@@ -32,11 +32,13 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/dgrijalva/jwt-go/v4"
 	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open"
+	"golang.org/x/term"
 	"google.golang.org/grpc/metadata"
 	"gopkg.in/segmentio/analytics-go.v3"
 
@@ -174,10 +176,16 @@ type PixieCloudLogin struct {
 	OrgName string
 	// OrgID: Selection is only valid for "pixie.support", will be removed when RBAC is supported.
 	OrgID string
+	// UseAPIKey, if true then prompt user for API key to use for login.
+	UseAPIKey bool
 }
 
 // Run either launches the browser or prints out the URL for auth.
 func (p *PixieCloudLogin) Run() (*RefreshToken, error) {
+	// Preferentially use API key for auth.
+	if p.UseAPIKey {
+		return p.doAPIKeyAuth()
+	}
 	// There are two ways to do the auth. The first one is where we automatically open up the browser
 	// and wait for the challenge to complete and call a HTTP server that we started.
 	// The second one is to perform a manual auth.
@@ -211,7 +219,7 @@ func (p *PixieCloudLogin) Run() (*RefreshToken, error) {
 	}
 	utils.Info("Fetching refresh token")
 
-	return p.getRefreshToken(accessToken)
+	return p.getRefreshToken(accessToken, "")
 }
 
 func addCORSHeaders(res http.ResponseWriter) {
@@ -232,6 +240,17 @@ func sendError(w http.ResponseWriter, err error) {
 	}
 
 	fmt.Fprint(w, err.Error())
+}
+
+func (p *PixieCloudLogin) doAPIKeyAuth() (*RefreshToken, error) {
+	fmt.Print("\nEnter API Key (won't echo): ")
+	apiKey, err := term.ReadPassword(syscall.Stdin)
+	fmt.Print("\n")
+	if err != nil {
+		return nil, err
+	}
+
+	return p.getRefreshToken("", string(apiKey))
 }
 
 func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
@@ -279,7 +298,7 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 			return
 		}
 
-		refreshToken, err := p.getRefreshToken(accessToken)
+		refreshToken, err := p.getRefreshToken(accessToken, "")
 
 		if err != nil {
 			sendError(w, err)
@@ -365,7 +384,7 @@ func (p *PixieCloudLogin) getAuthStringManually() (string, error) {
 	return r.ReadString('\n')
 }
 
-func (p *PixieCloudLogin) getRefreshToken(accessToken string) (*RefreshToken, error) {
+func (p *PixieCloudLogin) getRefreshToken(accessToken string, apiKey string) (*RefreshToken, error) {
 	if len(p.OrgName) > 0 {
 		return p.deprecatedGetRefreshTokenForOrg(accessToken)
 	}
@@ -378,7 +397,11 @@ func (p *PixieCloudLogin) getRefreshToken(accessToken string) (*RefreshToken, er
 	authRequest := &cloudpb.LoginRequest{
 		AccessToken: accessToken,
 	}
-	resp, err := authClient.Login(context.Background(), authRequest)
+	ctx := context.Background()
+	if len(apiKey) > 0 {
+		ctx = metadata.AppendToOutgoingContext(ctx, "pixie-api-key", apiKey)
+	}
+	resp, err := authClient.Login(ctx, authRequest)
 	if err != nil {
 		return nil, err
 	}

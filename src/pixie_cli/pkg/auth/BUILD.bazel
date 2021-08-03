@@ -33,5 +33,6 @@ go_library(
         "@com_github_skratchdot_open_golang//open",
         "@in_gopkg_segmentio_analytics_go_v3//:analytics-go_v3",
         "@org_golang_google_grpc//metadata",
+        "@org_golang_x_term//:term",
     ],
 )

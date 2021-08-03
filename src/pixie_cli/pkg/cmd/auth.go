@@ -33,14 +33,17 @@ import (
 )
 
 func init() {
-	AuthCmd.AddCommand(LoginCmd)
+	LoginCmd.PersistentFlags().Bool("manual", false, "Don't automatically open the browser")
+	viper.BindPFlag("manual", LoginCmd.PersistentFlags().Lookup("manual"))
 
-	AuthCmd.PersistentFlags().Bool("manual", false, "Don't automatically open the browser")
-	viper.BindPFlag("manual", AuthCmd.PersistentFlags().Lookup("manual"))
+	LoginCmd.Flags().Bool("use_api_key", false, "Use API key for authentication")
+	viper.BindPFlag("use_api_key", LoginCmd.Flags().Lookup("use_api_key"))
 
 	AuthCmd.PersistentFlags().String("org_name", "", "Select ORG to login into")
 	viper.BindPFlag("org_name", AuthCmd.PersistentFlags().Lookup("org_name"))
 	AuthCmd.PersistentFlags().MarkHidden("org_name")
+
+	AuthCmd.AddCommand(LoginCmd)
 }
 
 // AuthCmd is the auth sub-command of the CLI.
@@ -62,6 +65,7 @@ var LoginCmd = &cobra.Command{
 		l := auth.PixieCloudLogin{
 			ManualMode: viper.GetBool("manual"),
 			CloudAddr:  viper.GetString("cloud_addr"),
+			UseAPIKey:  viper.GetBool("use_api_key"),
 			OrgName:    orgName,
 		}
 		var refreshToken *auth.RefreshToken
