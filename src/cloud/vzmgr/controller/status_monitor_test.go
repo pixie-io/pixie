@@ -36,13 +36,13 @@ func mustLoadStatusMonitorTestData(db *sqlx.DB) {
 	insertVizierClusterQuery := `INSERT INTO vizier_cluster(org_id, id) VALUES ($1, $2)`
 	db.MustExec(insertVizierClusterQuery, "223e4567-e89b-12d3-a456-426655440000", "123e4567-e89b-12d3-a456-426655440000")
 
-	insertVizierClusterInfoQuery := `INSERT INTO vizier_cluster_info(vizier_cluster_id, status, address, jwt_signing_key, last_heartbeat) VALUES($1, $2, $3, $4, NOW() - INTERVAL '30 seconds')`
+	insertVizierClusterInfoQuery := `INSERT INTO vizier_cluster_info(vizier_cluster_id, status, address, jwt_signing_key, last_heartbeat) VALUES($1, $2, $3, $4, NOW() - INTERVAL '180 seconds')`
 	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440000", "HEALTHY", "addr0", "key0")
 
 	insertVizierClusterQuery = `INSERT INTO vizier_cluster(org_id, id) VALUES ($1, $2)`
 	db.MustExec(insertVizierClusterQuery, "223e4567-e89b-12d3-a456-426655440001", "123e4567-e89b-12d3-a456-426655440001")
 
-	insertVizierClusterInfoQuery = `INSERT INTO vizier_cluster_info(vizier_cluster_id, status, address, jwt_signing_key, last_heartbeat) VALUES($1, $2, $3, $4, NOW() - INTERVAL '30 seconds')`
+	insertVizierClusterInfoQuery = `INSERT INTO vizier_cluster_info(vizier_cluster_id, status, address, jwt_signing_key, last_heartbeat) VALUES($1, $2, $3, $4, NOW() - INTERVAL '180 seconds')`
 	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440001", "UPDATING", "addr0", "key0")
 
 	insertVizierClusterQuery = `INSERT INTO vizier_cluster(org_id, id) VALUES ($1, $2)`

@@ -28,13 +28,13 @@ import (
 )
 
 const (
-	// With 5 second heartbeats, this will be 4 missed heart beats.
-	durationBeforeDisconnect = 20 * time.Second
+	// With 5 second heartbeats, this will be 24 missed heart beats.
+	durationBeforeDisconnect = 120 * time.Second
 	// How often to update the database.
 	updateInterval = 5 * time.Second
 	// If a cluster is an UPDATING state, the amount of time since the last heartbeat at
 	// which we can consider it disconnected.
-	durationBeforeUpdateDisconnect = 10 * time.Minute
+	durationBeforeUpdateDisconnect = 15 * time.Minute
 )
 
 // StatusMonitor is responsible for maintaining status information of vizier clusters.
