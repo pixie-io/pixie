@@ -46,10 +46,6 @@ service ProfileService {
   // Calls for handling user attributes.
   rpc GetUserAttributes(GetUserAttributesRequest) returns (GetUserAttributesResponse);
   rpc SetUserAttributes(SetUserAttributesRequest) returns (SetUserAttributesResponse);
-  // InviteUser is deprecated. Use authpb's equivalent interface instead.
-  rpc InviteUser(InviteUserRequest) returns (InviteUserResponse) {
-        option deprecated = true;
-  }
 }
 
 // UserInfo has information about a single end user in our system.
@@ -202,22 +198,6 @@ message SetUserAttributesRequest {
 
 // The response for a SetUserAttributes call.
 message SetUserAttributesResponse {}
-
-message InviteUserRequest {
-	string email = 1;
-	string first_name = 2;
-	string last_name = 3;
-
-  // The ID of the organization to create the user for.
-  px.uuidpb.UUID org_id = 4 [(gogoproto.customname) = "OrgID"];
-  bool must_create_user = 5;
-  string identity_provider = 6;
-}
-
-message InviteUserResponse {
-	string email = 1;
-	string invite_link = 2;
-}
 
 // A request to get all users in the given org. This org must match the user's org,
 // verified in the augmented token.

@@ -257,26 +257,6 @@ func (mr *MockProfileServiceClientMockRecorder) GetUsersInOrg(ctx, in interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersInOrg", reflect.TypeOf((*MockProfileServiceClient)(nil).GetUsersInOrg), varargs...)
 }
 
-// InviteUser mocks base method.
-func (m *MockProfileServiceClient) InviteUser(ctx context.Context, in *profilepb.InviteUserRequest, opts ...grpc.CallOption) (*profilepb.InviteUserResponse, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "InviteUser", varargs...)
-	ret0, _ := ret[0].(*profilepb.InviteUserResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// InviteUser indicates an expected call of InviteUser.
-func (mr *MockProfileServiceClientMockRecorder) InviteUser(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InviteUser", reflect.TypeOf((*MockProfileServiceClient)(nil).InviteUser), varargs...)
-}
-
 // SetUserAttributes mocks base method.
 func (m *MockProfileServiceClient) SetUserAttributes(ctx context.Context, in *profilepb.SetUserAttributesRequest, opts ...grpc.CallOption) (*profilepb.SetUserAttributesResponse, error) {
 	m.ctrl.T.Helper()
@@ -543,21 +523,6 @@ func (m *MockProfileServiceServer) GetUsersInOrg(arg0 context.Context, arg1 *pro
 func (mr *MockProfileServiceServerMockRecorder) GetUsersInOrg(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersInOrg", reflect.TypeOf((*MockProfileServiceServer)(nil).GetUsersInOrg), arg0, arg1)
-}
-
-// InviteUser mocks base method.
-func (m *MockProfileServiceServer) InviteUser(arg0 context.Context, arg1 *profilepb.InviteUserRequest) (*profilepb.InviteUserResponse, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InviteUser", arg0, arg1)
-	ret0, _ := ret[0].(*profilepb.InviteUserResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// InviteUser indicates an expected call of InviteUser.
-func (mr *MockProfileServiceServerMockRecorder) InviteUser(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InviteUser", reflect.TypeOf((*MockProfileServiceServer)(nil).InviteUser), arg0, arg1)
 }
 
 // SetUserAttributes mocks base method.

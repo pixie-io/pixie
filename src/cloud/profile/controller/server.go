@@ -425,11 +425,6 @@ func (s *Server) SetUserAttributes(ctx context.Context, req *profilepb.SetUserAt
 	return &profilepb.SetUserAttributesResponse{}, nil
 }
 
-// InviteUser implements the Profile interface's InviteUser method.
-func (s *Server) InviteUser(ctx context.Context, req *profilepb.InviteUserRequest) (*profilepb.InviteUserResponse, error) {
-	return nil, errors.New("profile service InviteUser deprecated. Use auth service's InviteUser rpc")
-}
-
 // GetUsersInOrg gets the users in the requested org, given that the requestor has permissions.
 func (s *Server) GetUsersInOrg(ctx context.Context, req *profilepb.GetUsersInOrgRequest) (*profilepb.GetUsersInOrgResponse, error) {
 	sCtx, err := authcontext.FromContext(ctx)
