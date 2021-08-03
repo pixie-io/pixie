@@ -19,7 +19,7 @@
 import { gql, useQuery } from '@apollo/client';
 import * as React from 'react';
 import {
-  Theme, makeStyles,
+  Theme, makeStyles, Tooltip,
 } from '@material-ui/core';
 import { createStyles } from '@material-ui/styles';
 import { ClusterContext } from 'app/common/cluster-context';
@@ -29,6 +29,11 @@ import { GQLClusterInfo, GQLClusterStatus } from 'app/types/schema';
 import { clusterStatusGroup } from 'app/containers/admin/utils';
 
 const useStyles = makeStyles(({ spacing, palette }: Theme) => createStyles({
+  container: {
+    display: 'flex',
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
   label: {
     marginRight: spacing(0.5),
     justifyContent: 'center',
@@ -37,10 +42,9 @@ const useStyles = makeStyles(({ spacing, palette }: Theme) => createStyles({
     color: palette.text.secondary,
     fontWeight: 800,
   },
-  container: {
-    display: 'flex',
-    justifyContent: 'center',
-    flexDirection: 'row',
+  status: {
+    alignSelf: 'center',
+    marginRight: spacing(0.5),
   },
 }));
 
@@ -66,7 +70,7 @@ const ClusterSelector: React.FC = () => {
   );
 
   const clusters = data?.clusters;
-  const { selectedClusterPrettyName, setClusterByName } = React.useContext(ClusterContext);
+  const { selectedClusterPrettyName, selectedClusterStatus, setClusterByName } = React.useContext(ClusterContext);
 
   const getListItems = React.useCallback(async (input: string) => (
     clusters
@@ -79,13 +83,28 @@ const ClusterSelector: React.FC = () => {
       .sort((clusterA, clusterB) => clusterA.title.localeCompare(clusterB.title))
   ), [clusters]);
 
+  const statusGroup = clusterStatusGroup(selectedClusterStatus);
+
+  const selectedLabel = React.useMemo(() => (
+    <div className={classes.container}>
+      <div className={classes.label}>Cluster:</div>
+      <span>{selectedClusterPrettyName}</span>
+    </div>
+  ), [classes, selectedClusterPrettyName]);
+
   if (loading || !clusters || error) return (<></>);
 
   return (
     <div className={classes.container}>
-      <div className={classes.label}>Cluster:</div>
+      {statusGroup !== 'healthy' && (
+        <Tooltip title={`Status: ${statusGroup}`}>
+          <div className={classes.status}>
+            <StatusCell statusGroup={statusGroup} />
+          </div>
+        </Tooltip>
+      )}
       <Select
-        value={selectedClusterPrettyName}
+        value={selectedLabel}
         getListItems={getListItems}
         onSelect={setClusterByName}
         requireCompletion

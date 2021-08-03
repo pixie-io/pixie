@@ -17,19 +17,13 @@
  */
 
 import * as React from 'react';
-import {
-  Theme,
-} from '@material-ui/core';
-import {
-  WithStyles,
-  withStyles,
-} from '@material-ui/core/styles';
+import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
 import { DialogDropdown, BreadcrumbListItem } from 'app/components/breadcrumbs/breadcrumbs';
 import { AutocompleteContext } from 'app/components/autocomplete/autocomplete-context';
 
-const styles = (theme: Theme) => createStyles({
+const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
     color: theme.palette.text.secondary,
     display: 'flex',
@@ -42,19 +36,20 @@ const styles = (theme: Theme) => createStyles({
     alignItems: 'center',
     marginLeft: theme.spacing(-0.1),
   },
-});
+}), { name: 'Select' });
 
-export interface SelectProps extends WithStyles<typeof styles> {
-  value: string;
+export interface SelectProps {
+  value: React.ReactNode;
   getListItems?: (input: string) => Promise<BreadcrumbListItem[]>;
   onSelect?: (input: string) => void;
   requireCompletion?: boolean;
   placeholder?: string;
 }
 
-const SelectImpl = ({
-  classes, value, getListItems, onSelect, requireCompletion, placeholder,
-}: SelectProps) => {
+export const Select: React.FC<SelectProps> = ({
+  value, getListItems, onSelect, requireCompletion, placeholder,
+}) => {
+  const classes = useStyles();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
   const handleClick = React.useCallback(
@@ -91,5 +86,3 @@ const SelectImpl = ({
     </AutocompleteContext.Provider>
   );
 };
-
-export const Select = withStyles(styles)(SelectImpl);

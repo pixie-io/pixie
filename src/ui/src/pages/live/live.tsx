@@ -34,9 +34,10 @@ import { DataDrawerContextProvider } from 'app/context/data-drawer-context';
 import EditorContextProvider, { EditorContext } from 'app/context/editor-context';
 import { LayoutContext, LayoutContextProvider } from 'app/context/layout-context';
 import { ScriptContext, ScriptContextProvider } from 'app/context/script-context';
-import { ResultsContextProvider } from 'app/context/results-context';
+import { ResultsContext, ResultsContextProvider } from 'app/context/results-context';
 import { Script } from 'app/utils/script-bundle';
 
+import { Spinner } from 'app/components/spinner/spinner';
 import { ClusterInstructions } from 'app/containers/App/deploy-instructions';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
 import NavBars from 'app/containers/App/nav-bars';
@@ -203,6 +204,7 @@ const ClusterLoadingComponent = ({
   clusterPrettyName, clusterStatus, script, healthy,
 }: ClusterLoadingProps) => {
   const { loading: loadingAvailableScripts } = React.useContext(ScriptsContext);
+  const { loading: loadingResults, streaming: streamingResults } = React.useContext(ResultsContext);
 
   const formattedStatus = React.useMemo(
     () => clusterStatus.replace('CS_', '').toLowerCase(),
@@ -251,14 +253,20 @@ const ClusterLoadingComponent = ({
   }
 
   if (!loadingAvailableScripts && !script) {
-    return <div> Script name invalid, choose a new script in the dropdown</div>;
+    return <div>Script name invalid, choose a new script in the dropdown</div>;
   }
 
   if (!healthy) {
     return <ClusterInstructions message='Connecting to cluster...' />;
   }
 
-  return <></>;
+  if (loadingResults && !streamingResults) {
+    return <Spinner />;
+  }
+
+  // Cluster is healthy, script is set, scripts are loaded, results are loaded but this component was still invoked.
+  // Tell the user they may run a script here.
+  return <div>Select a script, then click &quot;Run&quot;.</div>;
 };
 
 const Nav: React.FC<{
@@ -322,6 +330,7 @@ const LiveView: React.FC = () => {
 
   const { selectedClusterName, selectedClusterPrettyName, selectedClusterStatus } = React.useContext(ClusterContext);
   const { script, args, cancelExecution } = React.useContext(ScriptContext);
+  const { tables } = React.useContext(ResultsContext);
   const { saveEditor } = React.useContext(EditorContext);
   const { isMobile, setEditorPanelOpen, setDataDrawerOpen } = React.useContext(LayoutContext);
   const [widgetsMoveable, setWidgetsMoveable] = React.useState(false);
@@ -347,7 +356,7 @@ const LiveView: React.FC = () => {
   // and want to ignore future health check failures. So we use healthyOnce to start as false
   // and transition to true once. After the transition, it will always stay true.
   const [healthyOnce, setHealthyOnce] = React.useState(false);
-  React.useCallback(() => {
+  React.useEffect(() => {
     setHealthyOnce((prev) => (prev || healthy));
   }, [healthy]);
 
@@ -409,7 +418,7 @@ const LiveView: React.FC = () => {
               widget && classes.widgetMain,
             )}>
               <BreadcrumbsWithOptionalRun />
-              {(selectedClusterStatus === GQLClusterStatus.CS_HEALTHY && script && healthy) ? (
+              {(script && healthyOnce && Object.keys(tables).length) ? (
                 <div className={classes.canvas} ref={canvasRef}>
                   <Canvas editable={widgetsMoveable} parentRef={canvasRef} />
                 </div>

@@ -105,7 +105,7 @@ export const ClusterContextProvider: React.FC = ({ children }) => {
     console.error(error?.message);
   }
 
-  if (loading) { return <div>Loading...</div>; }
+  if (loading && !data) { return <div>Loading...</div>; }
 
   return (
     <ClusterContext.Provider value={clusterContext}>
