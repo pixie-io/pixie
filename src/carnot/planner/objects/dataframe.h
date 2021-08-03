@@ -275,28 +275,37 @@ class Dataframe : public QLObject {
   is the right DataFrame. If the join keys do not have the same type, this will error out.
 
   Examples:
-    # Group by UPID and calculate maximum user time for the each
-    # UPID group.
+    # Single join key: Group by UPID and calculate maximum user time for the each UPID group.
     left_df = px.DataFrame('process_stats', start_time='-10s')
     left_df = left_df.groupby('upid').agg(cpu_utime=('cpu_utime_ns', px.max))
     right_df = px.DataFrame('http_events', start_time='-10s')
     right_df = right_df.groupby('upid').agg(count=('resp_body', px.count))
-    df = left_df.merge(right_df, how='inner', left_on='upid', right_on='upid',suffixes=['', '_x'])
-    # df relation = ['upid', 'cpu_utime', 'upid_x', 'count']
-
+    df = left_df.merge(right_df, how='inner', left_on='upid', right_on='upid', suffixes=['', '_x'])
+    # Output relation: ['upid', 'cpu_utime', 'upid_x', 'count']
+    # Multiple join keys: Calculate maximum user time for the each service/node pair.
+    left_df = px.DataFrame('process_stats', start_time='-10s')
+    left_df.node = left_df.ctx['node']
+    left_df.service = left_df.ctx['service']
+    left_df = left_df.groupby(['service', 'node']).agg(cpu_utime=('cpu_utime_ns', px.max))
+    right_df = px.DataFrame('http_events', start_time='-10s')
+    right_df.node = right_df.ctx['node']
+    right_df.service = right_df.ctx['service']
+    right_df = right_df.groupby(['service', 'node']).agg(count=('resp_body', px.count))
+    df = left_df.merge(right_df, how='inner', left_on=['service', 'node'], right_on=['service', 'node'], suffixes=['', '_x'])
+    # Output relation: ['service', 'node', 'cpu_utime', 'service_x', 'node_x', 'count']
 
   :topic: dataframe_ops
   :opname: Join
 
   Args:
     right (px.DataFrame): The DataFrame to join with this DataFrame.
-    how (['inner', 'outer', 'left', 'right'], default 'inner'): the Type of merge to perform.
+    how (['inner', 'outer', 'left', 'right'], default 'inner'): the type of merge (join) to perform.
       * inner: use the intersection of the left and right keys.
       * outer: use the union of the left and right keys.
       * left: use the keys from the left DataFrame.
       * right: use the keys from the right DataFrame.
-    left_on (string): Column name from this DataFrame.
-    right_on (string): Column name from the right DataFarme to join on. Must be the same type as the `left_on` column.
+    left_on (Union[string, List[string]]): Column name from this DataFrame, either as a string or a list of strings.
+    right_on (Union[string, List[string]]): Column name from the right DataFarme to join on. Must be the same type as the `left_on` column.
     suffixes (Tuple[string, string], default ['_x', '_y']): The suffixes to apply to duplicate columns.
 
   Returns:
