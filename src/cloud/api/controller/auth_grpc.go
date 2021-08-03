@@ -62,7 +62,7 @@ func (a *AuthServer) Login(ctx context.Context, req *cloudpb.LoginRequest) (*clo
 	apiKey := md.Get("pixie-api-key")
 	// If API key is in headers, try to login with API key.
 	if token == "" && mdOK && len(apiKey) == 1 {
-		apiKeyResp, err := a.AuthClient.GetAugmentedTokenForAPIKey(ctx, &authpb.GetAugmentedTokenForAPIKeyRequest{
+		apiKeyResp, err := a.AuthClient.GetAugmentedTokenForAPIKey(aCtx, &authpb.GetAugmentedTokenForAPIKeyRequest{
 			APIKey: apiKey[0],
 		})
 		if err == nil {
