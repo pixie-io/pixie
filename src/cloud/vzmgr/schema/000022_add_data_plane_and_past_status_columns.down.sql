@@ -1,0 +1,3 @@
+ALTER TABLE vizier_cluster_info DROP COLUMN unhealthy_data_plane_pod_statuses json;
+ALTER TABLE vizier_cluster_info DROP COLUMN previous_vizier_status vizier_status;
+ALTER TABLE vizier_cluster_info DROP COLUMN previous_vizier_status_time TIMESTAMP;

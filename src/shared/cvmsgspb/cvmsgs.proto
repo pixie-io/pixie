@@ -100,13 +100,17 @@ message VizierHeartbeat {
   // Port of the proxy service.
   int32 port = 5;
   // Map of pod name to pod status. This only includes pods that are part of the
-  // vizier control plane. Data-plane pods, such as PEMs or Kelvin can be fetched
-  // by running the agents script.
+  // vizier control plane.
   // Ex: {
   //   vizier-query-broker-z26d8: { name: vizier-query-broker-z26d8, status: RUNNING },
   //   vizier-metadata-7b668797b9-bjsvd: { name: vizier-metadata-7b668797b9-bjsvd, status: FAILED }
   // }
   map<string, PodStatus> pod_statuses = 6;
+  // Map of pod name to pod status for unhealthy data plane pods.
+  // Contains at most 10 results.
+  // Kelvin will always be included if it is unhealthy, and the first N unhealthy
+  // PEMs will be sampled from there.
+  map<string, PodStatus> unhealthy_data_plane_pod_statuses = 15;
   // The last time the pod statuses were updated.
   int64 pod_statuses_last_updated = 7;
   // The status of vizier at the time of the heartbeat. For backwards compatibility,
@@ -124,12 +128,10 @@ message VizierHeartbeat {
   bool disable_auto_update = 13;
   // The message explaining why the cluster is in its current state.
   string status_message = 14;
+  // The current Kubernetes version that the cluster is running.
+  string k8s_cluster_version = 16 [(gogoproto.customname) = "K8sClusterVersion"];
 }
 
-// TODO(nserrino), PP-2512: Deprecate and replace with vizierpb's VizierPodStatus,
-// PodStatus represents a pod's status at a moment in time. Currently this message
-// only contains name and status, but could contain more information that could
-// help debug in the future.
 message PodStatus {
   // The name of the pod. Ex: vizier-pem-z26d8
   string name = 1;
@@ -145,10 +147,10 @@ message PodStatus {
   google.protobuf.Timestamp created_at = 6 [(gogoproto.customname) = "CreatedAt"];
   // The K8s events associated with the pod.
   repeated K8sEvent events = 7;
+  // The number of restarts for this pod.
+  int64 num_restarts = 8;
 }
 
-// TODO(nserrino), PP-2512: Deprecate this (used by PodStatus).
-// K8sEvent represents a K8s event belonging to a pod.
 message K8sEvent {
   // The string describing the event itself.
   string message = 1;

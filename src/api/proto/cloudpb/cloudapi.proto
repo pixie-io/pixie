@@ -321,6 +321,8 @@ message PodStatus {
   google.protobuf.Timestamp created_at = 6 [ (gogoproto.customname) = "CreatedAt" ];
   // The K8s events associated with the pod.
   repeated K8sEvent events = 7;
+  // The number of restarts for this pod.
+  int64 num_restarts = 8;
 }
 
 enum ContainerState {
@@ -371,12 +373,20 @@ message ClusterInfo {
   //   vizier-metadata-7b668797b9-bjsvd: { name: vizier-metadata-7b668797b9-bjsvd, status: FAILED }
   // }
   map<string, PodStatus> control_plane_pod_statuses = 10;
+  // Pod status for up to 10 unhealthy data plane pods.
+  // If Kelvin is unhealthy, it will always be included in this list. Unhealthy PEMs will be
+  // sampled (first N alphabetically).
+  map<string, PodStatus> unhealthy_data_plane_pod_statuses = 14;
   // The total number of nodes (instrumented & non-instrumented) on the cluster this Vizier is on.
   int32 num_nodes = 11;
   // The total number of  nodes on the cluster that have pems.
   int32 num_instrumented_nodes = 12;
   // The message explaining why the cluster is in its current state.
   string status_message = 13;
+  // The previous status of this cluster, if there was one.
+  ClusterStatus previous_status = 15;
+  // The time at which this cluster changed statuses to the currents tatus.
+  google.protobuf.Timestamp previous_status_time = 16;
 }
 
 message GetClusterInfoResponse { repeated ClusterInfo clusters = 1; }
