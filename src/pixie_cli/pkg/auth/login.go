@@ -381,7 +381,12 @@ func (p *PixieCloudLogin) getAuthStringManually() (string, error) {
 	f.Flush()
 
 	r := bufio.NewReader(os.Stdin)
-	return r.ReadString('\n')
+	str, err := r.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(str), nil
 }
 
 func (p *PixieCloudLogin) getRefreshToken(accessToken string, apiKey string) (*RefreshToken, error) {
