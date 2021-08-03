@@ -104,6 +104,7 @@ func (s *Server) getArtifactListSpecifiedOperator() (*vpb.ArtifactSet, error) {
 				AvailableArtifacts: []vpb.ArtifactType{
 					vpb.AT_CONTAINER_SET_TEMPLATE_YAMLS,
 					vpb.AT_CONTAINER_SET_LINUX_AMD64,
+					vpb.AT_CONTAINER_SET_YAMLS,
 				},
 			},
 		},
