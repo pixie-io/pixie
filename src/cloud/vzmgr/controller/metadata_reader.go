@@ -74,7 +74,7 @@ func (vz *VizierState) stop() {
 	vz.once.Do(func() {
 		close(vz.quitCh)
 		if vz.liveSub != nil {
-			vz.liveSub.Unsubscribe()
+			vz.liveSub.Close()
 			vz.liveSub = nil
 		}
 	})
@@ -225,7 +225,7 @@ func (m *MetadataReader) loadVizierState(id uuid.UUID, k8sUID string) (*VizierSt
 			close(versionCh)
 		}
 		versionCh <- ru.UpdateVersion
-		// Don't ack this message, we don't want more.
+		// Don't ack this message, we only want to receive a single message for this sub.
 	}, stan.StartWithLastReceived(), stan.SetManualAckMode())
 	if err != nil {
 		return nil, err
@@ -267,7 +267,7 @@ func (m *MetadataReader) startVizierUpdates(id uuid.UUID, k8sUID string) error {
 	log.WithField("topic", topic).Info("Subscribing to STAN")
 	liveSub, err := m.sc.QueueSubscribe(topic, "vzmgr", func(msg *stan.Msg) {
 		vzState.liveCh <- msg
-	}, stan.SetManualAckMode(), stan.DurableName("vzmgr"))
+	}, stan.SetManualAckMode(), stan.DurableName("vzmgr"), stan.DeliverAllAvailable())
 	if err != nil {
 		vzState.stop()
 		return err

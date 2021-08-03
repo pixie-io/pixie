@@ -45,6 +45,26 @@ type MetadataRequest struct {
 	responses []*metadatapb.MissingK8SMetadataResponse
 }
 
+func listenForUnexpectedIndexerMessages(c chan *stan.Msg) error {
+	run := true
+	for run {
+		select {
+		case idxMessage := <-c:
+			u := &metadatapb.ResourceUpdate{}
+			err := proto.Unmarshal(idxMessage.Data, u)
+			if err != nil {
+				return err
+			}
+			return fmt.Errorf("Unexpected index message: %d", u.UpdateVersion)
+		// On some investigations, found that messages are sent < 500us, chose a
+		// timeout that was 100x in case of any unexpected interruptions.
+		case <-time.After(50 * time.Millisecond):
+			run = false
+		}
+	}
+	return nil
+}
+
 func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 	tests := []struct {
 		name                    string                       // Name of the test
@@ -373,12 +393,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 				}()
 			}
 
-			mdr, err := controller.NewMetadataReader(db, sc, nc)
-			require.NoError(t, err)
-			defer mdr.Stop()
-
 			var wg sync.WaitGroup
-
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
@@ -398,6 +413,9 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 				}
 			}()
 
+			mdr, err := controller.NewMetadataReader(db, sc, nc)
+			require.NoError(t, err)
+
 			numUpdates := 0
 			for numUpdates < len(test.expectedIndexerUpdates) {
 				select {
@@ -411,21 +429,44 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 					t.Fatal("Timed out")
 				}
 			}
-			// Make sure that we don't receive extra indexer updates.
-			run := true
-			for run {
-				select {
-				case idxMessage := <-idxCh:
-					u := &metadatapb.ResourceUpdate{}
-					err := proto.Unmarshal(idxMessage.Data, u)
-					require.NoError(t, err)
-					t.Errorf("Unpexected index message: %d", u.UpdateVersion)
-				case <-time.After(2 * time.Second):
-					run = false
-				}
-			}
+
+			require.NoError(t, listenForUnexpectedIndexerMessages(idxCh))
 
 			wg.Wait()
+			mdr.Stop()
+
+			// On restart, we shouldn't receive any updates.
+			mdr, err = controller.NewMetadataReader(db, sc, nc)
+			require.NoError(t, err)
+			defer mdr.Stop()
+
+			require.NoError(t, listenForUnexpectedIndexerMessages(idxCh))
 		})
 	}
+}
+
+func TestListenForUnexpectedIndexerMessages(t *testing.T) {
+	_, sc, stanCleanup := testingutils.MustStartTestStan(t, "test-stan", "test-client")
+	defer stanCleanup()
+
+	idxCh := make(chan *stan.Msg)
+	indexerSub, err := sc.Subscribe("MetadataIndex.test", func(msg *stan.Msg) {
+		idxCh <- msg
+	})
+	if err != nil {
+		t.Fatalf("failed to subscribe to stan: %v", err)
+	}
+	defer func() {
+		require.NoError(t, indexerSub.Unsubscribe())
+	}()
+
+	update := &metadatapb.ResourceUpdate{UpdateVersion: 1}
+	b, err := update.Marshal()
+	require.NoError(t, err)
+
+	// Push the update in.
+	require.NoError(t, sc.Publish("MetadataIndex.test", b))
+
+	// We expect this to error out because we intentionally send a message over stan.
+	require.Error(t, listenForUnexpectedIndexerMessages(idxCh))
 }

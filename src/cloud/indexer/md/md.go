@@ -71,7 +71,8 @@ func (v *VizierIndexer) Run(topic string) {
 	// messages that have alredy been process by this version of the index. (Without a queue, the fact
 	// that we have a new clientID and this is a durable subscription means that we'd get all messages
 	// on connect.)
-	sub, err := v.sc.QueueSubscribe(topic, IndexName, v.stanMessageHandler, stan.DurableName("indexer"), stan.SetManualAckMode(), stan.MaxInflight(50))
+	sub, err := v.sc.QueueSubscribe(topic, IndexName, v.stanMessageHandler,
+		stan.DurableName("indexer"), stan.SetManualAckMode(), stan.MaxInflight(50), stan.DeliverAllAvailable())
 	if err != nil {
 		log.WithError(err).Error("Failed to subscribe")
 	}
@@ -90,7 +91,7 @@ func (v *VizierIndexer) Run(topic string) {
 // Stop stops the indexer.
 func (v *VizierIndexer) Stop() {
 	close(v.quitCh)
-	err := v.sub.Unsubscribe()
+	err := v.sub.Close()
 	if err != nil {
 		log.WithError(err).Error("Failed to un-subscribe from channel")
 	}
