@@ -26,7 +26,7 @@ while read -r _ newsha _; do
 	author=$(git log -1 --pretty=format:"%ae" "${newsha}")
 	committer=$(git log -1 --pretty=format:"%ce" "${newsha}")
 	if [[ ! "${author}" =~ ${pattern} ]]; then
-		if [[ "${committer}" =~ "^(zasgar|vihang|michellenguyen)@pixielabs\.ai$" ]]; then
+		if [[ "${committer}" =~ ^(zasgar|vihang|michellenguyen)@pixielabs\.ai$ ]]; then
 			echo "WARNING: Non pixielabs author"
 		else
 			echo "======================================================================="
