@@ -233,15 +233,15 @@ func (s *Server) GetDownloadLink(ctx context.Context, in *apb.GetDownloadLinkReq
 
 	// If a specific vizier or CLI version is specified, check that the requested version matches. Otherwise, if no version is specified
 	// then we check the DB to see if the version exists.
-	if (at == vpb.AT_CONTAINER_SET_YAMLS || at == vpb.AT_CONTAINER_SET_TEMPLATE_YAMLS) && viper.GetString("vizier_version") != "" {
+	if name == vizierArtifactName && (at == vpb.AT_CONTAINER_SET_YAMLS || at == vpb.AT_CONTAINER_SET_TEMPLATE_YAMLS) && viper.GetString("vizier_version") != "" {
 		if versionStr != viper.GetString("vizier_version") {
 			return nil, status.Error(codes.NotFound, "artifact not found")
 		}
-	} else if (at == vpb.AT_CONTAINER_SET_TEMPLATE_YAMLS) && viper.GetString("operator_version") != "" {
+	} else if name == operatorArtifactName && (at == vpb.AT_CONTAINER_SET_TEMPLATE_YAMLS) && viper.GetString("operator_version") != "" {
 		if versionStr != viper.GetString("operator_version") {
 			return nil, status.Error(codes.NotFound, "artifact not found")
 		}
-	} else if (at == vpb.AT_DARWIN_AMD64 || at == vpb.AT_LINUX_AMD64) && viper.GetString("cli_version") != "" {
+	} else if name == cliArtifactName && (at == vpb.AT_DARWIN_AMD64 || at == vpb.AT_LINUX_AMD64) && viper.GetString("cli_version") != "" {
 		if versionStr != viper.GetString("cli_version") {
 			return nil, status.Error(codes.NotFound, "artifact not found")
 		}
