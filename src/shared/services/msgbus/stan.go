@@ -27,12 +27,12 @@ import (
 )
 
 func init() {
-	pflag.String("stan_cluster_id", "pl-stan", "The cluster ID of the stan cluster.")
+	pflag.String("stan_cluster", "pl-stan", "The cluster ID of the stan cluster.")
 }
 
 // MustConnectSTAN tries to connect to the STAN message bus.
 func MustConnectSTAN(nc *nats.Conn, clientID string) stan.Conn {
-	stanClusterID := viper.GetString("stan_cluster_id")
+	stanClusterID := viper.GetString("stan_cluster")
 
 	sc, err := stan.Connect(stanClusterID, clientID, stan.NatsConn(nc))
 	if err != nil {

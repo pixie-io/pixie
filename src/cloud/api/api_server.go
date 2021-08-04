@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/gorilla/handlers"
-	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -47,6 +46,7 @@ import (
 	svcEnv "px.dev/pixie/src/shared/services/env"
 	"px.dev/pixie/src/shared/services/handler"
 	"px.dev/pixie/src/shared/services/healthz"
+	"px.dev/pixie/src/shared/services/msgbus"
 	"px.dev/pixie/src/shared/services/server"
 )
 
@@ -55,7 +55,6 @@ const ossBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/scrip
 
 func init() {
 	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
-	pflag.String("nats_url", "pl-nats", "The URL of NATS")
 	pflag.String("elastic_service", "https://pl-elastic-es-http.plc-dev.svc.cluster.local:9200", "The url of the elasticsearch cluster")
 	pflag.String("elastic_ca_cert", "/elastic-certs/ca.crt", "CA Cert for elastic cluster")
 	pflag.String("elastic_tls_cert", "/elastic-certs/tls.crt", "TLS Cert for elastic cluster")
@@ -115,16 +114,7 @@ func main() {
 	}
 
 	// Connect to NATS.
-	nc, err := nats.Connect(viper.GetString("nats_url"),
-		nats.ClientCert(viper.GetString("client_tls_cert"), viper.GetString("client_tls_key")),
-		nats.RootCAs(viper.GetString("tls_ca_cert")))
-	if err != nil {
-		log.WithError(err).Fatal("Could not connect to NATS")
-	}
-
-	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, e error) {
-		log.WithError(e).Error("Got NATS error")
-	})
+	nc := msgbus.MustConnectNATS()
 
 	esConfig := &esutils.Config{
 		URL:        []string{viper.GetString("elastic_service")},

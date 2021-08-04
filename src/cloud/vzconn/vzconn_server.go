@@ -23,8 +23,6 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/gofrs/uuid"
-	"github.com/nats-io/nats.go"
-	"github.com/nats-io/stan.go"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -36,13 +34,12 @@ import (
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/env"
 	"px.dev/pixie/src/shared/services/healthz"
+	"px.dev/pixie/src/shared/services/msgbus"
 	"px.dev/pixie/src/shared/services/server"
 )
 
 func init() {
 	pflag.String("vzmgr_service", "kubernetes:///vzmgr-service.plc:51800", "The profile service url (load balancer/list is ok)")
-	pflag.String("nats_url", "pl-nats", "The URL of NATS")
-	pflag.String("stan_cluster", "pl-stan", "The name of the STAN cluster")
 	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
 }
 
@@ -58,26 +55,6 @@ func newVZMgrClients() (vzmgrpb.VZMgrServiceClient, vzmgrpb.VZDeploymentServiceC
 	}
 
 	return vzmgrpb.NewVZMgrServiceClient(vzmgrChannel), vzmgrpb.NewVZDeploymentServiceClient(vzmgrChannel), nil
-}
-
-func createStanNatsConnection(clientID string) (*nats.Conn, stan.Conn, error) {
-	nc, err := nats.Connect(viper.GetString("nats_url"),
-		nats.ClientCert(viper.GetString("client_tls_cert"), viper.GetString("client_tls_key")),
-		nats.RootCAs(viper.GetString("tls_ca_cert")))
-	if err != nil {
-		log.WithError(err).Error("NATS connection failed")
-		return nil, nil, err
-	}
-	sc, err := stan.Connect(viper.GetString("stan_cluster"),
-		clientID, stan.NatsConn(nc),
-		stan.SetConnectionLostHandler(func(_ stan.Conn, err error) {
-			log.WithError(err).Fatal("STAN Connection Lost")
-		}))
-	if err != nil {
-		log.WithError(err).Error("STAN connection failed")
-		return nil, nil, err
-	}
-	return nc, sc, nil
 }
 
 func main() {
@@ -102,16 +79,8 @@ func main() {
 	}
 
 	s := server.NewPLServerWithOptions(env.New(viper.GetString("domain_name")), mux, serverOpts)
-	nc, sc, err := createStanNatsConnection(uuid.Must(uuid.NewV4()).String())
-	if err != nil {
-		log.WithError(err).Fatal("Could not connect to NATS/STAN")
-	}
-
-	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
-		log.WithField("Sub", subscription.Subject).
-			WithError(err).
-			Error("Error with NATS handler")
-	})
+	nc := msgbus.MustConnectNATS()
+	sc := msgbus.MustConnectSTAN(nc, uuid.Must(uuid.NewV4()).String())
 
 	vzmgrClient, vzdeployClient, err := newVZMgrClients()
 	if err != nil {

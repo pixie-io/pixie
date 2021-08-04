@@ -36,7 +36,7 @@ func TestMustConnectSTAN(t *testing.T) {
 	_, sc, cleanup := testingutils.MustStartTestStan(t, clusterID, clientID)
 	defer cleanup()
 
-	viper.Set("stan_cluster_id", clusterID)
+	viper.Set("stan_cluster", clusterID)
 
 	nc := sc.NatsConn()
 	sc = msgbus.MustConnectSTAN(nc, "test-client-2")

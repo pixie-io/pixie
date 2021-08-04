@@ -28,7 +28,6 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/nats-io/nats.go"
-	"github.com/nats-io/stan.go"
 	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -41,12 +40,11 @@ import (
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/env"
 	"px.dev/pixie/src/shared/services/healthz"
+	"px.dev/pixie/src/shared/services/msgbus"
 	"px.dev/pixie/src/shared/services/server"
 )
 
 func init() {
-	pflag.String("nats_url", "pl-nats", "The URL of NATS")
-	pflag.String("stan_cluster", "pl-stan", "The name of the STAN cluster")
 	pflag.String("es_url", "https://pl-elastic-es-http:9200", "The URL for the elastic cluster")
 	pflag.String("es_ca_cert", "/es-certs/tls.crt", "The CA cert for elastic")
 	pflag.String("es_user", "elastic", "The user for elastic")
@@ -67,26 +65,6 @@ func newVZMgrClient() (vzmgrpb.VZMgrServiceClient, error) {
 	}
 
 	return vzmgrpb.NewVZMgrServiceClient(vzmgrChannel), nil
-}
-
-func createStanNatsConnection(clientID string) (*nats.Conn, stan.Conn, error) {
-	nc, err := nats.Connect(viper.GetString("nats_url"),
-		nats.ClientCert(viper.GetString("client_tls_cert"), viper.GetString("client_tls_key")),
-		nats.RootCAs(viper.GetString("tls_ca_cert")))
-	if err != nil {
-		log.WithError(err).Error("NATS connection failed")
-		return nil, nil, err
-	}
-	sc, err := stan.Connect(viper.GetString("stan_cluster"),
-		clientID, stan.NatsConn(nc),
-		stan.SetConnectionLostHandler(func(_ stan.Conn, err error) {
-			log.WithError(err).Fatal("STAN Connection Lost")
-		}))
-	if err != nil {
-		log.WithError(err).Error("STAN connection failed")
-		return nil, nil, err
-	}
-	return nc, sc, nil
 }
 
 func getESHTTPSClient() (*http.Client, error) {
@@ -142,10 +120,8 @@ func main() {
 	healthz.RegisterDefaultChecks(mux)
 
 	s := server.NewPLServer(env.New(viper.GetString("domain_name")), mux)
-	nc, sc, err := createStanNatsConnection(uuid.Must(uuid.NewV4()).String())
-	if err != nil {
-		log.Fatal("Could not connect to NATS/STAN")
-	}
+	nc := msgbus.MustConnectNATS()
+	sc := msgbus.MustConnectSTAN(nc, uuid.Must(uuid.NewV4()).String())
 
 	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
 		log.WithError(err).
@@ -154,7 +130,7 @@ func main() {
 	})
 
 	es := mustConnectElastic()
-	err = md.InitializeMapping(es)
+	err := md.InitializeMapping(es)
 	if err != nil {
 		log.WithError(err).Fatal("Could not initialize elastic mapping")
 	}
