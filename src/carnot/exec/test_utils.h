@@ -34,6 +34,7 @@
 #include "src/common/base/base.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/types/arrow_adapter.h"
+#include "src/shared/types/typespb/types.pb.h"
 #include "src/table_store/table_store.h"
 
 #include "src/carnot/carnotpb/carnot_mock.grpc.pb.h"
@@ -173,6 +174,63 @@ class CarnotTestUtils {
 
       EXPECT_OK(table->WriteRowBatch(rb));
     }
+    return table;
+  }
+
+  static std::shared_ptr<table_store::Table> ProcessStatsTable() {
+    table_store::schema::Relation rel(
+        {
+            types::DataType::TIME64NS,
+            types::DataType::UINT128,
+            types::DataType::INT64,
+            types::DataType::INT64,
+            types::DataType::INT64,
+            types::DataType::INT64,
+            types::DataType::INT64,
+            types::DataType::INT64,
+            types::DataType::INT64,
+            types::DataType::INT64,
+            types::DataType::INT64,
+            types::DataType::INT64,
+            types::DataType::INT64,
+        },
+        {
+            "time_",
+            "upid",
+            "major_faults",
+            "minor_faults",
+            "cpu_utime_ns",
+            "cpu_ktime_ns",
+            "num_threads",
+            "vsize_bytes",
+            "rss_bytes",
+            "rchar_bytes",
+            "wchar_bytes",
+            "read_bytes",
+            "write_bytes",
+        });
+    auto table = table_store::Table::Create(rel);
+    return table;
+  }
+
+  static std::shared_ptr<table_store::Table> HTTPEventsTable() {
+    table_store::schema::Relation rel(
+        {
+            types::DataType::TIME64NS, types::DataType::UINT128, types::DataType::STRING,
+            types::DataType::INT64,    types::DataType::INT64,   types::DataType::INT64,
+            types::DataType::INT64,    types::DataType::INT64,   types::DataType::STRING,
+            types::DataType::STRING,   types::DataType::STRING,  types::DataType::STRING,
+            types::DataType::INT64,    types::DataType::STRING,  types::DataType::INT64,
+            types::DataType::STRING,   types::DataType::STRING,  types::DataType::INT64,
+            types::DataType::INT64,
+        },
+        {
+            "time_",         "upid",          "remote_addr",    "remote_port",  "trace_role",
+            "major_version", "minor_version", "content_type",   "req_headers",  "req_method",
+            "req_path",      "req_body",      "req_body_size",  "resp_headers", "resp_status",
+            "resp_message",  "resp_body",     "resp_body_size", "latency",
+        });
+    auto table = table_store::Table::Create(rel);
     return table;
   }
 };

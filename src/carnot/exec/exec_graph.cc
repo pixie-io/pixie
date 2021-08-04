@@ -48,9 +48,9 @@ namespace exec {
 
 using table_store::schema::RowDescriptor;
 
-Status ExecutionGraph::Init(std::shared_ptr<table_store::schema::Schema> schema,
-                            plan::PlanState* plan_state, ExecState* exec_state,
-                            plan::PlanFragment* pf, bool collect_exec_node_stats,
+Status ExecutionGraph::Init(table_store::schema::Schema* schema, plan::PlanState* plan_state,
+                            ExecState* exec_state, plan::PlanFragment* pf,
+                            bool collect_exec_node_stats,
                             int32_t consecutive_generate_calls_per_source) {
   plan_state_ = plan_state;
   schema_ = schema;

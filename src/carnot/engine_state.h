@@ -45,14 +45,12 @@ class EngineState : public NotCopyable {
   EngineState() = delete;
   EngineState(std::unique_ptr<udf::Registry> func_registry,
               std::shared_ptr<table_store::TableStore> table_store,
-              std::shared_ptr<table_store::schema::Schema> schema,
               std::unique_ptr<planner::RegistryInfo> registry_info,
               const exec::ResultSinkStubGenerator& stub_generator,
               std::function<void(grpc::ClientContext*)> add_auth_to_grpc_context_func,
               exec::GRPCRouter* grpc_router, std::unique_ptr<exec::ml::ModelPool> model_pool)
       : func_registry_(std::move(func_registry)),
         table_store_(std::move(table_store)),
-        schema_(std::move(schema)),
         registry_info_(std::move(registry_info)),
         stub_generator_(stub_generator),
         add_auth_to_grpc_context_func_(add_auth_to_grpc_context_func),
@@ -65,18 +63,15 @@ class EngineState : public NotCopyable {
       const exec::ResultSinkStubGenerator& stub_generator,
       std::function<void(grpc::ClientContext*)> add_auth_to_grpc_context_func,
       exec::GRPCRouter* grpc_router) {
-    auto schema = std::make_shared<table_store::schema::Schema>();
     auto registry_info = std::make_unique<planner::RegistryInfo>();
     auto udf_info = func_registry->ToProto();
     PL_RETURN_IF_ERROR(registry_info->Init(udf_info));
     auto model_pool = exec::ml::ModelPool::Create();
 
     return std::make_unique<EngineState>(
-        std::move(func_registry), table_store, schema, std::move(registry_info), stub_generator,
+        std::move(func_registry), table_store, std::move(registry_info), stub_generator,
         add_auth_to_grpc_context_func, grpc_router, std::move(model_pool));
   }
-
-  std::shared_ptr<table_store::schema::Schema> schema() { return schema_; }
 
   table_store::TableStore* table_store() { return table_store_.get(); }
   std::unique_ptr<exec::ExecState> CreateExecState(const sole::uuid& query_id) {
@@ -109,7 +104,6 @@ class EngineState : public NotCopyable {
  private:
   std::unique_ptr<udf::Registry> func_registry_;
   std::shared_ptr<table_store::TableStore> table_store_;
-  std::shared_ptr<table_store::schema::Schema> schema_;
   std::unique_ptr<planner::RegistryInfo> registry_info_;
   const exec::ResultSinkStubGenerator stub_generator_;
   std::function<void(grpc::ClientContext*)> add_auth_to_grpc_context_func_;

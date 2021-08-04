@@ -229,9 +229,7 @@ StatusOr<table_store::schema::Relation> AggregateOperator::OutputRelation(
                            input_ids[0]);
   }
 
-  auto input_relation_s = schema.GetRelation(input_ids[0]);
-  PL_RETURN_IF_ERROR(input_relation_s);
-  const auto input_relation = input_relation_s.ConsumeValueOrDie();
+  PL_ASSIGN_OR_RETURN(const auto& input_relation, schema.GetRelation(input_ids[0]));
   table_store::schema::Relation output_relation;
 
   for (int idx = 0; idx < pb_.groups_size(); ++idx) {
@@ -504,8 +502,6 @@ StatusOr<table_store::schema::Relation> UnionOperator::OutputRelation(
       return error::NotFound("Missing relation ($0) for input of UnionOperator", input_ids[i]);
     }
 
-    auto input_relation_s = schema.GetRelation(input_ids[i]);
-    PL_RETURN_IF_ERROR(input_relation_s);
     PL_ASSIGN_OR_RETURN(const auto& input_relation, schema.GetRelation(input_ids[i]));
 
     for (size_t output_index = 0; output_index < column_mapping(i).size(); ++output_index) {

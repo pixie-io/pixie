@@ -85,11 +85,11 @@ class ExecutionGraph {
    * before switching to another available source.
    * @return The status of whether initialization succeeded.
    */
-  Status Init(std::shared_ptr<table_store::schema::Schema> schema, plan::PlanState* plan_state,
+  Status Init(table_store::schema::Schema* schema, plan::PlanState* plan_state,
               ExecState* exec_state, plan::PlanFragment* pf, bool collect_exec_node_stats,
               int32_t consecutive_generate_calls_per_source);
 
-  Status Init(std::shared_ptr<table_store::schema::Schema> schema, plan::PlanState* plan_state,
+  Status Init(table_store::schema::Schema* schema, plan::PlanState* plan_state,
               ExecState* exec_state, plan::PlanFragment* pf, bool collect_exec_node_stats) {
     return Init(schema, plan_state, exec_state, pf, collect_exec_node_stats,
                 kDefaultConsecutiveGenerateCallsPerSource);
@@ -185,22 +185,7 @@ class ExecutionGraph {
       input_descriptors.push_back(input_desc->second);
     }
     // Get output descriptor.
-    auto output_rel_or_s = node.OutputRelation(*schema_, *plan_state_, parents);
-    if (!output_rel_or_s.ok()) {
-      if (output_rel_or_s.msg() != "Mismatch between plan and table schema") {
-        return output_rel_or_s.status();
-      }
-      LOG(ERROR) << "HasColumn CHECK failure debug info: ";
-      LOG(ERROR) << "Op Node: " << node.DebugString();
-      LOG(ERROR) << "Table schema: " << schema_->DebugString();
-      LOG(ERROR) << "Plan fragment: ";
-      for (const auto& [idx, op_node] : pf_->nodes()) {
-        LOG(ERROR) << "Node " << idx;
-        LOG(ERROR) << op_node->DebugString();
-      }
-      return output_rel_or_s.status();
-    }
-    auto output_rel = output_rel_or_s.ConsumeValueOrDie();
+    PL_ASSIGN_OR_RETURN(auto output_rel, node.OutputRelation(*schema_, *plan_state_, parents));
     table_store::schema::RowDescriptor output_descriptor(output_rel.col_types());
     schema_->AddRelation(node.id(), output_rel);
     descriptors->insert({node.id(), output_descriptor});
@@ -227,7 +212,7 @@ class ExecutionGraph {
 
   ExecState* exec_state_;
   ObjectPool pool_{"exec_graph_pool"};
-  std::shared_ptr<table_store::schema::Schema> schema_;
+  table_store::schema::Schema* schema_;
   plan::PlanState* plan_state_;
   plan::PlanFragment* pf_;
   std::vector<int64_t> sources_;

@@ -106,7 +106,7 @@ TEST_F(ExecGraphTest, basic) {
                                          std::vector<std::string>({"test"}));
   schema->AddRelation(1, relation);
 
-  auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get(),
+  auto s = e.Init(schema.get(), plan_state.get(), exec_state_.get(), plan_fragment_.get(),
                   /* collect_exec_node_stats */ false);
 
   // Check that the structure of the exec graph is correct.
@@ -181,7 +181,7 @@ TEST_P(ExecGraphExecuteTest, execute) {
       std::vector<types::DataType>({types::DataType::FLOAT64, types::DataType::INT64})));
 
   ExecutionGraph e;
-  auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get(),
+  auto s = e.Init(schema.get(), plan_state.get(), exec_state_.get(), plan_fragment_.get(),
                   /* collect_exec_node_stats */ false, calls_to_generate);
 
   EXPECT_OK(e.Execute());
@@ -268,7 +268,7 @@ TEST_F(ExecGraphTest, execute_time) {
       std::vector<types::DataType>({types::DataType::FLOAT64, types::DataType::INT64})));
 
   ExecutionGraph e;
-  auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get(),
+  auto s = e.Init(schema.get(), plan_state.get(), exec_state_.get(), plan_fragment_.get(),
                   /* collect_exec_node_stats */ false);
 
   EXPECT_OK(e.Execute());
@@ -335,7 +335,7 @@ TEST_F(ExecGraphTest, two_limits_dont_interfere) {
       func_registry_.get(), table_store, MockResultSinkStubGenerator, sole::uuid4(), nullptr);
 
   ExecutionGraph e;
-  auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get(),
+  auto s = e.Init(schema.get(), plan_state.get(), exec_state_.get(), plan_fragment_.get(),
                   /* collect_exec_node_stats */ false);
 
   EXPECT_OK(e.Execute());
@@ -407,7 +407,7 @@ TEST_F(ExecGraphTest, limit_w_multiple_srcs) {
       func_registry_.get(), table_store, MockResultSinkStubGenerator, sole::uuid4(), nullptr);
 
   ExecutionGraph e;
-  auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get(),
+  auto s = e.Init(schema.get(), plan_state.get(), exec_state_.get(), plan_fragment_.get(),
                   /* collect_exec_node_stats */ false);
 
   EXPECT_OK(e.Execute());
@@ -470,7 +470,7 @@ TEST_F(ExecGraphTest, two_sequential_limits) {
       func_registry_.get(), table_store, MockResultSinkStubGenerator, sole::uuid4(), nullptr);
 
   ExecutionGraph e;
-  auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get(),
+  auto s = e.Init(schema.get(), plan_state.get(), exec_state_.get(), plan_fragment_.get(),
                   /* collect_exec_node_stats */ false);
 
   EXPECT_OK(e.Execute());
@@ -534,7 +534,7 @@ TEST_F(ExecGraphTest, execute_with_two_limits) {
       func_registry_.get(), table_store, MockResultSinkStubGenerator, sole::uuid4(), nullptr);
 
   ExecutionGraph e;
-  auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get(),
+  auto s = e.Init(schema.get(), plan_state.get(), exec_state_.get(), plan_fragment_.get(),
                   /* collect_exec_node_stats */ false);
 
   EXPECT_OK(e.Execute());
@@ -745,7 +745,7 @@ TEST_F(GRPCExecGraphTest, pending_row_batches_closed_connection_eos_success) {
   // Make a GRPC source, but don't initiate the connection.
   // Set timeouts to be 0 so that we definitely time out on connections being established.
   ExecutionGraph e{std::chrono::milliseconds(0), std::chrono::milliseconds(0)};
-  auto s = e.Init(schema_, plan_state_.get(), exec_state_.get(), plan_fragment_.get(),
+  auto s = e.Init(schema_.get(), plan_state_.get(), exec_state_.get(), plan_fragment_.get(),
                   /* collect_exec_node_stats */ false);
   ASSERT_OK(s);
 
@@ -781,7 +781,7 @@ TEST_F(GRPCExecGraphTest, pending_row_batches_closed_connection_no_eos) {
   // Make a GRPC source, but don't initiate the connection.
   // Set timeouts to be 0 so that we definitely time out on connections being established.
   ExecutionGraph e{std::chrono::milliseconds(0), std::chrono::milliseconds(0)};
-  auto s = e.Init(schema_, plan_state_.get(), exec_state_.get(), plan_fragment_.get(),
+  auto s = e.Init(schema_.get(), plan_state_.get(), exec_state_.get(), plan_fragment_.get(),
                   /* collect_exec_node_stats */ false);
   ASSERT_OK(s);
 
@@ -817,7 +817,7 @@ TEST_F(GRPCExecGraphTest, upstream_never_connected_no_active_sources) {
   // Make a GRPC source, but don't initiate the connection.
   // Set timeouts to be 0 so that we definitely time out on connections being established.
   ExecutionGraph e{std::chrono::milliseconds(0), std::chrono::milliseconds(0)};
-  auto s = e.Init(schema_, plan_state_.get(), exec_state_.get(), plan_fragment_.get(),
+  auto s = e.Init(schema_.get(), plan_state_.get(), exec_state_.get(), plan_fragment_.get(),
                   /* collect_exec_node_stats */ false);
   ASSERT_OK(s);
 

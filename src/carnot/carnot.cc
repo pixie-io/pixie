@@ -297,12 +297,14 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
   queryresultspb::AgentExecutionStats agent_operator_exec_stats;
   ToProto(agent_id_, agent_operator_exec_stats.mutable_agent_id());
   timer.Start();
+  // Unclear how we'll use plan fragments in the future (they're currently unused). For now, we will
+  // share the schema between plan fragments.
+  auto schema = std::make_unique<table_store::schema::Schema>();
   auto s =
       plan::PlanWalker()
           .OnPlanFragment([&](auto* pf) {
             auto exec_graph = exec::ExecutionGraph();
-            PL_RETURN_IF_ERROR(exec_graph.Init(engine_state_->schema(), plan_state.get(),
-                                               exec_state.get(), pf,
+            PL_RETURN_IF_ERROR(exec_graph.Init(schema.get(), plan_state.get(), exec_state.get(), pf,
                                                /* collect_exec_node_stats */ analyze));
             PL_RETURN_IF_ERROR(exec_graph.Execute());
             std::vector<std::string> frag_sinks = exec_graph.OutputTables();

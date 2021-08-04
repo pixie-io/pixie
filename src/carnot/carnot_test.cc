@@ -58,11 +58,18 @@ class CarnotTest : public ::testing::Test {
         table_store::schema::Relation({types::UINT128, types::INT64}, {"upid", "cycles"}));
     table_store_->AddTable("empty_table", empty_table_);
     table_store_->AddTable("duration_table", CarnotTestUtils::TestDuration64Table());
+
+    process_stats_table_ = CarnotTestUtils::ProcessStatsTable();
+    table_store_->AddTable("process_stats", process_stats_table_);
+    http_events_table_ = CarnotTestUtils::HTTPEventsTable();
+    table_store_->AddTable("http_events", http_events_table_);
   }
 
   std::shared_ptr<table_store::TableStore> table_store_;
   std::shared_ptr<table_store::Table> big_table_;
   std::shared_ptr<table_store::Table> empty_table_;
+  std::shared_ptr<table_store::Table> process_stats_table_;
+  std::shared_ptr<table_store::Table> http_events_table_;
   std::unique_ptr<Carnot> carnot_;
   std::unique_ptr<exec::LocalGRPCResultSinkServer> result_server_;
 };
@@ -1173,5 +1180,293 @@ TEST_F(CarnotTest, empty_source_test) {
         types::ToArrow(std::vector<types::Float64Value>({}), arrow::default_memory_pool())));
   }
 }
+
+const char kPxCluster[] = R"pxl(
+import px
+
+ns_per_ms = 1000 * 1000
+ns_per_s = 1000 * ns_per_ms
+# Window size to use on time_ column for bucketing.
+window_ns = px.DurationNanos(10 * ns_per_s)
+# Flag to filter out requests that come from an unresolvable IP.
+filter_unresolved_inbound = True
+# Flag to filter out health checks from the data.
+filter_health_checks = True
+# Flag to filter out ready checks from the data.
+filter_ready_checks = True
+
+
+def nodes_for_cluster(start_time: str):
+    ''' Gets a list of nodes in the current cluster since `start_time`.
+    Args:
+    @start_time Start time of the data to examine.
+    '''
+    df = px.DataFrame(table='process_stats', start_time=start_time)
+    df.node = df.ctx['node_name']
+    df.pod = df.ctx['pod_name']
+    agg = df.groupby(['node', 'pod']).agg()
+    nodes = agg.groupby('node').agg(pod_count=('pod', px.count))
+    process_stats = process_stats_by_entity(start_time, 'node')
+    output = process_stats.merge(nodes, how='inner', left_on='node', right_on='node',
+                                 suffixes=['', '_x'])
+    return output[['node', 'cpu_usage', 'pod_count']]
+
+
+def process_stats_by_entity(start_time: str, entity: str):
+    ''' Gets the windowed process stats (CPU, memory, etc) per node or pod.
+    Args:
+    @start_time Starting time of the data to examine.
+    @entity: Either pod or node_name.
+    '''
+    df = px.DataFrame(table='process_stats', start_time=start_time)
+    df[entity] = df.ctx[entity]
+    df.timestamp = px.bin(df.time_, window_ns)
+    # First calculate CPU usage by process (UPID) in each k8s_object
+    # over all windows.
+    df = df.groupby([entity, 'upid', 'timestamp']).agg(
+        rss=('rss_bytes', px.mean),
+        vsize=('vsize_bytes', px.mean),
+        # The fields below are counters, so we take the min and the max to subtract them.
+        cpu_utime_ns_max=('cpu_utime_ns', px.max),
+        cpu_utime_ns_min=('cpu_utime_ns', px.min),
+        cpu_ktime_ns_max=('cpu_ktime_ns', px.max),
+        cpu_ktime_ns_min=('cpu_ktime_ns', px.min),
+        read_bytes_max=('read_bytes', px.max),
+        read_bytes_min=('read_bytes', px.min),
+        write_bytes_max=('write_bytes', px.max),
+        write_bytes_min=('write_bytes', px.min),
+        rchar_bytes_max=('rchar_bytes', px.max),
+        rchar_bytes_min=('rchar_bytes', px.min),
+        wchar_bytes_max=('wchar_bytes', px.max),
+        wchar_bytes_min=('wchar_bytes', px.min),
+    )
+    # Next calculate cpu usage and memory stats per window.
+    df.cpu_utime_ns = df.cpu_utime_ns_max - df.cpu_utime_ns_min
+    df.cpu_ktime_ns = df.cpu_ktime_ns_max - df.cpu_ktime_ns_min
+    df.read_bytes = df.read_bytes_max - df.read_bytes_min
+    df.write_bytes = df.write_bytes_max - df.write_bytes_min
+    df.rchar_bytes = df.rchar_bytes_max - df.rchar_bytes_min
+    df.wchar_bytes = df.wchar_bytes_max - df.wchar_bytes_min
+    # Sum by UPID.
+    df = df.groupby([entity, 'timestamp']).agg(
+        cpu_ktime_ns=('cpu_ktime_ns', px.sum),
+        cpu_utime_ns=('cpu_utime_ns', px.sum),
+        read_bytes=('read_bytes', px.sum),
+        write_bytes=('write_bytes', px.sum),
+        rchar_bytes=('rchar_bytes', px.sum),
+        wchar_bytes=('wchar_bytes', px.sum),
+        rss=('rss', px.sum),
+        vsize=('vsize', px.sum),
+    )
+    df.actual_disk_read_throughput = df.read_bytes / window_ns
+    df.actual_disk_write_throughput = df.write_bytes / window_ns
+    df.total_disk_read_throughput = df.rchar_bytes / window_ns
+    df.total_disk_write_throughput = df.wchar_bytes / window_ns
+    # Now take the mean value over the various timestamps.
+    df = df.groupby(entity).agg(
+        cpu_ktime_ns=('cpu_ktime_ns', px.mean),
+        cpu_utime_ns=('cpu_utime_ns', px.mean),
+        actual_disk_read_throughput=('actual_disk_read_throughput', px.mean),
+        actual_disk_write_throughput=('actual_disk_write_throughput', px.mean),
+        total_disk_read_throughput=('total_disk_read_throughput', px.mean),
+        total_disk_write_throughput=('total_disk_write_throughput', px.mean),
+        avg_rss=('rss', px.mean),
+        avg_vsize=('vsize', px.mean),
+    )
+    # Finally, calculate total (kernel + user time)  percentage used over window.
+    df.cpu_usage = px.Percent((df.cpu_ktime_ns + df.cpu_utime_ns) / window_ns)
+    return df.drop(['cpu_ktime_ns', 'cpu_utime_ns'])
+
+
+def pods_for_cluster(start_time: str):
+    ''' A list of pods in `namespace`.
+    Args:
+    @start_time: The timestamp of data to start at.
+    @namespace: The name of the namespace to filter on.
+    '''
+    df = px.DataFrame(table='process_stats', start_time=start_time)
+    df.pod = df.ctx['pod_name']
+    df.node = df.ctx['node_name']
+    df.container = df.ctx['container_name']
+    df = df.groupby(['pod', 'node', 'container']).agg()
+    df = df.groupby(['pod', 'node']).agg(container_count=('container', px.count))
+    df.start_time = px.pod_name_to_start_time(df.pod)
+    df.status = px.pod_name_to_status(df.pod)
+    process_stats = process_stats_by_entity(start_time, 'pod')
+    output = process_stats.merge(df, how='inner', left_on='pod', right_on='pod',
+                                 suffixes=['', '_x'])
+    return output[['pod', 'cpu_usage', 'total_disk_read_throughput',
+                   'total_disk_write_throughput', 'container_count',
+                   'node', 'start_time', 'status']]
+
+
+def namespaces_for_cluster(start_time: str):
+    ''' Gets a overview of namespaces in the current cluster since `start_time`.
+    Args:
+    @start_time Start time of the data to examine.
+    '''
+    df = px.DataFrame(table='process_stats', start_time=start_time)
+    df.service = df.ctx['service_name']
+    df.pod = df.ctx['pod_name']
+    df.namespace = df.ctx['namespace']
+    agg = df.groupby(['service', 'pod', 'namespace']).agg()
+    pod_count = agg.groupby(['namespace', 'pod']).agg()
+    pod_count = pod_count.groupby('namespace').agg(pod_count=('pod', px.count))
+    svc_count = agg.groupby(['namespace', 'service']).agg()
+    svc_count = svc_count.groupby('namespace').agg(service_count=('service', px.count))
+    pod_and_svc_count = pod_count.merge(svc_count, how='inner',
+                                        left_on='namespace', right_on='namespace',
+                                        suffixes=['', '_x'])
+    process_stats = process_stats_by_entity(start_time, 'namespace')
+    output = process_stats.merge(pod_and_svc_count, how='inner', left_on='namespace',
+                                 right_on='namespace', suffixes=['', '_y'])
+    return output[['namespace', 'pod_count', 'service_count', 'avg_vsize', 'avg_rss']]
+
+
+def services_for_cluster(start_time: str):
+    ''' Get an overview of the services in the current cluster.
+    Args:
+    @start_time: The timestamp of data to start at.
+    '''
+    df = px.DataFrame(table='process_stats', start_time=start_time)
+    df.service = df.ctx['service']
+    df = df[df.service != '']
+    df.pod = df.ctx['pod']
+    df = df.groupby(['service', 'pod']).agg()
+    df = df.groupby('service').agg(pod_count=('pod', px.count))
+    service_let = inbound_service_let_summary(start_time)
+    joined = df.merge(service_let, how='inner', left_on='service', right_on='service',
+                      suffixes=['', '_x'])
+    return joined.drop('service_x')
+
+
+def inbound_service_let_summary(start_time: str):
+    ''' Compute a summary of traffic by requesting service, for requests
+        on services in the current cluster..
+    Args:
+    @start_time: The timestamp of data to start at.
+    '''
+    df = inbound_service_let_helper(start_time)
+    df = df[df.remote_addr != '']
+    df.responder = df.service
+    per_ns_df = df.groupby(['timestamp', 'service']).agg(
+        throughput_total=('latency', px.count),
+        inbound_bytes_total=('req_size', px.sum),
+        outbound_bytes_total=('resp_size', px.sum)
+    )
+    per_ns_df.request_throughput = per_ns_df.throughput_total / window_ns
+    per_ns_df.inbound_throughput = per_ns_df.inbound_bytes_total / window_ns
+    per_ns_df.outbound_throughput = per_ns_df.inbound_bytes_total / window_ns
+    per_ns_df = per_ns_df.groupby('service').agg(
+        request_throughput=('request_throughput', px.mean),
+        inbound_throughput=('inbound_throughput', px.mean),
+        outbound_throughput=('outbound_throughput', px.mean)
+    )
+    quantiles_df = df.groupby('service').agg(
+        latency=('latency', px.quantiles)
+        error_rate=('failure', px.mean),
+    )
+    quantiles_df.error_rate = px.Percent(quantiles_df.error_rate)
+    joined = per_ns_df.merge(quantiles_df, left_on='service',
+                             right_on='service', how='inner',
+                             suffixes=['', '_x'])
+    return joined[['service', 'latency', 'request_throughput', 'error_rate',
+                   'inbound_throughput', 'outbound_throughput']]
+
+
+def inbound_service_let_helper(start_time: str):
+    ''' Compute the let as a timeseries for requests received or by services in `namespace`.
+    Args:
+    @start_time: The timestamp of data to start at.
+    @namespace: The namespace to filter on.
+    @groupby_cols: The columns to group on.
+    '''
+    df = px.DataFrame(table='http_events', start_time=start_time)
+    df.service = df.ctx['service']
+    df.pod = df.ctx['pod_name']
+    df = df[df.service != '']
+    df.latency = df.latency
+    df.timestamp = px.bin(df.time_, window_ns)
+    df.req_size = px.Bytes(px.length(df.req_body))
+    df.resp_size = px.Bytes(px.length(df.resp_body))
+    df.failure = df.resp_status >= 400
+    filter_out_conds = ((df.req_path != '/health' or not filter_health_checks) and (
+        df.req_path != '/readyz' or not filter_ready_checks)) and (
+        df['remote_addr'] != '-' or not filter_unresolved_inbound)
+    df = df[filter_out_conds]
+    return df
+
+
+def inbound_let_service_graph(start_time: str):
+    ''' Compute a summary of traffic by requesting service, for requests on services
+        in the current cluster. Similar to `inbound_let_summary` but also breaks down
+        by pod in addition to service.
+    Args:
+    @start_time: The timestamp of data to start at.
+    '''
+    df = inbound_service_let_helper(start_time)
+    df = df.groupby(['timestamp', 'service', 'remote_addr', 'pod']).agg(
+        latency_quantiles=('latency', px.quantiles),
+        error_rate=('failure', px.mean),
+        throughput_total=('latency', px.count),
+        inbound_bytes_total=('req_size', px.sum),
+        outbound_bytes_total=('resp_size', px.sum)
+    )
+    df.latency_p50 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p50')))
+    df.latency_p90 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p90')))
+    df.latency_p99 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p99')))
+    df = df[df.remote_addr != '']
+    df.responder_pod = df.pod
+    df.requestor_pod_id = px.ip_to_pod_id(df.remote_addr)
+    df.requestor_pod = px.pod_id_to_pod_name(df.requestor_pod_id)
+    df.responder_service = df.service
+    df.requestor_service = px.pod_id_to_service_name(df.requestor_pod_id)
+    df.request_throughput = df.throughput_total / window_ns
+    df.inbound_throughput = df.inbound_bytes_total / window_ns
+    df.outbound_throughput = df.outbound_bytes_total / window_ns
+    df.error_rate = px.Percent(df.error_rate)
+    return df.groupby(['responder_pod', 'requestor_pod', 'responder_service',
+                       'requestor_service']).agg(
+        latency_p50=('latency_p50', px.mean),
+        latency_p90=('latency_p90', px.mean),
+        latency_p99=('latency_p99', px.mean),
+        request_throughput=('request_throughput', px.mean),
+        error_rate=('error_rate', px.mean),
+        inbound_throughput=('inbound_throughput', px.mean),
+        outbound_throughput=('outbound_throughput', px.mean),
+        throughput_total=('throughput_total', px.sum)
+    )
+
+start_time = '-5m'
+px.display(inbound_let_service_graph(start_time))
+px.display(nodes_for_cluster(start_time))
+px.display(namespaces_for_cluster(start_time))
+px.display(services_for_cluster(start_time))
+px.display(pods_for_cluster(start_time))
+)pxl";
+
+TEST_F(CarnotTest, multiple_queries) {
+  std::string query(kPxCluster);
+
+  auto exec_query_work = [&]() {
+    // No time column, doesn't use a time parameter.
+    auto query_id = sole::uuid4();
+    auto s = carnot_->ExecuteQuery(query, query_id, 0);
+    ASSERT_OK(s);
+  };
+
+  // TSAN should catch if running multiple queries at once mutate any shared state.
+  // This caught a bug where schema was shared between queries causing weird non-deterministic bugs.
+  auto num_simul = 5;
+  std::vector<std::thread> threads;
+  for (int i = 0; i < num_simul; ++i) {
+    threads.emplace_back(exec_query_work);
+  }
+
+  for (auto& t : threads) {
+    t.join();
+  }
+}
+
 }  // namespace carnot
 }  // namespace px
