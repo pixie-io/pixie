@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
@@ -774,13 +775,20 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	}
 
 	// Fetch previous status.
-	statusQuery := `SELECT i.status, i.vizier_version, c.cluster_name, c.cluster_version, c.org_id from vizier_cluster_info AS i INNER JOIN vizier_cluster as c ON c.id = i.vizier_cluster_id WHERE i.vizier_cluster_id=$1`
+	statusQuery := `SELECT
+			i.status, i.vizier_version, c.cluster_name, c.cluster_version, c.org_id,
+			i.previous_vizier_status, i.previous_vizier_status_time
+		from vizier_cluster_info AS i
+		INNER JOIN vizier_cluster as c ON c.id = i.vizier_cluster_id
+		WHERE i.vizier_cluster_id=$1`
 	var prevInfo struct {
-		Status         string    `db:"status"`
-		Version        string    `db:"vizier_version"`
-		ClusterVersion string    `db:"cluster_version"`
-		ClusterName    string    `db:"cluster_name"`
-		OrgID          uuid.UUID `db:"org_id"`
+		Status                   string     `db:"status"`
+		Version                  string     `db:"vizier_version"`
+		ClusterVersion           string     `db:"cluster_version"`
+		ClusterName              string     `db:"cluster_name"`
+		OrgID                    uuid.UUID  `db:"org_id"`
+		PreviousVizierStatus     *string    `db:"previous_vizier_status"`
+		PreviousVizierStatusTime *time.Time `db:"previous_vizier_status_time"`
 	}
 	rows, err := s.db.Queryx(statusQuery, vizierID)
 	if err != nil {
@@ -793,12 +801,6 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 			log.WithError(err).Error("Could not get current status")
 		}
 	}
-
-	query := `
-    UPDATE vizier_cluster_info
-    SET last_heartbeat = NOW(), status = $1, address= $2, control_plane_pod_statuses= $3,
-    	num_nodes = $4, num_instrumented_nodes = $5, auto_update_enabled = $6
-    WHERE vizier_cluster_id = $7`
 
 	vzStatus := "HEALTHY"
 	if req.Address == "" {
@@ -843,8 +845,31 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 		})
 	}
 
-	_, err = s.db.Exec(query, vzStatus, addr, PodStatuses(req.PodStatuses), req.NumNodes,
-		req.NumInstrumentedNodes, !req.DisableAutoUpdate, vizierID)
+	// When the status changes, move the current `status` into `previous_vizier_status`,
+	// and also update the previou status timestamp.
+	now := time.Now()
+	prevStatusTime := prevInfo.PreviousVizierStatusTime
+	prevStatus := prevInfo.PreviousVizierStatus
+	if vzStatus != prevInfo.Status {
+		if prevInfo.Status != "" {
+			prevStatus = &prevInfo.Status
+		} else {
+			prevStatus = nil
+		}
+		prevStatusTime = &now
+	}
+
+	query := `
+		UPDATE vizier_cluster_info
+		SET last_heartbeat = $1, status = $2, address = $3, control_plane_pod_statuses = $4,
+			num_nodes = $5, num_instrumented_nodes = $6, auto_update_enabled = $7,
+			unhealthy_data_plane_pod_statuses = $8, previous_vizier_status = $9,
+			previous_vizier_status_time = $10, cluster_version = $11
+		WHERE vizier_cluster_id = $12`
+
+	_, err = s.db.Exec(query, now, vzStatus, addr, PodStatuses(req.PodStatuses), req.NumNodes,
+		req.NumInstrumentedNodes, !req.DisableAutoUpdate, PodStatuses(req.UnhealthyDataPlanePodStatuses),
+		prevStatus, prevStatusTime, req.K8sClusterVersion, vizierID)
 	if err != nil {
 		log.WithError(err).Error("Could not update vizier heartbeat")
 	}
