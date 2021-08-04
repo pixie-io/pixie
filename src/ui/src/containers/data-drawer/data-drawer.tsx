@@ -164,28 +164,32 @@ const StyledTab = withStyles((theme: Theme) => createStyles({
 
 }))(Tab);
 
-const DataDrawer = ({ open, activeTab, setActiveTab }) => {
+const DataDrawer: React.FC<{ open: boolean }> = ({ open }) => {
   const classes = useStyles();
   const { loading, stats, tables } = React.useContext(ResultsContext);
+  const { activeTab, setActiveTab } = React.useContext(DataDrawerContext);
 
-  const onTabChange = (event, newTab) => {
+  const onTabChange = React.useCallback((event, newTab) => {
     setActiveTab(newTab);
     if (open && newTab !== activeTab) {
       event.stopPropagation();
     }
-  };
+  }, [activeTab, setActiveTab, open]);
+
   const tabs = React.useMemo(() => Object.keys(tables).map((tableName) => ({
     title: tableName,
     content: <LiveDataTableWithDetails table={tables[tableName]} />,
   })), [tables]);
 
   // If the selected table is not in the new result set, show the first table.
-  if (open && tabs.length && activeTab !== STATS_TAB_NAME) {
-    const selectedTable = tabs.find((t) => t.title === activeTab);
-    if (!selectedTable) {
-      setActiveTab(tabs[0].title);
+  React.useEffect(() => {
+    if (open && tabs.length && activeTab !== STATS_TAB_NAME) {
+      const selectedTable = tabs.find((t) => t.title === activeTab);
+      if (!selectedTable) {
+        setActiveTab(tabs[0].title);
+      }
     }
-  }
+  }, [open, tabs, activeTab, setActiveTab]);
 
   React.useEffect(() => {
     if (tabs.length > 0 && activeTab === '') {
@@ -264,7 +268,6 @@ export const DataDrawerSplitPanel: React.FC = () => {
   const classes = useStyles();
 
   const { dataDrawerOpen, setDataDrawerOpen } = React.useContext(LayoutContext);
-  const { activeTab, setActiveTab } = React.useContext(DataDrawerContext);
 
   const toggleDrawerOpen = () => setDataDrawerOpen((open) => !open);
 
@@ -288,11 +291,7 @@ export const DataDrawerSplitPanel: React.FC = () => {
       otherContent={contents}
       overlay={false}
     >
-      <DataDrawer
-        open={dataDrawerOpen}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-      />
+      <DataDrawer open={dataDrawerOpen} />
     </ResizableDrawer>
   );
 };
