@@ -586,9 +586,18 @@ void ConnTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs) {
       }
       break;
     case EndpointRole::kRoleClient: {
-      // Workaround: Server-side MySQL tracing seems to be busted, likely because of inference code.
-      // TODO(oazizi): Remove DNS from this as well. Just keeping it in here for the demo,
-      //               so we have more data in the tables.
+      // MySQL server-side tracing is functional, but leave client-side on for legacy reasons.
+      // TODO(oazizi): Remove MySQL client-side tracing.
+      //               This is an PxL-breaking change, so must be done with caution,
+      //               and with proper notification to users.
+      if (protocol() == kProtocolMySQL) {
+        state_ = State::kTransferring;
+        break;
+      }
+
+      // TODO(oazizi): Remove DNS client-side tracing.
+      //               This is an PxL-breaking change, so must be done with caution,
+      //               and with proper notification to users.
       if (protocol() == kProtocolDNS) {
         state_ = State::kTransferring;
         break;

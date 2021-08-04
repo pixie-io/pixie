@@ -772,7 +772,7 @@ INSTANTIATE_TEST_SUITE_P(
         UpdateStateParam{kProtocolHTTP, kRoleServer, ConnTracker::State::kTransferring},
         UpdateStateParam{kProtocolHTTP2, kRoleClient, ConnTracker::State::kCollecting},
         UpdateStateParam{kProtocolHTTP2, kRoleServer, ConnTracker::State::kTransferring},
-        UpdateStateParam{kProtocolMySQL, kRoleClient, ConnTracker::State::kCollecting},
+        UpdateStateParam{kProtocolMySQL, kRoleClient, ConnTracker::State::kTransferring},
         UpdateStateParam{kProtocolMySQL, kRoleServer, ConnTracker::State::kTransferring},
         UpdateStateParam{kProtocolCQL, kRoleClient, ConnTracker::State::kCollecting},
         UpdateStateParam{kProtocolCQL, kRoleServer, ConnTracker::State::kTransferring},
