@@ -149,9 +149,12 @@ func (q *QueryExecutorImpl) Run(ctx context.Context, req *vizierpb.ExecuteScript
 func (q *QueryExecutorImpl) Wait() error {
 	err := q.eg.Wait()
 	if err != nil {
-		log.WithField("query_id", q.queryID).WithField("duration", time.Since(q.startTime)).Info("Executed query")
+		log.WithField("query_id", q.queryID).
+			WithField("duration", time.Since(q.startTime)).
+			WithError(err).
+			Error("failed to execute query")
 	} else {
-		log.WithField("query_id", q.queryID).WithField("duration", time.Since(q.startTime)).Error("failed to execute query")
+		log.WithField("query_id", q.queryID).WithField("duration", time.Since(q.startTime)).Info("Executed query")
 	}
 	return err
 }
