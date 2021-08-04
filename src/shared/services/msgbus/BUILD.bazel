@@ -21,6 +21,7 @@ go_library(
     srcs = [
         "nats.go",
         "stan.go",
+        "streamer.go",
     ],
     importpath = "px.dev/pixie/src/shared/services/msgbus",
     visibility = ["//src:__subpackages__"],
