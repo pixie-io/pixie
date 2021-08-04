@@ -83,7 +83,7 @@ func init() {
 	viper.BindEnv("cloud_addr", "PX_CLOUD_ADDR", "PL_CLOUD_ADDR")
 	viper.BindEnv("testing_env", "PX_TESTING_ENV", "PL_TESTING_ENV")
 	viper.BindEnv("cli_version", "PX_CLI_VERSION", "PL_CLI_VERSION")
-	viper.BindEnv("vizier_version", "PX_CLI_VERSION", "PL_CLI_VERSION")
+	viper.BindEnv("vizier_version", "PX_VIZIER_VERSION", "PL_VIZIER_VERSION")
 
 	viper.BindPFlags(pflag.CommandLine)
 
