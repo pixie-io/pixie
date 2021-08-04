@@ -98,6 +98,9 @@ const webpackConfig = {
     },
     proxy: [],
   },
+  watchOptions: {
+    ignored: ['**/node_modules'],
+  },
   entry: {
     main: './app.tsx',
     config: ['./flags.js', './segment.js'],

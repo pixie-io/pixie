@@ -2926,6 +2926,7 @@ __metadata:
     favicons: ^6.2.1
     favicons-webpack-plugin: ^5.0.2
     file-loader: ^6.2.0
+    fsevents: ^2.3.2
     google-protobuf: ^3.15.5
     graphql: ^15.5.0
     graphql-schema-typescript: ^1.5.2
@@ -8997,7 +8998,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-fsevents@^2.1.2:
+"fsevents@^2.1.2, fsevents@^2.3.2":
   version: 2.3.2
   resolution: "fsevents@npm:2.3.2"
   dependencies:
@@ -9016,7 +9017,7 @@ fsevents@^2.1.2:
   languageName: node
   linkType: hard
 
-"fsevents@patch:fsevents@^2.1.2#builtin<compat/fsevents>":
+"fsevents@patch:fsevents@^2.1.2#builtin<compat/fsevents>, fsevents@patch:fsevents@^2.3.2#builtin<compat/fsevents>":
   version: 2.3.2
   resolution: "fsevents@patch:fsevents@npm%3A2.3.2#builtin<compat/fsevents>::version=2.3.2&hash=11e9ea"
   dependencies:
