@@ -55,15 +55,14 @@ func ShardMax() string {
 }
 
 // GenerateShardRange shard range produces the hex values 00-ff for the shards as configured.
-func GenerateShardRange() chan string {
-	ch := make(chan string)
-	go func() {
-		defer close(ch)
-		for i := minShard(); i <= maxShard(); i++ {
-			ch <- shardIntToHex(i)
-		}
-	}()
-	return ch
+func GenerateShardRange() []string {
+	min := minShard()
+	max := maxShard()
+	r := make([]string, max-min+1)
+	for i := min; i <= max; i++ {
+		r[i-min] = shardIntToHex(i)
+	}
+	return r
 }
 
 // VizierIDToShard provides the shardID for a given vizierID.

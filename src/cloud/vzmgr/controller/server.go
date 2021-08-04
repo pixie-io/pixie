@@ -27,6 +27,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
@@ -66,14 +67,14 @@ type HandleNATSMessageFunc func(*cvmsgspb.V2CMessage)
 
 // Server is a bridge implementation of evzmgr.
 type Server struct {
-	db            *sqlx.DB
-	dbKey         string
-	dnsMgrClient  dnsmgrpb.DNSMgrServiceClient
-	nc            *nats.Conn
-	natsCh        chan *nats.Msg
-	natsSubs      []*nats.Subscription
-	msgHandlerMap map[string]HandleNATSMessageFunc
-	updater       VzUpdater
+	db           *sqlx.DB
+	dbKey        string
+	dnsMgrClient dnsmgrpb.DNSMgrServiceClient
+	nc           *nats.Conn
+	updater      VzUpdater
+
+	done chan struct{}
+	once sync.Once
 }
 
 // VzUpdater is the interface for the module responsible for updating Vizier.
@@ -85,54 +86,56 @@ type VzUpdater interface {
 
 // New creates a new server.
 func New(db *sqlx.DB, dbKey string, dnsMgrClient dnsmgrpb.DNSMgrServiceClient, nc *nats.Conn, updater VzUpdater) *Server {
-	natsSubs := make([]*nats.Subscription, 0)
-	natsCh := make(chan *nats.Msg, 1024)
-	msgHandlerMap := make(map[string]HandleNATSMessageFunc)
-	s := &Server{db, dbKey, dnsMgrClient, nc, natsCh, natsSubs, msgHandlerMap, updater}
+	s := &Server{
+		db:           db,
+		dbKey:        dbKey,
+		dnsMgrClient: dnsMgrClient,
+		nc:           nc,
+		updater:      updater,
+		done:         make(chan struct{}),
+	}
 
-	// Register NATS message handlers.
-	if nc != nil {
-		s.registerMessageHandler("heartbeat", s.HandleVizierHeartbeat)
-		s.registerMessageHandler("ssl", s.HandleSSLRequest)
-
-		go s.handleMessageBus()
+	for _, shard := range vzshard.GenerateShardRange() {
+		s.startShardedHandler(shard, "heartbeat", s.HandleVizierHeartbeat)
+		s.startShardedHandler(shard, "ssl", s.HandleSSLRequest)
 	}
 
 	return s
 }
 
-func (s *Server) registerMessageHandler(topic string, fn HandleNATSMessageFunc) {
-	sub, err := s.nc.ChanSubscribe(fmt.Sprintf("v2c.*.*.%s", topic), s.natsCh)
+// Stop performs any necessary cleanup before shutdown.
+func (s *Server) Stop() {
+	s.once.Do(func() {
+		close(s.done)
+	})
+}
+
+func (s *Server) startShardedHandler(shard string, topic string, handler HandleNATSMessageFunc) {
+	if s.nc == nil {
+		return
+	}
+	natsCh := make(chan *nats.Msg, 8192)
+	sub, err := s.nc.ChanSubscribe(fmt.Sprintf("v2c.%s.*.%s", shard, topic), natsCh)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to subscribe to NATS channel")
 	}
-	s.natsSubs = append(s.natsSubs, sub)
-	s.msgHandlerMap[topic] = fn
-}
 
-func (s *Server) handleMessageBus() {
-	defer func() {
-		for _, sub := range s.natsSubs {
-			sub.Unsubscribe()
+	go func() {
+		for {
+			select {
+			case <-s.done:
+				sub.Unsubscribe()
+				return
+			case msg := <-natsCh:
+				pb := &cvmsgspb.V2CMessage{}
+				err := proto.Unmarshal(msg.Data, pb)
+				if err != nil {
+					log.WithError(err).Error("Could not unmarshal message")
+				}
+				handler(pb)
+			}
 		}
 	}()
-	for msg := range s.natsCh {
-		// Get topic.
-		splitTopic := strings.Split(msg.Subject, ".")
-		topic := splitTopic[len(splitTopic)-1]
-
-		pb := &cvmsgspb.V2CMessage{}
-		err := proto.Unmarshal(msg.Data, pb)
-		if err != nil {
-			log.WithError(err).Error("Could not unmarshal message")
-		}
-
-		if handler, ok := s.msgHandlerMap[topic]; ok {
-			handler(pb)
-		} else {
-			log.WithField("topic", msg.Subject).Error("Could not find handler for topic")
-		}
-	}
 }
 
 func (s *Server) sendNATSMessage(topic string, msg *types.Any, vizierID uuid.UUID) {

@@ -69,13 +69,7 @@ func TestGenerateShardRange(t *testing.T) {
 
 			assert.Equal(t, test.expMinShardID, vzshard.ShardMin())
 			assert.Equal(t, test.expMaxShardID, vzshard.ShardMax())
-
-			values := make([]string, 0)
-			for value := range vzshard.GenerateShardRange() {
-				values = append(values, value)
-			}
-
-			assert.Equal(t, values, test.expShardList)
+			assert.Equal(t, vzshard.GenerateShardRange(), test.expShardList)
 		})
 	}
 }

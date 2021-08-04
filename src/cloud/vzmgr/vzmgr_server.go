@@ -34,6 +34,7 @@ import (
 	"px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
 	"px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
 	"px.dev/pixie/src/cloud/shared/pgmigrate"
+	"px.dev/pixie/src/cloud/shared/vzshard"
 	"px.dev/pixie/src/cloud/vzmgr/controller"
 	"px.dev/pixie/src/cloud/vzmgr/deployment"
 	"px.dev/pixie/src/cloud/vzmgr/deploymentkey"
@@ -97,6 +98,7 @@ func (r *readinessCheck) Check() error {
 
 func main() {
 	services.SetupService("vzmgr-service", 51800)
+	vzshard.SetupFlags()
 	services.PostFlagSetupAndParse()
 	services.CheckServiceFlags()
 	services.SetupServiceLogging()

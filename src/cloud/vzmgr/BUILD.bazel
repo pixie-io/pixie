@@ -29,6 +29,7 @@ go_library(
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
         "//src/cloud/dnsmgr/dnsmgrpb:service_pl_go_proto",
         "//src/cloud/shared/pgmigrate",
+        "//src/cloud/shared/vzshard",
         "//src/cloud/vzmgr/controller",
         "//src/cloud/vzmgr/deployment",
         "//src/cloud/vzmgr/deploymentkey",

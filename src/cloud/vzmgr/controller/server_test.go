@@ -831,6 +831,8 @@ func TestServer_UpdateOrInstallVizier(t *testing.T) {
 }
 
 func TestServer_MessageHandler(t *testing.T) {
+	viper.Set("vizier_shard_min", 16)
+	viper.Set("vizier_shard_max", 32)
 	mustLoadTestData(db)
 
 	ctrl := gomock.NewController(t)
@@ -881,7 +883,7 @@ func TestServer_MessageHandler(t *testing.T) {
 	if err != nil {
 		t.Fatal("Could not marshal message to bytes")
 	}
-	err = nc.Publish("v2c.1.123e4567-e89b-12d3-a456-426655440001.ssl", b)
+	err = nc.Publish("v2c.12.123e4567-e89b-12d3-a456-426655440001.ssl", b)
 	require.NoError(t, err)
 
 	select {
