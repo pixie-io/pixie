@@ -22,6 +22,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -96,8 +97,8 @@ func mustLoadTestData(db *sqlx.DB) {
 	db.MustExec(`DELETE from api_keys`)
 
 	insertAPIKeys := `INSERT INTO api_keys(id, org_id, user_id, unsalted_key, description) VALUES ($1, $2, $3, $4, $5)`
-	db.MustExec(insertAPIKeys, testKey1ID, testAuthOrgID, testAuthUserID, "key1", "here is a desc")
-	db.MustExec(insertAPIKeys, testKey2ID, testAuthOrgID, testAuthUserID, "key2", "here is another one")
+	db.MustExec(insertAPIKeys, testKey1ID, testAuthOrgID, testAuthUserID, "px-api-key1", "here is a desc")
+	db.MustExec(insertAPIKeys, testKey2ID, testAuthOrgID, testAuthUserID, "px-api-key2", "here is another one")
 	db.MustExec(insertAPIKeys, testNonAuthUserKeyID.String(), testNonAuthOrgID, "123e4567-e89b-12d3-a456-426655440001", "key2", "some other desc")
 }
 
@@ -137,7 +138,7 @@ func TestAPIKeyService_CreateAPIKey(t *testing.T) {
 			assert.LessOrEqual(t, diff, int64(10000))
 
 			// Check if the key has a value and the ID looks valid.
-			assert.Greater(t, len(resp.Key), 0)
+			assert.True(t, strings.HasPrefix(resp.Key, "px-api-"))
 			assert.NotEqual(t, uuid.Nil.String(), utils.UUIDFromProtoOrNil(resp.ID).String())
 		})
 	}
@@ -172,8 +173,8 @@ func TestAPIKeyService_ListAPIKeys(t *testing.T) {
 			assert.Equal(t, testKey2ID, utils.UUIDFromProtoOrNil(resp.Keys[1].ID))
 			assert.Equal(t, "here is a desc", resp.Keys[0].Desc)
 			assert.Equal(t, "here is another one", resp.Keys[1].Desc)
-			assert.Equal(t, "key1", resp.Keys[0].Key)
-			assert.Equal(t, "key2", resp.Keys[1].Key)
+			assert.Equal(t, "px-api-key1", resp.Keys[0].Key)
+			assert.Equal(t, "px-api-key2", resp.Keys[1].Key)
 
 			// Check that time looks reasonable.
 			ts, err := types.TimestampFromProto(resp.Keys[0].CreatedAt)
@@ -229,7 +230,7 @@ func TestAPIKeyService_Get(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, resp)
 
-			assert.Equal(t, "key1", resp.Key.Key)
+			assert.Equal(t, "px-api-key1", resp.Key.Key)
 			// Check if time is reasonable.
 			ts, err := types.TimestampFromProto(resp.Key.CreatedAt)
 			require.NoError(t, err)
@@ -437,7 +438,7 @@ func TestService_FetchOrgUserIDUsingAPIKey(t *testing.T) {
 			ctx := test.ctx
 			svc := New(db, testDBKey)
 
-			orgID, userID, err := svc.FetchOrgUserIDUsingAPIKey(ctx, "key1")
+			orgID, userID, err := svc.FetchOrgUserIDUsingAPIKey(ctx, "px-api-key1")
 			require.NoError(t, err)
 			assert.Equal(t, testAuthOrgID, orgID)
 			assert.Equal(t, testAuthUserID, userID)

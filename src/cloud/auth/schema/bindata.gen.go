@@ -6,6 +6,8 @@
 // 000002_create_pgcrypto_extension.up.sql
 // 000003_unsalt_api_key.down.sql
 // 000003_unsalt_api_key.up.sql
+// 000004_px_api_prefix.down.sql
+// 000004_px_api_prefix.up.sql
 package schema
 
 import (
@@ -202,6 +204,46 @@ func _000003_unsalt_api_keyUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000004_px_api_prefixDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x0a\x0d\x70\x71\x0c\x71\x55\x48\x2c\xc8\x8c\xcf\x4e\xad\x2c\xe6\x52\x50\x50\x08\x76\x0d\x51\x28\xcd\x2b\x4e\xcc\x29\x49\x4d\x01\x09\x2a\xd8\x2a\x04\xb9\x06\xf8\x38\x3a\xbb\x6a\x20\x0b\xeb\x28\xa8\x17\x54\xe8\x26\x16\x64\xea\xaa\x6b\x72\x29\x84\x7b\xb8\x06\xb9\xa2\x6a\xf3\xf1\xf4\x76\x85\xab\x51\x55\xb7\xe6\x02\x04\x00\x00\xff\xff\xd0\xf2\xf3\x90\x6c\x00\x00\x00")
+
+func _000004_px_api_prefixDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000004_px_api_prefixDownSql,
+		"000004_px_api_prefix.down.sql",
+	)
+}
+
+func _000004_px_api_prefixDownSql() (*asset, error) {
+	bytes, err := _000004_px_api_prefixDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000004_px_api_prefix.down.sql", size: 108, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000004_px_api_prefixUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x0a\x0d\x70\x71\x0c\x71\x55\x48\x2c\xc8\x8c\xcf\x4e\xad\x2c\xe6\x52\x50\x50\x08\x76\x0d\x51\x28\xcd\x2b\x4e\xcc\x29\x49\x4d\x01\x09\x2a\xd8\x2a\xa8\x17\x54\xe8\x26\x16\x64\xea\xaa\x2b\xd4\xd4\xa0\xc8\x71\x29\x84\x7b\xb8\x06\xb9\xa2\xaa\xf7\xf3\x0f\x51\xf0\xf1\xf4\x76\x85\x6b\x53\x55\xb7\xe6\x02\x04\x00\x00\xff\xff\xee\xad\xa5\x6c\x69\x00\x00\x00")
+
+func _000004_px_api_prefixUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000004_px_api_prefixUpSql,
+		"000004_px_api_prefix.up.sql",
+	)
+}
+
+func _000004_px_api_prefixUpSql() (*asset, error) {
+	bytes, err := _000004_px_api_prefixUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000004_px_api_prefix.up.sql", size: 105, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -260,6 +302,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000002_create_pgcrypto_extension.up.sql":   _000002_create_pgcrypto_extensionUpSql,
 	"000003_unsalt_api_key.down.sql":            _000003_unsalt_api_keyDownSql,
 	"000003_unsalt_api_key.up.sql":              _000003_unsalt_api_keyUpSql,
+	"000004_px_api_prefix.down.sql":             _000004_px_api_prefixDownSql,
+	"000004_px_api_prefix.up.sql":               _000004_px_api_prefixUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -309,6 +353,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000002_create_pgcrypto_extension.up.sql":   &bintree{_000002_create_pgcrypto_extensionUpSql, map[string]*bintree{}},
 	"000003_unsalt_api_key.down.sql":            &bintree{_000003_unsalt_api_keyDownSql, map[string]*bintree{}},
 	"000003_unsalt_api_key.up.sql":              &bintree{_000003_unsalt_api_keyUpSql, map[string]*bintree{}},
+	"000004_px_api_prefix.down.sql":             &bintree{_000004_px_api_prefixDownSql, map[string]*bintree{}},
+	"000004_px_api_prefix.up.sql":               &bintree{_000004_px_api_prefixUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory

@@ -22,6 +22,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -40,6 +41,11 @@ import (
 var (
 	// ErrAPIKeyNotFound is used when the specified API key cannot be located.
 	ErrAPIKeyNotFound = errors.New("invalid API key")
+)
+
+const (
+	// apiKeyPrefix is applied to all api keys to make them easier to identify.
+	apiKeyPrefix = "px-api-"
 )
 
 // Service is used to provision and manage API keys.
@@ -70,7 +76,7 @@ func (s *Service) Create(ctx context.Context, req *authpb.CreateAPIKeyRequest) (
 	if err != nil {
 		return nil, err
 	}
-	key := keyID.String()
+	key := apiKeyPrefix + keyID.String()
 	err = s.db.QueryRowxContext(ctx, query,
 		sCtx.Claims.GetUserClaims().OrgID, sCtx.Claims.GetUserClaims().UserID, key, req.Desc).
 		Scan(&id, &ts)
@@ -194,6 +200,10 @@ func (s *Service) Delete(ctx context.Context, req *uuidpb.UUID) (*types.Empty, e
 
 // FetchOrgUserIDUsingAPIKey gets the org and user ID based on the API key.
 func (s *Service) FetchOrgUserIDUsingAPIKey(ctx context.Context, key string) (uuid.UUID, uuid.UUID, error) {
+	// For backwards compatibility add in apiKeyPrefix the front of the keys.
+	if !strings.HasPrefix(key, apiKeyPrefix) {
+		key = apiKeyPrefix + key
+	}
 	query := `SELECT org_id, user_id from api_keys WHERE unsalted_key=$1`
 	var orgID uuid.UUID
 	var userID uuid.UUID
