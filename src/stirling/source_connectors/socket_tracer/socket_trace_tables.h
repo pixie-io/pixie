@@ -24,6 +24,7 @@
 #include "src/stirling/source_connectors/socket_tracer/cass_table.h"
 #include "src/stirling/source_connectors/socket_tracer/dns_table.h"
 #include "src/stirling/source_connectors/socket_tracer/http_table.h"
+#include "src/stirling/source_connectors/socket_tracer/kafka_table.h"
 #include "src/stirling/source_connectors/socket_tracer/mysql_table.h"
 #include "src/stirling/source_connectors/socket_tracer/nats_table.h"
 #include "src/stirling/source_connectors/socket_tracer/pgsql_table.h"

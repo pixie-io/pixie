@@ -163,6 +163,22 @@ def stirling_docker_images_setup():
         repository = "pixie-oss/pixie-dev-public/nats/nats-server",
     )
 
+    # Kafka broker image, for testing.
+    container_pull(
+        name = "kafka_base_image",
+        digest = "sha256:ee6e42ce4f79623c69cf758848de6761c74bf9712697fe68d96291a2b655ce7f",
+        registry = "index.docker.io",
+        repository = "confluentinc/cp-kafka",
+    )
+
+    # Zookeeper image for Kafka.
+    container_pull(
+        name = "zookeeper_base_image",
+        digest = "sha256:87314e87320abf190f0407bf1689f4827661fbb4d671a41cba62673b45b66bfa",
+        registry = "index.docker.io",
+        repository = "confluentinc/cp-zookeeper",
+    )
+
 def _docker_images_setup():
     _go_image_repos()
     _java_image_repos()

@@ -66,7 +66,8 @@ ParseState ParseFrame(MessageType type, std::string_view* buf, Packet* result) {
     }
 
     PL_ASSIGN_OR_RETURN_INVALID(int16_t request_api_version, binary_decoder.ExtractInt<int16_t>());
-    if (request_api_version < 0 || request_api_version > kMaxAPIVersion) {
+
+    if (!IsSupportedAPIVersion(static_cast<APIKey>(request_api_key), request_api_version)) {
       return ParseState::kInvalid;
     }
     // TODO(chengruizhe): Add length range checks for each api key x version.
@@ -125,9 +126,7 @@ size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_po
       continue;
     }
 
-    // TODO(chengruizhe): A tighter check is possible here with the available api versions for
-    // each protocol.
-    if (request_api_version < 0 || request_api_version > kMaxAPIVersion) {
+    if (!IsSupportedAPIVersion(static_cast<APIKey>(request_api_key), request_api_version)) {
       continue;
     }
 

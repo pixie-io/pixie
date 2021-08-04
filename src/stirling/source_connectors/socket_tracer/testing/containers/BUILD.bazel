@@ -90,3 +90,13 @@ container_image(
         "//src/stirling/source_connectors/socket_tracer/testing/containers/ssl:ssl_keys_layer",
     ],
 )
+
+container_image(
+    name = "kafka_image",
+    base = "@kafka_base_image//image",
+)
+
+container_image(
+    name = "zookeeper_image",
+    base = "@zookeeper_base_image//image",
+)

@@ -213,17 +213,30 @@ enum class ErrorCode : int16_t {
   kInconsistentClusterID = 104,
 };
 
-// A mapping of api_key to the api_version from which the wire protocol becomes flexible.
-// Flexible versions use tagged fields and more efficient serialization for variable-length objects.
+struct APIVersionData {
+  int16_t kMinVersion;
+  int16_t kMaxVersion;
+  int16_t kflexibleVersion;
+};
+
+// A mapping of api_key to the api_versions supported and the version from which it becomes
+// flexible. Flexible versions use tagged fields and more efficient serialization for
+// variable-length objects.
 // https://cwiki.apache.org/confluence/display/KAFKA/KIP-482%3A+The+Kafka+Protocol+should+Support+Optional+Tagged+Fields#KIP482:TheKafkaProtocolshouldSupportOptionalTaggedFields-FlexibleVersions
-const absl::flat_hash_map<APIKey, int16_t> flexibleVersionMap = {
-    {APIKey::kProduce, 9},
+// Detailed information on each API key:
+// https://github.com/apache/kafka/tree/trunk/clients/src/main/resources/common/message
+// TODO(chengruizhe): Needs updating for new opcodes.
+inline const absl::flat_hash_map<APIKey, APIVersionData> APIVersionMap = {
+    // Setting min supported version to 1 to help finding frame boundary.
+    {APIKey::kProduce, {1, 9, 9}},
+    {APIKey::kMetadata, {1, 11, 9}},
+    {APIKey::kApiVersions, {0, 3, 3}},
 };
 
 inline bool IsFlexible(APIKey api_key, int16_t api_version) {
-  auto it = flexibleVersionMap.find(api_key);
-  if (it != flexibleVersionMap.end()) {
-    return api_version >= it->second;
+  auto it = APIVersionMap.find(api_key);
+  if (it != APIVersionMap.end()) {
+    return api_version >= it->second.kflexibleVersion;
   }
   return false;
 }
@@ -234,6 +247,14 @@ inline bool IsValidAPIKey(int16_t api_key) {
     return false;
   }
   return true;
+}
+
+inline bool IsSupportedAPIVersion(APIKey api_key, int16_t api_version) {
+  auto it = APIVersionMap.find(api_key);
+  if (it != APIVersionMap.end()) {
+    return api_version >= it->second.kMinVersion && api_version <= it->second.kMaxVersion;
+  }
+  return false;
 }
 
 constexpr int kMessageLengthBytes = 4;
@@ -274,23 +295,20 @@ struct Request {
   uint64_t timestamp_ns;
 
   std::string ToString() const {
-    return absl::Substitute("timestamp=$0 api_key=$1(version: $2) msg=$3", timestamp_ns,
-                            magic_enum::enum_name(api_key), api_version, msg);
+    return absl::Substitute("timestamp=$0 client_id=$1 api_key=$2(version: $3) msg=$4",
+                            timestamp_ns, client_id, magic_enum::enum_name(api_key), api_version,
+                            msg);
   }
 };
 
 struct Response {
-  // Kafka error code. 0 for OK.
-  ErrorCode error_code;
-
   // Response message.
   std::string msg;
 
   uint64_t timestamp_ns;
 
   std::string ToString() const {
-    return absl::Substitute("timestamp=$0 error_code=$1 msg=$2", timestamp_ns,
-                            magic_enum::enum_name(error_code), msg);
+    return absl::Substitute("timestamp=$0 msg=$1", timestamp_ns, msg);
   }
 };
 

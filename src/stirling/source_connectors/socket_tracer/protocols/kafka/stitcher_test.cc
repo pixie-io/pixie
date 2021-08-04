@@ -58,9 +58,10 @@ TEST(KafkaStitcherTest, BasicMatching) {
             "{\"transactional_id\":\"\",\"acks\":1,\"timeout_ms\":1500,\"topics\":[{\"name\":"
             "\"quickstart-events\",\"partitions\":[{\"index\":0,\"record_batch\":{\"records\":[{"
             "\"key\":\"\",\"value\":\"This is my first event\"}]}}]}]}");
-  EXPECT_EQ(result.records[0].resp.msg,
-            "{\"topics\":[{\"name\":\"quickstart-events\",\"partitions\":[{\"index\":0,\"error_"
-            "code\":0,\"record_errors\":[],\"error_message\":\"\"}]}],\"throttle_time_ms\":0}");
+  EXPECT_EQ(
+      result.records[0].resp.msg,
+      "{\"topics\":[{\"name\":\"quickstart-events\",\"partitions\":[{\"index\":0,\"error_"
+      "code\":\"kNone\",\"record_errors\":[],\"error_message\":\"\"}]}],\"throttle_time_ms\":0}");
 }
 
 }  // namespace kafka

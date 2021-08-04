@@ -84,7 +84,6 @@ StatusOr<Record> ProcessReqRespPair(Packet* req_packet, Packet* resp_packet) {
   Record r;
   PL_RETURN_IF_ERROR(ProcessReq(req_packet, &r.req));
   PL_RETURN_IF_ERROR(ProcessResp(resp_packet, &r.resp, r.req.api_key, r.req.api_version));
-
   return r;
 }
 

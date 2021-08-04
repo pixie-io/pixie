@@ -124,7 +124,7 @@ class MySQLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> 
 
     std::vector<std::string_view> lines = absl::StrSplit(out, "\n");
     if (lines.empty()) {
-      return error::Internal("Exected output (pid) from command.");
+      return error::Internal("Executed output (pid) from command.");
     }
 
     int32_t client_pid;

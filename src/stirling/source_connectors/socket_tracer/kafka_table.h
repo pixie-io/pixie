@@ -28,9 +28,7 @@ namespace px {
 namespace stirling {
 
 static const std::map<int64_t, std::string_view> kKafkaAPIKeyDecoder =
-    px::EnumDefToMap<protocols::kafka::Command>();
-static const std::map<int64_t, std::string_view> kKafkaErrorCodeDecoder =
-    px::EnumDefToMap<protocols::kafka::ErrorCode>();
+    px::EnumDefToMap<protocols::kafka::APIKey>();
 
 // clang-format off
 static constexpr DataElement kKafkaElements[] = {
@@ -48,19 +46,15 @@ static constexpr DataElement kKafkaElements[] = {
        types::DataType::STRING,
        types::SemanticType::ST_NONE,
        types::PatternType::GENERAL},
-      {"resp_status", "Kafka response error code. 0 for OK.",
-       types::DataType::INT64,
-       types::SemanticType::ST_NONE,
-       types::PatternType::GENERAL},
-      {"resp_body", "Kafka response body",
+      {"resp", "Kafka response",
        types::DataType::STRING,
        types::SemanticType::ST_NONE,
-       type::PatternType::GENERAL},
+       types::PatternType::GENERAL},
        canonical_data_elements::kLatencyNS,
 #ifndef NDEBUG
-      canonical_data_elements::kPXInfo,
+       canonical_data_elements::kPXInfo,
 #endif
-}
+};
 // clang-format on
 
 static constexpr auto kKafkaTable =
@@ -71,11 +65,10 @@ constexpr int kKafkaTimeIdx = kKafkaTable.ColIndex("time_");
 constexpr int kKafkaUPIDIdx = kKafkaTable.ColIndex("upid");
 constexpr int kKafkaReqCmdIdx = kKafkaTable.ColIndex("req_cmd");
 constexpr int kKafkaReqBodyIdx = kKafkaTable.ColIndex("req_body");
-constexpr int kKafkaRespStatusIdx = kKafkaTable.ColIndex("resp_status");
-constexpr int kKafkaRespBodyIdx = kKafkaTable.ColIndex("resp_body");
+constexpr int kKafkaRespIdx = kKafkaTable.ColIndex("resp");
 constexpr int kKafkaLatencyIdx = kKafkaTable.ColIndex("latency");
 #ifndef NDEBUG
-constexpr int kKafkaPXInfoIdx = kKafkaTable.ColIndex("px_info");
+constexpr int kKafkaPXInfoIdx = kKafkaTable.ColIndex("px_info_");
 #endif
 }  // namespace stirling
 }  // namespace px

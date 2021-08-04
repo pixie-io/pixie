@@ -172,7 +172,7 @@ struct ProduceRespPartition {
     writer->Key("index");
     writer->Int(index);
     writer->Key("error_code");
-    writer->Int(error_code);
+    writer->String(magic_enum::enum_name(static_cast<ErrorCode>(error_code)).data());
     writer->Key("record_errors");
     writer->StartArray();
     for (const auto& r : record_errors) {
