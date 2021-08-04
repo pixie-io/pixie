@@ -32,7 +32,6 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/nats-io/nats.go"
-	"github.com/nats-io/stan.go"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
@@ -41,6 +40,7 @@ import (
 	"px.dev/pixie/src/cloud/shared/vzshard"
 	"px.dev/pixie/src/cloud/vzconn/vzconnpb"
 	"px.dev/pixie/src/shared/cvmsgspb"
+	"px.dev/pixie/src/shared/services/msgbus"
 )
 
 // NATSBridgeController is responsible for routing messages from Vizier to NATS. It assumes that all authentication/handshakes
@@ -52,7 +52,7 @@ type NATSBridgeController struct {
 	srv       vzconnpb.VZConnService_NATSBridgeServer
 
 	nc        *nats.Conn
-	sc        stan.Conn
+	st        msgbus.Streamer
 	grpcOutCh chan *vzconnpb.C2VBridgeMessage
 	grpcInCh  chan *vzconnpb.V2CBridgeMessage
 
@@ -61,7 +61,7 @@ type NATSBridgeController struct {
 }
 
 // NewNATSBridgeController creates a NATSBridgeController.
-func NewNATSBridgeController(clusterID uuid.UUID, srv vzconnpb.VZConnService_NATSBridgeServer, nc *nats.Conn, sc stan.Conn) *NATSBridgeController {
+func NewNATSBridgeController(clusterID uuid.UUID, srv vzconnpb.VZConnService_NATSBridgeServer, nc *nats.Conn, st msgbus.Streamer) *NATSBridgeController {
 	streamID := uuid.Must(uuid.NewV4())
 	return &NATSBridgeController{
 		streamID:  streamID,
@@ -69,7 +69,7 @@ func NewNATSBridgeController(clusterID uuid.UUID, srv vzconnpb.VZConnService_NAT
 		l:         log.WithField("StreamID", streamID),
 		srv:       srv,
 		nc:        nc,
-		sc:        sc,
+		st:        st,
 
 		grpcOutCh: make(chan *vzconnpb.C2VBridgeMessage, 1000),
 		grpcInCh:  make(chan *vzconnpb.V2CBridgeMessage, 1000),
@@ -188,7 +188,7 @@ func (s *NATSBridgeController) sendMessageToMessageBus(msg *vzconnpb.V2CBridgeMe
 		Trace("sending message to nats")
 
 	if strings.Contains(topic, "Durable") {
-		return s.sc.Publish(topic, b)
+		return s.st.Publish(topic, b)
 	}
 
 	return s.nc.Publish(topic, b)

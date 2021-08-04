@@ -81,13 +81,17 @@ func main() {
 	s := server.NewPLServerWithOptions(env.New(viper.GetString("domain_name")), mux, serverOpts)
 	nc := msgbus.MustConnectNATS()
 	sc := msgbus.MustConnectSTAN(nc, uuid.Must(uuid.NewV4()).String())
+	strmr, err := msgbus.NewSTANStreamer(sc)
+	if err != nil {
+		log.WithError(err).Fatal("failed to start streamer")
+	}
 
 	vzmgrClient, vzdeployClient, err := newVZMgrClients()
 	if err != nil {
 		log.WithError(err).Fatal("failed to initialize vizer manager RPC client")
 		panic(err)
 	}
-	svr := bridge.NewBridgeGRPCServer(vzmgrClient, vzdeployClient, nc, sc)
+	svr := bridge.NewBridgeGRPCServer(vzmgrClient, vzdeployClient, nc, strmr)
 	vzconnpb.RegisterVZConnServiceServer(s.GRPCServer(), svr)
 
 	s.Start()

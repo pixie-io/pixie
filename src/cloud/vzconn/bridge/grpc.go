@@ -25,7 +25,6 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
-	"github.com/nats-io/stan.go"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
@@ -35,6 +34,7 @@ import (
 	"px.dev/pixie/src/cloud/vzconn/vzconnpb"
 	"px.dev/pixie/src/cloud/vzmgr/vzmgrpb"
 	"px.dev/pixie/src/shared/cvmsgspb"
+	"px.dev/pixie/src/shared/services/msgbus"
 	"px.dev/pixie/src/shared/services/utils"
 	utils2 "px.dev/pixie/src/utils"
 )
@@ -44,12 +44,12 @@ type GRPCServer struct {
 	vzmgrClient        vzmgrpb.VZMgrServiceClient
 	vzDeploymentClient vzmgrpb.VZDeploymentServiceClient
 	nc                 *nats.Conn
-	sc                 stan.Conn
+	st                 msgbus.Streamer
 }
 
 // NewBridgeGRPCServer creates a new GRPCServer.
-func NewBridgeGRPCServer(vzmgrClient vzmgrpb.VZMgrServiceClient, vzDeploymentClient vzmgrpb.VZDeploymentServiceClient, nc *nats.Conn, sc stan.Conn) *GRPCServer {
-	return &GRPCServer{vzmgrClient, vzDeploymentClient, nc, sc}
+func NewBridgeGRPCServer(vzmgrClient vzmgrpb.VZMgrServiceClient, vzDeploymentClient vzmgrpb.VZDeploymentServiceClient, nc *nats.Conn, st msgbus.Streamer) *GRPCServer {
+	return &GRPCServer{vzmgrClient, vzDeploymentClient, nc, st}
 }
 
 // RegisterVizierDeployment registers the vizier using the deployment key passed in on X-API-KEY.
@@ -114,7 +114,7 @@ func (s *GRPCServer) NATSBridge(srv vzconnpb.VZConnService_NATSBridgeServer) err
 
 	// Each Vizier calls this endpoint. Once it's called we will basically
 	// create NATS bridge and subscribe to the relevant channels.
-	c := NewNATSBridgeController(utils2.UUIDFromProtoOrNil(clusterID), srv, s.nc, s.sc)
+	c := NewNATSBridgeController(utils2.UUIDFromProtoOrNil(clusterID), srv, s.nc, s.st)
 	return convertToGRPCErr(c.Run())
 }
 

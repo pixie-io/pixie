@@ -123,6 +123,11 @@ func main() {
 	nc := msgbus.MustConnectNATS()
 	sc := msgbus.MustConnectSTAN(nc, uuid.Must(uuid.NewV4()).String())
 
+	strmr, err := msgbus.NewSTANStreamer(sc)
+	if err != nil {
+		log.Fatal("Could not connect to streamer")
+	}
+
 	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
 		log.WithError(err).
 			WithField("sub", subscription.Subject).
@@ -130,7 +135,7 @@ func main() {
 	})
 
 	es := mustConnectElastic()
-	err := md.InitializeMapping(es)
+	err = md.InitializeMapping(es)
 	if err != nil {
 		log.WithError(err).Fatal("Could not initialize elastic mapping")
 	}
@@ -140,7 +145,7 @@ func main() {
 		log.WithError(err).Fatal("Could not connect to vzmgr")
 	}
 
-	indexer, err := controllers.NewIndexer(nc, vzmgrClient, sc, es, "00", "ff")
+	indexer, err := controllers.NewIndexer(nc, vzmgrClient, strmr, es, "00", "ff")
 	if err != nil {
 		log.WithError(err).Fatal("Could not start indexer")
 	}

@@ -23,30 +23,30 @@ import (
 	"fmt"
 
 	"github.com/gofrs/uuid"
-	"github.com/nats-io/stan.go"
 	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 
 	"px.dev/pixie/src/shared/k8s/metadatapb"
+	"px.dev/pixie/src/shared/services/msgbus"
 )
 
 // VizierIndexer run the indexer for a single vizier index.
 type VizierIndexer struct {
-	sc       stan.Conn
+	st       msgbus.Streamer
 	es       *elastic.Client
 	vizierID uuid.UUID
 	orgID    uuid.UUID
 	k8sUID   string
 
-	sub    stan.Subscription
+	sub    msgbus.PersistentSub
 	quitCh chan bool
 	errCh  chan error
 }
 
 // NewVizierIndexer creates a new Vizier indexer.
-func NewVizierIndexer(vizierID uuid.UUID, orgID uuid.UUID, k8sUID string, sc stan.Conn, es *elastic.Client) *VizierIndexer {
+func NewVizierIndexer(vizierID uuid.UUID, orgID uuid.UUID, k8sUID string, st msgbus.Streamer, es *elastic.Client) *VizierIndexer {
 	return &VizierIndexer{
-		sc:       sc,
+		st:       st,
 		es:       es,
 		vizierID: vizierID,
 		orgID:    orgID,
@@ -63,16 +63,7 @@ func (v *VizierIndexer) Run(topic string) {
 		WithField("ClusterUID", v.k8sUID).
 		Info("Starting Indexer")
 
-	// The use of a QueueSubscribe instead of a Subscribe here is a slight gotcha.
-	// As of writing this, we only have one indexer pod running, however skaffold deploys bring up new
-	// pods and wait for them to stabilize before terminating old pods. Hence we must use a unique UUID
-	// for the stan clientID.
-	// Using a queue group with the IndexName is a way to indicate that we don't care about any ack-ed
-	// messages that have alredy been process by this version of the index. (Without a queue, the fact
-	// that we have a new clientID and this is a durable subscription means that we'd get all messages
-	// on connect.)
-	sub, err := v.sc.QueueSubscribe(topic, IndexName, v.stanMessageHandler,
-		stan.DurableName("indexer"), stan.SetManualAckMode(), stan.MaxInflight(50), stan.DeliverAllAvailable())
+	sub, err := v.st.PersistentSubscribe(topic, "indexer"+IndexName, v.streamHandler)
 	if err != nil {
 		log.WithError(err).Error("Failed to subscribe")
 	}
@@ -199,9 +190,9 @@ ctx._source.updateVersion = params.updateVersion;
 ctx._source.state = params.state;
 `
 
-func (v *VizierIndexer) stanMessageHandler(msg *stan.Msg) {
+func (v *VizierIndexer) streamHandler(msg msgbus.Msg) {
 	ru := metadatapb.ResourceUpdate{}
-	err := ru.Unmarshal(msg.Data)
+	err := ru.Unmarshal(msg.Data())
 	if err != nil { // We received an invalid message through stan.
 		log.WithError(err).Error("Could not unmarshal message from stan")
 		v.errCh <- err

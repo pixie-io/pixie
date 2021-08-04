@@ -135,6 +135,10 @@ func main() {
 	// Connect to NATS.
 	nc := msgbus.MustConnectNATS()
 	stc := msgbus.MustConnectSTAN(nc, uuid.Must(uuid.NewV4()).String())
+	strmr, err := msgbus.NewSTANStreamer(stc)
+	if err != nil {
+		log.WithError(err).Fatal("Could not start STAN streamer")
+	}
 
 	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
 		if err != nil {
@@ -168,7 +172,7 @@ func main() {
 
 	var mdr *controller.MetadataReader
 	go func() {
-		mdr, err = controller.NewMetadataReader(db, stc, nc)
+		mdr, err = controller.NewMetadataReader(db, strmr, nc)
 		if err != nil {
 			log.WithError(err).Fatal("Could not start metadata listener")
 		}

@@ -36,6 +36,7 @@ import (
 	"px.dev/pixie/src/cloud/vzmgr/controller"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/k8s/metadatapb"
+	"px.dev/pixie/src/shared/services/msgbus"
 	"px.dev/pixie/src/utils/testingutils"
 )
 
@@ -329,6 +330,9 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 			_, sc, stanCleanup := testingutils.MustStartTestStan(t, "test-stan", "test-client")
 			defer stanCleanup()
 
+			st, err := msgbus.NewSTANStreamer(sc)
+			require.NoError(t, err)
+
 			// First we add  entries in the indexer stream. This ensures that when we init the Vizier
 			// update manager, we are peeking the bottom of the stream's queue.
 			for _, updateV := range test.oldMetadataIndexUpdates {
@@ -413,7 +417,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 				}
 			}()
 
-			mdr, err := controller.NewMetadataReader(db, sc, nc)
+			mdr, err := controller.NewMetadataReader(db, st, nc)
 			require.NoError(t, err)
 
 			numUpdates := 0
@@ -436,7 +440,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 			mdr.Stop()
 
 			// On restart, we shouldn't receive any updates.
-			mdr, err = controller.NewMetadataReader(db, sc, nc)
+			mdr, err = controller.NewMetadataReader(db, st, nc)
 			require.NoError(t, err)
 			defer mdr.Stop()
 

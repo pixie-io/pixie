@@ -24,13 +24,13 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/nats-io/nats.go"
-	"github.com/nats-io/stan.go"
 	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 
 	"px.dev/pixie/src/cloud/indexer/md"
 	"px.dev/pixie/src/cloud/shared/vzutils"
 	"px.dev/pixie/src/cloud/vzmgr/vzmgrpb"
+	"px.dev/pixie/src/shared/services/msgbus"
 )
 
 // The topic on which updates are written to.
@@ -69,7 +69,7 @@ func (c *concurrentIndexersMap) values() []*md.VizierIndexer {
 type Indexer struct {
 	clusters *concurrentIndexersMap // Map from cluster UID->indexer.
 
-	sc stan.Conn
+	st msgbus.Streamer
 	es *elastic.Client
 
 	watcher *vzutils.Watcher
@@ -77,7 +77,7 @@ type Indexer struct {
 
 // NewIndexer creates a new Vizier indexer. This is a wrapper around the Vizier Watcher, which starts the indexer
 // for any active viziers.
-func NewIndexer(nc *nats.Conn, vzmgrClient vzmgrpb.VZMgrServiceClient, sc stan.Conn, es *elastic.Client, fromShardID string, toShardID string) (*Indexer, error) {
+func NewIndexer(nc *nats.Conn, vzmgrClient vzmgrpb.VZMgrServiceClient, st msgbus.Streamer, es *elastic.Client, fromShardID string, toShardID string) (*Indexer, error) {
 	watcher, err := vzutils.NewWatcher(nc, vzmgrClient, fromShardID, toShardID)
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func NewIndexer(nc *nats.Conn, vzmgrClient vzmgrpb.VZMgrServiceClient, sc stan.C
 	i := &Indexer{
 		clusters: &concurrentIndexersMap{unsafeMap: make(map[string]*md.VizierIndexer)},
 		watcher:  watcher,
-		sc:       sc,
+		st:       st,
 		es:       es,
 	}
 
@@ -116,7 +116,7 @@ func (i *Indexer) handleVizier(id uuid.UUID, orgID uuid.UUID, uid string) error 
 	}
 
 	// Start indexer.
-	vzIndexer := md.NewVizierIndexer(id, orgID, uid, i.sc, i.es)
+	vzIndexer := md.NewVizierIndexer(id, orgID, uid, i.st, i.es)
 	i.clusters.write(uid, vzIndexer)
 	go vzIndexer.Run(fmt.Sprintf("%s.%s", indexerMetadataTopic, uid))
 

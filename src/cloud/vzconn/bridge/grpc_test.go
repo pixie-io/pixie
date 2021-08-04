@@ -44,6 +44,7 @@ import (
 	"px.dev/pixie/src/cloud/vzmgr/vzmgrpb"
 	mock_vzmgrpb "px.dev/pixie/src/cloud/vzmgr/vzmgrpb/mock"
 	"px.dev/pixie/src/shared/cvmsgspb"
+	"px.dev/pixie/src/shared/services/msgbus"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/testingutils"
 )
@@ -69,7 +70,9 @@ func createTestState(t *testing.T, ctrl *gomock.Controller) (*testState, func(t 
 
 	nc, natsCleanup := testingutils.MustStartTestNATS(t)
 	_, sc, cleanStan := testingutils.MustStartTestStan(t, "test-stan", "test-client")
-	b := bridge.NewBridgeGRPCServer(mockVZMgr, mockVZDeployment, nc, sc)
+	st, err := msgbus.NewSTANStreamer(sc)
+	require.NoError(t, err)
+	b := bridge.NewBridgeGRPCServer(mockVZMgr, mockVZDeployment, nc, st)
 	vzconnpb.RegisterVZConnServiceServer(s, b)
 
 	eg := errgroup.Group{}

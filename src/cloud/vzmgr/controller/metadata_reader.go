@@ -29,7 +29,6 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/jmoiron/sqlx"
 	"github.com/nats-io/nats.go"
-	"github.com/nats-io/stan.go"
 	log "github.com/sirupsen/logrus"
 
 	"px.dev/pixie/src/cloud/shared/messages"
@@ -37,6 +36,7 @@ import (
 	"px.dev/pixie/src/cloud/shared/vzshard"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/k8s/metadatapb"
+	"px.dev/pixie/src/shared/services/msgbus"
 	"px.dev/pixie/src/utils"
 )
 
@@ -54,17 +54,14 @@ const indexerMetadataTopic = "MetadataIndex"
 
 const missingMetadataTimeout = 2 * time.Minute
 
-// Missing previous vzstate update version timeout.
-const missingVersionEntryTimeout = 200 * time.Millisecond
-
 // VizierState contains all state necessary to process metadata updates for the given vizier.
 type VizierState struct {
 	id            uuid.UUID // The Vizier's ID.
 	updateVersion int64     // The Vizier's last applied resource version.
 	k8sUID        string    // The Vizier's K8s UID.
 
-	liveSub stan.Subscription // The subcription for the live metadata updates.
-	liveCh  chan *stan.Msg
+	liveSub msgbus.PersistentSub // The subcription for the live metadata updates.
+	liveCh  chan msgbus.Msg
 
 	quitCh chan struct{} // Channel to sign a stop for a particular vizier
 	once   sync.Once
@@ -107,7 +104,7 @@ func (c *concurrentViziersMap) delete(vizierID uuid.UUID) {
 type MetadataReader struct {
 	db *sqlx.DB
 
-	sc stan.Conn
+	st msgbus.Streamer
 	nc *nats.Conn
 
 	viziers *concurrentViziersMap // Map of Vizier ID to it's state.
@@ -117,10 +114,10 @@ type MetadataReader struct {
 }
 
 // NewMetadataReader creates a new MetadataReader.
-func NewMetadataReader(db *sqlx.DB, sc stan.Conn, nc *nats.Conn) (*MetadataReader, error) {
+func NewMetadataReader(db *sqlx.DB, st msgbus.Streamer, nc *nats.Conn) (*MetadataReader, error) {
 	viziers := &concurrentViziersMap{unsafeMap: make(map[uuid.UUID]*VizierState)}
 
-	m := &MetadataReader{db: db, sc: sc, nc: nc, viziers: viziers, quitCh: make(chan struct{})}
+	m := &MetadataReader{db: db, st: st, nc: nc, viziers: viziers, quitCh: make(chan struct{})}
 	err := m.loadState()
 	if err != nil {
 		m.Stop()
@@ -211,37 +208,24 @@ func (m *MetadataReader) loadVizierState(id uuid.UUID, k8sUID string) (*VizierSt
 	vzState := &VizierState{
 		id:     id,
 		k8sUID: k8sUID,
-		liveCh: make(chan *stan.Msg),
+		liveCh: make(chan msgbus.Msg),
 		quitCh: make(chan struct{}),
 	}
-	versionCh := make(chan int64)
 	subject := fmt.Sprintf("%s.%s", indexerMetadataTopic, vzState.k8sUID)
-	// Peek the end of the Queue to see which message we've last pushed onto the Indexer subject.
-	sub, err := m.sc.Subscribe(subject, func(m *stan.Msg) {
-		ru := metadatapb.ResourceUpdate{}
-		err := ru.Unmarshal(m.Data)
-		if err != nil {
-			log.WithError(err).Error("unable to unmarshal data from STAN")
-			close(versionCh)
-		}
-		versionCh <- ru.UpdateVersion
-		// Don't ack this message, we only want to receive a single message for this sub.
-	}, stan.StartWithLastReceived(), stan.SetManualAckMode())
+	msg, err := m.st.PeekLatestMessage(subject)
 	if err != nil {
 		return nil, err
 	}
-	// Once we receive data or timeout, we give up.
-	select {
-	case version, ok := <-versionCh:
-		if ok {
-			vzState.updateVersion = version
-		}
-	case <-time.After(missingVersionEntryTimeout):
-		log.Tracef("Timed out waiting for latest k8s: %s", k8sUID)
+	// nil message means the queue was empty.
+	if msg == nil {
+		return vzState, nil
 	}
-	if err := sub.Unsubscribe(); err != nil {
+	ru := metadatapb.ResourceUpdate{}
+	err = ru.Unmarshal(msg.Data())
+	if err != nil {
 		return nil, err
 	}
+	vzState.updateVersion = ru.UpdateVersion
 	return vzState, nil
 }
 
@@ -265,9 +249,9 @@ func (m *MetadataReader) startVizierUpdates(id uuid.UUID, k8sUID string) error {
 	// Subscribe to STAN topic for streaming updates.
 	topic := vzshard.V2CTopic(streamingMetadataTopic, id)
 	log.WithField("topic", topic).Info("Subscribing to STAN")
-	liveSub, err := m.sc.QueueSubscribe(topic, "vzmgr", func(msg *stan.Msg) {
+	liveSub, err := m.st.PersistentSubscribe(topic, "vzmgr", func(msg msgbus.Msg) {
 		vzState.liveCh <- msg
-	}, stan.SetManualAckMode(), stan.DurableName("vzmgr"), stan.DeliverAllAvailable())
+	})
 	if err != nil {
 		vzState.stop()
 		return err
@@ -304,7 +288,7 @@ func (m *MetadataReader) processVizierUpdates(vzState *VizierState) {
 				continue
 			}
 
-			update, err := readMetadataUpdate(msg.Data)
+			update, err := readMetadataUpdate(msg.Data())
 			if err != nil {
 				log.WithError(err).Error("Error processing Vizier metadata updates")
 				return
@@ -510,7 +494,7 @@ func (m *MetadataReader) applyMetadataUpdate(vzState *VizierState, update *metad
 		WithField("rv", update.UpdateVersion).
 		Trace("Publishing metadata update to indexer")
 
-	err = m.sc.Publish(fmt.Sprintf("%s.%s", indexerMetadataTopic, vzState.k8sUID), b)
+	err = m.st.Publish(fmt.Sprintf("%s.%s", indexerMetadataTopic, vzState.k8sUID), b)
 	if err != nil {
 		return err
 	}
