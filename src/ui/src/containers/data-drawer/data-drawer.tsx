@@ -22,7 +22,7 @@ import { LayoutContext } from 'app/context/layout-context';
 import { ResultsContext } from 'app/context/results-context';
 
 import * as React from 'react';
-import { MinimalLiveDataTable } from 'app/containers/live-data-table/new-live-data-table';
+import { MinimalLiveDataTable } from 'app/containers/live-data-table/live-data-table';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 import {

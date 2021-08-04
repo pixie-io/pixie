@@ -16,31 +16,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ClusterContext } from 'app/common/cluster-context';
-import {
-  CellAlignment, ColumnProps, DataTable, SortState,
-  buildClass,
-} from 'app/components';
-import { JSONData } from 'app/containers/format-data/format-data';
-import { STATUS_TYPES } from 'app/containers/live-widgets/utils';
-import { LiveRouteContext } from 'app/containers/App/live-routing';
 import * as React from 'react';
-import { Table } from 'app/api';
-import { DataType, SemanticType } from 'app/types/generated/vizierapi_pb';
-import noop from 'app/utils/noop';
-import { dataFromProto } from 'app/utils/result-data-utils';
-import {
-  makeStyles,
-  useTheme, Theme,
-} from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
-import { IndexRange, SortDirection } from 'react-virtualized';
+import { Table as VizierTable } from 'app/api';
 import { Arguments } from 'app/utils/args-utils';
-
+import { dataFromProto } from 'app/utils/result-data-utils';
+import { ReactTable, DataTable, DataTableProps } from 'app/components/data-table/data-table';
+import { DataType, Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
+import { buildClass, CellAlignment } from 'app/components';
+import { useTheme, makeStyles, Theme } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
+import { ClusterContext } from 'app/common/cluster-context';
+import { LiveRouteContext } from 'app/containers/App/live-routing';
+import { JSONData } from 'app/containers/format-data/format-data';
+import { liveCellRenderer } from 'app/containers/live-data-table/renderers';
+import { getSortFunc } from 'app/containers/live-data-table/sort-funcs';
 import { ColumnDisplayInfo, displayInfoFromColumn, titleFromInfo } from './column-display-info';
 import { parseRows } from './parsers';
-import { liveCellRenderer } from './renderers';
-import { getSortFunc } from './sort-funcs';
+import ColumnInfo = Relation.ColumnInfo;
 
 // Note: if an alignment exists for both a column's semantic type and its data type, the semantic type takes precedence.
 const SemanticAlignmentMap = new Map<SemanticType, CellAlignment>(
@@ -61,238 +53,169 @@ const DataAlignmentMap = new Map<DataType, CellAlignment>(
   ],
 );
 
-// For certain semantic types, override the column width ratio based off of the rendering
-// we expect to do for that semantic type.
-const SemanticTypeWidthOverrideMap = new Map<SemanticType, number>(
-  [
-    [SemanticType.ST_QUANTILES, 40],
-    [SemanticType.ST_DURATION_NS, 20],
-    [SemanticType.ST_DURATION_NS_QUANTILES, 40],
-  ],
-);
-const DataTypeWidthOverrideMap = new Map<DataType, number>(
-  [
-    [DataType.TIME64NS, 25],
-  ],
-);
+function rowsFromVizierTable(table: VizierTable): Array<Record<string, any>> {
+  const semanticTypeMap = table.relation.getColumnsList().reduce((acc, col) => {
+    acc.set(col.getColumnName(), col.getColumnSemanticType());
+    return acc;
+  }, new Map<string, SemanticType>());
 
-function hasWidthOverride(st: SemanticType, dt: DataType): boolean {
-  return SemanticTypeWidthOverrideMap.has(st) || DataTypeWidthOverrideMap.has(dt);
+  return parseRows(semanticTypeMap, dataFromProto(table.relation, table.data));
 }
 
-function getWidthOverride(st: SemanticType, dt: DataType): number {
-  if (SemanticTypeWidthOverrideMap.has(st)) {
-    return SemanticTypeWidthOverrideMap.get(st);
-  }
-  return DataTypeWidthOverrideMap.get(dt);
-}
-
-interface LiveDataTableProps {
-  table: Table;
-  prettyRender?: boolean;
-  expandable?: boolean;
-  expandedRenderer?: (rowIndex: number) => JSX.Element;
-  clusterName?: string;
-  gutterColumn?: string;
-  onRowSelectionChanged?: (row: any) => void;
-  onRowsRendered?: (range: IndexRange) => void;
-  propagatedArgs?: Arguments;
-}
-
-export const LiveDataTable: React.FC<LiveDataTableProps> = (props) => {
-  const {
-    table, prettyRender = false, expandable = false, expandedRenderer,
-    clusterName = null,
-    gutterColumn = null,
-    onRowSelectionChanged = noop,
-    onRowsRendered = () => { },
-    propagatedArgs = null,
-  } = props;
-
+/** Transforms a table coming from a script into something react-table understands. */
+function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutterColumn?: string): ReactTable {
+  // Some cell renderers need a bit of extra information that isn't directly related to the table.
+  const theme = useTheme();
+  const { selectedClusterName: cluster } = React.useContext(ClusterContext);
   const { embedState } = React.useContext(LiveRouteContext);
 
-  const [rows, setRows] = React.useState([]);
-  const [selectedRow, setSelectedRow] = React.useState(-1);
-  const [columnDisplayInfos, setColumnDisplayInfos] = React.useState<Map<string, ColumnDisplayInfo>>(
-    new Map<string, ColumnDisplayInfo>());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const rows = React.useMemo(() => rowsFromVizierTable(table), [table.data]);
 
-  const dataLength = table.data ? table.data.length : 0;
-  React.useEffect(() => {
-    // Map containing the display information for the column.
-    const displayInfos = new Map<string, ColumnDisplayInfo>();
+  const [displayMap, setDisplayMap] = React.useState<Map<string, ColumnDisplayInfo>>(new Map());
 
-    table.relation.getColumnsList().forEach((col) => {
-      const name = col.getColumnName();
-      const displayInfo = displayInfoFromColumn(col);
-      displayInfos.set(name, displayInfo);
-    });
+  const convertColumn = (col: ColumnInfo) => {
+    const display = displayMap.get(col.getColumnName()) ?? displayInfoFromColumn(col);
+    const justify = SemanticAlignmentMap.get(display.semanticType) ?? DataAlignmentMap.get(display.type) ?? 'start';
 
-    const semanticTypeMap = [...displayInfos.values()].reduce((acc, val) => {
-      acc.set(val.columnName, val.semanticType);
-      return acc;
-    }, new Map<string, SemanticType>());
-
-    const rawRows = dataFromProto(table.relation, table.data);
-    if (prettyRender) {
-      const parsedRows = parseRows(semanticTypeMap, rawRows);
-      setRows(parsedRows);
-    } else {
-      setRows(rawRows);
-    }
-    setColumnDisplayInfos(displayInfos);
-  }, [table, dataLength, clusterName, prettyRender]);
-
-  const theme = useTheme();
-  const [dataTableCols, gutterCol] = React.useMemo(() => {
-    const allInfos = [...columnDisplayInfos.values()];
-
-    const gutterInfo = allInfos.find((displayInfo: ColumnDisplayInfo) => (
-      displayInfo.columnName === gutterColumn && STATUS_TYPES.has(displayInfo.semanticType)
-    ));
-
-    const remainingInfos = allInfos.filter((displayInfo: ColumnDisplayInfo) => (
-      displayInfo.columnName !== gutterInfo?.columnName
-    ));
-
-    const displayInfoToProps = (displayInfo: ColumnDisplayInfo) => {
-      if (!displayInfo) {
-        return null;
-      }
-      // Some cells give the power to update the display state for the whole column.
-      // This function is the handle that allows them to do that.
-      const updateColumnDisplay = ((newColumnDisplay: ColumnDisplayInfo) => {
-        const newMap = new Map<string, ColumnDisplayInfo>(
-          columnDisplayInfos.set(displayInfo.columnName, newColumnDisplay));
-        setColumnDisplayInfos(newMap);
-      });
-
-      const colProps: ColumnProps = {
-        dataKey: displayInfo.columnName,
-        label: titleFromInfo(displayInfo),
-        align: SemanticAlignmentMap.get(displayInfo.semanticType) ?? DataAlignmentMap.get(displayInfo.type) ?? 'start',
-        cellRenderer: liveCellRenderer(displayInfo, updateColumnDisplay, prettyRender,
-          theme, clusterName, rows, embedState, propagatedArgs),
-      };
-      if (hasWidthOverride(displayInfo.semanticType, displayInfo.type)) {
-        colProps.width = getWidthOverride(displayInfo.semanticType, displayInfo.type);
-      }
-      return colProps;
+    const updateDisplay = (newInfo: ColumnDisplayInfo) => {
+      displayMap.set(display.columnName, newInfo);
+      setDisplayMap(new Map<string, ColumnDisplayInfo>(displayMap));
     };
 
-    return [[...remainingInfos].map(displayInfoToProps), displayInfoToProps(gutterInfo)];
+    const renderer = liveCellRenderer(display, updateDisplay, true, theme, cluster, rows, embedState, propagatedArgs);
+
+    const sortFunc = getSortFunc(display);
+
+    const gutterWidth = parseInt(theme.spacing(3), 10); // 24px
+    const gutterProps = gutterColumn === display.columnName ? {
+      isGutter: true,
+      minWidth: gutterWidth,
+      width: gutterWidth,
+      maxWidth: gutterWidth,
+      Header: '\xa0', // nbsp
+      disableSortBy: true,
+      disableFilters: true,
+      disableResizing: true,
+    } : { isGutter: false };
+
+    return {
+      Header: titleFromInfo(display),
+      accessor: col.getColumnName(),
+      Cell({ value }) {
+        // TODO(nick,PC-1050): We're not doing width weights yet. Need to. Convert to ratio of default in DataTable?
+        // TODO(nick,PC-1050): Head/tail mode (data-table.tsx) for not-the-data-drawer.
+        // TODO(nick,PC-1050): Go over old impl a few more times. Any features I missed? Oversimplified? Etc.
+        return renderer(value);
+      },
+      original: col,
+      align: justify,
+      ...gutterProps,
+      sortType(a, b) {
+        // TODO(nick,PC-1050): react-table inverts the return value for descent anyway. Remove third param.
+        return sortFunc(a.original, b.original, true);
+      },
+    };
+  };
+
+  const columns = React.useMemo<ReactTable['columns']>(
+    () => table.relation
+      .getColumnsList()
+      .map(convertColumn)
+      .sort((a, b) => Number(b.isGutter) - Number(a.isGutter)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [columnDisplayInfos, gutterColumn, clusterName, prettyRender, propagatedArgs, rows, theme]);
+    [displayMap]);
 
-  const rowGetter = React.useCallback(
-    (i) => rows[i],
-    [rows],
-  );
+  return React.useMemo(() => ({ columns, data: rows }), [columns, rows]);
+}
 
-  const onSort = React.useCallback((sortState: SortState) => {
-    const column = columnDisplayInfos.get(sortState.dataKey);
-    const ascending = sortState.direction === SortDirection.ASC;
-    const sortFunc = getSortFunc(column);
-    setRows(rows.sort((a, b) => sortFunc(a, b, ascending)));
-    setSelectedRow(-1);
-    onRowSelectionChanged(null);
-  }, [rows, columnDisplayInfos, onRowSelectionChanged]);
-
-  const onRowSelect = React.useCallback((rowIndex) => {
-    let newRowIndex = rowIndex;
-    if (rowIndex === selectedRow) {
-      newRowIndex = -1;
-    }
-    setSelectedRow(newRowIndex);
-    onRowSelectionChanged(rows[newRowIndex]);
-  }, [rows, selectedRow, onRowSelectionChanged]);
-
-  if (rows.length === 0) {
-    return null;
-  }
-
-  return (
-    <DataTable
-      rowGetter={rowGetter}
-      rowCount={rows.length}
-      columns={dataTableCols}
-      gutterColumn={gutterCol}
-      compact
-      onSort={onSort}
-      onRowClick={onRowSelect}
-      highlightedRow={selectedRow}
-      expandable={expandable}
-      expandedRenderer={expandedRenderer}
-      onRowsRendered={onRowsRendered}
-    />
-  );
-};
-
-const useStyles = makeStyles((theme: Theme) => createStyles({
+// This one has a sidebar for the currently-selected row, rather than placing it inline like the main data table does.
+// It scrolls independently of the table to its left.
+const useLiveDataTableStyles = makeStyles((theme: Theme) => createStyles({
   root: {
     display: 'flex',
-    flexDirection: 'row',
+    width: '100%',
     height: '100%',
+    flexFlow: 'row nowrap',
+    justifyContent: 'stretch',
+    alignItems: 'stretch',
+    overflow: 'hidden',
     position: 'relative',
   },
-  details: {
-    flex: 1,
-    padding: theme.spacing(2),
-    borderLeft: `solid 1px ${theme.palette.background.three}`,
-    minWidth: 0,
-    overflow: 'auto',
-    whiteSpace: 'pre-wrap',
+  rootHorizontal: {
+    flexFlow: 'column nowrap',
   },
   table: {
     flex: 3,
-    overflowX: 'hidden',
+    overflow: 'hidden',
+    width: '100%', // It's using an AutoSizer that has a natural width/height of 0. Need to force it to use space.
   },
-  close: {
-    position: 'absolute',
+  details: {
+    flex: 1,
+    minWidth: '0px',
+    minHeight: '0px',
+    whiteSpace: 'pre-wrap',
+    overflow: 'auto',
+    borderLeft: `1px solid ${theme.palette.background.three}`,
+    padding: theme.spacing(2),
   },
-}));
+  detailsHorizontal: {
+    borderLeft: 0,
+    borderTop: `1px solid ${theme.palette.background.three}`,
+  },
+}), { name: 'LiveDataTable' });
 
-interface LiveDataRowDetailsProps {
-  data?: any;
-}
+export const MinimalLiveDataTable: React.FC<{ table: VizierTable }> = ({ table }) => {
+  const classes = useLiveDataTableStyles();
+  const reactTable = useConvertedTable(table);
 
-const LiveDataRowDetails: React.FC<LiveDataRowDetailsProps> = ({ data }) => {
-  const classes = useStyles();
-  if (!data) {
-    return null;
-  }
+  const [details, setDetails] = React.useState<Record<string, any>>(null);
+  const onRowSelected = React.useCallback((row: Record<string, any>|null) => setDetails(row), [setDetails]);
+
   return (
-    <div className={classes.details}>
-      <JSONData data={data} multiline />
+    <div className={classes.root}>
+      <div className={classes.table}>
+        <DataTable table={reactTable} enableRowSelect onRowSelected={onRowSelected} />
+      </div>
+      {details && (
+        <div className={classes.details}>
+          <JSONData data={details} multiline />
+        </div>
+      )}
     </div>
   );
 };
 
-export const LiveDataTableWithDetails: React.FC<{ table: Table }> = (props) => {
-  const [details, setDetails] = React.useState(null);
-  const { selectedClusterName } = React.useContext(ClusterContext);
+export interface LiveDataTableProps extends Pick<DataTableProps, 'onRowsRendered'> {
+  table: VizierTable;
+  propagatedArgs?: Arguments;
+  gutterColumn?: string;
+}
 
-  const onRowSelection = React.useCallback((row) => {
-    setDetails(row);
-  }, [setDetails]);
+export const LiveDataTable: React.FC<LiveDataTableProps> = ({ table, ...options }) => {
+  const classes = useLiveDataTableStyles();
+  const reactTable = useConvertedTable(table, options.propagatedArgs, options.gutterColumn);
 
-  const classes = useStyles();
-  const dataTableClass = buildClass(
-    'fs-exclude',
-    classes.root,
-  );
+  const [details, setDetails] = React.useState<Record<string, any>>(null);
+  const onRowSelected = React.useCallback((row: Record<string, any>|null) => setDetails(row), [setDetails]);
+
+  // Determine if we should render row details in a horizontal split or a vertical one based on available space
+  const [splitMode, setSplitMode] = React.useState<'horizontal'|'vertical'>('vertical');
+  const rootRef = React.useCallback((el: HTMLDivElement) => {
+    // TODO(nick,PC-1050): Make this update when widgets move (will need to watch nearest AutoSizerContext probably?)
+    setSplitMode((el?.offsetWidth < el?.offsetHeight) ? 'horizontal' : 'vertical');
+  }, [setSplitMode]);
 
   return (
-    <div className={dataTableClass}>
+    <div ref={rootRef} className={buildClass(classes.root, splitMode === 'horizontal' && classes.rootHorizontal)}>
       <div className={classes.table}>
-        <LiveDataTable
-          prettyRender
-          expandable={false}
-          table={props.table}
-          clusterName={selectedClusterName}
-          onRowSelectionChanged={onRowSelection}
-        />
+        <DataTable table={reactTable} enableRowSelect onRowSelected={onRowSelected} enableColumnSelect {...options} />
       </div>
-      <LiveDataRowDetails data={details} />
+      {details && (
+        <div className={buildClass(classes.details, splitMode === 'horizontal' && classes.detailsHorizontal)}>
+          <JSONData data={details} multiline />
+        </div>
+      )}
     </div>
   );
 };

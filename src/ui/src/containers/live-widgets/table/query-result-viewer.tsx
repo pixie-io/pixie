@@ -22,7 +22,7 @@ import * as React from 'react';
 import { Theme, Typography, makeStyles } from '@material-ui/core';
 import { createStyles } from '@material-ui/styles';
 import { Arguments } from 'app/utils/args-utils';
-import { LiveDataTable } from 'app/containers/live-data-table/new-live-data-table';
+import { LiveDataTable } from 'app/containers/live-data-table/live-data-table';
 import AutoSizer from 'react-virtualized-auto-sizer';
 
 const useStyles = makeStyles(({ spacing }: Theme) => createStyles({

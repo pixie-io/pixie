@@ -62,12 +62,10 @@ export { CodeRenderer } from './code-renderer/code-renderer';
 
 export { DataTable } from './data-table/data-table';
 export type {
+  DataTableProps,
+  ReactTable,
   CellAlignment,
-  ColumnProps,
-  ExpandedRows,
-  SortState,
 } from './data-table/data-table';
-export type { ColWidthOverrides } from './data-table/table-resizer';
 
 export { FixedSizeDrawer } from './drawer/drawer';
 export { ResizableDrawer } from './drawer/resizable-drawer';
