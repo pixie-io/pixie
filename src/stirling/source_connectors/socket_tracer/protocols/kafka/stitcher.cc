@@ -24,8 +24,8 @@
 #include <utility>
 
 #include "src/common/base/base.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/packet_decoder.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/types.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/common/types.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/decoder/packet_decoder.h"
 
 namespace px {
 namespace stirling {
@@ -51,10 +51,10 @@ Status ProcessReq(Packet* req_packet, Request* req) {
   // Extracts api_key, api_version, and correlation_id.
   PL_RETURN_IF_ERROR(decoder.ExtractReqHeader(req));
 
+  // TODO(chengruizhe): Add support for more api keys.
   switch (req->api_key) {
     case APIKey::kProduce:
       return ProcessProduceReq(&decoder, req);
-    // TODO(chengruizhe): Add support for more api keys.
     default:
       return error::Internal("Unhandled cmd $0", magic_enum::enum_name(req->api_key));
   }

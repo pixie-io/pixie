@@ -18,23 +18,5 @@
 
 #pragma once
 
-#include <deque>
-#include <string>
-#include <vector>
-
-#include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/common/types.h"
-
-namespace px {
-namespace stirling {
-namespace protocols {
-
-template <>
-ParseState ParseFrame(MessageType type, std::string_view* buf, kafka::Packet* packet);
-
-template <>
-size_t FindFrameBoundary<kafka::Packet>(MessageType type, std::string_view buf, size_t start_pos);
-
-}  // namespace protocols
-}  // namespace stirling
-}  // namespace px
+#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/opcodes/message_set.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/opcodes/produce.h"

@@ -24,7 +24,7 @@
 #include <utility>
 
 #include "src/common/base/byte_utils.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/types.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/common/types.h"
 #include "src/stirling/utils/binary_decoder.h"
 #include "src/stirling/utils/parse_state.h"
 

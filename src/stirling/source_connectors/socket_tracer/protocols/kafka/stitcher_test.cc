@@ -19,9 +19,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/common/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/kafka/stitcher.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/kafka/test_data.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/types.h"
 
 namespace px {
 namespace stirling {

@@ -22,7 +22,7 @@
 
 #include "src/stirling/core/types.h"
 #include "src/stirling/source_connectors/socket_tracer/canonical_types.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/types.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/common/types.h"
 
 namespace px {
 namespace stirling {

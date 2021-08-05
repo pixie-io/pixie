@@ -18,9 +18,6 @@
 
 #pragma once
 
-#include <rapidjson/document.h>
-#include <rapidjson/stringbuffer.h>
-#include <rapidjson/writer.h>
 #include <map>
 #include <stack>
 #include <string>
@@ -28,8 +25,8 @@
 #include <vector>
 
 #include "src/common/base/base.h"
-#include "src/common/json/json.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/types.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/common/types.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/opcodes/opcodes.h"
 #include "src/stirling/utils/binary_decoder.h"
 
 namespace px {
@@ -59,166 +56,6 @@ enum class DataType : uint16_t {
   kRecords,
   kArray,
   kCompactArray,
-};
-
-struct RecordMessage {
-  std::string key;
-  std::string value;
-
-  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
-    writer->StartObject();
-    writer->Key("key");
-    writer->String(key.c_str());
-    writer->Key("value");
-    writer->String(value.c_str());
-    writer->EndObject();
-  }
-};
-
-struct RecordBatch {
-  std::vector<RecordMessage> records;
-
-  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
-    writer->StartObject();
-    writer->Key("records");
-    writer->StartArray();
-    for (const auto& r : records) {
-      r.ToJSON(writer);
-    }
-    writer->EndArray();
-    writer->EndObject();
-  }
-};
-
-struct ProduceReqPartition {
-  int32_t index = 0;
-  RecordBatch record_batch;
-
-  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
-    writer->StartObject();
-    writer->Key("index");
-    writer->Int(index);
-    writer->Key("record_batch");
-    record_batch.ToJSON(writer);
-    writer->EndObject();
-  }
-};
-
-struct ProduceReqTopic {
-  std::string name;
-  std::vector<ProduceReqPartition> partitions;
-
-  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
-    writer->StartObject();
-    writer->Key("name");
-    writer->String(name.c_str());
-    writer->Key("partitions");
-    writer->StartArray();
-    for (const auto& r : partitions) {
-      r.ToJSON(writer);
-    }
-    writer->EndArray();
-    writer->EndObject();
-  }
-};
-
-// Produce Request Message (opcode = 0).
-struct ProduceReq {
-  std::string transactional_id;
-  int16_t acks = 0;
-  int32_t timeout_ms = 0;
-  std::vector<ProduceReqTopic> topics;
-
-  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
-    writer->StartObject();
-    writer->Key("transactional_id");
-    writer->String(transactional_id.c_str());
-    writer->Key("acks");
-    writer->Int(acks);
-    writer->Key("timeout_ms");
-    writer->Int(timeout_ms);
-    writer->Key("topics");
-    writer->StartArray();
-    for (const auto& r : topics) {
-      r.ToJSON(writer);
-    }
-    writer->EndArray();
-    writer->EndObject();
-  }
-};
-
-struct RecordError {
-  int32_t batch_index;
-  std::string error_message;
-
-  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
-    writer->StartObject();
-    writer->Key("batch_index");
-    writer->Int(batch_index);
-    writer->Key("error_message");
-    writer->String(error_message.c_str());
-    writer->EndObject();
-  }
-};
-
-struct ProduceRespPartition {
-  int32_t index;
-  int16_t error_code;
-  std::vector<RecordError> record_errors;
-  std::string error_message;
-
-  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
-    writer->StartObject();
-    writer->Key("index");
-    writer->Int(index);
-    writer->Key("error_code");
-    writer->String(magic_enum::enum_name(static_cast<ErrorCode>(error_code)).data());
-    writer->Key("record_errors");
-    writer->StartArray();
-    for (const auto& r : record_errors) {
-      r.ToJSON(writer);
-    }
-    writer->EndArray();
-    writer->Key("error_message");
-    writer->String(error_message.c_str());
-    writer->EndObject();
-  }
-};
-
-struct ProduceRespTopic {
-  std::string name;
-  std::vector<ProduceRespPartition> partitions;
-
-  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
-    writer->StartObject();
-    writer->Key("name");
-    writer->String(name.c_str());
-    writer->Key("partitions");
-    writer->StartArray();
-    for (const auto& r : partitions) {
-      r.ToJSON(writer);
-    }
-    writer->EndArray();
-    writer->EndObject();
-  }
-};
-
-struct ProduceResp {
-  std::vector<ProduceRespTopic> topics;
-  int32_t throttle_time_ms;
-
-  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
-    writer->StartObject();
-    writer->Key("topics");
-    writer->StartArray();
-    for (const auto& r : topics) {
-      r.ToJSON(writer);
-    }
-    writer->EndArray();
-    writer->Key("throttle_time_ms");
-    writer->Int(throttle_time_ms);
-    writer->EndObject();
-  }
 };
 
 template <typename T>
@@ -254,24 +91,8 @@ class PacketDecoder {
   // https://developers.google.com/protocol-buffers/docs/encoding#varints
   StatusOr<int64_t> ExtractVarlong();
 
-  // Represents a sequence of characters. First the length N is given as an INT16. Then N
-  // bytes follow which are the UTF-8 encoding of the character sequence.
   StatusOr<std::string> ExtractString();
-
-  // Represents a sequence of characters or null. For non-null strings, first the
-  // length N is given as an INT16. Then N bytes follow which are the UTF-8 encoding of the
-  // character sequence. A null value is encoded with length of -1 and there are no following
-  // bytes.
   StatusOr<std::string> ExtractNullableString();
-
-  // Represents a sequence of characters. First the length N + 1 is given as an
-  // UNSIGNED_VARINT . Then N bytes follow which are the UTF-8 encoding of the character sequence.
-  StatusOr<std::string> ExtractCompactString();
-
-  // Represents a sequence of characters. First the length N + 1 is given
-  // as an UNSIGNED_VARINT . Then N bytes follow which are the UTF-8 encoding of the character
-  // sequence. A null string is represented with a length of 0.
-  StatusOr<std::string> ExtractCompactNullableString();
 
   // Represents bytes whose length is encoded with zigzag varint.
   StatusOr<std::string> ExtractBytesZigZag();
@@ -281,7 +102,7 @@ class PacketDecoder {
   // type (e.g. STRING) or a structure. First, the length N is given as an INT32. Then N instances
   // of type T follow. A null array is represented with a length of -1.
   template <typename T>
-  StatusOr<std::vector<T>> ExtractArray(StatusOr<T> (PacketDecoder::*extract_func)()) {
+  StatusOr<std::vector<T>> ExtractRegularArray(StatusOr<T> (PacketDecoder::*extract_func)()) {
     constexpr int kNullSize = -1;
 
     PL_ASSIGN_OR_RETURN(int32_t len, ExtractInt32());
@@ -322,6 +143,14 @@ class PacketDecoder {
       result.push_back(std::move(tmp));
     }
     return result;
+  }
+
+  template <typename T>
+  StatusOr<std::vector<T>> ExtractArray(StatusOr<T> (PacketDecoder::*extract_func)()) {
+    if (is_flexible_) {
+      return ExtractCompactArray<T>(extract_func);
+    }
+    return ExtractRegularArray<T>(extract_func);
   }
 
   // TODO(chengruizhe): Parse and return a TagSection struct if needed.
@@ -371,6 +200,25 @@ class PacketDecoder {
   }
 
  private:
+  // Represents a sequence of characters. First the length N is given as an INT16. Then N
+  // bytes follow which are the UTF-8 encoding of the character sequence.
+  StatusOr<std::string> ExtractRegularString();
+
+  // Represents a sequence of characters or null. For non-null strings, first the
+  // length N is given as an INT16. Then N bytes follow which are the UTF-8 encoding of the
+  // character sequence. A null value is encoded with length of -1 and there are no following
+  // bytes.
+  StatusOr<std::string> ExtractRegularNullableString();
+
+  // Represents a sequence of characters. First the length N + 1 is given as an
+  // UNSIGNED_VARINT . Then N bytes follow which are the UTF-8 encoding of the character sequence.
+  StatusOr<std::string> ExtractCompactString();
+
+  // Represents a sequence of characters. First the length N + 1 is given
+  // as an UNSIGNED_VARINT . Then N bytes follow which are the UTF-8 encoding of the character
+  // sequence. A null string is represented with a length of 0.
+  StatusOr<std::string> ExtractCompactNullableString();
+
   template <typename TCharType>
   StatusOr<std::basic_string<TCharType>> ExtractBytesCore(int32_t len);
 

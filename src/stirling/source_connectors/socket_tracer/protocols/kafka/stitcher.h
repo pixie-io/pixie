@@ -25,7 +25,7 @@
 
 #include "src/common/base/base.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/types.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/common/types.h"
 
 namespace px {
 namespace stirling {

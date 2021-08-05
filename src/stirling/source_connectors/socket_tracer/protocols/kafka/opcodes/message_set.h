@@ -18,23 +18,49 @@
 
 #pragma once
 
-#include <deque>
+#include <rapidjson/document.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
 #include <string>
 #include <vector>
 
-#include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/kafka/common/types.h"
 
 namespace px {
 namespace stirling {
 namespace protocols {
+namespace kafka {
 
-template <>
-ParseState ParseFrame(MessageType type, std::string_view* buf, kafka::Packet* packet);
+struct RecordMessage {
+  std::string key;
+  std::string value;
 
-template <>
-size_t FindFrameBoundary<kafka::Packet>(MessageType type, std::string_view buf, size_t start_pos);
+  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
+    writer->StartObject();
+    writer->Key("key");
+    writer->String(key.c_str());
+    writer->Key("value");
+    writer->String(value.c_str());
+    writer->EndObject();
+  }
+};
 
+struct RecordBatch {
+  std::vector<RecordMessage> records;
+
+  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
+    writer->StartObject();
+    writer->Key("records");
+    writer->StartArray();
+    for (const auto& r : records) {
+      r.ToJSON(writer);
+    }
+    writer->EndArray();
+    writer->EndObject();
+  }
+};
+
+}  // namespace kafka
 }  // namespace protocols
 }  // namespace stirling
 }  // namespace px
