@@ -20,9 +20,7 @@ import AnnounceKit from 'announcekit-react';
 import * as React from 'react';
 
 import Drawer from '@material-ui/core/Drawer';
-import {
-  withStyles, Theme,
-} from '@material-ui/core/styles';
+import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 
 import HelpIcon from '@material-ui/icons/Help';
@@ -48,13 +46,12 @@ import {
 import { SidebarFooter } from 'configurable/sidebar-footer';
 import { showIntercomTrigger, triggerID } from 'app/utils/intercom';
 
-const styles = (
-  {
-    spacing,
-    palette,
-    transitions,
-    breakpoints,
-  }: Theme) => createStyles({
+const useStyles = makeStyles(({
+  spacing,
+  palette,
+  transitions,
+  breakpoints,
+}: Theme) => createStyles({
   announcekit: {
     '& .announcekit-widget-badge': {
       position: 'absolute !important',
@@ -143,7 +140,7 @@ const styles = (
     },
     width: '100%',
   },
-});
+}), { name: 'SideBar' });
 
 const SideBarInternalLinkItem = ({
   classes, icon, link, text,
@@ -167,19 +164,20 @@ const SideBarExternalLinkItem = ({
   </Tooltip>
 );
 
-const SideBar = ({ classes, open }) => {
-  const clusterContext = React.useContext(ClusterContext);
+export const SideBar: React.FC<{ open: boolean }> = React.memo(({ open }) => {
+  const classes = useStyles();
+  const { selectedClusterName } = React.useContext(ClusterContext);
   const { user } = React.useContext(UserContext);
 
   const navItems = React.useMemo(() => {
-    if (!clusterContext) {
+    if (!selectedClusterName) {
       return [];
     }
     return [{
       icon: <ClusterIcon />,
       link: toEntityPathname({
         params: {},
-        clusterName: clusterContext?.selectedClusterName,
+        clusterName: selectedClusterName,
         page: LiveViewPage.Cluster,
       }, false),
       text: 'Cluster',
@@ -188,13 +186,13 @@ const SideBar = ({ classes, open }) => {
       icon: <NamespaceIcon />,
       link: toEntityPathname({
         params: {},
-        clusterName: clusterContext?.selectedClusterName,
+        clusterName: selectedClusterName,
         page: LiveViewPage.Namespaces,
       }, false),
       text: 'Namespaces',
     }];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clusterContext?.selectedClusterName]);
+  }, [selectedClusterName]);
 
   return (
     <>
@@ -262,6 +260,5 @@ const SideBar = ({ classes, open }) => {
       </Drawer>
     </>
   );
-};
-
-export default withStyles(styles)(SideBar);
+});
+SideBar.displayName = 'SideBar';

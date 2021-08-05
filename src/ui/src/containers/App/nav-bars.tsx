@@ -18,7 +18,7 @@
 
 import * as React from 'react';
 
-import SideBar from 'app/containers/App/sidebar';
+import { SideBar } from 'app/containers/App/sidebar';
 import { TopBar } from 'app/containers/App/topbar';
 
 const NavBars: React.FC = ({ children }) => {
