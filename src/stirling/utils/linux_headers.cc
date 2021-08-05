@@ -43,7 +43,7 @@ namespace utils {
 StatusOr<KernelVersion> ParseKernelVersionString(const std::string& linux_release_str) {
   KernelVersion kernel_version;
 
-  std::regex uname_regex("^([0-9]+)\\.([0-9]+)\\.([0-9]+)");
+  static std::regex uname_regex("^([0-9]+)\\.([0-9]+)\\.([0-9]+)");
   std::smatch match;
   bool s = std::regex_search(linux_release_str, match, uname_regex);
   if (!s || match.size() != 4) {
@@ -120,7 +120,7 @@ StatusOr<std::string> GetProcSysKernelVersion() {
   // Example contents:
   // #1 SMP Debian 4.19.152-1 (2020-10-18)
 
-  std::regex version_regex(R"([0-9]+\.[0-9]+\.[0-9]+)");
+  static std::regex version_regex(R"([0-9]+\.[0-9]+\.[0-9]+)");
   std::smatch matches;
   bool match_found = std::regex_search(version_string, matches, version_regex);
   if (match_found) {
@@ -164,7 +164,7 @@ Status ModifyKernelVersion(const std::filesystem::path& linux_headers_base,
   LOG(INFO) << absl::Substitute("Overriding linux version code to $0", linux_version_code);
   std::string linux_version_code_override =
       absl::Substitute("#define LINUX_VERSION_CODE $0", linux_version_code);
-  std::regex e("#define LINUX_VERSION_CODE ([0-9]*)");
+  static std::regex e("#define LINUX_VERSION_CODE ([0-9]*)");
   std::string new_file_contents = std::regex_replace(file_contents, e, linux_version_code_override);
 
   // Write the modified file back.

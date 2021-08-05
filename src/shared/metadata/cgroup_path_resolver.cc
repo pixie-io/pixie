@@ -67,12 +67,12 @@ StatusOr<CGroupTemplateSpec> CreateCGroupTemplateSpecFromPath(std::string_view p
   // Examples:
   //   pod8dbc5577_d0e2_4706_8787_57d52c03ddf2
   //   pod8dbc5577-d0e2-4706-8787-57d52c03ddf2
-  const std::regex kPodIDRegex(
+  static std::regex kPodIDRegex(
       R"(pod[0-9a-f]{8}[-_][0-9a-f]{4}[-_][0-9a-f]{4}[-_][0-9a-f]{4}[-_][0-9a-f]{12}\b)");
 
   // Pattern match for a container ID.
   // Example: 8618d3540ce713dd59ed0549719643a71dd482c40c21685773e7ac1291b004f5
-  const std::regex kContainerIDRegex(R"(\b[0-9a-f]{64}\b)");
+  static std::regex kContainerIDRegex(R"(\b[0-9a-f]{64}\b)");
 
   CGroupTemplateSpec spec;
 

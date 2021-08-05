@@ -28,6 +28,15 @@ pl_cc_binary(
 )
 
 pl_cc_binary(
+    name = "regex_benchmark",
+    testonly = 1,
+    srcs = ["regex_benchmark.cc"],
+    deps = [
+        "//src/common/benchmark:cc_library",
+    ],
+)
+
+pl_cc_binary(
     name = "pb_parsing_benchmark",
     testonly = 1,
     srcs = ["pb_parsing_benchmark.cc"],
