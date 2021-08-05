@@ -23,7 +23,7 @@ import { TopBar } from 'app/containers/App/topbar';
 
 const NavBars: React.FC = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = React.useState<boolean>(false);
-  const toggleSidebar = () => setSidebarOpen((open) => !open);
+  const toggleSidebar = React.useCallback(() => setSidebarOpen((open) => !open), [setSidebarOpen]);
 
   return (
     <>

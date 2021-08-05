@@ -53,6 +53,7 @@ import ClusterSelector from 'app/containers/live/cluster-selector';
 import { LiveTourContextProvider } from 'app/containers/App/live-tour';
 import { PixieAPIClient, PixieAPIContext } from 'app/api';
 import { showIntercomTrigger, triggerID } from 'app/utils/intercom';
+import { SetStateFunc } from 'app/context/common';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -166,9 +167,10 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-const ScriptOptions = ({
-  classes, widgetsMoveable, setWidgetsMoveable,
+const ScriptOptions = React.memo<{ widgetsMoveable: boolean, setWidgetsMoveable: SetStateFunc<boolean> }>(({
+  widgetsMoveable, setWidgetsMoveable,
 }) => {
+  const classes = useStyles();
   const {
     editorPanelOpen, setEditorPanelOpen, isMobile,
   } = React.useContext(LayoutContext);
@@ -191,7 +193,8 @@ const ScriptOptions = ({
       </Tooltip>
     </div>
   );
-};
+});
+ScriptOptions.displayName = 'ScriptOptions';
 
 interface ClusterLoadingProps {
   clusterPrettyName: string;
@@ -287,7 +290,6 @@ const Nav: React.FC<{
       <ClusterSelector />
       <div className={classes.spacer} />
       <ScriptOptions
-        classes={classes}
         widgetsMoveable={widgetsMoveable}
         setWidgetsMoveable={setWidgetsMoveable}
       />
@@ -338,13 +340,13 @@ const LiveView: React.FC = () => {
     embedState: { isEmbedded, widget },
   } = React.useContext(LiveRouteContext);
 
-  const hotkeyHandlers = {
+  const hotkeyHandlers = React.useMemo(() => ({
     'toggle-editor': () => setEditorPanelOpen((editable) => !editable),
     execute: () => saveEditor(),
     'toggle-data-drawer': () => setDataDrawerOpen((open) => !open),
     // TODO(philkuz,PC-917) Pixie Command shortcut has been removed while we work to resolve its quirks.
     'pixie-command': () => {},
-  };
+  }), [setEditorPanelOpen, saveEditor, setDataDrawerOpen]);
 
   const canvasRef = React.useRef<HTMLDivElement>(null);
 

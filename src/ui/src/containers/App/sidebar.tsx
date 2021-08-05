@@ -107,21 +107,6 @@ const useStyles = makeStyles(({
   clippedItem: {
     height: spacing(6),
   },
-  pixieLogo: {
-    fill: palette.primary.main,
-    width: '48px',
-  },
-  profileIcon: {
-    paddingLeft: spacing(1),
-    paddingTop: spacing(1),
-    paddingBottom: spacing(1),
-  },
-  profileText: {
-    whiteSpace: 'nowrap',
-    textOverflow: 'ellipsis',
-    overflow: 'hidden',
-    marginLeft: spacing(0.5),
-  },
   sidebarToggle: {
     position: 'absolute',
     width: spacing(6),
@@ -132,13 +117,6 @@ const useStyles = makeStyles(({
   },
   spacer: {
     flex: 1,
-  },
-  hideOnMobile: {
-    // Same breakpoint (960px) at which the entire layout switches to suit mobile.
-    [breakpoints.down('sm')]: {
-      display: 'none',
-    },
-    width: '100%',
   },
 }), { name: 'SideBar' });
 
@@ -166,7 +144,7 @@ const SideBarExternalLinkItem = ({
 
 export const SideBar: React.FC<{ open: boolean }> = React.memo(({ open }) => {
   const classes = useStyles();
-  const { selectedClusterName } = React.useContext(ClusterContext);
+  const selectedClusterName = React.useContext(ClusterContext)?.selectedClusterName ?? '';
   const { user } = React.useContext(UserContext);
 
   const navItems = React.useMemo(() => {

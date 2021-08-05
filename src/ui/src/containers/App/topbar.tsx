@@ -24,7 +24,7 @@ import Toolbar from '@material-ui/core/Toolbar';
 import IconButton from '@material-ui/core/IconButton';
 import MenuIcon from '@material-ui/icons/Menu';
 import {
-  withStyles, Theme,
+  makeStyles, withStyles, Theme,
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import {
@@ -45,6 +45,7 @@ import { Link } from 'react-router-dom';
 import { Logo } from 'configurable/logo';
 import { GQLUserInfo, GQLUserAttributes } from 'app/types/schema';
 import pixieAnalytics from 'app/utils/analytics';
+import { SetStateFunc } from 'app/context/common';
 
 const StyledListItemText = withStyles((theme: Theme) => createStyles({
   primary: {
@@ -58,9 +59,50 @@ const StyledListItemIcon = withStyles(() => createStyles({
   },
 }))(ListItemIcon);
 
-const ProfileItem = ({
-  classes, setSidebarOpen,
-}) => {
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  container: {
+    zIndex: 1300,
+    backgroundColor: theme.palette.background.paper,
+  },
+  contents: {
+    display: 'flex',
+    flex: 1,
+    paddingRight: theme.spacing(4),
+    paddingLeft: theme.spacing(4),
+    height: '100%',
+    alignItems: 'center',
+  },
+  menu: {
+    color: theme.palette.text.secondary,
+  },
+  clickable: {
+    cursor: 'pointer',
+  },
+  avatarSm: {
+    backgroundColor: theme.palette.primary.main,
+    width: theme.spacing(4),
+    height: theme.spacing(4),
+    alignItems: 'center',
+  },
+  centeredListItemText: {
+    paddingLeft: theme.spacing(1),
+  },
+  hideOnMobile: {
+    // Same breakpoint (960px) at which the entire layout switches to suit mobile.
+    [theme.breakpoints.down('sm')]: {
+      display: 'none',
+    },
+    width: '100%',
+  },
+  profileIcon: {
+    paddingLeft: theme.spacing(1),
+    paddingTop: theme.spacing(1),
+    paddingBottom: theme.spacing(1),
+  },
+}), { name: 'TopBar' });
+
+const ProfileItem: React.FC<{ setSidebarOpen: SetStateFunc<boolean> }> = React.memo(({ setSidebarOpen }) => {
+  const classes = useStyles();
   const [open, setOpen] = React.useState<boolean>(false);
   const { setTourOpen } = React.useContext(LiveTourContext);
   const [wasSidebarOpenBeforeTour, setWasSidebarOpenBeforeTour] = React.useState<boolean>(false);
@@ -140,7 +182,7 @@ const ProfileItem = ({
   React.useEffect(() => {
     if (!loadingTourSeen && tourSeen !== true && inLiveView) {
       openTour();
-      setTourSeen();
+      setTourSeen().then();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadingTourSeen, tourSeen, inLiveView]);
@@ -224,51 +266,25 @@ const ProfileItem = ({
       </ProfileMenuWrapper>
     </>
   );
+});
+ProfileItem.displayName = 'ProfileItem';
+
+export const TopBar: React.FC<{ toggleSidebar: () => void, setSidebarOpen: SetStateFunc<boolean> }> = ({
+  children, toggleSidebar, setSidebarOpen,
+}) => {
+  const classes = useStyles();
+  return (
+    <AppBar className={classes.container} position='static'>
+      <Toolbar>
+        <IconButton edge='start' color='inherit' aria-label='menu' sx={{ mr: 2 }} onClick={toggleSidebar}>
+          <MenuIcon className={classes.menu} />
+        </IconButton>
+        <Link to='/'><Logo /></Link>
+        <div className={classes.contents}>
+          { children }
+        </div>
+        <ProfileItem setSidebarOpen={setSidebarOpen} />
+      </Toolbar>
+    </AppBar>
+  );
 };
-
-const TopBarImpl = ({
-  classes, children, toggleSidebar, setSidebarOpen,
-}) => (
-  <AppBar className={classes.container} position='static'>
-    <Toolbar>
-      <IconButton edge='start' color='inherit' aria-label='menu' sx={{ mr: 2 }} onClick={toggleSidebar}>
-        <MenuIcon className={classes.menu} />
-      </IconButton>
-      <Link to='/'><Logo /></Link>
-      <div className={classes.contents}>
-        { children }
-      </div>
-      <ProfileItem classes={classes} setSidebarOpen={setSidebarOpen} />
-    </Toolbar>
-  </AppBar>
-);
-
-export const TopBar = withStyles((theme: Theme) => createStyles({
-  container: {
-    zIndex: 1300,
-    backgroundColor: theme.palette.background.paper,
-  },
-  contents: {
-    display: 'flex',
-    flex: 1,
-    paddingRight: theme.spacing(4),
-    paddingLeft: theme.spacing(4),
-    height: '100%',
-    alignItems: 'center',
-  },
-  menu: {
-    color: theme.palette.text.secondary,
-  },
-  clickable: {
-    cursor: 'pointer',
-  },
-  avatarSm: {
-    backgroundColor: theme.palette.primary.main,
-    width: theme.spacing(4),
-    height: theme.spacing(4),
-    alignItems: 'center',
-  },
-  centeredListItemText: {
-    paddingLeft: theme.spacing(1),
-  },
-}))(TopBarImpl);

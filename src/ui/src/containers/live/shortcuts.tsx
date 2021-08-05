@@ -230,13 +230,13 @@ const LiveViewShortcutsProvider: React.FC<LiveViewShortcutsProps> = ({ handlers,
     return wrapped;
   }, [handlers, toggleOpenHelp]);
 
-  const context = Object.keys(wrappedHandlers).reduce((result, action) => ({
+  const context = React.useMemo(() => Object.keys(wrappedHandlers).reduce((result, action) => ({
     ...result,
     [action]: {
       handler: wrappedHandlers[action],
       ...keyMap[action],
     },
-  }), {}) as ShortcutsContextProps<LiveHotKeyAction>;
+  }), {}) as ShortcutsContextProps<LiveHotKeyAction>, [wrappedHandlers, keyMap]);
 
   return (
     <>
