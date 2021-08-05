@@ -23,7 +23,14 @@
 		"files.exclude": {
 			"**/.bazel-*": true,
 		},
+		"files.trimTrailingWhitespace": true,
 		"git.ignoreSubmodules": true,
+		"[go]": {
+			"editor.insertSpaces": false,
+			"editor.codeActionsOnSave": {
+				"source.organizeImports": true
+			}
+		},
 		"go.formatFlags": [
 			"-local=px.dev"
 		],
@@ -33,6 +40,7 @@
 			"CGO_ENABLED": 0
 		},
 		"go.toolsManagement.autoUpdate": true,
+		"go.useLanguageServer": false,
 		"gopls": {
 			"build.allowModfileModifications": true,
 			"build.directoryFilters": [
@@ -41,6 +49,8 @@
 			"formatting.local": "px.dev",
 			"ui.completion.usePlaceholders": true,
 		},
+		"remote.autoForwardPorts": false,
+		"remote.restoreForwardedPorts": false,
 		"search.exclude": {
 			"**/dist": true,
 			"**/.yarn": true,
