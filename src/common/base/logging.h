@@ -29,6 +29,13 @@ PL_SUPPRESS_WARNINGS_END()
 
 #include <string>
 
+#ifdef THREAD_SANITIZER
+// Disable VLOGs in TSAN mode. Glog has a benign race on VLOG initialization which might be fixed in
+// a newer version but we can't upgrade because the newer version conflicts with abseil.
+#undef VLOG
+#define VLOG(n) LOG_IF(INFO, false)
+#endif
+
 // A new form of CHECK is defined below, to extend those in the glog implementation.
 // The following table shows the behavioral differences.
 //
