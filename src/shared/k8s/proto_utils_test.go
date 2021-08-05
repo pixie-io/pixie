@@ -143,16 +143,19 @@ status {
 		type: 2
 		status: 2
 	}
+	restart_count: 4
 	container_statuses {
 	   name: "test_container_2"
 	   container_id: "test_id_2"
 	   container_state: 1
 	   start_timestamp_ns: 4
+		 restart_count: 0
 	}
 	container_statuses {
 	   name: "test_container"
 	   container_id: "test_id"
 	   container_state: 3
+		 restart_count: 4
 	}
 }
 spec {
@@ -667,6 +670,7 @@ func TestPodToProto(t *testing.T) {
 		State: v1.ContainerState{
 			Running: &runningState,
 		},
+		RestartCount: int32(0),
 	}
 	waitingState := v1.ContainerStateWaiting{}
 	containers[1] = v1.ContainerStatus{
@@ -675,6 +679,7 @@ func TestPodToProto(t *testing.T) {
 		State: v1.ContainerState{
 			Waiting: &waitingState,
 		},
+		RestartCount: int32(4),
 	}
 
 	status := v1.PodStatus{

@@ -166,6 +166,8 @@ message ContainerStatus {
   string message = 6;
   // A brief CamelCase message indicating details about why the container is in this state.
   string reason = 7;
+  // The number of restarts for this container.
+  int64 restart_count = 8;
 }
 
 // K8sEvent represents a K8s event belonging to a pod.
@@ -202,6 +204,8 @@ message PodStatus {
   repeated K8sEvent events = 12;
   // Deprecated.
   reserved 2;
+  // The number of restarts for this pod.
+  int64 restart_count = 13;
 }
 
 message PodCondition {

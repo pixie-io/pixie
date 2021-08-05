@@ -271,6 +271,10 @@ func PodStatusToProto(ps *v1.PodStatus) (*metadatapb.PodStatus, error) {
 		}
 	}
 
+	// Following kubectl, take the max # of restarts observed in a container for this pod
+	// as the pod's restart count.
+	podRestartCount := int64(0)
+
 	containers := make([]*metadatapb.ContainerStatus, len(ps.ContainerStatuses))
 	for i, c := range ps.ContainerStatuses {
 		cPb, err := ContainerStatusToProto(&c)
@@ -278,6 +282,9 @@ func PodStatusToProto(ps *v1.PodStatus) (*metadatapb.PodStatus, error) {
 			return &metadatapb.PodStatus{}, err
 		}
 		containers[i] = cPb
+		if podRestartCount < int64(c.RestartCount) {
+			podRestartCount = int64(c.RestartCount)
+		}
 	}
 
 	psPb := &metadatapb.PodStatus{
@@ -289,6 +296,7 @@ func PodStatusToProto(ps *v1.PodStatus) (*metadatapb.PodStatus, error) {
 		Conditions:        conditions,
 		QOSClass:          qosClassObjToPbMap[ps.QOSClass],
 		ContainerStatuses: containers,
+		RestartCount:      podRestartCount,
 	}
 
 	return psPb, nil
@@ -700,8 +708,9 @@ func ServiceFromProto(pb *metadatapb.Service) (*v1.Service, error) {
 // ContainerStatusToProto converts a ContainerStatus into a proto.
 func ContainerStatusToProto(c *v1.ContainerStatus) (*metadatapb.ContainerStatus, error) {
 	cPb := &metadatapb.ContainerStatus{
-		Name:        c.Name,
-		ContainerID: c.ContainerID,
+		Name:         c.Name,
+		ContainerID:  c.ContainerID,
+		RestartCount: int64(c.RestartCount),
 	}
 	switch {
 	case c.State.Waiting != nil:

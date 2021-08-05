@@ -28,7 +28,7 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 import "src/api/proto/uuidpb/uuid.proto";
 import "src/api/proto/vispb/vis.proto";
-import "src/api/proto/vizierconfigpb/vizier_types.proto"; 
+import "src/api/proto/vizierconfigpb/vizier_types.proto";
 
 // service UserService enables users to update/retrieve user information.
 service UserService {
@@ -85,9 +85,9 @@ message GetUserSettingsRequest {
 
 // The response for a UserSettingsRequest.
 message GetUserSettingsResponse {
-  // Settings for users key-value. 
+  // Settings for users key-value.
   reserved 1; // DEPRECATED
-  bool analytics_optout = 2; 
+  bool analytics_optout = 2;
 }
 
 // A request to get user attributes for the given user.
@@ -322,7 +322,7 @@ message PodStatus {
   // The K8s events associated with the pod.
   repeated K8sEvent events = 7;
   // The number of restarts for this pod.
-  int64 num_restarts = 8;
+  int64 restart_count = 8;
 }
 
 enum ContainerState {
@@ -344,6 +344,8 @@ message ContainerStatus {
   string reason = 4;
   // The create time of the container.
   google.protobuf.Timestamp created_at = 6 [ (gogoproto.customname) = "CreatedAt" ];
+  // The number of restarts for this container.
+  int64 restart_count = 7;
 }
 
 message ClusterInfo {
@@ -762,9 +764,9 @@ service ConfigService {
 // ConfigForVizierRequest is a request for Vizier yamls given a set of specs.
 message ConfigForVizierRequest {
   // Namespace of the Vizier.
-  string namespace = 1; 
-  // Specs that describe how the Vizier should be configured. 
-  vizierconfigpb.VizierSpec vz_spec = 2; 
+  string namespace = 1;
+  // Specs that describe how the Vizier should be configured.
+  vizierconfigpb.VizierSpec vz_spec = 2;
 }
 
 // ConfigForVizierResponse is the response to a ConfigForVizierRequest.

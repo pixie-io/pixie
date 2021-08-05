@@ -21,6 +21,7 @@ package bridge
 import (
 	"context"
 	"errors"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -54,6 +55,22 @@ const k8sStateUpdatePeriod = 10 * time.Second
 const privateImageRepo = "gcr.io/pixie-oss/pixie-dev"
 const publicImageRepo = "gcr.io/pixie-oss/pixie-prod"
 
+// K8sState describes the Kubernetes state of the Vizier instance.
+type K8sState struct {
+	// Pod statuses for Vizier control plane pods.
+	ControlPlanePodStatuses map[string]*cvmsgspb.PodStatus
+	// Pod statuses for a sample (10) of unhealthy Vizier pods.
+	UnhealthyDataPlanePodStatuses map[string]*cvmsgspb.PodStatus
+	// The current K8s version of Vizier.
+	K8sClusterVersion string
+	// The number of nodes on the cluster.
+	NumNodes int32
+	// The number of nodes on the cluster that are running a PEM.
+	NumInstrumentedNodes int32
+	// The last time this information was updated.
+	LastUpdated time.Time
+}
+
 // K8sJobHandler manages k8s jobs.
 type K8sJobHandler interface {
 	CleanupCronJob(string, time.Duration, chan bool)
@@ -61,16 +78,35 @@ type K8sJobHandler interface {
 
 // K8sVizierInfo is responsible for fetching Vizier information through K8s.
 type K8sVizierInfo struct {
-	ns                   string
-	clientset            *kubernetes.Clientset
-	vzClient             *v1alpha1.VizierClient
-	clusterVersion       string
-	clusterName          string
-	currentPodStatus     map[string]*cvmsgspb.PodStatus
-	k8sStateLastUpdated  time.Time
-	numNodes             int32
-	numInstrumentedNodes int32
-	mu                   sync.Mutex
+	ns                            string
+	clientset                     *kubernetes.Clientset
+	vzClient                      *v1alpha1.VizierClient
+	clusterVersion                string
+	clusterName                   string
+	controlPlanePodStatuses       map[string]*cvmsgspb.PodStatus
+	unhealthyDataPlanePodStatuses map[string]*cvmsgspb.PodStatus
+	k8sStateLastUpdated           time.Time
+	numNodes                      int32
+	numInstrumentedNodes          int32
+	mu                            sync.Mutex
+}
+
+func getK8sVersion() (string, error) {
+	kubeConfig, err := rest.InClusterConfig()
+	if err != nil {
+		return "", err
+	}
+
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(kubeConfig)
+	if err != nil {
+		return "", err
+	}
+
+	version, err := discoveryClient.ServerVersion()
+	if err != nil {
+		return "", err
+	}
+	return version.GitVersion, nil
 }
 
 // NewK8sVizierInfo creates a new K8sVizierInfo.
@@ -93,18 +129,9 @@ func NewK8sVizierInfo(clusterName, ns string) (*K8sVizierInfo, error) {
 		return nil, err
 	}
 
-	clusterVersion := ""
-
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(kubeConfig)
+	clusterVersion, err := getK8sVersion()
 	if err != nil {
-		log.WithError(err).Error("Failed to get discovery client from kubeConfig")
-	}
-
-	version, err := discoveryClient.ServerVersion()
-	if err != nil {
-		log.WithError(err).Error("Failed to get server version from discovery client")
-	} else {
-		clusterVersion = version.GitVersion
+		log.WithError(err).Error("Failed to get Kubernetes version for cluster")
 	}
 
 	vzInfo := &K8sVizierInfo{
@@ -332,61 +359,31 @@ func (v *K8sVizierInfo) GetVizierPods() ([]*vizierpb.VizierPodStatus, []*vizierp
 	return controlPods, dataPods, err
 }
 
-// UpdateK8sState gets the relevant state of the cluster, such as pod statuses, at the current moment in time.
-func (v *K8sVizierInfo) UpdateK8sState() {
-	nodesList, err := v.clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
-	if err != nil {
-		return
-	}
-	// Get only control-plane pods.
-	cpPodsList, err := v.clientset.CoreV1().Pods(v.ns).List(context.Background(), metav1.ListOptions{
-		LabelSelector: "plane=control",
-	})
-	if err != nil {
-		return
-	}
-	// Get only pem.
-	pemPodsList, err := v.clientset.CoreV1().Pods(v.ns).List(context.Background(), metav1.ListOptions{
-		LabelSelector: "name=vizier-pem",
-	})
-	if err != nil {
-		return
-	}
-	// Get the count of healthy PEMs.
-	healthyPemCount := 0
-	for _, p := range pemPodsList.Items {
-		podPb, err := protoutils.PodToProto(&p)
-		if err != nil {
-			return
-		}
-
-		if podPb.Status != nil && podPb.Status.Phase == metadatapb.RUNNING {
-			healthyPemCount++
-		}
-	}
-
-	now := time.Now()
-
+// Convert a list of K8s pod information to our internal (cloud) representation of PodStatus.
+func (v *K8sVizierInfo) getPodStatuses(podList []corev1.Pod) (map[string]*cvmsgspb.PodStatus, error) {
 	podMap := make(map[string]*cvmsgspb.PodStatus)
-	for _, p := range cpPodsList.Items {
+
+	for _, p := range podList {
 		podPb, err := protoutils.PodToProto(&p)
 		if err != nil {
-			return
+			return nil, err
 		}
 
 		status := metadatapb.PHASE_UNKNOWN
 		msg := ""
 		containers := make([]*cvmsgspb.ContainerStatus, 0)
+
 		if podPb.Status != nil {
 			status = podPb.Status.Phase
 			msg = podPb.Status.Reason
 			for _, c := range podPb.Status.ContainerStatuses {
 				containers = append(containers, &cvmsgspb.ContainerStatus{
-					Name:      c.Name,
-					Message:   c.Message,
-					Reason:    c.Reason,
-					State:     c.ContainerState,
-					CreatedAt: nanosToTimestampProto(c.StartTimestampNS),
+					Name:         c.Name,
+					Message:      c.Message,
+					Reason:       c.Reason,
+					State:        c.ContainerState,
+					CreatedAt:    nanosToTimestampProto(c.StartTimestampNS),
+					RestartCount: c.RestartCount,
 				})
 			}
 		}
@@ -417,7 +414,7 @@ func (v *K8sVizierInfo) UpdateK8sState() {
 				start++
 			}
 		} else {
-			log.WithError(err).Info("Error getting K8s events")
+			return nil, err
 		}
 
 		s := &cvmsgspb.PodStatus{
@@ -427,25 +424,143 @@ func (v *K8sVizierInfo) UpdateK8sState() {
 			Containers:    containers,
 			CreatedAt:     nanosToTimestampProto(podPb.Metadata.CreationTimestampNS),
 			Events:        events,
+			RestartCount:  podPb.Status.RestartCount,
 		}
 		podMap[name] = s
 	}
+	return podMap, nil
+}
 
+func (v *K8sVizierInfo) getControlPlanePodStatuses() (map[string]*cvmsgspb.PodStatus, error) {
+	// Get only control-plane pods.
+	cpPodsList, err := v.clientset.CoreV1().Pods(v.ns).List(context.Background(), metav1.ListOptions{
+		LabelSelector: "plane=control",
+	})
+	if err != nil {
+		return nil, err
+	}
+	return v.getPodStatuses(cpPodsList.Items)
+}
+
+// Capture K8s state related to the data plane (num nodes, num instrumented nodes, unhealthy data plane pods)
+func (v *K8sVizierInfo) getDataPlaneState() (int32, int32, map[string]*cvmsgspb.PodStatus, error) {
+	nodesList, err := v.clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		log.WithError(err).Error("Error fetching nodes")
+		return 0, 0, nil, err
+	}
+
+	var unhealthyDataPlanePods []corev1.Pod
+
+	kelvinPodsList, err := v.clientset.CoreV1().Pods(v.ns).List(context.Background(), metav1.ListOptions{
+		LabelSelector: "name=kelvin",
+	})
+	if err != nil {
+		log.WithError(err).Error("Error fetching Kelvin pods")
+		return 0, 0, nil, err
+	}
+	for _, kelvinPod := range kelvinPodsList.Items {
+		if kelvinPod.Status.Phase != corev1.PodRunning {
+			unhealthyDataPlanePods = append(unhealthyDataPlanePods, kelvinPod)
+		}
+	}
+
+	var unhealthyPEMPods []corev1.Pod
+	pemPodsList, err := v.clientset.CoreV1().Pods(v.ns).List(context.Background(), metav1.ListOptions{
+		LabelSelector: "name=vizier-pem",
+	})
+	if err != nil {
+		log.WithError(err).Error("Error fetching PEM pods")
+		return 0, 0, nil, err
+	}
+
+	// Get the count of healthy PEMs.
+	healthyPemCount := 0
+	for _, pemPod := range pemPodsList.Items {
+		if pemPod.Status.Phase == corev1.PodRunning {
+			healthyPemCount++
+		} else {
+			unhealthyPEMPods = append(unhealthyPEMPods, pemPod)
+		}
+	}
+
+	// Sort the unhealthy PEM pods. Get the first N.
+	maxUnhealthyDataPlanePods := 10
+	sort.Slice(unhealthyPEMPods, func(i, j int) bool {
+		return unhealthyPEMPods[i].ObjectMeta.Name < unhealthyPEMPods[j].ObjectMeta.Name
+	})
+	for i := 0; i < len(unhealthyPEMPods); i++ {
+		if len(unhealthyDataPlanePods) <= maxUnhealthyDataPlanePods {
+			break
+		}
+		unhealthyDataPlanePods = append(unhealthyDataPlanePods, unhealthyPEMPods[i])
+	}
+
+	unhealthyDataPlanePodStatuses, err := v.getPodStatuses(unhealthyDataPlanePods)
+	if err != nil {
+		return 0, 0, nil, err
+	}
+	return int32(len(nodesList.Items)), int32(healthyPemCount), unhealthyDataPlanePodStatuses, nil
+}
+
+// UpdateK8sState gets the relevant state of the cluster, such as pod statuses, at the current moment in time.
+func (v *K8sVizierInfo) UpdateK8sState() {
+	controlPlanePods, err := v.getControlPlanePodStatuses()
+	if err != nil {
+		log.WithError(err).Error("Error fetching control plane pod statuses")
+		return
+	}
+
+	numNodes, numInstrumentedNodes, unhealthyDataPlanePods, err := v.getDataPlaneState()
+	if err != nil {
+		log.WithError(err).Error("Error fetching data plane pod information")
+		return
+	}
+
+	clusterVersion, err := getK8sVersion()
+	if err != nil {
+		log.WithError(err).Error("Failed to get Kubernetes version for cluster")
+		return
+	}
+
+	now := time.Now()
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
-	v.currentPodStatus = podMap
 	v.k8sStateLastUpdated = now
-	v.numNodes = int32(len(nodesList.Items))
-	v.numInstrumentedNodes = int32(healthyPemCount)
+	v.controlPlanePodStatuses = controlPlanePods
+	v.unhealthyDataPlanePodStatuses = unhealthyDataPlanePods
+	v.numNodes = numNodes
+	v.numInstrumentedNodes = numInstrumentedNodes
+	v.clusterVersion = clusterVersion
+}
+
+// Function to copy pod statuses since maps are a reference type and we return
+// a map to the downstream consumers of K8sState.
+func copyPodStatus(podStatuses map[string]*cvmsgspb.PodStatus) map[string]*cvmsgspb.PodStatus {
+	if podStatuses == nil {
+		return nil
+	}
+	clone := make(map[string]*cvmsgspb.PodStatus)
+	for k, v := range podStatuses {
+		clone[k] = v
+	}
+	return clone
 }
 
 // GetK8sState gets the pod statuses and the last time they were updated.
-func (v *K8sVizierInfo) GetK8sState() (map[string]*cvmsgspb.PodStatus, int32, int32, time.Time) {
+func (v *K8sVizierInfo) GetK8sState() *K8sState {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
-	return v.currentPodStatus, v.numNodes, v.numInstrumentedNodes, v.k8sStateLastUpdated
+	return &K8sState{
+		ControlPlanePodStatuses:       copyPodStatus(v.controlPlanePodStatuses),
+		UnhealthyDataPlanePodStatuses: copyPodStatus(v.unhealthyDataPlanePodStatuses),
+		NumNodes:                      v.numNodes,
+		NumInstrumentedNodes:          v.numInstrumentedNodes,
+		LastUpdated:                   v.k8sStateLastUpdated,
+		K8sClusterVersion:             v.clusterVersion,
+	}
 }
 
 // ParseJobYAML parses the yaml string into a k8s job and applies the image tag and env subtitutions.

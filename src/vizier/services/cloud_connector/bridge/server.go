@@ -139,7 +139,7 @@ const upgradeJobName = "vizier-upgrade-job"
 type VizierInfo interface {
 	GetAddress() (string, int32, error)
 	GetVizierClusterInfo() (*cvmsgspb.VizierClusterInfo, error)
-	GetK8sState() (map[string]*cvmsgspb.PodStatus, int32, int32, time.Time)
+	GetK8sState() *K8sState
 	ParseJobYAML(yamlStr string, imageTag map[string]string, envSubtitutions map[string]string) (*batchv1.Job, error)
 	LaunchJob(j *batchv1.Job) (*batchv1.Job, error)
 	CreateSecret(string, map[string]string) error
@@ -1034,21 +1034,23 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) chan *cvmsgspb.VizierHeart
 		if err != nil {
 			log.WithError(err).Info("Failed to get vizier address")
 		}
-		podStatuses, numNodes, numInstrumentedNodes, updatedTime := s.vzInfo.GetK8sState()
+		state := s.vzInfo.GetK8sState()
 		hbMsg := &cvmsgspb.VizierHeartbeat{
-			VizierID:               utils.ProtoFromUUID(s.vizierID),
-			Time:                   time.Now().UnixNano(),
-			SequenceNumber:         atomic.LoadInt64(&s.hbSeqNum),
-			Address:                addr,
-			Port:                   port,
-			NumNodes:               numNodes,
-			NumInstrumentedNodes:   numInstrumentedNodes,
-			PodStatuses:            podStatuses,
-			PodStatusesLastUpdated: updatedTime.UnixNano(),
-			Status:                 s.currentStatus(),
-			BootstrapMode:          viper.GetBool("bootstrap_mode"),
-			BootstrapVersion:       viper.GetString("bootstrap_version"),
-			DisableAutoUpdate:      viper.GetBool("disable_auto_update"),
+			VizierID:                      utils.ProtoFromUUID(s.vizierID),
+			Time:                          time.Now().UnixNano(),
+			SequenceNumber:                atomic.LoadInt64(&s.hbSeqNum),
+			Address:                       addr,
+			Port:                          port,
+			NumNodes:                      state.NumNodes,
+			NumInstrumentedNodes:          state.NumInstrumentedNodes,
+			PodStatuses:                   state.ControlPlanePodStatuses,
+			UnhealthyDataPlanePodStatuses: state.UnhealthyDataPlanePodStatuses,
+			K8sClusterVersion:             state.K8sClusterVersion,
+			PodStatusesLastUpdated:        state.LastUpdated.UnixNano(),
+			Status:                        s.currentStatus(),
+			BootstrapMode:                 viper.GetBool("bootstrap_mode"),
+			BootstrapVersion:              viper.GetString("bootstrap_version"),
+			DisableAutoUpdate:             viper.GetBool("disable_auto_update"),
 		}
 		select {
 		case <-s.quitCh:
