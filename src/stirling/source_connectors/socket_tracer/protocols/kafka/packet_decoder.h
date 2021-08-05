@@ -293,7 +293,6 @@ class PacketDecoder {
     }
 
     std::vector<T> result;
-    result.reserve(len);
     for (int i = 0; i < len; ++i) {
       PL_ASSIGN_OR_RETURN(T tmp, (this->*extract_func)());
       result.push_back(std::move(tmp));
@@ -318,7 +317,6 @@ class PacketDecoder {
     len -= 1;
 
     std::vector<T> result;
-    result.reserve(len);
     for (int i = 0; i < len; ++i) {
       PL_ASSIGN_OR_RETURN(T tmp, (this->*extract_func)());
       result.push_back(std::move(tmp));

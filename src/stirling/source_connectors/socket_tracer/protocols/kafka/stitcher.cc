@@ -117,7 +117,6 @@ RecordsWithErrorCount<Record> StitchFrames(std::deque<Packet>* req_packets,
       req_packet.consumed = true;
       // Remove resp_packet from map once it's been matched.
       correlation_id_map.erase(req_packet.correlation_id);
-      break;
     }
   }
 

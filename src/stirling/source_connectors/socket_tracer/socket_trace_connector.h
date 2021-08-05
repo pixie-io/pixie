@@ -57,6 +57,7 @@ DECLARE_bool(stirling_enable_cass_tracing);
 DECLARE_bool(stirling_enable_dns_tracing);
 DECLARE_bool(stirling_enable_redis_tracing);
 DECLARE_bool(stirling_enable_nats_tracing);
+DECLARE_bool(stirling_enable_kafka_tracing);
 DECLARE_bool(stirling_disable_self_tracing);
 DECLARE_string(stirling_role_to_trace);
 
@@ -69,8 +70,9 @@ namespace stirling {
 class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrapper {
  public:
   static constexpr std::string_view kName = "socket_tracer";
-  static constexpr auto kTables = MakeArray(kConnStatsTable, kHTTPTable, kMySQLTable, kCQLTable,
-                                            kPGSQLTable, kDNSTable, kRedisTable, kNATSTable);
+  static constexpr auto kTables =
+      MakeArray(kConnStatsTable, kHTTPTable, kMySQLTable, kCQLTable, kPGSQLTable, kDNSTable,
+                kRedisTable, kNATSTable, kKafkaTable);
 
   static constexpr uint32_t kConnStatsTableNum = TableNum(kTables, kConnStatsTable);
   static constexpr uint32_t kHTTPTableNum = TableNum(kTables, kHTTPTable);
@@ -80,6 +82,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static constexpr uint32_t kDNSTableNum = TableNum(kTables, kDNSTable);
   static constexpr uint32_t kRedisTableNum = TableNum(kTables, kRedisTable);
   static constexpr uint32_t kNATSTableNum = TableNum(kTables, kNATSTable);
+  static constexpr uint32_t kKafkaTableNum = TableNum(kTables, kKafkaTable);
 
   static constexpr auto kSamplingPeriod = std::chrono::milliseconds{200};
   // TODO(yzhao): This is not used right now. Eventually use this to control data push frequency.

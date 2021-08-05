@@ -305,8 +305,7 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info,
   struct protocol_message_t inferred_protocol = infer_protocol(buf, count, conn_info);
 
   // Could not infer the traffic.
-  if (inferred_protocol.protocol == kProtocolUnknown || conn_info->protocol == kProtocolMongo ||
-      conn_info->protocol == kProtocolKafka) {
+  if (inferred_protocol.protocol == kProtocolUnknown || conn_info->protocol == kProtocolMongo) {
     return;
   }
 
@@ -773,9 +772,21 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
       return;
     }
 
+    // Kafka servers read in a 4-byte packet length header first. The first packet in the
+    // stream is used to infer protocol, but the header has already been read. One solution is to
+    // add another perf_submit of the 4-byte header, but this would impact the instruction limit.
+    // Not handling this case causes potential confusion in the parsers. As a compromise, we drop
+    // the first packet traced on the server side.
+    // TODO(chengruizhe): This is a special case hack. Remove once FindFrameBoundary is more robust.
+    bool drop_first_packet = (conn_info->protocol == kProtocolKafka) &&
+                             (conn_info->protocol_match_count == 1) &&
+                             (conn_info->role == kRoleServer);
+
     // TODO(yzhao): Same TODO for split the interface.
     if (!vecs) {
-      perf_submit_wrapper(ctx, direction, args->buf, bytes_count, conn_info, event);
+      if (!drop_first_packet) {
+        perf_submit_wrapper(ctx, direction, args->buf, bytes_count, conn_info, event);
+      }
     } else {
       // TODO(yzhao): iov[0] is copied twice, once in calling update_traffic_class(), and here.
       // This happens to the write probes as well, but the calls are placed in the entry and return

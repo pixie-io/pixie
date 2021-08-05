@@ -352,6 +352,23 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "kafka_trace_bpf_test",
+    timeout = "moderate",
+    srcs = ["kafka_trace_bpf_test.cc"],
+    data = [
+        "//src/stirling/source_connectors/socket_tracer/testing/containers:kafka_image.tar",
+        "//src/stirling/source_connectors/socket_tracer/testing/containers:zookeeper_image.tar",
+    ],
+    flaky = True,
+    tags = ["requires_bpf"],
+    deps = [
+        ":cc_library",
+        "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "openssl_trace_bpf_test",
     timeout = "moderate",
     srcs = ["openssl_trace_bpf_test.cc"],
