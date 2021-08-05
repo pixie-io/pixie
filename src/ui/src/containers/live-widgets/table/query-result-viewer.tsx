@@ -31,11 +31,6 @@ const useStyles = makeStyles(({ spacing }: Theme) => createStyles({
     display: 'flex',
     flexDirection: 'column',
     overflowX: 'hidden',
-    '@global': {
-      '.ReactVirtualized__Table__row': {
-        fontSize: '0.975rem',
-      },
-    },
   },
   table: {
     display: 'flex',

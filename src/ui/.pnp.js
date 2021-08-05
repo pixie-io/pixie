@@ -65,7 +65,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@types/react-dom", "npm:16.9.12"],
             ["@types/react-router", "npm:5.1.13"],
             ["@types/react-table", "npm:7.7.2"],
-            ["@types/react-virtualized", "npm:9.21.11"],
             ["@types/react-window", "npm:1.8.4"],
             ["@types/segment-analytics", "npm:0.0.32"],
             ["@typescript-eslint/eslint-plugin", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:4.21.0"],
@@ -146,7 +145,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["react-table", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:7.7.0"],
             ["react-test-renderer", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:16.14.0"],
             ["react-vega", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:7.4.2"],
-            ["react-virtualized", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:9.22.3"],
             ["react-virtualized-auto-sizer", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:1.0.5"],
             ["react-window", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:1.8.6"],
             ["regenerator-runtime", "npm:0.13.8"],
@@ -4999,7 +4997,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@types/react-dom", "npm:16.9.12"],
             ["@types/react-router", "npm:5.1.13"],
             ["@types/react-table", "npm:7.7.2"],
-            ["@types/react-virtualized", "npm:9.21.11"],
             ["@types/react-window", "npm:1.8.4"],
             ["@types/segment-analytics", "npm:0.0.32"],
             ["@typescript-eslint/eslint-plugin", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:4.21.0"],
@@ -5080,7 +5077,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["react-table", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:7.7.0"],
             ["react-test-renderer", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:16.14.0"],
             ["react-vega", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:7.4.2"],
-            ["react-virtualized", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:9.22.3"],
             ["react-virtualized-auto-sizer", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:1.0.5"],
             ["react-window", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:1.8.6"],
             ["regenerator-runtime", "npm:0.13.8"],
@@ -6061,17 +6057,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./.yarn/cache/@types-react-transition-group-npm-4.4.1-ff68c8c8a4-7d9d9ecf81.zip/node_modules/@types/react-transition-group/",
           "packageDependencies": [
             ["@types/react-transition-group", "npm:4.4.1"],
-            ["@types/react", "npm:17.0.3"]
-          ],
-          "linkType": "HARD",
-        }]
-      ]],
-      ["@types/react-virtualized", [
-        ["npm:9.21.11", {
-          "packageLocation": "./.yarn/cache/@types-react-virtualized-npm-9.21.11-b3420a9ad2-5a030f4be2.zip/node_modules/@types/react-virtualized/",
-          "packageDependencies": [
-            ["@types/react-virtualized", "npm:9.21.11"],
-            ["@types/prop-types", "npm:15.7.3"],
             ["@types/react", "npm:17.0.3"]
           ],
           "linkType": "HARD",
@@ -19259,38 +19244,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             "react",
             "vega-lite",
             "vega"
-          ],
-          "linkType": "HARD",
-        }]
-      ]],
-      ["react-virtualized", [
-        ["npm:9.22.3", {
-          "packageLocation": "./.yarn/cache/react-virtualized-npm-9.22.3-0fff3cbf64-1e54556ab9.zip/node_modules/react-virtualized/",
-          "packageDependencies": [
-            ["react-virtualized", "npm:9.22.3"]
-          ],
-          "linkType": "SOFT",
-        }],
-        ["virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:9.22.3", {
-          "packageLocation": "./.yarn/$$virtual/react-virtualized-virtual-2769c847cf/0/cache/react-virtualized-npm-9.22.3-0fff3cbf64-1e54556ab9.zip/node_modules/react-virtualized/",
-          "packageDependencies": [
-            ["react-virtualized", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:9.22.3"],
-            ["@babel/runtime", "npm:7.13.10"],
-            ["@types/react", "npm:17.0.3"],
-            ["@types/react-dom", "npm:16.9.12"],
-            ["clsx", "npm:1.1.1"],
-            ["dom-helpers", "npm:5.2.0"],
-            ["loose-envify", "npm:1.4.0"],
-            ["prop-types", "npm:15.7.2"],
-            ["react", "npm:16.14.0"],
-            ["react-dom", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:16.14.0"],
-            ["react-lifecycles-compat", "npm:3.0.4"]
-          ],
-          "packagePeers": [
-            "@types/react-dom",
-            "@types/react",
-            "react-dom",
-            "react"
           ],
           "linkType": "HARD",
         }]
