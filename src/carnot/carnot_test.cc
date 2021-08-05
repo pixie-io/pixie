@@ -1445,7 +1445,14 @@ px.display(services_for_cluster(start_time))
 px.display(pods_for_cluster(start_time))
 )pxl";
 
-TEST_F(CarnotTest, multiple_queries) {
+// TODO(PP-2935): Fix TSAN issues and re-enable test.
+TEST_F(CarnotTest,
+#ifdef THREAD_SANITIZER
+       DISABLED_UNDER_TSAN_multiple_queries
+#else
+       multiple_queries
+#endif
+) {
   std::string query(kPxCluster);
 
   auto exec_query_work = [&]() {
