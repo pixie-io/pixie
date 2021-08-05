@@ -105,15 +105,13 @@ function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutte
       Cell({ value }) {
         // TODO(nick,PC-1050): We're not doing width weights yet. Need to. Convert to ratio of default in DataTable?
         // TODO(nick,PC-1050): Head/tail mode (data-table.tsx) for not-the-data-drawer.
-        // TODO(nick,PC-1050): Go over old impl a few more times. Any features I missed? Oversimplified? Etc.
         return renderer(value);
       },
       original: col,
       align: justify,
       ...gutterProps,
       sortType(a, b) {
-        // TODO(nick,PC-1050): react-table inverts the return value for descent anyway. Remove third param.
-        return sortFunc(a.original, b.original, true);
+        return sortFunc(a.original, b.original);
       },
     };
   };

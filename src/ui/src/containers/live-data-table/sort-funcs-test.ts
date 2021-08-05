@@ -19,7 +19,7 @@
 import { fieldSortFunc } from './sort-funcs';
 
 describe('fieldSortFunc', () => {
-  it('correctly sorts the object by the specified subfield (ascending, with a value and record null)', () => {
+  it('correctly sorts the object by the specified subfield (with a value and record null)', () => {
     const f = fieldSortFunc('p99');
     const rows = [
       { p50: -20, p90: -26, p99: -23 },
@@ -29,32 +29,12 @@ describe('fieldSortFunc', () => {
       null,
       { p50: 30, p90: 360, p99: 370 },
     ];
-    expect(rows.sort((a, b) => f(a, b, true))).toStrictEqual([
+    expect(rows.sort(f)).toStrictEqual([
       { p50: -30, p90: -36, p99: -33 },
       { p50: -20, p90: -26, p99: -23 },
       { p50: 20, p90: 260, p99: 261 },
       { p50: 30, p90: 360, p99: 370 },
       { p50: 10, p90: 60 },
-      null,
-    ]);
-  });
-
-  it('correctly sorts the object by the specified subfield (descending, with a record null)', () => {
-    const f = fieldSortFunc('p99');
-    const rows = [
-      { p50: -20, p90: -26, p99: -23 },
-      { p50: 10, p90: 60, p99: 89 },
-      { p50: -30, p90: -36, p99: -33 },
-      null,
-      { p50: -10, p90: -6, p99: -3 },
-      { p50: 30, p90: 360, p99: 370 },
-    ];
-    expect(rows.sort((a, b) => f(a, b, false))).toStrictEqual([
-      { p50: 30, p90: 360, p99: 370 },
-      { p50: 10, p90: 60, p99: 89 },
-      { p50: -10, p90: -6, p99: -3 },
-      { p50: -20, p90: -26, p99: -23 },
-      { p50: -30, p90: -36, p99: -33 },
       null,
     ]);
   });
@@ -69,7 +49,7 @@ describe('fieldSortFunc', () => {
       { label: false },
       { label: false },
     ];
-    expect(rows.sort((a, b) => f(a, b, true))).toStrictEqual([
+    expect(rows.sort(f)).toStrictEqual([
       { label: false },
       { label: false },
       { label: false },
@@ -89,7 +69,7 @@ describe('fieldSortFunc', () => {
       { label: BigInt(4) },
       { label: BigInt(5) },
     ];
-    expect(rows.sort((a, b) => f(a, b, true))).toStrictEqual([
+    expect(rows.sort(f)).toStrictEqual([
       { label: BigInt(0) },
       { label: BigInt(1) },
       { label: BigInt(2) },
@@ -134,7 +114,7 @@ describe('fieldSortFunc', () => {
        */
       { label: 'Dryosaurus' },
     ];
-    expect(rows.sort((a, b) => f(a, b, true))).toStrictEqual([
+    expect(rows.sort(f)).toStrictEqual([
       // Surprisingly, there are no dinosaurs from the late Jurassic period whose names start with an F.
       { label: 'Allosaurus' },
       { label: 'Brachiosaurus' },
@@ -151,26 +131,25 @@ describe('fieldSortFunc', () => {
       { label: 'I am not a number.' },
       { label: 12345 },
     ];
-    expect(() => rows.sort((a, b) => f(a, b, true))).toThrowError();
+    expect(() => rows.sort(f)).toThrowError();
   });
 
   it('throws when trying to compare types with no reasonable comparison method', () => {
     const f = fieldSortFunc('label');
-    const fAsc = (a, b) => f(a, b, true);
     expect(() => [
       { label: function noSortingMe() {} },
       { label: function notMeEither() {} },
-    ].sort(fAsc)).toThrowError();
+    ].sort(f)).toThrowError();
 
     expect(() => [
       { label: {} },
       { label: {} },
-    ].sort(fAsc)).toThrowError();
+    ].sort(f)).toThrowError();
 
     expect(() => [
       { label: Symbol('Symbols cannot be compared reasonably') },
       { label: Symbol('Because doing so would be quite dirty') },
-    ].sort(fAsc)).toThrowError();
+    ].sort(f)).toThrowError();
   });
 
   it('sorts nulls to the end of the list', () => {
@@ -179,7 +158,7 @@ describe('fieldSortFunc', () => {
       { label: 'foo' },
       { label: null },
       { label: 'bar' },
-    ].sort((a, b) => f(a, b, true))).toStrictEqual([
+    ].sort(f)).toStrictEqual([
       { label: 'bar' },
       { label: 'foo' },
       { label: null },

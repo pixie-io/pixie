@@ -31,7 +31,7 @@ import { ColumnDisplayInfo, QuantilesDisplayState } from './column-display-info'
  * @param fieldName What field to look at when comparing two objects that both may have that field.
  */
 export function fieldSortFunc(fieldName: string) {
-  return (a: Record<string, unknown>, b: Record<string, unknown>, ascending: boolean): number => {
+  return (a: Record<string, unknown>, b: Record<string, unknown>): number => {
     const aVal = a?.[fieldName];
     const bVal = b?.[fieldName];
 
@@ -72,11 +72,11 @@ export function fieldSortFunc(fieldName: string) {
         checkExhaustive(aType);
     }
 
-    return (ascending ? result : -result);
+    return result;
   };
 }
 
-export function getSortFunc(display: ColumnDisplayInfo): (a: unknown, b: unknown, ascending: boolean) => number {
+export function getSortFunc(display: ColumnDisplayInfo): (a: unknown, b: unknown) => number {
   let f;
   switch (display.semanticType) {
     case SemanticType.ST_QUANTILES:
@@ -96,10 +96,9 @@ export function getSortFunc(display: ColumnDisplayInfo): (a: unknown, b: unknown
       f = fieldSortFunc('label');
       break;
     default: {
-      const undirected = getDataSortFunc(display.type);
-      f = (a, b, ascending) => (ascending ? undirected(a, b) : -undirected(a, b));
+      f = getDataSortFunc(display.type);
       break;
     }
   }
-  return (a, b, ascending) => f(a[display.columnName], b[display.columnName], ascending);
+  return (a, b) => f(a[display.columnName], b[display.columnName]);
 }
