@@ -59,7 +59,14 @@ func getCloudAddrFromCRD(ctx context.Context) (string, error) {
 	}
 
 	if len(vzLst.Items) == 1 {
-		return vzLst.Items[0].Spec.CloudAddr, nil
+		// When cloudConn connects to dev cloud, it should communicate directly with VZConn.
+		cloudAddr := vzLst.Items[0].Spec.CloudAddr
+		devCloudNamespace := vzLst.Items[0].Spec.DevCloudNamespace
+		if devCloudNamespace != "" {
+			cloudAddr = fmt.Sprintf("vzconn-service.%s.svc.cluster.local:51600", devCloudNamespace)
+		}
+
+		return cloudAddr, nil
 	} else if len(vzLst.Items) > 1 {
 		return "", fmt.Errorf("spec contains more than 1 Vizier item")
 	}
