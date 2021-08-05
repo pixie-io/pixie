@@ -360,10 +360,20 @@ def dockerStep(String dockerConfig = '', String dockerImage = devDockerImageWith
   }
 }
 
-def runBazelCmd(String f) {
+def runBazelCmd(String f, String targetConfig, int retries = 5) {
   def retval = sh(
     script: "bazel ${f}",
     returnStatus: true)
+
+  if (retval == 38 && (targetConfig == "tsan" || targetConfig == "asan")) {
+    // If bes update failed for a sanitizer run, re-run to get the real retval.
+    if (retries == 0) {
+        println("Bazel bes update failed for sanitizer run after multiple retries.")
+        return retval
+    }
+    println("Bazel bes update failed for sanitizer run, retrying...")
+    return runBazelCmd(f, targetConfig, retries - 1)
+  }
   // 4 means that tests not present.
   // 38 means that bes update failed/
   // Both are not fatal.
@@ -387,10 +397,10 @@ def bazelCICmd(String name, String targetConfig='clang', String targetCompilatio
 
   def args = "-c ${targetCompilationMode} --config=${targetConfig} --build_metadata=COMMIT_SHA=\$(git rev-parse HEAD) ${bazelRunExtraArgs}"
 
-  if (runBazelCmd("build ${args} --target_pattern_file ${buildableFile}") != 0) {
+  if (runBazelCmd("build ${args} --target_pattern_file ${buildableFile}", targetConfig) != 0) {
     throw new Exception('Bazel run failed')
   }
-  if (runBazelCmd("test ${args} --target_pattern_file ${testFile}") != 0) {
+  if (runBazelCmd("test ${args} --target_pattern_file ${testFile}", targetConfig) != 0) {
     throw new Exception('Bazel test failed')
   }
   createBazelStash("${name}-testlogs")

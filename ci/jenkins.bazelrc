@@ -24,7 +24,7 @@ build --remote_retries=2
 build --remote_timeout=3600
 
 
-test --bes_timeout=120s
+test --bes_timeout=240s
 test --experimental_inmemory_dotd_files
 test --experimental_inmemory_jdeps_files
 test --remote_download_toplevel
