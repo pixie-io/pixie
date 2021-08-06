@@ -1,6 +1,6 @@
 import * as jspb from 'google-protobuf'
 
-
+import * as github_com_gogo_protobuf_gogoproto_gogo_pb from '../../../../github.com/gogo/protobuf/gogoproto/gogo_pb';
 
 
 export class UInt128 extends jspb.Message {
@@ -871,6 +871,9 @@ export class ContainerStatus extends jspb.Message {
   getStartTimestampNs(): number;
   setStartTimestampNs(value: number): ContainerStatus;
 
+  getRestartCount(): number;
+  setRestartCount(value: number): ContainerStatus;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): ContainerStatus.AsObject;
   static toObject(includeInstance: boolean, msg: ContainerStatus): ContainerStatus.AsObject;
@@ -886,6 +889,7 @@ export namespace ContainerStatus {
     message: string,
     reason: string,
     startTimestampNs: number,
+    restartCount: number,
   }
 }
 
@@ -910,6 +914,9 @@ export class VizierPodStatus extends jspb.Message {
   clearContainerStatusesList(): VizierPodStatus;
   addContainerStatuses(value?: ContainerStatus, index?: number): ContainerStatus;
 
+  getRestartCount(): number;
+  setRestartCount(value: number): VizierPodStatus;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): VizierPodStatus.AsObject;
   static toObject(includeInstance: boolean, msg: VizierPodStatus): VizierPodStatus.AsObject;
@@ -926,6 +933,7 @@ export namespace VizierPodStatus {
     reason: string,
     createdAt: number,
     containerStatusesList: Array<ContainerStatus.AsObject>,
+    restartCount: number,
   }
 }
 

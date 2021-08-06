@@ -7210,7 +7210,8 @@ proto.px.api.vizierpb.ContainerStatus.toObject = function(includeInstance, msg) 
     containerState: jspb.Message.getFieldWithDefault(msg, 2, 0),
     message: jspb.Message.getFieldWithDefault(msg, 3, ""),
     reason: jspb.Message.getFieldWithDefault(msg, 4, ""),
-    startTimestampNs: jspb.Message.getFieldWithDefault(msg, 5, 0)
+    startTimestampNs: jspb.Message.getFieldWithDefault(msg, 5, 0),
+    restartCount: jspb.Message.getFieldWithDefault(msg, 6, 0)
   };
 
   if (includeInstance) {
@@ -7266,6 +7267,10 @@ proto.px.api.vizierpb.ContainerStatus.deserializeBinaryFromReader = function(msg
     case 5:
       var value = /** @type {number} */ (reader.readInt64());
       msg.setStartTimestampNs(value);
+      break;
+    case 6:
+      var value = /** @type {number} */ (reader.readInt64());
+      msg.setRestartCount(value);
       break;
     default:
       reader.skipField();
@@ -7328,6 +7333,13 @@ proto.px.api.vizierpb.ContainerStatus.serializeBinaryToWriter = function(message
   if (f !== 0) {
     writer.writeInt64(
       5,
+      f
+    );
+  }
+  f = message.getRestartCount();
+  if (f !== 0) {
+    writer.writeInt64(
+      6,
       f
     );
   }
@@ -7424,6 +7436,24 @@ proto.px.api.vizierpb.ContainerStatus.prototype.setStartTimestampNs = function(v
 };
 
 
+/**
+ * optional int64 restart_count = 6;
+ * @return {number}
+ */
+proto.px.api.vizierpb.ContainerStatus.prototype.getRestartCount = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 6, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.px.api.vizierpb.ContainerStatus} returns this
+ */
+proto.px.api.vizierpb.ContainerStatus.prototype.setRestartCount = function(value) {
+  return jspb.Message.setProto3IntField(this, 6, value);
+};
+
+
 
 /**
  * List of repeated fields within this message type.
@@ -7469,7 +7499,8 @@ proto.px.api.vizierpb.VizierPodStatus.toObject = function(includeInstance, msg) 
     reason: jspb.Message.getFieldWithDefault(msg, 4, ""),
     createdAt: jspb.Message.getFieldWithDefault(msg, 5, 0),
     containerStatusesList: jspb.Message.toObjectList(msg.getContainerStatusesList(),
-    proto.px.api.vizierpb.ContainerStatus.toObject, includeInstance)
+    proto.px.api.vizierpb.ContainerStatus.toObject, includeInstance),
+    restartCount: jspb.Message.getFieldWithDefault(msg, 7, 0)
   };
 
   if (includeInstance) {
@@ -7530,6 +7561,10 @@ proto.px.api.vizierpb.VizierPodStatus.deserializeBinaryFromReader = function(msg
       var value = new proto.px.api.vizierpb.ContainerStatus;
       reader.readMessage(value,proto.px.api.vizierpb.ContainerStatus.deserializeBinaryFromReader);
       msg.addContainerStatuses(value);
+      break;
+    case 7:
+      var value = /** @type {number} */ (reader.readInt64());
+      msg.setRestartCount(value);
       break;
     default:
       reader.skipField();
@@ -7601,6 +7636,13 @@ proto.px.api.vizierpb.VizierPodStatus.serializeBinaryToWriter = function(message
       6,
       f,
       proto.px.api.vizierpb.ContainerStatus.serializeBinaryToWriter
+    );
+  }
+  f = message.getRestartCount();
+  if (f !== 0) {
+    writer.writeInt64(
+      7,
+      f
     );
   }
 };
@@ -7731,6 +7773,24 @@ proto.px.api.vizierpb.VizierPodStatus.prototype.addContainerStatuses = function(
  */
 proto.px.api.vizierpb.VizierPodStatus.prototype.clearContainerStatusesList = function() {
   return this.setContainerStatusesList([]);
+};
+
+
+/**
+ * optional int64 restart_count = 7;
+ * @return {number}
+ */
+proto.px.api.vizierpb.VizierPodStatus.prototype.getRestartCount = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 7, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.px.api.vizierpb.VizierPodStatus} returns this
+ */
+proto.px.api.vizierpb.VizierPodStatus.prototype.setRestartCount = function(value) {
+  return jspb.Message.setProto3IntField(this, 7, value);
 };
 
 

@@ -301,8 +301,9 @@ func (v *K8sVizierInfo) toVizierPodStatus(p *corev1.Pod) (*vizierpb.VizierPodSta
 	}
 
 	podStatus := &vizierpb.VizierPodStatus{
-		Name:      podPb.Metadata.Name,
-		CreatedAt: podPb.Metadata.CreationTimestampNS,
+		Name:         podPb.Metadata.Name,
+		CreatedAt:    podPb.Metadata.CreationTimestampNS,
+		RestartCount: podPb.Status.RestartCount,
 	}
 
 	if podPb.Status != nil {
@@ -316,6 +317,7 @@ func (v *K8sVizierInfo) toVizierPodStatus(p *corev1.Pod) (*vizierpb.VizierPodSta
 				Reason:           c.Reason,
 				ContainerState:   convertContainerState(c.ContainerState),
 				StartTimestampNS: c.StartTimestampNS,
+				RestartCount:     c.RestartCount,
 			})
 		}
 	}

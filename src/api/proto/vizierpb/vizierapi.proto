@@ -445,6 +445,7 @@ message ContainerStatus {
   string message = 3;
   string reason = 4;
   int64 start_timestamp_ns = 5 [ (gogoproto.customname) = "StartTimestampNS" ];
+  int64 restart_count = 6;
 }
 
 enum PodPhase {
@@ -463,6 +464,7 @@ message VizierPodStatus {
   string reason = 4;
   int64 created_at = 5;
   repeated ContainerStatus container_statuses = 6;
+  int64 restart_count = 7;
 }
 
 message DebugPodsRequest {

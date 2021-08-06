@@ -180,9 +180,11 @@ var DebugPodsCmd = &cobra.Command{
 		}
 		w := components.CreateStreamWriter("table", os.Stdout)
 		defer w.Finish()
-		w.SetHeader("pods", []string{"Name", "Phase", "Message", "Reason", "Start Time"})
+		w.SetHeader("pods", []string{"Name", "Phase", "Restarts", "Message", "Reason", "Start Time"})
 		for _, pod := range pods {
-			_ = w.Write([]interface{}{pod.Name, pod.Phase, pod.Message, pod.Reason, time.Unix(0, pod.CreatedAt)})
+			_ = w.Write([]interface{}{
+				pod.Name, pod.Phase, pod.RestartCount, pod.Message, pod.Reason, time.Unix(0, pod.CreatedAt),
+			})
 		}
 	},
 }
@@ -201,10 +203,12 @@ var DebugContainersCmd = &cobra.Command{
 		}
 		w := components.CreateStreamWriter("table", os.Stdout)
 		defer w.Finish()
-		w.SetHeader("pods", []string{"Name", "Pod", "State", "Message", "Reason", "Start Time"})
+		w.SetHeader("containers", []string{"Name", "Pod", "State", "Restarts", "Message", "Reason", "Start Time"})
 		for _, pod := range pods {
-			for _, container := range pod.ContainerStatuses {
-				_ = w.Write([]interface{}{container.Name, pod.Name, container.ContainerState, container.Message, container.Reason, time.Unix(0, container.StartTimestampNS)})
+			for _, c := range pod.ContainerStatuses {
+				_ = w.Write([]interface{}{
+					c.Name, pod.Name, c.ContainerState, c.RestartCount, c.Message, c.Reason, time.Unix(0, c.StartTimestampNS),
+				})
 			}
 		}
 	},
