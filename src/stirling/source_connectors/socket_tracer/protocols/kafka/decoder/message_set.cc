@@ -45,7 +45,10 @@ StatusOr<RecordMessage> PacketDecoder::ExtractRecordMessage() {
 }
 
 // Only supports Kafka version >= 0.11.0
-StatusOr<RecordBatch> PacketDecoder::ExtractRecordBatch() {
+StatusOr<RecordBatch> PacketDecoder::ExtractRecordBatch(int32_t* offset) {
+  constexpr int32_t kBaseOffsetLength = 8;
+  constexpr int32_t kLengthLength = 4;
+
   RecordBatch r;
   PL_ASSIGN_OR_RETURN(int64_t base_offset, ExtractInt64());
 
@@ -84,7 +87,46 @@ StatusOr<RecordBatch> PacketDecoder::ExtractRecordBatch() {
 
   PL_ASSIGN_OR_RETURN(r.records, ExtractRegularArray(&PacketDecoder::ExtractRecordMessage));
   PL_RETURN_IF_ERROR(JumpToOffset());
+
+  *offset += length + kBaseOffsetLength + kLengthLength;
   return r;
+}
+
+StatusOr<MessageSet> PacketDecoder::ExtractMessageSet() {
+  MessageSet message_set;
+
+  int32_t length = 0;
+  int32_t offset = 0;
+
+  if (is_flexible_) {
+    PL_ASSIGN_OR_RETURN(length, ExtractUnsignedVarint());
+  } else {
+    PL_ASSIGN_OR_RETURN(length, ExtractInt32());
+  }
+  PL_RETURN_IF_ERROR(MarkOffset(length));
+
+  // There is no field in the message set that indicates how many record batches should follow.
+  // The length parsed above contains the length of the message set and the tagged section, if there
+  // is one (in flexible versions). This makes difficult to determine where parsing of the record
+  // batches should end. Thus, a best effort parsing is used here to parse out as many
+  // record batches as possible. If an error occurs due to tagged section, we just jump to the
+  // correct offset and continue parsing.
+  while (offset < length) {
+    auto record_batch_result = ExtractRecordBatch(&offset);
+    if (record_batch_result.ok()) {
+      message_set.record_batches.push_back(record_batch_result.ValueOrDie());
+    } else {
+      PL_RETURN_IF_ERROR(JumpToOffset());
+      return message_set;
+    }
+  }
+
+  if (is_flexible_) {
+    PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
+  }
+
+  PL_RETURN_IF_ERROR(JumpToOffset());
+  return message_set;
 }
 
 }  // namespace kafka

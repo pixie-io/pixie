@@ -21,6 +21,7 @@
 #include "src/common/base/types.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/kafka/decoder/packet_decoder.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/opcodes/message_set.h"
 
 namespace px {
 namespace stirling {
@@ -31,26 +32,8 @@ using ::testing::ElementsAre;
 using ::testing::IsEmpty;
 using ::px::operator<<;
 
-bool operator==(const RecordMessage& lhs, const RecordMessage& rhs) {
-  return lhs.key == rhs.key && lhs.value == rhs.value;
-}
-
-bool operator!=(const RecordMessage& lhs, const RecordMessage& rhs) { return !(lhs == rhs); }
-
-bool operator==(const RecordBatch& lhs, const RecordBatch& rhs) {
-  if (lhs.records.size() != rhs.records.size()) {
-    return false;
-  }
-  for (size_t i = 0; i < lhs.records.size(); ++i) {
-    if (lhs.records[i] != rhs.records[i]) {
-      return false;
-    }
-  }
-  return true;
-}
-
 bool operator==(const ProduceReqPartition& lhs, const ProduceReqPartition& rhs) {
-  return lhs.index == rhs.index && lhs.record_batch == rhs.record_batch;
+  return lhs.index == rhs.index && lhs.message_set == rhs.message_set;
 }
 
 bool operator!=(const ProduceReqPartition& lhs, const ProduceReqPartition& rhs) {
@@ -168,7 +151,8 @@ TEST(KafkaPacketDecoderTest, ExtractProduceReqV8) {
       "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x00\x00\x01\x28\x00\x00\x00\x01\x1c"
       "\x4d\x79\x20\x66\x69\x72\x73\x74\x20\x65\x76\x65\x6e\x74\x00");
   RecordBatch record_batch{{{.key = "", .value = "My first event"}}};
-  ProduceReqPartition partition{.index = 0, .record_batch = record_batch};
+  MessageSet message_set{{record_batch}};
+  ProduceReqPartition partition{.index = 0, .message_set = message_set};
   ProduceReqTopic topic{.name = "quickstart-events", .partitions = {partition}};
   ProduceReq expected_result{
       .transactional_id = "", .acks = 1, .timeout_ms = 1500, .topics = {topic}};
@@ -186,7 +170,8 @@ TEST(KafkaPacketDecoderTest, ExtractProduceReqV9) {
       "\xff\xff\x00\x00\x00\x01\x38\x00\x00\x00\x01\x2c\x54\x68\x69\x73\x20\x69\x73\x20\x6d\x79"
       "\x20\x66\x69\x72\x73\x74\x20\x65\x76\x65\x6e\x74\x00\x00\x00\x00");
   RecordBatch record_batch{{{.key = "", .value = "This is my first event"}}};
-  ProduceReqPartition partition{.index = 0, .record_batch = record_batch};
+  MessageSet message_set{{record_batch}};
+  ProduceReqPartition partition{.index = 0, .message_set = message_set};
   ProduceReqTopic topic{.name = "quickstart-events", .partitions = {partition}};
   ProduceReq expected_result{
       .transactional_id = "", .acks = 1, .timeout_ms = 1500, .topics = {topic}};

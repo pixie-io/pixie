@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/opcodes/message_set.h"
 #include <utility>
 #include <vector>
 #include "src/common/base/types.h"
@@ -30,24 +31,6 @@ namespace kafka {
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
 using ::px::operator<<;
-
-bool operator==(const RecordMessage& lhs, const RecordMessage& rhs) {
-  return lhs.key == rhs.key && lhs.value == rhs.value;
-}
-
-bool operator!=(const RecordMessage& lhs, const RecordMessage& rhs) { return !(lhs == rhs); }
-
-bool operator==(const RecordBatch& lhs, const RecordBatch& rhs) {
-  if (lhs.records.size() != rhs.records.size()) {
-    return false;
-  }
-  for (size_t i = 0; i < lhs.records.size(); ++i) {
-    if (lhs.records[i] != rhs.records[i]) {
-      return false;
-    }
-  }
-  return true;
-}
 
 TEST(KafkaPacketDecoderTest, ExtractRecordMessage) {
   // Empty key and value Record.
@@ -84,7 +67,7 @@ TEST(KafkaPacketDecoderTest, ExtractRecordBatchV9) {
       "\x00\x00\x00\x00\x00\x00\x00\x01\x7a\x1b\xc8\x2d\xaa\x00\x00\x01\x7a\x1b\xc8\x2d\xaa\xff"
       "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x00\x00\x01\x38\x00\x00\x00\x01"
       "\x2c\x54\x68\x69\x73\x20\x69\x73\x20\x6d\x79\x20\x66\x69\x72\x73\x74\x20\x65\x76\x65\x6e"
-      "\x74\x00\x00\x00\x00");
+      "\x74\x00");
   RecordBatch expected_result{{{.key = "", .value = "This is my first event"}}};
   PacketDecoder decoder(input);
   decoder.SetAPIInfo(APIKey::kProduce, 9);

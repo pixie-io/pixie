@@ -28,20 +28,7 @@ StatusOr<ProduceReqPartition> PacketDecoder::ExtractProduceReqPartition() {
   PL_ASSIGN_OR_RETURN(r.index, ExtractInt32());
 
   // COMPACT_RECORDS is used in api_version >= 9.
-  int32_t length = 0;
-  // TODO(chengruizhe): Add flexible version support. Flexible version was introduced in Kafka to
-  // support more compact datatypes and tagged fields etc.
-  if (is_flexible_) {
-    PL_ASSIGN_OR_RETURN(length, ExtractUnsignedVarint());
-  } else {
-    PL_ASSIGN_OR_RETURN(length, ExtractInt32());
-  }
-  PL_RETURN_IF_ERROR(MarkOffset(length));
-
-  PL_ASSIGN_OR_RETURN(r.record_batch, ExtractRecordBatch());
-  PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
-
-  PL_RETURN_IF_ERROR(JumpToOffset());
+  PL_ASSIGN_OR_RETURN(r.message_set, ExtractMessageSet());
   return r;
 }
 

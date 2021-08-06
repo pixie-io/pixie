@@ -34,14 +34,14 @@ namespace kafka {
 
 struct ProduceReqPartition {
   int32_t index = 0;
-  RecordBatch record_batch;
+  MessageSet message_set;
 
   void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
     writer->StartObject();
     writer->Key("index");
     writer->Int(index);
-    writer->Key("record_batch");
-    record_batch.ToJSON(writer);
+    writer->Key("message_set");
+    message_set.ToJSON(writer);
     writer->EndObject();
   }
 };

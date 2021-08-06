@@ -169,7 +169,10 @@ class PacketDecoder {
   // Messages (aka Records) are always written in batches. The technical term for a batch of
   // messages is a record batch, and a record batch contains one or more records.
   // https://kafka.apache.org/documentation/#recordbatch
-  StatusOr<RecordBatch> ExtractRecordBatch();
+  StatusOr<RecordBatch> ExtractRecordBatch(int32_t* offset);
+
+  // A MessageSet contains multiple record batches.
+  StatusOr<MessageSet> ExtractMessageSet();
 
   // Partition Data in Produce Request.
   StatusOr<ProduceReqPartition> ExtractProduceReqPartition();

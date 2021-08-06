@@ -60,6 +60,53 @@ struct RecordBatch {
   }
 };
 
+struct MessageSet {
+  std::vector<RecordBatch> record_batches;
+
+  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
+    writer->StartObject();
+    writer->Key("record_batches");
+    writer->StartArray();
+    for (const auto& r : record_batches) {
+      r.ToJSON(writer);
+    }
+    writer->EndArray();
+    writer->EndObject();
+  }
+};
+
+inline bool operator==(const RecordMessage& lhs, const RecordMessage& rhs) {
+  return lhs.key == rhs.key && lhs.value == rhs.value;
+}
+
+inline bool operator!=(const RecordMessage& lhs, const RecordMessage& rhs) { return !(lhs == rhs); }
+
+inline bool operator==(const RecordBatch& lhs, const RecordBatch& rhs) {
+  if (lhs.records.size() != rhs.records.size()) {
+    return false;
+  }
+  for (size_t i = 0; i < lhs.records.size(); ++i) {
+    if (lhs.records[i] != rhs.records[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+inline bool operator!=(const RecordBatch& lhs, const RecordBatch& rhs) { return !(lhs == rhs); }
+
+inline bool operator==(const MessageSet& lhs, const MessageSet& rhs) {
+  if (lhs.record_batches.size() != rhs.record_batches.size()) {
+    return false;
+  }
+  for (size_t i = 0; i < lhs.record_batches.size(); ++i) {
+    if (lhs.record_batches[i] != rhs.record_batches[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 }  // namespace kafka
 }  // namespace protocols
 }  // namespace stirling

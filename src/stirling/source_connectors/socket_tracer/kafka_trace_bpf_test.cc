@@ -152,8 +152,8 @@ KafkaTraceRecord kKafkaScriptCmd1 = {
     .req_cmd = kafka::APIKey::kProduce,
     .req_body =
         "{\"transactional_id\":\"\",\"acks\":1,\"timeout_ms\":1500,\"topics\":[{\"name\":\"foo\","
-        "\"partitions\":[{\"index\":0,\"record_batch\":{\"records\":[{\"key\":\"\",\"value\":"
-        "\"hello\"}]}}]}]}",
+        "\"partitions\":[{\"index\":0,\"message_set\":{\"record_batches\":[{\"records\":[{\"key\":"
+        "\"\",\"value\":\"hello\"}]}]}}]}]}",
     .resp =
         "{\"topics\":[{\"name\":\"foo\",\"partitions\":[{\"index\":0,\"error_code\":\"kNone\","
         "\"record_errors\":[],\"error_message\":\"\"}]}],\"throttle_time_ms\":0}"};
