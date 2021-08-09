@@ -165,9 +165,9 @@ void ConnTracker::AddConnStats(const conn_stats_event_t& event) {
 
   DCHECK_NE(event.timestamp_ns, last_conn_stats_update_);
   if (event.timestamp_ns > last_conn_stats_update_) {
-    DCHECK_GE(static_cast<int>(event.conn_events & CONN_CLOSE), conn_stats_.closed());
-    DCHECK_GE(static_cast<int>(event.rd_bytes), conn_stats_.bytes_recv());
-    DCHECK_GE(static_cast<int>(event.wr_bytes), conn_stats_.bytes_sent());
+    DCHECK_GE(static_cast<bool>(event.conn_events & CONN_CLOSE), conn_stats_.closed());
+    DCHECK_GE(event.rd_bytes, conn_stats_.bytes_recv());
+    DCHECK_GE(event.wr_bytes, conn_stats_.bytes_sent());
 
     conn_stats_.set_bytes_recv(event.rd_bytes);
     conn_stats_.set_bytes_sent(event.wr_bytes);
@@ -175,9 +175,9 @@ void ConnTracker::AddConnStats(const conn_stats_event_t& event) {
 
     last_conn_stats_update_ = event.timestamp_ns;
   } else {
-    DCHECK_LE(static_cast<int>(event.conn_events & CONN_CLOSE), conn_stats_.closed());
-    DCHECK_LE(static_cast<int>(event.rd_bytes), conn_stats_.bytes_recv());
-    DCHECK_LE(static_cast<int>(event.wr_bytes), conn_stats_.bytes_sent());
+    DCHECK_LE(static_cast<bool>(event.conn_events & CONN_CLOSE), conn_stats_.closed());
+    DCHECK_LE(event.rd_bytes, conn_stats_.bytes_recv());
+    DCHECK_LE(event.wr_bytes, conn_stats_.bytes_sent());
   }
 }
 
@@ -381,8 +381,8 @@ void ConnTracker::Disable(std::string_view reason) {
 
 bool ConnTracker::AllEventsReceived() const {
   return close_info_.timestamp_ns != 0 &&
-         stats_.Get(StatKey::kBytesSent) == static_cast<int64_t>(close_info_.send_bytes) &&
-         stats_.Get(StatKey::kBytesRecv) == static_cast<int64_t>(close_info_.recv_bytes);
+         stats_.Get(StatKey::kBytesSent) == close_info_.send_bytes &&
+         stats_.Get(StatKey::kBytesRecv) == close_info_.recv_bytes;
 }
 
 namespace {

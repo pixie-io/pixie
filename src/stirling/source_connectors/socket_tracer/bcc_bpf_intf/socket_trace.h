@@ -61,17 +61,17 @@ struct conn_info_t {
   bool ssl;
 
   // The number of bytes written/read on this connection.
-  uint64_t wr_bytes;
-  uint64_t rd_bytes;
+  int64_t wr_bytes;
+  int64_t rd_bytes;
 
   // The previously reported values of bytes written/read.
   // Used for determining when to send updated conn_stats values.
-  uint64_t last_reported_bytes;
+  int64_t last_reported_bytes;
 
   // The number of bytes written by application (for uprobe) on this connection.
-  uint64_t app_wr_bytes;
+  int64_t app_wr_bytes;
   // The number of bytes read by application (for uprobe) on this connection.
-  uint64_t app_rd_bytes;
+  int64_t app_rd_bytes;
 
   // Some stats for protocol inference. Used for threshold-based filtering.
   //
@@ -98,8 +98,8 @@ struct conn_event_t {
 // See conn_info_t for descriptions of the members.
 struct close_event_t {
   // The number of bytes written and read at time of close.
-  uint64_t wr_bytes;
-  uint64_t rd_bytes;
+  int64_t wr_bytes;
+  int64_t rd_bytes;
 };
 
 // Data buffer message size. BPF can submit at most this amount of data to a perf buffer.
@@ -215,9 +215,9 @@ struct conn_stats_event_t {
   enum EndpointRole role;
 
   // The number of bytes written on this connection.
-  uint64_t wr_bytes;
+  int64_t wr_bytes;
   // The number of bytes read on this connection.
-  uint64_t rd_bytes;
+  int64_t rd_bytes;
 
   // Bitmask of flags specifying whether conn open or close have been observed.
   uint32_t conn_events;

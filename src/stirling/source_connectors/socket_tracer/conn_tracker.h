@@ -69,10 +69,10 @@ struct SocketOpen {
 
 struct SocketClose {
   uint64_t timestamp_ns = 0;
-  // The number of bytes sent on the connection at time of close.
-  uint64_t send_bytes = 0;
-  // The number of bytes received on the connection at time of close.
-  uint64_t recv_bytes = 0;
+
+  // The number of bytes sent/received on the connection at time of close.
+  int64_t send_bytes = 0;
+  int64_t recv_bytes = 0;
 };
 
 /**
@@ -124,26 +124,29 @@ class ConnTracker : NotCopyMoveable {
 
     void set_bytes_sent(int64_t bytes_sent) { bytes_sent_ = bytes_sent; }
 
-    int bytes_recv() { return bytes_recv_; }
-    int bytes_sent() { return bytes_sent_; }
-    int closed() { return closed_; }
+    int64_t bytes_recv() { return bytes_recv_; }
+    int64_t bytes_sent() { return bytes_sent_; }
+    bool closed() { return closed_; }
 
     bool OpenSinceLastRead() {
       bool val = true - last_reported_open_;
       last_reported_open_ = true;
       return val;
     }
+
     bool CloseSinceLastRead() {
       bool val = closed_ - last_reported_close_;
       last_reported_close_ = closed_;
       return val;
     }
-    int BytesRecvSinceLastRead() {
+
+    int64_t BytesRecvSinceLastRead() {
       int64_t val = bytes_recv_ - last_reported_bytes_recv_;
       last_reported_bytes_recv_ = bytes_recv_;
       return val;
     }
-    int BytesSentSinceLastRead() {
+
+    int64_t BytesSentSinceLastRead() {
       int64_t val = bytes_sent_ - last_reported_bytes_sent_;
       last_reported_bytes_sent_ = bytes_sent_;
       return val;
@@ -472,7 +475,7 @@ class ConnTracker : NotCopyMoveable {
    */
   double StitchFailureRate() const;
 
-  uint64_t GetStat(StatKey key) const { return stats_.Get(key); }
+  int64_t GetStat(StatKey key) const { return stats_.Get(key); }
 
   /**
    * Initializes protocol state for a protocol.
