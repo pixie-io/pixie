@@ -4,13 +4,11 @@ go 1.16
 
 require (
 	cloud.google.com/go/storage v1.10.0
-	github.com/Azure/go-autorest/autorest v0.11.18 // indirect
 	github.com/EvilSuperstars/go-cidrman v0.0.0-20190607145828-28e79e32899a
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/PuerkitoBio/goquery v1.6.0
 	github.com/alecthomas/chroma v0.7.1
 	github.com/alecthomas/participle v0.4.1
-	github.com/armon/go-metrics v0.3.6 // indirect
 	github.com/badoux/checkmail v0.0.0-20181210160741-9661bd69e9ad
 	github.com/bazelbuild/rules_go v0.22.4
 	github.com/blang/semver v3.5.1+incompatible
@@ -30,21 +28,16 @@ require (
 	github.com/getsentry/sentry-go v0.5.1
 	github.com/go-openapi/runtime v0.19.26
 	github.com/go-openapi/strfmt v0.20.0
-	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang-migrate/migrate v3.5.4+incompatible
 	github.com/golang/mock v1.5.0
 	github.com/google/go-github/v32 v32.1.0
-	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/googleapis/google-cloud-go-testing v0.0.0-20191008195207-8e1d251e947d
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/sessions v1.2.1
 	github.com/graph-gophers/graphql-go v1.1.0
-	github.com/grpc-ecosystem/go-grpc-middleware v1.2.2
-	github.com/hashicorp/go-hclog v0.15.0 // indirect
-	github.com/hashicorp/go-immutable-radix v1.3.0 // indirect
-	github.com/huandu/xstrings v1.3.2 // indirect
+	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/ianlancetaylor/cgosymbolizer v0.0.0-20200424224625-be1b05b0b279
 	github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
@@ -55,9 +48,6 @@ require (
 	github.com/lestrrat-go/jwx v1.2.4
 	github.com/lib/pq v1.10.0
 	github.com/mattn/go-runewidth v0.0.9
-	github.com/minio/highwayhash v1.0.2 // indirect
-	github.com/mitchellh/copystructure v1.1.1 // indirect
-	github.com/moby/term v0.0.0-20201216013528-df9cb8a40635 // indirect
 	github.com/nats-io/nats-server/v2 v2.2.0
 	github.com/nats-io/nats-streaming-server v0.21.1
 	github.com/nats-io/nats.go v1.10.1-0.20210228004050-ed743748acac
@@ -71,7 +61,7 @@ require (
 	github.com/rivo/tview v0.0.0-20200404204604-ca37f83cb2e7
 	github.com/rivo/uniseg v0.1.0
 	github.com/sahilm/fuzzy v0.1.0
-	github.com/segmentio/backo-go v0.0.0-20160424052352-204274ad699c // indirect
+	github.com/segmentio/backo-go v0.0.0-20200129164019-23eae7c10bd3 // indirect
 	github.com/sercand/kuberesolver/v3 v3.0.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/skratchdot/open-golang v0.0.0-20190402232053-79abb63cd66e
@@ -88,19 +78,14 @@ require (
 	go.etcd.io/etcd/api/v3 v3.5.0
 	go.etcd.io/etcd/client/pkg/v3 v3.5.0
 	go.etcd.io/etcd/client/v3 v3.5.0
-	go.mongodb.org/mongo-driver v1.5.0 // indirect
-	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/net v0.0.0-20210330230544-e57232859fb2
 	golang.org/x/oauth2 v0.0.0-20210313182246-cd4f82c27b84
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210611083646-a4fc73990273
 	golang.org/x/term v0.0.0-20210317153231-de623e64d2a6
-	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba // indirect
-	golang.org/x/tools v0.1.3 // indirect
 	google.golang.org/api v0.44.0
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
 	google.golang.org/grpc v1.38.0
-	google.golang.org/grpc/examples v0.0.0-20210326170912-4a19753e9dfd // indirect
 	gopkg.in/segmentio/analytics-go.v3 v3.1.0
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/yaml.v2 v2.4.0
@@ -109,11 +94,8 @@ require (
 	k8s.io/cli-runtime v0.20.6
 	k8s.io/client-go v0.20.6
 	k8s.io/klog/v2 v2.8.0
-	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7 // indirect
 	k8s.io/kubectl v0.20.6
-	k8s.io/utils v0.0.0-20210305010621-2afb4311ab10 // indirect
 	sigs.k8s.io/controller-runtime v0.8.3
-	sigs.k8s.io/structured-merge-diff/v4 v4.1.0 // indirect
 	sigs.k8s.io/yaml v1.2.0
 )
 
