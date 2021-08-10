@@ -7,7 +7,6 @@ require (
 	github.com/Azure/go-autorest/autorest v0.11.18 // indirect
 	github.com/EvilSuperstars/go-cidrman v0.0.0-20190607145828-28e79e32899a
 	github.com/Masterminds/sprig/v3 v3.2.2
-	github.com/Microsoft/go-winio v0.4.16 // indirect
 	github.com/PuerkitoBio/goquery v1.6.0
 	github.com/alecthomas/chroma v0.7.1
 	github.com/alecthomas/participle v0.4.1
@@ -16,12 +15,10 @@ require (
 	github.com/bazelbuild/rules_go v0.22.4
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.2
-	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/cenkalti/backoff/v3 v3.2.2
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/cockroachdb/pebble v0.0.0-20210120202502-6110b03a8a85
-	github.com/containerd/containerd v1.3.4 // indirect
-	github.com/containerd/continuity v0.0.0-20210208174643-50096c924a4e // indirect
+	github.com/containerd/containerd v1.5.5 // indirect
 	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
 	github.com/docker/docker v20.10.5+incompatible // indirect
@@ -40,7 +37,6 @@ require (
 	github.com/golang/mock v1.5.0
 	github.com/google/go-github/v32 v32.1.0
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/google/uuid v1.2.0 // indirect
 	github.com/googleapis/google-cloud-go-testing v0.0.0-20191008195207-8e1d251e947d
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/sessions v1.2.1
@@ -55,7 +51,6 @@ require (
 	github.com/jackc/pgx v3.5.0+incompatible
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
-	github.com/klauspost/compress v1.11.13 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/lestrrat-go/jwx v1.2.4
 	github.com/lib/pq v1.10.0
@@ -76,10 +71,9 @@ require (
 	github.com/rivo/tview v0.0.0-20200404204604-ca37f83cb2e7
 	github.com/rivo/uniseg v0.1.0
 	github.com/sahilm/fuzzy v0.1.0
-	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/segmentio/backo-go v0.0.0-20160424052352-204274ad699c // indirect
 	github.com/sercand/kuberesolver/v3 v3.0.0
-	github.com/sirupsen/logrus v1.7.0
+	github.com/sirupsen/logrus v1.8.1
 	github.com/skratchdot/open-golang v0.0.0-20190402232053-79abb63cd66e
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.2.1
@@ -95,7 +89,6 @@ require (
 	go.etcd.io/etcd/client/pkg/v3 v3.5.0
 	go.etcd.io/etcd/client/v3 v3.5.0
 	go.mongodb.org/mongo-driver v1.5.0 // indirect
-	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2 // indirect
 	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/net v0.0.0-20210330230544-e57232859fb2
 	golang.org/x/oauth2 v0.0.0-20210313182246-cd4f82c27b84
@@ -111,13 +104,13 @@ require (
 	gopkg.in/segmentio/analytics-go.v3 v3.1.0
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.20.5
-	k8s.io/apimachinery v0.20.5
-	k8s.io/cli-runtime v0.20.5
-	k8s.io/client-go v0.20.5
+	k8s.io/api v0.20.6
+	k8s.io/apimachinery v0.20.6
+	k8s.io/cli-runtime v0.20.6
+	k8s.io/client-go v0.20.6
 	k8s.io/klog/v2 v2.8.0
 	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7 // indirect
-	k8s.io/kubectl v0.20.5
+	k8s.io/kubectl v0.20.6
 	k8s.io/utils v0.0.0-20210305010621-2afb4311ab10 // indirect
 	sigs.k8s.io/controller-runtime v0.8.3
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.0 // indirect
