@@ -40,6 +40,10 @@ analyze:
     type: go
     target: px.dev/pixie/src/api/go/pxapi/examples/deploykey_example
     path: src/api/go/pxapi/examples/deploykey_example
+  - name: px.dev/pixie/src/api/go/pxapi/examples/encryption_example
+    type: go
+    target: px.dev/pixie/src/api/go/pxapi/examples/encryption_example
+    path: src/api/go/pxapi/examples/encryption_example
   - name: px.dev/pixie/src/api/go/pxapi/examples/example_mux
     type: go
     target: px.dev/pixie/src/api/go/pxapi/examples/example_mux
@@ -52,6 +56,10 @@ analyze:
     type: go
     target: px.dev/pixie/src/api/go/pxapi/types
     path: src/api/go/pxapi/types
+  - name: px.dev/pixie/src/api/go/pxapi/utils
+    type: go
+    target: px.dev/pixie/src/api/go/pxapi/utils
+    path: src/api/go/pxapi/utils
   - name: px.dev/pixie/src/api/proto/cloudpb
     type: go
     target: px.dev/pixie/src/api/proto/cloudpb
@@ -320,14 +328,6 @@ analyze:
     type: go
     target: px.dev/pixie/src/cloud/profile/controller
     path: src/cloud/profile/controller
-  - name: px.dev/pixie/src/cloud/profile/controller/idmanager
-    type: go
-    target: px.dev/pixie/src/cloud/profile/controller/idmanager
-    path: src/cloud/profile/controller/idmanager
-  - name: px.dev/pixie/src/cloud/profile/controller/idmanager/mock
-    type: go
-    target: px.dev/pixie/src/cloud/profile/controller/idmanager/mock
-    path: src/cloud/profile/controller/idmanager/mock
   - name: px.dev/pixie/src/cloud/profile/controller/mock
     type: go
     target: px.dev/pixie/src/cloud/profile/controller/mock
@@ -488,6 +488,10 @@ analyze:
     type: go
     target: px.dev/pixie/src/common/base/testproto
     path: src/common/base/testproto
+  - name: px.dev/pixie/src/common/testing/test_utils/cert_generator
+    type: go
+    target: px.dev/pixie/src/common/testing/test_utils/cert_generator
+    path: src/common/testing/test_utils/cert_generator
   - name: px.dev/pixie/src/e2e_test/cli
     type: go
     target: px.dev/pixie/src/e2e_test/cli
@@ -664,26 +668,6 @@ analyze:
     type: go
     target: px.dev/pixie/src/shared/types/typespb
     path: src/shared/types/typespb
-  - name: px.dev/pixie/src/stirling/private/demo_apps/go_http/server
-    type: go
-    target: px.dev/pixie/src/stirling/private/demo_apps/go_http/server
-    path: src/stirling/private/demo_apps/go_http/server
-  - name: px.dev/pixie/src/stirling/private/demo_apps/wrk_sweeper
-    type: go
-    target: px.dev/pixie/src/stirling/private/demo_apps/wrk_sweeper
-    path: src/stirling/private/demo_apps/wrk_sweeper
-  - name: px.dev/pixie/src/stirling/private/scripts/perf
-    type: go
-    target: px.dev/pixie/src/stirling/private/scripts/perf
-    path: src/stirling/private/scripts/perf
-  - name: px.dev/pixie/src/stirling/private/scripts/perf/flock
-    type: go
-    target: px.dev/pixie/src/stirling/private/scripts/perf/flock
-    path: src/stirling/private/scripts/perf/flock
-  - name: px.dev/pixie/src/stirling/private/scripts/perf/utils
-    type: go
-    target: px.dev/pixie/src/stirling/private/scripts/perf/utils
-    path: src/stirling/private/scripts/perf/utils
   - name: px.dev/pixie/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb
     type: go
     target: px.dev/pixie/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb
@@ -724,10 +708,6 @@ analyze:
     type: go
     target: px.dev/pixie/src/stirling/source_connectors/socket_tracer/testing/containers/pgsql
     path: src/stirling/source_connectors/socket_tracer/testing/containers/pgsql
-  - name: px.dev/pixie/src/stirling/testing/demo_apps/go_grpc_tls_pl/certs
-    type: go
-    target: px.dev/pixie/src/stirling/testing/demo_apps/go_grpc_tls_pl/certs
-    path: src/stirling/testing/demo_apps/go_grpc_tls_pl/certs
   - name: px.dev/pixie/src/stirling/testing/demo_apps/go_grpc_tls_pl/client
     type: go
     target: px.dev/pixie/src/stirling/testing/demo_apps/go_grpc_tls_pl/client
