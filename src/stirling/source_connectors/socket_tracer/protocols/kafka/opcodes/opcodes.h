@@ -18,5 +18,6 @@
 
 #pragma once
 
+#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/opcodes/fetch.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/kafka/opcodes/message_set.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/kafka/opcodes/produce.h"

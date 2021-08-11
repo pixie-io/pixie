@@ -189,11 +189,21 @@ class PacketDecoder {
   // Topic Data in Produce Request.
   StatusOr<ProduceRespTopic> ExtractProduceRespTopic();
 
+  // Topic Data in Fetch Request.
+  StatusOr<FetchReqTopic> ExtractFetchReqTopic();
+
+  // Partition Data in Fetch Request.
+  StatusOr<FetchReqPartition> ExtractFetchReqPartition();
+
+  // Forgotten Topic Data in Fetch Request.
+  StatusOr<FetchForgottenTopicsData> ExtractFetchForgottenTopicsData();
+
   Status ExtractReqHeader(Request* req);
   Status ExtractRespHeader(Response* resp);
 
   StatusOr<ProduceReq> ExtractProduceReq();
   StatusOr<ProduceResp> ExtractProduceResp();
+  StatusOr<FetchReq> ExtractFetchReq();
 
   bool eof() { return binary_decoder_.eof(); }
 

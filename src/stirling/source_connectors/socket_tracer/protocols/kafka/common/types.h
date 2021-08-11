@@ -231,7 +231,7 @@ inline const absl::flat_hash_map<APIKey, APIVersionData> APIVersionMap = {
     {APIKey::kProduce, {1, 9, 9}},
     {APIKey::kMetadata, {1, 11, 9}},
     {APIKey::kApiVersions, {0, 3, 3}},
-};
+    {APIKey::kFetch, {0, 12, 12}}};
 
 inline bool IsFlexible(APIKey api_key, int16_t api_version) {
   auto it = APIVersionMap.find(api_key);
