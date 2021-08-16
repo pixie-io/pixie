@@ -58,10 +58,10 @@ async def run_script_and_tasks(
 class VizierServiceFake(vizierapi_pb2_grpc.VizierServiceServicer):
     def __init__(self) -> None:
         self.cluster_id_to_fake_data: Dict[str,
-                                           List[vpb.ExecuteScriptResponse]] = {}
+                                           List[test_utils.ExecResponse]] = {}
         self.cluster_id_to_error: Dict[str, Exception] = {}
 
-    def add_fake_data(self, cluster_id: str, data: List[vpb.ExecuteScriptResponse]) -> None:
+    def add_fake_data(self, cluster_id: str, data: List[test_utils.ExecResponse]) -> None:
         if cluster_id not in self.cluster_id_to_fake_data:
             self.cluster_id_to_fake_data[cluster_id] = []
         self.cluster_id_to_fake_data[cluster_id].extend(data)
@@ -74,8 +74,12 @@ class VizierServiceFake(vizierapi_pb2_grpc.VizierServiceServicer):
         cluster_id = request.cluster_id
         assert cluster_id in self.cluster_id_to_fake_data, f"need data for cluster_id {cluster_id}"
         data = self.cluster_id_to_fake_data[cluster_id]
+        opts = None
+        if request.HasField("encryption_options"):
+            opts = request.encryption_options
         for d in data:
-            yield d
+            yield d.encrypted_script_response(opts)
+
         # Trigger an error for the cluster ID if the user added one.
         if cluster_id in self.cluster_id_to_error:
             raise self.cluster_id_to_error[cluster_id]
@@ -393,9 +397,9 @@ class TestClient(unittest.TestCase):
         # Send over an error in the Status field. This is the exact error you would
         # get if you sent over an empty pxl function in the ExecuteScriptRequest.
         self.fake_vizier_service.add_fake_data(conn.cluster_id, [
-            vpb.ExecuteScriptResponse(status=test_utils.invalid_argument(
+            test_utils.ExecResponse(vpb.ExecuteScriptResponse(status=test_utils.invalid_argument(
                 message="Script should not be empty."
-            ))
+            )))
         ])
 
         # Prepare the script_executor and run synchronously.
@@ -415,11 +419,11 @@ class TestClient(unittest.TestCase):
         # Send over an error a line, column error. These kinds of errors come
         # from the compiler pointing to a specific failure in the pxl script_executor.
         self.fake_vizier_service.add_fake_data(conn.cluster_id, [
-            vpb.ExecuteScriptResponse(status=test_utils.line_col_error(
+            test_utils.ExecResponse(vpb.ExecuteScriptResponse(status=test_utils.line_col_error(
                 1,
                 2,
                 message="name 'aa' is not defined"
-            ))
+            )))
         ])
 
         # Prepare the script_executor and run synchronously.
@@ -682,9 +686,9 @@ class TestClient(unittest.TestCase):
             # Send over an error on the stream after we've started sending data.
             # this should happen if something breaks on the Pixie side.
             # Note: the table does not send an end message over the stream.
-            vpb.ExecuteScriptResponse(status=test_utils.invalid_argument(
+            test_utils.ExecResponse(vpb.ExecuteScriptResponse(status=test_utils.invalid_argument(
                 message="server error"
-            ))
+            ))),
         ])
 
         # Create the script_executor object.
@@ -879,6 +883,39 @@ class TestClient(unittest.TestCase):
         px_client._cloud_channel_cache = None
         px_client.connect_to_cluster(healthy_clusters[0])
         self.assertEqual(num_create_channel_calls, 2)
+
+    def test_encryption(self) -> None:
+        # Test creating encrypted clients.
+        px_client = pxapi.Client(
+            token=ACCESS_TOKEN,
+            server_url=self.url(),
+            use_encryption=True,
+            channel_fn=lambda url: grpc.insecure_channel(url),
+            conn_channel_fn=lambda url: grpc.aio.insecure_channel(url),
+        )
+        conn = px_client.connect_to_cluster(
+            px_client.list_healthy_clusters()[0])
+
+        # Create the script_executor.
+        script_executor = conn.prepare_script(pxl_script)
+
+        self.assertTrue(script_executor._use_encryption)
+
+        # Create table for cluster_uuid1.
+        http_table1 = self.http_table_factory.create_table(test_utils.table_id1)
+        self.fake_vizier_service.add_fake_data(conn.cluster_id, [
+            # Initialize the table on the stream with the metadata.
+            http_table1.metadata_response(),
+            # Send over a single-row batch.
+            http_table1.row_batch_response([["foo"], [200]]),
+            # Send an end-of-stream for the table.
+            http_table1.end(),
+        ])
+
+        # Use the results API to run and get the data from the http table.
+        for row in script_executor.results("http"):
+            self.assertEqual(row["resp_body"], "foo")
+            self.assertEqual(row["resp_status"], 200)
 
 
 if __name__ == "__main__":

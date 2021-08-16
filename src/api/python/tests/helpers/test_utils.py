@@ -16,6 +16,8 @@
 
 import grpc
 from typing import List, Any
+import json
+from authlib.jose import JsonWebKey, JsonWebEncryption
 
 from pxapi import vpb
 import pxapi
@@ -123,6 +125,37 @@ class FakeTableFactory:
         return FakeTable(self.name, self.relation, table_id)
 
 
+class ExecResponse:
+    def __init__(self, data: vpb.ExecuteScriptResponse):
+        self.execute_script_response = data
+
+    def encrypted_script_response(self, opts: vpb.ExecuteScriptRequest.EncryptionOptions) -> vpb.ExecuteScriptResponse:
+        '''
+        Returns a script repsonse with encrypted row batch fields, if they exist,
+        and if the options are set.
+        '''
+        es_resp = self.execute_script_response
+
+        if not es_resp.HasField("data"):
+            return es_resp
+        if opts is None:
+            return es_resp
+
+        # Now we encrypt the batch.
+        rb = es_resp.data.batch.SerializeToString()
+        key = JsonWebKey.import_key(json.loads(opts.jwk_key))
+        encrypted_batch = JsonWebEncryption().serialize_compact({
+            'alg': opts.key_alg,
+            'enc': opts.content_alg,
+            'zip': opts.compression_alg,
+        }, rb, key)
+
+        # Make sure we only send the encrypted_batch through.
+        es_resp.data.ClearField('batch')
+        es_resp.data.encrypted_batch = encrypted_batch
+        return es_resp
+
+
 class FakeTable:
     def __init__(self, name: str, relation: vpb.Relation, id: str):
         self.name = name
@@ -152,25 +185,29 @@ class FakeTable:
             num_rows=len(cols[0]),
         )
 
-    def metadata_response(self) -> vpb.ExecuteScriptResponse:
-        return vpb.ExecuteScriptResponse(status=_ok(), meta_data=self._metadata())
+    def metadata_response(self) -> ExecResponse:
+        return ExecResponse(data=vpb.ExecuteScriptResponse(status=_ok(), meta_data=self._metadata()))
 
-    def row_batch_response(self, cols: List[List[Any]]) -> vpb.ExecuteScriptResponse:
+    def row_batch_response(self, cols: List[List[Any]]) -> ExecResponse:
         # Error out if the rowbatch does not have the right number of columns.
-        return vpb.ExecuteScriptResponse(
-            status=_ok(),
-            data=vpb.QueryData(batch=self.row_batch(cols))
+        return ExecResponse(
+            data=vpb.ExecuteScriptResponse(
+                status=_ok(),
+                data=vpb.QueryData(batch=self.row_batch(cols))
+            ),
         )
 
-    def end(self) -> vpb.ExecuteScriptResponse:
+    def end(self) -> ExecResponse:
         """ Sends an end stream message. """
-        return vpb.ExecuteScriptResponse(
-            status=_ok(),
-            data=vpb.QueryData(batch=self.row_batch(
-                [[]] * len(self.relation.columns),
-                eos=True,
-                eow=True
-            )),
+        return ExecResponse(
+            data=vpb.ExecuteScriptResponse(
+                status=_ok(),
+                data=vpb.QueryData(batch=self.row_batch(
+                    [[]] * len(self.relation.columns),
+                    eos=True,
+                    eow=True
+                )),
+            )
         )
 
 

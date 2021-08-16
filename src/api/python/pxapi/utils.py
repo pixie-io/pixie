@@ -15,8 +15,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import uuid
+from authlib.jose import JsonWebKey, RSAKey, JsonWebEncryption
 
 from src.api.proto.uuidpb import uuid_pb2 as uuidpb
+from src.api.proto.vizierpb import vizierapi_pb2 as vpb
 
 
 def uuid_pb_from_string(id_str: str) -> uuidpb.UUID:
@@ -31,3 +33,31 @@ def uuid_pb_to_string(pb: uuidpb.UUID) -> str:
     i = (pb.high_bits << 64) + pb.low_bits
     u = uuid.UUID(int=i)
     return str(u)
+
+
+class CryptoOptions:
+    def __init__(self):
+        rsa = RSAKey.generate_key(key_size=4096, is_private=True)
+        self.jwk_public_key = JsonWebKey.import_key(rsa.as_pem(is_private=False))
+        self.jwk_private_key = JsonWebKey.import_key(rsa.as_pem(is_private=True))
+
+        self._key_alg = 'RSA-OAEP-256'
+        self._content_alg = 'A256GCM'
+        self._compression_alg = 'DEF'
+
+    def encrypt_options(self) -> vpb.ExecuteScriptRequest.EncryptionOptions:
+        return vpb.ExecuteScriptRequest.EncryptionOptions(
+            jwk_key=self.jwk_public_key.as_json(),
+            key_alg=self._key_alg,
+            content_alg=self._content_alg,
+            compression_alg=self._compression_alg,
+        )
+
+
+def decode_row_batch(crypt: CryptoOptions, data) -> vpb.RowBatchData:
+    jwe = JsonWebEncryption()
+
+    rb = vpb.RowBatchData()
+    data = jwe.deserialize_compact(data, crypt.jwk_private_key)
+    rb.ParseFromString(data['payload'])
+    return rb

@@ -32,7 +32,7 @@ px.display(df, 'http_table')
 """
 
 # create a Pixie client
-px_client = pxapi.Client(token=API_TOKEN)
+px_client = pxapi.Client(token=API_TOKEN, use_encryption=True)
 conn = px_client.connect_to_cluster(CLUSTER_ID)
 
 # execute the PxL script

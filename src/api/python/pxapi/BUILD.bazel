@@ -35,5 +35,6 @@ py_library(
         requirement("grpcio"),
         requirement("grpcio-tools"),
         requirement("protobuf"),
+        requirement("Authlib"),
     ],
 )

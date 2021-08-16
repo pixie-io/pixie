@@ -17,7 +17,7 @@
 import asyncio
 import grpc
 import grpc.aio
-
+import warnings
 from typing import AsyncGenerator, Awaitable, Callable, cast, \
     Dict, Generator, List, Literal, Union, Set
 from urllib.parse import urlparse
@@ -41,6 +41,8 @@ from .errors import (
 )
 
 from .utils import (
+    CryptoOptions,
+    decode_row_batch,
     uuid_pb_from_string,
     uuid_pb_to_string,
 )
@@ -109,6 +111,7 @@ class Conn:
             token: str,
             pixie_url: str,
             cluster_id: ClusterID,
+            use_encryption: bool,
             cluster_info: cpb.ClusterInfo = None,
             channel_fn: Callable[[str], grpc.aio.Channel] = None,
             direct: bool = False,
@@ -125,9 +128,11 @@ class Conn:
         # Whether the connection is direct connection or not.
         self._direct = direct
 
+        self._use_encryption = use_encryption
+
     def prepare_script(self, script_str: str) -> 'ScriptExecutor':
         """ Create a new ScriptExecutor for the script to run on this connection. """
-        return ScriptExecutor(self, script_str)
+        return ScriptExecutor(self, script_str, use_encryption=self._use_encryption)
 
     def _get_grpc_channel(self) -> grpc.aio.Channel:
         """
@@ -169,7 +174,7 @@ class ScriptExecutor:
     and cannot allow multiple runs per object.
     """
 
-    def __init__(self, conn: Conn, pxl: str):
+    def __init__(self, conn: Conn, pxl: str, use_encryption: bool):
         self._conn = conn
         self._pxl = pxl
 
@@ -191,6 +196,10 @@ class ScriptExecutor:
 
         # Flag whether to subscribe to all tables.
         self._subscribe_all_tables = False
+
+        # Whether to encrypt the execution or not.
+        self._use_encryption: bool = use_encryption
+        self._crypto = None
 
         self._table_q_subscribers: List[asyncio.Queue[TableType]] = []
         self._tasks: List[Callable[[], Awaitable[None]]] = []
@@ -333,11 +342,15 @@ class ScriptExecutor:
 
         self._add_table_to_q(table)
 
-    async def _process_data(self, data: vpb.QueryData) -> None:
-        table_id = data.batch.table_id
+    async def _process_encrypted_batch(self, encrypted_batch: str) -> None:
+        batch = decode_row_batch(self._crypto, encrypted_batch)
+        await self._process_data_batch(batch)
+
+    async def _process_data_batch(self, batch: vpb.RowBatchData) -> None:
+        table_id = batch.table_id
         async with self._tables_lock:
             assert table_id in self._table_id_to_table_map, "id is missing " + table_id
-            self._table_id_to_table_map[table_id].add_row_batch(data.batch)
+            self._table_id_to_table_map[table_id].add_row_batch(batch)
 
     async def _set_exec_stats(self,
                               exec_stats: vpb.QueryExecutionStats) -> None:
@@ -436,6 +449,10 @@ class ScriptExecutor:
         req.cluster_id = conn.cluster_id
         req.query_str = self._pxl
 
+        if self._use_encryption:
+            self._crypto = CryptoOptions()
+            req.encryption_options.CopyFrom(self._crypto.encrypt_options())
+
         async for res in stub.ExecuteScript(req, metadata=[
             ("pixie-api-key", conn.token),
             ("pixie-api-client", "python"),
@@ -447,8 +464,16 @@ class ScriptExecutor:
                     self._pxl, res.status, conn.name())
             if res.HasField("meta_data"):
                 await self._process_metadata(res.meta_data)
+            if res.HasField("data") and len(res.data.encrypted_batch) > 0:
+                if not self._use_encryption:
+                    raise ValueError("Received encrypted data on unencrypted request")
+                if self._crypto is None:
+                    raise ValueError("Error while trying to decrypt batch, cryptography information not saved by API")
+                await self._process_encrypted_batch(res.data.encrypted_batch)
             if res.HasField("data") and res.data.HasField("batch"):
-                await self._process_data(res.data)
+                if self._use_encryption:
+                    warnings.warn("Received unencrypted data on encrypted request")
+                await self._process_data_batch(res.data.batch)
             elif res.HasField("data") and res.data.HasField("execution_stats"):
                 await self._set_exec_stats(res.data.execution_stats)
 
@@ -491,6 +516,7 @@ class Client:
         self,
         token: str,
         server_url: str = DEFAULT_PIXIE_URL,
+        use_encryption: bool = False,
         channel_fn: Callable[[str], grpc.Channel] = None,
         conn_channel_fn: Callable[[str], grpc.aio.Channel] = None,
     ):
@@ -499,6 +525,7 @@ class Client:
         self._channel_fn = channel_fn
         self._conn_channel_fn = conn_channel_fn
         self._cloud_channel_cache: grpc.Channel = None
+        self._use_encryption = use_encryption
 
     def _create_cloud_channel(self) -> grpc.Channel:
         if self._channel_fn:
@@ -564,8 +591,9 @@ class Client:
             self._token,
             self._server_url,
             cluster_id,
-            cluster_info,
-            self._conn_channel_fn,
+            self._use_encryption,
+            cluster_info=cluster_info,
+            channel_fn=self._conn_channel_fn,
         )
 
     def _create_direct_connection(
@@ -579,8 +607,9 @@ class Client:
             token,
             cluster_url,
             cluster_id,
-            cluster_info,
-            self._conn_channel_fn,
+            self._use_encryption,
+            cluster_info=cluster_info,
+            channel_fn=self._conn_channel_fn,
             direct=True,
         )
 
