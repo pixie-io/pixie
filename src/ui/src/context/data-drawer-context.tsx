@@ -31,13 +31,21 @@ export const DataDrawerContext = React.createContext<DataDrawerContextProps>(nul
 export const DataDrawerContextProvider: React.FC = ({ children }) => {
   const [activeTab, setActiveTab] = React.useState<string>('');
   const { setDataDrawerOpen } = React.useContext(LayoutContext);
-  const openDrawerTab = (tab: string) => {
+  const openDrawerTab = React.useCallback((tab: string) => {
     setDataDrawerOpen(true);
     setActiveTab(tab);
-  };
+  }, [setDataDrawerOpen, setActiveTab]);
 
   return (
-    <DataDrawerContext.Provider value={{ activeTab, setActiveTab, openDrawerTab }}>
+    <DataDrawerContext.Provider value={React.useMemo(() => ({
+      activeTab,
+      setActiveTab,
+      openDrawerTab,
+    }), [
+      activeTab,
+      setActiveTab,
+      openDrawerTab,
+    ])}>
       {children}
     </DataDrawerContext.Provider>
   );

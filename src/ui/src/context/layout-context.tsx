@@ -21,17 +21,17 @@ import * as React from 'react';
 import { useTheme } from '@material-ui/core/styles';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 
-type SetSplitSizesFunc = (sizes: [number, number]) => void;
 type SetOpenFunc = React.Dispatch<React.SetStateAction<boolean>>;
 type Splits = [number, number];
+type SetSplitSizesFunc = (sizes: Splits) => void;
 
 export interface LayoutContextProps {
-  editorSplitsSizes: [number, number];
+  editorSplitsSizes: Splits;
   editorPanelOpen: boolean;
   setEditorSplitSizes: SetSplitSizesFunc;
   setEditorPanelOpen: SetOpenFunc;
 
-  dataDrawerSplitsSizes: [number, number];
+  dataDrawerSplitsSizes: Splits;
   dataDrawerOpen: boolean;
   setDataDrawerSplitsSizes: SetSplitSizesFunc;
   setDataDrawerOpen: SetOpenFunc;
@@ -58,7 +58,7 @@ export const LayoutContextProvider: React.FC = ({ children }) => {
 
   return (
     <LayoutContext.Provider
-      value={{
+      value={React.useMemo(() => ({
         editorSplitsSizes,
         editorPanelOpen,
         setEditorSplitSizes,
@@ -68,7 +68,17 @@ export const LayoutContextProvider: React.FC = ({ children }) => {
         setDataDrawerSplitsSizes,
         setDataDrawerOpen,
         isMobile,
-      }}
+      }), [
+        editorSplitsSizes,
+        editorPanelOpen,
+        setEditorSplitSizes,
+        setEditorPanelOpen,
+        dataDrawerSplitsSizes,
+        dataDrawerOpen,
+        setDataDrawerSplitsSizes,
+        setDataDrawerOpen,
+        isMobile,
+      ])}
     >
       {children}
     </LayoutContext.Provider>

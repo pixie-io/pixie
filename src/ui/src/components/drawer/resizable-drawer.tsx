@@ -18,11 +18,7 @@
 
 import * as React from 'react';
 import { DraggableCore } from 'react-draggable';
-import {
-  Theme,
-  WithStyles,
-  withStyles,
-} from '@material-ui/core/styles';
+import { Theme, makeStyles } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 
 import { FixedSizeDrawer, DrawerDirection } from './drawer';
@@ -30,7 +26,7 @@ import { FixedSizeDrawer, DrawerDirection } from './drawer';
 // The amount of time elasped since a user has last resized the drawer.
 const RESIZE_WAIT_INTERVAL_MS = 100;
 
-const styles = ({ spacing }: Theme) => createStyles({
+const useStyles = makeStyles(({ spacing }: Theme) => createStyles({
   draggableContent: {
     flex: 1,
     minHeight: 0,
@@ -52,10 +48,9 @@ const styles = ({ spacing }: Theme) => createStyles({
     position: 'absolute',
     pointerEvents: 'auto',
   },
-});
+}), { name: 'ResizableDrawer' });
 
-interface ResizableDrawerProps extends WithStyles<typeof styles> {
-  children?: React.ReactNode; // The contents of the drawer.
+interface ResizableDrawerProps {
   otherContent?: React.ReactNode; // The content that is not in the drawer.
   drawerDirection: DrawerDirection;
   open: boolean;
@@ -64,8 +59,8 @@ interface ResizableDrawerProps extends WithStyles<typeof styles> {
   minSize: number;
 }
 
-const ResizableDrawerImpl = ({
-  classes,
+// eslint-disable-next-line prefer-arrow-callback
+export const ResizableDrawer: React.FC<ResizableDrawerProps> = React.memo(function ResizableDrawer({
   children,
   otherContent,
   drawerDirection,
@@ -73,7 +68,8 @@ const ResizableDrawerImpl = ({
   overlay,
   initialSize,
   minSize,
-}: ResizableDrawerProps) => {
+}) {
+  const classes = useStyles();
   const [drawerSize, setDrawerSize] = React.useState(initialSize);
   // State responsible for tracking whether the user is actively resizing. This is used for debouncing.
   const [timer, setTimer] = React.useState(null);
@@ -179,10 +175,4 @@ const ResizableDrawerImpl = ({
       </FixedSizeDrawer>
     </>
   );
-};
-ResizableDrawerImpl.defaultProps = {
-  children: null,
-  otherContent: null,
-};
-
-export const ResizableDrawer = withStyles(styles)(ResizableDrawerImpl);
+});
