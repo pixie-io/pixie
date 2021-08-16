@@ -538,3 +538,13 @@ func TableRelationResponses(queryID uuid.UUID, tableIDMap map[string]string,
 
 	return results, nil
 }
+
+// StatusToError converts a statuspb.Status to a grpc error.
+func StatusToError(s *statuspb.Status) error {
+	return status.Error(codes.Code(int32(s.ErrCode)), s.Msg)
+}
+
+// VizierStatusToError converts a vizierpb.Status to a grpc error.
+func VizierStatusToError(s *vizierpb.Status) error {
+	return status.Error(codes.Code(s.Code), s.Message)
+}

@@ -25,6 +25,8 @@ import (
 
 	"github.com/gofrs/uuid"
 
+	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
+
 	"px.dev/pixie/src/common/base/statuspb"
 
 	"github.com/gogo/protobuf/proto"
@@ -327,17 +329,19 @@ func (f *fakeResultForwarder) ProducerCancelStream(queryID uuid.UUID, err error)
 }
 
 type queryExecTestCase struct {
-	Name                  string
-	Req                   *vizierpb.ExecuteScriptRequest
-	ResultForwarderResps  []*vizierpb.ExecuteScriptResponse
-	ExpectedResps         []*vizierpb.ExecuteScriptResponse
-	TableNames            []string
-	PlannerState          *distributedpb.LogicalPlannerState
-	ExpectedPlannerResult *distributedpb.LogicalPlannerResult
-	QueryExecRunError     error
-	QueryExecWaitError    error
-	ConsumeErrs           []error
-	StreamResultsErr      error
+	Name                       string
+	Req                        *vizierpb.ExecuteScriptRequest
+	ResultForwarderResps       []*vizierpb.ExecuteScriptResponse
+	ExpectedResps              []*vizierpb.ExecuteScriptResponse
+	TableNames                 []string
+	PlannerState               *distributedpb.LogicalPlannerState
+	ExpectedPlannerResult      *distributedpb.LogicalPlannerResult
+	QueryExecExpectedRunError  error
+	QueryExecExpectedWaitError error
+	ConsumeErrs                []error
+	StreamResultsErr           error
+	StreamResultsCallExpected  bool
+	MutExecFactory             controllers.MutationExecFactory
 }
 
 type testConsumer struct {
@@ -390,29 +394,39 @@ func runTestCase(t *testing.T, test *queryExecTestCase) {
 			Return(test.ExpectedPlannerResult, nil)
 	}
 
-	queryExec := controllers.NewQueryExecutor("qb_address", "qb_hostname", at, nc, nil, nil, rf, planner, nil)
+	queryExec := controllers.NewQueryExecutor("qb_address", "qb_hostname", at, nc, nil, nil, rf, planner, test.MutExecFactory)
 	consumer := newTestConsumer(test.ConsumeErrs)
 
-	assert.Equal(t, test.QueryExecRunError, queryExec.Run(context.Background(), test.Req, consumer))
-	assert.Equal(t, test.QueryExecWaitError, queryExec.Wait())
+	assert.Equal(t, test.QueryExecExpectedRunError, queryExec.Run(context.Background(), test.Req, consumer))
+	assert.Equal(t, test.QueryExecExpectedWaitError, queryExec.Wait())
 
 	require.Equalf(t, len(test.ExpectedResps)+len(test.TableNames), len(consumer.results), "query executor sent incorrect number of results to consumer")
 
-	tableResps := consumer.results[:len(test.TableNames)]
 	actualTableNames := make(map[string]bool)
-	for _, result := range tableResps {
-		actualTableNames[result.GetMetaData().Name] = true
+	for _, result := range consumer.results {
+		if result.GetMetaData() != nil {
+			actualTableNames[result.GetMetaData().Name] = true
+		}
 	}
 	for _, tableName := range test.TableNames {
 		_, ok := actualTableNames[tableName]
 		assert.True(t, ok)
 	}
 
-	resps := consumer.results[len(test.TableNames):]
-	for idx, result := range resps {
-		// Ignore resp.QueryID field
-		assert.Equal(t, test.ExpectedResps[idx].Status, result.Status)
-		assert.Equal(t, test.ExpectedResps[idx].Result, result.Result)
+	idx := 0
+	for _, result := range consumer.results {
+		if result.GetData() != nil {
+			// Ignore resp.QueryID field
+			assert.Equal(t, test.ExpectedResps[idx].Status, result.Status)
+			assert.Equal(t, test.ExpectedResps[idx].Result, result.Result)
+			idx++
+		}
+	}
+
+	if test.StreamResultsCallExpected {
+		assert.NotEqualf(t, uuid.Nil, rf.QueryStreamed, "Expected StreamResults to be called but it wasn't")
+	} else {
+		assert.Equalf(t, uuid.Nil, rf.QueryStreamed, "Expected StreamResults not to be called but it was")
 	}
 }
 
@@ -426,6 +440,7 @@ func TestQueryExecutor(t *testing.T) {
 		buildStreamResultErrorTestCase(t),
 		buildResumeQueryTestCase(t),
 		buildResumeQueryBadQueryIDTestCase(t),
+		buildMutationFailedQueryTestCase(t),
 	}
 
 	for _, test := range tests {
@@ -489,11 +504,12 @@ func buildSimpleSuccessTestCase(t *testing.T) queryExecTestCase {
 			fakeResult1,
 			fakeResult2,
 		},
-		TableNames:            []string{"agent1_table", "agent2_table"},
-		PlannerState:          buildPlannerState(t, singleAgentDistributedState),
-		ExpectedPlannerResult: buildPlannerResult(t, expectedPlannerResult),
-		QueryExecRunError:     nil,
-		QueryExecWaitError:    nil,
+		TableNames:                 []string{"agent1_table", "agent2_table"},
+		PlannerState:               buildPlannerState(t, singleAgentDistributedState),
+		ExpectedPlannerResult:      buildPlannerResult(t, expectedPlannerResult),
+		QueryExecExpectedRunError:  nil,
+		QueryExecExpectedWaitError: nil,
+		StreamResultsCallExpected:  true,
 	}
 }
 
@@ -529,14 +545,14 @@ func buildPlannerErrorTestCase(t *testing.T) queryExecTestCase {
 		Req: &vizierpb.ExecuteScriptRequest{
 			QueryStr: badQuery,
 		},
-		ResultForwarderResps:  []*vizierpb.ExecuteScriptResponse{},
-		ExpectedResps:         []*vizierpb.ExecuteScriptResponse{errResp},
-		TableNames:            []string{},
-		PlannerState:          buildPlannerState(t, singleAgentDistributedState),
-		ExpectedPlannerResult: buildPlannerResult(t, failedPlannerResult),
-		QueryExecRunError:     nil,
-		// In my opinion, this error should not be nil, but to keep existing behaviour I'm leaving it as nil.
-		QueryExecWaitError: nil,
+		ResultForwarderResps:       []*vizierpb.ExecuteScriptResponse{},
+		ExpectedResps:              []*vizierpb.ExecuteScriptResponse{errResp},
+		TableNames:                 []string{},
+		PlannerState:               buildPlannerState(t, singleAgentDistributedState),
+		ExpectedPlannerResult:      buildPlannerResult(t, failedPlannerResult),
+		QueryExecExpectedRunError:  nil,
+		QueryExecExpectedWaitError: controllers.VizierStatusToError(errResp.Status),
+		StreamResultsCallExpected:  false,
 	}
 }
 
@@ -552,14 +568,14 @@ func buildPlannerErrorTestCaseStatusMessage(t *testing.T) queryExecTestCase {
 		Req: &vizierpb.ExecuteScriptRequest{
 			QueryStr: badQuery,
 		},
-		ResultForwarderResps:  []*vizierpb.ExecuteScriptResponse{},
-		ExpectedResps:         []*vizierpb.ExecuteScriptResponse{errResp},
-		TableNames:            []string{},
-		PlannerState:          buildPlannerState(t, singleAgentDistributedState),
-		ExpectedPlannerResult: buildPlannerResult(t, failedPlannerResultFromStatus),
-		QueryExecRunError:     nil,
-		// In my opinion, this error should not be nil, but to keep existing behaviour I'm leaving it as nil.
-		QueryExecWaitError: nil,
+		ResultForwarderResps:       []*vizierpb.ExecuteScriptResponse{},
+		ExpectedResps:              []*vizierpb.ExecuteScriptResponse{errResp},
+		TableNames:                 []string{},
+		PlannerState:               buildPlannerState(t, singleAgentDistributedState),
+		ExpectedPlannerResult:      buildPlannerResult(t, failedPlannerResultFromStatus),
+		QueryExecExpectedRunError:  nil,
+		QueryExecExpectedWaitError: controllers.VizierStatusToError(errResp.Status),
+		StreamResultsCallExpected:  false,
 	}
 }
 
@@ -578,13 +594,14 @@ func buildPlanInvalidUUIDTestCase(t *testing.T) queryExecTestCase {
 		Req: &vizierpb.ExecuteScriptRequest{
 			QueryStr: badQuery,
 		},
-		ResultForwarderResps:  []*vizierpb.ExecuteScriptResponse{},
-		ExpectedResps:         []*vizierpb.ExecuteScriptResponse{},
-		TableNames:            []string{},
-		PlannerState:          buildPlannerState(t, singleAgentDistributedState),
-		ExpectedPlannerResult: badPlannerResult,
-		QueryExecRunError:     nil,
-		QueryExecWaitError:    fmt.Errorf("uuid: incorrect UUID length 10 in string \"not a uuid\""),
+		ResultForwarderResps:       []*vizierpb.ExecuteScriptResponse{},
+		ExpectedResps:              []*vizierpb.ExecuteScriptResponse{},
+		TableNames:                 []string{},
+		PlannerState:               buildPlannerState(t, singleAgentDistributedState),
+		ExpectedPlannerResult:      badPlannerResult,
+		QueryExecExpectedRunError:  nil,
+		QueryExecExpectedWaitError: fmt.Errorf("uuid: incorrect UUID length 10 in string \"not a uuid\""),
+		StreamResultsCallExpected:  false,
 	}
 }
 
@@ -601,13 +618,14 @@ func buildConsumeErrorTestCase(t *testing.T) queryExecTestCase {
 			&vizierpb.ExecuteScriptResponse{},
 			&vizierpb.ExecuteScriptResponse{},
 		},
-		ExpectedResps:         []*vizierpb.ExecuteScriptResponse{},
-		TableNames:            []string{"agent1_table", "agent2_table"},
-		PlannerState:          buildPlannerState(t, singleAgentDistributedState),
-		ExpectedPlannerResult: buildPlannerResult(t, expectedPlannerResult),
-		QueryExecRunError:     nil,
-		QueryExecWaitError:    consumeErr,
-		ConsumeErrs:           []error{nil, consumeErr},
+		ExpectedResps:              []*vizierpb.ExecuteScriptResponse{},
+		TableNames:                 []string{"agent1_table", "agent2_table"},
+		PlannerState:               buildPlannerState(t, singleAgentDistributedState),
+		ExpectedPlannerResult:      buildPlannerResult(t, expectedPlannerResult),
+		QueryExecExpectedRunError:  nil,
+		QueryExecExpectedWaitError: consumeErr,
+		ConsumeErrs:                []error{nil, consumeErr},
+		StreamResultsCallExpected:  true,
 	}
 }
 
@@ -652,12 +670,13 @@ func buildStreamResultErrorTestCase(t *testing.T) queryExecTestCase {
 			fakeResult1,
 			fakeResult2,
 		},
-		TableNames:            []string{"agent1_table", "agent2_table"},
-		PlannerState:          buildPlannerState(t, singleAgentDistributedState),
-		ExpectedPlannerResult: buildPlannerResult(t, expectedPlannerResult),
-		QueryExecRunError:     nil,
-		QueryExecWaitError:    err,
-		StreamResultsErr:      err,
+		TableNames:                 []string{"agent1_table", "agent2_table"},
+		PlannerState:               buildPlannerState(t, singleAgentDistributedState),
+		ExpectedPlannerResult:      buildPlannerResult(t, expectedPlannerResult),
+		QueryExecExpectedRunError:  nil,
+		QueryExecExpectedWaitError: err,
+		StreamResultsErr:           err,
+		StreamResultsCallExpected:  true,
 	}
 }
 
@@ -705,11 +724,12 @@ func buildResumeQueryTestCase(t *testing.T) queryExecTestCase {
 			fakeResult2,
 		},
 		// Resuming should not send table relation responses again.
-		TableNames:            []string{},
-		PlannerState:          buildPlannerState(t, singleAgentDistributedState),
-		ExpectedPlannerResult: buildPlannerResult(t, expectedPlannerResult),
-		QueryExecRunError:     nil,
-		QueryExecWaitError:    nil,
+		TableNames:                 []string{},
+		PlannerState:               buildPlannerState(t, singleAgentDistributedState),
+		ExpectedPlannerResult:      buildPlannerResult(t, expectedPlannerResult),
+		QueryExecExpectedRunError:  nil,
+		QueryExecExpectedWaitError: nil,
+		StreamResultsCallExpected:  true,
 	}
 }
 
@@ -725,10 +745,58 @@ func buildResumeQueryBadQueryIDTestCase(t *testing.T) queryExecTestCase {
 		},
 		ExpectedResps: []*vizierpb.ExecuteScriptResponse{},
 		// Resuming should not send table relation responses again.
-		TableNames:            []string{},
-		PlannerState:          buildPlannerState(t, singleAgentDistributedState),
-		ExpectedPlannerResult: buildPlannerResult(t, expectedPlannerResult),
-		QueryExecRunError:     fmt.Errorf("uuid: incorrect UUID format in string \"Not a UUID but is 36 chars longXXXXX\""),
-		QueryExecWaitError:    nil,
+		TableNames:                 []string{},
+		PlannerState:               buildPlannerState(t, singleAgentDistributedState),
+		ExpectedPlannerResult:      buildPlannerResult(t, expectedPlannerResult),
+		QueryExecExpectedRunError:  fmt.Errorf("uuid: incorrect UUID format in string \"Not a UUID but is 36 chars longXXXXX\""),
+		QueryExecExpectedWaitError: nil,
+		StreamResultsCallExpected:  false,
+	}
+}
+
+type fakeMutationExecutor struct {
+	MutInfo       *vizierpb.MutationInfo
+	ExecuteStatus *statuspb.Status
+	ExecuteError  error
+}
+
+func (m *fakeMutationExecutor) Execute(ctx context.Context, req *vizierpb.ExecuteScriptRequest, planOpts *planpb.PlanOptions) (*statuspb.Status, error) {
+	return m.ExecuteStatus, m.ExecuteError
+}
+
+func (m *fakeMutationExecutor) MutationInfo(ctx context.Context) (*vizierpb.MutationInfo, error) {
+	return m.MutInfo, nil
+}
+
+func buildMutationFailedQueryTestCase(t *testing.T) queryExecTestCase {
+	err := fmt.Errorf("fail query no schema")
+	mutInfo := &vizierpb.MutationInfo{Status: &vizierpb.Status{Code: 0}}
+	return queryExecTestCase{
+		Name: "mutation failed query",
+		Req: &vizierpb.ExecuteScriptRequest{
+			QueryStr: testQuery,
+			Mutation: true,
+		},
+		ResultForwarderResps: []*vizierpb.ExecuteScriptResponse{},
+		ExpectedResps: []*vizierpb.ExecuteScriptResponse{
+			&vizierpb.ExecuteScriptResponse{
+				Status:       &vizierpb.Status{Code: 0},
+				MutationInfo: mutInfo,
+			},
+		},
+		TableNames:                 []string{"agent1_table", "agent2_table"},
+		PlannerState:               buildPlannerState(t, singleAgentDistributedState),
+		ExpectedPlannerResult:      buildPlannerResult(t, expectedPlannerResult),
+		QueryExecExpectedRunError:  nil,
+		QueryExecExpectedWaitError: err,
+		StreamResultsErr:           err,
+		StreamResultsCallExpected:  true,
+		MutExecFactory: func(planner controllers.Planner, client metadatapb.MetadataTracepointServiceClient, client2 metadatapb.MetadataConfigServiceClient, state *distributedpb.DistributedState) controllers.MutationExecutor {
+			return &fakeMutationExecutor{
+				MutInfo:       mutInfo,
+				ExecuteStatus: nil,
+				ExecuteError:  nil,
+			}
+		},
 	}
 }

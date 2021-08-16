@@ -20,7 +20,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"golang.org/x/sync/errgroup"
@@ -51,11 +50,11 @@ type QueryExecutor interface {
 	QueryID() uuid.UUID
 }
 
-// MutationExecFactory is a function that creates a new MutationExecutor.
+// MutationExecFactory is a function that creates a new MutationExecutorImpl.
 type MutationExecFactory func(Planner,
 	metadatapb.MetadataTracepointServiceClient,
 	metadatapb.MetadataConfigServiceClient,
-	*distributedpb.DistributedState) *MutationExecutor
+	*distributedpb.DistributedState) MutationExecutor
 
 // QueryExecutorImpl implements the QueryExecutor interface.
 type QueryExecutorImpl struct {
@@ -202,15 +201,15 @@ func (q *QueryExecutorImpl) getPlanOpts(queryStr string) (*planpb.PlanOptions, e
 func (q *QueryExecutorImpl) runMutation(ctx context.Context, resultCh chan<- *vizierpb.ExecuteScriptResponse, req *vizierpb.ExecuteScriptRequest, planOpts *planpb.PlanOptions, distributedState *distributedpb.DistributedState) error {
 	mutationExec := q.mutationExecFactory(q.planner, q.mdtp, q.mdconf, distributedState)
 
-	status, err := mutationExec.Execute(ctx, req, planOpts)
+	s, err := mutationExec.Execute(ctx, req, planOpts)
 	if err != nil {
 		return err
 	}
-	if status != nil {
-		if err := q.sendResponse(ctx, resultCh, StatusToVizierResponse(q.queryID, status)); err != nil {
+	if s != nil {
+		if err := q.sendResponse(ctx, resultCh, StatusToVizierResponse(q.queryID, s)); err != nil {
 			return err
 		}
-		return fmt.Errorf(status.GetMsg())
+		return StatusToError(s)
 	}
 	mutationInfo, err := mutationExec.MutationInfo(ctx)
 	if err != nil {
@@ -225,8 +224,8 @@ func (q *QueryExecutorImpl) runMutation(ctx context.Context, resultCh chan<- *vi
 		return err
 	}
 
-	if mutationInfo.Status.Code != int32(codes.OK) || err != nil {
-		return err
+	if mutationInfo.Status.Code != int32(codes.OK) {
+		return VizierStatusToError(mutationInfo.Status)
 	}
 	return nil
 }
@@ -257,8 +256,7 @@ func (q *QueryExecutorImpl) compilePlan(ctx context.Context, resultCh chan<- *vi
 		if err := q.sendResponse(ctx, resultCh, StatusToVizierResponse(q.queryID, plannerResultPB.Status)); err != nil {
 			return nil, err
 		}
-		// Returning nil error here to maintain the previous behaviour, but I don't understand why we previously did this.
-		return nil, nil
+		return nil, StatusToError(plannerResultPB.Status)
 	}
 	return plannerResultPB.Plan, nil
 }
@@ -353,7 +351,7 @@ func (q *QueryExecutorImpl) prepareScript(ctx context.Context, resultCh chan<- *
 	}
 
 	plan, err := q.compilePlan(ctx, resultCh, convertedReq, planOpts, &distributedState)
-	if err != nil || plan == nil {
+	if err != nil {
 		return err
 	}
 

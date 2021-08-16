@@ -41,8 +41,14 @@ import (
 // TracepointMap stores a map from the name to tracepoint info.
 type TracepointMap map[string]*TracepointInfo
 
-// MutationExecutor is responsible for running script mutations.
-type MutationExecutor struct {
+// MutationExecutor is the interface for running script mutations.
+type MutationExecutor interface {
+	Execute(ctx context.Context, request *vizierpb.ExecuteScriptRequest, options *planpb.PlanOptions) (*statuspb.Status, error)
+	MutationInfo(ctx context.Context) (*vizierpb.MutationInfo, error)
+}
+
+// MutationExecutorImpl is responsible for running script mutations.
+type MutationExecutorImpl struct {
 	planner           Planner
 	mdtp              metadatapb.MetadataTracepointServiceClient
 	mdconf            metadatapb.MetadataConfigServiceClient
@@ -63,8 +69,8 @@ func NewMutationExecutor(
 	planner Planner,
 	mdtp metadatapb.MetadataTracepointServiceClient,
 	mdconf metadatapb.MetadataConfigServiceClient,
-	distributedState *distributedpb.DistributedState) *MutationExecutor {
-	return &MutationExecutor{
+	distributedState *distributedpb.DistributedState) MutationExecutor {
+	return &MutationExecutorImpl{
 		planner:           planner,
 		mdtp:              mdtp,
 		mdconf:            mdconf,
@@ -75,7 +81,7 @@ func NewMutationExecutor(
 
 // Execute runs the mutation. On unknown errors it will return an error, otherwise we return a status message
 // that has more context about the error message.
-func (m *MutationExecutor) Execute(ctx context.Context, req *vizierpb.ExecuteScriptRequest, planOpts *planpb.PlanOptions) (*statuspb.Status, error) {
+func (m *MutationExecutorImpl) Execute(ctx context.Context, req *vizierpb.ExecuteScriptRequest, planOpts *planpb.PlanOptions) (*statuspb.Status, error) {
 	convertedReq, err := VizierQueryRequestToPlannerMutationRequest(req)
 	if err != nil {
 		return nil, err
@@ -212,7 +218,7 @@ func (m *MutationExecutor) Execute(ctx context.Context, req *vizierpb.ExecuteScr
 }
 
 // MutationInfo returns the summarized mutation information.
-func (m *MutationExecutor) MutationInfo(ctx context.Context) (*vizierpb.MutationInfo, error) {
+func (m *MutationExecutorImpl) MutationInfo(ctx context.Context) (*vizierpb.MutationInfo, error) {
 	req := &metadatapb.GetTracepointInfoRequest{
 		IDs: make([]*uuidpb.UUID, 0),
 	}
@@ -263,7 +269,7 @@ func (m *MutationExecutor) MutationInfo(ctx context.Context) (*vizierpb.Mutation
 	return mutationInfo, nil
 }
 
-func (m *MutationExecutor) isSchemaReady() bool {
+func (m *MutationExecutorImpl) isSchemaReady() bool {
 	schemaNames := make(map[string]bool)
 	for _, s := range m.distributedState.SchemaInfo {
 		schemaNames[s.Name] = true

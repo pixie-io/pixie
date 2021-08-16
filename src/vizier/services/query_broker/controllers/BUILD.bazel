@@ -106,6 +106,7 @@ go_test(
         "//src/utils",
         "//src/utils/testingutils",
         "//src/vizier/messages/messagespb:messages_pl_go_proto",
+        "//src/vizier/services/metadata/metadatapb:service_pl_go_proto",
         "//src/vizier/services/query_broker/controllers/mock",
         "//src/vizier/services/query_broker/querybrokerenv",
         "//src/vizier/services/query_broker/tracker",
