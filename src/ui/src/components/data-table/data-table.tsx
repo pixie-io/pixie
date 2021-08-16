@@ -431,8 +431,8 @@ const DataTableImpl: React.FC<DataTableProps> = ({ table, ...options }) => {
       );
       const onClick = React.useMemo(() => options.enableRowSelect && (() => {
         toggleRowExpanded(row.id);
-        options.onRowSelected?.(expanded === row.id ? null : row.values);
-      }), [row.id, row.values]);
+        options.onRowSelected?.(expanded === row.id ? null : row.original);
+      }), [row.id, row.original]);
 
       const rowProps = React.useMemo(
         () => row.getRowProps({ style: { ...vRowStyle, width: totalColumnsWidth } }),
