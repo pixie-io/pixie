@@ -545,6 +545,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 		versionUpdated                bool
 		disableAutoUpdate             bool
 		status                        cvmsgspb.VizierStatus
+		statusMessage                 string
 	}{
 		{
 			name:                      "valid vizier",
@@ -565,6 +566,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			numInstrumentedNodes:          3,
 			checkVersion:                  true,
 			checkDB:                       true,
+			statusMessage:                 "test",
 		},
 		{
 			name:                      "valid vizier status updated",
@@ -724,6 +726,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 				NumNodes:                      tc.numNodes,
 				NumInstrumentedNodes:          tc.numInstrumentedNodes,
 				DisableAutoUpdate:             tc.disableAutoUpdate,
+				StatusMessage:                 tc.statusMessage,
 			}
 			nestedAny, err := types.MarshalAny(nestedMsg)
 			if err != nil {
@@ -742,7 +745,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			clusterQuery := `
 			SELECT status, last_heartbeat, address, control_plane_pod_statuses, num_nodes, num_instrumented_nodes,
 			auto_update_enabled, unhealthy_data_plane_pod_statuses, previous_vizier_status,
-			previous_vizier_status_time, cluster_version
+			previous_vizier_status_time, cluster_version, status_message
 			FROM vizier_cluster_info WHERE vizier_cluster_id=$1`
 			var clusterInfo struct {
 				Status                        string                 `db:"status"`
@@ -756,6 +759,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 				NumNodes                      int32                  `db:"num_nodes"`
 				NumInstrumentedNodes          int32                  `db:"num_instrumented_nodes"`
 				AutoUpdateEnabled             bool                   `db:"auto_update_enabled"`
+				StatusMessage                 string                 `db:"status_message"`
 			}
 			clusterID, err := uuid.FromString(tc.vizierID)
 			require.NoError(t, err)
@@ -774,6 +778,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			assert.Equal(t, tc.numNodes, clusterInfo.NumNodes)
 			assert.Equal(t, tc.numInstrumentedNodes, clusterInfo.NumInstrumentedNodes)
 			assert.Equal(t, !tc.disableAutoUpdate, clusterInfo.AutoUpdateEnabled)
+			assert.Equal(t, tc.statusMessage, clusterInfo.StatusMessage)
 		})
 	}
 }

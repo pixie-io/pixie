@@ -810,6 +810,7 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	if req.BootstrapMode {
 		vzStatus = "UPDATING"
 	}
+	vzMsg := req.StatusMessage
 
 	if req.Status != cvmsgspb.VZ_ST_UNKNOWN {
 		s, err := vizierStatus(req.Status).Value()
@@ -865,12 +866,12 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 		SET last_heartbeat = $1, status = $2, address = $3, control_plane_pod_statuses = $4,
 			num_nodes = $5, num_instrumented_nodes = $6, auto_update_enabled = $7,
 			unhealthy_data_plane_pod_statuses = $8, previous_vizier_status = $9,
-			previous_vizier_status_time = $10, cluster_version = $11
-		WHERE vizier_cluster_id = $12`
+			previous_vizier_status_time = $10, cluster_version = $11, status_message = $12
+		WHERE vizier_cluster_id = $13`
 
 	_, err = s.db.Exec(query, now, vzStatus, addr, PodStatuses(req.PodStatuses), req.NumNodes,
 		req.NumInstrumentedNodes, !req.DisableAutoUpdate, PodStatuses(req.UnhealthyDataPlanePodStatuses),
-		prevStatus, prevStatusTime, req.K8sClusterVersion, vizierID)
+		prevStatus, prevStatusTime, req.K8sClusterVersion, vzMsg, vizierID)
 	if err != nil {
 		log.WithError(err).Error("Could not update vizier heartbeat")
 	}
