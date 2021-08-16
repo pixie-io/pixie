@@ -664,7 +664,7 @@ func (s *Server) GetViziersByShard(ctx context.Context, req *vzmgrpb.GetViziersB
 
 // VizierConnected is an the request made to the mgr to handle new Vizier connections.
 func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizierRequest) (*cvmsgspb.RegisterVizierAck, error) {
-	log.WithField("req", req).Info("Received RegisterVizierRequest")
+	log.WithField("VizierID", req.VizierID).WithField("ClusterName", req.ClusterInfo.ClusterName).Info("Received RegisterVizierRequest")
 
 	vzVersion := ""
 	clusterUID := ""
