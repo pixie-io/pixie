@@ -44,6 +44,7 @@ import (
 
 	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/cloud/vzconn/vzconnpb"
+	"px.dev/pixie/src/operator/api/v1alpha1"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	vzstatus "px.dev/pixie/src/shared/status"
 	"px.dev/pixie/src/utils"
@@ -58,6 +59,7 @@ const (
 	// NATSBackoffMaxElapsedTime is the maximum elapsed time that we should retry.
 	NATSBackoffMaxElapsedTime = 10 * time.Minute
 	logChunkSize              = 500
+	operatorMessage           = "Please update to the operator-controlled version of Pixie. If Pixie was deployed through the CLI, run `px delete` then `px deploy`. If Pixie was deployed through Helm Charts, run `helm delete` and install the new charts listed in our docs: docs.px.dev. If you installed with another APM provider, contact them for information on how to upgrade to the operator version of Pixie."
 )
 
 // UpdaterJobYAML is the YAML that should be applied for the updater job.
@@ -151,9 +153,10 @@ type VizierInfo interface {
 	GetVizierPods() ([]*vizierpb.VizierPodStatus, []*vizierpb.VizierPodStatus, error)
 }
 
-// VizierUpdater updates and fetches info about the Vizier CRD.
-type VizierUpdater interface {
+// VizierOperatorInfo updates and fetches info about the Vizier CRD.
+type VizierOperatorInfo interface {
 	UpdateCRDVizierVersion(string) (bool, error)
+	GetVizierCRD() (*v1alpha1.Vizier, error)
 }
 
 // VizierHealthChecker is the interface that gets information on health of a Vizier.
@@ -170,7 +173,7 @@ type Bridge struct {
 
 	vzConnClient vzconnpb.VZConnServiceClient
 	vzInfo       VizierInfo
-	vzUpdater    VizierUpdater
+	vzOperator   VizierOperatorInfo
 	vizChecker   VizierHealthChecker
 
 	hbSeqNum int64
@@ -206,7 +209,7 @@ type Bridge struct {
 }
 
 // New creates a cloud connector to cloud bridge.
-func New(vizierID uuid.UUID, jwtSigningKey string, deployKey string, sessionID int64, vzClient vzconnpb.VZConnServiceClient, vzInfo VizierInfo, vzUpdater VizierUpdater, nc *nats.Conn, checker VizierHealthChecker) *Bridge {
+func New(vizierID uuid.UUID, jwtSigningKey string, deployKey string, sessionID int64, vzClient vzconnpb.VZConnServiceClient, vzInfo VizierInfo, vzOperator VizierOperatorInfo, nc *nats.Conn, checker VizierHealthChecker) *Bridge {
 	return &Bridge{
 		vizierID:      vizierID,
 		jwtSigningKey: jwtSigningKey,
@@ -215,7 +218,7 @@ func New(vizierID uuid.UUID, jwtSigningKey string, deployKey string, sessionID i
 		vzConnClient:  vzClient,
 		vizChecker:    checker,
 		vzInfo:        vzInfo,
-		vzUpdater:     vzUpdater,
+		vzOperator:    vzOperator,
 		hbSeqNum:      0,
 		nc:            nc,
 		// Buffer NATS channels to make sure we don't back-pressure NATS
@@ -416,7 +419,7 @@ func (s *Bridge) handleUpdateMessage(msg *types.Any) error {
 	// If cluster is using operator-deployed version of Vizier, we should
 	// trigger the update through the CRD. Otherwise, we fallback to the
 	// update job.
-	updating, err := s.vzUpdater.UpdateCRDVizierVersion(pb.Version)
+	updating, err := s.vzOperator.UpdateCRDVizierVersion(pb.Version)
 	if err == nil {
 		if updating {
 			s.updateRunning.Store(true)
@@ -1024,6 +1027,23 @@ func (s *Bridge) publishBridgeSync(stream vzconnpb.VZConnService_NATSBridgeClien
 	return nil
 }
 
+func crdPhaseToHeartbeatStatus(phase v1alpha1.VizierPhase) cvmsgspb.VizierStatus {
+	switch phase {
+	case v1alpha1.VizierPhaseDisconnected:
+		return cvmsgspb.VZ_ST_DISCONNECTED
+	case v1alpha1.VizierPhaseHealthy:
+		return cvmsgspb.VZ_ST_HEALTHY
+	case v1alpha1.VizierPhaseUpdating:
+		return cvmsgspb.VZ_ST_UPDATING
+	case v1alpha1.VizierPhaseUnhealthy:
+		return cvmsgspb.VZ_ST_UNHEALTHY
+	case v1alpha1.VizierPhaseDegraded:
+		return cvmsgspb.VZ_ST_UNHEALTHY
+	default:
+		return cvmsgspb.VZ_ST_UNKNOWN
+	}
+}
+
 func (s *Bridge) generateHeartbeats(done <-chan bool) chan *cvmsgspb.VizierHeartbeat {
 	hbCh := make(chan *cvmsgspb.VizierHeartbeat)
 
@@ -1033,6 +1053,18 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) chan *cvmsgspb.VizierHeart
 			log.WithError(err).Info("Failed to get vizier address")
 		}
 		state := s.vzInfo.GetK8sState()
+
+		// Try to get the status from the Vizier CRD.
+		vz, _ := s.vzOperator.GetVizierCRD()
+		// Report default message and status if not running the Pixie operator.
+		msg := operatorMessage
+		status := s.currentStatus()
+
+		if vz != nil {
+			msg = vz.Status.Message
+			status = crdPhaseToHeartbeatStatus(vz.Status.VizierPhase)
+		}
+		log.WithField("msg", msg).WithField("status", status).Info("Sending heartbeat")
 		hbMsg := &cvmsgspb.VizierHeartbeat{
 			VizierID:                      utils.ProtoFromUUID(s.vizierID),
 			Time:                          time.Now().UnixNano(),
@@ -1045,7 +1077,8 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) chan *cvmsgspb.VizierHeart
 			UnhealthyDataPlanePodStatuses: state.UnhealthyDataPlanePodStatuses,
 			K8sClusterVersion:             state.K8sClusterVersion,
 			PodStatusesLastUpdated:        state.LastUpdated.UnixNano(),
-			Status:                        s.currentStatus(),
+			Status:                        status,
+			StatusMessage:                 msg,
 			DisableAutoUpdate:             viper.GetBool("disable_auto_update"),
 		}
 		select {
