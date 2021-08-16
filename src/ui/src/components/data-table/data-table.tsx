@@ -376,7 +376,7 @@ const DataTableImpl: React.FC<DataTableProps> = ({ table, ...options }) => {
   const defaultWidth = React.useMemo(() => {
     const staticWidths = columns.map((c) => Number(c.width)).filter((c) => c > 0);
     const staticSum = staticWidths.reduce((a, c) => a + c, 0);
-    return (containerWidth - staticSum - scrollbarWidth) / (columns.length - staticWidths.length);
+    return Math.floor((containerWidth - staticSum - scrollbarWidth) / (columns.length - staticWidths.length));
   }, [columns, containerWidth, scrollbarWidth]);
 
   const defaultColumn = React.useMemo(() => ({
