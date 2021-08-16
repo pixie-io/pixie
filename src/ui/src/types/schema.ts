@@ -208,6 +208,7 @@ export interface GQLClusterInfo {
   controlPlanePodStatuses: Array<GQLPodStatus>;
   numNodes: number;
   numInstrumentedNodes: number;
+  statusMessage: string;
 }
 
 export interface GQLClusterConnectionInfo {
@@ -874,6 +875,7 @@ export interface GQLClusterInfoTypeResolver<TParent = any> {
   controlPlanePodStatuses?: ClusterInfoToControlPlanePodStatusesResolver<TParent>;
   numNodes?: ClusterInfoToNumNodesResolver<TParent>;
   numInstrumentedNodes?: ClusterInfoToNumInstrumentedNodesResolver<TParent>;
+  statusMessage?: ClusterInfoToStatusMessageResolver<TParent>;
 }
 
 export interface ClusterInfoToIdResolver<TParent = any, TResult = any> {
@@ -921,6 +923,10 @@ export interface ClusterInfoToNumNodesResolver<TParent = any, TResult = any> {
 }
 
 export interface ClusterInfoToNumInstrumentedNodesResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface ClusterInfoToStatusMessageResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 

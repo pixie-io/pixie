@@ -37,6 +37,7 @@ describe('formatClusters', () => {
         numNodes: 0,
         numInstrumentedNodes: 4,
         controlPlanePodStatuses: [],
+        statusMessage: 'test status',
       },
       {
         id: '5b27f024-eccb-4d07-b28d-84ab8d88e6a3',
@@ -53,6 +54,7 @@ describe('formatClusters', () => {
         numNodes: 0,
         numInstrumentedNodes: 4,
         controlPlanePodStatuses: [],
+        statusMessage: 'test status',
       },
       {
         id: '5b27f024-eccb-4d07-b28d-84ab8d88e6a3',
@@ -69,6 +71,7 @@ describe('formatClusters', () => {
         numNodes: 0,
         numInstrumentedNodes: 4,
         controlPlanePodStatuses: [],
+        statusMessage: 'test status',
       },
       {
         id: '1e3a32fc-caa4-5d81-e33d-10de7d77f1b2',
@@ -85,6 +88,7 @@ describe('formatClusters', () => {
         numNodes: 8,
         numInstrumentedNodes: 8,
         controlPlanePodStatuses: [],
+        statusMessage: 'test status',
       },
     ];
     expect(formatClusters(clusterResults)).toStrictEqual([

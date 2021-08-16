@@ -181,6 +181,7 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 		resp.Clusters = append(resp.Clusters, &cloudpb.ClusterInfo{
 			ID:              vzInfo.VizierID,
 			Status:          s,
+			StatusMessage:   vzInfo.StatusMessage,
 			LastHeartbeatNs: vzInfo.LastHeartbeatNs,
 			Config: &cloudpb.VizierConfig{
 				PassthroughEnabled: vzInfo.Config.PassthroughEnabled,

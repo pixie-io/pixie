@@ -120,6 +120,7 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 				VizierInfos: []*cvmsgspb.VizierInfo{{
 					VizierID:        clusterID,
 					Status:          cvmsgspb.VZ_ST_HEALTHY,
+					StatusMessage:   "Everything is running",
 					LastHeartbeatNs: int64(1305646598000000000),
 					Config: &cvmsgspb.VizierConfig{
 						PassthroughEnabled: false,
@@ -213,6 +214,7 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 			assert.Equal(t, "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar-3", cluster.ClusterName)
 			assert.Equal(t, "gke:dev-cluster-zasgar-3", cluster.PrettyClusterName)
 			assert.Equal(t, "5.6.7", cluster.ClusterVersion)
+			assert.Equal(t, "Everything is running", cluster.StatusMessage)
 			assert.Equal(t, expectedPodStatuses, cluster.ControlPlanePodStatuses)
 			assert.Equal(t, int32(5), cluster.NumNodes)
 			assert.Equal(t, int32(3), cluster.NumInstrumentedNodes)

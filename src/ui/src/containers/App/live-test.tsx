@@ -30,6 +30,7 @@ describe('selectCluster', () => {
     controlPlanePodStatuses: [],
     numNodes: 1,
     numInstrumentedNodes: 1,
+    statusMessage: 'test status',
   };
 
   it('should select the right default cluster', () => {

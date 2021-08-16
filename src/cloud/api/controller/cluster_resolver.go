@@ -153,6 +153,7 @@ type ClusterInfoResolver struct {
 	ControlPlanePodStatuses []PodStatusResolver
 	NumNodes                int32
 	NumInstrumentedNodes    int32
+	StatusMessage           string
 }
 
 // ID returns cluster ID.
@@ -187,6 +188,7 @@ func clusterInfoToResolver(cluster *cloudpb.ClusterInfo) (*ClusterInfoResolver, 
 		},
 		VizierVersion:           cluster.VizierVersion,
 		ClusterVersion:          cluster.ClusterVersion,
+		StatusMessage:           cluster.StatusMessage,
 		ClusterUID:              cluster.ClusterUID,
 		ClusterName:             cluster.ClusterName,
 		PrettyClusterName:       cluster.PrettyClusterName,

@@ -204,6 +204,7 @@ type ClusterInfo {
   controlPlanePodStatuses: [PodStatus!]!
   numNodes: Int!
   numInstrumentedNodes: Int!
+  statusMessage: String!
 }
 
 type ClusterConnectionInfo {

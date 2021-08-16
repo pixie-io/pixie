@@ -133,25 +133,25 @@ func mustLoadTestData(db *sqlx.DB) {
 	db.MustExec(insertCluster, testNonAuthOrgID, "323e4567-e89b-12d3-a456-426655440003", testProjectName, "k8s6", "", "non_auth_2")
 
 	insertClusterInfo := `INSERT INTO vizier_cluster_info(vizier_cluster_id, status, address, jwt_signing_key, last_heartbeat,
-						  passthrough_enabled, auto_update_enabled, vizier_version, control_plane_pod_statuses, num_nodes, num_instrumented_nodes)
-						  VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
+						  passthrough_enabled, auto_update_enabled, vizier_version, control_plane_pod_statuses, num_nodes, num_instrumented_nodes, status_message)
+						  VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
 	db.MustExec(insertClusterInfo, "123e4567-e89b-12d3-a456-426655440000", "UNKNOWN", "addr0",
-		"key0", "2011-05-16 15:36:38", true, false, "", testPodStatuses, 10, 8)
+		"key0", "2011-05-16 15:36:38", true, false, "", testPodStatuses, 10, 8, "")
 	db.MustExec(insertClusterInfo, "123e4567-e89b-12d3-a456-426655440001", "HEALTHY", "addr1",
 		"\\xc30d04070302c5374a5098262b6d7bd23f01822f741dbebaa680b922b55fd16eb985aeb09505f8fc4a36f0e11ebb8e18f01f684146c761e2234a81e50c21bca2907ea37736f2d9a5834997f4dd9e288c",
-		"2011-05-17 15:36:38", false, true, "vzVers", "{}", 12, 9)
+		"2011-05-17 15:36:38", false, true, "vzVers", "{}", 12, 9, "This is a test")
 	db.MustExec(insertClusterInfo, "123e4567-e89b-12d3-a456-426655440002", "UNHEALTHY", "addr2", "key2", "2011-05-18 15:36:38",
-		true, false, "", "{}", 4, 4)
+		true, false, "", "{}", 4, 4, "")
 	db.MustExec(insertClusterInfo, testDisconnectedClusterEmptyUID, "DISCONNECTED", "addr3", "key3", "2011-05-19 15:36:38",
-		false, true, "", "{}", 3, 2)
+		false, true, "", "{}", 3, 2, "")
 	db.MustExec(insertClusterInfo, testExistingCluster, "DISCONNECTED", "addr3", "key3", "2011-05-19 15:36:38",
-		false, true, "", "{}", 5, 4)
+		false, true, "", "{}", 5, 4, "")
 	db.MustExec(insertClusterInfo, testExistingClusterActive, "UNHEALTHY", "addr3", "key3", "2011-05-19 15:36:38",
-		false, true, "", "{}", 10, 4)
+		false, true, "", "{}", 10, 4, "")
 	db.MustExec(insertClusterInfo, "223e4567-e89b-12d3-a456-426655440003", "HEALTHY", "addr3", "key3", "2011-05-19 15:36:38",
-		true, true, "", "{}", 2, 0)
+		true, true, "", "{}", 2, 0, "")
 	db.MustExec(insertClusterInfo, "323e4567-e89b-12d3-a456-426655440003", "HEALTHY", "addr3", "key3", "2011-05-19 15:36:38",
-		false, true, "", "{}", 4, 2)
+		false, true, "", "{}", 4, 2, "")
 
 	db.MustExec(`UPDATE vizier_cluster SET cluster_name=NULL WHERE id=$1`, testDisconnectedClusterEmptyUID)
 }
@@ -249,6 +249,7 @@ func TestServer_GetVizierInfo(t *testing.T) {
 	assert.Equal(t, "cUID", resp.ClusterUID)
 	assert.Equal(t, int32(12), resp.NumNodes)
 	assert.Equal(t, int32(9), resp.NumInstrumentedNodes)
+	assert.Equal(t, "This is a test", resp.StatusMessage)
 
 	// Test that the empty pods list case works.
 	assert.Equal(t, make(controller.PodStatuses), controller.PodStatuses(resp.ControlPlanePodStatuses))
@@ -283,6 +284,7 @@ func TestServer_GetVizierInfos(t *testing.T) {
 	assert.Equal(t, 4, len(resp.VizierInfos))
 	assert.Equal(t, utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"), resp.VizierInfos[0].VizierID)
 	assert.Equal(t, "vzVers", resp.VizierInfos[0].VizierVersion)
+	assert.Equal(t, "This is a test", resp.VizierInfos[0].StatusMessage)
 	assert.Equal(t, &cvmsgspb.VizierInfo{}, resp.VizierInfos[1])
 	assert.Equal(t, &cvmsgspb.VizierInfo{}, resp.VizierInfos[2])
 	assert.Equal(t, utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"), resp.VizierInfos[3].VizierID)

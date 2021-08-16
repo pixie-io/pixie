@@ -89,6 +89,7 @@ func TestClusterInfo(t *testing.T) {
 				ClusterVersion: "clusterVersion",
 				ClusterName:    "clusterName",
 				ClusterUID:     "clusterUID",
+				StatusMessage:  "Everything is running",
 			}
 
 			mockClients.MockVizierClusterInfo.EXPECT().
@@ -117,6 +118,7 @@ func TestClusterInfo(t *testing.T) {
 								clusterVersion
 								clusterName
 								clusterUID
+								statusMessage
 							}
 						}
 					`,
@@ -132,7 +134,8 @@ func TestClusterInfo(t *testing.T) {
 								"vizierVersion": "vzVersion",
 								"clusterVersion": "clusterVersion",
 								"clusterName": "clusterName",
-								"clusterUID": "clusterUID"
+								"clusterUID": "clusterUID",
+								"statusMessage": "Everything is running"
 							}
 						}
 					`,
@@ -174,6 +177,7 @@ func TestClusterInfoByName(t *testing.T) {
 				ClusterVersion: "clusterVersion",
 				ClusterName:    "clusterName",
 				ClusterUID:     "clusterUID",
+				StatusMessage:  "Everything is running",
 			}
 
 			unmatchedClusterInfo := &cloudpb.ClusterInfo{
@@ -213,6 +217,7 @@ func TestClusterInfoByName(t *testing.T) {
 								clusterVersion
 								clusterName
 								clusterUID
+								statusMessage
 							}
 						}
 					`,
@@ -228,7 +233,8 @@ func TestClusterInfoByName(t *testing.T) {
 								"vizierVersion": "vzVersion",
 								"clusterVersion": "clusterVersion",
 								"clusterName": "clusterName",
-								"clusterUID": "clusterUID"
+								"clusterUID": "clusterUID",
+								"statusMessage": "Everything is running"
 							}
 						}
 					`,
