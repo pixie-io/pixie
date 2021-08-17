@@ -29,6 +29,7 @@
 
 #include <absl/strings/str_format.h>
 #include "src/carnot/udf/udf.h"
+#include "src/common/base/test_utils.h"
 #include "src/shared/types/types.h"
 
 namespace px {
@@ -75,6 +76,12 @@ class UDFTester {
 
   explicit UDFTester(std::unique_ptr<udf::FunctionContext> function_ctx)
       : function_ctx_(std::move(function_ctx)) {}
+
+  template <typename... Args>
+  UDFTester& Init(Args... args) {
+    EXPECT_OK(udf_.Init(function_ctx_.get(), args...));
+    return *this;
+  }
 
   /*
    * Execute the UDF on the given arguments and store the result to be checked by Expect.

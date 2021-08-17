@@ -35,6 +35,7 @@ pl_cc_library(
         "//src/carnot/exec/ml:cc_library",
         "//src/carnot/funcs/builtins/sql_parsing:cc_library",
         "//src/carnot/udf:cc_library",
+        "@com_github_google_re2//:re2",
         "@com_github_google_sentencepiece//:libsentencepiece",
         "@com_github_tdunning_t_digest//:tdigest",
         "@com_github_tencent_rapidjson//:rapidjson",
@@ -152,6 +153,15 @@ pl_cc_test(
 pl_cc_test(
     name = "sql_ops_test",
     srcs = ["sql_ops_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/udf:udf_testutils",
+    ],
+)
+
+pl_cc_test(
+    name = "regex_ops_test",
+    srcs = ["regex_ops_test.cc"],
     deps = [
         ":cc_library",
         "//src/carnot/udf:udf_testutils",
