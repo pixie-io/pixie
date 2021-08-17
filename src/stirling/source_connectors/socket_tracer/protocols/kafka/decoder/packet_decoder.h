@@ -198,12 +198,22 @@ class PacketDecoder {
   // Forgotten Topic Data in Fetch Request.
   StatusOr<FetchForgottenTopicsData> ExtractFetchForgottenTopicsData();
 
+  // Aborted Transaction Data in Fetch Response.
+  StatusOr<FetchRespAbortedTransaction> ExtractFetchRespAbortedTransaction();
+
+  // Partition Data in Fetch Response.
+  StatusOr<FetchRespPartition> ExtractFetchRespPartition();
+
+  // Topic Data in Fetch Response.
+  StatusOr<FetchRespTopic> ExtractFetchRespTopic();
+
   Status ExtractReqHeader(Request* req);
   Status ExtractRespHeader(Response* resp);
 
   StatusOr<ProduceReq> ExtractProduceReq();
   StatusOr<ProduceResp> ExtractProduceResp();
   StatusOr<FetchReq> ExtractFetchReq();
+  StatusOr<FetchResp> ExtractFetchResp();
 
   bool eof() { return binary_decoder_.eof(); }
 

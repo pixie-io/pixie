@@ -17,6 +17,7 @@
  */
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/kafka/decoder/packet_decoder.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/opcodes/message_set.h"
 
 namespace px {
 namespace stirling {
@@ -88,6 +89,48 @@ StatusOr<FetchReq> PacketDecoder::ExtractFetchReq() {
     PL_ASSIGN_OR_RETURN(r.rack_id, ExtractString());
   }
 
+  PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
+  return r;
+}
+
+StatusOr<FetchRespAbortedTransaction> PacketDecoder::ExtractFetchRespAbortedTransaction() {
+  FetchRespAbortedTransaction r;
+  PL_ASSIGN_OR_RETURN(r.producer_id, ExtractInt64());
+  PL_ASSIGN_OR_RETURN(r.first_offset, ExtractInt64());
+  PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
+  return r;
+}
+
+StatusOr<FetchRespPartition> PacketDecoder::ExtractFetchRespPartition() {
+  FetchRespPartition r;
+
+  PL_ASSIGN_OR_RETURN(r.index, ExtractInt32());
+  PL_ASSIGN_OR_RETURN(r.error_code, ExtractInt16());
+  PL_ASSIGN_OR_RETURN(r.high_watermark, ExtractInt64());
+  PL_ASSIGN_OR_RETURN(r.last_stable_offset, ExtractInt64());
+  PL_ASSIGN_OR_RETURN(r.log_start_offset, ExtractInt64());
+  PL_ASSIGN_OR_RETURN(r.aborted_transactions,
+                      ExtractArray(&PacketDecoder::ExtractFetchRespAbortedTransaction));
+  PL_ASSIGN_OR_RETURN(r.preferred_read_replica, ExtractInt32());
+  PL_ASSIGN_OR_RETURN(r.message_set, ExtractMessageSet());
+  // No tag section here, since it's been handled in MessageSet.
+  return r;
+}
+
+StatusOr<FetchRespTopic> PacketDecoder::ExtractFetchRespTopic() {
+  FetchRespTopic r;
+  PL_ASSIGN_OR_RETURN(r.name, ExtractString());
+  PL_ASSIGN_OR_RETURN(r.partitions, ExtractArray(&PacketDecoder::ExtractFetchRespPartition));
+  PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
+  return r;
+}
+
+StatusOr<FetchResp> PacketDecoder::ExtractFetchResp() {
+  FetchResp r;
+  PL_ASSIGN_OR_RETURN(r.throttle_time_ms, ExtractInt32());
+  PL_ASSIGN_OR_RETURN(r.error_code, ExtractInt16());
+  PL_ASSIGN_OR_RETURN(r.session_id, ExtractInt32());
+  PL_ASSIGN_OR_RETURN(r.topics, ExtractArray(&PacketDecoder::ExtractFetchRespTopic));
   PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   return r;
 }
