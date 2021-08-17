@@ -45,6 +45,7 @@ import (
 	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/cloud/vzconn/vzconnpb"
 	"px.dev/pixie/src/shared/cvmsgspb"
+	vzstatus "px.dev/pixie/src/shared/status"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/vizier/utils/messagebus"
 )
@@ -645,6 +646,7 @@ func (s *Bridge) doRegistrationHandshake(stream vzconnpb.VZConnService_NATSBridg
 				s.registered = true
 				return nil
 			default:
+
 				return errors.New("registration unsuccessful: " + err.Error())
 			}
 		}
@@ -1137,4 +1139,14 @@ func (s *Bridge) DebugPods(req *vizierpb.DebugPodsRequest, srv vizierpb.VizierDe
 		return err
 	}
 	return nil
+}
+
+// GetStatus returns a reason for the current state of the cloud bridge.
+// If an empty string is returned, assume healthy.
+func (s *Bridge) GetStatus() string {
+	if s.vzConnClient == nil {
+		return vzstatus.CloudConnectorFailedToConnect
+	}
+	// TODO(michellenguyen): Add status reasons for whether the bridge stream has started/stopped successfully.
+	return ""
 }

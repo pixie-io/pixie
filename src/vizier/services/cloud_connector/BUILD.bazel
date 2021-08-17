@@ -31,6 +31,8 @@ go_library(
         "//src/shared/services/healthz",
         "//src/shared/services/httpmiddleware",
         "//src/shared/services/server",
+        "//src/shared/services/statusz",
+        "//src/shared/status",
         "//src/vizier/services/cloud_connector/bridge",
         "//src/vizier/services/cloud_connector/vizhealth",
         "@com_github_gofrs_uuid//:uuid",

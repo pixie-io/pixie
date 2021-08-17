@@ -38,6 +38,8 @@ import (
 	"px.dev/pixie/src/shared/services/healthz"
 	"px.dev/pixie/src/shared/services/httpmiddleware"
 	"px.dev/pixie/src/shared/services/server"
+	"px.dev/pixie/src/shared/services/statusz"
+	"px.dev/pixie/src/shared/status"
 	controllers "px.dev/pixie/src/vizier/services/cloud_connector/bridge"
 	"px.dev/pixie/src/vizier/services/cloud_connector/vizhealth"
 )
@@ -163,6 +165,22 @@ func main() {
 	healthz.RegisterDefaultChecks(mux)
 	// Set up readyz endpoint.
 	healthz.InstallPathHandler(mux, "/readyz", &readinessCheck{vzInfo})
+
+	statusz.InstallPathHandler(mux, "/statusz", func() string {
+		// Check state of the bridge.
+		bridgeStatus := svr.GetStatus()
+		if bridgeStatus != "" {
+			return bridgeStatus
+		}
+
+		// If bridge is functioning, check whether queries can be executed.
+		_, err := checker.GetStatus()
+		if err != nil {
+			return status.CloudConnectorBasicQueryFailed
+		}
+
+		return ""
+	})
 
 	e := env.New("vizier")
 	s := server.NewPLServer(e,

@@ -34,6 +34,7 @@ go_library(
         "//src/shared/k8s",
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
         "//src/shared/services",
+        "//src/shared/status",
         "//src/utils",
         "//src/vizier/utils/messagebus",
         "@com_github_blang_semver//:semver",
