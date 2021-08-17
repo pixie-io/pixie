@@ -28,6 +28,7 @@ import { dataFromProto } from 'app/utils/result-data-utils';
 
 import { Theme, makeStyles, withStyles } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
+import HelpIcon from '@material-ui/icons/Help';
 import MaterialBreadcrumbs from '@material-ui/core/Breadcrumbs';
 import IconButton from '@material-ui/core/IconButton';
 import Table from '@material-ui/core/Table';
@@ -386,11 +387,123 @@ const PodsTable: React.FC<{ pods: GQLPodStatus[] }> = ({ pods }) => {
   );
 };
 
-const useDetailsTableStyles = makeStyles((theme: Theme) => createStyles({
+const useClusterDetailStyles = makeStyles((theme: Theme) => createStyles({
+  errorMessage: {
+    ...theme.typography.body1,
+    padding: theme.spacing(3),
+  },
+  tabContents: {
+    margin: theme.spacing(1),
+  },
+  tableContainer: {
+    maxHeight: 800,
+  },
+  podTypeHeader: {
+    ...theme.typography.h6,
+    color: theme.palette.foreground.grey5,
+    alignItems: 'center',
+    height: '100%',
+    paddingLeft: theme.spacing(2),
+  },
+  topPadding: {
+    paddingTop: theme.spacing(2),
+    paddingBottom: theme.spacing(2),
+  },
+  titleContainer: {
+    display: 'flex',
+  },
+  helpIcon: {
+    display: 'flex',
+    paddingLeft: theme.spacing(1),
+  },
   detailsTable: {
     maxWidth: theme.breakpoints.values.md,
   },
 }));
+
+const PixiePodsTab: React.FC<{
+  controlPlanePods: GQLPodStatus[],
+  dataPlanePods: GQLPodStatus[],
+}> = ({ controlPlanePods, dataPlanePods }) => {
+  const classes = useClusterDetailStyles();
+  const controlPlaneDisplay = controlPlanePods.map((podStatus) => formatPodStatus(podStatus));
+  const dataPlaneDisplay = dataPlanePods.map((podStatus) => formatPodStatus(podStatus));
+
+  const PodHeader = () => (
+    <TableHead>
+      <TableRow>
+        <StyledTableHeaderCell />
+        <StyledTableHeaderCell>Name</StyledTableHeaderCell>
+        <StyledTableHeaderCell>Status</StyledTableHeaderCell>
+        <StyledTableHeaderCell>Restart Count</StyledTableHeaderCell>
+        <StyledTableHeaderCell />
+      </TableRow>
+    </TableHead>
+
+  );
+  return (
+    <>
+      <div className={`${classes.podTypeHeader} ${classes.topPadding}`}> Control Plane Pods </div>
+      <Table>
+        <PodHeader />
+        <TableBody>
+          {controlPlaneDisplay.map((podStatus) => (
+            <ExpandablePodRow key={podStatus.name} podStatus={podStatus} />
+          ))}
+        </TableBody>
+        {/* We place this header as a row so our data plane pods are aligned with the control plane pods.
+        We also make the column span 3 so it sizes with the State, Name, and Status column. Without
+        this specification, the cell would default to colspan="1" which would cause the state column
+        to be extremely wide. If you ever reduce the number of columns in the table you'll want to reduce
+        this value.
+        */}
+        <TableRow>
+          <TableCell className={classes.podTypeHeader} colSpan={3}>
+            <div className={classes.titleContainer}>
+              <div className={classes.titleContainer}>
+                Sample of Unhealthy Data Plane Pods
+            </div>
+              <AdminTooltip title={'Sample of unhealthy Pixie data plane pods. '
+                + 'To see a list of all agents, click the Agents tab.'}>
+                <HelpIcon className={classes.helpIcon} />
+              </AdminTooltip>
+            </div>
+          </TableCell>
+        </TableRow>
+        <PodHeader />
+        <TableBody>
+          {
+            dataPlanePods?.length > 0
+              ? dataPlaneDisplay.map((podStatus) => (
+                <ExpandablePodRow key={podStatus.name} podStatus={podStatus} />
+              )) : <div className={classes.errorMessage}> Cluster has no unhealthy Pixie data plane pods. </div>
+          }
+        </TableBody>
+      </Table>
+    </>
+  );
+};
+
+const AgentsTab: React.FC<{
+  cluster: Pick<GQLClusterInfo, 'id' | 'clusterName' | 'status' | 'unhealthyDataPlanePodStatuses'>
+}> = ({ cluster }) => {
+  const classes = useClusterDetailStyles();
+  const statusGroup = clusterStatusGroup(cluster.status);
+
+  return (
+    <>
+      <TableContainer className={classes.tableContainer}>
+        {(statusGroup !== 'healthy') ? (
+          <div className={classes.errorMessage}>
+            {`Cannot get agents for cluster ${cluster.clusterName}, reason: ${statusGroup}`}
+          </div>
+        )
+          : (<AgentsTable />)
+        }
+      </TableContainer>
+    </>
+  );
+};
 
 const ClusterSummaryTable = ({ cluster }: {
   cluster: Pick<
@@ -407,7 +520,7 @@ const ClusterSummaryTable = ({ cluster }: {
   'vizierConfig'
   >
 }) => {
-  const classes = useDetailsTableStyles();
+  const classes = useClusterDetailStyles();
   if (!cluster) {
     return (
       <div>
@@ -454,23 +567,25 @@ const ClusterSummaryTable = ({ cluster }: {
   ];
 
   return (
-    <div className={classes.detailsTable}>
-      <Table>
-        <TableBody>
-          {data.map((r) => (
-            <TableRow key={r.key}>
-              <StyledTableCell >
-                {r.key}
-              </StyledTableCell>
-              {!React.isValidElement(r.value)
-                ? <StyledTableCell>{r.value}</StyledTableCell>
-                : r.value
-              }
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div >
+    <TableContainer className={classes.tableContainer}>
+      <div className={classes.detailsTable}>
+        <Table>
+          <TableBody>
+            {data.map((r) => (
+              <TableRow key={r.key}>
+                <StyledTableCell >
+                  {r.key}
+                </StyledTableCell>
+                {!React.isValidElement(r.value)
+                  ? <StyledTableCell>{r.value}</StyledTableCell>
+                  : r.value
+                }
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div >
+    </TableContainer>
   );
 };
 
@@ -521,19 +636,6 @@ const ClusterDetailsNavigationBreadcrumbs = ({ selectedClusterName }) => {
   return (<Breadcrumbs breadcrumbs={breadcrumbs} />);
 };
 
-const useClusterDetailStyles = makeStyles((theme: Theme) => createStyles({
-  error: {
-    ...theme.typography.body1,
-    padding: 20,
-  },
-  tabContents: {
-    margin: theme.spacing(1),
-  },
-  container: {
-    maxHeight: 800,
-  },
-}));
-
 const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) => {
   const classes = useClusterDetailStyles();
   const [tab, setTab] = React.useState('details');
@@ -551,6 +653,7 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
     'status' |
     'statusMessage' |
     'controlPlanePodStatuses' |
+    'unhealthyDataPlanePodStatuses' |
     'lastHeartbeatMs' |
     'numNodes' |
     'numInstrumentedNodes'
@@ -588,6 +691,22 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
               message
             }
           }
+          unhealthyDataPlanePodStatuses {
+            name
+            status
+            message
+            reason
+            restartCount
+            containers {
+              name
+              state
+              reason
+              message
+            }
+            events {
+              message
+            }
+          }
         }
       }`, { variables: { name: clusterName } },
   );
@@ -605,16 +724,16 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
   }), [cluster]);
 
   if (loading) {
-    return <div className={classes.error}>Loading...</div>;
+    return <div className={classes.errorMessage}>Loading...</div>;
   }
   if (error) {
-    return <div className={classes.error}>{error.toString()}</div>;
+    return <div className={classes.errorMessage}>{error.toString()}</div>;
   }
 
   if (!cluster) {
     return (
       <>
-        <div className={classes.error}>
+        <div className={classes.errorMessage}>
           Cluster
           {' '}
           {clusterName}
@@ -625,8 +744,6 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
     );
   }
 
-  const statusGroup = clusterStatusGroup(cluster.status);
-
   return (
     <>
       <StyledTabs
@@ -635,42 +752,27 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
       >
         <StyledTab value='details' label='Details' />
         <StyledTab value='agents' label='Agents' />
-        <StyledTab value='control-plane-pods' label='Control Plane Pods' />
+        <StyledTab value='pixie-pods' label='Pixie Pods' />
       </StyledTabs>
       <div className={classes.tabContents}>
         {
           tab === 'details' && (
-            <TableContainer className={classes.container}>
-              <ClusterSummaryTable cluster={cluster} />
-            </TableContainer>
+            <ClusterSummaryTable cluster={cluster} />
           )
         }
         {
           tab === 'agents' && (
-            statusGroup === 'healthy' ? (
-              <ClusterContext.Provider value={clusterContext}>
-                <TableContainer className={classes.container}>
-                  <AgentsTable />
-                </TableContainer>
-              </ClusterContext.Provider>
-            ) : (
-                <div className={classes.error}>
-                  Cannot get agents for cluster
-                  {' '}
-                  {clusterName}
-                  {', '}
-                cluster is in state
-                  {': '}
-                  {cluster.status.replace('CS_', '')}
-                </div>
-            )
+            <ClusterContext.Provider value={clusterContext}>
+              <AgentsTab cluster={cluster} />
+            </ClusterContext.Provider>
           )
         }
         {
-          tab === 'control-plane-pods' && (
-            <TableContainer className={classes.container}>
-              <PodsTable pods={cluster.controlPlanePodStatuses} />
-            </TableContainer>
+          tab === 'pixie-pods' && (
+            <PixiePodsTab
+              controlPlanePods={cluster.controlPlanePodStatuses}
+              dataPlanePods={cluster.unhealthyDataPlanePodStatuses}
+            />
           )
         }
       </div>
