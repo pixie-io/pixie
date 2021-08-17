@@ -33,7 +33,6 @@ go_library(
         "deployment_key.go",
         "get.go",
         "live.go",
-        "proxy.go",
         "root.go",
         "run.go",
         "script_utils.go",

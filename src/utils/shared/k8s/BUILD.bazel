@@ -23,7 +23,6 @@ go_library(
         "auth.go",
         "delete.go",
         "logs.go",
-        "proxy.go",
         "secrets.go",
         "watcher.go",
     ],

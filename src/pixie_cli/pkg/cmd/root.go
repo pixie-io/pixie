@@ -60,7 +60,6 @@ func init() {
 	RootCmd.AddCommand(DeployCmd)
 	RootCmd.AddCommand(DeleteCmd)
 	RootCmd.AddCommand(UpdateCmd)
-	RootCmd.AddCommand(ProxyCmd)
 	RootCmd.AddCommand(RunCmd)
 	RootCmd.AddCommand(LiveCmd)
 	RootCmd.AddCommand(GetCmd)
