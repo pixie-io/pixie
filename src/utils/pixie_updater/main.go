@@ -160,7 +160,9 @@ func main() {
 		if isTimeoutError(err) {
 			log.WithError(err).Error("Old components taking longer to terminate than timeout")
 		} else {
-			log.WithError(err).Fatal("Failed to delete old components")
+			// This error is expected since DeleteByLabel for all resources will also try to list resources that the UpdaterPod
+			// does not have RBAC access to.
+			log.WithError(err).Warn("Failed to delete old components")
 		}
 	}
 
