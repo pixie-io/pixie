@@ -829,9 +829,6 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	if req.Address == "" {
 		vzStatus = "UNHEALTHY"
 	}
-	if req.BootstrapMode {
-		vzStatus = "UPDATING"
-	}
 	vzMsg := req.StatusMessage
 
 	if req.Status != cvmsgspb.VZ_ST_UNKNOWN {
@@ -901,20 +898,9 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 		return
 	}
 
-	if !req.BootstrapMode {
-		if !req.DisableAutoUpdate && !s.updater.VersionUpToDate(prevInfo.Version) {
-			s.updater.AddToUpdateQueue(vizierID)
-		}
-		return
+	if !req.DisableAutoUpdate && !s.updater.VersionUpToDate(prevInfo.Version) {
+		s.updater.AddToUpdateQueue(vizierID)
 	}
-
-	// If we reach this point, the cluster is in bootstrap mode and needs to be deployed.
-	go func() {
-		_, err := s.updater.UpdateOrInstallVizier(vizierID, req.BootstrapVersion, false)
-		if err != nil {
-			log.WithError(err).Error("Failed to update or install vizier")
-		}
-	}()
 }
 
 // HandleSSLRequest registers certs for the vizier cluster.

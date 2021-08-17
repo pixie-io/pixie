@@ -17,7 +17,7 @@
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "container_push")
-load("//bazel:images.bzl", "generate_vizier_bootstrap_yamls", "generate_vizier_metadata_persist_yamls", "generate_vizier_yamls", "image_map_with_bundle_version")
+load("//bazel:images.bzl", "generate_vizier_metadata_persist_yamls", "generate_vizier_yamls", "image_map_with_bundle_version")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -46,22 +46,6 @@ generate_vizier_yamls(
     name = "private_vizier_etcd_metadata_prod",
     srcs = glob(["**/*.yaml"]),
     out = "private_vizier_etcd_metadata_prod.yaml",
-    image_map = VIZIER_IMAGE_MAP,
-    replace = {},
-)
-
-generate_vizier_bootstrap_yamls(
-    name = "public_vizier_bootstrap_prod",
-    srcs = glob(["**/*.yaml"]),
-    out = "public_vizier_bootstrap_prod.yaml",
-    image_map = VIZIER_IMAGE_MAP,
-    replace = public_image_replacement,
-)
-
-generate_vizier_bootstrap_yamls(
-    name = "private_vizier_bootstrap_prod",
-    srcs = glob(["**/*.yaml"]),
-    out = "private_vizier_bootstrap_prod.yaml",
     image_map = VIZIER_IMAGE_MAP,
     replace = {},
 )
@@ -119,12 +103,10 @@ pkg_tar(
     srcs =
         select({
             ":public": [
-                "//k8s/vizier:public_vizier_bootstrap_prod.yaml",
                 "//k8s/vizier:public_vizier_etcd_metadata_prod.yaml",
                 "//k8s/vizier:public_vizier_metadata_persist_prod.yaml",
             ],
             "//conditions:default": [
-                "//k8s/vizier:private_vizier_bootstrap_prod.yaml",
                 "//k8s/vizier:private_vizier_etcd_metadata_prod.yaml",
                 "//k8s/vizier:private_vizier_metadata_persist_prod.yaml",
             ],
@@ -134,10 +116,8 @@ pkg_tar(
         ],
     package_dir = "/yamls",
     remap_paths = {
-        "/vizier/private_vizier_bootstrap_prod.yaml": "vizier/vizier_bootstrap_prod.yaml",
         "/vizier/private_vizier_etcd_metadata_prod.yaml": "vizier/vizier_etcd_metadata_prod.yaml",
         "/vizier/private_vizier_metadata_persist_prod.yaml": "vizier/vizier_metadata_persist_prod.yaml",
-        "/vizier/public_vizier_bootstrap_prod.yaml": "vizier/vizier_bootstrap_prod.yaml",
         "/vizier/public_vizier_etcd_metadata_prod.yaml": "vizier/vizier_etcd_metadata_prod.yaml",
         "/vizier/public_vizier_metadata_persist_prod.yaml": "vizier/vizier_metadata_persist_prod.yaml",
     },

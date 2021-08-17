@@ -50,9 +50,6 @@ spec:
         - configMapRef:
             name: pl-cloud-connector-tls-config
         - configMapRef:
-            name: pl-cloud-connector-bootstrap-config
-            optional: true
-        - configMapRef:
             name: pl-cluster-config
             optional: true
         ports:

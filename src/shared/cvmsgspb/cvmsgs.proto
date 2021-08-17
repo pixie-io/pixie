@@ -116,10 +116,6 @@ message VizierHeartbeat {
   // The status of vizier at the time of the heartbeat. For backwards compatibility,
   // if status is VZ_ST_UNKNOWN, then we assume the vizier is healthy.
   VizierStatus status = 8;
-  // Whether the cluster is in bootstrap mode and needs to be deployed/updated.
-  bool bootstrap_mode = 9;
-  // The version to update/deploy, if in bootstrap mode.
-  string bootstrap_version = 10;
   // The total number of nodes (instrumented & non-instrumented) on the cluster this Vizier is on.
   int32 num_nodes = 11;
   // The total number of  nodes on the cluster that have pems.
@@ -130,6 +126,8 @@ message VizierHeartbeat {
   string status_message = 14;
   // The current Kubernetes version that the cluster is running.
   string k8s_cluster_version = 16 [(gogoproto.customname) = "K8sClusterVersion"];
+
+  reserved 9, 10;
 }
 
 message PodStatus {

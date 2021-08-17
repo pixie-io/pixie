@@ -83,9 +83,6 @@ spec:
         - configMapRef:
             name: pl-cluster-config
             optional: true
-        - configMapRef:
-            name: pl-cloud-connector-bootstrap-config
-            optional: true
         env:
         - name: PL_CLOUD_TOKEN
           valueFrom:
@@ -323,7 +320,7 @@ func (s *Bridge) RunStream() {
 		s.vzConnClient = vzClient
 	}
 
-	if !viper.GetBool("bootstrap_mode") && s.nc == nil {
+	if s.nc == nil {
 		var nc *nats.Conn
 		var err error
 
@@ -1050,8 +1047,6 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) chan *cvmsgspb.VizierHeart
 			K8sClusterVersion:             state.K8sClusterVersion,
 			PodStatusesLastUpdated:        state.LastUpdated.UnixNano(),
 			Status:                        s.currentStatus(),
-			BootstrapMode:                 viper.GetBool("bootstrap_mode"),
-			BootstrapVersion:              viper.GetString("bootstrap_version"),
 			DisableAutoUpdate:             viper.GetBool("disable_auto_update"),
 		}
 		select {

@@ -21,8 +21,6 @@ package vizieryamls
 import (
 	"fmt"
 	"os"
-	"strconv"
-	"strings"
 
 	"k8s.io/client-go/kubernetes"
 
@@ -47,7 +45,6 @@ type VizierTmplValues struct {
 	ClusterName       string
 	CloudUpdateAddr   string
 	UseEtcdOperator   bool
-	BootstrapVersion  string
 	PEMMemoryLimit    string
 	Namespace         string
 	DisableAutoUpdate bool
@@ -65,7 +62,6 @@ func VizierTmplValuesToArgs(tmplValues *VizierTmplValues) *yamls.YAMLTmplArgumen
 			"clusterName":       tmplValues.ClusterName,
 			"cloudUpdateAddr":   tmplValues.CloudUpdateAddr,
 			"useEtcdOperator":   tmplValues.UseEtcdOperator,
-			"bootstrapVersion":  tmplValues.BootstrapVersion,
 			"pemMemoryLimit":    tmplValues.PEMMemoryLimit,
 			"disableAutoUpdate": tmplValues.DisableAutoUpdate,
 			"sentryDSN":         tmplValues.SentryDSN,
@@ -152,7 +148,7 @@ func GenerateTemplatedDeployYAMLsWithTar(clientset *kubernetes.Clientset, tarPat
 
 // GenerateTemplatedDeployYAMLs generates the YAMLs that should be run when deploying Pixie using the provided YAML map.
 func GenerateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string, versionStr string) ([]*yamls.YAMLFile, error) {
-	secretsYAML, err := GenerateSecretsYAML(clientset, versionStr, false)
+	secretsYAML, err := GenerateSecretsYAML(clientset, versionStr)
 	if err != nil {
 		return nil, err
 	}
@@ -192,15 +188,10 @@ func GenerateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, yamlMap map[s
 }
 
 // GenerateSecretsYAML creates the YAML for Pixie secrets.
-func GenerateSecretsYAML(clientset *kubernetes.Clientset, versionStr string, bootstrapMode bool) (string, error) {
+func GenerateSecretsYAML(clientset *kubernetes.Clientset, versionStr string) (string, error) {
 	dockerYAML := ""
 
-	csYAMLs, err := generateClusterSecretYAMLs(bootstrapMode)
-	if err != nil {
-		return "", err
-	}
-
-	origYAML := yamls.ConcatYAMLs(dockerYAML, csYAMLs)
+	origYAML := yamls.ConcatYAMLs(dockerYAML, secretsYAML)
 
 	// Fill in configmaps.
 	secretsYAML, err := yamls.TemplatizeK8sYAML(clientset, origYAML, append([]*yamls.K8sTemplateOptions{
@@ -269,12 +260,6 @@ func GenerateSecretsYAML(clientset *kubernetes.Clientset, versionStr string, boo
 			Patch:           `{"data": { "PL_MD_ETCD_SERVER": "__PL_MD_ETCD_SERVER__"} }`,
 			Placeholder:     "__PL_MD_ETCD_SERVER__",
 			TemplateValue:   fmt.Sprintf(`{{ if .Values.useEtcdOperator }}"https://pl-etcd-client.%s.svc:2379"{{else}}"https://etcd.%s.svc:2379"{{end}}`, nsTmpl, nsTmpl),
-		},
-		{
-			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cloud-connector-bootstrap-config"),
-			Patch:           `{"data": { "PL_BOOTSTRAP_VERSION": "__PL_BOOTSTRAP_VERSION__"} }`,
-			Placeholder:     "__PL_BOOTSTRAP_VERSION__",
-			TemplateValue:   `"{{.Values.bootstrapVersion}}"`,
 		},
 	}, GlobalTemplateOptions...))
 	if err != nil {
@@ -440,28 +425,9 @@ metadata:
   namespace: pl
 ---
 apiVersion: v1
-data:
-  PL_BOOTSTRAP_MODE: "__PL_BOOTSTRAP_MODE__"
-kind: ConfigMap
-metadata:
-  creationTimestamp: null
-  labels:
-    component: vizier
-  name: pl-cloud-connector-bootstrap-config
-  namespace: pl
----
-apiVersion: v1
 kind: Secret
 metadata:
   creationTimestamp: null
   name: pl-deploy-secrets
   namespace: pl
 `
-
-func generateClusterSecretYAMLs(bootstrapMode bool) (string, error) {
-	// Perform substitutions.
-	r := strings.NewReplacer(
-		"__PL_BOOTSTRAP_MODE__", strconv.FormatBool(bootstrapMode),
-	)
-	return r.Replace(secretsYAML), nil
-}

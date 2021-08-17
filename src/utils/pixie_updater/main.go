@@ -39,7 +39,6 @@ import (
 
 const (
 	etcdYAML               = "etcd"
-	natsYAML               = "nats"
 	persistentMetadataYAML = "vizier_persistent"
 	etcdMetadataYAML       = "vizier_etcd"
 	deleteTimeout          = 10 * time.Minute
@@ -171,24 +170,6 @@ func main() {
 	if err != nil {
 		if isTimeoutError(err) {
 			log.WithError(err).Error("Old components taking longer to terminate than timeout")
-		}
-	}
-
-	// If in bootstrap mode, deploy NATS and etcd.
-	if viper.GetBool("bootstrap_mode") {
-		log.Info("Deploying NATS")
-
-		err = retryDeploy(clientset, kubeConfig, ns, yamlMap[natsYAML])
-		if err != nil {
-			log.WithError(err).Fatalf("Failed to deploy NATS")
-		}
-
-		if etcdOperatorEnabled {
-			log.Info("Deploying etcd operator")
-			err = retryDeploy(clientset, kubeConfig, ns, yamlMap[etcdYAML])
-			if err != nil {
-				log.WithError(err).Fatalf("Failed to deploy etcd operator")
-			}
 		}
 	}
 

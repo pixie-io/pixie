@@ -542,8 +542,6 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 		updatedClusterStatus          string
 		expectedClusterAddress        string
 		expectedPrevStatus            string
-		bootstrap                     bool
-		bootstrapVersion              string
 		expectDeploy                  bool
 		expectedFetchVizierVersion    bool
 		controlPlanePodStatuses       controller.PodStatuses
@@ -665,28 +663,6 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			checkDB:                   false,
 			disableAutoUpdate:         true,
 		},
-		{
-			name:                      "bootstrap vizier",
-			expectGetDNSAddressCalled: true,
-			dnsAddressResponse: &dnsmgrpb.GetDNSAddressResponse{
-				DNSAddress: "abc.clusters.dev.withpixie.dev",
-			},
-			dnsAddressError:            nil,
-			vizierID:                   "123e4567-e89b-12d3-a456-426655440001",
-			hbAddress:                  "127.0.0.1",
-			hbPort:                     123,
-			updatedClusterStatus:       "UPDATING",
-			expectedClusterAddress:     "abc.clusters.dev.withpixie.dev:123",
-			clusterVersion:             "v1.20.1",
-			status:                     cvmsgspb.VZ_ST_UPDATING,
-			bootstrap:                  true,
-			bootstrapVersion:           "",
-			expectedFetchVizierVersion: true,
-			expectDeploy:               true,
-			numNodes:                   4,
-			numInstrumentedNodes:       3,
-			checkDB:                    true,
-		},
 	}
 
 	for _, tc := range tests {
@@ -700,13 +676,6 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 				mockDNSClient.EXPECT().
 					GetDNSAddress(gomock.Any(), dnsMgrReq).
 					Return(tc.dnsAddressResponse, tc.dnsAddressError)
-			}
-
-			if tc.bootstrap {
-				updater.
-					EXPECT().
-					UpdateOrInstallVizier(uuid.FromStringOrNil(tc.vizierID), "", false).
-					Return(&cvmsgspb.V2CMessage{}, nil)
 			}
 
 			if tc.checkVersion {
@@ -729,8 +698,6 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 				Address:                       tc.hbAddress,
 				Port:                          int32(tc.hbPort),
 				Status:                        tc.status,
-				BootstrapMode:                 tc.bootstrap,
-				BootstrapVersion:              tc.bootstrapVersion,
 				PodStatuses:                   tc.controlPlanePodStatuses,
 				UnhealthyDataPlanePodStatuses: tc.unhealthyDataPlanePodStatuses,
 				K8sClusterVersion:             tc.clusterVersion,
