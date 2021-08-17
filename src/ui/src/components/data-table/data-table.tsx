@@ -387,7 +387,9 @@ const DataTableImpl: React.FC<DataTableProps> = ({ table, ...options }) => {
   // End: width math
 
   // By default, we sort by the first column that has data (ascending, ignores control/gutter columns)
-  const firstDataColumn = React.useMemo(() => columns?.find((col) => !!col.accessor), [columns]);
+  const firstDataColumn = React.useMemo(
+    () => columns?.find((col) => !!col.accessor && !col.isGutter),
+    [columns]);
 
   const instance = useTable(
     {
