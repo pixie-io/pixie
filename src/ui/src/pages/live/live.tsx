@@ -332,7 +332,7 @@ const LiveView: React.FC = () => {
 
   const { selectedClusterName, selectedClusterPrettyName, selectedClusterStatus } = React.useContext(ClusterContext);
   const { script, args, cancelExecution } = React.useContext(ScriptContext);
-  const { tables } = React.useContext(ResultsContext);
+  const { tables, loading: loadingResults, streaming: streamingResults } = React.useContext(ResultsContext);
   const { saveEditor } = React.useContext(EditorContext);
   const { isMobile, setEditorPanelOpen, setDataDrawerOpen } = React.useContext(LayoutContext);
   const [widgetsMoveable, setWidgetsMoveable] = React.useState(false);
@@ -405,6 +405,8 @@ const LiveView: React.FC = () => {
 
   if (!selectedClusterName || !args) return null;
 
+  const showResults = script && healthyOnce && (Object.keys(tables).length || loadingResults || streamingResults);
+
   return (
     <div className={classes.root}>
       <LiveViewShortcutsProvider handlers={hotkeyHandlers}>
@@ -420,7 +422,7 @@ const LiveView: React.FC = () => {
               widget && classes.widgetMain,
             )}>
               <BreadcrumbsWithOptionalRun />
-              {(script && healthyOnce && Object.keys(tables).length) ? (
+              {showResults ? (
                 <div className={classes.canvas} ref={canvasRef}>
                   <Canvas editable={widgetsMoveable} parentRef={canvasRef} />
                 </div>

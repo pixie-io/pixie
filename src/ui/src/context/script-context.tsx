@@ -226,12 +226,12 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
               table.data.push(updateBatch.batch);
             }
           }
-          resultsContext.setResults({
-            error: resultsContext.error,
-            stats: resultsContext.stats,
-            mutationInfo: resultsContext.mutationInfo,
-            tables: resultsContext.tables,
-          });
+          resultsContext.setResults((prev) => ({
+            error: prev.error,
+            stats: prev.stats,
+            mutationInfo: prev.mutationInfo,
+            tables: prev.tables,
+          }));
           if (resultsContext.streaming) {
             resultsContext.setLoading(false);
           }
