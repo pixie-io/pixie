@@ -28,6 +28,7 @@ import TableCell from '@material-ui/core/TableCell';
 import Tooltip from '@material-ui/core/Tooltip';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
+import { GQLClusterStatus } from 'app/types/schema';
 
 const tooltipStyles = makeStyles(() => createStyles({
   tooltip: {
@@ -66,7 +67,7 @@ export function agentStatusGroup(status: string): StatusGroup {
   return 'unknown';
 }
 
-export function clusterStatusGroup(status: string): StatusGroup {
+export function clusterStatusGroup(status: GQLClusterStatus): StatusGroup {
   if (['CS_HEALTHY', 'CS_CONNECTED'].indexOf(status) !== -1) {
     return 'healthy';
   } if (['CS_UPDATING'].indexOf(status) !== -1) {
@@ -115,7 +116,7 @@ export const AdminTooltip = ({
 }: { children: React.ReactElement, title: string }): React.ReactElement => {
   const classes = tooltipStyles();
   return (
-    <Tooltip title={title} placement='bottom' classes={classes}>
+    <Tooltip title={title} placement='bottom-start' classes={classes} >
       {children}
     </Tooltip>
   );
@@ -202,14 +203,3 @@ export const LiveViewButton = withStyles((theme: Theme) => createStyles({
     Live View
   </Button>
 ));
-
-withStyles((theme: Theme) => createStyles({
-  root: {
-    fontWeight: theme.typography.fontWeightLight,
-    fontSize: '14px',
-    color: theme.palette.foreground.one,
-    backgroundColor: theme.palette.foreground.grey3,
-    borderWidth: 8,
-    borderColor: theme.palette.background.default,
-  },
-}))(TableCell);

@@ -56,6 +56,7 @@ import {
   StyledRightTableCell, StyledSmallLeftTableCell, StyledSmallRightTableCell,
   StyledTab, StyledTableCell, StyledTableHeaderCell, StyledTabs,
 } from './utils';
+import { ClusterStatusCell, InstrumentationLevelCell, VizierVersionCell } from './cluster-table-cells';
 
 const useLinkStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -387,6 +388,94 @@ const ControlPlanePodsTable: React.FC<{
   );
 };
 
+const useDetailsTableStyles = makeStyles((theme: Theme) => createStyles({
+  detailsTable: {
+    maxWidth: theme.breakpoints.values.md,
+  },
+}));
+
+const ClusterSummaryTable = ({ cluster }: {
+  cluster: Pick<
+  GQLClusterInfo,
+  'clusterName' |
+  'id' |
+  'status' |
+  'statusMessage' |
+  'numNodes' |
+  'numInstrumentedNodes' |
+  'vizierVersion' |
+  'clusterVersion' |
+  'lastHeartbeatMs' |
+  'vizierConfig'
+  >
+}) => {
+  const classes = useDetailsTableStyles();
+  if (!cluster) {
+    return (
+      <div>
+        Cluster not found.
+      </div>
+    );
+  }
+
+  const data = [
+    {
+      key: 'Name',
+      value: cluster.clusterName,
+    },
+    {
+      key: 'ID',
+      value: cluster.id,
+    },
+    {
+      key: 'Status',
+      value: (<ClusterStatusCell status={cluster.status} message={cluster.statusMessage} />),
+    },
+    {
+      key: 'Instrumented Nodes',
+      value: (
+        <InstrumentationLevelCell cluster={cluster} />
+      ),
+    },
+    {
+      key: 'Vizier Version',
+      value: (<VizierVersionCell version={cluster.vizierVersion} />),
+    },
+    {
+      key: 'Kubernetes Version',
+      value: cluster.clusterVersion,
+    },
+    {
+      key: 'Heartbeat',
+      value: convertHeartbeatMS(cluster.lastHeartbeatMs),
+    },
+    {
+      key: 'Data Mode',
+      value: cluster.vizierConfig.passthroughEnabled ? 'Passthrough' : 'Direct',
+    },
+  ];
+
+  return (
+    <div className={classes.detailsTable}>
+      <Table>
+        <TableBody>
+          {data.map((r) => (
+            <TableRow key={r.key}>
+              <StyledTableCell >
+                {r.key}
+              </StyledTableCell>
+              {!React.isValidElement(r.value)
+                ? <StyledTableCell>{r.value}</StyledTableCell>
+                : r.value
+              }
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div >
+  );
+};
+
 const ClusterDetailsNavigationBreadcrumbs = ({ selectedClusterName }) => {
   const history = useHistory();
   const { data, loading, error } = useQuery<{
@@ -448,12 +537,24 @@ const useClusterDetailStyles = makeStyles((theme: Theme) => createStyles({
 
 const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) => {
   const classes = useClusterDetailStyles();
-  const [tab, setTab] = React.useState('agents');
+  const [tab, setTab] = React.useState('details');
 
   const { data, loading, error } = useQuery<{
     clusterByName: Pick<
     GQLClusterInfo,
-    'id' | 'clusterName' | 'prettyClusterName' | 'clusterUID' | 'vizierConfig' | 'status' | 'controlPlanePodStatuses'
+    'id' |
+    'clusterName' |
+    'clusterVersion' |
+    'vizierVersion' |
+    'prettyClusterName' |
+    'clusterUID' |
+    'vizierConfig' |
+    'status' |
+    'statusMessage' |
+    'controlPlanePodStatuses' |
+    'lastHeartbeatMs' |
+    'numNodes' |
+    'numInstrumentedNodes'
     >
   }>(
     gql`
@@ -463,9 +564,15 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
           clusterName
           prettyClusterName
           status
+          statusMessage
+          clusterVersion
+          vizierVersion
           vizierConfig {
             passthroughEnabled
           }
+          lastHeartbeatMs
+          numNodes
+          numInstrumentedNodes
           controlPlanePodStatuses {
             name
             status
@@ -526,10 +633,19 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
         value={tab}
         onChange={(event, newTab) => setTab(newTab)}
       >
+        <StyledTab value='details' label='Details' />
         <StyledTab value='agents' label='Agents' />
         <StyledTab value='control-plane-pods' label='Control Plane Pods' />
       </StyledTabs>
       <div className={classes.tabContents}>
+        {
+          tab === 'details'
+          && (
+            <TableContainer className={classes.container}>
+              <ClusterSummaryTable cluster={cluster} />
+            </TableContainer>
+          )
+        }
         {
           tab === 'agents' && (
             statusGroup === 'healthy' ? (
@@ -539,15 +655,15 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
                 </TableContainer>
               </ClusterContext.Provider>
             ) : (
-              <div className={classes.error}>
-                Cannot get agents for cluster
-                {' '}
-                {clusterName}
-                {', '}
+                <div className={classes.error}>
+                  Cannot get agents for cluster
+                  {' '}
+                  {clusterName}
+                  {', '}
                 cluster is in state
-                {': '}
-                {cluster.status.replace('CS_', '')}
-              </div>
+                  {': '}
+                  {cluster.status.replace('CS_', '')}
+                </div>
             )
           )
         }
