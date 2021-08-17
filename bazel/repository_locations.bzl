@@ -284,6 +284,11 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "pgcodekeeper-5.11.3",
         sha256 = "b80d88f447566733f887a2c21ad6072751297459e79fa5acfc99e5db3a9418a1",
     ),
+    com_github_google_re2 = dict(
+        urls = ["https://github.com/google/re2/archive/refs/tags/2021-08-01.tar.gz"],
+        strip_prefix = "re2-2021-08-01",
+        sha256 = "cd8c950b528f413e02c12970dce62a7b6f37733d7f68807e73a2d9bc9db79bc8",
+    ),
 )
 
 GIT_REPOSITORY_LOCATIONS = dict(
