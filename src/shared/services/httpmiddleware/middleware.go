@@ -50,7 +50,7 @@ func GetTokenFromBearer(r *http.Request) (string, bool) {
 }
 
 var healthEndpoints []string = []string{
-	"/healthz", "/readyz",
+	"/healthz", "/readyz", "/statusz",
 }
 
 func isHealthEndpoint(input string) bool {
