@@ -97,13 +97,15 @@ export const ClusterContextProvider: React.FC = ({ children }) => {
     setClusterByName,
   ]);
 
-  if (clusterName && error?.message) {
-    // This is an error with pixie cloud, it is probably not relevant to the user.
-    // Show a generic error message instead.
-    showSnackbar({ message: 'There was a problem connecting to Pixie', autoHideDuration: 5000 });
-    // eslint-disable-next-line no-console
-    console.error(error?.message);
-  }
+  React.useEffect(() => {
+    if (clusterName && error?.message) {
+      // This is an error with pixie cloud, it is probably not relevant to the user.
+      // Show a generic error message instead.
+      showSnackbar({ message: 'There was a problem connecting to Pixie', autoHideDuration: 5000 });
+      // eslint-disable-next-line no-console
+      console.error(error?.message);
+    }
+  }, [showSnackbar, clusterName, error?.message]);
 
   if (loading && !data) { return <div>Loading...</div>; }
 
