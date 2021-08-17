@@ -790,17 +790,18 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 		PreviousVizierStatus     *string    `db:"previous_vizier_status"`
 		PreviousVizierStatusTime *time.Time `db:"previous_vizier_status_time"`
 	}
+
 	rows, err := s.db.Queryx(statusQuery, vizierID)
 	if err != nil {
 		log.WithError(err).Error("Could not get current status")
 	}
-	defer rows.Close()
 	if rows.Next() {
 		err := rows.StructScan(&prevInfo)
 		if err != nil {
 			log.WithError(err).Error("Could not get current status")
 		}
 	}
+	rows.Close()
 
 	vzStatus := "HEALTHY"
 	if req.Address == "" {
