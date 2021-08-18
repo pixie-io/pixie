@@ -123,41 +123,41 @@ func mustLoadTestData(db *sqlx.DB) {
 	db.MustExec(`DELETE FROM vizier_cluster_info`)
 	db.MustExec(`DELETE FROM vizier_cluster`)
 
-	insertCluster := `INSERT INTO vizier_cluster(org_id, id, project_name, cluster_uid, cluster_version, cluster_name) VALUES ($1, $2, $3, $4, $5, $6)`
-	db.MustExec(insertCluster, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440000", testProjectName, "k8sID", "", "unknown_cluster")
-	db.MustExec(insertCluster, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440001", testProjectName, "cUID", "cVers", "healthy_cluster")
-	db.MustExec(insertCluster, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440002", testProjectName, "k8s2", "", "unhealthy_cluster")
-	db.MustExec(insertCluster, testAuthOrgID, testDisconnectedClusterEmptyUID, testProjectName, "", "", "disconnected_cluster")
-	db.MustExec(insertCluster, testAuthOrgID, testExistingCluster, testProjectName, "existing_cluster", "", "test_cluster_1234")
-	db.MustExec(insertCluster, testAuthOrgID, testExistingClusterActive, testProjectName, "my_other_cluster", "", "existing_cluster")
-	db.MustExec(insertCluster, testNonAuthOrgID, "223e4567-e89b-12d3-a456-426655440003", testProjectName, "k8s5", "", "non_auth_1")
-	db.MustExec(insertCluster, testNonAuthOrgID, "323e4567-e89b-12d3-a456-426655440003", testProjectName, "k8s6", "", "non_auth_2")
+	insertCluster := `INSERT INTO vizier_cluster(org_id, id, project_name, cluster_uid, cluster_name) VALUES ($1, $2, $3, $4, $5)`
+	db.MustExec(insertCluster, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440000", testProjectName, "k8sID", "unknown_cluster")
+	db.MustExec(insertCluster, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440001", testProjectName, "cUID", "healthy_cluster")
+	db.MustExec(insertCluster, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440002", testProjectName, "k8s2", "unhealthy_cluster")
+	db.MustExec(insertCluster, testAuthOrgID, testDisconnectedClusterEmptyUID, testProjectName, "", "disconnected_cluster")
+	db.MustExec(insertCluster, testAuthOrgID, testExistingCluster, testProjectName, "existing_cluster", "test_cluster_1234")
+	db.MustExec(insertCluster, testAuthOrgID, testExistingClusterActive, testProjectName, "my_other_cluster", "existing_cluster")
+	db.MustExec(insertCluster, testNonAuthOrgID, "223e4567-e89b-12d3-a456-426655440003", testProjectName, "k8s5", "non_auth_1")
+	db.MustExec(insertCluster, testNonAuthOrgID, "323e4567-e89b-12d3-a456-426655440003", testProjectName, "k8s6", "non_auth_2")
 
 	testPastStatus := "UNHEALTHY"
 
 	insertClusterInfo := `INSERT INTO vizier_cluster_info(vizier_cluster_id, status, address, jwt_signing_key, last_heartbeat,
-						  passthrough_enabled, auto_update_enabled, vizier_version, control_plane_pod_statuses,
+						  passthrough_enabled, auto_update_enabled, vizier_version, cluster_version, control_plane_pod_statuses,
 							unhealthy_data_plane_pod_statuses, num_nodes, num_instrumented_nodes, status_message,
 							prev_status, prev_status_time)
-						  VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`
+						  VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`
 	db.MustExec(insertClusterInfo, "123e4567-e89b-12d3-a456-426655440000", "UNKNOWN", "addr0",
-		"key0", "2011-05-16 15:36:38", true, false, "", testPodStatuses, testDataPlanePodStatuses, 10, 8, "",
+		"key0", "2011-05-16 15:36:38", true, false, "", "", testPodStatuses, testDataPlanePodStatuses, 10, 8, "",
 		&testPastStatus, testPastTime)
 	db.MustExec(insertClusterInfo, "123e4567-e89b-12d3-a456-426655440001", "HEALTHY", "addr1",
 		"\\xc30d04070302c5374a5098262b6d7bd23f01822f741dbebaa680b922b55fd16eb985aeb09505f8fc4a36f0e11ebb8e18f01f684146c761e2234a81e50c21bca2907ea37736f2d9a5834997f4dd9e288c",
-		"2011-05-17 15:36:38", false, true, "vzVers", "{}", "{}", 12, 9, "This is a test", &testPastStatus, testPastTime)
+		"2011-05-17 15:36:38", false, true, "vzVers", "cVers", "{}", "{}", 12, 9, "This is a test", &testPastStatus, testPastTime)
 	db.MustExec(insertClusterInfo, "123e4567-e89b-12d3-a456-426655440002", "UNHEALTHY", "addr2", "key2", "2011-05-18 15:36:38",
-		true, false, "", "{}", "{}", 4, 4, "", nil, nil)
+		true, false, "", "", "{}", "{}", 4, 4, "", nil, nil)
 	db.MustExec(insertClusterInfo, testDisconnectedClusterEmptyUID, "DISCONNECTED", "addr3", "key3", "2011-05-19 15:36:38",
-		false, true, "", "{}", "{}", 3, 2, "", nil, nil)
+		false, true, "", "", "{}", "{}", 3, 2, "", nil, nil)
 	db.MustExec(insertClusterInfo, testExistingCluster, "DISCONNECTED", "addr3", "key3", "2011-05-19 15:36:38",
-		false, true, "", "{}", "{}", 5, 4, "", nil, nil)
+		false, true, "", "", "{}", "{}", 5, 4, "", nil, nil)
 	db.MustExec(insertClusterInfo, testExistingClusterActive, "UNHEALTHY", "addr3", "key3", "2011-05-19 15:36:38",
-		false, true, "", "{}", "{}", 10, 4, "", nil, nil)
+		false, true, "", "", "{}", "{}", 10, 4, "", nil, nil)
 	db.MustExec(insertClusterInfo, "223e4567-e89b-12d3-a456-426655440003", "HEALTHY", "addr3", "key3", "2011-05-19 15:36:38",
-		true, true, "", "{}", "{}", 2, 0, "", nil, nil)
+		true, true, "", "", "{}", "{}", 2, 0, "", nil, nil)
 	db.MustExec(insertClusterInfo, "323e4567-e89b-12d3-a456-426655440003", "HEALTHY", "addr3", "key3", "2011-05-19 15:36:38",
-		false, true, "", "{}", "{}", 4, 2, "", nil, nil)
+		false, true, "", "", "{}", "{}", 4, 2, "", nil, nil)
 
 	db.MustExec(`UPDATE vizier_cluster SET cluster_name=NULL WHERE id=$1`, testDisconnectedClusterEmptyUID)
 }
@@ -433,9 +433,8 @@ func TestServer_VizierConnectedHealthy(t *testing.T) {
 		JwtKey:   "the-token",
 		Address:  "127.0.0.1",
 		ClusterInfo: &cvmsgspb.VizierClusterInfo{
-			ClusterUID:     "cUID",
-			ClusterVersion: "1234",
-			VizierVersion:  "some version",
+			ClusterUID:    "cUID",
+			VizierVersion: "some version",
 		},
 	}
 
@@ -1043,7 +1042,7 @@ func TestServer_ProvisionOrClaimVizier(t *testing.T) {
 	userID := uuid.Must(uuid.NewV4())
 
 	// This should select the first cluster with an empty UID that is disconnected.
-	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "my cluster", "", "1.1")
+	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "my cluster", "")
 	require.NoError(t, err)
 	// Should select the disconnected cluster.
 	assert.Equal(t, testDisconnectedClusterEmptyUID, clusterID.String())
@@ -1090,7 +1089,7 @@ func TestServer_ProvisionOrClaimVizierWIthExistingUID(t *testing.T) {
 			userID := uuid.Must(uuid.NewV4())
 
 			// This should select the existing cluster with the same UID.
-			clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "existing_cluster", test.inputName, "1.1")
+			clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "existing_cluster", test.inputName)
 			require.NoError(t, err)
 			// Should select the disconnected cluster.
 			assert.Equal(t, testExistingCluster, clusterID.String())
@@ -1113,7 +1112,7 @@ func TestServer_ProvisionOrClaimVizier_WithExistingActiveUID(t *testing.T) {
 	s := controller.New(db, "test", nil, nil, nil)
 	userID := uuid.Must(uuid.NewV4())
 	// This should select cause an error b/c we are trying to provision a cluster that is not disconnected.
-	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "my_other_cluster", "", "1.1")
+	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "my_other_cluster", "")
 	assert.NotNil(t, err)
 	assert.Equal(t, vzerrors.ErrProvisionFailedVizierIsActive, err)
 	assert.Equal(t, uuid.Nil, clusterID)
@@ -1125,7 +1124,7 @@ func TestServer_ProvisionOrClaimVizier_WithNewCluster(t *testing.T) {
 	s := controller.New(db, "test", nil, nil, nil)
 	userID := uuid.Must(uuid.NewV4())
 	// This should select cause an error b/c we are trying to provision a cluster that is not disconnected.
-	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testNonAuthOrgID), userID, "my_other_cluster", "", "1.1")
+	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testNonAuthOrgID), userID, "my_other_cluster", "")
 	require.NoError(t, err)
 	assert.NotEqual(t, uuid.Nil, clusterID)
 }
@@ -1137,18 +1136,16 @@ func TestServer_ProvisionOrClaimVizier_WithExistingName(t *testing.T) {
 	userID := uuid.Must(uuid.NewV4())
 
 	// This should select the existing cluster with the same UID.
-	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "some_cluster", "test_cluster_1234\n", "1.1")
+	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "some_cluster", "test_cluster_1234\n")
 	require.NoError(t, err)
 	// Should select the disconnected cluster.
 	assert.Equal(t, testDisconnectedClusterEmptyUID, clusterID.String())
 	// Check cluster name.
 	var clusterInfo struct {
-		ClusterName    *string `db:"cluster_name"`
-		ClusterVersion *string `db:"cluster_version"`
+		ClusterName *string `db:"cluster_name"`
 	}
-	nameQuery := `SELECT cluster_name, cluster_version from vizier_cluster WHERE id=$1`
+	nameQuery := `SELECT cluster_name from vizier_cluster WHERE id=$1`
 	err = db.Get(&clusterInfo, nameQuery, clusterID)
 	require.NoError(t, err)
 	assert.True(t, strings.HasPrefix(*clusterInfo.ClusterName, "test_cluster_1234_"))
-	assert.Equal(t, "1.1", *clusterInfo.ClusterVersion)
 }

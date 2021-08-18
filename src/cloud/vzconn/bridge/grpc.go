@@ -73,10 +73,9 @@ func (s *GRPCServer) RegisterVizierDeployment(ctx context.Context, req *vzconnpb
 	newCtx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
 		fmt.Sprintf("bearer %s", serviceAuthToken))
 	vzmgrResp, err := s.vzDeploymentClient.RegisterVizierDeployment(newCtx, &vzmgrpb.RegisterVizierDeploymentRequest{
-		K8sClusterUID:     req.K8sClusterUID,
-		K8sClusterName:    req.K8sClusterName,
-		K8sClusterVersion: req.K8sClusterVersion,
-		DeploymentKey:     deployKey,
+		K8sClusterUID:  req.K8sClusterUID,
+		K8sClusterName: req.K8sClusterName,
+		DeploymentKey:  deployKey,
 	})
 	if err != nil {
 		return nil, err
