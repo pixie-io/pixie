@@ -28,9 +28,7 @@ namespace px {
 namespace stirling {
 
 void DataStream::AddData(std::unique_ptr<SocketDataEvent> event) {
-  // Note that the BPF code will also generate a missing sequence number when truncation occurs,
-  // so the data stream will naturally reset after processing this event.
-  LOG_IF(ERROR, event->attr.msg_size > event->msg.size() && !event->msg.empty())
+  LOG_IF(WARNING, event->attr.msg_size > event->msg.size() && !event->msg.empty())
       << absl::Substitute("Message truncated, original size: $0, transferred size: $1",
                           event->attr.msg_size, event->msg.size());
 

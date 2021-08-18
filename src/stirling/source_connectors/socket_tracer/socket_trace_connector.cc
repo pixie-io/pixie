@@ -388,7 +388,7 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
     TransferConnStats(ctx, conn_stats_table);
   }
 
-  if (sampling_freq_mgr_.count() % FLAGS_stirling_socket_tracer_stats_logging_ratio == 0) {
+  if ((sampling_freq_mgr_.count() + 1) % FLAGS_stirling_socket_tracer_stats_logging_ratio == 0) {
     conn_trackers_mgr_.ComputeProtocolStats();
     LOG(INFO) << "ConnTracker statistics: " << conn_trackers_mgr_.StatsString();
     LOG(INFO) << "SocketTracer statistics: " << stats_.Print();
