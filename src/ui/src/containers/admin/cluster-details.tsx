@@ -26,7 +26,7 @@ import { useHistory, useParams } from 'react-router';
 import { Link } from 'react-router-dom';
 import { dataFromProto } from 'app/utils/result-data-utils';
 
-import { Theme, makeStyles } from '@material-ui/core/styles';
+import { Theme, makeStyles, withStyles } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import MaterialBreadcrumbs from '@material-ui/core/Breadcrumbs';
 import IconButton from '@material-ui/core/IconButton';
@@ -45,6 +45,7 @@ import {
   GQLClusterStatus as ClusterStatus,
   GQLPodStatus as PodStatus,
   GQLContainerStatus as ContainerStatus,
+  GQLPodStatus,
 } from 'app/types/schema';
 
 import { BehaviorSubject } from 'rxjs';
@@ -53,7 +54,7 @@ import { ClusterContext, ClusterContextProps, useClusterConfig } from 'app/commo
 import {
   AdminTooltip, agentStatusGroup, clusterStatusGroup, containerStatusGroup,
   convertHeartbeatMS, getClusterDetailsURL, podStatusGroup, StyledLeftTableCell,
-  StyledRightTableCell, StyledSmallLeftTableCell, StyledSmallRightTableCell,
+  StyledRightTableCell,
   StyledTab, StyledTableCell, StyledTableHeaderCell, StyledTabs,
 } from './utils';
 import { ClusterStatusCell, InstrumentationLevelCell, VizierVersionCell } from './cluster-table-cells';
@@ -248,23 +249,43 @@ const formatPodStatus = (podStatus: PodStatus): GroupedPodStatus => ({
   })),
 });
 
-const none = '<none>';
-
-const useRowStyles = makeStyles((theme: Theme) => createStyles({
+const usePodRowStyles = makeStyles((theme: Theme) => createStyles({
   messageAndReason: {
     ...theme.typography.body2,
   },
   eventList: {
     marginTop: 0,
   },
+  smallTable: {
+    backgroundColor: theme.palette.foreground.grey3,
+  },
 }));
+
+const StyledSmallTableCell = withStyles((theme: Theme) => createStyles({
+  root: {
+    fontWeight: theme.typography.fontWeightLight,
+    backgroundColor: theme.palette.foreground.grey2,
+    borderWidth: 0,
+  },
+}))(StyledTableCell);
+
+// combineReasonAndMessage returns a combination of a reason and a message. These fields are
+// used by Kubernetes to detail state However, we don't need to separate them when we
+// display to the user. We would rather combine them together.
+function combineReasonAndMessage(reason: string, message: string): string {
+  // If both are defined we want to separate them with a semicolon
+  if (message && reason) {
+    return `${message}; ${reason}`;
+  }
+  return `${message}${reason}`;
+}
 
 const ExpandablePodRow: React.FC<{ podStatus: GroupedPodStatus }> = (({ podStatus }) => {
   const {
-    name, status, statusGroup, message, reason, containers, events,
+    name, status, statusGroup, containers, events,
   } = podStatus;
   const [open, setOpen] = React.useState(false);
-  const classes = useRowStyles();
+  const classes = usePodRowStyles();
 
   return (
     // Fragment shorthand syntax does not support key, which is needed to prevent
@@ -278,6 +299,8 @@ const ExpandablePodRow: React.FC<{ podStatus: GroupedPodStatus }> = (({ podStatu
           </StyledLeftTableCell>
         </AdminTooltip>
         <StyledTableCell>{name}</StyledTableCell>
+        <StyledTableCell>{combineReasonAndMessage(podStatus.reason, podStatus.message)}</StyledTableCell>
+        <StyledTableCell>{podStatus.restartCount}</StyledTableCell>
         <StyledRightTableCell align='right'>
           <IconButton size='small' onClick={() => setOpen(!open)}>
             {open ? <UpIcon /> : <DownIcon />}
@@ -288,16 +311,6 @@ const ExpandablePodRow: React.FC<{ podStatus: GroupedPodStatus }> = (({ podStatu
         open && (
           <TableRow key={`${name}-details`}>
             <TableCell style={{ border: 0 }} colSpan={6}>
-              <div className={classes.messageAndReason}>
-                Pod message:
-                {' '}
-                {message || none}
-              </div>
-              <div className={classes.messageAndReason}>
-                Pod reason:
-                {' '}
-                {reason || none}
-              </div>
               {
                 (events && events.length > 0) && (
                   <div>
@@ -312,11 +325,12 @@ const ExpandablePodRow: React.FC<{ podStatus: GroupedPodStatus }> = (({ podStatu
                   </div>
                 )
               }
-              <Table size='small'>
+              <Table size='small' className={classes.smallTable}>
                 <TableHead>
                   <TableRow key={name}>
                     <StyledTableHeaderCell />
                     <StyledTableHeaderCell>Container</StyledTableHeaderCell>
+                    <StyledTableHeaderCell>Status</StyledTableHeaderCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -327,25 +341,14 @@ const ExpandablePodRow: React.FC<{ podStatus: GroupedPodStatus }> = (({ podStatu
                     <React.Fragment key={container.name}>
                       <TableRow key={`${name}-info`}>
                         <AdminTooltip title={container.state}>
-                          <StyledSmallLeftTableCell>
+                          <StyledSmallTableCell>
                             <StatusCell statusGroup={container.statusGroup} />
-                          </StyledSmallLeftTableCell>
+                          </StyledSmallTableCell>
                         </AdminTooltip>
-                        <StyledSmallRightTableCell>{container.name}</StyledSmallRightTableCell>
-                      </TableRow>
-                      <TableRow key={`${name}-details`}>
-                        <TableCell style={{ border: 0 }} colSpan={2}>
-                          <div className={classes.messageAndReason}>
-                            Container message:
-                            {' '}
-                            {container.message || none}
-                          </div>
-                          <div className={classes.messageAndReason}>
-                            Container reason:
-                            {' '}
-                            {container.reason || none}
-                          </div>
-                        </TableCell>
+                        <StyledSmallTableCell>{container.name}</StyledSmallTableCell>
+                        <StyledSmallTableCell>
+                          {combineReasonAndMessage(container.reason, container.message)}
+                        </StyledSmallTableCell>
                       </TableRow>
                     </React.Fragment>
                   ))}
@@ -359,23 +362,16 @@ const ExpandablePodRow: React.FC<{ podStatus: GroupedPodStatus }> = (({ podStatu
   );
 });
 
-const ControlPlanePodsTable: React.FC<{
-  cluster: Pick<GQLClusterInfo, 'id' | 'clusterName' | 'controlPlanePodStatuses'>
-}> = ({ cluster }) => {
-  if (!cluster) {
-    return (
-      <div>
-        Cluster not found.
-      </div>
-    );
-  }
-  const display = cluster.controlPlanePodStatuses.map((podStatus) => formatPodStatus(podStatus));
+const PodsTable: React.FC<{ pods: GQLPodStatus[] }> = ({ pods }) => {
+  const display = pods.map((podStatus) => formatPodStatus(podStatus));
   return (
     <Table>
       <TableHead>
         <TableRow>
           <StyledTableHeaderCell />
           <StyledTableHeaderCell>Name</StyledTableHeaderCell>
+          <StyledTableHeaderCell>Status</StyledTableHeaderCell>
+          <StyledTableHeaderCell>Restart Count</StyledTableHeaderCell>
           <StyledTableHeaderCell />
         </TableRow>
       </TableHead>
@@ -488,7 +484,7 @@ const ClusterDetailsNavigationBreadcrumbs = ({ selectedClusterName }) => {
                 status
             }
         }
-    `, {});
+      `, {});
   const clusters = data?.clusters;
 
   if (loading || error || !clusters) {
@@ -578,6 +574,7 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
             status
             message
             reason
+            restartCount
             containers {
               name
               state
@@ -639,8 +636,7 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
       </StyledTabs>
       <div className={classes.tabContents}>
         {
-          tab === 'details'
-          && (
+          tab === 'details' && (
             <TableContainer className={classes.container}>
               <ClusterSummaryTable cluster={cluster} />
             </TableContainer>
@@ -668,10 +664,9 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
           )
         }
         {
-          tab === 'control-plane-pods'
-          && (
+          tab === 'control-plane-pods' && (
             <TableContainer className={classes.container}>
-              <ControlPlanePodsTable cluster={cluster} />
+              <PodsTable pods={cluster.controlPlanePodStatuses} />
             </TableContainer>
           )
         }

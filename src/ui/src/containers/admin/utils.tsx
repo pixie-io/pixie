@@ -172,27 +172,6 @@ export const StyledRightTableCell = withStyles((theme: Theme) => createStyles({
   },
 }))(StyledTableCell);
 
-// These are for use in Tables that are children of other tables.
-export const StyledSmallTableCell = withStyles((theme: Theme) => createStyles({
-  root: {
-    fontWeight: theme.typography.fontWeightLight,
-    backgroundColor: theme.palette.foreground.grey2,
-    borderWidth: 0,
-  },
-}))(StyledTableCell);
-
-export const StyledSmallLeftTableCell = withStyles((theme: Theme) => createStyles({
-  root: {
-    borderRadius: theme.shape.leftRoundedBorderRadius.small,
-  },
-}))(StyledSmallTableCell);
-
-export const StyledSmallRightTableCell = withStyles((theme: Theme) => createStyles({
-  root: {
-    borderRadius: theme.shape.rightRoundedBorderRadius.small,
-  },
-}))(StyledSmallTableCell);
-
 export const LiveViewButton = withStyles((theme: Theme) => createStyles({
   root: {
     color: theme.palette.foreground.grey5,
