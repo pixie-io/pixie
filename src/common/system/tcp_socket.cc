@@ -200,7 +200,7 @@ ssize_t TCPSocket::ReadV(std::string* data) const {
 
   const ssize_t size = readv(sockfd_, &iov, 1);
   if (size > 0) {
-    data->assign(buf, size);
+    data->append(buf, size);
   }
   return size;
 }
@@ -211,7 +211,7 @@ bool TCPSocket::Read(std::string* data) const {
   if (size <= 0) {
     return false;
   }
-  data->assign(buf, size);
+  data->append(buf, size);
   return true;
 }
 
@@ -221,7 +221,7 @@ bool TCPSocket::Recv(std::string* data) const {
   if (size <= 0) {
     return false;
   }
-  data->assign(buf, size);
+  data->append(buf, size);
   return true;
 }
 

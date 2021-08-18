@@ -37,13 +37,11 @@ TEST(TCPSocketTest, DataIsWrittenAndReceivedCorrectly) {
   TCPSocket server;
   server.BindAndListen();
 
-  std::vector<std::string> received_data;
+  std::string received_data;
   TCPSocket client;
   std::thread client_thread([&server, &client, &received_data]() {
     client.Connect(server);
-    std::string data;
-    while (client.Read(&data)) {
-      received_data.push_back(data);
+    while (client.Read(&received_data)) {
     }
   });
   std::unique_ptr<TCPSocket> conn = server.Accept();
@@ -57,7 +55,7 @@ TEST(TCPSocketTest, DataIsWrittenAndReceivedCorrectly) {
   client_thread.join();
   // read() might get all data from multiple write() because of kernel buffering, so we can only
   // check the concatenated string.
-  EXPECT_EQ("a,bc,END,sendmsg", absl::StrJoin(received_data, ""));
+  EXPECT_EQ("a,bc,END,sendmsg", received_data);
 }
 
 TEST(TCPSocketTest, SendMsgAndRecvMsg) {
