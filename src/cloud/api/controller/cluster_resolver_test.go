@@ -77,6 +77,12 @@ func TestClusterInfo(t *testing.T) {
 			gqlEnv, mockClients, cleanup := testutils.CreateTestGraphQLEnv(t)
 			defer cleanup()
 			ctx := test.ctx
+			ctrlPlane := make(map[string]*cloudpb.PodStatus)
+			ctrlPlane["vizier-foo"] = &cloudpb.PodStatus{
+				Name:         "vizier-foo",
+				Status:       cloudpb.RUNNING,
+				RestartCount: 10,
+			}
 
 			clusterInfo := &cloudpb.ClusterInfo{
 				ID:              utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
@@ -85,11 +91,14 @@ func TestClusterInfo(t *testing.T) {
 				Config: &cloudpb.VizierConfig{
 					PassthroughEnabled: false,
 				},
-				VizierVersion:  "vzVersion",
-				ClusterVersion: "clusterVersion",
-				ClusterName:    "clusterName",
-				ClusterUID:     "clusterUID",
-				StatusMessage:  "Everything is running",
+				VizierVersion:           "vzVersion",
+				ClusterVersion:          "clusterVersion",
+				ClusterName:             "clusterName",
+				ClusterUID:              "clusterUID",
+				StatusMessage:           "Everything is running",
+				PreviousStatus:          cloudpb.CS_UNHEALTHY,
+				PreviousStatusTime:      types.TimestampNow(),
+				ControlPlanePodStatuses: ctrlPlane,
 			}
 
 			mockClients.MockVizierClusterInfo.EXPECT().
@@ -114,11 +123,17 @@ func TestClusterInfo(t *testing.T) {
 								vizierConfig {
 									passthroughEnabled
 								}
+								controlPlanePodStatuses {
+									name
+									status
+									restartCount
+								}
 								vizierVersion
 								clusterVersion
 								clusterName
 								clusterUID
 								statusMessage
+								previousStatus
 							}
 						}
 					`,
@@ -131,11 +146,17 @@ func TestClusterInfo(t *testing.T) {
 								"vizierConfig": {
 									"passthroughEnabled": false
 								},
+								"controlPlanePodStatuses": [{
+									"name": "vizier-foo",
+									"status": "RUNNING",
+									"restartCount": 10
+								}],
 								"vizierVersion": "vzVersion",
 								"clusterVersion": "clusterVersion",
 								"clusterName": "clusterName",
 								"clusterUID": "clusterUID",
-								"statusMessage": "Everything is running"
+								"statusMessage": "Everything is running",
+								"previousStatus": "CS_UNHEALTHY"
 							}
 						}
 					`,

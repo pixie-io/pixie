@@ -163,6 +163,7 @@ export interface GQLContainerStatus {
   state: string;
   message: string;
   reason: string;
+  restartCount: number;
 }
 
 export interface GQLK8sEvent {
@@ -179,6 +180,7 @@ export interface GQLPodStatus {
   reason: string;
   containers: Array<GQLContainerStatus>;
   events: Array<GQLK8sEvent>;
+  restartCount: number;
 }
 
 export enum GQLClusterStatus {
@@ -206,9 +208,12 @@ export interface GQLClusterInfo {
   prettyClusterName: string;
   clusterUID: string;
   controlPlanePodStatuses: Array<GQLPodStatus>;
+  unhealthyDataPlanePodStatuses: Array<GQLPodStatus>;
   numNodes: number;
   numInstrumentedNodes: number;
   statusMessage: string;
+  previousStatus?: GQLClusterStatus;
+  previousStatusTimeMs?: number;
 }
 
 export interface GQLClusterConnectionInfo {
@@ -776,6 +781,7 @@ export interface GQLContainerStatusTypeResolver<TParent = any> {
   state?: ContainerStatusToStateResolver<TParent>;
   message?: ContainerStatusToMessageResolver<TParent>;
   reason?: ContainerStatusToReasonResolver<TParent>;
+  restartCount?: ContainerStatusToRestartCountResolver<TParent>;
 }
 
 export interface ContainerStatusToNameResolver<TParent = any, TResult = any> {
@@ -795,6 +801,10 @@ export interface ContainerStatusToMessageResolver<TParent = any, TResult = any> 
 }
 
 export interface ContainerStatusToReasonResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface ContainerStatusToRestartCountResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
@@ -824,6 +834,7 @@ export interface GQLPodStatusTypeResolver<TParent = any> {
   reason?: PodStatusToReasonResolver<TParent>;
   containers?: PodStatusToContainersResolver<TParent>;
   events?: PodStatusToEventsResolver<TParent>;
+  restartCount?: PodStatusToRestartCountResolver<TParent>;
 }
 
 export interface PodStatusToNameResolver<TParent = any, TResult = any> {
@@ -854,6 +865,10 @@ export interface PodStatusToEventsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
+export interface PodStatusToRestartCountResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
 export interface GQLVizierConfigTypeResolver<TParent = any> {
   passthroughEnabled?: VizierConfigToPassthroughEnabledResolver<TParent>;
 }
@@ -873,9 +888,12 @@ export interface GQLClusterInfoTypeResolver<TParent = any> {
   prettyClusterName?: ClusterInfoToPrettyClusterNameResolver<TParent>;
   clusterUID?: ClusterInfoToClusterUIDResolver<TParent>;
   controlPlanePodStatuses?: ClusterInfoToControlPlanePodStatusesResolver<TParent>;
+  unhealthyDataPlanePodStatuses?: ClusterInfoToUnhealthyDataPlanePodStatusesResolver<TParent>;
   numNodes?: ClusterInfoToNumNodesResolver<TParent>;
   numInstrumentedNodes?: ClusterInfoToNumInstrumentedNodesResolver<TParent>;
   statusMessage?: ClusterInfoToStatusMessageResolver<TParent>;
+  previousStatus?: ClusterInfoToPreviousStatusResolver<TParent>;
+  previousStatusTimeMs?: ClusterInfoToPreviousStatusTimeMsResolver<TParent>;
 }
 
 export interface ClusterInfoToIdResolver<TParent = any, TResult = any> {
@@ -918,6 +936,10 @@ export interface ClusterInfoToControlPlanePodStatusesResolver<TParent = any, TRe
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
+export interface ClusterInfoToUnhealthyDataPlanePodStatusesResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
 export interface ClusterInfoToNumNodesResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
@@ -927,6 +949,14 @@ export interface ClusterInfoToNumInstrumentedNodesResolver<TParent = any, TResul
 }
 
 export interface ClusterInfoToStatusMessageResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface ClusterInfoToPreviousStatusResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface ClusterInfoToPreviousStatusTimeMsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 

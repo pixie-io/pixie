@@ -148,6 +148,7 @@ type ContainerStatus {
   state: String!
   message: String!
   reason: String!
+  restartCount: Int!
 }
 
 type K8sEvent {
@@ -164,6 +165,7 @@ type PodStatus {
   reason: String!
   containers: [ContainerStatus!]!
   events: [K8sEvent!]!
+  restartCount: Int!
 }
 
 enum ClusterStatus {
@@ -202,9 +204,12 @@ type ClusterInfo {
   prettyClusterName: String!
   clusterUID: String!
   controlPlanePodStatuses: [PodStatus!]!
+  unhealthyDataPlanePodStatuses: [PodStatus!]!
   numNodes: Int!
   numInstrumentedNodes: Int!
   statusMessage: String!
+  previousStatus: ClusterStatus
+  previousStatusTimeMs: Float
 }
 
 type ClusterConnectionInfo {

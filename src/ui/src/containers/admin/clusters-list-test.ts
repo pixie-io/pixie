@@ -37,6 +37,7 @@ describe('formatClusters', () => {
         numNodes: 0,
         numInstrumentedNodes: 4,
         controlPlanePodStatuses: [],
+        unhealthyDataPlanePodStatuses: [],
         statusMessage: 'test status',
       },
       {
@@ -54,6 +55,7 @@ describe('formatClusters', () => {
         numNodes: 0,
         numInstrumentedNodes: 4,
         controlPlanePodStatuses: [],
+        unhealthyDataPlanePodStatuses: [],
         statusMessage: 'test status',
       },
       {
@@ -71,6 +73,7 @@ describe('formatClusters', () => {
         numNodes: 0,
         numInstrumentedNodes: 4,
         controlPlanePodStatuses: [],
+        unhealthyDataPlanePodStatuses: [],
         statusMessage: 'test status',
       },
       {
@@ -88,6 +91,7 @@ describe('formatClusters', () => {
         numNodes: 8,
         numInstrumentedNodes: 8,
         controlPlanePodStatuses: [],
+        unhealthyDataPlanePodStatuses: [],
         statusMessage: 'test status',
       },
     ];

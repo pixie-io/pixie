@@ -225,12 +225,18 @@ message VizierInfo {
   string vizier_version = 8;
   // The status of the control plane pods.
   map<string, PodStatus> control_plane_pod_statuses = 9;
+  // The status of the unhealthy data plane pods.
+  map<string, PodStatus> unhealthy_data_plane_pod_statuses = 14;
   // The total number of nodes (instrumented & non-instrumented) on the cluster this Vizier is on.
   int32 num_nodes = 11;
   // The total number of  nodes on the cluster that have pems.
   int32 num_instrumented_nodes = 12;
   // A human-readable message of the reason that the cluster is in its current state.
   string status_message = 13;
+  // The previous Vizier status (if known)
+  VizierStatus previous_status = 15;
+  // The most recent timestamp of the previous Vizier status (if known)
+  google.protobuf.Timestamp previous_status_time = 16;
 }
 
 message UpdateVizierConfigRequest {

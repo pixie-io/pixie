@@ -320,20 +320,23 @@ func (s *Server) GetViziersByOrg(ctx context.Context, orgID *uuidpb.UUID) (*vzmg
 
 // VizierInfo represents all info we want to fetch about a Vizier.
 type VizierInfo struct {
-	ID                      uuid.UUID    `db:"vizier_cluster_id"`
-	Status                  vizierStatus `db:"status"`
-	LastHeartbeat           *int64       `db:"last_heartbeat"`
-	PassthroughEnabled      bool         `db:"passthrough_enabled"`
-	AutoUpdateEnabled       bool         `db:"auto_update_enabled"`
-	ClusterUID              *string      `db:"cluster_uid"`
-	ClusterName             *string      `db:"cluster_name"`
-	ClusterVersion          *string      `db:"cluster_version"`
-	VizierVersion           *string      `db:"vizier_version"`
-	ControlPlanePodStatuses PodStatuses  `db:"control_plane_pod_statuses"`
-	NumNodes                int32        `db:"num_nodes"`
-	NumInstrumentedNodes    int32        `db:"num_instrumented_nodes"`
-	OrgID                   uuid.UUID    `db:"org_id"`
-	StatusMessage           *string      `db:"status_message"`
+	ID                            uuid.UUID     `db:"vizier_cluster_id"`
+	Status                        vizierStatus  `db:"status"`
+	LastHeartbeat                 *int64        `db:"last_heartbeat"`
+	PassthroughEnabled            bool          `db:"passthrough_enabled"`
+	AutoUpdateEnabled             bool          `db:"auto_update_enabled"`
+	ClusterUID                    *string       `db:"cluster_uid"`
+	ClusterName                   *string       `db:"cluster_name"`
+	ClusterVersion                *string       `db:"cluster_version"`
+	VizierVersion                 *string       `db:"vizier_version"`
+	StatusMessage                 *string       `db:"status_message"`
+	ControlPlanePodStatuses       PodStatuses   `db:"control_plane_pod_statuses"`
+	UnhealthyDataPlanePodStatuses PodStatuses   `db:"unhealthy_data_plane_pod_statuses"`
+	NumNodes                      int32         `db:"num_nodes"`
+	NumInstrumentedNodes          int32         `db:"num_instrumented_nodes"`
+	OrgID                         uuid.UUID     `db:"org_id"`
+	PreviousStatus                *vizierStatus `db:"previous_vizier_status"`
+	PreviousStatusTime            *time.Time    `db:"previous_vizier_status_time"`
 }
 
 func vizierInfoToProto(vzInfo VizierInfo) *cvmsgspb.VizierInfo {
@@ -342,6 +345,8 @@ func vizierInfoToProto(vzInfo VizierInfo) *cvmsgspb.VizierInfo {
 	clusterVersion := ""
 	vizierVersion := ""
 	statusMessage := ""
+	var previousStatusTime *types.Timestamp
+	var previousStatus cvmsgspb.VizierStatus
 
 	lastHearbeat := int64(-1)
 	if vzInfo.LastHeartbeat != nil {
@@ -363,6 +368,12 @@ func vizierInfoToProto(vzInfo VizierInfo) *cvmsgspb.VizierInfo {
 	if vzInfo.StatusMessage != nil {
 		statusMessage = *vzInfo.StatusMessage
 	}
+	if vzInfo.PreviousStatusTime != nil {
+		previousStatusTime, _ = types.TimestampProto(*vzInfo.PreviousStatusTime)
+	}
+	if vzInfo.PreviousStatus != nil {
+		previousStatus = vzInfo.PreviousStatus.ToProto()
+	}
 
 	return &cvmsgspb.VizierInfo{
 		VizierID:        utils.ProtoFromUUID(vzInfo.ID),
@@ -372,14 +383,17 @@ func vizierInfoToProto(vzInfo VizierInfo) *cvmsgspb.VizierInfo {
 			PassthroughEnabled: vzInfo.PassthroughEnabled,
 			AutoUpdateEnabled:  vzInfo.AutoUpdateEnabled,
 		},
-		ClusterUID:              clusterUID,
-		ClusterName:             clusterName,
-		ClusterVersion:          clusterVersion,
-		VizierVersion:           vizierVersion,
-		ControlPlanePodStatuses: vzInfo.ControlPlanePodStatuses,
-		NumNodes:                vzInfo.NumNodes,
-		NumInstrumentedNodes:    vzInfo.NumInstrumentedNodes,
-		StatusMessage:           statusMessage,
+		ClusterUID:                    clusterUID,
+		ClusterName:                   clusterName,
+		ClusterVersion:                clusterVersion,
+		VizierVersion:                 vizierVersion,
+		StatusMessage:                 statusMessage,
+		ControlPlanePodStatuses:       vzInfo.ControlPlanePodStatuses,
+		UnhealthyDataPlanePodStatuses: vzInfo.UnhealthyDataPlanePodStatuses,
+		NumNodes:                      vzInfo.NumNodes,
+		NumInstrumentedNodes:          vzInfo.NumInstrumentedNodes,
+		PreviousStatus:                previousStatus,
+		PreviousStatusTime:            previousStatusTime,
 	}
 }
 
@@ -402,7 +416,8 @@ func (s *Server) GetVizierInfos(ctx context.Context, req *vzmgrpb.GetVizierInfos
 
 	strQuery := `SELECT i.vizier_cluster_id, c.cluster_uid, c.cluster_name, c.cluster_version, i.vizier_version, c.org_id,
 			  i.status, (EXTRACT(EPOCH FROM age(now(), i.last_heartbeat))*1E9)::bigint as last_heartbeat,
-              i.passthrough_enabled, i.auto_update_enabled, i.control_plane_pod_statuses, num_nodes, num_instrumented_nodes, i.status_message
+              i.passthrough_enabled, i.auto_update_enabled, i.control_plane_pod_statuses, i.unhealthy_data_plane_pod_statuses,
+							i.num_nodes, i.num_instrumented_nodes, i.status_message, i.previous_vizier_status, i.previous_vizier_status_time
               from vizier_cluster_info as i, vizier_cluster as c
               WHERE i.vizier_cluster_id=c.id AND i.vizier_cluster_id IN (?) AND c.org_id='%s'`
 	strQuery = fmt.Sprintf(strQuery, orgIDstr)
@@ -454,7 +469,8 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 
 	query := `SELECT i.vizier_cluster_id, c.cluster_uid, c.cluster_name, c.cluster_version, i.vizier_version,
 			  i.status, (EXTRACT(EPOCH FROM age(now(), i.last_heartbeat))*1E9)::bigint as last_heartbeat,
-              i.passthrough_enabled, i.auto_update_enabled, i.control_plane_pod_statuses, num_nodes, num_instrumented_nodes, i.status_message
+              i.passthrough_enabled, i.auto_update_enabled, i.control_plane_pod_statuses, i.unhealthy_data_plane_pod_statuses,
+							i.num_nodes, i.num_instrumented_nodes, i.status_message, i.previous_vizier_status, i.previous_vizier_status_time
               from vizier_cluster_info as i, vizier_cluster as c
               WHERE i.vizier_cluster_id=$1 AND i.vizier_cluster_id=c.id`
 	vzInfo := VizierInfo{}

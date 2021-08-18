@@ -121,6 +121,44 @@ func convertPodPhase(p metadatapb.PodPhase) cloudpb.PodPhase {
 	}
 }
 
+// Converts vzmgrpb proto format of PodStatus to cloudpb proto format.
+func convertPodStatuses(vzMgrStatuses map[string]*cvmsgspb.PodStatus) map[string]*cloudpb.PodStatus {
+	podStatuses := make(map[string]*cloudpb.PodStatus)
+	for podName, status := range vzMgrStatuses {
+		var containers []*cloudpb.ContainerStatus
+		for _, container := range status.Containers {
+			containers = append(containers, &cloudpb.ContainerStatus{
+				Name:         container.Name,
+				State:        convertContainerState(container.State),
+				Message:      container.Message,
+				Reason:       container.Reason,
+				CreatedAt:    container.CreatedAt,
+				RestartCount: container.RestartCount,
+			})
+		}
+		var events []*cloudpb.K8SEvent
+		for _, ev := range status.Events {
+			events = append(events, &cloudpb.K8SEvent{
+				Message:   ev.Message,
+				LastTime:  ev.LastTime,
+				FirstTime: ev.FirstTime,
+			})
+		}
+
+		podStatuses[podName] = &cloudpb.PodStatus{
+			Name:          status.Name,
+			Status:        convertPodPhase(status.Status),
+			StatusMessage: status.StatusMessage,
+			Reason:        status.Reason,
+			Containers:    containers,
+			CreatedAt:     status.CreatedAt,
+			Events:        events,
+			RestartCount:  status.RestartCount,
+		}
+	}
+	return podStatuses
+}
+
 func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []*uuidpb.UUID) (*cloudpb.GetClusterInfoResponse, error) {
 	resp := &cloudpb.GetClusterInfoResponse{}
 
@@ -137,39 +175,9 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 		if vzInfo == nil || vzInfo.VizierID == nil {
 			continue
 		}
-		podStatuses := make(map[string]*cloudpb.PodStatus)
-		for podName, status := range vzInfo.ControlPlanePodStatuses {
-			var containers []*cloudpb.ContainerStatus
-			for _, container := range status.Containers {
-				containers = append(containers, &cloudpb.ContainerStatus{
-					Name:      container.Name,
-					State:     convertContainerState(container.State),
-					Message:   container.Message,
-					Reason:    container.Reason,
-					CreatedAt: container.CreatedAt,
-				})
-			}
-			var events []*cloudpb.K8SEvent
-			for _, ev := range status.Events {
-				events = append(events, &cloudpb.K8SEvent{
-					Message:   ev.Message,
-					LastTime:  ev.LastTime,
-					FirstTime: ev.FirstTime,
-				})
-			}
-
-			podStatuses[podName] = &cloudpb.PodStatus{
-				Name:          status.Name,
-				Status:        convertPodPhase(status.Status),
-				StatusMessage: status.StatusMessage,
-				Reason:        status.Reason,
-				Containers:    containers,
-				CreatedAt:     status.CreatedAt,
-				Events:        events,
-			}
-		}
 
 		s := vzStatusToClusterStatus(vzInfo.Status)
+		prevS := vzStatusToClusterStatus(vzInfo.PreviousStatus)
 		prettyName := PrettifyClusterName(vzInfo.ClusterName, false)
 
 		if val, ok := cNames[prettyName]; ok {
@@ -187,14 +195,17 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 				PassthroughEnabled: vzInfo.Config.PassthroughEnabled,
 				AutoUpdateEnabled:  vzInfo.Config.AutoUpdateEnabled,
 			},
-			ClusterUID:              vzInfo.ClusterUID,
-			ClusterName:             vzInfo.ClusterName,
-			PrettyClusterName:       prettyName,
-			ClusterVersion:          vzInfo.ClusterVersion,
-			VizierVersion:           vzInfo.VizierVersion,
-			ControlPlanePodStatuses: podStatuses,
-			NumNodes:                vzInfo.NumNodes,
-			NumInstrumentedNodes:    vzInfo.NumInstrumentedNodes,
+			ClusterUID:                    vzInfo.ClusterUID,
+			ClusterName:                   vzInfo.ClusterName,
+			PrettyClusterName:             prettyName,
+			ClusterVersion:                vzInfo.ClusterVersion,
+			VizierVersion:                 vzInfo.VizierVersion,
+			ControlPlanePodStatuses:       convertPodStatuses(vzInfo.ControlPlanePodStatuses),
+			UnhealthyDataPlanePodStatuses: convertPodStatuses(vzInfo.UnhealthyDataPlanePodStatuses),
+			NumNodes:                      vzInfo.NumNodes,
+			NumInstrumentedNodes:          vzInfo.NumInstrumentedNodes,
+			PreviousStatus:                prevS,
+			PreviousStatusTime:            vzInfo.PreviousStatusTime,
 		})
 	}
 

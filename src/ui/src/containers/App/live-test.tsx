@@ -28,6 +28,7 @@ describe('selectCluster', () => {
       passthroughEnabled: true,
     },
     controlPlanePodStatuses: [],
+    unhealthyDataPlanePodStatuses: [],
     numNodes: 1,
     numInstrumentedNodes: 1,
     statusMessage: 'test status',

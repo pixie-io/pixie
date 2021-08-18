@@ -46,19 +46,21 @@ func timestampProtoToMillis(ts *types.Timestamp) float64 {
 
 // ContainerStatusResolver is the resolver responsible for container status info.
 type ContainerStatusResolver struct {
-	Name        string
-	CreatedAtMs float64
-	State       string
-	Message     string
-	Reason      string
+	Name         string
+	CreatedAtMs  float64
+	State        string
+	Message      string
+	Reason       string
+	RestartCount int32
 }
 
 func containerStatusToResolver(containerStatus cloudpb.ContainerStatus) ContainerStatusResolver {
 	resolver := ContainerStatusResolver{
-		Name:    containerStatus.Name,
-		State:   containerStatus.State.String(),
-		Message: containerStatus.Message,
-		Reason:  containerStatus.Reason,
+		Name:         containerStatus.Name,
+		State:        containerStatus.State.String(),
+		Message:      containerStatus.Message,
+		Reason:       containerStatus.Reason,
+		RestartCount: int32(containerStatus.RestartCount),
 	}
 
 	if containerStatus.CreatedAt != nil {
@@ -91,13 +93,14 @@ func k8sEventToResolver(event cloudpb.K8SEvent) K8sEventResolver {
 
 // PodStatusResolver is the resolver responsible for pod status info.
 type PodStatusResolver struct {
-	Name        string
-	CreatedAtMs float64
-	Status      string
-	Message     string
-	Reason      string
-	Containers  []ContainerStatusResolver
-	Events      []K8sEventResolver
+	Name         string
+	CreatedAtMs  float64
+	Status       string
+	Message      string
+	Reason       string
+	Containers   []ContainerStatusResolver
+	Events       []K8sEventResolver
+	RestartCount int32
 }
 
 func podStatusToResolver(podStatus cloudpb.PodStatus) PodStatusResolver {
@@ -120,12 +123,13 @@ func podStatusToResolver(podStatus cloudpb.PodStatus) PodStatusResolver {
 	}
 
 	resolver := PodStatusResolver{
-		Name:       podStatus.Name,
-		Status:     podStatus.Status.String(),
-		Message:    podStatus.StatusMessage,
-		Reason:     podStatus.Reason,
-		Containers: containers,
-		Events:     events,
+		Name:         podStatus.Name,
+		Status:       podStatus.Status.String(),
+		Message:      podStatus.StatusMessage,
+		Reason:       podStatus.Reason,
+		Containers:   containers,
+		Events:       events,
+		RestartCount: int32(podStatus.RestartCount),
 	}
 
 	if podStatus.CreatedAt != nil {
@@ -141,19 +145,22 @@ type VizierConfigResolver struct {
 
 // ClusterInfoResolver is the resolver responsible for cluster info.
 type ClusterInfoResolver struct {
-	clusterID               uuid.UUID
-	Status                  string
-	LastHeartbeatMs         float64
-	VizierConfig            VizierConfigResolver
-	VizierVersion           string
-	ClusterVersion          string
-	ClusterUID              string
-	ClusterName             string
-	PrettyClusterName       string
-	ControlPlanePodStatuses []PodStatusResolver
-	NumNodes                int32
-	NumInstrumentedNodes    int32
-	StatusMessage           string
+	clusterID                     uuid.UUID
+	Status                        string
+	LastHeartbeatMs               float64
+	VizierConfig                  VizierConfigResolver
+	VizierVersion                 string
+	ClusterVersion                string
+	ClusterUID                    string
+	ClusterName                   string
+	PrettyClusterName             string
+	StatusMessage                 string
+	ControlPlanePodStatuses       []PodStatusResolver
+	UnhealthyDataPlanePodStatuses []PodStatusResolver
+	NumNodes                      int32
+	NumInstrumentedNodes          int32
+	PreviousStatus                *string
+	PreviousStatusTimeMs          *float64
 }
 
 // ID returns cluster ID.
@@ -161,14 +168,10 @@ func (c *ClusterInfoResolver) ID() graphql.ID {
 	return graphql.ID(c.clusterID.String())
 }
 
-func clusterInfoToResolver(cluster *cloudpb.ClusterInfo) (*ClusterInfoResolver, error) {
-	clusterID, err := utils.UUIDFromProto(cluster.ID)
-	if err != nil {
-		return nil, err
-	}
-
+// Helper to map proto statuses to GQL pod statuses.
+func mapPodStatusArray(inputStatuses map[string]*cloudpb.PodStatus) []PodStatusResolver {
 	var podStatuses []PodStatusResolver
-	for _, podStatus := range cluster.ControlPlanePodStatuses {
+	for _, podStatus := range inputStatuses {
 		if podStatus == nil {
 			continue
 		}
@@ -178,24 +181,42 @@ func clusterInfoToResolver(cluster *cloudpb.ClusterInfo) (*ClusterInfoResolver, 
 	sort.SliceStable(podStatuses, func(i, j int) bool {
 		return podStatuses[i].Name < podStatuses[j].Name
 	})
+	return podStatuses
+}
 
-	return &ClusterInfoResolver{
+func clusterInfoToResolver(cluster *cloudpb.ClusterInfo) (*ClusterInfoResolver, error) {
+	clusterID, err := utils.UUIDFromProto(cluster.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	resolver := &ClusterInfoResolver{
 		clusterID:       clusterID,
 		Status:          cluster.Status.String(),
 		LastHeartbeatMs: float64(cluster.LastHeartbeatNs) / 1e6,
 		VizierConfig: VizierConfigResolver{
 			PassthroughEnabled: cluster.Config.PassthroughEnabled,
 		},
-		VizierVersion:           cluster.VizierVersion,
-		ClusterVersion:          cluster.ClusterVersion,
-		StatusMessage:           cluster.StatusMessage,
-		ClusterUID:              cluster.ClusterUID,
-		ClusterName:             cluster.ClusterName,
-		PrettyClusterName:       cluster.PrettyClusterName,
-		ControlPlanePodStatuses: podStatuses,
-		NumNodes:                cluster.NumNodes,
-		NumInstrumentedNodes:    cluster.NumInstrumentedNodes,
-	}, nil
+		VizierVersion:                 cluster.VizierVersion,
+		ClusterVersion:                cluster.ClusterVersion,
+		ClusterUID:                    cluster.ClusterUID,
+		ClusterName:                   cluster.ClusterName,
+		PrettyClusterName:             cluster.PrettyClusterName,
+		StatusMessage:                 cluster.StatusMessage,
+		ControlPlanePodStatuses:       mapPodStatusArray(cluster.ControlPlanePodStatuses),
+		UnhealthyDataPlanePodStatuses: mapPodStatusArray(cluster.UnhealthyDataPlanePodStatuses),
+		NumNodes:                      cluster.NumNodes,
+		NumInstrumentedNodes:          cluster.NumInstrumentedNodes,
+	}
+
+	if cluster.PreviousStatusTime != nil {
+		status := cluster.PreviousStatus.String()
+		prevTime := timestampProtoToMillis(cluster.PreviousStatusTime)
+		resolver.PreviousStatusTimeMs = &prevTime
+		resolver.PreviousStatus = &status
+	}
+
+	return resolver, nil
 }
 
 // Clusters lists all of the clusters.
