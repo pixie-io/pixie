@@ -807,7 +807,7 @@ if (isMainRun) {
               credentialsId: 'fossa-api-key',
               variable: 'FOSSA_API_KEY')
           ]) {
-            sh 'fossa analyze'
+            sh 'fossa analyze --branch main'
           }
         }
       }
