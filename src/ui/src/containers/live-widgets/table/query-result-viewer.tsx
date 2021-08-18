@@ -71,36 +71,40 @@ export const QueryResultTable: React.FC<QueryResultTableProps> = (({
     }
   }, [data, dataLength, setTotalCount]);
 
-  const [visibleRows, setVisibleRows] = React.useState<{ start: number, stop: number }>({ start: 1, stop: 1 });
+  const [visibleStart, setVisibleStart] = React.useState(1);
+  const [visibleStop, setVisibleStop] = React.useState(1);
   const visibleRowSummary = React.useMemo(() => {
-    const count = visibleRows.stop - visibleRows.start + 1;
-    let text = `Showing ${visibleRows.start + 1} - ${visibleRows.stop + 1} / ${totalCount} records`;
+    const count = visibleStop - visibleStart + 1;
+    let text = `Showing ${visibleStart + 1} - ${visibleStop + 1} / ${totalCount} records`;
     if (count <= 0) {
       text = 'No records to show';
     } else if (count >= totalCount) {
       text = '\xa0'; // non-breaking space
     }
     return <Typography variant='subtitle2'>{text}</Typography>;
-  }, [totalCount, visibleRows.start, visibleRows.stop]);
+  }, [totalCount, visibleStart, visibleStop]);
 
   const onRowsRendered = React.useCallback(({ visibleStartIndex, visibleStopIndex }) => {
-    setVisibleRows({ start: visibleStartIndex, stop: visibleStopIndex });
+    setVisibleStart(visibleStartIndex);
+    setVisibleStop(visibleStopIndex);
   }, []);
+
+  const makeInner = React.useCallback(({ width, height }) => (
+    <div style={{ width, height, overflow: 'hidden' }}>
+      <LiveDataTable
+        table={data}
+        gutterColumn={display.gutterColumn}
+        propagatedArgs={propagatedArgs}
+        onRowsRendered={onRowsRendered}
+      />
+    </div>
+  ), [data, display.gutterColumn, propagatedArgs, onRowsRendered]);
 
   return (
     <div className={classes.root}>
       <div className={classes.table}>
         <AutoSizer>
-          {({ width, height }) => (
-            <div style={{ width, height, overflow: 'hidden' }}>
-              <LiveDataTable
-                table={data}
-                gutterColumn={display.gutterColumn}
-                propagatedArgs={propagatedArgs}
-                onRowsRendered={onRowsRendered}
-              />
-            </div>
-          )}
+          {makeInner}
         </AutoSizer>
       </div>
       <div className={classes.tableSummary}>

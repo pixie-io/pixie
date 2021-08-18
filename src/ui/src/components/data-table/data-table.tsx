@@ -193,6 +193,8 @@ export interface DataTableProps {
 
 interface DataTableContextProps extends Omit<DataTableProps, 'table'> {
   instance: TableInstance;
+  expanded: string;
+  toggleRowExpanded: (rowId: string) => void;
 }
 const DataTableContext = React.createContext<DataTableContextProps>(null);
 
@@ -244,7 +246,7 @@ const ColumnResizeHandle: React.FC<{ column: HeaderGroup }> = ({ column }) => {
   );
 };
 
-const HeaderCell: React.FC<{ column: HeaderGroup }> = ({ column }) => {
+const HeaderCell: React.FC<{ column: HeaderGroup }> = React.memo(function HeaderCell({ column }) {
   const classes = useDataTableStyles();
 
   const cellClass = buildClass(classes.headerCell, column.isGutter && classes.gutterCell);
@@ -272,23 +274,14 @@ const HeaderCell: React.FC<{ column: HeaderGroup }> = ({ column }) => {
       {column.canResize && <ColumnResizeHandle column={column} />}
     </div>
   );
-};
-
-const BodyCell: React.FC<{ cell: Cell }> = ({ cell }) => {
-  const classes = useDataTableStyles();
-  const { column: col } = cell;
-
-  const cellClass = buildClass(classes.bodyCell, col.isGutter && classes.gutterCell);
-  const contClass = buildClass(classes.cellContents, classes[col.align]);
-  const cellWidth = Math.max(col.minWidth ?? 0, Math.min(Number(col.width), col.maxWidth ?? Infinity));
-  return (
-    <div role='cell' className={cellClass} style={{ width: `${cellWidth}px` }}>
-      <div className={contClass}>
-        {cell.render('Cell')}
-      </div>
-    </div>
-  );
-};
+}, (prev, next) => {
+  const checkKeys: Array<keyof HeaderGroup> = [
+    'id', 'width', 'canSort', 'isSorted', 'isSortedDesc', 'canResize', 'isResizing'];
+  for (const key of checkKeys) {
+    if (prev.column[key] !== next.column[key]) return false;
+  }
+  return true;
+});
 
 const HeaderRow = React.forwardRef<HTMLDivElement, { scrollbarWidth: number }>(
   function HeaderRow({ scrollbarWidth }, ref) {
@@ -307,12 +300,77 @@ const HeaderRow = React.forwardRef<HTMLDivElement, { scrollbarWidth: number }>(
       <div className={classes.tableHead} style={headStyle} ref={ref}>
         <div role='row' className={classes.headerRow} style={rowStyle}>
           {headerGroups[0].headers.map((column) => (
-            <HeaderCell key={String(column.id || column.Header)} column={column} />
+            <HeaderCell key={String(column.id || column.Header)} column={{ ...column }} />
           ))}
         </div>
       </div>
     );
   },
+);
+
+const BodyCell: React.FC<{ cell: Cell }> = React.memo(function BodyCell({ cell }) {
+  const classes = useDataTableStyles();
+  const { column: col } = cell;
+
+  const cellClass = buildClass(classes.bodyCell, col.isGutter && classes.gutterCell);
+  const contClass = buildClass(classes.cellContents, classes[col.align]);
+  const cellWidth = Math.max(col.minWidth ?? 0, Math.min(Number(col.width), col.maxWidth ?? Infinity));
+  return (
+    <div role='cell' className={cellClass} style={{ width: `${cellWidth}px` }}>
+      <div className={contClass}>
+        {cell.render('Cell')}
+      </div>
+    </div>
+  );
+}, (prev, next) => {
+  const pCol = prev.cell.column;
+  const nCol = next.cell.column;
+  return pCol.id === nCol.id
+    && pCol.width === nCol.width
+    && prev.cell.value === next.cell.value;
+});
+
+const BodyRow = React.memo<{ index: number, style: React.CSSProperties }>(
+  function BodyRow({
+    index: rowIndex,
+    style: vRowStyle,
+  }) {
+    const classes = useDataTableStyles();
+    const {
+      instance: {
+        rows,
+        totalColumnsWidth,
+        prepareRow,
+      },
+      expanded,
+      toggleRowExpanded,
+      enableRowSelect,
+      onRowSelected,
+    } = React.useContext(DataTableContext);
+
+    const row = rows[rowIndex];
+    prepareRow(row);
+    const className = buildClass(
+      classes.bodyRow,
+      enableRowSelect && classes.bodyRowSelectable,
+      enableRowSelect && expanded === row.id && classes.bodyRowSelected,
+    );
+    const onClick = React.useMemo(() => enableRowSelect && (() => {
+      toggleRowExpanded(row.id);
+      onRowSelected?.(expanded === row.id ? null : row.original);
+    }), [row.id, row.original, enableRowSelect, onRowSelected, expanded, toggleRowExpanded]);
+
+    const rowProps = React.useMemo(
+      () => row.getRowProps({ style: { ...vRowStyle, width: totalColumnsWidth } }),
+      [row, vRowStyle, totalColumnsWidth]);
+    return (
+      // eslint-disable-next-line react/jsx-key
+      <div {...rowProps} className={className} onClick={onClick}>
+        {row.cells.map((cell) => <BodyCell key={cell.column.id} cell={{ ...cell, column: { ...cell.column } }} />)}
+      </div>
+    );
+  },
+  areEqual,
 );
 
 function decorateTable({ table: { columns, data }, enableColumnSelect, enableRowSelect }: DataTableProps): ReactTable {
@@ -405,55 +463,24 @@ const DataTableImpl: React.FC<DataTableProps> = ({ table, ...options }) => {
     useSortBy,
   );
 
-  const {
-    rows,
-    prepareRow,
-    totalColumnsWidth,
-  } = instance;
-
   const [expanded, setExpanded] = React.useState<string>(null);
   const toggleRowExpanded = React.useCallback((rowId: string) => {
     if (expanded === rowId) setExpanded(null);
     else setExpanded(rowId);
   }, [expanded]);
 
-  const RowRenderer = React.memo<{ index: number, style: React.CSSProperties }>(
-    function VirtualizedRow({
-      index: rowIndex,
-      style: vRowStyle,
-    }) {
-      const row = rows[rowIndex];
-      prepareRow(row);
-      const className = buildClass(
-        classes.bodyRow,
-        options.enableRowSelect && classes.bodyRowSelectable,
-        options.enableRowSelect && expanded === row.id && classes.bodyRowSelected,
-      );
-      const onClick = React.useMemo(() => options.enableRowSelect && (() => {
-        toggleRowExpanded(row.id);
-        options.onRowSelected?.(expanded === row.id ? null : row.original);
-      }), [row.id, row.original]);
-
-      const rowProps = React.useMemo(
-        () => row.getRowProps({ style: { ...vRowStyle, width: totalColumnsWidth } }),
-        [row, vRowStyle]);
-      return (
-        // eslint-disable-next-line react/jsx-key
-        <div {...rowProps} className={className} onClick={onClick}>
-          {row.cells.map((cell) => <BodyCell key={cell.column.id} cell={cell} />)}
-        </div>
-      );
-    },
-    areEqual,
-  );
-
   const ctx: DataTableContextProps = React.useMemo(() => ({
     instance,
+    expanded,
+    toggleRowExpanded,
     ...options,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [
-    instance, options.enableRowSelect, options.enableColumnSelect,
+    // Monitoring specific parts of the instance ensures that the <List /> updates upon sort/resize/expand/etc events.
+    instance, instance.totalColumnsWidth, instance.state.sortBy,
+    options.enableRowSelect, options.enableColumnSelect,
     options.onRowSelected, options.onRowsRendered,
+    expanded, toggleRowExpanded,
   ]);
 
   const ready = containerWidth > 0 && containerHeight > 0 && defaultWidth > 0;
@@ -471,12 +498,12 @@ const DataTableImpl: React.FC<DataTableProps> = ({ table, ...options }) => {
             outerRef={scrollContainerRef}
             width={containerWidth}
             height={containerHeight - ROW_HEIGHT_PX}
-            itemCount={rows.length}
+            itemCount={instance.rows.length}
             itemSize={ROW_HEIGHT_PX}
             onItemsRendered={options.onRowsRendered}
             overscanCount={3}
           >
-            {RowRenderer}
+            {BodyRow}
           </List>
         </div>
       </div>
