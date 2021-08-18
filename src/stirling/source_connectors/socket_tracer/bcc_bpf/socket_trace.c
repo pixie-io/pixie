@@ -119,6 +119,11 @@ BPF_HASH(active_read_args_map, uint64_t, struct data_args_t);
 // Key is {tgid, pid}.
 BPF_HASH(active_close_args_map, uint64_t, struct close_args_t);
 
+// Map from thread to its ongoing sendfile syscall's input argument.
+// Tracks sendfile() call from entry -> exit.
+// Key is {tgid, pid}.
+BPF_HASH(active_sendfile_args_map, uint64_t, struct sendfile_args_t);
+
 // BPF programs are limited to a 512-byte stack. We store this value per CPU
 // and use it as a heap allocated value.
 BPF_PERCPU_ARRAY(socket_data_event_buffer_heap, struct socket_data_event_t, 1);
@@ -864,6 +869,66 @@ static __inline void process_syscall_data_vecs(struct pt_regs* ctx, uint64_t id,
   process_data(/* vecs */ true, ctx, id, direction, args, bytes_count, /* ssl */ false);
 }
 
+static __inline void process_syscall_sendfile(struct pt_regs* ctx, uint64_t id,
+                                              const struct sendfile_args_t* args,
+                                              ssize_t bytes_count) {
+  uint32_t tgid = id >> 32;
+
+  if (args->out_fd < 0) {
+    return;
+  }
+
+  if (bytes_count <= 0) {
+    // This sendfile call failed, or processed nothing.
+    return;
+  }
+
+  if (is_open_file(tgid, args->out_fd)) {
+    return;
+  }
+
+  enum target_tgid_match_result_t match_result = match_trace_tgid(tgid);
+  if (match_result == TARGET_TGID_UNMATCHED) {
+    return;
+  }
+  bool force_trace_tgid = (match_result == TARGET_TGID_MATCHED);
+
+  struct conn_info_t* conn_info = get_or_create_conn_info(tgid, args->out_fd);
+  if (conn_info == NULL) {
+    return;
+  }
+
+  if (!should_trace_conn(conn_info, /* ssl */ false)) {
+    return;
+  }
+
+  uint64_t tgid_fd = gen_tgid_fd(tgid, args->out_fd);
+
+  uint64_t* conn_disabled_tsid_ptr = conn_disabled_map.lookup(&tgid_fd);
+  uint64_t conn_disabled_tsid = (conn_disabled_tsid_ptr == NULL) ? 0 : *conn_disabled_tsid_ptr;
+
+  if (should_send_data(tgid, conn_disabled_tsid, force_trace_tgid, conn_info)) {
+    struct socket_data_event_t* event =
+        fill_socket_data_event(kSyscallSendfile, kEgress, conn_info);
+    if (event == NULL) {
+      // event == NULL not expected to ever happen.
+      return;
+    }
+
+    event->attr.pos = conn_info->wr_bytes;
+    event->attr.msg_size = bytes_count;
+    event->attr.msg_buf_size = 0;
+    socket_data_events.perf_submit(ctx, event, sizeof(event->attr));
+  }
+
+  // Update state of the connection.
+  conn_info->wr_bytes += bytes_count;
+
+  update_conn_stats(ctx, conn_info);
+
+  return;
+}
+
 static __inline void process_syscall_close(struct pt_regs* ctx, uint64_t id,
                                            const struct close_args_t* close_args) {
   uint32_t tgid = id >> 32;
@@ -1506,6 +1571,35 @@ int syscall__probe_ret_close(struct pt_regs* ctx) {
   }
 
   active_close_args_map.delete(&id);
+  return 0;
+}
+
+// int close(int fd);
+int syscall__probe_entry_sendfile(struct pt_regs* ctx, int out_fd, int in_fd, off_t* offset,
+                                  size_t count) {
+  uint64_t id = bpf_get_current_pid_tgid();
+
+  // Stash arguments.
+  struct sendfile_args_t args;
+  args.out_fd = out_fd;
+  args.in_fd = in_fd;
+  args.count = count;
+  active_sendfile_args_map.update(&id, &args);
+
+  return 0;
+}
+
+int syscall__probe_ret_sendfile(struct pt_regs* ctx) {
+  uint64_t id = bpf_get_current_pid_tgid();
+  ssize_t bytes_count = PT_REGS_RC(ctx);
+
+  // Unstash arguments, and process syscall.
+  const struct sendfile_args_t* args = active_sendfile_args_map.lookup(&id);
+  if (args != NULL) {
+    process_syscall_sendfile(ctx, id, args, bytes_count);
+  }
+
+  active_sendfile_args_map.delete(&id);
   return 0;
 }
 

@@ -25,6 +25,7 @@
 
 #include <magic_enum.hpp>
 
+#include "src/common/fs/temp_file.h"
 #include "src/common/system/clock.h"
 #include "src/common/system/tcp_socket.h"
 #include "src/common/system/udp_socket.h"
@@ -56,29 +57,29 @@ using ::testing::IsEmpty;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
-constexpr std::string_view kHTTPReqMsg1 = R"(GET /endpoint1 HTTP/1.1
-User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:67.0) Gecko/20100101 Firefox/67.0
+constexpr std::string_view kHTTPReqMsg1 =
+    "GET /endpoint1 HTTP/1.1\r\n"
+    "User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:67.0) Gecko/20100101 Firefox/67.0\r\n"
+    "\r\n";
 
-)";
+constexpr std::string_view kHTTPReqMsg2 =
+    "GET /endpoint2 HTTP/1.1\r\n"
+    "User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:67.0) Gecko/20100101 Firefox/67.0\r\n"
+    "\r\n";
 
-constexpr std::string_view kHTTPReqMsg2 = R"(GET /endpoint2 HTTP/1.1
-User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:67.0) Gecko/20100101 Firefox/67.0
+constexpr std::string_view kHTTPRespMsg1 =
+    "HTTP/1.1 200 OK\r\n"
+    "Content-Type: application/json; msg1\r\n"
+    "Content-Length: 0\r\n"
+    "\r\n";
 
-)";
+constexpr std::string_view kHTTPRespMsg2 =
+    "HTTP/1.1 200 OK\r\n"
+    "Content-Type: application/json; msg2\r\n"
+    "Content-Length: 0\r\n"
+    "\r\n";
 
-constexpr std::string_view kHTTPRespMsg1 = R"(HTTP/1.1 200 OK
-Content-Type: application/json; msg1
-Content-Length: 0
-
-)";
-
-constexpr std::string_view kHTTPRespMsg2 = R"(HTTP/1.1 200 OK
-Content-Type: application/json; msg2
-Content-Length: 0
-
-)";
-
-constexpr std::string_view kNoProtocolMsg = R"(This is not an HTTP message)";
+constexpr std::string_view kNoProtocolMsg = "This is not an HTTP message";
 
 // TODO(yzhao): We'd better rewrite the test to use BCCWrapper directly, instead of
 // SocketTraceConnector, to avoid triggering the userland parsing code, so these tests do not need
@@ -417,6 +418,73 @@ TEST_F(SocketTraceBPFTest, LargeMessages) {
   //  system.ServerFD())); EXPECT_EQ(server_tracker->send_data().data_buffer().Head(),
   //  kHTTPReqMsg1); EXPECT_THAT(std::string(server_tracker->recv_data().data_buffer().Head()),
   //  HasSubstr("+++++"));
+}
+
+constexpr std::string_view kHTTPRespMsgHeader =
+    "HTTP/1.1 200 OK\r\n"
+    "Content-Type: application/json; msg1\r\n"
+    "Content-Length: 22\r\n"
+    "\r\n";
+
+constexpr std::string_view kHTTPRespMsgContent = "Pixie labs is awesome!";
+
+TEST_F(SocketTraceBPFTest, SendFile) {
+  // FLAGS_stirling_conn_trace_pid = getpid();
+
+  StartTransferDataThread();
+
+  TCPSocket client;
+  TCPSocket server;
+
+  std::thread server_thread([&server]() {
+    server.BindAndListen();
+    auto conn = server.Accept();
+
+    std::string data;
+
+    conn->Recv(&data);
+
+    std::unique_ptr<fs::TempFile> tmpf = fs::TempFile::Create();
+    std::filesystem::path fpath = tmpf->path();
+    ASSERT_OK(WriteFileFromString(fpath, kHTTPRespMsgContent));
+
+    conn->Send(kHTTPRespMsgHeader);
+    conn->SendFile(fpath);
+  });
+
+  std::thread client_thread([&client, &server]() {
+    client.Connect(server);
+
+    std::string data;
+
+    client.Send(kHTTPReqMsg1);
+    while (data.size() != kHTTPRespMsgHeader.size() + kHTTPRespMsgContent.size()) {
+      client.Recv(&data);
+    }
+  });
+
+  server_thread.join();
+  client_thread.join();
+
+  client.Close();
+
+  StopTransferDataThread();
+
+  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
+  ASSERT_FALSE(tablets.empty());
+
+  ColumnWrapperRecordBatch records =
+      FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, getpid());
+
+  ASSERT_THAT(records, Each(ColWrapperSizeIs(2)));
+
+  // Time ordering by response means that we should get server entry first, then client entry.
+  std::string server_body = records[kHTTPRespBodyIdx]->Get<types::StringValue>(0);
+  std::string client_body = records[kHTTPRespBodyIdx]->Get<types::StringValue>(1);
+
+  const std::string kHTTPRespMsgContentAsFiller(kHTTPRespMsgContent.size(), 0);
+  EXPECT_EQ(server_body, kHTTPRespMsgContentAsFiller);
+  EXPECT_EQ(client_body, kHTTPRespMsgContent);
 }
 
 using NullRemoteAddrTest = testing::SocketTraceBPFTest</* TClientSideTracing */ false>;

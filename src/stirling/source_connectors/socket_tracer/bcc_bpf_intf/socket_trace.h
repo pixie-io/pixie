@@ -146,6 +146,7 @@ enum source_function_t {
   kSyscallRecvMMsg,
   kSyscallWriteV,
   kSyscallReadV,
+  kSyscallSendfile,
 
   // For Go TLS libraries.
   kGoTLSConnWrite,
@@ -284,15 +285,24 @@ struct data_args_t {
   // Represents the function from which this argument group originates.
   enum source_function_t source_fn;
   int32_t fd;
+
   // For send()/recv()/write()/read().
   const char* buf;
+
   // For sendmsg()/recvmsg()/writev()/readv().
   const struct iovec* iov;
   size_t iovlen;
+
   // For sendmmsg()
   unsigned int* msg_len;
 };
 
 struct close_args_t {
   int32_t fd;
+};
+
+struct sendfile_args_t {
+  int32_t out_fd;
+  int32_t in_fd;
+  size_t count;
 };

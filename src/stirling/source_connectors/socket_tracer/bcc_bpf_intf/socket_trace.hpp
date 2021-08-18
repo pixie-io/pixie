@@ -62,6 +62,14 @@ struct SocketDataEvent {
     // when only metadata is being sent (e.g. unknown protocols or disabled trackers).
     msg.assign(static_cast<const char*>(data) + offsetof(socket_data_event_t, msg),
                attr.msg_buf_size);
+
+    // Hack: Create a filler event for sendfile data.
+    // We need a better long-term solution for this,
+    // since we aren't able to directly trace the data.
+    if (attr.source_fn == kSyscallSendfile) {
+      DCHECK_EQ(attr.msg_buf_size, 0);
+      msg.assign(attr.msg_size, 0);
+    }
   }
 
   std::string ToString() const {
