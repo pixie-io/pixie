@@ -50,6 +50,8 @@
 // 000024_add_encrypted_deployment_key.up.sql
 // 000025_drop_deployment_key_old.down.sql
 // 000025_drop_deployment_key_old.up.sql
+// 000026_remove_extraneous_columns.down.sql
+// 000026_remove_extraneous_columns.up.sql
 package schema
 
 import (
@@ -1126,6 +1128,46 @@ func _000025_drop_deployment_key_oldUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000026_remove_extraneous_columnsDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x4f\xce\x29\x2d\x2e\x49\x2d\x8a\xcf\xcc\x4b\xcb\xe7\x72\x74\x71\x51\x70\xf6\xf7\x09\xf5\xf5\x53\x80\x89\xe7\x25\xe6\xa6\x2a\x94\x25\x16\x25\x67\x24\x16\x69\x18\x1a\x18\x18\x68\xea\x60\x53\x56\x9a\x99\x82\xaa\xca\x9a\x8b\x0b\xb7\x6d\xd8\x4c\x28\x4b\x2d\x2a\xce\xcc\xcf\x43\x33\x05\x10\x00\x00\xff\xff\xaa\xd5\x44\x73\xb2\x00\x00\x00")
+
+func _000026_remove_extraneous_columnsDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000026_remove_extraneous_columnsDownSql,
+		"000026_remove_extraneous_columns.down.sql",
+	)
+}
+
+func _000026_remove_extraneous_columnsDownSql() (*asset, error) {
+	bytes, err := _000026_remove_extraneous_columnsDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000026_remove_extraneous_columns.down.sql", size: 178, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000026_remove_extraneous_columnsUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x4f\xce\x29\x2d\x2e\x49\x2d\x8a\xcf\xcc\x4b\xcb\xe7\x72\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x53\x80\x49\xe4\x25\xe6\xa6\xea\x60\x95\x29\xcd\x4c\xb1\xe6\xe2\xc2\x6d\x26\x56\x4d\x65\xa9\x45\xc5\x99\xf9\x79\xd6\x80\x00\x00\x00\xff\xff\xc5\x60\x75\x69\x8b\x00\x00\x00")
+
+func _000026_remove_extraneous_columnsUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000026_remove_extraneous_columnsUpSql,
+		"000026_remove_extraneous_columns.up.sql",
+	)
+}
+
+func _000026_remove_extraneous_columnsUpSql() (*asset, error) {
+	bytes, err := _000026_remove_extraneous_columnsUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000026_remove_extraneous_columns.up.sql", size: 139, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -1228,6 +1270,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000024_add_encrypted_deployment_key.up.sql":             _000024_add_encrypted_deployment_keyUpSql,
 	"000025_drop_deployment_key_old.down.sql":                _000025_drop_deployment_key_oldDownSql,
 	"000025_drop_deployment_key_old.up.sql":                  _000025_drop_deployment_key_oldUpSql,
+	"000026_remove_extraneous_columns.down.sql":              _000026_remove_extraneous_columnsDownSql,
+	"000026_remove_extraneous_columns.up.sql":                _000026_remove_extraneous_columnsUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -1321,6 +1365,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000024_add_encrypted_deployment_key.up.sql":             &bintree{_000024_add_encrypted_deployment_keyUpSql, map[string]*bintree{}},
 	"000025_drop_deployment_key_old.down.sql":                &bintree{_000025_drop_deployment_key_oldDownSql, map[string]*bintree{}},
 	"000025_drop_deployment_key_old.up.sql":                  &bintree{_000025_drop_deployment_key_oldUpSql, map[string]*bintree{}},
+	"000026_remove_extraneous_columns.down.sql":              &bintree{_000026_remove_extraneous_columnsDownSql, map[string]*bintree{}},
+	"000026_remove_extraneous_columns.up.sql":                &bintree{_000026_remove_extraneous_columnsUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
