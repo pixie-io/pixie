@@ -272,9 +272,15 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
           break;
         case 'error': {
           const error = Array.isArray(update.event.error) ? update.event.error[0] : update.event.error;
-          resultsContext.setResults({ error, tables: {} });
           const { errType } = (error as VizierQueryError);
+
+          if (hasMutation && errType === 'unavailable') {
+            // Ignore unavailable errors from the mutation executor.
+            break;
+          }
+
           const errMsg = error.message;
+          resultsContext.setResults({ error, tables: {} });
           resultsContext.setLoading(false);
           resultsContext.setStreaming(false);
           setNumExecutionTries(numExecutionTries - 1);

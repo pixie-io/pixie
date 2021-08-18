@@ -332,7 +332,9 @@ const LiveView: React.FC = () => {
 
   const { selectedClusterName, selectedClusterPrettyName, selectedClusterStatus } = React.useContext(ClusterContext);
   const { script, args, cancelExecution } = React.useContext(ScriptContext);
-  const { tables, loading: loadingResults, streaming: streamingResults } = React.useContext(ResultsContext);
+  const {
+    tables, error, mutationInfo, loading: loadingResults, streaming: streamingResults,
+  } = React.useContext(ResultsContext);
   const { saveEditor } = React.useContext(EditorContext);
   const { isMobile, setEditorPanelOpen, setDataDrawerOpen } = React.useContext(LayoutContext);
   const [widgetsMoveable, setWidgetsMoveable] = React.useState(false);
@@ -405,7 +407,8 @@ const LiveView: React.FC = () => {
 
   if (!selectedClusterName || !args) return null;
 
-  const showResults = script && healthyOnce && (Object.keys(tables).length || loadingResults || streamingResults);
+  const showResults = script && healthyOnce && (
+    Object.keys(tables).length || loadingResults || streamingResults || error || mutationInfo);
 
   return (
     <div className={classes.root}>

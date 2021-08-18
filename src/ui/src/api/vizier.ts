@@ -18,7 +18,7 @@
 
 import { Status } from 'app/types/generated/vizierapi_pb';
 
-export type VizierQueryErrorType = 'script' | 'vis' | 'execution' | 'server';
+export type VizierQueryErrorType = 'script' | 'vis' | 'execution' | 'server' | 'unavailable';
 
 export enum GRPCStatusCode {
   OK = 0,
@@ -49,6 +49,8 @@ function getUserFacingMessage(errType: VizierQueryErrorType): string {
       return 'Failed to execute script';
     case 'server':
       return 'Server error';
+    case 'unavailable':
+      return 'Transient error';
     default:
       // Not reached
       return 'Unknown error';

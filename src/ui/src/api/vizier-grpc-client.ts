@@ -28,7 +28,7 @@ import {
   RowBatchData, Status, MutationInfo, HealthCheckResponse, ExecuteScriptResponse,
 } from 'app/types/generated/vizierapi_pb';
 import { VizierServiceClient } from 'app/types/generated/VizierapiServiceClientPb';
-import { VizierQueryError } from './vizier';
+import { GRPCStatusCode, VizierQueryError } from './vizier';
 
 const noop = () => {};
 
@@ -211,6 +211,11 @@ async function decryptRSA(privateKey: CryptoKey, data: Uint8Array): Promise<Uint
 
 const HEALTH_CHECK_TIMEOUT = 10000; // 10 seconds
 
+type ExecuteScriptResponseOrError = {
+  resp?: ExecuteScriptResponse,
+  error?: VizierQueryError,
+};
+
 /**
  * Client for gRPC connections to individual Vizier clusters.
  * See CloudGQLClient for the GraphQL client that works with shared data.
@@ -304,44 +309,61 @@ export class VizierGRPCClient {
 
         call = this.client.executeScript(req, headers);
 
-        return new Observable<ExecuteScriptResponse>((observer) => {
-          call.on('data', observer.next.bind(observer));
-          call.on('error', observer.error.bind(observer));
-          call.on('end', observer.complete.bind(observer));
-          call.on('status', (status) => {
-            if (status.code > 0) {
-              observer.error(new VizierQueryError('server', status.details));
-            }
+        return new Observable<ExecuteScriptResponseOrError>((observer) => {
+          call.on('data', (data: ExecuteScriptResponse) => {
+            observer.next({ resp: data });
           });
+          call.on('error', (grpcError) => {
+            let error: VizierQueryError;
+            if (grpcError.code === GRPCStatusCode.Unavailable) {
+              error = new VizierQueryError('unavailable', grpcError.message);
+            } else {
+              error = new VizierQueryError('server', grpcError.message);
+            }
+            // Delay throwing of errors until after the buffering step.
+            observer.next({ error });
+          });
+          call.on('end', observer.complete.bind(observer));
         });
       }),
       finalize(cancelCall),
-      concatMap((resp: ExecuteScriptResponse) => {
+      concatMap((respOrErr: ExecuteScriptResponseOrError) => {
+        const { resp, error } = respOrErr;
+        if (error) {
+          return of(respOrErr);
+        }
         if (!keyPair || !resp.hasData()) {
-          return of(resp);
+          return of(respOrErr);
         }
         if (!resp.getData().getEncryptedBatch()) {
           if (resp.getData().hasBatch()) {
             // eslint-disable-next-line no-console
             console.warn('Expected table data to be encrypted. Please upgrade vizier.');
           }
-          return of(resp);
+          return of(respOrErr);
         }
         const encrypted = resp.getData().getEncryptedBatch_asU8();
         return from(decryptRSA(keyPair.privateKey, encrypted)).pipe(
           map((dec: Uint8Array) => {
             resp.getData().setBatch(RowBatchData.deserializeBinary(dec));
             resp.getData().setEncryptedBatch('');
-            return resp;
+            return { resp };
           }),
         );
       }),
       bufferTime(250),
-      concatMap((resps: ExecuteScriptResponse[]) => {
+      concatMap((buffer: ExecuteScriptResponseOrError[]) => {
         const outs: ExecutionStateUpdate[] = [];
         const dataBatch: BatchDataUpdate[] = [];
 
-        for (const resp of resps) {
+        let errored = false;
+        for (const respOrErr of buffer) {
+          const { resp, error } = respOrErr;
+          if (error) {
+            errored = true;
+            outs.push({ event: { type: 'error', error }, completionReason: 'error', results });
+            break;
+          }
           if (!results.queryId) {
             results.queryId = resp.getQueryId();
           }
@@ -400,7 +422,9 @@ export class VizierGRPCClient {
           }
         }
 
-        outs.push({ event: { type: 'data', data: dataBatch }, results });
+        if (!errored) {
+          outs.push({ event: { type: 'data', data: dataBatch }, results });
+        }
         return outs;
       }),
       startWith({
