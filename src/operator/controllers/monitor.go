@@ -241,7 +241,6 @@ func ReconcileStatus(client HTTPClient, pods map[string]*v1.Pod) (pixiev1alpha1.
 		if ccPod.Status.Phase != v1.PodRunning {
 			return pixiev1alpha1.VizierPhaseUnhealthy, ""
 		}
-		log.Info(pods)
 		// Ping cloudConn's statusz.
 		ok, status := GetPodStatus(client, ccPod)
 		if !ok {
