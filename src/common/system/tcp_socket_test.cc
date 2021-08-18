@@ -26,7 +26,9 @@
 #include <vector>
 
 #include "src/common/base/base.h"
+#include "src/common/fs/temp_file.h"
 #include "src/common/system/tcp_socket.h"
+#include "src/common/testing/testing.h"
 
 namespace px {
 namespace system {
@@ -100,6 +102,34 @@ TEST(TCPSocketTest, WriteVandReadV) {
   client_thread.join();
 
   EXPECT_EQ("writevreadv", absl::StrJoin(received_data, ""));
+}
+
+TEST(TCPSocketTest, SendFile) {
+  TCPSocket server;
+  server.BindAndListen();
+
+  std::vector<std::string> received_data;
+  TCPSocket client;
+  std::thread client_thread([&server, &client, &received_data]() {
+    client.Connect(server);
+    std::string data;
+    while (client.Read(&data)) {
+      received_data.push_back(data);
+    }
+  });
+
+  std::unique_ptr<fs::TempFile> tmpf = fs::TempFile::Create();
+  std::filesystem::path fpath = tmpf->path();
+  ASSERT_OK(WriteFileFromString(fpath, "Pixielabs"));
+
+  std::unique_ptr<TCPSocket> conn = server.Accept();
+  EXPECT_EQ(9, conn->SendFile(fpath));
+  conn->Close();
+
+  server.Close();
+  client_thread.join();
+
+  EXPECT_EQ("Pixielabs", absl::StrJoin(received_data, ""));
 }
 
 TEST(TCPSocketTest, ServerAddrAndPort) {

@@ -20,6 +20,7 @@
 
 #include <netinet/in.h>
 
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
@@ -53,6 +54,7 @@ class TCPSocket {
   ssize_t WriteV(const std::vector<std::string_view>& data) const;
   ssize_t Send(std::string_view data) const;
   ssize_t SendMsg(const std::vector<std::string_view>& data) const;
+  ssize_t SendFile(const std::filesystem::path path) const;
   bool Read(std::string* data) const;
   ssize_t ReadV(std::string* data) const;
   bool Recv(std::string* data) const;

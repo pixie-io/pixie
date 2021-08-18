@@ -19,12 +19,14 @@
 #include "src/common/system/tcp_socket.h"
 
 #include <arpa/inet.h>
+#include <fcntl.h>
+#include <sys/sendfile.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>
 
-#include <algorithm>
 #include <memory>
 #include <vector>
 
@@ -136,6 +138,21 @@ ssize_t TCPSocket::SendMsg(const std::vector<std::string_view>& data) const {
     msg.msg_iov[i].iov_len = data[i].size();
   }
   return sendmsg(sockfd_, &msg, /*flags*/ 0);
+}
+
+ssize_t TCPSocket::SendFile(const std::filesystem::path path) const {
+  int fd = open(path.c_str(), O_RDONLY);
+  if (fd < 0) {
+    return -1;
+  }
+
+  struct stat stat_buf;
+  fstat(fd, &stat_buf);
+
+  off_t offset = 0;
+  size_t count = stat_buf.st_size;
+
+  return sendfile(sockfd_, fd, &offset, count);
 }
 
 ssize_t TCPSocket::RecvMsg(std::vector<std::string>* data) const {
