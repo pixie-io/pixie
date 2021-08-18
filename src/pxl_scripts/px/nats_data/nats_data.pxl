@@ -1,0 +1,41 @@
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+''' NATS Events Tracer
+
+This script traces all NATS data in the cluster.
+
+If you are using TLS for NATS, ensure that your NATS server and client are built
+with debug symbols included. Otherwise, this script will produce no data.
+'''
+import px
+
+
+def nats_data(start_time: str, num_head: int):
+    df = px.DataFrame(table='nats_events.beta', start_time=start_time)
+
+    df.namespace = df.ctx['namespace']
+    df.node = df.ctx['node']
+    df.pod = df.ctx['pod']
+    df.pid = px.upid_to_pid(df.upid)
+
+    # Remove some columns.
+    df = df.drop(['upid', 'trace_role'])
+
+    # Restrict number of results.
+    df = df.head(num_head)
+
+    return df

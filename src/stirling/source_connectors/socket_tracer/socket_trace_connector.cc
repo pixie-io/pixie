@@ -82,10 +82,8 @@ DEFINE_bool(stirling_enable_dns_tracing, true,
             "If true, stirling will trace and process DNS messages.");
 DEFINE_bool(stirling_enable_redis_tracing, true,
             "If true, stirling will trace and process Redis messages.");
-DEFINE_bool(stirling_enable_nats_tracing, false,
+DEFINE_bool(stirling_enable_nats_tracing, true,
             "If true, stirling will trace and process NATS messages.");
-DEFINE_bool(stirling_enable_kafka_tracing, true,
-            "If true, stirling will trace and process Kafka messages.");
 
 DEFINE_bool(stirling_disable_self_tracing, true,
             "If true, stirling will not trace and process syscalls made by itself.");
@@ -160,10 +158,10 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
       // mongo in the future.
       {kProtocolMongo,
        TransferSpec{false, kHTTPTableNum, {kRoleUnknown, kRoleClient, kRoleServer}, nullptr}},
-      {kProtocolKafka, TransferSpec{FLAGS_stirling_enable_kafka_tracing,
-                                    kKafkaTableNum,
-                                    {kRoleClient, kRoleServer},
-                                    TRANSFER_STREAM_PROTOCOL(kafka)}},
+      // TODO(chengruizhe): Add Kafka table. nullptr should be replaced by the transfer_fn for
+      // kafka in the future.
+      {kProtocolKafka,
+       TransferSpec{false, kHTTPTableNum, {kRoleUnknown, kRoleClient, kRoleServer}, nullptr}},
       {kProtocolUnknown, TransferSpec{false /*enabled*/,
                                       // Unknown protocols attached to HTTP table so that they run
                                       // their cleanup functions, but the use of nullptr transfer_fn
@@ -903,29 +901,6 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("cmd")>(record.req.command);
   r.Append<r.ColIndex("body")>(record.req.options);
   r.Append<r.ColIndex("resp")>(record.resp.command);
-#ifndef NDEBUG
-  r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
-#endif
-}
-
-template <>
-void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
-                                         protocols::kafka::Record record, DataTable* data_table) {
-  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
-                conn_tracker.conn_id().upid.start_time_ticks);
-
-  EndpointRole role = conn_tracker.role();
-  DataTable::RecordBuilder<&kKafkaTable> r(data_table, record.resp.timestamp_ns);
-  r.Append<r.ColIndex("time_")>(record.req.timestamp_ns);
-  r.Append<r.ColIndex("upid")>(upid.value());
-  r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
-  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
-  r.Append<r.ColIndex("trace_role")>(role);
-  r.Append<r.ColIndex("req_cmd")>(static_cast<int64_t>(record.req.api_key));
-  r.Append<r.ColIndex("req_body"), kMaxBodyBytes>(std::move(record.req.msg));
-  r.Append<r.ColIndex("resp"), kMaxBodyBytes>(std::move(record.resp.msg));
-  r.Append<r.ColIndex("latency")>(
-      CalculateLatency(record.req.timestamp_ns, record.resp.timestamp_ns));
 #ifndef NDEBUG
   r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
 #endif
