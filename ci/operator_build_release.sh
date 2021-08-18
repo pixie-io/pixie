@@ -77,7 +77,7 @@ faq -f yaml -o yaml --slurp '
   "$(pwd)/k8s/operator/bundle/csv.yaml" \
   "${kustomize_dir}/apps_v1_deployment_vizier-operator.yaml" \
   "${kustomize_dir}/rbac.authorization.k8s.io_v1_clusterrole_pixie-operator-role.yaml" \
-  "${kustomize_dir}/rbac.authorization.k8s.io_v1_clusterrolebinding_pixie-operator-binding.yaml" \
+  "${kustomize_dir}/rbac.authorization.k8s.io_v1_clusterrolebinding_pixie-operator-cluster-binding.yaml" \
   --kwargs version="${release_tag}" --kwargs name="pixie-operator.v${bundle_version}" \
   --kwargs previousName="pixie-operator.v${previous_version}" \
   --kwargs image="${image_path}" > "${tmp_dir}/manifests/csv.yaml"
