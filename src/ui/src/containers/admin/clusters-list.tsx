@@ -17,7 +17,6 @@
  */
 
 import { gql, useQuery } from '@apollo/client';
-import { StatusCell, StatusGroup } from 'app/components';
 import { Theme, withStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
 import Table from '@material-ui/core/Table';
@@ -26,121 +25,46 @@ import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
-import { GaugeLevel } from 'app/utils/metric-thresholds';
 
 import { GQLClusterInfo } from 'app/types/schema';
 import {
-  AdminTooltip, clusterStatusGroup, convertHeartbeatMS, getClusterDetailsURL,
-  StyledTableCell, StyledTableHeaderCell, StyledLeftTableCell, StyledRightTableCell,
+  AdminTooltip, getClusterDetailsURL,
+  StyledTableCell, StyledTableHeaderCell,
 } from './utils';
 
-const INACTIVE_AGENT_THRESHOLD_MS = 24 * 60 * 60 * 1000;
+import { ClusterStatusCell, InstrumentationLevelCell, VizierVersionCell } from './cluster-table-cells';
 
-type VizierConnectionMode = 'Passthrough' | 'Direct';
+// Cluster that are older that has not been healthy in over a day are labelled inactive.
+const INACTIVE_CLUSTER_THRESHOLD_MS = 24 * 60 * 60 * 1000;
 
-interface ClusterDisplay {
-  id: string;
-  idShort: string;
-  name: string;
-  prettyName: string;
-  status: string;
-  statusGroup: StatusGroup;
-  clusterVersion: string;
-  vizierVersionShort: string;
-  vizierVersion: string;
-  lastHeartbeat: string;
-  mode: VizierConnectionMode;
-  percentInstrumented: string;
-  percentInstrumentedLevel: GaugeLevel;
-}
-
-function getPercentInstrumentedLevel(instrumentedRatio: number): GaugeLevel {
-  if (instrumentedRatio > 0.9) {
-    return 'high';
-  }
-  if (instrumentedRatio > 0.6) {
-    return 'med';
-  }
-  return 'low';
-}
-
-function formatCluster(clusterInfo: GQLClusterInfo): ClusterDisplay {
-  const {
-    id, clusterName, prettyClusterName, clusterVersion, vizierVersion, vizierConfig,
-    status, lastHeartbeatMs, numNodes, numInstrumentedNodes,
-  } = clusterInfo;
-
-  let vizierVersionShort = vizierVersion;
-  // Dashes occur in internal Vizier versions and not public release ones.
-  if (vizierVersion.indexOf('-') === -1) {
-    [vizierVersionShort] = clusterInfo.vizierVersion.split('+');
-  }
-
-  let percentInstrumented;
-  let percentInstrumentedLevel;
-  const trimmedStatus = status.replace('CS_', '');
-  if (trimmedStatus !== 'DISCONNECTED') {
-    const instrumentedPerc = numNodes ? `${(numInstrumentedNodes / numNodes * 100).toFixed(0)}%` : 'N/A';
-    percentInstrumented = `${instrumentedPerc} (${numInstrumentedNodes} of ${numNodes})`;
-    percentInstrumentedLevel = numNodes ? getPercentInstrumentedLevel(numInstrumentedNodes / numNodes) : 'low';
-  } else {
-    percentInstrumented = 'N/A';
-    percentInstrumentedLevel = 'none';
-  }
-
-  return {
-    id,
-    clusterVersion,
-    vizierVersion,
-    vizierVersionShort,
-    percentInstrumented,
-    percentInstrumentedLevel,
-    idShort: id.split('-').pop(),
-    name: clusterName,
-    prettyName: prettyClusterName,
-    status: trimmedStatus,
-    statusGroup: clusterStatusGroup(status),
-    mode: vizierConfig.passthroughEnabled ? 'Passthrough' : 'Direct',
-    lastHeartbeat: convertHeartbeatMS(lastHeartbeatMs),
-  };
-}
-
-export function formatClusters(clusterInfos: GQLClusterInfo[]): ClusterDisplay[] {
-  if (!clusterInfos) {
-    return null;
-  }
-  return clusterInfos
-    .filter((cluster) => cluster.lastHeartbeatMs < INACTIVE_AGENT_THRESHOLD_MS)
-    .map((cluster) => formatCluster(cluster))
-    .sort((clusterA, clusterB) => clusterA.prettyName.localeCompare(clusterB.prettyName));
-}
+type ClusterRowInfo = Pick<GQLClusterInfo,
+'id' |
+'clusterName' |
+'prettyClusterName' |
+'vizierVersion' |
+'status' |
+'numNodes' |
+'numInstrumentedNodes' |
+'lastHeartbeatMs'>;
 
 export const ClustersTable = withStyles((theme: Theme) => ({
-  low: {
-    color: theme.palette.error.main,
-  },
-  med: {
-    color: theme.palette.warning.main,
-  },
-  high: {
-    color: theme.palette.success.main,
-  },
   error: {
     padding: theme.spacing(1),
   },
+  removePadding: {
+    padding: 0,
+  },
 }))(({ classes }: any) => {
-  const { data, loading, error } = useQuery<{ clusters: GQLClusterInfo[] }>(
+  const { data, loading, error } = useQuery<{
+    clusters: ClusterRowInfo[]
+  }>(
     gql`
       query listClusterForAdminPage {
         clusters {
           id
           clusterName
           prettyClusterName
-          clusterVersion
           vizierVersion
-          vizierConfig {
-            passthroughEnabled
-          }
           status
           lastHeartbeatMs
           numNodes
@@ -152,7 +76,9 @@ export const ClustersTable = withStyles((theme: Theme) => ({
     { pollInterval: 60000, fetchPolicy: 'network-only', nextFetchPolicy: 'cache-and-network' },
   );
 
-  const clusters = formatClusters(data?.clusters);
+  const clusters = data?.clusters
+    .filter((cluster) => cluster.lastHeartbeatMs < INACTIVE_CLUSTER_THRESHOLD_MS)
+    .sort((clusterA, clusterB) => clusterA.prettyClusterName.localeCompare(clusterB.prettyClusterName));
 
   if (loading) {
     return <div className={classes.error}>Loading...</div>;
@@ -173,44 +99,29 @@ export const ClustersTable = withStyles((theme: Theme) => ({
           <StyledTableHeaderCell>ID</StyledTableHeaderCell>
           <StyledTableHeaderCell>Instrumented Nodes</StyledTableHeaderCell>
           <StyledTableHeaderCell>Vizier Version</StyledTableHeaderCell>
-          <StyledTableHeaderCell>K8s Version</StyledTableHeaderCell>
-          <StyledTableHeaderCell>Heartbeat</StyledTableHeaderCell>
-          <StyledTableHeaderCell>Mode</StyledTableHeaderCell>
         </TableRow>
       </TableHead>
       <TableBody>
-        {clusters.map((cluster: ClusterDisplay) => (
+        {clusters.map((cluster: ClusterRowInfo) => (
           <TableRow key={cluster.id}>
-            <AdminTooltip title={cluster.status}>
-              <StyledLeftTableCell>
-                <StatusCell statusGroup={cluster.statusGroup} />
-              </StyledLeftTableCell>
-            </AdminTooltip>
-            <AdminTooltip title={cluster.name}>
+            <ClusterStatusCell status={cluster.status} />
+            <AdminTooltip title={cluster.clusterName}>
               <StyledTableCell>
                 <Button
+                  className={classes.removePadding}
                   component={Link}
-                  to={getClusterDetailsURL(encodeURIComponent(cluster.name))}
+                  to={getClusterDetailsURL(encodeURIComponent(cluster.clusterName))}
                   color='secondary'
                   variant='text'
-                  disabled={cluster.status === 'DISCONNECTED'}
+                  disabled={cluster.status === 'CS_DISCONNECTED'}
                 >
-                  {cluster.prettyName}
+                  {cluster.prettyClusterName}
                 </Button>
               </StyledTableCell>
             </AdminTooltip>
-            <AdminTooltip title={cluster.id}>
-              <StyledTableCell>{cluster.idShort}</StyledTableCell>
-            </AdminTooltip>
-            <StyledTableCell className={classes[cluster.percentInstrumentedLevel]}>
-              {cluster.percentInstrumented}
-            </StyledTableCell>
-            <AdminTooltip title={cluster.vizierVersion}>
-              <StyledTableCell>{cluster.vizierVersionShort}</StyledTableCell>
-            </AdminTooltip>
-            <StyledTableCell>{cluster.clusterVersion}</StyledTableCell>
-            <StyledTableCell>{cluster.lastHeartbeat}</StyledTableCell>
-            <StyledRightTableCell>{cluster.mode}</StyledRightTableCell>
+            <StyledTableCell>{cluster.id}</StyledTableCell>
+            <InstrumentationLevelCell cluster={cluster} />
+            <VizierVersionCell version={cluster.vizierVersion} />
           </TableRow>
         ))}
       </TableBody>
