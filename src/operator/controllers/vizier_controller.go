@@ -62,6 +62,8 @@ type VizierReconciler struct {
 
 	Clientset  *kubernetes.Clientset
 	RestConfig *rest.Config
+
+	monitor *VizierMonitor
 }
 
 // +kubebuilder:rbac:groups=pixie.px.dev,resources=viziers,verbs=get;list;watch;create;update;patch;delete
@@ -141,6 +143,25 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		}
 		// Vizier CRD deleted. The vizier instance should also be deleted.
 		return ctrl.Result{}, err
+	}
+
+	// Check if there if we are already monitoring this Vizier.
+	if r.monitor == nil || r.monitor.namespace != req.Namespace {
+		if r.monitor != nil {
+			r.monitor.Quit()
+		}
+
+		r.monitor = &VizierMonitor{
+			namespace:      req.Namespace,
+			namespacedName: req.NamespacedName,
+			vzUpdate:       r.Status().Update,
+			vzGet:          r.Get,
+			clientset:      r.Clientset,
+		}
+		err := r.monitor.InitAndStartMonitor()
+		if err != nil {
+			log.WithError(err).Fatal("Failed to initialize vizier monitor")
+		}
 	}
 
 	if vizier.Status.VizierPhase == pixiev1alpha1.VizierPhaseNone {
@@ -290,22 +311,6 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 	}
 
 	err = r.deployVizierCore(ctx, req.Namespace, vz, yamlMap, update)
-	if err != nil {
-		return err
-	}
-
-	err = waitForCluster(r.Clientset, req.Namespace)
-	vz.Status.Version = vz.Spec.Version
-	if err != nil {
-		log.WithError(err).Info("Failed healthcheck")
-		vz.Status.VizierPhase = pixiev1alpha1.VizierPhaseUnhealthy
-		vz.Status.Message = err.Error()
-	} else {
-		// We set this to healthy for now, until we add in better healthchecks in the operator.
-		vz.Status.VizierPhase = pixiev1alpha1.VizierPhaseHealthy
-	}
-
-	err = r.Status().Update(ctx, vz)
 	if err != nil {
 		return err
 	}
@@ -592,34 +597,6 @@ func updateResourceRequirements(requirements v1.ResourceRequirements, res map[st
 
 		castedContainer["resources"] = resources
 	}
-}
-
-func waitForCluster(clientset *kubernetes.Clientset, namespace string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-	defer cancel()
-	t := time.NewTicker(2 * time.Second)
-	defer t.Stop()
-
-	clusterID := false
-	for !clusterID { // Wait for secret to be updated with clusterID.
-		select {
-		case <-ctx.Done():
-			return errors.New("Timed out waiting for cluster ID")
-		case <-t.C:
-			s := k8s.GetSecret(clientset, namespace, "pl-cluster-secrets")
-			if s == nil {
-				return errors.New("Missing cluster secrets")
-			}
-			if _, ok := s.Data["cluster-id"]; ok {
-				clusterID = true
-			}
-		}
-	}
-
-	// TODO: Wait for the Vizier instance to actually be healthy. This may be more involved, requiring
-	// the operator to read the generated jwt-signing-key and TLS certs without actually having them
-	// mounted.
-	return nil
 }
 
 // SetupWithManager sets up the reconciler.

@@ -14,11 +14,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "controllers",
-    srcs = ["vizier_controller.go"],
+    srcs = [
+        "monitor.go",
+        "vizier_controller.go",
+    ],
     importpath = "px.dev/pixie/src/operator/controllers",
     visibility = ["//visibility:public"],
     deps = [
@@ -26,18 +29,36 @@ go_library(
         "//src/api/proto/vizierconfigpb:vizier_pl_go_proto",
         "//src/operator/api/v1alpha1",
         "//src/shared/services",
+        "//src/shared/status",
         "//src/utils/shared/certs",
         "//src/utils/shared/k8s",
         "@com_github_cenkalti_backoff_v3//:backoff",
         "@com_github_sirupsen_logrus//:logrus",
         "@io_k8s_api//core/v1:core",
+        "@io_k8s_apimachinery//pkg/apis/meta/internalversion",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
         "@io_k8s_apimachinery//pkg/apis/meta/v1/unstructured",
+        "@io_k8s_apimachinery//pkg/fields",
         "@io_k8s_apimachinery//pkg/runtime",
+        "@io_k8s_apimachinery//pkg/types",
         "@io_k8s_client_go//kubernetes",
+        "@io_k8s_client_go//plugin/pkg/client/auth/gcp",
         "@io_k8s_client_go//rest",
+        "@io_k8s_client_go//tools/cache",
+        "@io_k8s_client_go//tools/watch",
         "@io_k8s_sigs_controller_runtime//:controller-runtime",
         "@io_k8s_sigs_controller_runtime//pkg/client",
         "@org_golang_google_grpc//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "controllers_test",
+    srcs = ["monitor_test.go"],
+    embed = [":controllers"],
+    deps = [
+        "//src/operator/api/v1alpha1",
+        "@com_github_stretchr_testify//assert",
+        "@io_k8s_api//core/v1:core",
     ],
 )
