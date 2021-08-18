@@ -129,17 +129,11 @@ func NewK8sVizierInfo(clusterName, ns string) (*K8sVizierInfo, error) {
 		return nil, err
 	}
 
-	clusterVersion, err := getK8sVersion()
-	if err != nil {
-		log.WithError(err).Error("Failed to get Kubernetes version for cluster")
-	}
-
 	vzInfo := &K8sVizierInfo{
-		ns:             ns,
-		clientset:      clientset,
-		vzClient:       vzCrdClient,
-		clusterVersion: clusterVersion,
-		clusterName:    clusterName,
+		ns:          ns,
+		clientset:   clientset,
+		vzClient:    vzCrdClient,
+		clusterName: clusterName,
 	}
 
 	go func() {
@@ -160,10 +154,9 @@ func (v *K8sVizierInfo) GetVizierClusterInfo() (*cvmsgspb.VizierClusterInfo, err
 		return nil, err
 	}
 	return &cvmsgspb.VizierClusterInfo{
-		ClusterUID:     clusterUID,
-		ClusterName:    v.clusterName,
-		ClusterVersion: v.clusterVersion,
-		VizierVersion:  version.GetVersion().ToString(),
+		ClusterUID:    clusterUID,
+		ClusterName:   v.clusterName,
+		VizierVersion: version.GetVersion().ToString(),
 	}, nil
 }
 

@@ -60,8 +60,7 @@ message RegisterVizierDeploymentRequest {
   // The recommended name for the cluster. Modifications may be made to the recommended name to
   // perform deduplication. If no name is specified, a random name will be generated.
   string k8s_cluster_name = 2 [(gogoproto.customname) = "K8sClusterName"];
-  // The K8s version of the cluster.
-  string k8s_cluster_version = 3 [(gogoproto.customname) = "K8sClusterVersion"];
+  reserved 3; // DEPRECATED
 }
 
 // RegisterVizierDeploymentResponse returns the registration status. It either will include the

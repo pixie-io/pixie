@@ -60,9 +60,7 @@ message VizierClusterInfo {
   // The name of the cluster. The return value of "kubectl config current-context".
   // This could be empty if the user has not deployed through the CLI.
   string cluster_name = 2;
-  // The version of the K8s cluster. For example: v1.14.10-gke.27. This could be empty if
-  // the user has not deployed through the CLI.
-  string cluster_version = 3;
+  reserved 3; // DEPRECATED
   // The version of the deployed Vizier.
   string vizier_version = 4;
 }

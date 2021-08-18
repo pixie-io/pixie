@@ -91,7 +91,6 @@ func handleMsg(srv vzconnpb.VZConnService_NATSBridgeServer, msg *vzconnpb.V2CBri
 // NATSBridge is the endpoint that all viziers connect to.
 func (fs *FakeVZConnServer) RegisterVizierDeployment(ctx context.Context, req *vzconnpb.RegisterVizierDeploymentRequest) (*vzconnpb.RegisterVizierDeploymentResponse, error) {
 	assert.Equal(fs.t, "084cb5f0-ff69-11e9-a63e-42010a8a0193", req.K8sClusterUID)
-	assert.Equal(fs.t, "v1.14.10-gke.27", req.K8sClusterVersion)
 	newID := uuid.Must(uuid.NewV4())
 	return &vzconnpb.RegisterVizierDeploymentResponse{
 		VizierID: utils.ProtoFromUUID(newID),
@@ -161,9 +160,8 @@ func (f *FakeVZInfo) GetAddress() (string, int32, error) {
 
 func (f *FakeVZInfo) GetVizierClusterInfo() (*cvmsgspb.VizierClusterInfo, error) {
 	return &cvmsgspb.VizierClusterInfo{
-		ClusterUID:     "084cb5f0-ff69-11e9-a63e-42010a8a0193",
-		ClusterName:    "test-cluster",
-		ClusterVersion: "v1.14.10-gke.27",
+		ClusterUID:  "084cb5f0-ff69-11e9-a63e-42010a8a0193",
+		ClusterName: "test-cluster",
 	}, nil
 }
 
@@ -333,7 +331,6 @@ func TestNATSGRPCBridgeTest_CorrectRegistrationFlow(t *testing.T) {
 	assert.Equal(t, registerMsg.JwtKey, ts.jwt)
 	assert.Equal(t, registerMsg.Address, "foobar")
 	assert.Equal(t, "test-cluster", registerMsg.ClusterInfo.ClusterName)
-	assert.Equal(t, "v1.14.10-gke.27", registerMsg.ClusterInfo.ClusterVersion)
 	assert.Equal(t, "084cb5f0-ff69-11e9-a63e-42010a8a0193", registerMsg.ClusterInfo.ClusterUID)
 }
 
