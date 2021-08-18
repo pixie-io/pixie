@@ -233,6 +233,20 @@ static __inline bool should_trace_sockaddr_family(sa_family_t sa_family) {
   return sa_family == PX_AF_UNKNOWN || sa_family == AF_INET || sa_family == AF_INET6;
 }
 
+static __inline bool should_trace_conn(struct conn_info_t* conn_info, bool ssl) {
+  if (conn_info->ssl && !ssl) {
+    // This connection is tracking SSL now.
+    // Don't report encrypted data.
+    return false;
+  }
+
+  // While we keep all sa_family types in conn_info_map,
+  // we only send connections on INET or UNKNOWN to user-space.
+  // Also, it's very important to send the UNKNOWN cases to user-space,
+  // otherwise we may have a BPF map leak from the earlier call to get_or_create_conn_info().
+  return should_trace_sockaddr_family(conn_info->addr.sa.sa_family);
+}
+
 // Returns true if detection passes threshold. Right now this is only used for PGSQL.
 //
 // TODO(yzhao): Remove protocol detection threshold.
@@ -690,6 +704,38 @@ static __inline void process_implicit_conn(struct pt_regs* ctx, uint64_t id,
   submit_new_conn(ctx, tgid, args->fd, args->addr, /*socket*/ NULL, kRoleUnknown);
 }
 
+static __inline bool should_send_data(uint32_t tgid, uint64_t conn_disabled_tsid,
+                                      bool force_trace_tgid, struct conn_info_t* conn_info) {
+  // Never trace stirling.
+  if (is_stirling_tgid(tgid)) {
+    return false;
+  }
+
+  // Never trace any connections that user-space has asked us to disable.
+  if (conn_info->conn_id.tsid <= conn_disabled_tsid) {
+    return false;
+  }
+
+  // Only trace data for protocols of interest, or if forced on.
+  return (force_trace_tgid || should_trace_protocol_data(conn_info));
+}
+
+static __inline void update_conn_stats(struct pt_regs* ctx, struct conn_info_t* conn_info) {
+  // Only send event if there's been enough of a change.
+  // TODO(oazizi): Add elapsed time since last send as a triggering condition too.
+  uint64_t total_bytes = conn_info->wr_bytes + conn_info->rd_bytes;
+  bool meets_activity_threshold =
+      total_bytes >= conn_info->last_reported_bytes + kConnStatsDataThreshold;
+  if (meets_activity_threshold) {
+    struct conn_stats_event_t* event = fill_conn_stats_event(conn_info);
+    if (event != NULL) {
+      conn_stats_events.perf_submit(ctx, event, sizeof(struct conn_stats_event_t));
+    }
+
+    conn_info->last_reported_bytes = conn_info->rd_bytes + conn_info->wr_bytes;
+  }
+}
+
 static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t id,
                                   const enum TrafficDirection direction,
                                   const struct data_args_t* args, ssize_t bytes_count, bool ssl) {
@@ -720,30 +766,18 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
   if (match_result == TARGET_TGID_UNMATCHED) {
     return;
   }
+  bool force_trace_tgid = (match_result == TARGET_TGID_MATCHED);
 
   struct conn_info_t* conn_info = get_or_create_conn_info(tgid, args->fd);
   if (conn_info == NULL) {
     return;
   }
 
-  if (conn_info->ssl && !ssl) {
-    // This connection is tracking SSL now.
-    // Don't report encrypted data.
-    // Also, note this is a special case. We don't delete conn_info_map entry,
-    // because we are still tracking the connection.
+  if (!should_trace_conn(conn_info, ssl)) {
     return;
   }
 
   uint64_t tgid_fd = gen_tgid_fd(tgid, args->fd);
-
-  // While we keep all sa_family types in conn_info_map,
-  // we only send connections on INET or UNKNOWN to user-space.
-  // Why UNKNOWN? Because we may have failed to trace the initial connection.
-  // Also, it's very important to send the UNKNOWN cases to user-space,
-  // otherwise we may have a BPF map leak from the earlier call to get_or_create_conn_info().
-  if (!should_trace_sockaddr_family(conn_info->addr.sa.sa_family)) {
-    return;
-  }
 
   // TODO(yzhao): Split the interface such that the singular buf case and multiple bufs in msghdr
   // are handled separately without mixed interface. The plan is to factor out helper functions for
@@ -758,13 +792,10 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
     update_traffic_class(conn_info, direction, iov_cpy.iov_base, buf_size);
   }
 
-  uint64_t* conn_disabled_tsid = conn_disabled_map.lookup(&tgid_fd);
+  uint64_t* conn_disabled_tsid_ptr = conn_disabled_map.lookup(&tgid_fd);
+  uint64_t conn_disabled_tsid = (conn_disabled_tsid_ptr == NULL) ? 0 : *conn_disabled_tsid_ptr;
 
-  bool send_data = !is_stirling_tgid(tgid) &&
-                   (match_result == TARGET_TGID_MATCHED || should_trace_protocol_data(conn_info)) &&
-                   (conn_disabled_tsid == NULL || conn_info->conn_id.tsid > *conn_disabled_tsid);
-
-  if (send_data) {
+  if (should_send_data(tgid, conn_disabled_tsid, force_trace_tgid, conn_info)) {
     struct socket_data_event_t* event =
         fill_socket_data_event(args->source_fn, direction, conn_info);
     if (event == NULL) {
@@ -805,19 +836,7 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
       break;
   }
 
-  // Only send event if there's been enough of a change.
-  // TODO(oazizi): Add elapsed time since last send as a triggering condition too.
-  uint64_t total_bytes = conn_info->wr_bytes + conn_info->rd_bytes;
-  bool meets_activity_threshold =
-      total_bytes >= conn_info->last_reported_bytes + kConnStatsDataThreshold;
-  if (meets_activity_threshold) {
-    struct conn_stats_event_t* event = fill_conn_stats_event(conn_info);
-    if (event != NULL) {
-      conn_stats_events.perf_submit(ctx, event, sizeof(struct conn_stats_event_t));
-    }
-
-    conn_info->last_reported_bytes = conn_info->rd_bytes + conn_info->wr_bytes;
-  }
+  update_conn_stats(ctx, conn_info);
 
   return;
 }
@@ -1466,7 +1485,7 @@ int syscall__probe_ret_readv(struct pt_regs* ctx) {
 }
 
 // int close(int fd);
-int syscall__probe_entry_close(struct pt_regs* ctx, unsigned int fd) {
+int syscall__probe_entry_close(struct pt_regs* ctx, int fd) {
   uint64_t id = bpf_get_current_pid_tgid();
 
   // Stash arguments.
