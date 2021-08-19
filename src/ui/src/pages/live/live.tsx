@@ -275,7 +275,8 @@ const ClusterLoadingComponent = ({
 const Nav: React.FC<{
   widgetsMoveable: boolean,
   setWidgetsMoveable: React.Dispatch<React.SetStateAction<boolean>>,
-}> = ({ widgetsMoveable, setWidgetsMoveable }) => {
+  // eslint-disable-next-line prefer-arrow-callback
+}> = React.memo(function Nav({ widgetsMoveable, setWidgetsMoveable }) {
   const classes = useStyles();
   const {
     embedState: { isEmbedded },
@@ -301,7 +302,7 @@ const Nav: React.FC<{
       <DataDrawerSplitPanel />
     </div>
   </>;
-};
+});
 
 const BreadcrumbsWithOptionalRun: React.FC = () => {
   const classes = useStyles();

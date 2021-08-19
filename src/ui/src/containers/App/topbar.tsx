@@ -101,7 +101,8 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }), { name: 'TopBar' });
 
-const ProfileItem: React.FC<{ setSidebarOpen: SetStateFunc<boolean> }> = React.memo(({ setSidebarOpen }) => {
+// eslint-disable-next-line prefer-arrow-callback
+const ProfileItem = React.memo<{ setSidebarOpen: SetStateFunc<boolean> }>(function ProfileItem({ setSidebarOpen }) {
   const classes = useStyles();
   const [open, setOpen] = React.useState<boolean>(false);
   const { setTourOpen } = React.useContext(LiveTourContext);
@@ -161,7 +162,7 @@ const ProfileItem: React.FC<{ setSidebarOpen: SetStateFunc<boolean> }> = React.m
     setAnchorEl(null);
   }, []);
 
-  const openTour = () => {
+  const openTour = React.useCallback(() => {
     setTourOpen(true);
     setSidebarOpen((current) => {
       setWasSidebarOpenBeforeTour(current);
@@ -171,13 +172,13 @@ const ProfileItem: React.FC<{ setSidebarOpen: SetStateFunc<boolean> }> = React.m
       setWasDrawerOpenBeforeTour(current);
       return false;
     });
-  };
+  }, [setDataDrawerOpen, setSidebarOpen, setTourOpen]);
 
-  const closeTour = () => {
+  const closeTour = React.useCallback(() => {
     setTourOpen(false);
     setSidebarOpen(wasSidebarOpenBeforeTour);
     setDataDrawerOpen(wasDrawerOpenBeforeTour);
-  };
+  }, [setDataDrawerOpen, setSidebarOpen, setTourOpen, wasDrawerOpenBeforeTour, wasSidebarOpenBeforeTour]);
 
   React.useEffect(() => {
     if (!loadingTourSeen && tourSeen !== true && inLiveView) {
@@ -267,11 +268,16 @@ const ProfileItem: React.FC<{ setSidebarOpen: SetStateFunc<boolean> }> = React.m
     </>
   );
 });
-ProfileItem.displayName = 'ProfileItem';
 
-export const TopBar: React.FC<{ toggleSidebar: () => void, setSidebarOpen: SetStateFunc<boolean> }> = ({
+interface TopBarProps {
+  toggleSidebar: () => void;
+  setSidebarOpen: SetStateFunc<boolean>;
+}
+
+// eslint-disable-next-line prefer-arrow-callback
+export const TopBar: React.FC<TopBarProps> = React.memo(function TopBar({
   children, toggleSidebar, setSidebarOpen,
-}) => {
+}) {
   const classes = useStyles();
   return (
     <AppBar className={classes.container} position='static'>
@@ -287,4 +293,4 @@ export const TopBar: React.FC<{ toggleSidebar: () => void, setSidebarOpen: SetSt
       </Toolbar>
     </AppBar>
   );
-};
+});
