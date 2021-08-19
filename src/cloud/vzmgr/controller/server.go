@@ -686,7 +686,12 @@ func (s *Server) GetViziersByShard(ctx context.Context, req *vzmgrpb.GetViziersB
 
 // VizierConnected is an the request made to the mgr to handle new Vizier connections.
 func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizierRequest) (*cvmsgspb.RegisterVizierAck, error) {
-	log.WithField("VizierID", req.VizierID).WithField("ClusterName", req.ClusterInfo.ClusterName).Info("Received RegisterVizierRequest")
+	loggerWithCtx := log.WithContext(ctx).
+		WithField("VizierID", utils.UUIDFromProtoOrNil(req.VizierID)).
+		WithField("ClusterName", req.ClusterInfo.ClusterName)
+
+	loggerWithCtx.
+		Info("Received RegisterVizierRequest")
 
 	vzVersion := ""
 	clusterUID := ""
@@ -711,11 +716,7 @@ func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizi
     	NOW(), $2, PGP_SYM_ENCRYPT($3, $4), $5, $6)
     WHERE vizier_cluster_id = $1`
 
-	vzStatus := "CONNECTED"
-	if req.Address == "" {
-		vzStatus = "UNHEALTHY"
-	}
-
+	vzStatus := vizierStatus(cvmsgspb.VZ_ST_CONNECTED)
 	res, err := s.db.Exec(query, vizierID, req.Address, signingKey, s.dbKey, vzStatus, vzVersion)
 	if err != nil {
 		return nil, err

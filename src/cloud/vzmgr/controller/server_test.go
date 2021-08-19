@@ -409,48 +409,6 @@ func TestServer_GetVizierConnectionInfo(t *testing.T) {
 	assert.Equal(t, "cluster", claims["Scopes"].(string))
 }
 
-func TestServer_VizierConnectedUnhealthy(t *testing.T) {
-	mustLoadTestData(db)
-
-	nc, cleanup := testingutils.MustStartTestNATS(t)
-	defer cleanup()
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
-
-	s := controller.New(db, "test", mockDNSClient, nc, nil)
-	req := &cvmsgspb.RegisterVizierRequest{
-		VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
-		JwtKey:   "the-token",
-		ClusterInfo: &cvmsgspb.VizierClusterInfo{
-			ClusterUID: "cUID",
-		},
-	}
-
-	resp, err := s.VizierConnected(context.Background(), req)
-	require.NoError(t, err)
-	require.NotNil(t, resp)
-
-	assert.Equal(t, resp.Status, cvmsgspb.ST_OK)
-
-	// Check to make sure DB insert for JWT signing key is correct.
-	clusterQuery := `SELECT PGP_SYM_DECRYPT(jwt_signing_key::bytea, 'test') as jwt_signing_key, status from vizier_cluster_info WHERE vizier_cluster_id=$1`
-
-	var clusterInfo struct {
-		JWTSigningKey string `db:"jwt_signing_key"`
-		Status        string `db:"status"`
-	}
-	clusterID, err := uuid.FromString("123e4567-e89b-12d3-a456-426655440001")
-	require.NoError(t, err)
-	err = db.Get(&clusterInfo, clusterQuery, clusterID)
-	require.NoError(t, err)
-	assert.Equal(t, "the-token", clusterInfo.JWTSigningKey[controller.SaltLength:])
-
-	assert.Equal(t, "UNHEALTHY", clusterInfo.Status)
-	// TODO(zasgar): write more tests here.
-}
-
 func TestServer_VizierConnectedHealthy(t *testing.T) {
 	mustLoadTestData(db)
 
