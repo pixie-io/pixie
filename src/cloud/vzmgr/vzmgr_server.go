@@ -139,6 +139,8 @@ func main() {
 	// Connect to NATS.
 	nc := msgbus.MustConnectNATS()
 	stc := msgbus.MustConnectSTAN(nc, uuid.Must(uuid.NewV4()).String())
+	defer nc.Close()
+	defer stc.Close()
 	strmr, err := msgbus.NewSTANStreamer(stc)
 	if err != nil {
 		log.WithError(err).Fatal("Could not start STAN streamer")
