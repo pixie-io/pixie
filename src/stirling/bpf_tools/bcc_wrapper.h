@@ -109,6 +109,7 @@ struct UProbeSpec {
 
   // Must be identical to the default value of `pid` argument of BPF::{attach,detach}_uprobe().
   static constexpr pid_t kDefaultPID = -1;
+
   // Specifies the target process to attach. This still requires setting binary_path, symbol or
   // address.
   pid_t pid = kDefaultPID;
@@ -117,7 +118,7 @@ struct UProbeSpec {
   std::string probe_fn;
 
   std::string ToString() const {
-    return absl::Substitute("[binary=$0 symbol=$1 address=$2 pid=$3 type=$4 probe=$5]",
+    return absl::Substitute("[binary=$0 symbol=$1 address=$2 pid=$3 type=$4 probe_fn=$5]",
                             binary_path.string(), symbol, address, pid,
                             magic_enum::enum_name(attach_type), probe_fn);
   }
