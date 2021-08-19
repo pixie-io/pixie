@@ -59,6 +59,12 @@ class ScalarUDF1WithInit : public ScalarUDF {
   }
 };
 
+class ScalarUDFWithConflictingInit : public ScalarUDF {
+ public:
+  Status Init(FunctionContext*, types::Int64Value, types::BoolValue) { return Status::OK(); }
+  types::Int64Value Exec(FunctionContext*, types::BoolValue) { return 0; }
+};
+
 template <typename TOutput, typename TInput1, typename TInput2>
 class AddUDF : public ScalarUDF {
  public:
@@ -88,6 +94,30 @@ TEST(Registry, init_with_udfs) {
       "scalar1\n"
       "scalar1WithInit\n";
   EXPECT_EQ(expected_debug_str, registry.DebugString());
+
+  statusor = registry.GetScalarUDFDefinition(
+      "scalar1WithInit",
+      std::vector<types::DataType>(
+          {types::DataType::INT64, types::DataType::BOOLEAN, types::DataType::BOOLEAN}));
+  ASSERT_OK(statusor);
+  def = statusor.ConsumeValueOrDie();
+  ASSERT_NE(nullptr, def);
+  EXPECT_EQ("scalar1WithInit", def->name());
+  EXPECT_EQ(types::DataType::INT64, def->exec_return_type());
+  EXPECT_EQ(std::vector<types::DataType>({types::DataType::BOOLEAN, types::DataType::BOOLEAN}),
+            def->exec_arguments());
+  EXPECT_EQ(std::vector<types::DataType>({types::DataType::INT64}), def->init_arguments());
+}
+
+TEST(Registry, conflicting_init_exec_args) {
+  Registry registry("test registry");
+  registry.RegisterOrDie<ScalarUDF1WithInit>("scalar1WithInit");
+  auto s = registry.Register<ScalarUDFWithConflictingInit>("scalar1WithInit");
+  EXPECT_NOT_OK(s);
+  EXPECT_EQ(
+      "The UDF with name \"scalar1WithInit\" already exists with the same arg types "
+      "\"scalar1WithInit(INT64,BOOLEAN,BOOLEAN)\".",
+      s.msg());
 }
 
 TEST(Registry, templated_udfs) {
@@ -142,7 +172,7 @@ TEST(RegistryDeathTest, double_register) {
 
 class UDA1 : public UDA {
  public:
-  Status Init(FunctionContext*) { return Status::OK(); }
+  Status Init(FunctionContext*, types::StringValue) { return Status::OK(); }
   void Update(FunctionContext*, types::Int64Value) {}
   void Merge(FunctionContext*, const UDA1&) {}
   types::Int64Value Finalize(FunctionContext*) { return 0; }
@@ -157,7 +187,7 @@ class UDA1 : public UDA {
 
 class UDA1Overload : public UDA {
  public:
-  Status Init(FunctionContext*) { return Status::OK(); }
+  Status Init(FunctionContext*, types::StringValue) { return Status::OK(); }
   void Update(FunctionContext*, types::Int64Value, types::Float64Value) {}
   void Merge(FunctionContext*, const UDA1Overload&) {}
   types::Float64Value Finalize(FunctionContext*) { return 0; }
@@ -168,14 +198,27 @@ TEST(Registry, init_with_udas) {
   registry.RegisterOrDie<UDA1>("uda1");
   registry.RegisterOrDie<UDA1Overload>("uda1");
 
-  auto statusor =
-      registry.GetUDADefinition("uda1", std::vector<types::DataType>({types::DataType::INT64}));
+  auto statusor = registry.GetUDADefinition(
+      "uda1", std::vector<types::DataType>({types::DataType::STRING, types::DataType::INT64}));
   ASSERT_OK(statusor);
   auto def = statusor.ConsumeValueOrDie();
   ASSERT_NE(nullptr, def);
   EXPECT_EQ("uda1", def->name());
   EXPECT_EQ(std::vector<types::DataType>({types::DataType::INT64}), def->update_arguments());
   EXPECT_EQ(types::DataType::INT64, def->finalize_return_type());
+  EXPECT_EQ(std::vector<types::DataType>({types::DataType::STRING}), def->init_arguments());
+
+  statusor = registry.GetUDADefinition(
+      "uda1", std::vector<types::DataType>(
+                  {types::DataType::STRING, types::DataType::INT64, types::DataType::FLOAT64}));
+  ASSERT_OK(statusor);
+  def = statusor.ConsumeValueOrDie();
+  ASSERT_NE(nullptr, def);
+  EXPECT_EQ("uda1", def->name());
+  EXPECT_EQ(std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64}),
+            def->update_arguments());
+  EXPECT_EQ(types::DataType::FLOAT64, def->finalize_return_type());
+  EXPECT_EQ(std::vector<types::DataType>({types::DataType::STRING}), def->init_arguments());
 
   const char* expected_debug_str =
       "udf::Registry: test registry\n"
@@ -212,6 +255,7 @@ TEST(RegistryDeathTest, double_register_uda) {
 constexpr char kExpectedUDFInfo[] = R"(
 udas {
   name: "uda1"
+  init_arg_types: STRING
   update_arg_types: INT64
   finalize_type: INT64
 }

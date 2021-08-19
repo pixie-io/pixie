@@ -118,7 +118,7 @@ class Registry {
     auto key = RegistryKey(name, udf_def->RegistryArgTypes());
     if (map_.find(key) != map_.end()) {
       return error::AlreadyExists(
-          "The UDF with name \"$0\" already exists with same exec args \"$1\".", name,
+          "The UDF with name \"$0\" already exists with the same arg types \"$1\".", name,
           key.DebugString());
     }
     map_[key] = std::move(udf_def);

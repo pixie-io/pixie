@@ -228,6 +228,16 @@ class ScalarUDFTraits {
    */
   static constexpr bool HasExecutor() { return has_udf_executor_fn<T>::value; }
 
+  template <typename Q = T, std::enable_if_t<ScalarUDFTraits<Q>::HasInit(), void>* = nullptr>
+  static constexpr auto InitArguments() {
+    return GetArgumentTypesHelper(&Q::Init);
+  }
+
+  template <typename Q = T, std::enable_if_t<!ScalarUDFTraits<Q>::HasInit(), void>* = nullptr>
+  static constexpr auto InitArguments() {
+    return std::array<types::DataType, 0>{};
+  }
+
  private:
   struct check_valid_udf {
     static_assert(std::is_base_of_v<ScalarUDF, T>, "UDF must be derived from ScalarUDF");
@@ -356,6 +366,16 @@ class UDATraits {
    */
   static constexpr bool SupportsPartial() {
     return has_uda_serialize_fn<T>() && has_uda_deserialize_fn<T>();
+  }
+
+  template <typename Q = T, std::enable_if_t<UDATraits<Q>::HasInit(), void>* = nullptr>
+  static constexpr auto InitArguments() {
+    return GetArgumentTypesHelper(&Q::Init);
+  }
+
+  template <typename Q = T, std::enable_if_t<!UDATraits<Q>::HasInit(), void>* = nullptr>
+  static constexpr auto InitArguments() {
+    return std::array<types::DataType, 0>{};
   }
 
  private:

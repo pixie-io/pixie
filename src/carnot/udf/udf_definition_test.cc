@@ -29,6 +29,8 @@ namespace px {
 namespace carnot {
 namespace udf {
 
+using ::testing::ElementsAre;
+
 class NoArgUDF : public ScalarUDF {
  public:
   types::Int64Value Exec(FunctionContext*) { return invoke_count++; }
@@ -47,6 +49,12 @@ class AddUDF : public ScalarUDF {
   types::Int64Value Exec(FunctionContext*, types::Int64Value v1, types::Int64Value v2) {
     return v1.val + v2.val;
   }
+};
+
+class InitArgUDF : public ScalarUDF {
+ public:
+  Status Init(FunctionContext*, types::StringValue, types::UInt128Value) { return Status::OK(); }
+  types::StringValue Exec(FunctionContext*, types::StringValue) { return ""; }
 };
 
 TEST(UDFDefinition, no_args) {
@@ -118,6 +126,14 @@ TEST(UDFDefinition, arrow_write) {
   EXPECT_EQ(6, resArr->Value(1));
 }
 
+TEST(UDFDefinition, init_args) {
+  auto ctx = FunctionContext(nullptr, nullptr);
+  ScalarUDFDefinition def("initargudf");
+  EXPECT_OK(def.Init<InitArgUDF>());
+  EXPECT_EQ(2, def.init_arguments().size());
+  EXPECT_THAT(def.init_arguments(), ElementsAre(types::STRING, types::UINT128));
+}
+
 // Test UDA, takes the min of two arguments and then sums them.
 class MinSumUDA : public udf::UDA {
  public:
@@ -129,6 +145,16 @@ class MinSumUDA : public udf::UDA {
 
  protected:
   types::Int64Value sum_ = 0;
+};
+
+class InitArgUDA : public udf::UDA {
+ public:
+  Status Init(udf::FunctionContext*, types::Int64Value, types::StringValue, types::BoolValue) {
+    return Status::OK();
+  }
+  void Update(udf::FunctionContext*, types::Int64Value) {}
+  void Merge(udf::FunctionContext*, const InitArgUDA&) {}
+  types::Int64Value Finalize(udf::FunctionContext*) { return 0; }
 };
 
 TEST(UDADefinition, without_merge) {
@@ -184,6 +210,14 @@ TEST(UDADefinition, arrow_output) {
   EXPECT_EQ(1, res->length());
   auto casted = static_cast<arrow::Int64Array*>(res.get());
   EXPECT_EQ(5, casted->Value(0));
+}
+
+TEST(UDADefinition, init_args) {
+  auto ctx = FunctionContext(nullptr, nullptr);
+  UDADefinition def("initarguda");
+  EXPECT_OK(def.Init<InitArgUDA>());
+  EXPECT_EQ(3, def.init_arguments().size());
+  EXPECT_THAT(def.init_arguments(), ElementsAre(types::INT64, types::STRING, types::BOOLEAN));
 }
 
 }  // namespace udf

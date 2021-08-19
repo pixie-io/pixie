@@ -64,6 +64,8 @@ udfspb::UDFInfo Registry::ToProto() {
 void Registry::ToProto(const ScalarUDFDefinition& def, udfspb::ScalarUDFSpec* spec) {
   const auto& exec_arguments = def.exec_arguments();
   *spec->mutable_exec_arg_types() = {exec_arguments.begin(), exec_arguments.end()};
+  const auto& init_arguments = def.init_arguments();
+  *spec->mutable_init_arg_types() = {init_arguments.begin(), init_arguments.end()};
   spec->set_executor(def.executor());
   spec->set_return_type(def.exec_return_type());
   spec->set_name(def.name());
@@ -73,6 +75,8 @@ void Registry::ToProto(const ScalarUDFDefinition& def, udfspb::ScalarUDFSpec* sp
 void Registry::ToProto(const UDADefinition& def, udfspb::UDASpec* spec) {
   const auto& update_argument = def.update_arguments();
   *spec->mutable_update_arg_types() = {update_argument.begin(), update_argument.end()};
+  const auto& init_arguments = def.init_arguments();
+  *spec->mutable_init_arg_types() = {init_arguments.begin(), init_arguments.end()};
   spec->set_finalize_type(def.finalize_return_type());
   spec->set_name(def.name());
   spec->set_supports_partial(def.supports_partial());

@@ -96,6 +96,13 @@ class ScalarUDFDefinition : public UDFDefinition {
     exec_wrapper_fn_ = ScalarUDFWrapper<TUDF>::ExecBatch;
     exec_wrapper_arrow_fn_ = ScalarUDFWrapper<TUDF>::ExecBatchArrow;
 
+    auto init_arguments_array = ScalarUDFTraits<TUDF>::InitArguments();
+    init_arguments_ = {begin(init_arguments_array), end(init_arguments_array)};
+
+    registry_arguments_ = init_arguments_;
+    registry_arguments_.insert(registry_arguments_.end(), exec_arguments_.begin(),
+                               exec_arguments_.end());
+
     make_fn_ = ScalarUDFWrapper<TUDF>::Make;
 
     if constexpr (ScalarUDFTraits<TUDF>::HasExecutor()) {
@@ -129,14 +136,17 @@ class ScalarUDFDefinition : public UDFDefinition {
    */
   types::DataType exec_return_type() const { return exec_return_type_; }
   const std::vector<types::DataType>& exec_arguments() const { return exec_arguments_; }
+  const std::vector<types::DataType>& init_arguments() const { return init_arguments_; }
   udfspb::UDFSourceExecutor executor() const { return executor_; }
 
-  const std::vector<types::DataType>& RegistryArgTypes() override { return exec_arguments_; }
+  const std::vector<types::DataType>& RegistryArgTypes() override { return registry_arguments_; }
   size_t Arity() const { return exec_arguments_.size(); }
   const auto& exec_wrapper() const { return exec_wrapper_fn_; }
 
  private:
+  std::vector<types::DataType> init_arguments_;
   std::vector<types::DataType> exec_arguments_;
+  std::vector<types::DataType> registry_arguments_;
   types::DataType exec_return_type_;
   udfspb::UDFSourceExecutor executor_;
   std::function<std::unique_ptr<ScalarUDF>()> make_fn_;
@@ -177,6 +187,12 @@ class UDADefinition : public UDFDefinition {
     exec_batch_update_fn_ = UDAWrapper<T>::ExecBatchUpdate;
     exec_batch_update_arrow_fn_ = UDAWrapper<T>::ExecBatchUpdateArrow;
 
+    auto init_arguments_array = UDATraits<T>::InitArguments();
+    init_arguments_ = {begin(init_arguments_array), end(init_arguments_array)};
+    registry_arguments_ = init_arguments_;
+    registry_arguments_.insert(registry_arguments_.end(), update_arguments_.begin(),
+                               update_arguments_.end());
+
     merge_fn_ = UDAWrapper<T>::Merge;
     finalize_arrow_fn_ = UDAWrapper<T>::FinalizeArrow;
     finalize_value_fn = UDAWrapper<T>::FinalizeValue;
@@ -187,9 +203,10 @@ class UDADefinition : public UDFDefinition {
 
   UDADefinition* GetDefinition() override { return this; }
 
-  const std::vector<types::DataType>& RegistryArgTypes() override { return update_arguments_; }
+  const std::vector<types::DataType>& RegistryArgTypes() override { return registry_arguments_; }
 
   const std::vector<types::DataType>& update_arguments() const { return update_arguments_; }
+  const std::vector<types::DataType>& init_arguments() const { return init_arguments_; }
   types::DataType finalize_return_type() const { return finalize_return_type_; }
 
   bool supports_partial() const { return supports_partial_; }
@@ -214,7 +231,9 @@ class UDADefinition : public UDFDefinition {
   }
 
  private:
+  std::vector<types::DataType> init_arguments_;
   std::vector<types::DataType> update_arguments_;
+  std::vector<types::DataType> registry_arguments_;
   types::DataType finalize_return_type_;
   bool supports_partial_;
 
