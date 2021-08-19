@@ -46,6 +46,20 @@ Status ProcessProduceResp(PacketDecoder* decoder, Response* resp) {
   return Status::OK();
 }
 
+Status ProcessFetchReq(PacketDecoder* decoder, Request* req) {
+  PL_ASSIGN_OR_RETURN(FetchReq r, decoder->ExtractFetchReq());
+
+  req->msg = ToString(r);
+  return Status::OK();
+}
+
+Status ProcessFetchResp(PacketDecoder* decoder, Response* resp) {
+  PL_ASSIGN_OR_RETURN(FetchResp r, decoder->ExtractFetchResp());
+
+  resp->msg = ToString(r);
+  return Status::OK();
+}
+
 Status ProcessReq(Packet* req_packet, Request* req) {
   req->timestamp_ns = req_packet->timestamp_ns;
   PacketDecoder decoder(*req_packet);
@@ -56,6 +70,8 @@ Status ProcessReq(Packet* req_packet, Request* req) {
   switch (req->api_key) {
     case APIKey::kProduce:
       return ProcessProduceReq(&decoder, req);
+    case APIKey::kFetch:
+      return ProcessFetchReq(&decoder, req);
     default:
       VLOG(1) << absl::Substitute("Unparsed cmd $0", magic_enum::enum_name(req->api_key));
   }
@@ -72,6 +88,8 @@ Status ProcessResp(Packet* resp_packet, Response* resp, APIKey api_key, int16_t 
   switch (api_key) {
     case APIKey::kProduce:
       return ProcessProduceResp(&decoder, resp);
+    case APIKey::kFetch:
+      return ProcessFetchResp(&decoder, resp);
     // TODO(chengruizhe): Add support for more api keys.
     default:
       VLOG(1) << absl::Substitute("Unparsed cmd $0", magic_enum::enum_name(api_key));
