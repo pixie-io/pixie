@@ -57,7 +57,9 @@ import {
   StyledRightTableCell,
   StyledTab, StyledTableCell, StyledTableHeaderCell, StyledTabs,
 } from './utils';
-import { ClusterStatusCell, InstrumentationLevelCell, VizierVersionCell } from './cluster-table-cells';
+import {
+  ClusterStatusCell, InstrumentationLevelCell, VizierVersionCell, MonoSpaceCell,
+} from './cluster-table-cells';
 
 const useLinkStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -421,7 +423,7 @@ const ClusterSummaryTable = ({ cluster }: {
     },
     {
       key: 'ID',
-      value: cluster.id,
+      value: (<MonoSpaceCell data={cluster.id} />),
     },
     {
       key: 'Status',

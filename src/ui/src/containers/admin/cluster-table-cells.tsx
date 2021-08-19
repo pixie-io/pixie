@@ -114,3 +114,17 @@ export const VizierVersionCell: React.FC<{ version: string }> = ({ version }) =>
     <StyledTableCell>{version.split('+')[0]}</StyledTableCell>
   </AdminTooltip>
 );
+
+const useMonoCells = makeStyles(() => createStyles({
+  mono: {
+    fontFamily: '"Roboto Mono", Monospace',
+  },
+}));
+
+// MonoSpaceCell renders the in monospace.
+export const MonoSpaceCell: React.FC<{ data: string }> = ({ data }) => {
+  const classes = useMonoCells();
+  return (
+    <StyledTableCell className={classes.mono}>{data}</StyledTableCell>
+  );
+};

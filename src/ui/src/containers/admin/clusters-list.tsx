@@ -32,7 +32,9 @@ import {
   StyledTableCell, StyledTableHeaderCell,
 } from './utils';
 
-import { ClusterStatusCell, InstrumentationLevelCell, VizierVersionCell } from './cluster-table-cells';
+import {
+  ClusterStatusCell, InstrumentationLevelCell, VizierVersionCell, MonoSpaceCell,
+} from './cluster-table-cells';
 
 // Cluster that are older that has not been healthy in over a day are labelled inactive.
 const INACTIVE_CLUSTER_THRESHOLD_MS = 24 * 60 * 60 * 1000;
@@ -119,7 +121,7 @@ export const ClustersTable = withStyles((theme: Theme) => ({
                 </Button>
               </StyledTableCell>
             </AdminTooltip>
-            <StyledTableCell>{cluster.id}</StyledTableCell>
+            <MonoSpaceCell data={cluster.id} />
             <InstrumentationLevelCell cluster={cluster} />
             <VizierVersionCell version={cluster.vizierVersion} />
           </TableRow>
