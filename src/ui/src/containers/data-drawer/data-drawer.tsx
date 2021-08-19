@@ -165,7 +165,8 @@ const StyledTab = withStyles((theme: Theme) => createStyles({
 
 }))(Tab);
 
-const DataDrawer: React.FC<{ open: boolean }> = ({ open }) => {
+// eslint-disable-next-line prefer-arrow-callback
+const DataDrawer = React.memo<{ open: boolean }>(function DataDrawer({ open }) {
   const classes = useStyles();
   const { loading, stats, tables } = React.useContext(ResultsContext);
   const { activeTab, setActiveTab } = React.useContext(DataDrawerContext);
@@ -263,16 +264,16 @@ const DataDrawer: React.FC<{ open: boolean }> = ({ open }) => {
       </div>
     </div>
   );
-};
+});
 
-export const DataDrawerSplitPanel: React.FC = () => {
+// eslint-disable-next-line prefer-arrow-callback
+const DrawerToggleButton = React.memo(function DrawerToggleButton() {
   const classes = useStyles();
-
   const { dataDrawerOpen, setDataDrawerOpen } = React.useContext(LayoutContext);
 
-  const toggleDrawerOpen = () => setDataDrawerOpen((open) => !open);
+  const toggleDrawerOpen = React.useCallback(() => setDataDrawerOpen((open) => !open), [setDataDrawerOpen]);
 
-  const contents = (
+  return (
     <div className={classes.otherContent}>
       <div className={classes.spacer} />
       <div className={classes.toggle}>
@@ -282,6 +283,11 @@ export const DataDrawerSplitPanel: React.FC = () => {
       </div>
     </div>
   );
+});
+
+// eslint-disable-next-line prefer-arrow-callback
+export const DataDrawerSplitPanel = React.memo(function DataDrawerSplitPanel() {
+  const { dataDrawerOpen } = React.useContext(LayoutContext);
 
   return (
     <ResizableDrawer
@@ -289,10 +295,10 @@ export const DataDrawerSplitPanel: React.FC = () => {
       initialSize={350}
       minSize={0}
       open={dataDrawerOpen}
-      otherContent={contents}
+      otherContent={<DrawerToggleButton />}
       overlay={false}
     >
       <DataDrawer open={dataDrawerOpen} />
     </ResizableDrawer>
   );
-};
+});
