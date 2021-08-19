@@ -71,14 +71,22 @@ func (s *Service) Create(ctx context.Context, req *authpb.CreateAPIKeyRequest) (
 
 	var id uuid.UUID
 	var ts time.Time
-	query := `INSERT INTO api_keys(org_id, user_id, unsalted_key, description) VALUES($1, $2, $3, $4) RETURNING id, created_at`
+	// We store a version of the key in hashed_key that is salted using a constant salt (dbKey),
+	// to allow us to an associative lookup. This is secure since the API key is a UUID and won't collide.
+	query := `INSERT INTO api_keys(org_id, user_id, hashed_key, encrypted_key, description)
+                VALUES($1, $2, crypt($3, $4), PGP_SYM_ENCRYPT($3, $4), $5)
+                RETURNING id, created_at`
 	keyID, err := uuid.NewV4()
 	if err != nil {
 		return nil, err
 	}
 	key := apiKeyPrefix + keyID.String()
 	err = s.db.QueryRowxContext(ctx, query,
-		sCtx.Claims.GetUserClaims().OrgID, sCtx.Claims.GetUserClaims().UserID, key, req.Desc).
+		sCtx.Claims.GetUserClaims().OrgID,
+		sCtx.Claims.GetUserClaims().UserID,
+		key,
+		s.dbKey,
+		req.Desc).
 		Scan(&id, &ts)
 	if err != nil {
 		log.WithError(err).Error("Failed to insert API keys")
@@ -100,9 +108,12 @@ func (s *Service) List(ctx context.Context, req *authpb.ListAPIKeyRequest) (*aut
 		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 
-	// Return all clusters when the OrgID matches.
-	query := `SELECT id, org_id, unsalted_key, created_at, description from api_keys WHERE org_id=$1 ORDER BY created_at`
-	rows, err := s.db.QueryxContext(ctx, query, sCtx.Claims.GetUserClaims().OrgID)
+	// Return all keys when the OrgID matches.
+	query := `SELECT id, org_id, PGP_SYM_DECRYPT(encrypted_key::bytea, $2::text), created_at, description
+                FROM api_keys
+                WHERE org_id=$1
+                ORDER BY created_at`
+	rows, err := s.db.QueryxContext(ctx, query, sCtx.Claims.GetUserClaims().OrgID, s.dbKey)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return &authpb.ListAPIKeyResponse{}, nil
@@ -151,10 +162,15 @@ func (s *Service) Get(ctx context.Context, req *authpb.GetAPIKeyRequest) (*authp
 	var key string
 	var createdAt time.Time
 	var desc string
-	query := `SELECT unsalted_key, created_at, description from api_keys WHERE org_id=$1 and id=$2`
-	err = s.db.QueryRowxContext(ctx, query, sCtx.Claims.GetUserClaims().OrgID, tokenID).Scan(&key, &createdAt, &desc)
+	query := `SELECT PGP_SYM_DECRYPT(encrypted_key::bytea, $3::text), created_at, description
+                FROM api_keys
+                WHERE org_id=$1 AND id=$2`
+	err = s.db.QueryRowxContext(ctx, query, sCtx.Claims.GetUserClaims().OrgID, tokenID, s.dbKey).Scan(&key, &createdAt, &desc)
 	if err != nil {
-		return nil, status.Error(codes.NotFound, "No such API key")
+		if err == sql.ErrNoRows {
+			return nil, status.Error(codes.NotFound, "No such API key")
+		}
+		return nil, status.Error(codes.Internal, "Failed to query database for API key")
 	}
 
 	createdAtProto, _ := types.TimestampProto(createdAt)
@@ -178,7 +194,8 @@ func (s *Service) Delete(ctx context.Context, req *uuidpb.UUID) (*types.Empty, e
 		return nil, status.Error(codes.InvalidArgument, "invalid id format")
 	}
 
-	query := `DELETE from api_keys WHERE org_id=$1 and id=$2`
+	query := `DELETE FROM api_keys
+                WHERE org_id=$1 AND id=$2`
 	res, err := s.db.ExecContext(ctx, query, sCtx.Claims.GetUserClaims().OrgID, tokenID)
 	if err != nil {
 		log.WithError(err).Error("Failed to delete API token")
@@ -204,10 +221,12 @@ func (s *Service) FetchOrgUserIDUsingAPIKey(ctx context.Context, key string) (uu
 	if !strings.HasPrefix(key, apiKeyPrefix) {
 		key = apiKeyPrefix + key
 	}
-	query := `SELECT org_id, user_id from api_keys WHERE unsalted_key=$1`
+	query := `SELECT org_id, user_id
+                FROM api_keys
+                WHERE hashed_key=crypt($1, $2)`
 	var orgID uuid.UUID
 	var userID uuid.UUID
-	err := s.db.QueryRowxContext(ctx, query, key).Scan(&orgID, &userID)
+	err := s.db.QueryRowxContext(ctx, query, key, s.dbKey).Scan(&orgID, &userID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return uuid.Nil, uuid.Nil, ErrAPIKeyNotFound
