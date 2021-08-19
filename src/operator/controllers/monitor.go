@@ -274,6 +274,11 @@ func GetPodStatus(client HTTPClient, pod *v1.Pod) (bool, string) {
 	if resp.StatusCode == http.StatusOK {
 		return true, ""
 	}
+	// This is for backwards compatibility for cloudconnectors who do not yet have a statusz endpoint.
+	// We should assume a healthy state if the pod is running.
+	if resp.StatusCode != http.StatusServiceUnavailable {
+		return true, ""
+	}
 
 	body, err := io.ReadAll(resp.Body)
 

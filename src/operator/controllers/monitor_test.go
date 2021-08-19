@@ -84,7 +84,7 @@ func TestMonitor_GetPodStatus(t *testing.T) {
 			podPort:        50100,
 			podIP:          "127.0.0.2",
 			expectedStatus: "",
-			expectedOK:     false,
+			expectedOK:     true,
 		},
 		{
 			name:           "unhealthy",

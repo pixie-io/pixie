@@ -192,6 +192,11 @@ func (r *VizierReconciler) updateVizier(ctx context.Context, req ctrl.Request, v
 		return nil
 	}
 
+	if vz.Status.VizierPhase == pixiev1alpha1.VizierPhaseUpdating {
+		log.Info("Already in the process of updating, nothing to do")
+		return nil
+	}
+
 	return r.deployVizier(ctx, req, vz, true)
 }
 
@@ -311,6 +316,16 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 	}
 
 	err = r.deployVizierCore(ctx, req.Namespace, vz, yamlMap, update)
+	if err != nil {
+		return err
+	}
+
+	// TODO(michellenguyen): Remove when the operator has the ability to ping CloudConn for Vizier Version.
+	// We are currently blindly assuming that the new version is correct.
+	_ = waitForCluster(r.Clientset, req.Namespace)
+	vz.Status.Version = vz.Spec.Version
+
+	err = r.Status().Update(ctx, vz)
 	if err != nil {
 		return err
 	}
@@ -597,6 +612,31 @@ func updateResourceRequirements(requirements v1.ResourceRequirements, res map[st
 
 		castedContainer["resources"] = resources
 	}
+}
+
+func waitForCluster(clientset *kubernetes.Clientset, namespace string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+	t := time.NewTicker(2 * time.Second)
+	defer t.Stop()
+
+	clusterID := false
+	for !clusterID { // Wait for secret to be updated with clusterID.
+		select {
+		case <-ctx.Done():
+			return errors.New("Timed out waiting for cluster ID")
+		case <-t.C:
+			s := k8s.GetSecret(clientset, namespace, "pl-cluster-secrets")
+			if s == nil {
+				return errors.New("Missing cluster secrets")
+			}
+			if _, ok := s.Data["cluster-id"]; ok {
+				clusterID = true
+			}
+		}
+	}
+
+	return nil
 }
 
 // SetupWithManager sets up the reconciler.
