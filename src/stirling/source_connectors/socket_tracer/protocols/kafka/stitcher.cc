@@ -57,7 +57,7 @@ Status ProcessReq(Packet* req_packet, Request* req) {
     case APIKey::kProduce:
       return ProcessProduceReq(&decoder, req);
     default:
-      return error::Internal("Unhandled cmd $0", magic_enum::enum_name(req->api_key));
+      VLOG(1) << absl::Substitute("Unparsed cmd $0", magic_enum::enum_name(req->api_key));
   }
   return Status::OK();
 }
@@ -74,7 +74,7 @@ Status ProcessResp(Packet* resp_packet, Response* resp, APIKey api_key, int16_t 
       return ProcessProduceResp(&decoder, resp);
     // TODO(chengruizhe): Add support for more api keys.
     default:
-      return error::Internal("Unhandled cmd $0", magic_enum::enum_name(api_key));
+      VLOG(1) << absl::Substitute("Unparsed cmd $0", magic_enum::enum_name(api_key));
   }
 
   return Status::OK();
