@@ -111,7 +111,7 @@ var LiveCmd = &cobra.Command{
 
 		useEncryption, _ := cmd.Flags().GetBool("e2e_encryption")
 
-		viziers := vizier.MustConnectDefaultVizier(cloudAddr, allClusters, clusterUUID)
+		viziers := vizier.MustConnectHealthyDefaultVizier(cloudAddr, allClusters, clusterUUID)
 		lv, err := live.New(br, viziers, cloudAddr, aClient, execScript, useNewAC, useEncryption, clusterUUID)
 		if err != nil {
 			utils.WithError(err).Fatal("Failed to initialize live view")

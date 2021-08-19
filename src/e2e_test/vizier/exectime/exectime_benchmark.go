@@ -280,7 +280,7 @@ func main() {
 		}
 	}
 
-	vzrConns := vizier.MustConnectDefaultVizier(cloudAddr, allClusters, clusterID)
+	vzrConns := vizier.MustConnectHealthyDefaultVizier(cloudAddr, allClusters, clusterID)
 
 	data := make(map[string]*ScriptExecData)
 	for i, s := range scripts {

@@ -74,7 +74,7 @@ var GetPEMsCmd = &cobra.Command{
 			}
 		}
 
-		conns := vizier.MustConnectDefaultVizier(cloudAddr, allClusters, clusterID)
+		conns := vizier.MustConnectHealthyDefaultVizier(cloudAddr, allClusters, clusterID)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()

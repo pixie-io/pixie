@@ -67,9 +67,9 @@ func MustFindVizierNamespace() string {
 	return vzNs
 }
 
-// MustConnectDefaultVizier vizier will connect to default vizier based on parameters.
-func MustConnectDefaultVizier(cloudAddr string, allClusters bool, clusterID uuid.UUID) []*Connector {
-	c, err := ConnectDefaultVizier(cloudAddr, allClusters, clusterID)
+// MustConnectHealthyDefaultVizier vizier will connect to default vizier based on parameters.
+func MustConnectHealthyDefaultVizier(cloudAddr string, allClusters bool, clusterID uuid.UUID) []*Connector {
+	c, err := ConnectHealthyDefaultVizier(cloudAddr, allClusters, clusterID)
 	if err != nil {
 		cliUtils.WithError(err).Fatal("Failed to connect to vizier")
 	}
@@ -122,8 +122,8 @@ func createVizierConnection(cloudAddr string, vzInfo *cloudpb.ClusterInfo) (*Con
 	return v, nil
 }
 
-// ConnectDefaultVizier connects to the default vizier based on parameters.
-func ConnectDefaultVizier(cloudAddr string, allClusters bool, clusterID uuid.UUID) ([]*Connector, error) {
+// ConnectHealthyDefaultVizier connects to the healthy default vizier based on parameters.
+func ConnectHealthyDefaultVizier(cloudAddr string, allClusters bool, clusterID uuid.UUID) ([]*Connector, error) {
 	var conns []*Connector
 	if allClusters {
 		var err error
@@ -134,14 +134,14 @@ func ConnectDefaultVizier(cloudAddr string, allClusters bool, clusterID uuid.UUI
 		return conns, nil
 	}
 	if clusterID != uuid.Nil {
-		c, err := ConnectionToVizierByID(cloudAddr, clusterID)
+		c, err := ConnectionToHealthyVizierByID(cloudAddr, clusterID)
 		if err != nil {
 			return nil, err
 		}
 		conns = append(conns, c)
 		return conns, nil
 	}
-	return nil, fmt.Errorf("ConnectDefaultVizier expects either allClusters or clusterID to be set")
+	return nil, fmt.Errorf("ConnectHealthyDefaultVizier expects either allClusters or clusterID to be set")
 }
 
 // FirstHealthyVizier returns the cluster ID of the first healthy vizier.
@@ -223,7 +223,26 @@ func GetCurrentOrFirstHealthyVizier(cloudAddr string) (uuid.UUID, error) {
 	return clusterID, nil
 }
 
+// ConnectionToHealthyVizierByID connects to the input clusterID if it is healthy.
+// It returns an error if the clusterID provided corresponds to a cluster that is not healthy.
+func ConnectionToHealthyVizierByID(cloudAddr string, clusterID uuid.UUID) (*Connector, error) {
+	clusterInfo, err := GetVizierInfo(cloudAddr, clusterID)
+	if err != nil {
+		return nil, errors.New("Could not fetch vizier")
+	}
+	if clusterInfo.Status != cloudpb.CS_HEALTHY {
+		msg := fmt.Sprintf("Cluster %s is not healthy. Status is %s.",
+			clusterID.String(), clusterInfo.Status.String())
+		if clusterInfo.StatusMessage != "" {
+			msg = msg + fmt.Sprintf(" Status Message: %s", clusterInfo.StatusMessage)
+		}
+		return nil, errors.New(msg)
+	}
+	return ConnectionToVizierByID(cloudAddr, clusterID)
+}
+
 // ConnectionToVizierByID connects to the vizier on specified ID.
+// It will not check for Vizier health.
 func ConnectionToVizierByID(cloudAddr string, clusterID uuid.UUID) (*Connector, error) {
 	vzInfos, err := GetVizierList(cloudAddr)
 	if err != nil {
@@ -255,7 +274,7 @@ func GetVizierInfo(cloudAddr string, clusterID uuid.UUID) (*cloudpb.ClusterInfo,
 	return nil, errors.New("no such vizier")
 }
 
-// ConnectToAllViziers connets to all available viziers.
+// ConnectToAllViziers connects to all available viziers.
 func ConnectToAllViziers(cloudAddr string) ([]*Connector, error) {
 	vzInfos, err := GetVizierList(cloudAddr)
 	if err != nil {

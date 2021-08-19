@@ -185,7 +185,7 @@ func createNewCobraCommand() *cobra.Command {
 				}
 			}
 
-			conns := vizier.MustConnectDefaultVizier(cloudAddr, allClusters, clusterID)
+			conns := vizier.MustConnectHealthyDefaultVizier(cloudAddr, allClusters, clusterID)
 
 			// TODO(zasgar): Refactor this when we change to the new API to make analytics cleaner.
 			_ = pxanalytics.Client().Enqueue(&analytics.Track{
