@@ -124,6 +124,7 @@ func main() {
 	// We have 256 * 2 different sharded goroutines running to handle requests.
 	// Match the same number of allowed db connections.
 	db.SetMaxOpenConns(512)
+	db.SetMaxIdleConns(128)
 	err = pgmigrate.PerformMigrationsUsingBindata(db, "vzmgr_service_migrations",
 		bindata.Resource(schema.AssetNames(), schema.Asset))
 	if err != nil {

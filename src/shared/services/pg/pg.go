@@ -70,7 +70,7 @@ func MustCreateDefaultPostgresDB() *sqlx.DB {
 	}
 
 	db.SetMaxIdleConns(5)
-	db.SetConnMaxLifetime(2 * time.Minute)
+	db.SetConnMaxLifetime(30 * time.Minute)
 	db.SetMaxOpenConns(10)
 
 	return db
