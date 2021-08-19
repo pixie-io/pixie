@@ -20,7 +20,7 @@
     },
     {
       "name": "status_code",
-      "type": "PX_INT",
+      "type": "PX_INT64",
       "description": "The HTTP response status code.",
       "defaultValue": "200"
     },
