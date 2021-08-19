@@ -58,7 +58,7 @@ TEST(KafkaStitcherTest, BasicMatching) {
       result.records[0].req.msg,
       "{\"transactional_id\":\"\",\"acks\":1,\"timeout_ms\":1500,\"topics\":[{\"name\":"
       "\"quickstart-events\",\"partitions\":[{\"index\":0,\"message_set\":{\"record_batches\":[{"
-      "\"records\":[{\"key\":\"\",\"value\":\"This is my first event\"}]}]}}]}]}");
+      "\"records\":[{\"key\":,\"value\":This is my first event}]}]}}]}]}");
   EXPECT_EQ(
       result.records[0].resp.msg,
       "{\"topics\":[{\"name\":\"quickstart-events\",\"partitions\":[{\"index\":0,\"error_"

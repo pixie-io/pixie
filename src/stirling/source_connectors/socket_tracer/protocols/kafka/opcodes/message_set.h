@@ -38,9 +38,9 @@ struct RecordMessage {
   void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
     writer->StartObject();
     writer->Key("key");
-    writer->String(key.c_str());
+    writer->RawValue(key.c_str(), key.size(), rapidjson::Type::kStringType);
     writer->Key("value");
-    writer->String(value.c_str());
+    writer->RawValue(value.c_str(), value.size(), rapidjson::Type::kStringType);
     writer->EndObject();
   }
 };
