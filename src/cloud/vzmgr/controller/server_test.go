@@ -138,7 +138,7 @@ func mustLoadTestData(db *sqlx.DB) {
 	insertClusterInfo := `INSERT INTO vizier_cluster_info(vizier_cluster_id, status, address, jwt_signing_key, last_heartbeat,
 						  passthrough_enabled, auto_update_enabled, vizier_version, control_plane_pod_statuses,
 							unhealthy_data_plane_pod_statuses, num_nodes, num_instrumented_nodes, status_message,
-							previous_vizier_status, previous_vizier_status_time)
+							prev_status, prev_status_time)
 						  VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`
 	db.MustExec(insertClusterInfo, "123e4567-e89b-12d3-a456-426655440000", "UNKNOWN", "addr0",
 		"key0", "2011-05-16 15:36:38", true, false, "", testPodStatuses, testDataPlanePodStatuses, 10, 8, "",
@@ -558,6 +558,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 	}{
 		{
 			name:                      "valid vizier",
+			status:                    cvmsgspb.VZ_ST_HEALTHY,
 			expectGetDNSAddressCalled: true,
 			dnsAddressResponse: &dnsmgrpb.GetDNSAddressResponse{
 				DNSAddress: "abc.clusters.dev.withpixie.dev",
@@ -601,6 +602,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 		},
 		{
 			name:                      "valid vizier, no autoupdate",
+			status:                    cvmsgspb.VZ_ST_HEALTHY,
 			expectGetDNSAddressCalled: true,
 			dnsAddressResponse: &dnsmgrpb.GetDNSAddressResponse{
 				DNSAddress: "abc.clusters.dev.withpixie.dev",
@@ -621,6 +623,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 		},
 		{
 			name:                      "valid vizier dns failed",
+			status:                    cvmsgspb.VZ_ST_HEALTHY,
 			expectGetDNSAddressCalled: true,
 			dnsAddressResponse:        nil,
 			dnsAddressError:           errors.New("Could not get DNS address"),
@@ -638,11 +641,12 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 		},
 		{
 			name:                      "valid vizier no address",
+			status:                    cvmsgspb.VZ_ST_HEALTHY,
 			expectGetDNSAddressCalled: false,
 			vizierID:                  "123e4567-e89b-12d3-a456-426655440001",
 			hbAddress:                 "",
 			hbPort:                    0,
-			updatedClusterStatus:      "UNHEALTHY",
+			updatedClusterStatus:      "HEALTHY",
 			expectedClusterAddress:    "",
 			clusterVersion:            "",
 			numNodes:                  4,
@@ -652,13 +656,13 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 		},
 		{
 			name:                      "unknown vizier",
+			status:                    cvmsgspb.VZ_ST_UPDATING,
 			expectGetDNSAddressCalled: false,
 			vizierID:                  "223e4567-e89b-12d3-a456-426655440001",
 			hbAddress:                 "",
 			updatedClusterStatus:      "",
 			expectedClusterAddress:    "",
 			clusterVersion:            "",
-			status:                    cvmsgspb.VZ_ST_UPDATING,
 			checkVersion:              false,
 			checkDB:                   false,
 			disableAutoUpdate:         true,
@@ -722,14 +726,14 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			// Check database.
 			clusterQuery := `
 			SELECT status, last_heartbeat, address, control_plane_pod_statuses, num_nodes, num_instrumented_nodes,
-			auto_update_enabled, unhealthy_data_plane_pod_statuses, previous_vizier_status,
-			previous_vizier_status_time, cluster_version, status_message
+			auto_update_enabled, unhealthy_data_plane_pod_statuses, prev_status,
+			prev_status_time, cluster_version, status_message
 			FROM vizier_cluster_info WHERE vizier_cluster_id=$1`
 			var clusterInfo struct {
 				Status                        string                 `db:"status"`
 				LastHeartbeat                 time.Time              `db:"last_heartbeat"`
-				PreviousVizierStatus          *string                `db:"previous_vizier_status"`
-				PreviousVizierStatusTime      *time.Time             `db:"previous_vizier_status_time"`
+				PrevStatus                    *string                `db:"prev_status"`
+				PrevStatusTime                *time.Time             `db:"prev_status_time"`
 				Address                       string                 `db:"address"`
 				ClusterVersion                *string                `db:"cluster_version"`
 				ControlPlanePodStatuses       controller.PodStatuses `db:"control_plane_pod_statuses"`
@@ -747,8 +751,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 				assert.True(t, heartbeatTime.Before(clusterInfo.LastHeartbeat))
 			}
 			if tc.expectedPrevStatus != "" {
-				assert.Equal(t, tc.expectedPrevStatus, *clusterInfo.PreviousVizierStatus)
-				assert.True(t, heartbeatTime.Before(*(clusterInfo.PreviousVizierStatusTime)))
+				assert.Equal(t, tc.expectedPrevStatus, *clusterInfo.PrevStatus)
 			}
 			assert.Equal(t, tc.clusterVersion, *clusterInfo.ClusterVersion)
 			assert.Equal(t, tc.updatedClusterStatus, clusterInfo.Status)
