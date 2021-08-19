@@ -218,6 +218,7 @@ class PacketDecoder {
   bool eof() { return binary_decoder_.eof(); }
 
   void SetAPIInfo(APIKey api_key, int16_t api_version) {
+    api_key_ = api_key;
     api_version_ = api_version;
     is_flexible_ = IsFlexible(api_key, api_version);
   }
@@ -272,6 +273,7 @@ class PacketDecoder {
 
   std::stack<std::string_view> marked_bufs_;
   BinaryDecoder binary_decoder_;
+  APIKey api_key_;
   int16_t api_version_ = 0;
   bool is_flexible_ = false;
 };

@@ -105,6 +105,13 @@ StatusOr<MessageSet> PacketDecoder::ExtractMessageSet() {
   }
   PL_RETURN_IF_ERROR(MarkOffset(length));
 
+  // The message set in a fetch response is sent with the sendfile syscall:
+  // sendfile(int out_fd, int in_fd, off_t *offset, size_t count). We can only get the length of
+  // the payload, not the content. To make sure ParseFrame functions correctly, a temporary fix
+  // was put in to fill the content of sendfile syscall (a.k.a the message set) with zeros. In this
+  // case, since parsing of the record batches are best effort anyways, we do jump over to the end
+  // when ExtractRecordBatch fails.
+
   // There is no field in the message set that indicates how many record batches should follow.
   // The length parsed above contains the length of the message set and the tagged section, if there
   // is one (in flexible versions). This makes difficult to determine where parsing of the record
