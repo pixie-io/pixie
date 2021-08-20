@@ -43,6 +43,7 @@ using table_store::schema::Schema;
 
 class DummyTestUDF : public udf::ScalarUDF {
  public:
+  Status Init(udf::FunctionContext*, types::Int64Value) { return Status::OK(); }
   types::Int64Value Exec(udf::FunctionContext*, types::Float64Value, types::Float64Value,
                          types::Int64Value) {
     return 0;
@@ -51,7 +52,7 @@ class DummyTestUDF : public udf::ScalarUDF {
 
 class DummyTestUDA : public udf::UDA {
  public:
-  Status Init(udf::FunctionContext*) { return Status::OK(); }
+  Status Init(udf::FunctionContext*, types::Int64Value) { return Status::OK(); }
   void Update(udf::FunctionContext*, types::Float64Value, types::Float64Value, types::Int64Value) {}
   void Merge(udf::FunctionContext*, const DummyTestUDA&) {}
   types::Int64Value Finalize(udf::FunctionContext*) { return 0; }
@@ -304,6 +305,24 @@ TEST_F(ScalarFuncTest, debug_string) {
   EXPECT_EQ("fn:foobar(node<0>::col[1],node<1>::col[1],36)", sf_.DebugString());
 }
 
+TEST_F(ScalarFuncTest, init_args) {
+  const auto& init_args = sf_.init_arguments();
+  ASSERT_EQ(1, init_args.size());
+  EXPECT_EQ(types::INT64, init_args[0].DataType());
+  EXPECT_EQ(1234, init_args[0].Int64Value());
+}
+
+TEST_F(ScalarFuncTest, registry_args) {
+  const auto& registry_arg_types = sf_.registry_arg_types();
+  ASSERT_EQ(4, registry_arg_types.size());
+
+  // Registry arg types should include the types for the init args and the exec args.
+  EXPECT_EQ(types::INT64, registry_arg_types[0]);
+  EXPECT_EQ(types::INT64, registry_arg_types[1]);
+  EXPECT_EQ(types::INT64, registry_arg_types[2]);
+  EXPECT_EQ(types::INT64, registry_arg_types[3]);
+}
+
 TEST(ScalarExpressionWalker, walk_node_graph) {
   planpb::ScalarExpression se_pb = planpb::testutils::CreateTestScalarExpressionWithFunc1PB();
   EXPECT_EQ(planpb::ScalarExpression::kFunc, se_pb.value_case());
@@ -360,6 +379,10 @@ args {
 args_data_types: FLOAT64
 args_data_types: FLOAT64
 args_data_types: INT64
+init_args {
+  data_type: INT64
+  int64_value: 1234
+}
 )";
 
 class AggregateExpressionTest : public ScalarExpressionTest {
@@ -402,6 +425,21 @@ TEST_F(AggregateExpressionTest, expression_type) {
 
 TEST_F(AggregateExpressionTest, debug_string) {
   EXPECT_EQ("aggregate expression:testAgg(node<0>::col[1],node<1>::col[1],36)", ae_.DebugString());
+}
+
+TEST_F(AggregateExpressionTest, init_args) {
+  ASSERT_EQ(1, ae_.init_arguments().size());
+  ASSERT_EQ(types::INT64, ae_.init_arguments()[0].DataType());
+  EXPECT_EQ(1234, ae_.init_arguments()[0].Int64Value());
+}
+
+TEST_F(AggregateExpressionTest, registry_args) {
+  const auto& registry_arg_types = ae_.registry_arg_types();
+  ASSERT_EQ(4, registry_arg_types.size());
+  EXPECT_EQ(types::INT64, registry_arg_types[0]);
+  EXPECT_EQ(types::FLOAT64, registry_arg_types[1]);
+  EXPECT_EQ(types::FLOAT64, registry_arg_types[2]);
+  EXPECT_EQ(types::INT64, registry_arg_types[3]);
 }
 
 }  // namespace plan

@@ -53,6 +53,24 @@ class MinSumUDA : public udf::UDA {
   types::Int64Value sum_ = 0;
 };
 
+class MinSumWithInitUDA : public udf::UDA {
+ public:
+  Status Init(udf::FunctionContext*, types::Int64Value init_val) {
+    sum_ = init_val;
+    return Status::OK();
+  }
+  void Update(udf::FunctionContext*, types::Int64Value arg1, types::Int64Value arg2) {
+    sum_ = sum_.val + std::min(arg1.val, arg2.val);
+  }
+  void Merge(udf::FunctionContext*, const MinSumWithInitUDA& other) {
+    sum_ = sum_.val + other.sum_.val;
+  }
+  types::Int64Value Finalize(udf::FunctionContext*) { return sum_; }
+
+ protected:
+  types::Int64Value sum_ = 0;
+};
+
 constexpr char kBlockingNoGroupAgg[] = R"(
 op_type: AGGREGATE_OPERATOR
 agg_op {
@@ -193,6 +211,65 @@ agg_op {
   group_names: "g1"
 })";
 
+constexpr char kBlockingNoGroupInitArgAgg[] = R"(
+op_type: AGGREGATE_OPERATOR
+agg_op {
+  windowed: false
+  values {
+    name: "minsum_w_init"
+    args {
+      column {
+        node:0
+        index: 0
+      }
+    }
+    args {
+      column {
+        node:0
+        index: 1
+      }
+    }
+    init_args {
+      data_type: INT64
+      int64_value: 10
+    }
+    id: 1
+  }
+  value_names: "value1"
+})";
+
+constexpr char kBlockingSingleGroupInitArgAgg[] = R"(
+op_type: AGGREGATE_OPERATOR
+agg_op {
+  windowed: false
+  values {
+    name: "minsum_w_init"
+    args {
+      column {
+        node:0
+        index: 0
+      }
+    }
+    args {
+      column {
+        node:0
+        index: 1
+      }
+    }
+    init_args {
+      data_type: INT64
+      int64_value: 10
+    }
+    id: 1
+  }
+  groups {
+     node: 0
+     index: 0
+  }
+  group_names: "g1"
+  value_names: "value1"
+})";
+
 std::unique_ptr<ExecState> MakeTestExecState(udf::Registry* registry) {
   auto table_store = std::make_shared<table_store::TableStore>();
   return std::make_unique<ExecState>(registry, table_store, MockResultSinkStubGenerator,
@@ -210,10 +287,12 @@ class AggNodeTest : public ::testing::Test {
   AggNodeTest() {
     func_registry_ = std::make_unique<udf::Registry>("test");
     EXPECT_TRUE(func_registry_->Register<MinSumUDA>("minsum").ok());
+    EXPECT_TRUE(func_registry_->Register<MinSumWithInitUDA>("minsum_w_init").ok());
 
     exec_state_ = MakeTestExecState(func_registry_.get());
     EXPECT_OK(exec_state_->AddUDA(0, "minsum",
                                   std::vector<types::DataType>({types::INT64, types::INT64})));
+    EXPECT_OK(exec_state_->AddUDA(1, "minsum_w_init", {types::INT64, types::INT64, types::INT64}));
   }
 
  protected:
@@ -473,6 +552,61 @@ TEST_F(AggNodeTest, no_aggregate_expressions) {
       .ExpectRowBatch(
           RowBatchBuilder(output_rd, 3, true, true).AddColumn<types::Int64Value>({2, 1, 3}).get(),
           false)
+      .Close();
+}
+
+TEST_F(AggNodeTest, no_groups_blocking_init_args) {
+  auto plan_node = PlanNodeFromPbtxt(kBlockingNoGroupInitArgAgg);
+  RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64});
+
+  RowDescriptor output_rd({types::DataType::INT64});
+
+  auto tester = exec::ExecNodeTester<AggNode, plan::AggregateOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+
+  tester
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::Int64Value>({1, 2, 3, 4})
+                       .AddColumn<types::Int64Value>({2, 5, 6, 8})
+                       .get(),
+                   0, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, true, true)
+                       .AddColumn<types::Int64Value>({5, 6, 3, 4})
+                       .AddColumn<types::Int64Value>({1, 5, 3, 8})
+                       .get(),
+                   0)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 1, true, true)
+                          .AddColumn<types::Int64Value>({Int64Value(23 + 10)})
+                          .get(),
+                      false)
+      .Close();
+}
+
+TEST_F(AggNodeTest, single_group_blocking_init_args) {
+  auto plan_node = PlanNodeFromPbtxt(kBlockingSingleGroupInitArgAgg);
+  RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64});
+
+  RowDescriptor output_rd({types::DataType::INT64, types::DataType::INT64});
+
+  auto tester = exec::ExecNodeTester<AggNode, plan::AggregateOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+
+  tester
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::Int64Value>({1, 1, 2, 2})
+                       .AddColumn<types::Int64Value>({2, 3, 3, 1})
+                       .get(),
+                   0, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, true, true)
+                       .AddColumn<types::Int64Value>({5, 6, 3, 4})
+                       .AddColumn<types::Int64Value>({1, 5, 3, 8})
+                       .get(),
+                   0)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 6, true, true)
+                          .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6})
+                          .AddColumn<types::Int64Value>({12, 13, 13, 14, 11, 15})
+                          .get(),
+                      false)
       .Close();
 }
 

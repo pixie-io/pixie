@@ -111,6 +111,10 @@ args {
 args_data_types: INT64
 args_data_types: INT64
 args_data_types: INT64
+init_args {
+  data_type: INT64
+  int64_value: 1234
+}
 )";
 
 /*

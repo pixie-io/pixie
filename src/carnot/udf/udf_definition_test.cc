@@ -53,8 +53,18 @@ class AddUDF : public ScalarUDF {
 
 class InitArgUDF : public ScalarUDF {
  public:
-  Status Init(FunctionContext*, types::StringValue, types::UInt128Value) { return Status::OK(); }
-  types::StringValue Exec(FunctionContext*, types::StringValue) { return ""; }
+  Status Init(FunctionContext*, types::StringValue str, types::Int64Value i) {
+    str_ = str;
+    i_ = i.val;
+    return Status::OK();
+  }
+  types::StringValue Exec(FunctionContext*, types::StringValue arg) {
+    return absl::Substitute("$0, $1, $2", str_, i_, arg);
+  }
+
+ private:
+  std::string str_;
+  int64_t i_;
 };
 
 TEST(UDFDefinition, no_args) {
@@ -131,7 +141,24 @@ TEST(UDFDefinition, init_args) {
   ScalarUDFDefinition def("initargudf");
   EXPECT_OK(def.Init<InitArgUDF>());
   EXPECT_EQ(2, def.init_arguments().size());
-  EXPECT_THAT(def.init_arguments(), ElementsAre(types::STRING, types::UINT128));
+  EXPECT_THAT(def.init_arguments(), ElementsAre(types::STRING, types::INT64));
+
+  std::vector<std::shared_ptr<types::BaseValueType>> init_args = {
+      std::make_shared<types::StringValue>("init_arg"),
+      std::make_shared<types::Int64Value>(10),
+  };
+
+  auto udf = def.Make();
+  EXPECT_OK(def.ExecInit(udf.get(), &ctx, init_args));
+
+  types::StringValueColumnWrapper inputs({"abcd", "defg", "hello"});
+
+  types::StringValueColumnWrapper out(inputs.Size());
+  EXPECT_TRUE(def.ExecBatch(udf.get(), &ctx, {&inputs}, &out, inputs.Size()).ok());
+
+  EXPECT_EQ("init_arg, 10, abcd", out[0]);
+  EXPECT_EQ("init_arg, 10, defg", out[1]);
+  EXPECT_EQ("init_arg, 10, hello", out[2]);
 }
 
 // Test UDA, takes the min of two arguments and then sums them.
@@ -149,12 +176,26 @@ class MinSumUDA : public udf::UDA {
 
 class InitArgUDA : public udf::UDA {
  public:
-  Status Init(udf::FunctionContext*, types::Int64Value, types::StringValue, types::BoolValue) {
+  Status Init(udf::FunctionContext*, types::Int64Value i, types::StringValue str,
+              types::BoolValue b) {
+    i_ = i.val;
+    str_ = str;
+    b_ = b.val;
     return Status::OK();
   }
-  void Update(udf::FunctionContext*, types::Int64Value) {}
+  void Update(udf::FunctionContext*, types::Int64Value val) {
+    updates_.push_back(absl::StrCat(val.val));
+  }
   void Merge(udf::FunctionContext*, const InitArgUDA&) {}
-  types::Int64Value Finalize(udf::FunctionContext*) { return 0; }
+  types::StringValue Finalize(udf::FunctionContext*) {
+    return absl::Substitute("$0, $1, $2, [$3]", i_, str_, b_, absl::StrJoin(updates_, ", "));
+  }
+
+ private:
+  int64_t i_;
+  std::string str_;
+  bool b_;
+  std::vector<std::string> updates_;
 };
 
 TEST(UDADefinition, without_merge) {
@@ -218,6 +259,22 @@ TEST(UDADefinition, init_args) {
   EXPECT_OK(def.Init<InitArgUDA>());
   EXPECT_EQ(3, def.init_arguments().size());
   EXPECT_THAT(def.init_arguments(), ElementsAre(types::INT64, types::STRING, types::BOOLEAN));
+
+  std::vector<std::shared_ptr<types::BaseValueType>> init_args = {
+      std::make_shared<types::Int64Value>(123),
+      std::make_shared<types::StringValue>("init_arg"),
+      std::make_shared<types::BoolValue>(true),
+  };
+
+  auto uda = def.Make();
+  EXPECT_OK(def.ExecInit(uda.get(), &ctx, init_args));
+
+  types::Int64ValueColumnWrapper v1({1, 2, 3});
+
+  types::StringValue out;
+  EXPECT_OK(def.ExecBatchUpdate(uda.get(), &ctx, {&v1}));
+  EXPECT_OK(def.FinalizeValue(uda.get(), &ctx, &out));
+  EXPECT_EQ("123, init_arg, true, [1, 2, 3]", out);
 }
 
 }  // namespace udf

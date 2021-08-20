@@ -121,6 +121,8 @@ class ScalarExpressionEvaluator : public ExpressionEvaluator {
                                           const table_store::schema::RowBatch& input,
                                           const plan::ScalarExpression& expr,
                                           table_store::schema::RowBatch* output) = 0;
+  Status InitFuncsInExpression(ExecState* exec_state,
+                               std::shared_ptr<const plan::ScalarExpression> expr);
   plan::ConstScalarExpressionVector expressions_;
   udf::FunctionContext* function_ctx_ = nullptr;
   std::map<int64_t, std::unique_ptr<udf::ScalarUDF>> id_to_udf_map_;

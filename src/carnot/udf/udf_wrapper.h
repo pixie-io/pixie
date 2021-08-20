@@ -68,6 +68,22 @@ Status ExecWrapper(TUDF* udf, FunctionContext* ctx, size_t count, TOutput* out,
   return Status::OK();
 }
 
+template <typename TUDF, std::size_t... I>
+Status InitWrapper(TUDF* udf, FunctionContext* ctx,
+                   const std::vector<std::shared_ptr<types::BaseValueType>>& args,
+                   std::index_sequence<I...>) {
+  [[maybe_unused]] constexpr auto init_argument_types = ScalarUDFTraits<TUDF>::InitArguments();
+  return udf->Init(ctx, *CastToUDFValueType<init_argument_types[I]>(args[I].get())...);
+}
+
+template <typename TUDA, std::size_t... I>
+Status UDAInitWrapper(TUDA* udf, FunctionContext* ctx,
+                      const std::vector<std::shared_ptr<types::BaseValueType>>& args,
+                      std::index_sequence<I...>) {
+  [[maybe_unused]] constexpr auto init_argument_types = UDATraits<TUDA>::InitArguments();
+  return udf->Init(ctx, *CastToUDFValueType<init_argument_types[I]>(args[I].get())...);
+}
+
 // Returns the underlying data from a UDF value.
 template <typename T>
 inline auto UnWrap(const T& v) {
@@ -229,6 +245,39 @@ struct ScalarUDFWrapper {
                              input_as_base_value,
                              std::make_index_sequence<exec_argument_types.size()>{});
   }
+
+  /**
+   * Call the UDF's init method.
+   *
+   * This function is unsafe and will assume the BaseValueType pointers are actually pointers to the
+   * correct ValueType's.
+   *
+   * @param udf a pointer to the UDF
+   * @param ctx The function context.
+   * @param inputs An array of pointers to base value types to input into the init function.
+   * @return Status from the udf's init function.
+   */
+  template <typename Q = TUDF, std::enable_if_t<ScalarUDFTraits<Q>::HasInit(), void>* = nullptr>
+  static Status ExecInitImpl(ScalarUDF* udf, FunctionContext* ctx,
+                             const std::vector<std::shared_ptr<types::BaseValueType>>& inputs) {
+    auto init_argument_types = ScalarUDFTraits<Q>::InitArguments();
+    return InitWrapper<Q>(static_cast<Q*>(udf), ctx, inputs,
+                          std::make_index_sequence<init_argument_types.size()>{});
+  }
+
+  /**
+   * Return Status::OK, if the UDF doesn't have an Init method.
+   */
+  template <typename Q = TUDF, std::enable_if_t<!ScalarUDFTraits<Q>::HasInit(), void>* = nullptr>
+  static Status ExecInitImpl(ScalarUDF*, FunctionContext*,
+                             const std::vector<std::shared_ptr<types::BaseValueType>>&) {
+    return Status::OK();
+  }
+
+  static Status ExecInit(ScalarUDF* udf, FunctionContext* ctx,
+                         const std::vector<std::shared_ptr<types::BaseValueType>>& inputs) {
+    return ExecInitImpl(udf, ctx, inputs);
+  }
 };
 
 /**
@@ -310,6 +359,39 @@ struct UDAWrapper {
     size_t num_records = inputs[0]->length();
     return UpdateWrapperArrow<TUDA>(static_cast<TUDA*>(uda), ctx, num_records, inputs,
                                     std::make_index_sequence<update_argument_types.size()>{});
+  }
+
+  /**
+   * Call the UDA's init method.
+   *
+   * This function is unsafe and will assume the BaseValueType pointers are actually pointers to the
+   * correct ValueType's.
+   *
+   * @param udf a pointer to the UDF
+   * @param ctx The function context.
+   * @param inputs An array of pointers to base value types to input into the init function.
+   * @return Status from the uda's init function.
+   */
+  template <typename Q = TUDA, std::enable_if_t<UDATraits<Q>::HasInit(), void>* = nullptr>
+  static Status ExecInitImpl(UDA* uda, FunctionContext* ctx,
+                             const std::vector<std::shared_ptr<types::BaseValueType>>& inputs) {
+    auto init_argument_types = UDATraits<TUDA>::InitArguments();
+    return UDAInitWrapper<TUDA>(static_cast<TUDA*>(uda), ctx, inputs,
+                                std::make_index_sequence<init_argument_types.size()>{});
+  }
+
+  /**
+   * Return Status::OK, if the UDA doesn't have an Init method.
+   */
+  template <typename Q = TUDA, std::enable_if_t<!UDATraits<Q>::HasInit(), void>* = nullptr>
+  static Status ExecInitImpl(UDA*, FunctionContext*,
+                             const std::vector<std::shared_ptr<types::BaseValueType>>&) {
+    return Status::OK();
+  }
+
+  static Status ExecInit(UDA* uda, FunctionContext* ctx,
+                         const std::vector<std::shared_ptr<types::BaseValueType>>& inputs) {
+    return ExecInitImpl(uda, ctx, inputs);
   }
 
   /**

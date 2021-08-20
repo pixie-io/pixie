@@ -160,6 +160,8 @@ class ScalarValue : public ScalarExpression {
   absl::uint128 UInt128Value() const;
   bool IsNull() const;
 
+  std::shared_ptr<types::BaseValueType> ToBaseValueType() const;
+
  private:
   planpb::ScalarValue pb_;
 };
@@ -181,13 +183,15 @@ class ScalarFunc : public ScalarExpression {
   std::string name() const { return name_; }
   int64_t udf_id() const { return udf_id_; }
   const ScalarExpressionPtrVector& arg_deps() const { return arg_deps_; }
-  const std::vector<types::DataType> args_types() const { return args_types_; }
+  const std::vector<types::DataType> registry_arg_types() const { return registry_arg_types_; }
+  const std::vector<ScalarValue> init_arguments() const { return init_arguments_; }
 
  private:
   std::string name_;
   int64_t udf_id_;
   ScalarExpressionPtrVector arg_deps_;
-  std::vector<types::DataType> args_types_;
+  std::vector<types::DataType> registry_arg_types_;
+  std::vector<ScalarValue> init_arguments_;
 };
 
 class AggregateExpression : public ScalarExpression {
@@ -207,13 +211,15 @@ class AggregateExpression : public ScalarExpression {
   std::string name() const { return name_; }
   int64_t uda_id() const { return uda_id_; }
   const ScalarExpressionPtrVector& arg_deps() const { return arg_deps_; }
-  const std::vector<types::DataType> args_types() const { return args_types_; }
+  const std::vector<types::DataType> registry_arg_types() const { return registry_arg_types_; }
+  const std::vector<ScalarValue> init_arguments() const { return init_arguments_; }
 
  private:
   std::string name_;
   int64_t uda_id_;
   ScalarExpressionPtrVector arg_deps_;  // Args can be ScalarValue or Column.
-  std::vector<types::DataType> args_types_;
+  std::vector<types::DataType> registry_arg_types_;
+  std::vector<ScalarValue> init_arguments_;
 };
 
 /**

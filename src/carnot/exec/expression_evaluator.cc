@@ -71,7 +71,6 @@ std::unique_ptr<ScalarExpressionEvaluator> ScalarExpressionEvaluator::Create(
 }
 
 namespace {
-
 // Evaluate a scalar value to an arrow::Array.
 template <types::DataType T>
 std::shared_ptr<arrow::Array> EvalScalar(
@@ -151,10 +150,34 @@ std::string ScalarExpressionEvaluator::DebugString() {
   return absl::Substitute("ExpressionEvaluator<$0>", absl::StrJoin(debug_strs, ","));
 }
 
+Status ScalarExpressionEvaluator::InitFuncsInExpression(
+    ExecState* exec_state, std::shared_ptr<const plan::ScalarExpression> expr) {
+  plan::ExpressionWalker<bool> walker;
+  walker.OnScalarValue([](auto, auto) -> bool { return true; });
+  walker.OnColumn([](auto, auto) -> bool { return true; });
+  walker.OnScalarFunc([&](const plan::ScalarFunc& fn, const std::vector<bool>&) -> bool {
+    auto def = exec_state->GetScalarUDFDefinition(fn.udf_id());
+    auto udf = id_to_udf_map_[fn.udf_id()].get();
+
+    std::vector<std::shared_ptr<types::BaseValueType>> init_args;
+    for (const auto& scalar_val : fn.init_arguments()) {
+      init_args.push_back(scalar_val.ToBaseValueType());
+    }
+    PL_CHECK_OK(def->ExecInit(udf, function_ctx_, init_args));
+    return true;
+  });
+
+  PL_RETURN_IF_ERROR(walker.Walk(*expr));
+  return Status::OK();
+}
+
 Status VectorNativeScalarExpressionEvaluator::Open(ExecState* exec_state) {
   for (const auto& kv : exec_state->id_to_scalar_udf_map()) {
     auto udf = kv.second->Make();
     id_to_udf_map_[kv.first] = std::move(udf);
+  }
+  for (auto expr : expressions_) {
+    PL_RETURN_IF_ERROR(InitFuncsInExpression(exec_state, expr));
   }
   return Status::OK();
 }
@@ -254,6 +277,9 @@ Status ArrowNativeScalarExpressionEvaluator::Open(ExecState* exec_state) {
   for (const auto& kv : exec_state->id_to_scalar_udf_map()) {
     auto udf = kv.second->Make();
     id_to_udf_map_[kv.first] = std::move(udf);
+  }
+  for (const auto& expr : expressions_) {
+    PL_RETURN_IF_ERROR(InitFuncsInExpression(exec_state, expr));
   }
   return Status::OK();
 }

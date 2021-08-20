@@ -125,6 +125,25 @@ std::string ScalarValue::DebugString() const {
   }
 }
 
+std::shared_ptr<types::BaseValueType> ScalarValue::ToBaseValueType() const {
+  switch (DataType()) {
+    case types::BOOLEAN:
+      return std::make_shared<types::BoolValue>(BoolValue());
+    case types::INT64:
+      return std::make_shared<types::Int64Value>(Int64Value());
+    case types::FLOAT64:
+      return std::make_shared<types::Float64Value>(Float64Value());
+    case types::STRING:
+      return std::make_shared<types::StringValue>(StringValue());
+    case types::TIME64NS:
+      return std::make_shared<types::Time64NSValue>(Time64NSValue());
+    case types::UINT128:
+      return std::make_shared<types::UInt128Value>(UInt128Value());
+    default:
+      CHECK(0) << "Unknown data type";
+  }
+}
+
 StatusOr<types::DataType> ScalarValue::OutputDataType(const PlanState&,
                                                       const table_store::schema::Schema&) const {
   DCHECK(is_initialized_) << "Not initialized";
@@ -221,8 +240,15 @@ Status ScalarFunc::Init(const planpb::ScalarFunc& pb) {
     }
     arg_deps_.emplace_back(s.ConsumeValueOrDie());
   }
+  for (int i = 0; i < pb.init_args_size(); ++i) {
+    ScalarValue sv;
+    PL_RETURN_IF_ERROR(sv.Init(pb.init_args(i)));
+    init_arguments_.push_back(sv);
+
+    registry_arg_types_.push_back(pb.init_args(i).data_type());
+  }
   for (int64_t i = 0; i < pb.args_data_types_size(); i++) {
-    args_types_.push_back(pb.args_data_types(i));
+    registry_arg_types_.push_back(pb.args_data_types(i));
   }
   return Status::OK();
 }
@@ -262,13 +288,17 @@ StatusOr<types::DataType> ScalarFunc::OutputDataType(
                    return col.OutputDataType(state, input_schema);
                  })
                  .OnScalarFunc([&](auto& func, auto& child_results) -> StatusOr<types::DataType> {
-                   std::vector<types::DataType> child_args;
-                   child_args.reserve(child_results.size());
+                   std::vector<types::DataType> registry_args;
+                   registry_args.reserve(func.init_arguments().size() + child_results.size());
+                   for (const auto& init_arg : func.init_arguments()) {
+                     registry_args.push_back(init_arg.DataType());
+                   }
                    for (const auto& child_result : child_results) {
                      PL_RETURN_IF_ERROR(child_result);
-                     child_args.push_back(child_result.ValueOrDie());
+                     registry_args.push_back(child_result.ValueOrDie());
                    }
-                   auto s = state.func_registry()->GetScalarUDFDefinition(func.name(), child_args);
+                   auto s =
+                       state.func_registry()->GetScalarUDFDefinition(func.name(), registry_args);
                    PL_RETURN_IF_ERROR(s);
                    return s.ValueOrDie()->exec_return_type();
                  })
@@ -304,8 +334,15 @@ Status AggregateExpression::Init(const planpb::AggregateExpression& pb) {
     }
     arg_deps_.emplace_back(s.ConsumeValueOrDie());
   }
+  for (int64_t i = 0; i < pb.init_args_size(); ++i) {
+    ScalarValue sv;
+    PL_RETURN_IF_ERROR(sv.Init(pb.init_args(i)));
+    init_arguments_.push_back(sv);
+
+    registry_arg_types_.push_back(pb.init_args(i).data_type());
+  }
   for (int64_t i = 0; i < pb.args_data_types_size(); i++) {
-    args_types_.push_back(pb.args_data_types(i));
+    registry_arg_types_.push_back(pb.args_data_types(i));
   }
   return Status::OK();
 }
@@ -335,14 +372,10 @@ std::vector<const Column*> AggregateExpression::ColumnDeps() {
 
 StatusOr<types::DataType> AggregateExpression::OutputDataType(
     const PlanState& state, const table_store::schema::Schema&) const {
-  // The output data type of a function is based on the computed types of the args
+  // The output data type of a function is based on the computed types of the init_args + args
   // followed by the looking up the function in the registry and getting the output
   // data type of the function.
-  std::vector<types::DataType> child_args;
-  for (const auto& arg_type : args_types_) {
-    child_args.push_back(arg_type);
-  }
-  PL_ASSIGN_OR_RETURN(auto s, state.func_registry()->GetUDADefinition(name_, child_args));
+  PL_ASSIGN_OR_RETURN(auto s, state.func_registry()->GetUDADefinition(name_, registry_arg_types_));
   return s->finalize_return_type();
 }
 

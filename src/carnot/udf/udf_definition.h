@@ -95,6 +95,7 @@ class ScalarUDFDefinition : public UDFDefinition {
     exec_arguments_ = {begin(exec_arguments_array), end(exec_arguments_array)};
     exec_wrapper_fn_ = ScalarUDFWrapper<TUDF>::ExecBatch;
     exec_wrapper_arrow_fn_ = ScalarUDFWrapper<TUDF>::ExecBatchArrow;
+    init_wrapper_fn_ = ScalarUDFWrapper<TUDF>::ExecInit;
 
     auto init_arguments_array = ScalarUDFTraits<TUDF>::InitArguments();
     init_arguments_ = {begin(init_arguments_array), end(init_arguments_array)};
@@ -130,6 +131,11 @@ class ScalarUDFDefinition : public UDFDefinition {
     return exec_wrapper_arrow_fn_(udf, ctx, inputs, output, count);
   }
 
+  Status ExecInit(ScalarUDF* udf, FunctionContext* ctx,
+                  const std::vector<std::shared_ptr<types::BaseValueType>>& inputs) {
+    return init_wrapper_fn_(udf, ctx, inputs);
+  }
+
   /**
    * Access internal variable exec_return_type.
    * @return the stored return types of the exec function.
@@ -159,6 +165,10 @@ class ScalarUDFDefinition : public UDFDefinition {
                        const std::vector<arrow::Array*>& inputs, arrow::ArrayBuilder* output,
                        int count)>
       exec_wrapper_arrow_fn_;
+
+  std::function<Status(ScalarUDF* udf, FunctionContext* ctx,
+                       const std::vector<std::shared_ptr<types::BaseValueType>>& inputs)>
+      init_wrapper_fn_;
 };
 
 /**
@@ -186,6 +196,7 @@ class UDADefinition : public UDFDefinition {
     make_fn_ = UDAWrapper<T>::Make;
     exec_batch_update_fn_ = UDAWrapper<T>::ExecBatchUpdate;
     exec_batch_update_arrow_fn_ = UDAWrapper<T>::ExecBatchUpdateArrow;
+    init_wrapper_fn_ = UDAWrapper<T>::ExecInit;
 
     auto init_arguments_array = UDATraits<T>::InitArguments();
     init_arguments_ = {begin(init_arguments_array), end(init_arguments_array)};
@@ -222,6 +233,11 @@ class UDADefinition : public UDFDefinition {
     return exec_batch_update_arrow_fn_(uda, ctx, inputs);
   }
 
+  Status ExecInit(UDA* uda, FunctionContext* ctx,
+                  const std::vector<std::shared_ptr<types::BaseValueType>>& inputs) {
+    return init_wrapper_fn_(uda, ctx, inputs);
+  }
+
   Status Merge(UDA* uda1, UDA* uda2, FunctionContext* ctx) { return merge_fn_(uda1, uda2, ctx); }
   Status FinalizeValue(UDA* uda, FunctionContext* ctx, types::BaseValueType* output) {
     return finalize_value_fn(uda, ctx, output);
@@ -251,6 +267,9 @@ class UDADefinition : public UDFDefinition {
   std::function<Status(UDA* uda, FunctionContext* ctx, types::BaseValueType* output)>
       finalize_value_fn;
   std::function<Status(UDA* uda1, UDA* uda2, FunctionContext* ctx)> merge_fn_;
+  std::function<Status(UDA* uda, FunctionContext* ctx,
+                       const std::vector<std::shared_ptr<types::BaseValueType>>& inputs)>
+      init_wrapper_fn_;
 };
 
 class UDTFDefinition : public UDFDefinition {

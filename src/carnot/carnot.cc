@@ -187,14 +187,17 @@ Status CarnotImpl::WalkExpression(exec::ExecState* exec_state, const plan::Scala
   StatusOr<bool> walk_result =
       plan::ExpressionWalker<bool>()
           .OnAggregateExpression([&](const plan::AggregateExpression& func, std::vector<bool>) {
-            CHECK_EQ(func.args_types().size(), func.arg_deps().size());
-            Status s = exec_state->AddUDA(func.uda_id(), func.name(), func.args_types());
+            CHECK_EQ(func.registry_arg_types().size(),
+                     func.init_arguments().size() + func.arg_deps().size());
+            Status s = exec_state->AddUDA(func.uda_id(), func.name(), func.registry_arg_types());
             return s.ok();
           })
           .OnColumn([&](const auto&, std::vector<bool>) { return true; })
           .OnScalarFunc([&](const plan::ScalarFunc& func, std::vector<bool>) {
-            CHECK_EQ(func.args_types().size(), func.arg_deps().size());
-            Status s = exec_state->AddScalarUDF(func.udf_id(), func.name(), func.args_types());
+            CHECK_EQ(func.registry_arg_types().size(),
+                     func.init_arguments().size() + func.arg_deps().size());
+            Status s =
+                exec_state->AddScalarUDF(func.udf_id(), func.name(), func.registry_arg_types());
             return s.ok();
           })
           .OnScalarValue([&](const auto&, std::vector<bool>) { return true; })

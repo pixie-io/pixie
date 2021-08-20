@@ -527,7 +527,16 @@ Status AggNode::CreateUDAInfoValues(std::vector<UDAInfo>* val, ExecState* exec_s
       types.push_back(type);
     }
     auto def = exec_state->GetUDADefinition(value->uda_id());
-    val->emplace_back(def->Make(), def);
+    auto uda = def->Make();
+
+    std::vector<std::shared_ptr<types::BaseValueType>> init_args;
+    for (const auto& arg : value->init_arguments()) {
+      init_args.push_back(arg.ToBaseValueType());
+    }
+    // We currently don't use FunctionContext in UDAs so continuing that tradition here, but at some
+    // point we probably want to change this.
+    PL_RETURN_IF_ERROR(def->ExecInit(uda.get(), nullptr, init_args));
+    val->emplace_back(std::move(uda), def);
   }
   return Status::OK();
 }

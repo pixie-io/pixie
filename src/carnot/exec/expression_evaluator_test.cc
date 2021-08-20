@@ -60,6 +60,22 @@ class AddUDF : public udf::ScalarUDF {
   }
 };
 
+class InitArgUDF : public udf::ScalarUDF {
+ public:
+  Status Init(FunctionContext*, types::StringValue str, types::Int64Value i) {
+    str_ = str;
+    i_ = i.val;
+    return Status::OK();
+  }
+  types::StringValue Exec(FunctionContext*, types::StringValue arg) {
+    return absl::Substitute("$0, $1, $2", str_, i_, arg);
+  }
+
+ private:
+  std::string str_;
+  int64_t i_;
+};
+
 std::shared_ptr<plan::ScalarExpression> AddScalarExpr() {
   planpb::ScalarExpression se_pb;
   google::protobuf::TextFormat::MergeFromString(kAddScalarFuncPbtxt, &se_pb);
@@ -99,19 +115,24 @@ class ScalarExpressionTest : public ::testing::TestWithParam<ScalarExpressionEva
     auto table_store = std::make_shared<table_store::TableStore>();
 
     EXPECT_TRUE(func_registry_->Register<AddUDF>("add").ok());
+    EXPECT_TRUE(func_registry_->Register<InitArgUDF>("init_arg").ok());
     exec_state_ = std::make_unique<ExecState>(func_registry_.get(), table_store,
                                               MockResultSinkStubGenerator, sole::uuid4(), nullptr);
     EXPECT_OK(exec_state_->AddScalarUDF(
         0, "add", std::vector<types::DataType>({types::DataType::INT64, types::DataType::INT64})));
+    EXPECT_OK(
+        exec_state_->AddScalarUDF(1, "init_arg", {types::STRING, types::INT64, types::STRING}));
 
     std::vector<types::Int64Value> in1 = {1, 2, 3};
     std::vector<types::Int64Value> in2 = {3, 4, 5};
+    std::vector<types::StringValue> in3 = {"a", "b", "c"};
 
-    RowDescriptor rd({types::DataType::INT64, types::DataType::INT64});
+    RowDescriptor rd({types::DataType::INT64, types::DataType::INT64, types::DataType::STRING});
     input_rb_ = std::make_unique<RowBatch>(rd, in1.size());
 
     EXPECT_TRUE(input_rb_->AddColumn(ToArrow(in1, arrow::default_memory_pool())).ok());
     EXPECT_TRUE(input_rb_->AddColumn(ToArrow(in2, arrow::default_memory_pool())).ok());
+    EXPECT_TRUE(input_rb_->AddColumn(ToArrow(in3, arrow::default_memory_pool())).ok());
   }
 
  protected:
@@ -120,7 +141,8 @@ class ScalarExpressionTest : public ::testing::TestWithParam<ScalarExpressionEva
       RowBatch* output_rb) {
     function_ctx_ = std::make_unique<udf::FunctionContext>(nullptr, nullptr);
     auto evaluator = ScalarExpressionEvaluator::Create(exprs, GetParam(), function_ctx_.get());
-    EXPECT_TRUE(evaluator->Open(exec_state_.get()).ok());
+    EXPECT_TRUE(evaluator->Open(exec_state_.get()).ok())
+        << evaluator->Open(exec_state_.get()).msg();
     EXPECT_TRUE(evaluator->Evaluate(exec_state_.get(), *input_rb_, output_rb).ok());
     EXPECT_TRUE(evaluator->Close(exec_state_.get()).ok());
     return evaluator;
@@ -208,6 +230,43 @@ TEST_P(ScalarExpressionTest, eval_uint128_constant) {
   EXPECT_EQ(types::UInt128Value(123, 456), casted->Value(0));
   EXPECT_EQ(types::UInt128Value(123, 456), casted->Value(1));
   EXPECT_EQ(types::UInt128Value(123, 456), casted->Value(2));
+}
+
+constexpr char kInitArgScalarFunc[] = R"pb(
+func {
+  name: "init_arg"
+  id: 1
+  args {
+    column {
+      node: 0
+      index: 2
+    }
+  }
+  init_args {
+     data_type: STRING,
+     string_value: "init_arg"
+  }
+  init_args {
+    data_type: INT64
+    int64_value: 1234
+  }
+  args_data_types: STRING
+}
+)pb";
+
+TEST_P(ScalarExpressionTest, eval_init_arg_udf) {
+  RowDescriptor rd_output({types::DataType::STRING});
+  RowBatch output_rb(rd_output, input_rb_->num_rows());
+
+  auto se = ScalarExpressionOf(kInitArgScalarFunc);
+  RunEvaluator({se}, &output_rb);
+
+  auto out_col = output_rb.ColumnAt(0);
+  EXPECT_EQ(3, out_col->length());
+  auto casted = static_cast<arrow::StringArray*>(out_col.get());
+  EXPECT_EQ("init_arg, 1234, a", casted->GetString(0));
+  EXPECT_EQ("init_arg, 1234, b", casted->GetString(1));
+  EXPECT_EQ("init_arg, 1234, c", casted->GetString(2));
 }
 
 }  // namespace exec
