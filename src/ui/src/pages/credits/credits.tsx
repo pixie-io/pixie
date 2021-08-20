@@ -49,12 +49,9 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   main: {
     overflow: 'auto',
-    marginLeft: theme.spacing(6),
+    marginLeft: theme.spacing(8),
     flex: 1,
     minHeight: 0,
-    borderTopStyle: 'solid',
-    borderTopColor: theme.palette.background.three,
-    borderTopWidth: theme.spacing(0.25),
     padding: theme.spacing(1),
     display: 'flex',
     flexFlow: 'column nowrap',

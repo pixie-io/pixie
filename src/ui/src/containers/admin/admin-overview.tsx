@@ -46,6 +46,7 @@ import {
 const useStyles = makeStyles((theme: Theme) => createStyles({
   createButton: {
     margin: theme.spacing(1),
+    padding: '3px 15px',
   },
   tabRoot: {
     height: '100%',

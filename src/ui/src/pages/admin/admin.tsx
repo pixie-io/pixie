@@ -47,7 +47,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     height: '100%',
   },
   main: {
-    marginLeft: theme.spacing(6),
+    marginLeft: theme.spacing(8),
     flex: 1,
     minHeight: 0,
     padding: theme.spacing(1),
