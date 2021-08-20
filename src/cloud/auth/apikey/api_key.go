@@ -74,7 +74,7 @@ func (s *Service) Create(ctx context.Context, req *authpb.CreateAPIKeyRequest) (
 	// We store a version of the key in hashed_key that is salted using a constant salt (dbKey),
 	// to allow us to an associative lookup. This is secure since the API key is a UUID and won't collide.
 	query := `INSERT INTO api_keys(org_id, user_id, hashed_key, encrypted_key, description)
-                VALUES($1, $2, crypt($3, $4), PGP_SYM_ENCRYPT($3, $4), $5)
+                VALUES($1, $2, sha256($3), PGP_SYM_ENCRYPT($3::text, $4::text), $5)
                 RETURNING id, created_at`
 	keyID, err := uuid.NewV4()
 	if err != nil {
@@ -109,7 +109,7 @@ func (s *Service) List(ctx context.Context, req *authpb.ListAPIKeyRequest) (*aut
 	}
 
 	// Return all keys when the OrgID matches.
-	query := `SELECT id, org_id, PGP_SYM_DECRYPT(encrypted_key::bytea, $2::text), created_at, description
+	query := `SELECT id, org_id, CONVERT_FROM(PGP_SYM_DECRYPT(encrypted_key, $2::text)::bytea, 'UTF8'), created_at, description
                 FROM api_keys
                 WHERE org_id=$1
                 ORDER BY created_at`
@@ -162,7 +162,7 @@ func (s *Service) Get(ctx context.Context, req *authpb.GetAPIKeyRequest) (*authp
 	var key string
 	var createdAt time.Time
 	var desc string
-	query := `SELECT PGP_SYM_DECRYPT(encrypted_key::bytea, $3::text), created_at, description
+	query := `SELECT CONVERT_FROM(PGP_SYM_DECRYPT(encrypted_key, $3::text)::bytea, 'UTF8'), created_at, description
                 FROM api_keys
                 WHERE org_id=$1 AND id=$2`
 	err = s.db.QueryRowxContext(ctx, query, sCtx.Claims.GetUserClaims().OrgID, tokenID, s.dbKey).Scan(&key, &createdAt, &desc)
@@ -223,10 +223,10 @@ func (s *Service) FetchOrgUserIDUsingAPIKey(ctx context.Context, key string) (uu
 	}
 	query := `SELECT org_id, user_id
                 FROM api_keys
-                WHERE hashed_key=crypt($1, $2)`
+                WHERE hashed_key=sha256($1)`
 	var orgID uuid.UUID
 	var userID uuid.UUID
-	err := s.db.QueryRowxContext(ctx, query, key, s.dbKey).Scan(&orgID, &userID)
+	err := s.db.QueryRowxContext(ctx, query, key).Scan(&orgID, &userID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return uuid.Nil, uuid.Nil, ErrAPIKeyNotFound

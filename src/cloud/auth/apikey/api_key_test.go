@@ -97,7 +97,7 @@ func mustLoadTestData(db *sqlx.DB) {
 	db.MustExec(`DELETE from api_keys`)
 
 	insertAPIKeys := `INSERT INTO api_keys(id, org_id, user_id, hashed_key, encrypted_key, description)
-                        VALUES ($1, $2, $3, crypt($4, $5), PGP_SYM_ENCRYPT($4, $5), $6)`
+                        VALUES ($1, $2, $3, sha256($4), PGP_SYM_ENCRYPT($4::text, $5::text), $6)`
 	db.MustExec(insertAPIKeys, testKey1ID, testAuthOrgID, testAuthUserID, "px-api-key1", testDBKey, "here is a desc")
 	db.MustExec(insertAPIKeys, testKey2ID, testAuthOrgID, testAuthUserID, "px-api-key2", testDBKey, "here is another one")
 	db.MustExec(insertAPIKeys, testNonAuthUserKeyID.String(), testNonAuthOrgID, "123e4567-e89b-12d3-a456-426655440001", "key2", testDBKey, "some other desc")
@@ -377,7 +377,7 @@ func TestAPIKeyService_Delete_UnownedKey(t *testing.T) {
 
 			// Make DB query to make sure the Key still exists.
 			var key string
-			err = db.QueryRow(`SELECT PGP_SYM_DECRYPT(encrypted_key::bytea, $2::text) from api_keys where id=$1`,
+			err = db.QueryRow(`SELECT CONVERT_FROM(PGP_SYM_DECRYPT(encrypted_key, $2::text)::bytea, 'UTF8') from api_keys where id=$1`,
 				testNonAuthUserKeyID,
 				testDBKey).
 				Scan(&key)
