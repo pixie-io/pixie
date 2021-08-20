@@ -708,7 +708,14 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
             }
           }
         }
-      }`, { variables: { name: clusterName } },
+      }`,
+    // Ignore cache on first fetch, to avoid blinking stale heartbeats.
+    {
+      variables: { name: clusterName },
+      pollInterval: 60000,
+      fetchPolicy: 'network-only',
+      nextFetchPolicy: 'cache-first',
+    },
   );
 
   const cluster = data?.clusterByName;
