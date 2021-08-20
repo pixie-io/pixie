@@ -127,6 +127,7 @@
         "react/destructuring-assignment": 0,
         "react/no-array-index-key": 0,
         "import/prefer-default-export": 0,
+        "prefer-arrow-callback": ["error", {"allowNamedFunctions": true}],
         "prefer-destructuring": ["error", {"object": true, "array": false}],
         "react/jsx-filename-extension": [
           "warn",

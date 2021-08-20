@@ -101,7 +101,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }), { name: 'TopBar' });
 
-// eslint-disable-next-line prefer-arrow-callback
 const ProfileItem = React.memo<{ setSidebarOpen: SetStateFunc<boolean> }>(function ProfileItem({ setSidebarOpen }) {
   const classes = useStyles();
   const [open, setOpen] = React.useState<boolean>(false);
@@ -274,7 +273,6 @@ interface TopBarProps {
   setSidebarOpen: SetStateFunc<boolean>;
 }
 
-// eslint-disable-next-line prefer-arrow-callback
 export const TopBar: React.FC<TopBarProps> = React.memo(function TopBar({
   children, toggleSidebar, setSidebarOpen,
 }) {

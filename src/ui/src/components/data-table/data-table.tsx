@@ -291,7 +291,6 @@ const BodyCell: React.FC<{ cell: Cell }> = ({ cell }) => {
 };
 
 const HeaderRow = React.forwardRef<HTMLDivElement, { scrollbarWidth: number }>(
-  // eslint-disable-next-line prefer-arrow-callback
   function HeaderRow({ scrollbarWidth }, ref) {
     const classes = useDataTableStyles();
     const { width: containerWidth } = React.useContext(AutoSizerContext);
@@ -419,7 +418,6 @@ const DataTableImpl: React.FC<DataTableProps> = ({ table, ...options }) => {
   }, [expanded]);
 
   const RowRenderer = React.memo<{ index: number, style: React.CSSProperties }>(
-    // eslint-disable-next-line prefer-arrow-callback
     function VirtualizedRow({
       index: rowIndex,
       style: vRowStyle,

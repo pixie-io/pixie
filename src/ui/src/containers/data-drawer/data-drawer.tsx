@@ -165,7 +165,6 @@ const StyledTab = withStyles((theme: Theme) => createStyles({
 
 }))(Tab);
 
-// eslint-disable-next-line prefer-arrow-callback
 const DataDrawer = React.memo<{ open: boolean }>(function DataDrawer({ open }) {
   const classes = useStyles();
   const { loading, stats, tables } = React.useContext(ResultsContext);
@@ -266,7 +265,6 @@ const DataDrawer = React.memo<{ open: boolean }>(function DataDrawer({ open }) {
   );
 });
 
-// eslint-disable-next-line prefer-arrow-callback
 const DrawerToggleButton = React.memo(function DrawerToggleButton() {
   const classes = useStyles();
   const { dataDrawerOpen, setDataDrawerOpen } = React.useContext(LayoutContext);
@@ -285,7 +283,6 @@ const DrawerToggleButton = React.memo(function DrawerToggleButton() {
   );
 });
 
-// eslint-disable-next-line prefer-arrow-callback
 export const DataDrawerSplitPanel = React.memo(function DataDrawerSplitPanel() {
   const { dataDrawerOpen } = React.useContext(LayoutContext);
 

@@ -59,7 +59,6 @@ interface ResizableDrawerProps {
   minSize: number;
 }
 
-// eslint-disable-next-line prefer-arrow-callback
 export const ResizableDrawer: React.FC<ResizableDrawerProps> = React.memo(function ResizableDrawer({
   children,
   otherContent,

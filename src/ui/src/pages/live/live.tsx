@@ -275,7 +275,6 @@ const ClusterLoadingComponent = ({
 const Nav: React.FC<{
   widgetsMoveable: boolean,
   setWidgetsMoveable: React.Dispatch<React.SetStateAction<boolean>>,
-  // eslint-disable-next-line prefer-arrow-callback
 }> = React.memo(function Nav({ widgetsMoveable, setWidgetsMoveable }) {
   const classes = useStyles();
   const {
