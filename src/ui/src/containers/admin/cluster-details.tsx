@@ -510,7 +510,8 @@ const ClusterDetailsNavigationBreadcrumbs = ({ selectedClusterName }) => {
     selectable: true,
     omitKey: true,
     // eslint-disable-next-line
-    getListItems: async () => (clusters.filter((c) => c.status !== ClusterStatus.CS_DISCONNECTED)
+    getListItems: async (input) => (clusters
+      .filter((c) => c.status !== ClusterStatus.CS_DISCONNECTED && c.prettyClusterName.indexOf(input) >= 0)
       .map((c) => ({ value: c.prettyClusterName }))
     ),
     onSelect: (input) => {
