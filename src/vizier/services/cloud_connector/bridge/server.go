@@ -1062,7 +1062,10 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) chan *cvmsgspb.VizierHeart
 
 		if vz != nil {
 			msg = vz.Status.Message
-			status = crdPhaseToHeartbeatStatus(vz.Status.VizierPhase)
+			vzStatus := crdPhaseToHeartbeatStatus(vz.Status.VizierPhase)
+			if vzStatus != cvmsgspb.VZ_ST_UNKNOWN {
+				status = vzStatus
+			}
 		}
 		log.WithField("msg", msg).WithField("status", status).Info("Sending heartbeat")
 		hbMsg := &cvmsgspb.VizierHeartbeat{
