@@ -184,6 +184,24 @@ type KeyPair = {
   privateKey: CryptoKey,
 };
 
+async function parseKeyPair(data: string): Promise<KeyPair> {
+  const parsed: { privateKeyJWK: JsonWebKey, publicKeyJWK: JsonWebKey } = JSON.parse(data);
+  const privateKey = await window.crypto.subtle.importKey(
+    'jwk',
+    parsed.privateKeyJWK,
+    { name: 'RSA-OAEP', hash: 'SHA-256' },
+    true,
+    // Only set decrypt as option because this is the private key.
+    ['decrypt'],
+  );
+  return { publicKeyJWK: parsed.publicKeyJWK, privateKey };
+}
+
+async function serializeKeyPair(pair: KeyPair): Promise<string> {
+  const privateKeyJWK = await window.crypto.subtle.exportKey('jwk', pair.privateKey);
+  return JSON.stringify({ privateKeyJWK, publicKeyJWK: pair.publicKeyJWK });
+}
+
 async function generateRSAKeyPair(): Promise<KeyPair> {
   const keyPair = await window.crypto.subtle.generateKey(
     {
@@ -200,6 +218,18 @@ async function generateRSAKeyPair(): Promise<KeyPair> {
     keyPair.publicKey,
   );
   return { publicKeyJWK, privateKey: keyPair.privateKey };
+}
+
+async function getRSAKeyPair(): Promise<KeyPair> {
+  // If key pair exists in our cache, then we parse it out.
+  const keyPairCache = sessionStorage.getItem('pixie-e2e-encryption-key');
+  if (keyPairCache) {
+    return parseKeyPair(keyPairCache);
+  }
+  // Generate if not found in keyparse.
+  const keyPair = await generateRSAKeyPair();
+  sessionStorage.setItem('pixie-e2e-encryption-key', await serializeKeyPair(keyPair));
+  return keyPair;
 }
 
 async function decryptRSA(privateKey: CryptoKey, data: Uint8Array): Promise<Uint8Array> {
@@ -236,7 +266,7 @@ export class VizierGRPCClient {
     this.client = new VizierServiceClient(addr, null, attachCreds ? { withCredentials: 'true' } : {});
     // Generate once per client and cache it to avoid the expense of regenrating on every
     // request. The key pair will rotate on browser reload or on creation of a new client.
-    this.rsaKeyPromise = generateRSAKeyPair();
+    this.rsaKeyPromise = getRSAKeyPair();
     withDevTools(this.client);
   }
 
