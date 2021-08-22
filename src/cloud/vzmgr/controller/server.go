@@ -686,20 +686,22 @@ func (s *Server) GetViziersByShard(ctx context.Context, req *vzmgrpb.GetViziersB
 
 // VizierConnected is an the request made to the mgr to handle new Vizier connections.
 func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizierRequest) (*cvmsgspb.RegisterVizierAck, error) {
-	loggerWithCtx := log.WithContext(ctx).
-		WithField("VizierID", utils.UUIDFromProtoOrNil(req.VizierID)).
-		WithField("ClusterName", req.ClusterInfo.ClusterName)
-
-	loggerWithCtx.
-		Info("Received RegisterVizierRequest")
-
 	vzVersion := ""
 	clusterUID := ""
+	clusterName := ""
 
 	if req.ClusterInfo != nil {
 		vzVersion = req.ClusterInfo.VizierVersion
 		clusterUID = req.ClusterInfo.ClusterUID
+		clusterName = req.ClusterInfo.ClusterName
 	}
+
+	loggerWithCtx := log.WithContext(ctx).
+		WithField("VizierID", utils.UUIDFromProtoOrNil(req.VizierID)).
+		WithField("ClusterName", clusterName)
+
+	loggerWithCtx.
+		Info("Received RegisterVizierRequest")
 
 	// Add a salt to the signing key.
 	salt := make([]byte, SaltLength/2)
