@@ -516,7 +516,7 @@ func deploy(cloudConn *grpc.ClientConn, clientset *kubernetes.Clientset, vzClien
 
 	var clusterID uuid.UUID
 	waitJob := newTaskWrapper("Waiting for Cloud Connector to come online", func() error {
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
 
 		t := time.NewTicker(2 * time.Second)
