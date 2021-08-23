@@ -1062,21 +1062,34 @@ class FuncIR : public ExpressionIR {
 
   int64_t func_id() const { return func_id_; }
   void set_func_id(int64_t func_id) { func_id_ = func_id; }
-  const std::vector<ExpressionIR*>& args() const { return args_; }
-  const std::vector<types::DataType>& args_types() const { return args_types_; }
-  void SetArgsTypes(std::vector<types::DataType> args_types) { args_types_ = args_types; }
+  // all_args() is both init arguments and exec/update arguments.
+  const std::vector<ExpressionIR*>& all_args() const { return all_args_; }
+  // args() is only exec/update arguments and can't be called before SplitInitArgs is called.
+  const std::vector<ExpressionIR*>& args() const {
+    DCHECK(is_init_args_split_) << "Must call SplitInitArgs before args()";
+    return args_;
+  }
+  const std::vector<types::DataType>& registry_arg_types() const { return registry_arg_types_; }
+  // Set the type of all args including init args.
+  void SetRegistryArgTypes(std::vector<types::DataType> args_types) {
+    registry_arg_types_ = args_types;
+  }
+  bool HasRegistryArgTypes() const {
+    if (!is_init_args_split_) {
+      return registry_arg_types_.size() == all_args_.size();
+    }
+    return registry_arg_types_.size() == (init_args_.size() + args_.size());
+  }
   // TODO(philkuz) figure out how to combine this with set_func_id.
   void SetOutputDataType(types::DataType type) {
     evaluated_data_type_ = type;
     is_data_type_evaluated_ = true;
   }
+  // UpdateArg updates an arg relative to an index into all_args.
   Status UpdateArg(int64_t idx, ExpressionIR* arg);
   Status UpdateArg(ExpressionIR* old_arg, ExpressionIR* new_arg);
 
   Status AddArg(ExpressionIR* arg);
-  // Adds the arg if it isn't already present in the func, otherwise clones it so that there is no
-  // duplicate edge.
-  Status AddOrCloneArg(ExpressionIR* arg);
 
   types::DataType EvaluatedDataType() const override { return evaluated_data_type_; }
   bool IsDataTypeEvaluated() const override { return is_data_type_evaluated_; }
@@ -1093,11 +1106,23 @@ class FuncIR : public ExpressionIR {
       return false;
     }
     auto func = static_cast<FuncIR*>(expr);
-    if (func->func_name() != func_name() || func->args().size() != args().size()) {
+    if (func->func_name() != func_name() || func->IsInitArgsSplit() != IsInitArgsSplit() ||
+        func->all_args_.size() != all_args_.size() ||
+        func->init_args_.size() != init_args_.size() || args_.size() != args_.size()) {
       return false;
     }
-    for (const auto& [idx, node] : Enumerate(func->args())) {
-      if (!args()[idx]->Equals(node)) {
+    for (const auto& [idx, node] : Enumerate(func->all_args_)) {
+      if (!all_args_[idx]->Equals(node)) {
+        return false;
+      }
+    }
+    for (const auto& [idx, node] : Enumerate(func->init_args_)) {
+      if (!init_args_[idx]->Equals(node)) {
+        return false;
+      }
+    }
+    for (const auto& [idx, node] : Enumerate(func->args_)) {
+      if (!args_[idx]->Equals(node)) {
         return false;
       }
     }
@@ -1109,16 +1134,31 @@ class FuncIR : public ExpressionIR {
   bool SupportsPartial() const { return supports_partial_; }
   void SetSupportsPartial(bool can_partial) { supports_partial_ = can_partial; }
 
+  const std::vector<DataIR*>& init_args() const {
+    DCHECK(is_init_args_split_) << "Must call SplitInitArgs before init_args()";
+    return init_args_;
+  }
+  bool IsInitArgsSplit() const { return is_init_args_split_; }
+  Status SplitInitArgs(size_t num_init_args);
+
  private:
   std::string func_prefix_ = kPLFuncPrefix;
   Op op_;
   std::string func_name_;
+  std::vector<ExpressionIR*> all_args_;
+  std::vector<DataIR*> init_args_;
   std::vector<ExpressionIR*> args_;
-  std::vector<types::DataType> args_types_;
+  std::vector<types::DataType> registry_arg_types_;
   int64_t func_id_ = 0;
   types::DataType evaluated_data_type_ = types::DataType::DATA_TYPE_UNKNOWN;
   bool is_data_type_evaluated_ = false;
   bool supports_partial_ = false;
+  bool is_init_args_split_ = false;
+
+  // Adds the arg if it isn't already present in the func, otherwise clones it so that there is no
+  // duplicate edge.
+  Status AddOrCloneArg(ExpressionIR* arg);
+  Status AddInitArg(DataIR* arg);
 };
 
 /**

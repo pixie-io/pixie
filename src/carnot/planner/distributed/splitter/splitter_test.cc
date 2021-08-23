@@ -94,9 +94,11 @@ class SplitterTest : public OperatorTests {
 
 TEST_F(SplitterTest, blocking_agg_test) {
   auto mem_src = MakeMemSource(MakeRelation());
-  auto agg = MakeBlockingAgg(
-      mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
-      {{"mean", MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64))}});
+  auto mean_func = MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64));
+  mean_func->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(mean_func->SplitInitArgs(0));
+  auto agg = MakeBlockingAgg(mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
+                             {{"mean", mean_func}});
   auto sink = MakeMemSink(agg, "out");
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
@@ -133,6 +135,8 @@ TEST_F(SplitterTest, partial_agg_test) {
   count_col->ResolveColumnType(types::INT64);
   auto mean_func = MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64));
   mean_func->SetSupportsPartial(true);
+  mean_func->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(mean_func->SplitInitArgs(0));
   auto agg = MakeBlockingAgg(mem_src, {count_col}, {{"mean", mean_func}});
 
   table_store::schema::Relation relation({types::INT64, types::FLOAT64}, {"count", "mean"});
@@ -311,9 +315,11 @@ TEST_F(SplitterTest, sandwich_test) {
   auto mem_src = MakeMemSource(MakeRelation());
   auto map = MakeMap(mem_src, {{"count", MakeColumn("count", 0, types::DataType::INT64)}});
   EXPECT_OK(map->SetRelation(MakeRelation()));
-  auto agg = MakeBlockingAgg(
-      map, {MakeColumn("count", 0, types::DataType::INT64)},
-      {{"mean", MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64))}});
+  auto mean_func = MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64));
+  mean_func->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(mean_func->SplitInitArgs(0));
+  auto agg =
+      MakeBlockingAgg(map, {MakeColumn("count", 0, types::DataType::INT64)}, {{"mean", mean_func}});
   auto map2 = MakeMap(agg, {{"count", MakeColumn("count", 0, types::DataType::INT64)}});
   MakeMemSink(map2, "out");
 
@@ -344,12 +350,16 @@ TEST_F(SplitterTest, sandwich_test) {
 
 TEST_F(SplitterTest, first_blocking_node_test) {
   auto mem_src = MakeMemSource(MakeRelation());
-  auto agg = MakeBlockingAgg(
-      mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
-      {{"mean", MakeMeanFuncWithFloatType(MakeColumn("cpu0", 0, types::DataType::INT64))}});
-  auto agg2 = MakeBlockingAgg(
-      agg, {MakeColumn("count", 0, types::DataType::INT64)},
-      {{"mean2", MakeMeanFuncWithFloatType(MakeColumn("mean", 0, types::DataType::FLOAT64))}});
+  auto mean_func1 = MakeMeanFuncWithFloatType(MakeColumn("cpu0", 0, types::DataType::INT64));
+  mean_func1->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(mean_func1->SplitInitArgs(0));
+  auto agg = MakeBlockingAgg(mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
+                             {{"mean", mean_func1}});
+  auto mean_func2 = MakeMeanFuncWithFloatType(MakeColumn("mean", 0, types::DataType::FLOAT64));
+  mean_func2->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(mean_func2->SplitInitArgs(0));
+  auto agg2 = MakeBlockingAgg(agg, {MakeColumn("count", 0, types::DataType::INT64)},
+                              {{"mean2", mean_func2}});
   MakeMemSink(agg2, "out");
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
@@ -442,14 +452,17 @@ TEST_F(SplitterTest, union_operator) {
  */
 TEST_F(SplitterTest, two_blocking_children) {
   auto mem_src = MakeMemSource(MakeRelation());
-  auto blocking_agg1 = MakeBlockingAgg(
-      mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
-      {{"cpu0_mean", MakeMeanFuncWithFloatType(MakeColumn("cpu0", 0, types::DataType::INT64))}});
+  auto mean_func1 = MakeMeanFuncWithFloatType(MakeColumn("cpu0", 0, types::DataType::INT64));
+  mean_func1->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(mean_func1->SplitInitArgs(0));
+  auto blocking_agg1 = MakeBlockingAgg(mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
+                                       {{"cpu0_mean", mean_func1}});
   MakeMemSink(blocking_agg1, "out1");
-
-  auto blocking_agg2 = MakeBlockingAgg(
-      mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
-      {{"cpu1_mean", MakeMeanFuncWithFloatType(MakeColumn("cpu1", 0, types::DataType::INT64))}});
+  auto mean_func2 = MakeMeanFuncWithFloatType(MakeColumn("cpu1", 0, types::DataType::INT64));
+  mean_func2->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(mean_func2->SplitInitArgs(0));
+  auto blocking_agg2 = MakeBlockingAgg(mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
+                                       {{"cpu1_mean", mean_func2}});
   MakeMemSink(blocking_agg2, "out2");
 
   EXPECT_EQ(mem_src->Children().size(), 2);
@@ -505,9 +518,11 @@ TEST_F(SplitterTest, two_blocking_children) {
  */
 TEST_F(SplitterTest, agg_join_children) {
   auto mem_src = MakeMemSource(MakeRelation());
-  auto blocking_agg = MakeBlockingAgg(
-      mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
-      {{"cpu0_mean", MakeMeanFuncWithFloatType(MakeColumn("cpu0", 0, types::DataType::INT64))}});
+  auto mean_func = MakeMeanFuncWithFloatType(MakeColumn("cpu0", 0, types::DataType::INT64));
+  mean_func->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(mean_func->SplitInitArgs(0));
+  auto blocking_agg = MakeBlockingAgg(mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
+                                      {{"cpu0_mean", mean_func}});
   auto join = MakeJoin({mem_src, blocking_agg}, "inner", MakeRelation(),
                        Relation({types::INT64, types::FLOAT64}, {"count", "cpu0_mean"}), {"count"},
                        {"count"});
@@ -702,17 +717,20 @@ TEST_F(SplitterTest, MultipleBranchedIdenticalDepths) {
   // Branch 1.
   auto map1 = MakeMap(mem_src, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
   EXPECT_OK(map1->SetRelation(MakeRelation()));
-  auto agg1 = MakeBlockingAgg(
-      map1, {MakeColumn("count", 0, types::DataType::INT64)},
-      {{"mean", MakeMeanFuncWithFloatType(MakeColumn("col0", 0, types::DataType::INT64))}});
+  auto mean_func1 = MakeMeanFuncWithFloatType(MakeColumn("col0", 0, types::DataType::INT64));
+  mean_func1->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(mean_func1->SplitInitArgs(0));
+  auto agg1 = MakeBlockingAgg(map1, {MakeColumn("count", 0, types::DataType::INT64)},
+                              {{"mean", mean_func1}});
   MakeMemSink(agg1, "out1");
-
   // Branch 2.
+  auto mean_func2 = MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64));
+  mean_func2->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(mean_func2->SplitInitArgs(0));
   auto map2 = MakeMap(mem_src, {{"col2", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
   EXPECT_OK(map2->SetRelation(MakeRelation()));
-  auto agg2 = MakeBlockingAgg(
-      map2, {MakeColumn("count", 0, types::DataType::INT64)},
-      {{"mean", MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64))}});
+  auto agg2 = MakeBlockingAgg(map2, {MakeColumn("count", 0, types::DataType::INT64)},
+                              {{"mean", mean_func2}});
   MakeMemSink(agg2, "out2");
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ true);
@@ -776,14 +794,18 @@ TEST_F(SplitterTest, MultipleBranchedDifferentBlockingDepths) {
   auto mem_src = MakeMemSource(MakeRelation());
   auto map1 = MakeMap(mem_src, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
   EXPECT_OK(map1->SetRelation(MakeRelation()));
-  auto agg1 = MakeBlockingAgg(
-      map1, {MakeColumn("count", 0, types::DataType::INT64)},
-      {{"mean", MakeMeanFuncWithFloatType(MakeColumn("col0", 0, types::DataType::INT64))}});
+  auto mean_func1 = MakeMeanFuncWithFloatType(MakeColumn("col0", 0, types::DataType::INT64));
+  mean_func1->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(mean_func1->SplitInitArgs(0));
+  auto agg1 = MakeBlockingAgg(map1, {MakeColumn("count", 0, types::DataType::INT64)},
+                              {{"mean", mean_func1}});
   MakeMemSink(agg1, "out1");
 
-  auto agg2 = MakeBlockingAgg(
-      mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
-      {{"mean", MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64))}});
+  auto mean_func2 = MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64));
+  mean_func2->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(mean_func2->SplitInitArgs(0));
+  auto agg2 = MakeBlockingAgg(mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
+                              {{"mean", mean_func2}});
   MakeMemSink(agg2, "out2");
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ true);
@@ -858,7 +880,12 @@ TEST_F(SplitterTest, MultipleBranchesAndSparseFilter) {
       MakeFunc("upid_to_service_name", {MakeColumn("upid", 0, types::DataType::UINT128)},
                types::DataType::STRING);
   metadata_fn->set_annotations(ExpressionIR::Annotations{MetadataType::SERVICE_NAME});
-  auto filter = MakeFilter(mem_src, MakeEqualsFunc(metadata_fn, MakeString("pl/agent1")));
+  metadata_fn->SetRegistryArgTypes({types::DataType::UINT128});
+  EXPECT_OK(metadata_fn->SplitInitArgs(0));
+  auto eq_func = MakeEqualsFunc(metadata_fn, MakeString("pl/agent1"));
+  eq_func->SetRegistryArgTypes({types::STRING, types::STRING});
+  EXPECT_OK(eq_func->SplitInitArgs(0));
+  auto filter = MakeFilter(mem_src, eq_func);
   EXPECT_OK(filter->SetRelation(relation));
   auto map = MakeMap(filter, {{"time_", MakeColumn("time_", 0)},
                               {"count", MakeColumn("count", 0, types::DataType::INT64)}});
@@ -866,13 +893,17 @@ TEST_F(SplitterTest, MultipleBranchesAndSparseFilter) {
       table_store::schema::Relation({types::TIME64NS, types::INT64}, {"time_", "count"})));
   MakeMemSink(map, "out1");
 
-  auto agg1 = MakeBlockingAgg(
-      filter, {MakeColumn("count", 0, types::DataType::INT64)},
-      {{"countelms", MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64))}});
+  auto count_func1 = MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64));
+  count_func1->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(count_func1->SplitInitArgs(0));
+  auto agg1 = MakeBlockingAgg(filter, {MakeColumn("count", 0, types::DataType::INT64)},
+                              {{"countelms", count_func1}});
   MakeMemSink(agg1, "out2");
 
-  auto agg2 = MakeBlockingAgg(
-      mem_src, {}, {{"countelms", MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64))}});
+  auto count_func2 = MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64));
+  count_func2->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(count_func2->SplitInitArgs(0));
+  auto agg2 = MakeBlockingAgg(mem_src, {}, {{"countelms", count_func2}});
   MakeMemSink(agg2, "out3");
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ true);
@@ -1000,9 +1031,11 @@ TEST_F(SplitterTest, branch_where_children_must_be_on_pem) {
       {types::UINT128, types::TIME64NS, types::INT64, types::DataType::FLOAT64},
       {"upid", "time_", "count", "cpu0"});
   auto mem_src = MakeMemSource(relation);
-  auto random_map = MakeMap(
-      mem_src, {{"cpu++", MakeAddFunc(MakeColumn("cpu0", 0, types::DataType::INT64), MakeInt(1))}},
-      /*keep_input_columns*/ true);
+  auto add_func = MakeAddFunc(MakeColumn("cpu0", 0, types::DataType::INT64), MakeInt(1));
+  add_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
+  EXPECT_OK(add_func->SplitInitArgs(0));
+  auto random_map = MakeMap(mem_src, {{"cpu++", add_func}},
+                            /*keep_input_columns*/ true);
 
   EXPECT_OK(random_map->SetRelation(Relation(
       {types::UINT128, types::TIME64NS, types::INT64, types::DataType::FLOAT64, types::FLOAT64},
@@ -1012,8 +1045,12 @@ TEST_F(SplitterTest, branch_where_children_must_be_on_pem) {
       MakeFunc("upid_to_service_name", {MakeColumn("upid", 0, types::DataType::UINT128)},
                types::DataType::STRING);
   metadata_fn1->set_annotations(ExpressionIR::Annotations{MetadataType::SERVICE_NAME});
-  auto map1 = MakeMap(random_map,
-                      {{"equals_service", MakeEqualsFunc(metadata_fn1, MakeString("pl/agent1"))}},
+  metadata_fn1->SetRegistryArgTypes({types::DataType::UINT128});
+  EXPECT_OK(metadata_fn1->SplitInitArgs(0));
+  auto eq_func = MakeEqualsFunc(metadata_fn1, MakeString("pl/agent1"));
+  eq_func->SetRegistryArgTypes({types::DataType::STRING, types::DataType::STRING});
+  EXPECT_OK(eq_func->SplitInitArgs(0));
+  auto map1 = MakeMap(random_map, {{"equals_service", eq_func}},
                       /*keep_input_columns*/ true);
 
   EXPECT_OK(
@@ -1024,14 +1061,17 @@ TEST_F(SplitterTest, branch_where_children_must_be_on_pem) {
   // agg1 should partial.
   auto count_col_agg1 = MakeColumn("count", 0, types::DataType::INT64);
   count_col_agg1->ResolveColumnType(types::INT64);
-  auto agg1 = MakeBlockingAgg(
-      map1, {count_col_agg1},
-      {{"countelms", MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64))}});
+  auto count_func1 = MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64));
+  count_func1->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(count_func1->SplitInitArgs(0));
+  auto agg1 = MakeBlockingAgg(map1, {count_col_agg1}, {{"countelms", count_func1}});
   MakeMemSink(agg1, "out2");
 
   // agg2 should not partial.
   auto agg2_count_fn = MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64));
   agg2_count_fn->SetSupportsPartial(false);
+  agg2_count_fn->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(agg2_count_fn->SplitInitArgs(0));
   auto agg2 = MakeBlockingAgg(mem_src, {}, {{"countelms", agg2_count_fn}});
   MakeMemSink(agg2, "out3");
 
@@ -1039,7 +1079,8 @@ TEST_F(SplitterTest, branch_where_children_must_be_on_pem) {
       MakeFunc("upid_to_pod_name", {MakeColumn("upid", 0, types::DataType::UINT128)},
                types::DataType::STRING);
   metadata_fn2->set_annotations(ExpressionIR::Annotations{MetadataType::POD_NAME});
-
+  metadata_fn2->SetRegistryArgTypes({types::DataType::UINT128});
+  EXPECT_OK(metadata_fn2->SplitInitArgs(0));
   auto map2 = MakeMap(
       map1, {{"pod", metadata_fn2}, {"count", MakeColumn("count", 0, types::DataType::INT64)}},
       /*keep_input_columns*/ true);
@@ -1167,9 +1208,11 @@ TEST_F(SplitterTest, branch_where_single_node_must_be_on_pem_the_rest_can_recurs
       {types::UINT128, types::TIME64NS, types::INT64, types::DataType::FLOAT64},
       {"upid", "time_", "count", "cpu0"});
   auto mem_src = MakeMemSource(relation);
-  auto random_map1 = MakeMap(
-      mem_src, {{"cpu++", MakeAddFunc(MakeColumn("cpu0", 0, types::DataType::INT64), MakeInt(1))}},
-      /*keep_input_columns*/ true);
+  auto add_func = MakeAddFunc(MakeColumn("cpu0", 0, types::DataType::INT64), MakeInt(1));
+  add_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
+  EXPECT_OK(add_func->SplitInitArgs(0));
+  auto random_map1 = MakeMap(mem_src, {{"cpu++", add_func}},
+                             /*keep_input_columns*/ true);
 
   EXPECT_OK(random_map1->SetRelation(Relation(
       {types::UINT128, types::TIME64NS, types::INT64, types::DataType::FLOAT64, types::FLOAT64},
@@ -1179,9 +1222,13 @@ TEST_F(SplitterTest, branch_where_single_node_must_be_on_pem_the_rest_can_recurs
       MakeFunc("upid_to_service_name", {MakeColumn("upid", 0, types::DataType::UINT128)},
                types::DataType::STRING);
   metadata_fn1->set_annotations(ExpressionIR::Annotations{MetadataType::SERVICE_NAME});
-  auto pem_map1 = MakeMap(
-      random_map1, {{"equals_service", MakeEqualsFunc(metadata_fn1, MakeString("pl/agent1"))}},
-      /*keep_input_columns*/ true);
+  metadata_fn1->SetRegistryArgTypes({types::DataType::UINT128});
+  EXPECT_OK(metadata_fn1->SplitInitArgs(0));
+  auto eq_func = MakeEqualsFunc(metadata_fn1, MakeString("pl/agent1"));
+  eq_func->SetRegistryArgTypes({types::DataType::STRING, types::DataType::STRING});
+  EXPECT_OK(eq_func->SplitInitArgs(0));
+  auto pem_map1 = MakeMap(random_map1, {{"equals_service", eq_func}},
+                          /*keep_input_columns*/ true);
 
   EXPECT_OK(pem_map1->SetRelation(
       Relation({types::UINT128, types::TIME64NS, types::INT64, types::DataType::FLOAT64,
@@ -1191,22 +1238,26 @@ TEST_F(SplitterTest, branch_where_single_node_must_be_on_pem_the_rest_can_recurs
   // agg1 should partial.
   auto count_col_agg1 = MakeColumn("count", 0, types::DataType::INT64);
   count_col_agg1->ResolveColumnType(types::INT64);
-  auto agg1 = MakeBlockingAgg(
-      pem_map1, {count_col_agg1},
-      {{"countelms", MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64))}});
+  auto count_func = MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64));
+  count_func->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(count_func->SplitInitArgs(0));
+  auto agg1 = MakeBlockingAgg(pem_map1, {count_col_agg1}, {{"countelms", count_func}});
   MakeMemSink(agg1, "out2");
 
   // agg2 should not partial.
   auto agg2_count_fn = MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64));
   agg2_count_fn->SetSupportsPartial(false);
+  agg2_count_fn->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(agg2_count_fn->SplitInitArgs(0));
   auto agg2 = MakeBlockingAgg(mem_src, {}, {{"countelms", agg2_count_fn}});
   MakeMemSink(agg2, "out3");
 
-  auto random_map2 =
-      MakeMap(pem_map1,
-              {{"count++", MakeAddFunc(MakeColumn("count", 0, types::DataType::INT64), MakeInt(1))},
-               {"count", MakeColumn("count", 0, types::DataType::INT64)}},
-              /*keep_input_columns*/ true);
+  auto add_func2 = MakeAddFunc(MakeColumn("count", 0, types::DataType::INT64), MakeInt(1));
+  add_func2->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
+  EXPECT_OK(add_func2->SplitInitArgs(0));
+  auto random_map2 = MakeMap(
+      pem_map1, {{"count++", add_func2}, {"count", MakeColumn("count", 0, types::DataType::INT64)}},
+      /*keep_input_columns*/ true);
   EXPECT_OK(random_map2->SetRelation(
       Relation({types::UINT128, types::TIME64NS, types::DataType::FLOAT64, types::FLOAT64,
                 types::BOOLEAN, types::INT64, types::INT64},
@@ -1280,15 +1331,19 @@ TEST_F(SplitterTest, branch_where_single_node_must_be_on_pem_the_rest_can_recurs
 
 TEST_F(SplitterTest, schedule_kelvin_only_func_on_kelvin) {
   auto mem_src = MakeMemSource(MakeRelation());
-  auto kelvin_only_map = MakeMap(mem_src, {{"kelvin_only", MakeFunc("kelvin_only", {})}},
+  auto kelvin_func = MakeFunc("kelvin_only", {});
+  EXPECT_OK(kelvin_func->SplitInitArgs(0));
+  auto kelvin_only_map = MakeMap(mem_src, {{"kelvin_only", kelvin_func}},
                                  /*keep_input_columns*/ false);
 
   table_store::schema::Relation relation1({types::INT64, types::FLOAT64}, {"count", "mean"});
   ASSERT_OK(kelvin_only_map->SetRelation(relation1));
 
-  auto agg = MakeBlockingAgg(
-      kelvin_only_map, {MakeColumn("count", 0, types::DataType::INT64)},
-      {{"mean", MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64))}});
+  auto count_func = MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64));
+  count_func->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(count_func->SplitInitArgs(0));
+  auto agg = MakeBlockingAgg(kelvin_only_map, {MakeColumn("count", 0, types::DataType::INT64)},
+                             {{"mean", count_func}});
   table_store::schema::Relation relation2({types::INT64, types::FLOAT64}, {"count", "mean"});
   ASSERT_OK(agg->SetRelation(relation2));
 
@@ -1329,11 +1384,14 @@ TEST_F(SplitterTest, schedule_kelvin_only_func_on_kelvin) {
 
 TEST_F(SplitterTest, errors_if_pem_func_on_kelvin) {
   auto mem_src = MakeMemSource(MakeRelation());
-  auto agg = MakeBlockingAgg(
-      mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
-      {{"mean", MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64))}});
-  auto pem_only_map =
-      MakeMap(agg, {{"pem_only", MakeFunc("pem_only", {})}}, /*keep_input_columns*/ false);
+  auto mean_func = MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64));
+  mean_func->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(mean_func->SplitInitArgs(0));
+  auto agg = MakeBlockingAgg(mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
+                             {{"mean", mean_func}});
+  auto pem_func = MakeFunc("pem_only", {});
+  EXPECT_OK(pem_func->SplitInitArgs(0));
+  auto pem_only_map = MakeMap(agg, {{"pem_only", pem_func}}, /*keep_input_columns*/ false);
   MakeMemSink(pem_only_map, "out");
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);

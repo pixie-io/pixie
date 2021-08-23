@@ -37,7 +37,10 @@ TEST_F(PropagateExpressionAnnotationsRuleTest, noop) {
   MemorySourceIR* src = MakeMemSource(relation);
   MapIR* map1 = MakeMap(src, {{"def", MakeColumn("abc", 0)}}, false);
   MapIR* map2 = MakeMap(map1, {{"xyz", MakeInt(3)}, {"def", MakeColumn("def", 0)}}, false);
-  FilterIR* filter = MakeFilter(map2, MakeEqualsFunc(MakeColumn("def", 0), MakeInt(2)));
+  auto eq_func = MakeEqualsFunc(MakeColumn("def", 0), MakeInt(2));
+  eq_func->SetRegistryArgTypes({types::INT64, types::INT64});
+  EXPECT_OK(eq_func->SplitInitArgs(0));
+  FilterIR* filter = MakeFilter(map2, eq_func);
   MakeMemSink(filter, "foo", {});
 
   PropagateExpressionAnnotationsRule rule;
@@ -59,7 +62,10 @@ TEST_F(PropagateExpressionAnnotationsRuleTest, rename) {
   MapIR* map2 = MakeMap(map1, {{"xyz", map2_col1}, {"def", map2_col2}, {"ghi", MakeInt(2)}}, false);
   auto filter_col1 = MakeColumn("xyz", 0);
   auto filter_col2 = MakeColumn("ghi", 0);
-  FilterIR* filter = MakeFilter(map2, MakeEqualsFunc(filter_col1, filter_col2));
+  auto eq_func = MakeEqualsFunc(filter_col1, filter_col2);
+  eq_func->SetRegistryArgTypes({types::INT64, types::INT64});
+  EXPECT_OK(eq_func->SplitInitArgs(0));
+  FilterIR* filter = MakeFilter(map2, eq_func);
   MakeMemSink(filter, "foo", {});
 
   auto default_annotations = ExpressionIR::Annotations();
@@ -155,6 +161,8 @@ TEST_F(PropagateExpressionAnnotationsRuleTest, agg) {
   auto group_col = MakeColumn("abc", 0);
   auto agg_col = MakeColumn("xyz", 0);
   auto agg_func = MakeMeanFunc(agg_col);
+  agg_func->SetRegistryArgTypes({types::INT64, types::INT64});
+  EXPECT_OK(agg_func->SplitInitArgs(0));
   auto group_col_annotation = ExpressionIR::Annotations(MetadataType::POD_NAME);
   auto agg_col_annotation = ExpressionIR::Annotations(MetadataType::SERVICE_ID);
   auto agg_func_annotation = ExpressionIR::Annotations(MetadataType::POD_ID);
@@ -164,7 +172,10 @@ TEST_F(PropagateExpressionAnnotationsRuleTest, agg) {
 
   BlockingAggIR* agg = MakeBlockingAgg(src, {group_col}, {{"out", agg_func}});
   auto filter_col = MakeColumn("out", 0);
-  FilterIR* filter = MakeFilter(agg, MakeEqualsFunc(filter_col, MakeInt(2)));
+  auto eq_func = MakeEqualsFunc(filter_col, MakeInt(2));
+  eq_func->SetRegistryArgTypes({types::INT64, types::INT64});
+  EXPECT_OK(eq_func->SplitInitArgs(0));
+  FilterIR* filter = MakeFilter(agg, eq_func);
   auto map_expr_col = MakeColumn("out", 0);
   auto map_group_col = MakeColumn("abc", 0);
   MapIR* map = MakeMap(filter, {{"agg_expr", map_expr_col}, {"agg_group", map_group_col}});
@@ -248,9 +259,9 @@ TEST_F(PropagateExpressionAnnotationsRuleTest, filter_limit) {
 
   auto map1 = MakeMap(src, {{"abc_1", map1_col}, {"xyz_1", MakeColumn("xyz", 0)}});
   auto limit1 = MakeLimit(map1, 100);
-  auto filter1 = MakeFilter(limit1);
+  auto filter1 = MakeFilter(limit1, /*split_init_args*/ true);
   auto limit2 = MakeLimit(filter1, 10);
-  auto filter2 = MakeFilter(limit2);
+  auto filter2 = MakeFilter(limit2, /*split_init_args*/ true);
 
   auto map1_col1 = MakeColumn("abc_1", 0);
   auto map1_col2 = MakeColumn("xyz_1", 0);

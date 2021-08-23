@@ -55,12 +55,12 @@ TEST_F(ConvertMetadataRuleTest, multichild) {
 
   // Check the contents of the new func.
   EXPECT_MATCH(filter->filter_expr(), Equals(Func(), String()));
-  auto converted_md = static_cast<FuncIR*>(filter->filter_expr())->args()[0];
+  auto converted_md = static_cast<FuncIR*>(filter->filter_expr())->all_args()[0];
   EXPECT_MATCH(converted_md, Func());
   auto converted_md_func = static_cast<FuncIR*>(converted_md);
   EXPECT_EQ(absl::Substitute("upid_to_$0", metadata_name), converted_md_func->func_name());
-  EXPECT_EQ(1, converted_md_func->args().size());
-  auto input_col = converted_md_func->args()[0];
+  EXPECT_EQ(1, converted_md_func->all_args().size());
+  auto input_col = converted_md_func->all_args()[0];
   EXPECT_MATCH(input_col, ColumnNode("upid"));
 
   EXPECT_MATCH(converted_md, ResolvedExpression());

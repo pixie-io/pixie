@@ -30,11 +30,7 @@ Status ConvertMetadataRule::UpdateMetadataContainer(IRNode* container, MetadataI
                                                     ExpressionIR* metadata_expr) const {
   if (Match(container, Func())) {
     auto func = static_cast<FuncIR*>(container);
-    for (const auto& [arg_idx, arg] : Enumerate(func->args())) {
-      if (arg == metadata) {
-        PL_RETURN_IF_ERROR(func->UpdateArg(arg_idx, metadata_expr));
-      }
-    }
+    PL_RETURN_IF_ERROR(func->UpdateArg(metadata, metadata_expr));
     return Status::OK();
   }
   if (Match(container, Map())) {

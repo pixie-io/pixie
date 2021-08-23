@@ -78,7 +78,7 @@ bool ConvertStringTimesRule::HasStringTime(const ExpressionIR* node) {
   }
   if (Match(node, Func())) {
     const FuncIR* func = static_cast<const FuncIR*>(node);
-    for (const ExpressionIR* arg : func->args()) {
+    for (const ExpressionIR* arg : func->all_args()) {
       bool has_string_time = HasStringTime(arg);
       if (has_string_time) {
         return true;
@@ -110,7 +110,7 @@ StatusOr<ExpressionIR*> ConvertStringTimesRule::ConvertStringTimes(ExpressionIR*
     return node->graph()->CreateNode<IntIR>(node->ast(), time);
   } else if (Match(node, Func())) {
     auto func_node = static_cast<FuncIR*>(node);
-    for (const auto& [idx, arg] : Enumerate(func_node->args())) {
+    for (const auto& [idx, arg] : Enumerate(func_node->all_args())) {
       PL_ASSIGN_OR_RETURN(auto eval_result, ConvertStringTimes(arg, relative_time));
       if (eval_result != arg) {
         PL_RETURN_IF_ERROR(func_node->UpdateArg(idx, eval_result));

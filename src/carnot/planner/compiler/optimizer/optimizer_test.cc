@@ -336,7 +336,6 @@ TEST_F(OptimizerTest, mem_src_join_same_src_test) {
     auto mem_src0 = MakeMemSource("cpu", mem_src_relation);
     auto mem_src1 = MakeMemSource("cpu", mem_src_relation);
     auto agg_fn = MakeMeanFunc(MakeColumn("cpu0", 0));
-    agg_fn->SetOutputDataType(types::FLOAT64);
     auto column = MakeColumn("upid", 0);
     column->ResolveColumnType(types::UINT128);
     auto agg = MakeBlockingAgg(mem_src0, {column}, {{"cpu0_mean", agg_fn}});
@@ -384,7 +383,6 @@ TEST_F(OptimizerTest, mem_src_filter_test) {
   for (int64_t i = 0; i < num_runs; i++) {
     auto mem_src = MakeMemSource("cpu");
     auto filter_expr = MakeEqualsFunc(MakeColumn("cpu0", 0), MakeInt(23));
-    filter_expr->SetOutputDataType(types::BOOLEAN);
     auto filter = MakeFilter(mem_src, filter_expr);
     MakeMemSink(filter, "");
   }
@@ -416,7 +414,6 @@ TEST_F(OptimizerTest, mem_src_different_filter_test) {
     // Graph 0.
     auto mem_src = MakeMemSource("cpu", cpu_relation);
     auto filter_expr = MakeEqualsFunc(MakeColumn("cpu0", 0), MakeInt(23));
-    filter_expr->SetOutputDataType(types::BOOLEAN);
     auto filter = MakeFilter(mem_src, filter_expr);
     MakeMemSink(filter, "");
   }
@@ -426,7 +423,6 @@ TEST_F(OptimizerTest, mem_src_different_filter_test) {
     auto equals_fn1 = MakeEqualsFunc(MakeColumn("cpu0", 0), MakeInt(23));
     auto equals_fn2 = MakeEqualsFunc(MakeColumn("cpu0", 0), MakeInt(46));
     auto filter_expr = MakeOrFunc(equals_fn1, equals_fn2);
-    filter_expr->SetOutputDataType(types::BOOLEAN);
     auto filter = MakeFilter(mem_src, filter_expr);
     MakeMemSink(filter, "");
   }

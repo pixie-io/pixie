@@ -383,7 +383,7 @@ StatusOr<FuncIR*> AggHandler::ParseNameTuple(IR* ir, const pypa::AstPtr& ast,
 
   // The function should be specified as a single function by itself.
   // This could change in the future.
-  if (func_ir->args().size() != 0) {
+  if (func_ir->all_args().size() != 0) {
     return func_ir->CreateIRNodeError("Unexpected aggregate function");
   }
 

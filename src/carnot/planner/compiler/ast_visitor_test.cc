@@ -655,11 +655,11 @@ TEST_F(FilterTest, TestNewFilter) {
   ASSERT_MATCH(filter->filter_expr(), Equals(ColumnNode(), String()));
 
   auto filter_expr = static_cast<FuncIR*>(filter->filter_expr());
-  ASSERT_MATCH(filter_expr->args()[0], ColumnNode());
-  ASSERT_MATCH(filter_expr->args()[1], String());
+  ASSERT_MATCH(filter_expr->all_args()[0], ColumnNode());
+  ASSERT_MATCH(filter_expr->all_args()[1], String());
 
-  ColumnIR* col = static_cast<ColumnIR*>(filter_expr->args()[0]);
-  StringIR* str = static_cast<StringIR*>(filter_expr->args()[1]);
+  ColumnIR* col = static_cast<ColumnIR*>(filter_expr->all_args()[0]);
+  StringIR* str = static_cast<StringIR*>(filter_expr->all_args()[1]);
   EXPECT_EQ(col->col_name(), "service");
   EXPECT_EQ(str->str(), "foo");
 
@@ -696,11 +696,11 @@ TEST_F(FilterTest, ChainedFilterQuery) {
   ASSERT_MATCH(filter->filter_expr(), Equals(ColumnNode(), String()));
 
   auto filter_expr = static_cast<FuncIR*>(filter->filter_expr());
-  ASSERT_MATCH(filter_expr->args()[0], ColumnNode());
-  ASSERT_MATCH(filter_expr->args()[1], String());
+  ASSERT_MATCH(filter_expr->all_args()[0], ColumnNode());
+  ASSERT_MATCH(filter_expr->all_args()[1], String());
 
-  ColumnIR* col = static_cast<ColumnIR*>(filter_expr->args()[0]);
-  StringIR* str = static_cast<StringIR*>(filter_expr->args()[1]);
+  ColumnIR* col = static_cast<ColumnIR*>(filter_expr->all_args()[0]);
+  StringIR* str = static_cast<StringIR*>(filter_expr->all_args()[1]);
   EXPECT_EQ(col->col_name(), "service");
   EXPECT_EQ(str->str(), "foo");
 
@@ -750,11 +750,11 @@ TEST_F(FilterTest, ChainedFilterWithNewMetadataQuery) {
   ASSERT_MATCH(filter->filter_expr(), Equals(Metadata(), String()));
 
   auto filter_expr = static_cast<FuncIR*>(filter->filter_expr());
-  ASSERT_MATCH(filter_expr->args()[0], Metadata());
-  ASSERT_MATCH(filter_expr->args()[1], String());
+  ASSERT_MATCH(filter_expr->all_args()[0], Metadata());
+  ASSERT_MATCH(filter_expr->all_args()[1], String());
 
-  MetadataIR* col = static_cast<MetadataIR*>(filter_expr->args()[0]);
-  StringIR* str = static_cast<StringIR*>(filter_expr->args()[1]);
+  MetadataIR* col = static_cast<MetadataIR*>(filter_expr->all_args()[0]);
+  StringIR* str = static_cast<StringIR*>(filter_expr->all_args()[1]);
   EXPECT_EQ(col->name(), "service");
   EXPECT_EQ(str->str(), "foo");
 

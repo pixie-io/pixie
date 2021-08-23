@@ -350,9 +350,9 @@ struct BinaryOpMatch : public ParentMatch {
   bool Match(const IRNode* node) const override {
     if (node->type() == IRNodeType::kFunc) {
       auto* F = static_cast<const FuncIR*>(node);
-      if (F->opcode() == op && F->args().size() == 2) {
-        return (L.Match(F->args()[0]) && R.Match(F->args()[1])) ||
-               (Commutable && L.Match(F->args()[1]) && R.Match(F->args()[0]));
+      if (F->opcode() == op && F->all_args().size() == 2) {
+        return (L.Match(F->all_args()[0]) && R.Match(F->all_args()[1])) ||
+               (Commutable && L.Match(F->all_args()[1]) && R.Match(F->all_args()[0]));
       }
     }
     return false;
@@ -436,9 +436,9 @@ struct AnyBinaryOpMatch : public ParentMatch {
   bool Match(const IRNode* node) const override {
     if (node->type() == type) {
       auto* F = static_cast<const FuncIR*>(node);
-      if (F->args().size() == 2) {
-        return (L.Match(F->args()[0]) && R.Match(F->args()[1])) ||
-               (Commutable && L.Match(F->args()[1]) && R.Match(F->args()[0]));
+      if (F->all_args().size() == 2) {
+        return (L.Match(F->all_args()[0]) && R.Match(F->all_args()[1])) ||
+               (Commutable && L.Match(F->all_args()[1]) && R.Match(F->all_args()[0]));
       }
     }
     return false;
@@ -596,7 +596,7 @@ struct AnyFuncAllArgsMatch : public ParentMatch {
     if (node->type() == type) {
       auto* F = static_cast<const FuncIR*>(node);
       if (Resolved == F->IsDataTypeEvaluated()) {
-        for (const auto a : F->args()) {
+        for (const auto a : F->all_args()) {
           if (!argMatcher_.Match(a)) {
             return false;
           }
@@ -636,7 +636,7 @@ struct FuncNameAllArgsMatch : public ParentMatch {
       return false;
     }
     auto* func = static_cast<const FuncIR*>(node);
-    for (const auto a : func->args()) {
+    for (const auto a : func->all_args()) {
       if (!argMatcher_.Match(a)) {
         return false;
       }
@@ -681,7 +681,7 @@ struct FuncAllArgsMatch : public ParentMatch {
     if (node->type() == type) {
       auto* func = static_cast<const FuncIR*>(node);
       if (func->opcode() == op) {
-        for (const auto a : func->args()) {
+        for (const auto a : func->all_args()) {
           if (!arg_matcher_.Match(a)) {
             return false;
           }
@@ -1113,12 +1113,12 @@ struct ServiceMatcher : public ParentMatch {
       return false;
     }
     auto func = static_cast<const FuncIR*>(node);
-    if (func->args().size() != 2) {
+    if (func->all_args().size() != 2) {
       return false;
     }
-    auto service_id = MetadataExpression(MetadataType::SERVICE_ID).Match(func->args()[0]);
-    auto service_name = MetadataExpression(MetadataType::SERVICE_NAME).Match(func->args()[0]);
-    return (service_id || service_name) && String().Match(func->args()[1]);
+    auto service_id = MetadataExpression(MetadataType::SERVICE_ID).Match(func->all_args()[0]);
+    auto service_name = MetadataExpression(MetadataType::SERVICE_NAME).Match(func->all_args()[0]);
+    return (service_id || service_name) && String().Match(func->all_args()[1]);
   }
 };
 

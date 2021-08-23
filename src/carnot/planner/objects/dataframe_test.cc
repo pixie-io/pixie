@@ -260,9 +260,9 @@ TEST_F(DataframeTest, AggTest) {
     ASSERT_TRUE(Match(expr.node, Func())) << index;
     FuncIR* fn = static_cast<FuncIR*>(expr.node);
     EXPECT_EQ(fn->func_name(), "mean") << index;
-    ASSERT_EQ(fn->args().size(), 1) << index;
-    ASSERT_TRUE(Match(fn->args()[0], ColumnNode())) << index;
-    ColumnIR* col = static_cast<ColumnIR*>(fn->args()[0]);
+    ASSERT_EQ(fn->all_args().size(), 1) << index;
+    ASSERT_TRUE(Match(fn->all_args()[0], ColumnNode())) << index;
+    ColumnIR* col = static_cast<ColumnIR*>(fn->all_args()[0]);
     col_names.push_back(col->col_name());
   }
   ASSERT_THAT(col_names, UnorderedElementsAre("col1", "col2"));

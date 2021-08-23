@@ -43,11 +43,13 @@ StatusOr<bool> DataTypeRule::Apply(IRNode* ir_node) {
 StatusOr<bool> DataTypeRule::EvaluateFunc(CompilerState* compiler_state, FuncIR* func) {
   // Get the types of the children of this function.
   std::vector<types::DataType> children_data_types;
-  for (const auto& arg : func->args()) {
+  for (const auto& arg : func->all_args()) {
     types::DataType t = arg->EvaluatedDataType();
     DCHECK(t != types::DataType::DATA_TYPE_UNKNOWN);
     children_data_types.push_back(t);
   }
+  func->SetRegistryArgTypes(children_data_types);
+  PL_RETURN_IF_ERROR(func->SplitInitArgs(0));
 
   auto udftype_or_s = compiler_state->registry_info()->GetUDFExecType(func->func_name());
   if (!udftype_or_s.ok()) {
@@ -82,8 +84,6 @@ StatusOr<bool> DataTypeRule::EvaluateFunc(CompilerState* compiler_state, FuncIR*
       return error::Internal("Unsupported UDFExecType");
     }
   }
-
-  func->SetArgsTypes(children_data_types);
   return true;
 }
 

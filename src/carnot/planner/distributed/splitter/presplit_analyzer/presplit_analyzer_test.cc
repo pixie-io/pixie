@@ -48,7 +48,11 @@ TEST_F(PreSplitAnalyzerTest, split_pem_udf) {
   auto func1 = MakeFunc("pem_only", {input1});
   auto func2 = MakeFunc("kelvin_only", {input2});
   func1->SetOutputDataType(types::DataType::STRING);
+  func1->SetRegistryArgTypes({types::DataType::STRING});
+  EXPECT_OK(func1->SplitInitArgs(0));
   func2->SetOutputDataType(types::DataType::STRING);
+  func2->SetRegistryArgTypes({types::DataType::STRING});
+  EXPECT_OK(func2->SplitInitArgs(0));
   MapIR* map1 = MakeMap(src1, {{"pem", func1}, {"kelvin", func2}});
   ASSERT_OK(map1->SetRelationFromExprs());
   ASSERT_OK(ResolveOperatorType(map1, compiler_state_.get()));

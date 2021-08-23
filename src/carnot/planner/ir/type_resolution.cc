@@ -191,7 +191,12 @@ Status FuncIR::ResolveType(CompilerState* compiler_state,
                            const std::vector<TypePtr>& parent_types) {
   // Resolve the arg types first.
   std::vector<std::shared_ptr<ValueType>> arg_types;
-  for (auto arg : args_) {
+  for (auto init_arg : init_args()) {
+    // We may want to have semantic type resolution based on init arguments in the future. If so we
+    // can change this to actually resolve the init args semantic type.
+    arg_types.push_back(ValueType::Create(init_arg->EvaluatedDataType(), SemanticType::ST_NONE));
+  }
+  for (auto arg : args()) {
     PL_RETURN_IF_ERROR(ResolveExpressionType(arg, compiler_state, parent_types));
     // At the moment all expressions resolve to a ValueType, since UDFs can't take tables as args.
     auto primitive_type = std::static_pointer_cast<ValueType>(arg->resolved_type());

@@ -77,6 +77,8 @@ TEST_F(PartialOpMgrTest, agg_test) {
   service_col->ResolveColumnType(types::STRING);
   auto mean_func = MakeMeanFunc(MakeColumn("count", 0));
   mean_func->SetSupportsPartial(true);
+  mean_func->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(mean_func->SplitInitArgs(0));
   auto agg = MakeBlockingAgg(mem_src, {count_col, service_col}, {{"mean", mean_func}});
   Relation agg_relation({types::INT64, types::STRING, types::FLOAT64},
                         {"count", "service", "mean"});
@@ -130,9 +132,13 @@ TEST_F(PartialOpMgrTest, agg_where_fn_cant_partial) {
   // One function is partial
   auto mean_func = MakeMeanFunc(MakeColumn("count", 0));
   mean_func->SetSupportsPartial(false);
+  mean_func->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(mean_func->SplitInitArgs(0));
   // Even though one is partial, the entire agg cannot be converted.
   auto mean_func2 = MakeMeanFunc(MakeColumn("count", 0));
   mean_func2->SetSupportsPartial(true);
+  mean_func2->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(mean_func2->SplitInitArgs(0));
   auto agg = MakeBlockingAgg(mem_src, {count_col, service_col},
                              {{"mean", mean_func}, {"mean2", mean_func2}});
   Relation agg_relation({types::INT64, types::STRING, types::FLOAT64, types::FLOAT64},

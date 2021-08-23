@@ -871,7 +871,7 @@ class RulesTest : public OperatorTests {
     md_handler = MetadataHandler::Create();
   }
 
-  FilterIR* MakeFilter(OperatorIR* parent) {
+  FilterIR* MakeFilter(OperatorIR* parent, bool split_init_args = false) {
     auto constant1 = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
     auto column = MakeColumn("column", 0);
 
@@ -880,6 +880,10 @@ class RulesTest : public OperatorTests {
                                                 std::vector<ExpressionIR*>{constant1, column})
                            .ValueOrDie();
     filter_func->SetOutputDataType(types::DataType::BOOLEAN);
+    if (split_init_args) {
+      filter_func->SetRegistryArgTypes({types::INT64, types::INT64});
+      EXPECT_OK(filter_func->SplitInitArgs(0));
+    }
 
     return graph->CreateNode<FilterIR>(ast, parent, filter_func).ValueOrDie();
   }
@@ -1361,20 +1365,7 @@ void CompareCloneNode(LimitIR* new_ir, LimitIR* old_ir, const std::string& err_s
 
 template <>
 void CompareCloneNode(FuncIR* new_ir, FuncIR* old_ir, const std::string& err_string) {
-  EXPECT_EQ(new_ir->func_name(), old_ir->func_name()) << err_string;
-  EXPECT_EQ(new_ir->op().op_code, old_ir->op().op_code) << err_string;
-  EXPECT_EQ(new_ir->op().python_op, old_ir->op().python_op) << err_string;
-  EXPECT_EQ(new_ir->op().carnot_op_name, old_ir->op().carnot_op_name) << err_string;
-  EXPECT_EQ(new_ir->func_id(), old_ir->func_id()) << err_string;
-  EXPECT_EQ(new_ir->IsDataTypeEvaluated(), old_ir->IsDataTypeEvaluated()) << err_string;
-  EXPECT_EQ(new_ir->EvaluatedDataType(), old_ir->EvaluatedDataType()) << err_string;
-
-  std::vector<ExpressionIR*> new_args = new_ir->args();
-  std::vector<ExpressionIR*> old_args = old_ir->args();
-  ASSERT_EQ(new_args.size(), old_args.size()) << err_string;
-  for (size_t i = 0; i < new_args.size(); ++i) {
-    CompareClone(new_args[i], old_args[i], new_ir->graph() == old_ir->graph(), err_string);
-  }
+  EXPECT_TRUE(new_ir->Equals(old_ir)) << err_string;
 }
 
 template <>

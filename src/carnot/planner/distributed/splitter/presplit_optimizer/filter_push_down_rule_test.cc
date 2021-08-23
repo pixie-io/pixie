@@ -40,7 +40,10 @@ TEST_F(FilterPushDownTest, simple_no_op) {
   auto column = MakeColumn("column", 0);
   column->ResolveColumnType(types::DataType::INT64);
 
-  FilterIR* filter = MakeFilter(src, MakeEqualsFunc(column, constant));
+  auto eq_func = MakeEqualsFunc(column, constant);
+  eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
+  EXPECT_OK(eq_func->SplitInitArgs(0));
+  FilterIR* filter = MakeFilter(src, eq_func);
   MakeMemSink(filter, "foo", {});
 
   FilterPushdownRule rule(compiler_state_.get());
@@ -56,7 +59,10 @@ TEST_F(FilterPushDownTest, simple) {
       MakeMap(src, {{"abc_1", MakeColumn("abc", 0)}, {"abc", MakeColumn("abc", 0)}}, false);
   auto col = MakeColumn("abc", 0);
   col->ResolveColumnType(types::DataType::INT64);
-  FilterIR* filter = MakeFilter(map, MakeEqualsFunc(col, MakeInt(2)));
+  auto eq_func = MakeEqualsFunc(col, MakeInt(2));
+  eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
+  EXPECT_OK(eq_func->SplitInitArgs(0));
+  FilterIR* filter = MakeFilter(map, eq_func);
   MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
 
   FilterPushdownRule rule(compiler_state_.get());
@@ -82,7 +88,10 @@ TEST_F(FilterPushDownTest, two_col_filter) {
   col1->ResolveColumnType(types::DataType::INT64);
   auto col2 = MakeColumn("xyz", 0);
   col2->ResolveColumnType(types::DataType::INT64);
-  FilterIR* filter = MakeFilter(map4, MakeEqualsFunc(col1, col2));
+  auto eq_func = MakeEqualsFunc(col1, col2);
+  eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
+  EXPECT_OK(eq_func->SplitInitArgs(0));
+  FilterIR* filter = MakeFilter(map4, eq_func);
   MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
 
   FilterPushdownRule rule(compiler_state_.get());
@@ -113,10 +122,17 @@ TEST_F(FilterPushDownTest, multi_condition_filter) {
 
   auto equals1 = MakeEqualsFunc(col1, MakeInt(2));
   equals1->SetOutputDataType(types::DataType::BOOLEAN);
+  equals1->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
+  EXPECT_OK(equals1->SplitInitArgs(0));
   auto equals2 = MakeEqualsFunc(col2, MakeInt(3));
   equals2->SetOutputDataType(types::DataType::BOOLEAN);
+  equals2->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
+  EXPECT_OK(equals2->SplitInitArgs(0));
 
-  FilterIR* filter = MakeFilter(map3, MakeAndFunc(equals1, equals2));
+  auto and_func = MakeAndFunc(equals1, equals2);
+  and_func->SetRegistryArgTypes({types::DataType::BOOLEAN, types::DataType::BOOLEAN});
+  EXPECT_OK(and_func->SplitInitArgs(0));
+  FilterIR* filter = MakeFilter(map3, and_func);
   MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
 
   FilterPushdownRule rule(compiler_state_.get());
@@ -142,7 +158,10 @@ TEST_F(FilterPushDownTest, column_rename) {
 
   auto col = MakeColumn("def", 0);
   col->ResolveColumnType(types::DataType::INT64);
-  FilterIR* filter = MakeFilter(map2, MakeEqualsFunc(col, MakeInt(2)));
+  auto eq_func = MakeEqualsFunc(col, MakeInt(2));
+  eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
+  EXPECT_OK(eq_func->SplitInitArgs(0));
+  FilterIR* filter = MakeFilter(map2, eq_func);
   MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
 
   FilterPushdownRule rule(compiler_state_.get());
@@ -171,11 +190,17 @@ TEST_F(FilterPushDownTest, two_filters_different_cols) {
 
   auto col1 = MakeColumn("def", 0);
   col1->ResolveColumnType(types::DataType::INT64);
-  FilterIR* filter1 = MakeFilter(map2, MakeEqualsFunc(col1, MakeInt(2)));
+  auto eq_func = MakeEqualsFunc(col1, MakeInt(2));
+  eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
+  EXPECT_OK(eq_func->SplitInitArgs(0));
+  FilterIR* filter1 = MakeFilter(map2, eq_func);
 
   auto col2 = MakeColumn("abc", 0);
   col2->ResolveColumnType(types::DataType::INT64);
-  FilterIR* filter2 = MakeFilter(filter1, MakeEqualsFunc(col2, MakeInt(3)));
+  auto eq_func2 = MakeEqualsFunc(col2, MakeInt(3));
+  eq_func2->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
+  EXPECT_OK(eq_func2->SplitInitArgs(0));
+  FilterIR* filter2 = MakeFilter(filter1, eq_func2);
   MemorySinkIR* sink = MakeMemSink(filter2, "foo", {});
 
   FilterPushdownRule rule(compiler_state_.get());
@@ -205,14 +230,20 @@ TEST_F(FilterPushDownTest, two_filters_same_cols) {
 
   auto col1 = MakeColumn("def", 0);
   col1->ResolveColumnType(types::DataType::INT64);
-  FilterIR* filter1 = MakeFilter(map2, MakeEqualsFunc(col1, MakeInt(2)));
+  auto eq_func = MakeEqualsFunc(col1, MakeInt(2));
+  eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
+  EXPECT_OK(eq_func->SplitInitArgs(0));
+  FilterIR* filter1 = MakeFilter(map2, eq_func);
   MapIR* map3 = MakeMap(
       filter1, {{"abc", MakeColumn("abc", 0)}, {"def", MakeColumn("def", 0)}, {"ghi", MakeInt(2)}},
       false);
 
   auto col2 = MakeColumn("def", 0);
   col2->ResolveColumnType(types::DataType::INT64);
-  FilterIR* filter2 = MakeFilter(map3, MakeEqualsFunc(MakeInt(3), col2));
+  auto eq_func2 = MakeEqualsFunc(MakeInt(3), col2);
+  eq_func2->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
+  EXPECT_OK(eq_func2->SplitInitArgs(0));
+  FilterIR* filter2 = MakeFilter(map3, eq_func2);
   MemorySinkIR* sink = MakeMemSink(filter2, "foo", {});
 
   FilterPushdownRule rule(compiler_state_.get());
@@ -266,7 +297,10 @@ TEST_F(FilterPushDownTest, single_col_rename_collision_swap) {
 
   auto col = MakeColumn("abc", 0);
   col->ResolveColumnType(types::DataType::INT64);
-  FilterIR* filter = MakeFilter(map, MakeEqualsFunc(col, MakeInt(2)));
+  auto eq_func = MakeEqualsFunc(col, MakeInt(2));
+  eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
+  EXPECT_OK(eq_func->SplitInitArgs(0));
+  FilterIR* filter = MakeFilter(map, eq_func);
   MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
 
   FilterPushdownRule rule(compiler_state_.get());
@@ -291,7 +325,10 @@ TEST_F(FilterPushDownTest, multicol_rename_collision) {
 
   auto col = MakeColumn("abc", 0);
   col->ResolveColumnType(types::DataType::INT64);
-  FilterIR* filter = MakeFilter(map2, MakeEqualsFunc(col, MakeInt(2)));
+  auto eq_func = MakeEqualsFunc(col, MakeInt(2));
+  eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
+  EXPECT_OK(eq_func->SplitInitArgs(0));
+  FilterIR* filter = MakeFilter(map2, eq_func);
   MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
 
   FilterPushdownRule rule(compiler_state_.get());
@@ -312,10 +349,16 @@ TEST_F(FilterPushDownTest, agg_group) {
   MemorySourceIR* src = MakeMemSource(relation);
   auto col0 = MakeColumn("xyz", 0);
   col0->ResolveColumnType(types::DataType::INT64);
-  BlockingAggIR* agg = MakeBlockingAgg(src, {MakeColumn("abc", 0)}, {{"out", MakeMeanFunc(col0)}});
+  auto mean_func = MakeMeanFunc(col0);
+  mean_func->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(mean_func->SplitInitArgs(0));
+  BlockingAggIR* agg = MakeBlockingAgg(src, {MakeColumn("abc", 0)}, {{"out", mean_func}});
   auto col1 = MakeColumn("abc", 0);
   col1->ResolveColumnType(types::DataType::INT64);
-  FilterIR* filter = MakeFilter(agg, MakeEqualsFunc(col1, MakeInt(2)));
+  auto eq_func = MakeEqualsFunc(col1, MakeInt(2));
+  eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
+  EXPECT_OK(eq_func->SplitInitArgs(0));
+  FilterIR* filter = MakeFilter(agg, eq_func);
   MemorySinkIR* sink = MakeMemSink(filter, "");
 
   FilterPushdownRule rule(compiler_state_.get());
@@ -334,12 +377,18 @@ TEST_F(FilterPushDownTest, agg_expr_no_push) {
   MemorySourceIR* src = MakeMemSource(relation);
   auto col0 = MakeColumn("xyz", 0);
   col0->ResolveColumnType(types::DataType::INT64);
-  BlockingAggIR* agg = MakeBlockingAgg(src, {MakeColumn("abc", 0)}, {{"xyz", MakeMeanFunc(col0)}});
+  auto mean_func = MakeMeanFunc(col0);
+  mean_func->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(mean_func->SplitInitArgs(0));
+  BlockingAggIR* agg = MakeBlockingAgg(src, {MakeColumn("abc", 0)}, {{"xyz", mean_func}});
   auto col1 = MakeColumn("xyz", 0);
   col1->ResolveColumnType(types::DataType::INT64);
   auto col2 = MakeColumn("abc", 0);
   col2->ResolveColumnType(types::DataType::INT64);
-  FilterIR* filter = MakeFilter(agg, MakeEqualsFunc(col1, col2));
+  auto eq_func = MakeEqualsFunc(col1, col2);
+  eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
+  EXPECT_OK(eq_func->SplitInitArgs(0));
+  FilterIR* filter = MakeFilter(agg, eq_func);
   MakeMemSink(filter, "");
 
   FilterPushdownRule rule(compiler_state_.get());
@@ -351,11 +400,16 @@ TEST_F(FilterPushDownTest, agg_expr_no_push) {
 TEST_F(FilterPushDownTest, multiple_children_dont_push) {
   Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
   MemorySourceIR* src = MakeMemSource(relation);
-  BlockingAggIR* agg =
-      MakeBlockingAgg(src, {MakeColumn("abc", 0)}, {{"out", MakeMeanFunc(MakeColumn("xyz", 0))}});
+  auto mean_func = MakeMeanFunc(MakeColumn("xyz", 0));
+  mean_func->SetRegistryArgTypes({types::INT64});
+  EXPECT_OK(mean_func->SplitInitArgs(0));
+  BlockingAggIR* agg = MakeBlockingAgg(src, {MakeColumn("abc", 0)}, {{"out", mean_func}});
   auto col = MakeColumn("abc", 0);
   col->ResolveColumnType(types::DataType::INT64);
-  FilterIR* filter = MakeFilter(agg, MakeEqualsFunc(col, MakeInt(2)));
+  auto eq_func = MakeEqualsFunc(col, MakeInt(2));
+  eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
+  EXPECT_OK(eq_func->SplitInitArgs(0));
+  FilterIR* filter = MakeFilter(agg, eq_func);
   MakeMemSink(filter, "");
   MakeMemSink(agg, "2");
 
@@ -374,10 +428,14 @@ TEST_F(FilterPushDownTest, kelvin_only_filter) {
   Relation relation2({types::DataType::INT64}, {"abc"});
 
   MemorySourceIR* src = MakeMemSource(relation1);
-  MapIR* map1 = MakeMap(src, {{"abc", MakeFunc("pem_only", {})}}, false);
+  auto func = MakeFunc("pem_only", {});
+  EXPECT_OK(func->SplitInitArgs(0));
+  MapIR* map1 = MakeMap(src, {{"abc", func}}, false);
   ASSERT_OK(map1->SetRelation(relation2));
   MapIR* map2 = MakeMap(map1, {{"def", MakeColumn("abc", 0)}}, false);
-  FilterIR* filter = MakeFilter(map2, MakeFunc("kelvin_only", {}));
+  auto func2 = MakeFunc("kelvin_only", {});
+  EXPECT_OK(func2->SplitInitArgs(0));
+  FilterIR* filter = MakeFilter(map2, func2);
   MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
 
   FilterPushdownRule rule(compiler_state_.get());

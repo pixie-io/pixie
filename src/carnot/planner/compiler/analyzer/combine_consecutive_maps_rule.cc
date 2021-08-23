@@ -30,7 +30,7 @@ bool ContainsChildColumn(const ExpressionIR& expr,
   }
   if (Match(&expr, Func())) {
     auto func = static_cast<const FuncIR*>(&expr);
-    for (const auto& arg : func->args()) {
+    for (const auto& arg : func->all_args()) {
       if (ContainsChildColumn(*arg, colnames)) {
         return true;
       }

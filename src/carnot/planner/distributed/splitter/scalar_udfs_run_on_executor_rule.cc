@@ -67,19 +67,11 @@ StatusOr<UDFCheckerResult> CheckScalarFuncExecutor(
   }
   auto func = static_cast<FuncIR*>(node);
 
-  // Get the types of the children of this function.
-  std::vector<types::DataType> children_data_types;
   for (const auto& arg : func->args()) {
     PL_ASSIGN_OR_RETURN(auto res, CheckScalarFuncExecutor(compiler_state, arg, valid));
     if (!res.success) {
       return res;
     }
-    types::DataType t = arg->EvaluatedDataType();
-    if (t == types::DataType::DATA_TYPE_UNKNOWN) {
-      return error::Internal("Type of arg $0 to func '$1' is not resolved", arg->DebugString(),
-                             func->func_name());
-    }
-    children_data_types.push_back(t);
   }
 
   PL_ASSIGN_OR_RETURN(auto udf_type,
@@ -88,8 +80,11 @@ StatusOr<UDFCheckerResult> CheckScalarFuncExecutor(
     return UDFCheckerResult::Success();
   }
 
+  if (!func->HasRegistryArgTypes()) {
+    return error::Internal("func '$0' doesn't have RegistryArgTypes set.", func->func_name());
+  }
   PL_ASSIGN_OR_RETURN(auto executor, compiler_state->registry_info()->GetUDFSourceExecutor(
-                                         func->func_name(), children_data_types));
+                                         func->func_name(), func->registry_arg_types()));
   if (!valid.contains(executor)) {
     return UDFCheckerResult::Fail(func->func_name());
   }

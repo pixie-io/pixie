@@ -66,7 +66,10 @@ TEST_F(PreSplitOptimizerTest, filter_pushdown) {
       MakeMap(src, {{"abc_1", MakeColumn("abc", 0)}, {"abc", MakeColumn("abc", 0)}}, false);
   auto col = MakeColumn("abc", 0);
   col->ResolveColumnType(types::DataType::INT64);
-  FilterIR* filter = MakeFilter(map, MakeEqualsFunc(col, MakeInt(2)));
+  auto eq_func = MakeEqualsFunc(col, MakeInt(2));
+  eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
+  EXPECT_OK(eq_func->SplitInitArgs(0));
+  FilterIR* filter = MakeFilter(map, eq_func);
   MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
 
   auto optimizer = PreSplitOptimizer::Create(compiler_state_.get()).ConsumeValueOrDie();

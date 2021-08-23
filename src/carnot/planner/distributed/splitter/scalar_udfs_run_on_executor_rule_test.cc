@@ -34,6 +34,7 @@ TEST_F(DistributedRulesTest, ScalarUDFRunOnKelvinRuleTest) {
   MemorySourceIR* src1 = MakeMemSource("http_events");
   auto func1 = MakeFunc("kelvin_only", {});
   func1->SetOutputDataType(types::DataType::STRING);
+  EXPECT_OK(func1->SplitInitArgs(0));
   MapIR* map1 = MakeMap(src1, {{"out", func1}});
   MakeMemSink(map1, "foo", {});
 
@@ -47,6 +48,7 @@ TEST_F(DistributedRulesTest, ScalarUDFRunOnKelvinRuleTest) {
   MemorySourceIR* src2 = MakeMemSource("http_events");
   auto func2 = MakeFunc("pem_only", {});
   func2->SetOutputDataType(types::DataType::STRING);
+  EXPECT_OK(func2->SplitInitArgs(0));
   MapIR* map2 = MakeMap(src2, {{"out", func2}}, false);
   MakeMemSink(map2, "foo", {});
 
@@ -63,8 +65,11 @@ TEST_F(DistributedRulesTest, ScalarUDFRunOnPEMRuleTest) {
   MemorySourceIR* src1 = MakeMemSource("http_events");
   auto func1 = MakeFunc("pem_only", {});
   func1->SetOutputDataType(types::DataType::STRING);
+  EXPECT_OK(func1->SplitInitArgs(0));
   auto equals_func1 = MakeEqualsFunc(func1, MakeString("abc"));
   equals_func1->SetOutputDataType(types::DataType::BOOLEAN);
+  equals_func1->SetRegistryArgTypes({types::DataType::STRING, types::DataType::STRING});
+  EXPECT_OK(equals_func1->SplitInitArgs(0));
   FilterIR* filter1 = MakeFilter(src1, equals_func1);
   MakeMemSink(filter1, "foo", {});
 
@@ -78,8 +83,11 @@ TEST_F(DistributedRulesTest, ScalarUDFRunOnPEMRuleTest) {
   MemorySourceIR* src2 = MakeMemSource("http_events");
   auto func2 = MakeFunc("kelvin_only", {});
   func2->SetOutputDataType(types::DataType::STRING);
+  EXPECT_OK(func2->SplitInitArgs(0));
   auto equals_func2 = MakeEqualsFunc(func2, MakeString("abc"));
   equals_func2->SetOutputDataType(types::DataType::BOOLEAN);
+  equals_func2->SetRegistryArgTypes({types::DataType::STRING, types::DataType::STRING});
+  EXPECT_OK(equals_func2->SplitInitArgs(0));
   FilterIR* filter2 = MakeFilter(src2, equals_func2);
   MakeMemSink(filter2, "foo", {});
 

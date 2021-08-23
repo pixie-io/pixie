@@ -365,7 +365,7 @@ TEST_F(PixieModuleTest, script_reference_test_no_args) {
   auto func = static_cast<FuncIR*>(expr);
   EXPECT_EQ(FuncIR::Opcode::non_op, func->opcode());
   EXPECT_EQ("_script_reference", func->func_name());
-  auto args = func->args();
+  auto args = func->all_args();
   ASSERT_EQ(2, args.size());
   EXPECT_MATCH(args[0], ColumnNode("label"));
   EXPECT_MATCH(args[1], String("px/namespace"));
@@ -403,7 +403,7 @@ TEST_F(PixieModuleTest, script_reference_test_with_args) {
   auto func = static_cast<FuncIR*>(expr);
   EXPECT_EQ(FuncIR::Opcode::non_op, func->opcode());
   EXPECT_EQ("_script_reference", func->func_name());
-  auto args = func->args();
+  auto args = func->all_args();
   ASSERT_EQ(6, args.size());
   EXPECT_MATCH(args[0], ColumnNode("label"));
   EXPECT_MATCH(args[1], String("px/namespace"));

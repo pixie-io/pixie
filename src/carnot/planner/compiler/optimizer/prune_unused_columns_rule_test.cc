@@ -74,7 +74,10 @@ TEST_F(PruneUnusedColumnsRuleTest, filter) {
   Relation map_relation{{types::DataType::INT64, types::DataType::FLOAT64}, {"count_1", "cpu0_1"}};
   ASSERT_OK(map->SetRelation(map_relation));
 
-  auto filter = MakeFilter(map, MakeEqualsFunc(MakeColumn("count_1", 0), MakeColumn("cpu0_1", 0)));
+  auto eq_func = MakeEqualsFunc(MakeColumn("count_1", 0), MakeColumn("cpu0_1", 0));
+  eq_func->SetRegistryArgTypes({types::INT64, types::INT64});
+  EXPECT_OK(eq_func->SplitInitArgs(0));
+  auto filter = MakeFilter(map, eq_func);
   ASSERT_OK(filter->SetRelation(map_relation));
 
   auto sink = MakeMemSink(filter, "abc", {"cpu0_1"});
@@ -106,10 +109,15 @@ TEST_F(PruneUnusedColumnsRuleTest, filter) {
 
 TEST_F(PruneUnusedColumnsRuleTest, two_filters) {
   MemorySourceIR* mem_src = MakeMemSource(MakeRelation());
-
-  auto filter1 = MakeFilter(mem_src, MakeEqualsFunc(MakeColumn("count", 0), MakeInt(10)));
+  auto eq_func = MakeEqualsFunc(MakeColumn("count", 0), MakeInt(10));
+  eq_func->SetRegistryArgTypes({types::INT64, types::INT64});
+  EXPECT_OK(eq_func->SplitInitArgs(0));
+  auto eq_func2 = MakeEqualsFunc(MakeColumn("cpu0", 0), MakeColumn("cpu1", 0));
+  eq_func2->SetRegistryArgTypes({types::INT64, types::INT64});
+  EXPECT_OK(eq_func2->SplitInitArgs(0));
+  auto filter1 = MakeFilter(mem_src, eq_func);
   ASSERT_OK(filter1->SetRelation(MakeRelation()));
-  auto filter2 = MakeFilter(filter1, MakeEqualsFunc(MakeColumn("cpu0", 0), MakeColumn("cpu1", 0)));
+  auto filter2 = MakeFilter(filter1, eq_func2);
   ASSERT_OK(filter2->SetRelation(MakeRelation()));
 
   auto sink = MakeMemSink(filter2, "abc", {"cpu2"});

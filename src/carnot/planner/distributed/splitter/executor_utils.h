@@ -42,25 +42,17 @@ inline StatusOr<bool> IsFuncWithExecutor(CompilerState* compiler_state, IRNode* 
   }
   auto func = static_cast<FuncIR*>(node);
 
-  // Get the types of the children of this function.
-  std::vector<types::DataType> children_data_types;
-  for (const auto& arg : func->args()) {
-    types::DataType t = arg->EvaluatedDataType();
-    if (t == types::DataType::DATA_TYPE_UNKNOWN) {
-      return error::Internal("Type of arg $0 to func '$1' is not resolved", arg->DebugString(),
-                             func->func_name());
-    }
-    children_data_types.push_back(t);
-  }
-
   PL_ASSIGN_OR_RETURN(auto udf_type,
                       compiler_state->registry_info()->GetUDFExecType(func->func_name()));
   if (udf_type != UDFExecType::kUDF) {
     return false;
   }
 
+  if (!func->HasRegistryArgTypes()) {
+    return error::Internal("func '$0' doesn't have RegistryArgTypes set.", func->func_name());
+  }
   PL_ASSIGN_OR_RETURN(auto udf_executor, compiler_state->registry_info()->GetUDFSourceExecutor(
-                                             func->func_name(), children_data_types));
+                                             func->func_name(), func->registry_arg_types()));
   return executor == udf_executor;
 }
 

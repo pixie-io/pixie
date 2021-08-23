@@ -40,7 +40,7 @@ Status NestedBlockingAggFnCheckRule::CheckExpression(const ColumnExpression& exp
   }
 
   FuncIR* func = static_cast<FuncIR*>(expr.node);
-  for (const auto& arg : func->args()) {
+  for (const auto& arg : func->all_args()) {
     if (arg->IsFunction()) {
       return arg->CreateIRNodeError("agg function arg cannot be a function");
     }
