@@ -1,0 +1,4 @@
+---
+short: Kafka Flow Graph
+long: >
+  Graph of Kafka messages in the cluster, with latency stats.
