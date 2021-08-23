@@ -24,7 +24,7 @@ import {
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
-import { Card, Popover } from '@material-ui/core';
+import { Card, Popover, PopoverProps } from '@material-ui/core';
 import createTypography from '@material-ui/core/styles/createTypography';
 import createSpacing from '@material-ui/core/styles/createSpacing';
 
@@ -188,6 +188,15 @@ export interface DialogDropdownProps {
   explanation?: React.ReactNode;
 }
 
+// Used to shrink the <Autocomplete/>'s fonts and negative space, to not be as huge / central as the Command Input.
+const themeCompactor = (theme: Theme) => ({
+  ...theme,
+  typography: createTypography(theme.palette, {
+    fontSize: theme.typography.fontSize * 0.8,
+  }),
+  spacing: createSpacing((factor) => theme.spacing(factor * 0.8)),
+});
+
 const useDialogStyles = makeStyles((theme) => createStyles({
   card: {
     width: '608px',
@@ -305,46 +314,30 @@ export const DialogDropdown: React.FC<DialogDropdownProps> = ({
     [getListItems, requireCompletion],
   );
 
-  // Used to shrink the <Autocomplete/>'s fonts and negative space, to not be as huge / central as the Command Input.
-  const compactThemeBuilder = React.useMemo<(theme: Theme) => Theme>(
-    () => (theme: Theme) => ({
-      ...theme,
-      typography: createTypography(theme.palette, {
-        fontSize: theme.typography.fontSize * 0.8,
-      }),
-      spacing: createSpacing((factor) => theme.spacing(factor * 0.8)),
-    }),
-  [],
-  );
+  const autocompleteContextValue = React.useMemo(() => ({
+    allowTyping,
+    requireCompletion,
+    inputRef,
+    onOpen: 'clear' as const,
+    hidden: !anchorEl,
+  }), [allowTyping, requireCompletion, anchorEl]);
+
+  const popoverProps: PopoverProps = React.useMemo(() => ({
+    elevation: 0,
+    keepMounted: false,
+    classes: { paper: classes.completionsContainer },
+    onClose,
+    anchorEl,
+    open: !!anchorEl,
+    anchorOrigin: { vertical: 'bottom', horizontal: 'left' },
+    transformOrigin: { vertical: 'top', horizontal: 'left' },
+  }), [onClose, anchorEl, classes.completionsContainer]);
 
   return (
-    <Popover
-      classes={{ paper: classes.completionsContainer }}
-      anchorEl={anchorEl}
-      keepMounted
-      open={Boolean(anchorEl)}
-      onClose={onClose}
-      anchorOrigin={{
-        vertical: 'bottom',
-        horizontal: 'left',
-      }}
-      transformOrigin={{
-        vertical: 'top',
-        horizontal: 'left',
-      }}
-      elevation={0}
-    >
-      <ThemeProvider theme={compactThemeBuilder}>
+    <Popover {...popoverProps}>
+      <ThemeProvider theme={themeCompactor}>
         <Card className={classes.card}>
-          <AutocompleteContext.Provider
-            value={{
-              allowTyping,
-              requireCompletion,
-              inputRef,
-              onOpen: 'clear',
-              hidden: !anchorEl,
-            }}
-          >
+          <AutocompleteContext.Provider value={autocompleteContextValue}>
             <Autocomplete
               className={classes.autocomplete}
               placeholder={placeholder}
@@ -450,7 +443,7 @@ export interface BreadcrumbsProps {
   breadcrumbs: BreadcrumbOptions[];
 }
 
-export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ breadcrumbs }) => {
+export const Breadcrumbs: React.FC<BreadcrumbsProps> = React.memo(function Breadcrumbs({ breadcrumbs }) {
   const classes = useStyles();
   // In case a breadcrumb doesn't override, give it the nearest context's values.
   const { allowTyping, requireCompletion } = React.useContext(
@@ -479,4 +472,4 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ breadcrumbs }) => {
       </div>
     </Paper>
   );
-};
+});

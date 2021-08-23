@@ -31,7 +31,9 @@ import { Observable } from 'rxjs';
 import { checkExhaustive } from 'app/utils/check-exhaustive';
 import { ResultsContext } from 'app/context/results-context';
 import { useSnackbar } from 'app/components';
-import { argsForVis, stableSerializeArgs, validateArgs } from 'app/utils/args-utils';
+import {
+  argsForVis, Arguments, stableSerializeArgs, validateArgs,
+} from 'app/utils/args-utils';
 import { ClusterContext, useClusterConfig } from 'app/common/cluster-context';
 
 const NUM_MUTATION_RETRIES = 5;
@@ -319,26 +321,32 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runningExecution, numExecutionTries]);
 
+  const setScriptAndArgs = React.useCallback((newScript: Script, newArgs: Arguments = args) => {
+    setScript(newScript);
+    setManual(false);
+
+    push(selectedClusterName, newScript.id, argsForVis(newScript.vis, newArgs), embedState);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serializedArgs, embedState, push, selectedClusterName]);
+
+  const setScriptAndArgsManually = React.useCallback((newScript: Script, newArgs: Arguments = args) => {
+    setScript(newScript);
+    setManual(true);
+
+    push(selectedClusterName, newScript.id, argsForVis(newScript.vis, newArgs), embedState);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serializedArgs, embedState, push, selectedClusterName]);
+
   const context: ScriptContextProps = React.useMemo(() => ({
     script,
     args,
     manual,
-    setScriptAndArgs: (newScript: Script, newArgs: Record<string, string | string[]> = args) => {
-      setScript(newScript);
-      setManual(false);
-
-      push(selectedClusterName, newScript.id, argsForVis(newScript.vis, newArgs), embedState);
-    },
-    setScriptAndArgsManually: (newScript: Script, newArgs: Record<string, string | string[]> = args) => {
-      setScript(newScript);
-      setManual(true);
-
-      push(selectedClusterName, newScript.id, argsForVis(newScript.vis, newArgs), embedState);
-    },
+    setScriptAndArgs,
+    setScriptAndArgsManually,
     execute,
     cancelExecution: (cancelExecution ?? (() => {})),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [script, execute, serializedArgs, selectedClusterName]);
+  }), [script, execute, serializedArgs, selectedClusterName, setScriptAndArgs, setScriptAndArgsManually]);
 
   return <ScriptContext.Provider value={context}>{children}</ScriptContext.Provider>;
 };
