@@ -222,9 +222,11 @@ export const DialogDropdown: React.FC<DialogDropdownProps> = ({
   const { allowTyping, requireCompletion } = React.useContext(AutocompleteContext);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  if (anchorEl && inputRef.current) {
-    inputRef.current?.focus();
-  }
+  React.useEffect(() => {
+    if (anchorEl && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [anchorEl]);
 
   const onCompletionSelected = React.useCallback(
     (itemValue: string) => {
