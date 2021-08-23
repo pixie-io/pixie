@@ -748,6 +748,12 @@ class DataIR : public ExpressionIR {
                                      const planpb::ScalarValue& value);
 
   /**
+   * @brief HashValue returns a 64bit hash of the value of this Data node.
+   * @return uint64_t hash value
+   */
+  uint64_t HashValue() const;
+
+  /**
    * @brief The implementation of ToProto for DataIR derived classes.
    * Each implementation should only be one line such as
    * `value->set_int64_value`
@@ -763,6 +769,7 @@ class DataIR : public ExpressionIR {
  protected:
   DataIR(int64_t id, IRNodeType type, const ExpressionIR::Annotations& annotations)
       : ExpressionIR(id, type, annotations), evaluated_data_type_(DataType(type)) {}
+  virtual uint64_t HashValueImpl() const = 0;
 
  private:
   types::DataType evaluated_data_type_;
@@ -957,6 +964,9 @@ class StringIR : public DataIR {
     return s->str() == str();
   }
 
+ protected:
+  uint64_t HashValueImpl() const override;
+
  private:
   std::string str_;
 };
@@ -997,6 +1007,9 @@ class UInt128IR : public DataIR {
     auto data = static_cast<UInt128IR*>(expr);
     return data->val() == val();
   }
+
+ protected:
+  uint64_t HashValueImpl() const override;
 
  private:
   absl::uint128 val_;
@@ -1189,6 +1202,9 @@ class FloatIR : public DataIR {
     return absl::Substitute("$0, $1)", DataIR::DebugString(), val());
   }
 
+ protected:
+  uint64_t HashValueImpl() const override;
+
  private:
   double val_;
 };
@@ -1221,6 +1237,9 @@ class IntIR : public DataIR {
     return data->val() == val();
   }
 
+ protected:
+  uint64_t HashValueImpl() const override;
+
  private:
   int64_t val_;
 };
@@ -1248,6 +1267,9 @@ class BoolIR : public DataIR {
     return data->val() == val();
   }
 
+ protected:
+  uint64_t HashValueImpl() const override;
+
  private:
   bool val_;
 };
@@ -1273,6 +1295,9 @@ class TimeIR : public DataIR {
     auto data = static_cast<TimeIR*>(expr);
     return data->val() == val();
   }
+
+ protected:
+  uint64_t HashValueImpl() const override;
 
  private:
   int64_t val_;

@@ -55,10 +55,15 @@ StatusOr<bool> DataTypeRule::EvaluateFunc(CompilerState* compiler_state, FuncIR*
   if (!udftype_or_s.ok()) {
     return func->CreateIRNodeError(udftype_or_s.status().msg());
   }
+
   PL_ASSIGN_OR_RETURN(size_t num_init_args, compiler_state->registry_info()->GetNumInitArgs(
                                                 func->func_name(), children_data_types));
   PL_RETURN_IF_ERROR(func->SplitInitArgs(num_init_args));
 
+  std::vector<uint64_t> init_arg_hashes;
+  for (const auto& init_arg : func->init_args()) {
+    init_arg_hashes.push_back(init_arg->HashValue());
+  }
   switch (udftype_or_s.ConsumeValueOrDie()) {
     case UDFExecType::kUDF: {
       auto data_type_or_s =
@@ -67,8 +72,8 @@ StatusOr<bool> DataTypeRule::EvaluateFunc(CompilerState* compiler_state, FuncIR*
         return func->CreateIRNodeError(data_type_or_s.status().msg());
       }
       types::DataType data_type = data_type_or_s.ConsumeValueOrDie();
-      func->set_func_id(
-          compiler_state->GetUDFID(RegistryKey(func->func_name(), children_data_types)));
+      func->set_func_id(compiler_state->GetUDFID(
+          IDRegistryKey(func->func_name(), children_data_types, init_arg_hashes)));
       func->SetOutputDataType(data_type);
       break;
     }
@@ -78,8 +83,8 @@ StatusOr<bool> DataTypeRule::EvaluateFunc(CompilerState* compiler_state, FuncIR*
           compiler_state->registry_info()->GetUDADataType(func->func_name(), children_data_types));
       PL_ASSIGN_OR_RETURN(bool can_partial, compiler_state->registry_info()->DoesUDASupportPartial(
                                                 func->func_name(), children_data_types));
-      func->set_func_id(
-          compiler_state->GetUDAID(RegistryKey(func->func_name(), children_data_types)));
+      func->set_func_id(compiler_state->GetUDAID(
+          IDRegistryKey(func->func_name(), children_data_types, init_arg_hashes)));
       func->SetOutputDataType(data_type);
       func->SetSupportsPartial(can_partial);
       break;

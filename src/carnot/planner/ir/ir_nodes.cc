@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <farmhash.h>
 #include <queue>
 
 #include "src/carnot/planner/ir/ir_nodes.h"
@@ -844,6 +845,8 @@ Status DataIR::ToProto(planpb::ScalarValue* value_pb) const {
   return ToProtoImpl(value_pb);
 }
 
+uint64_t DataIR::HashValue() const { return HashValueImpl(); }
+
 StatusOr<DataIR*> DataIR::FromProto(IR* ir, std::string_view name,
                                     const planpb::ScalarValue& value) {
   switch (value.data_type()) {
@@ -903,9 +906,17 @@ Status IntIR::ToProtoImpl(planpb::ScalarValue* value) const {
   return Status::OK();
 }
 
+uint64_t IntIR::HashValueImpl() const {
+  return ::util::Hash64(reinterpret_cast<const char*>(&val_), sizeof(int64_t));
+}
+
 Status FloatIR::ToProtoImpl(planpb::ScalarValue* value) const {
   value->set_float64_value(val_);
   return Status::OK();
+}
+
+uint64_t FloatIR::HashValueImpl() const {
+  return ::util::Hash64(reinterpret_cast<const char*>(&val_), sizeof(double));
 }
 
 Status BoolIR::ToProtoImpl(planpb::ScalarValue* value) const {
@@ -913,14 +924,24 @@ Status BoolIR::ToProtoImpl(planpb::ScalarValue* value) const {
   return Status::OK();
 }
 
+uint64_t BoolIR::HashValueImpl() const {
+  return ::util::Hash64(reinterpret_cast<const char*>(&val_), sizeof(bool));
+}
+
 Status StringIR::ToProtoImpl(planpb::ScalarValue* value) const {
   value->set_string_value(str_);
   return Status::OK();
 }
 
+uint64_t StringIR::HashValueImpl() const { return ::util::Hash64(str_); }
+
 Status TimeIR::ToProtoImpl(planpb::ScalarValue* value) const {
   value->set_time64_ns_value(val_);
   return Status::OK();
+}
+
+uint64_t TimeIR::HashValueImpl() const {
+  return ::util::Hash64(reinterpret_cast<const char*>(&val_), sizeof(int64_t));
 }
 
 Status UInt128IR::ToProtoImpl(planpb::ScalarValue* value) const {
@@ -928,6 +949,11 @@ Status UInt128IR::ToProtoImpl(planpb::ScalarValue* value) const {
   uint128pb->set_high(absl::Uint128High64(val_));
   uint128pb->set_low(absl::Uint128Low64(val_));
   return Status::OK();
+}
+
+uint64_t UInt128IR::HashValueImpl() const {
+  uint64_t high_low[] = {absl::Uint128High64(val_), absl::Uint128Low64(val_)};
+  return ::util::Hash64(reinterpret_cast<const char*>(high_low), 2 * sizeof(uint64_t));
 }
 
 Status ColumnIR::Init(const std::string& col_name, int64_t parent_idx) {

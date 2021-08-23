@@ -3192,6 +3192,29 @@ TEST_F(CompilerTest, init_args_udf) {
   ASSERT_EQ(types::STRING, pb.func().init_args(0).data_type());
 }
 
+constexpr char kMultipleInitArgsQuery[] = R"pxl(
+import px
+df = px.DataFrame('http_events')
+df.foo = px.regex_match('regex_pattern1', df.req_body)
+df.foo2 = px.regex_match('regex_pattern2', df.req_body)
+px.display(df)
+)pxl";
+
+TEST_F(CompilerTest, init_args_udf_multiple_same_arg_types) {
+  auto plan_or_s = compiler_.CompileToIR(kMultipleInitArgsQuery, compiler_state_.get());
+  ASSERT_OK(plan_or_s);
+
+  auto plan = plan_or_s.ConsumeValueOrDie();
+  auto nodes = plan->FindNodesThatMatch(Func("regex_match"));
+  ASSERT_EQ(2, nodes.size());
+
+  auto node1 = static_cast<FuncIR*>(nodes[0]);
+  auto node2 = static_cast<FuncIR*>(nodes[1]);
+  // Eventhough they have the same types, since their init args differ they should be given a
+  // different id.
+  ASSERT_NE(node1->func_id(), node2->func_id());
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

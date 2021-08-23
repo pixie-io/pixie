@@ -23,6 +23,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include "src/carnot/planner/compiler_state/registry_info.h"
 
@@ -32,6 +33,55 @@
 namespace px {
 namespace carnot {
 namespace planner {
+
+/**
+ * IDRegistryKey is the class used to uniquely refer to a UDF or UDA in the ID registry.
+ * Distinct from the normal RegistryKey since that registry only cares about types, whereas the ID
+ * registry has to keep track of the values of init args as well.
+ */
+class IDRegistryKey {
+ public:
+  /**
+   * IDRegistryKey constructor.
+   *
+   * @param name of the UDF/UDA.
+   * @param registry_arg_types the types used for registry resolution.
+   * @param init_arg_vals the values of the init args.
+   */
+  IDRegistryKey(std::string name, const std::vector<types::DataType>& registry_arg_types,
+                const std::vector<uint64_t>& init_arg_hashes)
+      : name_(std::move(name)),
+        registry_arg_types_(registry_arg_types),
+        init_arg_hashes_(init_arg_hashes) {}
+
+  /**
+   * Access name of the UDF/UDA.
+   * @return The name of the udf/uda.
+   */
+  const std::string& name() const { return name_; }
+
+  const std::vector<types::DataType>& registry_arg_types() { return registry_arg_types_; }
+
+  /**
+   * LessThan operator overload so we can use this in maps.
+   * @param lhs is the other RegistryKey.
+   * @return a stable less than compare.
+   */
+  bool operator<(const IDRegistryKey& lhs) const {
+    if (name_ == lhs.name_) {
+      if (registry_arg_types_ == lhs.registry_arg_types_) {
+        return init_arg_hashes_ < lhs.init_arg_hashes_;
+      }
+      return registry_arg_types_ < lhs.registry_arg_types_;
+    }
+    return name_ < lhs.name_;
+  }
+
+ protected:
+  std::string name_;
+  std::vector<types::DataType> registry_arg_types_;
+  std::vector<uint64_t> init_arg_hashes_;
+};
 
 using RelationMap = std::unordered_map<std::string, table_store::schema::Relation>;
 class CompilerState : public NotCopyable {
@@ -64,10 +114,10 @@ class CompilerState : public NotCopyable {
   const std::string& result_address() const { return result_address_; }
   const std::string& result_ssl_targetname() const { return result_ssl_targetname_; }
 
-  std::map<RegistryKey, int64_t> udf_to_id_map() const { return udf_to_id_map_; }
-  std::map<RegistryKey, int64_t> uda_to_id_map() const { return uda_to_id_map_; }
+  std::map<IDRegistryKey, int64_t> udf_to_id_map() const { return udf_to_id_map_; }
+  std::map<IDRegistryKey, int64_t> uda_to_id_map() const { return uda_to_id_map_; }
 
-  int64_t GetUDFID(const RegistryKey& key) {
+  int64_t GetUDFID(const IDRegistryKey& key) {
     auto id = udf_to_id_map_.find(key);
     if (id != udf_to_id_map_.end()) {
       return id->second;
@@ -77,7 +127,7 @@ class CompilerState : public NotCopyable {
     return new_id;
   }
 
-  int64_t GetUDAID(const RegistryKey& key) {
+  int64_t GetUDAID(const IDRegistryKey& key) {
     auto id = uda_to_id_map_.find(key);
     if (id != uda_to_id_map_.end()) {
       return id->second;
@@ -94,8 +144,8 @@ class CompilerState : public NotCopyable {
   std::unique_ptr<RelationMap> relation_map_;
   RegistryInfo* registry_info_;
   types::Time64NSValue time_now_;
-  std::map<RegistryKey, int64_t> udf_to_id_map_;
-  std::map<RegistryKey, int64_t> uda_to_id_map_;
+  std::map<IDRegistryKey, int64_t> udf_to_id_map_;
+  std::map<IDRegistryKey, int64_t> uda_to_id_map_;
 
   int64_t max_output_rows_per_table_ = 0;
   const std::string result_address_;
