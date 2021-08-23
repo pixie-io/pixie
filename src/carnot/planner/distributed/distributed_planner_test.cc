@@ -374,6 +374,25 @@ TEST_F(DistributedPlannerUDTFTests, UDTFOnKelvinJoinWithUDTFOnPEM) {
             pem_grpc_sink->agent_id_to_destination_id().find(pem_instance->id())->second);
 }
 
+constexpr char kInitArgQuery[] = R"pxl(
+import px
+df = px.DataFrame('http_events')
+df.match = px.regex_match('regex_pattern', df.req_body)
+px.display(df)
+)pxl";
+
+TEST_F(DistributedRulesTest, init_args) {
+  compiler::Compiler compiler;
+  auto plan_or_s = compiler.CompileToIR(kInitArgQuery, compiler_state_.get());
+  ASSERT_OK(plan_or_s);
+  auto single_node_plan = plan_or_s.ConsumeValueOrDie();
+
+  auto distributed_planner = distributed::DistributedPlanner::Create().ConsumeValueOrDie();
+  auto distributed_plan_or_s = distributed_planner->Plan(
+      logical_state_.distributed_state(), compiler_state_.get(), single_node_plan.get());
+  EXPECT_OK(distributed_plan_or_s);
+}
+
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot

@@ -43,6 +43,12 @@ udas {
   update_arg_types: INT64
   finalize_type: INT64
 }
+udas {
+  name: "init_arg_uda"
+  init_arg_types: STRING
+  update_arg_types: INT64
+  finalize_type: INT64
+}
 scalar_udfs {
   name: "add"
   exec_arg_types: FLOAT64
@@ -56,6 +62,14 @@ scalar_udfs {
   exec_arg_types: INT64
   return_type: INT64
   executor: UDF_KELVIN
+}
+scalar_udfs {
+  name: "init_arg_scalar"
+  init_arg_types: INT64
+  init_arg_types: INT64
+  exec_arg_types: INT64
+  return_type: INT64
+  executor: UDF_ALL
 }
 udtfs {
   name: "OpenNetworkConnections"
@@ -122,7 +136,8 @@ TEST(RegistryInfo, basic) {
       info.GetUDFDataType("add", std::vector<types::DataType>({types::FLOAT64, types::FLOAT64}))
           .ConsumeValueOrDie());
 
-  EXPECT_THAT(info.func_names(), UnorderedElementsAre("uda1", "uda2", "add", "scalar1"));
+  EXPECT_THAT(info.func_names(), UnorderedElementsAre("uda1", "uda2", "init_arg_uda", "add",
+                                                      "scalar1", "init_arg_scalar"));
 
   ASSERT_EQ(info.udtfs().size(), 1);
   EXPECT_EQ(info.udtfs()[0].name(), "OpenNetworkConnections");
@@ -143,6 +158,18 @@ TEST(RegistryInfo, udf_executor) {
                 .ConsumeValueOrDie());
   EXPECT_NOT_OK(info.GetUDFSourceExecutor(
       "scalar1", std::vector<types::DataType>({types::FLOAT64, types::FLOAT64})));
+}
+
+TEST(RegistryInfo, init_args) {
+  auto info = RegistryInfo();
+  udfspb::UDFInfo info_pb;
+  google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
+  EXPECT_OK(info.Init(info_pb));
+
+  EXPECT_EQ(2, info.GetNumInitArgs("init_arg_scalar", {types::INT64, types::INT64, types::INT64})
+                   .ConsumeValueOrDie());
+  EXPECT_EQ(1,
+            info.GetNumInitArgs("init_arg_uda", {types::STRING, types::INT64}).ConsumeValueOrDie());
 }
 
 TEST(RegistryInfo, semantic_types) {

@@ -1468,5 +1468,14 @@ TEST_F(CarnotTest, multiple_queries) {
   }
 }
 
+constexpr char kInitArgQuery[] = R"pxl(
+import px
+df = px.DataFrame('big_test_table')
+df.match = px.regex_match('pattern', df.string_groups)
+px.display(df)
+)pxl";
+
+TEST_F(CarnotTest, init_args) { ASSERT_OK(carnot_->ExecuteQuery(kInitArgQuery, sole::uuid4(), 0)); }
+
 }  // namespace carnot
 }  // namespace px

@@ -855,14 +855,14 @@ class RulesTest : public OperatorTests {
 
   void SetUpImpl() override {
     SetUpRegistryInfo();
-
     auto rel_map = std::make_unique<RelationMap>();
     cpu_relation = table_store::schema::Relation(
         std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
                                       types::DataType::FLOAT64, types::DataType::FLOAT64}),
         std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"}));
-    auto semantic_rel = Relation({types::INT64, types::FLOAT64}, {"bytes", "cpu"},
-                                 {types::ST_BYTES, types::ST_PERCENT});
+    semantic_rel =
+        Relation({types::INT64, types::FLOAT64, types::STRING}, {"bytes", "cpu", "str_col"},
+                 {types::ST_BYTES, types::ST_PERCENT, types::ST_NONE});
     rel_map->emplace("cpu", cpu_relation);
     rel_map->emplace("semantic_table", semantic_rel);
 
@@ -933,6 +933,7 @@ class RulesTest : public OperatorTests {
   std::unique_ptr<RegistryInfo> info_;
   int64_t time_now = 1552607213931245000;
   table_store::schema::Relation cpu_relation;
+  table_store::schema::Relation semantic_rel;
   std::unique_ptr<MetadataHandler> md_handler;
 };
 

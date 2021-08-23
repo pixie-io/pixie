@@ -44,8 +44,12 @@ class DataTypeRuleTest : public RulesTest {
     mem_src =
         graph->CreateNode<MemorySourceIR>(ast, "source", std::vector<std::string>{}).ValueOrDie();
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
+    sem_rel_mem_src =
+        graph->CreateNode<MemorySourceIR>(ast, "source", std::vector<std::string>{}).ValueOrDie();
+    PL_CHECK_OK(sem_rel_mem_src->SetRelation(semantic_rel));
   }
   MemorySourceIR* mem_src;
+  MemorySourceIR* sem_rel_mem_src;
 };
 
 // Simple map function.
@@ -209,6 +213,47 @@ TEST_F(DataTypeRuleTest, metadata_column) {
   EXPECT_TRUE(result.ConsumeValueOrDie());
   EXPECT_TRUE(metadata_ir->IsDataTypeEvaluated());
   EXPECT_EQ(metadata_ir->EvaluatedDataType(), types::DataType::STRING);
+}
+
+TEST_F(DataTypeRuleTest, map_function_init_args) {
+  auto constant = graph->CreateNode<StringIR>(ast, "regex_pattern").ValueOrDie();
+  auto col = MakeColumn("str_col", /* parent_op_idx */ 0);
+  auto func = graph
+                  ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "regex_match"},
+                                       std::vector<ExpressionIR*>({constant, col}))
+                  .ValueOrDie();
+  EXPECT_OK(graph->CreateNode<MapIR>(ast, sem_rel_mem_src, ColExpressionVector{{"func", func}},
+                                     /* keep_input_columns */ false));
+  // No rule has been run, don't expect any of these to be evaluated.
+  EXPECT_FALSE(func->IsDataTypeEvaluated());
+  EXPECT_FALSE(col->IsDataTypeEvaluated());
+
+  EXPECT_NOT_MATCH(func, UnresolvedRTFuncMatchAllArgs(ResolvedExpression()));
+
+  // Expect the data_rule to change something.
+  DataTypeRule data_rule(compiler_state_.get());
+  bool did_change;
+  do {
+    auto result = data_rule.Execute(graph.get());
+    ASSERT_OK(result.status());
+    did_change = result.ConsumeValueOrDie();
+  } while (did_change);
+
+  // The function should now be evaluated, the column should stay evaluated.
+  EXPECT_TRUE(func->IsDataTypeEvaluated());
+  EXPECT_TRUE(col->IsDataTypeEvaluated());
+
+  EXPECT_EQ(col->EvaluatedDataType(), types::DataType::STRING);
+  EXPECT_EQ(func->EvaluatedDataType(), types::DataType::BOOLEAN);
+
+  // Expect the data_rule to do nothing, no more work left.
+  auto result = data_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_FALSE(result.ValueOrDie());
+
+  // Both should stay evaluated.
+  EXPECT_TRUE(func->IsDataTypeEvaluated());
+  EXPECT_TRUE(col->IsDataTypeEvaluated());
 }
 
 }  // namespace compiler

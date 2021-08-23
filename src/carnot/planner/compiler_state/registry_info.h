@@ -124,14 +124,13 @@ class RegistryInfo {
  public:
   Status Init(const udfspb::UDFInfo& info);
   StatusOr<types::DataType> GetUDADataType(std::string name,
-                                           std::vector<types::DataType> update_arg_types);
+                                           std::vector<types::DataType> arg_types);
   StatusOr<types::DataType> GetUDFDataType(std::string name,
-                                           std::vector<types::DataType> exec_arg_types);
-  StatusOr<udfspb::UDFSourceExecutor> GetUDFSourceExecutor(
-      std::string name, std::vector<types::DataType> exec_arg_types);
+                                           std::vector<types::DataType> arg_types);
+  StatusOr<udfspb::UDFSourceExecutor> GetUDFSourceExecutor(std::string name,
+                                                           std::vector<types::DataType> arg_types);
 
-  StatusOr<bool> DoesUDASupportPartial(std::string name,
-                                       std::vector<types::DataType> update_arg_types);
+  StatusOr<bool> DoesUDASupportPartial(std::string name, std::vector<types::DataType> arg_types);
 
   StatusOr<UDFExecType> GetUDFExecType(std::string_view name);
   absl::flat_hash_set<std::string> func_names() const;
@@ -158,12 +157,16 @@ class RegistryInfo {
   template <typename TType>
   StatusOr<TType> ResolveUDFSubType(std::string name, std::vector<TType> arg_types);
 
+  StatusOr<size_t> GetNumInitArgs(std::string name, const std::vector<types::DataType>& arg_types);
+
  protected:
   void AddSemanticInferenceRule(const udfspb::SemanticInferenceRule& rule);
 
   std::map<RegistryKey, types::DataType> udf_map_;
   std::map<RegistryKey, types::DataType> uda_map_;
   std::map<RegistryKey, udfspb::UDFSourceExecutor> udf_executor_map_;
+
+  std::map<RegistryKey, size_t> num_init_args_map_;
 
   // Allocated as a separate map because this is a temporary solution.
   std::map<RegistryKey, bool> uda_supports_partial_map_;

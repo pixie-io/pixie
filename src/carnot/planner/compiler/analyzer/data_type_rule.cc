@@ -49,12 +49,16 @@ StatusOr<bool> DataTypeRule::EvaluateFunc(CompilerState* compiler_state, FuncIR*
     children_data_types.push_back(t);
   }
   func->SetRegistryArgTypes(children_data_types);
-  PL_RETURN_IF_ERROR(func->SplitInitArgs(0));
-
+  // Need to run this first so that we see a could not find function error if the function doesn't
+  // exist, instead of a could not find function with arguments error.
   auto udftype_or_s = compiler_state->registry_info()->GetUDFExecType(func->func_name());
   if (!udftype_or_s.ok()) {
     return func->CreateIRNodeError(udftype_or_s.status().msg());
   }
+  PL_ASSIGN_OR_RETURN(size_t num_init_args, compiler_state->registry_info()->GetNumInitArgs(
+                                                func->func_name(), children_data_types));
+  PL_RETURN_IF_ERROR(func->SplitInitArgs(num_init_args));
+
   switch (udftype_or_s.ConsumeValueOrDie()) {
     case UDFExecType::kUDF: {
       auto data_type_or_s =

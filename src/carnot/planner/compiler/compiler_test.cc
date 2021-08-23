@@ -3169,6 +3169,29 @@ TEST_F(CompilerTest, nested_semantic_type_cast) {
   EXPECT_EQ(types::ST_DURATION_NS, node->type_cast()->semantic_type());
 }
 
+constexpr char kInitArgsQuery[] = R"pxl(
+import px
+df = px.DataFrame('http_events')
+df.foo = px.regex_match('regex_pattern', df.req_body)
+px.display(df)
+)pxl";
+
+TEST_F(CompilerTest, init_args_udf) {
+  auto plan_or_s = compiler_.CompileToIR(kInitArgsQuery, compiler_state_.get());
+  ASSERT_OK(plan_or_s);
+
+  auto plan = plan_or_s.ConsumeValueOrDie();
+  auto nodes = plan->FindNodesThatMatch(Func("regex_match"));
+  ASSERT_EQ(1, nodes.size());
+
+  auto node = static_cast<FuncIR*>(nodes[0]);
+  planpb::ScalarExpression pb;
+  ASSERT_OK(node->ToProto(&pb));
+
+  ASSERT_EQ(1, pb.func().init_args_size());
+  ASSERT_EQ(types::STRING, pb.func().init_args(0).data_type());
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

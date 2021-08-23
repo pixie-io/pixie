@@ -61,14 +61,18 @@ Status RegistryInfo::Init(const udfspb::UDFInfo& info) {
   info_pb_ = info;
   for (const auto& uda : info.udas()) {
     std::vector<types::DataType> arg_types;
-    arg_types.reserve(uda.update_arg_types_size());
+    arg_types.reserve(uda.init_arg_types_size() + uda.update_arg_types_size());
 
+    for (int64_t i = 0; i < uda.init_arg_types_size(); i++) {
+      arg_types.push_back(uda.init_arg_types(i));
+    }
     for (int64_t i = 0; i < uda.update_arg_types_size(); i++) {
       arg_types.push_back(uda.update_arg_types(i));
     }
     auto key = RegistryKey(uda.name(), arg_types);
     uda_map_[key] = uda.finalize_type();
     uda_supports_partial_map_[key] = uda.supports_partial();
+    num_init_args_map_[key] = uda.init_arg_types_size();
     // Add uda to funcs_.
     if (funcs_.contains(uda.name())) {
       PL_ASSIGN_OR_RETURN(auto type, GetUDFExecType(uda.name()));
@@ -79,8 +83,11 @@ Status RegistryInfo::Init(const udfspb::UDFInfo& info) {
 
   for (const auto& udf : info.scalar_udfs()) {
     std::vector<types::DataType> arg_types;
-    arg_types.reserve(udf.exec_arg_types_size());
+    arg_types.reserve(udf.init_arg_types_size() + udf.exec_arg_types_size());
 
+    for (int64_t i = 0; i < udf.init_arg_types_size(); i++) {
+      arg_types.push_back(udf.init_arg_types(i));
+    }
     for (int64_t i = 0; i < udf.exec_arg_types_size(); i++) {
       arg_types.push_back(udf.exec_arg_types(i));
     }
@@ -88,6 +95,7 @@ Status RegistryInfo::Init(const udfspb::UDFInfo& info) {
     auto key = RegistryKey(udf.name(), arg_types);
     udf_map_[key] = udf.return_type();
     udf_executor_map_[key] = udf.executor();
+    num_init_args_map_[key] = udf.init_arg_types_size();
 
     // Add udf to funcs_.
     if (funcs_.contains(udf.name())) {
@@ -181,6 +189,15 @@ StatusOr<std::shared_ptr<ValueType>> RegistryInfo::ResolveUDFType(
   PL_ASSIGN_OR_RETURN(auto out_data_type, ResolveUDFSubType(name, arg_data_types));
   PL_ASSIGN_OR_RETURN(auto out_semantic_type, ResolveUDFSubType(name, arg_semantic_types));
   return ValueType::Create(out_data_type, out_semantic_type);
+}
+
+StatusOr<size_t> RegistryInfo::GetNumInitArgs(std::string name,
+                                              const std::vector<types::DataType>& arg_types) {
+  auto it = num_init_args_map_.find(RegistryKey(name, arg_types));
+  if (it == num_init_args_map_.end()) {
+    return FormatMissingUDFError(name, arg_types);
+  }
+  return it->second;
 }
 
 void RegistryInfo::AddSemanticInferenceRule(const udfspb::SemanticInferenceRule& rule) {
