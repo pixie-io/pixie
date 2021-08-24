@@ -106,28 +106,28 @@ TEST(TCPSocketTest, SendFile) {
   TCPSocket server;
   server.BindAndListen();
 
-  std::vector<std::string> received_data;
+  std::string received_data;
   TCPSocket client;
   std::thread client_thread([&server, &client, &received_data]() {
     client.Connect(server);
-    std::string data;
-    while (client.Read(&data)) {
-      received_data.push_back(data);
+    while (client.Read(&received_data)) {
     }
   });
 
+  const std::string kText = "Pixielabs";
+
   std::unique_ptr<fs::TempFile> tmpf = fs::TempFile::Create();
   std::filesystem::path fpath = tmpf->path();
-  ASSERT_OK(WriteFileFromString(fpath, "Pixielabs"));
+  ASSERT_OK(WriteFileFromString(fpath, kText));
 
   std::unique_ptr<TCPSocket> conn = server.Accept();
-  EXPECT_EQ(9, conn->SendFile(fpath));
+  EXPECT_EQ(conn->SendFile(fpath), kText.size());
   conn->Close();
 
   server.Close();
   client_thread.join();
 
-  EXPECT_EQ("Pixielabs", absl::StrJoin(received_data, ""));
+  EXPECT_EQ(received_data, kText);
 }
 
 TEST(TCPSocketTest, ServerAddrAndPort) {
