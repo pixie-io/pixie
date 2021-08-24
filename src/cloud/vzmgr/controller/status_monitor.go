@@ -23,8 +23,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/segmentio/analytics-go.v3"
+
+	"px.dev/pixie/src/shared/cvmsgspb"
+	"px.dev/pixie/src/shared/services/events"
 )
 
 const (
@@ -82,21 +87,50 @@ func (s *StatusMonitor) Stop() {
 func (s *StatusMonitor) UpdateDBEntries() {
 	query := `
      UPDATE
-       vizier_cluster_info
+       vizier_cluster_info x
      SET
        status='DISCONNECTED',
        address=''
-     WHERE (last_heartbeat < NOW() - INTERVAL '%f seconds' AND status != 'UPDATING' AND status != 'DISCONNECTED')
-	 OR (last_heartbeat < NOW() - INTERVAL '%f seconds' AND status = 'UPDATING');`
+     FROM (SELECT * from vizier_cluster_info
+		     WHERE (last_heartbeat < NOW() - INTERVAL '%f seconds' AND status != 'UPDATING' AND status != 'DISCONNECTED')
+			   OR (last_heartbeat < NOW() - INTERVAL '%f seconds' AND status = 'UPDATING')) y
+     WHERE x.vizier_cluster_id = y.vizier_cluster_id
+     RETURNING y.vizier_cluster_id, y.status as prev_status, y.vizier_version, y.cluster_version;`
 	// Variable substitution does not seem to work for intervals. Since we control this entire
 	// query and input data it should be safe to add the value to the query using
 	// a format directive.
 	query = fmt.Sprintf(query, durationBeforeDisconnect.Seconds(), durationBeforeUpdateDisconnect.Seconds())
-	res, err := s.db.Exec(query)
+	start := time.Now()
+	rows, err := s.db.Queryx(query)
 	if err != nil {
 		log.WithError(err).Error("Failed to update database, ignoring (will retry in next tick)")
 		return
 	}
-	rowCount, _ := res.RowsAffected()
-	log.WithField("entries_update", rowCount).Info("Heartbeat Update Complete")
+
+	entryUpdated := 0
+	defer rows.Close()
+	for rows.Next() {
+		entryUpdated++
+		var vizierID uuid.UUID
+		var prevStatus vizierStatus
+		var vizierVersion string
+		var k8sClusterVersion string
+		err = rows.Scan(&vizierID, &prevStatus, &vizierVersion, &k8sClusterVersion)
+		if err != nil {
+			log.Info("Failed to read data for updated vizier, ignoring")
+		}
+		events.Client().Enqueue(&analytics.Track{
+			UserId: vizierID.String(),
+			Event:  events.ClusterStatusChange,
+			Properties: analytics.NewProperties().
+				Set("cluster_id", vizierID.String()).
+				Set("prev_status", cvmsgspb.VizierStatus(prevStatus).String()).
+				Set("status", cvmsgspb.VZ_ST_DISCONNECTED.String()).
+				Set("k8s_version", k8sClusterVersion).
+				Set("vizier_version", vizierVersion),
+		})
+	}
+	log.WithField("entries_update", entryUpdated).
+		WithField("update_time", time.Since(start)).
+		Info("Heartbeat Update Complete")
 }

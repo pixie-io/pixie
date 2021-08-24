@@ -799,17 +799,28 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 		addr = fmt.Sprintf("%s:%d", addr, req.Port)
 	}
 
+	// We want to detect when the record changes, so we need to exhaustively list all the columns except the
+	// heartbeat time and status.
+	// Note: We don't compare the json fields because they just contain details of the status fields.
 	query := `
-		UPDATE vizier_cluster_info
+		UPDATE vizier_cluster_info x
 		SET last_heartbeat = $1, status = $2, address = $3, control_plane_pod_statuses = $4,
 			num_nodes = $5, num_instrumented_nodes = $6, auto_update_enabled = $7,
 			unhealthy_data_plane_pod_statuses = $8, cluster_version = $9, status_message = $10
-		WHERE vizier_cluster_id = $11
-		RETURNING status != prev_status as status_changed, vizier_version`
+		FROM (SELECT * FROM vizier_cluster_info WHERE vizier_cluster_id = $11) y
+		WHERE x.vizier_cluster_id = y.vizier_cluster_id
+		RETURNING (x.status != y.status
+		  OR x.address != y.address
+		  OR x.num_nodes != y.num_nodes
+		  OR x.num_instrumented_nodes != y.num_instrumented_nodes
+		  OR x.auto_update_enabled != y.auto_update_enabled
+		  OR x.cluster_version != y.cluster_version
+		  OR x.status_message != y.status_message) as changed, x.vizier_version, y.prev_status as prev_status`
 
 	var info struct {
-		StatusChanged bool   `db:"status_changed"`
-		Version       string `db:"vizier_version"`
+		Changed    bool         `db:"changed"`
+		PrevStatus vizierStatus `db:"prev_status"`
+		Version    string       `db:"vizier_version"`
 	}
 
 	rows, err := s.db.Queryx(query, time.Now(), vizierStatus(req.Status), addr, PodStatuses(req.PodStatuses), req.NumNodes,
@@ -832,26 +843,20 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	// Release the DB connection early.
 	rows.Close()
 
-	// Send cluster-level info.
-	events.Client().Enqueue(&analytics.Track{
-		UserId: vizierID.String(),
-		Event:  events.VizierHeartbeat,
-		Properties: analytics.NewProperties().
-			Set("cluster_id", vizierID.String()).
-			Set("status", req.Status.String()).
-			Set("num_nodes", req.NumNodes).
-			Set("num_instrumented_nodes", req.NumInstrumentedNodes).
-			Set("vizier_version", info.Version),
-	})
-
 	// Send analytics event for cluster status changes.
-	if info.StatusChanged {
+	if info.Changed {
 		events.Client().Enqueue(&analytics.Track{
 			UserId: vizierID.String(),
 			Event:  events.ClusterStatusChange,
 			Properties: analytics.NewProperties().
 				Set("cluster_id", vizierID.String()).
-				Set("status", req.Status.String()),
+				Set("prev_status", cvmsgspb.VizierStatus(info.PrevStatus).String()).
+				Set("status", req.Status.String()).
+				Set("num_nodes", req.NumNodes).
+				Set("num_instrumented_nodes", req.NumInstrumentedNodes).
+				Set("auto_update_enabled", !req.DisableAutoUpdate).
+				Set("K8s_version", req.K8sClusterVersion).
+				Set("vizier_version", info.Version),
 		})
 	}
 
