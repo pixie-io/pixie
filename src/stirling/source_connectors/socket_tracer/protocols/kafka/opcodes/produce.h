@@ -90,7 +90,7 @@ struct ProduceReq {
 };
 
 struct RecordError {
-  int32_t batch_index;
+  int32_t batch_index = 0;
   std::string error_message;
 
   void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
@@ -104,8 +104,11 @@ struct RecordError {
 };
 
 struct ProduceRespPartition {
-  int32_t index;
-  int16_t error_code;
+  int32_t index = 0;
+  int16_t error_code = 0;
+  int64_t base_offset = 0;
+  int64_t log_append_time_ms = -1;
+  int64_t log_start_offset = 0;
   std::vector<RecordError> record_errors;
   std::string error_message;
 
@@ -115,6 +118,12 @@ struct ProduceRespPartition {
     writer->Int(index);
     writer->Key("error_code");
     writer->String(magic_enum::enum_name(static_cast<ErrorCode>(error_code)).data());
+    writer->Key("base_offset");
+    writer->Int(base_offset);
+    writer->Key("log_append_time_ms");
+    writer->Int(log_append_time_ms);
+    writer->Key("log_start_offset");
+    writer->Int(log_start_offset);
     writer->Key("record_errors");
     writer->StartArray();
     for (const auto& r : record_errors) {
@@ -147,7 +156,7 @@ struct ProduceRespTopic {
 
 struct ProduceResp {
   std::vector<ProduceRespTopic> topics;
-  int32_t throttle_time_ms;
+  int32_t throttle_time_ms = 0;
 
   void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
     writer->StartObject();

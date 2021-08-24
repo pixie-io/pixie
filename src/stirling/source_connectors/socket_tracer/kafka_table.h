@@ -42,6 +42,10 @@ static constexpr DataElement kKafkaElements[] = {
        types::SemanticType::ST_NONE,
        types::PatternType::GENERAL_ENUM,
        &kKafkaAPIKeyDecoder},
+      {"client_id", "Kafka client ID",
+       types::DataType::STRING,
+       types::SemanticType::ST_NONE,
+       types::PatternType::GENERAL},
       {"req_body", "Kafka request body",
        types::DataType::STRING,
        types::SemanticType::ST_NONE,
@@ -64,6 +68,7 @@ DEFINE_PRINT_TABLE(Kafka)
 constexpr int kKafkaTimeIdx = kKafkaTable.ColIndex("time_");
 constexpr int kKafkaUPIDIdx = kKafkaTable.ColIndex("upid");
 constexpr int kKafkaReqCmdIdx = kKafkaTable.ColIndex("req_cmd");
+constexpr int kKafkaClientIDIdx = kKafkaTable.ColIndex("client_id");
 constexpr int kKafkaReqBodyIdx = kKafkaTable.ColIndex("req_body");
 constexpr int kKafkaRespIdx = kKafkaTable.ColIndex("resp");
 constexpr int kKafkaLatencyIdx = kKafkaTable.ColIndex("latency");

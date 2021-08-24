@@ -134,6 +134,7 @@ class KafkaTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> 
 struct KafkaTraceRecord {
   int64_t ts_ns = 0;
   kafka::APIKey req_cmd;
+  std::string client_id;
   std::string req_body;
   std::string resp;
 
@@ -145,19 +146,22 @@ struct KafkaTraceRecord {
 
 auto EqKafkaTraceRecord(const KafkaTraceRecord& x) {
   return AllOf(Field(&KafkaTraceRecord::req_cmd, Eq(x.req_cmd)),
+               Field(&KafkaTraceRecord::client_id, StrEq(x.client_id)),
                Field(&KafkaTraceRecord::req_body, StrEq(x.req_body)),
                Field(&KafkaTraceRecord::resp, StrEq(x.resp)));
 }
 
 KafkaTraceRecord kKafkaScriptCmd1 = {
     .req_cmd = kafka::APIKey::kProduce,
+    .client_id = "console-producer",
     .req_body =
         "{\"transactional_id\":\"\",\"acks\":1,\"timeout_ms\":1500,\"topics\":[{\"name\":\"foo\","
         "\"partitions\":[{\"index\":0,\"message_set\":{\"record_batches\":[{\"records\":[{\"key\":"
         ",\"value\":hello}]}]}}]}]}",
     .resp =
         "{\"topics\":[{\"name\":\"foo\",\"partitions\":[{\"index\":0,\"error_code\":\"kNone\","
-        "\"record_errors\":[],\"error_message\":\"\"}]}],\"throttle_time_ms\":0}"};
+        "\"base_offset\":0,\"log_append_time_ms\":-1,\"log_start_offset\":0,\"record_errors\":[],"
+        "\"error_message\":\"\"}]}],\"throttle_time_ms\":0}"};
 
 std::vector<KafkaTraceRecord> GetKafkaTraceRecords(
     const types::ColumnWrapperRecordBatch& record_batch, int pid) {
@@ -166,6 +170,7 @@ std::vector<KafkaTraceRecord> GetKafkaTraceRecords(
     res.push_back(KafkaTraceRecord{
         record_batch[kKafkaTimeIdx]->Get<types::Time64NSValue>(idx).val,
         static_cast<kafka::APIKey>(record_batch[kKafkaReqCmdIdx]->Get<types::Int64Value>(idx).val),
+        std::string(record_batch[kKafkaClientIDIdx]->Get<types::StringValue>(idx)),
         std::string(record_batch[kKafkaReqBodyIdx]->Get<types::StringValue>(idx)),
         std::string(record_batch[kKafkaRespIdx]->Get<types::StringValue>(idx)),
     });

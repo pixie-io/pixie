@@ -54,20 +54,17 @@ StatusOr<ProduceRespPartition> PacketDecoder::ExtractProduceRespPartition() {
 
   PL_ASSIGN_OR_RETURN(r.index, ExtractInt32());
   PL_ASSIGN_OR_RETURN(r.error_code, ExtractInt16());
-  PL_ASSIGN_OR_RETURN(int64_t base_offset, ExtractInt64());
+  PL_ASSIGN_OR_RETURN(r.base_offset, ExtractInt64());
   if (api_version_ >= 2) {
-    PL_ASSIGN_OR_RETURN(int64_t log_append_time_ms, ExtractInt64());
-    PL_UNUSED(log_append_time_ms);
+    PL_ASSIGN_OR_RETURN(r.log_append_time_ms, ExtractInt64());
   }
   if (api_version_ >= 5) {
-    PL_ASSIGN_OR_RETURN(int64_t log_start_offset, ExtractInt64());
-    PL_UNUSED(log_start_offset);
+    PL_ASSIGN_OR_RETURN(r.log_start_offset, ExtractInt64());
   }
   PL_ASSIGN_OR_RETURN(r.record_errors, ExtractArray(&PacketDecoder::ExtractRecordError));
   PL_ASSIGN_OR_RETURN(r.error_message, ExtractNullableString());
   PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
 
-  PL_UNUSED(base_offset);
   return r;
 }
 

@@ -922,6 +922,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
   r.Append<r.ColIndex("trace_role")>(role);
   r.Append<r.ColIndex("req_cmd")>(static_cast<int64_t>(record.req.api_key));
+  r.Append<r.ColIndex("client_id"), kMaxBodyBytes>(std::move(record.req.client_id));
   r.Append<r.ColIndex("req_body"), kMaxBodyBytes>(std::move(record.req.msg));
   r.Append<r.ColIndex("resp"), kMaxBodyBytes>(std::move(record.resp.msg));
   r.Append<r.ColIndex("latency")>(

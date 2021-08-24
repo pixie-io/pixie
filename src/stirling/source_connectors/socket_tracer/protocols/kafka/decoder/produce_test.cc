@@ -91,6 +91,15 @@ bool operator==(const ProduceRespPartition& lhs, const ProduceRespPartition& rhs
   if (lhs.error_code != rhs.error_code) {
     return false;
   }
+  if (lhs.base_offset != rhs.base_offset) {
+    return false;
+  }
+  if (lhs.log_append_time_ms != rhs.log_append_time_ms) {
+    return false;
+  }
+  if (lhs.log_start_offset != rhs.log_start_offset) {
+    return false;
+  }
   if (lhs.error_message != rhs.error_message) {
     return false;
   }
@@ -186,8 +195,13 @@ TEST(KafkaPacketDecoderTest, ExtractProduceRespV8) {
       "\x73\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\xff\xff\xff"
       "\xff\xff\xff\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\x00\x00\x00"
       "\x00");
-  ProduceRespPartition partition{
-      .index = 0, .error_code = 0, .record_errors = {}, .error_message = ""};
+  ProduceRespPartition partition{.index = 0,
+                                 .error_code = 0,
+                                 .base_offset = 3,
+                                 .log_append_time_ms = -1,
+                                 .log_start_offset = 0,
+                                 .record_errors = {},
+                                 .error_message = ""};
   ProduceRespTopic topic{.name = "quickstart-events", .partitions = {partition}};
   ProduceResp expected_result{.topics = {topic}, .throttle_time_ms = 0};
   PacketDecoder decoder(input);
@@ -200,8 +214,13 @@ TEST(KafkaPacketDecoderTest, ExtractProduceRespV9) {
       "\x02\x12\x71\x75\x69\x63\x6b\x73\x74\x61\x72\x74\x2d\x65\x76\x65\x6e\x74\x73\x02\x00"
       "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x00"
       "\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00");
-  ProduceRespPartition partition{
-      .index = 0, .error_code = 0, .record_errors = {}, .error_message = ""};
+  ProduceRespPartition partition{.index = 0,
+                                 .error_code = 0,
+                                 .base_offset = 0,
+                                 .log_append_time_ms = -1,
+                                 .log_start_offset = 0,
+                                 .record_errors = {},
+                                 .error_message = ""};
   ProduceRespTopic topic{.name = "quickstart-events", .partitions = {partition}};
   ProduceResp expected_result{.topics = {topic}, .throttle_time_ms = 0};
   PacketDecoder decoder(input);
