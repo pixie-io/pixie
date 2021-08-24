@@ -31,8 +31,8 @@ pl_cc_library(
 )
 
 pl_cc_test(
-    name = "http_ops_test",
-    srcs = ["http_ops_test.cc"],
+    name = "protocol_ops_test",
+    srcs = ["protocol_ops_test.cc"],
     deps = [
         ":cc_library",
         "//src/carnot/udf:udf_testutils",

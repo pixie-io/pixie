@@ -16,24 +16,27 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <gtest/gtest.h>
+#include <string>
 
-#include "src/carnot/funcs/http/http_ops.h"
-#include "src/carnot/udf/test_utils.h"
+#include "src/carnot/funcs/protocols/protocol_ops.h"
+#include "src/carnot/udf/registry.h"
 #include "src/common/base/base.h"
 
 namespace px {
 namespace carnot {
 namespace funcs {
-namespace http {
+namespace protocols {
 
-TEST(HTTPOps, basic) {
-  auto udf_tester = udf::UDFTester<HTTPRespMessageUDF>();
-  udf_tester.ForInput(400).Expect("Bad Request");
-  udf_tester.ForInput(0).Expect("Unassigned");
+void RegisterProtocolOpsOrDie(px::carnot::udf::Registry* registry) {
+  CHECK(registry != nullptr);
+  /*****************************************
+   * Scalar UDFs.
+   *****************************************/
+  registry->RegisterOrDie<HTTPRespMessageUDF>("http_resp_message");
+  registry->RegisterOrDie<KafkaAPIKeyNameUDF>("kafka_api_key_name");
 }
 
-}  // namespace http
+}  // namespace protocols
 }  // namespace funcs
 }  // namespace carnot
 }  // namespace px

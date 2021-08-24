@@ -23,8 +23,8 @@
 namespace px {
 namespace carnot {
 namespace funcs {
+namespace protocols {
 namespace http {
-namespace internal {
 
 // Reference: https://www.ietf.org/assignments/http-status-codes/http-status-codes.xml
 inline std::string HTTPRespCodeToMessage(int code) {
@@ -158,9 +158,9 @@ inline std::string HTTPRespCodeToMessage(int code) {
   }
 }
 
-}  // namespace internal
-
 }  // namespace http
+
+}  // namespace protocols
 }  // namespace funcs
 }  // namespace carnot
 }  // namespace px

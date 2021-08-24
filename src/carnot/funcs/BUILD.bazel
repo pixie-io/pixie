@@ -27,9 +27,9 @@ pl_cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "//src/carnot/funcs/builtins:cc_library",
-        "//src/carnot/funcs/http:cc_library",
         "//src/carnot/funcs/metadata:cc_library",
         "//src/carnot/funcs/net:cc_library",
+        "//src/carnot/funcs/protocols:cc_library",
         "//src/carnot/udf:cc_library",
         "//src/shared/metadata:cc_library",
         "@com_github_tencent_rapidjson//:rapidjson",
