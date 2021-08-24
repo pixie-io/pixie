@@ -1,0 +1,52 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-reader
+  namespace: staging-ro
+spec:
+  selector:
+    matchLabels:
+      name: db-reader
+  template:
+    metadata:
+      labels:
+        name: db-reader
+    spec:
+      containers:
+      - image: ubuntu:18.04
+        imagePullPolicy: IfNotPresent
+        name: bash
+        resources: {}
+        stdin: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        tty: true
+      - command:
+        - /cloud_sql_proxy
+        - -instances=pixie-prod:us-west1:pixie-cloud-staging-db=tcp:5432
+        - -ip_address_types=PRIVATE
+        - -credential_file=/secrets/cloudsql/db_service_account.json
+        image: gcr.io/cloudsql-docker/gce-proxy:1.14
+        imagePullPolicy: IfNotPresent
+        name: cloudsql-proxy
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsUser: 2
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /secrets/cloudsql
+          name: pl-db-secrets
+          readOnly: true
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: pl-db-secrets
+        secret:
+          defaultMode: 420
+          secretName: pl-db-ro-secrets

@@ -4,3 +4,5 @@ kind: Kustomization
 namespace: plc-staging
 resources:
 - ../base
+- db_reader_role.yaml
+- db_reader.yaml
