@@ -727,6 +727,7 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
     selectedClusterUID: cluster?.clusterUID,
     selectedClusterVizierConfig: cluster?.vizierConfig,
     selectedClusterStatus: cluster?.status,
+    selectedClusterStatusMessage: cluster?.statusMessage,
     setClusterByName: () => {},
   }), [cluster]);
 

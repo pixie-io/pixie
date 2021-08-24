@@ -32,18 +32,22 @@ export interface ClusterContextProps {
   selectedClusterUID: string;
   selectedClusterVizierConfig: GQLVizierConfig;
   selectedClusterStatus: GQLClusterStatus;
+  selectedClusterStatusMessage: string;
   setClusterByName: (id: string) => void;
 }
 
 export const ClusterContext = React.createContext<ClusterContextProps>(null);
 
-type SelectedClusterInfo =
-  Pick<GQLClusterInfo, 'id' | 'clusterName' | 'prettyClusterName' | 'clusterUID' | 'vizierConfig' | 'status'>;
+type SelectedClusterInfo = Pick<
+GQLClusterInfo,
+'id' | 'clusterName' | 'prettyClusterName' | 'clusterUID' | 'vizierConfig' | 'status' | 'statusMessage'
+>;
 
 const invalidCluster = (name: string): SelectedClusterInfo => ({
   id: '',
   clusterUID: '',
   status: GQLClusterStatus.CS_UNKNOWN,
+  statusMessage: '',
   vizierConfig: null,
   clusterName: name,
   prettyClusterName: name,
@@ -70,6 +74,7 @@ export const ClusterContextProvider: React.FC = ({ children }) => {
               passthroughEnabled
           }
           status
+          statusMessage
         }
       }
     `,
@@ -91,6 +96,7 @@ export const ClusterContextProvider: React.FC = ({ children }) => {
     selectedClusterUID: cluster?.clusterUID,
     selectedClusterVizierConfig: cluster?.vizierConfig,
     selectedClusterStatus: cluster?.status,
+    selectedClusterStatusMessage: cluster?.statusMessage,
     setClusterByName,
   }), [
     cluster,

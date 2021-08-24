@@ -29,6 +29,7 @@ export const CLUSTER_CONTEXT_DEFAULTS: ClusterContextProps = {
     passthroughEnabled: true,
   },
   selectedClusterStatus: GQLClusterStatus.CS_UNKNOWN,
+  selectedClusterStatusMessage: '',
   setClusterByName: jest.fn(),
 };
 

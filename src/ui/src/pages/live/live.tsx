@@ -165,6 +165,10 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
       display: 'none',
     },
   },
+  statusMessage: {
+    marginBottom: theme.spacing(1),
+    marginTop: theme.spacing(1),
+  },
 }));
 
 const ScriptOptions = React.memo<{ widgetsMoveable: boolean, setWidgetsMoveable: SetStateFunc<boolean> }>(({
@@ -199,13 +203,16 @@ ScriptOptions.displayName = 'ScriptOptions';
 interface ClusterLoadingProps {
   clusterPrettyName: string;
   clusterStatus: GQLClusterStatus;
+  clusterStatusMessage: string;
   script: Script;
   healthy: boolean;
 }
 
 const ClusterLoadingComponent = ({
-  clusterPrettyName, clusterStatus, script, healthy,
+  clusterPrettyName, clusterStatus, clusterStatusMessage, script, healthy,
 }: ClusterLoadingProps) => {
+  const classes = useStyles();
+
   const { loading: loadingAvailableScripts } = React.useContext(ScriptsContext);
   const { loading: loadingResults, streaming: streamingResults } = React.useContext(ResultsContext);
 
@@ -221,9 +228,6 @@ const ClusterLoadingComponent = ({
             {`Cluster '${clusterPrettyName}' is disconnected`}
           </AlertTitle>
           <div>
-            {`Pixie instrumentation on '${clusterPrettyName}' is ${formattedStatus}.`}
-          </div>
-          <div>
             Please redeploy Pixie to the cluster or choose another cluster.
           </div>
         </Alert>
@@ -236,11 +240,14 @@ const ClusterLoadingComponent = ({
       <div>
         <Alert severity='error'>
           <AlertTitle>
-            {`Cluster '${clusterPrettyName}' unavailable`}
+            {`Cluster '${clusterPrettyName}' is ${formattedStatus}`}
           </AlertTitle>
-          <div>
-            {`Pixie instrumentation on '${clusterPrettyName}' is ${formattedStatus}.`}
-          </div>
+          {
+            (clusterStatusMessage && clusterStatusMessage.length)
+            && <div className={classes.statusMessage}>
+              {clusterStatusMessage}
+            </div>
+          }
           {showIntercomTrigger() && (
           <div>
             <div>
@@ -330,7 +337,12 @@ const BreadcrumbsWithOptionalRun: React.FC = () => {
 const LiveView: React.FC = () => {
   const classes = useStyles();
 
-  const { selectedClusterName, selectedClusterPrettyName, selectedClusterStatus } = React.useContext(ClusterContext);
+  const {
+    selectedClusterName,
+    selectedClusterPrettyName,
+    selectedClusterStatus,
+    selectedClusterStatusMessage,
+  } = React.useContext(ClusterContext);
   const { script, args, cancelExecution } = React.useContext(ScriptContext);
   const {
     tables, error, mutationInfo, loading: loadingResults, streaming: streamingResults,
@@ -434,6 +446,7 @@ const LiveView: React.FC = () => {
                   <ClusterLoadingComponent
                     clusterPrettyName={selectedClusterPrettyName}
                     clusterStatus={selectedClusterStatus}
+                    clusterStatusMessage={selectedClusterStatusMessage}
                     script={script}
                     healthy={healthyOnce}
                   />
