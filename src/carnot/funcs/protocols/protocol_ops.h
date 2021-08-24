@@ -18,12 +18,7 @@
 
 #pragma once
 
-#include <string>
-
-#include "src/carnot/funcs/protocols/http.h"
-#include "src/carnot/funcs/protocols/kafka.h"
 #include "src/carnot/udf/registry.h"
-#include "src/carnot/udf/type_inference.h"
 #include "src/shared/types/types.h"
 
 namespace px {
@@ -33,9 +28,7 @@ namespace protocols {
 
 class HTTPRespMessageUDF : public px::carnot::udf::ScalarUDF {
  public:
-  StringValue Exec(FunctionContext*, Int64Value resp_code) {
-    return http::HTTPRespCodeToMessage(resp_code.val);
-  }
+  StringValue Exec(FunctionContext*, Int64Value resp_code);
 
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Convert an HTTP response code to its corresponding message.")
@@ -48,9 +41,7 @@ class HTTPRespMessageUDF : public px::carnot::udf::ScalarUDF {
 
 class KafkaAPIKeyNameUDF : public px::carnot::udf::ScalarUDF {
  public:
-  StringValue Exec(FunctionContext*, Int64Value api_key) {
-    return kafka::KafkaAPIKeyName(api_key.val);
-  }
+  StringValue Exec(FunctionContext*, Int64Value api_key);
 
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Convert a Kafka API key to its name.")
@@ -58,6 +49,19 @@ class KafkaAPIKeyNameUDF : public px::carnot::udf::ScalarUDF {
         .Arg("api_key", "A Kafka API key")
         .Example("df.api_key_name = px.kafka_api_key_name(df.req_cmd)")
         .Returns("The API key's name.");
+  }
+};
+
+class MySQLCommandNameUDF : public px::carnot::udf::ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext*, Int64Value api_key);
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Convert a MySQL command code to its name.")
+        .Details("UDF to convert MySQL request command codes into their corresponding names.")
+        .Arg("cmd", "A MySQL command code")
+        .Example("df.cmd = px.kafka_api_key_name(df.req_cmd)")
+        .Returns("The request code's name.");
   }
 };
 

@@ -26,7 +26,7 @@ namespace funcs {
 namespace protocols {
 namespace kafka {
 
-inline std::string KafkaAPIKeyName(int api_key) {
+inline std::string APIKeyName(int api_key) {
   switch (api_key) {
     case 0:
       return "Produce";

@@ -40,6 +40,13 @@ TEST(ProtocolOps, KafkaAPIKeyNameUDF) {
   udf_tester.ForInput(9999).Expect("9999");
 }
 
+TEST(ProtocolOps, MySQLCommandNameUDF) {
+  auto udf_tester = udf::UDFTester<MySQLCommandNameUDF>();
+  udf_tester.ForInput(3).Expect("Query");
+  udf_tester.ForInput(0x17).Expect("StmtExecute");
+  udf_tester.ForInput(9999).Expect("9999");
+}
+
 }  // namespace protocols
 }  // namespace funcs
 }  // namespace carnot

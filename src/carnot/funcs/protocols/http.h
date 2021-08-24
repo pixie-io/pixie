@@ -27,7 +27,7 @@ namespace protocols {
 namespace http {
 
 // Reference: https://www.ietf.org/assignments/http-status-codes/http-status-codes.xml
-inline std::string HTTPRespCodeToMessage(int code) {
+inline std::string RespCodeToMessage(int code) {
   switch (code) {
     case 100:
       return "Continue";
