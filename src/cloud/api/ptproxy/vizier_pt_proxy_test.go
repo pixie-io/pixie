@@ -369,6 +369,14 @@ func TestVizierPassThroughProxy_HealthCheck(t *testing.T) {
 				{Status: &vizierpb.Status{Code: 1}},
 			},
 		},
+		{
+			name: "direct-mode cluster",
+
+			clusterID: "30000000-1111-2222-2222-333333333333",
+			authToken: validTestToken,
+
+			expGRPCError: ptproxy.ErrNotAvailable,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -722,6 +730,9 @@ func (v *fakeVzMgr) GetVizierInfo(ctx context.Context, in *uuidpb.UUID, opts ...
 				VizierID:        utils.ProtoFromUUIDStrOrNil("00000000-1111-2222-2222-333333333333"),
 				Status:          cvmsgspb.VZ_ST_HEALTHY,
 				LastHeartbeatNs: 0,
+				Config: &cvmsgspb.VizierConfig{
+					PassthroughEnabled: true,
+				},
 			},
 			nil,
 		},
@@ -730,6 +741,9 @@ func (v *fakeVzMgr) GetVizierInfo(ctx context.Context, in *uuidpb.UUID, opts ...
 				VizierID:        utils.ProtoFromUUIDStrOrNil("10000000-1111-2222-2222-333333333333"),
 				Status:          cvmsgspb.VZ_ST_DISCONNECTED,
 				LastHeartbeatNs: 0,
+				Config: &cvmsgspb.VizierConfig{
+					PassthroughEnabled: true,
+				},
 			},
 			nil,
 		},
@@ -738,6 +752,20 @@ func (v *fakeVzMgr) GetVizierInfo(ctx context.Context, in *uuidpb.UUID, opts ...
 				VizierID:        utils.ProtoFromUUIDStrOrNil("10000000-1111-2222-2222-333333333333"),
 				Status:          cvmsgspb.VZ_ST_UNHEALTHY,
 				LastHeartbeatNs: 0,
+				Config: &cvmsgspb.VizierConfig{
+					PassthroughEnabled: true,
+				},
+			},
+			nil,
+		},
+		"30000000-1111-2222-2222-333333333333": {
+			&cvmsgspb.VizierInfo{
+				VizierID:        utils.ProtoFromUUIDStrOrNil("30000000-1111-2222-2222-333333333333"),
+				Status:          cvmsgspb.VZ_ST_UNHEALTHY,
+				LastHeartbeatNs: 0,
+				Config: &cvmsgspb.VizierConfig{
+					PassthroughEnabled: false,
+				},
 			},
 			nil,
 		},
@@ -771,6 +799,13 @@ func (v *fakeVzMgr) GetVizierConnectionInfo(ctx context.Context, in *uuidpb.UUID
 			nil,
 		},
 		"20000000-1111-2222-2222-333333333333": {
+			&cvmsgspb.VizierConnectionInfo{
+				IPAddress: "3.3.3.3",
+				Token:     "abc2",
+			},
+			nil,
+		},
+		"30000000-1111-2222-2222-333333333333": {
 			&cvmsgspb.VizierConnectionInfo{
 				IPAddress: "3.3.3.3",
 				Token:     "abc2",

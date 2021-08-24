@@ -47,6 +47,8 @@ var (
 	ErrCredentialGenerate = status.Error(codes.Internal, "failed to generate creds for cluster")
 	// ErrPermissionDenied occurs when permission is denied to the cluster.
 	ErrPermissionDenied = status.Error(codes.PermissionDenied, "permission denied for access to cluster")
+	// ErrPassthroughDisabled occurs when a passthrough request is made to a Vizier that is sent to Direct mode.
+	ErrPassthroughDisabled = status.Error(codes.Unavailable, "cluster is not in passthrough mode")
 )
 
 // requestProxyer manages a single proxy request.
@@ -143,6 +145,10 @@ func (p requestProxyer) validateRequestAndFetchCreds(ctx context.Context, debugM
 			if resp.Status != cvmsgspb.VZ_ST_HEALTHY {
 				return ErrNotAvailable
 			}
+		}
+
+		if !resp.Config.PassthroughEnabled {
+			return ErrPassthroughDisabled
 		}
 		return nil
 	})
