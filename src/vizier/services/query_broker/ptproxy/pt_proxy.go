@@ -197,21 +197,17 @@ func (s *PassThroughProxy) runRequest(reqState *RequestState, msg *cvmsgspb.C2VA
 		if err != nil && err == io.EOF {
 			log.Trace("Stream has closed (Read)")
 			v2cResp := formatStatusMessage(reqState.requestID, codes.OK, "")
-
 			s.sendMessage(reqState.requestID, v2cResp)
 			return
 		}
 		if err != nil && (errors.Is(err, context.Canceled) || status.Code(err) == codes.Canceled) {
 			log.Trace("Stream has been cancelled")
 			v2cResp := formatStatusMessage(reqState.requestID, codes.Canceled, "")
-
 			s.sendMessage(reqState.requestID, v2cResp)
 			return
 		}
 		if err != nil {
-			log.WithError(err).Error("Got a stream read error")
 			v2cResp := formatStatusMessage(reqState.requestID, status.Code(err), err.Error())
-
 			s.sendMessage(reqState.requestID, v2cResp)
 			return
 		}
