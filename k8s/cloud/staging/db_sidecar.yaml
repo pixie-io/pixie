@@ -10,7 +10,7 @@ spec:
       - name: cloudsql-proxy
         image: gcr.io/cloudsql-docker/gce-proxy:1.14
         command: ["/cloud_sql_proxy",
-                  "-instances=pixie-prod:us-west1:pixie-cloud-prod-db=tcp:5432",
+                  "-instances=pixie-prod:us-west1:pixie-cloud-staging-db=tcp:5432",
                   "-ip_address_types=PRIVATE",
                   "-credential_file=/secrets/cloudsql/db_service_account.json"]
         # [START cloudsql_security_context]
