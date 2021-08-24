@@ -48,6 +48,8 @@
 // 000023_add_triggers_for_prev.up.sql
 // 000024_add_encrypted_deployment_key.down.sql
 // 000024_add_encrypted_deployment_key.up.sql
+// 000025_drop_deployment_key_old.down.sql
+// 000025_drop_deployment_key_old.up.sql
 package schema
 
 import (
@@ -1084,6 +1086,46 @@ func _000024_add_encrypted_deployment_keyUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000025_drop_deployment_key_oldDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x4f\x49\x2d\xc8\xc9\xaf\xcc\x4d\xcd\x2b\x89\xcf\x4e\xad\x2c\xe6\x52\x50\x70\x74\x71\x51\x70\xf6\xf7\x09\xf5\xf5\x53\x50\xcf\x4e\xad\x54\x57\x28\x4b\x2c\x4a\xce\x48\x2c\xb2\xe6\x02\x04\x00\x00\xff\xff\xfb\xc3\xd3\x12\x3f\x00\x00\x00")
+
+func _000025_drop_deployment_key_oldDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000025_drop_deployment_key_oldDownSql,
+		"000025_drop_deployment_key_old.down.sql",
+	)
+}
+
+func _000025_drop_deployment_key_oldDownSql() (*asset, error) {
+	bytes, err := _000025_drop_deployment_key_oldDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000025_drop_deployment_key_old.down.sql", size: 63, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000025_drop_deployment_key_oldUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x4f\x49\x2d\xc8\xc9\xaf\xcc\x4d\xcd\x2b\x89\xcf\x4e\xad\x2c\xe6\x52\x50\x70\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x53\xc8\x4e\xad\xb4\xe6\x02\x04\x00\x00\xff\xff\x16\xc3\x47\xe1\x36\x00\x00\x00")
+
+func _000025_drop_deployment_key_oldUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000025_drop_deployment_key_oldUpSql,
+		"000025_drop_deployment_key_old.up.sql",
+	)
+}
+
+func _000025_drop_deployment_key_oldUpSql() (*asset, error) {
+	bytes, err := _000025_drop_deployment_key_oldUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000025_drop_deployment_key_old.up.sql", size: 54, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -1184,6 +1226,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000023_add_triggers_for_prev.up.sql":                    _000023_add_triggers_for_prevUpSql,
 	"000024_add_encrypted_deployment_key.down.sql":           _000024_add_encrypted_deployment_keyDownSql,
 	"000024_add_encrypted_deployment_key.up.sql":             _000024_add_encrypted_deployment_keyUpSql,
+	"000025_drop_deployment_key_old.down.sql":                _000025_drop_deployment_key_oldDownSql,
+	"000025_drop_deployment_key_old.up.sql":                  _000025_drop_deployment_key_oldUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -1275,6 +1319,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000023_add_triggers_for_prev.up.sql":                    &bintree{_000023_add_triggers_for_prevUpSql, map[string]*bintree{}},
 	"000024_add_encrypted_deployment_key.down.sql":           &bintree{_000024_add_encrypted_deployment_keyDownSql, map[string]*bintree{}},
 	"000024_add_encrypted_deployment_key.up.sql":             &bintree{_000024_add_encrypted_deployment_keyUpSql, map[string]*bintree{}},
+	"000025_drop_deployment_key_old.down.sql":                &bintree{_000025_drop_deployment_key_oldDownSql, map[string]*bintree{}},
+	"000025_drop_deployment_key_old.up.sql":                  &bintree{_000025_drop_deployment_key_oldUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
