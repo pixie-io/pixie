@@ -18,9 +18,7 @@
 
 import * as React from 'react';
 
-import {
-  Theme, withStyles,
-} from '@material-ui/core/styles';
+import { Theme, makeStyles } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import { GQLAutocompleteEntityKind, GQLAutocompleteSuggestion } from 'app/types/schema';
 import { PixieAPIClient, PixieAPIContext } from 'app/api';
@@ -79,7 +77,7 @@ function useAutocompleteFieldSuggester(clusterUID: string): AutocompleteFieldSug
     )), [client, clusterUID]);
 }
 
-const styles = (({ shape, palette, spacing }: Theme) => createStyles({
+const useStyles = makeStyles(({ shape, palette, spacing }: Theme) => createStyles({
   root: {
     display: 'flex',
     alignItems: 'center',
@@ -118,9 +116,10 @@ const styles = (({ shape, palette, spacing }: Theme) => createStyles({
     marginRight: spacing(3),
     overflow: 'visible', // Otherwise shadows get cut off
   },
-}));
+}), { name: 'LiveViewBreadcrumbs' });
 
-const LiveViewBreadcrumbs = ({ classes }) => {
+export const LiveViewBreadcrumbs: React.FC = React.memo(function LiveViewBreadcrumbs() {
+  const classes = useStyles();
   const { selectedClusterUID } = React.useContext(ClusterContext);
   const { scripts } = React.useContext(ScriptsContext);
 
@@ -270,6 +269,4 @@ const LiveViewBreadcrumbs = ({ classes }) => {
       </div>
     </>
   );
-};
-
-export default withStyles(styles)(LiveViewBreadcrumbs);
+});

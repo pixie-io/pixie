@@ -45,7 +45,7 @@ import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-conte
 import { DataDrawerSplitPanel } from 'app/containers/data-drawer/data-drawer';
 import { EditorSplitPanel } from 'app/containers/editor/editor';
 import Canvas from 'app/containers/live/canvas';
-import LiveViewBreadcrumbs from 'app/containers/live/breadcrumbs';
+import { LiveViewBreadcrumbs } from 'app/containers/live/breadcrumbs';
 import { ScriptLoader } from 'app/containers/live/script-loader';
 import LiveViewShortcutsProvider from 'app/containers/live/shortcuts';
 import ExecuteScriptButton from 'app/containers/live/execute-button';

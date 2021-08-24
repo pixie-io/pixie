@@ -27,7 +27,7 @@ import { MockClusterContextProvider } from 'app/testing/mocks/cluster-context-mo
 import { MockLiveRouteContextProvider } from 'app/testing/mocks/live-routing-mock';
 import { MockScriptContextProvider } from 'app/testing/mocks/script-context-mock';
 import { MockScriptsContextProvider } from 'app/testing/mocks/scripts-context-mock';
-import LiveViewBreadcrumbs from './breadcrumbs';
+import { LiveViewBreadcrumbs } from './breadcrumbs';
 
 describe('Live view breadcrumbs', () => {
   it('renders', async () => {

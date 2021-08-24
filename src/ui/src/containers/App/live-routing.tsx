@@ -64,10 +64,14 @@ const LiveRoute: React.FC<LiveRouteContextProps> = ({
   args, scriptId, embedState, clusterName, push, children,
 }) => {
   const { timeArg } = React.useContext(EmbedContext);
-  const copiedArgs = args;
-  if (timeArg && copiedArgs.start_time) {
-    copiedArgs.start_time = timeArg;
-  }
+  const copiedArgs = React.useMemo(() => {
+    const copy = { ...args };
+    if (timeArg && copy.start_time) {
+      copy.start_time = timeArg;
+    }
+    return copy;
+  }, [args, timeArg]);
+
   // Sorting keys ensures that the stringified object looks the same regardless of the order of operations that built it
   const serializedArgs = JSON.stringify(copiedArgs, Object.keys(copiedArgs ?? {}).sort());
   const context: LiveRouteContextProps = React.useMemo(() => ({
