@@ -10,6 +10,8 @@
 // 000004_px_api_prefix.up.sql
 // 000005_px_apikey_crypt.down.sql
 // 000005_px_apikey_crypt.up.sql
+// 000006_px_apikey_del_unsalted.down.sql
+// 000006_px_apikey_del_unsalted.up.sql
 package schema
 
 import (
@@ -286,6 +288,46 @@ func _000005_px_apikey_cryptUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000006_px_apikey_del_unsaltedDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x48\x2c\xc8\x8c\xcf\x4e\xad\x2c\xe6\x52\x50\x70\x74\x71\x51\x70\xf6\xf7\x09\xf5\xf5\x53\x28\xcd\x2b\x4e\xcc\x29\x49\x4d\x01\x49\x29\x94\x25\x16\x25\x67\x24\x16\x59\x73\x71\x11\xd6\x88\xa2\x1e\x10\x00\x00\xff\xff\x10\x20\xd9\x52\x68\x00\x00\x00")
+
+func _000006_px_apikey_del_unsaltedDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000006_px_apikey_del_unsaltedDownSql,
+		"000006_px_apikey_del_unsalted.down.sql",
+	)
+}
+
+func _000006_px_apikey_del_unsaltedDownSql() (*asset, error) {
+	bytes, err := _000006_px_apikey_del_unsaltedDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000006_px_apikey_del_unsalted.down.sql", size: 104, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000006_px_apikey_del_unsaltedUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x48\x2c\xc8\x8c\xcf\x4e\xad\x2c\xe6\x52\x50\x70\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x53\x28\xcd\x2b\x4e\xcc\x29\x49\x4d\x01\xc9\x59\x73\x71\x11\xa1\x03\xac\x10\x10\x00\x00\xff\xff\xf4\x69\x58\xa4\x5a\x00\x00\x00")
+
+func _000006_px_apikey_del_unsaltedUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000006_px_apikey_del_unsaltedUpSql,
+		"000006_px_apikey_del_unsalted.up.sql",
+	)
+}
+
+func _000006_px_apikey_del_unsaltedUpSql() (*asset, error) {
+	bytes, err := _000006_px_apikey_del_unsaltedUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000006_px_apikey_del_unsalted.up.sql", size: 90, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -348,6 +390,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000004_px_api_prefix.up.sql":               _000004_px_api_prefixUpSql,
 	"000005_px_apikey_crypt.down.sql":           _000005_px_apikey_cryptDownSql,
 	"000005_px_apikey_crypt.up.sql":             _000005_px_apikey_cryptUpSql,
+	"000006_px_apikey_del_unsalted.down.sql":    _000006_px_apikey_del_unsaltedDownSql,
+	"000006_px_apikey_del_unsalted.up.sql":      _000006_px_apikey_del_unsaltedUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -401,6 +445,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000004_px_api_prefix.up.sql":               &bintree{_000004_px_api_prefixUpSql, map[string]*bintree{}},
 	"000005_px_apikey_crypt.down.sql":           &bintree{_000005_px_apikey_cryptDownSql, map[string]*bintree{}},
 	"000005_px_apikey_crypt.up.sql":             &bintree{_000005_px_apikey_cryptUpSql, map[string]*bintree{}},
+	"000006_px_apikey_del_unsalted.down.sql":    &bintree{_000006_px_apikey_del_unsaltedDownSql, map[string]*bintree{}},
+	"000006_px_apikey_del_unsalted.up.sql":      &bintree{_000006_px_apikey_del_unsaltedUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
