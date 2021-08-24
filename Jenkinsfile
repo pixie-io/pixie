@@ -97,7 +97,12 @@ COPYBARA_DOCKER_IMAGE = 'gcr.io/pixie-oss/pixie-dev-public/copybara:20210420'
 GCS_STASH_BUCKET = 'px-jenkins-build-temp'
 
 K8S_PROD_CLUSTER = 'https://cloud-prod.internal.corp.pixielabs.ai'
+// Our staging instance used to be run on our prod cluster. These creds are
+// actually the creds for our prod cluster.
 K8S_PROD_CREDS = 'cloud-staging'
+
+K8S_STAGING_CLUSTER = 'https://cloud-staging.internal.corp.pixielabs.ai'
+K8S_STAGING_CREDS = 'pixie-prod-staging-cluster'
 
 // PXL Docs variables.
 PXL_DOCS_BINARY = '//src/carnot/docstring:docstring_integration'
@@ -1076,7 +1081,7 @@ def  buildScriptForCLIRelease = {
           }
         }
         stage('Update versions database (staging)') {
-          updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, 'plc-staging')
+          updateVersionsDB(K8S_STAGING_CREDS, K8S_STAGING_CLUSTER, 'plc-staging')
         }
         stage('Update versions database (prod)') {
           updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, 'plc')
@@ -1132,7 +1137,7 @@ def buildScriptForVizierRelease = {
       parallel(vizierReleaseBuilders)
     }
     stage('Update versions database (staging)') {
-      updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, 'plc-staging')
+      updateVersionsDB(K8S_STAGING_CREDS, K8S_STAGING_CLUSTER, 'plc-staging')
     }
     stage('Update versions database (prod)') {
       updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, 'plc')
@@ -1166,7 +1171,7 @@ def buildScriptForOperatorRelease = {
       }
     }
     stage('Update versions database (staging)') {
-      updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, 'plc-staging')
+      updateVersionsDB(K8S_STAGING_CREDS, K8S_STAGING_CLUSTER, 'plc-staging')
     }
     stage('Update versions database (prod)') {
       updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, 'plc')
@@ -1182,11 +1187,11 @@ def buildScriptForOperatorRelease = {
   postBuildActions()
 }
 
-def pushAndDeployCloud(String profile, String namespace) {
+def pushAndDeployCloud(String profile, String namespace, String clusterCreds, String clusterURL) {
   WithSourceCodeK8s {
     container('pxbuild') {
-      withKubeConfig([credentialsId: K8S_PROD_CREDS,
-                    serverUrl: K8S_PROD_CLUSTER, namespace: namespace]) {
+      withKubeConfig([credentialsId: clusterCreds,
+                    serverUrl: clusterURL, namespace: namespace]) {
         withCredentials([
           file(
             credentialsId: 'pl-dev-infra-jenkins-sa-json',
@@ -1209,7 +1214,7 @@ def buildScriptForCloudStagingRelease = {
       checkoutAndInitialize()
     }
     stage('Build & Push Artifacts') {
-      pushAndDeployCloud('staging', 'plc-staging')
+      pushAndDeployCloud('staging', 'plc-staging', K8S_STAGING_CREDS, K8S_STAGING_CLUSTER)
     }
   }
   catch (err) {
@@ -1228,7 +1233,7 @@ def buildScriptForCloudProdRelease = {
       checkoutAndInitialize()
     }
     stage('Build & Push Artifacts') {
-      pushAndDeployCloud('prod', 'plc')
+      pushAndDeployCloud('prod', 'plc', K8S_PROD_CREDS, K8S_PROD_CLUSTER)
     }
   }
   catch (err) {
