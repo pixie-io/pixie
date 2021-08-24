@@ -46,6 +46,8 @@
 // 000022_add_data_plane_and_past_status_columns.up.sql
 // 000023_add_triggers_for_prev.down.sql
 // 000023_add_triggers_for_prev.up.sql
+// 000024_add_encrypted_deployment_key.down.sql
+// 000024_add_encrypted_deployment_key.up.sql
 package schema
 
 import (
@@ -1042,6 +1044,46 @@ func _000023_add_triggers_for_prevUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000024_add_encrypted_deployment_keyDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x09\xf2\x0f\x50\xf0\xf4\x73\x71\x8d\x50\xc8\x4c\xa9\x88\x2f\xcb\xac\xca\x4c\x2d\x8a\x4f\x49\x2d\xc8\xc9\xaf\xcc\x4d\xcd\x2b\x89\xcf\x4e\xad\x2c\x8e\xcf\x48\x2c\xce\x48\x4d\x01\xb1\xad\xb9\xb8\x1c\x7d\x42\x5c\x83\x14\x42\x1c\x9d\x7c\x5c\x15\xb0\xab\xe7\x52\x50\x00\x9b\xeb\xec\xef\x13\xea\xeb\xa7\x40\x99\xee\xd4\xbc\xe4\xa2\xca\x82\x12\x98\x01\x80\x00\x00\x00\xff\xff\xa6\xe5\x49\x3f\xb1\x00\x00\x00")
+
+func _000024_add_encrypted_deployment_keyDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000024_add_encrypted_deployment_keyDownSql,
+		"000024_add_encrypted_deployment_key.down.sql",
+	)
+}
+
+func _000024_add_encrypted_deployment_keyDownSql() (*asset, error) {
+	bytes, err := _000024_add_encrypted_deployment_keyDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000024_add_encrypted_deployment_key.down.sql", size: 177, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000024_add_encrypted_deployment_keyUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x94\x8e\xc1\x4a\xc4\x30\x10\x86\xef\x79\x8a\xff\xa8\x87\xf5\x05\xf6\x14\xb7\x01\x85\xda\x85\xa5\x82\xb7\x30\x36\x23\x0d\x5b\x93\x92\x99\xad\xc6\xa7\x97\xe2\xa1\x08\x7a\xd8\xeb\x7c\x33\xf3\x7d\xb6\xed\xdd\x09\xbd\xbd\x6f\x1d\x96\xf8\x15\xb9\xf8\xc0\xf3\x94\xeb\x3b\x27\xf5\x67\xae\x62\x00\xdb\x34\x38\x1c\xdb\xe7\xa7\x0e\x9c\x86\x52\x67\xe5\xb0\x32\xbc\x56\x65\xda\x1b\xb3\xdb\xe1\x81\x64\xe4\x80\x75\x2a\x9a\x0b\x0b\x08\x42\x93\x72\x00\xa5\x80\x71\xc3\x3a\x92\xe2\x83\x31\x50\xc2\x45\x18\x6f\xb9\x80\x44\xf2\x10\x49\xe3\xc2\x98\x72\x3e\x5f\xe6\x3b\x73\x6d\xda\x8f\xe2\x57\xd7\xe1\xe4\x6c\xef\xf0\xd8\x35\xee\x05\x31\x7c\xfa\xbf\xff\xf8\xed\xd4\x00\xc7\xee\x1f\xdd\xcd\xb6\x76\xbb\x37\xdf\x01\x00\x00\xff\xff\xfa\x0f\x00\x58\x3a\x01\x00\x00")
+
+func _000024_add_encrypted_deployment_keyUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000024_add_encrypted_deployment_keyUpSql,
+		"000024_add_encrypted_deployment_key.up.sql",
+	)
+}
+
+func _000024_add_encrypted_deployment_keyUpSql() (*asset, error) {
+	bytes, err := _000024_add_encrypted_deployment_keyUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000024_add_encrypted_deployment_key.up.sql", size: 314, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -1140,6 +1182,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000022_add_data_plane_and_past_status_columns.up.sql":   _000022_add_data_plane_and_past_status_columnsUpSql,
 	"000023_add_triggers_for_prev.down.sql":                  _000023_add_triggers_for_prevDownSql,
 	"000023_add_triggers_for_prev.up.sql":                    _000023_add_triggers_for_prevUpSql,
+	"000024_add_encrypted_deployment_key.down.sql":           _000024_add_encrypted_deployment_keyDownSql,
+	"000024_add_encrypted_deployment_key.up.sql":             _000024_add_encrypted_deployment_keyUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -1229,6 +1273,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000022_add_data_plane_and_past_status_columns.up.sql":   &bintree{_000022_add_data_plane_and_past_status_columnsUpSql, map[string]*bintree{}},
 	"000023_add_triggers_for_prev.down.sql":                  &bintree{_000023_add_triggers_for_prevDownSql, map[string]*bintree{}},
 	"000023_add_triggers_for_prev.up.sql":                    &bintree{_000023_add_triggers_for_prevUpSql, map[string]*bintree{}},
+	"000024_add_encrypted_deployment_key.down.sql":           &bintree{_000024_add_encrypted_deployment_keyDownSql, map[string]*bintree{}},
+	"000024_add_encrypted_deployment_key.up.sql":             &bintree{_000024_add_encrypted_deployment_keyUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory

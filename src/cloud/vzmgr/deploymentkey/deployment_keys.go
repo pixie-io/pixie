@@ -60,7 +60,9 @@ func (s *Service) Create(ctx context.Context, req *vzmgrpb.CreateDeploymentKeyRe
 
 	var id uuid.UUID
 	var ts time.Time
-	query := `INSERT INTO vizier_deployment_keys(org_id, user_id, key, description) VALUES($1, $2, PGP_SYM_ENCRYPT($3, $4), $5) RETURNING id, created_at`
+	query := `INSERT INTO vizier_deployment_keys(org_id, user_id, hashed_key, encrypted_key, description)
+                VALUES($1, $2, sha256($3), PGP_SYM_ENCRYPT($3::text, $4::text), $5)
+              RETURNING id, created_at`
 	keyID, err := uuid.NewV4()
 	if err != nil {
 		return nil, err
@@ -90,8 +92,11 @@ func (s *Service) List(ctx context.Context, req *vzmgrpb.ListDeploymentKeyReques
 	}
 
 	// Return all clusters when the OrgID matches.
-	query := `SELECT id, org_id, PGP_SYM_DECRYPT(key::bytea, $1), created_at, description from vizier_deployment_keys WHERE org_id=$2 ORDER BY created_at`
-	rows, err := s.db.QueryxContext(ctx, query, s.dbKey, sCtx.Claims.GetUserClaims().OrgID)
+	query := `SELECT id, org_id, CONVERT_FROM(PGP_SYM_DECRYPT(encrypted_key, $2::text)::bytea, 'UTF8'), created_at, description
+                FROM vizier_deployment_keys
+                WHERE org_id=$1
+                ORDER BY created_at`
+	rows, err := s.db.QueryxContext(ctx, query, sCtx.Claims.GetUserClaims().OrgID, s.dbKey)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return &vzmgrpb.ListDeploymentKeyResponse{}, nil
@@ -140,8 +145,10 @@ func (s *Service) Get(ctx context.Context, req *vzmgrpb.GetDeploymentKeyRequest)
 	var key string
 	var createdAt time.Time
 	var desc string
-	query := `SELECT PGP_SYM_DECRYPT(key::bytea, $1), created_at, description from vizier_deployment_keys WHERE org_id=$2 and id=$3`
-	err = s.db.QueryRowxContext(ctx, query, s.dbKey, sCtx.Claims.GetUserClaims().OrgID, tokenID).Scan(&key, &createdAt, &desc)
+	query := `SELECT CONVERT_FROM(PGP_SYM_DECRYPT(encrypted_key, $3::text)::bytea, 'UTF8'), created_at, description
+                FROM vizier_deployment_keys
+                WHERE org_id=$1 AND id=$2`
+	err = s.db.QueryRowxContext(ctx, query, sCtx.Claims.GetUserClaims().OrgID, tokenID, s.dbKey).Scan(&key, &createdAt, &desc)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "No such deployment key")
 	}
@@ -167,7 +174,8 @@ func (s *Service) Delete(ctx context.Context, req *uuidpb.UUID) (*types.Empty, e
 		return nil, status.Error(codes.InvalidArgument, "invalid id format")
 	}
 
-	query := `DELETE from vizier_deployment_keys WHERE org_id=$1 and id=$2`
+	query := `DELETE FROM vizier_deployment_keys
+                WHERE org_id=$1 AND id=$2`
 	res, err := s.db.ExecContext(ctx, query, sCtx.Claims.GetUserClaims().OrgID, tokenID)
 	if err != nil {
 		log.WithError(err).Error("Failed to delete deployment token")
@@ -189,7 +197,9 @@ func (s *Service) Delete(ctx context.Context, req *uuidpb.UUID) (*types.Empty, e
 
 // FetchOrgUserIDUsingDeploymentKey gets the org and user ID based on the deployment key.
 func (s *Service) FetchOrgUserIDUsingDeploymentKey(ctx context.Context, key string) (uuid.UUID, uuid.UUID, error) {
-	query := `SELECT org_id, user_id from vizier_deployment_keys WHERE PGP_SYM_DECRYPT(key::bytea, $2)=$1`
+	query := `SELECT org_id, user_id
+                FROM vizier_deployment_keys
+                WHERE hashed_key=sha256($1) AND PGP_SYM_DECRYPT(encrypted_key::bytea, $2::text)::bytea=$1`
 	var orgID uuid.UUID
 	var userID uuid.UUID
 	err := s.db.QueryRowxContext(ctx, query, key, s.dbKey).Scan(&orgID, &userID)

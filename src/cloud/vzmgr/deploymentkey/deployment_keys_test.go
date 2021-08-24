@@ -96,7 +96,8 @@ func createTestAPIUserContext() context.Context {
 func mustLoadTestData(db *sqlx.DB) {
 	db.MustExec(`DELETE FROM vizier_deployment_keys`)
 
-	insertVizierDeploymentKeys := `INSERT INTO vizier_deployment_keys(id, org_id, user_id, key, description) VALUES ($1, $2, $3, PGP_SYM_ENCRYPT($4, $5), $6)`
+	insertVizierDeploymentKeys := `INSERT INTO vizier_deployment_keys(id, org_id, user_id, hashed_key, encrypted_key, description)
+                                     VALUES ($1, $2, $3, sha256($4), PGP_SYM_ENCRYPT($4::text, $5::text), $6)`
 	db.MustExec(insertVizierDeploymentKeys, testKey1ID, testAuthOrgID, testAuthUserID, "key1", testDBKey, "here is a desc")
 	db.MustExec(insertVizierDeploymentKeys, testKey2ID, testAuthOrgID, testAuthUserID, "key2", testDBKey, "here is another one")
 	db.MustExec(insertVizierDeploymentKeys, testNonAuthUserKeyID.String(), testNonAuthOrgID, "123e4567-e89b-12d3-a456-426655440001", "key2", testDBKey, "some other desc")
@@ -373,7 +374,7 @@ func TestDeploymentKeyService_Delete_UnownedKey(t *testing.T) {
 
 			// Make DB query to make sure the Key still exists.
 			var key string
-			err = db.QueryRow(`SELECT PGP_SYM_DECRYPT(key::bytea, $1) from vizier_deployment_keys where id=$2`,
+			err = db.QueryRow(`SELECT CONVERT_FROM(PGP_SYM_DECRYPT(encrypted_key, $1::text)::bytea, 'UTF8') from vizier_deployment_keys where id=$2`,
 				testDBKey, testNonAuthUserKeyID).
 				Scan(&key)
 			require.NoError(t, err)
