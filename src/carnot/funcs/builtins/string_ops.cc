@@ -40,6 +40,7 @@ void RegisterStringOpsOrDie(udf::Registry* registry) {
   registry->RegisterOrDie<StripPrefixUDF>("strip_prefix");
   registry->RegisterOrDie<HexToASCII>("hex_to_ascii");
   registry->RegisterOrDie<BytesToHex>("bytes_to_hex");
+  registry->RegisterOrDie<StringToIntUDF>("atoi");
   /*****************************************
    * Aggregate UDFs.
    *****************************************/

@@ -103,6 +103,15 @@ TEST(StringOps, BytesToHex) {
   udf_tester.ForInput("abc").Expect(R"(\x61\x62\x63)");
 }
 
+TEST(StringOps, StringToInt) {
+  auto udf_tester = udf::UDFTester<StringToIntUDF>();
+  udf_tester.ForInput("1234", -1).Expect(1234);
+  udf_tester.ForInput("-1234", -1).Expect(-1234);
+  udf_tester.ForInput("not an int", -1).Expect(-1);
+  udf_tester.ForInput("not an int", 1234).Expect(1234);
+  udf_tester.ForInput("+1111111", -1).Expect(1111111);
+}
+
 }  // namespace builtins
 }  // namespace carnot
 }  // namespace px

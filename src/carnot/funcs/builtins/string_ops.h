@@ -212,6 +212,29 @@ class BytesToHex : public udf::ScalarUDF {
   }
 };
 
+class StringToIntUDF : public udf::ScalarUDF {
+ public:
+  Int64Value Exec(FunctionContext*, StringValue input, Int64Value default_val) {
+    int64_t val;
+    if (!absl::SimpleAtoi(input, &val)) {
+      return default_val;
+    }
+    return val;
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Convert a string to an integer.")
+        .Details(
+            "This function parses a string into a 64-bit integer if possible, otherwise it returns "
+            "the default value.")
+        .Example("df.val = px.atoi(df.int_as_str_col, -1)")
+        .Arg("arg1", "The string to convert")
+        .Arg("arg2", "The default integer value to return if conversion fails")
+        .Returns(
+            "Integer version of string, if parsing succeeded otherwise the default value passed "
+            "in.");
+  }
+};
+
 void RegisterStringOpsOrDie(udf::Registry* registry);
 
 }  // namespace builtins
