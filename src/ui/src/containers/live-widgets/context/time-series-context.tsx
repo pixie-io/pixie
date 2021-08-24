@@ -48,12 +48,12 @@ export const TimeSeriesContextProvider: React.FC = ({ children }) => {
   );
 };
 
-export function withTimeSeriesContextProvider<P>(Component: React.ComponentType<P>) {
-  return function TimeSeriesContextProviderHOC(props: P): React.ReactElement {
+export function withTimeSeriesContext<P>(Component: React.ComponentType<P>): React.ComponentType<P> {
+  return React.memo(function TimeSeriesContextProviderHOC(props) {
     return (
       <TimeSeriesContextProvider>
         <Component {...props} />
       </TimeSeriesContextProvider>
     );
-  };
+  });
 }

@@ -24,7 +24,6 @@ export const AutoSizerContext = React.createContext<{ width: number, height: num
 const AutoSizerContextProvider: React.FC<{
   width: number, height: number, content: React.ReactNode,
 }> = React.memo(
-  // eslint-disable-next-line prefer-arrow-callback
   function AutoSizerContextProvider({ width, height, content }) {
     const value = React.useMemo(() => ({ width: Math.max(width, 0), height: Math.max(height, 0) }), [width, height]);
     return (
@@ -36,8 +35,8 @@ const AutoSizerContextProvider: React.FC<{
 );
 
 /** Wraps component in an <AutoSizer>, and provides the width/height properties that creates in AutoSizerContext. */
-export function withAutoSizerContext<T>(Component: React.ComponentType<T>): React.ComponentType<T> {
-  const Wrapped: React.FC<T> = (props) => (
+export function withAutoSizerContext<P>(Component: React.ComponentType<P>): React.ComponentType<P> {
+  const Wrapped: React.FC<P> = (props) => (
     <AutoSizer>
       {({ width, height }) => (
         <AutoSizerContextProvider width={width} height={height} content={<Component {...props} />} />

@@ -24,7 +24,7 @@ import { GraphDisplay, GraphWidget } from 'app/containers/live-widgets/graph/gra
 import { RequestGraphDisplay, RequestGraphWidget } from 'app/containers/live-widgets/graph/request-graph';
 
 import {
-  TimeSeriesContext, withTimeSeriesContextProvider,
+  TimeSeriesContext, withTimeSeriesContext,
 } from 'app/containers/live-widgets/context/time-series-context';
 import { QueryResultTableDisplay, QueryResultTable } from 'app/containers/live-widgets/table/query-result-viewer';
 import * as React from 'react';
@@ -540,4 +540,4 @@ const Canvas: React.FC<CanvasProps> = ({ editable, parentRef }) => {
   );
 };
 
-export default withTimeSeriesContextProvider(Canvas);
+export default withTimeSeriesContext(Canvas);
