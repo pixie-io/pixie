@@ -241,10 +241,12 @@ const ColumnSortButton: React.FC<{ column: HeaderGroup }> = ({ column }) => {
 
 const ColumnResizeHandle: React.FC<{ column: HeaderGroup }> = ({ column }) => {
   const classes = useDataTableStyles();
+  const { instance: { resetResizing } } = React.useContext(DataTableContext);
+
   return (
-    // TODO(nick,PC-1050): Add double-click reset all columns; make that reflow as well. Remember weights!
     <span
       {...column.getResizerProps()}
+      onDoubleClick={resetResizing}
       className={buildClass(classes.resizeHandle, column.isResizing && classes.resizeHandleActive)}
     >
       &#8942;
