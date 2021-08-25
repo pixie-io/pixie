@@ -19,7 +19,6 @@
 package testutils
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -52,12 +51,14 @@ func CreateTestGraphQLEnv(t *testing.T) (controller.GraphQLEnv, *MockCloudClient
 	ctrl := gomock.NewController(t)
 	ats := mock_cloudpb.NewMockArtifactTrackerServer(ctrl)
 	vcs := mock_cloudpb.NewMockVizierClusterInfoServer(ctrl)
+	aps := mock_cloudpb.NewMockAPIKeyManagerServer(ctrl)
 	vds := mock_cloudpb.NewMockVizierDeploymentKeyManagerServer(ctrl)
 	sms := mock_cloudpb.NewMockScriptMgrServer(ctrl)
 	as := mock_cloudpb.NewMockAutocompleteServiceServer(ctrl)
 	os := mock_cloudpb.NewMockOrganizationServiceServer(ctrl)
 	us := mock_cloudpb.NewMockUserServiceServer(ctrl)
 	gqlEnv := controller.GraphQLEnv{
+		APIKeyMgr:             aps,
 		ArtifactTrackerServer: ats,
 		VizierClusterInfo:     vcs,
 		VizierDeployKeyMgr:    vds,
@@ -66,13 +67,8 @@ func CreateTestGraphQLEnv(t *testing.T) (controller.GraphQLEnv, *MockCloudClient
 		OrgServer:             os,
 		UserServer:            us,
 	}
-	cleanup := func() {
-		if r := recover(); r != nil {
-			fmt.Println("Panicked with error: ", r)
-		}
-		ctrl.Finish()
-	}
 	return gqlEnv, &MockCloudClients{
+		MockAPIKey:            aps,
 		MockArtifact:          ats,
 		MockVizierClusterInfo: vcs,
 		MockVizierDeployKey:   vds,
@@ -80,7 +76,7 @@ func CreateTestGraphQLEnv(t *testing.T) (controller.GraphQLEnv, *MockCloudClient
 		MockAutocomplete:      as,
 		MockOrg:               os,
 		MockUser:              us,
-	}, cleanup
+	}, ctrl.Finish
 }
 
 // MockAPIClients is a struct containing all of the mock clients for the api env.
@@ -112,12 +108,6 @@ func CreateTestAPIEnv(t *testing.T) (apienv.APIEnv, *MockAPIClients, func()) {
 	if err != nil {
 		t.Fatal("failed to init api env")
 	}
-	cleanup := func() {
-		if r := recover(); r != nil {
-			fmt.Println("Panicked with error: ", r)
-		}
-		ctrl.Finish()
-	}
 
 	return apiEnv, &MockAPIClients{
 		MockAuth:        mockAuthClient,
@@ -127,5 +117,5 @@ func CreateTestAPIEnv(t *testing.T) (apienv.APIEnv, *MockAPIClients, func()) {
 		MockVzDeployKey: mockVzDeployKey,
 		MockArtifact:    mockArtifactTrackerClient,
 		MockConfigMgr:   mockConfigMgrClient,
-	}, cleanup
+	}, ctrl.Finish
 }

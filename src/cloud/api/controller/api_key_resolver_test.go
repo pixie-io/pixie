@@ -323,7 +323,7 @@ func TestDeleteAPIKey(t *testing.T) {
 					`,
 					ExpectedResult: `
 						{
-							"DeleteAPImentKey": true
+							"DeleteAPIKey": true
 						}
 					`,
 				},

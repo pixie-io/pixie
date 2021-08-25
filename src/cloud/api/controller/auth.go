@@ -403,6 +403,9 @@ func AuthLogoutHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 	}
 
 	aCtx := authcontext.New()
+	if _, ok := session.Values["_at"]; !ok {
+		return handler.NewStatusError(http.StatusBadRequest, "missing auth token")
+	}
 	err = aCtx.UseJWTAuth(env.JWTSigningKey(), session.Values["_at"].(string), viper.GetString("domain_name"))
 	if err != nil {
 		return &handler.StatusError{Code: http.StatusInternalServerError, Err: err}
