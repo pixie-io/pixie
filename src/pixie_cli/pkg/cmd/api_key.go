@@ -39,6 +39,7 @@ func init() {
 	APIKeyCmd.AddCommand(CreateAPIKeyCmd)
 	APIKeyCmd.AddCommand(DeleteAPIKeyCmd)
 	APIKeyCmd.AddCommand(ListAPIKeyCmd)
+	APIKeyCmd.AddCommand(GetAPIKeyCmd)
 
 	CreateAPIKeyCmd.Flags().StringP("desc", "d", "", "A description for the API key")
 	viper.BindPFlag("desc", CreateAPIKeyCmd.Flags().Lookup("desc"))
@@ -105,7 +106,7 @@ var DeleteAPIKeyCmd = &cobra.Command{
 // ListAPIKeyCmd is the List sub-command of APIKey.
 var ListAPIKeyCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List all API key for Pixie",
+	Short: "List all API key metadata",
 	Run: func(cmd *cobra.Command, args []string) {
 		cloudAddr := viper.GetString("cloud_addr")
 		format, _ := cmd.Flags().GetString("output")
@@ -121,9 +122,40 @@ var ListAPIKeyCmd = &cobra.Command{
 		defer w.Finish()
 		w.SetHeader("api-keys", []string{"ID", "Key", "CreatedAt", "Description"})
 		for _, k := range keys {
-			_ = w.Write([]interface{}{utils2.UUIDFromProtoOrNil(k.ID), k.Key, k.CreatedAt,
+			_ = w.Write([]interface{}{utils2.UUIDFromProtoOrNil(k.ID), "<hidden>", k.CreatedAt,
 				k.Desc})
 		}
+	},
+}
+
+// GetAPIKeyCmd is the List sub-command of APIKey.
+var GetAPIKeyCmd = &cobra.Command{
+	Use:   "get",
+	Short: "Get API key details for a specific key",
+	Run: func(cmd *cobra.Command, args []string) {
+		cloudAddr := viper.GetString("cloud_addr")
+		format, _ := cmd.Flags().GetString("output")
+		format = strings.ToLower(format)
+
+		if len(args) != 1 {
+			utils.Fatal("Expected a single argument 'key id'.")
+		}
+
+		keyID, err := uuid.FromString(args[0])
+		if err != nil {
+			utils.Fatal("Malformed Key ID. Expected a single argument 'key id'.")
+		}
+		k, err := getAPIKey(cloudAddr, keyID)
+		if err != nil {
+			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
+			log.WithError(err).Fatal("Failed to fetch API key")
+		}
+		// Throw keys into table.
+		w := components.CreateStreamWriter(format, os.Stdout)
+		defer w.Finish()
+		w.SetHeader("api-keys", []string{"ID", "Key", "CreatedAt", "Description"})
+		_ = w.Write([]interface{}{utils2.UUIDFromProtoOrNil(k.ID), k.Key, k.CreatedAt,
+			k.Desc})
 	},
 }
 
@@ -178,4 +210,20 @@ func listAPIKeys(cloudAddr string) ([]*cloudpb.APIKey, error) {
 	}
 
 	return resp.Keys, nil
+}
+
+func getAPIKey(cloudAddr string, keyID uuid.UUID) (*cloudpb.APIKey, error) {
+	apiKeyMgr, ctxWithCreds, err := getAPIKeyClientAndContext(cloudAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := apiKeyMgr.Get(ctxWithCreds, &cloudpb.GetAPIKeyRequest{
+		ID: utils2.ProtoFromUUID(keyID),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Key, nil
 }
