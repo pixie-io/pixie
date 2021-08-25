@@ -20,11 +20,11 @@ extend type Query {
   scriptContents(id: ID!): ScriptContents!
 
   # Deploy keys
-  deploymentKeys: [DeploymentKey!]!
+  deploymentKeys: [DeploymentKeyMetadata!]!
   deploymentKey(id: ID!): DeploymentKey!
 
   # API keys
-  apiKeys: [APIKey!]!
+  apiKeys: [APIKeyMetadata!]!
   apiKey(id: ID!): APIKey!
 }
 
@@ -76,9 +76,21 @@ input EditableUserSettings {
   analyticsOptout: Boolean
 }
 
+type APIKeyMetadata {
+  id: ID!
+  createdAtMs: Float!
+  desc: String!
+}
+
 type APIKey {
   id: ID!
   key: String!
+  createdAtMs: Float!
+  desc: String!
+}
+
+type DeploymentKeyMetadata {
+  id: ID!
   createdAtMs: Float!
   desc: String!
 }

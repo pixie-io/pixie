@@ -31,9 +31,9 @@ export interface GQLQuery {
   liveViewContents: GQLLiveViewContents;
   scripts: Array<GQLScriptMetadata>;
   scriptContents: GQLScriptContents;
-  deploymentKeys: Array<GQLDeploymentKey>;
+  deploymentKeys: Array<GQLDeploymentKeyMetadata>;
   deploymentKey: GQLDeploymentKey;
-  apiKeys: Array<GQLAPIKey>;
+  apiKeys: Array<GQLAPIKeyMetadata>;
   apiKey: GQLAPIKey;
 }
 
@@ -101,9 +101,21 @@ export interface GQLEditableUserSettings {
   analyticsOptout?: boolean;
 }
 
+export interface GQLAPIKeyMetadata {
+  id: string;
+  createdAtMs: number;
+  desc: string;
+}
+
 export interface GQLAPIKey {
   id: string;
   key: string;
+  createdAtMs: number;
+  desc: string;
+}
+
+export interface GQLDeploymentKeyMetadata {
+  id: string;
   createdAtMs: number;
   desc: string;
 }
@@ -295,7 +307,9 @@ export interface GQLResolver {
   OrgInfo?: GQLOrgInfoTypeResolver;
   UserSettings?: GQLUserSettingsTypeResolver;
   UserAttributes?: GQLUserAttributesTypeResolver;
+  APIKeyMetadata?: GQLAPIKeyMetadataTypeResolver;
   APIKey?: GQLAPIKeyTypeResolver;
+  DeploymentKeyMetadata?: GQLDeploymentKeyMetadataTypeResolver;
   DeploymentKey?: GQLDeploymentKeyTypeResolver;
   AutocompleteSuggestion?: GQLAutocompleteSuggestionTypeResolver;
   TabSuggestion?: GQLTabSuggestionTypeResolver;
@@ -665,6 +679,24 @@ export interface UserAttributesToIdResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
+export interface GQLAPIKeyMetadataTypeResolver<TParent = any> {
+  id?: APIKeyMetadataToIdResolver<TParent>;
+  createdAtMs?: APIKeyMetadataToCreatedAtMsResolver<TParent>;
+  desc?: APIKeyMetadataToDescResolver<TParent>;
+}
+
+export interface APIKeyMetadataToIdResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface APIKeyMetadataToCreatedAtMsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface APIKeyMetadataToDescResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
 export interface GQLAPIKeyTypeResolver<TParent = any> {
   id?: APIKeyToIdResolver<TParent>;
   key?: APIKeyToKeyResolver<TParent>;
@@ -685,6 +717,24 @@ export interface APIKeyToCreatedAtMsResolver<TParent = any, TResult = any> {
 }
 
 export interface APIKeyToDescResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLDeploymentKeyMetadataTypeResolver<TParent = any> {
+  id?: DeploymentKeyMetadataToIdResolver<TParent>;
+  createdAtMs?: DeploymentKeyMetadataToCreatedAtMsResolver<TParent>;
+  desc?: DeploymentKeyMetadataToDescResolver<TParent>;
+}
+
+export interface DeploymentKeyMetadataToIdResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface DeploymentKeyMetadataToCreatedAtMsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface DeploymentKeyMetadataToDescResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 

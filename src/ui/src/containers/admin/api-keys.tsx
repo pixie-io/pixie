@@ -16,72 +16,61 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { gql, useQuery, useMutation } from '@apollo/client';
+import {
+  gql, useQuery, useMutation, useLazyQuery,
+} from '@apollo/client';
 import Table from '@material-ui/core/Table';
-import IconButton from '@material-ui/core/IconButton';
-import Input from '@material-ui/core/Input';
-import MenuItem from '@material-ui/core/MenuItem';
 import TableBody from '@material-ui/core/TableBody';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
-import Actions from '@material-ui/icons/MoreHoriz';
-import Copy from '@material-ui/icons/FileCopy';
-import Delete from '@material-ui/icons/DeleteForever';
-import Visibility from '@material-ui/icons/Visibility';
-import VisibilityOff from '@material-ui/icons/VisibilityOff';
 import { distanceInWords } from 'date-fns';
 import * as React from 'react';
 
-import { GQLAPIKey } from 'app/types/schema';
+import { GQLAPIKey, GQLAPIKeyMetadata } from 'app/types/schema';
 import {
-  AdminTooltip, StyledTableCell, StyledTableHeaderCell,
-  StyledLeftTableCell, StyledRightTableCell,
+  AdminTooltip, StyledTableCell, StyledTableHeaderCell, StyledLeftTableCell,
 } from './utils';
 import {
-  UseKeyListStyles, KeyListItemIcon, KeyListItemText, KeyListMenu,
+  UseKeyListStyles, KeyActionButtons,
 } from './key-list';
+import { MonoSpaceCell } from './cluster-table-cells';
 
 interface APIKeyDisplay {
   id: string;
   idShort: string;
   createdAt: string;
-  key: string;
   desc: string;
 }
 
-export function formatAPIKey(apiKey: GQLAPIKey): APIKeyDisplay {
+export function formatAPIKey(apiKey: GQLAPIKeyMetadata): APIKeyDisplay {
   const now = new Date();
   return {
     id: apiKey.id,
     idShort: apiKey.id.split('-').pop(),
     createdAt: `${distanceInWords(new Date(apiKey.createdAtMs), now, { addSuffix: false })} ago`,
-    key: apiKey.key,
     desc: apiKey.desc,
   };
 }
 
 export const APIKeyRow: React.FC<{ apiKey: APIKeyDisplay }> = ({ apiKey }) => {
-  const classes = UseKeyListStyles();
-  const [showKey, setShowKey] = React.useState(false);
-
-  const [open, setOpen] = React.useState<boolean>(false);
-  const [anchorEl, setAnchorEl] = React.useState(null);
-
   const [deleteAPIKey] = useMutation<{ DeleteAPIKey: boolean }, { id: string }>(gql`
     mutation DeleteAPIKeyFromAdminPage($id: ID!) {
       DeleteAPIKey(id: $id)
     }
   `);
 
-  const openMenu = React.useCallback((event) => {
-    setOpen(true);
-    setAnchorEl(event.currentTarget);
-  }, []);
-
-  const closeMenu = React.useCallback(() => {
-    setOpen(false);
-    setAnchorEl(null);
-  }, []);
+  const [copyKeyToClipboard] = useLazyQuery<{ apiKey: GQLAPIKey }>(gql`
+    query getAPIKey($id:ID!){
+      apiKey(id: $id) {
+        id
+        key
+      }
+    }`, {
+    fetchPolicy: 'network-only',
+    onCompleted: (data) => {
+      navigator.clipboard.writeText(data?.apiKey?.key);
+    },
+  });
 
   return (
     <TableRow key={apiKey.id}>
@@ -90,89 +79,41 @@ export const APIKeyRow: React.FC<{ apiKey: APIKeyDisplay }> = ({ apiKey }) => {
       </AdminTooltip>
       <StyledTableCell>{apiKey.createdAt}</StyledTableCell>
       <StyledTableCell>{apiKey.desc}</StyledTableCell>
+      <MonoSpaceCell data={'••••••••••••'} />
       <StyledTableCell>
-        <Input
-          className={classes.keyValue}
-          id='api-key'
-          fullWidth
-          readOnly
-          disableUnderline
-          type={showKey ? 'text' : 'password'}
-          value={apiKey.key}
-        />
-      </StyledTableCell>
-      <StyledRightTableCell>
-        <IconButton
-          size='small'
-          classes={{ sizeSmall: classes.actionsButton }}
-          onClick={openMenu}
-        >
-          <Actions />
-        </IconButton>
-        <KeyListMenu
-          open={open}
-          onClose={closeMenu}
-          anchorEl={anchorEl}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        >
-          <MenuItem key='show' alignItems='center' onClick={() => setShowKey(!showKey)}>
-            <KeyListItemIcon>
-              {showKey ? <Visibility /> : <VisibilityOff />}
-            </KeyListItemIcon>
-            <KeyListItemText primary={showKey ? 'Hide value' : 'Show value'} />
-          </MenuItem>
-          <MenuItem
-            key='copy'
-            alignItems='center'
-            onClick={() => navigator.clipboard.writeText(apiKey.key)}
-          >
-            <KeyListItemIcon className={classes.copyBtn}>
-              <Copy />
-            </KeyListItemIcon>
-            <KeyListItemText primary='Copy value' />
-          </MenuItem>
-          <MenuItem
-            key='delete'
-            alignItems='center'
-            onClick={() => deleteAPIKey({
-              variables: { id: apiKey.id },
-              update: (cache, { data }) => {
-                if (!data.DeleteAPIKey) {
-                  return;
-                }
-                cache.modify({
-                  fields: {
-                    apiKeys(existingKeys, { readField }) {
-                      return existingKeys.filter(
-                        (key) => (apiKey.id !== readField('id', key)),
-                      );
-                    },
+        <KeyActionButtons
+          copyOnClick={() => { copyKeyToClipboard({ variables: { id: apiKey.id } }); }}
+          deleteOnClick={() => deleteAPIKey({
+            variables: { id: apiKey.id },
+            update: (cache, { data }) => {
+              if (!data.DeleteAPIKey) {
+                return;
+              }
+              cache.modify({
+                fields: {
+                  apiKeys(existingKeys, { readField }) {
+                    return existingKeys.filter(
+                      (key) => (apiKey.id !== readField('id', key)),
+                    );
                   },
-                });
-              },
-              optimisticResponse: { DeleteAPIKey: true },
-            })}
-          >
-            <KeyListItemIcon className={classes.copyBtn}>
-              <Delete />
-            </KeyListItemIcon>
-            <KeyListItemText primary='Delete' />
-          </MenuItem>
-        </KeyListMenu>
-      </StyledRightTableCell>
-    </TableRow>
+                },
+              });
+            },
+            optimisticResponse: { DeleteAPIKey: true },
+          })} />
+      </StyledTableCell>
+    </TableRow >
   );
 };
 
 export const APIKeysTable: React.FC = () => {
   const classes = UseKeyListStyles();
 
-  const { data, loading, error } = useQuery<{ apiKeys: GQLAPIKey[] }>(
+  const { data, error } = useQuery<{ apiKeys: GQLAPIKeyMetadata[] }>(
     gql`
       query getAPIKeysForAdminPage{
         apiKeys {
           id
-          key
           desc
           createdAtMs
         }
@@ -182,9 +123,6 @@ export const APIKeysTable: React.FC = () => {
     { pollInterval: 60000, fetchPolicy: 'network-only', nextFetchPolicy: 'cache-and-network' },
   );
 
-  if (loading) {
-    return <div className={classes.error}>Loading...</div>;
-  }
   if (error) {
     return <div className={classes.error}>{error.toString()}</div>;
   }
@@ -199,7 +137,7 @@ export const APIKeysTable: React.FC = () => {
             <StyledTableHeaderCell>Created</StyledTableHeaderCell>
             <StyledTableHeaderCell>Description</StyledTableHeaderCell>
             <StyledTableHeaderCell>Value</StyledTableHeaderCell>
-            <StyledTableHeaderCell>Actions</StyledTableHeaderCell>
+            <StyledTableHeaderCell></StyledTableHeaderCell>
           </TableRow>
         </TableHead>
         <TableBody>

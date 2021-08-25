@@ -23,6 +23,10 @@ import { createStyles } from '@material-ui/styles';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
 import Menu from '@material-ui/core/Menu';
+import IconButton from '@material-ui/core/IconButton';
+import DeleteIcon from '@material-ui/icons/DeleteForeverOutlined';
+import CopyIcon from '@material-ui/icons/CopyAllOutlined';
+import * as React from 'react';
 
 export const UseKeyListStyles = makeStyles((theme: Theme) => createStyles({
   keyValue: {
@@ -34,7 +38,7 @@ export const UseKeyListStyles = makeStyles((theme: Theme) => createStyles({
     borderColor: theme.palette.background.default,
   },
   actionsButton: {
-    padding: 0,
+    padding: 6,
   },
   copyBtn: {
     minWidth: '30px',
@@ -65,3 +69,22 @@ export const KeyListMenu = withStyles((theme: Theme) => createStyles({
     borderColor: theme.palette.background.default,
   },
 }))(Menu);
+
+const copyDeleteStyles = makeStyles(() => createStyles({
+  button: {
+    padding: 6,
+  },
+}));
+export const KeyActionButtons = ({
+  deleteOnClick, copyOnClick,
+}: { deleteOnClick: any, copyOnClick: any }): React.ReactElement => {
+  const classes = copyDeleteStyles();
+  return (<>
+    <IconButton onClick={copyOnClick} className={classes.button}>
+      <CopyIcon />
+    </IconButton>
+    <IconButton onClick={deleteOnClick} className={classes.button}>
+      <DeleteIcon />
+    </IconButton>
+  </>);
+};

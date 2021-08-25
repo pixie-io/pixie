@@ -153,19 +153,16 @@ func TestAPIKeys(t *testing.T) {
 					Keys: []*cloudpb.APIKey{
 						{
 							ID:        utils.ProtoFromUUIDStrOrNil(key1ID),
-							Key:       "abc",
 							CreatedAt: createTime1Pb,
 							Desc:      "key description 1",
 						},
 						{
 							ID:        utils.ProtoFromUUIDStrOrNil(key2ID),
-							Key:       "def",
 							CreatedAt: createTime2Pb,
 							Desc:      "key description 2",
 						},
 						{
 							ID:        utils.ProtoFromUUIDStrOrNil(key3ID),
-							Key:       "ghi",
 							CreatedAt: createTime3Pb,
 							Desc:      "key description 3",
 						},
@@ -182,7 +179,6 @@ func TestAPIKeys(t *testing.T) {
 						query {
 							apiKeys {
 								id
-								key
 								createdAtMs
 								desc
 							}
@@ -192,18 +188,15 @@ func TestAPIKeys(t *testing.T) {
 						{
 							"apiKeys": [{
 								"id": "8cb848c6-9dad-11d1-80b4-00c04fd430c8",
-								"key": "ghi",
 								"createdAtMs": 1601747260000.4124,
 								"desc": "key description 3"
 							}, {
 								"id": "7ba7b810-9dad-11d1-80b4-00c04fd430c8",
-								"key": "abc",
 								"createdAtMs": 1583776060001.2324,
 								"desc": "key description 1"
 							},
 							{
 								"id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-								"key": "def",
 								"createdAtMs": 1572803260000.4124,
 								"desc": "key description 2"
 							}]
@@ -262,7 +255,6 @@ func TestCreateAPIKey(t *testing.T) {
 					mutation {
 						CreateAPIKey {
 							id
-							key
 							createdAtMs
 							desc
 						}
@@ -272,7 +264,6 @@ func TestCreateAPIKey(t *testing.T) {
 					{
 						"CreateAPIKey": {
 							"id": "7ba7b810-9dad-11d1-80b4-00c04fd430c8",
-							"key": "foobar",
 							"createdAtMs": 1583776060001.2324,
 							"desc": "key description"
 						}

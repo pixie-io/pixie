@@ -182,7 +182,6 @@ func TestDeploymentKeys(t *testing.T) {
 						query {
 							deploymentKeys {
 								id
-								key
 								createdAtMs
 								desc
 							}
@@ -192,18 +191,15 @@ func TestDeploymentKeys(t *testing.T) {
 						{
 							"deploymentKeys": [{
 								"id": "8cb848c6-9dad-11d1-80b4-00c04fd430c8",
-								"key": "ghi",
 								"createdAtMs": 1601747260000.4124,
 								"desc": "key description 3"
 							}, {
 								"id": "7ba7b810-9dad-11d1-80b4-00c04fd430c8",
-								"key": "abc",
 								"createdAtMs": 1583776060001.2324,
 								"desc": "key description 1"
 							},
 							{
 								"id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-								"key": "def",
 								"createdAtMs": 1572803260000.4124,
 								"desc": "key description 2"
 							}]
@@ -262,7 +258,6 @@ func TestCreateDeploymentKey(t *testing.T) {
 						mutation {
 							CreateDeploymentKey {
 								id
-								key
 								createdAtMs
 								desc
 							}
@@ -272,7 +267,6 @@ func TestCreateDeploymentKey(t *testing.T) {
 						{
 							"CreateDeploymentKey": {
 								"id": "7ba7b810-9dad-11d1-80b4-00c04fd430c8",
-								"key": "foobar",
 								"createdAtMs": 1583776060001.2324,
 								"desc": "key description"
 							}

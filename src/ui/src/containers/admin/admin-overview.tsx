@@ -37,7 +37,7 @@ import { UserSettings } from 'app/containers/admin/user-settings';
 import { StyledTab, StyledTabs } from 'app/containers/admin/utils';
 import { GetOAuthProvider } from 'app/pages/auth/utils';
 import { scrollbarStyles } from 'app/components';
-import { GQLAPIKey, GQLDeploymentKey } from 'app/types/schema';
+import { GQLAPIKeyMetadata, GQLDeploymentKeyMetadata } from 'app/types/schema';
 
 import {
   Route, Switch, useHistory, useLocation, useRouteMatch,
@@ -74,23 +74,21 @@ export const AdminOverview: React.FC = () => {
   const location = useLocation();
   const { path } = useRouteMatch();
 
-  const [createAPIKey] = useMutation<{ CreateAPIKey: GQLAPIKey }, void>(gql`
+  const [createAPIKey] = useMutation<{ CreateAPIKey: GQLAPIKeyMetadata }, void>(gql`
     mutation CreateAPIKeyFromAdminPage {
       CreateAPIKey {
         id
-        key
         desc
         createdAtMs
       }
     }
   `);
   const [createDeploymentKey] = useMutation<
-  { CreateDeploymentKey: GQLDeploymentKey }, void
+  { CreateDeploymentKey: GQLDeploymentKeyMetadata }, void
   >(gql`
     mutation CreateDeploymentKeyFromAdminPage{
       CreateDeploymentKey {
         id
-        key
         desc
         createdAtMs
       }
@@ -125,76 +123,74 @@ export const AdminOverview: React.FC = () => {
           <StyledTab value='users' label='Users' />
           <StyledTab value='org' label='Org Settings' />
           <StyledTab value='user' label='User Settings' />
-          { authClient.isInvitationEnabled() && <StyledTab value='invite' label='Invitations' /> }
+          {authClient.isInvitationEnabled() && <StyledTab value='invite' label='Invitations' />}
         </StyledTabs>
         {tab.endsWith('deployment-keys')
-        && (
-          <Button
-            onClick={() => createDeploymentKey({
-              // This immediately adds a row to the table, so gives the user
-              // an indication that clicking "Add" did something but the data
-              // added is "wrong" and flashes with the correct data once the
-              // actual response comes in.
-              // TODO: Maybe we should assign client side IDs here.
-              // The key is hidden by default so that value changing on
-              // server response isn't that bad.
-              optimisticResponse: {
-                CreateDeploymentKey: {
-                  id: '00000000-0000-0000-0000-000000000000',
-                  key: '00000000-0000-0000-0000-000000000000',
-                  desc: '',
-                  createdAtMs: Date.now(),
-                },
-              },
-              update: (cache, { data }) => {
-                cache.modify({
-                  fields: {
-                    deploymentKeys: (existingKeys) => ([data.CreateDeploymentKey].concat(existingKeys)),
+          && (
+            <Button
+              onClick={() => createDeploymentKey({
+                // This immediately adds a row to the table, so gives the user
+                // an indication that clicking "Add" did something but the data
+                // added is "wrong" and flashes with the correct data once the
+                // actual response comes in.
+                // TODO: Maybe we should assign client side IDs here.
+                // The key is hidden by default so that value changing on
+                // server response isn't that bad.
+                optimisticResponse: {
+                  CreateDeploymentKey: {
+                    id: '00000000-0000-0000-0000-000000000000',
+                    desc: '',
+                    createdAtMs: Date.now(),
                   },
-                });
-              },
-            })}
-            className={classes.createButton}
-            variant='outlined'
-            startIcon={<Add />}
-          >
-            New key
-          </Button>
-        )}
+                },
+                update: (cache, { data }) => {
+                  cache.modify({
+                    fields: {
+                      deploymentKeys: (existingKeys) => ([data.CreateDeploymentKey].concat(existingKeys)),
+                    },
+                  });
+                },
+              })}
+              className={classes.createButton}
+              variant='outlined'
+              startIcon={<Add />}
+            >
+              New key
+            </Button>
+          )}
         {tab.endsWith('api-keys')
-        && (
-          <Button
-            onClick={() => createAPIKey({
-              // This immediately adds a row to the table, so gives the user
-              // an indication that clicking "Add" did something but the data
-              // added is "wrong" and flashes with the correct data once the
-              // actual response comes in.
-              // TODO: Maybe we should assign client side IDs here.
-              // The key is hidden by default so that value changing on
-              // server response isn't that bad.
-              optimisticResponse: {
-                CreateAPIKey: {
-                  id: '00000000-0000-0000-0000-000000000000',
-                  key: '00000000-0000-0000-0000-000000000000',
-                  desc: '',
-                  createdAtMs: Date.now(),
-                },
-              },
-              update: (cache, { data }) => {
-                cache.modify({
-                  fields: {
-                    apiKeys: (existingKeys) => ([data.CreateAPIKey].concat(existingKeys)),
+          && (
+            <Button
+              onClick={() => createAPIKey({
+                // This immediately adds a row to the table, so gives the user
+                // an indication that clicking "Add" did something but the data
+                // added is "wrong" and flashes with the correct data once the
+                // actual response comes in.
+                // TODO: Maybe we should assign client side IDs here.
+                // The key is hidden by default so that value changing on
+                // server response isn't that bad.
+                optimisticResponse: {
+                  CreateAPIKey: {
+                    id: '00000000-0000-0000-0000-000000000000',
+                    desc: '',
+                    createdAtMs: Date.now(),
                   },
-                });
-              },
-            })}
-            className={classes.createButton}
-            variant='outlined'
-            startIcon={<Add />}
-          >
-            New key
-          </Button>
-        )}
+                },
+                update: (cache, { data }) => {
+                  cache.modify({
+                    fields: {
+                      apiKeys: (existingKeys) => ([data.CreateAPIKey].concat(existingKeys)),
+                    },
+                  });
+                },
+              })}
+              className={classes.createButton}
+              variant='outlined'
+              startIcon={<Add />}
+            >
+              New key
+            </Button>
+          )}
       </div>
       <div className={classes.tabContents}>
         <TableContainer className={classes.table}>
