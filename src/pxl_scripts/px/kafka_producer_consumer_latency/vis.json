@@ -21,8 +21,7 @@
         {
             "name": "topic",
             "type": "PX_STRING",
-            "description": "Kafka topic.",
-            "defaultValue": ""
+            "description": "Kafka topic."
         }
     ],
     "globalFuncs": [
@@ -53,6 +52,48 @@
     ],
     "widgets": [
         {
+            "name": "Kafka Producers",
+            "position": {
+                "x": 0,
+                "y": 0,
+                "w": 6,
+                "h": 2
+            },
+            "func": {
+                "name": "kafka_producers",
+                "args": [
+                    {
+                        "name": "start_time",
+                        "variable": "start_time"
+                    }
+                ]
+            },
+            "displaySpec": {
+                "@type": "types.px.dev/px.vispb.Table"
+            }
+        },
+        {
+            "name": "Kafka Consumers",
+            "position": {
+                "x": 6,
+                "y": 0,
+                "w": 6,
+                "h": 2
+            },
+            "func": {
+                "name": "kafka_consumers",
+                "args": [
+                    {
+                        "name": "start_time",
+                        "variable": "start_time"
+                    }
+                ]
+            },
+            "displaySpec": {
+                "@type": "types.px.dev/px.vispb.Table"
+            }
+        },
+        {
             "name": "Graph",
             "globalFuncOutputName": "kafka_data",
             "displaySpec": {
@@ -71,7 +112,7 @@
             },
             "position": {
                 "x": 0,
-                "y": 0,
+                "y": 2,
                 "w": 12,
                 "h": 3
             }
