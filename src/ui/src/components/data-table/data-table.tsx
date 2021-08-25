@@ -162,7 +162,7 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
     userSelect: 'none',
     position: 'absolute',
     right: '0',
-    top: '50%',
+    top: 'calc(50% - 2px)',
     transform: 'translate(50%, -50%)',
   },
   resizeHandleActive: {
@@ -176,6 +176,7 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
   },
   columnSelector: {
     position: 'relative',
+    top: '-2px', // The labels and icons don't quite line up otherwise due to how text renders
     left: '50%',
     transform: 'translate(-50%)',
     width: theme.spacing(3),
@@ -263,7 +264,7 @@ const HeaderCell: React.FC<{ column: HeaderGroup }> = React.memo(function Header
     <div {...column.getHeaderProps()} className={cellClass}>
       <div
         {...sortProps}
-        title={String(column.Header) ?? ''}
+        title={column.id === 'controls' ? 'Select visible columns' : column.id}
         className={contClass}
       >
         <span className={labelClass}>
