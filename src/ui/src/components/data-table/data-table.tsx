@@ -204,6 +204,11 @@ const ColumnSelector: React.FC<{ columns: ColumnInstance[] }> = ({ columns }) =>
   const [open, setOpen] = React.useState(false);
   const anchorEl = React.useRef<HTMLButtonElement>(null);
 
+  // Workaround: since react-table directly mutates its objects, column.isVisible on individual columns doesn't cause
+  // React to update this component. Monitoring the instance state with useEffect is sufficient to trigger an update.
+  const { hiddenColumns } = React.useContext(DataTableContext).instance.state;
+  React.useEffect(() => {}, [hiddenColumns.length]);
+
   const editableColumns = React.useMemo(() => columns.filter((col) => !col.isGutter), [columns]);
   return (
     <>
