@@ -125,6 +125,7 @@ def cmd_timeseries(start_time: str, pod: px.Pod):
     df = df.groupby(['time_', 'req_cmd']).agg(
         throughput_total=('req_cmd', px.count),
     )
+    df.req_cmd = px.kafka_api_key_name(df.req_cmd)
     return df
 
 

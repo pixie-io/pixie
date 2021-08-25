@@ -36,8 +36,9 @@ def kafka_data(start_time: str, source_filter: str, destination_filter: str, num
     df = df.head(num_head)
 
     df = add_source_dest_links(df, start_time)
-    df = df[['time_', 'source', 'destination', 'remote_port', 'req_cmd',
-            'req_body', 'resp', 'latency']]
+    df.req_cmd = px.kafka_api_key_name(df.req_cmd)
+    df = df['time_', 'source', 'destination', 'remote_port', 'req_cmd',
+            'req_body', 'resp', 'latency']
 
     return df
 
