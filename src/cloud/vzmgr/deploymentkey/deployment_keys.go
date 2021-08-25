@@ -21,6 +21,7 @@ package deploymentkey
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -35,6 +36,11 @@ import (
 	"px.dev/pixie/src/cloud/vzmgr/vzmgrpb"
 	"px.dev/pixie/src/shared/services/authcontext"
 	"px.dev/pixie/src/utils"
+)
+
+const (
+	// deployKeyPrefox is applied to all deploy keys to make them easier to identify.
+	deployKeyPrefix = "px-dep-"
 )
 
 // Service is used to provision and manage deployment keys.
@@ -67,7 +73,7 @@ func (s *Service) Create(ctx context.Context, req *vzmgrpb.CreateDeploymentKeyRe
 	if err != nil {
 		return nil, err
 	}
-	key := keyID.String()
+	key := deployKeyPrefix + keyID.String()
 	err = s.db.QueryRowxContext(ctx, query,
 		sCtx.Claims.GetUserClaims().OrgID, sCtx.Claims.GetUserClaims().UserID, key, s.dbKey, req.Desc).
 		Scan(&id, &ts)
@@ -197,6 +203,11 @@ func (s *Service) Delete(ctx context.Context, req *uuidpb.UUID) (*types.Empty, e
 
 // FetchOrgUserIDUsingDeploymentKey gets the org and user ID based on the deployment key.
 func (s *Service) FetchOrgUserIDUsingDeploymentKey(ctx context.Context, key string) (uuid.UUID, uuid.UUID, error) {
+	// For backwards compatibility add in deployKeyPrefix the front of the keys.
+	if !strings.HasPrefix(key, deployKeyPrefix) {
+		key = deployKeyPrefix + key
+	}
+
 	query := `SELECT org_id, user_id
                 FROM vizier_deployment_keys
                 WHERE hashed_key=sha256($1) AND PGP_SYM_DECRYPT(encrypted_key::bytea, $2::text)::bytea=$1`

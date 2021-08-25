@@ -22,6 +22,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -98,9 +99,9 @@ func mustLoadTestData(db *sqlx.DB) {
 
 	insertVizierDeploymentKeys := `INSERT INTO vizier_deployment_keys(id, org_id, user_id, hashed_key, encrypted_key, description)
                                      VALUES ($1, $2, $3, sha256($4), PGP_SYM_ENCRYPT($4::text, $5::text), $6)`
-	db.MustExec(insertVizierDeploymentKeys, testKey1ID, testAuthOrgID, testAuthUserID, "key1", testDBKey, "here is a desc")
-	db.MustExec(insertVizierDeploymentKeys, testKey2ID, testAuthOrgID, testAuthUserID, "key2", testDBKey, "here is another one")
-	db.MustExec(insertVizierDeploymentKeys, testNonAuthUserKeyID.String(), testNonAuthOrgID, "123e4567-e89b-12d3-a456-426655440001", "key2", testDBKey, "some other desc")
+	db.MustExec(insertVizierDeploymentKeys, testKey1ID, testAuthOrgID, testAuthUserID, "px-dep-key1", testDBKey, "here is a desc")
+	db.MustExec(insertVizierDeploymentKeys, testKey2ID, testAuthOrgID, testAuthUserID, "px-dep-key2", testDBKey, "here is another one")
+	db.MustExec(insertVizierDeploymentKeys, testNonAuthUserKeyID.String(), testNonAuthOrgID, "123e4567-e89b-12d3-a456-426655440001", "px-dep-key2", testDBKey, "some other desc")
 }
 
 func TestDeploymentKeyService_CreateDeploymentKey(t *testing.T) {
@@ -139,7 +140,7 @@ func TestDeploymentKeyService_CreateDeploymentKey(t *testing.T) {
 			assert.LessOrEqual(t, diff, int64(10000))
 
 			// Check if the key has a value and the ID looks valid.
-			assert.Greater(t, len(resp.Key), 0)
+			assert.True(t, strings.HasPrefix(resp.Key, "px-dep-"))
 			assert.NotEqual(t, uuid.Nil.String(), utils.UUIDFromProtoOrNil(resp.ID).String())
 		})
 	}
@@ -173,8 +174,8 @@ func TestDeploymentKeyService_ListDeploymentKeys(t *testing.T) {
 			assert.Equal(t, testKey2ID, utils.UUIDFromProtoOrNil(resp.Keys[1].ID))
 			assert.Equal(t, "here is a desc", resp.Keys[0].Desc)
 			assert.Equal(t, "here is another one", resp.Keys[1].Desc)
-			assert.Equal(t, "key1", resp.Keys[0].Key)
-			assert.Equal(t, "key2", resp.Keys[1].Key)
+			assert.Equal(t, "px-dep-key1", resp.Keys[0].Key)
+			assert.Equal(t, "px-dep-key2", resp.Keys[1].Key)
 
 			// Check that time looks reasonable.
 			ts, err := types.TimestampFromProto(resp.Keys[0].CreatedAt)
@@ -229,7 +230,7 @@ func TestDeploymentKeyService_Get(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, resp)
 
-			assert.Equal(t, "key1", resp.Key.Key)
+			assert.Equal(t, "px-dep-key1", resp.Key.Key)
 			// Check if time is reasonable.
 			ts, err := types.TimestampFromProto(resp.Key.CreatedAt)
 			require.NoError(t, err)
@@ -378,7 +379,7 @@ func TestDeploymentKeyService_Delete_UnownedKey(t *testing.T) {
 				testDBKey, testNonAuthUserKeyID).
 				Scan(&key)
 			require.NoError(t, err)
-			assert.Equal(t, "key2", key)
+			assert.Equal(t, "px-dep-key2", key)
 		})
 	}
 }
@@ -415,6 +416,36 @@ func TestDeploymentKeyService_Delete_NonExistentKey(t *testing.T) {
 }
 
 func TestService_FetchOrgUserIDUsingDeploymentKey(t *testing.T) {
+	mustLoadTestData(db)
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "regular user",
+			ctx:  createTestContext(),
+		},
+		{
+			name: "api user",
+			ctx:  createTestAPIUserContext(),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := test.ctx
+			svc := New(db, testDBKey)
+
+			orgID, userID, err := svc.FetchOrgUserIDUsingDeploymentKey(ctx, "px-dep-key1")
+			require.NoError(t, err)
+			assert.Equal(t, testAuthOrgID, orgID)
+			assert.Equal(t, testAuthUserID, userID)
+		})
+	}
+}
+
+func TestService_FetchOrgUserIDUsingDeploymentKey_OldKeys(t *testing.T) {
+	// Tests to make sure key without the prefix 'px-dep-' work.
 	mustLoadTestData(db)
 	tests := []struct {
 		name string
