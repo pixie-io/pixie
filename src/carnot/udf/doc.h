@@ -128,10 +128,11 @@ class ScalarUDFDocBuilder : public UDFDocBuilder<ScalarUDFDocBuilder> {
   Status ToProto(udfspb::Doc* doc) {
     PL_RETURN_IF_ERROR(UDFDocBuilder::ToProtoBase(doc));
 
+    const auto& init_args = ScalarUDFTraits<TUDF>::InitArguments();
     const auto& exec_args = ScalarUDFTraits<TUDF>::ExecArguments();
     const auto& return_type = ScalarUDFTraits<TUDF>::ReturnType();
 
-    if (exec_args.size() != args_.size()) {
+    if ((init_args.size() + exec_args.size()) != args_.size()) {
       return error::Internal("Argument count mismatch");
     }
 
@@ -140,7 +141,11 @@ class ScalarUDFDocBuilder : public UDFDocBuilder<ScalarUDFDocBuilder> {
       auto* a = scalar_doc->add_args();
       a->set_ident(arg.name);
       a->set_desc(arg.desc);
-      a->set_type(exec_args[i]);
+      if (i < init_args.size()) {
+        a->set_type(init_args[i]);
+      } else {
+        a->set_type(exec_args[i - init_args.size()]);
+      }
     }
 
     auto* retval = scalar_doc->mutable_retval();
@@ -169,10 +174,11 @@ class UDADocBuilder : public UDFDocBuilder<UDADocBuilder> {
   Status ToProto(udfspb::Doc* doc) {
     PL_RETURN_IF_ERROR(UDFDocBuilder::ToProtoBase(doc));
 
+    const auto& init_args = UDATraits<TUDA>::InitArguments();
     const auto& update_args = UDATraits<TUDA>::UpdateArgumentTypes();
     const auto& finalize_type = UDATraits<TUDA>::FinalizeReturnType();
 
-    if (update_args.size() != args_.size()) {
+    if ((init_args.size() + update_args.size()) != args_.size()) {
       return error::Internal("Argument count mismatch");
     }
 
@@ -181,7 +187,11 @@ class UDADocBuilder : public UDFDocBuilder<UDADocBuilder> {
       auto* a = uda_doc->add_update_args();
       a->set_ident(arg.name);
       a->set_desc(arg.desc);
-      a->set_type(update_args[i]);
+      if (i < init_args.size()) {
+        a->set_type(init_args[i]);
+      } else {
+        a->set_type(update_args[i - init_args.size()]);
+      }
     }
 
     auto* retval = uda_doc->mutable_result();

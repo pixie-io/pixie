@@ -179,8 +179,9 @@ class UDA1 : public UDA {
   static UDADocBuilder Doc() {
     return UDADocBuilder("This function computes the sum of a list of numbers.")
         .Details("The detailed version of this.")
-        .Arg("a", "The argument to sum")
-        .Returns("The sum of all values of a.")
+        .Arg("a", "random init arg")
+        .Arg("b", "The argument to sum")
+        .Returns("The sum of all values of b.")
         .Example("df.sum = df.agg");
   }
 };
@@ -652,11 +653,16 @@ udf {
   uda_doc {
     update_args {
       ident: "a"
+      desc: "random init arg"
+      type: STRING
+    }
+    update_args {
+      ident: "b"
       desc: "The argument to sum"
       type: INT64
     }
     result {
-      desc: "The sum of all values of a."
+      desc: "The sum of all values of b."
       type: INT64
     }
   }
