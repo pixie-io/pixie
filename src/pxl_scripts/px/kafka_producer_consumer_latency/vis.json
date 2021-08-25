@@ -1,0 +1,80 @@
+{
+    "variables": [
+        {
+            "name": "start_time",
+            "type": "PX_STRING",
+            "description": "The start time of the window in time units before now.",
+            "defaultValue": "-5m"
+        },
+        {
+            "name": "producer",
+            "type": "PX_STRING",
+            "description": "Kafka producer.",
+            "defaultValue": ""
+        },
+        {
+            "name": "consumer",
+            "type": "PX_STRING",
+            "description": "Kafka consumer.",
+            "defaultValue": ""
+        },
+        {
+            "name": "topic",
+            "type": "PX_STRING",
+            "description": "Kafka topic.",
+            "defaultValue": ""
+        }
+    ],
+    "globalFuncs": [
+        {
+            "outputName": "kafka_data",
+            "func": {
+                "name": "kafka_data",
+                "args": [
+                    {
+                        "name": "start_time",
+                        "variable": "start_time"
+                    },
+                    {
+                        "name": "producer",
+                        "variable": "producer"
+                    },
+                    {
+                        "name": "consumer",
+                        "variable": "consumer"
+                    },
+                    {
+                        "name": "topic",
+                        "variable": "topic"
+                    }
+                ]
+            }
+        }
+    ],
+    "widgets": [
+        {
+            "name": "Graph",
+            "globalFuncOutputName": "kafka_data",
+            "displaySpec": {
+                "@type": "types.px.dev/px.vispb.TimeseriesChart",
+                "timeseries": [
+                    {
+                        "value": "time_gap",
+                        "mode": "MODE_LINE"
+                    }
+                ],
+                "title": "",
+                "yAxis": {
+                    "label": "Produce-Consume Delay (seconds)"
+                },
+                "xAxis": null
+            },
+            "position": {
+                "x": 0,
+                "y": 0,
+                "w": 12,
+                "h": 3
+            }
+        }
+    ]
+}
