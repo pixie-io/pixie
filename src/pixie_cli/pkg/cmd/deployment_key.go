@@ -39,6 +39,7 @@ func init() {
 	DeployKeyCmd.AddCommand(CreateDeployKeyCmd)
 	DeployKeyCmd.AddCommand(DeleteDeployKeyCmd)
 	DeployKeyCmd.AddCommand(ListDeployKeyCmd)
+	DeployKeyCmd.AddCommand(GetDeployKeyCmd)
 
 	CreateDeployKeyCmd.Flags().StringP("desc", "d", "", "A description for the deploy key")
 	viper.BindPFlag("desc", CreateDeployKeyCmd.Flags().Lookup("desc"))
@@ -105,7 +106,7 @@ var DeleteDeployKeyCmd = &cobra.Command{
 // ListDeployKeyCmd is the List sub-command of DeployKey.
 var ListDeployKeyCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List all deploy key for Pixie",
+	Short: "List all deployment key metadata",
 	Run: func(cmd *cobra.Command, args []string) {
 		cloudAddr := viper.GetString("cloud_addr")
 		format, _ := cmd.Flags().GetString("output")
@@ -121,9 +122,40 @@ var ListDeployKeyCmd = &cobra.Command{
 		defer w.Finish()
 		w.SetHeader("deployment-keys", []string{"ID", "Key", "CreatedAt", "Description"})
 		for _, k := range keys {
-			_ = w.Write([]interface{}{utils2.UUIDFromProtoOrNil(k.ID), k.Key, k.CreatedAt,
+			_ = w.Write([]interface{}{utils2.UUIDFromProtoOrNil(k.ID), "<hidden>", k.CreatedAt,
 				k.Desc})
 		}
+	},
+}
+
+// GetDeployKeyCmd is the List sub-command of DeployKey.
+var GetDeployKeyCmd = &cobra.Command{
+	Use:   "get",
+	Short: "Get deployment key details for a single key",
+	Run: func(cmd *cobra.Command, args []string) {
+		cloudAddr := viper.GetString("cloud_addr")
+		format, _ := cmd.Flags().GetString("output")
+		format = strings.ToLower(format)
+
+		if len(args) != 1 {
+			utils.Fatal("Expected a single argument 'key id'.")
+		}
+
+		keyID, err := uuid.FromString(args[0])
+		if err != nil {
+			utils.Fatal("Malformed Key ID. Expected a single argument 'key id'.")
+		}
+		k, err := getDeployKeys(cloudAddr, keyID)
+		if err != nil {
+			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
+			log.WithError(err).Fatal("Failed to list deployment keys")
+		}
+		// Throw keys into table.
+		w := components.CreateStreamWriter(format, os.Stdout)
+		defer w.Finish()
+		w.SetHeader("deployment-keys", []string{"ID", "Key", "CreatedAt", "Description"})
+		_ = w.Write([]interface{}{utils2.UUIDFromProtoOrNil(k.ID), k.Key, k.CreatedAt,
+			k.Desc})
 	},
 }
 
@@ -178,4 +210,20 @@ func listDeployKeys(cloudAddr string) ([]*cloudpb.DeploymentKey, error) {
 	}
 
 	return resp.Keys, nil
+}
+
+func getDeployKeys(cloudAddr string, keyID uuid.UUID) (*cloudpb.DeploymentKey, error) {
+	deployMgrClient, ctxWithCreds, err := getClientAndContext(cloudAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := deployMgrClient.Get(ctxWithCreds, &cloudpb.GetDeploymentKeyRequest{
+		ID: utils2.ProtoFromUUID(keyID),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Key, nil
 }
