@@ -30,6 +30,7 @@ import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { JSONData } from 'app/containers/format-data/format-data';
 import { liveCellRenderer } from 'app/containers/live-data-table/renderers';
 import { getSortFunc } from 'app/containers/live-data-table/sort-funcs';
+import { AutoSizerContext, withAutoSizerContext } from 'app/utils/autosizer';
 import { ColumnDisplayInfo, displayInfoFromColumn, titleFromInfo } from './column-display-info';
 import { parseRows } from './parsers';
 import ColumnInfo = Relation.ColumnInfo;
@@ -132,8 +133,6 @@ function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutte
 const useLiveDataTableStyles = makeStyles((theme: Theme) => createStyles({
   root: {
     display: 'flex',
-    width: '100%',
-    height: '100%',
     flexFlow: 'row nowrap',
     justifyContent: 'stretch',
     alignItems: 'stretch',
@@ -190,22 +189,24 @@ export interface LiveDataTableProps extends Pick<DataTableProps, 'onRowsRendered
   gutterColumn?: string;
 }
 
-export const LiveDataTable: React.FC<LiveDataTableProps> = ({ table, ...options }) => {
+const LiveDataTableImpl: React.FC<LiveDataTableProps> = function LiveDataTable({ table, ...options }) {
   const classes = useLiveDataTableStyles();
   const reactTable = useConvertedTable(table, options.propagatedArgs, options.gutterColumn);
+  const { width: containerWidth, height: containerHeight } = React.useContext(AutoSizerContext);
 
   const [details, setDetails] = React.useState<Record<string, any>>(null);
   const onRowSelected = React.useCallback((row: Record<string, any>|null) => setDetails(row), [setDetails]);
 
   // Determine if we should render row details in a horizontal split or a vertical one based on available space
-  const [splitMode, setSplitMode] = React.useState<'horizontal'|'vertical'>('vertical');
-  const rootRef = React.useCallback((el: HTMLDivElement) => {
-    // TODO(nick,PC-1050): Make this update when widgets move (will need to watch nearest AutoSizerContext probably?)
-    setSplitMode((el?.offsetWidth < el?.offsetHeight) ? 'horizontal' : 'vertical');
-  }, [setSplitMode]);
+  const splitMode: 'horizontal'|'vertical' = React.useMemo(
+    () => (containerWidth / 4 < 240 ? 'horizontal' : 'vertical'),
+    [containerWidth]);
 
   return (
-    <div ref={rootRef} className={buildClass(classes.root, splitMode === 'horizontal' && classes.rootHorizontal)}>
+    <div
+      className={buildClass(classes.root, splitMode === 'horizontal' && classes.rootHorizontal)}
+      style={{ width: containerWidth, height: containerHeight }}
+    >
       <div className={classes.table}>
         <DataTable table={reactTable} enableRowSelect onRowSelected={onRowSelected} enableColumnSelect {...options} />
       </div>
@@ -217,3 +218,5 @@ export const LiveDataTable: React.FC<LiveDataTableProps> = ({ table, ...options 
     </div>
   );
 };
+
+export const LiveDataTable = withAutoSizerContext(LiveDataTableImpl);

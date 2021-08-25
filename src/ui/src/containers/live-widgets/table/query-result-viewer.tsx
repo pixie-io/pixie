@@ -23,7 +23,6 @@ import { Theme, Typography, makeStyles } from '@material-ui/core';
 import { createStyles } from '@material-ui/styles';
 import { Arguments } from 'app/utils/args-utils';
 import { LiveDataTable } from 'app/containers/live-data-table/live-data-table';
-import AutoSizer from 'react-virtualized-auto-sizer';
 
 const useStyles = makeStyles(({ spacing }: Theme) => createStyles({
   root: {
@@ -89,23 +88,15 @@ export const QueryResultTable: React.FC<QueryResultTableProps> = (({
     setVisibleStop(visibleStopIndex);
   }, []);
 
-  const makeInner = React.useCallback(({ width, height }) => (
-    <div style={{ width, height, overflow: 'hidden' }}>
-      <LiveDataTable
-        table={data}
-        gutterColumn={display.gutterColumn}
-        propagatedArgs={propagatedArgs}
-        onRowsRendered={onRowsRendered}
-      />
-    </div>
-  ), [data, display.gutterColumn, propagatedArgs, onRowsRendered]);
-
   return (
     <div className={classes.root}>
       <div className={classes.table}>
-        <AutoSizer>
-          {makeInner}
-        </AutoSizer>
+        <LiveDataTable
+          table={data}
+          gutterColumn={display.gutterColumn}
+          propagatedArgs={propagatedArgs}
+          onRowsRendered={onRowsRendered}
+        />
       </div>
       <div className={classes.tableSummary}>
         {visibleRowSummary}
