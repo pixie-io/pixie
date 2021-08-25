@@ -29,10 +29,50 @@ namespace px {
 namespace carnot {
 namespace builtins {
 
-TEST(StringOps, basic_regex_match) {
+constexpr char kMultiLine[] = R"str(
+abcd
+1234
+testtest
+)str";
+
+TEST(RegexOps, basic_regex_match) {
   auto udf_tester = udf::UDFTester<RegexMatchUDF>();
   udf_tester.Init("abcd.*").ForInput("abcdefg").Expect(true);
   udf_tester.Init("abcd.*").ForInput("abce").Expect(false);
+}
+
+TEST(RegexOps, invalid_regex_match) {
+  auto udf_tester = udf::UDFTester<RegexMatchUDF>();
+  udf_tester.Init(R"regex(\K)regex").ForInput(kMultiLine).Expect(false);
+}
+
+TEST(RegexOps, basic_regex_replace) {
+  auto udf_tester = udf::UDFTester<RegexReplaceUDF>();
+  udf_tester.Init("abc").ForInput("1abc 2abcd\t\n3abcd", "__").Expect("1__ 2__d\t\n3__d");
+  udf_tester.Init("\n").ForInput(kMultiLine, "\t").Expect("\tabcd\t1234\ttesttest\t");
+  udf_tester.Init("\n").ForInput(kMultiLine, "").Expect("abcd1234testtest");
+}
+
+TEST(RegexOps, regex_replace_w_groups) {
+  auto udf_tester = udf::UDFTester<RegexReplaceUDF>();
+  // Numbered group
+  udf_tester.Init(R"regex(([0-9]+)\w+)regex")
+      .ForInput("123abcd 000chars 0asdfasdfasdfasdfasdfasdfasdf", R"regex(\1word)regex")
+      .Expect("123word 000word 0word");
+}
+
+TEST(RegexOps, invalid_regex_replace) {
+  auto udf_tester = udf::UDFTester<RegexReplaceUDF>();
+  udf_tester.Init(R"regex(\K)regex")
+      .ForInput(kMultiLine, "")
+      .Expect("Invalid regex expr: invalid escape sequence: \\K");
+
+  // Named groups unsupported.
+  udf_tester.Init(R"regex((?P<numbers>[0-9]+)\w+)regex")
+      .ForInput("123abcd 000chars 0asdfasdfasdfasdfasdfasdfasdf", R"regex(\g<numbers>word)regex")
+      .Expect(
+          "Invalid regex in substitution string: Rewrite schema error: '\\' must be followed by "
+          "a digit or '\\'.");
 }
 
 }  // namespace builtins

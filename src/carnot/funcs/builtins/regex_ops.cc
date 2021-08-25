@@ -31,6 +31,7 @@ void RegisterRegexOpsOrDie(udf::Registry* registry) {
    *****************************************/
   // String contains.
   registry->RegisterOrDie<RegexMatchUDF>("regex_match");
+  registry->RegisterOrDie<RegexReplaceUDF>("replace");
   /*****************************************
    * Aggregate UDFs.
    *****************************************/
