@@ -70,14 +70,23 @@ def kafka_data(start_time: str, producer: str, consumer: str, topic: str):
     consumer_df = consumer_df[consumer_df.offset != ""]
 
     # Self-join to match consumer requests with producer requests.
-    df = consumer_df.merge(producer_df, how='inner', left_on='offset', right_on='offset', suffixes=['', '_producer'])
-    df = df['time_', 'offset', 'time__producer']
+    df = consumer_df.merge(
+        producer_df,
+        how='inner',
+        left_on='offset',
+        right_on='offset',
+        suffixes=['_consumer', '_producer'])
+    df.offset = df.offset_consumer
+    df = df['offset', 'time__consumer', 'time__producer']
 
     # Compute producer consumer latency.
     # If the consumer's fetch happened before the produce, then set latency to 0,
     # since it means the consumer is ready waiting for the produce as soon as it arrives.
-    df.time_gap = (df.time_ - df.time__producer) / 1000.0 / 1000.0 / 1000.0
-    df.time_gap = px.select(df.time_gap < 0.0, 0.0, df.time_gap)
+    df.delay = (df.time__consumer - df.time__producer) / 1000.0 / 1000.0 / 1000.0
+    df.delay = px.select(df.delay < 0.0, 0.0, df.delay)
+
+    # Add time_ as x-axis for charting
+    df.time_ = df.time__consumer
 
     return df
 

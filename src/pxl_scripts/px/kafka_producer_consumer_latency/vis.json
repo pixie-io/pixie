@@ -100,7 +100,7 @@
                 "@type": "types.px.dev/px.vispb.TimeseriesChart",
                 "timeseries": [
                     {
-                        "value": "time_gap",
+                        "value": "delay",
                         "mode": "MODE_LINE"
                     }
                 ],
@@ -119,3 +119,4 @@
         }
     ]
 }
+
