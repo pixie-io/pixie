@@ -26,6 +26,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -60,6 +61,25 @@ type HTTPClient interface {
 	Get(string) (resp *http.Response, err error)
 }
 
+// concurrentPodMap wraps a map with concurrency safe read/write operations.
+type concurrentPodMap struct {
+	unsafeMap map[string]*v1.Pod
+	mapMu     sync.Mutex
+}
+
+func (c *concurrentPodMap) read(name string) (*v1.Pod, bool) {
+	c.mapMu.Lock()
+	defer c.mapMu.Unlock()
+	pod, ok := c.unsafeMap[name]
+	return pod, ok
+}
+
+func (c *concurrentPodMap) write(name string, pod *v1.Pod) {
+	c.mapMu.Lock()
+	defer c.mapMu.Unlock()
+	c.unsafeMap[name] = pod
+}
+
 // VizierMonitor is responsible for watching the k8s API and statusz endpoints to compile a reason and state
 // for the overall Vizier instance.
 type VizierMonitor struct {
@@ -71,8 +91,8 @@ type VizierMonitor struct {
 	namespace      string
 	namespacedName types.NamespacedName
 
-	states map[string]*v1.Pod
-	lastRV string
+	podStates *concurrentPodMap
+	lastRV    string
 
 	vzUpdate func(context.Context, client.Object, ...client.UpdateOption) error
 	vzGet    func(context.Context, types.NamespacedName, client.Object) error
@@ -86,7 +106,7 @@ func (m *VizierMonitor) InitAndStartMonitor() error {
 	}
 	m.httpClient = &http.Client{Transport: tr}
 	m.ctx, m.cancel = context.WithCancel(context.Background())
-	m.states = make(map[string]*v1.Pod)
+	m.podStates = &concurrentPodMap{unsafeMap: make(map[string]*v1.Pod)}
 
 	err := m.initState()
 	if err != nil {
@@ -155,12 +175,12 @@ func (m *VizierMonitor) handlePod(pod v1.Pod) {
 	// the status of the previous pod.
 	// In the future we may add special handling for PEMs/multiple kelvins.
 	if name, ok := pod.ObjectMeta.Labels["name"]; ok {
-		if st, stOk := m.states[name]; stOk {
+		if st, stOk := m.podStates.read(name); stOk {
 			if st.ObjectMeta.Name != pod.ObjectMeta.Name && pod.ObjectMeta.CreationTimestamp.Before(&st.ObjectMeta.CreationTimestamp) {
 				return
 			}
 		}
-		m.states[name] = &pod
+		m.podStates.write(name, &pod)
 	}
 }
 
@@ -173,8 +193,7 @@ func (m *VizierMonitor) watchK8sAPI() {
 		}
 
 		resCh := retryWatcher.ResultChan()
-		runWatcher := true
-		for runWatcher {
+		for {
 			select {
 			case <-m.ctx.Done():
 				log.Info("Received cancel, stopping K8s watcher")
@@ -214,9 +233,9 @@ func isOk(state *vizierState) bool {
 }
 
 // getCloudConnState determines the state of the cloud connector then translates
-// that to a corresponding vizierState.
-func getCloudConnState(client HTTPClient, pods map[string]*v1.Pod) *vizierState {
-	if ccPod, ok := pods[cloudConnName]; ok {
+// that to a corresponding VizierState.
+func getCloudConnState(client HTTPClient, pods *concurrentPodMap) *vizierState {
+	if ccPod, ok := pods.read(cloudConnName); ok {
 		if ccPod.Status.Phase == v1.PodPending {
 			return &vizierState{Reason: status.CloudConnectorPodPending}
 		}
@@ -247,7 +266,7 @@ func getPVCState() *vizierState {
 // of data available at call time. Reports the first state that fails (does not aggregate),
 // otherwise reports a healthy state.
 func (m *VizierMonitor) getvizierState() *vizierState {
-	ccState := getCloudConnState(m.httpClient, m.states)
+	ccState := getCloudConnState(m.httpClient, m.podStates)
 	if !isOk(ccState) {
 		return ccState
 	}

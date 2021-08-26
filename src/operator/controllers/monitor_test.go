@@ -159,18 +159,20 @@ func TestMonitor_getCloudConnState(t *testing.T) {
 				},
 			}
 
-			pods := map[string]*v1.Pod{
-				"vizier-cloud-connector": &v1.Pod{
-					Status: v1.PodStatus{
-						PodIP: "127.0.0.1",
-						Phase: test.cloudConnPhase,
-					},
-					Spec: v1.PodSpec{
-						Containers: []v1.Container{
-							v1.Container{
-								Ports: []v1.ContainerPort{
-									v1.ContainerPort{
-										ContainerPort: 8080,
+			pods := &concurrentPodMap{
+				unsafeMap: map[string]*v1.Pod{
+					"vizier-cloud-connector": &v1.Pod{
+						Status: v1.PodStatus{
+							PodIP: "127.0.0.1",
+							Phase: test.cloudConnPhase,
+						},
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
+								v1.Container{
+									Ports: []v1.ContainerPort{
+										v1.ContainerPort{
+											ContainerPort: 8080,
+										},
 									},
 								},
 							},
