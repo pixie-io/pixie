@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package controllers_test
+package controllers
 
 import (
 	"bytes"
@@ -28,7 +28,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	pixiev1alpha1 "px.dev/pixie/src/operator/api/v1alpha1"
-	"px.dev/pixie/src/operator/controllers"
+	"px.dev/pixie/src/shared/status"
 )
 
 type FakeHTTPClient struct {
@@ -57,7 +57,7 @@ func (f *FakeHTTPClient) Get(url string) (*http.Response, error) {
 	}, nil
 }
 
-func TestMonitor_GetPodStatus(t *testing.T) {
+func TestMonitor_queryPodStatusz(t *testing.T) {
 	httpClient := &FakeHTTPClient{
 		responses: map[string]string{
 			"https://127.0.0.1:8080/statusz":  "",
@@ -97,7 +97,7 @@ func TestMonitor_GetPodStatus(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ok, status := controllers.GetPodStatus(httpClient, &v1.Pod{
+			ok, status := queryPodStatusz(httpClient, &v1.Pod{
 				Status: v1.PodStatus{
 					PodIP: test.podIP,
 				},
@@ -120,13 +120,13 @@ func TestMonitor_GetPodStatus(t *testing.T) {
 	}
 }
 
-func TestMonitor_ReconcileStatus(t *testing.T) {
+func TestMonitor_getCloudConnState(t *testing.T) {
 	tests := []struct {
 		name                string
 		cloudConnStatusz    string
 		cloudConnPhase      v1.PodPhase
 		expectedVizierPhase pixiev1alpha1.VizierPhase
-		expectedReason      string
+		expectedReason      status.VizierReason
 	}{
 		{
 			name:                "healthy",
@@ -140,14 +140,14 @@ func TestMonitor_ReconcileStatus(t *testing.T) {
 			cloudConnStatusz:    "",
 			cloudConnPhase:      v1.PodPending,
 			expectedVizierPhase: pixiev1alpha1.VizierPhaseUpdating,
-			expectedReason:      "",
+			expectedReason:      status.CloudConnectorPodPending,
 		},
 		{
 			name:                "unhealthy but running",
 			cloudConnStatusz:    "CloudConnectFailed",
 			cloudConnPhase:      v1.PodRunning,
 			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
-			expectedReason:      "CloudConnectFailed",
+			expectedReason:      status.CloudConnectorFailedToConnect,
 		},
 	}
 
@@ -179,9 +179,15 @@ func TestMonitor_ReconcileStatus(t *testing.T) {
 				},
 			}
 
-			phase, reason := controllers.ReconcileStatus(httpClient, pods)
-			assert.Equal(t, test.expectedVizierPhase, phase)
-			assert.Equal(t, test.expectedReason, reason)
+			state := getCloudConnState(httpClient, pods)
+			assert.Equal(t, test.expectedReason, state.Reason)
 		})
 	}
+}
+
+func TestMonitor_translateReasonToPhase(t *testing.T) {
+	assert.Equal(t, pixiev1alpha1.VizierPhaseHealthy, translateReasonToPhase(""))
+	assert.Equal(t, pixiev1alpha1.VizierPhaseUpdating, translateReasonToPhase(status.CloudConnectorPodPending))
+	assert.Equal(t, pixiev1alpha1.VizierPhaseDisconnected, translateReasonToPhase(status.CloudConnectorMissing))
+	assert.Equal(t, pixiev1alpha1.VizierPhaseUnhealthy, translateReasonToPhase("foobar"))
 }

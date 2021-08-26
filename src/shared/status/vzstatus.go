@@ -21,7 +21,7 @@ package status
 // This file contains all possible reasons for the Vizier components.
 // These are reported to the operator via statusz endpoints.
 
-var reasonToMessageMap = map[string]string{
+var reasonToMessageMap = map[VizierReason]string{
 	"":                             "",
 	CloudConnectorFailedToConnect:  "Cloud connector failed to connect to Pixie Cloud. Please check your cloud address.",
 	CloudConnectorInvalidDeployKey: "Invalid deploy key specified. Please check that the deploy key is correct.",
@@ -29,19 +29,29 @@ var reasonToMessageMap = map[string]string{
 }
 
 // GetMessageFromReason gets the human-readable message for a vizier status reason.
-func GetMessageFromReason(reason string) string {
+func GetMessageFromReason(reason VizierReason) string {
 	if msg, ok := reasonToMessageMap[reason]; ok {
 		return msg
 	}
 	return ""
 }
 
+// VizierReason is the reason that Vizier is in its current state.
+// All VizierReason values should be included in this file.
+type VizierReason string
+
 const (
 	// CloudConnectorFailedToConnect is a status for when the cloud connector is unable to connect to the specified cloud addr.
-	CloudConnectorFailedToConnect = "CloudConnectFailed"
+	CloudConnectorFailedToConnect VizierReason = "CloudConnectFailed"
 	// CloudConnectorInvalidDeployKey is a status for when the cloud connector has an invalid deploy key. This will prevent
 	// the Vizier from properly registering.
-	CloudConnectorInvalidDeployKey = "InvalidDeployKey"
+	CloudConnectorInvalidDeployKey VizierReason = "InvalidDeployKey"
 	// CloudConnectorBasicQueryFailed is a status for when the cloud connector is fully connected, but fails to run basic queries.
-	CloudConnectorBasicQueryFailed = "BasicQueryFailed"
+	CloudConnectorBasicQueryFailed VizierReason = "BasicQueryFailed"
+	// CloudConnectorPodPending is a status when a cloud connector that is still in the Pending Kubernetes Phase.
+	CloudConnectorPodPending VizierReason = "CloudConnectorPodPending"
+	// CloudConnectorPodFailed is the status when a cloud connector pod is in the Failed Kubernetes Phase.
+	CloudConnectorPodFailed VizierReason = "CloudConnectorPodFailed"
+	// CloudConnectorMissing is the status when a cloud connector doesn't exist for a cluster.
+	CloudConnectorMissing VizierReason = "CloudConnectorMissing"
 )

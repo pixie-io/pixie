@@ -81,15 +81,15 @@ const (
 	VizierPhaseNone VizierPhase = ""
 
 	// VizierPhaseDisconnected indicates that the vizier has been unable to contact and register with Pixie Cloud.
-	VizierPhaseDisconnected = "Disconnected"
+	VizierPhaseDisconnected VizierPhase = "Disconnected"
 	// VizierPhaseHealthy indicates that the vizier is fully functioning and queryable.
-	VizierPhaseHealthy = "Healthy"
+	VizierPhaseHealthy VizierPhase = "Healthy"
 	// VizierPhaseUpdating indicates that the vizier is in the process of creating or updating.
-	VizierPhaseUpdating = "Updating"
+	VizierPhaseUpdating VizierPhase = "Updating"
 	// VizierPhaseUnhealthy indicates that the vizier is not in a healthy state and is unqueryable.
-	VizierPhaseUnhealthy = "Unhealthy"
+	VizierPhaseUnhealthy VizierPhase = "Unhealthy"
 	// VizierPhaseDegraded indicates that the vizier is in a queryable state, but data may be missing.
-	VizierPhaseDegraded = "Degraded"
+	VizierPhaseDegraded VizierPhase = "Degraded"
 )
 
 // PodPolicy defines the policy for creating Vizier pods.

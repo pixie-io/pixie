@@ -199,8 +199,83 @@ func (m *VizierMonitor) watchK8sAPI() {
 	}
 }
 
-// runReconciler is responsible for periodically pinging the Vizier pods to determine their self-reported state.
-// The reconciler combines this information with the K8s API information to determine an overall Vizier state/reason/message.
+// vizierState details the state of Vizier at a snapshot.
+type vizierState struct {
+	// Reason is the description of the state. Should only be set with values enumerated in `src/shared/status/vzstatus.go`
+	Reason status.VizierReason
+}
+
+func okState() *vizierState {
+	return &vizierState{Reason: ""}
+}
+
+func isOk(state *vizierState) bool {
+	return state.Reason != okState().Reason
+}
+
+// getCloudConnState determines the state of the cloud connector then translates
+// that to a corresponding vizierState.
+func getCloudConnState(client HTTPClient, pods map[string]*v1.Pod) *vizierState {
+	if ccPod, ok := pods[cloudConnName]; ok {
+		if ccPod.Status.Phase == v1.PodPending {
+			return &vizierState{Reason: status.CloudConnectorPodPending}
+		}
+
+		if ccPod.Status.Phase != v1.PodRunning {
+			return &vizierState{Reason: status.CloudConnectorPodFailed}
+		}
+		// Ping cloudConn's statusz.
+		ok, podStatus := queryPodStatusz(client, ccPod)
+		if !ok {
+			return &vizierState{Reason: status.VizierReason(podStatus)}
+		}
+	} else {
+		return &vizierState{Reason: status.CloudConnectorMissing}
+	}
+
+	// Return the value of the cloud connector.
+	return okState()
+}
+
+// getPVCState determines the state of the PVC then translates it to a corresponding vizierState.
+func getPVCState() *vizierState {
+	// TODO(philkuz, PP-2957) implement.
+	return okState()
+}
+
+// getvizierState determines the state of the  Vizier instance based on the snapshot
+// of data available at call time. Reports the first state that fails (does not aggregate),
+// otherwise reports a healthy state.
+func (m *VizierMonitor) getvizierState() *vizierState {
+	ccState := getCloudConnState(m.httpClient, m.states)
+	if !isOk(ccState) {
+		return ccState
+	}
+
+	pvcState := getPVCState()
+	if !isOk(pvcState) {
+		return pvcState
+	}
+
+	return okState()
+}
+
+// translateReasonToPhase maps a specific VizierReason into a more general VizierPhase.
+// Empty reasons are considered healthy and unmatched reasons are by default unhealthy.
+func translateReasonToPhase(reason status.VizierReason) pixiev1alpha1.VizierPhase {
+	if reason == "" {
+		return pixiev1alpha1.VizierPhaseHealthy
+	}
+	if reason == status.CloudConnectorPodPending {
+		return pixiev1alpha1.VizierPhaseUpdating
+	}
+	if reason == status.CloudConnectorMissing {
+		return pixiev1alpha1.VizierPhaseDisconnected
+	}
+	return pixiev1alpha1.VizierPhaseUnhealthy
+}
+
+// runReconciler periodically evaluates the state of the Vizier Cluster and sends the state as an update.
 func (m *VizierMonitor) runReconciler() {
 	t := time.NewTicker(statuszCheckInterval)
 	for {
@@ -209,7 +284,7 @@ func (m *VizierMonitor) runReconciler() {
 			log.Info("Received cancel, stopping status reconciler")
 			return
 		case <-t.C:
-			state, reason := ReconcileStatus(m.httpClient, m.states)
+			vizierState := m.getvizierState()
 
 			vz := &pixiev1alpha1.Vizier{}
 			err := m.vzGet(context.Background(), m.namespacedName, vz)
@@ -218,9 +293,9 @@ func (m *VizierMonitor) runReconciler() {
 				continue
 			}
 
-			vz.Status.VizierPhase = state
-			vz.Status.VizierReason = reason
-			vz.Status.Message = status.GetMessageFromReason(reason)
+			vz.Status.VizierPhase = translateReasonToPhase(vizierState.Reason)
+			vz.Status.VizierReason = string(vizierState.Reason)
+			vz.Status.Message = status.GetMessageFromReason(vizierState.Reason)
 			err = m.vzUpdate(context.Background(), vz)
 			if err != nil {
 				log.WithError(err).Error("Failed to update vizier status")
@@ -229,34 +304,8 @@ func (m *VizierMonitor) runReconciler() {
 	}
 }
 
-// ReconcileStatus takes a set of Vizier pods and determines the overall status based on the pod states and
-// their statusz endpoints.
-func ReconcileStatus(client HTTPClient, pods map[string]*v1.Pod) (pixiev1alpha1.VizierPhase, string) {
-	// Check cloudConn first, to ensure that the vizier has successfully connected to a Pixie cloud.
-	if ccPod, ok := pods[cloudConnName]; ok {
-		if ccPod.Status.Phase == v1.PodPending {
-			return pixiev1alpha1.VizierPhaseUpdating, ""
-		}
-
-		if ccPod.Status.Phase != v1.PodRunning {
-			return pixiev1alpha1.VizierPhaseUnhealthy, ""
-		}
-		// Ping cloudConn's statusz.
-		ok, status := GetPodStatus(client, ccPod)
-		if !ok {
-			return pixiev1alpha1.VizierPhaseUnhealthy, status
-		}
-	} else {
-		return pixiev1alpha1.VizierPhaseDisconnected, ""
-	}
-
-	// TODO(michellenguyen): If cloudConn is because it can't run a basic query,
-	// check why the other pod statuses may be failing.
-	return pixiev1alpha1.VizierPhaseHealthy, ""
-}
-
-// GetPodStatus gets a pod's status by pinging its statusz endpoint.
-func GetPodStatus(client HTTPClient, pod *v1.Pod) (bool, string) {
+// queryPodStatusz returns a pod's self-reported status as served by its statusz endpoint.
+func queryPodStatusz(client HTTPClient, pod *v1.Pod) (bool, string) {
 	podIP := pod.Status.PodIP
 	// Assume that the statusz endpoint is on the first port in the first container.
 	var port int32
@@ -283,6 +332,7 @@ func GetPodStatus(client HTTPClient, pod *v1.Pod) (bool, string) {
 	body, err := io.ReadAll(resp.Body)
 
 	if err != nil {
+		log.WithError(err).Info("Error reading the response body")
 		return false, ""
 	}
 

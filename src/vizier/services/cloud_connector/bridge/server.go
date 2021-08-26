@@ -1173,7 +1173,7 @@ func (s *Bridge) DebugPods(req *vizierpb.DebugPodsRequest, srv vizierpb.VizierDe
 
 // GetStatus returns a reason for the current state of the cloud bridge.
 // If an empty string is returned, assume healthy.
-func (s *Bridge) GetStatus() string {
+func (s *Bridge) GetStatus() vzstatus.VizierReason {
 	if s.vzConnClient == nil {
 		return vzstatus.CloudConnectorFailedToConnect
 	}

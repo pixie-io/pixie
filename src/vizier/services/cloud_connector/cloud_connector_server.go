@@ -170,13 +170,13 @@ func main() {
 		// Check state of the bridge.
 		bridgeStatus := svr.GetStatus()
 		if bridgeStatus != "" {
-			return bridgeStatus
+			return string(bridgeStatus)
 		}
 
 		// If bridge is functioning, check whether queries can be executed.
 		_, err := checker.GetStatus()
 		if err != nil {
-			return status.CloudConnectorBasicQueryFailed
+			return string(status.CloudConnectorBasicQueryFailed)
 		}
 
 		return ""

@@ -58,6 +58,7 @@ go_test(
     embed = [":controllers"],
     deps = [
         "//src/operator/api/v1alpha1",
+        "//src/shared/status",
         "@com_github_stretchr_testify//assert",
         "@io_k8s_api//core/v1:core",
     ],
