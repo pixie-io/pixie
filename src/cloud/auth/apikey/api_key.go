@@ -109,11 +109,11 @@ func (s *Service) List(ctx context.Context, req *authpb.ListAPIKeyRequest) (*aut
 	}
 
 	// Return all keys when the OrgID matches.
-	query := `SELECT id, org_id, CONVERT_FROM(PGP_SYM_DECRYPT(encrypted_key, $2::text)::bytea, 'UTF8'), created_at, description
+	query := `SELECT id, org_id, created_at, description
                 FROM api_keys
                 WHERE org_id=$1
                 ORDER BY created_at`
-	rows, err := s.db.QueryxContext(ctx, query, sCtx.Claims.GetUserClaims().OrgID, s.dbKey)
+	rows, err := s.db.QueryxContext(ctx, query, sCtx.Claims.GetUserClaims().OrgID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return &authpb.ListAPIKeyResponse{}, nil
@@ -127,10 +127,9 @@ func (s *Service) List(ctx context.Context, req *authpb.ListAPIKeyRequest) (*aut
 	for rows.Next() {
 		var id string
 		var orgID string
-		var key string
 		var createdAt time.Time
 		var desc string
-		err = rows.Scan(&id, &orgID, &key, &createdAt, &desc)
+		err = rows.Scan(&id, &orgID, &createdAt, &desc)
 		if err != nil {
 			log.WithError(err).Error("Failed to read data from postgres")
 			return nil, status.Error(codes.Internal, "failed to read data")
