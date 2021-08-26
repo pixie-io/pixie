@@ -21,6 +21,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -142,15 +143,33 @@ func watchForExternalIP(ch <-chan watch.Event, outCh chan<- svcInfo) error {
 		svc := u.Object.(*v1.Service)
 		svcName := svc.ObjectMeta.Name
 
+		log.WithField("service", svcName).
+			Debug("Service")
+
 		if _, ok := dnsEntriesByService[svcName]; !ok {
 			continue
 		}
 
 		ing := svc.Status.LoadBalancer.Ingress
-		if len(ing) > 0 && ing[0].IP != "" {
-			outCh <- svcInfo{
-				SvcName: svc.ObjectMeta.Name,
-				Addr:    ing[0].IP,
+
+		if len(ing) > 0 {
+			if ing[0].IP != "" {
+				outCh <- svcInfo{
+					SvcName: svc.ObjectMeta.Name,
+					Addr:    ing[0].IP,
+				}
+			} else {
+				if ing[0].Hostname != "" {
+					log.WithField("ing[0].Hostname", ing[0].Hostname).
+						Debug("Using Hostname")
+
+					ip, _ := net.LookupIP(ing[0].Hostname)
+
+					outCh <- svcInfo{
+						SvcName: svc.ObjectMeta.Name,
+						Addr:    ip[0].String(),
+					}
+				}
 			}
 		}
 	}
