@@ -21,7 +21,8 @@
         {
             "name": "topic",
             "type": "PX_STRING",
-            "description": "Kafka topic."
+            "description": "Kafka topic.",
+            "defaultValue": ""
         }
     ],
     "globalFuncs": [
@@ -94,7 +95,7 @@
             }
         },
         {
-            "name": "Graph",
+            "name": "Kafka Producer-Consumer Delay (seconds)",
             "globalFuncOutputName": "kafka_data",
             "displaySpec": {
                 "@type": "types.px.dev/px.vispb.TimeseriesChart",
@@ -106,7 +107,7 @@
                 ],
                 "title": "",
                 "yAxis": {
-                    "label": "Produce-Consume Delay (seconds)"
+                    "label": "Delay (seconds)"
                 },
                 "xAxis": null
             },
