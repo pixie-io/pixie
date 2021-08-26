@@ -75,6 +75,45 @@ func ExecuteTemplatedYAMLs(yamls []*YAMLFile, tmplValues *YAMLTmplArguments) ([]
 	return executedYAMLs, nil
 }
 
+// AddPatchesToYAML takes a K8s YAML and adds the given patches using a strategic merge.
+func AddPatchesToYAML(clientset *kubernetes.Clientset, inputYAML string, patches map[string]string) (string, error) {
+	// Create ResourceNameMatcher functions for each patch.
+	matchFns := make(map[string]TemplateMatchFn)
+	for k := range patches {
+		matchFns[k] = GenerateResourceNameMatcherFn(k)
+	}
+	combinedYAML, err := processYAML(clientset, inputYAML, func(gvk schema.GroupVersionKind, resourceType string, unstructuredObj unstructured.Unstructured, currJSON []byte) ([]byte, error) {
+		for k, v := range patches {
+			if matchFns[k](unstructuredObj.Object, resourceType) {
+				creatorObj, err := scheme.Scheme.New(gvk)
+				if err != nil {
+					// Strategic merge patches are not supported for non-native K8s resources (custom CRDs).
+					// We will need to perform a regular JSON patch instead.
+					b, err := jsonpatch.MergePatch(currJSON, []byte(v))
+					if err != nil {
+						return currJSON, nil
+					}
+					return b, nil
+				}
+
+				b, err := strategicpatch.StrategicMergePatch(currJSON, []byte(v), creatorObj)
+				if err != nil {
+					return currJSON, nil
+
+				}
+				return b, nil
+			}
+		}
+
+		return currJSON, nil
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return combinedYAML, nil
+}
+
 // toYAML taken from Helm:
 // https://github.com/helm/helm/blob/4ee8db2208923ea1ca1e4cc3792b2a3e088b6e0d/pkg/engine/funcs.go#L72-L98
 func toYAML(v interface{}) string {
@@ -243,7 +282,74 @@ func addPlaceholder(opt *K8sTemplateOptions, gvk schema.GroupVersionKind, origin
 	return strategicpatch.StrategicMergePatch(originalJSON, []byte(opt.Patch), creatorObj)
 }
 
-func addPlaceholders(rm meta.RESTMapper, decodedYAML *yaml.YAMLOrJSONDecoder, tmplOpts []*K8sTemplateOptions) (string, error) {
+// TemplatizeK8sYAML takes a K8s YAML and templatizes the provided fields.
+func TemplatizeK8sYAML(clientset *kubernetes.Clientset, inputYAML string, tmplOpts []*K8sTemplateOptions) (string, error) {
+	combinedYAML, err := processYAML(clientset, inputYAML, func(gvk schema.GroupVersionKind, resourceType string, unstructuredObj unstructured.Unstructured, currJSON []byte) ([]byte, error) {
+		var err error
+		for _, opt := range tmplOpts {
+			if opt.TemplateMatcher != nil && !opt.TemplateMatcher(unstructuredObj.Object, resourceType) {
+				continue
+			}
+
+			currJSON, err = addPlaceholder(opt, gvk, currJSON)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return currJSON, nil
+	})
+	if err != nil {
+		return "", err
+	}
+
+	// Replace all placeholders with their template values.
+	replacedStrings := make([]string, 0)
+	for _, opt := range tmplOpts {
+		replacedStrings = append(replacedStrings, []string{opt.Placeholder, opt.TemplateValue}...)
+	}
+
+	r := strings.NewReplacer(replacedStrings...)
+
+	return r.Replace(combinedYAML), nil
+}
+
+type resourceProcessFn func(schema.GroupVersionKind, string, unstructured.Unstructured, []byte) ([]byte, error)
+
+func processYAML(clientset *kubernetes.Clientset, inputYAML string, processFn resourceProcessFn) (string, error) {
+	// Read the YAML into K8s resources.
+	yamlReader := strings.NewReader(inputYAML)
+
+	decodedYAML := yaml.NewYAMLOrJSONDecoder(yamlReader, 4096)
+	discoveryClient := clientset.Discovery()
+
+	apiGroupResources, err := restmapper.GetAPIGroupResources(discoveryClient)
+	if err != nil {
+		return "", err
+	}
+	rm := restmapper.NewDiscoveryRESTMapper(apiGroupResources)
+
+	templatedYAMLs := make([]string, 0)
+
+	for { // Loop through all objects in the YAML and process them.
+		newYAML, err := processResourceInYAML(rm, decodedYAML, processFn)
+		if err != nil && err == io.EOF {
+			break
+		} else if err != nil {
+			return "", err
+		}
+
+		templatedYAMLs = append(templatedYAMLs, newYAML)
+	}
+	// Concat the YAMLs.
+	combinedYAML := ""
+	for _, y := range templatedYAMLs {
+		combinedYAML = ConcatYAMLs(combinedYAML, y)
+	}
+
+	return combinedYAML, nil
+}
+
+func processResourceInYAML(rm meta.RESTMapper, decodedYAML *yaml.YAMLOrJSONDecoder, processFn resourceProcessFn) (string, error) {
 	// Read resource into JSON.
 	ext := runtime.RawExtension{}
 	err := decodedYAML.Decode(&ext)
@@ -253,6 +359,9 @@ func addPlaceholders(rm meta.RESTMapper, decodedYAML *yaml.YAMLOrJSONDecoder, tm
 
 	_, gvk, err := unstructured.UnstructuredJSONScheme.Decode(ext.Raw, nil, nil)
 	if err != nil {
+		if len(ext.Raw) == 0 {
+			return "", nil
+		}
 		return "", err
 	}
 
@@ -276,15 +385,10 @@ func addPlaceholders(rm meta.RESTMapper, decodedYAML *yaml.YAMLOrJSONDecoder, tm
 
 	// Add placeholders to the object.
 	currJSON := ext.Raw
-	for _, opt := range tmplOpts {
-		if opt.TemplateMatcher != nil && !opt.TemplateMatcher(unstructuredOrig.Object, resourceType) {
-			continue
-		}
 
-		currJSON, err = addPlaceholder(opt, *gvk, currJSON)
-		if err != nil {
-			return "", err
-		}
+	currJSON, err = processFn(*gvk, resourceType, unstructuredOrig, currJSON)
+	if err != nil {
+		return "", err
 	}
 
 	// Convert back to YAML.
@@ -294,47 +398,4 @@ func addPlaceholders(rm meta.RESTMapper, decodedYAML *yaml.YAMLOrJSONDecoder, tm
 	}
 
 	return string(y), nil
-}
-
-// TemplatizeK8sYAML takes a K8s YAML and templatizes the provided fields.
-func TemplatizeK8sYAML(clientset *kubernetes.Clientset, inputYAML string, tmplOpts []*K8sTemplateOptions) (string, error) {
-	// Read the YAML into K8s resources.
-	yamlReader := strings.NewReader(inputYAML)
-
-	decodedYAML := yaml.NewYAMLOrJSONDecoder(yamlReader, 4096)
-	discoveryClient := clientset.Discovery()
-
-	apiGroupResources, err := restmapper.GetAPIGroupResources(discoveryClient)
-	if err != nil {
-		return "", err
-	}
-	rm := restmapper.NewDiscoveryRESTMapper(apiGroupResources)
-
-	templatedYAMLs := make([]string, 0)
-
-	for { // Loop through all objects in the YAML and add placeholders.
-		placeholderYAML, err := addPlaceholders(rm, decodedYAML, tmplOpts)
-		if err != nil && err == io.EOF {
-			break
-		} else if err != nil {
-			return "", err
-		}
-
-		templatedYAMLs = append(templatedYAMLs, placeholderYAML)
-	}
-	// Concat the YAMLs.
-	combinedYAML := ""
-	for _, y := range templatedYAMLs {
-		combinedYAML = ConcatYAMLs(combinedYAML, y)
-	}
-
-	// Replace all placeholders with their template values.
-	replacedStrings := make([]string, 0)
-	for _, opt := range tmplOpts {
-		replacedStrings = append(replacedStrings, []string{opt.Placeholder, opt.TemplateValue}...)
-	}
-
-	r := strings.NewReplacer(replacedStrings...)
-
-	return r.Replace(combinedYAML), nil
 }
