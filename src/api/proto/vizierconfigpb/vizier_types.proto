@@ -25,53 +25,57 @@ option go_package = "vizierconfigpb";
 // Note: Any changes to this file should be in sync with operatpro/api/v1alpha1/vizier_types.go. 
 // VizierSpec defines the desired state of Vizier
 message VizierSpec {
-	// Version is the desired version of the Vizier instance.
-	string version = 1; 
-	// DeployKey is the deploy key associated with the Vizier instance. This is used to link the Vizier to a
-	// specific user/org.
-	string deploy_key = 2; 
-	// DisableAutoUpdate specifies whether auto update should be enabled for the Vizier instance.
-	bool disable_auto_update = 3; 
-	// UseEtcdOperator specifies whether the metadata service should use etcd for storage.
-	bool use_etcd_operator = 4;
-	// ClusterName is a name for the Vizier instance, usually specifying which cluster the Vizier is
-	// deployed to. If not specified, a random name will be generated.
-	string cluster_name = 5;
-	// CloudAddr is the address of the cloud instance that the Vizier should be pointing to.
-	string cloud_addr = 6; 
-	// DevCloudNamespace should be specified only for dev versions of Pixie cloud which have no ingress to help
-	// redirect traffic to the correct service. The DevCloudNamespace is the namespace that the dev Pixie cloud is
-	// running on, for example: "plc-dev".
-	string dev_cloud_namespace = 7; 
-	// PemMemoryLimit is a memory limit applied specifically to PEM pods.
-	string pem_memory_limit = 8; 
-	// Pod defines the policy for creating Vizier pods.
-	PodPolicyReq Pod_Policy = 9; 
+    // Version is the desired version of the Vizier instance.
+    string version = 1;
+    // DeployKey is the deploy key associated with the Vizier instance. This is used to link the Vizier to a
+    // specific user/org.
+    string deploy_key = 2;
+    // DisableAutoUpdate specifies whether auto update should be enabled for the Vizier instance.
+    bool disable_auto_update = 3;
+    // UseEtcdOperator specifies whether the metadata service should use etcd for storage.
+    bool use_etcd_operator = 4;
+    // ClusterName is a name for the Vizier instance, usually specifying which cluster the Vizier is
+    // deployed to. If not specified, a random name will be generated.
+    string cluster_name = 5;
+    // CloudAddr is the address of the cloud instance that the Vizier should be pointing to.
+    string cloud_addr = 6;
+    // DevCloudNamespace should be specified only for dev versions of Pixie cloud which have no ingress to help
+    // redirect traffic to the correct service. The DevCloudNamespace is the namespace that the dev Pixie cloud is
+    // running on, for example: "plc-dev".
+    string dev_cloud_namespace = 7;
+    // PemMemoryLimit is a memory limit applied specifically to PEM pods.
+    string pem_memory_limit = 8;
+    // Pod defines the policy for creating Vizier pods.
+    PodPolicyReq Pod_Policy = 9;
+    // Patches defines patches that should be applied to Vizier resources.
+    // The key of the patch should be the name of the resource that is patched. The value of the patch is the patch,
+    // encoded as a string which follow the "strategic merge patch" rules for K8s.
+    map<string, string> patches = 10;
 }
 
 // PodPolicyReq defines the policy for creating Vizier pods.
 message PodPolicyReq {
-	// Labels specifies the labels to attach to pods the operator creates.
-	map<string, string> labels = 1; 
-	// Annotations specifies the annotations to attach to pods the operator creates.
-	map<string, string> annotations = 2; 
-	// Resources is the resource requirements for a container.
-	// This field cannot be updated once the cluster is created.
-	ResourceReqs resources = 3; 
+    // Labels specifies the labels to attach to pods the operator creates.
+    map<string, string> labels = 1;
+    // Annotations specifies the annotations to attach to pods the operator creates.
+    map<string, string> annotations = 2;
+    // Resources is the resource requirements for a container.
+    // This field cannot be updated once the cluster is created.
+    ResourceReqs resources = 3;
 }
 
 // ResourceReqs is copied from the k8s api: https://pkg.go.dev/k8s.io/api/core/v1#ResourceRequirements
 message ResourceReqs {
-	ResourceList limits = 1; 
-	
-	ResourceList requests = 2; 
+    ResourceList limits = 1;
+
+    ResourceList requests = 2;
 }
 
 // ResourceList is copied from the k8s api: https://pkg.go.dev/k8s.io/api/core/v1#ResourceList
 message ResourceList {
-	map<string, ResourceQuantity> resource_list = 1;  
+    map<string, ResourceQuantity> resource_list = 1;
 }
 
 message ResourceQuantity {
-	string value = 1; 
+    string value = 1;
 }

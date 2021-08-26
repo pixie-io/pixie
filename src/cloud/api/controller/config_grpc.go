@@ -52,6 +52,7 @@ func (c *ConfigServiceServer) GetConfigForVizier(ctx context.Context,
 			DevCloudNamespace: vizSpecReq.DevCloudNamespace,
 			PemMemoryLimit:    vizSpecReq.PemMemoryLimit,
 			Pod_Policy:        vizSpecReq.Pod_Policy,
+			Patches:           vizSpecReq.Patches,
 		},
 	})
 	if err != nil {

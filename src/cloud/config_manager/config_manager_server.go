@@ -25,15 +25,16 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+	"k8s.io/client-go/rest"
 
 	atpb "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
 	"px.dev/pixie/src/cloud/config_manager/configmanagerpb"
 	"px.dev/pixie/src/cloud/config_manager/controller"
-
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/env"
 	"px.dev/pixie/src/shared/services/healthz"
 	"px.dev/pixie/src/shared/services/server"
+	"px.dev/pixie/src/utils/shared/k8s"
 )
 
 func init() {
@@ -67,11 +68,17 @@ func main() {
 	mux.Handle("/debug/", http.DefaultServeMux)
 	healthz.RegisterDefaultChecks(mux)
 
+	kubeConfig, err := rest.InClusterConfig()
+	if err != nil {
+		log.WithError(err).Fatal("Unable to get incluster kubeconfig")
+	}
+	clientset := k8s.GetClientset(kubeConfig)
+
 	atClient, err := newArtifactTrackerClient()
 	if err != nil {
 		log.WithError(err).Fatal("Could not connect with Artifact Service.")
 	}
-	svr := controller.NewServer(atClient)
+	svr := controller.NewServer(atClient, clientset)
 	serverOpts := &server.GRPCServerOptions{
 		DisableAuth: map[string]bool{
 			"/px.services.ConfigManagerService/GetConfigForVizier": true,

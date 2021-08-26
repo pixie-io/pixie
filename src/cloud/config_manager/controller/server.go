@@ -28,6 +28,7 @@ import (
 	"strings"
 
 	"github.com/spf13/viper"
+	"k8s.io/client-go/kubernetes"
 
 	atpb "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
 	cpb "px.dev/pixie/src/cloud/config_manager/configmanagerpb"
@@ -39,13 +40,15 @@ import (
 
 // Server defines an gRPC server type.
 type Server struct {
-	atClient atpb.ArtifactTrackerClient
+	atClient  atpb.ArtifactTrackerClient
+	clientset *kubernetes.Clientset
 }
 
 // NewServer creates GRPC handlers.
-func NewServer(atClient atpb.ArtifactTrackerClient) *Server {
+func NewServer(atClient atpb.ArtifactTrackerClient, clientset *kubernetes.Clientset) *Server {
 	return &Server{
-		atClient: atClient,
+		atClient:  atClient,
+		clientset: clientset,
 	}
 }
 
@@ -88,14 +91,25 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 		SentryDSN:         getSentryDSN(in.VzSpec.Version),
 	}
 
-	yamls, err := yamls.ExecuteTemplatedYAMLs(templatedYAMLs, vizieryamls.VizierTmplValuesToArgs(tmplValues))
+	vzYamls, err := yamls.ExecuteTemplatedYAMLs(templatedYAMLs, vizieryamls.VizierTmplValuesToArgs(tmplValues))
 	if err != nil {
 		return nil, err
 	}
 
+	// Apply custom patches, if any.
+	if in.VzSpec.Patches != nil || len(in.VzSpec.Patches) > 0 {
+		for _, y := range vzYamls {
+			patchedYAML, err := yamls.AddPatchesToYAML(s.clientset, y.YAML, in.VzSpec.Patches)
+			if err != nil {
+				return nil, err
+			}
+			y.YAML = patchedYAML
+		}
+	}
+
 	// Map from the YAML name to the YAML contents.
 	yamlMap := make(map[string]string)
-	for _, y := range yamls {
+	for _, y := range vzYamls {
 		yamlMap[y.Name] = y.YAML
 	}
 

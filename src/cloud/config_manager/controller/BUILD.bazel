@@ -29,5 +29,6 @@ go_library(
         "//src/utils/shared/yamls",
         "//src/utils/template_generator/vizier_yamls",
         "@com_github_spf13_viper//:viper",
+        "@io_k8s_client_go//kubernetes",
     ],
 )

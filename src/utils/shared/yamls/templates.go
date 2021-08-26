@@ -99,7 +99,6 @@ func AddPatchesToYAML(clientset *kubernetes.Clientset, inputYAML string, patches
 				b, err := strategicpatch.StrategicMergePatch(currJSON, []byte(v), creatorObj)
 				if err != nil {
 					return currJSON, nil
-
 				}
 				return b, nil
 			}
