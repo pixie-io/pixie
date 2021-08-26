@@ -139,6 +139,10 @@ const useLiveDataTableStyles = makeStyles((theme: Theme) => createStyles({
     overflow: 'hidden',
     position: 'relative',
   },
+  minimalRoot: {
+    height: '100%',
+    width: '100%',
+  },
   rootHorizontal: {
     flexFlow: 'column nowrap',
   },
@@ -170,7 +174,7 @@ export const MinimalLiveDataTable: React.FC<{ table: VizierTable }> = ({ table }
   const onRowSelected = React.useCallback((row: Record<string, any>|null) => setDetails(row), [setDetails]);
 
   return (
-    <div className={classes.root}>
+    <div className={buildClass(classes.root, classes.minimalRoot)}>
       <div className={classes.table}>
         <DataTable table={reactTable} enableRowSelect onRowSelected={onRowSelected} />
       </div>
