@@ -140,16 +140,16 @@ message GetAugmentedTokenForAPIKeyResponse {
 }
 
 message InviteUserRequest {
-	string email = 1;
-	string first_name = 2;
-	string last_name = 3;
+  string email = 1;
+  string first_name = 2;
+  string last_name = 3;
 
   // The ID of the organization to create the user for.
   px.uuidpb.UUID org_id = 4 [(gogoproto.customname) = "OrgID"];
 }
 
 message InviteUserResponse {
-	string invite_link = 1;
+  string invite_link = 1;
 }
 
 message CreateOrgAndInviteUserRequest {
@@ -168,7 +168,7 @@ message CreateOrgAndInviteUserRequest {
 }
 
 message CreateOrgAndInviteUserResponse {
-	string invite_link = 1;
+  string invite_link = 1;
 }
 
 //
@@ -199,6 +199,18 @@ message APIKey {
   string desc = 4;
 }
 
+// The metadata associated with the key, everything except the actual key.
+message APIKeyMetadata {
+  // They ID of the key.
+  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  google.protobuf.Timestamp created_at = 3;
+  // Description for the key.
+  string desc = 4;
+
+  // Reserves the key field which was used by the original APIKey proto.
+  reserved 2;
+}
+
 // Create a API key.
 message CreateAPIKeyRequest {
   // Description for the key.
@@ -211,7 +223,7 @@ message ListAPIKeyRequest {
 }
 
 message ListAPIKeyResponse {
-  repeated APIKey keys = 1;
+  repeated APIKeyMetadata keys = 1;
 }
 
 message GetAPIKeyRequest {

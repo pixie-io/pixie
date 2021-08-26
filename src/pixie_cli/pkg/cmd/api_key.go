@@ -112,7 +112,7 @@ var ListAPIKeyCmd = &cobra.Command{
 		format, _ := cmd.Flags().GetString("output")
 		format = strings.ToLower(format)
 
-		keys, err := listAPIKeys(cloudAddr)
+		keys, err := listAPIKeyMetadatas(cloudAddr)
 		if err != nil {
 			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 			log.WithError(err).Fatal("Failed to list API keys")
@@ -198,7 +198,7 @@ func deleteAPIKey(cloudAddr string, keyID uuid.UUID) error {
 	return err
 }
 
-func listAPIKeys(cloudAddr string) ([]*cloudpb.APIKey, error) {
+func listAPIKeyMetadatas(cloudAddr string) ([]*cloudpb.APIKeyMetadata, error) {
 	apiKeyMgr, ctxWithCreds, err := getAPIKeyClientAndContext(cloudAddr)
 	if err != nil {
 		return nil, err

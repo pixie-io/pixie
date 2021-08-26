@@ -123,7 +123,7 @@ func (s *Service) List(ctx context.Context, req *authpb.ListAPIKeyRequest) (*aut
 	}
 	defer rows.Close()
 
-	keys := make([]*authpb.APIKey, 0)
+	var keys []*authpb.APIKeyMetadata
 	for rows.Next() {
 		var id string
 		var orgID string
@@ -136,9 +136,8 @@ func (s *Service) List(ctx context.Context, req *authpb.ListAPIKeyRequest) (*aut
 			return nil, status.Error(codes.Internal, "failed to read data")
 		}
 		tProto, _ := types.TimestampProto(createdAt)
-		keys = append(keys, &authpb.APIKey{
+		keys = append(keys, &authpb.APIKeyMetadata{
 			ID:        utils.ProtoFromUUIDStrOrNil(id),
-			Key:       key,
 			CreatedAt: tProto,
 			Desc:      desc,
 		})

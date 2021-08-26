@@ -42,6 +42,14 @@ func apiKeyToCloudAPI(key *authpb.APIKey) *cloudpb.APIKey {
 	}
 }
 
+func apiKeyMetadataToCloudAPI(key *authpb.APIKeyMetadata) *cloudpb.APIKeyMetadata {
+	return &cloudpb.APIKeyMetadata{
+		ID:        key.ID,
+		CreatedAt: key.CreatedAt,
+		Desc:      key.Desc,
+	}
+}
+
 // Create creates a new API key.
 func (v *APIKeyServer) Create(ctx context.Context, req *cloudpb.CreateAPIKeyRequest) (*cloudpb.APIKey, error) {
 	ctx, err := contextWithAuthToken(ctx)
@@ -67,9 +75,9 @@ func (v *APIKeyServer) List(ctx context.Context, req *cloudpb.ListAPIKeyRequest)
 	if err != nil {
 		return nil, err
 	}
-	var keys []*cloudpb.APIKey
+	var keys []*cloudpb.APIKeyMetadata
 	for _, key := range resp.Keys {
-		keys = append(keys, apiKeyToCloudAPI(key))
+		keys = append(keys, apiKeyMetadataToCloudAPI(key))
 	}
 	return &cloudpb.ListAPIKeyResponse{
 		Keys: keys,

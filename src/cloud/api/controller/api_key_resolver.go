@@ -29,32 +29,37 @@ import (
 	"px.dev/pixie/src/utils"
 )
 
-// APIKeyResolver is the resolver responsible for API keys.
-type APIKeyResolver struct {
+// APIKeyMetadataResolver is the resolver responsible for API key metadata.
+type APIKeyMetadataResolver struct {
 	id          uuid.UUID
-	key         string
 	createdAtNs int64
 	desc        string
 }
 
 // ID returns API key ID.
-func (d *APIKeyResolver) ID() graphql.ID {
+func (d *APIKeyMetadataResolver) ID() graphql.ID {
 	return graphql.ID(d.id.String())
+}
+
+// CreatedAtMs returns the time at which the API key was created.
+func (d *APIKeyMetadataResolver) CreatedAtMs() float64 {
+	return float64(d.createdAtNs) / 1e6
+}
+
+// Desc returns the description of the key.
+func (d *APIKeyMetadataResolver) Desc() string {
+	return d.desc
+}
+
+// APIKeyResolver is the resolver responsible for API keys.
+type APIKeyResolver struct {
+	APIKeyMetadataResolver
+	key string
 }
 
 // Key returns the API key value.
 func (d *APIKeyResolver) Key() string {
 	return d.key
-}
-
-// CreatedAtMs returns the time at which the API key was created.
-func (d *APIKeyResolver) CreatedAtMs() float64 {
-	return float64(d.createdAtNs) / 1e6
-}
-
-// Desc returns the description of the key.
-func (d *APIKeyResolver) Desc() string {
-	return d.desc
 }
 
 // CreateAPIKey creates a new API key.
@@ -74,31 +79,42 @@ func apiKeyToResolver(key *cloudpb.APIKey) (*APIKeyResolver, error) {
 	}
 
 	return &APIKeyResolver{
-		id:          keyID,
-		key:         key.Key,
-		createdAtNs: key.CreatedAt.Seconds*NanosPerSecond + int64(key.CreatedAt.Nanos),
-		desc:        key.Desc,
+		APIKeyMetadataResolver: APIKeyMetadataResolver{
+			id:          keyID,
+			createdAtNs: key.CreatedAt.Seconds*NanosPerSecond + int64(key.CreatedAt.Nanos),
+			desc:        key.Desc,
+		},
+		key: key.Key,
 	}, nil
 }
 
+func apiKeyMetadatasToResolver(mds []*cloudpb.APIKeyMetadata) ([]*APIKeyMetadataResolver, error) {
+	var mdrs []*APIKeyMetadataResolver
+	for _, md := range mds {
+		mdu, err := utils.UUIDFromProto(md.ID)
+		if err != nil {
+			return nil, err
+		}
+		resolved := &APIKeyMetadataResolver{
+			id:          mdu,
+			createdAtNs: md.CreatedAt.Seconds*NanosPerSecond + int64(md.CreatedAt.Nanos),
+			desc:        md.Desc,
+		}
+		mdrs = append(mdrs, resolved)
+	}
+	sort.Slice(mdrs, func(i, j int) bool { return mdrs[i].createdAtNs > mdrs[j].createdAtNs })
+	return mdrs, nil
+}
+
 // APIKeys lists all of the API keys.
-func (q *QueryResolver) APIKeys(ctx context.Context) ([]*APIKeyResolver, error) {
+func (q *QueryResolver) APIKeys(ctx context.Context) ([]*APIKeyMetadataResolver, error) {
 	grpcAPI := q.Env.APIKeyMgr
 	res, err := grpcAPI.List(ctx, &cloudpb.ListAPIKeyRequest{})
 	if err != nil {
 		return nil, err
 	}
-	var keys []*APIKeyResolver
-	for _, key := range res.Keys {
-		resolvedKey, err := apiKeyToResolver(key)
-		if err != nil {
-			return nil, err
-		}
-		keys = append(keys, resolvedKey)
-	}
-	// Sort by descending time
-	sort.Slice(keys, func(i, j int) bool { return keys[i].createdAtNs > keys[j].createdAtNs })
-	return keys, nil
+
+	return apiKeyMetadatasToResolver(res.Keys)
 }
 
 type getOrDeleteAPIKeyArgs struct {

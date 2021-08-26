@@ -150,7 +150,7 @@ func TestAPIKeys(t *testing.T) {
 			mockClients.MockAPIKey.EXPECT().
 				List(gomock.Any(), &cloudpb.ListAPIKeyRequest{}).
 				Return(&cloudpb.ListAPIKeyResponse{
-					Keys: []*cloudpb.APIKey{
+					Keys: []*cloudpb.APIKeyMetadata{
 						{
 							ID:        utils.ProtoFromUUIDStrOrNil(key1ID),
 							CreatedAt: createTime1Pb,
