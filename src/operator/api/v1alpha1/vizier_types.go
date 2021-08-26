@@ -52,6 +52,10 @@ type VizierSpec struct {
 	PemMemoryLimit string `json:"pemMemoryLimit,omitempty"`
 	// Pod defines the policy for creating Vizier pods.
 	Pod *PodPolicy `json:"pod,omitempty"`
+	// Patches defines patches that should be applied to Vizier resources.
+	// The key of the patch should be the name of the resource that is patched. The value of the patch is the patch,
+	// encoded as a string which follow the "strategic merge patch" rules for K8s.
+	Patches map[string]string `json:"patches,omitempty"`
 }
 
 // VizierStatus defines the observed state of Vizier

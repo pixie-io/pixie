@@ -505,6 +505,7 @@ func generateVizierYAMLsConfig(ctx context.Context, ns string, vz *pixiev1alpha1
 					Requests: convertResourceType(vz.Spec.Pod.Resources.Requests),
 				},
 			},
+			Patches: vz.Spec.Patches,
 		},
 	}
 	resp, err := client.GetConfigForVizier(ctx, req)

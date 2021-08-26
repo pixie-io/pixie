@@ -20,6 +20,9 @@ spec:
   {{- if .Values.pemMemoryLimit }}
   pemMemoryLimit: {{ .Values.pemMemoryLimit }}
   {{- end }}
+  {{- if .Values.patches }}
+  patches: {{ .Values.patches | toYaml | nindent 4 }}
+  {{- end }}
   {{- if or .Values.pod.annotations (or .Values.pod.labels .Values.pod.resources) }}
   pod:
     {{- if .Values.pod.annotations }}
