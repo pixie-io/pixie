@@ -107,10 +107,9 @@ func TestVizierDeploymentKeyServer_List(t *testing.T) {
 
 			vzreq := &vzmgrpb.ListDeploymentKeyRequest{}
 			vzresp := &vzmgrpb.ListDeploymentKeyResponse{
-				Keys: []*vzmgrpb.DeploymentKey{
+				Keys: []*vzmgrpb.DeploymentKeyMetadata{
 					{
 						ID:        utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
-						Key:       "foobar",
 						CreatedAt: types.TimestampNow(),
 						Desc:      "this is a key",
 					},
@@ -128,7 +127,6 @@ func TestVizierDeploymentKeyServer_List(t *testing.T) {
 			assert.NotNil(t, resp)
 			for i, key := range resp.Keys {
 				assert.Equal(t, key.ID, vzresp.Keys[i].ID)
-				assert.Equal(t, key.Key, vzresp.Keys[i].Key)
 				assert.Equal(t, key.CreatedAt, vzresp.Keys[i].CreatedAt)
 				assert.Equal(t, key.Desc, vzresp.Keys[i].Desc)
 			}

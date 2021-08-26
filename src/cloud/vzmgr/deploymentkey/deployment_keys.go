@@ -112,7 +112,7 @@ func (s *Service) List(ctx context.Context, req *vzmgrpb.ListDeploymentKeyReques
 	}
 	defer rows.Close()
 
-	keys := make([]*vzmgrpb.DeploymentKey, 0)
+	keys := make([]*vzmgrpb.DeploymentKeyMetadata, 0)
 	for rows.Next() {
 		var id string
 		var orgID string
@@ -125,9 +125,8 @@ func (s *Service) List(ctx context.Context, req *vzmgrpb.ListDeploymentKeyReques
 			return nil, status.Error(codes.Internal, "failed to read data")
 		}
 		tProto, _ := types.TimestampProto(createdAt)
-		keys = append(keys, &vzmgrpb.DeploymentKey{
+		keys = append(keys, &vzmgrpb.DeploymentKeyMetadata{
 			ID:        utils.ProtoFromUUIDStrOrNil(id),
-			Key:       key,
 			CreatedAt: tProto,
 			Desc:      desc,
 		})

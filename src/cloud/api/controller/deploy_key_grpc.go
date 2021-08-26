@@ -42,6 +42,14 @@ func deployKeyToCloudAPI(key *vzmgrpb.DeploymentKey) *cloudpb.DeploymentKey {
 	}
 }
 
+func deployKeyMetadataToCloudAPI(key *vzmgrpb.DeploymentKeyMetadata) *cloudpb.DeploymentKeyMetadata {
+	return &cloudpb.DeploymentKeyMetadata{
+		ID:        key.ID,
+		CreatedAt: key.CreatedAt,
+		Desc:      key.Desc,
+	}
+}
+
 // Create creates a new deploy key in vzmgr.
 func (v *VizierDeploymentKeyServer) Create(ctx context.Context, req *cloudpb.CreateDeploymentKeyRequest) (*cloudpb.DeploymentKey, error) {
 	ctx, err := contextWithAuthToken(ctx)
@@ -67,9 +75,9 @@ func (v *VizierDeploymentKeyServer) List(ctx context.Context, req *cloudpb.ListD
 	if err != nil {
 		return nil, err
 	}
-	var keys []*cloudpb.DeploymentKey
+	var keys []*cloudpb.DeploymentKeyMetadata
 	for _, key := range resp.Keys {
-		keys = append(keys, deployKeyToCloudAPI(key))
+		keys = append(keys, deployKeyMetadataToCloudAPI(key))
 	}
 	return &cloudpb.ListDeploymentKeyResponse{
 		Keys: keys,

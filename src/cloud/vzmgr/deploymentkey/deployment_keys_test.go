@@ -174,8 +174,6 @@ func TestDeploymentKeyService_ListDeploymentKeys(t *testing.T) {
 			assert.Equal(t, testKey2ID, utils.UUIDFromProtoOrNil(resp.Keys[1].ID))
 			assert.Equal(t, "here is a desc", resp.Keys[0].Desc)
 			assert.Equal(t, "here is another one", resp.Keys[1].Desc)
-			assert.Equal(t, "px-dep-key1", resp.Keys[0].Key)
-			assert.Equal(t, "px-dep-key2", resp.Keys[1].Key)
 
 			// Check that time looks reasonable.
 			ts, err := types.TimestampFromProto(resp.Keys[0].CreatedAt)

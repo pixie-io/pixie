@@ -32,32 +32,37 @@ import (
 // NanosPerSecond is the number of nanoseconds per second.
 const NanosPerSecond int64 = 1000 * 1000 * 1000
 
-// DeploymentKeyResolver is the resolver responsible for cluster info.
-type DeploymentKeyResolver struct {
+// DeploymentKeyMetadataResolver is the resolver responsible for deploy key metadata.
+type DeploymentKeyMetadataResolver struct {
 	id          uuid.UUID
-	key         string
 	createdAtNs int64
 	desc        string
 }
 
 // ID returns deployment key ID.
-func (d *DeploymentKeyResolver) ID() graphql.ID {
+func (d *DeploymentKeyMetadataResolver) ID() graphql.ID {
 	return graphql.ID(d.id.String())
+}
+
+// CreatedAtMs returns the time at which the deployment key was created.
+func (d *DeploymentKeyMetadataResolver) CreatedAtMs() float64 {
+	return float64(d.createdAtNs) / 1e6
+}
+
+// Desc returns the description of the key.
+func (d *DeploymentKeyMetadataResolver) Desc() string {
+	return d.desc
+}
+
+// DeploymentKeyResolver resolves metadata and the current key value for a single key.
+type DeploymentKeyResolver struct {
+	DeploymentKeyMetadataResolver
+	key string
 }
 
 // Key returns the deployment key value.
 func (d *DeploymentKeyResolver) Key() string {
 	return d.key
-}
-
-// CreatedAtMs returns the time at which the deployment key was created.
-func (d *DeploymentKeyResolver) CreatedAtMs() float64 {
-	return float64(d.createdAtNs) / 1e6
-}
-
-// Desc returns the description of the key.
-func (d *DeploymentKeyResolver) Desc() string {
-	return d.desc
 }
 
 // CreateDeploymentKey creates a new deployment key.
@@ -77,31 +82,41 @@ func deploymentKeyToResolver(key *cloudpb.DeploymentKey) (*DeploymentKeyResolver
 	}
 
 	return &DeploymentKeyResolver{
-		id:          keyID,
-		key:         key.Key,
-		createdAtNs: key.CreatedAt.Seconds*NanosPerSecond + int64(key.CreatedAt.Nanos),
-		desc:        key.Desc,
+		DeploymentKeyMetadataResolver: DeploymentKeyMetadataResolver{
+			id:          keyID,
+			createdAtNs: key.CreatedAt.Seconds*NanosPerSecond + int64(key.CreatedAt.Nanos),
+			desc:        key.Desc,
+		},
+		key: key.Key,
 	}, nil
 }
 
+func deploymentKeyMetadatasToResolver(mds []*cloudpb.DeploymentKeyMetadata) ([]*DeploymentKeyMetadataResolver, error) {
+	var mdrs []*DeploymentKeyMetadataResolver
+	for _, md := range mds {
+		mdu, err := utils.UUIDFromProto(md.ID)
+		if err != nil {
+			return nil, err
+		}
+		resolved := &DeploymentKeyMetadataResolver{
+			id:          mdu,
+			createdAtNs: md.CreatedAt.Seconds*NanosPerSecond + int64(md.CreatedAt.Nanos),
+			desc:        md.Desc,
+		}
+		mdrs = append(mdrs, resolved)
+	}
+	sort.Slice(mdrs, func(i, j int) bool { return mdrs[i].createdAtNs > mdrs[j].createdAtNs })
+	return mdrs, nil
+}
+
 // DeploymentKeys lists all of the deployment keys.
-func (q *QueryResolver) DeploymentKeys(ctx context.Context) ([]*DeploymentKeyResolver, error) {
+func (q *QueryResolver) DeploymentKeys(ctx context.Context) ([]*DeploymentKeyMetadataResolver, error) {
 	grpcAPI := q.Env.VizierDeployKeyMgr
 	res, err := grpcAPI.List(ctx, &cloudpb.ListDeploymentKeyRequest{})
 	if err != nil {
 		return nil, err
 	}
-	var keys []*DeploymentKeyResolver
-	for _, key := range res.Keys {
-		resolvedKey, err := deploymentKeyToResolver(key)
-		if err != nil {
-			return nil, err
-		}
-		keys = append(keys, resolvedKey)
-	}
-	// Sort by descending time
-	sort.Slice(keys, func(i, j int) bool { return keys[i].createdAtNs > keys[j].createdAtNs })
-	return keys, nil
+	return deploymentKeyMetadatasToResolver(res.Keys)
 }
 
 type getOrDeleteDeployKeyArgs struct {

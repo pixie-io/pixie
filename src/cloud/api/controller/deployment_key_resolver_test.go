@@ -150,22 +150,19 @@ func TestDeploymentKeys(t *testing.T) {
 			mockClients.MockVizierDeployKey.EXPECT().
 				List(gomock.Any(), &cloudpb.ListDeploymentKeyRequest{}).
 				Return(&cloudpb.ListDeploymentKeyResponse{
-					Keys: []*cloudpb.DeploymentKey{
+					Keys: []*cloudpb.DeploymentKeyMetadata{
 						{
 							ID:        utils.ProtoFromUUIDStrOrNil(key1ID),
-							Key:       "abc",
 							CreatedAt: createTime1Pb,
 							Desc:      "key description 1",
 						},
 						{
 							ID:        utils.ProtoFromUUIDStrOrNil(key2ID),
-							Key:       "def",
 							CreatedAt: createTime2Pb,
 							Desc:      "key description 2",
 						},
 						{
 							ID:        utils.ProtoFromUUIDStrOrNil(key3ID),
-							Key:       "ghi",
 							CreatedAt: createTime3Pb,
 							Desc:      "key description 3",
 						},

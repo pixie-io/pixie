@@ -420,17 +420,30 @@ service VizierDeploymentKeyManager {
   rpc Delete(uuidpb.UUID) returns (google.protobuf.Empty);
 }
 
+// Metadata for a key that can be used to deploy a new vizier cluster.
+message DeploymentKeyMetadata {
+  // They ID of the key.
+  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  google.protobuf.Timestamp created_at = 3;
+  // Description for the key.
+  string desc = 4;
+
+  // 2 is reserved for the original key string.
+  reserved 2;
+}
+
 // A key that can be used to deploy a new vizier cluster. This is value of the key
 // is added to the X-API-KEY requests from Vizier on cloud conn.
 message DeploymentKey {
   // They ID of the key.
-  uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
+  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
   // The value of the key.
   string key = 2;
   google.protobuf.Timestamp created_at = 3;
   // Description for the key.
   string desc = 4;
 }
+
 
 // Create a deployment key.
 message CreateDeploymentKeyRequest {
@@ -442,7 +455,7 @@ message ListDeploymentKeyRequest {
   // Empty message on purpose so we can extend with attributes easily if needed.
 }
 
-message ListDeploymentKeyResponse { repeated DeploymentKey keys = 1; }
+message ListDeploymentKeyResponse { repeated DeploymentKeyMetadata keys = 1; }
 
 message GetDeploymentKeyRequest { uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ]; }
 

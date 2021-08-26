@@ -198,7 +198,7 @@ func deleteDeployKey(cloudAddr string, keyID uuid.UUID) error {
 	return err
 }
 
-func listDeployKeys(cloudAddr string) ([]*cloudpb.DeploymentKey, error) {
+func listDeployKeys(cloudAddr string) ([]*cloudpb.DeploymentKeyMetadata, error) {
 	deployMgrClient, ctxWithCreds, err := getClientAndContext(cloudAddr)
 	if err != nil {
 		return nil, err
