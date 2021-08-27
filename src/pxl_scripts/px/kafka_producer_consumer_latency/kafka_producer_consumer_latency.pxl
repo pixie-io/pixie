@@ -22,33 +22,54 @@ Limitations: only works if producer/consumer operate on a single topic.
 import px
 
 
-def kafka_producers(start_time: str):
-
+def kafka_producers(start_time: str, namespace: str):
     df = px.DataFrame(table='kafka_events.beta', start_time=start_time)
+    df.namespace = df.ctx['namespace']
+    df = df[df.namespace == namespace]
+
     df = add_source_dest_columns(df)
     df = df.groupby(['source', 'client_id', 'req_cmd', 'namespace']).agg()
     df = df[df.req_cmd == 0]
     df.producer = df.client_id
-    return df[['producer', 'namespace', 'source']]
+    return df[['producer', 'source']]
 
 
-def kafka_consumers(start_time: str):
-
+def kafka_consumers(start_time: str, namespace: str):
     df = px.DataFrame(table='kafka_events.beta', start_time=start_time)
+    df.namespace = df.ctx['namespace']
+    df = df[df.namespace == namespace]
+
     df = add_source_dest_columns(df)
     df = df.groupby(['source', 'client_id', 'req_cmd', 'namespace']).agg()
     df = df[df.req_cmd == 1]
     df.consumer = df.client_id
-    return df[['consumer', 'namespace', 'source']]
+    return df[['consumer', 'source']]
 
 
-def kafka_data(start_time: str, producer: str, consumer: str, topic: str):
+def kafka_topics(start_time: str, namespace: str):
+    df = px.DataFrame(table='kafka_events.beta', start_time=start_time)
+    df.namespace = df.ctx['namespace']
+    df = df[df.namespace == namespace]
+
+    # Search for topics within Produce and Fetch commands.
+    df = df[df.req_cmd == 0 or df.req_cmd == 1]
+    df = df[['req_body']]
+    df = extract_json_field_value(df, 'topic', 'req_body', '"name":')
+    df = df[['topic']]
+    df = df.groupby(['topic']).agg()
+    df = df[df.topic != '']
+    return df
+
+
+def kafka_data(start_time: str, namespace: str, producer: str, consumer: str, topic: str):
     df = px.DataFrame(table='kafka_events.beta', start_time=start_time)
 
     df.namespace = df.ctx['namespace']
     df.node = df.ctx['node']
     df.pod = df.ctx['pod']
     df.pid = px.upid_to_pid(df.upid)
+
+    df = df[df.namespace == namespace]
 
     # Filter on the requests to the kafka topic.
     # This needs to be made more robust once PxL has better JSON querying support.
