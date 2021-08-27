@@ -54,4 +54,11 @@ const (
 	CloudConnectorPodFailed VizierReason = "CloudConnectorPodFailed"
 	// CloudConnectorMissing is the status when a cloud connector doesn't exist for a cluster.
 	CloudConnectorMissing VizierReason = "CloudConnectorMissing"
+
+	// MetadataPVCMissing occurs when the operator cannot find the metadata PVC.
+	MetadataPVCMissing VizierReason = "MetadataPVCMissing"
+	// MetadataPVCStorageClassUnavailable occurs when the Metadata PVC is stuck pending because the storage class does not exist.
+	MetadataPVCStorageClassUnavailable VizierReason = "MetadataPVCStorageClassUnavailable"
+	// MetadataPVCPendingBinding occurs when the Metadata PVC is still pending, but the spec is requesting a valid Storage class.
+	MetadataPVCPendingBinding VizierReason = "MetadataPVCPendingBinding"
 )

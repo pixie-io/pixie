@@ -34,7 +34,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -46,12 +45,14 @@ import (
 
 	pixiev1alpha1 "px.dev/pixie/src/operator/api/v1alpha1"
 	"px.dev/pixie/src/shared/status"
+	"px.dev/pixie/src/utils/shared/k8s"
 )
 
 const (
 	// The name label of the cloud-conn pod.
 	cloudConnName = "vizier-cloud-connector"
-
+	// The name of the metadata-pvc.
+	metadataPVC = "metadata-pv-claim"
 	// How often we should ping the vizier pods for status updates.
 	statuszCheckInterval = 20 * time.Second
 )
@@ -80,10 +81,29 @@ func (c *concurrentPodMap) write(name string, pod *v1.Pod) {
 	c.unsafeMap[name] = pod
 }
 
+// concurrentPVCMap wraps a map with concurrency safe read/write operations.
+type concurrentPVCMap struct {
+	unsafeMap map[string]*v1.PersistentVolumeClaim
+	mapMu     sync.Mutex
+}
+
+func (c *concurrentPVCMap) read(name string) (*v1.PersistentVolumeClaim, bool) {
+	c.mapMu.Lock()
+	defer c.mapMu.Unlock()
+	pod, ok := c.unsafeMap[name]
+	return pod, ok
+}
+
+func (c *concurrentPVCMap) write(name string, pod *v1.PersistentVolumeClaim) {
+	c.mapMu.Lock()
+	defer c.mapMu.Unlock()
+	c.unsafeMap[name] = pod
+}
+
 // VizierMonitor is responsible for watching the k8s API and statusz endpoints to compile a reason and state
 // for the overall Vizier instance.
 type VizierMonitor struct {
-	clientset  *kubernetes.Clientset
+	clientset  kubernetes.Interface
 	httpClient HTTPClient
 	ctx        context.Context
 	cancel     func()
@@ -92,7 +112,9 @@ type VizierMonitor struct {
 	namespacedName types.NamespacedName
 
 	podStates *concurrentPodMap
-	lastRV    string
+	pvcStates *concurrentPVCMap
+	lastPodRV string
+	lastPVCRV string
 
 	vzUpdate func(context.Context, client.Object, ...client.UpdateOption) error
 	vzGet    func(context.Context, types.NamespacedName, client.Object) error
@@ -107,6 +129,7 @@ func (m *VizierMonitor) InitAndStartMonitor() error {
 	m.httpClient = &http.Client{Transport: tr}
 	m.ctx, m.cancel = context.WithCancel(context.Background())
 	m.podStates = &concurrentPodMap{unsafeMap: make(map[string]*v1.Pod)}
+	m.pvcStates = &concurrentPVCMap{unsafeMap: make(map[string]*v1.PersistentVolumeClaim)}
 
 	err := m.initState()
 	if err != nil {
@@ -114,7 +137,10 @@ func (m *VizierMonitor) InitAndStartMonitor() error {
 	}
 
 	// Watch for future updates in the namespace.
-	go m.watchK8sAPI()
+	go m.watchK8sPods()
+
+	// Watch for future PVC updates.
+	go m.watchK8sPVC()
 
 	// Start goroutine for periodically pinging statusz endpoints and
 	// reconciling the Vizier status.
@@ -124,35 +150,44 @@ func (m *VizierMonitor) InitAndStartMonitor() error {
 }
 
 func (m *VizierMonitor) initState() error {
-	watcher := cache.NewListWatchFromClient(m.clientset.CoreV1().RESTClient(), "pods", m.namespace, fields.Everything())
-	pods, err := watcher.List(metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-
 	// Convert to pod list.
-	podList, lastRV, err := getPodList(pods)
+	podList, lastPodRV, err := m.getPodList()
 	if err != nil {
 		return err
 	}
-	m.lastRV = lastRV
+	m.lastPodRV = lastPodRV
 
 	// Populate vizierStates with current pod state.
-	for _, pod := range *podList {
+	for _, pod := range podList {
 		m.handlePod(pod)
+	}
+
+	pvcList, lastPVCRV, err := m.getPVCList()
+	if err != nil {
+		return err
+	}
+	m.lastPVCRV = lastPVCRV
+
+	for _, pvc := range pvcList {
+		m.handlePVC(pvc)
 	}
 
 	return nil
 }
 
-func getPodList(o runtime.Object) (*[]v1.Pod, string, error) {
-	podList, ok := o.(*v1.PodList)
-
-	if ok {
-		return &podList.Items, podList.ResourceVersion, nil
+func (m *VizierMonitor) getPodList() ([]v1.Pod, string, error) {
+	watcher := cache.NewListWatchFromClient(m.clientset.CoreV1().RESTClient(), "pods", m.namespace, fields.Everything())
+	pods, err := watcher.List(metav1.ListOptions{})
+	if err != nil {
+		return nil, "", err
 	}
 
-	internalList, ok := o.(*internalversion.List)
+	podList, ok := pods.(*v1.PodList)
+	if ok {
+		return podList.Items, podList.ResourceVersion, nil
+	}
+
+	internalList, ok := pods.(*internalversion.List)
 	if !ok {
 		return nil, "", errors.New("Could not get pod list")
 	}
@@ -166,7 +201,36 @@ func getPodList(o runtime.Object) (*[]v1.Pod, string, error) {
 		typedList.Items = append(typedList.Items, *item)
 	}
 
-	return &typedList.Items, internalList.ResourceVersion, nil
+	return typedList.Items, internalList.ResourceVersion, nil
+}
+
+func (m *VizierMonitor) getPVCList() ([]v1.PersistentVolumeClaim, string, error) {
+	watcher := cache.NewListWatchFromClient(m.clientset.CoreV1().RESTClient(), "persistentvolumeclaims", m.namespace, fields.Everything())
+	pods, err := watcher.List(metav1.ListOptions{})
+	if err != nil {
+		return nil, "", err
+	}
+
+	podList, ok := pods.(*v1.PersistentVolumeClaimList)
+	if ok {
+		return podList.Items, podList.ResourceVersion, nil
+	}
+
+	internalList, ok := pods.(*internalversion.List)
+	if !ok {
+		return nil, "", errors.New("Could not get pvc list")
+	}
+
+	typedList := v1.PersistentVolumeClaimList{}
+	for _, i := range internalList.Items {
+		item, ok := i.(*v1.PersistentVolumeClaim)
+		if !ok {
+			return nil, "", errors.New("Could not get pvc list")
+		}
+		typedList.Items = append(typedList.Items, *item)
+	}
+
+	return typedList.Items, internalList.ResourceVersion, nil
 }
 
 func (m *VizierMonitor) handlePod(pod v1.Pod) {
@@ -184,10 +248,14 @@ func (m *VizierMonitor) handlePod(pod v1.Pod) {
 	}
 }
 
-func (m *VizierMonitor) watchK8sAPI() {
+func (m *VizierMonitor) handlePVC(pvc v1.PersistentVolumeClaim) {
+	m.pvcStates.write(pvc.ObjectMeta.Name, &pvc)
+}
+
+func (m *VizierMonitor) watchK8sPods() {
 	for {
 		watcher := cache.NewListWatchFromClient(m.clientset.CoreV1().RESTClient(), "pods", m.namespace, fields.Everything())
-		retryWatcher, err := watchClient.NewRetryWatcher(m.lastRV, watcher)
+		retryWatcher, err := watchClient.NewRetryWatcher(m.lastPodRV, watcher)
 		if err != nil {
 			log.WithError(err).Fatal("Could not start watcher for pods")
 		}
@@ -204,15 +272,48 @@ func (m *VizierMonitor) watchK8sAPI() {
 					continue
 				}
 
-				// Update the lastRV, so that if the watcher restarts, it starts at the correct resource version.
+				// Update the lastPodRV, so that if the watcher restarts, it starts at the correct resource version.
 				o, ok := c.Object.(*v1.Pod)
 				if !ok {
 					continue
 				}
 
-				m.lastRV = o.ObjectMeta.ResourceVersion
+				m.lastPodRV = o.ObjectMeta.ResourceVersion
 
 				m.handlePod(*o)
+			}
+		}
+	}
+}
+
+func (m *VizierMonitor) watchK8sPVC() {
+	for {
+		watcher := cache.NewListWatchFromClient(m.clientset.CoreV1().RESTClient(), "persistentvolumeclaims", m.namespace, fields.Everything())
+		retryWatcher, err := watchClient.NewRetryWatcher(m.lastPVCRV, watcher)
+		if err != nil {
+			log.WithError(err).Fatal("Could not start watcher for pvc")
+		}
+
+		resCh := retryWatcher.ResultChan()
+		for {
+			select {
+			case <-m.ctx.Done():
+				log.Info("Received cancel, stopping K8s watcher")
+				return
+			case c := <-resCh:
+				s, ok := c.Object.(*metav1.Status)
+				if ok && s.Status == metav1.StatusFailure {
+					continue
+				}
+
+				// Update the lastPVCRV, so that if the watcher restarts, it starts at the correct resource version.
+				o, ok := c.Object.(*v1.PersistentVolumeClaim)
+				if !ok {
+					continue
+				}
+
+				m.lastPVCRV = o.ObjectMeta.ResourceVersion
+				m.handlePVC(*o)
 			}
 		}
 	}
@@ -256,24 +357,54 @@ func getCloudConnState(client HTTPClient, pods *concurrentPodMap) *vizierState {
 	return okState()
 }
 
-// getPVCState determines the state of the PVC then translates it to a corresponding vizierState.
-func getPVCState() *vizierState {
-	// TODO(philkuz, PP-2957) implement.
+// Returns whether the storage class name requested by the pvc is valid for the Kubernetes instance.
+func isValidPVC(clientset kubernetes.Interface, pvc *v1.PersistentVolumeClaim) (bool, error) {
+	classes, err := k8s.ListStorageClasses(clientset)
+	if err != nil {
+		return false, err
+	}
+	for _, c := range classes.Items {
+		if c.ObjectMeta.Name == *pvc.Spec.StorageClassName {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// getMetadataPVCState determines the state of the PVC then translates it to a corresponding vizierState.
+func getMetadataPVCState(clientset kubernetes.Interface, pvcMap *concurrentPVCMap) *vizierState {
+	pvc, ok := pvcMap.read(metadataPVC)
+	if !ok {
+		return &vizierState{Reason: status.MetadataPVCMissing}
+	}
+	if pvc.Status.Phase == v1.ClaimPending {
+		isvalidClass, err := isValidPVC(clientset, pvc)
+		if err != nil {
+			log.WithError(err).Error("unable to list storage classes")
+			return &vizierState{Reason: status.MetadataPVCStorageClassUnavailable}
+		}
+		if !isvalidClass {
+			return &vizierState{Reason: status.MetadataPVCStorageClassUnavailable}
+		}
+		return &vizierState{Reason: status.MetadataPVCPendingBinding}
+	}
 	return okState()
 }
 
 // getvizierState determines the state of the  Vizier instance based on the snapshot
 // of data available at call time. Reports the first state that fails (does not aggregate),
 // otherwise reports a healthy state.
-func (m *VizierMonitor) getvizierState() *vizierState {
+func (m *VizierMonitor) getvizierState(vz *pixiev1alpha1.Vizier) *vizierState {
+	if !vz.Spec.UseEtcdOperator {
+		pvcState := getMetadataPVCState(m.clientset, m.pvcStates)
+		if !isOk(pvcState) {
+			return pvcState
+		}
+	}
+
 	ccState := getCloudConnState(m.httpClient, m.podStates)
 	if !isOk(ccState) {
 		return ccState
-	}
-
-	pvcState := getPVCState()
-	if !isOk(pvcState) {
-		return pvcState
 	}
 
 	return okState()
@@ -285,7 +416,7 @@ func translateReasonToPhase(reason status.VizierReason) pixiev1alpha1.VizierPhas
 	if reason == "" {
 		return pixiev1alpha1.VizierPhaseHealthy
 	}
-	if reason == status.CloudConnectorPodPending {
+	if reason == status.CloudConnectorPodPending || reason == status.MetadataPVCPendingBinding {
 		return pixiev1alpha1.VizierPhaseUpdating
 	}
 	if reason == status.CloudConnectorMissing {
@@ -303,14 +434,14 @@ func (m *VizierMonitor) runReconciler() {
 			log.Info("Received cancel, stopping status reconciler")
 			return
 		case <-t.C:
-			vizierState := m.getvizierState()
-
 			vz := &pixiev1alpha1.Vizier{}
 			err := m.vzGet(context.Background(), m.namespacedName, vz)
 			if err != nil {
 				log.WithError(err).Error("Failed to get vizier")
 				continue
 			}
+
+			vizierState := m.getvizierState(vz)
 
 			vz.Status.VizierPhase = translateReasonToPhase(vizierState.Reason)
 			vz.Status.VizierReason = string(vizierState.Reason)
@@ -334,7 +465,7 @@ func queryPodStatusz(client HTTPClient, pod *v1.Pod) (bool, string) {
 
 	resp, err := client.Get(fmt.Sprintf("https://%s:%d/statusz", podIP, port))
 	if err != nil {
-		log.WithError(err).Info("Error making statusz call")
+		log.WithError(err).Error("Error making statusz call")
 		return false, ""
 	}
 	defer resp.Body.Close()
@@ -351,7 +482,7 @@ func queryPodStatusz(client HTTPClient, pod *v1.Pod) (bool, string) {
 	body, err := io.ReadAll(resp.Body)
 
 	if err != nil {
-		log.WithError(err).Info("Error reading the response body")
+		log.WithError(err).Error("Error reading the response body")
 		return false, ""
 	}
 
