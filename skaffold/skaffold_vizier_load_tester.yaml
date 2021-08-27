@@ -1,0 +1,23 @@
+apiVersion: skaffold/v2alpha3
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/pixie-oss/pixie-dev/vizier/load_tester_server_image
+    context: .
+    bazel:
+      target: //src/vizier/services/load_tester:load_tester_server_image.tar
+  tagPolicy:
+    dateTime: {}
+deploy:
+  kustomize:
+    paths:
+    - k8s/utils/base/vizier_load_tester
+profiles:
+- name: minikube
+  patches:
+  - op: replace
+    path: /build/local
+    value:
+      push: false
+  activation:
+  - kubeContext: minikube

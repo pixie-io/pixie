@@ -303,7 +303,7 @@ func (s *Bridge) RunStream() {
 
 		connect := func() error {
 			log.Info("Connecting to VZConn...")
-			vzClient, err = NewVZConnClient()
+			vzClient, err = NewVZConnClient(s.vzOperator)
 			if err != nil {
 				log.WithError(err).Error("Failed to connect to VZConn")
 			}
@@ -364,7 +364,9 @@ func (s *Bridge) RunStream() {
 		}
 		defer func() {
 			err := natsSub.Unsubscribe()
-			log.WithError(err).Error("Failed to unsubscribe from NATS")
+			if err != nil {
+				log.WithError(err).Error("Failed to unsubscribe from NATS")
+			}
 		}()
 	}
 
@@ -1067,7 +1069,7 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) chan *cvmsgspb.VizierHeart
 				status = vzStatus
 			}
 		}
-		log.WithField("msg", msg).WithField("status", status).Info("Sending heartbeat")
+
 		hbMsg := &cvmsgspb.VizierHeartbeat{
 			VizierID:                      utils.ProtoFromUUID(s.vizierID),
 			Time:                          time.Now().UnixNano(),

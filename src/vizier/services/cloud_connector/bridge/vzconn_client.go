@@ -24,15 +24,11 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/rest"
 
 	"px.dev/pixie/src/cloud/vzconn/vzconnpb"
-	"px.dev/pixie/src/operator/api/v1alpha1"
 	"px.dev/pixie/src/shared/services"
 )
 
@@ -40,47 +36,30 @@ func init() {
 	pflag.String("cloud_addr", "vzconn-service.plc.svc:51600", "The Pixie Cloud service url (load balancer/list is ok)")
 }
 
-func getCloudAddrFromCRD(ctx context.Context) (string, error) {
-	kubeConfig, err := rest.InClusterConfig()
+func getCloudAddrFromCRD(vzOperator VizierOperatorInfo) (string, error) {
+	vz, err := vzOperator.GetVizierCRD()
 	if err != nil {
 		return "", err
 	}
 
-	vzCrdClient, err := v1alpha1.NewVizierClient(kubeConfig)
-	if err != nil {
-		log.WithError(err).Error("failed to initialize Vizier CRD client")
-		return "", err
+	// When cloudConn connects to dev cloud, it should communicate directly with VZConn.
+	cloudAddr := vz.Spec.CloudAddr
+	devCloudNamespace := vz.Spec.DevCloudNamespace
+	if devCloudNamespace != "" {
+		cloudAddr = fmt.Sprintf("vzconn-service.%s.svc.cluster.local:51600", devCloudNamespace)
 	}
 
-	vzLst, err := vzCrdClient.List(ctx, viper.GetString("pod_namespace"), v1.ListOptions{})
-	if err != nil {
-		log.WithError(err).Error("failed to list Vizier CRDs")
-		return "", err
-	}
-
-	if len(vzLst.Items) == 1 {
-		// When cloudConn connects to dev cloud, it should communicate directly with VZConn.
-		cloudAddr := vzLst.Items[0].Spec.CloudAddr
-		devCloudNamespace := vzLst.Items[0].Spec.DevCloudNamespace
-		if devCloudNamespace != "" {
-			cloudAddr = fmt.Sprintf("vzconn-service.%s.svc.cluster.local:51600", devCloudNamespace)
-		}
-
-		return cloudAddr, nil
-	} else if len(vzLst.Items) > 1 {
-		return "", fmt.Errorf("spec contains more than 1 Vizier item")
-	}
-	return "", fmt.Errorf("spec contains 0 Vizier items")
+	return cloudAddr, nil
 }
 
 // NewVZConnClient creates a new vzconn RPC client stub.
-func NewVZConnClient() (vzconnpb.VZConnServiceClient, error) {
+func NewVZConnClient(vzOperator VizierOperatorInfo) (vzconnpb.VZConnServiceClient, error) {
 	ctxBg := context.Background()
 
 	// Get the cloud address - first try the CRD, if it exists.
 	// If that fails, pull it from the environment for Viziers that are not
 	// running the operator yet.
-	cloudAddr, err := getCloudAddrFromCRD(ctxBg)
+	cloudAddr, err := getCloudAddrFromCRD(vzOperator)
 	if err != nil {
 		cloudAddr = viper.GetString("cloud_addr")
 	}

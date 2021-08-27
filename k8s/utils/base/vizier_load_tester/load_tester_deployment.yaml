@@ -1,0 +1,69 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vizier-load-tester
+spec:
+  replicas: 100
+  selector:
+    matchLabels:
+      name: vizier-load-tester
+  template:
+    metadata:
+      labels:
+        name: vizier-load-tester
+        plane: control
+    spec:
+      serviceAccountName: cloud-conn-service-account
+      containers:
+      - name: app
+        image: gcr.io/pixie-oss/pixie-dev/vizier/load_tester_server_image:latest
+        env:
+        - name: PL_JWT_SIGNING_KEY
+          valueFrom:
+            secretKeyRef:
+              key: jwt-signing-key
+              name: pl-cluster-secrets
+        - name: PL_CLUSTER_ID
+          valueFrom:
+            secretKeyRef:
+              key: cluster-id
+              name: pl-cluster-secrets
+              optional: true
+        - name: PL_DEPLOY_KEY
+          valueFrom:
+            secretKeyRef:
+              key: deploy-key
+              name: pl-deploy-secrets
+              optional: true
+        - name: PL_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: PL_MAX_EXPECTED_CLOCK_SKEW
+          value: "2000"
+        - name: PL_RENEW_PERIOD
+          value: "5000"
+        envFrom:
+        - configMapRef:
+            name: pl-cloud-config
+        - configMapRef:
+            name: pl-cloud-connector-tls-config
+        - configMapRef:
+            name: pl-cluster-config
+            optional: true
+        ports:
+        - containerPort: 51600
+        volumeMounts:
+        - mountPath: /certs
+          name: certs
+        livenessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 51600
+          initialDelaySeconds: 300
+      volumes:
+      - name: certs
+        secret:
+          secretName: service-tls-certs

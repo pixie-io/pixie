@@ -1,0 +1,58 @@
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+load("@io_bazel_rules_docker//go:image.bzl", "go_image")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "load_tester_lib",
+    srcs = ["load_tester_server.go"],
+    importpath = "px.dev/pixie/src/vizier/services/load_tester",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//src/api/proto/vizierpb:vizier_pl_go_proto",
+        "//src/operator/api/v1alpha1",
+        "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
+        "//src/shared/services",
+        "//src/shared/services/env",
+        "//src/shared/services/healthz",
+        "//src/shared/services/httpmiddleware",
+        "//src/shared/services/server",
+        "//src/vizier/services/cloud_connector/bridge",
+        "@com_github_cenkalti_backoff_v3//:backoff",
+        "@com_github_gofrs_uuid//:uuid",
+        "@com_github_nats_io_nats_go//:nats_go",
+        "@com_github_sirupsen_logrus//:logrus",
+        "@com_github_spf13_pflag//:pflag",
+        "@com_github_spf13_viper//:viper",
+        "@io_k8s_api//batch/v1:batch",
+    ],
+)
+
+go_binary(
+    name = "load_tester",
+    embed = [":load_tester_lib"],
+    visibility = ["//visibility:public"],
+)
+
+go_image(
+    name = "load_tester_server_image",
+    binary = ":load_tester",
+    visibility = [
+        "//k8s:__subpackages__",
+        "//src/vizier:__subpackages__",
+    ],
+)
