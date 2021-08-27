@@ -45,14 +45,16 @@ import (
 )
 
 var (
-	testAuthOrgID    = uuid.FromStringOrNil("223e4567-e89b-12d3-a456-426655440000")
-	testAuthUserID   = uuid.FromStringOrNil("423e4567-e89b-12d3-a456-426655440000")
-	testNonAuthOrgID = uuid.FromStringOrNil("223e4567-e89b-12d3-a456-426655440001")
-
-	testKey1ID           = uuid.FromStringOrNil("883e4567-e89b-12d3-a456-426655440000")
-	testKey2ID           = uuid.FromStringOrNil("993e4567-e89b-12d3-a456-426655440000")
+	testAuthOrgID        = uuid.FromStringOrNil("223e4567-e89b-12d3-a456-426655440000")
+	testAuthUserID       = uuid.FromStringOrNil("423e4567-e89b-12d3-a456-426655440000")
+	testNonAuthOrgID     = uuid.FromStringOrNil("223e4567-e89b-12d3-a456-426655440001")
 	testNonAuthUserKeyID = uuid.FromStringOrNil("003e4567-e89b-12d3-a456-426655440000")
-	testDBKey            = "test_db_key"
+
+	testKey1ID = uuid.FromStringOrNil("883e4567-e89b-12d3-a456-426655440000")
+	testKey2ID = uuid.FromStringOrNil("993e4567-e89b-12d3-a456-426655440000")
+	testKey3ID = uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440001")
+
+	testDBKey = "test_db_key"
 )
 
 func TestMain(m *testing.M) {
@@ -101,7 +103,7 @@ func mustLoadTestData(db *sqlx.DB) {
                                      VALUES ($1, $2, $3, sha256($4), PGP_SYM_ENCRYPT($4::text, $5::text), $6)`
 	db.MustExec(insertVizierDeploymentKeys, testKey1ID, testAuthOrgID, testAuthUserID, "px-dep-key1", testDBKey, "here is a desc")
 	db.MustExec(insertVizierDeploymentKeys, testKey2ID, testAuthOrgID, testAuthUserID, "px-dep-key2", testDBKey, "here is another one")
-	db.MustExec(insertVizierDeploymentKeys, testNonAuthUserKeyID.String(), testNonAuthOrgID, "123e4567-e89b-12d3-a456-426655440001", "px-dep-key2", testDBKey, "some other desc")
+	db.MustExec(insertVizierDeploymentKeys, testKey3ID, testNonAuthUserKeyID, testNonAuthOrgID, "px-dep-key3", testDBKey, "some other desc")
 }
 
 func TestDeploymentKeyService_CreateDeploymentKey(t *testing.T) {
@@ -172,6 +174,13 @@ func TestDeploymentKeyService_ListDeploymentKeys(t *testing.T) {
 			assert.Equal(t, 2, len(resp.Keys))
 			assert.Equal(t, testKey1ID, utils.UUIDFromProtoOrNil(resp.Keys[0].ID))
 			assert.Equal(t, testKey2ID, utils.UUIDFromProtoOrNil(resp.Keys[1].ID))
+
+			assert.Equal(t, testAuthOrgID, utils.UUIDFromProtoOrNil(resp.Keys[0].OrgID))
+			assert.Equal(t, testAuthUserID, utils.UUIDFromProtoOrNil(resp.Keys[0].UserID))
+
+			assert.Equal(t, testAuthOrgID, utils.UUIDFromProtoOrNil(resp.Keys[1].OrgID))
+			assert.Equal(t, testAuthUserID, utils.UUIDFromProtoOrNil(resp.Keys[1].UserID))
+
 			assert.Equal(t, "here is a desc", resp.Keys[0].Desc)
 			assert.Equal(t, "here is another one", resp.Keys[1].Desc)
 
@@ -233,6 +242,9 @@ func TestDeploymentKeyService_Get(t *testing.T) {
 			ts, err := types.TimestampFromProto(resp.Key.CreatedAt)
 			require.NoError(t, err)
 
+			assert.Equal(t, testAuthOrgID, utils.UUIDFromProtoOrNil(resp.Key.OrgID))
+			assert.Equal(t, testAuthUserID, utils.UUIDFromProtoOrNil(resp.Key.UserID))
+
 			diff := time.Since(ts).Milliseconds()
 			if diff < 0 {
 				diff = -1 * diff
@@ -265,7 +277,7 @@ func TestDeploymentKeyService_Get_UnownedID(t *testing.T) {
 			svc := New(db, testDBKey)
 
 			resp, err := svc.Get(ctx, &vzmgrpb.GetDeploymentKeyRequest{
-				ID: utils.ProtoFromUUID(testNonAuthUserKeyID),
+				ID: utils.ProtoFromUUID(testKey3ID),
 			})
 			assert.Nil(t, resp)
 			assert.NotNil(t, err)
@@ -365,7 +377,7 @@ func TestDeploymentKeyService_Delete_UnownedKey(t *testing.T) {
 			ctx := test.ctx
 			svc := New(db, testDBKey)
 
-			u := utils.ProtoFromUUID(testNonAuthUserKeyID)
+			u := utils.ProtoFromUUID(testKey3ID)
 			resp, err := svc.Delete(ctx, u)
 			assert.NotNil(t, err)
 			assert.Nil(t, resp)
@@ -374,10 +386,11 @@ func TestDeploymentKeyService_Delete_UnownedKey(t *testing.T) {
 			// Make DB query to make sure the Key still exists.
 			var key string
 			err = db.QueryRow(`SELECT CONVERT_FROM(PGP_SYM_DECRYPT(encrypted_key, $1::text)::bytea, 'UTF8') from vizier_deployment_keys where id=$2`,
-				testDBKey, testNonAuthUserKeyID).
+				testDBKey,
+				testKey3ID).
 				Scan(&key)
 			require.NoError(t, err)
-			assert.Equal(t, "px-dep-key2", key)
+			assert.Equal(t, "px-dep-key3", key)
 		})
 	}
 }
@@ -498,6 +511,63 @@ func TestService_FetchOrgUserIDUsingDeploymentKey_BadKey(t *testing.T) {
 			assert.Equal(t, vzerrors.ErrDeploymentKeyNotFound, err)
 			assert.Equal(t, uuid.Nil, orgID)
 			assert.Equal(t, uuid.Nil, userID)
+		})
+	}
+}
+
+func TestService_LookupDeploymentKey(t *testing.T) {
+	mustLoadTestData(db)
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "regular user",
+			ctx:  createTestContext(),
+		},
+		{
+			name: "api user",
+			ctx:  createTestAPIUserContext(),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := test.ctx
+			svc := New(db, testDBKey)
+
+			resp, err := svc.LookupDeploymentKey(ctx, &vzmgrpb.LookupDeploymentKeyRequest{Key: "px-dep-key1"})
+			require.NoError(t, err)
+			assert.Equal(t, testAuthOrgID, utils.UUIDFromProtoOrNil(resp.Key.OrgID))
+			assert.Equal(t, testAuthUserID, utils.UUIDFromProtoOrNil(resp.Key.UserID))
+		})
+	}
+}
+
+func TestService_LookupDeploymentKey_NonAuth(t *testing.T) {
+	mustLoadTestData(db)
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "regular user",
+			ctx:  createTestContext(),
+		},
+		{
+			name: "api user",
+			ctx:  createTestAPIUserContext(),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := test.ctx
+			svc := New(db, testDBKey)
+
+			resp, err := svc.LookupDeploymentKey(ctx, &vzmgrpb.LookupDeploymentKeyRequest{Key: "px-dep-key3"})
+			require.Error(t, err)
+			assert.Nil(t, resp)
 		})
 	}
 }

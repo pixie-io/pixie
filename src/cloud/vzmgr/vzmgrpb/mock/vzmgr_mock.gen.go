@@ -480,6 +480,26 @@ func (mr *MockVZDeploymentKeyServiceClientMockRecorder) List(ctx, in interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockVZDeploymentKeyServiceClient)(nil).List), varargs...)
 }
 
+// LookupDeploymentKey mocks base method.
+func (m *MockVZDeploymentKeyServiceClient) LookupDeploymentKey(ctx context.Context, in *vzmgrpb.LookupDeploymentKeyRequest, opts ...grpc.CallOption) (*vzmgrpb.LookupDeploymentKeyResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "LookupDeploymentKey", varargs...)
+	ret0, _ := ret[0].(*vzmgrpb.LookupDeploymentKeyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LookupDeploymentKey indicates an expected call of LookupDeploymentKey.
+func (mr *MockVZDeploymentKeyServiceClientMockRecorder) LookupDeploymentKey(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LookupDeploymentKey", reflect.TypeOf((*MockVZDeploymentKeyServiceClient)(nil).LookupDeploymentKey), varargs...)
+}
+
 // MockVZDeploymentKeyServiceServer is a mock of VZDeploymentKeyServiceServer interface.
 type MockVZDeploymentKeyServiceServer struct {
 	ctrl     *gomock.Controller
@@ -561,6 +581,21 @@ func (m *MockVZDeploymentKeyServiceServer) List(arg0 context.Context, arg1 *vzmg
 func (mr *MockVZDeploymentKeyServiceServerMockRecorder) List(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockVZDeploymentKeyServiceServer)(nil).List), arg0, arg1)
+}
+
+// LookupDeploymentKey mocks base method.
+func (m *MockVZDeploymentKeyServiceServer) LookupDeploymentKey(arg0 context.Context, arg1 *vzmgrpb.LookupDeploymentKeyRequest) (*vzmgrpb.LookupDeploymentKeyResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LookupDeploymentKey", arg0, arg1)
+	ret0, _ := ret[0].(*vzmgrpb.LookupDeploymentKeyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LookupDeploymentKey indicates an expected call of LookupDeploymentKey.
+func (mr *MockVZDeploymentKeyServiceServerMockRecorder) LookupDeploymentKey(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LookupDeploymentKey", reflect.TypeOf((*MockVZDeploymentKeyServiceServer)(nil).LookupDeploymentKey), arg0, arg1)
 }
 
 // MockVZDeploymentServiceClient is a mock of VZDeploymentServiceClient interface.

@@ -36,6 +36,8 @@ type VizierDeploymentKeyServer struct {
 func deployKeyToCloudAPI(key *vzmgrpb.DeploymentKey) *cloudpb.DeploymentKey {
 	return &cloudpb.DeploymentKey{
 		ID:        key.ID,
+		OrgID:     key.OrgID,
+		UserID:    key.UserID,
 		Key:       key.Key,
 		CreatedAt: key.CreatedAt,
 		Desc:      key.Desc,
@@ -45,6 +47,8 @@ func deployKeyToCloudAPI(key *vzmgrpb.DeploymentKey) *cloudpb.DeploymentKey {
 func deployKeyMetadataToCloudAPI(key *vzmgrpb.DeploymentKeyMetadata) *cloudpb.DeploymentKeyMetadata {
 	return &cloudpb.DeploymentKeyMetadata{
 		ID:        key.ID,
+		OrgID:     key.OrgID,
+		UserID:    key.UserID,
 		CreatedAt: key.CreatedAt,
 		Desc:      key.Desc,
 	}
@@ -109,4 +113,17 @@ func (v *VizierDeploymentKeyServer) Delete(ctx context.Context, uuid *uuidpb.UUI
 		return nil, err
 	}
 	return v.VzDeploymentKey.Delete(ctx, uuid)
+}
+
+// LookupDeploymentKey gets the complete API key information using just the Key.
+func (v *VizierDeploymentKeyServer) LookupDeploymentKey(ctx context.Context, req *cloudpb.LookupDeploymentKeyRequest) (*cloudpb.LookupDeploymentKeyResponse, error) {
+	ctx, err := contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := v.VzDeploymentKey.LookupDeploymentKey(ctx, &vzmgrpb.LookupDeploymentKeyRequest{Key: req.Key})
+	if err != nil {
+		return nil, err
+	}
+	return &cloudpb.LookupDeploymentKeyResponse{Key: deployKeyToCloudAPI(resp.Key)}, nil
 }

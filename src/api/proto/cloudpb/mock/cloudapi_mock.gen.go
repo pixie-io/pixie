@@ -1094,6 +1094,26 @@ func (mr *MockVizierDeploymentKeyManagerClientMockRecorder) List(ctx, in interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockVizierDeploymentKeyManagerClient)(nil).List), varargs...)
 }
 
+// LookupDeploymentKey mocks base method.
+func (m *MockVizierDeploymentKeyManagerClient) LookupDeploymentKey(ctx context.Context, in *cloudpb.LookupDeploymentKeyRequest, opts ...grpc.CallOption) (*cloudpb.LookupDeploymentKeyResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "LookupDeploymentKey", varargs...)
+	ret0, _ := ret[0].(*cloudpb.LookupDeploymentKeyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LookupDeploymentKey indicates an expected call of LookupDeploymentKey.
+func (mr *MockVizierDeploymentKeyManagerClientMockRecorder) LookupDeploymentKey(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LookupDeploymentKey", reflect.TypeOf((*MockVizierDeploymentKeyManagerClient)(nil).LookupDeploymentKey), varargs...)
+}
+
 // MockVizierDeploymentKeyManagerServer is a mock of VizierDeploymentKeyManagerServer interface.
 type MockVizierDeploymentKeyManagerServer struct {
 	ctrl     *gomock.Controller
@@ -1175,6 +1195,21 @@ func (m *MockVizierDeploymentKeyManagerServer) List(arg0 context.Context, arg1 *
 func (mr *MockVizierDeploymentKeyManagerServerMockRecorder) List(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockVizierDeploymentKeyManagerServer)(nil).List), arg0, arg1)
+}
+
+// LookupDeploymentKey mocks base method.
+func (m *MockVizierDeploymentKeyManagerServer) LookupDeploymentKey(arg0 context.Context, arg1 *cloudpb.LookupDeploymentKeyRequest) (*cloudpb.LookupDeploymentKeyResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LookupDeploymentKey", arg0, arg1)
+	ret0, _ := ret[0].(*cloudpb.LookupDeploymentKeyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LookupDeploymentKey indicates an expected call of LookupDeploymentKey.
+func (mr *MockVizierDeploymentKeyManagerServerMockRecorder) LookupDeploymentKey(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LookupDeploymentKey", reflect.TypeOf((*MockVizierDeploymentKeyManagerServer)(nil).LookupDeploymentKey), arg0, arg1)
 }
 
 // MockAPIKeyManagerClient is a mock of APIKeyManagerClient interface.

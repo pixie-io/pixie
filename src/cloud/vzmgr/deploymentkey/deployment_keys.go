@@ -21,6 +21,7 @@ package deploymentkey
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strings"
 	"time"
 
@@ -98,7 +99,7 @@ func (s *Service) List(ctx context.Context, req *vzmgrpb.ListDeploymentKeyReques
 	}
 
 	// Return all clusters when the OrgID matches.
-	query := `SELECT id, org_id, created_at, description
+	query := `SELECT id, org_id, user_id, created_at, description
                 FROM vizier_deployment_keys
                 WHERE org_id=$1
                 ORDER BY created_at`
@@ -115,10 +116,11 @@ func (s *Service) List(ctx context.Context, req *vzmgrpb.ListDeploymentKeyReques
 	keys := make([]*vzmgrpb.DeploymentKeyMetadata, 0)
 	for rows.Next() {
 		var id string
-		var orgID string
+		var orgID uuid.UUID
+		var userID uuid.UUID
 		var createdAt time.Time
 		var desc string
-		err = rows.Scan(&id, &orgID, &createdAt, &desc)
+		err = rows.Scan(&id, &orgID, &userID, &createdAt, &desc)
 		if err != nil {
 			log.WithError(err).Error("Failed to read data from postgres")
 			return nil, status.Error(codes.Internal, "failed to read data")
@@ -126,6 +128,8 @@ func (s *Service) List(ctx context.Context, req *vzmgrpb.ListDeploymentKeyReques
 		tProto, _ := types.TimestampProto(createdAt)
 		keys = append(keys, &vzmgrpb.DeploymentKeyMetadata{
 			ID:        utils.ProtoFromUUIDStrOrNil(id),
+			OrgID:     utils.ProtoFromUUID(orgID),
+			UserID:    utils.ProtoFromUUID(userID),
 			CreatedAt: tProto,
 			Desc:      desc,
 		})
@@ -146,13 +150,16 @@ func (s *Service) Get(ctx context.Context, req *vzmgrpb.GetDeploymentKeyRequest)
 		return nil, status.Error(codes.InvalidArgument, "invalid id format")
 	}
 
+	var orgID uuid.UUID
+	var userID uuid.UUID
 	var key string
 	var createdAt time.Time
 	var desc string
-	query := `SELECT CONVERT_FROM(PGP_SYM_DECRYPT(encrypted_key, $3::text)::bytea, 'UTF8'), created_at, description
+	query := `SELECT CONVERT_FROM(PGP_SYM_DECRYPT(encrypted_key, $3::text)::bytea, 'UTF8'), org_id, user_id, created_at, description
                 FROM vizier_deployment_keys
                 WHERE org_id=$1 AND id=$2`
-	err = s.db.QueryRowxContext(ctx, query, sCtx.Claims.GetUserClaims().OrgID, tokenID, s.dbKey).Scan(&key, &createdAt, &desc)
+	err = s.db.QueryRowxContext(ctx, query, sCtx.Claims.GetUserClaims().OrgID, tokenID, s.dbKey).
+		Scan(&key, &orgID, &userID, &createdAt, &desc)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "No such deployment key")
 	}
@@ -160,6 +167,8 @@ func (s *Service) Get(ctx context.Context, req *vzmgrpb.GetDeploymentKeyRequest)
 	createdAtProto, _ := types.TimestampProto(createdAt)
 	return &vzmgrpb.GetDeploymentKeyResponse{Key: &vzmgrpb.DeploymentKey{
 		ID:        req.ID,
+		OrgID:     utils.ProtoFromUUID(orgID),
+		UserID:    utils.ProtoFromUUID(userID),
 		Key:       key,
 		CreatedAt: createdAtProto,
 		Desc:      desc,
@@ -201,22 +210,70 @@ func (s *Service) Delete(ctx context.Context, req *uuidpb.UUID) (*types.Empty, e
 
 // FetchOrgUserIDUsingDeploymentKey gets the org and user ID based on the deployment key.
 func (s *Service) FetchOrgUserIDUsingDeploymentKey(ctx context.Context, key string) (uuid.UUID, uuid.UUID, error) {
+	resp, err := s.fetchDeploymentKeyUsingKeyFromDB(ctx, key)
+	if err != nil {
+		return uuid.Nil, uuid.Nil, err
+	}
+	oid, err := utils.UUIDFromProto(resp.OrgID)
+	if err != nil {
+		return uuid.Nil, uuid.Nil, err
+	}
+	uid, err := utils.UUIDFromProto(resp.UserID)
+	if err != nil {
+		return uuid.Nil, uuid.Nil, err
+	}
+	return oid, uid, nil
+}
+
+// LookupDeploymentKey gets the complete Deployment key information using just the Key.
+func (s *Service) LookupDeploymentKey(ctx context.Context, req *vzmgrpb.LookupDeploymentKeyRequest) (*vzmgrpb.LookupDeploymentKeyResponse, error) {
+	aCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	orgID := aCtx.Claims.GetUserClaims().OrgID
+	resp, err := s.fetchDeploymentKeyUsingKeyFromDB(ctx, req.Key)
+	if err != nil {
+		if err == vzerrors.ErrDeploymentKeyNotFound {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if utils.UUIDFromProtoOrNil(resp.OrgID).String() != orgID {
+		return nil, status.Error(codes.PermissionDenied, "permission denied deleting API key")
+	}
+	return &vzmgrpb.LookupDeploymentKeyResponse{Key: resp}, nil
+}
+
+func (s *Service) fetchDeploymentKeyUsingKeyFromDB(ctx context.Context, key string) (*vzmgrpb.DeploymentKey, error) {
 	// For backwards compatibility add in deployKeyPrefix the front of the keys.
 	if !strings.HasPrefix(key, deployKeyPrefix) {
 		key = deployKeyPrefix + key
 	}
-
-	query := `SELECT org_id, user_id
-                FROM vizier_deployment_keys
-                WHERE hashed_key=sha256($1) AND PGP_SYM_DECRYPT(encrypted_key::bytea, $2::text)::bytea=$1`
+	var id uuid.UUID
 	var orgID uuid.UUID
 	var userID uuid.UUID
-	err := s.db.QueryRowxContext(ctx, query, key, s.dbKey).Scan(&orgID, &userID)
+	var createdAt time.Time
+	var desc string
+	query := `SELECT id, org_id, user_id, created_at, description
+                FROM vizier_deployment_keys
+                WHERE hashed_key=sha256($1) AND PGP_SYM_DECRYPT(encrypted_key::bytea, $2::text)::bytea=$1`
+	err := s.db.QueryRowxContext(ctx, query, key, s.dbKey).
+		Scan(&id, &orgID, &userID, &createdAt, &desc)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return uuid.Nil, uuid.Nil, vzerrors.ErrDeploymentKeyNotFound
+			return nil, vzerrors.ErrDeploymentKeyNotFound
 		}
-		return uuid.Nil, uuid.Nil, err
+		return nil, fmt.Errorf("failed to query database for API key")
 	}
-	return orgID, userID, nil
+
+	createdAtProto, _ := types.TimestampProto(createdAt)
+	return &vzmgrpb.DeploymentKey{
+		ID:        utils.ProtoFromUUID(id),
+		OrgID:     utils.ProtoFromUUID(orgID),
+		UserID:    utils.ProtoFromUUID(userID),
+		Key:       key,
+		CreatedAt: createdAtProto,
+		Desc:      desc,
+	}, nil
 }

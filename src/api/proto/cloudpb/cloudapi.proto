@@ -418,6 +418,8 @@ service VizierDeploymentKeyManager {
   rpc Get(GetDeploymentKeyRequest) returns (GetDeploymentKeyResponse);
   // Delete the Key specified by ID.
   rpc Delete(uuidpb.UUID) returns (google.protobuf.Empty);
+  // Lookup the Deployment key information by the key value.
+  rpc LookupDeploymentKey(LookupDeploymentKeyRequest) returns (LookupDeploymentKeyResponse);
 }
 
 // Metadata for a key that can be used to deploy a new vizier cluster.
@@ -427,7 +429,8 @@ message DeploymentKeyMetadata {
   google.protobuf.Timestamp created_at = 3;
   // Description for the key.
   string desc = 4;
-
+  uuidpb.UUID org_id = 5 [(gogoproto.customname) = "OrgID"];
+  uuidpb.UUID user_id = 6 [(gogoproto.customname) = "UserID"];
   // 2 is reserved for the original key string.
   reserved 2;
 }
@@ -442,6 +445,8 @@ message DeploymentKey {
   google.protobuf.Timestamp created_at = 3;
   // Description for the key.
   string desc = 4;
+  uuidpb.UUID org_id = 5 [(gogoproto.customname) = "OrgID"];
+  uuidpb.UUID user_id = 6 [(gogoproto.customname) = "UserID"];
 }
 
 
@@ -460,6 +465,14 @@ message ListDeploymentKeyResponse { repeated DeploymentKeyMetadata keys = 1; }
 message GetDeploymentKeyRequest { uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ]; }
 
 message GetDeploymentKeyResponse { DeploymentKey key = 1; }
+
+message LookupDeploymentKeyRequest {
+  string key = 1;
+}
+
+message LookupDeploymentKeyResponse {
+  DeploymentKey key = 1;
+}
 
 // APIKeyManager is the service that manages API keys.
 service APIKeyManager {
@@ -489,7 +502,6 @@ message APIKey {
 
   uuidpb.UUID org_id = 5 [(gogoproto.customname) = "OrgID"];
   uuidpb.UUID user_id = 6 [(gogoproto.customname) = "UserID"];
-
 }
 
 // The metadata associated with the key, everything except the actual key.
