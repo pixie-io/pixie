@@ -82,5 +82,6 @@ go_library(
         "@io_k8s_client_go//plugin/pkg/client/auth",
         "@io_k8s_client_go//rest",
         "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_x_term//:term",
     ],
 )

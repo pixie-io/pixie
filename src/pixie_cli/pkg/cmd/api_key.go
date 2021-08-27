@@ -20,13 +20,16 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
+	"syscall"
 
 	"github.com/gofrs/uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/term"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/pixie_cli/pkg/auth"
@@ -40,6 +43,7 @@ func init() {
 	APIKeyCmd.AddCommand(DeleteAPIKeyCmd)
 	APIKeyCmd.AddCommand(ListAPIKeyCmd)
 	APIKeyCmd.AddCommand(GetAPIKeyCmd)
+	APIKeyCmd.AddCommand(LookupAPIKeyCmd)
 
 	CreateAPIKeyCmd.Flags().StringP("desc", "d", "", "A description for the API key")
 	viper.BindPFlag("desc", CreateAPIKeyCmd.Flags().Lookup("desc"))
@@ -49,6 +53,8 @@ func init() {
 
 	ListAPIKeyCmd.Flags().StringP("output", "o", "", "Output format: one of: json|proto")
 	viper.BindPFlag("output", ListAPIKeyCmd.Flags().Lookup("output"))
+
+	LookupAPIKeyCmd.Flags().StringP("key", "k", "", "Value of the key. Leave blank to be prompted.")
 }
 
 // APIKeyCmd is the api-key sub-command of the CLI.
@@ -125,6 +131,38 @@ var ListAPIKeyCmd = &cobra.Command{
 			_ = w.Write([]interface{}{utils2.UUIDFromProtoOrNil(k.ID), "<hidden>", k.CreatedAt,
 				k.Desc})
 		}
+	},
+}
+
+// LookupAPIKeyCmd is looks up the API key using the actual key value;
+var LookupAPIKeyCmd = &cobra.Command{
+	Use:   "lookup",
+	Short: "Lookup API key based on the value of the key",
+	Run: func(cmd *cobra.Command, args []string) {
+		cloudAddr := viper.GetString("cloud_addr")
+		format, _ := cmd.Flags().GetString("output")
+		format = strings.ToLower(format)
+		apiKey, err := cmd.Flags().GetString("key")
+		if err != nil || len(apiKey) == 0 {
+			fmt.Print("\nEnter API Key (won't echo): ")
+			k, err := term.ReadPassword(syscall.Stdin)
+			if err != nil {
+				log.WithError(err).Fatal("Failed to read API Key")
+			}
+			apiKey = string(k)
+		}
+
+		k, err := lookupAPIKey(cloudAddr, apiKey)
+		if err != nil {
+			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
+			log.WithError(err).Fatal("Failed to list lookup key")
+		}
+		// Throw keys into table.
+		w := components.CreateStreamWriter(format, os.Stdout)
+		defer w.Finish()
+		w.SetHeader("api-keys", []string{"ID", "Key", "CreatedAt", "Description"})
+		_ = w.Write([]interface{}{utils2.UUIDFromProtoOrNil(k.ID), "<hidden>", k.CreatedAt,
+			k.Desc})
 	},
 }
 
@@ -221,6 +259,20 @@ func getAPIKey(cloudAddr string, keyID uuid.UUID) (*cloudpb.APIKey, error) {
 	resp, err := apiKeyMgr.Get(ctxWithCreds, &cloudpb.GetAPIKeyRequest{
 		ID: utils2.ProtoFromUUID(keyID),
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Key, nil
+}
+
+func lookupAPIKey(cloudAddr string, key string) (*cloudpb.APIKey, error) {
+	apiKeyMgr, ctxWithCreds, err := getAPIKeyClientAndContext(cloudAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := apiKeyMgr.LookupAPIKey(ctxWithCreds, &cloudpb.LookupAPIKeyRequest{Key: key})
 	if err != nil {
 		return nil, err
 	}

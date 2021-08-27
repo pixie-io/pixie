@@ -20,13 +20,16 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
+	"syscall"
 
 	"github.com/gofrs/uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/term"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/pixie_cli/pkg/auth"
@@ -40,6 +43,7 @@ func init() {
 	DeployKeyCmd.AddCommand(DeleteDeployKeyCmd)
 	DeployKeyCmd.AddCommand(ListDeployKeyCmd)
 	DeployKeyCmd.AddCommand(GetDeployKeyCmd)
+	DeployKeyCmd.AddCommand(LookupDeployKeyCmd)
 
 	CreateDeployKeyCmd.Flags().StringP("desc", "d", "", "A description for the deploy key")
 	viper.BindPFlag("desc", CreateDeployKeyCmd.Flags().Lookup("desc"))
@@ -49,6 +53,8 @@ func init() {
 
 	ListDeployKeyCmd.Flags().StringP("output", "o", "", "Output format: one of: json|proto")
 	viper.BindPFlag("output", ListDeployKeyCmd.Flags().Lookup("output"))
+
+	LookupDeployKeyCmd.Flags().StringP("key", "k", "", "Value of the key. Leave blank to be prompted.")
 }
 
 // DeployKeyCmd is the deploy-key sub-command of the CLI.
@@ -125,6 +131,39 @@ var ListDeployKeyCmd = &cobra.Command{
 			_ = w.Write([]interface{}{utils2.UUIDFromProtoOrNil(k.ID), "<hidden>", k.CreatedAt,
 				k.Desc})
 		}
+	},
+}
+
+// LookupDeployKeyCmd is the List sub-command of DeployKey.
+var LookupDeployKeyCmd = &cobra.Command{
+	Use:   "lookup",
+	Short: "Lookup deployment key based on the value of the key",
+	Run: func(cmd *cobra.Command, args []string) {
+		cloudAddr := viper.GetString("cloud_addr")
+		format, _ := cmd.Flags().GetString("output")
+		format = strings.ToLower(format)
+
+		deployKey, err := cmd.Flags().GetString("key")
+		if err != nil || len(deployKey) == 0 {
+			fmt.Print("\nEnter Deploy Key (won't echo): ")
+			k, err := term.ReadPassword(syscall.Stdin)
+			if err != nil {
+				log.WithError(err).Fatal("Failed to read Deploy Key")
+			}
+			deployKey = string(k)
+		}
+
+		k, err := lookupDeployKeys(cloudAddr, deployKey)
+		if err != nil {
+			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
+			log.WithError(err).Fatal("Failed to list deployment keys")
+		}
+		// Throw keys into table.
+		w := components.CreateStreamWriter(format, os.Stdout)
+		defer w.Finish()
+		w.SetHeader("api-keys", []string{"ID", "Key", "CreatedAt", "Description"})
+		_ = w.Write([]interface{}{utils2.UUIDFromProtoOrNil(k.ID), "<hidden>", k.CreatedAt,
+			k.Desc})
 	},
 }
 
@@ -210,6 +249,22 @@ func listDeployKeys(cloudAddr string) ([]*cloudpb.DeploymentKeyMetadata, error) 
 	}
 
 	return resp.Keys, nil
+}
+
+func lookupDeployKeys(cloudAddr string, key string) (*cloudpb.DeploymentKey, error) {
+	deployMgrClient, ctxWithCreds, err := getClientAndContext(cloudAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := deployMgrClient.LookupDeploymentKey(ctxWithCreds, &cloudpb.LookupDeploymentKeyRequest{
+		Key: key,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Key, nil
 }
 
 func getDeployKeys(cloudAddr string, keyID uuid.UUID) (*cloudpb.DeploymentKey, error) {
