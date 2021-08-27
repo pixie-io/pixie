@@ -76,7 +76,7 @@ func ConvertResourceToYAML(obj runtime.Object) (string, error) {
 
 // ApplyYAML does the equivalent of a kubectl apply for the given yaml. If allowUpdate is true, then we update the resource
 // if it already exists.
-func ApplyYAML(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlFile io.Reader, allowUpdate bool) error {
+func ApplyYAML(clientset kubernetes.Interface, config *rest.Config, namespace string, yamlFile io.Reader, allowUpdate bool) error {
 	return ApplyYAMLForResourceTypes(clientset, config, namespace, yamlFile, []string{}, allowUpdate)
 }
 
@@ -99,7 +99,7 @@ func KeyValueStringToMap(labels string) (map[string]string, error) {
 }
 
 // ApplyYAMLForResourceTypes only applies the specified types in the given YAML file.
-func ApplyYAMLForResourceTypes(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlFile io.Reader, allowedResources []string, allowUpdate bool) error {
+func ApplyYAMLForResourceTypes(clientset kubernetes.Interface, config *rest.Config, namespace string, yamlFile io.Reader, allowedResources []string, allowUpdate bool) error {
 	resources, err := GetResourcesFromYAML(yamlFile)
 	if err != nil {
 		return err
@@ -160,7 +160,7 @@ func GetResourcesFromYAML(yamlFile io.Reader) ([]*Resource, error) {
 }
 
 // ApplyResources applies the following resources to the give namespace/cluster.
-func ApplyResources(clientset *kubernetes.Clientset, config *rest.Config, resources []*Resource, namespace string, allowedResources []string, allowUpdate bool) error {
+func ApplyResources(clientset kubernetes.Interface, config *rest.Config, resources []*Resource, namespace string, allowedResources []string, allowUpdate bool) error {
 	discoveryClient := clientset.Discovery()
 
 	apiGroupResources, err := restmapper.GetAPIGroupResources(discoveryClient)

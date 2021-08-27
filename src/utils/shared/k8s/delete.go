@@ -285,7 +285,7 @@ func (o *ObjectDeleter) deleteResource(info *resource.Info, deleteOptions *metav
 }
 
 // DeleteClusterRole deletes the clusterrole with the given name.
-func DeleteClusterRole(clientset *kubernetes.Clientset, name string) error {
+func DeleteClusterRole(clientset kubernetes.Interface, name string) error {
 	crs := clientset.RbacV1().ClusterRoles()
 	err := crs.Delete(context.Background(), name, metav1.DeleteOptions{})
 	if err != nil {
@@ -296,7 +296,7 @@ func DeleteClusterRole(clientset *kubernetes.Clientset, name string) error {
 }
 
 // DeleteClusterRoleBinding deletes the clusterrolebinding with the given name.
-func DeleteClusterRoleBinding(clientset *kubernetes.Clientset, name string) error {
+func DeleteClusterRoleBinding(clientset kubernetes.Interface, name string) error {
 	crbs := clientset.RbacV1().ClusterRoleBindings()
 
 	err := crbs.Delete(context.Background(), name, metav1.DeleteOptions{})
@@ -308,7 +308,7 @@ func DeleteClusterRoleBinding(clientset *kubernetes.Clientset, name string) erro
 }
 
 // DeleteConfigMap deletes the config map in the namespace with the given name.
-func DeleteConfigMap(clientset *kubernetes.Clientset, name string, namespace string) error {
+func DeleteConfigMap(clientset kubernetes.Interface, name string, namespace string) error {
 	cm := clientset.CoreV1().ConfigMaps(namespace)
 
 	err := cm.Delete(context.Background(), name, metav1.DeleteOptions{})
@@ -320,7 +320,7 @@ func DeleteConfigMap(clientset *kubernetes.Clientset, name string, namespace str
 }
 
 // DeleteAllResources deletes all resources in the given namespace with the given selector.
-func DeleteAllResources(clientset *kubernetes.Clientset, ns string, selectors string) error {
+func DeleteAllResources(clientset kubernetes.Interface, ns string, selectors string) error {
 	err := DeleteDeployments(clientset, ns, selectors)
 	if err != nil {
 		return err
@@ -345,7 +345,7 @@ func DeleteAllResources(clientset *kubernetes.Clientset, ns string, selectors st
 }
 
 // DeleteDeployments deletes all deployments in the namespace with the given selector.
-func DeleteDeployments(clientset *kubernetes.Clientset, namespace string, selectors string) error {
+func DeleteDeployments(clientset kubernetes.Interface, namespace string, selectors string) error {
 	deployments := clientset.AppsV1().Deployments(namespace)
 
 	if err := deployments.DeleteCollection(context.Background(), metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selectors}); err != nil {
@@ -355,7 +355,7 @@ func DeleteDeployments(clientset *kubernetes.Clientset, namespace string, select
 }
 
 // DeleteDaemonSets deletes all daemonsets in the namespace with the given selector.
-func DeleteDaemonSets(clientset *kubernetes.Clientset, namespace string, selectors string) error {
+func DeleteDaemonSets(clientset kubernetes.Interface, namespace string, selectors string) error {
 	daemonsets := clientset.AppsV1().DaemonSets(namespace)
 
 	if err := daemonsets.DeleteCollection(context.Background(), metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selectors}); err != nil {
@@ -365,7 +365,7 @@ func DeleteDaemonSets(clientset *kubernetes.Clientset, namespace string, selecto
 }
 
 // DeleteServices deletes all services in the namespace with the given selector.
-func DeleteServices(clientset *kubernetes.Clientset, namespace string, selectors string) error {
+func DeleteServices(clientset kubernetes.Interface, namespace string, selectors string) error {
 	svcs := clientset.CoreV1().Services(namespace)
 
 	l, err := svcs.List(context.Background(), metav1.ListOptions{LabelSelector: selectors})
@@ -383,7 +383,7 @@ func DeleteServices(clientset *kubernetes.Clientset, namespace string, selectors
 }
 
 // DeletePods deletes all pods in the namespace with the given selector.
-func DeletePods(clientset *kubernetes.Clientset, namespace string, selectors string) error {
+func DeletePods(clientset kubernetes.Interface, namespace string, selectors string) error {
 	pods := clientset.CoreV1().Pods(namespace)
 
 	l, err := pods.List(context.Background(), metav1.ListOptions{LabelSelector: selectors})

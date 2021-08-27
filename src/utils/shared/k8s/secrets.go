@@ -37,7 +37,7 @@ import (
 )
 
 // DeleteSecret deletes the given secret in kubernetes.
-func DeleteSecret(clientset *kubernetes.Clientset, namespace, name string) {
+func DeleteSecret(clientset kubernetes.Interface, namespace, name string) {
 	err := clientset.CoreV1().Secrets(namespace).Delete(context.Background(), name, metav1.DeleteOptions{})
 	if err != nil {
 		log.WithError(err).Error("Failed to delete secret")
@@ -45,7 +45,7 @@ func DeleteSecret(clientset *kubernetes.Clientset, namespace, name string) {
 }
 
 // GetSecret gets the secret in kubernetes.
-func GetSecret(clientset *kubernetes.Clientset, namespace, name string) *v1.Secret {
+func GetSecret(clientset kubernetes.Interface, namespace, name string) *v1.Secret {
 	secret, err := clientset.CoreV1().Secrets(namespace).Get(context.Background(), name, metav1.GetOptions{})
 	if err != nil {
 		return nil

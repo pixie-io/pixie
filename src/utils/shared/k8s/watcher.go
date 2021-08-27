@@ -31,7 +31,7 @@ import (
 )
 
 // WatchK8sResource returns a k8s watcher for the specified resource.
-func WatchK8sResource(clientset *kubernetes.Clientset, resource string, namespace string) (watch.Interface, error) {
+func WatchK8sResource(clientset kubernetes.Interface, resource string, namespace string) (watch.Interface, error) {
 	watcher := cache.NewListWatchFromClient(clientset.CoreV1().RESTClient(), resource, namespace, fields.Everything())
 	opts := metav1.ListOptions{}
 	watch, err := watcher.Watch(opts)
@@ -42,13 +42,13 @@ func WatchK8sResource(clientset *kubernetes.Clientset, resource string, namespac
 }
 
 // ListNodes lists the nodes in this Kubernetes cluster.
-func ListNodes(clientset *kubernetes.Clientset) (*v1.NodeList, error) {
+func ListNodes(clientset kubernetes.Interface) (*v1.NodeList, error) {
 	opts := metav1.ListOptions{}
 	return clientset.CoreV1().Nodes().List(context.Background(), opts)
 }
 
 // ListStorageClasses lists the storage classes in this Kubernetes cluster.
-func ListStorageClasses(clientset *kubernetes.Clientset) (*storagev1.StorageClassList, error) {
+func ListStorageClasses(clientset kubernetes.Interface) (*storagev1.StorageClassList, error) {
 	opts := metav1.ListOptions{}
 	return clientset.StorageV1().StorageClasses().List(context.Background(), opts)
 }
