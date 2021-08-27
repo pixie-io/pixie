@@ -185,6 +185,8 @@ service APIKeyService {
   rpc Get(GetAPIKeyRequest) returns (GetAPIKeyResponse);
   // Delete the Key specified by ID.
   rpc Delete(uuidpb.UUID) returns (google.protobuf.Empty);
+  // Lookup the API key information by the key value.
+  rpc LookupAPIKey(LookupAPIKeyRequest) returns (LookupAPIKeyResponse);
 }
 
 // A key that can be used to access the Pixie API. This is value of the key
@@ -197,6 +199,9 @@ message APIKey {
   google.protobuf.Timestamp created_at = 3;
   // Description for the key.
   string desc = 4;
+
+  uuidpb.UUID org_id = 5 [(gogoproto.customname) = "OrgID"];
+  uuidpb.UUID user_id = 6 [(gogoproto.customname) = "UserID"];
 }
 
 // The metadata associated with the key, everything except the actual key.
@@ -206,6 +211,9 @@ message APIKeyMetadata {
   google.protobuf.Timestamp created_at = 3;
   // Description for the key.
   string desc = 4;
+
+  uuidpb.UUID org_id = 5 [(gogoproto.customname) = "OrgID"];
+  uuidpb.UUID user_id = 6 [(gogoproto.customname) = "UserID"];
 
   // Reserves the key field which was used by the original APIKey proto.
   reserved 2;
@@ -231,5 +239,13 @@ message GetAPIKeyRequest {
 }
 
 message GetAPIKeyResponse {
+  APIKey key = 1;
+}
+
+message LookupAPIKeyRequest {
+  string key = 1;
+}
+
+message LookupAPIKeyResponse {
   APIKey key = 1;
 }

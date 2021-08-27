@@ -374,6 +374,26 @@ func (mr *MockAPIKeyServiceClientMockRecorder) List(ctx, in interface{}, opts ..
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockAPIKeyServiceClient)(nil).List), varargs...)
 }
 
+// LookupAPIKey mocks base method.
+func (m *MockAPIKeyServiceClient) LookupAPIKey(ctx context.Context, in *authpb.LookupAPIKeyRequest, opts ...grpc.CallOption) (*authpb.LookupAPIKeyResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "LookupAPIKey", varargs...)
+	ret0, _ := ret[0].(*authpb.LookupAPIKeyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LookupAPIKey indicates an expected call of LookupAPIKey.
+func (mr *MockAPIKeyServiceClientMockRecorder) LookupAPIKey(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LookupAPIKey", reflect.TypeOf((*MockAPIKeyServiceClient)(nil).LookupAPIKey), varargs...)
+}
+
 // MockAPIKeyServiceServer is a mock of APIKeyServiceServer interface.
 type MockAPIKeyServiceServer struct {
 	ctrl     *gomock.Controller
@@ -455,4 +475,19 @@ func (m *MockAPIKeyServiceServer) List(arg0 context.Context, arg1 *authpb.ListAP
 func (mr *MockAPIKeyServiceServerMockRecorder) List(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockAPIKeyServiceServer)(nil).List), arg0, arg1)
+}
+
+// LookupAPIKey mocks base method.
+func (m *MockAPIKeyServiceServer) LookupAPIKey(arg0 context.Context, arg1 *authpb.LookupAPIKeyRequest) (*authpb.LookupAPIKeyResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LookupAPIKey", arg0, arg1)
+	ret0, _ := ret[0].(*authpb.LookupAPIKeyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LookupAPIKey indicates an expected call of LookupAPIKey.
+func (mr *MockAPIKeyServiceServerMockRecorder) LookupAPIKey(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LookupAPIKey", reflect.TypeOf((*MockAPIKeyServiceServer)(nil).LookupAPIKey), arg0, arg1)
 }

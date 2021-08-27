@@ -22,6 +22,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -109,7 +110,7 @@ func (s *Service) List(ctx context.Context, req *authpb.ListAPIKeyRequest) (*aut
 	}
 
 	// Return all keys when the OrgID matches.
-	query := `SELECT id, org_id, created_at, description
+	query := `SELECT id, org_id, user_id, created_at, description
                 FROM api_keys
                 WHERE org_id=$1
                 ORDER BY created_at`
@@ -126,10 +127,11 @@ func (s *Service) List(ctx context.Context, req *authpb.ListAPIKeyRequest) (*aut
 	var keys []*authpb.APIKeyMetadata
 	for rows.Next() {
 		var id string
-		var orgID string
+		var orgID uuid.UUID
+		var userID uuid.UUID
 		var createdAt time.Time
 		var desc string
-		err = rows.Scan(&id, &orgID, &createdAt, &desc)
+		err = rows.Scan(&id, &orgID, &userID, &createdAt, &desc)
 		if err != nil {
 			log.WithError(err).Error("Failed to read data from postgres")
 			return nil, status.Error(codes.Internal, "failed to read data")
@@ -137,6 +139,8 @@ func (s *Service) List(ctx context.Context, req *authpb.ListAPIKeyRequest) (*aut
 		tProto, _ := types.TimestampProto(createdAt)
 		keys = append(keys, &authpb.APIKeyMetadata{
 			ID:        utils.ProtoFromUUIDStrOrNil(id),
+			OrgID:     utils.ProtoFromUUID(orgID),
+			UserID:    utils.ProtoFromUUID(userID),
 			CreatedAt: tProto,
 			Desc:      desc,
 		})
@@ -157,13 +161,15 @@ func (s *Service) Get(ctx context.Context, req *authpb.GetAPIKeyRequest) (*authp
 		return nil, status.Error(codes.InvalidArgument, "invalid id format")
 	}
 
+	var orgID uuid.UUID
+	var userID uuid.UUID
 	var key string
 	var createdAt time.Time
 	var desc string
-	query := `SELECT CONVERT_FROM(PGP_SYM_DECRYPT(encrypted_key, $3::text)::bytea, 'UTF8'), created_at, description
+	query := `SELECT CONVERT_FROM(PGP_SYM_DECRYPT(encrypted_key, $3::text)::bytea, 'UTF8'), org_id, user_id, created_at, description
                 FROM api_keys
                 WHERE org_id=$1 AND id=$2`
-	err = s.db.QueryRowxContext(ctx, query, sCtx.Claims.GetUserClaims().OrgID, tokenID, s.dbKey).Scan(&key, &createdAt, &desc)
+	err = s.db.QueryRowxContext(ctx, query, sCtx.Claims.GetUserClaims().OrgID, tokenID, s.dbKey).Scan(&key, &orgID, &userID, &createdAt, &desc)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, status.Error(codes.NotFound, "No such API key")
@@ -174,6 +180,8 @@ func (s *Service) Get(ctx context.Context, req *authpb.GetAPIKeyRequest) (*authp
 	createdAtProto, _ := types.TimestampProto(createdAt)
 	return &authpb.GetAPIKeyResponse{Key: &authpb.APIKey{
 		ID:        req.ID,
+		OrgID:     utils.ProtoFromUUID(orgID),
+		UserID:    utils.ProtoFromUUID(userID),
 		Key:       key,
 		CreatedAt: createdAtProto,
 		Desc:      desc,
@@ -215,21 +223,69 @@ func (s *Service) Delete(ctx context.Context, req *uuidpb.UUID) (*types.Empty, e
 
 // FetchOrgUserIDUsingAPIKey gets the org and user ID based on the API key.
 func (s *Service) FetchOrgUserIDUsingAPIKey(ctx context.Context, key string) (uuid.UUID, uuid.UUID, error) {
+	resp, err := s.fetchAPIKeyUsingKeyFromDB(ctx, key)
+	if err != nil {
+		return uuid.Nil, uuid.Nil, err
+	}
+	oid, err := utils.UUIDFromProto(resp.OrgID)
+	if err != nil {
+		return uuid.Nil, uuid.Nil, err
+	}
+	uid, err := utils.UUIDFromProto(resp.UserID)
+	if err != nil {
+		return uuid.Nil, uuid.Nil, err
+	}
+	return oid, uid, nil
+}
+
+// LookupAPIKey gets the complete API key information using just the Key.
+func (s *Service) LookupAPIKey(ctx context.Context, req *authpb.LookupAPIKeyRequest) (*authpb.LookupAPIKeyResponse, error) {
+	aCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	orgID := aCtx.Claims.GetUserClaims().OrgID
+	resp, err := s.fetchAPIKeyUsingKeyFromDB(ctx, req.Key)
+	if err != nil {
+		if err == ErrAPIKeyNotFound {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if utils.UUIDFromProtoOrNil(resp.OrgID).String() != orgID {
+		return nil, status.Error(codes.PermissionDenied, "permission denied deleting API key")
+	}
+	return &authpb.LookupAPIKeyResponse{Key: resp}, nil
+}
+
+func (s *Service) fetchAPIKeyUsingKeyFromDB(ctx context.Context, key string) (*authpb.APIKey, error) {
 	// For backwards compatibility add in apiKeyPrefix the front of the keys.
 	if !strings.HasPrefix(key, apiKeyPrefix) {
 		key = apiKeyPrefix + key
 	}
-	query := `SELECT org_id, user_id
-                FROM api_keys
-                WHERE hashed_key=sha256($1)`
+	var id uuid.UUID
 	var orgID uuid.UUID
 	var userID uuid.UUID
-	err := s.db.QueryRowxContext(ctx, query, key).Scan(&orgID, &userID)
+	var createdAt time.Time
+	var desc string
+	query := `SELECT id, org_id, user_id, created_at, description
+                FROM api_keys
+                WHERE hashed_key=sha256($1) and PGP_SYM_DECRYPT(encrypted_key::bytea, $2::text)::bytea=$1`
+	err := s.db.QueryRowxContext(ctx, query, key, s.dbKey).Scan(&id, &orgID, &userID, &createdAt, &desc)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return uuid.Nil, uuid.Nil, ErrAPIKeyNotFound
+			return nil, ErrAPIKeyNotFound
 		}
-		return uuid.Nil, uuid.Nil, err
+		return nil, fmt.Errorf("failed to query database for API key")
 	}
-	return orgID, userID, nil
+
+	createdAtProto, _ := types.TimestampProto(createdAt)
+	return &authpb.APIKey{
+		ID:        utils.ProtoFromUUID(id),
+		OrgID:     utils.ProtoFromUUID(orgID),
+		UserID:    utils.ProtoFromUUID(userID),
+		Key:       key,
+		CreatedAt: createdAtProto,
+		Desc:      desc,
+	}, nil
 }

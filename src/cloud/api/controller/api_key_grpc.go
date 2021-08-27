@@ -36,6 +36,8 @@ type APIKeyServer struct {
 func apiKeyToCloudAPI(key *authpb.APIKey) *cloudpb.APIKey {
 	return &cloudpb.APIKey{
 		ID:        key.ID,
+		OrgID:     key.OrgID,
+		UserID:    key.UserID,
 		Key:       key.Key,
 		CreatedAt: key.CreatedAt,
 		Desc:      key.Desc,
@@ -45,6 +47,8 @@ func apiKeyToCloudAPI(key *authpb.APIKey) *cloudpb.APIKey {
 func apiKeyMetadataToCloudAPI(key *authpb.APIKeyMetadata) *cloudpb.APIKeyMetadata {
 	return &cloudpb.APIKeyMetadata{
 		ID:        key.ID,
+		OrgID:     key.OrgID,
+		UserID:    key.UserID,
 		CreatedAt: key.CreatedAt,
 		Desc:      key.Desc,
 	}
@@ -109,4 +113,17 @@ func (v *APIKeyServer) Delete(ctx context.Context, uuid *uuidpb.UUID) (*types.Em
 		return nil, err
 	}
 	return v.APIKeyClient.Delete(ctx, uuid)
+}
+
+// LookupAPIKey gets the complete API key information using just the Key.
+func (v *APIKeyServer) LookupAPIKey(ctx context.Context, req *cloudpb.LookupAPIKeyRequest) (*cloudpb.LookupAPIKeyResponse, error) {
+	ctx, err := contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := v.APIKeyClient.LookupAPIKey(ctx, &authpb.LookupAPIKeyRequest{Key: req.Key})
+	if err != nil {
+		return nil, err
+	}
+	return &cloudpb.LookupAPIKeyResponse{Key: apiKeyToCloudAPI(resp.Key)}, nil
 }
