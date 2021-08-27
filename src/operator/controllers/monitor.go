@@ -229,7 +229,7 @@ func okState() *vizierState {
 }
 
 func isOk(state *vizierState) bool {
-	return state.Reason != okState().Reason
+	return state.Reason == okState().Reason
 }
 
 // getCloudConnState determines the state of the cloud connector then translates
