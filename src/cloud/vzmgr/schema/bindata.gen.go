@@ -52,6 +52,8 @@
 // 000025_drop_deployment_key_old.up.sql
 // 000026_remove_extraneous_columns.down.sql
 // 000026_remove_extraneous_columns.up.sql
+// 000027_add_vizier_cluster_indices.down.sql
+// 000027_add_vizier_cluster_indices.up.sql
 package schema
 
 import (
@@ -1168,6 +1170,46 @@ func _000026_remove_extraneous_columnsUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000027_add_vizier_cluster_indicesDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x09\xf2\x0f\x50\xf0\xf4\x73\x71\x8d\x50\xc8\x4c\xa9\x88\x2f\xcb\xac\xca\x4c\x2d\x8a\x4f\xce\x29\x2d\x2e\x41\xa2\x4b\x33\x53\xac\xb9\x88\x53\x9a\x97\x98\x9b\x4a\x48\x6d\x7e\x51\x7a\x3c\xc8\x44\x02\xca\x32\xf3\xd2\xf2\xe3\x8b\x4b\x12\x4b\x4a\x8b\x09\x99\x08\x56\x9a\x93\x58\x5c\x12\x9f\x91\x9a\x58\x54\x92\x94\x9a\x58\x62\x0d\x08\x00\x00\xff\xff\xfd\x65\x82\x8a\xdb\x00\x00\x00")
+
+func _000027_add_vizier_cluster_indicesDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000027_add_vizier_cluster_indicesDownSql,
+		"000027_add_vizier_cluster_indices.down.sql",
+	)
+}
+
+func _000027_add_vizier_cluster_indicesDownSql() (*asset, error) {
+	bytes, err := _000027_add_vizier_cluster_indicesDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000027_add_vizier_cluster_indices.down.sql", size: 219, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000027_add_vizier_cluster_indicesUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x0e\x72\x75\x0c\x71\x55\xf0\xf4\x73\x71\x8d\x50\xc8\x4c\xa9\x88\x2f\xcb\xac\xca\x4c\x2d\x8a\x4f\xce\x29\x2d\x2e\x41\xa2\x4b\x33\x53\x14\xfc\xfd\x14\x50\x65\x35\x90\x64\x35\xad\xb9\x88\x35\x2b\x2f\x31\x37\x15\x8f\x61\x20\x69\x22\x4c\xcb\x2f\x4a\x8f\xc7\xea\x28\x88\x84\xa6\x35\x17\x41\x23\x32\xf3\xd2\xf2\xe3\x8b\x4b\x12\x4b\x4a\x8b\x31\xcd\x01\xcb\x6a\x40\x64\x89\x70\x0e\xd8\xac\x9c\xc4\xe2\x92\xf8\x8c\xd4\xc4\xa2\x92\xa4\xd4\xc4\x12\x5c\x66\xa2\xaa\xd2\xb4\x06\x04\x00\x00\xff\xff\x36\xbd\xe7\xb0\x84\x01\x00\x00")
+
+func _000027_add_vizier_cluster_indicesUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000027_add_vizier_cluster_indicesUpSql,
+		"000027_add_vizier_cluster_indices.up.sql",
+	)
+}
+
+func _000027_add_vizier_cluster_indicesUpSql() (*asset, error) {
+	bytes, err := _000027_add_vizier_cluster_indicesUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000027_add_vizier_cluster_indices.up.sql", size: 388, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -1272,6 +1314,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000025_drop_deployment_key_old.up.sql":                  _000025_drop_deployment_key_oldUpSql,
 	"000026_remove_extraneous_columns.down.sql":              _000026_remove_extraneous_columnsDownSql,
 	"000026_remove_extraneous_columns.up.sql":                _000026_remove_extraneous_columnsUpSql,
+	"000027_add_vizier_cluster_indices.down.sql":             _000027_add_vizier_cluster_indicesDownSql,
+	"000027_add_vizier_cluster_indices.up.sql":               _000027_add_vizier_cluster_indicesUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -1367,6 +1411,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000025_drop_deployment_key_old.up.sql":                  &bintree{_000025_drop_deployment_key_oldUpSql, map[string]*bintree{}},
 	"000026_remove_extraneous_columns.down.sql":              &bintree{_000026_remove_extraneous_columnsDownSql, map[string]*bintree{}},
 	"000026_remove_extraneous_columns.up.sql":                &bintree{_000026_remove_extraneous_columnsUpSql, map[string]*bintree{}},
+	"000027_add_vizier_cluster_indices.down.sql":             &bintree{_000027_add_vizier_cluster_indicesDownSql, map[string]*bintree{}},
+	"000027_add_vizier_cluster_indices.up.sql":               &bintree{_000027_add_vizier_cluster_indicesUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
