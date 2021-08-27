@@ -61,4 +61,9 @@ const (
 	MetadataPVCStorageClassUnavailable VizierReason = "MetadataPVCStorageClassUnavailable"
 	// MetadataPVCPendingBinding occurs when the Metadata PVC is still pending, but the spec is requesting a valid Storage class.
 	MetadataPVCPendingBinding VizierReason = "MetadataPVCPendingBinding"
+
+	// ControlPlanePodsPending occurs when one or more control plane pods are pending.
+	ControlPlanePodsPending VizierReason = "ControlPlanePodsPending"
+	// ControlPlanePodsFailed occurs when one or more control plane pods are failing, but none are pending.
+	ControlPlanePodsFailed VizierReason = "ControlPlanePodsFailed"
 )

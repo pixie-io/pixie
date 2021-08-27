@@ -81,6 +81,18 @@ func (c *concurrentPodMap) write(name string, pod *v1.Pod) {
 	c.unsafeMap[name] = pod
 }
 
+func (c *concurrentPodMap) list() []*v1.Pod {
+	c.mapMu.Lock()
+	defer c.mapMu.Unlock()
+	pods := make([]*v1.Pod, len(c.unsafeMap))
+	i := 0
+	for _, v := range c.unsafeMap {
+		pods[i] = v
+		i++
+	}
+	return pods
+}
+
 // concurrentPVCMap wraps a map with concurrency safe read/write operations.
 type concurrentPVCMap struct {
 	unsafeMap map[string]*v1.PersistentVolumeClaim
@@ -357,6 +369,27 @@ func getCloudConnState(client HTTPClient, pods *concurrentPodMap) *vizierState {
 	return okState()
 }
 
+// getControlPlanePodState determines the state of control plane pods,
+// returning a pending state if the pods are stuck
+func getControlPlanePodState(pods *concurrentPodMap) *vizierState {
+	for _, v := range pods.list() {
+		plane, ok := v.ObjectMeta.Labels["plane"]
+		// We only want to check pods that are control plane pods.
+		if !ok || plane != "control" {
+			continue
+		}
+		if v.Status.Phase == v1.PodPending {
+			return &vizierState{Reason: status.ControlPlanePodsPending}
+		}
+		if v.Status.Phase != v1.PodRunning {
+			return &vizierState{Reason: status.ControlPlanePodsFailed}
+		}
+	}
+
+	// Return the value of the cloud connector.
+	return okState()
+}
+
 // Returns whether the storage class name requested by the pvc is valid for the Kubernetes instance.
 func isValidPVC(clientset kubernetes.Interface, pvc *v1.PersistentVolumeClaim) (bool, error) {
 	classes, err := k8s.ListStorageClasses(clientset)
@@ -407,6 +440,10 @@ func (m *VizierMonitor) getvizierState(vz *pixiev1alpha1.Vizier) *vizierState {
 		return ccState
 	}
 
+	podState := getControlPlanePodState(m.podStates)
+	if !isOk(podState) {
+		return podState
+	}
 	return okState()
 }
 
@@ -416,7 +453,7 @@ func translateReasonToPhase(reason status.VizierReason) pixiev1alpha1.VizierPhas
 	if reason == "" {
 		return pixiev1alpha1.VizierPhaseHealthy
 	}
-	if reason == status.CloudConnectorPodPending || reason == status.MetadataPVCPendingBinding {
+	if reason == status.CloudConnectorPodPending || reason == status.MetadataPVCPendingBinding || reason == status.ControlPlanePodsPending {
 		return pixiev1alpha1.VizierPhaseUpdating
 	}
 	if reason == status.CloudConnectorMissing {

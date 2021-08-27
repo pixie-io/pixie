@@ -255,3 +255,140 @@ func TestMonitor_getPVCState(t *testing.T) {
 		})
 	}
 }
+
+type phasePlane struct {
+	phase v1.PodPhase
+	plane string
+}
+
+func TestMonitor_getControlPlanePodState(t *testing.T) {
+	tests := []struct {
+		name                string
+		cloudConnPhase      v1.PodPhase
+		expectedVizierPhase pixiev1alpha1.VizierPhase
+		expectedReason      status.VizierReason
+		podPhases           map[string]phasePlane
+	}{
+		{
+			name:                "healthy",
+			cloudConnPhase:      v1.PodRunning,
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			podPhases: map[string]phasePlane{
+				"vizier-metadata": {
+					phase: v1.PodRunning,
+					plane: "control",
+				},
+				"vizier-query-broker": {
+					phase: v1.PodRunning,
+					plane: "control",
+				},
+				"kelvin": {
+					phase: v1.PodRunning,
+					plane: "data",
+				},
+				"vizier-cloud-connector": {
+					phase: v1.PodRunning,
+					plane: "control",
+				},
+			},
+			expectedReason: "",
+		},
+		{
+			name:                "pending metadata",
+			cloudConnPhase:      v1.PodPending,
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseUpdating,
+			podPhases: map[string]phasePlane{
+				"vizier-metadata": {
+					phase: v1.PodPending,
+					plane: "control",
+				},
+				"vizier-query-broker": {
+					phase: v1.PodRunning,
+					plane: "control",
+				},
+				"kelvin": {
+					phase: v1.PodRunning,
+					plane: "data",
+				},
+				"vizier-cloud-connector": {
+					phase: v1.PodRunning,
+					plane: "control",
+				},
+			},
+			expectedReason: status.ControlPlanePodsPending,
+		},
+		{
+			name:                "healthy even if data plane pod or no plane pod is pending ",
+			cloudConnPhase:      v1.PodRunning,
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			podPhases: map[string]phasePlane{
+				"vizier-metadata": {
+					phase: v1.PodRunning,
+					plane: "control",
+				},
+				"vizier-query-broker": {
+					phase: v1.PodRunning,
+					plane: "control",
+				},
+				"kelvin": {
+					phase: v1.PodPending,
+					plane: "data",
+				},
+				"no-plane-pod": {
+					phase: v1.PodPending,
+					plane: "",
+				},
+			},
+			expectedReason: "",
+		},
+		{
+			name:                "unhealthy if any pod is failing",
+			cloudConnPhase:      v1.PodRunning,
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+			podPhases: map[string]phasePlane{
+				"vizier-metadata": {
+					phase: v1.PodRunning,
+					plane: "control",
+				},
+				"vizier-query-broker": {
+					phase: v1.PodFailed,
+					plane: "control",
+				},
+				"kelvin": {
+					phase: v1.PodRunning,
+					plane: "data",
+				},
+				"no-plane-pod": {
+					phase: v1.PodRunning,
+					plane: "",
+				},
+			},
+			expectedReason: status.ControlPlanePodsFailed,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			pods := &concurrentPodMap{unsafeMap: make(map[string]*v1.Pod)}
+			for podName, fp := range test.podPhases {
+				labels := make(map[string]string)
+				if fp.plane != "" {
+					labels["plane"] = fp.plane
+				}
+
+				pods.write(podName, &v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: labels,
+					},
+					Status: v1.PodStatus{
+						Phase: fp.phase,
+					},
+				})
+			}
+
+			state := getControlPlanePodState(pods)
+			assert.Equal(t, test.expectedReason, state.Reason)
+			assert.Equal(t, test.expectedVizierPhase, translateReasonToPhase(state.Reason))
+		})
+	}
+}
