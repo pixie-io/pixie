@@ -20,6 +20,8 @@
 
 #include <netinet/in.h>
 
+#include "src/common/base/logging.h"
+
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -35,7 +37,7 @@ namespace system {
  */
 class TCPSocket {
  public:
-  TCPSocket();
+  explicit TCPSocket(sa_family_t sa_family = AF_INET);
   ~TCPSocket();
 
   void BindAndListen(int port = 0);
@@ -47,8 +49,15 @@ class TCPSocket {
   void Close();
 
   int sockfd() const { return sockfd_; }
-  const struct in_addr& addr() const { return addr_.sin_addr; }
-  in_port_t port() const { return addr_.sin_port; }
+  const struct in_addr& addr() const {
+    CHECK_EQ(kAF, AF_INET);
+    return addr4_.sin_addr;
+  }
+  const struct in6_addr& addr6() const {
+    CHECK_EQ(kAF, AF_INET6);
+    return addr6_.sin6_addr;
+  }
+  in_port_t port() const { return kAF == AF_INET ? addr4_.sin_port : addr6_.sin6_port; }
 
   ssize_t Write(std::string_view data) const;
   ssize_t WriteV(const std::vector<std::string_view>& data) const;
@@ -64,9 +73,21 @@ class TCPSocket {
   // This is the core constructor, which is used to internally create an empty TCPSockets.
   // In contrast, the public TCPSocket constructor always creates an initialized TCPSocket.
   // The argument is actually useless, but is used to differentiate the two constructor signatures.
-  explicit TCPSocket(int internal);
+  TCPSocket(sa_family_t sa_family, int internal);
   int sockfd_ = 0;
-  struct sockaddr_in addr_;
+
+  // Constants based on IPv4 vs IPv6.
+  const sa_family_t kAF;
+  const size_t kSockAddrSize;
+
+  // Use union to support both IPv4 and IPv6.
+  // We use &addr_ in the implementation, so using the union is important.
+  union {
+    struct sockaddr addr_;
+    struct sockaddr_in addr4_;
+    struct sockaddr_in6 addr6_;
+  };
+
   // Do not reduce this to less than 16 bytes; otherwise tests like GRPCTest.BasicTracingForCPP in
   // src/stirling/grpc_trace_bpf_test.cc will be broken.
   //

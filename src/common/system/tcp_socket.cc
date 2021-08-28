@@ -37,16 +37,31 @@ namespace system {
 
 // NOTE: Must convert CHECKs to Status if this code is ever used outside test code.
 
-TCPSocket::TCPSocket() : TCPSocket(0) {
-  // TODO(yzhao): For reference, we think AF_INET & AF_INET6 is largely independent to our code
-  // base. So here we only uses AF_INET, i.e. IPv4. Later, if needed, we can add TCPSocketV6 as a
-  // subclass to this, which uses AF_INET6.
-  sockfd_ = socket(AF_INET, SOCK_STREAM, /*protocol*/ 0);
+namespace {
+
+constexpr size_t SockAddrSize(sa_family_t sa_family) {
+  switch (sa_family) {
+    case AF_INET:
+      return sizeof(struct sockaddr_in);
+    case AF_INET6:
+      return sizeof(struct sockaddr_in6);
+    default:
+      COMPILE_TIME_ASSERT(false, "Unexpected address family");
+      return 0;
+  }
+}
+
+}  // namespace
+
+TCPSocket::TCPSocket(sa_family_t sa_family) : TCPSocket(sa_family, 0) {
+  sockfd_ = socket(kAF, SOCK_STREAM, /*protocol*/ 0);
   CHECK(sockfd_ > 0) << "Failed to create socket, error message: " << strerror(errno);
 }
 
-TCPSocket::TCPSocket(int internal) {
-  memset(&addr_, 0, sizeof(struct sockaddr_in));
+TCPSocket::TCPSocket(sa_family_t sa_family, int internal)
+    : kAF(sa_family), kSockAddrSize(SockAddrSize(sa_family)) {
+  memset(&addr_, 0, kSockAddrSize);
+
   // Required to differentiate the private vs public TCPSocket constructor.
   PL_UNUSED(internal);
 }
@@ -54,26 +69,32 @@ TCPSocket::TCPSocket(int internal) {
 TCPSocket::~TCPSocket() { Close(); }
 
 void TCPSocket::BindAndListen(int port) {
-  addr_.sin_family = AF_INET;
-  addr_.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-  addr_.sin_port = htons(port);
-  CHECK(bind(sockfd_, reinterpret_cast<const struct sockaddr*>(&addr_),
-             sizeof(struct sockaddr_in)) == 0)
+  if (kAF == AF_INET) {
+    addr4_.sin_family = AF_INET;
+    addr4_.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    addr4_.sin_port = htons(port);
+  } else {
+    addr6_.sin6_family = kAF;
+    addr6_.sin6_addr = in6addr_loopback;
+    addr6_.sin6_port = htons(port);
+  }
+
+  CHECK(bind(sockfd_, &addr_, kSockAddrSize) == 0)
       << "Failed to bind socket, error message: " << strerror(errno);
 
-  socklen_t addr_len = sizeof(struct sockaddr_in);
-  CHECK(getsockname(sockfd_, reinterpret_cast<struct sockaddr*>(&addr_), &addr_len) == 0)
+  socklen_t addr_len = kSockAddrSize;
+  CHECK(getsockname(sockfd_, &addr_, &addr_len) == 0)
       << "Failed to get socket name, error message: " << strerror(errno);
   LOG(INFO) << "Listening on port: " << ntohs(this->port());
 
-  CHECK(addr_len == sizeof(struct sockaddr_in)) << "Address size is incorrect";
+  CHECK(addr_len == kSockAddrSize) << "Address size is incorrect";
 
   CHECK(listen(sockfd_, /*backlog*/ 5) == 0)
       << "Failed to listen socket, error message: " << strerror(errno);
 }
 
 std::unique_ptr<TCPSocket> TCPSocket::AcceptWithNullAddr() {
-  auto new_conn = std::unique_ptr<TCPSocket>(new TCPSocket(0));
+  auto new_conn = std::unique_ptr<TCPSocket>(new TCPSocket(kAF, 0));
 
   new_conn->sockfd_ = accept4(sockfd_, /*addr*/ nullptr, /*addr_len*/ nullptr, /*flags*/ 0);
   CHECK(new_conn->sockfd_ >= 0) << "Failed to accept, error message: " << strerror(errno);
@@ -84,15 +105,13 @@ std::unique_ptr<TCPSocket> TCPSocket::AcceptWithNullAddr() {
 }
 
 std::unique_ptr<TCPSocket> TCPSocket::Accept() {
-  auto new_conn = std::unique_ptr<TCPSocket>(new TCPSocket(0));
+  auto new_conn = std::unique_ptr<TCPSocket>(new TCPSocket(kAF, 0));
 
-  socklen_t remote_addr_len = sizeof(struct sockaddr_in);
-  new_conn->sockfd_ =
-      accept4(sockfd_, reinterpret_cast<struct sockaddr*>(&new_conn->addr_), &remote_addr_len,
-              /*flags*/ 0);
+  socklen_t remote_addr_len = kSockAddrSize;
+  new_conn->sockfd_ = accept4(sockfd_, &new_conn->addr_, &remote_addr_len, /*flags*/ 0);
   CHECK(new_conn->sockfd_ >= 0) << "Failed to accept, error message: " << strerror(errno);
-  CHECK(remote_addr_len == sizeof(struct sockaddr_in))
-      << "Address length is wrong, " << remote_addr_len << " vs. " << sizeof(struct sockaddr_in);
+  CHECK(remote_addr_len == kSockAddrSize)
+      << "Address length is wrong, " << remote_addr_len << " vs. " << kSockAddrSize;
   LOG(INFO) << absl::Substitute("Accept(): remote_port=$0 on local_port=$1",
                                 ntohs(new_conn->port()), ntohs(port()));
 
@@ -100,17 +119,16 @@ std::unique_ptr<TCPSocket> TCPSocket::Accept() {
 }
 
 void TCPSocket::Connect(const TCPSocket& addr) {
-  const int retval = connect(sockfd_, reinterpret_cast<const struct sockaddr*>(&addr.addr_),
-                             sizeof(struct sockaddr_in));
+  const int retval = connect(sockfd_, &addr.addr_, kSockAddrSize);
   CHECK(retval == 0) << "Failed to connect, error message: " << strerror(errno);
 
-  socklen_t addr_len = sizeof(struct sockaddr_in);
-  CHECK(getsockname(sockfd_, reinterpret_cast<struct sockaddr*>(&addr_), &addr_len) == 0)
+  socklen_t addr_len = kSockAddrSize;
+  CHECK(getsockname(sockfd_, &addr_, &addr_len) == 0)
       << "Failed to get socket name, error message: " << strerror(errno);
   LOG(INFO) << absl::Substitute("Connect(): remote_port=$0 on local_port=$1", ntohs(addr.port()),
                                 ntohs(port()));
 
-  CHECK(addr_len == sizeof(struct sockaddr_in)) << "Address size is incorrect";
+  CHECK(addr_len == kSockAddrSize) << "Address size is incorrect";
 }
 
 void TCPSocket::Close() {
