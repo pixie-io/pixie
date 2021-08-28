@@ -17,6 +17,7 @@
  */
 
 #include "src/carnot/planner/compiler/analyzer/propagate_expression_annotations_rule.h"
+#include "src/carnot/planner/ir/map_ir.h"
 
 namespace px {
 namespace carnot {

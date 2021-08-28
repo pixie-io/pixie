@@ -34,7 +34,7 @@
 #include "src/carnot/planner/ast/ast_visitor.h"
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/ir/ast_utils.h"
-#include "src/carnot/planner/ir/ir_nodes.h"
+#include "src/carnot/planner/ir/ir.h"
 #include "src/carnot/planner/objects/dataframe.h"
 #include "src/carnot/planner/objects/pixie_module.h"
 #include "src/carnot/planner/objects/var_table.h"

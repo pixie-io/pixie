@@ -22,6 +22,8 @@
 
 #include <absl/container/flat_hash_map.h>
 
+#include "src/carnot/planner/ir/expression_ir.h"
+#include "src/carnot/planner/ir/map_ir.h"
 #include "src/carnot/planner/rules/rules.h"
 
 namespace px {

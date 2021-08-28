@@ -22,6 +22,13 @@
 #include <vector>
 
 #include "src/carnot/planner/compiler_state/compiler_state.h"
+#include "src/carnot/planner/ir/blocking_agg_ir.h"
+#include "src/carnot/planner/ir/grpc_sink_ir.h"
+#include "src/carnot/planner/ir/join_ir.h"
+#include "src/carnot/planner/ir/map_ir.h"
+#include "src/carnot/planner/ir/memory_sink_ir.h"
+#include "src/carnot/planner/ir/rolling_ir.h"
+#include "src/carnot/planner/ir/union_ir.h"
 #include "src/carnot/planner/rules/rules.h"
 
 namespace px {

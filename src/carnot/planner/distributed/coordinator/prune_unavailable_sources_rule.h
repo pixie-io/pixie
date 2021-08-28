@@ -25,6 +25,7 @@
 
 #include "src/carnot/planner/distributed/distributed_plan/distributed_plan.h"
 #include "src/carnot/planner/distributed/distributed_rules.h"
+#include "src/carnot/planner/ir/udtf_source_ir.h"
 
 namespace px {
 namespace carnot {

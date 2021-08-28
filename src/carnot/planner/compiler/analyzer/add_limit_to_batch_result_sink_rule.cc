@@ -17,6 +17,7 @@
  */
 
 #include "src/carnot/planner/compiler/analyzer/add_limit_to_batch_result_sink_rule.h"
+#include "src/carnot/planner/ir/memory_sink_ir.h"
 
 namespace px {
 namespace carnot {

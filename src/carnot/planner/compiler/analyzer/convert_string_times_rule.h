@@ -19,6 +19,9 @@
 #pragma once
 
 #include "src/carnot/planner/compiler_state/compiler_state.h"
+#include "src/carnot/planner/ir/expression_ir.h"
+#include "src/carnot/planner/ir/memory_source_ir.h"
+#include "src/carnot/planner/ir/rolling_ir.h"
 #include "src/carnot/planner/rules/rules.h"
 
 namespace px {

@@ -27,7 +27,7 @@
 
 #include "src/carnot/planner/compiler_state/registry_info.h"
 #include "src/carnot/planner/distributedpb/distributed_plan.pb.h"
-#include "src/carnot/planner/ir/ir_nodes.h"
+#include "src/carnot/planner/ir/ir.h"
 #include "src/carnot/planner/ir/pattern_match.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/uuid/uuid.h"

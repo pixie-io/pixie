@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "src/carnot/planner/ir/ir_nodes.h"
+#include "src/carnot/planner/ir/ir.h"
 #include "src/carnot/planner/ir/pattern_match.h"
 
 namespace px {

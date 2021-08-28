@@ -16,11 +16,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/carnot/planner/distributed/splitter/presplit_optimizer/filter_push_down_rule.h"
-#include "src/carnot/planner/distributed/splitter/executor_utils.h"
-
 #include <algorithm>
 #include <queue>
+
+#include "src/carnot/planner/distributed/splitter/executor_utils.h"
+#include "src/carnot/planner/distributed/splitter/presplit_optimizer/filter_push_down_rule.h"
 
 namespace px {
 namespace carnot {

@@ -19,6 +19,7 @@
 #include <string>
 
 #include "src/carnot/planner/compiler/analyzer/drop_to_map_rule.h"
+#include "src/carnot/planner/ir/map_ir.h"
 
 namespace px {
 namespace carnot {

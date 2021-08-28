@@ -28,8 +28,9 @@
 #include <utility>
 #include <vector>
 
+#include "src/carnot/planner/ir/all_ir_nodes.h"
+#include "src/carnot/planner/ir/ir.h"
 #include "src/carnot/planner/ir/ir_node_traits.h"
-#include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planner/types/types.h"
 
 namespace px {

@@ -19,6 +19,8 @@
 #pragma once
 
 #include "src/carnot/planner/compiler_state/compiler_state.h"
+#include "src/carnot/planner/ir/column_ir.h"
+#include "src/carnot/planner/ir/group_acceptor_ir.h"
 #include "src/carnot/planner/rules/rules.h"
 
 namespace px {

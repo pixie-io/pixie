@@ -25,7 +25,7 @@
 #include <pypa/ast/ast.hh>
 #include "src/carnot/planner/compiler_error_context/compiler_error_context.h"
 #include "src/carnot/planner/compilerpb/compiler_status.pb.h"
-#include "src/carnot/planner/ir/ir_nodes.h"
+#include "src/carnot/planner/ir/ir.h"
 #include "src/carnot/planner/ir/pattern_match.h"
 #include "src/common/base/base.h"
 #include "src/common/base/status.h"

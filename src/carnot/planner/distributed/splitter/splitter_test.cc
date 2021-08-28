@@ -27,7 +27,7 @@
 
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/distributed/splitter/splitter.h"
-#include "src/carnot/planner/ir/ir_nodes.h"
+#include "src/carnot/planner/ir/ir.h"
 #include "src/carnot/planner/rules/rules.h"
 #include "src/carnot/planner/test_utils.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"

@@ -31,7 +31,7 @@
 #include <pypa/ast/ast.hh>
 #include <pypa/ast/tree_walker.hh>
 
-#include "src/carnot/planner/ir/ir_nodes.h"
+#include "src/carnot/planner/ir/ir.h"
 #include "src/carnot/planner/plannerpb/func_args.pb.h"
 #include "src/shared/scriptspb/scripts.pb.h"
 

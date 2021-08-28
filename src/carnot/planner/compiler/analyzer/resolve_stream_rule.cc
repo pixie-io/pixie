@@ -19,6 +19,7 @@
 #include <queue>
 
 #include "src/carnot/planner/compiler/analyzer/resolve_stream_rule.h"
+#include "src/carnot/planner/ir/stream_ir.h"
 
 namespace px {
 namespace carnot {

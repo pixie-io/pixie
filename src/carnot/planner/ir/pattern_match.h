@@ -60,7 +60,19 @@
 #include <string>
 #include <unordered_map>
 
-#include "src/carnot/planner/ir/ir_nodes.h"
+#include "src/carnot/planner/ir/blocking_agg_ir.h"
+#include "src/carnot/planner/ir/bool_ir.h"
+#include "src/carnot/planner/ir/filter_ir.h"
+#include "src/carnot/planner/ir/float_ir.h"
+#include "src/carnot/planner/ir/func_ir.h"
+#include "src/carnot/planner/ir/grpc_sink_ir.h"
+#include "src/carnot/planner/ir/int_ir.h"
+#include "src/carnot/planner/ir/ir.h"
+#include "src/carnot/planner/ir/join_ir.h"
+#include "src/carnot/planner/ir/limit_ir.h"
+#include "src/carnot/planner/ir/memory_source_ir.h"
+#include "src/carnot/planner/ir/string_ir.h"
+
 namespace px {
 namespace carnot {
 namespace planner {

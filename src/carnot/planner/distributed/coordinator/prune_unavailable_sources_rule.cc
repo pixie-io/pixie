@@ -17,6 +17,10 @@
  */
 
 #include "src/carnot/planner/distributed/coordinator/prune_unavailable_sources_rule.h"
+#include "src/carnot/planner/ir/memory_source_ir.h"
+#include "src/carnot/planner/ir/string_ir.h"
+#include "src/carnot/planner/ir/udtf_source_ir.h"
+#include "src/carnot/planner/ir/uint128_ir.h"
 #include "src/shared/upid/upid.h"
 
 namespace px {

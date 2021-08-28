@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "src/carnot/planner/ir/group_by_ir.h"
 #include "src/carnot/planner/rules/rules.h"
 
 namespace px {

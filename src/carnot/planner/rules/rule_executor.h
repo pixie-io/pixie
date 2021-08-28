@@ -24,7 +24,7 @@
 #include <vector>
 
 #include "src/carnot/planner/compiler_state/compiler_state.h"
-#include "src/carnot/planner/ir/ir_nodes.h"
+#include "src/carnot/planner/ir/ir.h"
 #include "src/carnot/planner/rules/rules.h"
 
 namespace px {

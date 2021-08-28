@@ -26,7 +26,7 @@
 
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/compiler_state/registry_info.h"
-#include "src/carnot/planner/ir/ir_nodes.h"
+#include "src/carnot/planner/ir/ir.h"
 #include "src/carnot/planner/ir/pattern_match.h"
 #include "src/carnot/planner/ir/time.h"
 #include "src/carnot/planner/metadata/metadata_handler.h"

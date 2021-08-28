@@ -27,7 +27,7 @@
 
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/distributed/distributed_plan/distributed_plan.h"
-#include "src/carnot/planner/ir/ir_nodes.h"
+#include "src/carnot/planner/ir/ir.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/testing/protobuf.h"
 

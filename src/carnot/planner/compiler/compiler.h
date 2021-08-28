@@ -25,7 +25,7 @@
 
 #include "src/carnot/planner/compiler/ast_visitor.h"
 #include "src/carnot/planner/compiler_state/compiler_state.h"
-#include "src/carnot/planner/ir/ir_nodes.h"
+#include "src/carnot/planner/ir/ir.h"
 #include "src/carnot/planpb/plan.pb.h"
 
 namespace px {

@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "src/carnot/planner/compiler/analyzer/merge_group_by_into_group_acceptor_rule.h"
+#include "src/carnot/planner/ir/group_by_ir.h"
 
 namespace px {
 namespace carnot {

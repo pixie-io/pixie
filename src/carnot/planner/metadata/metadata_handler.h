@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "src/carnot/planner/ir/metadata_ir.h"
 #include "src/carnot/planner/ir/pattern_match.h"
 #include "src/common/base/error.h"
 #include "src/common/base/status.h"

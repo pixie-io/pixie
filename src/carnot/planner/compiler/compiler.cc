@@ -30,7 +30,7 @@
 #include "src/carnot/planner/compiler/analyzer/analyzer.h"
 #include "src/carnot/planner/compiler/compiler.h"
 #include "src/carnot/planner/compiler/optimizer/optimizer.h"
-#include "src/carnot/planner/ir/ir_nodes.h"
+#include "src/carnot/planner/ir/ir.h"
 #include "src/carnot/planner/objects/pixie_module.h"
 #include "src/carnot/planner/parser/parser.h"
 #include "src/carnot/planpb/plan.pb.h"

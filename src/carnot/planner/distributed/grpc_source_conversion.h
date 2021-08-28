@@ -22,7 +22,9 @@
 #include <string>
 #include <vector>
 
-#include "src/carnot/planner/ir/ir_nodes.h"
+#include "src/carnot/planner/ir/grpc_source_group_ir.h"
+#include "src/carnot/planner/ir/grpc_source_ir.h"
+#include "src/carnot/planner/ir/ir_node.h"
 #include "src/carnot/planner/rules/rules.h"
 
 namespace px {

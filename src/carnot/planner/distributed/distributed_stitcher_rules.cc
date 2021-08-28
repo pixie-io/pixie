@@ -23,6 +23,8 @@
 #include <vector>
 
 #include "src/carnot/planner/distributed/distributed_stitcher_rules.h"
+#include "src/carnot/planner/ir/grpc_sink_ir.h"
+#include "src/carnot/planner/ir/grpc_source_group_ir.h"
 
 namespace px {
 namespace carnot {

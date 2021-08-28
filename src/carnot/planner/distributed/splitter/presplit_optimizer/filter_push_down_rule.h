@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "src/carnot/planner/ir/blocking_agg_ir.h"
+#include "src/carnot/planner/ir/map_ir.h"
 #include "src/carnot/planner/rules/rules.h"
 
 namespace px {

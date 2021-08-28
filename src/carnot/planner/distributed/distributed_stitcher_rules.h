@@ -26,7 +26,7 @@
 #include "src/carnot/planner/distributed/coordinator/coordinator.h"
 #include "src/carnot/planner/distributed/distributed_plan/distributed_plan.h"
 #include "src/carnot/planner/distributed/distributed_rules.h"
-#include "src/carnot/planner/ir/ir_nodes.h"
+#include "src/carnot/planner/ir/ir.h"
 #include "src/carnot/planner/ir/pattern_match.h"
 
 namespace px {

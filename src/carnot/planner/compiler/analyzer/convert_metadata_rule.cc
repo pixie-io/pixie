@@ -20,6 +20,11 @@
 
 #include "src/carnot/planner/compiler/analyzer/convert_metadata_rule.h"
 #include "src/carnot/planner/compiler/analyzer/data_type_rule.h"
+#include "src/carnot/planner/ir/column_ir.h"
+#include "src/carnot/planner/ir/filter_ir.h"
+#include "src/carnot/planner/ir/func_ir.h"
+#include "src/carnot/planner/ir/map_ir.h"
+#include "src/carnot/planner/ir/metadata_ir.h"
 
 namespace px {
 namespace carnot {

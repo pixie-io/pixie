@@ -26,7 +26,7 @@
 #include <absl/strings/str_join.h>
 #include <pypa/ast/ast.hh>
 
-#include "src/carnot/planner/ir/ir_nodes.h"
+#include "src/carnot/planner/ir/ir.h"
 #include "src/carnot/planner/objects/expr_object.h"
 #include "src/carnot/planner/objects/qlobject.h"
 

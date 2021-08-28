@@ -25,7 +25,7 @@
 
 #include <sole.hpp>
 #include "src/carnot/planner/compiler/test_utils.h"
-#include "src/carnot/planner/ir/ir_nodes.h"
+#include "src/carnot/planner/ir/ir.h"
 #include "src/carnot/planner/ir/pattern_match.h"
 #include "src/carnot/planner/metadata/metadata_handler.h"
 #include "src/common/testing/protobuf.h"

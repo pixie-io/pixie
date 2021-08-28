@@ -33,7 +33,9 @@ pl_cc_library(
             "**/*_test_utils.h",
         ],
     ),
-    hdrs = ["ir_nodes.h"],
+    hdrs = glob(
+        ["*.h"],
+    ),
     deps = [
         "//src/carnot/dag:cc_library",
         "//src/carnot/planner/compiler_error_context:cc_library",

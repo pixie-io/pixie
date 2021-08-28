@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-#include "src/carnot/planner/ir/ir_nodes.h"
+#include "src/carnot/planner/ir/string_ir.h"
 
 namespace px {
 namespace carnot {

@@ -20,6 +20,7 @@
 
 #include <string>
 
+#include "src/carnot/planner/ir/map_ir.h"
 #include "src/carnot/planner/rules/rules.h"
 
 namespace px {

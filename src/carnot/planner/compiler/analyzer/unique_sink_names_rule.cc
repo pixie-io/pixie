@@ -17,6 +17,7 @@
  */
 
 #include "src/carnot/planner/compiler/analyzer/unique_sink_names_rule.h"
+#include "src/carnot/planner/ir/memory_sink_ir.h"
 
 namespace px {
 namespace carnot {

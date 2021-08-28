@@ -26,8 +26,8 @@
 #include <pypa/ast/ast.hh>
 
 #include "src/carnot/planner/ast/ast_visitor.h"
+#include "src/carnot/planner/ir/ir.h"
 #include "src/carnot/planner/ir/ir_node_type_conversion.h"
-#include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planner/objects/qlobject.h"
 #include "src/carnot/planner/objects/type_object.h"
 

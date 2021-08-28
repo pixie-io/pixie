@@ -22,7 +22,7 @@
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/compiler_state/registry_info.h"
-#include "src/carnot/planner/ir/ir_nodes.h"
+#include "src/carnot/planner/ir/ir.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/testing/testing.h"
 
