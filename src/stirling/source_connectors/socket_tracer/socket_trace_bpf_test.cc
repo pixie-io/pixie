@@ -495,7 +495,6 @@ TEST_F(SocketTraceBPFTest, SendFile) {
 using NullRemoteAddrTest = testing::SocketTraceBPFTest</* TClientSideTracing */ false>;
 
 // Tests that accept4() with a NULL sock_addr result argument.
-// TODO(yzhao): Think about how can we reliably test BPF's IPv6 code path.
 TEST_F(NullRemoteAddrTest, Accept4WithNullRemoteAddr) {
   StartTransferDataThread();
 
@@ -539,6 +538,7 @@ TEST_F(NullRemoteAddrTest, Accept4WithNullRemoteAddr) {
             0);
   // Close after getting the sockaddr from fd, otherwise getsockname() wont work.
   client.Close();
+  server.Close();
 
   StopTransferDataThread();
 
@@ -558,6 +558,73 @@ TEST_F(NullRemoteAddrTest, Accept4WithNullRemoteAddr) {
               StrEq(remote_addr));
   EXPECT_EQ(records[kHTTPRemotePortIdx]->Get<types::Int64Value>(0),
             ntohs(client_sockaddr.sin_port));
+}
+
+// Tests that accept4() with a NULL sock_addr result argument (IPv6 version).
+TEST_F(NullRemoteAddrTest, IPv6Accept4WithNullRemoteAddr) {
+  FLAGS_stirling_conn_trace_pid = getpid();
+
+  StartTransferDataThread();
+
+  TCPSocket client(AF_INET6);
+  TCPSocket server(AF_INET6);
+
+  std::atomic<bool> ready = false;
+
+  std::thread server_thread([&server, &ready]() {
+    server.BindAndListen();
+    ready = true;
+    auto conn = server.AcceptWithNullAddr();
+
+    std::string data;
+
+    conn->Read(&data);
+    conn->Write(kHTTPRespMsg1);
+  });
+
+  while (!ready) {
+  }
+
+  std::thread client_thread([&client, &server]() {
+    client.Connect(server);
+
+    std::string data;
+
+    client.Write(kHTTPReqMsg1);
+    client.Read(&data);
+  });
+
+  server_thread.join();
+  client_thread.join();
+
+  struct sockaddr_in6 client_sockaddr = {};
+  socklen_t client_sockaddr_len = sizeof(client_sockaddr);
+
+  // Get the remote port seen by server from client's local port.
+  ASSERT_EQ(getsockname(client.sockfd(), reinterpret_cast<struct sockaddr*>(&client_sockaddr),
+                        &client_sockaddr_len),
+            0);
+  // Close after getting the sockaddr from fd, otherwise getsockname() wont work.
+  client.Close();
+  server.Close();
+
+  StopTransferDataThread();
+
+  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
+  ASSERT_FALSE(tablets.empty());
+
+  ColumnWrapperRecordBatch records =
+      FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, getpid());
+  ASSERT_THAT(records, Each(ColWrapperSizeIs(1)));
+
+  EXPECT_THAT(std::string(records[kHTTPRespHeadersIdx]->Get<types::StringValue>(0)),
+              HasSubstr(R"(Content-Type":"application/json; msg1)"));
+  ASSERT_OK_AND_ASSIGN(std::string remote_addr, IPv6AddrToString(client_sockaddr.sin6_addr));
+  // Make sure that the socket info resolution works.
+  EXPECT_THAT(std::string(records[kHTTPRemoteAddrIdx]->Get<types::StringValue>(0)),
+              StrEq(remote_addr));
+  EXPECT_EQ(records[kHTTPRemotePortIdx]->Get<types::Int64Value>(0),
+            ntohs(client_sockaddr.sin6_port));
 }
 
 // Run a UDP-based client-server system.

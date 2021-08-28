@@ -623,6 +623,7 @@ void ConnTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs) {
       // At this point we should only see IP addresses (not any other format).
       DCHECK(open_info_.remote_addr.family == SockAddrFamily::kIPv4 ||
              open_info_.remote_addr.family == SockAddrFamily::kIPv6);
+
       if (IsRemoteAddrInCluster(cluster_cidrs)) {
         Disable("No client-side tracing: Remote endpoint is inside the cluster.");
         break;

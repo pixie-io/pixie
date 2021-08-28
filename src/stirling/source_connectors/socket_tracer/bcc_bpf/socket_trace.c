@@ -382,7 +382,7 @@ static __inline void read_sockaddr_kernel(struct conn_info_t* conn_info,
     conn_info->addr.in6.sin6_port = port;
 
     struct in6_addr* addr = &conn_info->addr.in6.sin6_addr;
-    bpf_probe_read_kernel(&addr, sizeof(*addr), &sk_common->skc_v6_daddr);
+    bpf_probe_read_kernel(addr, sizeof(*addr), &sk_common->skc_v6_daddr);
   }
 }
 
