@@ -438,6 +438,7 @@ TEST_F(SocketTraceBPFTest, SendFile) {
 
   TCPSocket client;
   TCPSocket server;
+  // TODO(yzhao/oazizi): Consider std::condition_variable.
   std::atomic<bool> ready = false;
 
   std::thread server_thread([&server, &ready]() {
@@ -504,11 +505,12 @@ TEST_F(NullRemoteAddrTest, Accept4WithNullRemoteAddr) {
 
   TCPSocket client;
   TCPSocket server;
-  std::atomic<bool> ready = true;
 
-  std::thread server_thread([&server, &ready]() {
+  std::atomic<bool> server_ready = true;
+
+  std::thread server_thread([&server, &server_ready]() {
     server.BindAndListen();
-    ready = true;
+    server_ready = true;
     auto conn = server.AcceptWithNullAddr();
 
     std::string data;
@@ -518,7 +520,7 @@ TEST_F(NullRemoteAddrTest, Accept4WithNullRemoteAddr) {
   });
 
   // Wait for server thread to start listening.
-  while (!ready) {
+  while (!server_ready) {
   }
 
   std::thread client_thread([&client, &server]() {
@@ -533,13 +535,12 @@ TEST_F(NullRemoteAddrTest, Accept4WithNullRemoteAddr) {
   server_thread.join();
   client_thread.join();
 
+  // Get the remote port seen by server from client's local port.
   struct sockaddr_in client_sockaddr = {};
   socklen_t client_sockaddr_len = sizeof(client_sockaddr);
+  struct sockaddr* client_sockaddr_ptr = reinterpret_cast<struct sockaddr*>(&client_sockaddr);
+  ASSERT_EQ(getsockname(client.sockfd(), client_sockaddr_ptr, &client_sockaddr_len), 0);
 
-  // Get the remote port seen by server from client's local port.
-  ASSERT_EQ(getsockname(client.sockfd(), reinterpret_cast<struct sockaddr*>(&client_sockaddr),
-                        &client_sockaddr_len),
-            0);
   // Close after getting the sockaddr from fd, otherwise getsockname() wont work.
   client.Close();
   server.Close();
@@ -556,28 +557,28 @@ TEST_F(NullRemoteAddrTest, Accept4WithNullRemoteAddr) {
 
   EXPECT_THAT(std::string(records[kHTTPRespHeadersIdx]->Get<types::StringValue>(0)),
               HasSubstr(R"(Content-Type":"application/json; msg1)"));
-  ASSERT_OK_AND_ASSIGN(std::string remote_addr, IPv4AddrToString(client_sockaddr.sin_addr));
+
   // Make sure that the socket info resolution works.
-  EXPECT_THAT(std::string(records[kHTTPRemoteAddrIdx]->Get<types::StringValue>(0)),
-              StrEq(remote_addr));
-  EXPECT_EQ(records[kHTTPRemotePortIdx]->Get<types::Int64Value>(0),
-            ntohs(client_sockaddr.sin_port));
+  ASSERT_OK_AND_ASSIGN(std::string remote_addr, IPv4AddrToString(client_sockaddr.sin_addr));
+  EXPECT_EQ(std::string(records[kHTTPRemoteAddrIdx]->Get<types::StringValue>(0)), remote_addr);
+  EXPECT_EQ(remote_addr, "127.0.0.1");
+
+  uint16_t port = ntohs(client_sockaddr.sin_port);
+  EXPECT_EQ(records[kHTTPRemotePortIdx]->Get<types::Int64Value>(0), port);
 }
 
 // Tests that accept4() with a NULL sock_addr result argument (IPv6 version).
 TEST_F(NullRemoteAddrTest, IPv6Accept4WithNullRemoteAddr) {
-  FLAGS_stirling_conn_trace_pid = getpid();
-
   StartTransferDataThread();
 
   TCPSocket client(AF_INET6);
   TCPSocket server(AF_INET6);
 
-  std::atomic<bool> ready = false;
+  std::atomic<bool> server_ready = false;
 
-  std::thread server_thread([&server, &ready]() {
+  std::thread server_thread([&server, &server_ready]() {
     server.BindAndListen();
-    ready = true;
+    server_ready = true;
     auto conn = server.AcceptWithNullAddr();
 
     std::string data;
@@ -586,7 +587,7 @@ TEST_F(NullRemoteAddrTest, IPv6Accept4WithNullRemoteAddr) {
     conn->Write(kHTTPRespMsg1);
   });
 
-  while (!ready) {
+  while (!server_ready) {
   }
 
   std::thread client_thread([&client, &server]() {
@@ -601,13 +602,12 @@ TEST_F(NullRemoteAddrTest, IPv6Accept4WithNullRemoteAddr) {
   server_thread.join();
   client_thread.join();
 
+  // Get the remote port seen by server from client's local port.
   struct sockaddr_in6 client_sockaddr = {};
   socklen_t client_sockaddr_len = sizeof(client_sockaddr);
+  struct sockaddr* client_sockaddr_ptr = reinterpret_cast<struct sockaddr*>(&client_sockaddr);
+  ASSERT_EQ(getsockname(client.sockfd(), client_sockaddr_ptr, &client_sockaddr_len), 0);
 
-  // Get the remote port seen by server from client's local port.
-  ASSERT_EQ(getsockname(client.sockfd(), reinterpret_cast<struct sockaddr*>(&client_sockaddr),
-                        &client_sockaddr_len),
-            0);
   // Close after getting the sockaddr from fd, otherwise getsockname() wont work.
   client.Close();
   server.Close();
@@ -623,12 +623,14 @@ TEST_F(NullRemoteAddrTest, IPv6Accept4WithNullRemoteAddr) {
 
   EXPECT_THAT(std::string(records[kHTTPRespHeadersIdx]->Get<types::StringValue>(0)),
               HasSubstr(R"(Content-Type":"application/json; msg1)"));
-  ASSERT_OK_AND_ASSIGN(std::string remote_addr, IPv6AddrToString(client_sockaddr.sin6_addr));
+
   // Make sure that the socket info resolution works.
-  EXPECT_THAT(std::string(records[kHTTPRemoteAddrIdx]->Get<types::StringValue>(0)),
-              StrEq(remote_addr));
-  EXPECT_EQ(records[kHTTPRemotePortIdx]->Get<types::Int64Value>(0),
-            ntohs(client_sockaddr.sin6_port));
+  ASSERT_OK_AND_ASSIGN(std::string remote_addr, IPv6AddrToString(client_sockaddr.sin6_addr));
+  EXPECT_EQ(std::string(records[kHTTPRemoteAddrIdx]->Get<types::StringValue>(0)), remote_addr);
+  EXPECT_EQ(remote_addr, "::1");
+
+  uint16_t port = ntohs(client_sockaddr.sin6_port);
+  EXPECT_EQ(records[kHTTPRemotePortIdx]->Get<types::Int64Value>(0), port);
 }
 
 // Run a UDP-based client-server system.
