@@ -140,7 +140,7 @@ ssize_t TCPSocket::SendMsg(const std::vector<std::string_view>& data) const {
   return sendmsg(sockfd_, &msg, /*flags*/ 0);
 }
 
-ssize_t TCPSocket::SendFile(const std::filesystem::path path) const {
+ssize_t TCPSocket::SendFile(const std::filesystem::path& path) const {
   int fd = open(path.c_str(), O_RDONLY);
   if (fd < 0) {
     return -1;
