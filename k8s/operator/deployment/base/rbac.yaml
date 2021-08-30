@@ -36,6 +36,7 @@ rules:
   - customresourcedefinitions
   - secrets
   - pods
+  - events
   - services
   - deployments
   - daemonsets

@@ -162,9 +162,12 @@ func TestMonitor_getCloudConnState(t *testing.T) {
 				},
 			}
 
-			pods := &concurrentPodMap{
-				unsafeMap: map[string]*v1.Pod{
-					"vizier-cloud-connector": &v1.Pod{
+			pods := &concurrentPodMap{unsafeMap: make(map[string]map[string]*pod)}
+			pods.write(
+				"vizier-cloud-connector",
+				"vizier-cloud-connector-abcdefg",
+				&pod{
+					k8spod: &v1.Pod{
 						Status: v1.PodStatus{
 							PodIP: "127.0.0.1",
 							Phase: test.cloudConnPhase,
@@ -181,14 +184,57 @@ func TestMonitor_getCloudConnState(t *testing.T) {
 							},
 						},
 					},
-				},
-			}
+				})
 
 			state := getCloudConnState(httpClient, pods)
 			assert.Equal(t, test.expectedReason, state.Reason)
 			assert.Equal(t, test.expectedVizierPhase, translateReasonToPhase(state.Reason))
 		})
 	}
+}
+
+func TestMonitor_getCloudConnState_SeveralCloudConns(t *testing.T) {
+	httpClient := &FakeHTTPClient{
+		responses: map[string]string{
+			"https://127.0.0.1:8080/statusz": "",
+		},
+	}
+
+	pods := &concurrentPodMap{unsafeMap: make(map[string]map[string]*pod)}
+
+	spec := v1.PodSpec{
+		Containers: []v1.Container{
+			v1.Container{
+				Ports: []v1.ContainerPort{
+					v1.ContainerPort{
+						ContainerPort: 8080,
+					},
+				},
+			},
+		},
+	}
+	pods.write("vizier-cloud-connector", "vizier-cloud-connector-abcdefg", &pod{
+		k8spod: &v1.Pod{
+			Status: v1.PodStatus{
+				PodIP: "127.0.0.1",
+				Phase: v1.PodRunning,
+			},
+			Spec: spec,
+		},
+	})
+	pods.write("vizier-cloud-connector", "vizier-cloud-connector-12345678", &pod{
+		k8spod: &v1.Pod{
+			Status: v1.PodStatus{
+				PodIP: "127.0.0.1",
+				Phase: v1.PodPending,
+			},
+			Spec: spec,
+		},
+	})
+
+	state := getCloudConnState(httpClient, pods)
+	assert.Equal(t, status.CloudConnectorPodPending, state.Reason)
+	assert.Equal(t, pixiev1alpha1.VizierPhaseUpdating, translateReasonToPhase(state.Reason))
 }
 
 func TestMonitor_getPVCState(t *testing.T) {
@@ -264,14 +310,12 @@ type phasePlane struct {
 func TestMonitor_getControlPlanePodState(t *testing.T) {
 	tests := []struct {
 		name                string
-		cloudConnPhase      v1.PodPhase
 		expectedVizierPhase pixiev1alpha1.VizierPhase
 		expectedReason      status.VizierReason
 		podPhases           map[string]phasePlane
 	}{
 		{
 			name:                "healthy",
-			cloudConnPhase:      v1.PodRunning,
 			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
 			podPhases: map[string]phasePlane{
 				"vizier-metadata": {
@@ -295,7 +339,6 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 		},
 		{
 			name:                "pending metadata",
-			cloudConnPhase:      v1.PodPending,
 			expectedVizierPhase: pixiev1alpha1.VizierPhaseUpdating,
 			podPhases: map[string]phasePlane{
 				"vizier-metadata": {
@@ -319,7 +362,6 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 		},
 		{
 			name:                "healthy even if data plane pod or no plane pod is pending ",
-			cloudConnPhase:      v1.PodRunning,
 			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
 			podPhases: map[string]phasePlane{
 				"vizier-metadata": {
@@ -342,8 +384,7 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 			expectedReason: "",
 		},
 		{
-			name:                "unhealthy if any pod is failing",
-			cloudConnPhase:      v1.PodRunning,
+			name:                "unhealthy if any control pod is failing",
 			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
 			podPhases: map[string]phasePlane{
 				"vizier-metadata": {
@@ -369,21 +410,21 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			pods := &concurrentPodMap{unsafeMap: make(map[string]*v1.Pod)}
-			for podName, fp := range test.podPhases {
+			pods := &concurrentPodMap{unsafeMap: make(map[string]map[string]*pod)}
+			for podLabel, fp := range test.podPhases {
 				labels := make(map[string]string)
 				if fp.plane != "" {
 					labels["plane"] = fp.plane
 				}
 
-				pods.write(podName, &v1.Pod{
+				pods.write(podLabel, podLabel, &pod{k8spod: &v1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: labels,
 					},
 					Status: v1.PodStatus{
 						Phase: fp.phase,
 					},
-				})
+				}})
 			}
 
 			state := getControlPlanePodState(pods)

@@ -60,33 +60,49 @@ type HTTPClient interface {
 	Get(string) (resp *http.Response, err error)
 }
 
+type pod struct {
+	k8spod *v1.Pod
+	events []v1.Event
+}
+
 // concurrentPodMap wraps a map with concurrency safe read/write operations.
+// Most operations can be done with the methods. However, if you need to manipulate
+// an entire child map, manually hold the mutex instead of writing a new method.
 type concurrentPodMap struct {
-	unsafeMap map[string]*v1.Pod
+	// mapping from the k8s label to the map of matching pods to their pod info.
+	unsafeMap map[string]map[string]*pod
 	mapMu     sync.Mutex
 }
 
-func (c *concurrentPodMap) read(name string) (*v1.Pod, bool) {
+func (c *concurrentPodMap) delete(nameLabel string, k8sName string) {
 	c.mapMu.Lock()
 	defer c.mapMu.Unlock()
-	pod, ok := c.unsafeMap[name]
-	return pod, ok
+	labelMap, ok := c.unsafeMap[nameLabel]
+	if !ok {
+		return
+	}
+	delete(labelMap, k8sName)
 }
 
-func (c *concurrentPodMap) write(name string, pod *v1.Pod) {
+func (c *concurrentPodMap) write(nameLabel, k8sName string, p *pod) {
 	c.mapMu.Lock()
 	defer c.mapMu.Unlock()
-	c.unsafeMap[name] = pod
+	labelMap, ok := c.unsafeMap[nameLabel]
+	if !ok {
+		labelMap = make(map[string]*pod)
+		c.unsafeMap[nameLabel] = labelMap
+	}
+	labelMap[k8sName] = p
 }
 
-func (c *concurrentPodMap) list() []*v1.Pod {
+func (c *concurrentPodMap) list() []*pod {
 	c.mapMu.Lock()
 	defer c.mapMu.Unlock()
-	pods := make([]*v1.Pod, len(c.unsafeMap))
-	i := 0
-	for _, v := range c.unsafeMap {
-		pods[i] = v
-		i++
+	var pods []*pod
+	for _, labelMap := range c.unsafeMap {
+		for _, p := range labelMap {
+			pods = append(pods, p)
+		}
 	}
 	return pods
 }
@@ -139,7 +155,7 @@ func (m *VizierMonitor) InitAndStartMonitor() error {
 	}
 	m.httpClient = &http.Client{Transport: tr}
 	m.ctx, m.cancel = context.WithCancel(context.Background())
-	m.podStates = &concurrentPodMap{unsafeMap: make(map[string]*v1.Pod)}
+	m.podStates = &concurrentPodMap{unsafeMap: make(map[string]map[string]*pod)}
 	m.pvcStates = &concurrentPVCMap{unsafeMap: make(map[string]*v1.PersistentVolumeClaim)}
 
 	err := m.initState()
@@ -184,19 +200,38 @@ func (m *VizierMonitor) initState() error {
 	return nil
 }
 
-func (m *VizierMonitor) handlePod(pod v1.Pod) {
+func (m *VizierMonitor) handlePod(p v1.Pod) {
 	// We label all of our vizier pods with a name=<componentName>.
 	// For now, this assumes no replicas. If a new pod starts up, it will replace
 	// the status of the previous pod.
 	// In the future we may add special handling for PEMs/multiple kelvins.
-	if name, ok := pod.ObjectMeta.Labels["name"]; ok {
-		if st, stOk := m.podStates.read(name); stOk {
-			if st.ObjectMeta.Name != pod.ObjectMeta.Name && pod.ObjectMeta.CreationTimestamp.Before(&st.ObjectMeta.CreationTimestamp) {
-				return
-			}
-		}
-		m.podStates.write(name, &pod)
+	nameLabel, ok := p.ObjectMeta.Labels["name"]
+	if !ok {
+		nameLabel = ""
 	}
+	k8sName := p.ObjectMeta.Name
+
+	// Delete from our pemState if the pod is set for deletion.
+	if p.ObjectMeta.DeletionTimestamp != nil {
+		m.podStates.delete(nameLabel, k8sName)
+		return
+	}
+
+	podObj := &pod{k8spod: &p}
+	// Avoid getting events if pod is running. We don't need the extra debugging info.
+	if p.Status.Phase != v1.PodRunning {
+		eventsInterface := m.clientset.CoreV1().Events(m.namespace)
+		selector := eventsInterface.GetFieldSelector(&p.Name, &m.namespace, nil, nil)
+		eventList, err := eventsInterface.List(context.Background(), metav1.ListOptions{
+			FieldSelector: selector.String(),
+		})
+		if err != nil {
+			log.WithError(err).Error("unable to get event list")
+		}
+
+		podObj.events = eventList.Items
+	}
+	m.podStates.write(nameLabel, k8sName, podObj)
 }
 
 func (m *VizierMonitor) handlePVC(pvc v1.PersistentVolumeClaim) {
@@ -287,21 +322,27 @@ func isOk(state *vizierState) bool {
 // getCloudConnState determines the state of the cloud connector then translates
 // that to a corresponding VizierState.
 func getCloudConnState(client HTTPClient, pods *concurrentPodMap) *vizierState {
-	if ccPod, ok := pods.read(cloudConnName); ok {
-		if ccPod.Status.Phase == v1.PodPending {
+	pods.mapMu.Lock()
+	defer pods.mapMu.Unlock()
+	labelMap, ok := pods.unsafeMap[cloudConnName]
+	if !ok || len(labelMap) == 0 {
+		return &vizierState{Reason: status.CloudConnectorMissing}
+	}
+	// We iterate here with the assumption that if any cc pods are pending the whole thing should fail.
+	// This should account for failed updates, or catching the cluster during an upgrade.
+	for _, ccPod := range labelMap {
+		if ccPod.k8spod.Status.Phase == v1.PodPending {
 			return &vizierState{Reason: status.CloudConnectorPodPending}
 		}
 
-		if ccPod.Status.Phase != v1.PodRunning {
+		if ccPod.k8spod.Status.Phase != v1.PodRunning {
 			return &vizierState{Reason: status.CloudConnectorPodFailed}
 		}
 		// Ping cloudConn's statusz.
-		ok, podStatus := queryPodStatusz(client, ccPod)
+		ok, podStatus := queryPodStatusz(client, ccPod.k8spod)
 		if !ok {
 			return &vizierState{Reason: status.VizierReason(podStatus)}
 		}
-	} else {
-		return &vizierState{Reason: status.CloudConnectorMissing}
 	}
 
 	// Return the value of the cloud connector.
@@ -312,15 +353,15 @@ func getCloudConnState(client HTTPClient, pods *concurrentPodMap) *vizierState {
 // returning a pending state if the pods are stuck
 func getControlPlanePodState(pods *concurrentPodMap) *vizierState {
 	for _, v := range pods.list() {
-		plane, ok := v.ObjectMeta.Labels["plane"]
+		plane, ok := v.k8spod.ObjectMeta.Labels["plane"]
 		// We only want to check pods that are control plane pods.
 		if !ok || plane != "control" {
 			continue
 		}
-		if v.Status.Phase == v1.PodPending {
+		if v.k8spod.Status.Phase == v1.PodPending {
 			return &vizierState{Reason: status.ControlPlanePodsPending}
 		}
-		if v.Status.Phase != v1.PodRunning {
+		if v.k8spod.Status.Phase != v1.PodRunning {
 			return &vizierState{Reason: status.ControlPlanePodsFailed}
 		}
 	}
@@ -374,15 +415,16 @@ func (m *VizierMonitor) getvizierState(vz *pixiev1alpha1.Vizier) *vizierState {
 		}
 	}
 
+	podState := getControlPlanePodState(m.podStates)
+	if !isOk(podState) {
+		return podState
+	}
+
 	ccState := getCloudConnState(m.httpClient, m.podStates)
 	if !isOk(ccState) {
 		return ccState
 	}
 
-	podState := getControlPlanePodState(m.podStates)
-	if !isOk(podState) {
-		return podState
-	}
 	return okState()
 }
 
