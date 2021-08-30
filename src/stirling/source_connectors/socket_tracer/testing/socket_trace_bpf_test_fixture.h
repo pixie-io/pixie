@@ -39,6 +39,14 @@ class SocketTraceBPFTest : public ::testing::Test {
  protected:
   void SetUp() override {
     FLAGS_stirling_disable_self_tracing = false;
+
+    // If client-side tracing is enabled, treat loopback as outside the cluster.
+    // This will interpret localhost connections as leaving the cluster and tracing will apply.
+    // WARNING: Do not use an if statement, because flags don't reset between successive tests.
+    // TODO(oazizi): Setting flags in the test is a bad idea because of the pitfall above.
+    //               Change this paradigm.
+    FLAGS_treat_loopback_as_in_cluster = !TEnableClientSideTracing;
+
     auto source_connector = SocketTraceConnector::Create("socket_trace_connector");
 
     source_.reset(dynamic_cast<SocketTraceConnector*>(source_connector.release()));
@@ -133,10 +141,6 @@ class SocketTraceBPFTest : public ::testing::Test {
       // This makes the Stirling interpret all traffic as leaving the cluster,
       // which means client-side tracing will also apply.
       PL_CHECK_OK(ctx_->SetClusterCIDR("1.2.3.4/32"));
-
-      // Treat loopback as outside the cluster so we also interpret localhost connections
-      // as leaving the cluster, which means client-side tracing will also apply.
-      FLAGS_treat_loopback_as_in_cluster = false;
     }
   }
 };

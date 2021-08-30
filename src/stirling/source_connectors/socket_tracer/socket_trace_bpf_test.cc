@@ -44,7 +44,6 @@ namespace stirling {
 
 using ::px::stirling::testing::ColWrapperIsEmpty;
 using ::px::stirling::testing::ColWrapperSizeIs;
-using ::px::stirling::testing::FindRecordIdxMatchesPID;
 using ::px::stirling::testing::FindRecordsMatchingPID;
 using ::px::system::TCPSocket;
 using ::px::system::UDPSocket;
@@ -545,23 +544,19 @@ TEST_F(NullRemoteAddrTest, Accept4WithNullRemoteAddr) {
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
   ASSERT_FALSE(tablets.empty());
-  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
-  const std::vector<size_t> target_record_indices =
-      testing::FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, getpid());
-  EXPECT_THAT(target_record_indices, SizeIs(Gt(0)));
+  ColumnWrapperRecordBatch records =
+      FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, getpid());
 
-  const size_t target_record_idx = target_record_indices.back();
+  ASSERT_THAT(records, Each(ColWrapperSizeIs(1)));
 
-  EXPECT_THAT(
-      std::string(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(target_record_idx)),
-      HasSubstr(R"(Content-Type":"application/json; msg1)"));
+  EXPECT_THAT(std::string(records[kHTTPRespHeadersIdx]->Get<types::StringValue>(0)),
+              HasSubstr(R"(Content-Type":"application/json; msg1)"));
   ASSERT_OK_AND_ASSIGN(std::string remote_addr, IPv4AddrToString(client_sockaddr.sin_addr));
   // Make sure that the socket info resolution works.
-  EXPECT_THAT(
-      std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(target_record_idx)),
-      StrEq(remote_addr));
-  EXPECT_EQ(record_batch[kHTTPRemotePortIdx]->Get<types::Int64Value>(target_record_idx),
+  EXPECT_THAT(std::string(records[kHTTPRemoteAddrIdx]->Get<types::StringValue>(0)),
+              StrEq(remote_addr));
+  EXPECT_EQ(records[kHTTPRemotePortIdx]->Get<types::Int64Value>(0),
             ntohs(client_sockaddr.sin_port));
 }
 
