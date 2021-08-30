@@ -33,7 +33,7 @@ import history from 'app/utils/pl-history';
 import * as QueryString from 'query-string';
 
 import {
-  ThemeProvider, withStyles,
+  Theme, ThemeProvider, withStyles, createTheme,
 } from '@material-ui/core/styles';
 import StyledEngineProvider from '@material-ui/core/StyledEngineProvider';
 import { createStyles } from '@material-ui/styles';
@@ -189,8 +189,18 @@ if (LD_CLIENT_ID !== '') {
 const ThemedApp: React.FC = () => {
   const { setAuthToken } = React.useContext(AuthContext);
   const { setTimeArg } = React.useContext(EmbedContext);
-  const [theme, setTheme] = React.useState<string | string[]>('dark');
+  const [theme, setTheme] = React.useState<Theme>(DARK_THEME);
   const [embedToken, setEmbedToken] = React.useState<string>('');
+
+  const setThemeFromName = React.useCallback((themeName) => {
+    switch (themeName) {
+      case 'light':
+        setTheme(LIGHT_THEME);
+        break;
+      default:
+        setTheme(DARK_THEME);
+    }
+  }, [setTheme]);
 
   // Parse query params to determine initial state of the page. These
   // params can also be set by the parent view, in an embedded context.
@@ -200,9 +210,10 @@ const ThemedApp: React.FC = () => {
     } = QueryString.parse(window.location.search);
 
     if (themeParam) {
-      setTheme(Array.isArray(themeParam) ? themeParam[0] : themeParam);
+      const themeName = Array.isArray(themeParam) ? themeParam[0] : themeParam;
+      setThemeFromName(themeName);
     }
-  }, [setTheme]);
+  }, [setThemeFromName]);
 
   // This is for an embedded environment.
   const listener = React.useCallback(async (event) => {
@@ -216,6 +227,7 @@ const ThemedApp: React.FC = () => {
           pixieTheme,
           pixieStartTime,
           embedPixieAPIToken,
+          pixieStyles,
         },
     } = event;
 
@@ -223,8 +235,19 @@ const ThemedApp: React.FC = () => {
       setTimeArg(pixieStartTime);
     }
 
+    if (pixieStyles) {
+      // Try to parse theme and apply.
+      try {
+        const parsedTheme = JSON.parse(pixieStyles);
+        setTheme(createTheme(parsedTheme));
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to parse MUI theme');
+      }
+    }
+
     if (pixieTheme && (pixieTheme === 'light' || pixieTheme === 'dark')) {
-      setTheme(pixieTheme);
+      setThemeFromName(pixieTheme);
     }
 
     // If the parent sends a ready message, it probably missed Pixie's
@@ -289,15 +312,8 @@ const ThemedApp: React.FC = () => {
     };
   }, [listener]);
 
-  let themeStyles = DARK_THEME;
-  switch (theme) {
-    case 'light':
-      themeStyles = LIGHT_THEME;
-      break;
-    default:
-  }
   return (
-    <ThemeProvider theme={themeStyles}>
+    <ThemeProvider theme={theme}>
       <CssBaseline />
         <PixieAPIContextProvider apiKey=''>
           <StyledApp />
