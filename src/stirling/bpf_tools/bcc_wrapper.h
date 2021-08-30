@@ -46,7 +46,6 @@
 #include "src/stirling/obj_tools/elf_tools.h"
 
 DECLARE_uint32(stirling_bpf_perf_buffer_page_count);
-DECLARE_bool(stirling_always_infer_task_struct_offsets);
 
 namespace px {
 /*
@@ -206,11 +205,14 @@ class BCCWrapper {
    * @param cflags compiler flags.
    * @param requires_linux_headers Search for local headers, or attempt installation of
    *                               packaged headers if available.
+   * @param always_infer_task_struct_offsets When true, run the task_struct offset resolver even
+   *                                         when local/host headers are found.
    * @return error if no root access, code could not be compiled, or required linux headers are not
    *               available.
    */
   Status InitBPFProgram(std::string_view bpf_program, std::vector<std::string> cflags = {},
-                        bool requires_linux_headers = true);
+                        bool requires_linux_headers = true,
+                        bool always_infer_task_struct_offsets = false);
 
   /**
    * Attach a single kprobe.

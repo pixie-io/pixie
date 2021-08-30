@@ -79,10 +79,14 @@ TEST(BCCWrapperTest, InitWithTaskStructResolver) {
   //   TaskStructResolver
   //   BCCWrapper::InitBPFProgram
   //   <end> (The second instance of BCCWrapper shouldn't call TaskStructResolver again.)
-  FLAGS_stirling_always_infer_task_struct_offsets = true;
+
+  std::vector<std::string> cflags = {};
+  bool requires_linux_headers = true;
+  bool always_infer_task_struct_offsets = true;
 
   BCCWrapper bcc_wrapper;
-  ASSERT_OK(bcc_wrapper.InitBPFProgram(kBCCProgram));
+  ASSERT_OK(bcc_wrapper.InitBPFProgram(kBCCProgram, cflags, requires_linux_headers,
+                                       always_infer_task_struct_offsets));
 }
 
 TEST(BCCWrapperTest, DetachUProbe) {
@@ -119,10 +123,13 @@ TEST(BCCWrapperTest, DetachUProbe) {
 TEST(BCCWrapperTest, GetTGIDStartTime) {
   // Force the TaskStructResolver to run,
   // since we're trying to check that it correctly gets the task_struct offsets.
-  FLAGS_stirling_always_infer_task_struct_offsets = true;
+  std::vector<std::string> cflags = {};
+  bool requires_linux_headers = true;
+  bool always_infer_task_struct_offsets = true;
 
   BCCWrapper bcc_wrapper;
-  ASSERT_OK(bcc_wrapper.InitBPFProgram(get_tgid_start_time_bcc_script));
+  ASSERT_OK(bcc_wrapper.InitBPFProgram(get_tgid_start_time_bcc_script, cflags,
+                                       requires_linux_headers, always_infer_task_struct_offsets));
 
   // Get the PID start time from /proc.
   ASSERT_OK_AND_ASSIGN(uint64_t expected_proc_pid_start_time,

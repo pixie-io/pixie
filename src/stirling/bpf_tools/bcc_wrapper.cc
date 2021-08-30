@@ -32,10 +32,6 @@
 #include "src/stirling/bpf_tools/task_struct_resolver.h"
 #include "src/stirling/utils/linux_headers.h"
 
-DEFINE_bool(
-    stirling_always_infer_task_struct_offsets, false,
-    "When true, run the task_struct offset resolver even when local/host headers are found.");
-
 namespace px {
 namespace stirling {
 namespace bpf_tools {
@@ -86,7 +82,7 @@ StatusOr<utils::TaskStructOffsets> ResolveTaskStructOffsets() {
   return offsets_status;
 }
 
-StatusOr<utils::TaskStructOffsets> GetTaskStructOffsets() {
+StatusOr<utils::TaskStructOffsets> GetTaskStructOffsets(bool always_infer_task_struct_offsets) {
   // Defaults to zero offsets, which tells BPF not to use the offset overrides.
   // If the values are changed (as they are if ResolveTaskStructOffsets() is run),
   // then the non-zero values will be used in BPF.
@@ -101,7 +97,7 @@ StatusOr<utils::TaskStructOffsets> GetTaskStructOffsets() {
   // There is a flag to force the task struct fields resolution, in case we don't trust the
   // local headers, and for testing purposes.
   bool potentially_mismatched_headers = utils::g_packaged_headers_installed;
-  if (potentially_mismatched_headers || FLAGS_stirling_always_infer_task_struct_offsets) {
+  if (potentially_mismatched_headers || always_infer_task_struct_offsets) {
     LOG(INFO) << "Resolving task_struct offsets.";
 
     PL_ASSIGN_OR_RETURN(offsets, ResolveTaskStructOffsets());
@@ -114,7 +110,8 @@ StatusOr<utils::TaskStructOffsets> GetTaskStructOffsets() {
 }
 
 Status BCCWrapper::InitBPFProgram(std::string_view bpf_program, std::vector<std::string> cflags,
-                                  bool requires_linux_headers) {
+                                  bool requires_linux_headers,
+                                  bool always_infer_task_struct_offsets) {
   using utils::TaskStructOffsets;
 
   if (!IsRoot()) {
@@ -150,7 +147,8 @@ Status BCCWrapper::InitBPFProgram(std::string_view bpf_program, std::vector<std:
         kernel_version.code() >= kLinux5p5VersionCode ? "start_boottime" : "real_start_time";
 
     // When there are mismatched headers, this determines offsets for required task_struct members.
-    PL_ASSIGN_OR_RETURN(TaskStructOffsets offsets, GetTaskStructOffsets());
+    PL_ASSIGN_OR_RETURN(TaskStructOffsets offsets,
+                        GetTaskStructOffsets(always_infer_task_struct_offsets));
 
     cflags.push_back(absl::Substitute("-DSTART_BOOTTIME_VARNAME=$0", boottime_varname));
     cflags.push_back(
