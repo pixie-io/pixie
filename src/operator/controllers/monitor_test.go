@@ -498,3 +498,142 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 		})
 	}
 }
+
+func TestMonitor_getPEMsSomeInsufficientMemory(t *testing.T) {
+	insufficientMemoryEvent := v1.Event{
+		Type:    "Warning",
+		Reason:  "FailedScheduling",
+		Message: "0/2 nodes are available: 2 Insufficient memory.",
+	}
+	tests := []struct {
+		name                string
+		expectedVizierPhase pixiev1alpha1.VizierPhase
+		expectedReason      status.VizierReason
+		pems                []struct {
+			name   string
+			phase  v1.PodPhase
+			events []v1.Event
+		}
+	}{
+		{
+			name:                "healthy",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			pems: []struct {
+				name   string
+				phase  v1.PodPhase
+				events []v1.Event
+			}{
+				{
+					name:  "vizier-pem-abcdefg",
+					phase: v1.PodRunning,
+				},
+				{
+					name:  "vizier-pem-123456",
+					phase: v1.PodRunning,
+				},
+			},
+			expectedReason: "",
+		},
+		{
+			name:                "no pems",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+			expectedReason:      status.PEMsMissing,
+		},
+		{
+			name:                "degraded if some (not all) are insufficient memory",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseDegraded,
+			pems: []struct {
+				name   string
+				phase  v1.PodPhase
+				events []v1.Event
+			}{
+				{
+					name:  "vizier-pem-abcdefg",
+					phase: v1.PodRunning,
+				},
+				{
+					name:  "vizier-pem-123456",
+					phase: v1.PodPending,
+					events: []v1.Event{
+						insufficientMemoryEvent,
+					},
+				},
+				{
+					name:  "vizier-pem-zyx987",
+					phase: v1.PodPending,
+					events: []v1.Event{
+						insufficientMemoryEvent,
+					},
+				},
+			},
+			expectedReason: status.PEMsSomeInsufficientMemory,
+		},
+		{
+			name:                "unhealthy if all are insufficient memory",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+			pems: []struct {
+				name   string
+				phase  v1.PodPhase
+				events []v1.Event
+			}{
+				{
+					name:  "vizier-pem-abcdefg",
+					phase: v1.PodPending,
+					events: []v1.Event{
+						insufficientMemoryEvent,
+					},
+				},
+				{
+					name:  "vizier-pem-123456",
+					phase: v1.PodPending,
+					events: []v1.Event{
+						insufficientMemoryEvent,
+					},
+				},
+			},
+			expectedReason: status.PEMsAllInsufficientMemory,
+		},
+		{
+			name:                "pod pending for unrelated reason",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			pems: []struct {
+				name   string
+				phase  v1.PodPhase
+				events []v1.Event
+			}{
+				{
+					name:  "vizier-pem-abcdefg",
+					phase: v1.PodPending,
+					events: []v1.Event{
+						v1.Event{
+							Reason:  "FailedScheduling",
+							Message: "foobar",
+						},
+					},
+				},
+			},
+			expectedReason: "",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			pems := &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWithEvents)}
+			for _, p := range test.pems {
+				pems.write(vizierPemLabel, p.name, &podWithEvents{
+					pod: &v1.Pod{
+						ObjectMeta: metav1.ObjectMeta{Name: p.name},
+						Status: v1.PodStatus{
+							Phase: p.phase,
+						},
+					},
+					events: p.events,
+				})
+			}
+
+			state := getPEMResourceLimitsState(pems)
+			assert.Equal(t, test.expectedReason, state.Reason)
+			assert.Equal(t, test.expectedVizierPhase, translateReasonToPhase(state.Reason))
+		})
+	}
+}

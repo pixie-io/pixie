@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -375,7 +376,6 @@ func getCloudConnState(client HTTPClient, pods *concurrentPodMap) *vizierState {
 		}
 	}
 
-	// Return the value of the cloud connector.
 	return okState()
 }
 
@@ -404,7 +404,6 @@ func getControlPlanePodState(pods *concurrentPodMap) *vizierState {
 		}
 	}
 
-	// Return the value of the cloud connector.
 	return okState()
 }
 
@@ -442,6 +441,39 @@ func getMetadataPVCState(clientset kubernetes.Interface, pvcMap *concurrentPVCMa
 	return okState()
 }
 
+// getPEMResourceLimitsState reads the state of pem resource limits to make sure they're running as expected.
+func getPEMResourceLimitsState(pods *concurrentPodMap) *vizierState {
+	pods.mapMu.Lock()
+	defer pods.mapMu.Unlock()
+	pems, ok := pods.unsafeMap[vizierPemLabel]
+	if !ok || len(pems) == 0 {
+		return &vizierState{Reason: status.PEMsMissing}
+	}
+
+	re := regexp.MustCompile("Insufficient memory")
+	pemInsufficientMemory := 0
+	for _, pem := range pems {
+		if pem.pod.Status.Phase == v1.PodRunning {
+			continue
+		}
+		// Check for an insufficient memory event for this pending pod.
+		for _, event := range pem.events {
+			if event.Reason == "FailedScheduling" && re.MatchString(event.Message) {
+				pemInsufficientMemory++
+				break
+			}
+		}
+	}
+	if pemInsufficientMemory == len(pems) {
+		return &vizierState{Reason: status.PEMsAllInsufficientMemory}
+	}
+	if pemInsufficientMemory > 0 {
+		return &vizierState{Reason: status.PEMsSomeInsufficientMemory}
+	}
+
+	return okState()
+}
+
 // getvizierState determines the state of the Vizier instance based on the snapshot
 // of data available at call time. Reports the first state that fails (does not aggregate),
 // otherwise reports a healthy state.
@@ -461,6 +493,11 @@ func (m *VizierMonitor) getvizierState(vz *pixiev1alpha1.Vizier) *vizierState {
 	natsState := getNATSState(m.httpClient, m.podStates)
 	if !isOk(natsState) {
 		return natsState
+	}
+
+	pemState := getPEMResourceLimitsState(m.podStates)
+	if !isOk(pemState) {
+		return pemState
 	}
 
 	ccState := getCloudConnState(m.httpClient, m.podStates)
@@ -491,6 +528,9 @@ func translateReasonToPhase(reason status.VizierReason) pixiev1alpha1.VizierPhas
 	}
 	if reason == status.CloudConnectorMissing {
 		return pixiev1alpha1.VizierPhaseDisconnected
+	}
+	if reason == status.PEMsSomeInsufficientMemory {
+		return pixiev1alpha1.VizierPhaseDegraded
 	}
 	return pixiev1alpha1.VizierPhaseUnhealthy
 }

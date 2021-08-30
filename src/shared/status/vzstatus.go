@@ -73,4 +73,13 @@ const (
 	NATSPodMissing VizierReason = "NATSPodMissing"
 	// NATSPodFailed occurs when the nats pod failed to start up.
 	NATSPodFailed VizierReason = "NATSPodFailed"
+
+	// PEMsSomeInsufficientMemory occurs when some PEMs (strictly not all) fail to schedule due to insufficient memory. If all PEMs experience
+	// insufficient memory, then the Reason should be PEMsAllInsufficientMemory.
+	PEMsSomeInsufficientMemory VizierReason = "PEMsSomeInsufficientMemory"
+	// PEMsAllInsufficientMemory occurs when all PEMs fail to schedule due to insufficient memory. If only some pods experience
+	// insufficient memory, then the Reason should be PEMsSomeInsufficientMemory.
+	PEMsAllInsufficientMemory VizierReason = "PEMsAllInsufficientMemory"
+	// PEMsMissing occurs when the operator can't find PEMs in the monitoring namespace.
+	PEMsMissing VizierReason = "PEMsMissing"
 )
