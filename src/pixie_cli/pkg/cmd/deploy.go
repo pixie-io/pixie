@@ -763,7 +763,7 @@ func pemCanScheduleWithTaint(t *v1.Taint) bool {
 // validateNumDefaultStorageClasses returns a boolean whether there is exactly
 // 1 default storage class or not.
 func validateNumDefaultStorageClasses(clientset *kubernetes.Clientset) (bool, error) {
-	storageClasses, err := k8s.ListStorageClasses(clientset)
+	storageClasses, err := clientset.StorageV1().StorageClasses().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return false, err
 	}
@@ -782,7 +782,7 @@ func validateNumDefaultStorageClasses(clientset *kubernetes.Clientset) (bool, er
 }
 
 func getNumNodes(clientset *kubernetes.Clientset) (int, error) {
-	nodes, err := k8s.ListNodes(clientset)
+	nodes, err := clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return 0, err
 	}
@@ -803,7 +803,7 @@ var empty struct{}
 // waitForPems waits for the Vizier's Proxy service to be ready with an external IP.
 func waitForPems(clientset *kubernetes.Clientset, namespace string, expectedPods int) error {
 	// Watch for pod updates.
-	watcher, err := k8s.WatchK8sResource(clientset, "pods", namespace)
+	watcher, err := clientset.CoreV1().Pods(namespace).Watch(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return err
 	}

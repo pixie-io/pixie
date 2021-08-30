@@ -19,6 +19,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -36,11 +37,9 @@ import (
 	"golang.org/x/sync/errgroup"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 
 	// Need this for GCP auth.
@@ -102,17 +101,6 @@ func homeDir() string {
 		return h
 	}
 	return os.Getenv("USERPROFILE") // windows
-}
-
-// watchK8sResource returns a k8s watcher for the specified resource.
-func watchK8sResource(clientset *kubernetes.Clientset, resource string, namespace string) (watch.Interface, error) {
-	watcher := cache.NewListWatchFromClient(clientset.CoreV1().RESTClient(), resource, namespace, fields.Everything())
-	opts := metav1.ListOptions{}
-	watch, err := watcher.Watch(opts)
-	if err != nil {
-		return nil, err
-	}
-	return watch, nil
 }
 
 func generateDomainEntries() {
@@ -180,7 +168,11 @@ func k8sWatchAndUpdateHosts() error {
 	kubeConfig := getConfig()
 	clientset := getClientset(kubeConfig)
 	namespace := viper.GetString("n")
-	serviceWatcher, err := watchK8sResource(clientset, "services", namespace)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	serviceWatcher, err := clientset.CoreV1().Services(namespace).Watch(ctx, metav1.ListOptions{})
 	if err != nil {
 		log.WithError(err).Fatal("failed to watch cloud proxy")
 	}

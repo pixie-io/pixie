@@ -111,7 +111,7 @@ func getLatestVizierVersion(ctx context.Context, client cloudpb.ArtifactTrackerC
 // validateNumDefaultStorageClasses returns a boolean whether there is exactly
 // 1 default storage class or not.
 func validateNumDefaultStorageClasses(clientset *kubernetes.Clientset) (bool, error) {
-	storageClasses, err := k8s.ListStorageClasses(clientset)
+	storageClasses, err := clientset.StorageV1().StorageClasses().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return false, err
 	}
