@@ -435,9 +435,11 @@ TEST_F(SocketTraceBPFTest, SendFile) {
 
   TCPSocket client;
   TCPSocket server;
+  std::atomic<bool> ready = false;
 
-  std::thread server_thread([&server]() {
+  std::thread server_thread([&server, &ready]() {
     server.BindAndListen();
+    ready = true;
     auto conn = server.Accept();
 
     std::string data;
@@ -451,6 +453,10 @@ TEST_F(SocketTraceBPFTest, SendFile) {
     conn->Send(kHTTPRespMsgHeader);
     conn->SendFile(fpath);
   });
+
+  // Wait for server thread to start listening.
+  while (!ready) {
+  }
 
   std::thread client_thread([&client, &server]() {
     client.Connect(server);
@@ -496,9 +502,11 @@ TEST_F(NullRemoteAddrTest, Accept4WithNullRemoteAddr) {
 
   TCPSocket client;
   TCPSocket server;
+  std::atomic<bool> ready = true;
 
-  std::thread server_thread([&server]() {
+  std::thread server_thread([&server, &ready]() {
     server.BindAndListen();
+    ready = true;
     auto conn = server.AcceptWithNullAddr();
 
     std::string data;
@@ -506,6 +514,10 @@ TEST_F(NullRemoteAddrTest, Accept4WithNullRemoteAddr) {
     conn->Read(&data);
     conn->Write(kHTTPRespMsg1);
   });
+
+  // Wait for server thread to start listening.
+  while (!ready) {
+  }
 
   std::thread client_thread([&client, &server]() {
     client.Connect(server);
