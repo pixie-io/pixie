@@ -25,6 +25,7 @@
 
 #include <pypa/parser/parser.hh>
 
+#include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/distributed/splitter/partial_op_mgr/partial_op_mgr.h"
 #include "src/carnot/planner/rules/rules.h"
@@ -34,12 +35,12 @@ namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
+using compiler::ResolveTypesRule;
 using ::testing::ElementsAre;
 using ::testing::UnorderedElementsAre;
 using ::testing::UnorderedElementsAreArray;
 
-class PartialOpMgrTest : public OperatorTests {};
-
+using PartialOpMgrTest = ASTVisitorTest;
 TEST_F(PartialOpMgrTest, limit_test) {
   auto mem_src = MakeMemSource(MakeRelation());
   auto limit = MakeLimit(mem_src, 10);
@@ -70,20 +71,21 @@ TEST_F(PartialOpMgrTest, limit_test) {
 TEST_F(PartialOpMgrTest, agg_test) {
   auto relation = MakeRelation();
   relation.AddColumn(types::STRING, "service");
-  auto mem_src = MakeMemSource(relation);
+  auto mem_src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
   auto count_col = MakeColumn("count", 0);
   EXPECT_OK(count_col->SetResolvedType(ValueType::Create(types::INT64, types::ST_NONE)));
   auto service_col = MakeColumn("service", 0);
   EXPECT_OK(service_col->SetResolvedType(ValueType::Create(types::STRING, types::ST_NONE)));
   auto mean_func = MakeMeanFunc(MakeColumn("count", 0));
-  mean_func->SetSupportsPartial(true);
-  mean_func->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(mean_func->SplitInitArgs(0));
   auto agg = MakeBlockingAgg(mem_src, {count_col, service_col}, {{"mean", mean_func}});
   Relation agg_relation({types::INT64, types::STRING, types::FLOAT64},
                         {"count", "service", "mean"});
   ASSERT_OK(agg->SetRelation(agg_relation));
   MakeMemSink(agg, "out");
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   // Pre-checks to make sure things work.
   EXPECT_MATCH(agg, FullAgg());
@@ -130,15 +132,11 @@ TEST_F(PartialOpMgrTest, agg_where_fn_cant_partial) {
   auto service_col = MakeColumn("service", 0);
   EXPECT_OK(service_col->SetResolvedType(ValueType::Create(types::STRING, types::ST_NONE)));
   // One function is partial
-  auto mean_func = MakeMeanFunc(MakeColumn("count", 0));
-  mean_func->SetSupportsPartial(false);
-  mean_func->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(mean_func->SplitInitArgs(0));
+  ASSERT_OK(AddUDAToRegistry("mean_no_partial", types::INT64, {types::INT64},
+                             /*supports_partial*/ false));
+  auto mean_func = MakeMeanFunc("mean_no_partial", MakeColumn("count", 0));
   // Even though one is partial, the entire agg cannot be converted.
   auto mean_func2 = MakeMeanFunc(MakeColumn("count", 0));
-  mean_func2->SetSupportsPartial(true);
-  mean_func2->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(mean_func2->SplitInitArgs(0));
   auto agg = MakeBlockingAgg(mem_src, {count_col, service_col},
                              {{"mean", mean_func}, {"mean2", mean_func2}});
   Relation agg_relation({types::INT64, types::STRING, types::FLOAT64, types::FLOAT64},

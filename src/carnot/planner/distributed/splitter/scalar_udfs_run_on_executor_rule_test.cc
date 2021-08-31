@@ -18,6 +18,7 @@
 
 #include <gtest/gtest.h>
 
+#include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/distributed/splitter/scalar_udfs_run_on_executor_rule.h"
 #include "src/carnot/planner/test_utils.h"
@@ -27,16 +28,18 @@ namespace carnot {
 namespace planner {
 namespace distributed {
 
+using compiler::ResolveTypesRule;
 using testutils::DistributedRulesTest;
 
 TEST_F(DistributedRulesTest, ScalarUDFRunOnKelvinRuleTest) {
   // Kelvin-only plan
   MemorySourceIR* src1 = MakeMemSource("http_events");
   auto func1 = MakeFunc("kelvin_only", {});
-  func1->SetOutputDataType(types::DataType::STRING);
-  EXPECT_OK(func1->SplitInitArgs(0));
   MapIR* map1 = MakeMap(src1, {{"out", func1}});
   MakeMemSink(map1, "foo", {});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   ScalarUDFsRunOnKelvinRule rule(compiler_state_.get());
 
@@ -47,10 +50,11 @@ TEST_F(DistributedRulesTest, ScalarUDFRunOnKelvinRuleTest) {
   // PEM-only plan
   MemorySourceIR* src2 = MakeMemSource("http_events");
   auto func2 = MakeFunc("pem_only", {});
-  func2->SetOutputDataType(types::DataType::STRING);
-  EXPECT_OK(func2->SplitInitArgs(0));
   MapIR* map2 = MakeMap(src2, {{"out", func2}}, false);
   MakeMemSink(map2, "foo", {});
+
+  ResolveTypesRule type_rule2(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   rule_or_s = rule.Execute(graph.get());
   ASSERT_NOT_OK(rule_or_s);
@@ -64,14 +68,12 @@ TEST_F(DistributedRulesTest, ScalarUDFRunOnPEMRuleTest) {
   // PEM-only plan
   MemorySourceIR* src1 = MakeMemSource("http_events");
   auto func1 = MakeFunc("pem_only", {});
-  func1->SetOutputDataType(types::DataType::STRING);
-  EXPECT_OK(func1->SplitInitArgs(0));
   auto equals_func1 = MakeEqualsFunc(func1, MakeString("abc"));
-  equals_func1->SetOutputDataType(types::DataType::BOOLEAN);
-  equals_func1->SetRegistryArgTypes({types::DataType::STRING, types::DataType::STRING});
-  EXPECT_OK(equals_func1->SplitInitArgs(0));
   FilterIR* filter1 = MakeFilter(src1, equals_func1);
   MakeMemSink(filter1, "foo", {});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   ScalarUDFsRunOnPEMRule rule(compiler_state_.get());
 
@@ -82,14 +84,12 @@ TEST_F(DistributedRulesTest, ScalarUDFRunOnPEMRuleTest) {
   // Kelvin-only plan
   MemorySourceIR* src2 = MakeMemSource("http_events");
   auto func2 = MakeFunc("kelvin_only", {});
-  func2->SetOutputDataType(types::DataType::STRING);
-  EXPECT_OK(func2->SplitInitArgs(0));
   auto equals_func2 = MakeEqualsFunc(func2, MakeString("abc"));
-  equals_func2->SetOutputDataType(types::DataType::BOOLEAN);
-  equals_func2->SetRegistryArgTypes({types::DataType::STRING, types::DataType::STRING});
-  EXPECT_OK(equals_func2->SplitInitArgs(0));
   FilterIR* filter2 = MakeFilter(src2, equals_func2);
   MakeMemSink(filter2, "foo", {});
+
+  ResolveTypesRule type_rule2(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   rule_or_s = rule.Execute(graph.get());
   ASSERT_NOT_OK(rule_or_s);

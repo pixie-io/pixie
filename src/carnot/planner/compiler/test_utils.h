@@ -639,7 +639,7 @@ class OperatorTests : public ::testing::Test {
                    const types::DataType& output_type) {
     auto res = graph->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", name}, args)
                    .ConsumeValueOrDie();
-    res->SetOutputDataType(output_type);
+    EXPECT_OK(res->SetResolvedType(ValueType::Create(output_type, types::ST_NONE)));
     return res;
   }
 
@@ -663,20 +663,23 @@ class OperatorTests : public ::testing::Test {
     return metadata;
   }
 
-  FuncIR* MakeMeanFunc(ExpressionIR* value) {
+  FuncIR* MakeMeanFunc(std::string func_name, ExpressionIR* value) {
     return graph
-        ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "mean"},
+        ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", func_name},
                              std::vector<ExpressionIR*>({value}))
         .ConsumeValueOrDie();
   }
+  FuncIR* MakeMeanFunc(ExpressionIR* value) { return MakeMeanFunc("mean", value); }
 
-  FuncIR* MakeMeanFuncWithFloatType(ExpressionIR* value) {
+  FuncIR* MakeMeanFuncWithFloatType(std::string func_name, ExpressionIR* value) {
     auto res = graph
-                   ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "mean"},
+                   ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", func_name},
                                         std::vector<ExpressionIR*>({value}))
                    .ConsumeValueOrDie();
-    res->SetOutputDataType(types::DataType::FLOAT64);
     return res;
+  }
+  FuncIR* MakeMeanFuncWithFloatType(ExpressionIR* value) {
+    return MakeMeanFuncWithFloatType("mean", value);
   }
 
   FuncIR* MakeMeanFunc() {
@@ -686,16 +689,11 @@ class OperatorTests : public ::testing::Test {
         .ConsumeValueOrDie();
   }
 
-  FuncIR* AddSupportsPartial(FuncIR* func) {
-    func->SetSupportsPartial(true);
-    return func;
-  }
   FuncIR* MakeCountFunc(ExpressionIR* value) {
-    return AddSupportsPartial(
-        graph
-            ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "count"},
-                                 std::vector<ExpressionIR*>({value}))
-            .ConsumeValueOrDie());
+    return graph
+        ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "count"},
+                             std::vector<ExpressionIR*>({value}))
+        .ConsumeValueOrDie();
   }
 
   std::shared_ptr<IR> SwapGraphBeingBuilt(std::shared_ptr<IR> new_graph) {
@@ -872,7 +870,7 @@ class RulesTest : public OperatorTests {
     md_handler = MetadataHandler::Create();
   }
 
-  FilterIR* MakeFilter(OperatorIR* parent, bool split_init_args = false) {
+  FilterIR* MakeFilter(OperatorIR* parent) {
     auto constant1 = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
     auto column = MakeColumn("column", 0);
 
@@ -880,10 +878,9 @@ class RulesTest : public OperatorTests {
                            ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::eq, "==", "equal"},
                                                 std::vector<ExpressionIR*>{constant1, column})
                            .ValueOrDie();
-    filter_func->SetOutputDataType(types::DataType::BOOLEAN);
-    if (split_init_args) {
-      filter_func->SetRegistryArgTypes({types::INT64, types::INT64});
-      EXPECT_OK(filter_func->SplitInitArgs(0));
+    if (parent->is_type_resolved()) {
+      EXPECT_OK(
+          ResolveExpressionType(filter_func, compiler_state_.get(), {parent->resolved_type()}));
     }
 
     return graph->CreateNode<FilterIR>(ast, parent, filter_func).ValueOrDie();
@@ -1202,6 +1199,53 @@ class ASTVisitorTest : public OperatorTests {
 
     PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
     return ast_walker->GetMainFuncArgsSpec();
+  }
+
+  Status AddUDFToRegistry(std::string name, types::DataType return_type,
+                          const std::vector<types::DataType>& init_arg_types,
+                          const std::vector<types::DataType>& exec_arg_types) {
+    udfspb::UDFInfo info_pb = registry_info_->info_pb();
+    auto new_udf = info_pb.add_scalar_udfs();
+    new_udf->set_name(name);
+    new_udf->set_return_type(return_type);
+    for (auto init_arg : init_arg_types) {
+      new_udf->add_init_arg_types(init_arg);
+    }
+    for (auto exec_arg : exec_arg_types) {
+      new_udf->add_exec_arg_types(exec_arg);
+    }
+    return registry_info_->Init(info_pb);
+  }
+  Status AddUDFToRegistry(std::string name, types::DataType return_type,
+                          const std::vector<types::DataType>& exec_arg_types) {
+    return AddUDFToRegistry(name, return_type, {}, exec_arg_types);
+  }
+
+  Status AddUDAToRegistry(std::string name, types::DataType finalize_type,
+                          const std::vector<types::DataType>& init_arg_types,
+                          const std::vector<types::DataType>& update_arg_types,
+                          bool supports_partial) {
+    udfspb::UDFInfo info_pb = registry_info_->info_pb();
+    auto new_uda = info_pb.add_udas();
+    new_uda->set_name(name);
+    new_uda->set_finalize_type(finalize_type);
+    new_uda->set_supports_partial(supports_partial);
+    for (auto init_arg : init_arg_types) {
+      new_uda->add_init_arg_types(init_arg);
+    }
+    for (auto update_arg : update_arg_types) {
+      new_uda->add_update_arg_types(update_arg);
+    }
+    return registry_info_->Init(info_pb);
+  }
+  Status AddUDAToRegistry(std::string name, types::DataType finalize_type,
+                          const std::vector<types::DataType>& update_arg_types,
+                          bool supports_partial) {
+    return AddUDAToRegistry(name, finalize_type, {}, update_arg_types, supports_partial);
+  }
+  Status AddUDAToRegistry(std::string name, types::DataType finalize_type,
+                          const std::vector<types::DataType>& update_arg_types) {
+    return AddUDAToRegistry(name, finalize_type, {}, update_arg_types, false);
   }
 
   Relation cpu_relation;

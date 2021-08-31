@@ -154,7 +154,7 @@ TEST_F(OptimizerTest, DISABLED_mem_src_different_map_exprs_sink_test) {
     auto mem_src = MakeMemSource("cpu", cpu_relation);
     auto child_fn = MakeAddFunc(MakeColumn("cpu0", 0), MakeInt(2));
     auto parent_fn = MakeAddFunc(child_fn, MakeInt(23));
-    parent_fn->SetOutputDataType(types::FLOAT64);
+    EXPECT_OK(parent_fn->SetResolvedType(ValueType::Create(types::FLOAT64, types::ST_NONE)));
     auto map = MakeMap(mem_src, {{"fn0", parent_fn}});
     MakeMemSink(map, "");
   }

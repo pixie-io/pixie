@@ -20,6 +20,7 @@
 
 #include <vector>
 
+#include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
 #include "src/carnot/planner/distributed/splitter/presplit_optimizer/filter_push_down_rule.h"
 #include "src/carnot/planner/test_utils.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
@@ -29,22 +30,25 @@ namespace carnot {
 namespace planner {
 namespace distributed {
 
+using compiler::ResolveTypesRule;
 using ::testing::ElementsAre;
 
 using FilterPushDownTest = testutils::DistributedRulesTest;
 TEST_F(FilterPushDownTest, simple_no_op) {
-  Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
-  MemorySourceIR* src = MakeMemSource(relation);
+  Relation relation({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64},
+                    {"abc", "xyz", "column"});
+  MemorySourceIR* src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
 
   auto constant = MakeInt(10);
   auto column = MakeColumn("column", 0);
-  EXPECT_OK(column->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
 
   auto eq_func = MakeEqualsFunc(column, constant);
-  eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
-  EXPECT_OK(eq_func->SplitInitArgs(0));
   FilterIR* filter = MakeFilter(src, eq_func);
   MakeMemSink(filter, "foo", {});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   FilterPushdownRule rule(compiler_state_.get());
   auto result = rule.Execute(graph.get());
@@ -54,16 +58,17 @@ TEST_F(FilterPushDownTest, simple_no_op) {
 
 TEST_F(FilterPushDownTest, simple) {
   Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
-  MemorySourceIR* src = MakeMemSource(relation);
+  MemorySourceIR* src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
   MapIR* map =
       MakeMap(src, {{"abc_1", MakeColumn("abc", 0)}, {"abc", MakeColumn("abc", 0)}}, false);
   auto col = MakeColumn("abc", 0);
-  EXPECT_OK(col->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func = MakeEqualsFunc(col, MakeInt(2));
-  eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
-  EXPECT_OK(eq_func->SplitInitArgs(0));
   FilterIR* filter = MakeFilter(map, eq_func);
   MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   FilterPushdownRule rule(compiler_state_.get());
   auto result = rule.Execute(graph.get());
@@ -77,7 +82,8 @@ TEST_F(FilterPushDownTest, simple) {
 
 TEST_F(FilterPushDownTest, two_col_filter) {
   Relation relation({types::DataType::INT64}, {"abc"});
-  MemorySourceIR* src = MakeMemSource(relation);
+  MemorySourceIR* src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
   MapIR* map1 = MakeMap(src, {{"abc", MakeColumn("abc", 0)}}, false);
   MapIR* map2 = MakeMap(map1, {{"xyz", MakeInt(3)}, {"abc", MakeColumn("abc", 0)}}, false);
   MapIR* map3 =
@@ -85,14 +91,13 @@ TEST_F(FilterPushDownTest, two_col_filter) {
   MapIR* map4 =
       MakeMap(map3, {{"xyz", MakeColumn("xyz", 0)}, {"abc", MakeColumn("abc", 0)}}, false);
   auto col1 = MakeColumn("abc", 0);
-  EXPECT_OK(col1->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto col2 = MakeColumn("xyz", 0);
-  EXPECT_OK(col2->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func = MakeEqualsFunc(col1, col2);
-  eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
-  EXPECT_OK(eq_func->SplitInitArgs(0));
   FilterIR* filter = MakeFilter(map4, eq_func);
   MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   FilterPushdownRule rule(compiler_state_.get());
   auto result = rule.Execute(graph.get());
@@ -109,31 +114,25 @@ TEST_F(FilterPushDownTest, two_col_filter) {
 
 TEST_F(FilterPushDownTest, multi_condition_filter) {
   Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
-  MemorySourceIR* src = MakeMemSource(relation);
+  MemorySourceIR* src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
   MapIR* map1 = MakeMap(src, {{"abc", MakeColumn("abc", 0)}}, false);
   MapIR* map2 = MakeMap(map1, {{"xyz", MakeInt(3)}, {"abc", MakeColumn("abc", 0)}}, false);
   MapIR* map3 =
       MakeMap(map2, {{"xyz", MakeColumn("xyz", 0)}, {"abc", MakeColumn("abc", 0)}}, false);
 
   auto col1 = MakeColumn("abc", 0);
-  EXPECT_OK(col1->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto col2 = MakeColumn("xyz", 0);
-  EXPECT_OK(col2->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
 
   auto equals1 = MakeEqualsFunc(col1, MakeInt(2));
-  equals1->SetOutputDataType(types::DataType::BOOLEAN);
-  equals1->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
-  EXPECT_OK(equals1->SplitInitArgs(0));
   auto equals2 = MakeEqualsFunc(col2, MakeInt(3));
-  equals2->SetOutputDataType(types::DataType::BOOLEAN);
-  equals2->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
-  EXPECT_OK(equals2->SplitInitArgs(0));
 
   auto and_func = MakeAndFunc(equals1, equals2);
-  and_func->SetRegistryArgTypes({types::DataType::BOOLEAN, types::DataType::BOOLEAN});
-  EXPECT_OK(and_func->SplitInitArgs(0));
   FilterIR* filter = MakeFilter(map3, and_func);
   MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   FilterPushdownRule rule(compiler_state_.get());
   auto result = rule.Execute(graph.get());
@@ -152,17 +151,18 @@ TEST_F(FilterPushDownTest, column_rename) {
   // abc -> def
   // filter on def
   Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
-  MemorySourceIR* src = MakeMemSource(relation);
+  MemorySourceIR* src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
   MapIR* map1 = MakeMap(src, {{"def", MakeColumn("abc", 0)}}, false);
   MapIR* map2 = MakeMap(map1, {{"xyz", MakeInt(3)}, {"def", MakeColumn("def", 0)}}, false);
 
   auto col = MakeColumn("def", 0);
-  EXPECT_OK(col->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func = MakeEqualsFunc(col, MakeInt(2));
-  eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
-  EXPECT_OK(eq_func->SplitInitArgs(0));
   FilterIR* filter = MakeFilter(map2, eq_func);
   MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   FilterPushdownRule rule(compiler_state_.get());
   auto result = rule.Execute(graph.get());
@@ -182,26 +182,24 @@ TEST_F(FilterPushDownTest, two_filters_different_cols) {
   // filter on def
   // filter on abc
   Relation relation({types::DataType::INT64}, {"abc"});
-  MemorySourceIR* src = MakeMemSource(relation);
+  MemorySourceIR* src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
   MapIR* map1 = MakeMap(src, {{"abc", MakeColumn("abc", 0)}, {"def", MakeInt(2)}}, false);
   MapIR* map2 = MakeMap(
       map1, {{"abc", MakeColumn("abc", 0)}, {"def", MakeColumn("def", 0)}, {"ghi", MakeInt(2)}},
       false);
 
   auto col1 = MakeColumn("def", 0);
-  EXPECT_OK(col1->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func = MakeEqualsFunc(col1, MakeInt(2));
-  eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
-  EXPECT_OK(eq_func->SplitInitArgs(0));
   FilterIR* filter1 = MakeFilter(map2, eq_func);
 
   auto col2 = MakeColumn("abc", 0);
-  EXPECT_OK(col2->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func2 = MakeEqualsFunc(col2, MakeInt(3));
-  eq_func2->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
-  EXPECT_OK(eq_func2->SplitInitArgs(0));
   FilterIR* filter2 = MakeFilter(filter1, eq_func2);
   MemorySinkIR* sink = MakeMemSink(filter2, "foo", {});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   FilterPushdownRule rule(compiler_state_.get());
   auto result = rule.Execute(graph.get());
@@ -223,28 +221,26 @@ TEST_F(FilterPushDownTest, two_filters_same_cols) {
   // create ghi
   // filter on def again
   Relation relation({types::DataType::INT64}, {"abc"});
-  MemorySourceIR* src = MakeMemSource(relation);
+  MemorySourceIR* src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
   MapIR* map1 = MakeMap(src, {{"abc", MakeColumn("abc", 0)}, {"def", MakeInt(2)}}, false);
   MapIR* map2 =
       MakeMap(map1, {{"abc", MakeColumn("abc", 0)}, {"def", MakeColumn("def", 0)}}, false);
 
   auto col1 = MakeColumn("def", 0);
-  EXPECT_OK(col1->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func = MakeEqualsFunc(col1, MakeInt(2));
-  eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
-  EXPECT_OK(eq_func->SplitInitArgs(0));
   FilterIR* filter1 = MakeFilter(map2, eq_func);
   MapIR* map3 = MakeMap(
       filter1, {{"abc", MakeColumn("abc", 0)}, {"def", MakeColumn("def", 0)}, {"ghi", MakeInt(2)}},
       false);
 
   auto col2 = MakeColumn("def", 0);
-  EXPECT_OK(col2->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func2 = MakeEqualsFunc(MakeInt(3), col2);
-  eq_func2->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
-  EXPECT_OK(eq_func2->SplitInitArgs(0));
   FilterIR* filter2 = MakeFilter(map3, eq_func2);
   MemorySinkIR* sink = MakeMemSink(filter2, "foo", {});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   FilterPushdownRule rule(compiler_state_.get());
   auto result = rule.Execute(graph.get());
@@ -268,12 +264,16 @@ TEST_F(FilterPushDownTest, single_col_rename_collision) {
   // 2: abc=xyz, def=def
   // 3: filter on def (bool col) becomes filter on abc at position 1.
   Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "def"});
-  MemorySourceIR* src = MakeMemSource(relation);
+  MemorySourceIR* src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
   MapIR* map1 = MakeMap(src, {{"def", MakeColumn("abc", 0)}, {"xyz", MakeInt(2)}}, false);
   MapIR* map2 =
       MakeMap(map1, {{"def", MakeColumn("def", 0)}, {"abc", MakeColumn("xyz", 0)}}, false);
   FilterIR* filter = graph->CreateNode<FilterIR>(ast, map2, MakeColumn("def", 0)).ValueOrDie();
   MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   FilterPushdownRule rule(compiler_state_.get());
   auto result = rule.Execute(graph.get());
@@ -292,16 +292,17 @@ TEST_F(FilterPushDownTest, single_col_rename_collision_swap) {
   // abc -> xyz, xyz -> abc
   // filter on abc
   Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
-  MemorySourceIR* src = MakeMemSource(relation);
+  MemorySourceIR* src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
   MapIR* map = MakeMap(src, {{"xyz", MakeColumn("abc", 0)}, {"abc", MakeColumn("xyz", 0)}}, false);
 
   auto col = MakeColumn("abc", 0);
-  EXPECT_OK(col->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func = MakeEqualsFunc(col, MakeInt(2));
-  eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
-  EXPECT_OK(eq_func->SplitInitArgs(0));
   FilterIR* filter = MakeFilter(map, eq_func);
   MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   FilterPushdownRule rule(compiler_state_.get());
   auto result = rule.Execute(graph.get());
@@ -318,18 +319,19 @@ TEST_F(FilterPushDownTest, multicol_rename_collision) {
   // abc -> def, def -> abc
   // filter on abc
   Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
-  MemorySourceIR* src = MakeMemSource(relation);
+  MemorySourceIR* src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
   MapIR* map1 = MakeMap(src, {{"xyz", MakeColumn("abc", 0)}, {"abc", MakeColumn("xyz", 0)}}, false);
   MapIR* map2 =
       MakeMap(map1, {{"xyz", MakeColumn("abc", 0)}, {"abc", MakeColumn("xyz", 0)}}, false);
 
   auto col = MakeColumn("abc", 0);
-  EXPECT_OK(col->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func = MakeEqualsFunc(col, MakeInt(2));
-  eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
-  EXPECT_OK(eq_func->SplitInitArgs(0));
   FilterIR* filter = MakeFilter(map2, eq_func);
   MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   FilterPushdownRule rule(compiler_state_.get());
   auto result = rule.Execute(graph.get());
@@ -346,20 +348,18 @@ TEST_F(FilterPushDownTest, multicol_rename_collision) {
 
 TEST_F(FilterPushDownTest, agg_group) {
   Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
-  MemorySourceIR* src = MakeMemSource(relation);
+  MemorySourceIR* src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
   auto col0 = MakeColumn("xyz", 0);
-  EXPECT_OK(col0->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto mean_func = MakeMeanFunc(col0);
-  mean_func->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(mean_func->SplitInitArgs(0));
   BlockingAggIR* agg = MakeBlockingAgg(src, {MakeColumn("abc", 0)}, {{"out", mean_func}});
   auto col1 = MakeColumn("abc", 0);
-  EXPECT_OK(col1->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func = MakeEqualsFunc(col1, MakeInt(2));
-  eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
-  EXPECT_OK(eq_func->SplitInitArgs(0));
   FilterIR* filter = MakeFilter(agg, eq_func);
   MemorySinkIR* sink = MakeMemSink(filter, "");
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   FilterPushdownRule rule(compiler_state_.get());
   auto result = rule.Execute(graph.get());
@@ -374,22 +374,19 @@ TEST_F(FilterPushDownTest, agg_group) {
 
 TEST_F(FilterPushDownTest, agg_expr_no_push) {
   Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
-  MemorySourceIR* src = MakeMemSource(relation);
+  MemorySourceIR* src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
   auto col0 = MakeColumn("xyz", 0);
-  EXPECT_OK(col0->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto mean_func = MakeMeanFunc(col0);
-  mean_func->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(mean_func->SplitInitArgs(0));
   BlockingAggIR* agg = MakeBlockingAgg(src, {MakeColumn("abc", 0)}, {{"xyz", mean_func}});
   auto col1 = MakeColumn("xyz", 0);
-  EXPECT_OK(col1->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto col2 = MakeColumn("abc", 0);
-  EXPECT_OK(col2->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func = MakeEqualsFunc(col1, col2);
-  eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
-  EXPECT_OK(eq_func->SplitInitArgs(0));
   FilterIR* filter = MakeFilter(agg, eq_func);
   MakeMemSink(filter, "");
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   FilterPushdownRule rule(compiler_state_.get());
   auto result = rule.Execute(graph.get());
@@ -399,19 +396,18 @@ TEST_F(FilterPushDownTest, agg_expr_no_push) {
 
 TEST_F(FilterPushDownTest, multiple_children_dont_push) {
   Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
-  MemorySourceIR* src = MakeMemSource(relation);
+  MemorySourceIR* src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
   auto mean_func = MakeMeanFunc(MakeColumn("xyz", 0));
-  mean_func->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(mean_func->SplitInitArgs(0));
   BlockingAggIR* agg = MakeBlockingAgg(src, {MakeColumn("abc", 0)}, {{"out", mean_func}});
   auto col = MakeColumn("abc", 0);
-  EXPECT_OK(col->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func = MakeEqualsFunc(col, MakeInt(2));
-  eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
-  EXPECT_OK(eq_func->SplitInitArgs(0));
   FilterIR* filter = MakeFilter(agg, eq_func);
   MakeMemSink(filter, "");
   MakeMemSink(agg, "2");
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   FilterPushdownRule rule(compiler_state_.get());
   auto result = rule.Execute(graph.get());
@@ -427,16 +423,18 @@ TEST_F(FilterPushDownTest, kelvin_only_filter) {
   Relation relation1({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
   Relation relation2({types::DataType::INT64}, {"abc"});
 
-  MemorySourceIR* src = MakeMemSource(relation1);
+  MemorySourceIR* src = MakeMemSource("source1", relation1);
+  compiler_state_->relation_map()->emplace("source1", relation1);
   auto func = MakeFunc("pem_only", {});
-  EXPECT_OK(func->SplitInitArgs(0));
   MapIR* map1 = MakeMap(src, {{"abc", func}}, false);
   ASSERT_OK(map1->SetRelation(relation2));
   MapIR* map2 = MakeMap(map1, {{"def", MakeColumn("abc", 0)}}, false);
   auto func2 = MakeFunc("kelvin_only", {});
-  EXPECT_OK(func2->SplitInitArgs(0));
   FilterIR* filter = MakeFilter(map2, func2);
   MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   FilterPushdownRule rule(compiler_state_.get());
   auto result = rule.Execute(graph.get());

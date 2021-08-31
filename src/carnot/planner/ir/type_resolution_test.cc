@@ -30,17 +30,18 @@ namespace px {
 namespace carnot {
 namespace planner {
 
-class TypeResolutionTest : public OperatorTests {
+class TypeResolutionTest : public ASTVisitorTest {
  protected:
   void SetUpRegistryInfo() {
     auto func_registry = std::make_unique<udf::Registry>("func_registry");
     funcs::RegisterFuncsOrDie(func_registry.get());
     auto udf_proto = func_registry->ToProto();
-    info_ = std::make_unique<planner::RegistryInfo>();
-    PL_CHECK_OK(info_->Init(udf_proto));
+    registry_info_ = std::make_unique<planner::RegistryInfo>();
+    PL_CHECK_OK(registry_info_->Init(udf_proto));
   }
 
-  void SetUpImpl() override {
+  void SetUp() override {
+    ASTVisitorTest::SetUp();
     SetUpRegistryInfo();
 
     auto rel_map = std::make_unique<RelationMap>();
@@ -50,15 +51,13 @@ class TypeResolutionTest : public OperatorTests {
                                      {types::ST_NONE, types::ST_PERCENT, types::ST_PERCENT,
                                       types::ST_PERCENT, types::ST_UPID, types::ST_BYTES}));
 
-    compiler_state_ =
-        std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now, "result_addr");
+    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), registry_info_.get(),
+                                                      time_now, "result_addr");
     cpu_type_ = ValueType::Create(types::FLOAT64, types::ST_PERCENT);
     upid_type_ = ValueType::Create(types::UINT128, types::ST_UPID);
     bytes_type_ = ValueType::Create(types::INT64, types::ST_BYTES);
   }
 
-  std::unique_ptr<CompilerState> compiler_state_;
-  std::unique_ptr<RegistryInfo> info_;
   int64_t time_now = 1552607213931245000;
   std::shared_ptr<ValueType> cpu_type_;
   std::shared_ptr<ValueType> upid_type_;
@@ -139,8 +138,6 @@ TEST_F(TypeResolutionTest, drop) {
 TEST_F(TypeResolutionTest, agg_no_groups) {
   auto mem_src = MakeMemSource("cpu", {"cpu0", "cpu1", "upid"});
   auto mean_func = MakeMeanFunc(MakeColumn("cpu0", 0));
-  mean_func->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(mean_func->SplitInitArgs(0));
   auto agg = MakeBlockingAgg(mem_src, {}, {ColumnExpression("cpu_mean", mean_func)});
 
   ASSERT_OK(ResolveOperatorType(mem_src, compiler_state_.get()));
@@ -160,8 +157,6 @@ TEST_F(TypeResolutionTest, agg_no_groups) {
 TEST_F(TypeResolutionTest, agg_removes_semantics) {
   auto mem_src = MakeMemSource("cpu", {"cpu0"});
   auto count_func = MakeCountFunc(MakeColumn("cpu0", 0));
-  count_func->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(count_func->SplitInitArgs(0));
   auto agg = MakeBlockingAgg(mem_src, {}, {ColumnExpression("count", count_func)});
 
   ASSERT_OK(ResolveOperatorType(mem_src, compiler_state_.get()));
@@ -181,8 +176,6 @@ TEST_F(TypeResolutionTest, agg_removes_semantics) {
 TEST_F(TypeResolutionTest, agg_with_groups) {
   auto mem_src = MakeMemSource("cpu", {"cpu0", "cpu1", "upid"});
   auto mean_func = MakeMeanFunc(MakeColumn("cpu0", 0));
-  mean_func->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(mean_func->SplitInitArgs(0));
   auto agg =
       MakeBlockingAgg(mem_src, {MakeColumn("upid", 0)}, {ColumnExpression("cpu_mean", mean_func)});
 
@@ -202,8 +195,6 @@ TEST_F(TypeResolutionTest, agg_with_groups) {
 TEST_F(TypeResolutionTest, map_removes_semantics) {
   auto mem_src = MakeMemSource("cpu", {"cpu0", "cpu1", "upid"});
   auto add_func = MakeAddFunc(MakeColumn("cpu0", 0), MakeColumn("cpu1", 0));
-  add_func->SetRegistryArgTypes({types::INT64, types::INT64});
-  EXPECT_OK(add_func->SplitInitArgs(0));
   auto map = MakeMap(mem_src, {ColumnExpression("cpu_sum", add_func)});
 
   ASSERT_OK(ResolveOperatorType(mem_src, compiler_state_.get()));
@@ -226,8 +217,6 @@ TEST_F(TypeResolutionTest, map_removes_semantics) {
 TEST_F(TypeResolutionTest, map_keeps_semantics) {
   auto mem_src = MakeMemSource("cpu", {"bytes", "upid"});
   auto add_func = MakeAddFunc(MakeColumn("bytes", 0), MakeColumn("bytes", 0));
-  add_func->SetRegistryArgTypes({types::INT64, types::INT64});
-  EXPECT_OK(add_func->SplitInitArgs(0));
   auto map = MakeMap(mem_src, {ColumnExpression("bytes_sum", add_func)});
 
   ASSERT_OK(ResolveOperatorType(mem_src, compiler_state_.get()));
@@ -306,8 +295,6 @@ TEST_F(TypeResolutionTest, udtf_src) {
 TEST_F(TypeResolutionTest, func_ir_no_types) {
   auto mem_src = MakeMemSource("cpu", {"cpu0", "upid"});
   auto func_ir = MakeMultFunc(MakeFloat(1.234), MakeColumn("cpu0", 0));
-  func_ir->SetRegistryArgTypes({types::FLOAT64, types::INT64});
-  EXPECT_OK(func_ir->SplitInitArgs(0));
   ASSERT_OK(ResolveOperatorType(mem_src, compiler_state_.get()));
   EXPECT_TRUE(mem_src->is_type_resolved());
   ASSERT_OK(ResolveExpressionType(func_ir, compiler_state_.get(), {mem_src->resolved_type()}));
@@ -359,10 +346,9 @@ TEST_F(TypeResolutionTest, data_ir) {
 
 TEST_F(TypeResolutionTest, func_ir_init_args) {
   auto mem_src = MakeMemSource("cpu", {"cpu0", "upid"});
+  // Pretend that mult has 1 init arg.
+  ASSERT_OK(AddUDFToRegistry("mult", types::FLOAT64, {types::FLOAT64}, {types::FLOAT64}));
   auto func_ir = MakeMultFunc(MakeFloat(1.234), MakeColumn("cpu0", 0));
-  func_ir->SetRegistryArgTypes({types::FLOAT64, types::INT64});
-  // Pretend that the first arg is an init arg and make sure type resolution still works.
-  EXPECT_OK(func_ir->SplitInitArgs(1));
 
   ASSERT_OK(ResolveOperatorType(mem_src, compiler_state_.get()));
   EXPECT_TRUE(mem_src->is_type_resolved());

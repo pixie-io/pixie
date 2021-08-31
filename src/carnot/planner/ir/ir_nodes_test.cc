@@ -157,10 +157,9 @@ constexpr char kExpectedMemSrcPb[] = R"(
   }
 )";
 
-TEST(ToProto, memory_source_ir) {
-  auto ast = MakeTestAstPtr();
-  auto graph = std::make_shared<IR>();
+using ToProtoTest = ASTVisitorTest;
 
+TEST_F(ToProtoTest, memory_source_ir) {
   auto mem_src =
       graph->CreateNode<MemorySourceIR>(ast, "test_table", std::vector<std::string>{}).ValueOrDie();
   EXPECT_OK(mem_src->SetRelation(
@@ -185,10 +184,7 @@ constexpr char kExpectedEmptySrcPb[] = R"(
   }
 )";
 
-TEST(ToProto, empty_source_ir) {
-  auto ast = MakeTestAstPtr();
-  auto graph = std::make_shared<IR>();
-
+TEST_F(ToProtoTest, empty_source_ir) {
   ASSERT_OK_AND_ASSIGN(
       EmptySourceIR * empty_source,
       graph->CreateNode<EmptySourceIR>(
@@ -221,10 +217,7 @@ constexpr char kExpectedMemSrcWithTabletPb[] = R"(
   }
 )";
 
-TEST(ToProto, memory_source_ir_with_tablet) {
-  auto ast = MakeTestAstPtr();
-  auto graph = std::make_shared<IR>();
-
+TEST_F(ToProtoTest, memory_source_ir_with_tablet) {
   auto mem_src =
       graph->CreateNode<MemorySourceIR>(ast, "test_table", std::vector<std::string>{"cpu0", "cpu1"})
           .ConsumeValueOrDie();
@@ -257,10 +250,7 @@ constexpr char kExpectedMemSinkPb[] = R"(
   }
 )";
 
-TEST(ToProto, memory_sink_ir) {
-  auto ast = MakeTestAstPtr();
-  auto graph = std::make_shared<IR>();
-
+TEST_F(ToProtoTest, memory_sink_ir) {
   auto mem_source =
       graph->CreateNode<MemorySourceIR>(ast, "source", std::vector<std::string>{}).ValueOrDie();
   auto mem_sink = graph
@@ -287,7 +277,6 @@ constexpr char kExpectedMapPb[] = R"(
     column_names: "col_name"
     expressions {
       func {
-        id: 1
         name: "add"
         args {
           constant {
@@ -308,9 +297,7 @@ constexpr char kExpectedMapPb[] = R"(
   }
 )";
 
-TEST(ToProto, map_ir) {
-  auto ast = MakeTestAstPtr();
-  auto graph = std::make_shared<IR>();
+TEST_F(ToProtoTest, map_ir) {
   auto constant = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
   auto col = graph->CreateNode<ColumnIR>(ast, "col4", /*parent_op_idx*/ 0).ValueOrDie();
   EXPECT_OK(col->SetResolvedType(ValueType::Create(types::INT64, types::ST_NONE)));
@@ -318,9 +305,6 @@ TEST(ToProto, map_ir) {
                   ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::add, "+", "add"},
                                        std::vector<ExpressionIR*>({constant, col}))
                   .ValueOrDie();
-  func->set_func_id(1);
-  func->SetRegistryArgTypes({constant->EvaluatedDataType(), col->EvaluatedDataType()});
-  EXPECT_OK(func->SplitInitArgs(0));
 
   auto mem_src =
       graph
@@ -331,10 +315,13 @@ TEST(ToProto, map_ir) {
       {types::INT64, types::INT64, types::INT64, types::INT64, types::INT64},
       {"col0", "col1", "col2", "col3", "col4"});
   EXPECT_OK(mem_src->SetRelation(relation));
+  compiler_state_->relation_map()->emplace("table_name", relation);
+  ASSERT_OK(ResolveOperatorType(mem_src, compiler_state_.get()));
   auto map = graph
                  ->CreateNode<MapIR>(ast, mem_src, ColExpressionVector{{"col_name", func}},
                                      /* keep_input_columns */ false)
                  .ValueOrDie();
+  ASSERT_OK(ResolveOperatorType(map, compiler_state_.get()));
 
   planpb::Operator pb;
   EXPECT_OK(map->ToProto(&pb));
@@ -370,20 +357,23 @@ constexpr char kExpectedFilterPb[] = R"(
   }
 )";
 
-TEST_F(OperatorTests, filter_to_proto) {
+TEST_F(ToProtoTest, filter_to_proto) {
   // Make the mem_src not node_id 0
   MakeInt(1);
-  auto mem_src = MakeMemSource(MakeRelation());
+  auto rel = MakeRelation();
+  auto mem_src = MakeMemSource("table", rel);
+  compiler_state_->relation_map()->emplace("table", rel);
   auto col1 = MakeColumn("cpu0", 0);
   auto col2 = MakeColumn("cpu2", 0);
   auto equals = MakeEqualsFunc(col1, col2);
   EXPECT_OK(col1->SetResolvedType(ValueType::Create(types::FLOAT64, types::ST_NONE)));
   EXPECT_OK(col2->SetResolvedType(ValueType::Create(types::FLOAT64, types::ST_NONE)));
-  equals->SetRegistryArgTypes({col1->EvaluatedDataType(), col2->EvaluatedDataType()});
-  EXPECT_OK(equals->SplitInitArgs(0));
 
   auto filter = MakeFilter(mem_src, equals);
   ASSERT_OK(filter->SetRelation(Relation({types::DataType::INT64}, {"cpu1"})));
+
+  ASSERT_OK(ResolveOperatorType(mem_src, compiler_state_.get()));
+  ASSERT_OK(ResolveOperatorType(filter, compiler_state_.get()));
 
   planpb::Operator pb;
   EXPECT_OK(filter->ToProto(&pb));
@@ -409,6 +399,8 @@ constexpr char kExpectedAggPb[] = R"(
           index: 2
         }
       }
+      args_data_types: INT64
+      args_data_types: INT64
     }
     groups {
       node: 0
@@ -421,9 +413,7 @@ constexpr char kExpectedAggPb[] = R"(
   }
 )";
 
-TEST(ToProto, agg_ir) {
-  auto ast = MakeTestAstPtr();
-  auto graph = std::make_shared<IR>();
+TEST_F(ToProtoTest, agg_ir) {
   auto mem_src = graph
                      ->CreateNode<MemorySourceIR>(
                          ast, "source", std::vector<std::string>{"col1", "group1", "column"})
@@ -431,6 +421,7 @@ TEST(ToProto, agg_ir) {
   table_store::schema::Relation rel({types::INT64, types::INT64, types::INT64},
                                     {"col1", "group1", "column"});
   EXPECT_OK(mem_src->SetRelation(rel));
+  compiler_state_->relation_map()->emplace("source", rel);
   auto constant = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
   auto col = graph->CreateNode<ColumnIR>(ast, "column", /*parent_op_idx*/ 0).ValueOrDie();
   EXPECT_OK(col->SetResolvedType(ValueType::Create(types::INT64, types::ST_NONE)));
@@ -439,7 +430,7 @@ TEST(ToProto, agg_ir) {
                       ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "mean"},
                                            std::vector<ExpressionIR*>{constant, col})
                       .ValueOrDie();
-  EXPECT_OK(agg_func->SplitInitArgs(0));
+  EXPECT_OK(AddUDAToRegistry("mean", types::INT64, {types::INT64, types::INT64}));
   auto group1 = graph->CreateNode<ColumnIR>(ast, "group1", /*parent_op_idx*/ 0).ValueOrDie();
   EXPECT_OK(group1->SetResolvedType(ValueType::Create(types::INT64, types::ST_NONE)));
 
@@ -447,6 +438,9 @@ TEST(ToProto, agg_ir) {
                  ->CreateNode<BlockingAggIR>(ast, mem_src, std::vector<ColumnIR*>{group1},
                                              ColExpressionVector{{"mean", agg_func}})
                  .ValueOrDie();
+
+  ASSERT_OK(ResolveOperatorType(mem_src, compiler_state_.get()));
+  ASSERT_OK(ResolveOperatorType(agg, compiler_state_.get()));
 
   planpb::Operator pb;
   ASSERT_OK(agg->ToProto(&pb));
@@ -454,9 +448,7 @@ TEST(ToProto, agg_ir) {
   EXPECT_THAT(pb, EqualsProto(kExpectedAggPb));
 }
 
-TEST(ToProto, agg_ir_with_presplit_proto) {
-  auto ast = MakeTestAstPtr();
-  auto graph = std::make_shared<IR>();
+TEST_F(ToProtoTest, agg_ir_with_presplit_proto) {
   auto mem_src = graph
                      ->CreateNode<MemorySourceIR>(
                          ast, "source", std::vector<std::string>{"col1", "group1", "column"})
@@ -464,6 +456,7 @@ TEST(ToProto, agg_ir_with_presplit_proto) {
   table_store::schema::Relation rel({types::INT64, types::INT64, types::INT64},
                                     {"col1", "group1", "column"});
   EXPECT_OK(mem_src->SetRelation(rel));
+  compiler_state_->relation_map()->emplace("source", rel);
   auto constant = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
   auto col = graph->CreateNode<ColumnIR>(ast, "column", /*parent_op_idx*/ 0).ValueOrDie();
   EXPECT_OK(col->SetResolvedType(ValueType::Create(types::INT64, types::ST_NONE)));
@@ -472,7 +465,7 @@ TEST(ToProto, agg_ir_with_presplit_proto) {
                       ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "mean"},
                                            std::vector<ExpressionIR*>{constant, col})
                       .ValueOrDie();
-  EXPECT_OK(agg_func->SplitInitArgs(0));
+  EXPECT_OK(AddUDAToRegistry("mean", types::INT64, {types::INT64, types::INT64}));
   auto group1 = graph->CreateNode<ColumnIR>(ast, "group1", /*parent_op_idx*/ 0).ValueOrDie();
   EXPECT_OK(group1->SetResolvedType(ValueType::Create(types::INT64, types::ST_NONE)));
 
@@ -480,6 +473,9 @@ TEST(ToProto, agg_ir_with_presplit_proto) {
                  ->CreateNode<BlockingAggIR>(ast, mem_src, std::vector<ColumnIR*>{group1},
                                              ColExpressionVector{{"mean", agg_func}})
                  .ValueOrDie();
+
+  ASSERT_OK(ResolveOperatorType(mem_src, compiler_state_.get()));
+  ASSERT_OK(ResolveOperatorType(agg, compiler_state_.get()));
 
   planpb::Operator pb;
   ASSERT_OK(agg->ToProto(&pb));
@@ -516,7 +512,7 @@ constexpr char kExpectedLimitPb[] = R"(
   }
 )";
 
-TEST(ToProto, limit_ir) {
+TEST_F(ToProtoTest, limit_ir) {
   auto ast = MakeTestAstPtr();
   auto graph = std::make_shared<IR>();
   auto mem_src = graph
@@ -544,7 +540,7 @@ constant {
   int64_value: 123
 })proto";
 
-TEST(ToProto, int_ir) {
+TEST_F(ToProtoTest, int_ir) {
   auto ast = MakeTestAstPtr();
   auto graph = std::make_shared<IR>();
   auto data_ir = graph->CreateNode<IntIR>(ast, 123).ConsumeValueOrDie();
@@ -561,7 +557,7 @@ constant {
   string_value: "pixie"
 })proto";
 
-TEST(ToProto, string_ir) {
+TEST_F(ToProtoTest, string_ir) {
   auto ast = MakeTestAstPtr();
   auto graph = std::make_shared<IR>();
   auto data_ir = graph->CreateNode<StringIR>(ast, "pixie").ConsumeValueOrDie();
@@ -578,7 +574,7 @@ constant {
   float64_value: 1.23
 })proto";
 
-TEST(ToProto, float_ir) {
+TEST_F(ToProtoTest, float_ir) {
   auto ast = MakeTestAstPtr();
   auto graph = std::make_shared<IR>();
   auto data_ir = graph->CreateNode<FloatIR>(ast, 1.23).ConsumeValueOrDie();
@@ -598,7 +594,7 @@ constant {
   }
 })proto";
 
-TEST(ToProto, uint128_ir) {
+TEST_F(ToProtoTest, uint128_ir) {
   auto ast = MakeTestAstPtr();
   auto graph = std::make_shared<IR>();
   auto data_ir = graph->CreateNode<UInt128IR>(ast, absl::MakeUint128(123, 456)).ConsumeValueOrDie();
@@ -615,7 +611,7 @@ constant {
   time64_ns_value: 123
 })proto";
 
-TEST(ToProto, time_ir) {
+TEST_F(ToProtoTest, time_ir) {
   auto ast = MakeTestAstPtr();
   auto graph = std::make_shared<IR>();
   auto data_ir = graph->CreateNode<TimeIR>(ast, 123).ConsumeValueOrDie();
@@ -632,7 +628,7 @@ constant {
   bool_value: true
 })proto";
 
-TEST(ToProto, bool_ir) {
+TEST_F(ToProtoTest, bool_ir) {
   auto ast = MakeTestAstPtr();
   auto graph = std::make_shared<IR>();
   auto data_ir = graph->CreateNode<BoolIR>(ast, true).ConsumeValueOrDie();
@@ -664,6 +660,7 @@ func{
 
 constexpr char kNestedFuncPbTxt[] = R"proto(
 func {
+  id: 1
   name: "foobar2"
   args {
     constant {
@@ -679,6 +676,7 @@ func {
 constexpr char kInitArgsFuncPbTxt[] = R"proto(
 func {
   name: "foobar3"
+  id: 2
   init_args {
     data_type: STRING
     string_value: "abcd"
@@ -693,9 +691,7 @@ func {
 }
 )proto";
 
-TEST(ToProto, func_tests) {
-  auto ast = MakeTestAstPtr();
-  auto graph = std::make_shared<IR>();
+TEST_F(ToProtoTest, func_tests) {
   auto int1 = graph->CreateNode<IntIR>(ast, 123).ConsumeValueOrDie();
   auto int2 = graph->CreateNode<IntIR>(ast, 456).ConsumeValueOrDie();
   auto int3 = graph->CreateNode<IntIR>(ast, 789).ConsumeValueOrDie();
@@ -705,23 +701,22 @@ TEST(ToProto, func_tests) {
                         ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "foobar1"},
                                              std::vector<ExpressionIR*>{int1, int2})
                         .ConsumeValueOrDie();
-
-  foobar1_fn->SetRegistryArgTypes({types::INT64, types::INT64});
-  EXPECT_OK(foobar1_fn->SplitInitArgs(0));
+  EXPECT_OK(AddUDFToRegistry("foobar1", types::INT64, {types::INT64, types::INT64}));
+  ASSERT_OK(ResolveExpressionType(foobar1_fn, compiler_state_.get(), {}));
   auto foobar2_fn = graph
                         ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "foobar2"},
                                              std::vector<ExpressionIR*>{int3, foobar1_fn})
                         .ConsumeValueOrDie();
-  foobar2_fn->SetRegistryArgTypes({types::INT64, types::INT64});
-  EXPECT_OK(foobar2_fn->SplitInitArgs(0));
+  EXPECT_OK(AddUDFToRegistry("foobar2", types::INT64, {types::INT64, types::INT64}));
+  ASSERT_OK(ResolveExpressionType(foobar2_fn, compiler_state_.get(), {}));
   ASSERT_THAT(foobar2_fn->args(), ElementsAre(int3, foobar1_fn));
 
   auto foobar3_fn = graph
                         ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "foobar3"},
                                              std::vector<ExpressionIR*>{init_string, int1})
                         .ConsumeValueOrDie();
-  foobar3_fn->SetRegistryArgTypes({types::STRING, types::INT64});
-  ASSERT_OK(foobar3_fn->SplitInitArgs(/*num_init_args*/ 1));
+  EXPECT_OK(AddUDFToRegistry("foobar3", types::STRING, {types::STRING}, {types::INT64}));
+  ASSERT_OK(ResolveExpressionType(foobar3_fn, compiler_state_.get(), {}));
 
   planpb::ScalarExpression pb1;
 
@@ -746,7 +741,7 @@ column {
   index: 1
 })proto";
 
-TEST(ToProto, column_tests) {
+TEST_F(ToProtoTest, column_tests) {
   auto ast = MakeTestAstPtr();
   auto graph = std::make_shared<IR>();
   auto column = graph->CreateNode<ColumnIR>(ast, "column", 0).ConsumeValueOrDie();
@@ -853,18 +848,21 @@ TEST_F(OperatorTests, external_grpc) {
   EXPECT_THAT(grpc_sink->out_columns(), ElementsAre("outcol"));
 }
 
-using CloneTests = OperatorTests;
+using CloneTests = ToProtoTest;
 TEST_F(CloneTests, simple_clone) {
-  auto mem_source = MakeMemSource();
+  Relation rel({types::INT64, types::INT64, types::INT64}, {"test1", "test2", "test3"});
+  auto mem_source = MakeMemSource("source", rel);
   ColumnIR* col1 = MakeColumn("test1", 0);
   ColumnIR* col2 = MakeColumn("test2", 0);
   col2->set_annotations(ExpressionIR::Annotations(MetadataType::POD_NAME));
   ColumnIR* col3 = MakeColumn("test3", 0);
   FuncIR* add_func = MakeAddFunc(col3, MakeInt(3));
-  add_func->SetRegistryArgTypes({types::INT64, types::INT64});
-  EXPECT_OK(add_func->SplitInitArgs(0));
   MapIR* map = MakeMap(mem_source, {{{"out1", col1}, {"out2", col2}, {"out3", add_func}}, {}});
   MakeMemSink(map, "out");
+
+  compiler_state_->relation_map()->emplace("source", rel);
+  ASSERT_OK(ResolveOperatorType(mem_source, compiler_state_.get()));
+  ASSERT_OK(ResolveOperatorType(map, compiler_state_.get()));
 
   auto out = graph->Clone();
   EXPECT_OK(out.status());
@@ -879,17 +877,18 @@ TEST_F(CloneTests, simple_clone) {
 }
 
 TEST_F(CloneTests, repeated_exprs_clone) {
-  auto mem_source = MakeMemSource();
+  auto mem_source = MakeMemSource("table", Relation());
+  compiler_state_->relation_map()->emplace("table", Relation());
   IntIR* intnode = MakeInt(105);
   FuncIR* add_func = MakeAddFunc(intnode, MakeInt(3));
-  add_func->SetRegistryArgTypes({types::INT64, types::INT64});
-  EXPECT_OK(add_func->SplitInitArgs(0));
   FuncIR* add_func2 = MakeAddFunc(intnode, add_func);
-  add_func2->SetRegistryArgTypes({types::INT64, types::INT64});
-  EXPECT_OK(add_func2->SplitInitArgs(0));
   MapIR* map1 = MakeMap(mem_source, {{{"int", intnode}, {"add", add_func}}});
   MapIR* map2 = MakeMap(map1, {{{"add1", add_func}, {"add2", add_func2}}});
   MakeMemSink(map2, "out");
+
+  ASSERT_OK(ResolveOperatorType(mem_source, compiler_state_.get()));
+  ASSERT_OK(ResolveOperatorType(map1, compiler_state_.get()));
+  ASSERT_OK(ResolveOperatorType(map2, compiler_state_.get()));
 
   auto out = graph->Clone();
   EXPECT_OK(out.status());
@@ -908,20 +907,16 @@ TEST_F(CloneTests, all_op_clone) {
   mem_source->set_streaming(true);
 
   auto equals_fn = MakeEqualsFunc(MakeMetadataIR("service", 0), MakeString("pl/test_service"));
-  equals_fn->SetRegistryArgTypes({types::STRING, types::STRING});
-  EXPECT_OK(equals_fn->SplitInitArgs(0));
-  auto filter = MakeFilter(mem_source, equals_fn);
+  auto eq_map = MakeMap(mem_source, {{{"equals_column", equals_fn}}});
+  auto filter = MakeFilter(eq_map, MakeColumn("equals_column", 0));
   auto limit = MakeLimit(filter, 10);
 
   auto mean_func = MakeMeanFunc(MakeColumn("equals_column", 0));
-  mean_func->SetRegistryArgTypes({types::BOOLEAN});
-  EXPECT_OK(mean_func->SplitInitArgs(0));
   auto agg = MakeBlockingAgg(limit, {MakeMetadataIR("service", 0)}, {{{"mean", mean_func}}, {}});
   auto add_func = MakeAddFunc(MakeColumn("mean", 0), MakeInt(3));
-  add_func->SetRegistryArgTypes({types::INT64, types::INT64});
-  EXPECT_OK(add_func->SplitInitArgs(0));
   auto map = MakeMap(agg, {{{"mean_deux", add_func}, {"mean", MakeColumn("mean", 0)}}, {}});
   MakeMemSink(map, "sup");
+
   auto out = graph->Clone();
   EXPECT_OK(out.status());
   std::unique_ptr<IR> cloned_ir = out.ConsumeValueOrDie();
@@ -1057,11 +1052,9 @@ TEST_F(CloneTests, copy_into_existing_dag) {
   auto src = MakeMemSource();
   IntIR* intnode = MakeInt(105);
   FuncIR* add_func = MakeAddFunc(intnode, MakeInt(3));
-  add_func->SetRegistryArgTypes({types::INT64, types::INT64});
-  EXPECT_OK(add_func->SplitInitArgs(0));
   FuncIR* add_func2 = MakeAddFunc(intnode, add_func);
-  add_func2->SetRegistryArgTypes({types::INT64, types::INT64});
-  EXPECT_OK(add_func2->SplitInitArgs(0));
+  ASSERT_OK(ResolveExpressionType(add_func, compiler_state_.get(), {}));
+  ASSERT_OK(ResolveExpressionType(add_func2, compiler_state_.get(), {}));
   MapIR* map = MakeMap(src, {{{"int", intnode}, {"add1", add_func}, {"add2", add_func2}}});
 
   auto source_out = graph->CopyNode(src);
@@ -1101,11 +1094,9 @@ TEST_F(CloneTests, repeated_exprs_copy_selected_nodes) {
   auto mem_source = MakeMemSource();
   IntIR* intnode = MakeInt(105);
   FuncIR* add_func = MakeAddFunc(intnode, MakeInt(3));
-  add_func->SetRegistryArgTypes({types::INT64, types::INT64});
-  EXPECT_OK(add_func->SplitInitArgs(0));
   FuncIR* add_func2 = MakeAddFunc(intnode, add_func);
-  add_func2->SetRegistryArgTypes({types::INT64, types::INT64});
-  EXPECT_OK(add_func2->SplitInitArgs(0));
+  ASSERT_OK(ResolveExpressionType(add_func, compiler_state_.get(), {}));
+  ASSERT_OK(ResolveExpressionType(add_func2, compiler_state_.get(), {}));
   MapIR* map1 = MakeMap(mem_source, {{{"int", intnode}, {"add", add_func}}});
   MapIR* map2 = MakeMap(map1, {{{"add1", add_func}, {"add2", add_func2}}});
   auto sink = MakeMemSink(map2, "out");
@@ -1871,28 +1862,35 @@ TEST_F(OperatorTests, grpc_sink_required_inputs) {
   EXPECT_THAT(inputs[0], UnorderedElementsAre("output1", "output2"));
 }
 
-TEST_F(OperatorTests, map_required_inputs) {
-  MemorySourceIR* mem_source = MakeMemSource();
+using RequiredInputTest = ToProtoTest;
+TEST_F(RequiredInputTest, map_required_inputs) {
+  Relation rel({types::INT64, types::INT64, types::INT64}, {"test1", "test2", "test3"});
+  MemorySourceIR* mem_source = MakeMemSource("table", rel);
+  compiler_state_->relation_map()->emplace("table", rel);
   ColumnIR* col1 = MakeColumn("test1", /*parent_op_idx*/ 0);
   ColumnIR* col2 = MakeColumn("test2", /*parent_op_idx*/ 0);
   ColumnIR* col3 = MakeColumn("test3", /*parent_op_idx*/ 0);
   FuncIR* add_func = MakeAddFunc(col3, MakeInt(3));
-  add_func->SetRegistryArgTypes({types::INT64, types::INT64});
-  EXPECT_OK(add_func->SplitInitArgs(0));
   MapIR* child_map =
       MakeMap(mem_source, {{{"out11", col1}, {"out2", col2}, {"out3", add_func}}, {}});
+
+  ASSERT_OK(ResolveOperatorType(mem_source, compiler_state_.get()));
+  ASSERT_OK(ResolveOperatorType(child_map, compiler_state_.get()));
 
   auto inputs = child_map->RequiredInputColumns().ConsumeValueOrDie();
   EXPECT_EQ(1, inputs.size());
   EXPECT_THAT(inputs[0], UnorderedElementsAre("test1", "test2", "test3"));
 }
 
-TEST_F(OperatorTests, filter_required_inputs) {
-  auto mem_src = MakeMemSource(MakeRelation());
+TEST_F(RequiredInputTest, filter_required_inputs) {
+  auto rel = MakeRelation();
+  auto mem_src = MakeMemSource("table", rel);
+  compiler_state_->relation_map()->emplace("table", rel);
   auto equals_fn = MakeEqualsFunc(MakeColumn("cpu0", 0), MakeColumn("cpu2", 0));
-  equals_fn->SetRegistryArgTypes({types::INT64, types::INT64});
-  EXPECT_OK(equals_fn->SplitInitArgs(0));
   auto filter = MakeFilter(mem_src, equals_fn);
+
+  ASSERT_OK(ResolveOperatorType(mem_src, compiler_state_.get()));
+  ASSERT_OK(ResolveOperatorType(filter, compiler_state_.get()));
 
   ASSERT_OK(filter->SetRelation(Relation({types::DataType::INT64}, {"count"})));
   auto inputs = filter->RequiredInputColumns().ConsumeValueOrDie();
@@ -1900,19 +1898,22 @@ TEST_F(OperatorTests, filter_required_inputs) {
   EXPECT_THAT(inputs[0], UnorderedElementsAre("count", "cpu0", "cpu2"));
 }
 
-TEST_F(OperatorTests, blocking_agg_required_inputs) {
-  auto mem_src = MakeMemSource(MakeRelation());
-  auto mean_func = MakeMeanFunc(MakeColumn("count2", 0));
-  mean_func->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(mean_func->SplitInitArgs(0));
-  auto agg = MakeBlockingAgg(mem_src, {MakeColumn("count1", 0)}, {{"mean", mean_func}});
+TEST_F(RequiredInputTest, blocking_agg_required_inputs) {
+  auto rel = MakeRelation();
+  auto mem_src = MakeMemSource("table", rel);
+  compiler_state_->relation_map()->emplace("table", rel);
+  auto mean_func = MakeMeanFunc(MakeColumn("cpu0", 0));
+  auto agg = MakeBlockingAgg(mem_src, {MakeColumn("cpu1", 0)}, {{"mean", mean_func}});
+
+  ASSERT_OK(ResolveOperatorType(mem_src, compiler_state_.get()));
+  ASSERT_OK(ResolveOperatorType(agg, compiler_state_.get()));
 
   auto inputs = agg->RequiredInputColumns().ConsumeValueOrDie();
   EXPECT_EQ(1, inputs.size());
-  EXPECT_THAT(inputs[0], UnorderedElementsAre("count1", "count2"));
+  EXPECT_THAT(inputs[0], UnorderedElementsAre("cpu0", "cpu1"));
 }
 
-TEST_F(OperatorTests, join_required_inputs) {
+TEST_F(RequiredInputTest, join_required_inputs) {
   Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
                       types::DataType::INT64},
                      {"left_only", "col1", "col2", "col3"});
@@ -2132,9 +2133,8 @@ TEST(ZeroValueForType, TestUint128) {
   EXPECT_EQ(0, static_cast<UInt128IR*>(val)->val());
 }
 
-TEST(FuncIR, SplitInitArgs) {
-  auto ast = MakeTestAstPtr();
-  auto graph = std::make_shared<IR>();
+using SplitFuncTest = ToProtoTest;
+TEST_F(SplitFuncTest, SplitInitArgs) {
   auto constant = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
   auto col = graph->CreateNode<ColumnIR>(ast, "col4", /*parent_op_idx*/ 0).ValueOrDie();
   EXPECT_OK(col->SetResolvedType(ValueType::Create(types::INT64, types::ST_NONE)));
@@ -2142,11 +2142,12 @@ TEST(FuncIR, SplitInitArgs) {
                   ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::add, "+", "add"},
                                        std::vector<ExpressionIR*>({constant, col}))
                   .ValueOrDie();
-  func->set_func_id(1);
-  func->SetRegistryArgTypes({constant->EvaluatedDataType(), col->EvaluatedDataType()});
 
   EXPECT_EQ(2, func->all_args().size());
-  EXPECT_OK(func->SplitInitArgs(/*num_init_args*/ 1));
+
+  ASSERT_OK(AddUDFToRegistry("add", types::INT64, {types::INT64}, {types::INT64}));
+  ASSERT_OK(ResolveExpressionType(func, compiler_state_.get(), {}));
+
   EXPECT_EQ(1, func->init_args().size());
   EXPECT_EQ(constant, func->init_args()[0]);
   EXPECT_EQ(1, func->args().size());

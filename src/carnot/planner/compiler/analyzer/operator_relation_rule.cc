@@ -18,7 +18,6 @@
 
 #include <string>
 
-#include "src/carnot/planner/compiler/analyzer/data_type_rule.h"
 #include "src/carnot/planner/compiler/analyzer/operator_relation_rule.h"
 
 namespace px {

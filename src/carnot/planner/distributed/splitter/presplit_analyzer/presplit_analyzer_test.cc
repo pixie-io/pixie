@@ -19,6 +19,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
 #include "src/carnot/planner/distributed/splitter/presplit_analyzer/presplit_analyzer.h"
 #include "src/carnot/planner/test_utils.h"
 
@@ -27,6 +28,7 @@ namespace carnot {
 namespace planner {
 namespace distributed {
 
+using compiler::ResolveTypesRule;
 using table_store::schema::Relation;
 using table_store::schemapb::Schema;
 using ::testing::_;
@@ -40,24 +42,17 @@ TEST_F(PreSplitAnalyzerTest, split_pem_udf) {
   MemorySourceIR* src1 = MakeMemSource("http_events");
   ASSERT_OK(
       src1->SetRelation(Relation({types::STRING, types::STRING}, {"remote_addr", "req_path"})));
-  ASSERT_OK(ResolveOperatorType(src1, compiler_state_.get()));
   auto input1 = MakeColumn("remote_addr", 0);
   auto input2 = MakeColumn("req_path", 0);
-  EXPECT_OK(input1->SetResolvedType(ValueType::Create(types::DataType::STRING, types::ST_NONE)));
-  EXPECT_OK(input2->SetResolvedType(ValueType::Create(types::DataType::STRING, types::ST_NONE)));
   auto func1 = MakeFunc("pem_only", {input1});
   auto func2 = MakeFunc("kelvin_only", {input2});
-  func1->SetOutputDataType(types::DataType::STRING);
-  func1->SetRegistryArgTypes({types::DataType::STRING});
-  EXPECT_OK(func1->SplitInitArgs(0));
-  func2->SetOutputDataType(types::DataType::STRING);
-  func2->SetRegistryArgTypes({types::DataType::STRING});
-  EXPECT_OK(func2->SplitInitArgs(0));
   MapIR* map1 = MakeMap(src1, {{"pem", func1}, {"kelvin", func2}});
-  ASSERT_OK(map1->SetRelationFromExprs());
-  ASSERT_OK(ResolveOperatorType(map1, compiler_state_.get()));
   MemorySinkIR* sink = MakeMemSink(map1, "foo", {});
 
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
+
+  ASSERT_OK(map1->SetRelationFromExprs());
   Relation existing_map_relation({types::STRING, types::STRING}, {"pem", "kelvin"});
   EXPECT_EQ(map1->relation(), existing_map_relation);
 

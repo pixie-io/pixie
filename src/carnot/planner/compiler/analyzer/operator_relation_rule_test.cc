@@ -46,7 +46,7 @@ class BlockingAggOperatorRelationRuleTest : public RulesTest {
                                              std::vector<ExpressionIR*>{constant})
                         .ValueOrDie();
     if (resolve_agg_func) {
-      agg_func->SetOutputDataType(func_data_type);
+      EXPECT_OK(agg_func->SetResolvedType(ValueType::Create(func_data_type, types::ST_NONE)));
     }
 
     auto group = MakeColumn(group_name, /* parent_op_idx */ 0);
@@ -125,8 +125,8 @@ class MapOperatorRelationRuleTest : public RulesTest {
                                            std::vector<ExpressionIR*>{constant1, constant2})
                       .ValueOrDie();
     if (resolve_map_func) {
-      func_1->SetOutputDataType(func_data_type);
-      func_2->SetOutputDataType(func_data_type);
+      EXPECT_OK(func_1->SetResolvedType(ValueType::Create(func_data_type, types::ST_NONE)));
+      EXPECT_OK(func_2->SetResolvedType(ValueType::Create(func_data_type, types::ST_NONE)));
     }
 
     map = graph

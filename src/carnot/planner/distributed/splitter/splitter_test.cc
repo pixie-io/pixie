@@ -25,6 +25,7 @@
 
 #include <pypa/parser/parser.hh>
 
+#include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/distributed/splitter/splitter.h"
 #include "src/carnot/planner/ir/ir.h"
@@ -36,25 +37,23 @@ namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
+using compiler::ResolveTypesRule;
 using ::testing::ElementsAre;
 using ::testing::UnorderedElementsAre;
 using ::testing::UnorderedElementsAreArray;
 
-class SplitterTest : public OperatorTests {
+class SplitterTest : public ASTVisitorTest {
  protected:
-  void SetUpImpl() override {
-    info_ = std::make_unique<RegistryInfo>();
-    ASSERT_OK(info_->Init(testutils::UDFInfoWithTestUDTF()));
-
-    auto rel_map = std::make_unique<RelationMap>();
+  void SetUp() override {
+    ASTVisitorTest::SetUp();
     cpu_relation = table_store::schema::Relation(
         std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
                                       types::DataType::FLOAT64, types::DataType::FLOAT64}),
         std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"}));
-    rel_map->emplace("cpu", cpu_relation);
+    compiler_state_->relation_map()->erase("cpu");
+    compiler_state_->relation_map()->emplace("cpu", cpu_relation);
 
-    compiler_state_ =
-        std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now, "result_addr");
+    PL_CHECK_OK(compiler_state_->registry_info()->Init(testutils::UDFInfoWithTestUDTF()));
   }
   void HasGRPCSinkChild(int64_t id, IR* test_graph, const std::string& err_string) {
     IRNode* maybe_op_node = test_graph->Get(id);
@@ -86,20 +85,19 @@ class SplitterTest : public OperatorTests {
     return static_cast<TIR*>(new_node);
   }
 
-  std::unique_ptr<CompilerState> compiler_state_;
-  std::unique_ptr<RegistryInfo> info_;
   int64_t time_now = 1552607213931245000;
   table_store::schema::Relation cpu_relation;
 };
 
 TEST_F(SplitterTest, blocking_agg_test) {
-  auto mem_src = MakeMemSource(MakeRelation());
+  auto mem_src = MakeMemSource("cpu", cpu_relation);
   auto mean_func = MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64));
-  mean_func->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(mean_func->SplitInitArgs(0));
   auto agg = MakeBlockingAgg(mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
                              {{"mean", mean_func}});
   auto sink = MakeMemSink(agg, "out");
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
@@ -130,18 +128,19 @@ TEST_F(SplitterTest, blocking_agg_test) {
 }
 
 TEST_F(SplitterTest, partial_agg_test) {
-  auto mem_src = MakeMemSource(MakeRelation());
+  auto mem_src = MakeMemSource("cpu", cpu_relation);
   auto count_col = MakeColumn("count", 0, types::DataType::INT64);
   EXPECT_OK(count_col->SetResolvedType(ValueType::Create(types::INT64, types::ST_NONE)));
   auto mean_func = MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64));
-  mean_func->SetSupportsPartial(true);
-  mean_func->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(mean_func->SplitInitArgs(0));
+  ASSERT_OK(AddUDAToRegistry("mean", types::FLOAT64, {types::INT64}, /*supports_partial*/ true));
   auto agg = MakeBlockingAgg(mem_src, {count_col}, {{"mean", mean_func}});
 
   table_store::schema::Relation relation({types::INT64, types::FLOAT64}, {"count", "mean"});
   ASSERT_OK(agg->SetRelation(relation));
   MakeMemSink(agg, "out");
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ true);
   ASSERT_OK(splitter_or_s);
@@ -196,11 +195,14 @@ TEST_F(SplitterTest, partial_agg_test) {
 }
 
 TEST_F(SplitterTest, limit_test) {
-  auto mem_src = MakeMemSource(MakeRelation());
+  auto mem_src = MakeMemSource("cpu", cpu_relation);
   auto limit = MakeLimit(mem_src, 10);
   EXPECT_OK(limit->SetRelation(mem_src->relation()));
   auto sink = MakeMemSink(limit, "out");
   EXPECT_TRUE(limit->IsRelationInit());
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
@@ -241,11 +243,14 @@ TEST_F(SplitterTest, limit_test) {
 }
 
 TEST_F(SplitterTest, limit_test_pem_only) {
-  auto mem_src = MakeMemSource(MakeRelation());
+  auto mem_src = MakeMemSource("cpu", cpu_relation);
   auto limit = MakeLimit(mem_src, 10, /* pem_only */ true);
   EXPECT_OK(limit->SetRelation(mem_src->relation()));
   auto sink = MakeMemSink(limit, "out");
   EXPECT_TRUE(limit->IsRelationInit());
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
@@ -281,11 +286,14 @@ TEST_F(SplitterTest, limit_test_pem_only) {
 }
 
 TEST_F(SplitterTest, sink_only_test) {
-  auto mem_src = MakeMemSource(MakeRelation());
-  auto map1 = MakeMap(mem_src, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
-  auto map2 = MakeMap(map1, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
+  auto mem_src = MakeMemSource("cpu", cpu_relation);
+  auto map1 = MakeMap(mem_src, {{"cpu0", MakeColumn("cpu0", 0)}, {"cpu1", MakeColumn("cpu1", 0)}});
+  auto map2 = MakeMap(map1, {{"cpu0", MakeColumn("cpu0", 0)}, {"cpu1", MakeColumn("cpu1", 0)}});
   EXPECT_OK(map2->SetRelation(MakeRelation()));
   auto sink = MakeMemSink(map2, "out");
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
@@ -312,16 +320,17 @@ TEST_F(SplitterTest, sink_only_test) {
 
 // Test to see whether splitting works when sandwiched between two separate ops.
 TEST_F(SplitterTest, sandwich_test) {
-  auto mem_src = MakeMemSource(MakeRelation());
+  auto mem_src = MakeMemSource("cpu", cpu_relation);
   auto map = MakeMap(mem_src, {{"count", MakeColumn("count", 0, types::DataType::INT64)}});
   EXPECT_OK(map->SetRelation(MakeRelation()));
   auto mean_func = MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64));
-  mean_func->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(mean_func->SplitInitArgs(0));
   auto agg =
       MakeBlockingAgg(map, {MakeColumn("count", 0, types::DataType::INT64)}, {{"mean", mean_func}});
   auto map2 = MakeMap(agg, {{"count", MakeColumn("count", 0, types::DataType::INT64)}});
   MakeMemSink(map2, "out");
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
@@ -349,18 +358,17 @@ TEST_F(SplitterTest, sandwich_test) {
 }
 
 TEST_F(SplitterTest, first_blocking_node_test) {
-  auto mem_src = MakeMemSource(MakeRelation());
+  auto mem_src = MakeMemSource("cpu", cpu_relation);
   auto mean_func1 = MakeMeanFuncWithFloatType(MakeColumn("cpu0", 0, types::DataType::INT64));
-  mean_func1->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(mean_func1->SplitInitArgs(0));
   auto agg = MakeBlockingAgg(mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
                              {{"mean", mean_func1}});
   auto mean_func2 = MakeMeanFuncWithFloatType(MakeColumn("mean", 0, types::DataType::FLOAT64));
-  mean_func2->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(mean_func2->SplitInitArgs(0));
   auto agg2 = MakeBlockingAgg(agg, {MakeColumn("count", 0, types::DataType::INT64)},
                               {{"mean2", mean_func2}});
   MakeMemSink(agg2, "out");
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
@@ -393,8 +401,8 @@ TEST_F(SplitterTest, first_blocking_node_test) {
 
 // Test feeding into unions.
 TEST_F(SplitterTest, union_operator) {
-  auto mem_src1 = MakeMemSource(MakeRelation());
-  auto mem_src2 = MakeMemSource(MakeRelation());
+  auto mem_src1 = MakeMemSource("cpu", cpu_relation);
+  auto mem_src2 = MakeMemSource("cpu", cpu_relation);
   auto union_op = MakeUnion({mem_src1, mem_src2});
   MakeMemSink(union_op, "out");
   EXPECT_OK(union_op->SetRelationFromParents());
@@ -402,6 +410,9 @@ TEST_F(SplitterTest, union_operator) {
   for (const auto union_parent : union_op->parents()) {
     EXPECT_MATCH(union_parent, MemorySource());
   }
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
@@ -451,21 +462,20 @@ TEST_F(SplitterTest, union_operator) {
  * Agg1   Agg2
  */
 TEST_F(SplitterTest, two_blocking_children) {
-  auto mem_src = MakeMemSource(MakeRelation());
+  auto mem_src = MakeMemSource("cpu", cpu_relation);
   auto mean_func1 = MakeMeanFuncWithFloatType(MakeColumn("cpu0", 0, types::DataType::INT64));
-  mean_func1->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(mean_func1->SplitInitArgs(0));
   auto blocking_agg1 = MakeBlockingAgg(mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
                                        {{"cpu0_mean", mean_func1}});
   MakeMemSink(blocking_agg1, "out1");
   auto mean_func2 = MakeMeanFuncWithFloatType(MakeColumn("cpu1", 0, types::DataType::INT64));
-  mean_func2->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(mean_func2->SplitInitArgs(0));
   auto blocking_agg2 = MakeBlockingAgg(mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
                                        {{"cpu1_mean", mean_func2}});
   MakeMemSink(blocking_agg2, "out2");
 
   EXPECT_EQ(mem_src->Children().size(), 2);
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
@@ -517,18 +527,19 @@ TEST_F(SplitterTest, two_blocking_children) {
  *      Join
  */
 TEST_F(SplitterTest, agg_join_children) {
-  auto mem_src = MakeMemSource(MakeRelation());
+  auto mem_src = MakeMemSource("cpu", cpu_relation);
   auto mean_func = MakeMeanFuncWithFloatType(MakeColumn("cpu0", 0, types::DataType::INT64));
-  mean_func->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(mean_func->SplitInitArgs(0));
   auto blocking_agg = MakeBlockingAgg(mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
                                       {{"cpu0_mean", mean_func}});
   auto join = MakeJoin({mem_src, blocking_agg}, "inner", MakeRelation(),
                        Relation({types::INT64, types::FLOAT64}, {"count", "cpu0_mean"}), {"count"},
-                       {"count"});
+                       {"count"}, {"", "_right"});
   MakeMemSink(join, "out");
 
   EXPECT_EQ(mem_src->Children().size(), 2);
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
@@ -565,10 +576,13 @@ TEST_F(SplitterTest, agg_join_children) {
 }
 
 TEST_F(SplitterTest, simple_split_test) {
-  auto mem_src = MakeMemSource(MakeRelation());
-  auto map1 = MakeMap(mem_src, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
+  auto mem_src = MakeMemSource("cpu", cpu_relation);
+  auto map1 = MakeMap(mem_src, {{"cpu0", MakeColumn("cpu0", 0)}, {"cpu1", MakeColumn("cpu1", 0)}});
   EXPECT_OK(map1->SetRelation(MakeRelation()));
   auto mem_sink = MakeMemSink(map1, "out");
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
@@ -592,15 +606,18 @@ TEST_F(SplitterTest, simple_split_test) {
 }
 
 TEST_F(SplitterTest, two_paths) {
-  auto mem_src1 = MakeMemSource(MakeRelation());
-  auto map1 = MakeMap(mem_src1, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
+  auto mem_src1 = MakeMemSource("cpu", cpu_relation);
+  auto map1 = MakeMap(mem_src1, {{"cpu0", MakeColumn("cpu0", 0)}, {"cpu1", MakeColumn("cpu1", 0)}});
   EXPECT_OK(map1->SetRelation(MakeRelation()));
   auto mem_sink1 = MakeMemSink(map1, "out");
 
-  auto mem_src2 = MakeMemSource(MakeRelation());
-  auto map2 = MakeMap(mem_src2, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
+  auto mem_src2 = MakeMemSource("cpu", cpu_relation);
+  auto map2 = MakeMap(mem_src2, {{"cpu0", MakeColumn("cpu0", 0)}, {"cpu1", MakeColumn("cpu1", 0)}});
   EXPECT_OK(map2->SetRelation(MakeRelation()));
   auto mem_sink2 = MakeMemSink(map2, "out");
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
@@ -662,6 +679,9 @@ TEST_F(SplitterTest, UDTFOnSubsetOfPEMs) {
   auto udtf = MakeUDTFSource(udtf_spec, {{"upid", MakeString(upid_value)}});
   auto sink = MakeMemSink(udtf, "out");
 
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
+
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
   std::unique_ptr<Splitter> splitter = splitter_or_s.ConsumeValueOrDie();
@@ -713,25 +733,28 @@ TEST_F(SplitterTest, UDTFOnSubsetOfPEMs) {
  */
 
 TEST_F(SplitterTest, MultipleBranchedIdenticalDepths) {
-  auto mem_src = MakeMemSource(MakeRelation());
+  auto mem_src = MakeMemSource("cpu", cpu_relation);
   // Branch 1.
-  auto map1 = MakeMap(mem_src, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
+  auto map1 = MakeMap(mem_src, {{"cpu0", MakeColumn("cpu0", 0)}, {"cpu1", MakeColumn("cpu1", 0)}});
   EXPECT_OK(map1->SetRelation(MakeRelation()));
-  auto mean_func1 = MakeMeanFuncWithFloatType(MakeColumn("col0", 0, types::DataType::INT64));
-  mean_func1->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(mean_func1->SplitInitArgs(0));
+  EXPECT_OK(AddUDAToRegistry("mean_no_partial", types::FLOAT64, {types::INT64},
+                             /*supports_partial*/ false));
+  auto mean_func1 =
+      MakeMeanFuncWithFloatType("mean_no_partial", MakeColumn("cpu0", 0, types::DataType::INT64));
   auto agg1 = MakeBlockingAgg(map1, {MakeColumn("count", 0, types::DataType::INT64)},
                               {{"mean", mean_func1}});
   MakeMemSink(agg1, "out1");
   // Branch 2.
-  auto mean_func2 = MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64));
-  mean_func2->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(mean_func2->SplitInitArgs(0));
-  auto map2 = MakeMap(mem_src, {{"col2", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
+  auto mean_func2 =
+      MakeMeanFuncWithFloatType("mean_no_partial", MakeColumn("count", 0, types::DataType::INT64));
+  auto map2 = MakeMap(mem_src, {{"cpu2", MakeColumn("cpu0", 0)}, {"cpu1", MakeColumn("cpu1", 0)}});
   EXPECT_OK(map2->SetRelation(MakeRelation()));
   auto agg2 = MakeBlockingAgg(map2, {MakeColumn("count", 0, types::DataType::INT64)},
                               {{"mean", mean_func2}});
   MakeMemSink(agg2, "out2");
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ true);
   ASSERT_OK(splitter_or_s);
@@ -791,22 +814,25 @@ TEST_F(SplitterTest, MultipleBranchedIdenticalDepths) {
  * Sink
  */
 TEST_F(SplitterTest, MultipleBranchedDifferentBlockingDepths) {
-  auto mem_src = MakeMemSource(MakeRelation());
-  auto map1 = MakeMap(mem_src, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
+  auto mem_src = MakeMemSource("cpu", cpu_relation);
+  auto map1 = MakeMap(mem_src, {{"cpu0", MakeColumn("cpu0", 0)}, {"cpu1", MakeColumn("cpu1", 0)}});
   EXPECT_OK(map1->SetRelation(MakeRelation()));
-  auto mean_func1 = MakeMeanFuncWithFloatType(MakeColumn("col0", 0, types::DataType::INT64));
-  mean_func1->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(mean_func1->SplitInitArgs(0));
+  EXPECT_OK(AddUDAToRegistry("mean_no_partial", types::FLOAT64, {types::INT64},
+                             /*supports_partial*/ false));
+  auto mean_func1 =
+      MakeMeanFuncWithFloatType("mean_no_partial", MakeColumn("cpu0", 0, types::DataType::INT64));
   auto agg1 = MakeBlockingAgg(map1, {MakeColumn("count", 0, types::DataType::INT64)},
                               {{"mean", mean_func1}});
   MakeMemSink(agg1, "out1");
 
-  auto mean_func2 = MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64));
-  mean_func2->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(mean_func2->SplitInitArgs(0));
+  auto mean_func2 =
+      MakeMeanFuncWithFloatType("mean_no_partial", MakeColumn("count", 0, types::DataType::INT64));
   auto agg2 = MakeBlockingAgg(mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
                               {{"mean", mean_func2}});
   MakeMemSink(agg2, "out2");
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ true);
   ASSERT_OK(splitter_or_s);
@@ -874,17 +900,13 @@ TEST_F(SplitterTest, MultipleBranchesAndSparseFilter) {
   table_store::schema::Relation relation(
       {types::UINT128, types::TIME64NS, types::INT64, types::DataType::FLOAT64},
       {"upid", "time_", "count", "cpu0"});
-  auto mem_src = MakeMemSource(relation);
+  auto mem_src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
   // Makes a sparse filter.
   auto metadata_fn =
-      MakeFunc("upid_to_service_name", {MakeColumn("upid", 0, types::DataType::UINT128)},
-               types::DataType::STRING);
+      MakeFunc("upid_to_service_name", {MakeColumn("upid", 0, types::DataType::UINT128)});
   metadata_fn->set_annotations(ExpressionIR::Annotations{MetadataType::SERVICE_NAME});
-  metadata_fn->SetRegistryArgTypes({types::DataType::UINT128});
-  EXPECT_OK(metadata_fn->SplitInitArgs(0));
   auto eq_func = MakeEqualsFunc(metadata_fn, MakeString("pl/agent1"));
-  eq_func->SetRegistryArgTypes({types::STRING, types::STRING});
-  EXPECT_OK(eq_func->SplitInitArgs(0));
   auto filter = MakeFilter(mem_src, eq_func);
   EXPECT_OK(filter->SetRelation(relation));
   auto map = MakeMap(filter, {{"time_", MakeColumn("time_", 0)},
@@ -894,17 +916,16 @@ TEST_F(SplitterTest, MultipleBranchesAndSparseFilter) {
   MakeMemSink(map, "out1");
 
   auto count_func1 = MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64));
-  count_func1->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(count_func1->SplitInitArgs(0));
   auto agg1 = MakeBlockingAgg(filter, {MakeColumn("count", 0, types::DataType::INT64)},
                               {{"countelms", count_func1}});
   MakeMemSink(agg1, "out2");
 
   auto count_func2 = MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64));
-  count_func2->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(count_func2->SplitInitArgs(0));
   auto agg2 = MakeBlockingAgg(mem_src, {}, {{"countelms", count_func2}});
   MakeMemSink(agg2, "out3");
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ true);
   ASSERT_OK(splitter_or_s);
@@ -1030,10 +1051,9 @@ TEST_F(SplitterTest, branch_where_children_must_be_on_pem) {
   table_store::schema::Relation relation(
       {types::UINT128, types::TIME64NS, types::INT64, types::DataType::FLOAT64},
       {"upid", "time_", "count", "cpu0"});
-  auto mem_src = MakeMemSource(relation);
+  auto mem_src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
   auto add_func = MakeAddFunc(MakeColumn("cpu0", 0, types::DataType::INT64), MakeInt(1));
-  add_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
-  EXPECT_OK(add_func->SplitInitArgs(0));
   auto random_map = MakeMap(mem_src, {{"cpu++", add_func}},
                             /*keep_input_columns*/ true);
 
@@ -1042,14 +1062,9 @@ TEST_F(SplitterTest, branch_where_children_must_be_on_pem) {
       {"upid", "time_", "count", "cpu0", "cpu++"})));
   // Makes a sparse filter.
   auto metadata_fn1 =
-      MakeFunc("upid_to_service_name", {MakeColumn("upid", 0, types::DataType::UINT128)},
-               types::DataType::STRING);
+      MakeFunc("upid_to_service_name", {MakeColumn("upid", 0, types::DataType::UINT128)});
   metadata_fn1->set_annotations(ExpressionIR::Annotations{MetadataType::SERVICE_NAME});
-  metadata_fn1->SetRegistryArgTypes({types::DataType::UINT128});
-  EXPECT_OK(metadata_fn1->SplitInitArgs(0));
   auto eq_func = MakeEqualsFunc(metadata_fn1, MakeString("pl/agent1"));
-  eq_func->SetRegistryArgTypes({types::DataType::STRING, types::DataType::STRING});
-  EXPECT_OK(eq_func->SplitInitArgs(0));
   auto map1 = MakeMap(random_map, {{"equals_service", eq_func}},
                       /*keep_input_columns*/ true);
 
@@ -1062,25 +1077,24 @@ TEST_F(SplitterTest, branch_where_children_must_be_on_pem) {
   auto count_col_agg1 = MakeColumn("count", 0, types::DataType::INT64);
   EXPECT_OK(count_col_agg1->SetResolvedType(ValueType::Create(types::INT64, types::ST_NONE)));
   auto count_func1 = MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64));
-  count_func1->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(count_func1->SplitInitArgs(0));
   auto agg1 = MakeBlockingAgg(map1, {count_col_agg1}, {{"countelms", count_func1}});
   MakeMemSink(agg1, "out2");
 
   // agg2 should not partial.
-  auto agg2_count_fn = MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64));
-  agg2_count_fn->SetSupportsPartial(false);
-  agg2_count_fn->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(agg2_count_fn->SplitInitArgs(0));
+  auto agg2_count_fn =
+      graph
+          ->CreateNode<FuncIR>(
+              ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "count_no_partial"},
+              std::vector<ExpressionIR*>({MakeColumn("count", 0, types::DataType::INT64)}))
+          .ConsumeValueOrDie();
+  ASSERT_OK(AddUDAToRegistry("count_no_partial", types::INT64, {types::INT64},
+                             /*supports_partial*/ false));
   auto agg2 = MakeBlockingAgg(mem_src, {}, {{"countelms", agg2_count_fn}});
   MakeMemSink(agg2, "out3");
 
   auto metadata_fn2 =
-      MakeFunc("upid_to_pod_name", {MakeColumn("upid", 0, types::DataType::UINT128)},
-               types::DataType::STRING);
+      MakeFunc("upid_to_pod_name", {MakeColumn("upid", 0, types::DataType::UINT128)});
   metadata_fn2->set_annotations(ExpressionIR::Annotations{MetadataType::POD_NAME});
-  metadata_fn2->SetRegistryArgTypes({types::DataType::UINT128});
-  EXPECT_OK(metadata_fn2->SplitInitArgs(0));
   auto map2 = MakeMap(
       map1, {{"pod", metadata_fn2}, {"count", MakeColumn("count", 0, types::DataType::INT64)}},
       /*keep_input_columns*/ true);
@@ -1089,6 +1103,9 @@ TEST_F(SplitterTest, branch_where_children_must_be_on_pem) {
                 types::BOOLEAN, types::STRING, types::INT64},
                {"upid", "time_", "cpu0", "cpu++", "equals_service", "pod", "count"})));
   MakeMemSink(map2, "out1");
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ true);
   ASSERT_OK(splitter_or_s);
@@ -1207,10 +1224,9 @@ TEST_F(SplitterTest, branch_where_single_node_must_be_on_pem_the_rest_can_recurs
   table_store::schema::Relation relation(
       {types::UINT128, types::TIME64NS, types::INT64, types::DataType::FLOAT64},
       {"upid", "time_", "count", "cpu0"});
-  auto mem_src = MakeMemSource(relation);
+  auto mem_src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
   auto add_func = MakeAddFunc(MakeColumn("cpu0", 0, types::DataType::INT64), MakeInt(1));
-  add_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
-  EXPECT_OK(add_func->SplitInitArgs(0));
   auto random_map1 = MakeMap(mem_src, {{"cpu++", add_func}},
                              /*keep_input_columns*/ true);
 
@@ -1219,14 +1235,9 @@ TEST_F(SplitterTest, branch_where_single_node_must_be_on_pem_the_rest_can_recurs
       {"upid", "time_", "count", "cpu0", "cpu++"})));
   // Makes a sparse filter.
   auto metadata_fn1 =
-      MakeFunc("upid_to_service_name", {MakeColumn("upid", 0, types::DataType::UINT128)},
-               types::DataType::STRING);
+      MakeFunc("upid_to_service_name", {MakeColumn("upid", 0, types::DataType::UINT128)});
   metadata_fn1->set_annotations(ExpressionIR::Annotations{MetadataType::SERVICE_NAME});
-  metadata_fn1->SetRegistryArgTypes({types::DataType::UINT128});
-  EXPECT_OK(metadata_fn1->SplitInitArgs(0));
   auto eq_func = MakeEqualsFunc(metadata_fn1, MakeString("pl/agent1"));
-  eq_func->SetRegistryArgTypes({types::DataType::STRING, types::DataType::STRING});
-  EXPECT_OK(eq_func->SplitInitArgs(0));
   auto pem_map1 = MakeMap(random_map1, {{"equals_service", eq_func}},
                           /*keep_input_columns*/ true);
 
@@ -1239,22 +1250,22 @@ TEST_F(SplitterTest, branch_where_single_node_must_be_on_pem_the_rest_can_recurs
   auto count_col_agg1 = MakeColumn("count", 0, types::DataType::INT64);
   EXPECT_OK(count_col_agg1->SetResolvedType(ValueType::Create(types::INT64, types::ST_NONE)));
   auto count_func = MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64));
-  count_func->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(count_func->SplitInitArgs(0));
   auto agg1 = MakeBlockingAgg(pem_map1, {count_col_agg1}, {{"countelms", count_func}});
   MakeMemSink(agg1, "out2");
 
   // agg2 should not partial.
-  auto agg2_count_fn = MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64));
-  agg2_count_fn->SetSupportsPartial(false);
-  agg2_count_fn->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(agg2_count_fn->SplitInitArgs(0));
+  auto agg2_count_fn =
+      graph
+          ->CreateNode<FuncIR>(
+              ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "count_no_partial"},
+              std::vector<ExpressionIR*>({MakeColumn("count", 0, types::DataType::INT64)}))
+          .ConsumeValueOrDie();
+  ASSERT_OK(AddUDAToRegistry("count_no_partial", types::INT64, {types::INT64},
+                             /*supports_partial*/ false));
   auto agg2 = MakeBlockingAgg(mem_src, {}, {{"countelms", agg2_count_fn}});
   MakeMemSink(agg2, "out3");
 
   auto add_func2 = MakeAddFunc(MakeColumn("count", 0, types::DataType::INT64), MakeInt(1));
-  add_func2->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
-  EXPECT_OK(add_func2->SplitInitArgs(0));
   auto random_map2 = MakeMap(
       pem_map1, {{"count++", add_func2}, {"count", MakeColumn("count", 0, types::DataType::INT64)}},
       /*keep_input_columns*/ true);
@@ -1263,6 +1274,9 @@ TEST_F(SplitterTest, branch_where_single_node_must_be_on_pem_the_rest_can_recurs
                 types::BOOLEAN, types::INT64, types::INT64},
                {"upid", "time_", "cpu0", "cpu++", "equals_service", "count++", "count"})));
   MakeMemSink(random_map2, "out1");
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ true);
   ASSERT_OK(splitter_or_s);
@@ -1330,9 +1344,8 @@ TEST_F(SplitterTest, branch_where_single_node_must_be_on_pem_the_rest_can_recurs
 }
 
 TEST_F(SplitterTest, schedule_kelvin_only_func_on_kelvin) {
-  auto mem_src = MakeMemSource(MakeRelation());
+  auto mem_src = MakeMemSource("cpu", cpu_relation);
   auto kelvin_func = MakeFunc("kelvin_only", {});
-  EXPECT_OK(kelvin_func->SplitInitArgs(0));
   auto kelvin_only_map = MakeMap(mem_src, {{"kelvin_only", kelvin_func}},
                                  /*keep_input_columns*/ false);
 
@@ -1340,14 +1353,15 @@ TEST_F(SplitterTest, schedule_kelvin_only_func_on_kelvin) {
   ASSERT_OK(kelvin_only_map->SetRelation(relation1));
 
   auto count_func = MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64));
-  count_func->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(count_func->SplitInitArgs(0));
   auto agg = MakeBlockingAgg(kelvin_only_map, {MakeColumn("count", 0, types::DataType::INT64)},
                              {{"mean", count_func}});
   table_store::schema::Relation relation2({types::INT64, types::FLOAT64}, {"count", "mean"});
   ASSERT_OK(agg->SetRelation(relation2));
 
   auto sink = MakeMemSink(agg, "out");
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
@@ -1383,16 +1397,16 @@ TEST_F(SplitterTest, schedule_kelvin_only_func_on_kelvin) {
 }
 
 TEST_F(SplitterTest, errors_if_pem_func_on_kelvin) {
-  auto mem_src = MakeMemSource(MakeRelation());
+  auto mem_src = MakeMemSource("cpu", cpu_relation);
   auto mean_func = MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64));
-  mean_func->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(mean_func->SplitInitArgs(0));
   auto agg = MakeBlockingAgg(mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
                              {{"mean", mean_func}});
   auto pem_func = MakeFunc("pem_only", {});
-  EXPECT_OK(pem_func->SplitInitArgs(0));
   auto pem_only_map = MakeMap(agg, {{"pem_only", pem_func}}, /*keep_input_columns*/ false);
   MakeMemSink(pem_only_map, "out");
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto splitter_or_s = Splitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);

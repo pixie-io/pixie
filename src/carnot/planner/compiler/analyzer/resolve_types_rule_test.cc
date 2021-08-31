@@ -31,21 +31,13 @@ using ResolveTypesRuleTest = RulesTest;
 TEST_F(ResolveTypesRuleTest, map_then_agg) {
   auto mem_src = MakeMemSource("semantic_table", {"cpu", "bytes"});
   auto add_func = MakeAddFunc(MakeColumn("cpu", 0), MakeColumn("cpu", 0));
-  add_func->SetRegistryArgTypes({types::INT64, types::INT64});
-  EXPECT_OK(add_func->SplitInitArgs(0));
   auto add_func2 = MakeAddFunc(MakeColumn("bytes", 0), MakeColumn("bytes", 0));
-  add_func2->SetRegistryArgTypes({types::INT64, types::INT64});
-  EXPECT_OK(add_func2->SplitInitArgs(0));
   auto map = MakeMap(mem_src, {
                                   ColumnExpression("cpu_sum", add_func),
                                   ColumnExpression("bytes_sum", add_func2),
                               });
   auto mean_func = MakeMeanFunc(MakeColumn("cpu_sum", 0));
-  mean_func->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(mean_func->SplitInitArgs(0));
   auto mean_func2 = MakeMeanFunc(MakeColumn("bytes_sum", 0));
-  mean_func2->SetRegistryArgTypes({types::INT64});
-  EXPECT_OK(mean_func2->SplitInitArgs(0));
   auto agg = MakeBlockingAgg(map, /* groups */ {},
                              {
                                  ColumnExpression("cpu_sum_mean", mean_func),

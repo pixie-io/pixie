@@ -20,7 +20,6 @@
 
 #include <gtest/gtest.h>
 
-#include "src/carnot/planner/compiler/analyzer/data_type_rule.h"
 #include "src/carnot/planner/compiler/analyzer/operator_relation_rule.h"
 #include "src/carnot/planner/compiler/analyzer/propagate_expression_annotations_rule.h"
 #include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
@@ -35,14 +34,16 @@ using PropagateExpressionAnnotationsRuleTest = RulesTest;
 
 TEST_F(PropagateExpressionAnnotationsRuleTest, noop) {
   Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
-  MemorySourceIR* src = MakeMemSource(relation);
+  MemorySourceIR* src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
   MapIR* map1 = MakeMap(src, {{"def", MakeColumn("abc", 0)}}, false);
   MapIR* map2 = MakeMap(map1, {{"xyz", MakeInt(3)}, {"def", MakeColumn("def", 0)}}, false);
   auto eq_func = MakeEqualsFunc(MakeColumn("def", 0), MakeInt(2));
-  eq_func->SetRegistryArgTypes({types::INT64, types::INT64});
-  EXPECT_OK(eq_func->SplitInitArgs(0));
   FilterIR* filter = MakeFilter(map2, eq_func);
   MakeMemSink(filter, "foo", {});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   PropagateExpressionAnnotationsRule rule;
   auto result = rule.Execute(graph.get());
@@ -52,7 +53,8 @@ TEST_F(PropagateExpressionAnnotationsRuleTest, noop) {
 
 TEST_F(PropagateExpressionAnnotationsRuleTest, rename) {
   Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
-  MemorySourceIR* src = MakeMemSource(relation);
+  MemorySourceIR* src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
   auto map1_col = MakeColumn("abc", 0);
   auto annotations = ExpressionIR::Annotations(MetadataType::POD_NAME);
   map1_col->set_annotations(annotations);
@@ -64,10 +66,11 @@ TEST_F(PropagateExpressionAnnotationsRuleTest, rename) {
   auto filter_col1 = MakeColumn("xyz", 0);
   auto filter_col2 = MakeColumn("ghi", 0);
   auto eq_func = MakeEqualsFunc(filter_col1, filter_col2);
-  eq_func->SetRegistryArgTypes({types::INT64, types::INT64});
-  EXPECT_OK(eq_func->SplitInitArgs(0));
   FilterIR* filter = MakeFilter(map2, eq_func);
   MakeMemSink(filter, "foo", {});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto default_annotations = ExpressionIR::Annotations();
   EXPECT_EQ(default_annotations, map2_col1->annotations());
@@ -122,12 +125,10 @@ TEST_F(PropagateExpressionAnnotationsRuleTest, join) {
   auto last = MakeMap(join, {{"annotations_col", map_col1}, {"non_annotations_col", map_col2}});
   MakeMemSink(last, "foo", {});
 
-  // run ResolveTypes rule before hand as well.
+  // run ResolveTypes rule to get types, since this rule will run before
+  // PropagateExpressionAnnotationsRule.
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));
-  // use this to set data types, this rule will run before PropagateExpressionAnnotationsRule.
-  DataTypeRule data_rule(compiler_state_.get());
-  ASSERT_OK(data_rule.Execute(graph.get()));
   // Use this to set output columns, this rule will run before PropagateExpressionAnnotationsRule.
   OperatorRelationRule op_rel_rule(compiler_state_.get());
   // Loop to make sure we fully execute the relation rule. Necessary because Map not guaranteed to
@@ -160,13 +161,12 @@ TEST_F(PropagateExpressionAnnotationsRuleTest, join) {
 
 TEST_F(PropagateExpressionAnnotationsRuleTest, agg) {
   Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
-  MemorySourceIR* src = MakeMemSource(relation);
+  MemorySourceIR* src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
   // Set up the columns and their annotations.
   auto group_col = MakeColumn("abc", 0);
   auto agg_col = MakeColumn("xyz", 0);
   auto agg_func = MakeMeanFunc(agg_col);
-  agg_func->SetRegistryArgTypes({types::INT64, types::INT64});
-  EXPECT_OK(agg_func->SplitInitArgs(0));
   auto group_col_annotation = ExpressionIR::Annotations(MetadataType::POD_NAME);
   auto agg_col_annotation = ExpressionIR::Annotations(MetadataType::SERVICE_ID);
   auto agg_func_annotation = ExpressionIR::Annotations(MetadataType::POD_ID);
@@ -177,13 +177,14 @@ TEST_F(PropagateExpressionAnnotationsRuleTest, agg) {
   BlockingAggIR* agg = MakeBlockingAgg(src, {group_col}, {{"out", agg_func}});
   auto filter_col = MakeColumn("out", 0);
   auto eq_func = MakeEqualsFunc(filter_col, MakeInt(2));
-  eq_func->SetRegistryArgTypes({types::INT64, types::INT64});
-  EXPECT_OK(eq_func->SplitInitArgs(0));
   FilterIR* filter = MakeFilter(agg, eq_func);
   auto map_expr_col = MakeColumn("out", 0);
   auto map_group_col = MakeColumn("abc", 0);
   MapIR* map = MakeMap(filter, {{"agg_expr", map_expr_col}, {"agg_group", map_group_col}});
   MakeMemSink(map, "");
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   PropagateExpressionAnnotationsRule rule;
   auto result = rule.Execute(graph.get());
@@ -231,12 +232,10 @@ TEST_F(PropagateExpressionAnnotationsRuleTest, union) {
   EXPECT_EQ(default_annotation, map3_col1->annotations());
   EXPECT_EQ(default_annotation, map3_col2->annotations());
 
-  // run ResolveTypes rule before hand as well.
+  // run ResolveTypes rule to get types, since this rule will run before
+  // PropagateExpressionAnnotationsRule.
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));
-  // use this to set data types, this rule will run before PropagateExpressionAnnotationsRule.
-  DataTypeRule data_rule(compiler_state_.get());
-  ASSERT_OK(data_rule.Execute(graph.get()));
   OperatorRelationRule op_rel_rule(compiler_state_.get());
   // Use this to set output columns, this rule will run before PropagateExpressionAnnotationsRule.
   bool did_change = true;
@@ -256,19 +255,23 @@ TEST_F(PropagateExpressionAnnotationsRuleTest, union) {
 }
 
 TEST_F(PropagateExpressionAnnotationsRuleTest, filter_limit) {
-  Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
-  MemorySourceIR* src = MakeMemSource(relation);
+  Relation relation({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64},
+                    {"abc", "xyz", "column"});
+  MemorySourceIR* src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
 
   auto map1_col = MakeColumn("abc", 0);
   auto annotations = ExpressionIR::Annotations(MetadataType::POD_NAME);
   auto default_annotation = ExpressionIR::Annotations();
   map1_col->set_annotations(annotations);
 
-  auto map1 = MakeMap(src, {{"abc_1", map1_col}, {"xyz_1", MakeColumn("xyz", 0)}});
+  auto map1 = MakeMap(
+      src,
+      {{"abc_1", map1_col}, {"xyz_1", MakeColumn("xyz", 0)}, {"column", MakeColumn("column", 0)}});
   auto limit1 = MakeLimit(map1, 100);
-  auto filter1 = MakeFilter(limit1, /*split_init_args*/ true);
+  auto filter1 = MakeFilter(limit1);
   auto limit2 = MakeLimit(filter1, 10);
-  auto filter2 = MakeFilter(limit2, /*split_init_args*/ true);
+  auto filter2 = MakeFilter(limit2);
 
   auto map1_col1 = MakeColumn("abc_1", 0);
   auto map1_col2 = MakeColumn("xyz_1", 0);
@@ -276,6 +279,9 @@ TEST_F(PropagateExpressionAnnotationsRuleTest, filter_limit) {
 
   EXPECT_EQ(default_annotation, map1_col1->annotations());
   EXPECT_EQ(default_annotation, map1_col2->annotations());
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   PropagateExpressionAnnotationsRule rule;
   auto result = rule.Execute(graph.get());

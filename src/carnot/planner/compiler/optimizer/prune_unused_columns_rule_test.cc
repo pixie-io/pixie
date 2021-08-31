@@ -20,6 +20,7 @@
 
 #include <gtest/gtest.h>
 
+#include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
 #include "src/carnot/planner/compiler/optimizer/prune_unused_columns_rule.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 
@@ -34,7 +35,9 @@ using ::testing::ElementsAre;
 using PruneUnusedColumnsRuleTest = RulesTest;
 
 TEST_F(PruneUnusedColumnsRuleTest, basic) {
-  MemorySourceIR* mem_src = MakeMemSource(MakeRelation());
+  auto relation = MakeRelation();
+  MemorySourceIR* mem_src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
 
   ColumnExpression expr1{"count_1", MakeColumn("count", 0)};
   ColumnExpression expr2{"cpu0_1", MakeColumn("cpu0", 0)};
@@ -46,6 +49,9 @@ TEST_F(PruneUnusedColumnsRuleTest, basic) {
   auto sink = MakeMemSink(map, "abc", {"cpu0_1"});
   Relation sink_relation{{types::DataType::FLOAT64}, {"cpu0_1"}};
   ASSERT_OK(sink->SetRelation(sink_relation));
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   PruneUnusedColumnsRule rule;
   auto result = rule.Execute(graph.get());
@@ -65,7 +71,9 @@ TEST_F(PruneUnusedColumnsRuleTest, basic) {
 }
 
 TEST_F(PruneUnusedColumnsRuleTest, filter) {
-  MemorySourceIR* mem_src = MakeMemSource(MakeRelation());
+  auto relation = MakeRelation();
+  MemorySourceIR* mem_src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
 
   ColumnExpression expr1{"count_1", MakeColumn("count", 0)};
   ColumnExpression expr2{"cpu0_1", MakeColumn("cpu0", 0)};
@@ -75,14 +83,15 @@ TEST_F(PruneUnusedColumnsRuleTest, filter) {
   ASSERT_OK(map->SetRelation(map_relation));
 
   auto eq_func = MakeEqualsFunc(MakeColumn("count_1", 0), MakeColumn("cpu0_1", 0));
-  eq_func->SetRegistryArgTypes({types::INT64, types::INT64});
-  EXPECT_OK(eq_func->SplitInitArgs(0));
   auto filter = MakeFilter(map, eq_func);
   ASSERT_OK(filter->SetRelation(map_relation));
 
   auto sink = MakeMemSink(filter, "abc", {"cpu0_1"});
   Relation sink_relation{{types::DataType::FLOAT64}, {"cpu0_1"}};
   ASSERT_OK(sink->SetRelation(sink_relation));
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   PruneUnusedColumnsRule rule;
   auto result = rule.Execute(graph.get());
@@ -108,13 +117,12 @@ TEST_F(PruneUnusedColumnsRuleTest, filter) {
 }
 
 TEST_F(PruneUnusedColumnsRuleTest, two_filters) {
-  MemorySourceIR* mem_src = MakeMemSource(MakeRelation());
+  auto relation = MakeRelation();
+  MemorySourceIR* mem_src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
+
   auto eq_func = MakeEqualsFunc(MakeColumn("count", 0), MakeInt(10));
-  eq_func->SetRegistryArgTypes({types::INT64, types::INT64});
-  EXPECT_OK(eq_func->SplitInitArgs(0));
   auto eq_func2 = MakeEqualsFunc(MakeColumn("cpu0", 0), MakeColumn("cpu1", 0));
-  eq_func2->SetRegistryArgTypes({types::INT64, types::INT64});
-  EXPECT_OK(eq_func2->SplitInitArgs(0));
   auto filter1 = MakeFilter(mem_src, eq_func);
   ASSERT_OK(filter1->SetRelation(MakeRelation()));
   auto filter2 = MakeFilter(filter1, eq_func2);
@@ -123,6 +131,9 @@ TEST_F(PruneUnusedColumnsRuleTest, two_filters) {
   auto sink = MakeMemSink(filter2, "abc", {"cpu2"});
   Relation sink_relation{{types::DataType::FLOAT64}, {"cpu2"}};
   ASSERT_OK(sink->SetRelation(sink_relation));
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   PruneUnusedColumnsRule rule;
   auto result = rule.Execute(graph.get());
@@ -141,15 +152,18 @@ TEST_F(PruneUnusedColumnsRuleTest, multiparent) {
   Relation relation0{{types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
                       types::DataType::INT64},
                      {"left_only", "col1", "col2", "col3"}};
-  auto mem_src1 = MakeMemSource(relation0);
+  auto mem_src1 = MakeMemSource("source0", relation0);
+  compiler_state_->relation_map()->emplace("source0", relation0);
 
   Relation relation1{{types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
                       types::DataType::INT64, types::DataType::INT64},
                      {"right_only", "col1", "col2", "col3", "col4"}};
-  auto mem_src2 = MakeMemSource(relation1);
+  auto mem_src2 = MakeMemSource("source1", relation1);
+  compiler_state_->relation_map()->emplace("source1", relation1);
 
-  auto join_op = MakeJoin({mem_src1, mem_src2}, "inner", relation0, relation1,
-                          std::vector<std::string>{"col1"}, std::vector<std::string>{"col2"});
+  auto join_op =
+      MakeJoin({mem_src1, mem_src2}, "inner", relation0, relation1,
+               std::vector<std::string>{"col1"}, std::vector<std::string>{"col2"}, {"_left", ""});
 
   std::vector<std::string> join_out_cols{"right_only", "col2_right", "left_only", "col1_left"};
   ASSERT_OK(join_op->SetOutputColumns(join_out_cols,
@@ -164,6 +178,9 @@ TEST_F(PruneUnusedColumnsRuleTest, multiparent) {
   auto sink = MakeMemSink(join_op, "abc", sink_out_cols);
   Relation sink_relation{{types::DataType::INT64, types::DataType::INT64}, sink_out_cols};
   ASSERT_OK(sink->SetRelation(sink_relation));
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   PruneUnusedColumnsRule rule;
   auto result = rule.Execute(graph.get());
@@ -196,7 +213,9 @@ TEST_F(PruneUnusedColumnsRuleTest, multiparent) {
 }
 
 TEST_F(PruneUnusedColumnsRuleTest, unchanged) {
-  MemorySourceIR* mem_src = MakeMemSource(MakeRelation());
+  auto rel = MakeRelation();
+  MemorySourceIR* mem_src = MakeMemSource("source", rel);
+  compiler_state_->relation_map()->emplace("source", rel);
 
   ColumnExpression expr1{"count_1", MakeColumn("count", 0)};
   ColumnExpression expr2{"cpu0_1", MakeColumn("cpu0", 0)};
@@ -213,6 +232,9 @@ TEST_F(PruneUnusedColumnsRuleTest, unchanged) {
   auto sink = MakeMemSink(map, "abc", out_cols);
   ASSERT_OK(sink->SetRelation(relation));
 
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
+
   PruneUnusedColumnsRule rule;
   auto result = rule.Execute(graph.get());
   ASSERT_OK(result);
@@ -220,9 +242,9 @@ TEST_F(PruneUnusedColumnsRuleTest, unchanged) {
 }
 
 TEST_F(PruneUnusedColumnsRuleTest, updates_resolved_type) {
-  MemorySourceIR* mem_src = MakeMemSource(MakeRelation());
-  auto mem_src_type = TableType::Create(mem_src->relation());
-  ASSERT_OK(mem_src->SetResolvedType(mem_src_type));
+  auto relation = MakeRelation();
+  MemorySourceIR* mem_src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
 
   ColumnExpression expr1{"count_1", MakeColumn("count", 0)};
   ColumnExpression expr2{"cpu0_1", MakeColumn("cpu0", 0)};
@@ -230,12 +252,13 @@ TEST_F(PruneUnusedColumnsRuleTest, updates_resolved_type) {
   auto map = MakeMap(mem_src, {expr1, expr2}, false);
   Relation map_relation{{types::DataType::INT64, types::DataType::FLOAT64}, {"count_1", "cpu0_1"}};
   ASSERT_OK(map->SetRelation(map_relation));
-  ASSERT_OK(ResolveOperatorType(map, compiler_state_.get()));
 
   auto sink = MakeMemSink(map, "abc", {"cpu0_1"});
   Relation sink_relation{{types::DataType::FLOAT64}, {"cpu0_1"}};
   ASSERT_OK(sink->SetRelation(sink_relation));
-  ASSERT_OK(ResolveOperatorType(sink, compiler_state_.get()));
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   PruneUnusedColumnsRule rule;
   auto result = rule.Execute(graph.get());

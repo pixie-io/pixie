@@ -18,6 +18,7 @@
 
 #include <gtest/gtest.h>
 
+#include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/distributed/splitter/presplit_analyzer/split_pem_and_kelvin_only_udf_operator_rule.h"
 #include "src/carnot/planner/test_utils.h"
@@ -27,6 +28,7 @@ namespace carnot {
 namespace planner {
 namespace distributed {
 
+using compiler::ResolveTypesRule;
 using ::testing::ElementsAre;
 
 using SplitPEMAndKelvinOnlyUDFOperatorRuleTest = testutils::DistributedRulesTest;
@@ -34,11 +36,11 @@ TEST_F(SplitPEMAndKelvinOnlyUDFOperatorRuleTest, noop) {
   // Kelvin-only plan
   MemorySourceIR* src1 = MakeMemSource("http_events");
   auto func1 = MakeEqualsFunc(MakeInt(3), MakeInt(2));
-  func1->SetOutputDataType(types::DataType::STRING);
-  func1->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
-  EXPECT_OK(func1->SplitInitArgs(0));
   MapIR* map1 = MakeMap(src1, {{"out", func1}});
   MakeMemSink(map1, "foo", {});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   SplitPEMAndKelvinOnlyUDFOperatorRule rule(compiler_state_.get());
 
@@ -55,21 +57,15 @@ TEST_F(SplitPEMAndKelvinOnlyUDFOperatorRuleTest, simple) {
   ASSERT_OK(ResolveOperatorType(src1, compiler_state_.get()));
   auto input1 = MakeColumn("remote_addr", 0);
   auto input2 = MakeColumn("req_path", 0);
-  EXPECT_OK(input1->SetResolvedType(ValueType::Create(types::DataType::STRING, types::ST_NONE)));
-  EXPECT_OK(input2->SetResolvedType(ValueType::Create(types::DataType::STRING, types::ST_NONE)));
   auto func1 = MakeFunc("pem_only", {input1});
   auto func2 = MakeFunc("kelvin_only", {input2});
-  func1->SetOutputDataType(types::DataType::STRING);
-  func1->SetRegistryArgTypes({types::DataType::STRING});
-  EXPECT_OK(func1->SplitInitArgs(0));
-  func2->SetOutputDataType(types::DataType::STRING);
-  func2->SetRegistryArgTypes({types::DataType::STRING});
-  EXPECT_OK(func2->SplitInitArgs(0));
   MapIR* map1 = MakeMap(src1, {{"pem", func1}, {"kelvin", func2}});
-  ASSERT_OK(map1->SetRelationFromExprs());
-  ASSERT_OK(ResolveOperatorType(map1, compiler_state_.get()));
   MemorySinkIR* sink = MakeMemSink(map1, "foo", {});
 
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
+
+  ASSERT_OK(map1->SetRelationFromExprs());
   Relation existing_map_relation({types::STRING, types::STRING}, {"pem", "kelvin"});
   EXPECT_EQ(map1->relation(), existing_map_relation);
 
@@ -104,22 +100,16 @@ TEST_F(SplitPEMAndKelvinOnlyUDFOperatorRuleTest, nested) {
   // Kelvin-only plan
   MemorySourceIR* src1 = MakeMemSource("http_events");
   ASSERT_OK(src1->SetRelation(Relation({types::STRING}, {"remote_addr"})));
-  ASSERT_OK(ResolveOperatorType(src1, compiler_state_.get()));
   auto input1 = MakeColumn("remote_addr", 0);
-  EXPECT_OK(input1->SetResolvedType(ValueType::Create(types::DataType::STRING, types::ST_NONE)));
   auto func1 = MakeFunc("pem_only", {input1});
   auto func2 = MakeFunc("kelvin_only", {func1});
-  func1->SetOutputDataType(types::DataType::STRING);
-  func1->SetRegistryArgTypes({types::DataType::STRING});
-  EXPECT_OK(func1->SplitInitArgs(0));
-  func2->SetOutputDataType(types::DataType::STRING);
-  func2->SetRegistryArgTypes({types::DataType::STRING});
-  EXPECT_OK(func2->SplitInitArgs(0));
   MapIR* map1 = MakeMap(src1, {{"kelvin", func2}});
-  ASSERT_OK(map1->SetRelationFromExprs());
-  ASSERT_OK(ResolveOperatorType(map1, compiler_state_.get()));
   MemorySinkIR* sink = MakeMemSink(map1, "foo", {});
 
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
+
+  ASSERT_OK(map1->SetRelationFromExprs());
   Relation existing_map_relation({types::STRING}, {"kelvin"});
   EXPECT_EQ(map1->relation(), existing_map_relation);
 
@@ -150,34 +140,20 @@ TEST_F(SplitPEMAndKelvinOnlyUDFOperatorRuleTest, nested) {
 TEST_F(SplitPEMAndKelvinOnlyUDFOperatorRuleTest, name_collision) {
   MemorySourceIR* src1 = MakeMemSource("http_events");
   ASSERT_OK(src1->SetRelation(Relation({types::STRING}, {"remote_addr"})));
-  ASSERT_OK(ResolveOperatorType(src1, compiler_state_.get()));
 
   auto input1 = MakeColumn("remote_addr", 0);
-  EXPECT_OK(input1->SetResolvedType(ValueType::Create(types::DataType::STRING, types::ST_NONE)));
-  auto func1 = MakeFunc("pem_only", {input1});
-  func1->SetOutputDataType(types::DataType::STRING);
-  func1->SetRegistryArgTypes({types::DataType::STRING});
-  EXPECT_OK(func1->SplitInitArgs(0));
   MapIR* map1 = MakeMap(src1, {{"pem_only_0", input1}});
-  ASSERT_OK(map1->SetRelationFromExprs());
-  ASSERT_OK(ResolveOperatorType(map1, compiler_state_.get()));
 
   auto input2 = MakeColumn("pem_only_0", 0);
-  EXPECT_OK(input2->SetResolvedType(ValueType::Create(types::DataType::STRING, types::ST_NONE)));
   auto func2 = MakeFunc("pem_only", {input2});
-  func2->SetOutputDataType(types::DataType::STRING);
-  func2->SetRegistryArgTypes({types::DataType::STRING});
-  EXPECT_OK(func2->SplitInitArgs(0));
-  auto input3 = MakeColumn("pem_only_0", 0);
-  EXPECT_OK(input3->SetResolvedType(ValueType::Create(types::DataType::STRING, types::ST_NONE)));
   auto func3 = MakeFunc("kelvin_only", {input2});
-  func3->SetOutputDataType(types::DataType::STRING);
-  func3->SetRegistryArgTypes({types::DataType::STRING});
-  EXPECT_OK(func3->SplitInitArgs(0));
   MapIR* map2 = MakeMap(map1, {{"pem_only_0", func2}, {"kelvin_only", func3}});
-  ASSERT_OK(map2->SetRelationFromExprs());
-  ASSERT_OK(ResolveOperatorType(map2, compiler_state_.get()));
   MakeMemSink(map2, "foo", {});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
+  ASSERT_OK(map1->SetRelationFromExprs());
+  ASSERT_OK(map2->SetRelationFromExprs());
 
   SplitPEMAndKelvinOnlyUDFOperatorRule rule(compiler_state_.get());
   auto rule_or_s = rule.Execute(graph.get());
@@ -200,30 +176,20 @@ TEST_F(SplitPEMAndKelvinOnlyUDFOperatorRuleTest, filter) {
   MemorySourceIR* src1 = MakeMemSource("http_events");
   ASSERT_OK(
       src1->SetRelation(Relation({types::STRING, types::STRING}, {"remote_addr", "req_path"})));
-  ASSERT_OK(ResolveOperatorType(src1, compiler_state_.get()));
   auto input1 = MakeColumn("remote_addr", 0);
   auto input2 = MakeColumn("req_path", 0);
-  EXPECT_OK(input1->SetResolvedType(ValueType::Create(types::DataType::STRING, types::ST_NONE)));
-  EXPECT_OK(input2->SetResolvedType(ValueType::Create(types::DataType::STRING, types::ST_NONE)));
   auto func1 = MakeFunc("pem_only", {input1});
   auto func2 = MakeFunc("kelvin_only", {input2});
-  func1->SetOutputDataType(types::DataType::STRING);
-  func1->SetRegistryArgTypes({types::DataType::STRING});
-  EXPECT_OK(func1->SplitInitArgs(0));
-  func2->SetOutputDataType(types::DataType::STRING);
-  func2->SetRegistryArgTypes({types::DataType::STRING});
-  EXPECT_OK(func2->SplitInitArgs(0));
   auto func3 = MakeEqualsFunc(func1, func2);
-  func3->SetOutputDataType(types::DataType::BOOLEAN);
-  func3->SetRegistryArgTypes({types::DataType::STRING, types::DataType::STRING});
-  EXPECT_OK(func3->SplitInitArgs(0));
   FilterIR* filter = MakeFilter(src1, func3);
   ASSERT_OK(filter->SetRelation(src1->relation()));
-  ASSERT_OK(ResolveOperatorType(filter, compiler_state_.get()));
   MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
 
   Relation existing_filter_relation({types::STRING, types::STRING}, {"remote_addr", "req_path"});
   EXPECT_EQ(filter->relation(), existing_filter_relation);
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   SplitPEMAndKelvinOnlyUDFOperatorRule rule(compiler_state_.get());
   auto rule_or_s = rule.Execute(graph.get());

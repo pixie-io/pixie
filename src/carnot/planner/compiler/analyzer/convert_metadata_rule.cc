@@ -19,7 +19,6 @@
 #include <vector>
 
 #include "src/carnot/planner/compiler/analyzer/convert_metadata_rule.h"
-#include "src/carnot/planner/compiler/analyzer/data_type_rule.h"
 #include "src/carnot/planner/ir/column_ir.h"
 #include "src/carnot/planner/ir/filter_ir.h"
 #include "src/carnot/planner/ir/func_ir.h"
@@ -105,9 +104,6 @@ StatusOr<bool> ConvertMetadataRule::Apply(IRNode* ir_node) {
   // Propagate type changes from the new conversion_func.
   PL_RETURN_IF_ERROR(PropagateTypeChangesFromNode(graph, conversion_func, compiler_state_));
 
-  PL_ASSIGN_OR_RETURN(auto evaled_func,
-                      DataTypeRule::EvaluateFunc(compiler_state_, conversion_func));
-  DCHECK(evaled_func);
   DCHECK_EQ(conversion_func->EvaluatedDataType(), column_type)
       << "Expected the parent_relation key column type and metadata property type to match.";
   conversion_func->set_annotations(ExpressionIR::Annotations(md_type));

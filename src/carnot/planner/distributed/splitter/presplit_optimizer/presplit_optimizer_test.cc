@@ -19,6 +19,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
 #include "src/carnot/planner/distributed/splitter/presplit_optimizer/presplit_optimizer.h"
 #include "src/carnot/planner/test_utils.h"
 
@@ -27,6 +28,7 @@ namespace carnot {
 namespace planner {
 namespace distributed {
 
+using compiler::ResolveTypesRule;
 using table_store::schema::Relation;
 using table_store::schemapb::Schema;
 using ::testing::_;
@@ -38,11 +40,15 @@ using PreSplitOptimizerTest = DistributedRulesTest;
 TEST_F(PreSplitOptimizerTest, limit_pushdown) {
   Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
 
-  MemorySourceIR* src = MakeMemSource(relation);
+  MemorySourceIR* src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
   MapIR* map1 = MakeMap(src, {{"abc", MakeColumn("abc", 0)}}, false);
   MapIR* map2 = MakeMap(map1, {{"def", MakeColumn("abc", 0)}}, false);
   LimitIR* limit = MakeLimit(map2, 10);
   MemorySinkIR* sink = MakeMemSink(limit, "foo", {});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto optimizer = PreSplitOptimizer::Create(compiler_state_.get()).ConsumeValueOrDie();
   ASSERT_OK(optimizer->Execute(graph.get()));
@@ -61,16 +67,17 @@ TEST_F(PreSplitOptimizerTest, limit_pushdown) {
 
 TEST_F(PreSplitOptimizerTest, filter_pushdown) {
   Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
-  MemorySourceIR* src = MakeMemSource(relation);
+  MemorySourceIR* src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
   MapIR* map =
       MakeMap(src, {{"abc_1", MakeColumn("abc", 0)}, {"abc", MakeColumn("abc", 0)}}, false);
   auto col = MakeColumn("abc", 0);
-  EXPECT_OK(col->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func = MakeEqualsFunc(col, MakeInt(2));
-  eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
-  EXPECT_OK(eq_func->SplitInitArgs(0));
   FilterIR* filter = MakeFilter(map, eq_func);
   MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto optimizer = PreSplitOptimizer::Create(compiler_state_.get()).ConsumeValueOrDie();
   ASSERT_OK(optimizer->Execute(graph.get()));

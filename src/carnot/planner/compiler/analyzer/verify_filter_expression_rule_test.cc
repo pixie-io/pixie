@@ -54,7 +54,8 @@ class VerifyFilterExpressionTest : public RulesTest {
 
 TEST_F(VerifyFilterExpressionTest, basic_test) {
   FuncIR* filter_func = MakeFilter();
-  filter_func->SetOutputDataType(types::DataType::BOOLEAN);
+  EXPECT_OK(
+      filter_func->SetResolvedType(ValueType::Create(types::DataType::BOOLEAN, types::ST_NONE)));
   VerifyFilterExpressionRule rule(compiler_state_.get());
   auto status_or = rule.Execute(graph.get());
   EXPECT_OK(status_or);
@@ -63,7 +64,8 @@ TEST_F(VerifyFilterExpressionTest, basic_test) {
 
 TEST_F(VerifyFilterExpressionTest, wrong_filter_func_type) {
   FuncIR* filter_func = MakeFilter();
-  filter_func->SetOutputDataType(types::DataType::INT64);
+  EXPECT_OK(
+      filter_func->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   VerifyFilterExpressionRule rule(compiler_state_.get());
   auto status_or = rule.Execute(graph.get());
   EXPECT_NOT_OK(status_or);

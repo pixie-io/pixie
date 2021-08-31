@@ -90,7 +90,6 @@ class FuncIR : public ExpressionIR {
   std::string carnot_op_name() const { return op_.carnot_op_name; }
 
   int64_t func_id() const { return func_id_; }
-  void set_func_id(int64_t func_id) { func_id_ = func_id; }
   // all_args() is both init arguments and exec/update arguments.
   const std::vector<ExpressionIR*>& all_args() const { return all_args_; }
   // args() is only exec/update arguments and can't be called before SplitInitArgs is called.
@@ -99,20 +98,11 @@ class FuncIR : public ExpressionIR {
     return args_;
   }
   const std::vector<types::DataType>& registry_arg_types() const { return registry_arg_types_; }
-  // Set the type of all args including init args.
-  void SetRegistryArgTypes(std::vector<types::DataType> args_types) {
-    registry_arg_types_ = args_types;
-  }
   bool HasRegistryArgTypes() const {
     if (!is_init_args_split_) {
       return registry_arg_types_.size() == all_args_.size();
     }
     return registry_arg_types_.size() == (init_args_.size() + args_.size());
-  }
-  // TODO(philkuz) figure out how to combine this with set_func_id.
-  void SetOutputDataType(types::DataType type) {
-    evaluated_data_type_ = type;
-    is_data_type_evaluated_ = true;
   }
   // UpdateArg updates an arg relative to an index into all_args.
   Status UpdateArg(int64_t idx, ExpressionIR* arg);
@@ -120,8 +110,13 @@ class FuncIR : public ExpressionIR {
 
   Status AddArg(ExpressionIR* arg);
 
-  types::DataType EvaluatedDataType() const override { return evaluated_data_type_; }
-  bool IsDataTypeEvaluated() const override { return is_data_type_evaluated_; }
+  types::DataType EvaluatedDataType() const override {
+    if (!is_type_resolved()) {
+      return types::DATA_TYPE_UNKNOWN;
+    }
+    return resolved_value_type()->data_type();
+  }
+  bool IsDataTypeEvaluated() const override { return is_type_resolved(); }
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
@@ -161,14 +156,12 @@ class FuncIR : public ExpressionIR {
   Status ResolveType(CompilerState* compiler_state, const std::vector<TypePtr>& parent_types);
 
   bool SupportsPartial() const { return supports_partial_; }
-  void SetSupportsPartial(bool can_partial) { supports_partial_ = can_partial; }
 
   const std::vector<DataIR*>& init_args() const {
     DCHECK(is_init_args_split_) << "Must call SplitInitArgs before init_args()";
     return init_args_;
   }
   bool IsInitArgsSplit() const { return is_init_args_split_; }
-  Status SplitInitArgs(size_t num_init_args);
 
  private:
   std::string func_prefix_ = kPLFuncPrefix;
@@ -179,8 +172,6 @@ class FuncIR : public ExpressionIR {
   std::vector<ExpressionIR*> args_;
   std::vector<types::DataType> registry_arg_types_;
   int64_t func_id_ = 0;
-  types::DataType evaluated_data_type_ = types::DataType::DATA_TYPE_UNKNOWN;
-  bool is_data_type_evaluated_ = false;
   bool supports_partial_ = false;
   bool is_init_args_split_ = false;
 
@@ -190,6 +181,7 @@ class FuncIR : public ExpressionIR {
   Status AddInitArg(DataIR* arg);
   Status SetInfoFromRegistry(CompilerState* compiler_state,
                              const std::vector<types::DataType>& registry_arg_types);
+  Status SplitInitArgs(size_t num_init_args);
 };
 }  // namespace planner
 }  // namespace carnot

@@ -97,7 +97,7 @@ TEST_F(PatternMatchTest, expression_data_type_resolution) {
   EXPECT_MATCH(func, UnresolvedRTFuncMatchAllArgs(ResolvedExpression()));
 
   // Make sure that resolution works
-  func->SetOutputDataType(types::DataType::INT64);
+  EXPECT_OK(func->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   EXPECT_MATCH(func, ResolvedExpression());
   EXPECT_MATCH(func, ResolvedFuncType());
 }
