@@ -27,17 +27,28 @@ echo "The release tag is: ${release_tag}"
 bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
       --repo_path "${repo_path}" --artifact_name operator --versions_file "${versions_file}"
 
+# Find the previous bundle version, which this release should replace.
+tags=$(git for-each-ref --sort='-*authordate' --format '%(refname:short)' refs/tags \
+    | grep "release/operator" | grep -v "\-")
+
 public="True"
 image_path="gcr.io/pixie-oss/pixie-prod/operator/operator_image:${release_tag}"
 channel="stable"
 channels="stable,dev"
 bucket="pixie-dev-public"
+# The previous version should be the 2nd item in the tags. Since this is a release build,
+# the first item in the tag is the current release.
+prev_tag=$(echo "$tags" | sed -n '2 p')
+
 if [[ $release_tag == *"-"* ]]; then
   public="False"
   image_path="gcr.io/pixie-oss/pixie-dev/operator/operator_image:${release_tag}"
   channel="dev"
   channels="dev"
   bucket="pixie-prod-artifacts"
+# The previous version should be the 1st item in the tags. Since this is a non-release build,
+# the first item in the tags is the previous release.
+  prev_tag=$(echo "$tags" | sed -n '1 p')
 fi
 
 # Push operator image.
@@ -55,10 +66,6 @@ bundle_version=$(echo "${release_tag}" | tr '[:upper:]' '[:lower:]')
 # about how the operator should be deployed.
 mkdir "${tmp_dir}/manifests"
 
-# Find the previous bundle version, which this release should replace.
-tags=$(git for-each-ref --sort='-*authordate' --format '%(refname:short)' refs/tags \
-    | grep "release/operator" | grep -v "\-")
-prev_tag=$(echo "$tags" | sed -n '2 p')
 previous_version=${prev_tag//*\/v/}
 
 kustomize build "$(pwd)/k8s/operator/crd/base" > "${kustomize_dir}/crd.yaml"
