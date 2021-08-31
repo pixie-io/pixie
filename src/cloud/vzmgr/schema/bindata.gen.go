@@ -54,6 +54,8 @@
 // 000026_remove_extraneous_columns.up.sql
 // 000027_add_vizier_cluster_indices.down.sql
 // 000027_add_vizier_cluster_indices.up.sql
+// 000028_remove_previous_status_cols.down.sql
+// 000028_remove_previous_status_cols.up.sql
 package schema
 
 import (
@@ -1210,6 +1212,46 @@ func _000027_add_vizier_cluster_indicesUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000028_remove_previous_status_colsDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x4f\xce\x29\x2d\x2e\x49\x2d\x8a\xcf\xcc\x4b\xcb\xe7\x52\x50\x70\x74\x71\x51\x70\xf6\xf7\x09\xf5\xf5\x53\x28\x28\x4a\x2d\xcb\xcc\x2f\x2d\x8e\x87\xaa\x2c\x2e\x49\x2c\x29\x2d\x56\x40\xe1\x59\x73\x71\x51\xc1\xcc\xf8\x92\xcc\xdc\x54\x85\x10\x4f\x5f\xd7\xe0\x10\x47\xdf\x00\x6b\x2e\x40\x00\x00\x00\xff\xff\x79\x45\x5a\x09\xa8\x00\x00\x00")
+
+func _000028_remove_previous_status_colsDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000028_remove_previous_status_colsDownSql,
+		"000028_remove_previous_status_cols.down.sql",
+	)
+}
+
+func _000028_remove_previous_status_colsDownSql() (*asset, error) {
+	bytes, err := _000028_remove_previous_status_colsDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000028_remove_previous_status_cols.down.sql", size: 168, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000028_remove_previous_status_colsUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x4f\xce\x29\x2d\x2e\x49\x2d\x8a\xcf\xcc\x4b\xcb\xe7\x52\x50\x70\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x53\x28\x28\x4a\x2d\xcb\xcc\x2f\x2d\x8e\x87\x2a\x2d\x2e\x49\x2c\x29\x2d\xb6\xe6\xe2\xa2\x86\x31\xf1\x25\x99\xb9\xa9\xd6\x5c\x80\x00\x00\x00\xff\xff\xb8\xcf\x71\xc8\x92\x00\x00\x00")
+
+func _000028_remove_previous_status_colsUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000028_remove_previous_status_colsUpSql,
+		"000028_remove_previous_status_cols.up.sql",
+	)
+}
+
+func _000028_remove_previous_status_colsUpSql() (*asset, error) {
+	bytes, err := _000028_remove_previous_status_colsUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000028_remove_previous_status_cols.up.sql", size: 146, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -1316,6 +1358,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000026_remove_extraneous_columns.up.sql":                _000026_remove_extraneous_columnsUpSql,
 	"000027_add_vizier_cluster_indices.down.sql":             _000027_add_vizier_cluster_indicesDownSql,
 	"000027_add_vizier_cluster_indices.up.sql":               _000027_add_vizier_cluster_indicesUpSql,
+	"000028_remove_previous_status_cols.down.sql":            _000028_remove_previous_status_colsDownSql,
+	"000028_remove_previous_status_cols.up.sql":              _000028_remove_previous_status_colsUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -1413,6 +1457,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000026_remove_extraneous_columns.up.sql":                &bintree{_000026_remove_extraneous_columnsUpSql, map[string]*bintree{}},
 	"000027_add_vizier_cluster_indices.down.sql":             &bintree{_000027_add_vizier_cluster_indicesDownSql, map[string]*bintree{}},
 	"000027_add_vizier_cluster_indices.up.sql":               &bintree{_000027_add_vizier_cluster_indicesUpSql, map[string]*bintree{}},
+	"000028_remove_previous_status_cols.down.sql":            &bintree{_000028_remove_previous_status_colsDownSql, map[string]*bintree{}},
+	"000028_remove_previous_status_cols.up.sql":              &bintree{_000028_remove_previous_status_colsUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
