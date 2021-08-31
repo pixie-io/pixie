@@ -21,7 +21,6 @@ package controllers
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -31,13 +30,12 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	watchClient "k8s.io/client-go/tools/watch"
+	"k8s.io/client-go/tools/watch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	// Blank import necessary for kubeConfig to work.
@@ -124,8 +122,9 @@ type VizierMonitor struct {
 	namespacedName types.NamespacedName
 
 	podStates *concurrentPodMap
-	pvcStates *concurrentPVCMap
 	lastPodRV string
+
+	pvcStates *concurrentPVCMap
 	lastPVCRV string
 
 	vzUpdate func(context.Context, client.Object, ...client.UpdateOption) error
@@ -162,87 +161,27 @@ func (m *VizierMonitor) InitAndStartMonitor() error {
 }
 
 func (m *VizierMonitor) initState() error {
-	// Convert to pod list.
-	podList, lastPodRV, err := m.getPodList()
+	podList, err := m.clientset.CoreV1().Pods(m.namespace).List(m.ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
-	m.lastPodRV = lastPodRV
-
+	m.lastPodRV = podList.ResourceVersion
 	// Populate vizierStates with current pod state.
-	for _, pod := range podList {
+	for _, pod := range podList.Items {
 		m.handlePod(pod)
 	}
 
-	pvcList, lastPVCRV, err := m.getPVCList()
+	pvcList, err := m.clientset.CoreV1().PersistentVolumeClaims(m.namespace).List(m.ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
-	m.lastPVCRV = lastPVCRV
+	m.lastPVCRV = pvcList.ResourceVersion
 
-	for _, pvc := range pvcList {
+	for _, pvc := range pvcList.Items {
 		m.handlePVC(pvc)
 	}
 
 	return nil
-}
-
-func (m *VizierMonitor) getPodList() ([]v1.Pod, string, error) {
-	watcher := cache.NewListWatchFromClient(m.clientset.CoreV1().RESTClient(), "pods", m.namespace, fields.Everything())
-	pods, err := watcher.List(metav1.ListOptions{})
-	if err != nil {
-		return nil, "", err
-	}
-
-	podList, ok := pods.(*v1.PodList)
-	if ok {
-		return podList.Items, podList.ResourceVersion, nil
-	}
-
-	internalList, ok := pods.(*internalversion.List)
-	if !ok {
-		return nil, "", errors.New("Could not get pod list")
-	}
-
-	typedList := v1.PodList{}
-	for _, i := range internalList.Items {
-		item, ok := i.(*v1.Pod)
-		if !ok {
-			return nil, "", errors.New("Could not get pod list")
-		}
-		typedList.Items = append(typedList.Items, *item)
-	}
-
-	return typedList.Items, internalList.ResourceVersion, nil
-}
-
-func (m *VizierMonitor) getPVCList() ([]v1.PersistentVolumeClaim, string, error) {
-	watcher := cache.NewListWatchFromClient(m.clientset.CoreV1().RESTClient(), "persistentvolumeclaims", m.namespace, fields.Everything())
-	pods, err := watcher.List(metav1.ListOptions{})
-	if err != nil {
-		return nil, "", err
-	}
-
-	podList, ok := pods.(*v1.PersistentVolumeClaimList)
-	if ok {
-		return podList.Items, podList.ResourceVersion, nil
-	}
-
-	internalList, ok := pods.(*internalversion.List)
-	if !ok {
-		return nil, "", errors.New("Could not get pvc list")
-	}
-
-	typedList := v1.PersistentVolumeClaimList{}
-	for _, i := range internalList.Items {
-		item, ok := i.(*v1.PersistentVolumeClaim)
-		if !ok {
-			return nil, "", errors.New("Could not get pvc list")
-		}
-		typedList.Items = append(typedList.Items, *item)
-	}
-
-	return typedList.Items, internalList.ResourceVersion, nil
 }
 
 func (m *VizierMonitor) handlePod(pod v1.Pod) {
@@ -267,7 +206,7 @@ func (m *VizierMonitor) handlePVC(pvc v1.PersistentVolumeClaim) {
 func (m *VizierMonitor) watchK8sPods() {
 	for {
 		watcher := cache.NewListWatchFromClient(m.clientset.CoreV1().RESTClient(), "pods", m.namespace, fields.Everything())
-		retryWatcher, err := watchClient.NewRetryWatcher(m.lastPodRV, watcher)
+		retryWatcher, err := watch.NewRetryWatcher(m.lastPodRV, watcher)
 		if err != nil {
 			log.WithError(err).Fatal("Could not start watcher for pods")
 		}
@@ -301,9 +240,9 @@ func (m *VizierMonitor) watchK8sPods() {
 func (m *VizierMonitor) watchK8sPVC() {
 	for {
 		watcher := cache.NewListWatchFromClient(m.clientset.CoreV1().RESTClient(), "persistentvolumeclaims", m.namespace, fields.Everything())
-		retryWatcher, err := watchClient.NewRetryWatcher(m.lastPVCRV, watcher)
+		retryWatcher, err := watch.NewRetryWatcher(m.lastPVCRV, watcher)
 		if err != nil {
-			log.WithError(err).Fatal("Could not start watcher for pvc")
+			log.WithError(err).Fatal("Could not start watcher for pvcs")
 		}
 
 		resCh := retryWatcher.ResultChan()
