@@ -810,12 +810,12 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 		FROM (SELECT * FROM vizier_cluster_info WHERE vizier_cluster_id = $11) y
 		WHERE x.vizier_cluster_id = y.vizier_cluster_id
 		RETURNING (x.status != y.status
-		  OR x.address != y.address
-		  OR x.num_nodes != y.num_nodes
-		  OR x.num_instrumented_nodes != y.num_instrumented_nodes
-		  OR x.auto_update_enabled != y.auto_update_enabled
-		  OR x.cluster_version != y.cluster_version
-		  OR x.status_message != y.status_message) as changed, x.vizier_version, y.prev_status as prev_status`
+		  OR ((x.address is not NULL) AND (x.address != y.address))
+		  OR ((x.num_nodes is not NULL) AND (x.num_nodes != y.num_nodes))
+		  OR ((x.num_instrumented_nodes is not NULL) AND (x.num_instrumented_nodes != y.num_instrumented_nodes))
+		  OR ((x.auto_update_enabled IS NOT NULL) AND (x.auto_update_enabled != y.auto_update_enabled))
+		  OR ((x.cluster_version IS NOT NULL) AND (x.cluster_version != y.cluster_version))
+		  OR ((x.status_message is not NULL) AND (x.status_message != y.status_message))) as changed, x.vizier_version, y.prev_status as prev_status`
 
 	var info struct {
 		Changed    bool         `db:"changed"`
