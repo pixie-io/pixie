@@ -105,8 +105,6 @@ Status ColumnIR::CopyFromNode(const IRNode* source,
   const ColumnIR* column = static_cast<const ColumnIR*>(source);
   col_name_ = column->col_name_;
   col_name_set_ = column->col_name_set_;
-  evaluated_data_type_ = column->evaluated_data_type_;
-  is_data_type_evaluated_ = column->is_data_type_evaluated_;
   container_op_parent_idx_ = column->container_op_parent_idx_;
   container_op_parent_idx_set_ = column->container_op_parent_idx_set_;
   return Status::OK();

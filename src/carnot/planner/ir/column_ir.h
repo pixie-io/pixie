@@ -83,15 +83,6 @@ class ColumnIR : public ExpressionIR {
 
   bool IsColumn() const override { return true; }
 
-  void ResolveColumnType(types::DataType type) {
-    evaluated_data_type_ = type;
-    is_data_type_evaluated_ = true;
-  }
-
-  void ResolveColumnType(const table_store::schema::Relation& relation) {
-    ResolveColumnType(relation.GetColumnType(col_name_));
-  }
-
   /**
    * @brief The operators containing this column. There can be multiple, but all of these operators
    * should share a common parent (ReferencedOperators).
@@ -115,8 +106,8 @@ class ColumnIR : public ExpressionIR {
     PL_ASSIGN_OR_RETURN(OperatorIR * referenced_op, ReferencedOperator());
     return referenced_op->id();
   }
-  types::DataType EvaluatedDataType() const override { return evaluated_data_type_; }
-  bool IsDataTypeEvaluated() const override { return is_data_type_evaluated_; }
+  types::DataType EvaluatedDataType() const override { return resolved_value_type()->data_type(); }
+  bool IsDataTypeEvaluated() const override { return is_type_resolved(); }
 
   StatusOr<int64_t> GetColumnIndex() const;
 
@@ -151,7 +142,8 @@ class ColumnIR : public ExpressionIR {
       return false;
     }
     auto col = static_cast<ColumnIR*>(expr);
-    return col->col_name() == col_name() && col->EvaluatedDataType() == EvaluatedDataType();
+    return col->col_name() == col_name() && (col->IsDataTypeEvaluated() == IsDataTypeEvaluated()) &&
+           (!IsDataTypeEvaluated() || (col->EvaluatedDataType() == EvaluatedDataType()));
   }
 
   // Note: This should be used carefully, only when the column has just been created by a clone
@@ -188,8 +180,6 @@ class ColumnIR : public ExpressionIR {
  private:
   std::string col_name_;
   bool col_name_set_ = false;
-  types::DataType evaluated_data_type_ = types::DATA_TYPE_UNKNOWN;
-  bool is_data_type_evaluated_ = false;
 
   int64_t container_op_parent_idx_ = -1;
   bool container_op_parent_idx_set_ = false;

@@ -132,7 +132,7 @@ TEST_F(SplitterTest, blocking_agg_test) {
 TEST_F(SplitterTest, partial_agg_test) {
   auto mem_src = MakeMemSource(MakeRelation());
   auto count_col = MakeColumn("count", 0, types::DataType::INT64);
-  count_col->ResolveColumnType(types::INT64);
+  EXPECT_OK(count_col->SetResolvedType(ValueType::Create(types::INT64, types::ST_NONE)));
   auto mean_func = MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64));
   mean_func->SetSupportsPartial(true);
   mean_func->SetRegistryArgTypes({types::INT64});
@@ -1060,7 +1060,7 @@ TEST_F(SplitterTest, branch_where_children_must_be_on_pem) {
 
   // agg1 should partial.
   auto count_col_agg1 = MakeColumn("count", 0, types::DataType::INT64);
-  count_col_agg1->ResolveColumnType(types::INT64);
+  EXPECT_OK(count_col_agg1->SetResolvedType(ValueType::Create(types::INT64, types::ST_NONE)));
   auto count_func1 = MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64));
   count_func1->SetRegistryArgTypes({types::INT64});
   EXPECT_OK(count_func1->SplitInitArgs(0));
@@ -1237,7 +1237,7 @@ TEST_F(SplitterTest, branch_where_single_node_must_be_on_pem_the_rest_can_recurs
 
   // agg1 should partial.
   auto count_col_agg1 = MakeColumn("count", 0, types::DataType::INT64);
-  count_col_agg1->ResolveColumnType(types::INT64);
+  EXPECT_OK(count_col_agg1->SetResolvedType(ValueType::Create(types::INT64, types::ST_NONE)));
   auto count_func = MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64));
   count_func->SetRegistryArgTypes({types::INT64});
   EXPECT_OK(count_func->SplitInitArgs(0));

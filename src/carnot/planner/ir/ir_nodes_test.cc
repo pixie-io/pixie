@@ -313,7 +313,7 @@ TEST(ToProto, map_ir) {
   auto graph = std::make_shared<IR>();
   auto constant = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
   auto col = graph->CreateNode<ColumnIR>(ast, "col4", /*parent_op_idx*/ 0).ValueOrDie();
-  col->ResolveColumnType(types::INT64);
+  EXPECT_OK(col->SetResolvedType(ValueType::Create(types::INT64, types::ST_NONE)));
   auto func = graph
                   ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::add, "+", "add"},
                                        std::vector<ExpressionIR*>({constant, col}))
@@ -377,8 +377,8 @@ TEST_F(OperatorTests, filter_to_proto) {
   auto col1 = MakeColumn("cpu0", 0);
   auto col2 = MakeColumn("cpu2", 0);
   auto equals = MakeEqualsFunc(col1, col2);
-  col1->ResolveColumnType(types::FLOAT64);
-  col2->ResolveColumnType(types::FLOAT64);
+  EXPECT_OK(col1->SetResolvedType(ValueType::Create(types::FLOAT64, types::ST_NONE)));
+  EXPECT_OK(col2->SetResolvedType(ValueType::Create(types::FLOAT64, types::ST_NONE)));
   equals->SetRegistryArgTypes({col1->EvaluatedDataType(), col2->EvaluatedDataType()});
   EXPECT_OK(equals->SplitInitArgs(0));
 
@@ -433,7 +433,7 @@ TEST(ToProto, agg_ir) {
   EXPECT_OK(mem_src->SetRelation(rel));
   auto constant = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
   auto col = graph->CreateNode<ColumnIR>(ast, "column", /*parent_op_idx*/ 0).ValueOrDie();
-  col->ResolveColumnType(types::INT64);
+  EXPECT_OK(col->SetResolvedType(ValueType::Create(types::INT64, types::ST_NONE)));
 
   auto agg_func = graph
                       ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "mean"},
@@ -441,7 +441,7 @@ TEST(ToProto, agg_ir) {
                       .ValueOrDie();
   EXPECT_OK(agg_func->SplitInitArgs(0));
   auto group1 = graph->CreateNode<ColumnIR>(ast, "group1", /*parent_op_idx*/ 0).ValueOrDie();
-  group1->ResolveColumnType(types::INT64);
+  EXPECT_OK(group1->SetResolvedType(ValueType::Create(types::INT64, types::ST_NONE)));
 
   auto agg = graph
                  ->CreateNode<BlockingAggIR>(ast, mem_src, std::vector<ColumnIR*>{group1},
@@ -466,7 +466,7 @@ TEST(ToProto, agg_ir_with_presplit_proto) {
   EXPECT_OK(mem_src->SetRelation(rel));
   auto constant = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
   auto col = graph->CreateNode<ColumnIR>(ast, "column", /*parent_op_idx*/ 0).ValueOrDie();
-  col->ResolveColumnType(types::INT64);
+  EXPECT_OK(col->SetResolvedType(ValueType::Create(types::INT64, types::ST_NONE)));
 
   auto agg_func = graph
                       ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "mean"},
@@ -474,7 +474,7 @@ TEST(ToProto, agg_ir_with_presplit_proto) {
                       .ValueOrDie();
   EXPECT_OK(agg_func->SplitInitArgs(0));
   auto group1 = graph->CreateNode<ColumnIR>(ast, "group1", /*parent_op_idx*/ 0).ValueOrDie();
-  group1->ResolveColumnType(types::INT64);
+  EXPECT_OK(group1->SetResolvedType(ValueType::Create(types::INT64, types::ST_NONE)));
 
   auto agg = graph
                  ->CreateNode<BlockingAggIR>(ast, mem_src, std::vector<ColumnIR*>{group1},
@@ -750,7 +750,7 @@ TEST(ToProto, column_tests) {
   auto ast = MakeTestAstPtr();
   auto graph = std::make_shared<IR>();
   auto column = graph->CreateNode<ColumnIR>(ast, "column", 0).ConsumeValueOrDie();
-  column->ResolveColumnType(types::INT64);
+  EXPECT_OK(column->SetResolvedType(ValueType::Create(types::INT64, types::ST_NONE)));
 
   auto mem_src =
       graph->CreateNode<MemorySourceIR>(ast, "source", std::vector<std::string>{"foo", "column"})
@@ -2137,7 +2137,7 @@ TEST(FuncIR, SplitInitArgs) {
   auto graph = std::make_shared<IR>();
   auto constant = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
   auto col = graph->CreateNode<ColumnIR>(ast, "col4", /*parent_op_idx*/ 0).ValueOrDie();
-  col->ResolveColumnType(types::INT64);
+  EXPECT_OK(col->SetResolvedType(ValueType::Create(types::INT64, types::ST_NONE)));
   auto func = graph
                   ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::add, "+", "add"},
                                        std::vector<ExpressionIR*>({constant, col}))

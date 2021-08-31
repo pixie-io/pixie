@@ -78,31 +78,14 @@ StatusOr<bool> DataTypeRule::EvaluateFunc(CompilerState* compiler_state, FuncIR*
   return true;
 }
 
-StatusOr<bool> DataTypeRule::EvaluateColumn(ColumnIR* column) {
-  PL_ASSIGN_OR_RETURN(OperatorIR * parent_op, column->ReferencedOperator());
-  if (!parent_op->IsRelationInit()) {
-    // Missing a relation in parent op is not a failure - the parent op still has to
-    // propagate results.
-    return false;
-  }
-
-  // Get the parent relation and find the column in it.
-  PL_RETURN_IF_ERROR(EvaluateColumnFromRelation(column, parent_op->relation()));
-  return true;
+StatusOr<bool> DataTypeRule::EvaluateColumn(ColumnIR*) {
+  // Column eval is now entirely handled by ResolveTypesRule.
+  return false;
 }
 
-StatusOr<bool> DataTypeRule::EvaluateMetadata(MetadataIR* md) {
-  md->ResolveColumnType(md->property()->column_type());
-  return true;
-}
-
-Status DataTypeRule::EvaluateColumnFromRelation(ColumnIR* column, const Relation& relation) {
-  if (!relation.HasColumn(column->col_name())) {
-    return column->CreateIRNodeError("Column '$0' not found in parent dataframe",
-                                     column->col_name());
-  }
-  column->ResolveColumnType(relation);
-  return Status::OK();
+StatusOr<bool> DataTypeRule::EvaluateMetadata(MetadataIR*) {
+  // Metadata eval is now entirely handled by ResolveTypesRule.
+  return false;
 }
 
 }  // namespace compiler

@@ -23,6 +23,7 @@
 #include "src/carnot/planner/compiler/analyzer/data_type_rule.h"
 #include "src/carnot/planner/compiler/analyzer/operator_relation_rule.h"
 #include "src/carnot/planner/compiler/analyzer/propagate_expression_annotations_rule.h"
+#include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 
 namespace px {
@@ -92,7 +93,8 @@ TEST_F(PropagateExpressionAnnotationsRuleTest, join) {
   Relation rel1({types::FLOAT64, types::STRING}, {"latency", "data"});
   Relation rel2({types::STRING, types::FLOAT64}, {join_key, "cpu_usage"});
 
-  auto mem_src1 = MakeMemSource(rel1);
+  auto mem_src1 = MakeMemSource("table1", rel1);
+  compiler_state_->relation_map()->emplace("table1", rel1);
   auto literal_with_annotations = MakeString("my_pod_name");
   auto annotations = ExpressionIR::Annotations(MetadataType::POD_NAME);
   literal_with_annotations->set_annotations(annotations);
@@ -103,7 +105,8 @@ TEST_F(PropagateExpressionAnnotationsRuleTest, join) {
                                    {"data", MakeColumn("data", 0)},
                                });
 
-  auto mem_src2 = MakeMemSource(rel2);
+  auto mem_src2 = MakeMemSource("table2", rel2);
+  compiler_state_->relation_map()->emplace("table2", rel2);
 
   std::string left_suffix = "_x";
   std::string right_suffix = "_y";
@@ -119,18 +122,19 @@ TEST_F(PropagateExpressionAnnotationsRuleTest, join) {
   auto last = MakeMap(join, {{"annotations_col", map_col1}, {"non_annotations_col", map_col2}});
   MakeMemSink(last, "foo", {});
 
+  // run ResolveTypes rule before hand as well.
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
   // use this to set data types, this rule will run before PropagateExpressionAnnotationsRule.
   DataTypeRule data_rule(compiler_state_.get());
-  auto result = data_rule.Execute(graph.get());
-  ASSERT_OK(result);
-  EXPECT_TRUE(result.ValueOrDie());
+  ASSERT_OK(data_rule.Execute(graph.get()));
   // Use this to set output columns, this rule will run before PropagateExpressionAnnotationsRule.
   OperatorRelationRule op_rel_rule(compiler_state_.get());
   // Loop to make sure we fully execute the relation rule. Necessary because Map not guaranteed to
   // be seen by rule before Join.
   bool did_change = true;
   while (did_change) {
-    result = op_rel_rule.Execute(graph.get());
+    auto result = op_rel_rule.Execute(graph.get());
     ASSERT_OK(result);
     did_change = result.ValueOrDie();
   }
@@ -142,7 +146,7 @@ TEST_F(PropagateExpressionAnnotationsRuleTest, join) {
                      {"key_x", "latency", "data", "key_y", "cpu_usage"}));
 
   PropagateExpressionAnnotationsRule rule;
-  result = rule.Execute(graph.get());
+  auto result = rule.Execute(graph.get());
   ASSERT_OK(result);
   ASSERT_TRUE(result.ValueOrDie());
 
@@ -197,8 +201,10 @@ TEST_F(PropagateExpressionAnnotationsRuleTest, union) {
   Relation relation1({types::DataType::STRING, types::DataType::STRING}, {"pod_id", "pod_name"});
   Relation relation2({types::DataType::STRING, types::DataType::STRING},
                      {"pod_id", "random_string"});
-  auto mem_src1 = MakeMemSource(relation1);
-  auto mem_src2 = MakeMemSource(relation2);
+  auto mem_src1 = MakeMemSource("table1", relation1);
+  compiler_state_->relation_map()->emplace("table1", relation1);
+  auto mem_src2 = MakeMemSource("table2", relation2);
+  compiler_state_->relation_map()->emplace("table2", relation2);
 
   auto map1_col1 = MakeColumn("pod_id", 0);
   auto map1_col2 = MakeColumn("pod_name", 0);
@@ -225,22 +231,23 @@ TEST_F(PropagateExpressionAnnotationsRuleTest, union) {
   EXPECT_EQ(default_annotation, map3_col1->annotations());
   EXPECT_EQ(default_annotation, map3_col2->annotations());
 
+  // run ResolveTypes rule before hand as well.
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
   // use this to set data types, this rule will run before PropagateExpressionAnnotationsRule.
   DataTypeRule data_rule(compiler_state_.get());
-  auto result = data_rule.Execute(graph.get());
-  ASSERT_OK(result);
-  EXPECT_TRUE(result.ValueOrDie());
+  ASSERT_OK(data_rule.Execute(graph.get()));
   OperatorRelationRule op_rel_rule(compiler_state_.get());
   // Use this to set output columns, this rule will run before PropagateExpressionAnnotationsRule.
   bool did_change = true;
   do {
-    result = op_rel_rule.Execute(graph.get());
+    auto result = op_rel_rule.Execute(graph.get());
     ASSERT_OK(result);
     did_change = result.ConsumeValueOrDie();
   } while (did_change);
 
   PropagateExpressionAnnotationsRule rule;
-  result = rule.Execute(graph.get());
+  auto result = rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
 

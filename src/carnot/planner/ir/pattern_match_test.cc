@@ -89,7 +89,7 @@ TEST_F(PatternMatchTest, expression_data_type_resolution) {
   EXPECT_FALSE(Match(func, UnresolvedRTFuncMatchAllArgs(ResolvedExpression())));
 
   // Resolve column and check whether test works.
-  col1->ResolveColumnType(types::DataType::INT64);
+  EXPECT_OK(col1->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   EXPECT_MATCH(col1, ResolvedExpression());
   EXPECT_MATCH(col1, ResolvedColumnType());
 

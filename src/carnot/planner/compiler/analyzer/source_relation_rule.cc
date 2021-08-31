@@ -91,24 +91,6 @@ StatusOr<Relation> SourceRelationRule::GetSelectRelation(
   return new_relation;
 }
 
-StatusOr<std::vector<ColumnIR*>> SourceRelationRule::GetColumnsFromRelation(
-    OperatorIR* node, std::vector<std::string> col_names, const Relation& relation) const {
-  auto graph = node->graph();
-  auto result = std::vector<ColumnIR*>();
-  // iterates through the columns, finds their relation position,
-  // then create columns with index and type.
-  for (const auto& col_name : col_names) {
-    if (!relation.HasColumn(col_name)) {
-      return node->CreateIRNodeError("Column '$0' not found in parent dataframe", col_name);
-    }
-    PL_ASSIGN_OR_RETURN(auto col_node, graph->CreateNode<ColumnIR>(node->ast(), col_name,
-                                                                   /*parent_op_idx*/ 0));
-    col_node->ResolveColumnType(relation);
-    result.push_back(col_node);
-  }
-  return result;
-}
-
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

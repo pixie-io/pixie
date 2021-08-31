@@ -39,16 +39,6 @@ class DataTypeRule : public Rule {
       : Rule(compiler_state, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
   /**
-   * @brief Evaluates the datatype of column from the type data in the relation. Errors out if the
-   * column doesn't exist in the relation.
-   *
-   * @param column the column to evaluate
-   * @param relation the relation that should be used to evaluate the datatype of the column.
-   * @return Status - error if column not contained in relation
-   */
-  static Status EvaluateColumnFromRelation(ColumnIR* column,
-                                           const table_store::schema::Relation& relation);
-  /**
    * @brief Evaluates the datatype of an input func.
    */
   static StatusOr<bool> EvaluateFunc(CompilerState* compiler_state, FuncIR* func);

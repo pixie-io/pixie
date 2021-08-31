@@ -180,6 +180,8 @@ class TableType : public BaseType {
     return "TableType(" + absl::StrJoin(col_debug_strings, " | ") + ")";
   }
 
+  const std::vector<std::string>& ColumnNames() const { return ordered_col_names_; }
+
   class TableTypeIterator {
    public:
     using value_type = std::pair<const std::string, std::shared_ptr<BaseType>>;

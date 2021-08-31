@@ -107,10 +107,12 @@ bool UpdateColumn(ColumnIR* col_expr, Relation* relation_ptr) {
 StatusOr<ColumnIR*> OperatorRelationRule::CreateOutputColumn(JoinIR* join_node,
                                                              const std::string& col_name,
                                                              int64_t parent_idx,
-                                                             const Relation& relation) const {
+                                                             const Relation&) const {
   PL_ASSIGN_OR_RETURN(ColumnIR * col, join_node->graph()->CreateNode<ColumnIR>(
                                           join_node->ast(), col_name, parent_idx));
-  PL_RETURN_IF_ERROR(DataTypeRule::EvaluateColumnFromRelation(col, relation));
+  // For now we just use the `join_node`'s parent types and ignore the relation, a future diff will
+  // remove Relation entirely from JoinIR, and this can be cleaned up then.
+  PL_RETURN_IF_ERROR(ResolveExpressionType(col, compiler_state_, join_node->parent_types()));
   return col;
 }
 
@@ -254,7 +256,8 @@ StatusOr<bool> OperatorRelationRule::SetBlockingAgg(BlockingAggIR* agg_ir) const
 
 StatusOr<bool> OperatorRelationRule::SetMap(MapIR* map_ir) const {
   DCHECK_EQ(map_ir->parents().size(), 1UL) << "There should be exactly one parent.";
-  auto parent_relation = map_ir->parents()[0]->relation();
+  DCHECK(map_ir->parents()[0]->is_type_resolved());
+  auto parent_table_type = map_ir->parents()[0]->resolved_table_type();
   const ColExpressionVector& expressions = map_ir->col_exprs();
 
   for (auto& entry : expressions) {
@@ -271,7 +274,7 @@ StatusOr<bool> OperatorRelationRule::SetMap(MapIR* map_ir) const {
       new_columns.insert(expr.name);
     }
 
-    for (const auto& input_col_name : parent_relation.col_names()) {
+    for (const auto& input_col_name : parent_table_type->ColumnNames()) {
       // If this column is being overwritten with a new expression, skip it here.
       if (new_columns.contains(input_col_name)) {
         continue;
@@ -280,7 +283,7 @@ StatusOr<bool> OperatorRelationRule::SetMap(MapIR* map_ir) const {
       PL_ASSIGN_OR_RETURN(ColumnIR * col_ir,
                           map_ir->graph()->CreateNode<ColumnIR>(map_ir->ast(), input_col_name,
                                                                 0 /*parent_op_idx*/));
-      col_ir->ResolveColumnType(parent_relation);
+      PL_RETURN_IF_ERROR(ResolveExpressionType(col_ir, compiler_state_, {parent_table_type}));
       output_expressions.push_back(ColumnExpression(input_col_name, col_ir));
     }
 

@@ -22,6 +22,7 @@
 #include <gtest/gtest.h>
 
 #include "src/carnot/planner/compiler/analyzer/drop_to_map_rule.h"
+#include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 
 namespace px {
@@ -40,11 +41,15 @@ TEST_F(RulesTest, drop_to_map) {
   DropIR* drop = graph->CreateNode<DropIR>(ast, mem_src, std::vector<std::string>{"cpu0", "cpu1"})
                      .ConsumeValueOrDie();
   MemorySinkIR* sink = MakeMemSink(drop, "sink");
-
+  compiler_state_->relation_map()->emplace("source", cpu_relation);
   EXPECT_OK(mem_src->SetRelation(cpu_relation));
   EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(0, 1, 2));
 
   auto drop_id = drop->id();
+
+  // ResolveTypes first.
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   // Apply the rule.
   DropToMapOperatorRule rule(compiler_state_.get());
@@ -73,10 +78,11 @@ TEST_F(RulesTest, drop_to_map) {
 }
 
 TEST_F(RulesTest, drop_middle_columns) {
-  MemorySourceIR* mem_src =
-      MakeMemSource(Relation({types::STRING, types::TIME64NS, types::STRING, types::FLOAT64,
-                              types::FLOAT64, types::TIME64NS},
-                             {"service", "window", "quantiles", "p50", "p99", "time_"}));
+  Relation rel({types::STRING, types::TIME64NS, types::STRING, types::FLOAT64, types::FLOAT64,
+                types::TIME64NS},
+               {"service", "window", "quantiles", "p50", "p99", "time_"});
+  MemorySourceIR* mem_src = MakeMemSource(rel);
+  compiler_state_->relation_map()->emplace("table", rel);
   DropIR* drop =
       graph->CreateNode<DropIR>(ast, mem_src, std::vector<std::string>{"window", "quantiles"})
           .ConsumeValueOrDie();
@@ -84,6 +90,10 @@ TEST_F(RulesTest, drop_middle_columns) {
   MemorySinkIR* sink = MakeMemSink(drop, "sink");
 
   EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(0, 1, 2));
+
+  // ResolveTypes first.
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   // Apply the rule.
   DropToMapOperatorRule rule(compiler_state_.get());

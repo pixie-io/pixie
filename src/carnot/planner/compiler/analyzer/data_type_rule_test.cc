@@ -22,6 +22,7 @@
 #include <gtest/gtest.h>
 
 #include "src/carnot/planner/compiler/analyzer/data_type_rule.h"
+#include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 
 namespace px {
@@ -42,10 +43,12 @@ class DataTypeRuleTest : public RulesTest {
   void SetUp() override {
     RulesTest::SetUp();
     mem_src =
-        graph->CreateNode<MemorySourceIR>(ast, "source", std::vector<std::string>{}).ValueOrDie();
+        graph->CreateNode<MemorySourceIR>(ast, "source1", std::vector<std::string>{}).ValueOrDie();
+    compiler_state_->relation_map()->emplace("source1", cpu_relation);
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
     sem_rel_mem_src =
-        graph->CreateNode<MemorySourceIR>(ast, "source", std::vector<std::string>{}).ValueOrDie();
+        graph->CreateNode<MemorySourceIR>(ast, "source2", std::vector<std::string>{}).ValueOrDie();
+    compiler_state_->relation_map()->emplace("source2", semantic_rel);
     PL_CHECK_OK(sem_rel_mem_src->SetRelation(semantic_rel));
   }
   MemorySourceIR* mem_src;
@@ -67,6 +70,9 @@ TEST_F(DataTypeRuleTest, map_function) {
   EXPECT_FALSE(col->IsDataTypeEvaluated());
 
   EXPECT_NOT_MATCH(func, UnresolvedRTFuncMatchAllArgs(ResolvedExpression()));
+  // Run the ResolveTypesRule since some of the data type handling has been moved over there.
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   // Expect the data_rule to change something.
   DataTypeRule data_rule(compiler_state_.get());
@@ -78,8 +84,8 @@ TEST_F(DataTypeRuleTest, map_function) {
   } while (did_change);
 
   // The function should now be evaluated, the column should stay evaluated.
-  EXPECT_TRUE(func->IsDataTypeEvaluated());
-  EXPECT_TRUE(col->IsDataTypeEvaluated());
+  ASSERT_TRUE(func->IsDataTypeEvaluated());
+  ASSERT_TRUE(col->IsDataTypeEvaluated());
 
   // Both should be integers.
   EXPECT_EQ(col->EvaluatedDataType(), types::DataType::INT64);
@@ -105,6 +111,11 @@ TEST_F(DataTypeRuleTest, missing_udf_name) {
                   .ValueOrDie();
   EXPECT_OK(graph->CreateNode<MapIR>(ast, mem_src, ColExpressionVector{{"func", func}},
                                      /* keep_input_columns */ false));
+
+  // Run the ResolveTypesRule since some of the data type handling has been moved over there.
+  ResolveTypesRule type_rule(compiler_state_.get());
+  // The ResolveTypesRule will fail on the function but should resolve the columns.
+  ASSERT_NOT_OK(type_rule.Execute(graph.get()));
   // Expect the data_rule to successfully change columnir.
   DataTypeRule data_rule(compiler_state_.get());
   Status s;
@@ -131,6 +142,10 @@ TEST_F(DataTypeRuleTest, function_in_agg) {
                   .ValueOrDie();
   EXPECT_OK(graph->CreateNode<BlockingAggIR>(ast, mem_src, std::vector<ColumnIR*>{},
                                              ColExpressionVector{{"func", func}}));
+
+  // Run the ResolveTypesRule since some of the data type handling has been moved over there.
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   // Expect the data_rule to successfully evaluate the column.
   DataTypeRule data_rule(compiler_state_.get());
@@ -166,6 +181,10 @@ TEST_F(DataTypeRuleTest, nested_functions) {
   EXPECT_FALSE(func->IsDataTypeEvaluated());
   EXPECT_FALSE(func2->IsDataTypeEvaluated());
   EXPECT_FALSE(col->IsDataTypeEvaluated());
+
+  // Run the ResolveTypesRule since some of the data type handling has been moved over there.
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   // Expect the data_rule to change something.
   DataTypeRule data_rule(compiler_state_.get());
@@ -203,8 +222,12 @@ TEST_F(DataTypeRuleTest, metadata_column) {
 
   MetadataIR* metadata_ir = MakeMetadataIR(metadata_name, /* parent_op_idx */ 0);
   metadata_ir->set_property(property);
-  MakeFilter(MakeMemSource(), metadata_ir);
+  MakeFilter(mem_src, metadata_ir);
   EXPECT_FALSE(metadata_ir->IsDataTypeEvaluated());
+
+  // Run the ResolveTypesRule since some of the data type handling has been moved over there.
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   DataTypeRule data_rule(compiler_state_.get());
   auto result = data_rule.Execute(graph.get());
@@ -229,6 +252,10 @@ TEST_F(DataTypeRuleTest, map_function_init_args) {
   EXPECT_FALSE(col->IsDataTypeEvaluated());
 
   EXPECT_NOT_MATCH(func, UnresolvedRTFuncMatchAllArgs(ResolvedExpression()));
+
+  // Run the ResolveTypesRule since some of the data type handling has been moved over there.
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   // Expect the data_rule to change something.
   DataTypeRule data_rule(compiler_state_.get());

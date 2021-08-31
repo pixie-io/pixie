@@ -337,7 +337,7 @@ TEST_F(OptimizerTest, mem_src_join_same_src_test) {
     auto mem_src1 = MakeMemSource("cpu", mem_src_relation);
     auto agg_fn = MakeMeanFunc(MakeColumn("cpu0", 0));
     auto column = MakeColumn("upid", 0);
-    column->ResolveColumnType(types::UINT128);
+    ASSERT_OK(column->SetResolvedType(ValueType::Create(types::UINT128, types::ST_NONE)));
     auto agg = MakeBlockingAgg(mem_src0, {column}, {{"cpu0_mean", agg_fn}});
     Relation agg_relation({types::UINT128, types::FLOAT64}, {"upid", "cpu0_mean"});
     auto join = MakeJoin({mem_src1, agg}, "inner", mem_src_relation, agg_relation, {"upid"},

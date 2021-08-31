@@ -65,7 +65,7 @@ TEST_F(PreSplitOptimizerTest, filter_pushdown) {
   MapIR* map =
       MakeMap(src, {{"abc_1", MakeColumn("abc", 0)}, {"abc", MakeColumn("abc", 0)}}, false);
   auto col = MakeColumn("abc", 0);
-  col->ResolveColumnType(types::DataType::INT64);
+  EXPECT_OK(col->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func = MakeEqualsFunc(col, MakeInt(2));
   eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
   EXPECT_OK(eq_func->SplitInitArgs(0));

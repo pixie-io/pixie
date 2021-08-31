@@ -212,7 +212,7 @@ StatusOr<absl::flat_hash_set<std::string>> JoinIR::PruneOutputColumnsToImpl(
   return kept_columns;
 }
 
-Status JoinIR::ResolveType(CompilerState* /* compiler_state */) {
+Status JoinIR::ResolveType(CompilerState* compiler_state) {
   DCHECK_EQ(2, parent_types().size());
   const auto& [left_type, right_type] = left_right_table_types();
   const auto& [left_suffix, right_suffix] = left_right_suffixs();
@@ -242,6 +242,12 @@ Status JoinIR::ResolveType(CompilerState* /* compiler_state */) {
       return CreateIRNodeError(err_fmt_string, new_right_col_name, left_suffix, right_suffix);
     }
     new_table->AddColumn(new_right_col_name, col_type);
+  }
+
+  // We need to resolve all of the output columns if they exist, because we haven't yet merged the
+  // join output columns logic from OperatorRelationRule into here.
+  for (auto col : output_columns_) {
+    PL_RETURN_IF_ERROR(ResolveExpressionType(col, compiler_state, {left_type, right_type}));
   }
 
   return SetResolvedType(new_table);

@@ -40,26 +40,26 @@ StatusOr<bool> DropToMapOperatorRule::DropToMap(DropIR* drop_ir) {
   DCHECK_EQ(drop_ir->parents().size(), 1UL);
   OperatorIR* parent_op = drop_ir->parents()[0];
 
-  DCHECK(parent_op->IsRelationInit());
-  Relation parent_relation = parent_op->relation();
+  DCHECK(parent_op->is_type_resolved());
+  auto parent_table_type = parent_op->resolved_table_type();
 
   absl::flat_hash_set<std::string> dropped_columns;
   for (const auto& name : drop_ir->col_names()) {
-    if (!parent_relation.HasColumn(name)) {
+    if (!parent_table_type->HasColumn(name)) {
       return drop_ir->CreateIRNodeError("Column '$0' not found in parent dataframe", name);
     }
     dropped_columns.insert(name);
   }
 
   ColExpressionVector col_exprs;
-  for (const auto& input_col_name : parent_relation.col_names()) {
+  for (const auto& input_col_name : parent_table_type->ColumnNames()) {
     if (dropped_columns.contains(input_col_name)) {
       continue;
     }
     PL_ASSIGN_OR_RETURN(ColumnIR * column_ir,
                         ir_graph->CreateNode<ColumnIR>(drop_ir->ast(), input_col_name,
                                                        /*parent_op_idx*/ 0));
-    column_ir->ResolveColumnType(parent_relation);
+    PL_RETURN_IF_ERROR(ResolveExpressionType(column_ir, compiler_state_, {parent_table_type}));
     col_exprs.emplace_back(input_col_name, column_ir);
   }
 

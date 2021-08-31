@@ -43,8 +43,8 @@ TEST_F(PreSplitAnalyzerTest, split_pem_udf) {
   ASSERT_OK(ResolveOperatorType(src1, compiler_state_.get()));
   auto input1 = MakeColumn("remote_addr", 0);
   auto input2 = MakeColumn("req_path", 0);
-  input1->ResolveColumnType(types::DataType::STRING);
-  input2->ResolveColumnType(types::DataType::STRING);
+  EXPECT_OK(input1->SetResolvedType(ValueType::Create(types::DataType::STRING, types::ST_NONE)));
+  EXPECT_OK(input2->SetResolvedType(ValueType::Create(types::DataType::STRING, types::ST_NONE)));
   auto func1 = MakeFunc("pem_only", {input1});
   auto func2 = MakeFunc("kelvin_only", {input2});
   func1->SetOutputDataType(types::DataType::STRING);

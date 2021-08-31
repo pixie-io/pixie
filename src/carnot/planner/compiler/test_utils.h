@@ -579,14 +579,15 @@ class OperatorTests : public ::testing::Test {
   ColumnIR* MakeColumn(const std::string& name, int64_t parent_op_idx,
                        const types::DataType& type) {
     ColumnIR* column = MakeColumn(name, parent_op_idx);
-    column->ResolveColumnType(type);
+    EXPECT_OK(column->SetResolvedType(ValueType::Create(type, types::ST_NONE)));
     return column;
   }
 
   ColumnIR* MakeColumn(const std::string& name, int64_t parent_op_idx,
                        const table_store::schema::Relation& relation) {
     ColumnIR* column = MakeColumn(name, parent_op_idx);
-    column->ResolveColumnType(relation);
+    auto type = ValueType::Create(relation.GetColumnType(name), types::ST_NONE);
+    EXPECT_OK(column->SetResolvedType(type));
     return column;
   }
 

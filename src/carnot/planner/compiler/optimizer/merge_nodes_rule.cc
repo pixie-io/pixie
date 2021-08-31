@@ -402,6 +402,7 @@ StatusOr<OperatorIR*> MergeNodesRule::MergeOps(IR* graph,
     return base_op->CreateIRNodeError("Can't optimize $0", base_op->DebugString());
   }
   DCHECK_NE(merged_op, nullptr);
+  PL_RETURN_IF_ERROR(ResolveOperatorType(merged_op, compiler_state_));
   merged_op->ClearRelation();
   OperatorRelationRule rule(compiler_state_);
   PL_ASSIGN_OR_RETURN(bool did_apply, rule.Apply(merged_op));

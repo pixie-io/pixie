@@ -38,7 +38,7 @@ TEST_F(FilterPushDownTest, simple_no_op) {
 
   auto constant = MakeInt(10);
   auto column = MakeColumn("column", 0);
-  column->ResolveColumnType(types::DataType::INT64);
+  EXPECT_OK(column->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
 
   auto eq_func = MakeEqualsFunc(column, constant);
   eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
@@ -58,7 +58,7 @@ TEST_F(FilterPushDownTest, simple) {
   MapIR* map =
       MakeMap(src, {{"abc_1", MakeColumn("abc", 0)}, {"abc", MakeColumn("abc", 0)}}, false);
   auto col = MakeColumn("abc", 0);
-  col->ResolveColumnType(types::DataType::INT64);
+  EXPECT_OK(col->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func = MakeEqualsFunc(col, MakeInt(2));
   eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
   EXPECT_OK(eq_func->SplitInitArgs(0));
@@ -85,9 +85,9 @@ TEST_F(FilterPushDownTest, two_col_filter) {
   MapIR* map4 =
       MakeMap(map3, {{"xyz", MakeColumn("xyz", 0)}, {"abc", MakeColumn("abc", 0)}}, false);
   auto col1 = MakeColumn("abc", 0);
-  col1->ResolveColumnType(types::DataType::INT64);
+  EXPECT_OK(col1->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto col2 = MakeColumn("xyz", 0);
-  col2->ResolveColumnType(types::DataType::INT64);
+  EXPECT_OK(col2->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func = MakeEqualsFunc(col1, col2);
   eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
   EXPECT_OK(eq_func->SplitInitArgs(0));
@@ -116,9 +116,9 @@ TEST_F(FilterPushDownTest, multi_condition_filter) {
       MakeMap(map2, {{"xyz", MakeColumn("xyz", 0)}, {"abc", MakeColumn("abc", 0)}}, false);
 
   auto col1 = MakeColumn("abc", 0);
-  col1->ResolveColumnType(types::DataType::INT64);
+  EXPECT_OK(col1->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto col2 = MakeColumn("xyz", 0);
-  col2->ResolveColumnType(types::DataType::INT64);
+  EXPECT_OK(col2->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
 
   auto equals1 = MakeEqualsFunc(col1, MakeInt(2));
   equals1->SetOutputDataType(types::DataType::BOOLEAN);
@@ -157,7 +157,7 @@ TEST_F(FilterPushDownTest, column_rename) {
   MapIR* map2 = MakeMap(map1, {{"xyz", MakeInt(3)}, {"def", MakeColumn("def", 0)}}, false);
 
   auto col = MakeColumn("def", 0);
-  col->ResolveColumnType(types::DataType::INT64);
+  EXPECT_OK(col->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func = MakeEqualsFunc(col, MakeInt(2));
   eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
   EXPECT_OK(eq_func->SplitInitArgs(0));
@@ -189,14 +189,14 @@ TEST_F(FilterPushDownTest, two_filters_different_cols) {
       false);
 
   auto col1 = MakeColumn("def", 0);
-  col1->ResolveColumnType(types::DataType::INT64);
+  EXPECT_OK(col1->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func = MakeEqualsFunc(col1, MakeInt(2));
   eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
   EXPECT_OK(eq_func->SplitInitArgs(0));
   FilterIR* filter1 = MakeFilter(map2, eq_func);
 
   auto col2 = MakeColumn("abc", 0);
-  col2->ResolveColumnType(types::DataType::INT64);
+  EXPECT_OK(col2->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func2 = MakeEqualsFunc(col2, MakeInt(3));
   eq_func2->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
   EXPECT_OK(eq_func2->SplitInitArgs(0));
@@ -229,7 +229,7 @@ TEST_F(FilterPushDownTest, two_filters_same_cols) {
       MakeMap(map1, {{"abc", MakeColumn("abc", 0)}, {"def", MakeColumn("def", 0)}}, false);
 
   auto col1 = MakeColumn("def", 0);
-  col1->ResolveColumnType(types::DataType::INT64);
+  EXPECT_OK(col1->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func = MakeEqualsFunc(col1, MakeInt(2));
   eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
   EXPECT_OK(eq_func->SplitInitArgs(0));
@@ -239,7 +239,7 @@ TEST_F(FilterPushDownTest, two_filters_same_cols) {
       false);
 
   auto col2 = MakeColumn("def", 0);
-  col2->ResolveColumnType(types::DataType::INT64);
+  EXPECT_OK(col2->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func2 = MakeEqualsFunc(MakeInt(3), col2);
   eq_func2->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
   EXPECT_OK(eq_func2->SplitInitArgs(0));
@@ -296,7 +296,7 @@ TEST_F(FilterPushDownTest, single_col_rename_collision_swap) {
   MapIR* map = MakeMap(src, {{"xyz", MakeColumn("abc", 0)}, {"abc", MakeColumn("xyz", 0)}}, false);
 
   auto col = MakeColumn("abc", 0);
-  col->ResolveColumnType(types::DataType::INT64);
+  EXPECT_OK(col->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func = MakeEqualsFunc(col, MakeInt(2));
   eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
   EXPECT_OK(eq_func->SplitInitArgs(0));
@@ -324,7 +324,7 @@ TEST_F(FilterPushDownTest, multicol_rename_collision) {
       MakeMap(map1, {{"xyz", MakeColumn("abc", 0)}, {"abc", MakeColumn("xyz", 0)}}, false);
 
   auto col = MakeColumn("abc", 0);
-  col->ResolveColumnType(types::DataType::INT64);
+  EXPECT_OK(col->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func = MakeEqualsFunc(col, MakeInt(2));
   eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
   EXPECT_OK(eq_func->SplitInitArgs(0));
@@ -348,13 +348,13 @@ TEST_F(FilterPushDownTest, agg_group) {
   Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
   MemorySourceIR* src = MakeMemSource(relation);
   auto col0 = MakeColumn("xyz", 0);
-  col0->ResolveColumnType(types::DataType::INT64);
+  EXPECT_OK(col0->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto mean_func = MakeMeanFunc(col0);
   mean_func->SetRegistryArgTypes({types::INT64});
   EXPECT_OK(mean_func->SplitInitArgs(0));
   BlockingAggIR* agg = MakeBlockingAgg(src, {MakeColumn("abc", 0)}, {{"out", mean_func}});
   auto col1 = MakeColumn("abc", 0);
-  col1->ResolveColumnType(types::DataType::INT64);
+  EXPECT_OK(col1->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func = MakeEqualsFunc(col1, MakeInt(2));
   eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
   EXPECT_OK(eq_func->SplitInitArgs(0));
@@ -376,15 +376,15 @@ TEST_F(FilterPushDownTest, agg_expr_no_push) {
   Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
   MemorySourceIR* src = MakeMemSource(relation);
   auto col0 = MakeColumn("xyz", 0);
-  col0->ResolveColumnType(types::DataType::INT64);
+  EXPECT_OK(col0->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto mean_func = MakeMeanFunc(col0);
   mean_func->SetRegistryArgTypes({types::INT64});
   EXPECT_OK(mean_func->SplitInitArgs(0));
   BlockingAggIR* agg = MakeBlockingAgg(src, {MakeColumn("abc", 0)}, {{"xyz", mean_func}});
   auto col1 = MakeColumn("xyz", 0);
-  col1->ResolveColumnType(types::DataType::INT64);
+  EXPECT_OK(col1->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto col2 = MakeColumn("abc", 0);
-  col2->ResolveColumnType(types::DataType::INT64);
+  EXPECT_OK(col2->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func = MakeEqualsFunc(col1, col2);
   eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
   EXPECT_OK(eq_func->SplitInitArgs(0));
@@ -405,7 +405,7 @@ TEST_F(FilterPushDownTest, multiple_children_dont_push) {
   EXPECT_OK(mean_func->SplitInitArgs(0));
   BlockingAggIR* agg = MakeBlockingAgg(src, {MakeColumn("abc", 0)}, {{"out", mean_func}});
   auto col = MakeColumn("abc", 0);
-  col->ResolveColumnType(types::DataType::INT64);
+  EXPECT_OK(col->SetResolvedType(ValueType::Create(types::DataType::INT64, types::ST_NONE)));
   auto eq_func = MakeEqualsFunc(col, MakeInt(2));
   eq_func->SetRegistryArgTypes({types::DataType::INT64, types::DataType::INT64});
   EXPECT_OK(eq_func->SplitInitArgs(0));

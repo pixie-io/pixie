@@ -52,7 +52,7 @@ class BlockingAggOperatorRelationRuleTest : public RulesTest {
     auto group = MakeColumn(group_name, /* parent_op_idx */ 0);
     // Code to resolve column.
     if (resolve_agg_group) {
-      group->ResolveColumnType(group_data_type);
+      EXPECT_OK(group->SetResolvedType(ValueType::Create(group_data_type, types::ST_NONE)));
     }
 
     agg = graph
@@ -110,6 +110,8 @@ class MapOperatorRelationRuleTest : public RulesTest {
   void SetUpGraph(bool resolve_map_func, bool keep_input_columns) {
     mem_src =
         graph->CreateNode<MemorySourceIR>(ast, "source", std::vector<std::string>{}).ValueOrDie();
+    compiler_state_->relation_map()->emplace("source", cpu_relation);
+    PL_CHECK_OK(ResolveOperatorType(mem_src, compiler_state_.get()));
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
     auto constant1 = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
     auto constant2 = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
@@ -380,8 +382,13 @@ TEST_F(OperatorRelationTest, JoinCreateOutputColumns) {
   std::string join_key = "key";
   Relation rel1({types::INT64, types::FLOAT64, types::STRING}, {join_key, "latency", "data"});
   Relation rel2({types::INT64, types::FLOAT64}, {join_key, "cpu_usage"});
-  auto mem_src1 = MakeMemSource(rel1);
-  auto mem_src2 = MakeMemSource(rel2);
+  auto mem_src1 = MakeMemSource("table1", rel1);
+  compiler_state_->relation_map()->emplace("table1", rel1);
+  auto mem_src2 = MakeMemSource("table2", rel2);
+  compiler_state_->relation_map()->emplace("table2", rel2);
+
+  ASSERT_OK(ResolveOperatorType(mem_src1, compiler_state_.get()));
+  ASSERT_OK(ResolveOperatorType(mem_src2, compiler_state_.get()));
 
   std::string left_suffix = "_x";
   std::string right_suffix = "_y";
@@ -392,6 +399,7 @@ TEST_F(OperatorRelationTest, JoinCreateOutputColumns) {
                                           std::vector<ColumnIR*>{MakeColumn(join_key, 1)},
                                           std::vector<std::string>{left_suffix, right_suffix})
                      .ConsumeValueOrDie();
+  join->PullParentTypes();
 
   EXPECT_TRUE(mem_src1->IsRelationInit());
   EXPECT_TRUE(mem_src2->IsRelationInit());
@@ -434,8 +442,13 @@ TEST_F(OperatorRelationTest, JoinCreateOutputColumnsFailsDuplicateResultColumns)
   std::string dup_key = absl::Substitute("$0$1", join_key, left_suffix);
   Relation rel1({types::INT64, types::FLOAT64, types::STRING}, {join_key, dup_key, "data"});
   Relation rel2({types::INT64, types::FLOAT64}, {join_key, "cpu_usage"});
-  auto mem_src1 = MakeMemSource(rel1);
-  auto mem_src2 = MakeMemSource(rel2);
+  auto mem_src1 = MakeMemSource("table1", rel1);
+  compiler_state_->relation_map()->emplace("table1", rel1);
+  auto mem_src2 = MakeMemSource("table2", rel2);
+  compiler_state_->relation_map()->emplace("table2", rel2);
+
+  ASSERT_OK(ResolveOperatorType(mem_src1, compiler_state_.get()));
+  ASSERT_OK(ResolveOperatorType(mem_src2, compiler_state_.get()));
 
   JoinIR* join = graph
                      ->CreateNode<JoinIR>(ast, std::vector<OperatorIR*>{mem_src1, mem_src2},
@@ -443,6 +456,7 @@ TEST_F(OperatorRelationTest, JoinCreateOutputColumnsFailsDuplicateResultColumns)
                                           std::vector<ColumnIR*>{MakeColumn(join_key, 1)},
                                           std::vector<std::string>{left_suffix, right_suffix})
                      .ConsumeValueOrDie();
+  join->PullParentTypes();
 
   EXPECT_TRUE(mem_src1->IsRelationInit());
   EXPECT_TRUE(mem_src2->IsRelationInit());
@@ -464,8 +478,13 @@ TEST_F(OperatorRelationTest, JoinCreateOutputColumnsFailsDuplicateNoSuffixes) {
   std::string right_suffix = "";
   Relation rel1({types::INT64, types::FLOAT64, types::STRING}, {join_key, "latency_ns", "data"});
   Relation rel2({types::INT64, types::FLOAT64}, {join_key, "cpu_usage"});
-  auto mem_src1 = MakeMemSource(rel1);
-  auto mem_src2 = MakeMemSource(rel2);
+  auto mem_src1 = MakeMemSource("table1", rel1);
+  compiler_state_->relation_map()->emplace("table1", rel1);
+  auto mem_src2 = MakeMemSource("table2", rel2);
+  compiler_state_->relation_map()->emplace("table2", rel2);
+
+  ASSERT_OK(ResolveOperatorType(mem_src1, compiler_state_.get()));
+  ASSERT_OK(ResolveOperatorType(mem_src2, compiler_state_.get()));
 
   JoinIR* join = graph
                      ->CreateNode<JoinIR>(ast, std::vector<OperatorIR*>{mem_src1, mem_src2},
@@ -473,6 +492,7 @@ TEST_F(OperatorRelationTest, JoinCreateOutputColumnsFailsDuplicateNoSuffixes) {
                                           std::vector<ColumnIR*>{MakeColumn(join_key, 1)},
                                           std::vector<std::string>{left_suffix, right_suffix})
                      .ConsumeValueOrDie();
+  join->PullParentTypes();
 
   EXPECT_TRUE(mem_src1->IsRelationInit());
   EXPECT_TRUE(mem_src2->IsRelationInit());
@@ -494,8 +514,13 @@ TEST_F(OperatorRelationTest, JoinCreateOutputColumnsAfterRightJoin) {
   std::string join_key = "key";
   Relation rel1({types::INT64, types::FLOAT64, types::STRING}, {join_key, "latency", "data"});
   Relation rel2({types::INT64, types::FLOAT64}, {join_key, "cpu_usage"});
-  auto mem_src1 = MakeMemSource(rel1);
-  auto mem_src2 = MakeMemSource(rel2);
+  auto mem_src1 = MakeMemSource("table1", rel1);
+  compiler_state_->relation_map()->emplace("table1", rel1);
+  auto mem_src2 = MakeMemSource("table2", rel2);
+  compiler_state_->relation_map()->emplace("table2", rel2);
+
+  ASSERT_OK(ResolveOperatorType(mem_src1, compiler_state_.get()));
+  ASSERT_OK(ResolveOperatorType(mem_src2, compiler_state_.get()));
 
   std::string left_suffix = "_x";
   std::string right_suffix = "_y";
@@ -522,6 +547,9 @@ TEST_F(OperatorRelationTest, JoinCreateOutputColumnsAfterRightJoin) {
   auto result_or_s = rule.Execute(graph.get());
   ASSERT_OK(result_or_s);
   EXPECT_TRUE(result_or_s.ValueOrDie());
+
+  // We have to pull the parent types after the SetupJoinTypeRule is run.
+  join->PullParentTypes();
 
   // Join should still be specified as a  right join.
   EXPECT_TRUE(join->specified_as_right());

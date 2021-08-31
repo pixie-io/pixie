@@ -72,9 +72,9 @@ TEST_F(PartialOpMgrTest, agg_test) {
   relation.AddColumn(types::STRING, "service");
   auto mem_src = MakeMemSource(relation);
   auto count_col = MakeColumn("count", 0);
-  count_col->ResolveColumnType(types::INT64);
+  EXPECT_OK(count_col->SetResolvedType(ValueType::Create(types::INT64, types::ST_NONE)));
   auto service_col = MakeColumn("service", 0);
-  service_col->ResolveColumnType(types::STRING);
+  EXPECT_OK(service_col->SetResolvedType(ValueType::Create(types::STRING, types::ST_NONE)));
   auto mean_func = MakeMeanFunc(MakeColumn("count", 0));
   mean_func->SetSupportsPartial(true);
   mean_func->SetRegistryArgTypes({types::INT64});
@@ -126,9 +126,9 @@ TEST_F(PartialOpMgrTest, agg_test) {
 TEST_F(PartialOpMgrTest, agg_where_fn_cant_partial) {
   auto mem_src = MakeMemSource(MakeRelation());
   auto count_col = MakeColumn("count", 0);
-  count_col->ResolveColumnType(types::INT64);
+  EXPECT_OK(count_col->SetResolvedType(ValueType::Create(types::INT64, types::ST_NONE)));
   auto service_col = MakeColumn("service", 0);
-  service_col->ResolveColumnType(types::STRING);
+  EXPECT_OK(service_col->SetResolvedType(ValueType::Create(types::STRING, types::ST_NONE)));
   // One function is partial
   auto mean_func = MakeMeanFunc(MakeColumn("count", 0));
   mean_func->SetSupportsPartial(false);

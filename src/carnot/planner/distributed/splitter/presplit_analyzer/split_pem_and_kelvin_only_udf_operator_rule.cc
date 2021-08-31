@@ -75,7 +75,6 @@ SplitPEMAndKelvinOnlyUDFOperatorRule::OptionallyUpdateExpression(
   PL_ASSIGN_OR_RETURN(auto input_col, graph->CreateNode<ColumnIR>(expr->ast(), output_col_name,
                                                                   /*parent_op_idx*/ 0));
   // This column should have the same type as the expression, since it's just a projection.
-  input_col->ResolveColumnType(expr->EvaluatedDataType());
   PL_RETURN_IF_ERROR(input_col->SetResolvedType(expr->resolved_type()));
 
   // Add the PEM-only expression to the PEM-only map.
@@ -127,7 +126,7 @@ StatusOr<bool> SplitPEMAndKelvinOnlyUDFOperatorRule::Apply(IRNode* node) {
                                  op->parents().size());
   }
   auto parent = op->parents()[0];
-  auto parent_relation = parent->relation();
+  auto parent_table_type = parent->resolved_table_type();
 
   // Collect the expression(s) to optionally modify.
   std::vector<ExpressionIR*> operator_expressions;
@@ -153,7 +152,7 @@ StatusOr<bool> SplitPEMAndKelvinOnlyUDFOperatorRule::Apply(IRNode* node) {
   // If it doesn't contain a PEM-only UDF, we will not modify it.
   // Also, keep track of the column names the operators are using so we don't autogenerate
   // a new column with a name collision with an existing column.
-  auto parent_col_names = parent_relation.col_names();
+  auto parent_col_names = parent_table_type->ColumnNames();
   absl::flat_hash_set<std::string> used_column_names(parent_col_names.begin(),
                                                      parent_col_names.end());
   for (ExpressionIR* operator_expression : operator_expressions) {
@@ -172,12 +171,12 @@ StatusOr<bool> SplitPEMAndKelvinOnlyUDFOperatorRule::Apply(IRNode* node) {
   for (const auto& required_input_col : required_inputs_per_parent[0]) {
     // If a required input column is one we just generated from a PEM-only function,
     // no need to add a column projection for it to the PEM map.
-    if (!parent_relation.HasColumn(required_input_col)) {
+    if (!parent_table_type->HasColumn(required_input_col)) {
       continue;
     }
     PL_ASSIGN_OR_RETURN(auto col_node, graph->CreateNode<ColumnIR>(op->ast(), required_input_col,
                                                                    /*parent_op_idx*/ 0));
-    col_node->ResolveColumnType(parent_relation);
+    PL_RETURN_IF_ERROR(ResolveExpressionType(col_node, compiler_state_, {parent_table_type}));
     PL_RETURN_IF_ERROR(pem_map->AddColExpr(ColumnExpression(required_input_col, col_node)));
   }
 

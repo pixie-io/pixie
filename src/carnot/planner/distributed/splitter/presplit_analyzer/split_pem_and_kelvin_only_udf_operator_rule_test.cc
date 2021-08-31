@@ -55,8 +55,8 @@ TEST_F(SplitPEMAndKelvinOnlyUDFOperatorRuleTest, simple) {
   ASSERT_OK(ResolveOperatorType(src1, compiler_state_.get()));
   auto input1 = MakeColumn("remote_addr", 0);
   auto input2 = MakeColumn("req_path", 0);
-  input1->ResolveColumnType(types::DataType::STRING);
-  input2->ResolveColumnType(types::DataType::STRING);
+  EXPECT_OK(input1->SetResolvedType(ValueType::Create(types::DataType::STRING, types::ST_NONE)));
+  EXPECT_OK(input2->SetResolvedType(ValueType::Create(types::DataType::STRING, types::ST_NONE)));
   auto func1 = MakeFunc("pem_only", {input1});
   auto func2 = MakeFunc("kelvin_only", {input2});
   func1->SetOutputDataType(types::DataType::STRING);
@@ -106,7 +106,7 @@ TEST_F(SplitPEMAndKelvinOnlyUDFOperatorRuleTest, nested) {
   ASSERT_OK(src1->SetRelation(Relation({types::STRING}, {"remote_addr"})));
   ASSERT_OK(ResolveOperatorType(src1, compiler_state_.get()));
   auto input1 = MakeColumn("remote_addr", 0);
-  input1->ResolveColumnType(types::DataType::STRING);
+  EXPECT_OK(input1->SetResolvedType(ValueType::Create(types::DataType::STRING, types::ST_NONE)));
   auto func1 = MakeFunc("pem_only", {input1});
   auto func2 = MakeFunc("kelvin_only", {func1});
   func1->SetOutputDataType(types::DataType::STRING);
@@ -153,7 +153,7 @@ TEST_F(SplitPEMAndKelvinOnlyUDFOperatorRuleTest, name_collision) {
   ASSERT_OK(ResolveOperatorType(src1, compiler_state_.get()));
 
   auto input1 = MakeColumn("remote_addr", 0);
-  input1->ResolveColumnType(types::DataType::STRING);
+  EXPECT_OK(input1->SetResolvedType(ValueType::Create(types::DataType::STRING, types::ST_NONE)));
   auto func1 = MakeFunc("pem_only", {input1});
   func1->SetOutputDataType(types::DataType::STRING);
   func1->SetRegistryArgTypes({types::DataType::STRING});
@@ -163,13 +163,13 @@ TEST_F(SplitPEMAndKelvinOnlyUDFOperatorRuleTest, name_collision) {
   ASSERT_OK(ResolveOperatorType(map1, compiler_state_.get()));
 
   auto input2 = MakeColumn("pem_only_0", 0);
-  input2->ResolveColumnType(types::DataType::STRING);
+  EXPECT_OK(input2->SetResolvedType(ValueType::Create(types::DataType::STRING, types::ST_NONE)));
   auto func2 = MakeFunc("pem_only", {input2});
   func2->SetOutputDataType(types::DataType::STRING);
   func2->SetRegistryArgTypes({types::DataType::STRING});
   EXPECT_OK(func2->SplitInitArgs(0));
   auto input3 = MakeColumn("pem_only_0", 0);
-  input3->ResolveColumnType(types::DataType::STRING);
+  EXPECT_OK(input3->SetResolvedType(ValueType::Create(types::DataType::STRING, types::ST_NONE)));
   auto func3 = MakeFunc("kelvin_only", {input2});
   func3->SetOutputDataType(types::DataType::STRING);
   func3->SetRegistryArgTypes({types::DataType::STRING});
@@ -203,8 +203,8 @@ TEST_F(SplitPEMAndKelvinOnlyUDFOperatorRuleTest, filter) {
   ASSERT_OK(ResolveOperatorType(src1, compiler_state_.get()));
   auto input1 = MakeColumn("remote_addr", 0);
   auto input2 = MakeColumn("req_path", 0);
-  input1->ResolveColumnType(types::DataType::STRING);
-  input2->ResolveColumnType(types::DataType::STRING);
+  EXPECT_OK(input1->SetResolvedType(ValueType::Create(types::DataType::STRING, types::ST_NONE)));
+  EXPECT_OK(input2->SetResolvedType(ValueType::Create(types::DataType::STRING, types::ST_NONE)));
   auto func1 = MakeFunc("pem_only", {input1});
   auto func2 = MakeFunc("kelvin_only", {input2});
   func1->SetOutputDataType(types::DataType::STRING);

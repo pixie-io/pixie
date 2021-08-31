@@ -105,10 +105,6 @@ StatusOr<bool> ConvertMetadataRule::Apply(IRNode* ir_node) {
   // Propagate type changes from the new conversion_func.
   PL_RETURN_IF_ERROR(PropagateTypeChangesFromNode(graph, conversion_func, compiler_state_));
 
-  // Manually evaluate the column type, because DataTypeRule will run before this rule.
-  PL_ASSIGN_OR_RETURN(auto evaled_col, DataTypeRule::EvaluateColumn(key_column));
-  DCHECK(evaled_col);
-
   PL_ASSIGN_OR_RETURN(auto evaled_func,
                       DataTypeRule::EvaluateFunc(compiler_state_, conversion_func));
   DCHECK(evaled_func);
