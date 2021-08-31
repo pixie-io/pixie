@@ -188,6 +188,8 @@ class FuncIR : public ExpressionIR {
   // duplicate edge.
   Status AddOrCloneArg(ExpressionIR* arg);
   Status AddInitArg(DataIR* arg);
+  Status SetInfoFromRegistry(CompilerState* compiler_state,
+                             const std::vector<types::DataType>& registry_arg_types);
 };
 }  // namespace planner
 }  // namespace carnot

@@ -190,21 +190,61 @@ Status FuncIR::CopyFromNodeImpl(const IRNode* node,
 
 bool FuncIR::NodeMatches(IRNode* node) { return Match(node, Func()); }
 
+Status FuncIR::SetInfoFromRegistry(CompilerState* compiler_state,
+                                   const std::vector<types::DataType>& registry_arg_types) {
+  registry_arg_types_ = registry_arg_types;
+
+  auto udftype_or_s = compiler_state->registry_info()->GetUDFExecType(func_name());
+  if (!udftype_or_s.ok()) {
+    return CreateIRNodeError(udftype_or_s.status().msg());
+  }
+
+  if (!is_init_args_split_) {
+    PL_ASSIGN_OR_RETURN(size_t num_init_args, compiler_state->registry_info()->GetNumInitArgs(
+                                                  func_name(), registry_arg_types));
+    PL_RETURN_IF_ERROR(SplitInitArgs(num_init_args));
+  }
+
+  std::vector<uint64_t> init_arg_hashes;
+  for (const auto& init_arg : init_args()) {
+    init_arg_hashes.push_back(init_arg->HashValue());
+  }
+  switch (udftype_or_s.ConsumeValueOrDie()) {
+    case UDFExecType::kUDF: {
+      func_id_ =
+          compiler_state->GetUDFID(IDRegistryKey(func_name(), registry_arg_types, init_arg_hashes));
+      break;
+    }
+    case UDFExecType::kUDA: {
+      PL_ASSIGN_OR_RETURN(supports_partial_, compiler_state->registry_info()->DoesUDASupportPartial(
+                                                 func_name(), registry_arg_types));
+      func_id_ =
+          compiler_state->GetUDAID(IDRegistryKey(func_name(), registry_arg_types, init_arg_hashes));
+      break;
+    }
+    default: {
+      return error::Internal("Unsupported UDFExecType");
+    }
+  }
+  return Status::OK();
+}
+
 Status FuncIR::ResolveType(CompilerState* compiler_state,
                            const std::vector<TypePtr>& parent_types) {
   // Resolve the arg types first.
-  std::vector<std::shared_ptr<ValueType>> arg_types;
-  for (auto init_arg : init_args()) {
-    // We may want to have semantic type resolution based on init arguments in the future. If so we
-    // can change this to actually resolve the init args semantic type.
-    arg_types.push_back(ValueType::Create(init_arg->EvaluatedDataType(), SemanticType::ST_NONE));
+  std::vector<ValueTypePtr> arg_types;
+  std::vector<types::DataType> arg_data_types;
+  for (auto expr : all_args_) {
+    PL_RETURN_IF_ERROR(ResolveExpressionType(expr, compiler_state, parent_types));
+    auto type = expr->resolved_value_type();
+    arg_types.push_back(type);
+    arg_data_types.push_back(type->data_type());
   }
-  for (auto arg : args()) {
-    PL_RETURN_IF_ERROR(ResolveExpressionType(arg, compiler_state, parent_types));
-    // At the moment all expressions resolve to a ValueType, since UDFs can't take tables as args.
-    auto primitive_type = std::static_pointer_cast<ValueType>(arg->resolved_type());
-    arg_types.push_back(primitive_type);
-  }
+
+  // In the future, we should refactor RegistryInfo to work with ValueTypePtrs instead of
+  // types::DataTypes.
+  PL_RETURN_IF_ERROR(SetInfoFromRegistry(compiler_state, arg_data_types));
+
   PL_ASSIGN_OR_RETURN(auto type_,
                       compiler_state->registry_info()->ResolveUDFType(func_name(), arg_types));
   return SetResolvedType(type_);

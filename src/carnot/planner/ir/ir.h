@@ -276,6 +276,8 @@ Status ResolveOperatorType(OperatorIR* op, CompilerState* compiler_state);
 
 Status ResolveExpressionType(ExpressionIR* expr, CompilerState* compiler_state,
                              const std::vector<TypePtr>& parent_types);
+
+Status PropagateTypeChangesFromNode(IR* graph, IRNode* node, CompilerState* compiler_state);
 }  // namespace planner
 }  // namespace carnot
 }  // namespace px

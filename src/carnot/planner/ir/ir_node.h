@@ -162,6 +162,7 @@ class IRNode {
     resolved_type_ = resolved_type;
     return Status::OK();
   }
+  virtual void ClearResolvedType() { resolved_type_ = nullptr; }
 
  protected:
   explicit IRNode(int64_t id, IRNodeType type) : type_(type), id_(id) {}

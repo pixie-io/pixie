@@ -381,6 +381,56 @@ Status ResolveExpressionType(ExpressionIR* expr, CompilerState* compiler_state,
   return expr->SetResolvedType(expr->type_cast());
 }
 
+Status PropagateTypeChangesFromNode(IR* graph, IRNode* node, CompilerState* compiler_state) {
+  // First, if node is not an Operator, we gather all its parent Operators (including Operators that
+  // are parents of parent expressions) into `clear_all_deps_nodes`. All of the expressions along
+  // the way also have their types cleared, so that they can be re-resolved. For example, if `node`
+  // is a function nested inside another function nested inside a Map, then the Map operator will be
+  // added to `clear_all_deps_nodes` and both of the functions will have their types cleared so that
+  // they can be re-resolved.
+  std::queue<IRNode*> clear_all_deps_nodes;
+  std::queue<IRNode*> op_search_nodes;
+  op_search_nodes.push(node);
+  while (!op_search_nodes.empty()) {
+    auto curr_node = op_search_nodes.front();
+    op_search_nodes.pop();
+    if (curr_node->IsExpression()) {
+      curr_node->ClearResolvedType();
+      for (auto parent_node : graph->dag().ParentsOf(curr_node->id())) {
+        op_search_nodes.push(graph->Get(parent_node));
+      }
+    } else {
+      clear_all_deps_nodes.push(curr_node);
+    }
+  }
+
+  // All dependencies (ops and exprs) of the nodes in `clear_all_deps_nodes` have their types
+  // cleared, and all of the depenedent Operator's are added to `ops_to_resolve`.
+  absl::flat_hash_set<int64_t> ops_to_resolve;
+  while (!clear_all_deps_nodes.empty()) {
+    auto curr_node = clear_all_deps_nodes.front();
+    clear_all_deps_nodes.pop();
+    curr_node->ClearResolvedType();
+    if (curr_node->IsOperator()) {
+      ops_to_resolve.insert(curr_node->id());
+    }
+    for (auto child_id : graph->dag().DependenciesOf(curr_node->id())) {
+      clear_all_deps_nodes.push(graph->Get(child_id));
+    }
+  }
+
+  // The ops in `ops_to_resolve` need to be ordered topologically, because type resolution expects
+  // parent nodes to be resolved before children.
+  for (auto op_id : graph->dag().TopologicalSort()) {
+    if (!ops_to_resolve.contains(op_id)) {
+      continue;
+    }
+    auto op = static_cast<OperatorIR*>(graph->Get(op_id));
+    PL_RETURN_IF_ERROR(ResolveOperatorType(op, compiler_state));
+  }
+  return Status::OK();
+}
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace px

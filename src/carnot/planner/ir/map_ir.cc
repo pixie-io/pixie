@@ -126,12 +126,26 @@ Status MapIR::CopyFromNodeImpl(const IRNode* node,
 
 Status MapIR::ResolveType(CompilerState* compiler_state) {
   DCHECK_EQ(1, parent_types().size());
-  auto table = TableType::Create();
+  auto table_type = TableType::Create();
+  if (keep_input_columns_) {
+    absl::flat_hash_set<std::string> col_names;
+    for (const auto& col_expr : col_exprs_) {
+      col_names.insert(col_expr.name);
+    }
+    auto parent_table_type = std::static_pointer_cast<TableType>(parent_types()[0]);
+    for (const auto& [name, type] : *parent_table_type) {
+      if (col_names.contains(name)) {
+        // Skip parent columns that are being overwritten by the new column expressions.
+        continue;
+      }
+      table_type->AddColumn(name, type);
+    }
+  }
   for (const auto& col_expr : col_exprs_) {
     PL_RETURN_IF_ERROR(ResolveExpressionType(col_expr.node, compiler_state, parent_types()));
-    table->AddColumn(col_expr.name, col_expr.node->resolved_type());
+    table_type->AddColumn(col_expr.name, col_expr.node->resolved_type());
   }
-  return SetResolvedType(table);
+  return SetResolvedType(table_type);
 }
 
 }  // namespace planner

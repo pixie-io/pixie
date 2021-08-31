@@ -41,6 +41,12 @@ Status MetadataIR::CopyFromNodeImpl(const IRNode* node,
   return Status::OK();
 }
 
+Status MetadataIR::ResolveType(CompilerState*, const std::vector<TypePtr>&) {
+  DCHECK(has_property());
+  auto type = ValueType::Create(property_->column_type(), types::ST_NONE);
+  return SetResolvedType(type);
+}
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace px

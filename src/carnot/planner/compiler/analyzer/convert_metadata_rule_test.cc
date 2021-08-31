@@ -19,6 +19,7 @@
 #include <gtest/gtest.h>
 
 #include "src/carnot/planner/compiler/analyzer/convert_metadata_rule.h"
+#include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 
 namespace px {
@@ -35,6 +36,7 @@ TEST_F(ConvertMetadataRuleTest, multichild) {
   MetadataType conversion_column = MetadataType::UPID;
   std::string conversion_column_str = MetadataProperty::GetMetadataString(conversion_column);
   relation.AddColumn(types::DataType::UINT128, conversion_column_str);
+  compiler_state_->relation_map()->emplace("table", relation);
 
   auto metadata_name = "pod_name";
   MetadataProperty* property = md_handler->GetProperty(metadata_name).ValueOrDie();
@@ -45,6 +47,9 @@ TEST_F(ConvertMetadataRuleTest, multichild) {
   auto map1 = MakeMap(src, {{"md", metadata_ir}});
   auto map2 = MakeMap(src, {{"other_col", MakeInt(2)}, {"md", metadata_ir}});
   auto filter = MakeFilter(src, MakeEqualsFunc(metadata_ir, MakeString("pl/foobar")));
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   ConvertMetadataRule rule(compiler_state_.get());
   auto result = rule.Execute(graph.get());
@@ -68,22 +73,33 @@ TEST_F(ConvertMetadataRuleTest, multichild) {
   EXPECT_EQ(types::DataType::STRING, converted_md->EvaluatedDataType());
   EXPECT_EQ(types::DataType::UINT128, input_col->EvaluatedDataType());
   EXPECT_EQ(ExpressionIR::Annotations(MetadataType::POD_NAME), converted_md->annotations());
-  EXPECT_EQ(0, converted_md_func->func_id());
+  EXPECT_EQ(1, converted_md_func->func_id());
 
   // Check to make sure that all of the operators and expressions depending on the metadata
   // now have an updated reference to the func.
   EXPECT_EQ(converted_md, map1->col_exprs()[0].node);
   EXPECT_EQ(converted_md, map2->col_exprs()[1].node);
+
+  // Check that the semantic type of the conversion func is propagated properly.
+  auto type_or_s = map2->resolved_table_type()->GetColumnType("md");
+  ASSERT_OK(type_or_s);
+  auto type = std::static_pointer_cast<ValueType>(type_or_s.ConsumeValueOrDie());
+  EXPECT_EQ(types::STRING, type->data_type());
+  EXPECT_EQ(types::ST_POD_NAME, type->semantic_type());
 }
 
 TEST_F(ConvertMetadataRuleTest, missing_conversion_column) {
   auto relation = table_store::schema::Relation(cpu_relation);
+  compiler_state_->relation_map()->emplace("table", relation);
 
   auto metadata_name = "pod_name";
   NameMetadataProperty property(MetadataType::POD_NAME, {MetadataType::UPID});
   MetadataIR* metadata_ir = MakeMetadataIR(metadata_name, /* parent_op_idx */ 0);
   metadata_ir->set_property(&property);
   MakeMap(MakeMemSource(relation), {{"md", metadata_ir}});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   ConvertMetadataRule rule(compiler_state_.get());
   auto result = rule.Execute(graph.get());

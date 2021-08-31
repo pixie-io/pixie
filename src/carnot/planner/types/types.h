@@ -41,15 +41,19 @@ using px::table_store::schema::Relation;
 using px::types::DataType;
 using px::types::SemanticType;
 
+class BaseType;
+using TypePtr = std::shared_ptr<BaseType>;
+
 class BaseType {
  public:
   virtual ~BaseType() {}
-  virtual std::shared_ptr<BaseType> Copy() const = 0;
+  virtual TypePtr Copy() const = 0;
   virtual std::string DebugString() const = 0;
   virtual bool IsValueType() const { return false; }
 };
 
-using TypePtr = std::shared_ptr<BaseType>;
+class ValueType;
+using ValueTypePtr = std::shared_ptr<ValueType>;
 
 class ValueType : public BaseType {
   /**
@@ -71,8 +75,8 @@ class ValueType : public BaseType {
                             types::ToString(semantic_type_));
   }
 
-  static std::shared_ptr<ValueType> Create(DataType data_type, SemanticType semantic_type) {
-    return std::shared_ptr<ValueType>(new ValueType(data_type, semantic_type));
+  static ValueTypePtr Create(DataType data_type, SemanticType semantic_type) {
+    return ValueTypePtr(new ValueType(data_type, semantic_type));
   }
 
   friend std::ostream& operator<<(std::ostream& os, const ValueType& val) {
@@ -107,6 +111,8 @@ class TableType : public BaseType {
   }
 
   void AddColumn(std::string col_name, TypePtr type_) {
+    DCHECK_EQ(0, map_.count(col_name)) << absl::Substitute(
+        "Cannot AddColumn '$0'. Column already exists in type: $1", col_name, DebugString());
     map_.insert({col_name, type_});
     ordered_col_names_.push_back(col_name);
   }

@@ -136,8 +136,7 @@ class MetadataIR : public ColumnIR {
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
   std::string DebugString() const override;
-
-  static constexpr bool FailOnResolveType() { return true; }
+  Status ResolveType(CompilerState* compiler_state, const std::vector<TypePtr>& parent_types);
 
  private:
   std::string metadata_name_;

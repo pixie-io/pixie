@@ -121,8 +121,12 @@ Status ColumnIR::ResolveType(CompilerState* /* compiler_state */,
   DCHECK(container_op_parent_idx_set_);
   DCHECK_LT(container_op_parent_idx_, parent_types.size());
   auto parent_table = std::static_pointer_cast<TableType>(parent_types[container_op_parent_idx_]);
-  PL_ASSIGN_OR_RETURN(auto type_, parent_table->GetColumnType(col_name_));
-  return SetResolvedType(type_->Copy());
+  auto type_or_s = parent_table->GetColumnType(col_name_);
+  if (!type_or_s.ok()) {
+    return CreateIRNodeError("Column '$0' not found in parent dataframe", col_name_);
+  }
+  auto type = type_or_s.ConsumeValueOrDie();
+  return SetResolvedType(type->Copy());
 }
 
 }  // namespace planner

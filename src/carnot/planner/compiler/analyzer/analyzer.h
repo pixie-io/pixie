@@ -105,6 +105,7 @@ class Analyzer : public RuleExecutor<IR> {
   void CreateDataTypeResolutionBatch() {
     RuleBatch* intermediate_resolution_batch =
         CreateRuleBatch<FailOnMax>("IntermediateResolution", 100);
+    intermediate_resolution_batch->AddRule<ResolveTypesRule>(compiler_state_);
     intermediate_resolution_batch->AddRule<DataTypeRule>(compiler_state_);
     intermediate_resolution_batch->AddRule<OperatorRelationRule>(compiler_state_);
     intermediate_resolution_batch->AddRule<DropToMapOperatorRule>(compiler_state_);
@@ -127,11 +128,6 @@ class Analyzer : public RuleExecutor<IR> {
     remove_ir_only_nodes_batch->AddRule<RemoveGroupByRule>();
   }
 
-  void CreateTypeResolutionBatch() {
-    RuleBatch* type_resolution_batch = CreateRuleBatch<FailOnMax>("TypeResolution", 2);
-    type_resolution_batch->AddRule<ResolveTypesRule>(compiler_state_);
-  }
-
   Status Init() {
     md_handler_ = MetadataHandler::Create();
     CreateSourceAndMetadataResolutionBatch();
@@ -143,9 +139,6 @@ class Analyzer : public RuleExecutor<IR> {
     CreateMetadataConversionBatch();
     CreateResolutionVerificationBatch();
     CreateRemoveIROnlyNodesBatch();
-    // TODO(james, PP-2065): once the old relation rules are removed this will probably have to move
-    // closer to the top.
-    CreateTypeResolutionBatch();
     return Status::OK();
   }
 

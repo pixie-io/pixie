@@ -83,6 +83,7 @@ StatusOr<bool> ConvertMetadataRule::Apply(IRNode* ir_node) {
   auto md_type = md_property->metadata_type();
 
   PL_ASSIGN_OR_RETURN(auto parent, metadata->ReferencedOperator());
+  PL_ASSIGN_OR_RETURN(auto containing_ops, metadata->ContainingOperators());
 
   PL_ASSIGN_OR_RETURN(std::string key_column_name,
                       FindKeyColumn(parent->relation(), md_property, ir_node));
@@ -100,6 +101,9 @@ StatusOr<bool> ConvertMetadataRule::Apply(IRNode* ir_node) {
     // new conversion func instead.
     PL_RETURN_IF_ERROR(UpdateMetadataContainer(graph->Get(parent_id), metadata, conversion_func));
   }
+
+  // Propagate type changes from the new conversion_func.
+  PL_RETURN_IF_ERROR(PropagateTypeChangesFromNode(graph, conversion_func, compiler_state_));
 
   // Manually evaluate the column type, because DataTypeRule will run before this rule.
   PL_ASSIGN_OR_RETURN(auto evaled_col, DataTypeRule::EvaluateColumn(key_column));

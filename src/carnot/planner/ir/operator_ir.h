@@ -147,6 +147,16 @@ class OperatorIR : public IRNode {
   // distributed stage.
   static constexpr bool FailOnResolveType() { return false; }
 
+  void ClearResolvedType() override {
+    IRNode::ClearResolvedType();
+    parent_types_set_ = false;
+    parent_types_.clear();
+  }
+
+  std::shared_ptr<TableType> resolved_table_type() const {
+    return std::static_pointer_cast<TableType>(resolved_type());
+  }
+
  protected:
   explicit OperatorIR(int64_t id, IRNodeType type) : IRNode(id, type) {}
 

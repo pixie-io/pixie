@@ -111,6 +111,10 @@ class ExpressionIR : public IRNode {
   const Annotations& annotations() const { return annotations_; }
   void set_annotations(const Annotations& annotations) { annotations_ = annotations; }
 
+  ValueTypePtr resolved_value_type() const {
+    return std::static_pointer_cast<ValueType>(resolved_type());
+  }
+
  protected:
   ExpressionIR(int64_t id, IRNodeType type, const Annotations& annotations)
       : IRNode(id, type), annotations_(annotations) {}
