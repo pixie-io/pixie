@@ -302,6 +302,76 @@ func TestMonitor_getPVCState(t *testing.T) {
 	}
 }
 
+func TestMonitor_natsPod(t *testing.T) {
+	httpClient := &FakeHTTPClient{
+		responses: map[string]string{
+			"http://127.0.0.1:8222/": "",
+			"http://127.0.0.3:8222/": "NATS Failed",
+		},
+	}
+
+	tests := []struct {
+		name                string
+		podMissing          bool
+		natsIP              string
+		natsPhase           v1.PodPhase
+		expectedReason      status.VizierReason
+		expectedVizierPhase pixiev1alpha1.VizierPhase
+	}{
+		{
+			name:                "OK",
+			natsIP:              "127.0.0.1",
+			natsPhase:           v1.PodRunning,
+			expectedReason:      "",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+		},
+		{
+			name:                "pending",
+			natsIP:              "127.0.0.2",
+			natsPhase:           v1.PodPending,
+			expectedReason:      "NATSPodPending",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseUpdating,
+		},
+		{
+			name:                "missing",
+			podMissing:          true,
+			expectedReason:      "NATSPodMissing",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+		},
+		{
+			name:                "unhealthy",
+			natsIP:              "127.0.0.3",
+			natsPhase:           v1.PodRunning,
+			expectedReason:      "NATSPodFailed",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			pods := &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWithEvents)}
+			if !test.podMissing {
+				pods.write(
+					"",
+					natsName,
+					&podWithEvents{
+						pod: &v1.Pod{
+							Status: v1.PodStatus{
+								PodIP: test.natsIP,
+								Phase: test.natsPhase,
+							},
+						},
+					},
+				)
+			}
+
+			state := getNATSState(httpClient, pods)
+			assert.Equal(t, test.expectedReason, state.Reason)
+			assert.Equal(t, test.expectedVizierPhase, translateReasonToPhase(state.Reason))
+		})
+	}
+}
+
 type phasePlane struct {
 	phase v1.PodPhase
 	plane string

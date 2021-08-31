@@ -53,6 +53,8 @@ const (
 	vizierPemLabel = "vizier-pem"
 	// The name of the metadata-pvc.
 	metadataPVC = "metadata-pv-claim"
+	// The name of the nats pod.
+	natsName = "pl-nats-1"
 	// How often we should ping the vizier pods for status updates.
 	statuszCheckInterval = 20 * time.Second
 )
@@ -308,6 +310,45 @@ func isOk(state *vizierState) bool {
 	return state.Reason == okState().Reason
 }
 
+// getNATSState determines the state of nats then translates
+// that to a corresponding VizierState.
+func getNATSState(client HTTPClient, pods *concurrentPodMap) *vizierState {
+	pods.mapMu.Lock()
+	defer pods.mapMu.Unlock()
+
+	noLabelPods, ok := pods.unsafeMap[""]
+	if !ok {
+		return &vizierState{Reason: status.NATSPodMissing}
+	}
+
+	natsPod, ok := noLabelPods[natsName]
+	if !ok {
+		return &vizierState{Reason: status.NATSPodMissing}
+	}
+
+	if natsPod.pod.Status.Phase == v1.PodPending {
+		return &vizierState{Reason: status.NATSPodPending}
+	}
+
+	if natsPod.pod.Status.Phase != v1.PodRunning {
+		return &vizierState{Reason: status.NATSPodFailed}
+	}
+
+	resp, err := client.Get(fmt.Sprintf("http://%s:%d/", natsPod.pod.Status.PodIP, 8222))
+	if err != nil {
+		log.WithError(err).Error("Error making nats monitoring call")
+		return &vizierState{Reason: status.NATSPodFailed}
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return &vizierState{Reason: status.NATSPodFailed}
+	}
+
+	// Return the value of the cloud connector.
+	return okState()
+}
+
 // getCloudConnState determines the state of the cloud connector then translates
 // that to a corresponding VizierState.
 func getCloudConnState(client HTTPClient, pods *concurrentPodMap) *vizierState {
@@ -417,6 +458,11 @@ func (m *VizierMonitor) getvizierState(vz *pixiev1alpha1.Vizier) *vizierState {
 		return podState
 	}
 
+	natsState := getNATSState(m.httpClient, m.podStates)
+	if !isOk(natsState) {
+		return natsState
+	}
+
 	ccState := getCloudConnState(m.httpClient, m.podStates)
 	if !isOk(ccState) {
 		return ccState
@@ -435,6 +481,9 @@ func translateReasonToPhase(reason status.VizierReason) pixiev1alpha1.VizierPhas
 		return pixiev1alpha1.VizierPhaseUpdating
 	}
 	if reason == status.MetadataPVCPendingBinding {
+		return pixiev1alpha1.VizierPhaseUpdating
+	}
+	if reason == status.NATSPodPending {
 		return pixiev1alpha1.VizierPhaseUpdating
 	}
 	if reason == status.ControlPlanePodsPending {

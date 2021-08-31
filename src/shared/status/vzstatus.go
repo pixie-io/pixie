@@ -66,4 +66,11 @@ const (
 	ControlPlanePodsPending VizierReason = "ControlPlanePodsPending"
 	// ControlPlanePodsFailed occurs when one or more control plane pods are failing, but none are pending.
 	ControlPlanePodsFailed VizierReason = "ControlPlanePodsFailed"
+
+	// NATSPodPending occurs when the nats pod is pending.
+	NATSPodPending VizierReason = "NATSPodPending"
+	// NATSPodMissing occurs when the nats pod is missing.
+	NATSPodMissing VizierReason = "NATSPodMissing"
+	// NATSPodFailed occurs when the nats pod failed to start up.
+	NATSPodFailed VizierReason = "NATSPodFailed"
 )
