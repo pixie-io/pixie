@@ -62,8 +62,8 @@ type HTTPClient interface {
 	Get(string) (resp *http.Response, err error)
 }
 
-type pod struct {
-	k8spod *v1.Pod
+type podWithEvents struct {
+	pod    *v1.Pod
 	events []v1.Event
 }
 
@@ -72,7 +72,7 @@ type pod struct {
 // an entire child map, manually hold the mutex instead of writing a new method.
 type concurrentPodMap struct {
 	// mapping from the k8s label to the map of matching pods to their pod info.
-	unsafeMap map[string]map[string]*pod
+	unsafeMap map[string]map[string]*podWithEvents
 	mapMu     sync.Mutex
 }
 
@@ -86,12 +86,12 @@ func (c *concurrentPodMap) delete(nameLabel string, k8sName string) {
 	delete(labelMap, k8sName)
 }
 
-func (c *concurrentPodMap) write(nameLabel, k8sName string, p *pod) {
+func (c *concurrentPodMap) write(nameLabel, k8sName string, p *podWithEvents) {
 	c.mapMu.Lock()
 	defer c.mapMu.Unlock()
 	labelMap, ok := c.unsafeMap[nameLabel]
 	if !ok {
-		labelMap = make(map[string]*pod)
+		labelMap = make(map[string]*podWithEvents)
 		c.unsafeMap[nameLabel] = labelMap
 	}
 	labelMap[k8sName] = p
@@ -145,7 +145,7 @@ func (m *VizierMonitor) InitAndStartMonitor() error {
 	}
 	m.httpClient = &http.Client{Transport: tr}
 	m.ctx, m.cancel = context.WithCancel(context.Background())
-	m.podStates = &concurrentPodMap{unsafeMap: make(map[string]map[string]*pod)}
+	m.podStates = &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWithEvents)}
 	m.pvcStates = &concurrentPVCMap{unsafeMap: make(map[string]*v1.PersistentVolumeClaim)}
 
 	err := m.initState()
@@ -207,7 +207,7 @@ func (m *VizierMonitor) handlePod(p v1.Pod) {
 		return
 	}
 
-	podObj := &pod{k8spod: &p}
+	podObj := &podWithEvents{pod: &p}
 	// Avoid getting events if pod is running. We don't need the extra debugging info.
 	if p.Status.Phase != v1.PodRunning {
 		eventsInterface := m.clientset.CoreV1().Events(m.namespace)
@@ -320,15 +320,15 @@ func getCloudConnState(client HTTPClient, pods *concurrentPodMap) *vizierState {
 	// We iterate here with the assumption that if any cc pods are pending the whole thing should fail.
 	// This should account for failed updates, or catching the cluster during an upgrade.
 	for _, ccPod := range labelMap {
-		if ccPod.k8spod.Status.Phase == v1.PodPending {
+		if ccPod.pod.Status.Phase == v1.PodPending {
 			return &vizierState{Reason: status.CloudConnectorPodPending}
 		}
 
-		if ccPod.k8spod.Status.Phase != v1.PodRunning {
+		if ccPod.pod.Status.Phase != v1.PodRunning {
 			return &vizierState{Reason: status.CloudConnectorPodFailed}
 		}
 		// Ping cloudConn's statusz.
-		ok, podStatus := queryPodStatusz(client, ccPod.k8spod)
+		ok, podStatus := queryPodStatusz(client, ccPod.pod)
 		if !ok {
 			return &vizierState{Reason: status.VizierReason(podStatus)}
 		}
@@ -349,15 +349,15 @@ func getControlPlanePodState(pods *concurrentPodMap) *vizierState {
 			continue
 		}
 		for _, p := range labelMap {
-			plane, ok := p.k8spod.ObjectMeta.Labels["plane"]
+			plane, ok := p.pod.ObjectMeta.Labels["plane"]
 			// We only want to check pods that are not data plane pods.
 			if ok && plane == "data" {
 				continue
 			}
-			if p.k8spod.Status.Phase == v1.PodPending {
+			if p.pod.Status.Phase == v1.PodPending {
 				return &vizierState{Reason: status.ControlPlanePodsPending}
 			}
-			if p.k8spod.Status.Phase != v1.PodRunning {
+			if p.pod.Status.Phase != v1.PodRunning {
 				return &vizierState{Reason: status.ControlPlanePodsFailed}
 			}
 		}
@@ -401,7 +401,7 @@ func getMetadataPVCState(clientset kubernetes.Interface, pvcMap *concurrentPVCMa
 	return okState()
 }
 
-// getvizierState determines the state of the  Vizier instance based on the snapshot
+// getvizierState determines the state of the Vizier instance based on the snapshot
 // of data available at call time. Reports the first state that fails (does not aggregate),
 // otherwise reports a healthy state.
 func (m *VizierMonitor) getvizierState(vz *pixiev1alpha1.Vizier) *vizierState {
@@ -431,7 +431,13 @@ func translateReasonToPhase(reason status.VizierReason) pixiev1alpha1.VizierPhas
 	if reason == "" {
 		return pixiev1alpha1.VizierPhaseHealthy
 	}
-	if reason == status.CloudConnectorPodPending || reason == status.MetadataPVCPendingBinding || reason == status.ControlPlanePodsPending {
+	if reason == status.CloudConnectorPodPending {
+		return pixiev1alpha1.VizierPhaseUpdating
+	}
+	if reason == status.MetadataPVCPendingBinding {
+		return pixiev1alpha1.VizierPhaseUpdating
+	}
+	if reason == status.ControlPlanePodsPending {
 		return pixiev1alpha1.VizierPhaseUpdating
 	}
 	if reason == status.CloudConnectorMissing {

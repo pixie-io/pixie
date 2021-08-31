@@ -162,12 +162,12 @@ func TestMonitor_getCloudConnState(t *testing.T) {
 				},
 			}
 
-			pods := &concurrentPodMap{unsafeMap: make(map[string]map[string]*pod)}
+			pods := &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWithEvents)}
 			pods.write(
 				"vizier-cloud-connector",
 				"vizier-cloud-connector-abcdefg",
-				&pod{
-					k8spod: &v1.Pod{
+				&podWithEvents{
+					pod: &v1.Pod{
 						Status: v1.PodStatus{
 							PodIP: "127.0.0.1",
 							Phase: test.cloudConnPhase,
@@ -200,7 +200,7 @@ func TestMonitor_getCloudConnState_SeveralCloudConns(t *testing.T) {
 		},
 	}
 
-	pods := &concurrentPodMap{unsafeMap: make(map[string]map[string]*pod)}
+	pods := &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWithEvents)}
 
 	spec := v1.PodSpec{
 		Containers: []v1.Container{
@@ -213,8 +213,8 @@ func TestMonitor_getCloudConnState_SeveralCloudConns(t *testing.T) {
 			},
 		},
 	}
-	pods.write("vizier-cloud-connector", "vizier-cloud-connector-abcdefg", &pod{
-		k8spod: &v1.Pod{
+	pods.write("vizier-cloud-connector", "vizier-cloud-connector-abcdefg", &podWithEvents{
+		pod: &v1.Pod{
 			Status: v1.PodStatus{
 				PodIP: "127.0.0.1",
 				Phase: v1.PodRunning,
@@ -222,8 +222,8 @@ func TestMonitor_getCloudConnState_SeveralCloudConns(t *testing.T) {
 			Spec: spec,
 		},
 	})
-	pods.write("vizier-cloud-connector", "vizier-cloud-connector-12345678", &pod{
-		k8spod: &v1.Pod{
+	pods.write("vizier-cloud-connector", "vizier-cloud-connector-12345678", &podWithEvents{
+		pod: &v1.Pod{
 			Status: v1.PodStatus{
 				PodIP: "127.0.0.1",
 				Phase: v1.PodPending,
@@ -405,14 +405,14 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			pods := &concurrentPodMap{unsafeMap: make(map[string]map[string]*pod)}
+			pods := &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWithEvents)}
 			for podLabel, fp := range test.podPhases {
 				labels := make(map[string]string)
 				if fp.plane != "" {
 					labels["plane"] = fp.plane
 				}
 
-				pods.write(podLabel, podLabel, &pod{k8spod: &v1.Pod{
+				pods.write(podLabel, podLabel, &podWithEvents{pod: &v1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: labels,
 					},
