@@ -173,7 +173,7 @@ struct FetchRespPartition {
     writer->Key("preferred_read_replica");
     writer->Int(preferred_read_replica);
     writer->Key("message_set");
-    message_set.ToJSON(writer);
+    message_set.ToJSON(writer, /* omit_record_batches */ true);
     writer->EndObject();
   }
 };

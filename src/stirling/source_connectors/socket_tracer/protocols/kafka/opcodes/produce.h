@@ -41,7 +41,7 @@ struct ProduceReqPartition {
     writer->Key("index");
     writer->Int(index);
     writer->Key("message_set");
-    message_set.ToJSON(writer);
+    message_set.ToJSON(writer, /* omit_record_batches */ true);
     writer->EndObject();
   }
 };

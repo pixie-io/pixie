@@ -160,7 +160,7 @@ TEST(KafkaPacketDecoderTest, ExtractProduceReqV8) {
       "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x00\x00\x01\x28\x00\x00\x00\x01\x1c"
       "\x4d\x79\x20\x66\x69\x72\x73\x74\x20\x65\x76\x65\x6e\x74\x00");
   RecordBatch record_batch{{{.key = "", .value = "My first event"}}};
-  MessageSet message_set{{record_batch}};
+  MessageSet message_set{.size = 70, .record_batches = {record_batch}};
   ProduceReqPartition partition{.index = 0, .message_set = message_set};
   ProduceReqTopic topic{.name = "quickstart-events", .partitions = {partition}};
   ProduceReq expected_result{
@@ -179,7 +179,7 @@ TEST(KafkaPacketDecoderTest, ExtractProduceReqV9) {
       "\xff\xff\x00\x00\x00\x01\x38\x00\x00\x00\x01\x2c\x54\x68\x69\x73\x20\x69\x73\x20\x6d\x79"
       "\x20\x66\x69\x72\x73\x74\x20\x65\x76\x65\x6e\x74\x00\x00\x00\x00");
   RecordBatch record_batch{{{.key = "", .value = "This is my first event"}}};
-  MessageSet message_set{{record_batch}};
+  MessageSet message_set{.size = 91, .record_batches = {record_batch}};
   ProduceReqPartition partition{.index = 0, .message_set = message_set};
   ProduceReqTopic topic{.name = "quickstart-events", .partitions = {partition}};
   ProduceReq expected_result{

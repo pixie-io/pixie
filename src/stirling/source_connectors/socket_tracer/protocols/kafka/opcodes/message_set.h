@@ -61,16 +61,22 @@ struct RecordBatch {
 };
 
 struct MessageSet {
+  int64_t size = 0;
   std::vector<RecordBatch> record_batches;
 
-  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
+  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer,
+              bool omit_record_batches = false) const {
     writer->StartObject();
-    writer->Key("record_batches");
-    writer->StartArray();
-    for (const auto& r : record_batches) {
-      r.ToJSON(writer);
+    writer->Key("size");
+    writer->Int(size);
+    if (!omit_record_batches) {
+      writer->Key("record_batches");
+      writer->StartArray();
+      for (const auto& r : record_batches) {
+        r.ToJSON(writer);
+      }
+      writer->EndArray();
     }
-    writer->EndArray();
     writer->EndObject();
   }
 };

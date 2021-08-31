@@ -261,8 +261,9 @@ TEST(KafkaPacketDecoder, TestExtractFetchRespV11) {
   RecordBatch record_batch3{{{.key = "", .value = ""}}};
   RecordBatch record_batch4{{{.key = "", .value = "My first event"}}};
   RecordBatch record_batch5{{{.key = "", .value = "My second event"}}};
-  MessageSet message_set{
-      {record_batch1, record_batch2, record_batch3, record_batch4, record_batch5}};
+  MessageSet message_set{.size = 369,
+                         .record_batches = {record_batch1, record_batch2, record_batch3,
+                                            record_batch4, record_batch5}};
   FetchRespPartition partition{
       .index = 0,
       .error_code = 0,
@@ -316,8 +317,9 @@ TEST(KafkaPacketDecoder, TestExtractFetchRespV12) {
   RecordBatch record_batch3{{{.key = "", .value = ""}}};
   RecordBatch record_batch4{{{.key = "", .value = "My first event"}}};
   RecordBatch record_batch5{{{.key = "", .value = "My second event"}}};
-  MessageSet message_set{
-      {record_batch1, record_batch2, record_batch3, record_batch4, record_batch5}};
+  MessageSet message_set{.size = 369,
+                         .record_batches = {record_batch1, record_batch2, record_batch3,
+                                            record_batch4, record_batch5}};
   FetchRespPartition partition{
       .index = 0,
       .error_code = 0,
@@ -366,7 +368,7 @@ TEST(KafkaPacketDecoder, TestExtractFetchRespV11MissingMessageSet) {
       "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
       "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
       "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00");
-  MessageSet message_set{{}};
+  MessageSet message_set{.size = 369, .record_batches = {}};
   FetchRespPartition partition{
       .index = 0,
       .error_code = 0,
@@ -415,7 +417,7 @@ TEST(KafkaPacketDecoder, TestExtractFetchRespV12MissingMessageSet) {
       "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
       "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
       "\x00\x00");
-  MessageSet message_set{{}};
+  MessageSet message_set{.size = 369, .record_batches = {}};
   FetchRespPartition partition{
       .index = 0,
       .error_code = 0,

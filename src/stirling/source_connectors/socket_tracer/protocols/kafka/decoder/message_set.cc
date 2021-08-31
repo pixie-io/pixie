@@ -95,15 +95,14 @@ StatusOr<RecordBatch> PacketDecoder::ExtractRecordBatch(int32_t* offset) {
 StatusOr<MessageSet> PacketDecoder::ExtractMessageSet() {
   MessageSet message_set;
 
-  int32_t length = 0;
   int32_t offset = 0;
 
   if (is_flexible_) {
-    PL_ASSIGN_OR_RETURN(length, ExtractUnsignedVarint());
+    PL_ASSIGN_OR_RETURN(message_set.size, ExtractUnsignedVarint());
   } else {
-    PL_ASSIGN_OR_RETURN(length, ExtractInt32());
+    PL_ASSIGN_OR_RETURN(message_set.size, ExtractInt32());
   }
-  PL_RETURN_IF_ERROR(MarkOffset(length));
+  PL_RETURN_IF_ERROR(MarkOffset(message_set.size));
 
   // The message set in a fetch response is sent with the sendfile syscall:
   // sendfile(int out_fd, int in_fd, off_t *offset, size_t count). We can only get the length of
@@ -118,7 +117,8 @@ StatusOr<MessageSet> PacketDecoder::ExtractMessageSet() {
   // batches should end. Thus, a best effort parsing is used here to parse out as many
   // record batches as possible. If an error occurs due to tagged section, we just jump to the
   // correct offset and continue parsing.
-  while (offset < length) {
+
+  while (offset < message_set.size) {
     auto record_batch_result = ExtractRecordBatch(&offset);
     if (record_batch_result.ok()) {
       message_set.record_batches.push_back(record_batch_result.ValueOrDie());
