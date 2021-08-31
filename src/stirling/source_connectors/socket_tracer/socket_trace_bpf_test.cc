@@ -29,6 +29,7 @@
 #include "src/common/system/clock.h"
 #include "src/common/system/tcp_socket.h"
 #include "src/common/system/udp_socket.h"
+#include "src/common/system/unix_socket.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
@@ -47,6 +48,7 @@ using ::px::stirling::testing::ColWrapperSizeIs;
 using ::px::stirling::testing::FindRecordsMatchingPID;
 using ::px::system::TCPSocket;
 using ::px::system::UDPSocket;
+using ::px::system::UnixSocket;
 using ::px::types::ColumnWrapperRecordBatch;
 using ::testing::Each;
 using ::testing::ElementsAre;
@@ -77,12 +79,6 @@ constexpr std::string_view kHTTPRespMsg2 =
     "Content-Type: application/json; msg2\r\n"
     "Content-Length: 0\r\n"
     "\r\n";
-
-constexpr std::string_view kNoProtocolMsg = "This is not an HTTP message";
-
-// TODO(yzhao): We'd better rewrite the test to use BCCWrapper directly, instead of
-// SocketTraceConnector, to avoid triggering the userland parsing code, so these tests do not need
-// change if we alter output format.
 
 // This test requires docker container with --pid=host so that the container's PID and the
 // host machine are identical.
@@ -267,9 +263,65 @@ INSTANTIATE_TEST_SUITE_P(IOVecSyscalls, IOVecSyscallTests,
                                            SocketTraceBPFTestParams{SyscallPair::kWritevReadv,
                                                                     kRoleClient | kRoleServer}));
 
+TEST_F(SocketTraceBPFTest, NonInetTrafficNotTraced) {
+  UnixSocket server;
+  UnixSocket client;
+
+  int server_fd;
+  int client_fd;
+
+  std::string unix_socket_path = absl::Substitute(
+      "/tmp/unix_sock_$0.server", std::chrono::steady_clock::now().time_since_epoch().count());
+
+  server.BindAndListen(unix_socket_path);
+
+  std::thread client_thread([&server, &client, &client_fd]() {
+    client.Connect(server);
+    client_fd = client.sockfd();
+
+    ASSERT_EQ(client.Send(kHTTPReqMsg1), kHTTPReqMsg1.size());
+
+    std::string received_data;
+    while (received_data.empty()) {
+      client.Recv(&received_data);
+    }
+
+    ASSERT_EQ(received_data, kHTTPRespMsg1);
+
+    client.Close();
+  });
+
+  std::thread server_thread([&server, &server_fd]() {
+    std::unique_ptr<UnixSocket> conn = server.Accept(false);
+    server_fd = conn->sockfd();
+
+    std::string received_data;
+    while (received_data.empty()) {
+      conn->Recv(&received_data);
+    }
+    ASSERT_EQ(received_data, kHTTPReqMsg1);
+
+    ASSERT_EQ(conn->Send(kHTTPRespMsg1), kHTTPRespMsg1.size());
+
+    conn->Close();
+  });
+
+  client_thread.join();
+  server_thread.join();
+
+  // Finally drain all BPF events.
+  source_->PollPerfBuffers();
+
+  // Those to file I/O FDs should not have been reported.
+  ASSERT_NOT_OK(GetConnTracker(getpid(), client_fd));
+  ASSERT_NOT_OK(GetConnTracker(getpid(), server_fd));
+}
+
 // Tests that SocketTraceConnector won't send data from BPF to userspace if the data were not
 // any of the supported protocols.
 TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
+  constexpr std::string_view kNoProtocolMsg = "This is not an HTTP message";
+
   testing::SendRecvScript script({
       {{kNoProtocolMsg}, {kNoProtocolMsg}},
       {{kNoProtocolMsg}, {kNoProtocolMsg}},
@@ -280,8 +332,8 @@ TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
 
   source_->PollPerfBuffers();
 
-  // We would still see the ConnTracker for client and server processes because the connect()
-  // accept() calls were traced.
+  // We expect to see a ConnTracker allocated for ConnStats, but the data buffers should be empty
+  // for unknown or unsupported protocols.
 
   ASSERT_OK_AND_ASSIGN(const auto* tracker, GetConnTracker(system.ClientPID(), system.ClientFD()));
   EXPECT_TRUE(tracker->send_data().data_buffer().empty());
@@ -396,6 +448,7 @@ TEST_F(SocketTraceBPFTest, LargeMessages) {
   testing::SendRecvScript script({
       {{kHTTPReqMsg1}, {large_response}},
   });
+
   testing::ClientServerSystem system;
   system.RunClientServer<&TCPSocket::Recv, &TCPSocket::Send>(script);
 

@@ -35,7 +35,7 @@ UnixSocket::UnixSocket() : UnixSocket(0) {
 }
 
 UnixSocket::UnixSocket(int internal) {
-  memset(&addr_, 0, sizeof(struct sockaddr_un));
+  memset(&addr_un_, 0, sizeof(struct sockaddr_un));
   // Required to differentiate the private vs public UnixSocket constructor.
   PL_UNUSED(internal);
 }
@@ -43,14 +43,13 @@ UnixSocket::UnixSocket(int internal) {
 UnixSocket::~UnixSocket() { Close(); }
 
 void UnixSocket::BindAndListen(const std::string& path) {
-  addr_.sun_family = AF_UNIX;
-  strncpy(addr_.sun_path, path.c_str(), sizeof(addr_.sun_path) - 1);
-  CHECK(bind(sockfd_, reinterpret_cast<const struct sockaddr*>(&addr_),
-             sizeof(struct sockaddr_un)) == 0)
+  addr_un_.sun_family = AF_UNIX;
+  strncpy(addr_un_.sun_path, path.c_str(), sizeof(addr_un_.sun_path) - 1);
+  CHECK(bind(sockfd_, &addr_, sizeof(struct sockaddr_un)) == 0)
       << "Failed to bind socket, error message: " << strerror(errno);
 
   socklen_t addr_len = sizeof(struct sockaddr_un);
-  CHECK(getsockname(sockfd_, reinterpret_cast<struct sockaddr*>(&addr_), &addr_len) == 0)
+  CHECK(getsockname(sockfd_, &addr_, &addr_len) == 0)
       << "Failed to get socket name, error message: " << strerror(errno);
   LOG(INFO) << "Listening on path: " << path;
 
@@ -58,25 +57,26 @@ void UnixSocket::BindAndListen(const std::string& path) {
       << "Failed to listen socket, error message: " << strerror(errno);
 }
 
-std::unique_ptr<UnixSocket> UnixSocket::Accept() {
+std::unique_ptr<UnixSocket> UnixSocket::Accept(bool populate_remote_addr) {
   auto new_conn = std::unique_ptr<UnixSocket>(new UnixSocket(0));
 
   socklen_t remote_addr_len = sizeof(struct sockaddr_un);
-  new_conn->sockfd_ =
-      accept4(sockfd_, reinterpret_cast<struct sockaddr*>(&new_conn->addr_), &remote_addr_len,
-              /*flags*/ 0);
+
+  struct sockaddr* addr_ptr = populate_remote_addr ? &new_conn->addr_ : nullptr;
+  socklen_t* len_ptr = populate_remote_addr ? &remote_addr_len : nullptr;
+
+  new_conn->sockfd_ = accept4(sockfd_, addr_ptr, len_ptr, /*flags*/ 0);
   CHECK(new_conn->sockfd_ >= 0) << "Failed to accept, error message: " << strerror(errno);
 
   return new_conn;
 }
 
 void UnixSocket::Connect(const UnixSocket& addr) {
-  const int retval = connect(sockfd_, reinterpret_cast<const struct sockaddr*>(&addr.addr_),
-                             sizeof(struct sockaddr_un));
+  const int retval = connect(sockfd_, &addr.addr_, sizeof(struct sockaddr_un));
   CHECK(retval == 0) << "Failed to connect, error message: " << strerror(errno);
 
   socklen_t addr_len = sizeof(struct sockaddr_un);
-  CHECK(getsockname(sockfd_, reinterpret_cast<struct sockaddr*>(&addr_), &addr_len) == 0)
+  CHECK(getsockname(sockfd_, &addr_, &addr_len) == 0)
       << "Failed to get socket name, error message: " << strerror(errno);
 }
 
@@ -101,7 +101,7 @@ bool UnixSocket::Recv(std::string* data) const {
   if (size <= 0) {
     return false;
   }
-  data->assign(buf, size);
+  data->append(buf, size);
   return true;
 }
 

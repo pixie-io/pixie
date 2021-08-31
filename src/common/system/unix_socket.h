@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <sys/socket.h>
 #include <sys/un.h>
 
 #include <memory>
@@ -38,12 +39,12 @@ class UnixSocket {
   ~UnixSocket();
 
   void BindAndListen(const std::string& path);
-  std::unique_ptr<UnixSocket> Accept();
+  std::unique_ptr<UnixSocket> Accept(bool populate_remote_addr = true);
   void Connect(const UnixSocket& addr);
   void Close();
 
   int sockfd() const { return sockfd_; }
-  std::string_view path() const { return std::string_view(addr_.sun_path); }
+  std::string_view path() const { return std::string_view(addr_un_.sun_path); }
 
   ssize_t Send(std::string_view data) const;
   bool Recv(std::string* data) const;
@@ -54,7 +55,11 @@ class UnixSocket {
   // The argument is actually useless, but is used to differentiate the two constructor signatures.
   explicit UnixSocket(int internal);
   int sockfd_ = 0;
-  struct sockaddr_un addr_;
+
+  union {
+    struct sockaddr addr_;
+    struct sockaddr_un addr_un_;
+  };
 
   // Buffer size for Recv() calls.
   static constexpr int kBufSize = 128;

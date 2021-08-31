@@ -371,14 +371,14 @@ static __inline void read_sockaddr_kernel(struct conn_info_t* conn_info,
   bpf_probe_read_kernel(&family, sizeof(family), &sk_common->skc_family);
   bpf_probe_read_kernel(&port, sizeof(port), &sk_common->skc_dport);
 
+  conn_info->addr.sa.sa_family = family;
+
   if (family == AF_INET) {
-    conn_info->addr.in4.sin_family = family;
     conn_info->addr.in4.sin_port = port;
 
     uint32_t* addr = &conn_info->addr.in4.sin_addr.s_addr;
     bpf_probe_read_kernel(addr, sizeof(*addr), &sk_common->skc_daddr);
   } else if (family == AF_INET6) {
-    conn_info->addr.in6.sin6_family = family;
     conn_info->addr.in6.sin6_port = port;
 
     struct in6_addr* addr = &conn_info->addr.in6.sin6_addr;

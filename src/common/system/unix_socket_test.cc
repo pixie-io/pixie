@@ -38,13 +38,11 @@ TEST(UnixSocketTest, SendAndRecv) {
 
   server.BindAndListen(unix_socket_path);
 
-  std::vector<std::string> received_data;
+  std::string received_data;
   UnixSocket client;
   std::thread client_thread([&server, &client, &received_data]() {
     client.Connect(server);
-    std::string data;
-    while (client.Recv(&data)) {
-      received_data.push_back(data);
+    while (client.Recv(&received_data)) {
     }
   });
   std::unique_ptr<UnixSocket> conn = server.Accept();
@@ -57,7 +55,7 @@ TEST(UnixSocketTest, SendAndRecv) {
   client_thread.join();
   // read() might get all data from multiple write() because of kernel buffering, so we can only
   // check the concatenated string.
-  EXPECT_EQ("a,bc,END", absl::StrJoin(received_data, ""));
+  EXPECT_EQ(received_data, "a,bc,END");
 }
 
 TEST(UnixSocketTest, Path) {
