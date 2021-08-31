@@ -84,12 +84,6 @@ BPF_HASH(conn_info_map, uint64_t, struct conn_info_t, 131072);
 // Key is {tgid, fd}; Value is TSID.
 BPF_HASH(conn_disabled_map, uint64_t, uint64_t);
 
-// Map from user-space file descriptors to open files obtained from open() syscall.
-// Used to filter out file read/writes.
-// Tracks connection from open() -> close().
-// Key is {tgid, fd}.
-BPF_HASH(open_file_map, uint64_t, bool);
-
 // Map from thread to its ongoing accept() syscall's input argument.
 // Tracks accept() call from entry -> exit.
 // Key is {tgid, pid}.
@@ -135,24 +129,6 @@ BPF_PERCPU_ARRAY(control_values, int64_t, kNumControlValues);
 
 static __inline uint64_t gen_tgid_fd(uint32_t tgid, int fd) {
   return ((uint64_t)tgid << 32) | (uint32_t)fd;
-}
-
-static __inline void set_open_file(uint64_t id, int fd) {
-  uint32_t tgid = id >> 32;
-  uint64_t tgid_fd = gen_tgid_fd(tgid, fd);
-  bool kTrue = 1;
-  open_file_map.insert(&tgid_fd, &kTrue);
-}
-
-static __inline bool is_open_file(uint32_t tgid, int fd) {
-  uint64_t tgid_fd = gen_tgid_fd(tgid, fd);
-  bool* open_file = open_file_map.lookup(&tgid_fd);
-  return (open_file != NULL);
-}
-
-static __inline void clear_open_file(uint32_t tgid, int fd) {
-  uint64_t tgid_fd = gen_tgid_fd(tgid, fd);
-  open_file_map.delete(&tgid_fd);
 }
 
 static __inline void init_conn_id(uint32_t tgid, int32_t fd, struct conn_id_t* conn_id) {
@@ -615,16 +591,6 @@ int conn_cleanup_uprobe(struct pt_regs* ctx) {
 //    Since no useful information is traced, just skip it. Will be treated as a case where we
 //    missed the accept.
 
-static __inline void process_syscall_open(struct pt_regs* ctx, uint64_t id) {
-  int fd = PT_REGS_RC(ctx);
-
-  if (fd < 0) {
-    return;
-  }
-
-  set_open_file(id, fd);
-}
-
 static __inline void process_syscall_connect(struct pt_regs* ctx, uint64_t id,
                                              const struct connect_args_t* args) {
   uint32_t tgid = id >> 32;
@@ -777,10 +743,6 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
     return;
   }
 
-  if (is_open_file(tgid, args->fd)) {
-    return;
-  }
-
   enum target_tgid_match_result_t match_result = match_trace_tgid(tgid);
   if (match_result == TARGET_TGID_UNMATCHED) {
     return;
@@ -896,10 +858,6 @@ static __inline void process_syscall_sendfile(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  if (is_open_file(tgid, args->out_fd)) {
-    return;
-  }
-
   enum target_tgid_match_result_t match_result = match_trace_tgid(tgid);
   if (match_result == TARGET_TGID_UNMATCHED) {
     return;
@@ -946,8 +904,6 @@ static __inline void process_syscall_close(struct pt_regs* ctx, uint64_t id,
   if (close_args->fd < 0) {
     return;
   }
-
-  clear_open_file(tgid, close_args->fd);
 
   if (ret_val < 0) {
     // This close() call failed.
@@ -997,16 +953,6 @@ static __inline void process_syscall_close(struct pt_regs* ctx, uint64_t id,
 //                  and processing the syscall with the combined context.
 //
 // Syscall signatures are listed. Look for detailed synopses in man pages.
-
-// int open(const char *pathname, int flags);
-int syscall__probe_ret_open(struct pt_regs* ctx) {
-  uint64_t id = bpf_get_current_pid_tgid();
-
-  // No arguments were stashed; non-existent entry probe.
-  process_syscall_open(ctx, id);
-
-  return 0;
-}
 
 // int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
 int syscall__probe_entry_connect(struct pt_regs* ctx, int sockfd, const struct sockaddr* addr,

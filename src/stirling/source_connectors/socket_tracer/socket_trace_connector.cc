@@ -317,7 +317,6 @@ std::string BPFMapsInfo(bpf_tools::BCCWrapper* bcc) {
       bcc, "active_write_headers_frame_map");
   out += BPFMapInfo<uint64_t, struct conn_info_t>(bcc, "conn_info_map");
   out += BPFMapInfo<uint64_t, uint64_t>(bcc, "conn_disabled_map");
-  out += BPFMapInfo<uint64_t, bool>(bcc, "open_file_map");
   out += BPFMapInfo<uint64_t, struct accept_args_t>(bcc, "active_accept_args_map");
   out += BPFMapInfo<uint64_t, struct connect_args_t>(bcc, "active_connect_args_map");
   out += BPFMapInfo<uint64_t, struct data_args_t>(bcc, "active_write_args_map");

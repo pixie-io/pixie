@@ -44,8 +44,7 @@ namespace stirling {
 
 ConnInfoMapManager::ConnInfoMapManager(bpf_tools::BCCWrapper* bcc)
     : conn_info_map_(bcc->GetHashTable<uint64_t, struct conn_info_t>("conn_info_map")),
-      conn_disabled_map_(bcc->GetHashTable<uint64_t, uint64_t>("conn_disabled_map")),
-      open_file_map_(bcc->GetHashTable<uint64_t, uint64_t>("open_file_map")) {
+      conn_disabled_map_(bcc->GetHashTable<uint64_t, uint64_t>("conn_disabled_map")) {
   // Use address instead of symbol to specify this probe,
   // so that even if debug symbols are stripped, the uprobe can still attach.
   uint64_t symbol_addr = reinterpret_cast<uint64_t>(&ConnInfoMapCleanupTrigger);
@@ -101,21 +100,6 @@ void ConnInfoMapManager::CleanupBPFMapLeaks(ConnTrackersManager* conn_trackers_m
     ReleaseResources(conn_info.conn_id);
     VLOG(1) << absl::Substitute("Found conn_info_map leak: pid=$0 fd=$1 af=$2", pid, fd,
                                 conn_info.addr.sa.sa_family);
-  }
-
-  for (const auto& [pid_fd, _] : open_file_map_.get_table_offline()) {
-    uint32_t pid = pid_fd >> 32;
-    int32_t fd = pid_fd;
-
-    std::filesystem::path fd_file =
-        sysconfig.proc_path() / std::to_string(pid) / "fd" / std::to_string(fd);
-    if (fs::Exists(fd_file).ok()) {
-      continue;
-    }
-
-    // TODO(yzhao): Rewrite to use the uprobe-style cleanup.
-    open_file_map_.remove_value(pid_fd);
-    VLOG(1) << absl::Substitute("Found open_file_map leak: pid=$0 fd=$1", pid, fd);
   }
 }
 

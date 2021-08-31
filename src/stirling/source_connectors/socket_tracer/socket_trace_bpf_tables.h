@@ -45,7 +45,6 @@ class ConnInfoMapManager {
  private:
   ebpf::BPFHashTable<uint64_t, struct conn_info_t> conn_info_map_;
   ebpf::BPFHashTable<uint64_t, uint64_t> conn_disabled_map_;
-  ebpf::BPFHashTable<uint64_t, uint64_t> open_file_map_;
 
   std::vector<struct conn_id_t> pending_release_queue_;
 
