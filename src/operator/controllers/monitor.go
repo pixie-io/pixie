@@ -49,6 +49,8 @@ import (
 const (
 	// The name label of the cloud-conn pod.
 	cloudConnName = "vizier-cloud-connector"
+	// The label for PEMs.
+	vizierPemLabel = "vizier-pem"
 	// The name of the metadata-pvc.
 	metadataPVC = "metadata-pv-claim"
 	// How often we should ping the vizier pods for status updates.
@@ -93,18 +95,6 @@ func (c *concurrentPodMap) write(nameLabel, k8sName string, p *pod) {
 		c.unsafeMap[nameLabel] = labelMap
 	}
 	labelMap[k8sName] = p
-}
-
-func (c *concurrentPodMap) list() []*pod {
-	c.mapMu.Lock()
-	defer c.mapMu.Unlock()
-	var pods []*pod
-	for _, labelMap := range c.unsafeMap {
-		for _, p := range labelMap {
-			pods = append(pods, p)
-		}
-	}
-	return pods
 }
 
 // concurrentPVCMap wraps a map with concurrency safe read/write operations.
@@ -228,7 +218,6 @@ func (m *VizierMonitor) handlePod(p v1.Pod) {
 		if err != nil {
 			log.WithError(err).Error("unable to get event list")
 		}
-
 		podObj.events = eventList.Items
 	}
 	m.podStates.write(nameLabel, k8sName, podObj)
@@ -352,17 +341,25 @@ func getCloudConnState(client HTTPClient, pods *concurrentPodMap) *vizierState {
 // getControlPlanePodState determines the state of control plane pods,
 // returning a pending state if the pods are stuck
 func getControlPlanePodState(pods *concurrentPodMap) *vizierState {
-	for _, v := range pods.list() {
-		plane, ok := v.k8spod.ObjectMeta.Labels["plane"]
-		// We only want to check pods that are control plane pods.
-		if !ok || plane != "control" {
+	pods.mapMu.Lock()
+	defer pods.mapMu.Unlock()
+	for nameLabel, labelMap := range pods.unsafeMap {
+		// Skip reading about viziers because they are the most data intensive part.
+		if nameLabel == vizierPemLabel {
 			continue
 		}
-		if v.k8spod.Status.Phase == v1.PodPending {
-			return &vizierState{Reason: status.ControlPlanePodsPending}
-		}
-		if v.k8spod.Status.Phase != v1.PodRunning {
-			return &vizierState{Reason: status.ControlPlanePodsFailed}
+		for _, p := range labelMap {
+			plane, ok := p.k8spod.ObjectMeta.Labels["plane"]
+			// We only want to check pods that are not data plane pods.
+			if ok && plane == "data" {
+				continue
+			}
+			if p.k8spod.Status.Phase == v1.PodPending {
+				return &vizierState{Reason: status.ControlPlanePodsPending}
+			}
+			if p.k8spod.Status.Phase != v1.PodRunning {
+				return &vizierState{Reason: status.ControlPlanePodsFailed}
+			}
 		}
 	}
 

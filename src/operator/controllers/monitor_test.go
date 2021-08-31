@@ -322,17 +322,9 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 					phase: v1.PodRunning,
 					plane: "control",
 				},
-				"vizier-query-broker": {
-					phase: v1.PodRunning,
-					plane: "control",
-				},
 				"kelvin": {
 					phase: v1.PodRunning,
 					plane: "data",
-				},
-				"vizier-cloud-connector": {
-					phase: v1.PodRunning,
-					plane: "control",
 				},
 			},
 			expectedReason: "",
@@ -353,22 +345,14 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 					phase: v1.PodRunning,
 					plane: "data",
 				},
-				"vizier-cloud-connector": {
-					phase: v1.PodRunning,
-					plane: "control",
-				},
 			},
 			expectedReason: status.ControlPlanePodsPending,
 		},
 		{
-			name:                "healthy even if data plane pod or no plane pod is pending ",
+			name:                "healthy even if data plane pod is pending ",
 			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
 			podPhases: map[string]phasePlane{
 				"vizier-metadata": {
-					phase: v1.PodRunning,
-					plane: "control",
-				},
-				"vizier-query-broker": {
 					phase: v1.PodRunning,
 					plane: "control",
 				},
@@ -376,12 +360,27 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 					phase: v1.PodPending,
 					plane: "data",
 				},
+			},
+			expectedReason: "",
+		},
+		{
+			name:                "updating if no-plane-pod is pending",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseUpdating,
+			podPhases: map[string]phasePlane{
+				"vizier-metadata": {
+					phase: v1.PodRunning,
+					plane: "control",
+				},
+				"kelvin": {
+					phase: v1.PodRunning,
+					plane: "data",
+				},
 				"no-plane-pod": {
 					phase: v1.PodPending,
 					plane: "",
 				},
 			},
-			expectedReason: "",
+			expectedReason: status.ControlPlanePodsPending,
 		},
 		{
 			name:                "unhealthy if any control pod is failing",
@@ -398,10 +397,6 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 				"kelvin": {
 					phase: v1.PodRunning,
 					plane: "data",
-				},
-				"no-plane-pod": {
-					phase: v1.PodRunning,
-					plane: "",
 				},
 			},
 			expectedReason: status.ControlPlanePodsFailed,
