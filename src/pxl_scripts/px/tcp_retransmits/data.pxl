@@ -97,8 +97,7 @@ def tcp_retransmissions_func():
                              pxtrace.kprobe(),
                              "10m")
 
-    df = px.DataFrame(table=table_name,
-                      select=['time', 'src_ip', 'src_port', 'dst_ip', 'dst_port', 'state'])
+    df = px.DataFrame(table=table_name)
 
     # Convert IPs to domain names.
     # Source is expected to be pod, while destination is expected to be a service.
