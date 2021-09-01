@@ -403,7 +403,7 @@ func getControlPlanePodState(pods *concurrentPodMap) *vizierState {
 			if p.pod.Status.Phase == v1.PodPending {
 				return &vizierState{Reason: status.ControlPlanePodsPending}
 			}
-			if p.pod.Status.Phase != v1.PodRunning {
+			if p.pod.Status.Phase != v1.PodRunning && p.pod.Status.Phase != v1.PodSucceeded {
 				return &vizierState{Reason: status.ControlPlanePodsFailed}
 			}
 		}

@@ -423,7 +423,7 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 			expectedReason: status.ControlPlanePodsPending,
 		},
 		{
-			name:                "healthy even if data plane pod is pending ",
+			name:                "healthy even if data plane pod is pending",
 			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
 			podPhases: map[string]phasePlane{
 				"vizier-metadata": {
@@ -433,6 +433,21 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 				"kelvin": {
 					phase: v1.PodPending,
 					plane: "data",
+				},
+			},
+			expectedReason: "",
+		},
+		{
+			name:                "healthy if control plane pod succeeded",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			podPhases: map[string]phasePlane{
+				"vizier-metadata": {
+					phase: v1.PodRunning,
+					plane: "control",
+				},
+				"vizier-certmgr": {
+					phase: v1.PodSucceeded,
+					plane: "",
 				},
 			},
 			expectedReason: "",
