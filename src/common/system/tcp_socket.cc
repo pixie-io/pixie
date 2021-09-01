@@ -93,25 +93,16 @@ void TCPSocket::BindAndListen(int port) {
       << "Failed to listen socket, error message: " << strerror(errno);
 }
 
-std::unique_ptr<TCPSocket> TCPSocket::AcceptWithNullAddr() {
-  auto new_conn = std::unique_ptr<TCPSocket>(new TCPSocket(kAF, 0));
-
-  new_conn->sockfd_ = accept4(sockfd_, /*addr*/ nullptr, /*addr_len*/ nullptr, /*flags*/ 0);
-  CHECK(new_conn->sockfd_ >= 0) << "Failed to accept, error message: " << strerror(errno);
-  LOG(INFO) << absl::Substitute("Accept(): remote_port=$0 on local_port=$1",
-                                ntohs(new_conn->port()), ntohs(port()));
-
-  return new_conn;
-}
-
-std::unique_ptr<TCPSocket> TCPSocket::Accept() {
+std::unique_ptr<TCPSocket> TCPSocket::Accept(bool populate_remote_addr) {
   auto new_conn = std::unique_ptr<TCPSocket>(new TCPSocket(kAF, 0));
 
   socklen_t remote_addr_len = kSockAddrSize;
-  new_conn->sockfd_ = accept4(sockfd_, &new_conn->addr_, &remote_addr_len, /*flags*/ 0);
+
+  struct sockaddr* addr_ptr = populate_remote_addr ? &new_conn->addr_ : nullptr;
+  socklen_t* len_ptr = populate_remote_addr ? &remote_addr_len : nullptr;
+
+  new_conn->sockfd_ = accept4(sockfd_, addr_ptr, len_ptr, /*flags*/ 0);
   CHECK(new_conn->sockfd_ >= 0) << "Failed to accept, error message: " << strerror(errno);
-  CHECK(remote_addr_len == kSockAddrSize)
-      << "Address length is wrong, " << remote_addr_len << " vs. " << kSockAddrSize;
   LOG(INFO) << absl::Substitute("Accept(): remote_port=$0 on local_port=$1",
                                 ntohs(new_conn->port()), ntohs(port()));
 

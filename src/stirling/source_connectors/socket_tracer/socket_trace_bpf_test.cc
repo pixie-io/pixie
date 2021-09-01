@@ -511,7 +511,7 @@ TEST_F(NullRemoteAddrTest, Accept4WithNullRemoteAddr) {
   std::thread server_thread([&server, &server_ready]() {
     server.BindAndListen();
     server_ready = true;
-    auto conn = server.AcceptWithNullAddr();
+    auto conn = server.Accept(/* populate_remote_addr */ false);
 
     std::string data;
 
@@ -579,7 +579,7 @@ TEST_F(NullRemoteAddrTest, IPv6Accept4WithNullRemoteAddr) {
   std::thread server_thread([&server, &server_ready]() {
     server.BindAndListen();
     server_ready = true;
-    auto conn = server.AcceptWithNullAddr();
+    auto conn = server.Accept(/* populate_remote_addr */ false);
 
     std::string data;
 
