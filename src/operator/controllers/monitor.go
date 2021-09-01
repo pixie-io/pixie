@@ -252,7 +252,9 @@ func (m *VizierMonitor) watchK8sPods() {
 			case c := <-resCh:
 				s, ok := c.Object.(*metav1.Status)
 				if ok && s.Status == metav1.StatusFailure {
-					continue
+					log.WithField("status", s.Status).Info("Received failure status in watcher")
+					// Try to start up another watcher instance.
+					break
 				}
 
 				// Update the lastPodRV, so that if the watcher restarts, it starts at the correct resource version.
@@ -286,7 +288,9 @@ func (m *VizierMonitor) watchK8sPVC() {
 			case c := <-resCh:
 				s, ok := c.Object.(*metav1.Status)
 				if ok && s.Status == metav1.StatusFailure {
-					continue
+					log.WithField("status", s.Status).Info("Received failure status in watcher")
+					// Try to start up another watcher instance.
+					break
 				}
 
 				// Update the lastPVCRV, so that if the watcher restarts, it starts at the correct resource version.
