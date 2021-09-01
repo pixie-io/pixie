@@ -18,6 +18,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <regex>
 #include <string>
 
 #include <absl/strings/str_replace.h>
@@ -44,6 +45,7 @@ using ::testing::AllOf;
 using ::testing::Contains;
 using ::testing::Eq;
 using ::testing::Field;
+using ::testing::HasSubstr;
 using ::testing::StrEq;
 using ::px::operator<<;
 
@@ -127,6 +129,16 @@ class KafkaTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> 
     return GetPIDFromOutput(out);
   }
 
+  StatusOr<int32_t> FetchMessage() {
+    std::string cmd = absl::StrFormat(
+        "docker exec %s bash -c 'kafka-console-consumer --bootstrap-server localhost:29092 --topic "
+        "foo --from-beginning --timeout-ms 10000& echo $! && wait'",
+        kafka_server_.container_name());
+
+    PL_ASSIGN_OR_RETURN(std::string out, px::Exec(cmd));
+    return GetPIDFromOutput(out);
+  }
+
   KafkaContainer kafka_server_;
   ZooKeeperContainer zookeeper_server_;
 };
@@ -139,19 +151,61 @@ struct KafkaTraceRecord {
   std::string resp;
 
   std::string ToString() const {
-    return absl::Substitute("ts_ns=$0 req_cmd=$1 req_body=$2 resp=$3", ts_ns,
-                            magic_enum::enum_name(req_cmd), req_body, resp);
+    return absl::Substitute("ts_ns=$0 req_cmd=$1 client_id $2 req_body=$3 resp=$4", ts_ns,
+                            magic_enum::enum_name(req_cmd), client_id, req_body, resp);
   }
 };
 
 auto EqKafkaTraceRecord(const KafkaTraceRecord& x) {
   return AllOf(Field(&KafkaTraceRecord::req_cmd, Eq(x.req_cmd)),
-               Field(&KafkaTraceRecord::client_id, StrEq(x.client_id)),
+               // client_id is dynamic for the consumer.
+               Field(&KafkaTraceRecord::client_id, HasSubstr(x.client_id)),
                Field(&KafkaTraceRecord::req_body, StrEq(x.req_body)),
                Field(&KafkaTraceRecord::resp, StrEq(x.resp)));
 }
 
-KafkaTraceRecord kKafkaScriptCmd1 = {
+KafkaTraceRecord kLeaderAndIsrRecord = {
+    .req_cmd = kafka::APIKey::kLeaderAndIsr, .client_id = "1001", .req_body = "", .resp = ""};
+
+KafkaTraceRecord kUpdateMetadataRecord = {
+    .req_cmd = kafka::APIKey::kUpdateMetadata, .client_id = "1001", .req_body = "", .resp = ""};
+
+KafkaTraceRecord kProducerMetadataRecord = {.req_cmd = kafka::APIKey::kMetadata,
+                                            .client_id = "console-producer",
+                                            .req_body = "",
+                                            .resp = ""};
+
+KafkaTraceRecord kConsumerMetadataRecord = {.req_cmd = kafka::APIKey::kMetadata,
+                                            .client_id = "console-consumer",
+                                            .req_body = "",
+                                            .resp = ""};
+
+KafkaTraceRecord kFindCoordinatorRecord = {.req_cmd = kafka::APIKey::kFindCoordinator,
+                                           .client_id = "console-consumer",
+                                           .req_body = "",
+                                           .resp = ""};
+
+KafkaTraceRecord kProducerApiVersionsRecord = {.req_cmd = kafka::APIKey::kApiVersions,
+                                               .client_id = "console-producer",
+                                               .req_body = "",
+                                               .resp = ""};
+
+KafkaTraceRecord kConsumerApiVersionsRecord = {.req_cmd = kafka::APIKey::kApiVersions,
+                                               .client_id = "console-consumer",
+                                               .req_body = "",
+                                               .resp = ""};
+
+KafkaTraceRecord kJoinGroupRecord = {.req_cmd = kafka::APIKey::kJoinGroup,
+                                     .client_id = "console-consumer",
+                                     .req_body = "",
+                                     .resp = ""};
+
+KafkaTraceRecord kSyncGroupRecord = {.req_cmd = kafka::APIKey::kSyncGroup,
+                                     .client_id = "console-consumer",
+                                     .req_body = "",
+                                     .resp = ""};
+
+KafkaTraceRecord kProduceRecord = {
     .req_cmd = kafka::APIKey::kProduce,
     .client_id = "console-producer",
     .req_body =
@@ -162,17 +216,45 @@ KafkaTraceRecord kKafkaScriptCmd1 = {
         "\"base_offset\":0,\"log_append_time_ms\":-1,\"log_start_offset\":0,\"record_errors\":[],"
         "\"error_message\":\"\"}]}],\"throttle_time_ms\":0}"};
 
+KafkaTraceRecord kOffsetFetchRecord = {.req_cmd = kafka::APIKey::kOffsetFetch,
+                                       .client_id = "console-consumer",
+                                       .req_body = "",
+                                       .resp = ""};
+
+KafkaTraceRecord kListOffsetsRecord = {.req_cmd = kafka::APIKey::kListOffsets,
+                                       .client_id = "console-consumer",
+                                       .req_body = "",
+                                       .resp = ""};
+
+KafkaTraceRecord kFetchRecord = {
+    .req_cmd = kafka::APIKey::kFetch,
+    .client_id = "console-consumer",
+    .req_body =
+        "{\"replica_id\":-1,\"session_id\":0,\"session_epoch\":0,\"topics\":[{\"name\":\"foo\","
+        "\"partitions\":[{\"index\":0,\"current_leader_epoch\":0,\"fetch_offset\":0,\"last_fetched_"
+        "epoch\":-1,\"log_start_offset\":-1,\"partition_max_bytes\":1048576}]}],\"forgotten_"
+        "topics\":[],\"rack_id\":\"\"}",
+    .resp =
+        "{\"throttle_time_ms\":0,\"error_code\":0,\"session_id\":<removed>,\"topics\":[{\"name\":"
+        "\"foo\",\"partitions\":[{"
+        "\"index\":0,\"error_code\":0,\"high_"
+        "watermark\":1,\"last_stable_offset\":1,\"log_start_offset\":0,\"aborted_transactions\":[],"
+        "\"preferred_read_replica\":-1,\"message_set\":{\"size\":74}}]}]}"};
+
 std::vector<KafkaTraceRecord> GetKafkaTraceRecords(
     const types::ColumnWrapperRecordBatch& record_batch, int pid) {
   std::vector<KafkaTraceRecord> res;
   for (const auto& idx : FindRecordIdxMatchesPID(record_batch, kKafkaUPIDIdx, pid)) {
+    // Masking the session_id field in the response, because it's dynamic.
+    std::string resp = std::string(record_batch[kKafkaRespIdx]->Get<types::StringValue>(idx));
+    std::regex session_id_re(",\"session_id\":\\d+");
+    resp = std::regex_replace(resp, session_id_re, ",\"session_id\":<removed>");
+
     res.push_back(KafkaTraceRecord{
         record_batch[kKafkaTimeIdx]->Get<types::Time64NSValue>(idx).val,
         static_cast<kafka::APIKey>(record_batch[kKafkaReqCmdIdx]->Get<types::Int64Value>(idx).val),
         std::string(record_batch[kKafkaClientIDIdx]->Get<types::StringValue>(idx)),
-        std::string(record_batch[kKafkaReqBodyIdx]->Get<types::StringValue>(idx)),
-        std::string(record_batch[kKafkaRespIdx]->Get<types::StringValue>(idx)),
-    });
+        std::string(record_batch[kKafkaReqBodyIdx]->Get<types::StringValue>(idx)), resp});
   }
   return res;
 }
@@ -187,6 +269,7 @@ TEST_F(KafkaTraceTest, kafka_capture) {
   ASSERT_OK_AND_ASSIGN(int32_t create_topic_pid, CreateTopic());
   PL_UNUSED(create_topic_pid);
   ASSERT_OK_AND_ASSIGN(int32_t produce_message_pid, ProduceMessage());
+  ASSERT_OK_AND_ASSIGN(int32_t fetch_message_pid, FetchMessage());
 
   StopTransferDataThread();
 
@@ -198,12 +281,36 @@ TEST_F(KafkaTraceTest, kafka_capture) {
   // TODO(chengruizhe): Some of the records are missing. Fix and add tests for all records.
   {
     auto records = GetKafkaTraceRecords(record_batch, kafka_server_.process_pid());
-    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kKafkaScriptCmd1)));
+    // ApiVersion requests are dropped by the server, since they are the first packets.
+    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kLeaderAndIsrRecord)));
+    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kUpdateMetadataRecord)));
+    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kProduceRecord)));
+    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kConsumerMetadataRecord)));
+    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kFindCoordinatorRecord)));
+    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kJoinGroupRecord)));
+    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kSyncGroupRecord)));
+    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kOffsetFetchRecord)));
+    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kListOffsetsRecord)));
+    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kFetchRecord)));
   }
 
   {
     auto records = GetKafkaTraceRecords(record_batch, produce_message_pid);
-    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kKafkaScriptCmd1)));
+    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kProducerApiVersionsRecord)));
+    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kProducerMetadataRecord)));
+    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kProduceRecord)));
+  }
+
+  {
+    auto records = GetKafkaTraceRecords(record_batch, fetch_message_pid);
+    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kConsumerApiVersionsRecord)));
+    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kConsumerMetadataRecord)));
+    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kFindCoordinatorRecord)));
+    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kJoinGroupRecord)));
+    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kSyncGroupRecord)));
+    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kOffsetFetchRecord)));
+    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kListOffsetsRecord)));
+    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kFetchRecord)));
   }
 }
 

@@ -228,7 +228,7 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
 
 void ContainerRunner::Stop() {
   // Clean-up the container.
-  container_.Signal(SIGTERM);
+  container_.Signal(SIGKILL);
   container_.Wait();
 }
 
