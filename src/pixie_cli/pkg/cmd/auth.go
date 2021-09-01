@@ -39,6 +39,9 @@ func init() {
 	LoginCmd.Flags().Bool("use_api_key", false, "Use API key for authentication")
 	viper.BindPFlag("use_api_key", LoginCmd.Flags().Lookup("use_api_key"))
 
+	LoginCmd.Flags().String("api_key", "", "Use specified API key for authentication.")
+	viper.BindPFlag("api_key", LoginCmd.Flags().Lookup("api_key"))
+
 	AuthCmd.PersistentFlags().String("org_name", "", "Select ORG to login into")
 	viper.BindPFlag("org_name", AuthCmd.PersistentFlags().Lookup("org_name"))
 	AuthCmd.PersistentFlags().MarkHidden("org_name")
@@ -66,6 +69,7 @@ var LoginCmd = &cobra.Command{
 			ManualMode: viper.GetBool("manual"),
 			CloudAddr:  viper.GetString("cloud_addr"),
 			UseAPIKey:  viper.GetBool("use_api_key"),
+			APIKey:     viper.GetString("api_key"),
 			OrgName:    orgName,
 		}
 		var refreshToken *auth.RefreshToken

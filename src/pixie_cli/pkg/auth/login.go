@@ -178,13 +178,18 @@ type PixieCloudLogin struct {
 	OrgID string
 	// UseAPIKey, if true then prompt user for API key to use for login.
 	UseAPIKey bool
+	// APIKey to use if specified. Otherwise, prompt for the key if UseAPIKey is true.
+	APIKey string
 }
 
 // Run either launches the browser or prints out the URL for auth.
 func (p *PixieCloudLogin) Run() (*RefreshToken, error) {
 	// Preferentially use API key for auth.
-	if p.UseAPIKey {
+	if p.UseAPIKey && len(p.APIKey) == 0 {
 		return p.doAPIKeyAuth()
+	}
+	if len(p.APIKey) > 0 {
+		return p.getRefreshToken("", p.APIKey)
 	}
 	// There are two ways to do the auth. The first one is where we automatically open up the browser
 	// and wait for the challenge to complete and call a HTTP server that we started.
