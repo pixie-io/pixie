@@ -626,7 +626,7 @@ func TestMonitor_getPEMsSomeInsufficientMemory(t *testing.T) {
 					events: []v1.Event{
 						v1.Event{
 							Reason:  "FailedScheduling",
-							Message: "foobar",
+							Message: "foo",
 						},
 					},
 				},
@@ -751,6 +751,168 @@ func TestMonitor_getVizierVersionState(t *testing.T) {
 
 			assert.Equal(t, test.expectedReason, versionState.Reason)
 			assert.Equal(t, test.expectedVizierPhase, translateReasonToPhase(versionState.Reason))
+		})
+	}
+}
+
+func TestMonitor_getPEMCrashingState(t *testing.T) {
+	terminatedErrorState := v1.ContainerState{
+		Terminated: &v1.ContainerStateTerminated{
+			Reason: "Error",
+		},
+	}
+	healthyContainerState := v1.ContainerState{Running: &v1.ContainerStateRunning{}}
+	crashLoopBackoffState := v1.ContainerState{
+		Waiting: &v1.ContainerStateWaiting{
+			Reason: "CrashLoopBackOff",
+		},
+	}
+
+	tests := []struct {
+		name                string
+		expectedVizierPhase pixiev1alpha1.VizierPhase
+		expectedReason      status.VizierReason
+		pems                []struct {
+			name           string
+			phase          v1.PodPhase
+			containerState v1.ContainerState
+		}
+	}{
+		{
+			name:                "healthy",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			pems: []struct {
+				name           string
+				phase          v1.PodPhase
+				containerState v1.ContainerState
+			}{
+				{
+					name:           "vizier-pem-abcdefg",
+					phase:          v1.PodRunning,
+					containerState: healthyContainerState,
+				},
+				{
+					name:           "vizier-pem-123456",
+					phase:          v1.PodRunning,
+					containerState: healthyContainerState,
+				},
+			},
+			expectedReason: "",
+		},
+		{
+			name:                "all crashing loop backoff",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+			pems: []struct {
+				name           string
+				phase          v1.PodPhase
+				containerState v1.ContainerState
+			}{
+				{
+					name:           "vizier-pem-abcdefg",
+					phase:          v1.PodRunning,
+					containerState: crashLoopBackoffState,
+				},
+				{
+					name:           "vizier-pem-123456",
+					phase:          v1.PodRunning,
+					containerState: crashLoopBackoffState,
+				},
+			},
+			expectedReason: status.PEMsAllFailing,
+		},
+		{
+			name:                "all terminated with error",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+			pems: []struct {
+				name           string
+				phase          v1.PodPhase
+				containerState v1.ContainerState
+			}{
+				{
+					name:           "vizier-pem-abcdefg",
+					phase:          v1.PodRunning,
+					containerState: terminatedErrorState,
+				},
+				{
+					name:           "vizier-pem-123456",
+					phase:          v1.PodRunning,
+					containerState: terminatedErrorState,
+				},
+			},
+			expectedReason: status.PEMsAllFailing,
+		},
+		{
+			name:                "degraded if some (not all) are failing",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseDegraded,
+			pems: []struct {
+				name           string
+				phase          v1.PodPhase
+				containerState v1.ContainerState
+			}{
+				{
+					name:           "vizier-pem-abcdefg",
+					phase:          v1.PodRunning,
+					containerState: healthyContainerState,
+				},
+				{
+					name:           "vizier-pem-123456",
+					phase:          v1.PodRunning,
+					containerState: crashLoopBackoffState,
+				},
+			},
+			expectedReason: status.PEMsHighFailureRate,
+		},
+		{
+			name:                "pending pods are ignored for this checker",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			pems: []struct {
+				name           string
+				phase          v1.PodPhase
+				containerState v1.ContainerState
+			}{
+				{
+					name:           "vizier-pem-abcdefg",
+					phase:          v1.PodPending,
+					containerState: healthyContainerState,
+				},
+				{
+					name:           "vizier-pem-123456",
+					phase:          v1.PodPending,
+					containerState: crashLoopBackoffState,
+				},
+			},
+			expectedReason: "",
+		},
+		{
+			name:                "no pems",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+			expectedReason:      status.PEMsMissing,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			pems := &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWithEvents)}
+			for _, p := range test.pems {
+				pems.write(vizierPemLabel, p.name, &podWithEvents{
+					pod: &v1.Pod{
+						ObjectMeta: metav1.ObjectMeta{Name: p.name},
+						Status: v1.PodStatus{
+							Phase: p.phase,
+							ContainerStatuses: []v1.ContainerStatus{
+								v1.ContainerStatus{
+									Name:  "pem",
+									State: p.containerState,
+								},
+							},
+						},
+					},
+				})
+			}
+
+			state := getPEMCrashingState(pems)
+			assert.Equal(t, test.expectedReason, state.Reason)
+			assert.Equal(t, test.expectedVizierPhase, translateReasonToPhase(state.Reason))
 		})
 	}
 }

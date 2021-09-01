@@ -87,4 +87,9 @@ const (
 	PEMsAllInsufficientMemory VizierReason = "PEMsAllInsufficientMemory"
 	// PEMsMissing occurs when the operator can't find PEMs in the monitoring namespace.
 	PEMsMissing VizierReason = "PEMsMissing"
+
+	// PEMsHighFailureRate occurs when a large portion of PEMs are hurting the stability of the cluster.
+	PEMsHighFailureRate VizierReason = "PEMsHighFailureRate"
+	// PEMsAllFailing occurs when a all PEMs are failing.
+	PEMsAllFailing VizierReason = "PEMsAllFailing"
 )

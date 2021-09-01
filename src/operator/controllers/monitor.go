@@ -61,6 +61,8 @@ const (
 	natsName = "pl-nats-1"
 	// How often we should ping the vizier pods for status updates.
 	statuszCheckInterval = 20 * time.Second
+	// The threshold of number of crashing PEM pods before we declare a cluster degraded.
+	pemCrashingThreshold = 0.25
 )
 
 // HTTPClient is the interface for a simple HTTPClient which can execute "Get".
@@ -520,7 +522,41 @@ func getVizierVersionState(atClient cloudpb.ArtifactTrackerClient, vz *pixiev1al
 	return okState()
 }
 
-// getvizierState determines the state of the  Vizier instance based on the snapshot
+// getPEMCrashingState reads the state of running PEMs to see if a large portion are failing.
+func getPEMCrashingState(pods *concurrentPodMap) *vizierState {
+	pods.mapMu.Lock()
+	defer pods.mapMu.Unlock()
+	pems, ok := pods.unsafeMap[vizierPemLabel]
+	if !ok || len(pems) == 0 {
+		return &vizierState{Reason: status.PEMsMissing}
+	}
+
+	pemCrashing := 0
+	for _, pem := range pems {
+		if pem.pod.Status.Phase != v1.PodRunning {
+			continue
+		}
+		for _, c := range pem.pod.Status.ContainerStatuses {
+			if c.State.Terminated != nil && c.State.Terminated.Reason == "Error" {
+				pemCrashing++
+				break
+			}
+			if c.State.Waiting != nil && c.State.Waiting.Reason == "CrashLoopBackOff" {
+				pemCrashing++
+				break
+			}
+		}
+	}
+	if pemCrashing == len(pems) {
+		return &vizierState{Reason: status.PEMsAllFailing}
+	}
+	if float64(pemCrashing) > float64(len(pems))*pemCrashingThreshold {
+		return &vizierState{Reason: status.PEMsHighFailureRate}
+	}
+	return okState()
+}
+
+// getvizierState determines the state of the Vizier instance based on the snapshot
 // of data available at call time. Reports the first state that fails (does not aggregate),
 // otherwise reports a healthy state.
 func (m *VizierMonitor) getvizierState(vz *pixiev1alpha1.Vizier) *vizierState {
@@ -549,9 +585,14 @@ func (m *VizierMonitor) getvizierState(vz *pixiev1alpha1.Vizier) *vizierState {
 		return natsState
 	}
 
-	pemState := getPEMResourceLimitsState(m.podStates)
-	if !isOk(pemState) {
-		return pemState
+	pemResourceState := getPEMResourceLimitsState(m.podStates)
+	if !isOk(pemResourceState) {
+		return pemResourceState
+	}
+
+	pemCrashingState := getPEMCrashingState(m.podStates)
+	if !isOk(pemCrashingState) {
+		return pemCrashingState
 	}
 
 	ccState := getCloudConnState(m.httpClient, m.podStates)
@@ -587,6 +628,9 @@ func translateReasonToPhase(reason status.VizierReason) pixiev1alpha1.VizierPhas
 		return pixiev1alpha1.VizierPhaseDisconnected
 	}
 	if reason == status.PEMsSomeInsufficientMemory {
+		return pixiev1alpha1.VizierPhaseDegraded
+	}
+	if reason == status.PEMsHighFailureRate {
 		return pixiev1alpha1.VizierPhaseDegraded
 	}
 	return pixiev1alpha1.VizierPhaseUnhealthy
