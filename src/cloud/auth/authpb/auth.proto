@@ -50,6 +50,8 @@ service AuthService {
   rpc InviteUser(InviteUserRequest) returns (InviteUserResponse);
   // Create a new org, create a new user, then return an invite link for that user.
   rpc CreateOrgAndInviteUser(CreateOrgAndInviteUserRequest) returns (CreateOrgAndInviteUserResponse);
+  // Gets a short-lived token that can be used with an auth connector.
+  rpc GetAuthConnectorToken(GetAuthConnectorTokenRequest) returns (GetAuthConnectorTokenResponse);
 }
 
 message LoginRequest {
@@ -169,6 +171,20 @@ message CreateOrgAndInviteUserRequest {
 
 message CreateOrgAndInviteUserResponse {
   string invite_link = 1;
+}
+
+message GetAuthConnectorTokenRequest {
+  // ClusterName is the name of the cluster that can be used with the auth connector. This will be encoded in the
+  // returned JWT. This can be modified by the user, so consumers should take care to
+  // validate this is a real cluster which the user has access to.
+  string cluster_name = 1;
+}
+
+message GetAuthConnectorTokenResponse {
+  // A short-lived access token that can be used to access the Pixie API on behalf of a user.
+  string token = 1;
+  // When this token expires.
+  int64 expires_at = 2;
 }
 
 //

@@ -20,6 +20,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"time"
@@ -580,4 +581,9 @@ func (s *Server) CreateOrgAndInviteUser(ctx context.Context, req *authpb.CreateO
 	return &authpb.CreateOrgAndInviteUserResponse{
 		InviteLink: resp.InviteLink,
 	}, nil
+}
+
+// GetAuthConnectorToken uses the AuthProvider to generate a short-lived token that can be used to authenticate as a user.
+func (s *Server) GetAuthConnectorToken(ctx context.Context, in *authpb.GetAuthConnectorTokenRequest) (*authpb.GetAuthConnectorTokenResponse, error) {
+	return nil, errors.New("Not yet implemented")
 }

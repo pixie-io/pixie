@@ -98,6 +98,26 @@ func (mr *MockAuthServiceClientMockRecorder) GetAugmentedTokenForAPIKey(ctx, in 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAugmentedTokenForAPIKey", reflect.TypeOf((*MockAuthServiceClient)(nil).GetAugmentedTokenForAPIKey), varargs...)
 }
 
+// GetAuthConnectorToken mocks base method.
+func (m *MockAuthServiceClient) GetAuthConnectorToken(ctx context.Context, in *authpb.GetAuthConnectorTokenRequest, opts ...grpc.CallOption) (*authpb.GetAuthConnectorTokenResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetAuthConnectorToken", varargs...)
+	ret0, _ := ret[0].(*authpb.GetAuthConnectorTokenResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAuthConnectorToken indicates an expected call of GetAuthConnectorToken.
+func (mr *MockAuthServiceClientMockRecorder) GetAuthConnectorToken(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAuthConnectorToken", reflect.TypeOf((*MockAuthServiceClient)(nil).GetAuthConnectorToken), varargs...)
+}
+
 // InviteUser mocks base method.
 func (m *MockAuthServiceClient) InviteUser(ctx context.Context, in *authpb.InviteUserRequest, opts ...grpc.CallOption) (*authpb.InviteUserResponse, error) {
 	m.ctrl.T.Helper()
@@ -224,6 +244,21 @@ func (m *MockAuthServiceServer) GetAugmentedTokenForAPIKey(arg0 context.Context,
 func (mr *MockAuthServiceServerMockRecorder) GetAugmentedTokenForAPIKey(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAugmentedTokenForAPIKey", reflect.TypeOf((*MockAuthServiceServer)(nil).GetAugmentedTokenForAPIKey), arg0, arg1)
+}
+
+// GetAuthConnectorToken mocks base method.
+func (m *MockAuthServiceServer) GetAuthConnectorToken(arg0 context.Context, arg1 *authpb.GetAuthConnectorTokenRequest) (*authpb.GetAuthConnectorTokenResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAuthConnectorToken", arg0, arg1)
+	ret0, _ := ret[0].(*authpb.GetAuthConnectorTokenResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAuthConnectorToken indicates an expected call of GetAuthConnectorToken.
+func (mr *MockAuthServiceServerMockRecorder) GetAuthConnectorToken(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAuthConnectorToken", reflect.TypeOf((*MockAuthServiceServer)(nil).GetAuthConnectorToken), arg0, arg1)
 }
 
 // InviteUser mocks base method.
