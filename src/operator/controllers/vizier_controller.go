@@ -90,9 +90,7 @@ func getCloudClientConnection(cloudAddr string, devCloudNS string) (*grpc.Client
 	return c, nil
 }
 
-func getLatestVizierVersion(ctx context.Context, conn *grpc.ClientConn) (string, error) {
-	client := cloudpb.NewArtifactTrackerClient(conn)
-
+func getLatestVizierVersion(ctx context.Context, client cloudpb.ArtifactTrackerClient) (string, error) {
 	req := &cloudpb.GetArtifactListRequest{
 		ArtifactName: "vizier",
 		ArtifactType: cloudpb.AT_CONTAINER_SET_YAMLS,
@@ -158,7 +156,11 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			vzGet:          r.Get,
 			clientset:      r.Clientset,
 		}
-		err := r.monitor.InitAndStartMonitor()
+		cloudClient, err := getCloudClientConnection(vizier.Spec.CloudAddr, vizier.Spec.DevCloudNamespace)
+		if err != nil {
+			log.WithError(err).Fatal("Failed to initialize vizier monitor")
+		}
+		err = r.monitor.InitAndStartMonitor(cloudClient)
 		if err != nil {
 			log.WithError(err).Fatal("Failed to initialize vizier monitor")
 		}
@@ -229,7 +231,8 @@ func (r *VizierReconciler) createVizier(ctx context.Context, req ctrl.Request, v
 	// If no version is set, we should fetch the latest version. This will trigger another reconcile that will do
 	// the actual vizier deployment.
 	if vz.Spec.Version == "" {
-		latest, err := getLatestVizierVersion(ctx, cloudClient)
+		atClient := cloudpb.NewArtifactTrackerClient(cloudClient)
+		latest, err := getLatestVizierVersion(ctx, atClient)
 		if err != nil {
 			return err
 		}

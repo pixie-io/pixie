@@ -26,6 +26,8 @@ var reasonToMessageMap = map[VizierReason]string{
 	CloudConnectorFailedToConnect:  "Cloud connector failed to connect to Pixie Cloud. Please check your cloud address.",
 	CloudConnectorInvalidDeployKey: "Invalid deploy key specified. Please check that the deploy key is correct.",
 	CloudConnectorBasicQueryFailed: "Unable to run basic healthcheck query on cluster.",
+
+	VizierVersionTooOld: "Vizier version is older by more than one major version and may no longer be supported. Please update to the latest version.",
 }
 
 // GetMessageFromReason gets the human-readable message for a vizier status reason.
@@ -41,6 +43,9 @@ func GetMessageFromReason(reason VizierReason) string {
 type VizierReason string
 
 const (
+	// VizierVersionTooOld is a status for when the running Vizier version is more than one major version too old.
+	VizierVersionTooOld VizierReason = "VizierVersionOld"
+
 	// CloudConnectorFailedToConnect is a status for when the cloud connector is unable to connect to the specified cloud addr.
 	CloudConnectorFailedToConnect VizierReason = "CloudConnectFailed"
 	// CloudConnectorInvalidDeployKey is a status for when the cloud connector has an invalid deploy key. This will prevent

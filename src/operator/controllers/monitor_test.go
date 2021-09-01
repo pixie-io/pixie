@@ -24,12 +24,16 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/gogo/protobuf/types"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
+	"px.dev/pixie/src/api/proto/cloudpb"
+	mock_cloudpb "px.dev/pixie/src/api/proto/cloudpb/mock"
 	pixiev1alpha1 "px.dev/pixie/src/operator/api/v1alpha1"
 	"px.dev/pixie/src/shared/status"
 )
@@ -634,6 +638,104 @@ func TestMonitor_getPEMsSomeInsufficientMemory(t *testing.T) {
 			state := getPEMResourceLimitsState(pems)
 			assert.Equal(t, test.expectedReason, state.Reason)
 			assert.Equal(t, test.expectedVizierPhase, translateReasonToPhase(state.Reason))
+		})
+	}
+}
+
+func TestMonitor_getVizierVersionState(t *testing.T) {
+	tests := []struct {
+		name                string
+		latestVersion       string
+		currentVersion      string
+		expectedReason      status.VizierReason
+		expectedVizierPhase pixiev1alpha1.VizierPhase
+	}{
+		{
+			name:                "up-to-date",
+			latestVersion:       "0.5.6",
+			currentVersion:      "0.5.6",
+			expectedReason:      "",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+		},
+		{
+			name:                "same minor",
+			latestVersion:       "0.5.8",
+			currentVersion:      "0.5.6",
+			expectedReason:      "",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+		},
+		{
+			name:                "one minor less",
+			latestVersion:       "0.5.6",
+			currentVersion:      "0.4.6",
+			expectedReason:      "",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+		},
+		{
+			name:                "major not matching",
+			latestVersion:       "1.5.6",
+			currentVersion:      "0.5.6",
+			expectedReason:      status.VizierVersionTooOld,
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+		},
+		{
+			name:                "two minor less",
+			latestVersion:       "0.5.6",
+			currentVersion:      "0.3.6",
+			expectedReason:      status.VizierVersionTooOld,
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+		},
+		{
+			name:                "two minor less with patch",
+			latestVersion:       "0.5.6",
+			currentVersion:      "0.3.6-pre-r0.45",
+			expectedReason:      status.VizierVersionTooOld,
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+		},
+		{
+			name:                "dev version",
+			latestVersion:       "0.5.6",
+			currentVersion:      "0.0.0-dev+Modified.0000000.19700101000000.0",
+			expectedReason:      "",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+		},
+		{
+			name:                "same minor with patch",
+			latestVersion:       "0.5.8",
+			currentVersion:      "0.5.6-pre-r0.45",
+			expectedReason:      "",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			ats := mock_cloudpb.NewMockArtifactTrackerClient(ctrl)
+
+			ats.EXPECT().GetArtifactList(gomock.Any(),
+				&cloudpb.GetArtifactListRequest{
+					ArtifactName: "vizier",
+					ArtifactType: cloudpb.AT_CONTAINER_SET_YAMLS,
+					Limit:        1,
+				}).
+				Return(&cloudpb.ArtifactSet{
+					Name: "vizier",
+					Artifact: []*cloudpb.Artifact{{
+						VersionStr: test.latestVersion,
+						Timestamp:  &types.Timestamp{Seconds: 10},
+					},
+					},
+				}, nil)
+
+			versionState := getVizierVersionState(ats, &pixiev1alpha1.Vizier{
+				Status: pixiev1alpha1.VizierStatus{
+					Version: test.currentVersion,
+				},
+			})
+
+			assert.Equal(t, test.expectedReason, versionState.Reason)
+			assert.Equal(t, test.expectedVizierPhase, translateReasonToPhase(versionState.Reason))
 		})
 	}
 }

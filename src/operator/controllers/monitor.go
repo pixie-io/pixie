@@ -29,7 +29,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/blang/semver"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -42,6 +44,7 @@ import (
 	// Blank import necessary for kubeConfig to work.
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
+	"px.dev/pixie/src/api/proto/cloudpb"
 	pixiev1alpha1 "px.dev/pixie/src/operator/api/v1alpha1"
 	"px.dev/pixie/src/shared/status"
 	"px.dev/pixie/src/utils/shared/k8s"
@@ -122,10 +125,11 @@ func (c *concurrentPVCMap) write(name string, pod *v1.PersistentVolumeClaim) {
 // VizierMonitor is responsible for watching the k8s API and statusz endpoints to compile a reason and state
 // for the overall Vizier instance.
 type VizierMonitor struct {
-	clientset  kubernetes.Interface
-	httpClient HTTPClient
-	ctx        context.Context
-	cancel     func()
+	clientset   kubernetes.Interface
+	httpClient  HTTPClient
+	ctx         context.Context
+	cancel      func()
+	cloudClient *grpc.ClientConn
 
 	namespace      string
 	namespacedName types.NamespacedName
@@ -141,12 +145,13 @@ type VizierMonitor struct {
 }
 
 // InitAndStartMonitor initializes and starts the status monitor for the Vizier.
-func (m *VizierMonitor) InitAndStartMonitor() error {
+func (m *VizierMonitor) InitAndStartMonitor(cloudClient *grpc.ClientConn) error {
 	// Initialize current state.
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	m.httpClient = &http.Client{Transport: tr}
+	m.cloudClient = cloudClient
 	m.ctx, m.cancel = context.WithCancel(context.Background())
 	m.podStates = &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWithEvents)}
 	m.pvcStates = &concurrentPVCMap{unsafeMap: make(map[string]*v1.PersistentVolumeClaim)}
@@ -474,10 +479,55 @@ func getPEMResourceLimitsState(pods *concurrentPodMap) *vizierState {
 	return okState()
 }
 
-// getvizierState determines the state of the Vizier instance based on the snapshot
+// getVizierVersionState gets the version of the running Vizier and compares it to the latest version of Vizier.
+// If the vizier version is more than one major version too old, then the cluster is in a degraded state.
+func getVizierVersionState(atClient cloudpb.ArtifactTrackerClient, vz *pixiev1alpha1.Vizier) *vizierState {
+	latest, err := getLatestVizierVersion(context.Background(), atClient)
+	if err != nil {
+		log.WithError(err).Error("Failed to get latest vizier version")
+		return nil
+	}
+
+	current := vz.Status.Version
+	if current == "" {
+		log.Error("No version specified on Vizier CRD status")
+		return nil
+	}
+
+	currentSemVer, err := semver.Make(current)
+	if err != nil {
+		log.WithError(err).Error("Failed to parse current Vizier version")
+		return nil
+	}
+	latestSemVer, err := semver.Make(latest)
+	if err != nil {
+		log.WithError(err).Error("Failed to parse latest Vizier version")
+		return nil
+	}
+
+	devVersionRange, _ := semver.ParseRange("<=0.0.0")
+	if devVersionRange(currentSemVer) {
+		return okState() // We consider dev versions up-to-date.
+	}
+
+	if currentSemVer.Major != latestSemVer.Major || currentSemVer.Minor <= latestSemVer.Minor-2 {
+		return &vizierState{Reason: status.VizierVersionTooOld}
+	}
+	return okState()
+}
+
+// getvizierState determines the state of the  Vizier instance based on the snapshot
 // of data available at call time. Reports the first state that fails (does not aggregate),
 // otherwise reports a healthy state.
 func (m *VizierMonitor) getvizierState(vz *pixiev1alpha1.Vizier) *vizierState {
+	// Check the latest vizier version, and current vizier version first. Regardless of
+	// whether the vizier pods are running, we consider the cluster in a degraded state.
+	atClient := cloudpb.NewArtifactTrackerClient(m.cloudClient)
+	vzVersionState := getVizierVersionState(atClient, vz)
+	if vzVersionState != nil && !isOk(vzVersionState) {
+		return vzVersionState
+	}
+
 	if !vz.Spec.UseEtcdOperator {
 		pvcState := getMetadataPVCState(m.clientset, m.pvcStates)
 		if !isOk(pvcState) {
@@ -523,7 +573,10 @@ func translateReasonToPhase(reason status.VizierReason) pixiev1alpha1.VizierPhas
 	if reason == status.NATSPodPending {
 		return pixiev1alpha1.VizierPhaseUpdating
 	}
-	if reason == status.ControlPlanePodsPending {
+	if reason == status.VizierVersionTooOld {
+		return pixiev1alpha1.VizierPhaseUnhealthy
+	}
+	if reason == status.CloudConnectorPodPending || reason == status.MetadataPVCPendingBinding || reason == status.ControlPlanePodsPending {
 		return pixiev1alpha1.VizierPhaseUpdating
 	}
 	if reason == status.CloudConnectorMissing {
