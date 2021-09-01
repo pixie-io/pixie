@@ -17,7 +17,7 @@
  */
 
 import {
-  DARK_THEME, LIGHT_THEME, SnackbarProvider, VersionInfo,
+  COMMON_THEME, DARK_THEME, LIGHT_THEME, SnackbarProvider, VersionInfo,
 } from 'app/components';
 import Live from 'app/containers/App/live';
 import PixieCookieBanner from 'configurable/cookie-banner';
@@ -239,7 +239,17 @@ const ThemedApp: React.FC = () => {
       // Try to parse theme and apply.
       try {
         const parsedTheme = JSON.parse(pixieStyles);
-        setTheme(createTheme(parsedTheme));
+        // Only use the `palette` field from the theme, as we know these
+        // values are safe to apply.
+        setTheme(createTheme({
+          ...COMMON_THEME,
+          ...{
+            palette: {
+              ...COMMON_THEME.palette,
+              ...parsedTheme.palette,
+            },
+          },
+        }));
       } catch (e) {
         // eslint-disable-next-line no-console
         console.error('Failed to parse MUI theme');

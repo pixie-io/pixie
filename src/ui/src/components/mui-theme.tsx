@@ -139,7 +139,7 @@ export const EDITOR_THEME_MAP: Record<PaletteMode, string> = {
   light: 'vs-light',
 };
 
-const common = {
+export const COMMON_THEME = {
   shape: {
     leftRoundedBorderRadius: {
       large: '10px 0px 0px 10px',
@@ -289,10 +289,10 @@ const common = {
 };
 
 export const DARK_THEME = createTheme({
-  ...common,
+  ...COMMON_THEME,
   ...{
     palette: {
-      ...common.palette,
+      ...COMMON_THEME.palette,
       foreground: {
         one: '#b2b5bb',
         two: '#f2f2f2',
@@ -326,10 +326,10 @@ export const DARK_THEME = createTheme({
 });
 
 export const LIGHT_THEME = createTheme({
-  ...common,
+  ...COMMON_THEME,
   ...{
     palette: {
-      ...common.palette,
+      ...COMMON_THEME.palette,
       background: {
         default: '#f6f6f6',
         paper: '#fbfbfb',

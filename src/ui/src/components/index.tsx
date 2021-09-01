@@ -117,6 +117,7 @@ export { PixieLogo } from './icons/pixie-logo';
 
 export {
   scrollbarStyles,
+  COMMON_THEME,
   DARK_THEME,
   LIGHT_THEME,
   EDITOR_THEME_MAP,
