@@ -62,6 +62,9 @@ func init() {
 	pflag.String("elastic_username", "elastic", "Username for access to elastic cluster")
 	pflag.String("elastic_password", "", "Password for access to elastic")
 	pflag.String("allowed_origins", "", "The allowed origins for CORS")
+
+	pflag.String("auth_connector_name", "", "If any, the name of the auth connector to be used with Pixie")
+	pflag.String("auth_connector_callback_url", "", "If any, the callback URL for the auth connector")
 }
 
 func main() {
