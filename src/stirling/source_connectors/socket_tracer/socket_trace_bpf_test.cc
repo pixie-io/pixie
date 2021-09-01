@@ -190,11 +190,7 @@ TEST_P(NonVecSyscallTests, NonVecSyscalls) {
 
 INSTANTIATE_TEST_SUITE_P(
     NonVecSyscalls, NonVecSyscallTests,
-    ::testing::Values(SocketTraceBPFTestParams{SyscallPair::kWriteRead, kRoleClient},
-                      SocketTraceBPFTestParams{SyscallPair::kWriteRead, kRoleServer},
-                      SocketTraceBPFTestParams{SyscallPair::kWriteRead, kRoleClient | kRoleServer},
-                      SocketTraceBPFTestParams{SyscallPair::kSendRecv, kRoleClient},
-                      SocketTraceBPFTestParams{SyscallPair::kSendRecv, kRoleServer},
+    ::testing::Values(SocketTraceBPFTestParams{SyscallPair::kWriteRead, kRoleClient | kRoleServer},
                       SocketTraceBPFTestParams{SyscallPair::kSendRecv, kRoleClient | kRoleServer}));
 
 class IOVecSyscallTests : public SocketTraceBPFTest,
