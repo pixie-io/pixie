@@ -408,15 +408,23 @@ TEST_F(SocketTraceBPFTest, LargeMessages) {
   ASSERT_OK_AND_ASSIGN(const auto* client_tracker,
                        GetConnTracker(system.ClientPID(), system.ClientFD()));
   EXPECT_EQ(client_tracker->send_data().data_buffer().Head(), kHTTPReqMsg1);
-  EXPECT_THAT(std::string(client_tracker->recv_data().data_buffer().Head()), HasSubstr("+++++"));
+  std::string client_recv_data(client_tracker->recv_data().data_buffer().Head());
+  EXPECT_THAT(client_recv_data.size(), 131153);
+  EXPECT_THAT(client_recv_data, HasSubstr("+++++"));
+  EXPECT_EQ(client_recv_data.substr(client_recv_data.size() - 5, 5), "+++++");
 
-  // TODO(oazizi): The server version of this test fails because the server's send syscall
-  //               has a huge payload, but we're only able to trace CHUNK_LIMIT * MAX_MSG_SIZE
-  //               per syscall. Fortunately, servers in the wild appear to chunk their syscall data.
-  //  ASSERT_OK_AND_ASSIGN(const auto* server_tracker, GetConnTracker(system.ServerPID(),
-  //  system.ServerFD())); EXPECT_EQ(server_tracker->send_data().data_buffer().Head(),
-  //  kHTTPReqMsg1); EXPECT_THAT(std::string(server_tracker->recv_data().data_buffer().Head()),
-  //  HasSubstr("+++++"));
+  // The server's send syscall transmits all 131153 bytes in one shot.
+  // This is over the limit that we can transmit through BPF, and so we expect
+  // filler bytes on this side of the connection. Note that the client doesn't have the
+  // same behavior, because the recv syscall provides the data in chunks.
+  ASSERT_OK_AND_ASSIGN(const auto* server_tracker,
+                       GetConnTracker(system.ServerPID(), system.ServerFD()));
+  EXPECT_EQ(server_tracker->recv_data().data_buffer().Head(), kHTTPReqMsg1);
+  std::string server_send_data(server_tracker->send_data().data_buffer().Head());
+  EXPECT_THAT(server_send_data.size(), 131153);
+  EXPECT_THAT(server_send_data, HasSubstr("+++++"));
+  // We expect filling with \0 bytes.
+  EXPECT_EQ(server_send_data.substr(server_send_data.size() - 5, 5), ConstStringView("\0\0\0\0\0"));
 }
 
 constexpr std::string_view kHTTPRespMsgHeader =

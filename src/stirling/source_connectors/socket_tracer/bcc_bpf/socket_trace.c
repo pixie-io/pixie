@@ -480,7 +480,7 @@ static __inline void perf_submit_buf(struct pt_regs* ctx, const enum TrafficDire
   //   4.14.104
   //   4.15.18 (Ubuntu 4.15.0-96-generic)
 
-  if (buf_size > MAX_MSG_SIZE || buf_size == 0) {
+  if (buf_size == 0) {
     return;
   }
 
@@ -496,13 +496,21 @@ static __inline void perf_submit_buf(struct pt_regs* ctx, const enum TrafficDire
 
   buf_size = buf_size_minus_1 + 1;
 
-  // This if-statement check is redundant, but is required for the verifier.
-  // Buf size is always greater than 0, but the verifier doesn't know that.
-  // 4.14 kernels otherwise reject bpf_probe_read with size that they may think is zero.
+  // 4.14 kernels reject bpf_probe_read with size that they may think is zero.
+  // Without the if statement, it somehow can't reason that the bpf_probe_read is non-zero.
+  size_t amount_copied = 0;
   if (buf_size_minus_1 < MAX_MSG_SIZE) {
     bpf_probe_read(&event->msg, buf_size, buf);
-    event->attr.msg_buf_size = buf_size;
-    socket_data_events.perf_submit(ctx, event, sizeof(event->attr) + buf_size);
+    amount_copied = buf_size;
+  } else {
+    bpf_probe_read(&event->msg, MAX_MSG_SIZE, buf);
+    amount_copied = MAX_MSG_SIZE;
+  }
+
+  // If-statement is redundant, but is required to keep the 4.14 verifier happy.
+  if (amount_copied > 0) {
+    event->attr.msg_buf_size = amount_copied;
+    socket_data_events.perf_submit(ctx, event, sizeof(event->attr) + amount_copied);
   }
 }
 
@@ -516,7 +524,8 @@ static __inline void perf_submit_wrapper(struct pt_regs* ctx, const enum Traffic
 #pragma unroll
   for (i = 0; i < CHUNK_LIMIT; ++i) {
     const int bytes_remaining = buf_size - bytes_sent;
-    const size_t current_size = bytes_remaining > MAX_MSG_SIZE ? MAX_MSG_SIZE : bytes_remaining;
+    const size_t current_size =
+        (bytes_remaining > MAX_MSG_SIZE && (i != CHUNK_LIMIT - 1)) ? MAX_MSG_SIZE : bytes_remaining;
     perf_submit_buf(ctx, direction, buf + bytes_sent, current_size, bytes_sent, conn_info, event);
     bytes_sent += current_size;
   }
@@ -554,6 +563,9 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx, const enum TrafficD
     perf_submit_buf(ctx, direction, iov_cpy.iov_base, iov_size, bytes_sent, conn_info, event);
     bytes_sent += iov_size;
   }
+
+  // TODO(oazizi): If there is data left after the loop limit, we should still report the remainder
+  //               with a data-less event.
 }
 
 /***********************************************************

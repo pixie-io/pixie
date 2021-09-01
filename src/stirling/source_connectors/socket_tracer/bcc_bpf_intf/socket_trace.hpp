@@ -66,9 +66,18 @@ struct SocketDataEvent {
     // Hack: Create a filler event for sendfile data.
     // We need a better long-term solution for this,
     // since we aren't able to directly trace the data.
-    if (attr.source_fn == kSyscallSendfile) {
-      DCHECK_EQ(attr.msg_buf_size, 0);
-      msg.assign(attr.msg_size, 0);
+    if (attr.msg_buf_size != attr.msg_size) {
+      DCHECK_GT(attr.msg_size, attr.msg_buf_size);
+      VLOG(1) << "Adding filler to event";
+
+      // Limit the size so we don't have huge allocations.
+      constexpr uint32_t kMaxFilledSizeBytes = 1 * 1024 * 1024;
+
+      size_t filled_size = std::min(attr.msg_size, kMaxFilledSizeBytes);
+      msg.resize(filled_size, 0);
+      if (attr.msg_size > kMaxFilledSizeBytes) {
+        VLOG(1) << absl::Substitute("Event too large: $0", attr.msg_size);
+      }
     }
   }
 

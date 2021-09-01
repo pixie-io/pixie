@@ -481,16 +481,9 @@ TEST_F(CQLTraceTest, cqlsh_capture) {
                     EqCassRecord(kRecord4), EqCassRecord(kRecord5), EqCassRecord(kRecord6),
                     EqCassRecord(kRecord7), EqCassRecord(kRecord8), EqCassRecord(kRecord9),
                     EqCassRecord(kRecord10), EqCassRecord(kRecord11), EqCassRecord(kRecord12),
-                    EqCassRecord(kRecord14), EqCassRecord(kRecord15), EqCassRecord(kRecord16),
-                    EqCassRecord(kRecord17), EqCassRecord(kRecord18)));
+                    EqCassRecord(kRecord13), EqCassRecord(kRecord14), EqCassRecord(kRecord15),
+                    EqCassRecord(kRecord16), EqCassRecord(kRecord17), EqCassRecord(kRecord18)));
   }
-
-  // TODO(oazizi): Address the warning below.
-  LOG(WARNING) << "Server-side tracing does not capture kRecord13 (which has a large result)."
-                  "The reason is a BPF limitation on data larger than MAX_MSG_SIZE (30KiB),"
-                  "This test generates a write() syscall with a packet that is 34982B large,"
-                  "and that packet is not traced. When this limitation is resolved,"
-                  "this test should be updated.";
 }
 
 }  // namespace stirling
