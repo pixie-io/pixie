@@ -87,7 +87,7 @@ func SaveRefreshToken(token *RefreshToken) error {
 		return err
 	}
 
-	f, err := os.OpenFile(pixieAuthFilePath, os.O_RDWR|os.O_CREATE, 0600)
+	f, err := os.OpenFile(pixieAuthFilePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
@@ -416,9 +416,30 @@ func (p *PixieCloudLogin) getRefreshToken(accessToken string, apiKey string) (*R
 		return nil, err
 	}
 
+	// Get the org name from the cloud.
+	var orgID string
+	if token, _ := jwt.Parse(resp.Token, nil); token != nil {
+		sc, ok := token.Claims.(jwt.MapClaims)
+		if ok {
+			orgID, _ = sc["OrgID"].(string)
+		}
+	}
+
+	profileClient := cloudpb.NewProfileServiceClient(conn)
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
+		fmt.Sprintf("bearer %s", resp.Token))
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	orgResp, err := profileClient.GetOrgInfo(ctx, apiutils.ProtoFromUUIDStrOrNil(orgID))
+	if err != nil {
+		return nil, err
+	}
+
 	return &RefreshToken{
 		Token:          resp.Token,
 		ExpiresAt:      resp.ExpiresAt,
+		OrgID:          orgID,
+		OrgName:        orgResp.OrgName,
 		SupportAccount: false,
 	}, nil
 }
