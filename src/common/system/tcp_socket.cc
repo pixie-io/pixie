@@ -146,7 +146,21 @@ ssize_t TCPSocket::SendMsg(const std::vector<std::string_view>& data) const {
     msg.msg_iov[i].iov_base = const_cast<char*>(data[i].data());
     msg.msg_iov[i].iov_len = data[i].size();
   }
-  return sendmsg(sockfd_, &msg, /*flags*/ 0);
+  return sendmsg(sockfd_, &msg, /* flags */ 0);
+}
+
+ssize_t TCPSocket::SendMMsg(std::string_view data) const {
+  struct iovec msg_iov;
+  msg_iov.iov_len = data.size();
+  msg_iov.iov_base = const_cast<void*>(reinterpret_cast<const void*>(data.data()));
+
+  struct mmsghdr msg = {};
+  msg.msg_hdr.msg_iovlen = 1;
+  msg.msg_hdr.msg_iov = &msg_iov;
+
+  int retval = sendmmsg(sockfd_, &msg, 1, /* flags */ 0);
+
+  return (retval < 0) ? retval : msg.msg_len;
 }
 
 ssize_t TCPSocket::SendFile(const std::filesystem::path& path) const {
@@ -190,6 +204,25 @@ ssize_t TCPSocket::RecvMsg(std::vector<std::string>* data) const {
     copied_size += size_to_copy;
   }
   return size;
+}
+
+bool TCPSocket::RecvMMsg(std::string* data) const {
+  char buf[kBufSize];
+
+  struct iovec msg_iov = {};
+  msg_iov.iov_base = buf;
+  msg_iov.iov_len = kBufSize;
+
+  struct mmsghdr msg = {};
+  msg.msg_hdr.msg_iovlen = 1;
+  msg.msg_hdr.msg_iov = &msg_iov;
+
+  ssize_t retval = recvmmsg(sockfd_, &msg, 1, /* flags */ 0, nullptr);
+  if (retval <= 0 || msg.msg_len == 0) {
+    return false;
+  }
+  data->append(buf, msg.msg_len);
+  return true;
 }
 
 ssize_t TCPSocket::WriteV(const std::vector<std::string_view>& data) const {

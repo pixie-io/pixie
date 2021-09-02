@@ -92,6 +92,7 @@ enum class SyscallPair {
   kSendRecv,
   kWriteRead,
   kSendMsgRecvMsg,
+  kSendMMsgRecvMMsg,
   kWritevReadv,
 };
 
@@ -134,6 +135,9 @@ TEST_P(NonVecSyscallTests, NonVecSyscalls) {
       break;
     case SyscallPair::kSendRecv:
       system.RunClientServer<&TCPSocket::Recv, &TCPSocket::Send>(script);
+      break;
+    case SyscallPair::kSendMMsgRecvMMsg:
+      system.RunClientServer<&TCPSocket::RecvMMsg, &TCPSocket::SendMMsg>(script);
       break;
     default:
       LOG(FATAL) << absl::Substitute("$0 not supported by this test",
@@ -187,7 +191,9 @@ TEST_P(NonVecSyscallTests, NonVecSyscalls) {
 INSTANTIATE_TEST_SUITE_P(
     NonVecSyscalls, NonVecSyscallTests,
     ::testing::Values(SocketTraceBPFTestParams{SyscallPair::kWriteRead, kRoleClient | kRoleServer},
-                      SocketTraceBPFTestParams{SyscallPair::kSendRecv, kRoleClient | kRoleServer}));
+                      SocketTraceBPFTestParams{SyscallPair::kSendRecv, kRoleClient | kRoleServer},
+                      SocketTraceBPFTestParams{SyscallPair::kSendMMsgRecvMMsg,
+                                               kRoleClient | kRoleServer}));
 
 class IOVecSyscallTests : public SocketTraceBPFTest,
                           public ::testing::WithParamInterface<SocketTraceBPFTestParams> {};

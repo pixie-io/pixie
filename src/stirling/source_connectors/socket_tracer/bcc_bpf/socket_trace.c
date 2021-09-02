@@ -1396,8 +1396,10 @@ int syscall__probe_ret_sendmmsg(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   struct data_args_t* write_args = active_write_args_map.lookup(&id);
   if (write_args != NULL && num_msgs > 0) {
-    ssize_t bytes_count;
-    bpf_probe_read(&bytes_count, sizeof(write_args->msg_len), write_args->msg_len);
+    // msg_len is defined as unsigned int, so we have to use the same here.
+    // This is different than most other syscalls that use ssize_t.
+    unsigned int bytes_count = 0;
+    bpf_probe_read(&bytes_count, sizeof(unsigned int), write_args->msg_len);
     process_syscall_data_vecs(ctx, id, kEgress, write_args, bytes_count);
   }
   active_write_args_map.delete(&id);
@@ -1494,8 +1496,10 @@ int syscall__probe_ret_recvmmsg(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   struct data_args_t* read_args = active_read_args_map.lookup(&id);
   if (read_args != NULL && num_msgs > 0) {
-    ssize_t bytes_count;
-    bpf_probe_read(&bytes_count, sizeof(read_args->msg_len), read_args->msg_len);
+    // msg_len is defined as unsigned int, so we have to use the same here.
+    // This is different than most other syscalls that use ssize_t.
+    unsigned int bytes_count = 0;
+    bpf_probe_read(&bytes_count, sizeof(unsigned int), read_args->msg_len);
     process_syscall_data_vecs(ctx, id, kIngress, read_args, bytes_count);
   }
   active_read_args_map.delete(&id);

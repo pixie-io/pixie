@@ -102,6 +102,27 @@ TEST(TCPSocketTest, WriteVandReadV) {
   EXPECT_EQ("writevreadv", absl::StrJoin(received_data, ""));
 }
 
+TEST(TCPSocketTest, SendMMsgAndRecvMMsg) {
+  TCPSocket server;
+  server.BindAndListen();
+
+  std::string received_data;
+  TCPSocket client;
+  std::thread client_thread([&server, &client, &received_data]() {
+    client.Connect(server);
+    while (client.RecvMMsg(&received_data)) {
+    }
+  });
+  std::unique_ptr<TCPSocket> conn = server.Accept();
+  EXPECT_EQ(4, conn->SendMMsg("mmsg"));
+  conn->Close();
+
+  server.Close();
+  client_thread.join();
+
+  EXPECT_EQ("mmsg", received_data);
+}
+
 TEST(TCPSocketTest, SendFile) {
   TCPSocket server;
   server.BindAndListen();
