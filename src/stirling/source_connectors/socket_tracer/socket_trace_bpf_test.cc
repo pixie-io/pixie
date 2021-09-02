@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <fcntl.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <sys/types.h>
@@ -268,6 +269,37 @@ INSTANTIATE_TEST_SUITE_P(IOVecSyscalls, IOVecSyscallTests,
                                                                     kRoleClient | kRoleServer},
                                            SocketTraceBPFTestParams{SyscallPair::kWritevReadv,
                                                                     kRoleClient | kRoleServer}));
+
+TEST_F(SocketTraceBPFTest, FileIONotTraced) {
+  std::unique_ptr<fs::TempFile> tmpf = fs::TempFile::Create();
+  std::filesystem::path fpath = tmpf->path();
+
+  int fd1 = open(fpath.c_str(), O_RDWR);
+
+  // Write an HTTP request using the primary FD.
+  ASSERT_EQ(write(fd1, kHTTPReqMsg1.data(), kHTTPReqMsg1.size()), kHTTPReqMsg1.size());
+
+  // Write an HTTP response using a secondary FD, so the primary FD can read a response.
+  int fd2 = open(fpath.c_str(), O_WRONLY | O_APPEND);
+  ASSERT_EQ(write(fd2, kHTTPRespMsg1.data(), kHTTPRespMsg1.size()), kHTTPRespMsg1.size());
+  close(fd2);
+
+  // Read the HTTP response using the primary FD.
+  std::string rd_data;
+  rd_data.resize(kHTTPReqMsg1.size());
+  int len = read(fd1, rd_data.data(), rd_data.size());
+  ASSERT_GT(len, 0);
+  rd_data.resize(len);
+  ASSERT_EQ(rd_data, kHTTPRespMsg1);
+
+  close(fd1);
+
+  // Finally drain all BPF events.
+  source_->PollPerfBuffers();
+
+  // Those to file I/O FDs should not have been reported.
+  ASSERT_NOT_OK(GetConnTracker(getpid(), fd1));
+}
 
 TEST_F(SocketTraceBPFTest, NonInetTrafficNotTraced) {
   UnixSocket server;

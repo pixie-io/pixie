@@ -284,6 +284,11 @@ struct accept_args_t {
 struct data_args_t {
   // Represents the function from which this argument group originates.
   enum source_function_t source_fn;
+
+  // Did the data event call sock_sendmsg/sock_recvmsg.
+  // Used to filter out read/write and readv/writev calls that are not to sockets.
+  bool sock_event;
+
   int32_t fd;
 
   // For send()/recv()/write()/read().

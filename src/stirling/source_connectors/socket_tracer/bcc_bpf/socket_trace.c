@@ -1110,8 +1110,7 @@ int syscall__probe_ret_write(struct pt_regs* ctx) {
 
   // Unstash arguments, and process syscall.
   struct data_args_t* write_args = active_write_args_map.lookup(&id);
-  // Don't process FD 0-2 to avoid STDIN, STDOUT, STDERR.
-  if (write_args != NULL && write_args->fd > 2) {
+  if (write_args != NULL && write_args->sock_event) {
     process_syscall_data(ctx, id, kEgress, write_args, bytes_count);
   }
 
@@ -1167,8 +1166,7 @@ int syscall__probe_ret_read(struct pt_regs* ctx) {
 
   // Unstash arguments, and process syscall.
   struct data_args_t* read_args = active_read_args_map.lookup(&id);
-  // Don't process FD 0-2 to avoid STDIN, STDOUT, STDERR.
-  if (read_args != NULL && read_args->fd > 2) {
+  if (read_args != NULL && read_args->sock_event) {
     process_syscall_data(ctx, id, kIngress, read_args, bytes_count);
   }
 
@@ -1528,7 +1526,7 @@ int syscall__probe_ret_writev(struct pt_regs* ctx) {
 
   // Unstash arguments, and process syscall.
   struct data_args_t* write_args = active_write_args_map.lookup(&id);
-  if (write_args != NULL) {
+  if (write_args != NULL && write_args->sock_event) {
     process_syscall_data_vecs(ctx, id, kEgress, write_args, bytes_count);
   }
 
@@ -1557,7 +1555,7 @@ int syscall__probe_ret_readv(struct pt_regs* ctx) {
 
   // Unstash arguments, and process syscall.
   struct data_args_t* read_args = active_read_args_map.lookup(&id);
-  if (read_args != NULL) {
+  if (read_args != NULL && read_args->sock_event) {
     process_syscall_data_vecs(ctx, id, kIngress, read_args, bytes_count);
   }
 
@@ -1646,6 +1644,34 @@ int probe_ret_sock_alloc(struct pt_regs* ctx) {
 
   if (accept_args->sock_alloc_socket == NULL) {
     accept_args->sock_alloc_socket = (struct socket*)PT_REGS_RC(ctx);
+  }
+
+  return 0;
+}
+
+// Trace kernel function:
+// int sock_sendmsg(struct socket *sock, struct msghdr *msg)
+// which is called by write/writev/sendto/sendmsg.
+int probe_entry_sock_sendmsg(struct pt_regs* ctx) {
+  uint64_t id = bpf_get_current_pid_tgid();
+
+  struct data_args_t* write_args = active_write_args_map.lookup(&id);
+  if (write_args != NULL) {
+    write_args->sock_event = true;
+  }
+
+  return 0;
+}
+
+// Trace kernel function:
+// int sock_recvmsg(struct socket *sock, struct msghdr *msg, int flags)
+// which is called by write/writev/sendto/sendmsg.
+int probe_entry_sock_recvmsg(struct pt_regs* ctx) {
+  uint64_t id = bpf_get_current_pid_tgid();
+
+  struct data_args_t* read_args = active_read_args_map.lookup(&id);
+  if (read_args != NULL) {
+    read_args->sock_event = true;
   }
 
   return 0;
