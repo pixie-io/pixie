@@ -717,19 +717,20 @@ class UDPSocketTraceBPFTest : public SocketTraceBPFTest {
 };
 
 TEST_F(UDPSocketTraceBPFTest, UDPSendToRecvFrom) {
-  std::string recv_data;
+  std::string server_recv_data;
+  std::string client_recv_data;
 
   ASSERT_EQ(client_.SendTo(kHTTPReqMsg1, server_.sockaddr()), kHTTPReqMsg1.size());
-  struct sockaddr_in server_remote = server_.RecvFrom(&recv_data);
+  struct sockaddr_in server_remote = server_.RecvFrom(&server_recv_data);
   ASSERT_NE(server_remote.sin_addr.s_addr, 0);
   ASSERT_NE(server_remote.sin_port, 0);
-  EXPECT_EQ(recv_data, kHTTPReqMsg1);
+  EXPECT_EQ(server_recv_data, kHTTPReqMsg1);
 
   ASSERT_EQ(server_.SendTo(kHTTPRespMsg1, server_remote), kHTTPRespMsg1.size());
-  struct sockaddr_in client_remote = client_.RecvFrom(&recv_data);
+  struct sockaddr_in client_remote = client_.RecvFrom(&client_recv_data);
   ASSERT_EQ(client_remote.sin_addr.s_addr, server_.addr().s_addr);
   ASSERT_EQ(client_remote.sin_port, server_.port());
-  EXPECT_EQ(recv_data, kHTTPRespMsg1);
+  EXPECT_EQ(client_recv_data, kHTTPRespMsg1);
 
   source_->PollPerfBuffers();
 
@@ -743,19 +744,20 @@ TEST_F(UDPSocketTraceBPFTest, UDPSendToRecvFrom) {
 }
 
 TEST_F(UDPSocketTraceBPFTest, UDPSendMsgRecvMsg) {
-  std::string recv_data;
+  std::string server_recv_data;
+  std::string client_recv_data;
 
   ASSERT_EQ(client_.SendMsg(kHTTPReqMsg1, server_.sockaddr()), kHTTPReqMsg1.size());
-  struct sockaddr_in client_sockaddr = server_.RecvMsg(&recv_data);
+  struct sockaddr_in client_sockaddr = server_.RecvMsg(&server_recv_data);
   ASSERT_NE(client_sockaddr.sin_addr.s_addr, 0);
   ASSERT_NE(client_sockaddr.sin_port, 0);
-  EXPECT_EQ(recv_data, kHTTPReqMsg1);
+  EXPECT_EQ(server_recv_data, kHTTPReqMsg1);
 
   ASSERT_EQ(server_.SendMsg(kHTTPRespMsg1, client_sockaddr), kHTTPRespMsg1.size());
-  struct sockaddr_in client_remote = client_.RecvMsg(&recv_data);
+  struct sockaddr_in client_remote = client_.RecvMsg(&client_recv_data);
   ASSERT_EQ(client_remote.sin_addr.s_addr, server_.addr().s_addr);
   ASSERT_EQ(client_remote.sin_port, server_.port());
-  EXPECT_EQ(recv_data, kHTTPRespMsg1);
+  EXPECT_EQ(client_recv_data, kHTTPRespMsg1);
 
   source_->PollPerfBuffers();
 
@@ -769,19 +771,20 @@ TEST_F(UDPSocketTraceBPFTest, UDPSendMsgRecvMsg) {
 }
 
 TEST_F(UDPSocketTraceBPFTest, UDPSendMMsgRecvMMsg) {
-  std::string recv_data;
+  std::string server_recv_data;
+  std::string client_recv_data;
 
   ASSERT_EQ(client_.SendMMsg(kHTTPReqMsg1, server_.sockaddr()), kHTTPReqMsg1.size());
-  struct sockaddr_in server_remote = server_.RecvMMsg(&recv_data);
+  struct sockaddr_in server_remote = server_.RecvMMsg(&server_recv_data);
   ASSERT_NE(server_remote.sin_addr.s_addr, 0);
   ASSERT_NE(server_remote.sin_port, 0);
-  EXPECT_EQ(recv_data, kHTTPReqMsg1);
+  EXPECT_EQ(server_recv_data, kHTTPReqMsg1);
 
   ASSERT_EQ(server_.SendMMsg(kHTTPRespMsg1, server_remote), kHTTPRespMsg1.size());
-  struct sockaddr_in client_remote = client_.RecvMMsg(&recv_data);
+  struct sockaddr_in client_remote = client_.RecvMMsg(&client_recv_data);
   ASSERT_EQ(client_remote.sin_addr.s_addr, server_.addr().s_addr);
   ASSERT_EQ(client_remote.sin_port, server_.port());
-  EXPECT_EQ(recv_data, kHTTPRespMsg1);
+  EXPECT_EQ(client_recv_data, kHTTPRespMsg1);
 
   source_->PollPerfBuffers();
 
@@ -804,12 +807,14 @@ TEST_F(UDPSocketTraceBPFTest, NonBlockingRecv) {
   ASSERT_EQ(failed_recv_remote.sin_port, 0);
   ASSERT_TRUE(recv_data.empty());
 
+  recv_data.clear();
   ASSERT_EQ(client_.SendTo(kHTTPReqMsg1, server_.sockaddr()), kHTTPReqMsg1.size());
   struct sockaddr_in server_remote = server_.RecvFrom(&recv_data);
   ASSERT_NE(server_remote.sin_addr.s_addr, 0);
   ASSERT_NE(server_remote.sin_port, 0);
   EXPECT_EQ(recv_data, kHTTPReqMsg1);
 
+  recv_data.clear();
   ASSERT_EQ(server_.SendTo(kHTTPRespMsg1, server_remote), kHTTPRespMsg1.size());
   struct sockaddr_in client_remote = client_.RecvFrom(&recv_data);
   ASSERT_EQ(client_remote.sin_addr.s_addr, server_.addr().s_addr);

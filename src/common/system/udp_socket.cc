@@ -111,7 +111,7 @@ struct sockaddr_in UDPSocket::RecvFrom(std::string* data, int flags) const {
     return {};
   }
   CHECK(len == sizeof(struct sockaddr_in));
-  data->assign(buf, size);
+  data->append(buf, size);
   return src;
 }
 
@@ -133,7 +133,7 @@ struct sockaddr_in UDPSocket::RecvMsg(std::string* data, int flags) const {
   if (size <= 0) {
     return {};
   }
-  data->assign(buf, size);
+  data->append(buf, size);
   return src;
 }
 
@@ -155,7 +155,7 @@ struct sockaddr_in UDPSocket::RecvMMsg(std::string* data, int flags) const {
   if (num_msg <= 0) {
     return {};
   }
-  data->assign(buf, msg.msg_len);
+  data->append(buf, msg.msg_len);
   return src;
 }
 
