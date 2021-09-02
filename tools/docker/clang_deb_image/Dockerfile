@@ -60,7 +60,7 @@ RUN cp -a /llvm_all/build/lib/libclang.a /opt/clang-11.1/lib
 # library.
 #######################################################
 WORKDIR /llvm_libc++
-RUN git clone https://github.com/pixie-labs/install-clang
+RUN git clone https://github.com/pixie-io/install-clang
 
 WORKDIR /llvm_libc++/install-clang
 RUN git fetch
@@ -76,7 +76,7 @@ RUN rm -rf /opt/clang-11.1-libc++/src
 
 # Add clang-lsif for our image. This needs to be patched for the version of clang being used.
 WORKDIR /tmp
-RUN git clone https://github.com/pixie-labs/lsif-clang.git
+RUN git clone https://github.com/pixie-io/lsif-clang.git
 
 WORKDIR /tmp/lsif-clang
 RUN git checkout llvm-11

@@ -1,5 +1,5 @@
 ## Slackin
-Slackin is our slack signup helper. More info [here](https://github.com/pixie-labs/slackin).
+Slackin is our slack signup helper. More info [here](https://github.com/pixie-io/slackin).
 
 
 ## Deployment instructions

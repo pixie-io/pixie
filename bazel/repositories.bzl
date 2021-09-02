@@ -122,7 +122,7 @@ def _cc_deps():
     _repo_impl("com_github_packetzero_dnsparser", build_file = "//bazel/external:dnsparser.BUILD")
     _repo_impl("com_github_rlyeh_sole", build_file = "//bazel/external:sole.BUILD")
     _repo_impl("com_github_serge1_elfio", build_file = "//bazel/external:elfio.BUILD")
-    _repo_impl("com_github_tdunning_t_digest", build_file = "//bazel/external:tdigest.BUILD")
+    _repo_impl("com_github_derrickburns_tdigest", build_file = "//bazel/external:tdigest.BUILD")
     _repo_impl("com_github_tencent_rapidjson", build_file = "//bazel/external:rapidjson.BUILD")
     _repo_impl("com_github_vinzenz_libpypa", build_file = "//bazel/external:libpypa.BUILD")
     _repo_impl("com_google_double_conversion", build_file = "//bazel/external:double_conversion.BUILD")

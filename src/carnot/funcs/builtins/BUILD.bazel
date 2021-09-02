@@ -35,9 +35,9 @@ pl_cc_library(
         "//src/carnot/exec/ml:cc_library",
         "//src/carnot/funcs/builtins/sql_parsing:cc_library",
         "//src/carnot/udf:cc_library",
+        "@com_github_derrickburns_tdigest//:tdigest",
         "@com_github_google_re2//:re2",
         "@com_github_google_sentencepiece//:libsentencepiece",
-        "@com_github_tdunning_t_digest//:tdigest",
         "@com_github_tencent_rapidjson//:rapidjson",
     ],
 )

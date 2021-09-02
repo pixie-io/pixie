@@ -50,19 +50,17 @@ var (
 )
 
 var remapRepos = map[string]string{
-	"pixie-labs/aes-min":      "cmcqueen/aes-min",
-	"pixie-labs/arrow":        "apache/arrow",
-	"pixie-labs/bcc":          "iovisor/bcc",
-	"pixie-labs/bpftrace":     "iovisor/bpftrace",
-	"pixie-labs/cpplint":      "cpplint/cpplint",
-	"pixie-labs/dnsparser":    "packetzero/dnsparser",
-	"pixie-labs/ELFIO":        "serge1/ELFIO",
-	"pixie-labs/grpc":         "grpc/grpc",
-	"pixie-labs/kuberesolver": "sercand/kuberesolver",
-	"pixie-labs/libpypa":      "vinzenz/libpypa",
-	"pixie-labs/protobuf":     "protocolbuffers/protobuf",
-	"pixie-labs/tdigest":      "derrickburns/tdigest",
-	"pixie-labs/threadstacks": "thoughtspot/threadstacks",
+	"pixie-io/aes-min":      "cmcqueen/aes-min",
+	"pixie-io/arrow":        "apache/arrow",
+	"pixie-io/bcc":          "iovisor/bcc",
+	"pixie-io/bpftrace":     "iovisor/bpftrace",
+	"pixie-io/cpplint":      "cpplint/cpplint",
+	"pixie-io/dnsparser":    "packetzero/dnsparser",
+	"pixie-io/ELFIO":        "serge1/ELFIO",
+	"pixie-io/grpc":         "grpc/grpc",
+	"pixie-io/libpypa":      "vinzenz/libpypa",
+	"pixie-io/tdigest":      "derrickburns/tdigest",
+	"pixie-io/threadstacks": "thoughtspot/threadstacks",
 }
 
 // Keep this in sync with src/ui/tools/licenses/yarn_license_extractor.js

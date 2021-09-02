@@ -41,7 +41,7 @@ REPOSITORY_LOCATIONS = dict(
     com_github_apache_arrow = dict(
         sha256 = "487ae884d035d9c8bbc052199268e6259d22cf502ee976e02661ee3f8e9468c0",
         strip_prefix = "arrow-ecbb9de0b4c8739347f7ffa9e7aee7e46926bbab",
-        urls = ["https://github.com/pixie-labs/arrow/archive/ecbb9de0b4c8739347f7ffa9e7aee7e46926bbab.tar.gz"],
+        urls = ["https://github.com/pixie-io/arrow/archive/ecbb9de0b4c8739347f7ffa9e7aee7e46926bbab.tar.gz"],
     ),
     com_github_bazelbuild_buildtools = dict(
         sha256 = "a02ba93b96a8151b5d8d3466580f6c1f7e77212c4eb181cba53eb2cae7752a23",
@@ -56,12 +56,12 @@ REPOSITORY_LOCATIONS = dict(
     com_github_packetzero_dnsparser = dict(
         sha256 = "bdf6c7f56f33725c1c32e672a4779576fb639dd2df565115778eb6be48296431",
         strip_prefix = "dnsparser-77398ffc200765db1cea9000d9f550ea99a29f7b",
-        urls = ["https://github.com/pixie-labs/dnsparser/archive/77398ffc200765db1cea9000d9f550ea99a29f7b.tar.gz"],
+        urls = ["https://github.com/pixie-io/dnsparser/archive/77398ffc200765db1cea9000d9f550ea99a29f7b.tar.gz"],
     ),
     com_github_serge1_elfio = dict(
         sha256 = "386bbeaac176683a68ee1941ab5b12dc381b7d43ff300cccca060047c2c9b291",
         strip_prefix = "ELFIO-9a70dd299199477bf9f8319424922d0fa436c225",
-        urls = ["https://github.com/pixie-labs/ELFIO/archive/9a70dd299199477bf9f8319424922d0fa436c225.tar.gz"],
+        urls = ["https://github.com/pixie-io/ELFIO/archive/9a70dd299199477bf9f8319424922d0fa436c225.tar.gz"],
     ),
     bazel_skylib = dict(
         sha256 = "e5d90f0ec952883d56747b7604e2a15ee36e288bb556c3d0ed33e818a4d971f2",
@@ -249,25 +249,25 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "aes-min-0.3.1",
         urls = ["https://github.com/cmcqueen/aes-min/releases/download/0.3.1/aes-min-0.3.1.tar.gz"],
     ),
-    com_github_tdunning_t_digest = dict(
-        sha256 = "85a8e8c3346b9e60270804678eb9ce066e1c993c3c59ca67606920c6f9ec5729",
-        strip_prefix = "t-digest-85e0f70092460e60236821db4c25143768d3da12",
-        urls = ["https://github.com/pixie-labs/t-digest/archive/85e0f70092460e60236821db4c25143768d3da12.tar.gz"],
+    com_github_derrickburns_tdigest = dict(
+        sha256 = "e420c7f9c73fe2af59ab69f302ea8279ec41ae3d241b749277761fdc2e8abfd7",
+        strip_prefix = "tdigest-85e0f70092460e60236821db4c25143768d3da12",
+        urls = ["https://github.com/pixie-io/tdigest/archive/85e0f70092460e60236821db4c25143768d3da12.tar.gz"],
     ),
     com_github_vinzenz_libpypa = dict(
         sha256 = "d61a6d88b65a470973f0ec595f44b1238e92dfee9f71585d50842f8ef95c7af2",
         strip_prefix = "libpypa-4cd45827d64cfa1e732e0b91182bf72f016a4e7f",
-        urls = ["https://github.com/pixie-labs/libpypa/archive/4cd45827d64cfa1e732e0b91182bf72f016a4e7f.tar.gz"],
+        urls = ["https://github.com/pixie-io/libpypa/archive/4cd45827d64cfa1e732e0b91182bf72f016a4e7f.tar.gz"],
     ),
     com_github_thoughtspot_threadstacks = dict(
         sha256 = "e54d4c3cd5af3cc136cc952c1ef77cd90b41133cd61140d8488e14c6d6f795e9",
         strip_prefix = "threadstacks-94adbe26c4aaf9ca945fd7936670d40ec6f228fb",
-        urls = ["https://github.com/pixie-labs/threadstacks/archive/94adbe26c4aaf9ca945fd7936670d40ec6f228fb.tar.gz"],
+        urls = ["https://github.com/pixie-io/threadstacks/archive/94adbe26c4aaf9ca945fd7936670d40ec6f228fb.tar.gz"],
     ),
     com_github_iovisor_bpftrace = dict(
         sha256 = "8bd665c0ab7cc79794d4cd7a1c5553e8bd25b65215bb7b4b7c4f905067cf63ee",
         strip_prefix = "bpftrace-da17ebda1090b5e09dc89d69a3afdb580d486670",
-        urls = ["https://github.com/pixie-labs/bpftrace/archive/da17ebda1090b5e09dc89d69a3afdb580d486670.tar.gz"],
+        urls = ["https://github.com/pixie-io/bpftrace/archive/da17ebda1090b5e09dc89d69a3afdb580d486670.tar.gz"],
     ),
     com_github_antlr_antlr4 = dict(
         urls = ["https://github.com/antlr/antlr4/archive/refs/tags/4.9.2.tar.gz"],
@@ -293,7 +293,7 @@ REPOSITORY_LOCATIONS = dict(
 
 GIT_REPOSITORY_LOCATIONS = dict(
     com_github_iovisor_bcc = dict(
-        remote = "https://github.com/pixie-labs/bcc.git",
+        remote = "https://github.com/pixie-io/bcc.git",
         commit = "c50098cadc54a602a7e423ae958dca8562ee2cf9",
         shallow_since = "1618606641 -0700",
     ),
