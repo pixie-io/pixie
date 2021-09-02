@@ -621,7 +621,7 @@ func translateReasonToPhase(reason status.VizierReason) pixiev1alpha1.VizierPhas
 	if reason == status.VizierVersionTooOld {
 		return pixiev1alpha1.VizierPhaseUnhealthy
 	}
-	if reason == status.CloudConnectorPodPending || reason == status.MetadataPVCPendingBinding || reason == status.ControlPlanePodsPending {
+	if reason == status.ControlPlanePodsPending {
 		return pixiev1alpha1.VizierPhaseUpdating
 	}
 	if reason == status.CloudConnectorMissing {
