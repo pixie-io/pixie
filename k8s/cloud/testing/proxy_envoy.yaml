@@ -1,0 +1,82 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: proxy-envoy-config
+data:
+# yamllint disable
+# The embedded YAML file is messing up yaml-lint.
+# This is almost an exact copy of base/proxy_envoy.yaml, except with a different CORS suffix. This
+# is because kustomize can't do patches within the embedded YAML.
+  envoy.yaml: >
+    static_resources:
+      listeners:
+      - name: listener_0
+        address:
+          socket_address: { address: 0.0.0.0, port_value: 56004 }
+        filter_chains:
+        - filters:
+          - name: envoy.http_connection_manager
+            config:
+              access_log:
+              - name: envoy.file_access_log
+                config:
+                  path: "/dev/stdout"
+              codec_type: auto
+              stat_prefix: ingress_http
+              route_config:
+                name: local_route
+                virtual_hosts:
+                - name: local_service
+                  domains: ["*"]
+                  routes:
+                  - match:
+                      prefix: "/px.api"
+                    route:
+                      cluster: api_service
+                      timeout: 3600s
+                  - match:
+                      prefix: "/healthz"
+                    route:
+                      cluster: api_service
+                  cors:
+                    allow_origin_string_match:
+                            - suffix: "testing.withpixie.dev"
+                    allow_methods: GET, PUT, DELETE, POST, OPTIONS
+                    allow_headers: >
+                      keep-alive,user-agent,cache-control,content-type,content-transfer-encoding,
+                      x-accept-content-transfer-encoding,x-accept-response-streaming,x-user-agent,
+                      x-grpc-web,authorization,grpc-timeout,grpc-status,grpc-message
+                    max_age: "1728000"
+                    expose_headers: grpc-status,grpc-message,grpc-timeout
+                    allow_credentials: true
+              http_filters:
+              - name: envoy.grpc_web
+              - name: envoy.cors
+              - name: envoy.router
+          tls_context:
+            common_tls_context:
+              alpn_protocols: "h2,http/1.1"
+              tls_certificates:
+                - certificate_chain:
+                    filename: "/certs/tls.crt"
+                  private_key:
+                    filename: "/certs/tls.key"
+      clusters:
+      - name: api_service
+        connect_timeout: 0.25s
+        type: logical_dns
+        http2_protocol_options: {}
+        lb_policy: round_robin
+        hosts:
+        - socket_address:
+            address: api-service
+            port_value: 51200
+        tls_context:
+          common_tls_context:
+            tls_certificates:
+              - certificate_chain:
+                  filename: "/service-certs/client.crt"
+                private_key:
+                  filename: "/service-certs/client.key"
+# yamllint enable

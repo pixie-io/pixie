@@ -1,0 +1,6 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: cloud-ingress
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: pixie-cloud-testing-external-ipaddr

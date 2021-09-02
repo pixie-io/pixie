@@ -106,4 +106,16 @@ profiles:
     value: [k8s/cloud/staging]
   activation:
   - env: PL_BUILD_TYPE=staging
-
+- name: testing
+  patches:
+  - op: add
+    path: /build/artifacts/context=./bazel/args
+    value:
+    - --compilation_mode=opt
+    - --stamp
+    - --action_env=GOOGLE_APPLICATION_CREDENTIALS
+  - op: replace
+    path: /deploy/kustomize/paths
+    value: [k8s/cloud/testing]
+  activation:
+  - env: PL_BUILD_TYPE=testing

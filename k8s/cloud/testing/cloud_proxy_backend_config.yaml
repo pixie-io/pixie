@@ -1,0 +1,17 @@
+---
+apiVersion: cloud.google.com/v1beta1
+kind: BackendConfig
+metadata:
+  name: cloud-proxy-backend-config
+spec:
+  securityPolicy:
+    name: pixie-cloud-staging-ingress-policy
+  timeoutSec: 3600
+  connectionDraining:
+    drainingTimeoutSec: 60
+  cdn:
+    enabled: true
+    cachePolicy:
+      includeHost: false
+      includeProtocol: false
+      includeQueryString: false

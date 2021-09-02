@@ -104,6 +104,9 @@ K8S_PROD_CREDS = 'cloud-staging'
 K8S_STAGING_CLUSTER = 'https://cloud-staging.internal.corp.pixielabs.ai'
 K8S_STAGING_CREDS = 'pixie-prod-staging-cluster'
 
+K8S_TESTING_CLUSTER = 'https://cloud-testing.internal.corp.pixielabs.ai'
+K8S_TESTING_CREDS = 'pixie-prod-testing-cluster'
+
 // PXL Docs variables.
 PXL_DOCS_BINARY = '//src/carnot/docstring:docstring_integration'
 PXL_DOCS_FILE = 'pxl-docs.json'
@@ -1080,6 +1083,9 @@ def  buildScriptForCLIRelease = {
             }
           }
         }
+        stage('Update versions database (testing)') {
+          updateVersionsDB(K8S_TESTING_CREDS, K8S_TESTING_CLUSTER, 'plc-testing')
+        }
         stage('Update versions database (staging)') {
           updateVersionsDB(K8S_STAGING_CREDS, K8S_STAGING_CLUSTER, 'plc-staging')
         }
@@ -1136,6 +1142,9 @@ def buildScriptForVizierRelease = {
     stage('Build & Push Artifacts') {
       parallel(vizierReleaseBuilders)
     }
+    stage('Update versions database (testing)') {
+      updateVersionsDB(K8S_TESTING_CREDS, K8S_TESTING_CLUSTER, 'plc-testing')
+    }
     stage('Update versions database (staging)') {
       updateVersionsDB(K8S_STAGING_CREDS, K8S_STAGING_CLUSTER, 'plc-staging')
     }
@@ -1169,6 +1178,9 @@ def buildScriptForOperatorRelease = {
           }
         }
       }
+    }
+    stage('Update versions database (testing)') {
+      updateVersionsDB(K8S_TESTING_CREDS, K8S_TESTING_CLUSTER, 'plc-testing')
     }
     stage('Update versions database (staging)') {
       updateVersionsDB(K8S_STAGING_CREDS, K8S_STAGING_CLUSTER, 'plc-staging')
