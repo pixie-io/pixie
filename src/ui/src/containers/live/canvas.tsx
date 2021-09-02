@@ -170,12 +170,12 @@ interface VegaWidgetProps {
   data: any[];
 }
 
-const VegaWidget: React.FC<VegaWidgetProps> = ({
+const VegaWidget: React.FC<VegaWidgetProps> = React.memo(function VegaWidget({
   tableName,
   display,
   table,
   data,
-}) => {
+}) {
   const classes = useStyles();
   const [focused, setFocused] = React.useState(false);
   const toggleFocus = React.useCallback(() => setFocused((enabled) => !enabled), []);
@@ -197,7 +197,7 @@ const VegaWidget: React.FC<VegaWidgetProps> = ({
       />
     </div>
   );
-};
+});
 
 const WidgetDisplay: React.FC<{
   display: VisWidgetDisplay,
@@ -206,9 +206,9 @@ const WidgetDisplay: React.FC<{
   widgetName: string,
   propagatedArgs: Record<string, any>,
   emptyTableMsg: string,
-}> = ({
+}> = React.memo(function WidgetDisplay({
   display, table, tableName, widgetName, propagatedArgs, emptyTableMsg,
-}) => {
+}) {
   const classes = useStyles();
 
   if (!table) {
@@ -285,16 +285,16 @@ const WidgetDisplay: React.FC<{
       </div>
     );
   }
-};
+});
 
 const ErrorDisplay: React.FC<{
   classes: Record<string, string>,
   error: any,
   setOpen: SetStateFunc<boolean>,
   open: boolean,
-}> = ({
+}> = React.memo(function ErrorDisplay({
   classes, error, setOpen, open,
-}) => {
+}) {
   const toggleOpen = React.useCallback(() => setOpen((opened) => !opened), [setOpen]);
   React.useEffect(() => {
     setOpen(true);
@@ -312,16 +312,17 @@ const ErrorDisplay: React.FC<{
       </div>
     </div>
   );
-};
+});
 
 const Grid = GridLayout.WidthProvider(GridLayout);
+const gridMargin = [20, 20];
 
 interface CanvasProps {
   editable: boolean;
   parentRef: React.RefObject<HTMLElement>;
 }
 
-const Canvas: React.FC<CanvasProps> = ({ editable, parentRef }) => {
+const Canvas: React.FC<CanvasProps> = React.memo(function Canvas({ editable, parentRef }) {
   const classes = useStyles();
   const {
     tables, loading, error, mutationInfo,
@@ -503,7 +504,7 @@ const Canvas: React.FC<CanvasProps> = ({ editable, parentRef }) => {
         onLayoutChange={updateDefaultLayout}
         isDraggable={editable}
         isResizable={editable}
-        margin={[20, 20]}
+        margin={gridMargin}
       >
         {
           Object.entries(tables).map(([tableName, table]) => (
@@ -524,7 +525,7 @@ const Canvas: React.FC<CanvasProps> = ({ editable, parentRef }) => {
         onLayoutChange={updateLayoutInVis}
         isDraggable={editable}
         isResizable={editable}
-        margin={[20, 20]}
+        margin={gridMargin}
       >
         {charts}
       </Grid>
@@ -538,6 +539,6 @@ const Canvas: React.FC<CanvasProps> = ({ editable, parentRef }) => {
       {displayGrid}
     </>
   );
-};
+});
 
 export default withTimeSeriesContext(Canvas);
