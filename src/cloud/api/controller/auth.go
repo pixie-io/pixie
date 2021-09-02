@@ -436,6 +436,35 @@ func AuthLogoutHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 	return nil
 }
 
+// AuthConnectorHandler receives an auth connector request and redirects to the auth connector callback with the access token.
+func AuthConnectorHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request) error {
+	apiEnv, ok := env.(apienv.APIEnv)
+	if !ok {
+		return handler.NewStatusError(http.StatusInternalServerError, "failed to get environment")
+	}
+	if r.Method != http.MethodGet {
+		return handler.NewStatusError(http.StatusMethodNotAllowed, "not a get request")
+	}
+
+	session, err := GetDefaultSession(apiEnv, r)
+	if err != nil {
+		return &handler.StatusError{Code: http.StatusInternalServerError, Err: err}
+	}
+
+	ctxWithCreds := metadata.AppendToOutgoingContext(r.Context(), "authorization",
+		fmt.Sprintf("bearer %s", session.Values["_at"].(string)))
+
+	clusterName := r.URL.Query().Get("clusterName")
+
+	resp, err := env.(apienv.APIEnv).AuthClient().GetAuthConnectorToken(ctxWithCreds, &authpb.GetAuthConnectorTokenRequest{ClusterName: clusterName})
+	if err != nil {
+		return handler.StatusError{Code: http.StatusInternalServerError, Err: err}
+	}
+
+	http.Redirect(w, r, viper.GetString("auth_connector_callback_url")+fmt.Sprintf("?token=%s", resp.Token), http.StatusSeeOther)
+	return nil
+}
+
 func attachCredentialsToContext(env commonenv.Env, r *http.Request) (context.Context, error) {
 	serviceAuthToken, err := GetServiceCredentials(env.JWTSigningKey())
 	if err != nil {

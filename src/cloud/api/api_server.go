@@ -145,6 +145,10 @@ func main() {
 		fmt.Fprintf(w, "OK")
 	})))
 
+	if viper.GetString("auth_connector_name") != "" {
+		mux.Handle(fmt.Sprintf("/api/auth/%s", viper.GetString("auth_connector_name")), handler.New(env, controller.AuthConnectorHandler))
+	}
+
 	// This handles all the pprof endpoints.
 	mux.Handle("/debug/", http.DefaultServeMux)
 	healthz.RegisterDefaultChecks(mux)
