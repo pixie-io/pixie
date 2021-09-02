@@ -43,7 +43,7 @@ update_bundle: bundle-oss.json.gz
 	gsutil acl ch -u allUsers:READER $(BUNDLE)
 
 update_readme:
-	./update_readme.py . https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts
+	./update_readme.py . https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts
 
 .PHONY: dev
 dev:

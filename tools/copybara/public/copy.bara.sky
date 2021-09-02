@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 internal_repo = "git@github.com:pixie-labs/pixielabs.git"
-public_repo = "git@github.com:pixie-labs/pixie.git"
+public_repo = "git@github.com:pixie-io/pixie.git"
 
 core.workflow(
     name = "default",

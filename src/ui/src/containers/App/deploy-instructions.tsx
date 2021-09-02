@@ -164,7 +164,7 @@ export const DeployInstructions: React.FC = () => {
               </Button>
               <Button
                 className={classes.button}
-                href='https://github.com/pixie-labs/pixie'
+                href='https://github.com/pixie-io/pixie'
                 variant='outlined'
                 size='large'
               >

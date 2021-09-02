@@ -64,4 +64,4 @@ Commit messages should provide enough information about what has changed and why
 
 #### CLA
 
-All code contributions require the [Contributor License Agreement](https://github.com/pixie-labs/pixie/blob/main/CLA.md). The CLA can be signed when creating your first PR.
+All code contributions require the [Contributor License Agreement](https://github.com/pixie-io/pixie/blob/main/CLA.md). The CLA can be signed when creating your first PR.

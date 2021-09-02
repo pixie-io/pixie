@@ -114,7 +114,7 @@ _For more information on Pixie Platform's architecture, check out our [docs](htt
 - [Website](https://px.dev)
 - [Documentation](https://docs.px.dev)
 - [Community Slack](https://slackin.px.dev/)
-- [Issue Tracker](https://github.com/pixie-labs/pixie/issues)
+- [Issue Tracker](https://github.com/pixie-io/pixie/issues)
 - [Youtube](https://www.youtube.com/channel/UCOMCDRvBVNIS0lCyOmst7eg/videos)
 
 ## About Us

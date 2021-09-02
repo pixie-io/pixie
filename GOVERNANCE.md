@@ -3,7 +3,7 @@ Pixie (The Project) is an open source software project. The goal of The Project 
 
 The Project is developed by a distributed team of developers, called Contributors. Contributors are individuals who have contributed code, documentation, designs, user support, or other work to one or more Project repositories. Anyone can be a Contributor. Contributors can be affiliated with any legal entity or none. Contributors participate in the project by submitting, reviewing and discussing Code Contributions and Issues and participating in open and public Project discussions on GitHub, JIRA, Phabricator, Slack, and mailing lists. The foundations of Project participation are openness and transparency.
 
-[Here](https://github.com/pixie-labs/pixie/blob/main/AUTHORS) is a list of some code Contributors to the main Pixie repository.
+[Here](https://github.com/pixie-io/pixie/blob/main/AUTHORS) is a list of some code Contributors to the main Pixie repository.
 
 The Project Community consists of all Contributors and Users of the Project. Contributors work on behalf of and are responsible to the larger Project Community and we strive to keep the barrier between Contributors and Users as low as possible.
 
