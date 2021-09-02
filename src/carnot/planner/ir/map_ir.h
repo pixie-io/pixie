@@ -85,6 +85,8 @@ class MapIR : public OperatorIR {
     return SetRelation(rel);
   }
 
+  Status UpdateOpAfterParentTypesResolvedImpl() override;
+
  protected:
   StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
       const absl::flat_hash_set<std::string>& output_colnames) override;

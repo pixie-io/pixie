@@ -405,7 +405,6 @@ TEST_F(SplitterTest, union_operator) {
   auto mem_src2 = MakeMemSource("cpu", cpu_relation);
   auto union_op = MakeUnion({mem_src1, mem_src2});
   MakeMemSink(union_op, "out");
-  EXPECT_OK(union_op->SetRelationFromParents());
 
   for (const auto union_parent : union_op->parents()) {
     EXPECT_MATCH(union_parent, MemorySource());

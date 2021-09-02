@@ -165,10 +165,7 @@ TEST_F(PruneUnusedColumnsRuleTest, multiparent) {
       MakeJoin({mem_src1, mem_src2}, "inner", relation0, relation1,
                std::vector<std::string>{"col1"}, std::vector<std::string>{"col2"}, {"_left", ""});
 
-  std::vector<std::string> join_out_cols{"right_only", "col2_right", "left_only", "col1_left"};
-  ASSERT_OK(join_op->SetOutputColumns(join_out_cols,
-                                      {MakeColumn("right_only", 1), MakeColumn("col2", 1),
-                                       MakeColumn("left_only", 0), MakeColumn("col1", 0)}));
+  std::vector<std::string> join_out_cols{"left_only", "col1_left", "right_only", "col2_right"};
   Relation join_relation{{types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
                           types::DataType::INT64},
                          join_out_cols};
@@ -199,14 +196,14 @@ TEST_F(PruneUnusedColumnsRuleTest, multiparent) {
 
   // Check join
   Relation new_join_relation{{types::DataType::INT64, types::DataType::INT64},
-                             {"right_only", "col1_left"}};
+                             {"col1_left", "right_only"}};
   EXPECT_EQ(new_join_relation, join_op->relation());
   EXPECT_EQ(2, join_op->output_columns().size());
-  EXPECT_EQ("right_only", join_op->output_columns()[0]->col_name());
-  EXPECT_EQ(1, join_op->output_columns()[0]->container_op_parent_idx());
-  EXPECT_EQ("col1", join_op->output_columns()[1]->col_name());
-  EXPECT_EQ(0, join_op->output_columns()[1]->container_op_parent_idx());
-  EXPECT_THAT(join_op->column_names(), ElementsAre("right_only", "col1_left"));
+  EXPECT_EQ("col1", join_op->output_columns()[0]->col_name());
+  EXPECT_EQ(0, join_op->output_columns()[0]->container_op_parent_idx());
+  EXPECT_EQ("right_only", join_op->output_columns()[1]->col_name());
+  EXPECT_EQ(1, join_op->output_columns()[1]->container_op_parent_idx());
+  EXPECT_THAT(join_op->column_names(), ElementsAre("col1_left", "right_only"));
 
   // Check mem sink, should be unchanged
   EXPECT_EQ(sink_relation, sink->relation());

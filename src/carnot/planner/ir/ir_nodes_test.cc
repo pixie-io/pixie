@@ -24,6 +24,7 @@
 #include <pypa/ast/ast.hh>
 
 #include <sole.hpp>
+#include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/ir/ir.h"
 #include "src/carnot/planner/ir/pattern_match.h"
@@ -34,6 +35,7 @@
 namespace px {
 namespace carnot {
 namespace planner {
+using compiler::ResolveTypesRule;
 using ::px::testing::proto::EqualsProto;
 using table_store::schema::Relation;
 using ::testing::ElementsAre;
@@ -1026,7 +1028,6 @@ TEST_F(CloneTests, union_clone) {
   auto mem_src2 = MakeMemSource(MakeRelation());
 
   auto union_op = MakeUnion({mem_src1, mem_src2});
-  ASSERT_OK(union_op->SetRelationFromParents());
 
   auto out = graph->Clone();
 
@@ -1115,7 +1116,7 @@ TEST_F(CloneTests, repeated_exprs_copy_selected_nodes) {
   }
 }
 
-class ToProtoTests : public OperatorTests {};
+using ToProtoTests = ASTVisitorTest;
 constexpr char kExpectedGRPCSourcePb[] = R"proto(
   op_type: GRPC_SOURCE_OPERATOR
   grpc_source_op {
@@ -1316,14 +1317,17 @@ TEST_F(ToProtoTests, UnionNoTime) {
   std::reverse(std::begin(column_types), std::end(column_types));
   Relation relation2 = Relation(column_types, column_names);
 
-  auto mem_src1 = MakeMemSource(relation);
-  auto mem_src2 = MakeMemSource(relation2);
+  auto mem_src1 = MakeMemSource("source1", relation);
+  compiler_state_->relation_map()->emplace("source1", relation);
+  auto mem_src2 = MakeMemSource("source2", relation2);
+  compiler_state_->relation_map()->emplace("source2", relation2);
   auto union_op = MakeUnion({mem_src1, mem_src2});
 
   EXPECT_OK(union_op->SetRelation(relation));
 
   EXPECT_FALSE(union_op->HasColumnMappings());
-  EXPECT_OK(union_op->SetRelationFromParents());
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
   EXPECT_TRUE(union_op->HasColumnMappings());
 
   planpb::Operator pb;
@@ -1351,16 +1355,19 @@ TEST_F(ToProtoTests, UnionHasTime) {
   std::vector<std::string> column_names = {"time_", "col1"};
   std::vector<types::DataType> column_types = {types::DataType::TIME64NS, types::DataType::INT64};
   Relation relation(column_types, column_names);
-  auto mem_src1 = MakeMemSource(relation);
+  auto mem_src1 = MakeMemSource("source1", relation);
+  compiler_state_->relation_map()->emplace("source1", relation);
   std::reverse(std::begin(column_names), std::end(column_names));
   std::reverse(std::begin(column_types), std::end(column_types));
   Relation relation2(column_types, column_names);
-  auto mem_src2 = MakeMemSource(relation2);
+  auto mem_src2 = MakeMemSource("source2", relation2);
+  compiler_state_->relation_map()->emplace("source2", relation2);
   auto union_op = MakeUnion({mem_src1, mem_src2});
 
   EXPECT_OK(union_op->SetRelation(mem_src1->relation()));
   EXPECT_FALSE(union_op->HasColumnMappings());
-  EXPECT_OK(union_op->SetRelationFromParents());
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
   EXPECT_TRUE(union_op->HasColumnMappings());
 
   planpb::Operator pb;
@@ -2042,9 +2049,14 @@ TEST_F(OperatorTests, union_prune_outputs) {
   Relation relation2{{types::DataType::FLOAT64, types::DataType::FLOAT64, types::DataType::INT64,
                       types::DataType::FLOAT64},
                      {"cpu1", "cpu2", "count", "cpu0"}};
-
-  auto union_op = MakeUnion({MakeMemSource(relation1), MakeMemSource(relation2)});
-  ASSERT_OK(union_op->SetRelationFromParents());
+  auto mem_src1 = MakeMemSource(relation1);
+  ASSERT_OK(mem_src1->SetResolvedType(TableType::Create(relation1)));
+  auto mem_src2 = MakeMemSource(relation2);
+  ASSERT_OK(mem_src2->SetResolvedType(TableType::Create(relation2)));
+  auto union_op = MakeUnion({mem_src1, mem_src2});
+  ASSERT_OK(union_op->UpdateOpAfterParentTypesResolved());
+  ASSERT_OK(union_op->SetResolvedType(TableType::Create(relation1)));
+  ASSERT_OK(union_op->SetRelation(relation1));
 
   EXPECT_OK(union_op->PruneOutputColumnsTo({"cpu2", "count"}));
   EXPECT_EQ(2, union_op->column_mappings().size());

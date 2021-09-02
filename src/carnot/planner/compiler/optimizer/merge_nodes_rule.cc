@@ -17,8 +17,10 @@
  */
 
 #include "src/carnot/planner/compiler/optimizer/merge_nodes_rule.h"
-#include "src/carnot/planner/compiler/analyzer/operator_relation_rule.h"
+#include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
 #include "src/carnot/planner/compiler/analyzer/source_relation_rule.h"
+#include "src/carnot/planner/ir/map_ir.h"
+#include "src/carnot/planner/ir/operator_ir.h"
 
 #include <algorithm>
 #include <queue>
@@ -342,6 +344,10 @@ StatusOr<OperatorIR*> MergeNodesRule::MergeOps(IR* graph,
     SourceRelationRule src_rule(compiler_state_);
     PL_ASSIGN_OR_RETURN(bool result, src_rule.Apply(new_src));
     DCHECK(result);
+
+    new_src->ClearResolvedType();
+    ResolveTypesRule rule(compiler_state_);
+    PL_RETURN_IF_ERROR(rule.Apply(new_src));
     return new_src;
 
   } else if (Match(base_op, Map())) {
@@ -402,9 +408,9 @@ StatusOr<OperatorIR*> MergeNodesRule::MergeOps(IR* graph,
     return base_op->CreateIRNodeError("Can't optimize $0", base_op->DebugString());
   }
   DCHECK_NE(merged_op, nullptr);
-  PL_RETURN_IF_ERROR(ResolveOperatorType(merged_op, compiler_state_));
   merged_op->ClearRelation();
-  OperatorRelationRule rule(compiler_state_);
+  merged_op->ClearResolvedType();
+  ResolveTypesRule rule(compiler_state_);
   PL_ASSIGN_OR_RETURN(bool did_apply, rule.Apply(merged_op));
   DCHECK(did_apply) << merged_op->DebugString();
   return merged_op;
@@ -415,7 +421,7 @@ StatusOr<MapIR*> MakeNoOpMap(IR* graph, CompilerState* compiler_state, OperatorI
                       graph->CreateNode<MapIR>(op_to_copy->ast(), op_to_copy, ColExpressionVector{},
                                                /* keep_input_columns */ true));
 
-  OperatorRelationRule rule(compiler_state);
+  ResolveTypesRule rule(compiler_state);
   PL_ASSIGN_OR_RETURN(bool did_change, rule.Apply(map));
   DCHECK(did_change);
   return map;

@@ -261,6 +261,7 @@ TEST_F(TypeResolutionTest, join) {
   EXPECT_TRUE(mem_src1->is_type_resolved());
   ASSERT_OK(ResolveOperatorType(mem_src2, compiler_state_.get()));
   EXPECT_TRUE(mem_src2->is_type_resolved());
+  ASSERT_OK(join->UpdateOpAfterParentTypesResolved());
   ASSERT_OK(ResolveOperatorType(join, compiler_state_.get()));
   EXPECT_TRUE(join->is_type_resolved());
 

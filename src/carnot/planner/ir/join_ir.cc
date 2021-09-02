@@ -15,10 +15,11 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+#include <map>
 
-#include "src/carnot/planner/ir/join_ir.h"
 #include "src/carnot/planner/ir/column_ir.h"
 #include "src/carnot/planner/ir/ir.h"
+#include "src/carnot/planner/ir/join_ir.h"
 
 namespace px {
 namespace carnot {
@@ -212,42 +213,104 @@ StatusOr<absl::flat_hash_set<std::string>> JoinIR::PruneOutputColumnsToImpl(
   return kept_columns;
 }
 
-Status JoinIR::ResolveType(CompilerState* compiler_state) {
-  DCHECK_EQ(2, parent_types().size());
+Status JoinIR::UpdateOpAfterParentTypesResolvedImpl() {
+  DCHECK_EQ(2UL, parents().size());
   const auto& [left_type, right_type] = left_right_table_types();
   const auto& [left_suffix, right_suffix] = left_right_suffixs();
 
-  auto new_table = std::static_pointer_cast<TableType>(left_type->Copy());
-  for (const auto& [col_name, col_type] : *right_type) {
-    if (!new_table->HasColumn(col_name)) {
-      new_table->AddColumn(col_name, col_type);
-      continue;
-    }
+  absl::flat_hash_set<std::string> left_column_names(left_type->ColumnNames().begin(),
+                                                     left_type->ColumnNames().end());
+  DCHECK_EQ(left_column_names.size(), left_type->ColumnNames().size())
+      << "Left relation has duplicate columns, should have caught this earlier.";
 
-    // If the column already exists, we rename the column from the left table with the left suffix,
-    // and and the column from the right with the right suffix.
-    auto new_left_col_name = absl::Substitute("$0$1", col_name, left_suffix);
-    const auto err_fmt_string =
-        "duplicate column '$0' after merge. Change the specified suffixes ('$1','$2') to fix";
-    // If the left_suffix is empty, then we can skip checking and renaming.
-    if (new_left_col_name != col_name) {
-      if (new_table->HasColumn(new_left_col_name)) {
-        return CreateIRNodeError(err_fmt_string, new_left_col_name, left_suffix, right_suffix);
-      }
-      new_table->RenameColumn(col_name, new_left_col_name);
-    }
+  absl::flat_hash_set<std::string> duplicate_column_names;
+  struct LeftRightIndex {
+    size_t index;
+    bool is_left;
+  };
+  std::multimap<std::string, LeftRightIndex> column_name_to_index;
+  size_t idx = 0;
+  for (auto col_name : left_type->ColumnNames()) {
+    column_name_to_index.emplace(col_name, LeftRightIndex{idx, true});
+    idx++;
+  }
+  for (auto col_name : right_type->ColumnNames()) {
+    column_name_to_index.emplace(col_name, LeftRightIndex{idx, false});
+    idx++;
 
-    auto new_right_col_name = absl::Substitute("$0$1", col_name, right_suffix);
-    if (new_table->HasColumn(new_right_col_name)) {
-      return CreateIRNodeError(err_fmt_string, new_right_col_name, left_suffix, right_suffix);
+    if (left_column_names.contains(col_name)) {
+      duplicate_column_names.insert(col_name);
     }
-    new_table->AddColumn(new_right_col_name, col_type);
   }
 
-  // We need to resolve all of the output columns if they exist, because we haven't yet merged the
-  // join output columns logic from OperatorRelationRule into here.
-  for (auto col : output_columns_) {
-    PL_RETURN_IF_ERROR(ResolveExpressionType(col, compiler_state, {left_type, right_type}));
+  // Resolve any of the duplicates, check to see if there are duplicates afterwards
+  for (auto dup_name : duplicate_column_names) {
+    // Since dup_name is always in column_name_to_index, left_index, and right_index can never be
+    // uninitialized after the for loop below, but gcc isn't smart enough to know this so we have to
+    // initialize them.
+    size_t left_index = 0;
+    size_t right_index = 0;
+    auto index_range = column_name_to_index.equal_range(dup_name);
+    for (auto it = index_range.first; it != index_range.second; ++it) {
+      if (it->second.is_left) {
+        left_index = it->second.index;
+      } else {
+        right_index = it->second.index;
+      }
+    }
+    column_name_to_index.erase(dup_name);
+
+    std::string left_column = absl::Substitute("$0$1", dup_name, left_suffix);
+    std::string right_column = absl::Substitute("$0$1", dup_name, right_suffix);
+
+    std::string err_string = absl::Substitute(
+        "duplicate column '$0' after merge. Change the specified suffixes ('$1','$2') to fix "
+        "this",
+        "$0", left_suffix, right_suffix);
+
+    // Make sure that the new left_column doesn't already exist in the column names.
+    if (column_name_to_index.count(left_column)) {
+      return CreateIRNodeError(err_string, left_column);
+    }
+    // Insert before checking right column to make sure left_column != right_column. Saves a check.
+    column_name_to_index.emplace(left_column, LeftRightIndex{left_index, true});
+    if (column_name_to_index.count(right_column)) {
+      return CreateIRNodeError(err_string, right_column);
+    }
+    column_name_to_index.emplace(right_column, LeftRightIndex{right_index, false});
+  }
+  std::vector<std::string> output_column_names;
+  output_column_names.resize(column_name_to_index.size());
+  for (const auto& [col_name, lr_index] : column_name_to_index) {
+    output_column_names[lr_index.index] = col_name;
+  }
+
+  int64_t left_idx = 0;
+  int64_t right_idx = 1;
+  if (specified_as_right()) {
+    left_idx = 1;
+    right_idx = 0;
+  }
+  std::vector<ColumnIR*> output_columns;
+  for (auto col_name : left_type->ColumnNames()) {
+    PL_ASSIGN_OR_RETURN(ColumnIR * col, graph()->CreateNode<ColumnIR>(ast(), col_name, left_idx));
+    output_columns.push_back(col);
+  }
+  for (auto col_name : right_type->ColumnNames()) {
+    PL_ASSIGN_OR_RETURN(ColumnIR * col, graph()->CreateNode<ColumnIR>(ast(), col_name, right_idx));
+    output_columns.push_back(col);
+  }
+
+  return SetOutputColumns(output_column_names, output_columns);
+}
+
+Status JoinIR::ResolveType(CompilerState* compiler_state) {
+  DCHECK_EQ(2, parent_types().size());
+  auto new_table = TableType::Create();
+  for (const auto& [idx, col] : Enumerate(output_columns_)) {
+    PL_RETURN_IF_ERROR(ResolveExpressionType(col, compiler_state, parent_types()));
+    auto col_name = column_names_[idx];
+    new_table->AddColumn(col_name, col->resolved_type());
   }
 
   return SetResolvedType(new_table);

@@ -20,7 +20,6 @@
 
 #include <gtest/gtest.h>
 
-#include "src/carnot/planner/compiler/analyzer/operator_relation_rule.h"
 #include "src/carnot/planner/compiler/analyzer/propagate_expression_annotations_rule.h"
 #include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
 #include "src/carnot/planner/compiler/test_utils.h"
@@ -129,16 +128,6 @@ TEST_F(PropagateExpressionAnnotationsRuleTest, join) {
   // PropagateExpressionAnnotationsRule.
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));
-  // Use this to set output columns, this rule will run before PropagateExpressionAnnotationsRule.
-  OperatorRelationRule op_rel_rule(compiler_state_.get());
-  // Loop to make sure we fully execute the relation rule. Necessary because Map not guaranteed to
-  // be seen by rule before Join.
-  bool did_change = true;
-  while (did_change) {
-    auto result = op_rel_rule.Execute(graph.get());
-    ASSERT_OK(result);
-    did_change = result.ValueOrDie();
-  }
 
   auto default_annotations = ExpressionIR::Annotations();
 
@@ -236,14 +225,6 @@ TEST_F(PropagateExpressionAnnotationsRuleTest, union) {
   // PropagateExpressionAnnotationsRule.
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));
-  OperatorRelationRule op_rel_rule(compiler_state_.get());
-  // Use this to set output columns, this rule will run before PropagateExpressionAnnotationsRule.
-  bool did_change = true;
-  do {
-    auto result = op_rel_rule.Execute(graph.get());
-    ASSERT_OK(result);
-    did_change = result.ConsumeValueOrDie();
-  } while (did_change);
 
   PropagateExpressionAnnotationsRule rule;
   auto result = rule.Execute(graph.get());

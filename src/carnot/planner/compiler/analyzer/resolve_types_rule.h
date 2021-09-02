@@ -36,7 +36,6 @@ class ResolveTypesRule : public Rule {
   explicit ResolveTypesRule(CompilerState* compiler_state)
       : Rule(compiler_state, /*use_topo*/ true, /*reverse_topological_execution*/ false) {}
 
- protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
 };
 

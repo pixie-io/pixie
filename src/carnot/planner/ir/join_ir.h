@@ -100,8 +100,8 @@ class JoinIR : public OperatorIR {
       left_idx = 1;
       right_idx = 0;
     }
-    auto left_type = std::static_pointer_cast<TableType>(parent_types()[left_idx]);
-    auto right_type = std::static_pointer_cast<TableType>(parent_types()[right_idx]);
+    auto left_type = parents()[left_idx]->resolved_table_type();
+    auto right_type = parents()[right_idx]->resolved_table_type();
     return std::make_tuple(left_type, right_type);
   }
 
@@ -116,6 +116,8 @@ class JoinIR : public OperatorIR {
   }
 
   Status ResolveType(CompilerState* compiler_state);
+
+  Status UpdateOpAfterParentTypesResolvedImpl() override;
 
  protected:
   StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(

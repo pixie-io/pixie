@@ -106,44 +106,6 @@ Status UnionIR::SetColumnMappings(const std::vector<InputColumnMapping>& column_
   return Status::OK();
 }
 
-Status UnionIR::SetRelationFromParents() {
-  DCHECK(!default_column_mapping_)
-      << "Default column mapping set on using the SetRelationFromParents call.";
-  DCHECK(!parents().empty());
-
-  std::vector<Relation> relations;
-  OperatorIR* base_parent = parents()[0];
-  Relation base_relation = base_parent->relation();
-  PL_RETURN_IF_ERROR(SetRelation(base_relation));
-
-  std::vector<InputColumnMapping> mappings;
-  for (const auto& [parent_idx, parent] : Enumerate(parents())) {
-    const Relation& cur_relation = parent->relation();
-    if (cur_relation.NumColumns() != base_relation.NumColumns()) {
-      return CreateIRNodeError(
-          "Table schema disagreement between parent ops $0 and $1 of $2. $0: $3 vs $1: $4. $5",
-          base_parent->DebugString(), parent->DebugString(), DebugString(),
-          base_relation.DebugString(), cur_relation.DebugString(), "Column count wrong.");
-    }
-    InputColumnMapping column_mapping;
-    for (const std::string& col_name : base_relation.col_names()) {
-      types::DataType col_type = base_relation.GetColumnType(col_name);
-      if (!cur_relation.HasColumn(col_name) || cur_relation.GetColumnType(col_name) != col_type) {
-        return CreateIRNodeError(
-            "Table schema disagreement between parent ops $0 and $1 of $2. $0: $3 vs $1: $4. $5",
-            base_parent->DebugString(), parent->DebugString(), DebugString(),
-            base_relation.DebugString(), cur_relation.DebugString(),
-            absl::Substitute("Missing or wrong type for $0.", col_name));
-      }
-      PL_ASSIGN_OR_RETURN(auto col_node, graph()->CreateNode<ColumnIR>(
-                                             ast(), col_name, /*parent_op_idx*/ parent_idx));
-      column_mapping.push_back(col_node);
-    }
-    mappings.push_back(column_mapping);
-  }
-  return SetColumnMappings(mappings);
-}
-
 Status UnionIR::SetDefaultColumnMapping() {
   if (!IsRelationInit()) {
     return CreateIRNodeError("Relation is not initialized yet");
@@ -194,15 +156,66 @@ StatusOr<absl::flat_hash_set<std::string>> UnionIR::PruneOutputColumnsToImpl(
   return kept_columns;
 }
 
+static inline std::string TypeToOldStyleDebugString(std::shared_ptr<TableType> type) {
+  std::vector<std::string> type_parts;
+  for (const auto& [col_name, col_type] : *type) {
+    DCHECK(col_type->IsValueType());
+    auto val_type = std::static_pointer_cast<ValueType>(col_type);
+    std::string data_type(ToString(val_type->data_type()));
+    type_parts.push_back(col_name + ":" + data_type);
+  }
+  return "[" + absl::StrJoin(type_parts, ", ") + "]";
+}
+
+Status UnionIR::UpdateOpAfterParentTypesResolvedImpl() {
+  DCHECK_GT(parents().size(), 0);
+  auto base_parent_type = parents()[0]->resolved_table_type();
+
+  std::vector<InputColumnMapping> mappings;
+  for (const auto& [parent_idx, parent] : Enumerate(parents())) {
+    auto parent_type = parent->resolved_table_type();
+
+    if (parent_type->ColumnNames().size() != base_parent_type->ColumnNames().size()) {
+      return CreateIRNodeError(
+          "Table schema disagreement between parent ops $0 and $1 of $2. $0: $3 vs $1: $4. $5",
+          parents()[0]->DebugString(), parent->DebugString(), DebugString(),
+          TypeToOldStyleDebugString(base_parent_type), TypeToOldStyleDebugString(parent_type),
+          "Column count wrong.");
+    }
+
+    InputColumnMapping column_mapping;
+    for (const auto& [col_name, col_type] : *base_parent_type) {
+      DCHECK(col_type->IsValueType());
+      auto base_col_val_type = std::static_pointer_cast<ValueType>(col_type);
+      if (!parent_type->HasColumn(col_name)) {
+        return CreateIRNodeError(
+            "Table schema disagreement between parent ops $0 and $1 of $2. $0: $3 vs $1: $4. $5",
+            parents()[0]->DebugString(), parent->DebugString(), DebugString(),
+            TypeToOldStyleDebugString(base_parent_type), TypeToOldStyleDebugString(parent_type),
+            absl::Substitute("Missing '$0'.", col_name));
+      }
+      auto col_val_type = std::static_pointer_cast<ValueType>(
+          parent_type->GetColumnType(col_name).ConsumeValueOrDie());
+      if (col_val_type->data_type() != base_col_val_type->data_type()) {
+        return CreateIRNodeError(
+            "Table schema disagreement between parent ops $0 and $1 of $2. $0: $3 vs $1: $4. $5",
+            parents()[0]->DebugString(), parent->DebugString(), DebugString(),
+            TypeToOldStyleDebugString(base_parent_type), TypeToOldStyleDebugString(parent_type),
+            absl::Substitute("wrong type for '$0'.", col_name));
+      }
+      PL_ASSIGN_OR_RETURN(auto col_node, graph()->CreateNode<ColumnIR>(
+                                             ast(), col_name, /*parent_op_idx*/ parent_idx));
+      column_mapping.push_back(col_node);
+    }
+    mappings.push_back(column_mapping);
+  }
+  return SetColumnMappings(mappings);
+}
+
 Status UnionIR::ResolveType(CompilerState* /* compiler_state */) {
   DCHECK_LE(1, parent_types().size());
-  // Currently, null values are not supported so all input schemas to a union must be the same.
+  // The types were checked in UpdateOpAfterParentTypesResolved, so no need to check here.
   auto type = parent_types()[0]->Copy();
-  for (const auto& [parent_idx, parent_type] : Enumerate(parent_types())) {
-    PL_UNUSED(parent_idx);
-    PL_UNUSED(parent_type);
-    // TODO(james, PP-2595): Add type checking here.
-  }
   return SetResolvedType(type);
 }
 

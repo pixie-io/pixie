@@ -17,6 +17,7 @@
  */
 
 #include "src/carnot/planner/ir/map_ir.h"
+#include "src/carnot/planner/ir/column_ir.h"
 #include "src/carnot/planner/ir/ir.h"
 
 namespace px {
@@ -124,23 +125,44 @@ Status MapIR::CopyFromNodeImpl(const IRNode* node,
   return SetColExprs(new_col_exprs);
 }
 
+Status MapIR::UpdateOpAfterParentTypesResolvedImpl() {
+  if (!keep_input_columns_) {
+    return Status::OK();
+  }
+
+  ColExpressionVector new_col_exprs;
+
+  absl::flat_hash_set<std::string> new_column_names;
+  for (auto expr : col_exprs_) {
+    new_column_names.insert(expr.name);
+  }
+
+  DCHECK_EQ(1UL, parents().size());
+  auto parent_table_type = parents()[0]->resolved_table_type();
+  for (auto col_name : parent_table_type->ColumnNames()) {
+    // If this column is being overwritten with a new expression, skip it here.
+    if (new_column_names.contains(col_name)) {
+      continue;
+    }
+    // Otherwise, bring over the column from the previous relation.
+    PL_ASSIGN_OR_RETURN(ColumnIR * col_ir,
+                        graph()->CreateNode<ColumnIR>(ast(), col_name, 0 /*parent_op_idx*/));
+    new_col_exprs.push_back(ColumnExpression(col_name, col_ir));
+  }
+  for (auto expr : col_exprs_) {
+    new_col_exprs.push_back(expr);
+  }
+
+  keep_input_columns_ = false;
+  PL_RETURN_IF_ERROR(SetColExprs(new_col_exprs));
+  return Status::OK();
+}
+
 Status MapIR::ResolveType(CompilerState* compiler_state) {
   DCHECK_EQ(1, parent_types().size());
+  // keep_input_columns_ = true case should be handled by UpdateOpAfterParentTypesResolvedImpl.
+  DCHECK(!keep_input_columns_);
   auto table_type = TableType::Create();
-  if (keep_input_columns_) {
-    absl::flat_hash_set<std::string> col_names;
-    for (const auto& col_expr : col_exprs_) {
-      col_names.insert(col_expr.name);
-    }
-    auto parent_table_type = std::static_pointer_cast<TableType>(parent_types()[0]);
-    for (const auto& [name, type] : *parent_table_type) {
-      if (col_names.contains(name)) {
-        // Skip parent columns that are being overwritten by the new column expressions.
-        continue;
-      }
-      table_type->AddColumn(name, type);
-    }
-  }
   for (const auto& col_expr : col_exprs_) {
     PL_RETURN_IF_ERROR(ResolveExpressionType(col_expr.node, compiler_state, parent_types()));
     table_type->AddColumn(col_expr.name, col_expr.node->resolved_type());

@@ -173,7 +173,7 @@ TEST_F(SplitPEMAndKelvinOnlyUDFOperatorRuleTest, name_collision) {
 
 TEST_F(SplitPEMAndKelvinOnlyUDFOperatorRuleTest, filter) {
   // Kelvin-only plan
-  MemorySourceIR* src1 = MakeMemSource("http_events");
+  MemorySourceIR* src1 = MakeMemSource("http_events", {"remote_addr", "req_path"});
   ASSERT_OK(
       src1->SetRelation(Relation({types::STRING, types::STRING}, {"remote_addr", "req_path"})));
   auto input1 = MakeColumn("remote_addr", 0);

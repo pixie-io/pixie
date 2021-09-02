@@ -331,6 +331,7 @@ Status ResolveOperatorType(OperatorIR* op, CompilerState* compiler_state) {
     return Status::OK();
   }
   op->PullParentTypes();
+  PL_RETURN_IF_ERROR(op->UpdateOpAfterParentTypesResolved());
   switch (op->type()) {
 #undef PL_IR_NODE
 #define PL_IR_NODE(NAME)    \

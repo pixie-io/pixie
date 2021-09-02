@@ -157,6 +157,17 @@ class OperatorIR : public IRNode {
     return std::static_pointer_cast<TableType>(resolved_type());
   }
 
+  virtual Status UpdateOpAfterParentTypesResolvedImpl() { return Status::OK(); }
+
+  // Some operators must do things (eg. Join's have to work out output columns, map's have to
+  // deal with keep_input_columns, etc) after their parents' types have been resolved.
+  // This function gets called after all the parent types are resolved but before ResolveType is
+  // called on the operator.
+  Status UpdateOpAfterParentTypesResolved() {
+    PL_RETURN_IF_ERROR(UpdateOpAfterParentTypesResolvedImpl());
+    return Status::OK();
+  }
+
  protected:
   explicit OperatorIR(int64_t id, IRNodeType type) : IRNode(id, type) {}
 

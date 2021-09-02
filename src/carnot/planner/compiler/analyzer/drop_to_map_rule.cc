@@ -29,7 +29,7 @@ namespace compiler {
 using table_store::schema::Relation;
 
 StatusOr<bool> DropToMapOperatorRule::Apply(IRNode* ir_node) {
-  if (Match(ir_node, UnresolvedReadyOp(Drop()))) {
+  if (Match(ir_node, Drop())) {
     return DropToMap(static_cast<DropIR*>(ir_node));
   }
   return false;

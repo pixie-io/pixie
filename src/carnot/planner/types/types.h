@@ -69,6 +69,7 @@ class ValueType : public BaseType {
   bool operator==(const ValueType& other) const {
     return (data_type_ == other.data_type()) && (semantic_type_ == other.semantic_type());
   }
+  bool operator!=(const ValueType& other) const { return !(*this == other); }
 
   std::string DebugString() const override {
     return absl::Substitute("ValueType($0, $1)", types::ToString(data_type_),
@@ -153,7 +154,7 @@ class TableType : public BaseType {
 
   TypePtr Copy() const override {
     auto copy = TableType::Create();
-    for (const auto& [name, type] : map_) {
+    for (const auto& [name, type] : *this) {
       copy->AddColumn(name, type);
     }
     return copy;
@@ -174,7 +175,7 @@ class TableType : public BaseType {
 
   std::string DebugString() const override {
     std::vector<std::string> col_debug_strings;
-    for (const auto& [name, type] : map_) {
+    for (const auto& [name, type] : *this) {
       col_debug_strings.push_back(absl::Substitute("$0: $1", name, type->DebugString()));
     }
     return "TableType(" + absl::StrJoin(col_debug_strings, " | ") + ")";

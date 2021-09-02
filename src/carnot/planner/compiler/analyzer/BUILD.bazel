@@ -105,16 +105,6 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "operator_relation_rule_test",
-    srcs = ["operator_relation_rule_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/carnot/planner/compiler:test_utils",
-        "//src/carnot/udf_exporter:cc_library",
-    ],
-)
-
-pl_cc_test(
     name = "propagate_expression_annotations_rule_test",
     srcs = ["propagate_expression_annotations_rule_test.cc"],
     deps = [

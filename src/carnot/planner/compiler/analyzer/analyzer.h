@@ -30,7 +30,6 @@
 #include "src/carnot/planner/compiler/analyzer/drop_to_map_rule.h"
 #include "src/carnot/planner/compiler/analyzer/merge_group_by_into_group_acceptor_rule.h"
 #include "src/carnot/planner/compiler/analyzer/nested_blocking_agg_fn_check_rule.h"
-#include "src/carnot/planner/compiler/analyzer/operator_relation_rule.h"
 #include "src/carnot/planner/compiler/analyzer/propagate_expression_annotations_rule.h"
 #include "src/carnot/planner/compiler/analyzer/remove_group_by_rule.h"
 #include "src/carnot/planner/compiler/analyzer/resolve_metadata_property_rule.h"
@@ -105,7 +104,6 @@ class Analyzer : public RuleExecutor<IR> {
     RuleBatch* intermediate_resolution_batch =
         CreateRuleBatch<FailOnMax>("IntermediateResolution", 100);
     intermediate_resolution_batch->AddRule<ResolveTypesRule>(compiler_state_);
-    intermediate_resolution_batch->AddRule<OperatorRelationRule>(compiler_state_);
     intermediate_resolution_batch->AddRule<DropToMapOperatorRule>(compiler_state_);
   }
 

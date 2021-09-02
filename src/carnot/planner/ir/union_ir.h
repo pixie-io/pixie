@@ -55,12 +55,6 @@ class UnionIR : public OperatorIR {
   Status Init(const std::vector<OperatorIR*>& parents);
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
-  /**
-   * @brief Set the Relation From Parents. This also figures out the relation from parents.
-   *
-   * @return Status error if one occurs.
-   */
-  Status SetRelationFromParents();
 
   /**
    * @brief Sets the column mapping to default no mapping. Used to save effort in creating Relation
@@ -81,6 +75,7 @@ class UnionIR : public OperatorIR {
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override;
 
   Status ResolveType(CompilerState* compiler_state);
+  Status UpdateOpAfterParentTypesResolvedImpl() override;
 
   bool default_column_mapping() const { return default_column_mapping_; }
 
