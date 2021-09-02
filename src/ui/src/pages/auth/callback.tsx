@@ -53,28 +53,7 @@ interface CallbackConfig {
   isEmailUnverified?: boolean;
 }
 
-const CLICodeBox = ({ code }) => (
-  <AuthMessageBox
-    title='Pixie Auth Token'
-    message='Please copy this code, switch to the CLI and paste it there:'
-    code={code}
-  />
-);
-
-const useStyles = makeStyles((theme: Theme) => createStyles({
-  ctaGutter: {
-    marginTop: theme.spacing(3),
-    paddingTop: theme.spacing(3),
-    borderTop: `1px solid ${theme.palette.foreground.grey1}`,
-    width: '80%',
-  },
-}));
-
-const CtaButton = ({ children, ...props }: ButtonProps) => (
-  <Button color='primary' variant='contained' {...props}>{children}</Button>
-);
-
-const trackAuthEvent = (event: string, id: string, email: string): Promise<void> => {
+function trackAuthEvent(event: string, id: string, email: string): Promise<void> {
   if (isValidAnalytics()) {
     return Promise.race([
       new Promise<void>((resolve) => { // Wait for analytics to be sent out before redirecting.
@@ -91,7 +70,106 @@ const trackAuthEvent = (event: string, id: string, email: string): Promise<void>
   }
 
   return Promise.resolve();
-};
+}
+
+function getCtaDetails(config: CallbackConfig) {
+  let ctaMessage: string;
+  let ctaDestination: string;
+  let errorMessage: string;
+  if (config.err.errorType === 'internal') {
+    if (config.signup) {
+      errorMessage = 'We hit a snag in creating an account. Please try again later.';
+      ctaMessage = 'Back to Sign Up';
+      ctaDestination = '/auth/signup';
+    } else if (config.err.errMessage.match(/.*organization.*not.*found.*/g)
+      || config.err.errMessage.match(/.*user.*not.*found.*/g)) {
+      errorMessage = 'We hit a snag trying to authenticate you. User not registered. Please sign up.';
+      // If user or organization not found, direct to sign up page first.
+      ctaMessage = 'Go to Sign Up';
+      ctaDestination = '/auth/signup';
+    } else {
+      errorMessage = 'We hit a snag trying to authenticate you. Please try again later.';
+      ctaMessage = 'Back to Log In';
+      ctaDestination = '/auth/login';
+    }
+  } else {
+    errorMessage = config.err.errMessage;
+    ctaMessage = 'Go Back';
+    ctaDestination = '/';
+  }
+  return { ctaMessage, ctaDestination, errorMessage };
+}
+
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  ctaGutter: {
+    marginTop: theme.spacing(3),
+    paddingTop: theme.spacing(3),
+    borderTop: `1px solid ${theme.palette.foreground.grey1}`,
+    width: '80%',
+  },
+}));
+
+const CLICodeBox = React.memo<{ code: string }>(function CLICodeBox({ code }) {
+  return (
+    <AuthMessageBox
+      title='Pixie Auth Token'
+      message='Please copy this code, switch to the CLI and paste it there:'
+      code={code}
+    />
+  );
+});
+
+const CtaButton = React.memo<ButtonProps>(function CtaButton({ children, ...props }) {
+  return <Button color='primary' variant='contained' {...props}>{children}</Button>;
+});
+
+const UnverifiedEmailMessage = React.memo(function UnverifiedEmailMessage() {
+  const classes = useStyles();
+  const ctaMessage = 'Back to Sign Up';
+  const ctaDestination = '/auth/signup';
+  const cta = React.useMemo(() => (
+    <div className={classes.ctaGutter}>
+      <Link to={ctaDestination} component={CtaButton}>
+        {ctaMessage}
+      </Link>
+    </div>
+  ), [classes.ctaGutter]);
+
+  return (
+    <AuthMessageBox
+      error='recoverable'
+      title='Check your inbox to finish signup.'
+      message='We sent a signup link to your email.'
+      cta={cta}
+    />
+  );
+});
+
+const ErrorMessage = React.memo<{ config: CallbackConfig }>(function ErrorMessage({ config }) {
+  const classes = useStyles();
+  const title = config.signup ? 'Failed to Sign Up' : 'Failed to Log In';
+  const errorDetails = config.err.errorType === 'internal' ? config.err.errMessage : undefined;
+
+  const { ctaMessage, ctaDestination, errorMessage } = getCtaDetails(config);
+
+  const cta = React.useMemo(() => (
+    <div className={classes.ctaGutter}>
+      <Link to={ctaDestination} component={CtaButton}>
+        {ctaMessage}
+      </Link>
+    </div>
+  ), [classes.ctaGutter, ctaDestination, ctaMessage]);
+
+  return (
+    <AuthMessageBox
+      error='recoverable'
+      title={title}
+      message={errorMessage}
+      errorDetails={errorDetails}
+      cta={cta}
+    />
+  );
+});
 
 /**
  * This is the main component to handle the callback from auth.
@@ -99,11 +177,10 @@ const trackAuthEvent = (event: string, id: string, email: string): Promise<void>
  * This component gets the token from Auth0 and either sends it to the CLI or
  * makes a request to Pixie cloud to perform a signup/login.
  */
-export const AuthCallbackPage: React.FC = () => {
+export const AuthCallbackPage: React.FC = React.memo(function AuthCallbackPage() {
   const [config, setConfig] = React.useState<CallbackConfig>(null);
-  const classes = useStyles();
 
-  const setErr = (errType: ErrorType, errMsg: string) => {
+  const setErr = React.useCallback((errType: ErrorType, errMsg: string) => {
     setConfig((c) => ({
       ...c,
       err: {
@@ -112,17 +189,17 @@ export const AuthCallbackPage: React.FC = () => {
       },
       loading: false,
     }));
-  };
+  }, []);
 
-  const handleHTTPError = (err: AxiosError) => {
+  const handleHTTPError = React.useCallback((err: AxiosError) => {
     if (err.code === '401' || err.code === '403' || err.code === '404') {
       setErr('auth', err.response.data);
     } else {
       setErr('internal', err.response.data);
     }
-  };
+  }, [setErr]);
 
-  const performSignup = async (accessToken: string, idToken: string) => {
+  const performSignup = React.useCallback(async (accessToken: string, idToken: string) => {
     let response = null;
     try {
       response = await Axios.post('/api/auth/signup', { accessToken, idToken });
@@ -133,9 +210,9 @@ export const AuthCallbackPage: React.FC = () => {
     }
     await trackAuthEvent('User signed up', response.data.userInfo.userID, response.data.userInfo.email);
     return true;
-  };
+  }, [handleHTTPError]);
 
-  const performUILogin = async (accessToken: string, idToken: string, orgName: string) => {
+  const performUILogin = React.useCallback(async (accessToken: string, idToken: string, orgName: string) => {
     let response = null;
     try {
       response = await Axios.post('/api/auth/login', {
@@ -150,9 +227,9 @@ export const AuthCallbackPage: React.FC = () => {
     }
     await trackAuthEvent('User logged in', response.data.userInfo.userID, response.data.userInfo.email);
     return true;
-  };
+  }, [handleHTTPError]);
 
-  const sendTokenToCLI = async (accessToken: string, idToken: string, redirectURI: string) => {
+  const sendTokenToCLI = React.useCallback(async (accessToken: string, idToken: string, redirectURI: string) => {
     try {
       const response = await redirectGet(redirectURI, { accessToken });
       return response.status === 200 && response.data === 'OK';
@@ -161,9 +238,9 @@ export const AuthCallbackPage: React.FC = () => {
       // If there's an error, we just return a failure.
       return false;
     }
-  };
+  }, [handleHTTPError]);
 
-  const doAuth = async (
+  const doAuth = React.useCallback(async (
     mode: AuthCallbackMode,
     signup: boolean,
     redirectURI: string,
@@ -222,11 +299,11 @@ export const AuthCallbackPage: React.FC = () => {
       ...c,
       loading: false,
     }));
-  };
+  }, [config?.err?.errorType, performSignup, performUILogin, sendTokenToCLI]);
 
-  const handleAccessToken = (token: Token) => {
+  const handleAccessToken = React.useCallback((token: Token) => {
     const params = QueryString.parse(window.location.search.substr(1));
-    let mode: AuthCallbackMode;
+    let mode: AuthCallbackMode = 'ui';
     switch (params.mode) {
       case 'cli_get':
       case 'cli_token':
@@ -234,7 +311,7 @@ export const AuthCallbackPage: React.FC = () => {
         ({ mode } = params);
         break;
       default:
-        mode = 'ui';
+        break;
     }
 
     const location = params.location && String(params.location);
@@ -262,7 +339,7 @@ export const AuthCallbackPage: React.FC = () => {
     }
 
     doAuth(mode, signup, redirectURI, location, orgName, token?.accessToken, token?.idToken).then();
-  };
+  }, [doAuth]);
 
   React.useEffect(() => {
     GetOAuthProvider().handleToken().then(handleAccessToken).catch((err) => {
@@ -271,76 +348,7 @@ export const AuthCallbackPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const renderUnverifiedEmailMessage = () => {
-    const ctaMessage = 'Back to Sign Up';
-    const ctaDestination = '/auth/signup';
-    const cta = (
-      <div className={classes.ctaGutter}>
-        <Link to={ctaDestination} component={CtaButton}>
-          {ctaMessage}
-        </Link>
-      </div>
-    );
-
-    return (
-      <AuthMessageBox
-        error='recoverable'
-        title='Check your inbox to finish signup.'
-        message='We sent a signup link to your email.'
-        cta={cta}
-      />
-    );
-  };
-
-  const renderError = () => {
-    const title = config.signup ? 'Failed to Sign Up' : 'Failed to Log In';
-    const errorDetails = config.err.errorType === 'internal' ? config.err.errMessage : undefined;
-
-    let ctaMessage: string;
-    let ctaDestination: string;
-    let errorMessage: string;
-    if (config.err.errorType === 'internal') {
-      if (config.signup) {
-        errorMessage = 'We hit a snag in creating an account. Please try again later.';
-        ctaMessage = 'Back to Sign Up';
-        ctaDestination = '/auth/signup';
-      } else if (config.err.errMessage.match(/.*organization.*not.*found.*/g)
-        || config.err.errMessage.match(/.*user.*not.*found.*/g)) {
-        errorMessage = 'We hit a snag trying to authenticate you. User not registered. Please sign up.';
-        // If user or organization not found, direct to sign up page first.
-        ctaMessage = 'Go to Sign Up';
-        ctaDestination = '/auth/signup';
-      } else {
-        errorMessage = 'We hit a snag trying to authenticate you. Please try again later.';
-        ctaMessage = 'Back to Log In';
-        ctaDestination = '/auth/login';
-      }
-    } else {
-      errorMessage = config.err.errMessage;
-      ctaMessage = 'Go Back';
-      ctaDestination = '/';
-    }
-
-    const cta = (
-      <div className={classes.ctaGutter}>
-        <Link to={ctaDestination} component={CtaButton}>
-          {ctaMessage}
-        </Link>
-      </div>
-    );
-
-    return (
-      <AuthMessageBox
-        error='recoverable'
-        title={title}
-        message={errorMessage}
-        errorDetails={errorDetails}
-        cta={cta}
-      />
-    );
-  };
-
-  const renderLoadingMessage = () => (
+  const loadingMessage = React.useMemo(() => (
     <AuthMessageBox
       title='Authenticating'
       message={
@@ -348,13 +356,14 @@ export const AuthCallbackPage: React.FC = () => {
           || '...'
       }
     />
-  );
-  const renderMessage = () => {
-    if (config.isEmailUnverified) {
-      return renderUnverifiedEmailMessage();
+  ), [config]);
+
+  const normalMessage = React.useMemo(() => {
+    if (config?.isEmailUnverified) {
+      return <UnverifiedEmailMessage />;
     }
 
-    if (config.mode === 'cli_token') {
+    if (config?.mode === 'cli_token') {
       return (
         <CLICodeBox
           code={config.token}
@@ -362,14 +371,14 @@ export const AuthCallbackPage: React.FC = () => {
       );
     }
 
-    return renderLoadingMessage();
-  };
+    return loadingMessage;
+  }, [config?.isEmailUnverified, config?.mode, config?.token, loadingMessage]);
 
   const loading = !config || config.loading;
   return (
     <BasePage>
-      {loading && renderLoadingMessage()}
-      {!loading && (config.err ? renderError() : renderMessage())}
+      {loading && loadingMessage}
+      {!loading && (config.err ? <ErrorMessage config={config} /> : normalMessage)}
     </BasePage>
   );
-};
+});

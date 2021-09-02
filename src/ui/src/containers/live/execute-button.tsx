@@ -24,15 +24,13 @@ import Tooltip from '@material-ui/core/Tooltip';
 import { ResultsContext } from 'app/context/results-context';
 import { EditorContext } from 'app/context/editor-context';
 import { ScriptContext } from 'app/context/script-context';
-import {
-  Button, Theme, withStyles, WithStyles,
-} from '@material-ui/core';
+import { Button, Theme, makeStyles } from '@material-ui/core';
 import { createStyles } from '@material-ui/styles';
 import { ClusterContext } from 'app/common/cluster-context';
 import { PixieAPIClient, PixieAPIContext } from 'app/api';
 import { GQLClusterStatus } from 'app/types/schema';
 
-const styles = ({ breakpoints, typography }: Theme) => createStyles({
+const useStyles = makeStyles(({ breakpoints, typography, shape }: Theme) => createStyles({
   buttonText: {
     fontWeight: typography.fontWeightBold,
     [breakpoints.down('md')]: {
@@ -42,20 +40,16 @@ const styles = ({ breakpoints, typography }: Theme) => createStyles({
   buttonContainer: {
     height: '100%',
   },
-});
-
-const StyledButton = withStyles((theme: Theme) => createStyles({
-  root: {
+  buttonRoot: {
     height: '100%',
-    borderRadius: theme.shape.borderRadius,
+    borderRadius: shape.borderRadius,
   },
-}))(Button);
-
-type ExecuteScriptButtonProps = WithStyles<typeof styles>;
+}), { name: 'ExecuteScriptButton' });
 
 const CANCELLABILITY_DELAY_MS = 1000;
 
-const ExecuteScriptButtonBare = ({ classes }: ExecuteScriptButtonProps) => {
+const ExecuteScriptButton: React.FC = React.memo(function ExecuteScriptButton() {
+  const classes = useStyles();
   const cloudClient = (React.useContext(PixieAPIContext) as PixieAPIClient).getCloudClient();
   const { selectedClusterStatus } = React.useContext(ClusterContext);
   const { loading, streaming } = React.useContext(ResultsContext);
@@ -81,19 +75,17 @@ const ExecuteScriptButtonBare = ({ classes }: ExecuteScriptButtonProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, streaming, healthy, cancelExecution]);
 
-  let tooltipTitle;
-  if (loading || streaming) {
-    tooltipTitle = 'Executing';
-  } else if (!healthy) {
-    tooltipTitle = 'Cluster Disconnected';
-  } else {
-    tooltipTitle = 'Execute script';
-  }
+  const tooltipTitle = React.useMemo(() => {
+    if (loading || streaming) return 'Executing';
+    if (!healthy) return 'Cluster Disconnected';
+    return 'Execute script';
+  }, [loading, streaming, healthy]);
 
   return (
     <Tooltip title={tooltipTitle}>
       <div className={classes.buttonContainer}>
-        <StyledButton
+        <Button
+          classes={React.useMemo(() => ({ root: classes.buttonRoot }), [classes.buttonRoot])}
           variant={cancellable ? 'outlined' : 'contained'}
           color='primary'
           disabled={!healthy || ((loading || streaming) && !cancellable)}
@@ -102,11 +94,10 @@ const ExecuteScriptButtonBare = ({ classes }: ExecuteScriptButtonProps) => {
           startIcon={cancellable ? <StopIcon /> : <PlayIcon />}
         >
           <span className={classes.buttonText}>{cancellable ? 'Stop' : 'Run'}</span>
-        </StyledButton>
+        </Button>
       </div>
     </Tooltip>
   );
-};
+});
 
-const ExecuteScriptButton = withStyles(styles)(ExecuteScriptButtonBare);
 export default ExecuteScriptButton;
