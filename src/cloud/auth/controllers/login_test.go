@@ -1703,3 +1703,43 @@ func TestServer_CreateOrgAndInviteUser(t *testing.T) {
 	require.NoError(t, err)
 	assert.Regexp(t, "self-service/recovery/methods", resp.InviteLink)
 }
+
+func TestServer_GetAuthConnectorToken(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	orgPb := utils.ProtoFromUUIDStrOrNil(orgID)
+	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	userPb := utils.ProtoFromUUIDStrOrNil(userID)
+
+	sCtx := authcontext.New()
+	sCtx.Claims = claimsutils.GenerateJWTForUser(userID, orgID, "test@test.com", time.Now(), "pixie")
+	ctx := authcontext.NewContext(context.Background(), sCtx)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+
+	mockProfile.EXPECT().
+		GetUser(gomock.Any(), userPb).
+		Return(&profilepb.UserInfo{
+			ID:    userPb,
+			OrgID: orgPb,
+			Email: "test@test.com",
+		}, nil)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
+	env, err := authenv.New(mockProfile)
+	require.NoError(t, err)
+	s, err := controllers.NewServer(env, nil, nil)
+	require.NoError(t, err)
+
+	resp, err := s.GetAuthConnectorToken(ctx, &authpb.GetAuthConnectorTokenRequest{
+		ClusterName: "test-cluster",
+	})
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	// Make sure expiry time is in the future.
+	verifyToken(t, resp.Token, userID, orgID, resp.ExpiresAt, "jwtkey")
+}

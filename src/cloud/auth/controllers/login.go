@@ -20,11 +20,11 @@ package controllers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"regexp"
 	"time"
 
+	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
 	"github.com/spf13/viper"
@@ -48,6 +48,8 @@ const (
 	AugmentedTokenValidDuration = 90 * time.Minute
 	// SupportAccountDomain is the domain name of the Pixie support account which can access the org provided at login.
 	SupportAccountDomain = "pixie.support"
+	// AuthConnectorTokenValidDuration is the duration that the auth connector token is valid from the current time.
+	AuthConnectorTokenValidDuration = 10 * time.Minute
 )
 
 func (s *Server) getUserInfoFromToken(accessToken string) (string, *UserInfo, error) {
@@ -584,6 +586,43 @@ func (s *Server) CreateOrgAndInviteUser(ctx context.Context, req *authpb.CreateO
 }
 
 // GetAuthConnectorToken uses the AuthProvider to generate a short-lived token that can be used to authenticate as a user.
-func (s *Server) GetAuthConnectorToken(ctx context.Context, in *authpb.GetAuthConnectorTokenRequest) (*authpb.GetAuthConnectorTokenResponse, error) {
-	return nil, errors.New("Not yet implemented")
+func (s *Server) GetAuthConnectorToken(ctx context.Context, req *authpb.GetAuthConnectorTokenRequest) (*authpb.GetAuthConnectorTokenResponse, error) {
+	// Find the org/user currently logged in.
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if sCtx.Claims.GetUserClaims() == nil {
+		return nil, fmt.Errorf("unable to create authConnector token for invalid user")
+	}
+
+        md, _ := metadata.FromIncomingContext(ctx)
+        ctx = metadata.NewOutgoingContext(ctx, md)
+
+	// Fetch userInfo that needs to be included in token.
+	pc := s.env.ProfileClient()
+	userInfo, err := pc.GetUser(ctx, utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID))
+	if err != nil {
+		return nil, fmt.Errorf("unable to create authConnector token for invalid user")
+	}
+
+	// Create access token.
+	now := time.Now()
+	expiresAt := now.Add(AuthConnectorTokenValidDuration)
+	claims := srvutils.GenerateJWTForUser(utils.UUIDFromProtoOrNil(userInfo.ID).String(), utils.UUIDFromProtoOrNil(userInfo.OrgID).String(), userInfo.Email, expiresAt, viper.GetString("domain_name"))
+	mc := srvutils.PBToMapClaims(claims)
+
+	// Add custom fields for auth connector token.
+	mc["ClusterName"] = req.ClusterName
+
+	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, mc).SignedString([]byte(s.env.JWTSigningKey()))
+	if err != nil {
+		return nil, fmt.Errorf("unable to sign authConnector token")
+	}
+
+	return &authpb.GetAuthConnectorTokenResponse{
+		Token:     token,
+		ExpiresAt: expiresAt.Unix(),
+	}, nil
 }
