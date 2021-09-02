@@ -40,6 +40,7 @@ rules:
   - services
   - deployments
   - daemonsets
+  - nodes
   - persistentvolumes
   - persistentvolumeclaims
   - roles

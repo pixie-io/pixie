@@ -36,6 +36,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
+	apiwatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/watch"
@@ -63,6 +64,11 @@ const (
 	statuszCheckInterval = 20 * time.Second
 	// The threshold of number of crashing PEM pods before we declare a cluster degraded.
 	pemCrashingThreshold = 0.25
+
+	// If 25% of the kernel versions are incompatible, then consider Vizier in
+	// a degraded state.
+	kernelVersionDegradedThreshold = .25
+	kernelMinVersion               = "4.14.0"
 )
 
 // HTTPClient is the interface for a simple HTTPClient which can execute "Get".
@@ -73,6 +79,109 @@ type HTTPClient interface {
 type podWithEvents struct {
 	pod    *v1.Pod
 	events []v1.Event
+}
+
+// NodeWatcher is responsible for tracking the nodes from the K8s API and using the NodeInfo to determine
+// whether or not Pixie can successfully collect data on the cluster.
+type nodeWatcher struct {
+	clientset kubernetes.Interface
+
+	nodeKernelValid map[string]bool
+	vizierStateCh   chan<- *vizierState
+	lastRV          string
+}
+
+func (n *nodeWatcher) start(ctx context.Context) {
+	nodeList, err := n.clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		log.WithError(err).Fatal("Could not list nodes")
+	}
+	n.lastRV = nodeList.ResourceVersion
+	// Populate vizierStates with current pod state.
+	for _, node := range nodeList.Items {
+		n.handleNode(node, false)
+	}
+
+	// Start watcher.
+	n.watchNode(ctx)
+}
+
+func nodeIsCompatible(node v1.Node) bool {
+	currentSemVer, err := semver.Make(node.Status.NodeInfo.KernelVersion)
+	if err != nil {
+		log.WithError(err).Error("Failed to parse current Node Kernel version")
+		return true
+	}
+	minSemVer, err := semver.Make(kernelMinVersion)
+	if err != nil {
+		log.WithError(err).Error("Failed to parse minimum Kernel version")
+		return true
+	}
+	return currentSemVer.GE(minSemVer)
+}
+
+func (n *nodeWatcher) getNodeStatus() *vizierState {
+	// Count up number of nodes with incompatible kernel versions. If greater than the threshold, the cluster should be in a degraded
+	// state.
+	totalIncompatible := 0.0
+	for _, compatible := range n.nodeKernelValid {
+		if !compatible {
+			totalIncompatible++
+		}
+	}
+	if totalIncompatible/float64(len(n.nodeKernelValid)) > kernelVersionDegradedThreshold {
+		return &vizierState{Reason: status.KernelVersionsIncompatible}
+	}
+
+	return okState()
+}
+
+func (n *nodeWatcher) handleNode(node v1.Node, deleted bool) {
+	// Track status.
+	if deleted {
+		delete(n.nodeKernelValid, node.Name)
+	} else {
+		// Check kernel compatibility.
+		n.nodeKernelValid[node.Name] = nodeIsCompatible(node)
+	}
+
+	// Send updated status to channel.
+	n.vizierStateCh <- n.getNodeStatus()
+}
+
+func (n *nodeWatcher) watchNode(ctx context.Context) {
+	for {
+		watcher := cache.NewListWatchFromClient(n.clientset.CoreV1().RESTClient(), "nodes", metav1.NamespaceAll, fields.Everything())
+		retryWatcher, err := watch.NewRetryWatcher(n.lastRV, watcher)
+		if err != nil {
+			log.WithError(err).Fatal("Could not start watcher for pvcs")
+		}
+
+		resCh := retryWatcher.ResultChan()
+		for {
+			select {
+			case <-ctx.Done():
+				log.Info("Received cancel, stopping K8s watcher")
+				return
+			case c := <-resCh:
+				s, ok := c.Object.(*metav1.Status)
+				if ok && s.Status == metav1.StatusFailure {
+					log.WithField("status", s.Status).Info("Received failure status in watcher")
+					// Try to start up another watcher instance.
+					break
+				}
+
+				// Update the lastPVCRV, so that if the watcher restarts, it starts at the correct resource version.
+				o, ok := c.Object.(*v1.Node)
+				if !ok {
+					continue
+				}
+
+				n.lastRV = o.ObjectMeta.ResourceVersion
+				n.handleNode(*o, c.Type == apiwatch.Deleted)
+			}
+		}
+	}
 }
 
 // concurrentPodMap wraps a map with concurrency safe read/write operations.
@@ -142,6 +251,10 @@ type VizierMonitor struct {
 	pvcStates *concurrentPVCMap
 	lastPVCRV string
 
+	// States from the various state-updaters, which should be aggregated into a single status.
+	nodeState       *vizierState
+	aggregatedState *vizierState
+
 	vzUpdate func(context.Context, client.Object, ...client.UpdateOption) error
 	vzGet    func(context.Context, types.NamespacedName, client.Object) error
 }
@@ -158,6 +271,8 @@ func (m *VizierMonitor) InitAndStartMonitor(cloudClient *grpc.ClientConn) error 
 	m.podStates = &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWithEvents)}
 	m.pvcStates = &concurrentPVCMap{unsafeMap: make(map[string]*v1.PersistentVolumeClaim)}
 
+	nodeStateCh := make(chan *vizierState)
+
 	err := m.initState()
 	if err != nil {
 		return err
@@ -169,8 +284,17 @@ func (m *VizierMonitor) InitAndStartMonitor(cloudClient *grpc.ClientConn) error 
 	// Watch for future PVC updates.
 	go m.watchK8sPVC()
 
+	// Start node monitor.
+	nodeWatcher := &nodeWatcher{
+		clientset:       m.clientset,
+		nodeKernelValid: make(map[string]bool),
+		vizierStateCh:   nodeStateCh,
+	}
+	go nodeWatcher.start(m.ctx)
+
 	// Start goroutine for periodically pinging statusz endpoints and
 	// reconciling the Vizier status.
+	go m.statusAggregator(nodeStateCh)
 	go m.runReconciler()
 
 	return nil
@@ -609,6 +733,10 @@ func (m *VizierMonitor) getvizierState(vz *pixiev1alpha1.Vizier) *vizierState {
 		return ccState
 	}
 
+	if !isOk(m.aggregatedState) {
+		return m.aggregatedState
+	}
+
 	return okState()
 }
 
@@ -627,8 +755,14 @@ func translateReasonToPhase(reason status.VizierReason) pixiev1alpha1.VizierPhas
 	if reason == status.NATSPodPending {
 		return pixiev1alpha1.VizierPhaseUpdating
 	}
-	if reason == status.VizierVersionTooOld {
-		return pixiev1alpha1.VizierPhaseUnhealthy
+	if reason == status.CloudConnectorPodPending {
+		return pixiev1alpha1.VizierPhaseUpdating
+	}
+	if reason == status.ControlPlanePodsPending {
+		return pixiev1alpha1.VizierPhaseUpdating
+	}
+	if reason == status.MetadataPVCPendingBinding {
+		return pixiev1alpha1.VizierPhaseUpdating
 	}
 	if reason == status.ControlPlanePodsPending {
 		return pixiev1alpha1.VizierPhaseUpdating
@@ -639,10 +773,29 @@ func translateReasonToPhase(reason status.VizierReason) pixiev1alpha1.VizierPhas
 	if reason == status.PEMsSomeInsufficientMemory {
 		return pixiev1alpha1.VizierPhaseDegraded
 	}
+	if reason == status.KernelVersionsIncompatible {
+		return pixiev1alpha1.VizierPhaseDegraded
+	}
 	if reason == status.PEMsHighFailureRate {
 		return pixiev1alpha1.VizierPhaseDegraded
 	}
 	return pixiev1alpha1.VizierPhaseUnhealthy
+}
+
+func (m *VizierMonitor) statusAggregator(nodeStateCh <-chan *vizierState) {
+	for {
+		select {
+		case <-m.ctx.Done():
+			return
+		case u := <-nodeStateCh:
+			m.nodeState = u
+		default:
+			continue
+		}
+
+		// For now, the aggregated state just depends on the node state.
+		m.aggregatedState = m.nodeState
+	}
 }
 
 // runReconciler periodically evaluates the state of the Vizier Cluster and sends the state as an update.

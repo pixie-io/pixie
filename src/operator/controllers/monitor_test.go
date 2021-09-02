@@ -953,3 +953,82 @@ func TestMonitor_getPEMCrashingState(t *testing.T) {
 		})
 	}
 }
+
+func TestMonitor_nodeWatcherHandleNode(t *testing.T) {
+	tests := []struct {
+		name                string
+		previousNodeMap     map[string]bool
+		newNodeName         string
+		newNodeKernel       string
+		expectedReason      status.VizierReason
+		expectedVizierPhase pixiev1alpha1.VizierPhase
+		deleted             bool
+	}{
+		{
+			name: "compatible",
+			previousNodeMap: map[string]bool{
+				"compatibleNode1":   true,
+				"compatibleNode2":   true,
+				"compatibleNode3":   true,
+				"incompatibleNode1": false,
+			},
+			newNodeKernel:       "4.14.0",
+			newNodeName:         "newCompatibleNode",
+			expectedReason:      "",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			deleted:             false,
+		},
+		{
+			name: "incompatible",
+			previousNodeMap: map[string]bool{
+				"compatibleNode1":   true,
+				"incompatibleNode3": true,
+			},
+			newNodeKernel:       "4.13.0",
+			newNodeName:         "newIncompatibleNode",
+			expectedReason:      status.KernelVersionsIncompatible,
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseDegraded,
+			deleted:             false,
+		},
+		{
+			name: "dead",
+			previousNodeMap: map[string]bool{
+				"compatibleNode1":   true,
+				"incompatibleNode3": true,
+				"incompatibleNode1": false,
+			},
+			newNodeKernel:       "4.13.0",
+			newNodeName:         "incompatibleNode1",
+			expectedReason:      "",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			deleted:             true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			vizierStateCh := make(chan *vizierState)
+			n := &nodeWatcher{
+				clientset:       nil,
+				nodeKernelValid: test.previousNodeMap,
+				vizierStateCh:   vizierStateCh,
+			}
+
+			go n.handleNode(v1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: test.newNodeName,
+				},
+				Status: v1.NodeStatus{
+					NodeInfo: v1.NodeSystemInfo{
+						KernelVersion: test.newNodeKernel,
+					},
+				},
+			}, test.deleted)
+
+			update := <-vizierStateCh
+
+			assert.Equal(t, test.expectedReason, update.Reason)
+			assert.Equal(t, test.expectedVizierPhase, translateReasonToPhase(update.Reason))
+		})
+	}
+}

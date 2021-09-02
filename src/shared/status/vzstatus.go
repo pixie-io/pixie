@@ -30,6 +30,7 @@ var reasonToMessageMap = map[VizierReason]string{
 	VizierVersionTooOld: "Vizier version is older by more than one major version and may no longer be supported. Please update to the latest version.",
 	ControlPlaneFailedToScheduleBecauseOfTaints: "The vizier control plane could not be scheduled because taints exist on " +
 		"every node. Consider removing taints from some nodes or manually adding tolerations to each deployment in Vizier.",
+	KernelVersionsIncompatible: "Majority of nodes on the cluster have an incompatible Kernel version. Instrumentation may be incomplete.",
 }
 
 // GetMessageFromReason gets the human-readable message for a vizier status reason.
@@ -47,6 +48,8 @@ type VizierReason string
 const (
 	// VizierVersionTooOld is a status for when the running Vizier version is more than one major version too old.
 	VizierVersionTooOld VizierReason = "VizierVersionOld"
+	// KernelVersionsIncompatible is a status for when the majority of nodes have an incompatible kernel version.
+	KernelVersionsIncompatible VizierReason = "KernelVersionsIncompatible"
 
 	// CloudConnectorFailedToConnect is a status for when the cloud connector is unable to connect to the specified cloud addr.
 	CloudConnectorFailedToConnect VizierReason = "CloudConnectFailed"
