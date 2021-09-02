@@ -110,6 +110,10 @@ struct InetAddr {
 struct CIDRBlock {
   InetAddr ip_addr;
   size_t prefix_length = 0;
+
+  std::string ToString() const {
+    return absl::Substitute("$0/$1", ip_addr.AddrStr(), prefix_length);
+  }
 };
 
 enum class SockAddrFamily { kUnspecified, kIPv4, kIPv6, kUnix, kOther };
