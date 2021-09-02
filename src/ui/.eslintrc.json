@@ -98,6 +98,7 @@
       "plugins": [
         "jest",
         "react",
+        "react-memo",
         "@typescript-eslint"
       ],
       "rules": {
@@ -126,6 +127,9 @@
         "react/jsx-props-no-spreading": 0,
         "react/destructuring-assignment": 0,
         "react/no-array-index-key": 0,
+        "react-memo/require-memo": 1,
+        "react-memo/require-usememo": 1,
+        "react-memo/require-usememo-children": 0,
         "import/prefer-default-export": 0,
         "prefer-arrow-callback": ["error", {"allowNamedFunctions": true}],
         "prefer-destructuring": ["error", {"object": true, "array": false}],

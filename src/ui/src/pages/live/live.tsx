@@ -467,6 +467,7 @@ const LiveView = React.memo(function LiveView() {
   );
 });
 
+// eslint-disable-next-line react-memo/require-memo
 const ContextualizedLiveView: React.FC = () => (
   <LayoutContextProvider>
     <LiveTourContextProvider>

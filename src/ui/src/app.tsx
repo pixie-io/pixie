@@ -100,6 +100,7 @@ function useIsAuthenticated() {
   return { authenticated, loading, error };
 }
 
+// eslint-disable-next-line react-memo/require-memo
 export const App: React.FC = () => {
   const { authenticated, loading } = useIsAuthenticated();
   const { authToken } = React.useContext(AuthContext);
@@ -183,6 +184,7 @@ if (LD_CLIENT_ID !== '') {
   })(StyledApp);
 }
 
+// eslint-disable-next-line react-memo/require-memo
 const ThemedApp: React.FC = () => {
   const { setAuthToken } = React.useContext(AuthContext);
   const { setTimeArg } = React.useContext(EmbedContext);

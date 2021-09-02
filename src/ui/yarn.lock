@@ -2933,6 +2933,7 @@ __metadata:
     eslint-plugin-jest: ^24.3.6
     eslint-plugin-react: ^7.23.1
     eslint-plugin-react-hooks: ^4.2.0
+    eslint-plugin-react-memo: ^0.0.3
     favicons: ^6.2.1
     favicons-webpack-plugin: ^5.0.2
     file-loader: ^6.2.0
@@ -8053,6 +8054,13 @@ __metadata:
   peerDependencies:
     eslint: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0
   checksum: 5378d16b5a56431a7a77b56d61464dbbfa343e8607da87b851a6caee44b96e08847147321f5f38de30d20668418691d859f69d9c5262dfb5308856382252096c
+  languageName: node
+  linkType: hard
+
+"eslint-plugin-react-memo@npm:^0.0.3":
+  version: 0.0.3
+  resolution: "eslint-plugin-react-memo@npm:0.0.3"
+  checksum: 7d88fead268da7cc26ee7b14ab75dfbf6296c67ce2fe7fbe494a14a0e291f169a449aafd2de6a17401102ce5a7e6c68d1e55f5aa6cdf7d8cb9353e4786d7d98a
   languageName: node
   linkType: hard
 
