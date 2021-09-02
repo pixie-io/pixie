@@ -166,11 +166,11 @@ func TestMonitor_getCloudConnState(t *testing.T) {
 				},
 			}
 
-			pods := &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWithEvents)}
+			pods := &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWrapper)}
 			pods.write(
 				"vizier-cloud-connector",
 				"vizier-cloud-connector-abcdefg",
-				&podWithEvents{
+				&podWrapper{
 					pod: &v1.Pod{
 						Status: v1.PodStatus{
 							PodIP: "127.0.0.1",
@@ -204,7 +204,7 @@ func TestMonitor_getCloudConnState_SeveralCloudConns(t *testing.T) {
 		},
 	}
 
-	pods := &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWithEvents)}
+	pods := &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWrapper)}
 
 	spec := v1.PodSpec{
 		Containers: []v1.Container{
@@ -217,7 +217,7 @@ func TestMonitor_getCloudConnState_SeveralCloudConns(t *testing.T) {
 			},
 		},
 	}
-	pods.write("vizier-cloud-connector", "vizier-cloud-connector-abcdefg", &podWithEvents{
+	pods.write("vizier-cloud-connector", "vizier-cloud-connector-abcdefg", &podWrapper{
 		pod: &v1.Pod{
 			Status: v1.PodStatus{
 				PodIP: "127.0.0.1",
@@ -226,7 +226,7 @@ func TestMonitor_getCloudConnState_SeveralCloudConns(t *testing.T) {
 			Spec: spec,
 		},
 	})
-	pods.write("vizier-cloud-connector", "vizier-cloud-connector-12345678", &podWithEvents{
+	pods.write("vizier-cloud-connector", "vizier-cloud-connector-12345678", &podWrapper{
 		pod: &v1.Pod{
 			Status: v1.PodStatus{
 				PodIP: "127.0.0.1",
@@ -353,12 +353,12 @@ func TestMonitor_natsPod(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			pods := &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWithEvents)}
+			pods := &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWrapper)}
 			if !test.podMissing {
 				pods.write(
 					"",
 					natsName,
-					&podWithEvents{
+					&podWrapper{
 						pod: &v1.Pod{
 							Status: v1.PodStatus{
 								PodIP: test.natsIP,
@@ -376,13 +376,12 @@ func TestMonitor_natsPod(t *testing.T) {
 	}
 }
 
-type phasePlane struct {
-	phase  v1.PodPhase
-	plane  string
-	events []v1.Event
-}
-
 func TestMonitor_getControlPlanePodState(t *testing.T) {
+	type phasePlane struct {
+		phase      v1.PodPhase
+		plane      string
+		conditions []v1.PodCondition
+	}
 	tests := []struct {
 		name                string
 		expectedVizierPhase pixiev1alpha1.VizierPhase
@@ -394,12 +393,14 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
 			podPhases: map[string]phasePlane{
 				"vizier-metadata": {
-					phase: v1.PodRunning,
-					plane: "control",
+					phase:      v1.PodRunning,
+					plane:      "control",
+					conditions: healthyConditions,
 				},
 				"kelvin": {
-					phase: v1.PodRunning,
-					plane: "data",
+					phase:      v1.PodRunning,
+					plane:      "data",
+					conditions: healthyConditions,
 				},
 			},
 			expectedReason: "",
@@ -413,12 +414,14 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 					plane: "control",
 				},
 				"vizier-query-broker": {
-					phase: v1.PodRunning,
-					plane: "control",
+					phase:      v1.PodRunning,
+					plane:      "control",
+					conditions: healthyConditions,
 				},
 				"kelvin": {
-					phase: v1.PodRunning,
-					plane: "data",
+					phase:      v1.PodRunning,
+					plane:      "data",
+					conditions: healthyConditions,
 				},
 			},
 			expectedReason: status.ControlPlanePodsPending,
@@ -428,8 +431,9 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
 			podPhases: map[string]phasePlane{
 				"vizier-metadata": {
-					phase: v1.PodRunning,
-					plane: "control",
+					phase:      v1.PodRunning,
+					plane:      "control",
+					conditions: healthyConditions,
 				},
 				"kelvin": {
 					phase: v1.PodPending,
@@ -443,8 +447,9 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
 			podPhases: map[string]phasePlane{
 				"vizier-metadata": {
-					phase: v1.PodRunning,
-					plane: "control",
+					phase:      v1.PodRunning,
+					plane:      "control",
+					conditions: healthyConditions,
 				},
 				"vizier-certmgr": {
 					phase: v1.PodSucceeded,
@@ -458,12 +463,14 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 			expectedVizierPhase: pixiev1alpha1.VizierPhaseUpdating,
 			podPhases: map[string]phasePlane{
 				"vizier-metadata": {
-					phase: v1.PodRunning,
-					plane: "control",
+					phase:      v1.PodRunning,
+					plane:      "control",
+					conditions: healthyConditions,
 				},
 				"kelvin": {
-					phase: v1.PodRunning,
-					plane: "data",
+					phase:      v1.PodRunning,
+					plane:      "data",
+					conditions: healthyConditions,
 				},
 				"no-plane-pod": {
 					phase: v1.PodPending,
@@ -477,16 +484,18 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
 			podPhases: map[string]phasePlane{
 				"vizier-metadata": {
-					phase: v1.PodRunning,
-					plane: "control",
+					phase:      v1.PodRunning,
+					plane:      "control",
+					conditions: healthyConditions,
 				},
 				"vizier-query-broker": {
 					phase: v1.PodFailed,
 					plane: "control",
 				},
 				"kelvin": {
-					phase: v1.PodRunning,
-					plane: "data",
+					phase:      v1.PodRunning,
+					plane:      "data",
+					conditions: healthyConditions,
 				},
 			},
 			expectedReason: status.ControlPlanePodsFailed,
@@ -498,9 +507,11 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 				"vizier-metadata": {
 					phase: v1.PodPending,
 					plane: "control",
-					events: []v1.Event{
-						v1.Event{
-							Reason:  "FailedScheduling",
+					conditions: []v1.PodCondition{
+						v1.PodCondition{
+							Type:    v1.PodScheduled,
+							Status:  v1.ConditionFalse,
+							Reason:  v1.PodReasonUnschedulable,
 							Message: "0/2 nodes are available: 2 node(s) had taint {key1: value1}, that the pod didn't tolerate.",
 						},
 					},
@@ -515,10 +526,12 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 				"vizier-metadata": {
 					phase: v1.PodPending,
 					plane: "control",
-					events: []v1.Event{
-						v1.Event{
-							Reason:  "FailedScheduling",
-							Message: "generic issue",
+					conditions: []v1.PodCondition{
+						v1.PodCondition{
+							Type:    v1.PodScheduled,
+							Status:  v1.ConditionFalse,
+							Reason:  v1.PodReasonUnschedulable,
+							Message: "generic condition",
 						},
 					},
 				},
@@ -529,23 +542,22 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			pods := &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWithEvents)}
-			for podLabel, fp := range test.podPhases {
+			pods := &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWrapper)}
+			for podLabel, p := range test.podPhases {
 				labels := make(map[string]string)
-				if fp.plane != "" {
-					labels["plane"] = fp.plane
+				if p.plane != "" {
+					labels["plane"] = p.plane
 				}
 
-				pods.write(podLabel, podLabel, &podWithEvents{pod: &v1.Pod{
+				pods.write(podLabel, podLabel, &podWrapper{pod: &v1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: labels,
 					},
 					Status: v1.PodStatus{
-						Phase: fp.phase,
+						Conditions: p.conditions,
+						Phase:      p.phase,
 					},
-				},
-					events: fp.events,
-				})
+				}})
 			}
 
 			state := getControlPlanePodState(pods)
@@ -555,37 +567,49 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 	}
 }
 
+var healthyConditions = []v1.PodCondition{
+	v1.PodCondition{
+		Type:   v1.PodReady,
+		Status: v1.ConditionTrue,
+	},
+	v1.PodCondition{
+		Type:   v1.PodScheduled,
+		Status: v1.ConditionTrue,
+	},
+}
+
+var insufficientMemoryPodCondition = v1.PodCondition{
+	Type:    v1.PodScheduled,
+	Status:  v1.ConditionFalse,
+	Reason:  v1.PodReasonUnschedulable,
+	Message: "0/2 nodes are available: 2 Insufficient memory.",
+}
+
 func TestMonitor_getPEMsSomeInsufficientMemory(t *testing.T) {
-	insufficientMemoryEvent := v1.Event{
-		Type:    "Warning",
-		Reason:  "FailedScheduling",
-		Message: "0/2 nodes are available: 2 Insufficient memory.",
+	type pem struct {
+		name       string
+		phase      v1.PodPhase
+		conditions []v1.PodCondition
 	}
 	tests := []struct {
 		name                string
 		expectedVizierPhase pixiev1alpha1.VizierPhase
 		expectedReason      status.VizierReason
-		pems                []struct {
-			name   string
-			phase  v1.PodPhase
-			events []v1.Event
-		}
+		pems                []pem
 	}{
 		{
 			name:                "healthy",
 			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
-			pems: []struct {
-				name   string
-				phase  v1.PodPhase
-				events []v1.Event
-			}{
+			pems: []pem{
 				{
-					name:  "vizier-pem-abcdefg",
-					phase: v1.PodRunning,
+					name:       "vizier-pem-abcdefg",
+					phase:      v1.PodRunning,
+					conditions: healthyConditions,
 				},
 				{
-					name:  "vizier-pem-123456",
-					phase: v1.PodRunning,
+					name:       "vizier-pem-123456",
+					phase:      v1.PodRunning,
+					conditions: healthyConditions,
 				},
 			},
 			expectedReason: "",
@@ -598,27 +622,24 @@ func TestMonitor_getPEMsSomeInsufficientMemory(t *testing.T) {
 		{
 			name:                "degraded if some (not all) are insufficient memory",
 			expectedVizierPhase: pixiev1alpha1.VizierPhaseDegraded,
-			pems: []struct {
-				name   string
-				phase  v1.PodPhase
-				events []v1.Event
-			}{
+			pems: []pem{
 				{
-					name:  "vizier-pem-abcdefg",
-					phase: v1.PodRunning,
+					name:       "vizier-pem-abcdefg",
+					phase:      v1.PodRunning,
+					conditions: healthyConditions,
 				},
 				{
 					name:  "vizier-pem-123456",
 					phase: v1.PodPending,
-					events: []v1.Event{
-						insufficientMemoryEvent,
+					conditions: []v1.PodCondition{
+						insufficientMemoryPodCondition,
 					},
 				},
 				{
 					name:  "vizier-pem-zyx987",
 					phase: v1.PodPending,
-					events: []v1.Event{
-						insufficientMemoryEvent,
+					conditions: []v1.PodCondition{
+						insufficientMemoryPodCondition,
 					},
 				},
 			},
@@ -627,23 +648,19 @@ func TestMonitor_getPEMsSomeInsufficientMemory(t *testing.T) {
 		{
 			name:                "unhealthy if all are insufficient memory",
 			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
-			pems: []struct {
-				name   string
-				phase  v1.PodPhase
-				events []v1.Event
-			}{
+			pems: []pem{
 				{
 					name:  "vizier-pem-abcdefg",
 					phase: v1.PodPending,
-					events: []v1.Event{
-						insufficientMemoryEvent,
+					conditions: []v1.PodCondition{
+						insufficientMemoryPodCondition,
 					},
 				},
 				{
 					name:  "vizier-pem-123456",
 					phase: v1.PodPending,
-					events: []v1.Event{
-						insufficientMemoryEvent,
+					conditions: []v1.PodCondition{
+						insufficientMemoryPodCondition,
 					},
 				},
 			},
@@ -652,16 +669,12 @@ func TestMonitor_getPEMsSomeInsufficientMemory(t *testing.T) {
 		{
 			name:                "pod pending for unrelated reason",
 			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
-			pems: []struct {
-				name   string
-				phase  v1.PodPhase
-				events []v1.Event
-			}{
+			pems: []pem{
 				{
 					name:  "vizier-pem-abcdefg",
 					phase: v1.PodPending,
-					events: []v1.Event{
-						v1.Event{
+					conditions: []v1.PodCondition{
+						v1.PodCondition{
 							Reason:  "FailedScheduling",
 							Message: "foo",
 						},
@@ -674,16 +687,16 @@ func TestMonitor_getPEMsSomeInsufficientMemory(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			pems := &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWithEvents)}
+			pems := &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWrapper)}
 			for _, p := range test.pems {
-				pems.write(vizierPemLabel, p.name, &podWithEvents{
+				pems.write(vizierPemLabel, p.name, &podWrapper{
 					pod: &v1.Pod{
 						ObjectMeta: metav1.ObjectMeta{Name: p.name},
 						Status: v1.PodStatus{
-							Phase: p.phase,
+							Phase:      p.phase,
+							Conditions: p.conditions,
 						},
 					},
-					events: p.events,
 				})
 			}
 
@@ -929,9 +942,9 @@ func TestMonitor_getPEMCrashingState(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			pems := &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWithEvents)}
+			pems := &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWrapper)}
 			for _, p := range test.pems {
-				pems.write(vizierPemLabel, p.name, &podWithEvents{
+				pems.write(vizierPemLabel, p.name, &podWrapper{
 					pod: &v1.Pod{
 						ObjectMeta: metav1.ObjectMeta{Name: p.name},
 						Status: v1.PodStatus{

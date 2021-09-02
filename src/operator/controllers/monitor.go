@@ -76,9 +76,8 @@ type HTTPClient interface {
 	Get(string) (resp *http.Response, err error)
 }
 
-type podWithEvents struct {
-	pod    *v1.Pod
-	events []v1.Event
+type podWrapper struct {
+	pod *v1.Pod
 }
 
 // NodeWatcher is responsible for tracking the nodes from the K8s API and using the NodeInfo to determine
@@ -189,7 +188,7 @@ func (n *nodeWatcher) watchNode(ctx context.Context) {
 // an entire child map, manually hold the mutex instead of writing a new method.
 type concurrentPodMap struct {
 	// mapping from the k8s label to the map of matching pods to their pod info.
-	unsafeMap map[string]map[string]*podWithEvents
+	unsafeMap map[string]map[string]*podWrapper
 	mapMu     sync.Mutex
 }
 
@@ -203,12 +202,12 @@ func (c *concurrentPodMap) delete(nameLabel string, k8sName string) {
 	delete(labelMap, k8sName)
 }
 
-func (c *concurrentPodMap) write(nameLabel, k8sName string, p *podWithEvents) {
+func (c *concurrentPodMap) write(nameLabel, k8sName string, p *podWrapper) {
 	c.mapMu.Lock()
 	defer c.mapMu.Unlock()
 	labelMap, ok := c.unsafeMap[nameLabel]
 	if !ok {
-		labelMap = make(map[string]*podWithEvents)
+		labelMap = make(map[string]*podWrapper)
 		c.unsafeMap[nameLabel] = labelMap
 	}
 	labelMap[k8sName] = p
@@ -268,7 +267,7 @@ func (m *VizierMonitor) InitAndStartMonitor(cloudClient *grpc.ClientConn) error 
 	m.httpClient = &http.Client{Transport: tr}
 	m.cloudClient = cloudClient
 	m.ctx, m.cancel = context.WithCancel(context.Background())
-	m.podStates = &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWithEvents)}
+	m.podStates = &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWrapper)}
 	m.pvcStates = &concurrentPVCMap{unsafeMap: make(map[string]*v1.PersistentVolumeClaim)}
 
 	nodeStateCh := make(chan *vizierState)
@@ -341,20 +340,7 @@ func (m *VizierMonitor) handlePod(p v1.Pod) {
 		return
 	}
 
-	podObj := &podWithEvents{pod: &p}
-	// Avoid getting events if pod is running. We don't need the extra debugging info.
-	if p.Status.Phase != v1.PodRunning {
-		eventsInterface := m.clientset.CoreV1().Events(m.namespace)
-		selector := eventsInterface.GetFieldSelector(&p.Name, &m.namespace, nil, nil)
-		eventList, err := eventsInterface.List(context.Background(), metav1.ListOptions{
-			FieldSelector: selector.String(),
-		})
-		if err != nil {
-			log.WithError(err).Error("unable to get event list")
-		}
-		podObj.events = eventList.Items
-	}
-	m.podStates.write(nameLabel, k8sName, podObj)
+	m.podStates.write(nameLabel, k8sName, &podWrapper{pod: &p})
 }
 
 func (m *VizierMonitor) handlePVC(pvc v1.PersistentVolumeClaim) {
@@ -532,10 +518,11 @@ func getControlPlanePodState(pods *concurrentPodMap) *vizierState {
 				continue
 			}
 			if p.pod.Status.Phase == v1.PodPending {
-				for _, event := range p.events {
-					if event.Reason == "FailedScheduling" && taintRe.MatchString(event.Message) {
-						return &vizierState{Reason: status.ControlPlaneFailedToScheduleBecauseOfTaints}
-					} else if event.Reason == "FailedScheduling" {
+				for _, cond := range p.pod.Status.Conditions {
+					if cond.Type == v1.PodScheduled && cond.Status == v1.ConditionFalse && cond.Reason == v1.PodReasonUnschedulable {
+						if taintRe.MatchString(cond.Message) {
+							return &vizierState{Reason: status.ControlPlaneFailedToScheduleBecauseOfTaints}
+						}
 						return &vizierState{Reason: status.ControlPlaneFailedToSchedule}
 					}
 				}
@@ -599,9 +586,8 @@ func getPEMResourceLimitsState(pods *concurrentPodMap) *vizierState {
 		if pem.pod.Status.Phase == v1.PodRunning {
 			continue
 		}
-		// Check for an insufficient memory event for this pending pod.
-		for _, event := range pem.events {
-			if event.Reason == "FailedScheduling" && memoryRe.MatchString(event.Message) {
+		for _, cond := range pem.pod.Status.Conditions {
+			if cond.Type == v1.PodScheduled && cond.Status == v1.ConditionFalse && cond.Reason == v1.PodReasonUnschedulable && memoryRe.MatchString(cond.Message) {
 				pemInsufficientMemory++
 				break
 			}
