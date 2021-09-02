@@ -18,6 +18,5 @@
 
 import * as React from 'react';
 
-export default (
-  <></>
-);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const TimeArgDetail = ({ clusterName } : { clusterName: string }): React.ReactElement => <></>;

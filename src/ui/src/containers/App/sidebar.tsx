@@ -233,7 +233,7 @@ export const SideBar: React.FC<{ open: boolean }> = React.memo(({ open }) => {
               </ListItem>
             </Tooltip>
           )}
-          <SidebarFooter />
+          <SidebarFooter clusterName={selectedClusterName} />
         </List>
       </Drawer>
     </>

@@ -33,7 +33,7 @@ import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
 import { ScriptContext } from 'app/context/script-context';
 import { pxTypeToEntityType, entityStatusGroup } from 'app/containers/command-input/autocomplete-utils';
-import TimeArgDetail from 'configurable/time-arg-detail';
+import { TimeArgDetail } from 'configurable/time-arg-detail';
 import { Variable } from './vis';
 
 type AutocompleteFieldSuggester = (
@@ -120,7 +120,7 @@ const useStyles = makeStyles(({ shape, palette, spacing }: Theme) => createStyle
 
 export const LiveViewBreadcrumbs: React.FC = React.memo(function LiveViewBreadcrumbs() {
   const classes = useStyles();
-  const { selectedClusterUID } = React.useContext(ClusterContext);
+  const { selectedClusterUID, selectedClusterName } = React.useContext(ClusterContext);
   const { scripts } = React.useContext(ScriptsContext);
 
   const {
@@ -240,7 +240,7 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(function LiveViewBreadcr
       if (argName === 'start_time' || argName === 'start') {
         // Don't show the time picker at all if it is disabled.
         if (!disableTimePicker) {
-          argProps.explanation = TimeArgDetail;
+          argProps.explanation = <TimeArgDetail clusterName={selectedClusterName} />;
           argBreadcrumbs.push(argProps);
         }
       } else {
