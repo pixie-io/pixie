@@ -28,6 +28,8 @@ var reasonToMessageMap = map[VizierReason]string{
 	CloudConnectorBasicQueryFailed: "Unable to run basic healthcheck query on cluster.",
 
 	VizierVersionTooOld: "Vizier version is older by more than one major version and may no longer be supported. Please update to the latest version.",
+	ControlPlaneFailedToScheduleBecauseOfTaints: "The vizier control plane could not be scheduled because taints exist on " +
+		"every node. Consider removing taints from some nodes or manually adding tolerations to each deployment in Vizier.",
 }
 
 // GetMessageFromReason gets the human-readable message for a vizier status reason.
@@ -92,4 +94,9 @@ const (
 	PEMsHighFailureRate VizierReason = "PEMsHighFailureRate"
 	// PEMsAllFailing occurs when a all PEMs are failing.
 	PEMsAllFailing VizierReason = "PEMsAllFailing"
+
+	// ControlPlaneFailedToSchedule occurs when a pod in the control plane cannot be scheduled. More specific states are enumerated in separate reasons below.
+	ControlPlaneFailedToSchedule VizierReason = "ControlPlaneFailedToSchedule"
+	// ControlPlaneFailedToScheduleBecauseOfTaints occurs when a pod in the control plane could not be scheduled because of restrictive taints.
+	ControlPlaneFailedToScheduleBecauseOfTaints VizierReason = "ControlPlaneFailedToScheduleBecauseOfTaints"
 )

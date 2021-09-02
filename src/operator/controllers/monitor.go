@@ -395,6 +395,7 @@ func getCloudConnState(client HTTPClient, pods *concurrentPodMap) *vizierState {
 func getControlPlanePodState(pods *concurrentPodMap) *vizierState {
 	pods.mapMu.Lock()
 	defer pods.mapMu.Unlock()
+	taintRe := regexp.MustCompile("had taint.* that the pod didn't tolerate")
 	for nameLabel, labelMap := range pods.unsafeMap {
 		// Skip reading about viziers because they are the most data intensive part.
 		if nameLabel == vizierPemLabel {
@@ -407,6 +408,13 @@ func getControlPlanePodState(pods *concurrentPodMap) *vizierState {
 				continue
 			}
 			if p.pod.Status.Phase == v1.PodPending {
+				for _, event := range p.events {
+					if event.Reason == "FailedScheduling" && taintRe.MatchString(event.Message) {
+						return &vizierState{Reason: status.ControlPlaneFailedToScheduleBecauseOfTaints}
+					} else if event.Reason == "FailedScheduling" {
+						return &vizierState{Reason: status.ControlPlaneFailedToSchedule}
+					}
+				}
 				return &vizierState{Reason: status.ControlPlanePodsPending}
 			}
 			if p.pod.Status.Phase != v1.PodRunning && p.pod.Status.Phase != v1.PodSucceeded {
@@ -461,7 +469,7 @@ func getPEMResourceLimitsState(pods *concurrentPodMap) *vizierState {
 		return &vizierState{Reason: status.PEMsMissing}
 	}
 
-	re := regexp.MustCompile("Insufficient memory")
+	memoryRe := regexp.MustCompile("Insufficient memory")
 	pemInsufficientMemory := 0
 	for _, pem := range pems {
 		if pem.pod.Status.Phase == v1.PodRunning {
@@ -469,7 +477,7 @@ func getPEMResourceLimitsState(pods *concurrentPodMap) *vizierState {
 		}
 		// Check for an insufficient memory event for this pending pod.
 		for _, event := range pem.events {
-			if event.Reason == "FailedScheduling" && re.MatchString(event.Message) {
+			if event.Reason == "FailedScheduling" && memoryRe.MatchString(event.Message) {
 				pemInsufficientMemory++
 				break
 			}
@@ -531,7 +539,7 @@ func getPEMCrashingState(pods *concurrentPodMap) *vizierState {
 		return &vizierState{Reason: status.PEMsMissing}
 	}
 
-	pemCrashing := 0
+	pemCrashing := 0.0
 	for _, pem := range pems {
 		if pem.pod.Status.Phase != v1.PodRunning {
 			continue
@@ -547,10 +555,11 @@ func getPEMCrashingState(pods *concurrentPodMap) *vizierState {
 			}
 		}
 	}
-	if pemCrashing == len(pems) {
+	numPems := float64(len(pems))
+	if pemCrashing == numPems {
 		return &vizierState{Reason: status.PEMsAllFailing}
 	}
-	if float64(pemCrashing) > float64(len(pems))*pemCrashingThreshold {
+	if pemCrashing > numPems*pemCrashingThreshold {
 		return &vizierState{Reason: status.PEMsHighFailureRate}
 	}
 	return okState()

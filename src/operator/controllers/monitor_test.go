@@ -377,8 +377,9 @@ func TestMonitor_natsPod(t *testing.T) {
 }
 
 type phasePlane struct {
-	phase v1.PodPhase
-	plane string
+	phase  v1.PodPhase
+	plane  string
+	events []v1.Event
 }
 
 func TestMonitor_getControlPlanePodState(t *testing.T) {
@@ -490,6 +491,40 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 			},
 			expectedReason: status.ControlPlanePodsFailed,
 		},
+		{
+			name:                "unhealthy if any control pod cant be scheduled because of tain",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+			podPhases: map[string]phasePlane{
+				"vizier-metadata": {
+					phase: v1.PodPending,
+					plane: "control",
+					events: []v1.Event{
+						v1.Event{
+							Reason:  "FailedScheduling",
+							Message: "0/2 nodes are available: 2 node(s) had taint {key1: value1}, that the pod didn't tolerate.",
+						},
+					},
+				},
+			},
+			expectedReason: status.ControlPlaneFailedToScheduleBecauseOfTaints,
+		},
+		{
+			name:                "unhealthy if any control pod cant be scheduled generic",
+			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+			podPhases: map[string]phasePlane{
+				"vizier-metadata": {
+					phase: v1.PodPending,
+					plane: "control",
+					events: []v1.Event{
+						v1.Event{
+							Reason:  "FailedScheduling",
+							Message: "generic issue",
+						},
+					},
+				},
+			},
+			expectedReason: status.ControlPlaneFailedToSchedule,
+		},
 	}
 
 	for _, test := range tests {
@@ -508,7 +543,9 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 					Status: v1.PodStatus{
 						Phase: fp.phase,
 					},
-				}})
+				},
+					events: fp.events,
+				})
 			}
 
 			state := getControlPlanePodState(pods)
