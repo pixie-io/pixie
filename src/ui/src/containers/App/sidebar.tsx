@@ -120,27 +120,39 @@ const useStyles = makeStyles(({
   },
 }), { name: 'SideBar' });
 
-const SideBarInternalLinkItem = ({
-  classes, icon, link, text,
-}) => (
-  <Tooltip title={text} disableInteractive>
-    <ListItem button component={Link} to={link} key={text} className={classes.listIcon}>
-      <ListItemIcon>{icon}</ListItemIcon>
-      <ListItemText primary={text} />
-    </ListItem>
-  </Tooltip>
-);
+interface LinkItemProps {
+  icon: React.ReactNode;
+  link: string;
+  text: string;
+}
 
-const SideBarExternalLinkItem = ({
-  classes, icon, link, text,
-}) => (
-  <Tooltip title={text} disableInteractive>
-    <ListItem button component='a' href={link} key={text} className={classes.listIcon} target='_blank'>
-      <ListItemIcon>{icon}</ListItemIcon>
-      <ListItemText primary={text} />
-    </ListItem>
-  </Tooltip>
-);
+const SideBarInternalLinkItem = React.memo<LinkItemProps>(function SideBarInternalLinkItem({
+  icon, link, text,
+}) {
+  const classes = useStyles();
+  return (
+    <Tooltip title={text} disableInteractive>
+      <ListItem button component={Link} to={link} key={text} className={classes.listIcon}>
+        <ListItemIcon>{icon}</ListItemIcon>
+        <ListItemText primary={text} />
+      </ListItem>
+    </Tooltip>
+  );
+});
+
+const SideBarExternalLinkItem = React.memo<LinkItemProps>(function SideBarExternalLinkItem({
+  icon, link, text,
+}) {
+  const classes = useStyles();
+  return (
+    <Tooltip title={text} disableInteractive>
+      <ListItem button component='a' href={link} key={text} className={classes.listIcon} target='_blank'>
+        <ListItemIcon>{icon}</ListItemIcon>
+        <ListItemText primary={text} />
+      </ListItem>
+    </Tooltip>
+  );
+});
 
 export const SideBar: React.FC<{ open: boolean }> = React.memo(({ open }) => {
   const classes = useStyles();
@@ -172,21 +184,29 @@ export const SideBar: React.FC<{ open: boolean }> = React.memo(({ open }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClusterName]);
 
+  const drawerClasses = React.useMemo(
+    () => ({ paper: open ? classes.drawerOpen : classes.drawerClose }),
+    [classes.drawerClose, classes.drawerOpen, open]);
+
+  const announceUser = React.useMemo(() => ({
+    id: user.email,
+    email: user.email,
+  }), [user.email]);
+  const announceData = React.useMemo(() => ({ org: user.orgName }), [user.orgName]);
+
   return (
     <>
       <Drawer
         variant='permanent'
         className={open ? classes.drawerOpen : classes.drawerClose}
-        classes={{
-          paper: open ? classes.drawerOpen : classes.drawerClose,
-        }}
+        classes={drawerClasses}
       >
         <List>
           <ListItem button className={classes.clippedItem} />
         </List>
         <List>
           {navItems.map(({ icon, link, text }) => (
-            <SideBarInternalLinkItem key={text} classes={classes} icon={icon} link={link} text={text} />
+            <SideBarInternalLinkItem key={text} icon={icon} link={link} text={text} />
           ))}
         </List>
         <div className={classes.spacer} />
@@ -195,20 +215,7 @@ export const SideBar: React.FC<{ open: boolean }> = React.memo(({ open }) => {
             <div className={classes.announcekit}>
               {
                 ANNOUNCEMENT_ENABLED && (
-                <AnnounceKit
-                  widget={ANNOUNCE_WIDGET_URL}
-                  user={
-                        {
-                          id: user.email,
-                          email: user.email,
-                        }
-                 }
-                  data={
-                        {
-                          org: user.orgName,
-                        }
-                   }
-                >
+                <AnnounceKit widget={ANNOUNCE_WIDGET_URL} user={announceUser} data={announceData}>
                   <ListItem button key='announcements' className={classes.listIcon}>
                     <ListItemIcon><CampaignIcon /></ListItemIcon>
                     <ListItemText primary='Announcements' />
@@ -220,8 +227,7 @@ export const SideBar: React.FC<{ open: boolean }> = React.memo(({ open }) => {
           </Tooltip>
           <SideBarExternalLinkItem
             key='Docs'
-            classes={classes}
-            icon={<DocsIcon />}
+            icon={React.useMemo(() => <DocsIcon />, [])}
             link={`https://docs.${DOMAIN_NAME}`}
             text='Docs'
           />
