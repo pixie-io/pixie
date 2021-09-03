@@ -202,16 +202,45 @@ const ThemedApp: React.FC = () => {
     }
   }, [setTheme]);
 
+  const parseAndSetTheme = React.useCallback((customTheme: string) => {
+    // Try to parse theme and apply.
+    try {
+      const parsedTheme = JSON.parse(customTheme);
+      // Only use the `palette` field from the theme, as we know these
+      // values are safe to apply.
+      setTheme(createTheme({
+        ...COMMON_THEME,
+        ...{
+          palette: {
+            ...COMMON_THEME.palette,
+            ...parsedTheme.palette,
+          },
+          shadows: {
+            ...COMMON_THEME,
+            ...parsedTheme.shadows,
+          },
+        },
+      }));
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to parse MUI theme');
+    }
+  }, [setTheme]);
+
   // Parse query params to determine initial state of the page. These
   // params can also be set by the parent view, in an embedded context.
   React.useEffect(() => {
     const {
       theme: themeParam,
+      customTheme,
     } = QueryString.parse(window.location.search);
 
     if (themeParam) {
       const themeName = Array.isArray(themeParam) ? themeParam[0] : themeParam;
       setThemeFromName(themeName);
+    }
+    if (customTheme) {
+      parseAndSetTheme(Array.isArray(customTheme) ? customTheme[0] : customTheme);
     }
   }, [setThemeFromName]);
 
@@ -237,23 +266,7 @@ const ThemedApp: React.FC = () => {
 
     if (pixieStyles) {
       // Try to parse theme and apply.
-      try {
-        const parsedTheme = JSON.parse(pixieStyles);
-        // Only use the `palette` field from the theme, as we know these
-        // values are safe to apply.
-        setTheme(createTheme({
-          ...COMMON_THEME,
-          ...{
-            palette: {
-              ...COMMON_THEME.palette,
-              ...parsedTheme.palette,
-            },
-          },
-        }));
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.error('Failed to parse MUI theme');
-      }
+      parseAndSetTheme(pixieStyles);
     }
 
     if (pixieTheme && (pixieTheme === 'light' || pixieTheme === 'dark')) {
