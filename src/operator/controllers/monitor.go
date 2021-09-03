@@ -36,7 +36,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
-	apiwatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/watch"
@@ -64,11 +63,6 @@ const (
 	statuszCheckInterval = 20 * time.Second
 	// The threshold of number of crashing PEM pods before we declare a cluster degraded.
 	pemCrashingThreshold = 0.25
-
-	// If 25% of the kernel versions are incompatible, then consider Vizier in
-	// a degraded state.
-	kernelVersionDegradedThreshold = .25
-	kernelMinVersion               = "4.14.0"
 )
 
 // HTTPClient is the interface for a simple HTTPClient which can execute "Get".
@@ -78,116 +72,6 @@ type HTTPClient interface {
 
 type podWrapper struct {
 	pod *v1.Pod
-}
-
-// NodeWatcher is responsible for tracking the nodes from the K8s API and using the NodeInfo to determine
-// whether or not Pixie can successfully collect data on the cluster.
-type nodeWatcher struct {
-	clientset kubernetes.Interface
-
-	nodeKernelValid map[string]bool
-	vizierStateCh   chan<- *vizierState
-	lastRV          string
-}
-
-func (n *nodeWatcher) start(ctx context.Context) {
-	nodeList, err := n.clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
-	if err != nil {
-		log.WithError(err).Fatal("Could not list nodes")
-	}
-	n.lastRV = nodeList.ResourceVersion
-	// Populate vizierStates with current pod state.
-	for _, node := range nodeList.Items {
-		n.handleNode(node, false)
-	}
-
-	// Start watcher.
-	n.watchNode(ctx)
-}
-
-func nodeIsCompatible(node v1.Node) bool {
-	currentSemVer, err := semver.Make(node.Status.NodeInfo.KernelVersion)
-	if err != nil {
-		log.WithError(err).Error("Failed to parse current Node Kernel version")
-		return true
-	}
-	minSemVer, err := semver.Make(kernelMinVersion)
-	if err != nil {
-		log.WithError(err).Error("Failed to parse minimum Kernel version")
-		return true
-	}
-	return currentSemVer.GE(minSemVer)
-}
-
-func (n *nodeWatcher) getNodeStatus() *vizierState {
-	// Count up number of nodes with incompatible kernel versions. If greater than the threshold, the cluster should be in a degraded
-	// state.
-	totalIncompatible := 0.0
-	for _, compatible := range n.nodeKernelValid {
-		if !compatible {
-			totalIncompatible++
-		}
-	}
-	if totalIncompatible/float64(len(n.nodeKernelValid)) > kernelVersionDegradedThreshold {
-		return &vizierState{Reason: status.KernelVersionsIncompatible}
-	}
-
-	return okState()
-}
-
-func (n *nodeWatcher) handleNode(node v1.Node, deleted bool) {
-	// Track status.
-	if deleted {
-		delete(n.nodeKernelValid, node.Name)
-	} else {
-		// Check kernel compatibility.
-		n.nodeKernelValid[node.Name] = nodeIsCompatible(node)
-	}
-
-	// Send updated status to channel.
-	n.vizierStateCh <- n.getNodeStatus()
-}
-
-func (n *nodeWatcher) watchNode(ctx context.Context) {
-	for {
-		watcher := cache.NewListWatchFromClient(n.clientset.CoreV1().RESTClient(), "nodes", metav1.NamespaceAll, fields.Everything())
-		retryWatcher, err := watch.NewRetryWatcher(n.lastRV, watcher)
-		if err != nil {
-			log.WithError(err).Fatal("Could not start watcher for nodes")
-		}
-
-		resCh := retryWatcher.ResultChan()
-		loop := true
-		for loop {
-			select {
-			case <-ctx.Done():
-				log.Info("Received cancel, stopping K8s watcher")
-				return
-			case c, ok := <-resCh:
-				if !ok {
-					log.Info("Watcher channel closed, restarting")
-					loop = false
-					break
-				}
-				s, ok := c.Object.(*metav1.Status)
-				if ok && s.Status == metav1.StatusFailure {
-					log.WithField("status", s.Status).Info("Received failure status in watcher")
-					// Try to start up another watcher instance.
-					loop = false
-					break
-				}
-
-				// Update the lastPVCRV, so that if the watcher restarts, it starts at the correct resource version.
-				o, ok := c.Object.(*v1.Node)
-				if !ok {
-					continue
-				}
-
-				n.lastRV = o.ObjectMeta.ResourceVersion
-				n.handleNode(*o, c.Type == apiwatch.Deleted)
-			}
-		}
-	}
 }
 
 // concurrentPodMap wraps a map with concurrency safe read/write operations.
@@ -292,9 +176,8 @@ func (m *VizierMonitor) InitAndStartMonitor(cloudClient *grpc.ClientConn) error 
 
 	// Start node monitor.
 	nodeWatcher := &nodeWatcher{
-		clientset:       m.clientset,
-		nodeKernelValid: make(map[string]bool),
-		vizierStateCh:   nodeStateCh,
+		clientset: m.clientset,
+		state:     nodeStateCh,
 	}
 	go nodeWatcher.start(m.ctx)
 

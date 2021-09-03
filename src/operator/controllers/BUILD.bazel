@@ -20,6 +20,7 @@ go_library(
     name = "controllers",
     srcs = [
         "monitor.go",
+        "node_watcher.go",
         "vizier_controller.go",
     ],
     importpath = "px.dev/pixie/src/operator/controllers",
@@ -55,7 +56,10 @@ go_library(
 
 go_test(
     name = "controllers_test",
-    srcs = ["monitor_test.go"],
+    srcs = [
+        "monitor_test.go",
+        "node_watcher_test.go",
+    ],
     embed = [":controllers"],
     deps = [
         "//src/api/proto/cloudpb:cloudapi_pl_go_proto",
