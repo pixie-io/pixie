@@ -26,7 +26,7 @@ import { useSnackbar } from 'app/components';
  * Automatically runs the selected script whenever it changes, the args change, or the vis spec changes.
  * @constructor
  */
-export const ScriptLoader: React.FC = () => {
+export const ScriptLoader: React.FC = React.memo(function ScriptLoader() {
   const {
     script, args, execute, cancelExecution, manual,
   } = React.useContext(ScriptContext);
@@ -59,4 +59,4 @@ export const ScriptLoader: React.FC = () => {
   }, [script, serializedArgs, serializedVis, clusterName, manual]);
 
   return null;
-};
+});
