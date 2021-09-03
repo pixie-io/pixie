@@ -449,6 +449,18 @@ func (r *VizierReconciler) deployVizierCore(ctx context.Context, namespace strin
 	if err != nil {
 		return err
 	}
+
+	// If updating, don't reapply service accounts as that will create duplicate service tokens.
+	if allowUpdate {
+		filteredResources := make([]*k8s.Resource, 0)
+		for _, r := range resources {
+			if r.GVK.Kind != "ServiceAccount" {
+				filteredResources = append(filteredResources, r)
+			}
+		}
+		resources = filteredResources
+	}
+
 	for _, r := range resources {
 		err = updateResourceConfiguration(r, vz)
 		if err != nil {
