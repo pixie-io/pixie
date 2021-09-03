@@ -153,20 +153,27 @@ func (n *nodeWatcher) watchNode(ctx context.Context) {
 		watcher := cache.NewListWatchFromClient(n.clientset.CoreV1().RESTClient(), "nodes", metav1.NamespaceAll, fields.Everything())
 		retryWatcher, err := watch.NewRetryWatcher(n.lastRV, watcher)
 		if err != nil {
-			log.WithError(err).Fatal("Could not start watcher for pvcs")
+			log.WithError(err).Fatal("Could not start watcher for nodes")
 		}
 
 		resCh := retryWatcher.ResultChan()
-		for {
+		loop := true
+		for loop {
 			select {
 			case <-ctx.Done():
 				log.Info("Received cancel, stopping K8s watcher")
 				return
-			case c := <-resCh:
+			case c, ok := <-resCh:
+				if !ok {
+					log.Info("Watcher channel closed, restarting")
+					loop = false
+					break
+				}
 				s, ok := c.Object.(*metav1.Status)
 				if ok && s.Status == metav1.StatusFailure {
 					log.WithField("status", s.Status).Info("Received failure status in watcher")
 					// Try to start up another watcher instance.
+					loop = false
 					break
 				}
 
@@ -356,16 +363,23 @@ func (m *VizierMonitor) watchK8sPods() {
 		}
 
 		resCh := retryWatcher.ResultChan()
-		for {
+		loop := true
+		for loop {
 			select {
 			case <-m.ctx.Done():
 				log.Info("Received cancel, stopping K8s watcher")
 				return
-			case c := <-resCh:
+			case c, ok := <-resCh:
+				if !ok {
+					log.Info("Watcher channel closed, restarting")
+					loop = false
+					break
+				}
 				s, ok := c.Object.(*metav1.Status)
 				if ok && s.Status == metav1.StatusFailure {
 					log.WithField("status", s.Status).Info("Received failure status in watcher")
 					// Try to start up another watcher instance.
+					loop = false
 					break
 				}
 
@@ -392,16 +406,23 @@ func (m *VizierMonitor) watchK8sPVC() {
 		}
 
 		resCh := retryWatcher.ResultChan()
-		for {
+		loop := true
+		for loop {
 			select {
 			case <-m.ctx.Done():
 				log.Info("Received cancel, stopping K8s watcher")
 				return
-			case c := <-resCh:
+			case c, ok := <-resCh:
+				if !ok {
+					log.Info("Watcher channel closed, restarting")
+					loop = false
+					break
+				}
 				s, ok := c.Object.(*metav1.Status)
 				if ok && s.Status == metav1.StatusFailure {
 					log.WithField("status", s.Status).Info("Received failure status in watcher")
 					// Try to start up another watcher instance.
+					loop = false
 					break
 				}
 
