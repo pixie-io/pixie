@@ -118,9 +118,11 @@ class StandaloneContext : public ConnectorContext {
     // The context consists of all PIDs, but no pods/containers.
     upids_ = ListUPIDs(system::Config::GetInstance().proc_path(), 0);
 
-    // Include loopback address as CIDR block.
+    // Cannot be empty, otherwise stirling will wait indefinitely. Since StandaloneContext is used
+    // for local environment, set it such that localhost (127.0.0.1) will be treated as outside of
+    // cluster, and --treat_loopback_as_in_cluster in conn_tracker.cc will take effect.
     // TODO(yzhao): Might need to include IPv6 version when tests for IPv6 are added.
-    ECHECK_OK(SetClusterCIDR("127.0.0.1/32"));
+    ECHECK_OK(SetClusterCIDR("0.0.0.1/32"));
   }
 
   uint32_t GetASID() const override { return 0; }
