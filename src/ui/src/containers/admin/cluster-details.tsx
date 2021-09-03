@@ -73,7 +73,7 @@ const useLinkStyles = makeStyles((theme: Theme) => createStyles({
     color: theme.palette.foreground.grey5,
   },
 }));
-const StyledBreadcrumbLink: React.FC<{ to: string }> = (({ children, to }) => {
+const StyledBreadcrumbLink: React.FC<{ to: string }> = React.memo(function StyledBreadcrumbsLink({ children, to }) {
   const classes = useLinkStyles();
   return <Link className={classes.root} to={to}>{children}</Link>;
 });
@@ -95,14 +95,14 @@ const useBreadcrumbsStyles = makeStyles((theme: Theme) => createStyles({
     width: theme.spacing(1),
   },
 }));
-const StyledBreadcrumbs: React.FC = ({ children }) => {
+const StyledBreadcrumbs: React.FC = React.memo(function StyledBreadcrumbs({ children }) {
   const classes = useBreadcrumbsStyles();
   return (
     <MaterialBreadcrumbs classes={classes}>
       {children}
     </MaterialBreadcrumbs>
   );
-};
+});
 
 const AGENT_STATUS_SCRIPT = `import px
 px.display(px.GetAgentStatus())`;
@@ -225,7 +225,7 @@ const AgentsTable: React.FC = () => {
       }
       executionSubject.unsubscribe();
     };
-  }, [client, clusterConfig]);
+  }, [client, clusterConfig, enableE2EEncryption]);
 
   if (state.error) {
     return (
