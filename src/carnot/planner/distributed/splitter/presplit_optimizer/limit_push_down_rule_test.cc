@@ -18,6 +18,7 @@
 
 #include <gtest/gtest.h>
 
+#include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/distributed/splitter/presplit_optimizer/limit_push_down_rule.h"
 #include "src/carnot/planner/test_utils.h"
@@ -27,6 +28,7 @@ namespace carnot {
 namespace planner {
 namespace distributed {
 
+using compiler::ResolveTypesRule;
 using ::testing::ElementsAre;
 
 using LimitPushdownRuleTest = testutils::DistributedRulesTest;
@@ -46,11 +48,15 @@ TEST_F(LimitPushdownRuleTest, simple_no_op) {
 TEST_F(LimitPushdownRuleTest, simple) {
   Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
 
-  MemorySourceIR* src = MakeMemSource(relation);
+  MemorySourceIR* src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
   MapIR* map1 = MakeMap(src, {{"abc", MakeColumn("abc", 0)}}, false);
   MapIR* map2 = MakeMap(map1, {{"def", MakeColumn("abc", 0)}}, false);
   LimitIR* limit = MakeLimit(map2, 10);
   MemorySinkIR* sink = MakeMemSink(limit, "foo", {});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   LimitPushdownRule rule(compiler_state_.get());
   auto result = rule.Execute(graph.get());
@@ -73,12 +79,15 @@ TEST_F(LimitPushdownRuleTest, pem_only) {
   Relation relation1({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
   Relation relation2({types::DataType::INT64}, {"abc"});
 
-  MemorySourceIR* src = MakeMemSource(relation1);
+  MemorySourceIR* src = MakeMemSource("source", relation1);
+  compiler_state_->relation_map()->emplace("source", relation1);
   MapIR* map1 = MakeMap(src, {{"abc", MakeFunc("pem_only", {})}}, false);
-  ASSERT_OK(map1->SetRelation(relation2));
   MapIR* map2 = MakeMap(map1, {{"def", MakeColumn("abc", 0)}}, false);
   LimitIR* limit = MakeLimit(map2, 10);
   MemorySinkIR* sink = MakeMemSink(limit, "foo", {});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   LimitPushdownRule rule(compiler_state_.get());
   auto result = rule.Execute(graph.get());
@@ -94,25 +103,29 @@ TEST_F(LimitPushdownRuleTest, pem_only) {
   EXPECT_THAT(map1->parents(), ElementsAre(src));
 
   // Ensure the limit inherits the relation from its parent, not the previous location.
-  EXPECT_EQ(new_limit->relation(), relation2);
+  EXPECT_EQ(new_limit->relation(), map1->relation());
 }
 
 TEST_F(LimitPushdownRuleTest, multi_branch_union) {
   Relation relation1({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
   Relation relation2({types::DataType::INT64}, {"abc"});
 
-  MemorySourceIR* src1 = MakeMemSource(relation1);
+  MemorySourceIR* src1 = MakeMemSource("source1", relation1);
+  compiler_state_->relation_map()->emplace("source1", relation1);
   MapIR* map1 = MakeMap(src1, {{"abc", MakeColumn("abc", 0)}}, false);
 
-  MemorySourceIR* src2 = MakeMemSource(relation2);
+  MemorySourceIR* src2 = MakeMemSource("source2", relation2);
+  compiler_state_->relation_map()->emplace("source2", relation2);
   MapIR* map2 = MakeMap(src2, {{"abc", MakeColumn("abc", 0)}}, false);
 
   UnionIR* union_node = MakeUnion({map1, map2});
-  ASSERT_OK(union_node->SetRelation(relation2));
   MapIR* map3 = MakeMap(union_node, {{"abc", MakeColumn("abc", 0)}}, false);
 
   LimitIR* limit = MakeLimit(map3, 10);
   MemorySinkIR* sink = MakeMemSink(limit, "foo", {});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   LimitPushdownRule rule(compiler_state_.get());
   auto result = rule.Execute(graph.get());

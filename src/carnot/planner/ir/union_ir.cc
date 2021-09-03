@@ -44,15 +44,15 @@ Status UnionIR::ToProto(planpb::Operator* op) const {
   auto pb = op->mutable_union_op();
   op->set_op_type(planpb::UNION_OPERATOR);
 
-  auto types = relation().col_types();
-  auto names = relation().col_names();
-  for (size_t i = 0; i < relation().NumColumns(); i++) {
-    pb->add_column_names(names[i]);
+  auto names = resolved_table_type()->ColumnNames();
+  DCHECK(is_type_resolved());
+  for (auto col_name : names) {
+    pb->add_column_names(col_name);
   }
   if (default_column_mapping_) {
     for (size_t parent_i = 0; parent_i < parents().size(); ++parent_i) {
       auto* pb_column_mapping = pb->add_column_mappings();
-      for (size_t col_i = 0; col_i < relation().NumColumns(); ++col_i) {
+      for (size_t col_i = 0; col_i < names.size(); ++col_i) {
         pb_column_mapping->add_column_indexes(col_i);
       }
     }
@@ -107,8 +107,8 @@ Status UnionIR::SetColumnMappings(const std::vector<InputColumnMapping>& column_
 }
 
 Status UnionIR::SetDefaultColumnMapping() {
-  if (!IsRelationInit()) {
-    return CreateIRNodeError("Relation is not initialized yet");
+  if (!is_type_resolved()) {
+    return CreateIRNodeError("Type is not initialized yet");
   }
   DCHECK(!HasColumnMappings())
       << "Trying to set default column mapping on a Union that has a default column mapping.";

@@ -221,7 +221,7 @@ Status JoinIR::UpdateOpAfterParentTypesResolvedImpl() {
   absl::flat_hash_set<std::string> left_column_names(left_type->ColumnNames().begin(),
                                                      left_type->ColumnNames().end());
   DCHECK_EQ(left_column_names.size(), left_type->ColumnNames().size())
-      << "Left relation has duplicate columns, should have caught this earlier.";
+      << "Left table type has duplicate columns, should have caught this earlier.";
 
   absl::flat_hash_set<std::string> duplicate_column_names;
   struct LeftRightIndex {

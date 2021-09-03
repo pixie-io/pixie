@@ -61,8 +61,8 @@ class MemorySinkIR : public OperatorIR {
   bool IsBlocking() const override { return true; }
 
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override {
-    DCHECK(IsRelationInit());
-    auto out_cols = relation().col_names();
+    DCHECK(is_type_resolved());
+    auto out_cols = resolved_table_type()->ColumnNames();
     absl::flat_hash_set<std::string> outputs{out_cols.begin(), out_cols.end()};
     return std::vector<absl::flat_hash_set<std::string>>{outputs};
   }

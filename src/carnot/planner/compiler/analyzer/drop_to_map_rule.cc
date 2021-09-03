@@ -67,7 +67,7 @@ StatusOr<bool> DropToMapOperatorRule::DropToMap(DropIR* drop_ir) {
   PL_ASSIGN_OR_RETURN(MapIR * map_ir,
                       ir_graph->CreateNode<MapIR>(drop_ir->ast(), parent_op, col_exprs,
                                                   /* keep_input_columns */ false));
-  PL_RETURN_IF_ERROR(map_ir->SetRelationFromExprs());
+  PL_RETURN_IF_ERROR(ResolveOperatorType(map_ir, compiler_state_));
 
   // Update all of drop's dependencies to point to src.
   for (const auto& dep : drop_ir->Children()) {

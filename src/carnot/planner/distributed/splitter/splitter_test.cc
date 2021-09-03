@@ -197,9 +197,7 @@ TEST_F(SplitterTest, partial_agg_test) {
 TEST_F(SplitterTest, limit_test) {
   auto mem_src = MakeMemSource("cpu", cpu_relation);
   auto limit = MakeLimit(mem_src, 10);
-  EXPECT_OK(limit->SetRelation(mem_src->relation()));
   auto sink = MakeMemSink(limit, "out");
-  EXPECT_TRUE(limit->IsRelationInit());
 
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));
@@ -245,9 +243,7 @@ TEST_F(SplitterTest, limit_test) {
 TEST_F(SplitterTest, limit_test_pem_only) {
   auto mem_src = MakeMemSource("cpu", cpu_relation);
   auto limit = MakeLimit(mem_src, 10, /* pem_only */ true);
-  EXPECT_OK(limit->SetRelation(mem_src->relation()));
   auto sink = MakeMemSink(limit, "out");
-  EXPECT_TRUE(limit->IsRelationInit());
 
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));

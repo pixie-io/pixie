@@ -737,7 +737,7 @@ class OperatorTests : public ::testing::Test {
                    const Relation& left_relation, const Relation& right_relation,
                    const std::vector<std::string> left_on_col_names,
                    const std::vector<std::string>& right_on_col_names,
-                   const std::vector<std::string>& suffix_strs = std::vector<std::string>{}) {
+                   const std::vector<std::string>& suffix_strs = std::vector<std::string>{"", ""}) {
     std::vector<ColumnIR*> left_on_cols;
     std::vector<ColumnIR*> right_on_cols;
     for (const auto& left_name : left_on_col_names) {

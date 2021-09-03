@@ -22,26 +22,26 @@ namespace px {
 namespace carnot {
 namespace planner {
 
-Status EmptySourceIR::Init(const Relation& relation) {
-  PL_RETURN_IF_ERROR(SetRelation(relation));
+Status EmptySourceIR::Init(const table_store::schema::Relation& relation) {
+  PL_RETURN_IF_ERROR(SetResolvedType(TableType::Create(relation)));
   return Status::OK();
 }
 Status EmptySourceIR::ToProto(planpb::Operator* op) const {
   auto pb = op->mutable_empty_source_op();
   op->set_op_type(planpb::EMPTY_SOURCE_OPERATOR);
 
-  for (size_t i = 0; i < relation().NumColumns(); ++i) {
-    pb->add_column_names(relation().col_names()[i]);
-    pb->add_column_types(relation().col_types()[i]);
+  DCHECK(is_type_resolved());
+  for (const auto& [col_name, col_type] : *resolved_table_type()) {
+    pb->add_column_names(col_name);
+    pb->add_column_types(std::static_pointer_cast<ValueType>(col_type)->data_type());
   }
 
   return Status::OK();
 }
 
-Status EmptySourceIR::CopyFromNodeImpl(const IRNode* source,
+Status EmptySourceIR::CopyFromNodeImpl(const IRNode*,
                                        absl::flat_hash_map<const IRNode*, IRNode*>*) {
-  const EmptySourceIR* empty = static_cast<const EmptySourceIR*>(source);
-  return SetRelation(empty->relation());
+  return Status::OK();
 }
 
 StatusOr<absl::flat_hash_set<std::string>> EmptySourceIR::PruneOutputColumnsToImpl(

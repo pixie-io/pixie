@@ -37,7 +37,6 @@
 #include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
 #include "src/carnot/planner/compiler/analyzer/set_memory_source_times_rule.h"
 #include "src/carnot/planner/compiler/analyzer/setup_join_type_rule.h"
-#include "src/carnot/planner/compiler/analyzer/source_relation_rule.h"
 #include "src/carnot/planner/compiler/analyzer/unique_sink_names_rule.h"
 #include "src/carnot/planner/compiler/analyzer/verify_filter_expression_rule.h"
 #include "src/carnot/planner/compiler_state/compiler_state.h"
@@ -65,7 +64,6 @@ class Analyzer : public RuleExecutor<IR> {
   void CreateSourceAndMetadataResolutionBatch() {
     RuleBatch* source_and_metadata_resolution_batch =
         CreateRuleBatch<FailOnMax>("TableAndMetadataResolution", 2);
-    source_and_metadata_resolution_batch->AddRule<SourceRelationRule>(compiler_state_);
     source_and_metadata_resolution_batch->AddRule<ResolveMetadataPropertyRule>(compiler_state_,
                                                                                md_handler_.get());
     source_and_metadata_resolution_batch->AddRule<SetupJoinTypeRule>();

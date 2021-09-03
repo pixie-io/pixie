@@ -49,7 +49,7 @@ class EmptySourceIR : public OperatorIR {
    * @param select_columns the columns to select. If vector is empty, then select all columns.
    * @return Status
    */
-  Status Init(const Relation& relation);
+  Status Init(const table_store::schema::Relation& relation);
 
   Status ToProto(planpb::Operator*) const override;
 

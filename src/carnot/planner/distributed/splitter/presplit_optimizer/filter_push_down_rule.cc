@@ -180,7 +180,7 @@ StatusOr<bool> FilterPushdownRule::Apply(IRNode* ir_node) {
   auto new_filter_parent = current_node->parents()[0];
   PL_RETURN_IF_ERROR(filter->AddParent(new_filter_parent));
   PL_RETURN_IF_ERROR(current_node->ReplaceParent(new_filter_parent, filter));
-  PL_RETURN_IF_ERROR(filter->SetRelation(new_filter_parent->relation()));
+  PL_RETURN_IF_ERROR(filter->SetResolvedType(new_filter_parent->resolved_type()));
   return true;
 }
 

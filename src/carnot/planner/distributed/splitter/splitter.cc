@@ -474,7 +474,7 @@ StatusOr<GRPCSinkIR*> Splitter::CreateGRPCSink(OperatorIR* parent_op, int64_t gr
 
   PL_ASSIGN_OR_RETURN(GRPCSinkIR * grpc_sink,
                       graph->CreateNode<GRPCSinkIR>(parent_op->ast(), parent_op, grpc_id));
-  PL_RETURN_IF_ERROR(grpc_sink->SetRelation(parent_op->relation()));
+  PL_RETURN_IF_ERROR(grpc_sink->SetResolvedType(parent_op->resolved_type()));
   return grpc_sink;
 }
 

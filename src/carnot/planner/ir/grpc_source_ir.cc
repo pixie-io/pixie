@@ -29,12 +29,12 @@ Status GRPCSourceIR::CopyFromNodeImpl(const IRNode*, absl::flat_hash_map<const I
 Status GRPCSourceIR::ToProto(planpb::Operator* op) const {
   auto pb = op->mutable_grpc_source_op();
   op->set_op_type(planpb::GRPC_SOURCE_OPERATOR);
-  auto types = relation().col_types();
-  auto names = relation().col_names();
 
-  for (size_t i = 0; i < relation().NumColumns(); i++) {
-    pb->add_column_types(types[i]);
-    pb->add_column_names(names[i]);
+  for (const auto& [col_name, col_type] : *resolved_table_type()) {
+    DCHECK(col_type->IsValueType());
+    auto val_type = std::static_pointer_cast<ValueType>(col_type);
+    pb->add_column_types(val_type->data_type());
+    pb->add_column_names(col_name);
   }
   return Status::OK();
 }

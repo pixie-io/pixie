@@ -150,8 +150,6 @@ TEST_F(MergeNodesTest, merge_memory_sources_different_columns) {
   MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(merged_op);
   EXPECT_EQ(mem_src->table_name(), "cpu");
   EXPECT_THAT(mem_src->column_names(), UnorderedElementsAre("upid", "cpu0", "agent_id"));
-
-  LOG(INFO) << mem_src->HasTimeExpressions();
 }
 
 TEST_F(MergeNodesTest, memory_sources_with_different_ranges_fails) {

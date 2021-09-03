@@ -52,7 +52,6 @@ TEST_F(PreSplitAnalyzerTest, split_pem_udf) {
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));
 
-  ASSERT_OK(map1->SetRelationFromExprs());
   Relation existing_map_relation({types::STRING, types::STRING}, {"pem", "kelvin"});
   EXPECT_EQ(map1->relation(), existing_map_relation);
 

@@ -31,8 +31,9 @@ Status LimitIR::Init(OperatorIR* parent, int64_t limit_value, bool pem_only) {
 }
 
 StatusOr<std::vector<absl::flat_hash_set<std::string>>> LimitIR::RequiredInputColumns() const {
-  DCHECK(IsRelationInit());
-  return std::vector<absl::flat_hash_set<std::string>>{ColumnsFromRelation(relation())};
+  DCHECK(is_type_resolved());
+  return std::vector<absl::flat_hash_set<std::string>>{
+      {resolved_table_type()->ColumnNames().begin(), resolved_table_type()->ColumnNames().end()}};
 }
 
 Status LimitIR::ToProto(planpb::Operator* op) const {
@@ -40,13 +41,16 @@ Status LimitIR::ToProto(planpb::Operator* op) const {
   op->set_op_type(planpb::LIMIT_OPERATOR);
   DCHECK_EQ(parents().size(), 1UL);
 
-  auto parent_rel = parents()[0]->relation();
+  DCHECK(parents()[0]->is_type_resolved());
+  auto parent_table_type = parents()[0]->resolved_table_type();
   auto parent_id = parents()[0]->id();
 
-  for (const std::string& col_name : relation().col_names()) {
+  DCHECK(is_type_resolved());
+  for (const std::string& col_name : resolved_table_type()->ColumnNames()) {
     planpb::Column* col_pb = pb->add_columns();
     col_pb->set_node(parent_id);
-    col_pb->set_index(parent_rel.GetColumnIndex(col_name));
+    DCHECK(parent_table_type->HasColumn(col_name));
+    col_pb->set_index(parent_table_type->GetColumnIndex(col_name));
   }
   if (!limit_value_set_) {
     return CreateIRNodeError("Limit value not set properly.");

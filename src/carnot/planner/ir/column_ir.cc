@@ -32,11 +32,12 @@ Status ColumnIR::Init(const std::string& col_name, int64_t parent_idx) {
 
 StatusOr<int64_t> ColumnIR::GetColumnIndex() const {
   PL_ASSIGN_OR_RETURN(auto op, ReferencedOperator());
-  if (!op->relation().HasColumn(col_name())) {
-    return DExitOrIRNodeError("Column '$0' does not exist in relation $1", col_name(),
-                              op->relation().DebugString());
+  auto col_index = op->resolved_table_type()->GetColumnIndex(col_name());
+  if (col_index == -1) {
+    return DExitOrIRNodeError("Column '$0' does not exist in $1", col_name(),
+                              op->resolved_table_type()->DebugString());
   }
-  return op->relation().GetColumnIndex(col_name());
+  return col_index;
 }
 
 Status ColumnIR::ToProto(planpb::Column* column_pb) const {

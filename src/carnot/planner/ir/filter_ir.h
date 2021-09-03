@@ -61,8 +61,6 @@ class FilterIR : public OperatorIR {
   ExpressionIR* filter_expr_ = nullptr;
 };
 
-absl::flat_hash_set<std::string> ColumnsFromRelation(Relation r);
-
 }  // namespace planner
 }  // namespace carnot
 }  // namespace px

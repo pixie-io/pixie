@@ -31,7 +31,7 @@ Status UDTFSourceIR::Init(std::string_view func_name,
   udtf_spec_ = udtf_spec;
   table_store::schema::Relation relation;
   PL_RETURN_IF_ERROR(relation.FromProto(&udtf_spec_.relation()));
-  PL_RETURN_IF_ERROR(SetRelation(relation));
+  PL_RETURN_IF_ERROR(SetResolvedType(TableType::Create(relation)));
   return InitArgValues(arg_value_map, udtf_spec);
 }
 
@@ -88,13 +88,6 @@ Status UDTFSourceIR::CopyFromNodeImpl(
     arg_values.push_back(static_cast<DataIR*>(new_arg_element));
   }
   return SetArgValues(arg_values);
-}
-
-Status UDTFSourceIR::ResolveType(CompilerState* /* compiler_state */) {
-  table_store::schema::Relation relation;
-  PL_RETURN_IF_ERROR(relation.FromProto(&udtf_spec_.relation()));
-  auto new_table = TableType::Create(relation);
-  return SetResolvedType(new_table);
 }
 
 }  // namespace planner

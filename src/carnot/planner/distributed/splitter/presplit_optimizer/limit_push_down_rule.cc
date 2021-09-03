@@ -92,7 +92,7 @@ StatusOr<bool> LimitPushdownRule::Apply(IRNode* ir_node) {
     // The limit should now be a child of the parent.
     PL_RETURN_IF_ERROR(new_limit->AddParent(new_parent));
     // Ensure we inherit the relation of the parent.
-    PL_RETURN_IF_ERROR(new_limit->SetRelation(new_parent->relation()));
+    PL_RETURN_IF_ERROR(new_limit->SetResolvedType(new_parent->resolved_type()));
   }
 
   PL_RETURN_IF_ERROR(graph->DeleteNode(limit->id()));

@@ -181,14 +181,16 @@ TEST_F(MapTest, single_col_map_subscript_attribute) {
   auto map1 = static_cast<MapIR*>(mapnodes[0]);
   auto map2 = static_cast<MapIR*>(mapnodes[1]);
 
-  CompareClone(map1, map2, "Map assignment");
-
   EXPECT_NE(map1, nullptr);
   EXPECT_TRUE(map1->keep_input_columns());
+  EXPECT_EQ(map1->keep_input_columns(), map2->keep_input_columns());
 
+  EXPECT_EQ(map1->col_exprs().size(), map2->col_exprs().size());
   std::vector<std::string> output_columns;
-  for (const ColumnExpression& expr : map1->col_exprs()) {
+  for (const auto& [idx, expr] : Enumerate(map1->col_exprs())) {
     output_columns.push_back(expr.name);
+    EXPECT_EQ(expr.name, map2->col_exprs()[idx].name);
+    EXPECT_TRUE(expr.node->Equals(map2->col_exprs()[idx].node));
   }
   EXPECT_EQ(output_columns, std::vector<std::string>{"cpu2"});
 }

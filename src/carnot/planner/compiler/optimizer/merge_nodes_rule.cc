@@ -18,7 +18,6 @@
 
 #include "src/carnot/planner/compiler/optimizer/merge_nodes_rule.h"
 #include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
-#include "src/carnot/planner/compiler/analyzer/source_relation_rule.h"
 #include "src/carnot/planner/ir/map_ir.h"
 #include "src/carnot/planner/ir/operator_ir.h"
 
@@ -340,10 +339,6 @@ StatusOr<OperatorIR*> MergeNodesRule::MergeOps(IR* graph,
     } else {
       new_src->SetTimeValuesNS(start_time, stop_time);
     }
-    new_src->ClearRelation();
-    SourceRelationRule src_rule(compiler_state_);
-    PL_ASSIGN_OR_RETURN(bool result, src_rule.Apply(new_src));
-    DCHECK(result);
 
     new_src->ClearResolvedType();
     ResolveTypesRule rule(compiler_state_);

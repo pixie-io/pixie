@@ -25,6 +25,7 @@
 
 #include <pypa/parser/parser.hh>
 
+#include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/distributed/distributed_plan/distributed_plan.h"
 #include "src/carnot/planner/ir/ir.h"
@@ -38,7 +39,7 @@ namespace distributed {
 using ::px::testing::proto::EqualsProto;
 using ::px::testing::proto::Partially;
 
-using DistributedPlanTest = OperatorTests;
+using DistributedPlanTest = ASTVisitorTest;
 
 constexpr char kIRProto[] = R"proto(
 qb_address_to_plan {
@@ -90,6 +91,10 @@ qb_address_to_plan {
             column_names: "cpu0"
             column_names: "cpu1"
             column_names: "cpu2"
+            column_semantic_types: ST_NONE
+            column_semantic_types: ST_NONE
+            column_semantic_types: ST_NONE
+            column_semantic_types: ST_NONE
           }
         }
       }
@@ -153,6 +158,10 @@ qb_address_to_plan {
             column_names: "cpu0"
             column_names: "cpu1"
             column_names: "cpu2"
+            column_semantic_types: ST_NONE
+            column_semantic_types: ST_NONE
+            column_semantic_types: ST_NONE
+            column_semantic_types: ST_NONE
           }
         }
       }
@@ -196,8 +205,12 @@ TEST_F(DistributedPlanTest, construction_test) {
     auto new_graph = std::make_shared<IR>();
     SwapGraphBeingBuilt(new_graph);
     auto mem_source = MakeMemSource(MakeRelation());
-    auto mem_sink = MakeMemSink(mem_source, carnot_instance->QueryBrokerAddress());
-    EXPECT_OK(mem_sink->SetRelation(MakeRelation()));
+    compiler_state_->relation_map()->emplace("table", MakeRelation());
+    MakeMemSink(mem_source, carnot_instance->QueryBrokerAddress());
+
+    compiler::ResolveTypesRule rule(compiler_state_.get());
+    ASSERT_OK(rule.Execute(graph.get()));
+
     auto clone_uptr = new_graph->Clone().ConsumeValueOrDie();
     carnot_instance->AddPlan(clone_uptr.get());
     physical_plan->AddPlan(std::move(clone_uptr));

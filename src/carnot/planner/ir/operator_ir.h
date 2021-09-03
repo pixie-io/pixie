@@ -53,16 +53,13 @@ class OperatorIR : public IRNode {
   OperatorIR() = delete;
   bool IsOperator() const override { return true; }
   bool IsExpression() const override { return false; }
-  const table_store::schema::Relation& relation() const { return relation_; }
-  Status SetRelation(table_store::schema::Relation relation) {
-    relation_init_ = true;
-    relation_ = relation;
-    return Status::OK();
+  table_store::schema::Relation relation() {
+    DCHECK(is_type_resolved());
+    return resolved_table_type()->ToRelation().ConsumeValueOrDie();
   }
-
-  void ClearRelation() { relation_init_ = false; }
-
-  bool IsRelationInit() const { return relation_init_; }
+  Status SetRelation(table_store::schema::Relation) { return Status::OK(); }
+  void ClearRelation() {}
+  bool IsRelationInit() const { return is_type_resolved(); }
   bool HasParents() const { return parents_.size() != 0; }
   bool IsChildOf(OperatorIR* parent) {
     return std::find(parents_.begin(), parents_.end(), parent) != parents_.end();
@@ -187,9 +184,7 @@ class OperatorIR : public IRNode {
       const absl::flat_hash_set<std::string>& output_colnames) = 0;
 
  private:
-  bool relation_init_ = false;
   std::vector<OperatorIR*> parents_;
-  table_store::schema::Relation relation_;
   std::vector<TypePtr> parent_types_;
   bool parent_types_set_ = false;
 };

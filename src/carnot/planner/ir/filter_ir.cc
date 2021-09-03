@@ -44,16 +44,11 @@ Status FilterIR::SetFilterExpr(ExpressionIR* expr) {
   return Status::OK();
 }
 
-absl::flat_hash_set<std::string> ColumnsFromRelation(Relation r) {
-  auto col_names = r.col_names();
-  return {col_names.begin(), col_names.end()};
-}
-
 StatusOr<std::vector<absl::flat_hash_set<std::string>>> FilterIR::RequiredInputColumns() const {
-  DCHECK(IsRelationInit());
+  DCHECK(is_type_resolved());
   PL_ASSIGN_OR_RETURN(auto filter_cols, filter_expr_->InputColumnNames());
-  auto relation_cols = ColumnsFromRelation(relation());
-  filter_cols.insert(relation_cols.begin(), relation_cols.end());
+  filter_cols.insert(resolved_table_type()->ColumnNames().begin(),
+                     resolved_table_type()->ColumnNames().end());
   return std::vector<absl::flat_hash_set<std::string>>{filter_cols};
 }
 
@@ -67,14 +62,14 @@ Status FilterIR::ToProto(planpb::Operator* op) const {
   op->set_op_type(planpb::FILTER_OPERATOR);
   DCHECK_EQ(parents().size(), 1UL);
 
-  auto col_names = relation().col_names();
+  auto col_names = resolved_table_type()->ColumnNames();
   for (const auto& col_name : col_names) {
     planpb::Column* col_pb = pb->add_columns();
     col_pb->set_node(parents()[0]->id());
-    auto parent_relation = parents()[0]->relation();
-    DCHECK(parent_relation.HasColumn(col_name)) << absl::Substitute(
-        "Don't have $0 in parent_relation $1", col_name, parent_relation.DebugString());
-    col_pb->set_index(parent_relation.GetColumnIndex(col_name));
+    auto parent_table_type = parents()[0]->resolved_table_type();
+    DCHECK(parent_table_type->HasColumn(col_name)) << absl::Substitute(
+        "Don't have $0 in parent_relation $1", col_name, parent_table_type->DebugString());
+    col_pb->set_index(parent_table_type->GetColumnIndex(col_name));
   }
 
   auto expr = pb->mutable_expression();

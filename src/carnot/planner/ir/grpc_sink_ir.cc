@@ -42,26 +42,13 @@ Status GRPCSinkIR::ToProto(planpb::Operator* op) const {
   pb->set_address(destination_address());
   pb->mutable_connection_options()->set_ssl_targetname(destination_ssl_targetname());
 
-  auto types = relation().col_types();
-  auto names = relation().col_names();
-
-  for (size_t i = 0; i < relation().NumColumns(); ++i) {
-    pb->mutable_output_table()->add_column_types(types[i]);
-    pb->mutable_output_table()->add_column_names(names[i]);
-  }
-
-  if (is_type_resolved()) {
-    auto table_type = std::static_pointer_cast<TableType>(resolved_type());
-    for (const auto& col_name : names) {
-      if (table_type->HasColumn(col_name)) {
-        PL_ASSIGN_OR_RETURN(auto col_type, table_type->GetColumnType(col_name));
-        if (!col_type->IsValueType()) {
-          return error::Internal("Attempting to create GRPCSink with a non-columnar type.");
-        }
-        auto val_type = std::static_pointer_cast<ValueType>(col_type);
-        pb->mutable_output_table()->add_column_semantic_types(val_type->semantic_type());
-      }
-    }
+  DCHECK(is_type_resolved());
+  for (const auto& [col_name, col_type] : *resolved_table_type()) {
+    DCHECK(col_type->IsValueType());
+    auto val_type = std::static_pointer_cast<ValueType>(col_type);
+    pb->mutable_output_table()->add_column_names(col_name);
+    pb->mutable_output_table()->add_column_types(val_type->data_type());
+    pb->mutable_output_table()->add_column_semantic_types(val_type->semantic_type());
   }
   return Status::OK();
 }
@@ -79,10 +66,6 @@ Status GRPCSinkIR::ToProto(planpb::Operator* op, int64_t agent_id) const {
 }
 
 Status GRPCSinkIR::ResolveType(CompilerState* /* compiler_state */) {
-  if (!has_output_table()) {
-    return CreateIRNodeError(
-        "Cannot resolve type of GRPCSink unless it produces a final output result.");
-  }
   DCHECK_EQ(1, parent_types().size());
   // When out_columns_ is empty, the GRPCSink just copies the parent type.
   if (out_columns_.size() == 0) {

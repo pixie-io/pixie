@@ -183,7 +183,6 @@ StatusOr<bool> SplitPEMAndKelvinOnlyUDFOperatorRule::Apply(IRNode* node) {
   // Update the relation of the PEM-only map.
   // The relation of the parent should be unchanged, since it is just a reassignment
   // of the same output value.
-  PL_RETURN_IF_ERROR(pem_map->SetRelationFromExprs());
   PL_RETURN_IF_ERROR(ResolveOperatorType(pem_map, compiler_state_));
   PL_RETURN_IF_ERROR(op->ReplaceParent(parent, pem_map));
   return true;

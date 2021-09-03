@@ -28,8 +28,6 @@ namespace px {
 namespace carnot {
 namespace planner {
 
-using table_store::schema::Relation;
-
 Status IR::AddEdge(int64_t from_node, int64_t to_node) {
   dag_.AddEdge(from_node, to_node);
   return Status::OK();
@@ -270,10 +268,10 @@ StatusOr<planpb::Plan> IR::ToProto(int64_t agent_id) const {
 
 Status IR::OutputProto(planpb::PlanFragment* pf, const OperatorIR* op_node,
                        int64_t agent_id) const {
-  // Check to make sure that the relation is set for this op_node, otherwise it's not connected to
+  // Check to make sure that the type is resolved for this op_node, otherwise it's not connected to
   // a Sink.
-  CHECK(op_node->IsRelationInit())
-      << absl::Substitute("$0 doesn't have a relation.", op_node->DebugString());
+  CHECK(op_node->is_type_resolved())
+      << absl::Substitute("$0 doesn't have a resolved_type.", op_node->DebugString());
 
   // Add PlanNode.
   auto plan_node = pf->add_nodes();

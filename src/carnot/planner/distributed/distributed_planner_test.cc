@@ -25,6 +25,7 @@
 
 #include <pypa/parser/parser.hh>
 
+#include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/distributed/distributed_planner.h"
 #include "src/carnot/planner/ir/ir.h"
@@ -37,6 +38,7 @@ namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
+using compiler::ResolveTypesRule;
 using px::testing::proto::EqualsProto;
 using ::testing::ContainsRegex;
 using ::testing::ElementsAre;
@@ -102,22 +104,22 @@ schema_info {
 }
 )proto";
 
-class DistributedPlannerTest : public OperatorTests {
+class DistributedPlannerTest : public ASTVisitorTest {
  protected:
-  void SetUpImpl() override { compiler_state_ = nullptr; }
   distributedpb::DistributedState LoadDistributedStatePb(const std::string& physical_state_txt) {
     distributedpb::DistributedState physical_state_pb;
     CHECK(google::protobuf::TextFormat::MergeFromString(physical_state_txt, &physical_state_pb));
     return physical_state_pb;
   }
-
-  std::unique_ptr<CompilerState> compiler_state_;
 };
 
 TEST_F(DistributedPlannerTest, one_pem_one_kelvin) {
   auto mem_src = MakeMemSource(MakeRelation());
-  auto mem_sink = MakeMemSink(mem_src, "out");
-  PL_CHECK_OK(mem_sink->SetRelation(MakeRelation()));
+  compiler_state_->relation_map()->emplace("table", MakeRelation());
+  MakeMemSink(mem_src, "out");
+
+  ResolveTypesRule rule(compiler_state_.get());
+  ASSERT_OK(rule.Execute(graph.get()));
 
   distributedpb::DistributedState ps_pb = LoadDistributedStatePb(kOnePEMOneKelvinDistributedState);
   std::unique_ptr<DistributedPlanner> physical_planner =
@@ -153,8 +155,11 @@ TEST_F(DistributedPlannerTest, one_pem_one_kelvin) {
 
 TEST_F(DistributedPlannerTest, three_agents_one_kelvin) {
   auto mem_src = MakeMemSource(MakeRelation());
-  auto mem_sink = MakeMemSink(mem_src, "out");
-  PL_CHECK_OK(mem_sink->SetRelation(MakeRelation()));
+  compiler_state_->relation_map()->emplace("table", MakeRelation());
+  MakeMemSink(mem_src, "out");
+
+  ResolveTypesRule rule(compiler_state_.get());
+  ASSERT_OK(rule.Execute(graph.get()));
 
   distributedpb::DistributedState ps_pb =
       LoadDistributedStatePb(kThreePEMsOneKelvinDistributedState);

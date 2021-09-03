@@ -222,10 +222,7 @@ TEST_F(UnionOperatorRelationRuleTest, union_relations_disagree) {
   compiler_state_->relation_map()->emplace("source2", relation2);
   auto mem_src1 = MakeMemSource("source1", relation1);
   auto mem_src2 = MakeMemSource("source2", relation2);
-  auto union_op = MakeUnion({mem_src1, mem_src2});
-  EXPECT_FALSE(union_op->IsRelationInit());
-  EXPECT_TRUE(mem_src1->IsRelationInit());
-  EXPECT_TRUE(mem_src2->IsRelationInit());
+  MakeUnion({mem_src1, mem_src2});
 
   ResolveTypesRule type_rule(compiler_state_.get());
   auto result = type_rule.Execute(graph.get());
@@ -252,9 +249,6 @@ TEST_F(UnionOperatorRelationRuleTest, union_relation_different_order) {
   auto mem_src1 = MakeMemSource("source1", relation1);
   auto mem_src2 = MakeMemSource("source2", relation2);
   auto union_op = MakeUnion({mem_src1, mem_src2});
-  EXPECT_FALSE(union_op->IsRelationInit());
-  EXPECT_TRUE(mem_src1->IsRelationInit());
-  EXPECT_TRUE(mem_src2->IsRelationInit());
 
   ResolveTypesRule type_rule(compiler_state_.get());
   auto result = type_rule.Execute(graph.get());
@@ -400,10 +394,6 @@ TEST_F(OperatorRelationTest, JoinCreateOutputColumns) {
                                           std::vector<std::string>{left_suffix, right_suffix})
                      .ConsumeValueOrDie();
 
-  EXPECT_TRUE(mem_src1->IsRelationInit());
-  EXPECT_TRUE(mem_src2->IsRelationInit());
-  EXPECT_FALSE(join->IsRelationInit());
-
   EXPECT_EQ(join->output_columns().size(), 0);
 
   ResolveTypesRule type_rule(compiler_state_.get());
@@ -453,10 +443,6 @@ TEST_F(OperatorRelationTest, JoinCreateOutputColumnsFailsDuplicateResultColumns)
                                           std::vector<std::string>{left_suffix, right_suffix})
                      .ConsumeValueOrDie();
 
-  EXPECT_TRUE(mem_src1->IsRelationInit());
-  EXPECT_TRUE(mem_src2->IsRelationInit());
-  EXPECT_FALSE(join->IsRelationInit());
-
   EXPECT_EQ(join->output_columns().size(), 0);
 
   ResolveTypesRule type_rule(compiler_state_.get());
@@ -484,10 +470,6 @@ TEST_F(OperatorRelationTest, JoinCreateOutputColumnsFailsDuplicateNoSuffixes) {
                                           std::vector<ColumnIR*>{MakeColumn(join_key, 1)},
                                           std::vector<std::string>{left_suffix, right_suffix})
                      .ConsumeValueOrDie();
-
-  EXPECT_TRUE(mem_src1->IsRelationInit());
-  EXPECT_TRUE(mem_src2->IsRelationInit());
-  EXPECT_FALSE(join->IsRelationInit());
 
   EXPECT_EQ(join->output_columns().size(), 0);
 
@@ -519,11 +501,6 @@ TEST_F(OperatorRelationTest, JoinCreateOutputColumnsAfterRightJoin) {
                                           std::vector<ColumnIR*>{MakeColumn(join_key, 1)},
                                           std::vector<std::string>{left_suffix, right_suffix})
                      .ConsumeValueOrDie();
-
-  EXPECT_TRUE(mem_src1->IsRelationInit());
-  EXPECT_TRUE(mem_src2->IsRelationInit());
-  EXPECT_FALSE(join->IsRelationInit());
-
   EXPECT_EQ(join->output_columns().size(), 0);
 
   // Join should be a right join.

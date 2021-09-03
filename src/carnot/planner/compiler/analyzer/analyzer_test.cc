@@ -999,7 +999,6 @@ TEST_F(AnalyzerTest, map_only_streaming_test) {
   ASSERT_EQ(1, srcs.size());
   EXPECT_TRUE(static_cast<MemorySourceIR*>(srcs[0])->streaming());
 }
-
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

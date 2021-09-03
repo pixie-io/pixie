@@ -25,6 +25,7 @@
 
 #include <pypa/parser/parser.hh>
 
+#include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/distributed/coordinator/coordinator.h"
 #include "src/carnot/planner/distributed/distributed_plan/distributed_plan.h"
@@ -62,8 +63,11 @@ class StitcherTest : public DistributedRulesTest {
 
   void MakeSourceSinkGraph() {
     auto mem_source = MakeMemSource(MakeRelation());
-    auto mem_sink = MakeMemSink(mem_source, "out");
-    PL_CHECK_OK(mem_sink->SetRelation(MakeRelation()));
+    compiler_state_->relation_map()->emplace("table", MakeRelation());
+    MakeMemSink(mem_source, "out");
+
+    compiler::ResolveTypesRule rule(compiler_state_.get());
+    ASSERT_OK(rule.Execute(graph.get()));
   }
 
   std::unique_ptr<DistributedPlan> MakeDistributedPlan(const distributedpb::DistributedState& ps) {

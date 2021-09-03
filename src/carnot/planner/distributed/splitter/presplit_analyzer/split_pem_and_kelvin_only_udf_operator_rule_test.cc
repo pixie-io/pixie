@@ -65,7 +65,6 @@ TEST_F(SplitPEMAndKelvinOnlyUDFOperatorRuleTest, simple) {
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));
 
-  ASSERT_OK(map1->SetRelationFromExprs());
   Relation existing_map_relation({types::STRING, types::STRING}, {"pem", "kelvin"});
   EXPECT_EQ(map1->relation(), existing_map_relation);
 
@@ -109,7 +108,6 @@ TEST_F(SplitPEMAndKelvinOnlyUDFOperatorRuleTest, nested) {
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));
 
-  ASSERT_OK(map1->SetRelationFromExprs());
   Relation existing_map_relation({types::STRING}, {"kelvin"});
   EXPECT_EQ(map1->relation(), existing_map_relation);
 
@@ -152,8 +150,6 @@ TEST_F(SplitPEMAndKelvinOnlyUDFOperatorRuleTest, name_collision) {
 
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));
-  ASSERT_OK(map1->SetRelationFromExprs());
-  ASSERT_OK(map2->SetRelationFromExprs());
 
   SplitPEMAndKelvinOnlyUDFOperatorRule rule(compiler_state_.get());
   auto rule_or_s = rule.Execute(graph.get());
@@ -174,22 +170,19 @@ TEST_F(SplitPEMAndKelvinOnlyUDFOperatorRuleTest, name_collision) {
 TEST_F(SplitPEMAndKelvinOnlyUDFOperatorRuleTest, filter) {
   // Kelvin-only plan
   MemorySourceIR* src1 = MakeMemSource("http_events", {"remote_addr", "req_path"});
-  ASSERT_OK(
-      src1->SetRelation(Relation({types::STRING, types::STRING}, {"remote_addr", "req_path"})));
   auto input1 = MakeColumn("remote_addr", 0);
   auto input2 = MakeColumn("req_path", 0);
   auto func1 = MakeFunc("pem_only", {input1});
   auto func2 = MakeFunc("kelvin_only", {input2});
   auto func3 = MakeEqualsFunc(func1, func2);
   FilterIR* filter = MakeFilter(src1, func3);
-  ASSERT_OK(filter->SetRelation(src1->relation()));
   MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
-
-  Relation existing_filter_relation({types::STRING, types::STRING}, {"remote_addr", "req_path"});
-  EXPECT_EQ(filter->relation(), existing_filter_relation);
 
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));
+
+  Relation existing_filter_relation({types::STRING, types::STRING}, {"remote_addr", "req_path"});
+  EXPECT_EQ(filter->relation(), existing_filter_relation);
 
   SplitPEMAndKelvinOnlyUDFOperatorRule rule(compiler_state_.get());
   auto rule_or_s = rule.Execute(graph.get());

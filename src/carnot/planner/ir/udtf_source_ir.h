@@ -76,13 +76,15 @@ class UDTFSourceIR : public OperatorIR {
 
   bool IsSource() const override { return true; }
 
-  Status ResolveType(CompilerState* compiler_state);
+  // Type is resolved on Init so no need to do anything here.
+  Status ResolveType(CompilerState*) { return Status::OK(); }
 
  protected:
   // We currently don't support materializing a subset of UDTF output columns.
   StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
       const absl::flat_hash_set<std::string>& /*kept_columns*/) override {
-    auto cols = relation().col_names();
+    DCHECK(is_type_resolved());
+    auto cols = resolved_table_type()->ColumnNames();
     return absl::flat_hash_set<std::string>(cols.begin(), cols.end());
   }
 

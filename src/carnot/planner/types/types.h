@@ -182,6 +182,13 @@ class TableType : public BaseType {
   }
 
   const std::vector<std::string>& ColumnNames() const { return ordered_col_names_; }
+  int64_t GetColumnIndex(std::string name) const {
+    auto it = std::find(ordered_col_names_.begin(), ordered_col_names_.end(), name);
+    if (it == ordered_col_names_.end()) {
+      return -1;
+    }
+    return it - ordered_col_names_.begin();
+  }
 
   class TableTypeIterator {
    public:

@@ -740,24 +740,24 @@ struct AnyExpressionMatch : public ParentMatch {
 inline AnyExpressionMatch Expression() { return AnyExpressionMatch(); }
 
 /**
- * @brief Match a MemorySource operation that has the expected relation status.
+ * @brief Match a MemorySource operation that has the expected type status.
  *
- * @tparam HasRelation: whether the MemorySource should have a relation set or not.
+ * @tparam HasResolvedType: whether the MemorySource should have a resolved type or not.
  */
-template <bool HasRelation = false>
-struct SourceHasRelationMatch : public ParentMatch {
-  SourceHasRelationMatch() : ParentMatch(IRNodeType::kAny) {}
+template <bool HasResolvedType = false>
+struct SourceHasTypeMatch : public ParentMatch {
+  SourceHasTypeMatch() : ParentMatch(IRNodeType::kAny) {}
   bool Match(const IRNode* node) const override {
     if (!node->IsOperator()) {
       return false;
     }
     const OperatorIR* op = static_cast<const OperatorIR*>(node);
-    return op->IsSource() && op->IsRelationInit() == HasRelation;
+    return op->IsSource() && op->is_type_resolved() == HasResolvedType;
   }
 };
 
-inline SourceHasRelationMatch<false> UnresolvedSource() { return SourceHasRelationMatch<false>(); }
-inline SourceHasRelationMatch<true> ResolvedSource() { return SourceHasRelationMatch<true>(); }
+inline SourceHasTypeMatch<false> UnresolvedSource() { return SourceHasTypeMatch<false>(); }
+inline SourceHasTypeMatch<true> ResolvedSource() { return SourceHasTypeMatch<true>(); }
 
 struct SourceOperator : public ParentMatch {
   SourceOperator() : ParentMatch(IRNodeType::kAny) {}
@@ -771,21 +771,21 @@ struct SourceOperator : public ParentMatch {
 };
 
 /**
- * @brief Match any operator that matches the Relation Init status and the parent's
- * relation init status.
+ * @brief Match any operator that matches the type Init status and the parent's
+ * type init status.
  *
- * @tparam ResolvedRelation: whether this operator should have a resolved relation.
- * @tparam ParentsOpResolved: whether the parent op relation should be resolved.
+ * @tparam ResolvedType: whether this operator should have a resolved type.
+ * @tparam ParentsOpResolved: whether the parent op should be resolved.
  */
-template <bool ResolvedRelation = false, bool ParentOpResolved = false>
-struct AnyRelationResolvedOpMatch : public ParentMatch {
-  AnyRelationResolvedOpMatch() : ParentMatch(IRNodeType::kAny) {}
+template <bool ResolvedType = false, bool ParentOpResolved = false>
+struct AnyTypeResolvedOpMatch : public ParentMatch {
+  AnyTypeResolvedOpMatch() : ParentMatch(IRNodeType::kAny) {}
   bool Match(const IRNode* node) const override {
     if (node->IsOperator()) {
       const OperatorIR* op_ir = static_cast<const OperatorIR*>(node);
-      if (op_ir->HasParents() && op_ir->IsRelationInit() == ResolvedRelation) {
+      if (op_ir->HasParents() && op_ir->is_type_resolved() == ResolvedType) {
         for (OperatorIR* parent : op_ir->parents()) {
-          if (parent->IsRelationInit() != ParentOpResolved) {
+          if (parent->is_type_resolved() != ParentOpResolved) {
             return false;
           }
         }
@@ -797,20 +797,20 @@ struct AnyRelationResolvedOpMatch : public ParentMatch {
 };
 
 /**
- * @brief Match an operator of type Matcher that matches the Relation Init status and the parent's
- * relation init status.
+ * @brief Match an operator of type Matcher that matches the type Init status and the parent's
+ * type init status.
  *
  * @tparam Matcher: the type of the matcher for the op.
- * @tparam ResolvedRelation: whether this operator should have a resolved relation.
- * @tparam ParentsOpResolved: whether the parent op relation should be resolved.
+ * @tparam ResolvedType: whether this operator should have a resolved type.
+ * @tparam ParentsOpResolved: whether the parent op type should be resolved.
  */
-template <typename Matcher, bool ResolvedRelation = false, bool ParentOpResolved = false>
-struct RelationResolvedOpSpecialMatch : public ParentMatch {
-  explicit RelationResolvedOpSpecialMatch(Matcher matcher)
+template <typename Matcher, bool ResolvedType = false, bool ParentOpResolved = false>
+struct TypeResolvedOpSpecialMatch : public ParentMatch {
+  explicit TypeResolvedOpSpecialMatch(Matcher matcher)
       : ParentMatch(IRNodeType::kAny), matcher_(matcher) {}
   bool Match(const IRNode* node) const override {
     if (matcher_.Match(node)) {
-      return AnyRelationResolvedOpMatch<ResolvedRelation, ParentOpResolved>().Match(node);
+      return AnyTypeResolvedOpMatch<ResolvedType, ParentOpResolved>().Match(node);
     }
     return false;
   }
@@ -818,18 +818,18 @@ struct RelationResolvedOpSpecialMatch : public ParentMatch {
 };
 
 /**
- * @brief Match Any operator that doesn't have a relation but the parent does.
+ * @brief Match Any operator that doesn't have a resolved type but the parent does.
  */
-inline AnyRelationResolvedOpMatch<false, true> UnresolvedReadyOp() {
-  return AnyRelationResolvedOpMatch<false, true>();
+inline AnyTypeResolvedOpMatch<false, true> UnresolvedReadyOp() {
+  return AnyTypeResolvedOpMatch<false, true>();
 }
 
 /**
- * @brief Match a Join node that doesn't have a relation but it's parents do.
+ * @brief Match a Join node that doesn't have a resolved type but it's parents do.
  */
 template <typename Matcher>
-inline RelationResolvedOpSpecialMatch<Matcher, false, true> UnresolvedReadyOp(Matcher m) {
-  return RelationResolvedOpSpecialMatch<Matcher, false, true>(m);
+inline TypeResolvedOpSpecialMatch<Matcher, false, true> UnresolvedReadyOp(Matcher m) {
+  return TypeResolvedOpSpecialMatch<Matcher, false, true>(m);
 }
 
 struct MatchAnyOp : public ParentMatch {

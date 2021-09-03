@@ -24,6 +24,7 @@
 #include <utility>
 #include <vector>
 
+#include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/distributed/coordinator/coordinator.h"
 #include "src/carnot/planner/ir/ir.h"
@@ -37,6 +38,7 @@ namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
+using compiler::ResolveTypesRule;
 using md::AgentMetadataFilter;
 using ::px::testing::proto::EqualsProto;
 using ::px::testing::proto::Partially;
@@ -53,8 +55,11 @@ class CoordinatorTest : public testutils::DistributedRulesTest {
  protected:
   void MakeGraph() {
     auto mem_src = MakeMemSource(MakeRelation());
-    auto mem_sink = MakeMemSink(mem_src, "out");
-    PL_CHECK_OK(mem_sink->SetRelation(MakeRelation()));
+    compiler_state_->relation_map()->emplace("table", MakeRelation());
+    MakeMemSink(mem_src, "out");
+
+    ResolveTypesRule rule(compiler_state_.get());
+    ASSERT_OK(rule.Execute(graph.get()));
   }
 
   void VerifyHasDataSourcePlan(IR* plan) {

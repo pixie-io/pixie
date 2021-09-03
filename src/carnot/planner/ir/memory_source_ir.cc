@@ -37,11 +37,14 @@ Status MemorySourceIR::ToProto(planpb::Operator* op) const {
     return error::InvalidArgument("MemorySource columns are not set.");
   }
 
-  DCHECK_EQ(column_index_map_.size(), relation().NumColumns());
-  for (size_t i = 0; i < relation().NumColumns(); ++i) {
-    pb->add_column_idxs(column_index_map_[i]);
-    pb->add_column_names(relation().col_names()[i]);
-    pb->add_column_types(relation().col_types()[i]);
+  DCHECK(is_type_resolved());
+  DCHECK_EQ(column_index_map_.size(), resolved_table_type()->ColumnNames().size());
+  for (const auto& [idx, col_name] : Enumerate(resolved_table_type()->ColumnNames())) {
+    pb->add_column_idxs(column_index_map_[idx]);
+    pb->add_column_names(col_name);
+    auto val_type = std::static_pointer_cast<ValueType>(
+        resolved_table_type()->GetColumnType(col_name).ConsumeValueOrDie());
+    pb->add_column_types(val_type->data_type());
   }
 
   if (IsTimeSet()) {
@@ -101,18 +104,18 @@ Status MemorySourceIR::SetTimeExpressions(ExpressionIR* new_start_time_expr,
 StatusOr<absl::flat_hash_set<std::string>> MemorySourceIR::PruneOutputColumnsToImpl(
     const absl::flat_hash_set<std::string>& output_colnames) {
   DCHECK(column_index_map_set());
-  DCHECK(IsRelationInit());
+  DCHECK(is_type_resolved());
   std::vector<std::string> new_col_names;
   std::vector<int64_t> new_col_index_map;
 
-  auto col_names = relation().col_names();
+  auto col_names = resolved_table_type()->ColumnNames();
   for (const auto& [idx, name] : Enumerate(col_names)) {
     if (output_colnames.contains(name)) {
       new_col_names.push_back(name);
       new_col_index_map.push_back(column_index_map_[idx]);
     }
   }
-  if (new_col_names != relation().col_names()) {
+  if (new_col_names != resolved_table_type()->ColumnNames()) {
     column_names_ = new_col_names;
   }
   column_index_map_ = new_col_index_map;
@@ -146,19 +149,28 @@ Status MemorySourceIR::CopyFromNodeImpl(
 Status MemorySourceIR::ResolveType(CompilerState* compiler_state) {
   auto relation_it = compiler_state->relation_map()->find(table_name());
   if (relation_it == compiler_state->relation_map()->end()) {
-    return CreateIRNodeError("Table '$0' not found", table_name_);
+    return CreateIRNodeError("Table '$0' not found.", table_name_);
   }
   auto table_relation = relation_it->second;
   auto full_table_type = TableType::Create(table_relation);
   if (select_all()) {
+    std::vector<int64_t> column_indices;
+    for (int64_t i = 0; i < static_cast<int64_t>(table_relation.NumColumns()); ++i) {
+      column_indices.push_back(i);
+    }
+    SetColumnIndexMap(column_indices);
     return SetResolvedType(full_table_type);
   }
 
+  std::vector<int64_t> column_indices;
   auto new_table = TableType::Create();
   for (const auto& col_name : column_names_) {
     PL_ASSIGN_OR_RETURN(auto col_type, full_table_type->GetColumnType(col_name));
     new_table->AddColumn(col_name, col_type);
+    column_indices.push_back(table_relation.GetColumnIndex(col_name));
   }
+
+  SetColumnIndexMap(column_indices);
   return SetResolvedType(new_table);
 }
 

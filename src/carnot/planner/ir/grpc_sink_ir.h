@@ -126,8 +126,8 @@ class GRPCSinkIR : public OperatorIR {
     if (sink_type_ != GRPCSinkType::kExternal) {
       return error::Unimplemented("Unexpected call to GRPCSinkIR::RequiredInputColumns");
     }
-    DCHECK(IsRelationInit());
-    auto out_cols = relation().col_names();
+    DCHECK(is_type_resolved());
+    auto out_cols = resolved_table_type()->ColumnNames();
     absl::flat_hash_set<std::string> outputs{out_cols.begin(), out_cols.end()};
     return std::vector<absl::flat_hash_set<std::string>>{outputs};
   }

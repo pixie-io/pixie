@@ -50,8 +50,11 @@ TEST_F(CombineConsecutiveMapsRuleTest, basic) {
   EXPECT_FALSE(graph->HasNode(map2_id));
   EXPECT_THAT(map1->Children(), ElementsAre(sink1, sink2));
 
-  auto expected_map = MakeMap(mem_src, {parent_expr, child_expr}, true);
-  CompareClone(expected_map, map1, "Map node");
+  ASSERT_EQ(2, map1->col_exprs().size());
+  EXPECT_EQ(parent_expr.name, map1->col_exprs()[0].name);
+  EXPECT_EQ(parent_expr.node, map1->col_exprs()[0].node);
+  EXPECT_EQ(child_expr.name, map1->col_exprs()[1].name);
+  EXPECT_EQ(child_expr.node, map1->col_exprs()[1].node);
 }
 
 TEST_F(CombineConsecutiveMapsRuleTest, multiple_with_break) {
@@ -85,8 +88,13 @@ TEST_F(CombineConsecutiveMapsRuleTest, multiple_with_break) {
   EXPECT_THAT(map1->Children(), ElementsAre(map4));
   EXPECT_THAT(map4->Children(), ElementsAre(sink1, sink2));
 
-  auto expected_map = MakeMap(mem_src, {expr1, expr2, expr3}, true);
-  CompareClone(expected_map, map1, "Map node");
+  ASSERT_EQ(3, map1->col_exprs().size());
+  EXPECT_EQ(expr1.name, map1->col_exprs()[0].name);
+  EXPECT_EQ(expr1.node, map1->col_exprs()[0].node);
+  EXPECT_EQ(expr2.name, map1->col_exprs()[1].name);
+  EXPECT_EQ(expr2.node, map1->col_exprs()[1].node);
+  EXPECT_EQ(expr3.name, map1->col_exprs()[2].name);
+  EXPECT_EQ(expr3.node, map1->col_exprs()[2].node);
 }
 
 TEST_F(CombineConsecutiveMapsRuleTest, name_reassignment) {
@@ -110,8 +118,9 @@ TEST_F(CombineConsecutiveMapsRuleTest, name_reassignment) {
   EXPECT_FALSE(graph->HasNode(map2_id));
   EXPECT_THAT(map1->Children(), ElementsAre(sink1, sink2));
 
-  auto expected_map = MakeMap(mem_src, {child_expr}, true);
-  CompareClone(expected_map, map1, "Map node");
+  ASSERT_EQ(1, map1->col_exprs().size());
+  EXPECT_EQ(child_expr.name, map1->col_exprs()[0].name);
+  EXPECT_EQ(child_expr.node, map1->col_exprs()[0].node);
 }
 
 TEST_F(CombineConsecutiveMapsRuleTest, use_output_column) {
@@ -169,8 +178,11 @@ TEST_F(CombineConsecutiveMapsRuleTest, parent_dont_keep_input_columns) {
   EXPECT_FALSE(graph->HasNode(map2_id));
   EXPECT_THAT(map1->Children(), ElementsAre(sink1, sink2));
 
-  auto expected_map = MakeMap(mem_src, {parent_expr, child_expr}, true);
-  CompareClone(expected_map, map1, "Map node");
+  ASSERT_EQ(2, map1->col_exprs().size());
+  EXPECT_EQ(parent_expr.name, map1->col_exprs()[0].name);
+  EXPECT_EQ(parent_expr.node, map1->col_exprs()[0].node);
+  EXPECT_EQ(child_expr.name, map1->col_exprs()[1].name);
+  EXPECT_EQ(child_expr.node, map1->col_exprs()[1].node);
 }
 
 TEST_F(CombineConsecutiveMapsRuleTest, child_dont_keep_input_columns) {

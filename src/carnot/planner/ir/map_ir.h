@@ -75,16 +75,6 @@ class MapIR : public OperatorIR {
     return absl::StrJoin(expr_strings, ",");
   }
 
-  Status SetRelationFromExprs() {
-    Relation rel;
-    // Make a new relation with each of the expression key, type pairs.
-    for (auto& entry : col_exprs_) {
-      DCHECK(entry.node->IsDataTypeEvaluated());
-      rel.AddColumn(entry.node->EvaluatedDataType(), entry.name);
-    }
-    return SetRelation(rel);
-  }
-
   Status UpdateOpAfterParentTypesResolvedImpl() override;
 
  protected:

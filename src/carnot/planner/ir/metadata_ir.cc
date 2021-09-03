@@ -38,6 +38,7 @@ Status MetadataIR::CopyFromNodeImpl(const IRNode* node,
                                     absl::flat_hash_map<const IRNode*, IRNode*>*) {
   const MetadataIR* metadata_ir = static_cast<const MetadataIR*>(node);
   metadata_name_ = metadata_ir->metadata_name_;
+  property_ = metadata_ir->property_;
   return Status::OK();
 }
 

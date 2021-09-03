@@ -164,11 +164,14 @@ using ToProtoTest = ASTVisitorTest;
 TEST_F(ToProtoTest, memory_source_ir) {
   auto mem_src =
       graph->CreateNode<MemorySourceIR>(ast, "test_table", std::vector<std::string>{}).ValueOrDie();
-  EXPECT_OK(mem_src->SetRelation(
-      Relation({types::DataType::INT64, types::DataType::FLOAT64}, {"cpu0", "cpu1"})));
+  auto relation = Relation({types::DataType::INT64, types::DataType::FLOAT64}, {"cpu0", "cpu1"});
+  compiler_state_->relation_map()->emplace("test_table", relation);
 
   mem_src->SetColumnIndexMap({0, 1});
   mem_src->SetTimeValuesNS(10, 20);
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   planpb::Operator pb;
   EXPECT_OK(mem_src->ToProto(&pb));
@@ -203,7 +206,7 @@ constexpr char kExpectedMemSrcWithTabletPb[] = R"(
   mem_source_op {
     name: "test_table"
     column_idxs: 0
-    column_idxs: 2
+    column_idxs: 1
     column_names: "cpu0"
     column_names: "cpu1"
     column_types: INT64
@@ -224,15 +227,17 @@ TEST_F(ToProtoTest, memory_source_ir_with_tablet) {
       graph->CreateNode<MemorySourceIR>(ast, "test_table", std::vector<std::string>{"cpu0", "cpu1"})
           .ConsumeValueOrDie();
 
-  EXPECT_OK(mem_src->SetRelation(
-      Relation({types::DataType::INT64, types::DataType::FLOAT64}, {"cpu0", "cpu1"})));
+  auto rel = Relation({types::DataType::INT64, types::DataType::FLOAT64}, {"cpu0", "cpu1"});
+  compiler_state_->relation_map()->emplace("test_table", rel);
 
-  mem_src->SetColumnIndexMap({0, 2});
   mem_src->SetTimeValuesNS(10, 20);
 
   types::TabletID tablet_value = "abcd";
 
   mem_src->SetTabletValue(tablet_value);
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   planpb::Operator pb;
   EXPECT_OK(mem_src->ToProto(&pb));
@@ -249,6 +254,8 @@ constexpr char kExpectedMemSinkPb[] = R"(
     column_names: "output2"
     column_types: INT64
     column_types: FLOAT64
+    column_semantic_types: ST_NONE
+    column_semantic_types: ST_NONE
   }
 )";
 
@@ -263,7 +270,10 @@ TEST_F(ToProtoTest, memory_sink_ir) {
   auto rel = table_store::schema::Relation(
       std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64}),
       std::vector<std::string>({"output1", "output2"}));
-  EXPECT_OK(mem_sink->SetRelation(rel));
+  compiler_state_->relation_map()->emplace("source", rel);
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   planpb::Operator pb;
   EXPECT_OK(mem_sink->ToProto(&pb));
@@ -354,7 +364,18 @@ constexpr char kExpectedFilterPb[] = R"(
     }
     columns {
       node: 1
+    }
+    columns {
+      node: 1
+      index: 1
+    }
+    columns {
+      node: 1
       index: 2
+    }
+    columns {
+      node: 1
+      index: 3
     }
   }
 )";
@@ -368,14 +389,11 @@ TEST_F(ToProtoTest, filter_to_proto) {
   auto col1 = MakeColumn("cpu0", 0);
   auto col2 = MakeColumn("cpu2", 0);
   auto equals = MakeEqualsFunc(col1, col2);
-  EXPECT_OK(col1->SetResolvedType(ValueType::Create(types::FLOAT64, types::ST_NONE)));
-  EXPECT_OK(col2->SetResolvedType(ValueType::Create(types::FLOAT64, types::ST_NONE)));
 
   auto filter = MakeFilter(mem_src, equals);
-  ASSERT_OK(filter->SetRelation(Relation({types::DataType::INT64}, {"cpu1"})));
 
-  ASSERT_OK(ResolveOperatorType(mem_src, compiler_state_.get()));
-  ASSERT_OK(ResolveOperatorType(filter, compiler_state_.get()));
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   planpb::Operator pb;
   EXPECT_OK(filter->ToProto(&pb));
@@ -509,26 +527,28 @@ constexpr char kExpectedLimitPb[] = R"(
     }
     columns {
       node: 0
+      index: 1
+    }
+    columns {
+      node: 0
       index: 2
     }
   }
 )";
 
 TEST_F(ToProtoTest, limit_ir) {
-  auto ast = MakeTestAstPtr();
-  auto graph = std::make_shared<IR>();
   auto mem_src = graph
                      ->CreateNode<MemorySourceIR>(
                          ast, "source", std::vector<std::string>{"col1", "group1", "column"})
                      .ValueOrDie();
   table_store::schema::Relation src_rel({types::INT64, types::INT64, types::INT64},
                                         {"col1", "group1", "column"});
-  EXPECT_OK(mem_src->SetRelation(src_rel));
+  compiler_state_->relation_map()->emplace("source", src_rel);
 
   auto limit = graph->CreateNode<LimitIR>(ast, mem_src, 12).ValueOrDie();
 
-  table_store::schema::Relation limit_rel({types::INT64, types::INT64}, {"col1", "column"});
-  EXPECT_OK(limit->SetRelation(limit_rel));
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   planpb::Operator pb;
   ASSERT_OK(limit->ToProto(&pb));
@@ -744,18 +764,18 @@ column {
 })proto";
 
 TEST_F(ToProtoTest, column_tests) {
-  auto ast = MakeTestAstPtr();
-  auto graph = std::make_shared<IR>();
   auto column = graph->CreateNode<ColumnIR>(ast, "column", 0).ConsumeValueOrDie();
-  EXPECT_OK(column->SetResolvedType(ValueType::Create(types::INT64, types::ST_NONE)));
 
   auto mem_src =
       graph->CreateNode<MemorySourceIR>(ast, "source", std::vector<std::string>{"foo", "column"})
           .ConsumeValueOrDie();
   table_store::schema::Relation rel({types::INT64, types::INT64}, {"foo", "column"});
-  EXPECT_OK(mem_src->SetRelation(rel));
+  compiler_state_->relation_map()->emplace("source", rel);
   graph->CreateNode<MapIR>(ast, mem_src, ColExpressionVector{{"column", column}}, false)
       .ConsumeValueOrDie();
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   planpb::ScalarExpression pb;
   ASSERT_OK(column->ToProto(&pb));
@@ -790,8 +810,9 @@ TEST_F(MetadataTests, metadata_ir) {
   EXPECT_TRUE(metadata_ir->has_property());
 }
 
+using OpTests = ToProtoTest;
 // Swapping a parent should make sure that all columns are passed over correclt.
-TEST_F(OperatorTests, swap_parent) {
+TEST_F(OpTests, swap_parent) {
   MemorySourceIR* mem_source = MakeMemSource();
   ColumnIR* col1 = MakeColumn("test1", /*parent_op_idx*/ 0);
   ColumnIR* col2 = MakeColumn("test2", /*parent_op_idx*/ 0);
@@ -817,7 +838,7 @@ TEST_F(OperatorTests, swap_parent) {
   EXPECT_EQ(col3->ReferenceID().ConsumeValueOrDie(), parent_map->id());
 }
 
-TEST_F(OperatorTests, internal_grpc_ops) {
+TEST_F(OpTests, internal_grpc_ops) {
   int64_t grpc_id = 123;
   std::string source_grpc_address = "1111";
   std::string sink_physical_id = "agent-xyz";
@@ -841,7 +862,7 @@ TEST_F(OperatorTests, internal_grpc_ops) {
   EXPECT_EQ(grpc_src_group->source_id(), grpc_id);
 }
 
-TEST_F(OperatorTests, external_grpc) {
+TEST_F(OpTests, external_grpc) {
   MemorySourceIR* mem_src = MakeMemSource();
   GRPCSinkIR* grpc_sink = MakeGRPCSink(mem_src, "output_table", std::vector<std::string>{"outcol"});
   EXPECT_FALSE(grpc_sink->has_destination_id());
@@ -854,6 +875,7 @@ using CloneTests = ToProtoTest;
 TEST_F(CloneTests, simple_clone) {
   Relation rel({types::INT64, types::INT64, types::INT64}, {"test1", "test2", "test3"});
   auto mem_source = MakeMemSource("source", rel);
+  compiler_state_->relation_map()->emplace("source", rel);
   ColumnIR* col1 = MakeColumn("test1", 0);
   ColumnIR* col2 = MakeColumn("test2", 0);
   col2->set_annotations(ExpressionIR::Annotations(MetadataType::POD_NAME));
@@ -862,9 +884,8 @@ TEST_F(CloneTests, simple_clone) {
   MapIR* map = MakeMap(mem_source, {{{"out1", col1}, {"out2", col2}, {"out3", add_func}}, {}});
   MakeMemSink(map, "out");
 
-  compiler_state_->relation_map()->emplace("source", rel);
-  ASSERT_OK(ResolveOperatorType(mem_source, compiler_state_.get()));
-  ASSERT_OK(ResolveOperatorType(map, compiler_state_.get()));
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto out = graph->Clone();
   EXPECT_OK(out.status());
@@ -888,9 +909,8 @@ TEST_F(CloneTests, repeated_exprs_clone) {
   MapIR* map2 = MakeMap(map1, {{{"add1", add_func}, {"add2", add_func2}}});
   MakeMemSink(map2, "out");
 
-  ASSERT_OK(ResolveOperatorType(mem_source, compiler_state_.get()));
-  ASSERT_OK(ResolveOperatorType(map1, compiler_state_.get()));
-  ASSERT_OK(ResolveOperatorType(map2, compiler_state_.get()));
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto out = graph->Clone();
   EXPECT_OK(out.status());
@@ -905,19 +925,30 @@ TEST_F(CloneTests, repeated_exprs_clone) {
 }
 
 TEST_F(CloneTests, all_op_clone) {
-  auto mem_source = MakeMemSource();
+  auto mem_source = MakeMemSource("http_events");
   mem_source->set_streaming(true);
 
-  auto equals_fn = MakeEqualsFunc(MakeMetadataIR("service", 0), MakeString("pl/test_service"));
+  auto property1 = std::make_unique<NameMetadataProperty>(
+      MetadataType::SERVICE_NAME, std::vector<MetadataType>({MetadataType::UPID}));
+  auto metadata1 = MakeMetadataIR("service", 0);
+  metadata1->set_property(property1.get());
+  auto equals_fn = MakeEqualsFunc(metadata1, MakeString("pl/test_service"));
   auto eq_map = MakeMap(mem_source, {{{"equals_column", equals_fn}}});
   auto filter = MakeFilter(eq_map, MakeColumn("equals_column", 0));
   auto limit = MakeLimit(filter, 10);
 
   auto mean_func = MakeMeanFunc(MakeColumn("equals_column", 0));
-  auto agg = MakeBlockingAgg(limit, {MakeMetadataIR("service", 0)}, {{{"mean", mean_func}}, {}});
+  auto property2 = std::make_unique<NameMetadataProperty>(
+      MetadataType::SERVICE_NAME, std::vector<MetadataType>({MetadataType::UPID}));
+  auto metadata2 = MakeMetadataIR("service", 0);
+  metadata2->set_property(property2.get());
+  auto agg = MakeBlockingAgg(limit, {metadata2}, {{{"mean", mean_func}}, {}});
   auto add_func = MakeAddFunc(MakeColumn("mean", 0), MakeInt(3));
   auto map = MakeMap(agg, {{{"mean_deux", add_func}, {"mean", MakeColumn("mean", 0)}}, {}});
   MakeMemSink(map, "sup");
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto out = graph->Clone();
   EXPECT_OK(out.status());
@@ -948,10 +979,14 @@ TEST_F(CloneTests, grpc_source_group) {
 }
 
 TEST_F(CloneTests, internal_grpc_sink) {
-  auto mem_source = MakeMemSource();
+  auto mem_source = MakeMemSource("source");
+  compiler_state_->relation_map()->emplace("source", MakeRelation());
   GRPCSinkIR* grpc_sink = MakeGRPCSink(mem_source, 123);
   grpc_sink->SetDestinationAddress("1111");
   grpc_sink->SetDestinationSSLTargetName("kelvin.pl.svc");
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto out = graph->Clone();
   EXPECT_OK(out.status());
@@ -966,10 +1001,15 @@ TEST_F(CloneTests, internal_grpc_sink) {
 }
 
 TEST_F(CloneTests, external_grpc_sink) {
-  auto mem_source = MakeMemSource();
-  GRPCSinkIR* grpc_sink = MakeGRPCSink(mem_source, "output_table", std::vector<std::string>{"foo"});
+  auto mem_source = MakeMemSource("source");
+  compiler_state_->relation_map()->emplace("source", MakeRelation());
+  GRPCSinkIR* grpc_sink =
+      MakeGRPCSink(mem_source, "output_table", std::vector<std::string>{"count"});
   grpc_sink->SetDestinationAddress("1111");
   grpc_sink->SetDestinationSSLTargetName("vizier-query-broker.pl.svc");
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto out = graph->Clone();
   EXPECT_OK(out.status());
@@ -986,6 +1026,10 @@ TEST_F(CloneTests, external_grpc_sink) {
 TEST_F(CloneTests, grpc_source) {
   auto grpc_source = MakeGRPCSource(MakeRelation());
   MakeMemSink(grpc_source, "sup");
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
+
   auto out = graph->Clone();
   EXPECT_OK(out.status());
   std::unique_ptr<IR> cloned_ir = out.ConsumeValueOrDie();
@@ -1002,16 +1046,21 @@ TEST_F(CloneTests, join_clone) {
   Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
                       types::DataType::INT64},
                      {"left_only", "col1", "col2", "col3"});
-  auto mem_src1 = MakeMemSource(relation0);
+  auto mem_src1 = MakeMemSource("source0", relation0);
+  compiler_state_->relation_map()->emplace("source0", relation0);
 
   Relation relation1({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
                       types::DataType::INT64, types::DataType::INT64},
                      {"right_only", "col1", "col2", "col3", "col4"});
-  auto mem_src2 = MakeMemSource(relation1);
+  auto mem_src2 = MakeMemSource("source1", relation1);
+  compiler_state_->relation_map()->emplace("source1", relation1);
 
-  auto join_op =
-      MakeJoin({mem_src1, mem_src2}, "inner", relation0, relation1,
-               std::vector<std::string>{"col1", "col3"}, std::vector<std::string>{"col2", "col4"});
+  auto join_op = MakeJoin({mem_src1, mem_src2}, "inner", relation0, relation1,
+                          std::vector<std::string>{"col1", "col3"},
+                          std::vector<std::string>{"col2", "col4"}, {"left", "right"});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<IR> cloned_ir, graph->Clone());
 
@@ -1024,10 +1073,14 @@ TEST_F(CloneTests, join_clone) {
 }
 
 TEST_F(CloneTests, union_clone) {
+  compiler_state_->relation_map()->emplace("table", MakeRelation());
   auto mem_src1 = MakeMemSource(MakeRelation());
   auto mem_src2 = MakeMemSource(MakeRelation());
 
   auto union_op = MakeUnion({mem_src1, mem_src2});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto out = graph->Clone();
 
@@ -1051,12 +1104,16 @@ TEST_F(CloneTests, union_clone) {
 
 TEST_F(CloneTests, copy_into_existing_dag) {
   auto src = MakeMemSource();
+  compiler_state_->relation_map()->emplace("table", Relation());
   IntIR* intnode = MakeInt(105);
   FuncIR* add_func = MakeAddFunc(intnode, MakeInt(3));
   FuncIR* add_func2 = MakeAddFunc(intnode, add_func);
   ASSERT_OK(ResolveExpressionType(add_func, compiler_state_.get(), {}));
   ASSERT_OK(ResolveExpressionType(add_func2, compiler_state_.get(), {}));
   MapIR* map = MakeMap(src, {{{"int", intnode}, {"add1", add_func}, {"add2", add_func2}}});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto source_out = graph->CopyNode(src);
   EXPECT_OK(source_out.status());
@@ -1093,6 +1150,7 @@ TEST_F(CloneTests, copy_into_existing_dag) {
 
 TEST_F(CloneTests, repeated_exprs_copy_selected_nodes) {
   auto mem_source = MakeMemSource();
+  compiler_state_->relation_map()->emplace("table", Relation());
   IntIR* intnode = MakeInt(105);
   FuncIR* add_func = MakeAddFunc(intnode, MakeInt(3));
   FuncIR* add_func2 = MakeAddFunc(intnode, add_func);
@@ -1105,6 +1163,9 @@ TEST_F(CloneTests, repeated_exprs_copy_selected_nodes) {
   // non-copied ops.
   auto other_source = MakeMemSource();
   MakeMemSink(other_source, "not copied");
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto dest = std::make_unique<IR>();
   EXPECT_OK(dest->CopyOperatorSubgraph(graph.get(), {mem_source, map1, map2, sink}));
@@ -1203,9 +1264,9 @@ TEST_F(ToProtoTests, external_grpc_sink_ir) {
 
   auto new_table = TableType::Create();
   new_table->AddColumn("count", ValueType::Create(types::INT64, types::ST_NONE));
-  new_table->AddColumn("cpu0", ValueType::Create(types::INT64, types::ST_PERCENT));
-  new_table->AddColumn("cpu1", ValueType::Create(types::INT64, types::ST_PERCENT));
-  new_table->AddColumn("cpu2", ValueType::Create(types::INT64, types::ST_PERCENT));
+  new_table->AddColumn("cpu0", ValueType::Create(types::FLOAT64, types::ST_PERCENT));
+  new_table->AddColumn("cpu1", ValueType::Create(types::FLOAT64, types::ST_PERCENT));
+  new_table->AddColumn("cpu2", ValueType::Create(types::FLOAT64, types::ST_PERCENT));
 
   ASSERT_OK(grpc_sink->SetRelation(MakeRelation()));
   ASSERT_OK(grpc_sink->SetResolvedType(new_table));
@@ -1215,7 +1276,6 @@ TEST_F(ToProtoTests, external_grpc_sink_ir) {
 
   planpb::Operator pb;
   ASSERT_OK(grpc_sink->ToProto(&pb));
-
   EXPECT_THAT(pb, EqualsProto(absl::Substitute(kExpectedExternalGRPCSinkPb, grpc_address,
                                                "output_table", ssl_targetname)));
 }
@@ -1273,6 +1333,10 @@ nodes {
         column_names: "cpu0"
         column_names: "cpu1"
         column_names: "cpu2"
+        column_semantic_types: ST_NONE
+        column_semantic_types: ST_NONE
+        column_semantic_types: ST_NONE
+        column_semantic_types: ST_NONE
       }
     }
   }
@@ -1280,8 +1344,12 @@ nodes {
 )proto";
 TEST_F(ToProtoTests, ir) {
   auto mem_src = MakeMemSource(MakeRelation());
+  compiler_state_->relation_map()->emplace("table", MakeRelation());
   auto mem_sink = MakeMemSink(mem_src, "out");
   EXPECT_OK(mem_sink->SetRelation(MakeRelation()));
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   planpb::Plan pb = graph->ToProto().ConsumeValueOrDie();
 
@@ -1364,7 +1432,6 @@ TEST_F(ToProtoTests, UnionHasTime) {
   compiler_state_->relation_map()->emplace("source2", relation2);
   auto union_op = MakeUnion({mem_src1, mem_src2});
 
-  EXPECT_OK(union_op->SetRelation(mem_src1->relation()));
   EXPECT_FALSE(union_op->HasColumnMappings());
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));
@@ -1375,10 +1442,10 @@ TEST_F(ToProtoTests, UnionHasTime) {
   EXPECT_THAT(pb, EqualsProto(kExpectedUnionOpTimePb));
 }
 
-constexpr char kExpectedInnerJoinOpPb[] = R"proto(
+constexpr char kExpectedJoinOpPb[] = R"proto(
 op_type: JOIN_OPERATOR
 join_op {
-  type: INNER
+  type: $0
   equality_conditions {
     left_column_index: 1
     right_column_index: 2
@@ -1392,21 +1459,46 @@ join_op {
     column_index: 0
   }
   output_columns {
-    parent_index: 1
-    column_index: 4
+    parent_index: 0
+    column_index: 1
   }
   output_columns {
     parent_index: 0
-    column_index: 1
+    column_index: 2
+  }
+  output_columns {
+    parent_index: 0
+    column_index: 3
   }
   output_columns {
     parent_index: 1
     column_index: 0
   }
+  output_columns {
+    parent_index: 1
+    column_index: 1
+  }
+  output_columns {
+    parent_index: 1
+    column_index: 2
+  }
+  output_columns {
+    parent_index: 1
+    column_index: 3
+  }
+  output_columns {
+    parent_index: 1
+    column_index: 4
+  }
   column_names: "left_only"
-  column_names: "col4"
   column_names: "col1"
+  column_names: "col2"
+  column_names: "col3"
   column_names: "right_only"
+  column_names: "col1_right"
+  column_names: "col2_right"
+  column_names: "col3_right"
+  column_names: "col4"
 }
 )proto";
 
@@ -1414,149 +1506,78 @@ TEST_F(ToProtoTests, inner_join) {
   Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
                       types::DataType::INT64},
                      {"left_only", "col1", "col2", "col3"});
-  auto mem_src1 = MakeMemSource(relation0);
+  auto mem_src1 = MakeMemSource("source0", relation0);
+  compiler_state_->relation_map()->emplace("source0", relation0);
 
   Relation relation1({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
                       types::DataType::INT64, types::DataType::INT64},
                      {"right_only", "col1", "col2", "col3", "col4"});
-  auto mem_src2 = MakeMemSource(relation1);
+  auto mem_src2 = MakeMemSource("source1", relation1);
+  compiler_state_->relation_map()->emplace("source1", relation1);
 
-  auto join_op =
-      MakeJoin({mem_src1, mem_src2}, "inner", relation0, relation1,
-               std::vector<std::string>{"col1", "col3"}, std::vector<std::string>{"col2", "col4"});
+  auto join_op = MakeJoin({mem_src1, mem_src2}, "inner", relation0, relation1,
+                          std::vector<std::string>{"col1", "col3"},
+                          std::vector<std::string>{"col2", "col4"}, {"", "_right"});
 
-  std::vector<std::string> col_names{"left_only", "col4", "col1", "right_only"};
-  std::vector<ColumnIR*> cols{MakeColumn("left_only", 0, relation0),
-                              MakeColumn("col4", 1, relation1), MakeColumn("col1", 0, relation0),
-                              MakeColumn("right_only", 1, relation1)};
-  EXPECT_OK(join_op->SetOutputColumns(col_names, cols));
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   planpb::Operator pb;
   EXPECT_OK(join_op->ToProto(&pb));
 
-  EXPECT_THAT(pb, EqualsProto(kExpectedInnerJoinOpPb));
+  EXPECT_THAT(pb, EqualsProto(absl::Substitute(kExpectedJoinOpPb, "INNER")));
 }
-
-constexpr char kExpectedLeftJoinOpPb[] = R"proto(
-op_type: JOIN_OPERATOR
-join_op {
-  type: LEFT_OUTER
-  equality_conditions {
-    left_column_index: 1
-    right_column_index: 2
-  }
-  equality_conditions {
-    left_column_index: 3
-    right_column_index: 4
-  }
-  output_columns {
-    parent_index: 0
-    column_index: 0
-  }
-  output_columns {
-    parent_index: 1
-    column_index: 4
-  }
-  output_columns {
-    parent_index: 0
-    column_index: 1
-  }
-  output_columns {
-    parent_index: 1
-    column_index: 0
-  }
-  column_names: "left_only"
-  column_names: "col4"
-  column_names: "col1"
-  column_names: "right_only"
-}
-)proto";
 
 TEST_F(ToProtoTests, left_join) {
   Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
                       types::DataType::INT64},
                      {"left_only", "col1", "col2", "col3"});
-  auto mem_src1 = MakeMemSource(relation0);
+  auto mem_src1 = MakeMemSource("source0", relation0);
+  compiler_state_->relation_map()->emplace("source0", relation0);
 
   Relation relation1({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
                       types::DataType::INT64, types::DataType::INT64},
                      {"right_only", "col1", "col2", "col3", "col4"});
-  auto mem_src2 = MakeMemSource(relation1);
+  auto mem_src2 = MakeMemSource("source1", relation1);
+  compiler_state_->relation_map()->emplace("source1", relation1);
 
-  auto join_op =
-      MakeJoin({mem_src1, mem_src2}, "left", relation0, relation1,
-               std::vector<std::string>{"col1", "col3"}, std::vector<std::string>{"col2", "col4"});
-  std::vector<std::string> col_names{"left_only", "col4", "col1", "right_only"};
-  std::vector<ColumnIR*> cols{MakeColumn("left_only", 0, relation0),
-                              MakeColumn("col4", 1, relation1), MakeColumn("col1", 0, relation0),
-                              MakeColumn("right_only", 1, relation1)};
-  EXPECT_OK(join_op->SetOutputColumns(col_names, cols));
+  auto join_op = MakeJoin({mem_src1, mem_src2}, "left", relation0, relation1,
+                          std::vector<std::string>{"col1", "col3"},
+                          std::vector<std::string>{"col2", "col4"}, {"", "_right"});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   planpb::Operator pb;
   EXPECT_OK(join_op->ToProto(&pb));
 
-  EXPECT_THAT(pb, EqualsProto(kExpectedLeftJoinOpPb));
+  EXPECT_THAT(pb, EqualsProto(absl::Substitute(kExpectedJoinOpPb, "LEFT_OUTER")));
 }
-
-constexpr char kExpectedOuterJoinOpPb[] = R"proto(
-op_type: JOIN_OPERATOR
-join_op {
-  type: FULL_OUTER
-  equality_conditions {
-    left_column_index: 1
-    right_column_index: 2
-  }
-  equality_conditions {
-    left_column_index: 3
-    right_column_index: 4
-  }
-  output_columns {
-    parent_index: 0
-    column_index: 0
-  }
-  output_columns {
-    parent_index: 1
-    column_index: 4
-  }
-  output_columns {
-    parent_index: 0
-    column_index: 1
-  }
-  output_columns {
-    parent_index: 1
-    column_index: 0
-  }
-  column_names: "left_only"
-  column_names: "col4"
-  column_names: "col1"
-  column_names: "right_only"
-}
-)proto";
 
 TEST_F(ToProtoTests, full_outer) {
   Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
                       types::DataType::INT64},
                      {"left_only", "col1", "col2", "col3"});
-  auto mem_src1 = MakeMemSource(relation0);
+  auto mem_src1 = MakeMemSource("source0", relation0);
+  compiler_state_->relation_map()->emplace("source0", relation0);
 
   Relation relation1({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
                       types::DataType::INT64, types::DataType::INT64},
                      {"right_only", "col1", "col2", "col3", "col4"});
-  auto mem_src2 = MakeMemSource(relation1);
+  auto mem_src2 = MakeMemSource("source1", relation1);
+  compiler_state_->relation_map()->emplace("source1", relation1);
 
-  auto join_op =
-      MakeJoin({mem_src1, mem_src2}, "outer", relation0, relation1,
-               std::vector<std::string>{"col1", "col3"}, std::vector<std::string>{"col2", "col4"});
-  std::vector<std::string> col_names{"left_only", "col4", "col1", "right_only"};
-  std::vector<ColumnIR*> cols{MakeColumn("left_only", 0, relation0),
-                              MakeColumn("col4", 1, relation1), MakeColumn("col1", 0, relation0),
-                              MakeColumn("right_only", 1, relation1)};
-  EXPECT_OK(join_op->SetOutputColumns(col_names, cols));
+  auto join_op = MakeJoin({mem_src1, mem_src2}, "outer", relation0, relation1,
+                          std::vector<std::string>{"col1", "col3"},
+                          std::vector<std::string>{"col2", "col4"}, {"", "_right"});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   planpb::Operator pb;
   EXPECT_OK(join_op->ToProto(&pb));
 
-  EXPECT_THAT(pb, EqualsProto(kExpectedOuterJoinOpPb));
+  EXPECT_THAT(pb, EqualsProto(absl::Substitute(kExpectedJoinOpPb, "FULL_OUTER")));
 }
 
 TEST_F(ToProtoTests, join_wrong_join_type) {
@@ -1582,7 +1603,7 @@ TEST_F(ToProtoTests, join_wrong_join_type) {
                                                      join_type_name));
 }
 
-TEST_F(OperatorTests, op_children) {
+TEST_F(OpTests, op_children) {
   auto mem_source = MakeMemSource();
   ColumnIR* col1 = MakeColumn("test1", 0);
   ColumnIR* col2 = MakeColumn("test2", 0);
@@ -1603,7 +1624,7 @@ TEST_F(OperatorTests, op_children) {
   EXPECT_EQ(mem_sink_children.size(), 0UL);
 }
 
-using IRPruneTests = OperatorTests;
+using IRPruneTests = OpTests;
 TEST_F(IRPruneTests, prune_test) {
   auto mem_source = MakeMemSource();
   ColumnIR* col1 = MakeColumn("test1", 0);
@@ -1623,8 +1644,9 @@ TEST_F(IRPruneTests, prune_test) {
   EXPECT_THAT(graph->dag().ParentsOf(add_func->id()), IsEmpty());
 }
 
-TEST_F(OperatorTests, tablet_source_group) {
+TEST_F(OpTests, tablet_source_group) {
   auto mem_source = MakeMemSource("table", MakeRelation());
+  ASSERT_OK(mem_source->SetResolvedType(TableType::Create(MakeRelation())));
   std::vector<types::TabletID> tablet_values = {"tablet1", "tablet2"};
   auto tablet_source =
       graph->CreateNode<TabletSourceGroupIR>(ast, mem_source, tablet_values, "cpu0")
@@ -1634,7 +1656,7 @@ TEST_F(OperatorTests, tablet_source_group) {
   EXPECT_EQ(tablet_source->ReplacedMemorySource(), mem_source);
 }
 
-TEST_F(OperatorTests, GroupByNode) {
+TEST_F(OpTests, GroupByNode) {
   auto mem_source = MakeMemSource();
   auto groupby =
       graph
@@ -1649,7 +1671,7 @@ TEST_F(OperatorTests, GroupByNode) {
   EXPECT_THAT(col_names, ElementsAre("col1", "col2"));
 }
 
-TEST_F(OperatorTests, join_node) {
+TEST_F(OpTests, join_node) {
   Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
                       types::DataType::INT64},
                      {"left_only", "col1", "col2", "col3"});
@@ -1668,7 +1690,7 @@ TEST_F(OperatorTests, join_node) {
                 .status());
 }
 
-TEST_F(OperatorTests, join_node_mismatched_columns) {
+TEST_F(OpTests, join_node_mismatched_columns) {
   auto mem_source1 = MakeMemSource();
   auto mem_source2 = MakeMemSource();
 
@@ -1678,7 +1700,7 @@ TEST_F(OperatorTests, join_node_mismatched_columns) {
       std::vector<ColumnIR*>{MakeColumn("col1", 1)}, std::vector<std::string>{}));
 }
 
-TEST_F(OperatorTests, join_duplicate_parents) {
+TEST_F(OpTests, join_duplicate_parents) {
   Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
                       types::DataType::INT64},
                      {"left_only", "col1", "col2", "col3"});
@@ -1693,7 +1715,7 @@ TEST_F(OperatorTests, join_duplicate_parents) {
   EXPECT_THAT(join_node->parents(), ElementsAre(mem_src, map_node));
 }
 
-TEST_F(OperatorTests, union_duplicate_parents) {
+TEST_F(OpTests, union_duplicate_parents) {
   Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
                       types::DataType::INT64},
                      {"left_only", "col1", "col2", "col3"});
@@ -1745,7 +1767,7 @@ constexpr char kExpectedUDTFSourceOpSingleArgPb[] = R"proto(
   }
 )proto";
 
-TEST_F(OperatorTests, UDTFSingleArgTest) {
+TEST_F(OpTests, UDTFSingleArgTest) {
   udfspb::UDTFSourceSpec udtf_spec;
   ASSERT_TRUE(
       google::protobuf::TextFormat::MergeFromString(kOpenNetworkConnsUDTFSourceSpecPb, &udtf_spec));
@@ -1808,7 +1830,7 @@ constexpr char kExpectedUDTFSourceOpMultipleArgsPb[] = R"proto(
   }
 )proto";
 
-TEST_F(OperatorTests, UDTFMultipleOutOfOrderArgs) {
+TEST_F(OpTests, UDTFMultipleOutOfOrderArgs) {
   udfspb::UDTFSourceSpec udtf_spec;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kDiskSpaceUDTFPb, &udtf_spec));
 
@@ -1829,14 +1851,14 @@ TEST_F(OperatorTests, UDTFMultipleOutOfOrderArgs) {
   EXPECT_EQ(udtf->relation(), relation);
 }
 
-TEST_F(OperatorTests, uint128_ir) {
+TEST_F(OpTests, uint128_ir) {
   auto uint128_or_s = graph->CreateNode<UInt128IR>(ast, absl::MakeUint128(123, 456));
   ASSERT_OK(uint128_or_s);
   auto uint128ir = uint128_or_s.ConsumeValueOrDie();
   EXPECT_EQ(uint128ir->val(), absl::MakeUint128(123, 456));
 }
 
-TEST_F(OperatorTests, uint128_ir_init_from_str) {
+TEST_F(OpTests, uint128_ir_init_from_str) {
   std::string uuid_str = "00000000-0000-007b-0000-0000000001c8";
   auto uint128_or_s = graph->CreateNode<UInt128IR>(ast, uuid_str);
   ASSERT_OK(uint128_or_s);
@@ -1844,14 +1866,14 @@ TEST_F(OperatorTests, uint128_ir_init_from_str) {
   EXPECT_EQ(uint128ir->val(), absl::MakeUint128(123, 456));
 }
 
-TEST_F(OperatorTests, uint128_ir_init_from_str_bad_format) {
+TEST_F(OpTests, uint128_ir_init_from_str_bad_format) {
   std::string uuid_str = "bad_uuid";
   auto uint128_or_s = graph->CreateNode<UInt128IR>(ast, uuid_str);
   ASSERT_NOT_OK(uint128_or_s);
   EXPECT_THAT(uint128_or_s.status(), HasCompilerError(".* is not a valid UUID"));
 }
 
-TEST_F(OperatorTests, grpc_sink_required_inputs) {
+TEST_F(OpTests, grpc_sink_required_inputs) {
   auto mem_source =
       graph->CreateNode<MemorySourceIR>(ast, "source", std::vector<std::string>{}).ValueOrDie();
   auto sink = graph
@@ -1862,7 +1884,10 @@ TEST_F(OperatorTests, grpc_sink_required_inputs) {
   auto rel = table_store::schema::Relation(
       std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64}),
       std::vector<std::string>({"output1", "output2"}));
-  EXPECT_OK(sink->SetRelation(rel));
+  compiler_state_->relation_map()->emplace("source", rel);
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   auto inputs = sink->RequiredInputColumns().ConsumeValueOrDie();
   EXPECT_EQ(1, inputs.size());
@@ -1899,10 +1924,9 @@ TEST_F(RequiredInputTest, filter_required_inputs) {
   ASSERT_OK(ResolveOperatorType(mem_src, compiler_state_.get()));
   ASSERT_OK(ResolveOperatorType(filter, compiler_state_.get()));
 
-  ASSERT_OK(filter->SetRelation(Relation({types::DataType::INT64}, {"count"})));
   auto inputs = filter->RequiredInputColumns().ConsumeValueOrDie();
   EXPECT_EQ(1, inputs.size());
-  EXPECT_THAT(inputs[0], UnorderedElementsAre("count", "cpu0", "cpu2"));
+  EXPECT_THAT(inputs[0], UnorderedElementsAre("count", "cpu0", "cpu1", "cpu2"));
 }
 
 TEST_F(RequiredInputTest, blocking_agg_required_inputs) {
@@ -1965,14 +1989,18 @@ TEST_F(RequiredInputTest, join_required_inputs) {
   EXPECT_THAT(right_inputs[1], UnorderedElementsAre("left_only", "col1", "col3"));
 }
 
-TEST_F(OperatorTests, prune_outputs) {
+TEST_F(OpTests, prune_outputs) {
   Relation original_relation{{types::DataType::INT64, types::DataType::FLOAT64,
                               types::DataType::FLOAT64, types::DataType::FLOAT64},
                              {"count", "cpu0", "cpu1", "cpu2"}};
   Relation expected_relation{{types::DataType::FLOAT64, types::DataType::FLOAT64},
                              {"cpu0", "cpu2"}};
 
-  auto mem_src = MakeMemSource(original_relation);
+  auto mem_src = MakeMemSource("source", original_relation);
+  compiler_state_->relation_map()->emplace("source", original_relation);
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   EXPECT_OK(mem_src->PruneOutputColumnsTo({"cpu0", "cpu2"}));
   EXPECT_THAT(mem_src->column_names(), ElementsAre("cpu0", "cpu2"));
@@ -1982,33 +2010,43 @@ TEST_F(OperatorTests, prune_outputs) {
   EXPECT_EQ(expected_relation, mem_src->relation());
 }
 
-TEST_F(OperatorTests, prune_outputs_unchanged) {
+TEST_F(OpTests, prune_outputs_unchanged) {
   auto mem_src = MakeMemSource("foo");
-  ASSERT_OK(mem_src->SetRelation(MakeRelation()));
+  compiler_state_->relation_map()->emplace("foo", MakeRelation());
   mem_src->SetColumnIndexMap({0, 1, 2, 3});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   EXPECT_OK(mem_src->PruneOutputColumnsTo({"count", "cpu0", "cpu1", "cpu2"}));
   EXPECT_TRUE(mem_src->select_all());
   EXPECT_THAT(mem_src->column_index_map(), ElementsAre(0, 1, 2, 3));
 }
 
-TEST_F(OperatorTests, prune_outputs_keep_one) {
-  auto mem_src = MakeMemSource("foo");
-  ASSERT_OK(mem_src->SetRelation(MakeRelation()));
+TEST_F(OpTests, prune_outputs_keep_one) {
+  auto mem_src = MakeMemSource("foo", MakeRelation());
+  compiler_state_->relation_map()->emplace("foo", MakeRelation());
   mem_src->SetColumnIndexMap({0, 1, 2, 3});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   EXPECT_OK(mem_src->PruneOutputColumnsTo({}));
   EXPECT_THAT(mem_src->column_names(), ElementsAre("count"));
   EXPECT_THAT(mem_src->column_index_map(), ElementsAre(0));
 }
 
-TEST_F(OperatorTests, map_prune_outputs) {
-  auto mem_src = MakeMemSource();
+TEST_F(OpTests, map_prune_outputs) {
+  auto mem_src = MakeMemSource("foo", MakeRelation());
+  compiler_state_->relation_map()->emplace("foo", MakeRelation());
   auto map = MakeMap(mem_src, {{"count", MakeColumn("count", 0)},
                                {"cpu0", MakeColumn("cpu0", 0)},
                                {"cpu1", MakeColumn("cpu1", 0)},
                                {"cpu2", MakeColumn("cpu2", 0)}});
-  ASSERT_OK(map->SetRelation(MakeRelation()));
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
+
   EXPECT_OK(map->PruneOutputColumnsTo({"cpu1"}));
   auto exprs = map->col_exprs();
   EXPECT_EQ(1, exprs.size());
@@ -2016,24 +2054,33 @@ TEST_F(OperatorTests, map_prune_outputs) {
   EXPECT_MATCH(exprs[0].node, ColumnNode("cpu1", /*parent_idx*/ 0));
 }
 
-TEST_F(OperatorTests, filter_prune_outputs) {
-  auto mem_src = MakeMemSource(MakeRelation());
+TEST_F(OpTests, filter_prune_outputs) {
+  auto mem_src = MakeMemSource("foo", MakeRelation());
+  compiler_state_->relation_map()->emplace("foo", MakeRelation());
   auto filter = MakeFilter(mem_src, MakeEqualsFunc(MakeColumn("cpu0", 0), MakeColumn("cpu1", 0)));
 
   ASSERT_OK(filter->SetRelation(MakeRelation()));
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   EXPECT_OK(filter->PruneOutputColumnsTo({"cpu1"}));
   EXPECT_THAT(filter->relation().col_names(), ElementsAre("cpu1"));
 }
 
-TEST_F(OperatorTests, agg_prune_outputs) {
-  auto mem_src = MakeMemSource();
+TEST_F(OpTests, agg_prune_outputs) {
+  auto mem_src = MakeMemSource("foo", MakeRelation());
+  compiler_state_->relation_map()->emplace("foo", MakeRelation());
   auto agg = MakeBlockingAgg(mem_src, {MakeColumn("count", 0)},
                              {{"cpu0", MakeMeanFunc(MakeColumn("cpu0", 0))},
                               {"cpu1", MakeMeanFunc(MakeColumn("cpu1", 0))},
                               {"cpu2", MakeMeanFunc(MakeColumn("cpu2", 0))}});
   auto old_groups = agg->groups();
   ASSERT_OK(agg->SetRelation(MakeRelation()));
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
+
   EXPECT_OK(agg->PruneOutputColumnsTo({"cpu0"}));
 
   // Groups shouldn't have changed
@@ -2044,19 +2091,19 @@ TEST_F(OperatorTests, agg_prune_outputs) {
   EXPECT_MATCH(agg_exprs[0].node, Func());
 }
 
-TEST_F(OperatorTests, union_prune_outputs) {
+TEST_F(OpTests, union_prune_outputs) {
   Relation relation1 = MakeRelation();
   Relation relation2{{types::DataType::FLOAT64, types::DataType::FLOAT64, types::DataType::INT64,
                       types::DataType::FLOAT64},
                      {"cpu1", "cpu2", "count", "cpu0"}};
-  auto mem_src1 = MakeMemSource(relation1);
-  ASSERT_OK(mem_src1->SetResolvedType(TableType::Create(relation1)));
-  auto mem_src2 = MakeMemSource(relation2);
-  ASSERT_OK(mem_src2->SetResolvedType(TableType::Create(relation2)));
+  auto mem_src1 = MakeMemSource("source1", relation1);
+  compiler_state_->relation_map()->emplace("source1", relation1);
+  auto mem_src2 = MakeMemSource("source2", relation2);
+  compiler_state_->relation_map()->emplace("source2", relation2);
   auto union_op = MakeUnion({mem_src1, mem_src2});
-  ASSERT_OK(union_op->UpdateOpAfterParentTypesResolved());
-  ASSERT_OK(union_op->SetResolvedType(TableType::Create(relation1)));
-  ASSERT_OK(union_op->SetRelation(relation1));
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
   EXPECT_OK(union_op->PruneOutputColumnsTo({"cpu2", "count"}));
   EXPECT_EQ(2, union_op->column_mappings().size());
@@ -2067,37 +2114,35 @@ TEST_F(OperatorTests, union_prune_outputs) {
   }
 }
 
-TEST_F(OperatorTests, join_prune_outputs) {
+TEST_F(OpTests, join_prune_outputs) {
   Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
                       types::DataType::INT64},
                      {"left_only", "col1", "col2", "col3"});
-  auto mem_src1 = MakeMemSource(relation0);
+  auto mem_src1 = MakeMemSource("source0", relation0);
+  compiler_state_->relation_map()->emplace("source0", relation0);
 
   Relation relation1({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
                       types::DataType::INT64, types::DataType::INT64},
                      {"right_only", "col1", "col2", "col3", "col4"});
-  auto mem_src2 = MakeMemSource(relation1);
+  auto mem_src2 = MakeMemSource("source1", relation1);
+  compiler_state_->relation_map()->emplace("source1", relation1);
 
-  auto join_op =
-      MakeJoin({mem_src1, mem_src2}, "inner", relation0, relation1,
-               std::vector<std::string>{"col1", "col3"}, std::vector<std::string>{"col2", "col4"});
+  auto join_op = MakeJoin(
+      {mem_src1, mem_src2}, "inner", relation0, relation1, std::vector<std::string>{"col1", "col3"},
+      std::vector<std::string>{"col2", "col4"}, std::vector<std::string>{"_left", ""});
 
-  std::vector<ColumnIR*> output_columns{MakeColumn("left_only", 0), MakeColumn("col1", 0),
-                                        MakeColumn("col1", 1),      MakeColumn("col2", 0),
-                                        MakeColumn("col2", 1),      MakeColumn("right_only", 1)};
-  std::vector<std::string> output_column_names{"left_only", "col1", "col1_right",
-                                               "col2_left", "col2", "right_only"};
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
 
-  ASSERT_OK(join_op->SetOutputColumns(output_column_names, output_columns));
-  Relation prev_relation{{types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
-                          types::DataType::INT64, types::DataType::INT64, types::DataType::INT64},
-                         output_column_names};
-  ASSERT_OK(join_op->SetRelation(prev_relation));
+  EXPECT_THAT(join_op->column_names(),
+              ElementsAre("left_only", "col1_left", "col2_left", "col3_left", "right_only", "col1",
+                          "col2", "col3", "col4"));
+
   EXPECT_OK(join_op->PruneOutputColumnsTo({"left_only", "right_only", "col1", "col2_left"}));
 
-  EXPECT_THAT(join_op->column_names(), ElementsAre("left_only", "col1", "col2_left", "right_only"));
+  EXPECT_THAT(join_op->column_names(), ElementsAre("left_only", "col2_left", "right_only", "col1"));
 
-  std::vector<std::string> expected_inputs{"left_only", "col1", "col2", "right_only"};
+  std::vector<std::string> expected_inputs{"left_only", "col2", "right_only", "col1"};
   for (const auto& [i, expect_colname] : Enumerate(expected_inputs)) {
     EXPECT_EQ(expect_colname, join_op->output_columns()[i]->col_name());
   }

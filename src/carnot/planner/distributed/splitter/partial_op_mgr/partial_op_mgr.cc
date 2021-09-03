@@ -52,20 +52,15 @@ StatusOr<OperatorIR*> AggOperatorMgr::CreatePrepareOperator(IR* plan, OperatorIR
   new_agg->SetPartialAgg(true);
   new_agg->SetFinalizeResults(false);
 
-  // Add the columns for the groups.
-  std::vector<types::DataType> col_types;
-  std::vector<std::string> col_names;
+  auto new_type = TableType::Create();
   for (ColumnIR* group : agg->groups()) {
-    DCHECK(group->IsDataTypeEvaluated());
-    col_types.push_back(group->EvaluatedDataType());
-    col_names.push_back(group->col_name());
+    DCHECK(group->is_type_resolved());
+    new_type->AddColumn(group->col_name(), group->resolved_type());
   }
 
   // Add column for the serialized expression
-  col_names.push_back("serialized_expressions");
-  col_types.push_back(types::STRING);
-  PL_RETURN_IF_ERROR(new_agg->SetRelation(
-      table_store::schema::Relation(std::move(col_types), std::move(col_names))));
+  new_type->AddColumn("serialized_expressions", ValueType::Create(types::STRING, types::ST_NONE));
+  PL_RETURN_IF_ERROR(new_agg->SetResolvedType(new_type));
 
   DCHECK(Match(new_agg, PartialAgg()));
   return new_agg;

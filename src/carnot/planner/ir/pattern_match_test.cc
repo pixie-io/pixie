@@ -132,7 +132,7 @@ TEST_F(PatternMatchTest, relation_status_operator_match) {
   EXPECT_FALSE(Match(filter, UnresolvedReadyOp()));
 
   // Resolve parent.
-  EXPECT_OK(mem_src->SetRelation(test_relation));
+  EXPECT_OK(mem_src->SetResolvedType(TableType::Create(test_relation)));
   // Unresolved blocking aggregate with resolved parent.
   EXPECT_MATCH(blocking_agg, UnresolvedReadyOp(BlockingAgg()));
   EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyOp(Map())));
@@ -147,9 +147,9 @@ TEST_F(PatternMatchTest, relation_status_operator_match) {
   EXPECT_MATCH(filter, UnresolvedReadyOp());
 
   // Resolve children.
-  EXPECT_OK(blocking_agg->SetRelation(test_relation));
-  EXPECT_OK(map->SetRelation(test_relation));
-  EXPECT_OK(filter->SetRelation(test_relation));
+  EXPECT_OK(blocking_agg->SetResolvedType(TableType::Create(test_relation)));
+  EXPECT_OK(map->SetResolvedType(TableType::Create(test_relation)));
+  EXPECT_OK(filter->SetResolvedType(TableType::Create(test_relation)));
   // Resolved blocking aggregate with resolved parent.
   EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyOp(BlockingAgg())));
   EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyOp(Map())));
@@ -172,12 +172,12 @@ TEST_F(PatternMatchTest, relation_status_union_test) {
 
   EXPECT_FALSE(Match(union_op, UnresolvedReadyOp(Union())));
 
-  EXPECT_OK(mem_src1->SetRelation(MakeRelation()));
+  EXPECT_OK(mem_src1->SetResolvedType(TableType::Create(MakeRelation())));
 
   // Check to make sure that one parent doesn't set it off.
   EXPECT_FALSE(Match(union_op, UnresolvedReadyOp(Union())));
 
-  EXPECT_OK(mem_src2->SetRelation(MakeRelation()));
+  EXPECT_OK(mem_src2->SetResolvedType(TableType::Create(MakeRelation())));
   // Check to make sure that setting both parents does set it off.
   EXPECT_MATCH(union_op, UnresolvedReadyOp(Union()));
 }

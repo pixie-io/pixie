@@ -81,9 +81,9 @@ StatusOr<std::vector<OperatorIR*>> OperatorIR::HandleDuplicateParents(
 }
 
 Status OperatorIR::PruneOutputColumnsTo(const absl::flat_hash_set<std::string>& output_colnames) {
-  DCHECK(IsRelationInit());
+  DCHECK(is_type_resolved());
   for (const auto& kept_colname : output_colnames) {
-    DCHECK(relation_.HasColumn(kept_colname)) << kept_colname;
+    DCHECK(resolved_table_type()->HasColumn(kept_colname)) << kept_colname;
   }
 
   auto output_cols = output_colnames;
@@ -91,30 +91,18 @@ Status OperatorIR::PruneOutputColumnsTo(const absl::flat_hash_set<std::string>& 
   // in which case it's ok to output 0 columns.
   if (!Match(this, ResultSink())) {
     if (!output_cols.size()) {
-      output_cols.insert(relation().col_names()[0]);
+      output_cols.insert(resolved_table_type()->ColumnNames()[0]);
     }
   }
   PL_ASSIGN_OR_RETURN(auto required_columns, PruneOutputColumnsToImpl(output_cols));
-  Relation updated_relation;
-  for (const auto& colname : relation_.col_names()) {
-    if (required_columns.contains(colname)) {
-      updated_relation.AddColumn(relation_.GetColumnType(colname), colname,
-                                 relation_.GetColumnSemanticType(colname),
-                                 relation_.GetColumnDesc(colname));
-    }
-  }
 
-  // TODO(james, PP-2065): Once relation is removed we should turn this into a DCHECK.
-  if (is_type_resolved()) {
-    auto new_table = TableType::Create();
-    for (const auto& [col_name, col_type] : *std::static_pointer_cast<TableType>(resolved_type())) {
-      if (required_columns.contains(col_name)) {
-        new_table->AddColumn(col_name, col_type->Copy());
-      }
+  auto new_table = TableType::Create();
+  for (const auto& [col_name, col_type] : *std::static_pointer_cast<TableType>(resolved_type())) {
+    if (required_columns.contains(col_name)) {
+      new_table->AddColumn(col_name, col_type->Copy());
     }
-    PL_RETURN_IF_ERROR(SetResolvedType(new_table));
   }
-  return SetRelation(updated_relation);
+  return SetResolvedType(new_table);
 }
 
 std::string OperatorIR::ParentsDebugString() {
@@ -132,10 +120,6 @@ std::string OperatorIR::ChildrenDebugString() {
 Status OperatorIR::CopyFromNode(const IRNode* node,
                                 absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
   PL_RETURN_IF_ERROR(IRNode::CopyFromNode(node, copied_nodes_map));
-  const OperatorIR* source = static_cast<const OperatorIR*>(node);
-
-  relation_ = source->relation_;
-  relation_init_ = source->relation_init_;
   return Status::OK();
 }
 

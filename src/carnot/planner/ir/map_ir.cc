@@ -144,7 +144,7 @@ Status MapIR::UpdateOpAfterParentTypesResolvedImpl() {
     if (new_column_names.contains(col_name)) {
       continue;
     }
-    // Otherwise, bring over the column from the previous relation.
+    // Otherwise, bring over the column from the previous operator.
     PL_ASSIGN_OR_RETURN(ColumnIR * col_ir,
                         graph()->CreateNode<ColumnIR>(ast(), col_name, 0 /*parent_op_idx*/));
     new_col_exprs.push_back(ColumnExpression(col_name, col_ir));

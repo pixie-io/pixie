@@ -56,7 +56,7 @@ class GRPCSourceGroupIR : public OperatorIR {
    */
   Status Init(int64_t source_id, const table_store::schema::Relation& relation) {
     source_id_ = source_id;
-    return SetRelation(relation);
+    return SetResolvedType(TableType::Create(relation));
   }
 
   void SetGRPCAddress(const std::string& grpc_address) { grpc_address_ = grpc_address; }

@@ -54,9 +54,9 @@ class TabletSourceGroupIR : public OperatorIR {
               const std::string& tablet_key) {
     tablets_ = tablets;
     memory_source_ir_ = memory_source_ir;
-    DCHECK(memory_source_ir->IsRelationInit());
-    PL_RETURN_IF_ERROR(SetRelation(memory_source_ir->relation()));
-    DCHECK(relation().HasColumn(tablet_key));
+    DCHECK(memory_source_ir->is_type_resolved());
+    PL_RETURN_IF_ERROR(SetResolvedType(memory_source_ir->resolved_type()));
+    DCHECK(resolved_table_type()->HasColumn(tablet_key));
     tablet_key_ = tablet_key;
     return Status::OK();
   }
@@ -97,7 +97,7 @@ class TabletSourceGroupIR : public OperatorIR {
   }
 
  private:
-  // The key in the relation that is used as a tablet_key.
+  // The key in the table that is used as a tablet_key.
   std::string tablet_key_;
   // The tablets that are associated with this node.
   std::vector<types::TabletID> tablets_;

@@ -34,27 +34,12 @@ Status MemorySinkIR::ToProto(planpb::Operator* op) const {
   auto pb = op->mutable_mem_sink_op();
   pb->set_name(name_);
   op->set_op_type(planpb::MEMORY_SINK_OPERATOR);
-
-  auto types = relation().col_types();
-  auto names = relation().col_names();
-
-  for (size_t i = 0; i < relation().NumColumns(); ++i) {
-    pb->add_column_types(types[i]);
-    pb->add_column_names(names[i]);
-  }
-
-  if (is_type_resolved()) {
-    auto table_type = std::static_pointer_cast<TableType>(resolved_type());
-    for (const auto& col_name : names) {
-      if (table_type->HasColumn(col_name)) {
-        PL_ASSIGN_OR_RETURN(auto col_type, table_type->GetColumnType(col_name));
-        if (!col_type->IsValueType()) {
-          return error::Internal("Attempting to create MemorySink with a non-columnar type.");
-        }
-        auto val_type = std::static_pointer_cast<ValueType>(col_type);
-        pb->add_column_semantic_types(val_type->semantic_type());
-      }
-    }
+  for (const auto& [col_name, col_type] : *resolved_table_type()) {
+    DCHECK(col_type->IsValueType());
+    auto val_type = std::static_pointer_cast<ValueType>(col_type);
+    pb->add_column_types(val_type->data_type());
+    pb->add_column_names(col_name);
+    pb->add_column_semantic_types(val_type->semantic_type());
   }
 
   return Status::OK();
