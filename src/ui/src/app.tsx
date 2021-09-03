@@ -23,8 +23,9 @@ import Live from 'app/containers/App/live';
 import PixieCookieBanner from 'configurable/cookie-banner';
 import { LD_CLIENT_ID } from 'app/containers/constants';
 import {
-  Redirect, Route, Router, Switch,
+  Redirect, RedirectProps, Route, Router, Switch,
 } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { makeCancellable, silentlyCatchCancellation } from 'app/utils/cancellable-promise';
 import { isProd, PIXIE_CLOUD_VERSION } from 'app/utils/env';
 import { dateToEpoch } from 'app/utils/time';
@@ -57,22 +58,18 @@ require('./wdyr');
 // be requested from the parent.
 const REFRESH_TOKEN_TIMEOUT_S = 60 * 5; // 5 minutes
 
-const RedirectWithArgs = (props) => {
-  const {
-    from,
-    to,
-    exact,
-    location,
-  } = props;
-
-  return (
-    <Redirect
-      from={from}
-      exact={exact}
-      to={{ pathname: to, search: location.search }}
-    />
-  );
-};
+const RedirectWithArgs = React.memo<Pick<RedirectProps, 'from'|'to'|'exact'>>(
+  function RedirectWithArgs({ from, to, exact }) {
+    const location = useLocation();
+    return (
+      <Redirect
+        from={from}
+        exact={exact}
+        to={React.useMemo(() => ({ pathname: to, search: location.search }), [to, location.search])}
+      />
+    );
+  },
+);
 
 function useIsAuthenticated() {
   // Using an object instead of separate variables because using multiple setState does NOT batch if it happens outside
@@ -242,7 +239,7 @@ const ThemedApp: React.FC = () => {
     if (customTheme) {
       parseAndSetTheme(Array.isArray(customTheme) ? customTheme[0] : customTheme);
     }
-  }, [setThemeFromName]);
+  }, [parseAndSetTheme, setThemeFromName]);
 
   // This is for an embedded environment.
   const listener = React.useCallback(async (event) => {
@@ -322,7 +319,7 @@ const ThemedApp: React.FC = () => {
 
       setAuthToken(response.data.token);
     }
-  }, [embedToken, setEmbedToken, setAuthToken, setTimeArg]);
+  }, [embedToken, setEmbedToken, setAuthToken, setTimeArg, parseAndSetTheme, setThemeFromName]);
 
   React.useEffect(() => {
     window.addEventListener('message', listener);
@@ -349,7 +346,7 @@ ReactDOM.render(
   <StyledEngineProvider injectFirst>
     <AuthContextProvider>
       <EmbedContextProvider>
-        < ThemedApp />
+        <ThemedApp />
       </EmbedContextProvider>
     </AuthContextProvider>
   </StyledEngineProvider>, document.getElementById('root'));

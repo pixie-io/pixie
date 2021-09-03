@@ -179,6 +179,10 @@ const ScriptOptions = React.memo<{ widgetsMoveable: boolean, setWidgetsMoveable:
     editorPanelOpen, setEditorPanelOpen, isMobile,
   } = React.useContext(LayoutContext);
 
+  const toggleEditorOpen = React.useCallback(() => setEditorPanelOpen((open) => !open), [setEditorPanelOpen]);
+  const toggleWidgetsMoveable = React.useCallback(
+    () => setWidgetsMoveable((moveable) => !moveable), [setWidgetsMoveable]);
+
   if (isMobile) {
     return <></>;
   }
@@ -186,12 +190,12 @@ const ScriptOptions = React.memo<{ widgetsMoveable: boolean, setWidgetsMoveable:
   return (
     <div className={classes.iconPanel}>
       <Tooltip title={`${editorPanelOpen ? 'Close' : 'Open'} editor`} className={classes.iconButton}>
-        <IconButton className={classes.iconButton} onClick={() => setEditorPanelOpen(!editorPanelOpen)}>
+        <IconButton className={classes.iconButton} onClick={toggleEditorOpen}>
           <EditIcon className={editorPanelOpen ? classes.iconActive : classes.iconInactive} />
         </IconButton>
       </Tooltip>
       <Tooltip title={`${widgetsMoveable ? 'Disable' : 'Enable'} move widgets`} className={classes.iconButton}>
-        <IconButton onClick={() => setWidgetsMoveable(!widgetsMoveable)}>
+        <IconButton onClick={toggleWidgetsMoveable}>
           <MoveIcon className={widgetsMoveable ? classes.iconActive : classes.iconInactive} />
         </IconButton>
       </Tooltip>
@@ -208,9 +212,9 @@ interface ClusterLoadingProps {
   healthy: boolean;
 }
 
-const ClusterLoadingComponent = ({
+const ClusterLoadingComponent = React.memo<ClusterLoadingProps>(function ClusterLoadingComponent({
   clusterPrettyName, clusterStatus, clusterStatusMessage, script, healthy,
-}: ClusterLoadingProps) => {
+}) {
   const classes = useStyles();
 
   const { loading: loadingAvailableScripts } = React.useContext(ScriptsContext);
@@ -277,7 +281,7 @@ const ClusterLoadingComponent = ({
   // Cluster is healthy, script is set, scripts are loaded, results are loaded but this component was still invoked.
   // Tell the user they may run a script here.
   return <div>Select a script, then click &quot;Run&quot;.</div>;
-};
+});
 
 const Nav: React.FC<{
   widgetsMoveable: boolean,
@@ -310,7 +314,7 @@ const Nav: React.FC<{
   </>;
 });
 
-const BreadcrumbsWithOptionalRun: React.FC = () => {
+const BreadcrumbsWithOptionalRun = React.memo(function BreadcrumbsWithOptionalRun() {
   const classes = useStyles();
   const {
     embedState: { isEmbedded, widget },
@@ -332,9 +336,9 @@ const BreadcrumbsWithOptionalRun: React.FC = () => {
       <ExecuteScriptButton />
     </div>
   </div>;
-};
+});
 
-const LiveView: React.FC = () => {
+const LiveView = React.memo(function LiveView() {
   const classes = useStyles();
 
   const {
@@ -461,7 +465,7 @@ const LiveView: React.FC = () => {
       </LiveViewShortcutsProvider>
     </div>
   );
-};
+});
 
 const ContextualizedLiveView: React.FC = () => (
   <LayoutContextProvider>
