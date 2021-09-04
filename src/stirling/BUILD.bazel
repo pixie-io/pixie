@@ -16,7 +16,9 @@
 
 load("//bazel:pl_build_system.bzl", "pl_cc_library")
 
-package(default_visibility = ["//src/stirling:__subpackages__"])
+package(default_visibility = [
+    "//src/stirling:__subpackages__",
+])
 
 pl_cc_library(
     name = "cc_library",
@@ -33,6 +35,7 @@ pl_cc_library(
         ],
     ),
     visibility = [
+        "//src/e2e_test/vizier/planner/dump_schemas:__pkg__",
         "//src/stirling:__subpackages__",
         "//src/vizier/services/agent:__subpackages__",
     ],

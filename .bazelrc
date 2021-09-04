@@ -7,8 +7,11 @@ query --incompatible_require_linker_input_cc_api=false
 
 # This is to flush bazel cache for new version of clang/gcc.
 build --action_env=CLANG_COMPILER_VERSION=11.1_0
+build --host_action_env=CLANG_COMPILER_VERSION=11.1_0
 build:clang --action_env=CC=/opt/clang-11.1/bin/clang
+build:clang --host_action_env=CC=/opt/clang-11.1/bin/clang
 build:clang --action_env=CXX=/opt/clang-11.1/bin/clang++
+build:clang --host_action_env=CXX=/opt/clang-11.1/bin/clang++
 
 # Get version information into the build.
 build --workspace_status_command=bazel/get_workspace_status.sh
@@ -44,15 +47,22 @@ test --sandbox_tmpfs_path=/tmp
 
 # Build for Clang:
 build:clang --linkopt -fuse-ld=lld
+build:clang --host_linkopt -fuse-ld=lld
 build:clang --action_env=BAZEL_LINKLIBS=-l%:libstdc++.a
+build:clang --host_action_env=BAZEL_LINKLIBS=-l%:libstdc++.a
 build:clang --action_env=BAZEL_LINKOPTS=-lm:-static-libgcc
+build:clang --host_action_env=BAZEL_LINKOPTS=-lm:-static-libgcc
 # We need this to ensure that external projects are built with
 # C++17 support. This is needed in some libraries like absl which
 # have different behavior with C++17.
 build:clang --action_env=BAZEL_CXXOPTS=-std=c++17
+build:clang --host_action_env=BAZEL_CXXOPTS=-std=c++17
 build:clang --action_env=BAZEL_COMPILER=clang
+build:clang --host_action_env=BAZEL_COMPILER=clang
 build:clang --action_env=CC=clang
+build:clang --host_action_env=CC=clang
 build:clang --action_env=CXX=clang++
+build:clang --host_action_env=CXX=clang++
 
 # Build for Clang using Libc++.
 build:libc++ --action_env=CXXFLAGS=-stdlib=libc++
@@ -64,6 +74,8 @@ build:libc++ --action_env=CXX=/opt/clang-11.1-libc++/bin/clang++
 build:libc++ --define use_libcpp=1
 # TODO(zasgar): Remove this in next diff.
 build:libc++ --copt -D_LIBCPP_NO_EXPERIMENTAL_DEPRECATION_WARNING_FILESYSTEM
+build:libc++ --build_tag_filters=-no_libcpp
+build:libc++ --test_tag_filters=-no_libcpp,-requires_root,-requires_bpf,-disabled
 
 # Build for GCC.
 build:gcc --action_env=BAZEL_LINKLIBS=-l%:libstdc++.a
@@ -81,6 +93,8 @@ build:gcc --action_env=CXX=/usr/bin/g++-10
 build:gcc --copt -Wno-error=sign-compare
 build:gcc --copt -Wno-error=stringop-truncation
 build:gcc --copt -Wno-error=maybe-uninitialized
+build:gcc --build_tag_filters=-no_gcc
+build:gcc --test_tag_filters=-no_gcc,-requires_root,-requires_bpf,-disabled
 
 # Default build opts:
 build --config=clang

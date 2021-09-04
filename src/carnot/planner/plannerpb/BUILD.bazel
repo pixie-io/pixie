@@ -18,6 +18,7 @@ load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", 
 
 package(default_visibility = [
     "//src/carnot:__subpackages__",
+    "//src/e2e_test/vizier/planner:__subpackages__",
     "//src/vizier:__subpackages__",
 ])
 

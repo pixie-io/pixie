@@ -20,6 +20,7 @@ load("//bazel:pl_build_system.bzl", "pl_cgo_library")
 # gazelle:ignore
 package(default_visibility = [
     "//src/carnot:__subpackages__",
+    "//src/e2e_test/vizier/planner:__subpackages__",
     "//src/vizier:__subpackages__",
 ])
 

@@ -1,0 +1,43 @@
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:pl_build_system.bzl", "pl_cc_binary")
+
+package(default_visibility = ["//src/e2e_test/vizier/planner:__subpackages__"])
+
+pl_cc_binary(
+    name = "dump_schemas",
+    srcs = ["dump_schemas.cc"],
+    deps = [
+        "//src/shared/schema:cc_library",
+        "//src/stirling:cc_library",
+        "//src/table_store/schema:cc_library",
+    ],
+)
+
+genrule(
+    name = "schemas",
+    outs = ["all_schemas.bin"],
+    cmd = "$(location //src/e2e_test/vizier/planner/dump_schemas:dump_schemas) > $@",
+    tags = [
+        "no_asan",
+        "no_gcc",
+        "no_libcpp",
+        "no_msan",
+        "no_tsan",
+    ],
+    tools = [":dump_schemas"],
+)

@@ -33,6 +33,7 @@ go_library(
     # TODO(PP-2567): Fix this visibility.
     visibility = [
         "//src/carnot:__subpackages__",
+        "//src/e2e_test/vizier/planner:__subpackages__",
         "//src/utils/plandebugger:__subpackages__",
         "//src/vizier:__subpackages__",
     ],
