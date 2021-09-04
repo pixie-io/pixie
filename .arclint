@@ -11,6 +11,7 @@
     "(^credentials\/.*\\.yaml)",
     "(^docs/customer/)",
     "(^experimental/users/)",
+    "(^src/operator/client/versioned/)",
     "(^src/stirling/bpf_tools/bcc_bpf/system-headers)",
     "(^src/stirling/mysql/testing/.*\\.json$)",
     "(^src/ui/.yarn/)",

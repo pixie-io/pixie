@@ -43,7 +43,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"px.dev/pixie/src/api/proto/vizierpb"
-	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
+	v1alpha1 "px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
+	"px.dev/pixie/src/operator/client/versioned"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	version "px.dev/pixie/src/shared/goversion"
 	protoutils "px.dev/pixie/src/shared/k8s"
@@ -80,7 +81,7 @@ type K8sJobHandler interface {
 type K8sVizierInfo struct {
 	ns                            string
 	clientset                     *kubernetes.Clientset
-	vzClient                      *v1alpha1.VizierClient
+	vzClient                      *versioned.Clientset
 	clusterVersion                string
 	clusterName                   string
 	controlPlanePodStatuses       map[string]*cvmsgspb.PodStatus
@@ -123,7 +124,7 @@ func NewK8sVizierInfo(clusterName, ns string) (*K8sVizierInfo, error) {
 		return nil, err
 	}
 
-	vzCrdClient, err := v1alpha1.NewVizierClient(kubeConfig)
+	vzCrdClient, err := versioned.NewForConfig(kubeConfig)
 	if err != nil {
 		log.WithError(err).Error("Failed to initialize vizier CRD client")
 		return nil, err
@@ -724,7 +725,7 @@ func (v *K8sVizierInfo) UpdateClusterID(id string) error {
 
 // GetVizierCRD gets the Vizier CRD for the running Vizier, if running using an operator.
 func (v *K8sVizierInfo) GetVizierCRD() (*v1alpha1.Vizier, error) {
-	viziers, err := v.vzClient.List(context.Background(), v.ns, metav1.ListOptions{})
+	viziers, err := v.vzClient.PxV1alpha1().Viziers(v.ns).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -751,7 +752,7 @@ func (v *K8sVizierInfo) UpdateCRDVizierVersion(version string) (bool, error) {
 	}
 
 	vz.Spec.Version = version
-	_, err = v.vzClient.Update(context.Background(), vz, v.ns, metav1.UpdateOptions{})
+	_, err = v.vzClient.PxV1alpha1().Viziers(v.ns).Update(context.Background(), vz, metav1.UpdateOptions{})
 	if err != nil {
 		return false, err
 	}

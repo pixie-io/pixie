@@ -29,6 +29,7 @@ go_library(
         "//src/api/proto/vizierpb:vizier_pl_go_proto",
         "//src/cloud/vzconn/vzconnpb:service_pl_go_proto",
         "//src/operator/apis/px.dev/v1alpha1",
+        "//src/operator/client/versioned",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/goversion",
         "//src/shared/k8s",

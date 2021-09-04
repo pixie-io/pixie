@@ -20,6 +20,8 @@
 //go:generate controller-gen object
 // Generate the CRD YAMLs.
 //go:generate controller-gen crd:trivialVersions=true rbac:roleName=operator-role webhook output:crd:artifacts:config=crd output:crd:dir:=../../../../../k8s/operator/crd/base
+// Generate the clientset.
+//go:generate client-gen --input=px.dev/v1alpha1 --clientset-name=versioned --go-header-file=/dev/null --input-base=px.dev/pixie/src/operator/apis --output-package=px.dev/pixie/src/operator/client
 
 package v1alpha1
 
@@ -104,6 +106,8 @@ type PodPolicy struct {
 }
 
 // Vizier is the Schema for the viziers API
+// +genclient
+// +genclient:noStatus
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 type Vizier struct {
@@ -114,15 +118,10 @@ type Vizier struct {
 	Status VizierStatus `json:"status,omitempty"`
 }
 
-// +kubebuilder:object:root=true
-
 // VizierList contains a list of Vizier
+// +kubebuilder:object:root=true
 type VizierList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Vizier `json:"items"`
-}
-
-func init() {
-	SchemeBuilder.Register(&Vizier{}, &VizierList{})
 }

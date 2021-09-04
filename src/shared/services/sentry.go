@@ -32,7 +32,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 
-	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
+	"px.dev/pixie/src/operator/client/versioned"
 	version "px.dev/pixie/src/shared/goversion"
 	"px.dev/pixie/src/shared/services/sentryhook"
 )
@@ -48,14 +48,14 @@ func getSentryVal(envNamespaceStr string) (string, error) {
 		return "", err
 	}
 
-	vzCrdClient, err := v1alpha1.NewVizierClient(kubeConfig)
+	vzCrdClient, err := versioned.NewForConfig(kubeConfig)
 	if err != nil {
 		log.WithError(err).Error("Failed to initialize vizier CRD client")
 		return "", err
 	}
 
 	ctx := context.Background()
-	vzLst, err := vzCrdClient.List(ctx, envNamespaceStr, v1.ListOptions{})
+	vzLst, err := vzCrdClient.PxV1alpha1().Viziers(envNamespaceStr).List(ctx, v1.ListOptions{})
 	if err != nil {
 		log.WithError(err).Error("Failed to list vizier CRDs.")
 		return "", err

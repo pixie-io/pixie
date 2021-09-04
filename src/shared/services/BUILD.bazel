@@ -29,7 +29,7 @@ go_library(
     importpath = "px.dev/pixie/src/shared/services",
     visibility = ["//src:__subpackages__"],
     deps = [
-        "//src/operator/apis/px.dev/v1alpha1",
+        "//src/operator/client/versioned",
         "//src/shared/goversion",
         "//src/shared/services/handler",
         "//src/shared/services/sentryhook",

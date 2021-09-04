@@ -1,0 +1,21 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "v1alpha1",
+    srcs = [
+        "doc.go",
+        "generated_expansion.go",
+        "px.dev_client.go",
+        "vizier.go",
+    ],
+    importpath = "px.dev/pixie/src/operator/client/versioned/typed/px.dev/v1alpha1",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/operator/apis/px.dev/v1alpha1",
+        "//src/operator/client/versioned/scheme",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_apimachinery//pkg/types",
+        "@io_k8s_apimachinery//pkg/watch",
+        "@io_k8s_client_go//rest",
+    ],
+)

@@ -1,0 +1,27 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "fake",
+    srcs = [
+        "clientset_generated.go",
+        "doc.go",
+        "register.go",
+    ],
+    importpath = "px.dev/pixie/src/operator/client/versioned/fake",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/operator/apis/px.dev/v1alpha1",
+        "//src/operator/client/versioned",
+        "//src/operator/client/versioned/typed/px.dev/v1alpha1",
+        "//src/operator/client/versioned/typed/px.dev/v1alpha1/fake",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_apimachinery//pkg/runtime",
+        "@io_k8s_apimachinery//pkg/runtime/schema",
+        "@io_k8s_apimachinery//pkg/runtime/serializer",
+        "@io_k8s_apimachinery//pkg/util/runtime",
+        "@io_k8s_apimachinery//pkg/watch",
+        "@io_k8s_client_go//discovery",
+        "@io_k8s_client_go//discovery/fake",
+        "@io_k8s_client_go//testing",
+    ],
+)

@@ -73,6 +73,7 @@ execute 'install go binaries' do
             github.com/golang/mock/mockgen@v1.5.0 \
             github.com/cheekybits/genny@v1.0.0 \
             sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1 \
+            k8s.io/code-generator/cmd/client-gen@v0.20.6 \
             github.com/go-bindata/go-bindata/go-bindata@v3.1.2+incompatible)
 end
 

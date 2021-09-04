@@ -1,0 +1,17 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "versioned",
+    srcs = [
+        "clientset.go",
+        "doc.go",
+    ],
+    importpath = "px.dev/pixie/src/operator/client/versioned",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/operator/client/versioned/typed/px.dev/v1alpha1",
+        "@io_k8s_client_go//discovery",
+        "@io_k8s_client_go//rest",
+        "@io_k8s_client_go//util/flowcontrol",
+    ],
+)
