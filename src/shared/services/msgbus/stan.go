@@ -89,6 +89,7 @@ func (s *stanStreamer) PersistentSubscribe(subject, persistentName string, cb Ms
 		wrapSTANMsgHandler(cb),
 		stan.DurableName(persistentName),
 		stan.SetManualAckMode(),
+		stan.MaxInflight(50),
 		stan.DeliverAllAvailable(),
 		stan.AckWait(s.ackWait),
 	)
