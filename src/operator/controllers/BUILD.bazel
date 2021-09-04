@@ -21,6 +21,7 @@ go_library(
     srcs = [
         "monitor.go",
         "node_watcher.go",
+        "pvc_watcher.go",
         "vizier_controller.go",
     ],
     importpath = "px.dev/pixie/src/operator/controllers",
@@ -59,6 +60,7 @@ go_test(
     srcs = [
         "monitor_test.go",
         "node_watcher_test.go",
+        "pvc_watcher_test.go",
     ],
     embed = [":controllers"],
     deps = [

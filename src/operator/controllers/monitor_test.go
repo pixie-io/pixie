@@ -28,9 +28,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
-	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/fake"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	mock_cloudpb "px.dev/pixie/src/api/proto/cloudpb/mock"
@@ -239,71 +237,6 @@ func TestMonitor_getCloudConnState_SeveralCloudConns(t *testing.T) {
 	state := getCloudConnState(httpClient, pods)
 	assert.Equal(t, status.CloudConnectorPodPending, state.Reason)
 	assert.Equal(t, pixiev1alpha1.VizierPhaseUpdating, translateReasonToPhase(state.Reason))
-}
-
-func TestMonitor_getPVCState(t *testing.T) {
-	tests := []struct {
-		name                     string
-		pvcStorageClassName      string
-		clusterStorageClassNames []string
-		pvcPhase                 v1.PersistentVolumeClaimPhase
-		expectedVizierPhase      pixiev1alpha1.VizierPhase
-		expectedReason           status.VizierReason
-	}{
-		{
-			name:                     "healthy",
-			pvcPhase:                 v1.ClaimBound,
-			pvcStorageClassName:      "standard",
-			clusterStorageClassNames: []string{"standard"},
-			expectedVizierPhase:      pixiev1alpha1.VizierPhaseHealthy,
-			expectedReason:           "",
-		},
-		{
-			name:                     "true_claim_pending",
-			pvcPhase:                 v1.ClaimPending,
-			pvcStorageClassName:      "standard",
-			clusterStorageClassNames: []string{"standard"},
-			expectedVizierPhase:      pixiev1alpha1.VizierPhaseUpdating,
-			expectedReason:           status.MetadataPVCPendingBinding,
-		},
-		{
-			name:                     "storage class not available on cluster",
-			pvcPhase:                 v1.ClaimPending,
-			pvcStorageClassName:      "standard",
-			clusterStorageClassNames: []string{},
-			expectedVizierPhase:      pixiev1alpha1.VizierPhaseUnhealthy,
-			expectedReason:           status.MetadataPVCStorageClassUnavailable,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			pvc := &concurrentPVCMap{
-				unsafeMap: map[string]*v1.PersistentVolumeClaim{
-					"metadata-pv-claim": &v1.PersistentVolumeClaim{
-						Status: v1.PersistentVolumeClaimStatus{
-							Phase: test.pvcPhase,
-						},
-						Spec: v1.PersistentVolumeClaimSpec{
-							StorageClassName: &test.pvcStorageClassName,
-						},
-					},
-				},
-			}
-
-			list := &storagev1.StorageClassList{Items: make([]storagev1.StorageClass, 0)}
-			for _, className := range test.clusterStorageClassNames {
-				list.Items = append(list.Items, storagev1.StorageClass{
-					ObjectMeta: metav1.ObjectMeta{Name: className},
-				})
-			}
-			clientset := fake.NewSimpleClientset(list)
-
-			state := getMetadataPVCState(clientset, pvc)
-			assert.Equal(t, test.expectedReason, state.Reason)
-			assert.Equal(t, test.expectedVizierPhase, translateReasonToPhase(state.Reason))
-		})
-	}
 }
 
 func TestMonitor_natsPod(t *testing.T) {

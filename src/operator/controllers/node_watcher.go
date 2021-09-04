@@ -128,7 +128,6 @@ func (nw *nodeWatcher) start(ctx context.Context) {
 	}
 	nw.lastRV = nodeList.ResourceVersion
 
-	// Populate vizierStates with current pod state.
 	for i := range nodeList.Items {
 		nw.compatTracker.addNode(&nodeList.Items[i])
 	}
@@ -171,7 +170,7 @@ func (nw *nodeWatcher) watchNodes(ctx context.Context) {
 					continue
 				}
 
-				// Update the lastPVCRV, so that if the watcher restarts, it starts at the correct resource version.
+				// Update the lastRV, so that if the watcher restarts, it starts at the correct resource version.
 				nw.lastRV = node.ObjectMeta.ResourceVersion
 
 				switch c.Type {

@@ -47,7 +47,6 @@ import (
 	"px.dev/pixie/src/api/proto/cloudpb"
 	pixiev1alpha1 "px.dev/pixie/src/operator/api/v1alpha1"
 	"px.dev/pixie/src/shared/status"
-	"px.dev/pixie/src/utils/shared/k8s"
 )
 
 const (
@@ -55,8 +54,6 @@ const (
 	cloudConnName = "vizier-cloud-connector"
 	// The label for PEMs.
 	vizierPemLabel = "vizier-pem"
-	// The name of the metadata-pvc.
-	metadataPVC = "metadata-pv-claim"
 	// The name of the nats pod.
 	natsName = "pl-nats-1"
 	// How often we should ping the vizier pods for status updates.
@@ -104,25 +101,6 @@ func (c *concurrentPodMap) write(nameLabel, k8sName string, p *podWrapper) {
 	labelMap[k8sName] = p
 }
 
-// concurrentPVCMap wraps a map with concurrency safe read/write operations.
-type concurrentPVCMap struct {
-	unsafeMap map[string]*v1.PersistentVolumeClaim
-	mapMu     sync.Mutex
-}
-
-func (c *concurrentPVCMap) read(name string) (*v1.PersistentVolumeClaim, bool) {
-	c.mapMu.Lock()
-	defer c.mapMu.Unlock()
-	pod, ok := c.unsafeMap[name]
-	return pod, ok
-}
-
-func (c *concurrentPVCMap) write(name string, pod *v1.PersistentVolumeClaim) {
-	c.mapMu.Lock()
-	defer c.mapMu.Unlock()
-	c.unsafeMap[name] = pod
-}
-
 // VizierMonitor is responsible for watching the k8s API and statusz endpoints to compile a reason and state
 // for the overall Vizier instance.
 type VizierMonitor struct {
@@ -138,11 +116,9 @@ type VizierMonitor struct {
 	podStates *concurrentPodMap
 	lastPodRV string
 
-	pvcStates *concurrentPVCMap
-	lastPVCRV string
-
 	// States from the various state-updaters, which should be aggregated into a single status.
 	nodeState       *vizierState
+	pvcState        *vizierState
 	aggregatedState *vizierState
 
 	vzUpdate func(context.Context, client.Object, ...client.UpdateOption) error
@@ -159,9 +135,9 @@ func (m *VizierMonitor) InitAndStartMonitor(cloudClient *grpc.ClientConn) error 
 	m.cloudClient = cloudClient
 	m.ctx, m.cancel = context.WithCancel(context.Background())
 	m.podStates = &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWrapper)}
-	m.pvcStates = &concurrentPVCMap{unsafeMap: make(map[string]*v1.PersistentVolumeClaim)}
 
-	nodeStateCh := make(chan *vizierState)
+	m.nodeState = okState()
+	m.pvcState = okState()
 
 	err := m.initState()
 	if err != nil {
@@ -171,19 +147,26 @@ func (m *VizierMonitor) InitAndStartMonitor(cloudClient *grpc.ClientConn) error 
 	// Watch for future updates in the namespace.
 	go m.watchK8sPods()
 
-	// Watch for future PVC updates.
-	go m.watchK8sPVC()
+	// Start PVC monitor.
+	pvcStateCh := make(chan *vizierState)
+	pvcW := &pvcWatcher{
+		clientset: m.clientset,
+		namespace: m.namespace,
+		state:     pvcStateCh,
+	}
+	go pvcW.start(m.ctx)
 
 	// Start node monitor.
-	nodeWatcher := &nodeWatcher{
+	nodeStateCh := make(chan *vizierState)
+	nodeW := &nodeWatcher{
 		clientset: m.clientset,
 		state:     nodeStateCh,
 	}
-	go nodeWatcher.start(m.ctx)
+	go nodeW.start(m.ctx)
 
 	// Start goroutine for periodically pinging statusz endpoints and
 	// reconciling the Vizier status.
-	go m.statusAggregator(nodeStateCh)
+	go m.statusAggregator(nodeStateCh, pvcStateCh)
 	go m.runReconciler()
 
 	return nil
@@ -198,16 +181,6 @@ func (m *VizierMonitor) initState() error {
 	// Populate vizierStates with current pod state.
 	for _, pod := range podList.Items {
 		m.handlePod(pod)
-	}
-
-	pvcList, err := m.clientset.CoreV1().PersistentVolumeClaims(m.namespace).List(m.ctx, metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-	m.lastPVCRV = pvcList.ResourceVersion
-
-	for _, pvc := range pvcList.Items {
-		m.handlePVC(pvc)
 	}
 
 	return nil
@@ -231,10 +204,6 @@ func (m *VizierMonitor) handlePod(p v1.Pod) {
 	}
 
 	m.podStates.write(nameLabel, k8sName, &podWrapper{pod: &p})
-}
-
-func (m *VizierMonitor) handlePVC(pvc v1.PersistentVolumeClaim) {
-	m.pvcStates.write(pvc.ObjectMeta.Name, &pvc)
 }
 
 func (m *VizierMonitor) watchK8sPods() {
@@ -275,48 +244,6 @@ func (m *VizierMonitor) watchK8sPods() {
 				m.lastPodRV = o.ObjectMeta.ResourceVersion
 
 				m.handlePod(*o)
-			}
-		}
-	}
-}
-
-func (m *VizierMonitor) watchK8sPVC() {
-	for {
-		watcher := cache.NewListWatchFromClient(m.clientset.CoreV1().RESTClient(), "persistentvolumeclaims", m.namespace, fields.Everything())
-		retryWatcher, err := watch.NewRetryWatcher(m.lastPVCRV, watcher)
-		if err != nil {
-			log.WithError(err).Fatal("Could not start watcher for pvcs")
-		}
-
-		resCh := retryWatcher.ResultChan()
-		loop := true
-		for loop {
-			select {
-			case <-m.ctx.Done():
-				log.Info("Received cancel, stopping K8s watcher")
-				return
-			case c, ok := <-resCh:
-				if !ok {
-					log.Info("Watcher channel closed, restarting")
-					loop = false
-					break
-				}
-				s, ok := c.Object.(*metav1.Status)
-				if ok && s.Status == metav1.StatusFailure {
-					log.WithField("status", s.Status).Info("Received failure status in PVC watcher")
-					// Try to start up another watcher instance.
-					loop = false
-					break
-				}
-
-				// Update the lastPVCRV, so that if the watcher restarts, it starts at the correct resource version.
-				o, ok := c.Object.(*v1.PersistentVolumeClaim)
-				if !ok {
-					continue
-				}
-
-				m.lastPVCRV = o.ObjectMeta.ResourceVersion
-				m.handlePVC(*o)
 			}
 		}
 	}
@@ -441,40 +368,6 @@ func getControlPlanePodState(pods *concurrentPodMap) *vizierState {
 	return okState()
 }
 
-// Returns whether the storage class name requested by the pvc is valid for the Kubernetes instance.
-func isValidPVC(clientset kubernetes.Interface, pvc *v1.PersistentVolumeClaim) (bool, error) {
-	classes, err := k8s.ListStorageClasses(clientset)
-	if err != nil {
-		return false, err
-	}
-	for _, c := range classes.Items {
-		if c.ObjectMeta.Name == *pvc.Spec.StorageClassName {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-// getMetadataPVCState determines the state of the PVC then translates it to a corresponding vizierState.
-func getMetadataPVCState(clientset kubernetes.Interface, pvcMap *concurrentPVCMap) *vizierState {
-	pvc, ok := pvcMap.read(metadataPVC)
-	if !ok {
-		return &vizierState{Reason: status.MetadataPVCMissing}
-	}
-	if pvc.Status.Phase == v1.ClaimPending {
-		isvalidClass, err := isValidPVC(clientset, pvc)
-		if err != nil {
-			log.WithError(err).Error("unable to list storage classes")
-			return &vizierState{Reason: status.MetadataPVCStorageClassUnavailable}
-		}
-		if !isvalidClass {
-			return &vizierState{Reason: status.MetadataPVCStorageClassUnavailable}
-		}
-		return &vizierState{Reason: status.MetadataPVCPendingBinding}
-	}
-	return okState()
-}
-
 // getPEMResourceLimitsState reads the state of pem resource limits to make sure they're running as expected.
 func getPEMResourceLimitsState(pods *concurrentPodMap) *vizierState {
 	pods.mapMu.Lock()
@@ -591,13 +484,6 @@ func (m *VizierMonitor) getvizierState(vz *pixiev1alpha1.Vizier) *vizierState {
 		return vzVersionState
 	}
 
-	if !vz.Spec.UseEtcdOperator {
-		pvcState := getMetadataPVCState(m.clientset, m.pvcStates)
-		if !isOk(pvcState) {
-			return pvcState
-		}
-	}
-
 	podState := getControlPlanePodState(m.podStates)
 	if !isOk(podState) {
 		return podState
@@ -672,17 +558,42 @@ func translateReasonToPhase(reason status.VizierReason) pixiev1alpha1.VizierPhas
 	return pixiev1alpha1.VizierPhaseUnhealthy
 }
 
-func (m *VizierMonitor) statusAggregator(nodeStateCh <-chan *vizierState) {
+func (m *VizierMonitor) statusAggregator(nodeStateCh, pvcStateCh <-chan *vizierState) {
 	for {
 		select {
 		case <-m.ctx.Done():
 			return
 		case u := <-nodeStateCh:
 			m.nodeState = u
+		case u := <-pvcStateCh:
+			m.pvcState = u
 		}
 
-		// For now, the aggregated state just depends on the node state.
-		m.aggregatedState = m.nodeState
+		if !isOk(m.nodeState) {
+			m.aggregatedState = m.nodeState
+			continue
+		}
+
+		// Shortcircuit, don't get vizier crd if the PVC is already in a good state.
+		if isOk(m.pvcState) {
+			m.aggregatedState = m.pvcState
+			continue
+		}
+
+		// PVC is bad or missing, check whether it's needed!
+		vz := &pixiev1alpha1.Vizier{}
+		err := m.vzGet(context.Background(), m.namespacedName, vz)
+		if err != nil {
+			log.WithError(err).Error("Failed to get vizier")
+			continue
+		}
+
+		if !vz.Spec.UseEtcdOperator {
+			m.aggregatedState = m.pvcState
+			continue
+		}
+
+		m.aggregatedState = okState()
 	}
 }
 
