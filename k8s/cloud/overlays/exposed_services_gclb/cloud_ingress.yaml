@@ -45,6 +45,10 @@ spec:
         backend:
           serviceName: cloud-proxy-service
           servicePort: 5555
+      - path: /px.cloudapi.UserService/*
+        backend:
+          serviceName: cloud-proxy-service
+          servicePort: 5555
       - path: /px.cloudapi.VizierClusterInfo/*
         backend:
           serviceName: cloud-proxy-service
