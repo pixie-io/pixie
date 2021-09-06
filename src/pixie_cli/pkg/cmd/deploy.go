@@ -41,7 +41,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
-	"px.dev/pixie/src/operator/api/v1alpha1"
+	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	"px.dev/pixie/src/pixie_cli/pkg/auth"
 	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"

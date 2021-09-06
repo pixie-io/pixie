@@ -24,7 +24,7 @@ go_library(
         "vizier_types.go",
         "zz_generated.deepcopy.go",
     ],
-    importpath = "px.dev/pixie/src/operator/api/v1alpha1",
+    importpath = "px.dev/pixie/src/operator/apis/px.dev/v1alpha1",
     visibility = ["//visibility:public"],
     deps = [
         "@io_k8s_api//core/v1:core",

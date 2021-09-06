@@ -32,7 +32,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 
 	"px.dev/pixie/src/api/proto/vizierpb"
-	"px.dev/pixie/src/operator/api/v1alpha1"
+	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/env"

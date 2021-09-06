@@ -504,10 +504,10 @@ analyze:
     type: go
     target: px.dev/pixie/src/operator
     path: src/operator
-  - name: px.dev/pixie/src/operator/api/v1alpha1
+  - name: px.dev/pixie/src/operator/apis/px.dev/v1alpha1
     type: go
-    target: px.dev/pixie/src/operator/api/v1alpha1
-    path: src/operator/api/v1alpha1
+    target: px.dev/pixie/src/operator/apis/px.dev/v1alpha1
+    path: src/operator/apis/px.dev/v1alpha1
   - name: px.dev/pixie/src/operator/controllers
     type: go
     target: px.dev/pixie/src/operator/controllers

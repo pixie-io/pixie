@@ -43,7 +43,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"px.dev/pixie/src/api/proto/vizierpb"
-	"px.dev/pixie/src/operator/api/v1alpha1"
+	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	version "px.dev/pixie/src/shared/goversion"
 	protoutils "px.dev/pixie/src/shared/k8s"

@@ -32,7 +32,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 
-	"px.dev/pixie/src/operator/api/v1alpha1"
+	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	version "px.dev/pixie/src/shared/goversion"
 	"px.dev/pixie/src/shared/services/sentryhook"
 )

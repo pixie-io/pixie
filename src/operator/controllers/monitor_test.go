@@ -32,7 +32,7 @@ import (
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	mock_cloudpb "px.dev/pixie/src/api/proto/cloudpb/mock"
-	pixiev1alpha1 "px.dev/pixie/src/operator/api/v1alpha1"
+	pixiev1alpha1 "px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	"px.dev/pixie/src/shared/status"
 )
 

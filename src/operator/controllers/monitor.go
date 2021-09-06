@@ -45,7 +45,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
-	pixiev1alpha1 "px.dev/pixie/src/operator/api/v1alpha1"
+	pixiev1alpha1 "px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	"px.dev/pixie/src/shared/status"
 )
 

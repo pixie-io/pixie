@@ -29,7 +29,7 @@ go_library(
     deps = [
         "//src/api/proto/cloudpb:cloudapi_pl_go_proto",
         "//src/api/proto/vizierconfigpb:vizier_pl_go_proto",
-        "//src/operator/api/v1alpha1",
+        "//src/operator/apis/px.dev/v1alpha1",
         "//src/shared/services",
         "//src/shared/status",
         "//src/utils/shared/certs",
@@ -66,7 +66,7 @@ go_test(
     deps = [
         "//src/api/proto/cloudpb:cloudapi_pl_go_proto",
         "//src/api/proto/cloudpb/mock",
-        "//src/operator/api/v1alpha1",
+        "//src/operator/apis/px.dev/v1alpha1",
         "//src/shared/status",
         "@com_github_gogo_protobuf//types",
         "@com_github_golang_mock//gomock",

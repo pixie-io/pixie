@@ -19,7 +19,7 @@
 // Generate the code for deep-copying the CRD in go.
 //go:generate controller-gen object
 // Generate the CRD YAMLs.
-//go:generate controller-gen crd:trivialVersions=true rbac:roleName=operator-role webhook output:crd:artifacts:config=crd output:crd:dir:=../../../../k8s/operator/crd/base
+//go:generate controller-gen crd:trivialVersions=true rbac:roleName=operator-role webhook output:crd:artifacts:config=crd output:crd:dir:=../../../../../k8s/operator/crd/base
 
 package v1alpha1
 

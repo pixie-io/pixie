@@ -24,7 +24,7 @@ go_library(
     importpath = "px.dev/pixie/src/operator",
     visibility = ["//visibility:private"],
     deps = [
-        "//src/operator/api/v1alpha1",
+        "//src/operator/apis/px.dev/v1alpha1",
         "//src/operator/controllers",
         "//src/utils/shared/k8s",
         "@com_github_sirupsen_logrus//:logrus",

@@ -24,7 +24,7 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//src/api/proto/vizierpb:vizier_pl_go_proto",
-        "//src/operator/api/v1alpha1",
+        "//src/operator/apis/px.dev/v1alpha1",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/services",
         "//src/shared/services/env",
