@@ -199,9 +199,14 @@ interface DataTableContextProps extends Omit<DataTableProps, 'table'> {
 }
 const DataTableContext = React.createContext<DataTableContextProps>(null);
 
-const ColumnSelector: React.FC<{ columns: ColumnInstance[] }> = ({ columns }) => {
+const noPointerEvents = { pointerEvents: 'none' as const };
+
+const ColumnSelector = React.memo<{ columns: ColumnInstance[] }>(function ColumnSelector({ columns }) {
   const classes = useDataTableStyles();
+
   const [open, setOpen] = React.useState(false);
+  const close = React.useCallback(() => setOpen(false), []);
+  const toggleOpen = React.useCallback(() => setOpen((prev) => !prev), []);
   const anchorEl = React.useRef<HTMLButtonElement>(null);
 
   // Workaround: since react-table directly mutates its objects, column.isVisible on individual columns doesn't cause
@@ -212,34 +217,36 @@ const ColumnSelector: React.FC<{ columns: ColumnInstance[] }> = ({ columns }) =>
   const editableColumns = React.useMemo(() => columns.filter((col) => !col.isGutter), [columns]);
   return (
     <>
-      <Menu open={open} anchorEl={anchorEl.current} onBackdropClick={() => setOpen(false)}>
+      <Menu open={open} anchorEl={anchorEl.current} onBackdropClick={close}>
         {editableColumns.map((column) => (
+          // eslint-disable-next-line react-memo/require-usememo
           <MenuItem key={column.id} button onClick={() => column.toggleHidden()}>
             <FormControlLabel
-              style={{ pointerEvents: 'none' }}
+              style={noPointerEvents}
               label={column.id || JSON.stringify(column)}
+              // eslint-disable-next-line react-memo/require-usememo
               control={<Checkbox color='secondary' disableRipple checked={column.isVisible} />}
             />
           </MenuItem>
         ))}
       </Menu>
-      <Button className={classes.columnSelector} onClick={() => setOpen(!open)} ref={anchorEl}>
+      <Button className={classes.columnSelector} onClick={toggleOpen} ref={anchorEl}>
         <MenuIcon />
       </Button>
     </>
   );
-};
+});
 
-const ColumnSortButton: React.FC<{ column: HeaderGroup }> = ({ column }) => {
+const ColumnSortButton = React.memo<{ column: HeaderGroup }>(function ColumnSortButton({ column }) {
   const classes = useDataTableStyles();
   const className = buildClass(
     classes.sortButton,
     column.isSorted && classes.sortButtonActive,
   );
   return column.isSortedDesc ? <DownIcon className={className} /> : <UpIcon className={className} />;
-};
+});
 
-const ColumnResizeHandle: React.FC<{ column: HeaderGroup }> = ({ column }) => {
+const ColumnResizeHandle = React.memo<{ column: HeaderGroup }>(function ColumnResizeHandle({ column }) {
   const classes = useDataTableStyles();
   const { instance: { resetResizing } } = React.useContext(DataTableContext);
 
@@ -252,7 +259,7 @@ const ColumnResizeHandle: React.FC<{ column: HeaderGroup }> = ({ column }) => {
       &#8942;
     </span>
   );
-};
+});
 
 const HeaderCell: React.FC<{ column: HeaderGroup }> = React.memo(function HeaderCell({ column }) {
   const classes = useDataTableStyles();
@@ -291,30 +298,30 @@ const HeaderCell: React.FC<{ column: HeaderGroup }> = React.memo(function Header
   return true;
 });
 
-const HeaderRow = React.forwardRef<HTMLDivElement, { scrollbarWidth: number }>(
-  function HeaderRow({ scrollbarWidth }, ref) {
-    const classes = useDataTableStyles();
-    const { width: containerWidth } = React.useContext(AutoSizerContext);
-    const { instance: { totalColumnsWidth, headerGroups } } = React.useContext(DataTableContext);
+const HeaderRow = React.memo(React.forwardRef<HTMLDivElement, { scrollbarWidth: number }>(({ scrollbarWidth }, ref) => {
+  const classes = useDataTableStyles();
+  const { width: containerWidth } = React.useContext(AutoSizerContext);
+  const { instance: { totalColumnsWidth, headerGroups } } = React.useContext(DataTableContext);
 
-    const headStyle = React.useMemo(() => ({
-      width: `${containerWidth - scrollbarWidth}px`,
-    }), [containerWidth, scrollbarWidth]);
-    const rowStyle = React.useMemo(() => ({
-      width: `${totalColumnsWidth + scrollbarWidth}px`,
-    }), [totalColumnsWidth, scrollbarWidth]);
+  const headStyle = React.useMemo(() => ({
+    width: `${containerWidth - scrollbarWidth}px`,
+  }), [containerWidth, scrollbarWidth]);
+  const rowStyle = React.useMemo(() => ({
+    width: `${totalColumnsWidth + scrollbarWidth}px`,
+  }), [totalColumnsWidth, scrollbarWidth]);
 
-    return (
-      <div className={classes.tableHead} style={headStyle} ref={ref}>
-        <div role='row' className={classes.headerRow} style={rowStyle}>
-          {headerGroups[0].headers.map((column) => (
-            <HeaderCell key={String(column.id || column.Header)} column={{ ...column }} />
-          ))}
-        </div>
+  return (
+    <div className={classes.tableHead} style={headStyle} ref={ref}>
+      <div role='row' className={classes.headerRow} style={rowStyle}>
+        {headerGroups[0].headers.map((column) => (
+          // eslint-disable-next-line react-memo/require-usememo
+          <HeaderCell key={String(column.id || column.Header)} column={{ ...column }} />
+        ))}
       </div>
-    );
-  },
-);
+    </div>
+  );
+}));
+HeaderRow.displayName = 'HeaderRow';
 
 const BodyCell: React.FC<{ cell: Cell }> = React.memo(function BodyCell({ cell }) {
   const classes = useDataTableStyles();
@@ -374,6 +381,7 @@ const BodyRow = React.memo<{ index: number, style: React.CSSProperties }>(
     return (
       // eslint-disable-next-line react/jsx-key
       <div {...rowProps} className={className} onClick={onClick}>
+        {/* eslint-disable-next-line react-memo/require-usememo */}
         {row.cells.map((cell) => <BodyCell key={cell.column.id} cell={{ ...cell, column: { ...cell.column } }} />)}
       </div>
     );
@@ -410,6 +418,7 @@ function decorateTable({ table: { columns, data }, enableColumnSelect, enableRow
   return { columns, data };
 }
 
+// eslint-disable-next-line react-memo/require-memo
 const DataTableImpl: React.FC<DataTableProps> = ({ table, ...options }) => {
   const classes = useDataTableStyles();
 
