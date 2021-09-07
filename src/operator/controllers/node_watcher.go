@@ -160,7 +160,7 @@ func (nw *nodeWatcher) watchNodes(ctx context.Context) {
 				}
 				s, ok := c.Object.(*metav1.Status)
 				if ok && s.Status == metav1.StatusFailure {
-					log.WithField("status", s.Status).Info("Received failure status in watcher")
+					log.WithField("status", s.Status).Info("Received failure status in node watcher")
 					// Try to start up another watcher instance.
 					loop = false
 					break

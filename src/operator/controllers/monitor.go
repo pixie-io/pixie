@@ -260,7 +260,7 @@ func (m *VizierMonitor) watchK8sPods() {
 				}
 				s, ok := c.Object.(*metav1.Status)
 				if ok && s.Status == metav1.StatusFailure {
-					log.WithField("status", s.Status).Info("Received failure status in watcher")
+					log.WithField("status", s.Status).Info("Received failure status in pod watcher")
 					// Try to start up another watcher instance.
 					loop = false
 					break
@@ -303,7 +303,7 @@ func (m *VizierMonitor) watchK8sPVC() {
 				}
 				s, ok := c.Object.(*metav1.Status)
 				if ok && s.Status == metav1.StatusFailure {
-					log.WithField("status", s.Status).Info("Received failure status in watcher")
+					log.WithField("status", s.Status).Info("Received failure status in PVC watcher")
 					// Try to start up another watcher instance.
 					loop = false
 					break
@@ -679,8 +679,6 @@ func (m *VizierMonitor) statusAggregator(nodeStateCh <-chan *vizierState) {
 			return
 		case u := <-nodeStateCh:
 			m.nodeState = u
-		default:
-			continue
 		}
 
 		// For now, the aggregated state just depends on the node state.
