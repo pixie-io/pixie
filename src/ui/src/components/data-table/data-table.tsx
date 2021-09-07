@@ -24,7 +24,6 @@ import {
   useSortBy,
   Column,
   Cell,
-  HeaderGroup,
   ColumnInstance, TableInstance,
 } from 'react-table';
 import { FixedSizeList as List, areEqual, ListOnItemsRenderedProps } from 'react-window';
@@ -237,7 +236,7 @@ const ColumnSelector = React.memo<{ columns: ColumnInstance[] }>(function Column
   );
 });
 
-const ColumnSortButton = React.memo<{ column: HeaderGroup }>(function ColumnSortButton({ column }) {
+const ColumnSortButton = React.memo<{ column: ColumnInstance }>(function ColumnSortButton({ column }) {
   const classes = useDataTableStyles();
   const className = buildClass(
     classes.sortButton,
@@ -246,7 +245,7 @@ const ColumnSortButton = React.memo<{ column: HeaderGroup }>(function ColumnSort
   return column.isSortedDesc ? <DownIcon className={className} /> : <UpIcon className={className} />;
 });
 
-const ColumnResizeHandle = React.memo<{ column: HeaderGroup }>(function ColumnResizeHandle({ column }) {
+const ColumnResizeHandle = React.memo<{ column: ColumnInstance }>(function ColumnResizeHandle({ column }) {
   const classes = useDataTableStyles();
   const { instance: { resetResizing } } = React.useContext(DataTableContext);
 
@@ -261,7 +260,7 @@ const ColumnResizeHandle = React.memo<{ column: HeaderGroup }>(function ColumnRe
   );
 });
 
-const HeaderCell: React.FC<{ column: HeaderGroup }> = React.memo(function HeaderCell({ column }) {
+const HeaderCell: React.FC<{ column: ColumnInstance }> = React.memo(function HeaderCell({ column }) {
   const classes = useDataTableStyles();
 
   const cellClass = buildClass(classes.headerCell, column.isGutter && classes.gutterCell);
@@ -290,8 +289,8 @@ const HeaderCell: React.FC<{ column: HeaderGroup }> = React.memo(function Header
     </div>
   );
 }, (prev, next) => {
-  const checkKeys: Array<keyof HeaderGroup> = [
-    'id', 'width', 'canSort', 'isSorted', 'isSortedDesc', 'canResize', 'isResizing'];
+  const checkKeys: Array<keyof ColumnInstance> = [
+    'id', 'Header', 'width', 'canSort', 'isSorted', 'isSortedDesc', 'canResize', 'isResizing'];
   for (const key of checkKeys) {
     if (prev.column[key] !== next.column[key]) return false;
   }
@@ -301,7 +300,7 @@ const HeaderCell: React.FC<{ column: HeaderGroup }> = React.memo(function Header
 const HeaderRow = React.memo(React.forwardRef<HTMLDivElement, { scrollbarWidth: number }>(({ scrollbarWidth }, ref) => {
   const classes = useDataTableStyles();
   const { width: containerWidth } = React.useContext(AutoSizerContext);
-  const { instance: { totalColumnsWidth, headerGroups } } = React.useContext(DataTableContext);
+  const { instance: { totalColumnsWidth, flatHeaders } } = React.useContext(DataTableContext);
 
   const headStyle = React.useMemo(() => ({
     width: `${containerWidth - scrollbarWidth}px`,
@@ -313,7 +312,7 @@ const HeaderRow = React.memo(React.forwardRef<HTMLDivElement, { scrollbarWidth: 
   return (
     <div className={classes.tableHead} style={headStyle} ref={ref}>
       <div role='row' className={classes.headerRow} style={rowStyle}>
-        {headerGroups[0].headers.map((column) => (
+        {flatHeaders.filter((c) => c.isVisible).map((column) => (
           // eslint-disable-next-line react-memo/require-usememo
           <HeaderCell key={String(column.id || column.Header)} column={{ ...column }} />
         ))}
@@ -341,6 +340,7 @@ const BodyCell: React.FC<{ cell: Cell }> = React.memo(function BodyCell({ cell }
   const pCol = prev.cell.column;
   const nCol = next.cell.column;
   return pCol.id === nCol.id
+    && pCol.Header === nCol.Header
     && pCol.width === nCol.width
     && prev.cell.value === next.cell.value;
 });
@@ -370,9 +370,13 @@ const BodyRow = React.memo<{ index: number, style: React.CSSProperties }>(
       enableRowSelect && classes.bodyRowSelectable,
       enableRowSelect && expanded === row.id && classes.bodyRowSelected,
     );
-    const onClick = React.useMemo(() => enableRowSelect && (() => {
-      toggleRowExpanded(row.id);
-      onRowSelected?.(expanded === row.id ? null : row.original);
+    const onClick = React.useMemo(() => enableRowSelect && ((event) => {
+      // The canvas in QuantilesBoxWhisker takes clicks (through Vega), which it doesn't prevent from bubbling.
+      // Let those clicks do just one thing, not two.
+      if (event.target.tagName !== 'CANVAS') {
+        toggleRowExpanded(row.id);
+        onRowSelected?.(expanded === row.id ? null : row.original);
+      }
     }), [row.id, row.original, enableRowSelect, onRowSelected, expanded, toggleRowExpanded]);
 
     const rowProps = React.useMemo(
@@ -486,6 +490,11 @@ const DataTableImpl: React.FC<DataTableProps> = ({ table, ...options }) => {
     else setExpanded(rowId);
   }, [expanded]);
 
+  // Ensures an update when, for example, a quantiles column changes modes
+  const colNames = React.useMemo(
+    () => columns.map((c) => String(c.id ?? c.Header)).join(';'),
+    [columns]);
+
   const ctx: DataTableContextProps = React.useMemo(() => ({
     instance,
     expanded,
@@ -497,7 +506,7 @@ const DataTableImpl: React.FC<DataTableProps> = ({ table, ...options }) => {
     instance, instance.totalColumnsWidth, instance.state.sortBy,
     options.enableRowSelect, options.enableColumnSelect,
     options.onRowSelected, options.onRowsRendered,
-    expanded, toggleRowExpanded,
+    colNames, expanded, toggleRowExpanded,
   ]);
 
   const ready = containerWidth > 0 && containerHeight > 0 && defaultWidth > 0;
