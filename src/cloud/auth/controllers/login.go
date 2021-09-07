@@ -49,7 +49,7 @@ const (
 	// SupportAccountDomain is the domain name of the Pixie support account which can access the org provided at login.
 	SupportAccountDomain = "pixie.support"
 	// AuthConnectorTokenValidDuration is the duration that the auth connector token is valid from the current time.
-	AuthConnectorTokenValidDuration = 10 * time.Minute
+	AuthConnectorTokenValidDuration = 30 * time.Minute
 )
 
 func (s *Server) getUserInfoFromToken(accessToken string) (string, *UserInfo, error) {
@@ -597,8 +597,8 @@ func (s *Server) GetAuthConnectorToken(ctx context.Context, req *authpb.GetAuthC
 		return nil, fmt.Errorf("unable to create authConnector token for invalid user")
 	}
 
-        md, _ := metadata.FromIncomingContext(ctx)
-        ctx = metadata.NewOutgoingContext(ctx, md)
+	md, _ := metadata.FromIncomingContext(ctx)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	// Fetch userInfo that needs to be included in token.
 	pc := s.env.ProfileClient()
