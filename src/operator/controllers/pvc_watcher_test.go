@@ -27,7 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
-	pixiev1alpha1 "px.dev/pixie/src/operator/api/v1alpha1"
+	pixiev1alpha1 "px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	"px.dev/pixie/src/shared/status"
 )
 
