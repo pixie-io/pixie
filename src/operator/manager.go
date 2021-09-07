@@ -29,7 +29,7 @@ import (
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	v1alpha1 "px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
+	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	"px.dev/pixie/src/operator/controllers"
 	"px.dev/pixie/src/utils/shared/k8s"
 	// +kubebuilder:scaffold:imports

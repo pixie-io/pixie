@@ -25,7 +25,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	pixiev1alpha1 "px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
+	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	"px.dev/pixie/src/shared/status"
 )
 
@@ -36,7 +36,7 @@ func TestMonitor_nodeWatcherHandleNode(t *testing.T) {
 		newNodeName         string
 		newNodeKernel       string
 		expectedReason      status.VizierReason
-		expectedVizierPhase pixiev1alpha1.VizierPhase
+		expectedVizierPhase v1alpha1.VizierPhase
 		delete              bool
 	}{
 		{
@@ -50,7 +50,7 @@ func TestMonitor_nodeWatcherHandleNode(t *testing.T) {
 			newNodeKernel:       "4.14.0",
 			newNodeName:         "newCompatibleNode",
 			expectedReason:      "",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseHealthy,
 			delete:              false,
 		},
 		{
@@ -62,7 +62,7 @@ func TestMonitor_nodeWatcherHandleNode(t *testing.T) {
 			newNodeKernel:       "4.13.0",
 			newNodeName:         "newIncompatibleNode",
 			expectedReason:      status.KernelVersionsIncompatible,
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseDegraded,
+			expectedVizierPhase: v1alpha1.VizierPhaseDegraded,
 			delete:              false,
 		},
 		{
@@ -74,7 +74,7 @@ func TestMonitor_nodeWatcherHandleNode(t *testing.T) {
 			newNodeKernel:       "4.13.0",
 			newNodeName:         "compatibleNode1",
 			expectedReason:      status.KernelVersionsIncompatible,
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseDegraded,
+			expectedVizierPhase: v1alpha1.VizierPhaseDegraded,
 			delete:              false,
 		},
 		{
@@ -86,7 +86,7 @@ func TestMonitor_nodeWatcherHandleNode(t *testing.T) {
 			newNodeKernel:       "4.14.1",
 			newNodeName:         "incompatibleNode3",
 			expectedReason:      "",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseHealthy,
 			delete:              false,
 		},
 		{
@@ -99,7 +99,7 @@ func TestMonitor_nodeWatcherHandleNode(t *testing.T) {
 			newNodeKernel:       "4.13.0",
 			newNodeName:         "incompatibleNode1",
 			expectedReason:      "",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseHealthy,
 			delete:              true,
 		},
 	}

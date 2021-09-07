@@ -4,7 +4,7 @@ package v1alpha1
 
 import (
 	rest "k8s.io/client-go/rest"
-	v1alpha1 "px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
+	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	"px.dev/pixie/src/operator/client/versioned/scheme"
 )
 

@@ -27,7 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
-	pixiev1alpha1 "px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
+	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	"px.dev/pixie/src/shared/status"
 )
 
@@ -37,7 +37,7 @@ func TestMonitor_getPVCState(t *testing.T) {
 		pvcStorageClassName      string
 		clusterStorageClassNames []string
 		pvcPhase                 v1.PersistentVolumeClaimPhase
-		expectedVizierPhase      pixiev1alpha1.VizierPhase
+		expectedVizierPhase      v1alpha1.VizierPhase
 		expectedReason           status.VizierReason
 	}{
 		{
@@ -45,7 +45,7 @@ func TestMonitor_getPVCState(t *testing.T) {
 			pvcPhase:                 v1.ClaimBound,
 			pvcStorageClassName:      "standard",
 			clusterStorageClassNames: []string{"standard"},
-			expectedVizierPhase:      pixiev1alpha1.VizierPhaseHealthy,
+			expectedVizierPhase:      v1alpha1.VizierPhaseHealthy,
 			expectedReason:           "",
 		},
 		{
@@ -53,7 +53,7 @@ func TestMonitor_getPVCState(t *testing.T) {
 			pvcPhase:                 v1.ClaimPending,
 			pvcStorageClassName:      "standard",
 			clusterStorageClassNames: []string{"standard"},
-			expectedVizierPhase:      pixiev1alpha1.VizierPhaseUpdating,
+			expectedVizierPhase:      v1alpha1.VizierPhaseUpdating,
 			expectedReason:           status.MetadataPVCPendingBinding,
 		},
 		{
@@ -61,7 +61,7 @@ func TestMonitor_getPVCState(t *testing.T) {
 			pvcPhase:                 v1.ClaimPending,
 			pvcStorageClassName:      "standard",
 			clusterStorageClassNames: []string{},
-			expectedVizierPhase:      pixiev1alpha1.VizierPhaseUnhealthy,
+			expectedVizierPhase:      v1alpha1.VizierPhaseUnhealthy,
 			expectedReason:           status.MetadataPVCStorageClassUnavailable,
 		},
 	}

@@ -32,7 +32,7 @@ import (
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	mock_cloudpb "px.dev/pixie/src/api/proto/cloudpb/mock"
-	pixiev1alpha1 "px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
+	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	"px.dev/pixie/src/shared/status"
 )
 
@@ -130,28 +130,28 @@ func TestMonitor_getCloudConnState(t *testing.T) {
 		name                string
 		cloudConnStatusz    string
 		cloudConnPhase      v1.PodPhase
-		expectedVizierPhase pixiev1alpha1.VizierPhase
+		expectedVizierPhase v1alpha1.VizierPhase
 		expectedReason      status.VizierReason
 	}{
 		{
 			name:                "healthy",
 			cloudConnStatusz:    "",
 			cloudConnPhase:      v1.PodRunning,
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseHealthy,
 			expectedReason:      "",
 		},
 		{
 			name:                "updating",
 			cloudConnStatusz:    "",
 			cloudConnPhase:      v1.PodPending,
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseUpdating,
+			expectedVizierPhase: v1alpha1.VizierPhaseUpdating,
 			expectedReason:      status.CloudConnectorPodPending,
 		},
 		{
 			name:                "unhealthy but running",
 			cloudConnStatusz:    "CloudConnectFailed",
 			cloudConnPhase:      v1.PodRunning,
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseUnhealthy,
 			expectedReason:      status.CloudConnectorFailedToConnect,
 		},
 	}
@@ -236,7 +236,7 @@ func TestMonitor_getCloudConnState_SeveralCloudConns(t *testing.T) {
 
 	state := getCloudConnState(httpClient, pods)
 	assert.Equal(t, status.CloudConnectorPodPending, state.Reason)
-	assert.Equal(t, pixiev1alpha1.VizierPhaseUpdating, translateReasonToPhase(state.Reason))
+	assert.Equal(t, v1alpha1.VizierPhaseUpdating, translateReasonToPhase(state.Reason))
 }
 
 func TestMonitor_natsPod(t *testing.T) {
@@ -253,34 +253,34 @@ func TestMonitor_natsPod(t *testing.T) {
 		natsIP              string
 		natsPhase           v1.PodPhase
 		expectedReason      status.VizierReason
-		expectedVizierPhase pixiev1alpha1.VizierPhase
+		expectedVizierPhase v1alpha1.VizierPhase
 	}{
 		{
 			name:                "OK",
 			natsIP:              "127.0.0.1",
 			natsPhase:           v1.PodRunning,
 			expectedReason:      "",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseHealthy,
 		},
 		{
 			name:                "pending",
 			natsIP:              "127.0.0.2",
 			natsPhase:           v1.PodPending,
 			expectedReason:      "NATSPodPending",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseUpdating,
+			expectedVizierPhase: v1alpha1.VizierPhaseUpdating,
 		},
 		{
 			name:                "missing",
 			podMissing:          true,
 			expectedReason:      "NATSPodMissing",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseUnhealthy,
 		},
 		{
 			name:                "unhealthy",
 			natsIP:              "127.0.0.3",
 			natsPhase:           v1.PodRunning,
 			expectedReason:      "NATSPodFailed",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseUnhealthy,
 		},
 	}
 
@@ -317,13 +317,13 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 	}
 	tests := []struct {
 		name                string
-		expectedVizierPhase pixiev1alpha1.VizierPhase
+		expectedVizierPhase v1alpha1.VizierPhase
 		expectedReason      status.VizierReason
 		podPhases           map[string]phasePlane
 	}{
 		{
 			name:                "healthy",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseHealthy,
 			podPhases: map[string]phasePlane{
 				"vizier-metadata": {
 					phase:      v1.PodRunning,
@@ -340,7 +340,7 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 		},
 		{
 			name:                "pending metadata",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseUpdating,
+			expectedVizierPhase: v1alpha1.VizierPhaseUpdating,
 			podPhases: map[string]phasePlane{
 				"vizier-metadata": {
 					phase: v1.PodPending,
@@ -361,7 +361,7 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 		},
 		{
 			name:                "healthy even if data plane pod is pending",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseHealthy,
 			podPhases: map[string]phasePlane{
 				"vizier-metadata": {
 					phase:      v1.PodRunning,
@@ -377,7 +377,7 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 		},
 		{
 			name:                "healthy if control plane pod succeeded",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseHealthy,
 			podPhases: map[string]phasePlane{
 				"vizier-metadata": {
 					phase:      v1.PodRunning,
@@ -393,7 +393,7 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 		},
 		{
 			name:                "updating if no-plane-pod is pending",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseUpdating,
+			expectedVizierPhase: v1alpha1.VizierPhaseUpdating,
 			podPhases: map[string]phasePlane{
 				"vizier-metadata": {
 					phase:      v1.PodRunning,
@@ -414,7 +414,7 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 		},
 		{
 			name:                "unhealthy if any control pod is failing",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseUnhealthy,
 			podPhases: map[string]phasePlane{
 				"vizier-metadata": {
 					phase:      v1.PodRunning,
@@ -435,7 +435,7 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 		},
 		{
 			name:                "unhealthy if any control pod cant be scheduled because of tain",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseUnhealthy,
 			podPhases: map[string]phasePlane{
 				"vizier-metadata": {
 					phase: v1.PodPending,
@@ -454,7 +454,7 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 		},
 		{
 			name:                "unhealthy if any control pod cant be scheduled generic",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseUnhealthy,
 			podPhases: map[string]phasePlane{
 				"vizier-metadata": {
 					phase: v1.PodPending,
@@ -526,13 +526,13 @@ func TestMonitor_getPEMsSomeInsufficientMemory(t *testing.T) {
 	}
 	tests := []struct {
 		name                string
-		expectedVizierPhase pixiev1alpha1.VizierPhase
+		expectedVizierPhase v1alpha1.VizierPhase
 		expectedReason      status.VizierReason
 		pems                []pem
 	}{
 		{
 			name:                "healthy",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseHealthy,
 			pems: []pem{
 				{
 					name:       "vizier-pem-abcdefg",
@@ -549,12 +549,12 @@ func TestMonitor_getPEMsSomeInsufficientMemory(t *testing.T) {
 		},
 		{
 			name:                "no pems",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseUnhealthy,
 			expectedReason:      status.PEMsMissing,
 		},
 		{
 			name:                "degraded if some (not all) are insufficient memory",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseDegraded,
+			expectedVizierPhase: v1alpha1.VizierPhaseDegraded,
 			pems: []pem{
 				{
 					name:       "vizier-pem-abcdefg",
@@ -580,7 +580,7 @@ func TestMonitor_getPEMsSomeInsufficientMemory(t *testing.T) {
 		},
 		{
 			name:                "unhealthy if all are insufficient memory",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseUnhealthy,
 			pems: []pem{
 				{
 					name:  "vizier-pem-abcdefg",
@@ -601,7 +601,7 @@ func TestMonitor_getPEMsSomeInsufficientMemory(t *testing.T) {
 		},
 		{
 			name:                "pod pending for unrelated reason",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseHealthy,
 			pems: []pem{
 				{
 					name:  "vizier-pem-abcdefg",
@@ -646,63 +646,63 @@ func TestMonitor_getVizierVersionState(t *testing.T) {
 		latestVersion       string
 		currentVersion      string
 		expectedReason      status.VizierReason
-		expectedVizierPhase pixiev1alpha1.VizierPhase
+		expectedVizierPhase v1alpha1.VizierPhase
 	}{
 		{
 			name:                "up-to-date",
 			latestVersion:       "0.5.6",
 			currentVersion:      "0.5.6",
 			expectedReason:      "",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseHealthy,
 		},
 		{
 			name:                "same minor",
 			latestVersion:       "0.5.8",
 			currentVersion:      "0.5.6",
 			expectedReason:      "",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseHealthy,
 		},
 		{
 			name:                "one minor less",
 			latestVersion:       "0.5.6",
 			currentVersion:      "0.4.6",
 			expectedReason:      "",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseHealthy,
 		},
 		{
 			name:                "major not matching",
 			latestVersion:       "1.5.6",
 			currentVersion:      "0.5.6",
 			expectedReason:      status.VizierVersionTooOld,
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseUnhealthy,
 		},
 		{
 			name:                "two minor less",
 			latestVersion:       "0.5.6",
 			currentVersion:      "0.3.6",
 			expectedReason:      status.VizierVersionTooOld,
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseUnhealthy,
 		},
 		{
 			name:                "two minor less with patch",
 			latestVersion:       "0.5.6",
 			currentVersion:      "0.3.6-pre-r0.45",
 			expectedReason:      status.VizierVersionTooOld,
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseUnhealthy,
 		},
 		{
 			name:                "dev version",
 			latestVersion:       "0.5.6",
 			currentVersion:      "0.0.0-dev+Modified.0000000.19700101000000.0",
 			expectedReason:      "",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseHealthy,
 		},
 		{
 			name:                "same minor with patch",
 			latestVersion:       "0.5.8",
 			currentVersion:      "0.5.6-pre-r0.45",
 			expectedReason:      "",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseHealthy,
 		},
 	}
 
@@ -726,8 +726,8 @@ func TestMonitor_getVizierVersionState(t *testing.T) {
 					},
 				}, nil)
 
-			versionState := getVizierVersionState(ats, &pixiev1alpha1.Vizier{
-				Status: pixiev1alpha1.VizierStatus{
+			versionState := getVizierVersionState(ats, &v1alpha1.Vizier{
+				Status: v1alpha1.VizierStatus{
 					Version: test.currentVersion,
 				},
 			})
@@ -753,7 +753,7 @@ func TestMonitor_getPEMCrashingState(t *testing.T) {
 
 	tests := []struct {
 		name                string
-		expectedVizierPhase pixiev1alpha1.VizierPhase
+		expectedVizierPhase v1alpha1.VizierPhase
 		expectedReason      status.VizierReason
 		pems                []struct {
 			name           string
@@ -763,7 +763,7 @@ func TestMonitor_getPEMCrashingState(t *testing.T) {
 	}{
 		{
 			name:                "healthy",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseHealthy,
 			pems: []struct {
 				name           string
 				phase          v1.PodPhase
@@ -784,7 +784,7 @@ func TestMonitor_getPEMCrashingState(t *testing.T) {
 		},
 		{
 			name:                "all crashing loop backoff",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseUnhealthy,
 			pems: []struct {
 				name           string
 				phase          v1.PodPhase
@@ -805,7 +805,7 @@ func TestMonitor_getPEMCrashingState(t *testing.T) {
 		},
 		{
 			name:                "all terminated with error",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseUnhealthy,
 			pems: []struct {
 				name           string
 				phase          v1.PodPhase
@@ -826,7 +826,7 @@ func TestMonitor_getPEMCrashingState(t *testing.T) {
 		},
 		{
 			name:                "degraded if some (not all) are failing",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseDegraded,
+			expectedVizierPhase: v1alpha1.VizierPhaseDegraded,
 			pems: []struct {
 				name           string
 				phase          v1.PodPhase
@@ -847,7 +847,7 @@ func TestMonitor_getPEMCrashingState(t *testing.T) {
 		},
 		{
 			name:                "pending pods are ignored for this checker",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseHealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseHealthy,
 			pems: []struct {
 				name           string
 				phase          v1.PodPhase
@@ -868,7 +868,7 @@ func TestMonitor_getPEMCrashingState(t *testing.T) {
 		},
 		{
 			name:                "no pems",
-			expectedVizierPhase: pixiev1alpha1.VizierPhaseUnhealthy,
+			expectedVizierPhase: v1alpha1.VizierPhaseUnhealthy,
 			expectedReason:      status.PEMsMissing,
 		},
 	}

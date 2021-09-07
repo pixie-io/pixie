@@ -40,7 +40,7 @@ import (
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/api/proto/vizierconfigpb"
-	pixiev1alpha1 "px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
+	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/utils/shared/certs"
 	"px.dev/pixie/src/utils/shared/k8s"
@@ -133,7 +133,7 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	log.WithField("req", req).Info("Reconciling...")
 
 	// Fetch vizier CRD to determine what operation should be performed.
-	var vizier pixiev1alpha1.Vizier
+	var vizier v1alpha1.Vizier
 	if err := r.Get(ctx, req.NamespacedName, &vizier); err != nil {
 		err = r.deleteVizier(ctx, req)
 		if err != nil {
@@ -166,7 +166,7 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		}
 	}
 
-	if vizier.Status.VizierPhase == pixiev1alpha1.VizierPhaseNone {
+	if vizier.Status.VizierPhase == v1alpha1.VizierPhaseNone {
 		// We are creating a new vizier instance.
 		err := r.createVizier(ctx, req, &vizier)
 		if err != nil {
@@ -186,7 +186,7 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 // updateVizier updates the vizier instance according to the spec. As of the current moment, we only support updates to the Vizier version.
 // Other updates to the Vizier spec will be ignored.
-func (r *VizierReconciler) updateVizier(ctx context.Context, req ctrl.Request, vz *pixiev1alpha1.Vizier) error {
+func (r *VizierReconciler) updateVizier(ctx context.Context, req ctrl.Request, vz *v1alpha1.Vizier) error {
 	// TODO: We currently only trigger updates on changing Vizier versions. We should add a webhook
 	// to disallow changes to other fields.
 	if vz.Status.Version == vz.Spec.Version {
@@ -194,7 +194,7 @@ func (r *VizierReconciler) updateVizier(ctx context.Context, req ctrl.Request, v
 		return nil
 	}
 
-	if vz.Status.VizierPhase == pixiev1alpha1.VizierPhaseUpdating {
+	if vz.Status.VizierPhase == v1alpha1.VizierPhaseUpdating {
 		log.Info("Already in the process of updating, nothing to do")
 		return nil
 	}
@@ -221,7 +221,7 @@ func (r *VizierReconciler) deleteVizier(ctx context.Context, req ctrl.Request) e
 }
 
 // createVizier deploys a new vizier instance in the given namespace.
-func (r *VizierReconciler) createVizier(ctx context.Context, req ctrl.Request, vz *pixiev1alpha1.Vizier) error {
+func (r *VizierReconciler) createVizier(ctx context.Context, req ctrl.Request, vz *v1alpha1.Vizier) error {
 	log.Info("Creating a new vizier instance")
 	cloudClient, err := getCloudClientConnection(vz.Spec.CloudAddr, vz.Spec.DevCloudNamespace)
 	if err != nil {
@@ -247,7 +247,7 @@ func (r *VizierReconciler) createVizier(ctx context.Context, req ctrl.Request, v
 	return r.deployVizier(ctx, req, vz, false)
 }
 
-func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, vz *pixiev1alpha1.Vizier, update bool) error {
+func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, vz *v1alpha1.Vizier, update bool) error {
 	log.Info("Starting a vizier deploy")
 	cloudClient, err := getCloudClientConnection(vz.Spec.CloudAddr, vz.Spec.DevCloudNamespace)
 	if err != nil {
@@ -255,7 +255,7 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 	}
 
 	// Set the status of the Vizier.
-	vz.Status.VizierPhase = pixiev1alpha1.VizierPhaseUpdating
+	vz.Status.VizierPhase = v1alpha1.VizierPhaseUpdating
 	err = r.Status().Update(ctx, vz)
 	if err != nil {
 		return err
@@ -263,7 +263,7 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 
 	// Add an additional annotation to our deployed vizier-resources, to allow easier tracking of the vizier resources.
 	if vz.Spec.Pod == nil {
-		vz.Spec.Pod = &pixiev1alpha1.PodPolicy{}
+		vz.Spec.Pod = &v1alpha1.PodPolicy{}
 	}
 
 	if vz.Spec.Pod.Annotations == nil {
@@ -339,7 +339,7 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 // TODO(michellenguyen): Add a goroutine
 // which checks when certs are about to expire. If they are about to expire,
 // we should generate new certs and bounce all pods.
-func (r *VizierReconciler) deployVizierCerts(ctx context.Context, namespace string, vz *pixiev1alpha1.Vizier) error {
+func (r *VizierReconciler) deployVizierCerts(ctx context.Context, namespace string, vz *v1alpha1.Vizier) error {
 	log.Info("Generating certs")
 
 	// Assign JWT signing key.
@@ -379,7 +379,7 @@ func (r *VizierReconciler) deployVizierCerts(ctx context.Context, namespace stri
 }
 
 // deployVizierConfigs deploys the secrets, configmaps, and certs that are necessary for running vizier.
-func (r *VizierReconciler) deployVizierConfigs(ctx context.Context, namespace string, vz *pixiev1alpha1.Vizier, yamlMap map[string]string) error {
+func (r *VizierReconciler) deployVizierConfigs(ctx context.Context, namespace string, vz *v1alpha1.Vizier, yamlMap map[string]string) error {
 	log.Info("Deploying Vizier configs and secrets")
 	resources, err := k8s.GetResourcesFromYAML(strings.NewReader(yamlMap["secrets"]))
 	if err != nil {
@@ -396,7 +396,7 @@ func (r *VizierReconciler) deployVizierConfigs(ctx context.Context, namespace st
 
 // deployVizierDeps deploys the vizier deps to the given namespace. This includes generating certs
 // along with deploying deps like etcd and nats.
-func (r *VizierReconciler) deployVizierDeps(ctx context.Context, namespace string, vz *pixiev1alpha1.Vizier, yamlMap map[string]string) error {
+func (r *VizierReconciler) deployVizierDeps(ctx context.Context, namespace string, vz *v1alpha1.Vizier, yamlMap map[string]string) error {
 	log.Info("Deploying NATS")
 	resources, err := k8s.GetResourcesFromYAML(strings.NewReader(yamlMap["nats"]))
 	if err != nil {
@@ -437,7 +437,7 @@ func (r *VizierReconciler) deployVizierDeps(ctx context.Context, namespace strin
 }
 
 // deployVizierCore deploys the core pods and services for running vizier.
-func (r *VizierReconciler) deployVizierCore(ctx context.Context, namespace string, vz *pixiev1alpha1.Vizier, yamlMap map[string]string, allowUpdate bool) error {
+func (r *VizierReconciler) deployVizierCore(ctx context.Context, namespace string, vz *v1alpha1.Vizier, yamlMap map[string]string, allowUpdate bool) error {
 	log.Info("Deploying Vizier")
 
 	vzYaml := "vizier_persistent"
@@ -475,7 +475,7 @@ func (r *VizierReconciler) deployVizierCore(ctx context.Context, namespace strin
 	return nil
 }
 
-func updateResourceConfiguration(resource *k8s.Resource, vz *pixiev1alpha1.Vizier) error {
+func updateResourceConfiguration(resource *k8s.Resource, vz *v1alpha1.Vizier) error {
 	// Add custom labels and annotations to the k8s resource.
 	addKeyValueMapToResource("labels", vz.Spec.Pod.Labels, resource.Object.Object)
 	addKeyValueMapToResource("annotations", vz.Spec.Pod.Annotations, resource.Object.Object)
@@ -497,7 +497,7 @@ func convertResourceType(originalLst v1.ResourceList) *vizierconfigpb.ResourceLi
 
 // generateVizierYAMLsConfig is responsible retrieving a yaml map of configurations from
 // Pixie Cloud.
-func generateVizierYAMLsConfig(ctx context.Context, ns string, vz *pixiev1alpha1.Vizier, conn *grpc.ClientConn) (*cloudpb.ConfigForVizierResponse,
+func generateVizierYAMLsConfig(ctx context.Context, ns string, vz *v1alpha1.Vizier, conn *grpc.ClientConn) (*cloudpb.ConfigForVizierResponse,
 	error) {
 	client := cloudpb.NewConfigServiceClient(conn)
 
@@ -658,7 +658,7 @@ func waitForCluster(clientset *kubernetes.Clientset, namespace string) error {
 // SetupWithManager sets up the reconciler.
 func (r *VizierReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&pixiev1alpha1.Vizier{}).
+		For(&v1alpha1.Vizier{}).
 		Complete(r)
 }
 
