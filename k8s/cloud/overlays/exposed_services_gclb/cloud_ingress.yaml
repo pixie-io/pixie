@@ -5,9 +5,8 @@ metadata:
   name: cloud-ingress
   annotations:
     networking.gke.io/v1beta1.FrontendConfig: "frontend-config"
+    networking.gke.io/managed-certificates: cloud-ingress-managed-cert
 spec:
-  tls:
-  - secretName: cloud-proxy-tls-certs
   rules:
   - http:
       paths:
