@@ -1,0 +1,179 @@
+# Copyright 2020 The NATS Authors
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+# http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# File modified from the original to use our specific names/namespaces
+# and to set some other config options.
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nats-config
+data:
+# yamllint disable
+  nats.conf: |
+    pid_file: "/var/run/nats/nats.pid"
+    http: 8222
+
+    tls {
+      ca_file: "/etc/nats-server-tls-certs/ca.crt",
+      cert_file: "/etc/nats-server-tls-certs/server.crt",
+      key_file: "/etc/nats-server-tls-certs/server.key",
+      timeout: 3
+    }
+# yamllint enable
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pl-nats
+  labels:
+    app: nats
+spec:
+  selector:
+    app: nats
+  ports:
+  - name: client
+    port: 4222
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pl-nats-mgmt
+  labels:
+    app: nats
+spec:
+  selector:
+    app: nats
+  clusterIP: None
+  ports:
+  - name: cluster
+    port: 6222
+  - name: monitor
+    port: 8222
+  - name: metrics
+    port: 7777
+  - name: leafnodes
+    port: 7422
+  - name: gateways
+    port: 7522
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: pl-nats
+  labels:
+    app: nats
+spec:
+  selector:
+    matchLabels:
+      app: nats
+  replicas: 1
+  serviceName: pl-nats
+  template:
+    metadata:
+      labels:
+        app: nats
+        name: pl-nats
+        plane: control
+    spec:
+      # Common volumes for the containers
+      volumes:
+      - name: nats-server-tls-volume
+        secret:
+          secretName: service-tls-certs
+      - name: config-volume
+        configMap:
+          name: nats-config
+      - name: pid
+        emptyDir: {}
+
+      # Required to be able to HUP signal and apply config reload
+      # to the server without restarting the pod.
+      shareProcessNamespace: true
+
+      #################
+      #               #
+      #  NATS Server  #
+      #               #
+      #################
+      terminationGracePeriodSeconds: 60
+      containers:
+      - name: pl-nats
+        image: nats:2.4.0-alpine3.14
+        ports:
+        - containerPort: 4222
+          name: client
+        - containerPort: 7422
+          name: leafnodes
+        - containerPort: 6222
+          name: cluster
+        - containerPort: 8222
+          name: monitor
+        - containerPort: 7777
+          name: metrics
+        command:
+        - "nats-server"
+        - "--config"
+        - "/etc/nats-config/nats.conf"
+
+        # Required to be able to define an environment variable
+        # that refers to other environment variables.  This env var
+        # is later used as part of the configuration file.
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: CLUSTER_ADVERTISE
+          value: $(POD_NAME).pl-nats.$(POD_NAMESPACE).svc
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/nats-config
+        - name: nats-server-tls-volume
+          mountPath: /etc/nats-server-tls-certs
+        - name: pid
+          mountPath: /var/run/nats
+
+        # Liveness/Readiness probes against the monitoring
+        #
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8222
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8222
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+
+        # Gracefully stop NATS Server on pod deletion or image upgrade.
+        #
+        lifecycle:
+          preStop:
+            exec:
+              # Using the alpine based NATS image, we add an extra sleep that is
+              # the same amount as the terminationGracePeriodSeconds to allow
+              # the NATS Server to gracefully terminate the client connections.
+              #
+              command: ["/bin/sh", "-c", "/nats-server -sl=ldm=/var/run/nats/nats.pid && /bin/sleep 60"]
+
