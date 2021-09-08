@@ -19,6 +19,7 @@
 package planner_test
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -32,7 +33,7 @@ import (
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/api/proto/vispb"
@@ -55,17 +56,21 @@ type script struct {
 	visPath string
 }
 
-func collectAllScripts(t *testing.T) []*script {
+func collectAllScripts() ([]*script, error) {
 	dirToScript := make(map[string]*script)
 
 	scriptDirAbsPath, err := bazel.Runfile(scriptDir)
 	if err != nil {
-		t.Fatal("Must run test through bazel, so that it can find the pxl scripts")
+		return nil, errors.New("Must run test through bazel, so that it can find the pxl scripts: ")
 	}
 	pxlPaths, err := filepath.Glob(path.Join(scriptDirAbsPath, "*", "*", "*.pxl"))
-	assert.Nil(t, err)
+	if err != nil {
+		return nil, err
+	}
 	otherPxlPaths, err := filepath.Glob(path.Join(scriptDirAbsPath, "*", "*", "*", "*.pxl"))
-	assert.Nil(t, err)
+	if err != nil {
+		return nil, err
+	}
 	pxlPaths = append(pxlPaths, otherPxlPaths...)
 	for _, p := range pxlPaths {
 		dirname := filepath.Dir(p)
@@ -73,15 +78,19 @@ func collectAllScripts(t *testing.T) []*script {
 		dirToScript[dirname] = &script{name: name, pxlPath: p}
 	}
 	visPaths, err := filepath.Glob(path.Join(scriptDirAbsPath, "*", "*", "*.json"))
-	assert.Nil(t, err)
+	if err != nil {
+		return nil, err
+	}
 	otherVisPaths, err := filepath.Glob(path.Join(scriptDirAbsPath, "*", "*", "*", "*.json"))
-	assert.Nil(t, err)
+	if err != nil {
+		return nil, err
+	}
 	visPaths = append(visPaths, otherVisPaths...)
 	for _, p := range visPaths {
 		dirname := filepath.Dir(p)
 		s, ok := dirToScript[dirname]
 		if !ok {
-			t.Fatalf("Found vis.json without pxl script: %s", p)
+			return nil, fmt.Errorf("Found vis.json without pxl script: %s", p)
 		}
 		s.visPath = p
 	}
@@ -90,7 +99,7 @@ func collectAllScripts(t *testing.T) []*script {
 	for _, s := range dirToScript {
 		scripts = append(scripts, s)
 	}
-	return scripts
+	return scripts, nil
 }
 
 func defaultForType(pxType vispb.PXType) string {
@@ -116,7 +125,7 @@ func defaultForType(pxType vispb.PXType) string {
 	}
 }
 
-func getArgsFromVis(t *testing.T, execFunc *plannerpb.FuncToExecute, args []*vispb.Widget_Func_FuncArg, variableMap map[string]*vispb.Vis_Variable) {
+func getArgsFromVis(execFunc *plannerpb.FuncToExecute, args []*vispb.Widget_Func_FuncArg, variableMap map[string]*vispb.Vis_Variable) {
 	for _, arg := range args {
 		execFuncArg := &plannerpb.FuncToExecute_ArgValue{}
 		execFuncArg.Name = arg.Name
@@ -136,7 +145,7 @@ func getArgsFromVis(t *testing.T, execFunc *plannerpb.FuncToExecute, args []*vis
 	}
 }
 
-func visToExecFuncs(t *testing.T, vis *vispb.Vis) []*plannerpb.FuncToExecute {
+func visToExecFuncs(vis *vispb.Vis) []*plannerpb.FuncToExecute {
 	funcs := make([]*plannerpb.FuncToExecute, 0)
 	variableMap := make(map[string]*vispb.Vis_Variable)
 	for _, v := range vis.Variables {
@@ -147,7 +156,7 @@ func visToExecFuncs(t *testing.T, vis *vispb.Vis) []*plannerpb.FuncToExecute {
 		execFunc := &plannerpb.FuncToExecute{}
 		execFunc.FuncName = f.Func.Name
 		execFunc.OutputTablePrefix = f.Func.Name
-		getArgsFromVis(t, execFunc, f.Func.Args, variableMap)
+		getArgsFromVis(execFunc, f.Func.Args, variableMap)
 		funcs = append(funcs, execFunc)
 	}
 
@@ -156,55 +165,71 @@ func visToExecFuncs(t *testing.T, vis *vispb.Vis) []*plannerpb.FuncToExecute {
 			execFunc := &plannerpb.FuncToExecute{}
 			execFunc.FuncName = w.GetFunc().Name
 			execFunc.OutputTablePrefix = w.GetFunc().Name
-			getArgsFromVis(t, execFunc, w.GetFunc().Args, variableMap)
+			getArgsFromVis(execFunc, w.GetFunc().Args, variableMap)
 			funcs = append(funcs, execFunc)
 		}
 	}
 	return funcs
 }
 
-func scriptToQueryRequest(t *testing.T, s *script) *plannerpb.QueryRequest {
+func scriptToQueryRequest(s *script) (*plannerpb.QueryRequest, error) {
 	pxlFile, err := os.Open(s.pxlPath)
-	assert.Nil(t, err)
+	if err != nil {
+		return nil, err
+	}
 	defer pxlFile.Close()
 
 	req := &plannerpb.QueryRequest{}
 	b, err := ioutil.ReadAll(pxlFile)
-	assert.Nil(t, err)
+	if err != nil {
+		return nil, err
+	}
 
 	req.QueryStr = string(b)
 	if s.visPath == "" {
-		return req
+		return req, nil
 	}
 
 	visFile, err := os.Open(s.visPath)
-	assert.Nil(t, err)
+	if err != nil {
+		return nil, err
+	}
 	defer visFile.Close()
 
 	vis := &vispb.Vis{}
 	err = jsonpb.Unmarshal(visFile, vis)
-	assert.Nil(t, err)
-	req.ExecFuncs = visToExecFuncs(t, vis)
-	return req
+	if err != nil {
+		return nil, err
+	}
+	req.ExecFuncs = visToExecFuncs(vis)
+	return req, nil
 }
 
-func loadSchemas(t *testing.T) *schemapb.Schema {
+func loadSchemas() (*schemapb.Schema, error) {
 	schema := &schemapb.Schema{}
 
 	schemaPath, err := bazel.Runfile("src/e2e_test/vizier/planner/dump_schemas/all_schemas.bin")
-	assert.Nil(t, err)
+	if err != nil {
+		return nil, err
+	}
 	schemaFile, err := os.Open(schemaPath)
-	assert.Nil(t, err)
+	if err != nil {
+		return nil, err
+	}
 
 	b, err := ioutil.ReadAll(schemaFile)
-	assert.Nil(t, err)
+	if err != nil {
+		return nil, err
+	}
 
 	err = proto.Unmarshal(b, schema)
-	assert.Nil(t, err)
-	return schema
+	if err != nil {
+		return nil, err
+	}
+	return schema, nil
 }
 
-func makePEMCarnotInfo(t *testing.T, id uuid.UUID) *distributedpb.CarnotInfo {
+func makePEMCarnotInfo(id uuid.UUID) *distributedpb.CarnotInfo {
 	return &distributedpb.CarnotInfo{
 		HasDataStore:         true,
 		HasGRPCServer:        false,
@@ -215,7 +240,7 @@ func makePEMCarnotInfo(t *testing.T, id uuid.UUID) *distributedpb.CarnotInfo {
 	}
 }
 
-func makeKelvinCarnotInfo(t *testing.T, id uuid.UUID) *distributedpb.CarnotInfo {
+func makeKelvinCarnotInfo(id uuid.UUID) *distributedpb.CarnotInfo {
 	return &distributedpb.CarnotInfo{
 		HasGRPCServer:        true,
 		HasDataStore:         false,
@@ -228,21 +253,28 @@ func makeKelvinCarnotInfo(t *testing.T, id uuid.UUID) *distributedpb.CarnotInfo 
 	}
 }
 
-func makeDistributedState(t *testing.T, numPems int, numKelvins int) *distributedpb.DistributedState {
+func makeDistributedState(numPems int, numKelvins int) (*distributedpb.DistributedState, error) {
 	ds := &distributedpb.DistributedState{}
 	pemIDs := make([]*uuidpb.UUID, numPems)
 	for i := 0; i < numPems; i++ {
 		id, err := uuid.NewV4()
-		assert.Nil(t, err)
+		if err != nil {
+			return nil, err
+		}
 		pemIDs[i] = utils.ProtoFromUUID(id)
-		ds.CarnotInfo = append(ds.CarnotInfo, makePEMCarnotInfo(t, id))
+		ds.CarnotInfo = append(ds.CarnotInfo, makePEMCarnotInfo(id))
 	}
 	for i := 0; i < numKelvins; i++ {
 		id, err := uuid.NewV4()
-		assert.Nil(t, err)
-		ds.CarnotInfo = append(ds.CarnotInfo, makeKelvinCarnotInfo(t, id))
+		if err != nil {
+			return nil, err
+		}
+		ds.CarnotInfo = append(ds.CarnotInfo, makeKelvinCarnotInfo(id))
 	}
-	schemas := loadSchemas(t)
+	schemas, err := loadSchemas()
+	if err != nil {
+		return nil, err
+	}
 	for name, rel := range schemas.RelationMap {
 		schemaInfo := &distributedpb.SchemaInfo{
 			Name:      name,
@@ -251,24 +283,58 @@ func makeDistributedState(t *testing.T, numPems int, numKelvins int) *distribute
 		}
 		ds.SchemaInfo = append(ds.SchemaInfo, schemaInfo)
 	}
-	return ds
+	return ds, nil
+}
+
+func setupPlanner(req *plannerpb.QueryRequest, udfInfo *udfspb.UDFInfo, distributedState *distributedpb.DistributedState) (goplanner.GoPlanner, *distributedpb.LogicalPlannerState, error) {
+	planner, err := goplanner.New(udfInfo)
+	if err != nil {
+		return planner, nil, err
+	}
+	flags, err := controllers.ParseQueryFlags(req.QueryStr)
+	if err != nil {
+		return planner, nil, err
+	}
+	planOpts := flags.GetPlanOptions()
+	ps := &distributedpb.LogicalPlannerState{
+		DistributedState:    distributedState,
+		PlanOptions:         planOpts,
+		ResultAddress:       "result_addr",
+		ResultSSLTargetName: "result_ssl_targetname",
+	}
+	return planner, ps, nil
+}
+
+func loadUDFInfo() (*udfspb.UDFInfo, error) {
+	udfInfo := &udfspb.UDFInfo{}
+	b, err := funcs.Asset("src/vizier/funcs/data/udf.pb")
+	if err != nil {
+		return nil, err
+	}
+	err = proto.Unmarshal(b, udfInfo)
+	if err != nil {
+		return nil, err
+	}
+	return udfInfo, nil
 }
 
 func TestAllScriptsCompile(t *testing.T) {
-	scripts := collectAllScripts(t)
+	scripts, err := collectAllScripts()
+	require.NoError(t, err)
+
 	queryReqs := make([]*plannerpb.QueryRequest, len(scripts))
 	for i, s := range scripts {
-		queryReqs[i] = scriptToQueryRequest(t, s)
+		req, err := scriptToQueryRequest(s)
+		require.NoError(t, err)
+		queryReqs[i] = req
 	}
 	// setup distributed planner state with 10 PEMs and 1 kelvin.
-	distributedState := makeDistributedState(t, 10, 1)
+	distributedState, err := makeDistributedState(10, 1)
+	require.NoError(t, err)
 
 	// get udf info
-	udfInfo := &udfspb.UDFInfo{}
-	b, err := funcs.Asset("src/vizier/funcs/data/udf.pb")
-	assert.Nil(t, err)
-	err = proto.Unmarshal(b, udfInfo)
-	assert.Nil(t, err)
+	udfInfo, err := loadUDFInfo()
+	require.NoError(t, err)
 
 	for i, s := range scripts {
 		t.Run(s.name, func(t *testing.T) {
@@ -277,23 +343,15 @@ func TestAllScriptsCompile(t *testing.T) {
 				fmt.Println("skipping ", s.name, " because it contains a mutation")
 				t.Skip(s.name)
 			}
-			planner, err := goplanner.New(udfInfo)
-			assert.Nil(t, err)
-			flags, err := controllers.ParseQueryFlags(req.QueryStr)
-			assert.Nil(t, err)
-			planOpts := flags.GetPlanOptions()
-			ps := &distributedpb.LogicalPlannerState{
-				DistributedState:    distributedState,
-				PlanOptions:         planOpts,
-				ResultAddress:       "result_addr",
-				ResultSSLTargetName: "result_ssl_targetname",
-			}
+			planner, ps, err := setupPlanner(req, udfInfo, distributedState)
+			require.NoError(t, err)
+			defer planner.Free()
 			result, err := planner.Plan(ps, req)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			if result.Status != nil && result.Status.ErrCode != 0 {
 				errContext := &compilerpb.CompilerErrorGroup{}
 				err := types.UnmarshalAny(result.Status.Context, errContext)
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				for _, e := range errContext.Errors {
 					if e.GetLineColError() != nil {
 						lineCol := e.GetLineColError()
@@ -302,6 +360,48 @@ func TestAllScriptsCompile(t *testing.T) {
 				}
 				t.Fail()
 			}
+		})
+	}
+}
+
+var preventOptimizationResult *distributedpb.LogicalPlannerResult
+
+func BenchmarkAllScripts(b *testing.B) {
+	scripts, err := collectAllScripts()
+	require.NoError(b, err)
+
+	queryReqs := make([]*plannerpb.QueryRequest, len(scripts))
+	for i, s := range scripts {
+		req, err := scriptToQueryRequest(s)
+		require.NoError(b, err)
+		queryReqs[i] = req
+	}
+	// setup distributed planner state with 10 PEMs and 1 kelvin.
+	distributedState, err := makeDistributedState(10, 1)
+	require.NoError(b, err)
+
+	// get udf info
+	udfInfo, err := loadUDFInfo()
+	require.NoError(b, err)
+
+	for i, s := range scripts {
+		b.Run(s.name, func(b *testing.B) {
+			b.StopTimer()
+			req := queryReqs[i]
+			if strings.Contains(req.QueryStr, "pxtrace") {
+				b.Skip(s.name)
+			}
+			var result *distributedpb.LogicalPlannerResult
+			for i := 0; i < b.N; i++ {
+				planner, ps, err := setupPlanner(req, udfInfo, distributedState)
+				require.NoError(b, err)
+				b.StartTimer()
+				result, err = planner.Plan(ps, req)
+				b.StopTimer()
+				require.NoError(b, err)
+				planner.Free()
+			}
+			preventOptimizationResult = result
 		})
 	}
 }

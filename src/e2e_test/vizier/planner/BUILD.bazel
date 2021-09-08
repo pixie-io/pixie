@@ -47,7 +47,7 @@ go_test(
         "@com_github_gogo_protobuf//jsonpb",
         "@com_github_gogo_protobuf//proto",
         "@com_github_gogo_protobuf//types",
-        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
         "@io_bazel_rules_go//go/tools/bazel:go_default_library",
     ],
 )
