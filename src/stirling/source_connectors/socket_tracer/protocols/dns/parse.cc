@@ -86,13 +86,14 @@ ParseState ParseFrame(MessageType type, std::string_view* buf, Frame* result) {
 }  // namespace dns
 
 template <>
-ParseState ParseFrame(MessageType type, std::string_view* buf, dns::Frame* result) {
+ParseState ParseFrame(MessageType type, std::string_view* buf, dns::Frame* result,
+                      NoState* /*state*/) {
   return dns::ParseFrame(type, buf, result);
 }
 
 template <>
 size_t FindFrameBoundary<dns::Frame>(MessageType /*type*/, std::string_view /*buf*/,
-                                     size_t /*start_pos*/) {
+                                     size_t /*start_pos*/, NoState* /*state*/) {
   // Not implemented.
   // Search for magic string that we should insert between UDP packets.
   return std::string::npos;

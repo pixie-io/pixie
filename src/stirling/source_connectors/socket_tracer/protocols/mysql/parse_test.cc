@@ -80,9 +80,10 @@ class MySQLParserTest : public ::testing::Test {};
 TEST_F(MySQLParserTest, ParseRaw) {
   const std::string buf = absl::StrCat(testutils::GenRawPacket(0, "\x03SELECT foo"),
                                        testutils::GenRawPacket(1, "\x03SELECT bar"));
+  StateWrapper state{};
 
   std::deque<Packet> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kRequest, buf, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kRequest, buf, &parsed_messages, &state);
 
   Packet expected_message0;
   expected_message0.msg = "\x03SELECT foo";
@@ -113,9 +114,10 @@ TEST_F(MySQLParserTest, ParseComStmtPrepare) {
   expected_message2.sequence_id = 0;
 
   const std::string buf = absl::StrCat(msg1, msg2);
+  StateWrapper state{};
 
   std::deque<Packet> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kRequest, buf, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kRequest, buf, &parsed_messages, &state);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message1, expected_message2));
@@ -127,13 +129,14 @@ TEST_F(MySQLParserTest, ParseComStmtExecute) {
   const std::string body(
       ConstStringView("\x01\x00\x00\x00\x00\x01\x00\x00\x00\x00\x01\x0f\x00\x03\x66\x6f\x6f"));
   std::string msg1 = testutils::GenRequestPacket(Command::kStmtExecute, body);
+  StateWrapper state{};
 
   Packet expected_message1;
   expected_message1.msg = absl::StrCat(CommandToString(Command::kStmtExecute), body);
   expected_message1.sequence_id = 0;
 
   std::deque<Packet> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kRequest, msg1, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kRequest, msg1, &parsed_messages, &state);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message1));
@@ -142,9 +145,10 @@ TEST_F(MySQLParserTest, ParseComStmtExecute) {
 TEST_F(MySQLParserTest, ParseComStmtClose) {
   Packet expected_packet = testutils::GenStmtCloseRequest(testdata::kStmtCloseRequest);
   std::string msg = testutils::GenRawPacket(expected_packet);
+  StateWrapper state{};
 
   std::deque<Packet> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kRequest, msg, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kRequest, msg, &parsed_messages, &state);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_packet));
@@ -163,9 +167,10 @@ TEST_F(MySQLParserTest, ParseComQuery) {
   expected_message2.sequence_id = 0;
 
   const std::string buf = absl::StrCat(msg1, msg2);
+  StateWrapper state{};
 
   std::deque<Packet> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kRequest, buf, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kRequest, buf, &parsed_messages, &state);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message1, expected_message2));
@@ -190,10 +195,11 @@ TEST_F(MySQLParserTest, ParseResponse) {
           // EOF packet
           ConstStringView("\x05\x00\x00\x03\xfe\x00\x00\x02\x00")),
       Command::kStmtPrepare};
+  StateWrapper state{};
 
   std::deque<Packet> parsed_messages;
-  ParseResult result =
-      ParseFramesLoop(MessageType::kResponse, kMySQLStmtPrepareMessage.response, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kResponse, kMySQLStmtPrepareMessage.response,
+                                       &parsed_messages, &state);
   EXPECT_EQ(ParseState::kSuccess, result.state);
 
   Packet expected_header;
@@ -244,9 +250,10 @@ TEST_F(MySQLParserTest, ParseMultipleRawPackets) {
   std::string chunk3 = absl::StrJoin(packets3, "");
 
   const std::string buf = absl::StrCat(chunk1, chunk2, chunk3);
+  StateWrapper state{};
 
   std::deque<Packet> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kResponse, buf, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kResponse, buf, &parsed_messages, &state);
 
   std::deque<Packet> expected_packets;
   for (Packet p : prepare_resp_packets) {
@@ -265,9 +272,10 @@ TEST_F(MySQLParserTest, ParseIncompleteRequest) {
       testutils::GenRequestPacket(Command::kStmtPrepare, "SELECT name FROM users WHERE");
   // Change the length of the request so that it isn't complete.
   msg1[0] = '\x24';
+  StateWrapper state{};
 
   std::deque<Packet> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kRequest, msg1, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kRequest, msg1, &parsed_messages, &state);
 
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre());
@@ -275,16 +283,18 @@ TEST_F(MySQLParserTest, ParseIncompleteRequest) {
 
 TEST_F(MySQLParserTest, ParseInvalidInput) {
   std::string msg1 = "hello world";
+  StateWrapper state{};
 
   std::deque<Packet> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kRequest, msg1, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kRequest, msg1, &parsed_messages, &state);
   EXPECT_EQ(ParseState::kInvalid, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre());
 }
 
 TEST_F(MySQLParserTest, Empty) {
+  StateWrapper state{};
   std::deque<Packet> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kResponse, "", &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kResponse, "", &parsed_messages, &state);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre());
@@ -298,8 +308,9 @@ TEST_F(MySQLParserTest, FindReqBoundaryAligned) {
   const std::string buf =
       absl::StrCat(testutils::GenRequestPacket(Command::kQuery, "SELECT foo"),
                    testutils::GenRequestPacket(Command::kStmtPrepare, "blahblahblah"));
+  StateWrapper state{};
 
-  size_t pos = FindFrameBoundary<mysql::Packet>(MessageType::kRequest, buf, 0);
+  size_t pos = FindFrameBoundary<mysql::Packet>(MessageType::kRequest, buf, 0, &state);
   ASSERT_EQ(pos, 0);
 }
 
@@ -308,9 +319,10 @@ TEST_F(MySQLParserTest, FindReqBoundaryUnaligned) {
       absl::StrCat(ConstStringView("some garbage leftover content\x03\x00\x00\x00"),
                    testutils::GenRequestPacket(Command::kQuery, "SELECT foo"),
                    testutils::GenRequestPacket(Command::kStmtPrepare, "blahblahblah"));
+  StateWrapper state{};
 
   // FindFrameBoundary() should cut out the garbage text.
-  size_t pos = FindFrameBoundary<mysql::Packet>(MessageType::kRequest, buf, 0);
+  size_t pos = FindFrameBoundary<mysql::Packet>(MessageType::kRequest, buf, 0, &state);
   ASSERT_NE(pos, std::string::npos);
   EXPECT_EQ(buf.substr(pos),
             absl::StrCat(testutils::GenRequestPacket(Command::kQuery, "SELECT foo"),
@@ -321,8 +333,9 @@ TEST_F(MySQLParserTest, FindReqBoundaryWithStartPos) {
   const std::string buf =
       absl::StrCat(testutils::GenRequestPacket(Command::kQuery, "SELECT foo"),
                    testutils::GenRequestPacket(Command::kStmtPrepare, "blahblahblah"));
+  StateWrapper state{};
 
-  size_t pos = FindFrameBoundary<mysql::Packet>(MessageType::kRequest, buf, 1);
+  size_t pos = FindFrameBoundary<mysql::Packet>(MessageType::kRequest, buf, 1, &state);
   ASSERT_NE(pos, std::string::npos);
   EXPECT_EQ(buf.substr(pos), testutils::GenRequestPacket(Command::kStmtPrepare, "blahblahblah"));
 }
@@ -331,8 +344,9 @@ TEST_F(MySQLParserTest, FindNoBoundary) {
   const std::string_view buf = ConstStringView(
       "This is a bogus string in which there is no MySQL "
       "protocol\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00");
+  StateWrapper state{};
 
-  size_t pos = FindFrameBoundary<mysql::Packet>(MessageType::kRequest, buf, 0);
+  size_t pos = FindFrameBoundary<mysql::Packet>(MessageType::kRequest, buf, 0, &state);
   EXPECT_EQ(pos, std::string::npos);
 }
 

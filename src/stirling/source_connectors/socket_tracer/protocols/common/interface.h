@@ -87,8 +87,9 @@ struct NoState {
  * @return Either the position of a frame start, if found (must be > start_pos),
  * or std::string::npos if no such frame start was found.
  */
-template <typename TFrameType>
-size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_pos);
+template <typename TFrameType, typename TStateType = NoState>
+size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_pos,
+                         TStateType* state = nullptr);
 
 /**
  * Parses the input string to extract a single frame of the specified protocol.
@@ -101,8 +102,9 @@ size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_po
  *
  * @return ParseState Indicates whether the parsing succeeded or not.
  */
-template <typename TFrameType>
-ParseState ParseFrame(MessageType type, std::string_view* buf, TFrameType* frame);
+template <typename TFrameType, typename TStateType = NoState>
+ParseState ParseFrame(MessageType type, std::string_view* buf, TFrameType* frame,
+                      TStateType* state = nullptr);
 
 /**
  * StitchFrames is the entry point of stitcher for all protocols. It loops through the responses,

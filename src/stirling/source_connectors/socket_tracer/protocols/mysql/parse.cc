@@ -117,12 +117,14 @@ size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_po
 }  // namespace mysql
 
 template <>
-ParseState ParseFrame(MessageType type, std::string_view* buf, mysql::Packet* result) {
+ParseState ParseFrame(MessageType type, std::string_view* buf, mysql::Packet* result,
+                      mysql::StateWrapper* /*state*/) {
   return mysql::ParseFrame(type, buf, result);
 }
 
 template <>
-size_t FindFrameBoundary<mysql::Packet>(MessageType type, std::string_view buf, size_t start_pos) {
+size_t FindFrameBoundary<mysql::Packet>(MessageType type, std::string_view buf, size_t start_pos,
+                                        mysql::StateWrapper* /*state*/) {
   return mysql::FindFrameBoundary(type, buf, start_pos);
 }
 

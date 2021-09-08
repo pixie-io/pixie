@@ -33,10 +33,11 @@ namespace protocols {
  * Parses the input string as a DNS protocol frame.
  */
 template <>
-ParseState ParseFrame(MessageType type, std::string_view* buf, dns::Frame* frame);
+ParseState ParseFrame(MessageType type, std::string_view* buf, dns::Frame* frame, NoState* state);
 
 template <>
-size_t FindFrameBoundary<dns::Frame>(MessageType type, std::string_view buf, size_t start_pos);
+size_t FindFrameBoundary<dns::Frame>(MessageType type, std::string_view buf, size_t start_pos,
+                                     NoState* state);
 
 }  // namespace protocols
 }  // namespace stirling

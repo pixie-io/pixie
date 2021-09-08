@@ -30,10 +30,12 @@ namespace stirling {
 namespace protocols {
 
 template <>
-ParseState ParseFrame(MessageType type, std::string_view* buf, kafka::Packet* packet);
+ParseState ParseFrame(MessageType type, std::string_view* buf, kafka::Packet* packet,
+                      NoState* state);
 
 template <>
-size_t FindFrameBoundary<kafka::Packet>(MessageType type, std::string_view buf, size_t start_pos);
+size_t FindFrameBoundary<kafka::Packet>(MessageType type, std::string_view buf, size_t start_pos,
+                                        NoState* state);
 
 }  // namespace protocols
 }  // namespace stirling

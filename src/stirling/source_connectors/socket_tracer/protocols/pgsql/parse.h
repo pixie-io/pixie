@@ -52,11 +52,12 @@ size_t FindFrameBoundary(std::string_view buf, size_t start);
 }  // namespace pgsql
 
 template <>
-ParseState ParseFrame(MessageType type, std::string_view* buf, pgsql::RegularMessage* frame);
+ParseState ParseFrame(MessageType type, std::string_view* buf, pgsql::RegularMessage* frame,
+                      pgsql::StateWrapper* /*state*/);
 
 template <>
 size_t FindFrameBoundary<pgsql::RegularMessage>(MessageType type, std::string_view buf,
-                                                size_t start);
+                                                size_t start, pgsql::StateWrapper* /*state*/);
 
 }  // namespace protocols
 }  // namespace stirling

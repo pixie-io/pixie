@@ -32,10 +32,12 @@ namespace protocols {
  * Parses a single HTTP message from the input string.
  */
 template <>
-ParseState ParseFrame(MessageType type, std::string_view* buf, http::Message* frame);
+ParseState ParseFrame(MessageType type, std::string_view* buf, http::Message* frame,
+                      NoState* state);
 
 template <>
-size_t FindFrameBoundary<http::Message>(MessageType type, std::string_view buf, size_t start_pos);
+size_t FindFrameBoundary<http::Message>(MessageType type, std::string_view buf, size_t start_pos,
+                                        NoState* state);
 
 }  // namespace protocols
 }  // namespace stirling

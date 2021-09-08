@@ -220,12 +220,13 @@ Status ParseMessage(std::string_view* buf, Message* msg) {
 
 template <>
 size_t FindFrameBoundary<nats::Message>(MessageType /*type*/, std::string_view buf,
-                                        size_t start_pos) {
+                                        size_t start_pos, NoState* /*state*/) {
   return nats::FindMessageBoundary(buf, start_pos);
 }
 
 template <>
-ParseState ParseFrame(MessageType /*type*/, std::string_view* buf, nats::Message* msg) {
+ParseState ParseFrame(MessageType /*type*/, std::string_view* buf, nats::Message* msg,
+                      NoState* /*state*/) {
   return TranslateStatus(nats::ParseMessage(buf, msg));
 }
 

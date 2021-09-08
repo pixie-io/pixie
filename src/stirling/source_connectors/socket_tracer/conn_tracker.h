@@ -249,9 +249,9 @@ class ConnTracker : NotCopyMoveable {
     using TFrameType = typename TProtocolTraits::frame_type;
     using TStateType = typename TProtocolTraits::state_type;
 
-    DataStreamsToFrames<TFrameType>();
-
     InitProtocolState<TStateType>();
+
+    DataStreamsToFrames<TFrameType, TStateType>();
 
     auto& req_frames = req_data()->Frames<TFrameType>();
     auto& resp_frames = resp_data()->Frames<TFrameType>();
@@ -594,15 +594,19 @@ class ConnTracker : NotCopyMoveable {
 
   void UpdateDataStats(const SocketDataEvent& event);
 
-  template <typename TFrameType>
+  template <typename TFrameType, typename TStateType>
   void DataStreamsToFrames() {
-    DataStream* resp_data_ptr = resp_data();
-    DCHECK_NE(resp_data_ptr, nullptr);
-    resp_data_ptr->template ProcessBytesToFrames<TFrameType>(MessageType::kResponse);
+    auto state_ptr = protocol_state<TStateType>();
 
     DataStream* req_data_ptr = req_data();
     DCHECK_NE(req_data_ptr, nullptr);
-    req_data_ptr->template ProcessBytesToFrames<TFrameType>(MessageType::kRequest);
+    req_data_ptr->template ProcessBytesToFrames<TFrameType, TStateType>(MessageType::kRequest,
+                                                                        state_ptr);
+
+    DataStream* resp_data_ptr = resp_data();
+    DCHECK_NE(resp_data_ptr, nullptr);
+    resp_data_ptr->template ProcessBytesToFrames<TFrameType, TStateType>(MessageType::kResponse,
+                                                                         state_ptr);
   }
 
   template <typename TRecordType>

@@ -33,10 +33,11 @@ namespace protocols {
  * Parses the input string as a CQL binary protocol frame.
  */
 template <>
-ParseState ParseFrame(MessageType type, std::string_view* buf, cass::Frame* frame);
+ParseState ParseFrame(MessageType type, std::string_view* buf, cass::Frame* frame, NoState* state);
 
 template <>
-size_t FindFrameBoundary<cass::Frame>(MessageType type, std::string_view buf, size_t start_pos);
+size_t FindFrameBoundary<cass::Frame>(MessageType type, std::string_view buf, size_t start_pos,
+                                      NoState* state);
 
 }  // namespace protocols
 }  // namespace stirling

@@ -84,13 +84,14 @@ ParseState ParseFrame(MessageType type, std::string_view* buf, Frame* result) {
 }  // namespace cass
 
 template <>
-ParseState ParseFrame(MessageType type, std::string_view* buf, cass::Frame* result) {
+ParseState ParseFrame(MessageType type, std::string_view* buf, cass::Frame* result,
+                      NoState* /*state*/) {
   return cass::ParseFrame(type, buf, result);
 }
 
 template <>
 size_t FindFrameBoundary<cass::Frame>(MessageType /*type*/, std::string_view /*buf*/,
-                                      size_t /*start_pos*/) {
+                                      size_t /*start_pos*/, NoState* /*state*/) {
   // Not implemented.
   return std::string::npos;
 }

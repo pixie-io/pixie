@@ -78,8 +78,8 @@ bool IsSyncRequired(int64_t stuck_count) {
 // To be robust to lost events, which are not necessarily aligned to parseable entity boundaries,
 // ProcessBytesToFrames() will invoke a call to ParseFrames() with a stream recovery argument when
 // necessary.
-template <typename TFrameType>
-void DataStream::ProcessBytesToFrames(MessageType type) {
+template <typename TFrameType, typename TStateType = protocols::NoState>
+void DataStream::ProcessBytesToFrames(MessageType type, TStateType* state) {
   auto& typed_messages = Frames<TFrameType>();
 
   // TODO(oazizi): Convert to ECHECK once we have more confidence.
@@ -120,8 +120,8 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
     size_t contiguous_bytes = data_buffer_.Head().size();
 
     // Now parse the raw data.
-    parse_result =
-        protocols::ParseFrames(type, data_buffer_, &typed_messages, IsSyncRequired(stuck_count_));
+    parse_result = protocols::ParseFrames(type, data_buffer_, &typed_messages,
+                                          IsSyncRequired(stuck_count_), state);
 
     if (contiguous_bytes != data_buffer_.size()) {
       // We weren't able to submit all bytes, which means we ran into a missing event.
@@ -180,14 +180,24 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
 }
 
 // PROTOCOL_LIST: Requires update on new protocols.
-template void DataStream::ProcessBytesToFrames<protocols::http::Message>(MessageType type);
-template void DataStream::ProcessBytesToFrames<protocols::mysql::Packet>(MessageType type);
-template void DataStream::ProcessBytesToFrames<protocols::cass::Frame>(MessageType type);
-template void DataStream::ProcessBytesToFrames<protocols::pgsql::RegularMessage>(MessageType type);
-template void DataStream::ProcessBytesToFrames<protocols::dns::Frame>(MessageType type);
-template void DataStream::ProcessBytesToFrames<protocols::redis::Message>(MessageType type);
-template void DataStream::ProcessBytesToFrames<protocols::kafka::Packet>(MessageType type);
-template void DataStream::ProcessBytesToFrames<protocols::nats::Message>(MessageType type);
+template void DataStream::ProcessBytesToFrames<protocols::http::Message, protocols::NoState>(
+    MessageType type, protocols::NoState* state);
+template void
+DataStream::ProcessBytesToFrames<protocols::mysql::Packet, protocols::mysql::StateWrapper>(
+    MessageType type, protocols::mysql::StateWrapper* state);
+template void DataStream::ProcessBytesToFrames<protocols::cass::Frame, protocols::NoState>(
+    MessageType type, protocols::NoState* state);
+template void
+DataStream::ProcessBytesToFrames<protocols::pgsql::RegularMessage, protocols::pgsql::StateWrapper>(
+    MessageType type, protocols::pgsql::StateWrapper* state);
+template void DataStream::ProcessBytesToFrames<protocols::dns::Frame, protocols::NoState>(
+    MessageType type, protocols::NoState* state);
+template void DataStream::ProcessBytesToFrames<protocols::redis::Message, protocols::NoState>(
+    MessageType type, protocols::NoState* state);
+template void DataStream::ProcessBytesToFrames<protocols::kafka::Packet, protocols::NoState>(
+    MessageType type, protocols::NoState* state);
+template void DataStream::ProcessBytesToFrames<protocols::nats::Message, protocols::NoState>(
+    MessageType type, protocols::NoState* state);
 
 void DataStream::Reset() {
   data_buffer_.Reset();

@@ -211,12 +211,13 @@ ParseState ParseMessage(MessageType type, std::string_view* buf, Message* msg) {
 
 template <>
 size_t FindFrameBoundary<redis::Message>(MessageType /*type*/, std::string_view buf,
-                                         size_t start_pos) {
+                                         size_t start_pos, NoState* /*state*/) {
   return redis::FindMessageBoundary(buf, start_pos);
 }
 
 template <>
-ParseState ParseFrame(MessageType type, std::string_view* buf, redis::Message* msg) {
+ParseState ParseFrame(MessageType type, std::string_view* buf, redis::Message* msg,
+                      NoState* /*state*/) {
   return redis::ParseMessage(type, buf, msg);
 }
 

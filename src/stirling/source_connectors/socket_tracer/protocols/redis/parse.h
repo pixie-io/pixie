@@ -29,10 +29,11 @@ namespace protocols {
 
 template <>
 size_t FindFrameBoundary<redis::Message>(MessageType /*type*/, std::string_view buf,
-                                         size_t start_pos);
+                                         size_t start_pos, NoState* /*state*/);
 
 template <>
-ParseState ParseFrame(MessageType type, std::string_view* buf, redis::Message* msg);
+ParseState ParseFrame(MessageType type, std::string_view* buf, redis::Message* msg,
+                      NoState* /*state*/);
 
 }  // namespace protocols
 }  // namespace stirling

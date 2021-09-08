@@ -94,9 +94,10 @@ struct ParseResult {
  *
  * @return ParseResult with locations where parseable frames were found in the source buffer.
  */
-template <typename TFrameType>
+template <typename TFrameType, typename TStateType = NoState>
 ParseResult ParseFrames(MessageType type, const DataStreamBuffer& data_stream_buffer,
-                        std::deque<TFrameType>* frames, bool resync = false) {
+                        std::deque<TFrameType>* frames, bool resync = false,
+                        TStateType* state = nullptr) {
   std::string_view buf = data_stream_buffer.Head();
 
   size_t start_pos = 0;
@@ -105,7 +106,7 @@ ParseResult ParseFrames(MessageType type, const DataStreamBuffer& data_stream_bu
     // Since we've been asked to resync, we search from byte 1 to find a new boundary.
     // Don't want to stay at the same position.
     constexpr int kStartPos = 1;
-    start_pos = FindFrameBoundary<TFrameType>(type, buf, kStartPos);
+    start_pos = FindFrameBoundary<TFrameType, TStateType>(type, buf, kStartPos, state);
 
     // Couldn't find a boundary, so stay where we are.
     // Chances are we won't be able to parse, but we have no other option.
@@ -121,7 +122,7 @@ ParseResult ParseFrames(MessageType type, const DataStreamBuffer& data_stream_bu
   const size_t prev_size = frames->size();
 
   // Parse and append new frames to the frames vector.
-  ParseResult result = ParseFramesLoop(type, buf, frames);
+  ParseResult result = ParseFramesLoop(type, buf, frames, state);
 
   VLOG(1) << absl::Substitute("Parsed $0 new frames", frames->size() - prev_size);
 
@@ -155,9 +156,9 @@ ParseResult ParseFrames(MessageType type, const DataStreamBuffer& data_stream_bu
  * @return ParseResult with locations where parseable frames were found in the source buffer.
  */
 // TODO(oazizi): Convert tests to use ParseFrames() instead of ParseFramesLoop().
-template <typename TFrameType>
-ParseResult ParseFramesLoop(MessageType type, std::string_view buf,
-                            std::deque<TFrameType>* frames) {
+template <typename TFrameType, typename TStateType = NoState>
+ParseResult ParseFramesLoop(MessageType type, std::string_view buf, std::deque<TFrameType>* frames,
+                            TStateType* state = nullptr) {
   std::vector<StartEndPos> frame_positions;
   const size_t buf_size = buf.size();
   ParseState s = ParseState::kSuccess;
@@ -167,7 +168,7 @@ ParseResult ParseFramesLoop(MessageType type, std::string_view buf,
   while (!buf.empty() && s != ParseState::kEOS) {
     TFrameType frame;
 
-    s = ParseFrame(type, &buf, &frame);
+    s = ParseFrame(type, &buf, &frame, state);
 
     bool stop = false;
     bool push = false;
@@ -179,7 +180,7 @@ ParseResult ParseFramesLoop(MessageType type, std::string_view buf,
       case ParseState::kInvalid: {
         // An invalid frame may occur when first parsing a connection, or after a lost event.
         // Attempt to look for next valid frame boundary.
-        size_t pos = FindFrameBoundary<TFrameType>(type, buf, 1);
+        size_t pos = FindFrameBoundary<TFrameType, TStateType>(type, buf, 1, state);
         if (pos != std::string::npos) {
           DCHECK_NE(pos, 0);
           buf.remove_prefix(pos);

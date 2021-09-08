@@ -370,12 +370,14 @@ size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_po
 }  // namespace http
 
 template <>
-ParseState ParseFrame(MessageType type, std::string_view* buf, http::Message* result) {
+ParseState ParseFrame(MessageType type, std::string_view* buf, http::Message* result,
+                      NoState* /*state*/) {
   return http::ParseFrame(type, buf, result);
 }
 
 template <>
-size_t FindFrameBoundary<http::Message>(MessageType type, std::string_view buf, size_t start_pos) {
+size_t FindFrameBoundary<http::Message>(MessageType type, std::string_view buf, size_t start_pos,
+                                        NoState* /*state*/) {
   return http::FindFrameBoundary(type, buf, start_pos);
 }
 

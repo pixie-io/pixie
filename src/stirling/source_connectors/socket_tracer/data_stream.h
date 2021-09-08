@@ -58,8 +58,8 @@ class DataStream : NotCopyMoveable {
    * @param type whether to parse as requests, responses or mixed traffic.
    * @return deque of parsed messages.
    */
-  template <typename TFrameType>
-  void ProcessBytesToFrames(MessageType type);
+  template <typename TFrameType, typename TStateType>
+  void ProcessBytesToFrames(MessageType type, TStateType* state);
 
   /**
    * Returns the current set of parsed frames.
