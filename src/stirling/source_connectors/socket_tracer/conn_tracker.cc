@@ -39,6 +39,7 @@
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/go_grpc_types.hpp"
 #include "src/stirling/source_connectors/socket_tracer/conn_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/conn_trackers_manager.h"
+#include "src/stirling/utils/enum_map.h"
 
 DEFINE_bool(treat_loopback_as_in_cluster, true,
             "Whether loopback is treated as inside the cluster of not");
@@ -58,6 +59,8 @@ DECLARE_int32(test_only_socket_trace_target_pid);
 
 namespace px {
 namespace stirling {
+
+using ::px::stirling::utils::EnumMap;
 
 // Parse failure rate threshold, after which a connection tracker will be disabled.
 constexpr double kParseFailureRateThreshold = 0.4;
@@ -565,6 +568,43 @@ bool ConnTracker::IsRemoteAddrInCluster(const std::vector<CIDRBlock>& cluster_ci
   return false;
 }
 
+namespace {
+
+auto CreateTraceRoles() {
+  EnumMap<TrafficProtocol, absl::flat_hash_set<EndpointRole>> res;
+  res.Set(kProtocolUnknown, {});
+  // This should never be used, but kept for simpler code pattern below.
+  res.Set(kNumProtocols, {});
+  res.Set(kProtocolHTTP, {kRoleServer});
+  res.Set(kProtocolHTTP2, {kRoleServer});
+  // MySQL server-side tracing is functional, but leave client-side on for legacy reasons.
+  // TODO(oazizi): Remove MySQL client-side tracing.
+  //               This is an PxL-breaking change, so must be done with caution,
+  //               and with proper notification to users.
+  res.Set(kProtocolMySQL, {kRoleServer, kRoleClient});
+  res.Set(kProtocolCQL, {kRoleServer});
+  res.Set(kProtocolPGSQL, {kRoleServer});
+  // TODO(oazizi): Remove DNS client-side tracing.
+  //               This is an PxL-breaking change, so must be done with caution,
+  //               and with proper notification to users.
+  res.Set(kProtocolDNS, {kRoleClient, kRoleServer});
+  res.Set(kProtocolRedis, {kRoleServer});
+  res.Set(kProtocolNATS, {kRoleServer});
+  res.Set(kProtocolMongo, {kRoleServer});
+  res.Set(kProtocolKafka, {kRoleServer});
+  DCHECK(res.AreAllKeysSet());
+  return res;
+}
+
+bool ShouldTraceProtocolRole(TrafficProtocol protocol, EndpointRole role) {
+  // Specifies for each protocol what Role should trigger data tracing.
+  static const EnumMap<TrafficProtocol, absl::flat_hash_set<EndpointRole>> kTraceRoles =
+      CreateTraceRoles();
+  return kTraceRoles.Get(protocol).contains(role);
+}
+
+}  // namespace
+
 void ConnTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs) {
   if (state_ == State::kDisabled) {
     return;
@@ -579,30 +619,15 @@ void ConnTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs) {
     return;
   }
 
+  if (ShouldTraceProtocolRole(protocol(), role())) {
+    state_ = State::kTransferring;
+    return;
+  }
+
   switch (role()) {
     case EndpointRole::kRoleServer:
-      if (state() == State::kCollecting) {
-        state_ = State::kTransferring;
-      }
       break;
     case EndpointRole::kRoleClient: {
-      // MySQL server-side tracing is functional, but leave client-side on for legacy reasons.
-      // TODO(oazizi): Remove MySQL client-side tracing.
-      //               This is an PxL-breaking change, so must be done with caution,
-      //               and with proper notification to users.
-      if (protocol() == kProtocolMySQL) {
-        state_ = State::kTransferring;
-        break;
-      }
-
-      // TODO(oazizi): Remove DNS client-side tracing.
-      //               This is an PxL-breaking change, so must be done with caution,
-      //               and with proper notification to users.
-      if (protocol() == kProtocolDNS) {
-        state_ = State::kTransferring;
-        break;
-      }
-
       if (cluster_cidrs.empty()) {
         CONN_TRACE(2) << "State not updated: MDS has not provided cluster CIDRs yet.";
         break;
