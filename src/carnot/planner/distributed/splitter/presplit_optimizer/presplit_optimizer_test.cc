@@ -62,7 +62,7 @@ TEST_F(PreSplitOptimizerTest, limit_pushdown) {
   EXPECT_THAT(new_limit->parents(), ElementsAre(src));
 
   // Ensure the limit inherits the relation from its parent, not the previous location.
-  EXPECT_EQ(new_limit->relation(), relation);
+  EXPECT_THAT(*new_limit->resolved_table_type(), IsTableType(relation));
 }
 
 TEST_F(PreSplitOptimizerTest, filter_pushdown) {

@@ -131,9 +131,10 @@ TEST_F(PropagateExpressionAnnotationsRuleTest, join) {
 
   auto default_annotations = ExpressionIR::Annotations();
 
-  EXPECT_EQ(join->relation(),
-            Relation({types::STRING, types::FLOAT64, types::STRING, types::STRING, types::FLOAT64},
-                     {"key_x", "latency", "data", "key_y", "cpu_usage"}));
+  EXPECT_THAT(*join->resolved_table_type(),
+              IsTableType(Relation(
+                  {types::STRING, types::FLOAT64, types::STRING, types::STRING, types::FLOAT64},
+                  {"key_x", "latency", "data", "key_y", "cpu_usage"})));
 
   PropagateExpressionAnnotationsRule rule;
   auto result = rule.Execute(graph.get());

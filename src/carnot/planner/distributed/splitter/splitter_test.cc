@@ -136,7 +136,6 @@ TEST_F(SplitterTest, partial_agg_test) {
   auto agg = MakeBlockingAgg(mem_src, {count_col}, {{"mean", mean_func}});
 
   table_store::schema::Relation relation({types::INT64, types::FLOAT64}, {"count", "mean"});
-  ASSERT_OK(agg->SetRelation(relation));
   MakeMemSink(agg, "out");
 
   ResolveTypesRule type_rule(compiler_state_.get());
@@ -173,10 +172,12 @@ TEST_F(SplitterTest, partial_agg_test) {
   EXPECT_EQ(grpc_sink->destination_id(), grpc_source->source_id());
 
   // Confirm that the relations have serialized in their relation.
-  EXPECT_EQ(grpc_sink->relation(),
-            Relation({types::INT64, types::STRING}, {"count", "serialized_expressions"}));
-  EXPECT_EQ(grpc_source->relation(),
-            Relation({types::INT64, types::STRING}, {"count", "serialized_expressions"}));
+  EXPECT_THAT(
+      *grpc_sink->resolved_table_type(),
+      IsTableType(Relation({types::INT64, types::STRING}, {"count", "serialized_expressions"})));
+  EXPECT_THAT(
+      *grpc_source->resolved_table_type(),
+      IsTableType(Relation({types::INT64, types::STRING}, {"count", "serialized_expressions"})));
 
   // Verify that the aggregate connects back into the original group.
   ASSERT_EQ(finalize_agg->Children().size(), 1);
@@ -285,7 +286,6 @@ TEST_F(SplitterTest, sink_only_test) {
   auto mem_src = MakeMemSource("cpu", cpu_relation);
   auto map1 = MakeMap(mem_src, {{"cpu0", MakeColumn("cpu0", 0)}, {"cpu1", MakeColumn("cpu1", 0)}});
   auto map2 = MakeMap(map1, {{"cpu0", MakeColumn("cpu0", 0)}, {"cpu1", MakeColumn("cpu1", 0)}});
-  EXPECT_OK(map2->SetRelation(MakeRelation()));
   auto sink = MakeMemSink(map2, "out");
 
   ResolveTypesRule type_rule(compiler_state_.get());
@@ -318,7 +318,6 @@ TEST_F(SplitterTest, sink_only_test) {
 TEST_F(SplitterTest, sandwich_test) {
   auto mem_src = MakeMemSource("cpu", cpu_relation);
   auto map = MakeMap(mem_src, {{"count", MakeColumn("count", 0, types::DataType::INT64)}});
-  EXPECT_OK(map->SetRelation(MakeRelation()));
   auto mean_func = MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64));
   auto agg =
       MakeBlockingAgg(map, {MakeColumn("count", 0, types::DataType::INT64)}, {{"mean", mean_func}});
@@ -573,7 +572,6 @@ TEST_F(SplitterTest, agg_join_children) {
 TEST_F(SplitterTest, simple_split_test) {
   auto mem_src = MakeMemSource("cpu", cpu_relation);
   auto map1 = MakeMap(mem_src, {{"cpu0", MakeColumn("cpu0", 0)}, {"cpu1", MakeColumn("cpu1", 0)}});
-  EXPECT_OK(map1->SetRelation(MakeRelation()));
   auto mem_sink = MakeMemSink(map1, "out");
 
   ResolveTypesRule type_rule(compiler_state_.get());
@@ -603,12 +601,10 @@ TEST_F(SplitterTest, simple_split_test) {
 TEST_F(SplitterTest, two_paths) {
   auto mem_src1 = MakeMemSource("cpu", cpu_relation);
   auto map1 = MakeMap(mem_src1, {{"cpu0", MakeColumn("cpu0", 0)}, {"cpu1", MakeColumn("cpu1", 0)}});
-  EXPECT_OK(map1->SetRelation(MakeRelation()));
   auto mem_sink1 = MakeMemSink(map1, "out");
 
   auto mem_src2 = MakeMemSource("cpu", cpu_relation);
   auto map2 = MakeMap(mem_src2, {{"cpu0", MakeColumn("cpu0", 0)}, {"cpu1", MakeColumn("cpu1", 0)}});
-  EXPECT_OK(map2->SetRelation(MakeRelation()));
   auto mem_sink2 = MakeMemSink(map2, "out");
 
   ResolveTypesRule type_rule(compiler_state_.get());
@@ -731,7 +727,6 @@ TEST_F(SplitterTest, MultipleBranchedIdenticalDepths) {
   auto mem_src = MakeMemSource("cpu", cpu_relation);
   // Branch 1.
   auto map1 = MakeMap(mem_src, {{"cpu0", MakeColumn("cpu0", 0)}, {"cpu1", MakeColumn("cpu1", 0)}});
-  EXPECT_OK(map1->SetRelation(MakeRelation()));
   EXPECT_OK(AddUDAToRegistry("mean_no_partial", types::FLOAT64, {types::INT64},
                              /*supports_partial*/ false));
   auto mean_func1 =
@@ -743,7 +738,6 @@ TEST_F(SplitterTest, MultipleBranchedIdenticalDepths) {
   auto mean_func2 =
       MakeMeanFuncWithFloatType("mean_no_partial", MakeColumn("count", 0, types::DataType::INT64));
   auto map2 = MakeMap(mem_src, {{"cpu2", MakeColumn("cpu0", 0)}, {"cpu1", MakeColumn("cpu1", 0)}});
-  EXPECT_OK(map2->SetRelation(MakeRelation()));
   auto agg2 = MakeBlockingAgg(map2, {MakeColumn("count", 0, types::DataType::INT64)},
                               {{"mean", mean_func2}});
   MakeMemSink(agg2, "out2");
@@ -811,7 +805,6 @@ TEST_F(SplitterTest, MultipleBranchedIdenticalDepths) {
 TEST_F(SplitterTest, MultipleBranchedDifferentBlockingDepths) {
   auto mem_src = MakeMemSource("cpu", cpu_relation);
   auto map1 = MakeMap(mem_src, {{"cpu0", MakeColumn("cpu0", 0)}, {"cpu1", MakeColumn("cpu1", 0)}});
-  EXPECT_OK(map1->SetRelation(MakeRelation()));
   EXPECT_OK(AddUDAToRegistry("mean_no_partial", types::FLOAT64, {types::INT64},
                              /*supports_partial*/ false));
   auto mean_func1 =
@@ -903,11 +896,8 @@ TEST_F(SplitterTest, MultipleBranchesAndSparseFilter) {
   metadata_fn->set_annotations(ExpressionIR::Annotations{MetadataType::SERVICE_NAME});
   auto eq_func = MakeEqualsFunc(metadata_fn, MakeString("pl/agent1"));
   auto filter = MakeFilter(mem_src, eq_func);
-  EXPECT_OK(filter->SetRelation(relation));
   auto map = MakeMap(filter, {{"time_", MakeColumn("time_", 0)},
                               {"count", MakeColumn("count", 0, types::DataType::INT64)}});
-  EXPECT_OK(map->SetRelation(
-      table_store::schema::Relation({types::TIME64NS, types::INT64}, {"time_", "count"})));
   MakeMemSink(map, "out1");
 
   auto count_func1 = MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64));
@@ -1052,9 +1042,6 @@ TEST_F(SplitterTest, branch_where_children_must_be_on_pem) {
   auto random_map = MakeMap(mem_src, {{"cpu++", add_func}},
                             /*keep_input_columns*/ true);
 
-  EXPECT_OK(random_map->SetRelation(Relation(
-      {types::UINT128, types::TIME64NS, types::INT64, types::DataType::FLOAT64, types::FLOAT64},
-      {"upid", "time_", "count", "cpu0", "cpu++"})));
   // Makes a sparse filter.
   auto metadata_fn1 =
       MakeFunc("upid_to_service_name", {MakeColumn("upid", 0, types::DataType::UINT128)});
@@ -1062,11 +1049,6 @@ TEST_F(SplitterTest, branch_where_children_must_be_on_pem) {
   auto eq_func = MakeEqualsFunc(metadata_fn1, MakeString("pl/agent1"));
   auto map1 = MakeMap(random_map, {{"equals_service", eq_func}},
                       /*keep_input_columns*/ true);
-
-  EXPECT_OK(
-      map1->SetRelation(Relation({types::UINT128, types::TIME64NS, types::INT64,
-                                  types::DataType::FLOAT64, types::FLOAT64, types::BOOLEAN},
-                                 {"upid", "time_", "count", "cpu0", "cpu++", "equals_service"})));
 
   // agg1 should partial.
   auto count_col_agg1 = MakeColumn("count", 0, types::DataType::INT64);
@@ -1093,10 +1075,6 @@ TEST_F(SplitterTest, branch_where_children_must_be_on_pem) {
   auto map2 = MakeMap(
       map1, {{"pod", metadata_fn2}, {"count", MakeColumn("count", 0, types::DataType::INT64)}},
       /*keep_input_columns*/ true);
-  EXPECT_OK(map2->SetRelation(
-      Relation({types::UINT128, types::TIME64NS, types::DataType::FLOAT64, types::FLOAT64,
-                types::BOOLEAN, types::STRING, types::INT64},
-               {"upid", "time_", "cpu0", "cpu++", "equals_service", "pod", "count"})));
   MakeMemSink(map2, "out1");
 
   ResolveTypesRule type_rule(compiler_state_.get());
@@ -1225,9 +1203,6 @@ TEST_F(SplitterTest, branch_where_single_node_must_be_on_pem_the_rest_can_recurs
   auto random_map1 = MakeMap(mem_src, {{"cpu++", add_func}},
                              /*keep_input_columns*/ true);
 
-  EXPECT_OK(random_map1->SetRelation(Relation(
-      {types::UINT128, types::TIME64NS, types::INT64, types::DataType::FLOAT64, types::FLOAT64},
-      {"upid", "time_", "count", "cpu0", "cpu++"})));
   // Makes a sparse filter.
   auto metadata_fn1 =
       MakeFunc("upid_to_service_name", {MakeColumn("upid", 0, types::DataType::UINT128)});
@@ -1235,11 +1210,6 @@ TEST_F(SplitterTest, branch_where_single_node_must_be_on_pem_the_rest_can_recurs
   auto eq_func = MakeEqualsFunc(metadata_fn1, MakeString("pl/agent1"));
   auto pem_map1 = MakeMap(random_map1, {{"equals_service", eq_func}},
                           /*keep_input_columns*/ true);
-
-  EXPECT_OK(pem_map1->SetRelation(
-      Relation({types::UINT128, types::TIME64NS, types::INT64, types::DataType::FLOAT64,
-                types::FLOAT64, types::BOOLEAN},
-               {"upid", "time_", "count", "cpu0", "cpu++", "equals_service"})));
 
   // agg1 should partial.
   auto count_col_agg1 = MakeColumn("count", 0, types::DataType::INT64);
@@ -1264,10 +1234,6 @@ TEST_F(SplitterTest, branch_where_single_node_must_be_on_pem_the_rest_can_recurs
   auto random_map2 = MakeMap(
       pem_map1, {{"count++", add_func2}, {"count", MakeColumn("count", 0, types::DataType::INT64)}},
       /*keep_input_columns*/ true);
-  EXPECT_OK(random_map2->SetRelation(
-      Relation({types::UINT128, types::TIME64NS, types::DataType::FLOAT64, types::FLOAT64,
-                types::BOOLEAN, types::INT64, types::INT64},
-               {"upid", "time_", "cpu0", "cpu++", "equals_service", "count++", "count"})));
   MakeMemSink(random_map2, "out1");
 
   ResolveTypesRule type_rule(compiler_state_.get());
@@ -1345,13 +1311,11 @@ TEST_F(SplitterTest, schedule_kelvin_only_func_on_kelvin) {
                                  /*keep_input_columns*/ false);
 
   table_store::schema::Relation relation1({types::INT64, types::FLOAT64}, {"count", "mean"});
-  ASSERT_OK(kelvin_only_map->SetRelation(relation1));
 
   auto count_func = MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64));
   auto agg = MakeBlockingAgg(kelvin_only_map, {MakeColumn("count", 0, types::DataType::INT64)},
                              {{"mean", count_func}});
   table_store::schema::Relation relation2({types::INT64, types::FLOAT64}, {"count", "mean"});
-  ASSERT_OK(agg->SetRelation(relation2));
 
   auto sink = MakeMemSink(agg, "out");
 

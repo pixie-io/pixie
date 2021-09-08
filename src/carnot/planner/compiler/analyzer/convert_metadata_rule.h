@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include "src/carnot/planner/compiler_state/compiler_state.h"
@@ -43,7 +44,7 @@ class ConvertMetadataRule : public Rule {
    */
   Status UpdateMetadataContainer(IRNode* container, MetadataIR* metadata,
                                  ExpressionIR* metadata_expr) const;
-  StatusOr<std::string> FindKeyColumn(const table_store::schema::Relation& parent_relation,
+  StatusOr<std::string> FindKeyColumn(std::shared_ptr<TableType> parent_type,
                                       MetadataProperty* property, IRNode* node_for_error) const;
 };
 

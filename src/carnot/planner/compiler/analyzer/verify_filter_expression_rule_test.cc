@@ -35,7 +35,6 @@ class VerifyFilterExpressionTest : public RulesTest {
     RulesTest::SetUp();
     mem_src =
         graph->CreateNode<MemorySourceIR>(ast, "source", std::vector<std::string>{}).ValueOrDie();
-    PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
   }
   FuncIR* MakeFilter() {
     auto constant1 = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();

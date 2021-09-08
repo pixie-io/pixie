@@ -50,6 +50,8 @@ class BaseType {
   virtual TypePtr Copy() const = 0;
   virtual std::string DebugString() const = 0;
   virtual bool IsValueType() const { return false; }
+  virtual bool IsTableType() const { return false; }
+  virtual bool Equals(TypePtr) const = 0;
 };
 
 class ValueType;
@@ -86,6 +88,13 @@ class ValueType : public BaseType {
   }
 
   bool IsValueType() const override { return true; }
+  bool Equals(TypePtr other_type) const override {
+    if (!other_type->IsValueType()) {
+      return false;
+    }
+    auto other = std::static_pointer_cast<ValueType>(other_type);
+    return *this == *other;
+  }
 
  protected:
   explicit ValueType(DataType data_type, SemanticType semantic_type)
@@ -188,6 +197,29 @@ class TableType : public BaseType {
       return -1;
     }
     return it - ordered_col_names_.begin();
+  }
+
+  bool IsTableType() const override { return true; }
+  bool Equals(TypePtr other_type) const override {
+    if (!other_type->IsTableType()) {
+      return false;
+    }
+    auto other = std::static_pointer_cast<TableType>(other_type);
+    if (ordered_col_names_ != other->ordered_col_names_) {
+      return false;
+    }
+    if (map_.size() != other->map_.size()) {
+      return false;
+    }
+    for (const auto& [name, type] : map_) {
+      if (other->map_.count(name) == 0) {
+        return false;
+      }
+      if (!type->Equals(other->map_[name])) {
+        return false;
+      }
+    }
+    return true;
   }
 
   class TableTypeIterator {

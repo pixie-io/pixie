@@ -56,9 +56,9 @@ StatusOr<bool> GRPCSourceGroupConversionRule::ExpandGRPCSourceGroup(GRPCSourceGr
 
 StatusOr<GRPCSourceIR*> GRPCSourceGroupConversionRule::CreateGRPCSource(
     GRPCSourceGroupIR* group_ir) {
-  DCHECK(group_ir->IsRelationInit());
+  DCHECK(group_ir->is_type_resolved());
   IR* graph = group_ir->graph();
-  return graph->CreateNode<GRPCSourceIR>(group_ir->ast(), group_ir->relation());
+  return graph->CreateNode<GRPCSourceIR>(group_ir->ast(), group_ir->resolved_type());
 }
 
 // Have to get rid of this function. Instead, need to associate (agent_id, sink_id) ->
@@ -74,8 +74,9 @@ StatusOr<OperatorIR*> GRPCSourceGroupConversionRule::ConvertGRPCSourceGroup(
   auto sinks = group_ir->dependent_sinks();
 
   if (sinks.size() == 0) {
-    PL_ASSIGN_OR_RETURN(EmptySourceIR * empty_source,
-                        ir_graph->CreateNode<EmptySourceIR>(group_ir->ast(), group_ir->relation()));
+    PL_ASSIGN_OR_RETURN(
+        EmptySourceIR * empty_source,
+        ir_graph->CreateNode<EmptySourceIR>(group_ir->ast(), group_ir->resolved_type()));
     return empty_source;
   }
 

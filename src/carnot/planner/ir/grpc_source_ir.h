@@ -50,9 +50,7 @@ class GRPCSourceIR : public OperatorIR {
    * @param relation
    * @return Status
    */
-  Status Init(const table_store::schema::Relation& relation) {
-    return SetResolvedType(TableType::Create(relation));
-  }
+  Status Init(TypePtr type) { return SetResolvedType(type); }
 
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override {
     return error::Unimplemented("Unexpected call to GRPCSourceIR::RequiredInputColumns");

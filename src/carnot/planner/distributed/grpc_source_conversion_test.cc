@@ -43,7 +43,8 @@ class GRPCSourceConversionTest : public OperatorTests {};
 TEST_F(GRPCSourceConversionTest, construction_test) {
   int64_t grpc_bridge_id = 123;
   std::string grpc_address = "1111";
-  auto grpc_source_group = MakeGRPCSourceGroup(grpc_bridge_id, MakeTimeRelation());
+  auto grpc_source_group =
+      MakeGRPCSourceGroup(grpc_bridge_id, TableType::Create(MakeTimeRelation()));
   grpc_source_group->SetGRPCAddress(grpc_address);
   int64_t grpc_source_group_id = grpc_source_group->id();
   auto mem_sink = MakeMemSink(grpc_source_group, "out");
@@ -77,7 +78,7 @@ TEST_F(GRPCSourceConversionTest, construction_test) {
   // Check to see that the union's parents are grpc_sources
   std::vector<int64_t> actual_ids;
   UnionIR* union_op = static_cast<UnionIR*>(mem_sink_parent);
-  EXPECT_TRUE(union_op->IsRelationInit());
+  EXPECT_TRUE(union_op->is_type_resolved());
   EXPECT_TRUE(union_op->default_column_mapping());
   for (auto* union_op_parent : union_op->parents()) {
     ASSERT_EQ(union_op_parent->type(), IRNodeType::kGRPCSource) << union_op_parent->type_string();
@@ -119,7 +120,8 @@ union_op {
 TEST_F(GRPCSourceConversionTest, construction_test_single_source) {
   int64_t grpc_bridge_id = 123;
   std::string grpc_address = "1111";
-  auto grpc_source_group = MakeGRPCSourceGroup(grpc_bridge_id, MakeTimeRelation());
+  auto grpc_source_group =
+      MakeGRPCSourceGroup(grpc_bridge_id, TableType::Create(MakeTimeRelation()));
   grpc_source_group->SetGRPCAddress(grpc_address);
   int64_t grpc_source_group_id = grpc_source_group->id();
   auto mem_sink1 = MakeMemSink(grpc_source_group, "out");
@@ -153,7 +155,8 @@ TEST_F(GRPCSourceConversionTest, construction_test_single_source) {
 TEST_F(GRPCSourceConversionTest, no_sinks_affiliated) {
   int64_t grpc_bridge_id = 123;
   std::string grpc_address = "1111";
-  auto grpc_source_group = MakeGRPCSourceGroup(grpc_bridge_id, MakeTimeRelation());
+  auto grpc_source_group =
+      MakeGRPCSourceGroup(grpc_bridge_id, TableType::Create(MakeTimeRelation()));
   grpc_source_group->SetGRPCAddress(grpc_address);
   MakeMemSink(grpc_source_group, "out");
 
@@ -175,12 +178,14 @@ TEST_F(GRPCSourceConversionTest, multiple_grpc_source_groups) {
   int64_t grpc_bridge_id1 = 123;
   int64_t grpc_bridge_id2 = 456;
   std::string grpc_address = "1111";
-  auto grpc_source_group1 = MakeGRPCSourceGroup(grpc_bridge_id1, MakeTimeRelation());
+  auto grpc_source_group1 =
+      MakeGRPCSourceGroup(grpc_bridge_id1, TableType::Create(MakeTimeRelation()));
   grpc_source_group1->SetGRPCAddress(grpc_address);
   int64_t grpc_source_group_id1 = grpc_source_group1->id();
   auto mem_sink1 = MakeMemSink(grpc_source_group1, "out");
 
-  auto grpc_source_group2 = MakeGRPCSourceGroup(grpc_bridge_id2, MakeTimeRelation());
+  auto grpc_source_group2 =
+      MakeGRPCSourceGroup(grpc_bridge_id2, TableType::Create(MakeTimeRelation()));
   grpc_source_group2->SetGRPCAddress(grpc_address);
   int64_t grpc_source_group_id2 = grpc_source_group2->id();
   auto mem_sink2 = MakeMemSink(grpc_source_group2, "out");
@@ -231,7 +236,8 @@ using MergeSameNodeGRPCBridgeRuleTest = GRPCSourceConversionTest;
 TEST_F(MergeSameNodeGRPCBridgeRuleTest, construction_test) {
   int64_t grpc_bridge_id = 123;
   std::string grpc_address = "1111";
-  auto grpc_source_group = MakeGRPCSourceGroup(grpc_bridge_id, MakeTimeRelation());
+  auto grpc_source_group =
+      MakeGRPCSourceGroup(grpc_bridge_id, TableType::Create(MakeTimeRelation()));
   grpc_source_group->SetGRPCAddress(grpc_address);
   MakeMemSink(grpc_source_group, "out");
 

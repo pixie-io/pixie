@@ -469,7 +469,7 @@ StatusOr<std::unique_ptr<IR>> Splitter::CreateGRPCBridgePlan(
 }
 
 StatusOr<GRPCSinkIR*> Splitter::CreateGRPCSink(OperatorIR* parent_op, int64_t grpc_id) {
-  DCHECK(parent_op->IsRelationInit()) << parent_op->DebugString();
+  DCHECK(parent_op->is_type_resolved()) << parent_op->DebugString();
   IR* graph = parent_op->graph();
 
   PL_ASSIGN_OR_RETURN(GRPCSinkIR * grpc_sink,
@@ -480,12 +480,12 @@ StatusOr<GRPCSinkIR*> Splitter::CreateGRPCSink(OperatorIR* parent_op, int64_t gr
 
 StatusOr<GRPCSourceGroupIR*> Splitter::CreateGRPCSourceGroup(OperatorIR* parent_op,
                                                              int64_t grpc_id) {
-  DCHECK(parent_op->IsRelationInit()) << parent_op->DebugString();
+  DCHECK(parent_op->is_type_resolved()) << parent_op->DebugString();
   IR* graph = parent_op->graph();
 
   PL_ASSIGN_OR_RETURN(
       GRPCSourceGroupIR * grpc_source_group,
-      graph->CreateNode<GRPCSourceGroupIR>(parent_op->ast(), grpc_id, parent_op->relation()));
+      graph->CreateNode<GRPCSourceGroupIR>(parent_op->ast(), grpc_id, parent_op->resolved_type()));
   return grpc_source_group;
 }
 }  // namespace distributed

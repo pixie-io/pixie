@@ -114,7 +114,6 @@ TEST_F(PruneUnavailableSourcesRuleTest, DISABLED_UDTFOnKelvinShouldBeRemovedIfOt
   auto udtf_src = MakeUDTFSource(udtf_spec, {});
   Relation udtf_relation;
   ASSERT_OK(udtf_relation.FromProto(&udtf_spec.relation()));
-  EXPECT_OK(udtf_src->SetRelation(udtf_relation));
 
   Relation src_relation{{types::STRING, types::INT64}, {"service", "rx_bytes"}};
   // This mem source can't be run on the Kelvin, so we should delete it.
@@ -191,8 +190,8 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnPEMsRemovesKelvin) {
   auto grpc_sink1_id = grpc_sink1->id();
 
   // Sub-plan 2, should not be affected.
-  auto grpc_source1 = MakeGRPCSource(udtf_src->relation());
-  auto grpc_source2 = MakeGRPCSource(udtf_src->relation());
+  auto grpc_source1 = MakeGRPCSource(udtf_src->resolved_type());
+  auto grpc_source2 = MakeGRPCSource(udtf_src->resolved_type());
   auto union_node = MakeUnion({grpc_source1, grpc_source2});
   auto grpc_source_id1 = grpc_source1->id();
   auto grpc_source_id2 = grpc_source2->id();
@@ -314,8 +313,8 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnAllAgentsKeepsAllKelvinNodes) {
   auto grpc_sink_id = grpc_sink->id();
 
   // Sub-plan 2 should not be deleted.
-  auto grpc_source1 = MakeGRPCSource(udtf_src->relation());
-  auto grpc_source2 = MakeGRPCSource(udtf_src->relation());
+  auto grpc_source1 = MakeGRPCSource(udtf_src->resolved_type());
+  auto grpc_source2 = MakeGRPCSource(udtf_src->resolved_type());
   auto union_node = MakeUnion({grpc_source1, grpc_source2});
   auto grpc_source_id1 = grpc_source1->id();
   auto grpc_source_id2 = grpc_source2->id();
@@ -356,8 +355,8 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnAllAgentsFilterOnAgentUIDKeepAgent
   auto grpc_sink_id = grpc_sink->id();
 
   // Sub-plan 2 should not be deleted.
-  auto grpc_source1 = MakeGRPCSource(udtf_src->relation());
-  auto grpc_source2 = MakeGRPCSource(udtf_src->relation());
+  auto grpc_source1 = MakeGRPCSource(udtf_src->resolved_type());
+  auto grpc_source2 = MakeGRPCSource(udtf_src->resolved_type());
   auto union_node = MakeUnion({grpc_source1, grpc_source2});
   auto grpc_source_id1 = grpc_source1->id();
   auto grpc_source_id2 = grpc_source2->id();
@@ -397,8 +396,8 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnAllAgentsFilterOutNonMatchingAgent
   ASSERT_NE("kelvin", carnot_info.query_broker_address());
 
   // Sub-plan 2 should not be removed.
-  auto grpc_source1 = MakeGRPCSource(udtf_src->relation());
-  auto grpc_source2 = MakeGRPCSource(udtf_src->relation());
+  auto grpc_source1 = MakeGRPCSource(udtf_src->resolved_type());
+  auto grpc_source2 = MakeGRPCSource(udtf_src->resolved_type());
   auto union_node = MakeUnion({grpc_source1, grpc_source2});
   auto grpc_source_id1 = grpc_source1->id();
   auto grpc_source_id2 = grpc_source2->id();

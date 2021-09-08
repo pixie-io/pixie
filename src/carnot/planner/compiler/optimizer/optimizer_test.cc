@@ -620,8 +620,10 @@ TEST_F(OptimizerTest, self_union) {
   // Should be no-op maps.
   EXPECT_MATCH(mem_src->Children()[1], Map());
   EXPECT_MATCH(mem_src->Children()[2], Map());
-  EXPECT_EQ(mem_src->Children()[1]->relation(), mem_src->relation());
-  EXPECT_EQ(mem_src->Children()[2]->relation(), mem_src->relation());
+  EXPECT_TRUE(
+      mem_src->Children()[1]->resolved_table_type()->Equals(mem_src->resolved_table_type()));
+  EXPECT_TRUE(
+      mem_src->Children()[2]->resolved_table_type()->Equals(mem_src->resolved_table_type()));
 
   EXPECT_EQ(mem_src->Children()[0], mem_src->Children()[1]->Children()[0]);
   EXPECT_EQ(mem_src->Children()[0], mem_src->Children()[2]->Children()[0]);
@@ -666,28 +668,28 @@ TEST_F(OptimizerTest, prune_unused_columns) {
   // Maps 1 and 3 are no-ops after this column pruning, but once we add
   // a rule to remove no-op maps, these will go away.
   auto map1 = static_cast<MapIR*>(join->Children()[0]);
-  EXPECT_THAT(map1->relation().col_names(), ElementsAre("bytes_in"));
+  EXPECT_THAT(map1->resolved_table_type()->ColumnNames(), ElementsAre("bytes_in"));
 
   ASSERT_EQ(map1->Children().size(), 1);
   ASSERT_MATCH(map1->Children()[0], Map());
   auto map2 = static_cast<MapIR*>(map1->Children()[0]);
-  EXPECT_THAT(map2->relation().col_names(), ElementsAre("mb_in"));
+  EXPECT_THAT(map2->resolved_table_type()->ColumnNames(), ElementsAre("mb_in"));
 
   ASSERT_EQ(map2->Children().size(), 1);
   ASSERT_MATCH(map2->Children()[0], Map());
   auto map3 = static_cast<MapIR*>(map2->Children()[0]);
-  EXPECT_THAT(map3->relation().col_names(), ElementsAre("mb_in"));
+  EXPECT_THAT(map3->resolved_table_type()->ColumnNames(), ElementsAre("mb_in"));
 
   ASSERT_EQ(map3->Children().size(), 1);
   ASSERT_MATCH(map3->Children()[0], Limit());
   auto limit = static_cast<LimitIR*>(map3->Children()[0]);
-  EXPECT_THAT(limit->relation().col_names(), ElementsAre("mb_in"));
+  EXPECT_THAT(limit->resolved_table_type()->ColumnNames(), ElementsAre("mb_in"));
 
   // Check sink node
   ASSERT_EQ(limit->Children().size(), 1);
   ASSERT_MATCH(limit->Children()[0], ExternalGRPCSink());
   auto sink = static_cast<GRPCSinkIR*>(limit->Children()[0]);
-  EXPECT_THAT(sink->relation().col_names(), ElementsAre("mb_in"));
+  EXPECT_THAT(sink->resolved_table_type()->ColumnNames(), ElementsAre("mb_in"));
 }
 
 constexpr char kAggAfterFilterQuery[] = R"pxl(

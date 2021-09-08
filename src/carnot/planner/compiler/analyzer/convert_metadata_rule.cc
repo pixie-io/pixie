@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <memory>
 #include <vector>
 
 #include "src/carnot/planner/compiler/analyzer/convert_metadata_rule.h"
@@ -53,20 +54,20 @@ Status ConvertMetadataRule::UpdateMetadataContainer(IRNode* container, MetadataI
   return error::Internal("Unsupported IRNode container for metadata: $0", container->DebugString());
 }
 
-StatusOr<std::string> ConvertMetadataRule::FindKeyColumn(const Relation& parent_relation,
+StatusOr<std::string> ConvertMetadataRule::FindKeyColumn(std::shared_ptr<TableType> parent_type,
                                                          MetadataProperty* property,
                                                          IRNode* node_for_error) const {
   DCHECK_NE(property, nullptr);
   for (const std::string& key_col : property->GetKeyColumnReprs()) {
-    if (parent_relation.HasColumn(key_col)) {
+    if (parent_type->HasColumn(key_col)) {
       return key_col;
     }
   }
   return node_for_error->CreateIRNodeError(
       "Can't resolve metadata because of lack of converting columns in the parent. Need one of "
-      "[$0]. Parent relation has columns [$1] available.",
+      "[$0]. Parent type has columns [$1] available.",
       absl::StrJoin(property->GetKeyColumnReprs(), ","),
-      absl::StrJoin(parent_relation.col_names(), ","));
+      absl::StrJoin(parent_type->ColumnNames(), ","));
 }
 
 StatusOr<bool> ConvertMetadataRule::Apply(IRNode* ir_node) {
@@ -85,7 +86,7 @@ StatusOr<bool> ConvertMetadataRule::Apply(IRNode* ir_node) {
   PL_ASSIGN_OR_RETURN(auto containing_ops, metadata->ContainingOperators());
 
   PL_ASSIGN_OR_RETURN(std::string key_column_name,
-                      FindKeyColumn(parent->relation(), md_property, ir_node));
+                      FindKeyColumn(parent->resolved_table_type(), md_property, ir_node));
 
   PL_ASSIGN_OR_RETURN(ColumnIR * key_column,
                       graph->CreateNode<ColumnIR>(ir_node->ast(), key_column_name, parent_op_idx));
@@ -105,7 +106,7 @@ StatusOr<bool> ConvertMetadataRule::Apply(IRNode* ir_node) {
   PL_RETURN_IF_ERROR(PropagateTypeChangesFromNode(graph, conversion_func, compiler_state_));
 
   DCHECK_EQ(conversion_func->EvaluatedDataType(), column_type)
-      << "Expected the parent_relation key column type and metadata property type to match.";
+      << "Expected the parent key column type and metadata property type to match.";
   conversion_func->set_annotations(ExpressionIR::Annotations(md_type));
 
   return true;

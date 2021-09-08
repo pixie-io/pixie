@@ -55,7 +55,6 @@ class RuleExecutorTest : public OperatorTests {
     graph = std::make_shared<IR>();
     mem_src =
         graph->CreateNode<MemorySourceIR>(ast, "source", std::vector<std::string>{}).ValueOrDie();
-    PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
     SetupGraph();
   }
   void SetupGraph() {

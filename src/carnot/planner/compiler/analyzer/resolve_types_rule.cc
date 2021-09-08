@@ -33,9 +33,6 @@ StatusOr<bool> ResolveTypesRule::Apply(IRNode* ir_node) {
   }
   PL_RETURN_IF_ERROR(ResolveOperatorType(op, compiler_state_));
 
-  // For now we SetRelation, but in a future diff SetRelation will be removed.
-  PL_ASSIGN_OR_RETURN(auto rel, op->resolved_table_type()->ToRelation());
-  PL_RETURN_IF_ERROR(op->SetRelation(rel));
   return true;
 }
 

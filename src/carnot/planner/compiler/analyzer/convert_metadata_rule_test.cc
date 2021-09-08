@@ -109,7 +109,7 @@ TEST_F(ConvertMetadataRuleTest, missing_conversion_column) {
               HasCompilerError(
                   "Can\'t resolve metadata because of lack of converting columns in the parent. "
                   "Need one of "
-                  "\\[upid\\]. Parent relation has columns \\[count,cpu0,cpu1,cpu2\\] available."));
+                  "\\[upid\\]. Parent type has columns \\[count,cpu0,cpu1,cpu2\\] available."));
 
   skip_check_stray_nodes_ = true;
 }

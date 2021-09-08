@@ -81,7 +81,6 @@ TEST_F(PartialOpMgrTest, agg_test) {
   auto agg = MakeBlockingAgg(mem_src, {count_col, service_col}, {{"mean", mean_func}});
   Relation agg_relation({types::INT64, types::STRING, types::FLOAT64},
                         {"count", "service", "mean"});
-  ASSERT_OK(agg->SetRelation(agg_relation));
   MakeMemSink(agg, "out");
 
   ResolveTypesRule type_rule(compiler_state_.get());
@@ -118,10 +117,11 @@ TEST_F(PartialOpMgrTest, agg_test) {
                             merge_expr.node->DebugString());
   }
   // Confirm that the relations are good.
-  EXPECT_EQ(prepare_agg->relation(), Relation({types::INT64, types::STRING, types::STRING},
-                                              {"count", "service", "serialized_expressions"}));
+  EXPECT_THAT(*prepare_agg->resolved_table_type(),
+              IsTableType(Relation({types::INT64, types::STRING, types::STRING},
+                                   {"count", "service", "serialized_expressions"})));
 
-  EXPECT_EQ(merge_agg->relation(), agg_relation);
+  EXPECT_THAT(*merge_agg->resolved_table_type(), IsTableType(agg_relation));
 }
 
 // This tests aggs with functions that can't partial. We don't partial the agg if that's the case.
@@ -141,7 +141,6 @@ TEST_F(PartialOpMgrTest, agg_where_fn_cant_partial) {
                              {{"mean", mean_func}, {"mean2", mean_func2}});
   Relation agg_relation({types::INT64, types::STRING, types::FLOAT64, types::FLOAT64},
                         {"count", "service", "mean", "mean2"});
-  ASSERT_OK(agg->SetRelation(agg_relation));
   MakeMemSink(agg, "out");
 
   // Pre-checks to make sure things work.

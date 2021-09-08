@@ -193,7 +193,8 @@ TEST_F(ToProtoTest, empty_source_ir) {
   ASSERT_OK_AND_ASSIGN(
       EmptySourceIR * empty_source,
       graph->CreateNode<EmptySourceIR>(
-          ast, Relation{{types::DataType::INT64, types::DataType::FLOAT64}, {"cpu0", "cpu1"}}));
+          ast, TableType::Create(Relation{{types::DataType::INT64, types::DataType::FLOAT64},
+                                          {"cpu0", "cpu1"}})));
 
   planpb::Operator pb;
   EXPECT_OK(empty_source->ToProto(&pb));
@@ -326,7 +327,6 @@ TEST_F(ToProtoTest, map_ir) {
   table_store::schema::Relation relation(
       {types::INT64, types::INT64, types::INT64, types::INT64, types::INT64},
       {"col0", "col1", "col2", "col3", "col4"});
-  EXPECT_OK(mem_src->SetRelation(relation));
   compiler_state_->relation_map()->emplace("table_name", relation);
   ASSERT_OK(ResolveOperatorType(mem_src, compiler_state_.get()));
   auto map = graph
@@ -440,7 +440,6 @@ TEST_F(ToProtoTest, agg_ir) {
                      .ValueOrDie();
   table_store::schema::Relation rel({types::INT64, types::INT64, types::INT64},
                                     {"col1", "group1", "column"});
-  EXPECT_OK(mem_src->SetRelation(rel));
   compiler_state_->relation_map()->emplace("source", rel);
   auto constant = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
   auto col = graph->CreateNode<ColumnIR>(ast, "column", /*parent_op_idx*/ 0).ValueOrDie();
@@ -475,7 +474,6 @@ TEST_F(ToProtoTest, agg_ir_with_presplit_proto) {
                      .ValueOrDie();
   table_store::schema::Relation rel({types::INT64, types::INT64, types::INT64},
                                     {"col1", "group1", "column"});
-  EXPECT_OK(mem_src->SetRelation(rel));
   compiler_state_->relation_map()->emplace("source", rel);
   auto constant = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
   auto col = graph->CreateNode<ColumnIR>(ast, "column", /*parent_op_idx*/ 0).ValueOrDie();
@@ -851,7 +849,8 @@ TEST_F(OpTests, internal_grpc_ops) {
   // swaps the graph being built and returns the old_graph
   std::shared_ptr<IR> old_graph = SwapGraphBeingBuilt(new_graph);
 
-  GRPCSourceGroupIR* grpc_src_group = MakeGRPCSourceGroup(grpc_id, MakeRelation());
+  GRPCSourceGroupIR* grpc_src_group =
+      MakeGRPCSourceGroup(grpc_id, TableType::Create(MakeRelation()));
   MakeMemSink(grpc_src_group, "out");
 
   grpc_src_group->SetGRPCAddress(source_grpc_address);
@@ -963,7 +962,7 @@ TEST_F(CloneTests, all_op_clone) {
 }
 
 TEST_F(CloneTests, grpc_source_group) {
-  auto grpc_source = MakeGRPCSourceGroup(123, MakeRelation());
+  auto grpc_source = MakeGRPCSourceGroup(123, TableType::Create(MakeRelation()));
   grpc_source->SetGRPCAddress("1111");
 
   auto out = graph->Clone();
@@ -1024,7 +1023,7 @@ TEST_F(CloneTests, external_grpc_sink) {
 }
 
 TEST_F(CloneTests, grpc_source) {
-  auto grpc_source = MakeGRPCSource(MakeRelation());
+  auto grpc_source = MakeGRPCSource(TableType::Create(MakeRelation()));
   MakeMemSink(grpc_source, "sup");
 
   ResolveTypesRule type_rule(compiler_state_.get());
@@ -1193,7 +1192,7 @@ constexpr char kExpectedGRPCSourcePb[] = R"proto(
 )proto";
 
 TEST_F(ToProtoTests, grpc_source_ir) {
-  auto grpc_src = MakeGRPCSource(MakeRelation());
+  auto grpc_src = MakeGRPCSource(TableType::Create(MakeRelation()));
   MakeMemSink(grpc_src, "sink");
 
   planpb::Operator pb;
@@ -1268,7 +1267,6 @@ TEST_F(ToProtoTests, external_grpc_sink_ir) {
   new_table->AddColumn("cpu1", ValueType::Create(types::FLOAT64, types::ST_PERCENT));
   new_table->AddColumn("cpu2", ValueType::Create(types::FLOAT64, types::ST_PERCENT));
 
-  ASSERT_OK(grpc_sink->SetRelation(MakeRelation()));
   ASSERT_OK(grpc_sink->SetResolvedType(new_table));
 
   grpc_sink->SetDestinationAddress(grpc_address);
@@ -1345,8 +1343,7 @@ nodes {
 TEST_F(ToProtoTests, ir) {
   auto mem_src = MakeMemSource(MakeRelation());
   compiler_state_->relation_map()->emplace("table", MakeRelation());
-  auto mem_sink = MakeMemSink(mem_src, "out");
-  EXPECT_OK(mem_sink->SetRelation(MakeRelation()));
+  MakeMemSink(mem_src, "out");
 
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));
@@ -1390,8 +1387,6 @@ TEST_F(ToProtoTests, UnionNoTime) {
   auto mem_src2 = MakeMemSource("source2", relation2);
   compiler_state_->relation_map()->emplace("source2", relation2);
   auto union_op = MakeUnion({mem_src1, mem_src2});
-
-  EXPECT_OK(union_op->SetRelation(relation));
 
   EXPECT_FALSE(union_op->HasColumnMappings());
   ResolveTypesRule type_rule(compiler_state_.get());
@@ -1744,14 +1739,17 @@ relation {
   columns {
     column_name: "time_"
     column_type: TIME64NS
+    column_semantic_type: ST_NONE
   }
   columns {
     column_name: "fd"
     column_type: INT64
+    column_semantic_type: ST_NONE
   }
   columns {
     column_name: "name"
     column_type: STRING
+    column_semantic_type: ST_NONE
   }
 }
 )proto";
@@ -1786,8 +1784,7 @@ TEST_F(OpTests, UDTFSingleArgTest) {
   EXPECT_OK(udtf->ToProto(&pb));
   EXPECT_THAT(pb, EqualsProto(kExpectedUDTFSourceOpSingleArgPb)) << pb.DebugString();
 
-  EXPECT_TRUE(udtf->IsRelationInit());
-  EXPECT_EQ(udtf->relation(), relation);
+  EXPECT_THAT(*udtf->resolved_table_type(), IsTableType(relation));
 }
 
 constexpr char kDiskSpaceUDTFPb[] = R"proto(
@@ -1807,10 +1804,12 @@ relation {
   columns {
     column_name: "used_capacity"
     column_type: INT64
+    column_semantic_type: ST_NONE
   }
   columns {
     column_name: "total_capacity"
     column_type: INT64
+    column_semantic_type: ST_NONE
   }
 }
 )proto";
@@ -1847,8 +1846,7 @@ TEST_F(OpTests, UDTFMultipleOutOfOrderArgs) {
   EXPECT_OK(udtf->ToProto(&pb));
   EXPECT_THAT(pb, EqualsProto(kExpectedUDTFSourceOpMultipleArgsPb)) << pb.DebugString();
 
-  EXPECT_TRUE(udtf->IsRelationInit());
-  EXPECT_EQ(udtf->relation(), relation);
+  EXPECT_THAT(*udtf->resolved_table_type(), IsTableType(relation));
 }
 
 TEST_F(OpTests, uint128_ir) {
@@ -2007,7 +2005,7 @@ TEST_F(OpTests, prune_outputs) {
   EXPECT_THAT(mem_src->column_index_map(), ElementsAre(1, 3));
 
   // Check that the top-level func updated the relation.
-  EXPECT_EQ(expected_relation, mem_src->relation());
+  EXPECT_THAT(*mem_src->resolved_table_type(), IsTableType(expected_relation));
 }
 
 TEST_F(OpTests, prune_outputs_unchanged) {
@@ -2059,13 +2057,11 @@ TEST_F(OpTests, filter_prune_outputs) {
   compiler_state_->relation_map()->emplace("foo", MakeRelation());
   auto filter = MakeFilter(mem_src, MakeEqualsFunc(MakeColumn("cpu0", 0), MakeColumn("cpu1", 0)));
 
-  ASSERT_OK(filter->SetRelation(MakeRelation()));
-
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));
 
   EXPECT_OK(filter->PruneOutputColumnsTo({"cpu1"}));
-  EXPECT_THAT(filter->relation().col_names(), ElementsAre("cpu1"));
+  EXPECT_THAT(filter->resolved_table_type()->ColumnNames(), ElementsAre("cpu1"));
 }
 
 TEST_F(OpTests, agg_prune_outputs) {
@@ -2076,7 +2072,6 @@ TEST_F(OpTests, agg_prune_outputs) {
                               {"cpu1", MakeMeanFunc(MakeColumn("cpu1", 0))},
                               {"cpu2", MakeMeanFunc(MakeColumn("cpu2", 0))}});
   auto old_groups = agg->groups();
-  ASSERT_OK(agg->SetRelation(MakeRelation()));
 
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));

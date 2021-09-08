@@ -53,13 +53,6 @@ class OperatorIR : public IRNode {
   OperatorIR() = delete;
   bool IsOperator() const override { return true; }
   bool IsExpression() const override { return false; }
-  table_store::schema::Relation relation() {
-    DCHECK(is_type_resolved());
-    return resolved_table_type()->ToRelation().ConsumeValueOrDie();
-  }
-  Status SetRelation(table_store::schema::Relation) { return Status::OK(); }
-  void ClearRelation() {}
-  bool IsRelationInit() const { return is_type_resolved(); }
   bool HasParents() const { return parents_.size() != 0; }
   bool IsChildOf(OperatorIR* parent) {
     return std::find(parents_.begin(), parents_.end(), parent) != parents_.end();

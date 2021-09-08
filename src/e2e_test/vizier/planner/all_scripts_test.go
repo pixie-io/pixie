@@ -35,10 +35,11 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/stretchr/testify/require"
 
+	"px.dev/pixie/src/carnot/planner/compilerpb"
+
 	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/api/proto/vispb"
 	"px.dev/pixie/src/carnot/goplanner"
-	"px.dev/pixie/src/carnot/planner/compilerpb"
 	"px.dev/pixie/src/carnot/planner/distributedpb"
 	"px.dev/pixie/src/carnot/planner/plannerpb"
 	"px.dev/pixie/src/carnot/udfspb"
@@ -349,15 +350,18 @@ func TestAllScriptsCompile(t *testing.T) {
 			result, err := planner.Plan(ps, req)
 			require.NoError(t, err)
 			if result.Status != nil && result.Status.ErrCode != 0 {
-				errContext := &compilerpb.CompilerErrorGroup{}
-				err := types.UnmarshalAny(result.Status.Context, errContext)
-				require.NoError(t, err)
-				for _, e := range errContext.Errors {
-					if e.GetLineColError() != nil {
-						lineCol := e.GetLineColError()
-						t.Logf("Planner error at %d:%d  %s", lineCol.Line, lineCol.Column, lineCol.Message)
+				if result.Status.Context != nil {
+					errContext := &compilerpb.CompilerErrorGroup{}
+					err := types.UnmarshalAny(result.Status.Context, errContext)
+				    require.NoError(t, err)
+					for _, e := range errContext.Errors {
+						if e.GetLineColError() != nil {
+							lineCol := e.GetLineColError()
+							t.Logf("Planner error at %d:%d  %s", lineCol.Line, lineCol.Column, lineCol.Message)
+						}
 					}
 				}
+				t.Log(result.Status.Msg)
 				t.Fail()
 			}
 		})

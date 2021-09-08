@@ -28,15 +28,15 @@ StatusOr<bool> PruneUnusedColumnsRule::Apply(IRNode* ir_node) {
     return false;
   }
   auto op = static_cast<OperatorIR*>(ir_node);
-  DCHECK(op->IsRelationInit());
+  DCHECK(op->is_type_resolved());
   auto changed = false;
 
   if (operator_to_required_outputs_.contains(op)) {
     auto required_outs = operator_to_required_outputs_.at(op);
-    auto prev_relation = op->relation();
+    auto prev_type = op->resolved_table_type();
     PL_RETURN_IF_ERROR(op->PruneOutputColumnsTo(required_outs));
-    auto new_relation = op->relation();
-    changed = prev_relation != new_relation;
+    auto new_type = op->resolved_table_type();
+    changed = !prev_type->Equals(new_type);
   }
 
   PL_ASSIGN_OR_RETURN(auto required_inputs, op->RequiredInputColumns());

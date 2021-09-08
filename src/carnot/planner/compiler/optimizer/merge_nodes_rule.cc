@@ -197,21 +197,21 @@ bool MergeNodesRule::CanMerge(OperatorIR* a, OperatorIR* b) {
   } else if (Match(a, Filter())) {
     auto filter_a = static_cast<FilterIR*>(a);
     auto filter_b = static_cast<FilterIR*>(b);
-    // Filter's output relation mirrors its input parent relation, so two filters can only be
-    // merged if they share the same output relation.
+    // Filter's output type mirrors its input parent type, so two filters can only be
+    // merged if they share the same output type.
     DCHECK_EQ(1, a->parents().size());
     DCHECK_EQ(1, b->parents().size());
     return filter_a->filter_expr()->Equals(filter_b->filter_expr()) &&
-           a->parents()[0]->relation() == b->parents()[0]->relation();
+           a->parents()[0]->resolved_table_type()->Equals(b->parents()[0]->resolved_table_type());
   } else if (Match(a, Limit())) {
     auto limit_a = static_cast<LimitIR*>(a);
     auto limit_b = static_cast<LimitIR*>(b);
-    // Limit's output relation mirrors its input parent relation, so two limits can only be
-    // merged if they share the same output relation.
+    // Limit's output type mirrors its input parent type, so two limits can only be
+    // merged if they share the same output type.
     DCHECK_EQ(1, a->parents().size());
     DCHECK_EQ(1, b->parents().size());
     return limit_a->limit_value() == limit_b->limit_value() &&
-           a->parents()[0]->relation() == b->parents()[0]->relation();
+           a->parents()[0]->resolved_table_type()->Equals(b->parents()[0]->resolved_table_type());
   }
   VLOG(1) << "Can't match, so excluding from merge." << a->DebugString();
   return false;
@@ -403,7 +403,6 @@ StatusOr<OperatorIR*> MergeNodesRule::MergeOps(IR* graph,
     return base_op->CreateIRNodeError("Can't optimize $0", base_op->DebugString());
   }
   DCHECK_NE(merged_op, nullptr);
-  merged_op->ClearRelation();
   merged_op->ClearResolvedType();
   ResolveTypesRule rule(compiler_state_);
   PL_ASSIGN_OR_RETURN(bool did_apply, rule.Apply(merged_op));

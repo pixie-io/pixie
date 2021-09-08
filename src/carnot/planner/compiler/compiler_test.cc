@@ -2490,13 +2490,14 @@ TEST_F(CompilerTest, BadDropQuery) {
   ASSERT_NE(sink, nullptr);
   Relation expected_relation(
       {types::STRING, types::FLOAT64, types::FLOAT64, types::FLOAT64, types::TIME64NS},
-      {"service", "p50", "p90", "p99", "time_"});
-  EXPECT_EQ(sink->relation(), expected_relation);
+      {"service", "p50", "p90", "p99", "time_"},
+      {types::ST_SERVICE_NAME, types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE});
+  EXPECT_THAT(*sink->resolved_table_type(), IsTableType(expected_relation));
   ASSERT_MATCH(sink->parents()[0], Filter());
   FilterIR* filter = static_cast<FilterIR*>(sink->parents()[0]);
   ASSERT_MATCH(filter->parents()[0], Map());
   MapIR* map = static_cast<MapIR*>(filter->parents()[0]);
-  EXPECT_EQ(map->relation(), expected_relation);
+  EXPECT_THAT(*map->resolved_table_type(), IsTableType(expected_relation));
 }
 
 constexpr char kDropWithoutListQuery[] = R"pxl(
@@ -2522,7 +2523,7 @@ TEST_F(CompilerTest, DropWithoutListQuery) {
   ASSERT_NE(sink, nullptr);
 
   Relation expected_relation({types::FLOAT64}, {"cpu1"});
-  ASSERT_EQ(sink->relation(), expected_relation);
+  ASSERT_THAT(*sink->resolved_table_type(), IsTableType(expected_relation));
 }
 
 TEST_F(CompilerTest, AndExpressionFailsGracefully) {
@@ -2568,8 +2569,9 @@ TEST_F(CompilerTest, MetadataNoDuplicateColumnsQuery) {
   ASSERT_NE(sink, nullptr);
 
   // ensure service_name is in relation but _attr_service_name is not
-  Relation expected_relation({types::UINT128, types::STRING}, {"upid", "service_name"});
-  ASSERT_EQ(sink->relation(), expected_relation);
+  Relation expected_relation({types::UINT128, types::STRING}, {"upid", "service_name"},
+                             {types::ST_NONE, types::ST_SERVICE_NAME});
+  ASSERT_THAT(*sink->resolved_table_type(), IsTableType(expected_relation));
 }
 
 TEST_F(CompilerTest, UnusedOperatorsRemoved) {
@@ -2610,7 +2612,7 @@ TEST_F(CompilerTest, UnusedOperatorsRemoved) {
   ASSERT_MATCH(filter_child_child, ExternalGRPCSink());
   GRPCSinkIR* sink = static_cast<GRPCSinkIR*>(filter_child_child);
   Relation expected_relation({types::TIME64NS}, {"time_"});
-  EXPECT_EQ(sink->relation(), expected_relation);
+  EXPECT_THAT(*sink->resolved_table_type(), IsTableType(expected_relation));
 }
 
 constexpr char kUndefinedFuncError[] = R"pxl(
@@ -2669,7 +2671,7 @@ TEST_F(CompilerTest, DISABLED_RollingTimeStringQuery) {
   ASSERT_EQ(window_size_int->val(),
             std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(3)).count());
   Relation rolling_relation({types::TIME64NS, types::INT64}, {"time_", "remote_port"});
-  EXPECT_EQ(rolling_relation, rolling->relation());
+  EXPECT_THAT(*rolling->resolved_table_type(), IsTableType(rolling_relation));
 }
 
 constexpr char kRollingIntQuery[] = R"pxl(
@@ -2692,7 +2694,7 @@ TEST_F(CompilerTest, DISABLED_RollingIntQuery) {
   IntIR* window_size_int = static_cast<IntIR*>(rolling->window_size());
   ASSERT_EQ(window_size_int->val(), 3000);
   Relation rolling_relation({types::TIME64NS, types::INT64}, {"time_", "remote_port"});
-  EXPECT_EQ(rolling_relation, rolling->relation());
+  EXPECT_THAT(*rolling->resolved_table_type(), IsTableType(rolling_relation));
 }
 
 constexpr char kRollingCompileTimeExprEvalQuery[] = R"pxl(
@@ -2715,7 +2717,7 @@ TEST_F(CompilerTest, DISABLED_RollingCompileTimeExprEvalQuery) {
   IntIR* window_size_int = static_cast<IntIR*>(rolling->window_size());
   ASSERT_EQ(window_size_int->val(), compiler_state_->time_now().val + 1);
   Relation rolling_relation({types::TIME64NS, types::INT64}, {"time_", "remote_port"});
-  EXPECT_EQ(rolling_relation, rolling->relation());
+  EXPECT_THAT(*rolling->resolved_table_type(), IsTableType(rolling_relation));
 }
 
 constexpr char kRollingNonTimeColumn[] = R"pxl(

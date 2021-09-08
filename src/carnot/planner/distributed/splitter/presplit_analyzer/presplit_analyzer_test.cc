@@ -40,8 +40,6 @@ using PreSplitAnalyzerTest = DistributedRulesTest;
 TEST_F(PreSplitAnalyzerTest, split_pem_udf) {
   // Kelvin-only plan
   MemorySourceIR* src1 = MakeMemSource("http_events");
-  ASSERT_OK(
-      src1->SetRelation(Relation({types::STRING, types::STRING}, {"remote_addr", "req_path"})));
   auto input1 = MakeColumn("remote_addr", 0);
   auto input2 = MakeColumn("req_path", 0);
   auto func1 = MakeFunc("pem_only", {input1});
@@ -53,7 +51,7 @@ TEST_F(PreSplitAnalyzerTest, split_pem_udf) {
   ASSERT_OK(type_rule.Execute(graph.get()));
 
   Relation existing_map_relation({types::STRING, types::STRING}, {"pem", "kelvin"});
-  EXPECT_EQ(map1->relation(), existing_map_relation);
+  EXPECT_THAT(*map1->resolved_table_type(), IsTableType(existing_map_relation));
 
   auto analyzer = PreSplitAnalyzer::Create(compiler_state_.get()).ConsumeValueOrDie();
   ASSERT_OK(analyzer->Execute(graph.get()));
@@ -63,13 +61,13 @@ TEST_F(PreSplitAnalyzerTest, split_pem_udf) {
   EXPECT_MATCH(src1->Children()[0], Map());
   auto new_map = static_cast<MapIR*>(src1->Children()[0]);
   Relation expected_map_relation({types::STRING, types::STRING}, {"pem_only_0", "req_path"});
-  EXPECT_EQ(new_map->relation(), expected_map_relation);
+  EXPECT_THAT(*new_map->resolved_table_type(), IsTableType(expected_map_relation));
   EXPECT_THAT(new_map->parents(), ElementsAre(src1));
   EXPECT_THAT(new_map->Children(), ElementsAre(map1));
 
   // original map relation and children shouldn't have changed.
   // pem_only func should now be a column projection.
-  EXPECT_EQ(map1->relation(), existing_map_relation);
+  EXPECT_THAT(*map1->resolved_table_type(), IsTableType(existing_map_relation));
   EXPECT_EQ(2, map1->col_exprs().size());
   EXPECT_EQ("pem", map1->col_exprs()[0].name);
   EXPECT_MATCH(map1->col_exprs()[0].node, ColumnNode("pem_only_0"));

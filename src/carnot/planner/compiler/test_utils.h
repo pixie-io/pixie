@@ -516,7 +516,6 @@ class OperatorTests : public ::testing::Test {
                                 const table_store::schema::Relation& relation,
                                 const std::vector<std::string>& col_names) {
     MemorySourceIR* mem_source = MakeMemSource(table_name, col_names);
-    EXPECT_OK(mem_source->SetRelation(relation));
     std::vector<int64_t> column_index_map;
     for (const auto& name : col_names) {
       column_index_map.push_back(relation.GetColumnIndex(name));
@@ -702,10 +701,9 @@ class OperatorTests : public ::testing::Test {
     return old_graph;
   }
 
-  GRPCSourceGroupIR* MakeGRPCSourceGroup(int64_t source_id,
-                                         const table_store::schema::Relation& relation) {
+  GRPCSourceGroupIR* MakeGRPCSourceGroup(int64_t source_id, TypePtr type) {
     GRPCSourceGroupIR* grpc_src_group =
-        graph->CreateNode<GRPCSourceGroupIR>(ast, source_id, relation).ConsumeValueOrDie();
+        graph->CreateNode<GRPCSourceGroupIR>(ast, source_id, type).ConsumeValueOrDie();
     return grpc_src_group;
   }
 
@@ -722,9 +720,8 @@ class OperatorTests : public ::testing::Test {
     return grpc_sink;
   }
 
-  GRPCSourceIR* MakeGRPCSource(const table_store::schema::Relation& relation) {
-    GRPCSourceIR* grpc_src_group =
-        graph->CreateNode<GRPCSourceIR>(ast, relation).ConsumeValueOrDie();
+  GRPCSourceIR* MakeGRPCSource(TypePtr type) {
+    GRPCSourceIR* grpc_src_group = graph->CreateNode<GRPCSourceIR>(ast, type).ConsumeValueOrDie();
     return grpc_src_group;
   }
 
@@ -1490,10 +1487,9 @@ void CompareClone(IRNode* new_ir, IRNode* old_ir, const std::string& err_string)
   if (Match(new_ir, Operator())) {
     auto new_op = static_cast<OperatorIR*>(new_ir);
     auto old_op = static_cast<OperatorIR*>(old_ir);
-    // Check relation status.
-    EXPECT_EQ(new_op->IsRelationInit(), old_op->IsRelationInit());
-    EXPECT_EQ(new_op->relation().col_names(), old_op->relation().col_names());
-    EXPECT_EQ(new_op->relation().col_types(), old_op->relation().col_types());
+    // Check type status.
+    EXPECT_EQ(new_op->is_type_resolved(), old_op->is_type_resolved());
+    EXPECT_TRUE(new_op->resolved_type()->Equals(old_op->resolved_type()));
 
     // Check parents.
     ASSERT_EQ(new_op->parents().size(), old_op->parents().size());
@@ -1537,6 +1533,17 @@ void CompareClone(IRNode* new_ir, IRNode* old_ir, const std::string& err_string)
 
 #define ASSERT_COMPILER_ERROR_AT(status, line, col, ...) \
   ASSERT_THAT(StatusAdapter(status), HasCompilerErrorAt(line, col, __VA_ARGS__))
+
+MATCHER_P2(IsTableType, data_types, names,
+           absl::StrCat(negation ? "doesn't" : "does", " match a TableType with col names ",
+                        absl::StrJoin(names, ", "), " and data types ",
+                        absl::StrJoin(data_types, ", "))) {
+  return arg.Equals(TableType::Create(Relation(data_types, names)));
+}
+
+MATCHER_P(IsTableType, rel, "") { return arg.Equals(TableType::Create(rel)); }
+
+void PrintTo(const TableType& table, std::ostream* os) { *os << table.DebugString(); }
 
 }  // namespace planner
 }  // namespace carnot

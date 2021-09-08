@@ -42,7 +42,6 @@ TEST_F(RulesTest, drop_to_map) {
                      .ConsumeValueOrDie();
   MemorySinkIR* sink = MakeMemSink(drop, "sink");
   compiler_state_->relation_map()->emplace("source", cpu_relation);
-  EXPECT_OK(mem_src->SetRelation(cpu_relation));
   EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(0, 1, 2));
 
   auto drop_id = drop->id();
@@ -71,7 +70,9 @@ TEST_F(RulesTest, drop_to_map) {
   EXPECT_TRUE(Match(op->col_exprs()[1].node, ColumnNode("cpu2")))
       << op->col_exprs()[1].node->DebugString();
 
-  EXPECT_EQ(op->relation(), Relation({types::INT64, types::FLOAT64}, {"count", "cpu2"}));
+  EXPECT_THAT(*op->resolved_table_type(),
+              IsTableType(std::vector<types::DataType>{types::INT64, types::FLOAT64},
+                          std::vector<std::string>{"count", "cpu2"}));
 
   EXPECT_EQ(op->Children().size(), 1);
   EXPECT_EQ(op->Children()[0], sink);
@@ -121,9 +122,10 @@ TEST_F(RulesTest, drop_middle_columns) {
   EXPECT_TRUE(Match(op->col_exprs()[3].node, ColumnNode("time_")))
       << op->col_exprs()[3].node->DebugString();
 
-  EXPECT_EQ(op->relation(),
-            Relation({types::STRING, types::FLOAT64, types::FLOAT64, types::TIME64NS},
-                     {"service", "p50", "p99", "time_"}));
+  EXPECT_THAT(*op->resolved_table_type(),
+              IsTableType(std::vector<types::DataType>{types::STRING, types::FLOAT64,
+                                                       types::FLOAT64, types::TIME64NS},
+                          std::vector<std::string>{"service", "p50", "p99", "time_"}));
   EXPECT_EQ(op->Children().size(), 1);
   EXPECT_EQ(op->Children()[0], sink);
 }

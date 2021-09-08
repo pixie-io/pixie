@@ -427,7 +427,6 @@ TEST_F(FilterPushDownTest, kelvin_only_filter) {
   compiler_state_->relation_map()->emplace("source1", relation1);
   auto func = MakeFunc("pem_only", {});
   MapIR* map1 = MakeMap(src, {{"abc", func}}, false);
-  ASSERT_OK(map1->SetRelation(relation2));
   MapIR* map2 = MakeMap(map1, {{"def", MakeColumn("abc", 0)}}, false);
   auto func2 = MakeFunc("kelvin_only", {});
   FilterIR* filter = MakeFilter(map2, func2);

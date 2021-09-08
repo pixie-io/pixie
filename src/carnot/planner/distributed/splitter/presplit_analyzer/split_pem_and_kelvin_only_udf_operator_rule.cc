@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <set>
+#include <utility>
 #include <vector>
 
 #include "src/carnot/planner/distributed/splitter/executor_utils.h"
@@ -168,6 +170,10 @@ StatusOr<bool> SplitPEMAndKelvinOnlyUDFOperatorRule::Apply(IRNode* node) {
     return op->CreateIRNodeError("Operator unexpectedly has $0 parents, expected 1",
                                  op->parents().size());
   }
+  auto cmp = [](auto p1, auto p2) { return p1.first < p2.first; };
+  // We sort col expressions by their index in the original op type. This is necessary because
+  // `RequiredInputColumns` returns a set with unspecified ordering.
+  std::set<std::pair<int64_t, ColumnExpression>, decltype(cmp)> sorted_col_exprs(cmp);
   for (const auto& required_input_col : required_inputs_per_parent[0]) {
     // If a required input column is one we just generated from a PEM-only function,
     // no need to add a column projection for it to the PEM map.
@@ -177,7 +183,12 @@ StatusOr<bool> SplitPEMAndKelvinOnlyUDFOperatorRule::Apply(IRNode* node) {
     PL_ASSIGN_OR_RETURN(auto col_node, graph->CreateNode<ColumnIR>(op->ast(), required_input_col,
                                                                    /*parent_op_idx*/ 0));
     PL_RETURN_IF_ERROR(ResolveExpressionType(col_node, compiler_state_, {parent_table_type}));
-    PL_RETURN_IF_ERROR(pem_map->AddColExpr(ColumnExpression(required_input_col, col_node)));
+    sorted_col_exprs.emplace(op->resolved_table_type()->GetColumnIndex(required_input_col),
+                             ColumnExpression(required_input_col, col_node));
+  }
+
+  for (const auto& [_, col_expr] : sorted_col_exprs) {
+    PL_RETURN_IF_ERROR(pem_map->AddColExpr(col_expr));
   }
 
   // Update the relation of the PEM-only map.

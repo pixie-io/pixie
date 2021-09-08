@@ -22,8 +22,8 @@ namespace px {
 namespace carnot {
 namespace planner {
 
-Status EmptySourceIR::Init(const table_store::schema::Relation& relation) {
-  PL_RETURN_IF_ERROR(SetResolvedType(TableType::Create(relation)));
+Status EmptySourceIR::Init(TypePtr type) {
+  PL_RETURN_IF_ERROR(SetResolvedType(type));
   return Status::OK();
 }
 Status EmptySourceIR::ToProto(planpb::Operator* op) const {

@@ -51,7 +51,7 @@ TEST_F(PruneUnconnectedOperatorsRuleTest, basic) {
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));
 
-  auto sink_relation = sink->relation();
+  auto sink_type = sink->resolved_table_type();
 
   PruneUnconnectedOperatorsRule rule;
   auto result = rule.Execute(graph.get());
@@ -62,7 +62,7 @@ TEST_F(PruneUnconnectedOperatorsRuleTest, basic) {
   EXPECT_FALSE(graph->HasNode(map1_id));
 
   // Should be unchanged
-  EXPECT_EQ(sink_relation, sink->relation());
+  EXPECT_TRUE(sink_type->Equals(sink->resolved_table_type()));
 }
 
 TEST_F(PruneUnconnectedOperatorsRuleTest, unchanged) {

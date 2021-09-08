@@ -72,7 +72,7 @@ TEST_F(LimitPushdownRuleTest, simple) {
   EXPECT_THAT(new_limit->parents(), ElementsAre(src));
 
   // Ensure the limit inherits the relation from its parent, not the previous location.
-  EXPECT_EQ(new_limit->relation(), relation);
+  EXPECT_THAT(*new_limit->resolved_table_type(), IsTableType(relation));
 }
 
 TEST_F(LimitPushdownRuleTest, pem_only) {
@@ -103,7 +103,7 @@ TEST_F(LimitPushdownRuleTest, pem_only) {
   EXPECT_THAT(map1->parents(), ElementsAre(src));
 
   // Ensure the limit inherits the relation from its parent, not the previous location.
-  EXPECT_EQ(new_limit->relation(), map1->relation());
+  EXPECT_TRUE(new_limit->resolved_table_type()->Equals(map1->resolved_table_type()));
 }
 
 TEST_F(LimitPushdownRuleTest, multi_branch_union) {
@@ -140,7 +140,7 @@ TEST_F(LimitPushdownRuleTest, multi_branch_union) {
   auto new_limit = map3->parents()[0];
   EXPECT_EQ(10, static_cast<LimitIR*>(new_limit)->limit_value());
   EXPECT_THAT(new_limit->parents(), ElementsAre(union_node));
-  EXPECT_EQ(new_limit->relation(), relation2);
+  EXPECT_THAT(*new_limit->resolved_table_type(), IsTableType(relation2));
 
   EXPECT_THAT(union_node->parents(), ElementsAre(map1, map2));
 
@@ -150,7 +150,7 @@ TEST_F(LimitPushdownRuleTest, multi_branch_union) {
   EXPECT_EQ(10, static_cast<LimitIR*>(new_limit1)->limit_value());
   EXPECT_THAT(new_limit1->parents(), ElementsAre(src1));
   // Ensure the limit inherits the relation from its parent, not the previous location.
-  EXPECT_EQ(new_limit1->relation(), relation1);
+  EXPECT_THAT(*new_limit1->resolved_table_type(), IsTableType(relation1));
 
   EXPECT_EQ(1, map2->parents().size());
   auto new_limit2 = map2->parents()[0];
@@ -158,7 +158,7 @@ TEST_F(LimitPushdownRuleTest, multi_branch_union) {
   EXPECT_EQ(10, static_cast<LimitIR*>(new_limit2)->limit_value());
   EXPECT_THAT(new_limit2->parents(), ElementsAre(src2));
   // Ensure the limit inherits the relation from its parent, not the previous location.
-  EXPECT_EQ(new_limit2->relation(), relation2);
+  EXPECT_THAT(*new_limit2->resolved_table_type(), IsTableType(relation2));
 }
 
 }  // namespace distributed

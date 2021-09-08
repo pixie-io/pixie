@@ -44,11 +44,9 @@ TEST_F(PruneUnusedColumnsRuleTest, basic) {
 
   auto map = MakeMap(mem_src, {expr1, expr2}, false);
   Relation map_relation{{types::DataType::INT64, types::DataType::FLOAT64}, {"count_1", "cpu0_1"}};
-  ASSERT_OK(map->SetRelation(map_relation));
 
   auto sink = MakeMemSink(map, "abc", {"cpu0_1"});
   Relation sink_relation{{types::DataType::FLOAT64}, {"cpu0_1"}};
-  ASSERT_OK(sink->SetRelation(sink_relation));
 
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));
@@ -58,16 +56,17 @@ TEST_F(PruneUnusedColumnsRuleTest, basic) {
   ASSERT_OK(result);
   ASSERT_TRUE(result.ConsumeValueOrDie());
 
-  EXPECT_EQ(mem_src->relation(), Relation({types::DataType::FLOAT64}, {"cpu0"}));
+  EXPECT_THAT(*mem_src->resolved_table_type(),
+              IsTableType(Relation({types::DataType::FLOAT64}, {"cpu0"})));
   EXPECT_THAT(mem_src->column_names(), ElementsAre("cpu0"));
 
-  EXPECT_EQ(map->relation(), sink_relation);
+  EXPECT_THAT(*map->resolved_table_type(), IsTableType(sink_relation));
   EXPECT_EQ(1, map->col_exprs().size());
   EXPECT_EQ(expr2.name, map->col_exprs()[0].name);
   EXPECT_EQ(expr2.node, map->col_exprs()[0].node);
 
   // Should be unchanged
-  EXPECT_EQ(sink_relation, sink->relation());
+  EXPECT_THAT(*sink->resolved_table_type(), IsTableType(sink_relation));
 }
 
 TEST_F(PruneUnusedColumnsRuleTest, filter) {
@@ -80,15 +79,12 @@ TEST_F(PruneUnusedColumnsRuleTest, filter) {
 
   auto map = MakeMap(mem_src, {expr1, expr2}, false);
   Relation map_relation{{types::DataType::INT64, types::DataType::FLOAT64}, {"count_1", "cpu0_1"}};
-  ASSERT_OK(map->SetRelation(map_relation));
 
   auto eq_func = MakeEqualsFunc(MakeColumn("count_1", 0), MakeColumn("cpu0_1", 0));
   auto filter = MakeFilter(map, eq_func);
-  ASSERT_OK(filter->SetRelation(map_relation));
 
   auto sink = MakeMemSink(filter, "abc", {"cpu0_1"});
   Relation sink_relation{{types::DataType::FLOAT64}, {"cpu0_1"}};
-  ASSERT_OK(sink->SetRelation(sink_relation));
 
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));
@@ -98,14 +94,14 @@ TEST_F(PruneUnusedColumnsRuleTest, filter) {
   ASSERT_OK(result);
   ASSERT_TRUE(result.ConsumeValueOrDie());
 
-  EXPECT_EQ(mem_src->relation(),
-            Relation({types::DataType::INT64, types::DataType::FLOAT64}, {
-                                                                             "count",
-                                                                             "cpu0",
-                                                                         }));
+  EXPECT_THAT(*mem_src->resolved_table_type(),
+              IsTableType(Relation({types::DataType::INT64, types::DataType::FLOAT64}, {
+                                                                                           "count",
+                                                                                           "cpu0",
+                                                                                       })));
   EXPECT_THAT(mem_src->column_names(), ElementsAre("count", "cpu0"));
 
-  EXPECT_EQ(map_relation, map->relation());
+  EXPECT_THAT(*map->resolved_table_type(), IsTableType(map_relation));
   EXPECT_EQ(2, map->col_exprs().size());
   EXPECT_EQ(expr1.name, map->col_exprs()[0].name);
   EXPECT_EQ(expr1.node, map->col_exprs()[0].node);
@@ -113,7 +109,7 @@ TEST_F(PruneUnusedColumnsRuleTest, filter) {
   EXPECT_EQ(expr2.node, map->col_exprs()[1].node);
 
   // Should be unchanged
-  EXPECT_EQ(sink_relation, sink->relation());
+  EXPECT_THAT(*sink->resolved_table_type(), IsTableType(sink_relation));
 }
 
 TEST_F(PruneUnusedColumnsRuleTest, two_filters) {
@@ -124,13 +120,10 @@ TEST_F(PruneUnusedColumnsRuleTest, two_filters) {
   auto eq_func = MakeEqualsFunc(MakeColumn("count", 0), MakeInt(10));
   auto eq_func2 = MakeEqualsFunc(MakeColumn("cpu0", 0), MakeColumn("cpu1", 0));
   auto filter1 = MakeFilter(mem_src, eq_func);
-  ASSERT_OK(filter1->SetRelation(MakeRelation()));
   auto filter2 = MakeFilter(filter1, eq_func2);
-  ASSERT_OK(filter2->SetRelation(MakeRelation()));
 
   auto sink = MakeMemSink(filter2, "abc", {"cpu2"});
   Relation sink_relation{{types::DataType::FLOAT64}, {"cpu2"}};
-  ASSERT_OK(sink->SetRelation(sink_relation));
 
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));
@@ -140,12 +133,13 @@ TEST_F(PruneUnusedColumnsRuleTest, two_filters) {
   ASSERT_OK(result);
   ASSERT_TRUE(result.ConsumeValueOrDie());
 
-  EXPECT_THAT(mem_src->relation().col_names(), ElementsAre("count", "cpu0", "cpu1", "cpu2"));
-  EXPECT_THAT(filter1->relation().col_names(), ElementsAre("cpu0", "cpu1", "cpu2"));
-  EXPECT_THAT(filter2->relation().col_names(), ElementsAre("cpu2"));
+  EXPECT_THAT(mem_src->resolved_table_type()->ColumnNames(),
+              ElementsAre("count", "cpu0", "cpu1", "cpu2"));
+  EXPECT_THAT(filter1->resolved_table_type()->ColumnNames(), ElementsAre("cpu0", "cpu1", "cpu2"));
+  EXPECT_THAT(filter2->resolved_table_type()->ColumnNames(), ElementsAre("cpu2"));
 
   // Should be unchanged
-  EXPECT_EQ(sink_relation, sink->relation());
+  EXPECT_THAT(*sink->resolved_table_type(), IsTableType(sink_relation));
 }
 
 TEST_F(PruneUnusedColumnsRuleTest, multiparent) {
@@ -169,12 +163,10 @@ TEST_F(PruneUnusedColumnsRuleTest, multiparent) {
   Relation join_relation{{types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
                           types::DataType::INT64},
                          join_out_cols};
-  ASSERT_OK(join_op->SetRelation(join_relation));
 
   std::vector<std::string> sink_out_cols{"right_only", "col1_left"};
   auto sink = MakeMemSink(join_op, "abc", sink_out_cols);
   Relation sink_relation{{types::DataType::INT64, types::DataType::INT64}, sink_out_cols};
-  ASSERT_OK(sink->SetRelation(sink_relation));
 
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));
@@ -186,18 +178,18 @@ TEST_F(PruneUnusedColumnsRuleTest, multiparent) {
 
   // Check mem sources
   Relation mem_src1_relation{{types::DataType::INT64}, {"col1"}};
-  EXPECT_EQ(mem_src1_relation, mem_src1->relation());
+  EXPECT_THAT(*mem_src1->resolved_table_type(), IsTableType(mem_src1_relation));
   EXPECT_THAT(mem_src1->column_names(), ElementsAre("col1"));
 
   Relation mem_src2_relation{{types::DataType::INT64, types::DataType::INT64},
                              {"right_only", "col2"}};
-  EXPECT_EQ(mem_src2_relation, mem_src2->relation());
+  EXPECT_THAT(*mem_src2->resolved_table_type(), IsTableType(mem_src2_relation));
   EXPECT_THAT(mem_src2->column_names(), ElementsAre("right_only", "col2"));
 
   // Check join
   Relation new_join_relation{{types::DataType::INT64, types::DataType::INT64},
                              {"col1_left", "right_only"}};
-  EXPECT_EQ(new_join_relation, join_op->relation());
+  EXPECT_THAT(*join_op->resolved_table_type(), IsTableType(new_join_relation));
   EXPECT_EQ(2, join_op->output_columns().size());
   EXPECT_EQ("col1", join_op->output_columns()[0]->col_name());
   EXPECT_EQ(0, join_op->output_columns()[0]->container_op_parent_idx());
@@ -206,7 +198,7 @@ TEST_F(PruneUnusedColumnsRuleTest, multiparent) {
   EXPECT_THAT(join_op->column_names(), ElementsAre("col1_left", "right_only"));
 
   // Check mem sink, should be unchanged
-  EXPECT_EQ(sink_relation, sink->relation());
+  EXPECT_THAT(*sink->resolved_table_type(), IsTableType(sink_relation));
 }
 
 TEST_F(PruneUnusedColumnsRuleTest, unchanged) {
@@ -224,10 +216,8 @@ TEST_F(PruneUnusedColumnsRuleTest, unchanged) {
   Relation relation{{types::DataType::INT64, types::DataType::FLOAT64, types::DataType::FLOAT64,
                      types::DataType::FLOAT64},
                     out_cols};
-  ASSERT_OK(map->SetRelation(relation));
 
-  auto sink = MakeMemSink(map, "abc", out_cols);
-  ASSERT_OK(sink->SetRelation(relation));
+  MakeMemSink(map, "abc", out_cols);
 
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));
@@ -248,11 +238,9 @@ TEST_F(PruneUnusedColumnsRuleTest, updates_resolved_type) {
 
   auto map = MakeMap(mem_src, {expr1, expr2}, false);
   Relation map_relation{{types::DataType::INT64, types::DataType::FLOAT64}, {"count_1", "cpu0_1"}};
-  ASSERT_OK(map->SetRelation(map_relation));
 
   auto sink = MakeMemSink(map, "abc", {"cpu0_1"});
   Relation sink_relation{{types::DataType::FLOAT64}, {"cpu0_1"}};
-  ASSERT_OK(sink->SetRelation(sink_relation));
 
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));
@@ -262,7 +250,8 @@ TEST_F(PruneUnusedColumnsRuleTest, updates_resolved_type) {
   ASSERT_OK(result);
   ASSERT_TRUE(result.ConsumeValueOrDie());
 
-  EXPECT_EQ(mem_src->relation(), Relation({types::DataType::FLOAT64}, {"cpu0"}));
+  EXPECT_THAT(*mem_src->resolved_table_type(),
+              IsTableType(Relation({types::DataType::FLOAT64}, {"cpu0"})));
   EXPECT_THAT(mem_src->column_names(), ElementsAre("cpu0"));
   auto new_src_table_type = std::static_pointer_cast<TableType>(mem_src->resolved_type());
   EXPECT_TRUE(new_src_table_type->HasColumn("cpu0"));
@@ -271,7 +260,7 @@ TEST_F(PruneUnusedColumnsRuleTest, updates_resolved_type) {
             *std::static_pointer_cast<ValueType>(
                 new_src_table_type->GetColumnType("cpu0").ConsumeValueOrDie()));
 
-  EXPECT_EQ(map->relation(), sink_relation);
+  EXPECT_THAT(*map->resolved_table_type(), IsTableType(sink_relation));
   EXPECT_EQ(1, map->col_exprs().size());
   EXPECT_EQ(expr2.name, map->col_exprs()[0].name);
   EXPECT_EQ(expr2.node, map->col_exprs()[0].node);
@@ -284,7 +273,7 @@ TEST_F(PruneUnusedColumnsRuleTest, updates_resolved_type) {
   EXPECT_FALSE(new_map_table_type->HasColumn("count_1"));
 
   // Should be unchanged
-  EXPECT_EQ(sink_relation, sink->relation());
+  EXPECT_THAT(*sink->resolved_table_type(), IsTableType(sink_relation));
 }
 
 }  // namespace compiler

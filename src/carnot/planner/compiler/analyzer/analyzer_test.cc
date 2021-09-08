@@ -250,40 +250,43 @@ TEST_F(AnalyzerTest, test_relation_results) {
   std::vector<IRNode*> source_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySource);
   EXPECT_EQ(source_nodes.size(), 1);
   auto source_node = static_cast<MemorySourceIR*>(source_nodes[0]);
-  EXPECT_THAT(source_node->relation(),
-              UnorderedRelationMatches((*compiler_state_->relation_map())["cpu"]));
+  EXPECT_THAT(
+      *source_node->resolved_table_type(),
+      IsTableType(std::vector<types::DataType>{types::UINT128, types::FLOAT64, types::FLOAT64,
+                                               types::FLOAT64, types::INT64},
+                  std::vector<std::string>{"upid", "cpu0", "cpu1", "cpu2", "agent_id"}));
 
   // Map relation should be contain cpu0, cpu1, and cpu_sum.
   std::vector<IRNode*> map_nodes = ir_graph->FindNodesOfType(IRNodeType::kMap);
   EXPECT_EQ(map_nodes.size(), 2);
-  std::vector<Relation> map_relations = {static_cast<MapIR*>(map_nodes[0])->relation(),
-                                         static_cast<MapIR*>(map_nodes[1])->relation()};
 
   Relation sum_relation({types::UINT128, types::FLOAT64, types::FLOAT64, types::FLOAT64,
                          types::INT64, types::FLOAT64},
                         {"upid", "cpu0", "cpu1", "cpu2", "agent_id", "cpu_sum"});
   Relation drop_relation({types::FLOAT64, types::FLOAT64, types::FLOAT64},
                          {"cpu0", "cpu1", "cpu_sum"});
-
-  EXPECT_THAT(map_relations, UnorderedElementsAre(sum_relation, drop_relation));
+  std::vector<TableType> map_types{*static_cast<MapIR*>(map_nodes[0])->resolved_table_type(),
+                                   *static_cast<MapIR*>(map_nodes[1])->resolved_table_type()};
+  EXPECT_THAT(map_types,
+              UnorderedElementsAre(IsTableType(sum_relation), IsTableType(drop_relation)));
 
   // Agg should be a new relation with one column.
   std::vector<IRNode*> agg_nodes = ir_graph->FindNodesOfType(IRNodeType::kBlockingAgg);
   EXPECT_EQ(agg_nodes.size(), 1);
   auto agg_node = static_cast<BlockingAggIR*>(agg_nodes[0]);
   table_store::schema::Relation test_agg_relation;
+  test_agg_relation.AddColumn(types::FLOAT64, "cpu0");
   test_agg_relation.AddColumn(types::INT64, "cpu_count");
   test_agg_relation.AddColumn(types::FLOAT64, "cpu_mean");
-  test_agg_relation.AddColumn(types::FLOAT64, "cpu0");
-  EXPECT_THAT(agg_node->relation(), UnorderedRelationMatches(test_agg_relation));
+  EXPECT_THAT(*agg_node->resolved_table_type(), IsTableType(test_agg_relation));
 
   EXPECT_EQ(agg_node->Children().size(), 1);
   ASSERT_MATCH(agg_node->Children()[0], Limit(10000));
   auto limit = static_cast<LimitIR*>(agg_node->Children()[0]);
-  EXPECT_THAT(limit->relation(), UnorderedRelationMatches(test_agg_relation));
+  EXPECT_THAT(*limit->resolved_table_type(), IsTableType(test_agg_relation));
   ASSERT_MATCH(limit->Children()[0], ExternalGRPCSink());
   auto sink_node = static_cast<GRPCSinkIR*>(limit->Children()[0]);
-  EXPECT_THAT(sink_node->relation(), UnorderedRelationMatches(test_agg_relation));
+  EXPECT_THAT(*sink_node->resolved_table_type(), IsTableType(test_agg_relation));
 }
 
 // Make sure the compiler exits when calling columns that aren't explicitly called.
@@ -329,11 +332,11 @@ TEST_F(AnalyzerTest, test_relation_multi_col_agg) {
   EXPECT_EQ(agg_nodes.size(), 1);
   auto agg_node = static_cast<BlockingAggIR*>(agg_nodes[0]);
   table_store::schema::Relation test_agg_relation;
-  test_agg_relation.AddColumn(types::INT64, "cpu_count");
-  test_agg_relation.AddColumn(types::FLOAT64, "cpu_mean");
   test_agg_relation.AddColumn(types::FLOAT64, "cpu0");
   test_agg_relation.AddColumn(types::FLOAT64, "cpu2");
-  EXPECT_THAT(agg_node->relation(), UnorderedRelationMatches(test_agg_relation));
+  test_agg_relation.AddColumn(types::INT64, "cpu_count");
+  test_agg_relation.AddColumn(types::FLOAT64, "cpu_mean");
+  EXPECT_THAT(*agg_node->resolved_table_type(), IsTableType(test_agg_relation));
 }
 
 TEST_F(AnalyzerTest, test_from_select) {
@@ -351,7 +354,7 @@ TEST_F(AnalyzerTest, test_from_select) {
   std::vector<IRNode*> sink_nodes = ir_graph->FindNodesThatMatch(ExternalGRPCSink());
   EXPECT_EQ(sink_nodes.size(), 1);
   auto sink_node = static_cast<GRPCSinkIR*>(sink_nodes[0]);
-  EXPECT_EQ(sink_node->relation(), test_relation);
+  EXPECT_THAT(*sink_node->resolved_table_type(), IsTableType(test_relation));
 }
 
 TEST_F(AnalyzerTest, nonexistent_cols) {
@@ -538,10 +541,10 @@ TEST_F(AnalyzerTest, assign_udf_func_ids_consolidated_maps) {
     drop_node = tmp_node;
   }
 
-  ASSERT_EQ(arithmetic_node->relation(),
-            Relation({types::FLOAT64, types::FLOAT64, types::FLOAT64, types::FLOAT64,
-                      types::FLOAT64, types::FLOAT64},
-                     {"cpu0", "cpu1", "cpu2", "cpu_sub", "cpu_sum", "cpu_sum2"}));
+  ASSERT_THAT(*arithmetic_node->resolved_table_type(),
+              IsTableType(Relation({types::FLOAT64, types::FLOAT64, types::FLOAT64, types::FLOAT64,
+                                    types::FLOAT64, types::FLOAT64},
+                                   {"cpu0", "cpu1", "cpu2", "cpu_sub", "cpu_sum", "cpu_sum2"})));
 
   ASSERT_EQ(arithmetic_node->col_exprs().size(), 6);
 
@@ -595,8 +598,7 @@ TEST_F(AnalyzerTest, select_all) {
   auto relation_map = compiler_state_->relation_map();
   ASSERT_NE(relation_map->find("cpu"), relation_map->end());
   auto expected_relation = relation_map->find("cpu")->second;
-  EXPECT_EQ(expected_relation.col_types(), sink_node->relation().col_types());
-  EXPECT_EQ(expected_relation.col_names(), sink_node->relation().col_names());
+  EXPECT_THAT(*sink_node->resolved_table_type(), IsTableType(expected_relation));
 }
 
 class MetadataSingleOps : public AnalyzerTest, public ::testing::WithParamInterface<std::string> {};
@@ -652,7 +654,7 @@ TEST_F(AnalyzerTest, metadata_fails_no_upid) {
   ASSERT_OK(ir_graph_status);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   EXPECT_THAT(HandleRelation(ir_graph),
-              HasCompilerError(".*Need one of \\[upid.*?. Parent relation has "
+              HasCompilerError(".*Need one of \\[upid.*?. Parent type has "
                                "columns \\[cpu0\\] available."));
 }
 
@@ -713,11 +715,11 @@ TEST_F(AnalyzerTest, join_test) {
   ASSERT_MATCH(join->Children()[0], Map());
   auto map = static_cast<MapIR*>(join->Children()[0]);
 
-  EXPECT_THAT(map->relation().col_names(),
-              ElementsAre("upid", "bytes_in", "bytes_out", "cpu0", "cpu1"));
-
-  EXPECT_THAT(map->relation().col_types(), ElementsAre(types::UINT128, types::INT64, types::INT64,
-                                                       types::FLOAT64, types::FLOAT64));
+  EXPECT_THAT(
+      *map->resolved_table_type(),
+      IsTableType(std::vector<types::DataType>{types::UINT128, types::INT64, types::INT64,
+                                               types::FLOAT64, types::FLOAT64},
+                  std::vector<std::string>{"upid", "bytes_in", "bytes_out", "cpu0", "cpu1"}));
 }
 
 constexpr char kInnerJoinFollowedByMapQuery[] = R"query(
@@ -758,7 +760,7 @@ TEST_F(AnalyzerTest, drop_to_map_test) {
   auto map = static_cast<MapIR*>(map_nodes[0]);
   table_store::schema::Relation cpu0_relation;
   cpu0_relation.AddColumn(types::FLOAT64, "cpu0");
-  EXPECT_EQ(map->relation(), cpu0_relation);
+  EXPECT_THAT(*map->resolved_table_type(), IsTableType(cpu0_relation));
 }
 
 constexpr char kDropNonexistentColumn[] = R"query(

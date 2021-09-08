@@ -68,7 +68,7 @@ StatusOr<bool> PropagateExpressionAnnotationsRule::Apply(IRNode* ir_node) {
   } else if (Match(op, Union())) {
     // For each of the union output columns, compute the annotation that is comprised of
     // all of the fields that every parent shares.
-    auto out_col_names = op->relation().col_names();
+    auto out_col_names = op->resolved_table_type()->ColumnNames();
     for (const auto& out_col_name : out_col_names) {
       ExpressionIR::Annotations shared_annotation;
       // Note: assumes that unioning is done by column name with no renaming of columns.

@@ -97,16 +97,15 @@ TEST_F(OldOperatorRelationRuleTest, successful_resolve) {
                  .ValueOrDie();
 
   ResolveTypesRule type_rule(compiler_state_.get());
-  EXPECT_FALSE(agg->IsRelationInit());
+  EXPECT_FALSE(agg->is_type_resolved());
   auto result = type_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
-  ASSERT_TRUE(agg->IsRelationInit());
+  ASSERT_TRUE(agg->is_type_resolved());
 
-  auto result_relation = agg->relation();
   table_store::schema::Relation expected_relation(
       {types::DataType::FLOAT64, types::DataType::FLOAT64}, {"cpu0", "meaned"});
-  EXPECT_EQ(result_relation, expected_relation);
+  EXPECT_THAT(*agg->resolved_table_type(), IsTableType(expected_relation));
 }
 
 class MapOperatorRelationRuleTest : public OldOperatorRelationRuleTest {
@@ -143,16 +142,15 @@ class MapOperatorRelationRuleTest : public OldOperatorRelationRuleTest {
 TEST_F(MapOperatorRelationRuleTest, successful_resolve) {
   SetUpGraph(false /* keep_input_columns */);
   ResolveTypesRule type_rule(compiler_state_.get());
-  EXPECT_FALSE(map->IsRelationInit());
+  EXPECT_FALSE(map->is_type_resolved());
   auto result = type_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
-  ASSERT_TRUE(map->IsRelationInit());
+  ASSERT_TRUE(map->is_type_resolved());
 
-  auto result_relation = map->relation();
   table_store::schema::Relation expected_relation({types::DataType::INT64, types::DataType::INT64},
                                                   {new_col_name, old_col_name});
-  EXPECT_EQ(result_relation, expected_relation);
+  EXPECT_THAT(*map->resolved_table_type(), IsTableType(expected_relation));
 }
 
 // Relation should resolve, all expressions in operator are resolved, and add the previous
@@ -160,18 +158,17 @@ TEST_F(MapOperatorRelationRuleTest, successful_resolve) {
 TEST_F(MapOperatorRelationRuleTest, successful_resolve_keep_input_columns) {
   SetUpGraph(true /* keep_input_columns */);
   ResolveTypesRule type_rule(compiler_state_.get());
-  EXPECT_FALSE(map->IsRelationInit());
+  EXPECT_FALSE(map->is_type_resolved());
   auto result = type_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
-  ASSERT_TRUE(map->IsRelationInit());
+  ASSERT_TRUE(map->is_type_resolved());
 
-  auto result_relation = map->relation();
   table_store::schema::Relation expected_relation(
       {types::DataType::INT64, types::DataType::FLOAT64, types::DataType::FLOAT64,
        types::DataType::INT64, types::DataType::INT64},
       {"count", "cpu1", "cpu2", new_col_name, old_col_name});
-  EXPECT_EQ(result_relation, expected_relation);
+  EXPECT_THAT(*map->resolved_table_type(), IsTableType(expected_relation));
 }
 
 using UnionOperatorRelationRuleTest = OldOperatorRelationRuleTest;
@@ -181,18 +178,15 @@ TEST_F(UnionOperatorRelationRuleTest, union_relation_setup) {
   auto mem_src1 = MakeMemSource("source", rel);
   auto mem_src2 = MakeMemSource("source", rel);
   auto union_op = MakeUnion({mem_src1, mem_src2});
-  EXPECT_FALSE(union_op->IsRelationInit());
+  EXPECT_FALSE(union_op->is_type_resolved());
 
   ResolveTypesRule type_rule(compiler_state_.get());
   auto result = type_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
-  ASSERT_TRUE(union_op->IsRelationInit());
+  ASSERT_TRUE(union_op->is_type_resolved());
 
-  auto result_relation = union_op->relation();
-  table_store::schema::Relation expected_relation = MakeRelation();
-  EXPECT_THAT(result_relation.col_types(), ElementsAreArray(expected_relation.col_types()));
-  EXPECT_THAT(result_relation.col_names(), ElementsAreArray(expected_relation.col_names()));
+  EXPECT_THAT(*union_op->resolved_table_type(), IsTableType(rel));
 
   EXPECT_EQ(union_op->column_mappings().size(), 2);
   std::vector<std::string> expected_names{"count", "cpu0", "cpu1", "cpu2"};
@@ -254,11 +248,8 @@ TEST_F(UnionOperatorRelationRuleTest, union_relation_different_order) {
   auto result = type_rule.Execute(graph.get());
   ASSERT_OK(result);
 
-  ASSERT_TRUE(union_op->IsRelationInit());
-  Relation result_relation = union_op->relation();
-  Relation expected_relation = relation1;
-  EXPECT_THAT(result_relation.col_types(), ElementsAreArray(expected_relation.col_types()));
-  EXPECT_THAT(result_relation.col_names(), ElementsAreArray(expected_relation.col_names()));
+  ASSERT_TRUE(union_op->is_type_resolved());
+  EXPECT_THAT(*union_op->resolved_table_type(), IsTableType(relation1));
 
   EXPECT_EQ(union_op->column_mappings().size(), 2);
 
@@ -286,7 +277,6 @@ class OperatorRelationTest : public OldOperatorRelationRuleTest {
     mem_src =
         graph->CreateNode<MemorySourceIR>(ast, "source", std::vector<std::string>{}).ValueOrDie();
     compiler_state_->relation_map()->emplace("source", cpu_relation);
-    PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
   }
   LimitIR* MakeLimit(OperatorIR* parent) {
     return graph->CreateNode<LimitIR>(ast, parent, 10).ValueOrDie();
@@ -304,8 +294,8 @@ TEST_F(OperatorRelationTest, propogate_test) {
                          .ValueOrDie();
   auto filter = graph->CreateNode<FilterIR>(ast, mem_src, filter_func).ValueOrDie();
   LimitIR* limit = MakeLimit(filter);
-  EXPECT_FALSE(filter->IsRelationInit());
-  EXPECT_FALSE(limit->IsRelationInit());
+  EXPECT_FALSE(filter->is_type_resolved());
+  EXPECT_FALSE(limit->is_type_resolved());
   ResolveTypesRule type_rule(compiler_state_.get());
   bool did_change = false;
   do {
@@ -315,8 +305,8 @@ TEST_F(OperatorRelationTest, propogate_test) {
   } while (did_change);
 
   // Because limit comes after filter, it can actually evaluate in a single run.
-  EXPECT_TRUE(filter->IsRelationInit());
-  EXPECT_TRUE(limit->IsRelationInit());
+  EXPECT_TRUE(filter->is_type_resolved());
+  EXPECT_TRUE(limit->is_type_resolved());
 }
 
 TEST_F(OperatorRelationTest, mem_sink_with_columns_test) {
@@ -330,7 +320,8 @@ TEST_F(OperatorRelationTest, mem_sink_with_columns_test) {
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
 
-  EXPECT_EQ(Relation({types::DataType::FLOAT64}, {"cpu0"}), sink->relation());
+  EXPECT_THAT(*sink->resolved_table_type(),
+              IsTableType(Relation({types::DataType::FLOAT64}, {"cpu0"})));
 }
 
 TEST_F(OperatorRelationTest, mem_sink_all_columns_test) {
@@ -344,7 +335,7 @@ TEST_F(OperatorRelationTest, mem_sink_all_columns_test) {
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
 
-  EXPECT_EQ(src_relation, sink->relation());
+  EXPECT_THAT(*sink->resolved_table_type(), IsTableType(src_relation));
 }
 
 TEST_F(OperatorRelationTest, grpc_sink_with_columns_test) {
@@ -358,7 +349,8 @@ TEST_F(OperatorRelationTest, grpc_sink_with_columns_test) {
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
 
-  EXPECT_EQ(Relation({types::DataType::FLOAT64}, {"cpu0"}), sink->relation());
+  EXPECT_THAT(*sink->resolved_table_type(),
+              IsTableType(Relation({types::DataType::FLOAT64}, {"cpu0"})));
 }
 
 TEST_F(OperatorRelationTest, grpc_sink_all_columns_test) {
@@ -372,7 +364,7 @@ TEST_F(OperatorRelationTest, grpc_sink_all_columns_test) {
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
 
-  EXPECT_EQ(src_relation, sink->relation());
+  EXPECT_THAT(*sink->resolved_table_type(), IsTableType(src_relation));
 }
 
 TEST_F(OperatorRelationTest, JoinCreateOutputColumns) {
@@ -418,10 +410,11 @@ TEST_F(OperatorRelationTest, JoinCreateOutputColumns) {
   EXPECT_MATCH(join->output_columns()[4], Expression(types::FLOAT64));
 
   // Join relation should be set.
-  EXPECT_TRUE(join->IsRelationInit());
-  EXPECT_EQ(join->relation(),
-            Relation({types::INT64, types::FLOAT64, types::STRING, types::INT64, types::FLOAT64},
-                     {"key_x", "latency", "data", "key_y", "cpu_usage"}));
+  EXPECT_TRUE(join->is_type_resolved());
+  EXPECT_THAT(*join->resolved_table_type(),
+              IsTableType(Relation(
+                  {types::INT64, types::FLOAT64, types::STRING, types::INT64, types::FLOAT64},
+                  {"key_x", "latency", "data", "key_y", "cpu_usage"})));
 }
 
 TEST_F(OperatorRelationTest, JoinCreateOutputColumnsFailsDuplicateResultColumns) {
@@ -540,10 +533,11 @@ TEST_F(OperatorRelationTest, JoinCreateOutputColumnsAfterRightJoin) {
   EXPECT_MATCH(join->output_columns()[4], Expression(types::FLOAT64));
 
   // Join relation should be set.
-  EXPECT_TRUE(join->IsRelationInit());
-  EXPECT_EQ(join->relation(),
-            Relation({types::INT64, types::FLOAT64, types::STRING, types::INT64, types::FLOAT64},
-                     {"key_x", "latency", "data", "key_y", "cpu_usage"}));
+  EXPECT_TRUE(join->is_type_resolved());
+  EXPECT_THAT(*join->resolved_table_type(),
+              IsTableType(Relation(
+                  {types::INT64, types::FLOAT64, types::STRING, types::INT64, types::FLOAT64},
+                  {"key_x", "latency", "data", "key_y", "cpu_usage"})));
 }
 
 }  // namespace compiler
