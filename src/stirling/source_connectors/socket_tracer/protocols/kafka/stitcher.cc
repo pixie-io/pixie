@@ -18,9 +18,9 @@
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/kafka/stitcher.h"
 
+#include <absl/container/flat_hash_map.h>
 #include <deque>
 #include <string>
-#include <unordered_map>
 #include <utility>
 
 #include "src/common/base/base.h"
@@ -113,12 +113,12 @@ StatusOr<Record> ProcessReqRespPair(Packet* req_packet, Packet* resp_packet) {
 // the function, where req_packets not matched remain in the deque.
 // Note that this is different from the two for loop implementation used in other stitchers.
 RecordsWithErrorCount<Record> StitchFrames(std::deque<Packet>* req_packets,
-                                           std::deque<Packet>* resp_packets) {
+                                           std::deque<Packet>* resp_packets, State* state) {
   std::vector<Record> entries;
   int error_count = 0;
 
   // Maps correlation_id to resp packet.
-  std::unordered_map<int32_t, Packet*> correlation_id_map;
+  absl::flat_hash_map<int32_t, Packet*> correlation_id_map;
   for (auto& resp_packet : *resp_packets) {
     correlation_id_map[resp_packet.correlation_id] = &resp_packet;
   }
@@ -137,6 +137,9 @@ RecordsWithErrorCount<Record> StitchFrames(std::deque<Packet>* req_packets,
       req_packet.consumed = true;
       // Remove resp_packet from map once it's been matched.
       correlation_id_map.erase(req_packet.correlation_id);
+      // Remove this correlation_id from state.
+      // TODO(chengruizhe): Add expiration time for correlation_ids in the state.
+      state->seen_correlation_ids.erase(req_packet.correlation_id);
     }
   }
 

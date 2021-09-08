@@ -40,15 +40,15 @@ namespace kafka {
  * @return A vector of entries to be appended to table store.
  */
 RecordsWithErrorCount<Record> StitchFrames(std::deque<Packet>* req_packets,
-                                           std::deque<Packet>* resp_packets);
+                                           std::deque<Packet>* resp_packets, State* state);
 
 }  // namespace kafka
 
 template <>
 inline RecordsWithErrorCount<kafka::Record> StitchFrames(std::deque<kafka::Packet>* req_packets,
                                                          std::deque<kafka::Packet>* resp_packets,
-                                                         NoState* /* state */) {
-  return kafka::StitchFrames(req_packets, resp_packets);
+                                                         kafka::StateWrapper* state) {
+  return kafka::StitchFrames(req_packets, resp_packets, &state->global);
 }
 
 }  // namespace protocols

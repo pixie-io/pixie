@@ -31,9 +31,10 @@ namespace kafka {
 TEST(KafkaStitcherTest, BasicMatching) {
   std::deque<Packet> req_packets;
   std::deque<Packet> resp_packets;
+  State state{};
   RecordsWithErrorCount<Record> result;
 
-  result = StitchFrames(&req_packets, &resp_packets);
+  result = StitchFrames(&req_packets, &resp_packets, &state);
   EXPECT_TRUE(resp_packets.empty());
   EXPECT_TRUE(req_packets.empty());
   EXPECT_EQ(result.error_count, 0);
@@ -41,7 +42,7 @@ TEST(KafkaStitcherTest, BasicMatching) {
 
   req_packets.push_back(testdata::kProduceReqPacket);
 
-  result = StitchFrames(&req_packets, &resp_packets);
+  result = StitchFrames(&req_packets, &resp_packets, &state);
   EXPECT_TRUE(resp_packets.empty());
   EXPECT_EQ(req_packets.size(), 1);
   EXPECT_EQ(result.error_count, 0);
@@ -49,7 +50,7 @@ TEST(KafkaStitcherTest, BasicMatching) {
 
   resp_packets.push_back(testdata::kProduceRespPacket);
 
-  result = StitchFrames(&req_packets, &resp_packets);
+  result = StitchFrames(&req_packets, &resp_packets, &state);
   EXPECT_TRUE(resp_packets.empty());
   EXPECT_EQ(req_packets.size(), 0);
   EXPECT_EQ(result.error_count, 0);

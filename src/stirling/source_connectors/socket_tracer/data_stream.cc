@@ -194,8 +194,9 @@ template void DataStream::ProcessBytesToFrames<protocols::dns::Frame, protocols:
     MessageType type, protocols::NoState* state);
 template void DataStream::ProcessBytesToFrames<protocols::redis::Message, protocols::NoState>(
     MessageType type, protocols::NoState* state);
-template void DataStream::ProcessBytesToFrames<protocols::kafka::Packet, protocols::NoState>(
-    MessageType type, protocols::NoState* state);
+template void
+DataStream::ProcessBytesToFrames<protocols::kafka::Packet, protocols::kafka::StateWrapper>(
+    MessageType type, protocols::kafka::StateWrapper* state);
 template void DataStream::ProcessBytesToFrames<protocols::nats::Message, protocols::NoState>(
     MessageType type, protocols::NoState* state);
 

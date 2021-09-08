@@ -95,33 +95,24 @@ constexpr uint8_t kAPIVersionResponse[] = {
     0x00, 0x00};
 
 template <size_t N>
-Packet GenReqPacket(const uint8_t (&raw_packet)[N], int timestamp) {
+Packet GenPacket(MessageType type, const uint8_t (&raw_packet)[N], int timestamp,
+                 int correlation_id) {
   Packet result;
+  State state = {{correlation_id}};
   auto packet_view = CreateStringView<char>(CharArrayStringView<uint8_t>(raw_packet));
-  ParseState parse_state = ParseFrame(MessageType::kRequest, &packet_view, &result);
+  ParseState parse_state = ParseFrame(type, &packet_view, &result, &state);
   EXPECT_EQ(parse_state, ParseState::kSuccess);
 
   result.timestamp_ns = timestamp;
   return result;
 }
 
-template <size_t N>
-Packet GenRespPacket(const uint8_t (&raw_packet)[N], int timestamp) {
-  Packet result;
-  auto packet_view = CreateStringView<char>(CharArrayStringView<uint8_t>(raw_packet));
-  ParseState parse_state = ParseFrame(MessageType::kResponse, &packet_view, &result);
-  EXPECT_EQ(parse_state, ParseState::kSuccess);
-
-  result.timestamp_ns = timestamp;
-  return result;
-}
-
-const Packet kProduceReqPacket = GenReqPacket(kProduceRequest, 0);
-const Packet kProduceRespPacket = GenRespPacket(kProduceResponse, 1);
-const Packet kMetaDataReqPacket = GenReqPacket(kMetaDataRequest, 2);
-const Packet kMetaDataRespPacket = GenRespPacket(kMetaDataResponse, 3);
-const Packet kAPIVersionReqPacket = GenReqPacket(kAPIVersionRequest, 4);
-const Packet kAPIVersionRespPacket = GenRespPacket(kAPIVersionResponse, 5);
+const Packet kProduceReqPacket = GenPacket(MessageType::kRequest, kProduceRequest, 0, 4);
+const Packet kProduceRespPacket = GenPacket(MessageType::kResponse, kProduceResponse, 1, 4);
+const Packet kMetaDataReqPacket = GenPacket(MessageType::kRequest, kMetaDataRequest, 2, 1);
+const Packet kMetaDataRespPacket = GenPacket(MessageType::kResponse, kMetaDataResponse, 3, 1);
+const Packet kAPIVersionReqPacket = GenPacket(MessageType::kRequest, kAPIVersionRequest, 4, 2);
+const Packet kAPIVersionRespPacket = GenPacket(MessageType::kResponse, kAPIVersionResponse, 5, 2);
 
 }  // namespace testdata
 }  // namespace kafka

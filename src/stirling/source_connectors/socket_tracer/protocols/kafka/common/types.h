@@ -19,6 +19,7 @@
 #pragma once
 
 #include <absl/container/flat_hash_map.h>
+#include <absl/container/flat_hash_set.h>
 #include <chrono>
 #include <deque>
 #include <memory>
@@ -380,10 +381,22 @@ struct Record {
   }
 };
 
+// seen_correlation_ids is the correlation_ids of the received requests. It can be used to
+// more robustly implement FindFrameBoundary for Kafka response packets.
+struct State {
+  absl::flat_hash_set<int32_t> seen_correlation_ids;
+};
+
+struct StateWrapper {
+  State global;
+  std::monostate send;
+  std::monostate recv;
+};
+
 struct ProtocolTraits {
   using frame_type = Packet;
   using record_type = Record;
-  using state_type = NoState;
+  using state_type = StateWrapper;
 };
 
 }  // namespace kafka

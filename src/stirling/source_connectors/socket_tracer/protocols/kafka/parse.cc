@@ -18,6 +18,7 @@
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/kafka/parse.h"
 
+#include <absl/container/flat_hash_set.h>
 #include <arpa/inet.h>
 #include <deque>
 #include <string_view>
@@ -37,7 +38,7 @@ namespace kafka {
   PL_ASSIGN_OR(expr, val_or, return ParseState::kInvalid)
 
 // Kafka request/response format: https://kafka.apache.org/protocol.html#protocol_messages
-ParseState ParseFrame(MessageType type, std::string_view* buf, Packet* result) {
+ParseState ParseFrame(MessageType type, std::string_view* buf, Packet* result, State* state) {
   DCHECK(type == MessageType::kRequest || type == MessageType::kResponse);
 
   if (type == MessageType::kRequest && buf->size() < kafka::kMinReqHeaderLength) {
@@ -58,16 +59,18 @@ ParseState ParseFrame(MessageType type, std::string_view* buf, Packet* result) {
 
   // TODO(chengruizhe): Add Length checks for each command x version. Automatic parsing of the
   // kafka doc will help.
-
+  APIKey request_api_key;
+  int16_t request_api_version;
   if (type == MessageType::kRequest) {
-    PL_ASSIGN_OR_RETURN_INVALID(int16_t request_api_key, binary_decoder.ExtractInt<int16_t>());
-    if (!IsValidAPIKey(request_api_key)) {
+    PL_ASSIGN_OR_RETURN_INVALID(int16_t request_api_key_int, binary_decoder.ExtractInt<int16_t>());
+    if (!IsValidAPIKey(request_api_key_int)) {
       return ParseState::kInvalid;
     }
+    request_api_key = static_cast<APIKey>(request_api_key_int);
 
-    PL_ASSIGN_OR_RETURN_INVALID(int16_t request_api_version, binary_decoder.ExtractInt<int16_t>());
+    PL_ASSIGN_OR_RETURN_INVALID(request_api_version, binary_decoder.ExtractInt<int16_t>());
 
-    if (!IsSupportedAPIVersion(static_cast<APIKey>(request_api_key), request_api_version)) {
+    if (!IsSupportedAPIVersion(request_api_key, request_api_version)) {
       return ParseState::kInvalid;
     }
     // TODO(chengruizhe): Add length range checks for each api key x version.
@@ -83,6 +86,13 @@ ParseState ParseFrame(MessageType type, std::string_view* buf, Packet* result) {
     return ParseState::kNeedsMoreData;
   }
 
+  // Update seen_correlation_ids of requests for more robust response frame parsing.
+  if (type == MessageType::kRequest) {
+    state->seen_correlation_ids.insert(correlation_id);
+  }
+  // TODO(chengruizhe): Check that the correlation_id has been seen before for
+  //  responses. If not, e.g. request is missing, get into a confused state.
+
   result->correlation_id = correlation_id;
   result->msg = buf->substr(kMessageLengthBytes, packet_length);
   buf->remove_prefix(kMessageLengthBytes + packet_length);
@@ -92,49 +102,50 @@ ParseState ParseFrame(MessageType type, std::string_view* buf, Packet* result) {
 
 #define PL_ASSIGN_OR_RETURN_NPOS(expr, val_or) PL_ASSIGN_OR(expr, val_or, return std::string::npos)
 
-// FindFrameBoundary currently looks for a proper packet length and valid Kafka api key and version.
-// A good idea for improvement is to use correlation_id to find a matching req resp pair,
-// which gives us high confidence.
-size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_pos) {
-  if (type == MessageType::kResponse) {
-    // Kafka response header only contains a correlation_id, too loose for boundary detection.
-    // TODO(chengruizhe): Can we keep a state and check for correlation id matching?
+// FindFrameBoundary currently looks for a proper packet length and valid Kafka api key and version
+// in requests, and correlation_id that appeared before in responses.
+size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_pos, State* state) {
+  size_t min_length = type == MessageType::kRequest ? kMinReqHeaderLength : kMinRespHeaderLength;
+
+  if (buf.length() < min_length) {
     return std::string::npos;
   }
 
-  if (buf.length() < kafka::kMinReqHeaderLength) {
-    return std::string::npos;
-  }
-
-  for (size_t i = start_pos; i < buf.size() - kMinReqHeaderLength; ++i) {
+  for (size_t i = start_pos; i < buf.size() - min_length; ++i) {
     std::string_view cur_buf = buf.substr(i);
     BinaryDecoder binary_decoder(cur_buf);
 
     PL_ASSIGN_OR_RETURN_NPOS(int32_t packet_length, binary_decoder.ExtractInt<int32_t>());
 
-    if (packet_length < 0 || (size_t)packet_length + kMessageLengthBytes > buf.size()) {
+    if (packet_length <= 0 || (size_t)packet_length + kMessageLengthBytes > buf.size() ||
+        (size_t)packet_length + kMessageLengthBytes < min_length) {
       continue;
     }
 
-    PL_ASSIGN_OR_RETURN_NPOS(int16_t request_api_key, binary_decoder.ExtractInt<int16_t>());
+    // Check for valid api_key and api_version in requests.
+    if (type == MessageType::kRequest) {
+      PL_ASSIGN_OR_RETURN_NPOS(int16_t request_api_key, binary_decoder.ExtractInt<int16_t>());
+      if (!IsValidAPIKey(request_api_key)) {
+        continue;
+      }
 
-    PL_ASSIGN_OR_RETURN_NPOS(int16_t request_api_version, binary_decoder.ExtractInt<int16_t>());
+      PL_ASSIGN_OR_RETURN_NPOS(int16_t request_api_version, binary_decoder.ExtractInt<int16_t>());
+      if (!IsSupportedAPIVersion(static_cast<APIKey>(request_api_key), request_api_version)) {
+        continue;
+      }
+    }
 
     PL_ASSIGN_OR_RETURN_NPOS(int32_t correlation_id, binary_decoder.ExtractInt<int32_t>());
-
-    if (!IsValidAPIKey(request_api_key)) {
-      continue;
-    }
-
-    if (!IsSupportedAPIVersion(static_cast<APIKey>(request_api_key), request_api_version)) {
-      continue;
-    }
-
-    // TODO(chengruizhe): Add Length checks for each api_key x version. Automatic parsing of the
-    // kafka doc will help.
-
     if (correlation_id < 0) {
       continue;
+    }
+
+    // Check for seen correlation_id in responses.
+    if (type == MessageType::kResponse) {
+      auto it = state->seen_correlation_ids.find(correlation_id);
+      if (it == state->seen_correlation_ids.end()) {
+        continue;
+      }
     }
 
     // TODO(chengruizhe): Check the client_id field.
@@ -147,15 +158,17 @@ size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_po
 }  // namespace kafka
 
 template <>
-ParseState ParseFrame(MessageType type, std::string_view* buf, kafka::Packet* packet,
-                      NoState* /* state */) {
-  return kafka::ParseFrame(type, buf, packet);
+ParseState ParseFrame<kafka::Packet, kafka::StateWrapper>(MessageType type, std::string_view* buf,
+                                                          kafka::Packet* packet,
+                                                          kafka::StateWrapper* state) {
+  return kafka::ParseFrame(type, buf, packet, &state->global);
 }
 
 template <>
-size_t FindFrameBoundary<kafka::Packet>(MessageType type, std::string_view buf, size_t start_pos,
-                                        NoState* /* state */) {
-  return kafka::FindFrameBoundary(type, buf, start_pos);
+size_t FindFrameBoundary<kafka::Packet, kafka::StateWrapper>(MessageType type, std::string_view buf,
+                                                             size_t start_pos,
+                                                             kafka::StateWrapper* state) {
+  return kafka::FindFrameBoundary(type, buf, start_pos, &state->global);
 }
 
 }  // namespace protocols

@@ -47,15 +47,19 @@ using ::testing::ElementsAre;
 TEST(KafkaParserTest, Basics) {
   Packet packet;
   ParseState parse_state;
+  State state;
 
   auto produce_frame_view =
       CreateStringView<char>(CharArrayStringView<uint8_t>(testdata::kProduceRequest));
-  parse_state = ParseFrame(MessageType::kRequest, &produce_frame_view, &packet);
+  parse_state = ParseFrame(MessageType::kRequest, &produce_frame_view, &packet, &state);
   EXPECT_EQ(parse_state, ParseState::kSuccess);
+  EXPECT_TRUE(state.seen_correlation_ids.contains(4));
 
+  state = {};
   auto short_produce_frame_view = produce_frame_view.substr(0, kMinReqHeaderLength - 1);
-  parse_state = ParseFrame(MessageType::kRequest, &short_produce_frame_view, &packet);
+  parse_state = ParseFrame(MessageType::kRequest, &short_produce_frame_view, &packet, &state);
   EXPECT_EQ(parse_state, ParseState::kNeedsMoreData);
+  EXPECT_TRUE(state.seen_correlation_ids.empty());
 }
 
 TEST(KafkaParserTest, ParseMultipleRequests) {
@@ -75,10 +79,13 @@ TEST(KafkaParserTest, ParseMultipleRequests) {
   const std::string buf = absl::StrCat(produce_frame_view, metadata_frame_view);
 
   std::deque<Packet> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kRequest, buf, &parsed_messages);
+  StateWrapper state;
+  ParseResult result = ParseFramesLoop(MessageType::kRequest, buf, &parsed_messages, &state);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message1, expected_message2));
+  EXPECT_TRUE(state.global.seen_correlation_ids.contains(expected_message1.correlation_id));
+  EXPECT_TRUE(state.global.seen_correlation_ids.contains(expected_message2.correlation_id));
 }
 
 TEST(KafkaParserTest, ParseMultipleResponses) {
@@ -98,7 +105,8 @@ TEST(KafkaParserTest, ParseMultipleResponses) {
   const std::string buf = absl::StrCat(produce_frame_view, metadata_frame_view);
 
   std::deque<Packet> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kResponse, buf, &parsed_messages);
+  StateWrapper state{.global = {{1, 4}}, .send = {}, .recv = {}};
+  ParseResult result = ParseFramesLoop(MessageType::kResponse, buf, &parsed_messages, &state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message1, expected_message2));
 }
 
@@ -108,20 +116,24 @@ TEST(KafkaParserTest, ParseIncompleteRequest) {
   auto truncated_produce_frame = produce_frame_view.substr(0, produce_frame_view.size() - 1);
 
   std::deque<Packet> parsed_messages;
+  StateWrapper state;
   ParseResult result =
-      ParseFramesLoop(MessageType::kRequest, truncated_produce_frame, &parsed_messages);
+      ParseFramesLoop(MessageType::kRequest, truncated_produce_frame, &parsed_messages, &state);
 
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre());
+  EXPECT_TRUE(state.global.seen_correlation_ids.empty());
 }
 
 TEST(KafkaParserTest, ParseInvalidInput) {
   std::string msg1("\x00\x00\x18\x00\x03SELECT name FROM users;", 28);
 
   std::deque<Packet> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kRequest, msg1, &parsed_messages);
+  StateWrapper state;
+  ParseResult result = ParseFramesLoop(MessageType::kRequest, msg1, &parsed_messages, &state);
   EXPECT_EQ(ParseState::kInvalid, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre());
+  EXPECT_TRUE(state.global.seen_correlation_ids.empty());
 }
 
 TEST(KafkaFindFrameBoundaryTest, FindReqBoundaryAligned) {
@@ -130,21 +142,58 @@ TEST(KafkaFindFrameBoundaryTest, FindReqBoundaryAligned) {
   auto metadata_frame_view =
       CreateStringView<char>(CharArrayStringView<uint8_t>(testdata::kMetaDataRequest));
   const std::string buf = absl::StrCat(produce_frame_view, metadata_frame_view);
-  size_t pos = FindFrameBoundary<kafka::Packet>(MessageType::kRequest, buf, 0);
+  State state;
+
+  size_t pos = FindFrameBoundary(MessageType::kRequest, buf, 0, &state);
   ASSERT_EQ(pos, 0);
 }
 
 TEST(KafkaFindFrameBoundaryTest, FindReqBoundaryUnAligned) {
   auto produce_frame_view =
       CreateStringView<char>(CharArrayStringView<uint8_t>(testdata::kProduceRequest));
-  auto apiversion_frame_view =
+  auto metadata_frame_view =
       CreateStringView<char>(CharArrayStringView<uint8_t>(testdata::kMetaDataRequest));
   const std::string buf =
-      absl::StrCat(ConstStringView("some garbage"), produce_frame_view, apiversion_frame_view);
+      absl::StrCat(ConstStringView("some garbage"), produce_frame_view, metadata_frame_view);
+  State state;
 
-  size_t pos = FindFrameBoundary<kafka::Packet>(MessageType::kRequest, buf, 0);
+  size_t pos = FindFrameBoundary(MessageType::kRequest, buf, 0, &state);
   ASSERT_NE(pos, std::string::npos);
-  EXPECT_EQ(buf.substr(pos), absl::StrCat(produce_frame_view, apiversion_frame_view));
+  EXPECT_EQ(buf.substr(pos), absl::StrCat(produce_frame_view, metadata_frame_view));
+}
+
+TEST(KafkaFindFrameBoundaryTest, FindRespBoundaryAligned) {
+  auto produce_frame_view =
+      CreateStringView<char>(CharArrayStringView<uint8_t>(testdata::kProduceResponse));
+  auto metadata_frame_view =
+      CreateStringView<char>(CharArrayStringView<uint8_t>(testdata::kMetaDataResponse));
+
+  const std::string buf = absl::StrCat(produce_frame_view, metadata_frame_view);
+  State state{.seen_correlation_ids = {1, 4}};
+
+  size_t pos = FindFrameBoundary(MessageType::kResponse, buf, 0, &state);
+  ASSERT_EQ(pos, 0);
+}
+
+TEST(KafkaFindFrameBoundaryTest, FindRespBoundaryUnAligned) {
+  auto produce_frame_view =
+      CreateStringView<char>(CharArrayStringView<uint8_t>(testdata::kProduceResponse));
+  auto metadata_frame_view =
+      CreateStringView<char>(CharArrayStringView<uint8_t>(testdata::kMetaDataResponse));
+
+  const std::string buf =
+      absl::StrCat(ConstStringView("some garbage"), produce_frame_view, metadata_frame_view);
+  State state{.seen_correlation_ids = {1, 4}};
+
+  size_t pos = FindFrameBoundary(MessageType::kResponse, buf, 0, &state);
+  ASSERT_NE(pos, std::string::npos);
+  EXPECT_EQ(buf.substr(pos), absl::StrCat(produce_frame_view, metadata_frame_view));
+
+  // If the correlation_id of produce response (i.e. 4) is not seen, this should skip over it.
+  state = {.seen_correlation_ids = {1}};
+  pos = FindFrameBoundary(MessageType::kResponse, buf, 0, &state);
+  ASSERT_NE(pos, std::string::npos);
+  EXPECT_EQ(buf.substr(pos), metadata_frame_view);
 }
 
 // TODO(chengruizhe): This test currently fails. Make the check more robust by maybe limiting the
@@ -157,7 +206,7 @@ TEST(KafkaFindFrameBoundaryTest, FindReqBoundaryUnAligned) {
 //    const std::string buf =
 //      absl::StrCat(produce_frame_view, apiversion_frame_view);
 //
-//    size_t pos = FindFrameBoundary<kafka::Packet>(MessageType::kRequest, buf, 1);
+//    size_t pos = FindFrameBoundary(MessageType::kRequest, buf, 1);
 //    ASSERT_NE(pos, std::string::npos);
 //    EXPECT_EQ(buf.substr(pos), apiversion_frame_view);
 //}
