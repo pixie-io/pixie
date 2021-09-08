@@ -75,11 +75,9 @@ StatusOr<int> UProbeManager::AttachUProbeTmpl(const ArrayView<UProbeTmpl>& probe
   int uprobe_count = 0;
   for (const auto& tmpl : probe_tmpls) {
     bpf_tools::UProbeSpec spec = {binary,
-                                  {},
-                                  0,
-                                  bpf_tools::UProbeSpec::kDefaultPID,
-                                  tmpl.attach_type,
-                                  std::string(tmpl.probe_fn)};
+                                  /*symbol*/ {},
+                                  /*address*/ 0,    bpf_tools::UProbeSpec::kDefaultPID,
+                                  tmpl.attach_type, std::string(tmpl.probe_fn)};
 
     StatusOr<std::vector<ElfReader::SymbolInfo>> symbol_infos_status =
         elf_reader->ListFuncSymbols(tmpl.symbol, tmpl.match_type);
