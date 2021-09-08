@@ -145,7 +145,7 @@ spec:
           secretName: nri-bundle-nri-metadata-injection
 ---
 # Source: nri-bundle/charts/kube-state-metrics/templates/clusterrolebinding.yaml
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
@@ -503,7 +503,7 @@ rules:
   verbs: ["approve"]
 ---
 # Source: nri-bundle/charts/kube-state-metrics/templates/clusterrole.yaml
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:

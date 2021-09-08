@@ -4,7 +4,7 @@ kind: ServiceAccount
 metadata:
   name: metadata-service-account
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: pl-vizier-metadata
@@ -19,7 +19,7 @@ rules:
   verbs:
   - "*"
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: pl-vizier-metadata-cluster-binding
@@ -32,7 +32,7 @@ subjects:
   name: metadata-service-account
   namespace: pl
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: pl-vizier-metadata-node-view-cluster-binding
@@ -45,7 +45,7 @@ subjects:
   name: metadata-service-account
   namespace: pl
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: pl-vizier-crd-metadata-binding
