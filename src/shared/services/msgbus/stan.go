@@ -36,7 +36,10 @@ func init() {
 func MustConnectSTAN(nc *nats.Conn, clientID string) stan.Conn {
 	stanClusterID := viper.GetString("stan_cluster")
 
-	sc, err := stan.Connect(stanClusterID, clientID, stan.NatsConn(nc))
+	sc, err := stan.Connect(stanClusterID, clientID, stan.NatsConn(nc),
+		stan.SetConnectionLostHandler(func(_ stan.Conn, reason error) {
+			log.WithError(reason).Fatal("STAN Connection lost")
+		}))
 	if err != nil {
 		log.WithError(err).WithField("ClusterID", stanClusterID).Fatal("Failed to connect to STAN")
 	}
