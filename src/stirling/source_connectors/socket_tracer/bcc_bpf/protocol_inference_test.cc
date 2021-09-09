@@ -31,6 +31,39 @@
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/common.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.h"
 
+TEST(ProtocolInferenceTest, HTTP) {
+  constexpr char kGet[] =
+      "GET /endpoint1 HTTP/1.1\r\n"
+      "User-Agent: Mozilla/5.0\r\n"
+      "\r\n";
+
+  constexpr char kPost[] =
+      "POST /test HTTP/1.1\r\n"
+      "content-type: application/x-www-form-urlencoded\r\n"
+      "content-length: 27\r\n"
+      "\r\n"
+      "field1=value1&field2=value2";
+
+  constexpr char kPut[] =
+      "PUT /test HTTP/1.1\r\n"
+      "content-type: application/x-www-form-urlencoded\r\n"
+      "content-length: 27\r\n"
+      "\r\n"
+      "field1=value1&field2=value2";
+
+  const char kResp[] =
+      "HTTP/1.1 200 OK\r\n"
+      "Content-Type: application/json; charset=utf-8\r\n"
+      "Content-Length: 3\r\n"
+      "\r\n"
+      "foo";
+
+  EXPECT_EQ(kRequest, infer_http_message(kGet, sizeof(kGet)));
+  EXPECT_EQ(kRequest, infer_http_message(kPost, sizeof(kPost)));
+  EXPECT_EQ(kRequest, infer_http_message(kPut, sizeof(kPut)));
+  EXPECT_EQ(kResponse, infer_http_message(kResp, sizeof(kResp)));
+}
+
 TEST(ProtocolInferenceTest, Postgres) {
   constexpr char kStartupMessage[] =
       "\x00\x00\x00\x54\x00\x03\x00\x00\x75\x73\x65\x72\x00\x70\x6f\x73"

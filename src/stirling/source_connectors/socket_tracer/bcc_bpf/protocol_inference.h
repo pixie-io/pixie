@@ -46,10 +46,20 @@ static __inline enum MessageType infer_http_message(const char* buf, size_t coun
   if (buf[0] == 'G' && buf[1] == 'E' && buf[2] == 'T') {
     return kRequest;
   }
+  if (buf[0] == 'H' && buf[1] == 'E' && buf[2] == 'A' && buf[3] == 'D') {
+    return kRequest;
+  }
   if (buf[0] == 'P' && buf[1] == 'O' && buf[2] == 'S' && buf[3] == 'T') {
     return kRequest;
   }
-  // TODO(oazizi): Should we add PUT, DELETE, HEAD, and perhaps others?
+  if (buf[0] == 'P' && buf[1] == 'U' && buf[2] == 'T') {
+    return kRequest;
+  }
+  if (buf[0] == 'D' && buf[1] == 'E' && buf[2] == 'L' && buf[3] == 'E' && buf[4] == 'T' &&
+      buf[5] == 'E') {
+    return kRequest;
+  }
+  // TODO(oazizi): Should we add CONNECT, OPTIONS, TRACE, PATCH?
 
   return kUnknown;
 }

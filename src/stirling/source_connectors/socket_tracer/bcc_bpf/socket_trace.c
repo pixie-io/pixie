@@ -39,7 +39,7 @@
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.h"
 
 // This keeps instruction count below BPF's limit of 4096 per probe.
-#define LOOP_LIMIT 45
+#define LOOP_LIMIT 42
 
 const int32_t kInvalidFD = -1;
 
