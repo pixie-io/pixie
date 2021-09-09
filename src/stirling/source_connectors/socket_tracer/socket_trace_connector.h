@@ -233,8 +233,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // in the exact same way.
   uint64_t AdjustedSteadyClockNowNS() const {
     auto now = std::chrono::steady_clock::now();
-    return std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count() +
-           ClockRealTimeOffset();
+    return ConvertToRealTime(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count());
   }
 
   // Initialize protocol_transfer_specs_.

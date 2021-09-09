@@ -49,7 +49,9 @@ class ConfigImpl final : public Config {
 
   int64_t KernelTicksPerSecond() const override { return sysconf(_SC_CLK_TCK); }
 
-  uint64_t ClockRealTimeOffset() const override { return real_time_offset_; }
+  uint64_t ConvertToRealTime(uint64_t monotonic_time) const override {
+    return monotonic_time + real_time_offset_;
+  }
 
   const std::filesystem::path& sysfs_path() const override { return sysfs_path_; }
 

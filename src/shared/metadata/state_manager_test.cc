@@ -32,9 +32,11 @@ namespace md {
 
 using ResourceUpdate = px::shared::k8s::metadatapb::ResourceUpdate;
 
+using ::testing::_;
 using ::testing::ElementsAre;
 using ::testing::Pair;
 using ::testing::Return;
+using ::testing::ReturnArg;
 using ::testing::ReturnRef;
 using ::testing::UnorderedElementsAre;
 
@@ -252,7 +254,7 @@ TEST_F(AgentMetadataStateTest, pid_created) {
   std::filesystem::path proc_path = testing::TestFilePath("src/shared/metadata/testdata/proc");
 
   system::MockConfig sysconfig;
-  EXPECT_CALL(sysconfig, ClockRealTimeOffset()).WillRepeatedly(Return(128));
+  EXPECT_CALL(sysconfig, ConvertToRealTime(_)).WillRepeatedly(ReturnArg<0>());
   EXPECT_CALL(sysconfig, HasConfig()).WillRepeatedly(Return(true));
   EXPECT_CALL(sysconfig, PageSize()).WillRepeatedly(Return(4096));
   EXPECT_CALL(sysconfig, KernelTicksPerSecond()).WillRepeatedly(Return(10000000));

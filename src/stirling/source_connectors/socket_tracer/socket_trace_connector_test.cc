@@ -239,7 +239,7 @@ TEST_F(SocketTraceConnectorTest, HTTPBasic) {
       event_gen.InitRecvEvent<kProtocolHTTP>(kJSONResp);
   struct socket_control_event_t close_event = event_gen.InitClose();
 
-  EXPECT_NE(0, source_->ClockRealTimeOffset());
+  EXPECT_NE(0, source_->ConvertToRealTime(0));
 
   // Registers a new connection.
   source_->AcceptControlEvent(conn);
@@ -275,7 +275,7 @@ TEST_F(SocketTraceConnectorTest, HTTPContentType) {
       event_gen.InitRecvEvent<kProtocolHTTP>(kJSONResp);
   struct socket_control_event_t close_event = event_gen.InitClose();
 
-  EXPECT_NE(0, source_->ClockRealTimeOffset());
+  EXPECT_NE(0, source_->ConvertToRealTime(0));
 
   // Registers a new connection.
   source_->AcceptControlEvent(conn);
@@ -301,8 +301,8 @@ TEST_F(SocketTraceConnectorTest, HTTPContentType) {
   EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]),
               ElementsAre("foo", "bar", "<removed: non-text content-type>", "foo"));
   EXPECT_THAT(ToIntVector<types::Time64NSValue>(record_batch[kHTTPTimeIdx]),
-              ElementsAre(3 + source_->ClockRealTimeOffset(), 5 + source_->ClockRealTimeOffset(),
-                          7 + source_->ClockRealTimeOffset(), 9 + source_->ClockRealTimeOffset()));
+              ElementsAre(source_->ConvertToRealTime(3), source_->ConvertToRealTime(5),
+                          source_->ConvertToRealTime(7), source_->ConvertToRealTime(9)));
 }
 
 // Use CQL protocol to check sorting, because it supports parallel request-response streams.

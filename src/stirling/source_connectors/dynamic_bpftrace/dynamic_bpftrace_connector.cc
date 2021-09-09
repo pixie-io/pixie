@@ -277,14 +277,14 @@ void DynamicBPFTraceConnector::HandleEvent(uint8_t* data) {
     switch (field.type.type) {
       case bpftrace::Type::integer:
 
-#define APPEND_INTEGER(int_type, expr)                                  \
-  {                                                                     \
-    auto val = *reinterpret_cast<int_type*>(expr);                      \
-    if (column.type() == types::DataType::TIME64NS) {                   \
-      r.Append(col, types::Time64NSValue(val + ClockRealTimeOffset())); \
-    } else {                                                            \
-      r.Append(col, types::Int64Value(val));                            \
-    }                                                                   \
+#define APPEND_INTEGER(int_type, expr)                             \
+  {                                                                \
+    auto val = *reinterpret_cast<int_type*>(expr);                 \
+    if (column.type() == types::DataType::TIME64NS) {              \
+      r.Append(col, types::Time64NSValue(ConvertToRealTime(val))); \
+    } else {                                                       \
+      r.Append(col, types::Int64Value(val));                       \
+    }                                                              \
   }
 
         switch (field.type.size) {

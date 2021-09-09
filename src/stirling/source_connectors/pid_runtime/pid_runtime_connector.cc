@@ -65,7 +65,7 @@ void PIDRuntimeConnector::TransferDataImpl(ConnectorContext* /* ctx */,
       prev_run_time = it->second;
     }
 
-    uint64_t time = item.second.timestamp + ClockRealTimeOffset();
+    uint64_t time = ConvertToRealTime(item.second.timestamp);
 
     DataTable::RecordBuilder<&kTable> r(data_table, time);
     r.Append<r.ColIndex("time_")>(time);

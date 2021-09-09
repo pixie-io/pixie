@@ -68,8 +68,8 @@ void CPUStatBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */,
   }
 
   DataTable::RecordBuilder<&kTable> r(data_table);
-  r.Append<r.ColIndex("time_")>(*(reinterpret_cast<int64_t*>(cpustat_map[0].second.data())) +
-                                ClockRealTimeOffset());
+  r.Append<r.ColIndex("time_")>(
+      ConvertToRealTime(*(reinterpret_cast<int64_t*>(cpustat_map[0].second.data()))));
   r.Append<r.ColIndex("cpustat_user")>(*(reinterpret_cast<int64_t*>(cpustat_map[1].second.data())));
   r.Append<r.ColIndex("cpustat_nice")>(*(reinterpret_cast<int64_t*>(cpustat_map[2].second.data())));
   r.Append<r.ColIndex("cpustat_system")>(

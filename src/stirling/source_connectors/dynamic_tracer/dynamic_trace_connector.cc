@@ -464,7 +464,7 @@ Status DynamicTraceConnector::AppendRecord(const Struct& st, uint32_t asid, std:
 
     if (field.name() == "time_") {
       PL_ASSIGN_OR_RETURN(uint64_t ktime_ns, struct_decoder.ExtractField<uint64_t>());
-      int64_t time = ktime_ns + ClockRealTimeOffset();
+      int64_t time = ConvertToRealTime(ktime_ns);
       r.Append(col_idx++, types::Time64NSValue(time));
     } else if ((field.name() == "tgid_") && (i + 1 < st.fields_size()) &&
                (st.fields(i + 1).name() == "tgid_start_time_")) {

@@ -30,6 +30,9 @@
 namespace px {
 namespace md {
 
+using ::testing::_;
+using ::testing::ReturnArg;
+
 namespace {
 constexpr char kTestDataBasePath[] = "src/shared/metadata";
 
@@ -51,7 +54,7 @@ class CGroupMetadataReaderTest : public ::testing::Test {
     EXPECT_CALL(*sysconfig, HasConfig()).WillRepeatedly(Return(true));
     EXPECT_CALL(*sysconfig, PageSize()).WillRepeatedly(Return(4096));
     EXPECT_CALL(*sysconfig, KernelTicksPerSecond()).WillRepeatedly(Return(10000000));
-    EXPECT_CALL(*sysconfig, ClockRealTimeOffset()).WillRepeatedly(Return(128));
+    EXPECT_CALL(*sysconfig, ConvertToRealTime(_)).WillRepeatedly(ReturnArg<0>());
 
     EXPECT_CALL(*sysconfig, proc_path()).WillRepeatedly(ReturnRef(proc_path_));
     EXPECT_CALL(*sysconfig, sysfs_path()).WillRepeatedly(ReturnRef(sysfs_path_));

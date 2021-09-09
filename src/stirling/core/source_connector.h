@@ -101,7 +101,9 @@ class SourceConnector : public NotCopyable {
    * Utility function to convert time as recorded by in monotonic clock to real time.
    * This is especially useful for converting times from BPF, which are all in monotonic clock.
    */
-  uint64_t ClockRealTimeOffset() const { return sysconfig_.ClockRealTimeOffset(); }
+  uint64_t ConvertToRealTime(uint64_t monotonic_time) const {
+    return sysconfig_.ConvertToRealTime(monotonic_time);
+  }
 
   virtual void SetDebugLevel(int level) { debug_level_ = level; }
   virtual void EnablePIDTrace(int pid) { pids_to_trace_.insert(pid); }

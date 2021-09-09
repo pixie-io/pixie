@@ -80,13 +80,21 @@ Status BPFTraceWrapper::Compile(std::string_view script, const std::vector<std::
   // bpftrace::bt_verbose = true;
   // bpftrace::bt_debug = bpftrace::DebugLevel::kFullDebug;
 
-  uint64_t time_offset = px::system::Config::GetInstance().ClockRealTimeOffset();
+  // Convert the current monotonic time to real time and calculate an offset. With our current real
+  // time conversion this is equivalent, but when we add more complicated time conversion this won't
+  // be 100% accurate for the duration of the probe. But since its only used for strftime in
+  // BPFTrace it won't matter for our BPFTrace scripts.
+  constexpr uint64_t kNanosPerSecond = 1000 * 1000 * 1000;
+  struct timespec mono_time;
+  clock_gettime(CLOCK_MONOTONIC, &mono_time);
+  uint64_t mono_nsecs = kNanosPerSecond * mono_time.tv_sec + mono_time.tv_nsec;
+  uint64_t time_offset =
+      px::system::Config::GetInstance().ConvertToRealTime(mono_nsecs) - mono_nsecs;
 
   // Set boottime. Required to support strftime() in bpftrace code.
   // Since BPF nsecs uses monotonic clock, but strftime() needs to know the real time,
   // BPFtrace requires the offset to be passed in directly.
   // BPFTrace then applies the offset before performing the formatting.
-  constexpr uint64_t kNanosPerSecond = 1000 * 1000 * 1000;
   struct timespec boottime;
   boottime.tv_sec = time_offset / kNanosPerSecond;
   boottime.tv_nsec = time_offset % kNanosPerSecond;

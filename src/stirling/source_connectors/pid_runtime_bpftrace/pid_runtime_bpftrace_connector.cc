@@ -122,7 +122,7 @@ void PIDCPUUseBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */,
     }
 
     DataTable::RecordBuilder<&kTable> r(data_table);
-    r.Append<r.ColIndex("time_")>(timestamp + ClockRealTimeOffset());
+    r.Append<r.ColIndex("time_")>(ConvertToRealTime(timestamp));
     r.Append<r.ColIndex("pid")>(pid);
     r.Append<r.ColIndex("runtime_ns")>(cputime - last_cputime);
     r.Append<r.ColIndex("cmd")>(std::move(name));

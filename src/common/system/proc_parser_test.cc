@@ -33,10 +33,12 @@
 namespace px {
 namespace system {
 
+using ::testing::_;
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
 using ::testing::MatchesRegex;
 using ::testing::Return;
+using ::testing::ReturnArg;
 using ::testing::ReturnRef;
 using ::testing::UnorderedElementsAre;
 
@@ -58,7 +60,7 @@ class ProcParserTest : public ::testing::Test {
     EXPECT_CALL(sysconfig, HasConfig()).WillRepeatedly(Return(true));
     EXPECT_CALL(sysconfig, PageSize()).WillRepeatedly(Return(4096));
     EXPECT_CALL(sysconfig, KernelTicksPerSecond()).WillRepeatedly(Return(10000000));
-    EXPECT_CALL(sysconfig, ClockRealTimeOffset()).WillRepeatedly(Return(128));
+    EXPECT_CALL(sysconfig, ConvertToRealTime(_)).WillRepeatedly(ReturnArg<0>());
     EXPECT_CALL(sysconfig, proc_path()).WillRepeatedly(ReturnRef(proc_path_));
     parser_ = std::make_unique<ProcParser>(sysconfig);
     bytes_per_page_ = sysconfig.PageSize();

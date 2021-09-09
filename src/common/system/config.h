@@ -66,10 +66,10 @@ class Config : public NotCopyable {
   virtual int64_t KernelTicksPerSecond() const = 0;
 
   /**
-   * If recording `nsecs` from bpf, this function can be used to find the offset for
+   * If recording `nsecs` from bpf, this function can be used to
    * convert the result into realtime.
    */
-  virtual uint64_t ClockRealTimeOffset() const = 0;
+  virtual uint64_t ConvertToRealTime(uint64_t monotonic_time) const = 0;
 
   /**
    * Get the sysfs path.
