@@ -618,6 +618,10 @@ func (m *VizierMonitor) runReconciler() {
 			vz.Status.VizierPhase = translateReasonToPhase(vizierState.Reason)
 			vz.Status.VizierReason = string(vizierState.Reason)
 			vz.Status.Message = status.GetMessageFromReason(vizierState.Reason)
+			// Default to the VizierReason if the message is empty.
+			if vz.Status.Message == "" {
+				vz.Status.Message = vz.Status.VizierReason
+			}
 			err = m.vzUpdate(context.Background(), vz)
 			if err != nil {
 				log.WithError(err).Error("Failed to update vizier status")

@@ -23,17 +23,39 @@ package status
 
 var reasonToMessageMap = map[VizierReason]string{
 	"":                             "",
-	CloudConnectorFailedToConnect:  "Cloud connector failed to connect to Pixie Cloud. Please check your cloud address.",
+	VizierVersionTooOld:            "Vizier version is older by more than one major version and may no longer be supported. Please update to the latest version.",
+	KernelVersionsIncompatible:     "Majority of nodes on the cluster have an incompatible Kernel version. Instrumentation may be incomplete.",
+	CloudConnectorFailedToConnect:  "Cloud connector failed to connect to Pixie Cloud. Please check the cloud address in the Vizier object.",
 	CloudConnectorInvalidDeployKey: "Invalid deploy key specified. Please check that the deploy key is correct.",
 	CloudConnectorBasicQueryFailed: "Unable to run basic healthcheck query on cluster.",
-
-	VizierVersionTooOld: "Vizier version is older by more than one major version and may no longer be supported. Please update to the latest version.",
-	ControlPlaneFailedToScheduleBecauseOfTaints: "The vizier control plane could not be scheduled because taints exist on " +
+	CloudConnectorPodPending:       "Cloud connector pod is pending. If this status persists, investigate failures on the vizier-cloud-connector pod.",
+	CloudConnectorPodFailed:        "Cloud connector pod failed to start. If this status persists, investigate failures on the vizier-cloud-connector pod.",
+	CloudConnectorMissing: "Cloud connector pod not found. Something is preventing the vizier-operator from deploying Pixie. " +
+		"If this status persists, clobber and re-deploy your Pixie instance.",
+	MetadataPVCMissing: "The PVC requested by Pixie cannot be found. The vizier-metadata service is unable to start without the PVC. " +
+		"If this status persists, clobber and re-deploy your Pixie instance.",
+	MetadataPVCStorageClassUnavailable: "The PVC requested by Pixie cannot be created successfully: cluster lacks PersistentVolumes or dynamic storage provisioning. " +
+		"See https://kubernetes.io/docs/concepts/storage/persistent-volumes/#lifecycle-of-a-volume-and-claim for info on setting up this feature on the cluster.",
+	MetadataPVCPendingBinding: "The PVC requested by Pixie is still Pending. If stuck in this status, investigate the status of PVC in the Vizier namespace (default `pl`).",
+	ControlPlaneFailedToScheduleBecauseOfTaints: "The Vizier control plane could not be scheduled because taints exist on " +
 		"every node. Consider removing taints from some nodes or manually adding tolerations to each deployment in Vizier.",
-	KernelVersionsIncompatible: "Majority of nodes on the cluster have an incompatible Kernel version. Instrumentation may be incomplete.",
+	ControlPlaneFailedToSchedule: "Vizier control plane pods failed to schedule. Investigate the failures of non-Ready pods in the Vizier namespace (default `pl`).",
+	ControlPlanePodsPending:      "Vizier control plane pods are still pending. If this status persists, investigate details of Pending pods in the Vizier namespace (default `pl`).",
+	ControlPlanePodsFailed:       "Vizier control plane pods are failing. If this status persists, investigate details on the Failed pods in the Vizier namespace (default pl).",
+	NATSPodPending:               "NATS message bus pods are still pending. If this status persists, investigate failures on the Pending NATS pods in the Vizier namespace (default `pl`).",
+	NATSPodMissing:               "NATS message bus pods are missing. If this status persists, clobber and redeploy this Pixie instance.",
+	NATSPodFailed:                "NATS message bus pods have failed. Investigate failures on the Pending NATS pods in the Vizier namespace (default `pl`).",
+	PEMsSomeInsufficientMemory: "Some PEMs are failing to schedule due to insufficient memory available on the nodes. You will not be able to receive data from those failing nodes. " +
+		"Free up memory on those nodes to start scraping Pixie data from those nodes.",
+	PEMsAllInsufficientMemory: "None of the PEMs can schedule due to insufficient memory available on the nodes. " +
+		"Free up memory on all nodes to enable Pixie to schedule.",
+	PEMsMissing: "Cannot find any PEMs in the Vizier namespace (default `pl`). You will not receive data until some PEMs show up. " +
+		"If this problem persists, clobber and re-deploy your Pixie instance",
+	PEMsHighFailureRate: "PEMs are experiencing a high crash rate. Your Pixie experience will be degraded while this occurs.",
+	PEMsAllFailing:      "PEMs are all crashing. Consider filing a bug so someone can address your problem: https://github.com/pixie-labs/pixie",
 }
 
-// GetMessageFromReason gets the human-readable message for a vizier status reason.
+// GetMessageFromReason gets the human-readable message for a Vizier status reason.
 func GetMessageFromReason(reason VizierReason) string {
 	if msg, ok := reasonToMessageMap[reason]; ok {
 		return msg
@@ -46,23 +68,23 @@ func GetMessageFromReason(reason VizierReason) string {
 type VizierReason string
 
 const (
-	// VizierVersionTooOld is a status for when the running Vizier version is more than one major version too old.
+	// VizierVersionTooOld occurs when the running Vizier version is more than one major version too old.
 	VizierVersionTooOld VizierReason = "VizierVersionOld"
-	// KernelVersionsIncompatible is a status for when the majority of nodes have an incompatible kernel version.
+	// KernelVersionsIncompatible occurs when the majority of nodes have an incompatible kernel version.
 	KernelVersionsIncompatible VizierReason = "KernelVersionsIncompatible"
 
-	// CloudConnectorFailedToConnect is a status for when the cloud connector is unable to connect to the specified cloud addr.
+	// CloudConnectorFailedToConnect occurs when the cloud connector is unable to connect to the specified cloud addr.
 	CloudConnectorFailedToConnect VizierReason = "CloudConnectFailed"
-	// CloudConnectorInvalidDeployKey is a status for when the cloud connector has an invalid deploy key. This will prevent
+	// CloudConnectorInvalidDeployKey occurs when the cloud connector has an invalid deploy key. This will prevent
 	// the Vizier from properly registering.
 	CloudConnectorInvalidDeployKey VizierReason = "InvalidDeployKey"
-	// CloudConnectorBasicQueryFailed is a status for when the cloud connector is fully connected, but fails to run basic queries.
+	// CloudConnectorBasicQueryFailed occurs when the cloud connector is fully connected, but fails to run basic queries.
 	CloudConnectorBasicQueryFailed VizierReason = "BasicQueryFailed"
-	// CloudConnectorPodPending is a status when a cloud connector that is still in the Pending Kubernetes Phase.
+	// CloudConnectorPodPending occurs when a cloud connector is in the Pending Kubeneretes PodPhase.
 	CloudConnectorPodPending VizierReason = "CloudConnectorPodPending"
-	// CloudConnectorPodFailed is the status when a cloud connector pod is in the Failed Kubernetes Phase.
+	// CloudConnectorPodFailed occurs when a cloud connector pod is in the Failed Kubernetes PodPhase.
 	CloudConnectorPodFailed VizierReason = "CloudConnectorPodFailed"
-	// CloudConnectorMissing is the status when a cloud connector doesn't exist for a cluster.
+	// CloudConnectorMissing occurs when a cloud connector pod doesn't exist for a cluster.
 	CloudConnectorMissing VizierReason = "CloudConnectorMissing"
 
 	// MetadataPVCMissing occurs when the operator cannot find the metadata PVC.
@@ -76,6 +98,10 @@ const (
 	ControlPlanePodsPending VizierReason = "ControlPlanePodsPending"
 	// ControlPlanePodsFailed occurs when one or more control plane pods are failing, but none are pending.
 	ControlPlanePodsFailed VizierReason = "ControlPlanePodsFailed"
+	// ControlPlaneFailedToSchedule occurs when a pod in the control plane cannot be scheduled. More specific states are enumerated in separate reasons below.
+	ControlPlaneFailedToSchedule VizierReason = "ControlPlaneFailedToSchedule"
+	// ControlPlaneFailedToScheduleBecauseOfTaints occurs when a pod in the control plane could not be scheduled because of restrictive taints.
+	ControlPlaneFailedToScheduleBecauseOfTaints VizierReason = "ControlPlaneFailedToScheduleBecauseOfTaints"
 
 	// NATSPodPending occurs when the nats pod is pending.
 	NATSPodPending VizierReason = "NATSPodPending"
@@ -97,9 +123,4 @@ const (
 	PEMsHighFailureRate VizierReason = "PEMsHighFailureRate"
 	// PEMsAllFailing occurs when a all PEMs are failing.
 	PEMsAllFailing VizierReason = "PEMsAllFailing"
-
-	// ControlPlaneFailedToSchedule occurs when a pod in the control plane cannot be scheduled. More specific states are enumerated in separate reasons below.
-	ControlPlaneFailedToSchedule VizierReason = "ControlPlaneFailedToSchedule"
-	// ControlPlaneFailedToScheduleBecauseOfTaints occurs when a pod in the control plane could not be scheduled because of restrictive taints.
-	ControlPlaneFailedToScheduleBecauseOfTaints VizierReason = "ControlPlaneFailedToScheduleBecauseOfTaints"
 )
