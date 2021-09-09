@@ -43,13 +43,13 @@ pl_cc_library(
 )
 
 pl_cc_test(
-    name = "kafka_parse_test",
+    name = "parse_test",
     srcs = ["parse_test.cc"],
     deps = [":cc_library"],
 )
 
 pl_cc_test(
-    name = "kafka_stitcher_test",
+    name = "stitcher_test",
     srcs = ["stitcher_test.cc"],
     deps = [":cc_library"],
 )

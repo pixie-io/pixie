@@ -52,19 +52,19 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "mysql_handler_test",
+    name = "handler_test",
     srcs = ["handler_test.cc"],
     deps = [":cc_library"],
 )
 
 pl_cc_test(
-    name = "mysql_stitcher_test",
+    name = "stitcher_test",
     srcs = ["stitcher_test.cc"],
     deps = [":cc_library"],
 )
 
 pl_cc_test(
-    name = "mysql_parse_test",
+    name = "parse_test",
     srcs = ["parse_test.cc"],
     deps = [":cc_library"],
 )
