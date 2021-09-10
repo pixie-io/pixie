@@ -49,7 +49,7 @@ spec:
         - name: HEALTH_PATH
           value: "/health"
         - name: DEFAULT_ETCD_PATH
-          value: "https://etcd.pl.svc:2379"
+          value: "https://pl-etcd-client.pl.svc:2379"
         envFrom:
         - configMapRef:
             name: pl-cluster-config

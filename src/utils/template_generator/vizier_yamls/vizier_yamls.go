@@ -259,7 +259,7 @@ func GenerateSecretsYAML(clientset *kubernetes.Clientset, versionStr string) (st
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cluster-config"),
 			Patch:           `{"data": { "PL_MD_ETCD_SERVER": "__PL_MD_ETCD_SERVER__"} }`,
 			Placeholder:     "__PL_MD_ETCD_SERVER__",
-			TemplateValue:   fmt.Sprintf(`{{ if .Values.useEtcdOperator }}"https://pl-etcd-client.%s.svc:2379"{{else}}"https://etcd.%s.svc:2379"{{end}}`, nsTmpl, nsTmpl),
+			TemplateValue:   fmt.Sprintf("https://pl-etcd-client.%s.svc:2379", nsTmpl),
 		},
 	}, GlobalTemplateOptions...))
 	if err != nil {

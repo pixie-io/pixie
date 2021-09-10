@@ -58,7 +58,7 @@ const (
 )
 
 func init() {
-	pflag.String("md_etcd_server", "https://etcd.pl.svc:2379", "The address to metadata etcd server.")
+	pflag.String("md_etcd_server", "https://pl-etcd-client.pl.svc:2379", "The address to metadata etcd server.")
 	pflag.String("cluster_id", "", "The Cluster ID to use for Pixie Cloud")
 	pflag.Duration("max_expected_clock_skew", 2000, "Duration in ms of expected maximum clock skew in a cluster")
 	pflag.Duration("renew_period", 5000, "Duration in ms of the time to wait to renew lease")
