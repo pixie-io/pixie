@@ -176,6 +176,7 @@ func main() {
 		// If bridge is functioning, check whether queries can be executed.
 		_, err := checker.GetStatus()
 		if err != nil {
+			log.WithError(err).Info("health check returned unhealthy")
 			return string(status.CloudConnectorBasicQueryFailed)
 		}
 
