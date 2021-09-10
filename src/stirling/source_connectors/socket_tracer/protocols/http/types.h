@@ -99,7 +99,7 @@ struct Record {
   }
 };
 
-struct ProtocolTraits {
+struct ProtocolTraits : public BaseProtocolTraits<Record> {
   using frame_type = Message;
   using record_type = Record;
   using state_type = NoState;

@@ -147,7 +147,7 @@ struct Record {
   Response resp;
 };
 
-struct ProtocolTraits {
+struct ProtocolTraits : public BaseProtocolTraits<Record> {
   using frame_type = Frame;
   using record_type = Record;
   using state_type = NoState;

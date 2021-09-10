@@ -56,7 +56,7 @@ struct Record {
 };
 
 // Required by event parser interface.
-struct ProtocolTraits {
+struct ProtocolTraits : public BaseProtocolTraits<Record> {
   using frame_type = Message;
   using record_type = Record;
   using state_type = NoState;

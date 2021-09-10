@@ -100,4 +100,14 @@ inline int64_t CurrentTimeNS() {
       .count();
 }
 
+/**
+ * Helper to get the current time from steady clock, in nanoseconds.
+ * @return the current time in ns.
+ */
+inline int64_t CurrentSteadyTimeNS() {
+  return std::chrono::duration_cast<std::chrono::nanoseconds>(
+             std::chrono::steady_clock::now().time_since_epoch())
+      .count();
+}
+
 }  // namespace px

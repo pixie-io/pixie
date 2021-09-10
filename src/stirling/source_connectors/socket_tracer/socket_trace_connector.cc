@@ -568,8 +568,6 @@ ConnTracker& SocketTraceConnector::GetOrCreateConnTracker(struct conn_id_t conn_
 }
 
 void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> event) {
-  event->attr.timestamp_ns = ConvertToRealTime(event->attr.timestamp_ns);
-
   if (perf_buffer_events_output_stream_ != nullptr) {
     WriteDataEvent(*event);
   }
@@ -579,30 +577,21 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
 }
 
 void SocketTraceConnector::AcceptControlEvent(socket_control_event_t event) {
-  // timestamp_ns is a common field of open and close fields.
-  event.timestamp_ns = ConvertToRealTime(event.timestamp_ns);
-
   ConnTracker& tracker = GetOrCreateConnTracker(event.conn_id);
   tracker.AddControlEvent(event);
 }
 
 void SocketTraceConnector::AcceptConnStatsEvent(conn_stats_event_t event) {
-  event.timestamp_ns = ConvertToRealTime(event.timestamp_ns);
-
   ConnTracker& tracker = conn_trackers_mgr_.GetOrCreateConnTracker(event.conn_id);
   tracker.AddConnStats(event);
 }
 
 void SocketTraceConnector::AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> event) {
-  event->attr.timestamp_ns = ConvertToRealTime(event->attr.timestamp_ns);
-
   ConnTracker& tracker = GetOrCreateConnTracker(event->attr.conn_id);
   tracker.AddHTTP2Header(std::move(event));
 }
 
 void SocketTraceConnector::AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event) {
-  event->attr.timestamp_ns = ConvertToRealTime(event->attr.timestamp_ns);
-
   ConnTracker& tracker = GetOrCreateConnTracker(event->attr.conn_id);
   tracker.AddHTTP2Data(std::move(event));
 }
@@ -1002,6 +991,8 @@ void SocketTraceConnector::TransferStream(ConnectorContext* ctx, ConnTracker* tr
     // table store. But those messages are not cached inside ConnTracker.
     auto records = tracker->ProcessToRecords<TProtocolTraits>();
     for (auto& record : records) {
+      TProtocolTraits::ConvertTimestamps(
+          &record, [&](uint64_t mono_time) { return ConvertToRealTime(mono_time); });
       AppendMessage(ctx, *tracker, std::move(record), data_table);
     }
 
@@ -1015,7 +1006,7 @@ void SocketTraceConnector::TransferConnStats(ConnectorContext* ctx, DataTable* d
   namespace idx = ::px::stirling::conn_stats_idx;
 
   absl::flat_hash_set<md::UPID> upids = ctx->GetUPIDs();
-  uint64_t time = CurrentTimeNS();
+  uint64_t time = AdjustedSteadyClockNowNS();
 
   auto& agg_stats = conn_stats_.UpdateStats();
 

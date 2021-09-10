@@ -119,6 +119,20 @@ RecordsWithErrorCount<TRecordType> StitchFrames(std::deque<TFrameType>* requests
                                                 std::deque<TFrameType>* responses,
                                                 TStateType* state);
 
+/**
+ * The BaseProtocolTraits all ProtocolTraits should inherit from. It provides a default
+ * UpdateTimestamps method that applies to most protocols.
+ * @tparam TRecord The type of the record for the derived ProtocolTraits.
+ */
+template <typename TRecord>
+struct BaseProtocolTraits {
+  using ConvertTimestampsFuncType = const std::function<uint64_t(uint64_t)>&;
+  static void ConvertTimestamps(TRecord* record, ConvertTimestampsFuncType func) {
+    record->req.timestamp_ns = func(record->req.timestamp_ns);
+    record->resp.timestamp_ns = func(record->resp.timestamp_ns);
+  }
+};
+
 }  // namespace protocols
 }  // namespace stirling
 }  // namespace px

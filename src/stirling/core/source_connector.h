@@ -105,6 +105,11 @@ class SourceConnector : public NotCopyable {
     return sysconfig_.ConvertToRealTime(monotonic_time);
   }
 
+  // Use this version of the clock, instead of CurrentTimeNS(), when generating a timestamp
+  // for comparison against BPF event timestamps. This is to make sure the clocks are generated
+  // in the exact same way.
+  uint64_t AdjustedSteadyClockNowNS() const { return ConvertToRealTime(CurrentSteadyTimeNS()); }
+
   virtual void SetDebugLevel(int level) { debug_level_ = level; }
   virtual void EnablePIDTrace(int pid) { pids_to_trace_.insert(pid); }
   virtual void DisablePIDTrace(int pid) { pids_to_trace_.erase(pid); }

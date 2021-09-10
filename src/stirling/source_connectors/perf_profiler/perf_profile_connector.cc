@@ -218,7 +218,7 @@ void PerfProfileConnector::CreateRecords(ebpf::BPFStackTable* stack_traces, Conn
   constexpr size_t kMaxStackDepth = 64;
   constexpr size_t kMaxStackTraceSize = kMaxStackDepth * kMaxSymbolSize;
 
-  const uint64_t timestamp_ns = CurrentTimeNS();
+  const uint64_t timestamp_ns = AdjustedSteadyClockNowNS();
 
   // Stack traces from kernel/BPF are ordered lists of instruction pointers (addresses).
   // AggregateStackTraces() will collapse some of those into identical symbolic stack traces;

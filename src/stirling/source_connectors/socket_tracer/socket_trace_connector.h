@@ -228,15 +228,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   explicit SocketTraceConnector(std::string_view source_name);
 
-  // Use this version of the clock, instead of CurrentTimeNS(), when generating a timestamp
-  // for comparison against BPF event timestamps. This is to make sure the clocks are generated
-  // in the exact same way.
-  uint64_t AdjustedSteadyClockNowNS() const {
-    auto now = std::chrono::steady_clock::now();
-    return ConvertToRealTime(
-        std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count());
-  }
-
   // Initialize protocol_transfer_specs_.
   void InitProtocolTransferSpecs();
 

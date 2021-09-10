@@ -81,7 +81,7 @@ Status JVMStatsConnector::ExportStats(const md::UPID& upid,
     return Status::OK();
   }
 
-  uint64_t time = CurrentTimeNS();
+  uint64_t time = AdjustedSteadyClockNowNS();
 
   DataTable::RecordBuilder<&kJVMStatsTable> r(data_table, time);
   r.Append<kTimeIdx>(time);

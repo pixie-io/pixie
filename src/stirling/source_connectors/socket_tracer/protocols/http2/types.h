@@ -182,10 +182,15 @@ struct Stream {
 
 using Record = Stream;
 
-struct ProtocolTraits {
+struct ProtocolTraits : public BaseProtocolTraits<Record> {
   using frame_type = Stream;
   using record_type = Record;
   using state_type = NoState;
+
+  static void ConvertTimestamps(record_type* record, ConvertTimestampsFuncType func) {
+    record->send.timestamp_ns = func(record->send.timestamp_ns);
+    record->recv.timestamp_ns = func(record->recv.timestamp_ns);
+  }
 };
 
 }  // namespace http2
