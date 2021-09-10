@@ -8,15 +8,15 @@
 go get px.dev/pxapi
 ```
 
-- [API Quick Start Documentation](https://docs.pixielabs.ai/using-pixie/api-quick-start/)
+- [API Quick Start Documentation](https://docs.px.dev/using-pixie/api-quick-start/)
 - [API Reference Docs](https://pkg.go.dev/px.dev/pxapi)
 
 ## Resources
 
-- [Website](https://pixielabs.ai)
-- [Documentation](https://docs.pixielabs.ai)
-- [Community Slack](https://slackin.withpixie.ai/)
-- [Youtube](https://www.youtube.com/channel/UCOMCDRvBVNIS0lCyOmst7eg/videos)
+- [Website](https://px.dev)
+- [Documentation](https://docs.px.dev)
+- [Community Slack](https://slackin.px.dev/)
+- [Youtube](https://www.youtube.com/channel/UCOMCDRvBVNIS0lCyOmst7eg)
 
 ## Contributing
 

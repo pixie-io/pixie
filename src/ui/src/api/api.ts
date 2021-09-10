@@ -68,8 +68,8 @@ export abstract class PixieAPIClientAbstract {
 }
 
 /**
- * API client library for [Pixie](https://pixielabs.ai).
- * See the [documentation](https://docs.pixielabs.ai/reference/api/overview/) for a complete reference.
+ * API client library for [Pixie](https://px.dev).
+ * See the [documentation](https://docs.px.dev/reference/api/overview/) for a complete reference.
  */
 export class PixieAPIClient extends PixieAPIClientAbstract {
   /**

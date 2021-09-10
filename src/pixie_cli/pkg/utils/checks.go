@@ -234,7 +234,7 @@ var (
 			}
 		}
 
-		return errors.New("Cluster type is not in list of known supported cluster types. Please see: https://docs.pixielabs.ai/installing-pixie/requirements/")
+		return errors.New("Cluster type is not in list of known supported cluster types. Please see: https://docs.px.dev/installing-pixie/requirements/")
 	})
 )
 
