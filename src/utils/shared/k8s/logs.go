@@ -30,8 +30,8 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	v12 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -40,37 +40,35 @@ import (
 type LogCollector struct {
 	k8sConfig    *rest.Config
 	k8sClientSet *kubernetes.Clientset
-	ns           string
 }
 
 // NewLogCollector creates a new log collector.
-func NewLogCollector(ns string) *LogCollector {
+func NewLogCollector() *LogCollector {
 	cfg := GetConfig()
 	cs := GetClientset(cfg)
 	return &LogCollector{
 		k8sConfig:    cfg,
 		k8sClientSet: cs,
-		ns:           ns,
 	}
 }
 
-func fileNameFromParams(podName string, containerName string, prev bool) string {
+func fileNameFromParams(ns string, podName string, containerName string, prev bool) string {
 	suffix := "log"
 	if prev {
 		suffix = "prev.log"
 	}
-	return fmt.Sprintf("%s__%s.%s", podName, containerName, suffix)
+	return fmt.Sprintf("%s__%s__%s.%s", ns, podName, containerName, suffix)
 }
 
-func (c *LogCollector) logPodInfoToZipFile(zf *zip.Writer, pod v12.Pod, containerName string, prev bool) error {
-	fName := fileNameFromParams(pod.Name, containerName, prev)
+func (c *LogCollector) logPodInfoToZipFile(zf *zip.Writer, pod v1.Pod, containerName string, prev bool) error {
+	fName := fileNameFromParams(pod.Namespace, pod.Name, containerName, prev)
 	w, err := zf.Create(fName)
 	if err != nil {
 		return err
 	}
 	defer zf.Flush()
 
-	logOpts := &v12.PodLogOptions{
+	logOpts := &v1.PodLogOptions{
 		Container: containerName,
 		Previous:  prev,
 	}
@@ -114,8 +112,8 @@ func (c *LogCollector) logKubeCmd(zf *zip.Writer, fName string, arg ...string) e
 	return cmd.Wait()
 }
 
-func (c *LogCollector) writePodDescription(zf *zip.Writer, pod v12.Pod) error {
-	w, err := zf.Create(fmt.Sprintf("pod_%s_describe.json", pod.Name))
+func (c *LogCollector) writePodDescription(zf *zip.Writer, pod v1.Pod) error {
+	w, err := zf.Create(fmt.Sprintf("%s__%s__describe.json", pod.Namespace, pod.Name))
 	defer zf.Flush()
 
 	if err != nil {
@@ -141,7 +139,18 @@ func (c *LogCollector) CollectPixieLogs(fName string) error {
 	zf := zip.NewWriter(f)
 	defer zf.Close()
 
-	pods, err := c.k8sClientSet.CoreV1().Pods(c.ns).List(context.Background(), v1.ListOptions{})
+	labelSelector := metav1.FormatLabelSelector(&metav1.LabelSelector{
+		MatchExpressions: []metav1.LabelSelectorRequirement{
+			metav1.LabelSelectorRequirement{
+				Key:      "app",
+				Operator: metav1.LabelSelectorOpIn,
+				Values:   []string{"pixie-operator", "pl-monitoring"},
+			},
+		},
+	})
+
+	// We check across all namespaces for the matching pixie pods.
+	pods, err := c.k8sClientSet.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
 		return err
 	}
@@ -167,9 +176,9 @@ func (c *LogCollector) CollectPixieLogs(fName string) error {
 		log.WithError(err).Warn("failed to log node info")
 	}
 
-	err = c.logKubeCmd(zf, "services.log", "-n", c.ns, "get", "services", "-o", "wide")
+	err = c.logKubeCmd(zf, "services.log", "describe", "services", "--all-namespaces", "-l", labelSelector)
 	if err != nil {
-		log.WithError(err).Warn("failed to log services")
+		log.WithError(err).Warnf("failed to log services")
 	}
 
 	return nil

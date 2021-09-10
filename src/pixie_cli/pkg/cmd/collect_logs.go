@@ -27,7 +27,6 @@ import (
 	"github.com/spf13/viper"
 
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
-	"px.dev/pixie/src/pixie_cli/pkg/vizier"
 	"px.dev/pixie/src/utils/shared/k8s"
 )
 
@@ -41,12 +40,7 @@ var CollectLogsCmd = &cobra.Command{
 	Use:   "collect-logs",
 	Short: "Collect pixie logs on the cluster",
 	Run: func(cmd *cobra.Command, args []string) {
-		ns, _ := cmd.Flags().GetString("namespace")
-		if ns == "" {
-			ns = vizier.MustFindVizierNamespace()
-		}
-
-		c := k8s.NewLogCollector(ns)
+		c := k8s.NewLogCollector()
 		fName := fmt.Sprintf("pixie_logs_%s.zip", time.Now().Format("20060102150405"))
 		err := c.CollectPixieLogs(fName)
 		if err != nil {
