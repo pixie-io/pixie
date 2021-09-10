@@ -10,7 +10,7 @@ import (
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	rest "k8s.io/client-go/rest"
-	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
+	v1alpha1 "px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	scheme "px.dev/pixie/src/operator/client/versioned/scheme"
 )
 
