@@ -70,6 +70,8 @@ spec:
             secretKeyRef:
               key: jwt-signing-key
               name: pl-cluster-secrets
+        - name: PL_ENABLE_CLOCKWORK
+          value: "false"
         resources: {}
         securityContext:
           capabilities:

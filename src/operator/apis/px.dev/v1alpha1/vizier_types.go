@@ -52,6 +52,8 @@ type VizierSpec struct {
 	DevCloudNamespace string `json:"devCloudNamespace,omitempty"`
 	// PemMemoryLimit is a memory limit applied specifically to PEM pods.
 	PemMemoryLimit string `json:"pemMemoryLimit,omitempty"`
+	// EnableClockworkIntegration enables getting timestamp offsets from a clockwork agent, for time-sync purposes.
+	EnableClockworkIntegration bool `json:"enableClockworkIntegration,omitempty"`
 	// Pod defines the policy for creating Vizier pods.
 	Pod *PodPolicy `json:"pod,omitempty"`
 	// Patches defines patches that should be applied to Vizier resources.

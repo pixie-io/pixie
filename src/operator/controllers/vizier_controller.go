@@ -656,14 +656,15 @@ func generateVizierYAMLsConfig(ctx context.Context, ns string, vz *v1alpha1.Vizi
 	req := &cloudpb.ConfigForVizierRequest{
 		Namespace: ns,
 		VzSpec: &vizierconfigpb.VizierSpec{
-			Version:           vz.Spec.Version,
-			DeployKey:         vz.Spec.DeployKey,
-			DisableAutoUpdate: vz.Spec.DisableAutoUpdate,
-			UseEtcdOperator:   vz.Spec.UseEtcdOperator,
-			ClusterName:       vz.Spec.ClusterName,
-			CloudAddr:         vz.Spec.CloudAddr,
-			DevCloudNamespace: vz.Spec.DevCloudNamespace,
-			PemMemoryLimit:    vz.Spec.PemMemoryLimit,
+			Version:                    vz.Spec.Version,
+			DeployKey:                  vz.Spec.DeployKey,
+			DisableAutoUpdate:          vz.Spec.DisableAutoUpdate,
+			UseEtcdOperator:            vz.Spec.UseEtcdOperator,
+			ClusterName:                vz.Spec.ClusterName,
+			CloudAddr:                  vz.Spec.CloudAddr,
+			DevCloudNamespace:          vz.Spec.DevCloudNamespace,
+			PemMemoryLimit:             vz.Spec.PemMemoryLimit,
+			EnableClockworkIntegration: vz.Spec.EnableClockworkIntegration,
 			Pod_Policy: &vizierconfigpb.PodPolicyReq{
 				Labels:      vz.Spec.Pod.Labels,
 				Annotations: vz.Spec.Pod.Annotations,

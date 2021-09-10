@@ -71,6 +71,9 @@ spec:
                 description: PemMemoryLimit is a memory limit applied specifically
                   to PEM pods.
                 type: string
+              enableClockworkIntegration:
+                description: Currently unsupported.
+                type: boolean
               pod:
                 description: Pod defines the policy for creating Vizier pods.
                 properties:

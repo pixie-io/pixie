@@ -38,33 +38,35 @@ const (
 
 // VizierTmplValues are the template values that can be used to fill out templated Vizier YAMLs.
 type VizierTmplValues struct {
-	DeployKey         string
-	CustomAnnotations string
-	CustomLabels      string
-	CloudAddr         string
-	ClusterName       string
-	CloudUpdateAddr   string
-	UseEtcdOperator   bool
-	PEMMemoryLimit    string
-	Namespace         string
-	DisableAutoUpdate bool
-	SentryDSN         string
+	DeployKey                  string
+	CustomAnnotations          string
+	CustomLabels               string
+	CloudAddr                  string
+	ClusterName                string
+	CloudUpdateAddr            string
+	UseEtcdOperator            bool
+	PEMMemoryLimit             string
+	Namespace                  string
+	DisableAutoUpdate          bool
+	SentryDSN                  string
+	EnableClockworkIntegration bool
 }
 
 // VizierTmplValuesToArgs converts the vizier template values to args which can be used to fill out a template.
 func VizierTmplValuesToArgs(tmplValues *VizierTmplValues) *yamls.YAMLTmplArguments {
 	return &yamls.YAMLTmplArguments{
 		Values: &map[string]interface{}{
-			"deployKey":         tmplValues.DeployKey,
-			"customAnnotations": tmplValues.CustomAnnotations,
-			"customLabels":      tmplValues.CustomLabels,
-			"cloudAddr":         tmplValues.CloudAddr,
-			"clusterName":       tmplValues.ClusterName,
-			"cloudUpdateAddr":   tmplValues.CloudUpdateAddr,
-			"useEtcdOperator":   tmplValues.UseEtcdOperator,
-			"pemMemoryLimit":    tmplValues.PEMMemoryLimit,
-			"disableAutoUpdate": tmplValues.DisableAutoUpdate,
-			"sentryDSN":         tmplValues.SentryDSN,
+			"deployKey":                  tmplValues.DeployKey,
+			"customAnnotations":          tmplValues.CustomAnnotations,
+			"customLabels":               tmplValues.CustomLabels,
+			"cloudAddr":                  tmplValues.CloudAddr,
+			"clusterName":                tmplValues.ClusterName,
+			"cloudUpdateAddr":            tmplValues.CloudUpdateAddr,
+			"useEtcdOperator":            tmplValues.UseEtcdOperator,
+			"pemMemoryLimit":             tmplValues.PEMMemoryLimit,
+			"disableAutoUpdate":          tmplValues.DisableAutoUpdate,
+			"sentryDSN":                  tmplValues.SentryDSN,
+			"enableClockworkIntegration": tmplValues.EnableClockworkIntegration,
 		},
 		Release: &map[string]interface{}{
 			"Namespace": tmplValues.Namespace,
@@ -367,6 +369,12 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
 			Patch:           `{ "subjects": [{ "name": "metadata-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
 			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
 			TemplateValue:   nsTmpl,
+		},
+		{
+			TemplateMatcher: yamls.GenerateContainerNameMatcherFn("pem"),
+			Patch:           `{"spec": {"template": { "spec": { "containers": [{"name": "pem", "env": [{"name": "PL_ENABLE_CLOCKWORK", "value": "__PX_ENABLE_CLOCKWORK__"}]}] } } } }`,
+			Placeholder:     "__PX_ENABLE_CLOCKWORK__",
+			TemplateValue:   `{{ if .Values.enableClockworkIntegration }}"true"{{else}}"false"{{end}}`,
 		},
 	}...)
 

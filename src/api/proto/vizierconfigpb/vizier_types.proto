@@ -51,6 +51,9 @@ message VizierSpec {
     // The key of the patch should be the name of the resource that is patched. The value of the patch is the patch,
     // encoded as a string which follow the "strategic merge patch" rules for K8s.
     map<string, string> patches = 10;
+    // EnableClockworkIntegration specifies whether to enable getting timestamp offsets from clockwork agents,
+    // for time-sync purposes.
+    bool enable_clockwork_integration = 11;
 }
 
 // PodPolicyReq defines the policy for creating Vizier pods.
