@@ -44,7 +44,20 @@ export interface ResultsContextProps extends Results {
 
 export const ResultsContext = React.createContext<ResultsContextProps>(null);
 
-export const ResultsContextProvider: React.FC = ({ children }) => {
+/**
+ * When streaming queries, row batch data updates happen outside of React's lifecycle and mutate tables' contents.
+ * React doesn't see these changes for the purposes of memoized props, but watching ResultsContext lets it notice.
+ * Use this for things like tables that need to append data while it's still being streamed, before results finalize.
+ */
+export function useLatestRowCount(tableName: string): number {
+  const { tables } = React.useContext(ResultsContext);
+  const count = tables[tableName]?.numRows ?? 0;
+  // This is what actually makes React watch for the change
+  React.useEffect(() => {}, [tableName, count]);
+  return count;
+}
+
+export const ResultsContextProvider = React.memo(function ResultsContextProvider({ children }) {
   const [results, setResults] = React.useState<Results>({ tables: {} });
   const [loading, setLoading] = React.useState(false);
   const [streaming, setStreaming] = React.useState(false);
@@ -75,4 +88,4 @@ export const ResultsContextProvider: React.FC = ({ children }) => {
       {children}
     </ResultsContext.Provider>
   );
-};
+});

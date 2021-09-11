@@ -51,6 +51,7 @@ export interface ExecuteScriptOptions {
 export interface Table {
   relation: Relation;
   data: RowBatchData[];
+  numRows: number;
   name: string;
   id: string;
 }
@@ -418,7 +419,7 @@ export class VizierGRPCClient {
             const id = resp.getMetaData().getId();
             const name = resp.getMetaData().getName();
             tablesMap.set(id, {
-              relation, id, name, data: [],
+              relation, id, name, data: [], numRows: 0,
             });
             const table = tablesMap.get(id);
             results.tables.push(table);

@@ -219,25 +219,23 @@ export const ScriptContextProvider: React.FC = React.memo(function ScriptContext
             setCancelExecution(null);
           });
           break;
-        case 'data':
-          for (const updateBatch of update.event.data) {
-            const table: Table = resultsContext.tables[updateBatch.id];
-            if (!table) {
-              resultsContext.tables[updateBatch.id] = { ...updateBatch, data: [updateBatch.batch] };
-            } else {
+        case 'data': {
+          const updateData = update.event.data;
+          resultsContext.setResults((prev) => {
+            for (const updateBatch of updateData) {
+              const table: Table = prev.tables[updateBatch.name] ?? { ...updateBatch, data: [], numRows: 0 };
               table.data.push(updateBatch.batch);
+              table.numRows = table.data.reduce((sum, batch) => sum + batch.getNumRows(), 0);
+              // eslint-disable-next-line no-param-reassign
+              prev.tables[updateBatch.name] = table;
             }
-          }
-          resultsContext.setResults((prev) => ({
-            error: prev.error,
-            stats: prev.stats,
-            mutationInfo: prev.mutationInfo,
-            tables: prev.tables,
-          }));
+            return { ...prev };
+          });
           if (resultsContext.streaming) {
             resultsContext.setLoading(false);
           }
           break;
+        }
         case 'metadata':
         case 'mutation-info':
         case 'status':
@@ -248,13 +246,18 @@ export const ScriptContextProvider: React.FC = React.memo(function ScriptContext
             break;
           }
 
-          // TODO(nick): Same performance improvement for tables (though this event happens once, maybe best to refresh)
           if (update.results && (resultsContext.streaming || update.results.executionStats)) {
             resultsContext.setResults({
               error: resultsContext.error,
               stats: update.results.executionStats,
               mutationInfo: resultsContext.mutationInfo,
-              tables: update.results.tables.reduce((a, c) => ({ ...a, [c.name]: c }), {}),
+              tables: update.results.tables.reduce((map, table) => ({
+                ...map,
+                [table.name]: {
+                  ...table,
+                  numRows: table.data.reduce((sum, batch) => sum + batch.getNumRows(), 0),
+                },
+              }), {}),
             });
           }
           // Query completed normally

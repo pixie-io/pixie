@@ -422,8 +422,7 @@ function decorateTable({ table: { columns, data }, enableColumnSelect, enableRow
   return { columns, data };
 }
 
-// eslint-disable-next-line react-memo/require-memo
-const DataTableImpl: React.FC<DataTableProps> = ({ table, ...options }) => {
+const DataTableImpl = React.memo<DataTableProps>(function DataTable({ table, ...options }) {
   const classes = useDataTableStyles();
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -535,7 +534,6 @@ const DataTableImpl: React.FC<DataTableProps> = ({ table, ...options }) => {
       </div>
     </DataTableContext.Provider>
   );
-};
-DataTableImpl.displayName = 'DataTable';
+});
 
 export const DataTable = withAutoSizerContext(DataTableImpl);

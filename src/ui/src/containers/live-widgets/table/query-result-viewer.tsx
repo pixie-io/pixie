@@ -23,6 +23,7 @@ import { Theme, Typography, makeStyles } from '@material-ui/core';
 import { createStyles } from '@material-ui/styles';
 import { Arguments } from 'app/utils/args-utils';
 import { LiveDataTable } from 'app/containers/live-data-table/live-data-table';
+import { useLatestRowCount } from 'app/context/results-context';
 
 const useStyles = makeStyles(({ spacing }: Theme) => createStyles({
   root: {
@@ -54,34 +55,26 @@ export interface QueryResultTableProps {
   propagatedArgs: Arguments;
 }
 
-export const QueryResultTable: React.FC<QueryResultTableProps> = (({
+export const QueryResultTable = React.memo<QueryResultTableProps>(function QueryResultTable({
   display, data, propagatedArgs,
-}) => {
+}) {
   const classes = useStyles();
 
-  const [totalCount, setTotalCount] = React.useState<number>(0);
-
-  const dataLength = data?.data?.length ?? 0;
-  React.useEffect(() => {
-    if (data && data.data) {
-      setTotalCount(
-        data.data.map((d) => d.getNumRows())
-          .reduce((p, n) => p + n, 0));
-    }
-  }, [data, dataLength, setTotalCount]);
+  // Ensures the summary updates while streaming queries.
+  const numRows = useLatestRowCount(data.name);
 
   const [visibleStart, setVisibleStart] = React.useState(1);
   const [visibleStop, setVisibleStop] = React.useState(1);
   const visibleRowSummary = React.useMemo(() => {
     const count = visibleStop - visibleStart + 1;
-    let text = `Showing ${visibleStart + 1} - ${visibleStop + 1} / ${totalCount} records`;
+    let text = `Showing ${visibleStart + 1} - ${visibleStop + 1} / ${numRows} records`;
     if (count <= 0) {
       text = 'No records to show';
-    } else if (count >= totalCount) {
+    } else if (count >= numRows) {
       text = '\xa0'; // non-breaking space
     }
     return <Typography variant='subtitle2'>{text}</Typography>;
-  }, [totalCount, visibleStart, visibleStop]);
+  }, [numRows, visibleStart, visibleStop]);
 
   const onRowsRendered = React.useCallback(({ visibleStartIndex, visibleStopIndex }) => {
     setVisibleStart(visibleStartIndex);

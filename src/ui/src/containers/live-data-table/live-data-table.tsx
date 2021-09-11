@@ -30,6 +30,7 @@ import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { JSONData } from 'app/containers/format-data/format-data';
 import { liveCellRenderer } from 'app/containers/live-data-table/renderers';
 import { getSortFunc } from 'app/containers/live-data-table/sort-funcs';
+import { useLatestRowCount } from 'app/context/results-context';
 import { AutoSizerContext, withAutoSizerContext } from 'app/utils/autosizer';
 import { ColumnDisplayInfo, displayInfoFromColumn, titleFromInfo } from './column-display-info';
 import { parseRows } from './parsers';
@@ -70,12 +71,15 @@ function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutte
   const { selectedClusterName: cluster } = React.useContext(ClusterContext);
   const { embedState } = React.useContext(LiveRouteContext);
 
+  // Ensures the table checks for new data while streaming queries.
+  const numRows = useLatestRowCount(table.name);
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const rows = React.useMemo(() => rowsFromVizierTable(table), [table.data]);
+  const rows = React.useMemo(() => rowsFromVizierTable(table), [table.data, numRows]);
 
   const [displayMap, setDisplayMap] = React.useState<Map<string, ColumnDisplayInfo>>(new Map());
 
-  const convertColumn = (col: ColumnInfo) => {
+  const convertColumn = React.useCallback((col: ColumnInfo) => {
     const display = displayMap.get(col.getColumnName()) ?? displayInfoFromColumn(col);
     const justify = SemanticAlignmentMap.get(display.semanticType) ?? DataAlignmentMap.get(display.type) ?? 'start';
 
@@ -115,7 +119,7 @@ function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutte
         return sortFunc(a.original, b.original);
       },
     };
-  };
+  }, [cluster, displayMap, embedState, gutterColumn, propagatedArgs, rows, theme]);
 
   const columns = React.useMemo<ReactTable['columns']>(
     () => table.relation
@@ -166,7 +170,7 @@ const useLiveDataTableStyles = makeStyles((theme: Theme) => createStyles({
   },
 }), { name: 'LiveDataTable' });
 
-export const MinimalLiveDataTable: React.FC<{ table: VizierTable }> = ({ table }) => {
+export const MinimalLiveDataTable = React.memo<{ table: VizierTable }>(function MinimalLiveDataTable({ table }) {
   const classes = useLiveDataTableStyles();
   const reactTable = useConvertedTable(table);
 
@@ -185,7 +189,7 @@ export const MinimalLiveDataTable: React.FC<{ table: VizierTable }> = ({ table }
       )}
     </div>
   );
-};
+});
 
 export interface LiveDataTableProps extends Pick<DataTableProps, 'onRowsRendered'> {
   table: VizierTable;
@@ -193,7 +197,7 @@ export interface LiveDataTableProps extends Pick<DataTableProps, 'onRowsRendered
   gutterColumn?: string;
 }
 
-const LiveDataTableImpl: React.FC<LiveDataTableProps> = function LiveDataTable({ table, ...options }) {
+const LiveDataTableImpl = React.memo<LiveDataTableProps>(function LiveDataTable({ table, ...options }) {
   const classes = useLiveDataTableStyles();
   const reactTable = useConvertedTable(table, options.propagatedArgs, options.gutterColumn);
   const { width: containerWidth, height: containerHeight } = React.useContext(AutoSizerContext);
@@ -221,6 +225,6 @@ const LiveDataTableImpl: React.FC<LiveDataTableProps> = function LiveDataTable({
       )}
     </div>
   );
-};
+});
 
 export const LiveDataTable = withAutoSizerContext(LiveDataTableImpl);
