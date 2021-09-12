@@ -9,4 +9,4 @@ data:
   PL_POSTGRES_HOSTNAME: localhost
   PL_POSTGRES_PORT: "5432"
   PL_POSTGRES_DB: pl_staging
-  PL_POSTGRES_INSTANCE: pixie-prod:us-west1:pixie-cloud-staging-db
+  PL_POSTGRES_INSTANCE: pixie-prod:us-west1:pixie-cloud-staging-db-pg13
