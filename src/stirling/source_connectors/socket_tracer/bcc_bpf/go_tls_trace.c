@@ -62,8 +62,8 @@ int probe_tls_conn_write(struct pt_regs* ctx) {
   void* conn_ptr;
   bpf_probe_read(&conn_ptr, sizeof(void*), sp + symaddrs->Write_c_offset);
 
-  struct go_byte_array plaintext;
-  bpf_probe_read(&plaintext, sizeof(struct go_byte_array), sp + symaddrs->Write_b_offset);
+  char* plaintext_ptr;
+  bpf_probe_read(&plaintext_ptr, sizeof(char*), sp + symaddrs->Write_b_offset);
 
   // TODO(oazizi): Use symaddrs instead of constant offsets.
   int64_t retval0;
@@ -95,7 +95,7 @@ int probe_tls_conn_write(struct pt_regs* ctx) {
 
   struct data_args_t args;
   args.source_fn = kGoTLSConnWrite;
-  args.buf = plaintext.ptr;
+  args.buf = plaintext_ptr;
   args.msg_len = 0;  // Unused.
   args.fd = fd;
 
@@ -133,8 +133,8 @@ int probe_tls_conn_read(struct pt_regs* ctx) {
   void* conn_ptr;
   bpf_probe_read(&conn_ptr, sizeof(void*), sp + symaddrs->Read_c_offset);
 
-  struct go_byte_array plaintext;
-  bpf_probe_read(&plaintext, sizeof(struct go_byte_array), sp + symaddrs->Read_b_offset);
+  char* plaintext_ptr;
+  bpf_probe_read(&plaintext_ptr, sizeof(char*), sp + symaddrs->Read_b_offset);
 
   int64_t retval0;
   bpf_probe_read(&retval0, sizeof(retval0), sp + 40);
@@ -167,7 +167,7 @@ int probe_tls_conn_read(struct pt_regs* ctx) {
 
   struct data_args_t args;
   args.source_fn = kGoTLSConnRead;
-  args.buf = plaintext.ptr;
+  args.buf = plaintext_ptr;
   args.msg_len = 0;  // Unused.
   args.fd = fd;
 

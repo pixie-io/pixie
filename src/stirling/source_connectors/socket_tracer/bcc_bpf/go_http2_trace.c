@@ -65,6 +65,13 @@ BPF_HASH(active_write_headers_frame_map, void*, struct header_attr_t);
 const uint8_t kFlagDataEndStream = 0x1;
 const uint8_t kFlagHeadersEndStream = 0x1;
 
+// A golang array consists of a pointer, a length and a capacity.
+// These could come from DWARF information, but are hard-coded,
+// since an array is a pretty stable type.
+const int kGoArrayPtrOffset = 0;
+const int kGoArrayLenOffset = 8;
+const int kGoArrayCapOffset = 16;
+
 //-----------------------------------------------------------------------------
 // FD extraction functions
 //-----------------------------------------------------------------------------
@@ -191,7 +198,7 @@ static __inline void fill_header_field(struct go_grpc_http2_header_event_t* even
 
 static __inline void submit_headers(struct pt_regs* ctx, enum http2_probe_type_t probe_type,
                                     enum HeaderEventType type, int32_t fd, uint32_t stream_id,
-                                    bool end_stream, struct go_ptr_array fields,
+                                    bool end_stream, void* fields_ptr, int64_t fields_len,
                                     const struct go_http2_symaddrs_t* symaddrs) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
   struct conn_info_t* conn_info = get_or_create_conn_info(tgid, fd);
@@ -210,8 +217,8 @@ static __inline void submit_headers(struct pt_regs* ctx, enum http2_probe_type_t
   const int kSizeOfHeaderField = 40;
 #pragma unroll
   for (unsigned int i = 0; i < MAX_HEADER_COUNT; ++i) {
-    if (i < fields.len) {
-      fill_header_field(&event, fields.ptr + i * kSizeOfHeaderField, symaddrs);
+    if (i < fields_len) {
+      fill_header_field(&event, fields_ptr + i * kSizeOfHeaderField, symaddrs);
       go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
     }
   }
@@ -290,8 +297,13 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
   bool end_stream;
   bpf_probe_read(&end_stream, sizeof(bool), sp + symaddrs->writeHeader_endStream_offset);
 
-  struct go_ptr_array fields;
-  bpf_probe_read(&fields, sizeof(struct go_ptr_array), sp + symaddrs->writeHeader_hf_offset);
+  void* fields_ptr;
+  bpf_probe_read(&fields_ptr, sizeof(void*),
+                 sp + symaddrs->writeHeader_hf_offset + kGoArrayPtrOffset);
+
+  int64_t fields_len;
+  bpf_probe_read(&fields_len, sizeof(int64_t),
+                 sp + symaddrs->writeHeader_hf_offset + kGoArrayLenOffset);
 
   // ---------------------------------------------
   // Extract members
@@ -311,7 +323,7 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
   }
 
   submit_headers(ctx, k_probe_loopy_writer_write_header, kHeaderEventWrite, fd, stream_id,
-                 end_stream, fields, symaddrs);
+                 end_stream, fields_ptr, fields_len, symaddrs);
 
   return 0;
 }
@@ -340,9 +352,20 @@ static __inline void probe_http2_operate_headers(struct pt_regs* ctx,
   bpf_probe_read(&HeadersFrame_ptr, sizeof(void*),
                  MetaHeadersFrame_ptr + symaddrs->MetaHeadersFrame_HeadersFrame_offset);
 
-  struct go_ptr_array fields;
-  bpf_probe_read(&fields, sizeof(struct go_ptr_array),
-                 MetaHeadersFrame_ptr + symaddrs->MetaHeadersFrame_Fields_offset);
+  void* fields_ptr;
+  bpf_probe_read(
+      &fields_ptr, sizeof(void*),
+      MetaHeadersFrame_ptr + symaddrs->MetaHeadersFrame_Fields_offset + kGoArrayPtrOffset);
+
+  int64_t fields_len;
+  bpf_probe_read(
+      &fields_len, sizeof(int64_t),
+      MetaHeadersFrame_ptr + symaddrs->MetaHeadersFrame_Fields_offset + kGoArrayLenOffset);
+
+  int64_t fields_cap;
+  bpf_probe_read(
+      &fields_cap, sizeof(int64_t),
+      MetaHeadersFrame_ptr + symaddrs->MetaHeadersFrame_Fields_offset + kGoArrayCapOffset);
 
   // ------------------------------------------------------
   // Extract members of HeadersFrame_ptr (HeadersFrame)
@@ -368,11 +391,12 @@ static __inline void probe_http2_operate_headers(struct pt_regs* ctx,
 
   // TODO(yzhao): We saw some arbitrary large slices received by operateHeaders(), it's not clear
   // what conditions result into them.
-  if (fields.len > 100 || fields.len <= 0 || fields.cap <= 0) {
+  if (fields_len > 100 || fields_len <= 0 || fields_cap <= 0) {
     return;
   }
 
-  submit_headers(ctx, probe_type, kHeaderEventRead, fd, stream_id, end_stream, fields, symaddrs);
+  submit_headers(ctx, probe_type, kHeaderEventRead, fd, stream_id, end_stream, fields_ptr,
+                 fields_len, symaddrs);
 }
 
 // Probe for the golang.org/x/net/http2 library's header reader (client-side).
@@ -527,9 +551,15 @@ int probe_http_http2serverConn_processHeaders(struct pt_regs* ctx) {
   // Extract members of http2MetaHeadersFrame_ptr (headers)
   // ------------------------------------------------------
 
-  struct go_ptr_array fields;
-  bpf_probe_read(&fields, sizeof(struct go_ptr_array),
-                 http2MetaHeadersFrame_ptr + symaddrs->http2MetaHeadersFrame_Fields_offset);
+  void* fields_ptr;
+  bpf_probe_read(&fields_ptr, sizeof(void*),
+                 http2MetaHeadersFrame_ptr + symaddrs->http2MetaHeadersFrame_Fields_offset +
+                     kGoArrayPtrOffset);
+
+  int64_t fields_len;
+  bpf_probe_read(&fields_len, sizeof(int64_t),
+                 http2MetaHeadersFrame_ptr + symaddrs->http2MetaHeadersFrame_Fields_offset +
+                     kGoArrayLenOffset);
 
   void* http2HeadersFrame_ptr;
   bpf_probe_read(
@@ -570,7 +600,7 @@ int probe_http_http2serverConn_processHeaders(struct pt_regs* ctx) {
   // ------------------------------------------------------
 
   submit_headers(ctx, k_probe_http_http2serverConn_processHeaders, kHeaderEventRead, fd, stream_id,
-                 end_stream, fields, symaddrs);
+                 end_stream, fields_ptr, fields_len, symaddrs);
 
   return 0;
 }
@@ -734,8 +764,8 @@ int probe_http_http2writeResHeaders_write_frame(struct pt_regs* ctx) {
 
 static __inline void go_http2_submit_data(struct pt_regs* ctx, enum http2_probe_type_t probe_type,
                                           uint32_t tgid, int32_t fd, enum DataFrameEventType type,
-                                          uint32_t stream_id, bool end_stream,
-                                          struct go_byte_array data) {
+                                          uint32_t stream_id, bool end_stream, char* data_ptr,
+                                          int64_t data_len) {
   struct conn_info_t* conn_info = get_or_create_conn_info(tgid, fd);
   if (conn_info == NULL) {
     return;
@@ -755,15 +785,15 @@ static __inline void go_http2_submit_data(struct pt_regs* ctx, enum http2_probe_
 
   if (type == kDataFrameEventWrite) {
     info->attr.pos = conn_info->app_wr_bytes;
-    conn_info->app_wr_bytes += data.len;
+    conn_info->app_wr_bytes += data_len;
   } else if (type == kDataFrameEventRead) {
     info->attr.pos = conn_info->app_rd_bytes;
-    conn_info->app_rd_bytes += data.len;
+    conn_info->app_rd_bytes += data_len;
   }
 
-  info->attr.data_size = data.len;
+  info->attr.data_size = data_len;
 
-  uint32_t data_buf_size = data.len < MAX_DATA_SIZE ? data.len : MAX_DATA_SIZE;
+  uint32_t data_buf_size = data_len < MAX_DATA_SIZE ? data_len : MAX_DATA_SIZE;
   info->attr.data_buf_size = data_buf_size;
 
   // Note that we have some black magic below with the string sizes.
@@ -776,7 +806,7 @@ static __inline void go_http2_submit_data(struct pt_regs* ctx, enum http2_probe_
   data_buf_size = data_buf_size_minus_1 + 1;
 
   if (data_buf_size_minus_1 < MAX_DATA_SIZE) {
-    bpf_probe_read(info->data, data_buf_size, data.ptr);
+    bpf_probe_read(info->data, data_buf_size, data_ptr);
     go_grpc_data_events.perf_submit(ctx, info, sizeof(info->attr) + data_buf_size);
   }
 }
@@ -865,16 +895,20 @@ int probe_http2_framer_check_frame_order(struct pt_regs* ctx) {
   // Reinterpret as data frame.
   void* data_frame_ptr = frame_interface.ptr;
 
-  struct go_byte_array data;
-  bpf_probe_read(&data, sizeof(struct go_byte_array),
-                 data_frame_ptr + symaddrs->DataFrame_data_offset);
+  char* data_ptr;
+  bpf_probe_read(&data_ptr, sizeof(char*),
+                 data_frame_ptr + symaddrs->DataFrame_data_offset + kGoArrayPtrOffset);
+
+  int64_t data_len;
+  bpf_probe_read(&data_len, sizeof(int64_t),
+                 data_frame_ptr + symaddrs->DataFrame_data_offset + kGoArrayLenOffset);
 
   // ------------------------------------------------------
   // Submit
   // ------------------------------------------------------
 
   go_http2_submit_data(ctx, k_probe_http2_framer_check_frame_order, tgid, fd, kDataFrameEventRead,
-                       stream_id, end_stream, data);
+                       stream_id, end_stream, data_ptr, data_len);
   return 0;
 }
 
@@ -963,16 +997,20 @@ int probe_http_http2framer_check_frame_order(struct pt_regs* ctx) {
   // Reinterpret as data frame.
   void* data_frame_ptr = frame_interface.ptr;
 
-  struct go_byte_array data;
-  bpf_probe_read(&data, sizeof(struct go_byte_array),
-                 data_frame_ptr + symaddrs->http2DataFrame_data_offset);
+  char* data_ptr;
+  bpf_probe_read(&data_ptr, sizeof(char*),
+                 data_frame_ptr + symaddrs->http2DataFrame_data_offset + kGoArrayPtrOffset);
+
+  int64_t data_len;
+  bpf_probe_read(&data_len, sizeof(int64_t),
+                 data_frame_ptr + symaddrs->http2DataFrame_data_offset + kGoArrayLenOffset);
 
   // ------------------------------------------------------
   // Submit
   // ------------------------------------------------------
 
   go_http2_submit_data(ctx, k_probe_http_http2Framer_check_frame_order, tgid, fd,
-                       kDataFrameEventRead, stream_id, end_stream, data);
+                       kDataFrameEventRead, stream_id, end_stream, data_ptr, data_len);
   return 0;
 }
 
@@ -1014,9 +1052,13 @@ int probe_http2_framer_write_data(struct pt_regs* ctx) {
   bool end_stream;
   bpf_probe_read(&end_stream, sizeof(bool), sp + symaddrs->http2_WriteDataPadded_endStream_offset);
 
-  struct go_byte_array data;
-  bpf_probe_read(&data, sizeof(struct go_byte_array),
-                 sp + symaddrs->http2_WriteDataPadded_data_offset);
+  char* data_ptr;
+  bpf_probe_read(&data_ptr, sizeof(char*),
+                 sp + symaddrs->http2_WriteDataPadded_data_offset + kGoArrayPtrOffset);
+
+  int64_t data_len;
+  bpf_probe_read(&data_len, sizeof(int64_t),
+                 sp + symaddrs->http2_WriteDataPadded_data_offset + kGoArrayLenOffset);
 
   // ------------------------------------------------------
   // Extract members of Framer (fd)
@@ -1032,7 +1074,7 @@ int probe_http2_framer_write_data(struct pt_regs* ctx) {
   // ---------------------------------------------
 
   go_http2_submit_data(ctx, k_probe_http2_framer_write_data, tgid, fd, kDataFrameEventWrite,
-                       stream_id, end_stream, data);
+                       stream_id, end_stream, data_ptr, data_len);
 
   return 0;
 }
@@ -1076,9 +1118,13 @@ int probe_http_http2framer_write_data(struct pt_regs* ctx) {
   bpf_probe_read(&end_stream, sizeof(bool),
                  sp + symaddrs->http2Framer_WriteDataPadded_endStream_offset);
 
-  struct go_byte_array data;
-  bpf_probe_read(&data, sizeof(struct go_byte_array),
-                 sp + symaddrs->http2Framer_WriteDataPadded_data_offset);
+  char* data_ptr;
+  bpf_probe_read(&data_ptr, sizeof(char*),
+                 sp + symaddrs->http2Framer_WriteDataPadded_data_offset + kGoArrayPtrOffset);
+
+  int64_t data_len;
+  bpf_probe_read(&data_len, sizeof(int64_t),
+                 sp + symaddrs->http2Framer_WriteDataPadded_data_offset + kGoArrayLenOffset);
 
   // ------------------------------------------------------
   // Extract members of Framer (fd)
@@ -1094,6 +1140,6 @@ int probe_http_http2framer_write_data(struct pt_regs* ctx) {
   // ---------------------------------------------
 
   go_http2_submit_data(ctx, k_probe_http_http2Framer_write_data, tgid, fd, kDataFrameEventWrite,
-                       stream_id, end_stream, data);
+                       stream_id, end_stream, data_ptr, data_len);
   return 0;
 }
