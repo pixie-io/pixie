@@ -46,7 +46,7 @@ func SetupTestDB(schemaSource *bindata.AssetSource) (*sqlx.DB, func(), error) {
 	resource, err := pool.RunWithOptions(
 		&dockertest.RunOptions{
 			Repository: "postgres",
-			Tag:        "11.1",
+			Tag:        "13.3",
 			Env:        []string{"POSTGRES_PASSWORD=secret", "POSTGRES_DB=" + dbName},
 		}, func(config *docker.HostConfig) {
 			config.AutoRemove = true
