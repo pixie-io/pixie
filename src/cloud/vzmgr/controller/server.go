@@ -926,7 +926,7 @@ func (s *Server) HandleSSLRequest(v2cMsg *cvmsgspb.V2CMessage) {
 		return
 	}
 
-	log.WithField("SSL", respAnyMsg.String()).Info("sending SSL response")
+	log.WithField("vizierID", req.VizierID).Info("sending SSL response")
 	s.sendNATSMessage("sslResp", respAnyMsg, vizierID)
 }
 
