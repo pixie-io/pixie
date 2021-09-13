@@ -855,8 +855,12 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 				Set("num_nodes", req.NumNodes).
 				Set("num_instrumented_nodes", req.NumInstrumentedNodes).
 				Set("auto_update_enabled", !req.DisableAutoUpdate).
-				Set("K8s_version", req.K8sClusterVersion).
-				Set("vizier_version", info.Version),
+				Set("k8s_version", req.K8sClusterVersion).
+				Set("vizier_version", info.Version).
+				Set("disable_auto_update", req.DisableAutoUpdate).
+				Set("control_pod_statuses", req.PodStatuses).
+				Set("data_plane_pod_statuses", req.UnhealthyDataPlanePodStatuses).
+				Set("status_message", req.StatusMessage),
 		})
 	}
 
