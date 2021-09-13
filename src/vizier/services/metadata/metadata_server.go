@@ -68,6 +68,7 @@ func init() {
 }
 
 func mustInitEtcdDatastore() (*etcd.DataStore, func()) {
+	log.Infof("Using etcd: %s for metadata", viper.GetString("md_etcd_server"))
 	var tlsConfig *tls.Config
 	if !viper.GetBool("disable_ssl") {
 		var err error
@@ -84,7 +85,7 @@ func mustInitEtcdDatastore() (*etcd.DataStore, func()) {
 		TLS:         tlsConfig,
 	})
 	if err != nil {
-		log.WithError(err).Fatal("Failed to connect to etcd at " + viper.GetString("md_etcd_server"))
+		log.WithError(err).Fatalf("Failed to connect to etcd at %s", viper.GetString("md_etcd_server"))
 	}
 
 	etcdMgr := controllers.NewEtcdManager(etcdClient)
@@ -97,6 +98,7 @@ func mustInitEtcdDatastore() (*etcd.DataStore, func()) {
 }
 
 func mustInitPebbleDatastore() *pebbledb.DataStore {
+	log.Infof("Using pebbledb: %s for metadata", pebbleOpenDir)
 	pebbleDb, err := pebble.Open(pebbleOpenDir, &pebble.Options{})
 	if err != nil {
 		log.WithError(err).Fatal("Failed to open pebble database.")
@@ -242,7 +244,7 @@ func main() {
 	healthz.RegisterDefaultChecks(mux)
 
 	svr := controllers.NewServer(env, agtMgr, tracepointMgr)
-	log.Info("Metadata Server: " + version.GetVersion().ToString())
+	log.Infof("Metadata Server: %s", version.GetVersion().ToString())
 
 	// We bump up the max message size because agent metadata may be larger than 4MB. This is a
 	// temporary change. In the future, we would like to page the agent metadata.
