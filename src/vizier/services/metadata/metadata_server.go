@@ -65,6 +65,13 @@ func init() {
 	pflag.String("pod_namespace", "pl", "The namespace this pod runs in. Used for leader elections")
 	pflag.String("nats_url", "pl-nats", "The URL of NATS")
 	pflag.Bool("use_etcd_operator", false, "Whether the etcd operator should be used instead of the persistent version.")
+
+	// Metadata flags are set using the env vars in pl-cluster-config.
+	// We historically set PL_ETCD_OPERATOR_ENABLED but not PL_USE_ETCD_OPERATOR in the configmap.
+	// We also don't have a clean way to update  configmaps for existing deploys.
+	// So instead just map PL_ETCD_OPERATOR_ENABLED to use_etcd_operator to make it work.
+	// TODO: We should clean this up in the future and make these flags consistent.
+	viper.BindEnv("use_etcd_operator", "PL_ETCD_OPERATOR_ENABLED")
 }
 
 func mustInitEtcdDatastore() (*etcd.DataStore, func()) {
