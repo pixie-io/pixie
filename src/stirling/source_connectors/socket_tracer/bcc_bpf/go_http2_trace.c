@@ -1033,7 +1033,7 @@ int probe_http2_framer_write_data(struct pt_regs* ctx) {
   // Extract arguments (on stack)
   // ---------------------------------------------
 
-  const char* sp = (const char*)ctx->sp;
+  const void* sp = (const void*)ctx->sp;
 
   void* framer_ptr;
   bpf_probe_read(&framer_ptr, sizeof(void*), sp + symaddrs->http2_WriteDataPadded_f_loc.offset);

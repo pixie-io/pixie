@@ -27,6 +27,7 @@ load("//bazel:pl_build_system.bzl", "pl_cc_test")
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
 socket_trace_hdrs = [
+    "go_runtime_trace.c",
     "go_http2_trace.c",
     "go_tls_trace.c",
     "go_trace_common.h",

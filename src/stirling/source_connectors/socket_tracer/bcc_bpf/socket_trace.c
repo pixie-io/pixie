@@ -1556,15 +1556,14 @@ int probe_entry_security_socket_recvmsg(struct pt_regs* ctx) {
   return 0;
 }
 
-// TODO(oazizi): Look into the following opens:
-// 1) Why does the syscall table only include sendto, while Linux source code and man page list both
-// sendto and send?
-
-// Include HTTP2 tracing probes.
-#include "src/stirling/source_connectors/socket_tracer/bcc_bpf/go_http2_trace.c"
-
-// Include OpenSSL tracing probes.
+// OpenSSL tracing probes.
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf/openssl_trace.c"
 
-// Include GoTLS tracing probes.
+// Go Runtime tracing probes (must precede other Go tracing probes).
+#include "src/stirling/source_connectors/socket_tracer/bcc_bpf/go_runtime_trace.c"
+
+// Go HTTP2 tracing probes.
+#include "src/stirling/source_connectors/socket_tracer/bcc_bpf/go_http2_trace.c"
+
+// GoTLS tracing probes.
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf/go_tls_trace.c"

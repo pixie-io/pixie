@@ -359,6 +359,22 @@ StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(uint32_t pid) {
   return kOpenSSLUProbes.size() + count;
 }
 
+StatusOr<int> UProbeManager::AttachGoRuntimeUProbes(const std::string& binary,
+                                                    obj_tools::ElfReader* elf_reader,
+                                                    obj_tools::DwarfReader* /* dwarf_reader */,
+                                                    const std::vector<int32_t>& /* pids */) {
+  // Step 1: Update BPF symbols_map on all new PIDs.
+  // TODO(oazizi): Implement this piece.
+
+  // Step 2: Deploy uprobes on all new binaries.
+  auto result = go_probed_binaries_.insert(binary);
+  if (!result.second) {
+    // This is not a new binary, so nothing more to do.
+    return 0;
+  }
+  return AttachUProbeTmpl(kGoRuntimeUProbeTmpls, binary, elf_reader);
+}
+
 StatusOr<int> UProbeManager::AttachGoTLSUProbes(const std::string& binary,
                                                 obj_tools::ElfReader* elf_reader,
                                                 obj_tools::DwarfReader* dwarf_reader,
@@ -532,7 +548,7 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
     }
     std::unique_ptr<ElfReader> elf_reader = elf_reader_status.ConsumeValueOrDie();
 
-    // Avoid going passed this point if not a golang program.
+    // Avoid going past this point if not a golang program.
     // The DwarfReader is memory intensive, and the remaining probes are Golang specific.
     if (!IsGoExecutable(elf_reader.get())) {
       continue;
@@ -554,6 +570,18 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
       VLOG(1) << absl::Substitute(
           "Golang binary $0 does not have the mandatory symbols (e.g. TCPConn).", binary);
       continue;
+    }
+
+    // Go Runtime Probes.
+    {
+      StatusOr<int> attach_status =
+          AttachGoRuntimeUProbes(binary, elf_reader.get(), dwarf_reader.get(), pid_vec);
+      if (!attach_status.ok()) {
+        LOG_FIRST_N(WARNING, 10) << absl::Substitute(
+            "Failed to attach Go Runtime Uprobes to $0: $1", binary, attach_status.ToString());
+      } else {
+        uprobe_count += attach_status.ValueOrDie();
+      }
     }
 
     // GoTLS Probes.

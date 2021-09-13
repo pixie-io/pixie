@@ -130,6 +130,16 @@ class UProbeManager {
   bool ThreadsRunning() { return num_deploy_uprobes_threads_ != 0; }
 
  private:
+  // Probes on Golang crypto/tls library.
+  inline static const auto kGoRuntimeUProbeTmpls = MakeArray<UProbeTmpl>({
+      UProbeTmpl{
+          .symbol = "runtime.casgstatus",
+          .match_type = obj_tools::SymbolMatchType::kSuffix,
+          .probe_fn = "probe_runtime_casgstatus",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+      },
+  });
+
   inline static constexpr auto kHTTP2ProbeTmpls = MakeArray<UProbeTmpl>({
       // Probes on Golang net/http2 library.
       UProbeTmpl{
@@ -201,13 +211,25 @@ class UProbeManager {
       UProbeTmpl{
           .symbol = "crypto/tls.(*Conn).Write",
           .match_type = obj_tools::SymbolMatchType::kSuffix,
-          .probe_fn = "probe_tls_conn_write",
+          .probe_fn = "probe_entry_tls_conn_write",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+      },
+      UProbeTmpl{
+          .symbol = "crypto/tls.(*Conn).Write",
+          .match_type = obj_tools::SymbolMatchType::kSuffix,
+          .probe_fn = "probe_return_tls_conn_write",
           .attach_type = bpf_tools::BPFProbeAttachType::kReturnInsts,
       },
       UProbeTmpl{
           .symbol = "crypto/tls.(*Conn).Read",
           .match_type = obj_tools::SymbolMatchType::kSuffix,
-          .probe_fn = "probe_tls_conn_read",
+          .probe_fn = "probe_entry_tls_conn_read",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+      },
+      UProbeTmpl{
+          .symbol = "crypto/tls.(*Conn).Read",
+          .match_type = obj_tools::SymbolMatchType::kSuffix,
+          .probe_fn = "probe_return_tls_conn_read",
           .attach_type = bpf_tools::BPFProbeAttachType::kReturnInsts,
       },
   });
@@ -358,6 +380,22 @@ class UProbeManager {
   int DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids);
 
   /**
+   * Attaches the required probes for general Go tracing to the specified binary, if it is a
+   * compatible Go binary.
+   *
+   * @param binary The path to the binary on which to deploy Go HTTP2 probes.
+   * @param elf_reader ELF reader for the binary.
+   * @param dwarf_reader DWARF reader for the binary.
+   * @param pids The list of PIDs that are new instances of the binary. Used to populate symbol
+   *             addresses.
+   * @return The number of uprobes deployed, or error. It is not an error if the binary
+   *         is not a Go binary; instead the return value will be zero.
+   */
+  StatusOr<int> AttachGoRuntimeUProbes(const std::string& binary, obj_tools::ElfReader* elf_reader,
+                                       obj_tools::DwarfReader* dwarf_reader,
+                                       const std::vector<int32_t>& new_pids);
+
+  /**
    * Attaches the required probes for Go HTTP2 tracing to the specified binary, if it is a
    * compatible Go binary.
    *
@@ -475,6 +513,7 @@ class UProbeManager {
   //               Without clean-up, these could consume more-and-more memory.
   absl::flat_hash_set<std::string> openssl_probed_binaries_;
   absl::flat_hash_set<std::string> scanned_binaries_;
+  absl::flat_hash_set<std::string> go_probed_binaries_;
   absl::flat_hash_set<std::string> go_http2_probed_binaries_;
   absl::flat_hash_set<std::string> go_tls_probed_binaries_;
   absl::flat_hash_set<std::string> nodejs_binaries_;
