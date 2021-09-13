@@ -100,3 +100,16 @@ container_image(
     name = "zookeeper_image",
     base = "@zookeeper_base_image//image",
 )
+
+container_image(
+    name = "node_image",
+    base = "@node_base_image//image",
+    cmd = [
+        "node",
+        "/etc/node/https_server.js",
+    ],
+    layers = [
+        "//src/stirling/source_connectors/socket_tracer/testing/containers/ssl:ssl_keys_layer",
+        "//src/stirling/source_connectors/socket_tracer/testing/containers/ssl:node_client_server_layer",
+    ],
+)
