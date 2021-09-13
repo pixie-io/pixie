@@ -139,6 +139,10 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		if err != nil {
 			log.WithError(err).Info("Failed to delete Vizier instance")
 		}
+
+		if r.monitor != nil && r.monitor.namespace == req.Namespace {
+			r.monitor.Quit()
+		}
 		// Vizier CRD deleted. The vizier instance should also be deleted.
 		return ctrl.Result{}, err
 	}
