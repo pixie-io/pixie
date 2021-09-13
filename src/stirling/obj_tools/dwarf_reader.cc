@@ -915,15 +915,23 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
   PL_ASSIGN_OR_RETURN(const DWARFDie& function_die,
                       GetMatchingDIE(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
 
-  // If return value is not able to be passed in as a register,
-  // then the first argument register becomes a pointer to the return value.
-  // Account for that here.
+  // If function has a return value, process that first.
+  // This is important, because in some ABIs (e.g. SystemV ABI),
+  // if the return value is not able to be passed back in the available registers,
+  // then a hidden first argument is introduced that becomes a pointer to the return value.
+  // For more details, see: https://uclibc.org/docs/psABI-x86_64.pdf Section 3.2.3.
   // No return type means the function has a void return type.
   if (function_die.find(llvm::dwarf::DW_AT_type).hasValue()) {
     PL_ASSIGN_OR_RETURN(const DWARFDie type_die, GetTypeDie(function_die));
+
     PL_ASSIGN_OR_RETURN(const TypeClass type_class, GetTypeClass(type_die));
-    PL_ASSIGN_OR_RETURN(const auto byte_size, GetTypeByteSize(type_die));
-    PL_RETURN_IF_ERROR(arg_tracker->AdjustForReturnValue(type_class, byte_size));
+    PL_ASSIGN_OR_RETURN(const uint64_t type_size, GetTypeByteSize(type_die));
+    PL_ASSIGN_OR_RETURN(const uint64_t alignment_size, GetAlignmentByteSize(type_die));
+    PL_ASSIGN_OR_RETURN(const uint64_t num_vars, GetNumPrimitives(type_die));
+    PL_ASSIGN_OR_RETURN(
+        const VarLocation loc,
+        arg_tracker->PopLocation(type_class, type_size, alignment_size, num_vars, true));
+    PL_UNUSED(loc);
   }
 
   for (const auto& die : GetParamDIEs(function_die)) {
@@ -933,16 +941,17 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
     PL_ASSIGN_OR_RETURN(const DWARFDie type_die, GetTypeDie(die));
     PL_ASSIGN_OR_RETURN(arg.type_info, GetTypeInfo(die, type_die));
 
+    if (source_language_ == llvm::dwarf::DW_LANG_Go) {
+      arg.retarg = IsGolangRetArg(die).ValueOr(false);
+    }
+
     PL_ASSIGN_OR_RETURN(const TypeClass type_class, GetTypeClass(type_die));
     PL_ASSIGN_OR_RETURN(const uint64_t type_size, GetTypeByteSize(type_die));
     PL_ASSIGN_OR_RETURN(const uint64_t alignment_size, GetAlignmentByteSize(type_die));
     PL_ASSIGN_OR_RETURN(const uint64_t num_vars, GetNumPrimitives(type_die));
-    PL_ASSIGN_OR_RETURN(arg.location,
-                        arg_tracker->PopLocation(type_class, type_size, alignment_size, num_vars));
-
-    if (source_language_ == llvm::dwarf::DW_LANG_Go) {
-      arg.retarg = IsGolangRetArg(die).ValueOr(false);
-    }
+    PL_ASSIGN_OR_RETURN(
+        arg.location,
+        arg_tracker->PopLocation(type_class, type_size, alignment_size, num_vars, arg.retarg));
   }
 
   return arg_info;

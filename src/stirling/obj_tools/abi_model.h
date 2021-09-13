@@ -113,7 +113,7 @@ struct VarLocation {
   // For stack locations, the offset represents the offset off the SP.
   // For register locations, the offset represents the offset in the register space,
   // assuming all the available registers were concatenated into a single scratch space of memory.
-  int64_t offset = std::numeric_limits<uint64_t>::max();
+  int64_t offset = 0;
 
   // For register locations, the list of registers where the variable is located.
   std::vector<RegisterName> registers = {};
@@ -153,9 +153,8 @@ class ABICallingConventionModel {
    * @return The location where the argument would be placed according to the calling convention.
    */
   virtual StatusOr<VarLocation> PopLocation(TypeClass type_class, uint64_t type_size,
-                                            uint64_t alignment_size, int num_vars) = 0;
-
-  virtual Status AdjustForReturnValue(TypeClass type_class, uint64_t ret_val_size) = 0;
+                                            uint64_t alignment_size, int num_vars,
+                                            bool is_ret_arg) = 0;
 };
 
 /**
@@ -167,12 +166,11 @@ class GolangStackABIModel : public ABICallingConventionModel {
   ~GolangStackABIModel() = default;
 
   StatusOr<VarLocation> PopLocation(TypeClass type_class, uint64_t type_size,
-                                    uint64_t alignment_size, int num_vars) override;
-
-  Status AdjustForReturnValue(TypeClass type_class, uint64_t ret_val_size) override;
+                                    uint64_t alignment_size, int num_vars,
+                                    bool is_ret_arg) override;
 
  private:
-  uint64_t current_stack_offset_ = 0;
+  int32_t current_stack_offset_ = 0;
 };
 
 /**
@@ -185,19 +183,24 @@ class GolangRegABIModel : public ABICallingConventionModel {
   ~GolangRegABIModel() = default;
 
   StatusOr<VarLocation> PopLocation(TypeClass type_class, uint64_t type_size,
-                                    uint64_t alignment_size, int num_vars) override;
-
-  Status AdjustForReturnValue(TypeClass type_class, uint64_t ret_val_size) override;
+                                    uint64_t alignment_size, int num_vars,
+                                    bool is_ret_arg) override;
 
  private:
   const uint64_t reg_size_;
 
-  uint64_t current_stack_offset_ = 0;
-  uint64_t current_fp_reg_offset_ = 0;
-  uint64_t current_int_reg_offset_ = 0;
+  int32_t current_stack_offset_ = 0;
+  int32_t current_int_arg_reg_offset_ = 0;
+  int32_t current_fp_arg_reg_offset_ = 0;
+  int32_t current_int_retval_reg_offset_ = 0;
+  int32_t current_fp_retval_reg_offset_ = 0;
 
+  // There are separate registers for integer-values (int) and floating point values (fp).
+  // Registers are also reused for argument passing (arg) and return values (retval).
   std::deque<RegisterName> int_arg_registers_;
   std::deque<RegisterName> fp_arg_registers_;
+  std::deque<RegisterName> int_retval_registers_;
+  std::deque<RegisterName> fp_retval_registers_;
 };
 
 /**
@@ -212,16 +215,17 @@ class SysVABIModel : public ABICallingConventionModel {
   ~SysVABIModel() = default;
 
   StatusOr<VarLocation> PopLocation(TypeClass type_class, uint64_t type_size,
-                                    uint64_t alignment_size, int num_vars) override;
-
-  Status AdjustForReturnValue(TypeClass type_class, uint64_t ret_val_size) override;
+                                    uint64_t alignment_size, int num_vars,
+                                    bool is_ret_arg) override;
 
  private:
   const uint64_t reg_size_;
 
-  uint64_t current_stack_offset_ = 0;
-  uint64_t current_fp_reg_offset_ = 0;
-  uint64_t current_int_reg_offset_ = 0;
+  int32_t current_stack_offset_ = 0;
+  int32_t current_fp_arg_reg_offset_ = 0;
+  int32_t current_int_arg_reg_offset_ = 0;
+  int32_t current_fp_retval_reg_offset_ = 0;
+  int32_t current_int_retval_reg_offset_ = 0;
 
   std::deque<RegisterName> int_arg_registers_;
   std::deque<RegisterName> fp_arg_registers_;
