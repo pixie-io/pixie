@@ -238,13 +238,7 @@ static __inline bool should_trace_sockaddr_family(sa_family_t sa_family) {
   return sa_family == PX_AF_UNKNOWN || sa_family == AF_INET || sa_family == AF_INET6;
 }
 
-static __inline bool should_trace_conn(struct conn_info_t* conn_info, bool ssl) {
-  if (conn_info->ssl && !ssl) {
-    // This connection is tracking SSL now.
-    // Don't report encrypted data.
-    return false;
-  }
-
+static __inline bool should_trace_conn(struct conn_info_t* conn_info) {
   // While we keep all sa_family types in conn_info_map,
   // we only send connections on INET or UNKNOWN to user-space.
   // Also, it's very important to send the UNKNOWN cases to user-space,
@@ -737,7 +731,18 @@ static __inline bool should_send_data(uint32_t tgid, uint64_t conn_disabled_tsid
   return (force_trace_tgid || should_trace_protocol_data(conn_info));
 }
 
-static __inline void update_conn_stats(struct pt_regs* ctx, struct conn_info_t* conn_info) {
+static __inline void update_conn_stats(struct pt_regs* ctx, struct conn_info_t* conn_info,
+                                       enum TrafficDirection direction, ssize_t bytes_count) {
+  // Update state of the connection.
+  switch (direction) {
+    case kEgress:
+      conn_info->wr_bytes += bytes_count;
+      break;
+    case kIngress:
+      conn_info->rd_bytes += bytes_count;
+      break;
+  }
+
   // Only send event if there's been enough of a change.
   // TODO(oazizi): Add elapsed time since last send as a triggering condition too.
   uint64_t total_bytes = conn_info->wr_bytes + conn_info->rd_bytes;
@@ -790,70 +795,69 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
     return;
   }
 
-  if (!should_trace_conn(conn_info, ssl)) {
+  if (!should_trace_conn(conn_info)) {
     return;
   }
 
   uint64_t tgid_fd = gen_tgid_fd(tgid, args->fd);
-
-  // TODO(yzhao): Split the interface such that the singular buf case and multiple bufs in msghdr
-  // are handled separately without mixed interface. The plan is to factor out helper functions for
-  // lower-level functionalities, and call them separately for each case.
-  if (!vecs) {
-    update_traffic_class(conn_info, direction, args->buf, bytes_count);
-  } else {
-    struct iovec iov_cpy;
-    bpf_probe_read(&iov_cpy, sizeof(struct iovec), &args->iov[0]);
-    // Ensure we are not reading beyond the available data.
-    const size_t buf_size = iov_cpy.iov_len < bytes_count ? iov_cpy.iov_len : bytes_count;
-    update_traffic_class(conn_info, direction, iov_cpy.iov_base, buf_size);
-  }
-
   uint64_t* conn_disabled_tsid_ptr = conn_disabled_map.lookup(&tgid_fd);
   uint64_t conn_disabled_tsid = (conn_disabled_tsid_ptr == NULL) ? 0 : *conn_disabled_tsid_ptr;
 
-  if (should_send_data(tgid, conn_disabled_tsid, force_trace_tgid, conn_info)) {
-    struct socket_data_event_t* event =
-        fill_socket_data_event(args->source_fn, direction, conn_info);
-    if (event == NULL) {
-      // event == NULL not expected to ever happen.
-      return;
-    }
-
-    // Kafka servers read in a 4-byte packet length header first. The first packet in the
-    // stream is used to infer protocol, but the header has already been read. One solution is to
-    // add another perf_submit of the 4-byte header, but this would impact the instruction limit.
-    // Not handling this case causes potential confusion in the parsers. As a compromise, we drop
-    // the first packet traced on the server side.
-    // TODO(chengruizhe): This is a special case hack. Remove once FindFrameBoundary is more robust.
-    bool drop_first_packet = (conn_info->protocol == kProtocolKafka) &&
-                             (conn_info->protocol_match_count == 1) &&
-                             (conn_info->role == kRoleServer);
-
-    // TODO(yzhao): Same TODO for split the interface.
+  // Only process plaintext data.
+  if (conn_info->ssl == ssl) {
+    // TODO(yzhao): Split the interface such that the singular buf case and multiple bufs in msghdr
+    // are handled separately without mixed interface. The plan is to factor out helper functions
+    // for lower-level functionalities, and call them separately for each case.
     if (!vecs) {
-      if (!drop_first_packet) {
-        perf_submit_wrapper(ctx, direction, args->buf, bytes_count, conn_info, event);
-      }
+      update_traffic_class(conn_info, direction, args->buf, bytes_count);
     } else {
-      // TODO(yzhao): iov[0] is copied twice, once in calling update_traffic_class(), and here.
-      // This happens to the write probes as well, but the calls are placed in the entry and return
-      // probes respectively. Consider remove one copy.
-      perf_submit_iovecs(ctx, direction, args->iov, args->iovlen, bytes_count, conn_info, event);
+      struct iovec iov_cpy;
+      bpf_probe_read(&iov_cpy, sizeof(struct iovec), &args->iov[0]);
+      // Ensure we are not reading beyond the available data.
+      const size_t buf_size = iov_cpy.iov_len < bytes_count ? iov_cpy.iov_len : bytes_count;
+      update_traffic_class(conn_info, direction, iov_cpy.iov_base, buf_size);
+    }
+
+    if (should_send_data(tgid, conn_disabled_tsid, force_trace_tgid, conn_info)) {
+      struct socket_data_event_t* event =
+          fill_socket_data_event(args->source_fn, direction, conn_info);
+      if (event == NULL) {
+        // event == NULL not expected to ever happen.
+        return;
+      }
+
+      // Kafka servers read in a 4-byte packet length header first. The first packet in the
+      // stream is used to infer protocol, but the header has already been read. One solution is to
+      // add another perf_submit of the 4-byte header, but this would impact the instruction limit.
+      // Not handling this case causes potential confusion in the parsers. As a compromise, we drop
+      // the first packet traced on the server side.
+      // TODO(chengruizhe): This is a special case hack. Remove once FindFrameBoundary is more
+      // robust.
+      bool drop_first_packet = (conn_info->protocol == kProtocolKafka) &&
+                               (conn_info->protocol_match_count == 1) &&
+                               (conn_info->role == kRoleServer);
+
+      // TODO(yzhao): Same TODO for split the interface.
+      if (!vecs) {
+        if (!drop_first_packet) {
+          perf_submit_wrapper(ctx, direction, args->buf, bytes_count, conn_info, event);
+        }
+      } else {
+        // TODO(yzhao): iov[0] is copied twice, once in calling update_traffic_class(), and here.
+        // This happens to the write probes as well, but the calls are placed in the entry and
+        // return probes respectively. Consider remove one copy.
+        perf_submit_iovecs(ctx, direction, args->iov, args->iovlen, bytes_count, conn_info, event);
+      }
     }
   }
 
-  // Update state of the connection.
-  switch (direction) {
-    case kEgress:
-      conn_info->wr_bytes += bytes_count;
-      break;
-    case kIngress:
-      conn_info->rd_bytes += bytes_count;
-      break;
+  // TODO(oazizi): For conn stats, we should be using the encrypted traffic to do the accounting,
+  //               but that will break things with how we track data positions.
+  //               For now, keep using plaintext data. In the future, this if statement should be:
+  //                     if (!ssl) { ... }
+  if (conn_info->ssl == ssl) {
+    update_conn_stats(ctx, conn_info, direction, bytes_count);
   }
-
-  update_conn_stats(ctx, conn_info);
 
   return;
 }
@@ -910,12 +914,11 @@ static __inline void process_syscall_sendfile(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  if (!should_trace_conn(conn_info, /* ssl */ false)) {
+  if (!should_trace_conn(conn_info)) {
     return;
   }
 
   uint64_t tgid_fd = gen_tgid_fd(tgid, args->out_fd);
-
   uint64_t* conn_disabled_tsid_ptr = conn_disabled_map.lookup(&tgid_fd);
   uint64_t conn_disabled_tsid = (conn_disabled_tsid_ptr == NULL) ? 0 : *conn_disabled_tsid_ptr;
 
@@ -933,10 +936,7 @@ static __inline void process_syscall_sendfile(struct pt_regs* ctx, uint64_t id,
     socket_data_events.perf_submit(ctx, event, sizeof(event->attr));
   }
 
-  // Update state of the connection.
-  conn_info->wr_bytes += bytes_count;
-
-  update_conn_stats(ctx, conn_info);
+  update_conn_stats(ctx, conn_info, kEgress, bytes_count);
 
   return;
 }
