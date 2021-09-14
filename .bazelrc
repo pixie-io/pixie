@@ -189,7 +189,7 @@ coverage --cxxopt -ftest-coverage
 coverage --instrument_test_targets
 coverage --define PL_COVERAGE=true
 coverage --copt -DPL_COVERAGE
-coverage --test_tag_filters=-requires_root,-requires_bpf,-no_coverage,-disabled
+coverage --test_tag_filters=-requires_root,-requires_bpf,-no_coverage,-disabled,-no_gcc
 # Uploading to BES from the coverage build seems to fail on jenkins.
 coverage --experimental_build_event_upload_strategy=local
 
