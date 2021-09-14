@@ -27,6 +27,7 @@ import (
 	"sort"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/kubernetes"
 
@@ -66,6 +67,7 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 	in *cpb.ConfigForVizierRequest) (*cpb.ConfigForVizierResponse, error) {
 	templatedYAMLs, err := fetchVizierTemplates(ctx, "", in.VzSpec.Version, s.atClient)
 	if err != nil {
+		log.WithError(err).Error("Failed to fetch Vizier templates")
 		return nil, err
 	}
 
@@ -93,6 +95,7 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 
 	vzYamls, err := yamls.ExecuteTemplatedYAMLs(templatedYAMLs, vizieryamls.VizierTmplValuesToArgs(tmplValues))
 	if err != nil {
+		log.WithError(err).Error("Failed to execute templates")
 		return nil, err
 	}
 
@@ -101,6 +104,7 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 		for _, y := range vzYamls {
 			patchedYAML, err := yamls.AddPatchesToYAML(s.clientset, y.YAML, in.VzSpec.Patches)
 			if err != nil {
+				log.WithError(err).Error("Failed to add patches")
 				return nil, err
 			}
 			y.YAML = patchedYAML
