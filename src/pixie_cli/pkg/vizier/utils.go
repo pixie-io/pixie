@@ -51,6 +51,32 @@ func FindVizierNamespace(clientset *kubernetes.Clientset) (string, error) {
 	return vzPods.Items[0].Namespace, nil
 }
 
+// FindOperatorNamespace finds the namespace running the vizier-operator.
+func FindOperatorNamespace(clientset *kubernetes.Clientset) (string, error) {
+	labelSelector := metav1.FormatLabelSelector(&metav1.LabelSelector{
+		MatchExpressions: []metav1.LabelSelectorRequirement{
+			metav1.LabelSelectorRequirement{
+				Key:      "app",
+				Operator: metav1.LabelSelectorOpIn,
+				Values:   []string{"pixie-operator"},
+			},
+		},
+	})
+
+	vzPods, err := clientset.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	if len(vzPods.Items) == 0 {
+		return "", nil
+	}
+
+	return vzPods.Items[0].Namespace, nil
+}
+
 // MustFindVizierNamespace exits the current program if a Vizier namespace can't be found.
 func MustFindVizierNamespace() string {
 	kubeConfig := k8s.GetConfig()

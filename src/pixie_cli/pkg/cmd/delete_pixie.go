@@ -62,8 +62,16 @@ func deletePixie(ns string, clobberAll bool) {
 	kubeAPIConfig := k8s.GetClientAPIConfig()
 	clientset := k8s.GetClientset(kubeConfig)
 
+	opNs, _ := vizier.FindOperatorNamespace(clientset)
+
 	od := k8s.ObjectDeleter{
 		Namespace:  ns,
+		Clientset:  clientset,
+		RestConfig: kubeConfig,
+		Timeout:    2 * time.Minute,
+	}
+	opOd := k8s.ObjectDeleter{
+		Namespace:  opNs,
 		Clientset:  clientset,
 		RestConfig: kubeConfig,
 		Timeout:    2 * time.Minute,
@@ -86,6 +94,9 @@ func deletePixie(ns string, clobberAll bool) {
 
 	if clobberAll {
 		tasks = append(tasks, newTaskWrapper("Deleting namespace", od.DeleteNamespace))
+		if opNs != "" {
+			tasks = append(tasks, newTaskWrapper("Deleting operator namespace", opOd.DeleteNamespace))
+		}
 		tasks = append(tasks, newTaskWrapper("Deleting cluster-scoped resources", func() error {
 			_, err := od.DeleteByLabel("app=pl-monitoring")
 			return err
