@@ -29,4 +29,3 @@ RUN echo "print(\"pid=\" + str(os.getpid()))" >> /root/.local/lib/python3.10/sit
 
 # Entrypoint is python. Accepts a script as an argument.
 ENTRYPOINT ["python"]
-
