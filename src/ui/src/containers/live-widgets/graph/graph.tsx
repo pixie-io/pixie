@@ -111,11 +111,10 @@ function getColorForEdge(col: ColInfo, val: number, thresholds: EdgeThresholds):
   return val > highThreshold ? 'high' : 'med';
 }
 
-export const Graph: React.FC<GraphProps> = (props) => {
-  const {
-    dot, toCol, fromCol, data, propagatedArgs, edgeWeightColumn,
-    nodeWeightColumn, edgeColorColumn, edgeThresholds, edgeHoverInfo, edgeLength, enableDefaultHierarchy,
-  } = props;
+export const Graph = React.memo<GraphProps>(function Graph({
+  dot, toCol, fromCol, data, propagatedArgs, edgeWeightColumn,
+  nodeWeightColumn, edgeColorColumn, edgeThresholds, edgeHoverInfo, edgeLength, enableDefaultHierarchy,
+}) {
   const theme = useTheme();
 
   const { selectedClusterName } = React.useContext(ClusterContext);
@@ -273,10 +272,11 @@ export const Graph: React.FC<GraphProps> = (props) => {
       </div>
     </div>
   );
-};
+});
 
-export const GraphWidget = (props: GraphWidgetProps): React.ReactElement => {
-  const { display, data, relation } = props;
+export const GraphWidget = React.memo<GraphWidgetProps>(function GraphWidget({
+  display, data, relation, propagatedArgs,
+}) {
   if (display.dotColumn && data.length > 0) {
     return (
       <Graph dot={data[0][display.dotColumn]} />
@@ -310,7 +310,7 @@ export const GraphWidget = (props: GraphWidgetProps): React.ReactElement => {
           toCol={toColInfo}
           fromCol={fromColInfo}
           edgeColorColumn={colorColInfo}
-          propagatedArgs={props.propagatedArgs}
+          propagatedArgs={propagatedArgs}
           edgeHoverInfo={edgeHoverInfo}
         />
       );
@@ -324,11 +324,8 @@ export const GraphWidget = (props: GraphWidgetProps): React.ReactElement => {
 
     return <div>{errorMsg}</div>;
   }
-  return <div key={props.display.dotColumn}>Invalid spec for graph</div>;
-};
-GraphWidget.defaultProps = {
-  propagatedArgs: null,
-};
+  return <div key={display.dotColumn}>Invalid spec for graph</div>;
+});
 
 interface GraphProps {
   dot?: any;

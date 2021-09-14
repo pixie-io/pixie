@@ -19,7 +19,7 @@
 import { gql, useQuery } from '@apollo/client';
 import * as React from 'react';
 import {
-  Switch, Route, Redirect, useRouteMatch,
+  Switch, Route, Redirect, useRouteMatch, useLocation,
 } from 'react-router-dom';
 import * as QueryString from 'query-string';
 
@@ -37,7 +37,6 @@ export interface LiveRouteContextProps {
   scriptId: string;
   args: Arguments;
   embedState: EmbedState;
-  push: (clusterName: string, scriptId: string, args: Arguments, embedState: EmbedState) => void;
 }
 
 export const LiveRouteContext = React.createContext<LiveRouteContextProps>(null);
@@ -55,41 +54,38 @@ const VANITY_ROUTES = new Map<string, string>([
   ['/clusters/:cluster/namespaces/:namespace/services',          'px/services'],
   ['/clusters/:cluster/namespaces/:namespace/services/:service', 'px/service'],
   ['/clusters/:cluster/scratch',                                 SCRATCH_SCRIPT.id],
-  // The bare live path will redirect to px/cluster but only if we have a clustername available to pick.
+  // The bare live path will redirect to px/cluster but only if we have a cluster name available to pick.
   ['',                                                           'px/cluster'],
   /* eslint-enable no-multi-spaces */
 ]);
 
-const LiveRoute: React.FC<LiveRouteContextProps> = ({
-  args, scriptId, embedState, clusterName, push, children,
-}) => {
-  const { timeArg } = React.useContext(EmbedContext);
-  const copiedArgs = React.useMemo(() => {
-    const copy = { ...args };
-    if (timeArg && copy.start_time) {
-      copy.start_time = timeArg;
-    }
-    return copy;
-  }, [args, timeArg]);
+function unwrapQueryParam(param: string|string[]): string {
+  return Array.isArray(param) ? param[0] : param;
+}
 
-  // Sorting keys ensures that the stringified object looks the same regardless of the order of operations that built it
-  const serializedArgs = JSON.stringify(copiedArgs, Object.keys(copiedArgs ?? {}).sort());
-  const context: LiveRouteContextProps = React.useMemo(() => ({
-    scriptId, clusterName, embedState, args: copiedArgs, push,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [scriptId, clusterName, embedState, serializedArgs, push]);
+function buildMatchParams(scriptId: string, routeParams: Record<string, string|string[]>) {
+  const cluster = unwrapQueryParam(routeParams.cluster || '');
+  const matchParams = { ...routeParams };
+  delete matchParams.cluster;
 
-  return (
-    <LiveRouteContext.Provider value={context}>{children}</LiveRouteContext.Provider>
-  );
-};
+  if (scriptId === 'px/pod' && matchParams.namespace != null && matchParams.pod != null) {
+    matchParams.pod = `${matchParams.namespace}/${matchParams.pod}`;
+    delete matchParams.namespace;
+  }
+  if (scriptId === 'px/service' && matchParams.namespace != null && matchParams.service != null) {
+    matchParams.service = `${matchParams.namespace}/${matchParams.service}`;
+    delete matchParams.namespace;
+  }
 
-const push = (
+  return { cluster, matchParams };
+}
+
+export function push(
   clusterName: string,
   scriptId: string,
   args: Arguments,
   embedState: EmbedState,
-) => {
+): void {
   const pathname = `${embedState.isEmbedded ? '/embed' : ''}/live/clusters/${encodeURIComponent(clusterName)}`;
   const queryParams: Arguments = {
     ...args,
@@ -102,10 +98,36 @@ const push = (
   if (pathname !== plHistory.location.pathname || search !== plHistory.location.search) {
     plHistory.push({ pathname, search });
   }
-};
+}
 
-export const LiveContextRouter: React.FC = ({ children }) => {
-  const { path } = useRouteMatch();
+const LiveRoute: React.FC<LiveRouteContextProps> = React.memo(function LiveRoute({
+  args, scriptId, embedState, clusterName, children,
+}) {
+  const { timeArg } = React.useContext(EmbedContext);
+  const copiedArgs = React.useMemo(() => {
+    const copy = { ...args };
+    if (timeArg && copy.start_time) {
+      copy.start_time = timeArg;
+    }
+    return copy;
+  }, [args, timeArg]);
+
+  // Sorting keys ensures that the stringified object looks the same regardless of the order of operations that built it
+  const serializedArgs = JSON.stringify(copiedArgs, Object.keys(copiedArgs ?? {}).sort());
+  const context: LiveRouteContextProps = React.useMemo(() => ({
+    scriptId, clusterName, embedState, args: copiedArgs,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [scriptId, clusterName, embedState, serializedArgs]);
+
+  return (
+    <LiveRouteContext.Provider value={context}>{children}</LiveRouteContext.Provider>
+  );
+});
+
+const VanityRouter: React.FC<{ outerPath: string }> = React.memo(function VanityRouter({ outerPath, children }) {
+  const location = useLocation();
+  const { path, params: routeParams } = useRouteMatch();
+  const nestedPath = path.substr(outerPath.length);
 
   const { data, loading: loadingCluster } = useQuery<{
     clusters: Pick<GQLClusterInfo, 'clusterName' | 'status'>[]
@@ -127,78 +149,71 @@ export const LiveContextRouter: React.FC = ({ children }) => {
 
   const { scripts: availableScripts, loading: loadingAvailableScripts } = React.useContext(ScriptsContext);
 
-  if (loadingCluster || loadingAvailableScripts) return null; // Wait for things to be ready
+  const isEmbedded = outerPath.startsWith('/embed');
+
+  const {
+    script: queryScriptId,
+    widget: widgetName,
+    disable_time_picker: disableTimePicker,
+    ...queryParams
+  } = React.useMemo(() => QueryString.parse(location.search), [location.search]);
+
+  const scriptId = React.useMemo(() => {
+    if (queryScriptId) return unwrapQueryParam(queryScriptId);
+    return VANITY_ROUTES.get(nestedPath) ?? 'px/cluster';
+  }, [nestedPath, queryScriptId]);
+
+  const embedState: EmbedState = React.useMemo(() => {
+    let disable = false;
+    let widget = null;
+    if (isEmbedded) {
+      disable = unwrapQueryParam(disableTimePicker) === 'true';
+      widget = unwrapQueryParam(widgetName);
+    }
+    return { isEmbedded, disableTimePicker: disable, widget };
+  }, [isEmbedded, disableTimePicker, widgetName]);
+
+  const { cluster, matchParams } = React.useMemo(
+    () => buildMatchParams(scriptId, routeParams),
+    [scriptId, routeParams]);
+
+  const args: Arguments = React.useMemo(() => argsForVis(
+    availableScripts.get(scriptId)?.vis, {
+      ...matchParams,
+      ...queryParams,
+    }), [availableScripts, matchParams, queryParams, scriptId]);
+
+  // Wait for things to be ready
+  if (loadingCluster || loadingAvailableScripts) return null;
+
+  // Special handling only if a default cluster is available and path is /live w/o args.
+  // Otherwise we want to render the LiveRoute which eventually renders something helpful for new users.
+  if (defaultCluster && nestedPath === '') {
+    return (<Redirect to={`${outerPath}/clusters/${encodeURIComponent(defaultCluster)}`} />);
+  }
+
+  return (
+    <LiveRoute
+      scriptId={scriptId}
+      args={args}
+      embedState={embedState}
+      clusterName={decodeURIComponent(cluster)}
+    >
+      {children}
+    </LiveRoute>
+  );
+});
+
+export const LiveContextRouter = React.memo(function LiveContextRouter({ children }) {
+  const { path } = useRouteMatch();
+  const vanities = React.useMemo(() => [...VANITY_ROUTES.keys()].map((r) => `${path}${r}`), [path]);
 
   return (
     <Switch>
-      <Route
-        exact
-        path={[...Array.from(VANITY_ROUTES.keys()).map((r) => (`${path}${r}`))]}
-        render={({ match, location }) => {
-          const isEmbedded = match.path.startsWith('/embed');
-          // Strip out the path matched by the router one level above us.
-          const nestedPath = match.path.substr(path.length);
-          // Special handling only if a default cluster is available and path is /live w/o args.
-          // Otherwise we want to render the LiveRoute which eventually renders something helpful for new users.
-          if (defaultCluster && nestedPath === '') {
-            return (<Redirect to={`${path}/clusters/${encodeURIComponent(defaultCluster)}`} />);
-          }
-          const {
-            script: queryScriptId,
-            widget: widgetName,
-            disable_time_picker: disableTimePicker,
-            ...queryParams
-          } = QueryString.parse(location.search);
-
-          let scriptId = VANITY_ROUTES.get(nestedPath) ?? 'px/cluster';
-          if (queryScriptId) {
-            scriptId = Array.isArray(queryScriptId)
-              ? queryScriptId[0]
-              : queryScriptId;
-          }
-          const { cluster: matchedCluster, ...matchParams } = match.params;
-          const cluster = matchedCluster || '';
-
-          if (scriptId === 'px/pod' && matchParams.namespace != null && matchParams.pod != null) {
-            matchParams.pod = `${matchParams.namespace}/${matchParams.pod}`;
-            delete matchParams.namespace;
-          }
-          if (scriptId === 'px/service' && matchParams.namespace != null && matchParams.service != null) {
-            matchParams.service = `${matchParams.namespace}/${matchParams.service}`;
-            delete matchParams.namespace;
-          }
-          const args: Arguments = argsForVis(
-            availableScripts.get(scriptId)?.vis, {
-              ...matchParams,
-              ...queryParams,
-            });
-
-          const embedState: EmbedState = {
-            isEmbedded,
-            disableTimePicker: false,
-            widget: null,
-          };
-          if (isEmbedded) {
-            embedState.disableTimePicker = (
-              Array.isArray(disableTimePicker) ? disableTimePicker[0] : disableTimePicker
-            ) === 'true';
-            embedState.widget = Array.isArray(widgetName) ? widgetName[0] : widgetName;
-          }
-
-          return (
-            <LiveRoute
-              scriptId={scriptId}
-              args={args}
-              embedState={embedState}
-              clusterName={decodeURIComponent(cluster)}
-              push={push}
-            >
-              {children}
-            </LiveRoute>
-          );
-        }}
-      />
+      <Route exact path={vanities}>
+        <VanityRouter outerPath={path}>{children}</VanityRouter>
+      </Route>
       <Route path={`${path}*`} component={RouteNotFound} />
     </Switch>
   );
-};
+});

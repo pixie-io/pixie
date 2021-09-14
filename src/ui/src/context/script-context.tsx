@@ -18,7 +18,7 @@
 
 import * as React from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
-import { LiveRouteContext } from 'app/containers/App/live-routing';
+import { LiveRouteContext, push } from 'app/containers/App/live-routing';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
 import { getQueryFuncs } from 'app/containers/live/vis';
 import { Script } from 'app/utils/script-bundle';
@@ -82,7 +82,6 @@ export const ScriptContextProvider: React.FC = React.memo(function ScriptContext
     scriptId,
     args,
     embedState,
-    push,
   } = React.useContext(LiveRouteContext);
   const { selectedClusterName } = React.useContext(ClusterContext);
   const { scripts: availableScripts, loading: loadingAvailableScripts } = React.useContext(ScriptsContext);

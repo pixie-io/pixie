@@ -22,7 +22,7 @@ import { GQLClusterInfo, GQLVizierConfig, GQLClusterStatus } from 'app/types/sch
 import { ClusterConfig } from 'app/api';
 import { isDev } from 'app/utils/env';
 import { useSnackbar } from 'app/components';
-import { LiveRouteContext } from 'app/containers/App/live-routing';
+import { LiveRouteContext, push } from 'app/containers/App/live-routing';
 import { stableSerializeArgs } from 'app/utils/args-utils';
 
 export interface ClusterContextProps {
@@ -53,11 +53,11 @@ const invalidCluster = (name: string): SelectedClusterInfo => ({
   prettyClusterName: name,
 });
 
-export const ClusterContextProvider: React.FC = ({ children }) => {
+export const ClusterContextProvider = React.memo(function ClusterContextProvider({ children }) {
   const showSnackbar = useSnackbar();
 
   const {
-    scriptId, clusterName, args, embedState, push,
+    scriptId, clusterName, args, embedState,
   } = React.useContext(LiveRouteContext);
 
   const { data, loading, error } = useQuery<{
@@ -120,7 +120,7 @@ export const ClusterContextProvider: React.FC = ({ children }) => {
       {children}
     </ClusterContext.Provider>
   );
-};
+});
 
 export function useClusterConfig(): ClusterConfig | null {
   const { selectedClusterID, selectedClusterVizierConfig } = React.useContext(ClusterContext);

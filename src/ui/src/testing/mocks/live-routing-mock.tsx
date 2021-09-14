@@ -28,9 +28,9 @@ export const LIVE_ROUTE_CONTEXT_DEFAULTS: LiveRouteContextProps = {
     widget: null,
     disableTimePicker: false,
   },
-  push: jest.fn(),
 };
 
+// eslint-disable-next-line react-memo/require-memo
 export const MockLiveRouteContextProvider: React.FC = ({ children }) => (
   <LiveRouteContext.Provider value={LIVE_ROUTE_CONTEXT_DEFAULTS}>
     {children}
