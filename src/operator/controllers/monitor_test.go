@@ -239,7 +239,7 @@ func TestMonitor_getCloudConnState_SeveralCloudConns(t *testing.T) {
 	assert.Equal(t, v1alpha1.VizierPhaseUpdating, translateReasonToPhase(state.Reason))
 }
 
-func TestMonitor_natsPod(t *testing.T) {
+func TestMonitor_operatorBasedNATsPod(t *testing.T) {
 	httpClient := &FakeHTTPClient{
 		responses: map[string]string{
 			"http://127.0.0.1:8222/": "",
@@ -254,6 +254,10 @@ func TestMonitor_natsPod(t *testing.T) {
 		natsPhase           v1.PodPhase
 		expectedReason      status.VizierReason
 		expectedVizierPhase v1alpha1.VizierPhase
+		// The metadata label part of the pod that this is a part of.
+		natsPodNameLabel string
+		// The name of the nats pod.
+		natsPodName string
 	}{
 		{
 			name:                "OK",
@@ -261,6 +265,8 @@ func TestMonitor_natsPod(t *testing.T) {
 			natsPhase:           v1.PodRunning,
 			expectedReason:      "",
 			expectedVizierPhase: v1alpha1.VizierPhaseHealthy,
+			natsPodNameLabel:    natsLabel,
+			natsPodName:         natsPodName,
 		},
 		{
 			name:                "pending",
@@ -268,6 +274,8 @@ func TestMonitor_natsPod(t *testing.T) {
 			natsPhase:           v1.PodPending,
 			expectedReason:      "NATSPodPending",
 			expectedVizierPhase: v1alpha1.VizierPhaseUpdating,
+			natsPodNameLabel:    natsLabel,
+			natsPodName:         natsPodName,
 		},
 		{
 			name:                "missing",
@@ -281,6 +289,31 @@ func TestMonitor_natsPod(t *testing.T) {
 			natsPhase:           v1.PodRunning,
 			expectedReason:      "NATSPodFailed",
 			expectedVizierPhase: v1alpha1.VizierPhaseUnhealthy,
+			natsPodNameLabel:    natsLabel,
+			natsPodName:         natsPodName,
+		},
+		{
+			name:                "missing if nats pod is not named and label is natsLabel",
+			expectedReason:      "NATSPodMissing",
+			expectedVizierPhase: v1alpha1.VizierPhaseUnhealthy,
+			natsPodNameLabel:    natsLabel,
+			natsPodName:         "random_pod",
+		},
+		{
+			name:                "missing if nats pod is not named and label is empty",
+			expectedReason:      "NATSPodMissing",
+			expectedVizierPhase: v1alpha1.VizierPhaseUnhealthy,
+			natsPodNameLabel:    "",
+			natsPodName:         "random_pod",
+		},
+		{
+			name:                "Old PodName and label OK",
+			natsIP:              "127.0.0.1",
+			natsPhase:           v1.PodRunning,
+			expectedReason:      "",
+			expectedVizierPhase: v1alpha1.VizierPhaseHealthy,
+			natsPodNameLabel:    "",
+			natsPodName:         natsPodOldName,
 		},
 	}
 
@@ -289,8 +322,8 @@ func TestMonitor_natsPod(t *testing.T) {
 			pods := &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWrapper)}
 			if !test.podMissing {
 				pods.write(
-					"",
-					natsName,
+					test.natsPodNameLabel,
+					test.natsPodName,
 					&podWrapper{
 						pod: &v1.Pod{
 							Status: v1.PodStatus{

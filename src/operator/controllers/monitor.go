@@ -52,10 +52,14 @@ import (
 const (
 	// The name label of the cloud-conn pod.
 	cloudConnName = "vizier-cloud-connector"
-	// The label for PEMs.
+	// The name label for PEMs.
 	vizierPemLabel = "vizier-pem"
+	// The name label for nats pods.
+	natsLabel = "pl-nats"
 	// The name of the nats pod.
-	natsName = "pl-nats-1"
+	natsPodName = "pl-nats-0"
+	// The name of the old nats pod name, before the switch from operator managed NATS to the stateful set NATS.
+	natsPodOldName = "pl-nats-1"
 	// How often we should ping the vizier pods for status updates.
 	statuszCheckInterval = 20 * time.Second
 	// The threshold of number of crashing PEM pods before we declare a cluster degraded.
@@ -271,14 +275,32 @@ func getNATSState(client HTTPClient, pods *concurrentPodMap) *vizierState {
 	pods.mapMu.Lock()
 	defer pods.mapMu.Unlock()
 
-	noLabelPods, ok := pods.unsafeMap[""]
-	if !ok {
-		return &vizierState{Reason: status.NATSPodMissing}
+	var natsPod *podWrapper
+	// There are two places the NATS pod will end up, depending on which NATS
+	// deployment a customer has. Either the NATS pod will be in the natsLabel
+	// because their NATS is handled by the current StatefulSet deployment.
+	// Or it will be in the empty string label, which is created by the Operator
+	// deployment.
+	//
+	// This Operator deployment will be deprecated and not checked for in a later version
+	// of the monitor code.
+	newNATSFound := false
+	natsPods, ok := pods.unsafeMap[natsLabel]
+	if ok {
+		natsPod, ok = natsPods[natsPodName]
+		newNATSFound = ok
 	}
 
-	natsPod, ok := noLabelPods[natsName]
-	if !ok {
-		return &vizierState{Reason: status.NATSPodMissing}
+	// Old NATS pods do not have a name label and have a slightly different NATS name.
+	if !newNATSFound {
+		natsPods, ok := pods.unsafeMap[""]
+		if !ok {
+			return &vizierState{Reason: status.NATSPodMissing}
+		}
+		natsPod, ok = natsPods[natsPodOldName]
+		if !ok {
+			return &vizierState{Reason: status.NATSPodMissing}
+		}
 	}
 
 	if natsPod.pod.Status.Phase == v1.PodPending {
