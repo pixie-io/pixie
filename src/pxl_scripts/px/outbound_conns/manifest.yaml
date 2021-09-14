@@ -1,0 +1,3 @@
+---
+short: Outbound Connections
+long: Shows a list of connections that are to endpoints outside the k8s cluster.

@@ -1,0 +1,39 @@
+{
+  "variables": [
+    {
+      "name": "start_time",
+      "type": "PX_STRING",
+      "description": "The start time of the window in time units before now.",
+      "defaultValue": "-5m"
+    }
+  ],
+  "globalFuncs": [
+    {
+      "outputName": "outbound_conns",
+      "func": {
+        "name": "outbound_conns",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          }
+        ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Table",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 4
+      },
+      "globalFuncOutputName": "outbound_conns",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      }
+    }
+  ]
+}
