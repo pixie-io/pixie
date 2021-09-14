@@ -210,6 +210,52 @@ class UProbeManager {
       },
   });
 
+  // TODO(yzhao): Regroups OpenSSL uprobes into 3 groups: 1) OpenSSL dynamic library; 2) OpenSSL
+  // static library (no known cases other than nodejs today, but should support for future-proof);
+  // 3) NodeJS specific uprobes.
+
+  // Probes on node' C++ functions for obtaining the file descriptor from TLSWrap object.
+  // The match type is kPrefix to (hopefully) tolerate potential changes in argument
+  // order/type/count etc.
+  inline static const auto kNodejsOpenSSLUProbeTmpls = MakeArray<UProbeTmpl>({
+      UProbeTmpl{
+          .symbol = "_ZN4node6crypto7TLSWrapC2E",
+          .match_type = obj_tools::SymbolMatchType::kPrefix,
+          .probe_fn = "probe_entry_TLSWrap_memfn",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+      },
+      UProbeTmpl{
+          .symbol = "_ZN4node6crypto7TLSWrapC2E",
+          .match_type = obj_tools::SymbolMatchType::kPrefix,
+          .probe_fn = "probe_ret_TLSWrap_memfn",
+          .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
+      },
+      UProbeTmpl{
+          .symbol = "_ZN4node6crypto7TLSWrap7ClearInE",
+          .match_type = obj_tools::SymbolMatchType::kPrefix,
+          .probe_fn = "probe_entry_TLSWrap_memfn",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+      },
+      UProbeTmpl{
+          .symbol = "_ZN4node6crypto7TLSWrap7ClearInE",
+          .match_type = obj_tools::SymbolMatchType::kPrefix,
+          .probe_fn = "probe_ret_TLSWrap_memfn",
+          .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
+      },
+      UProbeTmpl{
+          .symbol = "_ZN4node6crypto7TLSWrap8ClearOutE",
+          .match_type = obj_tools::SymbolMatchType::kPrefix,
+          .probe_fn = "probe_entry_TLSWrap_memfn",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+      },
+      UProbeTmpl{
+          .symbol = "_ZN4node6crypto7TLSWrap8ClearOutE",
+          .match_type = obj_tools::SymbolMatchType::kPrefix,
+          .probe_fn = "probe_ret_TLSWrap_memfn",
+          .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
+      },
+  });
+
   // Probes for OpenSSL tracing.
   inline static const auto kOpenSSLUProbes = MakeArray<bpf_tools::UProbeSpec>({
       bpf_tools::UProbeSpec{
@@ -235,6 +281,14 @@ class UProbeManager {
           .symbol = "SSL_read",
           .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
           .probe_fn = "probe_ret_SSL_read",
+      },
+      // Used by node tracing to record the mapping from SSL object to TLSWrap object.
+      // TODO(yzhao): Move this to a separate list for node application only.
+      bpf_tools::UProbeSpec{
+          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
+          .symbol = "SSL_new",
+          .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
+          .probe_fn = "probe_ret_SSL_new",
       },
   });
 
@@ -292,17 +346,24 @@ class UProbeManager {
                                    const std::vector<int32_t>& new_pids);
 
   /**
-   * // Attaches the required probes for OpenSSL tracing to the specified PID, if it uses OpenSSL.
+   * Attaches the required probes for OpenSSL tracing to the specified PID, if it uses OpenSSL.
    *
-   * @param binary The path to the binary on which to deploy Go HTTP2 probes.
-   * @param elf_reader ELF reader for the binary.
-   * @param dwarf_reader DWARF reader for the binary.
-   * @param pids The list of PIDs that are new instances of the binary. Used to populate symbol
-   *        addresses.
+   * @param pid The PID of the process whose mount namespace is examined for OpenSSL dynamic library
+   * files.
    * @return The number of uprobes deployed. It is not an error if the binary
    *         does not use OpenSSL; instead the return value will be zero.
    */
-  StatusOr<int> AttachOpenSSLUProbes(uint32_t pid);
+  StatusOr<int> AttachOpenSSLUProbesOnDynamicLib(uint32_t pid);
+
+  /**
+   * Attaches the required probes for OpenSSL tracing the executable of the specified PID.
+   * The OpenSSL library is assumed to be statically linked into the executable.
+   *
+   * @param pid The PID of the process whose executable is attached with the probes.
+   * @return The number of uprobes deployed. It is not an error if the binary
+   * does not use OpenSSL; instead the return value will be zero.
+   */
+  StatusOr<int> AttachNodeJsOpenSSLUprobes(uint32_t pid);
 
   /**
    * Helper function that calls BCCWrapper.AttachUprobe() from a probe template.

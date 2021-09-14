@@ -172,7 +172,7 @@ Status UProbeManager::UpdateGoTLSSymAddrs(ElfReader* elf_reader, DwarfReader* dw
 // e.g. input: lib_names = {"libssl.so.1.1", "libcrypto.so.1.1"}
 // output: {"/usr/lib/mount/abc...def/usr/lib/libssl.so.1.1",
 // "/usr/lib/mount/abc...def/usr/lib/libcrypto.so.1.1"}
-StatusOr<std::vector<std::filesystem::path>> FindLibraryPaths(
+StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDPath(
     const std::vector<std::string_view>& lib_names, uint32_t pid, system::ProcParser* proc_parser,
     LazyLoadedFPResolver* fp_resolver) {
   // TODO(jps): use a mutable map<string, path> as the function argument.
@@ -228,7 +228,7 @@ StatusOr<std::vector<std::filesystem::path>> FindLibraryPaths(
 
 // Return error if something unexpected occurs.
 // Return 0 if nothing unexpected, but there is nothing to deploy (e.g. no OpenSSL detected).
-StatusOr<int> UProbeManager::AttachOpenSSLUProbes(uint32_t pid) {
+StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
   constexpr std::string_view kLibSSL = "libssl.so.1.1";
   constexpr std::string_view kLibCrypto = "libcrypto.so.1.1";
   const std::vector<std::string_view> lib_names = {kLibSSL, kLibCrypto};
@@ -237,13 +237,13 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbes(uint32_t pid) {
 
   // Find paths to libssl.so and libcrypto.so for the pid, if they are in use (i.e. mapped).
   PL_ASSIGN_OR_RETURN(const std::vector<std::filesystem::path> container_lib_paths,
-                      FindLibraryPaths(lib_names, pid, proc_parser_.get(), &fp_resolver_));
+                      FindHostPathForPIDPath(lib_names, pid, proc_parser_.get(), &fp_resolver_));
 
   std::filesystem::path container_libssl = container_lib_paths[0];
   std::filesystem::path container_libcrypto = container_lib_paths[1];
 
   if (container_libssl.empty() || container_libcrypto.empty()) {
-    // Looks like this process doesn't use OpenSSL, because it did not
+    // Looks like this process doesn't have dynamic OpenSSL library installed, because it did not
     // map both of libssl.so.x.x & libcrypto.so.x.x.
     // Return "0" to indicate zero probes were attached. This is not an error.
     return 0;
@@ -268,6 +268,42 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbes(uint32_t pid) {
     PL_RETURN_IF_ERROR(bcc_->AttachUProbe(spec));
   }
   return kOpenSSLUProbes.size();
+}
+
+StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(uint32_t pid) {
+  PL_ASSIGN_OR_RETURN(std::filesystem::path proc_exe, ProcExe(pid));
+  if (proc_exe.empty()) {
+    return 0;
+  }
+
+  std::string proc_exe_str = proc_exe.string();
+  PL_ASSIGN_OR_RETURN(
+      const std::vector<std::filesystem::path> proc_exe_paths,
+      FindHostPathForPIDPath({proc_exe_str}, pid, proc_parser_.get(), &fp_resolver_));
+
+  if (proc_exe_paths.size() != 1) {
+    return error::Internal(
+        "Expect get exactly 1 host path for pid path $0, got [$1]", proc_exe_str,
+        absl::StrJoin(proc_exe_paths, ",", [](std::string* s, const std::filesystem::path& p) {
+          s->append(p.string());
+        }));
+  }
+
+  std::filesystem::path host_proc_exe = system::Config::GetInstance().ToHostPath(proc_exe_paths[0]);
+
+  // These probes are attached on OpenSSL dynamic library (if present) as well.
+  // Here they are attached on statically linked OpenSSL library (eg. for node).
+  for (auto spec : kOpenSSLUProbes) {
+    spec.binary_path = host_proc_exe.string();
+    PL_RETURN_IF_ERROR(bcc_->AttachUProbe(spec));
+  }
+
+  PL_ASSIGN_OR_RETURN(auto elf_reader, ElfReader::Create(host_proc_exe));
+  // These are node-specific probes.
+  PL_ASSIGN_OR_RETURN(int count,
+                      AttachUProbeTmpl(kNodejsOpenSSLUProbeTmpls, host_proc_exe, elf_reader.get()));
+
+  return kOpenSSLUProbes.size() + count;
 }
 
 StatusOr<int> UProbeManager::AttachGoTLSUProbes(const std::string& binary,
@@ -377,14 +413,30 @@ int UProbeManager::DeployOpenSSLUProbes(const absl::flat_hash_set<md::UPID>& pid
       continue;
     }
 
-    StatusOr<int> attach_status = AttachOpenSSLUProbes(pid.pid());
-    if (!attach_status.ok()) {
-      VLOG(1) << absl::Substitute("AttachOpenSSLUprobes failed for PID $0: $1", pid.pid(),
-                                  attach_status.ToString());
+    auto count_or = AttachOpenSSLUProbesOnDynamicLib(pid.pid());
+    if (count_or.ok()) {
+      uprobe_count += count_or.ValueOrDie();
+      VLOG(1) << absl::Substitute(
+          "Attaching OpenSSL uprobes on dynamic library succeeded for PID $0: $1 probes", pid.pid(),
+          count_or.ValueOrDie());
     } else {
-      VLOG(1) << absl::Substitute("AttachOpenSSLUprobes succeeded for PID $0: $1 probes", pid.pid(),
-                                  attach_status.ValueOrDie());
-      uprobe_count += attach_status.ValueOrDie();
+      VLOG(1) << absl::Substitute(
+          "Attaching OpenSSL uprobes on dynamic library failed for PID $0: $1", pid.pid(),
+          count_or.ToString());
+    }
+
+    count_or = AttachNodeJsOpenSSLUprobes(pid.pid());
+    if (count_or.ok()) {
+      uprobe_count += count_or.ValueOrDie();
+      VLOG(1) << absl::Substitute(
+          "Attaching OpenSSL uprobes on executable statically linked OpenSSL library succeeded for "
+          "PID $0: $1 probes",
+          pid.pid(), count_or.ValueOrDie());
+    } else {
+      VLOG(1) << absl::Substitute(
+          "Attaching OpenSSL uprobes on executable statically linked OpenSSL library failed for "
+          "PID $0: $1",
+          pid.pid(), count_or.ToString());
     }
   }
 

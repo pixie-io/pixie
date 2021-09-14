@@ -26,6 +26,7 @@
 // LINT_C_FILE: Do not remove this line. It ensures cpplint treats this as a C file.
 
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf/macros.h"
+#include "src/stirling/source_connectors/socket_tracer/bcc_bpf/node_openssl_trace.c"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
 
 // Maps that communicates the location of symbols within a binary.
@@ -65,7 +66,7 @@ static __inline void process_openssl_data(struct pt_regs* ctx, uint64_t id,
 // so this function may break with OpenSSL updates.
 // To help combat this, the is parameterized with symbol addresses which are set by user-space,
 // base on the OpenSSL version detected.
-static int get_fd(uint32_t tgid, void* ssl) {
+static int get_fd_symaddrs(uint32_t tgid, void* ssl) {
   struct openssl_symaddrs_t* symaddrs = openssl_symaddrs_map.lookup(&tgid);
   if (symaddrs == NULL) {
     return kInvalidFD;
@@ -83,6 +84,25 @@ static int get_fd(uint32_t tgid, void* ssl) {
   return rbio_num;
 }
 
+static int get_fd(uint32_t tgid, void* ssl) {
+  int fd = kInvalidFD;
+
+  // OpenSSL is used by nodejs in an asynchronous way, where the SSL_read/SSL_write functions don't
+  // immediately relay the traffic to/from the socket. If we notice that this SSL call was made from
+  // node, we use the FD that we obtained from a separate nodejs uprobe.
+  fd = get_fd_node(ssl);
+  if (fd != kInvalidFD && /*not any of the standard fds*/ fd > 2) {
+    return fd;
+  }
+
+  fd = get_fd_symaddrs(tgid, ssl);
+  if (fd != kInvalidFD && /*not any of the standard fds*/ fd > 2) {
+    return fd;
+  }
+
+  return kInvalidFD;
+}
+
 /***********************************************************
  * BPF probe function entry-points
  ***********************************************************/
@@ -97,9 +117,11 @@ int probe_entry_SSL_write(struct pt_regs* ctx) {
   uint32_t tgid = id >> 32;
 
   void* ssl = (void*)PT_REGS_PARM1(ctx);
-  char* buf = (char*)PT_REGS_PARM2(ctx);
+  update_node_ssl_tls_wrap_map(ssl);
 
+  char* buf = (char*)PT_REGS_PARM2(ctx);
   int32_t fd = get_fd(tgid, ssl);
+
   if (fd == kInvalidFD) {
     return 0;
   }
@@ -135,9 +157,11 @@ int probe_entry_SSL_read(struct pt_regs* ctx) {
   uint32_t tgid = id >> 32;
 
   void* ssl = (void*)PT_REGS_PARM1(ctx);
-  char* buf = (char*)PT_REGS_PARM2(ctx);
+  update_node_ssl_tls_wrap_map(ssl);
 
+  char* buf = (char*)PT_REGS_PARM2(ctx);
   int32_t fd = get_fd(tgid, ssl);
+
   if (fd == kInvalidFD) {
     return 0;
   }

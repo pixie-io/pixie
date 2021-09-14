@@ -18,12 +18,14 @@
 
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "src/shared/types/column_wrapper.h"
+#include "src/stirling/source_connectors/socket_tracer/http_table.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/types.h"
 
 namespace px {
@@ -56,11 +58,31 @@ inline auto EqHTTPResp(const protocols::http::Message& x) {
                Field(&protocols::http::Message::body, ::testing::StrEq(x.body)));
 }
 
+// TODO(yzhao): http::Record misses many fields from the records in http data table. Consider adding
+// additional fields.
 inline auto EqHTTPRecord(const protocols::http::Record& x) {
   using ::testing::Field;
 
   return AllOf(Field(&protocols::http::Record::req, EqHTTPReq(x.req)),
                Field(&protocols::http::Record::resp, EqHTTPResp(x.resp)));
+}
+
+inline std::vector<std::string> GetRemoteAddrs(const types::ColumnWrapperRecordBatch& rb,
+                                               const std::vector<size_t>& indices) {
+  std::vector<std::string> addrs;
+  for (size_t idx : indices) {
+    addrs.push_back(rb[kHTTPRemoteAddrIdx]->Get<types::StringValue>(idx));
+  }
+  return addrs;
+}
+
+inline std::vector<int64_t> GetRemotePorts(const types::ColumnWrapperRecordBatch& rb,
+                                           const std::vector<size_t>& indices) {
+  std::vector<int64_t> addrs;
+  for (size_t idx : indices) {
+    addrs.push_back(rb[kHTTPRemotePortIdx]->Get<types::Int64Value>(idx).val);
+  }
+  return addrs;
 }
 
 }  // namespace testing

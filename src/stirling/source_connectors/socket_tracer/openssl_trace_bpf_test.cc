@@ -48,12 +48,33 @@ using ::px::stirling::testing::GetTargetRecords;
 using ::px::stirling::testing::SocketTraceBPFTest;
 using ::px::stirling::testing::ToRecordVector;
 
+using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
 
-class NginxOpenSSL_1_1_0_Container : public ContainerRunner {
+class ServerRunner {
+ public:
+  virtual int32_t PID() const = 0;
+};
+
+namespace {
+
+int32_t GetNginxWorkerPID(int32_t pid) {
+  // Nginx has a master process and a worker process. We need the PID of the worker process.
+  int worker_pid;
+  std::string pid_str = px::Exec(absl::Substitute("pgrep -P $0", pid)).ValueOrDie();
+  CHECK(absl::SimpleAtoi(pid_str, &worker_pid));
+  LOG(INFO) << absl::Substitute("Worker thread PID: $0", worker_pid);
+  return worker_pid;
+}
+
+}  // namespace
+
+class NginxOpenSSL_1_1_0_Container : public ServerRunner, public ContainerRunner {
  public:
   NginxOpenSSL_1_1_0_Container()
       : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
+
+  int32_t PID() const { return GetNginxWorkerPID(process_pid()); }
 
  private:
   // Image is a modified nginx image created through bazel rules, and stored as a tar file.
@@ -65,10 +86,12 @@ class NginxOpenSSL_1_1_0_Container : public ContainerRunner {
   static constexpr std::string_view kReadyMessage = "";
 };
 
-class NginxOpenSSL_1_1_1_Container : public ContainerRunner {
+class NginxOpenSSL_1_1_1_Container : public ServerRunner, public ContainerRunner {
  public:
   NginxOpenSSL_1_1_1_Container()
       : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
+
+  int32_t PID() const { return GetNginxWorkerPID(process_pid()); }
 
  private:
   // Image is a modified nginx image created through bazel rules, and stored as a tar file.
@@ -106,7 +129,35 @@ class RubyContainer : public ContainerRunner {
   static constexpr std::string_view kReadyMessage = "";
 };
 
-template <typename NginxContainer>
+class NodeServerContainer : public ServerRunner, public ContainerRunner {
+ public:
+  NodeServerContainer()
+      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix, kReadyMessage) {
+  }
+
+  int32_t PID() const override { return process_pid(); }
+
+ private:
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/node_image.tar";
+  static constexpr std::string_view kContainerNamePrefix = "node_server";
+  static constexpr std::string_view kReadyMessage = "Nodejs https server started!";
+};
+
+class NodeClientContainer : public ContainerRunner {
+ public:
+  NodeClientContainer()
+      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix, kReadyMessage) {
+  }
+
+ private:
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/node_image.tar";
+  static constexpr std::string_view kContainerNamePrefix = "node_client";
+  static constexpr std::string_view kReadyMessage = "";
+};
+
+template <typename ServerContainer>
 class OpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ false> {
  protected:
   OpenSSLTraceTest() {
@@ -120,21 +171,8 @@ class OpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ fals
     sleep(1);
   }
 
-  int NginxWorkerPID() {
-    // Nginx has a master process and a worker process. We need the PID of the worker process.
-    int worker_pid;
-    std::string pid_str =
-        px::Exec(absl::Substitute("pgrep -P $0", this->server_.process_pid())).ValueOrDie();
-    CHECK(absl::SimpleAtoi(pid_str, &worker_pid));
-    LOG(INFO) << absl::Substitute("Worker thread PID: $0", worker_pid);
-    return worker_pid;
-  }
-
-  NginxContainer server_;
+  ServerContainer server_;
 };
-
-using OpenSSL_1_1_0_TraceTest = OpenSSLTraceTest<NginxOpenSSL_1_1_0_Container>;
-using OpenSSL_1_1_1_TraceTest = OpenSSLTraceTest<NginxOpenSSL_1_1_1_Container>;
 
 //-----------------------------------------------------------------------------
 // Test Scenarios
@@ -163,7 +201,20 @@ working. Further configuration is required.</p>
 Commercial support is available at
 <a href... [TRUNCATED])";
 
-typedef ::testing::Types<NginxOpenSSL_1_1_0_Container, NginxOpenSSL_1_1_1_Container>
+http::Record GetExpectedHTTPRecord() {
+  http::Record expected_record;
+  expected_record.req.minor_version = 1;
+  expected_record.req.req_method = "GET";
+  expected_record.req.req_path = "/index.html";
+  expected_record.req.body = "";
+  expected_record.resp.resp_status = 200;
+  expected_record.resp.resp_message = "OK";
+  expected_record.resp.body = kNginxRespBody;
+  return expected_record;
+}
+
+typedef ::testing::Types<NginxOpenSSL_1_1_0_Container, NginxOpenSSL_1_1_1_Container,
+                         NodeServerContainer>
     NginxImplementations;
 TYPED_TEST_SUITE(OpenSSLTraceTest, NginxImplementations);
 
@@ -183,7 +234,7 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
                  {"--insecure", "-s", "-S", "https://localhost:443/index.html"}));
   client.Wait();
 
-  int worker_pid = this->NginxWorkerPID();
+  int server_pid = this->server_.PID();
 
   this->StopTransferDataThread();
 
@@ -199,20 +250,17 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
     VLOG(1) << absl::Substitute("$0 $1", pid, req_path);
   }
 
-  http::Record expected_record;
-  expected_record.req.minor_version = 1;
-  expected_record.req.req_method = "GET";
-  expected_record.req.req_path = "/index.html";
-  expected_record.req.body = "";
-  expected_record.resp.resp_status = 200;
-  expected_record.resp.resp_message = "OK";
-  expected_record.resp.body = kNginxRespBody;
+  http::Record expected_record = GetExpectedHTTPRecord();
+
+  std::vector<size_t> server_record_indices =
+      FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, server_pid);
 
   // Check server-side tracing results.
   {
-    std::vector<http::Record> records = GetTargetRecords(record_batch, worker_pid);
-
+    std::vector<http::Record> records = ToRecordVector(record_batch, server_record_indices);
     EXPECT_THAT(records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
+    EXPECT_THAT(testing::GetRemoteAddrs(record_batch, server_record_indices),
+                UnorderedElementsAre(StrEq("127.0.0.1")));
   }
 }
 
@@ -249,7 +297,7 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
                  {"ruby", "-e", rb_script}));
   client.Wait();
 
-  int worker_pid = this->NginxWorkerPID();
+  int server_pid = this->server_.PID();
 
   this->StopTransferDataThread();
 
@@ -259,22 +307,55 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
-  http::Record expected_record;
-  expected_record.req.minor_version = 1;
-  expected_record.req.req_method = "GET";
-  expected_record.req.req_path = "/index.html";
-  expected_record.req.body = "";
-  expected_record.resp.resp_status = 200;
-  expected_record.resp.resp_message = "OK";
-  expected_record.resp.body = kNginxRespBody;
+  http::Record expected_record = GetExpectedHTTPRecord();
+
+  std::vector<size_t> server_record_indices =
+      FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, server_pid);
 
   // Check server-side tracing results.
   {
-    std::vector<http::Record> records = GetTargetRecords(record_batch, worker_pid);
-
+    std::vector<http::Record> records = ToRecordVector(record_batch, server_record_indices);
     EXPECT_THAT(records,
                 UnorderedElementsAre(EqHTTPRecord(expected_record), EqHTTPRecord(expected_record),
                                      EqHTTPRecord(expected_record)));
+    EXPECT_THAT(testing::GetRemoteAddrs(record_batch, server_record_indices),
+                UnorderedElementsAre(StrEq("127.0.0.1"), StrEq("127.0.0.1"), StrEq("127.0.0.1")));
+  }
+}
+
+TYPED_TEST(OpenSSLTraceTest, ssl_capture_node_client) {
+  this->StartTransferDataThread();
+
+  // Make an SSL request with the client.
+  // Run the client in the network of the server, so they can connect to each other.
+  NodeClientContainer client;
+  PL_CHECK_OK(
+      client.Run(std::chrono::seconds{60},
+                 {absl::Substitute("--network=container:$0", this->server_.container_name())},
+                 {"node", "/etc/node/https_client.js"}));
+  client.Wait();
+
+  int server_pid = this->server_.PID();
+
+  this->StopTransferDataThread();
+
+  // Grab the data from Stirling.
+  std::vector<TaggedRecordBatch> tablets =
+      this->ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
+  ASSERT_FALSE(tablets.empty());
+  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+
+  http::Record expected_record = GetExpectedHTTPRecord();
+
+  std::vector<size_t> server_record_indices =
+      FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, server_pid);
+
+  // Check server-side tracing results.
+  {
+    std::vector<http::Record> records = ToRecordVector(record_batch, server_record_indices);
+    EXPECT_THAT(records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
+    EXPECT_THAT(testing::GetRemoteAddrs(record_batch, server_record_indices),
+                UnorderedElementsAre(StrEq("127.0.0.1")));
   }
 }
 
