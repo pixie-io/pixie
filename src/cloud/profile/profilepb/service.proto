@@ -157,10 +157,10 @@ message GetUserSettingsRequest {
 
 // The response for a UserSettingsRequest.
 message GetUserSettingsResponse {
-  // Settings for users key-value. 
+  // Settings for users key-value.
   reserved 1; // DEPRECATED
   reserved 2; // DEPRECATED
-  bool analytics_optout = 3; 
+  bool analytics_optout = 3;
 }
 
 // A request to update the user settings for a particular user.

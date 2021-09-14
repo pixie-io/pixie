@@ -126,4 +126,3 @@ spec:
           secretName: etcd-client-tls-certs
       - emptyDir: {}
         name: etcd-data
-

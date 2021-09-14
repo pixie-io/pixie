@@ -37,7 +37,7 @@ spec:
         - configMapRef:
             name: pl-domain-config
         - configMapRef:
-            name: pl-support-access-config  
+            name: pl-support-access-config
         - configMapRef:
             name: pl-ory-service-config
         env:

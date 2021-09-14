@@ -219,4 +219,3 @@ async def iterate_and_pass(table_sub: pxapi.TableSub) -> None:
     """ Processor that iterates over a subscription and does nothing. """
     async for _ in table_sub:
         pass
-

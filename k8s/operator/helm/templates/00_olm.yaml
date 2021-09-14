@@ -81,7 +81,7 @@ spec:
               port: 8080
           terminationMessagePolicy: FallbackToLogsOnError
           env:
-        
+
           - name: OPERATOR_NAMESPACE
             valueFrom:
               fieldRef:
@@ -92,8 +92,8 @@ spec:
             requests:
               cpu: 10m
               memory: 160Mi
-          
-      
+
+
       nodeSelector:
         kubernetes.io/os: linux
 ---
@@ -144,13 +144,13 @@ spec:
               port: 8080
           terminationMessagePolicy: FallbackToLogsOnError
           env:
-          
+
           resources:
             requests:
               cpu: 10m
               memory: 80Mi
-          
-      
+
+
       nodeSelector:
         kubernetes.io/os: linux
 ---

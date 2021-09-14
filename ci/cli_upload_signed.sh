@@ -28,7 +28,7 @@ printenv
 release_tag=${TAG_NAME##*/v}
 bucket="pixie-prod-artifacts"
 if [[ ! "$release_tag" == *"-"* ]]; then
-  bucket="pixie-dev-public" 
+  bucket="pixie-dev-public"
 fi
 
 output_path="gs://${bucket}/cli/${release_tag}"

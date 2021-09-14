@@ -43,7 +43,7 @@ mkdir -p "${tmp_path}"
 # A Helm chart contains two main items:
 # 1. Chart.yaml which specifies the version and name of the chart.
 # 2. `templates` directory, which contains the template YAMLs that should be filled out.
- 
+
 # Create Chart.yaml for this release.
 echo "apiVersion: v2
 name: pixie-chart
@@ -71,5 +71,3 @@ helm repo index "${tmp_dir}/${helm_gcs_bucket}" --url "https://${helm_gcs_bucket
 
 # Upload the new index and tar to gcs by syncing. This will help keep the timestamps for pre-existing tars the same.
 gsutil rsync "${tmp_dir}/${helm_gcs_bucket}" "gs://${helm_gcs_bucket}"
-
-

@@ -73,6 +73,3 @@ else # Build staging YAMLs.
 fi
 
 kubectl apply -f "$yaml_path"
-
-
-

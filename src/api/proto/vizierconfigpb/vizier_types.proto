@@ -22,7 +22,7 @@ package px.vizierconfigpb;
 
 option go_package = "vizierconfigpb";
 
-// Note: Any changes to this file should be in sync with operatpro/api/v1alpha1/vizier_types.go. 
+// Note: Any changes to this file should be in sync with operatpro/api/v1alpha1/vizier_types.go.
 // VizierSpec defines the desired state of Vizier
 message VizierSpec {
     // Version is the desired version of the Vizier instance.

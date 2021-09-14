@@ -93,4 +93,3 @@ sleep 2
 if pidof "$!"; then
   kill -9 "$!"
 fi
-

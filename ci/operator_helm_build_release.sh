@@ -77,5 +77,3 @@ helm repo index "${tmp_dir}/${helm_gcs_bucket}" --url "https://${helm_gcs_bucket
 
 # Upload the new index and tar to gcs by syncing. This will help keep the timestamps for pre-existing tars the same.
 gsutil rsync "${tmp_dir}/${helm_gcs_bucket}" "gs://${helm_gcs_bucket}"
-
-

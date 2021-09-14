@@ -61,7 +61,7 @@ kustomize_dir="$(mktemp -d)"
 # The bundle can only contain lowercase alphanumeric characters.
 bundle_version=$(echo "${release_tag}" | tr '[:upper:]' '[:lower:]')
 
-# An OLM operator bundle containers requires a manifests directory containing the CRDs 
+# An OLM operator bundle containers requires a manifests directory containing the CRDs
 # that are used by the operator and a CSV (ClusterServiceVersion) which provides information
 # about how the operator should be deployed.
 mkdir "${tmp_dir}/manifests"
@@ -74,10 +74,10 @@ kustomize build "$(pwd)/k8s/operator/deployment/base" -o "${kustomize_dir}"
 #shellcheck disable=SC2016
 faq -f yaml -o yaml --slurp '
   .[0].spec.replaces = $previousName |
-  .[0].metadata.name = $name | 
+  .[0].metadata.name = $name |
   .[0].spec.version = $version |
-  .[0].spec.install = {strategy: "deployment", spec:{ 
-  deployments: [{name: .[1].metadata.name, spec: .[1].spec }], 
+  .[0].spec.install = {strategy: "deployment", spec:{
+  deployments: [{name: .[1].metadata.name, spec: .[1].spec }],
   permissions: [{serviceAccountName: .[3].subjects[0].name, rules: .[2].rules }]}} |
   .[0].spec.install.spec.deployments[0].spec.template.spec.containers[0].image = $image
   | .[0]' \

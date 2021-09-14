@@ -81,7 +81,7 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: pl-service-config
-              key: PL_CONFIG_MANAGER_SERVICE      
+              key: PL_CONFIG_MANAGER_SERVICE
         - name: PL_SEGMENT_WRITE_KEY
           valueFrom:
             configMapKeyRef:

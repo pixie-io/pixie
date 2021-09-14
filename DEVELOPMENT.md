@@ -132,4 +132,3 @@ You will be able to run any of the CLI commands using `bazel run`.
 
 - `bazel run //src/pixie_cli:px -- deploy` will be equivalent to `px deploy`
 - `bazel run //src/pixie_cli:px -- run px/cluster` is the same as `px run px/cluster`
-

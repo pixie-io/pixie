@@ -1,13 +1,13 @@
 ---
-name: New Pxl Community Script 
-about: Describe the use-case your script addresses. 
+name: New Pxl Community Script
+about: Describe the use-case your script addresses.
 ---
 
 **Describe the use-case**
 A concise description of your script's objective
 
 **Example scenario**
-A brief description of a debugging scenario where such a view would have been helpful. 
+A brief description of a debugging scenario where such a view would have been helpful.
 
 **Desired output**
 Output Widgets

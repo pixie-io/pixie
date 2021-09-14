@@ -469,7 +469,7 @@ func TestIndexMigrate(t *testing.T) {
 							}
 						}
 					}
-				}	
+				}
 				`,
 			},
 		},

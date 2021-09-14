@@ -23,7 +23,7 @@ package px.services;
 option go_package = "configmanagerpb";
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-import "src/api/proto/vizierconfigpb/vizier_types.proto"; 
+import "src/api/proto/vizierconfigpb/vizier_types.proto";
 
 // ConfigManagerService provides configuration specs from the Cloud.
 service ConfigManagerService {
@@ -34,9 +34,9 @@ service ConfigManagerService {
 // ConfigForVizierRequest is a request for Vizier yamls given a set of specs.
 message ConfigForVizierRequest {
     // Namespace of the Vizier.
-    string namespace = 1; 
-    // Specs that describe how the Vizier should be configured. 
-    vizierconfigpb.VizierSpec vz_spec = 2; 
+    string namespace = 1;
+    // Specs that describe how the Vizier should be configured.
+    vizierconfigpb.VizierSpec vz_spec = 2;
 }
 
 // ConfigForVizierResponse is the response to a ConfigForVizierRequest.

@@ -50,7 +50,7 @@ kind: ConfigMap
 metadata:
   name: pl-auth-connector-config
 data:
-  # Pixie can be used as an auth connector with other products. By calling "api/auth/<connector_name>", 
+  # Pixie can be used as an auth connector with other products. By calling "api/auth/<connector_name>",
   # Pixie can send user info and access tokens to other products through the given callback URL.
   PL_AUTH_CONNECTOR_NAME: ""
   PL_AUTH_CONNECTOR_CALLBACK_URL: ""
