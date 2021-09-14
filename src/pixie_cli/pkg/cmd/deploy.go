@@ -464,6 +464,10 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	if err != nil {
 		utils.Error(err.Error())
 	}
+	if numNodes == 0 {
+		utils.Error("Cluster has no nodes. Try deploying Pixie to a cluster with at least one node.")
+		return
+	}
 
 	utils.Infof("Found %v nodes", numNodes)
 
