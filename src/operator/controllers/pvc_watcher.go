@@ -20,6 +20,7 @@ package controllers
 
 import (
 	"context"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -108,8 +109,10 @@ func (pw *pvcWatcher) watchPVCs(ctx context.Context) {
 				}
 				s, ok := c.Object.(*metav1.Status)
 				if ok && s.Status == metav1.StatusFailure {
-					log.WithField("status", s.Status).Info("Received failure status in PVC watcher")
+					log.WithField("status", s.Status).WithField("msg", s.Message).WithField("reason", s.Reason).WithField("details", s.Details).Info("Received failure status in PVC watcher")
 					// Try to start up another watcher instance.
+					// Sleep a second before retrying, so as not to drive up the CPU.
+					time.Sleep(1 * time.Second)
 					loop = false
 					break
 				}

@@ -20,6 +20,7 @@ package controllers
 
 import (
 	"context"
+	"time"
 
 	"github.com/blang/semver"
 	log "github.com/sirupsen/logrus"
@@ -159,8 +160,10 @@ func (nw *nodeWatcher) watchNodes(ctx context.Context) {
 				}
 				s, ok := c.Object.(*metav1.Status)
 				if ok && s.Status == metav1.StatusFailure {
-					log.WithField("status", s.Status).Info("Received failure status in node watcher")
+					log.WithField("status", s.Status).WithField("msg", s.Message).WithField("reason", s.Reason).WithField("details", s.Details).Info("Received failure status in node watcher")
 					// Try to start up another watcher instance.
+					// Sleep a second before retrying, so as not to drive up the CPU.
+					time.Sleep(1 * time.Second)
 					loop = false
 					break
 				}
