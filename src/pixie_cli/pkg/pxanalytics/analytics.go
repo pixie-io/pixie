@@ -58,6 +58,12 @@ func Client() analytics.Client {
 
 		cloudAddr := viper.GetString("cloud_addr")
 		resp, err := http.Get(fmt.Sprintf("https://segment.%s/cli-write-key", cloudAddr))
+		if err != nil {
+			return
+		}
+		if resp == nil {
+			return
+		}
 
 		var analyticsKey []byte
 
