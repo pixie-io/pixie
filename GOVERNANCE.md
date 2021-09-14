@@ -22,7 +22,7 @@ The following structure will remain in place until May 2023, at which point at t
 The Project will have a BDFL (Benevolent Dictator for Life), who is currently Zain Asgar, and a Deputy BDFL, who is Michelle Nguyen. As Dictator, the BDFL has the authority to make all final decisions for The Project. As Benevolent, the BDFL, in practice chooses to defer that authority to the consensus of the community discussion channels and the Governance Board (see below). It is expected, and in the past has been the case, that the BDFL will only rarely assert their final authority. Because rarely used, we refer to BDFL’s final authority as a “special” or “overriding” vote. When it does occur, the BDFL override typically happens in situations where there is a deadlock in the Governance Board or if the Governance Board asks the BDFL to make a decision on a specific matter. The BDFL is chair of the Governance Board (see below) and may delegate their authority on a particular decision or set of decisions to any other Board member at their discretion.
 
 ## Governance Board
-The project will have a governance board that consists of two project members, two community members, and two end-user community members. The overall role of the Board is to ensure, working with the BDFLs and taking input from the Community, a long-term well-being of the project, both technically and as a community. 
+The project will have a governance board that consists of two project members, two community members, and two end-user community members. The overall role of the Board is to ensure, working with the BDFLs and taking input from the Community, a long-term well-being of the project, both technically and as a community.
 
 The Governance Board and its Members play a special role in certain situations. In particular, the Board may:
 
@@ -70,4 +70,3 @@ Unless specifically required, all Board discussions and activities will be publi
 
 # Changing the Governance Documents
 Changes to the governance documents are submitted via a GitHub/Phabricator pull request to The Project's governance document. The pull request is then refined in response to public comment and review, with the goal being consensus in the community. Since the BDFL holds ultimate authority in The Project, the BDFL has authority to act alone in accepting or rejecting changes.
-

@@ -5,7 +5,7 @@ We write our code, documentation, review comments, and other assets with inclusi
 ## Avoid ableist language
 When trying to achieve a friendly and conversational tone, problematic ableist language may slip in. This can come in the form of figures of speech and other turns of phrase. Be sensitive to your word choice, especially when aiming for an informal tone. Choose alternative words depending on the context.
 
-Things to avoid: 
+Things to avoid:
 
 - Phrases referring to mental health: sanity / crazy / insane
 - Words related to physical or mental disabilities: blind / cripple / dummy
@@ -13,7 +13,7 @@ Things to avoid:
 How to fix ableist language:
 
 - Try replacing the word with a phrase that has no underlying negative connotations. Example: “crazy outliers” → “baffling outliers”, “dummy variable” → “placeholder variable”.
- 
+
 ## Use gender-neutral language
 Some points in our code, documentation and comments contain needless assumptions about the gender of a future reader, user, etc. Example: “When the user logs into his profile.”
 
@@ -61,4 +61,3 @@ How to fix racist language:
 
 - https://developers.google.com/style/inclusive-documentation
 - https://chromium.googlesource.com/chromium/src/+/master/styleguide/inclusive_code.md
-

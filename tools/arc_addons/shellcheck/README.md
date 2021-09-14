@@ -23,17 +23,17 @@ you should deploy this as /opt/phabricator/shellcheck-linter.
 
 ```lang=json
   "load": [
-    "shellcheck-linter"                                                                                                                                
+    "shellcheck-linter"
   ]
 ```
 
 Replace the absolute value by a relative path to the folder
 if you aren't able to install globally as instructed above:
 
-```lang=json                                                                                                                                           
-  "load": [                                                                                                                                            
-    "./vendor/shellcheck-linter"                                                                                                                                
-  ]                                                                                                                                                    
+```lang=json
+  "load": [
+    "./vendor/shellcheck-linter"
+  ]
 ```
 
 2. Configure .arclint to lint shell:

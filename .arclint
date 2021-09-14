@@ -6,10 +6,12 @@
     "(\\.idea/)",
     "(\\.patch$)",
     "(\\.pb\\.go$)",
+    "(\\.tsx\\.snap$)",
     "(\\.pbtxt$)",
     "(\\.sublime-project$)",
     "(^credentials\/.*\\.sh)",
     "(^credentials\/.*\\.yaml)",
+    "(^credentials\/.*\\.sh)",
     "(^docs/customer/)",
     "(^experimental/users/)",
     "(^k8s/operator/crd/base/px\\.dev_viziers\\.yaml$)",
@@ -185,16 +187,6 @@
         "(^src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/physicalpb/physical\\.proto$)"
       ]
     },
-    "proto-text": {
-      "type": "text",
-      "include": [
-        "(.*\\.proto$)"
-      ],
-      "exclude": [
-        "(^src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/physicalpb/physical\\.proto$)"
-      ],
-      "text.max-line-length": 120
-    },
     "shellcheck": {
       "type": "shellcheck",
       "include": [
@@ -207,6 +199,10 @@
         "(.*\\.crt$)",
         "(.*\\.key$)"
       ]
+    },
+    "text": {
+      "type": "pxtext",
+      "text.max-line-length": 120
     },
     "xhpast": {
       "type": "xhpast",
