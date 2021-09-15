@@ -35,6 +35,7 @@ import { SemanticType, Relation } from 'app/types/generated/vizierapi_pb';
 import { useHistory } from 'react-router-dom';
 import { Arguments } from 'app/utils/args-utils';
 import { formatFloat64Data } from 'app/utils/format-data';
+import { buildClass } from 'app/utils/build-class';
 import {
   getColorForErrorRate,
   getColorForLatency,
@@ -72,22 +73,24 @@ interface RequestGraphProps {
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
     width: '100%',
-    height: '100%',
+    flex: 1,
+    minHeight: 0,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'flex-end',
-    '&.focus': {
-      border: '1px solid #353738',
-    },
   },
   container: {
     width: '100%',
-    height: '90%',
+    height: '100%',
     minHeight: 0,
+    border: '1px solid transparent',
+    // https://cssinjs.org/jss-plugin-nested/#use-rulename-to-reference-a-local-rule-within-the-same-style-sheet
+    '&$focus': { borderColor: theme.palette.foreground.grey2 },
     '& > .vis-active': {
       boxShadow: 'none',
     },
   },
+  focus: {/* Blank entry so the rule above has something to reference */},
   enabled: {
     color: theme.palette.text.secondary,
   },
@@ -96,11 +99,11 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
       marginRight: theme.spacing(2),
     },
   },
-}));
+}), { name: 'RequestGraphWidget' });
 
-export const RequestGraphWidget: React.FC<RequestGraphProps> = ({
+export const RequestGraphWidget = React.memo<RequestGraphProps>(function RequestGraphWidget({
   data, relation, display, propagatedArgs,
-}) => {
+}) {
   const { selectedClusterName } = React.useContext(ClusterContext);
   const history = useHistory();
 
@@ -321,8 +324,8 @@ export const RequestGraphWidget: React.FC<RequestGraphProps> = ({
 
   const classes = useStyles();
   return (
-    <div className={`${classes.root} ${focused ? 'focus' : ''}`} onFocus={toggleFocus} onBlur={toggleFocus}>
-      <div className={classes.container} ref={ref} />
+    <div className={classes.root} onFocus={toggleFocus} onBlur={toggleFocus}>
+      <div className={buildClass(classes.container, focused && classes.focus)} ref={ref} />
       <div className={classes.buttonContainer}>
         <Tooltip title={colorByLatency ? 'Colored by latency' : 'Colored by Error Rate'}>
           <IconButton
@@ -354,7 +357,4 @@ export const RequestGraphWidget: React.FC<RequestGraphProps> = ({
       </div>
     </div>
   );
-};
-RequestGraphWidget.defaultProps = {
-  propagatedArgs: null,
-};
+});

@@ -36,6 +36,7 @@ import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { Arguments } from 'app/utils/args-utils';
 import Button from '@material-ui/core/Button';
 import { Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
+import { buildClass } from 'app/utils/build-class';
 import {
   getGraphOptions, semTypeToShapeConfig, colInfoFromName, ColInfo,
 } from './graph-utils';
@@ -76,7 +77,7 @@ interface GraphWidgetProps {
 const INVALID_NODE_TYPES = [SemanticType.ST_SCRIPT_REFERENCE, SemanticType.ST_HTTP_RESP_MESSAGE];
 const LATENCY_TYPES = [SemanticType.ST_DURATION_NS, SemanticType.ST_THROUGHPUT_PER_NS];
 
-const useStyles = makeStyles(() => createStyles({
+const useStyles = makeStyles((theme) => createStyles({
   root: {
     width: '100%',
     flex: 1,
@@ -84,18 +85,20 @@ const useStyles = makeStyles(() => createStyles({
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'flex-end',
-    '&.focus': {
-      border: '1px solid #353738',
-    },
   },
   container: {
     width: '100%',
-    height: '95%',
+    height: '100%',
+    minHeight: 0,
+    border: '1px solid transparent',
+    // https://cssinjs.org/jss-plugin-nested/#use-rulename-to-reference-a-local-rule-within-the-same-style-sheet
+    '&$focus': { borderColor: theme.palette.foreground.grey2 },
     '& > .vis-active': {
       boxShadow: 'none',
     },
   },
-}));
+  focus: {/* Blank entry so the rule above has something to reference */},
+}), { name: 'Graph' });
 
 function getColorForEdge(col: ColInfo, val: number, thresholds: EdgeThresholds): GaugeLevel {
   if (!thresholds && LATENCY_TYPES.includes(col.semType)) {
@@ -260,8 +263,8 @@ export const Graph = React.memo<GraphProps>(function Graph({
 
   const classes = useStyles();
   return (
-    <div className={`${classes.root} ${focused ? 'focus' : ''}`} onFocus={toggleFocus} onBlur={toggleFocus}>
-      <div className={classes.container} ref={ref} />
+    <div className={classes.root} onFocus={toggleFocus} onBlur={toggleFocus}>
+      <div className={buildClass(classes.container, focused && classes.focus)} ref={ref} />
       <div>
         <Button
           size='small'
