@@ -180,13 +180,15 @@ linux_timeconst_files = [
     "@timeconst_1000//file:file",
 ]
 
+stirling_ctrl_files = [
+    "//src/stirling/binaries:stirling_ctrl",
+]
+
 container_image(
     name = "pl_cc_bpf_image",
     base = ":pl_cc_base_image",
     directory = "/pl",
-    files = linux_headers_tarballs + linux_timeconst_files + [
-        "//src/stirling/binaries:stirling_ctrl",
-    ],
+    files = linux_headers_tarballs + linux_timeconst_files + stirling_ctrl_files,
     visibility = ["//visibility:public"],
 )
 
@@ -194,7 +196,7 @@ container_image(
     name = "pl_cc_bpf_debug_image",
     base = ":pl_cc_base_debug_image",
     directory = "/pl",
-    files = linux_headers_tarballs + linux_timeconst_files,
+    files = linux_headers_tarballs + linux_timeconst_files + stirling_ctrl_files,
     visibility = ["//visibility:public"],
 )
 
