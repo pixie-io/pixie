@@ -444,12 +444,19 @@ func TestAuthLoginHandler_BadMethod(t *testing.T) {
 }
 
 func TestAuthLogoutHandler(t *testing.T) {
-	t.Skip("TODO(PC-1150): Fix broken test")
 	env, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("POST", "/logout", nil)
 	require.NoError(t, err)
+
+	// Setup the auth token, otherwise logout errors out.
+	sess, err := controller.GetDefaultSession(env, req)
+	require.NoError(t, err)
+	sess.Values["_at"] = testingutils.GenerateTestJWTToken(t, "jwt-key")
+	cookieRecorder := httptest.NewRecorder()
+	require.NoError(t, sess.Save(req, cookieRecorder))
+	req.Header.Add("Cookie", cookieRecorder.Header().Get("Set-Cookie"))
 
 	rr := httptest.NewRecorder()
 	h := handler.New(env, controller.AuthLogoutHandler)
@@ -472,7 +479,7 @@ func TestAuthLogoutHandler(t *testing.T) {
 	header := http.Header{}
 	header.Add("Cookie", rawCookies)
 	req2 := http.Request{Header: header}
-	sess, err := controller.GetDefaultSession(env, &req2)
+	sess, err = controller.GetDefaultSession(env, &req2)
 	require.NoError(t, err)
 	assert.Equal(t, "", sess.Values["_at"])
 }
