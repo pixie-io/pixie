@@ -16,6 +16,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# TODO(PP-3021): This test shows flakiness. Find and fix the root cause.
+# TODO(PP-3022): This test cannot be run with scripts/sudo_bazel_run.sh. Find and fix the root
+# cause.
+
 # Clean-up any spawned background processes on exit.
 trap 'kill $(jobs -p) &> /dev/null || true' SIGINT SIGTERM EXIT
 
