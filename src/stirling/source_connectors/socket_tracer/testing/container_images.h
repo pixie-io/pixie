@@ -18,6 +18,9 @@
 
 #pragma once
 
+#include <string>
+
+#include "src/common/exec/exec.h"
 #include "src/common/testing/test_environment.h"
 #include "src/common/testing/test_utils/container_runner.h"
 
@@ -46,11 +49,27 @@ class RubyContainer : public ContainerRunner {
 // HTTP/HTTPS
 //-----------------------------------------------------------------------------
 
+namespace internal {
+
+// A helper function useful for the Nginx images below.
+int32_t GetNginxWorkerPID(int32_t pid) {
+  // Nginx has a master process and a worker process. We need the PID of the worker process.
+  int worker_pid;
+  std::string pid_str = px::Exec(absl::Substitute("pgrep -P $0", pid)).ValueOrDie();
+  CHECK(absl::SimpleAtoi(pid_str, &worker_pid));
+  LOG(INFO) << absl::Substitute("Worker thread PID: $0", worker_pid);
+  return worker_pid;
+}
+
+}  // namespace internal
+
 class NginxOpenSSL_1_1_0_Container : public ContainerRunner {
  public:
   NginxOpenSSL_1_1_0_Container()
       : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
+
+  int32_t NginxWorkerPID() const { return internal::GetNginxWorkerPID(process_pid()); }
 
  private:
   // Image is a modified nginx image created through bazel rules, and stored as a tar file.
@@ -67,6 +86,8 @@ class NginxOpenSSL_1_1_1_Container : public ContainerRunner {
   NginxOpenSSL_1_1_1_Container()
       : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
+
+  int32_t NginxWorkerPID() const { return internal::GetNginxWorkerPID(process_pid()); }
 
  private:
   // Image is a modified nginx image created through bazel rules, and stored as a tar file.

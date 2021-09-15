@@ -46,29 +46,16 @@ using ::px::stirling::testing::ToRecordVector;
 using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
 
-namespace {
-
-int32_t GetNginxWorkerPID(int32_t pid) {
-  // Nginx has a master process and a worker process. We need the PID of the worker process.
-  int worker_pid;
-  std::string pid_str = px::Exec(absl::Substitute("pgrep -P $0", pid)).ValueOrDie();
-  CHECK(absl::SimpleAtoi(pid_str, &worker_pid));
-  LOG(INFO) << absl::Substitute("Worker thread PID: $0", worker_pid);
-  return worker_pid;
-}
-
-}  // namespace
-
 class NginxOpenSSL_1_1_0_ContainerWrapper
     : public ::px::stirling::testing::NginxOpenSSL_1_1_0_Container {
  public:
-  int32_t PID() const { return GetNginxWorkerPID(process_pid()); }
+  int32_t PID() const { return NginxWorkerPID(); }
 };
 
 class NginxOpenSSL_1_1_1_ContainerWrapper
     : public ::px::stirling::testing::NginxOpenSSL_1_1_1_Container {
  public:
-  int32_t PID() const { return GetNginxWorkerPID(process_pid()); }
+  int32_t PID() const { return NginxWorkerPID(); }
 };
 
 class NodeServerContainerWrapper : public ::px::stirling::testing::NodeServerContainer {

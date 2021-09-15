@@ -16,10 +16,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/common/exec/subprocess.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/core/output.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/client_server_system.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 
@@ -28,16 +28,12 @@ namespace stirling {
 
 using ::px::stirling::testing::AccessRecordBatch;
 using ::px::stirling::testing::ClientServerSystem;
-using ::px::stirling::testing::ColWrapperSizeIs;
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
 using ::px::stirling::testing::FindRecordsMatchingPID;
 using ::px::stirling::testing::SendRecvScript;
 using ::px::stirling::testing::TCPSocket;
 
-using ::testing::Each;
 using ::testing::IsEmpty;
-using ::testing::SizeIs;
-using ::testing::UnorderedElementsAre;
 
 constexpr int kUPIDIdx = conn_stats_idx::kUPID;
 constexpr int kConnOpenIdx = conn_stats_idx::kConnOpen;
@@ -348,6 +344,77 @@ TEST_F(ConnStatsMidConnBPFTest, InferRemoteEndpointAndReport) {
     EXPECT_THAT(rb[kConnCloseIdx]->Get<types::Int64Value>(s_idx).val, 1);
     EXPECT_THAT(rb[kBytesSentIdx]->Get<types::Int64Value>(s_idx).val, 0);
     EXPECT_THAT(rb[kBytesRecvIdx]->Get<types::Int64Value>(s_idx).val, 360012);
+  }
+}
+
+TEST_F(ConnStatsBPFTest, SSLConnections) {
+  ::px::stirling::testing::NginxOpenSSL_1_1_1_Container server;
+  ::px::stirling::testing::CurlContainer client;
+
+  // Run the nginx HTTPS server.
+  // The container runner will make sure it is in the ready state before unblocking.
+  StatusOr<std::string> run_result = server.Run(std::chrono::seconds{60});
+  PL_CHECK_OK(run_result);
+
+  // Sleep an additional second, just to be safe.
+  sleep(1);
+
+  StartTransferDataThread();
+
+  // Make an SSL request with curl.
+  // Because the server uses a self-signed certificate, curl will normally refuse to connect.
+  // This is similar to the warning pages that Firefox/Chrome would display.
+  // To take an exception and make the SSL connection anyways, we use the --insecure flag.
+
+  // Run the client in the network of the server, so they can connect to each other.
+  PL_CHECK_OK(client.Run(std::chrono::seconds{60},
+                         {absl::Substitute("--network=container:$0", server.container_name())},
+                         {"--insecure", "-s", "-S", "https://localhost:443/index.html"}));
+  client.Wait();
+
+  StopTransferDataThread();
+
+  int server_pid = server.NginxWorkerPID();
+
+  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kConnStatsTableNum);
+  ASSERT_FALSE(tablets.empty());
+  types::ColumnWrapperRecordBatch records =
+      FindRecordsMatchingPID(tablets[0].records, kUPIDIdx, server_pid);
+  // PL_LOG_VAR(PrintConnStatsTable(records));
+
+  // Check server-side stats.
+  {
+    const auto& rb = tablets[0].records;
+    auto indices = FindRecordIdxMatchesPID(tablets[0].records, kUPIDIdx, server_pid);
+    ASSERT_FALSE(indices.empty());
+
+    // ConnStats may have produced various updates during the lifetime of the ClientServerSystem.
+    // Grab the last record, which has the final information.
+    int idx = indices.back();
+
+    int conn_open = AccessRecordBatch<types::Int64Value>(rb, kConnOpenIdx, idx).val;
+    int conn_close = AccessRecordBatch<types::Int64Value>(rb, kConnCloseIdx, idx).val;
+    int bytes_sent = AccessRecordBatch<types::Int64Value>(rb, kBytesSentIdx, idx).val;
+    int bytes_rcvd = AccessRecordBatch<types::Int64Value>(rb, kBytesRecvIdx, idx).val;
+    int addr_family = AccessRecordBatch<types::Int64Value>(rb, kAddrFamilyIdx, idx).val;
+    int protocol = AccessRecordBatch<types::Int64Value>(rb, kProtocolIdx, idx).val;
+    int role = AccessRecordBatch<types::Int64Value>(rb, kRoleIdx, idx).val;
+    int ssl = AccessRecordBatch<types::BoolValue>(rb, kSSLIdx, idx).val;
+
+    EXPECT_THAT(conn_open, 1);
+    EXPECT_THAT(conn_close, 1);
+    // TODO(oazizi): The number of encrypted bytes is different than the number of plaintext bytes.
+    //               At the conn_stats level, the right number should be what's on the connection,
+    //               so it should be encrypted bytes. But the way we do things today,
+    //               we're counting the plaintext bytes (because that's what we trace).
+    //               bytes_sent/bytes_rcvd should be 2730 and 1029 respectively
+    //               once we perform our accounting on encrypted data.
+    EXPECT_THAT(bytes_sent, 2497);
+    EXPECT_THAT(bytes_rcvd, 698);
+    EXPECT_THAT(addr_family, static_cast<int>(SockAddrFamily::kIPv4));
+    EXPECT_THAT(protocol, kProtocolHTTP);
+    EXPECT_THAT(role, kRoleServer);
+    EXPECT_THAT(ssl, true);
   }
 }
 
