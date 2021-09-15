@@ -5,7 +5,7 @@ commonLabels:
   app: pl-cloud
 resources:
 - service_accounts.yaml
-- deployment.yaml
+- statefulset.yaml
 vars:
 - name: STAN_SERVICEACCOUNT_NAMESPACE
   objref:
