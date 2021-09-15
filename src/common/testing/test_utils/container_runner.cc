@@ -23,6 +23,9 @@
 
 namespace px {
 
+// Number of seconds to wait between each attempt.
+constexpr int kSleepSeconds = 1;
+
 ContainerRunner::ContainerRunner(std::string_view image, std::string_view instance_name_prefix,
                                  std::string_view ready_message)
     : image_(image), instance_name_prefix_(instance_name_prefix), ready_message_(ready_message) {
@@ -54,10 +57,9 @@ ContainerRunner::~ContainerRunner() {
 
   std::string docker_rm_cmd = absl::StrCat("docker rm ", container_name_);
   StatusOr<std::string> s = px::Exec(docker_rm_cmd);
-  if (!s.ok()) {
-    // Failing to remove the container will just result in a leak of containers.
-    LOG(ERROR) << s.ToString();
-  }
+  LOG_IF(ERROR, !s.ok()) << absl::Substitute(
+      "Failing to remove the container. Container $0 is leaked. Status: $1", container_name_,
+      s.ToString());
 }
 
 namespace {
@@ -133,8 +135,6 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
 
   // Wait for container's server to be running.
   for (; attempts_remaining > 0; --attempts_remaining) {
-    sleep(kSleepSeconds);
-
     // We check if the container process is running before running docker inspect
     // to avoid races where the container stops running after the docker inspect.
     bool container_is_running = container_.IsRunning();
@@ -158,6 +158,8 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
       PL_RETURN_IF_ERROR(container_.Stdout(&container_out));
       return error::Internal("Docker run failed. Output:\n$0", container_out);
     }
+
+    sleep(kSleepSeconds);
   }
 
   if (container_status != "running" && container_status != "exited") {

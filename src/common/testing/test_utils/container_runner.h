@@ -27,7 +27,7 @@
 
 namespace px {
 
-// ContainerRunner runs a container.
+// ContainerRunner runs a container, and provides the runtime information of the container.
 class ContainerRunner {
  public:
   /**
@@ -107,9 +107,6 @@ class ContainerRunner {
   // A message in the container logs that indicates the container is in ready state.
   // Leave blank if no such concept exists.
   const std::string ready_message_;
-
-  // Number of seconds to wait between each attempt.
-  inline static constexpr int kSleepSeconds = 1;
 
   // The subprocess running the container.
   SubProcess container_;
