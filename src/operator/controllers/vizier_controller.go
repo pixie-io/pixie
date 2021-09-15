@@ -142,15 +142,31 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 		if r.monitor != nil && r.monitor.namespace == req.Namespace {
 			r.monitor.Quit()
+			r.monitor = nil
 		}
 		// Vizier CRD deleted. The vizier instance should also be deleted.
 		return ctrl.Result{}, err
+	}
+
+	if vizier.Status.VizierPhase == v1alpha1.VizierPhaseNone {
+		// We are creating a new vizier instance.
+		err := r.createVizier(ctx, req, &vizier)
+		if err != nil {
+			log.WithError(err).Info("Failed to deploy new Vizier instance")
+		}
+		return ctrl.Result{}, err
+	}
+
+	err := r.updateVizier(ctx, req, &vizier)
+	if err != nil {
+		log.WithError(err).Info("Failed to update Vizier instance")
 	}
 
 	// Check if there if we are already monitoring this Vizier.
 	if r.monitor == nil || r.monitor.namespace != req.Namespace {
 		if r.monitor != nil {
 			r.monitor.Quit()
+			r.monitor = nil
 		}
 
 		r.monitor = &VizierMonitor{
@@ -168,20 +184,6 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		if err != nil {
 			log.WithError(err).Fatal("Failed to initialize vizier monitor")
 		}
-	}
-
-	if vizier.Status.VizierPhase == v1alpha1.VizierPhaseNone {
-		// We are creating a new vizier instance.
-		err := r.createVizier(ctx, req, &vizier)
-		if err != nil {
-			log.WithError(err).Info("Failed to deploy new Vizier instance")
-		}
-		return ctrl.Result{}, err
-	}
-
-	err := r.updateVizier(ctx, req, &vizier)
-	if err != nil {
-		log.WithError(err).Info("Failed to update Vizier instance")
 	}
 
 	// Vizier CRD has been updated, and we should update the running vizier accordingly.
