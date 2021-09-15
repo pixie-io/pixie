@@ -250,7 +250,7 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(function LiveViewBreadcr
 
     return { entityBreadcrumbs, argBreadcrumbs };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [script?.id, collapsedScriptIds, args, selectedClusterUID, getCompletions]);
+  }, [script?.id, script?.code, collapsedScriptIds, args, selectedClusterUID, getCompletions]);
 
   if (widget) {
     return <></>;
