@@ -53,7 +53,7 @@ func TestMonitor_getPVCState(t *testing.T) {
 			pvcPhase:                 v1.ClaimPending,
 			pvcStorageClassName:      "standard",
 			clusterStorageClassNames: []string{"standard"},
-			expectedVizierPhase:      v1alpha1.VizierPhaseUpdating,
+			expectedVizierPhase:      v1alpha1.VizierPhaseUnhealthy,
 			expectedReason:           status.MetadataPVCPendingBinding,
 		},
 		{

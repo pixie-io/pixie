@@ -144,7 +144,7 @@ func TestMonitor_getCloudConnState(t *testing.T) {
 			name:                "updating",
 			cloudConnStatusz:    "",
 			cloudConnPhase:      v1.PodPending,
-			expectedVizierPhase: v1alpha1.VizierPhaseUpdating,
+			expectedVizierPhase: v1alpha1.VizierPhaseUnhealthy,
 			expectedReason:      status.CloudConnectorPodPending,
 		},
 		{
@@ -236,7 +236,7 @@ func TestMonitor_getCloudConnState_SeveralCloudConns(t *testing.T) {
 
 	state := getCloudConnState(httpClient, pods)
 	assert.Equal(t, status.CloudConnectorPodPending, state.Reason)
-	assert.Equal(t, v1alpha1.VizierPhaseUpdating, translateReasonToPhase(state.Reason))
+	assert.Equal(t, v1alpha1.VizierPhaseUnhealthy, translateReasonToPhase(state.Reason))
 }
 
 func TestMonitor_operatorBasedNATsPod(t *testing.T) {
@@ -273,7 +273,7 @@ func TestMonitor_operatorBasedNATsPod(t *testing.T) {
 			natsIP:              "127.0.0.2",
 			natsPhase:           v1.PodPending,
 			expectedReason:      "NATSPodPending",
-			expectedVizierPhase: v1alpha1.VizierPhaseUpdating,
+			expectedVizierPhase: v1alpha1.VizierPhaseUnhealthy,
 			natsPodNameLabel:    natsLabel,
 			natsPodName:         natsPodName,
 		},
@@ -373,7 +373,7 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 		},
 		{
 			name:                "pending metadata",
-			expectedVizierPhase: v1alpha1.VizierPhaseUpdating,
+			expectedVizierPhase: v1alpha1.VizierPhaseUnhealthy,
 			podPhases: map[string]phasePlane{
 				"vizier-metadata": {
 					phase: v1.PodPending,
@@ -426,7 +426,7 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 		},
 		{
 			name:                "updating if no-plane-pod is pending",
-			expectedVizierPhase: v1alpha1.VizierPhaseUpdating,
+			expectedVizierPhase: v1alpha1.VizierPhaseUnhealthy,
 			podPhases: map[string]phasePlane{
 				"vizier-metadata": {
 					phase:      v1.PodRunning,

@@ -546,27 +546,6 @@ func translateReasonToPhase(reason status.VizierReason) pixiev1alpha1.VizierPhas
 	if reason == "" {
 		return pixiev1alpha1.VizierPhaseHealthy
 	}
-	if reason == status.CloudConnectorPodPending {
-		return pixiev1alpha1.VizierPhaseUpdating
-	}
-	if reason == status.MetadataPVCPendingBinding {
-		return pixiev1alpha1.VizierPhaseUpdating
-	}
-	if reason == status.NATSPodPending {
-		return pixiev1alpha1.VizierPhaseUpdating
-	}
-	if reason == status.CloudConnectorPodPending {
-		return pixiev1alpha1.VizierPhaseUpdating
-	}
-	if reason == status.ControlPlanePodsPending {
-		return pixiev1alpha1.VizierPhaseUpdating
-	}
-	if reason == status.MetadataPVCPendingBinding {
-		return pixiev1alpha1.VizierPhaseUpdating
-	}
-	if reason == status.ControlPlanePodsPending {
-		return pixiev1alpha1.VizierPhaseUpdating
-	}
 	if reason == status.CloudConnectorMissing {
 		return pixiev1alpha1.VizierPhaseDisconnected
 	}
