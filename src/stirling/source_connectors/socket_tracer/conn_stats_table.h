@@ -37,6 +37,8 @@ constexpr DataElement kConnStatsElements[] = {
         {"protocol", "The protocol of the traffic on the connections.",
          types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::GENERAL_ENUM,
          &kTrafficProtocolDecoder},
+        {"ssl", "Was SSL traffic detected on this connection.",
+         types::DataType::BOOLEAN, types::SemanticType::ST_NONE, types::PatternType::GENERAL_ENUM},
         {"conn_open", "The number of connections opened since the beginning of tracing.",
          types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_COUNTER},
         {"conn_close", "The number of connections closed since the beginning of tracing.",
@@ -70,6 +72,7 @@ constexpr int kRemotePort = kConnStatsTable.ColIndex("remote_port");
 constexpr int kAddrFamily = kConnStatsTable.ColIndex("addr_family");
 constexpr int kProtocol = kConnStatsTable.ColIndex("protocol");
 constexpr int kRole = kConnStatsTable.ColIndex("trace_role");
+constexpr int kSSL = kConnStatsTable.ColIndex("ssl");
 constexpr int kConnOpen = kConnStatsTable.ColIndex("conn_open");
 constexpr int kConnClose = kConnStatsTable.ColIndex("conn_close");
 constexpr int kConnActive = kConnStatsTable.ColIndex("conn_active");

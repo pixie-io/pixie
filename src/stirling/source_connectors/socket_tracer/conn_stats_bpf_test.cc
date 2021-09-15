@@ -33,6 +33,7 @@ using ::px::stirling::testing::FindRecordIdxMatchesPID;
 using ::px::stirling::testing::FindRecordsMatchingPID;
 using ::px::stirling::testing::SendRecvScript;
 using ::px::stirling::testing::TCPSocket;
+
 using ::testing::Each;
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
@@ -46,6 +47,7 @@ constexpr int kBytesRecvIdx = conn_stats_idx::kBytesRecv;
 constexpr int kAddrFamilyIdx = conn_stats_idx::kAddrFamily;
 constexpr int kProtocolIdx = conn_stats_idx::kProtocol;
 constexpr int kRoleIdx = conn_stats_idx::kRole;
+constexpr int kSSLIdx = conn_stats_idx::kSSL;
 
 // Turn off client-side tracing. Unlike data tracing, conn-stats should still trace client-side even
 // with the client-side tracing turned off.
@@ -71,7 +73,7 @@ TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kConnStatsTableNum);
   ASSERT_FALSE(tablets.empty());
   const types::ColumnWrapperRecordBatch& rb = tablets[0].records;
-  PL_LOG_VAR(PrintConnStatsTable(rb));
+  // PL_LOG_VAR(PrintConnStatsTable(rb));
 
   // Check server-side stats.
   {
@@ -115,6 +117,7 @@ TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
     int addr_family = AccessRecordBatch<types::Int64Value>(rb, kAddrFamilyIdx, idx).val;
     int protocol = AccessRecordBatch<types::Int64Value>(rb, kProtocolIdx, idx).val;
     int role = AccessRecordBatch<types::Int64Value>(rb, kRoleIdx, idx).val;
+    int ssl = AccessRecordBatch<types::BoolValue>(rb, kSSLIdx, idx).val;
 
     EXPECT_THAT(conn_open, 1);
     EXPECT_THAT(conn_close, 1);
@@ -123,6 +126,7 @@ TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
     EXPECT_THAT(addr_family, static_cast<int>(SockAddrFamily::kIPv4));
     EXPECT_THAT(protocol, kProtocolUnknown);
     EXPECT_THAT(role, kRoleClient);
+    EXPECT_THAT(ssl, false);
   }
 }
 
@@ -147,7 +151,6 @@ TEST_F(ConnStatsBPFTest, RoleFromConnectAccept) {
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kConnStatsTableNum);
   ASSERT_FALSE(tablets.empty());
   const types::ColumnWrapperRecordBatch& rb = tablets[0].records;
-  PL_LOG_VAR(PrintConnStatsTable(rb));
 
   // Check client-side.
   {
@@ -165,6 +168,7 @@ TEST_F(ConnStatsBPFTest, RoleFromConnectAccept) {
     int addr_family = AccessRecordBatch<types::Int64Value>(rb, kAddrFamilyIdx, idx).val;
     int protocol = AccessRecordBatch<types::Int64Value>(rb, kProtocolIdx, idx).val;
     int role = AccessRecordBatch<types::Int64Value>(rb, kRoleIdx, idx).val;
+    int ssl = AccessRecordBatch<types::BoolValue>(rb, kSSLIdx, idx).val;
 
     EXPECT_THAT(protocol, kProtocolUnknown);
     EXPECT_THAT(role, kRoleClient);
@@ -173,6 +177,7 @@ TEST_F(ConnStatsBPFTest, RoleFromConnectAccept) {
     EXPECT_THAT(conn_close, 1);
     EXPECT_THAT(bytes_sent, 0);
     EXPECT_THAT(bytes_rcvd, 0);
+    EXPECT_THAT(ssl, false);
   }
 
   // Check server-side.
@@ -191,6 +196,7 @@ TEST_F(ConnStatsBPFTest, RoleFromConnectAccept) {
     int addr_family = AccessRecordBatch<types::Int64Value>(rb, kAddrFamilyIdx, idx).val;
     int protocol = AccessRecordBatch<types::Int64Value>(rb, kProtocolIdx, idx).val;
     int role = AccessRecordBatch<types::Int64Value>(rb, kRoleIdx, idx).val;
+    int ssl = AccessRecordBatch<types::BoolValue>(rb, kSSLIdx, idx).val;
 
     EXPECT_THAT(protocol, kProtocolUnknown);
     EXPECT_THAT(role, kRoleServer);
@@ -199,6 +205,7 @@ TEST_F(ConnStatsBPFTest, RoleFromConnectAccept) {
     EXPECT_THAT(conn_close, 1);
     EXPECT_THAT(bytes_sent, 0);
     EXPECT_THAT(bytes_rcvd, 0);
+    EXPECT_THAT(ssl, false);
   }
 }
 
@@ -302,7 +309,7 @@ TEST_F(ConnStatsMidConnBPFTest, InferRemoteEndpointAndReport) {
   ASSERT_FALSE(tablets.empty());
 
   const types::ColumnWrapperRecordBatch& rb = tablets[0].records;
-  PL_LOG_VAR(PrintConnStatsTable(rb));
+  // PL_LOG_VAR(PrintConnStatsTable(rb));
 
   // Check client-side.
   {

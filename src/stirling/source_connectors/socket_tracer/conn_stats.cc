@@ -70,6 +70,8 @@ absl::flat_hash_map<ConnStats::AggKey, ConnStats::Stats>& ConnStats::UpdateStats
 
     stats.addr_family = tracker->remote_endpoint().family;
     stats.role = tracker->role();
+    stats.protocol = tracker->protocol();
+    stats.ssl = tracker->ssl();
     stats.conn_open += conn_open;
     stats.conn_close += conn_close;
     stats.bytes_recv += bytes_recv;

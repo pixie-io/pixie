@@ -125,6 +125,7 @@ void ConnTracker::AddConnCloseEvent(const close_event_t& close_event, uint64_t t
 void ConnTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   SetRole(event->attr.role, "inferred from data_event");
   SetProtocol(event->attr.protocol, "inferred from data_event");
+  SetSSL(event->attr.ssl, "inferred from data_event");
 
   CheckTracker();
   UpdateTimestamps(event->attr.timestamp_ns);
@@ -481,6 +482,26 @@ bool ConnTracker::SetProtocol(TrafficProtocol protocol, std::string_view reason)
   CONN_TRACE(1) << absl::Substitute("Protocol changed: $0->$1, reason=[$2]",
                                     magic_enum::enum_name(old_protocol),
                                     magic_enum::enum_name(protocol), reason);
+  return true;
+}
+
+bool ConnTracker::SetSSL(bool ssl, std::string_view reason) {
+  // No change, so we're all good.
+  if (ssl_ == ssl) {
+    return true;
+  }
+
+  // Changing the active SSL state of a connection tracker is not allowed.
+  if (ssl_ != false) {
+    CONN_TRACE(2) << absl::Substitute(
+        "Not allowed to change the SSL state of an active ConnTracker: $0->$1, reason=[$2]", ssl_,
+        ssl, reason);
+    return false;
+  }
+
+  bool old_ssl = ssl_;
+  ssl_ = ssl;
+  CONN_TRACE(1) << absl::Substitute("SSL state changed: $0->$1, reason=[$2]", old_ssl, ssl, reason);
   return true;
 }
 

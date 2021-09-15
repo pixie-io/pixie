@@ -1044,6 +1044,7 @@ void SocketTraceConnector::TransferConnStats(ConnectorContext* ctx, DataTable* d
       r.Append<idx::kAddrFamily>(static_cast<int>(stats.addr_family));
       r.Append<idx::kProtocol>(stats.protocol);
       r.Append<idx::kRole>(stats.role);
+      r.Append<idx::kSSL>(stats.ssl);
       r.Append<idx::kConnOpen>(stats.conn_open);
       r.Append<idx::kConnClose>(stats.conn_close);
       r.Append<idx::kConnActive>(stats.conn_open - stats.conn_close);

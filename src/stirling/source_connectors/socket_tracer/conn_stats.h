@@ -69,6 +69,7 @@ class ConnStats {
     TrafficProtocol protocol = kProtocolUnknown;
     EndpointRole role = kRoleUnknown;
     SockAddrFamily addr_family = SockAddrFamily::kUnspecified;
+    bool ssl = false;
 
     uint64_t conn_open = 0;
     uint64_t conn_close = 0;
