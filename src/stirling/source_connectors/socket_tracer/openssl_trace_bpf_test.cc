@@ -24,10 +24,10 @@
 #include "src/common/base/base.h"
 #include "src/common/exec/exec.h"
 #include "src/common/testing/test_environment.h"
-#include "src/common/testing/test_utils/container_runner.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/protocol_checkers.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
@@ -37,9 +37,6 @@ namespace stirling {
 
 namespace http = protocols::http;
 
-using ::px::testing::BazelBinTestFilePath;
-using ::px::testing::TestFilePath;
-
 using ::px::stirling::testing::EqHTTPRecord;
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
 using ::px::stirling::testing::GetTargetRecords;
@@ -48,11 +45,6 @@ using ::px::stirling::testing::ToRecordVector;
 
 using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
-
-class ServerRunner {
- public:
-  virtual int32_t PID() const = 0;
-};
 
 namespace {
 
@@ -67,92 +59,21 @@ int32_t GetNginxWorkerPID(int32_t pid) {
 
 }  // namespace
 
-class NginxOpenSSL_1_1_0_Container : public ServerRunner, public ContainerRunner {
+class NginxOpenSSL_1_1_0_ContainerWrapper
+    : public ::px::stirling::testing::NginxOpenSSL_1_1_0_Container {
  public:
-  NginxOpenSSL_1_1_0_Container()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
-
   int32_t PID() const { return GetNginxWorkerPID(process_pid()); }
-
- private:
-  // Image is a modified nginx image created through bazel rules, and stored as a tar file.
-  // It is not pushed to any repo.
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/"
-      "nginx_openssl_1_1_0_image.tar";
-  static constexpr std::string_view kInstanceNamePrefix = "nginx";
-  static constexpr std::string_view kReadyMessage = "";
 };
 
-class NginxOpenSSL_1_1_1_Container : public ServerRunner, public ContainerRunner {
+class NginxOpenSSL_1_1_1_ContainerWrapper
+    : public ::px::stirling::testing::NginxOpenSSL_1_1_1_Container {
  public:
-  NginxOpenSSL_1_1_1_Container()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
-
   int32_t PID() const { return GetNginxWorkerPID(process_pid()); }
-
- private:
-  // Image is a modified nginx image created through bazel rules, and stored as a tar file.
-  // It is not pushed to any repo.
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/"
-      "nginx_openssl_1_1_1_image.tar";
-  static constexpr std::string_view kInstanceNamePrefix = "nginx";
-  static constexpr std::string_view kReadyMessage = "";
 };
 
-class CurlContainer : public ContainerRunner {
+class NodeServerContainerWrapper : public ::px::stirling::testing::NodeServerContainer {
  public:
-  CurlContainer()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix, kReadyMessage) {
-  }
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/curl_image.tar";
-  static constexpr std::string_view kContainerNamePrefix = "curl";
-  static constexpr std::string_view kReadyMessage = "";
-};
-
-class RubyContainer : public ContainerRunner {
- public:
-  RubyContainer()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix, kReadyMessage) {
-  }
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/ruby_image.tar";
-  static constexpr std::string_view kContainerNamePrefix = "ruby";
-  static constexpr std::string_view kReadyMessage = "";
-};
-
-class NodeServerContainer : public ServerRunner, public ContainerRunner {
- public:
-  NodeServerContainer()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix, kReadyMessage) {
-  }
-
-  int32_t PID() const override { return process_pid(); }
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/node_image.tar";
-  static constexpr std::string_view kContainerNamePrefix = "node_server";
-  static constexpr std::string_view kReadyMessage = "Nodejs https server started!";
-};
-
-class NodeClientContainer : public ContainerRunner {
- public:
-  NodeClientContainer()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix, kReadyMessage) {
-  }
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/node_image.tar";
-  static constexpr std::string_view kContainerNamePrefix = "node_client";
-  static constexpr std::string_view kReadyMessage = "";
+  int32_t PID() const { return process_pid(); }
 };
 
 template <typename ServerContainer>
@@ -211,10 +132,10 @@ http::Record GetExpectedHTTPRecord() {
   return expected_record;
 }
 
-typedef ::testing::Types<NginxOpenSSL_1_1_0_Container, NginxOpenSSL_1_1_1_Container,
-                         NodeServerContainer>
-    NginxImplementations;
-TYPED_TEST_SUITE(OpenSSLTraceTest, NginxImplementations);
+typedef ::testing::Types<NginxOpenSSL_1_1_0_ContainerWrapper, NginxOpenSSL_1_1_1_ContainerWrapper,
+                         NodeServerContainerWrapper>
+    OpenSSLServerImplementations;
+TYPED_TEST_SUITE(OpenSSLTraceTest, OpenSSLServerImplementations);
 
 TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
   this->StartTransferDataThread();
@@ -225,7 +146,7 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
   // To take an exception and make the SSL connection anyways, we use the --insecure flag.
 
   // Run the client in the network of the server, so they can connect to each other.
-  CurlContainer client;
+  ::px::stirling::testing::CurlContainer client;
   PL_CHECK_OK(
       client.Run(std::chrono::seconds{60},
                  {absl::Substitute("--network=container:$0", this->server_.container_name())},
@@ -288,7 +209,7 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
 
   // Make an SSL request with the client.
   // Run the client in the network of the server, so they can connect to each other.
-  RubyContainer client;
+  ::px::stirling::testing::RubyContainer client;
   PL_CHECK_OK(
       client.Run(std::chrono::seconds{60},
                  {absl::Substitute("--network=container:$0", this->server_.container_name())},
@@ -326,7 +247,7 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_node_client) {
 
   // Make an SSL request with the client.
   // Run the client in the network of the server, so they can connect to each other.
-  NodeClientContainer client;
+  ::px::stirling::testing::NodeClientContainer client;
   PL_CHECK_OK(
       client.Run(std::chrono::seconds{60},
                  {absl::Substitute("--network=container:$0", this->server_.container_name())},

@@ -21,9 +21,9 @@
 
 #include "src/common/base/test_utils.h"
 #include "src/common/exec/subprocess.h"
-#include "src/common/testing/test_utils/container_runner.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/core/output.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/protocol_checkers.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
@@ -32,8 +32,6 @@ namespace px {
 namespace stirling {
 
 namespace http = protocols::http;
-
-using ::px::testing::BazelBinTestFilePath;
 
 using ::px::stirling::testing::AccessRecordBatch;
 using ::px::stirling::testing::EqHTTPRecord;
@@ -44,34 +42,6 @@ using ::testing::Gt;
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
-
-//-----------------------------------------------------------------------------
-// Test Stimulus: Server and Client
-//-----------------------------------------------------------------------------
-
-class GRPCServerContainer : public ContainerRunner {
- public:
-  GRPCServerContainer()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/server_image.tar";
-  static constexpr std::string_view kInstanceNamePrefix = "grpc_server";
-  static constexpr std::string_view kReadyMessage = "Starting HTTP/2 server";
-};
-
-class GRPCClientContainer : public ContainerRunner {
- public:
-  GRPCClientContainer()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/testing/demo_apps/go_grpc_tls_pl/client/client_image.tar";
-  static constexpr std::string_view kInstanceNamePrefix = "grpc_client";
-  static constexpr std::string_view kReadyMessage = "";
-};
 
 //-----------------------------------------------------------------------------
 // Test Class and Test Cases
@@ -86,8 +56,8 @@ class HTTP2TraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing 
     PL_CHECK_OK(server_.Run(std::chrono::seconds{60}));
   }
 
-  GRPCServerContainer server_;
-  GRPCClientContainer client_;
+  ::px::stirling::testing::GRPCServerContainer server_;
+  ::px::stirling::testing::GRPCClientContainer client_;
 };
 
 TEST_F(HTTP2TraceTest, Basic) {
@@ -140,30 +110,6 @@ TEST_F(HTTP2TraceTest, Basic) {
   }
 }
 
-class ProductCatalogService : public ContainerRunner {
- public:
-  ProductCatalogService() : ContainerRunner(kImage, kInstanceNamePrefix, kReadyMessage) {}
-
- private:
-  static constexpr std::string_view kImage =
-      "gcr.io/google-samples/microservices-demo/productcatalogservice:v0.2.0";
-  static constexpr std::string_view kInstanceNamePrefix = "pcs";
-  static constexpr std::string_view kReadyMessage = "starting grpc server";
-};
-
-class ProductCatalogClient : public ContainerRunner {
- public:
-  ProductCatalogClient()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/testing/demo_apps/hipster_shop/productcatalogservice_client/"
-      "productcatalogservice_client_image.tar";
-  static constexpr std::string_view kInstanceNamePrefix = "pcc";
-  static constexpr std::string_view kReadyMessage = "";
-};
-
 class ProductCatalogServiceTraceTest
     : public testing::SocketTraceBPFTest</* TClientSideTracing */ false> {
  protected:
@@ -175,8 +121,8 @@ class ProductCatalogServiceTraceTest
     PL_CHECK_OK(server_.Run(std::chrono::seconds{60}));
   }
 
-  ProductCatalogService server_;
-  ProductCatalogClient client_;
+  ::px::stirling::testing::ProductCatalogService server_;
+  ::px::stirling::testing::ProductCatalogClient client_;
 };
 
 TEST_F(ProductCatalogServiceTraceTest, Basic) {

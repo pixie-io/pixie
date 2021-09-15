@@ -26,8 +26,8 @@
 #include <utility>
 
 #include "src/common/exec/exec.h"
-#include "src/common/testing/test_utils/container_runner.h"
 #include "src/stirling/core/output.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 
@@ -37,7 +37,6 @@ namespace stirling {
 using protocols::pgsql::Tag;
 using ::px::stirling::testing::AccessRecordBatch;
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
-using ::px::testing::BazelBinTestFilePath;
 using ::testing::_;
 using ::testing::ElementsAre;
 using ::testing::HasSubstr;
@@ -47,41 +46,13 @@ using ::testing::Pair;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
-class PostgreSQLContainer : public ContainerRunner {
- public:
-  PostgreSQLContainer()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix, kReadyMessage) {
-  }
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/"
-      "postgres_image.tar";
-  static constexpr std::string_view kContainerNamePrefix = "postgres_testing";
-  static constexpr std::string_view kReadyMessage =
-      "database system is ready to accept connections";
-};
-
-class GolangSQLxContainer : public ContainerRunner {
- public:
-  GolangSQLxContainer()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix, kReadyMessage) {
-  }
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/pgsql/demo_client_image.tar";
-  static constexpr std::string_view kContainerNamePrefix = "pgsql_demo";
-  static constexpr std::string_view kReadyMessage = "";
-};
-
 class PostgreSQLTraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ true> {
  protected:
   PostgreSQLTraceTest() {
     PL_CHECK_OK(container_.Run(std::chrono::seconds{150}, {"--env=POSTGRES_PASSWORD=docker"}));
   }
 
-  PostgreSQLContainer container_;
+  ::px::stirling::testing::PostgreSQLContainer container_;
 };
 
 struct ReqRespCmd {
@@ -159,7 +130,7 @@ TEST_F(PostgreSQLTraceTest, GolangSqlxDemo) {
 
   StartTransferDataThread();
 
-  GolangSQLxContainer sqlx_container;
+  ::px::stirling::testing::GolangSQLxContainer sqlx_container;
   PL_CHECK_OK(sqlx_container.Run(
       std::chrono::seconds{10},
       {absl::Substitute("--network=container:$0", container_.container_name())}));

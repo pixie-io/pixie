@@ -19,6 +19,7 @@
 #include "src/common/testing/test_utils/container_runner.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 
 namespace px {
@@ -32,33 +33,6 @@ using ::testing::HasSubstr;
 using ::testing::UnorderedElementsAre;
 // Automatically converts ToString() to stream operator for gtest.
 using ::px::operator<<;
-
-class NATSServerContainer : public ContainerRunner {
- public:
-  NATSServerContainer()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix, kReadyMessage) {
-  }
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/nats_image.tar";
-  static constexpr std::string_view kContainerNamePrefix = "nats_server";
-  static constexpr std::string_view kReadyMessage = "Server is ready";
-};
-
-class NATSClientContainer : public ContainerRunner {
- public:
-  NATSClientContainer()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix, kReadyMessage) {
-  }
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/protocols/nats/testing/"
-      "nats_test_client_with_ca_image.tar";
-  static constexpr std::string_view kContainerNamePrefix = "nats_test_client";
-  static constexpr std::string_view kReadyMessage = "";
-};
 
 class NATSTraceBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ false>,
                          public ::testing::WithParamInterface<bool> {
@@ -76,8 +50,8 @@ class NATSTraceBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracin
     PL_CHECK_OK(server_container_.Run(std::chrono::seconds{150}, /*options*/ {}, args));
   }
 
-  NATSServerContainer server_container_;
-  NATSClientContainer client_container_;
+  ::px::stirling::testing::NATSServerContainer server_container_;
+  ::px::stirling::testing::NATSClientContainer client_container_;
 };
 
 struct NATSTraceRecord {

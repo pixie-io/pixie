@@ -18,15 +18,14 @@
 
 #include "src/common/exec/exec.h"
 #include "src/common/exec/subprocess.h"
-#include "src/common/testing/test_utils/container_runner.h"
 #include "src/common/testing/testing.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 
 namespace px {
 namespace stirling {
 
 using ::px::SubProcess;
-using ::px::testing::BazelBinTestFilePath;
 
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
@@ -40,19 +39,6 @@ using ::px::stirling::testing::FindRecordIdxMatchesPID;
 static constexpr std::string_view kRedisImagePath =
     "src/stirling/source_connectors/socket_tracer/testing/containers/redis_image.tar";
 
-class RedisContainer : public ContainerRunner {
- public:
-  RedisContainer()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix, kReadyMessage) {
-  }
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/redis_image.tar";
-  static constexpr std::string_view kContainerNamePrefix = "redis_test";
-  static constexpr std::string_view kReadyMessage = "# Server initialized";
-};
-
 struct RedisTraceTestCase {
   std::string cmd;
   std::string exp_cmd;
@@ -65,7 +51,7 @@ class RedisTraceBPFTest : public testing::SocketTraceBPFTest</* TClientSideTraci
  protected:
   RedisTraceBPFTest() { PL_CHECK_OK(container_.Run(std::chrono::seconds{150})); }
 
-  RedisContainer container_;
+  ::px::stirling::testing::RedisContainer container_;
 };
 
 struct RedisTraceRecord {
@@ -181,6 +167,8 @@ TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
 
 // Verifies that pub/sub commands can be traced correctly.
 TEST_F(RedisTraceBPFTest, VerifyPubSubCommands) {
+  using ::px::testing::BazelBinTestFilePath;
+
   StartTransferDataThread();
 
   ContainerRunner redis_sub_client(BazelBinTestFilePath(kRedisImagePath), "redis_sub_client", "");

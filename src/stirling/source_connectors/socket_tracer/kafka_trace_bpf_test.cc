@@ -29,6 +29,7 @@
 #include "src/common/testing/test_utils/container_runner.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/kafka/common/types.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 
@@ -48,31 +49,6 @@ using ::testing::Field;
 using ::testing::HasSubstr;
 using ::testing::StrEq;
 using ::px::operator<<;
-
-class KafkaContainer : public ContainerRunner {
- public:
-  KafkaContainer()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/kafka_image.tar";
-  static constexpr std::string_view kInstanceNamePrefix = "kafka_server";
-  static constexpr std::string_view kReadyMessage =
-      "Recorded new controller, from now on will use broker";
-};
-
-class ZooKeeperContainer : public ContainerRunner {
- public:
-  ZooKeeperContainer()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/zookeeper_image.tar";
-  static constexpr std::string_view kInstanceNamePrefix = "zookeeper_server";
-  static constexpr std::string_view kReadyMessage = "INFO PrepRequestProcessor (sid:0) started";
-};
 
 class KafkaTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {
  protected:
@@ -139,8 +115,8 @@ class KafkaTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> 
     return GetPIDFromOutput(out);
   }
 
-  KafkaContainer kafka_server_;
-  ZooKeeperContainer zookeeper_server_;
+  ::px::stirling::testing::KafkaContainer kafka_server_;
+  ::px::stirling::testing::ZooKeeperContainer zookeeper_server_;
 };
 
 struct KafkaTraceRecord {

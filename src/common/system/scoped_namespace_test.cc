@@ -22,7 +22,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "src/common/base/base.h"
 #include "src/common/system/scoped_namespace.h"
 #include "src/common/testing/test_utils/test_container.h"
 #include "src/common/testing/testing.h"

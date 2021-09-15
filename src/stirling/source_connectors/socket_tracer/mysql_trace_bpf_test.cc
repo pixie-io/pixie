@@ -27,7 +27,6 @@
 #include "src/common/base/test_utils.h"
 #include "src/common/exec/exec.h"
 #include "src/common/fs/fs_wrapper.h"
-#include "src/common/testing/test_utils/container_runner.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
@@ -35,6 +34,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/test_output_generator/test_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 
@@ -45,7 +45,6 @@ namespace mysql = protocols::mysql;
 
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
 using ::px::stirling::testing::SocketTraceBPFTest;
-using ::px::testing::BazelBinTestFilePath;
 using ::px::testing::TestFilePath;
 using ::px::types::ColumnWrapper;
 using ::px::types::ColumnWrapperRecordBatch;
@@ -61,32 +60,6 @@ using ::testing::UnorderedElementsAre;
 using ::testing::UnorderedElementsAreArray;
 
 DEFINE_bool(tracing_mode, false, "If true, only runs the containers and exits. For tracing.");
-
-class MySQLContainer : public ContainerRunner {
- public:
-  MySQLContainer()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/mysql_image.tar";
-  static constexpr std::string_view kInstanceNamePrefix = "mysql_server";
-  static constexpr std::string_view kReadyMessage =
-      "/usr/sbin/mysqld: ready for connections. Version: '8.0.13'  socket: "
-      "'/var/lib/mysql/mysql.sock'  port: 3306";
-};
-
-class PythonMySQLConnectorContainer : public ContainerRunner {
- public:
-  PythonMySQLConnectorContainer()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/mysql_connector_image.tar";
-  static constexpr std::string_view kInstanceNamePrefix = "mysql_client";
-  static constexpr std::string_view kReadyMessage = "pid";
-};
 
 class MySQLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {
  protected:
@@ -173,8 +146,8 @@ class MySQLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> 
     return client_pid;
   }
 
-  MySQLContainer server_;
-  PythonMySQLConnectorContainer client_;
+  ::px::stirling::testing::MySQLContainer server_;
+  ::px::stirling::testing::PythonMySQLConnectorContainer client_;
 };
 
 //-----------------------------------------------------------------------------

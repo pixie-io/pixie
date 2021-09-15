@@ -23,8 +23,8 @@
 
 #include "src/common/base/base.h"
 #include "src/common/exec/exec.h"
-#include "src/common/testing/test_utils/container_runner.h"
 #include "src/stirling/core/output.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 
@@ -34,23 +34,9 @@ namespace stirling {
 using ::px::stirling::testing::ColWrapperSizeIs;
 using ::px::stirling::testing::FindRecordsMatchingPID;
 using ::px::stirling::testing::SocketTraceBPFTest;
-using ::px::testing::BazelBinTestFilePath;
 
 using ::testing::Each;
 using ::testing::MatchesRegex;
-
-// A DNS server using the bind9 DNS server image.
-class DNSServerContainer : public ContainerRunner {
- public:
-  DNSServerContainer()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/dns_image.tar";
-  static constexpr std::string_view kInstanceNamePrefix = "dns_server";
-  static constexpr std::string_view kReadyMessage = "all zones loaded";
-};
 
 class DNSTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {
  protected:
@@ -61,7 +47,7 @@ class DNSTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {
     PL_CHECK_OK(container_.Run(std::chrono::seconds{150}));
   }
 
-  DNSServerContainer container_;
+  ::px::stirling::testing::DNSServerContainer container_;
 };
 
 //-----------------------------------------------------------------------------

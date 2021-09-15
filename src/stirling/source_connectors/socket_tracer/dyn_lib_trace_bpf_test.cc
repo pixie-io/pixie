@@ -25,11 +25,10 @@
 #include "src/common/base/test_utils.h"
 #include "src/common/exec/exec.h"
 #include "src/common/testing/test_environment.h"
-#include "src/common/testing/test_utils/container_runner.h"
-#include "src/common/testing/testing.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/protocol_checkers.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
@@ -42,9 +41,6 @@ namespace http = protocols::http;
 // Automatically converts ToString() to stream operator for gtest.
 using ::px::operator<<;
 
-using ::px::testing::BazelBinTestFilePath;
-using ::px::testing::TestFilePath;
-
 using ::px::stirling::testing::EqHTTPRecord;
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
 using ::px::stirling::testing::GetTargetRecords;
@@ -52,34 +48,6 @@ using ::px::stirling::testing::SocketTraceBPFTest;
 using ::px::stirling::testing::ToRecordVector;
 
 using ::testing::UnorderedElementsAre;
-
-class NginxContainer : public ContainerRunner {
- public:
-  NginxContainer()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
-
- private:
-  // Image is a modified nginx image created through bazel rules, and stored as a tar file.
-  // It is not pushed to any repo.
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/"
-      "nginx_openssl_1_1_0_image.tar";
-  static constexpr std::string_view kInstanceNamePrefix = "nginx";
-  static constexpr std::string_view kReadyMessage = "";
-};
-
-class RubyContainer : public ContainerRunner {
- public:
-  RubyContainer()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix, kReadyMessage) {
-  }
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/ruby_image.tar";
-  static constexpr std::string_view kContainerNamePrefix = "ruby";
-  static constexpr std::string_view kReadyMessage = "";
-};
 
 using DynLibTraceTest = SocketTraceBPFTest</* TClientSideTracing */ true>;
 
@@ -121,8 +89,8 @@ TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
 
   StartTransferDataThread();
 
-  NginxContainer server;
-  RubyContainer client;
+  ::px::stirling::testing::NginxOpenSSL_1_1_0_Container server;
+  ::px::stirling::testing::RubyContainer client;
 
   // Run the nginx HTTPS server.
   // The container runner will make sure it is in the ready state before unblocking.

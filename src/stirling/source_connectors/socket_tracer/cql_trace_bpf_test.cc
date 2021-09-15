@@ -24,12 +24,12 @@
 #include "src/common/base/base.h"
 #include "src/common/base/test_utils.h"
 #include "src/common/exec/exec.h"
-#include "src/common/testing/test_utils/container_runner.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/cql/types.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 
@@ -37,8 +37,6 @@ namespace px {
 namespace stirling {
 
 namespace cass = protocols::cass;
-
-using ::px::testing::BazelBinTestFilePath;
 
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
 using ::px::stirling::testing::SocketTraceBPFTest;
@@ -53,19 +51,6 @@ using ::testing::SizeIs;
 using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
 
-class CassandraContainer : public ContainerRunner {
- public:
-  CassandraContainer()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/"
-      "datastax_image.tar";
-  static constexpr std::string_view kInstanceNamePrefix = "dse_server";
-  static constexpr std::string_view kReadyMessage = "DSE startup complete.";
-};
-
 // CQLTraceTest runs with both server and client-side tracing enabled.
 class CQLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {
  protected:
@@ -76,7 +61,7 @@ class CQLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {
     PL_CHECK_OK(container_.Run(std::chrono::seconds{150}, {"--env=DS_LICENSE=accept"}));
   }
 
-  CassandraContainer container_;
+  ::px::stirling::testing::CassandraContainer container_;
 };
 
 //-----------------------------------------------------------------------------
