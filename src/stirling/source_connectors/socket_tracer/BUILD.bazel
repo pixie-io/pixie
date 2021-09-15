@@ -374,9 +374,9 @@ pl_cc_test(
     srcs = ["openssl_trace_bpf_test.cc"],
     data = [
         "//src/stirling/source_connectors/socket_tracer/testing/containers:curl_image.tar",
-        "//src/stirling/source_connectors/socket_tracer/testing/containers:node_image.tar",
         "//src/stirling/source_connectors/socket_tracer/testing/containers:nginx_openssl_1_1_0_image.tar",
         "//src/stirling/source_connectors/socket_tracer/testing/containers:nginx_openssl_1_1_1_image.tar",
+        "//src/stirling/source_connectors/socket_tracer/testing/containers:node_image.tar",
         "//src/stirling/source_connectors/socket_tracer/testing/containers:ruby_image.tar",
     ],
     flaky = True,
