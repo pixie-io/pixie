@@ -3,23 +3,20 @@ kind: Service
 metadata:
   name: pl-etcd-client
   labels:
-    app: etcd
     etcd_cluster: pl-etcd
 spec:
   ports:
   - name: etcd-client
     port: 2379
   selector:
-    app: etcd
+    etcd_cluster: pl-etcd
 ---
 apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
   name: pl-etcd
   labels:
-    app: etcd
     etcd_cluster: pl-etcd
 spec:
   clusterIP: None
@@ -28,15 +25,15 @@ spec:
     name: client
   - port: 2380
     name: peer
+  publishNotReadyAddresses: true
   selector:
-    app: etcd
+    etcd_cluster: pl-etcd
 ---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: pl-etcd
   labels:
-    app: etcd
     etcd_cluster: pl-etcd
 spec:
   serviceName: pl-etcd

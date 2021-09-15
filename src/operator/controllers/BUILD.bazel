@@ -30,6 +30,8 @@ go_library(
         "//src/api/proto/cloudpb:cloudapi_pl_go_proto",
         "//src/api/proto/vizierconfigpb:vizier_pl_go_proto",
         "//src/operator/apis/px.dev/v1alpha1",
+        "//src/operator/vendored/etcd",
+        "//src/operator/vendored/nats",
         "//src/shared/services",
         "//src/shared/status",
         "//src/utils/shared/certs",

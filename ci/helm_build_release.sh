@@ -54,11 +54,6 @@ version: ${VERSION}" > "${tmp_path}/Chart.yaml"
 tar xvf "${YAML_TAR}" -C "${tmp_dir}"
 mv "${tmp_dir}/pixie_yamls" "${tmp_path}/templates"
 
-# Add crds. Helm ensures that these crds are deployed before the templated YAMLs.
-bazel build //k8s/vizier_deps:vizier_deps_crds
-mv "${repo_path}/bazel-bin/k8s/vizier_deps/vizier_deps_crds.tar" "${tmp_dir}"
-tar xvf "${tmp_dir}/vizier_deps_crds.tar" -C "${tmp_path}"
-
 # Fetch all of the current charts in GCS, because generating the index needs all pre-existing tar versions present.
 mkdir -p "${tmp_dir}/${helm_gcs_bucket}"
 gsutil rsync "gs://${helm_gcs_bucket}" "${tmp_dir}/${helm_gcs_bucket}"

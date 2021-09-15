@@ -40,10 +40,10 @@ kind: Service
 metadata:
   name: pl-nats
   labels:
-    app: nats
+    name: pl-nats
 spec:
   selector:
-    app: nats
+    name: pl-nats
   ports:
   - name: client
     port: 4222
@@ -53,10 +53,10 @@ kind: Service
 metadata:
   name: pl-nats-mgmt
   labels:
-    app: nats
+    name: pl-nats
 spec:
   selector:
-    app: nats
+    name: pl-nats
   clusterIP: None
   ports:
   - name: cluster
@@ -75,17 +75,16 @@ kind: StatefulSet
 metadata:
   name: pl-nats
   labels:
-    app: nats
+    name: pl-nats
 spec:
   selector:
     matchLabels:
-      app: nats
+      name: pl-nats
   replicas: 1
   serviceName: pl-nats
   template:
     metadata:
       labels:
-        app: nats
         name: pl-nats
         plane: control
     spec:

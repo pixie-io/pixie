@@ -45,9 +45,6 @@ type: application
 version: ${VERSION}" > "${helm_path}/Chart.yaml"
 
 # Add crds. Helm ensures that these crds are deployed before the templated YAMLs.
-bazel build //k8s/vizier_deps:vizier_deps_crds
-mv "${repo_path}/bazel-bin/k8s/vizier_deps/vizier_deps_crds.tar" "${tmp_dir}"
-tar xvf "${tmp_dir}/vizier_deps_crds.tar" -C "${helm_path}"
 cp "${repo_path}/k8s/operator/crd/base/px.dev_viziers.yaml" "${helm_path}/crds/vizier_crd.yaml"
 
 # Fetch all of the current charts in GCS, because generating the index needs all pre-existing tar versions present.

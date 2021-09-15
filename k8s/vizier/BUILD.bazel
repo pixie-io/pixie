@@ -112,7 +112,7 @@ pkg_tar(
             ],
         }) + [
             "//k8s/vizier_deps:nats_prod",
-            "//k8s/vizier_deps:etcd_operator_prod",
+            "//k8s/vizier_deps:etcd_prod",
         ],
     package_dir = "/yamls",
     remap_paths = {

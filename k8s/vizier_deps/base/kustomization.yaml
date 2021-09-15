@@ -6,4 +6,4 @@ commonLabels:
 namespace: pl
 resources:
 - nats
-- etcd_operator
+- etcd

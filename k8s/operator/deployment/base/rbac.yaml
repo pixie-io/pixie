@@ -46,7 +46,6 @@ rules:
   - roles
   - rolebindings
   - serviceaccounts
-  - etcdclusters.etcd.database.coreos.com
   - etcdclusters
   - statefulsets
   - cronjobs

@@ -14,8 +14,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
-
 package(default_visibility = ["//visibility:public"])
 
 genrule(
@@ -30,21 +28,12 @@ genrule(
 )
 
 genrule(
-    name = "etcd_operator_prod",
+    name = "etcd_prod",
     srcs = glob(["**/*.yaml"]),
-    outs = ["etcd_operator_prod.yaml"],
+    outs = ["etcd_prod.yaml"],
     cmd = """
       T=`mktemp -d`
-      cp -aL k8s/vizier_deps/base/etcd_operator $$T
-      kustomize build $$T/etcd_operator -o $@
+      cp -aL k8s/vizier_deps/base/etcd $$T
+      kustomize build $$T/etcd -o $@
     """,
-)
-
-pkg_tar(
-    name = "vizier_deps_crds",
-    srcs = [
-        "base/etcd_operator/etcd_crd.yaml",
-        "base/nats/nats_crd.yaml",
-    ],
-    package_dir = "/crds",
 )

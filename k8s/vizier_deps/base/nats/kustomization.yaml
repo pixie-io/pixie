@@ -4,6 +4,4 @@ commonLabels:
   app: pl-monitoring
 namespace: pl
 resources:
-- 00-nats-prereqs.yaml
-- 10-nats-deployment.yaml
-- 20-nats-cluster.yaml
+- nats_statefulset.yaml

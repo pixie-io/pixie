@@ -29,9 +29,9 @@ import (
 )
 
 const (
-	etcdOperatorYAMLPath          = "./yamls/vizier_deps/etcd_operator_prod.yaml"
 	vizierEtcdYAMLPath            = "./yamls/vizier/vizier_etcd_metadata_prod.yaml"
 	vizierMetadataPersistYAMLPath = "./yamls/vizier/vizier_metadata_persist_prod.yaml"
+	etcdYAMLPath                  = "./yamls/vizier_deps/etcd_prod.yaml"
 	natsYAMLPath                  = "./yamls/vizier_deps/nats_prod.yaml"
 	defaultMemoryLimit            = "2Gi"
 )
@@ -272,12 +272,6 @@ func GenerateSecretsYAML(clientset *kubernetes.Clientset, versionStr string) (st
 func generateVzDepsYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string) (string, string, error) {
 	natsYAML, err := yamls.TemplatizeK8sYAML(clientset, yamlMap[natsYAMLPath], append(GlobalTemplateOptions, []*yamls.K8sTemplateOptions{
 		{
-			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl:nats-operator-cluster-binding"),
-			Patch:           `{ "subjects": [{ "name": "nats-operator", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
-			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
-			TemplateValue:   nsTmpl,
-		},
-		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl:nats-server-cluster-binding"),
 			Patch:           `{ "subjects": [{ "name": "nats-server", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
 			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
@@ -288,7 +282,7 @@ func generateVzDepsYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]str
 		return "", "", err
 	}
 
-	etcdYAML, err := yamls.TemplatizeK8sYAML(clientset, yamlMap[etcdOperatorYAMLPath], GlobalTemplateOptions)
+	etcdYAML, err := yamls.TemplatizeK8sYAML(clientset, yamlMap[etcdYAMLPath], GlobalTemplateOptions)
 	if err != nil {
 		return "", "", err
 	}
