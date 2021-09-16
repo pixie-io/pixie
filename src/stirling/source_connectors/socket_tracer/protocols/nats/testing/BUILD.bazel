@@ -35,7 +35,7 @@ container_image(
     layers = [
         "//src/stirling/source_connectors/socket_tracer/testing/containers/ssl:ssl_keys_layer",
     ],
-    visibility = ["//src/stirling/source_connectors/socket_tracer:__pkg__"],
+    visibility = ["//src/stirling/source_connectors/socket_tracer/testing:__pkg__"],
 )
 
 go_library(

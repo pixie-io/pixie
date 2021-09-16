@@ -99,3 +99,19 @@ pl_cc_test(
         "//src/stirling/testing:cc_library",
     ],
 )
+
+pl_cc_test(
+    name = "uprobe_extra_trigger_bpf_test",
+    srcs = ["uprobe_extra_trigger_bpf_test.cc"],
+    tags = [
+        # This test must be exclusive, because other tests that deploy the same container images
+        # could cause extra BPF triggers. In fact, this is what the test internally demonstrates
+        # is a problem.
+        "exclusive",
+        "requires_bpf",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
+    ],
+)
