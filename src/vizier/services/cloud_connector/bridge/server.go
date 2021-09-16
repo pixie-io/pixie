@@ -1068,6 +1068,10 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) chan *cvmsgspb.VizierHeart
 			if vzStatus != cvmsgspb.VZ_ST_UNKNOWN {
 				status = vzStatus
 			}
+			// We always override our status if the Reconciler is still in the updating phase.
+			if vz.Status.ReconciliationPhase == v1alpha1.ReconciliationPhaseUpdating {
+				status = cvmsgspb.VZ_ST_UPDATING
+			}
 		}
 
 		hbMsg := &cvmsgspb.VizierHeartbeat{
