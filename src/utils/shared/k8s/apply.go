@@ -217,6 +217,9 @@ func ApplyResources(clientset kubernetes.Interface, config *rest.Config, resourc
 			if !k8serrors.IsAlreadyExists(err) {
 				return err
 			} else if (k8sRes == "clusterroles" || k8sRes == "cronjobs") || allowUpdate {
+				// TODO(michelle,vihang,philkuz) Update() fails on services and PVCs that are already running on the
+				// cluster. We will need to fix this before we can successfully update those resources. K8s is unhappy
+				// that we don't specify resourceVersion and clusterIP for services.
 				_, err = createRes.Update(context.Background(), resource.Object, metav1.UpdateOptions{})
 				if err != nil {
 					log.WithError(err).Info("Could not update K8s resource")

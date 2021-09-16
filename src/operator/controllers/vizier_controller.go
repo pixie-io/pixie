@@ -204,7 +204,8 @@ func (r *VizierReconciler) updateVizier(ctx context.Context, req ctrl.Request, v
 		return nil
 	}
 
-	if vz.Status.VizierPhase == v1alpha1.VizierPhaseUpdating {
+	// TODO(philkuz, PP-3035): mark update as failed if updating > ttl.
+	if vz.Status.ReconciliationPhase == v1alpha1.ReconciliationPhaseUpdating {
 		log.Info("Already in the process of updating, nothing to do")
 		return nil
 	}
@@ -259,6 +260,14 @@ func (r *VizierReconciler) createVizier(ctx context.Context, req ctrl.Request, v
 	return r.deployVizier(ctx, req, vz, false)
 }
 
+// setReconciliationPhase sets the requested phase in the status and also sets the time to Now.
+func setReconciliationPhase(vz *v1alpha1.Vizier, rp v1alpha1.ReconciliationPhase) *v1alpha1.Vizier {
+	vz.Status.ReconciliationPhase = rp
+	timeNow := metav1.Now()
+	vz.Status.LastReconciliationPhaseTime = &timeNow
+	return vz
+}
+
 func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, vz *v1alpha1.Vizier, update bool) error {
 	log.Info("Starting a vizier deploy")
 	cloudClient, err := getCloudClientConnection(vz.Spec.CloudAddr, vz.Spec.DevCloudNamespace)
@@ -267,7 +276,7 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 	}
 
 	// Set the status of the Vizier.
-	vz.Status.VizierPhase = v1alpha1.VizierPhaseUpdating
+	vz = setReconciliationPhase(vz, v1alpha1.ReconciliationPhaseUpdating)
 	err = r.Status().Update(ctx, vz)
 	if err != nil {
 		return err
@@ -348,6 +357,7 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 	// We are currently blindly assuming that the new version is correct.
 	_ = waitForCluster(r.Clientset, req.Namespace)
 	vz.Status.Version = vz.Spec.Version
+	vz = setReconciliationPhase(vz, v1alpha1.ReconciliationPhaseReady)
 
 	err = r.Status().Update(ctx, vz)
 	if err != nil {
