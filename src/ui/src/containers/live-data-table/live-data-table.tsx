@@ -110,7 +110,7 @@ function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutte
       Cell({ value }) {
         // TODO(nick,PC-1050): We're not doing width weights yet. Need to. Convert to ratio of default in DataTable?
         // TODO(nick,PC-1050): Head/tail mode (data-table.tsx) for not-the-data-drawer.
-        return renderer(value);
+        return value != null ? renderer(value) : null;
       },
       original: col,
       align: justify,
