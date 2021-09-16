@@ -57,6 +57,11 @@ const (
 	// defaultClassAnnotationKey is the key in the annotation map which indicates
 	// a storage class is default.
 	defaultClassAnnotationKey = "storageclass.kubernetes.io/is-default-class"
+	// updatingFailedTimeout is the amount of time we wait since an Updated started
+	// before we consider the Update Failed.
+	updatingFailedTimeout = 30 * time.Minute
+	// How often we should check whether a Vizier update failed.
+	updatingVizierCheckPeriod = 1 * time.Minute
 )
 
 // VizierReconciler reconciles a Vizier object
@@ -204,7 +209,6 @@ func (r *VizierReconciler) updateVizier(ctx context.Context, req ctrl.Request, v
 		return nil
 	}
 
-	// TODO(philkuz, PP-3035): mark update as failed if updating > ttl.
 	if vz.Status.ReconciliationPhase == v1alpha1.ReconciliationPhaseUpdating {
 		log.Info("Already in the process of updating, nothing to do")
 		return nil
@@ -803,8 +807,38 @@ func waitForCluster(clientset *kubernetes.Clientset, namespace string) error {
 	return nil
 }
 
+// watchForFailedVizierUpdates regularly polls for timed-out viziers
+// and marks matching Viziers ReconciliationPhases as failed.
+func (r *VizierReconciler) watchForFailedVizierUpdates() {
+	t := time.NewTicker(updatingVizierCheckPeriod)
+	defer t.Stop()
+	for range t.C {
+		var viziersList v1alpha1.VizierList
+		ctx := context.Background()
+		err := r.List(ctx, &viziersList)
+		if err != nil {
+			log.WithError(err).Error("Unable to list the vizier objects")
+			continue
+		}
+		for _, vz := range viziersList.Items {
+			// Set the Vizier Reconciliation phase to Failed if an Update has timed out.
+			if vz.Status.ReconciliationPhase != v1alpha1.ReconciliationPhaseUpdating {
+				continue
+			}
+			if time.Since(vz.Status.LastReconciliationPhaseTime.Time) < updatingFailedTimeout {
+				continue
+			}
+			err := r.Status().Update(ctx, setReconciliationPhase(&vz, v1alpha1.ReconciliationPhaseFailed))
+			if err != nil {
+				log.WithError(err).Error("Unable to update vizier status")
+			}
+		}
+	}
+}
+
 // SetupWithManager sets up the reconciler.
 func (r *VizierReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	go r.watchForFailedVizierUpdates()
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Vizier{}).
 		Complete(r)
