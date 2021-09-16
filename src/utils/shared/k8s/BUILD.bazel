@@ -24,6 +24,7 @@ go_library(
         "delete.go",
         "logs.go",
         "secrets.go",
+        "selector.go",
     ],
     importpath = "px.dev/pixie/src/utils/shared/k8s",
     visibility = ["//src:__subpackages__"],

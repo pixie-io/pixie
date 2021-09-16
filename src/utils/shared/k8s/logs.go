@@ -139,15 +139,8 @@ func (c *LogCollector) CollectPixieLogs(fName string) error {
 	zf := zip.NewWriter(f)
 	defer zf.Close()
 
-	labelSelector := metav1.FormatLabelSelector(&metav1.LabelSelector{
-		MatchExpressions: []metav1.LabelSelectorRequirement{
-			metav1.LabelSelectorRequirement{
-				Key:      "app",
-				Operator: metav1.LabelSelectorOpIn,
-				Values:   []string{"pixie-operator", "pl-monitoring"},
-			},
-		},
-	})
+	vls := VizierLabelSelector()
+	labelSelector := metav1.FormatLabelSelector(&vls)
 
 	// We check across all namespaces for the matching pixie pods.
 	pods, err := c.k8sClientSet.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{LabelSelector: labelSelector})

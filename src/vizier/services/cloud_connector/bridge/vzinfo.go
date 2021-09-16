@@ -21,6 +21,7 @@ package bridge
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -46,6 +47,7 @@ import (
 	version "px.dev/pixie/src/shared/goversion"
 	protoutils "px.dev/pixie/src/shared/k8s"
 	"px.dev/pixie/src/shared/k8s/metadatapb"
+	"px.dev/pixie/src/utils/shared/k8s"
 )
 
 const k8sStateUpdatePeriod = 10 * time.Second
@@ -292,7 +294,7 @@ func (v *K8sVizierInfo) toVizierPodStatus(p *corev1.Pod) (*vizierpb.VizierPodSta
 	}
 
 	podStatus := &vizierpb.VizierPodStatus{
-		Name:         podPb.Metadata.Name,
+		Name:         fmt.Sprintf("%s/%s", podPb.Metadata.Namespace, podPb.Metadata.Name),
 		CreatedAt:    podPb.Metadata.CreationTimestampNS,
 		RestartCount: podPb.Status.RestartCount,
 	}
@@ -318,16 +320,21 @@ func (v *K8sVizierInfo) toVizierPodStatus(p *corev1.Pod) (*vizierpb.VizierPodSta
 
 // GetVizierPods gets the Vizier pods and their statuses.
 func (v *K8sVizierInfo) GetVizierPods() ([]*vizierpb.VizierPodStatus, []*vizierpb.VizierPodStatus, error) {
+	vls := k8s.VizierLabelSelector()
 	// Get only control-plane pods.
-	rawControlPodsList, err := v.clientset.CoreV1().Pods(v.ns).List(context.Background(), metav1.ListOptions{
-		LabelSelector: "plane=control",
+	vls.MatchLabels["plane"] = "control"
+	rawControlPodsList, err := v.clientset.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{
+		LabelSelector: metav1.FormatLabelSelector(&vls),
 	})
 	if err != nil {
 		return nil, nil, err
 	}
+
+	vls = k8s.VizierLabelSelector()
 	// Get only data-plane pods.
-	rawDataPodsList, err := v.clientset.CoreV1().Pods(v.ns).List(context.Background(), metav1.ListOptions{
-		LabelSelector: "plane=data",
+	vls.MatchLabels["plane"] = "data"
+	rawDataPodsList, err := v.clientset.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{
+		LabelSelector: metav1.FormatLabelSelector(&vls),
 	})
 
 	var controlPods []*vizierpb.VizierPodStatus

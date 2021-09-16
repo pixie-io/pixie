@@ -37,6 +37,7 @@ go_library(
         "//src/shared/services",
         "//src/shared/status",
         "//src/utils",
+        "//src/utils/shared/k8s",
         "//src/vizier/utils/messagebus",
         "@com_github_blang_semver//:semver",
         "@com_github_cenkalti_backoff_v3//:backoff",
