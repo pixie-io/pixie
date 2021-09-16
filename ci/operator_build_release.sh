@@ -33,6 +33,7 @@ tags=$(git for-each-ref --sort='-*authordate' --format '%(refname:short)' refs/t
 
 public="True"
 image_path="gcr.io/pixie-oss/pixie-prod/operator/operator_image:${release_tag}"
+deleter_image_path="gcr.io/pixie-oss/pixie-prod/operator/vizier_deleter:${release_tag}"
 channel="stable"
 channels="stable,dev"
 bucket="pixie-dev-public"
@@ -43,6 +44,7 @@ prev_tag=$(echo "$tags" | sed -n '2 p')
 if [[ $release_tag == *"-"* ]]; then
   public="False"
   image_path="gcr.io/pixie-oss/pixie-dev/operator/operator_image:${release_tag}"
+  deleter_image_path="gcr.io/pixie-oss/pixie-dev/operator/vizier_deleter:${release_tag}"
   channel="dev"
   channels="dev"
   bucket="pixie-prod-artifacts"
@@ -89,6 +91,13 @@ faq -f yaml -o yaml --slurp '
   --kwargs previousName="pixie-operator.v${previous_version}" \
   --kwargs image="${image_path}" > "${tmp_dir}/manifests/csv.yaml"
 faq -f yaml -o yaml --slurp '.[0]' "${kustomize_dir}/crd.yaml" > "${tmp_dir}/manifests/crd.yaml"
+
+# Update deleter template image tag.
+#shellcheck disable=SC2016
+faq -f yaml -o yaml --slurp '.[0].spec.template.spec.containers[0].image = $imagePath | .[0]' \
+  "$(pwd)/k8s/operator/helm/templates/deleter.yaml" \
+  --kwargs imagePath="${deleter_image_path}" > "$(pwd)/k8s/operator/helm/templates/deleter_tmp.yaml"
+mv "$(pwd)/k8s/operator/helm/templates/deleter_tmp.yaml" "$(pwd)/k8s/operator/helm/templates/deleter.yaml"
 
 # Build and push bundle.
 cd "${tmp_dir}"

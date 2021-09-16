@@ -23,6 +23,7 @@ package(default_visibility = ["//visibility:public"])
 
 OPERATOR_IMAGE_MAP = {
     "gcr.io/pixie-oss/pixie-dev/operator/operator_image": "//src/operator:operator_image",
+    "gcr.io/pixie-oss/pixie-dev/operator/vizier_deleter": "//src/utils/pixie_deleter:vizier_deleter_image",
 }
 
 public_image_replacement = {"gcr.io/pixie-oss/pixie-dev": "gcr.io/pixie-oss/pixie-prod"}
@@ -72,12 +73,14 @@ genrule(
 
 pkg_tar(
     name = "operator_templates",
-    srcs =
+    srcs = glob(
         [
-            "helm/crds",
-            "helm/templates",
-            ":vizier_crd_yaml",
+            "helm/templates/*_*.yaml",
         ],
+    ) + [
+        "helm/crds",
+        ":vizier_crd_yaml",
+    ],
     package_dir = "/yamls",
     remap_paths = {
         "/operator/helm": "/",

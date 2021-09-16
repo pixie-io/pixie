@@ -1,0 +1,24 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vizier-deleter
+  annotations:
+    "helm.sh/hook": pre-delete
+    "helm.sh/hook-delete-policy": hook-succeeded
+  namespace: "{{ .Release.Namespace }}"
+spec:
+  template:
+    metadata:
+      name: vizier-deleter
+    spec:
+      serviceAccountName: updater-service-account
+      restartPolicy: Never
+      containers:
+      - name: delete-job
+        image: gcr.io/pixie-oss/pixie-dev/operator/vizier_deleter:latest
+        env:
+        - name: PL_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
