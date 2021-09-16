@@ -55,7 +55,7 @@ ContainerRunner::ContainerRunner(std::filesystem::path image_tar,
 ContainerRunner::~ContainerRunner() {
   Stop();
 
-  std::string docker_rm_cmd = absl::StrCat("docker rm ", container_name_);
+  std::string docker_rm_cmd = absl::StrCat("docker rm -f ", container_name_);
   StatusOr<std::string> s = px::Exec(docker_rm_cmd);
   LOG_IF(ERROR, !s.ok()) << absl::Substitute(
       "Failing to remove the container. Container $0 is leaked. Status: $1", container_name_,
@@ -119,9 +119,8 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
 
   // If the process receives a SIGKILL, then the docker run command above would leak.
   // As a safety net for such cases, we spawn off a delayed docker kill command to clean-up.
-  std::string docker_kill_cmd =
-      absl::Substitute("(sleep $0 && docker kill $1 && docker rm $1) 2>&1 >/dev/null",
-                       timeout.count(), container_name_);
+  std::string docker_kill_cmd = absl::Substitute("(sleep $0 && docker rm -f $1) 2>&1 >/dev/null",
+                                                 timeout.count(), container_name_);
   FILE* pipe = popen(docker_kill_cmd.c_str(), "r");
   // We deliberately don't ever call pclose() -- even in the destructor -- otherwise, we'd block.
   // This spawned process is meant to potentially outlive the current process as a safety net.
