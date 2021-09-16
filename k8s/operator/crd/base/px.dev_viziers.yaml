@@ -147,6 +147,17 @@ spec:
                   that gives the reason for the transition into the Vizier's current
                   status.
                 type: string
+              reconciliationPhase:
+                description: ReconciliationPhase is the state the Reconciler has reached while managing this
+                  Vizier. When the Reconciler creates a Vizier, the Reconciler sets this value to `Updating`.
+                  When successful, the Reconciler moves to a `Ready` phase. If unsuccessful,
+                  will move from `Updating` to `Failed`. When the Reconciler updates the Vizier
+                  again, the phase will be set to `Updating`.
+                type: string
+              lastReconciliationPhaseTime:
+                description: LastReconciliationPhaseTime is the last time that the ReconciliationPhase changed.
+                format: date-time
+                type: string
             type: object
         type: object
     served: true

@@ -69,6 +69,11 @@ type VizierStatus struct {
 	// VizierReason is a short, machine understandable string that gives the reason
 	// for the transition into the Vizier's current status.
 	VizierReason string `json:"vizierReason,omitempty"`
+	// ReconciliationPhase describes the state the Reconciler is in for this Vizier. See the
+	// documentation above the ReconciliationPhase type for more information.
+	ReconciliationPhase ReconciliationPhase `json:"reconciliationPhase,omitempty"`
+	// LastReconciliationPhaseTime is the last time that the ReconciliationPhase changed.
+	LastReconciliationPhaseTime *metav1.Time `json:"lastReconciliationPhaseTime,omitempty"`
 	// Message is a human-readable message with details about why the Vizier is in this condition.
 	Message string `json:"message,omitempty"`
 	// SentryDSN is key for Viziers that is used to send errors and stacktraces to Sentry.
@@ -92,6 +97,24 @@ const (
 	VizierPhaseUnhealthy VizierPhase = "Unhealthy"
 	// VizierPhaseDegraded indicates that the vizier is in a queryable state, but data may be missing.
 	VizierPhaseDegraded VizierPhase = "Degraded"
+)
+
+// ReconciliationPhase is the state the Reconciler has reached while managing this
+// vizier. When the Reconciler creates a Vizier, the Reconciler sets this value to `Updating`.
+// When successful, the Reconciler moves to a `Ready` phase. If unsuccessful,
+// will move from `Updating` to `Failed`. When the Reconciler updates the Vizier
+// again, the phase will be set to `Updating`.
+type ReconciliationPhase string
+
+const (
+	// ReconciliationPhaseNone indicates that the Reconciler does not know the Vizier's Reconcilliation state.
+	ReconciliationPhaseNone ReconciliationPhase = ""
+	// ReconciliationPhaseReady indicates that the Reconciler has finished updating to the desired Vizier version.
+	ReconciliationPhaseReady ReconciliationPhase = "Ready"
+	// ReconciliationPhaseUpdating indicates that the Reconciler is currently updating this Vizier.
+	ReconciliationPhaseUpdating ReconciliationPhase = "Updating"
+	// ReconciliationPhaseFailed indicates that the Reconciler failed to apply the desired Vizier version.
+	ReconciliationPhaseFailed ReconciliationPhase = "Failed"
 )
 
 // PodPolicy defines the policy for creating Vizier pods.
