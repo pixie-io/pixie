@@ -291,6 +291,8 @@ void UserSignalHandler(int /* signum */, siginfo_t* info, void* /* context */) {
     return;
   }
 
+  LOG(INFO) << absl::Substitute("Signal received: $0", info->si_int);
+
   if (opcode == SignalOpCode::kNone) {
     opcode = static_cast<SignalOpCode>(info->si_int);
     return;

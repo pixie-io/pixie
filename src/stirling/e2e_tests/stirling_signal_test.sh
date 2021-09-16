@@ -65,10 +65,15 @@ echo "Found PID = $stirling_pid"
 
 out=$(tail -f -n +1 <&4 | sed '/Stirling successfully initialized./ q')
 
+echo "[Debug] Set global debug level to 1"
 sleep 1 && run_prompt_sudo "$stirling_ctrl" "$stirling_pid" 1 1
+echo "[Debug] Set global debug level to 0"
 sleep 1 && run_prompt_sudo "$stirling_ctrl" "$stirling_pid" 1 0
+echo "[Debug] Enable tracing on PID"
 sleep 1 && run_prompt_sudo "$stirling_ctrl" "$stirling_pid" 2 12345
+echo "[Debug] Disable tracing on PID"
 sleep 1 && run_prompt_sudo "$stirling_ctrl" "$stirling_pid" 2 -12345
+echo "[Debug] Kill stirling"
 sleep 1 && run_prompt_sudo kill "$stirling_pid"
 
 out=$(cat <&4)
