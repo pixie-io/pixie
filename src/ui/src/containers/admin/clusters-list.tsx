@@ -107,20 +107,18 @@ export const ClustersTable = withStyles((theme: Theme) => ({
         {clusters.map((cluster: ClusterRowInfo) => (
           <TableRow key={cluster.id}>
             <ClusterStatusCell status={cluster.status} />
-            <AdminTooltip title={cluster.clusterName}>
-              <StyledTableCell>
-                <Button
-                  className={classes.removePadding}
-                  component={Link}
-                  to={getClusterDetailsURL(encodeURIComponent(cluster.clusterName))}
-                  color='secondary'
-                  variant='text'
-                  disabled={cluster.status === 'CS_DISCONNECTED'}
-                >
-                  {cluster.prettyClusterName}
-                </Button>
-              </StyledTableCell>
-            </AdminTooltip>
+            <StyledTableCell>
+              <Button
+                className={classes.removePadding}
+                component={Link}
+                to={getClusterDetailsURL(encodeURIComponent(cluster.clusterName))}
+                color='secondary'
+                variant='text'
+                disabled={cluster.status === 'CS_DISCONNECTED'}
+              >
+                {cluster.prettyClusterName}
+              </Button>
+            </StyledTableCell>
             <MonoSpaceCell data={cluster.id} />
             <InstrumentationLevelCell cluster={cluster} />
             <VizierVersionCell version={cluster.vizierVersion} />
