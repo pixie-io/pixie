@@ -76,13 +76,14 @@ func ExecuteTemplatedYAMLs(yamls []*YAMLFile, tmplValues *YAMLTmplArguments) ([]
 }
 
 // AddPatchesToYAML takes a K8s YAML and adds the given patches using a strategic merge.
-func AddPatchesToYAML(clientset *kubernetes.Clientset, inputYAML string, patches map[string]string) (string, error) {
+func AddPatchesToYAML(clientset *kubernetes.Clientset, inputYAML string, patches map[string]string, rm meta.RESTMapper) (string, error) {
 	// Create ResourceNameMatcher functions for each patch.
 	matchFns := make(map[string]TemplateMatchFn)
 	for k := range patches {
 		matchFns[k] = GenerateResourceNameMatcherFn(k)
 	}
-	combinedYAML, err := processYAML(clientset, inputYAML, func(gvk schema.GroupVersionKind, resourceType string, unstructuredObj unstructured.Unstructured, currJSON []byte) ([]byte, error) {
+
+	combinedYAML, err := processYAML(clientset, inputYAML, rm, func(gvk schema.GroupVersionKind, resourceType string, unstructuredObj unstructured.Unstructured, currJSON []byte) ([]byte, error) {
 		for k, v := range patches {
 			if matchFns[k](unstructuredObj.Object, resourceType) {
 				creatorObj, err := scheme.Scheme.New(gvk)
@@ -283,7 +284,14 @@ func addPlaceholder(opt *K8sTemplateOptions, gvk schema.GroupVersionKind, origin
 
 // TemplatizeK8sYAML takes a K8s YAML and templatizes the provided fields.
 func TemplatizeK8sYAML(clientset *kubernetes.Clientset, inputYAML string, tmplOpts []*K8sTemplateOptions) (string, error) {
-	combinedYAML, err := processYAML(clientset, inputYAML, func(gvk schema.GroupVersionKind, resourceType string, unstructuredObj unstructured.Unstructured, currJSON []byte) ([]byte, error) {
+	discoveryClient := clientset.Discovery()
+	apiGroupResources, err := restmapper.GetAPIGroupResources(discoveryClient)
+	if err != nil {
+		return "", err
+	}
+	rm := restmapper.NewDiscoveryRESTMapper(apiGroupResources)
+
+	combinedYAML, err := processYAML(clientset, inputYAML, rm, func(gvk schema.GroupVersionKind, resourceType string, unstructuredObj unstructured.Unstructured, currJSON []byte) ([]byte, error) {
 		var err error
 		for _, opt := range tmplOpts {
 			if opt.TemplateMatcher != nil && !opt.TemplateMatcher(unstructuredObj.Object, resourceType) {
@@ -314,18 +322,11 @@ func TemplatizeK8sYAML(clientset *kubernetes.Clientset, inputYAML string, tmplOp
 
 type resourceProcessFn func(schema.GroupVersionKind, string, unstructured.Unstructured, []byte) ([]byte, error)
 
-func processYAML(clientset *kubernetes.Clientset, inputYAML string, processFn resourceProcessFn) (string, error) {
+func processYAML(clientset *kubernetes.Clientset, inputYAML string, rm meta.RESTMapper, processFn resourceProcessFn) (string, error) {
 	// Read the YAML into K8s resources.
 	yamlReader := strings.NewReader(inputYAML)
 
 	decodedYAML := yaml.NewYAMLOrJSONDecoder(yamlReader, 4096)
-	discoveryClient := clientset.Discovery()
-
-	apiGroupResources, err := restmapper.GetAPIGroupResources(discoveryClient)
-	if err != nil {
-		return "", err
-	}
-	rm := restmapper.NewDiscoveryRESTMapper(apiGroupResources)
 
 	templatedYAMLs := make([]string, 0)
 

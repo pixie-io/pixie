@@ -26,6 +26,7 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/restmapper"
 
 	atpb "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
 	"px.dev/pixie/src/cloud/config_manager/configmanagerpb"
@@ -74,11 +75,18 @@ func main() {
 	}
 	clientset := k8s.GetClientset(kubeConfig)
 
+	discoveryClient := clientset.Discovery()
+	apiGroupResources, err := restmapper.GetAPIGroupResources(discoveryClient)
+	if err != nil {
+		log.WithError(err).Fatal("Could not get API Group Resources")
+	}
+	rm := restmapper.NewDiscoveryRESTMapper(apiGroupResources)
+
 	atClient, err := newArtifactTrackerClient()
 	if err != nil {
 		log.WithError(err).Fatal("Could not connect with Artifact Service.")
 	}
-	svr := controller.NewServer(atClient, clientset)
+	svr := controller.NewServer(atClient, clientset, rm)
 	serverOpts := &server.GRPCServerOptions{
 		DisableAuth: map[string]bool{
 			"/px.services.ConfigManagerService/GetConfigForVizier": true,
