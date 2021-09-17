@@ -155,6 +155,8 @@ TEST(ServiceInfo, basic_accessors) {
   ServiceInfo service_info("123", "pl", "service1");
   service_info.set_start_time_ns(123);
   service_info.set_stop_time_ns(256);
+  service_info.set_external_ips(std::vector<std::string>{"127.0.0.1"});
+  service_info.set_cluster_ip("127.0.0.2");
 
   EXPECT_EQ("123", service_info.uid());
   EXPECT_EQ("pl", service_info.ns());
@@ -164,6 +166,9 @@ TEST(ServiceInfo, basic_accessors) {
   EXPECT_EQ(256, service_info.stop_time_ns());
 
   EXPECT_EQ(K8sObjectType::kService, service_info.type());
+
+  EXPECT_EQ("127.0.0.2", service_info.cluster_ip());
+  EXPECT_EQ(std::vector<std::string>{"127.0.0.1"}, service_info.external_ips());
 }
 
 TEST(ServiceInfo, debug_string) {
@@ -181,6 +186,8 @@ TEST(ServiceInfo, clone) {
   ServiceInfo service_info("123", "pl", "service1");
   service_info.set_start_time_ns(123);
   service_info.set_stop_time_ns(256);
+  service_info.set_external_ips(std::vector<std::string>{"127.0.0.1"});
+  service_info.set_cluster_ip("127.0.0.2");
 
   std::unique_ptr<ServiceInfo> cloned(static_cast<ServiceInfo*>(service_info.Clone().release()));
   EXPECT_EQ(cloned->uid(), service_info.uid());
@@ -191,6 +198,8 @@ TEST(ServiceInfo, clone) {
   EXPECT_EQ(cloned->stop_time_ns(), service_info.stop_time_ns());
 
   EXPECT_EQ(cloned->type(), service_info.type());
+  EXPECT_EQ("127.0.0.2", cloned->cluster_ip());
+  EXPECT_EQ(std::vector<std::string>{"127.0.0.1"}, cloned->external_ips());
 }
 
 }  // namespace md

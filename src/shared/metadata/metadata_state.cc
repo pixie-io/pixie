@@ -77,6 +77,11 @@ UID K8sMetadataState::PodIDByIP(std::string_view pod_ip) const {
   return (it == pods_by_ip_.end()) ? "" : it->second;
 }
 
+UID K8sMetadataState::ServiceIDByClusterIP(std::string_view cluster_ip) const {
+  auto it = services_by_cluster_ip_.find(cluster_ip);
+  return (it == services_by_cluster_ip_.end()) ? "" : it->second;
+}
+
 CID K8sMetadataState::ContainerIDByName(std::string_view container_name) const {
   auto it = containers_by_name_.find(container_name);
   return (it == containers_by_name_.end()) ? "" : it->second;
@@ -113,6 +118,7 @@ std::unique_ptr<K8sMetadataState> K8sMetadataState::Clone() const {
   other->namespaces_by_name_ = namespaces_by_name_;
   other->containers_by_name_ = containers_by_name_;
   other->pods_by_ip_ = pods_by_ip_;
+  other->services_by_cluster_ip_ = services_by_cluster_ip_;
 
   return other;
 }
@@ -134,6 +140,9 @@ std::string K8sMetadataState::DebugString(int indent_level) const {
   str += prefix + "IPs:\n";
   for (const auto& [k, v] : pods_by_ip_) {
     str += absl::Substitute("pod_id: $0, ip: $1\n", v, k);
+  }
+  for (const auto& [k, v] : services_by_cluster_ip_) {
+    str += absl::Substitute("service_id: $0, cluster_ip: $1\n", v, k);
   }
 
   str += prefix + absl::Substitute("PodCIDRs($0): ", pod_cidrs_.size());
@@ -244,11 +253,23 @@ Status K8sMetadataState::HandleServiceUpdate(const ServiceUpdate& update) {
     PodInfo* pod_info = static_cast<PodInfo*>(k8s_objects_by_id_[uid].get());
     pod_info->AddService(service_uid);
   }
-  service_info->set_start_time_ns(update.start_timestamp_ns());
-  service_info->set_stop_time_ns(update.stop_timestamp_ns());
+  if (update.start_timestamp_ns() != 0) {
+    service_info->set_start_time_ns(update.start_timestamp_ns());
+  }
+  if (update.stop_timestamp_ns() != 0) {
+    service_info->set_stop_time_ns(update.stop_timestamp_ns());
+  }
+  if (update.cluster_ip() != "") {
+    services_by_cluster_ip_[update.cluster_ip()] = service_uid;
+    service_info->set_cluster_ip(update.cluster_ip());
+  }
+  if (update.external_ips().size()) {
+    std::vector<std::string> external_ips(update.external_ips().begin(),
+                                          update.external_ips().end());
+    service_info->set_external_ips(external_ips);
+  }
 
   VLOG(1) << "service update: " << update.name();
-
   services_by_name_[{ns, name}] = service_uid;
   return Status::OK();
 }

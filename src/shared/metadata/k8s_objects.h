@@ -21,6 +21,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
@@ -439,9 +440,21 @@ class ServiceInfo : public K8sMetadataObject {
 
   std::string DebugString(int indent = 0) const override;
 
+  void set_cluster_ip(std::string_view cluster_ip) { cluster_ip_ = cluster_ip; }
+  const std::string& cluster_ip() const { return cluster_ip_; }
+
+  void set_external_ips(const std::vector<std::string>& external_ips) {
+    external_ips_ = external_ips;
+  }
+  const std::vector<std::string>& external_ips() const { return external_ips_; }
+
  protected:
   ServiceInfo(const ServiceInfo& other) = default;
   ServiceInfo& operator=(const ServiceInfo& other) = delete;
+
+ private:
+  std::string cluster_ip_;
+  std::vector<std::string> external_ips_;
 };
 
 /**

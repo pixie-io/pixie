@@ -98,6 +98,7 @@ class K8sMetadataState : NotCopyable {
   using NamespacesByNameMap = K8sEntityByNameMap;
   using ContainersByNameMap = absl::flat_hash_map<std::string, CID>;
   using PodsByPodIpMap = absl::flat_hash_map<std::string, UID>;
+  using ServicesByServiceIpMap = absl::flat_hash_map<std::string, UID>;
 
   void set_service_cidr(CIDRBlock cidr) {
     if (!service_cidr_.has_value() || service_cidr_.value() != cidr) {
@@ -134,6 +135,13 @@ class K8sMetadataState : NotCopyable {
    * @return the pod_id or empty string if the pod does not exist.
    */
   UID PodIDByIP(std::string_view pod_ip) const;
+
+  /**
+   * ServiceIDByClusterIP returns the ServiceID for the service with the given Cluster IP.
+   * @param cluster_ip string of the cluster IP.
+   * @return the service_id or empty string if the service does not exist.
+   */
+  UID ServiceIDByClusterIP(std::string_view cluster_ip) const;
 
   /**
    * ContainerInfoByID returns the container info by ID.
@@ -230,6 +238,11 @@ class K8sMetadataState : NotCopyable {
    * Mapping of Pods by host ip.
    */
   PodsByPodIpMap pods_by_ip_;
+
+  /**
+   * Mapping of Services by Cluster IP.
+   */
+  ServicesByServiceIpMap services_by_cluster_ip_;
 };
 
 class AgentMetadataState : NotCopyable {

@@ -78,6 +78,14 @@ constexpr char kRunningServiceUpdatePbTxt[] = R"(
   pod_names: "pod1"
 )";
 
+constexpr char kRunningServiceUpdateExternalIPsPbTxt[] = R"(
+  uid: "service0_uid"
+  name: "running_service"
+  namespace: "ns0"
+  external_ips: "127.0.0.1"
+  cluster_ip: "127.0.0.2"
+)";
+
 constexpr char kRunningNamespaceUpdatePbTxt[] = R"(
   uid: "ns0_uid"
   name: "ns0"
@@ -192,6 +200,10 @@ TEST(K8sMetadataStateTest, HandleServiceUpdate) {
   ASSERT_TRUE(TextFormat::MergeFromString(kRunningServiceUpdatePbTxt, &service_update))
       << "Failed to parse proto";
 
+  K8sMetadataState::ServiceUpdate service_ip_update;
+  ASSERT_TRUE(TextFormat::MergeFromString(kRunningServiceUpdateExternalIPsPbTxt, &service_update))
+      << "Failed to parse proto";
+
   EXPECT_OK(state.HandlePodUpdate(pod_update));
 
   auto pod_info = state.PodInfoByID("pod0_uid");
@@ -210,6 +222,23 @@ TEST(K8sMetadataStateTest, HandleServiceUpdate) {
 
   // Check that the pod info service got set.
   EXPECT_THAT(pod_info->services(), UnorderedElementsAre("service0_uid"));
+
+  EXPECT_OK(state.HandleServiceUpdate(service_ip_update));
+
+  // Existing metadata shouldn't be overwritten in this update when those fields
+  // aren't filled out by the subsequent update.
+  EXPECT_EQ("service0_uid", service_info->uid());
+  EXPECT_EQ("running_service", service_info->name());
+  EXPECT_EQ("ns0", service_info->ns());
+  EXPECT_EQ(7, service_info->start_time_ns());
+  EXPECT_EQ(8, service_info->stop_time_ns());
+  EXPECT_EQ(std::vector<std::string>{"127.0.0.1"}, service_info->external_ips());
+  EXPECT_EQ("127.0.0.2", service_info->cluster_ip());
+
+  // Ditto for the other way around.
+  EXPECT_OK(state.HandleServiceUpdate(service_update));
+  EXPECT_EQ(std::vector<std::string>{"127.0.0.1"}, service_info->external_ips());
+  EXPECT_EQ("127.0.0.2", service_info->cluster_ip());
 }
 
 TEST(K8sMetadataStateTest, HandleNamespaceUpdate) {
