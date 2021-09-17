@@ -83,6 +83,31 @@ TEST(ProtocolInferenceTest, Postgres) {
   EXPECT_EQ(kRequest, infer_pgsql_message(kQueryMessage, sizeof(kQueryMessage)));
 }
 
+TEST(ProtocolInferenceTest, MySQL) {
+  // Basic case.
+  {
+    conn_info_t conn_info = {};
+    conn_info.prev_count = 5;
+    constexpr char kQueryMessage[] = "\x24\x00\x00\x00\x16SELECT name FROM users WHERE id = ?";
+    auto protocol_message = infer_protocol(kQueryMessage, sizeof(kQueryMessage), &conn_info);
+    EXPECT_EQ(kProtocolMySQL, protocol_message.protocol);
+  }
+
+  // Test seperatedly read length header and body.
+  {
+    constexpr char kQueryHeader[4] = {'\x24', '\x00', '\x00', '\x00'};
+    // Remove the null-terminator for length check requirements.
+    char kQueryBody[36] = "\x16SELECT name FROM users WHERE id = ";
+    kQueryBody[35] = '?';
+
+    conn_info_t conn_info = {};
+    auto header_protocol_message = infer_protocol(kQueryHeader, sizeof(kQueryHeader), &conn_info);
+    EXPECT_EQ(kUnknown, header_protocol_message.protocol);
+    auto body_protocol_message = infer_protocol(kQueryBody, sizeof(kQueryBody), &conn_info);
+    EXPECT_EQ(kProtocolMySQL, body_protocol_message.protocol);
+  }
+}
+
 TEST(ProtocolInferenceTest, DNS) {
   // A query captured via WireShark:
   //   Domain Name System (query)
@@ -258,14 +283,9 @@ TEST(ProtocolInferenceTest, Redis) {
 TEST(ProtocolInferenceTest, Mongo) {
   constexpr uint8_t kReqHeaderFrame[] = {0x4d, 0x01, 0x00, 0x00, 0xd8, 0xe8, 0x91, 0x29,
                                          0x00, 0x00, 0x00, 0x00, 0xd4, 0x07, 0x00, 0x00};
-  constexpr uint8_t kRespHeaderFrame[] = {0x4b, 0x00, 0x00, 0x00, 0xf7, 0x4b, 0x9f, 0x29,
-                                          0xdb, 0xe8, 0x91, 0x29, 0x01, 0x00, 0x00, 0x00};
   EXPECT_EQ(
       infer_mongo_message(reinterpret_cast<const char*>(kReqHeaderFrame), sizeof(kReqHeaderFrame)),
       kRequest);
-  EXPECT_EQ(infer_mongo_message(reinterpret_cast<const char*>(kRespHeaderFrame),
-                                sizeof(kRespHeaderFrame)),
-            kResponse);
 }
 
 TEST(ProtocolInferenceTest, Kafka) {

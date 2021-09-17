@@ -150,7 +150,8 @@ static __inline enum MessageType infer_cql_message(const char* buf, size_t count
 static __inline enum MessageType infer_mongo_message(const char* buf, size_t count) {
   // Reference:
   // https://docs.mongodb.com/manual/reference/mongodb-wire-protocol/#std-label-wp-request-opcodes.
-  static const int32_t kOPReply = 1;
+  // Note: Response side inference for Mongo is not robust, and is not attempted to avoid
+  // confusion with other protocols, especially MySQL.
   static const int32_t kOPUpdate = 2001;
   static const int32_t kOPInsert = 2002;
   static const int32_t kReserved = 2003;
@@ -183,13 +184,9 @@ static __inline enum MessageType infer_mongo_message(const char* buf, size_t cou
   int32_t response_to = buf4[2];
   int32_t opcode = buf4[3];
 
-  if (opcode == kOPReply) {
-    if (response_to > 0) {
-      return kResponse;
-    }
-  } else if (opcode == kOPUpdate || opcode == kOPInsert || opcode == kReserved ||
-             opcode == kOPQuery || opcode == kOPGetMore || opcode == kOPDelete ||
-             opcode == kOPKillCursors || opcode == kOPCompressed || opcode == kOPMsg) {
+  if (opcode == kOPUpdate || opcode == kOPInsert || opcode == kReserved || opcode == kOPQuery ||
+      opcode == kOPGetMore || opcode == kOPDelete || opcode == kOPKillCursors ||
+      opcode == kOPCompressed || opcode == kOPMsg) {
     if (response_to == 0) {
       return kRequest;
     }
