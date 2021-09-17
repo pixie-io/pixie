@@ -29,9 +29,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-
-	// Blank import necessary for kubeConfig to work.
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 // K8sAPIImpl is a wrapper around the k8s API.

@@ -26,9 +26,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	// Blank import necessary for kubeConfig to work.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
 	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
 	"px.dev/pixie/src/pixie_cli/pkg/vizier"

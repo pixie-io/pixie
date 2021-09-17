@@ -16,9 +16,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	watchClient "k8s.io/client-go/tools/watch"
 
-	// Blank import necessary for kubeConfig to work.
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-
 	protoutils "px.dev/pixie/src/shared/k8s"
 	"px.dev/pixie/src/vizier/services/metadata/storepb"
 )
