@@ -32,6 +32,7 @@ pl_cc_library(
         "@com_github_antlr_antlr4//:libantlr",
         "@com_github_antlr_grammars_v4//:libmysql_parser",
         "@com_github_pgcodekeeper_pgcodekeeper//:libpgsql_parser",
+        "@com_github_simdutf_simdutf//:libsimdutf",
         "@com_github_tencent_rapidjson//:rapidjson",
     ],
 )

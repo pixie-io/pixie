@@ -173,6 +173,34 @@ INSTANTIATE_TEST_SUITE_P(
             },
         }));
 
+TEST(NormPGSQL, invalid_utf8) {
+  std::string invalid(
+      "\xbf\xef\xef\xbd\xbd\xbf\xbf\xef\xef\xbd\xbd\xbf\xbf\xef\xef\xbd\xbd\xbf\xbf\xef");
+
+  auto expected_result = NormalizeResult{
+      "",
+      {},
+      "Invalid UTF-8 byte sequence in SQL query",
+  };
+
+  auto udf_tester = udf::UDFTester<NormalizePostgresSQLUDF>();
+  udf_tester.ForInput(invalid, kPgQueryCmdCode).Expect(expected_result.ToJSON());
+}
+
+TEST(NormMySQL, invalid_utf8) {
+  std::string invalid(
+      "\xbf\xef\xef\xbd\xbd\xbf\xbf\xef\xef\xbd\xbd\xbf\xbf\xef\xef\xbd\xbd\xbf\xbf\xef");
+
+  auto expected_result = NormalizeResult{
+      "",
+      {},
+      "Invalid UTF-8 byte sequence in SQL query",
+  };
+
+  auto udf_tester = udf::UDFTester<NormalizeMySQLUDF>();
+  udf_tester.ForInput(invalid, kMySQLQueryCmdCode).Expect(expected_result.ToJSON());
+}
+
 }  // namespace builtins
 }  // namespace carnot
 }  // namespace px

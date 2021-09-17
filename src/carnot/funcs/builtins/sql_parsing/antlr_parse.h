@@ -20,9 +20,11 @@
 #include <antlr4-runtime.h>
 #include <atn/ParserATNSimulator.h>
 #include <atn/PredictionMode.h>
+#include <simdutf.h>
 
 #include <absl/strings/substitute.h>
 #include <cctype>
+#include <memory>
 #include <string>
 #include <vector>
 #include "src/common/base/error.h"
@@ -81,6 +83,10 @@ class AntlrParser {
   Status ParseWalk(antlr4::tree::ParseTreeListener* listener) {
     // Because of the way Antlr handles memory it makes it awkward to do the parsing and then later
     // walk through the parse tree. So instead we parse and walk the tree in the same function.
+
+    if (!simdutf::validate_utf8(input_.data(), input_.length())) {
+      return error::InvalidArgument("Invalid UTF-8 byte sequence in SQL query");
+    }
     TCharStream input_stream(input_);
     TLexer lexer(&input_stream);
     antlr4::CommonTokenStream tokens(&lexer);

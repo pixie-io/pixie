@@ -289,6 +289,11 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "re2-2021-08-01",
         sha256 = "cd8c950b528f413e02c12970dce62a7b6f37733d7f68807e73a2d9bc9db79bc8",
     ),
+    com_github_simdutf_simdutf = dict(
+        urls = ["https://github.com/simdutf/simdutf/archive/refs/tags/v1.0.0.tar.gz"],
+        strip_prefix = "simdutf-1.0.0",
+        sha256 = "a91056e53e566070068203b77a4607fec41920b923712464cf54e12a760cd0a6",
+    ),
 )
 
 GIT_REPOSITORY_LOCATIONS = dict(

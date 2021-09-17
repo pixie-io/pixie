@@ -135,6 +135,7 @@ def _cc_deps():
     _repo_impl("com_github_antlr_antlr4", build_file = "//bazel/external:antlr4.BUILD", patches = ["//bazel/external:antlr4.patch"], patch_args = ["-p1"])
     _repo_impl("com_github_antlr_grammars_v4", build_file = "//bazel/external:antlr_grammars.BUILD", patches = ["//bazel/external:antlr_grammars.patch"], patch_args = ["-p1"])
     _repo_impl("com_github_pgcodekeeper_pgcodekeeper", build_file = "//bazel/external:pgsql_grammar.BUILD", patches = ["//bazel/external:pgsql_grammar.patch"], patch_args = ["-p1"])
+    _repo_impl("com_github_simdutf_simdutf", build_file = "//bazel/external:simdutf.BUILD")
 
 def _go_deps():
     # Add go specific imports here when necessary.
