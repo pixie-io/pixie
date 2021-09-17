@@ -1463,6 +1463,10 @@ class PodIPToServiceIDUDF : public ScalarUDF {
         .Arg("pod_ip", "The IP of a pod to convert.")
         .Returns("The service id if it exists, otherwise an empty string.");
   }
+
+  // This UDF can currently only run on Kelvins, because only Kelvins have the IP to pod
+  // information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_KELVIN; }
 };
 
 inline bool EqualsOrArrayContains(const std::string& input, const std::string& value) {
