@@ -786,7 +786,27 @@ func TestServiceUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 	state := &k8smeta.ProcessorState{}
 	p := k8smeta.ServiceUpdateProcessor{}
 	updates := p.GetUpdatesToSend(storedProtos, state)
-	assert.Equal(t, 0, len(updates))
+	assert.Equal(t, 1, len(updates))
+
+	su := &k8smeta.OutgoingUpdate{
+		Update: &metadatapb.ResourceUpdate{
+			UpdateVersion: 2,
+			Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+				ServiceUpdate: &metadatapb.ServiceUpdate{
+					UID:       "ijkl",
+					Name:      "object_md",
+					Namespace: "a_namespace",
+					ExternalIPs: []string{
+						"127.0.0.2",
+						"127.0.0.3",
+					},
+					ClusterIP: "127.0.0.1",
+				},
+			},
+		},
+		Topics: []string{k8smeta.KelvinUpdateTopic},
+	}
+	assert.Equal(t, updates[0], su)
 }
 
 func TestPodUpdateProcessor_SetDeleted(t *testing.T) {

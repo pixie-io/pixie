@@ -236,17 +236,17 @@ message Endpoints {
 }
 
 message EndpointSubset {
-  // IP addresses which offer the related ports that are marked as ready.
+  // Pod IP addresses which offer the related ports that are marked as ready.
   repeated EndpointAddress addresses = 1;
-  // IP addresses which offer the related ports but are not currently marked as ready.
+  // Pod IP addresses which offer the related ports but are not currently marked as ready.
   repeated EndpointAddress not_ready_addresses = 2;
-  // Port numbers available on the related IP addresses.
+  // Port numbers available on the related Pod IP addresses.
   repeated EndpointPort ports = 3;
 }
 
-// EndpointAddress is a tuple that describes single IP address.
+// EndpointAddress is a tuple that describes single Pod IP address.
 message EndpointAddress {
-  // The IP of this endpoint.
+  // The Pod IP of this endpoint.
   string ip = 1 [(gogoproto.customname) = "IP"];
   // The hostname of this endpoint
   string hostname = 2;
@@ -456,6 +456,10 @@ message ServiceUpdate {
   // A list of Pods that are service this service.
   repeated string pod_ids = 6 [(gogoproto.customname) = "PodIDs"];
   repeated string pod_names = 7;
+  // The External IPs for this service.
+  repeated string external_ips = 8 [(gogoproto.customname) = "ExternalIPs"];
+  // The Cluster IP for this service.
+  string cluster_ip = 9 [(gogoproto.customname) = "ClusterIP"];
 }
 
 message NamespaceUpdate {

@@ -465,6 +465,7 @@ func (p *EndpointsUpdateProcessor) GetUpdatesToSend(storedUpdates []*StoredUpdat
 		return nil
 	}
 
+	// We always expect one element in this array.
 	pb := storedUpdates[0].Update.GetEndpoints()
 	rv := storedUpdates[0].UpdateVersion
 
@@ -564,9 +565,36 @@ func (p *ServiceUpdateProcessor) updateServiceCIDR(svc *metadatapb.Service, stat
 
 // GetUpdatesToSend gets the resource updates that should be sent out to the agents, along with the agent IPs that the update should be sent to.
 func (p *ServiceUpdateProcessor) GetUpdatesToSend(storedUpdates []*StoredUpdate, state *ProcessorState) []*OutgoingUpdate {
-	// We don't send out service updates, they are encapsulated by endpoints updates where we have more information
-	// about which nodes the service is actually running on.
-	return nil
+	if len(storedUpdates) == 0 {
+		return nil
+	}
+
+	service := storedUpdates[0].Update.GetService()
+	uv := storedUpdates[0].UpdateVersion
+
+	// Send service-level updates (which are detached from a specific pod) to Kelvin only.
+	// Service updates will also be sent to PEMs by the EndpointsUpdateProcessor in order to provide
+	// a mapping from service->pod.
+	return []*OutgoingUpdate{
+		&OutgoingUpdate{
+			Update: &metadatapb.ResourceUpdate{
+				UpdateVersion: uv,
+				Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+					ServiceUpdate: &metadatapb.ServiceUpdate{
+						UID:       service.Metadata.UID,
+						Name:      service.Metadata.Name,
+						Namespace: service.Metadata.Namespace,
+						// Omit Start/Stop timestamps -- These will be sent by the EndpointUpdateProcessor.
+						// The EndpointUpdateProcessor associates services to pods, and the pods should have
+						// consistent information about start/stop timestamps for the service they are part of.
+						ExternalIPs: service.Spec.ExternalIPs,
+						ClusterIP:   service.Spec.ClusterIP,
+					},
+				},
+			},
+			Topics: []string{KelvinUpdateTopic},
+		},
+	}
 }
 
 // PodUpdateProcessor is a processor for pods.
