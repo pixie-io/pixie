@@ -350,4 +350,71 @@ TEST(FloorTest, Basic) {
   EXPECT_EQ(Floor(v, 6), v.find(5));
 }
 
+TEST(LinearInterpolate, BasicUInt64) {
+  uint64_t x_a = 0;
+  uint64_t x_b = 10;
+  int64_t y_a = 10;
+  int64_t y_b = 20;
+  uint64_t value = 5;
+
+  EXPECT_EQ(15, LinearInterpolate(x_a, x_b, y_a, y_b, value));
+}
+
+TEST(LinearInterpolate, ZeroIntervalUInt64) {
+  uint64_t x_a = 0;
+  uint64_t x_b = 0;
+  int64_t y_a = 1111;
+  // y_b and value are unused when x_a and x_b are the same, so there values should have no
+  // influence.
+  int64_t y_b = 123423143243214123;
+  uint64_t value = 99999999999;
+
+  EXPECT_EQ(y_a, LinearInterpolate(x_a, x_b, y_a, y_b, value));
+}
+
+TEST(LinearInterpolate, OutOfIntervalUInt64) {
+  // value less than x_a
+  {
+    uint64_t x_a = 10;
+    uint64_t x_b = 20;
+    int64_t y_a = 50;
+    int64_t y_b = 60;
+    uint64_t value = 0;
+
+    EXPECT_EQ(40, LinearInterpolate(x_a, x_b, y_a, y_b, value));
+  }
+  // value greater than x_b
+  {
+    uint64_t x_a = 10;
+    uint64_t x_b = 20;
+    int64_t y_a = 50;
+    int64_t y_b = 60;
+    uint64_t value = 30;
+
+    EXPECT_EQ(70, LinearInterpolate(x_a, x_b, y_a, y_b, value));
+  }
+}
+
+TEST(LinearInterpolate, SymmetryUInt64) {
+  uint64_t x_a = 0;
+  uint64_t x_b = 10;
+  int64_t y_a = 10;
+  int64_t y_b = 20;
+  uint64_t value = 5;
+
+  // if x_a > x_b, LinearInterpolate should still work and should be equivalent if the y_a and y_b
+  // values are also swapped.
+  EXPECT_EQ(LinearInterpolate(x_b, x_a, y_b, y_a, value),
+            LinearInterpolate(x_a, x_b, y_a, y_b, value));
+}
+
+TEST(LinearInterpolate, LargeIntPrecision) {
+  uint64_t x_a = 0;
+  uint64_t x_b = 10;
+  int64_t y_a = 1ULL << 63;
+  int64_t y_b = y_a + 10000;
+  uint64_t value = 5;
+  EXPECT_EQ(y_a + 5000, LinearInterpolate(x_a, x_b, y_a, y_b, value));
+}
+
 }  // namespace px

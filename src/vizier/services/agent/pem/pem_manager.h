@@ -63,6 +63,7 @@ class PEMManager : public Manager {
 
  private:
   Status InitSchemas();
+  Status InitClockConverters();
   static services::shared::agent::AgentCapabilities Capabilities() {
     services::shared::agent::AgentCapabilities capabilities;
     capabilities.set_collects_data(true);
@@ -71,6 +72,9 @@ class PEMManager : public Manager {
 
   std::unique_ptr<stirling::Stirling> stirling_;
   std::shared_ptr<TracepointManager> tracepoint_manager_;
+
+  // Timer for triggering ClockConverter polls.
+  px::event::TimerUPtr clock_converter_timer_;
 };
 
 }  // namespace agent

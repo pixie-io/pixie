@@ -15,16 +15,20 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+#include <utility>
 
 #include "src/common/system/config.h"
 
 #include <unistd.h>
 
 #include "src/common/base/base.h"
+#include "src/common/clock/clock_conversion.h"
 #include "src/common/fs/fs_wrapper.h"
 
 namespace px {
 namespace system {
+using clock::ClockConverter;
+using clock::DefaultMonoToRealtimeConverter;
 
 DEFINE_string(sysfs_path, gflags::StringFromEnv("PL_SYSFS_PATH", "/sys/fs"),
               "The path to the sysfs directory.");
@@ -36,12 +40,11 @@ DEFINE_string(host_path, gflags::StringFromEnv("PL_HOST_PATH", ""),
 
 class ConfigImpl final : public Config {
  public:
-  ConfigImpl()
+  ConfigImpl(std::unique_ptr<ClockConverter> clock_converter)
       : host_path_(FLAGS_host_path),
         sysfs_path_(FLAGS_sysfs_path),
-        proc_path_(absl::StrCat(FLAGS_host_path, "/proc")) {
-    InitClockRealTimeOffset();
-  }
+        proc_path_(absl::StrCat(FLAGS_host_path, "/proc")),
+        clock_converter_(std::move(clock_converter)) {}
 
   bool HasConfig() const override { return true; }
 
@@ -50,7 +53,7 @@ class ConfigImpl final : public Config {
   int64_t KernelTicksPerSecond() const override { return sysconf(_SC_CLK_TCK); }
 
   uint64_t ConvertToRealTime(uint64_t monotonic_time) const override {
-    return monotonic_time + real_time_offset_;
+    return clock_converter_->Convert(monotonic_time);
   }
 
   const std::filesystem::path& sysfs_path() const override { return sysfs_path_; }
@@ -66,25 +69,13 @@ class ConfigImpl final : public Config {
     return fs::JoinPath({&host_path_, &p});
   }
 
+  clock::ClockConverter* clock_converter() const override { return clock_converter_.get(); }
+
  private:
-  uint64_t real_time_offset_ = 0;
   const std::filesystem::path host_path_;
   const std::filesystem::path sysfs_path_;
   const std::filesystem::path proc_path_;
-
-  // Utility function to convert time as recorded by in monotonic clock (aka steady_clock)
-  // to real time (aka system_clock).
-  // TODO(oazizi): if machine is ever suspended, this function would have to be called again.
-  void InitClockRealTimeOffset() {
-    static constexpr uint64_t kSecToNanosecFactor = 1000000000;
-
-    struct timespec time, real_time;
-    clock_gettime(CLOCK_MONOTONIC, &time);
-    clock_gettime(CLOCK_REALTIME, &real_time);
-
-    real_time_offset_ =
-        kSecToNanosecFactor * (real_time.tv_sec - time.tv_sec) + real_time.tv_nsec - time.tv_nsec;
-  }
+  std::unique_ptr<ClockConverter> clock_converter_;
 };
 
 namespace {
@@ -93,12 +84,17 @@ std::unique_ptr<ConfigImpl> g_instance;
 
 const Config& Config::GetInstance() {
   if (g_instance == nullptr) {
-    ResetInstance();
+    ResetInstance(std::make_unique<DefaultMonoToRealtimeConverter>());
   }
   return *g_instance;
 }
 
-void Config::ResetInstance() { g_instance = std::make_unique<ConfigImpl>(); }
+void Config::ResetInstance(std::unique_ptr<ClockConverter> converter) {
+  g_instance = std::make_unique<ConfigImpl>(std::move(converter));
+}
+void Config::ResetInstance() {
+  Config::ResetInstance(std::make_unique<DefaultMonoToRealtimeConverter>());
+}
 
 }  // namespace system
 }  // namespace px

@@ -23,6 +23,7 @@
 #include <string>
 
 #include "src/common/base/base.h"
+#include "src/common/clock/clock_conversion.h"
 
 namespace px {
 namespace system {
@@ -42,7 +43,9 @@ class Config : public NotCopyable {
 
   /**
    * Resets the underlying static instance. Used for testing purposes.
+   * @param converter unique_ptr to a ClockConverter instance to use for the Config.
    */
+  static void ResetInstance(std::unique_ptr<clock::ClockConverter> converter);
   static void ResetInstance();
 
   virtual ~Config() {}
@@ -90,6 +93,8 @@ class Config : public NotCopyable {
    * Converts a path to host relative path, for when this binary is running inside a container.
    */
   virtual std::filesystem::path ToHostPath(const std::filesystem::path& p) const = 0;
+
+  virtual clock::ClockConverter* clock_converter() const = 0;
 
  protected:
   Config() {}

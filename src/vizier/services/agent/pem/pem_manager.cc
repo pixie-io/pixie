@@ -18,6 +18,7 @@
 
 #include "src/vizier/services/agent/pem/pem_manager.h"
 
+#include "src/common/system/config.h"
 #include "src/vizier/services/agent/manager/exec.h"
 #include "src/vizier/services/agent/manager/manager.h"
 
@@ -25,7 +26,10 @@ namespace px {
 namespace vizier {
 namespace agent {
 
-Status PEMManager::InitImpl() { return Status::OK(); }
+Status PEMManager::InitImpl() {
+  PL_RETURN_IF_ERROR(InitClockConverters());
+  return Status::OK();
+}
 
 Status PEMManager::PostRegisterHookImpl() {
   stirling_->RegisterDataPushCallback(std::bind(&table_store::TableStore::AppendData, table_store(),
@@ -78,6 +82,19 @@ Status PEMManager::InitSchemas() {
     table_store()->AddTable(std::move(table_ptr), relation_info.name, relation_info.id);
     PL_RETURN_IF_ERROR(relation_info_manager()->AddRelationInfo(relation_info));
   }
+  return Status::OK();
+}
+
+Status PEMManager::InitClockConverters() {
+  clock_converter_timer_ = dispatcher()->CreateTimer([this]() {
+    auto clock_converter = px::system::Config::GetInstance().clock_converter();
+    clock_converter->Update();
+    if (clock_converter_timer_) {
+      clock_converter_timer_->EnableTimer(clock_converter->UpdatePeriod());
+    }
+  });
+  clock_converter_timer_->EnableTimer(
+      px::system::Config::GetInstance().clock_converter()->UpdatePeriod());
   return Status::OK();
 }
 

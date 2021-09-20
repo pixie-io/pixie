@@ -94,6 +94,34 @@ constexpr TIntType IntRoundUpToPow2(TIntType x) {
 }
 
 /**
+ * Interpolate the y value at x=`value` along the line defined by the points (`x_a`, `y_a`) (`x_b`,
+ * `y_b`). If `value` falls outside [`x_a`, `x_b`] this function will extrapolate. If `x_a` equals
+ * `x_b` the behaviour is undefined, so we arbtrarily choose to return `y_a` in this case. Note that
+ * `x_a` need not be less than `x_b`, the interpolation is symmetrical around a swap of point a and
+ * point b.
+ * @tparam TXIntType Integer Type for the x-values.
+ * @tparam TYIntType Integer Type for the y-values. Note that TYIntType must be a signed integer
+ * type. An unsigned integer type will lead to undefined behaviour.
+ * @param x_a x coordinate of first point in the line.
+ * @param x_b x coordinate of second point in the line.
+ * @param y_a y coordinate of first point in the line.
+ * @param y_b y coordinate of second point in the line.
+ * @param value x coordinate to interpolate the y value for.
+ * @return y value for interpolation at x=`value` of line drawn between (`x_a`, `y_a`) and (`x_b`,
+ * `y_b`).
+ */
+template <typename TXIntType, typename TYIntType>
+constexpr TYIntType LinearInterpolate(TXIntType x_a, TXIntType x_b, TYIntType y_a, TYIntType y_b,
+                                      TXIntType value) {
+  if (x_b == x_a) {
+    return y_a;
+  }
+  double percent = (static_cast<double>(value) - static_cast<double>(x_a)) /
+                   (static_cast<double>(x_b) - static_cast<double>(x_a));
+  return static_cast<TYIntType>(std::round(percent * (y_b - y_a))) + y_a;
+}
+
+/**
  * bytes_format structs allow you to quickly define new formats for BytesToString().
  * For example, say want a octal output, or you want a separator between characters,
  * then all you have to do is define a new struct and set kCharFormat appropriately.
