@@ -28,9 +28,9 @@ namespace px {
 namespace stirling {
 
 #ifdef __OPTIMIZE__
-constexpr uint64_t kFileSizeLimitMB = 90;
+constexpr uint64_t kFileSizeLimitMB = 95;
 #else
-constexpr uint64_t kFileSizeLimitMB = 250;
+constexpr uint64_t kFileSizeLimitMB = 290;
 #endif
 
 TEST(StirlingWrapperSizeTest, ExecutableSizeLimit) {

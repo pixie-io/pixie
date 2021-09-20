@@ -18,6 +18,7 @@
 
 #include <sole.hpp>
 
+#include "src/integrations/grpc_clocksync/grpc_clock_converter.h"
 #include "src/vizier/services/agent/pem/pem_manager.h"
 
 #include "src/common/base/base.h"
@@ -30,6 +31,9 @@ DEFINE_string(pod_name, gflags::StringFromEnv("PL_POD_NAME", ""),
               "The name of the POD the PEM is running on");
 DEFINE_string(host_ip, gflags::StringFromEnv("PL_HOST_IP", ""),
               "The IP of the host this service is running on");
+DEFINE_string(clock_converter, gflags::StringFromEnv("PL_CLOCK_CONVERTER", "default"),
+              "Which ClockConverter to use for converting from mono to reference time. Current "
+              "options are 'default' or 'grpc'");
 
 using ::px::vizier::agent::Manager;
 using ::px::vizier::agent::PEMManager;
@@ -88,6 +92,11 @@ int main(int argc, char** argv) {
   sole::uuid agent_id = sole::uuid4();
   LOG(INFO) << absl::Substitute("Pixie PEM. Version: $0, id: $1", px::VersionInfo::VersionString(),
                                 agent_id.str());
+
+  if (FLAGS_clock_converter == "grpc") {
+    px::system::Config::ResetInstance(
+        std::make_unique<px::integrations::grpc_clocksync::GRPCClockConverter>());
+  }
 
   if (FLAGS_host_ip.length() == 0) {
     LOG(FATAL) << "The HOST_IP must be specified";

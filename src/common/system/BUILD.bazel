@@ -28,6 +28,7 @@ pl_cc_library(
         exclude = [
             "**/*_mock.h",
             "**/*_test.cc",
+            "**/*_benchmark.cc",
             "socket_info_tool.cc",
         ],
     ),
