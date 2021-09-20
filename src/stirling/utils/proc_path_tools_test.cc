@@ -28,26 +28,6 @@ namespace stirling {
 using ::testing::EndsWith;
 using ::testing::MatchesRegex;
 
-TEST(ProcExeTest, Basic) {
-  std::filesystem::path proc_pid = "/proc/self";
-
-  // We expect that ProcExe resolves proc_pid to this test.
-  // The regex accounts for the fact that this source code is referenced by two tests:
-  //   1) proc_path_tools_test
-  //   2) proc_path_tools_container_test
-  const std::string kExpectedPathRegex = ".*/src/stirling/utils/proc_path_tools.*_test";
-
-  {
-    ASSERT_OK_AND_ASSIGN(std::filesystem::path proc_exe, ProcExe(proc_pid));
-    EXPECT_THAT(proc_exe.string(), MatchesRegex(kExpectedPathRegex));
-  }
-
-  {
-    ASSERT_OK_AND_ASSIGN(std::filesystem::path proc_exe, ProcExe(getpid()));
-    EXPECT_THAT(proc_exe.string(), MatchesRegex(kExpectedPathRegex));
-  }
-}
-
 // Don't run this test if bazel is in a container environment with PL_HOST_PATH,
 // because it will fail. This test is meant for non-container environments,
 // to ensure FilePathResolver is robust.

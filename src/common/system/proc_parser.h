@@ -143,7 +143,7 @@ class ProcParser {
   /**
    * Returns the /proc/<pid>/exe
    */
-  StatusOr<std::string> GetExePath(int32_t pid) const;
+  StatusOr<std::filesystem::path> GetExePath(int32_t pid) const;
 
   /**
    * Parses /proc/<pid>/io files.
@@ -259,7 +259,7 @@ class ProcParser {
    * @param pid Process for which to get mapped paths.
    * @return All map paths, including entries that are not filesystem paths (e.g. [heap]).
    */
-  StatusOr<absl::flat_hash_set<std::string>> GetMapPaths(pid_t pid);
+  StatusOr<absl::flat_hash_set<std::string>> GetMapPaths(pid_t pid) const;
 
  private:
   static Status ParseNetworkStatAccumulateIFaceData(

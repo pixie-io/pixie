@@ -49,9 +49,9 @@ namespace dynamic_tracing {
 
 using ::px::stirling::bpf_tools::BPFProbeAttachType;
 using ::px::stirling::bpf_tools::UProbeSpec;
-
 using ::px::stirling::obj_tools::DwarfReader;
 using ::px::stirling::obj_tools::ElfReader;
+using ::px::system::ProcParser;
 
 namespace {
 
@@ -206,18 +206,30 @@ StatusOr<BCCProgram> CompileProgram(ir::logical::TracepointDeployment* input_pro
 
 namespace {
 
+Status CheckPIDStartTime(const ProcParser& proc_parser, int32_t pid, int64_t spec_start_time) {
+  PL_ASSIGN_OR_RETURN(int64_t pid_start_time, proc_parser.GetPIDStartTimeTicks(pid));
+  if (spec_start_time != pid_start_time) {
+    return error::NotFound(
+        "This is not the pid you are looking for... "
+        "Start time does not match (specification: $0 vs system: $1).",
+        spec_start_time, pid_start_time);
+  }
+  return Status::OK();
+}
+
 StatusOr<std::filesystem::path> ResolveUPID(const ir::shared::DeploymentSpec& deployment_spec) {
   uint32_t pid = deployment_spec.upid().pid();
+  const auto& sysconfig = system::Config::GetInstance();
+  const ProcParser proc_parser(sysconfig);
 
-  std::optional<int64_t> start_time;
   if (deployment_spec.upid().ts_ns() != 0) {
-    start_time = deployment_spec.upid().ts_ns();
+    PL_RETURN_IF_ERROR(CheckPIDStartTime(proc_parser, pid, deployment_spec.upid().ts_ns()));
   }
 
-  PL_ASSIGN_OR_RETURN(std::filesystem::path proc_exe, ProcExe(pid, start_time));
+  PL_ASSIGN_OR_RETURN(std::filesystem::path proc_exe, proc_parser.GetExePath(pid));
   PL_ASSIGN_OR_RETURN(std::unique_ptr<FilePathResolver> fp_resolver, FilePathResolver::Create(pid));
   PL_ASSIGN_OR_RETURN(std::filesystem::path pid_binary, fp_resolver->ResolvePath(proc_exe));
-  pid_binary = system::Config::GetInstance().ToHostPath(pid_binary);
+  pid_binary = sysconfig.ToHostPath(pid_binary);
   PL_RETURN_IF_ERROR(fs::Exists(pid_binary));
   return pid_binary;
 }
@@ -226,24 +238,14 @@ StatusOr<std::filesystem::path> ResolveSharedObject(
     const ir::shared::DeploymentSpec& deployment_spec) {
   const uint32_t& pid = deployment_spec.shared_object().upid().pid();
   const std::string& lib_name = deployment_spec.shared_object().name();
+  const auto& sysconfig = system::Config::GetInstance();
+  const ProcParser proc_parser(sysconfig);
 
-  const system::Config& sysconfig = system::Config::GetInstance();
-
-  std::filesystem::path proc_pid_path = sysconfig.proc_path() / std::to_string(pid);
   if (deployment_spec.upid().ts_ns() != 0) {
-    int64_t spec_start_time = deployment_spec.upid().ts_ns();
-
-    PL_ASSIGN_OR_RETURN(int64_t pid_start_time, system::GetPIDStartTimeTicks(proc_pid_path));
-    if (spec_start_time != pid_start_time) {
-      return error::NotFound(
-          "This is not the pid you are looking for... "
-          "Start time does not match (specification: $0 vs system: $1).",
-          spec_start_time, pid_start_time);
-    }
+    PL_RETURN_IF_ERROR(CheckPIDStartTime(proc_parser, pid, deployment_spec.upid().ts_ns()));
   }
 
   // Find the path to shared library, which may be inside a container.
-  system::ProcParser proc_parser(sysconfig);
   PL_ASSIGN_OR_RETURN(absl::flat_hash_set<std::string> libs_status, proc_parser.GetMapPaths(pid));
 
   PL_ASSIGN_OR_RETURN(std::unique_ptr<FilePathResolver> fp_resolver, FilePathResolver::Create(pid));

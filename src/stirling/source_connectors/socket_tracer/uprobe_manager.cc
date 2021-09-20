@@ -271,7 +271,8 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
 }
 
 StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(uint32_t pid) {
-  PL_ASSIGN_OR_RETURN(std::filesystem::path proc_exe, ProcExe(pid));
+  PL_ASSIGN_OR_RETURN(std::filesystem::path proc_exe, proc_parser_->GetExePath(pid));
+
   if (proc_exe.empty()) {
     return 0;
   }
@@ -357,12 +358,14 @@ namespace {
 std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
     const absl::flat_hash_set<md::UPID>& upids, LazyLoadedFPResolver* fp_resolver) {
   const system::Config& sysconfig = system::Config::GetInstance();
+  const system::ProcParser proc_parser(sysconfig);
 
   // Convert to a map of binaries, with the upids that are instances of that binary.
   std::map<std::string, std::vector<int32_t>> pids;
 
   for (const auto& upid : upids) {
-    PL_ASSIGN_OR(std::filesystem::path proc_exe, ProcExe(upid.pid()), continue);
+    // TODO(yzhao): Might need to check the start time.
+    PL_ASSIGN_OR(std::filesystem::path proc_exe, proc_parser.GetExePath(upid.pid()), continue);
 
     Status s = fp_resolver->SetMountNamespace(upid.pid());
     if (!s.ok()) {

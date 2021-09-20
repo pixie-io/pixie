@@ -36,17 +36,6 @@ namespace stirling {
 using MountInfoVec = std::vector<system::ProcParser::MountInfo>;
 
 /**
- * Returns the path to the binary of a process specified by /proc/<pid>.
- */
-StatusOr<std::filesystem::path> ProcExe(const std::filesystem::path& proc_pid);
-
-/**
- * Returns the path to the binary of a process pid and an optional start time.
- */
-StatusOr<std::filesystem::path> ProcExe(uint32_t pid,
-                                        std::optional<int64_t> start_time = std::nullopt);
-
-/**
  * Resolves a path from within a pid namespace to the path on the host.
  * Implemented as a class, so the state of creation can be saved for multiple resolutions.
  * Otherwise, parsing /proc becomes very expensive.

@@ -445,9 +445,18 @@ std::string ProcParser::GetPIDCmdline(int32_t pid) const {
   return cmdline;
 }
 
-StatusOr<std::string> ProcParser::GetExePath(int32_t pid) const {
+StatusOr<std::filesystem::path> ProcParser::GetExePath(int32_t pid) const {
   auto exe_path = std::filesystem::path(proc_base_path_) / std::to_string(pid) / "exe";
-  return fs::ReadSymlink(exe_path);
+  PL_ASSIGN_OR_RETURN(std::filesystem::path proc_exe, fs::ReadSymlink(exe_path));
+  if (proc_exe.empty() || proc_exe == "/") {
+    // Not sure what causes this, but sometimes get symlinks that point to "/".
+    // Seems to happen with PIDs that are short-lived, because I can never catch it in the act.
+    // Suspect there is a race with the proc filesystem, with PID creation/destruction,
+    // but this is not confirmed. Would be nice to understand the root cause, but for now, just
+    // filter these out.
+    return error::Internal("Symlink appears malformed.");
+  }
+  return proc_exe;
 }
 
 StatusOr<int64_t> ProcParser::GetPIDStartTimeTicks(int32_t pid) const {
@@ -615,7 +624,7 @@ Status ProcParser::ReadMountInfos(pid_t pid,
   return Status::OK();
 }
 
-StatusOr<absl::flat_hash_set<std::string>> ProcParser::GetMapPaths(pid_t pid) {
+StatusOr<absl::flat_hash_set<std::string>> ProcParser::GetMapPaths(pid_t pid) const {
   static constexpr int kProcMapNumFields = 6;
   absl::flat_hash_set<std::string> map_paths;
 

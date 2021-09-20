@@ -35,6 +35,7 @@ namespace system {
 
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
+using ::testing::MatchesRegex;
 using ::testing::Return;
 using ::testing::ReturnRef;
 using ::testing::UnorderedElementsAre;
@@ -236,6 +237,17 @@ TEST_F(ProcParserTest, GetMapPaths) {
             "/usr/lib/x86_64-linux-gnu/libssl.so.1.1", "/usr/sbin/nginx", "/[aio] (deleted)",
             "[heap]", "[stack]", "[uprobes]", "[vdso]", "[vsyscall]", "[vvar]"));
   }
+}
+
+// Check ProcParser can detect itself.
+TEST(ProcParserGetExePathTest, CheckTestProcess) {
+  // Since bazel prepares test files as symlinks, creating testdata/proc/123/exe symlink would
+  // result into bazel creating another symlink to it. So instead we just use the actual system
+  // config to read the actual exe path of this test process.
+  ProcParser parser(system::Config::GetInstance());
+  const std::string kExpectedPathRegex = ".*/src/common/system/proc_parser_test";
+  ASSERT_OK_AND_ASSIGN(std::filesystem::path proc_exe, parser.GetExePath(getpid()));
+  EXPECT_THAT(proc_exe.string(), MatchesRegex(kExpectedPathRegex));
 }
 
 }  // namespace system
