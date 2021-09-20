@@ -157,7 +157,7 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	if vizier.Status.VizierPhase == v1alpha1.VizierPhaseNone {
+	if vizier.Status.VizierPhase == v1alpha1.VizierPhaseNone && vizier.Status.ReconciliationPhase == v1alpha1.ReconciliationPhaseNone {
 		// We are creating a new vizier instance.
 		err := r.createVizier(ctx, req, &vizier)
 		if err != nil {
