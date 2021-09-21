@@ -179,10 +179,21 @@ def stirling_docker_images_setup():
         repository = "confluentinc/cp-zookeeper",
     )
 
-    # Node image for testing stirling tracing. The digest points to amd64 arch.
+    # Tag: node:15.0
+    # Arch: linux/amd64
+    # This is the oldest version that works correctly with the hard-coded offsets.
     container_pull(
-        name = "node_base_image",
-        digest = "sha256:a6eef60145526d7bbe3217b7cb706f2dbe167d19c25a026884d5325fa358caf8",
+        name = "node_15_0_linux_amd64_image",
+        digest = "sha256:91aa606ed3ea471af8ea2b5bae066c753b3103ee4a902fbfb4a6db0b7f938d97",
+        registry = "index.docker.io",
+        repository = "node",
+    )
+
+    # Tag: node:16.9
+    # Arch: linux/amd64
+    container_pull(
+        name = "node_16_9_linux_amd64_image",
+        digest = "sha256:b0616a801a0f3c17c437c67c49e20c76c8735e205cdc165e56ae4fa867f32af1",
         registry = "index.docker.io",
         repository = "node",
     )

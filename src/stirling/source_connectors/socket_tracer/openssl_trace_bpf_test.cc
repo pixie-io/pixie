@@ -58,7 +58,12 @@ class NginxOpenSSL_1_1_1_ContainerWrapper
   int32_t PID() const { return NginxWorkerPID(); }
 };
 
-class NodeServerContainerWrapper : public ::px::stirling::testing::NodeServerContainer {
+class Node15_0ContainerWrapper : public ::px::stirling::testing::Node15_0Container {
+ public:
+  int32_t PID() const { return process_pid(); }
+};
+
+class Node16_9ContainerWrapper : public ::px::stirling::testing::Node16_9Container {
  public:
   int32_t PID() const { return process_pid(); }
 };
@@ -120,7 +125,7 @@ http::Record GetExpectedHTTPRecord() {
 }
 
 typedef ::testing::Types<NginxOpenSSL_1_1_0_ContainerWrapper, NginxOpenSSL_1_1_1_ContainerWrapper,
-                         NodeServerContainerWrapper>
+                         Node15_0ContainerWrapper, Node16_9ContainerWrapper>
     OpenSSLServerImplementations;
 TYPED_TEST_SUITE(OpenSSLTraceTest, OpenSSLServerImplementations);
 
