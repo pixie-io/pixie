@@ -124,7 +124,7 @@ StatusOr<std::unique_ptr<SourceRegistry>> CreateSourceRegistry(
   for (auto name : source_names) {
     auto iter = kAllSources.find(name);
     if (iter == kAllSources.end()) {
-      return error::InvalidArgument("Source name $0 is not available.");
+      return error::InvalidArgument("Source name $0 is not available.", name);
     }
     PL_RETURN_IF_ERROR(result->Register(iter->first, iter->second));
   }

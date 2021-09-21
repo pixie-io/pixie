@@ -63,8 +63,17 @@ Status BPFTraceWrapper::CompileForMapOutput(std::string_view script,
 }
 
 Status BPFTraceWrapper::Compile(std::string_view script, const std::vector<std::string>& params) {
+  // Because BPFTrace uses global state (related to clear_struct_list()),
+  // multiple simultaneous compiles may not be safe. For now, introduce a lock for safety.
+  // TODO(oazizi): Update BPFTrace repo to avoid use of global state if possible.
+  const std::lock_guard<std::mutex> lock(compilation_mutex_);
+
   int err;
   int success;
+
+  // Reset some BPFTrace global state, which may be dirty because of a previous compile.
+  bpftrace::TracepointFormatParser::clear_struct_list();
+
   bpftrace::Driver driver(bpftrace_);
 
   // Change these values for debug

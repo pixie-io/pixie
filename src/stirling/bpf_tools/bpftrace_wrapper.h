@@ -23,6 +23,7 @@
 #include <bpftrace/src/driver.h>
 
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -117,6 +118,8 @@ class BPFTraceWrapper {
   // BPFTrace on-request compilation class.
   // Required by bpftrace_.
   std::unique_ptr<bpftrace::BpfOrc> bpforc_;
+
+  std::mutex compilation_mutex_;
 
   bool compiled_ = false;
   bool printf_to_table_ = false;
