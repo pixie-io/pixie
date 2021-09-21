@@ -474,6 +474,7 @@ const DataTableImpl = React.memo<DataTableProps>(function DataTable({ table, ...
       data,
       defaultColumn,
       disableSortRemove: true,
+      autoResetSortBy: false,
       initialState: {
         sortBy: firstDataColumn ? [{ id: firstDataColumn.accessor as string }] : [],
       },
