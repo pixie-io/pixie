@@ -21,7 +21,7 @@ This script lists connections made to services that are not within the k8s clust
 import px
 
 
-def outbound_conns(start_time: str):
+def outbound_conns(start_time: str, ip_filter: str):
     df = px.DataFrame(table='conn_stats', start_time=start_time)
 
     df.namespace = df.ctx['namespace']
@@ -39,6 +39,9 @@ def outbound_conns(start_time: str):
     # Filter out localhost.
     df = df[not df.remote_addr == '127.0.0.1']
     df = df[not df.remote_addr == '0.0.0.0']
+
+    # Apply user supplied filter.
+    df = df[px.contains(df.remote_addr, ip_filter)]
 
     df = df.groupby(['pod', 'remote_addr', 'remote_port']).agg(
         conn_open=('conn_open', px.max),
