@@ -126,7 +126,7 @@ func registerRootHealthzChecks(checks ...Checker) http.HandlerFunc {
 			if err := check.Check(); err != nil {
 				// don't include the error since this endpoint is public.  If someone wants more detail
 				// they should have explicit permission to the detailed checks.
-				log.WithField("checker", check.Name()).WithError(err).Error("healthz check failed")
+				log.WithField("checker", check.Name()).WithError(err).Info("healthz check failed")
 				fmt.Fprintf(&verboseOut, "[-]%v FAILED: %v\n", check.Name(), err.Error())
 				failed = true
 			} else {

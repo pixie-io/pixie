@@ -331,9 +331,6 @@ func (s *Bridge) RunStream() {
 			nc, err = nats.Connect(viper.GetString("nats_url"),
 				nats.ClientCert(viper.GetString("client_tls_cert"), viper.GetString("client_tls_key")),
 				nats.RootCAs(viper.GetString("tls_ca_cert")))
-			if err != nil {
-				log.WithError(err).Error("Failed to connect to NATS")
-			}
 			return err
 		}
 

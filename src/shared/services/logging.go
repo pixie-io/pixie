@@ -60,7 +60,7 @@ func HTTPLoggingMiddleware(next http.Handler) http.Handler {
 
 		switch {
 		case lw.Status() != http.StatusOK:
-			log.WithTime(start).WithFields(logFields).Error("HTTP Request")
+			log.WithTime(start).WithFields(logFields).Info("HTTP Request")
 		case r.URL.String() == "/healthz":
 			log.WithTime(start).WithFields(logFields).Trace("HTTP Request")
 		default:

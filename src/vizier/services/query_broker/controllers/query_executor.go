@@ -20,6 +20,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -148,16 +149,24 @@ func (q *QueryExecutorImpl) Run(ctx context.Context, req *vizierpb.ExecuteScript
 // Wait waits for the query to finish or error.
 func (q *QueryExecutorImpl) Wait() error {
 	err := q.eg.Wait()
-	if err != nil && !strings.Contains(err.Error(), "Distributed state does not have a Carnot instance") {
-		// We expect the "Distributed state does not have a Carnot instance..." error when a Vizier is flickering between healthy/unhealthy.
-		// Since it is a common occurrence, we do not want to unnecessarily log it.
-		log.WithField("query_id", q.queryID).
-			WithField("duration", time.Since(q.startTime)).
-			WithError(err).
-			Error("failed to execute query")
-	} else {
-		log.WithField("query_id", q.queryID).WithField("duration", time.Since(q.startTime)).Info("Executed query")
+	if err == nil {
+		return nil
 	}
+	// There are a few common failure cases that may occur naturally during query execution. For example, ctxDeadlineExceeded,
+	// and invalid arguments. In this case, we do not want to unnecessarily log our error state.
+	if strings.Contains(err.Error(), "Distributed state does not have a Carnot instance") {
+		return err
+	}
+	if strings.Contains(err.Error(), "InvalidArgument") {
+		return err
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return err
+	}
+	log.WithField("query_id", q.queryID).
+		WithField("duration", time.Since(q.startTime)).
+		WithError(err).
+		Error("failed to execute query")
 	return err
 }
 
