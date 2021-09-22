@@ -31,6 +31,7 @@
 #include "src/stirling/bpf_tools/macros.h"
 #include "src/stirling/obj_tools/dwarf_tools.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
+#include "src/stirling/source_connectors/socket_tracer/detect_application.h"
 #include "src/stirling/source_connectors/socket_tracer/uprobe_symaddrs.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
@@ -274,6 +275,10 @@ StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(uint32_t pid) {
   PL_ASSIGN_OR_RETURN(std::filesystem::path proc_exe, proc_parser_->GetExePath(pid));
 
   if (proc_exe.empty()) {
+    return 0;
+  }
+
+  if (DetectApplication(proc_exe) != Application::kNode) {
     return 0;
   }
 
