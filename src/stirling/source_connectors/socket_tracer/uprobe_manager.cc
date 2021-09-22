@@ -485,9 +485,7 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
 
     // Avoid going passed this point if not a golang program.
     // The DwarfReader is memory intensive, and the remaining probes are Golang specific.
-    // TODO(oazizi): Consolidate with similar check in dynamic_tracing/autogen.cc.
-    bool is_golang_binary = elf_reader->SymbolAddress(obj_tools::kGoBuildVersionSymbol).has_value();
-    if (!is_golang_binary) {
+    if (!IsGoExecutable(elf_reader.get())) {
       continue;
     }
 

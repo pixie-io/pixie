@@ -64,7 +64,7 @@ void DetectSourceLanguage(obj_tools::ElfReader* elf_reader, obj_tools::DwarfRead
                             .ConsumeValueOr(ir::shared::Language::LANG_UNKNOWN);
   } else {
     // Back-up detection policy looks for certain language-specific symbols
-    if (elf_reader->SymbolAddress(obj_tools::kGoBuildVersionSymbol).has_value()) {
+    if (IsGoExecutable(elf_reader)) {
       detected_language = ir::shared::Language::GOLANG;
     }
 

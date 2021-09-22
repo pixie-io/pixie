@@ -22,6 +22,10 @@ namespace px {
 namespace stirling {
 namespace obj_tools {
 
+// This symbol points to a static string variable that describes the Golang tool-chain version used
+// to build the executable. This symbol is embedded in a Golang executable's data section.
+constexpr std::string_view kGoBuildVersionSymbol = "runtime.buildVersion";
+
 namespace {
 
 // This is defined in src/stirling/bpf_tools/bcc_bpf_intf/go_types.h as well.
@@ -32,6 +36,10 @@ struct gostring {
 };
 
 }  // namespace
+
+bool IsGoExecutable(ElfReader* elf_reader) {
+  return elf_reader->SearchTheOnlySymbol(obj_tools::kGoBuildVersionSymbol).ok();
+}
 
 StatusOr<std::string> ReadBuildVersion(ElfReader* elf_reader) {
   PL_ASSIGN_OR_RETURN(ElfReader::SymbolInfo symbol,

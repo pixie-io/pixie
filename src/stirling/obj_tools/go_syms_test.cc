@@ -36,6 +36,13 @@ TEST(ReadBuildVersionTest, WorkingOnBasicGoBinary) {
   EXPECT_THAT(version, StrEq("go1.16"));
 }
 
+TEST(IsGoExecutableTest, WorkingOnBasicGoBinary) {
+  const std::string kPath = px::testing::BazelBinTestFilePath(
+      "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary");
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
+  EXPECT_TRUE(IsGoExecutable(elf_reader.get()));
+}
+
 }  // namespace obj_tools
 }  // namespace stirling
 }  // namespace px
