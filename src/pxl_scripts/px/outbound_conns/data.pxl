@@ -47,6 +47,7 @@ def outbound_conns(start_time: str, ip_filter: str):
         conn_open=('conn_open', px.max),
         bytes_sent=('bytes_sent', px.max),
         byts_recv=('bytes_recv', px.max),
+        last_activity_time=('time_', px.max),
     )
 
     return df
