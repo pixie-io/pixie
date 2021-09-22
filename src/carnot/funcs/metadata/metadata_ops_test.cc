@@ -58,6 +58,7 @@ class MetadataOpsTest : public ::testing::Test {
     updates_->enqueue(px::metadatapb::testutils::CreateRunningContainerUpdatePB());
     updates_->enqueue(px::metadatapb::testutils::CreateRunningPodUpdatePB());
     updates_->enqueue(px::metadatapb::testutils::CreateRunningServiceUpdatePB());
+    updates_->enqueue(px::metadatapb::testutils::CreateRunningServiceIPUpdatePB());
     updates_->enqueue(px::metadatapb::testutils::CreateTerminatingContainerUpdatePB());
     updates_->enqueue(px::metadatapb::testutils::CreateTerminatingPodUpdatePB());
     updates_->enqueue(px::metadatapb::testutils::CreateTerminatingServiceUpdatePB());
@@ -242,6 +243,21 @@ TEST_F(MetadataOpsTest, service_id_to_service_name_test) {
   auto udf_tester = px::carnot::udf::UDFTester<ServiceIDToServiceNameUDF>(std::move(function_ctx));
   udf_tester.ForInput("3_uid").Expect("pl/running_service");
   udf_tester.ForInput("4_uid").Expect("pl/terminating_service");
+  udf_tester.ForInput("nonexistent").Expect("");
+}
+
+TEST_F(MetadataOpsTest, service_id_to_cluster_ip_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<ServiceIDToClusterIPUDF>(std::move(function_ctx));
+  udf_tester.ForInput("3_uid").Expect("127.0.0.2");
+  udf_tester.ForInput("4_uid").Expect("");
+}
+
+TEST_F(MetadataOpsTest, service_id_to_external_ips_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<ServiceIDToExternalIPsUDF>(std::move(function_ctx));
+  udf_tester.ForInput("3_uid").Expect("[\"127.0.0.1\"]");
+  udf_tester.ForInput("4_uid").Expect("[]");
   udf_tester.ForInput("nonexistent").Expect("");
 }
 
@@ -527,20 +543,22 @@ TEST_F(MetadataOpsTest, num_cpus) {
   EXPECT_LT(num_cpus, 1024);
 }
 
-TEST_F(MetadataOpsTest, pod_ip) {
+TEST_F(MetadataOpsTest, ip_to_pod_id_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
 
-  PodIPToPodIDUDF udf;
+  IPToPodIDUDF udf;
   EXPECT_EQ(udf.Exec(function_ctx.get(), "1.1.1.1"), "1_uid");
   EXPECT_EQ(udf.Exec(function_ctx.get(), "1.2.1.2"), "");
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "127.0.0.2"), "");
 }
 
-TEST_F(MetadataOpsTest, pod_ip_to_service_id_test) {
+TEST_F(MetadataOpsTest, ip_to_service_id_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
-  PodIPToServiceIDUDF udf;
+  IPToServiceIDUDF udf;
   EXPECT_EQ(udf.Exec(function_ctx.get(), "1.1.1.1"), "3_uid");
   EXPECT_EQ(udf.Exec(function_ctx.get(), "1.1.1.10"), "");
   EXPECT_EQ(udf.Exec(function_ctx.get(), "1.2.1.2"), "");
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "127.0.0.2"), "3_uid");
 }
 
 TEST_F(MetadataOpsTest, upid_to_qos) {

@@ -137,6 +137,14 @@ start_timestamp_ns: 7
 pod_ids: "1_uid"
 )";
 
+const char* kRunningServiceIPUpdatePbTxt = R"(
+uid: "3_uid"
+name: "running_service"
+namespace: "pl"
+external_ips: "127.0.0.1"
+cluster_ip: "127.0.0.2"
+)";
+
 const char* kToBeTerminatedServiceUpdatePbTxt = R"(
 uid: "4_uid"
 name: "terminating_service"
@@ -220,6 +228,15 @@ std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateRunningServic
   auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
   auto update_proto =
       absl::Substitute(kResourceUpdateTmpl, "service_update", kRunningServiceUpdatePbTxt);
+  CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
+      << "Failed to parse proto";
+  return update;
+}
+
+std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateRunningServiceIPUpdatePB() {
+  auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
+  auto update_proto =
+      absl::Substitute(kResourceUpdateTmpl, "service_update", kRunningServiceIPUpdatePbTxt);
   CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
       << "Failed to parse proto";
   return update;

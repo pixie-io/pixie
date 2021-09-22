@@ -41,7 +41,7 @@ void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<ContainerNameToContainerStopTimeUDF>("container_name_to_stop_time");
   registry->RegisterOrDie<HasServiceIDUDF>("has_service_id");
   registry->RegisterOrDie<HasServiceNameUDF>("has_service_name");
-  registry->RegisterOrDie<PodIPToPodIDUDF>("ip_to_pod_id");
+  registry->RegisterOrDie<IPToPodIDUDF>("ip_to_pod_id");
   registry->RegisterOrDie<PodIDToPodNameUDF>("pod_id_to_pod_name");
   registry->RegisterOrDie<PodIDToNamespaceUDF>("pod_id_to_namespace");
   registry->RegisterOrDie<PodIDToNodeNameUDF>("pod_id_to_node_name");
@@ -49,7 +49,7 @@ void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<PodIDToPodStopTimeUDF>("pod_id_to_stop_time");
   registry->RegisterOrDie<PodIDToServiceNameUDF>("pod_id_to_service_name");
   registry->RegisterOrDie<PodIDToServiceIDUDF>("pod_id_to_service_id");
-  registry->RegisterOrDie<PodIPToServiceIDUDF>("ip_to_service_id");
+  registry->RegisterOrDie<IPToServiceIDUDF>("ip_to_service_id");
   registry->RegisterOrDie<PodNameToNamespaceUDF>("pod_name_to_namespace");
   registry->RegisterOrDie<PodNameToPodIDUDF>("pod_name_to_pod_id");
   registry->RegisterOrDie<PodNameToPodIPUDF>("pod_name_to_pod_ip");
@@ -58,6 +58,8 @@ void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<PodNameToPodStartTimeUDF>("pod_name_to_start_time");
   registry->RegisterOrDie<PodNameToPodStopTimeUDF>("pod_name_to_stop_time");
   registry->RegisterOrDie<PodNameToPodStatusUDF>("pod_name_to_status");
+  registry->RegisterOrDie<ServiceIDToClusterIPUDF>("service_id_to_cluster_ip");
+  registry->RegisterOrDie<ServiceIDToExternalIPsUDF>("service_id_to_external_ips");
   registry->RegisterOrDie<ServiceIDToServiceNameUDF>("service_id_to_service_name");
   registry->RegisterOrDie<ServiceNameToServiceIDUDF>("service_name_to_service_id");
   registry->RegisterOrDie<ServiceNameToNamespaceUDF>("service_name_to_namespace");

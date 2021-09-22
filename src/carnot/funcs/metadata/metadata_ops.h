@@ -294,19 +294,25 @@ inline const px::md::PodInfo* UPIDtoPod(const px::md::AgentMetadataState* md,
   return pod_info;
 }
 
+// Stringifies a vector, including 0 and 1 element inputs.
+inline types::StringValue VectorToStringArray(const std::vector<std::string>& vec) {
+  rapidjson::StringBuffer s;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(s);
+
+  writer.StartArray();
+  for (const auto& str : vec) {
+    writer.String(str.c_str());
+  }
+  writer.EndArray();
+  return s.GetString();
+}
+
+// Stringifies a vector, but returns the input only as a vector for size>=2.
 inline types::StringValue StringifyVector(const std::vector<std::string>& vec) {
   if (vec.size() == 1) {
     return std::string(vec[0]);
   } else if (vec.size() > 1) {
-    rapidjson::StringBuffer s;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(s);
-
-    writer.StartArray();
-    for (const auto& str : vec) {
-      writer.String(str.c_str());
-    }
-    writer.EndArray();
-    return s.GetString();
+    return VectorToStringArray(vec);
   }
   return "";
 }
@@ -419,13 +425,61 @@ class ServiceIDToServiceNameUDF : public ScalarUDF {
   }
 
   static udf::ScalarUDFDocBuilder Doc() {
-    return udf::ScalarUDFDocBuilder("Convert the kubernetes service ID to service name.")
+    return udf::ScalarUDFDocBuilder("Convert the Kubernetes service ID to service name.")
         .Details(
-            "Converts the kubernetes service ID to the name of the service. If the ID "
+            "Converts the Kubernetes service ID to the name of the service. If the ID "
             "is not found in our mapping, then returns an empty string.")
         .Example("df.service = px.service_id_to_service_name(df.service_id)")
         .Arg("service_id", "The service ID to get the service name for.")
         .Returns("The service name or an empty string if service_id not found.");
+  }
+};
+
+class ServiceIDToClusterIPUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue service_id) {
+    auto md = GetMetadataState(ctx);
+    const auto* service_info = md->k8s_metadata_state().ServiceInfoByID(service_id);
+    if (service_info != nullptr) {
+      return service_info->cluster_ip();
+    }
+    return "";
+  }
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {
+        udf::ExplicitRule::Create<ServiceIDToClusterIPUDF>(types::ST_IP_ADDRESS, {types::ST_NONE})};
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Convert the Kubernetes service ID to its cluster IP.")
+        .Details(
+            "Converts the Kubernetes service ID to the cluster IP of the service. If either "
+            "the service ID or IP is not found in our mapping, then returns an empty string.")
+        .Example("df.cluster_ip = px.service_id_to_cluster_ip(df.service_id)")
+        .Arg("service_id", "The service ID to get the service name for.")
+        .Returns("The cluster IP or an empty string.");
+  }
+};
+
+class ServiceIDToExternalIPsUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue service_id) {
+    auto md = GetMetadataState(ctx);
+    const auto* service_info = md->k8s_metadata_state().ServiceInfoByID(service_id);
+    if (service_info != nullptr) {
+      return VectorToStringArray(service_info->external_ips());
+    }
+    return "";
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder(
+               "Convert the Kubernetes service ID to its external IP addresses.")
+        .Details(
+            "Converts the Kubernetes service ID to the external IPs of the service as an array. "
+            "If the the service ID is not found in our mapping, then returns an empty string. "
+            "If the service ID is found but has no external IPs, then returns an empty array. ")
+        .Example("df.external_ips = px.service_id_to_external_ips(df.service_id)")
+        .Arg("service_id", "The service ID to get the service name for.")
+        .Returns("The external IPs or an empty string.");
   }
 };
 
@@ -1408,7 +1462,7 @@ class HostNumCPUsUDF : public ScalarUDF {
   }
 };
 
-class PodIPToPodIDUDF : public ScalarUDF {
+class IPToPodIDUDF : public ScalarUDF {
  public:
   /**
    * @brief Gets the pod id of pod with given pod_ip
@@ -1441,11 +1495,17 @@ class PodIPToPodIDUDF : public ScalarUDF {
   static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_KELVIN; }
 };
 
-class PodIPToServiceIDUDF : public ScalarUDF {
+class IPToServiceIDUDF : public ScalarUDF {
  public:
-  StringValue Exec(FunctionContext* ctx, StringValue pod_ip) {
+  StringValue Exec(FunctionContext* ctx, StringValue ip) {
     auto md = GetMetadataState(ctx);
-    auto pod_id = md->k8s_metadata_state().PodIDByIP(pod_ip);
+    // First, check the list of Service Cluster IPs for this IP.
+    auto service_id = md->k8s_metadata_state().ServiceIDByClusterIP(ip);
+    if (service_id != "") {
+      return service_id;
+    }
+    // Next, check to see if the IP is in the list of of Pod IPs.
+    auto pod_id = md->k8s_metadata_state().PodIDByIP(ip);
     if (pod_id == "") {
       return "";
     }
@@ -1454,13 +1514,13 @@ class PodIPToServiceIDUDF : public ScalarUDF {
   }
 
   static udf::ScalarUDFDocBuilder Doc() {
-    return udf::ScalarUDFDocBuilder("Get the service ID for a given pod IP.")
+    return udf::ScalarUDFDocBuilder("Get the service ID for a given IP.")
         .Details(
             "Converts the IP address into a Kubernetes service ID for the service "
-            "associated to the pod. If there is no service associated with the given IP address, "
+            "associated to the IP. If there is no service associated with the given IP address, "
             "return an empty string.")
         .Example("df.service_id = px.ip_to_service_id(df.remote_addr)")
-        .Arg("pod_ip", "The IP of a pod to convert.")
+        .Arg("ip", "The IP to convert.")
         .Returns("The service id if it exists, otherwise an empty string.");
   }
 
