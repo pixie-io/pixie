@@ -263,7 +263,7 @@ StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::SearchSymbols(
 StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::ListFuncSymbols(
     std::string_view search_symbol, SymbolMatchType match_type) {
   PL_ASSIGN_OR_RETURN(std::vector<ElfReader::SymbolInfo> symbol_infos,
-                      SearchSymbols(search_symbol, match_type, ELFIO::STT_FUNC));
+                      SearchSymbols(search_symbol, match_type, /*symbol_type*/ ELFIO::STT_FUNC));
 
   absl::flat_hash_set<uint64_t> symbol_addrs;
   for (auto& symbol_info : symbol_infos) {
@@ -531,9 +531,9 @@ StatusOr<absl::flat_hash_map<std::string, std::vector<IntfImplTypeInfo>>> Extrac
   // All itable objects in the symbols are prefixed with this string.
   const std::string_view kITablePrefix("go.itab.");
 
-  PL_ASSIGN_OR_RETURN(
-      std::vector<ElfReader::SymbolInfo> itable_symbols,
-      elf_reader->SearchSymbols(kITablePrefix, SymbolMatchType::kPrefix, ELFIO::STT_OBJECT));
+  PL_ASSIGN_OR_RETURN(std::vector<ElfReader::SymbolInfo> itable_symbols,
+                      elf_reader->SearchSymbols(kITablePrefix, SymbolMatchType::kPrefix,
+                                                /*symbol_type*/ ELFIO::STT_OBJECT));
 
   for (const auto& sym : itable_symbols) {
     // Expected format is:

@@ -66,7 +66,7 @@ TEST(ElfReaderTest, NonExistentPath) {
 
 auto SymbolNameIs(const std::string& n) { return Field(&ElfReader::SymbolInfo::name, n); }
 
-TEST(ElfReaderTest, ListSymbolsAnyMatch) {
+TEST(ElfReaderTest, ListFuncSymbolsAnyMatch) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
                        ElfReader::Create(kDummyExeFixture.Path()));
 
@@ -78,7 +78,7 @@ TEST(ElfReaderTest, ListSymbolsAnyMatch) {
                      ElementsAre(SymbolNameIs("CanYouFindThis")));
 }
 
-TEST(ElfReaderTest, ListSymbolsExactMatch) {
+TEST(ElfReaderTest, ListFuncSymbolsExactMatch) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
                        ElfReader::Create(kDummyExeFixture.Path()));
 
@@ -88,7 +88,7 @@ TEST(ElfReaderTest, ListSymbolsExactMatch) {
   EXPECT_OK_AND_THAT(elf_reader->ListFuncSymbols("FindThis", SymbolMatchType::kExact), IsEmpty());
 }
 
-TEST(ElfReaderTest, ListSymbolsPrefixMatch) {
+TEST(ElfReaderTest, ListFuncSymbolsPrefixMatch) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
                        ElfReader::Create(kDummyExeFixture.Path()));
 
@@ -99,7 +99,7 @@ TEST(ElfReaderTest, ListSymbolsPrefixMatch) {
                      ElementsAre(SymbolNameIs("CanYouFindThis")));
 }
 
-TEST(ElfReaderTest, ListSymbolsSuffixMatch) {
+TEST(ElfReaderTest, ListFuncSymbolsSuffixMatch) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
                        ElfReader::Create(kDummyExeFixture.Path()));
 
