@@ -47,7 +47,7 @@ inline constexpr char kTransferEncoding[] = "Transfer-Encoding";
 inline constexpr char kUpgrade[] = "Upgrade";
 
 struct Message : public FrameBase {
-  MessageType type = MessageType::kUnknown;
+  message_type_t type = message_type_t::kUnknown;
 
   int minor_version = -1;
   HeadersMap headers = {};

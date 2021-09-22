@@ -32,8 +32,8 @@ namespace stirling {
 namespace protocols {
 namespace mysql {
 
-ParseState ParseFrame(MessageType type, std::string_view* buf, Packet* result) {
-  if (type != MessageType::kRequest && type != MessageType::kResponse) {
+ParseState ParseFrame(message_type_t type, std::string_view* buf, Packet* result) {
+  if (type != message_type_t::kRequest && type != message_type_t::kResponse) {
     return ParseState::kInvalid;
   }
 
@@ -47,7 +47,7 @@ ParseState ParseFrame(MessageType type, std::string_view* buf, Packet* result) {
 
   // TODO(oazizi): Is pre-checking requests here a good idea? Somewhat out of place.
   // Better fit for stitcher (when analyzing structure of packet bodies).
-  if (type == MessageType::kRequest) {
+  if (type == message_type_t::kRequest) {
     if (buf->size() < kPacketHeaderLength + 1) {
       return ParseState::kInvalid;
     }
@@ -74,12 +74,12 @@ ParseState ParseFrame(MessageType type, std::string_view* buf, Packet* result) {
   return ParseState::kSuccess;
 }
 
-size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_pos) {
+size_t FindFrameBoundary(message_type_t type, std::string_view buf, size_t start_pos) {
   if (buf.length() < mysql::kPacketHeaderLength) {
     return std::string::npos;
   }
 
-  if (type == MessageType::kResponse) {
+  if (type == message_type_t::kResponse) {
     // No real search implemented for responses.
     // TODO(oazizi): Is there something we can implement here?
     return std::string::npos;
@@ -117,13 +117,13 @@ size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_po
 }  // namespace mysql
 
 template <>
-ParseState ParseFrame(MessageType type, std::string_view* buf, mysql::Packet* result,
+ParseState ParseFrame(message_type_t type, std::string_view* buf, mysql::Packet* result,
                       mysql::StateWrapper* /*state*/) {
   return mysql::ParseFrame(type, buf, result);
 }
 
 template <>
-size_t FindFrameBoundary<mysql::Packet>(MessageType type, std::string_view buf, size_t start_pos,
+size_t FindFrameBoundary<mysql::Packet>(message_type_t type, std::string_view buf, size_t start_pos,
                                         mysql::StateWrapper* /*state*/) {
   return mysql::FindFrameBoundary(type, buf, start_pos);
 }

@@ -66,8 +66,8 @@ class ConnStats {
   };
 
   struct Stats {
-    TrafficProtocol protocol = kProtocolUnknown;
-    EndpointRole role = kRoleUnknown;
+    traffic_protocol_t protocol = kProtocolUnknown;
+    endpoint_role_t role = kRoleUnknown;
     SockAddrFamily addr_family = SockAddrFamily::kUnspecified;
     bool ssl = false;
 

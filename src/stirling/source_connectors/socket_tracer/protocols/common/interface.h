@@ -88,7 +88,7 @@ struct NoState {
  * or std::string::npos if no such frame start was found.
  */
 template <typename TFrameType, typename TStateType = NoState>
-size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_pos,
+size_t FindFrameBoundary(message_type_t type, std::string_view buf, size_t start_pos,
                          TStateType* state = nullptr);
 
 /**
@@ -103,7 +103,7 @@ size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_po
  * @return ParseState Indicates whether the parsing succeeded or not.
  */
 template <typename TFrameType, typename TStateType = NoState>
-ParseState ParseFrame(MessageType type, std::string_view* buf, TFrameType* frame,
+ParseState ParseFrame(message_type_t type, std::string_view* buf, TFrameType* frame,
                       TStateType* state = nullptr);
 
 /**

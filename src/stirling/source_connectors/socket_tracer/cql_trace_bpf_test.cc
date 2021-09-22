@@ -426,7 +426,7 @@ TEST_F(CQLTraceTest, cqlsh_capture) {
 
       VLOG(1) << absl::Substitute("$0 $1 $2 $3", pid, req_op, req_body, resp_body);
 
-      EXPECT_EQ(trace_role, static_cast<int>(EndpointRole::kRoleClient));
+      EXPECT_EQ(trace_role, static_cast<int>(endpoint_role_t::kRoleClient));
     }
 
     std::vector<cass::Record> records = ToRecordVector(record_batch, target_record_indices);
@@ -455,7 +455,7 @@ TEST_F(CQLTraceTest, cqlsh_capture) {
 
       VLOG(1) << absl::Substitute("$0 $1 $2 $3", pid, req_op, req_body, resp_body);
 
-      EXPECT_EQ(trace_role, static_cast<int>(EndpointRole::kRoleServer));
+      EXPECT_EQ(trace_role, static_cast<int>(endpoint_role_t::kRoleServer));
     }
 
     std::vector<cass::Record> records = ToRecordVector(record_batch, target_record_indices);

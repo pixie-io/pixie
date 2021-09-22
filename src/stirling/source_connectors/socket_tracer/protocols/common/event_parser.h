@@ -95,7 +95,7 @@ struct ParseResult {
  * @return ParseResult with locations where parseable frames were found in the source buffer.
  */
 template <typename TFrameType, typename TStateType = NoState>
-ParseResult ParseFrames(MessageType type, const DataStreamBuffer& data_stream_buffer,
+ParseResult ParseFrames(message_type_t type, const DataStreamBuffer& data_stream_buffer,
                         std::deque<TFrameType>* frames, bool resync = false,
                         TStateType* state = nullptr) {
   std::string_view buf = data_stream_buffer.Head();
@@ -157,8 +157,8 @@ ParseResult ParseFrames(MessageType type, const DataStreamBuffer& data_stream_bu
  */
 // TODO(oazizi): Convert tests to use ParseFrames() instead of ParseFramesLoop().
 template <typename TFrameType, typename TStateType = NoState>
-ParseResult ParseFramesLoop(MessageType type, std::string_view buf, std::deque<TFrameType>* frames,
-                            TStateType* state = nullptr) {
+ParseResult ParseFramesLoop(message_type_t type, std::string_view buf,
+                            std::deque<TFrameType>* frames, TStateType* state = nullptr) {
   std::vector<StartEndPos> frame_positions;
   const size_t buf_size = buf.size();
   ParseState s = ParseState::kSuccess;

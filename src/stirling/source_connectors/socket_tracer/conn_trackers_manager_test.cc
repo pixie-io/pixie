@@ -48,7 +48,7 @@ class ConnTrackersManagerTest : public ::testing::Test {
     }
   }
 
-  void TrackerEvent(struct conn_id_t conn_id, TrafficProtocol protocol) {
+  void TrackerEvent(struct conn_id_t conn_id, traffic_protocol_t protocol) {
     VLOG(1) << "TrackerEvent";
     ConnTracker& tracker = trackers_mgr_.GetOrCreateConnTracker(conn_id);
     tracker.SetProtocol(protocol, "for testing");
@@ -67,7 +67,7 @@ TEST_F(ConnTrackersManagerTest, Fuzz) {
   std::uniform_int_distribution<int> protocol_dist(0, kNumProtocols - 1);
 
   for (int i = 0; i < kIters; ++i) {
-    auto protocol = magic_enum::enum_cast<TrafficProtocol>(protocol_dist(rng_));
+    auto protocol = magic_enum::enum_cast<traffic_protocol_t>(protocol_dist(rng_));
     CHECK(protocol.has_value());
 
     // Randomly pick an action to take.

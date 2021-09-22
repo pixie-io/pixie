@@ -79,7 +79,7 @@ bool IsSyncRequired(int64_t stuck_count) {
 // ProcessBytesToFrames() will invoke a call to ParseFrames() with a stream recovery argument when
 // necessary.
 template <typename TFrameType, typename TStateType = protocols::NoState>
-void DataStream::ProcessBytesToFrames(MessageType type, TStateType* state) {
+void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
   auto& typed_messages = Frames<TFrameType>();
 
   // TODO(oazizi): Convert to ECHECK once we have more confidence.
@@ -181,24 +181,24 @@ void DataStream::ProcessBytesToFrames(MessageType type, TStateType* state) {
 
 // PROTOCOL_LIST: Requires update on new protocols.
 template void DataStream::ProcessBytesToFrames<protocols::http::Message, protocols::NoState>(
-    MessageType type, protocols::NoState* state);
+    message_type_t type, protocols::NoState* state);
 template void
 DataStream::ProcessBytesToFrames<protocols::mysql::Packet, protocols::mysql::StateWrapper>(
-    MessageType type, protocols::mysql::StateWrapper* state);
+    message_type_t type, protocols::mysql::StateWrapper* state);
 template void DataStream::ProcessBytesToFrames<protocols::cass::Frame, protocols::NoState>(
-    MessageType type, protocols::NoState* state);
+    message_type_t type, protocols::NoState* state);
 template void
 DataStream::ProcessBytesToFrames<protocols::pgsql::RegularMessage, protocols::pgsql::StateWrapper>(
-    MessageType type, protocols::pgsql::StateWrapper* state);
+    message_type_t type, protocols::pgsql::StateWrapper* state);
 template void DataStream::ProcessBytesToFrames<protocols::dns::Frame, protocols::NoState>(
-    MessageType type, protocols::NoState* state);
+    message_type_t type, protocols::NoState* state);
 template void DataStream::ProcessBytesToFrames<protocols::redis::Message, protocols::NoState>(
-    MessageType type, protocols::NoState* state);
+    message_type_t type, protocols::NoState* state);
 template void
 DataStream::ProcessBytesToFrames<protocols::kafka::Packet, protocols::kafka::StateWrapper>(
-    MessageType type, protocols::kafka::StateWrapper* state);
+    message_type_t type, protocols::kafka::StateWrapper* state);
 template void DataStream::ProcessBytesToFrames<protocols::nats::Message, protocols::NoState>(
-    MessageType type, protocols::NoState* state);
+    message_type_t type, protocols::NoState* state);
 
 void DataStream::Reset() {
   data_buffer_.Reset();

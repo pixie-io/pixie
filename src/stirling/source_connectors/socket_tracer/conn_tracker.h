@@ -303,8 +303,8 @@ class ConnTracker : NotCopyMoveable {
   }
 
   const conn_id_t& conn_id() const { return conn_id_; }
-  TrafficProtocol protocol() const { return protocol_; }
-  EndpointRole role() const { return role_; }
+  traffic_protocol_t protocol() const { return protocol_; }
+  endpoint_role_t role() const { return role_; }
   bool ssl() const { return ssl_; }
   ConnStatsTracker& conn_stats() { return conn_stats_; }
 
@@ -548,13 +548,13 @@ class ConnTracker : NotCopyMoveable {
   void SetRemoteAddr(const union sockaddr_t addr, std::string_view reason);
 
   // Returns false if the protocol change is disallowed.
-  bool SetProtocol(TrafficProtocol protocol, std::string_view reason);
+  bool SetProtocol(traffic_protocol_t protocol, std::string_view reason);
 
   // Returns false if the protocol change is disallowed.
   bool SetSSL(bool ssl, std::string_view reason);
 
   // Returns true if the state was changed.
-  bool SetRole(EndpointRole role, std::string_view reason);
+  bool SetRole(endpoint_role_t role, std::string_view reason);
 
   void SetDebugTrace(int level) { debug_trace_level_ = level; }
 
@@ -604,12 +604,12 @@ class ConnTracker : NotCopyMoveable {
 
     DataStream* req_data_ptr = req_data();
     DCHECK_NE(req_data_ptr, nullptr);
-    req_data_ptr->template ProcessBytesToFrames<TFrameType, TStateType>(MessageType::kRequest,
+    req_data_ptr->template ProcessBytesToFrames<TFrameType, TStateType>(message_type_t::kRequest,
                                                                         state_ptr);
 
     DataStream* resp_data_ptr = resp_data();
     DCHECK_NE(resp_data_ptr, nullptr);
-    resp_data_ptr->template ProcessBytesToFrames<TFrameType, TStateType>(MessageType::kResponse,
+    resp_data_ptr->template ProcessBytesToFrames<TFrameType, TStateType>(message_type_t::kResponse,
                                                                          state_ptr);
   }
 
@@ -627,8 +627,8 @@ class ConnTracker : NotCopyMoveable {
 
   struct conn_id_t conn_id_ = {};
 
-  TrafficProtocol protocol_ = kProtocolUnknown;
-  EndpointRole role_ = kRoleUnknown;
+  traffic_protocol_t protocol_ = kProtocolUnknown;
+  endpoint_role_t role_ = kRoleUnknown;
   bool ssl_ = false;
   SocketOpen open_info_;
   SocketClose close_info_;

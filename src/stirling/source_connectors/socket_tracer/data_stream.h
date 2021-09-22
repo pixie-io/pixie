@@ -59,7 +59,7 @@ class DataStream : NotCopyMoveable {
    * @return deque of parsed messages.
    */
   template <typename TFrameType, typename TStateType>
-  void ProcessBytesToFrames(MessageType type, TStateType* state);
+  void ProcessBytesToFrames(message_type_t type, TStateType* state);
 
   /**
    * Returns the current set of parsed frames.

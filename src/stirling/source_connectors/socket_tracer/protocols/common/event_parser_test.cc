@@ -46,7 +46,7 @@ struct TestFrame : public FrameBase {
 };
 
 template <>
-ParseState ParseFrame(MessageType /* type */, std::string_view* buf, TestFrame* frame,
+ParseState ParseFrame(message_type_t /* type */, std::string_view* buf, TestFrame* frame,
                       NoState* /*state*/) {
   size_t pos = buf->find(",");
   if (pos == buf->npos) {
@@ -59,8 +59,8 @@ ParseState ParseFrame(MessageType /* type */, std::string_view* buf, TestFrame* 
 }
 
 template <>
-size_t FindFrameBoundary<TestFrame>(MessageType /* type */, std::string_view buf, size_t start_pos,
-                                    NoState* /*state*/) {
+size_t FindFrameBoundary<TestFrame>(message_type_t /* type */, std::string_view buf,
+                                    size_t start_pos, NoState* /*state*/) {
   size_t pos = buf.substr(start_pos).find(",");
   return (pos == buf.npos) ? start_pos : pos;
 }
@@ -84,7 +84,7 @@ TEST_F(EventParserTest, BasicProtocolParsing) {
   std::vector<SocketDataEvent> events = CreateEvents(event_messages);
 
   AddEvents(events);
-  ParseResult res = ParseFrames(MessageType::kRequest, data_buffer_, &word_frames);
+  ParseResult res = ParseFrames(message_type_t::kRequest, data_buffer_, &word_frames);
 
   EXPECT_EQ(ParseState::kSuccess, res.state);
   EXPECT_THAT(res.frame_positions,

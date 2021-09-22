@@ -107,9 +107,9 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Updates control map value for protocol, which specifies which role(s) to trace for the given
   // protocol's traffic.
   //
-  // Role_mask a bit mask, and represents the EndpointRole roles that are allowed to transfer
+  // Role_mask a bit mask, and represents the endpoint_role_t roles that are allowed to transfer
   // data from inside BPF to user-space.
-  Status UpdateBPFProtocolTraceRole(TrafficProtocol protocol, uint64_t role_mask);
+  Status UpdateBPFProtocolTraceRole(traffic_protocol_t protocol, uint64_t role_mask);
   Status TestOnlySetTargetPID(int64_t pid);
   Status DisableSelfTracing();
 
@@ -288,7 +288,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
     // could be unified.
     bool enabled = false;
     uint32_t table_num = 0;
-    std::vector<EndpointRole> trace_roles;
+    std::vector<endpoint_role_t> trace_roles;
     std::function<void(SocketTraceConnector&, ConnectorContext*, ConnTracker*, DataTable*)>
         transfer_fn = nullptr;
   };

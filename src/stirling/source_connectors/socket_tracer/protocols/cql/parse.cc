@@ -39,8 +39,8 @@ namespace cass {
 
 // For how to parse frames, see the Cassandra spec:
 // https://git-wip-us.apache.org/repos/asf?p=cassandra.git;a=blob_plain;f=doc/native_protocol_v3.spec
-ParseState ParseFrame(MessageType type, std::string_view* buf, Frame* result) {
-  DCHECK(type == MessageType::kRequest || type == MessageType::kResponse);
+ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* result) {
+  DCHECK(type == message_type_t::kRequest || type == message_type_t::kResponse);
 
   if (buf->size() < kFrameHeaderLength) {
     return ParseState::kNeedsMoreData;
@@ -84,13 +84,13 @@ ParseState ParseFrame(MessageType type, std::string_view* buf, Frame* result) {
 }  // namespace cass
 
 template <>
-ParseState ParseFrame(MessageType type, std::string_view* buf, cass::Frame* result,
+ParseState ParseFrame(message_type_t type, std::string_view* buf, cass::Frame* result,
                       NoState* /*state*/) {
   return cass::ParseFrame(type, buf, result);
 }
 
 template <>
-size_t FindFrameBoundary<cass::Frame>(MessageType /*type*/, std::string_view /*buf*/,
+size_t FindFrameBoundary<cass::Frame>(message_type_t /*type*/, std::string_view /*buf*/,
                                       size_t /*start_pos*/, NoState* /*state*/) {
   // Not implemented.
   return std::string::npos;

@@ -56,8 +56,9 @@ void PreProcessMessage(Message* message) {
   }
 
   // Rule: Exclude anything that doesn't match the filter, if filter is active.
-  if (message->type == MessageType::kResponse && (!kHTTPResponseHeaderFilter.inclusions.empty() ||
-                                                  !kHTTPResponseHeaderFilter.exclusions.empty())) {
+  if (message->type == message_type_t::kResponse &&
+      (!kHTTPResponseHeaderFilter.inclusions.empty() ||
+       !kHTTPResponseHeaderFilter.exclusions.empty())) {
     if (!MatchesHTTPHeaders(message->headers, kHTTPResponseHeaderFilter)) {
       message->body = "<removed: non-text content-type>";
       return;

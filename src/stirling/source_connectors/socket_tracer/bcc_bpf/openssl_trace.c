@@ -42,7 +42,7 @@ BPF_HASH(openssl_symaddrs_map, uint32_t, struct openssl_symaddrs_t);
  ***********************************************************/
 
 static __inline void process_openssl_data(struct pt_regs* ctx, uint64_t id,
-                                          const enum TrafficDirection direction,
+                                          const enum traffic_direction_t direction,
                                           const struct data_args_t* args) {
   // Do not change bytes_count to 'ssize_t' or 'long'.
   // Using a 64b data type for bytes_count causes negative values,

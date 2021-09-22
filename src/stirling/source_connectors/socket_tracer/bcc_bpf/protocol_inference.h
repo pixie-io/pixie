@@ -31,7 +31,7 @@
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/common.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.h"
 
-static __inline enum MessageType infer_http_message(const char* buf, size_t count) {
+static __inline enum message_type_t infer_http_message(const char* buf, size_t count) {
   // Smallest HTTP response is 17 characters:
   // HTTP/1.1 200 OK\r\n
   // Smallest HTTP response is 16 characters:
@@ -76,7 +76,7 @@ static __inline enum MessageType infer_http_message(const char* buf, size_t coun
 //      .                                       .
 //      .                                       .
 //      +----------------------------------------
-static __inline enum MessageType infer_cql_message(const char* buf, size_t count) {
+static __inline enum message_type_t infer_cql_message(const char* buf, size_t count) {
   static const uint8_t kError = 0x00;
   static const uint8_t kStartup = 0x01;
   static const uint8_t kReady = 0x02;
@@ -147,7 +147,7 @@ static __inline enum MessageType infer_cql_message(const char* buf, size_t count
   }
 }
 
-static __inline enum MessageType infer_mongo_message(const char* buf, size_t count) {
+static __inline enum message_type_t infer_mongo_message(const char* buf, size_t count) {
   // Reference:
   // https://docs.mongodb.com/manual/reference/mongodb-wire-protocol/#std-label-wp-request-opcodes.
   // Note: Response side inference for Mongo is not robust, and is not attempted to avoid
@@ -198,7 +198,7 @@ static __inline enum MessageType infer_mongo_message(const char* buf, size_t cou
 // TODO(yzhao): This is for initial development use. Later we need to combine with more inference
 // code, as the startup message only appears at the beginning of the exchanges between PostgreSQL
 // client and server.
-static __inline enum MessageType infer_pgsql_startup_message(const char* buf, size_t count) {
+static __inline enum message_type_t infer_pgsql_startup_message(const char* buf, size_t count) {
   // Length field: int32, protocol version field: int32, "user" string, 4 bytes.
   const int kMinMsgLen = 4 + 4 + 4;
   if (count < kMinMsgLen) {
@@ -229,7 +229,7 @@ static __inline enum MessageType infer_pgsql_startup_message(const char* buf, si
 }
 
 // Regular message format: | byte tag | int32_t len | string payload |
-static __inline enum MessageType infer_pgsql_query_message(const char* buf, size_t count) {
+static __inline enum message_type_t infer_pgsql_query_message(const char* buf, size_t count) {
   const uint8_t kTagQ = 'Q';
   if (*buf != kTagQ) {
     return kUnknown;
@@ -257,7 +257,7 @@ static __inline enum MessageType infer_pgsql_query_message(const char* buf, size
 // suffix of a query response, so it's difficult to capture. Research more to see if we can detect
 // this message.
 
-static __inline enum MessageType infer_pgsql_regular_message(const char* buf, size_t count) {
+static __inline enum message_type_t infer_pgsql_regular_message(const char* buf, size_t count) {
   const int kMinMsgLen = 1 + sizeof(int32_t);
   if (count < kMinMsgLen) {
     return kUnknown;
@@ -265,8 +265,8 @@ static __inline enum MessageType infer_pgsql_regular_message(const char* buf, si
   return infer_pgsql_query_message(buf, count);
 }
 
-static __inline enum MessageType infer_pgsql_message(const char* buf, size_t count) {
-  enum MessageType type = infer_pgsql_startup_message(buf, count);
+static __inline enum message_type_t infer_pgsql_message(const char* buf, size_t count) {
+  enum message_type_t type = infer_pgsql_startup_message(buf, count);
   if (type != kUnknown) {
     return type;
   }
@@ -284,8 +284,8 @@ static __inline enum MessageType infer_pgsql_message(const char* buf, size_t cou
 //      .                                       .
 //      +----------------------------------------
 // TODO(oazizi/yzhao): This produces too many false positives. Add stronger protocol detection.
-static __inline enum MessageType infer_mysql_message(const char* buf, size_t count,
-                                                     struct conn_info_t* conn_info) {
+static __inline enum message_type_t infer_mysql_message(const char* buf, size_t count,
+                                                        struct conn_info_t* conn_info) {
   static const uint8_t kComQuery = 0x03;
   static const uint8_t kComConnect = 0x0b;
   static const uint8_t kComStmtPrepare = 0x16;
@@ -347,7 +347,7 @@ static __inline enum MessageType infer_mysql_message(const char* buf, size_t cou
 //     request_api_key => INT16
 //     request_api_version => INT16
 //     correlation_id => INT32
-static __inline enum MessageType infer_kafka_request(const char* buf) {
+static __inline enum message_type_t infer_kafka_request(const char* buf) {
   // API is Kafka's terminology for opcode.
   static const int kNumAPIs = 62;
   static const int kMaxAPIVersion = 12;
@@ -369,8 +369,8 @@ static __inline enum MessageType infer_kafka_request(const char* buf) {
   return kRequest;
 }
 
-static __inline enum MessageType infer_kafka_message(const char* buf, size_t count,
-                                                     struct conn_info_t* conn_info) {
+static __inline enum message_type_t infer_kafka_message(const char* buf, size_t count,
+                                                        struct conn_info_t* conn_info) {
   // Second statement checks whether suspected header matches the length of current packet.
   // This shouldn't confuse with MySQL because MySQL uses little endian, and Kafka uses big endian.
   bool use_prev_buf =
@@ -397,7 +397,7 @@ static __inline enum MessageType infer_kafka_message(const char* buf, size_t cou
   return infer_kafka_request(request_buf);
 }
 
-static __inline enum MessageType infer_dns_message(const char* buf, size_t count) {
+static __inline enum message_type_t infer_dns_message(const char* buf, size_t count) {
   const int kDNSHeaderSize = 12;
 
   // Use the maximum *guaranteed* UDP packet size as the max DNS message size.
@@ -485,7 +485,7 @@ static __inline bool is_redis_message(const char* buf, size_t count) {
 //
 // In case of bpf instruction count limit becomes a problem, we can drop CONNECT and INFO message
 // detection, they are only sent once after establishing the connection.
-static __inline enum MessageType infer_nats_message(const char* buf, size_t count) {
+static __inline enum message_type_t infer_nats_message(const char* buf, size_t count) {
   // NATS messages start with an one-byte type marker, and end with \r\n terminal sequence.
   if (count < 3) {
     return kUnknown;

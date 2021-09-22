@@ -120,7 +120,7 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
   // We popluate transfer_specs_by_protocol so that we guarantee the protocol_transfer_specs_
   // is stuffed in the *correct* order.
   // Also, this will fail fast (when we stuff the vector) if we forget a protocol.
-  absl::flat_hash_map<TrafficProtocol, TransferSpec> transfer_specs_by_protocol = {
+  absl::flat_hash_map<traffic_protocol_t, TransferSpec> transfer_specs_by_protocol = {
       {kProtocolHTTP, TransferSpec{FLAGS_stirling_enable_http_tracing,
                                    kHTTPTableNum,
                                    {kRoleClient, kRoleServer},
@@ -177,9 +177,9 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
     // First, we double check that we have a transfer spec for the protocol in question.
     // Next, we stuff the vector of transfer specs,
     // by indexing into the transfer_specs_by_protocol map.
-    DCHECK(transfer_specs_by_protocol.contains(TrafficProtocol(i))) << absl::Substitute(
-        "Protocol $0 is not mapped in transfer_specs_by_protocol.", TrafficProtocol(i));
-    protocol_transfer_specs_.push_back(transfer_specs_by_protocol[TrafficProtocol(i)]);
+    DCHECK(transfer_specs_by_protocol.contains(traffic_protocol_t(i))) << absl::Substitute(
+        "Protocol $0 is not mapped in transfer_specs_by_protocol.", traffic_protocol_t(i));
+    protocol_transfer_specs_.push_back(transfer_specs_by_protocol[traffic_protocol_t(i)]);
   }
 }
 
@@ -446,7 +446,7 @@ Status UpdatePerCPUArrayValue(int idx, TValueType val, ebpf::BPFPercpuArrayTable
   return Status::OK();
 }
 
-Status SocketTraceConnector::UpdateBPFProtocolTraceRole(TrafficProtocol protocol,
+Status SocketTraceConnector::UpdateBPFProtocolTraceRole(traffic_protocol_t protocol,
                                                         uint64_t role_mask) {
   auto control_map_handle = GetPerCPUArrayTable<uint64_t>(kControlMapName);
   return UpdatePerCPUArrayValue(static_cast<int>(protocol), role_mask, &control_map_handle);
@@ -845,7 +845,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
 
 namespace {
 
-EndpointRole SwapEndpointRole(EndpointRole role) {
+endpoint_role_t Swapendpoint_role_t(endpoint_role_t role) {
   switch (role) {
     case kRoleClient:
       return kRoleServer;
@@ -866,9 +866,9 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
-  EndpointRole role = conn_tracker.role();
+  endpoint_role_t role = conn_tracker.role();
   if (entry.role_swapped) {
-    role = SwapEndpointRole(role);
+    role = Swapendpoint_role_t(role);
   }
 
   DataTable::RecordBuilder<&kRedisTable> r(data_table, entry.resp.timestamp_ns);
@@ -893,7 +893,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
-  EndpointRole role = conn_tracker.role();
+  endpoint_role_t role = conn_tracker.role();
   DataTable::RecordBuilder<&kNATSTable> r(data_table, record.resp.timestamp_ns);
   r.Append<r.ColIndex("time_")>(record.req.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
@@ -914,7 +914,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
-  EndpointRole role = conn_tracker.role();
+  endpoint_role_t role = conn_tracker.role();
   DataTable::RecordBuilder<&kKafkaTable> r(data_table, record.resp.timestamp_ns);
   r.Append<r.ColIndex("time_")>(record.req.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());

@@ -152,7 +152,7 @@ class ConnTrackersManager {
 
   // Records statistics of ConnTracker for reporting and consistency check.
   utils::StatCounter<StatKey> stats_;
-  utils::StatCounter<TrafficProtocol> protocol_stats_;
+  utils::StatCounter<traffic_protocol_t> protocol_stats_;
 };
 
 }  // namespace stirling

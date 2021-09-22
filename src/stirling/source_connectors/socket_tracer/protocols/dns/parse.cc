@@ -51,7 +51,7 @@ class PxDnsParserListener : public DnsParserListener {
   std::vector<DNSRecord> records_;
 };
 
-ParseState ParseFrame(MessageType type, std::string_view* buf, Frame* result) {
+ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* result) {
   PL_UNUSED(type);
 
   PxDnsParserListener response_handler;
@@ -86,13 +86,13 @@ ParseState ParseFrame(MessageType type, std::string_view* buf, Frame* result) {
 }  // namespace dns
 
 template <>
-ParseState ParseFrame(MessageType type, std::string_view* buf, dns::Frame* result,
+ParseState ParseFrame(message_type_t type, std::string_view* buf, dns::Frame* result,
                       NoState* /*state*/) {
   return dns::ParseFrame(type, buf, result);
 }
 
 template <>
-size_t FindFrameBoundary<dns::Frame>(MessageType /*type*/, std::string_view /*buf*/,
+size_t FindFrameBoundary<dns::Frame>(message_type_t /*type*/, std::string_view /*buf*/,
                                      size_t /*start_pos*/, NoState* /*state*/) {
   // Not implemented.
   // Search for magic string that we should insert between UDP packets.

@@ -310,7 +310,7 @@ Status ParseDesc(const RegularMessage& msg, Desc* desc) {
 }  // namespace pgsql
 
 template <>
-ParseState ParseFrame(MessageType type, std::string_view* buf, pgsql::RegularMessage* frame,
+ParseState ParseFrame(message_type_t type, std::string_view* buf, pgsql::RegularMessage* frame,
                       pgsql::StateWrapper* /*state*/) {
   PL_UNUSED(type);
 
@@ -324,7 +324,7 @@ ParseState ParseFrame(MessageType type, std::string_view* buf, pgsql::RegularMes
 }
 
 template <>
-size_t FindFrameBoundary<pgsql::RegularMessage>(MessageType type, std::string_view buf,
+size_t FindFrameBoundary<pgsql::RegularMessage>(message_type_t type, std::string_view buf,
                                                 size_t start, pgsql::StateWrapper* /*state*/) {
   PL_UNUSED(type);
   return pgsql::FindFrameBoundary(buf, start);

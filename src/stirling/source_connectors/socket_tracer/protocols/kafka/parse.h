@@ -29,17 +29,17 @@ namespace px {
 namespace stirling {
 namespace protocols {
 namespace kafka {
-ParseState ParseFrame(MessageType type, std::string_view* buf, Packet* result, State* state);
+ParseState ParseFrame(message_type_t type, std::string_view* buf, Packet* result, State* state);
 
-size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_pos, State* state);
+size_t FindFrameBoundary(message_type_t type, std::string_view buf, size_t start_pos, State* state);
 }  // namespace kafka
 
 template <>
-ParseState ParseFrame(MessageType type, std::string_view* buf, kafka::Packet* packet,
+ParseState ParseFrame(message_type_t type, std::string_view* buf, kafka::Packet* packet,
                       kafka::StateWrapper* state);
 
 template <>
-size_t FindFrameBoundary<kafka::Packet>(MessageType type, std::string_view buf, size_t start_pos,
+size_t FindFrameBoundary<kafka::Packet>(message_type_t type, std::string_view buf, size_t start_pos,
                                         kafka::StateWrapper* state);
 
 }  // namespace protocols

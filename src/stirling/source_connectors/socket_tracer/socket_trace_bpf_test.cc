@@ -383,7 +383,7 @@ TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
 }
 
 TEST_F(SocketTraceBPFTest, MultipleConnections) {
-  ConfigureBPFCapture(TrafficProtocol::kProtocolHTTP, kRoleClient);
+  ConfigureBPFCapture(traffic_protocol_t::kProtocolHTTP, kRoleClient);
 
   StartTransferDataThread();
 
@@ -425,7 +425,7 @@ TEST_F(SocketTraceBPFTest, MultipleConnections) {
 
 // Tests that the start time of UPIDs reported in data table are within a specified time window.
 TEST_F(SocketTraceBPFTest, StartTime) {
-  ConfigureBPFCapture(TrafficProtocol::kProtocolHTTP, kRoleClient);
+  ConfigureBPFCapture(traffic_protocol_t::kProtocolHTTP, kRoleClient);
 
   StartTransferDataThread();
 
@@ -474,7 +474,7 @@ TEST_F(SocketTraceBPFTest, StartTime) {
 }
 
 TEST_F(SocketTraceBPFTest, LargeMessages) {
-  ConfigureBPFCapture(TrafficProtocol::kProtocolHTTP, kRoleClient | kRoleServer);
+  ConfigureBPFCapture(traffic_protocol_t::kProtocolHTTP, kRoleClient | kRoleServer);
 
   std::string large_response =
       "HTTP/1.1 200 OK\r\n"
@@ -729,7 +729,7 @@ class UDPSocketTraceBPFTest : public SocketTraceBPFTest {
  protected:
   void SetUp() override {
     SocketTraceBPFTest::SetUp();
-    ConfigureBPFCapture(TrafficProtocol::kProtocolHTTP, kRoleClient | kRoleServer);
+    ConfigureBPFCapture(traffic_protocol_t::kProtocolHTTP, kRoleClient | kRoleServer);
     server_.BindAndListen();
 
     pid_ = getpid();

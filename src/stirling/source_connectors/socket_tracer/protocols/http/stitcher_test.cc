@@ -31,7 +31,7 @@ using ::testing::Pair;
 
 TEST(PreProcessRecordTest, GzipCompressedContentIsDecompressed) {
   Message message;
-  message.type = MessageType::kResponse;
+  message.type = message_type_t::kResponse;
   message.headers.insert({kContentEncoding, "gzip"});
   // Not really json, but specify json so the content is not ignored.
   message.headers.insert({kContentType, "json"});
@@ -46,7 +46,7 @@ TEST(PreProcessRecordTest, GzipCompressedContentIsDecompressed) {
 
 TEST(PreProcessRecordTest, ContentHeaderIsNotAdded) {
   Message message;
-  message.type = MessageType::kResponse;
+  message.type = message_type_t::kResponse;
   message.body = "test";
   message.headers.insert({kContentType, "text"});
   PreProcessMessage(&message);

@@ -115,9 +115,9 @@ bool IsPubMsg(const std::vector<std::string>& payloads) {
 
 // This calls ParseMessage(), which eventually calls ParseArray() and are both recursive
 // functions. This is because Array message can include nested array messages.
-Status ParseArray(MessageType type, BinaryDecoder* decoder, Message* msg);
+Status ParseArray(message_type_t type, BinaryDecoder* decoder, Message* msg);
 
-Status ParseMessage(MessageType type, BinaryDecoder* decoder, Message* msg) {
+Status ParseMessage(message_type_t type, BinaryDecoder* decoder, Message* msg) {
   PL_ASSIGN_OR_RETURN(const char type_marker, decoder->ExtractChar());
 
   switch (type_marker) {
@@ -152,7 +152,7 @@ Status ParseMessage(MessageType type, BinaryDecoder* decoder, Message* msg) {
 }
 
 // Array is formatted as *<size_str>\r\n[one of simple string, error, bulk string, etc.]
-Status ParseArray(MessageType type, BinaryDecoder* decoder, Message* msg) {
+Status ParseArray(message_type_t type, BinaryDecoder* decoder, Message* msg) {
   PL_ASSIGN_OR_RETURN(int len, ParseSize(decoder));
 
   if (len == kNullSize) {
@@ -170,7 +170,7 @@ Status ParseArray(MessageType type, BinaryDecoder* decoder, Message* msg) {
 
   FormatArrayMessage(VectorView<std::string>(payloads), msg);
 
-  if (type == MessageType::kResponse && IsPubMsg(payloads)) {
+  if (type == message_type_t::kResponse && IsPubMsg(payloads)) {
     msg->is_published_message = true;
   }
 
@@ -193,7 +193,7 @@ size_t FindMessageBoundary(std::string_view buf, size_t start_pos) {
 
 // Redis protocol specification: https://redis.io/topics/protocol
 // This can also be implemented as a recursive function.
-ParseState ParseMessage(MessageType type, std::string_view* buf, Message* msg) {
+ParseState ParseMessage(message_type_t type, std::string_view* buf, Message* msg) {
   BinaryDecoder decoder(*buf);
 
   auto status = ParseMessage(type, &decoder, msg);
@@ -210,13 +210,13 @@ ParseState ParseMessage(MessageType type, std::string_view* buf, Message* msg) {
 }  // namespace redis
 
 template <>
-size_t FindFrameBoundary<redis::Message>(MessageType /*type*/, std::string_view buf,
+size_t FindFrameBoundary<redis::Message>(message_type_t /*type*/, std::string_view buf,
                                          size_t start_pos, NoState* /*state*/) {
   return redis::FindMessageBoundary(buf, start_pos);
 }
 
 template <>
-ParseState ParseFrame(MessageType type, std::string_view* buf, redis::Message* msg,
+ParseState ParseFrame(message_type_t type, std::string_view* buf, redis::Message* msg,
                       NoState* /*state*/) {
   return redis::ParseMessage(type, buf, msg);
 }

@@ -33,11 +33,11 @@ namespace protocols {
  * Parses a single MySQL packet from the input string.
  */
 template <>
-ParseState ParseFrame(MessageType type, std::string_view* buf, mysql::Packet* frame,
+ParseState ParseFrame(message_type_t type, std::string_view* buf, mysql::Packet* frame,
                       mysql::StateWrapper* state);
 
 template <>
-size_t FindFrameBoundary<mysql::Packet>(MessageType type, std::string_view buf, size_t start_pos,
+size_t FindFrameBoundary<mysql::Packet>(message_type_t type, std::string_view buf, size_t start_pos,
                                         mysql::StateWrapper* state);
 
 }  // namespace protocols

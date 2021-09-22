@@ -38,14 +38,14 @@ namespace kafka {
   PL_ASSIGN_OR(expr, val_or, return ParseState::kInvalid)
 
 // Kafka request/response format: https://kafka.apache.org/protocol.html#protocol_messages
-ParseState ParseFrame(MessageType type, std::string_view* buf, Packet* result, State* state) {
-  DCHECK(type == MessageType::kRequest || type == MessageType::kResponse);
+ParseState ParseFrame(message_type_t type, std::string_view* buf, Packet* result, State* state) {
+  DCHECK(type == message_type_t::kRequest || type == message_type_t::kResponse);
 
-  if (type == MessageType::kRequest && buf->size() < kafka::kMinReqHeaderLength) {
+  if (type == message_type_t::kRequest && buf->size() < kafka::kMinReqHeaderLength) {
     return ParseState::kNeedsMoreData;
   }
 
-  if (type == MessageType::kResponse && buf->size() < kafka::kMinRespHeaderLength) {
+  if (type == message_type_t::kResponse && buf->size() < kafka::kMinRespHeaderLength) {
     return ParseState::kNeedsMoreData;
   }
 
@@ -61,7 +61,7 @@ ParseState ParseFrame(MessageType type, std::string_view* buf, Packet* result, S
   // kafka doc will help.
   APIKey request_api_key;
   int16_t request_api_version;
-  if (type == MessageType::kRequest) {
+  if (type == message_type_t::kRequest) {
     PL_ASSIGN_OR_RETURN_INVALID(int16_t request_api_key_int, binary_decoder.ExtractInt<int16_t>());
     if (!IsValidAPIKey(request_api_key_int)) {
       return ParseState::kInvalid;
@@ -87,7 +87,7 @@ ParseState ParseFrame(MessageType type, std::string_view* buf, Packet* result, S
   }
 
   // Update seen_correlation_ids of requests for more robust response frame parsing.
-  if (type == MessageType::kRequest) {
+  if (type == message_type_t::kRequest) {
     state->seen_correlation_ids.insert(correlation_id);
   }
   // TODO(chengruizhe): Check that the correlation_id has been seen before for
@@ -104,8 +104,9 @@ ParseState ParseFrame(MessageType type, std::string_view* buf, Packet* result, S
 
 // FindFrameBoundary currently looks for a proper packet length and valid Kafka api key and version
 // in requests, and correlation_id that appeared before in responses.
-size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_pos, State* state) {
-  size_t min_length = type == MessageType::kRequest ? kMinReqHeaderLength : kMinRespHeaderLength;
+size_t FindFrameBoundary(message_type_t type, std::string_view buf, size_t start_pos,
+                         State* state) {
+  size_t min_length = type == message_type_t::kRequest ? kMinReqHeaderLength : kMinRespHeaderLength;
 
   if (buf.length() < min_length) {
     return std::string::npos;
@@ -123,7 +124,7 @@ size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_po
     }
 
     // Check for valid api_key and api_version in requests.
-    if (type == MessageType::kRequest) {
+    if (type == message_type_t::kRequest) {
       PL_ASSIGN_OR_RETURN_NPOS(int16_t request_api_key, binary_decoder.ExtractInt<int16_t>());
       if (!IsValidAPIKey(request_api_key)) {
         continue;
@@ -141,7 +142,7 @@ size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_po
     }
 
     // Check for seen correlation_id in responses.
-    if (type == MessageType::kResponse) {
+    if (type == message_type_t::kResponse) {
       auto it = state->seen_correlation_ids.find(correlation_id);
       if (it == state->seen_correlation_ids.end()) {
         continue;
@@ -158,15 +159,16 @@ size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_po
 }  // namespace kafka
 
 template <>
-ParseState ParseFrame<kafka::Packet, kafka::StateWrapper>(MessageType type, std::string_view* buf,
+ParseState ParseFrame<kafka::Packet, kafka::StateWrapper>(message_type_t type,
+                                                          std::string_view* buf,
                                                           kafka::Packet* packet,
                                                           kafka::StateWrapper* state) {
   return kafka::ParseFrame(type, buf, packet, &state->global);
 }
 
 template <>
-size_t FindFrameBoundary<kafka::Packet, kafka::StateWrapper>(MessageType type, std::string_view buf,
-                                                             size_t start_pos,
+size_t FindFrameBoundary<kafka::Packet, kafka::StateWrapper>(message_type_t type,
+                                                             std::string_view buf, size_t start_pos,
                                                              kafka::StateWrapper* state) {
   return kafka::FindFrameBoundary(type, buf, start_pos, &state->global);
 }

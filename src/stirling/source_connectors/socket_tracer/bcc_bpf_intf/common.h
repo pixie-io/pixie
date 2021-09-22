@@ -32,16 +32,16 @@
 
 // This file contains definitions that are shared between various kprobes and uprobes.
 
-enum MessageType { kUnknown, kRequest, kResponse };
+enum message_type_t { kUnknown, kRequest, kResponse };
 
-enum TrafficDirection {
+enum traffic_direction_t {
   kEgress,
   kIngress,
 };
 
 // Protocol being used on a connection (HTTP, MySQL, etc.).
 // PROTOCOL_LIST: Requires update on new protocols.
-enum TrafficProtocol {
+enum traffic_protocol_t {
   kProtocolUnknown = 0,
   kProtocolHTTP,
   kProtocolHTTP2,
@@ -58,21 +58,21 @@ enum TrafficProtocol {
 
 #ifdef __cplusplus
 static const std::map<int64_t, std::string_view> kTrafficProtocolDecoder =
-    px::EnumDefToMap<TrafficProtocol>();
+    px::EnumDefToMap<traffic_protocol_t>();
 #endif
 
 struct protocol_message_t {
-  enum TrafficProtocol protocol;
-  enum MessageType type;
+  enum traffic_protocol_t protocol;
+  enum message_type_t type;
 };
 
 #ifdef __cplusplus
 inline auto TrafficProtocolEnumValues() {
-  auto protocols_array = magic_enum::enum_values<TrafficProtocol>();
+  auto protocols_array = magic_enum::enum_values<traffic_protocol_t>();
 
   // Strip off last element in protocols_array, which is not a real protocol.
-  constexpr int kNumProtocols = magic_enum::enum_count<TrafficProtocol>() - 1;
-  std::array<TrafficProtocol, kNumProtocols> protocols;
+  constexpr int kNumProtocols = magic_enum::enum_count<traffic_protocol_t>() - 1;
+  std::array<traffic_protocol_t, kNumProtocols> protocols;
   std::copy(protocols_array.begin(), protocols_array.end() - 1, protocols.begin());
   return protocols;
 }
@@ -81,7 +81,7 @@ inline auto TrafficProtocolEnumValues() {
 // The direction of traffic expected on a probe.
 // Values have single bit set, so that they could be used as bit masks.
 // WARNING: Do not change the existing mappings (PxL scripts rely on them).
-enum EndpointRole {
+enum endpoint_role_t {
   kRoleClient = 1 << 0,
   kRoleServer = 1 << 1,
   kRoleUnknown = 1 << 2,
@@ -89,7 +89,7 @@ enum EndpointRole {
 
 #ifdef __cplusplus
 static const std::map<int64_t, std::string_view> kEndpointRoleDecoder =
-    px::EnumDefToMap<EndpointRole>();
+    px::EnumDefToMap<endpoint_role_t>();
 #endif
 
 struct conn_id_t {
@@ -115,7 +115,7 @@ inline bool operator!=(const struct conn_id_t& a, const struct conn_id_t& b) { r
 #endif
 
 // Specifies the corresponding indexes of the entries of a per-cpu array.
-enum ControlValueIndex {
+enum control_value_index_t {
   // This specify one pid to monitor. This is used during test to eliminate noise.
   // TODO(yzhao): We need a more robust mechanism for production use, which should be able to:
   // * Specify multiple pids up to a certain limit, let's say 1024.

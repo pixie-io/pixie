@@ -222,11 +222,11 @@ std::string ConnTrackersManager::StatsString() const {
 }
 
 void ConnTrackersManager::ComputeProtocolStats() {
-  absl::flat_hash_map<TrafficProtocol, int> protocol_count;
+  absl::flat_hash_map<traffic_protocol_t, int> protocol_count;
   for (const auto* tracker : active_trackers_) {
     ++protocol_count[tracker->protocol()];
   }
-  for (auto protocol : magic_enum::enum_values<TrafficProtocol>()) {
+  for (auto protocol : magic_enum::enum_values<traffic_protocol_t>()) {
     protocol_stats_.Reset(protocol);
     auto iter = protocol_count.find(protocol);
     if (iter != protocol_count.end()) {

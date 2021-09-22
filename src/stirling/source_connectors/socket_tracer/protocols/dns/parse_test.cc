@@ -251,7 +251,7 @@ TEST_F(DNSParserTest, BasicReq) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kQueryFrame));
 
   std::deque<Frame> frames;
-  ParseResult parse_result = ParseFramesLoop(MessageType::kRequest, frame_view, &frames);
+  ParseResult parse_result = ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kSuccess);
   ASSERT_EQ(frames.size(), 1);
@@ -272,7 +272,7 @@ TEST_F(DNSParserTest, BasicResp) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kRespFrame));
 
   std::deque<Frame> frames;
-  ParseResult parse_result = ParseFramesLoop(MessageType::kResponse, frame_view, &frames);
+  ParseResult parse_result = ParseFramesLoop(message_type_t::kResponse, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kSuccess);
   ASSERT_EQ(frames.size(), 1);
@@ -293,7 +293,7 @@ TEST_F(DNSParserTest, BasicReq2) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kReqFrame2));
 
   std::deque<Frame> frames;
-  ParseResult parse_result = ParseFramesLoop(MessageType::kResponse, frame_view, &frames);
+  ParseResult parse_result = ParseFramesLoop(message_type_t::kResponse, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kSuccess);
   ASSERT_EQ(frames.size(), 1);
@@ -314,7 +314,7 @@ TEST_F(DNSParserTest, CNameAndMultipleResponses) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kRespFrame2));
 
   std::deque<Frame> frames;
-  ParseResult parse_result = ParseFramesLoop(MessageType::kResponse, frame_view, &frames);
+  ParseResult parse_result = ParseFramesLoop(message_type_t::kResponse, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kSuccess);
   ASSERT_EQ(frames.size(), 1);
@@ -356,7 +356,7 @@ TEST_F(DNSParserTest, CNameAndMultipleResponses2) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kRespFrame3));
 
   std::deque<Frame> frames;
-  ParseResult parse_result = ParseFramesLoop(MessageType::kResponse, frame_view, &frames);
+  ParseResult parse_result = ParseFramesLoop(message_type_t::kResponse, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kSuccess);
   ASSERT_EQ(frames.size(), 1);
@@ -399,7 +399,7 @@ TEST_F(DNSParserTest, IncompleteHeader) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kIncompleteHeader));
 
   std::deque<Frame> frames;
-  ParseResult parse_result = ParseFramesLoop(MessageType::kRequest, frame_view, &frames);
+  ParseResult parse_result = ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kInvalid);
 }
@@ -412,7 +412,7 @@ TEST_F(DNSParserTest, PartialRecords) {
     frame_view.remove_suffix(10);
 
     std::deque<Frame> frames;
-    ParseResult parse_result = ParseFramesLoop(MessageType::kRequest, frame_view, &frames);
+    ParseResult parse_result = ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
 
     ASSERT_EQ(parse_result.state, ParseState::kSuccess);
   }
@@ -422,7 +422,7 @@ TEST_F(DNSParserTest, PartialRecords) {
     frame_view.remove_suffix(20);
 
     std::deque<Frame> frames;
-    ParseResult parse_result = ParseFramesLoop(MessageType::kRequest, frame_view, &frames);
+    ParseResult parse_result = ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
 
     ASSERT_EQ(parse_result.state, ParseState::kInvalid);
   }

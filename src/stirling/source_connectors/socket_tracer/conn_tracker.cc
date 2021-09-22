@@ -149,10 +149,10 @@ void ConnTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   }
 
   switch (event->attr.direction) {
-    case TrafficDirection::kEgress: {
+    case traffic_direction_t::kEgress: {
       send_data_.AddData(std::move(event));
     } break;
-    case TrafficDirection::kIngress: {
+    case traffic_direction_t::kIngress: {
       recv_data_.AddData(std::move(event));
     } break;
   }
@@ -194,7 +194,7 @@ protocols::http2::HalfStream* ConnTracker::HalfStreamPtr(uint32_t stream_id, boo
   return streams.HalfStreamPtr(stream_id, write_event);
 }
 
-EndpointRole InferHTTP2Role(bool write_event, const std::unique_ptr<HTTP2HeaderEvent>& hdr) {
+endpoint_role_t InferHTTP2Role(bool write_event, const std::unique_ptr<HTTP2HeaderEvent>& hdr) {
   // Look for standard headers to infer role.
   // Could look at others (:scheme, :path, :authority), but this seems sufficient.
 
@@ -252,7 +252,7 @@ void ConnTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
   }
 
   if (role_ == kRoleUnknown) {
-    EndpointRole role = InferHTTP2Role(write_event, hdr);
+    endpoint_role_t role = InferHTTP2Role(write_event, hdr);
     SetRole(role, "Inferred from http2 header");
   }
 
@@ -436,7 +436,7 @@ void ConnTracker::SetRemoteAddr(const union sockaddr_t addr, std::string_view re
   }
 }
 
-bool ConnTracker::SetRole(EndpointRole role, std::string_view reason) {
+bool ConnTracker::SetRole(endpoint_role_t role, std::string_view reason) {
   // Don't allow changing active role, unless it is from unknown to something else.
   if (role_ != kRoleUnknown) {
     if (role != kRoleUnknown && role_ != role) {
@@ -463,7 +463,7 @@ bool ConnTracker::SetRole(EndpointRole role, std::string_view reason) {
 }
 
 // Returns false if protocol change was not allowed.
-bool ConnTracker::SetProtocol(TrafficProtocol protocol, std::string_view reason) {
+bool ConnTracker::SetProtocol(traffic_protocol_t protocol, std::string_view reason) {
   // No change, so we're all good.
   if (protocol_ == protocol) {
     return true;
@@ -477,7 +477,7 @@ bool ConnTracker::SetProtocol(TrafficProtocol protocol, std::string_view reason)
     return false;
   }
 
-  TrafficProtocol old_protocol = protocol_;
+  traffic_protocol_t old_protocol = protocol_;
   protocol_ = protocol;
   CONN_TRACE(1) << absl::Substitute("Protocol changed: $0->$1, reason=[$2]",
                                     magic_enum::enum_name(old_protocol),
@@ -592,7 +592,7 @@ bool ConnTracker::IsRemoteAddrInCluster(const std::vector<CIDRBlock>& cluster_ci
 namespace {
 
 auto CreateTraceRoles() {
-  EnumMap<TrafficProtocol, absl::flat_hash_set<EndpointRole>> res;
+  EnumMap<traffic_protocol_t, absl::flat_hash_set<endpoint_role_t>> res;
   res.Set(kProtocolUnknown, {});
   // This should never be used, but kept for simpler code pattern below.
   res.Set(kNumProtocols, {});
@@ -617,9 +617,9 @@ auto CreateTraceRoles() {
   return res;
 }
 
-bool ShouldTraceProtocolRole(TrafficProtocol protocol, EndpointRole role) {
+bool ShouldTraceProtocolRole(traffic_protocol_t protocol, endpoint_role_t role) {
   // Specifies for each protocol what Role should trigger data tracing.
-  static const EnumMap<TrafficProtocol, absl::flat_hash_set<EndpointRole>> kTraceRoles =
+  static const EnumMap<traffic_protocol_t, absl::flat_hash_set<endpoint_role_t>> kTraceRoles =
       CreateTraceRoles();
   return kTraceRoles.Get(protocol).contains(role);
 }
@@ -646,9 +646,9 @@ void ConnTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs) {
   }
 
   switch (role()) {
-    case EndpointRole::kRoleServer:
+    case endpoint_role_t::kRoleServer:
       break;
-    case EndpointRole::kRoleClient: {
+    case endpoint_role_t::kRoleClient: {
       if (cluster_cidrs.empty()) {
         CONN_TRACE(2) << "State not updated: MDS has not provided cluster CIDRs yet.";
         break;
@@ -678,7 +678,7 @@ void ConnTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs) {
       // Remote endpoint appears to be outside the cluster, so trace it.
       state_ = State::kTransferring;
     } break;
-    case EndpointRole::kRoleUnknown:
+    case endpoint_role_t::kRoleUnknown:
       if (conn_resolution_failed_) {
         // TODO(yzhao): Incorporate parsing to detect message type, and back fill the role.
         // This is useful for Redis, for which eBPF protocol resolution cannot detect message type.
@@ -695,12 +695,12 @@ void ConnTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs) {
 
 void ConnTracker::UpdateDataStats(const SocketDataEvent& event) {
   switch (event.attr.direction) {
-    case TrafficDirection::kEgress: {
+    case traffic_direction_t::kEgress: {
       stats_.Increment(StatKey::kDataEventSent, 1);
       stats_.Increment(StatKey::kBytesSent, event.attr.msg_size);
       stats_.Increment(StatKey::kBytesSentTransferred, event.attr.msg_buf_size);
     } break;
-    case TrafficDirection::kIngress: {
+    case traffic_direction_t::kIngress: {
       stats_.Increment(StatKey::kDataEventRecv, 1);
       stats_.Increment(StatKey::kBytesRecv, event.attr.msg_size);
       stats_.Increment(StatKey::kBytesRecvTransferred, event.attr.msg_buf_size);
@@ -853,7 +853,7 @@ Status ParseSocketInfoRemoteAddr(const system::SocketInfo& socket_info, SockAddr
   return Status::OK();
 }
 
-EndpointRole TranslateRole(system::ClientServerRole role) {
+endpoint_role_t TranslateRole(system::ClientServerRole role) {
   switch (role) {
     case system::ClientServerRole::kClient:
       return kRoleClient;
@@ -957,7 +957,7 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
     return;
   }
 
-  EndpointRole inferred_role = TranslateRole(socket_info.role);
+  endpoint_role_t inferred_role = TranslateRole(socket_info.role);
   SetRole(inferred_role, "inferred from socket info");
 
   CONN_TRACE(1) << absl::Substitute("Inferred connection dest=$0:$1",

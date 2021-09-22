@@ -52,10 +52,10 @@ struct conn_info_t {
   union sockaddr_t addr;
 
   // The protocol of traffic on the connection (HTTP, MySQL, etc.).
-  enum TrafficProtocol protocol;
+  enum traffic_protocol_t protocol;
 
   // Classify traffic as requests, responses or mixed.
-  enum EndpointRole role;
+  enum endpoint_role_t role;
 
   // Whether the connection uses SSL.
   bool ssl;
@@ -91,7 +91,7 @@ struct conn_info_t {
 // See conn_info_t for descriptions of the members.
 struct conn_event_t {
   union sockaddr_t addr;
-  enum EndpointRole role;
+  enum endpoint_role_t role;
 };
 
 // This struct is a subset of conn_info_t. It is used to communicate close events.
@@ -168,14 +168,14 @@ struct socket_data_event_t {
     struct conn_id_t conn_id;
 
     // The protocol of traffic on the connection (HTTP, MySQL, etc.).
-    enum TrafficProtocol protocol;
+    enum traffic_protocol_t protocol;
 
     // The server-client role.
-    enum EndpointRole role;
+    enum endpoint_role_t role;
 
     // The type of the actual data that the msg field encodes, which is used by the caller
     // to determine how to interpret the data.
-    enum TrafficDirection direction;
+    enum traffic_direction_t direction;
 
     // Whether the traffic was collected from an encrypted channel.
     bool ssl;
@@ -213,7 +213,7 @@ struct conn_stats_event_t {
   union sockaddr_t addr;
 
   // The server-client role.
-  enum EndpointRole role;
+  enum endpoint_role_t role;
 
   // The number of bytes written on this connection.
   int64_t wr_bytes;
@@ -224,13 +224,13 @@ struct conn_stats_event_t {
   uint32_t conn_events;
 };
 
-typedef enum {
+enum control_event_type_t {
   kConnOpen,
   kConnClose,
-} ControlEventType;
+};
 
 struct socket_control_event_t {
-  ControlEventType type;
+  enum control_event_type_t type;
   uint64_t timestamp_ns;
   struct conn_id_t conn_id;
   union {

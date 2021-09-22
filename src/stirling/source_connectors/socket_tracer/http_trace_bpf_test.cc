@@ -99,7 +99,7 @@ TEST_F(GoHTTPTraceTest, RequestAndResponse) {
   // This test currently performs client-side tracing because of the cluster CIDR in
   // socket_trace_bpf_test_fixture.h.
   EXPECT_EQ(record_batch[kHTTPTraceRoleIdx]->Get<types::Int64Value>(target_record_idx).val,
-            static_cast<int>(EndpointRole::kRoleServer));
+            static_cast<int>(endpoint_role_t::kRoleServer));
   EXPECT_EQ(record_batch[kHTTPRespBodySizeIdx]->Get<types::Int64Value>(target_record_idx).val, 31);
 }
 
@@ -147,7 +147,7 @@ TEST_F(GoHTTPTraceTest, LargePostMessage) {
 }
 
 struct TraceRoleTestParam {
-  EndpointRole role;
+  endpoint_role_t role;
   size_t client_records_count;
   size_t server_records_count;
 };

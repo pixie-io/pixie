@@ -52,7 +52,7 @@ const std::string_view kHTTPGetReq0 =
 
 Message HTTPGetReq0ExpectedMessage() {
   Message expected_message;
-  expected_message.type = MessageType::kRequest;
+  expected_message.type = message_type_t::kRequest;
   expected_message.minor_version = 1;
   expected_message.headers = {{"Host", "www.pixielabs.ai"},
                               {"Accept", "image/gif, image/jpeg, */*"},
@@ -72,7 +72,7 @@ const std::string_view kHTTPGetReq1 =
 
 Message HTTPGetReq1ExpectedMessage() {
   Message expected_message;
-  expected_message.type = MessageType::kRequest;
+  expected_message.type = message_type_t::kRequest;
   expected_message.minor_version = 1;
   expected_message.headers = {{"Host", "www.pixielabs.ai"},
                               {"Accept", "image/gif, image/jpeg, */*"},
@@ -93,7 +93,7 @@ const std::string_view kHTTPPostReq0 =
 
 Message HTTPPostReq0ExpectedMessage() {
   Message expected_message;
-  expected_message.type = MessageType::kRequest;
+  expected_message.type = message_type_t::kRequest;
   expected_message.minor_version = 1;
   expected_message.headers = {{"host", "pixielabs.ai"},
                               {"content-type", "application/x-www-form-urlencoded"},
@@ -113,7 +113,7 @@ const std::string_view kHTTPResp0 =
 
 Message HTTPResp0ExpectedMessage() {
   Message expected_message;
-  expected_message.type = MessageType::kResponse;
+  expected_message.type = message_type_t::kResponse;
   expected_message.minor_version = 1;
   expected_message.headers = {{"Content-Type", "foo"}, {"Content-Length", "9"}};
   expected_message.resp_status = 200;
@@ -131,7 +131,7 @@ const std::string_view kHTTPResp1 =
 
 Message HTTPResp1ExpectedMessage() {
   Message expected_message;
-  expected_message.type = MessageType::kResponse;
+  expected_message.type = message_type_t::kResponse;
   expected_message.minor_version = 1;
   expected_message.headers = {{"Content-Type", "bar"}, {"Content-Length", "21"}};
   expected_message.resp_status = 200;
@@ -153,7 +153,7 @@ const std::string_view kHTTPResp2 =
 
 Message HTTPResp2ExpectedMessage() {
   Message expected_message;
-  expected_message.type = MessageType::kResponse;
+  expected_message.type = message_type_t::kResponse;
   expected_message.minor_version = 1;
   expected_message.headers = {{"Transfer-Encoding", "chunked"}};
   expected_message.resp_status = 200;
@@ -164,7 +164,7 @@ Message HTTPResp2ExpectedMessage() {
 
 Message EmptyHTTPResp() {
   Message result;
-  result.type = MessageType::kResponse;
+  result.type = message_type_t::kResponse;
   result.minor_version = 1;
   result.resp_status = 200;
   result.resp_message = "OK";
@@ -274,7 +274,7 @@ TEST_F(HTTPParserTest, CompleteMessages) {
   std::string buf = absl::StrCat(msg_a, msg_b, msg_c);
 
   std::deque<Message> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kResponse, buf, &parsed_messages);
+  ParseResult result = ParseFramesLoop(message_type_t::kResponse, buf, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_EQ(msg_a.size() + msg_b.size() + msg_c.size(), result.end_position);
@@ -294,7 +294,7 @@ TEST_F(HTTPParserTest, PartialHeader) {
       "Content-Type:";
 
   std::deque<Message> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kResponse, msg, &parsed_messages);
+  ParseResult result = ParseFramesLoop(message_type_t::kResponse, msg, &parsed_messages);
 
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
   EXPECT_EQ(0, result.end_position);
@@ -310,7 +310,7 @@ TEST_F(HTTPParserTest, PartialBody) {
       "Foo";
 
   std::deque<Message> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kResponse, msg, &parsed_messages);
+  ParseResult result = ParseFramesLoop(message_type_t::kResponse, msg, &parsed_messages);
 
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
   EXPECT_EQ(0, result.end_position);
@@ -328,7 +328,7 @@ TEST_F(HTTPParserTest, Status101) {
   std::string data = absl::StrCat(switch_protocol_msg, new_protocol_data);
 
   std::deque<Message> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kResponse, data, &parsed_messages);
+  ParseResult result = ParseFramesLoop(message_type_t::kResponse, data, &parsed_messages);
 
   EXPECT_EQ(ParseState::kEOS, result.state);
   EXPECT_EQ(switch_protocol_msg.size(), result.end_position);
@@ -341,7 +341,7 @@ TEST_F(HTTPParserTest, Status204) {
       "\r\n";
 
   std::deque<Message> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kResponse, msg, &parsed_messages);
+  ParseResult result = ParseFramesLoop(message_type_t::kResponse, msg, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(HasBody("")));
@@ -367,7 +367,7 @@ TEST_F(HTTPParserTest, ParseCompleteHTTPResponseWithContentLengthHeader) {
       "pixielabs!";
 
   Message expected_message1;
-  expected_message1.type = MessageType::kResponse;
+  expected_message1.type = message_type_t::kResponse;
   expected_message1.minor_version = 1;
   expected_message1.headers = {{"Content-Type", "foo"}, {"Content-Length", "9"}};
   expected_message1.resp_status = 200;
@@ -375,7 +375,7 @@ TEST_F(HTTPParserTest, ParseCompleteHTTPResponseWithContentLengthHeader) {
   expected_message1.body = "pixielabs";
 
   Message expected_message2;
-  expected_message2.type = MessageType::kResponse;
+  expected_message2.type = message_type_t::kResponse;
   expected_message2.minor_version = 1;
   expected_message2.headers = {{"Content-Type", "bar"}, {"Content-Length", "10"}};
   expected_message2.resp_status = 200;
@@ -384,7 +384,7 @@ TEST_F(HTTPParserTest, ParseCompleteHTTPResponseWithContentLengthHeader) {
 
   std::deque<Message> parsed_messages;
   const std::string buf = absl::StrCat(msg1, msg2);
-  ParseResult result = ParseFramesLoop(MessageType::kResponse, buf, &parsed_messages);
+  ParseResult result = ParseFramesLoop(message_type_t::kResponse, buf, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message1, expected_message2));
@@ -401,7 +401,7 @@ TEST_F(HTTPParserTest, ParseIncompleteHTTPResponseWithContentLengthHeader) {
   const std::string_view msg3 = "!";
 
   Message expected_message1;
-  expected_message1.type = MessageType::kResponse;
+  expected_message1.type = message_type_t::kResponse;
   expected_message1.minor_version = 1;
   expected_message1.headers = {{"Content-Type", "foo"}, {"Content-Length", "21"}};
   expected_message1.resp_status = 200;
@@ -410,7 +410,7 @@ TEST_F(HTTPParserTest, ParseIncompleteHTTPResponseWithContentLengthHeader) {
 
   const std::string buf = absl::StrCat(msg1, msg2, msg3);
   std::deque<Message> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kResponse, buf, &parsed_messages);
+  ParseResult result = ParseFramesLoop(message_type_t::kResponse, buf, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message1));
@@ -419,7 +419,7 @@ TEST_F(HTTPParserTest, ParseIncompleteHTTPResponseWithContentLengthHeader) {
 TEST_F(HTTPParserTest, InvalidInput) {
   const std::string_view buf = " is awesome";
   std::deque<Message> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kResponse, buf, &parsed_messages);
+  ParseResult result = ParseFramesLoop(message_type_t::kResponse, buf, &parsed_messages);
 
   EXPECT_EQ(ParseState::kInvalid, result.state);
   EXPECT_THAT(parsed_messages, IsEmpty());
@@ -427,7 +427,7 @@ TEST_F(HTTPParserTest, InvalidInput) {
 
 TEST_F(HTTPParserTest, NoAppend) {
   std::deque<Message> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kResponse, "", &parsed_messages);
+  ParseResult result = ParseFramesLoop(message_type_t::kResponse, "", &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, IsEmpty());
@@ -447,7 +447,7 @@ TEST_F(HTTPParserTest, ParseCompleteChunkEncodedMessage) {
   expected_message.body = "pixielabs is awesome!";
 
   std::deque<Message> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kResponse, msg, &parsed_messages);
+  ParseResult result = ParseFramesLoop(message_type_t::kResponse, msg, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
@@ -462,7 +462,7 @@ TEST_F(HTTPParserTest, ParseIncompleteChunks) {
       "pixie";
 
   std::deque<Message> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kResponse, msg1, &parsed_messages);
+  ParseResult result = ParseFramesLoop(message_type_t::kResponse, msg1, &parsed_messages);
 
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
   EXPECT_THAT(parsed_messages, IsEmpty());
@@ -479,7 +479,7 @@ TEST_F(HTTPParserTest, ParseRequestWithoutLengthOrChunking) {
       "\r\n";
 
   Message expected_message;
-  expected_message.type = MessageType::kRequest;
+  expected_message.type = message_type_t::kRequest;
   expected_message.minor_version = 1;
   expected_message.headers = {{"Host", "www.pixielabs.ai"},
                               {"Accept", "image/gif, image/jpeg, */*"},
@@ -489,7 +489,7 @@ TEST_F(HTTPParserTest, ParseRequestWithoutLengthOrChunking) {
   expected_message.body = "";
 
   std::deque<Message> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kRequest, msg1, &parsed_messages);
+  ParseResult result = ParseFramesLoop(message_type_t::kRequest, msg1, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
@@ -508,7 +508,7 @@ TEST_F(HTTPParserTest, ParseResponseWithoutLengthOrChunking) {
   expected_message.body = "pixielabs is aweso";
 
   std::deque<Message> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kResponse, msg1, &parsed_messages);
+  ParseResult result = ParseFramesLoop(message_type_t::kResponse, msg1, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
@@ -520,7 +520,7 @@ TEST_F(HTTPParserTest, MessagePartialHeaders) {
       "Content-Type: text/plain";
 
   std::deque<Message> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kResponse, msg1, &parsed_messages);
+  ParseResult result = ParseFramesLoop(message_type_t::kResponse, msg1, &parsed_messages);
 
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
   EXPECT_THAT(parsed_messages, IsEmpty());
@@ -535,7 +535,7 @@ TEST_F(HTTPParserTest, PartialMessageInTheMiddleOfStream) {
 
   const std::string buf = absl::StrCat(msg0, msg1, msg2, msg3, msg4);
   std::deque<Message> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kResponse, buf, &parsed_messages);
+  ParseResult result = ParseFramesLoop(message_type_t::kResponse, buf, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(HasBody("foobar"), HasBody("pixielabs rocks!")));
@@ -547,7 +547,7 @@ TEST_F(HTTPParserTest, PartialMessageInTheMiddleOfStream) {
 
 TEST_F(HTTPParserTest, ParseHTTPRequestSingle) {
   std::deque<Message> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kRequest, kHTTPGetReq0, &parsed_messages);
+  ParseResult result = ParseFramesLoop(message_type_t::kRequest, kHTTPGetReq0, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(HTTPGetReq0ExpectedMessage()));
@@ -556,7 +556,7 @@ TEST_F(HTTPParserTest, ParseHTTPRequestSingle) {
 TEST_F(HTTPParserTest, ParseHTTPRequestMultiple) {
   const std::string buf = absl::StrCat(kHTTPGetReq0, kHTTPPostReq0);
   std::deque<Message> parsed_messages;
-  ParseResult result = ParseFramesLoop(MessageType::kRequest, buf, &parsed_messages);
+  ParseResult result = ParseFramesLoop(message_type_t::kRequest, buf, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages,
@@ -588,7 +588,7 @@ TEST_P(HTTPParserTest, ParseHTTPRequestsRepeatedly) {
     AddEvent(events[2]);
 
     std::deque<Message> parsed_messages;
-    ParseResult result = ParseFrames(MessageType::kRequest, data_buffer_, &parsed_messages);
+    ParseResult result = ParseFrames(message_type_t::kRequest, data_buffer_, &parsed_messages);
     data_buffer_.RemovePrefix(result.end_position);
 
     ASSERT_EQ(ParseState::kSuccess, result.state);
@@ -623,7 +623,7 @@ TEST_P(HTTPParserTest, ParseHTTPResponsesRepeatedly) {
     AddEvent(events[2]);
 
     std::deque<Message> parsed_messages;
-    ParseResult result = ParseFrames(MessageType::kResponse, data_buffer_, &parsed_messages);
+    ParseResult result = ParseFrames(message_type_t::kResponse, data_buffer_, &parsed_messages);
     data_buffer_.RemovePrefix(result.end_position);
 
     ASSERT_EQ(ParseState::kSuccess, result.state);
@@ -653,7 +653,7 @@ TEST_F(HTTPParserTest, ParseHTTPResponsesWithLeftover) {
   // Don't append last split, yet.
 
   std::deque<Message> parsed_messages;
-  ParseResult result = ParseFrames(MessageType::kResponse, data_buffer_, &parsed_messages);
+  ParseResult result = ParseFrames(message_type_t::kResponse, data_buffer_, &parsed_messages);
 
   ASSERT_EQ(ParseState::kNeedsMoreData, result.state);
   ASSERT_THAT(parsed_messages, ElementsAre(HTTPResp0ExpectedMessage(), HTTPResp1ExpectedMessage()));
@@ -663,7 +663,7 @@ TEST_F(HTTPParserTest, ParseHTTPResponsesWithLeftover) {
   // Now add last event.
   AddEvent(events[2]);
 
-  result = ParseFrames(MessageType::kResponse, data_buffer_, &parsed_messages);
+  result = ParseFrames(message_type_t::kResponse, data_buffer_, &parsed_messages);
 
   ASSERT_EQ(ParseState::kSuccess, result.state);
   ASSERT_THAT(parsed_messages, ElementsAre(HTTPResp0ExpectedMessage(), HTTPResp1ExpectedMessage(),
@@ -697,13 +697,13 @@ TEST_P(HTTPParserTest, ParseHTTPResponsesWithLeftoverRepeatedly) {
     AddEvent(events[1]);
 
     std::deque<Message> parsed_messages;
-    ParseResult result1 = ParseFrames(MessageType::kResponse, data_buffer_, &parsed_messages);
+    ParseResult result1 = ParseFrames(message_type_t::kResponse, data_buffer_, &parsed_messages);
 
     data_buffer_.RemovePrefix(result1.end_position);
 
     // Now add msg_splits[2].
     AddEvent(events[2]);
-    ParseResult result2 = ParseFrames(MessageType::kResponse, data_buffer_, &parsed_messages);
+    ParseResult result2 = ParseFrames(message_type_t::kResponse, data_buffer_, &parsed_messages);
 
     ASSERT_EQ(ParseState::kSuccess, result2.state);
     ASSERT_THAT(parsed_messages,
@@ -722,7 +722,7 @@ INSTANTIATE_TEST_SUITE_P(Stressor, HTTPParserTest,
 TEST_F(HTTPParserTest, FindReqBoundaryAligned) {
   const std::string buf = absl::StrCat(kHTTPGetReq0, kHTTPPostReq0, kHTTPGetReq1);
 
-  size_t pos = FindFrameBoundary<http::Message>(MessageType::kRequest, buf, 0);
+  size_t pos = FindFrameBoundary<http::Message>(message_type_t::kRequest, buf, 0);
   ASSERT_NE(pos, std::string::npos);
   EXPECT_EQ(buf.substr(pos), absl::StrCat(kHTTPGetReq0, kHTTPPostReq0, kHTTPGetReq1));
 }
@@ -730,7 +730,7 @@ TEST_F(HTTPParserTest, FindReqBoundaryAligned) {
 TEST_F(HTTPParserTest, FindRespBoundaryAligned) {
   const std::string buf = absl::StrCat(kHTTPResp0, kHTTPResp1, kHTTPResp2);
 
-  size_t pos = FindFrameBoundary<http::Message>(MessageType::kResponse, buf, 0);
+  size_t pos = FindFrameBoundary<http::Message>(message_type_t::kResponse, buf, 0);
   ASSERT_NE(pos, std::string::npos);
   EXPECT_EQ(buf.substr(pos), absl::StrCat(kHTTPResp0, kHTTPResp1, kHTTPResp2));
 }
@@ -742,7 +742,7 @@ TEST_F(HTTPParserTest, FindReqBoundaryUnaligned) {
 
     // FindFrameBoundary() should cut out the garbage text and shouldn't match on the GET inside
     // the garbage text.
-    size_t pos = FindFrameBoundary<http::Message>(MessageType::kRequest, buf, 0);
+    size_t pos = FindFrameBoundary<http::Message>(message_type_t::kRequest, buf, 0);
     ASSERT_NE(pos, std::string::npos);
     EXPECT_EQ(buf.substr(pos), absl::StrCat(kHTTPPostReq0, kHTTPGetReq1));
   }
@@ -753,7 +753,7 @@ TEST_F(HTTPParserTest, FindReqBoundaryUnaligned) {
 
     // FindFrameBoundary() should cut out the garbage text and shouldn't match on the POST inside
     // the garbage text.
-    size_t pos = FindFrameBoundary<http::Message>(MessageType::kRequest, buf, 0);
+    size_t pos = FindFrameBoundary<http::Message>(message_type_t::kRequest, buf, 0);
     ASSERT_NE(pos, std::string::npos);
     EXPECT_EQ(buf.substr(pos), absl::StrCat(kHTTPPostReq0, kHTTPGetReq1));
   }
@@ -763,14 +763,14 @@ TEST_F(HTTPParserTest, FindReqBoundaryWithStartPos) {
   const std::string buf = absl::StrCat(kHTTPGetReq0, kHTTPPostReq0, kHTTPGetReq1);
 
   {
-    size_t pos = FindFrameBoundary<http::Message>(MessageType::kRequest, buf, 1);
+    size_t pos = FindFrameBoundary<http::Message>(message_type_t::kRequest, buf, 1);
     ASSERT_NE(pos, std::string::npos);
     EXPECT_EQ(buf.substr(pos), absl::StrCat(kHTTPPostReq0, kHTTPGetReq1));
   }
 
   {
     size_t pos =
-        FindFrameBoundary<http::Message>(MessageType::kRequest, buf, kHTTPGetReq0.length() + 1);
+        FindFrameBoundary<http::Message>(message_type_t::kRequest, buf, kHTTPGetReq0.length() + 1);
     ASSERT_NE(pos, std::string::npos);
     EXPECT_EQ(buf.substr(pos), absl::StrCat(kHTTPGetReq1));
   }
@@ -782,7 +782,7 @@ TEST_F(HTTPParserTest, FindRespBoundaryUnaligned) {
 
   // FindFrameBoundary() should cut out the garbage text and shouldn't match on the HTTP/1.1
   // inside the garbage text.
-  size_t pos = FindFrameBoundary<http::Message>(MessageType::kResponse, buf, 1);
+  size_t pos = FindFrameBoundary<http::Message>(message_type_t::kResponse, buf, 1);
   ASSERT_NE(pos, std::string::npos);
   EXPECT_EQ(buf.substr(pos), absl::StrCat(kHTTPResp1, kHTTPResp2));
 }
@@ -791,14 +791,14 @@ TEST_F(HTTPParserTest, FindRespBoundaryWithStartPos) {
   const std::string buf = absl::StrCat(kHTTPResp0, kHTTPResp1, kHTTPResp2);
 
   {
-    size_t pos = FindFrameBoundary<http::Message>(MessageType::kResponse, buf, 1);
+    size_t pos = FindFrameBoundary<http::Message>(message_type_t::kResponse, buf, 1);
     ASSERT_NE(pos, std::string::npos);
     EXPECT_EQ(buf.substr(pos), absl::StrCat(kHTTPResp1, kHTTPResp2));
   }
 
   {
     size_t pos =
-        FindFrameBoundary<http::Message>(MessageType::kResponse, buf, kHTTPResp0.length() + 1);
+        FindFrameBoundary<http::Message>(message_type_t::kResponse, buf, kHTTPResp0.length() + 1);
     ASSERT_NE(pos, std::string::npos);
     EXPECT_EQ(buf.substr(pos), absl::StrCat(kHTTPResp2));
   }
@@ -808,12 +808,12 @@ TEST_F(HTTPParserTest, FindNoBoundary) {
   const std::string buf = "This is a bogus string in which there are no HTTP boundaries.";
 
   {
-    size_t pos = FindFrameBoundary<http::Message>(MessageType::kRequest, buf, 0);
+    size_t pos = FindFrameBoundary<http::Message>(message_type_t::kRequest, buf, 0);
     EXPECT_EQ(pos, std::string::npos);
   }
 
   {
-    size_t pos = FindFrameBoundary<http::Message>(MessageType::kResponse, buf, 0);
+    size_t pos = FindFrameBoundary<http::Message>(message_type_t::kResponse, buf, 0);
     EXPECT_EQ(pos, std::string::npos);
   }
 }
@@ -832,7 +832,7 @@ TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessage) {
 
     std::deque<Message> parsed_messages;
     ParseResult result =
-        ParseFrames(MessageType::kRequest, data_buffer_, &parsed_messages, /* resync */ true);
+        ParseFrames(message_type_t::kRequest, data_buffer_, &parsed_messages, /* resync */ true);
 
     EXPECT_EQ(ParseState::kSuccess, result.state);
     ASSERT_THAT(parsed_messages,
@@ -850,7 +850,7 @@ TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessage) {
 
     std::deque<Message> parsed_messages;
     ParseResult result =
-        ParseFrames(MessageType::kResponse, data_buffer_, &parsed_messages, /* resync */ true);
+        ParseFrames(message_type_t::kResponse, data_buffer_, &parsed_messages, /* resync */ true);
 
     EXPECT_EQ(ParseState::kSuccess, result.state);
     EXPECT_THAT(parsed_messages,
@@ -870,7 +870,7 @@ TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessageNoSync) {
 
   std::deque<Message> parsed_messages;
   ParseResult result =
-      ParseFrames(MessageType::kRequest, data_buffer_, &parsed_messages, /* resync */ false);
+      ParseFrames(message_type_t::kRequest, data_buffer_, &parsed_messages, /* resync */ false);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages,
@@ -886,7 +886,7 @@ TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessageNoSync) {
 
   std::deque<Message> parsed_messages;
   ParseResult result =
-      ParseFrames(MessageType::kResponse, data_buffer_, &parsed_messages, /* resync */ false);
+      ParseFrames(message_type_t::kResponse, data_buffer_, &parsed_messages, /* resync */ false);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(HTTPResp1ExpectedMessage(), HTTPResp2ExpectedMessage()));
@@ -912,13 +912,14 @@ TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessageWithSync) {
   std::deque<Message> parsed_messages;
   ParseResult result;
 
-  result = ParseFrames(MessageType::kRequest, data_buffer_, &parsed_messages, /* resync */ false);
+  result =
+      ParseFrames(message_type_t::kRequest, data_buffer_, &parsed_messages, /* resync */ false);
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
   EXPECT_EQ(0, parsed_messages.size());
 
   data_buffer_.RemovePrefix(result.end_position);
 
-  result = ParseFrames(MessageType::kRequest, data_buffer_, &parsed_messages, /* resync */ true);
+  result = ParseFrames(message_type_t::kRequest, data_buffer_, &parsed_messages, /* resync */ true);
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages,
               ElementsAre(HTTPPostReq0ExpectedMessage(), HTTPGetReq1ExpectedMessage()));
@@ -939,13 +940,15 @@ TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessageWithSync) {
   std::deque<Message> parsed_messages;
   ParseResult result;
 
-  result = ParseFrames(MessageType::kResponse, data_buffer_, &parsed_messages, /* resync */ false);
+  result =
+      ParseFrames(message_type_t::kResponse, data_buffer_, &parsed_messages, /* resync */ false);
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
   EXPECT_EQ(0, parsed_messages.size());
 
   data_buffer_.RemovePrefix(result.end_position);
 
-  result = ParseFrames(MessageType::kResponse, data_buffer_, &parsed_messages, /* resync */ true);
+  result =
+      ParseFrames(message_type_t::kResponse, data_buffer_, &parsed_messages, /* resync */ true);
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(HTTPResp1ExpectedMessage(), HTTPResp2ExpectedMessage()));
 }

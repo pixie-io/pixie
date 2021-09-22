@@ -70,7 +70,7 @@ BPF_PERF_OUTPUT(conn_stats_events);
 BPF_PERF_OUTPUT(mmap_events);
 
 // This control_map is a bit-mask that controls which endpoints are traced in a connection.
-// The bits are defined in EndpointRole enum, kRoleClient or kRoleServer. kRoleUnknown is not
+// The bits are defined in endpoint_role_t enum, kRoleClient or kRoleServer. kRoleUnknown is not
 // really used, but is defined for completeness.
 // There is a control map element for each protocol.
 BPF_PERCPU_ARRAY(control_map, uint64_t, kNumProtocols);
@@ -193,7 +193,7 @@ static __inline void set_conn_as_ssl(uint32_t tgid, int32_t fd) {
 }
 
 static __inline struct socket_data_event_t* fill_socket_data_event(
-    enum source_function_t src_fn, enum TrafficDirection direction,
+    enum source_function_t src_fn, enum traffic_direction_t direction,
     const struct conn_info_t* conn_info) {
   uint32_t kZero = 0;
   struct socket_data_event_t* event = socket_data_event_buffer_heap.lookup(&kZero);
@@ -307,7 +307,7 @@ static __inline enum target_tgid_match_result_t match_trace_tgid(const uint32_t 
 }
 
 static __inline void update_traffic_class(struct conn_info_t* conn_info,
-                                          enum TrafficDirection direction, const char* buf,
+                                          enum traffic_direction_t direction, const char* buf,
                                           size_t count) {
   if (conn_info == NULL) {
     return;
@@ -382,7 +382,7 @@ static __inline void read_sockaddr_kernel(struct conn_info_t* conn_info,
 
 static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, int32_t fd,
                                      const struct sockaddr* addr, const struct socket* socket,
-                                     enum EndpointRole role) {
+                                     enum endpoint_role_t role) {
   struct conn_info_t conn_info = {};
   init_conn_info(tgid, fd, &conn_info);
   if (addr != NULL) {
@@ -429,7 +429,7 @@ static __inline void submit_close_event(struct pt_regs* ctx, struct conn_info_t*
 // Writes the input buf to event, and submits the event to the corresponding perf buffer.
 // Returns the bytes output from the input buf. Note that is not the total bytes submitted to the
 // perf buffer, which includes additional metadata.
-static __inline void perf_submit_buf(struct pt_regs* ctx, const enum TrafficDirection direction,
+static __inline void perf_submit_buf(struct pt_regs* ctx, const enum traffic_direction_t direction,
                                      const char* buf, size_t buf_size, size_t offset,
                                      struct conn_info_t* conn_info,
                                      struct socket_data_event_t* event) {
@@ -508,9 +508,9 @@ static __inline void perf_submit_buf(struct pt_regs* ctx, const enum TrafficDire
   }
 }
 
-static __inline void perf_submit_wrapper(struct pt_regs* ctx, const enum TrafficDirection direction,
-                                         const char* buf, const size_t buf_size,
-                                         struct conn_info_t* conn_info,
+static __inline void perf_submit_wrapper(struct pt_regs* ctx,
+                                         const enum traffic_direction_t direction, const char* buf,
+                                         const size_t buf_size, struct conn_info_t* conn_info,
                                          struct socket_data_event_t* event) {
   int bytes_sent = 0;
   unsigned int i;
@@ -525,7 +525,8 @@ static __inline void perf_submit_wrapper(struct pt_regs* ctx, const enum Traffic
   }
 }
 
-static __inline void perf_submit_iovecs(struct pt_regs* ctx, const enum TrafficDirection direction,
+static __inline void perf_submit_iovecs(struct pt_regs* ctx,
+                                        const enum traffic_direction_t direction,
                                         const struct iovec* iov, const size_t iovlen,
                                         const size_t total_size, struct conn_info_t* conn_info,
                                         struct socket_data_event_t* event) {
@@ -732,7 +733,7 @@ static __inline bool should_send_data(uint32_t tgid, uint64_t conn_disabled_tsid
 }
 
 static __inline void update_conn_stats(struct pt_regs* ctx, struct conn_info_t* conn_info,
-                                       enum TrafficDirection direction, ssize_t bytes_count) {
+                                       enum traffic_direction_t direction, ssize_t bytes_count) {
   // Update state of the connection.
   switch (direction) {
     case kEgress:
@@ -759,7 +760,7 @@ static __inline void update_conn_stats(struct pt_regs* ctx, struct conn_info_t* 
 }
 
 static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t id,
-                                  const enum TrafficDirection direction,
+                                  const enum traffic_direction_t direction,
                                   const struct data_args_t* args, ssize_t bytes_count, bool ssl) {
   uint32_t tgid = id >> 32;
 
@@ -873,13 +874,13 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
 //               Clang function cloning, which is not directly controllable.
 
 static __inline void process_syscall_data(struct pt_regs* ctx, uint64_t id,
-                                          const enum TrafficDirection direction,
+                                          const enum traffic_direction_t direction,
                                           const struct data_args_t* args, ssize_t bytes_count) {
   process_data(/* vecs */ false, ctx, id, direction, args, bytes_count, /* ssl */ false);
 }
 
 static __inline void process_syscall_data_vecs(struct pt_regs* ctx, uint64_t id,
-                                               const enum TrafficDirection direction,
+                                               const enum traffic_direction_t direction,
                                                const struct data_args_t* args,
                                                ssize_t bytes_count) {
   process_data(/* vecs */ true, ctx, id, direction, args, bytes_count, /* ssl */ false);

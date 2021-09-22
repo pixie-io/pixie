@@ -142,7 +142,7 @@ ParseState ParseBody(std::string_view* buf, Message* result) {
   // not contain a payload body and the method semantics do not anticipate such a body."
   //
   // We apply this to all methods, since we have no better strategy in other cases.
-  if (result->type == MessageType::kRequest) {
+  if (result->type == message_type_t::kRequest) {
     result->body = "";
     return ParseState::kSuccess;
   }
@@ -220,7 +220,7 @@ ParseState ParseRequest(std::string_view* buf, Message* result) {
   if (retval >= 0) {
     buf->remove_prefix(retval);
 
-    result->type = MessageType::kRequest;
+    result->type = message_type_t::kRequest;
     result->minor_version = minor_version;
     result->headers = GetHTTPHeadersMap(headers, num_headers);
     result->req_method = std::string(method, method_len);
@@ -252,7 +252,7 @@ ParseState ParseResponse(std::string_view* buf, Message* result) {
   if (retval >= 0) {
     buf->remove_prefix(retval);
 
-    result->type = MessageType::kResponse;
+    result->type = message_type_t::kResponse;
     result->minor_version = minor_version;
     result->headers = GetHTTPHeadersMap(headers, num_headers);
     result->resp_status = status;
@@ -279,11 +279,11 @@ ParseState ParseResponse(std::string_view* buf, Message* result) {
  * @param result: A parsed HTTP message, if parse was successful (must consider return value).
  * @return parse state indicating how the parse progressed.
  */
-ParseState ParseFrame(MessageType type, std::string_view* buf, Message* result) {
+ParseState ParseFrame(message_type_t type, std::string_view* buf, Message* result) {
   switch (type) {
-    case MessageType::kRequest:
+    case message_type_t::kRequest:
       return pico_wrapper::ParseRequest(buf, result);
-    case MessageType::kResponse:
+    case message_type_t::kResponse:
       return pico_wrapper::ParseResponse(buf, result);
     default:
       return ParseState::kInvalid;
@@ -295,7 +295,7 @@ ParseState ParseFrame(MessageType type, std::string_view* buf, Message* result) 
 // ATM, they actually do not share the same logic. As a result, BPF events detected as HTTP traffic,
 // can actually fail to find any valid boundary by this function. Unfortunately, BPF has many
 // restrictions that likely make this a difficult or impossible goal.
-size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_pos) {
+size_t FindFrameBoundary(message_type_t type, std::string_view buf, size_t start_pos) {
   // List of all HTTP request methods. All HTTP requests start with one of these.
   // https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods
   static constexpr std::string_view kHTTPReqStartPatternArray[] = {
@@ -316,13 +316,13 @@ size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_po
   // Choose the right set of patterns for request vs response.
   const ArrayView<std::string_view>* start_patterns = nullptr;
   switch (type) {
-    case MessageType::kRequest:
+    case message_type_t::kRequest:
       start_patterns = &kHTTPReqStartPatterns;
       break;
-    case MessageType::kResponse:
+    case message_type_t::kResponse:
       start_patterns = &kHTTPRespStartPatterns;
       break;
-    case MessageType::kUnknown:
+    case message_type_t::kUnknown:
       return std::string::npos;
   }
 
@@ -370,13 +370,13 @@ size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_po
 }  // namespace http
 
 template <>
-ParseState ParseFrame(MessageType type, std::string_view* buf, http::Message* result,
+ParseState ParseFrame(message_type_t type, std::string_view* buf, http::Message* result,
                       NoState* /*state*/) {
   return http::ParseFrame(type, buf, result);
 }
 
 template <>
-size_t FindFrameBoundary<http::Message>(MessageType type, std::string_view buf, size_t start_pos,
+size_t FindFrameBoundary<http::Message>(message_type_t type, std::string_view buf, size_t start_pos,
                                         NoState* /*state*/) {
   return http::FindFrameBoundary(type, buf, start_pos);
 }

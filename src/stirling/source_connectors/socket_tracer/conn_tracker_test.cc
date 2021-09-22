@@ -731,7 +731,7 @@ TEST_F(ConnTrackerTest, ConnStats) {
   EXPECT_EQ(tracker.conn_stats().BytesRecvSinceLastRead(), 0);
   EXPECT_EQ(tracker.conn_stats().BytesSentSinceLastRead(), 50);
 
-  for (auto p : magic_enum::enum_values<TrafficProtocol>()) {
+  for (auto p : magic_enum::enum_values<traffic_protocol_t>()) {
     for (auto r : {kRoleClient, kRoleServer}) {
       std::cout << absl::Substitute("UpdateStateParam{$0, $1, ConnTracker::State::kCollecting},\n",
                                     magic_enum::enum_name(p), magic_enum::enum_name(r));
@@ -740,8 +740,8 @@ TEST_F(ConnTrackerTest, ConnStats) {
 }
 
 struct UpdateStateParam {
-  TrafficProtocol protocol;
-  EndpointRole role;
+  traffic_protocol_t protocol;
+  endpoint_role_t role;
   ConnTracker::State expected_state;
 };
 

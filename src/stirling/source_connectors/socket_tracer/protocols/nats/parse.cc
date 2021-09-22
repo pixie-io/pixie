@@ -49,11 +49,11 @@ constexpr std::string_view kMessageFieldDelimiters = " \t";
 
 size_t FindMessageBoundary(std::string_view buf, size_t start_pos) {
   // Based on https://github.com/nats-io/docs/blob/master/nats_protocol/nats-protocol.md.
-  const std::vector<std::string_view> kMessageTypes = {kInfo, kConnect, kPub,  kSub, kUnsub,
-                                                       kMsg,  kPing,    kPong, kOK,  kERR};
+  const std::vector<std::string_view> kmessage_type_ts = {kInfo, kConnect, kPub,  kSub, kUnsub,
+                                                          kMsg,  kPing,    kPong, kOK,  kERR};
   constexpr size_t kMinMsgSize = 3;
   for (size_t i = start_pos; i < buf.size() - kMinMsgSize; ++i) {
-    for (auto msg_type : kMessageTypes) {
+    for (auto msg_type : kmessage_type_ts) {
       if (absl::StartsWith(buf.substr(i), msg_type)) {
         return i;
       }
@@ -219,13 +219,13 @@ Status ParseMessage(std::string_view* buf, Message* msg) {
 }  // namespace nats
 
 template <>
-size_t FindFrameBoundary<nats::Message>(MessageType /*type*/, std::string_view buf,
+size_t FindFrameBoundary<nats::Message>(message_type_t /*type*/, std::string_view buf,
                                         size_t start_pos, NoState* /*state*/) {
   return nats::FindMessageBoundary(buf, start_pos);
 }
 
 template <>
-ParseState ParseFrame(MessageType /*type*/, std::string_view* buf, nats::Message* msg,
+ParseState ParseFrame(message_type_t /*type*/, std::string_view* buf, nats::Message* msg,
                       NoState* /*state*/) {
   return TranslateStatus(nats::ParseMessage(buf, msg));
 }

@@ -95,7 +95,7 @@ constexpr uint8_t kAPIVersionResponse[] = {
     0x00, 0x00};
 
 template <size_t N>
-Packet GenPacket(MessageType type, const uint8_t (&raw_packet)[N], int timestamp,
+Packet GenPacket(message_type_t type, const uint8_t (&raw_packet)[N], int timestamp,
                  int correlation_id) {
   Packet result;
   State state = {{correlation_id}};
@@ -107,12 +107,13 @@ Packet GenPacket(MessageType type, const uint8_t (&raw_packet)[N], int timestamp
   return result;
 }
 
-const Packet kProduceReqPacket = GenPacket(MessageType::kRequest, kProduceRequest, 0, 4);
-const Packet kProduceRespPacket = GenPacket(MessageType::kResponse, kProduceResponse, 1, 4);
-const Packet kMetaDataReqPacket = GenPacket(MessageType::kRequest, kMetaDataRequest, 2, 1);
-const Packet kMetaDataRespPacket = GenPacket(MessageType::kResponse, kMetaDataResponse, 3, 1);
-const Packet kAPIVersionReqPacket = GenPacket(MessageType::kRequest, kAPIVersionRequest, 4, 2);
-const Packet kAPIVersionRespPacket = GenPacket(MessageType::kResponse, kAPIVersionResponse, 5, 2);
+const Packet kProduceReqPacket = GenPacket(message_type_t::kRequest, kProduceRequest, 0, 4);
+const Packet kProduceRespPacket = GenPacket(message_type_t::kResponse, kProduceResponse, 1, 4);
+const Packet kMetaDataReqPacket = GenPacket(message_type_t::kRequest, kMetaDataRequest, 2, 1);
+const Packet kMetaDataRespPacket = GenPacket(message_type_t::kResponse, kMetaDataResponse, 3, 1);
+const Packet kAPIVersionReqPacket = GenPacket(message_type_t::kRequest, kAPIVersionRequest, 4, 2);
+const Packet kAPIVersionRespPacket =
+    GenPacket(message_type_t::kResponse, kAPIVersionResponse, 5, 2);
 
 }  // namespace testdata
 }  // namespace kafka

@@ -33,17 +33,17 @@ using ::testing::StrEq;
 
 // Tests that the simple cases are as expected.
 TEST(FindMessageBoundaryTest, ResultsAreAsExpected) {
-  EXPECT_EQ(FindFrameBoundary<nats::Message>(MessageType::kUnknown, " CONNECT {} \r\n", 0), 1);
-  EXPECT_EQ(FindFrameBoundary<nats::Message>(MessageType::kUnknown, " INFO {} \r\n", 0), 1);
-  EXPECT_EQ(FindFrameBoundary<nats::Message>(MessageType::kUnknown, " PUB \r\n", 0), 1);
-  EXPECT_EQ(FindFrameBoundary<nats::Message>(MessageType::kUnknown, " SUB \r\n", 0), 1);
-  EXPECT_EQ(FindFrameBoundary<nats::Message>(MessageType::kUnknown, " UNSUB \r\n", 0), 1);
-  EXPECT_EQ(FindFrameBoundary<nats::Message>(MessageType::kUnknown, " MSG \r\n", 0), 1);
-  EXPECT_EQ(FindFrameBoundary<nats::Message>(MessageType::kUnknown, " PING\r\n", 0), 1);
-  EXPECT_EQ(FindFrameBoundary<nats::Message>(MessageType::kUnknown, " PONG\r\n", 0), 1);
-  EXPECT_EQ(FindFrameBoundary<nats::Message>(MessageType::kUnknown, " +OK\r\n", 0), 1);
-  EXPECT_EQ(FindFrameBoundary<nats::Message>(MessageType::kUnknown, " -ERR 'test'\r\n", 0), 1);
-  EXPECT_EQ(FindFrameBoundary<nats::Message>(MessageType::kUnknown, " {} \r\n", 0),
+  EXPECT_EQ(FindFrameBoundary<nats::Message>(message_type_t::kUnknown, " CONNECT {} \r\n", 0), 1);
+  EXPECT_EQ(FindFrameBoundary<nats::Message>(message_type_t::kUnknown, " INFO {} \r\n", 0), 1);
+  EXPECT_EQ(FindFrameBoundary<nats::Message>(message_type_t::kUnknown, " PUB \r\n", 0), 1);
+  EXPECT_EQ(FindFrameBoundary<nats::Message>(message_type_t::kUnknown, " SUB \r\n", 0), 1);
+  EXPECT_EQ(FindFrameBoundary<nats::Message>(message_type_t::kUnknown, " UNSUB \r\n", 0), 1);
+  EXPECT_EQ(FindFrameBoundary<nats::Message>(message_type_t::kUnknown, " MSG \r\n", 0), 1);
+  EXPECT_EQ(FindFrameBoundary<nats::Message>(message_type_t::kUnknown, " PING\r\n", 0), 1);
+  EXPECT_EQ(FindFrameBoundary<nats::Message>(message_type_t::kUnknown, " PONG\r\n", 0), 1);
+  EXPECT_EQ(FindFrameBoundary<nats::Message>(message_type_t::kUnknown, " +OK\r\n", 0), 1);
+  EXPECT_EQ(FindFrameBoundary<nats::Message>(message_type_t::kUnknown, " -ERR 'test'\r\n", 0), 1);
+  EXPECT_EQ(FindFrameBoundary<nats::Message>(message_type_t::kUnknown, " {} \r\n", 0),
             std::string_view::npos);
 }
 
@@ -60,7 +60,7 @@ TEST_P(ParseFrameTest, CheckResult) {
   TestParam param = GetParam();
   nats::Message msg;
 
-  EXPECT_EQ(ParseFrame(MessageType::kUnknown, &param.input, &msg), ParseState::kSuccess);
+  EXPECT_EQ(ParseFrame(message_type_t::kUnknown, &param.input, &msg), ParseState::kSuccess);
   EXPECT_THAT(msg.command, StrEq(param.command));
   EXPECT_THAT(msg.options, StrEq(param.options));
   EXPECT_THAT(param.input, IsEmpty());

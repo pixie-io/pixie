@@ -61,7 +61,7 @@ struct WellFormedTestCase {
   std::string_view input;
   std::string_view expected_command;
   std::string_view expected_payload;
-  std::vector<MessageType> types_to_test = {MessageType::kRequest, MessageType::kResponse};
+  std::vector<message_type_t> types_to_test = {message_type_t::kRequest, message_type_t::kResponse};
 };
 
 std::ostream& operator<<(std::ostream& os, const WellFormedTestCase& test_case) {
@@ -78,7 +78,7 @@ std::ostream& operator<<(std::ostream& os, ParseState state) {
 class ParseTest : public ::testing::TestWithParam<WellFormedTestCase> {};
 
 TEST_P(ParseTest, ResultsAreAsExpected) {
-  for (MessageType type : GetParam().types_to_test) {
+  for (message_type_t type : GetParam().types_to_test) {
     std::string_view req = GetParam().input;
     Message msg;
 
@@ -99,40 +99,40 @@ INSTANTIATE_TEST_SUITE_P(
         WellFormedTestCase{kEmptyBulkStringMsg, "", ""},
         WellFormedTestCase{kNullBulkStringMsg, "", "<NULL>"},
         WellFormedTestCase{kArrayMsg, "", R"(["OK","Error message","bulk string"])"},
-        WellFormedTestCase{kCmdMsg, "ACL LOAD", R"([])", {MessageType::kRequest}},
+        WellFormedTestCase{kCmdMsg, "ACL LOAD", R"([])", {message_type_t::kRequest}},
         WellFormedTestCase{kNullElemInArrayMsg, "", R"(["<NULL>"])"},
         WellFormedTestCase{kNullArrayMsg, "", "[NULL]"},
         WellFormedTestCase{kEmptyArrayMsg, "", "[]"},
         WellFormedTestCase{kAppendMsg, "APPEND", R"({"key":"foo","value":"bar"})",
-                           {MessageType::kRequest}},
+                           {message_type_t::kRequest}},
         WellFormedTestCase{kAclGetuserMsg,  "ACL GETUSER", R"({"username":"user"})",
-                           {MessageType::kRequest}},
+                           {message_type_t::kRequest}},
         WellFormedTestCase{kAclDeluserMsg,  "ACL DELUSER", R"({"username":["foo","bar"]})",
-                           {MessageType::kRequest}},
+                           {message_type_t::kRequest}},
         WellFormedTestCase{kBrpopLPushMsg, "BRPOPLPUSH",
                            R"({"source":"src","destination":"dest","timeout":"10"})",
-                           {MessageType::kRequest}},
+                           {message_type_t::kRequest}},
         WellFormedTestCase{kLPushMsg, "LPUSH", R"({"key":"foo","element":["bar0","bar1"]})",
-                           {MessageType::kRequest}},
+                           {message_type_t::kRequest}},
         WellFormedTestCase{kZPopMaxMsg, "ZPOPMAX", R"({"key":"foo","count":"10"})",
-                           {MessageType::kRequest}},
+                           {message_type_t::kRequest}},
         WellFormedTestCase{kZPopMaxNoOptArgMsg,  "ZPOPMAX", R"({"key":"foo"})",
-                           {MessageType::kRequest}},
+                           {message_type_t::kRequest}},
         WellFormedTestCase{kSwapDBMsg, "SWAPDB", R"({"index1":"foo","index2":"bar"})",
-                           {MessageType::kRequest}},
+                           {message_type_t::kRequest}},
         WellFormedTestCase{kEvalSHAMsg, "EVALSHA",
                            R"({"sha1":"sha","numkeys":"3","key":["foo"],"value":["bar"]})",
-                           {MessageType::kRequest}},
+                           {message_type_t::kRequest}},
         WellFormedTestCase{kHSetMsg, "HSET",
                            R"({"key":"foo","field value":[{"field":"val"},{"value":"3"}]})",
-                           {MessageType::kRequest, MessageType::kResponse}}));
+                           {message_type_t::kRequest, message_type_t::kResponse}}));
 // clang-format on
 
 TEST(ParsePubMsgTest, DetectPublishedMessage) {
   std::string_view resp = kPubMsg;
   Message msg;
 
-  EXPECT_EQ(ParseFrame(MessageType::kResponse, &resp, &msg), ParseState::kSuccess);
+  EXPECT_EQ(ParseFrame(message_type_t::kResponse, &resp, &msg), ParseState::kSuccess);
   EXPECT_THAT(resp, IsEmpty());
   EXPECT_THAT(msg.payload, StrEq(R"(["message","foo","test"])"));
   EXPECT_TRUE(msg.is_published_message);
@@ -145,7 +145,7 @@ TEST_P(ParseIncompleteInputTest, IncompleteInput) {
   std::string_view input = GetParam();
   Message msg;
 
-  EXPECT_EQ(ParseFrame(MessageType::kRequest, &input, &msg), ParseState::kNeedsMoreData);
+  EXPECT_EQ(ParseFrame(message_type_t::kRequest, &input, &msg), ParseState::kNeedsMoreData);
   EXPECT_THAT(std::string(input), StrEq(original_input));
 }
 
@@ -169,7 +169,7 @@ TEST_P(ParseInvalidInputTest, InvalidInput) {
   std::string_view input = GetParam();
   Message msg;
 
-  EXPECT_EQ(ParseFrame(MessageType::kRequest, &input, &msg), ParseState::kInvalid);
+  EXPECT_EQ(ParseFrame(message_type_t::kRequest, &input, &msg), ParseState::kInvalid);
   EXPECT_THAT(std::string(input), StrEq(original_input));
 }
 
