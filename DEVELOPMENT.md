@@ -9,21 +9,24 @@ The Pixie project currently consists of three main components:
 This document outlines the process for setting up the development environment for each of these components.
 
 ## Setting up the Environment
+To set up the developer environment required to start building Pixie's components, run the `run_docker.sh` script. The following script will run the Docker container and dump you out inside the docker container console from which you can run all the necessary tools to build, test, and deploy Pixie in development mode.
 
-To setup the developer environment required to start building Pixie's components, it is easiest to use our docker image which has the necessary tools and packages. If you plan to use a non-minikube environment (gke, eks, etc) for running Vizier/Pixie Cloud, this can be done by running our script:
+1. Since this script runs a Docker container, you must have Docker installed. To install it follow these instructions [here](https://docs.docker.com/get-docker/).
 
-```
-./scripts/run_docker.sh
-```
+2. `run_docker.sh` requires the realpath command which is part of the coreutils package that you may need to install:
+    * Ubuntu: `sudo apt-get install coreutils`
+    * OS X: `brew install coreutils`
 
-Otherwise, to launch the dev environment with minikube, run:
+3. Finally, run the following script to start the Docker container:
+    ```
+    ./scripts/run_docker.sh
+    ```
 
-```
-make dev-env-start
-```
+4. Since development of Pixie requires a Kubernetes cluster to deploy to, you must have Minikube installed and running. Follow the instructions [here](https://docs.px.dev/installing-pixie/setting-up-k8s/minikube-setup/). Note that Pixie development scripts use the output of `kubectl config current-context` to determine which Kubernetes cluster to deploy to. So make sure if you have multiple clusters, the context is pointing to the correct target cluster.
 
 
 ## Pixie Cloud
+Pixie Cloud manages users, authentication, and proxying “passthrough” mode. If you want to make changes to Pixie Cloud, then you will need to spin up a self-hosted version in development mode to test those changes. If you aren't changing Pixie Cloud, feel free to use officially released Pixie Cloud options listed in our Install Guides.
 
 1. Load the config maps and secrets.
 
@@ -93,25 +96,30 @@ After which, you can rerun a `px auth login` to authenticate with the dev cloud 
 Make sure to `px delete --clobber` if running a prior instance of Vizier pointing to another cloud instance.
 
 ## Vizier
+Vizier is Pixie’s data collector that runs on each cluster. It is responsible for query execution and managing PEMs.
 
-Deploying a development version of Vizier is a 2-step process. A release-version of Vizier must first be deployed (through the CLI or YAMLs), which will set up specific cluster-secrets that are not deployed via Skaffold. Skaffold can then be run to build and deploy a version of Vizier based on local changes.
+### Getting Started
+Verify that you can build Pixie Vizier and run the unit tests.
 
-1. If deploying Vizier pointing to a dev cloud instance, make sure to export the following environment variables:
+The following will build Pixie Vizier and run a unit test of your choice in Pixie's Vizier module using [Bazel](https://bazel.build/). If you are running the development environment via Docker, the following should be run inside the Docker container.
+
+```
+bazel test //src/<path to unit test file> --test_output=errors -j $(nproc)
+```
+
+### Deploying
+Deploying a development version of Vizier is a 2-step process. An official release-version of Vizier must first be deployed (through the Pixie CLI or YAMLs) and can then be run to build and deploy a local development version of Vizier.
+
+1. If you wish to test development changes made to both Pixie Cloud and Vizier, export the following environment variables that will point to the development Pixie Cloud instance:
 
     ```
     export PL_CLOUD_ADDR=dev.withpixie.dev:443
     export PL_TESTING_ENV=dev
     ```
 
-2. Deploy Vizier through CLI/YAML. If deploying Vizier to a dev cloud instance, make sure to export the necessary dev-specific environment variables mentioned in `Pixie Cloud` above.
+2. Install the Pixie CLI and run `px deploy`. Depending on whether you are pointing to a self-hosted Pixie Cloud or the official Community Pixie Cloud follow the appropriate installation guide [here](https://docs.px.dev/installing-pixie/install-guides/). `px deploy` will set up specific cluster-secrets, etc that are not deployed via Skaffold. Wait for this command to successfully complete and Vizier to successfully connect to Pixie Cloud, to ensure all secrets and configs have been set up properly. Note you will not need to run this to deploy again unless you connect to a different cluster.
 
-    ```
-    px deploy
-    ```
-
-3. Wait for the Vizier to successfully connect to the cloud instance, to ensure all secrets and configs have been set up properly.
-
-4. Deploy a local version of Vizier using skaffold.
+3. Deploy a local development version of Pixie Vizier using  [Skaffold](https://skaffold.dev/). Note each time you make a code change you will need to run this command to build and deploy the new version.
 
    ```
    skaffold run -f skaffold/skaffold_vizier.yaml

@@ -47,6 +47,7 @@ docker run --rm -it \
   "${configs[@]}" \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v "${workspace_root}:/pl/src/px.dev/pixie" \
+  --network host \
   "${PX_RUN_DOCKER_EXTRA_ARGS[@]}" \
   "${docker_image_with_tag}" \
   "${exec_cmd[@]}"
