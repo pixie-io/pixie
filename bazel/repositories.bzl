@@ -110,6 +110,7 @@ def _cc_deps():
     _include_all_repo("com_github_libarchive_libarchive")
 
     _git_repo_impl("com_github_iovisor_bcc", build_file = "//bazel/external:bcc.BUILD")
+    _git_repo_impl("com_github_iovisor_bpftrace", build_file = "//bazel/external:bpftrace.BUILD")
 
     _repo_impl("com_github_apache_arrow", build_file = "//bazel/external:arrow.BUILD")
     _repo_impl("com_github_ariafallah_csv_parser", build_file = "//bazel/external:csv_parser.BUILD")
@@ -117,7 +118,6 @@ def _cc_deps():
     _repo_impl("com_github_cameron314_concurrentqueue", build_file = "//bazel/external:concurrentqueue.BUILD")
     _repo_impl("com_github_cmcqueen_aes_min", patches = ["//bazel/external:aes_min.patch"], patch_args = ["-p1"], build_file = "//bazel/external:aes_min.BUILD")
     _repo_impl("com_github_cyan4973_xxhash", build_file = "//bazel/external:xxhash.BUILD")
-    _repo_impl("com_github_iovisor_bpftrace", build_file = "//bazel/external:bpftrace.BUILD")
     _repo_impl("com_github_nlohmann_json", build_file = "//bazel/external:nlohmann_json.BUILD")
     _repo_impl("com_github_packetzero_dnsparser", build_file = "//bazel/external:dnsparser.BUILD")
     _repo_impl("com_github_rlyeh_sole", build_file = "//bazel/external:sole.BUILD")

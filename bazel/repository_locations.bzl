@@ -264,11 +264,6 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "threadstacks-94adbe26c4aaf9ca945fd7936670d40ec6f228fb",
         urls = ["https://github.com/pixie-io/threadstacks/archive/94adbe26c4aaf9ca945fd7936670d40ec6f228fb.tar.gz"],
     ),
-    com_github_iovisor_bpftrace = dict(
-        sha256 = "8bd665c0ab7cc79794d4cd7a1c5553e8bd25b65215bb7b4b7c4f905067cf63ee",
-        strip_prefix = "bpftrace-da17ebda1090b5e09dc89d69a3afdb580d486670",
-        urls = ["https://github.com/pixie-io/bpftrace/archive/da17ebda1090b5e09dc89d69a3afdb580d486670.tar.gz"],
-    ),
     com_github_antlr_antlr4 = dict(
         urls = ["https://github.com/antlr/antlr4/archive/refs/tags/4.9.2.tar.gz"],
         strip_prefix = "antlr4-4.9.2",
@@ -301,5 +296,9 @@ GIT_REPOSITORY_LOCATIONS = dict(
         remote = "https://github.com/pixie-io/bcc.git",
         commit = "c50098cadc54a602a7e423ae958dca8562ee2cf9",
         shallow_since = "1618606641 -0700",
+    ),
+    com_github_iovisor_bpftrace = dict(
+        remote = "https://github.com/pixie-io/bpftrace.git",
+        commit = "da17ebda1090b5e09dc89d69a3afdb580d486670",
     ),
 )
