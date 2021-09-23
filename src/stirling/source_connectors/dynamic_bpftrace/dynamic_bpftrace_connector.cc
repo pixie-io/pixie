@@ -138,15 +138,10 @@ StatusOr<BackedDataElements> ConvertFields(const std::vector<bpftrace::Field> fi
 StatusOr<std::unique_ptr<SourceConnector>> DynamicBPFTraceConnector::Create(
     std::string_view source_name,
     const dynamic_tracing::ir::logical::TracepointDeployment::Tracepoint& tracepoint) {
-  // We create a separate BPFTrace instance just to compile and get the schema.
-  // We later will run the compilation again a second time during Init.
-  // This is wasteful and somewhat hacky, but there is a circular dependency otherwise.
-  // TODO(oazizi): Clean this up. No time now since trying to get this out quickly.
-  //               Right solution is probably to inject the compiled program into the connector.
-  BPFTraceWrapper bpftrace;
-  PL_RETURN_IF_ERROR(bpftrace.CompileForPrintfOutput(tracepoint.bpftrace().program(), {}));
-  const std::vector<bpftrace::Field>& fields = bpftrace.OutputFields();
-  std::string_view format_str = bpftrace.OutputFmtStr();
+  auto bpftrace = std::make_unique<bpf_tools::BPFTraceWrapper>();
+  PL_RETURN_IF_ERROR(bpftrace->CompileForPrintfOutput(tracepoint.bpftrace().program(), {}));
+  const std::vector<bpftrace::Field>& fields = bpftrace->OutputFields();
+  std::string_view format_str = bpftrace->OutputFmtStr();
   PL_ASSIGN_OR_RETURN(BackedDataElements columns, ConvertFields(fields, format_str));
 
   // Could consider making a better description, but may require more user input,
@@ -156,16 +151,16 @@ StatusOr<std::unique_ptr<SourceConnector>> DynamicBPFTraceConnector::Create(
   std::unique_ptr<DynamicDataTableSchema> table_schema =
       DynamicDataTableSchema::Create(tracepoint.table_name(), desc, std::move(columns));
 
-  return std::unique_ptr<SourceConnector>(new DynamicBPFTraceConnector(
-      source_name, std::move(table_schema), tracepoint.bpftrace().program()));
+  return std::unique_ptr<SourceConnector>(
+      new DynamicBPFTraceConnector(source_name, std::move(table_schema), std::move(bpftrace)));
 }
 
 DynamicBPFTraceConnector::DynamicBPFTraceConnector(
     std::string_view source_name, std::unique_ptr<DynamicDataTableSchema> table_schema,
-    std::string_view script)
+    std::unique_ptr<bpf_tools::BPFTraceWrapper> bpftrace)
     : SourceConnector(source_name, ArrayView<DataTableSchema>(&table_schema->Get(), 1)),
       table_schema_(std::move(table_schema)),
-      script_(script) {}
+      bpftrace_(std::move(bpftrace)) {}
 
 namespace {
 
@@ -226,15 +221,14 @@ Status DynamicBPFTraceConnector::InitImpl() {
   push_freq_mgr_.set_period(kPushPeriod);
 
   auto callback_fn = std::bind(&DynamicBPFTraceConnector::HandleEvent, this, std::placeholders::_1);
-  PL_RETURN_IF_ERROR(CompileForPrintfOutput(script_, {}));
-  output_fields_ = OutputFields();
+  output_fields_ = bpftrace_->OutputFields();
   PL_RETURN_IF_ERROR(CheckOutputFields(output_fields_, table_schema_->Get().elements()));
-  PL_RETURN_IF_ERROR(Deploy(callback_fn));
+  PL_RETURN_IF_ERROR(bpftrace_->Deploy(callback_fn));
   return Status::OK();
 }
 
 Status DynamicBPFTraceConnector::StopImpl() {
-  BPFTraceWrapper::Stop();
+  bpftrace_->Stop();
   return Status::OK();
 }
 
@@ -247,7 +241,7 @@ void DynamicBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */,
   }
   // This trigger a callbacks for each BPFTrace printf event in the perf buffers.
   // Store data_table_ so the Handle function has the appropriate context.
-  PollPerfBuffers();
+  bpftrace_->PollPerfBuffers();
   data_table_ = nullptr;
 }
 
@@ -329,42 +323,44 @@ void DynamicBPFTraceConnector::HandleEvent(uint8_t* data) {
       case bpftrace::Type::usym: {
         uint64_t addr = *reinterpret_cast<uint64_t*>(data + field.offset);
         uint64_t pid = *reinterpret_cast<uint64_t*>(data + field.offset + 8);
-        r.Append(col, types::StringValue(bpftrace_.resolve_usym(addr, pid)));
+        r.Append(col, types::StringValue(bpftrace_->mutable_bpftrace()->resolve_usym(addr, pid)));
         break;
       }
       case bpftrace::Type::ksym: {
         uint64_t addr = *reinterpret_cast<uint64_t*>(data + field.offset);
-        r.Append(col, types::StringValue(bpftrace_.resolve_ksym(addr)));
+        r.Append(col, types::StringValue(bpftrace_->mutable_bpftrace()->resolve_ksym(addr)));
         break;
       }
       case bpftrace::Type::username: {
         uint64_t addr = *reinterpret_cast<uint64_t*>(data + field.offset);
-        r.Append(col, types::StringValue(bpftrace_.resolve_uid(addr)));
+        r.Append(col, types::StringValue(bpftrace_->mutable_bpftrace()->resolve_uid(addr)));
         break;
       }
       case bpftrace::Type::probe: {
         uint64_t probe_id = *reinterpret_cast<uint64_t*>(data + field.offset);
-        r.Append(col, types::StringValue(bpftrace_.resolve_probe(probe_id)));
+        r.Append(col, types::StringValue(bpftrace_->mutable_bpftrace()->resolve_probe(probe_id)));
         break;
       }
       case bpftrace::Type::kstack: {
         uint64_t stackidpid = *reinterpret_cast<uint64_t*>(data + field.offset);
         bool ustack = false;
         auto& stack_type = field.type.stack_type;
-        r.Append(col, types::StringValue(bpftrace_.get_stack(stackidpid, ustack, stack_type)));
+        r.Append(col, types::StringValue(bpftrace_->mutable_bpftrace()->get_stack(
+                          stackidpid, ustack, stack_type)));
         break;
       }
       case bpftrace::Type::ustack: {
         uint64_t stackidpid = *reinterpret_cast<uint64_t*>(data + field.offset);
         bool ustack = true;
         auto& stack_type = field.type.stack_type;
-        r.Append(col, types::StringValue(bpftrace_.get_stack(stackidpid, ustack, stack_type)));
+        r.Append(col, types::StringValue(bpftrace_->mutable_bpftrace()->get_stack(
+                          stackidpid, ustack, stack_type)));
         break;
       }
       case bpftrace::Type::timestamp: {
         auto x = reinterpret_cast<bpftrace::AsyncEvent::Strftime*>(data + field.offset);
-        r.Append(col, types::StringValue(
-                          bpftrace_.resolve_timestamp(x->strftime_id, x->nsecs_since_boot)));
+        r.Append(col, types::StringValue(bpftrace_->mutable_bpftrace()->resolve_timestamp(
+                          x->strftime_id, x->nsecs_since_boot)));
         break;
       }
       case bpftrace::Type::pointer: {

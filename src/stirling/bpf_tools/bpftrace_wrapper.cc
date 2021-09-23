@@ -19,6 +19,7 @@
 #include "src/stirling/bpf_tools/bpftrace_wrapper.h"
 
 #include <bpftrace/src/ast/codegen_llvm.h>
+#include <bpftrace/src/ast/field_analyser.h>
 #include <bpftrace/src/ast/printer.h>
 #include <bpftrace/src/ast/semantic_analyser.h>
 #include <bpftrace/src/clang_parser.h>
@@ -97,8 +98,14 @@ Status BPFTraceWrapper::Compile(std::string_view script, const std::vector<std::
   bpftrace_.join_argnum_ = 16;
   bpftrace_.join_argsize_ = 1024;
 
-  err = static_cast<int>(!bpftrace::TracepointFormatParser::parse(driver.root_.get(), bpftrace_));
+  bpftrace::ast::FieldAnalyser fields(driver.root_.get(), bpftrace_);
+  err = fields.analyse();
   if (err != 0) {
+    return error::Internal("Field analyser failed.");
+  }
+
+  success = bpftrace::TracepointFormatParser::parse(driver.root_.get(), bpftrace_);
+  if (!success) {
     return error::Internal("TracepointFormatParser failed.");
   }
 

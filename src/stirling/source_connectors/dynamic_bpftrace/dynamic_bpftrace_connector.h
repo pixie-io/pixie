@@ -29,7 +29,7 @@
 namespace px {
 namespace stirling {
 
-class DynamicBPFTraceConnector : public SourceConnector, public bpf_tools::BPFTraceWrapper {
+class DynamicBPFTraceConnector : public SourceConnector {
  public:
   static constexpr auto kSamplingPeriod = std::chrono::milliseconds{100};
   static constexpr auto kPushPeriod = std::chrono::milliseconds{1000};
@@ -44,7 +44,7 @@ class DynamicBPFTraceConnector : public SourceConnector, public bpf_tools::BPFTr
  protected:
   explicit DynamicBPFTraceConnector(std::string_view source_name,
                                     std::unique_ptr<DynamicDataTableSchema> table_schema,
-                                    std::string_view script);
+                                    std::unique_ptr<bpf_tools::BPFTraceWrapper> bpftrace);
   Status InitImpl() override;
   Status StopImpl() override;
   void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
@@ -54,7 +54,7 @@ class DynamicBPFTraceConnector : public SourceConnector, public bpf_tools::BPFTr
 
   std::string name_;
   std::unique_ptr<DynamicDataTableSchema> table_schema_;
-  std::string script_;
+  std::unique_ptr<bpf_tools::BPFTraceWrapper> bpftrace_;
 
   // The types according to the BPFTrace printf format.
   std::vector<bpftrace::Field> output_fields_;

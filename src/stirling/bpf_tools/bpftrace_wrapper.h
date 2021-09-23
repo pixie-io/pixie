@@ -97,9 +97,10 @@ class BPFTraceWrapper {
    */
   bpftrace::BPFTraceMap GetBPFMap(const std::string& name);
 
- protected:
-  bpftrace::BPFtrace bpftrace_;
-  std::unique_ptr<bpftrace::BpfOrc> bpforc_;
+  /**
+   * Get direct access to the BPFTrace object.
+   */
+  bpftrace::BPFtrace* mutable_bpftrace() { return &bpftrace_; }
 
  private:
   Status Compile(std::string_view script, const std::vector<std::string>& params);
@@ -109,6 +110,13 @@ class BPFTraceWrapper {
   //  2) If there is more than one printf, all printfs have a consistent format string.
   //     In other words, all printfs must output to the same table.
   Status CheckPrintfs() const;
+
+  // The primary BPFtrace object.
+  bpftrace::BPFtrace bpftrace_;
+
+  // BPFTrace on-request compilation class.
+  // Required by bpftrace_.
+  std::unique_ptr<bpftrace::BpfOrc> bpforc_;
 
   bool compiled_ = false;
   bool printf_to_table_ = false;
