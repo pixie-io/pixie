@@ -177,8 +177,8 @@ def pl_deps():
     _bazel_repo("rules_foreign_cc")
     _bazel_repo("io_bazel_rules_k8s")
     _bazel_repo("io_bazel_rules_closure")
+    _bazel_repo("io_bazel_rules_docker")
 
-    _repo_impl("io_bazel_rules_docker", patches = ["//bazel/external:rules_docker.patch"], patch_args = ["-p1"])
     _repo_impl("bazel_gazelle")
     _repo_impl("com_github_grpc_grpc", patches = ["//bazel/external:grpc.patch"], patch_args = ["-p1"])
     _repo_impl("com_intel_tbb", build_file = "//bazel/external:tbb.BUILD")
