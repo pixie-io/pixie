@@ -47,7 +47,7 @@ df = px.DataFrame(table='http_events', start_time='-2m')
 df[resp_size] = px.Bytes(px.length(df.resp_body))
 df[k8s_object] = df.ctx[k8s_object]
 filter_pods = px.contains(df[k8s_object], match_name)
-filter_out_conds = ((df.req_path != '/health' or not filter_health) and (
+filter_out_conds = ((df.req_path != '/healthz' or not filter_health) and (
     df.req_path != '/readyz' or not filter_readyz)) and (
     df[ip] != '-' or not filter_dash)
 filt_df = df[(filter_pods and filter_out_conds)]

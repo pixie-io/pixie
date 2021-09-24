@@ -205,7 +205,7 @@ def inbound_let_helper(start_time: str, namespace: px.Namespace):
 
     df.resp_size = px.Bytes(px.length(df.resp_body))
     df.failure = df.resp_status >= 400
-    filter_out_conds = ((df.req_path != '/health' or not filter_health_checks) and (
+    filter_out_conds = ((df.req_path != '/healthz' or not filter_health_checks) and (
         df.req_path != '/readyz' or not filter_ready_checks)) and (
         df['remote_addr'] != '-' or not filter_unresolved_inbound)
 
