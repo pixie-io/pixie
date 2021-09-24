@@ -31,6 +31,10 @@ namespace stirling {
 
 class PIDCPUUseBPFTraceConnector : public SourceConnector, public bpf_tools::BPFTraceWrapper {
  public:
+  static constexpr std::string_view kName = "pid_runtime_bpftrace";
+  static constexpr auto kSamplingPeriod = std::chrono::milliseconds{100};
+  static constexpr auto kPushPeriod = std::chrono::milliseconds{1000};
+
   // clang-format off
   static constexpr DataElement kElements[] = {
       {

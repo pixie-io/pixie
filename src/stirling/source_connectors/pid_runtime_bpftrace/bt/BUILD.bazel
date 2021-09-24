@@ -19,7 +19,7 @@ load("//bazel:cc_resource.bzl", "pl_bpf_cc_resource")
 package(default_visibility = ["//src/stirling/source_connectors/pid_runtime_bpftrace:__pkg__"])
 
 pl_bpf_cc_resource(
-    name = "pidruntime",
+    name = "bpftrace_pidruntime",
     src = "pidruntime.bt",
     hdrs = [],
     syshdrs = "//src/stirling/bpf_tools/bcc_bpf/system-headers",

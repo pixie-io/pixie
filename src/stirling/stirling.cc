@@ -47,6 +47,7 @@
 #include "src/stirling/source_connectors/network_stats/network_stats_connector.h"
 #include "src/stirling/source_connectors/perf_profiler/perf_profile_connector.h"
 #include "src/stirling/source_connectors/pid_runtime/pid_runtime_connector.h"
+#include "src/stirling/source_connectors/pid_runtime_bpftrace/pid_runtime_bpftrace_connector.h"
 #include "src/stirling/source_connectors/proc_stat/proc_stat_connector.h"
 #include "src/stirling/source_connectors/process_stats/process_stats_connector.h"
 #include "src/stirling/source_connectors/seq_gen/seq_gen_connector.h"
@@ -62,10 +63,11 @@ namespace {
 #define REGISTRY_PAIR(source) \
   { source::kName, SourceRegistry::CreateRegistryElement<source>() }
 const absl::flat_hash_map<std::string_view, SourceRegistry::RegistryElement> kAllSources = {
-    REGISTRY_PAIR(JVMStatsConnector),     REGISTRY_PAIR(PIDRuntimeConnector),
-    REGISTRY_PAIR(ProcStatConnector),     REGISTRY_PAIR(SeqGenConnector),
-    REGISTRY_PAIR(SocketTraceConnector),  REGISTRY_PAIR(ProcessStatsConnector),
-    REGISTRY_PAIR(NetworkStatsConnector), REGISTRY_PAIR(PerfProfileConnector),
+    REGISTRY_PAIR(JVMStatsConnector),          REGISTRY_PAIR(PIDRuntimeConnector),
+    REGISTRY_PAIR(ProcStatConnector),          REGISTRY_PAIR(SeqGenConnector),
+    REGISTRY_PAIR(SocketTraceConnector),       REGISTRY_PAIR(ProcessStatsConnector),
+    REGISTRY_PAIR(NetworkStatsConnector),      REGISTRY_PAIR(PerfProfileConnector),
+    REGISTRY_PAIR(PIDCPUUseBPFTraceConnector),
 };
 #undef REGISTRY_PAIR
 

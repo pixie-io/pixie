@@ -28,12 +28,15 @@
 
 // The following is a string_view into a BT file that is included in the binary by the linker.
 // The BT files are permanently resident in memory, so the string view is permanent too.
-BPF_SRC_STRVIEW(kPIDRuntimeBTScript, pidruntime);
+BPF_SRC_STRVIEW(kPIDRuntimeBTScript, bpftrace_pidruntime);
 
 namespace px {
 namespace stirling {
 
 Status PIDCPUUseBPFTraceConnector::InitImpl() {
+  sampling_freq_mgr_.set_period(kSamplingPeriod);
+  push_freq_mgr_.set_period(kPushPeriod);
+
   PL_RETURN_IF_ERROR(CompileForMapOutput(kPIDRuntimeBTScript, std::vector<std::string>({})));
   PL_RETURN_IF_ERROR(Deploy());
 
