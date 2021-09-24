@@ -316,6 +316,12 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 	vz.Spec.Pod.Annotations[operatorAnnotation] = req.Name
 	vz.Spec.Pod.Labels[operatorAnnotation] = req.Name
 
+	// Update the spec in the k8s api as other parts of the code expect this to be true.
+	err = r.Update(ctx, vz)
+	if err != nil {
+		return err
+	}
+
 	configForVizierResp, err := generateVizierYAMLsConfig(ctx, req.Namespace, vz, cloudClient)
 	if err != nil {
 		return err
