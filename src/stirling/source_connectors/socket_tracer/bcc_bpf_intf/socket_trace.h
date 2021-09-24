@@ -85,6 +85,7 @@ struct conn_info_t {
   // keep a state. (MySQL): Length(3 bytes) + seq_number(1 byte). (Kafka): Length(4 bytes)
   size_t prev_count;
   char prev_buf[4];
+  bool prepend_length_header;
 };
 
 // This struct is a subset of conn_info_t. It is used to communicate connect/accept events.
@@ -196,6 +197,12 @@ struct socket_data_event_t {
     // data had to be truncated, or if the data was stripped because we only want to send metadata
     // (e.g. if the connection data tracking has been disabled).
     uint32_t msg_buf_size;
+
+    // Whether to prepend length header to the buffer for messages first inferred as Kafka. MySQL
+    // may also use this in this future.
+    // See infer_kafka_message in protocol_inference.h for details.
+    bool prepend_length_header;
+    uint32_t length_header;
   } attr;
   char msg[MAX_MSG_SIZE];
 };

@@ -57,10 +57,19 @@ struct SocketDataEvent {
     memcpy(&attr, static_cast<const char*>(data) + offsetof(socket_data_event_t, attr),
            sizeof(socket_data_event_t::attr_t));
 
+    // The length header of the first Kafka packet on the server side will be dropped in bpf
+    // due to protocol inference. We send the length header in attributes instead, and adjust pos
+    // forward by 4 bytes.
+    if (attr.prepend_length_header) {
+      char buf[4];
+      px::utils::IntToLEndianBytes(attr.length_header, buf);
+      msg.assign(buf, 4);
+      attr.pos -= 4;
+    }
     // Use attr.msg_buf_size to only copy the data included in the buffer.
     // msg_buf_size may differ from msg_size when the message has been truncated or
     // when only metadata is being sent (e.g. unknown protocols or disabled trackers).
-    msg.assign(static_cast<const char*>(data) + offsetof(socket_data_event_t, msg),
+    msg.append(static_cast<const char*>(data) + offsetof(socket_data_event_t, msg),
                attr.msg_buf_size);
 
     // Hack: Create a filler event for sendfile data.

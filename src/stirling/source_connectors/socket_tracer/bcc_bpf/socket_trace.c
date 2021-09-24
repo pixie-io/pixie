@@ -179,6 +179,8 @@ static __inline struct socket_data_event_t* fill_socket_data_event(
   event->attr.conn_id = conn_info->conn_id;
   event->attr.protocol = conn_info->protocol;
   event->attr.role = conn_info->role;
+  event->attr.prepend_length_header = conn_info->prepend_length_header;
+  bpf_probe_read(&event->attr.length_header, 4, conn_info->prev_buf);
   return event;
 }
 
@@ -785,22 +787,9 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
         return;
       }
 
-      // Kafka servers read in a 4-byte packet length header first. The first packet in the
-      // stream is used to infer protocol, but the header has already been read. One solution is to
-      // add another perf_submit of the 4-byte header, but this would impact the instruction limit.
-      // Not handling this case causes potential confusion in the parsers. As a compromise, we drop
-      // the first packet traced on the server side.
-      // TODO(chengruizhe): This is a special case hack. Remove once FindFrameBoundary is more
-      // robust.
-      bool drop_first_packet = (conn_info->protocol == kProtocolKafka) &&
-                               (conn_info->protocol_match_count == 1) &&
-                               (conn_info->role == kRoleServer);
-
       // TODO(yzhao): Same TODO for split the interface.
       if (!vecs) {
-        if (!drop_first_packet) {
-          perf_submit_wrapper(ctx, direction, args->buf, bytes_count, conn_info, event);
-        }
+        perf_submit_wrapper(ctx, direction, args->buf, bytes_count, conn_info, event);
       } else {
         // TODO(yzhao): iov[0] is copied twice, once in calling update_traffic_class(), and here.
         // This happens to the write probes as well, but the calls are placed in the entry and

@@ -390,7 +390,18 @@ static __inline enum message_type_t infer_kafka_message(const char* buf, size_t 
     return kUnknown;
   }
   const char* request_buf = use_prev_buf ? buf : buf + 4;
-  return infer_kafka_request(request_buf);
+  enum message_type_t result = infer_kafka_request(request_buf);
+
+  // Kafka servers read in a 4-byte packet length header first. The first packet in the
+  // stream is used to infer protocol, but the header has already been read. One solution is to
+  // add another perf_submit of the 4-byte header, but this would impact the instruction limit.
+  // Not handling this case causes potential confusion in the parsers. Instead, we set a
+  // prepend_length_header field if and only if Kafka has just been inferred for the first time
+  // under the scenario described above. Length header is appended to user the buffer in user space.
+  if (use_prev_buf && result == kRequest && conn_info->protocol == kProtocolUnknown) {
+    conn_info->prepend_length_header = true;
+  }
+  return result;
 }
 
 static __inline enum message_type_t infer_dns_message(const char* buf, size_t count) {
@@ -529,6 +540,10 @@ static __inline struct protocol_message_t infer_protocol(const char* buf, size_t
   struct protocol_message_t inferred_message;
   inferred_message.protocol = kProtocolUnknown;
   inferred_message.type = kUnknown;
+
+  // The prepend_length_header controls whether a length header is prepended to the buffer
+  // in user space.
+  conn_info->prepend_length_header = false;
 
   if ((inferred_message.type = infer_http_message(buf, count)) != kUnknown) {
     inferred_message.protocol = kProtocolHTTP;
