@@ -220,16 +220,40 @@ export function scriptToEntityURL(script: string, clusterName: string, embedStat
   } : nonEntityParams);
 }
 
-export function toSingleEntityPage(entityName: string, semanticType: SemanticType, clusterName: string): EntityPage {
-  switch (semanticType) {
-    case SemanticType.ST_SERVICE_NAME:
+// Handle the case where service is a stringified JSON array.
+function getServicePage(service: string, clusterName: string): EntityPage {
+  try {
+    const parsedArray = JSON.parse(service);
+
+    if (Array.isArray(parsedArray)) {
+      if (!parsedArray.length) {
+        return null;
+      }
       return {
         clusterName,
         page: LiveViewPage.Service,
         params: {
-          service: entityName,
+          service: parsedArray[0],
         },
       };
+    }
+  } catch {
+    // Do nothing.
+  }
+
+  return {
+    clusterName,
+    page: LiveViewPage.Service,
+    params: {
+      service,
+    },
+  };
+}
+
+export function toSingleEntityPage(entityName: string, semanticType: SemanticType, clusterName: string): EntityPage {
+  switch (semanticType) {
+    case SemanticType.ST_SERVICE_NAME:
+      return getServicePage(entityName, clusterName);
     case SemanticType.ST_POD_NAME:
       return {
         clusterName,

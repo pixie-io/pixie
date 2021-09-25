@@ -253,6 +253,18 @@ describe('toSingleEntityPage test', () => {
       clusterName: 'gke:foobar',
     });
   });
+
+  it('should generate the entity for a service array', () => {
+    const entity = toSingleEntityPage('["px-sock-shop/orders", "px-sock-shop/carts"]',
+      SemanticType.ST_SERVICE_NAME, 'gke:foobar');
+    expect(entity).toStrictEqual({
+      page: LiveViewPage.Service,
+      params: {
+        service: 'px-sock-shop/orders',
+      },
+      clusterName: 'gke:foobar',
+    });
+  });
 });
 
 describe('entityPageForScriptId', () => {
