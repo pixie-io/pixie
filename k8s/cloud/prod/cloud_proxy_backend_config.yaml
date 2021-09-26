@@ -1,4 +1,4 @@
-apiVersion: cloud.google.com/v1beta1
+apiVersion: cloud.google.com/v1
 kind: BackendConfig
 metadata:
   name: cloud-proxy-backend-config
@@ -11,6 +11,7 @@ spec:
   cdn:
     enabled: true
     cachePolicy:
-      includeHost: false
-      includeProtocol: false
-      includeQueryString: false
+      includeHost: true
+      includeProtocol: true
+      includeQueryString: true
+#    negativeCaching: false
