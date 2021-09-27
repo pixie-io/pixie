@@ -1,0 +1,9 @@
+VER_1 {
+        global: foo;
+        local:  *;      # Hide all other symbols
+};
+
+VER_2 {
+        global: foo; pqr;
+        local:  *;      # Hide all other symbols
+};

@@ -87,3 +87,8 @@ genrule(
     ],
     cmd = "objcopy --strip-all --add-gnu-debuglink=$(location :test_exe_debug_target) $(location :test_exe) $(location test_exe_debuglink)",
 )
+
+filegroup(
+    name = "lib_foo",
+    srcs = ["lib_foo_so"],
+)

@@ -46,6 +46,7 @@ pl_cc_test(
     name = "elf_reader_test",
     srcs = ["elf_reader_test.cc"],
     data = [
+        "//src/stirling/obj_tools/testdata/cc:lib_foo",
         "//src/stirling/obj_tools/testdata/cc:prebuilt_exe",
         "//src/stirling/obj_tools/testdata/cc:stripped_exe",
         "//src/stirling/obj_tools/testdata/cc:test_exe_debug_target",

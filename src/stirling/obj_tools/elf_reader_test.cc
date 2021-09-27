@@ -38,6 +38,8 @@ using ::testing::Pair;
 using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
 
+using ::px::operator<<;
+
 StatusOr<int64_t> NmSymbolNameToAddr(const std::string& path, const std::string& symbol_name) {
   // Extract the address from nm as the gold standard.
   int64_t symbol_addr = -1;
@@ -247,6 +249,18 @@ TEST(ElfReaderTest, GolangAppRuntimeBuildVersion) {
 #endif
   EXPECT_EQ(symbol.size, 16) << "Symbol table entry size should be 16";
   EXPECT_EQ(symbol.type, ELFIO::STT_OBJECT);
+}
+
+// Tests that the versioned symbol names always include version strings.
+TEST(ElfReaderTest, VersionedSymbolsInDynamicLibrary) {
+  const std::string kPath =
+      px::testing::BazelBinTestFilePath("src/stirling/obj_tools/testdata/cc/lib_foo_so");
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
+  ASSERT_OK_AND_THAT(elf_reader->SearchSymbols("foo", SymbolMatchType::kSubstr),
+                     UnorderedElementsAre(SymbolNameIs("lib_foo.c"), SymbolNameIs("foo_new"),
+                                          SymbolNameIs("foo_old"),
+                                          // @@ refers to the default version.
+                                          SymbolNameIs("foo@@VER_2"), SymbolNameIs("foo@VER_1")));
 }
 
 }  // namespace obj_tools
