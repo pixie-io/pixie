@@ -54,15 +54,16 @@ const (
 	// This is the key for the annotation that the operator applies on all of its deployed resources for a CRD.
 	operatorAnnotation  = "vizier-name"
 	clusterSecretJWTKey = "jwt-signing-key"
-	// defaultClassAnnotationKey is the key in the annotation map which indicates
-	// a storage class is default.
-	defaultClassAnnotationKey = "storageclass.kubernetes.io/is-default-class"
 	// updatingFailedTimeout is the amount of time we wait since an Updated started
 	// before we consider the Update Failed.
 	updatingFailedTimeout = 30 * time.Minute
 	// How often we should check whether a Vizier update failed.
 	updatingVizierCheckPeriod = 1 * time.Minute
 )
+
+// defaultClassAnnotationKey is the key in the annotation map which indicates
+// a storage class is default.
+var defaultClassAnnotationKeys = []string{"storageclass.kubernetes.io/is-default-class", "storageclass.beta.kubernetes.io/is-default-class"}
 
 // VizierReconciler reconciles a Vizier object
 type VizierReconciler struct {
@@ -130,8 +131,13 @@ func validateNumDefaultStorageClasses(clientset *kubernetes.Clientset) (bool, er
 	// Check annotations map on each storage class to see if default is set to "true".
 	for _, storageClass := range storageClasses.Items {
 		annotationsMap := storageClass.GetAnnotations()
-		if annotationsMap[defaultClassAnnotationKey] == "true" {
-			defaultClassCount++
+		for _, key := range defaultClassAnnotationKeys {
+			if annotationsMap[key] == "true" {
+				// It is possible for some storageClasses to have both the beta/non-beta annotation.
+				// We break here so that we don't double count this storageClass.
+				defaultClassCount++
+				break
+			}
 		}
 	}
 	return defaultClassCount == 1, nil
