@@ -108,18 +108,28 @@ export function getNamespaceFromEntityName(val: string): string {
   return val.split('/')[0];
 }
 
-export function getColorForLatency(val: number, theme: Theme): string {
-  if (val < 100) {
+const nsPerMs = 1_000_000;
+
+/**
+ * Colors latency by how high it is.
+ * Higher latency gets more concerning colors.
+ */
+export function getColorForLatency(nanoseconds: number, theme: Theme): string {
+  if (nanoseconds < 100 * nsPerMs) {
     return theme.palette.success.dark;
   }
-  return val > 200 ? theme.palette.error.main : theme.palette.warning.main;
+  return nanoseconds > 200 * nsPerMs ? theme.palette.error.main : theme.palette.warning.main;
 }
 
-export function getColorForErrorRate(val: number, theme: Theme): string {
-  if (val < 1) {
+/**
+ * Colors an ratio in between 0 and 1 (inclusive) by how high it is.
+ * Higher error rates get more concerning colors.
+ */
+export function getColorForErrorRate(rate: number, theme: Theme): string {
+  if (rate < 0.01) {
     return theme.palette.success.dark;
   }
-  return val > 2 ? theme.palette.error.main : theme.palette.warning.main;
+  return rate > 0.02 ? theme.palette.error.main : theme.palette.warning.main;
 }
 
 export function colInfoFromName(relation: Relation, name: string): ColInfo {
