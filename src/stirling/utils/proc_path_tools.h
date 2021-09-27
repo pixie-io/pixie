@@ -150,5 +150,12 @@ class LazyLoadedFPResolver {
  */
 StatusOr<std::filesystem::path> GetSelfPath();
 
+/**
+ * Returns the path to the executable of the input process PID.
+ */
+// TODO(yzhao): This can be used in places that ProcParser::GetExePath() is called.
+StatusOr<std::filesystem::path> ProcExe(uint32_t pid, system::ProcParser* proc_parser,
+                                        LazyLoadedFPResolver* fp_resolver);
+
 }  // namespace stirling
 }  // namespace px

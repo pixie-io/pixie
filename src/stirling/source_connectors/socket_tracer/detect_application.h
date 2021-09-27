@@ -19,6 +19,9 @@
 #pragma once
 
 #include <filesystem>
+#include <string>
+
+#include "src/common/base/base.h"
 
 namespace px {
 namespace stirling {
@@ -30,16 +33,11 @@ enum class Application {
 };
 
 // Returns the application of the input executable.
-inline Application DetectApplication(const std::filesystem::path& exe) {
-  constexpr std::string_view kNodeFileName = "node";
-  constexpr std::string_view kNodejsFileName = "nodejs";
+Application DetectApplication(const std::filesystem::path& exe);
 
-  if (exe.filename() == kNodeFileName || exe.filename() == kNodejsFileName) {
-    return Application::kNode;
-  }
-
-  return Application::kUnknown;
-}
+// Returns the output of the <executable> <version flag>.
+StatusOr<std::string> GetVersion(const std::filesystem::path& exe,
+                                 std::string_view version_flag = "--version");
 
 }  // namespace stirling
 }  // namespace px

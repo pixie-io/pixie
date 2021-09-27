@@ -170,5 +170,14 @@ StatusOr<std::filesystem::path> GetSelfPath() {
   return sysconfig.ToHostPath(self_path);
 }
 
+StatusOr<std::filesystem::path> ProcExe(uint32_t pid, system::ProcParser* proc_parser,
+                                        LazyLoadedFPResolver* fp_resolver) {
+  PL_ASSIGN_OR_RETURN(const std::filesystem::path proc_exe, proc_parser->GetExePath(pid));
+  PL_RETURN_IF_ERROR(fp_resolver->SetMountNamespace(pid));
+  PL_ASSIGN_OR_RETURN(const std::filesystem::path resolved_proc_exe,
+                      fp_resolver->ResolvePath(proc_exe));
+  return system::Config::GetInstance().ToHostPath(resolved_proc_exe);
+}
+
 }  // namespace stirling
 }  // namespace px
