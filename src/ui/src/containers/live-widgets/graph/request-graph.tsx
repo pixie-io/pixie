@@ -198,7 +198,7 @@ export const RequestGraphWidget = React.memo<RequestGraphProps>(function Request
           hierarchical: {
             enabled: true,
             levelSeparation: 50,
-            direction: 'LR',
+            direction: 'UD',
             sortMethod: 'directed',
             nodeSpacing: 50,
             edgeMinimization: true,
