@@ -68,6 +68,11 @@ class ElfReader {
     int type = -1;
     uint64_t address = -1;
     uint64_t size = -1;
+
+    std::string ToString() const {
+      return absl::Substitute("name=$0 type=$1 address=$2 size =$3", name, type,
+                              absl::StrFormat("%x", address), size);
+    }
   };
 
   /**
@@ -76,10 +81,15 @@ class ElfReader {
    * @param search_symbol The symbol to search for.
    * @param match_type Type of search (e.g. exact match, substring, suffix).
    * @param Symbol type (e.g. STT_FUNC, STT_OBJECT, ...). See uapi/linux/elf.h.
+   * @param stop_at_first_match If true, stop the search at the first matched symbol.
    */
   StatusOr<std::vector<SymbolInfo>> SearchSymbols(std::string_view search_symbol,
                                                   SymbolMatchType match_type,
-                                                  std::optional<int> symbol_type = std::nullopt);
+                                                  std::optional<int> symbol_type = std::nullopt,
+                                                  bool stop_at_first_match = false);
+
+  // Returns a unique symbol.
+  StatusOr<SymbolInfo> SearchTheOnlySymbol(std::string_view symbol);
 
   /**
    * Like SearchSymbols, but for function symbols only.
@@ -149,6 +159,11 @@ class ElfReader {
    */
   StatusOr<std::vector<uint64_t>> FuncRetInstAddrs(const SymbolInfo& func_symbol);
 
+  /**
+   * Returns the byte code for the symbol at the specified section.
+   */
+  StatusOr<px::utils::u8string> SymbolByteCode(std::string_view section, const SymbolInfo& symbol);
+
  private:
   ElfReader() = default;
 
@@ -176,6 +191,7 @@ class ElfReader {
   ELFIO::elfio elf_reader_;
 };
 
+// TODO(yzhao): Move this to go_syms.h.
 struct IntfImplTypeInfo {
   // The name of the type that implements a given interface.
   std::string type_name;
@@ -191,6 +207,7 @@ struct IntfImplTypeInfo {
 /**
  * Returns a map of all interfaces, and types that implement that interface in a go binary
  */
+// TODO(yzhao): Move this to go_syms.h.
 StatusOr<absl::flat_hash_map<std::string, std::vector<IntfImplTypeInfo>>> ExtractGolangInterfaces(
     obj_tools::ElfReader* elf_reader);
 

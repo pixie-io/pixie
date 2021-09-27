@@ -215,7 +215,8 @@ StatusOr<ELFIO::section*> ElfReader::SymtabSection() {
 }
 
 StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::SearchSymbols(
-    std::string_view search_symbol, SymbolMatchType match_type, std::optional<int> symbol_type) {
+    std::string_view search_symbol, SymbolMatchType match_type, std::optional<int> symbol_type,
+    bool stop_at_first_match) {
   PL_ASSIGN_OR_RETURN(ELFIO::section * symtab_section, SymtabSection());
 
   std::vector<SymbolInfo> symbol_infos;
@@ -255,7 +256,12 @@ StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::SearchSymbols(
     if (!match) {
       continue;
     }
+
     symbol_infos.push_back({std::move(name), type, addr, size});
+
+    if (stop_at_first_match) {
+      break;
+    }
   }
   return symbol_infos;
 }
@@ -279,6 +285,16 @@ StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::ListFuncSymbols(
   }
 
   return symbol_infos;
+}
+
+StatusOr<ElfReader::SymbolInfo> ElfReader::SearchTheOnlySymbol(std::string_view symbol) {
+  PL_ASSIGN_OR_RETURN(std::vector<ElfReader::SymbolInfo> symbol_infos,
+                      SearchSymbols(symbol, SymbolMatchType::kExact, /*symbol_type*/ std::nullopt,
+                                    /*stop_at_first_match*/ true));
+  if (symbol_infos.empty()) {
+    return error::NotFound("Symbol $0 not found", symbol);
+  }
+  return std::move(symbol_infos[0]);
 }
 
 std::optional<int64_t> ElfReader::SymbolAddress(std::string_view symbol) {
@@ -484,7 +500,8 @@ std::vector<uint64_t> FindRetInsts(utils::u8string_view byte_code) {
 }  // namespace
 
 StatusOr<std::vector<uint64_t>> ElfReader::FuncRetInstAddrs(const SymbolInfo& func_symbol) {
-  PL_ASSIGN_OR_RETURN(utils::u8string byte_code, FuncByteCode(func_symbol));
+  constexpr std::string_view kDotText = ".text";
+  PL_ASSIGN_OR_RETURN(utils::u8string byte_code, SymbolByteCode(kDotText, func_symbol));
   std::vector<uint64_t> addrs = FindRetInsts(byte_code);
   for (auto& offset : addrs) {
     offset += func_symbol.address;
@@ -492,34 +509,34 @@ StatusOr<std::vector<uint64_t>> ElfReader::FuncRetInstAddrs(const SymbolInfo& fu
   return addrs;
 }
 
-StatusOr<utils::u8string> ElfReader::FuncByteCode(const SymbolInfo& func_symbol) {
-  constexpr char kDotText[] = ".text";
+StatusOr<utils::u8string> ElfReader::SymbolByteCode(std::string_view section,
+                                                    const SymbolInfo& symbol) {
   ELFIO::section* text_section = nullptr;
   for (int i = 0; i < elf_reader_.sections.size(); ++i) {
     ELFIO::section* psec = elf_reader_.sections[i];
-    if (psec->get_name() == kDotText) {
+    if (psec->get_name() == section) {
       text_section = psec;
       break;
     }
   }
   if (text_section == nullptr) {
-    return error::NotFound("Could not find section=$0 in binary=$1", kDotText, binary_path_);
+    return error::NotFound("Could not find section=$0 in binary=$1", section, binary_path_);
   }
-  int offset = func_symbol.address - text_section->get_address() + text_section->get_offset();
+  int offset = symbol.address - text_section->get_address() + text_section->get_offset();
 
   std::ifstream ifs(binary_path_, std::ios::binary);
   if (!ifs.seekg(offset)) {
     return error::Internal("Failed to seek position=$0 in binary=$1", offset, binary_path_);
   }
-  utils::u8string byte_code(func_symbol.size, '\0');
+  utils::u8string byte_code(symbol.size, '\0');
   auto* buf = reinterpret_cast<char*>(byte_code.data());
-  if (!ifs.read(buf, func_symbol.size)) {
-    return error::Internal("Failed to read size=$0 bytes from offset=$1 in binary=$2",
-                           func_symbol.size, offset, binary_path_);
+  if (!ifs.read(buf, symbol.size)) {
+    return error::Internal("Failed to read size=$0 bytes from offset=$1 in binary=$2", symbol.size,
+                           offset, binary_path_);
   }
-  if (ifs.gcount() != static_cast<int64_t>(func_symbol.size)) {
+  if (ifs.gcount() != static_cast<int64_t>(symbol.size)) {
     return error::Internal("Only read size=$0 bytes from offset=$1 in binary=$2, expect $3 bytes",
-                           func_symbol.size, offset, binary_path_, ifs.gcount());
+                           symbol.size, offset, binary_path_, ifs.gcount());
   }
   return byte_code;
 }

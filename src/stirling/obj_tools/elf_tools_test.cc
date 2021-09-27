@@ -277,6 +277,17 @@ TEST(ElfGolangItableTest, ExtractInterfaceTypes) {
 #endif
 }
 
+TEST(ElfReaderTest, GolangAppRuntimeBuildVersion) {
+  const std::string kPath = px::testing::BazelBinTestFilePath(
+      "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary");
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
+  ASSERT_OK_AND_ASSIGN(ElfReader::SymbolInfo symbol,
+                       elf_reader->SearchTheOnlySymbol("runtime.buildVersion"));
+  EXPECT_EQ(symbol.address, 0x549F20);
+  EXPECT_EQ(symbol.size, 16) << "Symbol table entry size should be 16";
+  EXPECT_EQ(symbol.type, ELFIO::STT_OBJECT);
+}
+
 }  // namespace obj_tools
 }  // namespace stirling
 }  // namespace px

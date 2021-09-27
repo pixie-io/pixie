@@ -30,6 +30,7 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/stirling/bpf_tools/macros.h"
 #include "src/stirling/obj_tools/dwarf_tools.h"
+#include "src/stirling/obj_tools/go_syms.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
 #include "src/stirling/source_connectors/socket_tracer/detect_application.h"
 #include "src/stirling/source_connectors/socket_tracer/uprobe_symaddrs.h"
@@ -485,7 +486,7 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
     // Avoid going passed this point if not a golang program.
     // The DwarfReader is memory intensive, and the remaining probes are Golang specific.
     // TODO(oazizi): Consolidate with similar check in dynamic_tracing/autogen.cc.
-    bool is_golang_binary = elf_reader->SymbolAddress("runtime.buildVersion").has_value();
+    bool is_golang_binary = elf_reader->SymbolAddress(obj_tools::kGoBuildVersionSymbol).has_value();
     if (!is_golang_binary) {
       continue;
     }

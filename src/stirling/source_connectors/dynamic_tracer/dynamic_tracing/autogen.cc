@@ -25,6 +25,7 @@
 #include <utility>
 #include <vector>
 
+#include "src/stirling/obj_tools/go_syms.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/sharedpb/shared.pb.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/types.h"
 
@@ -63,7 +64,7 @@ void DetectSourceLanguage(obj_tools::ElfReader* elf_reader, obj_tools::DwarfRead
                             .ConsumeValueOr(ir::shared::Language::LANG_UNKNOWN);
   } else {
     // Back-up detection policy looks for certain language-specific symbols
-    if (elf_reader->SymbolAddress("runtime.buildVersion").has_value()) {
+    if (elf_reader->SymbolAddress(obj_tools::kGoBuildVersionSymbol).has_value()) {
       detected_language = ir::shared::Language::GOLANG;
     }
 

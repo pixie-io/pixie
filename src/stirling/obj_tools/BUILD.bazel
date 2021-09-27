@@ -86,6 +86,17 @@ pl_cc_test(
     ],
 )
 
+pl_cc_test(
+    name = "go_syms_test",
+    srcs = ["go_syms_test.cc"],
+    data = [
+        "//src/stirling/obj_tools/testdata:dummy_go_binary",
+    ],
+    deps = [
+        ":cc_library",
+    ],
+)
+
 pl_cc_binary(
     name = "elf_reader_tool",
     srcs = ["elf_reader_tool.cc"],
