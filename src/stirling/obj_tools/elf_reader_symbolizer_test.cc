@@ -24,7 +24,7 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/bpf_tools/macros.h"
-#include "src/stirling/obj_tools/elf_tools.h"
+#include "src/stirling/obj_tools/elf_reader.h"
 
 using px::stirling::obj_tools::ElfReader;
 

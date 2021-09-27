@@ -34,7 +34,7 @@
 #include "src/common/system/socket_info.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/obj_tools/dwarf_tools.h"
-#include "src/stirling/obj_tools/elf_tools.h"
+#include "src/stirling/obj_tools/elf_reader.h"
 
 #include "src/stirling/core/source_connector.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"

@@ -30,7 +30,8 @@
 #include <google/protobuf/repeated_field.h>
 
 #include "src/stirling/obj_tools/dwarf_tools.h"
-#include "src/stirling/obj_tools/elf_tools.h"
+#include "src/stirling/obj_tools/elf_reader.h"
+#include "src/stirling/obj_tools/go_syms.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/sharedpb/shared.pb.h"
 
 namespace px {

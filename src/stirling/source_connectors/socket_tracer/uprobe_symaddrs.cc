@@ -28,7 +28,7 @@
 #include "src/common/base/base.h"
 #include "src/common/fs/fs_wrapper.h"
 #include "src/stirling/obj_tools/dwarf_tools.h"
-#include "src/stirling/obj_tools/elf_tools.h"
+#include "src/stirling/obj_tools/elf_reader.h"
 
 using ::px::stirling::obj_tools::DwarfReader;
 using ::px::stirling::obj_tools::ElfReader;

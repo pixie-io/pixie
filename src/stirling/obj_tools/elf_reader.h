@@ -191,26 +191,6 @@ class ElfReader {
   ELFIO::elfio elf_reader_;
 };
 
-// TODO(yzhao): Move this to go_syms.h.
-struct IntfImplTypeInfo {
-  // The name of the type that implements a given interface.
-  std::string type_name;
-
-  // The address of the symbol that records this information.
-  uint64_t address = 0;
-
-  std::string ToString() const {
-    return absl::Substitute("type_name=$0 address=$1", type_name, address);
-  }
-};
-
-/**
- * Returns a map of all interfaces, and types that implement that interface in a go binary
- */
-// TODO(yzhao): Move this to go_syms.h.
-StatusOr<absl::flat_hash_map<std::string, std::vector<IntfImplTypeInfo>>> ExtractGolangInterfaces(
-    obj_tools::ElfReader* elf_reader);
-
 }  // namespace obj_tools
 }  // namespace stirling
 }  // namespace px

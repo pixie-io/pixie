@@ -20,8 +20,11 @@
 
 #include <string>
 #include <string_view>
+#include <vector>
 
-#include "src/stirling/obj_tools/elf_tools.h"
+#include <absl/container/flat_hash_map.h>
+
+#include "src/stirling/obj_tools/elf_reader.h"
 
 namespace px {
 namespace stirling {
@@ -35,6 +38,23 @@ bool IsGoExecutable(ElfReader* elf_reader);
 // TODO(yzhao): We'll use this to determine the corresponding Golang executable's TLS data
 // structures and their offsets.
 StatusOr<std::string> ReadBuildVersion(ElfReader* elf_reader);
+
+// Describes a Golang type that implement an interface.
+struct IntfImplTypeInfo {
+  // The name of the type that implements a given interface.
+  std::string type_name;
+
+  // The address of the symbol that records this information.
+  uint64_t address = 0;
+
+  std::string ToString() const {
+    return absl::Substitute("type_name=$0 address=$1", type_name, address);
+  }
+};
+
+// Returns a map of all interfaces, and types that implement that interface in a go binary.
+StatusOr<absl::flat_hash_map<std::string, std::vector<IntfImplTypeInfo>>> ExtractGolangInterfaces(
+    ElfReader* elf_reader);
 
 }  // namespace obj_tools
 }  // namespace stirling

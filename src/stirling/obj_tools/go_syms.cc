@@ -18,6 +18,8 @@
 
 #include "src/stirling/obj_tools/go_syms.h"
 
+#include <utility>
+
 namespace px {
 namespace stirling {
 namespace obj_tools {
@@ -58,6 +60,41 @@ StatusOr<std::string> ReadBuildVersion(ElfReader* elf_reader) {
 
   PL_ASSIGN_OR_RETURN(utils::u8string str, elf_reader->SymbolByteCode(".data", version_symbol));
   return std::string(reinterpret_cast<const char*>(str.data()), str.size());
+}
+
+StatusOr<absl::flat_hash_map<std::string, std::vector<IntfImplTypeInfo>>> ExtractGolangInterfaces(
+    ElfReader* elf_reader) {
+  absl::flat_hash_map<std::string, std::vector<IntfImplTypeInfo>> interface_types;
+
+  // All itable objects in the symbols are prefixed with this string.
+  const std::string_view kITablePrefix("go.itab.");
+
+  PL_ASSIGN_OR_RETURN(std::vector<ElfReader::SymbolInfo> itable_symbols,
+                      elf_reader->SearchSymbols(kITablePrefix, SymbolMatchType::kPrefix,
+                                                /*symbol_type*/ ELFIO::STT_OBJECT));
+
+  for (const auto& sym : itable_symbols) {
+    // Expected format is:
+    //  go.itab.<type_name>,<interface_name>
+    std::vector<std::string_view> sym_split = absl::StrSplit(sym.name, ",");
+    if (sym_split.size() != 2) {
+      LOG(WARNING) << absl::Substitute("Ignoring unexpected itable format: $0", sym.name);
+      continue;
+    }
+
+    std::string_view interface_name = sym_split[1];
+    std::string_view type = sym_split[0];
+    type.remove_prefix(kITablePrefix.size());
+
+    IntfImplTypeInfo info;
+
+    info.type_name = type;
+    info.address = sym.address;
+
+    interface_types[std::string(interface_name)].push_back(std::move(info));
+  }
+
+  return interface_types;
 }
 
 }  // namespace obj_tools

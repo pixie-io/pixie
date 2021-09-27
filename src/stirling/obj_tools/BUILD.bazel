@@ -43,8 +43,8 @@ pl_cc_library(
 )
 
 pl_cc_test(
-    name = "elf_tools_test",
-    srcs = ["elf_tools_test.cc"],
+    name = "elf_reader_test",
+    srcs = ["elf_reader_test.cc"],
     data = [
         "//src/stirling/obj_tools/testdata:dummy_exe_debug_target",
         "//src/stirling/obj_tools/testdata:dummy_exe_debuglink_target",

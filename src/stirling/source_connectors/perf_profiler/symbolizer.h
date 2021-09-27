@@ -25,7 +25,7 @@
 #include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
 #include "src/stirling/bpf_tools/bcc_symbolizer.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
-#include "src/stirling/obj_tools/elf_tools.h"
+#include "src/stirling/obj_tools/elf_reader.h"
 #include "src/stirling/source_connectors/perf_profiler/symbol_cache.h"
 #include "src/stirling/source_connectors/perf_profiler/types.h"
 

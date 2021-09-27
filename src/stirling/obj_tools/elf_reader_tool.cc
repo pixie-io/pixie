@@ -19,7 +19,7 @@
 #include <memory>
 
 #include "src/common/base/base.h"
-#include "src/stirling/obj_tools/elf_tools.h"
+#include "src/stirling/obj_tools/elf_reader.h"
 
 DEFINE_string(binary, "", "Filename to list symbols");
 DEFINE_string(filter, "", "Symbol matching substring used to select symbols to print.");

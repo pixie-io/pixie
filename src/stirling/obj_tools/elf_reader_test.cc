@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/stirling/obj_tools/elf_tools.h"
+#include "src/stirling/obj_tools/elf_reader.h"
 
 #include "src/common/exec/exec.h"
 #include "src/common/testing/test_environment.h"
@@ -233,48 +233,6 @@ TEST(ElfReaderTest, FuncByteCode) {
     const auto& symbol_info = symbol_infos.front();
     ASSERT_OK_AND_THAT(elf_reader->FuncRetInstAddrs(symbol_info), ElementsAre(0x201101));
   }
-}
-
-TEST(ElfGolangItableTest, ExtractInterfaceTypes) {
-  const std::string kPath = px::testing::BazelBinTestFilePath(
-      "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary");
-
-  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
-  ASSERT_OK_AND_ASSIGN(const auto interfaces, ExtractGolangInterfaces(elf_reader.get()));
-
-  // Check for `bazel coverage` so we can bypass the final checks.
-  // Note that we still get accurate coverage metrics, because this only skips the final check.
-  // Ideally, we'd get bazel to deterministically build dummy_go_binary,
-  // but it's not easy to tell bazel to use a different config for just one target.
-#ifdef PL_COVERAGE
-  LOG(INFO) << "Whoa...`bazel coverage` is messaging with dummy_go_binary. Shame on you bazel. "
-               "Ending this test early.";
-  return;
-#else
-
-  EXPECT_THAT(
-      interfaces,
-      UnorderedElementsAre(
-          Pair("error",
-               UnorderedElementsAre(
-                   Field(&IntfImplTypeInfo::type_name, "main.IntStruct"),
-                   Field(&IntfImplTypeInfo::type_name, "*errors.errorString"),
-                   Field(&IntfImplTypeInfo::type_name, "*io/fs.PathError"),
-                   Field(&IntfImplTypeInfo::type_name, "*internal/poll.DeadlineExceededError"),
-                   Field(&IntfImplTypeInfo::type_name, "runtime.errorString"),
-                   Field(&IntfImplTypeInfo::type_name, "syscall.Errno"))),
-          Pair("sort.Interface", UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name,
-                                                            "*internal/fmtsort.SortedMap"))),
-          Pair("math/rand.Source", UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name,
-                                                              "*math/rand.lockedSource"))),
-          Pair("io.Writer", UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name, "*os.File"))),
-          Pair("internal/reflectlite.Type",
-               UnorderedElementsAre(
-                   Field(&IntfImplTypeInfo::type_name, "*internal/reflectlite.rtype"))),
-          Pair("reflect.Type",
-               UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name, "*reflect.rtype"))),
-          Pair("fmt.State", UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name, "*fmt.pp")))));
-#endif
 }
 
 TEST(ElfReaderTest, GolangAppRuntimeBuildVersion) {

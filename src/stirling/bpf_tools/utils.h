@@ -22,7 +22,7 @@
 
 #include "src/common/base/statusor.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
-#include "src/stirling/obj_tools/elf_tools.h"
+#include "src/stirling/obj_tools/elf_reader.h"
 
 namespace px {
 namespace stirling {

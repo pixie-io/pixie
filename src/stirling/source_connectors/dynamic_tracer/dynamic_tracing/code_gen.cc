@@ -28,7 +28,7 @@
 
 #include "src/common/base/base.h"
 #include "src/stirling/bpf_tools/utils.h"
-#include "src/stirling/obj_tools/elf_tools.h"
+#include "src/stirling/obj_tools/elf_reader.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/types.h"
 
 namespace px {
