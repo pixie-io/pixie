@@ -83,7 +83,7 @@ def pl_common_linkopts():
     })
 
 def pl_defines():
-    return ["MAGIC_ENUM_RANGE_MIN=0", "MAGIC_ENUM_RANGE_MAX=256"]
+    return ["MAGIC_ENUM_RANGE_MIN=-128", "MAGIC_ENUM_RANGE_MAX=256"]
 
 def _default_external_deps():
     return [

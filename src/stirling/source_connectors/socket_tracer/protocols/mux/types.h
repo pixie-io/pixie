@@ -1,5 +1,6 @@
 #pragma once
 
+#include <magic_enum.hpp>
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/event_parser.h"
 #include "src/stirling/utils/utils.h"
 
@@ -7,6 +8,38 @@ namespace px {
 namespace stirling {
 namespace protocols {
 namespace mux {
+
+enum class Type : int8_t {
+    Treq = 1,
+    Rreq = -1,
+    Tdispatch = 2,
+    Rdispatch = -2,
+
+    // control messages
+    Tdrain = 64,
+    Rdrain = -64,
+    Tping  = 65,
+    Rping  = -65,
+
+    Tdiscarded = 66,
+    Rdiscarded = -66,
+
+    Tlease = 67,
+
+    Tinit = 68,
+    Rinit = -68,
+
+    Rerr = -128,
+
+    // only used to preserve backwards compatibility
+    TdiscardedOld = -62,
+    RerrOld       = 127,
+};
+
+inline bool IsMuxType(int8_t t) {
+  std::optional<Type> mux_type = magic_enum::enum_cast<Type>(t);
+  return mux_type.has_value();
+}
 
 /**
  * Regular message's wire format:

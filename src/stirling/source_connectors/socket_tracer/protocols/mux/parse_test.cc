@@ -44,6 +44,17 @@ constexpr uint8_t muxTinitFrame[] = {
     0x65, 0x63, 0x6b,
 };
 
+constexpr uint8_t muxInvalidType[] = {
+    // mux header length (15 bytes)
+    0x00, 0x00, 0x00, 0x0f,
+    // type and tag
+    0x03, 0x00, 0x00, 0x01,
+    // why
+    0x74, 0x69, 0x6e, 0x69,
+    0x74, 0x20, 0x63, 0x68,
+    0x65, 0x63, 0x6b,
+};
+
 constexpr uint8_t muxNeedMoreData[] = {
     // mux header length (15 bytes)
     0x00, 0x00, 0x00, 0x0f,
@@ -84,6 +95,15 @@ TEST_F(MuxParserTest, ParseFrameWhenNeedsMoreData) {
   ASSERT_EQ(state, ParseState::kNeedsMoreData);
 }
 
+TEST_F(MuxParserTest, ParseFrameWhenNotValidMuxType) {
+  auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(muxInvalidType));
+
+  mux::Frame frame;
+  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+
+  ASSERT_EQ(state, ParseState::kInvalid);
+}
+
 TEST_F(MuxParserTest, ParseFrameCanITinit) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(muxTinitFrame));
 
@@ -94,7 +114,7 @@ TEST_F(MuxParserTest, ParseFrameCanITinit) {
   ASSERT_EQ(frame.header_length, 15);
 
   ASSERT_EQ(frame.tag, 1);
-  ASSERT_EQ(frame.type, mux::RerrOld);
+  ASSERT_EQ(frame.type, static_cast<int8_t>(mux::Type::RerrOld));
 
   ASSERT_EQ(frame.why, tinitCheck);
 }
@@ -107,7 +127,7 @@ TEST_F(MuxParserTest, ParseFrameTdispatch) {
 
   // Verify that tags 24 bit wide are properly constructed
   ASSERT_EQ(frame.tag, 0x80000f);
-  ASSERT_EQ(frame.type, mux::Tdispatch);
+  ASSERT_EQ(frame.type, static_cast<int8_t>(mux::Type::Tdispatch));
   ASSERT_EQ(state, ParseState::kSuccess);
 
   ASSERT_EQ(frame.context.size(), 3);
