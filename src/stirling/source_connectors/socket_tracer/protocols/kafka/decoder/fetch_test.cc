@@ -172,6 +172,34 @@ bool operator==(const FetchResp& lhs, const FetchResp& rhs) {
   return true;
 }
 
+TEST(KafkaPacketDecoder, TestExtractFetchReqV4) {
+  const std::string_view input = CreateStringView<char>(
+      "\xFF\xFF\xFF\xFF\x00\x00\x01\xF4\x00\x00\x00\x01\x03\x20\x00\x00\x00\x00\x00\x00\x01\x00"
+      "\x08\x6D\x79\x2D\x74\x6F\x70\x69\x63\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+      "\x01\x7E\x00\x10\x00\x00");
+
+  FetchReqPartition partition{
+      .index = 0,
+      .current_leader_epoch = -1,
+      .fetch_offset = 382,
+      .last_fetched_epoch = -1,
+      .partition_max_bytes = 1048576,
+  };
+  FetchReqTopic topic{
+      .name = "my-topic",
+      .partitions = {partition},
+  };
+  FetchReq expected_result{.replica_id = -1,
+                           .session_id = 0,
+                           .session_epoch = -1,
+                           .topics = {topic},
+                           .forgotten_topics = {},
+                           .rack_id = ""};
+  PacketDecoder decoder(input);
+  decoder.SetAPIInfo(APIKey::kFetch, 4);
+  EXPECT_OK_AND_EQ(decoder.ExtractFetchReq(), expected_result);
+}
+
 TEST(KafkaPacketDecoder, TestExtractFetchReqV11) {
   const std::string_view input = CreateStringView<char>(
       "\xff\xff\xff\xff\x00\x00\x01\xf4\x00\x00\x00\x01\x03\x20\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -232,6 +260,38 @@ TEST(KafkaPacketDecoder, TestExtractFetchReqV12) {
   PacketDecoder decoder(input);
   decoder.SetAPIInfo(APIKey::kFetch, 12);
   EXPECT_OK_AND_EQ(decoder.ExtractFetchReq(), expected_result);
+}
+
+TEST(KafkaPacketDecoder, TestExtractFetchRespV4) {
+  const std::string_view input = CreateStringView<char>(
+      "\x00\x00\x00\x00\x00\x00\x00\x01\x00\x08\x6D\x79\x2D\x74\x6F\x70\x69\x63\x00\x00\x00\x01"
+      "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x7E\x00\x00\x00\x00\x00\x00\x01\x7E\xFF"
+      "\xFF\xFF\xFF\x00\x00\x00\x00");
+  MessageSet message_set{.size = 0, .record_batches = {}};
+  FetchRespPartition partition{
+      .index = 0,
+      .error_code = 0,
+      .high_watermark = 382,
+      .last_stable_offset = 382,
+      .log_start_offset = -1,
+      .aborted_transactions = {},
+      .preferred_read_replica = -1,
+      .message_set = message_set,
+  };
+  FetchRespTopic topic{
+      .name = "my-topic",
+      .partitions = {partition},
+  };
+  FetchResp expected_result{
+      .throttle_time_ms = 0,
+      .error_code = 0,
+      .session_id = 0,
+      .topics = {topic},
+  };
+
+  PacketDecoder decoder(input);
+  decoder.SetAPIInfo(APIKey::kFetch, 4);
+  EXPECT_OK_AND_EQ(decoder.ExtractFetchResp(), expected_result);
 }
 
 TEST(KafkaPacketDecoder, TestExtractFetchRespV11) {

@@ -107,11 +107,19 @@ StatusOr<FetchRespPartition> PacketDecoder::ExtractFetchRespPartition() {
   PL_ASSIGN_OR_RETURN(r.index, ExtractInt32());
   PL_ASSIGN_OR_RETURN(r.error_code, ExtractInt16());
   PL_ASSIGN_OR_RETURN(r.high_watermark, ExtractInt64());
-  PL_ASSIGN_OR_RETURN(r.last_stable_offset, ExtractInt64());
-  PL_ASSIGN_OR_RETURN(r.log_start_offset, ExtractInt64());
-  PL_ASSIGN_OR_RETURN(r.aborted_transactions,
-                      ExtractArray(&PacketDecoder::ExtractFetchRespAbortedTransaction));
-  PL_ASSIGN_OR_RETURN(r.preferred_read_replica, ExtractInt32());
+  if (api_version_ >= 4) {
+    PL_ASSIGN_OR_RETURN(r.last_stable_offset, ExtractInt64());
+  }
+  if (api_version_ >= 5) {
+    PL_ASSIGN_OR_RETURN(r.log_start_offset, ExtractInt64());
+  }
+  if (api_version_ >= 4) {
+    PL_ASSIGN_OR_RETURN(r.aborted_transactions,
+                        ExtractArray(&PacketDecoder::ExtractFetchRespAbortedTransaction));
+  }
+  if (api_version_ >= 11) {
+    PL_ASSIGN_OR_RETURN(r.preferred_read_replica, ExtractInt32());
+  }
   PL_ASSIGN_OR_RETURN(r.message_set, ExtractMessageSet());
   // No tag section here, since it's been handled in MessageSet.
   return r;
@@ -127,9 +135,13 @@ StatusOr<FetchRespTopic> PacketDecoder::ExtractFetchRespTopic() {
 
 StatusOr<FetchResp> PacketDecoder::ExtractFetchResp() {
   FetchResp r;
-  PL_ASSIGN_OR_RETURN(r.throttle_time_ms, ExtractInt32());
-  PL_ASSIGN_OR_RETURN(r.error_code, ExtractInt16());
-  PL_ASSIGN_OR_RETURN(r.session_id, ExtractInt32());
+  if (api_version_ >= 1) {
+    PL_ASSIGN_OR_RETURN(r.throttle_time_ms, ExtractInt32());
+  }
+  if (api_version_ >= 7) {
+    PL_ASSIGN_OR_RETURN(r.error_code, ExtractInt16());
+    PL_ASSIGN_OR_RETURN(r.session_id, ExtractInt32());
+  }
   PL_ASSIGN_OR_RETURN(r.topics, ExtractArray(&PacketDecoder::ExtractFetchRespTopic));
   PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   return r;

@@ -151,6 +151,26 @@ bool operator==(const ProduceResp& lhs, const ProduceResp& rhs) {
   return true;
 }
 
+TEST(KafkaPacketDecoderTest, ExtractProduceReqV7) {
+  const std::string_view input = CreateStringView<char>(
+      "\xFF\xFF\x00\x01\x00\x00\x75\x30\x00\x00\x00\x01\x00\x08\x6D\x79\x2D\x74\x6F\x70\x69\x63\x00"
+      "\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x5C\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x50"
+      "\x00\x00\x00\x00\x02\x76\x7C\xA6\x2F\x00\x00\x00\x00\x00\x01\x00\x00\x01\x7C\x29\x89\x9A\xA2"
+      "\x00\x00\x01\x7C\x29\x89\x9A\xA2\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x00"
+      "\x00\x00\x02\x14\x00\x00\x00\x01\x08\x74\x65\x73\x74\x00\x26\x00\x00\x02\x01\x1A\xC2\x48\x6F"
+      "\x6C\x61\x2C\x20\x6D\x75\x6E\x64\x6F\x21\x00");
+  RecordBatch record_batch{
+      .records = {{.key = "", .value = "test"}, {.key = "", .value = "\xc2Hola, mundo!"}}};
+  MessageSet message_set{.size = 92, .record_batches = {record_batch}};
+  ProduceReqPartition partition{.index = 0, .message_set = message_set};
+  ProduceReqTopic topic{.name = "my-topic", .partitions = {partition}};
+  ProduceReq expected_result{
+      .transactional_id = "", .acks = 1, .timeout_ms = 30000, .topics = {topic}};
+  PacketDecoder decoder(input);
+  decoder.SetAPIInfo(APIKey::kProduce, 7);
+  EXPECT_OK_AND_EQ(decoder.ExtractProduceReq(), expected_result);
+}
+
 TEST(KafkaPacketDecoderTest, ExtractProduceReqV8) {
   const std::string_view input = CreateStringView<char>(
       "\xff\xff\x00\x01\x00\x00\x05\xdc\x00\x00\x00\x01\x00\x11\x71\x75\x69\x63\x6b\x73\x74\x61"
@@ -187,6 +207,25 @@ TEST(KafkaPacketDecoderTest, ExtractProduceReqV9) {
   PacketDecoder decoder(input);
   decoder.SetAPIInfo(APIKey::kProduce, 9);
   EXPECT_OK_AND_EQ(decoder.ExtractProduceReq(), expected_result);
+}
+
+TEST(KafkaPacketDecoderTest, ExtractProduceRespV7) {
+  const std::string_view input = CreateStringView<char>(
+      "\x00\x00\x00\x01\x00\x08\x6D\x79\x2D\x74\x6F\x70\x69\x63\x00\x00\x00\x01\x00\x00\x00\x00\x00"
+      "\x00\x00\x00\x00\x00\x00\x00\x01\xAE\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x00\x00\x00\x00\x00\x00"
+      "\x00\x00\x00\x00\x00\x00");
+  ProduceRespPartition partition{.index = 0,
+                                 .error_code = 0,
+                                 .base_offset = 430,
+                                 .log_append_time_ms = -1,
+                                 .log_start_offset = 0,
+                                 .record_errors = {},
+                                 .error_message = ""};
+  ProduceRespTopic topic{.name = "my-topic", .partitions = {partition}};
+  ProduceResp expected_result{.topics = {topic}, .throttle_time_ms = 0};
+  PacketDecoder decoder(input);
+  decoder.SetAPIInfo(APIKey::kProduce, 7);
+  EXPECT_OK_AND_EQ(decoder.ExtractProduceResp(), expected_result);
 }
 
 TEST(KafkaPacketDecoderTest, ExtractProduceRespV8) {
