@@ -28,13 +28,11 @@ import SpeedIcon from '@material-ui/icons/Speed';
 import ErrorOutlineIcon from '@material-ui/icons/ErrorOutline';
 import IconButton from '@material-ui/core/IconButton';
 import Tooltip from '@material-ui/core/Tooltip';
-import { toEntityURL, toSingleEntityPage } from 'app/containers/live-widgets/utils/live-view-params';
 import { ClusterContext } from 'app/common/cluster-context';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { SemanticType, Relation } from 'app/types/generated/vizierapi_pb';
 import { useHistory } from 'react-router-dom';
 import { Arguments } from 'app/utils/args-utils';
-import { formatFloat64Data } from 'app/utils/format-data';
 import { buildClass } from 'app/utils/build-class';
 import {
   getColorForErrorRate,
@@ -42,26 +40,11 @@ import {
   getGraphOptions,
   LABEL_OPTIONS as labelOpts,
   semTypeToShapeConfig,
-  colInfoFromName,
   ColInfo,
 } from './graph-utils';
-import { Edge, RequestGraph, RequestGraphParser } from './request-graph-parser';
-import { formatBySemType } from '../../format-data/format-data';
-
-export interface RequestGraphDisplay extends WidgetDisplay {
-  readonly requestorPodColumn: string;
-  readonly responderPodColumn: string;
-  readonly requestorServiceColumn: string;
-  readonly responderServiceColumn: string;
-  readonly p50Column: string;
-  readonly p90Column: string;
-  readonly p99Column: string;
-  readonly errorRateColumn: string;
-  readonly requestsPerSecondColumn: string;
-  readonly inboundBytesPerSecondColumn: string;
-  readonly outboundBytesPerSecondColumn: string;
-  readonly totalRequestCountColumn: string;
-}
+import {
+  Edge, Entity, RequestGraphDisplay, RequestGraphManager,
+} from './request-graph-manager';
 
 interface RequestGraphProps {
   display: RequestGraphDisplay;
@@ -105,14 +88,13 @@ export const RequestGraphWidget = React.memo<RequestGraphProps>(function Request
   data, relation, display, propagatedArgs,
 }) {
   const { selectedClusterName } = React.useContext(ClusterContext);
+  const { embedState } = React.useContext(LiveRouteContext);
   const history = useHistory();
 
   const ref = React.useRef<HTMLDivElement>();
 
   const [network, setNetwork] = React.useState<Network>(null);
-  const [graph, setGraph] = React.useState<RequestGraph>(null);
-
-  const [colInfos, setColInfos] = React.useState<{ [key: string]: ColInfo }>({});
+  const [graphMgr, setGraphMgr] = React.useState<RequestGraphManager>(null);
 
   const [clusteredMode, setClusteredMode] = React.useState<boolean>(true);
   const [hierarchyEnabled, setHierarchyEnabled] = React.useState<boolean>(false);
@@ -120,198 +102,100 @@ export const RequestGraphWidget = React.memo<RequestGraphProps>(function Request
   const [focused, setFocused] = React.useState<boolean>(false);
 
   const theme = useTheme();
-  const defaultGraphOpts = getGraphOptions(theme, -1);
-  const [graphOpts, setGraphOpts] = React.useState<Options>(defaultGraphOpts);
+  /**
+   * Toggle the clustering of the graph (service vs pod).
+   */
+  const toggleMode = React.useCallback(() => setClusteredMode((clustered) => !clustered), []);
 
   /**
-   * Toggle the hier/non-hier clustering mode.
+   * Toggle the hierarchical state of the graph.
    */
-  const toggleMode = React.useCallback(() => setClusteredMode(
-    (clustered) => !clustered), [setClusteredMode]);
+  const toggleHierarchy = React.useCallback(() => setHierarchyEnabled((enabled) => !enabled), []);
 
-  React.useEffect(() => {
-    const infos = {};
-
-    // Get columnInfos for all relevant columns.
-    const cols = [display.p50Column, display.p90Column, display.errorRateColumn, display.requestsPerSecondColumn,
-      display.inboundBytesPerSecondColumn, display.outboundBytesPerSecondColumn,
-    ];
-
-    cols.forEach((c) => {
-      infos[c] = colInfoFromName(relation, c);
-    });
-
-    setColInfos(infos);
-  }, [relation, display]);
-
-  React.useEffect(() => {
-    if (network && graph) {
-      network.setData({
-        nodes: graph.nodes,
-        edges: graph.edges,
-      });
-      if (clusteredMode) {
-        // Clustered.
-        graph.services.forEach((svc) => {
-          const clusterOptionsByData = {
-            joinCondition(childOptions) {
-              return childOptions.service === svc;
-            },
-            clusterNodeProperties: {
-              ...semTypeToShapeConfig(SemanticType.ST_SERVICE_NAME),
-              allowSingleNodeCluster: true,
-              label: svc,
-              scaling: labelOpts,
-            },
-            processProperties(clusterOptions,
-              childNodes) {
-              const newOptions = clusterOptions;
-              let totalValue = 0;
-              childNodes.forEach((node) => {
-                totalValue += node.value;
-              });
-              newOptions.value = totalValue;
-              if (svc === '') {
-                newOptions.hidden = true;
-                newOptions.physics = false;
-              }
-              return newOptions;
-            },
-          };
-          network.cluster(clusterOptionsByData);
-        });
-      }
+  const getEdgeColoringFn = React.useCallback((latencyColor: boolean) => ((edge: Edge): string => {
+    if (latencyColor) {
+      return getColorForLatency(edge.p99, theme);
     }
-  }, [network, graph, clusteredMode]);
+    return getColorForErrorRate(edge.errorRate, theme);
+  }), [theme]);
+
+  const defaultGraphOpts = React.useMemo(() => getGraphOptions(theme, -1), [theme]);
 
   /**
-   * This is used to toggle the hierarchical state of graph.
+   * Toggle the color mode of the graph.
    */
-  const toggleHierarchy = React.useCallback(() => setHierarchyEnabled((enabled) => {
-    const hierEnabled = !enabled;
-    let opts = {};
-    if (hierEnabled) {
-      opts = {
-        ...defaultGraphOpts,
-        layout: {
-          ...defaultGraphOpts.layout,
-          hierarchical: {
-            enabled: true,
-            levelSeparation: 50,
-            direction: 'UD',
-            sortMethod: 'directed',
-            nodeSpacing: 50,
-            edgeMinimization: true,
-            blockShifting: true,
-          },
-        },
-      };
-    } else {
-      opts = {
-        ...defaultGraphOpts,
-        layout: {
-          ...defaultGraphOpts.layout,
-          hierarchical: {
-            enabled: false,
-          },
-        },
-      };
-    }
-    setGraphOpts(opts);
-    return hierEnabled;
-  }), [defaultGraphOpts]);
-
   const toggleColor = React.useCallback(() => setColorByLatency((enabled) => {
     const latencyColor = !enabled;
-    if (graph) {
-      graph.edges.forEach((edge: Edge) => {
-        graph.edges.update({
-          ...edge,
-          color: latencyColor ? getColorForLatency(edge.p99, theme) : getColorForErrorRate(edge.errorRate, theme),
-        });
-      });
+    if (graphMgr) {
+      graphMgr.setEdgeColor(getEdgeColoringFn(latencyColor));
     }
     return latencyColor;
-  }), [theme, graph]);
+  }), [graphMgr, getEdgeColoringFn]);
 
+  /**
+   * Toggle whether the graph is in focus.
+   */
   const toggleFocus = React.useCallback(() => setFocused((enabled) => !enabled), []);
 
-  // Load the graph.
+  /**
+   * Load data when the data or display changes.
+   */
   React.useEffect(() => {
-    const p = new RequestGraphParser(data, display);
-    const nodeDS = new visData.DataSet();
-    nodeDS.add(p.getEntities());
-    const edgeDS = new visData.DataSet();
-    edgeDS.add(p.getEdges());
-    setGraph({
-      nodes: nodeDS,
-      edges: edgeDS,
-      services: p.getServiceList(),
-    });
-  }, [data, display]);
+    const gMgr = new RequestGraphManager();
+    gMgr.parseInputData(data, relation, display, selectedClusterName, embedState, propagatedArgs);
+    gMgr.setEdgeColor(getEdgeColoringFn(colorByLatency));
+    setGraphMgr(gMgr);
+  // We don't actually want to redo this whenever colorByLatency changes, that will be
+  // handled by the next React.useEffect. This is for initial load only.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, display, relation, selectedClusterName, embedState, propagatedArgs, getEdgeColoringFn]);
 
-  // Load the data.
+  /**
+   * Reload the network when the graph substantially changes. This allows the proper
+   * new layout to be computed and handle the physics logic in one place.
+   */
   React.useEffect(() => {
-    if (ref && graph) {
-      // Hydrate the data.
-
-      const getDisplayText = (value: any, colName: string, defaultUnits: string) => {
-        const info = colInfos[colName];
-        if (info?.semType === SemanticType.ST_NONE || info?.semType === SemanticType.ST_UNSPECIFIED) {
-          return `${formatFloat64Data(value)}${defaultUnits}`;
-        }
-        const valWithUnits = formatBySemType(info?.semType, value);
-        return `${valWithUnits.val} ${valWithUnits.units}`;
-      };
-
-      graph.edges.forEach((edge: Edge) => {
-        const bps = edge.inboundBPS + edge.outputBPS;
-
-        const title = `${getDisplayText(bps, display.inboundBytesPerSecondColumn, ' B/s')} <br>
-                       ${getDisplayText(edge.rps, display.requestsPerSecondColumn, ' req/s')} <br>
-                       Error: ${getDisplayText(edge.errorRate, display.errorRateColumn, '%')} <br>
-                       p50: ${getDisplayText(edge.p50, display.p50Column, 'ms')} <br>
-                       p90: ${getDisplayText(edge.p90, display.p50Column, 'ms')}
-        `;
-
-        const color = colorByLatency
-          ? getColorForLatency(edge.p99, theme) : getColorForErrorRate(edge.errorRate, theme);
-        const value = bps;
-        graph.edges.update({
-          ...edge,
-          title,
-          color,
-          value,
-        });
-      });
-
-      const d = {
-        nodes: graph.nodes,
-        edges: graph.edges,
-      };
-      const n = new Network(ref.current, d, graphOpts);
-
-      n.on('stabilizationIterationsDone', () => {
-        n.setOptions({ physics: false });
-      });
-      setNetwork(n);
+    if (!graphMgr) {
+      return;
     }
-    // To list all exhaustive deps, we also have to list theme, which will never change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [graph, display, ref, colorByLatency, colInfos, graphOpts]);
 
-  const { embedState } = React.useContext(LiveRouteContext);
+    const graphOpts = {
+      ...defaultGraphOpts,
+      layout: {
+        ...defaultGraphOpts.layout,
+        hierarchical: hierarchyEnabled ? {
+          enabled: true,
+          levelSeparation: 50,
+          direction: 'UD',
+          sortMethod: 'directed',
+          nodeSpacing: 50,
+          edgeMinimization: true,
+          blockShifting: true,
+        } : {
+          enabled: false,
+        },
+      },
+    };
+
+    const n = new Network(ref.current, graphMgr.getRequestGraph(clusteredMode), graphOpts);
+    n.on('stabilizationIterationsDone', () => {
+      n.setOptions({ physics: false });
+    });
+    setNetwork(n);
+  }, [graphMgr, clusteredMode, hierarchyEnabled, defaultGraphOpts]);
 
   const doubleClickCallback = React.useCallback((params?: any) => {
     if (params.nodes.length > 0 && !embedState.widget) {
-      const nodeName = !clusteredMode ? params.nodes[0]
-        : graph.nodes.get(network.getNodesInCluster(params.nodes[0]))[0].service;
-      const semType = !clusteredMode ? SemanticType.ST_POD_NAME : SemanticType.ST_SERVICE_NAME;
-      const page = toSingleEntityPage(nodeName, semType, selectedClusterName);
-      const pathname = toEntityURL(page, embedState, propagatedArgs);
-      history.push(pathname);
+      // Unfortunately, vis's getRequestGraph has different signatures based on the input.
+      // For this input, it will return a single Entity node, but for other inputs it might
+      // return an any[], and that is the type that TypeScript is receiving. So, we have to
+      // do this ugly conversion here. See `get` in https://visjs.github.io/vis-data/data/dataset.html.
+      const node = graphMgr.getRequestGraph(clusteredMode).nodes.get(params.nodes[0]) as unknown as Entity;
+      if (node?.url) {
+        history.push(node.url);
+      }
     }
-  }, [history, selectedClusterName, clusteredMode, network, graph, propagatedArgs, embedState]);
+  }, [graphMgr, clusteredMode, history, embedState]);
 
   // This function needs to dynamically change on 'network' every time clusteredMode is updated,
   // so we assign it separately from where Network is created.

@@ -21,7 +21,8 @@ import 'react-resizable/css/styles.css';
 
 import { buildClass, Spinner } from 'app/components';
 import { GraphDisplay, GraphWidget } from 'app/containers/live-widgets/graph/graph';
-import { RequestGraphDisplay, RequestGraphWidget } from 'app/containers/live-widgets/graph/request-graph';
+import { RequestGraphWidget } from 'app/containers/live-widgets/graph/request-graph';
+import { RequestGraphDisplay } from 'app/containers/live-widgets/graph/request-graph-manager';
 
 import {
   TimeSeriesContext, withTimeSeriesContext,
