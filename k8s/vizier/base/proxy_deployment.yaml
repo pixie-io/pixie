@@ -14,6 +14,24 @@ spec:
         name: vizier-proxy
         plane: control
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/os
+                operator: Exists
+              - key: kubernetes.io/os
+                operator: In
+                values:
+                - linux
+            - matchExpressions:
+              - key: beta.kubernetes.io/os
+                operator: Exists
+              - key: beta.kubernetes.io/os
+                operator: In
+                values:
+                - linux
       containers:
       - name: app
         image: envoyproxy/envoy:v1.12.2

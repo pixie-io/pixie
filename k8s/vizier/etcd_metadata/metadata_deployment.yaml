@@ -15,6 +15,24 @@ spec:
         plane: control
     spec:
       serviceAccountName: metadata-service-account
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/os
+                operator: Exists
+              - key: kubernetes.io/os
+                operator: In
+                values:
+                - linux
+            - matchExpressions:
+              - key: beta.kubernetes.io/os
+                operator: Exists
+              - key: beta.kubernetes.io/os
+                operator: In
+                values:
+                - linux
       initContainers:
       - name: nats-wait
         image: gcr.io/pixie-prod/pixie-prod-artifacts/curl:1.0

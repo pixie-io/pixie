@@ -17,6 +17,24 @@ spec:
         name: vizier-pem
         plane: data
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/os
+                operator: Exists
+              - key: kubernetes.io/os
+                operator: In
+                values:
+                - linux
+            - matchExpressions:
+              - key: beta.kubernetes.io/os
+                operator: Exists
+              - key: beta.kubernetes.io/os
+                operator: In
+                values:
+                - linux
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule

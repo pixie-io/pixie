@@ -13,6 +13,24 @@ spec:
         name: kelvin
         plane: data
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/os
+                operator: Exists
+              - key: kubernetes.io/os
+                operator: In
+                values:
+                - linux
+            - matchExpressions:
+              - key: beta.kubernetes.io/os
+                operator: Exists
+              - key: beta.kubernetes.io/os
+                operator: In
+                values:
+                - linux
       initContainers:
       - name: qb-wait
         image: gcr.io/pixie-prod/pixie-prod-artifacts/curl:1.0
