@@ -14,7 +14,7 @@ build --verbose_failures
 test --verbose_failures
 
 # BES/Cache Setup
-build --bes_timeout=120s
+build --bes_timeout=180s
 build --experimental_inmemory_dotd_files
 build --experimental_inmemory_jdeps_files
 build --keep_backend_build_event_connections_alive=false
