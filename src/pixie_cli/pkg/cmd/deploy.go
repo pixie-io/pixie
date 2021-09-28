@@ -56,11 +56,6 @@ import (
 )
 
 const (
-	// DefaultClassAnnotationKey is the key in the annotation map which indicates
-	// a storage class is default.
-	// TODO(nserrino): Remove this when the operator (which contains duplicate logic)
-	// is used by all Pixie users.
-	DefaultClassAnnotationKey = "storageclass.kubernetes.io/is-default-class"
 	// DefaultCloudAddr is the Community Cloud address.
 	DefaultCloudAddr = "withpixie.ai:443"
 )
@@ -238,7 +233,6 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	deployKey, _ := cmd.Flags().GetString("deploy_key")
 	useEtcdOperator, _ := cmd.Flags().GetBool("use_etcd_operator")
-	useEtcdOperatorSet := cmd.Flags().Changed("use_etcd_operator")
 	customLabels, _ := cmd.Flags().GetString("labels")
 	customAnnotations, _ := cmd.Flags().GetString("annotations")
 	pemMemoryLimit, _ := cmd.Flags().GetString("pem_memory_limit")
@@ -367,20 +361,6 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	templatedYAMLs, err := artifacts.FetchOperatorTemplates(cloudConn, operatorVersion)
 	if err != nil {
 		log.WithError(err).Fatal("Could not fetch Vizier YAMLs")
-	}
-
-	// useEtcdOperator is true then deploy operator. Otherwise: If defaultStorageExists, then
-	// go for persistent storage version.
-	// TODO(nserrino): Remove this logic once everyone has fully moved to the operator.
-	if !useEtcdOperatorSet {
-		// Validate correct number of default storage classes.
-		defaultStorageExists, err := validateNumDefaultStorageClasses(clientset)
-		if err != nil {
-			utils.Error("Error checking default storage classes: " + err.Error())
-		}
-		if !defaultStorageExists {
-			useEtcdOperator = true
-		}
 	}
 
 	clusterName, _ := cmd.Flags().GetString("cluster_name")
@@ -761,28 +741,6 @@ func podUnschedulableMessage(podStatus *v1.PodStatus) string {
 func pemCanScheduleWithTaint(t *v1.Taint) bool {
 	// For now an effect of NoSchedule should be sufficient, we don't have tolerations in the Daemonset spec.
 	return t.Effect != "NoSchedule"
-}
-
-// TODO(nserrino): Remove this when everyone has moved to the operator.
-// validateNumDefaultStorageClasses returns a boolean whether there is exactly
-// 1 default storage class or not.
-func validateNumDefaultStorageClasses(clientset *kubernetes.Clientset) (bool, error) {
-	storageClasses, err := clientset.StorageV1().StorageClasses().List(context.Background(), metav1.ListOptions{})
-	if err != nil {
-		return false, err
-	}
-
-	defaultClassCount := 0
-
-	// Check annotations map on each storage class to see if default is set to "true".
-	for _, storageClass := range storageClasses.Items {
-		annotationsMap := storageClass.GetAnnotations()
-		if annotationsMap[DefaultClassAnnotationKey] == "true" {
-			defaultClassCount++
-		}
-	}
-
-	return defaultClassCount == 1, nil
 }
 
 func getNumNodes(clientset *kubernetes.Clientset) (int, error) {
