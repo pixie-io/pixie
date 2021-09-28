@@ -51,7 +51,7 @@ module.exports = {
       ...a,
       [`^.+\\.${ext}$`]: ['esbuild-jest', {
         loader: ext,
-        target: 'node12',
+        target: 'node16',
       }]
     }), {}),
     [`node_modules/(${esModules}).*\\.jsx?$`]: './jest-esm-transform',

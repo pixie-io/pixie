@@ -112,7 +112,7 @@ const webpackConfig = {
         loader: require.resolve('esbuild-loader'),
         options: {
           loader: ext,
-          target: 'es6',
+          target: 'es2020',
         },
       })),
       {
