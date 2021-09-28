@@ -237,12 +237,12 @@ TEST(ElfReaderTest, FuncByteCode) {
 
 TEST(ElfReaderTest, GolangAppRuntimeBuildVersion) {
 #ifdef PL_COVERAGE
-  LOG(INFO) << "Whoa...`bazel coverage` is messaging with dummy_go_binary. Shame on you bazel. "
+  LOG(INFO) << "Whoa...`bazel coverage` is messaging with test_go_binary. Shame on you bazel. "
                "Ending this test early.";
   return;
 #else
   const std::string kPath = px::testing::BazelBinTestFilePath(
-      "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary");
+      "src/stirling/obj_tools/testdata/test_go_binary_/test_go_binary");
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
   ASSERT_OK_AND_ASSIGN(ElfReader::SymbolInfo symbol,
                        elf_reader->SearchTheOnlySymbol("runtime.buildVersion"));

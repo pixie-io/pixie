@@ -40,7 +40,7 @@ cc_library(
 )
 
 go_binary(
-    name = "dummy_go_binary",
+    name = "test_go_binary",
     embed = [":testdata_lib"],
     # To force no optimizations and no inlining, we need to pass -N -l
     gc_goopts = [
@@ -112,7 +112,7 @@ go_library(
     name = "testdata_lib",
     srcs = [
         "dummy_exe_fixture.h",
-        "dummy_go_binary.go",
+        "test_go_binary.go",
     ],
     importpath = "px.dev/pixie/src/stirling/obj_tools/testdata",
 )

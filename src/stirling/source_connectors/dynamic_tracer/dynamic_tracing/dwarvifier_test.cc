@@ -23,7 +23,7 @@
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dwarvifier.h"
 
 constexpr std::string_view kBinaryPath =
-    "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary";
+    "src/stirling/obj_tools/testdata/test_go_binary_/test_go_binary";
 
 namespace px {
 namespace stirling {
@@ -1493,10 +1493,10 @@ TEST_P(DwarfInfoTest, Transform) {
 
 // Check for `bazel coverage` so we can bypass the final checks.
 // Note that we still get accurate coverage metrics, because this only skips the final check.
-// Ideally, we'd get bazel to deterministically build dummy_go_binary,
+// Ideally, we'd get bazel to deterministically build test_go_binary,
 // but it's not easy to tell bazel to use a different config for just one target.
 #ifdef PL_COVERAGE
-  LOG(INFO) << "Whoa...`bazel coverage` is messaging with dummy_go_binary. Shame on you bazel. "
+  LOG(INFO) << "Whoa...`bazel coverage` is messaging with test_go_binary. Shame on you bazel. "
                "Skipping final checks.";
   return;
 #else

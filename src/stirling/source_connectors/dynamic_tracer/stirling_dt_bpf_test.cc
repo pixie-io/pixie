@@ -275,7 +275,7 @@ TEST_F(DynamicTraceAPITest, InvalidReference) {
 class DynamicTraceGolangTest : public StirlingDynamicTraceBPFTest {
  protected:
   const std::string kBinaryPath =
-      BazelBinTestFilePath("src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary");
+      BazelBinTestFilePath("src/stirling/obj_tools/testdata/test_go_binary_/test_go_binary");
 };
 
 TEST_F(DynamicTraceGolangTest, TraceLatencyOnly) {
