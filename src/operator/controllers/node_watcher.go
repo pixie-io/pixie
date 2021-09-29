@@ -21,17 +21,12 @@ package controllers
 import (
 	"context"
 	"strings"
-	"time"
 
 	"github.com/blang/semver"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	apiwatch "k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/watch"
 
 	"px.dev/pixie/src/shared/status"
 )
@@ -122,10 +117,9 @@ func (n *nodeCompatTracker) state() *vizierState {
 // NodeWatcher is responsible for tracking the nodes from the K8s API and using the NodeInfo to determine
 // whether or not Pixie can successfully collect data on the cluster.
 type nodeWatcher struct {
-	clientset kubernetes.Interface
+	factory informers.SharedInformerFactory
 
 	compatTracker nodeCompatTracker
-	lastRV        string
 
 	state chan<- *vizierState
 }
@@ -135,70 +129,41 @@ func (nw *nodeWatcher) start(ctx context.Context) {
 		incompatibleCount: 0.0,
 		nodeCompatible:    make(map[string]bool),
 	}
-	nodeList, err := nw.clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
-	if err != nil {
-		log.WithError(err).Fatal("Could not list nodes")
-	}
-	nw.lastRV = nodeList.ResourceVersion
 
-	for i := range nodeList.Items {
-		nw.compatTracker.addNode(&nodeList.Items[i])
-	}
-	nw.state <- nw.compatTracker.state()
-
-	// Start watcher.
-	nw.watchNodes(ctx)
+	informer := nw.factory.Core().V1().Nodes().Informer()
+	stopper := make(chan struct{})
+	defer close(stopper)
+	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    nw.onAdd,
+		UpdateFunc: nw.onUpdate,
+		DeleteFunc: nw.onDelete,
+	})
+	informer.Run(stopper)
 }
 
-func (nw *nodeWatcher) watchNodes(ctx context.Context) {
-	for {
-		watcher := cache.NewListWatchFromClient(nw.clientset.CoreV1().RESTClient(), "nodes", metav1.NamespaceAll, fields.Everything())
-		retryWatcher, err := watch.NewRetryWatcher(nw.lastRV, watcher)
-		if err != nil {
-			log.WithError(err).Fatal("Could not start watcher for nodes")
-		}
-
-		resCh := retryWatcher.ResultChan()
-		loop := true
-		for loop {
-			select {
-			case <-ctx.Done():
-				log.Info("Received cancel, stopping K8s watcher")
-				return
-			case c, ok := <-resCh:
-				if !ok {
-					loop = false
-					break
-				}
-				s, ok := c.Object.(*metav1.Status)
-				if ok && s.Status == metav1.StatusFailure {
-					log.WithField("status", s.Status).WithField("msg", s.Message).WithField("reason", s.Reason).WithField("details", s.Details).Info("Received failure status in node watcher")
-					// Try to start up another watcher instance.
-					// Sleep a second before retrying, so as not to drive up the CPU.
-					time.Sleep(1 * time.Second)
-					loop = false
-					break
-				}
-
-				node, ok := c.Object.(*v1.Node)
-				if !ok {
-					continue
-				}
-
-				// Update the lastRV, so that if the watcher restarts, it starts at the correct resource version.
-				nw.lastRV = node.ObjectMeta.ResourceVersion
-
-				switch c.Type {
-				case apiwatch.Added:
-					nw.compatTracker.addNode(node)
-				case apiwatch.Modified:
-					nw.compatTracker.updateNode(node)
-				case apiwatch.Deleted:
-					nw.compatTracker.removeNode(node)
-				}
-
-				nw.state <- nw.compatTracker.state()
-			}
-		}
+func (nw *nodeWatcher) onAdd(obj interface{}) {
+	node, ok := obj.(*v1.Node)
+	if !ok {
+		return
 	}
+	nw.compatTracker.addNode(node)
+	nw.state <- nw.compatTracker.state()
+}
+
+func (nw *nodeWatcher) onUpdate(oldObj, newObj interface{}) {
+	node, ok := newObj.(*v1.Node)
+	if !ok {
+		return
+	}
+	nw.compatTracker.updateNode(node)
+	nw.state <- nw.compatTracker.state()
+}
+
+func (nw *nodeWatcher) onDelete(obj interface{}) {
+	node, ok := obj.(*v1.Node)
+	if !ok {
+		return
+	}
+	nw.compatTracker.removeNode(node)
+	nw.state <- nw.compatTracker.state()
 }

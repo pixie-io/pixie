@@ -20,16 +20,12 @@ package controllers
 
 import (
 	"context"
-	"time"
 
-	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	apiwatch "k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/watch"
 
 	"px.dev/pixie/src/shared/status"
 )
@@ -60,7 +56,7 @@ func metadataPVCState(clientset kubernetes.Interface, pvc *v1.PersistentVolumeCl
 // whether or not Pixie can successfully run the metadata service on this cluster.
 type pvcWatcher struct {
 	clientset kubernetes.Interface
-	lastRV    string
+	factory   informers.SharedInformerFactory
 
 	namespace string
 
@@ -68,73 +64,42 @@ type pvcWatcher struct {
 }
 
 func (pw *pvcWatcher) start(ctx context.Context) {
-	pvcs, err := pw.clientset.CoreV1().PersistentVolumeClaims(pw.namespace).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		log.WithError(err).Fatal("Could not list pvcs")
-	}
-	pw.lastRV = pvcs.ResourceVersion
-
-	var pvc *v1.PersistentVolumeClaim
-	for i := range pvcs.Items {
-		if pvcs.Items[i].Name == metadataPVC {
-			pvc = &pvcs.Items[i]
-			break
-		}
-	}
-	pw.state <- metadataPVCState(pw.clientset, pvc)
-
-	// Start watcher.
-	pw.watchPVCs(ctx)
+	informer := pw.factory.Core().V1().PersistentVolumeClaims().Informer()
+	stopper := make(chan struct{})
+	defer close(stopper)
+	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    pw.onAdd,
+		UpdateFunc: pw.onUpdate,
+		DeleteFunc: pw.onDelete,
+	})
+	informer.Run(stopper)
 }
 
-func (pw *pvcWatcher) watchPVCs(ctx context.Context) {
-	for {
-		watcher := cache.NewListWatchFromClient(pw.clientset.CoreV1().RESTClient(), "persistentvolumeclaims", pw.namespace, fields.Everything())
-		retryWatcher, err := watch.NewRetryWatcher(pw.lastRV, watcher)
-		if err != nil {
-			log.WithError(err).Fatal("Could not start watcher for PVCs")
-		}
-
-		resCh := retryWatcher.ResultChan()
-		loop := true
-		for loop {
-			select {
-			case <-ctx.Done():
-				log.Info("Received cancel, stopping K8s watcher")
-				return
-			case c, ok := <-resCh:
-				if !ok {
-					loop = false
-					break
-				}
-				s, ok := c.Object.(*metav1.Status)
-				if ok && s.Status == metav1.StatusFailure {
-					log.WithField("status", s.Status).WithField("msg", s.Message).WithField("reason", s.Reason).WithField("details", s.Details).Info("Received failure status in PVC watcher")
-					// Try to start up another watcher instance.
-					// Sleep a second before retrying, so as not to drive up the CPU.
-					time.Sleep(1 * time.Second)
-					loop = false
-					break
-				}
-
-				pvc, ok := c.Object.(*v1.PersistentVolumeClaim)
-				if !ok {
-					continue
-				}
-
-				// Update the lastRV, so that if the watcher restarts, it starts at the correct resource version.
-				pw.lastRV = pvc.ObjectMeta.ResourceVersion
-				if pvc.Name != metadataPVC {
-					continue
-				}
-
-				switch c.Type {
-				case apiwatch.Added, apiwatch.Modified:
-					pw.state <- metadataPVCState(pw.clientset, pvc)
-				case apiwatch.Deleted:
-					pw.state <- metadataPVCState(pw.clientset, nil)
-				}
-			}
-		}
+func (pw *pvcWatcher) isMetadataPVC(obj interface{}) bool {
+	pvc, ok := obj.(*v1.PersistentVolumeClaim)
+	if !ok {
+		return false
 	}
+	return pvc.Namespace == pw.namespace && pvc.Name == metadataPVC
+}
+
+func (pw *pvcWatcher) onAdd(obj interface{}) {
+	if !pw.isMetadataPVC(obj) {
+		return
+	}
+	pw.state <- metadataPVCState(pw.clientset, obj.(*v1.PersistentVolumeClaim))
+}
+
+func (pw *pvcWatcher) onUpdate(oldObj, newObj interface{}) {
+	if !pw.isMetadataPVC(newObj) {
+		return
+	}
+	pw.state <- metadataPVCState(pw.clientset, newObj.(*v1.PersistentVolumeClaim))
+}
+
+func (pw *pvcWatcher) onDelete(obj interface{}) {
+	if !pw.isMetadataPVC(obj) {
+		return
+	}
+	pw.state <- metadataPVCState(pw.clientset, nil)
 }

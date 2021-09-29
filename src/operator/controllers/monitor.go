@@ -33,12 +33,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/watch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
@@ -106,6 +104,7 @@ func (c *concurrentPodMap) write(nameLabel, k8sName string, p *podWrapper) {
 // for the overall Vizier instance.
 type VizierMonitor struct {
 	clientset   kubernetes.Interface
+	factory     informers.SharedInformerFactory
 	httpClient  HTTPClient
 	ctx         context.Context
 	cancel      func()
@@ -115,7 +114,6 @@ type VizierMonitor struct {
 	namespacedName types.NamespacedName
 
 	podStates *concurrentPodMap
-	lastPodRV string
 
 	// States from the various state-updaters, which should be aggregated into a single status.
 	nodeState       *vizierState
@@ -140,18 +138,16 @@ func (m *VizierMonitor) InitAndStartMonitor(cloudClient *grpc.ClientConn) error 
 	m.nodeState = okState()
 	m.pvcState = okState()
 
-	err := m.initState()
-	if err != nil {
-		return err
-	}
+	m.factory = informers.NewSharedInformerFactoryWithOptions(m.clientset, 0, informers.WithNamespace(m.namespace))
 
-	// Watch for future updates in the namespace.
+	// Watch for pod updates in the namespace.
 	go m.watchK8sPods()
 
 	// Start PVC monitor.
 	pvcStateCh := make(chan *vizierState)
 	pvcW := &pvcWatcher{
 		clientset: m.clientset,
+		factory:   m.factory,
 		namespace: m.namespace,
 		state:     pvcStateCh,
 	}
@@ -160,8 +156,8 @@ func (m *VizierMonitor) InitAndStartMonitor(cloudClient *grpc.ClientConn) error 
 	// Start node monitor.
 	nodeStateCh := make(chan *vizierState)
 	nodeW := &nodeWatcher{
-		clientset: m.clientset,
-		state:     nodeStateCh,
+		factory: m.factory,
+		state:   nodeStateCh,
 	}
 	go nodeW.start(m.ctx)
 
@@ -173,83 +169,40 @@ func (m *VizierMonitor) InitAndStartMonitor(cloudClient *grpc.ClientConn) error 
 	return nil
 }
 
-func (m *VizierMonitor) initState() error {
-	podList, err := m.clientset.CoreV1().Pods(m.namespace).List(m.ctx, metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-	m.lastPodRV = podList.ResourceVersion
-	// Populate vizierStates with current pod state.
-	for _, pod := range podList.Items {
-		m.handlePod(pod)
-	}
-
-	return nil
-}
-
-func (m *VizierMonitor) handlePod(p v1.Pod) {
-	// We label all of our vizier pods with a name=<componentName>.
-	// For now, this assumes no replicas. If a new pod starts up, it will replace
-	// the status of the previous pod.
-	// In the future we may add special handling for PEMs/multiple kelvins.
-	nameLabel, ok := p.ObjectMeta.Labels["name"]
+func (m *VizierMonitor) onAddPod(obj interface{}) {
+	pod, ok := obj.(*v1.Pod)
 	if !ok {
-		nameLabel = ""
-	}
-	k8sName := p.ObjectMeta.Name
-
-	// Delete from our pemState if the pod is set for deletion.
-	if p.ObjectMeta.DeletionTimestamp != nil {
-		m.podStates.delete(nameLabel, k8sName)
 		return
 	}
+	m.podStates.write(pod.ObjectMeta.Labels["name"], pod.ObjectMeta.Name, &podWrapper{pod: pod})
+}
 
-	m.podStates.write(nameLabel, k8sName, &podWrapper{pod: &p})
+func (m *VizierMonitor) onUpdatePod(oldObj, newObj interface{}) {
+	pod, ok := newObj.(*v1.Pod)
+	if !ok {
+		return
+	}
+	m.podStates.write(pod.ObjectMeta.Labels["name"], pod.ObjectMeta.Name, &podWrapper{pod: pod})
+}
+
+func (m *VizierMonitor) onDeletePod(obj interface{}) {
+	pod, ok := obj.(*v1.Pod)
+	if !ok {
+		return
+	}
+	m.podStates.delete(pod.ObjectMeta.Labels["name"], pod.ObjectMeta.Name)
 }
 
 func (m *VizierMonitor) watchK8sPods() {
-	for {
-		watcher := cache.NewListWatchFromClient(m.clientset.CoreV1().RESTClient(), "pods", m.namespace, fields.Everything())
-		retryWatcher, err := watch.NewRetryWatcher(m.lastPodRV, watcher)
-		if err != nil {
-			log.WithError(err).Fatal("Could not start watcher for pods")
-		}
-
-		resCh := retryWatcher.ResultChan()
-		loop := true
-		for loop {
-			select {
-			case <-m.ctx.Done():
-				log.Info("Received cancel, stopping K8s watcher")
-				return
-			case c, ok := <-resCh:
-				if !ok {
-					log.Info("Watcher channel closed, restarting")
-					loop = false
-					break
-				}
-				s, ok := c.Object.(*metav1.Status)
-				if ok && s.Status == metav1.StatusFailure {
-					log.WithField("status", s.Status).WithField("msg", s.Message).WithField("reason", s.Reason).WithField("details", s.Details).Info("Received failure status in pod watcher")
-					// Try to start up another watcher instance.
-					// Sleep a second before retrying, so as not to drive up the CPU.
-					time.Sleep(1 * time.Second)
-					loop = false
-					break
-				}
-
-				// Update the lastPodRV, so that if the watcher restarts, it starts at the correct resource version.
-				o, ok := c.Object.(*v1.Pod)
-				if !ok {
-					continue
-				}
-
-				m.lastPodRV = o.ObjectMeta.ResourceVersion
-
-				m.handlePod(*o)
-			}
-		}
-	}
+	informer := m.factory.Core().V1().Pods().Informer()
+	stopper := make(chan struct{})
+	defer close(stopper)
+	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    m.onAddPod,
+		UpdateFunc: m.onUpdatePod,
+		DeleteFunc: m.onDeletePod,
+	})
+	informer.Run(stopper)
 }
 
 // vizierState details the state of Vizier at a snapshot.
