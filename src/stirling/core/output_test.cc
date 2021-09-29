@@ -19,19 +19,19 @@
 #include "src/stirling/core/output.h"
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/testing/dummy_table.h"
+#include "src/stirling/testing/test_table.h"
 
 namespace px {
 namespace stirling {
 
-using ::px::stirling::testing::DummyTableFixture;
+using ::px::stirling::testing::TestTableFixture;
 using ::testing::ElementsAre;
 using ::testing::StrEq;
 
-namespace idx = ::px::stirling::testing::dummy_table_idx;
+namespace idx = ::px::stirling::testing::test_table_idx;
 
-std::unique_ptr<DummyTableFixture> GetDummyTableFixture() {
-  auto fixture = std::make_unique<DummyTableFixture>();
+std::unique_ptr<TestTableFixture> GetTestTableFixture() {
+  auto fixture = std::make_unique<TestTableFixture>();
   {
     auto r = fixture->record_builder();
     r.Append<idx::kInt64Idx>(0);
@@ -46,7 +46,7 @@ std::unique_ptr<DummyTableFixture> GetDummyTableFixture() {
 }
 
 TEST(PrintRecordBatchTest, AllRecordsToStringPrefixWrapper) {
-  auto fixture = GetDummyTableFixture();
+  auto fixture = GetTestTableFixture();
   EXPECT_EQ(
       "[test] int64:[0] string:[test]\n"
       "[test] int64:[0] string:[test]\n",
@@ -54,8 +54,8 @@ TEST(PrintRecordBatchTest, AllRecordsToStringPrefixWrapper) {
 }
 
 TEST(PrintRecordBatchTest, AllRecordsToStringNonPrefixWrapper) {
-  auto fixture = GetDummyTableFixture();
-  EXPECT_THAT(ToString(testing::kDummyTable.ToProto(), fixture->record_batch()),
+  auto fixture = GetTestTableFixture();
+  EXPECT_THAT(ToString(testing::kTestTable.ToProto(), fixture->record_batch()),
               ElementsAre(StrEq(" int64:[0] string:[test]"), StrEq(" int64:[0] string:[test]")));
 }
 

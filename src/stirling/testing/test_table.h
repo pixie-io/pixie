@@ -30,7 +30,7 @@ namespace stirling {
 namespace testing {
 
 // clang-format off
-constexpr DataElement kDummyElements[] = {
+constexpr DataElement kElements[] = {
     {"int64", "int64",
      types::DataType::INT64,
      types::SemanticType::ST_NONE,
@@ -42,8 +42,8 @@ constexpr DataElement kDummyElements[] = {
 };
 // clang-format on
 
-constexpr auto kDummyTable = DataTableSchema("dummy", "A dummy table for testing", kDummyElements);
-DEFINE_PRINT_TABLE(Dummy);
+constexpr auto kTestTable = DataTableSchema("test", "A table for testing", kElements);
+DEFINE_PRINT_TABLE(Test);
 
 template <const DataTableSchema* schema>
 struct TableFixture {
@@ -55,7 +55,7 @@ struct TableFixture {
     CHECK_EQ(tablets.size(), 1);
     return std::move(tablets.front().records);
   }
-  ArrayView<DataElement> elements() const { return kDummyTable.elements(); }
+  ArrayView<DataElement> elements() const { return kTestTable.elements(); }
   DataTable::RecordBuilder<schema> record_builder() {
     return DataTable::RecordBuilder<schema>(&data_table);
   }
@@ -64,14 +64,14 @@ struct TableFixture {
   DataTable data_table;
 };
 
-using DummyTableFixture = TableFixture<&kDummyTable>;
+using TestTableFixture = TableFixture<&kTestTable>;
 
-namespace dummy_table_idx {
+namespace test_table_idx {
 
-constexpr int kInt64Idx = kDummyTable.ColIndex("int64");
-constexpr int kStringIdx = kDummyTable.ColIndex("string");
+constexpr int kInt64Idx = kTestTable.ColIndex("int64");
+constexpr int kStringIdx = kTestTable.ColIndex("string");
 
-}  // namespace dummy_table_idx
+}  // namespace test_table_idx
 
 }  // namespace testing
 }  // namespace stirling

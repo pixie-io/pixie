@@ -31,7 +31,7 @@ def dns_requests(start_time: str, query_name_filter: str):
     # Convert DNS IP to string.
     df.dns_server = px.nslookup(df.remote_addr)
 
-    # Parse the DNS respoonse to determine if it was successfully resolved.
+    # Parse the DNS response to determine if it was successfully resolved.
     df.resp_body = px.pluck(df.resp_body, 'answers')
     df.request_resolved = px.contains(df.resp_body, 'name')
 
