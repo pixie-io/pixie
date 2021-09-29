@@ -158,6 +158,9 @@ func init() {
 	DeployCmd.Flags().StringP("pem_memory_limit", "p", "", "The memory limit to specify for the PEMS, otherwise a default is used.")
 	viper.BindPFlag("pem_memory_limit", DeployCmd.Flags().Lookup("pem_memory_limit"))
 
+	DeployCmd.Flags().StringArray("patches", []string{}, "Custom patches to apply to Pixie yamls, for example: 'vizier-pem:{\"spec\":{\"template\":{\"spec\":{\"nodeSelector\":{\"pixie\": \"allowed\"}}}}}'")
+	viper.BindPFlag("patches", DeployCmd.Flags().Lookup("patches"))
+
 	// Flags for deploying OLM.
 	DeployCmd.Flags().String("operator_version", "", "Operator version to deploy")
 	viper.BindPFlag("operator_version", DeployCmd.Flags().Lookup("operator_version"))
@@ -236,6 +239,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	customLabels, _ := cmd.Flags().GetString("labels")
 	customAnnotations, _ := cmd.Flags().GetString("annotations")
 	pemMemoryLimit, _ := cmd.Flags().GetString("pem_memory_limit")
+	patches, _ := cmd.Flags().GetStringArray("patches")
 
 	labelMap := make(map[string]string)
 	if customLabels != "" {
@@ -259,6 +263,16 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 			utils.WithError(err).Fatal("--annotations must be specified through the following format: annotation1=value1,annotation2=value2")
 		}
 		annotationMap = am
+	}
+	patchesMap := make(map[string]string)
+	if len(patches) != 0 {
+		for _, p := range patches {
+			colon := strings.Index(p, ":")
+			if colon == -1 {
+				continue
+			}
+			patchesMap[p[:colon]] = p[colon+1:]
+		}
 	}
 
 	if deployKey == "" && extractPath != "" {
@@ -392,6 +406,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 				"annotations": annotationMap,
 				"labels":      labelMap,
 			},
+			"patches": patchesMap,
 		},
 		Release: &map[string]interface{}{
 			"Namespace": namespace,
