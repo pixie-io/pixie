@@ -67,9 +67,9 @@ pl_cc_test(
     data = glob([
         "testdata/config",
         "testdata/config.gz",
-        "testdata/dummy_header_packages/*",
-        "testdata/dummy_host_ubuntu/**",
-        "testdata/dummy_host_debian/**",
+        "testdata/test_header_packages/*",
+        "testdata/sample_host_ubuntu/**",
+        "testdata/sample_host_debian/**",
     ]),
     deps = [
         ":cc_library",
