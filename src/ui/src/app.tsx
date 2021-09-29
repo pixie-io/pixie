@@ -32,6 +32,7 @@ import { dateToEpoch } from 'app/utils/time';
 import { parseJWT } from 'app/utils/jwt';
 import history from 'app/utils/pl-history';
 import * as QueryString from 'query-string';
+import CreditsView from 'app/pages/credits/credits';
 
 import {
   Theme, ThemeProvider, withStyles, createTheme,
@@ -124,6 +125,7 @@ export const App: React.FC = () => {
         <Router history={history}>
           <div className='center-content'>
             <Switch>
+              <Route path='/credits' component={CreditsView} />
               <Route path='/auth' component={AuthRouter} />
               <RedirectWithArgs exact from='/login' to='/auth/login' />
               <RedirectWithArgs exact from='/logout' to='/auth/logout' />

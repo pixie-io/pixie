@@ -251,12 +251,6 @@ const ProfileItem = React.memo<{ setSidebarOpen: SetStateFunc<boolean> }>(functi
             ]
           )
         }
-        <MenuItem key='credits' button component={Link} to='/credits'>
-          <StyledListItemIcon>
-            <CodeIcon />
-          </StyledListItemIcon>
-          <StyledListItemText primary='Credits' />
-        </MenuItem>
         <MenuItem key='logout' button component={Link} to='/logout'>
           <StyledListItemIcon>
             <LogoutIcon />

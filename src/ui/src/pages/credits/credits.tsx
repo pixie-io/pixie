@@ -114,12 +114,6 @@ const CreditsPage: React.FC = ({ children }) => {
   const classes = useStyles();
   return (
     <div className={classes.root}>
-      <NavBars>
-        <div className={classes.title}>
-          <div className={classes.topbarTitle}>Credits</div>
-        </div>
-        <LiveViewButton />
-      </NavBars>
       <div className={classes.main}>
         {children}
       </div>
