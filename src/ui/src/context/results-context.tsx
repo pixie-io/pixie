@@ -22,13 +22,9 @@ import { QueryExecutionStats, MutationInfo } from 'app/types/generated/vizierapi
 
 import { SetStateFunc } from './common';
 
-interface Tables {
-  [name: string]: Table;
-}
-
 interface Results {
   error?: Error;
-  tables: Tables;
+  tables: Map<string, Table>;
   stats?: QueryExecutionStats;
   mutationInfo?: MutationInfo;
 }
@@ -51,18 +47,18 @@ export const ResultsContext = React.createContext<ResultsContextProps>(null);
  */
 export function useLatestRowCount(tableName: string): number {
   const { tables } = React.useContext(ResultsContext);
-  const count = tables[tableName]?.numRows ?? 0;
+  const count = tables.get(tableName)?.numRows ?? 0;
   // This is what actually makes React watch for the change
   React.useEffect(() => {}, [tableName, count]);
   return count;
 }
 
 export const ResultsContextProvider = React.memo(function ResultsContextProvider({ children }) {
-  const [results, setResults] = React.useState<Results>({ tables: {} });
+  const [results, setResults] = React.useState<Results>({ tables: new Map() });
   const [loading, setLoading] = React.useState(false);
   const [streaming, setStreaming] = React.useState(false);
   const clearResults = React.useCallback(() => {
-    setResults({ tables: {} });
+    setResults({ tables: new Map() });
   }, [setResults]);
 
   const value = React.useMemo(() => ({

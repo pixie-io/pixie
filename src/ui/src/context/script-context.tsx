@@ -144,7 +144,7 @@ export const ScriptContextProvider: React.FC = React.memo(function ScriptContext
     if (validationError != null) {
       resultsContext.setResults({
         error: validationError,
-        tables: {},
+        tables: new Map(),
       });
       return;
     }
@@ -222,11 +222,10 @@ export const ScriptContextProvider: React.FC = React.memo(function ScriptContext
           const updateData = update.event.data;
           resultsContext.setResults((prev) => {
             for (const updateBatch of updateData) {
-              const table: Table = prev.tables[updateBatch.name] ?? { ...updateBatch, data: [], numRows: 0 };
+              const table: Table = prev.tables.get(updateBatch.name) ?? { ...updateBatch, data: [], numRows: 0 };
               table.data.push(updateBatch.batch);
               table.numRows = table.data.reduce((sum, batch) => sum + batch.getNumRows(), 0);
-              // eslint-disable-next-line no-param-reassign
-              prev.tables[updateBatch.name] = table;
+              prev.tables.set(updateBatch.name, table);
             }
             return { ...prev };
           });
@@ -241,7 +240,7 @@ export const ScriptContextProvider: React.FC = React.memo(function ScriptContext
         case 'stats':
           // Mutation schema not ready yet.
           if (hasMutation && update.results.mutationInfo?.getStatus().getCode() === GRPCStatusCode.Unavailable) {
-            resultsContext.setResults({ tables: {}, mutationInfo: update.results.mutationInfo });
+            resultsContext.setResults({ tables: new Map(), mutationInfo: update.results.mutationInfo });
             break;
           }
 
@@ -250,13 +249,10 @@ export const ScriptContextProvider: React.FC = React.memo(function ScriptContext
               error: resultsContext.error,
               stats: update.results.executionStats,
               mutationInfo: resultsContext.mutationInfo,
-              tables: update.results.tables.reduce((map, table) => ({
-                ...map,
-                [table.name]: {
-                  ...table,
-                  numRows: table.data.reduce((sum, batch) => sum + batch.getNumRows(), 0),
-                },
-              }), {}),
+              tables: update.results.tables.reduce((map, table) => map.set(table.name, {
+                ...table,
+                numRows: table.data.reduce((sum, batch) => sum + batch.getNumRows(), 0),
+              }), new Map()),
             });
           }
           // Query completed normally
@@ -284,7 +280,7 @@ export const ScriptContextProvider: React.FC = React.memo(function ScriptContext
           }
 
           const errMsg = error.message;
-          resultsContext.setResults({ error, tables: {} });
+          resultsContext.setResults({ error, tables: new Map() });
           resultsContext.setLoading(false);
           resultsContext.setStreaming(false);
           setNumExecutionTries(numExecutionTries - 1);

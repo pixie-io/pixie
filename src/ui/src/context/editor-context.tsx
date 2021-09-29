@@ -35,7 +35,7 @@ export interface EditorContextProps {
 
 export const EditorContext = React.createContext<EditorContextProps>(null);
 
-const EditorContextProvider: React.FC = ({ children }) => {
+export const EditorContextProvider: React.FC = React.memo(function EditorContextProvider({ children }) {
   const resultsContext = React.useContext(ResultsContext);
 
   const {
@@ -64,7 +64,7 @@ const EditorContextProvider: React.FC = ({ children }) => {
     } catch (e) {
       resultsContext.setResults({
         error: new VizierQueryError('vis', ['While parsing Vis Spec: ', e.toString()]),
-        tables: {},
+        tables: new Map(),
       });
       return;
     }
@@ -100,6 +100,4 @@ const EditorContextProvider: React.FC = ({ children }) => {
       {children}
     </EditorContext.Provider>
   );
-};
-
-export default EditorContextProvider;
+});

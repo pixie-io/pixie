@@ -26,9 +26,10 @@ export const RESULTS_CONTEXT_DEFUALTS: ResultsContextProps = {
   setStreaming: jest.fn(),
   loading: false,
   streaming: false,
-  tables: {},
+  tables: new Map(),
 };
 
+// eslint-disable-next-line react-memo/require-memo
 export const MockResultsContextProvider: React.FC = ({ children }) => (
   <ResultsContext.Provider value={RESULTS_CONTEXT_DEFUALTS}>
     {children}

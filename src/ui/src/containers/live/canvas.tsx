@@ -347,7 +347,7 @@ const Canvas: React.FC<CanvasProps> = React.memo(function Canvas({ editable, par
     }
   }, [isEmbedded]);
   React.useEffect(() => {
-    if (Object.keys(tables).length > 0 && !loading && isEmbedded) {
+    if (tables.size > 0 && !loading && isEmbedded) {
       window.top.postMessage({ pixieComponentsRendered: true }, '*');
     }
   }, [loading, tables, isEmbedded]);
@@ -454,7 +454,7 @@ const Canvas: React.FC<CanvasProps> = React.memo(function Canvas({ editable, par
       const display = currentWidget.displaySpec;
       const tableName = widgetTableName(currentWidget, i);
       const widgetName = widgetLayout.i;
-      const table = tables[tableName];
+      const table = tables.get(tableName);
 
       if (loading) {
         widgets.push(
@@ -495,7 +495,7 @@ const Canvas: React.FC<CanvasProps> = React.memo(function Canvas({ editable, par
   let displayGrid: React.ReactNode;
 
   if (charts.length === 0) {
-    const tableLayout = addTableLayout(Object.keys(tables), defaultLayout, isMobile, defaultHeight);
+    const tableLayout = addTableLayout(Array.from(tables.keys()), defaultLayout, isMobile, defaultHeight);
     displayGrid = (
       <Grid
         layout={tableLayout.layout}
@@ -508,7 +508,7 @@ const Canvas: React.FC<CanvasProps> = React.memo(function Canvas({ editable, par
         margin={gridMargin}
       >
         {
-          Object.entries(tables).map(([tableName, table]) => (
+          Array.from(tables.entries()).map(([tableName, table]) => (
             <Paper elevation={1} key={tableName} className={className}>
               <div className={classes.widgetTitle}>{tableName}</div>
               <QueryResultTable display={{} as QueryResultTableDisplay} data={table} propagatedArgs={propagatedArgs} />

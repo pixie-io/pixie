@@ -31,7 +31,7 @@ import MoveIcon from '@material-ui/icons/OpenWith';
 import { Copyright } from 'configurable/copyright';
 import { ClusterContext } from 'app/common/cluster-context';
 import { DataDrawerContextProvider } from 'app/context/data-drawer-context';
-import EditorContextProvider, { EditorContext } from 'app/context/editor-context';
+import { EditorContext, EditorContextProvider } from 'app/context/editor-context';
 import { LayoutContext, LayoutContextProvider } from 'app/context/layout-context';
 import { ScriptContext, ScriptContextProvider } from 'app/context/script-context';
 import { ResultsContext, ResultsContextProvider } from 'app/context/results-context';
@@ -424,7 +424,7 @@ const LiveView = React.memo(function LiveView() {
   if (!selectedClusterName || !args) return null;
 
   const showResults = script && healthyOnce && (
-    Object.keys(tables).length || loadingResults || streamingResults || error || mutationInfo);
+    tables.size || loadingResults || streamingResults || error || mutationInfo);
 
   return (
     <div className={classes.root}>

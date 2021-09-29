@@ -135,8 +135,11 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-const TabSpacer = (props) => (<div className={props.classes.spacer} />);
+const TabSpacer = React.memo(function TabSpacer() {
+  return <div className={useStyles().spacer} />;
+});
 
+// eslint-disable-next-line react-memo/require-memo
 const StyledTabs = withStyles((theme: Theme) => createStyles({
   root: {
     minHeight: theme.spacing(4),
@@ -146,6 +149,7 @@ const StyledTabs = withStyles((theme: Theme) => createStyles({
   },
 }))(Tabs);
 
+// eslint-disable-next-line react-memo/require-memo
 const StyledTab = withStyles((theme: Theme) => createStyles({
   root: {
     minHeight: theme.spacing(4),
@@ -177,9 +181,9 @@ const DataDrawer = React.memo<{ open: boolean }>(function DataDrawer({ open }) {
     }
   }, [activeTab, setActiveTab, open]);
 
-  const tabs = React.useMemo(() => Object.keys(tables).map((tableName) => ({
+  const tabs = React.useMemo(() => Array.from(tables.entries()).map(([tableName, table]) => ({
     title: tableName,
-    content: <MinimalLiveDataTable table={tables[tableName]} />,
+    content: <MinimalLiveDataTable table={table} />,
   })), [tables]);
 
   // If the selected table is not in the new result set, show the first table.
@@ -225,7 +229,7 @@ const DataDrawer = React.memo<{ open: boolean }>(function DataDrawer({ open }) {
             label={tab.title}
           />
         ))}
-        <TabSpacer classes={classes} />
+        <TabSpacer />
         {
           stats ? (
             <StyledTab
@@ -292,7 +296,7 @@ export const DataDrawerSplitPanel = React.memo(function DataDrawerSplitPanel() {
       initialSize={350}
       minSize={0}
       open={dataDrawerOpen}
-      otherContent={<DrawerToggleButton />}
+      otherContent={React.useMemo(() => <DrawerToggleButton />, [])}
       overlay={false}
     >
       <DataDrawer open={dataDrawerOpen} />
