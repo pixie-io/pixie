@@ -91,6 +91,18 @@ struct Frame : public FrameBase {
 
 };
 
+struct Record {
+    Frame req;
+    Frame resp;
+};
+
+struct ProtocolTraits {
+  using frame_type = Frame;
+  using record_type = Record;
+  // TODO: mux does have state but assume no state for now
+  using state_type = NoState;
+};
+
 }
 }
 }
