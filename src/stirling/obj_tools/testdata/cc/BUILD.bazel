@@ -18,12 +18,12 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
-# We build dummy_exe with clang++ regardless of the bazel config.
+# We build test_exe with clang++ regardless of the bazel config.
 # This is test data, so we want deterministic debug symbols.
 genrule(
     name = "dummy_cc_binary",
-    srcs = ["dummy_exe.cc"],
-    outs = ["dummy_exe"],
+    srcs = ["test_exe.cc"],
+    outs = ["test_exe"],
     # -O0: Disables optimization which in turn disables inlining.
     # -g: Produces dwarf information.
     # -Wl,--build-id: This tells the linker to include a build-id,
@@ -32,8 +32,8 @@ genrule(
 )
 
 cc_library(
-    name = "dummy_exe_fixture",
-    hdrs = ["dummy_exe_fixture.h"],
+    name = "test_exe_fixture",
+    hdrs = ["test_exe_fixture.h"],
     data = [":dummy_cc_binary"],
     deps = ["//src/common/exec:cc_library"],
 )
@@ -41,7 +41,7 @@ cc_library(
 filegroup(
     name = "stripped_exe",
     srcs = [
-        "stripped_dummy_exe",
+        "stripped_test_exe",
         "usr/lib/debug/.build-id/7d/eb0e3f89deba61.debug",
     ],
 )
@@ -49,41 +49,41 @@ filegroup(
 filegroup(
     name = "prebuilt_exe",
     srcs = [
-        "prebuilt_dummy_exe",
+        "prebuilt_test_exe",
     ],
 )
 
 #------------------------------------------------------------------------------
 
-# The output of dummy_exe_stripped_target is also checked into the repo as stripped_dummy_exe.
+# The output of test_exe_stripped_target is also checked into the repo as stripped_test_exe.
 # This is because we need a consistent build-id for testing purposes.
 
 genrule(
-    name = "dummy_exe_stripped_target",
-    srcs = [":dummy_exe"],
+    name = "test_exe_stripped_target",
+    srcs = [":test_exe"],
     outs = [
-        "dummy_exe_stripped",
+        "test_exe_stripped",
     ],
-    cmd = "objcopy --strip-all $(location :dummy_exe) $(location dummy_exe_stripped)",
+    cmd = "objcopy --strip-all $(location :test_exe) $(location test_exe_stripped)",
 )
 
 genrule(
-    name = "dummy_exe_debug_target",
-    srcs = [":dummy_exe"],
+    name = "test_exe_debug_target",
+    srcs = [":test_exe"],
     outs = [
-        "dummy_exe.debug",
+        "test_exe.debug",
     ],
-    cmd = "objcopy --only-keep-debug $(location :dummy_exe) $(location dummy_exe.debug)",
+    cmd = "objcopy --only-keep-debug $(location :test_exe) $(location test_exe.debug)",
 )
 
 genrule(
-    name = "dummy_exe_debuglink_target",
+    name = "test_exe_debuglink_target",
     srcs = [
-        ":dummy_exe",
-        ":dummy_exe_debug_target",
+        ":test_exe",
+        ":test_exe_debug_target",
     ],
     outs = [
-        "dummy_exe_debuglink",
+        "test_exe_debuglink",
     ],
-    cmd = "objcopy --strip-all --add-gnu-debuglink=$(location :dummy_exe_debug_target) $(location :dummy_exe) $(location dummy_exe_debuglink)",
+    cmd = "objcopy --strip-all --add-gnu-debuglink=$(location :test_exe_debug_target) $(location :test_exe) $(location test_exe_debuglink)",
 )

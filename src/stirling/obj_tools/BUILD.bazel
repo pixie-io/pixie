@@ -46,16 +46,16 @@ pl_cc_test(
     name = "elf_reader_test",
     srcs = ["elf_reader_test.cc"],
     data = [
-        "//src/stirling/obj_tools/testdata/cc:dummy_exe_debug_target",
-        "//src/stirling/obj_tools/testdata/cc:dummy_exe_debuglink_target",
         "//src/stirling/obj_tools/testdata/cc:prebuilt_exe",
         "//src/stirling/obj_tools/testdata/cc:stripped_exe",
+        "//src/stirling/obj_tools/testdata/cc:test_exe_debug_target",
+        "//src/stirling/obj_tools/testdata/cc:test_exe_debuglink_target",
         "//src/stirling/obj_tools/testdata/go:test_go_binary",
     ],
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",
-        "//src/stirling/obj_tools/testdata/cc:dummy_exe_fixture",
+        "//src/stirling/obj_tools/testdata/cc:test_exe_fixture",
     ],
 )
 
@@ -63,7 +63,7 @@ pl_cc_test(
     name = "dwarf_tools_test",
     srcs = ["dwarf_tools_test.cc"],
     data = [
-        "//src/stirling/obj_tools/testdata/cc:dummy_exe_fixture",
+        "//src/stirling/obj_tools/testdata/cc:test_exe_fixture",
         "//src/stirling/obj_tools/testdata/go:sockshop_service",
         "//src/stirling/obj_tools/testdata/go:test_go_binary",
         "//src/stirling/testing/demo_apps/go_grpc_tls_pl/server",

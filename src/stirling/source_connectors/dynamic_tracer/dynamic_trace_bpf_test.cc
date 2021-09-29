@@ -24,7 +24,7 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/core/types.h"
-#include "src/stirling/obj_tools/testdata/cc/dummy_exe_fixture.h"
+#include "src/stirling/obj_tools/testdata/cc/test_exe_fixture.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_trace_connector.h"
 #include "src/stirling/testing/common.h"
 
@@ -223,14 +223,14 @@ class CPPDynamicTraceTest : public ::testing::Test {
   void InitTestFixturesAndRunTestProgram(const std::string& text_pb) {
     CHECK(TextFormat::ParseFromString(text_pb, &logical_program_));
 
-    logical_program_.mutable_deployment_spec()->set_path(dummy_exe_fixture_.Path());
+    logical_program_.mutable_deployment_spec()->set_path(test_exe_fixture_.Path());
 
     ASSERT_OK_AND_ASSIGN(connector_,
                          DynamicTraceConnector::Create("my_dynamic_source", &logical_program_));
 
     ASSERT_OK(connector_->Init());
 
-    ASSERT_OK(dummy_exe_fixture_.Run());
+    ASSERT_OK(test_exe_fixture_.Run());
   }
 
   std::vector<TaggedRecordBatch> GetRecords() {
@@ -243,13 +243,13 @@ class CPPDynamicTraceTest : public ::testing::Test {
   }
 
   // Need debug build to include the dwarf info.
-  obj_tools::DummyExeFixture dummy_exe_fixture_;
+  obj_tools::TestExeFixture test_exe_fixture_;
 
   LogicalProgram logical_program_;
   std::unique_ptr<SourceConnector> connector_;
 };
 
-constexpr char kDummyExeTraceProgram[] = R"(
+constexpr char kTestExeTraceProgram[] = R"(
 tracepoints {
   program {
     language: CPP
@@ -276,9 +276,9 @@ tracepoints {
 }
 )";
 
-TEST_F(CPPDynamicTraceTest, DISABLED_TraceDummyExe) {
+TEST_F(CPPDynamicTraceTest, DISABLED_TraceTestExe) {
   // TODO(yzhao): This does not work yet.
-  ASSERT_NO_FATAL_FAILURE(InitTestFixturesAndRunTestProgram(kDummyExeTraceProgram));
+  ASSERT_NO_FATAL_FAILURE(InitTestFixturesAndRunTestProgram(kTestExeTraceProgram));
   std::vector<TaggedRecordBatch> tablets = GetRecords();
   PL_UNUSED(tablets);
 }

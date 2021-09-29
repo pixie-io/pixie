@@ -55,7 +55,7 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",
-        "//src/stirling/obj_tools/testdata/cc:dummy_exe_fixture",
+        "//src/stirling/obj_tools/testdata/cc:test_exe_fixture",
         "//src/stirling/testing:cc_library",
     ],
 )

@@ -27,20 +27,20 @@ namespace px {
 namespace stirling {
 namespace obj_tools {
 
-// Holds a reference to the :dummy_exe, so that it's easier for tests to invoke the binary.
-class DummyExeFixture {
+// Holds a reference to the :test_exe, so that it's easier for tests to invoke the binary.
+class TestExeFixture {
  public:
-  static constexpr char kDummyExePath[] = "src/stirling/obj_tools/testdata/cc/dummy_exe";
+  static constexpr char kTestExePath[] = "src/stirling/obj_tools/testdata/cc/test_exe";
 
-  const std::filesystem::path& Path() const { return dummy_exe_path_; }
+  const std::filesystem::path& Path() const { return test_exe_path_; }
 
   Status Run() const {
-    auto stdout_or = Exec(dummy_exe_path_);
+    auto stdout_or = Exec(test_exe_path_);
     return stdout_or.status();
   }
 
  private:
-  const std::filesystem::path dummy_exe_path_ = testing::BazelBinTestFilePath(kDummyExePath);
+  const std::filesystem::path test_exe_path_ = testing::BazelBinTestFilePath(kTestExePath);
 };
 
 }  // namespace obj_tools

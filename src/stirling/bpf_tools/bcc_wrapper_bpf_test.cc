@@ -22,7 +22,7 @@
 #include "src/common/system/system.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/bpf_tools/macros.h"
-#include "src/stirling/obj_tools/testdata/cc/dummy_exe_fixture.h"
+#include "src/stirling/obj_tools/testdata/cc/test_exe_fixture.h"
 
 // A function which we will uprobe on, to trigger our BPF code.
 // The function itself is irrelevant, but it must not be optimized away.
@@ -46,20 +46,20 @@ constexpr char kBCCProgram[] = R"BCC(
   }
 )BCC";
 
-class DummyExeWrapper {
+class TestExeWrapper {
  public:
-  DummyExeWrapper() {
-    // Copy dummy_exe to temp directory so we can remove it to simulate non-existent file.
-    const obj_tools::DummyExeFixture kDummyExeFixture;
-    dummy_exe_path_ = temp_dir_.path() / "dummy_exe";
-    PL_CHECK_OK(fs::Copy(kDummyExeFixture.Path(), dummy_exe_path_));
+  TestExeWrapper() {
+    // Copy test_exe to temp directory so we can remove it to simulate non-existent file.
+    const obj_tools::TestExeFixture kTestExeFixture;
+    test_exe_path_ = temp_dir_.path() / "test_exe";
+    PL_CHECK_OK(fs::Copy(kTestExeFixture.Path(), test_exe_path_));
   }
 
-  std::filesystem::path& path() { return dummy_exe_path_; }
+  std::filesystem::path& path() { return test_exe_path_; }
 
  private:
   TempDir temp_dir_;
-  std::filesystem::path dummy_exe_path_;
+  std::filesystem::path test_exe_path_;
 };
 
 TEST(BCCWrapperTest, InitDefault) {
@@ -90,13 +90,13 @@ TEST(BCCWrapperTest, InitWithTaskStructResolver) {
 }
 
 TEST(BCCWrapperTest, DetachUProbe) {
-  DummyExeWrapper dummy_exe;
+  TestExeWrapper test_exe;
 
   BCCWrapper bcc_wrapper;
   ASSERT_OK(bcc_wrapper.InitBPFProgram(kBCCProgram));
 
   UProbeSpec spec = {
-      .binary_path = dummy_exe.path(),
+      .binary_path = test_exe.path(),
       .symbol = "CanYouFindThis",
       .probe_fn = "foo",
   };
@@ -114,7 +114,7 @@ TEST(BCCWrapperTest, DetachUProbe) {
     EXPECT_EQ(1, bcc_wrapper.num_attached_probes());
 
     // Remove the binary.
-    ASSERT_OK(fs::Remove(dummy_exe.path()));
+    ASSERT_OK(fs::Remove(test_exe.path()));
     ASSERT_OK(bcc_wrapper.DetachUProbe(spec));
     EXPECT_EQ(0, bcc_wrapper.num_attached_probes());
   }

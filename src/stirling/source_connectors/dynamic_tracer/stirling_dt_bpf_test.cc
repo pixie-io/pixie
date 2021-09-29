@@ -150,7 +150,7 @@ class StirlingDynamicTraceBPFTest : public ::testing::Test {
 class DynamicTraceAPITest : public StirlingDynamicTraceBPFTest {
  protected:
   const std::string kBinaryPath =
-      BazelBinTestFilePath("src/stirling/obj_tools/testdata/cc/dummy_exe");
+      BazelBinTestFilePath("src/stirling/obj_tools/testdata/cc/test_exe");
 
   static constexpr std::string_view kTracepointDeploymentTxtPB = R"(
   deployment_spec {
@@ -627,7 +627,7 @@ INSTANTIATE_TEST_SUITE_P(GolangByteArrayTests, DynamicTraceGolangTestWithParam,
 class DynamicTraceCppTest : public StirlingDynamicTraceBPFTest {
  protected:
   const std::string kBinaryPath =
-      BazelBinTestFilePath("src/stirling/obj_tools/testdata/cc/dummy_exe");
+      BazelBinTestFilePath("src/stirling/obj_tools/testdata/cc/test_exe");
 };
 
 TEST_F(DynamicTraceCppTest, BasicTypes) {

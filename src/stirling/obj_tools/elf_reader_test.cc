@@ -21,13 +21,13 @@
 #include "src/common/exec/exec.h"
 #include "src/common/testing/test_environment.h"
 #include "src/common/testing/testing.h"
-#include "src/stirling/obj_tools/testdata/cc/dummy_exe_fixture.h"
+#include "src/stirling/obj_tools/testdata/cc/test_exe_fixture.h"
 
 namespace px {
 namespace stirling {
 namespace obj_tools {
 
-const DummyExeFixture kDummyExeFixture;
+const TestExeFixture kTestExeFixture;
 
 using ::px::stirling::obj_tools::ElfReader;
 using ::px::stirling::obj_tools::SymbolMatchType;
@@ -68,7 +68,7 @@ auto SymbolNameIs(const std::string& n) { return Field(&ElfReader::SymbolInfo::n
 
 TEST(ElfReaderTest, ListFuncSymbolsAnyMatch) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
-                       ElfReader::Create(kDummyExeFixture.Path()));
+                       ElfReader::Create(kTestExeFixture.Path()));
 
   EXPECT_OK_AND_THAT(elf_reader->ListFuncSymbols("CanYouFindThis", SymbolMatchType::kSubstr),
                      ElementsAre(SymbolNameIs("CanYouFindThis")));
@@ -80,7 +80,7 @@ TEST(ElfReaderTest, ListFuncSymbolsAnyMatch) {
 
 TEST(ElfReaderTest, ListFuncSymbolsExactMatch) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
-                       ElfReader::Create(kDummyExeFixture.Path()));
+                       ElfReader::Create(kTestExeFixture.Path()));
 
   EXPECT_OK_AND_THAT(elf_reader->ListFuncSymbols("CanYouFindThis", SymbolMatchType::kExact),
                      ElementsAre(SymbolNameIs("CanYouFindThis")));
@@ -90,7 +90,7 @@ TEST(ElfReaderTest, ListFuncSymbolsExactMatch) {
 
 TEST(ElfReaderTest, ListFuncSymbolsPrefixMatch) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
-                       ElfReader::Create(kDummyExeFixture.Path()));
+                       ElfReader::Create(kTestExeFixture.Path()));
 
   EXPECT_OK_AND_THAT(elf_reader->ListFuncSymbols("CanYouFindThis", SymbolMatchType::kPrefix),
                      ElementsAre(SymbolNameIs("CanYouFindThis")));
@@ -101,7 +101,7 @@ TEST(ElfReaderTest, ListFuncSymbolsPrefixMatch) {
 
 TEST(ElfReaderTest, ListFuncSymbolsSuffixMatch) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
-                       ElfReader::Create(kDummyExeFixture.Path()));
+                       ElfReader::Create(kTestExeFixture.Path()));
 
   EXPECT_OK_AND_THAT(elf_reader->ListFuncSymbols("CanYouFindThis", SymbolMatchType::kSuffix),
                      ElementsAre(SymbolNameIs("CanYouFindThis")));
@@ -111,7 +111,7 @@ TEST(ElfReaderTest, ListFuncSymbolsSuffixMatch) {
 }
 
 TEST(ElfReaderTest, SymbolAddress) {
-  const std::string path = kDummyExeFixture.Path().string();
+  const std::string path = kTestExeFixture.Path().string();
   const std::string kSymbolName = "CanYouFindThis";
   ASSERT_OK_AND_ASSIGN(const int64_t symbol_addr, NmSymbolNameToAddr(path, kSymbolName));
 
@@ -132,7 +132,7 @@ TEST(ElfReaderTest, SymbolAddress) {
 }
 
 TEST(ElfReaderTest, AddrToSymbol) {
-  const std::string path = kDummyExeFixture.Path().string();
+  const std::string path = kTestExeFixture.Path().string();
   const std::string kSymbolName = "CanYouFindThis";
   ASSERT_OK_AND_ASSIGN(const int64_t symbol_addr, NmSymbolNameToAddr(path, kSymbolName));
 
@@ -153,7 +153,7 @@ TEST(ElfReaderTest, AddrToSymbol) {
 }
 
 TEST(ElfReaderTest, InstrAddrToSymbol) {
-  const std::string path = kDummyExeFixture.Path().string();
+  const std::string path = kTestExeFixture.Path().string();
   const std::string kSymbolName = "CanYouFindThis";
   ASSERT_OK_AND_ASSIGN(const int64_t kSymbolAddr, NmSymbolNameToAddr(path, kSymbolName));
 
@@ -182,7 +182,7 @@ TEST(ElfReaderTest, InstrAddrToSymbol) {
 
 TEST(ElfReaderTest, ExternalDebugSymbolsBuildID) {
   const std::string stripped_bin =
-      px::testing::TestFilePath("src/stirling/obj_tools/testdata/cc/stripped_dummy_exe");
+      px::testing::TestFilePath("src/stirling/obj_tools/testdata/cc/stripped_test_exe");
   const std::string debug_dir =
       px::testing::TestFilePath("src/stirling/obj_tools/testdata/cc/usr/lib/debug");
 
@@ -195,7 +195,7 @@ TEST(ElfReaderTest, ExternalDebugSymbolsBuildID) {
 
 TEST(ElfReaderTest, ExternalDebugSymbolsDebugLink) {
   const std::string stripped_bin =
-      px::testing::BazelBinTestFilePath("src/stirling/obj_tools/testdata/cc/dummy_exe_debuglink");
+      px::testing::BazelBinTestFilePath("src/stirling/obj_tools/testdata/cc/test_exe_debuglink");
   const std::string debug_dir =
       px::testing::TestFilePath("src/stirling/obj_tools/testdata/usr/lib/debug2");
 
@@ -209,20 +209,20 @@ TEST(ElfReaderTest, ExternalDebugSymbolsDebugLink) {
 TEST(ElfReaderTest, FuncByteCode) {
   {
     const std::string path =
-        px::testing::TestFilePath("src/stirling/obj_tools/testdata/cc/prebuilt_dummy_exe");
+        px::testing::TestFilePath("src/stirling/obj_tools/testdata/cc/prebuilt_test_exe");
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
     ASSERT_OK_AND_ASSIGN(const std::vector<ElfReader::SymbolInfo> symbol_infos,
                          elf_reader->ListFuncSymbols("CanYouFindThis", SymbolMatchType::kExact));
     ASSERT_THAT(symbol_infos, SizeIs(1));
     const auto& symbol_info = symbol_infos.front();
     // The byte code can be examined with:
-    // objdump -d src/stirling/obj_tools/testdata/cc/prebuilt_dummy_exe | grep CanYouFindThis -A 20
+    // objdump -d src/stirling/obj_tools/testdata/cc/prebuilt_test_exe | grep CanYouFindThis -A 20
     // 0x201101 is the address of the 'c3' (retq) opcode.
     ASSERT_OK_AND_THAT(elf_reader->FuncRetInstAddrs(symbol_info), ElementsAre(0x4011e1));
   }
   {
     const std::string stripped_bin =
-        px::testing::TestFilePath("src/stirling/obj_tools/testdata/cc/stripped_dummy_exe");
+        px::testing::TestFilePath("src/stirling/obj_tools/testdata/cc/stripped_test_exe");
     const std::string debug_dir =
         px::testing::TestFilePath("src/stirling/obj_tools/testdata/cc/usr/lib/debug");
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
