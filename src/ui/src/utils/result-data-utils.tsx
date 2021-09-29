@@ -72,25 +72,31 @@ export function columnFromProto(column: Column): (number | boolean | string)[] {
 
 export function dataFromProto(
   relation: Relation,
-  data: RowBatchData[],
+  batches: RowBatchData[],
 ): any[] {
-  const results = [];
+  // There can be dozens of batches with thousands of rows each. As such, this method tries to be somewhat fast:
+  // - Pre-allocating the results array (cheaper than pushing rows one-at-a-time or in batches)
+  // - Populating each row of the array at the last possible moment, to avoid an extra loop
+  // - Looping without iterators (for..of, for..in) or callbacks (forEach)
+  // These optimizations are a bit clunky to read, but this method is costly and in the critical result processing path.
+
+  const total = batches.reduce((sum, batch) => sum + batch.getNumRows(), 0);
+  const results = Array(total); // Not filling/mapping at this stage; it's slightly faster to create objects as needed.
+  let offset = 0;
 
   const colRelations = relation.getColumnsList();
 
-  data.forEach((batch) => {
-    const rows = [];
-    for (let i = 0; i < batch.getNumRows(); i++) {
-      rows.push({});
-    }
+  for (const batch of batches) {
     const cols = batch.getColsList();
-    cols.forEach((col, i) => {
+    for (let i = 0; i < cols.length; i++) {
       const name = colRelations[i].getColumnName();
-      columnFromProto(col).forEach((d, j) => {
-        rows[j][name] = d;
-      });
-    });
-    results.push(...rows);
-  });
+      const colData = columnFromProto(cols[i]);
+      for (let j = 0; j < colData.length; j++) {
+        if (results[j + offset] == null) results[j + offset] = {};
+        results[j + offset][name] = colData[j];
+      }
+    }
+    offset += batch.getNumRows();
+  }
   return results;
 }

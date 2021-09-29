@@ -61,7 +61,7 @@ function rowsFromVizierTable(table: VizierTable): Array<Record<string, any>> {
     return acc;
   }, new Map<string, SemanticType>());
 
-  return parseRows(semanticTypeMap, dataFromProto(table.relation, table.data));
+  return parseRows(semanticTypeMap, dataFromProto(table.relation, table.batches));
 }
 
 /** Transforms a table coming from a script into something react-table understands. */
@@ -75,7 +75,7 @@ function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutte
   const numRows = useLatestRowCount(table.name);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const rows = React.useMemo(() => rowsFromVizierTable(table), [table.data, numRows]);
+  const rows = React.useMemo(() => rowsFromVizierTable(table), [table.batches, numRows]);
 
   const [displayMap, setDisplayMap] = React.useState<Map<string, ColumnDisplayInfo>>(new Map());
 

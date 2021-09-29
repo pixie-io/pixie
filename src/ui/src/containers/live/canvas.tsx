@@ -234,7 +234,7 @@ const WidgetDisplay: React.FC<{
     );
   }
 
-  const parsedTable = dataFromProto(table.relation, table.data);
+  const parsedTable = dataFromProto(table.relation, table.batches);
 
   if (display[DISPLAY_TYPE_KEY] === GRAPH_DISPLAY_TYPE) {
     return (

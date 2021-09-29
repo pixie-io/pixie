@@ -222,9 +222,9 @@ export const ScriptContextProvider: React.FC = React.memo(function ScriptContext
           const updateData = update.event.data;
           resultsContext.setResults((prev) => {
             for (const updateBatch of updateData) {
-              const table: Table = prev.tables.get(updateBatch.name) ?? { ...updateBatch, data: [], numRows: 0 };
-              table.data.push(updateBatch.batch);
-              table.numRows = table.data.reduce((sum, batch) => sum + batch.getNumRows(), 0);
+              const table: Table = prev.tables.get(updateBatch.name) ?? { ...updateBatch, batches: [], numRows: 0 };
+              table.batches.push(updateBatch.batch);
+              table.numRows = table.batches.reduce((sum, batch) => sum + batch.getNumRows(), 0);
               prev.tables.set(updateBatch.name, table);
             }
             return { ...prev };
@@ -251,7 +251,7 @@ export const ScriptContextProvider: React.FC = React.memo(function ScriptContext
               mutationInfo: resultsContext.mutationInfo,
               tables: update.results.tables.reduce((map, table) => map.set(table.name, {
                 ...table,
-                numRows: table.data.reduce((sum, batch) => sum + batch.getNumRows(), 0),
+                numRows: table.batches.reduce((sum, batch) => sum + batch.getNumRows(), 0),
               }), new Map()),
             });
           }

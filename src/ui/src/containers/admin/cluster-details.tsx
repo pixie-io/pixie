@@ -195,7 +195,7 @@ const AgentsTable: React.FC = () => {
             }
             return;
           }
-          const data = dataFromProto(results.tables[0].relation, results.tables[0].data);
+          const data = dataFromProto(results.tables[0].relation, results.tables[0].batches);
           setState({ data });
         }
       };
