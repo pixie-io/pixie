@@ -161,6 +161,9 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(function LiveViewBreadcr
           return ns === normalizedScratchId || ns.indexOf(normalizedInput) >= 0;
         });
 
+        // The `px` namespace should appear before all others
+        ids.sort((a, b) => Number(b.startsWith('px/')) - Number(a.startsWith('px/')));
+
         // The scratch script should always appear at the top of the list for visibility. It doesn't get auto-selected
         // unless it's the only thing in the list.
         const scratchIndex = scriptIds.indexOf(SCRATCH_SCRIPT.id);
