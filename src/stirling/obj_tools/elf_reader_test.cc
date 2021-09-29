@@ -236,20 +236,17 @@ TEST(ElfReaderTest, FuncByteCode) {
 }
 
 TEST(ElfReaderTest, GolangAppRuntimeBuildVersion) {
-#ifdef PL_COVERAGE
-  LOG(INFO) << "Whoa...`bazel coverage` is messaging with test_go_binary. Shame on you bazel. "
-               "Ending this test early.";
-  return;
-#else
   const std::string kPath = px::testing::BazelBinTestFilePath(
       "src/stirling/obj_tools/testdata/go/test_go_binary_/test_go_binary");
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
   ASSERT_OK_AND_ASSIGN(ElfReader::SymbolInfo symbol,
                        elf_reader->SearchTheOnlySymbol("runtime.buildVersion"));
+  // Coverage build might alter the resultant binary.
+#ifndef PL_COVERAGE
   EXPECT_EQ(symbol.address, 0x549F20);
+#endif
   EXPECT_EQ(symbol.size, 16) << "Symbol table entry size should be 16";
   EXPECT_EQ(symbol.type, ELFIO::STT_OBJECT);
-#endif
 }
 
 }  // namespace obj_tools
