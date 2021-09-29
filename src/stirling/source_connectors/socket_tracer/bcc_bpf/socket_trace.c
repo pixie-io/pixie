@@ -397,9 +397,6 @@ static __inline void submit_close_event(struct pt_regs* ctx, struct conn_info_t*
   socket_control_events.perf_submit(ctx, &control_event, sizeof(struct socket_control_event_t));
 }
 
-// TODO(yzhao): We can write a test for this, by define a dummy bpf_probe_read() function. Similar
-// in idea to a mock in normal C++ code.
-
 // Writes the input buf to event, and submits the event to the corresponding perf buffer.
 // Returns the bytes output from the input buf. Note that is not the total bytes submitted to the
 // perf buffer, which includes additional metadata.

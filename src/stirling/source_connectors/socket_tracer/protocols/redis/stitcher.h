@@ -48,14 +48,14 @@ inline RecordsWithErrorCount<redis::Record> StitchFrames(std::deque<redis::Messa
   record.req.timestamp_ns = 0;
   record.resp.timestamp_ns = 0;
 
-  redis::Message dummy_message;
-  dummy_message.timestamp_ns = std::numeric_limits<int64_t>::max();
+  redis::Message placeholder_message;
+  placeholder_message.timestamp_ns = std::numeric_limits<int64_t>::max();
 
   auto req_iter = req_messages->begin();
   auto resp_iter = resp_messages->begin();
   while (req_iter != req_messages->end() || resp_iter != resp_messages->end()) {
-    redis::Message& req = (req_iter == req_messages->end()) ? dummy_message : *req_iter;
-    redis::Message& resp = (resp_iter == resp_messages->end()) ? dummy_message : *resp_iter;
+    redis::Message& req = (req_iter == req_messages->end()) ? placeholder_message : *req_iter;
+    redis::Message& resp = (resp_iter == resp_messages->end()) ? placeholder_message : *resp_iter;
 
     // This if block is the added code to StitchMessagesWithTimestampOrder().
     // For Redis pub/sub, published messages have no corresponding `requests`, therefore we

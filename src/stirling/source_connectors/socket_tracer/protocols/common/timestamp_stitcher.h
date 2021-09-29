@@ -52,16 +52,16 @@ RecordsWithErrorCount<TRecordType> StitchMessagesWithTimestampOrder(
   record.req.timestamp_ns = 0;
   record.resp.timestamp_ns = 0;
 
-  TMessageType dummy_message;
-  dummy_message.timestamp_ns = std::numeric_limits<int64_t>::max();
+  TMessageType placeholder_message;
+  placeholder_message.timestamp_ns = std::numeric_limits<int64_t>::max();
 
   // Implementation resembles a merge-sort of the two deques.
   // Each iteration, we pop off either a request or response message.
   auto req_iter = req_messages->begin();
   auto resp_iter = resp_messages->begin();
   while (resp_iter != resp_messages->end()) {
-    TMessageType& req = (req_iter == req_messages->end()) ? dummy_message : *req_iter;
-    TMessageType& resp = (resp_iter == resp_messages->end()) ? dummy_message : *resp_iter;
+    TMessageType& req = (req_iter == req_messages->end()) ? placeholder_message : *req_iter;
+    TMessageType& resp = (resp_iter == resp_messages->end()) ? placeholder_message : *resp_iter;
 
     // Process the oldest item, either a request or response.
     if (req.timestamp_ns < resp.timestamp_ns) {

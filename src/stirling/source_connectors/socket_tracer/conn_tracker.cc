@@ -258,9 +258,9 @@ void ConnTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
 
   protocols::http2::HalfStream* half_stream_ptr = HalfStreamPtr(hdr->attr.stream_id, write_event);
 
-  // End stream flag is on a dummy header, so just record the end_stream, but don't add the headers.
+  // End stream flag is on a empty header, so just record the end_stream, but don't add the headers.
   if (hdr->attr.end_stream) {
-    // Expecting a dummy (empty) header since this is how it is done in BPF.
+    // Expecting an empty header since this is how it is done in BPF.
     ECHECK(hdr->name.empty());
     ECHECK(hdr->value.empty());
 

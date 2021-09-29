@@ -34,10 +34,10 @@ using ::testing::ElementsAre;
 using ::testing::Pair;
 
 //-----------------------------------------------------------------------------
-// A dummy protocol and parser.
+// A test protocol and parser.
 //-----------------------------------------------------------------------------
 
-// This dummy parser is a simple comma-separated value splitter.
+// This test parser is a simple comma-separated value splitter.
 
 struct TestFrame : public FrameBase {
   std::string msg;
@@ -67,7 +67,7 @@ size_t FindFrameBoundary<TestFrame>(message_type_t /* type */, std::string_view 
 
 class EventParserTest : public DataStreamBufferTestWrapper, public ::testing::Test {};
 
-// Use dummy protocol to test basics of EventParser.
+// Use test protocol to test basics of EventParser.
 TEST_F(EventParserTest, BasicProtocolParsing) {
   std::deque<TestFrame> word_frames;
 
