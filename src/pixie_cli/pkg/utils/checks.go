@@ -33,7 +33,7 @@ import (
 )
 
 const (
-	k8sMinVersion     = "1.12.0"
+	k8sMinVersion     = "1.16.0"
 	kubectlMinVersion = "1.10.0"
 	kernelMinVersion  = "4.14.0"
 )
