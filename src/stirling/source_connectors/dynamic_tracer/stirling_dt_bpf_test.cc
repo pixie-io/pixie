@@ -149,7 +149,8 @@ class StirlingDynamicTraceBPFTest : public ::testing::Test {
 
 class DynamicTraceAPITest : public StirlingDynamicTraceBPFTest {
  protected:
-  const std::string kBinaryPath = BazelBinTestFilePath("src/stirling/obj_tools/testdata/dummy_exe");
+  const std::string kBinaryPath =
+      BazelBinTestFilePath("src/stirling/obj_tools/testdata/cc/dummy_exe");
 
   static constexpr std::string_view kTracepointDeploymentTxtPB = R"(
   deployment_spec {
@@ -275,7 +276,7 @@ TEST_F(DynamicTraceAPITest, InvalidReference) {
 class DynamicTraceGolangTest : public StirlingDynamicTraceBPFTest {
  protected:
   const std::string kBinaryPath =
-      BazelBinTestFilePath("src/stirling/obj_tools/testdata/test_go_binary_/test_go_binary");
+      BazelBinTestFilePath("src/stirling/obj_tools/testdata/go/test_go_binary_/test_go_binary");
 };
 
 TEST_F(DynamicTraceGolangTest, TraceLatencyOnly) {
@@ -625,7 +626,8 @@ INSTANTIATE_TEST_SUITE_P(GolangByteArrayTests, DynamicTraceGolangTestWithParam,
 
 class DynamicTraceCppTest : public StirlingDynamicTraceBPFTest {
  protected:
-  const std::string kBinaryPath = BazelBinTestFilePath("src/stirling/obj_tools/testdata/dummy_exe");
+  const std::string kBinaryPath =
+      BazelBinTestFilePath("src/stirling/obj_tools/testdata/cc/dummy_exe");
 };
 
 TEST_F(DynamicTraceCppTest, BasicTypes) {

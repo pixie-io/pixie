@@ -14,7 +14,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
@@ -39,16 +38,6 @@ cc_library(
     deps = ["//src/common/exec:cc_library"],
 )
 
-go_binary(
-    name = "test_go_binary",
-    embed = [":testdata_lib"],
-    # To force no optimizations and no inlining, we need to pass -N -l
-    gc_goopts = [
-        "-N",
-        "-l",
-    ],
-)
-
 filegroup(
     name = "stripped_exe",
     srcs = [
@@ -61,13 +50,6 @@ filegroup(
     name = "prebuilt_exe",
     srcs = [
         "prebuilt_dummy_exe",
-    ],
-)
-
-filegroup(
-    name = "sockshop_service",
-    srcs = [
-        "sockshop_payments_service",
     ],
 )
 
@@ -104,15 +86,4 @@ genrule(
         "dummy_exe_debuglink",
     ],
     cmd = "objcopy --strip-all --add-gnu-debuglink=$(location :dummy_exe_debug_target) $(location :dummy_exe) $(location dummy_exe_debuglink)",
-)
-
-#------------------------------------------------------------------------------
-
-go_library(
-    name = "testdata_lib",
-    srcs = [
-        "dummy_exe_fixture.h",
-        "test_go_binary.go",
-    ],
-    importpath = "px.dev/pixie/src/stirling/obj_tools/testdata",
 )

@@ -61,7 +61,7 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/stirling/bpf_tools/testing:get_tgid_start_time",
-        "//src/stirling/obj_tools/testdata:dummy_exe_fixture",
+        "//src/stirling/obj_tools/testdata/cc:dummy_exe_fixture",
     ],
 )
 
@@ -81,7 +81,7 @@ pl_cc_test(
     tags = ["requires_bpf"],
     deps = [
         ":cc_library",
-        "//src/stirling/obj_tools/testdata:dummy_exe_fixture",
+        "//src/stirling/obj_tools/testdata/cc:dummy_exe_fixture",
     ],
 )
 

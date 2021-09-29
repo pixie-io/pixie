@@ -55,7 +55,7 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",
-        "//src/stirling/obj_tools/testdata:dummy_exe_fixture",
+        "//src/stirling/obj_tools/testdata/cc:dummy_exe_fixture",
         "//src/stirling/testing:cc_library",
     ],
 )
@@ -65,8 +65,8 @@ pl_cc_test(
     timeout = "long",
     srcs = ["stirling_dt_bpf_test.cc"],
     data = [
-        "//src/stirling/obj_tools/testdata:dummy_cc_binary",
-        "//src/stirling/obj_tools/testdata:test_go_binary",
+        "//src/stirling/obj_tools/testdata/cc:dummy_cc_binary",
+        "//src/stirling/obj_tools/testdata/go:test_go_binary",
         "//src/stirling/testing/dns:dns_hammer",
         "//src/stirling/testing/dns:dns_hammer_image.tar",
     ],

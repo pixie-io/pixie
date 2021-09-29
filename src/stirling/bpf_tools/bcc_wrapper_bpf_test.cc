@@ -22,7 +22,7 @@
 #include "src/common/system/system.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/bpf_tools/macros.h"
-#include "src/stirling/obj_tools/testdata/dummy_exe_fixture.h"
+#include "src/stirling/obj_tools/testdata/cc/dummy_exe_fixture.h"
 
 // A function which we will uprobe on, to trigger our BPF code.
 // The function itself is irrelevant, but it must not be optimized away.

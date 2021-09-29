@@ -83,7 +83,6 @@ type OuterStruct struct {
 
 func PointerWrapperWrapperWrapperFunc(p PointerWrapperWrapperWrapper) int {
 	return *p.Ptr.Val.Ptr // *(p.Ptr->Val.Ptr)
-
 }
 
 func (v Vertex) Abs() float64 {
@@ -121,7 +120,7 @@ func NamedRetvals(i1 int, b1 bool, b2 BoolWrapper, i2 int, i3 int, b3 bool) (int
 	}
 	int_out = i1 * i2 * i3
 	bw_out = BoolWrapper{true, false, true, false}
-	return
+	return //nolint
 }
 
 func GoHasNamedReturns() (retfoo int, retbar bool) {
@@ -166,7 +165,7 @@ func FooReturnsNilError() error {
 }
 
 func main() {
-	for true {
+	for {
 		v := Vertex{3, 4}
 		v2 := Vertex{2, 9}
 		v.CrossScale(v2, 10)
@@ -221,7 +220,8 @@ func main() {
 		err := FooReturnsDummyError()
 		fmt.Println(err)
 
-		FooReturnsNilError()
+		err = FooReturnsNilError()
+		fmt.Println(err)
 
 		time.Sleep(time.Second)
 	}

@@ -21,7 +21,7 @@
 #include "src/common/exec/exec.h"
 #include "src/common/testing/test_environment.h"
 #include "src/common/testing/testing.h"
-#include "src/stirling/obj_tools/testdata/dummy_exe_fixture.h"
+#include "src/stirling/obj_tools/testdata/cc/dummy_exe_fixture.h"
 
 namespace px {
 namespace stirling {
@@ -182,9 +182,9 @@ TEST(ElfReaderTest, InstrAddrToSymbol) {
 
 TEST(ElfReaderTest, ExternalDebugSymbolsBuildID) {
   const std::string stripped_bin =
-      px::testing::TestFilePath("src/stirling/obj_tools/testdata/stripped_dummy_exe");
+      px::testing::TestFilePath("src/stirling/obj_tools/testdata/cc/stripped_dummy_exe");
   const std::string debug_dir =
-      px::testing::TestFilePath("src/stirling/obj_tools/testdata/usr/lib/debug");
+      px::testing::TestFilePath("src/stirling/obj_tools/testdata/cc/usr/lib/debug");
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
                        ElfReader::Create(stripped_bin, debug_dir));
@@ -195,7 +195,7 @@ TEST(ElfReaderTest, ExternalDebugSymbolsBuildID) {
 
 TEST(ElfReaderTest, ExternalDebugSymbolsDebugLink) {
   const std::string stripped_bin =
-      px::testing::BazelBinTestFilePath("src/stirling/obj_tools/testdata/dummy_exe_debuglink");
+      px::testing::BazelBinTestFilePath("src/stirling/obj_tools/testdata/cc/dummy_exe_debuglink");
   const std::string debug_dir =
       px::testing::TestFilePath("src/stirling/obj_tools/testdata/usr/lib/debug2");
 
@@ -209,22 +209,22 @@ TEST(ElfReaderTest, ExternalDebugSymbolsDebugLink) {
 TEST(ElfReaderTest, FuncByteCode) {
   {
     const std::string path =
-        px::testing::TestFilePath("src/stirling/obj_tools/testdata/prebuilt_dummy_exe");
+        px::testing::TestFilePath("src/stirling/obj_tools/testdata/cc/prebuilt_dummy_exe");
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
     ASSERT_OK_AND_ASSIGN(const std::vector<ElfReader::SymbolInfo> symbol_infos,
                          elf_reader->ListFuncSymbols("CanYouFindThis", SymbolMatchType::kExact));
     ASSERT_THAT(symbol_infos, SizeIs(1));
     const auto& symbol_info = symbol_infos.front();
     // The byte code can be examined with:
-    // objdump -d src/stirling/obj_tools/testdata/prebuilt_dummy_exe | grep CanYouFindThis -A 20
+    // objdump -d src/stirling/obj_tools/testdata/cc/prebuilt_dummy_exe | grep CanYouFindThis -A 20
     // 0x201101 is the address of the 'c3' (retq) opcode.
     ASSERT_OK_AND_THAT(elf_reader->FuncRetInstAddrs(symbol_info), ElementsAre(0x4011e1));
   }
   {
     const std::string stripped_bin =
-        px::testing::TestFilePath("src/stirling/obj_tools/testdata/stripped_dummy_exe");
+        px::testing::TestFilePath("src/stirling/obj_tools/testdata/cc/stripped_dummy_exe");
     const std::string debug_dir =
-        px::testing::TestFilePath("src/stirling/obj_tools/testdata/usr/lib/debug");
+        px::testing::TestFilePath("src/stirling/obj_tools/testdata/cc/usr/lib/debug");
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
                          ElfReader::Create(stripped_bin, debug_dir));
     ASSERT_OK_AND_ASSIGN(const std::vector<ElfReader::SymbolInfo> symbol_infos,
@@ -242,7 +242,7 @@ TEST(ElfReaderTest, GolangAppRuntimeBuildVersion) {
   return;
 #else
   const std::string kPath = px::testing::BazelBinTestFilePath(
-      "src/stirling/obj_tools/testdata/test_go_binary_/test_go_binary");
+      "src/stirling/obj_tools/testdata/go/test_go_binary_/test_go_binary");
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
   ASSERT_OK_AND_ASSIGN(ElfReader::SymbolInfo symbol,
                        elf_reader->SearchTheOnlySymbol("runtime.buildVersion"));
