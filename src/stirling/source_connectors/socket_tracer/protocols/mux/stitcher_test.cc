@@ -45,29 +45,111 @@ mux::Frame CreateMuxFrame(uint64_t ts_ns, mux::Type type, uint32_t tag) {
     return frame;
 }
 
-TEST_F(StitchFramesTest, VerifySingleOutputMessage) {
+TEST_F(StitchFramesTest, VerifyTransmitReceivePairsAreMatched) {
     std::deque<mux::Frame> reqs = {
         // tinit check message
         CreateMuxFrame(0, mux::Type::RerrOld, 1),
         CreateMuxFrame(2, mux::Type::Tinit, 1),
         CreateMuxFrame(4, mux::Type::Tping, 1),
+        CreateMuxFrame(6, mux::Type::Tdispatch, 1),
+        CreateMuxFrame(8, mux::Type::TdiscardedOld, 1),
+        CreateMuxFrame(10, mux::Type::Tdiscarded, 1),
+        CreateMuxFrame(12, mux::Type::Treq, 1),
+        CreateMuxFrame(14, mux::Type::Tdrain, 1),
     };
     std::deque<mux::Frame> resps = {
         // tinit check message response
         CreateMuxFrame(1, mux::Type::RerrOld, 1),
         CreateMuxFrame(3, mux::Type::Rinit, 1),
         CreateMuxFrame(5, mux::Type::Rping, 1),
+        CreateMuxFrame(7, mux::Type::Rdispatch, 1),
+        CreateMuxFrame(9, mux::Type::Rdiscarded, 1),
+        CreateMuxFrame(11, mux::Type::Rdiscarded, 1),
+        CreateMuxFrame(13, mux::Type::Rreq, 1),
+        CreateMuxFrame(15, mux::Type::Rdrain, 1),
     };
     NoState state;
 
     RecordsWithErrorCount<mux::Record> res = mux::StitchFrames(&reqs, &resps, &state);
     EXPECT_EQ(res.error_count, 0);
+    EXPECT_EQ(res.records.size(), 8);
     EXPECT_THAT(reqs, IsEmpty());
     EXPECT_THAT(resps, IsEmpty());
-    PL_UNUSED(res);
 }
 
-TEST_F(StitchFramesTest, HandleParseErrResp) {
+TEST_F(StitchFramesTest, VerifyTleaseIsHandled) {
+    std::deque<mux::Frame> reqs = {
+        // tinit check message
+        CreateMuxFrame(0, mux::Type::RerrOld, 1),
+        CreateMuxFrame(2, mux::Type::Tlease, 1),
+        CreateMuxFrame(4, mux::Type::Tping, 1),
+    };
+    std::deque<mux::Frame> resps = {
+        // tinit check message response
+        CreateMuxFrame(1, mux::Type::RerrOld, 1),
+        CreateMuxFrame(5, mux::Type::Rping, 1),
+    };
+    NoState state;
+
+    RecordsWithErrorCount<mux::Record> res = mux::StitchFrames(&reqs, &resps, &state);
+
+    EXPECT_EQ(res.error_count, 0);
+    EXPECT_EQ(res.records.size(), 3);
+    EXPECT_EQ(mux::Type(res.records[1].req.type), mux::Type::Tlease);
+    // There is no response for Tlease so the response frame should
+    // have an uninitialized type field
+    EXPECT_EQ(res.records[1].resp.type, 0);
+
+    EXPECT_THAT(reqs, IsEmpty());
+    EXPECT_THAT(resps, IsEmpty());
+}
+
+TEST_F(StitchFramesTest, StaleResponsesAreHandled) {
+    std::deque<mux::Frame> reqs = {
+        // tinit check message
+        CreateMuxFrame(1, mux::Type::RerrOld, 1),
+    };
+    std::deque<mux::Frame> resps = {
+        // tinit check message response
+        CreateMuxFrame(0, mux::Type::RerrOld, 1),
+        CreateMuxFrame(2, mux::Type::RerrOld, 1),
+    };
+    NoState state;
+
+    RecordsWithErrorCount<mux::Record> res = mux::StitchFrames(&reqs, &resps, &state);
+
+    EXPECT_EQ(res.error_count, 0);
+    EXPECT_EQ(res.records.size(), 2);
+    EXPECT_EQ(mux::Type(res.records[0].resp.type), mux::Type::RerrOld);
+    EXPECT_EQ(res.records[0].req.type, 0);
+
+    EXPECT_THAT(reqs, IsEmpty());
+    EXPECT_THAT(resps, IsEmpty());
+}
+
+TEST_F(StitchFramesTest, StaleRequestsAreHandled) {
+    std::deque<mux::Frame> reqs = {
+        // tinit check message
+        CreateMuxFrame(0, mux::Type::RerrOld, 1),
+        CreateMuxFrame(1, mux::Type::Tdispatch, 1),
+        CreateMuxFrame(3, mux::Type::Tdrain, 1),
+    };
+    std::deque<mux::Frame> resps = {
+        // tinit check message response
+        CreateMuxFrame(2, mux::Type::Rdispatch, 1),
+        CreateMuxFrame(4, mux::Type::Rdrain, 1),
+    };
+    NoState state;
+
+    RecordsWithErrorCount<mux::Record> res = mux::StitchFrames(&reqs, &resps, &state);
+
+    EXPECT_EQ(res.error_count, 1);
+    EXPECT_EQ(res.records.size(), 3);
+    EXPECT_EQ(mux::Type(res.records[0].req.type), mux::Type::RerrOld);
+    EXPECT_EQ(res.records[0].resp.type, 0);
+
+    EXPECT_THAT(reqs, IsEmpty());
+    EXPECT_THAT(resps, IsEmpty());
 }
 
 }  // namespace protocols

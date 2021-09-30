@@ -26,6 +26,7 @@
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mux/parse.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/mux/types.h"
 #include "src/stirling/utils/binary_decoder.h"
 
 namespace px {
@@ -36,11 +37,61 @@ namespace mux {
 RecordsWithErrorCount<mux::Record> StitchFrames(std::deque<mux::Frame>* reqs,
                                                   std::deque<mux::Frame>* resps,
                                                   NoState* state) {
-    PL_UNUSED(reqs);
-    PL_UNUSED(resps);
     PL_UNUSED(state);
     std::vector<mux::Record> records;
     int error_count = 0;
+
+    auto req_iter = reqs->begin();
+    auto resp_iter = resps->begin();
+    while (req_iter != reqs->end() && resp_iter != resps->end()) {
+
+        if (Type(req_iter->type) == Type::Tlease) {
+
+            records.push_back({std::move(*req_iter), {}});
+            ++req_iter;
+            continue;
+        }
+        if (req_iter->timestamp_ns > resp_iter->timestamp_ns) {
+
+            records.push_back({{}, std::move(*resp_iter)});
+            ++resp_iter;
+            continue;
+        }
+
+        Type matching_resp_type = GetMatchingRespType(Type(req_iter->type));
+        if (
+            resp_iter->type != static_cast<int8_t>(matching_resp_type) ||
+            resp_iter->tag != req_iter->tag
+        ) {
+            ++resp_iter;
+            continue;
+        }
+
+        records.push_back({std::move(*req_iter), std::move(*resp_iter)});
+        ++req_iter;
+        ++resp_iter;
+    }
+
+    while (req_iter != reqs->end()) {
+        records.push_back({std::move(*req_iter), {}});
+
+        ++req_iter;
+        error_count++;
+    }
+
+    /* while (resp_iter != resps->end()) { */
+    /*     records.push_back({{}, std::move(*resp_iter)}); */
+
+    /*     if (Type(resp_iter->type) == Type::Rerr) { */
+
+    /*     } */
+    /*     ++req_iter; */
+    /*     records.error_count++; */
+    /* } */
+
+    reqs->erase(reqs->begin(), req_iter);
+    resps->erase(resps->begin(), resp_iter);
+
     return {records, error_count};
 }
 

@@ -35,6 +35,18 @@ TEST(IsMuxType, CanDetectMembershipOfSmallestAndLargestTypes) {
     ASSERT_EQ(IsMuxType(static_cast<int8_t>(Type::RerrOld)), true);
 }
 
+TEST(GetMatchingRespType, A) {
+    ASSERT_EQ(GetMatchingRespType(Type::RerrOld), Type::RerrOld);
+    ASSERT_EQ(GetMatchingRespType(Type::Rerr), Type::Rerr);
+    ASSERT_EQ(GetMatchingRespType(Type::Tinit), Type::Rinit);
+    ASSERT_EQ(GetMatchingRespType(Type::Tping), Type::Rping);
+    ASSERT_EQ(GetMatchingRespType(Type::TdiscardedOld), Type::Rdiscarded);
+    ASSERT_EQ(GetMatchingRespType(Type::Tdiscarded), Type::Rdiscarded);
+    ASSERT_EQ(GetMatchingRespType(Type::Tdrain), Type::Rdrain);
+    ASSERT_EQ(GetMatchingRespType(Type::Tdispatch), Type::Rdispatch);
+    ASSERT_EQ(GetMatchingRespType(Type::Treq), Type::Rreq);
+}
+
 }  // namespace mux
 }  // namespace protocols
 }  // namespace stirling

@@ -41,6 +41,18 @@ inline bool IsMuxType(int8_t t) {
   return mux_type.has_value();
 }
 
+inline Type GetMatchingRespType(Type req_type) {
+    if (req_type == Type::RerrOld) return Type::RerrOld;
+    if (req_type == Type::Rerr) return Type::Rerr;
+    if (req_type == Type::Tinit) return Type::Rinit;
+    if (req_type == Type::Tping) return Type::Rping;
+    if (req_type == Type::Treq) return Type::Rreq;
+    if (req_type == Type::Tdrain) return Type::Rdrain;
+    if (req_type == Type::Tdispatch) return Type::Rdispatch;
+    if (req_type == Type::TdiscardedOld || req_type == Type::Tdiscarded) return Type::Rdiscarded;
+    return Type::Tlease;
+}
+
 /**
  * Regular message's wire format:
  * ----------------------------------------------
