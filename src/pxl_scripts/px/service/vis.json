@@ -162,7 +162,7 @@
       }
     },
     {
-      "name": "Inbound Traffic By Requesting Service",
+      "name": "Inbound HTTP Traffic to Service",
       "position": {
         "x": 0,
         "y": 6,

@@ -373,7 +373,7 @@
       }
     },
     {
-      "name": "Inbound Traffic to Pod",
+      "name": "Inbound HTTP Traffic to Pod",
       "func": {
         "name": "inbound_let_summary",
         "args": [

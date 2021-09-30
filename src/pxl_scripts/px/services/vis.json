@@ -224,7 +224,7 @@
       }
     },
     {
-      "name": "Inbound Traffic to Namespace",
+      "name": "Inbound HTTP Traffic to Services",
       "position": {
         "x": 0,
         "y": 9,
