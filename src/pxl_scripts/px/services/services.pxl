@@ -112,7 +112,7 @@ def inbound_let_summary(start_time: str, namespace: px.Namespace):
 
     per_ns_df.request_throughput = per_ns_df.throughput_total / window_ns
     per_ns_df.inbound_throughput = per_ns_df.inbound_bytes_total / window_ns
-    per_ns_df.outbound_throughput = per_ns_df.inbound_bytes_total / window_ns
+    per_ns_df.outbound_throughput = per_ns_df.outbound_bytes_total / window_ns
 
     per_ns_df = per_ns_df.groupby(['requestor', 'responder']).agg(
         request_throughput=('request_throughput', px.mean),

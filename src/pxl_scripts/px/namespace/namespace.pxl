@@ -57,6 +57,24 @@ def pods_for_namespace(start_time: str, namespace: px.Namespace):
     return df
 
 
+def services_for_namespace(start_time: str, namespace: px.Namespace):
+    ''' Get an overview of the services in the current cluster.
+    Args:
+    @start_time: The timestamp of data to start at.
+    '''
+    df = px.DataFrame(table='process_stats', start_time=start_time)
+    df = df[df.ctx['namespace'] == namespace]
+    df.service = df.ctx['service']
+    df = df[df.service != '']
+    df.pod = df.ctx['pod']
+    df = df.groupby(['service', 'pod']).agg()
+    df = df.groupby('service').agg(pod_count=('pod', px.count))
+    service_let = inbound_service_let_summary(start_time, namespace)
+    joined = df.merge(service_let, how='left', left_on='service', right_on='service',
+                      suffixes=['', '_x'])
+    return joined.drop('service_x')
+
+
 def inbound_service_let_summary(start_time: str, namespace: px.Namespace):
     ''' Compute a summary of traffic by requesting service, for requests on services in `namespace`.
 
@@ -71,33 +89,29 @@ def inbound_service_let_summary(start_time: str, namespace: px.Namespace):
     df = df[df.trace_role == 2]
     df = df[df.service != '']
     df.responder = df.service
-
     per_ns_df = df.groupby(['timestamp', 'service']).agg(
-        throughput_total=('latency', px.count),
-        inbound_bytes_total=('req_size', px.sum),
-        outbound_bytes_total=('resp_size', px.sum)
+        http_throughput_total=('latency', px.count),
+        inbound_http_bytes_total=('req_size', px.sum),
+        outbound_http_bytes_total=('resp_size', px.sum)
     )
-
-    per_ns_df.request_throughput = per_ns_df.throughput_total / window_ns
-    per_ns_df.inbound_throughput = per_ns_df.inbound_bytes_total / window_ns
-    per_ns_df.outbound_throughput = per_ns_df.outbound_bytes_total / window_ns
-
-    per_ns_df = per_ns_df.groupby(['service']).agg(
-        request_throughput=('request_throughput', px.mean),
-        inbound_throughput=('inbound_throughput', px.mean),
-        outbound_throughput=('outbound_throughput', px.mean)
+    per_ns_df.http_request_throughput = per_ns_df.http_throughput_total / window_ns
+    per_ns_df.inbound_http_throughput = per_ns_df.inbound_http_bytes_total / window_ns
+    per_ns_df.outbound_http_throughput = per_ns_df.outbound_http_bytes_total / window_ns
+    per_ns_df = per_ns_df.groupby('service').agg(
+        http_request_throughput=('http_request_throughput', px.mean),
+        inbound_http_throughput=('inbound_http_throughput', px.mean),
+        outbound_http_throughput=('outbound_http_throughput', px.mean)
     )
-
-    quantiles_df = df.groupby(['service']).agg(
-        latency=('latency', px.quantiles),
-        error_rate=('failure', px.mean)
+    quantiles_df = df.groupby('service').agg(
+        http_latency=('latency', px.quantiles)
+        http_error_rate=('failure', px.mean),
     )
-    quantiles_df.error_rate = px.Percent(quantiles_df.error_rate)
-
-    joined = per_ns_df.merge(quantiles_df, left_on='service', right_on='service', how='inner',
+    quantiles_df.http_error_rate = px.Percent(quantiles_df.http_error_rate)
+    joined = per_ns_df.merge(quantiles_df, left_on='service',
+                             right_on='service', how='inner',
                              suffixes=['', '_x'])
-    return joined[['service', 'latency', 'request_throughput', 'error_rate',
-                   'inbound_throughput', 'outbound_throughput']]
+    return joined[['service', 'http_latency', 'http_request_throughput', 'http_error_rate',
+                   'inbound_http_throughput', 'outbound_http_throughput']]
 
 
 def inbound_service_let_graph(start_time: str, namespace: px.Namespace):

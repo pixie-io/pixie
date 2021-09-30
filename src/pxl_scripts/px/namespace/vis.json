@@ -61,7 +61,7 @@
         "h": 3
       },
       "func": {
-        "name": "inbound_service_let_summary",
+        "name": "services_for_namespace",
         "args": [
           {
             "name": "start_time",
