@@ -137,9 +137,7 @@ class StirlingTest : public ::testing::Test {
   inline static const uint64_t& kNumProcessedRequirement = FLAGS_kNumProcessedRequirement;
 
   StirlingTest()
-      : rng(kRNGSeed),
-        push_period_millis_dist_(0, 100),
-        uniform_probability_dist_(0, 1.0) {}
+      : rng(kRNGSeed), push_period_millis_dist_(0, 100), uniform_probability_dist_(0, 1.0) {}
 
   void SetUp() override {
     // Make registry with a number of SeqGenConnectors.
@@ -148,10 +146,9 @@ class StirlingTest : public ::testing::Test {
       registry->RegisterOrDie<SeqGenConnector>(absl::Substitute("sequences$0", i));
     }
 
-    // Make Stirling.
     stirling_ = Stirling::Create(std::move(registry));
 
-    // Set a dummy callback function (normally this would be in the agent).
+    // Set a callback function that receives the data.
     stirling_->RegisterDataPushCallback(std::bind(&StirlingTest::AppendData, this,
                                                   std::placeholders::_1, std::placeholders::_2,
                                                   std::placeholders::_3));

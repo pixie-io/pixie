@@ -43,7 +43,8 @@ ProcStatConnector reads the system's overall CPU usage from the `/proc` file sys
 
 ### SeqGen
 
-SeqGenConnector generates random integer and exports them into dummy tables. It is used in tests.
+SeqGenConnector generates predictable sequences of numbers and text into its output tables.
+It is used in tests.
 
 ### CPUStatBPFTrace && PIDCPUUseBPFTrace
 

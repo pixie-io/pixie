@@ -164,7 +164,7 @@ int main(int argc, char** argv) {
   stirling->GetPublishProto(&publication);
   IndexPublication(publication, &g_table_info_map);
 
-  // Set a dummy callback function (normally this would be in the agent).
+  // Set a callback function that outputs the pushed records.
   stirling->RegisterDataPushCallback(StirlingWrapperCallback);
 
   // Start measuring process stats after init.

@@ -22,13 +22,6 @@ package(default_visibility = [
 ])
 
 filegroup(
-    name = "dummy_system_headers",
-    srcs = glob([
-        "system-headers/**",
-    ]),
-)
-
-filegroup(
     name = "headers",
     srcs = glob(["*.h"]),
 )

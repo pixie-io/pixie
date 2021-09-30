@@ -35,11 +35,9 @@ class StirlingBPFTest : public ::testing::Test {
   void SetUp() override {
     std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>();
     registry->RegisterOrDie<SocketTraceConnector>();
-
-    // Make Stirling.
     stirling_ = Stirling::Create(std::move(registry));
 
-    // Set dummy callbacks for agent function.
+    // Set callback function which receives the pushed data.
     stirling_->RegisterDataPushCallback(std::bind(&StirlingBPFTest::AppendData, this,
                                                   std::placeholders::_1, std::placeholders::_2,
                                                   std::placeholders::_3));

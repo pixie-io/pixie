@@ -82,12 +82,12 @@ std::string_view EmptySymbolizerFn(const uintptr_t addr) {
   return symbol;
 }
 
-std::string_view DummyKernelSymbolizerFn(const uintptr_t) { return "<kernel symbol>"; }
+std::string_view BogusKernelSymbolizerFn(const uintptr_t) { return "<kernel symbol>"; }
 
 SymbolizerFn ElfSymbolizer::GetSymbolizerFn(const struct upid_t& upid) {
   constexpr uint32_t kKernelPID = static_cast<uint32_t>(-1);
   if (upid.pid == kKernelPID) {
-    return SymbolizerFn(&(DummyKernelSymbolizerFn));
+    return SymbolizerFn(&(BogusKernelSymbolizerFn));
   }
 
   std::unique_ptr<ElfReader::Symbolizer>& upid_symbolizer = symbolizers_[upid];

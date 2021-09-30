@@ -32,7 +32,7 @@ namespace bpf_tools {
 
 /**
  * A wrapper around ebpf::BPFStackTable to gain access to the BCC symbolization API.
- * The table itself is a dummy and is not used.
+ * The eBPF table itself is not actually used.
  */
 class BCCSymbolizer {
  public:

@@ -21,7 +21,7 @@ package(default_visibility = ["//src/stirling:__subpackages__"])
 # We build test_exe with clang++ regardless of the bazel config.
 # This is test data, so we want deterministic debug symbols.
 genrule(
-    name = "dummy_cc_binary",
+    name = "test_cc_binary",
     srcs = ["test_exe.cc"],
     outs = ["test_exe"],
     # -O0: Disables optimization which in turn disables inlining.
@@ -34,7 +34,7 @@ genrule(
 cc_library(
     name = "test_exe_fixture",
     hdrs = ["test_exe_fixture.h"],
-    data = [":dummy_cc_binary"],
+    data = [":test_cc_binary"],
     deps = ["//src/common/exec:cc_library"],
 )
 

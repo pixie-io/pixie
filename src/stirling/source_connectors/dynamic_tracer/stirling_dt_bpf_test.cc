@@ -61,11 +61,9 @@ class StirlingDynamicTraceBPFTest : public ::testing::Test {
  protected:
   void SetUp() override {
     std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>();
-
-    // Make Stirling.
     stirling_ = Stirling::Create(std::move(registry));
 
-    // Set dummy callbacks for agent function.
+    // Set function to call on data pushes.
     stirling_->RegisterDataPushCallback(std::bind(&StirlingDynamicTraceBPFTest::AppendData, this,
                                                   std::placeholders::_1, std::placeholders::_2,
                                                   std::placeholders::_3));

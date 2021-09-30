@@ -34,7 +34,7 @@ namespace stirling {
 #define BPF_SRC_STRVIEW(varname, build_label) OBJ_STRVIEW(varname, _binary_##build_label##_bpf_src);
 
 // Define NO_OPT_ATTR that specifies that function should not be optimized away.
-// Typically used on dummy probe triggers.
+// Typically used on functions used purely as eBPF probe triggers.
 // Note that the attributes are different depending on the compiler.
 #if defined(__clang__)
 #define NO_OPT_ATTR __attribute__((noinline, optnone))
