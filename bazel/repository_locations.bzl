@@ -300,6 +300,6 @@ GIT_REPOSITORY_LOCATIONS = dict(
     com_github_iovisor_bpftrace = dict(
         remote = "https://github.com/pixie-io/bpftrace.git",
         commit = "b63b4902f7865f2d7a995e0732333b8439fc78ab",
-        shallow_since = "1601316353 -0700",
+        shallow_since = "1632863490 -0700",
     ),
 )
