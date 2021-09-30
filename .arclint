@@ -22,6 +22,7 @@
     "(^src/operator/vendored/)",
     "(^src/stirling/bpf_tools/bcc_bpf/system-headers)",
     "(^src/stirling/mysql/testing/.*\\.json$)",
+    "(^src/stirling/obj_tools/testdata/go/test_go_binary.go)",
     "(^src/stirling/utils/testdata/config$)",
     "(^src/ui/.yarn/)",
     "(^src/ui/.pnp.js$)",

@@ -541,12 +541,11 @@ tracepoints {
 
 INSTANTIATE_TEST_SUITE_P(
     NilAndNonNilError, ReturnedErrorInterfaceTest,
-    ::testing::Values(ReturnedErrorInterfaceTestCase{absl::Substitute(kProgramTxtPBTmpl,
-                                                                      "main.FooReturnsDummyError"),
-                                                     "{\"X\":3,\"Y\":4}"},
-                      ReturnedErrorInterfaceTestCase{
-                          absl::Substitute(kProgramTxtPBTmpl, "main.FooReturnsNilError"),
-                          "{\"tab\":0,\"data\":0}"}));
+    ::testing::Values(
+        ReturnedErrorInterfaceTestCase{absl::Substitute(kProgramTxtPBTmpl, "main.ReturnError"),
+                                       "{\"X\":3,\"Y\":4}"},
+        ReturnedErrorInterfaceTestCase{absl::Substitute(kProgramTxtPBTmpl, "main.ReturnNilError"),
+                                       "{\"tab\":0,\"data\":0}"}));
 
 struct TestParam {
   std::string function_symbol;

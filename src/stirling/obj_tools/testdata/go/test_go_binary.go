@@ -156,11 +156,11 @@ func (e IntStruct) Error() string {
 	return "IntStruct { X, Y }"
 }
 
-func FooReturnsDummyError() error {
+func ReturnError() error {
 	return IntStruct{3, 4}
 }
 
-func FooReturnsNilError() error {
+func ReturnNilError() error {
 	return nil
 }
 
@@ -217,10 +217,10 @@ func main() {
 		fmt.Println(OuterStructFunc(x))
 
 		// This allows directly examine the value of err in gdb or dlv.
-		err := FooReturnsDummyError()
+		err := ReturnError()
 		fmt.Println(err)
 
-		err = FooReturnsNilError()
+		err = ReturnNilError()
 		fmt.Println(err)
 
 		time.Sleep(time.Second)

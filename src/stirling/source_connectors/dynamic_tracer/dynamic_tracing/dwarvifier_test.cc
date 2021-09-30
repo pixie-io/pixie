@@ -1213,7 +1213,7 @@ tracepoints {
     }
     probes: {
       tracepoint: {
-        symbol: "main.FooReturnsDummyError"
+        symbol: "main.ReturnError"
         type: RETURN
       }
       args {
@@ -1302,7 +1302,7 @@ outputs {
 }
 probes {
   tracepoint {
-    symbol: "main.FooReturnsDummyError"
+    symbol: "main.ReturnError"
     type: RETURN
   }
   vars {

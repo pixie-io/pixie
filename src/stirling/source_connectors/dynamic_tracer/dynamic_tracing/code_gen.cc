@@ -354,9 +354,6 @@ std::vector<std::string> GenStructBlobMemoryVariable(const ScalarVariable& var) 
                                           var.memory().base(), var.memory().offset()));
   }
 
-  // Note: Since we are dealing with statically sized objects, the dummy character
-  // is not actually required.
-
   return code_lines;
 }
 
@@ -930,8 +927,8 @@ std::vector<std::string> GenBlobType(std::string_view type_name, int size,
       // during decoding.
       absl::Substitute("$0 {", type_name), "  uint64_t len;"};
 
-  // This by default accounts for the dummy byte.
-  int overhead_size = sizeof(uint8_t);
+  // This by default accounts for the length and truncated bytes.
+  int overhead_size = sizeof(uint64_t) + sizeof(uint8_t);
 
   if (include_decoder_index) {
     // TODO(yzhao): Change to use uint16_t.
@@ -939,12 +936,12 @@ std::vector<std::string> GenBlobType(std::string_view type_name, int size,
     overhead_size += sizeof(int8_t);
   }
 
-  code_lines.insert(code_lines.end(), {
-                                          absl::Substitute("  uint8_t buf[$0-sizeof(uint64_t)-$1];",
-                                                           size, overhead_size),
-                                          "  uint8_t truncated;",
-                                          "};",
-                                      });
+  code_lines.insert(code_lines.end(),
+                    {
+                        absl::Substitute("  uint8_t buf[$0-$1];", size, overhead_size),
+                        "  uint8_t truncated;",
+                        "};",
+                    });
 
   return code_lines;
 }
