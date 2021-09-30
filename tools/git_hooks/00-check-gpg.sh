@@ -16,33 +16,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-pattern='pixielabs\.ai$'
-
 while read -r _ newsha _; do
 	if [[ "${newsha}" == "0000000000000000000000000000000000000000" ]]; then
 		continue
-	fi
-
-	author=$(git log -1 --pretty=format:"%ae" "${newsha}")
-	committer=$(git log -1 --pretty=format:"%ce" "${newsha}")
-	if [[ ! "${author}" =~ ${pattern} ]]; then
-		if [[ "${committer}" =~ ^(zasgar|vihang|michellenguyen)@pixielabs\.ai$ ]]; then
-			echo "WARNING: Non pixielabs author"
-		else
-			echo "======================================================================="
-			echo "Please set your gitconfig to use your pixielabs.ai email"
-			echo "Found author email: ${author}"
-			echo "======================================================================="
-			exit 1
-		fi
-	fi
-
-	if [[ ! "${committer}" =~ ${pattern} ]]; then
-		echo "======================================================================="
-		echo "Please set your gitconfig to use your pixielabs.ai email"
-		echo "Found committer email: ${committer}"
-		echo "======================================================================="
-		exit 1
 	fi
 
 	gpg_sign=$(git log -1 --pretty=format:"%GG" "${newsha}")
