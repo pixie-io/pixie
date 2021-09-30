@@ -157,6 +157,59 @@ class PluckAsFloat64UDF : public udf::ScalarUDF {
   }
 };
 
+class PluckArrayUDF : public udf::ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext*, StringValue in, Int64Value index) {
+    rapidjson::Document d;
+    rapidjson::ParseResult ok = d.Parse(in.data());
+    // TODO(zasgar/michellenguyen, PP-419): Replace with null when available.
+    if (ok == nullptr) {
+      return "";
+    }
+    if (!d.IsArray()) {
+      return "";
+    }
+    const auto& plucked_array = d.GetArray();
+    if (index < 0 || index >= plucked_array.Size()) {
+      return "";
+    }
+
+    const auto& plucked_value = plucked_array[index.val];
+    if (plucked_value.IsNull()) {
+      return "";
+    }
+    if (plucked_value.IsString()) {
+      return plucked_value.GetString();
+    }
+
+    // This is robust to nested JSON.
+    rapidjson::StringBuffer sb;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+    plucked_value.Accept(writer);
+    return sb.GetString();
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder(
+               "Grabs the ith value in the array from the serialized JSON string and "
+               "returns as a string.")
+        .Details(
+            "Convenience method to handle grabbing the ith item in an array from a serialized JSON "
+            "string. The function parses the array JSON string and attempts to find the ith "
+            "element. If the JSON string is not an array, or the index is out of range, an empty "
+            "string is returned.\n"
+            "This function returns the ith element as a string.")
+        .Example(R"doc(
+          | df.json = '{"names": ["foo", "bar"]}'
+          | df.names = px.pluck(df.json, "names") # Returns ["foo", "bar"]
+          | df.name0 = px.pluck_array(df.names, 0) # Returns "foo"
+          | df.name5 = px.pluck_array(df.names, 5) # Returns ""
+      )doc")
+        .Arg("json_str", "JSON data serialized as a string.")
+        .Arg("index", "The index of the value in the array.")
+        .Returns("The value at the ith position in the array as a string.");
+  }
+};
+
 /**
   DocString intentionally omitted, this is a non-public function.
   This function creates a custom deep link by creating a "script reference" from a label,

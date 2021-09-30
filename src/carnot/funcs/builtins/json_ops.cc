@@ -30,6 +30,7 @@ void RegisterJSONOpsOrDie(udf::Registry* registry) {
   registry->RegisterOrDie<PluckUDF>("pluck");
   registry->RegisterOrDie<PluckAsInt64UDF>("pluck_int64");
   registry->RegisterOrDie<PluckAsFloat64UDF>("pluck_float64");
+  registry->RegisterOrDie<PluckArrayUDF>("pluck_array");
 
   // Up to 8 script args are supported for the _script_reference UDF, due to the lack of support for
   // variadic UDF arguments in the UDF registry today. We should clean this up if/when variadic UDF

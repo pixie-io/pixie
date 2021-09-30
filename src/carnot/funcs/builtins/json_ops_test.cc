@@ -35,6 +35,8 @@ constexpr char kTestJSONStr[] = R"(
   "str_plain": "abc"
 })";
 
+constexpr char kTestJSONArray[] = R"(["foo", "bar", {"pixie":"labs"}])";
+
 TEST(JSONOps, PluckUDF) {
   auto udf_tester = udf::UDFTester<PluckUDF>();
   udf_tester.ForInput(kTestJSONStr, "str_key").Expect(R"({"abc":"def"})");
@@ -88,6 +90,21 @@ TEST(JSONOps, PluckAsFloat64UDF_bad_input_return_empty) {
 TEST(JSONOps, PluckAsFloatUDF_non_object_input_return_empty) {
   auto udf_tester = udf::UDFTester<PluckAsFloat64UDF>();
   udf_tester.ForInput("[\"asdad\"]", "float64_key").Expect(0.0);
+}
+
+TEST(JSONOps, PluckArrayUDF) {
+  auto udf_tester = udf::UDFTester<PluckArrayUDF>();
+  udf_tester.ForInput(kTestJSONArray, 2).Expect(R"({"pixie":"labs"})");
+}
+
+TEST(JSONOps, PluckArrayUDF_input_is_not_array) {
+  auto udf_tester = udf::UDFTester<PluckArrayUDF>();
+  udf_tester.ForInput(kTestJSONStr, 0).Expect("");
+}
+
+TEST(JSONOps, PluckArrayUDF_index_out_of_bound) {
+  auto udf_tester = udf::UDFTester<PluckArrayUDF>();
+  udf_tester.ForInput(kTestJSONArray, 3).Expect("");
 }
 
 TEST(JSONOps, ScriptReferenceUDF_no_args) {
