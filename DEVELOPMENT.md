@@ -9,22 +9,14 @@ The Pixie project currently consists of three main components:
 This document outlines the process for setting up the development environment for each of these components.
 
 ## Setting up the Environment
-There are two different ways to run a development environment. The first and easiest
-approach is via Docker. If you plan to use a non-Minikube environment (GKE, EKS, etc)
-for running Vizier/Pixie Cloud, use this first approach via Docker. The second approach
-is using Make and Minikube.
+There are two different ways to run a development environment. The first and easiest approach is via Docker. If you plan to use a non-Minikube environment (GKE, EKS, etc) for running Vizier/Pixie Cloud, use this first approach via Docker. The second approach is using Make and Minikube.
 
 ### Running Via Docker
-To set up the developer environment required to start building Pixie's components,
-it is easiest to run the `run_docker.sh` script. The following script will run the
-Docker container and dump you out inside the docker container console from which
-you can run all the necessary tools to build, test, and deploy Pixie.
+To set up the developer environment required to start building Pixie's components, it is easiest to run the `run_docker.sh` script. The following script will run the Docker container and dump you out inside the docker container console from which you can run all the necessary tools to build, test, and deploy Pixie in development mode.
 
-1. Since this script runs a Docker container, you must have Docker installed. To
-install it follow these instructions [here](https://docs.docker.com/get-docker/).
+1. Since this script runs a Docker container, you must have Docker installed. To install it follow these instructions [here](https://docs.docker.com/get-docker/).
 
-1. `run_docker.sh` requires the realpath command which is part of the coreutils
-package that you may need to install:
+1. `run_docker.sh` requires the realpath command which is part of the coreutils package that you may need to install:
     * Ubuntu: `sudo apt-get install coreutils`
     * OS X: `brew install coreutils`
 
@@ -33,12 +25,13 @@ package that you may need to install:
     ./scripts/run_docker.sh
     ```
 
-### Running Via Minikube
-If you plan on using a Minikube environment, launch the dev environment with Minikube,
-via Make.
+1. Since development of Pixie requires a Kubernetes cluster to deploy to, you must have Minikube installed and running. Follow the instructions [here](https://docs.px.dev/installing-pixie/setting-up-k8s/minikube-setup/). Note that Pixie development scripts use the output of `kubectl config current-context` to determine which Kubernetes cluster to deploy to. So make sure if you have multiple clusters, the context is pointing to the correct target cluster.
 
-1. Since this runs via Minikube, you must have Minikube installed. To install it follow
-the instructions [here](https://minikube.sigs.k8s.io/docs/start/).
+
+### Running Via Minikube
+If you plan on using a Minikube environment, launch the dev environment with Minikube, via Make.
+
+1. Since this runs via Minikube, you must have Minikube installed. To install it follow the instructions [here](https://docs.px.dev/installing-pixie/setting-up-k8s/minikube-setup/).
 
 1. Run make to spin up a Minikube environment:
     ```
@@ -47,9 +40,7 @@ the instructions [here](https://minikube.sigs.k8s.io/docs/start/).
 
 
 ## Pixie Cloud
-Pixie Cloud manages users, authentication, and proxying “passthrough” mode. If you want
-to make changes to it then you will need to spin up a self-hosted version to test those
-changes rather than pointing to the official cloud hosted version.
+Pixie Cloud manages users, authentication, and proxying “passthrough” mode. If you want to make changes to Pixie Cloud, then you will need to spin up a self-hosted version in development mode to test those changes. If you aren't changing Pixie Cloud, feel free to use officially released Pixie Cloud options listed in our Install Guides.
 
 1. Load the config maps and secrets.
 
@@ -119,66 +110,34 @@ After which, you can rerun a `px auth login` to authenticate with the dev cloud 
 Make sure to `px delete --clobber` if running a prior instance of Vizier pointing to another cloud instance.
 
 ## Vizier
-Vizier is Pixie’s data collector that runs on each cluster. It is responsible
-for query execution and managing PEMs.
+Vizier is Pixie’s data collector that runs on each cluster. It is responsible for query execution and managing PEMs.
 
 ### Getting Started
 Verify that you can build Pixie Vizier and run the unit tests.
 
-The following will build Pixie Vizier and then run the unit tests for the UDF
-(User Defined Function) math operations. These UDFs will be available directly off
-the px object inside a PxL script. If you are running the development environment via
-Docker, the following should be run inside the Docker container.
+The following will build Pixie Vizier and run a unit test of your choice in Pixie's Vizier module. If you are running the development environment via Docker, the following should be run inside the Docker container.
 
 ```
-bazel test //src/carnot/funcs/builtins:math_ops_test --test_output=errors -j 2
+bazel test //src/<path to unit test file> --test_output=errors -j $(nproc)
 ```
 
 ### Deploying
-Deploying a development version of Vizier is a 2-step process. An official
-release-version of Vizier must first be deployed (through the Pixie CLI or
-YAMLs) and Skaffold can then be run to build and deploy a local development
-version of Vizier.
+Deploying a development version of Vizier is a 2-step process. An official release-version of Vizier must first be deployed (through the Pixie CLI or YAMLs) and Skaffold can then be run to build and deploy a local development version of Vizier.
 
-1. Since both of these steps require a Kubernetes cluster to deploy to, you must have
-Minikube installed and running. Follow the instructions
-[here](https://docs.px.dev/installing-pixie/setting-up-k8s/minikube-setup/). Note that
-both deployment scripts below use the output of `kubectl config current-context` to
-determine which Kubernetes cluster to deploy to. So make sure if you have multiple
-clusters, the context is pointing to the correct target cluster.
-
-1. If you wish to test development changes made to Pixie Cloud and Vizier, export the
-following environment variables that will point to the development Pixie Cloud instance:
+1. If you wish to test development changes made to Pixie Cloud and Vizier, export the following environment variables that will point to the development Pixie Cloud instance:
 
     ```
     export PL_CLOUD_ADDR=dev.withpixie.dev:443
     export PL_TESTING_ENV=dev
     ```
 
-1. Install the Pixie CLI and signup for Pixie Community Cloud. Follow steps 1 and 3 on
-[these](https://docs.px.dev/installing-pixie/install-guides/community-cloud-for-pixie/)
-instructions.
-
-1. Deploy Vizier through CLI/YAML. This will set up specific cluster-secrets, etc that
-are not deployed via Skaffold. Wait for this command to successfully complete and Vizier
-to successfully connect to Pixie Cloud, to ensure all secrets and configs have been set
-up properly. Note you will not need to run this to deploy again unless you connect to a
-different cluster.
-
-    ```
-    px deploy
-    ```
-
-    If this command does not successfully complete you might retry it after deleting all
-    the nodes and the namespace as sometimes the deploy nodes can get into a bad state:
+1. Install the Pixie CLI and run `px deploy`. Depending on whether you are pointing to a self-hosted Pixie Cloud or the official Comminity Pixie Cloud follow the appropriate installation guide [here](https://docs.px.dev/installing-pixie/install-guides/). `px deploy` will set up specific cluster-secrets, etc that are not deployed via Skaffold. Wait for this command to successfully complete and Vizier to successfully connect to Pixie Cloud, to ensure all secrets and configs have been set up properly. Note you will not need to run this to deploy again unless you connect to a different cluster. If the `px deploy` command does not successfully complete you might retry it after deleting all the nodes and the namespace as sometimes the deploy nodes can get into a bad state:
     ```
     px delete
     kubectl delete namespace px-operator
     ```
 
-1. Deploy a local development version of Pixie Vizier using Skaffold. Note each time you
-make a code change you will need to run this command to build and deploy the new
-version.
+1. Deploy a local development version of Pixie Vizier using Skaffold. Note each time you make a code change you will need to run this command to build and deploy the new version.
 
    ```
    skaffold run -f skaffold/skaffold_vizier.yaml
