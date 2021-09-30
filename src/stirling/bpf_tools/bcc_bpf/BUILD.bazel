@@ -22,7 +22,6 @@
 # SPDX-License-Identifier: MIT
 
 load("//bazel:cc_resource.bzl", "pl_bpf_cc_resource")
-load("//bazel:pl_bpf_preprocess.bzl", "pl_bpf_preprocess")
 
 package(default_visibility = [
     "//experimental/bpf:__subpackages__",
@@ -34,18 +33,9 @@ filegroup(
     srcs = glob(["*.h"]),
 )
 
+# Build :task_struct_mem_read_bpf_preprocess_genrule to examine the preprocessing output.
 pl_bpf_cc_resource(
     name = "task_struct_mem_read",
-    src = "task_struct_mem_read.c",
-    hdrs = ["//src/stirling/bpf_tools/bcc_bpf_intf:headers"],
-    syshdrs = "//src/stirling/bpf_tools/bcc_bpf/system-headers",
-)
-
-# Debug target, so output of preprocessing can be viewed.
-# Must keep in sync with :task_struct_mem_read.
-# Do not use as a dependency.
-pl_bpf_preprocess(
-    name = "task_struct_mem_read_preprocess_debug",
     src = "task_struct_mem_read.c",
     hdrs = ["//src/stirling/bpf_tools/bcc_bpf_intf:headers"],
     syshdrs = "//src/stirling/bpf_tools/bcc_bpf/system-headers",

@@ -14,9 +14,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:cc_resource.bzl", "pl_bpf_cc_resource")
+load("//bazel:cc_resource.bzl", "pl_bpf_cc_resource", "pl_cc_resource")
 
-package(default_visibility = ["//src/stirling:__subpackages__"])
+package(default_visibility = ["//src/stirling/bpf_tools:__subpackages__"])
 
 pl_bpf_cc_resource(
     name = "get_tgid_start_time",
@@ -25,4 +25,9 @@ pl_bpf_cc_resource(
         "//src/stirling/bpf_tools/bcc_bpf:headers",
     ],
     syshdrs = "//src/stirling/bpf_tools/bcc_bpf/system-headers",
+)
+
+pl_cc_resource(
+    name = "test_txt_cc_resource",
+    src = "test.txt",
 )

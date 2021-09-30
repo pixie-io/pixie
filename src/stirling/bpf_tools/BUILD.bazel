@@ -55,12 +55,21 @@ pl_cc_binary(
 )
 
 pl_cc_test(
+    name = "macros_test",
+    srcs = ["macros_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/bpf_tools/testdata:test_txt_cc_resource",
+    ],
+)
+
+pl_cc_test(
     name = "bcc_wrapper_bpf_test",
     srcs = ["bcc_wrapper_bpf_test.cc"],
     tags = ["requires_bpf"],
     deps = [
         ":cc_library",
-        "//src/stirling/bpf_tools/testing:get_tgid_start_time",
+        "//src/stirling/bpf_tools/testdata:get_tgid_start_time",
         "//src/stirling/obj_tools/testdata/cc:test_exe_fixture",
     ],
 )

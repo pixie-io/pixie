@@ -41,7 +41,7 @@ def pl_bpf_preprocess(
         syshdrs,
         tags = [],
         *kwargs):
-    out_file = name
+    out_file = name + "_bpf_preprocess"
 
     # Hacky: Extract the name of the directory by removing the leading "//".
     # There might be Bazel-esque way of doing this, but since filegroups can't have $location
@@ -52,7 +52,7 @@ def pl_bpf_preprocess(
     cmd = "cpp -U linux -Dinclude=#include -I. -I{} $(location {}) -o $@".format(syshdrs_dir, src)
 
     native.genrule(
-        name = name + "_preprocess_rule",
+        name = name + "_bpf_preprocess_genrule",
         outs = [out_file],
         srcs = [src] + hdrs + [syshdrs],
         tags = tags,
