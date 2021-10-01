@@ -140,7 +140,7 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
     bool container_is_running = container_.IsRunning();
 
     PL_ASSIGN_OR_RETURN(container_status, ContainerStatus(container_name_));
-    LOG(INFO) << absl::Substitute("Container status: $0", container_status);
+    LOG(INFO) << absl::Substitute("Container $0 status: $1", container_name_, container_status);
 
     // Status should be one of: created, restarting, running, removing, paused, exited, dead.
     if (container_status == "running" || container_status == "exited" ||
@@ -150,13 +150,15 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
 
     // Delay before trying again.
     LOG(INFO) << absl::Substitute(
-        "Container not yet running, will try again ($0 attempts remaining).", attempts_remaining);
+        "Container $0 not yet running, will try again ($1 attempts remaining).", container_name_,
+        attempts_remaining);
 
     if (!container_is_running) {
       // If container is not running, fail early to save time.
       std::string container_out;
       PL_RETURN_IF_ERROR(container_.Stdout(&container_out));
-      return error::Internal("Docker run failed. Output:\n$0", container_out);
+      return error::Internal("Container $0 docker run failed. Output:\n$1", container_name_,
+                             container_out);
     }
 
     sleep(kSleepSeconds);
@@ -165,7 +167,8 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
   if (container_status != "running" && container_status != "exited") {
     std::string container_out;
     PL_RETURN_IF_ERROR(container_.Stdout(&container_out));
-    return error::Internal("Container failed to start. Container output:\n$0", container_out);
+    return error::Internal("Container $0 failed to start. Container output:\n$1", container_name_,
+                           container_out);
   }
 
   // Get the PID of process within the container.
@@ -173,11 +176,13 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
   process_pid_ = ContainerPID(container_name_).ValueOr(-1);
 
   if (process_pid_ == -1) {
-    LOG(WARNING) << "Container may have terminated before PID could be sampled.";
+    LOG(WARNING) << absl::Substitute(
+        "Container $0 may have terminated before PID could be sampled.", container_name_);
   }
-  LOG(INFO) << absl::Substitute("Container process PID: $0", process_pid_);
+  LOG(INFO) << absl::Substitute("Container $0 process PID: $1", container_name_, process_pid_);
 
-  LOG(INFO) << absl::StrCat("Waiting for log message: ", ready_message_);
+  LOG(INFO) << absl::Substitute("Container $0 waiting for log message: $1", container_name_,
+                                ready_message_);
 
   // Wait for container to become "ready".
   std::string container_out;
@@ -188,7 +193,7 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
     PL_ASSIGN_OR_RETURN(container_status, ContainerStatus(container_name_));
     PL_RETURN_IF_ERROR(container_.Stdout(&container_out));
 
-    LOG(INFO) << absl::Substitute("Container status: $0", container_status);
+    LOG(INFO) << absl::Substitute("Container $0 status: $1", container_name_, container_status);
 
     if (absl::StrContains(container_out, ready_message_)) {
       break;
@@ -197,19 +202,19 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
     // Early exit to save time if the container has exited.
     // Any further looping won't really help us.
     if (container_status == "exited" || container_status == "dead") {
-      LOG(INFO) << "Container has exited.";
+      LOG(INFO) << absl::Substitute("Container $0 has exited.", container_name_);
       break;
     }
 
     LOG(INFO) << absl::Substitute(
-        "Container not in ready state, will try again ($0 attempts remaining).",
+        "Container $0 not in ready state, will try again ($1 attempts remaining).", container_name_,
         attempts_remaining);
 
     sleep(kSleepSeconds);
   }
 
   if (!absl::StrContains(container_out, ready_message_)) {
-    LOG(ERROR) << "Container did not reach ready state.";
+    LOG(ERROR) << absl::Substitute("Container $0 did not reach ready state.", container_name_);
 
     // Dump some information that may be useful for debugging.
     LOG(INFO) << "\n> docker container ls -a";
@@ -221,7 +226,7 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
     LOG(INFO) << px::Exec(absl::Substitute("docker logs $0", container_name_))
                      .ValueOr("<docker logs failed>");
 
-    return error::Internal("Timeout. Container did not reach ready state.");
+    return error::Internal("Timeout. Container $0 did not reach ready state.", container_name_);
   }
 
   LOG(INFO) << absl::Substitute("Container $0 is ready.", container_name_);
