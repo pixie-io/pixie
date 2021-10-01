@@ -498,3 +498,18 @@ func (s *Server) UpdateOrg(ctx context.Context, req *profilepb.UpdateOrgRequest)
 	}
 	return orgInfoToProto(orgInfo), nil
 }
+
+// AddOrgIDEConfig adds the IDE config for the given org.
+func (s *Server) AddOrgIDEConfig(ctx context.Context, req *profilepb.AddOrgIDEConfigRequest) (*profilepb.AddOrgIDEConfigResponse, error) {
+	return nil, errors.New("Not yet implemented")
+}
+
+// DeleteOrgIDEConfig deletes the IDE config from the given org.
+func (s *Server) DeleteOrgIDEConfig(ctx context.Context, req *profilepb.DeleteOrgIDEConfigRequest) (*profilepb.DeleteOrgIDEConfigResponse, error) {
+	return nil, errors.New("Not yet implemented")
+}
+
+// GetOrgIDEConfigs gets all IDE configs from the given org.
+func (s *Server) GetOrgIDEConfigs(ctx context.Context, req *profilepb.GetOrgIDEConfigsRequest) (*profilepb.GetOrgIDEConfigsResponse, error) {
+	return nil, errors.New("Not yet implemented")
+}

@@ -34,18 +34,33 @@ service ProfileService {
   rpc GetUserByAuthProviderID(GetUserByAuthProviderIDRequest) returns (UserInfo);
   // Creates the initial organization with the specified user as the owner.
   rpc CreateOrgAndUser(CreateOrgAndUserRequest) returns (CreateOrgAndUserResponse);
-  rpc GetOrg(px.uuidpb.UUID) returns (OrgInfo);
-  rpc GetOrgByDomain(GetOrgByDomainRequest) returns (OrgInfo);
   rpc UpdateUser(UpdateUserRequest) returns (UserInfo);
-  rpc UpdateOrg(UpdateOrgRequest) returns (OrgInfo);
-  rpc GetOrgs(GetOrgsRequest) returns (GetOrgsResponse);
-  rpc GetUsersInOrg(GetUsersInOrgRequest) returns (GetUsersInOrgResponse);
   // Calls for handling user settings.
   rpc GetUserSettings(GetUserSettingsRequest) returns (GetUserSettingsResponse);
   rpc UpdateUserSettings(UpdateUserSettingsRequest) returns (UpdateUserSettingsResponse);
   // Calls for handling user attributes.
   rpc GetUserAttributes(GetUserAttributesRequest) returns (GetUserAttributesResponse);
   rpc SetUserAttributes(SetUserAttributesRequest) returns (SetUserAttributesResponse);
+
+  // TODO(michellenguyen): These have calls have moved to the OrgService. Remove them once
+  // all consumers (API service) have been updated to use the new service.
+  rpc GetOrg(px.uuidpb.UUID) returns (OrgInfo);
+  rpc GetOrgByDomain(GetOrgByDomainRequest) returns (OrgInfo);
+  rpc UpdateOrg(UpdateOrgRequest) returns (OrgInfo);
+  rpc GetOrgs(GetOrgsRequest) returns (GetOrgsResponse);
+  rpc GetUsersInOrg(GetUsersInOrgRequest) returns (GetUsersInOrgResponse);
+}
+
+// Org service tracks organization information.
+service OrgService {
+  rpc GetOrg(px.uuidpb.UUID) returns (OrgInfo);
+  rpc GetOrgByDomain(GetOrgByDomainRequest) returns (OrgInfo);
+  rpc UpdateOrg(UpdateOrgRequest) returns (OrgInfo);
+  rpc GetOrgs(GetOrgsRequest) returns (GetOrgsResponse);
+  rpc GetUsersInOrg(GetUsersInOrgRequest) returns (GetUsersInOrgResponse);
+  rpc AddOrgIDEConfig(AddOrgIDEConfigRequest) returns (AddOrgIDEConfigResponse);
+  rpc DeleteOrgIDEConfig(DeleteOrgIDEConfigRequest) returns (DeleteOrgIDEConfigResponse);
+  rpc GetOrgIDEConfigs(GetOrgIDEConfigsRequest) returns (GetOrgIDEConfigsResponse);
 }
 
 // UserInfo has information about a single end user in our system.
@@ -210,4 +225,52 @@ message GetUsersInOrgRequest {
 message GetUsersInOrgResponse {
   // The users in the requested org.
   repeated UserInfo users = 1;
+}
+
+// IDEConfig is used to configure an IDE with Pixie.
+message IDEConfig {
+  // The name of the IDE. For example: "github", "sourcemap".
+  string ide_name = 1 [(gogoproto.customname) = "IDEName"];
+  // A golang text template path for opening up a page in the IDE, given the symbol, function path, and function.
+  // For example: "subl://{{.Path}}/{{.Symbol}}".
+  string path = 2;
+}
+
+// AddOrgIDEConfigRequest is a request to add an IDE config for the given org.
+message AddOrgIDEConfigRequest {
+  // The org which the IDE config should be added to.
+  px.uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
+  // The config that should be added to the org.
+  IDEConfig config = 2;
+}
+
+// AddOrgIDEConfigResponse is the response for adding an IDE config to an org.
+message AddOrgIDEConfigResponse {
+  // The config that was added to the org.
+  IDEConfig config = 1;
+}
+
+// DeleteOrgIDEConfigRequest is a request to delete an IDE config from an org.
+message DeleteOrgIDEConfigRequest {
+  // The org which the IDE config should be removed from.
+  px.uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
+  // The name of the IDE config to be deleted.
+  string ide_name = 2 [(gogoproto.customname) = "IDEName"];
+}
+
+// DeleteOrgIDEConfigResponse is the response to deleting an IDE config from an org.
+message DeleteOrgIDEConfigResponse {}
+
+// GetOrgIDEConfigsRequest is a request to get all IDE configs for an org.
+message GetOrgIDEConfigsRequest {
+  // The org to get the IDE configs for.
+  px.uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
+  // Optional, the name of the IDE to fetch configs for. If not specified, fetches all configs for the org.
+  string ide_name = 2 [(gogoproto.customname) = "IDEName"];
+}
+
+// GetOrgIDEConfigsResponse is the response to getting all IDE configs for an org.
+message GetOrgIDEConfigsResponse {
+  // The IDE configs belonging to the org.
+  repeated IDEConfig configs = 1;
 }

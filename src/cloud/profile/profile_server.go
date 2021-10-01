@@ -65,6 +65,7 @@ func main() {
 
 	s := server.NewPLServer(env, mux)
 	profilepb.RegisterProfileServiceServer(s.GRPCServer(), svr)
+	profilepb.RegisterOrgServiceServer(s.GRPCServer(), svr)
 	s.Start()
 	s.StopOnInterrupt()
 }
