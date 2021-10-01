@@ -20,6 +20,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -150,4 +151,19 @@ func (o *OrganizationServiceServer) GetUsersInOrg(ctx context.Context, req *clou
 	return &cloudpb.GetUsersInOrgResponse{
 		Users: userList,
 	}, nil
+}
+
+// AddOrgIDEConfig adds the IDE config for the given org.
+func (o *OrganizationServiceServer) AddOrgIDEConfig(ctx context.Context, req *cloudpb.AddOrgIDEConfigRequest) (*cloudpb.AddOrgIDEConfigResponse, error) {
+	return nil, errors.New("Not yet implemented")
+}
+
+// DeleteOrgIDEConfig deletes the IDE config from the given org.
+func (o *OrganizationServiceServer) DeleteOrgIDEConfig(ctx context.Context, req *cloudpb.DeleteOrgIDEConfigRequest) (*cloudpb.DeleteOrgIDEConfigResponse, error) {
+	return nil, errors.New("Not yet implemented")
+}
+
+// GetOrgIDEConfigs gets all IDE configs from the given org.
+func (o *OrganizationServiceServer) GetOrgIDEConfigs(ctx context.Context, req *cloudpb.GetOrgIDEConfigsRequest) (*cloudpb.GetOrgIDEConfigsResponse, error) {
+	return nil, errors.New("Not yet implemented")
 }

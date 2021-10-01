@@ -329,6 +329,46 @@ func (m *MockOrganizationServiceClient) EXPECT() *MockOrganizationServiceClientM
 	return m.recorder
 }
 
+// AddOrgIDEConfig mocks base method.
+func (m *MockOrganizationServiceClient) AddOrgIDEConfig(ctx context.Context, in *cloudpb.AddOrgIDEConfigRequest, opts ...grpc.CallOption) (*cloudpb.AddOrgIDEConfigResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "AddOrgIDEConfig", varargs...)
+	ret0, _ := ret[0].(*cloudpb.AddOrgIDEConfigResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AddOrgIDEConfig indicates an expected call of AddOrgIDEConfig.
+func (mr *MockOrganizationServiceClientMockRecorder) AddOrgIDEConfig(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddOrgIDEConfig", reflect.TypeOf((*MockOrganizationServiceClient)(nil).AddOrgIDEConfig), varargs...)
+}
+
+// DeleteOrgIDEConfig mocks base method.
+func (m *MockOrganizationServiceClient) DeleteOrgIDEConfig(ctx context.Context, in *cloudpb.DeleteOrgIDEConfigRequest, opts ...grpc.CallOption) (*cloudpb.DeleteOrgIDEConfigResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteOrgIDEConfig", varargs...)
+	ret0, _ := ret[0].(*cloudpb.DeleteOrgIDEConfigResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteOrgIDEConfig indicates an expected call of DeleteOrgIDEConfig.
+func (mr *MockOrganizationServiceClientMockRecorder) DeleteOrgIDEConfig(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrgIDEConfig", reflect.TypeOf((*MockOrganizationServiceClient)(nil).DeleteOrgIDEConfig), varargs...)
+}
+
 // GetOrg mocks base method.
 func (m *MockOrganizationServiceClient) GetOrg(ctx context.Context, in *uuidpb.UUID, opts ...grpc.CallOption) (*cloudpb.OrgInfo, error) {
 	m.ctrl.T.Helper()
@@ -347,6 +387,26 @@ func (mr *MockOrganizationServiceClientMockRecorder) GetOrg(ctx, in interface{},
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrg", reflect.TypeOf((*MockOrganizationServiceClient)(nil).GetOrg), varargs...)
+}
+
+// GetOrgIDEConfigs mocks base method.
+func (m *MockOrganizationServiceClient) GetOrgIDEConfigs(ctx context.Context, in *cloudpb.GetOrgIDEConfigsRequest, opts ...grpc.CallOption) (*cloudpb.GetOrgIDEConfigsResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetOrgIDEConfigs", varargs...)
+	ret0, _ := ret[0].(*cloudpb.GetOrgIDEConfigsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrgIDEConfigs indicates an expected call of GetOrgIDEConfigs.
+func (mr *MockOrganizationServiceClientMockRecorder) GetOrgIDEConfigs(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgIDEConfigs", reflect.TypeOf((*MockOrganizationServiceClient)(nil).GetOrgIDEConfigs), varargs...)
 }
 
 // GetUsersInOrg mocks base method.
@@ -432,6 +492,36 @@ func (m *MockOrganizationServiceServer) EXPECT() *MockOrganizationServiceServerM
 	return m.recorder
 }
 
+// AddOrgIDEConfig mocks base method.
+func (m *MockOrganizationServiceServer) AddOrgIDEConfig(arg0 context.Context, arg1 *cloudpb.AddOrgIDEConfigRequest) (*cloudpb.AddOrgIDEConfigResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddOrgIDEConfig", arg0, arg1)
+	ret0, _ := ret[0].(*cloudpb.AddOrgIDEConfigResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AddOrgIDEConfig indicates an expected call of AddOrgIDEConfig.
+func (mr *MockOrganizationServiceServerMockRecorder) AddOrgIDEConfig(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddOrgIDEConfig", reflect.TypeOf((*MockOrganizationServiceServer)(nil).AddOrgIDEConfig), arg0, arg1)
+}
+
+// DeleteOrgIDEConfig mocks base method.
+func (m *MockOrganizationServiceServer) DeleteOrgIDEConfig(arg0 context.Context, arg1 *cloudpb.DeleteOrgIDEConfigRequest) (*cloudpb.DeleteOrgIDEConfigResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteOrgIDEConfig", arg0, arg1)
+	ret0, _ := ret[0].(*cloudpb.DeleteOrgIDEConfigResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteOrgIDEConfig indicates an expected call of DeleteOrgIDEConfig.
+func (mr *MockOrganizationServiceServerMockRecorder) DeleteOrgIDEConfig(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrgIDEConfig", reflect.TypeOf((*MockOrganizationServiceServer)(nil).DeleteOrgIDEConfig), arg0, arg1)
+}
+
 // GetOrg mocks base method.
 func (m *MockOrganizationServiceServer) GetOrg(arg0 context.Context, arg1 *uuidpb.UUID) (*cloudpb.OrgInfo, error) {
 	m.ctrl.T.Helper()
@@ -445,6 +535,21 @@ func (m *MockOrganizationServiceServer) GetOrg(arg0 context.Context, arg1 *uuidp
 func (mr *MockOrganizationServiceServerMockRecorder) GetOrg(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrg", reflect.TypeOf((*MockOrganizationServiceServer)(nil).GetOrg), arg0, arg1)
+}
+
+// GetOrgIDEConfigs mocks base method.
+func (m *MockOrganizationServiceServer) GetOrgIDEConfigs(arg0 context.Context, arg1 *cloudpb.GetOrgIDEConfigsRequest) (*cloudpb.GetOrgIDEConfigsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrgIDEConfigs", arg0, arg1)
+	ret0, _ := ret[0].(*cloudpb.GetOrgIDEConfigsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrgIDEConfigs indicates an expected call of GetOrgIDEConfigs.
+func (mr *MockOrganizationServiceServerMockRecorder) GetOrgIDEConfigs(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgIDEConfigs", reflect.TypeOf((*MockOrganizationServiceServer)(nil).GetOrgIDEConfigs), arg0, arg1)
 }
 
 // GetUsersInOrg mocks base method.
