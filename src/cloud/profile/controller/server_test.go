@@ -49,7 +49,10 @@ func TestServer_CreateUser(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
 	testOrgUUID := uuid.Must(uuid.NewV4())
 	testUUID := uuid.Must(uuid.NewV4())
@@ -232,9 +235,9 @@ func TestServer_CreateUser(t *testing.T) {
 
 	for _, tc := range createUsertests {
 		t.Run(tc.name, func(t *testing.T) {
-			s := controller.NewServer(nil, d, nil)
+			s := controller.NewServer(nil, uds, usds, ods, osds)
 			if utils.UUIDFromProtoOrNil(tc.userInfo.OrgID) != uuid.Nil {
-				d.EXPECT().
+				ods.EXPECT().
 					GetOrg(testOrgUUID).
 					Return(&datastore.OrgInfo{
 						EnableApprovals: tc.enableApprovals,
@@ -251,7 +254,7 @@ func TestServer_CreateUser(t *testing.T) {
 					IdentityProvider: tc.userInfo.IdentityProvider,
 					AuthProviderID:   tc.userInfo.AuthProviderID,
 				}
-				d.EXPECT().
+				uds.EXPECT().
 					CreateUser(req).
 					Return(testUUID, nil)
 			}
@@ -273,11 +276,14 @@ func TestServer_GetUser(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
 	userUUID := uuid.Must(uuid.NewV4())
 	orgUUID := uuid.Must(uuid.NewV4())
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, uds, usds, ods, osds)
 
 	mockReply := &datastore.UserInfo{
 		ID:             userUUID,
@@ -289,7 +295,7 @@ func TestServer_GetUser(t *testing.T) {
 		AuthProviderID: "github|asdfghjkl;",
 	}
 
-	d.EXPECT().
+	uds.EXPECT().
 		GetUser(userUUID).
 		Return(mockReply, nil)
 
@@ -309,11 +315,14 @@ func TestServer_GetUser_MissingUser(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
 	userUUID := uuid.Must(uuid.NewV4())
-	s := controller.NewServer(nil, d, nil)
-	d.EXPECT().
+	s := controller.NewServer(nil, uds, usds, ods, osds)
+	uds.EXPECT().
 		GetUser(userUUID).
 		Return(nil, nil)
 
@@ -327,11 +336,14 @@ func TestServer_GetUserByEmail(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
 	userUUID := uuid.Must(uuid.NewV4())
 	orgUUID := uuid.Must(uuid.NewV4())
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, uds, usds, ods, osds)
 
 	mockReply := &datastore.UserInfo{
 		ID:               userUUID,
@@ -344,7 +356,7 @@ func TestServer_GetUserByEmail(t *testing.T) {
 		AuthProviderID:   "github|asdfghjkl;",
 	}
 
-	d.EXPECT().
+	uds.EXPECT().
 		GetUserByEmail("foo@bar.com").
 		Return(mockReply, nil)
 
@@ -364,11 +376,14 @@ func TestServer_GetUserByAuthProviderID(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
 	userUUID := uuid.Must(uuid.NewV4())
 	orgUUID := uuid.Must(uuid.NewV4())
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, uds, usds, ods, osds)
 
 	mockReply := &datastore.UserInfo{
 		ID:               userUUID,
@@ -381,7 +396,7 @@ func TestServer_GetUserByAuthProviderID(t *testing.T) {
 		AuthProviderID:   "github|asdfghjkl;",
 	}
 
-	d.EXPECT().
+	uds.EXPECT().
 		GetUserByAuthProviderID("github|asdfghjkl;").
 		Return(mockReply, nil)
 
@@ -401,11 +416,14 @@ func TestServer_GetUserByEmail_MissingEmail(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, uds, usds, ods, osds)
 
-	d.EXPECT().
+	uds.EXPECT().
 		GetUserByEmail("foo@bar.com").
 		Return(nil, datastore.ErrUserNotFound)
 
@@ -422,7 +440,10 @@ func TestServer_CreateOrgAndUser_SuccessCases(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
 	testOrgUUID := uuid.Must(uuid.NewV4())
 	testUUID := uuid.Must(uuid.NewV4())
@@ -488,7 +509,7 @@ func TestServer_CreateOrgAndUser_SuccessCases(t *testing.T) {
 
 			env := profileenv.New(pm)
 
-			s := controller.NewServer(env, d, nil)
+			s := controller.NewServer(env, uds, usds, ods, osds)
 			exUserInfo := &datastore.UserInfo{
 				Username:         tc.req.User.Username,
 				FirstName:        tc.req.User.FirstName,
@@ -502,7 +523,7 @@ func TestServer_CreateOrgAndUser_SuccessCases(t *testing.T) {
 				DomainName: tc.req.Org.DomainName,
 				OrgName:    tc.req.Org.OrgName,
 			}
-			d.EXPECT().
+			uds.EXPECT().
 				CreateUserAndOrg(exOrg, exUserInfo).
 				Return(testOrgUUID, testUUID, nil)
 			orgResp, err := s.CreateOrgAndUser(context.Background(), tc.req)
@@ -516,7 +537,10 @@ func TestServer_CreateOrgAndUser_InvalidArgumentCases(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
 	createOrgUserTest := []struct {
 		name string
@@ -608,7 +632,7 @@ func TestServer_CreateOrgAndUser_InvalidArgumentCases(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			pm := mock_projectmanager.NewMockProjectManagerServiceClient(ctrl)
 			env := profileenv.New(pm)
-			s := controller.NewServer(env, d, nil)
+			s := controller.NewServer(env, uds, usds, ods, osds)
 			resp, err := s.CreateOrgAndUser(context.Background(), tc.req)
 			assert.NotNil(t, err)
 			assert.Nil(t, resp)
@@ -622,7 +646,10 @@ func TestServer_CreateOrgAndUser_CreateProjectFailed(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
 	testOrgUUID := uuid.Must(uuid.NewV4())
 	testUUID := uuid.Must(uuid.NewV4())
@@ -651,7 +678,7 @@ func TestServer_CreateOrgAndUser_CreateProjectFailed(t *testing.T) {
 		},
 	}
 
-	s := controller.NewServer(env, d, nil)
+	s := controller.NewServer(env, uds, usds, ods, osds)
 	exUserInfo := &datastore.UserInfo{
 		Username:         req.User.Username,
 		FirstName:        req.User.FirstName,
@@ -664,11 +691,11 @@ func TestServer_CreateOrgAndUser_CreateProjectFailed(t *testing.T) {
 		DomainName: req.Org.DomainName,
 		OrgName:    req.Org.OrgName,
 	}
-	d.EXPECT().
+	uds.EXPECT().
 		CreateUserAndOrg(exOrg, exUserInfo).
 		Return(testOrgUUID, testUUID, nil)
 
-	d.EXPECT().
+	ods.EXPECT().
 		DeleteOrgAndUsers(testOrgUUID).
 		Return(nil)
 
@@ -681,10 +708,13 @@ func TestServer_GetOrg(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
 	orgUUID := uuid.Must(uuid.NewV4())
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, uds, usds, ods, osds)
 
 	mockReply := &datastore.OrgInfo{
 		ID:         orgUUID,
@@ -692,7 +722,7 @@ func TestServer_GetOrg(t *testing.T) {
 		OrgName:    "my-org",
 	}
 
-	d.EXPECT().
+	ods.EXPECT().
 		GetOrg(orgUUID).
 		Return(mockReply, nil)
 
@@ -708,12 +738,15 @@ func TestServer_GetOrgs(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
 	orgUUID := uuid.Must(uuid.NewV4())
 	org2UUID := uuid.Must(uuid.NewV4())
 
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, uds, usds, ods, osds)
 
 	mockReply := []*datastore.OrgInfo{{
 		ID:         orgUUID,
@@ -726,7 +759,7 @@ func TestServer_GetOrgs(t *testing.T) {
 			OrgName:    "pixie",
 		}}
 
-	d.EXPECT().
+	ods.EXPECT().
 		GetOrgs().
 		Return(mockReply, nil)
 
@@ -746,12 +779,15 @@ func TestServer_GetOrg_MissingOrg(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
 	orgUUID := uuid.Must(uuid.NewV4())
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, uds, usds, ods, osds)
 
-	d.EXPECT().
+	ods.EXPECT().
 		GetOrg(orgUUID).
 		Return(nil, nil)
 
@@ -765,10 +801,13 @@ func TestServer_GetOrgByDomain(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
 	orgUUID := uuid.Must(uuid.NewV4())
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, uds, usds, ods, osds)
 
 	mockReply := &datastore.OrgInfo{
 		ID:         orgUUID,
@@ -776,7 +815,7 @@ func TestServer_GetOrgByDomain(t *testing.T) {
 		OrgName:    "my-org",
 	}
 
-	d.EXPECT().
+	ods.EXPECT().
 		GetOrgByDomain("my-org.com").
 		Return(mockReply, nil)
 
@@ -794,11 +833,14 @@ func TestServer_GetOrgByDomain_MissingOrg(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, uds, usds, ods, osds)
 
-	d.EXPECT().
+	ods.EXPECT().
 		GetOrgByDomain("my-org.com").
 		Return(nil, datastore.ErrOrgNotFound)
 
@@ -815,9 +857,12 @@ func TestServer_DeleteOrgAndUsers(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, uds, usds, ods, osds)
 
 	orgUUID := uuid.Must(uuid.NewV4())
 
@@ -826,8 +871,8 @@ func TestServer_DeleteOrgAndUsers(t *testing.T) {
 		DomainName: "my-org.com",
 		OrgName:    "my-org",
 	}
-	d.EXPECT().GetOrg(orgUUID).Return(mockReply, nil)
-	d.EXPECT().DeleteOrgAndUsers(orgUUID).Return(nil)
+	ods.EXPECT().GetOrg(orgUUID).Return(mockReply, nil)
+	ods.EXPECT().DeleteOrgAndUsers(orgUUID).Return(nil)
 
 	err := s.DeleteOrgAndUsers(context.Background(), utils.ProtoFromUUID(orgUUID))
 	require.NoError(t, err)
@@ -837,12 +882,15 @@ func TestServer_DeleteOrgAndUsers_MissingOrg(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, uds, usds, ods, osds)
 
 	orgUUID := uuid.Must(uuid.NewV4())
-	d.EXPECT().
+	ods.EXPECT().
 		GetOrg(orgUUID).
 		Return(nil, nil)
 
@@ -855,7 +903,10 @@ func TestServer_UpdateUser(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
 	updateUserTest := []struct {
 		name              string
@@ -890,7 +941,7 @@ func TestServer_UpdateUser(t *testing.T) {
 	for _, tc := range updateUserTest {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := CreateTestContext()
-			s := controller.NewServer(nil, d, nil)
+			s := controller.NewServer(nil, uds, usds, ods, osds)
 			userID := uuid.FromStringOrNil(tc.userID)
 
 			// This is the original user's info.
@@ -927,11 +978,11 @@ func TestServer_UpdateUser(t *testing.T) {
 				mockUpdateReq.IsApproved = tc.updatedIsApproved
 			}
 
-			d.EXPECT().
+			uds.EXPECT().
 				GetUser(userID).
 				Return(originalUserInfo, nil)
 
-			d.EXPECT().
+			uds.EXPECT().
 				UpdateUser(mockUpdateReq).
 				Return(nil)
 
@@ -948,10 +999,13 @@ func TestServer_UpdateOrg(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
 	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, uds, usds, ods, osds)
 
 	mockReply := &datastore.OrgInfo{
 		ID:              orgID,
@@ -963,11 +1017,11 @@ func TestServer_UpdateOrg(t *testing.T) {
 		EnableApprovals: true,
 	}
 
-	d.EXPECT().
+	ods.EXPECT().
 		GetOrg(orgID).
 		Return(mockReply, nil)
 
-	d.EXPECT().
+	ods.EXPECT().
 		UpdateOrg(mockUpdateReq).
 		Return(nil)
 
@@ -988,10 +1042,13 @@ func TestServer_UpdateOrg_DisableApprovals(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
 	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, uds, usds, ods, osds)
 
 	mockReply := &datastore.OrgInfo{
 		ID: orgID,
@@ -1005,15 +1062,15 @@ func TestServer_UpdateOrg_DisableApprovals(t *testing.T) {
 		EnableApprovals: false,
 	}
 
-	d.EXPECT().
+	ods.EXPECT().
 		GetOrg(orgID).
 		Return(mockReply, nil)
 
-	d.EXPECT().
+	ods.EXPECT().
 		UpdateOrg(mockUpdateReq).
 		Return(nil)
 
-	d.EXPECT().
+	ods.EXPECT().
 		ApproveAllOrgUsers(orgID).
 		Return(nil)
 
@@ -1036,17 +1093,20 @@ func TestServer_UpdateOrg_NoChangeInState(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
 	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, uds, usds, ods, osds)
 
 	mockReply := &datastore.OrgInfo{
 		ID:              orgID,
 		EnableApprovals: true,
 	}
 
-	d.EXPECT().
+	ods.EXPECT().
 		GetOrg(orgID).
 		Return(mockReply, nil)
 
@@ -1067,17 +1127,20 @@ func TestServer_UpdateOrg_EnableApprovalsIsNull(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
 	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, uds, usds, ods, osds)
 
 	mockReply := &datastore.OrgInfo{
 		ID:              orgID,
 		EnableApprovals: true,
 	}
 
-	d.EXPECT().
+	ods.EXPECT().
 		GetOrg(orgID).
 		Return(mockReply, nil)
 
@@ -1097,9 +1160,12 @@ func TestServer_UpdateOrg_RequestBlockedForUserOutsideOrg(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, uds, usds, ods, osds)
 	_, err := s.UpdateOrg(
 		CreateTestContext(),
 		&profilepb.UpdateOrgRequest{
@@ -1115,13 +1181,16 @@ func TestServer_GetUserAttributes(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
-	s := controller.NewServer(nil, nil, d)
+	s := controller.NewServer(nil, uds, usds, ods, osds)
 
 	userID := uuid.Must(uuid.NewV4())
 	tourSeen := true
-	d.EXPECT().
+	usds.EXPECT().
 		GetUserAttributes(userID).
 		Return(&datastore.UserAttributes{TourSeen: &tourSeen}, nil)
 
@@ -1136,13 +1205,16 @@ func TestServer_SetUserAttributes(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
-	s := controller.NewServer(nil, nil, d)
+	s := controller.NewServer(nil, uds, usds, ods, osds)
 
 	userID := uuid.Must(uuid.NewV4())
 	tourSeen := true
-	d.EXPECT().
+	usds.EXPECT().
 		SetUserAttributes(&datastore.UserAttributes{
 			UserID:   userID,
 			TourSeen: &tourSeen,
@@ -1161,13 +1233,16 @@ func TestServer_GetUserSettings(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
-	s := controller.NewServer(nil, nil, d)
+	s := controller.NewServer(nil, uds, usds, ods, osds)
 
 	userID := uuid.Must(uuid.NewV4())
 	analyticsOptout := true
-	d.EXPECT().
+	usds.EXPECT().
 		GetUserSettings(userID).
 		Return(&datastore.UserSettings{AnalyticsOptout: &analyticsOptout}, nil)
 
@@ -1182,13 +1257,16 @@ func TestServer_UpdateUserSettings(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
-	s := controller.NewServer(nil, nil, d)
+	s := controller.NewServer(nil, uds, usds, ods, osds)
 
 	userID := uuid.Must(uuid.NewV4())
 	analyticsOptout := true
-	d.EXPECT().
+	usds.EXPECT().
 		UpdateUserSettings(&datastore.UserSettings{
 			UserID:          userID,
 			AnalyticsOptout: &analyticsOptout,
@@ -1224,10 +1302,14 @@ func TestServer_GetUsersInOrg(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	d := mock_controller.NewMockDatastore(ctrl)
-	s := controller.NewServer(nil, d, nil)
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
 
-	d.EXPECT().
+	s := controller.NewServer(nil, uds, usds, ods, osds)
+
+	ods.EXPECT().
 		GetUsersInOrg(orgID).
 		Return([]*datastore.UserInfo{
 			{

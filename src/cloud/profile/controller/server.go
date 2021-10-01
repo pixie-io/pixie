@@ -47,39 +47,38 @@ var emailDomainBlockedList = map[string]bool{
 // DefaultProjectName is the name of the default project we automatically assign to every org.
 const DefaultProjectName string = "default"
 
-// Datastore is the interface used to the backing store for profile information.
-type Datastore interface {
+// UserDatastore is the interface used to the backing store for user profile information.
+type UserDatastore interface {
 	// CreateUser creates a new user.
 	CreateUser(*datastore.UserInfo) (uuid.UUID, error)
 	// GetUser gets a user by ID.
 	GetUser(uuid.UUID) (*datastore.UserInfo, error)
 	// GetUserByEmail gets a user by email.
 	GetUserByEmail(string) (*datastore.UserInfo, error)
-
 	// GetUserByAuthProviderID returns the user that matches the AuthProviderID.
 	GetUserByAuthProviderID(string) (*datastore.UserInfo, error)
-
 	// CreateUserAndOrg creates a user and org for creating a new org with specified user as owner.
 	CreateUserAndOrg(*datastore.OrgInfo, *datastore.UserInfo) (orgID uuid.UUID, userID uuid.UUID, err error)
+	// UpdateUser updates the user info.
+	UpdateUser(*datastore.UserInfo) error
+}
+
+// OrgDatastore is the interface used as the backing store for org information.
+type OrgDatastore interface {
+	// ApproveAllOrgUsers sets is_approved for all users.
+	ApproveAllOrgUsers(uuid.UUID) error
+	// UpdateOrg updates the orgs info.
+	UpdateOrg(*datastore.OrgInfo) error
+	// GetOrgs gets all the orgs.
+	GetOrgs() ([]*datastore.OrgInfo, error)
+	// GetUsersInOrg gets all of the users in the given org.
+	GetUsersInOrg(uuid.UUID) ([]*datastore.UserInfo, error)
 	// GetOrg gets and org by ID.
 	GetOrg(uuid.UUID) (*datastore.OrgInfo, error)
 	// GetOrgByDomain gets an org by domain name.
 	GetOrgByDomain(string) (*datastore.OrgInfo, error)
 	// Delete Org and all of its users
 	DeleteOrgAndUsers(uuid.UUID) error
-	// UpdateUser updates the user info.
-	UpdateUser(*datastore.UserInfo) error
-	// ApproveAllOrgUsers sets is_approved for all users.
-	ApproveAllOrgUsers(uuid.UUID) error
-
-	// UpdateOrg updates the orgs info.
-	UpdateOrg(*datastore.OrgInfo) error
-
-	// GetOrgs gets all the orgs.
-	GetOrgs() ([]*datastore.OrgInfo, error)
-
-	// GetUsersInOrg gets all of the users in the given org.
-	GetUsersInOrg(uuid.UUID) ([]*datastore.UserInfo, error)
 }
 
 // UserSettingsDatastore is the interface used to the backing store for user settings.
@@ -94,16 +93,23 @@ type UserSettingsDatastore interface {
 	SetUserAttributes(*datastore.UserAttributes) error
 }
 
+// OrgSettingsDatastore is the interface used as the backing store for org settings.
+// This includes IDE configs and various other settings that users can configure for orgs.
+type OrgSettingsDatastore interface {
+}
+
 // Server is an implementation of GRPC server for profile service.
 type Server struct {
-	env profileenv.ProfileEnv
-	d   Datastore
-	uds UserSettingsDatastore
+	env  profileenv.ProfileEnv
+	uds  UserDatastore
+	usds UserSettingsDatastore
+	ods  OrgDatastore
+	osds OrgSettingsDatastore
 }
 
 // NewServer creates a new GRPC profile server.
-func NewServer(env profileenv.ProfileEnv, d Datastore, uds UserSettingsDatastore) *Server {
-	return &Server{env: env, d: d, uds: uds}
+func NewServer(env profileenv.ProfileEnv, uds UserDatastore, usds UserSettingsDatastore, ods OrgDatastore, osds OrgSettingsDatastore) *Server {
+	return &Server{env: env, uds: uds, usds: usds, ods: ods, osds: osds}
 }
 
 func userInfoToProto(u *datastore.UserInfo) *profilepb.UserInfo {
@@ -166,7 +172,7 @@ func (s *Server) CreateUser(ctx context.Context, req *profilepb.CreateUserReques
 	if orgID == uuid.Nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid org id")
 	}
-	orgInfo, err := s.d.GetOrg(orgID)
+	orgInfo, err := s.ods.GetOrg(orgID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to get org info")
 	}
@@ -191,14 +197,14 @@ func (s *Server) CreateUser(ctx context.Context, req *profilepb.CreateUserReques
 	if userInfo.IdentityProvider == "" {
 		return nil, status.Error(codes.InvalidArgument, "identity provider must not be empty")
 	}
-	uid, err := s.d.CreateUser(userInfo)
+	uid, err := s.uds.CreateUser(userInfo)
 	return utils.ProtoFromUUID(uid), err
 }
 
 // GetUser is the GRPC method to get a user.
 func (s *Server) GetUser(ctx context.Context, req *uuidpb.UUID) (*profilepb.UserInfo, error) {
 	uid := utils.UUIDFromProtoOrNil(req)
-	userInfo, err := s.d.GetUser(uid)
+	userInfo, err := s.uds.GetUser(uid)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +216,7 @@ func (s *Server) GetUser(ctx context.Context, req *uuidpb.UUID) (*profilepb.User
 
 // GetUserByEmail is the GRPC method to get a user by email.
 func (s *Server) GetUserByEmail(ctx context.Context, req *profilepb.GetUserByEmailRequest) (*profilepb.UserInfo, error) {
-	userInfo, err := s.d.GetUserByEmail(req.Email)
+	userInfo, err := s.uds.GetUserByEmail(req.Email)
 	if err != nil {
 		return nil, toExternalError(err)
 	}
@@ -219,7 +225,7 @@ func (s *Server) GetUserByEmail(ctx context.Context, req *profilepb.GetUserByEma
 
 // GetUserByAuthProviderID returns the user identified by the AuthProviderID.
 func (s *Server) GetUserByAuthProviderID(ctx context.Context, req *profilepb.GetUserByAuthProviderIDRequest) (*profilepb.UserInfo, error) {
-	userInfo, err := s.d.GetUserByAuthProviderID(req.AuthProviderID)
+	userInfo, err := s.uds.GetUserByAuthProviderID(req.AuthProviderID)
 	if err != nil {
 		return nil, toExternalError(err)
 	}
@@ -259,7 +265,7 @@ func (s *Server) CreateOrgAndUser(ctx context.Context, req *profilepb.CreateOrgA
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	orgID, userID, err := s.d.CreateUserAndOrg(orgInfo, userInfo)
+	orgID, userID, err := s.uds.CreateUserAndOrg(orgInfo, userInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +279,7 @@ func (s *Server) CreateOrgAndUser(ctx context.Context, req *profilepb.CreateOrgA
 	})
 
 	if err != nil {
-		deleteErr := s.d.DeleteOrgAndUsers(orgID)
+		deleteErr := s.ods.DeleteOrgAndUsers(orgID)
 		if deleteErr != nil {
 			return nil, status.Error(codes.Internal,
 				fmt.Sprintf("Could not delete org and users after create default project failed: %s", err.Error()))
@@ -295,7 +301,7 @@ func (s *Server) CreateOrgAndUser(ctx context.Context, req *profilepb.CreateOrgA
 // GetOrg is the GRPC method to get an org by ID.
 func (s *Server) GetOrg(ctx context.Context, req *uuidpb.UUID) (*profilepb.OrgInfo, error) {
 	orgID := utils.UUIDFromProtoOrNil(req)
-	orgInfo, err := s.d.GetOrg(orgID)
+	orgInfo, err := s.ods.GetOrg(orgID)
 	if err != nil {
 		return nil, err
 	}
@@ -307,7 +313,7 @@ func (s *Server) GetOrg(ctx context.Context, req *uuidpb.UUID) (*profilepb.OrgIn
 
 // GetOrgs is the GRPC method to get all orgs. This should only be used internally.
 func (s *Server) GetOrgs(ctx context.Context, req *profilepb.GetOrgsRequest) (*profilepb.GetOrgsResponse, error) {
-	orgs, err := s.d.GetOrgs()
+	orgs, err := s.ods.GetOrgs()
 	if err != nil {
 		return nil, err
 	}
@@ -321,7 +327,7 @@ func (s *Server) GetOrgs(ctx context.Context, req *profilepb.GetOrgsRequest) (*p
 
 // GetOrgByDomain gets an org by domain name.
 func (s *Server) GetOrgByDomain(ctx context.Context, req *profilepb.GetOrgByDomainRequest) (*profilepb.OrgInfo, error) {
-	orgInfo, err := s.d.GetOrgByDomain(req.DomainName)
+	orgInfo, err := s.ods.GetOrgByDomain(req.DomainName)
 	if err != nil {
 		return nil, toExternalError(err)
 	}
@@ -334,13 +340,13 @@ func (s *Server) DeleteOrgAndUsers(ctx context.Context, req *uuidpb.UUID) error 
 	if err != nil {
 		return err
 	}
-	return s.d.DeleteOrgAndUsers(utils.UUIDFromProtoOrNil(req))
+	return s.ods.DeleteOrgAndUsers(utils.UUIDFromProtoOrNil(req))
 }
 
 // UpdateUser updates a user's info.
 func (s *Server) UpdateUser(ctx context.Context, req *profilepb.UpdateUserRequest) (*profilepb.UserInfo, error) {
 	userID := utils.UUIDFromProtoOrNil(req.ID)
-	userInfo, err := s.d.GetUser(userID)
+	userInfo, err := s.uds.GetUser(userID)
 	if err != nil {
 		return nil, toExternalError(err)
 	}
@@ -353,7 +359,7 @@ func (s *Server) UpdateUser(ctx context.Context, req *profilepb.UpdateUserReques
 		userInfo.IsApproved = req.IsApproved.Value
 	}
 
-	err = s.d.UpdateUser(userInfo)
+	err = s.uds.UpdateUser(userInfo)
 	if err != nil {
 		return nil, toExternalError(err)
 	}
@@ -365,7 +371,7 @@ func (s *Server) UpdateUser(ctx context.Context, req *profilepb.UpdateUserReques
 func (s *Server) GetUserSettings(ctx context.Context, req *profilepb.GetUserSettingsRequest) (*profilepb.GetUserSettingsResponse, error) {
 	userID := utils.UUIDFromProtoOrNil(req.ID)
 
-	settings, err := s.uds.GetUserSettings(userID)
+	settings, err := s.usds.GetUserSettings(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -385,7 +391,7 @@ func (s *Server) UpdateUserSettings(ctx context.Context, req *profilepb.UpdateUs
 		userSettings.AnalyticsOptout = &req.AnalyticsOptout.Value
 	}
 
-	err := s.uds.UpdateUserSettings(userSettings)
+	err := s.usds.UpdateUserSettings(userSettings)
 	if err != nil {
 		return nil, err
 	}
@@ -397,7 +403,7 @@ func (s *Server) UpdateUserSettings(ctx context.Context, req *profilepb.UpdateUs
 func (s *Server) GetUserAttributes(ctx context.Context, req *profilepb.GetUserAttributesRequest) (*profilepb.GetUserAttributesResponse, error) {
 	userID := utils.UUIDFromProtoOrNil(req.ID)
 
-	userAttrs, err := s.uds.GetUserAttributes(userID)
+	userAttrs, err := s.usds.GetUserAttributes(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -417,7 +423,7 @@ func (s *Server) SetUserAttributes(ctx context.Context, req *profilepb.SetUserAt
 		userAttrs.TourSeen = &req.TourSeen.Value
 	}
 
-	err := s.uds.SetUserAttributes(userAttrs)
+	err := s.usds.SetUserAttributes(userAttrs)
 	if err != nil {
 		return nil, err
 	}
@@ -438,7 +444,7 @@ func (s *Server) GetUsersInOrg(ctx context.Context, req *profilepb.GetUsersInOrg
 		return nil, errors.New("Unauthorized to get users for org")
 	}
 
-	users, err := s.d.GetUsersInOrg(reqOrgID)
+	users, err := s.ods.GetUsersInOrg(reqOrgID)
 	if err != nil {
 		return nil, err
 	}
@@ -475,7 +481,7 @@ func (s *Server) UpdateOrg(ctx context.Context, req *profilepb.UpdateOrgRequest)
 	}
 
 	// Get OrgInfo.
-	orgInfo, err := s.d.GetOrg(id)
+	orgInfo, err := s.ods.GetOrg(id)
 	if err != nil {
 		return nil, toExternalError(err)
 	}
@@ -486,12 +492,12 @@ func (s *Server) UpdateOrg(ctx context.Context, req *profilepb.UpdateOrgRequest)
 	}
 
 	orgInfo.EnableApprovals = req.EnableApprovals.Value
-	if err := s.d.UpdateOrg(orgInfo); err != nil {
+	if err := s.ods.UpdateOrg(orgInfo); err != nil {
 		return nil, toExternalError(err)
 	}
 	// If EnableApprovals has changed to false, we flip the flag for all users to approve them.
 	if !orgInfo.EnableApprovals {
-		err = s.d.ApproveAllOrgUsers(id)
+		err = s.ods.ApproveAllOrgUsers(id)
 		if err != nil {
 			return nil, toExternalError(err)
 		}
