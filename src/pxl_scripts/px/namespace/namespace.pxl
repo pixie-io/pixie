@@ -33,6 +33,8 @@ ns_per_ms = 1000 * 1000
 ns_per_s = 1000 * ns_per_ms
 # Window size to use on time_ column for bucketing.
 window_ns = px.DurationNanos(10 * ns_per_s)
+# Whether or not to include traffic from IPs that don't resolve to a known pod/service.
+include_ips = True
 
 
 def pods_for_namespace(start_time: str, namespace: px.Namespace):
@@ -64,6 +66,11 @@ def inbound_service_let_summary(start_time: str, namespace: px.Namespace):
 
     '''
     df = inbound_service_let_helper(start_time, namespace)
+    # Filter only to inbound service traffic (server-side).
+    # Don't include traffic initiated by this service to an external location.
+    df = df[df.trace_role == 2]
+    df = df[df.service != '']
+    df.responder = df.service
 
     per_ns_df = df.groupby(['timestamp', 'service']).agg(
         throughput_total=('latency', px.count),
@@ -103,8 +110,7 @@ def inbound_service_let_graph(start_time: str, namespace: px.Namespace):
 
     '''
     df = inbound_service_let_helper(start_time, namespace)
-
-    df = df.groupby(['timestamp', 'service', 'remote_addr', 'pod']).agg(
+    df = df.groupby(['timestamp', 'service', 'remote_addr', 'pod', 'trace_role']).agg(
         latency_quantiles=('latency', px.quantiles),
         error_rate=('failure', px.mean),
         throughput_total=('latency', px.count),
@@ -112,24 +118,36 @@ def inbound_service_let_graph(start_time: str, namespace: px.Namespace):
         outbound_bytes_total=('resp_size', px.sum)
     )
 
+    # Get the traced and remote pod/service/IP information.
+    df.traced_pod = df.pod
+    df.traced_service = df.service
+    df.traced_ip = px.pod_name_to_pod_ip(df.pod)
+    df.remote_pod = px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_addr))
+    df.remote_service = px.service_id_to_service_name(px.ip_to_service_id(df.remote_addr))
+    df.remote_ip = df.remote_addr
+    # If external IPs are excluded in the service graph, then we also exclude any
+    # traffic where we don't know the remote pod or remote service name.
+    df = df[include_ips or (df.remote_pod != '' or df.remote_service != '')]
+
+    # Associate it with Client/Server roles, based on the trace role.
+    df.is_server_side_tracing = df.trace_role == 2
+    df.responder_pod = px.select(df.is_server_side_tracing, df.traced_pod, df.remote_pod)
+    df.requestor_pod = px.select(df.is_server_side_tracing, df.remote_pod, df.traced_pod)
+    df.responder_service = px.select(df.is_server_side_tracing, df.traced_service, df.remote_service)
+    df.requestor_service = px.select(df.is_server_side_tracing, df.remote_service, df.traced_service)
+    df.responder_ip = px.select(df.is_server_side_tracing, df.traced_ip, df.remote_ip)
+    df.requestor_ip = px.select(df.is_server_side_tracing, df.remote_ip, df.traced_ip)
+
+    # Compute statistics about each edge of the service graph.
     df.latency_p50 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p50')))
     df.latency_p90 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p90')))
     df.latency_p99 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p99')))
-
-    df = df[df.remote_addr != '']
-    df.responder_pod = df.pod
-    df.requestor_pod_id = px.ip_to_pod_id(df.remote_addr)
-    df.requestor_pod = px.pod_id_to_pod_name(df.requestor_pod_id)
-    df.responder_service = df.service
-    df.requestor_service = px.pod_id_to_service_name(df.requestor_pod_id)
-
     df.request_throughput = df.throughput_total / window_ns
     df.inbound_throughput = df.inbound_bytes_total / window_ns
     df.outbound_throughput = df.outbound_bytes_total / window_ns
     df.error_rate = px.Percent(df.error_rate)
-
     return df.groupby(['responder_pod', 'requestor_pod', 'responder_service',
-                       'requestor_service']).agg(
+                       'requestor_service', 'responder_ip', 'requestor_ip']).agg(
         latency_p50=('latency_p50', px.mean),
         latency_p90=('latency_p90', px.mean),
         latency_p99=('latency_p99', px.mean),
@@ -152,9 +170,9 @@ def inbound_service_let_helper(start_time: str, namespace: px.Namespace):
     df = px.DataFrame(table='http_events', start_time=start_time)
     df.service = df.ctx['service']
     df.pod = df.ctx['pod_name']
-    df = df[df.ctx['namespace'] == namespace and df.service != '']
+    df = df[df.ctx['namespace'] == namespace]
+    df = df[df.pod != '']
     df.latency = df.latency
-
     df.timestamp = px.bin(df.time_, window_ns)
 
     df.req_size = px.Bytes(px.length(df.req_body))

@@ -20,7 +20,9 @@ pl_proto_library(
     name = "vis_pl_proto",
     srcs = ["vis.proto"],
     visibility = ["//src:__subpackages__"],
-    deps = [],
+    deps = [
+        "@gogo_special_proto//github.com/gogo/protobuf/gogoproto",
+    ],
 )
 
 pl_go_proto_library(

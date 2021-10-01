@@ -9,7 +9,7 @@
   ],
   "widgets": [
     {
-      "name": "Service Graph",
+      "name": "HTTP Service Map",
       "position": {
         "x": 0,
         "y": 0,
@@ -31,6 +31,8 @@
         "responderPodColumn": "responder_pod",
         "requestorServiceColumn": "requestor_service",
         "responderServiceColumn": "responder_service",
+        "requestorIPColumn": "requestor_ip",
+        "responderIPColumn": "responder_ip",
         "p50Column": "latency_p50",
         "p90Column": "latency_p90",
         "p99Column": "latency_p99",

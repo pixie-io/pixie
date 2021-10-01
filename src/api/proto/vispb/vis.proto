@@ -22,6 +22,7 @@ package px.vispb;
 
 option go_package = "vispb";
 
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/any.proto";
 import "google/protobuf/wrappers.proto";
 
@@ -358,6 +359,13 @@ message RequestGraph {
   string requestor_service_column = 3;
   // The column name containing the responding service.
   string responder_service_column = 4;
+  // The column name containing the requesting IP.
+  // Note that the odd naming is intentional, in order to support a JSON field name with IP
+  // both capitalized. Unfortunately, jsonpb ignores custom JSON tags in struct definitions,
+  // so using gogo.jsontag doesn't work for us here.
+  string requestor_i_p_column = 13;
+  // The column name containing the responding IP.
+  string responder_i_p_column = 14;
   // The column name containing the p50 latency for this requestor/responder combination.
   string p50_column = 5;
   // The column name containing the p90 latency for this requestor/responder combination.
