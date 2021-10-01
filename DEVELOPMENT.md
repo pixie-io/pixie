@@ -16,16 +16,16 @@ To set up the developer environment required to start building Pixie's component
 
 1. Since this script runs a Docker container, you must have Docker installed. To install it follow these instructions [here](https://docs.docker.com/get-docker/).
 
-1. `run_docker.sh` requires the realpath command which is part of the coreutils package that you may need to install:
+2. `run_docker.sh` requires the realpath command which is part of the coreutils package that you may need to install:
     * Ubuntu: `sudo apt-get install coreutils`
     * OS X: `brew install coreutils`
 
-1. Finally, run the following script to start the Docker container:
+3. Finally, run the following script to start the Docker container:
     ```
     ./scripts/run_docker.sh
     ```
 
-1. Since development of Pixie requires a Kubernetes cluster to deploy to, you must have Minikube installed and running. Follow the instructions [here](https://docs.px.dev/installing-pixie/setting-up-k8s/minikube-setup/). Note that Pixie development scripts use the output of `kubectl config current-context` to determine which Kubernetes cluster to deploy to. So make sure if you have multiple clusters, the context is pointing to the correct target cluster.
+4. Since development of Pixie requires a Kubernetes cluster to deploy to, you must have Minikube installed and running. Follow the instructions [here](https://docs.px.dev/installing-pixie/setting-up-k8s/minikube-setup/). Note that Pixie development scripts use the output of `kubectl config current-context` to determine which Kubernetes cluster to deploy to. So make sure if you have multiple clusters, the context is pointing to the correct target cluster.
 
 
 ### Running Via Minikube
@@ -33,7 +33,7 @@ If you plan on using a Minikube environment, launch the dev environment with Min
 
 1. Since this runs via Minikube, you must have Minikube installed. To install it follow the instructions [here](https://docs.px.dev/installing-pixie/setting-up-k8s/minikube-setup/).
 
-1. Run make to spin up a Minikube environment:
+2. Run make to spin up a Minikube environment:
     ```
     make dev-env-start
     ```
@@ -131,9 +131,9 @@ Deploying a development version of Vizier is a 2-step process. An official relea
     export PL_TESTING_ENV=dev
     ```
 
-1. Install the Pixie CLI and run `px deploy`. Depending on whether you are pointing to a self-hosted Pixie Cloud or the official Community Pixie Cloud follow the appropriate installation guide [here](https://docs.px.dev/installing-pixie/install-guides/). `px deploy` will set up specific cluster-secrets, etc that are not deployed via Skaffold. Wait for this command to successfully complete and Vizier to successfully connect to Pixie Cloud, to ensure all secrets and configs have been set up properly. Note you will not need to run this to deploy again unless you connect to a different cluster.
+2. Install the Pixie CLI and run `px deploy`. Depending on whether you are pointing to a self-hosted Pixie Cloud or the official Community Pixie Cloud follow the appropriate installation guide [here](https://docs.px.dev/installing-pixie/install-guides/). `px deploy` will set up specific cluster-secrets, etc that are not deployed via Skaffold. Wait for this command to successfully complete and Vizier to successfully connect to Pixie Cloud, to ensure all secrets and configs have been set up properly. Note you will not need to run this to deploy again unless you connect to a different cluster.
 
-1. Deploy a local development version of Pixie Vizier using Skaffold. Note each time you make a code change you will need to run this command to build and deploy the new version.
+3. Deploy a local development version of Pixie Vizier using Skaffold. Note each time you make a code change you will need to run this command to build and deploy the new version.
 
    ```
    skaffold run -f skaffold/skaffold_vizier.yaml
