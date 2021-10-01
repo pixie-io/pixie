@@ -34,6 +34,8 @@
 // 000017_reformat_user_settings.up.sql
 // 000018_add_unique_constraint_auth_provider_id.down.sql
 // 000018_add_unique_constraint_auth_provider_id.up.sql
+// 000019_create_org_ide_configs_tables.down.sql
+// 000019_create_org_ide_configs_tables.up.sql
 package schema
 
 import (
@@ -790,6 +792,46 @@ func _000018_add_unique_constraint_auth_provider_idUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000019_create_org_ide_configs_tablesDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x09\xf2\x0f\x50\x08\x71\x74\xf2\x71\x55\xf0\x74\x53\x70\x8d\xf0\x0c\x0e\x09\x56\xc8\x2f\x4a\x8f\xcf\x4c\x49\x8d\x4f\xce\xcf\x4b\xcb\x4c\x2f\xb6\xe6\x02\x04\x00\x00\xff\xff\xdf\x02\x52\xc7\x26\x00\x00\x00")
+
+func _000019_create_org_ide_configs_tablesDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000019_create_org_ide_configs_tablesDownSql,
+		"000019_create_org_ide_configs_tables.down.sql",
+	)
+}
+
+func _000019_create_org_ide_configs_tablesDownSql() (*asset, error) {
+	bytes, err := _000019_create_org_ide_configs_tablesDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000019_create_org_ide_configs_tables.down.sql", size: 38, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000019_create_org_ide_configs_tablesUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x6c\x8e\xbd\x0e\x82\x40\x10\x06\xfb\x7d\x8a\xaf\xbc\x4b\x28\xd4\xd8\x59\x9d\xb8\xe8\x45\x45\x5d\xef\x8c\x54\x84\x08\x22\x85\x60\xc4\xf7\x8f\x39\xff\x2a\xdb\x9d\x99\xcd\x17\x0b\x1b\xc7\x70\x66\xba\x62\x74\xf7\x3a\x6f\xca\x2a\x3f\x75\xed\xb9\xa9\x7b\x28\xc2\xe7\x06\xef\xed\x2c\x22\x20\xe0\xb6\xb8\x56\x38\x18\x89\x17\x46\xa0\x86\x83\xd1\x58\x07\x74\x2b\x1e\x17\x38\x3e\xba\x88\x08\xd8\x8a\x5d\x1b\xc9\xb0\xe4\x4c\xbd\x7f\x44\xbf\xf8\xa5\xfb\xd4\xee\x3c\xe3\x3f\x4c\x36\xc2\x76\x9e\x86\xfa\x6b\x68\x08\x27\x2c\x9c\xc6\xbc\x0f\xab\x7a\xd5\x94\x9a\xf4\x84\x9e\x01\x00\x00\xff\xff\xdb\x55\x31\xd8\xc3\x00\x00\x00")
+
+func _000019_create_org_ide_configs_tablesUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000019_create_org_ide_configs_tablesUpSql,
+		"000019_create_org_ide_configs_tables.up.sql",
+	)
+}
+
+func _000019_create_org_ide_configs_tablesUpSql() (*asset, error) {
+	bytes, err := _000019_create_org_ide_configs_tablesUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000019_create_org_ide_configs_tables.up.sql", size: 195, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -876,6 +918,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000017_reformat_user_settings.up.sql":                   _000017_reformat_user_settingsUpSql,
 	"000018_add_unique_constraint_auth_provider_id.down.sql": _000018_add_unique_constraint_auth_provider_idDownSql,
 	"000018_add_unique_constraint_auth_provider_id.up.sql":   _000018_add_unique_constraint_auth_provider_idUpSql,
+	"000019_create_org_ide_configs_tables.down.sql":          _000019_create_org_ide_configs_tablesDownSql,
+	"000019_create_org_ide_configs_tables.up.sql":            _000019_create_org_ide_configs_tablesUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -953,6 +997,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000017_reformat_user_settings.up.sql":                   &bintree{_000017_reformat_user_settingsUpSql, map[string]*bintree{}},
 	"000018_add_unique_constraint_auth_provider_id.down.sql": &bintree{_000018_add_unique_constraint_auth_provider_idDownSql, map[string]*bintree{}},
 	"000018_add_unique_constraint_auth_provider_id.up.sql":   &bintree{_000018_add_unique_constraint_auth_provider_idUpSql, map[string]*bintree{}},
+	"000019_create_org_ide_configs_tables.down.sql":          &bintree{_000019_create_org_ide_configs_tablesDownSql, map[string]*bintree{}},
+	"000019_create_org_ide_configs_tables.up.sql":            &bintree{_000019_create_org_ide_configs_tablesUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
