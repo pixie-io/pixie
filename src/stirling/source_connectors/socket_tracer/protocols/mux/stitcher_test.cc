@@ -70,9 +70,9 @@ TEST_F(StitchFramesTest, VerifyTransmitReceivePairsAreMatched) {
     };
     NoState state;
 
-    RecordsWithErrorCount<mux::Record> res = mux::StitchFrames(&reqs, &resps, &state);
-    EXPECT_EQ(res.error_count, 0);
-    EXPECT_EQ(res.records.size(), 8);
+    RecordsWithErrorCount<mux::Record> result = mux::StitchFrames(&reqs, &resps, &state);
+    EXPECT_EQ(result.error_count, 0);
+    EXPECT_EQ(result.records.size(), 8);
     EXPECT_THAT(reqs, IsEmpty());
     EXPECT_THAT(resps, IsEmpty());
 }
@@ -91,20 +91,20 @@ TEST_F(StitchFramesTest, VerifyTleaseIsHandled) {
     };
     NoState state;
 
-    RecordsWithErrorCount<mux::Record> res = mux::StitchFrames(&reqs, &resps, &state);
+    RecordsWithErrorCount<mux::Record> result = mux::StitchFrames(&reqs, &resps, &state);
 
-    EXPECT_EQ(res.error_count, 0);
-    EXPECT_EQ(res.records.size(), 3);
-    EXPECT_EQ(mux::Type(res.records[1].req.type), mux::Type::Tlease);
+    EXPECT_EQ(result.error_count, 0);
+    EXPECT_EQ(result.records.size(), 3);
+    EXPECT_EQ(mux::Type(result.records[1].req.type), mux::Type::Tlease);
     // There is no response for Tlease so the response frame should
     // have an uninitialized type field
-    EXPECT_EQ(res.records[1].resp.type, 0);
+    EXPECT_EQ(result.records[1].resp.type, 0);
 
     EXPECT_THAT(reqs, IsEmpty());
     EXPECT_THAT(resps, IsEmpty());
 }
 
-TEST_F(StitchFramesTest, StaleResponsesAreHandled) {
+TEST_F(StitchFramesTest, UnmatchedResponsesAreHandled) {
     std::deque<mux::Frame> reqs = {
         // tinit check message
         CreateMuxFrame(1, mux::Type::RerrOld, 1),
@@ -116,18 +116,20 @@ TEST_F(StitchFramesTest, StaleResponsesAreHandled) {
     };
     NoState state;
 
-    RecordsWithErrorCount<mux::Record> res = mux::StitchFrames(&reqs, &resps, &state);
+    RecordsWithErrorCount<mux::Record> result = mux::StitchFrames(&reqs, &resps, &state);
 
-    EXPECT_EQ(res.error_count, 0);
-    EXPECT_EQ(res.records.size(), 2);
-    EXPECT_EQ(mux::Type(res.records[0].resp.type), mux::Type::RerrOld);
-    EXPECT_EQ(res.records[0].req.type, 0);
+    EXPECT_EQ(result.error_count, 1);
+    EXPECT_EQ(result.records.size(), 2);
+    EXPECT_EQ(mux::Type(result.records[0].resp.type), mux::Type::RerrOld);
+    // Verify that the request in the unmatched request has an
+    // uninitialized type field
+    EXPECT_EQ(result.records[0].req.type, 0);
 
     EXPECT_THAT(reqs, IsEmpty());
     EXPECT_THAT(resps, IsEmpty());
 }
 
-TEST_F(StitchFramesTest, StaleRequestsAreHandled) {
+TEST_F(StitchFramesTest, UnmatchedRequestsAreHandled) {
     std::deque<mux::Frame> reqs = {
         // tinit check message
         CreateMuxFrame(0, mux::Type::RerrOld, 1),
@@ -141,12 +143,14 @@ TEST_F(StitchFramesTest, StaleRequestsAreHandled) {
     };
     NoState state;
 
-    RecordsWithErrorCount<mux::Record> res = mux::StitchFrames(&reqs, &resps, &state);
+    RecordsWithErrorCount<mux::Record> result = mux::StitchFrames(&reqs, &resps, &state);
 
-    EXPECT_EQ(res.error_count, 1);
-    EXPECT_EQ(res.records.size(), 3);
-    EXPECT_EQ(mux::Type(res.records[0].req.type), mux::Type::RerrOld);
-    EXPECT_EQ(res.records[0].resp.type, 0);
+    EXPECT_EQ(result.error_count, 1);
+    EXPECT_EQ(result.records.size(), 3);
+    EXPECT_EQ(mux::Type(result.records[0].req.type), mux::Type::RerrOld);
+    // Verify that the response in the unmatched request has an
+    // uninitialized type field
+    EXPECT_EQ(result.records[0].resp.type, 0);
 
     EXPECT_THAT(reqs, IsEmpty());
     EXPECT_THAT(resps, IsEmpty());

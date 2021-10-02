@@ -21,6 +21,7 @@
 #include <string>
 #include <utility>
 #include <variant>
+#include <set>
 
 #include <absl/strings/str_replace.h>
 
@@ -41,56 +42,45 @@ RecordsWithErrorCount<mux::Record> StitchFrames(std::deque<mux::Frame>* reqs,
     std::vector<mux::Record> records;
     int error_count = 0;
 
-    auto req_iter = reqs->begin();
-    auto resp_iter = resps->begin();
-    while (req_iter != reqs->end() && resp_iter != resps->end()) {
+    for (auto& req : *reqs) {
+        auto req_consumed = false;
+        for (auto& res : *resps) {
+            if (Type(req.type) == Type::Tlease) {
 
-        if (Type(req_iter->type) == Type::Tlease) {
+                records.push_back({req, {}});
+                req_consumed = true;
+                break;
+            }
+            if (req.timestamp_ns > res.timestamp_ns) {
 
-            records.push_back({std::move(*req_iter), {}});
-            ++req_iter;
-            continue;
+                records.push_back({{}, res});
+                resps->pop_front();
+                error_count++;
+                continue;
+            }
+
+            Type matching_resp_type = GetMatchingRespType(Type(req.type));
+            if (
+                res.type != static_cast<int8_t>(matching_resp_type) ||
+                res.tag != req.tag
+            ) {
+                continue;
+            }
+
+            records.push_back({req, res});
+            resps->pop_front();
+            req_consumed = true;
+            break;
         }
-        if (req_iter->timestamp_ns > resp_iter->timestamp_ns) {
 
-            records.push_back({{}, std::move(*resp_iter)});
-            ++resp_iter;
-            continue;
+        if (! req_consumed) {
+            records.push_back({req, {}});
+
+            error_count++;
         }
-
-        Type matching_resp_type = GetMatchingRespType(Type(req_iter->type));
-        if (
-            resp_iter->type != static_cast<int8_t>(matching_resp_type) ||
-            resp_iter->tag != req_iter->tag
-        ) {
-            ++resp_iter;
-            continue;
-        }
-
-        records.push_back({std::move(*req_iter), std::move(*resp_iter)});
-        ++req_iter;
-        ++resp_iter;
     }
-
-    while (req_iter != reqs->end()) {
-        records.push_back({std::move(*req_iter), {}});
-
-        ++req_iter;
-        error_count++;
-    }
-
-    /* while (resp_iter != resps->end()) { */
-    /*     records.push_back({{}, std::move(*resp_iter)}); */
-
-    /*     if (Type(resp_iter->type) == Type::Rerr) { */
-
-    /*     } */
-    /*     ++req_iter; */
-    /*     records.error_count++; */
-    /* } */
-
-    reqs->erase(reqs->begin(), req_iter);
-    resps->erase(resps->begin(), resp_iter);
+    reqs->erase(reqs->begin(), reqs->end());
+    resps->erase(resps->begin(), resps->end());
 
     return {records, error_count};
 }
