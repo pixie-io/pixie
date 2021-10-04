@@ -802,8 +802,8 @@ message GetUsersInOrgResponse {
 message IDEConfig {
   // The name of the IDE. For example: "github", "sourcemap".
   string ide_name = 1 [(gogoproto.customname) = "IDEName"];
-  // A golang text template path for opening up a page in the IDE, given the symbol, function path, and function.
-  // For example: "subl://{{.Path}}/{{.Symbol}}".
+  // A mustache.js template path for opening up a page in the IDE, given the symbol, function path, and function.
+  // For example: "subl://{{path}}/{{symbol}}".
   string path = 2;
 }
 
