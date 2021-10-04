@@ -115,14 +115,14 @@ Vizier is Pixie’s data collector that runs on each cluster. It is responsible 
 ### Getting Started
 Verify that you can build Pixie Vizier and run the unit tests.
 
-The following will build Pixie Vizier and run a unit test of your choice in Pixie's Vizier module. If you are running the development environment via Docker, the following should be run inside the Docker container.
+The following will build Pixie Vizier and run a unit test of your choice in Pixie's Vizier module using [Bazel](https://bazel.build/). If you are running the development environment via Docker, the following should be run inside the Docker container.
 
 ```
 bazel test //src/<path to unit test file> --test_output=errors -j $(nproc)
 ```
 
 ### Deploying
-Deploying a development version of Vizier is a 2-step process. An official release-version of Vizier must first be deployed (through the Pixie CLI or YAMLs) and Skaffold can then be run to build and deploy a local development version of Vizier.
+Deploying a development version of Vizier is a 2-step process. An official release-version of Vizier must first be deployed (through the Pixie CLI or YAMLs) and can then be run to build and deploy a local development version of Vizier.
 
 1. If you wish to test development changes made to both Pixie Cloud and Vizier, export the following environment variables that will point to the development Pixie Cloud instance:
 
@@ -133,7 +133,7 @@ Deploying a development version of Vizier is a 2-step process. An official relea
 
 2. Install the Pixie CLI and run `px deploy`. Depending on whether you are pointing to a self-hosted Pixie Cloud or the official Community Pixie Cloud follow the appropriate installation guide [here](https://docs.px.dev/installing-pixie/install-guides/). `px deploy` will set up specific cluster-secrets, etc that are not deployed via Skaffold. Wait for this command to successfully complete and Vizier to successfully connect to Pixie Cloud, to ensure all secrets and configs have been set up properly. Note you will not need to run this to deploy again unless you connect to a different cluster.
 
-3. Deploy a local development version of Pixie Vizier using Skaffold. Note each time you make a code change you will need to run this command to build and deploy the new version.
+3. Deploy a local development version of Pixie Vizier using  [Skaffold](https://skaffold.dev/). Note each time you make a code change you will need to run this command to build and deploy the new version.
 
    ```
    skaffold run -f skaffold/skaffold_vizier.yaml
