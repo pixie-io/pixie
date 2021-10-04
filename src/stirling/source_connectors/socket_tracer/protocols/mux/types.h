@@ -94,7 +94,7 @@ struct Frame : public FrameBase {
   uint32_t header_length;
   int8_t type;
   uint32_t tag;
-  std::string_view why;
+  std::string why;
   std::map<std::string, std::map<std::string, std::string>> context;
 
   size_t ByteSize() const override { return header_length; }
