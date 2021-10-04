@@ -1,0 +1,3 @@
+---
+short: TCP drops
+long: Shows TCP drop counts in the cluster.
