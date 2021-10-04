@@ -11,6 +11,7 @@ namespace mux {
 
 ParseState ParseFullFrame(BinaryDecoder* decoder, message_type_t /* type */, std::string_view* buf, Frame* frame) {
 
+  // TODO(oazizi/ddelnano): Simplify this logic when the binary decoder supports reading 24 bit fields
   PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(uint16_t tagFirst, decoder->ExtractInt<uint16_t>());
   PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(uint8_t tagLast, decoder->ExtractInt<uint8_t>());
   frame->tag = (tagFirst << 8) | tagLast;
