@@ -9,10 +9,7 @@ The Pixie project currently consists of three main components:
 This document outlines the process for setting up the development environment for each of these components.
 
 ## Setting up the Environment
-There are two different ways to run a development environment. The first and easiest approach is via Docker. If you plan to use a non-Minikube environment (GKE, EKS, etc) for running Vizier/Pixie Cloud, use this first approach via Docker. The second approach is using Make and Minikube.
-
-### Running Via Docker
-To set up the developer environment required to start building Pixie's components, it is easiest to run the `run_docker.sh` script. The following script will run the Docker container and dump you out inside the docker container console from which you can run all the necessary tools to build, test, and deploy Pixie in development mode.
+To set up the developer environment required to start building Pixie's components, run the `run_docker.sh` script. The following script will run the Docker container and dump you out inside the docker container console from which you can run all the necessary tools to build, test, and deploy Pixie in development mode.
 
 1. Since this script runs a Docker container, you must have Docker installed. To install it follow these instructions [here](https://docs.docker.com/get-docker/).
 
@@ -26,17 +23,6 @@ To set up the developer environment required to start building Pixie's component
     ```
 
 4. Since development of Pixie requires a Kubernetes cluster to deploy to, you must have Minikube installed and running. Follow the instructions [here](https://docs.px.dev/installing-pixie/setting-up-k8s/minikube-setup/). Note that Pixie development scripts use the output of `kubectl config current-context` to determine which Kubernetes cluster to deploy to. So make sure if you have multiple clusters, the context is pointing to the correct target cluster.
-
-
-### Running Via Minikube
-If you plan on using a Minikube environment, launch the dev environment with Minikube, via Make.
-
-1. Since this runs via Minikube, you must have Minikube installed. To install it follow the instructions [here](https://docs.px.dev/installing-pixie/setting-up-k8s/minikube-setup/).
-
-2. Run make to spin up a Minikube environment:
-    ```
-    make dev-env-start
-    ```
 
 
 ## Pixie Cloud
