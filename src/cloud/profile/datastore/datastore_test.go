@@ -63,6 +63,7 @@ func testMain(m *testing.M) error {
 
 func mustLoadTestData(db *sqlx.DB) {
 	// Cleanup.
+	db.MustExec(`DELETE FROM org_ide_configs`)
 	db.MustExec(`DELETE FROM user_attributes`)
 	db.MustExec(`DELETE FROM user_settings`)
 	db.MustExec(`DELETE FROM users`)
@@ -79,6 +80,10 @@ func mustLoadTestData(db *sqlx.DB) {
 
 	insertUserAttr := `INSERT INTO user_attributes (user_id, tour_seen) VALUES ($1, $2)`
 	db.MustExec(insertUserAttr, "123e4567-e89b-12d3-a456-426655440001", false)
+
+	insertIDEConfig := `INSERT INTO org_ide_configs (org_id, ide_name, path) VALUES ($1, $2, $3)`
+	db.MustExec(insertIDEConfig, "123e4567-e89b-12d3-a456-426655440000", "sublime", "subl://{{symbol}}")
+	db.MustExec(insertIDEConfig, "123e4567-e89b-12d3-a456-426655440000", "test", "tester://{{symbol}}")
 }
 
 func TestDatastore(t *testing.T) {
@@ -479,5 +484,63 @@ func TestDatastore(t *testing.T) {
 		assert.Equal(t, 2, len(users))
 		assert.True(t, users[0].IsApproved)
 		assert.True(t, users[1].IsApproved)
+	})
+
+	t.Run("delete IDE config from org", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db)
+		orgID := uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000")
+
+		err := d.DeleteIDEConfig(orgID, "sublime")
+		require.NoError(t, err)
+
+		// Check value in DB.
+		query := `SELECT * from org_ide_configs WHERE org_id=$1 AND ide_name=$2`
+		rows, err := db.Queryx(query, orgID, "sublime")
+		require.NoError(t, err)
+		assert.False(t, rows.Next())
+	})
+
+	t.Run("insert IDE config for org", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db)
+		orgID := uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000")
+
+		err := d.AddIDEConfig(orgID, &datastore.IDEConfig{Path: "test://123/{{symbol}}", Name: "test2"})
+		require.NoError(t, err)
+
+		// Check value in DB.
+		query := `SELECT ide_name, path from org_ide_configs WHERE org_id=$1 AND ide_name=$2`
+		rows, err := db.Queryx(query, orgID, "test2")
+		require.NoError(t, err)
+		require.True(t, rows.Next())
+
+		var ideConf datastore.IDEConfig
+		_ = rows.StructScan(&ideConf)
+		assert.Equal(t, "test2", ideConf.Name)
+		assert.Equal(t, "test://123/{{symbol}}", ideConf.Path)
+	})
+
+	t.Run("get IDE config", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db)
+		orgID := uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000")
+
+		ideConfig, err := d.GetIDEConfig(orgID, "sublime")
+		require.NoError(t, err)
+		require.NotNil(t, ideConfig)
+
+		assert.Equal(t, "sublime", ideConfig.Name)
+		assert.Equal(t, "subl://{{symbol}}", ideConfig.Path)
+	})
+
+	t.Run("get IDE configs for org", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db)
+		orgID := uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000")
+
+		ideConfigs, err := d.GetIDEConfigs(orgID)
+		require.NoError(t, err)
+		assert.Equal(t, 2, len(ideConfigs))
 	})
 }

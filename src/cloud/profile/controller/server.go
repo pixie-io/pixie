@@ -96,6 +96,14 @@ type UserSettingsDatastore interface {
 // OrgSettingsDatastore is the interface used as the backing store for org settings.
 // This includes IDE configs and various other settings that users can configure for orgs.
 type OrgSettingsDatastore interface {
+	// AddIDEConfig adds the IDE config to the org.
+	AddIDEConfig(uuid.UUID, *datastore.IDEConfig) error
+	// DeleteIDEConfig deletes the IDE config from the org.
+	DeleteIDEConfig(uuid.UUID, string) error
+	// GetIDEConfigs gets all IDE configs for the org.
+	GetIDEConfigs(uuid.UUID) ([]*datastore.IDEConfig, error)
+	// GetIDEConfig gets the IDE config for the IDE with the given name.
+	GetIDEConfig(uuid.UUID, string) (*datastore.IDEConfig, error)
 }
 
 // Server is an implementation of GRPC server for profile service.

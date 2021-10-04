@@ -501,3 +501,70 @@ func (d *Datastore) createUserAttributesUsingTxn(tx *sqlx.Tx, id uuid.UUID) erro
 
 	return nil
 }
+
+// IDEConfig is an org-level configuration which defines the IDE paths which can be used to navigate to
+// a given symbol.
+type IDEConfig struct {
+	Name string `db:"ide_name"`
+	Path string `db:"path"`
+}
+
+// AddIDEConfig adds the IDE config to the org.
+func (d *Datastore) AddIDEConfig(orgID uuid.UUID, config *IDEConfig) error {
+	query := `INSERT INTO org_ide_configs (org_id, ide_name, path) VALUES ($1, $2, $3)`
+	rows, err := d.db.Queryx(query, orgID, config.Name, config.Path)
+	if err != nil {
+		return err
+	}
+	rows.Close()
+	return nil
+}
+
+// DeleteIDEConfig deletes the IDE config from the org.
+func (d *Datastore) DeleteIDEConfig(orgID uuid.UUID, name string) error {
+	query := `DELETE FROM org_ide_configs WHERE org_id=$1 AND ide_name=$2`
+	rows, err := d.db.Queryx(query, orgID, name)
+	if err != nil {
+		return err
+	}
+	rows.Close()
+	return nil
+}
+
+// GetIDEConfigs gets all IDE configs for the org.
+func (d *Datastore) GetIDEConfigs(orgID uuid.UUID) ([]*IDEConfig, error) {
+	query := `SELECT ide_name, path from org_ide_configs WHERE org_id=$1`
+	rows, err := d.db.Queryx(query, orgID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	configs := make([]*IDEConfig, 0)
+	for rows.Next() {
+		var ideConf IDEConfig
+		err := rows.StructScan(&ideConf)
+		if err != nil {
+			return nil, err
+		}
+		configs = append(configs, &ideConf)
+	}
+	return configs, nil
+}
+
+// GetIDEConfig gets the IDE config for the IDE with the given name.
+func (d *Datastore) GetIDEConfig(orgID uuid.UUID, name string) (*IDEConfig, error) {
+	query := `SELECT ide_name, path from org_ide_configs WHERE org_id=$1 AND ide_name=$2`
+	rows, err := d.db.Queryx(query, orgID, name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		var ideConf IDEConfig
+		err := rows.StructScan(&ideConf)
+		return &ideConf, err
+	}
+	return nil, errors.New("failed to get IDE config for IDE with given name")
+}

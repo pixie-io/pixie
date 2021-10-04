@@ -353,3 +353,61 @@ func NewMockOrgSettingsDatastore(ctrl *gomock.Controller) *MockOrgSettingsDatast
 func (m *MockOrgSettingsDatastore) EXPECT() *MockOrgSettingsDatastoreMockRecorder {
 	return m.recorder
 }
+
+// AddIDEConfig mocks base method.
+func (m *MockOrgSettingsDatastore) AddIDEConfig(arg0 uuid.UUID, arg1 *datastore.IDEConfig) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddIDEConfig", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddIDEConfig indicates an expected call of AddIDEConfig.
+func (mr *MockOrgSettingsDatastoreMockRecorder) AddIDEConfig(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddIDEConfig", reflect.TypeOf((*MockOrgSettingsDatastore)(nil).AddIDEConfig), arg0, arg1)
+}
+
+// DeleteIDEConfig mocks base method.
+func (m *MockOrgSettingsDatastore) DeleteIDEConfig(arg0 uuid.UUID, arg1 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteIDEConfig", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteIDEConfig indicates an expected call of DeleteIDEConfig.
+func (mr *MockOrgSettingsDatastoreMockRecorder) DeleteIDEConfig(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIDEConfig", reflect.TypeOf((*MockOrgSettingsDatastore)(nil).DeleteIDEConfig), arg0, arg1)
+}
+
+// GetIDEConfig mocks base method.
+func (m *MockOrgSettingsDatastore) GetIDEConfig(arg0 uuid.UUID, arg1 string) (*datastore.IDEConfig, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetIDEConfig", arg0, arg1)
+	ret0, _ := ret[0].(*datastore.IDEConfig)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetIDEConfig indicates an expected call of GetIDEConfig.
+func (mr *MockOrgSettingsDatastoreMockRecorder) GetIDEConfig(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIDEConfig", reflect.TypeOf((*MockOrgSettingsDatastore)(nil).GetIDEConfig), arg0, arg1)
+}
+
+// GetIDEConfigs mocks base method.
+func (m *MockOrgSettingsDatastore) GetIDEConfigs(arg0 uuid.UUID) ([]*datastore.IDEConfig, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetIDEConfigs", arg0)
+	ret0, _ := ret[0].([]*datastore.IDEConfig)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetIDEConfigs indicates an expected call of GetIDEConfigs.
+func (mr *MockOrgSettingsDatastoreMockRecorder) GetIDEConfigs(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIDEConfigs", reflect.TypeOf((*MockOrgSettingsDatastore)(nil).GetIDEConfigs), arg0)
+}
