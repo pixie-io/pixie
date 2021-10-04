@@ -95,7 +95,9 @@ func (q *QueryResolver) OrgUsers(ctx context.Context) ([]*UserInfoResolver, erro
 
 // OrgInfoResolver resolves org information.
 type OrgInfoResolver struct {
+	ctx     context.Context
 	OrgInfo *cloudpb.OrgInfo
+	gqlEnv  *GraphQLEnv
 }
 
 // ID returns the org id.
@@ -122,7 +124,29 @@ type IDEPathResolver struct {
 // IDEPaths returns the configured IDE paths for the org, which can be used to navigate to
 // a symbol in an IDE.
 func (u *OrgInfoResolver) IDEPaths() []IDEPathResolver {
-	return nil
+	sCtx, err := authcontext.FromContext(u.ctx)
+	if err != nil {
+		return []IDEPathResolver{}
+	}
+
+	resp, err := u.gqlEnv.OrgServer.GetOrgIDEConfigs(u.ctx,
+		&cloudpb.GetOrgIDEConfigsRequest{
+			OrgID: utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().OrgID),
+		},
+	)
+	if err != nil {
+		return []IDEPathResolver{}
+	}
+
+	configResolvers := make([]IDEPathResolver, len(resp.Configs))
+	for i, c := range resp.Configs {
+		configResolvers[i] = IDEPathResolver{
+			IDEName: c.IDEName,
+			Path:    c.Path,
+		}
+	}
+
+	return configResolvers
 }
 
 // Org resolves org information.
@@ -139,7 +163,8 @@ func (q *QueryResolver) Org(ctx context.Context) (*OrgInfoResolver, error) {
 			ID: idPb,
 		}
 	}
-	return &OrgInfoResolver{orgInfo}, nil
+
+	return &OrgInfoResolver{ctx, orgInfo, &q.Env}, nil
 }
 
 type updateOrgSettingsArgs struct {
@@ -176,5 +201,5 @@ func (q *QueryResolver) UpdateOrgSettings(ctx context.Context, args updateOrgSet
 			ID: idPb,
 		}
 	}
-	return &OrgInfoResolver{orgInfo}, nil
+	return &OrgInfoResolver{ctx, orgInfo, &q.Env}, nil
 }

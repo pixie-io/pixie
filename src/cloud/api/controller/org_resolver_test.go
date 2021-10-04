@@ -277,3 +277,80 @@ func TestUserSettingsResolver_OrgInfo(t *testing.T) {
 		})
 	}
 }
+
+func TestUserSettingsResolver_IDEConfigs(t *testing.T) {
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "regular user",
+			ctx:  CreateTestContext(),
+		},
+		{
+			name: "api user",
+			ctx:  CreateAPIUserTestContext(),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
+			defer cleanup()
+			ctx := test.ctx
+
+			mockClients.MockOrg.EXPECT().
+				GetOrg(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
+				Return(&cloudpb.OrgInfo{
+					EnableApprovals: true,
+					OrgName:         "test.com",
+					ID:              utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
+				}, nil)
+
+			mockClients.MockOrg.EXPECT().
+				GetOrgIDEConfigs(gomock.Any(), &cloudpb.GetOrgIDEConfigsRequest{
+					OrgID: utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
+				}).
+				Return(&cloudpb.GetOrgIDEConfigsResponse{
+					Configs: []*cloudpb.IDEConfig{
+						&cloudpb.IDEConfig{
+							IDEName: "test",
+							Path:    "subl://{{symbol}}",
+						},
+						&cloudpb.IDEConfig{
+							IDEName: "anothertest",
+							Path:    "test://{{symbol}}",
+						},
+					},
+				}, nil)
+			gqlSchema := LoadSchema(gqlEnv)
+			gqltesting.RunTests(t, []*gqltesting.Test{
+				{
+					Schema:  gqlSchema,
+					Context: ctx,
+					Query: `
+						query {
+							org {
+								name
+								enableApprovals
+								idePaths {
+									IDEName
+									path
+								}
+							}
+						}
+					`,
+					ExpectedResult: `
+						{
+							"org": {
+								"name": "test.com",
+								"enableApprovals": true,
+								"idePaths": [{ "IDEName": "test", "path": "subl://{{symbol}}"}, { "IDEName": "anothertest", "path": "test://{{symbol}}"}]
+							}
+						}
+					`,
+				},
+			})
+		})
+	}
+}
