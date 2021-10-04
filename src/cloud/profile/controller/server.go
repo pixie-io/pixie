@@ -515,15 +515,63 @@ func (s *Server) UpdateOrg(ctx context.Context, req *profilepb.UpdateOrgRequest)
 
 // AddOrgIDEConfig adds the IDE config for the given org.
 func (s *Server) AddOrgIDEConfig(ctx context.Context, req *profilepb.AddOrgIDEConfigRequest) (*profilepb.AddOrgIDEConfigResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
+
+	err := s.osds.AddIDEConfig(orgID, &datastore.IDEConfig{
+		Name: req.Config.IDEName,
+		Path: req.Config.Path,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &profilepb.AddOrgIDEConfigResponse{
+		Config: req.Config,
+	}, nil
 }
 
 // DeleteOrgIDEConfig deletes the IDE config from the given org.
 func (s *Server) DeleteOrgIDEConfig(ctx context.Context, req *profilepb.DeleteOrgIDEConfigRequest) (*profilepb.DeleteOrgIDEConfigResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
+
+	err := s.osds.DeleteIDEConfig(orgID, req.IDEName)
+	if err != nil {
+		return nil, err
+	}
+
+	return &profilepb.DeleteOrgIDEConfigResponse{}, nil
 }
 
 // GetOrgIDEConfigs gets all IDE configs from the given org.
 func (s *Server) GetOrgIDEConfigs(ctx context.Context, req *profilepb.GetOrgIDEConfigsRequest) (*profilepb.GetOrgIDEConfigsResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
+
+	configs := make([]*datastore.IDEConfig, 0)
+	if req.IDEName != "" {
+		conf, err := s.osds.GetIDEConfig(orgID, req.IDEName)
+		if err != nil {
+			return nil, err
+		}
+
+		configs = append(configs, conf)
+	} else {
+		confs, err := s.osds.GetIDEConfigs(orgID)
+		if err != nil {
+			return nil, err
+		}
+		configs = confs
+	}
+
+	configPbs := make([]*profilepb.IDEConfig, len(configs))
+	for i, c := range configs {
+		configPbs[i] = &profilepb.IDEConfig{
+			IDEName: c.Name,
+			Path:    c.Path,
+		}
+	}
+
+	return &profilepb.GetOrgIDEConfigsResponse{
+		Configs: configPbs,
+	}, nil
 }

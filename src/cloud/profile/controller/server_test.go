@@ -1347,3 +1347,142 @@ func TestServer_GetUsersInOrg(t *testing.T) {
 	})
 	assert.NotNil(t, err)
 }
+
+func TestServer_AddOrgIDEConfig(t *testing.T) {
+	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	ctx := CreateTestContext()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
+
+	s := controller.NewServer(nil, uds, usds, ods, osds)
+
+	osds.EXPECT().
+		AddIDEConfig(orgID, &datastore.IDEConfig{Name: "test", Path: "test://path/{{symbol}}"}).
+		Return(nil)
+
+	resp, err := s.AddOrgIDEConfig(ctx, &profilepb.AddOrgIDEConfigRequest{
+		OrgID: utils.ProtoFromUUID(orgID),
+		Config: &profilepb.IDEConfig{
+			IDEName: "test",
+			Path:    "test://path/{{symbol}}",
+		},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, &profilepb.IDEConfig{
+		IDEName: "test",
+		Path:    "test://path/{{symbol}}",
+	}, resp.Config)
+}
+
+func TestServer_DeleteOrgIDEConfig(t *testing.T) {
+	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	ctx := CreateTestContext()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
+
+	s := controller.NewServer(nil, uds, usds, ods, osds)
+
+	osds.EXPECT().
+		DeleteIDEConfig(orgID, "test").
+		Return(nil)
+
+	resp, err := s.DeleteOrgIDEConfig(ctx, &profilepb.DeleteOrgIDEConfigRequest{
+		OrgID:   utils.ProtoFromUUID(orgID),
+		IDEName: "test",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, &profilepb.DeleteOrgIDEConfigResponse{}, resp)
+}
+
+func TestServer_GetOrgIDEConfigs_Single(t *testing.T) {
+	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	ctx := CreateTestContext()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
+
+	s := controller.NewServer(nil, uds, usds, ods, osds)
+
+	osds.EXPECT().
+		GetIDEConfig(orgID, "test").
+		Return(&datastore.IDEConfig{
+			Name: "test",
+			Path: "test://{{symbol}}",
+		}, nil)
+
+	resp, err := s.GetOrgIDEConfigs(ctx, &profilepb.GetOrgIDEConfigsRequest{
+		OrgID:   utils.ProtoFromUUID(orgID),
+		IDEName: "test",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, &profilepb.GetOrgIDEConfigsResponse{
+		Configs: []*profilepb.IDEConfig{
+			&profilepb.IDEConfig{
+				IDEName: "test",
+				Path:    "test://{{symbol}}",
+			},
+		},
+	}, resp)
+}
+
+func TestServer_GetOrgIDEConfigs_Multi(t *testing.T) {
+	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	ctx := CreateTestContext()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
+
+	s := controller.NewServer(nil, uds, usds, ods, osds)
+
+	osds.EXPECT().
+		GetIDEConfigs(orgID).
+		Return([]*datastore.IDEConfig{
+			&datastore.IDEConfig{
+				Name: "test",
+				Path: "test://{{symbol}}",
+			},
+			&datastore.IDEConfig{
+				Name: "test2",
+				Path: "test2://{{symbol2}}",
+			},
+		}, nil)
+
+	resp, err := s.GetOrgIDEConfigs(ctx, &profilepb.GetOrgIDEConfigsRequest{
+		OrgID: utils.ProtoFromUUID(orgID),
+	})
+	require.NoError(t, err)
+	assert.Equal(t, &profilepb.GetOrgIDEConfigsResponse{
+		Configs: []*profilepb.IDEConfig{
+			&profilepb.IDEConfig{
+				IDEName: "test",
+				Path:    "test://{{symbol}}",
+			},
+			&profilepb.IDEConfig{
+				IDEName: "test2",
+				Path:    "test2://{{symbol2}}",
+			},
+		},
+	}, resp)
+}
