@@ -18,6 +18,7 @@
 
 import { ClusterContextProvider } from 'app/common/cluster-context';
 import UserContext from 'app/common/user-context';
+import OrgContext from 'app/common/org-context';
 import { useSnackbar } from 'app/components';
 import AdminView from 'app/pages/admin/admin';
 import CreditsView from 'app/pages/credits/credits';
@@ -32,7 +33,9 @@ import * as QueryString from 'query-string';
 import { makeStyles } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import { useLDClient } from 'launchdarkly-react-client-sdk';
-import { GQLClusterInfo, GQLUserInfo, GQLUserSettings } from 'app/types/schema';
+import {
+  GQLClusterInfo, GQLUserInfo, GQLUserSettings, GQLOrgInfo,
+} from 'app/types/schema';
 import { useQuery, gql } from '@apollo/client';
 
 import { DeployInstructions } from './deploy-instructions';
@@ -216,6 +219,34 @@ export default function PixieWithContext(): React.ReactElement {
     },
   }), [userEmail, userOrg]);
 
+  const { data: orgData } = useQuery<{
+    org: Omit<GQLOrgInfo, 'enableApprovals'>
+  }>(
+    gql`
+      query getOrgInfo {
+        org {
+          id
+          name
+          idePaths {
+            IDEName
+            path
+          }
+        }
+      }
+    `,
+  );
+  const org = orgData?.org;
+  const orgID = org?.id;
+  const orgName = org?.name;
+  const idePaths = org?.idePaths;
+
+  const orgContext = React.useMemo(() => ({
+    org: {
+      id: orgID,
+      name: orgName,
+      idePaths,
+    },
+  }), [orgID, orgName, idePaths]);
   React.useEffect(() => {
     if (ldClient != null && userEmail != null) {
       ldClient.identify({
@@ -237,35 +268,43 @@ export default function PixieWithContext(): React.ReactElement {
     console.error(errMsg);
   }
 
+  const scriptPaths = React.useMemo(() => [
+    '/script/:scriptNS/:scriptID',
+    '/scripts/:scriptNS/:scriptID',
+    '/s/:scriptNS/:scriptID',
+    '/script/:scriptID',
+    '/scripts/:scriptID',
+    '/s/:scriptID',
+    '/scratch',
+    '/scratchpad',
+  ], []);
+
+  const clusterPaths = React.useMemo(() => [
+    [
+      '/clusterID/:clusterID',
+      '/embed/clusterID/:clusterID',
+    ],
+  ], []);
+
   if (loadingUser) { return <div>Loading...</div>; }
   return (
     <UserContext.Provider value={userContext}>
-      <ClusterWarningBanner user={user} />
-      <Switch>
-        <Route path='/admin' component={AdminView} />
-        <Route path='/credits' component={CreditsView} />
-        <Route path={[
-          '/clusterID/:clusterID',
-          '/embed/clusterID/:clusterID',
-        ]} component={ClusterIDShortcut} />
-        <Route path='/live' component={LiveWithProvider} />
-        <Route path='/embed/live' component={LiveWithProvider} />
-        <Route
-          path={[
-            '/script/:scriptNS/:scriptID',
-            '/scripts/:scriptNS/:scriptID',
-            '/s/:scriptNS/:scriptID',
-            '/script/:scriptID',
-            '/scripts/:scriptID',
-            '/s/:scriptID',
-            '/scratch',
-            '/scratchpad',
-          ]}
-          component={ScriptShortcut}
-        />
-        <Redirect exact from='/' to='/live' />
-        <Route path='/*' component={RouteNotFound} />
-      </Switch>
+      <OrgContext.Provider value={orgContext}>
+        <ClusterWarningBanner user={user} />
+        <Switch>
+          <Route path='/admin' component={AdminView} />
+          <Route path='/credits' component={CreditsView} />
+          <Route path={clusterPaths} component={ClusterIDShortcut} />
+          <Route path='/live' component={LiveWithProvider} />
+          <Route path='/embed/live' component={LiveWithProvider} />
+          <Route
+            path={scriptPaths}
+            component={ScriptShortcut}
+          />
+          <Redirect exact from='/' to='/live' />
+          <Route path='/*' component={RouteNotFound} />
+        </Switch>
+      </OrgContext.Provider>
     </UserContext.Provider>
   );
 }
