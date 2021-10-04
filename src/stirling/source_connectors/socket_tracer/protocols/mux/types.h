@@ -54,7 +54,10 @@ inline Type GetMatchingRespType(Type req_type) {
 }
 
 /**
- * Regular message's wire format:
+ * Mux messages can take on a few different wire formats. Each type
+ * is described below. All fields are big endian.
+ *
+ * Regular message
  * ----------------------------------------------
  * | uint32 header size | int8 type | int24 tag |
  * ----------------------------------------------
