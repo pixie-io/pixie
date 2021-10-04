@@ -16,4 +16,4 @@ spec:
       - name: api-server
         env:
         - name: PL_ALLOWED_ORIGINS
-          value: https://docs.pixielabs.ai
+          value: https://docs.pixielabs.ai,https://docs.px.dev
