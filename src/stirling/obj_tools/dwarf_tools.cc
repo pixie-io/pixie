@@ -98,14 +98,16 @@ std::string Dump(const llvm::DWARFDie& die) {
 // https://superuser.com/questions/791506/how-to-determine-if-a-linux-binary-file-is-32-bit-or-64-bit
 uint8_t kAddressSize = sizeof(void*);
 
-StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::Create(std::string_view obj_filename,
-                                                           bool index) {
+StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::Create(
+    const std::filesystem::path& obj_file_path, bool index) {
   using llvm::MemoryBuffer;
 
   std::error_code ec;
 
+  std::string obj_filename = obj_file_path.string();
+
   llvm::ErrorOr<std::unique_ptr<MemoryBuffer>> buff_or_err =
-      MemoryBuffer::getFileOrSTDIN(std::string(obj_filename));
+      MemoryBuffer::getFileOrSTDIN(obj_filename);
   ec = buff_or_err.getError();
   if (ec) {
     return error::Internal("DwarfReader $0: $1", ec.message(), obj_filename);

@@ -23,6 +23,7 @@
 
 #include <absl/container/flat_hash_map.h>
 
+#include <filesystem>
 #include <limits>
 #include <map>
 #include <memory>
@@ -172,7 +173,7 @@ class DwarfReader {
    * @return error if file does not exist or is not a valid object file. Otherwise returns
    * a unique pointer to a DwarfReader.
    */
-  static StatusOr<std::unique_ptr<DwarfReader>> Create(std::string_view obj_filename,
+  static StatusOr<std::unique_ptr<DwarfReader>> Create(const std::filesystem::path& obj_file_path,
                                                        bool index = true);
 
   /**
