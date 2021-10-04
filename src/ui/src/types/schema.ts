@@ -77,10 +77,16 @@ export interface GQLUserInfo {
   isApproved: boolean;
 }
 
+export interface GQLIDEPath {
+  IDEName: string;
+  path: string;
+}
+
 export interface GQLOrgInfo {
   id: string;
   name: string;
   enableApprovals: boolean;
+  idePaths: Array<GQLIDEPath>;
 }
 
 export interface GQLUserSettings {
@@ -304,6 +310,7 @@ export interface GQLResolver {
   ArtifactsInfo?: GQLArtifactsInfoTypeResolver;
   Artifact?: GQLArtifactTypeResolver;
   UserInfo?: GQLUserInfoTypeResolver;
+  IDEPath?: GQLIDEPathTypeResolver;
   OrgInfo?: GQLOrgInfoTypeResolver;
   UserSettings?: GQLUserSettingsTypeResolver;
   UserAttributes?: GQLUserAttributesTypeResolver;
@@ -635,10 +642,24 @@ export interface UserInfoToIsApprovedResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
+export interface GQLIDEPathTypeResolver<TParent = any> {
+  IDEName?: IDEPathToIDENameResolver<TParent>;
+  path?: IDEPathToPathResolver<TParent>;
+}
+
+export interface IDEPathToIDENameResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface IDEPathToPathResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
 export interface GQLOrgInfoTypeResolver<TParent = any> {
   id?: OrgInfoToIdResolver<TParent>;
   name?: OrgInfoToNameResolver<TParent>;
   enableApprovals?: OrgInfoToEnableApprovalsResolver<TParent>;
+  idePaths?: OrgInfoToIdePathsResolver<TParent>;
 }
 
 export interface OrgInfoToIdResolver<TParent = any, TResult = any> {
@@ -650,6 +671,10 @@ export interface OrgInfoToNameResolver<TParent = any, TResult = any> {
 }
 
 export interface OrgInfoToEnableApprovalsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface OrgInfoToIdePathsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 

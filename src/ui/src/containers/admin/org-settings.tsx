@@ -59,7 +59,8 @@ export const OrgSettings: React.FC = () => {
   const org = data?.org;
 
   const [updateOrgApprovalSetting] = useMutation<
-  { UpdateOrgSettings: GQLOrgInfo }, { orgID: string, enableApprovals: boolean }
+  { UpdateOrgSettings: Pick<GQLOrgInfo, 'id' | 'name' | 'enableApprovals'> },
+  { orgID: string, enableApprovals: boolean }
   >(
     gql`
       mutation UpdateOrgApprovalSetting ($orgID: ID!, $enableApprovals: Boolean!) {

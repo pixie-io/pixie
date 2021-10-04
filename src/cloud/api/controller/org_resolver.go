@@ -113,6 +113,18 @@ func (u *OrgInfoResolver) EnableApprovals() bool {
 	return u.OrgInfo.EnableApprovals
 }
 
+// IDEPathResolver is a resolver for an IDE path.
+type IDEPathResolver struct {
+	IDEName string
+	Path    string
+}
+
+// IDEPaths returns the configured IDE paths for the org, which can be used to navigate to
+// a symbol in an IDE.
+func (u *OrgInfoResolver) IDEPaths() []IDEPathResolver {
+	return nil
+}
+
 // Org resolves org information.
 func (q *QueryResolver) Org(ctx context.Context) (*OrgInfoResolver, error) {
 	sCtx, err := authcontext.FromContext(ctx)

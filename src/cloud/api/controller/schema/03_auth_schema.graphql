@@ -52,10 +52,16 @@ type UserInfo {
   isApproved: Boolean!
 }
 
+type IDEPath {
+  IDEName: String!
+  path: String!
+}
+
 type OrgInfo {
   id: ID!
   name: String!
   enableApprovals: Boolean!
+  idePaths: [IDEPath!]!
 }
 
 type UserSettings {
