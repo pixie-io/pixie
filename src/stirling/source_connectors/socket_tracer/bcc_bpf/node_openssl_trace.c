@@ -21,6 +21,8 @@
 
 // LINT_C_FILE: Do not remove this line. It ensures cpplint treats this as a C file.
 
+#include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
+
 // Key: SSL object pointer.
 // Value: Associated TLSWrap object pointer.
 BPF_HASH(node_ssl_tls_wrap_map, void*, void*);
@@ -28,6 +30,12 @@ BPF_HASH(node_ssl_tls_wrap_map, void*, void*);
 // Tracks the currently-in-progress TLSWrap member function's this pointer, i.e., the pointer to the
 // TLSWrap object.
 BPF_HASH(active_TLSWrap_memfn_this, uint64_t, void*);
+
+// Maps that communicates the offsets of symbols related to reading file descriptor from TLSWrap
+// pointer of a node executable.
+//   Key: TGID
+//   Value: Symbol offsets for the node executable with that TGID.
+BPF_HASH(node_tlswrap_symaddrs_map, uint32_t, struct node_tlswrap_symaddrs_t);
 
 static __inline void* get_tls_wrap_for_memfn() {
   uint64_t id = bpf_get_current_pid_tgid();
@@ -52,10 +60,10 @@ static __inline void update_node_ssl_tls_wrap_map(void* ssl) {
 
 // Reads fd by chasing pointers fields and offsets starting from the pointer to a TLSWrap object.
 // TODO(yzhao): Add a doc to explain the layout of the data structures.
-static __inline int32_t get_fd_from_tlswrap_ptr(void* tlswrap) {
-  const uint64_t K_TLSWRAP_STREAMLISTENER_OFFSET = 0x78;
-  const uint64_t K_STREAMLISENER_STREAM_OFFSET = 0x08;
-  void* stream_ptr = tlswrap + K_TLSWRAP_STREAMLISTENER_OFFSET + K_STREAMLISENER_STREAM_OFFSET;
+static __inline int32_t get_fd_from_tlswrap_ptr(const struct node_tlswrap_symaddrs_t* symaddrs,
+                                                void* tlswrap) {
+  void* stream_ptr =
+      tlswrap + symaddrs->TLSWrap_StreamListener_offset + symaddrs->StreamListener_stream_offset;
   void* stream = NULL;
 
   bpf_probe_read(&stream, sizeof(stream), stream_ptr);
@@ -64,10 +72,9 @@ static __inline int32_t get_fd_from_tlswrap_ptr(void* tlswrap) {
     return kInvalidFD;
   }
 
-  const uint64_t K_LIBUV_STREAM_WRAP_STREAM_BASE_OFFSET = 0x58;
-  const uint64_t K_STREAM_BASE_UV_STREAM_OFFSET = 0x98;
-  void* uv_stream_ptr =
-      stream - K_LIBUV_STREAM_WRAP_STREAM_BASE_OFFSET + K_STREAM_BASE_UV_STREAM_OFFSET;
+  void* uv_stream_ptr = stream - symaddrs->StreamBase_StreamResource_offset -
+                        symaddrs->LibuvStreamWrap_StreamBase_offset +
+                        symaddrs->LibuvStreamWrap_stream_offset;
 
   void* uv_stream = NULL;
   bpf_probe_read(&uv_stream, sizeof(uv_stream), uv_stream_ptr);
@@ -76,23 +83,30 @@ static __inline int32_t get_fd_from_tlswrap_ptr(void* tlswrap) {
     return kInvalidFD;
   }
 
-  const uint64_t K_UV_STREAM_IO_WATCHER_OFFSET = 0x88;
-  const uint64_t K_UV_IO_FD_OFFSET = 0x30;
-  int32_t* fd_ptr = uv_stream + K_UV_STREAM_IO_WATCHER_OFFSET + K_UV_IO_FD_OFFSET;
+  int32_t* fd_ptr =
+      uv_stream + symaddrs->uv_stream_s_io_watcher_offset + symaddrs->uv__io_s_fd_offset;
 
   int32_t fd = kInvalidFD;
 
-  bpf_probe_read(&fd, sizeof(fd), fd_ptr);
+  if (bpf_probe_read(&fd, sizeof(fd), fd_ptr) != 0) {
+    return kInvalidFD;
+  }
 
   return fd;
 }
 
-static __inline int32_t get_fd_node(void* ssl) {
+static __inline int32_t get_fd_node(uint32_t tgid, void* ssl) {
   void** tls_wrap_ptr = node_ssl_tls_wrap_map.lookup(&ssl);
   if (tls_wrap_ptr == NULL) {
     return kInvalidFD;
   }
-  return get_fd_from_tlswrap_ptr(*tls_wrap_ptr);
+
+  const struct node_tlswrap_symaddrs_t* symaddrs = node_tlswrap_symaddrs_map.lookup(&tgid);
+  if (symaddrs == NULL) {
+    return kInvalidFD;
+  }
+
+  return get_fd_from_tlswrap_ptr(symaddrs, *tls_wrap_ptr);
 }
 
 // SSL_new is invoked by TLSWrap::TLSWrap(). Its return value is used to update the map.

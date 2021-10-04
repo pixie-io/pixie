@@ -86,7 +86,7 @@ static int get_fd(uint32_t tgid, void* ssl) {
   // OpenSSL is used by nodejs in an asynchronous way, where the SSL_read/SSL_write functions don't
   // immediately relay the traffic to/from the socket. If we notice that this SSL call was made from
   // node, we use the FD that we obtained from a separate nodejs uprobe.
-  fd = get_fd_node(ssl);
+  fd = get_fd_node(tgid, ssl);
   if (fd != kInvalidFD && /*not any of the standard fds*/ fd > 2) {
     return fd;
   }

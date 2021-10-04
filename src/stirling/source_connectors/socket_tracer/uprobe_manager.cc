@@ -65,6 +65,9 @@ void UProbeManager::Init(bool enable_http2_tracing, bool disable_self_probing) {
       bcc_, "http2_symaddrs_map");
   go_tls_symaddrs_map_ = UserSpaceManagedBPFMap<uint32_t, struct go_tls_symaddrs_t>::Create(
       bcc_, "go_tls_symaddrs_map");
+  node_tlswrap_symaddrs_map_ =
+      UserSpaceManagedBPFMap<uint32_t, struct node_tlswrap_symaddrs_t>::Create(
+          bcc_, "node_tlswrap_symaddrs_map");
 }
 
 void UProbeManager::NotifyMMapEvent(upid_t upid) { upids_with_mmap_.insert(upid); }
@@ -166,6 +169,12 @@ Status UProbeManager::UpdateGoTLSSymAddrs(ElfReader* elf_reader, DwarfReader* dw
     go_tls_symaddrs_map_->UpdateValue(pid, symaddrs);
   }
 
+  return Status::OK();
+}
+
+Status UProbeManager::UpdateNodeTLSWrapSymAddrs(int32_t pid) {
+  PL_ASSIGN_OR_RETURN(struct node_tlswrap_symaddrs_t symaddrs, NodeTLSWrapSymAddrs());
+  node_tlswrap_symaddrs_map_->UpdateValue(pid, symaddrs);
   return Status::OK();
 }
 
@@ -298,6 +307,8 @@ StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(uint32_t pid) {
 
   std::filesystem::path host_proc_exe = system::Config::GetInstance().ToHostPath(proc_exe_paths[0]);
 
+  PL_RETURN_IF_ERROR(UpdateNodeTLSWrapSymAddrs(pid));
+
   // These probes are attached on OpenSSL dynamic library (if present) as well.
   // Here they are attached on statically linked OpenSSL library (eg. for node).
   for (auto spec : kOpenSSLUProbes) {
@@ -411,6 +422,7 @@ void UProbeManager::CleanupSymaddrMaps(const absl::flat_hash_set<md::UPID>& dele
     go_common_symaddrs_map_->RemoveValue(pid.pid());
     go_tls_symaddrs_map_->RemoveValue(pid.pid());
     go_http2_symaddrs_map_->RemoveValue(pid.pid());
+    node_tlswrap_symaddrs_map_->RemoveValue(pid.pid());
   }
 }
 

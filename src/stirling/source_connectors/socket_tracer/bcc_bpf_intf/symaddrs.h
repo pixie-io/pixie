@@ -208,3 +208,29 @@ struct openssl_symaddrs_t {
   // Struct is defined in crypto/bio/bio_lcl.h, crypto/bio/bio_local.h depending on the version.
   int32_t RBIO_num_offset;  // 0x30 (openssl 1.1.1) or 0x28 (openssl 1.1.0)
 };
+
+// For reading file descriptor from a TLSWrap pointer.
+struct node_tlswrap_symaddrs_t {
+  // Offset of StreamListener base class of TLSWrap class.
+  int32_t TLSWrap_StreamListener_offset;
+
+  // Offset of the stream_ member variable of StreamListener class.
+  // stream_ member variable is a StreamResource pointer, which is actually a LibuvStreamWrap object
+  int32_t StreamListener_stream_offset;
+
+  // Offset of StreamResource base class of StreamBase class.
+  int32_t StreamBase_StreamResource_offset;
+
+  // Offset of StreamBase base class of LibuvStreamWrap class.
+  int32_t LibuvStreamWrap_StreamBase_offset;
+
+  // Offset of stream_ member variable of LibuvStreamWrap class.
+  int32_t LibuvStreamWrap_stream_offset;
+
+  // Offset of io_watcher member variable (uv__io_s/uv__io_t type) of uv_stream_s struct, in
+  // node/deps/uv.
+  int32_t uv_stream_s_io_watcher_offset;
+
+  // Offset of fd member variable of uv__io_s/uv__io_t
+  int32_t uv__io_s_fd_offset;
+};

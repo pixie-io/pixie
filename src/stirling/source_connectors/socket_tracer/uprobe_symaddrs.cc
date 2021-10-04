@@ -591,5 +591,20 @@ StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(const std::filesystem::path&
 // $28 = (int *) 0x55ea64698b40
 // (gdb) p s.wbio.num
 
+StatusOr<struct node_tlswrap_symaddrs_t> NodeTLSWrapSymAddrs() {
+  // This works for version from 15.0 to 16.9 as tested. Versions newer than 16.9 should still be
+  // compatible, but requires testing.
+  struct node_tlswrap_symaddrs_t symaddrs = {
+      .TLSWrap_StreamListener_offset = 0x78,
+      .StreamListener_stream_offset = 0x08,
+      .StreamBase_StreamResource_offset = 0x00,
+      .LibuvStreamWrap_StreamBase_offset = 0x58,
+      .LibuvStreamWrap_stream_offset = 0x98,
+      .uv_stream_s_io_watcher_offset = 0x88,
+      .uv__io_s_fd_offset = 0x30,
+  };
+  return symaddrs;
+}
+
 }  // namespace stirling
 }  // namespace px

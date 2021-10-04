@@ -391,6 +391,7 @@ class UProbeManager {
                                const std::vector<int32_t>& pids);
   Status UpdateGoTLSSymAddrs(obj_tools::ElfReader* elf_reader, obj_tools::DwarfReader* dwarf_reader,
                              const std::vector<int32_t>& pids);
+  Status UpdateNodeTLSWrapSymAddrs(int32_t pid);
 
   // Clean-up various BPF maps used to communicate symbol addresses per PID.
   // Once the PID has terminated, the information is not required anymore.
@@ -439,6 +440,8 @@ class UProbeManager {
   std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct go_http2_symaddrs_t> >
       go_http2_symaddrs_map_;
   std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct go_tls_symaddrs_t> > go_tls_symaddrs_map_;
+  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct node_tlswrap_symaddrs_t> >
+      node_tlswrap_symaddrs_map_;
 };
 
 }  // namespace stirling
