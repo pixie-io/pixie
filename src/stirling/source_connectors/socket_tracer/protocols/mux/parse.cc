@@ -9,8 +9,7 @@ namespace mux {
 #define PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(expr, val_or) \
   PL_ASSIGN_OR(expr, val_or, return ParseState::kNeedsMoreData)
 
-ParseState ParseFullFrame(BinaryDecoder* decoder, message_type_t type, std::string_view* buf, Frame* frame) {
-  PL_UNUSED(type);
+ParseState ParseFullFrame(BinaryDecoder* decoder, message_type_t /* type */, std::string_view* buf, Frame* frame) {
 
   PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(uint16_t tagFirst, decoder->ExtractInt<uint16_t>());
   PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(uint8_t tagLast, decoder->ExtractInt<uint8_t>());
