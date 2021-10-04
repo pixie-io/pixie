@@ -30,6 +30,7 @@ namespace stirling {
 enum class Application {
   kUnknown,
   kNode,
+  kJava,
 };
 
 // Returns the application of the input executable.
