@@ -1258,27 +1258,69 @@ def buildScriptForCloudProdRelease = {
   postBuildActions()
 }
 
+def copybaraTemplate(String name, String copybaraFile) {
+  DefaultCopybaraPodTemplate(name) {
+    deleteDir()
+    checkout scm
+    container('copybara') {
+    sshagent (credentials: ['pixie-copybara-git']) {
+      withCredentials([
+        file(
+          credentialsId: 'copybara-private-key-asc',
+          variable: 'COPYBARA_GPG_KEY_FILE'),
+        string(
+          credentialsId: 'copybara-gpg-key-id',
+          variable: 'COPYBARA_GPG_KEY_ID'),
+        ]) {
+          sh "GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' \
+          ./ci/run_copybara.sh ${copybaraFile}"
+        }
+      }
+    }
+  }
+}
 
-def buildScriptForCopybaraTemplate(String name, String copybaraFile) {
+def buildScriptForCopybaraPublic() {
   try {
     stage('Copybara it') {
-      DefaultCopybaraPodTemplate(name) {
+      copybaraTemplate("public-copy", "tools/copybara/public/copy.bara.sky")
+    }
+    stage('Copy tags') {
+      DefaultGCloudPodTemplate("public-copy-tags") {
         deleteDir()
-        checkout scm
-        container('copybara') {
-        sshagent (credentials: ['pixie-copybara-git']) {
-          withCredentials([
-            file(
-              credentialsId: 'copybara-private-key-asc',
-              variable: 'COPYBARA_GPG_KEY_FILE'),
-            string(
-              credentialsId: 'copybara-gpg-key-id',
-              variable: 'COPYBARA_GPG_KEY_ID'),
-            ]) {
-              sh "GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' \
-              ./ci/run_copybara.sh ${copybaraFile}"
-            }
-          }
+        checkout([
+          changelog: false,
+          poll: false,
+          scm: [
+            $class: 'GitSCM',
+            branches: [[name: 'main']],
+            extensions: [
+              [$class: 'RelativeTargetDirectory', relativeTargetDir: 'pixie-private'],
+              [$class: 'CloneOption', noTags: false, reference: '', shallow: false]
+            ],
+            userRemoteConfigs: [
+              [credentialsId: 'build-bot-ro', url: 'git@github.com/pixie-labs/pixielabs.git']
+            ]
+          ]
+        ])
+        checkout([
+          changelog: false,
+          poll: false,
+          scm: [
+            $class: 'GitSCM',
+            branches: [[name: 'main']],
+            extensions: [
+              [$class: 'RelativeTargetDirectory', relativeTargetDir: 'pixie-oss'],
+              [$class: 'CloneOption', noTags: false, reference: '', shallow: false]
+            ],
+            userRemoteConfigs: [
+              [credentialsId: 'pixie-copybara-git', url: 'git@github.com:pixie-io/pixie.git']
+            ]
+          ]
+        ])
+        dir('pixie-private') {
+          sh "GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' \
+          ./ci/copy_release_tags.sh ../pixie-oss"
         }
       }
     }
@@ -1291,6 +1333,19 @@ def buildScriptForCopybaraTemplate(String name, String copybaraFile) {
   }
 }
 
+def buildScriptForCopybaraPxAPI() {
+  try {
+    stage('Copybara it') {
+      copybaraTemplate("pxapi-copy", "tools/copybara/pxapi_go/copy.bara.sky")
+    }
+  }
+  catch (err) {
+    currentBuild.result = 'FAILURE'
+    echo "Exception thrown:\n ${err}"
+    echo 'Stacktrace:'
+    err.printStackTrace()
+  }
+}
 
 if (isNightlyTestRegressionRun) {
   buildScriptForNightlyTestRegression()
@@ -1305,9 +1360,9 @@ if (isNightlyTestRegressionRun) {
 } else if (isCloudProdBuildRun) {
   buildScriptForCloudProdRelease()
 } else if(isCopybaraPublic) {
-  buildScriptForCopybaraTemplate("public-copy", "tools/copybara/public/copy.bara.sky")
+  buildScriptForCopybaraPublic()
 } else if(isCopybaraPxAPI) {
-  buildScriptForCopybaraTemplate("pxapi-copy", "tools/copybara/pxapi_go/copy.bara.sky")
+  buildScriptForCopybaraPxAPI()
 }else {
   buildScriptForCommits()
 }
