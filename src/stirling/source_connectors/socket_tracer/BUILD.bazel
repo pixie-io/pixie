@@ -394,14 +394,3 @@ pl_cc_test(
         "//src/stirling/testing:cc_library",
     ],
 )
-
-pl_cc_test(
-    name = "detect_application_test",
-    timeout = "moderate",
-    srcs = ["detect_application_test.cc"],
-    tags = ["requires_bpf"],
-    deps = [
-        ":cc_library",
-        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
-    ],
-)

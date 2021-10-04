@@ -32,8 +32,8 @@
 #include "src/stirling/obj_tools/dwarf_tools.h"
 #include "src/stirling/obj_tools/go_syms.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
-#include "src/stirling/source_connectors/socket_tracer/detect_application.h"
 #include "src/stirling/source_connectors/socket_tracer/uprobe_symaddrs.h"
+#include "src/stirling/utils/detect_application.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
 DEFINE_bool(stirling_rescan_for_dlopen, false,

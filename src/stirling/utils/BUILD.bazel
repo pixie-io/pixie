@@ -28,6 +28,7 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     deps = [
+        "//src/common/exec:cc_library",
         "//src/common/fs:cc_library",
         "//src/common/minitar:cc_library",
         "//src/common/system:cc_library",
@@ -132,4 +133,15 @@ pl_cc_test(
     name = "enum_map_test",
     srcs = ["enum_map_test.cc"],
     deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "detect_application_test",
+    timeout = "moderate",
+    srcs = ["detect_application_test.cc"],
+    tags = ["requires_bpf"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
+    ],
 )

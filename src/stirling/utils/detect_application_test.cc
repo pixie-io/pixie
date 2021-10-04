@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/stirling/source_connectors/socket_tracer/detect_application.h"
+#include "src/stirling/utils/detect_application.h"
 
 #include <string>
 #include <vector>
