@@ -34,8 +34,53 @@ import (
 
 func init() {
 	pflag.String("auth0_host", "https://pixie-labs.auth0.com", "The auth0 hostname")
+	pflag.String("google_oauth_userinfo_url", "https://www.googleapis.com/oauth2/v2/userinfo", "Google OAuth2 URL for userinfo.")
 	pflag.String("auth0_client_id", "", "Auth0 client ID")
 	pflag.String("auth0_client_secret", "", "Auth0 client secret")
+}
+
+// Returns an OrgName for the identity according to the IdentityProvider.
+// If the returned string is empty, the identity does not belong to an org.
+func (a *Auth0Connector) retrieveOrgName(ident *auth0Identity) (string, error) {
+	// We only implement for google-oauth2 connections for now.
+	if ident.Provider != "google-oauth2" {
+		return "", nil
+	}
+	token := ident.AccessToken
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", a.cfg.GoogleOAuth2UserInfoURL, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Authorization",
+		fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.New("bad response from google")
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
+
+	if err != nil {
+		return "", err
+	}
+
+	var userInfo struct {
+		// HostedDomain is the hosted G Suite domain of the user. Provided only if the user belongs to a hosted domain.
+		// see https://developers.google.com/identity/protocols/oauth2/openid-connect#an-id-tokens-payload for more info.
+		HostedDomain string `json:"hd,omitempty"`
+	}
+	if err = json.Unmarshal(body, &userInfo); err != nil {
+		return "", err
+	}
+	return userInfo.HostedDomain, nil
 }
 
 // auth0UserMetadata is a part of the Auth0 response.
@@ -45,7 +90,8 @@ type auth0UserMetadata struct {
 }
 
 type auth0Identity struct {
-	Provider string `json:"provider,omitempty"`
+	Provider    string `json:"provider,omitempty"`
+	AccessToken string `json:"access_token,omitempty"`
 }
 
 // auth0UserInfo tracks the returned auth0 info.
@@ -69,6 +115,7 @@ type Auth0Config struct {
 	Auth0UserInfoEndpoint   string
 	Auth0ClientID           string
 	Auth0ClientSecret       string
+	GoogleOAuth2UserInfoURL string
 }
 
 // NewAuth0Config generates and Auth0Config based on env vars and flags.
@@ -81,6 +128,7 @@ func NewAuth0Config() Auth0Config {
 		Auth0UserInfoEndpoint:   auth0Host + "/userinfo",
 		Auth0ClientID:           viper.GetString("auth0_client_id"),
 		Auth0ClientSecret:       viper.GetString("auth0_client_secret"),
+		GoogleOAuth2UserInfoURL: viper.GetString("google_oauth_userinfo_url"),
 	}
 	return cfg
 }
@@ -248,15 +296,21 @@ func (a *Auth0Connector) GetUserInfo(userID string) (*UserInfo, error) {
 		return nil, fmt.Errorf("User has multiple idproviders: %s", strings.Join(idps, ","))
 	}
 
+	orgName, err := a.retrieveOrgName(userInfo.Identities[0])
+	if err != nil {
+		return nil, err
+	}
+
 	// Convert auth0UserInfo to UserInfo.
 	u := &UserInfo{
-		Email:            userInfo.Email,
-		FirstName:        userInfo.FirstName,
-		LastName:         userInfo.LastName,
-		Name:             userInfo.Name,
-		Picture:          userInfo.Picture,
-		IdentityProvider: idp,
-		AuthProviderID:   userInfo.UserID,
+		Email:                   userInfo.Email,
+		FirstName:               userInfo.FirstName,
+		LastName:                userInfo.LastName,
+		Name:                    userInfo.Name,
+		Picture:                 userInfo.Picture,
+		IdentityProvider:        idp,
+		AuthProviderID:          userInfo.UserID,
+		IdentityProviderOrgName: orgName,
 	}
 	clientID := a.cfg.Auth0ClientID
 	// If user does not exist in userInfo, then create a new user if specified.

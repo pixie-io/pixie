@@ -19,6 +19,7 @@
 package controllers_test
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -36,6 +37,7 @@ func SetupViperEnvironment(t *testing.T, hostname string) func() {
 	viper.Set("auth0_host", hostname)
 	viper.Set("auth0_client_id", "foo")
 	viper.Set("auth0_client_secret", "bar")
+	viper.Set("google_oauth_userinfo_url", fmt.Sprintf("%s/%s", hostname, "google/oauth2/userinfo"))
 
 	return func() {
 		viper.Reset()
@@ -210,6 +212,66 @@ func TestAuth0ConnectorImpl_GetUserInfo(t *testing.T) {
 	assert.Equal(t, "test_pl_user_id", userInfo.PLUserID)
 	assert.Equal(t, "github", userInfo.IdentityProvider)
 	assert.Equal(t, "github|123990813094", userInfo.AuthProviderID)
+	assert.Equal(t, "", userInfo.IdentityProviderOrgName)
+}
+
+func TestAuth0ConnectorImpl_GetUserInfo_GoogleOAuth(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		// Return valid management token.
+		if r.URL.String() == "/oauth/token" {
+			_, err := w.Write([]byte(`{"access_token": "test_token"}`))
+			require.NoError(t, err)
+			return
+		}
+
+		if r.URL.String() == "/google/oauth2/userinfo" {
+			_, err := w.Write([]byte(`{"hd": "test.com"}`))
+			require.NoError(t, err)
+			assert.Equal(t, "Bearer google-token", r.Header.Get("Authorization"))
+			return
+		}
+
+		assert.Equal(t, "/api/v2/users/abcd", r.URL.String())
+		assert.Equal(t, "Bearer test_token", r.Header.Get("Authorization"))
+		_, err := w.Write([]byte(`
+			{
+				"email": "testuser@test.com",
+				"name": "Test User",
+				"picture": "picture.jpg",
+				"user_id": "google-oauth2|123990813094",
+				"app_metadata": {
+					"foo": {
+						"pl_user_id": "test_pl_user_id"
+					}
+				},
+				"identities": [{
+					"provider": "google-oauth2",
+					"access_token": "google-token"
+				}]
+			}`))
+		require.NoError(t, err)
+	}))
+	defer server.Close()
+
+	cleanup := SetupViperEnvironment(t, server.URL)
+	defer cleanup()
+
+	cfg := controllers.NewAuth0Config()
+	c, err := controllers.NewAuth0Connector(cfg)
+	require.NoError(t, err)
+
+	userInfo, err := c.GetUserInfo("abcd")
+	assert.Equal(t, 3, callCount)
+	require.NoError(t, err)
+	assert.Equal(t, "testuser@test.com", userInfo.Email)
+	assert.Equal(t, "Test User", userInfo.Name)
+	assert.Equal(t, "picture.jpg", userInfo.Picture)
+	assert.Equal(t, "test_pl_user_id", userInfo.PLUserID)
+	assert.Equal(t, "google-oauth2", userInfo.IdentityProvider)
+	assert.Equal(t, "google-oauth2|123990813094", userInfo.AuthProviderID)
+	assert.Equal(t, "test.com", userInfo.IdentityProviderOrgName)
 }
 
 func TestAuth0ConnectorImpl_GetUserInfo_BadResponse(t *testing.T) {
