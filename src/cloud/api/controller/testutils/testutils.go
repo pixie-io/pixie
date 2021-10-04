@@ -83,6 +83,7 @@ func CreateTestGraphQLEnv(t *testing.T) (controller.GraphQLEnv, *MockCloudClient
 type MockAPIClients struct {
 	MockAuth        *mock_auth.MockAuthServiceClient
 	MockProfile     *mock_profilepb.MockProfileServiceClient
+	MockOrg         *mock_profilepb.MockOrgServiceClient
 	MockVzDeployKey *mock_vzmgrpb.MockVZDeploymentKeyServiceClient
 	MockAPIKey      *mock_auth.MockAPIKeyServiceClient
 	MockVzMgr       *mock_vzmgrpb.MockVZMgrServiceClient
@@ -99,12 +100,13 @@ func CreateTestAPIEnv(t *testing.T) (apienv.APIEnv, *MockAPIClients, func()) {
 
 	mockAuthClient := mock_auth.NewMockAuthServiceClient(ctrl)
 	mockProfileClient := mock_profilepb.NewMockProfileServiceClient(ctrl)
+	mockOrgClient := mock_profilepb.NewMockOrgServiceClient(ctrl)
 	mockVzMgrClient := mock_vzmgrpb.NewMockVZMgrServiceClient(ctrl)
 	mockVzDeployKey := mock_vzmgrpb.NewMockVZDeploymentKeyServiceClient(ctrl)
 	mockAPIKey := mock_auth.NewMockAPIKeyServiceClient(ctrl)
 	mockArtifactTrackerClient := mock_artifacttrackerpb.NewMockArtifactTrackerClient(ctrl)
 	mockConfigMgrClient := mock_configmanagerpb.NewMockConfigManagerServiceClient(ctrl)
-	apiEnv, err := apienv.New(mockAuthClient, mockProfileClient, mockVzDeployKey, mockAPIKey, mockVzMgrClient, mockArtifactTrackerClient, nil, mockConfigMgrClient)
+	apiEnv, err := apienv.New(mockAuthClient, mockProfileClient, mockOrgClient, mockVzDeployKey, mockAPIKey, mockVzMgrClient, mockArtifactTrackerClient, nil, mockConfigMgrClient)
 	if err != nil {
 		t.Fatal("failed to init api env")
 	}
@@ -112,6 +114,7 @@ func CreateTestAPIEnv(t *testing.T) (apienv.APIEnv, *MockAPIClients, func()) {
 	return apiEnv, &MockAPIClients{
 		MockAuth:        mockAuthClient,
 		MockProfile:     mockProfileClient,
+		MockOrg:         mockOrgClient,
 		MockVzMgr:       mockVzMgrClient,
 		MockAPIKey:      mockAPIKey,
 		MockVzDeployKey: mockVzDeployKey,

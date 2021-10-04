@@ -20,8 +20,8 @@ package controller
 
 import (
 	"context"
-	"errors"
 
+	"github.com/gofrs/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -37,6 +37,7 @@ import (
 type OrganizationServiceServer struct {
 	ProfileServiceClient profilepb.ProfileServiceClient
 	AuthServiceClient    authpb.AuthServiceClient
+	OrgServiceClient     profilepb.OrgServiceClient
 }
 
 // InviteUser creates and returns an invite link for the org for the specified user info.
@@ -155,15 +156,102 @@ func (o *OrganizationServiceServer) GetUsersInOrg(ctx context.Context, req *clou
 
 // AddOrgIDEConfig adds the IDE config for the given org.
 func (o *OrganizationServiceServer) AddOrgIDEConfig(ctx context.Context, req *cloudpb.AddOrgIDEConfigRequest) (*cloudpb.AddOrgIDEConfigResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	ctx, err := contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	claimsOrgID := sCtx.Claims.GetUserClaims().OrgID
+	reqOrgID := utils.UUIDFromProtoOrNil(req.OrgID)
+	if uuid.FromStringOrNil(claimsOrgID) != reqOrgID {
+		return nil, status.Errorf(codes.Unauthenticated, "Could not add IDE config for org")
+	}
+
+	resp, err := o.OrgServiceClient.AddOrgIDEConfig(ctx, &profilepb.AddOrgIDEConfigRequest{
+		OrgID: req.OrgID,
+		Config: &profilepb.IDEConfig{
+			IDEName: req.Config.IDEName,
+			Path:    req.Config.Path,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &cloudpb.AddOrgIDEConfigResponse{
+		Config: &cloudpb.IDEConfig{
+			IDEName: resp.Config.IDEName,
+			Path:    resp.Config.Path,
+		},
+	}, nil
 }
 
 // DeleteOrgIDEConfig deletes the IDE config from the given org.
 func (o *OrganizationServiceServer) DeleteOrgIDEConfig(ctx context.Context, req *cloudpb.DeleteOrgIDEConfigRequest) (*cloudpb.DeleteOrgIDEConfigResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	ctx, err := contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	claimsOrgID := sCtx.Claims.GetUserClaims().OrgID
+	reqOrgID := utils.UUIDFromProtoOrNil(req.OrgID)
+	if uuid.FromStringOrNil(claimsOrgID) != reqOrgID {
+		return nil, status.Errorf(codes.Unauthenticated, "Could not delete IDE config for org")
+	}
+
+	_, err = o.OrgServiceClient.DeleteOrgIDEConfig(ctx, &profilepb.DeleteOrgIDEConfigRequest{
+		OrgID:   req.OrgID,
+		IDEName: req.IDEName,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &cloudpb.DeleteOrgIDEConfigResponse{}, nil
 }
 
 // GetOrgIDEConfigs gets all IDE configs from the given org.
 func (o *OrganizationServiceServer) GetOrgIDEConfigs(ctx context.Context, req *cloudpb.GetOrgIDEConfigsRequest) (*cloudpb.GetOrgIDEConfigsResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	ctx, err := contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	claimsOrgID := sCtx.Claims.GetUserClaims().OrgID
+	reqOrgID := utils.UUIDFromProtoOrNil(req.OrgID)
+	if uuid.FromStringOrNil(claimsOrgID) != reqOrgID {
+		return nil, status.Errorf(codes.Unauthenticated, "Could not get IDE configs for org")
+	}
+
+	resp, err := o.OrgServiceClient.GetOrgIDEConfigs(ctx, &profilepb.GetOrgIDEConfigsRequest{
+		OrgID:   req.OrgID,
+		IDEName: req.IDEName,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	configs := make([]*cloudpb.IDEConfig, len(resp.Configs))
+	for i, c := range resp.Configs {
+		configs[i] = &cloudpb.IDEConfig{
+			IDEName: c.IDEName,
+			Path:    c.Path,
+		}
+	}
+
+	return &cloudpb.GetOrgIDEConfigsResponse{
+		Configs: configs,
+	}, nil
 }

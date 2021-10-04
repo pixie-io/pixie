@@ -44,6 +44,7 @@ type APIEnv interface {
 	CookieStore() sessions.Store
 	AuthClient() authpb.AuthServiceClient
 	ProfileClient() profilepb.ProfileServiceClient
+	OrgClient() profilepb.OrgServiceClient
 	VZMgrClient() vzmgrpb.VZMgrServiceClient
 	VZDeploymentKeyClient() vzmgrpb.VZDeploymentKeyServiceClient
 	APIKeyClient() authpb.APIKeyServiceClient
@@ -65,6 +66,7 @@ type Impl struct {
 	cookieStore            sessions.Store
 	authClient             authpb.AuthServiceClient
 	profileClient          profilepb.ProfileServiceClient
+	orgClient              profilepb.OrgServiceClient
 	vzDeployKeyClient      vzmgrpb.VZDeploymentKeyServiceClient
 	apiKeyClient           authpb.APIKeyServiceClient
 	vzMgrClient            vzmgrpb.VZMgrServiceClient
@@ -74,7 +76,7 @@ type Impl struct {
 }
 
 // New creates a new api env.
-func New(ac authpb.AuthServiceClient, pc profilepb.ProfileServiceClient,
+func New(ac authpb.AuthServiceClient, pc profilepb.ProfileServiceClient, oc profilepb.OrgServiceClient,
 	vk vzmgrpb.VZDeploymentKeyServiceClient, ak authpb.APIKeyServiceClient, vc vzmgrpb.VZMgrServiceClient,
 	at artifacttrackerpb.ArtifactTrackerClient, oa IdentityProviderClient,
 	cm configmanagerpb.ConfigManagerServiceClient) (APIEnv, error) {
@@ -84,7 +86,7 @@ func New(ac authpb.AuthServiceClient, pc profilepb.ProfileServiceClient,
 	}
 
 	sessionStore := sessions.NewCookieStore([]byte(sessionKey))
-	return &Impl{env.New(viper.GetString("domain_name")), sessionStore, ac, pc, vk, ak, vc, at, oa, cm}, nil
+	return &Impl{env.New(viper.GetString("domain_name")), sessionStore, ac, pc, oc, vk, ak, vc, at, oa, cm}, nil
 }
 
 // CookieStore returns the CookieStore from the environment.
@@ -100,6 +102,11 @@ func (e *Impl) AuthClient() authpb.AuthServiceClient {
 // ProfileClient returns a profile service client.
 func (e *Impl) ProfileClient() profilepb.ProfileServiceClient {
 	return e.profileClient
+}
+
+// OrgClient returns a org service client.
+func (e *Impl) OrgClient() profilepb.OrgServiceClient {
+	return e.orgClient
 }
 
 // VZDeploymentKeyClient returns a Vizier deploy key client.

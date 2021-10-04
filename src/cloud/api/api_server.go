@@ -86,6 +86,11 @@ func main() {
 		log.WithError(err).Fatal("Failed to init profile client")
 	}
 
+	oc, err := apienv.NewOrgServiceClient()
+	if err != nil {
+		log.WithError(err).Error("Failed to init org client")
+	}
+
 	cm, err := apienv.NewConfigManagerServiceClient()
 	if err != nil {
 		log.WithError(err).Fatal("Failed to init config manager client")
@@ -111,7 +116,7 @@ func main() {
 		log.WithError(err).Fatal("Failed to init Hydra + Kratos idprovider client")
 	}
 
-	env, err := apienv.New(ac, pc, vk, ak, vc, at, oa, cm)
+	env, err := apienv.New(ac, pc, oc, vk, ak, vc, at, oa, cm)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create api environment")
 	}
@@ -250,7 +255,7 @@ func main() {
 	profileServer := &controller.ProfileServer{ProfileServiceClient: pc}
 	cloudpb.RegisterProfileServiceServer(s.GRPCServer(), profileServer)
 
-	os := &controller.OrganizationServiceServer{ProfileServiceClient: pc, AuthServiceClient: ac}
+	os := &controller.OrganizationServiceServer{ProfileServiceClient: pc, AuthServiceClient: ac, OrgServiceClient: oc}
 	cloudpb.RegisterOrganizationServiceServer(s.GRPCServer(), os)
 
 	us := &controller.UserServiceServer{ProfileServiceClient: pc}

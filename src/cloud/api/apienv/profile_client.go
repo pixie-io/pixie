@@ -45,3 +45,18 @@ func NewProfileServiceClient() (profilepb.ProfileServiceClient, error) {
 
 	return profilepb.NewProfileServiceClient(authChannel), nil
 }
+
+// NewOrgServiceClient creates a new org RPC client stub.
+func NewOrgServiceClient() (profilepb.OrgServiceClient, error) {
+	dialOpts, err := services.GetGRPCClientDialOpts()
+	if err != nil {
+		return nil, err
+	}
+
+	authChannel, err := grpc.Dial(viper.GetString("profile_service"), dialOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return profilepb.NewOrgServiceClient(authChannel), nil
+}

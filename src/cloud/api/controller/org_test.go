@@ -30,6 +30,7 @@ import (
 	"px.dev/pixie/src/cloud/api/controller"
 	"px.dev/pixie/src/cloud/api/controller/testutils"
 	"px.dev/pixie/src/cloud/auth/authpb"
+	"px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/utils"
 )
 
@@ -68,7 +69,7 @@ func TestOrganizationServiceServer_InviteUser(t *testing.T) {
 					InviteLink: "withpixie.ai/invite&id=abcd",
 				}, nil)
 
-			os := &controller.OrganizationServiceServer{mockClients.MockProfile, mockClients.MockAuth}
+			os := &controller.OrganizationServiceServer{mockClients.MockProfile, mockClients.MockAuth, mockClients.MockOrg}
 
 			resp, err := os.InviteUser(ctx, &cloudpb.InviteUserRequest{
 				Email:     "bobloblaw@lawblog.law",
@@ -81,4 +82,106 @@ func TestOrganizationServiceServer_InviteUser(t *testing.T) {
 			assert.Equal(t, "withpixie.ai/invite&id=abcd", resp.InviteLink)
 		})
 	}
+}
+
+func TestOrganizationServiceServer_AddOrgIDEConfig(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateAPIUserTestContext()
+
+	mockClients.MockOrg.EXPECT().AddOrgIDEConfig(gomock.Any(), &profilepb.AddOrgIDEConfigRequest{
+		OrgID: utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+		Config: &profilepb.IDEConfig{
+			IDEName: "test",
+			Path:    "test://{{symbol}}",
+		},
+	}).Return(&profilepb.AddOrgIDEConfigResponse{
+		Config: &profilepb.IDEConfig{
+			IDEName: "test",
+			Path:    "test://{{symbol}}",
+		},
+	}, nil)
+
+	os := &controller.OrganizationServiceServer{mockClients.MockProfile, mockClients.MockAuth, mockClients.MockOrg}
+
+	resp, err := os.AddOrgIDEConfig(ctx, &cloudpb.AddOrgIDEConfigRequest{
+		OrgID: utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+		Config: &cloudpb.IDEConfig{
+			IDEName: "test",
+			Path:    "test://{{symbol}}",
+		},
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, "test", resp.Config.IDEName)
+	assert.Equal(t, "test://{{symbol}}", resp.Config.Path)
+}
+
+func TestOrganizationServiceServer_DeleteOrgIDEConfig(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateAPIUserTestContext()
+
+	mockClients.MockOrg.EXPECT().DeleteOrgIDEConfig(gomock.Any(), &profilepb.DeleteOrgIDEConfigRequest{
+		OrgID:   utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+		IDEName: "test",
+	}).Return(&profilepb.DeleteOrgIDEConfigResponse{}, nil)
+
+	os := &controller.OrganizationServiceServer{mockClients.MockProfile, mockClients.MockAuth, mockClients.MockOrg}
+
+	resp, err := os.DeleteOrgIDEConfig(ctx, &cloudpb.DeleteOrgIDEConfigRequest{
+		OrgID:   utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+		IDEName: "test",
+	})
+
+	require.NoError(t, err)
+	assert.NotNil(t, resp)
+}
+
+func TestOrganizationServiceServer_GetOrgIDEConfigs(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateAPIUserTestContext()
+
+	mockClients.MockOrg.EXPECT().GetOrgIDEConfigs(gomock.Any(), &profilepb.GetOrgIDEConfigsRequest{
+		OrgID: utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+	}).Return(&profilepb.GetOrgIDEConfigsResponse{
+		Configs: []*profilepb.IDEConfig{
+			&profilepb.IDEConfig{
+				IDEName: "test",
+				Path:    "test://{{symbol}}",
+			},
+			&profilepb.IDEConfig{
+				IDEName: "another-test",
+				Path:    "sublime://{{symbol}}",
+			},
+		},
+	}, nil)
+
+	os := &controller.OrganizationServiceServer{mockClients.MockProfile, mockClients.MockAuth, mockClients.MockOrg}
+
+	resp, err := os.GetOrgIDEConfigs(ctx, &cloudpb.GetOrgIDEConfigsRequest{
+		OrgID: utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, []*cloudpb.IDEConfig{
+		&cloudpb.IDEConfig{
+			IDEName: "test",
+			Path:    "test://{{symbol}}",
+		},
+		&cloudpb.IDEConfig{
+			IDEName: "another-test",
+			Path:    "sublime://{{symbol}}",
+		},
+	}, resp.Configs)
 }
