@@ -71,7 +71,7 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, message_type_t /* type */, std
     context.insert({std::string(ctx_key), unpacked_value});
   }
 
-  frame->context = context;
+  frame->context = std::move(context);
 
   // TODO: Add dest and dtab parsing here
 
