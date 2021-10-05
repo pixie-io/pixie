@@ -1901,6 +1901,8 @@ function generateColorScale(baseColor: string, overlayColor: string, overlayAlph
 const OVERLAY_COLOR = '#121212';
 const OVERLAY_ALPHA = 0.04;
 const OVERLAY_LEVELS = 1;
+export const SHIFT_CLICK_FLAMEGRAPH_SIGNAL = 'shift_click_flamegraph';
+
 function convertToStacktraceFlameGraph(
   display: StacktraceFlameGraphDisplay,
   source: string, theme: Theme): VegaSpecWithProps {
@@ -2429,6 +2431,21 @@ function convertToStacktraceFlameGraph(
           type: 'mouseup',
         },
         update: '{invalid: true}',
+      },
+    ],
+  });
+
+  addSignal(spec, {
+    name: SHIFT_CLICK_FLAMEGRAPH_SIGNAL,
+    on: [
+      {
+        events: {
+          source: 'scope',
+          type: 'click',
+          markname: 'stacktrace_rect',
+          filter: ['event.shiftKey'],
+        },
+        update: '{symbol: datum.name, x: event.x, y: event.y}',
       },
     ],
   });

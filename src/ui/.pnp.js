@@ -124,6 +124,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["moment", "npm:2.29.1"],
             ["monaco-editor", "npm:0.20.0"],
             ["monaco-editor-webpack-plugin", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:1.9.1"],
+            ["mustache", "npm:4.2.0"],
             ["numeral", "npm:2.0.6"],
             ["oidc-client", "npm:1.11.5"],
             ["pako", "npm:2.0.4"],
@@ -5057,6 +5058,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["moment", "npm:2.29.1"],
             ["monaco-editor", "npm:0.20.0"],
             ["monaco-editor-webpack-plugin", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:1.9.1"],
+            ["mustache", "npm:4.2.0"],
             ["numeral", "npm:2.0.6"],
             ["oidc-client", "npm:1.11.5"],
             ["pako", "npm:2.0.4"],
@@ -16577,6 +16579,15 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./.yarn/cache/multicast-dns-service-types-npm-1.1.0-d019ff060c-de10f16134.zip/node_modules/multicast-dns-service-types/",
           "packageDependencies": [
             ["multicast-dns-service-types", "npm:1.1.0"]
+          ],
+          "linkType": "HARD",
+        }]
+      ]],
+      ["mustache", [
+        ["npm:4.2.0", {
+          "packageLocation": "./.yarn/cache/mustache-npm-4.2.0-1fe3d6d77a-55540771ed.zip/node_modules/mustache/",
+          "packageDependencies": [
+            ["mustache", "npm:4.2.0"]
           ],
           "linkType": "HARD",
         }]

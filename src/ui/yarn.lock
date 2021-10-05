@@ -2957,6 +2957,7 @@ __metadata:
     moment: ^2.24.0
     monaco-editor: 0.20.0
     monaco-editor-webpack-plugin: ^1.9.0
+    mustache: ^4.2.0
     numeral: ^2.0.6
     oidc-client: ^1.11.5
     pako: ^2.0.4
@@ -12756,6 +12757,15 @@ fsevents@^1.2.7:
   bin:
     multicast-dns: cli.js
   checksum: 42ab042abe0fe3b5f71628ca099062dfad9e5bae7d955f990299c9e108aaa163abd960e42e31c9966d58091677e811f95e5d630a0fcb78713d34ea55233ddd8e
+  languageName: node
+  linkType: hard
+
+"mustache@npm:^4.2.0":
+  version: 4.2.0
+  resolution: "mustache@npm:4.2.0"
+  bin:
+    mustache: bin/mustache
+  checksum: 55540771ed2ca0a72d44c747bd57531ca70fd54c4b420eee580ef5ea021101359e679fbadf40f467e69be2b9086fa6a7be8613e91261fa072d5e321f66eaa748
   languageName: node
   linkType: hard
 

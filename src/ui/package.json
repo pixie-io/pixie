@@ -117,6 +117,7 @@
     "lodash": "^4.17.21",
     "moment": "^2.24.0",
     "monaco-editor": "0.20.0",
+    "mustache": "^4.2.0",
     "numeral": "^2.0.6",
     "oidc-client": "^1.11.5",
     "pako": "^2.0.4",

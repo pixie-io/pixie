@@ -22,7 +22,8 @@ import {
   buildHoverDataCache, formatLegendData, HoverDataCache, LegendData,
 } from 'app/containers/legend/legend-data';
 import {
-  ChartDisplay, convertWidgetDisplayToVegaSpec, EXTERNAL_HOVER_SIGNAL, EXTERNAL_TS_DOMAIN_SIGNAL,
+  ChartDisplay, convertWidgetDisplayToVegaSpec, SHIFT_CLICK_FLAMEGRAPH_SIGNAL, EXTERNAL_HOVER_SIGNAL,
+  EXTERNAL_TS_DOMAIN_SIGNAL,
   getColumnFromDisplay,
   getVegaFormatFunc,
   HOVER_PIVOT_TRANSFORM, HOVER_SIGNAL, INTERNAL_HOVER_SIGNAL, INTERNAL_TS_DOMAIN_SIGNAL,
@@ -46,6 +47,7 @@ import { createStyles } from '@material-ui/styles';
 
 import { formatFloat64Data } from 'app/utils/format-data';
 import { TimeSeriesContext } from '../context/time-series-context';
+import { FlamegraphIDEMenu } from './flamegraph-ide';
 
 const NUMERAL_FORMAT_STRING = '0.00';
 
@@ -154,6 +156,10 @@ const Vega = React.memo((props: VegaProps) => {
     { selectedSeries: [], hoveredSeries: '' },
   );
   const [hoverDataCache, setHoverDataCache] = React.useState<HoverDataCache>(null);
+  const [flamegraphMenuOpen, setFlamegraphMenuOpen] = React.useState(false);
+  const [flamegraphSymbol, setFlamegraphSymbol] = React.useState<string>('');
+
+  const fgMenuClose = React.useCallback(() => setFlamegraphMenuOpen(false), [setFlamegraphMenuOpen]);
 
   const chartRef = React.useRef(null);
 
@@ -216,6 +222,11 @@ const Vega = React.memo((props: VegaProps) => {
         }
         return merged;
       });
+    },
+
+    [SHIFT_CLICK_FLAMEGRAPH_SIGNAL]: (name, value) => {
+      setFlamegraphSymbol(value.symbol);
+      setFlamegraphMenuOpen(true);
     },
 
     // Add signal listener for width, because the origin changes when width changes.
@@ -332,6 +343,11 @@ const Vega = React.memo((props: VegaProps) => {
       {error ? <div>{error.toString()}</div>
         : (
           <div className={classes.flexbox} ref={chartRef}>
+            <FlamegraphIDEMenu
+              symbol={flamegraphSymbol}
+              open={flamegraphMenuOpen}
+              onClose={fgMenuClose}
+            />
             <ReactVega
               spec={spec}
               data={data}
