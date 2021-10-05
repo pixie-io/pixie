@@ -83,7 +83,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static constexpr uint32_t kRedisTableNum = TableNum(kTables, kRedisTable);
   static constexpr uint32_t kNATSTableNum = TableNum(kTables, kNATSTable);
   static constexpr uint32_t kKafkaTableNum = TableNum(kTables, kKafkaTable);
-  static constexpr uint32_t kMuxTableNum = TableNum(kTables, kMuxTable);
 
   static constexpr auto kSamplingPeriod = std::chrono::milliseconds{200};
   // TODO(yzhao): This is not used right now. Eventually use this to control data push frequency.
