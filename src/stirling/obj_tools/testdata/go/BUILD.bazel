@@ -36,8 +36,10 @@ go_binary(
 )
 
 filegroup(
-    name = "sockshop_service",
+    name = "precompiled_test_binaries",
     srcs = [
         "sockshop_payments_service",
+        "test_go_1_16_binary",
+        "test_go_1_17_binary",
     ],
 )

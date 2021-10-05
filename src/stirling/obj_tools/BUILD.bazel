@@ -65,8 +65,7 @@ pl_cc_test(
     srcs = ["dwarf_tools_test.cc"],
     data = [
         "//src/stirling/obj_tools/testdata/cc:test_exe_fixture",
-        "//src/stirling/obj_tools/testdata/go:sockshop_service",
-        "//src/stirling/obj_tools/testdata/go:test_go_binary",
+        "//src/stirling/obj_tools/testdata/go:precompiled_test_binaries",
         "//src/stirling/testing/demo_apps/go_grpc_tls_pl/server",
     ],
     deps = [

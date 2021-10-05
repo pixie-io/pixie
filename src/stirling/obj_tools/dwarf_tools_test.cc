@@ -21,8 +21,7 @@
 #include "src/common/testing/test_environment.h"
 #include "src/common/testing/testing.h"
 
-constexpr std::string_view kTestGoBinary =
-    "src/stirling/obj_tools/testdata/go/test_go_binary_/test_go_binary";
+constexpr std::string_view kTestGoBinary = "src/stirling/obj_tools/testdata/go/test_go_1_16_binary";
 constexpr std::string_view kGoGRPCServer =
     "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/server_/server";
 constexpr std::string_view kCppBinary = "src/stirling/obj_tools/testdata/cc/test_exe";
@@ -49,7 +48,7 @@ class DwarfReaderTest : public ::testing::TestWithParam<DwarfReaderTestParam> {
  protected:
   DwarfReaderTest()
       : kCppBinaryPath(px::testing::BazelBinTestFilePath(kCppBinary)),
-        kGoBinaryPath(px::testing::BazelBinTestFilePath(kTestGoBinary)),
+        kGoBinaryPath(px::testing::TestFilePath(kTestGoBinary)),
         kGoServerBinaryPath(px::testing::BazelBinTestFilePath(kGoGRPCServer)),
         kGoBinaryUnconventionalPath(px::testing::TestFilePath(kGoBinaryUnconventional)) {}
 
