@@ -19,6 +19,7 @@
 export * from './cloud-gql-client';
 export * from './vizier';
 export * from './vizier-grpc-client';
+export * from './vizier-table';
 
 export * from './api';
 export * from './api-options';

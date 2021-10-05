@@ -17,14 +17,14 @@
  */
 
 import * as React from 'react';
-import { Table } from 'app/api';
+import { VizierTable } from 'app/api';
 import { QueryExecutionStats, MutationInfo } from 'app/types/generated/vizierapi_pb';
 
 import { SetStateFunc } from './common';
 
 interface Results {
   error?: Error;
-  tables: Map<string, Table>;
+  tables: Map<string, VizierTable>;
   stats?: QueryExecutionStats;
   mutationInfo?: MutationInfo;
 }
@@ -47,7 +47,7 @@ export const ResultsContext = React.createContext<ResultsContextProps>(null);
  */
 export function useLatestRowCount(tableName: string): number {
   const { tables } = React.useContext(ResultsContext);
-  const count = tables.get(tableName)?.numRows ?? 0;
+  const count = tables.get(tableName)?.rows.length ?? 0;
   // This is what actually makes React watch for the change
   React.useEffect(() => {}, [tableName, count]);
   return count;

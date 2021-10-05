@@ -471,7 +471,10 @@ const DataTableImpl = React.memo<DataTableProps>(function DataTable({ table, ...
   const instance = useTable(
     {
       columns,
-      data,
+      // react-table doesn't notice if data.length changes, so unfortunately we need to shallow copy to reset identity.
+      // Doing so slows down as the number of rows increases, but thankfully not to a catastrophic degree.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      data: React.useMemo(() => data.slice(), [data.length]),
       defaultColumn,
       disableSortRemove: true,
       autoResetSortBy: false,

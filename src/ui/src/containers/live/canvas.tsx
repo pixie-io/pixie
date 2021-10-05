@@ -33,7 +33,7 @@ import * as GridLayout from 'react-grid-layout';
 import { resizeEvent, triggerResize } from 'app/utils/resize';
 import { dataFromProto } from 'app/utils/result-data-utils';
 import { Alert, AlertTitle } from '@material-ui/core';
-import { VizierQueryError, Table as VizierTable } from 'app/api';
+import { VizierQueryError, VizierTable } from 'app/api';
 import { containsMutation } from 'app/utils/pxl';
 import { VizierErrorDetails } from 'app/common/errors';
 
@@ -227,7 +227,7 @@ const WidgetDisplay: React.FC<{
         <div className={classes.widgetTitle}>{widgetName}</div>
         <QueryResultTable
           display={display as QueryResultTableDisplay}
-          data={table}
+          table={table}
           propagatedArgs={propagatedArgs}
         />
       </>
@@ -511,7 +511,7 @@ const Canvas: React.FC<CanvasProps> = React.memo(function Canvas({ editable, par
           Array.from(tables.entries()).map(([tableName, table]) => (
             <Paper elevation={1} key={tableName} className={className}>
               <div className={classes.widgetTitle}>{tableName}</div>
-              <QueryResultTable display={{} as QueryResultTableDisplay} data={table} propagatedArgs={propagatedArgs} />
+              <QueryResultTable display={{} as QueryResultTableDisplay} table={table} propagatedArgs={propagatedArgs} />
             </Paper>
           ))
         }

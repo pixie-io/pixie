@@ -17,9 +17,8 @@
  */
 
 import * as React from 'react';
-import { Table as VizierTable } from 'app/api';
+import { VizierTable } from 'app/api';
 import { Arguments } from 'app/utils/args-utils';
-import { dataFromProto } from 'app/utils/result-data-utils';
 import { ReactTable, DataTable, DataTableProps } from 'app/components/data-table/data-table';
 import { DataType, Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
 import { buildClass, CellAlignment } from 'app/components';
@@ -33,7 +32,6 @@ import { getSortFunc } from 'app/containers/live-data-table/sort-funcs';
 import { useLatestRowCount } from 'app/context/results-context';
 import { AutoSizerContext, withAutoSizerContext } from 'app/utils/autosizer';
 import { ColumnDisplayInfo, displayInfoFromColumn, titleFromInfo } from './column-display-info';
-import { parseRows } from './parsers';
 import ColumnInfo = Relation.ColumnInfo;
 
 // Note: if an alignment exists for both a column's semantic type and its data type, the semantic type takes precedence.
@@ -55,15 +53,6 @@ const DataAlignmentMap = new Map<DataType, CellAlignment>(
   ],
 );
 
-function rowsFromVizierTable(table: VizierTable): Array<Record<string, any>> {
-  const semanticTypeMap = table.relation.getColumnsList().reduce((acc, col) => {
-    acc.set(col.getColumnName(), col.getColumnSemanticType());
-    return acc;
-  }, new Map<string, SemanticType>());
-
-  return parseRows(semanticTypeMap, dataFromProto(table.relation, table.batches));
-}
-
 /** Transforms a table coming from a script into something react-table understands. */
 function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutterColumn?: string): ReactTable {
   // Some cell renderers need a bit of extra information that isn't directly related to the table.
@@ -71,11 +60,9 @@ function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutte
   const { selectedClusterName: cluster } = React.useContext(ClusterContext);
   const { embedState } = React.useContext(LiveRouteContext);
 
-  // Ensures the table checks for new data while streaming queries.
-  const numRows = useLatestRowCount(table.name);
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const rows = React.useMemo(() => rowsFromVizierTable(table), [table.batches, numRows]);
+  // Ensure that useConvertedTable re-renders when the table data is appended to (memoization doesn't see otherwise).
+  // Using table.rows.length in memo dependencies below still works, since that value updates on re-render.
+  useLatestRowCount(table.name);
 
   const [displayMap, setDisplayMap] = React.useState<Map<string, ColumnDisplayInfo>>(new Map());
 
@@ -88,7 +75,8 @@ function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutte
       setDisplayMap(new Map<string, ColumnDisplayInfo>(displayMap));
     };
 
-    const renderer = liveCellRenderer(display, updateDisplay, true, theme, cluster, rows, embedState, propagatedArgs);
+    const renderer = liveCellRenderer(
+      display, updateDisplay, true, theme, cluster, table.rows, embedState, propagatedArgs);
 
     const sortFunc = getSortFunc(display);
 
@@ -108,8 +96,8 @@ function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutte
       Header: titleFromInfo(display),
       accessor: col.getColumnName(),
       Cell({ value }) {
-        // TODO(nick,PC-1050): We're not doing width weights yet. Need to. Convert to ratio of default in DataTable?
-        // TODO(nick,PC-1050): Head/tail mode (data-table.tsx) for not-the-data-drawer.
+        // TODO(nick,PC-1123): We're not doing width weights yet. Need to. Convert to ratio of default in DataTable?
+        // TODO(nick,PC-1102): Head/tail mode (data-table.tsx) for not-the-data-drawer.
         return value != null ? renderer(value) : null;
       },
       original: col,
@@ -119,7 +107,9 @@ function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutte
         return sortFunc(a.original, b.original);
       },
     };
-  }, [cluster, displayMap, embedState, gutterColumn, propagatedArgs, rows, theme]);
+    // We monitor the length of the data array, not its identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cluster, displayMap, embedState, gutterColumn, propagatedArgs, table.rows.length, theme]);
 
   const columns = React.useMemo<ReactTable['columns']>(
     () => table.relation
@@ -129,7 +119,8 @@ function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutte
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [displayMap]);
 
-  return React.useMemo(() => ({ columns, data: rows }), [columns, rows]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return React.useMemo(() => ({ columns, data: table.rows }), [columns, table.rows.length]);
 }
 
 // This one has a sidebar for the currently-selected row, rather than placing it inline like the main data table does.

@@ -17,7 +17,7 @@
  */
 
 import { WidgetDisplay } from 'app/containers/live/vis';
-import { Table } from 'app/api';
+import { VizierTable } from 'app/api';
 import * as React from 'react';
 import { Theme, Typography, makeStyles } from '@material-ui/core';
 import { createStyles } from '@material-ui/styles';
@@ -51,17 +51,17 @@ export interface QueryResultTableDisplay extends WidgetDisplay {
 
 export interface QueryResultTableProps {
   display: QueryResultTableDisplay;
-  data: Table;
+  table: VizierTable;
   propagatedArgs: Arguments;
 }
 
 export const QueryResultTable = React.memo<QueryResultTableProps>(function QueryResultTable({
-  display, data, propagatedArgs,
+  display, table, propagatedArgs,
 }) {
   const classes = useStyles();
 
   // Ensures the summary updates while streaming queries.
-  const numRows = useLatestRowCount(data.name);
+  const numRows = useLatestRowCount(table.name);
 
   const [visibleStart, setVisibleStart] = React.useState(1);
   const [visibleStop, setVisibleStop] = React.useState(1);
@@ -85,7 +85,7 @@ export const QueryResultTable = React.memo<QueryResultTableProps>(function Query
     <div className={classes.root}>
       <div className={classes.table}>
         <LiveDataTable
-          table={data}
+          table={table}
           gutterColumn={display.gutterColumn}
           propagatedArgs={propagatedArgs}
           onRowsRendered={onRowsRendered}

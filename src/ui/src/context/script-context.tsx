@@ -24,7 +24,7 @@ import { getQueryFuncs } from 'app/containers/live/vis';
 import { Script } from 'app/utils/script-bundle';
 import pixieAnalytics from 'app/utils/analytics';
 import {
-  PixieAPIContext, ExecutionStateUpdate, VizierQueryError, GRPCStatusCode, Table,
+  PixieAPIContext, ExecutionStateUpdate, VizierQueryError, GRPCStatusCode, VizierTable,
 } from 'app/api';
 import { containsMutation, isStreaming } from 'app/utils/pxl';
 import { Observable } from 'rxjs';
@@ -222,9 +222,9 @@ export const ScriptContextProvider: React.FC = React.memo(function ScriptContext
           const updateData = update.event.data;
           resultsContext.setResults((prev) => {
             for (const updateBatch of updateData) {
-              const table: Table = prev.tables.get(updateBatch.name) ?? { ...updateBatch, batches: [], numRows: 0 };
-              table.batches.push(updateBatch.batch);
-              table.numRows = table.batches.reduce((sum, batch) => sum + batch.getNumRows(), 0);
+              const table: VizierTable = prev.tables.get(updateBatch.name)
+                ?? new VizierTable(updateBatch.id, updateBatch.name, updateBatch.relation);
+              table.appendBatch(updateBatch.batch);
               prev.tables.set(updateBatch.name, table);
             }
             return { ...prev };
@@ -249,10 +249,9 @@ export const ScriptContextProvider: React.FC = React.memo(function ScriptContext
               error: resultsContext.error,
               stats: update.results.executionStats,
               mutationInfo: resultsContext.mutationInfo,
-              tables: update.results.tables.reduce((map, table) => map.set(table.name, {
-                ...table,
-                numRows: table.batches.reduce((sum, batch) => sum + batch.getNumRows(), 0),
-              }), new Map()),
+              tables: update.results.tables.reduce(
+                (map, table) => map.set(table.name, table),
+                new Map()),
             });
           }
           // Query completed normally

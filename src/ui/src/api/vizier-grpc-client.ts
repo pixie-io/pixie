@@ -29,6 +29,7 @@ import {
 } from 'app/types/generated/vizierapi_pb';
 import { VizierServiceClient } from 'app/types/generated/VizierapiServiceClientPb';
 import { GRPCStatusCode, VizierQueryError } from './vizier';
+import { VizierTable } from './vizier-table';
 
 const noop = () => {};
 
@@ -48,17 +49,9 @@ export interface ExecuteScriptOptions {
   enableE2EEncryption: boolean;
 }
 
-export interface Table {
-  relation: Relation;
-  batches: RowBatchData[];
-  numRows: number;
-  name: string;
-  id: string;
-}
-
 export interface VizierQueryResult {
   queryId?: string;
-  tables: Table[];
+  tables: VizierTable[];
   status?: Status;
   executionStats?: QueryExecutionStats;
   mutationInfo?: MutationInfo;
@@ -95,7 +88,7 @@ interface ExecutionErrorEvent {
 
 interface ExecutionMetadataEvent {
   type: 'metadata';
-  table: Table;
+  table: VizierTable;
 }
 
 interface ExecutionMutationInfoEvent {
@@ -308,7 +301,7 @@ export class VizierGRPCClient {
       }
     };
     let keyPair: KeyPair;
-    const tablesMap = new Map<string, Table>();
+    const tablesMap = new Map<string, VizierTable>();
     const results: VizierQueryResult = { tables: [] };
 
     const rsaKeyPromise: Promise<KeyPair> = opts.enableE2EEncryption ? this.rsaKeyPromise : Promise.resolve(null);
@@ -415,12 +408,10 @@ export class VizierGRPCClient {
           }
 
           if (resp.hasMetaData()) {
-            const relation = resp.getMetaData().getRelation();
             const id = resp.getMetaData().getId();
             const name = resp.getMetaData().getName();
-            tablesMap.set(id, {
-              relation, id, name, batches: [], numRows: 0,
-            });
+            const relation = resp.getMetaData().getRelation();
+            tablesMap.set(id, new VizierTable(id, name, relation));
             const table = tablesMap.get(id);
             results.tables.push(table);
             results.schemaOnly = true;
@@ -437,7 +428,7 @@ export class VizierGRPCClient {
               const id = batch.getTableId();
               const table = tablesMap.get(id);
               const { name, relation } = table;
-              table.batches.push(batch);
+              table.appendBatch(batch);
               dataBatch.push({
                 id, name, relation, batch,
               });

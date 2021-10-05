@@ -17,7 +17,7 @@
  */
 
 import { SemanticType } from 'app/types/generated/vizierapi_pb';
-import { parseRows } from './parsers';
+import { parseRows } from './result-data-parsers';
 
 describe('parseRows', () => {
   it('correctly parses a row with quantiles', () => {
