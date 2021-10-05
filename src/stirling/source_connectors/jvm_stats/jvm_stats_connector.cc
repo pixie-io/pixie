@@ -27,6 +27,7 @@
 #include "src/common/system/proc_parser.h"
 #include "src/stirling/source_connectors/jvm_stats/jvm_stats_table.h"
 #include "src/stirling/source_connectors/jvm_stats/utils/java.h"
+#include "src/stirling/utils/detect_application.h"
 #include "src/stirling/utils/proc_tracker.h"
 
 DEFINE_int32(
@@ -43,16 +44,23 @@ Status JVMStatsConnector::InitImpl() {
 }
 
 void JVMStatsConnector::FindJavaUPIDs(const ConnectorContext& ctx) {
+  const auto& proc_parser = system::ProcParser(system::Config::GetInstance());
   proc_tracker_.Update(ctx.GetUPIDs());
 
   for (const auto& upid : proc_tracker_.new_upids()) {
     // The host PID 1 is not a Java app. However, when later invoking HsperfdataPath(), it could be
     // confused to conclude that there is a hsperfdata file for PID 1, because of the limitations
     // of ResolveMountPoint().
-    if (upid.pid() == 1) {
+    const uint32_t pid = upid.pid();
+
+    if (pid == 1) {
       continue;
     }
-    PL_ASSIGN_OR(auto hsperf_data_path, java::HsperfdataPath(upid.pid()), continue);
+    PL_ASSIGN_OR(const std::filesystem::path proc_exe, proc_parser.GetExePath(pid), continue);
+    if (DetectApplication(proc_exe) != Application::kJava) {
+      continue;
+    }
+    PL_ASSIGN_OR(auto hsperf_data_path, java::HsperfdataPath(pid), continue);
     java_procs_[upid].hsperf_data_path = hsperf_data_path;
   }
 }
