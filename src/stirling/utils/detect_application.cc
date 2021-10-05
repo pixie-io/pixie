@@ -37,13 +37,15 @@ Application DetectApplication(const std::filesystem::path& exe) {
   constexpr std::string_view kNodeFileName = "node";
   constexpr std::string_view kNodejsFileName = "nodejs";
 
+  if (exe.empty()) {
+    return Application::kUnknown;
+  }
   if (exe.filename() == kNodeFileName || exe.filename() == kNodejsFileName) {
     return Application::kNode;
   }
   if (exe.filename() == kJavaFileName) {
     return Application::kJava;
   }
-
   return Application::kUnknown;
 }
 

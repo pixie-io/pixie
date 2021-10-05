@@ -316,10 +316,6 @@ StatusOr<std::array<UProbeTmpl, 6>> UProbeManager::GetNodeOpensslUProbeTmpls(con
 StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(uint32_t pid) {
   PL_ASSIGN_OR_RETURN(std::filesystem::path proc_exe, proc_parser_->GetExePath(pid));
 
-  if (proc_exe.empty()) {
-    return 0;
-  }
-
   if (DetectApplication(proc_exe) != Application::kNode) {
     return 0;
   }
