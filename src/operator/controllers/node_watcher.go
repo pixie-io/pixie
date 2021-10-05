@@ -20,6 +20,7 @@ package controllers
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/blang/semver"
@@ -46,7 +47,18 @@ var (
 )
 
 func nodeIsCompatible(node *v1.Node) bool {
-	currentSemVer, err := semver.Make(node.Status.NodeInfo.KernelVersion)
+	version := node.Status.NodeInfo.KernelVersion
+	// We don't actually care about pre-release tags, so drop them since they sometimes cause parse error.
+	sp := strings.Split(version, "-")
+	if len(sp) == 0 {
+		return true
+	}
+	version = sp[0]
+	version = strings.TrimPrefix(version, "v")
+	// Minor version can sometime contain a "+", we remove it so it parses properly with semver.
+	version = strings.TrimSuffix(version, "+")
+
+	currentSemVer, err := semver.Make(version)
 	if err != nil {
 		log.WithError(err).Error("Failed to parse current Node Kernel version")
 		return true
