@@ -840,7 +840,7 @@ int probe_http2_framer_check_frame_order(struct pt_regs* ctx) {
   // Extract arguments (on stack)
   // ---------------------------------------------
 
-  const char* sp = (const char*)ctx->sp;
+  const void* sp = (const void*)ctx->sp;
 
   void* framer_ptr;
   bpf_probe_read(&framer_ptr, sizeof(void*), sp + symaddrs->http2_checkFrameOrder_fr_offset);
@@ -941,7 +941,7 @@ int probe_http_http2framer_check_frame_order(struct pt_regs* ctx) {
   // Extract arguments (on stack)
   // ---------------------------------------------
 
-  const char* sp = (const char*)ctx->sp;
+  const void* sp = (const void*)ctx->sp;
 
   void* framer_ptr;
   bpf_probe_read(&framer_ptr, sizeof(void*), sp + symaddrs->http2Framer_checkFrameOrder_fr_offset);
@@ -1101,7 +1101,7 @@ int probe_http_http2framer_write_data(struct pt_regs* ctx) {
   // Extract arguments (on stack)
   // ---------------------------------------------
 
-  const char* sp = (const char*)ctx->sp;
+  const void* sp = (const void*)ctx->sp;
 
   void* framer_ptr;
   bpf_probe_read(&framer_ptr, sizeof(void*), sp + symaddrs->http2Framer_WriteDataPadded_f_offset);

@@ -53,7 +53,7 @@ int probe_tls_conn_write(struct pt_regs* ctx) {
   // Extract arguments (on stack)
   // ---------------------------------------------
 
-  const char* sp = (const char*)ctx->sp;
+  const void* sp = (const void*)ctx->sp;
 
   void* conn_ptr;
   bpf_probe_read(&conn_ptr, sizeof(void*), sp + symaddrs->Write_c_offset);
@@ -124,7 +124,7 @@ int probe_tls_conn_read(struct pt_regs* ctx) {
   // Extract arguments (on stack)
   // ---------------------------------------------
 
-  const char* sp = (const char*)ctx->sp;
+  const void* sp = (const void*)ctx->sp;
 
   void* conn_ptr;
   bpf_probe_read(&conn_ptr, sizeof(void*), sp + symaddrs->Read_c_offset);
