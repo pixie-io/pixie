@@ -131,7 +131,7 @@ TEST_F(MuxParserTest, ParseFrameTdispatch) {
   ASSERT_EQ(state, ParseState::kSuccess);
 
   ASSERT_EQ(frame.context.size(), 3);
-  std::map<std::string, std::string> traceCtx = {
+  std::map<std::string, std::string> trace_ctx = {
     {"span id", "4821737427585769174"},
     {"parent id", "4821737427585769174"},
     {"trace id", "4821737427585769174"},
@@ -144,7 +144,7 @@ TEST_F(MuxParserTest, ParseFrameTdispatch) {
   std::map<std::string, std::string> retries = {
     {"length", "4"},
   };
-  ASSERT_EQ(frame.context["com.twitter.finagle.tracing.TraceContext"], traceCtx);
+  ASSERT_EQ(frame.context["com.twitter.finagle.tracing.TraceContext"], trace_ctx);
   ASSERT_EQ(frame.context["com.twitter.finagle.Deadline"], deadline);
   ASSERT_EQ(frame.context["com.twitter.finagle.Retries"], retries);
 }

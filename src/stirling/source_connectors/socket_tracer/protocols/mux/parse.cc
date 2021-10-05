@@ -9,9 +9,9 @@ namespace mux {
 ParseState ParseFullFrame(BinaryDecoder* decoder, message_type_t /* type */, std::string_view* buf, Frame* frame) {
 
   // TODO(oazizi/ddelnano): Simplify this logic when the binary decoder supports reading 24 bit fields
-  PL_ASSIGN_OR(uint16_t tagFirst, decoder->ExtractInt<uint16_t>(), return ParseState::kInvalid);
-  PL_ASSIGN_OR(uint8_t tagLast, decoder->ExtractInt<uint8_t>(), return ParseState::kInvalid);
-  frame->tag = (tagFirst << 8) | tagLast;
+  PL_ASSIGN_OR(uint16_t tag_first, decoder->ExtractInt<uint16_t>(), return ParseState::kInvalid);
+  PL_ASSIGN_OR(uint8_t tag_last, decoder->ExtractInt<uint8_t>(), return ParseState::kInvalid);
+  frame->tag = (tag_first << 8) | tag_last;
 
   if (frame->type == static_cast<int8_t>(Type::RerrOld) || frame->type == static_cast<int8_t>(Type::Rerr)) {
     size_t why_len = buf->length() - 8;
@@ -26,49 +26,49 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, message_type_t /* type */, std
   }
   // TODO: Add support for reading the Rdispatch reply status
 
-  PL_ASSIGN_OR(int16_t numCtx, decoder->ExtractInt<int16_t>(), return ParseState::kInvalid);
+  PL_ASSIGN_OR(int16_t num_ctx, decoder->ExtractInt<int16_t>(), return ParseState::kInvalid);
   std::map<std::string, std::map<std::string, std::string>> context;
 
-  for (int i = 0; i < numCtx; i++) {
-    PL_ASSIGN_OR(size_t ctxKeyLen, decoder->ExtractInt<int16_t>(), return ParseState::kInvalid);
-    PL_ASSIGN_OR(std::string_view ctxKey, decoder->ExtractString(ctxKeyLen), return ParseState::kInvalid);
+  for (int i = 0; i < num_ctx; i++) {
+    PL_ASSIGN_OR(size_t ctx_key_len, decoder->ExtractInt<int16_t>(), return ParseState::kInvalid);
+    PL_ASSIGN_OR(std::string_view ctx_key, decoder->ExtractString(ctx_key_len), return ParseState::kInvalid);
 
-    PL_ASSIGN_OR(size_t ctxValueLen, decoder->ExtractInt<int16_t>(), return ParseState::kInvalid);
+    PL_ASSIGN_OR(size_t ctx_value_len, decoder->ExtractInt<int16_t>(), return ParseState::kInvalid);
 
-    std::map<std::string, std::string> unpackedValue;
-    if (ctxKey == "com.twitter.finagle.Deadline") {
+    std::map<std::string, std::string> unpacked_value;
+    if (ctx_key == "com.twitter.finagle.Deadline") {
 
       PL_ASSIGN_OR(int64_t timestamp, decoder->ExtractInt<int64_t>(), return ParseState::kInvalid);
       PL_ASSIGN_OR(int64_t deadline, decoder->ExtractInt<int64_t>(), return ParseState::kInvalid);
 
-      unpackedValue["timestamp"] = std::to_string(timestamp / 1000);
-      unpackedValue["deadline"] = std::to_string(deadline / 1000);
+      unpacked_value["timestamp"] = std::to_string(timestamp / 1000);
+      unpacked_value["deadline"] = std::to_string(deadline / 1000);
 
-    } else if (ctxKey == "com.twitter.finagle.tracing.TraceContext") {
+    } else if (ctx_key == "com.twitter.finagle.tracing.TraceContext") {
 
-      PL_ASSIGN_OR(int64_t spanId, decoder->ExtractInt<int64_t>(), return ParseState::kInvalid);
-      PL_ASSIGN_OR(int64_t parentId, decoder->ExtractInt<int64_t>(), return ParseState::kInvalid);
-      PL_ASSIGN_OR(int64_t traceId, decoder->ExtractInt<int64_t>(), return ParseState::kInvalid);
+      PL_ASSIGN_OR(int64_t span_id, decoder->ExtractInt<int64_t>(), return ParseState::kInvalid);
+      PL_ASSIGN_OR(int64_t parent_id, decoder->ExtractInt<int64_t>(), return ParseState::kInvalid);
+      PL_ASSIGN_OR(int64_t trace_id, decoder->ExtractInt<int64_t>(), return ParseState::kInvalid);
       PL_ASSIGN_OR(int64_t flags, decoder->ExtractInt<int64_t>(), return ParseState::kInvalid);
 
-      unpackedValue["span id"] = std::to_string(spanId);
-      unpackedValue["parent id"] = std::to_string(parentId);
-      unpackedValue["trace id"] = std::to_string(traceId);
-      unpackedValue["flags"] = std::to_string(flags);
+      unpacked_value["span id"] = std::to_string(span_id);
+      unpacked_value["parent id"] = std::to_string(parent_id);
+      unpacked_value["trace id"] = std::to_string(trace_id);
+      unpacked_value["flags"] = std::to_string(flags);
 
-    } else if (ctxKey == "com.twitter.finagle.thrift.ClientIdContext") {
+    } else if (ctx_key == "com.twitter.finagle.thrift.ClientIdContext") {
 
-      PL_ASSIGN_OR(std::string_view ctxValue, decoder->ExtractString(ctxValueLen), return ParseState::kInvalid);
-      unpackedValue["name"] = std::string(ctxValue);
+      PL_ASSIGN_OR(std::string_view ctx_value, decoder->ExtractString(ctx_value_len), return ParseState::kInvalid);
+      unpacked_value["name"] = std::string(ctx_value);
 
     } else {
 
-      PL_ASSIGN_OR(std::string_view ctxValue, decoder->ExtractString(ctxValueLen), return ParseState::kInvalid);
-      unpackedValue["length"] = std::to_string(ctxValue.length());
+      PL_ASSIGN_OR(std::string_view ctx_value, decoder->ExtractString(ctx_value_len), return ParseState::kInvalid);
+      unpacked_value["length"] = std::to_string(ctx_value.length());
 
     }
 
-    context.insert({std::string(ctxKey), unpackedValue});
+    context.insert({std::string(ctx_key), unpacked_value});
   }
 
   frame->context = context;
@@ -83,7 +83,6 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, message_type_t /* type */, std
 
 template <>
 ParseState ParseFrame(message_type_t type, std::string_view* buf, mux::Frame* frame, NoState* /*state*/) {
-  PL_UNUSED(type);
     
   BinaryDecoder decoder(*buf);
 
