@@ -30,6 +30,8 @@ source "$pixie_root"/src/stirling/scripts/test_utils.sh
 
 if [ -z "$BUILD_WORKSPACE_DIRECTORY" ] && [ -z "$TEST_TMPDIR" ]; then
     # If the script was run in a stand-alone way, then build and set paths.
+    echo "Running test in stand-alone mode"
+    echo "Building stirling_wrapper and test binaries. This may take some time."
     stirling_wrapper=$pixie_root/$(bazel_build //src/stirling/binaries:stirling_wrapper)
     go_grpc_server=$pixie_root/$(bazel_build //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:go_grpc_server)
     go_grpc_client=$pixie_root/$(bazel_build //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:go_grpc_client)
@@ -55,7 +57,7 @@ run_uprobe_target "$go_grpc_server" "$go_grpc_client"
 
 echo "Running stirling_wrapper."
 
-flags="--timeout_secs=0"
+flags="--color_output=false --timeout_secs=0"
 out=$(run_prompt_sudo "$stirling_wrapper" $flags 2>&1)
 
 ###############################################################################

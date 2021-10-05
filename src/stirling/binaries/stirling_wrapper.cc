@@ -71,6 +71,7 @@ DEFINE_string(print_record_batches,
 DEFINE_bool(init_only, false, "If true, only runs the init phase and exits. For testing.");
 DEFINE_int32(timeout_secs, -1,
              "If non-negative, only runs for the specified amount of time and exits.");
+DEFINE_bool(color_output, true, "If true, output logs will use colors.");
 DEFINE_bool(enable_heap_profiler, false, "If true, heap profiling is enabled.");
 
 // Put this in global space, so we can kill it in the signal handler.
@@ -263,6 +264,8 @@ int main(int argc, char** argv) {
   g_signal_action->RegisterFatalErrorHandler(err_handler);
 
   px::EnvironmentGuard env_guard(&argc, argv);
+  // Override the default coloring set by the environment. This is useful for tests.
+  FLAGS_colorlogtostderr = FLAGS_color_output;
 
   if (FLAGS_enable_heap_profiler) {
     CHECK(::px::profiler::Heap::ProfilerAvailable());
