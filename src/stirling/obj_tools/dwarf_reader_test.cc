@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/stirling/obj_tools/dwarf_tools.h"
+#include "src/stirling/obj_tools/dwarf_reader.h"
 
 #include "src/common/testing/test_environment.h"
 #include "src/common/testing/testing.h"
@@ -68,42 +68,6 @@ TEST_F(DwarfReaderTest, SourceLanguage) {
                        DwarfReader::Create(kCppBinaryPath, /*index*/ true));
   // We use C++17, but the dwarf shows 14.
   EXPECT_EQ(dwarf_reader->source_language(), llvm::dwarf::DW_LANG_C_plus_plus_14);
-}
-
-TEST_F(DwarfReaderTest, GetMatchingDIEs) {
-  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kCppBinaryPath));
-
-  std::vector<llvm::DWARFDie> dies;
-  ASSERT_OK_AND_ASSIGN(dies, dwarf_reader->GetMatchingDIEs("foo"));
-  ASSERT_THAT(dies, SizeIs(1));
-  EXPECT_EQ(dies[0].getTag(), llvm::dwarf::DW_TAG_variable);
-
-  EXPECT_OK_AND_THAT(dwarf_reader->GetMatchingDIEs("non-existent-name"), IsEmpty());
-
-  ASSERT_OK_AND_ASSIGN(dies, dwarf_reader->GetMatchingDIEs("ABCStruct32"));
-  ASSERT_THAT(dies, SizeIs(1));
-  EXPECT_EQ(dies[0].getTag(), llvm::dwarf::DW_TAG_structure_type);
-
-  EXPECT_OK_AND_THAT(dwarf_reader->GetMatchingDIEs("ABCStruct32", llvm::dwarf::DW_TAG_member),
-                     IsEmpty());
-
-  ASSERT_OK_AND_ASSIGN(
-      dies, dwarf_reader->GetMatchingDIEs("px::testing::Foo::Bar", llvm::dwarf::DW_TAG_subprogram));
-  ASSERT_THAT(dies, SizeIs(1));
-  EXPECT_EQ(dies[0].getTag(), llvm::dwarf::DW_TAG_subprogram);
-  // Although the DIE does not have name attribute, DWARFDie::getShortName() walks
-  // DW_AT_specification attribute to find the name.
-  EXPECT_EQ(GetShortName(dies[0]), "Bar");
-  EXPECT_THAT(std::string(GetLinkageName(dies[0])), ::testing::StrEq("_ZNK2px7testing3Foo3BarEi"));
-
-  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("px::testing::Foo::Bar", "this"), 8);
-  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("px::testing::Foo::Bar", "i"), 4);
-
-  ASSERT_OK_AND_ASSIGN(
-      dies, dwarf_reader->GetMatchingDIEs("ABCStruct32", llvm::dwarf::DW_TAG_structure_type));
-  ASSERT_THAT(dies, SizeIs(1));
-  ASSERT_EQ(dies[0].getTag(), llvm::dwarf::DW_TAG_structure_type);
 }
 
 TEST_P(DwarfReaderTest, CppGetStructByteSize) {

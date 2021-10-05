@@ -61,8 +61,8 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "dwarf_tools_test",
-    srcs = ["dwarf_tools_test.cc"],
+    name = "dwarf_reader_test",
+    srcs = ["dwarf_reader_test.cc"],
     data = [
         "//src/stirling/obj_tools/testdata/cc:test_exe_fixture",
         "//src/stirling/obj_tools/testdata/go:precompiled_test_binaries",
@@ -71,6 +71,17 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "dwarf_utils_test",
+    srcs = ["dwarf_utils_test.cc"],
+    data = [
+        "//src/stirling/obj_tools/testdata/cc:test_exe_fixture",
+    ],
+    deps = [
+        ":cc_library",
     ],
 )
 

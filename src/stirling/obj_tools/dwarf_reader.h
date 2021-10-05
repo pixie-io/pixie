@@ -37,10 +37,6 @@ namespace px {
 namespace stirling {
 namespace obj_tools {
 
-//-----------------------------------------------------------------------------
-// Types
-//-----------------------------------------------------------------------------
-
 enum class VarType {
   // Refers to types that are not yet handled.
   kUnspecified = 0,
@@ -160,10 +156,10 @@ inline bool operator==(const StructSpecEntry& a, const StructSpecEntry& b) {
   return a.offset == b.offset && a.size == b.size && a.type_info == b.type_info && a.path == b.path;
 }
 
-//-----------------------------------------------------------------------------
-// DwarfReader
-//-----------------------------------------------------------------------------
-
+/**
+ * Accepts an executable and reads DWARF information from it.
+ * APIs are provided for accessing the needed data.
+ */
 class DwarfReader {
  public:
   /**
@@ -286,7 +282,7 @@ class DwarfReader {
    */
   StatusOr<RetValInfo> GetFunctionRetValInfo(std::string_view function_symbol_name);
 
-  bool IsValid() { return dwarf_context_->getNumCompileUnits() != 0; }
+  bool IsValid() const { return dwarf_context_->getNumCompileUnits() != 0; }
 
   const llvm::dwarf::SourceLanguage& source_language() const { return source_language_; }
 
@@ -320,21 +316,6 @@ class DwarfReader {
   // Nested map: [tag][symbol_name] -> DWARFDie
   absl::flat_hash_map<llvm::dwarf::Tag, absl::flat_hash_map<std::string, llvm::DWARFDie>> die_map_;
 };
-
-//-----------------------------------------------------------------------------
-// DWARFDie Functions (made public for test use only)
-//-----------------------------------------------------------------------------
-
-// Returns the DW_AT_name attribute of the input DIE. Returns an empty string if attribute does not
-// exist, or for any errors.
-std::string_view GetShortName(const llvm::DWARFDie& die);
-
-// Returns the DW_AT_linkage_name attribute of the input DIE. Returns an empty string if attribute
-// does not exist, or for any errors.
-std::string_view GetLinkageName(const llvm::DWARFDie& die);
-
-// Returns the text representation of the input DIE.
-std::string Dump(const llvm::DWARFDie& die);
 
 }  // namespace obj_tools
 }  // namespace stirling

@@ -33,7 +33,7 @@
 #include "src/common/grpcutils/service_descriptor_database.h"
 #include "src/common/system/socket_info.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
-#include "src/stirling/obj_tools/dwarf_tools.h"
+#include "src/stirling/obj_tools/dwarf_reader.h"
 #include "src/stirling/obj_tools/elf_reader.h"
 
 #include "src/stirling/core/source_connector.h"

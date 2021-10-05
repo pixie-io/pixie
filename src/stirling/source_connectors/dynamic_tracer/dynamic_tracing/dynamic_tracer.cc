@@ -32,7 +32,7 @@
 #include "src/shared/upid/upid.h"
 
 #include "src/stirling/bpf_tools/utils.h"
-#include "src/stirling/obj_tools/dwarf_tools.h"
+#include "src/stirling/obj_tools/dwarf_reader.h"
 #include "src/stirling/obj_tools/elf_reader.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/autogen.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/code_gen.h"

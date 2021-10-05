@@ -23,7 +23,7 @@
 #include <string>
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/obj_tools/dwarf_tools.h"
+#include "src/stirling/obj_tools/dwarf_reader.h"
 #include "src/stirling/obj_tools/elf_reader.h"
 #include "src/stirling/source_connectors/socket_tracer/uprobe_symaddrs.h"
 

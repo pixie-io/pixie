@@ -20,7 +20,7 @@
 
 #include "src/common/base/base.h"
 #include "src/common/testing/test_environment.h"
-#include "src/stirling/obj_tools/dwarf_tools.h"
+#include "src/stirling/obj_tools/dwarf_reader.h"
 
 using px::stirling::obj_tools::DwarfReader;
 using px::testing::BazelBinTestFilePath;

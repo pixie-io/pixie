@@ -29,7 +29,7 @@
 #include "src/common/base/utils.h"
 #include "src/common/fs/fs_wrapper.h"
 #include "src/stirling/bpf_tools/macros.h"
-#include "src/stirling/obj_tools/dwarf_tools.h"
+#include "src/stirling/obj_tools/dwarf_reader.h"
 #include "src/stirling/obj_tools/go_syms.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
 #include "src/stirling/source_connectors/socket_tracer/uprobe_symaddrs.h"

@@ -25,7 +25,7 @@
 
 #include "src/common/base/base.h"
 
-#include "src/stirling/obj_tools/dwarf_tools.h"
+#include "src/stirling/obj_tools/dwarf_reader.h"
 
 constexpr char kProgramDescription[] =
     "A simple tool that finds debug information in object files with DWARF info.\n"

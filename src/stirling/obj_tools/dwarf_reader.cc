@@ -16,16 +16,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/stirling/obj_tools/dwarf_tools.h"
+#include "src/stirling/obj_tools/dwarf_reader.h"
 
 #include <algorithm>
 
 #include <llvm/DebugInfo/DIContext.h>
 #include <llvm/Object/ObjectFile.h>
 
-#include "src/stirling/obj_tools/init.h"
-
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
+#include "src/stirling/obj_tools/dwarf_utils.h"
+#include "src/stirling/obj_tools/init.h"
 
 namespace px {
 namespace stirling {
@@ -36,16 +36,6 @@ using llvm::DWARFDie;
 using llvm::DWARFFormValue;
 
 namespace {
-
-// Returns a StatusOr that holds the llvm_opt's value, or an error Status with the input message.
-template <typename TValueType>
-StatusOr<TValueType> AdaptLLVMOptional(llvm::Optional<TValueType>&& llvm_opt,
-                                       std::string_view msg) {
-  if (!llvm_opt.hasValue()) {
-    return error::Internal(msg);
-  }
-  return llvm_opt.getValue();
-}
 
 std::vector<DWARFDie> GetParamDIEs(const DWARFDie& function_die) {
   std::vector<DWARFDie> dies;
@@ -58,40 +48,6 @@ std::vector<DWARFDie> GetParamDIEs(const DWARFDie& function_die) {
 }
 
 }  // namespace
-
-std::string_view GetShortName(const DWARFDie& die) {
-  const char* short_name = die.getName(llvm::DINameKind::ShortName);
-  if (short_name != nullptr) {
-    return std::string_view(short_name);
-  }
-  return {};
-}
-
-std::string_view GetLinkageName(const DWARFDie& die) {
-  auto name_or = AdaptLLVMOptional(llvm::dwarf::toString(die.find(llvm::dwarf::DW_AT_linkage_name)),
-                                   "Failed to read DW_AT_linkage_name.");
-  if (name_or.ok() && name_or.ValueOrDie() != nullptr) {
-    return std::string_view(name_or.ValueOrDie());
-  }
-
-  DWARFDie spec_die = die.getAttributeValueAsReferencedDie(llvm::dwarf::DW_AT_specification);
-
-  name_or = AdaptLLVMOptional(llvm::dwarf::toString(spec_die.find(llvm::dwarf::DW_AT_linkage_name)),
-                              "Failed to read DW_AT_linkage_name of the specification DIE.");
-  if (name_or.ok() && name_or.ValueOrDie() != nullptr) {
-    return std::string_view(name_or.ValueOrDie());
-  }
-
-  return {};
-}
-
-std::string Dump(const llvm::DWARFDie& die) {
-  std::string buf;
-  llvm::raw_string_ostream rso(buf);
-  die.dump(rso);
-  rso.flush();
-  return buf;
-}
 
 // This will break on 32-bit binaries.
 // Use ELF to get the correct value.
