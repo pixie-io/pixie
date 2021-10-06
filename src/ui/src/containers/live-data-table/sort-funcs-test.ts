@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { fieldSortFunc } from './sort-funcs';
+import { fieldSortFunc, serviceSortFunc } from './sort-funcs';
 
 describe('fieldSortFunc', () => {
   it('correctly sorts the object by the specified subfield (with a value and record null)', () => {
@@ -162,6 +162,33 @@ describe('fieldSortFunc', () => {
       { label: 'bar' },
       { label: 'foo' },
       { label: null },
+    ]);
+  });
+});
+
+describe('serviceSortFunc', () => {
+  it('Sorts service names both in plain strings and in arrays', () => {
+    const base = [
+      'foo',
+      ['bar', 'foo'],
+      ['a', 'foo'],
+      'bar',
+      'a',
+      ['a-b.c;d?e', 'bar'],
+      'a-b.c;d?e',
+      ['foo', 'bar'],
+    ].map((s) => (Array.isArray(s) ? JSON.stringify(s) : s));
+
+    const out = [...base].sort(serviceSortFunc());
+    expect(out).toEqual([
+      'a',
+      '["a","foo"]',
+      'a-b.c;d?e',
+      '["a-b.c;d?e","bar"]',
+      'bar',
+      '["bar","foo"]',
+      'foo',
+      '["foo","bar"]',
     ]);
   });
 });

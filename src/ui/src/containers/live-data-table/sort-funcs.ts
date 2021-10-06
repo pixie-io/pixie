@@ -76,6 +76,23 @@ export function fieldSortFunc(fieldName: string) {
   };
 }
 
+/**
+ * Service names can be both plain strings and JSON-encoded string arrays.
+ * This sorts by the first item (or plain value), then the second if there's a tie, and so on.
+ */
+export function serviceSortFunc(): (a: string, b: string) => number {
+  // Instead of parsing JSON arrays (expensive), we can do a bit of string manipulation for the same result.
+  // First, flatten '["foo","bar"]' into 'foo,bar'; then swap the commas for a tab character (earliest printable char).
+  // Thus, a natural order would be: 'a', 'a,b', 'b'.
+  const flattenStringArrayRe = new RegExp('["\\[\\]]', 'g');
+  const commaRe = new RegExp(',', 'g');
+  return (a, b) => {
+    const aCmp = a.replace(flattenStringArrayRe, '').replace(commaRe, '\t');
+    const bCmp = b.replace(flattenStringArrayRe, '').replace(commaRe, '\t');
+    return aCmp.localeCompare(bCmp);
+  };
+}
+
 export function getSortFunc(display: ColumnDisplayInfo): (a: unknown, b: unknown) => number {
   let f;
   switch (display.semanticType) {
@@ -94,6 +111,9 @@ export function getSortFunc(display: ColumnDisplayInfo): (a: unknown, b: unknown
       break;
     case SemanticType.ST_SCRIPT_REFERENCE:
       f = fieldSortFunc('label');
+      break;
+    case SemanticType.ST_SERVICE_NAME:
+      f = serviceSortFunc();
       break;
     default: {
       f = getDataSortFunc(display.type);
