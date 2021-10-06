@@ -202,17 +202,18 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceBuiltins) {
     int64_t nsecs = records[kNsecsIdx]->Get<types::Int64Value>(0).val;
     LOG(INFO) << absl::Substitute("nsecs: $0", nsecs);
     // Event should have been in the last 10 seconds (being generous).
-    auto now = std::chrono::steady_clock::now().time_since_epoch();
+    auto now = px::chrono::boot_clock::now().time_since_epoch();
     auto now_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
     constexpr int64_t kNanosPerSecond = 1000 * 1000 * 1000;
     EXPECT_GE(nsecs, now_ns - 10 * kNanosPerSecond);
     EXPECT_LE(nsecs, now_ns);
 
     int64_t elapsed = records[kElapsedIdx]->Get<types::Int64Value>(0).val;
-    LOG(INFO) << absl::Substitute("elpased: $0", elapsed);
-    // TODO(oazizi): Investigate why this produces negative numbers.
-    // EXPECT_GE(elapsed, 0*kNanosPerSecond);
-    // EXPECT_LE(elapsed, 100*kNanosPerSecond);
+    LOG(INFO) << absl::Substitute("elapsed: $0", elapsed);
+    // Expecting a value of close to 100 ms. Add +/- 50 ms to be generous.
+    constexpr int kNanosPerMilli = 1000 * 1000;
+    EXPECT_GE(elapsed, 50 * kNanosPerMilli);
+    EXPECT_LE(elapsed, 150 * kNanosPerMilli);
 
     int64_t cpu = records[kCPUIdx]->Get<types::Int64Value>(0).val;
     LOG(INFO) << absl::Substitute("CPU: $0", cpu);
