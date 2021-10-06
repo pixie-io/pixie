@@ -152,6 +152,43 @@ func TestUpdater_AddToUpdateQueue(t *testing.T) {
 	assert.False(t, updater.AddToUpdateQueue(id2))
 }
 
+func TestUpdater_AddToUpdateQueueNoDeadlock(t *testing.T) {
+	updater, nc, _, _, cleanup := setUpUpdater(t)
+	defer cleanup()
+
+	// Fill the update queue.
+	for i := 0; i < 32; i++ {
+		id := uuid.Must(uuid.NewV4())
+		assert.True(t, updater.AddToUpdateQueue(id))
+	}
+	// Update queue no longer accepts updates.s
+	for i := 0; i < 32; i++ {
+		id := uuid.Must(uuid.NewV4())
+		assert.False(t, updater.AddToUpdateQueue(id))
+	}
+
+	// Drain the update queue.
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		_, err := nc.Subscribe("c2v.*.VizierUpdate", func(m *nats.Msg) {
+			wg.Done()
+		})
+		require.NoError(t, err)
+	}()
+
+	go updater.ProcessUpdateQueue()
+
+	// Wait for one item to be processed.
+	wg.Wait()
+
+	// We should be able to add another update to the queue.
+	id := uuid.Must(uuid.NewV4())
+	assert.True(t, updater.AddToUpdateQueue(id))
+
+	updater.Stop()
+}
+
 func TestUpdater_ProcessUpdateQueue(t *testing.T) {
 	updater, nc, _, _, cleanup := setUpUpdater(t)
 	defer cleanup()

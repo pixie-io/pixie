@@ -64,7 +64,7 @@ func NewUpdater(db *sqlx.DB, atClient artifacttrackerpb.ArtifactTrackerClient, n
 		atClient:      atClient,
 		nc:            nc,
 		quitCh:        make(chan bool),
-		updateQueue:   make(chan uuid.UUID, 1000),
+		updateQueue:   make(chan uuid.UUID, 32),
 		queuedViziers: make(map[uuid.UUID]bool),
 	}
 
@@ -270,9 +270,16 @@ func (u *Updater) AddToUpdateQueue(vizierID uuid.UUID) bool {
 		return false // Vizier is already queued for an update.
 	}
 
-	u.queuedViziers[vizierID] = true
-	u.updateQueue <- vizierID
-	return true
+	// Add to queue if possible, else we will add it next time around.
+	// This helps buffer updates and rolls our the update slowly.
+	select {
+	case u.updateQueue <- vizierID:
+		u.queuedViziers[vizierID] = true
+		return true
+	default:
+	}
+
+	return false
 }
 
 // ProcessUpdateQueue updates the Viziers in the update queue.
@@ -287,11 +294,10 @@ func (u *Updater) ProcessUpdateQueue() {
 			if err != nil {
 				log.WithError(err).Error("Failed to send update to Vizier.")
 			}
-			func() {
-				u.queueMu.Lock()
-				defer u.queueMu.Unlock()
-				delete(u.queuedViziers, vzID)
-			}()
+
+			u.queueMu.Lock()
+			delete(u.queuedViziers, vzID)
+			u.queueMu.Unlock()
 		}
 	}
 }

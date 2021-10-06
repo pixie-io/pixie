@@ -82,6 +82,7 @@ type Server struct {
 type VzUpdater interface {
 	UpdateOrInstallVizier(vizierID uuid.UUID, version string, redeployEtcd bool) (*cvmsgspb.V2CMessage, error)
 	VersionUpToDate(version string) bool
+	// AddToUpdateQueue must be idempotent since we Queue based on heartbeats and reported version.
 	AddToUpdateQueue(vizierID uuid.UUID) bool
 }
 
