@@ -95,6 +95,8 @@ class CPUStatBPFTraceConnector : public SourceConnector, public bpf_tools::BPFTr
   static constexpr auto kTable = DataTableSchema(
       "bpftrace_cpu_stats", "CPU usage metrics for processes (obtained via BPFtrace)", kElements);
   static constexpr auto kTables = MakeArray(kTable);
+  static constexpr auto kSamplingPeriod = std::chrono::milliseconds{1000};
+  static constexpr auto kPushPeriod = std::chrono::milliseconds{1000};
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     // TODO(oazizi): Expose cpu_id through Create.
