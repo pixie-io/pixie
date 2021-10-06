@@ -280,10 +280,8 @@ export default function PixieWithContext(): React.ReactElement {
   ], []);
 
   const clusterPaths = React.useMemo(() => [
-    [
-      '/clusterID/:clusterID',
-      '/embed/clusterID/:clusterID',
-    ],
+    '/clusterID/:clusterID',
+    '/embed/clusterID/:clusterID',
   ], []);
 
   if (loadingUser) { return <div>Loading...</div>; }
@@ -297,10 +295,7 @@ export default function PixieWithContext(): React.ReactElement {
           <Route path={clusterPaths} component={ClusterIDShortcut} />
           <Route path='/live' component={LiveWithProvider} />
           <Route path='/embed/live' component={LiveWithProvider} />
-          <Route
-            path={scriptPaths}
-            component={ScriptShortcut}
-          />
+          <Route path={scriptPaths} component={ScriptShortcut} />
           <Redirect exact from='/' to='/live' />
           <Route path='/*' component={RouteNotFound} />
         </Switch>
