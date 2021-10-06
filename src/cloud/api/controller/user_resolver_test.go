@@ -26,6 +26,8 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	"github.com/graph-gophers/graphql-go/gqltesting"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	gqltestutils "px.dev/pixie/src/cloud/api/controller/testutils"
@@ -116,22 +118,14 @@ func TestUserInfoResolver_GetSupportUserInfo(t *testing.T) {
 	ctx := CreateTestContext()
 
 	userID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9")
-	orgID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 
 	// Will fetch info from the context instead.
 	mockClients.MockUser.EXPECT().GetUser(gomock.Any(), userID).Return(nil, errors.New("no such person"))
-	mockClients.MockUser.EXPECT().GetOrg(gomock.Any(), orgID).Return(&cloudpb.OrgInfo{
-		EnableApprovals: true,
-		OrgName:         "test.com",
-		ID:              orgID,
-	}, nil)
 
+	// Manually test this one because we expect this to error out and the graphql interface for
+	// testing errors is too restrictive because it does a deep comparison.
 	gqlSchema := LoadSchema(gqlEnv)
-	gqltesting.RunTests(t, []*gqltesting.Test{
-		{
-			Schema:  gqlSchema,
-			Context: ctx,
-			Query: `
+	query := `
 				query {
 					user {
 						id
@@ -141,22 +135,11 @@ func TestUserInfoResolver_GetSupportUserInfo(t *testing.T) {
 						orgID
 						orgName
 					}
-				}
-				`,
-			ExpectedResult: `
-				{
-					"user": {
-						"id": "6ba7b810-9dad-11d1-80b4-00c04fd430c9",
-						"name": " ",
-						"email": "test@test.com",
-						"picture": "",
-						"orgID": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-						"orgName": "test.com"
-					}
-				}
-			`,
-		},
-	})
+				}`
+
+	result := gqlSchema.Exec(ctx, query, "", nil)
+	require.Len(t, result.Errors, 1)
+	assert.Equal(t, result.Errors[0].Message, "no such person")
 }
 
 func TestUserInfoResolver_UpdateUserPermissions(t *testing.T) {

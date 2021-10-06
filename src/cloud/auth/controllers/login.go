@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go/v4"
-	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
@@ -45,8 +44,6 @@ const (
 	RefreshTokenValidDuration = 90 * 24 * time.Hour
 	// AugmentedTokenValidDuration is the duration that the augmented token is valid from the current time.
 	AugmentedTokenValidDuration = 90 * time.Minute
-	// SupportAccountDomain is the domain name of the Pixie support account which can access the org provided at login.
-	SupportAccountDomain = "pixie.support"
 	// AuthConnectorTokenValidDuration is the duration that the auth connector token is valid from the current time.
 	AuthConnectorTokenValidDuration = 30 * time.Minute
 )
@@ -115,20 +112,6 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 
 	md, _ := metadata.FromIncomingContext(ctx)
 	ctx = metadata.NewOutgoingContext(ctx, md)
-
-	domainName := getOrgName(userInfo)
-
-	// If account is a Pixie support account, we don't want to create a new user.
-	if domainName == SupportAccountDomain {
-		accessEnabled := viper.GetBool("support_access_enabled")
-		if !accessEnabled {
-			return nil, status.Error(codes.PermissionDenied, "Support account does not have access credentials.")
-		}
-		return s.loginSupportUser(ctx, in, userInfo)
-	} else if in.OrgName != "" {
-		return nil, status.Error(codes.InvalidArgument, "orgName param not permitted for non Pixie support accounts")
-	}
-
 	pc := s.env.ProfileClient()
 
 	// If user does not exist in the AuthProvider, then create a new user if specified.
@@ -154,8 +137,7 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 	if userInfo.PLOrgID != "" {
 		// If the user already belongs to an org according to the AuthProvider (userInfo),
 		// we log that user into the corresponding org.
-		orgPb := utils.ProtoFromUUIDStrOrNil(userInfo.PLOrgID)
-		orgInfo, err = pc.GetOrg(ctx, orgPb)
+		orgInfo, err = pc.GetOrg(ctx, utils.ProtoFromUUIDStrOrNil(userInfo.PLOrgID))
 		if err != nil {
 			return nil, status.Errorf(codes.NotFound, "organization not found, please register, or talk to your Pixie administrator '%v'", err)
 		}
@@ -168,7 +150,7 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 		}
 	} else {
 		// Users can login without registering if their org already exists. If org doesn't exist, they must complete sign up flow.
-		orgInfo, err = pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: domainName})
+		orgInfo, err = pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: getOrgName(userInfo)})
 		if err != nil || orgInfo == nil {
 			return nil, status.Error(codes.NotFound, "organization not found, please register.")
 		}
@@ -190,8 +172,10 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 	}
 
 	// Update user's profile photo.
-	upb := utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID)
-	_, err = pc.UpdateUser(ctx, &profilepb.UpdateUserRequest{ID: upb, DisplayPicture: &types.StringValue{Value: userInfo.Picture}})
+	_, err = pc.UpdateUser(ctx, &profilepb.UpdateUserRequest{
+		ID:             utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID),
+		DisplayPicture: &types.StringValue{Value: userInfo.Picture},
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -214,45 +198,6 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 		OrgInfo: &authpb.LoginReply_OrgInfo{
 			OrgName: orgInfo.OrgName,
 			OrgID:   utils.UUIDFromProtoOrNil(orgInfo.ID).String(),
-		},
-	}, nil
-}
-
-func (s *Server) loginSupportUser(ctx context.Context, in *authpb.LoginRequest, userInfo *UserInfo) (*authpb.LoginReply, error) {
-	if in.OrgName == "" {
-		return nil, status.Error(codes.InvalidArgument, "orgName is required for Pixie Support accounts")
-	}
-
-	pc := s.env.ProfileClient()
-
-	orgInfo, err := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: in.OrgName})
-	if err != nil || orgInfo == nil {
-		return nil, status.Error(codes.InvalidArgument, "organization not found")
-	}
-
-	// Generate token for impersonated support account.
-	userID := uuid.FromStringOrNil("") // No account actually exists, so this should be a nil UUID.
-	orgID := utils.UUIDFromProtoOrNil(orgInfo.ID)
-	expiresAt := time.Now().Add(RefreshTokenValidDuration)
-	claims := srvutils.GenerateJWTForUser(userID.String(), orgID.String(), userInfo.Email, expiresAt, viper.GetString("domain_name"))
-	token, err := srvutils.SignJWTClaims(claims, s.env.JWTSigningKey())
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to generate token")
-	}
-
-	return &authpb.LoginReply{
-		Token:       token,
-		ExpiresAt:   expiresAt.Unix(),
-		UserCreated: false,
-		UserInfo: &authpb.AuthenticatedUserInfo{
-			UserID:    utils.ProtoFromUUID(userID),
-			FirstName: userInfo.FirstName,
-			LastName:  userInfo.LastName,
-			Email:     userInfo.Email,
-		},
-		OrgInfo: &authpb.LoginReply_OrgInfo{
-			OrgName: orgInfo.OrgName,
-			OrgID:   orgID.String(),
 		},
 	}, nil
 }
@@ -445,21 +390,14 @@ func (s *Server) GetAugmentedToken(
 		}
 
 		if !aCtx.Claims.GetUserClaims().IsAPIUser {
-			domainName, err := GetDomainNameFromEmail(aCtx.Claims.GetUserClaims().Email)
-			if err != nil {
-				return nil, status.Error(codes.Unauthenticated, "Invalid email")
+			userIDstr := aCtx.Claims.GetUserClaims().UserID
+			userInfo, err := pc.GetUser(ctx, utils.ProtoFromUUIDStrOrNil(userIDstr))
+			if err != nil || userInfo == nil {
+				return nil, status.Error(codes.Unauthenticated, "Invalid auth/user")
 			}
 
-			if domainName != SupportAccountDomain {
-				userIDstr := aCtx.Claims.GetUserClaims().UserID
-				userInfo, err := pc.GetUser(ctx, utils.ProtoFromUUIDStrOrNil(userIDstr))
-				if err != nil || userInfo == nil {
-					return nil, status.Error(codes.Unauthenticated, "Invalid auth/user")
-				}
-
-				if orgIDstr != utils.UUIDFromProtoOrNil(userInfo.OrgID).String() {
-					return nil, status.Error(codes.Unauthenticated, "Mismatched org")
-				}
+			if orgIDstr != utils.UUIDFromProtoOrNil(userInfo.OrgID).String() {
+				return nil, status.Error(codes.Unauthenticated, "Mismatched org")
 			}
 		}
 	}

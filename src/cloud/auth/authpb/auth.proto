@@ -62,8 +62,8 @@ message LoginRequest {
   string id_token = 5;
   // Automatically create the user if they don't exist.
   bool create_user_if_not_exists = 3;
-  // If the account is a Pixie Support account, login with access to the given org. Otherwise, this field is ignored.
-  string org_name = 4;
+  // Reserved after support accounts were removed.
+  reserved 4;
 }
 
 message LoginReply {

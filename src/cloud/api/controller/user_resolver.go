@@ -47,13 +47,7 @@ func (q *QueryResolver) User(ctx context.Context) (*UserInfoResolver, error) {
 	userID := utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID)
 	userInfo, err := q.Env.UserServer.GetUser(ctx, userID)
 	if err != nil {
-		// Normally we'd return a nil resolver with an error here but if we get here,
-		// it means that this is a support account, so grab info from the UserClaims and return that.
-		userInfo = &cloudpb.UserInfo{
-			ID:    userID,
-			Email: sCtx.Claims.GetUserClaims().Email,
-			OrgID: utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().OrgID),
-		}
+		return nil, err
 	}
 	return &UserInfoResolver{ctx, &q.Env, userInfo}, nil
 }
@@ -182,20 +176,9 @@ func (q *QueryResolver) UpdateUserPermissions(ctx context.Context, args *updateU
 		return nil, err
 	}
 
-	sCtx, err := authcontext.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	userInfo, err := q.Env.UserServer.GetUser(ctx, userID)
 	if err != nil {
-		// Normally we'd return a nil resolver with an error here but if we get here,
-		// it means that this is a support account, so grab info from the UserClaims and return that.
-		userInfo = &cloudpb.UserInfo{
-			ID:    userID,
-			Email: sCtx.Claims.GetUserClaims().Email,
-			OrgID: utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().OrgID),
-		}
+		return nil, err
 	}
 	return &UserInfoResolver{ctx, &q.Env, userInfo}, nil
 }

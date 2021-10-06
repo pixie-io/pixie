@@ -44,7 +44,6 @@ func init() {
 	pflag.String("database_key", "", "The encryption key to use for the database")
 	pflag.String("oauth_provider", "auth0", "The auth provider to user. Currently support 'auth0' or 'hydra'")
 	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
-	pflag.Bool("support_access_enabled", false, "Whether support accounts are allowed to access orgs.")
 }
 
 func connectToPostgres() (*sqlx.DB, string) {

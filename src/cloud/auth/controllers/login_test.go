@@ -123,7 +123,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
 
-	resp, err := doLoginRequest(getTestContext(), t, s, "")
+	resp, err := doLoginRequest(getTestContext(), t, s)
 	require.NoError(t, err)
 
 	// Make sure expiry time is in the future.
@@ -183,7 +183,7 @@ func TestServer_Login_OldGoogleOrgNameShouldError(t *testing.T) {
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
 
-	_, err = doLoginRequest(getTestContext(), t, s, "")
+	_, err = doLoginRequest(getTestContext(), t, s)
 	assert.Regexp(t, "contact support", err)
 }
 
@@ -236,7 +236,7 @@ func TestServer_Login_OldGoogleOrgNameThatMatchesWorks(t *testing.T) {
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
 
-	_, err = doLoginRequest(getTestContext(), t, s, "")
+	_, err = doLoginRequest(getTestContext(), t, s)
 	assert.NoError(t, err)
 }
 
@@ -271,40 +271,6 @@ func TestServer_LoginNewUser_NoAutoCreate(t *testing.T) {
 	assert.Nil(t, resp)
 }
 
-func TestServer_Login_OrgNameSpecified(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	// Setup expectations for the mocks.
-	a := mock_controllers.NewMockAuthProvider(ctrl)
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
-
-	fakeUserInfo := &controllers.UserInfo{
-		Email:     "abc@gmail.com",
-		FirstName: "first",
-		LastName:  "last",
-	}
-
-	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
-
-	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-
-	viper.Set("jwt_signing_key", "jwtkey")
-	viper.Set("domain_name", "withpixie.ai")
-
-	env, err := authenv.New(mockProfile)
-	require.NoError(t, err)
-	s, err := controllers.NewServer(env, a, nil)
-	require.NoError(t, err)
-
-	resp, err := doLoginRequest(getTestContext(), t, s, "testorg")
-	assert.Nil(t, resp)
-	assert.NotNil(t, err)
-	stat, ok := status.FromError(err)
-	assert.True(t, ok)
-	assert.Equal(t, codes.InvalidArgument, stat.Code())
-}
-
 func TestServer_Login_MissingOrgError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -335,99 +301,9 @@ func TestServer_Login_MissingOrgError(t *testing.T) {
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
 
-	resp, err := doLoginRequest(getTestContext(), t, s, "")
+	resp, err := doLoginRequest(getTestContext(), t, s)
 	assert.Nil(t, resp)
 	assert.NotNil(t, err)
-}
-
-func TestServer_LoginNewUser_SupportUserNoOrg(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	// Setup expectations for the mocks.
-	a := mock_controllers.NewMockAuthProvider(ctrl)
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
-
-	fakeUserInfo := &controllers.UserInfo{
-		Email:                   "test@pixie.support",
-		FirstName:               "first",
-		LastName:                "last",
-		IdentityProviderOrgName: "pixie.support",
-	}
-
-	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
-
-	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-
-	viper.Set("jwt_signing_key", "jwtkey")
-	viper.Set("domain_name", "withpixie.ai")
-	viper.Set("support_access_enabled", true)
-
-	env, err := authenv.New(mockProfile)
-	require.NoError(t, err)
-	s, err := controllers.NewServer(env, a, nil)
-	require.NoError(t, err)
-
-	resp, err := doLoginRequest(getTestContext(), t, s, "")
-	assert.Nil(t, resp)
-	assert.NotNil(t, err)
-	stat, ok := status.FromError(err)
-	assert.True(t, ok)
-	assert.Equal(t, codes.InvalidArgument, stat.Code())
-}
-
-func TestServer_LoginNewUser_SupportUser(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
-	orgPb := utils.ProtoFromUUIDStrOrNil(orgID)
-
-	userID := uuid.FromStringOrNil("")
-	fakeOrgInfo := &profilepb.OrgInfo{
-		ID: orgPb,
-	}
-	// Setup expectations for the mocks.
-	a := mock_controllers.NewMockAuthProvider(ctrl)
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
-
-	fakeUserInfo := &controllers.UserInfo{
-		Email:                   "test@pixie.support",
-		FirstName:               "first",
-		LastName:                "last",
-		IdentityProviderOrgName: "pixie.support",
-	}
-
-	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
-
-	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-
-	mockProfile.EXPECT().
-		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "my-org.com"}).
-		Return(fakeOrgInfo, nil)
-
-	viper.Set("jwt_signing_key", "jwtkey")
-	viper.Set("domain_name", "withpixie.ai")
-
-	env, err := authenv.New(mockProfile)
-	require.NoError(t, err)
-	s, err := controllers.NewServer(env, a, nil)
-	require.NoError(t, err)
-
-	resp, err := doLoginRequest(getTestContext(), t, s, "my-org.com")
-	assert.NotNil(t, resp)
-	require.NoError(t, err)
-
-	// Make sure expiry time is in the future.
-	currentTime := time.Now().Unix()
-	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
-	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
-	assert.False(t, resp.UserCreated)
-	assert.Equal(t, utils.UUIDFromProtoOrNil(resp.UserInfo.UserID), userID)
-	assert.Equal(t, resp.UserInfo.FirstName, "first")
-	assert.Equal(t, resp.UserInfo.LastName, "last")
-	assert.Equal(t, resp.UserInfo.Email, "test@pixie.support")
-	verifyToken(t, resp.Token, userID.String(), orgID, resp.ExpiresAt, "jwtkey")
 }
 
 func TestServer_LoginNewUser_InvalidOrg(t *testing.T) {
@@ -460,7 +336,7 @@ func TestServer_LoginNewUser_InvalidOrg(t *testing.T) {
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
 
-	resp, err := doLoginRequest(getTestContext(), t, s, "")
+	resp, err := doLoginRequest(getTestContext(), t, s)
 	assert.NotNil(t, err)
 	assert.Nil(t, resp)
 }
@@ -511,7 +387,7 @@ func TestServer_LoginNewUser_CreateUserFailed(t *testing.T) {
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
 
-	resp, err := doLoginRequest(getTestContext(), t, s, "")
+	resp, err := doLoginRequest(getTestContext(), t, s)
 	assert.Nil(t, resp)
 	assert.NotNil(t, err)
 }
@@ -533,7 +409,7 @@ func TestServer_Login_BadToken(t *testing.T) {
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
 
-	resp, err := doLoginRequest(getTestContext(), t, s, "")
+	resp, err := doLoginRequest(getTestContext(), t, s)
 	assert.NotNil(t, err)
 	// Check the response data.
 	stat, ok := status.FromError(err)
@@ -588,7 +464,7 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
 
-	resp, err := doLoginRequest(getTestContext(), t, s, "")
+	resp, err := doLoginRequest(getTestContext(), t, s)
 	require.NoError(t, err)
 	assert.NotNil(t, resp)
 
@@ -673,7 +549,7 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
 
-	resp, err := doLoginRequest(getTestContext(), t, s, "")
+	resp, err := doLoginRequest(getTestContext(), t, s)
 	require.NoError(t, err)
 	assert.NotNil(t, resp)
 
@@ -946,47 +822,6 @@ func TestServer_GetAugmentedTokenBadToken(t *testing.T) {
 	e, ok := status.FromError(err)
 	assert.True(t, ok)
 	assert.Equal(t, e.Code(), codes.Unauthenticated)
-}
-
-func TestServer_GetAugmentedTokenSupportAccount(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	a := mock_controllers.NewMockAuthProvider(ctrl)
-
-	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-	mockOrgInfo := &profilepb.OrgInfo{
-		ID: utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
-	}
-	mockProfile.EXPECT().
-		GetOrg(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
-		Return(mockOrgInfo, nil)
-
-	viper.Set("jwt_signing_key", "jwtkey")
-	viper.Set("domain_name", "withpixie.ai")
-
-	env, err := authenv.New(mockProfile)
-	require.NoError(t, err)
-	s, err := controllers.NewServer(env, a, nil)
-	require.NoError(t, err)
-
-	claims := testingutils.GenerateTestClaimsWithEmail(t, "test@pixie.support")
-	token := testingutils.SignPBClaims(t, claims, "jwtkey")
-	req := &authpb.GetAugmentedAuthTokenRequest{
-		Token: token,
-	}
-	sCtx := authcontext.New()
-	sCtx.Claims = claims
-	resp, err := s.GetAugmentedToken(context.Background(), req)
-
-	require.NoError(t, err)
-	assert.NotNil(t, resp)
-
-	// Make sure expiry time is in the future & > 0.
-	currentTime := time.Now().Unix()
-	maxExpiryTime := time.Now().Add(90 * time.Minute).Unix()
-	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt <= maxExpiryTime)
-	assert.True(t, resp.ExpiresAt > 0)
-
-	verifyToken(t, resp.Token, testingutils.TestUserID, testingutils.TestOrgID, resp.ExpiresAt, "jwtkey")
 }
 
 func TestServer_GetAugmentedTokenAPIUser(t *testing.T) {
@@ -1358,11 +1193,10 @@ func verifyToken(t *testing.T, token, expectedUserID string, expectedOrgID strin
 	assert.Equal(t, expectedExpiry, int64(claims["exp"].(float64)))
 }
 
-func doLoginRequest(ctx context.Context, t *testing.T, server *controllers.Server, orgName string) (*authpb.LoginReply, error) {
+func doLoginRequest(ctx context.Context, t *testing.T, server *controllers.Server) (*authpb.LoginReply, error) {
 	req := &authpb.LoginRequest{
 		AccessToken:           "tokenabc",
 		CreateUserIfNotExists: true,
-		OrgName:               orgName,
 	}
 	return server.Login(ctx, req)
 }
@@ -1428,7 +1262,7 @@ func TestServer_LoginUserForOrgMembership(t *testing.T) {
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
 
-	resp, err := doLoginRequest(getTestContext(), t, s, "")
+	resp, err := doLoginRequest(getTestContext(), t, s)
 	require.NoError(t, err)
 	assert.NotNil(t, resp)
 
@@ -1562,7 +1396,7 @@ func TestServer_Login_UserNotApproved(t *testing.T) {
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
 
-	resp, err := doLoginRequest(getTestContext(), t, s, "")
+	resp, err := doLoginRequest(getTestContext(), t, s)
 	assert.Nil(t, resp)
 	assert.Regexp(t, "You are not approved to log in", err)
 }

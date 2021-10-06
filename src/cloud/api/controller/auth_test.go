@@ -357,10 +357,10 @@ func TestAuthLoginHandler_WithOrgName(t *testing.T) {
 		strings.NewReader("{\"accessToken\": \"the-token\", \"orgName\": \"my-org\"}"))
 	require.NoError(t, err)
 
+	// After support account removal, we ignore the orgName  parameter
 	expectedAuthServiceReq := &authpb.LoginRequest{
 		AccessToken:           "the-token",
 		CreateUserIfNotExists: true,
-		OrgName:               "my-org",
 	}
 
 	loginResp := &authpb.LoginReply{

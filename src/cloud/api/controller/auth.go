@@ -239,7 +239,6 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 		rpcReq := &authpb.LoginRequest{
 			AccessToken:           params.AccessToken,
 			CreateUserIfNotExists: true,
-			OrgName:               params.OrgName,
 			IdToken:               params.IDToken,
 		}
 
@@ -342,7 +341,6 @@ func AuthLoginHandlerEmbed(env commonenv.Env, w http.ResponseWriter, r *http.Req
 		rpcReq := &authpb.LoginRequest{
 			AccessToken:           params.AccessToken,
 			CreateUserIfNotExists: false,
-			OrgName:               "",
 			IdToken:               params.IDToken,
 		}
 
