@@ -35,7 +35,7 @@
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.h"
 
 // This keeps instruction count below BPF's limit of 4096 per probe.
-#define LOOP_LIMIT 42
+#define LOOP_LIMIT 44
 
 const int32_t kInvalidFD = -1;
 
@@ -179,6 +179,7 @@ static __inline struct socket_data_event_t* fill_socket_data_event(
   event->attr.conn_id = conn_info->conn_id;
   event->attr.protocol = conn_info->protocol;
   event->attr.role = conn_info->role;
+  event->attr.pos = (direction == kEgress) ? conn_info->wr_bytes : conn_info->rd_bytes;
   event->attr.prepend_length_header = conn_info->prepend_length_header;
   bpf_probe_read(&event->attr.length_header, 4, conn_info->prev_buf);
   return event;
@@ -401,18 +402,9 @@ static __inline void submit_close_event(struct pt_regs* ctx, struct conn_info_t*
 // Returns the bytes output from the input buf. Note that is not the total bytes submitted to the
 // perf buffer, which includes additional metadata.
 static __inline void perf_submit_buf(struct pt_regs* ctx, const enum traffic_direction_t direction,
-                                     const char* buf, size_t buf_size, size_t offset,
+                                     const char* buf, size_t buf_size,
                                      struct conn_info_t* conn_info,
                                      struct socket_data_event_t* event) {
-  switch (direction) {
-    case kEgress:
-      event->attr.pos = conn_info->wr_bytes + offset;
-      break;
-    case kIngress:
-      event->attr.pos = conn_info->rd_bytes + offset;
-      break;
-  }
-
   // Record original size of packet. This may get truncated below before submit.
   event->attr.msg_size = buf_size;
 
@@ -491,8 +483,11 @@ static __inline void perf_submit_wrapper(struct pt_regs* ctx,
     const int bytes_remaining = buf_size - bytes_sent;
     const size_t current_size =
         (bytes_remaining > MAX_MSG_SIZE && (i != CHUNK_LIMIT - 1)) ? MAX_MSG_SIZE : bytes_remaining;
-    perf_submit_buf(ctx, direction, buf + bytes_sent, current_size, bytes_sent, conn_info, event);
+    perf_submit_buf(ctx, direction, buf + bytes_sent, current_size, conn_info, event);
     bytes_sent += current_size;
+
+    // Move the position for the next event.
+    event->attr.pos += current_size;
   }
 }
 
@@ -501,23 +496,13 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx,
                                         const struct iovec* iov, const size_t iovlen,
                                         const size_t total_size, struct conn_info_t* conn_info,
                                         struct socket_data_event_t* event) {
-  // NOTE: The loop index 'i' used to be int. BPF verifier somehow conclude that msg_size inside
-  // perf_submit_buf(), after a series of assignment, and passed into a function call, can be
-  // negative.
-  //
-  // The issue can be fixed by changing the loop index, or msg_size inside
-  // perf_submit_buf(), to unsigned int (changing to size_t does not work either).
-  //
-  // We prefer changing loop index, as it appears to be the source of triggering BPF verifier's
-  // confusion.
-  //
   // NOTE: The syscalls for scatter buffers, {send,recv}msg()/{write,read}v(), access buffers in
   // array order. That means they read or fill iov[0], then iov[1], and so on. They return the total
   // size of the written or read data. Therefore, when loop through the buffers, both the number of
   // buffers and the total size need to be checked. More details can be found on their man pages.
   int bytes_sent = 0;
 #pragma unroll
-  for (unsigned int i = 0; i < LOOP_LIMIT && i < iovlen && bytes_sent < total_size; ++i) {
+  for (int i = 0; i < LOOP_LIMIT && i < iovlen && bytes_sent < total_size; ++i) {
     struct iovec iov_cpy;
     bpf_probe_read(&iov_cpy, sizeof(struct iovec), &iov[i]);
 
@@ -526,8 +511,11 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx,
 
     // TODO(oazizi/yzhao): Should switch this to go through perf_submit_wrapper.
     //                     We don't have the BPF instruction count to do so right now.
-    perf_submit_buf(ctx, direction, iov_cpy.iov_base, iov_size, bytes_sent, conn_info, event);
+    perf_submit_buf(ctx, direction, iov_cpy.iov_base, iov_size, conn_info, event);
     bytes_sent += iov_size;
+
+    // Move the position for the next event.
+    event->attr.pos += iov_size;
   }
 
   // TODO(oazizi): If there is data left after the loop limit, we should still report the remainder
