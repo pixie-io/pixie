@@ -263,7 +263,7 @@ func (m *Handler) processUpdates() {
 					// Set the previous update version on the update.
 					prevUV, err := m.mds.GetUpdateVersion(t)
 					if err != nil || prevUV == 0 {
-						log.WithError(err).Trace("Failed to get update version for topic")
+						log.WithError(err).Info("Failed to get update version for topic")
 						// If we cannot get a prevRV from the db, the agent won't know what
 						// update came before this update. Setting the prevRV
 						// to the current update version, which they definitely don't have yet,
@@ -274,7 +274,7 @@ func (m *Handler) processUpdates() {
 					// Set the new update version.
 					err = m.mds.SetUpdateVersion(t, updateToSend.UpdateVersion)
 					if err != nil {
-						log.WithError(err).Trace("Failed to set current update version for topic")
+						log.WithError(err).Info("Failed to set current update version for topic")
 						// If we fail to set the current update version, the topic may miss an update
 						// without realizing it.
 					}
@@ -282,7 +282,7 @@ func (m *Handler) processUpdates() {
 					if err != nil {
 						// If this happens, the agent will rerequest the update as a missing update when it
 						// receives the next update.
-						log.WithError(err).Trace("Failed to send update to agent")
+						log.WithError(err).Info("Failed to send update to agent")
 					}
 				}
 			}

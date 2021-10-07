@@ -291,7 +291,7 @@ func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metada
 			}
 		}
 
-		log.Infof("Sent %d agent updates", len(updates))
+		log.Tracef("Sent %d agent updates", len(updates))
 		time.Sleep(agentUpdatePeriod)
 	}
 }
