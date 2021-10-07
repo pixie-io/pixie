@@ -22,7 +22,7 @@ if [ "$#" -ne 1 ]; then
 fi
 pubRepoLoc=$1
 
-pushd "${pubRepoLoc}" || exit 1
+pushd "${pubRepoLoc}" &> /dev/null || exit 1
 
 typeset -A privateHashToPublicHash
 mapfile -t hashMappings < <(git --no-pager log --pretty="format:%(trailers:key=GitOrigin-RevId,valueonly,separator=%x00) %H")
@@ -34,9 +34,13 @@ for hashMapping in "${hashMappings[@]}"; do
   privateHashToPublicHash["${privHash}"]="${pubHash}"
 done
 
-popd || exit 1
+echo "Found ${#privateHashToPublicHash[@]} commit mappings."
+
+popd &> /dev/null || exit 1
 
 mapfile -t tagRefs < <(git show-ref --tags -d | grep -E release | grep -E '\^\{\}' | grep -E -v 'v\d+\.\d+\.\d+-' | cut -d'^' -f1 | sed 's|refs/tags/||g')
+
+echo "Found ${#tagRefs[@]} tag refs."
 
 for tagRef in "${tagRefs[@]}"; do
   IFS=" " read -r -a hashToTag <<< "${tagRef}"
@@ -45,11 +49,14 @@ for tagRef in "${tagRefs[@]}"; do
   pubHash=${privateHashToPublicHash[$hash]}
   tagMessage=$(git tag -l --format='%(contents)' "${tag}")
   if [[ -n "${pubHash}" ]]; then
-    pushd "${pubRepoLoc}" || exit 1
-    if [[ ! $(git tag -l "${tag}") ]]; then
+    pushd "${pubRepoLoc}" &> /dev/null || exit 1
+    if [[ $(git tag -l "${tag}") ]]; then
+      echo "Tag ${tag} already exists. Skipping."
+    else
+      echo "Creating and pushing tag ${tag}"
       git tag -a "${tag}" -m "${tagMessage}" "${pubHash}"
       git push origin "${tag}"
     fi
-    popd || exit 1
+    popd &> /dev/null || exit 1
   fi
 done
