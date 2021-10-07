@@ -35,7 +35,6 @@ import (
 	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/cloud/auth/authpb"
 	"px.dev/pixie/src/cloud/profile/profilepb"
-	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/authcontext"
 	srvutils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils"
@@ -100,6 +99,13 @@ func (s *Server) isUserApproved(ctx context.Context, userID string, orgInfo *pro
 	return user.IsApproved, nil
 }
 
+func getOrgName(userInfo *UserInfo) string {
+	if userInfo.IdentityProviderOrgName != "" {
+		return userInfo.IdentityProviderOrgName
+	}
+	return userInfo.Email
+}
+
 // Login uses the AuthProvider to authenticate and login the user. Errors out if their org doesn't exist.
 func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.LoginReply, error) {
 	userID, userInfo, err := s.getUserInfoFromToken(in.AccessToken)
@@ -110,10 +116,7 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 	md, _ := metadata.FromIncomingContext(ctx)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
-	domainName, err := GetDomainNameFromEmail(userInfo.Email)
-	if err != nil {
-		return nil, services.HTTPStatusFromError(err, "Failed to get org name for user")
-	}
+	domainName := getOrgName(userInfo)
 
 	// If account is a Pixie support account, we don't want to create a new user.
 	if domainName == SupportAccountDomain {
@@ -146,7 +149,8 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 	}
 
 	var orgInfo *profilepb.OrgInfo
-	// If the account has an org, use that instead of trying their domain.
+	// If the org field is populated for the user, that means they already have an organization that they belong to.
+	// Otherwise, users can belong to an org based on their domain.
 	if userInfo.PLOrgID != "" {
 		// If the user already belongs to an org according to the AuthProvider (userInfo),
 		// we log that user into the corresponding org.
@@ -175,7 +179,7 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if !isApproved {
-		return nil, status.Error(codes.PermissionDenied, "user not yet approved to log in. Please request user approval from your org admin")
+		return nil, status.Error(codes.PermissionDenied, "You are not approved to log in to the org. Please request approval from your org admin")
 	}
 
 	// Update user's profile photo.
@@ -263,11 +267,7 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 		return nil, status.Error(codes.PermissionDenied, "user already exists, please login.")
 	}
 
-	domainName, err := GetDomainNameFromEmail(userInfo.Email)
-	if err != nil {
-		return nil, services.HTTPStatusFromError(err, "Failed to get org name for user")
-	}
-
+	domainName := getOrgName(userInfo)
 	orgInfo, _ := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: domainName})
 	var orgID *uuidpb.UUID
 	newOrg := orgInfo == nil
@@ -288,7 +288,7 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		if !isApproved {
-			return nil, status.Error(codes.PermissionDenied, "user not yet approved to log in. Contact org admin")
+			return nil, status.Error(codes.PermissionDenied, "You are not approved to log in to the org. Please request approval from your org admin")
 		}
 	}
 

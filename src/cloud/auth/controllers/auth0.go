@@ -340,7 +340,6 @@ func (a *Auth0Connector) SetPLMetadata(userID, plOrgID, plUserID string) error {
 
 	client := &http.Client{}
 	patchPath := fmt.Sprintf("%s/users/%s", a.cfg.Auth0MgmtAPI, userID)
-	log.Printf(patchPath)
 	req, err := http.NewRequest("PATCH", patchPath, bytes.NewBuffer(jsonStr))
 	if err != nil {
 		return err

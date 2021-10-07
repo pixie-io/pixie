@@ -240,37 +240,6 @@ func TestServer_Login_MissingOrgError(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestServer_LoginNewUser_InvalidEmail(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	// Setup expectations for the mocks.
-	a := mock_controllers.NewMockAuthProvider(ctrl)
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
-
-	fakeUserInfo := &controllers.UserInfo{
-		Email:     "abc.com",
-		FirstName: "first",
-		LastName:  "last",
-	}
-
-	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
-
-	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-
-	viper.Set("jwt_signing_key", "jwtkey")
-	viper.Set("domain_name", "withpixie.ai")
-
-	env, err := authenv.New(mockProfile)
-	require.NoError(t, err)
-	s, err := controllers.NewServer(env, a, nil)
-	require.NoError(t, err)
-
-	resp, err := doLoginRequest(getTestContext(), t, s, "")
-	assert.Nil(t, resp)
-	assert.NotNil(t, err)
-}
-
 func TestServer_LoginNewUser_SupportUserNoOrg(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -280,9 +249,10 @@ func TestServer_LoginNewUser_SupportUserNoOrg(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		Email:     "test@pixie.support",
-		FirstName: "first",
-		LastName:  "last",
+		Email:                   "test@pixie.support",
+		FirstName:               "first",
+		LastName:                "last",
+		IdentityProviderOrgName: "pixie.support",
 	}
 
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
@@ -322,9 +292,10 @@ func TestServer_LoginNewUser_SupportUser(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		Email:     "test@pixie.support",
-		FirstName: "first",
-		LastName:  "last",
+		Email:                   "test@pixie.support",
+		FirstName:               "first",
+		LastName:                "last",
+		IdentityProviderOrgName: "pixie.support",
 	}
 
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
@@ -1442,7 +1413,7 @@ func TestServer_Signup_UserNotApproved(t *testing.T) {
 
 	resp, err := doSignupRequest(getTestContext(), t, s)
 	assert.Nil(t, resp)
-	assert.Regexp(t, "user not yet approved to log in", err)
+	assert.Regexp(t, "You are not approved to log in", err)
 }
 
 func TestServer_Login_UserNotApproved(t *testing.T) {
@@ -1493,7 +1464,7 @@ func TestServer_Login_UserNotApproved(t *testing.T) {
 
 	resp, err := doLoginRequest(getTestContext(), t, s, "")
 	assert.Nil(t, resp)
-	assert.Regexp(t, "user not yet approved to log in", err)
+	assert.Regexp(t, "You are not approved to log in", err)
 }
 
 func TestServer_InviteUser(t *testing.T) {

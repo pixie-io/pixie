@@ -33,7 +33,6 @@ go_library(
         "//src/cloud/auth/authpb:auth_pl_go_proto",
         "//src/cloud/profile/profilepb:service_pl_go_proto",
         "//src/cloud/shared/idprovider",
-        "//src/shared/services",
         "//src/shared/services/authcontext",
         "//src/shared/services/handler",
         "//src/shared/services/utils",
