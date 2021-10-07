@@ -102,7 +102,6 @@ func getAugmentedToken(env apienv.APIEnv, r *http.Request) (string, error) {
 			return "", ErrCSRFOriginCheckFailed
 		}
 	}
-
 	// Steps:
 	// 1. Check if header contains a pixie-api-key. If so, generate augmented auth from the API Key.
 	// 2. Try to get the token out of session.
@@ -214,7 +213,15 @@ func GetAugmentedTokenGRPC(ctx context.Context, env apienv.APIEnv) (string, erro
 	if !ok {
 		return "", errors.New("Could not get metadata from incoming md")
 	}
-	r := &http.Request{Header: http.Header{}}
+
+	// The authcontext contains the GRPC path.
+	sCtx, err := authcontext.FromContext(ctx)
+	var urlPath *url.URL
+	if err == nil {
+		urlPath, _ = url.Parse(sCtx.Path)
+	}
+
+	r := &http.Request{Header: http.Header{}, URL: urlPath}
 	for k, v := range md {
 		for _, val := range v {
 			r.Header.Add(k, val)
