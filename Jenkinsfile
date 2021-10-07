@@ -1299,7 +1299,7 @@ def buildScriptForCopybaraPublic() {
               [$class: 'CloneOption', noTags: false, reference: '', shallow: false]
             ],
             userRemoteConfigs: [
-              [credentialsId: 'build-bot-ro', url: 'git@github.com/pixie-labs/pixielabs.git']
+              [credentialsId: 'build-bot-ro', url: 'git@github.com:pixie-labs/pixielabs.git']
             ]
           ]
         ])
