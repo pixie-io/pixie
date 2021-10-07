@@ -54,10 +54,14 @@ def kafka_topics(start_time: str, namespace: str):
     # Search for topics within Produce and Fetch commands.
     df = df[df.req_cmd == 0 or df.req_cmd == 1]
     df = df[['req_body']]
-    df = extract_json_field_value(df, 'topic', 'req_body', '"name":')
-    df = df[['topic']]
-    df = df.groupby(['topic']).agg()
+
+    # Unnest topics.
+    df.topics = px.pluck(df.req_body, 'topics')
+    df = json_unnest_first5(df, 'topic', 'topics', ['topic'])
     df = df[df.topic != '']
+    df.topic = px.pluck(df.topic, 'name')
+
+    df = df.groupby(['topic']).agg()
     return df
 
 
@@ -80,35 +84,74 @@ def kafka_data(start_time: str, namespace: str, producer: str, consumer: str, to
     consumer_df = df[df.client_id == consumer]
     producer_df = df[df.client_id == producer]
 
-    # Extract producer and consumer offsets.
-    producer_df = extract_json_field_value(producer_df, 'offset', 'resp', '"base_offset":')
-    consumer_df = extract_json_field_value(consumer_df, 'offset', 'req_body', '"fetch_offset":')
+    consumer_df = extract_partition_offset(consumer_df, topic, 'req_body', 'fetch_offset')
+    producer_df = extract_partition_offset(producer_df, topic, 'resp', 'base_offset')
 
-    # Keep only the commands with offsets.
-    # Fetch requests that are a repeat of the previous one will not have offsets,
-    # but we don't care about those.
-    producer_df = producer_df[producer_df.offset != ""]
-    consumer_df = consumer_df[consumer_df.offset != ""]
+    df = merge_dfs(consumer_df, producer_df)
+    return df
 
+
+def merge_dfs(consumer_df, producer_df):
     # Self-join to match consumer requests with producer requests.
     df = consumer_df.merge(
         producer_df,
         how='inner',
-        left_on='offset',
-        right_on='offset',
+        left_on=['part_idx', 'offset'],
+        right_on=['part_idx', 'offset'],
         suffixes=['_consumer', '_producer'])
-    df.offset = df.offset_consumer
-    df = df['offset', 'time__consumer', 'time__producer']
 
     # Compute producer consumer latency.
     # If the consumer's fetch happened before the produce, then set latency to 0,
     # since it means the consumer is ready waiting for the produce as soon as it arrives.
     df.delay = (df.time__consumer - df.time__producer) / 1000.0 / 1000.0 / 1000.0
     df.delay = px.select(df.delay < 0.0, 0.0, df.delay)
+    df = df[['part_idx_consumer', 'time__consumer', 'delay']]
 
     # Add time_ as x-axis for charting
     df.time_ = df.time__consumer
+    return df
 
+
+def extract_partition_offset(df, topic, body_field, offset_field):
+    df = df[[body_field, 'time_']]
+
+    # Unnest topics.
+    df.topics = px.pluck(df[body_field], 'topics')
+    df = json_unnest_first5(df, 'topic', 'topics', ['topic', 'time_'])
+    df = df[df.topic != '']
+
+    # Keep only the topic we want.
+    df.topic_name = px.pluck(df.topic, 'name')
+    df = df[df.topic_name == topic]
+
+    # Unnest partitions.
+    df.partitions = px.pluck(df.topic, 'partitions')
+    df = json_unnest_first5(df, 'partition', 'partitions', ['partition', 'time_'])
+
+    # Get index, offset, and time
+    df.part_idx = px.pluck(df.partition, 'index')
+    df.offset = px.pluck(df.partition, offset_field)
+    df = df[['part_idx', 'offset', 'time_']]
+    df = df[df.offset != '' and df.part_idx != '']
+    return df
+
+
+def json_unnest_first5(df, dest_col, src_col, fields):
+    ''' Unnest the first 5 values in a JSON array in the src_col, and put it in the
+    dest_col. Fields are the columns to keep in the resulting table.
+    '''
+    df0 = json_array_index(df, dest_col, src_col, fields, 0)
+    df1 = json_array_index(df, dest_col, src_col, fields, 1)
+    df2 = json_array_index(df, dest_col, src_col, fields, 2)
+    df3 = json_array_index(df, dest_col, src_col, fields, 3)
+    df4 = json_array_index(df, dest_col, src_col, fields, 4)
+    df = df0.append(df1).append(df2).append(df3).append(df4)
+    return df
+
+
+def json_array_index(df, dest_col, src_col, fields, idx):
+    df[dest_col] = px.pluck_array(df[src_col], idx)
+    df = df[fields]
     return df
 
 

@@ -8,7 +8,7 @@
         },
         {
             "name": "namespace",
-            "type": "PX_STRING",
+            "type": "PX_NAMESPACE",
             "description": "Namespace of the application containing kafka."
         },
         {
@@ -144,6 +144,8 @@
                 "timeseries": [
                     {
                         "value": "delay",
+                        "series": "part_idx_consumer",
+                        "stackBySeries": false,
                         "mode": "MODE_LINE"
                     }
                 ],
