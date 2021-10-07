@@ -39,20 +39,6 @@
 
 const int32_t kInvalidFD = -1;
 
-// Determines what percentage of events must be inferred as a certain type for us to consider the
-// connection to be of that type. Encoded as a numerator/denominator. Currently set to 20%. While
-// this may seem low, one must consider that not all captures are packet-aligned, and the inference
-// logic doesn't work on the middle of packets. Moreover, a large data packet would get split up
-// and cause issues. This threshold only needs to be larger than the false positive rate, which
-// for MySQL is 32/256 based on command only.
-const int kTrafficInferenceThresholdNum = 1;
-const int kTrafficInferenceThresholdDen = 5;
-
-// This bias is added to the numerator of the traffic inference threshold.
-// By using a positive number, it biases messages to be classified as matches,
-// when the number of samples is low.
-const int kTrafficInferenceBias = 5;
-
 // This is the amount of activity required on a connection before a new ConnStats event
 // is reported to user-space. It applies to read and write traffic combined.
 const int kConnStatsDataThreshold = 65536;
@@ -221,25 +207,9 @@ static __inline bool should_trace_conn(struct conn_info_t* conn_info) {
   return should_trace_sockaddr_family(conn_info->addr.sa.sa_family);
 }
 
-// Returns true if detection passes threshold. Right now this is only used for PGSQL.
-//
-// TODO(yzhao): Remove protocol detection threshold.
-static __inline bool protocol_detection_passes_threshold(const struct conn_info_t* conn_info) {
-  if (conn_info->protocol == kProtocolPGSQL) {
-    // Since some protocols are hard to infer from a single event, we track the inference stats over
-    // time, and then use the match rate to determine whether we really want to consider it to be of
-    // the protocol or not. This helps reduce polluting events to user-space.
-    bool meets_threshold =
-        kTrafficInferenceThresholdDen * (conn_info->protocol_match_count + kTrafficInferenceBias) >
-        kTrafficInferenceThresholdNum * conn_info->protocol_total_count;
-    return meets_threshold;
-  }
-  return true;
-}
-
 // If this returns false, we still will trace summary stats.
 static __inline bool should_trace_protocol_data(const struct conn_info_t* conn_info) {
-  if (conn_info->protocol == kProtocolUnknown || !protocol_detection_passes_threshold(conn_info)) {
+  if (conn_info->protocol == kProtocolUnknown) {
     return false;
   }
 
@@ -300,9 +270,6 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info,
   // Update protocol if not set.
   if (conn_info->protocol == kProtocolUnknown) {
     conn_info->protocol = inferred_protocol.protocol;
-    conn_info->protocol_match_count = 1;
-  } else if (conn_info->protocol == inferred_protocol.protocol) {
-    conn_info->protocol_match_count += 1;
   }
 
   // Update role if not set.
