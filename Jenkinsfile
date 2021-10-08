@@ -497,9 +497,22 @@ def InitializeRepoState(String stashName = SRC_STASH_NAME) {
   stashOnGCS(SRC_STASH_NAME, '.')
 }
 
+def DefaultGitPodTemplate(String suffix, Closure body) {
+  RetryOnK8sDownscale {
+    def label = "worker-git-${env.BUILD_TAG}-${suffix}"
+    podTemplate(label: label, cloud: 'devinfra-cluster', containers: [
+      containerTemplate(name: 'git', image: 'bitnami/git:2.33.0', command: 'cat', ttyEnabled: true)
+    ]) {
+      node(label) {
+        body()
+      }
+    }
+  }
+}
+
 def DefaultGCloudPodTemplate(String suffix, Closure body) {
   RetryOnK8sDownscale {
-    def label = "worker-${env.BUILD_TAG}-${suffix}"
+    def label = "worker-gcloud-${env.BUILD_TAG}-${suffix}"
     podTemplate(label: label, cloud: 'devinfra-cluster', containers: [
       containerTemplate(name: 'gcloud', image: GCLOUD_DOCKER_IMAGE, command: 'cat', ttyEnabled: true)
     ]) {
@@ -515,7 +528,6 @@ def DefaultCopybaraPodTemplate(String suffix, Closure body) {
     def label = "worker-copybara-${env.BUILD_TAG}-${suffix}"
     podTemplate(label: label, cloud: 'devinfra-cluster', containers: [
       containerTemplate(name: 'copybara', image: COPYBARA_DOCKER_IMAGE, command: 'cat', ttyEnabled: true),
-      containerTemplate(name: 'gcloud', image: GCLOUD_DOCKER_IMAGE, command: 'cat', ttyEnabled: true),
     ]) {
       node(label) {
         body()
@@ -1308,41 +1320,43 @@ def buildScriptForCopybaraPublic() {
       copybaraTemplate('public-copy', 'tools/copybara/public/copy.bara.sky')
     }
     stage('Copy tags') {
-      DefaultGCloudPodTemplate('public-copy-tags') {
-        deleteDir()
-        checkout([
-          changelog: false,
-          poll: false,
-          scm: [
-            $class: 'GitSCM',
-            branches: [[name: 'main']],
-            extensions: [
-              [$class: 'RelativeTargetDirectory', relativeTargetDir: 'pixie-private'],
-              [$class: 'CloneOption', noTags: false, reference: '', shallow: false]
-            ],
-            userRemoteConfigs: [
-              [credentialsId: 'build-bot-ro', url: 'git@github.com:pixie-labs/pixielabs.git']
+      DefaultGitPodTemplate('public-copy-tags') {
+        container('git') {
+          deleteDir()
+          checkout([
+            changelog: false,
+            poll: false,
+            scm: [
+              $class: 'GitSCM',
+              branches: [[name: 'main']],
+              extensions: [
+                [$class: 'RelativeTargetDirectory', relativeTargetDir: 'pixie-private'],
+                [$class: 'CloneOption', noTags: false, reference: '', shallow: false]
+              ],
+              userRemoteConfigs: [
+                [credentialsId: 'build-bot-ro', url: 'git@github.com:pixie-labs/pixielabs.git']
+              ]
             ]
-          ]
-        ])
-        checkout([
-          changelog: false,
-          poll: false,
-          scm: [
-            $class: 'GitSCM',
-            branches: [[name: 'main']],
-            extensions: [
-              [$class: 'RelativeTargetDirectory', relativeTargetDir: 'pixie-oss'],
-              [$class: 'CloneOption', noTags: false, reference: '', shallow: false]
-            ],
-            userRemoteConfigs: [
-              [credentialsId: 'pixie-copybara-git', url: 'git@github.com:pixie-io/pixie.git']
+          ])
+          checkout([
+            changelog: false,
+            poll: false,
+            scm: [
+              $class: 'GitSCM',
+              branches: [[name: 'main']],
+              extensions: [
+                [$class: 'RelativeTargetDirectory', relativeTargetDir: 'pixie-oss'],
+                [$class: 'CloneOption', noTags: false, reference: '', shallow: false]
+              ],
+              userRemoteConfigs: [
+                [credentialsId: 'pixie-copybara-git', url: 'git@github.com:pixie-io/pixie.git']
+              ]
             ]
-          ]
-        ])
-        dir('pixie-private') {
-          sh "GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' \
-          ./ci/copy_release_tags.sh ../pixie-oss"
+          ])
+          dir('pixie-private') {
+            sh "GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' \
+            ./ci/copy_release_tags.sh ../pixie-oss"
+          }
         }
       }
     }
