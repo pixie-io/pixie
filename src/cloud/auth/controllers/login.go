@@ -83,23 +83,6 @@ func (s *Server) updateAuthProviderUser(authUserID string, orgID string, userID 
 	return userInfo, nil
 }
 
-// Returns an error if the user is not approved.
-func (s *Server) isUserApproved(ctx context.Context, userID string, orgInfo *profilepb.OrgInfo) error {
-	pc := s.env.ProfileClient()
-	// If the org does not have approvals enabled, users are auto-approved by default.
-	if !orgInfo.EnableApprovals {
-		return nil
-	}
-	user, err := pc.GetUser(ctx, utils.ProtoFromUUIDStrOrNil(userID))
-	if err != nil {
-		return status.Error(codes.Internal, err.Error())
-	}
-	if !user.IsApproved {
-		return status.Error(codes.PermissionDenied, "You are not approved to log in to the org. Please request approval from your org admin")
-	}
-	return nil
-}
-
 func getOrgName(userInfo *UserInfo) string {
 	if userInfo.IdentityProviderOrgName != "" {
 		return userInfo.IdentityProviderOrgName
@@ -167,7 +150,7 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 		}
 	}
 
-	tkn, err := s.postLoginProcess(ctx, userInfo, orgInfo)
+	tkn, err := s.loginUser(ctx, userInfo, orgInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -194,15 +177,22 @@ type token struct {
 	expiresAt time.Time
 }
 
-func (s *Server) postLoginProcess(ctx context.Context, userInfo *UserInfo, orgInfo *profilepb.OrgInfo) (*token, error) {
+// loginUser does the final login steps and generates a token for the user.
+func (s *Server) loginUser(ctx context.Context, userInfo *UserInfo, orgInfo *profilepb.OrgInfo) (*token, error) {
 	pc := s.env.ProfileClient()
-	// Check to make sure the user is approved to login.
-	err := s.isUserApproved(ctx, userInfo.PLUserID, orgInfo)
-	if err != nil {
-		return nil, err
+	// Check to make sure the user is approved to login. They are default approved
+	// if the org does not EnableApprovals.
+	if orgInfo.EnableApprovals {
+		user, err := pc.GetUser(ctx, utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID))
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		if !user.IsApproved {
+			return nil, status.Error(codes.PermissionDenied, "You are not approved to log in to the org. Please request approval from your org admin")
+		}
 	}
 	// Update user's profile photo.
-	_, err = pc.UpdateUser(ctx, &profilepb.UpdateUserRequest{
+	_, err := pc.UpdateUser(ctx, &profilepb.UpdateUserRequest{
 		ID:             utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID),
 		DisplayPicture: &types.StringValue{Value: userInfo.Picture},
 	})
@@ -210,7 +200,9 @@ func (s *Server) postLoginProcess(ctx context.Context, userInfo *UserInfo, orgIn
 		return nil, err
 	}
 
-	tkn, expiresAt, err := generateJWTTokenForUser(userInfo, s.env.JWTSigningKey())
+	expiresAt := time.Now().Add(RefreshTokenValidDuration)
+	claims := srvutils.GenerateJWTForUser(userInfo.PLUserID, userInfo.PLOrgID, userInfo.Email, expiresAt, viper.GetString("domain_name"))
+	tkn, err := srvutils.SignJWTClaims(claims, s.env.JWTSigningKey())
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to generate token")
 	}
@@ -258,7 +250,7 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 		}
 	}
 
-	tkn, err := s.postLoginProcess(ctx, userInfo, orgInfo)
+	tkn, err := s.loginUser(ctx, userInfo, orgInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -432,14 +424,6 @@ func (s *Server) GetAugmentedToken(
 		ExpiresAt: claims.ExpiresAt,
 	}
 	return resp, nil
-}
-
-func generateJWTTokenForUser(userInfo *UserInfo, signingKey string) (string, time.Time, error) {
-	expiresAt := time.Now().Add(RefreshTokenValidDuration)
-	claims := srvutils.GenerateJWTForUser(userInfo.PLUserID, userInfo.PLOrgID, userInfo.Email, expiresAt, viper.GetString("domain_name"))
-	token, err := srvutils.SignJWTClaims(claims, signingKey)
-
-	return token, expiresAt, err
 }
 
 func (s *Server) createInvitedUser(ctx context.Context, req *authpb.InviteUserRequest) (*UserInfo, error) {
