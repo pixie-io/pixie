@@ -31,7 +31,7 @@ const (
 	// SiteCreated is the event for a new site.
 	SiteCreated = "Site Created"
 	// ClusterStatusChange is an event for when a Vizier cluster's status changes.
-	ClusterStatusChange = "Cluster Status Change"
+	ClusterStatusChange = "Vizier Status Change"
 	// VizierHeartbeat is an event for when Vizier sends a heartbeat to the cloud.
 	VizierHeartbeat = "Vizier Heartbeat"
 	// APIRequest is an event for when a request is made to the Pixie API using an API token.
