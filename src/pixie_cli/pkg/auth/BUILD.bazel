@@ -23,7 +23,6 @@ go_library(
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/proto/cloudpb:cloudapi_pl_go_proto",
-        "//src/pixie_cli/pkg/components",
         "//src/pixie_cli/pkg/pxanalytics",
         "//src/pixie_cli/pkg/pxconfig",
         "//src/pixie_cli/pkg/utils",

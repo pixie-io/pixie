@@ -20,12 +20,10 @@ package auth
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -43,7 +41,6 @@ import (
 	"gopkg.in/segmentio/analytics-go.v3"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
-	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
 	"px.dev/pixie/src/pixie_cli/pkg/pxconfig"
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
@@ -56,7 +53,6 @@ const pixieAuthFile = "auth.json"
 var errUserChallengeTimeout = errors.New("timeout waiting for user")
 var errBrowserFailed = errors.New("browser failed to open")
 var errServerListenerFailed = errors.New("failed to start up local server")
-var errTokenUnauthorized = errors.New("failed to obtain token")
 var errUserNotRegistered = errors.New("user is not registered. Please sign up")
 var localServerRedirectURL = "http://localhost:8085/auth_complete"
 var localServerPort = int32(8085)
@@ -132,10 +128,6 @@ func LoadDefaultCredentials() (*RefreshToken, error) {
 		}
 	}
 
-	if token.SupportAccount {
-		components.RenderBureaucratDragon(token.OrgName)
-	}
-
 	// TODO(zasgar): Exchange refresh token for new token type.
 	return token, nil
 }
@@ -172,8 +164,6 @@ func CtxWithCreds(ctx context.Context) context.Context {
 type PixieCloudLogin struct {
 	ManualMode bool
 	CloudAddr  string
-	// OrgName: Selection is only valid for "pixie.support", will be removed when RBAC is supported.
-	OrgName string
 	// OrgID: Selection is only valid for "pixie.support", will be removed when RBAC is supported.
 	OrgID string
 	// UseAPIKey, if true then prompt user for API key to use for login.
@@ -395,10 +385,6 @@ func (p *PixieCloudLogin) getAuthStringManually() (string, error) {
 }
 
 func (p *PixieCloudLogin) getRefreshToken(accessToken string, apiKey string) (*RefreshToken, error) {
-	if len(p.OrgName) > 0 {
-		return p.deprecatedGetRefreshTokenForOrg(accessToken)
-	}
-
 	conn, err := utils.GetCloudClientConnection(p.CloudAddr)
 	if err != nil {
 		return nil, err
@@ -436,104 +422,19 @@ func (p *PixieCloudLogin) getRefreshToken(accessToken string, apiKey string) (*R
 	}
 
 	return &RefreshToken{
-		Token:          resp.Token,
-		ExpiresAt:      resp.ExpiresAt,
-		OrgID:          orgID,
-		OrgName:        orgResp.OrgName,
-		SupportAccount: false,
+		Token:     resp.Token,
+		ExpiresAt: resp.ExpiresAt,
+		OrgID:     orgID,
+		OrgName:   orgResp.OrgName,
 	}, nil
-}
-
-// deprecatedGetRefreshTokenForOrg - should be removed once we add in proper impersonation support.
-func (p *PixieCloudLogin) deprecatedGetRefreshTokenForOrg(accessToken string) (*RefreshToken, error) {
-	params := struct {
-		AccessToken string `json:"accessToken"`
-		OrgName     string `json:"orgName,omitempty"`
-	}{
-		AccessToken: strings.Trim(accessToken, "\n"),
-		OrgName:     p.OrgName,
-	}
-	b, err := json.Marshal(params)
-	if err != nil {
-		return nil, err
-	}
-	authURL := p.getAuthAPIURL()
-	req, err := http.NewRequest("POST", authURL, bytes.NewBuffer(b))
-	req.Header.Set("content-type", "application/json")
-	if err != nil {
-		return nil, err
-	}
-
-	client := http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusBadRequest {
-		// Read error body.
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return nil, errTokenUnauthorized
-		}
-		return nil, errors.New(string(bodyBytes))
-	}
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, errUserNotRegistered
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Request for token failed with status %d", resp.StatusCode)
-	}
-	refreshToken := &RefreshToken{}
-	if err := json.NewDecoder(resp.Body).Decode(refreshToken); err != nil {
-		return nil, err
-	}
-
-	refreshToken.SupportAccount = p.OrgName != ""
-	refreshToken.OrgID = p.OrgID
-	refreshToken.OrgName = p.OrgName
-
-	if refreshToken.OrgName == "" {
-		// Get the org name from the cloud.
-		var orgID string
-		if token, _ := jwt.Parse(refreshToken.Token, nil); token != nil {
-			sc, ok := token.Claims.(jwt.MapClaims)
-			if ok {
-				orgID, _ = sc["OrgID"].(string)
-			}
-		}
-
-		refreshToken.OrgID = orgID
-
-		uuidProto := apiutils.ProtoFromUUIDStrOrNil(orgID)
-		conn, err := utils.GetCloudClientConnection(p.CloudAddr)
-		if err != nil {
-			return nil, err
-		}
-		client := cloudpb.NewProfileServiceClient(conn)
-		ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
-			fmt.Sprintf("bearer %s", refreshToken.Token))
-		ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
-		defer cancel()
-		resp, err := client.GetOrgInfo(ctx, uuidProto)
-		if err != nil {
-			return nil, err
-		}
-		refreshToken.OrgName = resp.OrgName
-	}
-	return refreshToken, nil
 }
 
 // RefreshToken is the format for the refresh token.
 type RefreshToken struct {
-	Token          string `json:"token"`
-	ExpiresAt      int64  `json:"expiresAt"`
-	SupportAccount bool   `json:"supportAccount,omitempty"`
-	OrgName        string `json:"orgName,omitempty"`
-	OrgID          string `json:"orgID,omitempty"`
+	Token     string `json:"token"`
+	ExpiresAt int64  `json:"expiresAt"`
+	OrgName   string `json:"orgName,omitempty"`
+	OrgID     string `json:"orgID,omitempty"`
 }
 
 func (p *PixieCloudLogin) getAuthURL() *url.URL {
@@ -547,20 +448,6 @@ func (p *PixieCloudLogin) getAuthURL() *url.URL {
 	authURL.Path = "/login"
 	params := url.Values{}
 	params.Add("local_mode", "true")
-	if len(p.OrgName) > 0 {
-		params.Add("org_name", p.OrgName)
-	}
 	authURL.RawQuery = params.Encode()
 	return authURL
-}
-
-func (p *PixieCloudLogin) getAuthAPIURL() string {
-	authURL, err := url.Parse(fmt.Sprintf("https://%s/api/auth/login", p.CloudAddr))
-	if err != nil {
-		// This is intentionally a log.Fatal, which will trigger a Sentry error.
-		// In most other cases, we want to use the cli logger, which will not trigger
-		// Sentry errors on user errors.
-		log.WithError(err).Fatal("Failed to parse cloud addr.")
-	}
-	return authURL.String()
 }

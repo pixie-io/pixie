@@ -26,7 +26,6 @@ import (
 	"gopkg.in/segmentio/analytics-go.v3"
 
 	"px.dev/pixie/src/pixie_cli/pkg/auth"
-	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
 	"px.dev/pixie/src/pixie_cli/pkg/pxconfig"
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
@@ -41,10 +40,6 @@ func init() {
 
 	LoginCmd.Flags().String("api_key", "", "Use specified API key for authentication.")
 	viper.BindPFlag("api_key", LoginCmd.Flags().Lookup("api_key"))
-
-	AuthCmd.PersistentFlags().String("org_name", "", "Select ORG to login into")
-	viper.BindPFlag("org_name", AuthCmd.PersistentFlags().Lookup("org_name"))
-	AuthCmd.PersistentFlags().MarkHidden("org_name")
 
 	AuthCmd.AddCommand(LoginCmd)
 }
@@ -64,13 +59,11 @@ var LoginCmd = &cobra.Command{
 	Use:   "login",
 	Short: "Login to Pixie",
 	Run: func(cmd *cobra.Command, args []string) {
-		orgName := viper.GetString("org_name")
 		l := auth.PixieCloudLogin{
 			ManualMode: viper.GetBool("manual"),
 			CloudAddr:  viper.GetString("cloud_addr"),
 			UseAPIKey:  viper.GetBool("use_api_key"),
 			APIKey:     viper.GetString("api_key"),
-			OrgName:    orgName,
 		}
 		var refreshToken *auth.RefreshToken
 		var err error
@@ -95,9 +88,5 @@ var LoginCmd = &cobra.Command{
 			}
 		}
 		utils.Info("Authentication Successful")
-
-		if orgName != "" {
-			components.RenderBureaucratDragon(orgName)
-		}
 	},
 }
