@@ -16,15 +16,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as React from 'react';
-
 import Link from '@material-ui/core/Link';
-import Mustache from 'mustache';
+import ListItem from '@material-ui/core/ListItem';
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
-import ListItem from '@material-ui/core/ListItem';
 import OrgContext from 'app/common/org-context';
 import { GQLIDEPath } from 'app/types/schema';
+import Mustache from 'mustache';
+import * as React from 'react';
 
 interface FlamegraphConfig {
   name: string;
@@ -37,21 +36,19 @@ export const executePathTemplate = ((tmplConfigs: GQLIDEPath[], symbol: string) 
   }
 
   // Parse symbol.
-  const rePath = /.*(?=\.)/; // Match everything up to last dot.
-  const reFn = /(?<=\.)[^.]*$/; // Match everything after the last dot.
-  const fnRegex = reFn.exec(symbol);
-  const pathRegex = rePath.exec(symbol);
+  const reGolang = /(.*)\.(.*)/;
+  const parsedGolang = reGolang.exec(symbol);
 
   // This was likely not a Go symbol. We can't parse the rest properly, so don't show the menu.
-  if (fnRegex == null || pathRegex == null || fnRegex.length === 0 || pathRegex.length === 0) {
+  if (parsedGolang == null || parsedGolang.length !== 3) {
     return [];
   }
 
-  let path = pathRegex[0];
+  let path = parsedGolang[1];
   if (path.indexOf('.(') !== -1) {
     path = path.slice(0, path.indexOf('.('));
   }
-  const fn = fnRegex[0];
+  const fn = parsedGolang[2];
 
   // Fill in the template paths.
   const paths = tmplConfigs.map((tmpl) => (
