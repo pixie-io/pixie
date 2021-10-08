@@ -167,28 +167,14 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 		}
 	}
 
-	err = s.isUserApproved(ctx, userInfo.PLUserID, orgInfo)
+	tkn, err := s.postLoginProcess(ctx, userInfo, orgInfo)
 	if err != nil {
 		return nil, err
-	}
-
-	// Update user's profile photo.
-	_, err = pc.UpdateUser(ctx, &profilepb.UpdateUserRequest{
-		ID:             utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID),
-		DisplayPicture: &types.StringValue{Value: userInfo.Picture},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	token, expiresAt, err := generateJWTTokenForUser(userInfo, s.env.JWTSigningKey())
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to generate token")
 	}
 
 	return &authpb.LoginReply{
-		Token:       token,
-		ExpiresAt:   expiresAt.Unix(),
+		Token:       tkn.token,
+		ExpiresAt:   tkn.expiresAt.Unix(),
 		UserCreated: newUser,
 		UserInfo: &authpb.AuthenticatedUserInfo{
 			UserID:    utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID),
@@ -200,6 +186,37 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 			OrgName: orgInfo.OrgName,
 			OrgID:   utils.UUIDFromProtoOrNil(orgInfo.ID).String(),
 		},
+	}, nil
+}
+
+type token struct {
+	token     string
+	expiresAt time.Time
+}
+
+func (s *Server) postLoginProcess(ctx context.Context, userInfo *UserInfo, orgInfo *profilepb.OrgInfo) (*token, error) {
+	pc := s.env.ProfileClient()
+	// Check to make sure the user is approved to login.
+	err := s.isUserApproved(ctx, userInfo.PLUserID, orgInfo)
+	if err != nil {
+		return nil, err
+	}
+	// Update user's profile photo.
+	_, err = pc.UpdateUser(ctx, &profilepb.UpdateUserRequest{
+		ID:             utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID),
+		DisplayPicture: &types.StringValue{Value: userInfo.Picture},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	tkn, expiresAt, err := generateJWTTokenForUser(userInfo, s.env.JWTSigningKey())
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to generate token")
+	}
+	return &token{
+		token:     tkn,
+		expiresAt: expiresAt,
 	}, nil
 }
 
@@ -229,36 +246,26 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 		if err != nil {
 			return nil, err
 		}
+		orgInfo, err = pc.GetOrg(ctx, orgID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
 	} else {
 		userInfo, err = s.createUser(ctx, userID, userInfo, orgInfo.ID)
 		orgID = orgInfo.ID
 		if err != nil {
 			return nil, err
 		}
-		// If the organization is not new, the user might not be approved, we should check.
-		err = s.isUserApproved(ctx, userInfo.PLUserID, orgInfo)
-		if err != nil {
-			return nil, err
-		}
 	}
 
-	// Update user's profile photo.
-	_, err = pc.UpdateUser(ctx, &profilepb.UpdateUserRequest{
-		ID:             utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID),
-		DisplayPicture: &types.StringValue{Value: userInfo.Picture},
-	})
+	tkn, err := s.postLoginProcess(ctx, userInfo, orgInfo)
 	if err != nil {
 		return nil, err
 	}
 
-	token, expiresAt, err := generateJWTTokenForUser(userInfo, s.env.JWTSigningKey())
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to generate token")
-	}
-
 	return &authpb.SignupReply{
-		Token:      token,
-		ExpiresAt:  expiresAt.Unix(),
+		Token:      tkn.token,
+		ExpiresAt:  tkn.expiresAt.Unix(),
 		OrgCreated: newOrg,
 		UserInfo: &authpb.AuthenticatedUserInfo{
 			UserID:    utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID),
@@ -434,6 +441,7 @@ func generateJWTTokenForUser(userInfo *UserInfo, signingKey string) (string, tim
 
 	return token, expiresAt, err
 }
+
 func (s *Server) createInvitedUser(ctx context.Context, req *authpb.InviteUserRequest) (*UserInfo, error) {
 	// Create the Identity in the AuthProvider.
 	ident, err := s.a.CreateIdentity(req.Email)

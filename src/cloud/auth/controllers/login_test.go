@@ -1076,6 +1076,14 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 			UserID: userPb,
 		}, nil)
 
+	fakeOrgInfo := &profilepb.OrgInfo{
+		ID:              orgPb,
+		EnableApprovals: false,
+	}
+	mockProfile.EXPECT().
+		GetOrg(gomock.Any(), orgPb).
+		Return(fakeOrgInfo, nil)
+
 	mockProfile.EXPECT().
 		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
 			ID:             userPb,
