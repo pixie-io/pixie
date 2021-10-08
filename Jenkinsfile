@@ -4,7 +4,6 @@
 import java.net.URLEncoder
 import jenkins.model.Jenkins
 
-
 // Choose a label from configuration here:
 // https://jenkins.corp.pixielabs.ai/configureClouds/
 //
@@ -72,7 +71,6 @@ class PhabConnector {
       url: url,
       validResponseCodes: '200'
   }
-
 }
 
 /**
@@ -160,11 +158,11 @@ def WithGCloud(Closure body) {
 }
 
 def gsutilCopy(String src, String dest) {
-    WithGCloud {
+  WithGCloud {
     sh """
     gsutil -o GSUtil:parallel_composite_upload_threshold=150M cp ${src} ${dest}
     """
-    }
+  }
 }
 
 def stashOnGCS(String name, String pattern, String excludes = '') {
@@ -224,12 +222,14 @@ def addBuildInfo = {
     text = params.PHAB_COMMIT.substring(0, 7)
     link = "${phabConnector.URL}/r${phabConnector.repository}${env.PHAB_COMMIT}"
   }
-  addShortText(text: text,
+  addShortText(
+    text: text,
     background: 'transparent',
     border: 0,
     borderColor: 'transparent',
     color: '#1FBAD6',
-    link: link)
+    link: link
+  )
 }
 
 /**
@@ -271,7 +271,8 @@ def writeBazelRCFile() {
   withCredentials([
     string(
       credentialsId: 'buildbuddy-api-key',
-      variable: 'BUILDBUDDY_API_KEY')
+      variable: 'BUILDBUDDY_API_KEY'
+    )
   ]) {
     def bbAPIArg = '--remote_header=x-buildbuddy-api-key=${BUILDBUDDY_API_KEY}'
     sh "echo \"build ${bbAPIArg}\" >> jenkins.bazelrc"
@@ -371,15 +372,16 @@ def dockerStep(String dockerConfig = '', String dockerImage = devDockerImageWith
 def runBazelCmd(String f, String targetConfig, int retries = 5) {
   def retval = sh(
     script: "bazel ${f}",
-    returnStatus: true)
+    returnStatus: true
+  )
 
-  if (retval == 38 && (targetConfig == "tsan" || targetConfig == "asan")) {
+  if (retval == 38 && (targetConfig == 'tsan' || targetConfig == 'asan')) {
     // If bes update failed for a sanitizer run, re-run to get the real retval.
     if (retries == 0) {
-        println("Bazel bes update failed for sanitizer run after multiple retries.")
-        return retval
+      println('Bazel bes update failed for sanitizer run after multiple retries.')
+      return retval
     }
-    println("Bazel bes update failed for sanitizer run, retrying...")
+    println('Bazel bes update failed for sanitizer run, retrying...')
     return runBazelCmd(f, targetConfig, retries - 1)
   }
   // 4 means that tests not present.
@@ -442,7 +444,8 @@ def processAllExtractedBazelLogs() {
 }
 
 def publishDoxygenDocs() {
-  publishHTML([allowMissing: true,
+  publishHTML([
+    allowMissing: true,
     alwaysLinkToLastBuild: true,
     keepAll: true,
     reportDir: 'doxygen-docs/docs/html',
@@ -456,9 +459,9 @@ def sendSlackNotification() {
     slackSend color: '#FF0000', message: "FAILED: Build - ${env.BUILD_TAG} -- URL: ${env.BUILD_URL}."
   }
   else if (currentBuild.getPreviousBuild() &&
-            currentBuild.getPreviousBuild().getResult().toString() != 'SUCCESS') {
+           currentBuild.getPreviousBuild().getResult().toString() != 'SUCCESS') {
     slackSend color: '#00FF00', message: "PASSED(Recovered): Build - ${env.BUILD_TAG} -- URL: ${env.BUILD_URL}."
-            }
+  }
 }
 
 def sendCloudReleaseSlackNotification(String profile) {
@@ -498,14 +501,14 @@ def DefaultGCloudPodTemplate(String suffix, Closure body) {
   RetryOnK8sDownscale {
     def label = "worker-${env.BUILD_TAG}-${suffix}"
     podTemplate(label: label, cloud: 'devinfra-cluster', containers: [
-      containerTemplate(name: 'gcloud', image: GCLOUD_DOCKER_IMAGE, command: 'cat', ttyEnabled: true)]) {
+      containerTemplate(name: 'gcloud', image: GCLOUD_DOCKER_IMAGE, command: 'cat', ttyEnabled: true)
+    ]) {
       node(label) {
         body()
       }
-      }
+    }
   }
 }
-
 
 def DefaultCopybaraPodTemplate(String suffix, Closure body) {
   RetryOnK8sDownscale {
@@ -521,17 +524,18 @@ def DefaultCopybaraPodTemplate(String suffix, Closure body) {
   }
 }
 
-
 def DefaultBuildPodTemplate(String suffix, Closure body) {
   RetryOnK8sDownscale {
     def label = "worker-${env.BUILD_TAG}-${suffix}"
-    podTemplate(label: label, cloud: 'devinfra-cluster', containers: [
-      containerTemplate(name: 'pxbuild', image: 'gcr.io/' + devDockerImageWithTag,
-                        command: 'cat', ttyEnabled: true,
-                        resourceRequestMemory: '58368Mi',
-                        resourceRequestCpu: '14500m',
-      ),
-      containerTemplate(name: 'gcloud', image: GCLOUD_DOCKER_IMAGE, command: 'cat', ttyEnabled: true),
+    podTemplate(
+      label: label, cloud: 'devinfra-cluster', containers: [
+        containerTemplate(
+          name: 'pxbuild', image: 'gcr.io/' + devDockerImageWithTag,
+          command: 'cat', ttyEnabled: true,
+          resourceRequestMemory: '58368Mi',
+          resourceRequestCpu: '14500m',
+        ),
+        containerTemplate(name: 'gcloud', image: GCLOUD_DOCKER_IMAGE, command: 'cat', ttyEnabled: true),
       ],
       yaml:'''
 spec:
@@ -553,7 +557,7 @@ spec:
       node(label) {
         body()
       }
-      }
+    }
   }
 }
 
@@ -761,7 +765,8 @@ if (isMainRun || isOSSMainRun) {
           withCredentials([
             string(
               credentialsId: codecovToken,
-              variable: 'CODECOV_TOKEN')
+              variable: 'CODECOV_TOKEN'
+            )
           ]) {
             sh "ci/collect_coverage.sh -u -t ${CODECOV_TOKEN} -b main -c `cat GIT_COMMIT`"
           }
@@ -791,7 +796,8 @@ if (isMainRun) {
           withCredentials([
             string(
               credentialsId: 'sourcegraph-api-token',
-              variable: 'SOURCEGRAPH_TOKEN')
+              variable: 'SOURCEGRAPH_TOKEN'
+            )
           ]) {
             sh 'ci/collect_and_upload_lsif.sh -t ${SOURCEGRAPH_TOKEN} -c `cat GIT_COMMIT`'
           }
@@ -808,7 +814,8 @@ if (isMainRun) {
           withCredentials([
             string(
               credentialsId: 'fossa-api-key',
-              variable: 'FOSSA_API_KEY')
+              variable: 'FOSSA_API_KEY'
+            )
           ]) {
             sh 'fossa analyze --branch main'
           }
@@ -985,9 +992,11 @@ def buildScriptForNightlyTestRegression = {
     stage('Build & Push to Stirling Perf') {
       WithSourceCodeK8s {
         container('pxbuild') {
-          withKubeConfig([credentialsId: 'stirling-cluster-creds',
-                          serverUrl: 'https://stirling.internal.corp.pixielabs.ai',
-                          namespace: 'pl']) {
+          withKubeConfig([
+            credentialsId: 'stirling-cluster-creds',
+            serverUrl: 'https://stirling.internal.corp.pixielabs.ai',
+            namespace: 'pl'
+          ]) {
             sh """
             skaffold run --profile=opt --filename=skaffold/skaffold_vizier.yaml \
             --label=commit=\$(git rev-parse HEAD) --cache-artifacts=false --default-repo='gcr.io/pl-dev-infra'
@@ -1033,8 +1042,11 @@ def updateVersionsDB(String credsName, String clusterURL, String namespace) {
   WithSourceCodeK8s {
     container('pxbuild') {
       unstashFromGCS('versions')
-      withKubeConfig([credentialsId: credsName,
-                    serverUrl: clusterURL, namespace: namespace]) {
+      withKubeConfig([
+        credentialsId: credsName,
+        serverUrl: clusterURL,
+        namespace: namespace
+      ]) {
         sh './ci/update_artifact_db.sh'
       }
     }
@@ -1045,7 +1057,8 @@ def  buildScriptForCLIRelease = {
     withCredentials([
       string(
         credentialsId: 'docker_access_token',
-        variable: 'DOCKER_TOKEN')
+        variable: 'DOCKER_TOKEN'
+      )
     ]) {
       try {
         stage('Checkout code') {
@@ -1120,8 +1133,10 @@ def vizierReleaseBuilders = [:]
 vizierReleaseBuilders['Build & Push Artifacts'] = {
   WithSourceCodeK8s {
     container('pxbuild') {
-      withKubeConfig([credentialsId: K8S_PROD_CREDS,
-              serverUrl: K8S_PROD_CLUSTER, namespace: 'default']) {
+      withKubeConfig([
+        credentialsId: K8S_PROD_CREDS,
+        serverUrl: K8S_PROD_CLUSTER, namespace: 'default'
+      ]) {
         sh './ci/vizier_build_release.sh'
         stashOnGCS('versions', 'src/utils/artifacts/artifact_db_updater/VERSIONS.json')
         stashList.add('versions')
@@ -1170,8 +1185,10 @@ def buildScriptForOperatorRelease = {
     stage('Build & Push Artifacts') {
       WithSourceCodeK8s {
         container('pxbuild') {
-          withKubeConfig([credentialsId: K8S_PROD_CREDS,
-                serverUrl: K8S_PROD_CLUSTER, namespace: 'default']) {
+          withKubeConfig([
+            credentialsId: K8S_PROD_CREDS,
+            serverUrl: K8S_PROD_CLUSTER, namespace: 'default'
+          ]) {
             sh './ci/operator_build_release.sh'
             stashOnGCS('versions', 'src/utils/artifacts/artifact_db_updater/VERSIONS.json')
             stashList.add('versions')
@@ -1202,12 +1219,15 @@ def buildScriptForOperatorRelease = {
 def pushAndDeployCloud(String profile, String namespace, String clusterCreds, String clusterURL) {
   WithSourceCodeK8s {
     container('pxbuild') {
-      withKubeConfig([credentialsId: clusterCreds,
-                    serverUrl: clusterURL, namespace: namespace]) {
+      withKubeConfig([
+        credentialsId: clusterCreds,
+        serverUrl: clusterURL, namespace: namespace
+      ]) {
         withCredentials([
           file(
             credentialsId: 'pl-dev-infra-jenkins-sa-json',
-            variable: 'GOOGLE_APPLICATION_CREDENTIALS')
+            variable: 'GOOGLE_APPLICATION_CREDENTIALS'
+          )
         ]) {
           if (profile == 'prod') {
             sh './ci/cloud_build_release.sh -r'
@@ -1263,14 +1283,16 @@ def copybaraTemplate(String name, String copybaraFile) {
     deleteDir()
     checkout scm
     container('copybara') {
-    sshagent (credentials: ['pixie-copybara-git']) {
-      withCredentials([
-        file(
-          credentialsId: 'copybara-private-key-asc',
-          variable: 'COPYBARA_GPG_KEY_FILE'),
-        string(
-          credentialsId: 'copybara-gpg-key-id',
-          variable: 'COPYBARA_GPG_KEY_ID'),
+      sshagent (credentials: ['pixie-copybara-git']) {
+        withCredentials([
+          file(
+            credentialsId: 'copybara-private-key-asc',
+            variable: 'COPYBARA_GPG_KEY_FILE'
+          ),
+          string(
+            credentialsId: 'copybara-gpg-key-id',
+            variable: 'COPYBARA_GPG_KEY_ID'
+          ),
         ]) {
           sh "GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' \
           ./ci/run_copybara.sh ${copybaraFile}"
@@ -1283,10 +1305,10 @@ def copybaraTemplate(String name, String copybaraFile) {
 def buildScriptForCopybaraPublic() {
   try {
     stage('Copybara it') {
-      copybaraTemplate("public-copy", "tools/copybara/public/copy.bara.sky")
+      copybaraTemplate('public-copy', 'tools/copybara/public/copy.bara.sky')
     }
     stage('Copy tags') {
-      DefaultGCloudPodTemplate("public-copy-tags") {
+      DefaultGCloudPodTemplate('public-copy-tags') {
         deleteDir()
         checkout([
           changelog: false,
@@ -1336,7 +1358,7 @@ def buildScriptForCopybaraPublic() {
 def buildScriptForCopybaraPxAPI() {
   try {
     stage('Copybara it') {
-      copybaraTemplate("pxapi-copy", "tools/copybara/pxapi_go/copy.bara.sky")
+      copybaraTemplate('pxapi-copy', 'tools/copybara/pxapi_go/copy.bara.sky')
     }
   }
   catch (err) {
@@ -1359,10 +1381,10 @@ if (isNightlyTestRegressionRun) {
   buildScriptForCloudStagingRelease()
 } else if (isCloudProdBuildRun) {
   buildScriptForCloudProdRelease()
-} else if(isCopybaraPublic) {
+} else if (isCopybaraPublic) {
   buildScriptForCopybaraPublic()
-} else if(isCopybaraPxAPI) {
+} else if (isCopybaraPxAPI) {
   buildScriptForCopybaraPxAPI()
-}else {
+} else {
   buildScriptForCommits()
 }
