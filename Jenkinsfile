@@ -1354,8 +1354,10 @@ def buildScriptForCopybaraPublic() {
             ]
           ])
           dir('pixie-private') {
-            sh "GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' \
-            ./ci/copy_release_tags.sh ../pixie-oss"
+            sshagent (credentials: ['pixie-copybara-git']) {
+              sh "GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' \
+              ./ci/copy_release_tags.sh ../pixie-oss"
+            }
           }
         }
       }
