@@ -36,6 +36,9 @@ bazel-*
 **/.vscode/.vs_code_bazel_build/**
 **/.vscode/ipch/
 
+# ctags file
+tags
+
 # Python cache files.
 .cache
 __pycache__
@@ -68,3 +71,7 @@ clang_tidy.log
 # LSIF data for code intel
 *.dump.lsif
 dump.lsif
+
+# Ignore files created by vagrant
+.vagrant/
+Vagrantfile
