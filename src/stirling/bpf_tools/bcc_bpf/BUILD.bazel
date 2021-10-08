@@ -24,7 +24,6 @@
 load("//bazel:cc_resource.bzl", "pl_bpf_cc_resource")
 
 package(default_visibility = [
-    "//experimental/bpf:__subpackages__",
     "//src/stirling:__subpackages__",
 ])
 
