@@ -234,6 +234,8 @@ export default function PixieWithContext(): React.ReactElement {
         }
       }
     `,
+    // Ignore cache on first fetch, to pull in any IDE configs that may have changed.
+    { fetchPolicy: 'network-only', nextFetchPolicy: 'cache-and-network' },
   );
   const org = orgData?.org;
   const orgID = org?.id;
