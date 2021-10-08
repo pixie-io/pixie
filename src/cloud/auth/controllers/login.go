@@ -159,6 +159,13 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 		if err != nil {
 			return nil, status.Errorf(codes.NotFound, "organization not found, please register, or talk to your Pixie administrator '%v'", err)
 		}
+
+		// We've switched over to use IdentityProviderOrgName instead of email domain to determine org membership.
+		// Some running systems have users who are in their email domain org, but not their org according to IdentityProviderOrgName.
+		// This flags those users and informs them that they should contact support to fix their org info in the database.
+		if userInfo.IdentityProvider == googleIdentityProvider && userInfo.IdentityProviderOrgName == "" && userInfo.Email != orgInfo.OrgName {
+			return nil, status.Errorf(codes.PermissionDenied, "There is an organizational issue with your account. Please contact support letting them know you received this error for your email, %s", userInfo.Email)
+		}
 	} else {
 		// Users can login without registering if their org already exists. If org doesn't exist, they must complete sign up flow.
 		orgInfo, err = pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: domainName})

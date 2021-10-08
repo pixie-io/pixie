@@ -140,6 +140,106 @@ func TestServer_LoginNewUser(t *testing.T) {
 	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.PLUserID, fakeUserInfoSecondRequest.PLOrgID, resp.ExpiresAt, "jwtkey")
 }
 
+func TestServer_Login_OldGoogleOrgNameShouldError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	orgPb := utils.ProtoFromUUIDStrOrNil(orgID)
+	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	userPb := utils.ProtoFromUUIDStrOrNil(userID)
+
+	// Setup expectations for the mocks.
+	a := mock_controllers.NewMockAuthProvider(ctrl)
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return(userID, nil)
+
+	fakeUserInfo1 := &controllers.UserInfo{
+		Email:                   "abc@randomorg.com",
+		PLUserID:                userID,
+		PLOrgID:                 orgID,
+		IdentityProvider:        "google-oauth2",
+		IdentityProviderOrgName: "",
+	}
+
+	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfo1, nil)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockProfile.EXPECT().
+		GetUser(gomock.Any(), userPb).
+		Return(nil, nil)
+	fakeOrgInfo := &profilepb.OrgInfo{
+		OrgName: "randomorg.com",
+		ID:      orgPb,
+	}
+	mockProfile.EXPECT().
+		GetOrg(gomock.Any(), orgPb).
+		Return(fakeOrgInfo, nil)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
+	env, err := authenv.New(mockProfile)
+	require.NoError(t, err)
+	s, err := controllers.NewServer(env, a, nil)
+	require.NoError(t, err)
+
+	_, err = doLoginRequest(getTestContext(), t, s, "")
+	assert.Regexp(t, "contact support", err)
+}
+
+func TestServer_Login_OldGoogleOrgNameThatMatchesWorks(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	orgPb := utils.ProtoFromUUIDStrOrNil(orgID)
+	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	userPb := utils.ProtoFromUUIDStrOrNil(userID)
+
+	// Setup expectations for the mocks.
+	a := mock_controllers.NewMockAuthProvider(ctrl)
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return(userID, nil)
+
+	fakeUserInfo1 := &controllers.UserInfo{
+		Email:                   "abc@randomorg.com",
+		PLUserID:                userID,
+		PLOrgID:                 orgID,
+		IdentityProvider:        "google-oauth2",
+		IdentityProviderOrgName: "randomorg.com",
+	}
+
+	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfo1, nil)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockProfile.EXPECT().
+		GetUser(gomock.Any(), userPb).
+		Return(nil, nil)
+	fakeOrgInfo := &profilepb.OrgInfo{
+		OrgName: "randomorg.com",
+		ID:      orgPb,
+	}
+	mockProfile.EXPECT().
+		GetOrg(gomock.Any(), orgPb).
+		Return(fakeOrgInfo, nil)
+	mockProfile.EXPECT().
+		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
+			ID:             userPb,
+			DisplayPicture: &types.StringValue{Value: ""},
+		}).
+		Return(nil, nil)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
+	env, err := authenv.New(mockProfile)
+	require.NoError(t, err)
+	s, err := controllers.NewServer(env, a, nil)
+	require.NoError(t, err)
+
+	_, err = doLoginRequest(getTestContext(), t, s, "")
+	assert.NoError(t, err)
+}
+
 func TestServer_LoginNewUser_NoAutoCreate(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

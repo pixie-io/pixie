@@ -32,6 +32,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+const googleIdentityProvider = "google-oauth2"
+
 func init() {
 	pflag.String("auth0_host", "https://pixie-labs.auth0.com", "The auth0 hostname")
 	pflag.String("google_oauth_userinfo_url", "https://www.googleapis.com/oauth2/v2/userinfo", "Google OAuth2 URL for userinfo.")
@@ -43,7 +45,7 @@ func init() {
 // If the returned string is empty, the identity does not belong to an org.
 func (a *Auth0Connector) retrieveOrgName(ident *auth0Identity) (string, error) {
 	// We only implement for google-oauth2 connections for now.
-	if ident.Provider != "google-oauth2" {
+	if ident.Provider != googleIdentityProvider {
 		return "", nil
 	}
 	token := ident.AccessToken
