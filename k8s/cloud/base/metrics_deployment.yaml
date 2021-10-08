@@ -1,0 +1,47 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metrics-server
+spec:
+  selector:
+    matchLabels:
+      name: metrics-server
+  template:
+    metadata:
+      labels:
+        name: metrics-server
+    spec:
+      containers:
+      - name: metrics-server
+        image: gcr.io/pixie-oss/pixie-dev/cloud/metrics_server_image
+        ports:
+        - containerPort: 50800
+        readinessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 50800
+        livenessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 50800
+        envFrom:
+        - configMapRef:
+            name: pl-tls-config
+        - configMapRef:
+            name: pl-domain-config
+        env:
+        - name: PL_JWT_SIGNING_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cloud-auth-secrets
+              key: jwt-signing-key
+        volumeMounts:
+        - name: certs
+          mountPath: /certs
+      volumes:
+      - name: certs
+        secret:
+          secretName: service-tls-certs

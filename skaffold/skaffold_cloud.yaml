@@ -55,6 +55,10 @@ build:
     context: .
     bazel:
       target: //src/cloud/jobs/create_admin_user:create_admin_job_image.tar
+  - image: gcr.io/pixie-oss/pixie-dev/cloud/metrics_server_image
+    context: .
+    bazel:
+      target: //src/cloud/metrics:metrics_server_image.tar
   tagPolicy:
     dateTime: {}
   local:
