@@ -22,10 +22,13 @@ Limitations: only works if producer/consumer operate on a single topic.
 import px
 
 
-def kafka_producers(start_time: str, namespace: str):
+def kafka_producers(start_time: str, namespace: str, topic: str):
     df = px.DataFrame(table='kafka_events.beta', start_time=start_time)
     df.namespace = df.ctx['namespace']
-    df = df[df.namespace == namespace]
+
+    # Filter by namespace and topic.
+    # TODO(chengruizhe): Use Json unnest to filter on topic once it's fully supported. Same below.
+    df = df[df.namespace == namespace and px.contains(df.req_body, '"name":"' + topic + '"')]
 
     df = add_source_dest_columns(df)
     df = df.groupby(['source', 'client_id', 'req_cmd', 'namespace']).agg()
@@ -34,10 +37,12 @@ def kafka_producers(start_time: str, namespace: str):
     return df[['producer', 'source']]
 
 
-def kafka_consumers(start_time: str, namespace: str):
+def kafka_consumers(start_time: str, namespace: str, topic: str):
     df = px.DataFrame(table='kafka_events.beta', start_time=start_time)
     df.namespace = df.ctx['namespace']
-    df = df[df.namespace == namespace]
+
+    # Filter by namespace and topic.
+    df = df[df.namespace == namespace and px.contains(df.req_body, '"name":"' + topic + '"')]
 
     df = add_source_dest_columns(df)
     df = df.groupby(['source', 'client_id', 'req_cmd', 'namespace']).agg()

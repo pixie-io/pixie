@@ -12,6 +12,12 @@
             "description": "Namespace of the application containing kafka."
         },
         {
+            "name": "topic",
+            "type": "PX_STRING",
+            "description": "Kafka topic.",
+            "defaultValue": "Please fill in from Kafka Topics below."
+        },
+        {
             "name": "producer",
             "type": "PX_STRING",
             "description": "Kafka producer.",
@@ -21,12 +27,6 @@
             "name": "consumer",
             "type": "PX_STRING",
             "description": "Kafka consumer.",
-            "defaultValue": ""
-        },
-        {
-            "name": "topic",
-            "type": "PX_STRING",
-            "description": "Kafka topic.",
             "defaultValue": ""
         }
     ],
@@ -62,59 +62,9 @@
     ],
     "widgets": [
         {
-            "name": "Kafka Producers",
-            "position": {
-                "x": 0,
-                "y": 0,
-                "w": 4,
-                "h": 2
-            },
-            "func": {
-                "name": "kafka_producers",
-                "args": [
-                    {
-                        "name": "start_time",
-                        "variable": "start_time"
-                    },
-                    {
-                        "name": "namespace",
-                        "variable": "namespace"
-                    }
-                ]
-            },
-            "displaySpec": {
-                "@type": "types.px.dev/px.vispb.Table"
-            }
-        },
-        {
-            "name": "Kafka Consumers",
-            "position": {
-                "x": 4,
-                "y": 0,
-                "w": 4,
-                "h": 2
-            },
-            "func": {
-                "name": "kafka_consumers",
-                "args": [
-                    {
-                        "name": "start_time",
-                        "variable": "start_time"
-                    },
-                    {
-                        "name": "namespace",
-                        "variable": "namespace"
-                    }
-                ]
-            },
-            "displaySpec": {
-                "@type": "types.px.dev/px.vispb.Table"
-            }
-        },
-        {
             "name": "Kafka Topics",
             "position": {
-                "x": 8,
+                "x": 0,
                 "y": 0,
                 "w": 4,
                 "h": 2
@@ -129,6 +79,64 @@
                     {
                         "name": "namespace",
                         "variable": "namespace"
+                    }
+                ]
+            },
+            "displaySpec": {
+                "@type": "types.px.dev/px.vispb.Table"
+            }
+        },
+        {
+            "name": "Kafka Producers",
+            "position": {
+                "x": 4,
+                "y": 0,
+                "w": 4,
+                "h": 2
+            },
+            "func": {
+                "name": "kafka_producers",
+                "args": [
+                    {
+                        "name": "start_time",
+                        "variable": "start_time"
+                    },
+                    {
+                        "name": "namespace",
+                        "variable": "namespace"
+                    },
+                    {
+                        "name": "topic",
+                        "variable": "topic"
+                    }
+                ]
+            },
+            "displaySpec": {
+                "@type": "types.px.dev/px.vispb.Table"
+            }
+        },
+        {
+            "name": "Kafka Consumers",
+            "position": {
+                "x": 8,
+                "y": 0,
+                "w": 4,
+                "h": 2
+            },
+            "func": {
+                "name": "kafka_consumers",
+                "args": [
+                    {
+                        "name": "start_time",
+                        "variable": "start_time"
+                    },
+                    {
+                        "name": "namespace",
+                        "variable": "namespace"
+                    },
+                    {
+                        "name": "topic",
+                        "variable": "topic"
                     }
                 ]
             },
