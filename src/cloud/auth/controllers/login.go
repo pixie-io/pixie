@@ -83,17 +83,21 @@ func (s *Server) updateAuthProviderUser(authUserID string, orgID string, userID 
 	return userInfo, nil
 }
 
-func (s *Server) isUserApproved(ctx context.Context, userID string, orgInfo *profilepb.OrgInfo) (bool, error) {
+// Returns an error if the user is not approved.
+func (s *Server) isUserApproved(ctx context.Context, userID string, orgInfo *profilepb.OrgInfo) error {
 	pc := s.env.ProfileClient()
 	// If the org does not have approvals enabled, users are auto-approved by default.
 	if !orgInfo.EnableApprovals {
-		return true, nil
+		return nil
 	}
 	user, err := pc.GetUser(ctx, utils.ProtoFromUUIDStrOrNil(userID))
 	if err != nil {
-		return false, err
+		return status.Error(codes.Internal, err.Error())
 	}
-	return user.IsApproved, nil
+	if !user.IsApproved {
+		return status.Error(codes.PermissionDenied, "You are not approved to log in to the org. Please request approval from your org admin")
+	}
+	return nil
 }
 
 func getOrgName(userInfo *UserInfo) string {
@@ -163,12 +167,9 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 		}
 	}
 
-	isApproved, err := s.isUserApproved(ctx, userInfo.PLUserID, orgInfo)
+	err = s.isUserApproved(ctx, userInfo.PLUserID, orgInfo)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	if !isApproved {
-		return nil, status.Error(codes.PermissionDenied, "You are not approved to log in to the org. Please request approval from your org admin")
+		return nil, err
 	}
 
 	// Update user's profile photo.
@@ -235,13 +236,19 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 			return nil, err
 		}
 		// If the organization is not new, the user might not be approved, we should check.
-		isApproved, err := s.isUserApproved(ctx, userInfo.PLUserID, orgInfo)
+		err = s.isUserApproved(ctx, userInfo.PLUserID, orgInfo)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
-		if !isApproved {
-			return nil, status.Error(codes.PermissionDenied, "You are not approved to log in to the org. Please request approval from your org admin")
-		}
+	}
+
+	// Update user's profile photo.
+	_, err = pc.UpdateUser(ctx, &profilepb.UpdateUserRequest{
+		ID:             utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID),
+		DisplayPicture: &types.StringValue{Value: userInfo.Picture},
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	token, expiresAt, err := generateJWTTokenForUser(userInfo, s.env.JWTSigningKey())

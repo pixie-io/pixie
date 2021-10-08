@@ -928,6 +928,7 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 	orgPb := utils.ProtoFromUUIDStrOrNil(orgID)
 
 	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	userPb := utils.ProtoFromUUIDStrOrNil(userID)
 
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
@@ -948,6 +949,7 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 		FirstName:      "first",
 		LastName:       "last",
 		AuthProviderID: "github|abcdefg",
+		Picture:        "something",
 	}
 	a.EXPECT().SetPLMetadata(userID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.PLUserID = plid
@@ -964,6 +966,12 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 	fakeOrgInfo := &profilepb.OrgInfo{
 		ID: orgPb,
 	}
+	mockProfile.EXPECT().
+		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
+			ID:             userPb,
+			DisplayPicture: &types.StringValue{Value: "something"},
+		}).
+		Return(nil, nil)
 
 	mockProfile.EXPECT().
 		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@gmail.com"}).
@@ -1021,6 +1029,7 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 		FirstName:      "first",
 		LastName:       "last",
 		AuthProviderID: "github|abcdefg",
+		Picture:        "something",
 	}
 
 	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfo, nil)
@@ -1031,6 +1040,7 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 		FirstName:      "first",
 		LastName:       "last",
 		AuthProviderID: "github|abcdefg",
+		Picture:        "something",
 	}
 	a.EXPECT().SetPLMetadata(userID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.PLUserID = plid
@@ -1065,6 +1075,13 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 			OrgID:  orgPb,
 			UserID: userPb,
 		}, nil)
+
+	mockProfile.EXPECT().
+		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
+			ID:             userPb,
+			DisplayPicture: &types.StringValue{Value: "something"},
+		}).
+		Return(nil, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
