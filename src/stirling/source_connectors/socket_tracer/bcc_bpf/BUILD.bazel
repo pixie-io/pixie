@@ -44,6 +44,8 @@ pl_bpf_cc_resource(
     name = "socket_trace",
     src = "socket_trace.c",
     hdrs = socket_trace_hdrs,
+    # Uncomment to enable debug printks.
+    # defines = ["BPF_DEBUG"],
     syshdrs = "//src/stirling/bpf_tools/bcc_bpf/system-headers",
 )
 

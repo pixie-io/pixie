@@ -45,8 +45,6 @@
 #include "src/common/base/base.h"
 #include "src/stirling/obj_tools/elf_reader.h"
 
-DECLARE_uint32(stirling_bpf_perf_buffer_page_count);
-
 namespace px {
 /*
  * Status adapter for ebpf::StatusTuple.

@@ -39,6 +39,7 @@ def pl_bpf_preprocess(
         src,
         hdrs,
         syshdrs,
+        defines = [],
         tags = [],
         *kwargs):
     out_file = name + "_bpf_preprocess"
@@ -49,7 +50,11 @@ def pl_bpf_preprocess(
     # For more details, see note about syshdrs above.
     syshdrs_dir = syshdrs[2:]
 
-    cmd = "cpp -U linux -Dinclude=#include -I. -I{} $(location {}) -o $@".format(syshdrs_dir, src)
+    defines_str = ""
+    for d in defines:
+        defines_str += "-D" + d + " "
+
+    cmd = "cpp -U linux {} -Dinclude=#include -I. -I{} $(location {}) -o $@".format(defines_str, syshdrs_dir, src)
 
     native.genrule(
         name = name + "_bpf_preprocess_genrule",

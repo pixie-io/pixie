@@ -25,26 +25,28 @@
 
 #define __inline inline __attribute__((__always_inline__))
 
-// This macro is essentially a min() function that caps a number.
-// It performs the min in a way that keeps the the BPF verifier happy.
-// It is essentially a traditional min(), plus a mask that helps old versions of the BPF verifier
-// reason about the maximum value of a number.
-//
-// NOTE: cap must be a power-of-2.
-// This is not checked for the caller, and behavior is undefined when this is not true.
-//
-// Note that we still apply a min() function before masking, otherwise, the mask may create a number
-// lower than the min if the original number is greater than the cap_mask.
+// Enable BPF_DEBUG via BUILD.bazel.
 //
 // Example:
-//   cap = 16
-//   cap-1 = 16-1 = 0xf
-//   x = 36 = 0x24
-//   BPF_LEN_CAP(x, cap) = 16
+// pl_bpf_cc_resource(
+//    name = "socket_trace",
+//    src = "socket_trace.c",
+//    hdrs = socket_trace_hdrs,
+//    defines = ["BPF_DEBUG"],
+//    syshdrs = "//src/stirling/bpf_tools/bcc_bpf/system-headers",
+//)
 //
-// However, if we remove the min() before applying the mask, we would get a smaller number.
-//   x & (cap-1) = 4
-#define BPF_LEN_CAP(x, cap) (x < cap ? (x & (cap - 1)) : cap)
+// Note: Do not try to pass BPF_DEBUG through BCCWrapper's cflags. It won't work
+// because the BPF code preprocessor will have already processed the ifdefs during
+// the bazel build.
+
+#ifdef BPF_DEBUG
+#define bpf_debug_printk(fmt, ...) \
+  { bpf_trace_printk(fmt, ##__VA_ARGS__); }
+#else
+#define bpf_debug_printk(fmt, ...) \
+  {}
+#endif
 
 static __inline int32_t read_big_endian_int32(const char* buf) {
   int32_t length;

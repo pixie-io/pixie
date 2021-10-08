@@ -38,9 +38,10 @@ def pl_bpf_cc_resource(
         src,
         hdrs,
         syshdrs,
+        defines = [],
         tags = [],
         **kwargs):
-    out_file = pl_bpf_preprocess(name, src, hdrs, syshdrs, tags)
+    out_file = pl_bpf_preprocess(name, src, hdrs, syshdrs, defines, tags)
     pl_cc_resource_impl(name, out_file, tags = tags, **kwargs)
 
 def pl_cc_resource_impl(
