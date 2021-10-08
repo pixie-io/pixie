@@ -22,6 +22,12 @@ if [ "$#" -ne 1 ]; then
 fi
 pubRepoLoc=$1
 
+git_committer_name='Copybara'
+git_committer_email='copybara@pixielabs.ai'
+
+git config --global user.name ${git_committer_name}
+git config --global user.email ${git_committer_email}
+
 pushd "${pubRepoLoc}" &> /dev/null || exit 1
 
 typeset -A privateHashToPublicHash
