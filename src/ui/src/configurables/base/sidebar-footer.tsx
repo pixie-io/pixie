@@ -18,7 +18,4 @@
 
 import * as React from 'react';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const SidebarFooter = ({ clusterName } : { clusterName: string }): React.ReactElement => (
-  <></>
-);
+export const SidebarFooter: React.FC<{ clusterName: string }> = () => <></>;

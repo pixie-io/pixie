@@ -20,7 +20,7 @@ import {
   COMMON_THEME, DARK_THEME, LIGHT_THEME, SnackbarProvider, VersionInfo,
 } from 'app/components';
 import Live from 'app/containers/App/live';
-import PixieCookieBanner from 'configurable/cookie-banner';
+import { PixieCookieBanner } from 'configurable/cookie-banner';
 import { LD_CLIENT_ID } from 'app/containers/constants';
 import {
   Redirect, RedirectProps, Route, Router, Switch,

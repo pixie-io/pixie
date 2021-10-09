@@ -18,6 +18,6 @@
 
 import * as React from 'react';
 
-export default function PixieCookieBanner(): React.ReactElement {
+export function PixieCookieBanner(): React.ReactElement {
   return (<></>);
 }

@@ -18,5 +18,4 @@
 
 import * as React from 'react';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const TimeArgDetail = ({ clusterName } : { clusterName: string }): React.ReactElement => <></>;
+export const TimeArgDetail: React.FC<{ clusterName: string }> = () => <></>;

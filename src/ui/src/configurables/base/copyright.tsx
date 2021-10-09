@@ -18,8 +18,8 @@
 
 import * as React from 'react';
 
-export const Copyright = (
-  <span>
-    &copy; 2018- The Pixie Authors
-  </span>
+export const Copyright = (): React.ReactElement => (
+    <span>
+      &copy; 2018- The Pixie Authors
+    </span>
 );
