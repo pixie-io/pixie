@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -35,31 +36,6 @@ func init() {
 	pflag.String("auth0_host", "https://pixie-labs.auth0.com", "The auth0 hostname")
 	pflag.String("auth0_client_id", "", "Auth0 client ID")
 	pflag.String("auth0_client_secret", "", "Auth0 client secret")
-}
-
-func getIdentityProvider(auth0 *auth0UserInfo) string {
-	if len(auth0.Identities) != 1 {
-		return ""
-	}
-	return auth0.Identities[0].Provider
-}
-
-func transformAuth0UserInfoToUserInfo(auth0 *auth0UserInfo, clientID string) (*UserInfo, error) {
-	// If user does not exist in Auth0, then create a new user if specified.
-	u := &UserInfo{
-		Email:            auth0.Email,
-		FirstName:        auth0.FirstName,
-		LastName:         auth0.LastName,
-		Name:             auth0.Name,
-		Picture:          auth0.Picture,
-		IdentityProvider: getIdentityProvider(auth0),
-		AuthProviderID:   auth0.UserID,
-	}
-	if !(auth0.AppMetadata == nil || auth0.AppMetadata[clientID] == nil) {
-		u.PLUserID = auth0.AppMetadata[clientID].PLUserID
-		u.PLOrgID = auth0.AppMetadata[clientID].PLOrgID
-	}
-	return u, nil
 }
 
 // auth0UserMetadata is a part of the Auth0 response.
@@ -258,7 +234,37 @@ func (a *Auth0Connector) GetUserInfo(userID string) (*UserInfo, error) {
 		return nil, err
 	}
 
-	return transformAuth0UserInfoToUserInfo(userInfo, a.cfg.Auth0ClientID)
+	var idp string
+	if len(userInfo.Identities) >= 1 {
+		idp = userInfo.Identities[0].Provider
+	}
+	// Log the case when auth0.Identities > 1 so we can account for it later.
+	if len(userInfo.Identities) > 1 {
+		idps := make([]string, len(userInfo.Identities))
+		for i, ident := range userInfo.Identities {
+			idps[i] = ident.Provider
+		}
+		log.WithField("idps", strings.Join(idps, ",")).Error("User has multiple idproviders")
+		return nil, fmt.Errorf("User has multiple idproviders: %s", strings.Join(idps, ","))
+	}
+
+	// Convert auth0UserInfo to UserInfo.
+	u := &UserInfo{
+		Email:            userInfo.Email,
+		FirstName:        userInfo.FirstName,
+		LastName:         userInfo.LastName,
+		Name:             userInfo.Name,
+		Picture:          userInfo.Picture,
+		IdentityProvider: idp,
+		AuthProviderID:   userInfo.UserID,
+	}
+	clientID := a.cfg.Auth0ClientID
+	// If user does not exist in userInfo, then create a new user if specified.
+	if !(userInfo.AppMetadata == nil || userInfo.AppMetadata[clientID] == nil) {
+		u.PLUserID = userInfo.AppMetadata[clientID].PLUserID
+		u.PLOrgID = userInfo.AppMetadata[clientID].PLOrgID
+	}
+	return u, nil
 }
 
 // SetPLMetadata sets the pixielabs related metadata in the auth0 client.

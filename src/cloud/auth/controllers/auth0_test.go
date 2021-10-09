@@ -177,20 +177,19 @@ func TestAuth0ConnectorImpl_GetUserInfo(t *testing.T) {
 		assert.Equal(t, "Bearer test_token", r.Header.Get("Authorization"))
 		_, err := w.Write([]byte(`
          {
-              "email": "testuser@test.com",
-              "name": "Test User",
-              "picture": "picture.jpg",
-							"user_id": "github|123990813094",
-              "app_metadata": {
-          			"foo": {
-          				"pl_user_id": "test_pl_user_id"
-          			}
-              },
-							"identities": [{
-								"provider": "github"
-							}]
-         }
-        `))
+						"email": "testuser@test.com",
+						"name": "Test User",
+						"picture": "picture.jpg",
+						"user_id": "github|123990813094",
+						"app_metadata": {
+							"foo": {
+								"pl_user_id": "test_pl_user_id"
+							}
+						},
+						"identities": [{
+							"provider": "github"
+						}]
+         }`))
 		require.NoError(t, err)
 	}))
 	defer server.Close()

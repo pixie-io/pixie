@@ -112,7 +112,7 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 
 	domainName, err := GetDomainNameFromEmail(userInfo.Email)
 	if err != nil {
-		return nil, services.HTTPStatusFromError(err, "Failed to get domain from email")
+		return nil, services.HTTPStatusFromError(err, "Failed to get org name for user")
 	}
 
 	// If account is a Pixie support account, we don't want to create a new user.
@@ -145,10 +145,9 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 		return nil, status.Error(codes.NotFound, "user not found, please register.")
 	}
 
-	hasOrg := userInfo.PLOrgID != ""
 	var orgInfo *profilepb.OrgInfo
 	// If the account has an org, use that instead of trying their domain.
-	if hasOrg {
+	if userInfo.PLOrgID != "" {
 		// If the user already belongs to an org according to the AuthProvider (userInfo),
 		// we log that user into the corresponding org.
 		orgPb := utils.ProtoFromUUIDStrOrNil(userInfo.PLOrgID)
@@ -191,14 +190,12 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 		return nil, status.Error(codes.Internal, "failed to generate token")
 	}
 
-	userID = userInfo.PLUserID
-
 	return &authpb.LoginReply{
 		Token:       token,
 		ExpiresAt:   expiresAt.Unix(),
 		UserCreated: newUser,
 		UserInfo: &authpb.AuthenticatedUserInfo{
-			UserID:    utils.ProtoFromUUIDStrOrNil(userID),
+			UserID:    utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID),
 			FirstName: userInfo.FirstName,
 			LastName:  userInfo.LastName,
 			Email:     userInfo.Email,
@@ -268,7 +265,7 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 
 	domainName, err := GetDomainNameFromEmail(userInfo.Email)
 	if err != nil {
-		return nil, services.HTTPStatusFromError(err, "Failed to get domain from email")
+		return nil, services.HTTPStatusFromError(err, "Failed to get org name for user")
 	}
 
 	orgInfo, _ := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: domainName})
