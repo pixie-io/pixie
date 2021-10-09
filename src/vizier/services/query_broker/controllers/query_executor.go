@@ -160,6 +160,9 @@ func (q *QueryExecutorImpl) Wait() error {
 	if strings.Contains(err.Error(), "InvalidArgument") {
 		return err
 	}
+	if errors.Is(err, nats.ErrConnectionClosed) {
+		return err
+	}
 	if errors.Is(err, context.DeadlineExceeded) {
 		return err
 	}
