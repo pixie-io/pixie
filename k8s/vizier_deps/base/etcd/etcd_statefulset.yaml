@@ -80,13 +80,18 @@ spec:
             --trusted-ca-file=/etc/etcdtls/member/server-tls/server-ca.crt \
             --cert-file=/etc/etcdtls/member/server-tls/server.crt \
             --key-file=/etc/etcdtls/member/server-tls/server.key
+            --max-request-bytes 2000000 \
+            --max-wals 1 \
+            --max-snapshots 1 \
+            --quota-backend-bytes 8589934592 \
+            --snapshot-count 5000
         env:
         - name: POD_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
         - name: ETCD_AUTO_COMPACTION_RETENTION
-          value: "10"
+          value: "5"
         - name: ETCD_AUTO_COMPACTION_MODE
           value: revision
         readinessProbe:
