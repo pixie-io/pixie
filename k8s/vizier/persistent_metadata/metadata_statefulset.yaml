@@ -69,7 +69,7 @@ spec:
         - name: PL_MAX_EXPECTED_CLOCK_SKEW
           value: "2000"
         - name: PL_RENEW_PERIOD
-          value: "5000"
+          value: "7500"
         envFrom:
         - configMapRef:
             name: pl-tls-config
