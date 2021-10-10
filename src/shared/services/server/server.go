@@ -148,7 +148,7 @@ func (s *PLServer) Stop() {
 			defer cancel()
 
 			if err := s.httpServer.Shutdown(ctx); err != nil {
-				log.WithError(err).Error("Failed to do a graceful shutdown of HTTP server.")
+				log.WithError(err).Warn("Failed to do a graceful shutdown of HTTP server.")
 			}
 			log.Info("Shutdown HTTP server complete. ")
 		}()

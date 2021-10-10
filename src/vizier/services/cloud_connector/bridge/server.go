@@ -975,14 +975,14 @@ func (s *Bridge) publishBridgeCh(topic string, msg *types.Any) error {
 		if s.droppedMessagesBeforeResume > 0 {
 			log.WithField("Topic", wrappedReq.Topic).
 				WithField("droppedCount", s.droppedMessagesBeforeResume).
-				Error("Resuming messages again...")
+				Info("Resuming messages again...")
 		}
 		s.droppedMessagesBeforeResume = 0
 	default:
 		if (s.droppedMessagesBeforeResume % 100) == 0 {
 			log.WithField("Topic", wrappedReq.Topic).
 				WithField("droppedCount", s.droppedMessagesBeforeResume).
-				Error("Dropping message because of queue backoff")
+				Warn("Dropping message because of queue backoff")
 		}
 		s.droppedMessagesBeforeResume++
 	}

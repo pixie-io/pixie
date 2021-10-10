@@ -162,17 +162,17 @@ func (mc *MessageBusController) Close() {
 	for _, sub := range mc.subscriptions {
 		err := sub.Unsubscribe()
 		if err != nil {
-			log.WithError(err).Error("Failed to unsubscribe")
+			log.WithError(err).Warn("Failed to unsubscribe")
 		}
 		err = sub.Drain()
 		if err != nil {
-			log.WithError(err).Error("Failed to drain subscription")
+			log.WithError(err).Warn("Failed to drain subscription")
 		}
 	}
 
 	err := mc.conn.Drain()
 	if err != nil {
-		log.WithError(err).Error("Failed to drain nats connection")
+		log.WithError(err).Warn("Failed to drain nats connection")
 	}
 	mc.conn.Close()
 
