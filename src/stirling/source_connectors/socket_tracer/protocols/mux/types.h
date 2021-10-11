@@ -42,18 +42,34 @@ inline bool IsMuxType(int8_t t) {
 }
 
 inline Type GetMatchingRespType(Type req_type) {
-    if (req_type == Type::RerrOld) return Type::RerrOld;
-    if (req_type == Type::Rerr) return Type::Rerr;
-    if (req_type == Type::Tinit) return Type::Rinit;
-    if (req_type == Type::Tping) return Type::Rping;
-    if (req_type == Type::Treq) return Type::Rreq;
-    if (req_type == Type::Tdrain) return Type::Rdrain;
-    if (req_type == Type::Tdispatch) return Type::Rdispatch;
-    if (req_type == Type::TdiscardedOld || req_type == Type::Tdiscarded) return Type::Rdiscarded;
-    return Type::Tlease;
+    switch (req_type) {
+        case Type::RerrOld:
+            return Type::RerrOld;
+        case Type::Rerr:
+            return Type::Rerr;
+        case Type::Tinit:
+            return Type::Rinit;
+        case Type::Tping:
+            return Type::Rping;
+        case Type::Treq:
+            return Type::Rreq;
+        case Type::Tdrain:
+            return Type::Rdrain;
+        case Type::Tdispatch:
+            return Type::Rdispatch;
+        case Type::TdiscardedOld:
+        case Type::Tdiscarded:
+            return Type::Rdiscarded;
+        default:
+            LOG(DFATAL) << absl::Substitute("Unexpected request type $0", magic_enum::enum_name(req_type));
+            return Type::Tlease;
+    }
 }
 
 /**
+ * The mux protocol is explained in more detail in the finagle source code
+ * here (https://github.com/twitter/finagle/blob/release/finagle-mux/src/main/scala/com/twitter/finagle/mux/package.scala)
+ *
  * Mux messages can take on a few different wire formats. Each type
  * is described below. All fields are big endian.
  *
@@ -91,17 +107,17 @@ inline Type GetMatchingRespType(Type req_type) {
  * ----------------------------------------------
  */
 struct Frame : public FrameBase {
-  uint32_t header_length;
+  uint32_t length;
   int8_t type;
   uint32_t tag;
   std::string why;
   std::map<std::string, std::map<std::string, std::string>> context;
 
-  size_t ByteSize() const override { return header_length; }
+  size_t ByteSize() const override { return length; }
 
   // TODO: Include printing the context, dtabs and other fields
   std::string ToString() const override {
-    return absl::Substitute("Mux message [len=$0 type=$1 tag=$2 # context: TBD dtabs: TBD]", header_length, type, tag);
+    return absl::Substitute("Mux message [len=$0 type=$1 tag=$2 # context: TBD dtabs: TBD]", length, type, tag);
   }
 
 };
