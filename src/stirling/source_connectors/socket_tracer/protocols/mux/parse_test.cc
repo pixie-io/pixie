@@ -32,9 +32,9 @@ constexpr std::string_view tinitCheck = ConstStringView("tinit check");
 //   00000000  00 00 00 0f 7f 00 00 01  74 69 6e 69 74 20 63 68  |........tinit ch|
 //   00000010  65 63 6b                                          |eck|
 
-// Size header: 15 Type: 127 Tag: 1 Why: tinit check NumCtx: 0 Ctx: map[] Dest:  Dtabs: map[] Payload length: 0
+// Size: 15 Type: 127 Tag: 1 Why: tinit check NumCtx: 0 Ctx: map[] Dest:  Dtabs: map[] Payload length: 0
 constexpr uint8_t muxTinitFrame[] = {
-    // mux header length (15 bytes)
+    // mux length (15 bytes)
     0x00, 0x00, 0x00, 0x0f,
     // type and tag
     0x7f, 0x00, 0x00, 0x01,
@@ -45,7 +45,7 @@ constexpr uint8_t muxTinitFrame[] = {
 };
 
 constexpr uint8_t muxInvalidType[] = {
-    // mux header length (15 bytes)
+    // mux length (15 bytes)
     0x00, 0x00, 0x00, 0x0f,
     // type and tag
     0x03, 0x00, 0x00, 0x01,
@@ -56,7 +56,7 @@ constexpr uint8_t muxInvalidType[] = {
 };
 
 constexpr uint8_t muxNeedMoreData[] = {
-    // mux header length (15 bytes)
+    // mux length
     0x00, 0x00, 0x00, 0x0f,
     // type and tag
     0x7f, 0x00, 0x00, 0x01,
@@ -79,6 +79,8 @@ constexpr uint8_t muxTdispatchFrame[] = {
 // These lines are repeated to avoid kNeedsMoreData
 /* 00e0 */   0x7d, 0x7e, 0xc0, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
 /* 00e0 */   0x7d, 0x7e, 0xc0, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
+/* 00e0 */   0x7d, 0x7e, 0xc0, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
+/* 00e0 */   0x7d, 0x7e, 0xc0, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
 };
 
 
@@ -91,7 +93,7 @@ TEST_F(MuxParserTest, ParseFrameWhenNeedsMoreData) {
   mux::Frame frame;
   ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
 
-  ASSERT_EQ(frame.header_length, 15);
+  ASSERT_EQ(frame.length, 15);
   ASSERT_EQ(state, ParseState::kNeedsMoreData);
 }
 
@@ -111,7 +113,7 @@ TEST_F(MuxParserTest, ParseFrameCanITinit) {
   ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
 
   ASSERT_EQ(state, ParseState::kSuccess);
-  ASSERT_EQ(frame.header_length, 15);
+  ASSERT_EQ(frame.length, 15);
 
   ASSERT_EQ(frame.tag, 1);
   ASSERT_EQ(frame.type, static_cast<int8_t>(mux::Type::RerrOld));

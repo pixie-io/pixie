@@ -107,6 +107,10 @@ inline Type GetMatchingRespType(Type req_type) {
  * ----------------------------------------------
  */
 struct Frame : public FrameBase {
+  // The length of the mux header and the application protocol data excluding
+  // the 4 byte length field. For Tdispatch / Rdispatch messages when using a
+  // protocol like thriftmux, this would include the length of the mux and thrift
+  // data.
   uint32_t length;
   int8_t type;
   uint32_t tag;
