@@ -30,8 +30,8 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, message_type_t /* type */, std
   }
 
   if (frame->type == static_cast<int8_t>(Type::kRdispatch)) {
-      // TODO: Add support for reading Rdispatch reply status code
-      if (! decoder->ExtractInt<uint8_t>().ok()) return ParseState::kInvalid;
+      PL_ASSIGN_OR(frame->reply_status, decoder->ExtractInt<uint8_t>(), return ParseState::kInvalid);
+      remaining_bytes -= 1;
   }
 
   PL_ASSIGN_OR(int16_t num_ctx, decoder->ExtractInt<int16_t>(), return ParseState::kInvalid);

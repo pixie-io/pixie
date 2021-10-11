@@ -62,6 +62,16 @@ constexpr uint8_t muxNeedMoreData[] = {
     0x7f, 0x00, 0x00, 0x01,
 };
 
+constexpr uint8_t muxRdispatchFrame[] = {
+//           |   mux header length | type |       tag      | # context |
+/* 0038 */   0x00, 0x00, 0x00, 0x22, 0xfe, 0x00, 0x00, 0x02,
+//   |reply status | # contex  | Thrift data
+/* 0040 */   0x01, 0x00, 0x00, 0x80, 0x01, 0x00, 0x02, 0x00, 0x00, 0x00, 0x03, 0x67, 0x65, 0x74, 0x00, 0x00,
+//           More thrift data
+/* 0050 */   0x00, 0x00, 0x0a, 0x00, 0x00, 0x14, 0x00, 0x35, 0xc9, 0xd0, 0x80, 0x00, 0x00, 0x00,
+
+};
+
 constexpr uint8_t muxTdispatchFrame[] = {
 //           |   mux header length | type |       tag      | # context |
 /* 0042 */   0x00, 0x00, 0x00, 0xc8, 0x02, 0x80, 0x00, 0x0f, 0x00, 0x03, 0x00, 0x28, 0x63, 0x6f,
@@ -119,6 +129,18 @@ TEST_F(MuxParserTest, ParseFrameCanITinit) {
   ASSERT_EQ(frame.type, static_cast<int8_t>(mux::Type::kRerrOld));
 
   ASSERT_EQ(frame.why, tinitCheck);
+}
+
+TEST_F(MuxParserTest, ParseFrameRdispatch) {
+  auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(muxRdispatchFrame));
+
+  mux::Frame frame;
+  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+
+  ASSERT_EQ(frame.tag, 0x02);
+  ASSERT_EQ(frame.type, static_cast<int8_t>(mux::Type::kRdispatch));
+  ASSERT_EQ(frame.reply_status, 1);
+  ASSERT_EQ(state, ParseState::kSuccess);
 }
 
 TEST_F(MuxParserTest, ParseFrameTdispatch) {

@@ -115,6 +115,8 @@ struct Frame : public FrameBase {
   int8_t type;
   uint32_t tag;
   std::string why;
+  // Reply status codes. Only present in Rdispatch messages types
+  int8_t reply_status;
   std::map<std::string, std::map<std::string, std::string>> context;
 
   size_t ByteSize() const override { return length; }
