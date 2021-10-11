@@ -200,7 +200,7 @@ func (m *ManagerImpl) updateAgentSchemaWrapper(agentID uuid.UUID, schema []*stor
 	// since the update to the metadata store may hit the network.
 	err := m.agtStore.UpdateSchemas(agentID, schema)
 	if err != nil {
-		log.WithError(err).Errorf("Failed to update agent schema for agent %s", agentID.String())
+		log.WithError(err).Warnf("Failed to update agent schema for agent %s", agentID.String())
 		return err
 	}
 
@@ -226,7 +226,7 @@ func (m *ManagerImpl) deleteAgentWrapper(agentID uuid.UUID) error {
 	err := m.agtStore.DeleteAgent(agentID)
 
 	if err != nil {
-		log.WithError(err).Errorf("Failed to delete agent %s", agentID.String())
+		log.WithError(err).Warnf("Failed to delete agent %s", agentID.String())
 		return err
 	}
 
@@ -260,7 +260,7 @@ func (m *ManagerImpl) createAgentWrapper(agentID uuid.UUID, agentInfo *agentpb.A
 	err := m.agtStore.CreateAgent(agentID, agentInfo)
 
 	if err != nil {
-		log.WithError(err).Errorf("Failed to create agent %s", agentID.String())
+		log.WithError(err).Warnf("Failed to create agent %s", agentID.String())
 		return err
 	}
 
@@ -294,7 +294,7 @@ func (m *ManagerImpl) updateAgentWrapper(agentID uuid.UUID, agentInfo *agentpb.A
 	err := m.agtStore.UpdateAgent(agentID, agentInfo)
 
 	if err != nil {
-		log.WithError(err).Errorf("Failed to update agent %s", agentID.String())
+		log.WithError(err).Warnf("Failed to update agent %s", agentID.String())
 		return err
 	}
 
@@ -328,7 +328,7 @@ func (m *ManagerImpl) updateAgentDataInfoWrapper(agentID uuid.UUID, agentDataInf
 	err := m.agtStore.UpdateAgentDataInfo(agentID, agentDataInfo)
 
 	if err != nil {
-		log.WithError(err).Errorf("Failed to update agent data info for agent %s", agentID.String())
+		log.WithError(err).Warnf("Failed to update agent data info for agent %s", agentID.String())
 		return err
 	}
 
@@ -355,7 +355,7 @@ func (m *ManagerImpl) updateAgentDataInfoWrapper(agentID uuid.UUID, agentDataInf
 func (m *ManagerImpl) ApplyAgentUpdate(update *Update) error {
 	resp, err := m.agtStore.GetAgent(update.AgentID)
 	if err != nil {
-		log.WithError(err).Error("Failed to get agent")
+		log.WithError(err).Warn("Failed to get agent")
 		return err
 	} else if resp == nil {
 		log.Info("Ignoring update for agent that has already been deleted")
