@@ -31,28 +31,46 @@ namespace builtins {
 
 udf::ScalarUDFDocBuilder AddDoc();
 template <typename TReturn, typename TArg1, typename TArg2>
-class AddUDF : public udf::ScalarUDF {
+
+class ValueListener : public antlr4::tree::ParseTreeListener {
  public:
-  TReturn Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val + b2.val; }
-  static udf::InfRuleVec SemanticInferenceRules() {
-    return {
-        udf::InheritTypeFromArgs<AddUDF>::Create({types::ST_BYTES, types::ST_THROUGHPUT_PER_NS,
-                                                  types::ST_THROUGHPUT_BYTES_PER_NS,
-                                                  types::ST_DURATION_NS}),
-    };
+  void enterEveryRule(antlr4::ParserRuleContext* ctx) {
+    auto rule_index = ctx->getRuleIndex();
+    if (rule_index == pgsql_parser::PostgresSQLParser::RuleValue_expression_primary) {
+      values_.push_back(ctx->getText());
+    }
   }
 
-  static udf::ScalarUDFDocBuilder Doc() { return AddDoc(); }
+  void visitTerminal(antlr4::tree::TerminalNode*) {}
+  void visitErrorNode(antlr4::tree::ErrorNode*) {}
+  void exitEveryRule(antlr4::ParserRuleContext*) {}
+
+  const std::vector<std::string>& values() const { return values_; }
+
+ private:
+  std::vector<std::string> values_;
+
+ static udf::ScalarUDFDocBuilder Doc() { return AddDoc(); }
 };
 
-template <>
-class AddUDF<types::StringValue, types::StringValue, types::StringValue> : public udf::ScalarUDF {
- public:
-  types::StringValue Exec(FunctionContext*, types::StringValue b1, types::StringValue b2) {
-    return b1 + b2;
+types::StringValue PluckValueExprPostgresSQLUDF::Exec(FunctionContext*, StringValue sql_str) {
+  sql_parsing::AntlrParser<pgsql_parser::PostgresSQLParser, pgsql_parser::PostgresSQLLexer,
+                           antlr4::ANTLRInputStream>
+      parser(sql_str);
+  ValueListener listener;
+  auto s = parser.ParseWalk(&listener);
+  if (!s.ok()) {
+    // If I were submitting production code i would do something with this error.
+    LOG(ERROR) << s.msg();
   }
-
-  static udf::ScalarUDFDocBuilder Doc() { return AddDoc(); }
+  rapidjson::StringBuffer sb;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+  writer.StartArray();
+  for (const auto& value : listener.values()) {
+    writer.String(value.c_str());
+  }
+  writer.EndArray();
+  return sb.GetString();
 };
 
 void RegisterSecurityFuncsOrDie(udf::Registry* registry);
