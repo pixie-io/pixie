@@ -30,21 +30,21 @@ namespace mux {
 
 TEST(IsMuxType, CanDetectMembershipOfSmallestAndLargestTypes) {
     // Smallest signed 8 bit value
-    ASSERT_EQ(IsMuxType(static_cast<int8_t>(Type::Rerr)), true);
+    ASSERT_EQ(IsMuxType(static_cast<int8_t>(Type::kRerr)), true);
     // Largest signed 8 bit value
-    ASSERT_EQ(IsMuxType(static_cast<int8_t>(Type::RerrOld)), true);
+    ASSERT_EQ(IsMuxType(static_cast<int8_t>(Type::kRerrOld)), true);
 }
 
 TEST(GetMatchingRespType, A) {
-    ASSERT_EQ(GetMatchingRespType(Type::RerrOld), Type::RerrOld);
-    ASSERT_EQ(GetMatchingRespType(Type::Rerr), Type::Rerr);
-    ASSERT_EQ(GetMatchingRespType(Type::Tinit), Type::Rinit);
-    ASSERT_EQ(GetMatchingRespType(Type::Tping), Type::Rping);
-    ASSERT_EQ(GetMatchingRespType(Type::TdiscardedOld), Type::Rdiscarded);
-    ASSERT_EQ(GetMatchingRespType(Type::Tdiscarded), Type::Rdiscarded);
-    ASSERT_EQ(GetMatchingRespType(Type::Tdrain), Type::Rdrain);
-    ASSERT_EQ(GetMatchingRespType(Type::Tdispatch), Type::Rdispatch);
-    ASSERT_EQ(GetMatchingRespType(Type::Treq), Type::Rreq);
+    ASSERT_EQ(GetMatchingRespType(Type::kRerrOld), Type::kRerrOld);
+    ASSERT_EQ(GetMatchingRespType(Type::kRerr), Type::kRerr);
+    ASSERT_EQ(GetMatchingRespType(Type::kTinit), Type::kRinit);
+    ASSERT_EQ(GetMatchingRespType(Type::kTping), Type::kRping);
+    ASSERT_EQ(GetMatchingRespType(Type::kTdiscardedOld), Type::kRdiscarded);
+    ASSERT_EQ(GetMatchingRespType(Type::kTdiscarded), Type::kRdiscarded);
+    ASSERT_EQ(GetMatchingRespType(Type::kTdrain), Type::kRdrain);
+    ASSERT_EQ(GetMatchingRespType(Type::kTdispatch), Type::kRdispatch);
+    ASSERT_EQ(GetMatchingRespType(Type::kTreq), Type::kRreq);
 }
 
 }  // namespace mux

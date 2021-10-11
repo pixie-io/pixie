@@ -16,13 +16,13 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, message_type_t /* type */, std
   // Account for mux type and tag
   remaining_bytes -= 4;
 
-  if (frame->type == static_cast<int8_t>(Type::RerrOld) || frame->type == static_cast<int8_t>(Type::Rerr)) {
+  if (frame->type == static_cast<int8_t>(Type::kRerrOld) || frame->type == static_cast<int8_t>(Type::kRerr)) {
     PL_ASSIGN_OR(std::string_view why, decoder->ExtractString(remaining_bytes), return ParseState::kInvalid);
     frame->why = std::string(why);
     return ParseState::kSuccess;
   }
 
-  if (frame->type == static_cast<int8_t>(Type::Rinit) || frame->type == static_cast<int8_t>(Type::Tinit)) {
+  if (frame->type == static_cast<int8_t>(Type::kRinit) || frame->type == static_cast<int8_t>(Type::kTinit)) {
       // TODO: Add support for reading Tinit and Rinit compression, tls and other parameters
     if (! decoder->ExtractString(remaining_bytes).ok()) return ParseState::kInvalid;
 

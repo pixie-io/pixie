@@ -116,7 +116,7 @@ TEST_F(MuxParserTest, ParseFrameCanITinit) {
   ASSERT_EQ(frame.length, 15);
 
   ASSERT_EQ(frame.tag, 1);
-  ASSERT_EQ(frame.type, static_cast<int8_t>(mux::Type::RerrOld));
+  ASSERT_EQ(frame.type, static_cast<int8_t>(mux::Type::kRerrOld));
 
   ASSERT_EQ(frame.why, tinitCheck);
 }
@@ -129,7 +129,7 @@ TEST_F(MuxParserTest, ParseFrameTdispatch) {
 
   // Verify that tags 24 bit wide are properly constructed
   ASSERT_EQ(frame.tag, 0x80000f);
-  ASSERT_EQ(frame.type, static_cast<int8_t>(mux::Type::Tdispatch));
+  ASSERT_EQ(frame.type, static_cast<int8_t>(mux::Type::kTdispatch));
   ASSERT_EQ(state, ParseState::kSuccess);
 
   ASSERT_EQ(frame.context.size(), 3);

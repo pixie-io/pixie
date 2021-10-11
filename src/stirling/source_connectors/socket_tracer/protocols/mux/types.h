@@ -10,30 +10,30 @@ namespace protocols {
 namespace mux {
 
 enum class Type : int8_t {
-    Treq = 1,
-    Rreq = -1,
-    Tdispatch = 2,
-    Rdispatch = -2,
+    kTreq = 1,
+    kRreq = -1,
+    kTdispatch = 2,
+    kRdispatch = -2,
 
     // control messages
-    Tdrain = 64,
-    Rdrain = -64,
-    Tping  = 65,
-    Rping  = -65,
+    kTdrain = 64,
+    kRdrain = -64,
+    kTping  = 65,
+    kRping  = -65,
 
-    Tdiscarded = 66,
-    Rdiscarded = -66,
+    kTdiscarded = 66,
+    kRdiscarded = -66,
 
-    Tlease = 67,
+    kTlease = 67,
 
-    Tinit = 68,
-    Rinit = -68,
+    kTinit = 68,
+    kRinit = -68,
 
-    Rerr = -128,
+    kRerr = -128,
 
     // only used to preserve backwards compatibility
-    TdiscardedOld = -62,
-    RerrOld       = 127,
+    kTdiscardedOld = -62,
+    kRerrOld       = 127,
 };
 
 inline bool IsMuxType(int8_t t) {
@@ -43,26 +43,26 @@ inline bool IsMuxType(int8_t t) {
 
 inline Type GetMatchingRespType(Type req_type) {
     switch (req_type) {
-        case Type::RerrOld:
-            return Type::RerrOld;
-        case Type::Rerr:
-            return Type::Rerr;
-        case Type::Tinit:
-            return Type::Rinit;
-        case Type::Tping:
-            return Type::Rping;
-        case Type::Treq:
-            return Type::Rreq;
-        case Type::Tdrain:
-            return Type::Rdrain;
-        case Type::Tdispatch:
-            return Type::Rdispatch;
-        case Type::TdiscardedOld:
-        case Type::Tdiscarded:
-            return Type::Rdiscarded;
+        case Type::kRerrOld:
+            return Type::kRerrOld;
+        case Type::kRerr:
+            return Type::kRerr;
+        case Type::kTinit:
+            return Type::kRinit;
+        case Type::kTping:
+            return Type::kRping;
+        case Type::kTreq:
+            return Type::kRreq;
+        case Type::kTdrain:
+            return Type::kRdrain;
+        case Type::kTdispatch:
+            return Type::kRdispatch;
+        case Type::kTdiscardedOld:
+        case Type::kTdiscarded:
+            return Type::kRdiscarded;
         default:
             LOG(DFATAL) << absl::Substitute("Unexpected request type $0", magic_enum::enum_name(req_type));
-            return Type::Tlease;
+            return Type::kTlease;
     }
 }
 
