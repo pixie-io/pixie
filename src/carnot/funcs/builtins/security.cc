@@ -24,17 +24,13 @@ namespace px {
 namespace carnot {
 namespace builtins {
 udf::ScalarUDFDocBuilder AddDoc() {
-  return udf::ScalarUDFDocBuilder("Arithmetically add the arguments or concatenate the strings.")
-      .Details(R"(This function is implicitly invoked by the + operator.
-      If both types are strings, then will concate the strings. Trying to
-      add any other type to a string will cause an error)")
-      .Example(R"doc(# Implicit call.
-        | df.sum = df.a + df.b
-        | Explicit call.
-        | df.sum = px.add(df.a, df.b))doc")
-      .Arg("a", "The value to be added to.")
-      .Arg("b", "The value to add to the first argument.")
-      .Returns("The sum of a and b.");
+  return udf::ScalarUDFDocBuilder("Get all values inside the given PostgreSQL query string.")
+      .Details(R"(Returns all values in the form of the list from the PostgreSQL query string.)")
+      .Example(R"doc(
+        | df.GetValuesFromPostgreSQLQuery("select * from tbl where 'id'=123 OR 1=1")
+		| ["*","123","1","1"] ))doc")
+      .Arg("sqlQuery", "The query string to be evaluated.")
+      .Returns("Returns all values inside the given PostgreSQL query string.");
 }
 
 void RegisterSecurityFuncsOrDie(udf::Registry* registry) {

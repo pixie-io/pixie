@@ -53,24 +53,30 @@ class ValueListener : public antlr4::tree::ParseTreeListener {
  static udf::ScalarUDFDocBuilder Doc() { return AddDoc(); }
 };
 
-types::StringValue PluckValueExprPostgresSQLUDF::Exec(FunctionContext*, StringValue sql_str) {
-  sql_parsing::AntlrParser<pgsql_parser::PostgresSQLParser, pgsql_parser::PostgresSQLLexer,
-                           antlr4::ANTLRInputStream>
-      parser(sql_str);
-  ValueListener listener;
-  auto s = parser.ParseWalk(&listener);
-  if (!s.ok()) {
-    // If I were submitting production code i would do something with this error.
-    LOG(ERROR) << s.msg();
+template <>
+class GetValuesFromPostgreSQLQuery<types::StringValue, types::StringValue> : public udf::ScalarUDF {
+ public:
+  types::StringValue GetValuesFromPostgreSQLQuery::Exec(FunctionContext*, StringValue sqlQuery) {
+    sql_parsing::AntlrParser<pgsql_parser::PostgresSQLParser, pgsql_parser::PostgresSQLLexer,
+                             antlr4::ANTLRInputStream>
+        parser(sqlQuery);
+    ValueListener listener;
+    auto s = parser.ParseWalk(&listener);
+    if (!s.ok()) {
+      // If I were submitting production code i would do something with this error.
+      LOG(ERROR) << s.msg();
+    }
+    rapidjson::StringBuffer sb;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+    writer.StartArray();
+    for (const auto& value : listener.values()) {
+      writer.String(value.c_str());
+    }
+    writer.EndArray();
+    return sb.GetString();
   }
-  rapidjson::StringBuffer sb;
-  rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
-  writer.StartArray();
-  for (const auto& value : listener.values()) {
-    writer.String(value.c_str());
-  }
-  writer.EndArray();
-  return sb.GetString();
+
+  static udf::ScalarUDFDocBuilder Doc() { return AddDoc(); }
 };
 
 void RegisterSecurityFuncsOrDie(udf::Registry* registry);
