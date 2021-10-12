@@ -20,145 +20,363 @@ Shows the most recent XSS Stored Attack's in the cluster.
 
 import px
 
+RULES = [
+    "img_tag",
+    "iframe_tag",
+    "object_tag",
+    "embed_tag",
+    "alert_event",
+    "href_property",
+    "src_property",
+    "fscommand_event",
+    "onabort_event",
+    "onactivate_event",
+    "onafterprint_event",
+    "onafterupdate_event",
+    "onbeforeactivate_event",
+    "onbeforecopy_event",
+    "onbeforecut_event",
+    "onbeforedeactivate_event",
+    "onbeforeeditfocus_event",
+    "onbeforepaste_event",
+    "onbeforeprint_event",
+    "onbeforeunload_event",
+    "onbeforeupdate_event",
+    "onbegin_event",
+    "onblur_event",
+    "onbounce_event",
+    "oncellchange_event",
+    "onchange_event",
+    "onclick_event",
+    "oncontextmenu_event",
+    "oncontrolselect_event",
+    "oncopy_event",
+    "oncut_event",
+    "ondataavailable_event",
+    "ondatasetchanged_event",
+    "ondatasetcomplete_event",
+    "ondblclick_event",
+    "ondeactivate_event",
+    "ondrag_event",
+    "ondragend_event",
+    "ondragleave_event",
+    "ondragenter_event",
+    "ondragover_event",
+    "ondragdrop_event",
+    "ondragstart_event",
+    "ondrop_event",
+    "onend_event",
+    "onerror_event",
+    "onerrorupdate_event",
+    "onfilterchange_event",
+    "onfinish_event",
+    "onfocus_event",
+    "onfocusin_event",
+    "onfocusout_event",
+    "onhashchange_event",
+    "onhelp_event",
+    "oninput_event",
+    "onkeydown_event",
+    "onkeypress_event",
+    "onkeyup_event",
+    "onlayoutcomplete_event",
+    "onload_event",
+    "onlosecapture_event",
+    "onmediacomplete_event",
+    "onmediaerror_event",
+    "onmessage_event",
+    "onmousedown_event",
+    "onmouseenter_event",
+    "onmouseleave_event",
+    "onmousemove_event",
+    "onmouseout_event",
+    "onmouseover_event",
+    "onmouseup_event",
+    "onmousewheel_event",
+    "onmove_event",
+    "onmoveend_event",
+    "onmovestart_event",
+    "onoffline_event",
+    "ononline_event",
+    "onoutofsync_event",
+    "onpaste_event",
+    "onpause_event",
+    "onpopstate_event",
+    "onprogress_event",
+    "onpropertychange_event",
+    "onreadystatechange_event",
+    "onredo_event",
+    "onrepeat_event",
+    "onreset_event",
+    "onresize_event",
+    "onresizeend_event",
+    "onresizestart_event",
+    "onresume_event",
+    "onreverse_event",
+    "onrowsenter_event",
+    "onrowexit_event",
+    "onrowdelete_event",
+    "onrowinserted_event",
+    "onscroll_event",
+    "onseek_event",
+    "onselect_event",
+    "onselectionchange_event",
+    "onselectstart_event",
+    "onstart_event",
+    "onstop_event",
+    "onstorage_event",
+    "onsyncrestored_event",
+    "onsubmit_event",
+    "ontimeerror_event",
+    "ontrackchange_event",
+    "onundo_event",
+    "onunload_event",
+    "onurlflip_event",
+    "seeksegmenttime_event",
+]
 
-EVENT_HANDLERS = {
-    "script_tag": "(<|%3C)\s*[sS][cC][rR][iI][pP][tT]",
-    "title_tag": "(<|%3C)\s*[tT][iI][tT][iI][lL][eE]",
-    "img_tag": "(<|%3C)\s*[iI][mM][gG]",
-    "iframe_tag": "(<|%3C)\s*[iI][fF][rR][aA][mM][eE]",
-    "object_tag": "(<|%3C)\s*[oO][bB][jJ][eE][cC][tT]",
-    "embed_tag": "(<|%3C)\s*[eE][mM][bB][eE][dD]",
-    "alert_event": "alert(",
-    "href_property": "[hH][rR][eE][fF]=",
-    "src_property": "[sS][rR][cC]=",
-    "fscommand_event": "[fF][sS][cC][oO][mM][mM][aA][nN][dD](=|\()",
-    "onabort_event": "[oO][nN][aA][bB][oO][rR][tT](=|\()",
-    "onactivate_event": "[oO][nN][aA][cC][tT][iI][vV][aA][tT][eE](=|()",
-    "onafterprint_event": "[oO][nN][aA][fF][tT][eE][rR][pP][rR][iI][nN][tT](=|()",
-    "onafterupdate_event": "[oO][nN][aA][fF][tT][eE][rR][uU][pP][dD][aA][tT][eE](=|()",
-    "onbeforeactivate_event": "[oO][nN][bB][eE][fF][oO][rR][eE][aA][cC][tT][iI][vV][aA][tT][eE](=|()",
-    "onbeforecopy_event": "[oO][nN][bB][eE][fF][oO][rR][eE][cC][oO][pP][yY](=|()",
-    "onbeforecut_event": "[oO][nN][bB][eE][fF][oO][rR][eE][cC][uU][tT](=|()",
-    "onbeforedeactivate_event": "[oO][nN][bB][eE][fF][oO][rR][eE][dD][eE][aA][cC][tT][iI][vV][aA][tT][eE](=|()",
-    "onbeforeeditfocus_event": "[oO][nN][bB][eE][fF][oO][rR][eE][eE][dD][iI][tT][fF][oO][cC][uU][sS](=|()",
-    "onbeforepaste_event": "[oO][nN][bB][eE][fF][oO][rR][eE][pP][aA][sS][tT][eE](=|()",
-    "onbeforeprint_event": "[oO][nN][bB][eE][fF][oO][rR][eE][pP][rR][iI][nN][tT](=|()",
-    "onbeforeunload_event": "[oO][nN][bB][eE][fF][oO][rR][eE][uU][nN][lL][oO][aA][dD](=|()",
-    "onbeforeupdate_event": "[oO][nN][bB][eE][fF][oO][rR][eE][uU][pP][dD][aA][tT][eE](=|()",
-    "onbegin_event": "[oO][nN][bB][eE][gG][iI][nN](=|()",
-    "onblur_event": "[oO][nN][bB][lL][uU][rR](=|()",
-    "onbounce_event": "[oO][nN][bB][oO][uU][nN][cC][eE](=|()",
-    "oncellchange_event": "[oO][nN][cC][eE][lL][lL][cC]h[aA][nN][gG][eE](=|()",
-    "onchange_event": "[oO][nN][cC]h[aA][nN][gG][eE](=|()",
-    "onclick_event": "[oO][nN][cC][lL][iI][cC][kK](=|()",
-    "oncontextmenu_event": "[oO][nN][cC][oO][nN][tT][eE]x[tT][mM][eE][nN][uU](=|()",
-    "oncontrolselect_event": "[oO][nN][cC][oO][nN][tT][rR][oO][lL][sS][eE][lL][eE][cC][tT](=|()",
-    "oncopy_event": "[oO][nN][cC][oO][pP][yY](=|()",
-    "oncut_event": "[oO][nN][cC][uU][tT](=|()",
-    "ondataavailable_event": "[oO][nN][dD][aA][tT][aA][aA][vV][aA][iI][lL][aA][bB][lL][eE](=|()",
-    "ondatasetchanged_event": "[oO][nN][dD][aA][tT][aA][sS][eE][tT][cC]h[aA][nN][gG][eE][dD](=|()",
-    "ondatasetcomplete_event": "[oO][nN][dD][aA][tT][aA][sS][eE][tT][cC][oO][mM][pP][lL][eE][tT][eE](=|()",
-    "ondblclick_event": "[oO][nN][dD][bB][lL][cC][lL][iI][cC][kK](=|()",
-    "ondeactivate_event": "[oO][nN][dD][eE][aA][cC][tT][iI][vV][aA][tT][eE](=|()",
-    "ondrag_event": "[oO][nN][dD][rR][aA][gG](=|()",
-    "ondragend_event": "[oO][nN][dD][rR][aA][gG][eE][nN][dD](=|()",
-    "ondragleave_event": "[oO][nN][dD][rR][aA][gG][lL][eE][aA][vV][eE](=|()",
-    "ondragenter_event": "[oO][nN][dD][rR][aA][gG][eE][nN][tT][eE][rR](=|()",
-    "ondragover_event": "[oO][nN][dD][rR][aA][gG][oO][vV][eE][rR](=|()",
-    "ondragdrop_event": "[oO][nN][dD][rR][aA][gG][dD][rR][oO][pP](=|()",
-    "ondragstart_event": "[oO][nN][dD][rR][aA][gG][sS][tT][aA][rR][tT](=|()",
-    "ondrop_event": "[oO][nN][dD][rR][oO][pP](=|()",
-    "onend_event": "[oO][nN][eE][nN][dD](=|()",
-    "onerror_event": "[oO][nN][eE][rR][rR][oO][rR](=|()",
-    "onerrorupdate_event": "[oO][nN][eE][rR][rR][oO][rR][uU][pP][dD][aA][tT][eE](=|()",
-    "onfilterchange_event": "[oO][nN][fF][iI][lL][tT][eE][rR][cC]h[aA][nN][gG][eE](=|()",
-    "onfinish_event": "[oO][nN][fF][iI][nN][iI][sS]h(=|()",
-    "onfocus_event": "[oO][nN][fF][oO][cC][uU][sS](=|()",
-    "onfocusin_event": "[oO][nN][fF][oO][cC][uU][sS][iI][nN](=|()",
-    "onfocusout_event": "[oO][nN][fF][oO][cC][uU][sS][oO][uU][tT](=|()",
-    "onhashchange_event": "[oO][nN]h[aA][sS]h[cC]h[aA][nN][gG][eE](=|()",
-    "onhelp_event": "[oO][nN]h[eE][lL][pP](=|()",
-    "oninput_event": "[oO][nN][iI][nN][pP][uU][tT](=|()",
-    "onkeydown_event": "[oO][nN][kK][eE][yY][dD][oO]w[nN](=|()",
-    "onkeypress_event": "[oO][nN][kK][eE][yY][pP][rR][eE][sS][sS](=|()",
-    "onkeyup_event": "[oO][nN][kK][eE][yY][uU][pP](=|()",
-    "onlayoutcomplete_event": "[oO][nN][lL][aA][yY][oO][uU][tT][cC][oO][mM][pP][lL][eE][tT][eE](=|()",
-    "onload_event": "[oO][nN][lL][oO][aA][dD](=|()",
-    "onlosecapture_event": "[oO][nN][lL][oO][sS][eE][cC][aA][pP][tT][uU][rR][eE](=|()",
-    "onmediacomplete_event": "[oO][nN][mM][eE][dD][iI][aA][cC][oO][mM][pP][lL][eE][tT][eE](=|()",
-    "onmediaerror_event": "[oO][nN][mM][eE][dD][iI][aA][eE][rR][rR][oO][rR](=|()",
-    "onmessage_event": "[oO][nN][mM][eE][sS][sS][aA][gG][eE](=|()",
-    "onmousedown_event": "[oO][nN][mM][oO][uU][sS][eE][dD][oO]w[nN](=|()",
-    "onmouseenter_event": "[oO][nN][mM][oO][uU][sS][eE][eE][nN][tT][eE][rR](=|()",
-    "onmouseleave_event": "[oO][nN][mM][oO][uU][sS][eE][lL][eE][aA][vV][eE](=|()",
-    "onmousemove_event": "[oO][nN][mM][oO][uU][sS][eE][mM][oO][vV][eE](=|()",
-    "onmouseout_event": "[oO][nN][mM][oO][uU][sS][eE][oO][uU][tT](=|()",
-    "onmouseover_event": "[oO][nN][mM][oO][uU][sS][eE][oO][vV][eE][rR](=|()",
-    "onmouseup_event": "[oO][nN][mM][oO][uU][sS][eE][uU][pP](=|()",
-    "onmousewheel_event": "[oO][nN][mM][oO][uU][sS][eE]wh[eE][eE][lL](=|()",
-    "onmove_event": "[oO][nN][mM][oO][vV][eE](=|()",
-    "onmoveend_event": "[oO][nN][mM][oO][vV][eE][eE][nN][dD](=|()",
-    "onmovestart_event": "[oO][nN][mM][oO][vV][eE][sS][tT][aA][rR][tT](=|()",
-    "onoffline_event": "[oO][nN][oO][fF][fF][lL][iI][nN][eE](=|()",
-    "ononline_event": "[oO][nN][oO][nN][lL][iI][nN][eE](=|()",
-    "onoutofsync_event": "[oO][nN][oO][uU][tT][oO][fF][sS][yY][nN][cC](=|()",
-    "onpaste_event": "[oO][nN][pP][aA][sS][tT][eE](=|()",
-    "onpause_event": "[oO][nN][pP][aA][uU][sS][eE](=|()",
-    "onpopstate_event": "[oO][nN][pP][oO][pP][sS][tT][aA][tT][eE](=|()",
-    "onprogress_event": "[oO][nN][pP][rR][oO][gG][rR][eE][sS][sS](=|()",
-    "onpropertychange_event": "[oO][nN][pP][rR][oO][pP][eE][rR][tT][yY][cC]h[aA][nN][gG][eE](=|()",
-    "onreadystatechange_event": "[oO][nN][rR][eE][aA][dD][yY][sS][tT][aA][tT][eE][cC]h[aA][nN][gG][eE](=|()",
-    "onredo_event": "[oO][nN][rR][eE][dD][oO](=|()",
-    "onrepeat_event": "[oO][nN][rR][eE][pP][eE][aA][tT](=|()",
-    "onreset_event": "[oO][nN][rR][eE][sS][eE][tT](=|()",
-    "onresize_event": "[oO][nN][rR][eE][sS][iI][zZ][eE](=|()",
-    "onresizeend_event": "[oO][nN][rR][eE][sS][iI][zZ][eE][eE][nN][dD](=|()",
-    "onresizestart_event": "[oO][nN][rR][eE][sS][iI][zZ][eE][sS][tT][aA][rR][tT](=|()",
-    "onresume_event": "[oO][nN][rR][eE][sS][uU][mM][eE](=|()",
-    "onreverse_event": "[oO][nN][rR][eE][vV][eE][rR][sS][eE](=|()",
-    "onrowsenter_event": "[oO][nN][rR][oO]w[sS][eE][nN][tT][eE][rR](=|()",
-    "onrowexit_event": "[oO][nN][rR][oO]w[eE]x[iI][tT](=|()",
-    "onrowdelete_event": "[oO][nN][rR][oO]w[dD][eE][lL][eE][tT][eE](=|()",
-    "onrowinserted_event": "[oO][nN][rR][oO]w[iI][nN][sS][eE][rR][tT][eE][dD](=|()",
-    "onscroll_event": "[oO][nN][sS][cC][rR][oO][lL][lL](=|()",
-    "onseek_event": "[oO][nN][sS][eE][eE][kK](=|()",
-    "onselect_event": "[oO][nN][sS][eE][lL][eE][cC][tT](=|()",
-    "onselectionchange_event": "[oO][nN][sS][eE][lL][eE][cC][tT][iI][oO][nN][cC]h[aA][nN][gG][eE](=|()",
-    "onselectstart_event": "[oO][nN][sS][eE][lL][eE][cC][tT][sS][tT][aA][rR][tT](=|()",
-    "onstart_event": "[oO][nN][sS][tT][aA][rR][tT](=|()",
-    "onstop_event": "[oO][nN][sS][tT][oO][pP](=|()",
-    "onstorage_event": "[oO][nN][sS][tT][oO][rR][aA][gG][eE](=|()",
-    "onsyncrestored_event": "[oO][nN][sS][yY][nN][cC][rR][eE][sS][tT][oO][rR][eE][dD](=|()",
-    "onsubmit_event": "[oO][nN][sS][uU][bB][mM][iI][tT](=|()",
-    "ontimeerror_event": "[oO][nN][tT][iI][mM][eE][eE][rR][rR][oO][rR](=|()",
-    "ontrackchange_event": "[oO][nN][tT][rR][aA][cC][kK][cC]h[aA][nN][gG][eE](=|()",
-    "onundo_event": "[oO][nN][uU][nN][dD][oO](=|()",
-    "onunload_event": "[oO][nN][uU][nN][lL][oO][aA][dD](=|()",
-    "onurlflip_event": "[oO][nN][uU][rR][lL][fF][lL][iI][pP](=|()",
-    "seeksegmenttime_event": "[sS][eE][eE][kK][sS][eE][gG][mM][eE][nN][tT][tT][iI][mM][eE](=|()",
-}
-
-def add_sql_injection_rule(df, rule_name, rule):
-    df[rule_name] = px.regex_match(".*" + rule + ".*", df.req)
-    return df
 
 def xss_attacks(df):
-    df = add_sql_injection_rule(df, 'script_tag', SCRIPT_TAG_RULE)
+    df["img_tag"] = px.regex_match(".*(<|%3C)\s*[iI][mM][gG].*", df.req)
+    df["iframe_tag"] = px.regex_match(".*(<|%3C)\s*[iI][fF][rR][aA][mM][eE].*", df.req)
+    df["object_tag"] = px.regex_match(".*(<|%3C)\s*[oO][bB][jJ][eE][cC][tT].*", df.req)
+    df["embed_tag"] = px.regex_match(".*(<|%3C)\s*[eE][mM][bB][eE][dD].*", df.req)
+    df["alert_event"] = px.regex_match(".*alert(.*", df.req)
+    df["href_property"] = px.regex_match(".*[hH][rR][eE][fF]=.*", df.req)
+    df["src_property"] = px.regex_match(".*[sS][rR][cC]=.*", df.req)
+    df["fscommand_event"] = px.regex_match(".*[fF][sS][cC][oO][mM][mM][aA][nN][dD](=|\().*", df.req)
+    df["onabort_event"] = px.regex_match(".*[oO][nN][aA][bB][oO][rR][tT](=|\().*", df.req)
+    df["onactivate_event"] = px.regex_match(".*[oO][nN][aA][cC][tT][iI][vV][aA][tT][eE](=|().*", df.req)
+    df["onafterprint_event"] = px.regex_match(".*[oO][nN][aA][fF][tT][eE][rR][pP][rR][iI][nN][tT](=|().*", df.req)
+    df["onafterupdate_event"] = px.regex_match(".*[oO][nN][aA][fF][tT][eE][rR][uU][pP][dD][aA][tT][eE](=|().*", df.req)
+    df["onbeforeactivate_event"] = px.regex_match(".*[oO][nN][bB][eE][fF][oO][rR][eE][aA][cC][tT][iI][vV][aA][tT][eE](=|().*", df.req)
+    df["onbeforecopy_event"] = px.regex_match(".*[oO][nN][bB][eE][fF][oO][rR][eE][cC][oO][pP][yY](=|().*", df.req)
+    df["onbeforecut_event"] = px.regex_match(".*[oO][nN][bB][eE][fF][oO][rR][eE][cC][uU][tT](=|().*", df.req)
+    df["onbeforedeactivate_event"] = px.regex_match(".*[oO][nN][bB][eE][fF][oO][rR][eE][dD][eE][aA][cC][tT][iI][vV][aA][tT][eE](=|().*", df.req)
+    df["onbeforeeditfocus_event"] = px.regex_match(".*[oO][nN][bB][eE][fF][oO][rR][eE][eE][dD][iI][tT][fF][oO][cC][uU][sS](=|().*", df.req)
+    df["onbeforepaste_event"] = px.regex_match(".*[oO][nN][bB][eE][fF][oO][rR][eE][pP][aA][sS][tT][eE](=|().*", df.req)
+    df["onbeforeprint_event"] = px.regex_match(".*[oO][nN][bB][eE][fF][oO][rR][eE][pP][rR][iI][nN][tT](=|().*", df.req)
+    df["onbeforeunload_event"] = px.regex_match(".*[oO][nN][bB][eE][fF][oO][rR][eE][uU][nN][lL][oO][aA][dD](=|().*", df.req)
+    df["onbeforeupdate_event"] = px.regex_match(".*[oO][nN][bB][eE][fF][oO][rR][eE][uU][pP][dD][aA][tT][eE](=|().*", df.req)
+    df["onbegin_event"] = px.regex_match(".*[oO][nN][bB][eE][gG][iI][nN](=|().*", df.req)
+    df["onblur_event"] = px.regex_match(".*[oO][nN][bB][lL][uU][rR](=|().*", df.req)
+    df["onbounce_event"] = px.regex_match(".*[oO][nN][bB][oO][uU][nN][cC][eE](=|().*", df.req)
+    df["oncellchange_event"] = px.regex_match(".*[oO][nN][cC][eE][lL][lL][cC]h[aA][nN][gG][eE](=|().*", df.req)
+    df["onchange_event"] = px.regex_match(".*[oO][nN][cC]h[aA][nN][gG][eE](=|().*", df.req)
+    df["onclick_event"] = px.regex_match(".*[oO][nN][cC][lL][iI][cC][kK](=|().*", df.req)
+    df["oncontextmenu_event"] = px.regex_match(".*[oO][nN][cC][oO][nN][tT][eE]x[tT][mM][eE][nN][uU](=|().*", df.req)
+    df["oncontrolselect_event"] = px.regex_match(".*[oO][nN][cC][oO][nN][tT][rR][oO][lL][sS][eE][lL][eE][cC][tT](=|().*", df.req)
+    df["oncopy_event"] = px.regex_match(".*[oO][nN][cC][oO][pP][yY](=|().*", df.req)
+    df["oncut_event"] = px.regex_match(".*[oO][nN][cC][uU][tT](=|().*", df.req)
+    df["ondataavailable_event"] = px.regex_match(".*[oO][nN][dD][aA][tT][aA][aA][vV][aA][iI][lL][aA][bB][lL][eE](=|().*", df.req)
+    df["ondatasetchanged_event"] = px.regex_match(".*[oO][nN][dD][aA][tT][aA][sS][eE][tT][cC]h[aA][nN][gG][eE][dD](=|().*", df.req)
+    df["ondatasetcomplete_event"] = px.regex_match(".*[oO][nN][dD][aA][tT][aA][sS][eE][tT][cC][oO][mM][pP][lL][eE][tT][eE](=|().*", df.req)
+    df["ondblclick_event"] = px.regex_match(".*[oO][nN][dD][bB][lL][cC][lL][iI][cC][kK](=|().*", df.req)
+    df["ondeactivate_event"] = px.regex_match(".*[oO][nN][dD][eE][aA][cC][tT][iI][vV][aA][tT][eE](=|().*", df.req)
+    df["ondrag_event"] = px.regex_match(".*[oO][nN][dD][rR][aA][gG](=|().*", df.req)
+    df["ondragend_event"] = px.regex_match(".*[oO][nN][dD][rR][aA][gG][eE][nN][dD](=|().*", df.req)
+    df["ondragleave_event"] = px.regex_match(".*[oO][nN][dD][rR][aA][gG][lL][eE][aA][vV][eE](=|().*", df.req)
+    df["ondragenter_event"] = px.regex_match(".*[oO][nN][dD][rR][aA][gG][eE][nN][tT][eE][rR](=|().*", df.req)
+    df["ondragover_event"] = px.regex_match(".*[oO][nN][dD][rR][aA][gG][oO][vV][eE][rR](=|().*", df.req)
+    df["ondragdrop_event"] = px.regex_match(".*[oO][nN][dD][rR][aA][gG][dD][rR][oO][pP](=|().*", df.req)
+    df["ondragstart_event"] = px.regex_match(".*[oO][nN][dD][rR][aA][gG][sS][tT][aA][rR][tT](=|().*", df.req)
+    df["ondrop_event"] = px.regex_match(".*[oO][nN][dD][rR][oO][pP](=|().*", df.req)
+    df["onend_event"] = px.regex_match(".*[oO][nN][eE][nN][dD](=|().*", df.req)
+    df["onerror_event"] = px.regex_match(".*[oO][nN][eE][rR][rR][oO][rR](=|().*", df.req)
+    df["onerrorupdate_event"] = px.regex_match(".*[oO][nN][eE][rR][rR][oO][rR][uU][pP][dD][aA][tT][eE](=|().*", df.req)
+    df["onfilterchange_event"] = px.regex_match(".*[oO][nN][fF][iI][lL][tT][eE][rR][cC]h[aA][nN][gG][eE](=|().*", df.req)
+    df["onfinish_event"] = px.regex_match(".*[oO][nN][fF][iI][nN][iI][sS]h(=|().*", df.req)
+    df["onfocus_event"] = px.regex_match(".*[oO][nN][fF][oO][cC][uU][sS](=|().*", df.req)
+    df["onfocusin_event"] = px.regex_match(".*[oO][nN][fF][oO][cC][uU][sS][iI][nN](=|().*", df.req)
+    df["onfocusout_event"] = px.regex_match(".*[oO][nN][fF][oO][cC][uU][sS][oO][uU][tT](=|().*", df.req)
+    df["onhashchange_event"] = px.regex_match(".*[oO][nN]h[aA][sS]h[cC]h[aA][nN][gG][eE](=|().*", df.req)
+    df["onhelp_event"] = px.regex_match(".*[oO][nN]h[eE][lL][pP](=|().*", df.req)
+    df["oninput_event"] = px.regex_match(".*[oO][nN][iI][nN][pP][uU][tT](=|().*", df.req)
+    df["onkeydown_event"] = px.regex_match(".*[oO][nN][kK][eE][yY][dD][oO]w[nN](=|().*", df.req)
+    df["onkeypress_event"] = px.regex_match(".*[oO][nN][kK][eE][yY][pP][rR][eE][sS][sS](=|().*", df.req)
+    df["onkeyup_event"] = px.regex_match(".*[oO][nN][kK][eE][yY][uU][pP](=|().*", df.req)
+    df["onlayoutcomplete_event"] = px.regex_match(".*[oO][nN][lL][aA][yY][oO][uU][tT][cC][oO][mM][pP][lL][eE][tT][eE](=|().*", df.req)
+    df["onload_event"] = px.regex_match(".*[oO][nN][lL][oO][aA][dD](=|().*", df.req)
+    df["onlosecapture_event"] = px.regex_match(".*[oO][nN][lL][oO][sS][eE][cC][aA][pP][tT][uU][rR][eE](=|().*", df.req)
+    df["onmediacomplete_event"] = px.regex_match(".*[oO][nN][mM][eE][dD][iI][aA][cC][oO][mM][pP][lL][eE][tT][eE](=|().*", df.req)
+    df["onmediaerror_event"] = px.regex_match(".*[oO][nN][mM][eE][dD][iI][aA][eE][rR][rR][oO][rR](=|().*", df.req)
+    df["onmessage_event"] = px.regex_match(".*[oO][nN][mM][eE][sS][sS][aA][gG][eE](=|().*", df.req)
+    df["onmousedown_event"] = px.regex_match(".*[oO][nN][mM][oO][uU][sS][eE][dD][oO]w[nN](=|().*", df.req)
+    df["onmouseenter_event"] = px.regex_match(".*[oO][nN][mM][oO][uU][sS][eE][eE][nN][tT][eE][rR](=|().*", df.req)
+    df["onmouseleave_event"] = px.regex_match(".*[oO][nN][mM][oO][uU][sS][eE][lL][eE][aA][vV][eE](=|().*", df.req)
+    df["onmousemove_event"] = px.regex_match(".*[oO][nN][mM][oO][uU][sS][eE][mM][oO][vV][eE](=|().*", df.req)
+    df["onmouseout_event"] = px.regex_match(".*[oO][nN][mM][oO][uU][sS][eE][oO][uU][tT](=|().*", df.req)
+    df["onmouseover_event"] = px.regex_match(".*[oO][nN][mM][oO][uU][sS][eE][oO][vV][eE][rR](=|().*", df.req)
+    df["onmouseup_event"] = px.regex_match(".*[oO][nN][mM][oO][uU][sS][eE][uU][pP](=|().*", df.req)
+    df["onmousewheel_event"] = px.regex_match(".*[oO][nN][mM][oO][uU][sS][eE]wh[eE][eE][lL](=|().*", df.req)
+    df["onmove_event"] = px.regex_match(".*[oO][nN][mM][oO][vV][eE](=|().*", df.req)
+    df["onmoveend_event"] = px.regex_match(".*[oO][nN][mM][oO][vV][eE][eE][nN][dD](=|().*", df.req)
+    df["onmovestart_event"] = px.regex_match(".*[oO][nN][mM][oO][vV][eE][sS][tT][aA][rR][tT](=|().*", df.req)
+    df["onoffline_event"] = px.regex_match(".*[oO][nN][oO][fF][fF][lL][iI][nN][eE](=|().*", df.req)
+    df["ononline_event"] = px.regex_match(".*[oO][nN][oO][nN][lL][iI][nN][eE](=|().*", df.req)
+    df["onoutofsync_event"] = px.regex_match(".*[oO][nN][oO][uU][tT][oO][fF][sS][yY][nN][cC](=|().*", df.req)
+    df["onpaste_event"] = px.regex_match(".*[oO][nN][pP][aA][sS][tT][eE](=|().*", df.req)
+    df["onpause_event"] = px.regex_match(".*[oO][nN][pP][aA][uU][sS][eE](=|().*", df.req)
+    df["onpopstate_event"] = px.regex_match(".*[oO][nN][pP][oO][pP][sS][tT][aA][tT][eE](=|().*", df.req)
+    df["onprogress_event"] = px.regex_match(".*[oO][nN][pP][rR][oO][gG][rR][eE][sS][sS](=|().*", df.req)
+    df["onpropertychange_event"] = px.regex_match(".*[oO][nN][pP][rR][oO][pP][eE][rR][tT][yY][cC]h[aA][nN][gG][eE](=|().*", df.req)
+    df["onreadystatechange_event"] = px.regex_match(".*[oO][nN][rR][eE][aA][dD][yY][sS][tT][aA][tT][eE][cC]h[aA][nN][gG][eE](=|().*", df.req)
+    df["onredo_event"] = px.regex_match(".*[oO][nN][rR][eE][dD][oO](=|().*", df.req)
+    df["onrepeat_event"] = px.regex_match(".*[oO][nN][rR][eE][pP][eE][aA][tT](=|().*", df.req)
+    df["onreset_event"] = px.regex_match(".*[oO][nN][rR][eE][sS][eE][tT](=|().*", df.req)
+    df["onresize_event"] = px.regex_match(".*[oO][nN][rR][eE][sS][iI][zZ][eE](=|().*", df.req)
+    df["onresizeend_event"] = px.regex_match(".*[oO][nN][rR][eE][sS][iI][zZ][eE][eE][nN][dD](=|().*", df.req)
+    df["onresizestart_event"] = px.regex_match(".*[oO][nN][rR][eE][sS][iI][zZ][eE][sS][tT][aA][rR][tT](=|().*", df.req)
+    df["onresume_event"] = px.regex_match(".*[oO][nN][rR][eE][sS][uU][mM][eE](=|().*", df.req)
+    df["onreverse_event"] = px.regex_match(".*[oO][nN][rR][eE][vV][eE][rR][sS][eE](=|().*", df.req)
+    df["onrowsenter_event"] = px.regex_match(".*[oO][nN][rR][oO]w[sS][eE][nN][tT][eE][rR](=|().*", df.req)
+    df["onrowexit_event"] = px.regex_match(".*[oO][nN][rR][oO]w[eE]x[iI][tT](=|().*", df.req)
+    df["onrowdelete_event"] = px.regex_match(".*[oO][nN][rR][oO]w[dD][eE][lL][eE][tT][eE](=|().*", df.req)
+    df["onrowinserted_event"] = px.regex_match(".*[oO][nN][rR][oO]w[iI][nN][sS][eE][rR][tT][eE][dD](=|().*", df.req)
+    df["onscroll_event"] = px.regex_match(".*[oO][nN][sS][cC][rR][oO][lL][lL](=|().*", df.req)
+    df["onseek_event"] = px.regex_match(".*[oO][nN][sS][eE][eE][kK](=|().*", df.req)
+    df["onselect_event"] = px.regex_match(".*[oO][nN][sS][eE][lL][eE][cC][tT](=|().*", df.req)
+    df["onselectionchange_event"] = px.regex_match(".*[oO][nN][sS][eE][lL][eE][cC][tT][iI][oO][nN][cC]h[aA][nN][gG][eE](=|().*", df.req)
+    df["onselectstart_event"] = px.regex_match(".*[oO][nN][sS][eE][lL][eE][cC][tT][sS][tT][aA][rR][tT](=|().*", df.req)
+    df["onstart_event"] = px.regex_match(".*[oO][nN][sS][tT][aA][rR][tT](=|().*", df.req)
+    df["onstop_event"] = px.regex_match(".*[oO][nN][sS][tT][oO][pP](=|().*", df.req)
+    df["onstorage_event"] = px.regex_match(".*[oO][nN][sS][tT][oO][rR][aA][gG][eE](=|().*", df.req)
+    df["onsyncrestored_event"] = px.regex_match(".*[oO][nN][sS][yY][nN][cC][rR][eE][sS][tT][oO][rR][eE][dD](=|().*", df.req)
+    df["onsubmit_event"] = px.regex_match(".*[oO][nN][sS][uU][bB][mM][iI][tT](=|().*", df.req)
+    df["ontimeerror_event"] = px.regex_match(".*[oO][nN][tT][iI][mM][eE][eE][rR][rR][oO][rR](=|().*", df.req)
+    df["ontrackchange_event"] = px.regex_match(".*[oO][nN][tT][rR][aA][cC][kK][cC]h[aA][nN][gG][eE](=|().*", df.req)
+    df["onundo_event"] = px.regex_match(".*[oO][nN][uU][nN][dD][oO](=|().*", df.req)
+    df["onunload_event"] = px.regex_match(".*[oO][nN][uU][nN][lL][oO][aA][dD](=|().*", df.req)
+    df["onurlflip_event"] = px.regex_match(".*[oO][nN][uU][rR][lL][fF][lL][iI][pP](=|().*", df.req)
+    df["seeksegmenttime_event"] = px.regex_match(".*[sS][eE][eE][kK][sS][eE][gG][mM][eE][nN][tT][tT][iI][mM][eE](=|().*", df.req)
+
     df = df[
-        df.script_tag or (df.comment_dashes or (df.comment_slash_star or (df.semicolon or (
-                df.unmatched_quotes or (df.union or (df.char_casting or df.system_catalog_access))))))]
-    df.rule_broken = px.select(df.script_tag, 'script_tag',
-                               px.select(df.comment_dashes, 'comment_dashes',
-                                         px.select(df.comment_slash_star, 'comment_slash_star',
-                                                   px.select(df.unmatched_quotes, 'unmatched_quotes',
-                                                             px.select(df.union, 'union',
-                                                                       px.select(df.char_casting, 'char_casting',
-                                                                                 px.select(df.system_catalog_access,
-                                                                                           'system_catalog_access',
-                                                                                           px.select(df.semicolon,
-                                                                                                     'semicolon',
-                                                                                                     'N/A'))))))))
-    return df[['time_', 'source', 'destination', 'remote_port', 'req', 'resp', 'latency', 'rule_broken']]
+        df.img_tag or
+        ( df.iframe_tag or
+        ( df.object_tag or (
+        ( df.embed_tag or (
+        ( df.alert_event or (
+        ( df.href_property or (
+        ( df.src_property or (
+        ( df.fscommand_event or (
+        ( df.onabort_event or (
+        ( df.onactivate_event or (
+        ( df.onafterprint_event or (
+        ( df.onafterupdate_event or (
+        ( df.onbeforeactivate_event or (
+        ( df.onbeforecopy_event or (
+        ( df.onbeforecut_event or (
+        ( df.onbeforedeactivate_event or (
+        ( df.onbeforeeditfocus_event or (
+        ( df.onbeforepaste_event or (
+        ( df.onbeforeprint_event or (
+        ( df.onbeforeunload_event or (
+        ( df.onbeforeupdate_event or (
+        ( df.onbegin_event or (
+        ( df.onblur_event or (
+        ( df.onbounce_event or (
+        ( df.oncellchange_event or (
+        ( df.onchange_event or (
+        ( df.onclick_event or (
+        ( df.oncontextmenu_event or (
+        ( df.oncontrolselect_event or (
+        ( df.oncopy_event or (
+        ( df.oncut_event or (
+        ( df.ondataavailable_event or (
+        ( df.ondatasetchanged_event or (
+        ( df.ondatasetcomplete_event or (
+        ( df.ondblclick_event or (
+        ( df.ondeactivate_event or (
+        ( df.ondrag_event or (
+        ( df.ondragend_event or (
+        ( df.ondragleave_event or (
+        ( df.ondragenter_event or (
+        ( df.ondragover_event or (
+        ( df.ondragdrop_event or (
+        ( df.ondragstart_event or (
+        ( df.ondrop_event or (
+        ( df.onend_event or (
+        ( df.onerror_event or (
+        ( df.onerrorupdate_event or (
+        ( df.onfilterchange_event or (
+        ( df.onfinish_event or (
+        ( df.onfocus_event or (
+        ( df.onfocusin_event or (
+        ( df.onfocusout_event or (
+        ( df.onhashchange_event or (
+        ( df.onhelp_event or (
+        ( df.oninput_event or (
+        ( df.onkeydown_event or (
+        ( df.onkeypress_event or (
+        ( df.onkeyup_event or (
+        ( df.onlayoutcomplete_event or (
+        ( df.onload_event or (
+        ( df.onlosecapture_event or (
+        ( df.onmediacomplete_event or (
+        ( df.onmediaerror_event or (
+        ( df.onmessage_event or (
+        ( df.onmousedown_event or (
+        ( df.onmouseenter_event or (
+        ( df.onmouseleave_event or (
+        ( df.onmousemove_event or (
+        ( df.onmouseout_event or (
+        ( df.onmouseover_event or (
+        ( df.onmouseup_event or (
+        ( df.onmousewheel_event or (
+        ( df.onmove_event or (
+        ( df.onmoveend_event or (
+        ( df.onmovestart_event or (
+        ( df.onoffline_event or (
+        ( df.ononline_event or (
+        ( df.onoutofsync_event or (
+        ( df.onpaste_event or (
+        ( df.onpause_event or (
+        ( df.onpopstate_event or (
+        ( df.onprogress_event or (
+        ( df.onpropertychange_event or (
+        ( df.onreadystatechange_event or (
+        ( df.onredo_event or (
+        ( df.onrepeat_event or (
+        ( df.onreset_event or (
+        ( df.onresize_event or (
+        ( df.onresizeend_event or (
+        ( df.onresizestart_event or (
+        ( df.onresume_event or (
+        ( df.onreverse_event or (
+        ( df.onrowsenter_event or (
+        ( df.onrowexit_event or (
+        ( df.onrowdelete_event or (
+        ( df.onrowinserted_event or (
+        ( df.onscroll_event or (
+        ( df.onseek_event or (
+        ( df.onselect_event or (
+        ( df.onselectionchange_event or (
+        ( df.onselectstart_event or (
+        ( df.onstart_event or (
+        ( df.onstop_event or (
+        ( df.onstorage_event or (
+        ( df.onsyncrestored_event or (
+        ( df.onsubmit_event or (
+        ( df.ontimeerror_event or (
+        ( df.ontrackchange_event or (
+        ( df.onundo_event or (
+        ( df.onunload_event or (
+        ( df.onurlflip_event or (
+        ( df.seeksegmenttime_event)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) 
+    ]
+ 
+    # df.rule_broken = px.select(df.script_tag, 'script_tag',
+    #                            px.select(df.comment_dashes, 'comment_dashes',
+    #                                      px.select(df.comment_slash_star, 'comment_slash_star',
+    #                                                px.select(df.unmatched_quotes, 'unmatched_quotes',
+    #                                                          px.select(df.union, 'union',
+    #                                                                    px.select(df.char_casting, 'char_casting',
+    #                                                                              px.select(df.system_catalog_access,
+    #                                                                                        'system_catalog_access',
+    #                                                                                        px.select(df.semicolon,
+    #                                                                                                  'semicolon',
+    #                                                                                                  'N/A'))))))))
+    return df[['time_', 'source', 'destination', 'remote_port', 'req', 'resp', 'latency']]
 
 def pgsql_data(start_time: str, source_filter: str, destination_filter: str, num_head: int):
     df = px.DataFrame(table='pgsql_events', start_time=start_time)

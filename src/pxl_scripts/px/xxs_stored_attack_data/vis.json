@@ -27,9 +27,9 @@
   ],
   "globalFuncs": [
     {
-      "outputName": "potential_xss_attacks",
+      "outputName": "xss_stored_attacks",
       "func": {
-        "name": "potential_xss_attacks",
+        "name": "xss_stored_attacks",
         "args": [
           {
             "name": "start_time",
@@ -60,7 +60,7 @@
         "w": 12,
         "h": 4
       },
-      "globalFuncOutputName": "potential_xss_attacks",
+      "globalFuncOutputName": "xss_stored_attacks",
       "displaySpec": {
         "@type": "types.px.dev/px.vispb.Table"
       }
