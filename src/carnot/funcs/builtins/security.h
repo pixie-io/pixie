@@ -18,12 +18,12 @@
 
 #pragma once
 
-#include <cmath>
-#include <limits>
+#include <regex>
 
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/type_inference.h"
 #include "src/shared/types/types.h"
+#include "src/common/json/json.h"
 
 namespace px {
 namespace carnot {
@@ -32,48 +32,25 @@ namespace builtins {
 udf::ScalarUDFDocBuilder AddDoc();
 template <typename TReturn, typename TArg1, typename TArg2>
 
-class ValueListener : public antlr4::tree::ParseTreeListener {
- public:
-  void enterEveryRule(antlr4::ParserRuleContext* ctx) {
-    auto rule_index = ctx->getRuleIndex();
-    if (rule_index == pgsql_parser::PostgresSQLParser::RuleValue_expression_primary) {
-      values_.push_back(ctx->getText());
-    }
-  }
-
-  void visitTerminal(antlr4::tree::TerminalNode*) {}
-  void visitErrorNode(antlr4::tree::ErrorNode*) {}
-  void exitEveryRule(antlr4::ParserRuleContext*) {}
-
-  const std::vector<std::string>& values() const { return values_; }
-
- private:
-  std::vector<std::string> values_;
-
- static udf::ScalarUDFDocBuilder Doc() { return AddDoc(); }
-};
-
 template <>
-class GetValuesFromPostgreSQLQuery<types::StringValue, types::StringValue> : public udf::ScalarUDF {
+class MatchRegexRule<types::StringValue, types::StringValue, types::StringArray> : public udf::ScalarUDF {
  public:
-  types::StringValue GetValuesFromPostgreSQLQuery::Exec(FunctionContext*, StringValue sqlQuery) {
-    sql_parsing::AntlrParser<pgsql_parser::PostgresSQLParser, pgsql_parser::PostgresSQLLexer,
-                             antlr4::ANTLRInputStream>
-        parser(sqlQuery);
-    ValueListener listener;
-    auto s = parser.ParseWalk(&listener);
-    if (!s.ok()) {
-      // If I were submitting production code i would do something with this error.
-      LOG(ERROR) << s.msg();
+  types::StringValue GetValuesFromPostgreSQLQuery::Exec(FunctionContext*, StringValue value, StringValue regexRules) {
+    Json::Reader reader;
+    Json::Value regexRulesParsed;
+
+    bool parseSuccess = reader.parse(regexRules, regexRulesParsed, false);
+
+    if (parseSuccess) {
+      const Json::Value regexRulesMap = root["result"];
     }
-    rapidjson::StringBuffer sb;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
-    writer.StartArray();
-    for (const auto& value : listener.values()) {
-      writer.String(value.c_str());
+    
+    for (auto item = regexRulesMap.begin(); item != regexRulesMap.end(); ++item) {
+        if (std::regex_match(value, std::regex(item.value()) )) {
+            return item.key();
+        }
     }
-    writer.EndArray();
-    return sb.GetString();
+    return "";
   }
 
   static udf::ScalarUDFDocBuilder Doc() { return AddDoc(); }
