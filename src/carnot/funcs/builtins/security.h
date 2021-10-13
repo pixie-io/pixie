@@ -20,10 +20,11 @@
 
 #include <regex>
 
+#include <rapidjson/document.h>
+
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/type_inference.h"
 #include "src/shared/types/types.h"
-#include "src/common/json/json.h"
 
 namespace px {
 namespace carnot {
@@ -36,13 +37,11 @@ template <>
 class MatchRegexRule<types::StringValue, types::StringValue, types::StringArray> : public udf::ScalarUDF {
  public:
   types::StringValue GetValuesFromPostgreSQLQuery::Exec(FunctionContext*, StringValue value, StringValue regexRules) {
-    Json::Reader reader;
-    Json::Value regexRulesParsed;
-
-    bool parseSuccess = reader.parse(regexRules, regexRulesParsed, false);
-
-    if (parseSuccess) {
-      const Json::Value regexRulesMap = root["result"];
+    rapidjson::Document regexRulesMap;
+    rapidjson::ParseResult ok = d.Parse(in.data());
+    // TODO(zasgar/michellenguyen, PP-419): Replace with null when available.
+    if (ok == nullptr) {
+      return "";
     }
     
     for (auto item = regexRulesMap.begin(); item != regexRulesMap.end(); ++item) {
