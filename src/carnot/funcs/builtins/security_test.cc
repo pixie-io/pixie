@@ -30,10 +30,10 @@ namespace px {
 namespace carnot {
 namespace builtins {
 
-TEST(MathOps, basic_string_add_test) {
+TEST(Security, basic_string_add_test) {
   auto udf_tester =
-      udf::UDFTester<AddUDF<types::StringValue, types::StringValue, types::StringValue>>();
-  udf_tester.ForInput("a", "b").Expect("ab");
+      udf::UDFTester<GetValuesFromPostgreSQLQuery<types::StringValue, types::StringValue>>();
+  udf_tester.ForInput("select * from tbl where 'id'=123 OR 1=1").Expect(["*", "123", "1", "1"]);
 }
 }  // namespace builtins
 }  // namespace carnot

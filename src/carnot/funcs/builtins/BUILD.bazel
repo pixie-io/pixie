@@ -75,6 +75,15 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "security_test",
+    srcs = ["security_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/udf:udf_testutils",
+    ],
+)
+
+pl_cc_test(
     name = "math_ops_test",
     srcs = ["math_ops_test.cc"],
     deps = [
