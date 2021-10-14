@@ -44,6 +44,7 @@ import {
   makeStyles, useTheme, Theme,
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { formatFloat64Data } from 'app/utils/format-data';
 import { TimeSeriesContext } from '../context/time-series-context';
@@ -129,6 +130,8 @@ const Vega = React.memo((props: VegaProps) => {
     spec, hasLegend, legendColumnName, error, preprocess, showTooltips,
   } = React.useMemo(() => convertWidgetDisplayToVegaSpec(display, tableName, theme, relation),
     [display, tableName, theme, relation]);
+
+  const { showInIde } = useFlags();
 
   const formatter = React.useMemo(() => getFormatter(relation, display), [display, relation]);
 
@@ -345,12 +348,12 @@ const Vega = React.memo((props: VegaProps) => {
       {error ? <div>{error.toString()}</div>
         : (
           <div className={classes.flexbox} ref={chartRef}>
-            <FlamegraphIDEMenu
+            { showInIde ? <FlamegraphIDEMenu
               symbol={flamegraphSymbol}
               fullPath={flamegraphPath}
               open={flamegraphMenuOpen}
               onClose={fgMenuClose}
-            />
+            /> : null }
             <ReactVega
               spec={spec}
               data={data}

@@ -93,7 +93,6 @@ export const FlamegraphIDEMenu: React.FC<FlamegraphIDEMenuProps> = React.memo(fu
 
   // Gets the position of the current tooltip in Vega and overlays the menu on top.
   const getTooltip = React.useCallback(() => document.querySelector('.vg-tooltip'), []);
-
   // Don't show the menu if there are no IDE paths/the symbol was invalid.
   if (paths.length === 0) {
     return null;
