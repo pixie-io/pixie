@@ -118,20 +118,18 @@ Then you just add a line to every git commit message:
 
 Use your real name (sorry, no pseudonyms or anonymous contributions.)
 
-If you set your `user.name` and `user.email` git configs, you can sign your commit automatically
-with `git commit -s`.
+##### Configuring Commit Signing in Git
+1. If you set your `user.name` and `user.email` git configs, you can sign your commit with `git commit -s`.
 
-Note: If your git config information is set properly then viewing the `git log` information for your
- commit will look something like this:
+    Note: If your git config information is set properly then viewing the `git log` information for your commit will look something like this:
 
-```
-Author: Joe Smith <joe.smith@example.com>
-Date:   Thu Feb 2 11:41:15 2018 -0800
-
-    Update README
-
-    Signed-off-by: Joe Smith <joe.smith@example.com>
-```
-
-Notice the `Author` and `Signed-off-by` lines match. If they don't your PR will be rejected by the
-automated DCO check.
+    ```
+    Author: Joe Smith <joe.smith@example.com>
+    Date:   Thu Feb 2 11:41:15 2018 -0800
+    
+        Update README
+    
+        Signed-off-by: Joe Smith <joe.smith@example.com>
+    ```
+    
+    Notice the `Author` and `Signed-off-by` lines match. If they don't your PR will be rejected by the automated DCO check.
