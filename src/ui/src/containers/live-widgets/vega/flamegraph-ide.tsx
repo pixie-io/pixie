@@ -30,7 +30,8 @@ interface FlamegraphConfig {
   path: string;
 }
 
-export const executePathTemplate = ((tmplConfigs: GQLIDEPath[], symbol: string) : FlamegraphConfig[] => {
+export const executePathTemplate = ((tmplConfigs: GQLIDEPath[], symbol: string, fullPath: string)
+: FlamegraphConfig[] => {
   if (!symbol) {
     return [];
   }
@@ -50,28 +51,45 @@ export const executePathTemplate = ((tmplConfigs: GQLIDEPath[], symbol: string) 
   }
   const fn = parsedGolang[2];
 
+  // Parse pod.
+  const rePod = /pod: (.*?);/;
+  const parsedPod = rePod.exec(fullPath);
+  let pod = '';
+  if (parsedPod != null && parsedPod.length > 1) {
+    pod = parsedPod[1];
+  }
   // Fill in the template paths.
   const paths = tmplConfigs.map((tmpl) => (
-    { name: tmpl.IDEName, path: Mustache.render(tmpl.path, { function: fn, symbol, path }) }
-  ));
+    {
+      name: tmpl.IDEName,
+      path: Mustache.render(tmpl.path, {
+        function: encodeURIComponent(fn),
+        symbol: encodeURIComponent(symbol),
+        path: encodeURIComponent(path),
+        pod: encodeURIComponent(pod),
+      }),
+    }),
+  );
 
   return paths;
 });
 
 export interface FlamegraphIDEMenuProps {
   symbol: string;
+  fullPath: string;
   open: boolean;
   onClose: (boolean) => void;
 }
 
 export const FlamegraphIDEMenu: React.FC<FlamegraphIDEMenuProps> = React.memo(function FlamegraphIDEMenu({
   symbol,
+  fullPath,
   open,
   onClose,
 }) {
   const { org } = React.useContext(OrgContext);
 
-  const paths = executePathTemplate(org.idePaths, symbol);
+  const paths = executePathTemplate(org.idePaths, symbol, fullPath);
 
   // Gets the position of the current tooltip in Vega and overlays the menu on top.
   const getTooltip = React.useCallback(() => document.querySelector('.vg-tooltip'), []);

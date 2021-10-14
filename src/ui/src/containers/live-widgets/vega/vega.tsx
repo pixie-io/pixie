@@ -158,6 +158,7 @@ const Vega = React.memo((props: VegaProps) => {
   const [hoverDataCache, setHoverDataCache] = React.useState<HoverDataCache>(null);
   const [flamegraphMenuOpen, setFlamegraphMenuOpen] = React.useState(false);
   const [flamegraphSymbol, setFlamegraphSymbol] = React.useState<string>('');
+  const [flamegraphPath, setFlamegraphPath] = React.useState<string>('');
 
   const fgMenuClose = React.useCallback(() => setFlamegraphMenuOpen(false), [setFlamegraphMenuOpen]);
 
@@ -226,6 +227,7 @@ const Vega = React.memo((props: VegaProps) => {
 
     [SHIFT_CLICK_FLAMEGRAPH_SIGNAL]: (name, value) => {
       setFlamegraphSymbol(value.symbol);
+      setFlamegraphPath(value.path);
       setFlamegraphMenuOpen(true);
     },
 
@@ -345,6 +347,7 @@ const Vega = React.memo((props: VegaProps) => {
           <div className={classes.flexbox} ref={chartRef}>
             <FlamegraphIDEMenu
               symbol={flamegraphSymbol}
+              fullPath={flamegraphPath}
               open={flamegraphMenuOpen}
               onClose={fgMenuClose}
             />

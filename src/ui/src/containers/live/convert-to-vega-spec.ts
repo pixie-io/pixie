@@ -2445,7 +2445,7 @@ function convertToStacktraceFlameGraph(
           markname: 'stacktrace_rect',
           filter: ['event.shiftKey'],
         },
-        update: '{symbol: datum.name, x: event.x, y: event.y}',
+        update: '{path: datum.fullPath, symbol: datum.name, x: event.x, y: event.y}',
       },
     ],
   });
