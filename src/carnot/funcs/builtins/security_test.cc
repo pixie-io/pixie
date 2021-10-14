@@ -32,8 +32,8 @@ namespace builtins {
 
 TEST(Security, basic_string_add_test) {
   auto udf_tester =
-      udf::UDFTester<GetValuesFromPostgreSQLQuery<types::StringValue, types::StringValue>>();
-  udf_tester.ForInput("select * from tbl where 'id'=123 OR 1=1").Expect(["*", "123", "1", "1"]);
+      udf::UDFTester<MatchRegexRule>();
+  udf_tester.ForInput("UPDATE courses SET name = '<a/+/OnpOinteRENtER+=+a=prompt,a()%0dx>v3dm0s ' WHERE id = 2", "{\"onpointerenter_event\":\".*[oO][nN][pP][oO][iI][nN][tT][eE][rR][eE][nN][tT][eE][rR].*\"}").Expect("onpointerenter_event");
 }
 }  // namespace builtins
 }  // namespace carnot

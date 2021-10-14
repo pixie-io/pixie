@@ -25,36 +25,34 @@
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/type_inference.h"
 #include "src/shared/types/types.h"
+#include "src/carnot/funcs/builtins/regex_ops.h"
 
 namespace px {
 namespace carnot {
 namespace builtins {
 
-udf::ScalarUDFDocBuilder AddDoc();
-template <typename TReturn, typename TArg1, typename TArg2>
-
-template <>
-class MatchRegexRule<types::StringValue, types::StringValue, types::StringArray> : public udf::ScalarUDF {
+class MatchRegexRule : public udf::ScalarUDF {
  public:
-  types::StringValue GetValuesFromPostgreSQLQuery::Exec(FunctionContext*, StringValue value, StringValue regexRules) {
-    rapidjson::Document regexRulesMap;
-    rapidjson::ParseResult ok = d.Parse(in.data());
+  types::StringValue Exec(FunctionContext*, StringValue value, StringValue regexRules) {
+    rapidjson::Document d;
+    rapidjson::ParseResult ok = d.Parse(regexRules.data());
     // TODO(zasgar/michellenguyen, PP-419): Replace with null when available.
     if (ok == nullptr) {
       return "";
     }
-    
-    for (auto item = regexRulesMap.begin(); item != regexRulesMap.end(); ++item) {
-        if (std::regex_match(value, std::regex(item.value()) )) {
-            return item.key();
+    RegexMatchUDF regex_match; 
+    for (rapidjson::Value::ConstMemberIterator itr = d.MemberBegin(); itr != d.MemberEnd(); ++itr) {
+        auto name = itr->name.GetString();
+        PL_UNUSED(regex_match.Init(nullptr, itr->value.GetString()));
+        auto is_match = regex_match.Exec(nullptr, value).val;
+        if (is_match) {
+            return name; 
         }
     }
     return "";
   }
-
-  static udf::ScalarUDFDocBuilder Doc() { return AddDoc(); }
 };
-
+   
 void RegisterSecurityFuncsOrDie(udf::Registry* registry);
 }  // namespace builtins
 }  // namespace carnot

@@ -23,15 +23,15 @@
 namespace px {
 namespace carnot {
 namespace builtins {
-udf::ScalarUDFDocBuilder AddDoc() {
-  return udf::ScalarUDFDocBuilder("Get all values inside the given PostgreSQL query string.")
-      .Details(R"(Returns all values in the form of the list from the PostgreSQL query string.)")
-      .Example(R"doc(
-        | df.GetValuesFromPostgreSQLQuery("select * from tbl where 'id'=123 OR 1=1")
-		| ["*","123","1","1"] ))doc")
-      .Arg("sqlQuery", "The query string to be evaluated.")
-      .Returns("Returns all values inside the given PostgreSQL query string.");
-}
+// udf::ScalarUDFDocBuilder AddDoc() {
+//   return udf::ScalarUDFDocBuilder("Get all values inside the given PostgreSQL query string.")
+//       .Details(R"(Returns all values in the form of the list from the PostgreSQL query string.)")
+//       .Example(R"doc(
+//         | df.GetValuesFromPostgreSQLQuery("select * from tbl where 'id'=123 OR 1=1")
+// 		| ["*","123","1","1"] ))doc")
+//       .Arg("sqlQuery", "The query string to be evaluated.")
+//       .Returns("Returns all values inside the given PostgreSQL query string.");
+// }
 
 void RegisterSecurityFuncsOrDie(udf::Registry* registry) {
   CHECK(registry != nullptr);
