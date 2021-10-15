@@ -41,7 +41,7 @@ inline bool IsMuxType(int8_t t) {
   return mux_type.has_value();
 }
 
-inline Type GetMatchingRespType(Type req_type) {
+inline std::optional<Type> GetMatchingRespType(Type req_type) {
     switch (req_type) {
         case Type::kRerrOld:
             return Type::kRerrOld;
@@ -62,7 +62,7 @@ inline Type GetMatchingRespType(Type req_type) {
             return Type::kRdiscarded;
         default:
             LOG(DFATAL) << absl::Substitute("Unexpected request type $0", magic_enum::enum_name(req_type));
-            return Type::kTlease;
+            return {};
     }
 }
 
