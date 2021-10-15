@@ -111,7 +111,7 @@ export const FlamegraphIDEMenu: React.FC<FlamegraphIDEMenuProps> = React.memo(fu
     </ListItem>
     {
       Array.from(paths.map((conf) => (
-        <Link key={conf.name} href={conf.path}>
+        <Link target='_blank' key={conf.name} href={conf.path}>
           <MenuItem>
             {conf.name}
           </MenuItem>
