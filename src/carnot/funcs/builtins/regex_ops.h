@@ -52,7 +52,7 @@ class MatchRegexRule : public udf::ScalarUDF {
     rapidjson::ParseResult ok = regex_rules.Parse(encodedRegexRules.data());
     // TODO(zasgar/michellenguyen, PP-419): Replace with null when available.
     if (ok == nullptr) {
-      return Status::OK(); // Not OK.
+      return Status(statuspb::Code::INVALID_ARGUMENT, "unable to convert to json");
     }
     return Status::OK();
   }
