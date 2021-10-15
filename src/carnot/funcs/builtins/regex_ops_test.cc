@@ -29,10 +29,20 @@ namespace px {
 namespace carnot {
 namespace builtins {
 
-TEST(StringOps, basic_regex_match) {
+TEST(RegexOps, basic_regex_match) {
   auto udf_tester = udf::UDFTester<RegexMatchUDF>();
   udf_tester.Init("abcd.*").ForInput("abcdefg").Expect(true);
   udf_tester.Init("abcd.*").ForInput("abce").Expect(false);
+}
+
+TEST(RegexOps, regex_match_rules) {
+  auto udf_tester =
+      udf::UDFTester<MatchRegexRule>();
+  udf_tester.Init(
+    "{\"onpointerenter_event\":\".*[oO][nN][pP][oO][iI][nN][tT][eE][rR][eE][nN][tT][eE][rR].*\"}"
+  ).ForInput(
+    "UPDATE courses SET name = '<a/+/OnpOinteRENtER+=+a=prompt,a()%0dx>v3dm0s ' WHERE id = 2"
+  ).Expect("onpointerenter_event");
 }
 
 }  // namespace builtins

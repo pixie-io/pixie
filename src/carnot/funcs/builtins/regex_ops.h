@@ -22,6 +22,8 @@
 #include <algorithm>
 #include <memory>
 #include <string>
+#include <regex>
+#include <rapidjson/document.h>
 #include "re2/re2.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/base/utils.h"
@@ -41,6 +43,34 @@ class RegexMatchUDF : public udf::ScalarUDF {
 
  private:
   std::unique_ptr<re2::RE2> regex_;
+};
+
+
+class MatchRegexRule : public udf::ScalarUDF {
+ public:
+  Status Init(FunctionContext*, StringValue encodedRegexRules) {
+    rapidjson::ParseResult ok = regex_rules.Parse(encodedRegexRules.data());
+    // TODO(zasgar/michellenguyen, PP-419): Replace with null when available.
+    if (ok == nullptr) {
+      return Status::OK(); // Not OK.
+    }
+    return Status::OK();
+  }
+  types::StringValue Exec(FunctionContext*, StringValue value) {
+    RegexMatchUDF regex_match; 
+    for (rapidjson::Value::ConstMemberIterator itr = regex_rules.MemberBegin(); itr != regex_rules.MemberEnd(); ++itr) {
+        auto name = itr->name.GetString();
+        PL_UNUSED(regex_match.Init(nullptr, itr->value.GetString()));
+        auto is_match = regex_match.Exec(nullptr, value).val;
+        if (is_match) {
+            return name; 
+        }
+    }
+    return "";
+  }
+
+ private:
+  rapidjson::Document regex_rules;
 };
 
 void RegisterRegexOpsOrDie(udf::Registry* registry);
