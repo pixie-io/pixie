@@ -166,12 +166,12 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(function LiveViewBreadcr
 
         // The scratch script should always appear at the top of the list for visibility. It doesn't get auto-selected
         // unless it's the only thing in the list.
-        const scratchIndex = scriptIds.indexOf(SCRATCH_SCRIPT.id);
+        const scratchIndex = ids.indexOf(SCRATCH_SCRIPT.id);
         if (scratchIndex !== -1) {
-          scriptIds.splice(scratchIndex, 1);
+          ids.splice(scratchIndex, 1);
           // Don't include SCRATCH in embedded views.
           if (!isEmbedded) {
-            scriptIds.unshift(SCRATCH_SCRIPT.id);
+            ids.unshift(SCRATCH_SCRIPT.id);
           }
         }
 
