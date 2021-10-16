@@ -17,7 +17,7 @@
 BUNDLE := gs://pixie-prod-artifacts/script-bundles/bundle-oss.json
 
 # Update dir name here if you want to add a new directory.
-dirs := px pxbeta sotw
+dirs := bpftrace px pxbeta sotw
 script_files := $(foreach dir,$(dirs),$(wildcard $(dir)/**/*))
 
 EXECUTABLES = px
