@@ -21,6 +21,7 @@ import ListItem from '@material-ui/core/ListItem';
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
 import OrgContext from 'app/common/org-context';
+import { ClusterContext } from 'app/common/cluster-context';
 import { GQLIDEPath } from 'app/types/schema';
 import Mustache from 'mustache';
 import * as React from 'react';
@@ -30,7 +31,7 @@ interface FlamegraphConfig {
   path: string;
 }
 
-export const executePathTemplate = ((tmplConfigs: GQLIDEPath[], symbol: string, fullPath: string)
+export const executePathTemplate = ((tmplConfigs: GQLIDEPath[], symbol: string, fullPath: string, cluster: string)
 : FlamegraphConfig[] => {
   if (!symbol) {
     return [];
@@ -58,6 +59,15 @@ export const executePathTemplate = ((tmplConfigs: GQLIDEPath[], symbol: string, 
   if (parsedPod != null && parsedPod.length > 1) {
     pod = parsedPod[1];
   }
+
+  // Parse namespace.
+  const reNs = /namespace: (.*?);/;
+  const parsedNs = reNs.exec(fullPath);
+  let ns = '';
+  if (parsedNs != null && parsedNs.length > 1) {
+    ns = parsedNs[1];
+  }
+
   // Fill in the template paths.
   const paths = tmplConfigs.map((tmpl) => (
     {
@@ -67,6 +77,8 @@ export const executePathTemplate = ((tmplConfigs: GQLIDEPath[], symbol: string, 
         symbol: encodeURIComponent(symbol),
         path: encodeURIComponent(path),
         pod: encodeURIComponent(pod),
+        namespace: encodeURIComponent(ns),
+        cluster: encodeURIComponent(cluster),
       }),
     }),
   );
@@ -88,8 +100,9 @@ export const FlamegraphIDEMenu: React.FC<FlamegraphIDEMenuProps> = React.memo(fu
   onClose,
 }) {
   const { org } = React.useContext(OrgContext);
+  const selectedClusterName = React.useContext(ClusterContext)?.selectedClusterName ?? '';
 
-  const paths = executePathTemplate(org.idePaths, symbol, fullPath);
+  const paths = executePathTemplate(org.idePaths, symbol, fullPath, selectedClusterName);
 
   // Gets the position of the current tooltip in Vega and overlays the menu on top.
   const getTooltip = React.useCallback(() => document.querySelector('.vg-tooltip'), []);
