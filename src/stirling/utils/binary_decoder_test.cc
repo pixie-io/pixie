@@ -30,6 +30,14 @@ namespace stirling {
 
 using ::testing::StrEq;
 
+TEST(Int24_t, VerifyInitializationAndBitShifting) {
+    Int24_t t = 1;
+    EXPECT_EQ(t << 8, 256);
+    // Assign an int that uses each of the 3 bytes
+    Int24_t t2 = 0x10111;
+    EXPECT_EQ(t2 << 8, 0x11100);
+}
+
 TEST(BinaryDecoderTest, ExtractChar) {
   std::string_view data("\xff\x02");
   BinaryDecoder bin_decoder(data);
@@ -41,11 +49,14 @@ TEST(BinaryDecoderTest, ExtractChar) {
 }
 
 TEST(BinaryDecoderTest, ExtractInt) {
-  std::string_view data("\x01\x01\x01\x01\x01\x01\x01");
+  std::string_view data("\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01");
   BinaryDecoder bin_decoder(data);
 
   ASSERT_OK_AND_EQ(bin_decoder.ExtractInt<int8_t>(), 1);
   ASSERT_OK_AND_EQ(bin_decoder.ExtractInt<int16_t>(), 257);
+  StatusOr<Int24_t> custom_int = bin_decoder.ExtractInt<Int24_t>();
+  ASSERT_OK_AND_EQ(custom_int, 65793);
+  EXPECT_EQ(sizeof(custom_int.ValueOrDie()), 3);
   ASSERT_OK_AND_EQ(bin_decoder.ExtractInt<int32_t>(), 16843009);
   EXPECT_EQ(0, bin_decoder.BufSize());
 }
