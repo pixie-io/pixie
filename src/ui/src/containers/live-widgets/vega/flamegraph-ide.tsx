@@ -28,7 +28,7 @@ import * as React from 'react';
 
 interface FlamegraphConfig {
   name: string;
-  path: string;
+  path: URL;
 }
 
 export const executePathTemplate = ((tmplConfigs: GQLIDEPath[], symbol: string, fullPath: string, cluster: string)
@@ -69,19 +69,21 @@ export const executePathTemplate = ((tmplConfigs: GQLIDEPath[], symbol: string, 
   }
 
   // Fill in the template paths.
-  const paths = tmplConfigs.map((tmpl) => (
-    {
-      name: tmpl.IDEName,
-      path: Mustache.render(tmpl.path, {
+  const paths = [];
+  tmplConfigs.forEach((tmpl) => {
+    try {
+      const filledPath = Mustache.render(tmpl.path, {
         function: encodeURIComponent(fn),
         symbol: encodeURIComponent(symbol),
         path: encodeURIComponent(path),
         pod: encodeURIComponent(pod),
         namespace: encodeURIComponent(ns),
         cluster: encodeURIComponent(cluster),
-      }),
-    }),
-  );
+      });
+      paths.push({ name: tmpl.IDEName, path: new URL(filledPath) });
+      // eslint-disable-next-line no-empty
+    } catch {}
+  });
 
   return paths;
 });
@@ -124,7 +126,7 @@ export const FlamegraphIDEMenu: React.FC<FlamegraphIDEMenuProps> = React.memo(fu
     </ListItem>
     {
       Array.from(paths.map((conf) => (
-        <Link target='_blank' key={conf.name} href={conf.path}>
+        <Link target='_blank' key={conf.name} href={conf.path.href}>
           <MenuItem>
             {conf.name}
           </MenuItem>
