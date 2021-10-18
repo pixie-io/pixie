@@ -229,3 +229,17 @@ end
 file '/tmp/fossa.tar.gz' do
   action :delete
 end
+
+remote_file '/tmp/lego.tar.gz' do
+  source node['lego']['download_path']
+  mode 0755
+  checksum node['lego']['sha256']
+end
+
+execute 'install lego' do
+  command 'tar xf /tmp/lego.tar.gz -C /opt/pixielabs/bin lego'
+end
+
+file '/tmp/lego.tar.gz' do
+  action :delete
+end

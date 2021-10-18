@@ -55,6 +55,7 @@ default['fossa']                     = {}
 default['golangci-lint']             = {}
 default['helm']                      = {}
 default['opm']                       = {}
+default['lego']                      = {}
 
 
 if node[:platform] == 'ubuntu'
@@ -150,6 +151,11 @@ if node[:platform] == 'ubuntu'
     'https://github.com/fossas/fossa-cli/releases/download/v1.1.10/fossa-cli_1.1.10_linux_amd64.tar.gz'
   default['fossa']['sha256']        =
     'a263aabf09308614a39d8486df722f3b03ab5b0f5060b655be1fd9def8e5619f'
+
+  default['lego']['download_path'] =
+    'https://github.com/go-acme/lego/releases/download/v4.5.3/lego_v4.5.3_linux_amd64.tar.gz'
+  default['lego']['sha256']        =
+    'd6a6dbf82ae9a1a7f9fbc8d85c224617a17337afa4284aaca6b0556a7347609d'
 elsif node[:platform] == 'mac_os_x'
   default['bazel']['download_path'] =
     'https://github.com/bazelbuild/bazel/releases/download/4.2.1/bazel-4.2.1-darwin-x86_64'
@@ -241,4 +247,9 @@ elsif node[:platform] == 'mac_os_x'
     'https://github.com/fossas/fossa-cli/releases/download/v1.1.10/fossa-cli_1.1.10_darwin_amd64.tar.gz'
   default['fossa']['sha256']        =
     '39f23d382c63381ec98e0b22cbf60c2007bdb699b034bfd37692a062ba254a8d'
+
+  default['lego']['download_path'] =
+    'https://github.com/go-acme/lego/releases/download/v4.5.3/lego_v4.5.3_darwin_amd64.tar.gz'
+  default['lego']['sha256']        =
+    'eaf2792d9731c911da671a6145eebd5ba136c20446adb542e7b1463ffe868388'
 end
