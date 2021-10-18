@@ -16,72 +16,54 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Script to generate certs.
-workspace=$(bazel info workspace 2> /dev/null)
-LEGO=${workspace}/lego
+set -e
+WORKSPACE=$(bazel info workspace 2> /dev/null)
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
-if [ $# -ne 3 ]; then
-  echo "Expected 3 Arguments: EMAIL and OUTDIR and NUMCERTS. Received $#."
-  exit 1
-fi
-EMAIL=$1
-OUTDIR=$2
-NUMCERTS=$3
+CERTS_DIR="$HOME/lego_certs"
+mkdir -p "${CERTS_DIR}/accounts/acme-v02.api.letsencrypt.org/prod@pixielabs.ai/keys/"
 
-function create_cert() {
-  if [ $# -ne 2 ]; then
-    echo "Expected 2 Arguments: ID and DOMAIN. Received $#."
-    exit 1
-  fi
+sops -d "${WORKSPACE}/credentials/certs/accounts/acme-v02.api.letsencrypt.org/prod@pixielabs.ai/account.json" > "${CERTS_DIR}/accounts/acme-v02.api.letsencrypt.org/prod@pixielabs.ai/account.json"
+sops -d "${WORKSPACE}/credentials/certs/accounts/acme-v02.api.letsencrypt.org/prod@pixielabs.ai/keys/prod@pixielabs.ai.key" > "${CERTS_DIR}/accounts/acme-v02.api.letsencrypt.org/prod@pixielabs.ai/keys/prod@pixielabs.ai.key"
 
-  ID=$1
-  MIDDOMAIN=$2
-  DOMAIN="*.${ID}.${MIDDOMAIN}"
-
-  FNAME_PREFIX="_.${ID}.${MIDDOMAIN}"
-
-  EXISTING_FILES=$(find "${OUTDIR}"/certificates -name "*${FNAME_PREFIX}*" | wc -l)
-  if [ "$EXISTING_FILES" -ne 0 ]; then
-    echo "Found ${EXISTING_FILES} files with same ID: ${ID}";
-    exit 1;
-  fi
-
-
-  $LEGO -k rsa4096 --email="$EMAIL" --domains="$DOMAIN" --dns='gcloud' --path="${OUTDIR}" -a run
+function run_lego() {
+  lego --email=prod@pixielabs.ai \
+       --dns=gcloud \
+       --path="${CERTS_DIR}" \
+       --key-type rsa4096 \
+       --dns.resolvers=8.8.8.8:53 \
+       --dns.resolvers=1.1.1.1:53 \
+       --dns.resolvers=127.0.0.53:53 \
+       --accept-tos \
+       --domains="$1" \
+       run
 }
 
+mapfile -t STAGING_DOMAINS < <(yq e 'keys' credentials/certs/staging/certs.yaml -M | cut -d '-' -f2 | cut -d '_' -f2 | grep -v sops)
+mapfile -t PROD_DOMAINS < <(yq e 'keys' credentials/certs/prod/certs.yaml -M | cut -d '-' -f2 | cut -d '_' -f2 | grep -v sops)
+
+typeset -A EXISTING_DOMAINS
+for DOMAIN in "${STAGING_DOMAINS[@]}"; do
+  EXISTING_DOMAINS["${DOMAIN}"]="true"
+done
+for DOMAIN in "${PROD_DOMAINS[@]}"; do
+  EXISTING_DOMAINS["${DOMAIN}"]="true"
+done
+
 function create_uuid_certs() {
-  if [ $# -ne 1 ]; then
-    echo "Expected 1 Arguments: DOMAIN. Received $#."
-    exit 1
-  fi
   SUBDOMAIN=$1
-  for i in $(seq 1 "${NUMCERTS}")
-  do
+  for i in {1..10}; do
     echo "Creating $i for $SUBDOMAIN"
-    UUID=$(uuidgen)
-    ADDRESS_ID=${UUID:0:8}
-    create_cert "$ADDRESS_ID" "$SUBDOMAIN"
+    ID=$(uuidgen | cut -c -8)
+    while [[ ${EXISTING_DOMAINS[".${ID}.${SUBDOMAIN}"]} == "true" ]]; do
+      ID=$(uuidgen | cut -c -8)
+    done
+    EXISTING_DOMAINS[".${ID}.${SUBDOMAIN}"]="true"
+    GCE_PROJECT="pixie-prod" run_lego "*.${ID}.${SUBDOMAIN}"
   done
 }
 
-# Prepare the output file.
-echo "Creating the dev certificates"
-
-# Save the original gcp project.
-ORIGINAL_GCP_PROJECT=$(gcloud config get-value project)
-gcloud config set project pl-dev-infra
-export GCE_PROJECT="pl-dev-infra"
-create_cert "default" "clusters.dev.withpixie.dev"
-
-
-echo "Creating the production certificates."
-
-gcloud config set project pixie-prod
-export GCE_PROJECT="pixie-prod"
-create_uuid_certs "clusters.withpixie.ai"
 create_uuid_certs "clusters.staging.withpixie.dev"
+create_uuid_certs "clusters.withpixie.ai"
 
-
-# # Return to the original GCP project.
-gcloud config set project "${ORIGINAL_GCP_PROJECT}"
+"${SCRIPT_DIR}/convert_certs_to_yaml.sh" "${CERTS_DIR}/certificates" "${WORKSPACE}/credentials/certs"
