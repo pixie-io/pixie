@@ -325,6 +325,7 @@ StatusOr<SimpleBlock> DecodeSimpleBlock(const llvm::ArrayRef<uint8_t>& block) {
 
   decoded_block.code = static_cast<llvm::dwarf::LocationAtom>(operation.getCode());
   decoded_block.operand = operation.getRawOperand(0);
+
   VLOG(1) << absl::Substitute("Decoded block: code=$0 operand=$1",
                               magic_enum::enum_name(decoded_block.code), decoded_block.operand);
 
@@ -343,8 +344,9 @@ StatusOr<uint64_t> GetMemberOffset(const DWARFDie& die) {
 
   // We've run into a case where the offset is encoded as a block instead of a constant.
   // See section 7.5.5 of the spec: http://dwarfstd.org/doc/DWARF5.pdf
-  // Or use llvm-dwarfdump on testdata/sockshop_payments_service to see an example.
-  // This handles that case as long as the block is simple (which is what we've seen in practice).
+  // Or use llvm-dwarfdump on src/stirling/obj_tools/testdata/go/sockshop_payments_service to see an
+  // example. This handles that case as long as the block is simple (which is what we've seen in
+  // practice).
   if (attr.getForm() == llvm::dwarf::DW_FORM_block1) {
     PL_ASSIGN_OR_RETURN(llvm::ArrayRef<uint8_t> offset_block,
                         AdaptLLVMOptional(attr.getAsBlock(), "Could not extract block."));
@@ -638,48 +640,88 @@ StatusOr<uint64_t> DwarfReader::GetArgumentTypeByteSize(std::string_view functio
   return error::Internal("Could not find argument.");
 }
 
-StatusOr<ArgLocation> GetDieArgumentLocation(const DWARFDie& die) {
+StatusOr<VarLocation> DwarfReader::GetDieLocationAttr(const DWARFDie& die) {
   PL_ASSIGN_OR_RETURN(const DWARFFormValue& loc_attr,
                       AdaptLLVMOptional(die.find(llvm::dwarf::DW_AT_location),
                                         "Could not find DW_AT_location for function argument."));
 
-  if (!loc_attr.isFormClass(DWARFFormValue::FC_Block) &&
-      !loc_attr.isFormClass(DWARFFormValue::FC_Exprloc)) {
-    return error::Internal("Unexpected Form: $0", magic_enum::enum_name(loc_attr.getForm()));
-  }
+  if (loc_attr.isFormClass(DWARFFormValue::FC_Block) ||
+      loc_attr.isFormClass(DWARFFormValue::FC_Exprloc)) {
+    PL_ASSIGN_OR_RETURN(llvm::ArrayRef<uint8_t> loc_block,
+                        AdaptLLVMOptional(loc_attr.getAsBlock(), "Could not extract location."));
 
-  PL_ASSIGN_OR_RETURN(llvm::ArrayRef<uint8_t> loc_block,
-                      AdaptLLVMOptional(loc_attr.getAsBlock(), "Could not extract location."));
+    PL_ASSIGN_OR_RETURN(SimpleBlock decoded_loc_block, DecodeSimpleBlock(loc_block));
 
-  PL_ASSIGN_OR_RETURN(SimpleBlock decoded_loc_block, DecodeSimpleBlock(loc_block));
-
-  if (decoded_loc_block.code == llvm::dwarf::LocationAtom::DW_OP_fbreg) {
-    if (decoded_loc_block.operand >= 0) {
-      return ArgLocation{.loc_type = LocationType::kStack, .offset = decoded_loc_block.operand};
-    } else {
-      decoded_loc_block.operand *= -1;
-      return ArgLocation{.loc_type = LocationType::kRegister, .offset = decoded_loc_block.operand};
+    if (decoded_loc_block.code == llvm::dwarf::LocationAtom::DW_OP_fbreg) {
+      if (decoded_loc_block.operand >= 0) {
+        return VarLocation{.loc_type = LocationType::kStack, .offset = decoded_loc_block.operand};
+      } else {
+        decoded_loc_block.operand *= -1;
+        return VarLocation{.loc_type = LocationType::kRegister,
+                           .offset = decoded_loc_block.operand};
+      }
     }
+
+    // DW_OP_call_frame_cfa is observed in golang dwarf symbols.
+    // This logic is probably not right, but appears to work for now.
+    // TODO(oazizi): Study call_frame_cfa blocks.
+    if (decoded_loc_block.code == llvm::dwarf::LocationAtom::DW_OP_call_frame_cfa) {
+      return VarLocation{.loc_type = LocationType::kStack, .offset = 0};
+    }
+
+    return error::Internal("Unsupported operand: $0",
+                           magic_enum::enum_name(decoded_loc_block.code));
   }
 
-  // DW_OP_call_frame_cfa is observed in golang dwarf symbols.
-  // This logic is probably not right, but appears to work for now.
-  // TODO(oazizi): Study call_frame_cfa blocks.
-  if (decoded_loc_block.code == llvm::dwarf::LocationAtom::DW_OP_call_frame_cfa) {
-    return ArgLocation{.loc_type = LocationType::kStack, .offset = 0};
+  if (loc_attr.isFormClass(DWARFFormValue::FC_SectionOffset)) {
+    PL_ASSIGN_OR_RETURN(uint64_t section_offset,
+                        AdaptLLVMOptional(loc_attr.getAsSectionOffset(),
+                                          "Could not extract location as section offset."));
+
+    llvm::Expected<llvm::DWARFLocationExpressionsVector> location_expr_vec =
+        die.getDwarfUnit()->findLoclistFromOffset(section_offset);
+
+    std::error_code ec = errorToErrorCode(location_expr_vec.takeError());
+    if (ec) {
+      return error::Internal("Expected DWARFLocationExpressionsVector: $0", ec.message());
+    }
+
+    if (location_expr_vec->empty()) {
+      return error::Internal("Emtpy DWARFLocationExpressionsVector");
+    }
+
+    // Now we have a vector of locations that look like the following:
+    //   [0x000000000047f120, 0x000000000047f14d): DW_OP_reg0 RAX
+    //   [0x000000000047f14d, 0x000000000047f1cd): DW_OP_call_frame_cfa)
+    // Note that there is an instruction address range. Within that range of instructions,
+    // we can expect to find the argument at the specified location.
+
+    // For now, we use the first location, assuming that it is valid for the function entry.
+    const llvm::DWARFLocationExpression& loc = location_expr_vec->front();
+    VLOG(1) << to_string(loc);
+
+    PL_ASSIGN_OR_RETURN(SimpleBlock decoded_block, DecodeSimpleBlock(loc.Expr));
+
+    if (decoded_block.code >= llvm::dwarf::LocationAtom::DW_OP_reg0 &&
+        decoded_block.code <= llvm::dwarf::LocationAtom::DW_OP_reg31) {
+      int reg_num = decoded_block.code - llvm::dwarf::LocationAtom::DW_OP_reg0;
+      return VarLocation{.loc_type = LocationType::kRegister, .offset = reg_num};
+    }
+
+    return error::Unimplemented("Unsupported code (location atom): $0", decoded_block.code);
   }
 
-  return error::Internal("Unsupported operand: $0", magic_enum::enum_name(decoded_loc_block.code));
+  return error::Internal("Unsupported Form: $0", magic_enum::enum_name(loc_attr.getForm()));
 }
 
-StatusOr<ArgLocation> DwarfReader::GetArgumentLocation(std::string_view function_symbol_name,
+StatusOr<VarLocation> DwarfReader::GetArgumentLocation(std::string_view function_symbol_name,
                                                        std::string_view arg_name) {
   PL_ASSIGN_OR_RETURN(const DWARFDie& function_die,
                       GetMatchingDIE(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
 
   for (const auto& die : GetParamDIEs(function_die)) {
     if (die.getName(llvm::DINameKind::ShortName) == arg_name) {
-      return GetDieArgumentLocation(die);
+      return GetDieLocationAttr(die);
     }
   }
   return error::Internal("Could not find argument.");

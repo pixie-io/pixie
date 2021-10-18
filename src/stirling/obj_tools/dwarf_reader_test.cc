@@ -21,7 +21,10 @@
 #include "src/common/testing/test_environment.h"
 #include "src/common/testing/testing.h"
 
-constexpr std::string_view kTestGoBinary = "src/stirling/obj_tools/testdata/go/test_go_1_16_binary";
+constexpr std::string_view kTestGo1_16Binary =
+    "src/stirling/obj_tools/testdata/go/test_go_1_16_binary";
+constexpr std::string_view kTestGo1_17Binary =
+    "src/stirling/obj_tools/testdata/go/test_go_1_17_binary";
 constexpr std::string_view kGoGRPCServer =
     "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/server_/server";
 constexpr std::string_view kCppBinary = "src/stirling/obj_tools/testdata/cc/test_exe";
@@ -40,6 +43,9 @@ using ::testing::Pair;
 using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
 
+// Automatically converts ToString() to stream operator for gtest.
+using ::px::operator<<;
+
 struct DwarfReaderTestParam {
   bool index;
 };
@@ -48,12 +54,14 @@ class DwarfReaderTest : public ::testing::TestWithParam<DwarfReaderTestParam> {
  protected:
   DwarfReaderTest()
       : kCppBinaryPath(px::testing::BazelBinTestFilePath(kCppBinary)),
-        kGoBinaryPath(px::testing::TestFilePath(kTestGoBinary)),
+        kGo1_16BinaryPath(px::testing::TestFilePath(kTestGo1_16Binary)),
+        kGo1_17BinaryPath(px::testing::TestFilePath(kTestGo1_17Binary)),
         kGoServerBinaryPath(px::testing::BazelBinTestFilePath(kGoGRPCServer)),
         kGoBinaryUnconventionalPath(px::testing::TestFilePath(kGoBinaryUnconventional)) {}
 
   const std::string kCppBinaryPath;
-  const std::string kGoBinaryPath;
+  const std::string kGo1_16BinaryPath;
+  const std::string kGo1_17BinaryPath;
   const std::string kGoServerBinaryPath;
   const std::string kGoBinaryUnconventionalPath;
 };
@@ -82,7 +90,7 @@ TEST_P(DwarfReaderTest, CppGetStructByteSize) {
 TEST_P(DwarfReaderTest, GolangGetStructByteSize) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kGoBinaryPath, p.index));
+                       DwarfReader::Create(kGo1_16BinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetStructByteSize("main.Vertex"), 16);
 }
@@ -100,7 +108,7 @@ TEST_P(DwarfReaderTest, CppGetStructMemberInfo) {
 TEST_P(DwarfReaderTest, GoGetStructMemberInfo) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kGoBinaryPath, p.index));
+                       DwarfReader::Create(kGo1_16BinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberInfo("main.Vertex", "Y"),
                    (StructMemberInfo{8, TypeInfo{VarType::kBaseType, "float64"}}));
@@ -120,7 +128,7 @@ TEST_P(DwarfReaderTest, CppGetStructMemberOffset) {
 TEST_P(DwarfReaderTest, GoGetStructMemberOffset) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kGoBinaryPath, p.index));
+                       DwarfReader::Create(kGo1_16BinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("main.Vertex", "Y"), 8);
   EXPECT_NOT_OK(dwarf_reader->GetStructMemberOffset("main.Vertex", "bogus"));
@@ -183,7 +191,7 @@ TEST_P(DwarfReaderTest, CppGetStructSpec) {
 TEST_P(DwarfReaderTest, GoGetStructSpec) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kGoBinaryPath, p.index));
+                       DwarfReader::Create(kGo1_16BinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(
       dwarf_reader->GetStructSpec("main.OuterStruct"),
@@ -239,7 +247,7 @@ TEST_P(DwarfReaderTest, CppArgumentTypeByteSize) {
 TEST_P(DwarfReaderTest, GolangArgumentTypeByteSize) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kGoBinaryPath, p.index));
+                       DwarfReader::Create(kGo1_16BinaryPath, p.index));
 
   // v is of type *Vertex.
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("main.(*Vertex).Scale", "v"), 8);
@@ -255,36 +263,58 @@ TEST_P(DwarfReaderTest, CppArgumentLocation) {
                        DwarfReader::Create(kCppBinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("ABCSum32", "x"),
-                   (ArgLocation{.loc_type = LocationType::kRegister, .offset = 32}));
+                   (VarLocation{.loc_type = LocationType::kRegister, .offset = 32}));
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("ABCSum32", "y"),
-                   (ArgLocation{.loc_type = LocationType::kRegister, .offset = 64}));
+                   (VarLocation{.loc_type = LocationType::kRegister, .offset = 64}));
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("CanYouFindThis", "a"),
-                   (ArgLocation{.loc_type = LocationType::kRegister, .offset = 4}));
+                   (VarLocation{.loc_type = LocationType::kRegister, .offset = 4}));
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("CanYouFindThis", "b"),
-                   (ArgLocation{.loc_type = LocationType::kRegister, .offset = 8}));
+                   (VarLocation{.loc_type = LocationType::kRegister, .offset = 8}));
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("SomeFunctionWithPointerArgs", "a"),
-                   (ArgLocation{.loc_type = LocationType::kRegister, .offset = 8}));
+                   (VarLocation{.loc_type = LocationType::kRegister, .offset = 8}));
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("SomeFunctionWithPointerArgs", "x"),
-                   (ArgLocation{.loc_type = LocationType::kRegister, .offset = 16}));
+                   (VarLocation{.loc_type = LocationType::kRegister, .offset = 16}));
 }
 
-TEST_P(DwarfReaderTest, GolangArgumentLocation) {
+TEST_P(DwarfReaderTest, Golang1_16ArgumentLocation) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kGoBinaryPath, p.index));
+                       DwarfReader::Create(kGo1_16BinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).Scale", "v"),
-                   (ArgLocation{.loc_type = LocationType::kStack, .offset = 0}));
+                   (VarLocation{.loc_type = LocationType::kStack, .offset = 0}));
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).Scale", "f"),
-                   (ArgLocation{.loc_type = LocationType::kStack, .offset = 8}));
+                   (VarLocation{.loc_type = LocationType::kStack, .offset = 8}));
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).CrossScale", "v"),
-                   (ArgLocation{.loc_type = LocationType::kStack, .offset = 0}));
+                   (VarLocation{.loc_type = LocationType::kStack, .offset = 0}));
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).CrossScale", "v2"),
-                   (ArgLocation{.loc_type = LocationType::kStack, .offset = 8}));
+                   (VarLocation{.loc_type = LocationType::kStack, .offset = 8}));
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).CrossScale", "f"),
-                   (ArgLocation{.loc_type = LocationType::kStack, .offset = 24}));
+                   (VarLocation{.loc_type = LocationType::kStack, .offset = 24}));
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.Vertex.Abs", "v"),
-                   (ArgLocation{.loc_type = LocationType::kStack, .offset = 0}));
+                   (VarLocation{.loc_type = LocationType::kStack, .offset = 0}));
+}
+
+TEST_P(DwarfReaderTest, Golang1_17ArgumentLocation) {
+  DwarfReaderTestParam p = GetParam();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       DwarfReader::Create(kGo1_17BinaryPath, p.index));
+
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).Scale", "v"),
+                   (VarLocation{.loc_type = LocationType::kRegister, .offset = 0}));
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).Scale", "f"),
+                   (VarLocation{.loc_type = LocationType::kRegister, .offset = 17}));
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).CrossScale", "v"),
+                   (VarLocation{.loc_type = LocationType::kRegister, .offset = 0}));
+
+  // TODO(oazizi): Support multi-piece arguments that span multiple registers.
+  EXPECT_NOT_OK(dwarf_reader->GetArgumentLocation("main.(*Vertex).CrossScale", "v2"));
+
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).CrossScale", "f"),
+                   (VarLocation{.loc_type = LocationType::kRegister, .offset = 19}));
+
+  // TODO(oazizi): Support multi-piece arguments that span multiple registers.
+  EXPECT_NOT_OK(dwarf_reader->GetArgumentLocation("main.Vertex.Abs", "v"));
 }
 
 // Note the differences here and the results in CppArgumentStackPointerOffset.
@@ -334,7 +364,7 @@ TEST_P(DwarfReaderTest, GoFunctionArgInfo) {
 
   {
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                         DwarfReader::Create(kGoBinaryPath, p.index));
+                         DwarfReader::Create(kGo1_16BinaryPath, p.index));
 
     EXPECT_OK_AND_THAT(
         dwarf_reader->GetFunctionArgInfo("main.(*Vertex).Scale"),
@@ -406,11 +436,11 @@ TEST_P(DwarfReaderTest, GoFunctionArgInfo) {
   }
 }
 
-TEST_P(DwarfReaderTest, GoFunctionArgLocationConsistency) {
+TEST_P(DwarfReaderTest, GoFunctionVarLocationConsistency) {
   DwarfReaderTestParam p = GetParam();
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kGoBinaryPath, p.index));
+                       DwarfReader::Create(kGo1_16BinaryPath, p.index));
 
   // First run GetFunctionArgInfo to automatically get all arguments.
   ASSERT_OK_AND_ASSIGN(auto function_arg_locations,
@@ -421,7 +451,7 @@ TEST_P(DwarfReaderTest, GoFunctionArgLocationConsistency) {
 
   // Finally, run a consistency check between the two methods.
   for (auto& [arg_name, arg_info] : function_arg_locations) {
-    ASSERT_OK_AND_ASSIGN(ArgLocation location,
+    ASSERT_OK_AND_ASSIGN(VarLocation location,
                          dwarf_reader->GetArgumentLocation("main.MixedArgTypes", arg_name));
     EXPECT_EQ(location, arg_info.location)
         << absl::Substitute("Argument $0 failed consistency check", arg_name);

@@ -84,8 +84,13 @@ struct StructMemberInfo {
   }
 };
 
-struct ArgLocation {
+// Location of a variable or argument, according to DWARF information.
+// The location may be on the stack or in registers.
+struct VarLocation {
   LocationType loc_type = LocationType::kUnknown;
+
+  // For stack locations, the offset represents the offset off the SP.
+  // For register locations, the offset represents the register number.
   int64_t offset = std::numeric_limits<uint64_t>::max();
 
   std::string ToString() const {
@@ -95,7 +100,7 @@ struct ArgLocation {
 
 struct ArgInfo {
   TypeInfo type_info;
-  ArgLocation location;
+  VarLocation location;
 
   // If true, this argument is really a return value.
   // Used by golang return values which are really function arguments from a DWARF perspective.
@@ -140,7 +145,7 @@ inline bool operator==(const StructMemberInfo& a, const StructMemberInfo& b) {
   return a.offset == b.offset && a.type_info == b.type_info;
 }
 
-inline bool operator==(const ArgLocation& a, const ArgLocation& b) {
+inline bool operator==(const VarLocation& a, const VarLocation& b) {
   return a.loc_type == b.loc_type && a.offset == b.offset;
 }
 
@@ -260,7 +265,7 @@ class DwarfReader {
    * NOTE: This function currently uses the DW_AT_location. It is NOT yet robust,
    * and may fail for certain functions. Compare this function to GetFunctionArgInfo().
    */
-  StatusOr<ArgLocation> GetArgumentLocation(std::string_view function_symbol_name,
+  StatusOr<VarLocation> GetArgumentLocation(std::string_view function_symbol_name,
                                             std::string_view arg_name);
 
   /**
@@ -300,6 +305,18 @@ class DwarfReader {
   static Status GetMatchingDIEs(llvm::DWARFContext::unit_iterator_range CUs, std::string_view name,
                                 std::optional<llvm::dwarf::Tag> tag,
                                 std::vector<llvm::DWARFDie>* dies_out);
+
+  // Get the DW_AT_location of a DIE. Used for getting the location of variables,
+  // which may be either on the stack or in registers.
+  // Currently used on function arguments.
+  //
+  // Example:
+  //     0x00062106:   DW_TAG_formal_parameter
+  //                    DW_AT_name [DW_FORM_string] ("v")
+  //                    ...
+  //                    DW_AT_location [DW_FORM_block1] (DW_OP_call_frame_cfa)
+  // This example should return the location on the stack.
+  StatusOr<VarLocation> GetDieLocationAttr(const llvm::DWARFDie& die);
 
   // Walks the struct_die for all members, recursively visiting any members which are also structs,
   // to capture information of all base type members of the struct in a flattened form.
