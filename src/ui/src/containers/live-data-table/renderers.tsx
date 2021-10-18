@@ -27,9 +27,9 @@ import {
   HTTPStatusCodeRenderer,
   JSONData,
   PercentRenderer,
-  PortRenderer, ThroughputBytesRenderer, ThroughputRenderer,
+  PortRenderer,
+  ThroughputRenderer,
 } from 'app/containers/format-data/format-data';
-import { EmbedState } from 'app/containers/live-widgets/utils/live-view-params';
 import {
   EntityLink,
   isEntityType,
@@ -39,60 +39,21 @@ import {
 } from 'app/containers/live-widgets/utils';
 import { QuantilesBoxWhisker, SelectedPercentile } from 'app/components';
 import { DataType, SemanticType } from 'app/types/generated/vizierapi_pb';
-import { Arguments } from 'app/utils/args-utils';
+import { Arguments, stableSerializeArgs } from 'app/utils/args-utils';
 import {
   getDataRenderer,
   looksLikeAlertCol,
   looksLikeCPUCol,
-  looksLikeLatencyCol, looksLikePIDCol,
+  looksLikeLatencyCol,
+  looksLikePIDCol,
 } from 'app/utils/format-data';
-import { getLatencyNSLevel, getColor } from 'app/utils/metric-thresholds';
-import { Theme } from '@material-ui/core/styles';
+import { getColor, getLatencyNSLevel } from 'app/utils/metric-thresholds';
+import { useTheme } from '@material-ui/core/styles';
 import { VizierTable } from 'app/api';
+import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { ColumnDisplayInfo, QuantilesDisplayState } from './column-display-info';
 
 interface Quant { p50: number; p90: number; p99: number; }
-
-// Expects data to contain floats in p50, p90, and p99 fields.
-export function quantilesRenderer(
-  display: ColumnDisplayInfo,
-  theme: Theme,
-  updateDisplay: (ColumnDisplayInfo) => void,
-  max = 0,
-): (v: Quant) => React.ReactElement {
-  return function renderer(val) {
-    const { p50, p90, p99 } = val;
-    const quantilesDisplay = display.displayState as QuantilesDisplayState;
-    const selectedPercentile = quantilesDisplay.selectedPercentile || 'p99';
-
-    const floatRenderer = getDataRenderer(DataType.FLOAT64);
-    const p50Display = floatRenderer(p50);
-    const p90Display = floatRenderer(p90);
-    const p99Display = floatRenderer(p99);
-
-    return (
-      <QuantilesBoxWhisker
-        p50={p50}
-        p90={p90}
-        p99={p99}
-        max={max}
-        p50Display={p50Display}
-        p90Display={p90Display}
-        p99Display={p99Display}
-        p50HoverFill={getColor('none', theme)}
-        p90HoverFill={getColor('none', theme)}
-        p99HoverFill={getColor('none', theme)}
-        selectedPercentile={selectedPercentile}
-        onChangePercentile={(newPercentile: SelectedPercentile) => {
-          updateDisplay({
-            ...display,
-            displayState: { selectedPercentile: newPercentile },
-          });
-        }}
-      />
-    );
-  };
-}
 
 // Helper to durationQuantilesRenderer since it takes in a string, rather than a span
 // for p50Display et al.
@@ -100,31 +61,79 @@ function dataWithUnitsToString(dataWithUnits: DataWithUnits): string {
   return `${dataWithUnits.val} ${dataWithUnits.units}`;
 }
 
-// Expects data to contain p50, p90, and p99 fields.
-export function durationQuantilesRenderer(
+interface LiveCellProps {
+  data: any;
+}
+
+function getEntityCellRenderer(
+  st: SemanticType, clusterName: string, propagatedArgs?: Arguments,
+): React.ComponentType<LiveCellProps> {
+  return React.memo<LiveCellProps>(function EntityCell({ data }) {
+    const { embedState } = React.useContext(LiveRouteContext);
+
+    let entities: string[] = [data];
+
+    if (st === SemanticType.ST_SERVICE_NAME) {
+      try {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) {
+          entities = parsed;
+        }
+      } catch { /**/ }
+    }
+
+    const components = entities.map((entity, i) => (
+      <React.Fragment key={i}>
+        {i > 0 && ', '}
+        <EntityLink
+          entity={data}
+          semanticType={st}
+          clusterName={clusterName}
+          embedState={embedState}
+          propagatedParams={propagatedArgs}
+        />
+      </React.Fragment>
+    ));
+
+    return <>{components}</>;
+  });
+}
+
+function getQuantilesCellRenderer(
   display: ColumnDisplayInfo,
-  theme: Theme,
   updateDisplay: (ColumnDisplayInfo) => void,
   max = 0,
-): (val: Quant) => React.ReactElement {
-  return function renderer(val) {
-    const { p50, p90, p99 } = val;
-    const quantilesDisplay = display.displayState as QuantilesDisplayState;
-    const selectedPercentile = quantilesDisplay.selectedPercentile || 'p99';
-    let p50HoverFill = getColor('none', theme);
-    let p90HoverFill = getColor('none', theme);
-    let p99HoverFill = getColor('none', theme);
+  isDuration = false,
+): React.ComponentType<LiveCellProps> {
+  const formatFloat = isDuration
+    ? ((val: number) => dataWithUnitsToString(formatDuration(val)))
+    : getDataRenderer(DataType.FLOAT64);
+
+  return React.memo<LiveCellProps>(function QuantilesCell({ data }) {
+    const theme = useTheme();
+    const fill = React.useMemo(() => getColor('none', theme), [theme]);
+
+    const { p50, p90, p99 } = data as Quant;
+
+    /* eslint-disable react-memo/require-usememo */
+    let p50HoverFill = fill;
+    let p90HoverFill = fill;
+    let p99HoverFill = fill;
+    /* eslint-enable react-memo/require-usememo */
 
     // individual keys in ST_DURATION_NS_QUANTILES are FLOAT64 ST_DURATION_NS.
-    if (looksLikeLatencyCol(display.columnName, SemanticType.ST_DURATION_NS, DataType.FLOAT64)) {
+    if (isDuration && looksLikeLatencyCol(display.columnName, SemanticType.ST_DURATION_NS, DataType.FLOAT64)) {
       p50HoverFill = getColor(getLatencyNSLevel(p50), theme);
       p90HoverFill = getColor(getLatencyNSLevel(p90), theme);
       p99HoverFill = getColor(getLatencyNSLevel(p99), theme);
     }
 
-    const p50Display = dataWithUnitsToString(formatDuration(p50));
-    const p90Display = dataWithUnitsToString(formatDuration(p90));
-    const p99Display = dataWithUnitsToString(formatDuration(p99));
+    const onChangePercentile = React.useCallback((newPercentile: SelectedPercentile) => {
+      updateDisplay({
+        ...display,
+        displayState: { selectedPercentile: newPercentile },
+      });
+    }, []);
 
     return (
       <QuantilesBoxWhisker
@@ -132,180 +141,104 @@ export function durationQuantilesRenderer(
         p90={p90}
         p99={p99}
         max={max}
-        p50Display={p50Display}
-        p90Display={p90Display}
-        p99Display={p99Display}
+        p50Display={formatFloat(p50)}
+        p90Display={formatFloat(p90)}
+        p99Display={formatFloat(p99)}
         p50HoverFill={p50HoverFill}
         p90HoverFill={p90HoverFill}
         p99HoverFill={p99HoverFill}
-        selectedPercentile={selectedPercentile}
-        onChangePercentile={(newPercentile: SelectedPercentile) => {
-          updateDisplay({
-            ...display,
-            displayState: { selectedPercentile: newPercentile },
-          });
-        }}
+        selectedPercentile={(display.displayState as QuantilesDisplayState).selectedPercentile || 'p99'}
+        onChangePercentile={onChangePercentile}
       />
     );
-  };
+  });
 }
 
-function renderWrapper(RendererFunc: any /* TODO(zasgar): revisit this typing */) {
-  return function renderer(val) {
-    return <RendererFunc data={val} />;
-  };
-}
+function getScriptReferenceCellRenderer(
+  clusterName: string, propagatedArgs?: Arguments,
+): React.ComponentType<LiveCellProps> {
+  return React.memo(function ScriptReferenceCell({ data }) {
+    const { embedState } = React.useContext(LiveRouteContext);
+    const { script, label, args } = data;
+    const stabilizedArgs = stableSerializeArgs(args);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const mergedArgs = React.useMemo(() => ({ ...propagatedArgs, ...args }), [stabilizedArgs]);
 
-const statusRenderer = (st: SemanticType) => (v: string) => toStatusIndicator(v, st);
-
-const serviceRendererFuncGen = (clusterName: string, embedState: EmbedState,
-  propagatedArgs?: Arguments) => function Service(v) {
-  try {
-    // Hack to handle cases like "['pl/service1', 'pl/service2']" which show up for pods that are part of 2 services.
-    const parsedArray = JSON.parse(v);
-    if (Array.isArray(parsedArray)) {
-      return (
-        <>
-          {
-              parsedArray.map((entity, i) => (
-                <span key={i}>
-                  {i > 0 && ', '}
-                  <EntityLink
-                    entity={entity}
-                    semanticType={SemanticType.ST_SERVICE_NAME}
-                    clusterName={clusterName}
-                    embedState={embedState}
-                    propagatedParams={propagatedArgs}
-                  />
-                </span>
-              ))
-            }
-        </>
-      );
-    }
-  } catch (e) {
-    // noop.
-  }
-  return <EntityLink
-    entity={v}
-    semanticType={SemanticType.ST_SERVICE_NAME}
-    clusterName={clusterName}
-    embedState={embedState}
-    propagatedParams={propagatedArgs}
-  />;
-};
-
-const entityRenderer = (st: SemanticType, clusterName: string, embedState: EmbedState,
-  propagatedArgs?: Arguments) => {
-  if (st === SemanticType.ST_SERVICE_NAME) {
-    return serviceRendererFuncGen(clusterName, embedState, propagatedArgs);
-  }
-  return function Entity(v) {
     return (
-      <EntityLink
-        entity={v}
-        semanticType={st}
+      <ScriptReference
+        label={label}
         clusterName={clusterName}
+        script={script}
         embedState={embedState}
-        propagatedParams={propagatedArgs}
+        args={mergedArgs}
       />
     );
-  };
-};
+  });
+}
 
-const scriptReferenceRenderer = (clusterName: string, embedState: EmbedState,
-  propagatedArgs?: Arguments) => (function Reference(v) {
-  const { script, label, args } = v;
-  const mergedArgs = { ...propagatedArgs, ...args };
-  return (
-    <ScriptReference
-      label={label}
-      clusterName={clusterName}
-      script={script}
-      embedState={embedState}
-      args={mergedArgs}
-    />
-  );
+const JSONCell = React.memo<LiveCellProps>(function JSONCell({ data }) {
+  try {
+    const parsed = JSON.parse(data);
+    return <JSONData data={parsed} />;
+  } catch {
+    return <>{data}</>;
+  }
 });
 
-const CPUDataWrapper = (data: any) => <CPUData data={data} />;
-const AlertDataWrapper = (data: any) => <AlertData data={data} />;
-const PlainNumberWrapper = (data: any) => <>{data}</>;
+const PlainCell = React.memo<LiveCellProps>(function PlainCell({ data }) {
+  return <>{data}</>;
+});
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function liveCellRenderer(
+function getDataCell(formatter: (data: any) => string) {
+  return React.memo<LiveCellProps>(function DataCell({ data }) {
+    return <>{formatter(data)}</>;
+  });
+}
+
+export function getLiveCellRenderer(
+  table: VizierTable,
   display: ColumnDisplayInfo,
   updateDisplay: (ColumnDisplayInfo) => void,
   clusterName: string,
-  table: VizierTable,
-  theme: Theme,
-  embedState: EmbedState,
   propagatedArgs?: Arguments,
-) {
-  const dt = display.type;
-  const st = display.semanticType;
-  const name = display.columnName;
-  const renderer = getDataRenderer(dt);
+): React.ComponentType<LiveCellProps> {
+  const { type: dt, semanticType: st, columnName } = display;
+  const dataRenderer = getDataRenderer(dt);
 
   if (isEntityType(st)) {
-    return entityRenderer(st, clusterName, embedState, propagatedArgs);
+    return getEntityCellRenderer(st, clusterName, propagatedArgs);
   }
 
   switch (st) {
     case SemanticType.ST_QUANTILES:
-      return quantilesRenderer(display, theme, updateDisplay, table.maxQuantiles.get(display.columnName));
+      return getQuantilesCellRenderer(display, updateDisplay, table.maxQuantiles.get(display.columnName), false);
     case SemanticType.ST_DURATION_NS_QUANTILES:
-      return durationQuantilesRenderer(display, theme, updateDisplay, table.maxQuantiles.get(display.columnName));
+      return getQuantilesCellRenderer(display, updateDisplay, table.maxQuantiles.get(display.columnName), true);
     case SemanticType.ST_PORT:
-      return renderWrapper(PortRenderer);
+      return PortRenderer;
     case SemanticType.ST_DURATION_NS:
-      return renderWrapper(DurationRenderer);
+      return DurationRenderer;
     case SemanticType.ST_BYTES:
-      return renderWrapper(BytesRenderer);
+      return BytesRenderer;
     case SemanticType.ST_HTTP_RESP_STATUS:
-      return renderWrapper(HTTPStatusCodeRenderer);
+      return HTTPStatusCodeRenderer;
     case SemanticType.ST_PERCENT:
-      return renderWrapper(PercentRenderer);
+      return PercentRenderer;
     case SemanticType.ST_THROUGHPUT_PER_NS:
-      return renderWrapper(ThroughputRenderer);
-    case SemanticType.ST_THROUGHPUT_BYTES_PER_NS:
-      return renderWrapper(ThroughputBytesRenderer);
+      return ThroughputRenderer;
     case SemanticType.ST_SCRIPT_REFERENCE:
-      return scriptReferenceRenderer(clusterName, embedState, propagatedArgs);
+      return getScriptReferenceCellRenderer(clusterName, propagatedArgs);
     default:
       break;
   }
 
-  if (STATUS_TYPES.has(st)) {
-    return statusRenderer(st);
-  }
+  if (STATUS_TYPES.has(st)) return getDataCell((data) => toStatusIndicator(data, st));
 
-  if (looksLikeCPUCol(name, st, dt)) {
-    return CPUDataWrapper;
-  }
+  if (looksLikeCPUCol(columnName, st, dt)) return CPUData;
+  if (looksLikeAlertCol(columnName, dt)) return AlertData;
+  if (looksLikePIDCol(columnName, dt)) return PlainCell;
 
-  if (looksLikeAlertCol(name, dt)) {
-    return AlertDataWrapper;
-  }
+  if (dt !== DataType.STRING) return getDataCell(dataRenderer);
 
-  if (looksLikePIDCol(name, dt)) {
-    return PlainNumberWrapper;
-  }
-
-  if (dt !== DataType.STRING) {
-    return renderer;
-  }
-
-  return (v) => {
-    try {
-      const jsonObj = JSON.parse(v);
-      return (
-        <JSONData
-          data={jsonObj}
-        />
-      );
-    } catch {
-      return v;
-    }
-  };
+  return JSONCell;
 }

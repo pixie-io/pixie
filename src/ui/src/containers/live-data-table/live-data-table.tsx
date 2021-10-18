@@ -25,9 +25,8 @@ import { buildClass, CellAlignment } from 'app/components';
 import { useTheme, makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import { ClusterContext } from 'app/common/cluster-context';
-import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { JSONData } from 'app/containers/format-data/format-data';
-import { liveCellRenderer } from 'app/containers/live-data-table/renderers';
+import { getLiveCellRenderer } from 'app/containers/live-data-table/renderers';
 import { getSortFunc } from 'app/containers/live-data-table/sort-funcs';
 import { useLatestRowCount } from 'app/context/results-context';
 import { AutoSizerContext, withAutoSizerContext } from 'app/utils/autosizer';
@@ -58,7 +57,6 @@ function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutte
   // Some cell renderers need a bit of extra information that isn't directly related to the table.
   const theme = useTheme();
   const { selectedClusterName: cluster } = React.useContext(ClusterContext);
-  const { embedState } = React.useContext(LiveRouteContext);
 
   // Ensure that useConvertedTable re-renders when the table data is appended to (memoization doesn't see otherwise).
   // Using table.rows.length in memo dependencies below still works, since that value updates on re-render.
@@ -75,8 +73,7 @@ function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutte
       setDisplayMap(new Map<string, ColumnDisplayInfo>(displayMap));
     };
 
-    const renderer = liveCellRenderer(
-      display, updateDisplay, cluster, table, theme, embedState, propagatedArgs);
+    const Renderer = getLiveCellRenderer(table, display, updateDisplay, cluster, propagatedArgs);
 
     const sortFunc = getSortFunc(display);
 
@@ -95,10 +92,10 @@ function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutte
     return {
       Header: titleFromInfo(display),
       accessor: col.getColumnName(),
+      // TODO(nick,PC-1123): We're not doing width weights yet. Need to. Convert to ratio of default in DataTable?
+      // TODO(nick,PC-1102): Head/tail mode (data-table.tsx) for not-the-data-drawer.
       Cell({ value }) {
-        // TODO(nick,PC-1123): We're not doing width weights yet. Need to. Convert to ratio of default in DataTable?
-        // TODO(nick,PC-1102): Head/tail mode (data-table.tsx) for not-the-data-drawer.
-        return value != null ? renderer(value) : null;
+        return value != null ? <Renderer data={value} /> : null;
       },
       original: col,
       align: justify,
@@ -107,9 +104,7 @@ function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutte
         return sortFunc(a.original, b.original);
       },
     };
-    // We monitor the length of the data array, not its identity.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cluster, displayMap, embedState, gutterColumn, propagatedArgs, table.rows.length, theme]);
+  }, [table, cluster, displayMap, gutterColumn, propagatedArgs, theme]);
 
   const columns = React.useMemo<ReactTable['columns']>(
     () => table.relation

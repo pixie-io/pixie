@@ -23,6 +23,7 @@ import {
   AlertData, DurationRenderer, JSONData, formatBytes, formatDuration,
 } from './format-data';
 
+/* eslint-disable react-memo/require-usememo */
 describe('formatters Test', () => {
   it('should handle 0 Bytes correctly', () => {
     expect(formatBytes(0)).toEqual({ units: '\u00a0B', val: '0' });
@@ -54,22 +55,19 @@ describe('formatters Test', () => {
 
 describe('DurationRenderer test', () => {
   it('should render correctly for low latency', () => {
-    const component = DurationRenderer({ data: 20 * 1000 * 1000 });
-    const { container } = render(component);
+    const { container } = render(<DurationRenderer data={20 * 1000 * 1000} />);
 
     expect(container).toMatchSnapshot();
   });
 
   it('should render correctly for medium latency', () => {
-    const component = DurationRenderer({ data: 250 * 1000 * 1000 });
-    const { container } = render(component);
+    const { container } = render(<DurationRenderer data={250 * 1000 * 1000} />);
 
     expect(container).toMatchSnapshot();
   });
 
   it('should render correctly for high latency', () => {
-    const component = DurationRenderer({ data: 400 * 1000 * 1000 });
-    const { container } = render(component);
+    const { container } = render(<DurationRenderer data={400 * 1000 * 1000} />);
 
     expect(container).toMatchSnapshot();
   });
@@ -77,7 +75,7 @@ describe('DurationRenderer test', () => {
 
 describe('<AlertData/> test', () => {
   it('should render correctly for true alert', () => {
-    const { container } = render(<AlertData data />);
+    const { container } = render(<AlertData data={true} />);
 
     expect(container).toMatchSnapshot();
   });

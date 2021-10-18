@@ -60,10 +60,10 @@ const useJsonStyles = makeStyles(({ palette }: Theme) => createStyles({
   },
 }), { name: 'JSONData' });
 
-export const AlertData: React.FC<{ data: any }> = ({ data }) => {
+export const AlertData: React.FC<{ data: any }> = React.memo(function AlertData({ data }) {
   const classes = useAlertDataStyles();
   return <div className={classes[data]}>{formatBoolData(data)}</div>;
-};
+});
 
 interface JSONDataProps {
   data: any;
@@ -179,20 +179,20 @@ const useGaugeStyles = makeStyles(({ palette }: Theme) => createStyles({
   },
 }), { name: 'GaugeData' });
 
-export const GaugeDataBase: React.FC<GaugeDataProps> = ({ getLevel, data }) => {
+export const GaugeDataBase: React.FC<GaugeDataProps> = React.memo(function GaugeDataBase({ getLevel, data }) {
   const classes = useGaugeStyles();
   const floatVal = parseFloat(data);
   return <div className={classes[getLevel(floatVal)]}>{formatFloat64Data(data)}</div>;
-};
+});
 
-export const GaugeData: React.FC<{ data: any, level: GaugeLevel }> = ({ data, level }) => {
+export const GaugeData: React.FC<{ data: any, level: GaugeLevel }> = React.memo(function GuageData({ data, level }) {
   const classes = useGaugeStyles();
   return <div className={classes[level]}>{data}</div>;
-};
+});
 
-export const CPUData: React.FC<{ data: any }> = ({ data }) => (
-  <GaugeDataBase data={data} getLevel={getCPULevel} />
-);
+export const CPUData: React.FC<{ data: any }> = React.memo(function CPUData({ data }) {
+  return <GaugeDataBase data={data} getLevel={getCPULevel} />;
+});
 
 const usePortRendererStyles = makeStyles(() => createStyles({
   value: {
@@ -201,9 +201,9 @@ const usePortRendererStyles = makeStyles(() => createStyles({
   },
 }), { name: 'PortRenderer' });
 
-export const PortRenderer: React.FC<{ data: any }> = ({ data }) => (
-  <span className={usePortRendererStyles().value}>{data}</span>
-);
+export const PortRenderer: React.FC<{ data: any }> = React.memo(function PortRenderer({ data }) {
+  return <span className={usePortRendererStyles().value}>{data}</span>;
+});
 
 export interface DataWithUnits {
   val: string;
@@ -264,7 +264,7 @@ const useRenderValueWithUnitsStyles = makeStyles(() => createStyles({
   },
 }), { name: 'RenderValueWithUnits' });
 
-const RenderValueWithUnits: React.FC<{ data: DataWithUnits }> = ({ data }) => {
+const RenderValueWithUnits: React.FC<{ data: DataWithUnits }> = React.memo(function RenderValueWithUnits({ data }) {
   const classes = useRenderValueWithUnitsStyles();
   return (
     <>
@@ -272,18 +272,21 @@ const RenderValueWithUnits: React.FC<{ data: DataWithUnits }> = ({ data }) => {
       <span className={classes.units}>{data.units}</span>
     </>
   );
-};
+});
 
-export const BytesRenderer: React.FC<{ data: number }> = ({ data }) => (
-  <RenderValueWithUnits data={formatBytes(data)} />
-);
+export const BytesRenderer: React.FC<{ data: number }> = React.memo(function BytesRenderer({ data }) {
+  return <RenderValueWithUnits data={formatBytes(data)} />;
+});
 
-export const DurationRenderer: React.FC<{ data: number }> = ({ data }) => (
-  <GaugeData
-    data={<RenderValueWithUnits data={formatDuration(data)} />}
-    level={getLatencyNSLevel(data)}
-  />
-);
+export const DurationRenderer: React.FC<{ data: number }> = React.memo(function DurationRenderer({ data }) {
+  const value = React.useMemo(() => <RenderValueWithUnits data={formatDuration(data)} />, [data]);
+  return (
+    <GaugeData
+      data={value}
+      level={getLatencyNSLevel(data)}
+    />
+  );
+});
 
 const useHttpStatusCodeRendererStyles = makeStyles((theme: Theme) => createStyles({
   root: {},
@@ -307,7 +310,7 @@ const useHttpStatusCodeRendererStyles = makeStyles((theme: Theme) => createStyle
   },
 }), { name: 'HttpStatusCodeRenderer' });
 
-export const HTTPStatusCodeRenderer: React.FC<{ data: string }> = ({ data }) => {
+export const HTTPStatusCodeRenderer: React.FC<{ data: string }> = React.memo(function HTTPStatusCodeRenderer({ data }) {
   const classes = useHttpStatusCodeRendererStyles();
   const intVal = parseInt(data, 10);
   const cls = buildClass(
@@ -324,7 +327,7 @@ export const HTTPStatusCodeRenderer: React.FC<{ data: string }> = ({ data }) => 
       <span className={cls}>{data}</span>
     </>
   );
-};
+});
 
 export const formatPercent = (data: number): DataWithUnits => {
   const val = (100 * parseFloat(data.toString())).toFixed(1);
@@ -340,16 +343,18 @@ interface PercentRendererProps {
   data: number;
 }
 
-export const PercentRenderer: React.FC<PercentRendererProps> = ({ data }) => (
-  <RenderValueWithUnits data={formatPercent(data)} />
-);
+export const PercentRenderer: React.FC<PercentRendererProps> = React.memo(function PercentRenderer({ data }) {
+  return <RenderValueWithUnits data={formatPercent(data)} />;
+});
 
-export const ThroughputRenderer: React.FC<PercentRendererProps> = ({ data }) => (
-  <RenderValueWithUnits data={formatThroughput(data)} />
-);
+export const ThroughputRenderer: React.FC<PercentRendererProps> = React.memo(function ThroughputRenderer({ data }) {
+  return <RenderValueWithUnits data={formatThroughput(data)} />;
+});
 
-export const ThroughputBytesRenderer: React.FC<PercentRendererProps> = ({ data }) => (
-  <RenderValueWithUnits data={formatThroughputBytes(data)} />
+export const ThroughputBytesRenderer: React.FC<PercentRendererProps> = React.memo(
+  function ThroughputBytesRenderer({ data }) {
+    return <RenderValueWithUnits data={formatThroughputBytes(data)} />;
+  },
 );
 
 // FormatFnMetadata stores a function with the string rep of that function.
