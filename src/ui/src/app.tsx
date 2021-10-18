@@ -297,7 +297,7 @@ const ThemedApp: React.FC = () => {
         if (jwt != null) {
           const refreshTimeout = jwt.exp - dateToEpoch(new Date(Date.now())) - REFRESH_TOKEN_TIMEOUT_S;
           setTimeout(() => {
-            window.postMessage({ pixieRefreshToken: true }, '*');
+            window.top.postMessage({ pixieRefreshToken: true }, '*');
           }, refreshTimeout * 1000);
         }
         return;
