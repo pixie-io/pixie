@@ -48,38 +48,18 @@ import {
 } from 'app/utils/format-data';
 import { getLatencyNSLevel, getColor } from 'app/utils/metric-thresholds';
 import { Theme } from '@material-ui/core/styles';
+import { VizierTable } from 'app/api';
 import { ColumnDisplayInfo, QuantilesDisplayState } from './column-display-info';
 
 interface Quant { p50: number; p90: number; p99: number; }
-
-// Expects a p99 field in colName.
-export function getMaxQuantile(rows: any[], colName: string): number {
-  let max: number = null;
-  for (let i = 0; i < rows.length; ++i) {
-    const row = rows[i];
-    if (row[colName]) {
-      const { p99 } = row[colName];
-      if (p99 != null) {
-        if (max != null) {
-          max = Math.max(max ?? Number.NEGATIVE_INFINITY, p99);
-        } else {
-          max = p99;
-        }
-      }
-    }
-  }
-  return max;
-}
 
 // Expects data to contain floats in p50, p90, and p99 fields.
 export function quantilesRenderer(
   display: ColumnDisplayInfo,
   theme: Theme,
   updateDisplay: (ColumnDisplayInfo) => void,
-  rows: any[],
+  max = 0,
 ): (v: Quant) => React.ReactElement {
-  const max = getMaxQuantile(rows, display.columnName);
-
   return function renderer(val) {
     const { p50, p90, p99 } = val;
     const quantilesDisplay = display.displayState as QuantilesDisplayState;
@@ -125,10 +105,8 @@ export function durationQuantilesRenderer(
   display: ColumnDisplayInfo,
   theme: Theme,
   updateDisplay: (ColumnDisplayInfo) => void,
-  rows: any[],
+  max = 0,
 ): (val: Quant) => React.ReactElement {
-  const max = getMaxQuantile(rows, display.columnName);
-
   return function renderer(val) {
     const { p50, p90, p99 } = val;
     const quantilesDisplay = display.displayState as QuantilesDisplayState;
@@ -255,11 +233,11 @@ const AlertDataWrapper = (data: any) => <AlertData data={data} />;
 const PlainNumberWrapper = (data: any) => <>{data}</>;
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function prettyCellRenderer(
+export function liveCellRenderer(
   display: ColumnDisplayInfo,
   updateDisplay: (ColumnDisplayInfo) => void,
   clusterName: string,
-  rows: any[],
+  table: VizierTable,
   theme: Theme,
   embedState: EmbedState,
   propagatedArgs?: Arguments,
@@ -275,9 +253,9 @@ export function prettyCellRenderer(
 
   switch (st) {
     case SemanticType.ST_QUANTILES:
-      return quantilesRenderer(display, theme, updateDisplay, rows);
+      return quantilesRenderer(display, theme, updateDisplay, table.maxQuantiles.get(display.columnName));
     case SemanticType.ST_DURATION_NS_QUANTILES:
-      return durationQuantilesRenderer(display, theme, updateDisplay, rows);
+      return durationQuantilesRenderer(display, theme, updateDisplay, table.maxQuantiles.get(display.columnName));
     case SemanticType.ST_PORT:
       return renderWrapper(PortRenderer);
     case SemanticType.ST_DURATION_NS:
@@ -330,21 +308,4 @@ export function prettyCellRenderer(
       return v;
     }
   };
-}
-
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function liveCellRenderer(
-  display: ColumnDisplayInfo,
-  updateDisplay: (ColumnDisplayInfo) => void,
-  prettyRender: boolean,
-  theme: Theme,
-  clusterName: string,
-  rows: any[],
-  embedState: EmbedState,
-  propagatedArgs?: Arguments,
-) {
-  if (prettyRender) {
-    return prettyCellRenderer(display, updateDisplay, clusterName, rows, theme, embedState, propagatedArgs);
-  }
-  return getDataRenderer(display.type);
 }

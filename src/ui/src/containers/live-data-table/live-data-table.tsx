@@ -76,7 +76,7 @@ function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutte
     };
 
     const renderer = liveCellRenderer(
-      display, updateDisplay, true, theme, cluster, table.rows, embedState, propagatedArgs);
+      display, updateDisplay, cluster, table, theme, embedState, propagatedArgs);
 
     const sortFunc = getSortFunc(display);
 

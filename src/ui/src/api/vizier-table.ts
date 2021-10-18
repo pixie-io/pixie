@@ -30,6 +30,9 @@ export class VizierTable {
 
   readonly batches: RowBatchData[] = [];
 
+  /** Keeps track of the maximum p99 value in each column that contains quantile data. */
+  readonly maxQuantiles = new Map<string, number>();
+
   private readonly semanticTypeMap: Map<string, SemanticType>;
 
   constructor(
@@ -52,10 +55,30 @@ export class VizierTable {
     this.batches.push(batch);
     const newRows = parseRows(this.semanticTypeMap, dataFromProto(this.relation, [batch]));
 
+    // Update any cumulative values with the new rows, before appending them to the existing rows.
+    this.updateMaxQuantiles(newRows);
+
     // Fast concatenation: while `a.push(...b)` is clear and concise, it also repeats work. Telling the array ahead of
     // time how much to grow, then assigning items directly to their new locations, involves fewer memory operations.
     const offset = this.rows.length;
     this.rows.length += batch.getNumRows();
     for (let r = 0; r < newRows.length; r++) this.rows[r + offset] = newRows[r];
+  }
+
+  private updateMaxQuantiles(newRows: any[]) {
+    const quantileColumns = [...this.semanticTypeMap.keys()].filter((k) => [
+      SemanticType.ST_QUANTILES,
+      SemanticType.ST_DURATION_NS_QUANTILES,
+    ].includes(this.semanticTypeMap.get(k)));
+
+    for (let r = 0; r < newRows.length; r++) {
+      for (const key of quantileColumns) {
+        const max = Math.max(
+          this.maxQuantiles.get(key) ?? Number.NEGATIVE_INFINITY,
+          newRows[r][key]?.p99 ?? Number.NEGATIVE_INFINITY,
+        );
+        if (max > Number.NEGATIVE_INFINITY) this.maxQuantiles.set(key, max);
+      }
+    }
   }
 }

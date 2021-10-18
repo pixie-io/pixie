@@ -112,4 +112,14 @@ describe('VizierTable', () => {
       { one: false, two: { p50: 25, p90: 26, p99: 27 } },
     ]);
   });
+
+  it('Keeps track of the highest p99 in each quantile column', () => {
+    const table = new VizierTable(id, name, Relation.deserializeBinary(relation.serializeBinary()));
+
+    table.appendBatch(RowBatchData.deserializeBinary(inBatches[0].serializeBinary()));
+    expect([...table.maxQuantiles.entries()]).toEqual([['two', 22]]);
+
+    table.appendBatch(RowBatchData.deserializeBinary(inBatches[1].serializeBinary()));
+    expect([...table.maxQuantiles.entries()]).toEqual([['two', 27]]);
+  });
 });
