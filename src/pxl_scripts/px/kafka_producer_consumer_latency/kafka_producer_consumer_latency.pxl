@@ -85,14 +85,33 @@ def kafka_data(start_time: str, namespace: str, producer: str, consumer: str, to
     topic_str = '"name":"' + topic + '"'
     df = df[px.contains(df.req_body, topic_str) or px.contains(df.resp, topic_str)]
 
-    # Filter to consumer-producer pair of interest.
-    consumer_df = df[df.client_id == consumer]
-    producer_df = df[df.client_id == producer]
+    # Produce requests have command 0 and fetch requests have command 1.
+    producer_df = df[df.req_cmd == 0]
+    consumer_df = df[df.req_cmd == 1]
+
+    # Filter to consumer-producer pair of interest. If consumer/producer is empty, all rows are retained.
+    producer_df = producer_df[px.contains(producer_df.client_id, producer)]
+    consumer_df = consumer_df[px.contains(consumer_df.client_id, consumer)]
 
     consumer_df = extract_partition_offset(consumer_df, topic, 'req_body', 'fetch_offset')
     producer_df = extract_partition_offset(producer_df, topic, 'resp', 'base_offset')
 
     df = merge_dfs(consumer_df, producer_df)
+
+    df = format_label(df, consumer, producer)
+    df = df[['series_col', 'time_', 'delay']]
+    return df
+
+
+def format_label(df, consumer: str, producer: str):
+    df.add_producer_id = producer == ""
+    df.add_consumer_id = consumer == ""
+
+    df.client_id_producer = px.select(df.add_producer_id, df.client_id_producer + '/', '')
+    df.client_id_consumer = px.select(df.add_consumer_id, df.client_id_consumer + '/', '')
+
+    df.part_idx_consumer = 'partition-' + df.part_idx_consumer
+    df.series_col = df.client_id_producer + df.client_id_consumer + df.part_idx_consumer
     return df
 
 
@@ -110,7 +129,6 @@ def merge_dfs(consumer_df, producer_df):
     # since it means the consumer is ready waiting for the produce as soon as it arrives.
     df.delay = (df.time__consumer - df.time__producer) / 1000.0 / 1000.0 / 1000.0
     df.delay = px.select(df.delay < 0.0, 0.0, df.delay)
-    df = df[['part_idx_consumer', 'time__consumer', 'delay']]
 
     # Add time_ as x-axis for charting
     df.time_ = df.time__consumer
@@ -118,11 +136,11 @@ def merge_dfs(consumer_df, producer_df):
 
 
 def extract_partition_offset(df, topic, body_field, offset_field):
-    df = df[[body_field, 'time_']]
+    df = df[[body_field, 'client_id', 'time_']]
 
     # Unnest topics.
     df.topics = px.pluck(df[body_field], 'topics')
-    df = json_unnest_first5(df, 'topic', 'topics', ['topic', 'time_'])
+    df = json_unnest_first5(df, 'topic', 'topics', ['topic', 'client_id', 'time_'])
     df = df[df.topic != '']
 
     # Keep only the topic we want.
@@ -131,12 +149,12 @@ def extract_partition_offset(df, topic, body_field, offset_field):
 
     # Unnest partitions.
     df.partitions = px.pluck(df.topic, 'partitions')
-    df = json_unnest_first5(df, 'partition', 'partitions', ['partition', 'time_'])
+    df = json_unnest_first5(df, 'partition', 'partitions', ['partition', 'client_id', 'time_'])
 
     # Get index, offset, and time
     df.part_idx = px.pluck(df.partition, 'index')
     df.offset = px.pluck(df.partition, offset_field)
-    df = df[['part_idx', 'offset', 'time_']]
+    df = df[['client_id', 'part_idx', 'offset', 'time_']]
     df = df[df.offset != '' and df.part_idx != '']
     return df
 

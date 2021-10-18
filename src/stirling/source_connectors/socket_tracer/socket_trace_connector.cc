@@ -910,6 +910,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
                                          protocols::kafka::Record record, DataTable* data_table) {
+  constexpr size_t kMaxKafkaBodyBytes = 65536;
+
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
@@ -922,8 +924,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("trace_role")>(role);
   r.Append<r.ColIndex("req_cmd")>(static_cast<int64_t>(record.req.api_key));
   r.Append<r.ColIndex("client_id"), kMaxBodyBytes>(std::move(record.req.client_id));
-  r.Append<r.ColIndex("req_body"), kMaxBodyBytes>(std::move(record.req.msg));
-  r.Append<r.ColIndex("resp"), kMaxBodyBytes>(std::move(record.resp.msg));
+  r.Append<r.ColIndex("req_body"), kMaxKafkaBodyBytes>(std::move(record.req.msg));
+  r.Append<r.ColIndex("resp"), kMaxKafkaBodyBytes>(std::move(record.resp.msg));
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(record.req.timestamp_ns, record.resp.timestamp_ns));
 #ifndef NDEBUG

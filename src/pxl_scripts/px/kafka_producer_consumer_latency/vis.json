@@ -152,7 +152,7 @@
                 "timeseries": [
                     {
                         "value": "delay",
-                        "series": "part_idx_consumer",
+                        "series": "series_col",
                         "stackBySeries": false,
                         "mode": "MODE_LINE"
                     }
