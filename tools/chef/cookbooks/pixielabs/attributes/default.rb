@@ -114,9 +114,9 @@ if node[:platform] == 'ubuntu'
     '2247ff34ad31fa7d9433b3310879190d1ab63b2ddbd58257d24c267f53ef64e6'
 
   default['yq']['download_path'] =
-    'https://github.com/mikefarah/yq/releases/download/3.2.1/yq_linux_amd64'
+    'https://github.com/mikefarah/yq/releases/download/v4.13.4/yq_linux_amd64'
   default['yq']['sha256']        =
-    '11a830ffb72aad0eaa7640ef69637068f36469be4f68a93da822fbe454e998f8'
+    '11092943c548232bc670504303807e5f4b68adc9690fae74069c1c7f5dff0f3f'
 
   default['src']['download_path'] =
     'https://github.com/sourcegraph/src-cli/releases/download/3.22.3/src_linux_amd64'
@@ -205,9 +205,9 @@ elsif node[:platform] == 'mac_os_x'
     '5ca2a19f1cb04bc5059bb07e14d565231246e623f7523fafe9389b463addf645'
 
   default['yq']['download_path'] =
-    'https://github.com/mikefarah/yq/releases/download/3.2.1/yq_darwin_amd64'
+    'https://github.com/mikefarah/yq/releases/download/v4.13.4/yq_darwin_amd64'
   default['yq']['sha256']        =
-    '116f74a384d0b4fa31a58dd01cfcdeffa6fcd21c066de223cbb0ebc042a8bc28'
+    '17ab1aa6589f5be6398c60acc875426f4f64faeaba6ee581f700b0a9f47da19e'
 
   default['src']['download_path'] =
     'https://github.com/sourcegraph/src-cli/releases/download/3.22.3/src_darwin_amd64'
