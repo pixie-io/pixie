@@ -22,8 +22,6 @@ package main
 
 import (
 	"os"
-	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/gofrs/uuid"
@@ -52,11 +50,13 @@ type SSLCert struct {
 	Key       string    `db:"key"`
 }
 
+const query = `INSERT INTO ssl_certs(cname, cert, key) VALUES (:cname, :cert, :key)
+	ON CONFLICT ON CONSTRAINT unique_cname
+	DO UPDATE SET cert=:cert, key=:key WHERE ssl_certs.cname=:cname`
+
 func init() {
-	pflag.String("certs_path", "../../../../credentials/certs", "The path to the certs")
-	pflag.String("env_type", "dev", "The env type (dev, staging, prod")
+	pflag.String("certs_path", "credentials/certs/dev/certs.yaml", "The path to the certs")
 	pflag.String("domain_name_suffix", "clusters.dev.withpixie.dev", "The suffix of the domain name to strip out")
-	pflag.Bool("update_only", false, "Whether the script should update_only")
 }
 
 func fileExists(filename string) bool {
@@ -67,37 +67,17 @@ func fileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func getCertFilePath() string {
-	certsPath := viper.GetString("certs_path")
-	envType := viper.GetString("env_type")
-	absPath, err := filepath.Abs(certsPath)
-	if err != nil {
-		log.WithError(err).Fatal("Failed to get cert path")
-	}
-
-	return filepath.Join(absPath, envType, "certs.yaml")
-}
-
-func getQuery(updateOnly bool) string {
-	if updateOnly {
-		return `UPDATE ssl_certs SET cert=:cert, key=:key WHERE cname=:cname`
-	}
-	return `INSERT INTO ssl_certs(cname, cert, key) VALUES (:cname, :cert, :key)`
-}
-
 func loadCerts(db *sqlx.DB) {
-	certFilePath := getCertFilePath()
+	certFilePath := viper.GetString("certs_path")
 	if !fileExists(certFilePath) {
-		log.WithField("certFile", certFilePath).
-			Fatal("File does not exist")
+		log.WithField("certFile", certFilePath).Fatal("File does not exist")
 	}
 
-	log.WithField("certFile", certFilePath).WithField("update_only", viper.GetBool("update_only")).
-		Info("Deploying certs")
+	log.WithField("certFile", certFilePath).Info("Deploying certs")
 
-	out, err := exec.Command("sops", "--decrypt", certFilePath).Output()
+	out, err := os.ReadFile(certFilePath)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to decrypt certs")
+		log.WithError(err).Fatal("Failed to read certs")
 	}
 
 	certs := map[string]certInfo{}
@@ -114,7 +94,6 @@ func loadCerts(db *sqlx.DB) {
 			log.Fatal("certificate suffix does not match the supplied domain")
 		}
 
-		query := getQuery(viper.GetBool("update_only"))
 		cname := strings.TrimSuffix(fullCname, domainSuffix)
 		// Remove the wildcard char.
 		cname = strings.TrimPrefix(cname, "_.")
@@ -142,7 +121,7 @@ func InitDBAndLoadCerts() {
 }
 
 func main() {
-	log.WithField("exec", "load_certs").Info("Starting load_certs...")
+	log.Info("Starting load_certs...")
 	pflag.Parse()
 
 	viper.AutomaticEnv()

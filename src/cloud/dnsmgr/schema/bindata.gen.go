@@ -2,6 +2,8 @@
 // sources:
 // 000001_create_dns_tables.down.sql
 // 000001_create_dns_tables.up.sql
+// 000002_unique_cname.down.sql
+// 000002_unique_cname.up.sql
 package schema
 
 import (
@@ -118,6 +120,46 @@ func _000001_create_dns_tablesUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000002_unique_cnameDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\x2e\xce\x89\x4f\x4e\x2d\x2a\x29\xe6\x72\x09\xf2\x0f\x50\x70\xf6\xf7\x0b\x0e\x09\x72\xf4\xf4\x0b\x51\x28\xcd\xcb\x2c\x2c\x4d\x8d\x4f\xce\x4b\xcc\x4d\xb5\xe6\x02\x04\x00\x00\xff\xff\x37\xba\x51\x89\x34\x00\x00\x00")
+
+func _000002_unique_cnameDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000002_unique_cnameDownSql,
+		"000002_unique_cname.down.sql",
+	)
+}
+
+func _000002_unique_cnameDownSql() (*asset, error) {
+	bytes, err := _000002_unique_cnameDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000002_unique_cname.down.sql", size: 52, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000002_unique_cnameUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\x2e\xce\x89\x4f\x4e\x2d\x2a\x29\xe6\x72\x74\x71\x51\x70\xf6\xf7\x0b\x0e\x09\x72\xf4\xf4\x0b\x51\x28\xcd\xcb\x2c\x2c\x4d\x8d\x4f\xce\x4b\xcc\x4d\x55\x08\xf5\xf3\x0c\x0c\x75\x55\xd0\x00\xf3\x34\xad\xb9\x00\x01\x00\x00\xff\xff\xb6\x14\x27\x80\x42\x00\x00\x00")
+
+func _000002_unique_cnameUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000002_unique_cnameUpSql,
+		"000002_unique_cname.up.sql",
+	)
+}
+
+func _000002_unique_cnameUpSql() (*asset, error) {
+	bytes, err := _000002_unique_cnameUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000002_unique_cname.up.sql", size: 66, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -172,6 +214,8 @@ func AssetNames() []string {
 var _bindata = map[string]func() (*asset, error){
 	"000001_create_dns_tables.down.sql": _000001_create_dns_tablesDownSql,
 	"000001_create_dns_tables.up.sql":   _000001_create_dns_tablesUpSql,
+	"000002_unique_cname.down.sql":      _000002_unique_cnameDownSql,
+	"000002_unique_cname.up.sql":        _000002_unique_cnameUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -217,6 +261,8 @@ type bintree struct {
 var _bintree = &bintree{nil, map[string]*bintree{
 	"000001_create_dns_tables.down.sql": &bintree{_000001_create_dns_tablesDownSql, map[string]*bintree{}},
 	"000001_create_dns_tables.up.sql":   &bintree{_000001_create_dns_tablesUpSql, map[string]*bintree{}},
+	"000002_unique_cname.down.sql":      &bintree{_000002_unique_cnameDownSql, map[string]*bintree{}},
+	"000002_unique_cname.up.sql":        &bintree{_000002_unique_cnameUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
