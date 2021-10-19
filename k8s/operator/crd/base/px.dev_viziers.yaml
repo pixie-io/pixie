@@ -45,6 +45,14 @@ spec:
                   specifying which cluster the Vizier is deployed to. If not specified,
                   a random name will be generated.
                 type: string
+              dataAccess:
+                description: DataAccess defines the level of data that may be accesssed
+                  when executing a script on the cluster. If none specified, assumes
+                  full data access.
+                enum:
+                - Full
+                - Restricted
+                type: string
               deployKey:
                 description: DeployKey is the deploy key associated with the Vizier
                   instance. This is used to link the Vizier to a specific user/org.

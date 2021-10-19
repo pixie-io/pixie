@@ -60,7 +60,24 @@ type VizierSpec struct {
 	// The key of the patch should be the name of the resource that is patched. The value of the patch is the patch,
 	// encoded as a string which follow the "strategic merge patch" rules for K8s.
 	Patches map[string]string `json:"patches,omitempty"`
+	// DataAccess defines the level of data that may be accesssed when executing a script on the cluster. If none specified,
+	// assumes full data access.
+	DataAccess DataAccessLevel `json:"dataAccess,omitempty"`
 }
+
+// DataAccessLevel defines the levels of data access that can be used when executing a script on a cluster.
+// +kubebuilder:validation:Enum=Full;Restricted
+type DataAccessLevel string
+
+const (
+	// DataAccessUnknown indicates that the data access level is unspecified.
+	DataAccessUnknown DataAccessLevel = ""
+	// DataAccessFull provides complete, unrestricted access to all collected data.
+	DataAccessFull DataAccessLevel = "Full"
+	// DataAccessRestricted restricts users from accessing columns that may contain sensitive data, for example: HTTP response
+	// bodies. These columns will be entirely replaced by a redacted string.
+	DataAccessRestricted DataAccessLevel = "Restricted"
+)
 
 // VizierStatus defines the observed state of Vizier
 type VizierStatus struct {

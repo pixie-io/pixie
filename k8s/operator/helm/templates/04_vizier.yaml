@@ -20,6 +20,9 @@ spec:
   {{- if .Values.pemMemoryLimit }}
   pemMemoryLimit: {{ .Values.pemMemoryLimit }}
   {{- end }}
+  {{- if .Values.dataAccess }}
+  dataAccess: {{ .Values.dataAccess }}
+  {{- end }}
   {{- if .Values.patches }}
   patches: {{ .Values.patches | toYaml | nindent 4 }}
   {{- end }}
