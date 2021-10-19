@@ -35,7 +35,7 @@ TEST(IsMuxType, CanDetectMembershipOfSmallestAndLargestTypes) {
     ASSERT_EQ(IsMuxType(static_cast<int8_t>(Type::kRerrOld)), true);
 }
 
-TEST(GetMatchingRespType, A) {
+TEST(GetMatchingRespType, ReturnsCorrespondingResponseTypes) {
     ASSERT_EQ(GetMatchingRespType(Type::kRerrOld), Type::kRerrOld);
     ASSERT_EQ(GetMatchingRespType(Type::kRerr), Type::kRerr);
     ASSERT_EQ(GetMatchingRespType(Type::kTinit), Type::kRinit);
