@@ -8,3 +8,5 @@ namespace: plc
 resources:
 - clusterroles
 - ../../base/stan
+patchesStrategicMerge:
+- statefulset_patch.yaml
