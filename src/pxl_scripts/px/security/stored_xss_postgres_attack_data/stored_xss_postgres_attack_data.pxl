@@ -138,6 +138,7 @@ RULES = '{'
 
 def xss_attacks(df):
     df["rule_broken"] = px.match_regex_rule(RULES, df.req)
+    df = df[df.rule_broken != ""]
     return df[['time_', 'source', 'destination', 'remote_port', 'req', 'resp', 'latency', 'rule_broken']]
 
 def pgsql_data(start_time: str, source_filter: str, destination_filter: str, num_head: int):

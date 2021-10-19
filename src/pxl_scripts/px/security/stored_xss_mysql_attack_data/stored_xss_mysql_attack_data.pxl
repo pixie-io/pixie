@@ -1,0 +1,247 @@
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+''' XSS Stored Attack Data Tracer
+Shows the most recent XSS Stored Attack's in the cluster.
+'''
+
+import px
+
+RULES = '{'
+    '"img_tag":".*(<|%3C)\s*[iI][mM][gG].*",'
+    '"iframe_tag":".*(<|%3C)\s*[iI][fF][rR][aA][mM][eE].*",'
+    '"object_tag":".*(<|%3C)\s*[oO][bB][jJ][eE][cC][tT].*",'
+    '"embed_tag":".*(<|%3C)\s*[eE][mM][bB][eE][dD].*",'
+    '"alert_event":".*alert(.*",'
+    '"href_property":".*[hH][rR][eE][fF]=.*",'
+    '"src_property":".*[sS][rR][cC]=.*",'
+    '"fscommand_event":".*[fF][sS][cC][oO][mM][mM][aA][nN][dD](=|\().*",'
+    '"onabort_event":".*[oO][nN][aA][bB][oO][rR][tT](=|\().*",'
+    '"onactivate_event":".*[oO][nN][aA][cC][tT][iI][vV][aA][tT][eE](=|().*",'
+    '"onafterprint_event":".*[oO][nN][aA][fF][tT][eE][rR][pP][rR][iI][nN][tT](=|().*",'
+    '"onafterupdate_event":".*[oO][nN][aA][fF][tT][eE][rR][uU][pP][dD][aA][tT][eE](=|().*",'
+    '"onbeforeactivate_event":".*[oO][nN][bB][eE][fF][oO][rR][eE][aA][cC][tT][iI][vV][aA][tT][eE](=|().*",'
+    '"onbeforecopy_event":".*[oO][nN][bB][eE][fF][oO][rR][eE][cC][oO][pP][yY](=|().*",'
+    '"onbeforecut_event":".*[oO][nN][bB][eE][fF][oO][rR][eE][cC][uU][tT](=|().*",'
+    '"onbeforedeactivate_event":".*[oO][nN][bB][eE][fF][oO][rR][eE][dD][eE][aA][cC][tT][iI][vV][aA][tT][eE](=|().*",'
+    '"onbeforeeditfocus_event":".*[oO][nN][bB][eE][fF][oO][rR][eE][eE][dD][iI][tT][fF][oO][cC][uU][sS](=|().*",'
+    '"onbeforepaste_event":".*[oO][nN][bB][eE][fF][oO][rR][eE][pP][aA][sS][tT][eE](=|().*",'
+    '"onbeforeprint_event":".*[oO][nN][bB][eE][fF][oO][rR][eE][pP][rR][iI][nN][tT](=|().*",'
+    '"onbeforeunload_event":".*[oO][nN][bB][eE][fF][oO][rR][eE][uU][nN][lL][oO][aA][dD](=|().*",'
+    '"onbeforeupdate_event":".*[oO][nN][bB][eE][fF][oO][rR][eE][uU][pP][dD][aA][tT][eE](=|().*",'
+    '"onbegin_event":".*[oO][nN][bB][eE][gG][iI][nN](=|().*",'
+    '"onblur_event":".*[oO][nN][bB][lL][uU][rR](=|().*",'
+    '"onbounce_event":".*[oO][nN][bB][oO][uU][nN][cC][eE](=|().*",'
+    '"oncellchange_event":".*[oO][nN][cC][eE][lL][lL][cC]h[aA][nN][gG][eE](=|().*",'
+    '"onchange_event":".*[oO][nN][cC]h[aA][nN][gG][eE](=|().*",'
+    '"onclick_event":".*[oO][nN][cC][lL][iI][cC][kK](=|().*",'
+    '"oncontextmenu_event":".*[oO][nN][cC][oO][nN][tT][eE]x[tT][mM][eE][nN][uU](=|().*",'
+    '"oncontrolselect_event":".*[oO][nN][cC][oO][nN][tT][rR][oO][lL][sS][eE][lL][eE][cC][tT](=|().*",'
+    '"oncopy_event":".*[oO][nN][cC][oO][pP][yY](=|().*",'
+    '"oncut_event":".*[oO][nN][cC][uU][tT](=|().*",'
+    '"ondataavailable_event":".*[oO][nN][dD][aA][tT][aA][aA][vV][aA][iI][lL][aA][bB][lL][eE](=|().*",'
+    '"ondatasetchanged_event":".*[oO][nN][dD][aA][tT][aA][sS][eE][tT][cC]h[aA][nN][gG][eE][dD](=|().*",'
+    '"ondatasetcomplete_event":".*[oO][nN][dD][aA][tT][aA][sS][eE][tT][cC][oO][mM][pP][lL][eE][tT][eE](=|().*",'
+    '"ondblclick_event":".*[oO][nN][dD][bB][lL][cC][lL][iI][cC][kK](=|().*",'
+    '"ondeactivate_event":".*[oO][nN][dD][eE][aA][cC][tT][iI][vV][aA][tT][eE](=|().*",'
+    '"ondrag_event":".*[oO][nN][dD][rR][aA][gG](=|().*",'
+    '"ondragend_event":".*[oO][nN][dD][rR][aA][gG][eE][nN][dD](=|().*",'
+    '"ondragleave_event":".*[oO][nN][dD][rR][aA][gG][lL][eE][aA][vV][eE](=|().*",'
+    '"ondragenter_event":".*[oO][nN][dD][rR][aA][gG][eE][nN][tT][eE][rR](=|().*",'
+    '"ondragover_event":".*[oO][nN][dD][rR][aA][gG][oO][vV][eE][rR](=|().*",'
+    '"ondragdrop_event":".*[oO][nN][dD][rR][aA][gG][dD][rR][oO][pP](=|().*",'
+    '"ondragstart_event":".*[oO][nN][dD][rR][aA][gG][sS][tT][aA][rR][tT](=|().*",'
+    '"ondrop_event":".*[oO][nN][dD][rR][oO][pP](=|().*",'
+    '"onend_event":".*[oO][nN][eE][nN][dD](=|().*",'
+    '"onerror_event":".*[oO][nN][eE][rR][rR][oO][rR](=|().*",'
+    '"onerrorupdate_event":".*[oO][nN][eE][rR][rR][oO][rR][uU][pP][dD][aA][tT][eE](=|().*",'
+    '"onfilterchange_event":".*[oO][nN][fF][iI][lL][tT][eE][rR][cC]h[aA][nN][gG][eE](=|().*",'
+    '"onfinish_event":".*[oO][nN][fF][iI][nN][iI][sS]h(=|().*",'
+    '"onfocus_event":".*[oO][nN][fF][oO][cC][uU][sS](=|().*",'
+    '"onfocusin_event":".*[oO][nN][fF][oO][cC][uU][sS][iI][nN](=|().*",'
+    '"onfocusout_event":".*[oO][nN][fF][oO][cC][uU][sS][oO][uU][tT](=|().*",'
+    '"onhashchange_event":".*[oO][nN]h[aA][sS]h[cC]h[aA][nN][gG][eE](=|().*",'
+    '"onhelp_event":".*[oO][nN]h[eE][lL][pP](=|().*",'
+    '"oninput_event":".*[oO][nN][iI][nN][pP][uU][tT](=|().*",'
+    '"onkeydown_event":".*[oO][nN][kK][eE][yY][dD][oO]w[nN](=|().*",'
+    '"onkeypress_event":".*[oO][nN][kK][eE][yY][pP][rR][eE][sS][sS](=|().*",'
+    '"onkeyup_event":".*[oO][nN][kK][eE][yY][uU][pP](=|().*",'
+    '"onlayoutcomplete_event":".*[oO][nN][lL][aA][yY][oO][uU][tT][cC][oO][mM][pP][lL][eE][tT][eE](=|().*",'
+    '"onload_event":".*[oO][nN][lL][oO][aA][dD](=|().*",'
+    '"onlosecapture_event":".*[oO][nN][lL][oO][sS][eE][cC][aA][pP][tT][uU][rR][eE](=|().*",'
+    '"onmediacomplete_event":".*[oO][nN][mM][eE][dD][iI][aA][cC][oO][mM][pP][lL][eE][tT][eE](=|().*",'
+    '"onmediaerror_event":".*[oO][nN][mM][eE][dD][iI][aA][eE][rR][rR][oO][rR](=|().*",'
+    '"onmessage_event":".*[oO][nN][mM][eE][sS][sS][aA][gG][eE](=|().*",'
+    '"onmousedown_event":".*[oO][nN][mM][oO][uU][sS][eE][dD][oO]w[nN](=|().*",'
+    '"onmouseenter_event":".*[oO][nN][mM][oO][uU][sS][eE][eE][nN][tT][eE][rR](=|().*",'
+    '"onmouseleave_event":".*[oO][nN][mM][oO][uU][sS][eE][lL][eE][aA][vV][eE](=|().*",'
+    '"onmousemove_event":".*[oO][nN][mM][oO][uU][sS][eE][mM][oO][vV][eE](=|().*",'
+    '"onmouseout_event":".*[oO][nN][mM][oO][uU][sS][eE][oO][uU][tT](=|().*",'
+    '"onmouseover_event":".*[oO][nN][mM][oO][uU][sS][eE][oO][vV][eE][rR](=|().*",'
+    '"onmouseup_event":".*[oO][nN][mM][oO][uU][sS][eE][uU][pP](=|().*",'
+    '"onmousewheel_event":".*[oO][nN][mM][oO][uU][sS][eE]wh[eE][eE][lL](=|().*",'
+    '"onmove_event":".*[oO][nN][mM][oO][vV][eE](=|().*",'
+    '"onmoveend_event":".*[oO][nN][mM][oO][vV][eE][eE][nN][dD](=|().*",'
+    '"onmovestart_event":".*[oO][nN][mM][oO][vV][eE][sS][tT][aA][rR][tT](=|().*",'
+    '"onoffline_event":".*[oO][nN][oO][fF][fF][lL][iI][nN][eE](=|().*",'
+    '"ononline_event":".*[oO][nN][oO][nN][lL][iI][nN][eE](=|().*",'
+    '"onoutofsync_event":".*[oO][nN][oO][uU][tT][oO][fF][sS][yY][nN][cC](=|().*",'
+    '"onpaste_event":".*[oO][nN][pP][aA][sS][tT][eE](=|().*",'
+    '"onpause_event":".*[oO][nN][pP][aA][uU][sS][eE](=|().*",'
+    '"onpopstate_event":".*[oO][nN][pP][oO][pP][sS][tT][aA][tT][eE](=|().*",'
+    '"onprogress_event":".*[oO][nN][pP][rR][oO][gG][rR][eE][sS][sS](=|().*",'
+    '"onpropertychange_event":".*[oO][nN][pP][rR][oO][pP][eE][rR][tT][yY][cC]h[aA][nN][gG][eE](=|().*",'
+    '"onreadystatechange_event":".*[oO][nN][rR][eE][aA][dD][yY][sS][tT][aA][tT][eE][cC]h[aA][nN][gG][eE](=|().*",'
+    '"onredo_event":".*[oO][nN][rR][eE][dD][oO](=|().*",'
+    '"onrepeat_event":".*[oO][nN][rR][eE][pP][eE][aA][tT](=|().*",'
+    '"onreset_event":".*[oO][nN][rR][eE][sS][eE][tT](=|().*",'
+    '"onresize_event":".*[oO][nN][rR][eE][sS][iI][zZ][eE](=|().*",'
+    '"onresizeend_event":".*[oO][nN][rR][eE][sS][iI][zZ][eE][eE][nN][dD](=|().*",'
+    '"onresizestart_event":".*[oO][nN][rR][eE][sS][iI][zZ][eE][sS][tT][aA][rR][tT](=|().*",'
+    '"onresume_event":".*[oO][nN][rR][eE][sS][uU][mM][eE](=|().*",'
+    '"onreverse_event":".*[oO][nN][rR][eE][vV][eE][rR][sS][eE](=|().*",'
+    '"onrowsenter_event":".*[oO][nN][rR][oO]w[sS][eE][nN][tT][eE][rR](=|().*",'
+    '"onrowexit_event":".*[oO][nN][rR][oO]w[eE]x[iI][tT](=|().*",'
+    '"onrowdelete_event":".*[oO][nN][rR][oO]w[dD][eE][lL][eE][tT][eE](=|().*",'
+    '"onrowinserted_event":".*[oO][nN][rR][oO]w[iI][nN][sS][eE][rR][tT][eE][dD](=|().*",'
+    '"onscroll_event":".*[oO][nN][sS][cC][rR][oO][lL][lL](=|().*",'
+    '"onseek_event":".*[oO][nN][sS][eE][eE][kK](=|().*",'
+    '"onselect_event":".*[oO][nN][sS][eE][lL][eE][cC][tT](=|().*",'
+    '"onselectionchange_event":".*[oO][nN][sS][eE][lL][eE][cC][tT][iI][oO][nN][cC]h[aA][nN][gG][eE](=|().*",'
+    '"onselectstart_event":".*[oO][nN][sS][eE][lL][eE][cC][tT][sS][tT][aA][rR][tT](=|().*",'
+    '"onstart_event":".*[oO][nN][sS][tT][aA][rR][tT](=|().*",'
+    '"onstop_event":".*[oO][nN][sS][tT][oO][pP](=|().*",'
+    '"onstorage_event":".*[oO][nN][sS][tT][oO][rR][aA][gG][eE](=|().*",'
+    '"onsyncrestored_event":".*[oO][nN][sS][yY][nN][cC][rR][eE][sS][tT][oO][rR][eE][dD](=|().*",'
+    '"onsubmit_event":".*[oO][nN][sS][uU][bB][mM][iI][tT](=|().*",'
+    '"ontimeerror_event":".*[oO][nN][tT][iI][mM][eE][eE][rR][rR][oO][rR](=|().*",'
+    '"ontrackchange_event":".*[oO][nN][tT][rR][aA][cC][kK][cC]h[aA][nN][gG][eE](=|().*",'
+    '"onundo_event":".*[oO][nN][uU][nN][dD][oO](=|().*",'
+    '"onunload_event":".*[oO][nN][uU][nN][lL][oO][aA][dD](=|().*",'
+    '"onurlflip_event":".*[oO][nN][uU][rR][lL][fF][lL][iI][pP](=|().*",'
+    '"seeksegmenttime_event":".*[sS][eE][eE][kK][sS][eE][gG][mM][eE][nN][tT][tT][iI][mM][eE](=|().*"'
+    '}'
+
+
+def xss_attacks(df):
+    df["rule_broken"] = px.match_regex_rule(RULES, df.req_body)
+    df = df[df.rule_broken != ""]
+    return df[['time_', 'source', 'destination', 'remote_port', 'req_cmd',
+            'req_body', 'resp_status', 'resp_body', 'latency', 'rule_broken']]
+
+
+def mysql_data(start_time: str, source_filter: str, destination_filter: str, num_head: int):
+    df = px.DataFrame(table='mysql_events', start_time=start_time)
+    df = add_source_dest_columns(df)
+
+    # Filter out entities as specified by the user.
+    df = df[px.contains(df.source, source_filter)]
+    df = df[px.contains(df.destination, destination_filter)]
+
+    # Add additional filters below:
+    # Restrict number of results.
+    df = df.head(num_head)
+    df = add_source_dest_links(df, start_time)
+    df = df[['time_', 'source', 'destination', 'remote_port', 'req_cmd',
+            'req_body', 'resp_status', 'resp_body', 'latency']]
+    return df
+
+
+def xss_stored_attacks(start_time: str, source_filter: str, destination_filter: str, num_head: int):
+    df = mysql_data(start_time, source_filter, destination_filter, num_head)
+    df = xss_attacks(df)
+    return df
+
+
+def add_source_dest_columns(df):
+    ''' Add source and destination columns for the MySQL request.
+
+    MySQL requests are traced server-side (trace_role==2), unless the server is
+    outside of the cluster in which case the request is traced client-side (trace_role==1).
+
+    When trace_role==2, the MySQL request source is the remote_addr column
+    and destination is the pod column. When trace_role==1, the MySQL request
+    source is the pod column and the destination is the remote_addr column.
+
+    Input DataFrame must contain trace_role, upid, remote_addr columns.
+    '''
+    df.pod = df.ctx['pod']
+    df.namespace = df.ctx['namespace']
+
+    # If remote_addr is a pod, get its name. If not, use IP address.
+    df.ra_pod = px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_addr))
+    df.is_ra_pod = df.ra_pod != ''
+    df.ra_name = px.select(df.is_ra_pod, df.ra_pod, df.remote_addr)
+
+    df.is_server_tracing = df.trace_role == 2
+    df.is_source_pod_type = px.select(df.is_server_tracing, df.is_ra_pod, True)
+    df.is_dest_pod_type = px.select(df.is_server_tracing, True, df.is_ra_pod)
+
+    # Set source and destination based on trace_role.
+    df.source = px.select(df.is_server_tracing, df.ra_name, df.pod)
+    df.destination = px.select(df.is_server_tracing, df.pod, df.ra_name)
+
+    # Filter out messages with empty source / destination.
+    df = df[df.source != '']
+    df = df[df.destination != '']
+
+    df = df.drop(['ra_pod', 'is_ra_pod', 'ra_name', 'is_server_tracing'])
+
+    return df
+
+
+def add_source_dest_links(df, start_time: str):
+    ''' Modifies the source and destination columns to display deeplinks in the UI.
+    Clicking on a pod name in either column will run the px/pod script for that pod.
+    Clicking on an IP address, will run the px/net_flow_graph script showing all
+    network connections to/from that address.
+
+    Input DataFrame must contain source, destination, is_source_pod_type,
+    is_dest_pod_type, and namespace columns.
+    '''
+
+    # Source linking. If source is a pod, link to px/pod. If an IP addr, link to px/net_flow_graph.
+    df.src_pod_link = px.script_reference(df.source, 'px/pod', {
+        'start_time': start_time,
+        'pod': df.source
+    })
+    df.src_link = px.script_reference(df.source, 'px/net_flow_graph', {
+        'start_time': start_time,
+        'namespace': df.namespace,
+        'from_entity_filter': df.source,
+        'to_entity_filter': '',
+        'throughput_filter': '0.0'
+    })
+    df.source = px.select(df.is_source_pod_type, df.src_pod_link, df.src_link)
+
+    # If destination is a pod, link to px/pod. If an IP addr, link to px/net_flow_graph.
+    df.dest_pod_link = px.script_reference(df.destination, 'px/pod', {
+        'start_time': start_time,
+        'pod': df.destination
+    })
+    df.dest_link = px.script_reference(df.destination, 'px/net_flow_graph', {
+        'start_time': start_time,
+        'namespace': df.namespace,
+        'from_entity_filter': '',
+        'to_entity_filter': df.destination,
+        'throughput_filter': '0.0'
+    })
+    df.destination = px.select(df.is_dest_pod_type, df.dest_pod_link, df.dest_link)
+
+    df = df.drop(['src_pod_link', 'src_link', 'is_source_pod_type', 'dest_pod_link',
+                  'dest_link', 'is_dest_pod_type'])
+
+    return df
