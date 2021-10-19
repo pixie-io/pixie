@@ -65,6 +65,16 @@ interface LiveCellProps {
   data: any;
 }
 
+// Use this to render a cheap placeholder cell at first, then a full render in the next run of the event loop.
+function useIsPlaceholder() {
+  const [isPlaceholder, setIsPlaceholder] = React.useState(true);
+  React.useEffect(() => {
+    const delay = setTimeout(() => setIsPlaceholder(false), 0);
+    return () => clearTimeout(delay);
+  }, []);
+  return isPlaceholder;
+}
+
 function getEntityCellRenderer(
   st: SemanticType, clusterName: string, propagatedArgs?: Arguments,
 ): React.ComponentType<LiveCellProps> {
@@ -113,6 +123,16 @@ function getQuantilesCellRenderer(
     const theme = useTheme();
     const fill = React.useMemo(() => getColor('none', theme), [theme]);
 
+    const onChangePercentile = React.useCallback((newPercentile: SelectedPercentile) => {
+      updateDisplay({
+        ...display,
+        displayState: { selectedPercentile: newPercentile },
+      });
+    }, []);
+
+    const isPlaceholder = useIsPlaceholder();
+    if (isPlaceholder) return <>...</>;
+
     const { p50, p90, p99 } = data as Quant;
 
     /* eslint-disable react-memo/require-usememo */
@@ -127,13 +147,6 @@ function getQuantilesCellRenderer(
       p90HoverFill = getColor(getLatencyNSLevel(p90), theme);
       p99HoverFill = getColor(getLatencyNSLevel(p99), theme);
     }
-
-    const onChangePercentile = React.useCallback((newPercentile: SelectedPercentile) => {
-      updateDisplay({
-        ...display,
-        displayState: { selectedPercentile: newPercentile },
-      });
-    }, []);
 
     return (
       <QuantilesBoxWhisker
@@ -177,6 +190,9 @@ function getScriptReferenceCellRenderer(
 }
 
 const JSONCell = React.memo<LiveCellProps>(function JSONCell({ data }) {
+  const isPlaceholder = useIsPlaceholder();
+  if (isPlaceholder) return <>{data}</>;
+
   try {
     const parsed = JSON.parse(data);
     return <JSONData data={parsed} />;
