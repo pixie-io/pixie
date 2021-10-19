@@ -306,18 +306,6 @@ class DwarfReader {
                                 std::optional<llvm::dwarf::Tag> tag,
                                 std::vector<llvm::DWARFDie>* dies_out);
 
-  // Get the DW_AT_location of a DIE. Used for getting the location of variables,
-  // which may be either on the stack or in registers.
-  // Currently used on function arguments.
-  //
-  // Example:
-  //     0x00062106:   DW_TAG_formal_parameter
-  //                    DW_AT_name [DW_FORM_string] ("v")
-  //                    ...
-  //                    DW_AT_location [DW_FORM_block1] (DW_OP_call_frame_cfa)
-  // This example should return the location on the stack.
-  StatusOr<VarLocation> GetDieLocationAttr(const llvm::DWARFDie& die);
-
   // Walks the struct_die for all members, recursively visiting any members which are also structs,
   // to capture information of all base type members of the struct in a flattened form.
   // See GetStructSpec() for the public interface, and the output format.

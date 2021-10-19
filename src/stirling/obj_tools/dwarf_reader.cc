@@ -640,7 +640,13 @@ StatusOr<uint64_t> DwarfReader::GetArgumentTypeByteSize(std::string_view functio
   return error::Internal("Could not find argument.");
 }
 
-StatusOr<VarLocation> DwarfReader::GetDieLocationAttr(const DWARFDie& die) {
+namespace {
+
+// Get the DW_AT_location of a DIE as raw bytes.
+// For DW_AT_location expressions that have different values for different address ranges,
+// this function currently returns the value for the first address range (which should
+// correspond to the location of the variable at the function entry).
+StatusOr<llvm::ArrayRef<uint8_t>> GetDieLocationAttrBytes(const DWARFDie& die) {
   PL_ASSIGN_OR_RETURN(const DWARFFormValue& loc_attr,
                       AdaptLLVMOptional(die.find(llvm::dwarf::DW_AT_location),
                                         "Could not find DW_AT_location for function argument."));
@@ -650,27 +656,7 @@ StatusOr<VarLocation> DwarfReader::GetDieLocationAttr(const DWARFDie& die) {
     PL_ASSIGN_OR_RETURN(llvm::ArrayRef<uint8_t> loc_block,
                         AdaptLLVMOptional(loc_attr.getAsBlock(), "Could not extract location."));
 
-    PL_ASSIGN_OR_RETURN(SimpleBlock decoded_loc_block, DecodeSimpleBlock(loc_block));
-
-    if (decoded_loc_block.code == llvm::dwarf::LocationAtom::DW_OP_fbreg) {
-      if (decoded_loc_block.operand >= 0) {
-        return VarLocation{.loc_type = LocationType::kStack, .offset = decoded_loc_block.operand};
-      } else {
-        decoded_loc_block.operand *= -1;
-        return VarLocation{.loc_type = LocationType::kRegister,
-                           .offset = decoded_loc_block.operand};
-      }
-    }
-
-    // DW_OP_call_frame_cfa is observed in golang dwarf symbols.
-    // This logic is probably not right, but appears to work for now.
-    // TODO(oazizi): Study call_frame_cfa blocks.
-    if (decoded_loc_block.code == llvm::dwarf::LocationAtom::DW_OP_call_frame_cfa) {
-      return VarLocation{.loc_type = LocationType::kStack, .offset = 0};
-    }
-
-    return error::Internal("Unsupported operand: $0",
-                           magic_enum::enum_name(decoded_loc_block.code));
+    return loc_block;
   }
 
   if (loc_attr.isFormClass(DWARFFormValue::FC_SectionOffset)) {
@@ -700,19 +686,53 @@ StatusOr<VarLocation> DwarfReader::GetDieLocationAttr(const DWARFDie& die) {
     const llvm::DWARFLocationExpression& loc = location_expr_vec->front();
     VLOG(1) << to_string(loc);
 
-    PL_ASSIGN_OR_RETURN(SimpleBlock decoded_block, DecodeSimpleBlock(loc.Expr));
-
-    if (decoded_block.code >= llvm::dwarf::LocationAtom::DW_OP_reg0 &&
-        decoded_block.code <= llvm::dwarf::LocationAtom::DW_OP_reg31) {
-      int reg_num = decoded_block.code - llvm::dwarf::LocationAtom::DW_OP_reg0;
-      return VarLocation{.loc_type = LocationType::kRegister, .offset = reg_num};
-    }
-
-    return error::Unimplemented("Unsupported code (location atom): $0", decoded_block.code);
+    return llvm::ArrayRef<uint8_t>(loc.Expr);
   }
 
   return error::Internal("Unsupported Form: $0", magic_enum::enum_name(loc_attr.getForm()));
 }
+
+// Get the DW_AT_location of a DIE. Used for getting the location of variables,
+// which may be either on the stack or in registers.
+// Currently used on function arguments.
+//
+// Example:
+//     0x00062106:   DW_TAG_formal_parameter
+//                    DW_AT_name [DW_FORM_string] ("v")
+//                    ...
+//                    DW_AT_location [DW_FORM_block1] (DW_OP_call_frame_cfa)
+// This example should return the location on the stack.
+StatusOr<VarLocation> GetDieLocationAttr(const DWARFDie& die) {
+  PL_ASSIGN_OR_RETURN(llvm::ArrayRef<uint8_t> loc_bytes, GetDieLocationAttrBytes(die));
+  PL_ASSIGN_OR_RETURN(SimpleBlock loc_block, DecodeSimpleBlock(loc_bytes));
+
+  if (loc_block.code == llvm::dwarf::LocationAtom::DW_OP_fbreg) {
+    if (loc_block.operand >= 0) {
+      return VarLocation{.loc_type = LocationType::kStack, .offset = loc_block.operand};
+    } else {
+      // TODO(oazizi): Hacky code used for CPP DWARF info. Needs to be re-written.
+      loc_block.operand *= -1;
+      return VarLocation{.loc_type = LocationType::kRegister, .offset = loc_block.operand};
+    }
+  }
+
+  if (loc_block.code == llvm::dwarf::LocationAtom::DW_OP_call_frame_cfa) {
+    // DW_OP_call_frame_cfa is observed in golang dwarf symbols.
+    // This logic is probably not right, but appears to work for now.
+    // TODO(oazizi): Study call_frame_cfa blocks.
+    return VarLocation{.loc_type = LocationType::kStack, .offset = 0};
+  }
+
+  if (loc_block.code >= llvm::dwarf::LocationAtom::DW_OP_reg0 &&
+      loc_block.code <= llvm::dwarf::LocationAtom::DW_OP_reg31) {
+    int reg_num = loc_block.code - llvm::dwarf::LocationAtom::DW_OP_reg0;
+    return VarLocation{.loc_type = LocationType::kRegister, .offset = reg_num};
+  }
+
+  return error::Unimplemented("Unsupported code (location atom): $0", loc_block.code);
+}
+
+}  // namespace
 
 StatusOr<VarLocation> DwarfReader::GetArgumentLocation(std::string_view function_symbol_name,
                                                        std::string_view arg_name) {
