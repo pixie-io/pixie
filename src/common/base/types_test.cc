@@ -224,7 +224,6 @@ TEST(int24_t, VerifyInitializationAndBitShifting) {
     // Assign an int that uses each of the 3 bytes
     int24_t t2 = 0x10111;
     EXPECT_EQ(t2 << 8, 0x11100);
-    EXPECT_EQ(sizeof(t2), 3);
 
     int24_t val = 0xffffff;
     EXPECT_EQ(val, -1);
