@@ -59,6 +59,10 @@ spec:
                 description: DisableAutoUpdate specifies whether auto update should
                   be enabled for the Vizier instance.
                 type: boolean
+              enableClockworkIntegration:
+                description: EnableClockworkIntegration enables getting timestamp
+                  offsets from a clockwork agent, for time-sync purposes.
+                type: boolean
               patches:
                 additionalProperties:
                   type: string
@@ -71,9 +75,6 @@ spec:
                 description: PemMemoryLimit is a memory limit applied specifically
                   to PEM pods.
                 type: string
-              enableClockworkIntegration:
-                description: Currently unsupported.
-                type: boolean
               pod:
                 description: Pod defines the policy for creating Vizier pods.
                 properties:
@@ -130,9 +131,19 @@ spec:
           status:
             description: VizierStatus defines the observed state of Vizier
             properties:
+              lastReconciliationPhaseTime:
+                description: LastReconciliationPhaseTime is the last time that the
+                  ReconciliationPhase changed.
+                format: date-time
+                type: string
               message:
                 description: Message is a human-readable message with details about
                   why the Vizier is in this condition.
+                type: string
+              reconciliationPhase:
+                description: ReconciliationPhase describes the state the Reconciler
+                  is in for this Vizier. See the documentation above the ReconciliationPhase
+                  type for more information.
                 type: string
               sentryDSN:
                 description: SentryDSN is key for Viziers that is used to send errors
@@ -149,17 +160,6 @@ spec:
                 description: VizierReason is a short, machine understandable string
                   that gives the reason for the transition into the Vizier's current
                   status.
-                type: string
-              reconciliationPhase:
-                description: ReconciliationPhase is the state the Reconciler has reached while managing this
-                  Vizier. When the Reconciler creates a Vizier, the Reconciler sets this value to `Updating`.
-                  When successful, the Reconciler moves to a `Ready` phase. If unsuccessful,
-                  will move from `Updating` to `Failed`. When the Reconciler updates the Vizier
-                  again, the phase will be set to `Updating`.
-                type: string
-              lastReconciliationPhaseTime:
-                description: LastReconciliationPhaseTime is the last time that the ReconciliationPhase changed.
-                format: date-time
                 type: string
             type: object
         type: object
