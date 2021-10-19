@@ -10,15 +10,15 @@ namespace stirling {
 namespace protocols {
 namespace mux {
 
-ParseState ParseFullFrame(BinaryDecoder* decoder, message_type_t /*type*/, std::string_view* buf, Frame* frame);
+ParseState ParseFullFrame(BinaryDecoder* decoder, message_type_t, std::string_view* buf, Frame* frame);
 
 }
 
 template <>
-ParseState ParseFrame(message_type_t type, std::string_view* buf, mux::Frame* frame, NoState* /*state*/);
+ParseState ParseFrame(message_type_t type, std::string_view* buf, mux::Frame* frame, NoState*);
 
 template <>
-size_t FindFrameBoundary<mux::Frame>(message_type_t type, std::string_view buf, size_t start_pos, NoState* /*state*/);
+size_t FindFrameBoundary<mux::Frame>(message_type_t type, std::string_view buf, size_t start_pos, NoState*);
 
 }
 }

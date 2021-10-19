@@ -6,7 +6,7 @@ namespace stirling {
 namespace protocols {
 namespace mux {
 
-ParseState ParseFullFrame(BinaryDecoder* decoder, message_type_t /* type */, std::string_view* /*buf*/, Frame* frame) {
+ParseState ParseFullFrame(BinaryDecoder* decoder, message_type_t, std::string_view*, Frame* frame) {
 
   auto remaining_bytes = frame->length;
   // TODO(oazizi/ddelnano): Simplify this logic when the binary decoder supports reading 24 bit fields
@@ -23,7 +23,7 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, message_type_t /* type */, std
   }
 
   if (frame->type == static_cast<int8_t>(Type::kRinit) || frame->type == static_cast<int8_t>(Type::kTinit)) {
-      // TODO: Add support for reading Tinit and Rinit compression, tls and other parameters
+      // TODO(ddelnano): Add support for reading Tinit and Rinit compression, tls and other parameters
     if (! decoder->ExtractString(remaining_bytes).ok()) return ParseState::kInvalid;
 
     return ParseState::kSuccess;
@@ -93,7 +93,7 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, message_type_t /* type */, std
 
   frame->context = std::move(context);
 
-  // TODO: Add dest and dtab parsing here
+  // TODO(ddelnano): Add dest and dtab parsing here
   if (! decoder->ExtractString(remaining_bytes).ok()) return ParseState::kInvalid;
 
   return ParseState::kSuccess;
@@ -103,8 +103,8 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, message_type_t /* type */, std
 
 
 template <>
-ParseState ParseFrame(message_type_t type, std::string_view* buf, mux::Frame* frame, NoState* /*state*/) {
-    
+ParseState ParseFrame(message_type_t type, std::string_view* buf, mux::Frame* frame, NoState*) {
+
   BinaryDecoder decoder(*buf);
 
   PL_ASSIGN_OR(frame->length, decoder.ExtractInt<int32_t>(), return ParseState::kInvalid);
@@ -113,7 +113,7 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, mux::Frame* fr
   }
 
   PL_ASSIGN_OR(frame->type, decoder.ExtractInt<int8_t>(), return ParseState::kInvalid);
-  if (! mux::IsMuxType(frame->type)) {
+  if (!mux::IsMuxType(frame->type)) {
       return ParseState::kInvalid;
   }
 
@@ -121,8 +121,8 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, mux::Frame* fr
 }
 
 template <>
-size_t FindFrameBoundary<mux::Frame>(message_type_t /*type*/, std::string_view /*buf*/,
-                                      size_t /*start_pos*/, NoState* /*state*/) {
+size_t FindFrameBoundary<mux::Frame>(message_type_t, std::string_view,
+                                      size_t, NoState*) {
   // Not implemented.
   return std::string::npos;
 }

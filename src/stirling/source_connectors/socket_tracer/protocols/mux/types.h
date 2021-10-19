@@ -79,7 +79,7 @@ inline std::optional<Type> GetMatchingRespType(Type req_type) {
  * ----------------------------------------------
  * |                 Payload                    |
  * ----------------------------------------------
- * 
+ *
  * Rinit message
  * ----------------------------------------------
  * | uint32 header size | int8 type | int24 tag |
@@ -121,7 +121,7 @@ struct Frame : public FrameBase {
 
   size_t ByteSize() const override { return length; }
 
-  // TODO: Include printing the context, dtabs and other fields
+  // TODO(ddelnano): Include printing the context, dtabs and other fields
   std::string ToString() const override {
     return absl::Substitute("Mux message [len=$0 type=$1 tag=$2 # context: TBD dtabs: TBD]", length, type, tag);
   }
@@ -136,7 +136,7 @@ struct Record {
 struct ProtocolTraits {
   using frame_type = Frame;
   using record_type = Record;
-  // TODO: mux does have state but assume no state for now
+  // TODO(ddelnano): mux does have state but assume no state for now
   using state_type = NoState;
 };
 
