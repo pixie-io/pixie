@@ -53,10 +53,9 @@ TEST(RegexOps, regex_match_rules) {
   ).Expect("");
   // Regex rules is not a valid json.
   EXPECT_NOT_OK(
-    udf_tester.Init(
+    MatchRegexRule().Init(
+      nullptr,
       ".*[oO][nN][pP][oO][iI][nN][tT][eE][rR][eE][nN][tT][eE][rR].*"
-    ).ForInput(
-      "UPDATE courses SET name = 'foo' WHERE id = 2"
     )
   );
 }

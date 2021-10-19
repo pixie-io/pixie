@@ -28,7 +28,6 @@
 #include "src/carnot/udf/registry.h"
 #include "src/common/base/utils.h"
 #include "src/shared/types/types.h"
-#include "src/common/base/base.h"
 
 namespace px {
 namespace carnot {
