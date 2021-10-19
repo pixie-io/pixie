@@ -143,6 +143,27 @@ using VectorView = ContainerView<T, std::vector>;
 template <typename T>
 using DequeView = ContainerView<T, std::deque>;
 
+class int24_t {
+  public:
+    operator int() const { return (data[0] << 16 | data[1] << 8 | data[2]); }
+    int24_t(): data{0, 0, 0} { }
+    int24_t(int x) {
+      data[0] = (x & 0xff0000) >> 16;
+      data[1] = (x & 0xff00) >> 8;
+      data[2] = x & 0xff;
+    }
+
+    int8_t data[3];
+};
+
+inline int operator<<(int24_t left, int shift) {
+  if (shift != 8) throw std::invalid_argument("int24_t only supports shifting by 8 bits");
+  left.data[0] = left.data[1];
+  left.data[1] = left.data[2];
+  left.data[2] = 0;
+  return (left.data[0] << (shift * 2) | left.data[1] << shift);
+}
+
 }  // namespace px
 
 // When used in a constexpr function, this will prevent compilation if assert does not pass.
