@@ -11,7 +11,7 @@
   ],
   "widgets": [
     {
-      "name": "Results",
+      "name": "TCP Retransmits",
       "position": {
         "x": 0,
         "y": 0,
@@ -36,6 +36,19 @@
           "retransmissions"
         ]
       }
+    },
+    {
+        "name": "Table",
+        "position": {
+            "x": 0,
+            "y": 5,
+            "w": 12,
+            "h": 4
+        },
+        "globalFuncOutputName": "results",
+        "displaySpec": {
+            "@type": "types.px.dev/px.vispb.Table"
+        }
     }
   ]
 }
