@@ -46,8 +46,7 @@ TEST(BinaryDecoderTest, ExtractInt) {
 
   ASSERT_OK_AND_EQ(bin_decoder.ExtractInt<int8_t>(), 1);
   ASSERT_OK_AND_EQ(bin_decoder.ExtractInt<int16_t>(), 257);
-  StatusOr<int24_t> custom_int = bin_decoder.ExtractInt<int24_t>();
-  ASSERT_OK_AND_EQ(custom_int, 65793);
+  ASSERT_OK_AND_EQ(bin_decoder.ExtractInt<int24_t>(), 65793);
   ASSERT_OK_AND_EQ(bin_decoder.ExtractInt<int32_t>(), 16843009);
   EXPECT_EQ(0, bin_decoder.BufSize());
 }
