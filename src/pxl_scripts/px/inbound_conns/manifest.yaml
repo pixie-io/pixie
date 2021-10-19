@@ -1,0 +1,3 @@
+---
+short: Inbound Connections
+long: Shows a list of connections originating from endpoints outside the k8s cluster.

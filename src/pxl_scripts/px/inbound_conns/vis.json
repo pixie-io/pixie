@@ -1,0 +1,49 @@
+{
+    "variables": [
+        {
+            "name": "start_time",
+            "type": "PX_STRING",
+            "description": "The start time of the window in time units before now.",
+            "defaultValue": "-5m"
+        },
+        {
+            "name": "ip_filter",
+            "type": "PX_STRING",
+            "description": "IP filter, using a substring match.",
+            "defaultValue": ""
+        }
+    ],
+    "globalFuncs": [
+        {
+            "outputName": "inbound_conns",
+            "func": {
+                "name": "inbound_conns",
+                "args": [
+                    {
+                        "name": "start_time",
+                        "variable": "start_time"
+                    },
+                    {
+                        "name": "ip_filter",
+                        "variable": "ip_filter"
+                    }
+                ]
+            }
+        }
+    ],
+    "widgets": [
+        {
+            "name": "Table",
+            "position": {
+                "x": 0,
+                "y": 0,
+                "w": 12,
+                "h": 4
+            },
+            "globalFuncOutputName": "inbound_conns",
+            "displaySpec": {
+                "@type": "types.px.dev/px.vispb.Table"
+            }
+        }
+    ]
+}
