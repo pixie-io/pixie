@@ -26,6 +26,7 @@ var reasonToMessageMap = map[VizierReason]string{
 	VizierVersionTooOld:            "Vizier version is older by more than one major version and may no longer be supported. Please update to the latest version.",
 	KernelVersionsIncompatible:     "Majority of nodes on the cluster have an incompatible Kernel version. Instrumentation may be incomplete.",
 	CloudConnectorFailedToConnect:  "Cloud connector failed to connect to Pixie Cloud. Please check the cloud address in the Vizier object.",
+	CloudConnectorRegistering:      "Cloud connector is registering with Pixie Cloud. This may take a few minutes.",
 	CloudConnectorInvalidDeployKey: "Invalid deploy key specified. Please check that the deploy key is correct.",
 	CloudConnectorBasicQueryFailed: "Unable to run basic healthcheck query on cluster.",
 	CloudConnectorPodPending:       "Cloud connector pod is pending. If this status persists, investigate failures on the vizier-cloud-connector pod.",
@@ -86,6 +87,8 @@ const (
 	CloudConnectorPodFailed VizierReason = "CloudConnectorPodFailed"
 	// CloudConnectorMissing occurs when a cloud connector pod doesn't exist for a cluster.
 	CloudConnectorMissing VizierReason = "CloudConnectorMissing"
+	// CloudConnectorRegistering occurs when the cloud connector is still registering with Pixie Cloud.
+	CloudConnectorRegistering VizierReason = "CloudConnectorRegistering"
 
 	// MetadataPVCMissing occurs when the operator cannot find the metadata PVC.
 	MetadataPVCMissing VizierReason = "MetadataPVCMissing"

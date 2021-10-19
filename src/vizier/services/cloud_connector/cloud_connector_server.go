@@ -20,6 +20,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -74,7 +75,7 @@ func newVzServiceClient() (vizierpb.VizierServiceClient, error) {
 
 // Checks to see if the cloud connector has successfully assigned a cluster ID.
 type readinessCheck struct {
-	vzInfo controllers.VizierInfo
+	bridge *controllers.Bridge
 }
 
 func (r *readinessCheck) Name() string {
@@ -82,8 +83,11 @@ func (r *readinessCheck) Name() string {
 }
 
 func (r *readinessCheck) Check() error {
-	_, err := r.vzInfo.GetClusterID()
-	return err
+	s := r.bridge.GetStatus()
+	if s == "" {
+		return nil
+	}
+	return errors.New(string(s))
 }
 
 func main() {
@@ -164,7 +168,7 @@ func main() {
 	// Set up healthz endpoint.
 	healthz.RegisterDefaultChecks(mux)
 	// Set up readyz endpoint.
-	healthz.InstallPathHandler(mux, "/readyz", &readinessCheck{vzInfo})
+	healthz.InstallPathHandler(mux, "/readyz", &readinessCheck{svr})
 
 	statusz.InstallPathHandler(mux, "/statusz", func() string {
 		// Check state of the bridge.

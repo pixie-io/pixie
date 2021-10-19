@@ -147,7 +147,6 @@ type VizierInfo interface {
 	DeleteJob(string) error
 	GetJob(string) (*batchv1.Job, error)
 	GetClusterUID() (string, error)
-	GetClusterID() (string, error)
 	UpdateClusterID(string) error
 	GetVizierPodLogs(string, bool, string) (string, error)
 	GetVizierPods() ([]*vizierpb.VizierPodStatus, []*vizierpb.VizierPodStatus, error)
@@ -1179,6 +1178,10 @@ func (s *Bridge) DebugPods(req *vizierpb.DebugPodsRequest, srv vizierpb.VizierDe
 func (s *Bridge) GetStatus() vzstatus.VizierReason {
 	if s.vzConnClient == nil {
 		return vzstatus.CloudConnectorFailedToConnect
+	}
+
+	if s.vizierID == uuid.Nil {
+		return vzstatus.CloudConnectorRegistering
 	}
 	// TODO(michellenguyen): Add status reasons for whether the bridge stream has started/stopped successfully.
 	return ""

@@ -703,18 +703,6 @@ func (v *K8sVizierInfo) WaitForJobCompletion(name string) (bool, error) {
 	return true, nil
 }
 
-// GetClusterID fetches the cluster ID from the cluster secrets.
-func (v *K8sVizierInfo) GetClusterID() (string, error) {
-	s, err := v.clientset.CoreV1().Secrets(v.ns).Get(context.Background(), "pl-cluster-secrets", metav1.GetOptions{})
-	if err != nil {
-		return "", err
-	}
-	if id, ok := s.Data["cluster-id"]; ok {
-		return string(id), nil
-	}
-	return "", errors.New("cluster-id not found in pl-cluster-secrets")
-}
-
 // UpdateClusterID updates the cluster ID in the cluster secrets.
 func (v *K8sVizierInfo) UpdateClusterID(id string) error {
 	s, err := v.clientset.CoreV1().Secrets(v.ns).Get(context.Background(), "pl-cluster-secrets", metav1.GetOptions{})
