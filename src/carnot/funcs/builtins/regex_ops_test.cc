@@ -23,6 +23,7 @@
 
 #include "src/carnot/funcs/builtins/regex_ops.h"
 #include "src/carnot/udf/test_utils.h"
+#include "src/common/testing/testing.h"
 #include "src/common/base/base.h"
 
 namespace px {
@@ -38,11 +39,26 @@ TEST(RegexOps, basic_regex_match) {
 TEST(RegexOps, regex_match_rules) {
   auto udf_tester =
       udf::UDFTester<MatchRegexRule>();
+  // Value matches regex rule.
   udf_tester.Init(
     "{\"onpointerenter_event\":\".*[oO][nN][pP][oO][iI][nN][tT][eE][rR][eE][nN][tT][eE][rR].*\"}"
   ).ForInput(
     "UPDATE courses SET name = '<a/+/OnpOinteRENtER+=+a=prompt,a()%0dx>v3dm0s ' WHERE id = 2"
   ).Expect("onpointerenter_event");
+  // Value does not match regex rule.
+  udf_tester.Init(
+    "{\"onpointerenter_event\":\".*[oO][nN][pP][oO][iI][nN][tT][eE][rR][eE][nN][tT][eE][rR].*\"}"
+  ).ForInput(
+    "UPDATE courses SET name = 'foo' WHERE id = 2"
+  ).Expect("");
+  // Regex rules is not a valid json.
+  EXPECT_NOT_OK(
+    udf_tester.Init(
+      ".*[oO][nN][pP][oO][iI][nN][tT][eE][rR][eE][nN][tT][eE][rR].*"
+    ).ForInput(
+      "UPDATE courses SET name = 'foo' WHERE id = 2"
+    )
+  );
 }
 
 }  // namespace builtins
