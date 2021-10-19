@@ -16,48 +16,56 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-DB="pl_prod"
-
 usage() {
-    echo "Usage: $0 [-p] [-s] [-w]"
-    echo " -p : Log into the prod db"
-    echo " -s : Log into the staging db"
-    echo " -w : Log into the db with write access"
+  echo "Usage: $0 [-p] [-s] [-w]"
+  echo " -p : Log into the prod db"
+  echo " -s : Log into the staging db"
+  echo " -w : Log into the db with write access"
+  exit 1
 }
 
-if [ $# -gt 2 ]; then
-usage
-exit
+set_default_values() {
+  DB=pl_prod
+  READER_NS=prod-ro
+  NS=plc
+
+  WRITE=false
+}
+
+parse_args() {
+  set_default_values
+
+  local OPTIND
+  while getopts "psw" opt; do
+    case ${opt} in
+      p)
+        ;;
+      s)
+        DB=pl_staging
+        READER_NS=staging-ro
+        SECRET_NS=staging-ro
+        NS=plc-staging
+        ;;
+      w)
+        WRITE=true
+        ;;
+      *)
+        usage
+        ;;
+    esac
+  done
+  shift $((OPTIND - 1))
+}
+
+parse_args "$@"
+
+if [[ $WRITE == "true" ]]; then
+  SECRET_NS="${NS}"
+  SECRET_NAME=pl-db-secrets
+else
+  SECRET_NS="${READER_NS}"
+  SECRET_NAME=pl-db-ro-secrets
 fi
-
-SECRET_NAME="pl-db-ro-secrets"
-DB="pl_prod"
-READER_NS="prod-ro"
-SECRET_NS="prod-ro"
-NS="plc"
-
-while test $# -gt 0; do
-  case "$1" in
-    -p) DB="pl_prod"
-        READER_NS="prod-ro"
-        SECRET_NS="prod-ro"
-        NS="plc"
-        shift
-        ;;
-    -s) DB="pl_staging"
-        READER_NS="staging-ro"
-        SECRET_NS="staging-ro"
-        NS="plc-staging"
-        shift
-        ;;
-    -w) SECRET_NS="${NS}"
-        SECRET_NAME="pl-db-secrets"
-        shift
-        ;;
-    *)  usage ;;
-  esac
-done
-
 
 # Running this script requires access to the "prod-ro" (prod-readonly) namespace in the prod cluster.
 POD_NAME=$(kubectl get pod --namespace $READER_NS \
