@@ -121,6 +121,21 @@ struct Frame : public FrameBase {
 
   size_t ByteSize() const override { return length; }
 
+  /*
+   * Returns the number of bytes remaining in the mux body / payload
+   * after parsing the required fields for all packets: header size,
+   * type and tag.
+   *
+   * Since mux's header size field is not included in the size field
+   * this will be 4 bytes less the length member (to account for type
+   * and tag fields).
+   *
+   * This is typically used when reading the rest of the payload for
+   * the RerrOld, Rerr, Rinit and Tinit messages that contain a why
+   * message, tls or compression parameters, etc.
+  */
+  size_t MuxBodyLength() const { return length - 4; }
+
   // TODO(ddelnano): Include printing the context, dtabs and other fields
   std::string ToString() const override {
     return absl::Substitute("Mux message [len=$0 type=$1 tag=$2 # context: TBD dtabs: TBD]", length, type, tag);
