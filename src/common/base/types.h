@@ -143,12 +143,11 @@ using VectorView = ContainerView<T, std::vector>;
 template <typename T>
 using DequeView = ContainerView<T, std::deque>;
 
-class __attribute__((packed)) int24_t {
-    public:
-      operator int() const { return data; }
-      int24_t(int x) : data(x) {}
-      int24_t () {}
-      int32_t data : 24;
+struct __attribute__((packed)) int24_t {
+  operator int() const { return data; }
+  int24_t(int x) : data(x) {}
+  int24_t () {}
+  int32_t data : 24;
 };
 
 inline int operator<<(int24_t left, int shift) {
