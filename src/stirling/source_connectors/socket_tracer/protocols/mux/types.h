@@ -3,6 +3,7 @@
 #include <magic_enum.hpp>
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/event_parser.h"
 #include "src/stirling/utils/utils.h"
+#include <absl/container/flat_hash_map.h>
 
 namespace px {
 namespace stirling {
@@ -117,7 +118,7 @@ struct Frame : public FrameBase {
   std::string why;
   // Reply status codes. Only present in Rdispatch messages types
   int8_t reply_status;
-  std::map<std::string, std::map<std::string, std::string>> context;
+  absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, std::string>> context;
 
   size_t ByteSize() const override { return length; }
 

@@ -155,17 +155,17 @@ TEST_F(MuxParserTest, ParseFrameTdispatch) {
   ASSERT_EQ(state, ParseState::kSuccess);
 
   ASSERT_EQ(frame.context.size(), 3);
-  std::map<std::string, std::string> trace_ctx = {
+  absl::flat_hash_map<std::string, std::string> trace_ctx = {
     {"span id", "4821737427585769174"},
     {"parent id", "4821737427585769174"},
     {"trace id", "4821737427585769174"},
     {"flags", "0"},
   };
-  std::map<std::string, std::string> deadline = {
+  absl::flat_hash_map<std::string, std::string> deadline = {
     {"timestamp", "1627272372195000"},
     {"deadline", "9223372036854775"},
   };
-  std::map<std::string, std::string> retries = {
+  absl::flat_hash_map<std::string, std::string> retries = {
     {"length", "4"},
   };
   ASSERT_EQ(frame.context["com.twitter.finagle.tracing.TraceContext"], trace_ctx);

@@ -1,5 +1,6 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/mux/parse.h"
 #include "src/stirling/utils/binary_decoder.h"
+#include <absl/container/flat_hash_map.h>
 
 namespace px {
 namespace stirling {
@@ -31,7 +32,7 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, Frame* frame) {
   }
 
   PL_ASSIGN_OR(int16_t num_ctx, decoder->ExtractInt<int16_t>(), return ParseState::kInvalid);
-  std::map<std::string, std::map<std::string, std::string>> context;
+  absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, std::string>> context;
 
   for (int i = 0; i < num_ctx; i++) {
     PL_ASSIGN_OR(size_t ctx_key_len, decoder->ExtractInt<int16_t>(), return ParseState::kInvalid);
@@ -40,7 +41,7 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, Frame* frame) {
 
     PL_ASSIGN_OR(size_t ctx_value_len, decoder->ExtractInt<int16_t>(), return ParseState::kInvalid);
 
-    std::map<std::string, std::string> unpacked_value;
+    absl::flat_hash_map<std::string, std::string> unpacked_value;
     if (ctx_key == "com.twitter.finagle.Deadline") {
 
       PL_ASSIGN_OR(int64_t timestamp, decoder->ExtractInt<int64_t>(), return ParseState::kInvalid);
