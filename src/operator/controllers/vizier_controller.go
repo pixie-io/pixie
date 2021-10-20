@@ -372,6 +372,14 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 	// TODO(michellenguyen): Remove when the operator has the ability to ping CloudConn for Vizier Version.
 	// We are currently blindly assuming that the new version is correct.
 	_ = waitForCluster(r.Clientset, req.Namespace)
+
+	// Refetch the Vizier resource, as it may have changed in the time in which we were waiting for the cluster.
+	err = r.Get(ctx, req.NamespacedName, vz)
+	if err != nil {
+		// The Vizier was deleted in the meantime. Do nothing.
+		return nil
+	}
+
 	vz.Status.Version = vz.Spec.Version
 	vz = setReconciliationPhase(vz, v1alpha1.ReconciliationPhaseReady)
 
