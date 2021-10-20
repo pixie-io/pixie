@@ -112,9 +112,11 @@ const useStyles = makeStyles(({ shape, palette, spacing }: Theme) => createStyle
   },
   breadcrumbs: {
     display: 'flex',
-    marginLeft: spacing(3),
-    marginRight: spacing(3),
-    overflow: 'visible', // Otherwise shadows get cut off
+    // Use an over sized element to let shadows always appear,
+    // but let a horizontal scrollbar show up if there are more breadcrumbs than space allows.
+    margin: `${spacing(-0.5)} ${spacing(2.5)}`,
+    padding: spacing(0.5),
+    overflow: 'auto hidden',
   },
 }), { name: 'LiveViewBreadcrumbs' });
 
