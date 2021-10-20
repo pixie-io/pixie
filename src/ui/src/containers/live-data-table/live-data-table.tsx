@@ -25,7 +25,7 @@ import { buildClass, CellAlignment } from 'app/components';
 import { useTheme, makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import { ClusterContext } from 'app/common/cluster-context';
-import { JSONData } from 'app/containers/format-data/format-data';
+import { JSONData } from 'app/containers/format-data/json-data';
 import { getLiveCellRenderer } from 'app/containers/live-data-table/renderers';
 import { getSortFunc } from 'app/containers/live-data-table/sort-funcs';
 import { useLatestRowCount } from 'app/context/results-context';

@@ -25,11 +25,11 @@ import {
   DurationRenderer,
   formatDuration,
   HTTPStatusCodeRenderer,
-  JSONData,
   PercentRenderer,
   PortRenderer,
   ThroughputRenderer,
 } from 'app/containers/format-data/format-data';
+import { JSONData } from 'app/containers/format-data/json-data';
 import {
   EntityLink,
   isEntityType,

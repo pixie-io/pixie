@@ -28,8 +28,6 @@ import {
 import { buildClass } from 'app/components';
 import { DataType, SemanticType } from 'app/types/generated/vizierapi_pb';
 
-const JSON_INDENT_PX = 16;
-
 const useAlertDataStyles = makeStyles(({ palette }: Theme) => createStyles({
   true: {
     color: palette.error.dark,
@@ -37,130 +35,10 @@ const useAlertDataStyles = makeStyles(({ palette }: Theme) => createStyles({
   false: {},
 }), { name: 'AlertData' });
 
-const useJsonStyles = makeStyles(({ palette }: Theme) => createStyles({
-  base: {
-    fontFamily: '"Roboto Mono", serif',
-    fontSize: '14px',
-  },
-  jsonKey: {
-    color: palette.text.secondary,
-  },
-  number: {
-    color: palette.secondary.main,
-  },
-  null: {
-    color: palette.success.main,
-  },
-  string: {
-    color: palette.mode === 'dark' ? palette.info.light : palette.info.dark,
-    wordBreak: 'break-all',
-  },
-  boolean: {
-    color: palette.success.main,
-  },
-}), { name: 'JSONData' });
-
 export const AlertData: React.FC<{ data: any }> = React.memo(function AlertData({ data }) {
   const classes = useAlertDataStyles();
   return <div className={classes[data]}>{formatBoolData(data)}</div>;
 });
-
-interface JSONDataProps {
-  data: any;
-  indentation?: number;
-  multiline?: boolean;
-}
-
-export const JSONData: React.FC<JSONDataProps> = React.memo<JSONDataProps>((props) => {
-  const classes = useJsonStyles();
-  const indentation = props.indentation ? props.indentation : 0;
-  const { multiline } = props;
-  let { data } = props;
-  let cls = String(typeof data);
-
-  if (cls === 'string') {
-    try {
-      // noinspection UnnecessaryLocalVariableJS
-      const parsedJson = JSON.parse(data);
-      data = parsedJson;
-    } catch {
-      // Do nothing.
-    }
-  }
-
-  if (data === null) {
-    cls = 'null';
-  }
-
-  if (Array.isArray(data)) {
-    return (
-      <span className={classes.base}>
-        {'[\u00A0'}
-        {props.multiline ? <br /> : null}
-        {
-          data.map((val, idx) => (
-            <span
-              key={`${idx}-${indentation}`}
-              style={{ marginLeft: multiline ? (indentation + 1) * JSON_INDENT_PX : 0 }}
-            >
-              <JSONData data={val} multiline={multiline} indentation={indentation + 1} />
-              {idx !== Object.keys(data).length - 1 ? ',\u00A0' : ''}
-              {multiline ? <br /> : null}
-            </span>
-          ))
-        }
-        <span style={{ marginLeft: multiline ? indentation * JSON_INDENT_PX : 0 }}>{'\u00A0]'}</span>
-      </span>
-    );
-  }
-
-  if (typeof data === 'object' && data !== null) {
-    return (
-      <span className={classes.base}>
-        {'{\u00A0'}
-        {props.multiline ? <br /> : null}
-        {
-          Object.keys(data).map((key, idx) => (
-            <span
-              key={`${key}-${indentation}`}
-              style={{ marginLeft: props.multiline ? (indentation + 1) * JSON_INDENT_PX : 0 }}
-            >
-              <span className={classes.jsonKey}>
-                {`${key}:\u00A0`}
-              </span>
-              <JSONData data={data[key]} multiline={props.multiline} indentation={indentation + 1} />
-              {idx !== Object.keys(data).length - 1 ? ',\u00A0' : ''}
-              {props.multiline ? <br /> : null}
-            </span>
-          ))
-        }
-        <span style={{ marginLeft: multiline ? indentation * JSON_INDENT_PX : 0 }}>{'\u00A0}'}</span>
-      </span>
-    );
-  }
-
-  const splits = String(data)
-    .replace(/ /g, '\u00A0')
-    .split('\n');
-
-  const indent = {
-    marginLeft: props.multiline ? (indentation + 1) * JSON_INDENT_PX : 0,
-  };
-
-  return (
-    <span className={classes[cls]}>
-      {
-        splits.map((val, idx) => (
-          <span key={idx} style={idx > 0 ? indent : {}}>
-            {val}
-            {props.multiline && (idx !== splits.length - 1) ? <br /> : null}
-          </span>
-        ))
-      }
-    </span>
-  );
-});
-JSONData.displayName = 'JSONData';
 
 interface GaugeDataProps {
   data: any;

@@ -20,7 +20,7 @@
 import { render } from '@testing-library/react';
 import * as React from 'react';
 import {
-  AlertData, DurationRenderer, JSONData, formatBytes, formatDuration,
+  AlertData, DurationRenderer, formatBytes, formatDuration,
 } from './format-data';
 
 /* eslint-disable react-memo/require-usememo */
@@ -82,67 +82,6 @@ describe('<AlertData/> test', () => {
 
   it('should render correctly for false alert', () => {
     const { container } = render(<AlertData data={false} />);
-
-    expect(container).toMatchSnapshot();
-  });
-});
-
-describe('<JSONData/> test', () => {
-  it('should render correctly for single line', () => {
-    const { container } = render(
-      <JSONData
-        data={{
-          testString: 'a',
-          testNum: 10,
-          testNull: null,
-          testJSON: {
-            hello: 'world',
-          },
-        }}
-      />,
-    );
-
-    expect(container).toMatchSnapshot();
-  });
-
-  it('should render correctly for multiline', () => {
-    const { container } = render(
-      <JSONData
-        data={{
-          testString: 'a',
-          testNum: 10,
-          testNull: null,
-          testJSON: {
-            hello: 'world',
-          },
-        }}
-        multiline
-      />,
-    );
-
-    expect(container).toMatchSnapshot();
-  });
-
-  it('should render array correctly for single line', () => {
-    const { container } = render(
-      <JSONData
-        data={['some text', 'some other text']}
-      />,
-    );
-
-    expect(container).toMatchSnapshot();
-  });
-
-  it('should render array correctly for multiline', () => {
-    const { container } = render(
-      <JSONData
-        data={[
-          { a: 1, b: { c: 'foo' } },
-          { a: 3, b: null },
-        ]}
-        multiline
-      />,
-    );
 
     expect(container).toMatchSnapshot();
   });
