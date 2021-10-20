@@ -38,7 +38,7 @@ import { buildClass } from 'app/utils/build-class';
 import './react-table-config.d';
 import { AutoSizerContext, withAutoSizerContext } from 'app/utils/autosizer';
 import {
-  alpha, Button, Checkbox, FormControlLabel, Menu, MenuItem,
+  alpha, Button, Checkbox, FormControlLabel, Menu, MenuItem, Tooltip,
 } from '@material-ui/core';
 import { UnexpandedIcon } from 'app/components/icons/unexpanded';
 import MenuIcon from '@material-ui/icons/Menu';
@@ -272,17 +272,28 @@ const HeaderCell: React.FC<{ column: ColumnInstance }> = React.memo(function Hea
     // eslint-disable-next-line react-hooks/exhaustive-deps
   ), [column.canSort]);
 
+  // When the title is cut off (text-overflow: ellipsis), offer a tooltip with the full title.
+  // useLayoutEffect is required here to wait for the span's width to be set.
+  const overflowRef = React.useRef<HTMLDivElement>(null);
+  const [showTooltip, setShowTooltip] = React.useState(false);
+  React.useLayoutEffect(() => {
+    setShowTooltip(column.id === 'controls' || (overflowRef.current?.scrollWidth > overflowRef.current?.offsetWidth));
+  }, [column.id, column.width, overflowRef.current?.scrollWidth]);
+  const tooltip = column.id === 'controls' ? 'Select visible columns' : column.id;
+
   return (
     // eslint-disable-next-line react/jsx-key
     <div {...column.getHeaderProps()} className={cellClass}>
       <div
         {...sortProps}
-        title={column.id === 'controls' ? 'Select visible columns' : column.id}
+        title='' // sortProps sets this to 'Toggle SortBy' otherwise
         className={contClass}
       >
-        <span className={labelClass}>
-          {column.render('Header')}
-        </span>
+        <Tooltip title={showTooltip ? tooltip : ''}>
+          <span className={labelClass} ref={overflowRef}>
+            {column.render('Header')}
+          </span>
+        </Tooltip>
         {column.canSort && <ColumnSortButton column={column} />}
       </div>
       {column.canResize && <ColumnResizeHandle column={column} />}
