@@ -1,6 +1,5 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/mux/parse.h"
 #include "src/stirling/utils/binary_decoder.h"
-#include <absl/container/flat_hash_map.h>
 
 namespace px {
 namespace stirling {
@@ -34,6 +33,9 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, Frame* frame) {
   PL_ASSIGN_OR(int16_t num_ctx, decoder->ExtractInt<int16_t>(), return ParseState::kInvalid);
   absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, std::string>> context;
 
+  // Parse the key, value context pairs supplied in the Rdispatch/Tdispatch messages.
+  // These entries pass distributed tracing context, request deadlines, client id context
+  // and retries among others.
   for (int i = 0; i < num_ctx; i++) {
     PL_ASSIGN_OR(size_t ctx_key_len, decoder->ExtractInt<int16_t>(), return ParseState::kInvalid);
 
