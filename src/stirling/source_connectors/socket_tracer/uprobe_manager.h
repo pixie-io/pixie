@@ -431,6 +431,7 @@ class UProbeManager {
   absl::flat_hash_set<std::string> scanned_binaries_;
   absl::flat_hash_set<std::string> go_http2_probed_binaries_;
   absl::flat_hash_set<std::string> go_tls_probed_binaries_;
+  absl::flat_hash_set<std::string> nodejs_binaries_;
 
   // BPF maps through which the addresses of symbols for a given pid are communicated to uprobes.
   std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct openssl_symaddrs_t> >

@@ -307,6 +307,12 @@ StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(uint32_t pid) {
 
   std::filesystem::path host_proc_exe = system::Config::GetInstance().ToHostPath(proc_exe_paths[0]);
 
+  auto result = nodejs_binaries_.insert(host_proc_exe.string());
+  if (!result.second) {
+    // This is not a new binary, so nothing more to do.
+    return 0;
+  }
+
   PL_RETURN_IF_ERROR(UpdateNodeTLSWrapSymAddrs(pid));
 
   // These probes are attached on OpenSSL dynamic library (if present) as well.
