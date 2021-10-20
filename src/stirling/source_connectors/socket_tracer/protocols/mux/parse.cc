@@ -6,25 +6,27 @@ namespace stirling {
 namespace protocols {
 namespace mux {
 
-ParseState ParseFullFrame(BinaryDecoder* decoder, message_type_t, std::string_view*, Frame* frame) {
+ParseState ParseFullFrame(BinaryDecoder* decoder, Frame* frame) {
 
   // TODO(oazizi/ddelnano): Simplify this logic when the binary decoder supports reading 24 bit fields
   PL_ASSIGN_OR(uint16_t tag_first, decoder->ExtractInt<uint16_t>(), return ParseState::kInvalid);
   PL_ASSIGN_OR(uint8_t tag_last, decoder->ExtractInt<uint8_t>(), return ParseState::kInvalid);
   frame->tag = (tag_first << 8) | tag_last;
 
-  if (frame->type == static_cast<int8_t>(Type::kRerrOld) || frame->type == static_cast<int8_t>(Type::kRerr)) {
+  Type frame_type = static_cast<Type>(frame->type);
+
+  if (frame_type == Type::kRerrOld || frame_type == Type::kRerr) {
     PL_ASSIGN_OR(std::string_view why, decoder->ExtractString(frame->MuxBodyLength()), return ParseState::kInvalid);
     frame->why = std::string(why);
     return ParseState::kSuccess;
   }
 
-  if (frame->type == static_cast<int8_t>(Type::kRinit) || frame->type == static_cast<int8_t>(Type::kTinit)) {
+  if (frame_type == Type::kRinit || frame_type == Type::kTinit) {
     // TODO(ddelnano): Add support for reading Tinit and Rinit compression, tls and other parameters
     return ParseState::kSuccess;
   }
 
-  if (frame->type == static_cast<int8_t>(Type::kRdispatch)) {
+  if (frame_type == Type::kRdispatch) {
       PL_ASSIGN_OR(frame->reply_status, decoder->ExtractInt<uint8_t>(), return ParseState::kInvalid);
   }
 
@@ -84,7 +86,7 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, message_type_t, std::string_vi
 
 
 template <>
-ParseState ParseFrame(message_type_t type, std::string_view* buf, mux::Frame* frame, NoState*) {
+ParseState ParseFrame(message_type_t, std::string_view* buf, mux::Frame* frame, NoState*) {
 
   BinaryDecoder decoder(*buf);
 
@@ -98,7 +100,7 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, mux::Frame* fr
     return ParseState::kInvalid;
   }
 
-  ParseState parse_state = mux::ParseFullFrame(&decoder, type, buf, frame);
+  ParseState parse_state = mux::ParseFullFrame(&decoder, frame);
   if (parse_state == ParseState::kSuccess) {
     buf->remove_prefix(frame->length);
   }

@@ -10,7 +10,7 @@ namespace stirling {
 namespace protocols {
 namespace mux {
 
-ParseState ParseFullFrame(BinaryDecoder* decoder, message_type_t, std::string_view* buf, Frame* frame);
+ParseState ParseFullFrame(BinaryDecoder* decoder, Frame* frame);
 
 }
 
