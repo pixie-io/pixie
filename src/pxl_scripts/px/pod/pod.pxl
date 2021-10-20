@@ -287,9 +287,11 @@ def inbound_let_summary(start_time: str, pod: px.Pod):
     joined_table.request_throughput = joined_table.requests_per_window / window_ns
 
     joined_table.responder = df.pod
-    joined_table.requestor = px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_addr))
+    joined_table.requesting_ip = df.remote_addr
+    joined_table.requesting_pod = px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_addr))
+    joined_table.requesting_svc = px.pod_id_to_service_name(px.ip_to_pod_id(df.remote_addr))
 
-    return joined_table[['requestor', 'remote_addr', 'latency',
+    return joined_table[['requesting_ip', 'requesting_pod', 'requesting_svc', 'latency',
                          'error_rate', 'request_throughput']]
 
 

@@ -102,9 +102,12 @@ def inbound_let_summary(start_time: str, namespace: px.Namespace):
     df = df[df.trace_role == 2]
     df = df[df.service != '']
     df.responder = df.service
-    df.requestor = px.pod_id_to_service_name(px.ip_to_pod_id(df.remote_addr))
+    df.requesting_ip = df.remote_addr
+    df.requesting_pod = px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_addr))
+    df.requesting_svc = px.pod_id_to_service_name(px.ip_to_pod_id(df.remote_addr))
 
-    per_ns_df = df.groupby(['timestamp', 'requestor', 'responder']).agg(
+    per_ns_df = df.groupby(['timestamp', 'requesting_ip', 'requesting_pod', 'requesting_svc',
+                            'responder']).agg(
         throughput_total=('latency', px.count),
         inbound_bytes_total=('req_size', px.sum),
         outbound_bytes_total=('resp_size', px.sum)
@@ -114,24 +117,26 @@ def inbound_let_summary(start_time: str, namespace: px.Namespace):
     per_ns_df.inbound_throughput = per_ns_df.inbound_bytes_total / window_ns
     per_ns_df.outbound_throughput = per_ns_df.outbound_bytes_total / window_ns
 
-    per_ns_df = per_ns_df.groupby(['requestor', 'responder']).agg(
+    per_ns_df = per_ns_df.groupby(['requesting_ip', 'requesting_pod', 'requesting_svc',
+                                   'responder']).agg(
         request_throughput=('request_throughput', px.mean),
         inbound_throughput=('inbound_throughput', px.mean),
         outbound_throughput=('outbound_throughput', px.mean)
     )
 
-    quantiles_df = df.groupby(['requestor', 'responder']).agg(
+    quantiles_df = df.groupby(['requesting_ip', 'requesting_pod', 'requesting_svc',
+                               'responder']).agg(
         latency=('latency', px.quantiles)
         error_rate=('failure', px.mean),
     )
 
     quantiles_df.error_rate = px.Percent(quantiles_df.error_rate)
 
-    joined = per_ns_df.merge(quantiles_df, left_on=['requestor', 'responder'],
-                             right_on=['requestor', 'responder'], how='inner',
+    joined = per_ns_df.merge(quantiles_df, left_on=['requesting_ip', 'responder'],
+                             right_on=['requesting_ip', 'responder'], how='inner',
                              suffixes=['', '_x'])
-    return joined[['requestor', 'responder', 'latency', 'request_throughput', 'error_rate',
-                   'inbound_throughput', 'outbound_throughput']]
+    return joined[['requesting_ip', 'requesting_pod', 'requesting_svc', 'responder', 'latency',
+                   'request_throughput', 'error_rate', 'inbound_throughput', 'outbound_throughput']]
 
 
 def inbound_let_service_graph(start_time: str, namespace: px.Namespace):
