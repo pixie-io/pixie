@@ -38,7 +38,7 @@ func init() {
 	LiveCmd.Flags().StringP("bundle", "b", "", "Path/URL to bundle file")
 	LiveCmd.Flags().StringP("file", "f", "", "Script file, specify - for STDIN")
 	LiveCmd.Flags().BoolP("new_autocomplete", "n", false, "Whether to use the new autocomplete")
-	LiveCmd.Flags().BoolP("e2e_encryption", "e", false, "Enable E2E encryption")
+	LiveCmd.Flags().BoolP("e2e_encryption", "e", true, "Enable E2E encryption")
 
 	LiveCmd.Flags().BoolP("all-clusters", "d", false, "Run script across all clusters")
 	LiveCmd.Flags().StringP("cluster", "c", "", "Run only on selected cluster")

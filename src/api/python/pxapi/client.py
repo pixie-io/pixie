@@ -111,7 +111,7 @@ class Conn:
             token: str,
             pixie_url: str,
             cluster_id: ClusterID,
-            use_encryption: bool,
+            use_encryption: bool = True,
             cluster_info: cpb.ClusterInfo = None,
             channel_fn: Callable[[str], grpc.aio.Channel] = None,
             direct: bool = False,

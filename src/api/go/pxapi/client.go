@@ -72,7 +72,8 @@ type Client struct {
 // NewClient creates a new Pixie API Client.
 func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 	c := &Client{
-		cloudAddr: defaultCloudAddr,
+		cloudAddr:     defaultCloudAddr,
+		useEncryption: true,
 	}
 
 	for _, opt := range opts {

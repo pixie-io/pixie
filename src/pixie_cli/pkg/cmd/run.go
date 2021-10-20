@@ -45,7 +45,7 @@ func init() {
 	RunCmd.Flags().StringP("output", "o", "", "Output format: one of: json|table|csv")
 	RunCmd.Flags().StringP("file", "f", "", "Script file, specify - for STDIN")
 	RunCmd.Flags().BoolP("list", "l", false, "List available scripts")
-	RunCmd.Flags().BoolP("e2e_encryption", "e", false, "Enable E2E encryption")
+	RunCmd.Flags().BoolP("e2e_encryption", "e", true, "Enable E2E encryption")
 	RunCmd.Flags().BoolP("all-clusters", "d", false, "Run script across all clusters")
 	RunCmd.Flags().StringP("cluster", "c", "", "ID of the cluster to run on. "+
 		"Use 'px get viziers', or visit Admin console: work.withpixie.ai/admin, to find the ID")
