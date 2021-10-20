@@ -159,23 +159,25 @@ bool IsNamespace(llvm::dwarf::Tag tag) { return tag == llvm::dwarf::DW_TAG_names
 }  // namespace
 
 Status DwarfReader::DetectSourceLanguage() {
-  if (dwarf_context_->getNumCompileUnits() == 0) {
-    return error::Internal(
-        "Could not determine the source language of the DWARF info. No compile units found.");
+  for (size_t i = 0; i < dwarf_context_->getNumCompileUnits(); ++i) {
+    auto lang_opt =
+        dwarf_context_->getUnitAtIndex(i)->getUnitDIE().find(llvm::dwarf::DW_AT_language);
+    if (!lang_opt.hasValue()) {
+      // Found that node executable built from the source can have the following DIE returned by
+      // getUnitAtIndex()->getUnitDie().
+      // 0x0000000b: DW_TAG_partial_unit
+      //               DW_AT_stmt_list   (0x00000000)
+      //               DW_AT_comp_dir    ("/home/yzhao/src/node/out")
+      // This is not a DW_TAG_compile_unit.
+      continue;
+    }
+    source_language_ =
+        static_cast<llvm::dwarf::SourceLanguage>(llvm::dwarf::toUnsigned(lang_opt, /*default*/ 0));
+    return Status::OK();
   }
-
-  // Use the first compile unit as the source language.
-  DWARFDie CU = dwarf_context_->getUnitAtIndex(0)->getUnitDIE();
-  auto lang = CU.find(llvm::dwarf::DW_AT_language);
-
-  if (!lang.hasValue()) {
-    return error::Internal(
-        "Could not determine the source language of the DWARF info. DW_AT_language not found on "
-        "unit DIE.");
-  }
-
-  source_language_ = static_cast<llvm::dwarf::SourceLanguage>(llvm::dwarf::toUnsigned(lang, 0));
-  return Status::OK();
+  return error::Internal(
+      "Could not determine the source language of the DWARF info. DW_AT_language not found on "
+      "any compilation unit.");
 }
 
 void DwarfReader::IndexDIEs() {
