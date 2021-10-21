@@ -22,34 +22,15 @@ This view lists the namespaces and the nodes that are available on the current c
 import px
 
 
-ns_per_ms = 1000 * 1000
-ns_per_s = 1000 * ns_per_ms
 # Window size to use on time_ column for bucketing.
+ns_per_s = 1000 * 1000 * 1000
 window_ns = px.DurationNanos(10 * ns_per_s)
-# Flag to filter out requests that come from an unresolvable IP.
-filter_unresolved_inbound = True
+
 # Flag to filter out health checks from the data.
 filter_health_checks = True
-# Flag to filter out ready checks from the data.
-filter_ready_checks = True
+
 # Whether or not to include traffic from IPs that don't resolve to a known pod/service.
 include_ips = True
-
-
-def nodes_for_cluster(start_time: str):
-    ''' Gets a list of nodes in the current cluster since `start_time`.
-    Args:
-    @start_time Start time of the data to examine.
-    '''
-    df = px.DataFrame(table='process_stats', start_time=start_time)
-    df.node = df.ctx['node_name']
-    df.pod = df.ctx['pod_name']
-    agg = df.groupby(['node', 'pod']).agg()
-    nodes = agg.groupby('node').agg(pod_count=('pod', px.count))
-    process_stats = process_stats_by_entity(start_time, 'node')
-    output = process_stats.merge(nodes, how='inner', left_on='node', right_on='node',
-                                 suffixes=['', '_x'])
-    return output[['node', 'cpu_usage', 'pod_count']]
 
 
 def process_stats_by_entity(start_time: str, entity: str):
@@ -118,6 +99,22 @@ def process_stats_by_entity(start_time: str, entity: str):
     return df.drop(['cpu_ktime_ns', 'cpu_utime_ns'])
 
 
+def nodes_for_cluster(start_time: str):
+    ''' Gets a list of nodes in the current cluster since `start_time`.
+    Args:
+    @start_time Start time of the data to examine.
+    '''
+    df = px.DataFrame(table='process_stats', start_time=start_time)
+    df.node = df.ctx['node_name']
+    df.pod = df.ctx['pod_name']
+    agg = df.groupby(['node', 'pod']).agg()
+    nodes = agg.groupby('node').agg(pod_count=('pod', px.count))
+    process_stats = process_stats_by_entity(start_time, 'node')
+    output = process_stats.merge(nodes, how='inner', left_on='node', right_on='node',
+                                 suffixes=['', '_x'])
+    return output[['node', 'cpu_usage', 'pod_count']]
+
+
 def pods_for_cluster(start_time: str):
     ''' A list of pods in `namespace`.
     Args:
@@ -180,13 +177,42 @@ def services_for_cluster(start_time: str):
     return joined.drop('service_x')
 
 
+def http_events_df(start_time: str):
+    ''' Get a dataframe of HTTP events.
+    Certain traffic (like health checks) are auto removed, and some standard fields are added.
+    Args:
+    @start_time: The timestamp of data to start at.
+    '''
+    df = px.DataFrame(table='http_events', start_time=start_time)
+
+    # Add K8s metadata.
+    df.service = df.ctx['service']
+    df.pod = df.ctx['pod']
+
+    # Filter out non-k8s entities.
+    df = df[df.pod != '']
+
+    # Snap timestamps to bins.
+    df.timestamp = px.bin(df.time_, window_ns)
+
+    # Additional HTTP fields, pre-computed for convenience.
+    df.failure = df.resp_status >= 400
+
+    # Remove health checks, and anything with no remote address.
+    health_check_req = ((df.req_path == '/healthz' or df.req_path == '/readyz') or df.req_path == '/livez')
+    filter_out_conds = (health_check_req and filter_health_checks) or (df['remote_addr'] == '-')
+    df = df[not filter_out_conds]
+
+    return df
+
+
 def inbound_service_let_summary(start_time: str):
     ''' Compute a summary of traffic by requesting service, for requests
         on services in the current cluster..
     Args:
     @start_time: The timestamp of data to start at.
     '''
-    df = inbound_service_let_helper(start_time)
+    df = http_events_df(start_time)
     # Filter only to inbound service traffic (server-side).
     # Don't include traffic initiated by this service to an external location.
     df = df[df.trace_role == 2]
@@ -217,26 +243,6 @@ def inbound_service_let_summary(start_time: str):
                    'inbound_http_throughput', 'outbound_http_throughput']]
 
 
-def inbound_service_let_helper(start_time: str):
-    ''' Compute the let as a timeseries for requests received or by services in `namespace`.
-    Args:
-    @start_time: The timestamp of data to start at.
-    @namespace: The namespace to filter on.
-    '''
-    df = px.DataFrame(table='http_events', start_time=start_time)
-    df.service = df.ctx['service']
-    df.pod = df.ctx['pod_name']
-    df = df[df.pod != '']
-    df.latency = df.latency
-    df.timestamp = px.bin(df.time_, window_ns)
-    df.failure = df.resp_status >= 400
-    filter_out_conds = ((df.req_path != '/healthz' or not filter_health_checks) and (
-        df.req_path != '/readyz' or not filter_ready_checks)) and (
-        df['remote_addr'] != '-' or not filter_unresolved_inbound)
-    df = df[filter_out_conds]
-    return df
-
-
 def inbound_let_service_graph(start_time: str):
     ''' Compute a summary of traffic by requesting service, for requests on services
         in the current cluster. Similar to `inbound_let_summary` but also breaks down
@@ -244,7 +250,7 @@ def inbound_let_service_graph(start_time: str):
     Args:
     @start_time: The timestamp of data to start at.
     '''
-    df = inbound_service_let_helper(start_time)
+    df = http_events_df(start_time)
     df = df.groupby(['timestamp', 'service', 'remote_addr', 'pod', 'trace_role']).agg(
         latency_quantiles=('latency', px.quantiles),
         error_rate=('failure', px.mean),
