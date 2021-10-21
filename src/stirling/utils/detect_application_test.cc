@@ -22,14 +22,11 @@
 #include <vector>
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
-#include "src/stirling/utils/proc_path_tools.h"
 
 namespace px {
 namespace stirling {
 
-using ::px::system::ProcParser;
-using ::testing::StrEq;
+using ::px::testing::status::StatusIs;
 
 TEST(DetectApplicationTest, ResultsAreAsExpected) {
   EXPECT_EQ(Application::kUnknown, DetectApplication("/usr/bin/test"));
@@ -37,38 +34,15 @@ TEST(DetectApplicationTest, ResultsAreAsExpected) {
   EXPECT_EQ(Application::kNode, DetectApplication("/usr/bin/nodejs"));
 }
 
-struct NodeVersionTestParam {
-  std::filesystem::path tar;
-  std::string expected_version;
-};
-
-using NodeVersionTest = ::testing::TestWithParam<NodeVersionTestParam>;
-
-// Tests that GetVersion() can execute the executable of container process (with the set of
-// permissions granted through our requires_bpf tag, although the exact permission might be more
-// limited, perhaps only need 'root' permission to have access to the file).
-TEST_P(NodeVersionTest, ResultsAreAsExpected) {
-  ContainerRunner node_server(px::testing::BazelBinTestFilePath(GetParam().tar), "node_server", "");
-  ASSERT_OK_AND_ASSIGN(std::string output, node_server.Run(std::chrono::seconds{60}));
-  pid_t node_server_pid = node_server.process_pid();
-
-  ProcParser proc_parser(system::Config::GetInstance());
-  LazyLoadedFPResolver fp_resolver;
-
-  ASSERT_OK_AND_ASSIGN(const std::filesystem::path proc_exe_path,
-                       ProcExe(node_server_pid, &proc_parser, &fp_resolver));
-  ASSERT_OK_AND_THAT(GetVersion(proc_exe_path), StrEq(GetParam().expected_version));
+TEST(GetSemVer, AsExpected) {
+  ASSERT_OK_AND_ASSIGN(SemVer sem_ver, GetSemVer("v1.2.3-test"));
+  EXPECT_EQ(sem_ver.major, 1);
+  EXPECT_EQ(sem_ver.minor, 2);
+  EXPECT_EQ(sem_ver.patch, 3);
+  EXPECT_THAT(GetSemVer("v1.2.test").status(),
+              StatusIs(px::statuspb::INVALID_ARGUMENT,
+                       "Input 'v1.2.test' does not contain a semantic version number"));
 }
-
-INSTANTIATE_TEST_SUITE_P(
-    AllVersions, NodeVersionTest,
-    ::testing::Values(
-        NodeVersionTestParam{
-            "src/stirling/source_connectors/socket_tracer/testing/containers/node_15_0_image.tar",
-            "v15.0.1"},
-        NodeVersionTestParam{
-            "src/stirling/source_connectors/socket_tracer/testing/containers/node_16_9_image.tar",
-            "v16.9.1"}));
 
 }  // namespace stirling
 }  // namespace px

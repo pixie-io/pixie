@@ -40,5 +40,18 @@ Application DetectApplication(const std::filesystem::path& exe);
 StatusOr<std::string> GetVersion(const std::filesystem::path& exe,
                                  std::string_view version_flag = "--version");
 
+// Describes a semantic versioning number.
+struct SemVer {
+  int major = 0;
+  int minor = 0;
+  int patch = 0;
+};
+
+// Returns semantic version from a version string that include a substring that represent the
+// semantic version numbers. For example, v1.1.0 returns SemVer{1, 1, 0}.
+// Note: the argument is chosen because the implementation uses std::regex_search which does not
+// accept std::string_view.
+StatusOr<SemVer> GetSemVer(const std::string& version);
+
 }  // namespace stirling
 }  // namespace px

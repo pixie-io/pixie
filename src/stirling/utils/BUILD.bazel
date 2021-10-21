@@ -137,8 +137,16 @@ pl_cc_test(
 
 pl_cc_test(
     name = "detect_application_test",
-    timeout = "moderate",
     srcs = ["detect_application_test.cc"],
+    deps = [
+        ":cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "detect_application_bpf_test",
+    timeout = "moderate",
+    srcs = ["detect_application_bpf_test.cc"],
     tags = ["requires_bpf"],
     deps = [
         ":cc_library",

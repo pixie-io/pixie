@@ -18,8 +18,11 @@
 
 #include "src/stirling/utils/detect_application.h"
 
+#include <regex>
 #include <string_view>
+#include <vector>
 
+#include <absl/strings/numbers.h>
 #include <absl/strings/str_cat.h>
 
 #include "src/common/exec/exec.h"
@@ -49,6 +52,33 @@ StatusOr<std::string> GetVersion(const std::filesystem::path& exe, std::string_v
   absl::StripLeadingAsciiWhitespace(&version);
   absl::StripTrailingAsciiWhitespace(&version);
   return version;
+}
+
+StatusOr<SemVer> GetSemVer(const std::string& version) {
+  std::regex sem_ver_regex(R"([0-9]+\.[0-9]+\.[0-9])");
+  std::smatch match;
+  if (!std::regex_search(version, match, sem_ver_regex)) {
+    return error::InvalidArgument("Input '$0' does not contain a semantic version number", version);
+  }
+  std::string sem_ver_str = match.str(0);
+  std::vector<std::string_view> fields = absl::StrSplit(sem_ver_str, ".");
+  if (fields.size() != 3) {
+    return error::InvalidArgument(
+        "Invalid semantic version '$0', must have 3 dot-separated fields, as in "
+        "<major>.<minor>.<patch>",
+        sem_ver_str);
+  }
+  SemVer res;
+  if (!absl::SimpleAtoi(fields[0], &res.major)) {
+    return error::InvalidArgument("Major version '$0' is not a number", fields[0]);
+  }
+  if (!absl::SimpleAtoi(fields[1], &res.minor)) {
+    return error::InvalidArgument("Minor version '$0' is not a number", fields[1]);
+  }
+  if (!absl::SimpleAtoi(fields[2], &res.patch)) {
+    return error::InvalidArgument("Patch version '$0' is not a number", fields[2]);
+  }
+  return res;
 }
 
 }  // namespace stirling
