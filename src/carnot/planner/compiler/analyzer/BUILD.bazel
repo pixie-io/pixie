@@ -95,6 +95,15 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "restrict_columns_rule_test",
+    srcs = ["restrict_columns_rule_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner/compiler:test_utils",
+    ],
+)
+
+pl_cc_test(
     name = "merge_group_by_into_group_acceptor_rule_test",
     srcs = ["merge_group_by_into_group_acceptor_rule_test.cc"],
     deps = [

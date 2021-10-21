@@ -88,7 +88,7 @@ class Analyzer : public RuleExecutor<IR> {
 
   void CreateOperatorCompileTimeExpressionRuleBatch() {
     RuleBatch* intermediate_resolution_batch =
-        CreateRuleBatch<FailOnMax>("IntermediateResolution", 100);
+        CreateRuleBatch<FailOnMax>("CompileTimeResolution", 100);
     intermediate_resolution_batch->AddRule<SetMemorySourceTimesRule>();
   }
 
@@ -100,7 +100,7 @@ class Analyzer : public RuleExecutor<IR> {
 
   void CreateDataTypeResolutionBatch() {
     RuleBatch* intermediate_resolution_batch =
-        CreateRuleBatch<FailOnMax>("IntermediateResolution", 100);
+        CreateRuleBatch<FailOnMax>("DataTypeResolution", 100);
     intermediate_resolution_batch->AddRule<ResolveTypesRule>(compiler_state_);
     intermediate_resolution_batch->AddRule<DropToMapOperatorRule>(compiler_state_);
   }

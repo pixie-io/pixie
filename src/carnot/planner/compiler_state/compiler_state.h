@@ -109,6 +109,10 @@ class CompilerState : public NotCopyable {
   CompilerState() = delete;
 
   RelationMap* relation_map() const { return relation_map_.get(); }
+  absl::flat_hash_map<std::string, absl::flat_hash_set<std::string>>*
+  table_names_to_sensitive_columns() {
+    return &table_names_to_sensitive_columns_;
+  }
   RegistryInfo* registry_info() const { return registry_info_; }
   types::Time64NSValue time_now() const { return time_now_; }
   const std::string& result_address() const { return result_address_; }
@@ -142,6 +146,8 @@ class CompilerState : public NotCopyable {
 
  private:
   std::unique_ptr<RelationMap> relation_map_;
+  absl::flat_hash_map<std::string, absl::flat_hash_set<std::string>>
+      table_names_to_sensitive_columns_;
   RegistryInfo* registry_info_;
   types::Time64NSValue time_now_;
   std::map<IDRegistryKey, int64_t> udf_to_id_map_;
