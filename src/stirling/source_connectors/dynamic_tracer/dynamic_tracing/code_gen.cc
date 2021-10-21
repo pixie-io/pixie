@@ -238,6 +238,8 @@ std::string GenRegister(const ScalarVariable& var) {
   switch (var.reg()) {
     case Register::SP:
       return absl::Substitute("$0 $1 = ($0)PT_REGS_SP(ctx);", type, var.name());
+    case Register::BP:
+      return absl::Substitute("$0 $1 = ($0)PT_REGS_FP(ctx);", type, var.name());
     case Register::RC:
       return absl::Substitute("$0 $1 = ($0)PT_REGS_RC(ctx);", type, var.name());
     case Register::RC_PTR:

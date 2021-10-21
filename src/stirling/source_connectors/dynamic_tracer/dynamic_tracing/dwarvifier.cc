@@ -189,6 +189,7 @@ namespace {
 // Special variables all end with an underscore to minimize chance of conflict with user variables.
 // User variables that end with underscore are not allowed (this is not yet enforced).
 constexpr char kSPVarName[] = "sp_";
+constexpr char kBPVarName[] = "bp_";
 constexpr char kTGIDVarName[] = "tgid_";
 constexpr char kTGIDPIDVarName[] = "tgid_pid_";
 constexpr char kTGIDStartTimeVarName[] = "tgid_start_time_";
@@ -938,6 +939,9 @@ Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg,
       switch (arg_info.location.loc_type) {
         case LocationType::kStack:
           base_var = kSPVarName;
+          break;
+        case LocationType::kStackBP:
+          base_var = kBPVarName;
           break;
         case LocationType::kRegister:
           base_var = kParmPtrVarName;

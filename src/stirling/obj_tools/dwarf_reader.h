@@ -54,6 +54,7 @@ enum class VarType {
 enum class LocationType {
   kUnknown,
   kStack,
+  kStackBP,
   kRegister,
 };
 

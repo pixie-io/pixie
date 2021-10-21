@@ -869,7 +869,7 @@ uint64_t SnapUpToMultiple(uint64_t val, uint64_t size) {
 // TODO(oazizi): Finish implementing the rules.
 StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
     std::string_view function_symbol_name) {
-  // Get some basic infor about the binary,
+  // Get some basic information about the binary,
   // including the number of registers used in the calling convention for this language.
   const uint32_t reg_size = RegisterSize();
   PL_ASSIGN_OR_RETURN(const int num_arg_regs, NumArgPassingRegs(source_language_));
@@ -897,6 +897,12 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
 
     PL_ASSIGN_OR_RETURN(const DWARFDie type_die, GetTypeDie(die));
     PL_ASSIGN_OR_RETURN(arg.type_info, GetTypeInfo(die, type_die));
+
+    // Ideally, we'd use the call below,
+    // but DW_AT_location has been found to be blank in some cases, making it unreliable.
+    // PL_ASSIGN_OR_RETURN(arg.location, GetDieLocationAttr(die));
+    // Instead, we have to do the rest of the function here.
+
     PL_ASSIGN_OR_RETURN(uint64_t type_size, GetTypeByteSize(type_die));
     PL_ASSIGN_OR_RETURN(uint64_t alignment_size, GetAlignmentByteSize(type_die));
 

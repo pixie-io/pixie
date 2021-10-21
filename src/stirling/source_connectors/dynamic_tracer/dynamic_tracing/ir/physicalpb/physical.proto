@@ -31,6 +31,9 @@ enum Register {
   // Stack pointer.
   SP = 0;
 
+  // Frame base pointer.
+  BP = 1;
+
   // Direct return value of the System V ABI calling convention.
   // Useful when the return value is already a pointer to the data,
   // which happens whenever the return value is > 16B in size,
@@ -132,7 +135,7 @@ message MemoryExpression {
   string base = 1;
 
   // The offset off the base address.
-  uint32 offset = 2;
+  int32 offset = 2;
 
   // Only used if ScalarType is STRUCT_BLOB.
   // Otherwise size is automatically inferred based on the ScalarType during code generation.

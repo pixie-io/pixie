@@ -421,8 +421,8 @@ TEST_P(DwarfReaderTest, GoFunctionArgInfo) {
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
                          DwarfReader::Create(kGoServerBinaryPath, p.index));
 
-    //   func (f *http2Framer) WriteDataPadded(streamID uint32, endStream bool, data, pad []byte)
-    //   error
+    // func (f *http2Framer) WriteDataPadded(streamID uint32, endStream bool, data, pad []byte)
+    // error
     EXPECT_OK_AND_THAT(
         dwarf_reader->GetFunctionArgInfo("net/http.(*http2Framer).WriteDataPadded"),
         UnorderedElementsAre(
