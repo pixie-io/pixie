@@ -35,6 +35,7 @@
 #include "src/carnot/planner/compiler/analyzer/resolve_metadata_property_rule.h"
 #include "src/carnot/planner/compiler/analyzer/resolve_stream_rule.h"
 #include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
+#include "src/carnot/planner/compiler/analyzer/restrict_columns_rule.h"
 #include "src/carnot/planner/compiler/analyzer/set_memory_source_times_rule.h"
 #include "src/carnot/planner/compiler/analyzer/setup_join_type_rule.h"
 #include "src/carnot/planner/compiler/analyzer/unique_sink_names_rule.h"
@@ -104,6 +105,10 @@ class Analyzer : public RuleExecutor<IR> {
     intermediate_resolution_batch->AddRule<ResolveTypesRule>(compiler_state_);
     intermediate_resolution_batch->AddRule<DropToMapOperatorRule>(compiler_state_);
   }
+  void CreateManageColumnAccessBatch() {
+    RuleBatch* manage_column_access = CreateRuleBatch<TryUntilMax>("ManageColumnAccess", 1);
+    manage_column_access->AddRule<RestrictColumnsRule>(compiler_state_);
+  }
 
   void CreateMetadataConversionBatch() {
     RuleBatch* metadata_conversion_batch = CreateRuleBatch<FailOnMax>("MetadataConversion", 2);
@@ -130,6 +135,7 @@ class Analyzer : public RuleExecutor<IR> {
     CreateOperatorCompileTimeExpressionRuleBatch();
     CreateCombineConsecutiveMapsRule();
     CreateDataTypeResolutionBatch();
+    CreateManageColumnAccessBatch();
     CreateMetadataConversionBatch();
     CreateResolutionVerificationBatch();
     CreateRemoveIROnlyNodesBatch();

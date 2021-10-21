@@ -39,7 +39,8 @@ StatusOr<carnot::planner::dynamic_tracing::ir::logical::TracepointDeployment> Co
   // TODO(oazizi): Try inserting nullptr for registry_info.
   px::carnot::planner::RegistryInfo registry_info;
   px::carnot::planner::CompilerState dummy_compiler_state(
-      std::make_unique<px::carnot::planner::RelationMap>(), &registry_info,
+      std::make_unique<px::carnot::planner::RelationMap>(),
+      px::carnot::planner::SensitiveColumnMap{}, &registry_info,
       // Time now isn't used to generate probes, but we still need to pass one in.
       /*time_now*/ 1552607213931245000,
       /*max_output_rows_per_table*/ 10000, "dummy_result_addr", /* SSL target name override */ "");

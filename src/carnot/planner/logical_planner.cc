@@ -55,11 +55,21 @@ StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
     int64_t max_output_rows_per_table) {
   PL_ASSIGN_OR_RETURN(std::unique_ptr<RelationMap> rel_map,
                       MakeRelationMapFromDistributedState(logical_state.distributed_state()));
-  // Create a CompilerState obj using the relation map and grabbing the current time.
 
+  SensitiveColumnMap sensitive_columns;
+  if (logical_state.redact_sensitive_columns()) {
+    // Block columns.
+    sensitive_columns = {{"cql_events", {"req_body", "resp_body"}},
+                         {"http_events", {"req_body", "resp_body"}},
+                         {"kafka_events.beta", {"req_body"}},
+                         {"mysql_events", {"req_body", "resp_body"}},
+                         {"nats_events.beta", {"body"}}};
+  }
+  // Create a CompilerState obj using the relation map and grabbing the current time.
   return std::make_unique<planner::CompilerState>(
-      std::move(rel_map), registry_info, px::CurrentTimeNS(), max_output_rows_per_table,
-      logical_state.result_address(), logical_state.result_ssl_targetname());
+      std::move(rel_map), sensitive_columns, registry_info, px::CurrentTimeNS(),
+      max_output_rows_per_table, logical_state.result_address(),
+      logical_state.result_ssl_targetname());
 }
 
 StatusOr<std::unique_ptr<LogicalPlanner>> LogicalPlanner::Create(const udfspb::UDFInfo& udf_info) {

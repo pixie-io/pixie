@@ -36,9 +36,9 @@ TEST_F(AddLimitToBatchResultSinkRuleTest, basic) {
   MemorySourceIR* src = MakeMemSource(MakeRelation());
   GRPCSinkIR* sink = MakeGRPCSink(src, "foo", {});
 
-  auto compiler_state =
-      std::make_unique<CompilerState>(std::make_unique<RelationMap>(), info_.get(), time_now, 1000,
-                                      "result_addr", "result_ssl_targetname");
+  auto compiler_state = std::make_unique<CompilerState>(
+      std::make_unique<RelationMap>(), SensitiveColumnMap{}, info_.get(), time_now, 1000,
+      "result_addr", "result_ssl_targetname");
 
   AddLimitToBatchResultSinkRule rule(compiler_state.get());
   auto result = rule.Execute(graph.get());
@@ -61,9 +61,9 @@ TEST_F(AddLimitToBatchResultSinkRuleTest, overwrite_higher) {
   auto limit = graph->CreateNode<LimitIR>(ast, src, 1001).ValueOrDie();
   MakeMemSink(limit, "foo", {});
 
-  auto compiler_state =
-      std::make_unique<CompilerState>(std::make_unique<RelationMap>(), info_.get(), time_now, 1000,
-                                      "result_addr", "result_ssl_targetname");
+  auto compiler_state = std::make_unique<CompilerState>(
+      std::make_unique<RelationMap>(), SensitiveColumnMap{}, info_.get(), time_now, 1000,
+      "result_addr", "result_ssl_targetname");
 
   AddLimitToBatchResultSinkRule rule(compiler_state.get());
   auto result = rule.Execute(graph.get());
@@ -81,9 +81,9 @@ TEST_F(AddLimitToBatchResultSinkRuleTest, dont_overwrite_lower) {
   auto limit = graph->CreateNode<LimitIR>(ast, src, 999).ValueOrDie();
   MakeMemSink(limit, "foo", {});
 
-  auto compiler_state =
-      std::make_unique<CompilerState>(std::make_unique<RelationMap>(), info_.get(), time_now, 1000,
-                                      "result_addr", "result_ssl_targetname");
+  auto compiler_state = std::make_unique<CompilerState>(
+      std::make_unique<RelationMap>(), SensitiveColumnMap{}, info_.get(), time_now, 1000,
+      "result_addr", "result_ssl_targetname");
 
   AddLimitToBatchResultSinkRule rule(compiler_state.get());
   auto result = rule.Execute(graph.get());
