@@ -17,7 +17,7 @@
         "h": 3
       },
       "func": {
-        "name": "inbound_let_service_graph",
+        "name": "service_let_graph",
         "args": [
           {
             "name": "start_time",

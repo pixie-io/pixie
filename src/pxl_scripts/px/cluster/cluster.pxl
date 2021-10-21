@@ -22,15 +22,36 @@ This view lists the namespaces and the nodes that are available on the current c
 import px
 
 
-# Window size to use on time_ column for bucketing.
-ns_per_s = 1000 * 1000 * 1000
-window_ns = px.DurationNanos(10 * ns_per_s)
-
 # Flag to filter out health checks from the data.
 filter_health_checks = True
 
 # Whether or not to include traffic from IPs that don't resolve to a known pod/service.
 include_ips = True
+
+
+# Hack to get the time window for the script.
+# TODO(philkuz): Replace this with a built-in.
+def get_time_window(start_time: str):
+    ''' Converts the start_time string into a table with a single column and single row.
+    The approach is hacky, and will round to roughly 1 second.
+    '''
+    df = px.DataFrame('process_stats', start_time=start_time)
+
+    df = df.agg(
+        time_min=('time_', px.min),
+        time_max=('time_', px.max),
+    )
+
+    df.window = px.DurationNanos(df.time_max - df.time_min)
+    df = df[['window']]
+
+    return df
+
+
+def add_time_window_column(df, start_time):
+    tw = get_time_window(start_time)
+    df = df.merge(tw, how='inner', left_on=[], right_on=[])
+    return df
 
 
 def process_stats_by_entity(start_time: str, entity: str):
@@ -39,6 +60,10 @@ def process_stats_by_entity(start_time: str, entity: str):
     @start_time Starting time of the data to examine.
     @entity: Either pod or node_name.
     '''
+    # Window size to use on time_ column for bucketing.
+    ns_per_s = 1000 * 1000 * 1000
+    window_ns = px.DurationNanos(10 * ns_per_s)
+
     df = px.DataFrame(table='process_stats', start_time=start_time)
     df[entity] = df.ctx[entity]
     df.timestamp = px.bin(df.time_, window_ns)
@@ -171,13 +196,13 @@ def services_for_cluster(start_time: str):
     df.pod = df.ctx['pod']
     df = df.groupby(['service', 'pod']).agg()
     df = df.groupby('service').agg(pod_count=('pod', px.count))
-    service_let = inbound_service_let_summary(start_time)
+    service_let = service_let_summary(start_time)
     joined = df.merge(service_let, how='left', left_on='service', right_on='service',
                       suffixes=['', '_x'])
     return joined.drop('service_x')
 
 
-def http_events_df(start_time: str):
+def http_stats(start_time: str):
     ''' Get a dataframe of HTTP events.
     Certain traffic (like health checks) are auto removed, and some standard fields are added.
     Args:
@@ -192,9 +217,6 @@ def http_events_df(start_time: str):
     # Filter out non-k8s entities.
     df = df[df.pod != '']
 
-    # Snap timestamps to bins.
-    df.timestamp = px.bin(df.time_, window_ns)
-
     # Additional HTTP fields, pre-computed for convenience.
     df.failure = df.resp_status >= 400
 
@@ -206,55 +228,138 @@ def http_events_df(start_time: str):
     return df
 
 
-def inbound_service_let_summary(start_time: str):
+def http_stats_by_service(start_time: str):
+    ''' Get a data frame of HTTP stats per service. The HTTP stats are for inbound traffic,
+    and includes HTTP request count, error count and latency quantiles.
+    Args:
+    @start_time: The timestamp of data to start at.
+    '''
+    df = http_stats(start_time)
+
+    # Filter only to inbound service traffic (server-side).
+    # Don't include traffic initiated by this service to an external location.
+    df = df[df.trace_role == 2]
+
+    # Compute HTTP metrics.
+    df = df.groupby(['service']).agg(
+        http_req_count_in=('latency', px.count),
+        http_error_count_in=('failure', px.sum),
+        http_latency_in=('latency', px.quantiles)
+    )
+
+    return df
+
+
+def conn_stats(start_time: str):
+    ''' Get a dataframe of connection stats.
+    For each client-server pair, the resulting data frame has the bytes sent and received.
+    Args:
+    @start_time: The timestamp of data to start at.
+    '''
+    df = px.DataFrame(table='conn_stats', start_time=start_time)
+
+    df.pod = df.ctx['pod']
+    df.service = df.ctx['service']
+
+    df = df[df.service != '']
+
+    # Find min/max bytes transferred over the selected time window per pod.
+    df = df.groupby(['upid', 'remote_addr', 'remote_port', 'pod', 'service', 'trace_role']).agg(
+        bytes_recv_min=('bytes_recv', px.min),
+        bytes_recv_max=('bytes_recv', px.max),
+        bytes_sent_min=('bytes_sent', px.min),
+        bytes_sent_max=('bytes_sent', px.max),
+    )
+
+    # Calculate bytes transferred over the time window
+    df.bytes_sent = df.bytes_sent_max - df.bytes_sent_min
+    df.bytes_recv = df.bytes_recv_max - df.bytes_recv_min
+    df = df.drop(['bytes_recv_min', 'bytes_recv_max', 'bytes_sent_min', 'bytes_sent_max'])
+
+    return df
+
+
+def conn_stats_by_service(start_time: str):
+    ''' Get a dataframe of connection stats aggregated by service.
+    For each service, the resulting data frame contains rx/tx stats for server-side and client-side connections.
+    Args:
+    @start_time: The timestamp of data to start at.
+    '''
+    df = conn_stats(start_time)
+
+    # Group by service and trace role.
+    # Do this after computing bytes sent/received by conn_stats key ({upid, remote_addr, remote_port}).
+    # Keeping trace_role allows us to see which traffic was part of server duties vs client duties.
+    df = df.groupby(['service', 'trace_role']).agg(
+        bytes_recv=('bytes_recv', px.sum),
+        bytes_sent=('bytes_sent', px.sum),
+    )
+
+    # Get RX/TX stats for the server side connections.
+    server_df = df[df.trace_role == 2]
+    server_df.rx_server = server_df.bytes_recv
+    server_df.tx_server = server_df.bytes_sent
+    server_df = server_df[['service', 'rx_server', 'tx_server']]
+
+    # Get RX/TX stats for the client side connections.
+    client_df = df[df.trace_role == 1]
+    client_df.rx_client = client_df.bytes_recv
+    client_df.tx_client = client_df.bytes_sent
+    client_df = client_df[['service', 'rx_client', 'tx_client']]
+
+    # Create a dataframe that contains both server-side and client-side RX/TX stats.
+    df = server_df.merge(client_df,
+                         how='left',
+                         left_on='service',
+                         right_on='service',
+                         suffixes=['', '_x'])
+    df = df['service', 'rx_server', 'tx_server', 'rx_client', 'tx_client']
+
+    return df
+
+
+def service_let_summary(start_time: str):
     ''' Compute a summary of traffic by requesting service, for requests
         on services in the current cluster..
     Args:
     @start_time: The timestamp of data to start at.
     '''
-    df = http_events_df(start_time)
-    # Filter only to inbound service traffic (server-side).
-    # Don't include traffic initiated by this service to an external location.
-    df = df[df.trace_role == 2]
-    df = df[df.service != '']
-    df.responder = df.service
-    per_ns_df = df.groupby(['timestamp', 'service']).agg(
-        http_throughput_total=('latency', px.count),
-        inbound_http_bytes_total=('req_body_size', px.sum),
-        outbound_http_bytes_total=('resp_body_size', px.sum)
-    )
-    per_ns_df.http_request_throughput = per_ns_df.http_throughput_total / window_ns
-    per_ns_df.inbound_http_throughput = per_ns_df.inbound_http_bytes_total / window_ns
-    per_ns_df.outbound_http_throughput = per_ns_df.outbound_http_bytes_total / window_ns
-    per_ns_df = per_ns_df.groupby('service').agg(
-        http_request_throughput=('http_request_throughput', px.mean),
-        inbound_http_throughput=('inbound_http_throughput', px.mean),
-        outbound_http_throughput=('outbound_http_throughput', px.mean)
-    )
-    quantiles_df = df.groupby('service').agg(
-        http_latency=('latency', px.quantiles)
-        http_error_rate=('failure', px.mean),
-    )
-    quantiles_df.http_error_rate = px.Percent(quantiles_df.http_error_rate)
-    joined = per_ns_df.merge(quantiles_df, left_on='service',
-                             right_on='service', how='inner',
+    conn_stats_df = conn_stats_by_service(start_time)
+    http_stats_df = http_stats_by_service(start_time)
+
+    # Merge conn_stats_df and http_stats_df.
+    df = conn_stats_df.merge(http_stats_df,
+                             how='left',
+                             left_on='service',
+                             right_on='service',
                              suffixes=['', '_x'])
-    return joined[['service', 'http_latency', 'http_request_throughput', 'http_error_rate',
-                   'inbound_http_throughput', 'outbound_http_throughput']]
+
+    # Compute time window for the query and add it as a column.
+    df = add_time_window_column(df, start_time)
+
+    # Compute throughput values.
+    df.http_req_throughput_in = df.http_req_count_in / df.window
+    df.http_error_rate_in = px.Percent(
+        px.select(df.http_req_count_in != 0, df.http_error_count_in / df.http_req_count_in, 0.0))
+    df.inbound_conns = (df.rx_server + df.tx_server) / df.window
+    df.outbound_conns = (df.tx_client + df.rx_client) / df.window
+
+    return df[['service', 'http_latency_in', 'http_req_throughput_in', 'http_error_rate_in',
+               'inbound_conns', 'outbound_conns']]
 
 
-def inbound_let_service_graph(start_time: str):
+def service_let_graph(start_time: str):
     ''' Compute a summary of traffic by requesting service, for requests on services
-        in the current cluster. Similar to `inbound_let_summary` but also breaks down
+        in the current cluster. Similar to `service_let_summary` but also breaks down
         by pod in addition to service.
     Args:
     @start_time: The timestamp of data to start at.
     '''
-    df = http_events_df(start_time)
-    df = df.groupby(['timestamp', 'service', 'remote_addr', 'pod', 'trace_role']).agg(
+    df = http_stats(start_time)
+    df = df.groupby(['service', 'remote_addr', 'pod', 'trace_role']).agg(
+        http_req_count_in=('latency', px.count),
+        http_error_count_in=('failure', px.sum),
         latency_quantiles=('latency', px.quantiles),
-        error_rate=('failure', px.mean),
-        throughput_total=('latency', px.count),
         inbound_bytes_total=('req_body_size', px.sum),
         outbound_bytes_total=('resp_body_size', px.sum)
     )
@@ -283,12 +388,14 @@ def inbound_let_service_graph(start_time: str):
     df.latency_p50 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p50')))
     df.latency_p90 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p90')))
     df.latency_p99 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p99')))
-    df.request_throughput = df.throughput_total / window_ns
-    df.inbound_throughput = df.inbound_bytes_total / window_ns
-    df.outbound_throughput = df.outbound_bytes_total / window_ns
-    df.error_rate = px.Percent(df.error_rate)
-    return df.groupby(['responder_pod', 'requestor_pod', 'responder_service',
-                       'requestor_service', 'responder_ip', 'requestor_ip']).agg(
+    df = add_time_window_column(df, start_time)
+    df.request_throughput = df.http_req_count_in / df.window
+    df.inbound_throughput = df.inbound_bytes_total / df.window
+    df.outbound_throughput = df.outbound_bytes_total / df.window
+    df.error_rate = px.Percent(df.http_error_count_in / df.http_req_count_in)
+
+    df = df.groupby(['responder_pod', 'requestor_pod', 'responder_service',
+                     'requestor_service', 'responder_ip', 'requestor_ip']).agg(
         latency_p50=('latency_p50', px.mean),
         latency_p90=('latency_p90', px.mean),
         latency_p99=('latency_p99', px.mean),
@@ -296,5 +403,7 @@ def inbound_let_service_graph(start_time: str):
         error_rate=('error_rate', px.mean),
         inbound_throughput=('inbound_throughput', px.mean),
         outbound_throughput=('outbound_throughput', px.mean),
-        throughput_total=('throughput_total', px.sum)
+        throughput_total=('http_req_count_in', px.sum)
     )
+
+    return df
