@@ -194,8 +194,8 @@ def inbound_service_let_summary(start_time: str):
     df.responder = df.service
     per_ns_df = df.groupby(['timestamp', 'service']).agg(
         http_throughput_total=('latency', px.count),
-        inbound_http_bytes_total=('req_size', px.sum),
-        outbound_http_bytes_total=('resp_size', px.sum)
+        inbound_http_bytes_total=('req_body_size', px.sum),
+        outbound_http_bytes_total=('resp_body_size', px.sum)
     )
     per_ns_df.http_request_throughput = per_ns_df.http_throughput_total / window_ns
     per_ns_df.inbound_http_throughput = per_ns_df.inbound_http_bytes_total / window_ns
@@ -229,8 +229,6 @@ def inbound_service_let_helper(start_time: str):
     df = df[df.pod != '']
     df.latency = df.latency
     df.timestamp = px.bin(df.time_, window_ns)
-    df.req_size = px.Bytes(px.length(df.req_body))
-    df.resp_size = px.Bytes(px.length(df.resp_body))
     df.failure = df.resp_status >= 400
     filter_out_conds = ((df.req_path != '/healthz' or not filter_health_checks) and (
         df.req_path != '/readyz' or not filter_ready_checks)) and (
@@ -251,8 +249,8 @@ def inbound_let_service_graph(start_time: str):
         latency_quantiles=('latency', px.quantiles),
         error_rate=('failure', px.mean),
         throughput_total=('latency', px.count),
-        inbound_bytes_total=('req_size', px.sum),
-        outbound_bytes_total=('resp_size', px.sum)
+        inbound_bytes_total=('req_body_size', px.sum),
+        outbound_bytes_total=('resp_body_size', px.sum)
     )
 
     # Get the traced and remote pod/service/IP information.

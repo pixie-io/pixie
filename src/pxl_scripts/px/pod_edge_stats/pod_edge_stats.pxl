@@ -68,6 +68,12 @@ def http_requests(start_time: str, requesting_pod: px.Pod, responding_pod: px.Po
         df.req_path != '/readyz' or not filter_ready_checks)) and (
         df['remote_addr'] != '-' or not filter_unresolved_inbound)
     df = df[filter_out_conds]
+    return df
+
+
+def http_requests_formatted(start_time: str, requesting_pod: px.Pod, responding_pod: px.Pod):
+
+    df = http_requests(start_time, requesting_pod, responding_pod)
     return df[['timestamp', 'latency', 'req_method', 'req_path', 'req_body',
                'resp_status', 'resp_body', 'failure']]
 
@@ -110,15 +116,13 @@ def pod_edge_let(start_time: str, requesting_pod: px.Pod, responding_pod: px.Pod
     """
 
     df = http_requests(start_time, requesting_pod, responding_pod)
-    df.resp_size = px.Bytes(px.length(df.resp_body))
-    df.req_size = px.Bytes(px.length(df.req_body))
 
     df = df.groupby('timestamp').agg(
         latency_quantiles=('latency', px.quantiles),
         error_rate_per_window=('failure', px.mean),
         throughput_total=('latency', px.count),
-        bytes_recv=('req_size', px.sum),
-        bytes_sent=('resp_size', px.sum)
+        bytes_recv=('req_body_size', px.sum),
+        bytes_sent=('resp_body_size', px.sum)
     )
 
     df.latency_p50 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p50')))

@@ -211,7 +211,6 @@ def format_http_table(df, filter_health_checks, filter_ready_checks,
     Returns: formatted HTTP events DataFrame.
     """
     df = format_events_table(df, 'latency')
-    df.resp_size = px.length(df.resp_body)
     df.failure = df.resp_status >= 400
     filter_out_conds = ((df.req_path != '/healthz' or not filter_health_checks) and (
         df.req_path != '/readyz' or not filter_ready_checks)) and (
@@ -268,7 +267,7 @@ def calc_http_LET(df, groups):
         latency_quantiles=('latency', px.quantiles),
         error_rate_per_window=('failure', px.mean),
         throughput_total=('latency', px.count),
-        bytes_total=('resp_size', px.sum)
+        bytes_total=('resp_body_size', px.sum)
     )
     df.bytes_total = px.Bytes(df.bytes_total)
 

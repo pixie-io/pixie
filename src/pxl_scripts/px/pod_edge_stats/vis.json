@@ -238,7 +238,7 @@
         "h": 3
       },
       "func": {
-        "name": "http_requests",
+        "name": "http_requests_formatted",
         "args": [
           {
             "name": "start_time",

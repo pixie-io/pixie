@@ -49,7 +49,7 @@ def endpoint_let_timeseries(start_time: str, service: px.Service, endpoint: str)
         latency_quantiles=('latency', px.quantiles),
         error_rate_per_window=('failure', px.mean),
         throughput_total=('latency', px.count),
-        bytes_total=('resp_size', px.sum)
+        bytes_total=('resp_body_size', px.sum)
     )
 
     # Format the result of LET aggregates into proper scalar formats and
@@ -105,7 +105,6 @@ def let_helper(start_time: str, service: px.Service):
 
     df.timestamp = px.bin(df.time_, window_ns)
 
-    df.resp_size = px.Bytes(px.length(df.resp_body))
     df.failure = df.resp_status >= 400
     filter_out_conds = ((df.req_path != '/healthz' or not filter_health_checks) and (
         df.req_path != '/readyz' or not filter_ready_checks)) and (

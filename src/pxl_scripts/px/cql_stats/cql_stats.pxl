@@ -182,7 +182,6 @@ def format_cql_table(df):
     """
     df = format_events_table(df, 'latency')
     df.failure = df['resp_op'] == 0
-    df.resp_size = px.length(df.resp_body)
 
     return df
 
@@ -192,7 +191,7 @@ def format_LET_aggs(df):
 
     Converts the result of aggregates on windows into well-formatted metrics that
     can be visualized. Latency quantile values need to be extracted from the
-    quantiles struct, and then error_rate, request_throughput, and bytes_per_ns are calculated as
+    quantiles struct, and then error_rate and request_throughput are calculated as
     a function of window size.
 
 
@@ -211,7 +210,6 @@ def format_LET_aggs(df):
     df.latency_p99 = px.pluck_float64(df.latency_quantiles, 'p99')
     df['time_'] = df['timestamp']
     df.request_throughput = df.throughput_total / window_ns
-    df.bytes_per_ns = df.bytes_total / window_ns
     df.error_rate = df.error_rate_per_window * df.request_throughput / px.DurationNanos(1)
 
     return df
@@ -240,7 +238,6 @@ def calc_cql_LET(df, groups):
     # Calculate latency on all requests that return or return an err.
     lcy = filt_df.groupby(groups).agg(
         latency_quantiles=('latency', px.quantiles),
-        bytes_total=('resp_size', px.sum)
     )
     # Left join because et's groups are a strict superset of lcy.
     df = et.merge(lcy, how='left', left_on=groups,
@@ -282,7 +279,6 @@ def summarize_LET(let_df, groups):
     """
     df = let_df.groupby(groups).agg(
         request_throughput=('request_throughput', px.mean),
-        bytes_per_ns=('bytes_per_ns', px.mean),
         error_rate=('error_rate', px.mean),
         total_requests=('throughput_total', px.sum),
         latency=('latency_p50', px.mean),

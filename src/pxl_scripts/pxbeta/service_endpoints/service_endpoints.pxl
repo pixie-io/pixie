@@ -71,8 +71,8 @@ def endpoint_let(start_time: str, service: px.Service):
         latency_quantiles=('latency', px.quantiles),
         error_rate=('failure', px.mean),
         throughput_total=('latency', px.count),
-        inbound_bytes_total=('req_size', px.sum),
-        outbound_bytes_total=('resp_size', px.sum)
+        inbound_bytes_total=('req_body_size', px.sum),
+        outbound_bytes_total=('resp_body_size', px.sum)
     )
 
     df.latency_p50 = px.DurationNanos(
@@ -108,8 +108,6 @@ def endpoint_let_helper(start_time: str, service: px.Service):
     df.latency = df.latency
     df.timestamp = px.bin(df.time_, window_ns)
 
-    df.req_size = px.Bytes(px.length(df.req_body))
-    df.resp_size = px.Bytes(px.length(df.resp_body))
     df.failure = df.resp_status >= 400
     filter_out_conds = ((df.req_path != '/healthz' or not filter_health_checks) and (
         df.req_path != '/readyz' or not filter_ready_checks)) and (

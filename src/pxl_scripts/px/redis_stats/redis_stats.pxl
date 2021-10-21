@@ -197,7 +197,6 @@ def format_redis_table(df):
     df = add_source_dest_columns(df)
 
     df = format_events_table(df, 'latency')
-    df.resp_size = px.length(df.resp)
     return df
 
 
@@ -206,7 +205,7 @@ def format_LET_aggs(df):
 
     Converts the result of aggregates on windows into well-formatted metrics that
     can be visualized. Latency quantile values need to be extracted from the
-    quantiles struct, and then request_throughput and bytes_per_ns are calculated as
+    quantiles struct, and then request_throughput is calculated as
     a function of window size.
 
 
@@ -224,7 +223,6 @@ def format_LET_aggs(df):
     df.latency_p99 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p99')))
     df['time_'] = df['timestamp']
     df.request_throughput = df.throughput_total / window_ns
-    df.bytes_per_ns = df.bytes_total / window_ns
 
     return df
 
@@ -245,7 +243,6 @@ def calc_redis_LET(df, groups):
     # All requests for errors and throughput
     df = df.groupby(groups).agg(
         latency_quantiles=('latency', px.quantiles),
-        bytes_total=('resp_size', px.sum),
         throughput_total=('latency', px.count)
     )
 
@@ -266,7 +263,6 @@ def summarize_LET(let_df, groups):
     '''
     df = let_df.groupby(groups).agg(
         request_throughput=('request_throughput', px.mean),
-        bytes_per_ns=('bytes_per_ns', px.mean),
         total_requests=('throughput_total', px.sum),
         latency=('latency_p50', px.mean)
     )
