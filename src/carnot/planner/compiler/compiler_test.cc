@@ -3217,6 +3217,18 @@ TEST_F(CompilerTest, init_args_udf_multiple_same_arg_types) {
   ASSERT_NE(node1->func_id(), node2->func_id());
 }
 
+constexpr char kSyntaxErrorQuery[] = R"pxl(
+import px
+df = px.DataFrame('http_events')
+px.display(df.groupby('req_path').agg('count'=('time_', px.count)))
+)pxl";
+TEST_F(CompilerTest, syntax_error_in_func_params) {
+  auto plan_or_s = compiler_.CompileToIR(kSyntaxErrorQuery, compiler_state_.get());
+  ASSERT_NOT_OK(plan_or_s);
+
+  EXPECT_THAT(plan_or_s.status(), HasCompilerError("SyntaxError"));
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
