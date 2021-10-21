@@ -114,25 +114,32 @@ class RegexReplaceUDF : public udf::ScalarUDF {
 
 class MatchRegexRule : public udf::ScalarUDF {
  public:
-  Status Init(FunctionContext*, StringValue encodedRegexRules) {
-    rapidjson::ParseResult ok = regex_rules.Parse(encodedRegexRules.data());
-    // TODO(zasgar/michellenguyen, PP-419): Replace with null when available.
-    if (ok == nullptr) {
-      return Status(statuspb::Code::INVALID_ARGUMENT, "unable to convert to json");
-    }
-    return Status::OK();
+  Status Init(FunctionContext* ctx, StringValue encodedRegexRules) {
+   // parse encodedRegexRules as json
+   rapidjson::Document regex_rules;
+   rapidjson::ParseResult parse_result = regex_rules.Parse(encodedRegexRules.data());
+   if (!parse_result) {
+     return Status(statuspb::Code::INVALID_ARGUMENT, "unable to parse string as json");
+   }
+   // populate self::regex_rules_map_
+   for (rapidjson::Value::ConstMemberIterator itr = regex_rules.MemberBegin(); 
+        itr != regex_rules.MemberEnd(); ++itr) {
+    RegexMatchUDF regex_match_udf; 
+    auto name = itr->name.GetString();
+    auto regex_pattern = itr->value.GetString();
+    PL_RETURN_IF_ERROR(regex_match_udf.Init(ctx, regex_pattern)); 
+    regex_rules_map_.emplace(name, std::move(regex_match_udf));
+   }
+   return Status::OK();
   }
-  types::StringValue Exec(FunctionContext*, StringValue value) {
-    RegexMatchUDF regex_match; 
-    for (rapidjson::Value::ConstMemberIterator itr = regex_rules.MemberBegin(); itr != regex_rules.MemberEnd(); ++itr) {
-        auto name = itr->name.GetString();
-        PL_UNUSED(regex_match.Init(nullptr, itr->value.GetString()));
-        auto is_match = regex_match.Exec(nullptr, value).val;
-        if (is_match) {
-            return name; 
-        }
+  
+  types::StringValue Exec(FunctionContext *ctx, StringValue value) {
+    for (auto& [rule_name, regex_match_udf] : regex_rules_map_) {
+      if (regex_match_udf.Exec(ctx, value).val) {
+        return rule_name;
+      }
     }
-    return "";
+  return "";
   }
 
   static udf::ScalarUDFDocBuilder Doc() {
@@ -145,13 +152,13 @@ class MatchRegexRule : public udf::ScalarUDF {
             "We support google RE2 syntax. More details on that syntax can be found "
             "[here](https://github.com/google/re2/wiki/Syntax). ")
         .Example("df.is_match = px.regex_match('{\"rule1\": \".*my_regex_pattern.*\"}', df.resp_body)")
-        .Arg("arg1", "The encoded json of regex patterns to match.")
+        .Arg("arg1", "The encoded json map from the name of the rule to the regex pattern for the rule.")
         .Arg("arg2", "The string column to match the pattern against.")
         .Returns("string representing the name of the first rule that matched or an empty string if no match.");
   }
 
  private:
-  rapidjson::Document regex_rules;
+  std::map<std::string, RegexMatchUDF> regex_rules_map_;
 };
 
 void RegisterRegexOpsOrDie(udf::Registry* registry);
