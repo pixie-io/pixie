@@ -73,6 +73,7 @@ type AgentsTracker interface {
 type Server struct {
 	env           querybrokerenv.QueryBrokerEnv
 	agentsTracker AgentsTracker
+	dataPrivacy   DataPrivacy
 	natsConn      *nats.Conn
 
 	hcStatus            serviceUtils.AtomicError
@@ -92,7 +93,7 @@ type Server struct {
 type QueryExecutorFactory func(*Server, MutationExecFactory) QueryExecutor
 
 // NewServer creates GRPC handlers.
-func NewServer(env querybrokerenv.QueryBrokerEnv, agentsTracker AgentsTracker,
+func NewServer(env querybrokerenv.QueryBrokerEnv, agentsTracker AgentsTracker, dataPrivacy DataPrivacy,
 	mds metadatapb.MetadataTracepointServiceClient, mdconf metadatapb.MetadataConfigServiceClient,
 	natsConn *nats.Conn, queryExecFactory QueryExecutorFactory) (*Server, error) {
 	var udfInfo udfspb.UDFInfo
@@ -104,13 +105,14 @@ func NewServer(env querybrokerenv.QueryBrokerEnv, agentsTracker AgentsTracker,
 		return nil, err
 	}
 
-	return NewServerWithForwarderAndPlanner(env, agentsTracker, NewQueryResultForwarder(), mds, mdconf,
+	return NewServerWithForwarderAndPlanner(env, agentsTracker, dataPrivacy, NewQueryResultForwarder(), mds, mdconf,
 		natsConn, c, queryExecFactory)
 }
 
 // NewServerWithForwarderAndPlanner is NewServer with a QueryResultForwarder and a planner generating func.
 func NewServerWithForwarderAndPlanner(env querybrokerenv.QueryBrokerEnv,
 	agentsTracker AgentsTracker,
+	dataPrivacy DataPrivacy,
 	resultForwarder QueryResultForwarder,
 	mds metadatapb.MetadataTracepointServiceClient,
 	mdconf metadatapb.MetadataConfigServiceClient,
@@ -120,6 +122,7 @@ func NewServerWithForwarderAndPlanner(env querybrokerenv.QueryBrokerEnv,
 	s := &Server{
 		env:               env,
 		agentsTracker:     agentsTracker,
+		dataPrivacy:       dataPrivacy,
 		resultForwarder:   resultForwarder,
 		natsConn:          natsConn,
 		mdtp:              mds,

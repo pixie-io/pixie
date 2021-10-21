@@ -367,6 +367,15 @@ func (c *testConsumer) Consume(result *vizierpb.ExecuteScriptResponse) error {
 	return nil
 }
 
+type fakeDataPrivacy struct {
+	Value bool
+}
+
+// ShouldRedactSensitiveColumns returns true if the execution should redact sensitive columns.
+func (fdp *fakeDataPrivacy) ShouldRedactSensitiveColumns(_ context.Context) (bool, error) {
+	return fdp.Value, nil
+}
+
 func runTestCase(t *testing.T, test *queryExecTestCase) {
 	// Start NATS.
 	nc, cleanup := testingutils.MustStartTestNATS(t)
@@ -394,7 +403,8 @@ func runTestCase(t *testing.T, test *queryExecTestCase) {
 			Return(test.ExpectedPlannerResult, nil)
 	}
 
-	queryExec := controllers.NewQueryExecutor("qb_address", "qb_hostname", at, nc, nil, nil, rf, planner, test.MutExecFactory)
+	dp := &fakeDataPrivacy{}
+	queryExec := controllers.NewQueryExecutor("qb_address", "qb_hostname", at, dp, nc, nil, nil, rf, planner, test.MutExecFactory)
 	consumer := newTestConsumer(test.ConsumeErrs)
 
 	assert.Equal(t, test.QueryExecExpectedRunError, queryExec.Run(context.Background(), test.Req, consumer))

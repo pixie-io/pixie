@@ -157,10 +157,15 @@ func main() {
 			Error("Got nats error")
 	})
 
+	dataPrivacy, err := controllers.CreateDataPrivacyManager(viper.GetString("pod_namespace"))
+	if err != nil {
+		log.WithError(err).Fatal("Failed to create data privacy manager.")
+	}
+
 	agentTracker := tracker.NewAgents(mdsClient, viper.GetString("jwt_signing_key"))
 	agentTracker.Start()
 	defer agentTracker.Stop()
-	svr, err := controllers.NewServer(env, agentTracker, mdtpClient, mdconfClient, natsConn, controllers.NewQueryExecutorFromServer)
+	svr, err := controllers.NewServer(env, agentTracker, dataPrivacy, mdtpClient, mdconfClient, natsConn, controllers.NewQueryExecutorFromServer)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize GRPC server funcs.")
 	}

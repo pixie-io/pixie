@@ -132,6 +132,8 @@ message LogicalPlannerState {
   string result_address = 4;
   // The SSL target override for the result address, if applicable.
   string result_ssl_targetname = 5 [(gogoproto.customname) = "ResultSSLTargetName"];
+  // Whether the query should redact sensitive columns or not.
+  bool redact_sensitive_columns = 6;
 }
 
 // The result for the planner. Contains a status to track any errors

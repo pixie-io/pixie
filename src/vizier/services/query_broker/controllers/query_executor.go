@@ -52,6 +52,12 @@ type QueryExecutor interface {
 	QueryID() uuid.UUID
 }
 
+// DataPrivacy is an interface that manages data privacy in the query executor.
+type DataPrivacy interface {
+	// ShouldRedactSensitiveColumns returns true if the execution should redact sensitive columns.
+	ShouldRedactSensitiveColumns(ctx context.Context) (bool, error)
+}
+
 // MutationExecFactory is a function that creates a new MutationExecutorImpl.
 type MutationExecFactory func(Planner,
 	metadatapb.MetadataTracepointServiceClient,
@@ -63,6 +69,7 @@ type QueryExecutorImpl struct {
 	resultAddress       string
 	resultSSLTargetName string
 	agentsTracker       AgentsTracker
+	dataPrivacy         DataPrivacy
 	natsConn            *nats.Conn
 	mdtp                metadatapb.MetadataTracepointServiceClient
 	mdconf              metadatapb.MetadataConfigServiceClient
@@ -84,6 +91,7 @@ func NewQueryExecutorFromServer(s *Server, mutExecFactory MutationExecFactory) Q
 		s.env.Address(),
 		s.env.SSLTargetName(),
 		s.agentsTracker,
+		s.dataPrivacy,
 		s.natsConn,
 		s.mdtp,
 		s.mdconf,
@@ -98,6 +106,7 @@ func NewQueryExecutor(
 	resultAddress string,
 	resultSSLTargetName string,
 	agentsTracker AgentsTracker,
+	dataPrivacy DataPrivacy,
 	natsConn *nats.Conn,
 	mdtp metadatapb.MetadataTracepointServiceClient,
 	mdconf metadatapb.MetadataConfigServiceClient,
@@ -109,6 +118,7 @@ func NewQueryExecutor(
 		resultAddress:       resultAddress,
 		resultSSLTargetName: resultSSLTargetName,
 		agentsTracker:       agentsTracker,
+		dataPrivacy:         dataPrivacy,
 		natsConn:            natsConn,
 		mdtp:                mdtp,
 		mdconf:              mdconf,
@@ -258,11 +268,18 @@ func (q *QueryExecutorImpl) compilePlan(ctx context.Context, resultCh chan<- *vi
 	if info == nil {
 		return nil, status.Error(codes.Unavailable, "not ready yet")
 	}
+
+	redactSensitiveColumns, err := q.dataPrivacy.ShouldRedactSensitiveColumns(ctx)
+	if err != nil {
+		log.WithError(err).Errorf("Failed to get the redaction info")
+		return nil, status.Errorf(codes.Internal, "error setting up the compiler")
+	}
 	plannerState := &distributedpb.LogicalPlannerState{
-		DistributedState:    distributedState,
-		PlanOptions:         planOpts,
-		ResultAddress:       q.resultAddress,
-		ResultSSLTargetName: q.resultSSLTargetName,
+		DistributedState:       distributedState,
+		PlanOptions:            planOpts,
+		ResultAddress:          q.resultAddress,
+		ResultSSLTargetName:    q.resultSSLTargetName,
+		RedactSensitiveColumns: redactSensitiveColumns,
 	}
 
 	// Compile the query plan.
