@@ -8,10 +8,7 @@ namespace mux {
 
 ParseState ParseFullFrame(BinaryDecoder* decoder, Frame* frame) {
 
-  // TODO(oazizi/ddelnano): Simplify this logic when the binary decoder supports reading 24 bit fields
-  PL_ASSIGN_OR(uint16_t tag_first, decoder->ExtractInt<uint16_t>(), return ParseState::kInvalid);
-  PL_ASSIGN_OR(uint8_t tag_last, decoder->ExtractInt<uint8_t>(), return ParseState::kInvalid);
-  frame->tag = (tag_first << 8) | tag_last;
+  PL_ASSIGN_OR(frame->tag, decoder->ExtractInt<uint24_t>(), return ParseState::kInvalid);
 
   Type frame_type = static_cast<Type>(frame->type);
 

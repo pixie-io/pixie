@@ -114,7 +114,7 @@ struct Frame : public FrameBase {
   // data.
   uint32_t length;
   int8_t type;
-  uint32_t tag;
+  uint24_t tag;
   std::string why;
   // Reply status codes. Only present in Rdispatch messages types
   int8_t reply_status;
@@ -139,7 +139,7 @@ struct Frame : public FrameBase {
 
   // TODO(ddelnano): Include printing the context, dtabs and other fields
   std::string ToString() const override {
-    return absl::Substitute("Mux message [len=$0 type=$1 tag=$2 # context: TBD dtabs: TBD]", length, type, tag);
+    return absl::Substitute("Mux message [len=$0 type=$1 tag=$2 # context: TBD dtabs: TBD]", length, type, uint32_t(tag));
   }
 
 };
