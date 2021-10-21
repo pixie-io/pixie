@@ -1,0 +1,66 @@
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+''' XSS Reflected Attack Data Tracer
+Shows the most recent XSS Reflected Attack's in the cluster.
+'''
+
+import px
+
+RULES = '{'
+    '"img_tag":"(?i).*(<|%3C)\s*img.*",'
+    '"iframe_tag":"(?i).*(<|%3C)\s*iframe.*",'
+    '"object_tag":"(?i).*(<|%3C)\s*object.*",'
+    '"embed_tag":"(?i).*(<|%3C)\s*embed.*",'
+    '"script_tag":"(?i).*(<|%3C)\s*script.*",'
+    '"alert_event":"(?i).*[\s\"\'`;\/0-9=\x0B\x09\x0C\x3B\x2C\x28\x3B]alert(.*",'
+    '"href_property":"(?i).*[\s\"\'`;\/0-9=\x0B\x09\x0C\x3B\x2C\x28\x3B]href[\s\x0B\x09\x0C\x3B\x2C\x28\x3B]*?=[^=].*",'
+    '"src_property":"(?i).*[\s\"\'`;\/0-9=\x0B\x09\x0C\x3B\x2C\x28\x3B]src[\s\x0B\x09\x0C\x3B\x2C\x28\x3B]*?=[^=].*",'
+    '"flash_command_event": "(?i).*i[\s\"\'`;\/0-9=\x0B\x09\x0C\x3B\x2C\x28\x3B]fscommand[\s\x0B\x09\x0C\x3B\x2C\x28\x3B]*?=[^=].*",'
+    # Pulled from https://github.com/coreruleset/coreruleset/blob/v3.4/dev/rules/REQUEST-941-APPLICATION-ATTACK-XSS.conf.
+    '"event": "(?i).*[\s\"\'`;\/0-9=\x0B\x09\x0C\x3B\x2C\x28\x3B]on[a-zA-Z]{3,25}[\s\x0B\x09\x0C\x3B\x2C\x28\x3B]*?=[^=].*",'
+    '"attribute_vector": "(?i).*[\s\S](?:\b(?:x(?:link:href|html|mlns)|data:text\/html|pattern\b.*?=|formaction)|!ENTITY\s+(?:\S+|%\s+\S+)\s+(?:PUBLIC|SYSTEM)|;base64|@import)\b.*",'
+    '"javascript_uri_and_tags": "(?i).*[a-z]+=(?:[^:=]+:.+;)*?[^:=]+:url\(javascript.*",'
+    '}'
+COLUMNS = ['time_', 'remote_addr', 'remote_port', 'req_headers', 'req_method', 'req_path', 'req_body', 'resp_headers', 'resp_status', 'resp_message', 'resp_body', 'rule_broken']
+
+
+def xss_attacks(df):
+    df["rule_broken"] = px.match_regex_rule(RULES, df.req_path + df.req_body)
+    df["resp_rule_broken"] = px.match_regex_rule(RULES, df.resp_message + df.resp_body)
+    df = df[df.rule_broken == df.resp_rule_broken]
+    return df[COLUMNS]
+
+def http_data(start_time: str, num_head: int):
+    df = px.DataFrame(table='http_events', start_time=start_time)
+
+    df.namespace = df.ctx['namespace']
+    df.node = df.ctx['node']
+    df.pod = df.ctx['pod']
+    df.pid = px.upid_to_pid(df.upid)
+
+    # Remove some columns.
+    df = df.drop(['upid', 'trace_role', 'content_type', 'minor_version'])
+
+    # Restrict number of results.
+    df = df.head(num_head)
+
+    return df
+
+def xss_stored_attacks(start_time: str, source_filter: str, destination_filter: str, num_head: int):
+    df = http_data(start_time, source_filter, destination_filter, num_head)
+    df = xss_attacks(df)
+    return df
