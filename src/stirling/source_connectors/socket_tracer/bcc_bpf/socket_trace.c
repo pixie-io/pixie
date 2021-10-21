@@ -1534,30 +1534,25 @@ int probe_ret_sock_alloc(struct pt_regs* ctx) {
 }
 
 // Trace kernel function:
-// int sock_sendmsg(struct socket *sock, struct msghdr *msg)
-// which is called by write/writev/sendto/sendmsg.
-int probe_entry_sock_sendmsg(struct pt_regs* ctx) {
+// int security_socket_sendmsg(struct socket *sock, struct msghdr *msg, int size)
+// which is called by write/writev/send/sendmsg.
+int probe_entry_security_socket_sendmsg(struct pt_regs* ctx) {
   uint64_t id = bpf_get_current_pid_tgid();
-
   struct data_args_t* write_args = active_write_args_map.lookup(&id);
   if (write_args != NULL) {
     write_args->sock_event = true;
   }
-
   return 0;
 }
 
 // Trace kernel function:
-// int sock_recvmsg(struct socket *sock, struct msghdr *msg, int flags)
-// which is called by write/writev/sendto/sendmsg.
-int probe_entry_sock_recvmsg(struct pt_regs* ctx) {
+// int security_socket_recvmsg(struct socket *sock, struct msghdr *msg, int size)
+int probe_entry_security_socket_recvmsg(struct pt_regs* ctx) {
   uint64_t id = bpf_get_current_pid_tgid();
-
   struct data_args_t* read_args = active_read_args_map.lookup(&id);
   if (read_args != NULL) {
     read_args->sock_event = true;
   }
-
   return 0;
 }
 

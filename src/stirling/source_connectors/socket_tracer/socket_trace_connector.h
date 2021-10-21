@@ -183,9 +183,11 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
        {"mmap", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_mmap"},
        {"sock_alloc", bpf_tools::BPFProbeAttachType::kReturn, "probe_ret_sock_alloc",
         /*is_syscall*/ false},
-       {"sock_sendmsg", bpf_tools::BPFProbeAttachType::kEntry, "probe_entry_sock_sendmsg",
+       {"security_socket_sendmsg", bpf_tools::BPFProbeAttachType::kEntry,
+        "probe_entry_security_socket_sendmsg",
         /*is_syscall*/ false},
-       {"sock_recvmsg", bpf_tools::BPFProbeAttachType::kEntry, "probe_entry_sock_recvmsg",
+       {"security_socket_recvmsg", bpf_tools::BPFProbeAttachType::kEntry,
+        "probe_entry_security_socket_recvmsg",
         /*is_syscall*/ false}});
 
   // TODO(oazizi): Remove send and recv probes once we are confident that they don't trace anything.

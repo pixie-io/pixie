@@ -87,6 +87,10 @@ struct KProbeSpec {
   // If true the kernel_fn is the short name of a syscall.
   bool is_syscall = true;
 
+  // Whether to fail if the kprobe doesn't deploy. Useful in case the symbol may not exist in some
+  // kernels.
+  bool is_optional = false;
+
   std::string ToString() const {
     return absl::Substitute("[kernel_function=$0 type=$1 probe=$2]", kernel_fn,
                             magic_enum::enum_name(attach_type), probe_fn);

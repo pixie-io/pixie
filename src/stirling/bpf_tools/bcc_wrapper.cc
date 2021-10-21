@@ -170,11 +170,19 @@ Status BCCWrapper::AttachKProbe(const KProbeSpec& probe) {
   VLOG(1) << "Deploying kprobe: " << probe.ToString();
   DCHECK(probe.attach_type != BPFProbeAttachType::kReturnInsts);
 
-  PL_RETURN_IF_ERROR(
+  auto status =
       bpf_.attach_kprobe(GetKProbeTargetName(probe), std::string(probe.probe_fn), 0 /* offset */,
-                         static_cast<bpf_probe_attach_type>(probe.attach_type), kKprobeMaxActive));
-  kprobes_.push_back(probe);
-  ++num_attached_kprobes_;
+                         static_cast<bpf_probe_attach_type>(probe.attach_type), kKprobeMaxActive);
+
+  // Don't return error if the probe is optional.
+  if (!probe.is_optional) {
+    PL_RETURN_IF_ERROR(status);
+  }
+
+  if (status.ok()) {
+    kprobes_.push_back(probe);
+    ++num_attached_kprobes_;
+  }
   return Status::OK();
 }
 
