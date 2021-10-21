@@ -39,6 +39,7 @@ service MetadataService {
   // These RPC calls are used by UDTFs to fetch metadata.
   rpc GetSchemas(SchemaRequest) returns (SchemaResponse);
   rpc GetAgentInfo(AgentInfoRequest) returns (AgentInfoResponse);
+  rpc GetWithPrefixKey(WithPrefixKeyRequest) returns (WithPrefixKeyResponse);
 }
 
 service MetadataTracepointService {
@@ -113,6 +114,28 @@ message AgentUpdatesResponse {
   // `end_of_update_batch` denotes that the latest batch of updates has completed, and the next message
   // will be from a new batch of updates.
   bool end_of_version = 4;
+}
+
+message WithPrefixKeyRequest {
+  // A key prefix for all the key values store in MDS that we are interested in knowning about.
+  string prefix = 1;
+  // The fully qualified proto name for the value stored at the keys.
+  // Omitting this field or using an empty string will skip any value decoding, works well for
+  // primitive types stored in MDS such as ints or strings, but might cause issues with wire
+  // encoded protos since they usually have null bytes.
+  string proto = 2;
+}
+
+message WithPrefixKeyResponse {
+  message KV {
+    // Key for a particular stored field in MDS.
+    string key = 1;
+    // Value for the corresponding field in MDS. Raw value from MDS if `proto` wasn't set.
+    // Else, proto decoded and then JSON marshalled for convenience.
+    bytes value = 2;
+  }
+  // All the key-value pairs that matched the given prefix.
+  repeated KV kvs = 1;
 }
 
 // The request to register tracepoints on all PEMs.

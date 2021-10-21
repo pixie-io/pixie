@@ -36,6 +36,8 @@ void RegisterFuncsOrDie(const VizierFuncFactoryContext& ctx, carnot::udf::Regist
       "GetAgentStatus", ctx);
 
   registry->RegisterOrDie<GetDebugMDState>("_DebugMDState");
+  registry->RegisterFactoryOrDie<GetDebugMDWithPrefix, UDTFWithMDFactory<GetDebugMDWithPrefix>>(
+      "_DebugMDGetWithPrefix", ctx);
   registry->RegisterFactoryOrDie<GetDebugTableInfo, UDTFWithTableStoreFactory<GetDebugTableInfo>>(
       "_DebugTableInfo", ctx.table_store());
 

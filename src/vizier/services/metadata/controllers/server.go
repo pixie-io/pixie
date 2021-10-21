@@ -20,13 +20,16 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/gofrs/uuid"
+	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -42,6 +45,7 @@ import (
 	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
 	"px.dev/pixie/src/vizier/services/metadata/storepb"
 	"px.dev/pixie/src/vizier/services/shared/agentpb"
+	"px.dev/pixie/src/vizier/utils/datastore"
 )
 
 // UnhealthyAgentThreshold is the amount of time where an agent is considered unhealthy if
@@ -51,6 +55,7 @@ const UnhealthyAgentThreshold = 30 * time.Second
 // Server defines an gRPC server type.
 type Server struct {
 	env    metadataenv.MetadataEnv
+	ds     datastore.MultiGetterSetterDeleterCloser
 	agtMgr agent.Manager
 	tpMgr  *tracepoint.Manager
 	// The current cursor that is actively running the GetAgentsUpdate stream. Only one GetAgentsUpdate
@@ -60,9 +65,10 @@ type Server struct {
 }
 
 // NewServer creates GRPC handlers.
-func NewServer(env metadataenv.MetadataEnv, agtMgr agent.Manager, tpMgr *tracepoint.Manager) *Server {
+func NewServer(env metadataenv.MetadataEnv, ds datastore.MultiGetterSetterDeleterCloser, agtMgr agent.Manager, tpMgr *tracepoint.Manager) *Server {
 	return &Server{
 		env:    env,
+		ds:     ds,
 		agtMgr: agtMgr,
 		tpMgr:  tpMgr,
 	}
@@ -294,6 +300,48 @@ func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metada
 		log.Tracef("Sent %d agent updates", len(updates))
 		time.Sleep(agentUpdatePeriod)
 	}
+}
+
+// GetWithPrefixKey fetches all the metadata KVs with the given prefix. This is used for debug purposes.
+func (s *Server) GetWithPrefixKey(ctx context.Context, req *metadatapb.WithPrefixKeyRequest) (*metadatapb.WithPrefixKeyResponse, error) {
+	prefix := req.Prefix
+	if prefix == "" {
+		return nil, errors.New("Empty prefixes are not supported")
+	}
+	mName := req.Proto
+	var msg proto.Message
+	if mName != "" {
+		t := proto.MessageType(mName)
+		if t != nil {
+			msg = reflect.New(t.Elem()).Interface().(proto.Message)
+		}
+	}
+	ks, vs, err := s.ds.GetWithPrefix(prefix)
+	if err != nil {
+		return nil, err
+	}
+	resp := &metadatapb.WithPrefixKeyResponse{}
+	for i := range ks {
+		kv := &metadatapb.WithPrefixKeyResponse_KV{
+			Key:   ks[i],
+			Value: vs[i],
+		}
+		resp.Kvs = append(resp.Kvs, kv)
+		if msg == nil {
+			continue
+		}
+		msg.Reset()
+		err := proto.Unmarshal(vs[i], msg)
+		if err != nil {
+			continue
+		}
+		js, err := json.Marshal(msg)
+		if err != nil {
+			continue
+		}
+		kv.Value = js
+	}
+	return resp, nil
 }
 
 // RegisterTracepoint is a request to register the tracepoints specified in the TracepointDeployment on all agents.

@@ -39,6 +39,7 @@ go_library(
         "//src/vizier/services/metadata/metadatapb:service_pl_go_proto",
         "//src/vizier/services/metadata/storepb:store_pl_go_proto",
         "//src/vizier/services/shared/agentpb:agent_pl_go_proto",
+        "//src/vizier/utils/datastore",
         "//src/vizier/utils/messagebus",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_gogo_protobuf//proto",

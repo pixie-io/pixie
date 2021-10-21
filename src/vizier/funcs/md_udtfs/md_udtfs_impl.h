@@ -550,6 +550,67 @@ class GetDebugMDState final : public carnot::udf::UDTF<GetDebugMDState> {
 };
 
 /**
+ * This UDTF fetches all MDS kvs with the given prefix.
+ */
+class GetDebugMDWithPrefix final : public carnot::udf::UDTF<GetDebugMDWithPrefix> {
+ public:
+  using MDSStub = vizier::services::metadata::MetadataService::Stub;
+  GetDebugMDWithPrefix() = delete;
+  GetDebugMDWithPrefix(std::shared_ptr<MDSStub> stub,
+                       std::function<void(grpc::ClientContext*)> add_context_authentication)
+      : stub_(stub), add_context_authentication_func_(add_context_authentication) {}
+
+  static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ONE_KELVIN; }
+
+  static constexpr auto OutputRelation() {
+    return MakeArray(ColInfo("key", types::DataType::STRING, types::PatternType::GENERAL,
+                             "The key of the object"),
+                     ColInfo("value", types::DataType::STRING, types::PatternType::GENERAL,
+                             "Text encoded version of the proto"));
+  }
+
+  static constexpr auto InitArgs() {
+    return MakeArray(
+        UDTFArg::Make<types::DataType::STRING>("prefix", "Prefix key for metadata info"),
+        UDTFArg::Make<types::DataType::STRING>(
+            "proto", "Fully qualified proto message name to decode values"));
+  }
+
+  Status Init(FunctionContext*, types::StringValue prefix, types::StringValue proto) {
+    px::vizier::services::metadata::WithPrefixKeyRequest req;
+    resp_ = std::make_unique<px::vizier::services::metadata::WithPrefixKeyResponse>();
+
+    req.set_prefix(prefix);
+    req.set_proto(proto);
+
+    grpc::ClientContext ctx;
+    add_context_authentication_func_(&ctx);
+    auto s = stub_->GetWithPrefixKey(&ctx, req, resp_.get());
+    if (!s.ok()) {
+      return error::Internal("Failed to make RPC call to metadata service");
+    }
+
+    return Status::OK();
+  }
+
+  bool NextRecord(FunctionContext*, RecordWriter* rw) {
+    for (const px::vizier::services::metadata::WithPrefixKeyResponse_KV& kv : resp_->kvs()) {
+      rw->Append<IndexOf("key")>(kv.key());
+      rw->Append<IndexOf("value")>(kv.value());
+    }
+
+    // no more records.
+    return false;
+  }
+
+ private:
+  std::unique_ptr<px::vizier::services::metadata::WithPrefixKeyResponse> resp_;
+
+  std::shared_ptr<MDSStub> stub_;
+  std::function<void(grpc::ClientContext*)> add_context_authentication_func_;
+};
+
+/**
  * This UDTF dumps the debug information for all registered tables.
  */
 class GetDebugTableInfo final : public carnot::udf::UDTF<GetDebugTableInfo> {

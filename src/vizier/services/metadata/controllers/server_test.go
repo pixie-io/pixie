@@ -163,7 +163,7 @@ func TestGetAgentInfo(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s := controllers.NewServer(env, mockAgtMgr, nil)
+	s := controllers.NewServer(env, nil, mockAgtMgr, nil)
 
 	req := metadatapb.AgentInfoRequest{}
 
@@ -209,7 +209,7 @@ func TestGetAgentInfoGetActiveAgentsFailed(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s := controllers.NewServer(env, mockAgtMgr, nil)
+	s := controllers.NewServer(env, nil, mockAgtMgr, nil)
 
 	req := metadatapb.AgentInfoRequest{}
 
@@ -238,7 +238,7 @@ func TestGetSchemas(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s := controllers.NewServer(env, mockAgtMgr, nil)
+	s := controllers.NewServer(env, nil, mockAgtMgr, nil)
 
 	req := metadatapb.SchemaRequest{}
 
@@ -346,7 +346,7 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s := controllers.NewServer(env, mockAgtMgr, tracepointMgr)
+	s := controllers.NewServer(env, nil, mockAgtMgr, tracepointMgr)
 
 	reqs := []*metadatapb.RegisterTracepointRequest_TracepointRequest{
 		{
@@ -471,7 +471,7 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s := controllers.NewServer(env, mockAgtMgr, tracepointMgr)
+	s := controllers.NewServer(env, nil, mockAgtMgr, tracepointMgr)
 
 	reqs := []*metadatapb.RegisterTracepointRequest_TracepointRequest{
 		{
@@ -656,7 +656,7 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 				t.Fatal("Failed to create api environment.")
 			}
 
-			s := controllers.NewServer(env, mockAgtMgr, tracepointMgr)
+			s := controllers.NewServer(env, nil, mockAgtMgr, tracepointMgr)
 			req := metadatapb.GetTracepointInfoRequest{
 				IDs: []*uuidpb.UUID{utils.ProtoFromUUID(tID)},
 			}
@@ -714,7 +714,7 @@ func Test_Server_RemoveTracepoint(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s := controllers.NewServer(env, mockAgtMgr, tracepointMgr)
+	s := controllers.NewServer(env, nil, mockAgtMgr, tracepointMgr)
 
 	req := metadatapb.RemoveTracepointRequest{
 		Names: []string{"test1", "test2"},
@@ -897,7 +897,7 @@ func TestGetAgentUpdates(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	srv := controllers.NewServer(mdEnv, mockAgtMgr, nil)
+	srv := controllers.NewServer(mdEnv, nil, mockAgtMgr, nil)
 
 	env := env.New("withpixie.ai")
 	s := server.CreateGRPCServer(env, &server.GRPCServerOptions{})
@@ -1058,7 +1058,7 @@ func Test_Server_UpdateConfig(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s := controllers.NewServer(env, mockAgtMgr, tracepointMgr)
+	s := controllers.NewServer(env, nil, mockAgtMgr, tracepointMgr)
 
 	req := metadatapb.UpdateConfigRequest{
 		AgentPodName: "pl/pem-1234",

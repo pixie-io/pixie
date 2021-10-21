@@ -250,7 +250,7 @@ func main() {
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
 
-	svr := controllers.NewServer(env, agtMgr, tracepointMgr)
+	svr := controllers.NewServer(env, dataStore, agtMgr, tracepointMgr)
 	log.Infof("Metadata Server: %s", version.GetVersion().ToString())
 
 	// We bump up the max message size because agent metadata may be larger than 4MB. This is a
