@@ -155,6 +155,18 @@ inline int operator<<(int24_t left, int shift) {
   return left.data;
 }
 
+struct __attribute__((packed)) uint24_t {
+  operator int() const { return data; }
+  uint24_t(int x) : data(x) {}
+  uint24_t() {}
+  uint32_t data : 24;
+};
+
+inline int operator<<(uint24_t left, int shift) {
+  left.data = (left.data << shift) & 0xffffff;
+  return left.data;
+}
+
 }  // namespace px
 
 // When used in a constexpr function, this will prevent compilation if assert does not pass.

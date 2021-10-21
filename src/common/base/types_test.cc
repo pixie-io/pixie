@@ -230,5 +230,20 @@ TEST(int24_t, VerifyInitializationAndBitShifting) {
   EXPECT_NE(val, 16777215);
 }
 
+TEST(uint24_t, VerifyInitializationAndBitShifting) {
+  EXPECT_EQ(sizeof(uint24_t), 3);
+
+  uint24_t t = 1;
+  EXPECT_EQ(t << 8, 256);
+
+  // Assign an int that uses each of the 3 bytes
+  uint24_t t2 = 0x10111;
+  EXPECT_EQ(t2 << 8, 0x11100);
+
+  uint24_t val = 0xffffff;
+  EXPECT_EQ(val, 0xffffff);
+  EXPECT_NE(val, -1);
+}
+
 }  // namespace const_types_test
 }  // namespace px
