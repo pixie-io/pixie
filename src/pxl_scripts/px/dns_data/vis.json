@@ -27,9 +27,9 @@
   ],
   "globalFuncs": [
     {
-      "outputName": "cql_data",
+      "outputName": "dns_data",
       "func": {
-        "name": "cql_data",
+        "name": "dns_data",
         "args": [
           {
             "name": "start_time",
@@ -60,7 +60,7 @@
         "w": 12,
         "h": 4
       },
-      "globalFuncOutputName": "cql_data",
+      "globalFuncOutputName": "dns_data",
       "displaySpec": {
         "@type": "types.px.dev/px.vispb.Table"
       }
