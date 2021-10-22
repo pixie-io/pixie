@@ -353,7 +353,7 @@ func TestAllScriptsCompile(t *testing.T) {
 				if result.Status.Context != nil {
 					errContext := &compilerpb.CompilerErrorGroup{}
 					err := types.UnmarshalAny(result.Status.Context, errContext)
-				    require.NoError(t, err)
+					require.NoError(t, err)
 					for _, e := range errContext.Errors {
 						if e.GetLineColError() != nil {
 							lineCol := e.GetLineColError()
