@@ -34,7 +34,6 @@ namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
-using px::shared::scriptspb::VisFuncsInfo;
 using pypa::AstType;
 
 StatusOr<FuncIR::Op> ASTVisitorImpl::GetOp(const std::string& python_op, const pypa::AstPtr node) {
@@ -331,20 +330,6 @@ Status ASTVisitorImpl::ProcessExecFuncs(const ExecFuncs& exec_funcs) {
     }
   }
   return Status::OK();
-}
-
-StatusOr<shared::scriptspb::FuncArgsSpec> ASTVisitorImpl::GetMainFuncArgsSpec() const {
-  QLObjectPtr mainfn = var_table_->Lookup(kMainFuncId);
-  if (mainfn == nullptr) {
-    return error::InvalidArgument("Could not find '$0' fn", kMainFuncId);
-  }
-
-  if (mainfn->type() != QLObjectType::kFunction) {
-    return error::InvalidArgument("'$0' is not a function", kMainFuncId);
-  }
-
-  auto func_object = std::static_pointer_cast<FuncObject>(mainfn);
-  return func_object->CreateFuncArgsSpec();
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& body,
@@ -1153,22 +1138,6 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessFuncDefDocString(const pypa::AstSui
     return ExprObject::Create(ir_node, this);
   }
   return ProcessDocString(PYPA_PTR_CAST(DocString, items_list[0]));
-}
-
-StatusOr<VisFuncsInfo> ASTVisitorImpl::GetVisFuncsInfo() const {
-  VisFuncsInfo info;
-  auto doc_string_map = info.mutable_doc_string_map();
-  auto vis_spec_map = info.mutable_vis_spec_map();
-  auto fn_args_map = info.mutable_fn_args_map();
-  for (const auto& [name, func] : var_table_->GetVisFuncs()) {
-    doc_string_map->insert({name, func->doc_string()});
-    auto vis_spec = func->vis_spec();
-    px::shared::scriptspb::VisSpec vis_spec_pb;
-    vis_spec_pb.set_vega_spec(vis_spec->vega_spec);
-    vis_spec_map->insert({name, vis_spec_pb});
-    fn_args_map->insert({name, func->CreateFuncArgsSpec()});
-  }
-  return info;
 }
 
 }  // namespace compiler

@@ -77,21 +77,6 @@ Status Compiler::Optimize(IR* ir, CompilerState* compiler_state) {
   return optimizer->Execute(ir);
 }
 
-StatusOr<shared::scriptspb::FuncArgsSpec> Compiler::GetMainFuncArgsSpec(
-    const std::string& query, CompilerState* compiler_state) {
-  Parser parser;
-  PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
-
-  std::shared_ptr<IR> ir = std::make_shared<IR>();
-  ModuleHandler module_handler;
-  MutationsIR dynamic_trace;
-  PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(ir.get(), &dynamic_trace,
-                                                              compiler_state, &module_handler));
-  PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
-
-  return ast_walker->GetMainFuncArgsSpec();
-}
-
 StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
                                                   CompilerState* compiler_state,
                                                   const ExecFuncs& exec_funcs) {
@@ -140,20 +125,6 @@ StatusOr<std::unique_ptr<MutationsIR>> Compiler::CompileTrace(const std::string&
     PL_RETURN_IF_ERROR(ast_walker->ProcessExecFuncs(exec_funcs));
   }
   return mutations;
-}
-
-StatusOr<px::shared::scriptspb::VisFuncsInfo> Compiler::GetVisFuncsInfo(
-    const std::string& query, CompilerState* compiler_state) {
-  Parser parser;
-  PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
-
-  std::shared_ptr<IR> ir = std::make_shared<IR>();
-  ModuleHandler module_handler;
-  MutationsIR dynamic_trace;
-  PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(ir.get(), &dynamic_trace,
-                                                              compiler_state, &module_handler));
-  PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
-  return ast_walker->GetVisFuncsInfo();
 }
 
 Status Compiler::VerifyGraphHasResultSink(IR* ir) {

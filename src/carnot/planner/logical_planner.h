@@ -62,24 +62,6 @@ class LogicalPlanner : public NotCopyable {
       const distributedpb::LogicalPlannerState& logical_state,
       const plannerpb::CompileMutationsRequest& mutations_req);
 
-  /**
-   * @brief Get the Main Func Args Spec for a query. Must have a main function in the query or the
-   * method will return an error.
-   *
-   * @param query_request
-   * @return StatusOr<shared::scriptspb::FuncArgsSpec>
-   */
-  StatusOr<shared::scriptspb::FuncArgsSpec> GetMainFuncArgsSpec(
-      const plannerpb::QueryRequest& query_request);
-
-  /**
-   * @brief Takes in a script string and outputs information about vis funcs for that script.
-   *
-   * @param script: the string of the script.
-   * @return VisFuncsInfo or error if one occurs during compilation.
-   */
-  StatusOr<px::shared::scriptspb::VisFuncsInfo> GetVisFuncsInfo(const std::string& script_str);
-
   Status Init(std::unique_ptr<planner::RegistryInfo> registry_info);
   Status Init(const udfspb::UDFInfo& udf_info);
 

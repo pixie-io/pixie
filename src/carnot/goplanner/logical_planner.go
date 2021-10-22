@@ -41,7 +41,6 @@ import (
 	"px.dev/pixie/src/carnot/planner/plannerpb"
 	"px.dev/pixie/src/carnot/udfspb"
 	"px.dev/pixie/src/common/base/statuspb"
-	"px.dev/pixie/src/shared/scriptspb"
 )
 
 // GoPlanner wraps the C Planner.
@@ -93,52 +92,6 @@ func (cm GoPlanner) Plan(planState *distributedpb.LogicalPlannerState, queryRequ
 		return plan, fmt.Errorf("error: '%s'; string: '%s'", err, string(lp))
 	}
 	return plan, nil
-}
-
-// GetMainFuncArgsSpec returns the FuncArgSpec of the main function if it exists, otherwise throws a Compiler Error.
-func (cm GoPlanner) GetMainFuncArgsSpec(queryRequest *plannerpb.QueryRequest) (*scriptspb.MainFuncSpecResult, error) {
-	var resultLen C.int
-	queryRequestBytes, err := proto.Marshal(queryRequest)
-	if err != nil {
-		return nil, err
-	}
-	queryRequestData := C.CBytes(queryRequestBytes)
-	defer C.free(queryRequestData)
-
-	res := C.PlannerGetMainFuncArgsSpec(cm.planner, (*C.char)(queryRequestData), C.int(len(queryRequestBytes)), &resultLen)
-	defer C.StrFree(res)
-	resultBytes := C.GoBytes(unsafe.Pointer(res), resultLen)
-	if resultLen == 0 {
-		return nil, errors.New("no result returned")
-	}
-
-	resultPB := &scriptspb.MainFuncSpecResult{}
-	if err := proto.Unmarshal(resultBytes, resultPB); err != nil {
-		return resultPB, fmt.Errorf("error: '%s'; string: '%s'", err, string(resultBytes))
-	}
-
-	return resultPB, nil
-}
-
-// ExtractVisFuncsInfo parses a script for misc info such as func args, vega specs, and docstrings.
-func (cm GoPlanner) ExtractVisFuncsInfo(script string) (*scriptspb.VisFuncsInfoResult, error) {
-	var resultLen C.int
-	scriptData := C.CString(script)
-	defer C.free(unsafe.Pointer(scriptData))
-	res := C.PlannerVisFuncsInfo(cm.planner, scriptData, C.int(len(script)), &resultLen)
-	defer C.StrFree(res)
-
-	resultBytes := C.GoBytes(unsafe.Pointer(res), resultLen)
-	if resultLen == 0 {
-		return nil, errors.New("no result returned")
-	}
-
-	visFuncsPb := &scriptspb.VisFuncsInfoResult{}
-	if err := proto.Unmarshal(resultBytes, visFuncsPb); err != nil {
-		return visFuncsPb, fmt.Errorf("error: '%s'; string: '%s'", err, string(resultBytes))
-	}
-
-	return visFuncsPb, nil
 }
 
 // CompileMutations compiles the query into a mutation of Pixie Data Table.

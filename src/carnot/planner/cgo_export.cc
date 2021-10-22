@@ -38,8 +38,6 @@
 
 using px::carnot::planner::distributedpb::LogicalPlannerResult;
 using px::carnot::planner::plannerpb::CompileMutationsResponse;
-using px::shared::scriptspb::MainFuncSpecResult;
-using px::shared::scriptspb::VisFuncsInfoResult;
 
 PlannerPtr PlannerNew(const char* udf_info_data, int udf_info_len) {
   std::string udf_info_pb_str(udf_info_data, udf_info_data + udf_info_len);
@@ -163,50 +161,6 @@ char* PlannerCompileMutations(PlannerPtr planner_ptr, const char* planner_state_
 
   // Serialize the tracing program into bytes.
   return PrepareResult(&mutations_response_pb, resultLen);
-}
-
-char* PlannerGetMainFuncArgsSpec(PlannerPtr planner_ptr, const char* query_request_str_c,
-                                 int query_request_str_len, int* resultLen) {
-  DCHECK(query_request_str_c != nullptr);
-  std::string query_request_pb_str(query_request_str_c,
-                                   query_request_str_c + query_request_str_len);
-  px::carnot::planner::plannerpb::QueryRequest query_request_pb;
-  PLANNER_RETURN_IF_ERROR(
-      MainFuncSpecResult, resultLen,
-      LoadProto(query_request_pb_str, &query_request_pb, "Failed to process the query request"));
-
-  auto planner = reinterpret_cast<px::carnot::planner::LogicalPlanner*>(planner_ptr);
-
-  auto main_args_spec_status = planner->GetMainFuncArgsSpec(query_request_pb);
-  if (!main_args_spec_status.ok()) {
-    return ExitEarly<MainFuncSpecResult>(main_args_spec_status.status(), resultLen);
-  }
-
-  MainFuncSpecResult main_func_spec_response_pb;
-  WrapStatus(&main_func_spec_response_pb, main_args_spec_status.status());
-  *(main_func_spec_response_pb.mutable_main_func_spec()) =
-      main_args_spec_status.ConsumeValueOrDie();
-
-  return PrepareResult(&main_func_spec_response_pb, resultLen);
-}
-
-char* PlannerVisFuncsInfo(PlannerPtr planner_ptr, const char* script_str_c, int script_str_len,
-                          int* resultLen) {
-  DCHECK(script_str_c != nullptr);
-  std::string script_str(script_str_c, script_str_c + script_str_len);
-
-  auto planner = reinterpret_cast<px::carnot::planner::LogicalPlanner*>(planner_ptr);
-
-  auto vis_funcs_info_or_s = planner->GetVisFuncsInfo(script_str);
-  if (!vis_funcs_info_or_s.ok()) {
-    return ExitEarly<VisFuncsInfoResult>(vis_funcs_info_or_s.status(), resultLen);
-  }
-
-  VisFuncsInfoResult vis_funcs_pb;
-  WrapStatus(&vis_funcs_pb, vis_funcs_info_or_s.status());
-  *(vis_funcs_pb.mutable_info()) = vis_funcs_info_or_s.ConsumeValueOrDie();
-
-  return PrepareResult(&vis_funcs_pb, resultLen);
 }
 
 void PlannerFree(PlannerPtr planner_ptr) {

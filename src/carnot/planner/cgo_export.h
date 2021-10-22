@@ -46,32 +46,6 @@ char* PlannerPlan(PlannerPtr planner_ptr, const char* planner_state_str_c,
                   int planner_state_str_len, const char* query, int query_len, int* resultLen);
 
 /**
- * @brief Returns the Main Function argument's Specification. Fails if the main function doesn't
- * exist in the query argument.
- *
- * @param planner Pointer to the Planner
- * @param query_request_str_c The query request proto serialized to a string
- * @param query_request_str_len  The length of the serialized query request.
- * @param requestLen A pointer to an int that stores the length of the result.
- * @return char*
- */
-char* PlannerGetMainFuncArgsSpec(PlannerPtr planner_ptr, const char* query_request_str_c,
-                                 int query_request_str_len, int* resultLen);
-
-/**
- * @brief Takes in the planner object and the script string, uses this to determine information
- * about the Vis Funcs.
- *
- * @param planner Pointer to the Planner
- * @param script_str_c The string of the script to be parsed.
- * @param script_str_len  The length of the script string.
- * @param requestLen A pointer to an int that stores the length of the result.
- * @return char* The VisFuncsInfo, serialized as a string.
- */
-char* PlannerVisFuncsInfo(PlannerPtr planner_ptr, const char* script_str_c, int script_str_len,
-                          int* resultLen);
-
-/**
  * @brief Compiles mutations into their executable form. Takes in a serialized
  * CompileMutationsRequest and returns a serialiaed CompileMutationsResponse.
  *

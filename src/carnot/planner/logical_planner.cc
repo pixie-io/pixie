@@ -123,22 +123,6 @@ StatusOr<std::unique_ptr<compiler::MutationsIR>> LogicalPlanner::CompileTrace(
   return compiler_.CompileTrace(mutations_req.query_str(), compiler_state.get(), exec_funcs);
 }
 
-StatusOr<shared::scriptspb::FuncArgsSpec> LogicalPlanner::GetMainFuncArgsSpec(
-    const plannerpb::QueryRequest& query_request) {
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,
-                      CreateCompilerState({}, registry_info_.get(), 0));
-
-  return compiler_.GetMainFuncArgsSpec(query_request.query_str(), compiler_state.get());
-}
-
-StatusOr<px::shared::scriptspb::VisFuncsInfo> LogicalPlanner::GetVisFuncsInfo(
-    const std::string& script_str) {
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,
-                      CreateCompilerState({}, registry_info_.get(), 0));
-
-  return compiler_.GetVisFuncsInfo(script_str, compiler_state.get());
-}
-
 }  // namespace planner
 }  // namespace carnot
 }  // namespace px

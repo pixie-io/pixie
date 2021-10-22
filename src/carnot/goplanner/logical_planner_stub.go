@@ -28,7 +28,6 @@ import (
 	"px.dev/pixie/src/carnot/planner/plannerpb"
 	"px.dev/pixie/src/carnot/udfspb"
 	"px.dev/pixie/src/common/base/statuspb"
-	"px.dev/pixie/src/shared/scriptspb"
 )
 
 var errorUnimplemented = errors.New(" ¡UNIMPLEMENTED STUB FOR STATIC ANALYSIS. goplanner ONLY RUNS WITH __CGO__ ENABLED! ")
@@ -44,16 +43,6 @@ func New(udfInfo *udfspb.UDFInfo) (GoPlanner, error) {
 
 // Plan the query with the passed in state, then return the result as a planner result protobuf.
 func (cm GoPlanner) Plan(planState *distributedpb.LogicalPlannerState, queryRequest *plannerpb.QueryRequest) (*distributedpb.LogicalPlannerResult, error) {
-	return nil, errorUnimplemented
-}
-
-// GetMainFuncArgsSpec returns the FuncArgSpec of the main function if it exists, otherwise throws a Compiler Error.
-func (cm GoPlanner) GetMainFuncArgsSpec(queryRequest *plannerpb.QueryRequest) (*scriptspb.MainFuncSpecResult, error) {
-	return nil, errorUnimplemented
-}
-
-// ExtractVisFuncsInfo parses a script for misc info such as func args, vega specs, and docstrings.
-func (cm GoPlanner) ExtractVisFuncsInfo(script string) (*scriptspb.VisFuncsInfoResult, error) {
 	return nil, errorUnimplemented
 }
 

@@ -64,10 +64,6 @@ class Compiler {
   StatusOr<std::unique_ptr<MutationsIR>> CompileTrace(const std::string& query,
                                                       CompilerState* compiler_state,
                                                       const ExecFuncs& exec_funcs);
-  StatusOr<shared::scriptspb::FuncArgsSpec> GetMainFuncArgsSpec(const std::string& query,
-                                                                CompilerState* compiler_state);
-  StatusOr<px::shared::scriptspb::VisFuncsInfo> GetVisFuncsInfo(const std::string& query,
-                                                                CompilerState* compiler_state);
 
  private:
   StatusOr<std::shared_ptr<IR>> QueryToIR(const std::string& query, CompilerState* compiler_state,

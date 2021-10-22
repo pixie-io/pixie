@@ -22,7 +22,6 @@ package px.shared.scriptspb;
 
 option go_package = "scriptspb";
 
-import "src/common/base/statuspb/status.proto";
 import "src/shared/types/typespb/types.proto";
 
 // FuncArgsSpec specifies the flags that are defined within a query.
@@ -40,27 +39,3 @@ message FuncArgsSpec {
   repeated Arg args = 1;
 }
 
-// VisSpec provides information to specify the visualization of a function.
-message VisSpec {
-  string vega_spec = 1;
-}
-
-// VisFuncsInfo contains info about each px.vis annotated function.
-message VisFuncsInfo {
-  // Map from function name to doc string for that function.
-  map<string, string> doc_string_map = 1;
-  // Map from function name to VisSpec for the function.
-  map<string, VisSpec> vis_spec_map = 2;
-  // Mapping from function name to arguments.
-  map<string, FuncArgsSpec> fn_args_map = 3;
-}
-
-message VisFuncsInfoResult {
-  px.statuspb.Status status = 1;
-  VisFuncsInfo info = 2;
-}
-
-message MainFuncSpecResult {
-  px.statuspb.Status status = 1;
-  FuncArgsSpec main_func_spec = 2;
-}

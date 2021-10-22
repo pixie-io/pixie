@@ -1169,35 +1169,6 @@ class ASTVisitorTest : public OperatorTests {
     return ast_walker;
   }
 
-  StatusOr<px::shared::scriptspb::VisFuncsInfo> GetVisFuncsInfo(const std::string& query) {
-    Parser parser;
-    PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
-    std::shared_ptr<IR> ir = std::make_shared<IR>();
-    compiler::ModuleHandler module_handler;
-    compiler::MutationsIR dynamic_trace;
-    PL_ASSIGN_OR_RETURN(auto ast_walker,
-                        compiler::ASTVisitorImpl::Create(ir.get(), &dynamic_trace,
-                                                         compiler_state_.get(), &module_handler));
-
-    PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
-    return ast_walker->GetVisFuncsInfo();
-  }
-
-  StatusOr<px::shared::scriptspb::FuncArgsSpec> GetMainFuncArgsSpec(const std::string& query) {
-    Parser parser;
-    PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
-    std::shared_ptr<IR> ir = std::make_shared<IR>();
-    compiler::ModuleHandler module_handler;
-
-    compiler::MutationsIR dynamic_trace;
-    PL_ASSIGN_OR_RETURN(auto ast_walker,
-                        compiler::ASTVisitorImpl::Create(ir.get(), &dynamic_trace,
-                                                         compiler_state_.get(), &module_handler));
-
-    PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
-    return ast_walker->GetMainFuncArgsSpec();
-  }
-
   Status AddUDFToRegistry(std::string name, types::DataType return_type,
                           const std::vector<types::DataType>& init_arg_types,
                           const std::vector<types::DataType>& exec_arg_types) {
