@@ -21,6 +21,18 @@ import { parseRows } from 'app/utils/result-data-parsers';
 import { dataFromProto } from 'app/utils/result-data-utils';
 
 /**
+ * Pressure release valve: to avoid locking up the browser, limit how many rows can be remembered at one time.
+ * When appendBatch would add enough rows to exceed this limit, the oldest (based on order received) are pruned to make
+ * room. This can be visually weird if the user is sorting by a column other than `time_`. Better than freezing though!
+ *
+ * Note: Do not set this below 10,000. That is the maximum size of a data window, and pruning below that limit is buggy.
+ *
+ * This number wasn't chosen scientifically: it's roughly where a 2020 Macbook Pro starts to struggle when it's also
+ * busy running an IDE, a build, two browsers, and a dev server. Ideally, the limit would by dynamic based on load.
+ */
+export const ROW_RETENTION_LIMIT = 50_000;
+
+/**
  * Utility class to handle table data from ExecuteScriptResponse.
  *
  * Converts response data to a format the UI can render quickly, and efficiently processes updates.
@@ -55,6 +67,17 @@ export class VizierTable {
     this.batches.push(batch);
     const newRows = parseRows(this.semanticTypeMap, dataFromProto(this.relation, [batch]));
 
+    // Pruning: if the number of rows would put too much pressure on memory, forget the oldest ones to make room first.
+    // NOTE: This does not handle the scenario where newRows.length > ROW_RETENTION_LIMIT. Don't set the limit too low.
+    const newLength = this.rows.length + newRows.length;
+    if (newLength > ROW_RETENTION_LIMIT) {
+      this.fastShift(newLength - ROW_RETENTION_LIMIT);
+      // It's possible that we prune the current max value for a column. However, it's ALSO possible that the max was
+      // a tie with a row that we did not remove. To reconcile this, recompute entirely. Unfortunately, this is slow.
+      this.maxQuantiles.clear();
+      this.updateMaxQuantiles(this.rows);
+    }
+
     // Update any cumulative values with the new rows, before appending them to the existing rows.
     this.updateMaxQuantiles(newRows);
 
@@ -80,5 +103,26 @@ export class VizierTable {
         if (max > Number.NEGATIVE_INFINITY) this.maxQuantiles.set(key, max);
       }
     }
+  }
+
+  /**
+   * Like Array.prototype.shift(), except it removes many elements at a time. Using splice() can do this too, but that
+   * creates a new array containing the removed elements. If you don't need that, this method is faster.
+   */
+  private fastShift(count: number) {
+    if (count > this.rows.length) {
+      throw new Error(`Tried to prune ${count} rows; there are only ${this.rows.length}!`);
+    }
+
+    if (count === this.rows.length) { // Shortcut. Also, the logic below breaks in this case anyway.
+      this.rows.length = 0;
+      return;
+    }
+
+    // Like with appendBatch above, repeated shift() takes more memory operations than this more direct approach.
+    for (let i = count; i < this.rows.length; i++) {
+      this.rows[i - count] = this.rows[i];
+    }
+    this.rows.length -= count;
   }
 }

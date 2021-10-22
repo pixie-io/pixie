@@ -23,9 +23,9 @@ import {
   DataType,
   Relation,
   RowBatchData,
-  SemanticType,
+  SemanticType, Int64Column,
 } from 'app/types/generated/vizierapi_pb';
-import { VizierTable } from './vizier-table';
+import { ROW_RETENTION_LIMIT, VizierTable } from './vizier-table';
 
 describe('VizierTable', () => {
   const id = 'foo';
@@ -59,6 +59,15 @@ describe('VizierTable', () => {
         new Column().setStringData(new StringColumn().setDataList([JSON.stringify({ p50: 25, p90: 26, p99: 27 })])),
       ]),
   ];
+
+  const hugeBatchRelation = new Relation().setColumnsList([
+    new Relation.ColumnInfo().setColumnName('int').setColumnType(DataType.INT64),
+  ]);
+  const hugeBatch = new RowBatchData().setTableId(id).setColsList([
+    new Column().setInt64Data(new Int64Column().setDataList(
+      Array(ROW_RETENTION_LIMIT - 1).fill(null).map((_, i) => i),
+    )),
+  ]);
 
   it('Constructs without seed rows', () => {
     const table = new VizierTable(id, name, Relation.deserializeBinary(relation.serializeBinary()));
@@ -122,4 +131,58 @@ describe('VizierTable', () => {
     table.appendBatch(RowBatchData.deserializeBinary(inBatches[1].serializeBinary()));
     expect([...table.maxQuantiles.entries()]).toEqual([['two', 27]]);
   });
+
+  it('Sheds excessive rows when there are too many to keep in memory', () => {
+    const table = new VizierTable(id, name, Relation.deserializeBinary(hugeBatchRelation.serializeBinary()));
+    // Start with one row fewer than the limit
+    table.appendBatch(RowBatchData.deserializeBinary(hugeBatch.serializeBinary()));
+    expect(table.rows.length).toBe(ROW_RETENTION_LIMIT - 1);
+
+    // Add that many rows again, which results in ((limit * 2) - 2) rows.
+    table.appendBatch(RowBatchData.deserializeBinary(hugeBatch.serializeBinary()));
+
+    // The table should remove (limit - 2) rows from the top to make room. This means that the last item from
+    // the original batch should still be there, as well as the entire set of added rows.
+    expect(table.rows.length).toBe(ROW_RETENTION_LIMIT);
+    expect(table.rows[0].int).toBe(ROW_RETENTION_LIMIT - 2);
+    expect(table.rows[1].int).toBe(0);
+  });
+
+  it('Updates highest p99 correctly when shedding excessive rows', () => {
+    const table = new VizierTable(id, name, new Relation().setColumnsList([
+      new Relation.ColumnInfo()
+        .setColumnName('quantile')
+        .setColumnType(DataType.STRING)
+        .setColumnSemanticType(SemanticType.ST_QUANTILES),
+    ]));
+
+    table.appendBatch(
+      new RowBatchData()
+        .setTableId(id)
+        .setColsList([
+          new Column().setStringData(new StringColumn().setDataList(
+            Array(ROW_RETENTION_LIMIT - 1).fill(null)
+              .map((_, i) => JSON.stringify({ p50: 0, p90: 0, p99: i * 2 })),
+          )),
+        ]),
+    );
+
+    expect(table.maxQuantiles.get('quantile')).toBe(ROW_RETENTION_LIMIT * 2 - 4);
+
+    table.appendBatch(
+      new RowBatchData()
+        .setTableId(id)
+        .setColsList([
+          new Column().setStringData(new StringColumn().setDataList(
+            Array(ROW_RETENTION_LIMIT).fill(null) // Enough to COMPLETELY empty the buffer
+              .map((_, i) => JSON.stringify({ p50: 0, p90: 0, p99: i })),
+          )),
+        ]),
+    );
+
+    // If the old max value falls out, the next max value (which may be smaller) should be what gets kept.
+    expect(table.maxQuantiles.get('quantile')).toBe(ROW_RETENTION_LIMIT - 1);
+  });
+
+  // Omitted test case: when a batch comes in that's bigger than ROW_RETENTION_LIMIT (intentionally ignored scenario).
 });

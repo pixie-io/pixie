@@ -17,15 +17,15 @@
  */
 
 import { WidgetDisplay } from 'app/containers/live/vis';
-import { VizierTable } from 'app/api';
+import { ROW_RETENTION_LIMIT, VizierTable } from 'app/api';
 import * as React from 'react';
-import { Theme, Typography, makeStyles } from '@material-ui/core';
+import { Theme, makeStyles, alpha } from '@material-ui/core';
 import { createStyles } from '@material-ui/styles';
 import { Arguments } from 'app/utils/args-utils';
 import { LiveDataTable } from 'app/containers/live-data-table/live-data-table';
-import { useLatestRowCount } from 'app/context/results-context';
+import { ResultsContext, useLatestRowCount } from 'app/context/results-context';
 
-const useStyles = makeStyles(({ spacing }: Theme) => createStyles({
+const useStyles = makeStyles(({ spacing, typography, palette }: Theme) => createStyles({
   root: {
     height: '100%',
     display: 'flex',
@@ -42,6 +42,11 @@ const useStyles = makeStyles(({ spacing }: Theme) => createStyles({
     paddingTop: spacing(1),
     paddingRight: spacing(1),
     textAlign: 'right',
+    ...typography.subtitle2,
+  },
+  overload: {
+    fontStyle: 'italic',
+    color: alpha(palette.foreground.one, 0.8),
   },
 }), { name: 'QueryResultViewer' });
 
@@ -59,9 +64,11 @@ export const QueryResultTable = React.memo<QueryResultTableProps>(function Query
   display, table, propagatedArgs,
 }) {
   const classes = useStyles();
+  const { streaming } = React.useContext(ResultsContext);
 
   // Ensures the summary updates while streaming queries.
   const numRows = useLatestRowCount(table.name);
+  const showOverloadWarning = streaming && numRows >= ROW_RETENTION_LIMIT;
 
   const [visibleStart, setVisibleStart] = React.useState(1);
   const [visibleStop, setVisibleStop] = React.useState(1);
@@ -73,7 +80,7 @@ export const QueryResultTable = React.memo<QueryResultTableProps>(function Query
     } else if (count >= numRows) {
       text = '\xa0'; // non-breaking space
     }
-    return <Typography variant='subtitle2'>{text}</Typography>;
+    return text;
   }, [numRows, visibleStart, visibleStop]);
 
   const onRowsRendered = React.useCallback(({ visibleStartIndex, visibleStopIndex }) => {
@@ -92,7 +99,10 @@ export const QueryResultTable = React.memo<QueryResultTableProps>(function Query
         />
       </div>
       <div className={classes.tableSummary}>
-        {visibleRowSummary}
+        <span>{visibleRowSummary}</span>
+        {showOverloadWarning && (
+          <span className={classes.overload}>{' (keeping only latest to reduce memory pressure)'}</span>
+        )}
       </div>
     </div>
   );

@@ -484,8 +484,9 @@ const DataTableImpl = React.memo<DataTableProps>(function DataTable({ table, ...
       columns,
       // react-table doesn't notice if data.length changes, so unfortunately we need to shallow copy to reset identity.
       // Doing so slows down as the number of rows increases, but thankfully not to a catastrophic degree.
+      // Also responds to the first item's identity changing, for if VizierTable had to prune an unreasonable row count.
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      data: React.useMemo(() => data.slice(), [data.length]),
+      data: React.useMemo(() => data.slice(), [data.length, data[0]]),
       defaultColumn,
       disableSortRemove: true,
       autoResetSortBy: false,
