@@ -60,10 +60,12 @@ StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
   if (logical_state.redact_sensitive_columns()) {
     // Block columns.
     sensitive_columns = {{"cql_events", {"req_body", "resp_body"}},
-                         {"http_events", {"req_body", "resp_body"}},
-                         {"kafka_events.beta", {"req_body"}},
+                         {"http_events", {"req_headers", "req_body", "resp_headers", "resp_body"}},
+                         {"kafka_events.beta", {"req_body", "resp"}},
                          {"mysql_events", {"req_body", "resp_body"}},
-                         {"nats_events.beta", {"body"}}};
+                         {"nats_events.beta", {"body", "resp"}},
+                         {"pgsql_events", {"req", "resp"}},
+                         {"redis_events", {"req_args", "resp"}}};
   }
   // Create a CompilerState obj using the relation map and grabbing the current time.
   return std::make_unique<planner::CompilerState>(
