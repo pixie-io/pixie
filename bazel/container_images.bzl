@@ -156,6 +156,14 @@ def stirling_test_images():
         "confluentinc/cp-zookeeper",
     )
 
+    # Tag: node:14.18
+    # Arch: linux/amd64
+    _docker_io_image(
+        "node_14.18_linux_amd64_image",
+        "sha256:c0d52db04cdb02454a0fd12e42356433a1e884eb717c1c60be9c9263e8ede2ca",
+        "node",
+    )
+
     # Tag: node:15.0
     # Arch: linux/amd64
     # This is the oldest version that works correctly with the hard-coded offsets.
