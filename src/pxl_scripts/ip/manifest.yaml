@@ -1,0 +1,4 @@
+---
+short: Traffic to/from IP
+long: >
+  This view displays a summary of the traffic from the cluster to the input IP address.

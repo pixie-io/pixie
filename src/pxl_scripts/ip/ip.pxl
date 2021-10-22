@@ -1,0 +1,119 @@
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+import px
+
+
+def ip_info(start_time: str, ip: str):
+    '''
+        Computes the total number of bytes sent/received to this IP.
+        Also returns metadata about this IP address.
+    '''
+    df = pod_traffic_to_ip(start_time, ip)
+    df = df.agg(
+        bytes_per_s_from_ip=('bytes_per_s_from_ip', px.sum),
+        bytes_per_s_to_ip=('bytes_per_s_to_ip', px.sum)
+    )
+    df.resolved_domain = px.nslookup(ip)
+    df.ip_pod = px.pod_id_to_pod_name(px.ip_to_pod_id(ip))
+    df.ip_service = px.service_id_to_service_name(px.ip_to_service_id(ip))
+    df.ip_node = px.pod_id_to_node_name(px.ip_to_pod_id(ip))
+    return df
+
+
+def pod_traffic_to_ip(start_time: str, ip: str):
+    '''
+        Computes the total number of bytes sent/received to this IP by pod.
+        Does not take trace_role into account, just computes the bytes sent by the pod
+        and received by the pod to the IP address.
+    '''
+    df = traffic_involving_ip(start_time, ip)
+    return df.groupby(['pod']).agg(
+        bytes_per_s_from_ip=('bytes_per_s_from_ip', px.sum),
+        bytes_per_s_to_ip=('bytes_per_s_to_ip', px.sum),
+        total_bytes_per_s=('total_bytes_per_s', px.sum)
+    )
+
+
+def net_flow_graph(start_time: str, ip: str):
+    '''
+        Returns the graph representation of traffic from the cluster to the input IP address.
+        Takes trace_role into account so that we can set the requestor and responder.
+    '''
+    df = traffic_involving_ip(start_time, ip)
+    df.requestor = px.select(df.trace_role == 2, ip, df.pod)
+    df.responder = px.select(df.trace_role == 2, df.pod, ip)
+    df.requestor_sent_bytes_per_s = px.select(df.trace_role == 2,
+                                              df.bytes_per_s_from_ip,
+                                              df.bytes_per_s_to_ip)
+    df.responder_sent_bytes_per_s = px.select(df.trace_role == 2,
+                                              df.bytes_per_s_to_ip,
+                                              df.bytes_per_s_from_ip)
+    return df[['requestor', 'responder', 'requestor_sent_bytes_per_s',
+               'responder_sent_bytes_per_s', 'total_bytes_per_s']]
+
+
+def traffic_involving_ip(start_time: str, ip: str):
+    '''
+        This is a helper function to return the traffic involving the input IP address.
+        Specifically, it returns traffic from within the cluster that talks to that IP.
+        It returns the bytes sent/received/total by pod that talks to the input IP.
+        This function does not consider trace_role, that should be considered by any
+        downstream consumer of this function.
+    '''
+    df = px.DataFrame('conn_stats', start_time=start_time)
+    df = df[df.remote_addr == ip]
+
+    # Store the pod/node/service talking to this IP.
+    df.pod = df.ctx['pod']
+    df.node = df.ctx['node']
+    df.service = df.ctx['service']
+
+    # Use aggregate to pick the first and last sample for any given client-server pair.
+    # We do this by picking the min/max of the stats, since they are all counters.
+    agg_df = df.groupby(['pod', 'node', 'service', 'upid', 'trace_role']).agg(
+        bytes_sent_min=('bytes_sent', px.min),
+        bytes_sent_max=('bytes_sent', px.max),
+        bytes_recv_min=('bytes_recv', px.min),
+        bytes_recv_max=('bytes_recv', px.max),
+    )
+    agg_df.bytes_sent_by_pod = agg_df.bytes_sent_max - agg_df.bytes_sent_min
+    agg_df.bytes_recv_by_pod = agg_df.bytes_recv_max - agg_df.bytes_recv_min
+    agg_df.total_bytes = agg_df.bytes_sent_by_pod + agg_df.bytes_recv_by_pod
+    agg_df = agg_df.drop(['bytes_sent_max', 'bytes_sent_min', 'bytes_recv_max', 'bytes_recv_min'])
+
+    # Since there may be multiple processes per pod (one per upid),
+    # perform an additional aggregation to consolidate those into one entry.
+    agg_df = agg_df.groupby(['pod', 'node', 'service', 'trace_role']).agg(
+        bytes_sent_by_pod=('bytes_sent_by_pod', px.sum),
+        bytes_recv_by_pod=('bytes_recv_by_pod', px.sum),
+        total_bytes=('total_bytes', px.sum),
+    )
+    # Find the time window. Intentionally uses the pre-aggregated table, df.
+    time_window = df.agg(
+        time_min=('time_', px.min),
+        time_max=('time_', px.max),
+    )
+    time_window.time_delta = px.DurationNanos(time_window.time_max - time_window.time_min)
+    time_window = time_window.drop(['time_min', 'time_max'])
+
+    res = agg_df.merge(time_window, how='inner', left_on=[], right_on=[])
+
+    # Compute as rates. Notice the intentional inversion to change pod->ip.
+    res.bytes_per_s_from_ip = res.bytes_recv_by_pod / res.time_delta
+    res.bytes_per_s_to_ip = res.bytes_sent_by_pod / res.time_delta
+    res.total_bytes_per_s = res.total_bytes / res.time_delta
+    return res.drop(['time_delta'])

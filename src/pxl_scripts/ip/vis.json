@@ -1,0 +1,104 @@
+{
+  "variables": [
+    {
+      "name": "start_time",
+      "type": "PX_STRING",
+      "description": "The start time of the window in time units before now.",
+      "defaultValue": "-5m"
+    },
+    {
+      "name": "ip",
+      "type": "PX_STRING",
+      "description": "The IP address to see traffic to/from in the cluster."
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Net Flow Graph",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 4
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Graph",
+        "adjacencyList": {
+          "fromColumn": "requestor",
+          "toColumn": "responder"
+        },
+        "edgeWeightColumn": "total_bytes_per_s",
+        "edgeColorColumn": "total_bytes_per_s",
+        "edgeHoverInfo": [
+          "total_bytes_per_s",
+          "requestor_sent_bytes_per_s",
+          "responder_sent_bytes_per_s"
+        ],
+        "edgeLength": 500
+      },
+      "func": {
+        "name": "net_flow_graph",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "ip",
+            "variable": "ip"
+          }
+        ]
+      }
+    },
+    {
+      "name": "IP Summary",
+      "position": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 2
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      },
+      "func": {
+        "name": "ip_info",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "ip",
+            "variable": "ip"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Pod Traffic to IP",
+      "position": {
+        "x": 0,
+        "y": 6,
+        "w": 12,
+        "h": 4
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      },
+      "func": {
+        "name": "pod_traffic_to_ip",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "ip",
+            "variable": "ip"
+          }
+        ]
+      }
+    }
+  ]
+}
