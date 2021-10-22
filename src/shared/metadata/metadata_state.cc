@@ -320,7 +320,10 @@ Status K8sMetadataState::CleanupExpiredMetadata(int64_t retention_time_ns) {
 
     switch (k8s_object->type()) {
       case K8sObjectType::kPod:
-        pods_by_name_.erase({k8s_object->ns(), k8s_object->name()});
+        if (PodIDByName(std::make_pair(k8s_object->ns(), k8s_object->name())) ==
+            k8s_object->uid()) {
+          pods_by_name_.erase({k8s_object->ns(), k8s_object->name()});
+        }
         if (PodIDByIP(static_cast<PodInfo*>(k8s_object.get())->pod_ip()) ==
             k8s_object
                 ->uid()) {  // There could be a new pod assigned to the podIP now, we should only
@@ -329,10 +332,16 @@ Status K8sMetadataState::CleanupExpiredMetadata(int64_t retention_time_ns) {
         }
         break;
       case K8sObjectType::kNamespace:
-        namespaces_by_name_.erase({k8s_object->ns(), k8s_object->name()});
+        if (NamespaceIDByName(std::make_pair(k8s_object->ns(), k8s_object->name())) ==
+            k8s_object->uid()) {
+          namespaces_by_name_.erase({k8s_object->ns(), k8s_object->name()});
+        }
         break;
       case K8sObjectType::kService:
-        services_by_name_.erase({k8s_object->ns(), k8s_object->name()});
+        if (ServiceIDByName(std::make_pair(k8s_object->ns(), k8s_object->name())) ==
+            k8s_object->uid()) {
+          services_by_name_.erase({k8s_object->ns(), k8s_object->name()});
+        }
         break;
       default:
         LOG(DFATAL) << absl::Substitute("Unexpected object type: $0",
