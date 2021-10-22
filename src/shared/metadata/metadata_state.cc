@@ -321,7 +321,12 @@ Status K8sMetadataState::CleanupExpiredMetadata(int64_t retention_time_ns) {
     switch (k8s_object->type()) {
       case K8sObjectType::kPod:
         pods_by_name_.erase({k8s_object->ns(), k8s_object->name()});
-        pods_by_ip_.erase(static_cast<PodInfo*>(k8s_object.get())->pod_ip());
+        if (PodIDByIP(static_cast<PodInfo*>(k8s_object.get())->pod_ip()) ==
+            k8s_object
+                ->uid()) {  // There could be a new pod assigned to the podIP now, we should only
+                            // delete the IP from the map if it belongs to the terminated pod.
+          pods_by_ip_.erase(static_cast<PodInfo*>(k8s_object.get())->pod_ip());
+        }
         break;
       case K8sObjectType::kNamespace:
         namespaces_by_name_.erase({k8s_object->ns(), k8s_object->name()});

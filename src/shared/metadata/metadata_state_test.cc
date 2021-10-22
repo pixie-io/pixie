@@ -53,6 +53,54 @@ constexpr char kPod0UpdatePbTxt[] = R"(
   reason: "a pod reason"
 )";
 
+constexpr char kPod1UpdatePbTxt[] = R"(
+  uid: "pod1_uid"
+  name: "pod1"
+  namespace: "ns0"
+  start_timestamp_ns: 101
+  stop_timestamp_ns: 103
+  container_ids: "container0_uid"
+  container_ids: "container1_uid"
+  container_names: "container0"
+  container_names: "container1"
+  qos_class: QOS_CLASS_GUARANTEED
+  phase: RUNNING
+  conditions: {
+    type: READY
+    status: STATUS_TRUE
+  }
+  node_name: "a_node"
+  hostname: "a_host"
+  pod_ip: "1.2.3.5"
+  host_ip: "5.6.7.8"
+  message: "a pod message"
+  reason: "a pod reason"
+)";
+
+constexpr char kPod2UpdatePbTxt[] = R"(
+  uid: "pod2_uid"
+  name: "pod2"
+  namespace: "ns0"
+  start_timestamp_ns: 101
+  stop_timestamp_ns: 0
+  container_ids: "container0_uid"
+  container_ids: "container1_uid"
+  container_names: "container0"
+  container_names: "container1"
+  qos_class: QOS_CLASS_GUARANTEED
+  phase: RUNNING
+  conditions: {
+    type: READY
+    status: STATUS_TRUE
+  }
+  node_name: "a_node"
+  hostname: "a_host"
+  pod_ip: "1.2.3.5"
+  host_ip: "5.6.7.8"
+  message: "a pod message"
+  reason: "a pod reason"
+)";
+
 constexpr char kContainer0UpdatePbTxt[] = R"(
   cid: "container0_uid"
   name: "container0"
@@ -269,12 +317,20 @@ TEST(K8sMetadataStateTest, CleanupExpiredMetadata) {
   K8sMetadataState::PodUpdate pod_update;
   ASSERT_TRUE(TextFormat::MergeFromString(kPod0UpdatePbTxt, &pod_update));
 
+  K8sMetadataState::PodUpdate terminated_ip_pod_update;
+  ASSERT_TRUE(TextFormat::MergeFromString(kPod1UpdatePbTxt, &terminated_ip_pod_update));
+
+  K8sMetadataState::PodUpdate running_ip_pod_update;
+  ASSERT_TRUE(TextFormat::MergeFromString(kPod2UpdatePbTxt, &running_ip_pod_update));
+
   K8sMetadataState::ServiceUpdate service_update;
   ASSERT_TRUE(TextFormat::MergeFromString(kRunningServiceUpdatePbTxt, &service_update));
 
   EXPECT_OK(state.HandleNamespaceUpdate(ns_update));
   EXPECT_OK(state.HandleContainerUpdate(container_update));
   EXPECT_OK(state.HandlePodUpdate(pod_update));
+  EXPECT_OK(state.HandlePodUpdate(terminated_ip_pod_update));
+  EXPECT_OK(state.HandlePodUpdate(running_ip_pod_update));
   EXPECT_OK(state.HandleServiceUpdate(service_update));
 
   int64_t current_time = CurrentTimeNS();
@@ -288,6 +344,11 @@ TEST(K8sMetadataStateTest, CleanupExpiredMetadata) {
     ASSERT_NE(pod_info, nullptr);
     ASSERT_GT(pod_info->stop_time_ns(), 0);
     ASSERT_LT(pod_info->stop_time_ns(), current_time);
+
+    const PodInfo* pod_info1 = state.PodInfoByID("pod1_uid");
+    ASSERT_NE(pod_info1, nullptr);
+    ASSERT_GT(pod_info1->stop_time_ns(), 0);
+    ASSERT_LT(pod_info1->stop_time_ns(), current_time);
 
     const ServiceInfo* service_info = state.ServiceInfoByID("service0_uid");
     ASSERT_NE(service_info, nullptr);
@@ -314,6 +375,15 @@ TEST(K8sMetadataStateTest, CleanupExpiredMetadata) {
     const PodInfo* pod_info = state.PodInfoByID("pod0_uid");
     ASSERT_NE(pod_info, nullptr);
 
+    const PodInfo* pod_info1 = state.PodInfoByID("pod1_uid");
+    ASSERT_NE(pod_info1, nullptr);
+
+    const PodInfo* pod_info2 = state.PodInfoByID("pod2_uid");
+    ASSERT_NE(pod_info2, nullptr);
+
+    ASSERT_EQ("pod0_uid", state.PodIDByIP("1.2.3.4"));
+    ASSERT_EQ("pod2_uid", state.PodIDByIP("1.2.3.5"));
+
     const ServiceInfo* service_info = state.ServiceInfoByID("service0_uid");
     ASSERT_NE(service_info, nullptr);
 
@@ -330,6 +400,15 @@ TEST(K8sMetadataStateTest, CleanupExpiredMetadata) {
   {
     const PodInfo* pod_info = state.PodInfoByID("pod0_uid");
     ASSERT_EQ(pod_info, nullptr);
+
+    const PodInfo* pod_info1 = state.PodInfoByID("pod1_uid");
+    ASSERT_EQ(pod_info1, nullptr);
+
+    const PodInfo* pod_info2 = state.PodInfoByID("pod2_uid");
+    ASSERT_NE(pod_info2, nullptr);
+
+    ASSERT_EQ("", state.PodIDByIP("1.2.3.4"));
+    ASSERT_EQ("pod2_uid", state.PodIDByIP("1.2.3.5"));
 
     const ServiceInfo* service_info = state.ServiceInfoByID("service0_uid");
     ASSERT_EQ(service_info, nullptr);
