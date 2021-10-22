@@ -306,8 +306,8 @@ def add_source_dest_columns(df):
 def add_source_dest_links(df, start_time: str):
     ''' Modifies the source and destination columns to display deeplinks in the UI.
     Clicking on a pod name in either column will run the px/pod script for that pod.
-    Clicking on an IP address, will run the px/net_flow_graph script showing all
-    network connections to/from that address.
+    Clicking on an IP address, will run the px/ip script showing all network connections
+    to/from that IP address.
 
     Input DataFrame must contain source, destination, is_source_pod_type,
     is_dest_pod_type, and namespace columns.
@@ -318,12 +318,9 @@ def add_source_dest_links(df, start_time: str):
         'start_time': start_time,
         'pod': df.source
     })
-    df.src_link = px.script_reference(df.source, 'px/net_flow_graph', {
+    df.src_link = px.script_reference(df.source, 'px/ip', {
         'start_time': start_time,
-        'namespace': df.namespace,
-        'from_entity_filter': df.source,
-        'to_entity_filter': '',
-        'throughput_filter': '0.0'
+        'ip': df.source,
     })
     df.source = px.select(df.is_source_pod_type, df.src_pod_link, df.src_link)
 
@@ -332,12 +329,9 @@ def add_source_dest_links(df, start_time: str):
         'start_time': start_time,
         'pod': df.destination
     })
-    df.dest_link = px.script_reference(df.destination, 'px/net_flow_graph', {
+    df.dest_link = px.script_reference(df.destination, 'px/ip', {
         'start_time': start_time,
-        'namespace': df.namespace,
-        'from_entity_filter': '',
-        'to_entity_filter': df.destination,
-        'throughput_filter': '0.0'
+        'ip': df.destination,
     })
     df.destination = px.select(df.is_dest_pod_type, df.dest_pod_link, df.dest_link)
 
