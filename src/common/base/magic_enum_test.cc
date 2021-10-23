@@ -27,7 +27,7 @@ enum class Color { RED = 2, BLUE = 4, GREEN = 8 };
 constexpr std::size_t kColorCount = magic_enum::enum_count<Color>();
 
 // Tests values that go beyond MAGIC_ENUM_RANGE_MAX.
-enum class WideColor { INFRARED = -1, RED = 2, VIOLET = 256, ULTRAVIOLET = 1024 };
+enum class WideColor { INFRARED = -1024, RED = 2, VIOLET = 256, ULTRAVIOLET = 1024 };
 
 TEST(MagicEnum, num_elements) { EXPECT_EQ(kColorCount, 3); }
 
