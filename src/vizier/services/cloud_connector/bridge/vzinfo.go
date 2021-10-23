@@ -288,10 +288,7 @@ func convertContainerState(p metadatapb.ContainerState) vizierpb.ContainerState 
 }
 
 func (v *K8sVizierInfo) toVizierPodStatus(p *corev1.Pod) (*vizierpb.VizierPodStatus, error) {
-	podPb, err := protoutils.PodToProto(p)
-	if err != nil {
-		return nil, err
-	}
+	podPb := protoutils.PodToProto(p)
 
 	podStatus := &vizierpb.VizierPodStatus{
 		Name:         fmt.Sprintf("%s/%s", podPb.Metadata.Namespace, podPb.Metadata.Name),
@@ -364,10 +361,7 @@ func (v *K8sVizierInfo) getPodStatuses(podList []corev1.Pod) (map[string]*cvmsgs
 	podMap := make(map[string]*cvmsgspb.PodStatus)
 
 	for _, p := range podList {
-		podPb, err := protoutils.PodToProto(&p)
-		if err != nil {
-			return nil, err
-		}
+		podPb := protoutils.PodToProto(&p)
 
 		status := metadatapb.PHASE_UNKNOWN
 		msg := ""

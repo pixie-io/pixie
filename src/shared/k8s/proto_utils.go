@@ -145,35 +145,29 @@ var nodeAddressTypeToPbMap = map[v1.NodeAddressType]metadatapb.NodeAddressType{
 }
 
 // OwnerReferenceToProto converts an OwnerReference into a proto.
-func OwnerReferenceToProto(o *metav1.OwnerReference) (*metadatapb.OwnerReference, error) {
-	oPb := &metadatapb.OwnerReference{
+func OwnerReferenceToProto(o *metav1.OwnerReference) *metadatapb.OwnerReference {
+	return &metadatapb.OwnerReference{
 		Kind: o.Kind,
 		Name: o.Name,
 		UID:  string(o.UID),
 	}
-	return oPb, nil
 }
 
 // OwnerReferenceFromProto converts a proto message to an OwnerReference.
-func OwnerReferenceFromProto(pb *metadatapb.OwnerReference) (*metav1.OwnerReference, error) {
-	obj := &metav1.OwnerReference{
+func OwnerReferenceFromProto(pb *metadatapb.OwnerReference) *metav1.OwnerReference {
+	return &metav1.OwnerReference{
 		Kind: pb.Kind,
 		Name: pb.Name,
 		UID:  types.UID(pb.UID),
 	}
-	return obj, nil
 }
 
 // ObjectMetadataToProto converts an ObjectMeta into a proto.
-func ObjectMetadataToProto(o *metav1.ObjectMeta) (*metadatapb.ObjectMetadata, error) {
+func ObjectMetadataToProto(o *metav1.ObjectMeta) *metadatapb.ObjectMetadata {
 	ownerRefs := make([]*metadatapb.OwnerReference, len(o.OwnerReferences))
 
 	for i, ref := range o.OwnerReferences {
-		refPb, err := OwnerReferenceToProto(&ref)
-		if err != nil {
-			return nil, err
-		}
-		ownerRefs[i] = refPb
+		ownerRefs[i] = OwnerReferenceToProto(&ref)
 	}
 
 	oPb := &metadatapb.ObjectMetadata{
@@ -192,11 +186,11 @@ func ObjectMetadataToProto(o *metav1.ObjectMeta) (*metadatapb.ObjectMetadata, er
 		oPb.DeletionTimestampNS = o.DeletionTimestamp.UnixNano()
 	}
 
-	return oPb, nil
+	return oPb
 }
 
 // ObjectMetadataFromProto converts a proto message to an ObjectMeta.
-func ObjectMetadataFromProto(pb *metadatapb.ObjectMetadata) (*metav1.ObjectMeta, error) {
+func ObjectMetadataFromProto(pb *metadatapb.ObjectMetadata) *metav1.ObjectMeta {
 	var delTime metav1.Time
 	var creationTime metav1.Time
 	if pb.DeletionTimestampNS != 0 {
@@ -208,14 +202,10 @@ func ObjectMetadataFromProto(pb *metadatapb.ObjectMetadata) (*metav1.ObjectMeta,
 
 	ownerRefs := make([]metav1.OwnerReference, len(pb.OwnerReferences))
 	for i, refPb := range pb.OwnerReferences {
-		ref, err := OwnerReferenceFromProto(refPb)
-		if err != nil {
-			return &metav1.ObjectMeta{}, nil
-		}
-		ownerRefs[i] = *ref
+		ownerRefs[i] = *OwnerReferenceFromProto(refPb)
 	}
 
-	o := &metav1.ObjectMeta{
+	return &metav1.ObjectMeta{
 		Name:              pb.Name,
 		Namespace:         pb.Namespace,
 		UID:               types.UID(pb.UID),
@@ -226,11 +216,10 @@ func ObjectMetadataFromProto(pb *metadatapb.ObjectMetadata) (*metav1.ObjectMeta,
 		DeletionTimestamp: &delTime,
 		OwnerReferences:   ownerRefs,
 	}
-	return o, nil
 }
 
 // PodSpecToProto converts an PodSpec into a proto.
-func PodSpecToProto(ps *v1.PodSpec) (*metadatapb.PodSpec, error) {
+func PodSpecToProto(ps *v1.PodSpec) *metadatapb.PodSpec {
 	psPb := &metadatapb.PodSpec{
 		NodeSelector:      ps.NodeSelector,
 		NodeName:          ps.NodeName,
@@ -243,12 +232,12 @@ func PodSpecToProto(ps *v1.PodSpec) (*metadatapb.PodSpec, error) {
 		psPb.Priority = *ps.Priority
 	}
 
-	return psPb, nil
+	return psPb
 }
 
 // PodSpecFromProto converts a proto message to a PodSpec.
-func PodSpecFromProto(pb *metadatapb.PodSpec) (*v1.PodSpec, error) {
-	ps := &v1.PodSpec{
+func PodSpecFromProto(pb *metadatapb.PodSpec) *v1.PodSpec {
+	return &v1.PodSpec{
 		NodeSelector:      pb.NodeSelector,
 		NodeName:          pb.NodeName,
 		Hostname:          pb.Hostname,
@@ -257,12 +246,10 @@ func PodSpecFromProto(pb *metadatapb.PodSpec) (*v1.PodSpec, error) {
 		DNSPolicy:         dnsPolicyPbToObjMap[pb.DNSPolicy],
 		Priority:          &pb.Priority,
 	}
-
-	return ps, nil
 }
 
 // PodStatusToProto converts an PodStatus into a proto.
-func PodStatusToProto(ps *v1.PodStatus) (*metadatapb.PodStatus, error) {
+func PodStatusToProto(ps *v1.PodStatus) *metadatapb.PodStatus {
 	conditions := make([]*metadatapb.PodCondition, len(ps.Conditions))
 	for i, c := range ps.Conditions {
 		conditions[i] = &metadatapb.PodCondition{
@@ -277,17 +264,13 @@ func PodStatusToProto(ps *v1.PodStatus) (*metadatapb.PodStatus, error) {
 
 	containers := make([]*metadatapb.ContainerStatus, len(ps.ContainerStatuses))
 	for i, c := range ps.ContainerStatuses {
-		cPb, err := ContainerStatusToProto(&c)
-		if err != nil {
-			return &metadatapb.PodStatus{}, err
-		}
-		containers[i] = cPb
+		containers[i] = ContainerStatusToProto(&c)
 		if podRestartCount < int64(c.RestartCount) {
 			podRestartCount = int64(c.RestartCount)
 		}
 	}
 
-	psPb := &metadatapb.PodStatus{
+	return &metadatapb.PodStatus{
 		Message:           ps.Message,
 		Reason:            ps.Reason,
 		HostIP:            ps.HostIP,
@@ -298,22 +281,19 @@ func PodStatusToProto(ps *v1.PodStatus) (*metadatapb.PodStatus, error) {
 		ContainerStatuses: containers,
 		RestartCount:      podRestartCount,
 	}
-
-	return psPb, nil
 }
 
 // PodStatusFromProto converts a proto message to a PodStatus.
-func PodStatusFromProto(pb *metadatapb.PodStatus) (*v1.PodStatus, error) {
+func PodStatusFromProto(pb *metadatapb.PodStatus) *v1.PodStatus {
 	conditions := make([]v1.PodCondition, len(pb.Conditions))
 	for i, c := range pb.Conditions {
-		podCond := v1.PodCondition{
+		conditions[i] = v1.PodCondition{
 			Type:   podConditionTypePbToObjMap[c.Type],
 			Status: podConditionStatusPbToObjMap[c.Status],
 		}
-		conditions[i] = podCond
 	}
 
-	ps := &v1.PodStatus{
+	return &v1.PodStatus{
 		Message:    pb.Message,
 		Reason:     pb.Reason,
 		HostIP:     pb.HostIP,
@@ -322,144 +302,90 @@ func PodStatusFromProto(pb *metadatapb.PodStatus) (*v1.PodStatus, error) {
 		Conditions: conditions,
 		QOSClass:   qosClassPbToObjMap[pb.QOSClass],
 	}
-
-	return ps, nil
 }
 
 // PodToProto converts a Pod into a proto.
-func PodToProto(p *v1.Pod) (*metadatapb.Pod, error) {
-	metadata, err := ObjectMetadataToProto(&p.ObjectMeta)
-	if err != nil {
-		return nil, err
+func PodToProto(p *v1.Pod) *metadatapb.Pod {
+	return &metadatapb.Pod{
+		Metadata: ObjectMetadataToProto(&p.ObjectMeta),
+		Spec:     PodSpecToProto(&p.Spec),
+		Status:   PodStatusToProto(&p.Status),
 	}
-
-	spec, err := PodSpecToProto(&p.Spec)
-	if err != nil {
-		return nil, err
-	}
-
-	status, err := PodStatusToProto(&p.Status)
-	if err != nil {
-		return nil, err
-	}
-
-	pPb := &metadatapb.Pod{
-		Metadata: metadata,
-		Spec:     spec,
-		Status:   status,
-	}
-	return pPb, nil
 }
 
 // PodFromProto converts a proto message to a Pod.
-func PodFromProto(pb *metadatapb.Pod) (*v1.Pod, error) {
-	metadata, err := ObjectMetadataFromProto(pb.Metadata)
-	if err != nil {
-		return nil, err
+func PodFromProto(pb *metadatapb.Pod) *v1.Pod {
+	return &v1.Pod{
+		ObjectMeta: *ObjectMetadataFromProto(pb.Metadata),
+		Spec:       *PodSpecFromProto(pb.Spec),
+		Status:     *PodStatusFromProto(pb.Status),
 	}
-
-	spec, err := PodSpecFromProto(pb.Spec)
-	if err != nil {
-		return nil, err
-	}
-
-	status, err := PodStatusFromProto(pb.Status)
-	if err != nil {
-		return nil, err
-	}
-
-	p := &v1.Pod{
-		ObjectMeta: *metadata,
-		Spec:       *spec,
-		Status:     *status,
-	}
-
-	return p, nil
 }
 
 // NamespaceToProto converts a namespace into a proto.
-func NamespaceToProto(n *v1.Namespace) (*metadatapb.Namespace, error) {
-	metadata, err := ObjectMetadataToProto(&n.ObjectMeta)
-	if err != nil {
-		return nil, err
+func NamespaceToProto(n *v1.Namespace) *metadatapb.Namespace {
+	return &metadatapb.Namespace{
+		Metadata: ObjectMetadataToProto(&n.ObjectMeta),
 	}
-
-	nPb := &metadatapb.Namespace{
-		Metadata: metadata,
-	}
-	return nPb, nil
 }
 
 // ObjectReferenceToProto converts an ObjectReference into a proto.
-func ObjectReferenceToProto(o *v1.ObjectReference) (*metadatapb.ObjectReference, error) {
-	oPb := &metadatapb.ObjectReference{
+func ObjectReferenceToProto(o *v1.ObjectReference) *metadatapb.ObjectReference {
+	return &metadatapb.ObjectReference{
 		Kind:            o.Kind,
 		Namespace:       o.Namespace,
 		Name:            o.Name,
 		UID:             string(o.UID),
 		ResourceVersion: o.ResourceVersion,
 	}
-	return oPb, nil
 }
 
 // ObjectReferenceFromProto converts a proto message to a ObjectReference.
-func ObjectReferenceFromProto(pb *metadatapb.ObjectReference) (*v1.ObjectReference, error) {
-	o := &v1.ObjectReference{
+func ObjectReferenceFromProto(pb *metadatapb.ObjectReference) *v1.ObjectReference {
+	return &v1.ObjectReference{
 		Kind:            pb.Kind,
 		Namespace:       pb.Namespace,
 		Name:            pb.Name,
 		UID:             types.UID(pb.UID),
 		ResourceVersion: pb.ResourceVersion,
 	}
-
-	return o, nil
 }
 
 // EndpointPortToProto converts an EndpointPort into a proto.
-func EndpointPortToProto(e *v1.EndpointPort) (*metadatapb.EndpointPort, error) {
-	ePb := &metadatapb.EndpointPort{
+func EndpointPortToProto(e *v1.EndpointPort) *metadatapb.EndpointPort {
+	return &metadatapb.EndpointPort{
 		Name:     e.Name,
 		Port:     e.Port,
 		Protocol: ipProtocolObjToPbMap[e.Protocol],
 	}
-	return ePb, nil
 }
 
 // EndpointPortFromProto converts a proto message to a EndpointPort.
-func EndpointPortFromProto(pb *metadatapb.EndpointPort) (*v1.EndpointPort, error) {
-	e := &v1.EndpointPort{
+func EndpointPortFromProto(pb *metadatapb.EndpointPort) *v1.EndpointPort {
+	return &v1.EndpointPort{
 		Name:     pb.Name,
 		Port:     pb.Port,
 		Protocol: ipProtocolPbToObjMap[pb.Protocol],
 	}
-
-	return e, nil
 }
 
 // EndpointAddressToProto converts an EndpointAddress into a proto.
-func EndpointAddressToProto(e *v1.EndpointAddress) (*metadatapb.EndpointAddress, error) {
-	nodename := ""
-	if e.NodeName != nil {
-		nodename = *e.NodeName
-	}
-
+func EndpointAddressToProto(e *v1.EndpointAddress) *metadatapb.EndpointAddress {
 	ePb := &metadatapb.EndpointAddress{
 		IP:       e.IP,
 		Hostname: e.Hostname,
-		NodeName: nodename,
 	}
 	if e.TargetRef != nil {
-		objRef, err := ObjectReferenceToProto(e.TargetRef)
-		if err != nil {
-			return nil, err
-		}
-		ePb.TargetRef = objRef
+		ePb.TargetRef = ObjectReferenceToProto(e.TargetRef)
 	}
-	return ePb, nil
+	if e.NodeName != nil {
+		ePb.NodeName = *e.NodeName
+	}
+	return ePb
 }
 
 // EndpointAddressFromProto converts a proto message to a EndpointAddress.
-func EndpointAddressFromProto(pb *metadatapb.EndpointAddress) (*v1.EndpointAddress, error) {
+func EndpointAddressFromProto(pb *metadatapb.EndpointAddress) *v1.EndpointAddress {
 	e := &v1.EndpointAddress{
 		IP:       pb.IP,
 		Hostname: pb.Hostname,
@@ -467,169 +393,109 @@ func EndpointAddressFromProto(pb *metadatapb.EndpointAddress) (*v1.EndpointAddre
 	}
 
 	if pb.TargetRef != nil {
-		objRef, err := ObjectReferenceFromProto(pb.TargetRef)
-		if err != nil {
-			return nil, err
-		}
-		e.TargetRef = objRef
+		e.TargetRef = ObjectReferenceFromProto(pb.TargetRef)
 	}
 
-	return e, nil
+	return e
 }
 
 // EndpointSubsetToProto converts an EndpointSubset into a proto.
-func EndpointSubsetToProto(e *v1.EndpointSubset) (*metadatapb.EndpointSubset, error) {
+func EndpointSubsetToProto(e *v1.EndpointSubset) *metadatapb.EndpointSubset {
 	addresses := make([]*metadatapb.EndpointAddress, len(e.Addresses))
 	for i, a := range e.Addresses {
-		aPb, err := EndpointAddressToProto(&a)
-		if err != nil {
-			return nil, err
-		}
-		addresses[i] = aPb
+		addresses[i] = EndpointAddressToProto(&a)
 	}
 	notReadyAddrs := make([]*metadatapb.EndpointAddress, len(e.NotReadyAddresses))
 	for i, a := range e.NotReadyAddresses {
-		aPb, err := EndpointAddressToProto(&a)
-		if err != nil {
-			return nil, err
-		}
-		notReadyAddrs[i] = aPb
+		notReadyAddrs[i] = EndpointAddressToProto(&a)
 	}
 	ports := make([]*metadatapb.EndpointPort, len(e.Ports))
 	for i, p := range e.Ports {
-		pPb, err := EndpointPortToProto(&p)
-		if err != nil {
-			return nil, err
-		}
-		ports[i] = pPb
+		ports[i] = EndpointPortToProto(&p)
 	}
-	ePb := &metadatapb.EndpointSubset{
+	return &metadatapb.EndpointSubset{
 		Addresses:         addresses,
 		NotReadyAddresses: notReadyAddrs,
 		Ports:             ports,
 	}
-	return ePb, nil
 }
 
 // EndpointSubsetFromProto converts a proto message to a EndpointPort.
-func EndpointSubsetFromProto(pb *metadatapb.EndpointSubset) (*v1.EndpointSubset, error) {
+func EndpointSubsetFromProto(pb *metadatapb.EndpointSubset) *v1.EndpointSubset {
 	addresses := make([]v1.EndpointAddress, len(pb.Addresses))
 	for i, a := range pb.Addresses {
-		aPb, err := EndpointAddressFromProto(a)
-		if err != nil {
-			return nil, err
-		}
-		addresses[i] = *aPb
+		addresses[i] = *EndpointAddressFromProto(a)
 	}
 	notReadyAddrs := make([]v1.EndpointAddress, len(pb.NotReadyAddresses))
 	for i, a := range pb.NotReadyAddresses {
-		aPb, err := EndpointAddressFromProto(a)
-		if err != nil {
-			return nil, err
-		}
-		notReadyAddrs[i] = *aPb
+		notReadyAddrs[i] = *EndpointAddressFromProto(a)
 	}
 	ports := make([]v1.EndpointPort, len(pb.Ports))
 	for i, p := range pb.Ports {
-		pPb, err := EndpointPortFromProto(p)
-		if err != nil {
-			return nil, err
-		}
-		ports[i] = *pPb
+		ports[i] = *EndpointPortFromProto(p)
 	}
 
-	e := &v1.EndpointSubset{
+	return &v1.EndpointSubset{
 		Addresses:         addresses,
 		NotReadyAddresses: notReadyAddrs,
 		Ports:             ports,
 	}
-
-	return e, nil
 }
 
 // EndpointsToProto converts an Endpoints into a proto.
-func EndpointsToProto(e *v1.Endpoints) (*metadatapb.Endpoints, error) {
-	metadata, err := ObjectMetadataToProto(&e.ObjectMeta)
-	if err != nil {
-		return nil, err
-	}
-
+func EndpointsToProto(e *v1.Endpoints) *metadatapb.Endpoints {
 	subsets := make([]*metadatapb.EndpointSubset, len(e.Subsets))
 	for i, s := range e.Subsets {
-		sPb, err := EndpointSubsetToProto(&s)
-		if err != nil {
-			return nil, err
-		}
-		subsets[i] = sPb
+		subsets[i] = EndpointSubsetToProto(&s)
 	}
 
-	ePb := &metadatapb.Endpoints{
-		Metadata: metadata,
+	return &metadatapb.Endpoints{
+		Metadata: ObjectMetadataToProto(&e.ObjectMeta),
 		Subsets:  subsets,
 	}
-
-	return ePb, nil
 }
 
 // EndpointsFromProto converts a proto message to an Endpoints.
-func EndpointsFromProto(pb *metadatapb.Endpoints) (*v1.Endpoints, error) {
-	md, err := ObjectMetadataFromProto(pb.Metadata)
-	if err != nil {
-		return nil, err
-	}
-
+func EndpointsFromProto(pb *metadatapb.Endpoints) *v1.Endpoints {
 	subsets := make([]v1.EndpointSubset, len(pb.Subsets))
 	for i, s := range pb.Subsets {
-		sPb, err := EndpointSubsetFromProto(s)
-		if err != nil {
-			return nil, err
-		}
-		subsets[i] = *sPb
+		subsets[i] = *EndpointSubsetFromProto(s)
 	}
 
-	e := &v1.Endpoints{
-		ObjectMeta: *md,
+	return &v1.Endpoints{
+		ObjectMeta: *ObjectMetadataFromProto(pb.Metadata),
 		Subsets:    subsets,
 	}
-
-	return e, nil
 }
 
 // ServicePortToProto converts a ServicePort into a proto.
-func ServicePortToProto(e *v1.ServicePort) (*metadatapb.ServicePort, error) {
-	sPb := &metadatapb.ServicePort{
+func ServicePortToProto(e *v1.ServicePort) *metadatapb.ServicePort {
+	return &metadatapb.ServicePort{
 		Name:     e.Name,
 		Port:     e.Port,
 		Protocol: ipProtocolObjToPbMap[e.Protocol],
 		NodePort: e.NodePort,
 	}
-	return sPb, nil
 }
 
 // ServicePortFromProto converts a proto message to a ServicePort.
-func ServicePortFromProto(pb *metadatapb.ServicePort) (*v1.ServicePort, error) {
-	s := &v1.ServicePort{
+func ServicePortFromProto(pb *metadatapb.ServicePort) *v1.ServicePort {
+	return &v1.ServicePort{
 		Name:     pb.Name,
 		Port:     pb.Port,
 		Protocol: ipProtocolPbToObjMap[pb.Protocol],
 		NodePort: pb.NodePort,
 	}
-
-	return s, nil
 }
 
 // ServiceSpecToProto converts a ServiceSpec into a proto.
-func ServiceSpecToProto(s *v1.ServiceSpec) (*metadatapb.ServiceSpec, error) {
+func ServiceSpecToProto(s *v1.ServiceSpec) *metadatapb.ServiceSpec {
 	ports := make([]*metadatapb.ServicePort, len(s.Ports))
 	for i, p := range s.Ports {
-		pPb, err := ServicePortToProto(&p)
-		if err != nil {
-			return nil, err
-		}
-		ports[i] = pPb
+		ports[i] = ServicePortToProto(&p)
 	}
 
-	sPb := &metadatapb.ServiceSpec{
+	return &metadatapb.ServiceSpec{
 		ClusterIP:             s.ClusterIP,
 		ExternalIPs:           s.ExternalIPs,
 		LoadBalancerIP:        s.LoadBalancerIP,
@@ -638,22 +504,16 @@ func ServiceSpecToProto(s *v1.ServiceSpec) (*metadatapb.ServiceSpec, error) {
 		Ports:                 ports,
 		Type:                  serviceTypeObjToPbMap[s.Type],
 	}
-
-	return sPb, nil
 }
 
 // ServiceSpecFromProto converts a proto message to a ServiceSpec.
-func ServiceSpecFromProto(pb *metadatapb.ServiceSpec) (*v1.ServiceSpec, error) {
+func ServiceSpecFromProto(pb *metadatapb.ServiceSpec) *v1.ServiceSpec {
 	ports := make([]v1.ServicePort, len(pb.Ports))
 	for i, p := range pb.Ports {
-		pPb, err := ServicePortFromProto(p)
-		if err != nil {
-			return nil, err
-		}
-		ports[i] = *pPb
+		ports[i] = *ServicePortFromProto(p)
 	}
 
-	s := &v1.ServiceSpec{
+	return &v1.ServiceSpec{
 		ClusterIP:             pb.ClusterIP,
 		ExternalIPs:           pb.ExternalIPs,
 		LoadBalancerIP:        pb.LoadBalancerIP,
@@ -662,51 +522,26 @@ func ServiceSpecFromProto(pb *metadatapb.ServiceSpec) (*v1.ServiceSpec, error) {
 		Type:                  serviceTypePbToObjMap[pb.Type],
 		Ports:                 ports,
 	}
-
-	return s, nil
 }
 
 // ServiceToProto converts a Service into a proto.
-func ServiceToProto(s *v1.Service) (*metadatapb.Service, error) {
-	metadata, err := ObjectMetadataToProto(&s.ObjectMeta)
-	if err != nil {
-		return nil, err
+func ServiceToProto(s *v1.Service) *metadatapb.Service {
+	return &metadatapb.Service{
+		Metadata: ObjectMetadataToProto(&s.ObjectMeta),
+		Spec:     ServiceSpecToProto(&s.Spec),
 	}
-
-	spec, err := ServiceSpecToProto(&s.Spec)
-	if err != nil {
-		return nil, err
-	}
-
-	sPb := &metadatapb.Service{
-		Metadata: metadata,
-		Spec:     spec,
-	}
-	return sPb, nil
 }
 
 // ServiceFromProto converts a proto message to a Service.
-func ServiceFromProto(pb *metadatapb.Service) (*v1.Service, error) {
-	metadata, err := ObjectMetadataFromProto(pb.Metadata)
-	if err != nil {
-		return nil, err
+func ServiceFromProto(pb *metadatapb.Service) *v1.Service {
+	return &v1.Service{
+		ObjectMeta: *ObjectMetadataFromProto(pb.Metadata),
+		Spec:       *ServiceSpecFromProto(pb.Spec),
 	}
-
-	spec, err := ServiceSpecFromProto(pb.Spec)
-	if err != nil {
-		return nil, err
-	}
-
-	s := &v1.Service{
-		ObjectMeta: *metadata,
-		Spec:       *spec,
-	}
-
-	return s, nil
 }
 
 // ContainerStatusToProto converts a ContainerStatus into a proto.
-func ContainerStatusToProto(c *v1.ContainerStatus) (*metadatapb.ContainerStatus, error) {
+func ContainerStatusToProto(c *v1.ContainerStatus) *metadatapb.ContainerStatus {
 	cPb := &metadatapb.ContainerStatus{
 		Name:         c.Name,
 		ContainerID:  c.ContainerID,
@@ -727,25 +562,16 @@ func ContainerStatusToProto(c *v1.ContainerStatus) (*metadatapb.ContainerStatus,
 		cPb.Message = c.State.Terminated.Message
 		cPb.Reason = c.State.Terminated.Reason
 	}
-	return cPb, nil
+	return cPb
 }
 
 // NodeToProto converts a k8s Node object into a proto.
-func NodeToProto(n *v1.Node) (*metadatapb.Node, error) {
-	metadata, err := ObjectMetadataToProto(&n.ObjectMeta)
-	if err != nil {
-		return nil, err
-	}
-
-	spec := NodeSpecToProto(&n.Spec)
-
-	status := NodeStatusToProto(&n.Status)
-
+func NodeToProto(n *v1.Node) *metadatapb.Node {
 	return &metadatapb.Node{
-		Metadata: metadata,
-		Spec:     spec,
-		Status:   status,
-	}, nil
+		Metadata: ObjectMetadataToProto(&n.ObjectMeta),
+		Spec:     NodeSpecToProto(&n.Spec),
+		Status:   NodeStatusToProto(&n.Status),
+	}
 }
 
 // NodeStatusToProto converts a k8s Node status into a proto.

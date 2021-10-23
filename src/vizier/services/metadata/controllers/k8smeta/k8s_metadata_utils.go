@@ -125,15 +125,11 @@ func podConverter(obj interface{}) *K8sResourceMessage {
 	if !ok {
 		return nil
 	}
-	pb, err := k8s.PodToProto(o)
-	if err != nil {
-		return nil
-	}
 
 	return &K8sResourceMessage{
 		Object: &storepb.K8SResource{
 			Resource: &storepb.K8SResource_Pod{
-				Pod: pb,
+				Pod: k8s.PodToProto(o),
 			},
 		},
 	}
@@ -144,15 +140,11 @@ func serviceConverter(obj interface{}) *K8sResourceMessage {
 	if !ok {
 		return nil
 	}
-	pb, err := k8s.ServiceToProto(o)
-	if err != nil {
-		return nil
-	}
 
 	return &K8sResourceMessage{
 		Object: &storepb.K8SResource{
 			Resource: &storepb.K8SResource_Service{
-				Service: pb,
+				Service: k8s.ServiceToProto(o),
 			},
 		},
 	}
@@ -163,15 +155,11 @@ func namespaceConverter(obj interface{}) *K8sResourceMessage {
 	if !ok {
 		return nil
 	}
-	pb, err := k8s.NamespaceToProto(o)
-	if err != nil {
-		return nil
-	}
 
 	return &K8sResourceMessage{
 		Object: &storepb.K8SResource{
 			Resource: &storepb.K8SResource_Namespace{
-				Namespace: pb,
+				Namespace: k8s.NamespaceToProto(o),
 			},
 		},
 	}
@@ -182,15 +170,11 @@ func endpointsConverter(obj interface{}) *K8sResourceMessage {
 	if !ok {
 		return nil
 	}
-	pb, err := k8s.EndpointsToProto(o)
-	if err != nil {
-		return nil
-	}
 
 	return &K8sResourceMessage{
 		Object: &storepb.K8SResource{
 			Resource: &storepb.K8SResource_Endpoints{
-				Endpoints: pb,
+				Endpoints: k8s.EndpointsToProto(o),
 			},
 		},
 	}
@@ -201,15 +185,11 @@ func nodeConverter(obj interface{}) *K8sResourceMessage {
 	if !ok {
 		return nil
 	}
-	pb, err := k8s.NodeToProto(o)
-	if err != nil {
-		return nil
-	}
 
 	return &K8sResourceMessage{
 		Object: &storepb.K8SResource{
 			Resource: &storepb.K8SResource_Node{
-				Node: pb,
+				Node: k8s.NodeToProto(o),
 			},
 		},
 	}
