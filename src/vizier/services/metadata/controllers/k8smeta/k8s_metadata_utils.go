@@ -18,4 +18,199 @@
 
 package k8smeta
 
-//go:generate genny -in=k8s_metadata_utils.tmpl -out k8s_metadata_utils.gen.go gen "ReplacedResource=Pod,Service,Namespace,Endpoints,Node"
+import (
+	"time"
+
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
+
+	"px.dev/pixie/src/shared/k8s"
+	"px.dev/pixie/src/vizier/services/metadata/storepb"
+)
+
+type informerWatcher struct {
+	convert func(obj interface{}) *K8sResourceMessage
+	objType string
+	ch      chan *K8sResourceMessage
+	inf     cache.SharedIndexInformer
+}
+
+func (i *informerWatcher) send(msg *K8sResourceMessage, et watch.EventType) {
+	msg.ObjectType = i.objType
+	msg.EventType = et
+
+	i.ch <- msg
+}
+
+// StartWatcher starts a watcher.
+func (i *informerWatcher) StartWatcher(quitCh chan struct{}) {
+	i.inf.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			msg := i.convert(obj)
+			if msg != nil {
+				i.send(msg, watch.Added)
+			}
+		},
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			msg := i.convert(newObj)
+			if msg != nil {
+				i.send(msg, watch.Modified)
+			}
+		},
+		DeleteFunc: func(obj interface{}) {
+			msg := i.convert(obj)
+			if msg != nil {
+				i.send(msg, watch.Deleted)
+			}
+		},
+	})
+	i.inf.Run(quitCh)
+}
+
+func podWatcher(resource string, ch chan *K8sResourceMessage, clientset *kubernetes.Clientset) *informerWatcher {
+	factory := informers.NewSharedInformerFactory(clientset, 12*time.Hour)
+	return &informerWatcher{
+		convert: podConverter,
+		objType: resource,
+		ch:      ch,
+		inf:     factory.Core().V1().Pods().Informer(),
+	}
+}
+
+func serviceWatcher(resource string, ch chan *K8sResourceMessage, clientset *kubernetes.Clientset) *informerWatcher {
+	factory := informers.NewSharedInformerFactory(clientset, 12*time.Hour)
+	return &informerWatcher{
+		convert: serviceConverter,
+		objType: resource,
+		ch:      ch,
+		inf:     factory.Core().V1().Services().Informer(),
+	}
+}
+
+func namespaceWatcher(resource string, ch chan *K8sResourceMessage, clientset *kubernetes.Clientset) *informerWatcher {
+	factory := informers.NewSharedInformerFactory(clientset, 12*time.Hour)
+	return &informerWatcher{
+		convert: namespaceConverter,
+		objType: resource,
+		ch:      ch,
+		inf:     factory.Core().V1().Namespaces().Informer(),
+	}
+}
+
+func endpointsWatcher(resource string, ch chan *K8sResourceMessage, clientset *kubernetes.Clientset) *informerWatcher {
+	factory := informers.NewSharedInformerFactory(clientset, 12*time.Hour)
+	return &informerWatcher{
+		convert: endpointsConverter,
+		objType: resource,
+		ch:      ch,
+		inf:     factory.Core().V1().Endpoints().Informer(),
+	}
+}
+
+func nodeWatcher(resource string, ch chan *K8sResourceMessage, clientset *kubernetes.Clientset) *informerWatcher {
+	factory := informers.NewSharedInformerFactory(clientset, 12*time.Hour)
+	return &informerWatcher{
+		convert: nodeConverter,
+		objType: resource,
+		ch:      ch,
+		inf:     factory.Core().V1().Nodes().Informer(),
+	}
+}
+
+func podConverter(obj interface{}) *K8sResourceMessage {
+	o, ok := obj.(*v1.Pod)
+	if !ok {
+		return nil
+	}
+	pb, err := k8s.PodToProto(o)
+	if err != nil {
+		return nil
+	}
+
+	return &K8sResourceMessage{
+		Object: &storepb.K8SResource{
+			Resource: &storepb.K8SResource_Pod{
+				Pod: pb,
+			},
+		},
+	}
+}
+
+func serviceConverter(obj interface{}) *K8sResourceMessage {
+	o, ok := obj.(*v1.Service)
+	if !ok {
+		return nil
+	}
+	pb, err := k8s.ServiceToProto(o)
+	if err != nil {
+		return nil
+	}
+
+	return &K8sResourceMessage{
+		Object: &storepb.K8SResource{
+			Resource: &storepb.K8SResource_Service{
+				Service: pb,
+			},
+		},
+	}
+}
+
+func namespaceConverter(obj interface{}) *K8sResourceMessage {
+	o, ok := obj.(*v1.Namespace)
+	if !ok {
+		return nil
+	}
+	pb, err := k8s.NamespaceToProto(o)
+	if err != nil {
+		return nil
+	}
+
+	return &K8sResourceMessage{
+		Object: &storepb.K8SResource{
+			Resource: &storepb.K8SResource_Namespace{
+				Namespace: pb,
+			},
+		},
+	}
+}
+
+func endpointsConverter(obj interface{}) *K8sResourceMessage {
+	o, ok := obj.(*v1.Endpoints)
+	if !ok {
+		return nil
+	}
+	pb, err := k8s.EndpointsToProto(o)
+	if err != nil {
+		return nil
+	}
+
+	return &K8sResourceMessage{
+		Object: &storepb.K8SResource{
+			Resource: &storepb.K8SResource_Endpoints{
+				Endpoints: pb,
+			},
+		},
+	}
+}
+
+func nodeConverter(obj interface{}) *K8sResourceMessage {
+	o, ok := obj.(*v1.Node)
+	if !ok {
+		return nil
+	}
+	pb, err := k8s.NodeToProto(o)
+	if err != nil {
+		return nil
+	}
+
+	return &K8sResourceMessage{
+		Object: &storepb.K8SResource{
+			Resource: &storepb.K8SResource_Node{
+				Node: pb,
+			},
+		},
+	}
+}

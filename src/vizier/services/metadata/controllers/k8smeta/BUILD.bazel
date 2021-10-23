@@ -22,7 +22,6 @@ go_library(
         "k8s_metadata_controller.go",
         "k8s_metadata_handler.go",
         "k8s_metadata_store.go",
-        "k8s_metadata_utils.gen.go",
         "k8s_metadata_utils.go",
         "metadata_topic_listener.go",
     ],
@@ -43,15 +42,11 @@ go_library(
         "@com_github_nats_io_nats_go//:nats_go",
         "@com_github_sirupsen_logrus//:logrus",
         "@io_k8s_api//core/v1:core",
-        "@io_k8s_apimachinery//pkg/apis/meta/internalversion",
-        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
-        "@io_k8s_apimachinery//pkg/fields",
-        "@io_k8s_apimachinery//pkg/runtime",
         "@io_k8s_apimachinery//pkg/watch",
+        "@io_k8s_client_go//informers",
         "@io_k8s_client_go//kubernetes",
         "@io_k8s_client_go//rest",
         "@io_k8s_client_go//tools/cache",
-        "@io_k8s_client_go//tools/watch",
     ],
 )
 
@@ -60,7 +55,6 @@ go_test(
     srcs = [
         "k8s_metadata_handler_test.go",
         "k8s_metadata_store_test.go",
-        "k8s_metadata_utils_test.go",
         "metadata_topic_listener_test.go",
     ],
     embed = [":k8smeta"],
@@ -77,8 +71,5 @@ go_test(
         "@com_github_nats_io_nats_go//:nats_go",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
-        "@io_k8s_api//core/v1:core",
-        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
-        "@io_k8s_apimachinery//pkg/watch",
     ],
 )
