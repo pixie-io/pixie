@@ -31,11 +31,15 @@ if [[ $release_tag == *"-"* ]]; then
 fi
 ARTIFACT_BASE_PATH="https://storage.googleapis.com/${bucket}/cli"
 
-url="${ARTIFACT_BASE_PATH}/${release_tag}/cli_darwin_amd64_unsigned"
+for arch in amd64 arm64
+do
+  url="${ARTIFACT_BASE_PATH}/${release_tag}/cli_darwin_${arch}_unsigned"
+  rm -f "cli_darwin_${arch}_unsigned"
+  wget "${url}"
+  mv "cli_darwin_${arch}_unsigned" "cli_darwin_${arch}"
+done
 
-rm -f cli_darwin_amd64_unsigned
-wget "${url}"
-
-mv cli_darwin_amd64_unsigned cli_darwin_amd64
+# Create a universal binary.
+lipo -create -output cli_darwin_universal cli_darwin_arm64 cli_darwin_amd64
 
 gon ci/gon.hcl

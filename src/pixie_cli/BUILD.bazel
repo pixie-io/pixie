@@ -44,7 +44,15 @@ go_binary(
 )
 
 go_binary(
-    name = "px_darwin",
+    name = "px_darwin_arm64",
+    embed = [":pixie_cli_lib"],
+    goarch = "arm64",
+    goos = "darwin",
+    visibility = ["//src:__subpackages__"],
+)
+
+go_binary(
+    name = "px_darwin_amd64",
     embed = [":pixie_cli_lib"],
     goarch = "amd64",
     goos = "darwin",
@@ -64,9 +72,16 @@ go_image(
 )
 
 pkg_tar(
-    name = "px_darwin_pkg",
+    name = "px_darwin_amd64_pkg",
     srcs = [
-        ":px_darwin",
+        ":px_darwin_amd64",
+    ],
+)
+
+pkg_tar(
+    name = "px_darwin_arm64_pkg",
+    srcs = [
+        ":px_darwin_arm64",
     ],
 )
 

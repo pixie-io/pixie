@@ -32,12 +32,13 @@ if [[ ! "$release_tag" == *"-"* ]]; then
 fi
 
 output_path="gs://${bucket}/cli/${release_tag}"
-copy_artifact_to_gcs "$output_path" "cli_darwin_amd64" "cli_darwin_amd64"
-copy_artifact_to_gcs "$output_path" "cli_darwin_amd64.zip" "cli_darwin_amd64.zip"
+for arch in amd64 arm64 universal
+do
+  copy_artifact_to_gcs "$output_path" "cli_darwin_${arch}" "cli_darwin_${arch}"
 
-# Check to see if it's production build. If so we should also write it to the latest directory.
-if [[ ! "$release_tag" == *"-"* ]]; then
-  output_path="gs://pixie-dev-public/cli/latest"
-  copy_artifact_to_gcs "$output_path" "cli_darwin_amd64" "cli_darwin_amd64"
-  copy_artifact_to_gcs "$output_path" "cli_darwin_amd64.zip" "cli_darwin_amd64.zip"
-fi
+  # Check to see if it's production build. If so we should also write it to the latest directory.
+  if [[ ! "$release_tag" == *"-"* ]]; then
+    output_path="gs://pixie-dev-public/cli/latest"
+    copy_artifact_to_gcs "$output_path" "cli_darwin_${arch}" "cli_darwin_${arch}"
+  fi
+done

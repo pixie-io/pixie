@@ -24,7 +24,7 @@ set -u
 
 CLOUD_ADDR=${PL_CLOUD_ADDR:-"work.withpixie.ai"}
 DEFAULT_INSTALL_PATH=/usr/local/bin
-ARTIFACT_NAME=cli_darwin_amd64
+ARTIFACT_NAME=cli_darwin_universal
 USE_VERSION=${PL_CLI_VERSION:-latest}
 USER_INSTALL_PATH="$HOME/bin"
 ARTIFACT_BUCKET="pixie-dev-public"
@@ -41,7 +41,7 @@ PIXIE_BANNER="
  |_|  |_|/_\_\|_|\___|
 "
 
-# First check if the OS is Linux.
+# Check if the OS is Linux.
 if [[ "$(uname)" = "Linux" ]]; then
     ARTIFACT_NAME=cli_linux_amd64
 fi

@@ -25,22 +25,26 @@ repo_path=$(bazel info workspace)
 printenv
 
 release_tag=${TAG_NAME##*/v}
-arch=x86_64
-pkg_prefix="pixie-px-${release_tag}.${arch}"
+linux_arch=x86_64
+pkg_prefix="pixie-px-${release_tag}.${linux_arch}"
 versions_file="${repo_path}/src/utils/artifacts/artifact_db_updater/VERSIONS.json"
 
 echo "The release tag is: ${release_tag}"
 linux_binary=bazel-bin/src/pixie_cli/px_/px
-darwin_package=bazel-bin/src/pixie_cli/px_darwin_pkg.tar
+darwin_package_amd64=bazel-bin/src/pixie_cli/px_darwin_amd64_pkg.tar
+darwin_package_arm64=bazel-bin/src/pixie_cli/px_darwin_arm64_pkg.tar
 docker_repo="pixielabs/px"
 
 bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
       --repo_path "${repo_path}" --artifact_name cli --versions_file "${versions_file}"
 
-# We write the darwin binary to a tar, because normal cross-compilation of the :px_darwin
+# We write the darwin binary to a tar, because normal cross-compilation of the :px_darwin*
 # binary does not write it to a bazel-bin location with a determinable path.
-bazel build -c opt --stamp //src/pixie_cli:px_darwin_pkg
-tar -xvf ${darwin_package}
+bazel build -c opt --stamp //src/pixie_cli:px_darwin_amd64_pkg
+tar -xvf ${darwin_package_amd64}
+
+bazel build -c opt --stamp //src/pixie_cli:px_darwin_arm64_pkg
+tar -xvf ${darwin_package_arm64}
 
 bazel build -c opt --stamp //src/pixie_cli:px
 
@@ -98,14 +102,14 @@ fi
 
 write_artifacts_to_gcs() {
     output_path=$1
-    mac_binary="px_darwin"
-    copy_artifact_to_gcs "$output_path" "$mac_binary" "cli_darwin_amd64_unsigned"
+    copy_artifact_to_gcs "$output_path" "px_darwin_amd64" "cli_darwin_amd64_unsigned"
+    copy_artifact_to_gcs "$output_path" "px_darwin_arm64" "cli_darwin_arm64_unsigned"
     copy_artifact_to_gcs "$output_path" "$linux_binary" "cli_linux_amd64"
 
     if [[ ! "$release_tag" == *"-"* ]]; then
         # RPM/DEB only exists for release builds.
-        copy_artifact_to_gcs "$output_path" "/mnt/jenkins/sharedDir/image/${pkg_prefix}.deb" "pixie-px.${arch}.deb"
-        copy_artifact_to_gcs "$output_path" "/mnt/jenkins/sharedDir/image/${pkg_prefix}.rpm" "pixie-px.${arch}.rpm"
+        copy_artifact_to_gcs "$output_path" "/mnt/jenkins/sharedDir/image/${pkg_prefix}.deb" "pixie-px.${linux_arch}.deb"
+        copy_artifact_to_gcs "$output_path" "/mnt/jenkins/sharedDir/image/${pkg_prefix}.rpm" "pixie-px.${linux_arch}.rpm"
     fi
 }
 

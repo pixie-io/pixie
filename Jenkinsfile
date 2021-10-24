@@ -1087,22 +1087,22 @@ def  buildScriptForCLIRelease = {
             }
           }
         }
-        stage('Sign Mac Binary') {
+        stage('Sign Mac Binaries') {
           node('macos') {
             deleteDir()
             unstash 'ci_scripts_signing'
             withCredentials([string(credentialsId: 'pl_ac_passwd', variable: 'AC_PASSWD'),
               string(credentialsId: 'jenkins_keychain_pw', variable: 'JENKINSKEY')]) {
-              sh './ci/cli_sign.sh'
+              sh './ci/cli_merge_sign.sh'
               }
-            stash name: 'cli_darwin_amd64_signed', includes: 'cli_darwin_amd64*'
+            stash name: 'cli_darwin_signed', includes: 'cli_darwin*'
           }
         }
         stage('Upload Signed Binary') {
           node('macos') {
             WithSourceCodeFatalError {
               dockerStep('', devDockerImageExtrasWithTag) {
-                unstash 'cli_darwin_amd64_signed'
+                unstash 'cli_darwin_signed'
                 sh './ci/cli_upload_signed.sh'
               }
             }

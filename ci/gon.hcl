@@ -1,7 +1,7 @@
 // This file defines the config for getting the CLI signed
 // using Gon.
 
-source = ["./cli_darwin_amd64"]
+source = ["./cli_darwin_amd64", "./cli_darwin_arm64", "cli_darwin_universal"]
 bundle_id = "ai.pixielabs.px"
 
 // TODO(zasgar): Update this to the orders@pixielabs.ai account. It has access to the certs,
@@ -16,5 +16,5 @@ sign {
 }
 
 zip {
-  output_path = "cli_darwin_amd64.zip"
+  output_path = "cli_darwin.zip"
 }
