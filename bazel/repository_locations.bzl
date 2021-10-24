@@ -289,6 +289,11 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "simdutf-1.0.0",
         sha256 = "a91056e53e566070068203b77a4607fec41920b923712464cf54e12a760cd0a6",
     ),
+    com_github_opentelemetry_proto = dict(
+        urls = ["https://github.com/open-telemetry/opentelemetry-proto/archive/refs/tags/v0.10.0.tar.gz"],
+        strip_prefix = "opentelemetry-proto-0.10.0",
+        sha256 = "f1004a49f40d7acb43e86b1fd95f73e80c778acb163e309bba86f0cbd7fa8a71",
+    ),
 )
 
 GIT_REPOSITORY_LOCATIONS = dict(

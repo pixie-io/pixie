@@ -185,5 +185,6 @@ def pl_deps():
     _repo_impl("com_google_farmhash", build_file = "//bazel/external:farmhash.BUILD")
     _repo_impl("com_github_h2o_picohttpparser", build_file = "//bazel/external:picohttpparser.BUILD")
 
+    _repo_impl("com_github_opentelemetry_proto", build_file = "//bazel/external:opentelemetry.BUILD")
     _cc_deps()
     _go_deps()
