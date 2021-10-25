@@ -260,10 +260,6 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 	q.Set("redirect_uri", localServerRedirectURL)
 	authURL.RawQuery = q.Encode()
 
-	// Need to leave this as a fmt.Println because it does something different with the
-	// %s in the url than the cli_out.go code does.
-	fmt.Printf("Opening authentication URL: %s\n", authURL.String())
-
 	type result struct {
 		Token *RefreshToken
 		err   error
