@@ -23,6 +23,7 @@ import (
 	"errors"
 
 	log "github.com/sirupsen/logrus"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 
@@ -30,9 +31,14 @@ import (
 	"px.dev/pixie/src/operator/client/versioned"
 )
 
+var (
+	// ErrVizierNotFound occurs when the k8s API does not return any Viziers because none exist
+	// or the viziers CRD is not defined.
+	ErrVizierNotFound = errors.New("Vizier CustomResource not found")
+)
+
 // getVizierCRD gets the Vizier CRD for the running Vizier, if running using an operator.
 func getVizierCRD(ns string) (*pixie.Vizier, error) {
-	// There is a specific config for services running in the cluster.
 	kubeConfig, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, err
@@ -47,12 +53,15 @@ func getVizierCRD(ns string) (*pixie.Vizier, error) {
 
 	viziers, err := vzCrdClient.PxV1alpha1().Viziers(ns).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
+		if k8serr.IsNotFound(err) {
+			return nil, ErrVizierNotFound
+		}
 		return nil, err
 	}
 	if len(viziers.Items) > 0 {
 		return &viziers.Items[0], nil
 	}
-	return nil, errors.New("No vizier CRD found")
+	return nil, ErrVizierNotFound
 }
 
 type vizierCachedDataPrivacy struct {
@@ -66,11 +75,16 @@ func (dp *vizierCachedDataPrivacy) ShouldRedactSensitiveColumns(ctx context.Cont
 
 // CreateDataPrivacyManager creates a privacy manager for the namespace.
 func CreateDataPrivacyManager(ns string) (DataPrivacy, error) {
-	// We only get this value once.
 	vz, err := getVizierCRD(ns)
-	if err != nil {
+	// If the vizier was not found, that means this cluster is not using the Operator version - we only provide Full DataAcces.
+	if err == ErrVizierNotFound {
 		return &vizierCachedDataPrivacy{
 			dataAccess: pixie.DataAccessFull,
+		}, nil
+	} else if err != nil {
+		log.WithError(err).Warn("Failure trying to getVizierCRD, starting in restricted mode")
+		return &vizierCachedDataPrivacy{
+			dataAccess: pixie.DataAccessRestricted,
 		}, nil
 	}
 	return &vizierCachedDataPrivacy{
