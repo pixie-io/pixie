@@ -44,6 +44,8 @@ RecordsWithErrorCount<mux::Record> StitchFrames(std::deque<mux::Frame>* reqs,
         auto req_consumed = false;
         for (auto& res : *resps) {
             Type req_type = static_cast<Type>(req.type);
+
+            // Tlease messages do not have a response pair
             if (req_type == Type::kTlease) {
 
                 records.push_back({req, {}});
