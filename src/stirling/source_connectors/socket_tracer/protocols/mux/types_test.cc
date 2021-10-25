@@ -36,15 +36,16 @@ TEST(IsMuxType, CanDetectMembershipOfSmallestAndLargestTypes) {
 }
 
 TEST(GetMatchingRespType, ReturnsCorrespondingResponseTypes) {
-  ASSERT_EQ(GetMatchingRespType(Type::kRerrOld), Type::kRerrOld);
-  ASSERT_EQ(GetMatchingRespType(Type::kRerr), Type::kRerr);
-  ASSERT_EQ(GetMatchingRespType(Type::kTinit), Type::kRinit);
-  ASSERT_EQ(GetMatchingRespType(Type::kTping), Type::kRping);
-  ASSERT_EQ(GetMatchingRespType(Type::kTdiscardedOld), Type::kRdiscarded);
-  ASSERT_EQ(GetMatchingRespType(Type::kTdiscarded), Type::kRdiscarded);
-  ASSERT_EQ(GetMatchingRespType(Type::kTdrain), Type::kRdrain);
-  ASSERT_EQ(GetMatchingRespType(Type::kTdispatch), Type::kRdispatch);
-  ASSERT_EQ(GetMatchingRespType(Type::kTreq), Type::kRreq);
+  ASSERT_OK_AND_EQ(GetMatchingRespType(Type::kRerrOld), Type::kRerrOld);
+  ASSERT_OK_AND_EQ(GetMatchingRespType(Type::kRerr), Type::kRerr);
+  ASSERT_OK_AND_EQ(GetMatchingRespType(Type::kTinit), Type::kRinit);
+  ASSERT_OK_AND_EQ(GetMatchingRespType(Type::kTping), Type::kRping);
+  ASSERT_OK_AND_EQ(GetMatchingRespType(Type::kTdiscardedOld), Type::kRdiscarded);
+  ASSERT_OK_AND_EQ(GetMatchingRespType(Type::kTdiscarded), Type::kRdiscarded);
+  ASSERT_OK_AND_EQ(GetMatchingRespType(Type::kTdrain), Type::kRdrain);
+  ASSERT_OK_AND_EQ(GetMatchingRespType(Type::kTdispatch), Type::kRdispatch);
+  ASSERT_OK_AND_EQ(GetMatchingRespType(Type::kTreq), Type::kRreq);
+  ASSERT_NOT_OK(GetMatchingRespType(static_cast<Type>(0)));
 }
 
 }  // namespace mux

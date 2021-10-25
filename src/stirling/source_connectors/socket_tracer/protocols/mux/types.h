@@ -63,7 +63,7 @@ inline bool IsMuxType(int8_t t) {
   return mux_type.has_value();
 }
 
-inline std::optional<Type> GetMatchingRespType(Type req_type) {
+inline StatusOr<Type> GetMatchingRespType(Type req_type) {
   switch (req_type) {
     case Type::kRerrOld:
       return Type::kRerrOld;
@@ -83,9 +83,7 @@ inline std::optional<Type> GetMatchingRespType(Type req_type) {
     case Type::kTdiscarded:
       return Type::kRdiscarded;
     default:
-      LOG(DFATAL) << absl::Substitute("Unexpected request type $0",
-                                      magic_enum::enum_name(req_type));
-      return {};
+      return error::Internal("Unexpected request type $0", magic_enum::enum_name(req_type));
   }
 }
 
@@ -139,6 +137,7 @@ struct Frame : public FrameBase {
   int8_t type = 0;
   uint24_t tag = 0;
   std::string why;
+  bool consumed = false;
   // Reply status codes. Only present in Rdispatch messages types
   int8_t reply_status = 0;
   absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, std::string>> context;
