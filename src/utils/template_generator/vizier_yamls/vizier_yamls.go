@@ -34,6 +34,7 @@ const (
 	etcdYAMLPath                  = "./yamls/vizier_deps/etcd_prod.yaml"
 	natsYAMLPath                  = "./yamls/vizier_deps/nats_prod.yaml"
 	defaultMemoryLimit            = "2Gi"
+	defaultDataAccess             = "Full"
 )
 
 // VizierTmplValues are the template values that can be used to fill out templated Vizier YAMLs.
@@ -50,6 +51,7 @@ type VizierTmplValues struct {
 	DisableAutoUpdate bool
 	SentryDSN         string
 	ClockConverter    string
+	DataAccess        string
 }
 
 // VizierTmplValuesToArgs converts the vizier template values to args which can be used to fill out a template.
@@ -67,6 +69,7 @@ func VizierTmplValuesToArgs(tmplValues *VizierTmplValues) *yamls.YAMLTmplArgumen
 			"disableAutoUpdate": tmplValues.DisableAutoUpdate,
 			"sentryDSN":         tmplValues.SentryDSN,
 			"clockConverter":    tmplValues.ClockConverter,
+			"dataAccess":        tmplValues.DataAccess,
 		},
 		Release: &map[string]interface{}{
 			"Namespace": tmplValues.Namespace,
@@ -375,6 +378,12 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
 			Patch:           `{"spec": {"template": { "spec": { "containers": [{"name": "pem", "env": [{"name": "PL_CLOCK_CONVERTER", "value": "__PX_CLOCK_CONVERTER__"}]}] } } } }`,
 			Placeholder:     "__PX_CLOCK_CONVERTER__",
 			TemplateValue:   `{{ if .Values.clockConverter }}"{{ .Values.clockConverter }}"{{else}}"default"{{end}}`,
+		},
+		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("vizier-query-broker"),
+			Patch:           `{"spec": {"template": {"spec": {"containers": [{"name": "app", "env": [{"name": "PL_DATA_ACCESS","value": "__PX_DATA_ACCESS__"}]}] } } } }`,
+			Placeholder:     "__PX_DATA_ACCESS__",
+			TemplateValue:   fmt.Sprintf(`{{ if .Values.dataAccess }}"{{ .Values.dataAccess }}"{{else}}"%s"{{end}}`, defaultDataAccess),
 		},
 	}...)
 

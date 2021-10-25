@@ -66,6 +66,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: PL_DATA_ACCESS
+          value: "Full"
         envFrom:
         - configMapRef:
             name: pl-tls-config
