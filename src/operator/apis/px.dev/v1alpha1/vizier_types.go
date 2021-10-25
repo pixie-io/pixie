@@ -52,8 +52,8 @@ type VizierSpec struct {
 	DevCloudNamespace string `json:"devCloudNamespace,omitempty"`
 	// PemMemoryLimit is a memory limit applied specifically to PEM pods.
 	PemMemoryLimit string `json:"pemMemoryLimit,omitempty"`
-	// EnableClockworkIntegration enables getting timestamp offsets from a clockwork agent, for time-sync purposes.
-	EnableClockworkIntegration bool `json:"enableClockworkIntegration,omitempty"`
+	// ClockConverter specifies which routine to use for converting timestamps to a synced reference time.
+	ClockConverter ClockConverterType `json:"clockConverter,omitempty"`
 	// Pod defines the policy for creating Vizier pods.
 	Pod *PodPolicy `json:"pod,omitempty"`
 	// Patches defines patches that should be applied to Vizier resources.
@@ -77,6 +77,16 @@ const (
 	// DataAccessRestricted restricts users from accessing columns that may contain sensitive data, for example: HTTP response
 	// bodies. These columns will be entirely replaced by a redacted string.
 	DataAccessRestricted DataAccessLevel = "Restricted"
+)
+
+// ClockConverterType defines which clock conversion routine to use for converting timestamps to a synced reference time.
+type ClockConverterType string
+
+const (
+	// ClockConverterDefault specifies using the default clock conversion routine.
+	ClockConverterDefault ClockConverterType = "default"
+	// ClockConverterGrpc specifies using the grpc clocksync integration to convert to a synced reference time.
+	ClockConverterGrpc ClockConverterType = "grpc"
 )
 
 // VizierStatus defines the observed state of Vizier

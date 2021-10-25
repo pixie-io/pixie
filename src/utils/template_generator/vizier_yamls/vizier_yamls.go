@@ -38,35 +38,35 @@ const (
 
 // VizierTmplValues are the template values that can be used to fill out templated Vizier YAMLs.
 type VizierTmplValues struct {
-	DeployKey                  string
-	CustomAnnotations          string
-	CustomLabels               string
-	CloudAddr                  string
-	ClusterName                string
-	CloudUpdateAddr            string
-	UseEtcdOperator            bool
-	PEMMemoryLimit             string
-	Namespace                  string
-	DisableAutoUpdate          bool
-	SentryDSN                  string
-	EnableClockworkIntegration bool
+	DeployKey         string
+	CustomAnnotations string
+	CustomLabels      string
+	CloudAddr         string
+	ClusterName       string
+	CloudUpdateAddr   string
+	UseEtcdOperator   bool
+	PEMMemoryLimit    string
+	Namespace         string
+	DisableAutoUpdate bool
+	SentryDSN         string
+	ClockConverter    string
 }
 
 // VizierTmplValuesToArgs converts the vizier template values to args which can be used to fill out a template.
 func VizierTmplValuesToArgs(tmplValues *VizierTmplValues) *yamls.YAMLTmplArguments {
 	return &yamls.YAMLTmplArguments{
 		Values: &map[string]interface{}{
-			"deployKey":                  tmplValues.DeployKey,
-			"customAnnotations":          tmplValues.CustomAnnotations,
-			"customLabels":               tmplValues.CustomLabels,
-			"cloudAddr":                  tmplValues.CloudAddr,
-			"clusterName":                tmplValues.ClusterName,
-			"cloudUpdateAddr":            tmplValues.CloudUpdateAddr,
-			"useEtcdOperator":            tmplValues.UseEtcdOperator,
-			"pemMemoryLimit":             tmplValues.PEMMemoryLimit,
-			"disableAutoUpdate":          tmplValues.DisableAutoUpdate,
-			"sentryDSN":                  tmplValues.SentryDSN,
-			"enableClockworkIntegration": tmplValues.EnableClockworkIntegration,
+			"deployKey":         tmplValues.DeployKey,
+			"customAnnotations": tmplValues.CustomAnnotations,
+			"customLabels":      tmplValues.CustomLabels,
+			"cloudAddr":         tmplValues.CloudAddr,
+			"clusterName":       tmplValues.ClusterName,
+			"cloudUpdateAddr":   tmplValues.CloudUpdateAddr,
+			"useEtcdOperator":   tmplValues.UseEtcdOperator,
+			"pemMemoryLimit":    tmplValues.PEMMemoryLimit,
+			"disableAutoUpdate": tmplValues.DisableAutoUpdate,
+			"sentryDSN":         tmplValues.SentryDSN,
+			"clockConverter":    tmplValues.ClockConverter,
 		},
 		Release: &map[string]interface{}{
 			"Namespace": tmplValues.Namespace,
@@ -372,9 +372,9 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
 		},
 		{
 			TemplateMatcher: yamls.GenerateContainerNameMatcherFn("pem"),
-			Patch:           `{"spec": {"template": { "spec": { "containers": [{"name": "pem", "env": [{"name": "PL_ENABLE_CLOCKWORK", "value": "__PX_ENABLE_CLOCKWORK__"}]}] } } } }`,
-			Placeholder:     "__PX_ENABLE_CLOCKWORK__",
-			TemplateValue:   `{{ if .Values.enableClockworkIntegration }}"true"{{else}}"false"{{end}}`,
+			Patch:           `{"spec": {"template": { "spec": { "containers": [{"name": "pem", "env": [{"name": "PL_CLOCK_CONVERTER", "value": "__PX_CLOCK_CONVERTER__"}]}] } } } }`,
+			Placeholder:     "__PX_CLOCK_CONVERTER__",
+			TemplateValue:   `{{ if .Values.clockConverter }}"{{ .Values.clockConverter }}"{{else}}"default"{{end}}`,
 		},
 	}...)
 

@@ -35,6 +35,13 @@ spec:
           spec:
             description: VizierSpec defines the desired state of Vizier
             properties:
+              clockConverter:
+                description: ClockConverter specifies which routine to use for converting
+                  timestamps to a synced reference time.
+                enum:
+                - default
+                - grpc
+                type: string
               cloudAddr:
                 description: CloudAddr is the address of the cloud instance that the
                   Vizier should be pointing to.
@@ -65,10 +72,6 @@ spec:
               disableAutoUpdate:
                 description: DisableAutoUpdate specifies whether auto update should
                   be enabled for the Vizier instance.
-                type: boolean
-              enableClockworkIntegration:
-                description: EnableClockworkIntegration enables getting timestamp
-                  offsets from a clockwork agent, for time-sync purposes.
                 type: boolean
               patches:
                 additionalProperties:
