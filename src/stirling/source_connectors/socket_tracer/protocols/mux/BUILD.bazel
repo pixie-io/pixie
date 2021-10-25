@@ -16,7 +16,7 @@
 
 load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 
-package(default_visibility = ["//src/stirling:__subpackages__"])
+package(default_visibility = ["//src/stirling/socket_tracer/socket_tracer:__subpackages__"])
 
 pl_cc_library(
     name = "cc_library",

@@ -135,12 +135,12 @@ struct Frame : public FrameBase {
   // the 4 byte length field. For Tdispatch / Rdispatch messages when using a
   // protocol like thriftmux, this would include the length of the mux and thrift
   // data.
-  uint32_t length;
-  int8_t type;
-  uint24_t tag;
+  uint32_t length = 0;
+  int8_t type = 0;
+  uint24_t tag = 0;
   std::string why;
   // Reply status codes. Only present in Rdispatch messages types
-  int8_t reply_status;
+  int8_t reply_status = 0;
   absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, std::string>> context;
 
   size_t ByteSize() const override { return length; }
