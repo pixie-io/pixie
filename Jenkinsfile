@@ -1,4 +1,4 @@
-/** WIP
+/** WI
  * Jenkins build definition. This file defines the entire build pipeline.
  */
 import java.net.URLEncoder
