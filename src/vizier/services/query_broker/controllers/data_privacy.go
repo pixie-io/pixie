@@ -69,7 +69,9 @@ func CreateDataPrivacyManager(ns string) (DataPrivacy, error) {
 	// We only get this value once.
 	vz, err := getVizierCRD(ns)
 	if err != nil {
-		return nil, err
+		return &vizierCachedDataPrivacy{
+			dataAccess: pixie.DataAccessFull,
+		}, nil
 	}
 	return &vizierCachedDataPrivacy{
 		dataAccess: vz.Spec.DataAccess,
