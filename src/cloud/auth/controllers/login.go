@@ -22,6 +22,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go/v4"
@@ -212,6 +213,25 @@ func (s *Server) loginUser(ctx context.Context, userInfo *UserInfo, orgInfo *pro
 	}, nil
 }
 
+func (s *Server) signupUser(ctx context.Context, userInfo *UserInfo, orgInfo *profilepb.OrgInfo, newOrg bool) (*authpb.SignupReply, error) {
+	tkn, err := s.loginUser(ctx, userInfo, orgInfo)
+	if err != nil {
+		return nil, err
+	}
+	return &authpb.SignupReply{
+		Token:      tkn.token,
+		ExpiresAt:  tkn.expiresAt.Unix(),
+		OrgCreated: newOrg,
+		UserInfo: &authpb.AuthenticatedUserInfo{
+			UserID:    utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID),
+			FirstName: userInfo.FirstName,
+			LastName:  userInfo.LastName,
+			Email:     userInfo.Email,
+		},
+		OrgID: orgInfo.ID,
+	}, nil
+}
+
 // Signup uses the AuthProvider to authenticate and sign up the user. It autocreates the org if the org doesn't exist.
 func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.SignupReply, error) {
 	userID, userInfo, err := s.getUserInfoFromToken(in.AccessToken)
@@ -229,47 +249,61 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 		return nil, status.Error(codes.PermissionDenied, "user already exists, please login.")
 	}
 
-	domainName := getOrgName(userInfo)
-	orgInfo, _ := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: domainName})
-	var orgID *uuidpb.UUID
-	newOrg := orgInfo == nil
-	if newOrg {
-		userInfo, orgID, err = s.createUserAndOrg(ctx, domainName, domainName, userID, userInfo)
+	// Case 1: An empty IdentityProviderOrgName means this user will be assigned to a self-org.
+	if userInfo.IdentityProviderOrgName == "" {
+		updatedUserInfo, orgID, err := s.createUserAndOrg(ctx, userInfo.Email, userInfo.Email, userID, userInfo)
 		if err != nil {
 			return nil, err
 		}
-		orgInfo, err = pc.GetOrg(ctx, orgID)
+		orgInfoPb, err := pc.GetOrg(ctx, orgID)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
-	} else {
-		userInfo, err = s.createUser(ctx, userID, userInfo, orgInfo.ID)
-		orgID = orgInfo.ID
+		return s.signupUser(ctx, updatedUserInfo, orgInfoPb, true /* newOrg */)
+	}
+
+	// Case 2: Search for an org that has a domain matching the IdentityProviderOrgName.
+	orgInfoByIponDomain, _ := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{
+		DomainName: userInfo.IdentityProviderOrgName,
+	})
+	if orgInfoByIponDomain != nil {
+		updatedUserInfo, err := s.createUser(ctx, userID, userInfo, orgInfoByIponDomain.ID)
 		if err != nil {
 			return nil, err
 		}
+		return s.signupUser(ctx, updatedUserInfo, orgInfoByIponDomain, false /* newOrg */)
 	}
 
-	tkn, err := s.loginUser(ctx, userInfo, orgInfo)
+	// Case 3: Search for an org that matches the email domain.
+	// Users who have an IdentityProviderOrgName might be able to join a matching domainName org.
+	emailComponents := strings.Split(userInfo.Email, "@")
+	if len(emailComponents) != 2 {
+		return nil, status.Error(codes.InvalidArgument, "bad format email received from auth")
+	}
+	domainName := emailComponents[1]
+
+	orgInfoByEmailDomain, _ := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: domainName})
+	if orgInfoByEmailDomain != nil {
+		updatedUserInfo, err := s.createUser(ctx, userID, userInfo, orgInfoByEmailDomain.ID)
+		if err != nil {
+			return nil, err
+		}
+		return s.signupUser(ctx, updatedUserInfo, orgInfoByEmailDomain, false /* newOrg */)
+	}
+
+	// Final case: User is the first to join and their org will be created with them.
+	updatedUserInfo, orgID, err := s.createUserAndOrg(ctx, userInfo.IdentityProviderOrgName, userInfo.IdentityProviderOrgName, userID, userInfo)
 	if err != nil {
 		return nil, err
 	}
-
-	return &authpb.SignupReply{
-		Token:      tkn.token,
-		ExpiresAt:  tkn.expiresAt.Unix(),
-		OrgCreated: newOrg,
-		UserInfo: &authpb.AuthenticatedUserInfo{
-			UserID:    utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID),
-			FirstName: userInfo.FirstName,
-			LastName:  userInfo.LastName,
-			Email:     userInfo.Email,
-		},
-		OrgID: orgID,
-	}, nil
+	orgInfoPb, err := pc.GetOrg(ctx, orgID)
+	if err != nil {
+		return nil, err
+	}
+	return s.signupUser(ctx, updatedUserInfo, orgInfoPb, true /* newOrg */)
 }
 
-// Creates a user as well as an org if the orgInfo passed in is nil.
+// Creates a user as well as an org.
 func (s *Server) createUserAndOrg(ctx context.Context, domainName string, orgName string, userID string, userInfo *UserInfo) (*UserInfo, *uuidpb.UUID, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	ctx = metadata.NewOutgoingContext(ctx, md)
@@ -301,17 +335,17 @@ func (s *Server) createUserAndOrg(ctx context.Context, domainName string, orgNam
 	return userInfo, orgIDpb, err
 }
 
-// Creates a user in the passed in orgname.
-func (s *Server) createUser(ctx context.Context, userID string, userInfo *UserInfo, orgInfoID *uuidpb.UUID) (*UserInfo, error) {
+// Creates a user for the orgID.
+func (s *Server) createUser(ctx context.Context, userID string, userInfo *UserInfo, orgID *uuidpb.UUID) (*UserInfo, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
-	if orgInfoID == nil {
+	if orgID == nil {
 		return nil, fmt.Errorf("orgInfo should not be nil")
 	}
 	// Create a new user to register them.
 	userCreateReq := &profilepb.CreateUserRequest{
-		OrgID:            orgInfoID,
+		OrgID:            orgID,
 		Username:         userInfo.Email,
 		FirstName:        userInfo.FirstName,
 		LastName:         userInfo.LastName,
@@ -324,7 +358,7 @@ func (s *Server) createUser(ctx context.Context, userID string, userInfo *UserIn
 	if err != nil {
 		return nil, err
 	}
-	userInfo, err = s.updateAuthProviderUser(userID, utils.UUIDFromProtoOrNil(orgInfoID).String(), utils.UUIDFromProtoOrNil(userIDpb).String())
+	userInfo, err = s.updateAuthProviderUser(userID, utils.UUIDFromProtoOrNil(orgID).String(), utils.UUIDFromProtoOrNil(userIDpb).String())
 	return userInfo, err
 }
 
