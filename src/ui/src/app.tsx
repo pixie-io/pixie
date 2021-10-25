@@ -51,6 +51,7 @@ import 'typeface-roboto-mono';
 import { PixieAPIContext, PixieAPIContextProvider } from 'app/api';
 import { AuthContextProvider, AuthContext } from 'app/common/auth-context';
 import { EmbedContext, EmbedContextProvider } from 'app/common/embed-context';
+import { ErrorBoundary, PixienautCrashFallback } from 'app/utils/error-boundary';
 
 // This side-effect-only import has to be a `require`, or else it gets erroneously optimized away during compilation.
 require('./wdyr');
@@ -120,7 +121,7 @@ export const App: React.FC = () => {
   const authRedirectTo = authRedirectUri ? `/login?redirect_uri=${authRedirectUri}` : '/login';
 
   return loading ? null : (
-    <>
+    <ErrorBoundary name='App' fallback={PixienautCrashFallback}>
       <SnackbarProvider>
         <Router history={history}>
           <div className='center-content'>
@@ -143,7 +144,7 @@ export const App: React.FC = () => {
         {!isProd() ? <VersionInfo cloudVersion={PIXIE_CLOUD_VERSION} /> : null}
       </SnackbarProvider>
       <PixieCookieBanner />
-    </>
+    </ErrorBoundary>
   );
 };
 
@@ -347,10 +348,12 @@ const ThemedApp: React.FC = () => {
 };
 
 ReactDOM.render(
-  <StyledEngineProvider injectFirst>
-    <AuthContextProvider>
-      <EmbedContextProvider>
-        <ThemedApp />
-      </EmbedContextProvider>
-    </AuthContextProvider>
-  </StyledEngineProvider>, document.getElementById('root'));
+  <ErrorBoundary name='Root'>
+    <StyledEngineProvider injectFirst>
+      <AuthContextProvider>
+        <EmbedContextProvider>
+          <ThemedApp />
+        </EmbedContextProvider>
+      </AuthContextProvider>
+    </StyledEngineProvider>
+  </ErrorBoundary>, document.getElementById('root'));
