@@ -1,4 +1,4 @@
-/** WIP
+/**
  * Jenkins build definition. This file defines the entire build pipeline.
  */
 import java.net.URLEncoder
@@ -118,7 +118,7 @@ devDockerImageExtrasWithTag = ''
 stashList = []
 
 // Flag controlling if coverage job is enabled.
-isMainCodeReviewRun =  (env.JOB_NAME == 'pixie-dev/main-phab-test')
+isMainCodeReviewRun =  (env.JOB_NAME == 'pixie-dev/main-phab-test' || env.JOB_NAME == 'pixie-oss/build-and-test-pr')
 isMainRun =  (env.JOB_NAME == 'pixie-main/build-and-test-all')
 isOSSMainRun =  (env.JOB_NAME == 'pixie-oss/build-and-test-all')
 isNightlyTestRegressionRun = (env.JOB_NAME == 'pixie-main/nightly-test-regression')
