@@ -26,7 +26,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -41,7 +40,6 @@ import (
 
 var (
 	modules           = flag.String("modules", "", "Path to the a file listing all go module deps")
-	githubToken       = flag.String("github_token", "", "Path to the a file containing the Github OAuth Token")
 	tryPkgDevGo       = flag.Bool("try_pkg_dev_go", false, "Whether to query pkg.dev.go for licenses")
 	fatalIfMissing    = flag.Bool("fatal_if_missing", false, "Whether to treat any missing dependecies as a fatal error")
 	jsonManualInput   = flag.String("json_manual_input", "", "Path to input json file with manually fetched licenses")
@@ -275,12 +273,9 @@ func main() {
 	}
 
 	var tc *http.Client
-	if *githubToken != "" {
-		tokenData, err := ioutil.ReadFile(*githubToken)
-		if err == nil {
-			token := strings.TrimSpace(string(tokenData))
-			tc = oauth2.NewClient(ctx, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
-		}
+	githubToken, ok := os.LookupEnv("GH_API_KEY")
+	if ok && githubToken != "" {
+		tc = oauth2.NewClient(ctx, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: githubToken}))
 	}
 	client := github.NewClient(tc)
 

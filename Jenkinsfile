@@ -272,10 +272,17 @@ def writeBazelRCFile() {
     string(
       credentialsId: 'buildbuddy-api-key',
       variable: 'BUILDBUDDY_API_KEY'
+    ),
+    string(
+      credentialsId: 'github-license-ratelimit',
+      variable: 'GH_API_KEY'
     )
   ]) {
     def bbAPIArg = '--remote_header=x-buildbuddy-api-key=${BUILDBUDDY_API_KEY}'
     sh "echo \"build ${bbAPIArg}\" >> jenkins.bazelrc"
+
+    def ghAPIEnv = '--action_env=GH_API_KEY=${GH_API_KEY}'
+    sh "echo \"build ${ghAPIEnv}\" >> jenkins.bazelrc"
   }
 }
 

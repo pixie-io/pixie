@@ -16,7 +16,6 @@
 
 def _fetch_licenses_impl(ctx):
     args = ctx.actions.args()
-    args.add("--github_token", ctx.file.oauth_token)
     args.add("--modules", ctx.file.src)
 
     if ctx.attr.use_pkg_dev_go:
@@ -31,9 +30,10 @@ def _fetch_licenses_impl(ctx):
 
     ctx.actions.run(
         executable = ctx.file.fetch_tool,
-        inputs = [ctx.file.src, ctx.file.oauth_token, ctx.file.manual_licenses],
+        inputs = [ctx.file.src, ctx.file.manual_licenses],
         outputs = [ctx.outputs.out_found, ctx.outputs.out_missing],
         arguments = [args],
+        use_default_shell_env = True,
         progress_message =
             "Fetching licenses %s" % ctx.outputs.out_found,
     )
@@ -44,7 +44,6 @@ fetch_licenses = rule(
         "disallow_missing": attr.bool(),
         "fetch_tool": attr.label(mandatory = True, allow_single_file = True),
         "manual_licenses": attr.label(mandatory = True, allow_single_file = True),
-        "oauth_token": attr.label(mandatory = True, allow_single_file = True),
         "out_found": attr.output(mandatory = True),
         "out_missing": attr.output(),
         "src": attr.label(mandatory = True, allow_single_file = True),
