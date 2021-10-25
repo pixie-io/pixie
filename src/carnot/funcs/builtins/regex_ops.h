@@ -121,12 +121,12 @@ class MatchRegexRule : public udf::ScalarUDF {
    if (!parse_result) {
      return Status(statuspb::Code::INVALID_ARGUMENT, "unable to parse string as json");
    }
-   // populate self::regex_rules_map_
+   // Populate the parse regular expressions into self::regex_rules_map_.
    for (rapidjson::Value::ConstMemberIterator itr = regex_rules.MemberBegin(); 
         itr != regex_rules.MemberEnd(); ++itr) {
     RegexMatchUDF regex_match_udf; 
-    auto name = itr->name.GetString();
-    auto regex_pattern = itr->value.GetString();
+    std::string name = itr->name.GetString();
+    std::string regex_pattern = itr->value.GetString();
     PL_RETURN_IF_ERROR(regex_match_udf.Init(ctx, regex_pattern)); 
     regex_rules_map_.emplace(name, std::move(regex_match_udf));
    }
@@ -139,7 +139,7 @@ class MatchRegexRule : public udf::ScalarUDF {
         return rule_name;
       }
     }
-  return "";
+    return "";
   }
 
   static udf::ScalarUDFDocBuilder Doc() {
@@ -158,7 +158,7 @@ class MatchRegexRule : public udf::ScalarUDF {
   }
 
  private:
-  std::map<std::string, RegexMatchUDF> regex_rules_map_;
+  absl::flat_hash_map<std::string, RegexMatchUDF> regex_rules_map_;
 };
 
 void RegisterRegexOpsOrDie(udf::Registry* registry);
