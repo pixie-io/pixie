@@ -115,28 +115,29 @@ class RegexReplaceUDF : public udf::ScalarUDF {
 class MatchRegexRule : public udf::ScalarUDF {
  public:
   Status Init(FunctionContext* ctx, StringValue encodedRegexRules) {
-    // parse encodedRegexRules as json
-    rapidjson::Document regex_rules;
-    rapidjson::ParseResult parse_result = regex_rules.Parse(encodedRegexRules.data());
+    // Parse encodedRegexRules as json.
+    rapidjson::Document regex_rules_json;
+    rapidjson::ParseResult parse_result = regex_rules_json.Parse(encodedRegexRules.data());
     if (!parse_result) {
       return Status(statuspb::Code::INVALID_ARGUMENT, "unable to parse string as json");
     }
-    // Populate the parse regular expressions into self::regex_rules_map_.
-    for (rapidjson::Value::ConstMemberIterator itr = regex_rules.MemberBegin();
-         itr != regex_rules.MemberEnd(); ++itr) {
+    // Populate the parse regular expressions into self::regex_rules.
+    for (rapidjson::Value::ConstMemberIterator itr = regex_rules_json.MemberBegin();
+         itr != regex_rules_json.MemberEnd(); ++itr) {
       RegexMatchUDF regex_match_udf;
       std::string name = itr->name.GetString();
       std::string regex_pattern = itr->value.GetString();
       PL_RETURN_IF_ERROR(regex_match_udf.Init(ctx, regex_pattern));
-      regex_rules_map_.emplace(name, std::move(regex_match_udf));
+      regex_rules.push_back(make_pair(name, std::move(regex_match_udf)));
+      regex_rules_length++;
     }
     return Status::OK();
   }
 
   types::StringValue Exec(FunctionContext* ctx, StringValue value) {
-    for (auto& [rule_name, regex_match_udf] : regex_rules_map_) {
-      if (regex_match_udf.Exec(ctx, value).val) {
-        return rule_name;
+    for (int i = 0; i < regex_rules_length; i++) {
+      if (regex_rules[i].second.Exec(ctx, value).val) {
+        return regex_rules[i].first;
       }
     }
     return "";
@@ -164,7 +165,8 @@ class MatchRegexRule : public udf::ScalarUDF {
   }
 
  private:
-  absl::flat_hash_map<std::string, RegexMatchUDF> regex_rules_map_;
+  int regex_rules_length = 0;
+  std::vector<std::pair<std::string, RegexMatchUDF> > regex_rules;
 };
 
 void RegisterRegexOpsOrDie(udf::Registry* registry);
