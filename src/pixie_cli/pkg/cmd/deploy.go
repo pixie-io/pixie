@@ -41,6 +41,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
+	vztypes "px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	"px.dev/pixie/src/operator/client/versioned"
 	"px.dev/pixie/src/pixie_cli/pkg/auth"
 	"px.dev/pixie/src/pixie_cli/pkg/components"
@@ -174,6 +175,9 @@ func init() {
 	DeployCmd.Flags().String("olm_operator_namespace", "px-operator", "The namespace to use for the Pixie operator")
 	viper.BindPFlag("olm_operator_namespace", DeployCmd.Flags().Lookup("olm_operator_namespace"))
 
+	DeployCmd.Flags().String("data_access", "Full", "Data access level defines the level of data that may be accesssed when executing a script on the cluster. Options: 'Full' and 'Restricted'")
+	viper.BindPFlag("data_access", DeployCmd.Flags().Lookup("data_access"))
+
 	// Super secret flags for Pixies.
 	DeployCmd.Flags().MarkHidden("namespace")
 }
@@ -240,6 +244,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	customAnnotations, _ := cmd.Flags().GetString("annotations")
 	pemMemoryLimit, _ := cmd.Flags().GetString("pem_memory_limit")
 	patches, _ := cmd.Flags().GetStringArray("patches")
+	dataAccess, _ := cmd.Flags().GetString("data_access")
 
 	labelMap := make(map[string]string)
 	if customLabels != "" {
@@ -273,6 +278,10 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 			}
 			patchesMap[p[:colon]] = p[colon+1:]
 		}
+	}
+	castedDataAccess := vztypes.DataAccessLevel(dataAccess)
+	if castedDataAccess != vztypes.DataAccessFull && castedDataAccess != vztypes.DataAccessRestricted {
+		utils.Fatal("--data_access must be a valid data access level")
 	}
 
 	if deployKey == "" && extractPath != "" {
@@ -406,7 +415,8 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 				"annotations": annotationMap,
 				"labels":      labelMap,
 			},
-			"patches": patchesMap,
+			"patches":    patchesMap,
+			"dataAccess": castedDataAccess,
 		},
 		Release: &map[string]interface{}{
 			"Namespace": namespace,
