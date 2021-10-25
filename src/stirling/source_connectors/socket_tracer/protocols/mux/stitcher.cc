@@ -74,7 +74,7 @@ RecordsWithErrorCount<mux::Record> StitchFrames(std::deque<mux::Frame>* reqs,
             break;
         }
 
-        if (! req_consumed) {
+        if (!req_consumed) {
             records.push_back({req, {}});
 
             error_count++;

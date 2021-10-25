@@ -37,7 +37,7 @@ using ::testing::StrEq;
 class StitchFramesTest : public ::testing::Test {
 };
 
-mux::Frame CreateMuxFrame(uint64_t ts_ns, mux::Type type, uint32_t tag) {
+mux::Frame CreateMuxFrame(uint64_t ts_ns, mux::Type type, uint24_t tag) {
     mux::Frame frame;
     frame.timestamp_ns = ts_ns;
     frame.type = static_cast<int8_t>(type);
@@ -134,7 +134,6 @@ TEST_F(StitchFramesTest, UnmatchedRequestsAreHandled) {
         CreateMuxFrame(3, mux::Type::kTdrain, 1),
     };
     std::deque<mux::Frame> resps = {
-        // tinit check message response
         CreateMuxFrame(2, mux::Type::kRdispatch, 1),
         CreateMuxFrame(4, mux::Type::kRdrain, 1),
     };
