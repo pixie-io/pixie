@@ -470,8 +470,8 @@ StatusOr<uint64_t> GetTypeByteSize(const DWARFDie& die) {
     case llvm::dwarf::DW_TAG_structure_type:
       return GetBaseOrStructTypeByteSize(die);
     default:
-      return error::Internal(absl::Substitute("GetTypeByteSize - Unexpected DIE type: $0",
-                                              magic_enum::enum_name(die.getTag())));
+      return error::Internal("GetTypeByteSize - Unexpected DIE type: $0",
+                             magic_enum::enum_name(die.getTag()));
   }
 }
 
@@ -498,6 +498,69 @@ StatusOr<uint64_t> GetAlignmentByteSize(const DWARFDie& die) {
     default:
       return error::Internal(
           absl::Substitute("Failed to get alignment size, unexpected DIE type: $0",
+                           magic_enum::enum_name(die.getTag())));
+  }
+}
+
+StatusOr<int> GetNumPrimitives(const DWARFDie& die) {
+  DCHECK(die.isValid());
+
+  switch (die.getTag()) {
+    case llvm::dwarf::DW_TAG_pointer_type:
+    case llvm::dwarf::DW_TAG_subroutine_type:
+    case llvm::dwarf::DW_TAG_base_type:
+      return 1;
+    case llvm::dwarf::DW_TAG_structure_type: {
+      int num_primitives = 0;
+      for (const auto& member_die : die.children()) {
+        if ((member_die.getTag() == llvm::dwarf::DW_TAG_member)) {
+          PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(member_die));
+          PL_ASSIGN_OR_RETURN(uint64_t member_num_primitives, GetNumPrimitives(type_die));
+          num_primitives += member_num_primitives;
+        }
+      }
+      return num_primitives;
+    }
+    default:
+      return error::Internal("GetNumPrimitives() failed: unexpected DIE type: $0",
+                             magic_enum::enum_name(die.getTag()));
+  }
+}
+
+StatusOr<TypeClass> GetTypeClass(const DWARFDie& die) {
+  DCHECK(die.isValid());
+
+  switch (die.getTag()) {
+    case llvm::dwarf::DW_TAG_pointer_type:
+    case llvm::dwarf::DW_TAG_subroutine_type:
+      return TypeClass::kInteger;
+    case llvm::dwarf::DW_TAG_base_type: {
+      PL_ASSIGN_OR_RETURN(const DWARFFormValue& encoding_attr,
+                          GetAttribute(die, llvm::dwarf::DW_AT_encoding));
+
+      PL_ASSIGN_OR_RETURN(uint64_t encoding,
+                          AdaptLLVMOptional(encoding_attr.getAsUnsignedConstant(),
+                                            absl::Substitute("Could not extract encoding [die=$0].",
+                                                             GetShortName(die))));
+      if (encoding == llvm::dwarf::DW_ATE_float) {
+        return TypeClass::kFloat;
+      }
+      return TypeClass::kInteger;
+    }
+    case llvm::dwarf::DW_TAG_structure_type: {
+      TypeClass type_class = TypeClass::kNone;
+      for (const auto& member_die : die.children()) {
+        if ((member_die.getTag() == llvm::dwarf::DW_TAG_member)) {
+          PL_ASSIGN_OR_RETURN(DWARFDie member_type_die, GetTypeDie(member_die));
+          PL_ASSIGN_OR_RETURN(TypeClass child_type, GetTypeClass(member_type_die));
+          type_class = Combine(type_class, child_type);
+        }
+      }
+      return type_class;
+    }
+    default:
+      return error::Internal(
+          absl::Substitute("Failed to get type class size, unexpected DIE type: $0",
                            magic_enum::enum_name(die.getTag())));
   }
 }
@@ -619,7 +682,7 @@ Status DwarfReader::FlattenedStructSpec(const llvm::DWARFDie& struct_die,
       PL_ASSIGN_OR_RETURN(TypeInfo type_info, GetTypeInfo(die, type_die));
 
       if (type_info.type == VarType::kBaseType || type_info.type == VarType::kPointer) {
-        PL_ASSIGN_OR_RETURN(int size, GetTypeByteSize(type_die));
+        PL_ASSIGN_OR_RETURN(const uint64_t size, GetTypeByteSize(type_die));
 
         StructSpecEntry entry;
         entry.offset = offset + member_offset;
@@ -831,16 +894,19 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
   }
   std::unique_ptr<ABICallingConventionModel> arg_tracker = ABICallingConventionModel::Create(abi);
 
+  PL_ASSIGN_OR_RETURN(const DWARFDie& function_die,
+                      GetMatchingDIE(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
+
   // If return value is not able to be passed in as a register,
   // then the first argument register becomes a pointer to the return value.
   // Account for that here.
-  PL_ASSIGN_OR_RETURN(RetValInfo ret_val_info, GetFunctionRetValInfo(function_symbol_name));
-  // TODO(oazizi): Set TypeClass correctly (coming in future diff).
-  PL_RETURN_IF_ERROR(
-      arg_tracker->AdjustForReturnValue(TypeClass::kInteger, ret_val_info.byte_size));
-
-  PL_ASSIGN_OR_RETURN(const DWARFDie& function_die,
-                      GetMatchingDIE(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
+  // No return type means the function has a void return type.
+  if (function_die.find(llvm::dwarf::DW_AT_type).hasValue()) {
+    PL_ASSIGN_OR_RETURN(const DWARFDie type_die, GetTypeDie(function_die));
+    PL_ASSIGN_OR_RETURN(const TypeClass type_class, GetTypeClass(type_die));
+    PL_ASSIGN_OR_RETURN(const auto byte_size, GetTypeByteSize(type_die));
+    PL_RETURN_IF_ERROR(arg_tracker->AdjustForReturnValue(type_class, byte_size));
+  }
 
   for (const auto& die : GetParamDIEs(function_die)) {
     VLOG(1) << die.getShortName();
@@ -849,11 +915,12 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
     PL_ASSIGN_OR_RETURN(const DWARFDie type_die, GetTypeDie(die));
     PL_ASSIGN_OR_RETURN(arg.type_info, GetTypeInfo(die, type_die));
 
-    PL_ASSIGN_OR_RETURN(uint64_t type_size, GetTypeByteSize(type_die));
-    PL_ASSIGN_OR_RETURN(uint64_t alignment_size, GetAlignmentByteSize(type_die));
-    // TODO(oazizi): Set TypeClass and num_vars correctly (coming in future diff).
-    PL_ASSIGN_OR_RETURN(arg.location, arg_tracker->PopLocation(TypeClass::kInteger, type_size,
-                                                               alignment_size, /* num_vars */ 0));
+    PL_ASSIGN_OR_RETURN(const TypeClass type_class, GetTypeClass(type_die));
+    PL_ASSIGN_OR_RETURN(const uint64_t type_size, GetTypeByteSize(type_die));
+    PL_ASSIGN_OR_RETURN(const uint64_t alignment_size, GetAlignmentByteSize(type_die));
+    PL_ASSIGN_OR_RETURN(const uint64_t num_vars, GetNumPrimitives(type_die));
+    PL_ASSIGN_OR_RETURN(arg.location,
+                        arg_tracker->PopLocation(type_class, type_size, alignment_size, num_vars));
 
     if (source_language_ == llvm::dwarf::DW_LANG_Go) {
       arg.retarg = IsGolangRetArg(die).ValueOr(false);
