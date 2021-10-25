@@ -27,7 +27,7 @@ using px::testing::BazelBinTestFilePath;
 
 // NOTE: This benchmark only works with `-c opt`, but that's how we want it to run anyways.
 constexpr std::string_view kBinary =
-    "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/linux_amd64/server";
+    "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/server_/server";
 
 struct SymAddrs {
   // Members of net/http.http2serverConn.
