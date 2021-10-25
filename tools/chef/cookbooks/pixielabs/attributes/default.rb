@@ -75,8 +75,8 @@ if node[:platform] == 'ubuntu'
     'e96db5103448663d349072c515ddae33bdf05727689a9a3460f3f36a41a94b8e'
 
   default['kubectl']['download_path'] =
-    'https://storage.googleapis.com/kubernetes-release/release/v1.14.6/bin/linux/amd64/kubectl'
-  default['kubectl']['sha256']        = '5f8e8d8de929f64b8f779d0428854285e1a1c53a02cc2ad6b1ce5d32eefad25c'
+    'https://storage.googleapis.com/kubernetes-release/release/v1.21.5/bin/linux/amd64/kubectl'
+  default['kubectl']['sha256']        = '060ede75550c63bdc84e14fcc4c8ab3017f7ffc032fc4cac3bf20d274fab1be4'
 
   default['minikube']['download_path'] =
     'https://github.com/kubernetes/minikube/releases/download/v1.24.0/minikube-linux-amd64'
@@ -172,8 +172,8 @@ elsif node[:platform] == 'mac_os_x'
   default['skaffold']['sha256']        = '6b2bd0ae47dda96d64661136222622d97aaa9bd020b67f77fb744f944cd47ae5'
 
   default['kubectl']['download_path'] =
-    'https://storage.googleapis.com/kubernetes-release/release/v1.14.6/bin/darwin/amd64/kubectl'
-  default['kubectl']['sha256']        = 'de42dd22f67c135b749c75f389c70084c3fe840e3d89a03804edd255ac6ee829'
+    'https://storage.googleapis.com/kubernetes-release/release/v1.21.5/bin/darwin/amd64/kubectl'
+  default['kubectl']['sha256']        = '54be977d44dc7f1960d3605f69756e891c216b303342750e035748f6a2eab9d7'
 
   default['minikube']['download_path'] =
     'https://github.com/kubernetes/minikube/releases/download/v1.24.0/minikube-darwin-amd64'
