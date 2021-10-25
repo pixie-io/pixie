@@ -809,7 +809,7 @@ namespace {
 // Return the number of registers available for passing arguments,
 // according to the calling convention.
 // NOTE: We currently only support the System V AMD64 ABI for C/C++.
-StatusOr<int> NumArgPassingRegs(llvm::dwarf::SourceLanguage lang) {
+int NumArgPassingRegs(llvm::dwarf::SourceLanguage lang) {
   switch (lang) {
     case llvm::dwarf::DW_LANG_Go:
       // No arguments are passed through register on Go.
@@ -828,7 +828,7 @@ StatusOr<int> NumArgPassingRegs(llvm::dwarf::SourceLanguage lang) {
 
 // Return the number of registers available for return values,
 // according to the calling convention.
-StatusOr<int> NumRetValPassingRegs(llvm::dwarf::SourceLanguage lang) {
+int NumRetValPassingRegs(llvm::dwarf::SourceLanguage lang) {
   switch (lang) {
     case llvm::dwarf::DW_LANG_Go:
       // Return values are passed through a hidden parameter.
@@ -859,6 +859,63 @@ uint64_t SnapUpToMultiple(uint64_t val, uint64_t size) {
   return ((val + (size - 1)) / size) * size;
 }
 
+// Helper for DwarfReader::GetFunctionArgInfo.
+// Keeps track of stack/register positions that have been used for
+// each successive argument, so that it can report the next location.
+class FunctionArgTracker {
+ public:
+  explicit FunctionArgTracker(llvm::dwarf::SourceLanguage lang)
+      : reg_size_(RegisterSize()),
+        num_arg_regs_(NumArgPassingRegs(lang)),
+        num_ret_val_regs_(NumRetValPassingRegs(lang)),
+        total_register_bytes_(num_arg_regs_ * reg_size_) {}
+
+  // Get the location of the next argument according to the argument type.
+  // Depending on the ABI, the result may be a register location or a location on the stack.
+  StatusOr<VarLocation> PopLocation(const DWARFDie& type_die) {
+    PL_ASSIGN_OR_RETURN(uint64_t type_size, GetTypeByteSize(type_die));
+    PL_ASSIGN_OR_RETURN(uint64_t alignment_size, GetAlignmentByteSize(type_die));
+
+    VarLocation location;
+
+    if (type_size <= 16 && current_reg_offset_ + type_size <= total_register_bytes_) {
+      location.loc_type = LocationType::kRegister;
+      location.offset = current_reg_offset_;
+
+      current_reg_offset_ += SnapUpToMultiple(type_size, reg_size_);
+    } else {
+      // Align to the type's required alignment.
+      current_offset_ = SnapUpToMultiple(current_offset_, alignment_size);
+      location.loc_type = LocationType::kStack;
+      location.offset = current_offset_;
+
+      current_offset_ += type_size;
+    }
+
+    return location;
+  }
+
+  // In the SystemV AMD64 ABI, the return value is stored in rax+rdx.
+  // If return value is too large to be returned via register however,
+  // then there is an implicit first argument which is a pointer to the return value.
+  // This implicitly added argument is passed through a register, so
+  // enable a way to account for that here.
+  void AdjustForReturnValue(uint64_t ret_val_size) {
+    if (ret_val_size > num_ret_val_regs_ * reg_size_) {
+      current_reg_offset_ += reg_size_;
+    }
+  }
+
+ private:
+  const uint32_t reg_size_;
+  const int num_arg_regs_;
+  const int num_ret_val_regs_;
+  const uint64_t total_register_bytes_;
+
+  uint64_t current_offset_ = 0;
+  uint64_t current_reg_offset_ = 0;
+};
+
 }  // namespace
 
 // A large part of this function's responsibilities is to determine where
@@ -869,24 +926,18 @@ uint64_t SnapUpToMultiple(uint64_t val, uint64_t size) {
 // TODO(oazizi): Finish implementing the rules.
 StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
     std::string_view function_symbol_name) {
-  // Get some basic information about the binary,
-  // including the number of registers used in the calling convention for this language.
-  const uint32_t reg_size = RegisterSize();
-  PL_ASSIGN_OR_RETURN(const int num_arg_regs, NumArgPassingRegs(source_language_));
-  PL_ASSIGN_OR_RETURN(const int num_ret_val_regs, NumRetValPassingRegs(source_language_));
-
   std::map<std::string, ArgInfo> arg_info;
-  uint64_t current_offset = 0;
-  uint64_t current_reg_offset = 0;
-  uint64_t total_register_bytes = num_arg_regs * reg_size;
+
+  // Ideally, we'd use DW_AT_location directly from DWARF, (via GetDieLocationAttr(die),
+  // but DW_AT_location has been found to be blank in some cases, making it unreliable.
+  // Instead, we use an ArgTracker that tries to reverse engineer the calling convention.
+  FunctionArgTracker arg_tracker(source_language_);
 
   // If return value is not able to be passed in as a register,
   // then the first argument register becomes a pointer to the return value.
   // Account for that here.
   PL_ASSIGN_OR_RETURN(RetValInfo ret_val_info, GetFunctionRetValInfo(function_symbol_name));
-  if (ret_val_info.byte_size > num_ret_val_regs * reg_size) {
-    current_reg_offset += reg_size;
-  }
+  arg_tracker.AdjustForReturnValue(ret_val_info.byte_size);
 
   PL_ASSIGN_OR_RETURN(const DWARFDie& function_die,
                       GetMatchingDIE(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
@@ -897,27 +948,7 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
 
     PL_ASSIGN_OR_RETURN(const DWARFDie type_die, GetTypeDie(die));
     PL_ASSIGN_OR_RETURN(arg.type_info, GetTypeInfo(die, type_die));
-
-    // Ideally, we'd use the call below,
-    // but DW_AT_location has been found to be blank in some cases, making it unreliable.
-    // PL_ASSIGN_OR_RETURN(arg.location, GetDieLocationAttr(die));
-    // Instead, we have to do the rest of the function here.
-
-    PL_ASSIGN_OR_RETURN(uint64_t type_size, GetTypeByteSize(type_die));
-    PL_ASSIGN_OR_RETURN(uint64_t alignment_size, GetAlignmentByteSize(type_die));
-
-    if (type_size <= 16 && current_reg_offset + type_size <= total_register_bytes) {
-      arg.location.loc_type = LocationType::kRegister;
-      arg.location.offset = current_reg_offset;
-      // Consume full registers at a time.
-      current_reg_offset += SnapUpToMultiple(type_size, reg_size);
-    } else {
-      // Align to the type's required alignment.
-      current_offset = SnapUpToMultiple(current_offset, alignment_size);
-      arg.location.loc_type = LocationType::kStack;
-      arg.location.offset = current_offset;
-      current_offset += type_size;
-    }
+    PL_ASSIGN_OR_RETURN(arg.location, arg_tracker.PopLocation(type_die));
 
     if (source_language_ == llvm::dwarf::DW_LANG_Go) {
       arg.retarg = IsGolangRetArg(die).ValueOr(false);
