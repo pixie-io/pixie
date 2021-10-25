@@ -172,9 +172,20 @@ Status UProbeManager::UpdateGoTLSSymAddrs(ElfReader* elf_reader, DwarfReader* dw
   return Status::OK();
 }
 
-Status UProbeManager::UpdateNodeTLSWrapSymAddrs(int32_t pid) {
-  PL_ASSIGN_OR_RETURN(struct node_tlswrap_symaddrs_t symaddrs, NodeTLSWrapSymAddrs());
-  node_tlswrap_symaddrs_map_->UpdateValue(pid, symaddrs);
+Status UProbeManager::UpdateNodeTLSWrapSymAddrs(int32_t pid, const std::filesystem::path& exe) {
+  // Creation might fail if source language cannot be detected, which means that there is no dwarf
+  // info.
+  auto dwarf_reader_or = DwarfReader::Create(exe.string());
+  if (dwarf_reader_or.ok()) {
+    auto symaddrs_or = NodeTLSWrapSymAddrsFromDwarf(dwarf_reader_or.ValueOrDie().get());
+    if (symaddrs_or.ok()) {
+      node_tlswrap_symaddrs_map_->UpdateValue(pid, symaddrs_or.ValueOrDie());
+      return Status::OK();
+    }
+  }
+  // The executable can have only partial dwarf info. Therefore the symbol offsets might not be
+  // available. In that case, we use the default offset.
+  node_tlswrap_symaddrs_map_->UpdateValue(pid, DefaultNodeTLSWrapSymAddrs());
   return Status::OK();
 }
 
@@ -313,7 +324,7 @@ StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(uint32_t pid) {
     return 0;
   }
 
-  PL_RETURN_IF_ERROR(UpdateNodeTLSWrapSymAddrs(pid));
+  PL_RETURN_IF_ERROR(UpdateNodeTLSWrapSymAddrs(pid, host_proc_exe));
 
   // These probes are attached on OpenSSL dynamic library (if present) as well.
   // Here they are attached on statically linked OpenSSL library (eg. for node).

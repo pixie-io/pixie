@@ -644,7 +644,9 @@ Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t 
 
   // Used to determine the implementation type.
   PL_ASSIGN_OR_RETURN(const StructMemberInfo tab_mem_info,
-                      dwarf_reader_->GetStructMemberInfo(kGolangInterfaceTypeName, "tab"));
+                      dwarf_reader_->GetStructMemberInfo(kGolangInterfaceTypeName,
+                                                         llvm::dwarf::DW_TAG_structure_type, "tab",
+                                                         llvm::dwarf::DW_TAG_member));
 
   std::string iface_tab_var_name = absl::StrCat(var_name, kIfaceTabSuffix);
   ir::physical::ScalarVariable* iface_tab_var =
@@ -655,7 +657,9 @@ Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t 
 
   // Used to copy the content of the implementation variable.
   PL_ASSIGN_OR_RETURN(const StructMemberInfo data_mem_info,
-                      dwarf_reader_->GetStructMemberInfo(kGolangInterfaceTypeName, "data"));
+                      dwarf_reader_->GetStructMemberInfo(kGolangInterfaceTypeName,
+                                                         llvm::dwarf::DW_TAG_structure_type, "data",
+                                                         llvm::dwarf::DW_TAG_member));
 
   std::string iface_data_var_name = absl::StrCat(var_name, kIfaceDataSuffix);
   ir::physical::ScalarVariable* iface_data_var = AddVariable<ScalarVariable>(
@@ -850,8 +854,10 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
     }
 
     std::string_view field_name = *iter;
-    PL_ASSIGN_OR_RETURN(StructMemberInfo member_info,
-                        dwarf_reader_->GetStructMemberInfo(type_info.type_name, field_name));
+    PL_ASSIGN_OR_RETURN(
+        StructMemberInfo member_info,
+        dwarf_reader_->GetStructMemberInfo(type_info.type_name, llvm::dwarf::DW_TAG_structure_type,
+                                           field_name, llvm::dwarf::DW_TAG_member));
     offset += member_info.offset;
     type_info = std::move(member_info.type_info);
     absl::StrAppend(&name, kDotStr, field_name);

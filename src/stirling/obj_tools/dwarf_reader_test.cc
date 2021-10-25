@@ -100,9 +100,12 @@ TEST_P(DwarfReaderTest, CppGetStructMemberInfo) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
                        DwarfReader::Create(kCppBinaryPath, p.index));
 
-  EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberInfo("ABCStruct32", "b"),
-                   (StructMemberInfo{4, TypeInfo{VarType::kBaseType, "int"}}));
-  EXPECT_NOT_OK(dwarf_reader->GetStructMemberInfo("ABCStruct32", "bogus"));
+  EXPECT_OK_AND_EQ(
+      dwarf_reader->GetStructMemberInfo("ABCStruct32", llvm::dwarf::DW_TAG_structure_type, "b",
+                                        llvm::dwarf::DW_TAG_member),
+      (StructMemberInfo{4, TypeInfo{VarType::kBaseType, "int"}}));
+  EXPECT_NOT_OK(dwarf_reader->GetStructMemberInfo("ABCStruct32", llvm::dwarf::DW_TAG_structure_type,
+                                                  "bogus", llvm::dwarf::DW_TAG_member));
 }
 
 TEST_P(DwarfReaderTest, GoGetStructMemberInfo) {
@@ -110,9 +113,12 @@ TEST_P(DwarfReaderTest, GoGetStructMemberInfo) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
                        DwarfReader::Create(kGo1_16BinaryPath, p.index));
 
-  EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberInfo("main.Vertex", "Y"),
-                   (StructMemberInfo{8, TypeInfo{VarType::kBaseType, "float64"}}));
-  EXPECT_NOT_OK(dwarf_reader->GetStructMemberInfo("main.Vertex", "bogus"));
+  EXPECT_OK_AND_EQ(
+      dwarf_reader->GetStructMemberInfo("main.Vertex", llvm::dwarf::DW_TAG_structure_type, "Y",
+                                        llvm::dwarf::DW_TAG_member),
+      (StructMemberInfo{8, TypeInfo{VarType::kBaseType, "float64"}}));
+  EXPECT_NOT_OK(dwarf_reader->GetStructMemberInfo("main.Vertex", llvm::dwarf::DW_TAG_structure_type,
+                                                  "bogus", llvm::dwarf::DW_TAG_member));
 }
 
 TEST_P(DwarfReaderTest, CppGetStructMemberOffset) {

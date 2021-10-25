@@ -569,32 +569,31 @@ StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(const std::filesystem::path&
       return error::Internal("Unsupported openssl_fix_sub_version: $0", openssl_fix_sub_version);
   }
 
+  // Using GDB to confirm member offsets on OpenSSL 1.1.1:
+  // (gdb) p s
+  // $18 = (SSL *) 0x55ea646953c0
+  // (gdb) p &s.rbio
+  // $22 = (BIO **) 0x55ea646953d0
+  // (gdb) p s.rbio
+  // $23 = (BIO *) 0x55ea64698b10
+  // (gdb) p &s.rbio.num
+  // $24 = (int *) 0x55ea64698b40
+  // (gdb) p s.rbio.num
+  // $25 = 3
+  // (gdb) p &s.wbio
+  // $26 = (BIO **) 0x55ea646953d8
+  // (gdb) p s.wbio
+  // $27 = (BIO *) 0x55ea64698b10
+  // (gdb) p &s.wbio.num
+  // $28 = (int *) 0x55ea64698b40
+  // (gdb) p s.wbio.num
   return symaddrs;
 }
 
-// Appendix: Using GDB to confirm member offsets on OpenSSL 1.1.1:
-// (gdb) p s
-// $18 = (SSL *) 0x55ea646953c0
-// (gdb) p &s.rbio
-// $22 = (BIO **) 0x55ea646953d0
-// (gdb) p s.rbio
-// $23 = (BIO *) 0x55ea64698b10
-// (gdb) p &s.rbio.num
-// $24 = (int *) 0x55ea64698b40
-// (gdb) p s.rbio.num
-// $25 = 3
-// (gdb) p &s.wbio
-// $26 = (BIO **) 0x55ea646953d8
-// (gdb) p s.wbio
-// $27 = (BIO *) 0x55ea64698b10
-// (gdb) p &s.wbio.num
-// $28 = (int *) 0x55ea64698b40
-// (gdb) p s.wbio.num
-
-StatusOr<struct node_tlswrap_symaddrs_t> NodeTLSWrapSymAddrs() {
+struct node_tlswrap_symaddrs_t DefaultNodeTLSWrapSymAddrs() {
   // This works for version from 15.0 to 16.9 as tested. Versions newer than 16.9 should still be
   // compatible, but requires testing.
-  struct node_tlswrap_symaddrs_t symaddrs = {
+  return {
       .TLSWrap_StreamListener_offset = 0x78,
       .StreamListener_stream_offset = 0x08,
       .StreamBase_StreamResource_offset = 0x00,
@@ -603,6 +602,32 @@ StatusOr<struct node_tlswrap_symaddrs_t> NodeTLSWrapSymAddrs() {
       .uv_stream_s_io_watcher_offset = 0x88,
       .uv__io_s_fd_offset = 0x30,
   };
+}
+
+StatusOr<struct node_tlswrap_symaddrs_t> NodeTLSWrapSymAddrsFromDwarf(DwarfReader* dwarf_reader) {
+  struct node_tlswrap_symaddrs_t symaddrs = {};
+
+  PL_ASSIGN_OR_RETURN(symaddrs.TLSWrap_StreamListener_offset,
+                      dwarf_reader->GetClassParentOffset("TLSWrap", "StreamListener"));
+
+  PL_ASSIGN_OR_RETURN(symaddrs.StreamListener_stream_offset,
+                      dwarf_reader->GetClassMemberOffset("StreamListener", "stream_"));
+
+  PL_ASSIGN_OR_RETURN(symaddrs.StreamBase_StreamResource_offset,
+                      dwarf_reader->GetClassParentOffset("StreamBase", "StreamResource"));
+
+  PL_ASSIGN_OR_RETURN(symaddrs.LibuvStreamWrap_StreamBase_offset,
+                      dwarf_reader->GetClassParentOffset("LibuvStreamWrap", "StreamBase"));
+
+  PL_ASSIGN_OR_RETURN(symaddrs.LibuvStreamWrap_stream_offset,
+                      dwarf_reader->GetClassMemberOffset("LibuvStreamWrap", "stream_"));
+
+  PL_ASSIGN_OR_RETURN(symaddrs.uv_stream_s_io_watcher_offset,
+                      dwarf_reader->GetStructMemberOffset("uv_stream_s", "io_watcher"));
+
+  PL_ASSIGN_OR_RETURN(symaddrs.uv__io_s_fd_offset,
+                      dwarf_reader->GetStructMemberOffset("uv__io_s", "fd"));
+
   return symaddrs;
 }
 

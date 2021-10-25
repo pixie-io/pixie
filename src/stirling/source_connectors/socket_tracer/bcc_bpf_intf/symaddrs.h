@@ -215,13 +215,15 @@ struct node_tlswrap_symaddrs_t {
   int32_t TLSWrap_StreamListener_offset;
 
   // Offset of the stream_ member variable of StreamListener class.
-  // stream_ member variable is a StreamResource pointer, which is actually a LibuvStreamWrap object
+  // stream_ member variable is a StreamResource pointer, which points to a LibuvStreamWrap object
   int32_t StreamListener_stream_offset;
 
   // Offset of StreamResource base class of StreamBase class.
+  // class StreamBase : public class StreamResource {...};
   int32_t StreamBase_StreamResource_offset;
 
   // Offset of StreamBase base class of LibuvStreamWrap class.
+  // class LibuvStreamWrap : public class StreamBase {...};
   int32_t LibuvStreamWrap_StreamBase_offset;
 
   // Offset of stream_ member variable of LibuvStreamWrap class.

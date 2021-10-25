@@ -294,7 +294,7 @@ StatusOr<DWARFDie> DwarfReader::GetMatchingDIE(std::string_view name,
     return error::Internal("Could not locate symbol name=$0", name);
   }
   if (dies.size() > 1) {
-    return error::Internal("Found too many DIE matches.");
+    return error::Internal("Found $0 matches, expect only 1.", dies.size());
   }
 
   return dies.front();
@@ -333,7 +333,11 @@ StatusOr<SimpleBlock> DecodeSimpleBlock(const llvm::ArrayRef<uint8_t>& block) {
 }
 
 StatusOr<uint64_t> GetMemberOffset(const DWARFDie& die) {
-  DCHECK(die.getTag() == llvm::dwarf::DW_TAG_member);
+  DCHECK(
+      // Members, eg: member functions and variables in C++.
+      die.getTag() == llvm::dwarf::DW_TAG_member ||
+      // Parent class inherited from.
+      die.getTag() == llvm::dwarf::DW_TAG_inheritance);
 
   const char* die_short_name = die.getName(llvm::DINameKind::ShortName);
 
@@ -375,6 +379,14 @@ StatusOr<DWARFDie> GetTypeAttribute(const DWARFDie& die) {
   return die.getAttributeValueAsReferencedDie(type_attr);
 }
 
+std::string_view GetTypeName(const DWARFDie& die) {
+  auto die_or = GetTypeAttribute(die);
+  if (die_or.ok()) {
+    return GetShortName(die_or.ValueOrDie());
+  }
+  return {};
+}
+
 // Recursively resolve the type of the input DIE until reaching a leaf type that has no further
 // alias.
 StatusOr<DWARFDie> GetTypeDie(const DWARFDie& die) {
@@ -400,17 +412,25 @@ VarType GetType(const DWARFDie& die) {
       return VarType::kClass;
     case llvm::dwarf::DW_TAG_structure_type:
       return VarType::kStruct;
+    case llvm::dwarf::DW_TAG_const_type: {
+      auto type_die_or = GetTypeDie(die);
+      if (!type_die_or.ok()) {
+        return VarType::kUnspecified;
+      }
+      return GetType(type_die_or.ValueOrDie());
+    }
     default:
       return VarType::kUnspecified;
   }
 }
 
-StatusOr<std::string> GetTypeName(const DWARFDie& die) {
+// Returns the name of the DIE, it could be type name, member name, inheritance name etc.
+// DIE name is loosely defined such that the name is used to lookup and is easier for caller to
+// specify.
+StatusOr<std::string> GetDieName(const DWARFDie& die) {
   DCHECK(die.isValid());
 
   switch (die.getTag()) {
-    case llvm::dwarf::DW_TAG_subroutine_type:
-      return std::string("func");
     case llvm::dwarf::DW_TAG_pointer_type: {
       std::string type_name(GetShortName(die));
 
@@ -426,11 +446,15 @@ StatusOr<std::string> GetTypeName(const DWARFDie& die) {
     case llvm::dwarf::DW_TAG_class_type:
     case llvm::dwarf::DW_TAG_structure_type:
     case llvm::dwarf::DW_TAG_typedef:
+    case llvm::dwarf::DW_TAG_subroutine_type:
+    case llvm::dwarf::DW_TAG_member:
       return std::string(GetShortName(die));
+    case llvm::dwarf::DW_TAG_inheritance:
+    case llvm::dwarf::DW_TAG_const_type:
+      return std::string(GetTypeName(die));
     default:
-      return error::Internal(absl::Substitute(
-          "Could not get the type name of the input DIE, because of unexpected DIE type: $0",
-          magic_enum::enum_name(die.getTag())));
+      return error::Internal(
+          "Could not get the name of the input DIE, because of unexpected tag, DIE: $0", Dump(die));
   }
 }
 
@@ -438,7 +462,7 @@ StatusOr<TypeInfo> GetTypeInfo(const DWARFDie& die, const DWARFDie& type_die) {
   TypeInfo type_info;
 
   PL_ASSIGN_OR_RETURN(DWARFDie decl_type_die, GetTypeAttribute(die));
-  PL_ASSIGN_OR_RETURN(type_info.decl_type, GetTypeName(decl_type_die));
+  PL_ASSIGN_OR_RETURN(type_info.decl_type, GetDieName(decl_type_die));
 
   type_info.type = GetType(type_die);
 
@@ -448,9 +472,15 @@ StatusOr<TypeInfo> GetTypeInfo(const DWARFDie& die, const DWARFDie& type_die) {
         Dump(type_die));
   }
 
-  PL_ASSIGN_OR_RETURN(type_info.type_name, GetTypeName(type_die));
+  PL_ASSIGN_OR_RETURN(type_info.type_name, GetDieName(type_die));
 
   return type_info;
+}
+
+StatusOr<DWARFFormValue> GetDieAttribute(const DWARFDie& die, llvm::dwarf::Attribute attribute) {
+  return AdaptLLVMOptional(die.find(attribute),
+                           absl::Substitute("Could not find attribute $0 in DIE $1",
+                                            magic_enum::enum_name(attribute), GetShortName(die)));
 }
 
 StatusOr<uint64_t> GetBaseOrStructTypeByteSize(const DWARFDie& die) {
@@ -458,9 +488,7 @@ StatusOr<uint64_t> GetBaseOrStructTypeByteSize(const DWARFDie& die) {
          (die.getTag() == llvm::dwarf::DW_TAG_structure_type));
 
   PL_ASSIGN_OR_RETURN(const DWARFFormValue& byte_size_attr,
-                      AdaptLLVMOptional(die.find(llvm::dwarf::DW_AT_byte_size),
-                                        absl::Substitute("Could not find DW_AT_byte_size [die=$0].",
-                                                         GetShortName(die))));
+                      GetDieAttribute(die, llvm::dwarf::DW_AT_byte_size));
 
   PL_ASSIGN_OR_RETURN(uint64_t byte_size,
                       AdaptLLVMOptional(byte_size_attr.getAsUnsignedConstant(),
@@ -530,15 +558,25 @@ StatusOr<bool> IsGolangRetArg(const DWARFDie& die) {
   return (val == 0x01);
 }
 
-std::vector<DWARFDie> GetMemberDIEs(const DWARFDie& struct_die) {
-  std::vector<DWARFDie> member_dies;
-  for (const auto& die : struct_die.children()) {
-    if (die.getTag() != llvm::dwarf::DW_TAG_member) {
+// Returns the list of DIEs of the children of the input die and matches the filter_tag.
+std::vector<DWARFDie> GetChildDIEs(const DWARFDie& die, llvm::dwarf::Tag filter_tag) {
+  std::vector<DWARFDie> child_dies;
+  for (const auto& die : die.children()) {
+    if (die.getTag() != filter_tag) {
       continue;
     }
-    member_dies.push_back(die);
+    child_dies.push_back(die);
   }
-  return member_dies;
+  return child_dies;
+}
+
+bool IsDeclaration(const llvm::DWARFDie& die) {
+  auto value_or = GetDieAttribute(die, llvm::dwarf::DW_AT_declaration);
+  if (value_or.ok()) {
+    DCHECK(value_or.ValueOrDie().getForm() == llvm::dwarf::DW_FORM_flag_present)
+        << "DW_AT_declaration should be of DW_FORM_flag_present. DIE: " << Dump(die);
+  }
+  return value_or.ok();
 }
 
 }  // namespace
@@ -551,23 +589,42 @@ StatusOr<uint64_t> DwarfReader::GetStructByteSize(std::string_view struct_name) 
 }
 
 StatusOr<StructMemberInfo> DwarfReader::GetStructMemberInfo(std::string_view struct_name,
-                                                            std::string_view member_name) {
+                                                            llvm::dwarf::Tag tag,
+                                                            std::string_view member_name,
+                                                            llvm::dwarf::Tag member_tag) {
   StructMemberInfo member_info;
 
-  PL_ASSIGN_OR_RETURN(const DWARFDie& struct_die,
-                      GetMatchingDIE(struct_name, llvm::dwarf::DW_TAG_structure_type));
+  PL_ASSIGN_OR_RETURN(std::vector<DWARFDie> dies, GetMatchingDIEs(struct_name, {tag}));
 
-  for (const auto& die : GetMemberDIEs(struct_die)) {
-    if (GetShortName(die) != member_name) {
+  const DWARFDie* struct_def_die = nullptr;
+
+  for (const auto& die : dies) {
+    if (IsDeclaration(die)) {
+      // Declaration DIE does not include the member DIEs.
       continue;
     }
+    struct_def_die = &die;
+  }
+
+  if (struct_def_die == nullptr) {
+    return error::NotFound("No definition of DIE found for name $0 and tag $1", struct_name,
+                           magic_enum::enum_name(tag));
+  }
+
+  for (const auto& die : GetChildDIEs(*struct_def_die, member_tag)) {
+    PL_ASSIGN_OR(std::string die_name, GetDieName(die), continue);
+
+    if (die_name != member_name) {
+      continue;
+    }
+
     PL_ASSIGN_OR_RETURN(member_info.offset, GetMemberOffset(die));
     PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
     PL_ASSIGN_OR_RETURN(member_info.type_info, GetTypeInfo(die, type_die));
     return member_info;
   }
 
-  return error::Internal("Could not find member.");
+  return error::Internal("Could not find member $0 in struct $1.", member_name, struct_name);
 }
 
 StatusOr<std::vector<StructSpecEntry>> DwarfReader::GetStructSpec(std::string_view struct_name) {

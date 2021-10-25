@@ -57,7 +57,13 @@ StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(const std::filesystem::path&
  * Detects the version of node executable, and returns the locations of all relevant symbols for
  * OpenSSL uprobe deployment.
  */
-StatusOr<struct node_tlswrap_symaddrs_t> NodeTLSWrapSymAddrs();
+StatusOr<struct node_tlswrap_symaddrs_t> NodeTLSWrapSymAddrsFromDwarf(
+    obj_tools::DwarfReader* dwarf_reader);
+
+/**
+ * Returns a default symbol addresses.
+ */
+struct node_tlswrap_symaddrs_t DefaultNodeTLSWrapSymAddrs();
 
 }  // namespace stirling
 }  // namespace px

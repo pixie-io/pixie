@@ -391,7 +391,7 @@ class UProbeManager {
                                const std::vector<int32_t>& pids);
   Status UpdateGoTLSSymAddrs(obj_tools::ElfReader* elf_reader, obj_tools::DwarfReader* dwarf_reader,
                              const std::vector<int32_t>& pids);
-  Status UpdateNodeTLSWrapSymAddrs(int32_t pid);
+  Status UpdateNodeTLSWrapSymAddrs(int32_t pid, const std::filesystem::path& exe);
 
   // Clean-up various BPF maps used to communicate symbol addresses per PID.
   // Once the PID has terminated, the information is not required anymore.
