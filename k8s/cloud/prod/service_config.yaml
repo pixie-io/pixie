@@ -1,3 +1,4 @@
+---
 # Lists of referenceable services.
 apiVersion: v1
 kind: ConfigMap

@@ -1,4 +1,5 @@
 ---
 short: Kafka producer-consumer latency
 long: >
-  Shows the producer-consumer latency for a given topic. Values above 0 indicate that the consumer is falling behind the producer.
+  Shows the producer-consumer latency for a given topic.
+  Values above 0 indicate that the consumer is falling behind the producer.

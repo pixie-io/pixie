@@ -226,8 +226,7 @@
       ],
       "exclude": [
         "(^demos/)",
-        "(^k8s/operator/helm/crds/olm_crd.yaml$)",
-        "(^k8s/operator/helm/templates)"
+        "(^k8s/operator/helm/)"
       ]
     }
   }
