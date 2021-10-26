@@ -22,3 +22,5 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: PL_VIZIER_NAME
+          value: "{{ .Values.name }}"

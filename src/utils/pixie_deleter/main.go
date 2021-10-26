@@ -32,6 +32,7 @@ import (
 
 func init() {
 	pflag.String("namespace", "pl", "The namespace this job runs in.")
+	pflag.String("vizier_name", "pixie", "The name of the vizier CRD.")
 }
 
 func main() {
@@ -43,6 +44,7 @@ func main() {
 	viper.BindPFlags(pflag.CommandLine)
 
 	ns := viper.GetString("namespace")
+	vzName := viper.GetString("vizier_name")
 
 	kubeConfig, err := rest.InClusterConfig()
 	if err != nil {
@@ -50,22 +52,41 @@ func main() {
 	}
 	clientset := k8s.GetClientset(kubeConfig)
 
-	labelSelector := metav1.FormatLabelSelector(&metav1.LabelSelector{
-		MatchExpressions: []metav1.LabelSelectorRequirement{
-			metav1.LabelSelectorRequirement{
-				Key:      "app",
-				Operator: metav1.LabelSelectorOpIn,
-				Values:   []string{"pl-monitoring"},
-			},
-		},
-	})
-
 	od := k8s.ObjectDeleter{
 		Namespace:  ns,
 		Clientset:  clientset,
 		RestConfig: kubeConfig,
 		Timeout:    2 * time.Minute,
 	}
+
+	// First delete non-bootstrap items. For example, avoid clusterrole objects as these may prevent following deletes from going through.
+	vzNameLabelSelector := metav1.FormatLabelSelector(&metav1.LabelSelector{
+		MatchExpressions: []metav1.LabelSelectorRequirement{
+			metav1.LabelSelectorRequirement{
+				Key:      "vizier-name",
+				Operator: metav1.LabelSelectorOpIn,
+				Values:   []string{vzName},
+			},
+			metav1.LabelSelectorRequirement{
+				Key:      "vizier-bootstrap",
+				Operator: metav1.LabelSelectorOpNotIn,
+				Values:   []string{"true"},
+			},
+		},
+	})
+
+	_, _ = od.DeleteByLabel(vzNameLabelSelector)
+
+	// Delete clusterrole objects.
+	labelSelector := metav1.FormatLabelSelector(&metav1.LabelSelector{
+		MatchExpressions: []metav1.LabelSelectorRequirement{
+			metav1.LabelSelectorRequirement{
+				Key:      "vizier-name",
+				Operator: metav1.LabelSelectorOpIn,
+				Values:   []string{vzName},
+			},
+		},
+	})
 
 	_, _ = od.DeleteByLabel(labelSelector)
 }
