@@ -135,6 +135,7 @@ def service_slow_requests(start_time: str, service: px.Service):
     requests = df.merge(quantiles, left_on='service', right_on='service', how='inner',
                         suffixes=['', '_x'])
     requests = requests[requests.latency >= px.floor(requests.service_p99)]
+
     return requests[['time_', 'pod', 'latency', 'req_method',
                      'req_path', 'req_body', 'resp_status',
                      'remote_addr', 'remote_port',
@@ -150,6 +151,9 @@ def let_helper(start_time: str):
 
     '''
     df = px.DataFrame(table='http_events', start_time=start_time)
+    # Filter only to inbound service traffic (server-side).
+    # Don't include traffic initiated by this service to an external location.
+    df = df[df.trace_role == 2]
     df.service = df.ctx['service']
     df.pod = df.ctx['pod']
     df.latency = df.latency

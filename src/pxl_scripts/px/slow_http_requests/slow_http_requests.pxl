@@ -29,15 +29,16 @@ ns_per_ms = 1000 * 1000
 def namespace_slow_requests(start_time: str, namespace: px.Namespace):
     df = px.DataFrame(table='http_events', start_time=start_time)
     df.service = df.ctx['service']
-    df.pod = df.ctx['pod_name']
     df = df[df.ctx['namespace'] == namespace and df.service != '']
-    df.latency = df.latency
+    df = add_source_dest_columns(df)
+    df = add_source_dest_links(df, start_time)
+
     filter_out_conds = (((df.req_path != '/healthz' or not filter_health_checks) and (
         df.req_path != '/readyz' or not filter_ready_checks)) and (
         df['remote_addr'] != '-' or not filter_unresolved_inbound)) and (
         df.latency > 100 * ns_per_ms)
-
     df = df[filter_out_conds]
+
     quantiles = df.groupby('service').agg(
         latency_quantiles=('latency', px.quantiles)
     )
@@ -46,6 +47,79 @@ def namespace_slow_requests(start_time: str, namespace: px.Namespace):
     requests = df.merge(quantiles, left_on='service', right_on='service', how='inner',
                         suffixes=['', '_x'])
     requests = requests[requests.latency >= px.floor(requests.service_p99)]
-    return requests[['time_', 'service', 'pod', 'latency', 'req_method',
-                     'req_path', 'resp_status', 'remote_addr', 'remote_port',
-                     'resp_body']].head(1000)
+    return requests[['time_', 'source', 'destination', 'remote_port', 'latency', 'req_method',
+                     'req_path', 'resp_status', 'resp_body']].head(1000)
+
+
+def add_source_dest_columns(df):
+    ''' Add source and destination columns.
+
+    Connections are traced server-side (trace_role==2), unless the server is outside
+    of the cluster in which case the connection is traced client-side (trace_role==1).
+
+    With trace_role==2: source is the `remote_addr` col, destination is the `pod` col.
+    With trace_role==1: source is the `pod` col, destination is the `remote_addr` col.
+
+    Input DataFrame must contain trace_role, upid, remote_addr columns.
+    '''
+    df.pod = df.ctx['pod']
+    df.namespace = df.ctx['namespace']
+
+    # If remote_addr is a pod, get its name. If not, use IP address.
+    df.ra_pod = px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_addr))
+    df.is_ra_pod = df.ra_pod != ''
+    df.ra_name = px.select(df.is_ra_pod, df.ra_pod, df.remote_addr)
+
+    df.is_server_tracing = df.trace_role == 2
+    df.is_source_pod_type = px.select(df.is_server_tracing, df.is_ra_pod, True)
+    df.is_dest_pod_type = px.select(df.is_server_tracing, True, df.is_ra_pod)
+
+    # Set source and destination based on trace_role.
+    df.source = px.select(df.is_server_tracing, df.ra_name, df.pod)
+    df.destination = px.select(df.is_server_tracing, df.pod, df.ra_name)
+
+    # Filter out messages with empty source / destination.
+    df = df[df.source != '']
+    df = df[df.destination != '']
+
+    df = df.drop(['ra_pod', 'is_ra_pod', 'ra_name', 'is_server_tracing'])
+
+    return df
+
+
+def add_source_dest_links(df, start_time: str):
+    ''' Modifies the source and destination columns to display deeplinks in the UI.
+    Clicking on a pod name in either column will run the px/pod script for that pod.
+    Clicking on an IP address, will run the px/ip script showing all network connections
+    to/from that IP address.
+
+    Input DataFrame must contain source, destination, is_source_pod_type,
+    is_dest_pod_type, and namespace columns.
+    '''
+
+    # Source linking. If source is a pod, link to px/pod. If an IP addr, link to px/net_flow_graph.
+    df.src_pod_link = px.script_reference(df.source, 'px/pod', {
+        'start_time': start_time,
+        'pod': df.source
+    })
+    df.src_link = px.script_reference(df.source, 'px/ip', {
+        'start_time': start_time,
+        'ip': df.source,
+    })
+    df.source = px.select(df.is_source_pod_type, df.src_pod_link, df.src_link)
+
+    # If destination is a pod, link to px/pod. If an IP addr, link to px/net_flow_graph.
+    df.dest_pod_link = px.script_reference(df.destination, 'px/pod', {
+        'start_time': start_time,
+        'pod': df.destination
+    })
+    df.dest_link = px.script_reference(df.destination, 'px/ip', {
+        'start_time': start_time,
+        'ip': df.destination,
+    })
+    df.destination = px.select(df.is_dest_pod_type, df.dest_pod_link, df.dest_link)
+
+    df = df.drop(['src_pod_link', 'src_link', 'is_source_pod_type', 'dest_pod_link',
+                  'dest_link', 'is_dest_pod_type'])
+
+    return df

@@ -64,6 +64,9 @@ def inbound_service_let(start_time: str, namespace: px.Namespace):
     # responder service.
 
     df = inbound_service_let_helper(start_time, namespace)
+    # Filter only to inbound service traffic (server-side).
+    # Don't include traffic initiated by this service to an external location.
+    df = df[df.trace_role == 2]
     df = df.groupby(['timestamp', 'service']).agg(
         latency_quantiles=('latency', px.quantiles),
         error_rate=('failure', px.mean),

@@ -305,16 +305,18 @@ def let_helper(start_time: str):
     '''
     df = px.DataFrame(table='http_events', start_time=start_time)
     df.pod = df.ctx['pod']
-    df.latency = df.latency
-
     df.timestamp = px.bin(df.time_, window_ns)
-
     df.failure = df.resp_status >= 400
+
+    # Filter only to inbound pod traffic (server-side).
+    # Don't include traffic initiated by this pod to an external location.
+    df = df[df.trace_role == 2]
+
     filter_out_conds = ((df.req_path != '/healthz' or not filter_health_checks) and (
         df.req_path != '/readyz' or not filter_ready_checks)) and (
         df['remote_addr'] != '-' or not filter_unresolved_inbound)
-
     df = df[filter_out_conds]
+
     return df
 
 
