@@ -84,13 +84,6 @@ func (s *Server) updateAuthProviderUser(authUserID string, orgID string, userID 
 	return userInfo, nil
 }
 
-func getOrgName(userInfo *UserInfo) string {
-	if userInfo.IdentityProviderOrgName != "" {
-		return userInfo.IdentityProviderOrgName
-	}
-	return userInfo.Email
-}
-
 // Login uses the AuthProvider to authenticate and login the user. Errors out if their org doesn't exist.
 func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.LoginReply, error) {
 	userID, userInfo, err := s.getUserInfoFromToken(in.AccessToken)
@@ -119,15 +112,15 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 		return nil, status.Error(codes.NotFound, "user not found, please register.")
 	}
 
-	var orgInfo *profilepb.OrgInfo
-	// If the org field is populated for the user, that means they already have an organization that they belong to.
-	// Otherwise, users can belong to an org based on their domain.
+	// All users who have logged in before will have their PLOrgID already set. However, some new users will also have PLOrgID
+	// set by the AuthProvider, but they have yet to login to Pixie and therefore the users does not exist in the profile service.
+	// This case must handle that flow as well - and hence why we propagate `newUser`.
 	if userInfo.PLOrgID != "" {
 		// If the user already belongs to an org according to the AuthProvider (userInfo),
 		// we log that user into the corresponding org.
-		orgInfo, err = pc.GetOrg(ctx, utils.ProtoFromUUIDStrOrNil(userInfo.PLOrgID))
+		orgInfo, err := pc.GetOrg(ctx, utils.ProtoFromUUIDStrOrNil(userInfo.PLOrgID))
 		if err != nil {
-			return nil, status.Errorf(codes.NotFound, "organization not found, please register, or talk to your Pixie administrator '%v'", err)
+			return nil, status.Errorf(codes.NotFound, "organization not found, please register, or contact support '%v'", err)
 		}
 
 		// We've switched over to use IdentityProviderOrgName instead of email domain to determine org membership.
@@ -136,26 +129,42 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 		if userInfo.IdentityProvider == googleIdentityProvider && userInfo.IdentityProviderOrgName == "" && userInfo.Email != orgInfo.OrgName {
 			return nil, status.Errorf(codes.PermissionDenied, "Our system found an issue with your account. Please contact support and include your email '%s' and this error in your message", userInfo.Email)
 		}
-	} else {
-		// Users can login without registering if their org already exists. If org doesn't exist, they must complete sign up flow.
-		orgInfo, err = pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: getOrgName(userInfo)})
+		return s.loginUser(ctx, userID, userInfo, orgInfo, newUser)
+	}
+
+	// This case shouldn't really happen because self-orgs (where domain == user email) should already have registered.
+	if userInfo.IdentityProviderOrgName == "" {
+		orgInfo, err := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: userInfo.Email})
 		if err != nil || orgInfo == nil {
 			return nil, status.Error(codes.NotFound, "organization not found, please register.")
 		}
+
+		return s.loginUser(ctx, userID, userInfo, orgInfo, newUser)
 	}
 
+	// Users can login without registering if their org already exists. If org doesn't exist, they must complete sign up flow.
+	orgInfo, err := s.getMatchingOrgForUser(ctx, userInfo)
+	if err != nil {
+		return nil, err
+	}
+	if orgInfo == nil {
+		return nil, status.Error(codes.NotFound, "organization not found, please register.")
+	}
+	return s.loginUser(ctx, userID, userInfo, orgInfo, newUser)
+}
+
+func (s *Server) loginUser(ctx context.Context, userID string, userInfo *UserInfo, orgInfo *profilepb.OrgInfo, newUser bool) (*authpb.LoginReply, error) {
+	var err error
 	if newUser {
 		userInfo, err = s.createUser(ctx, userID, userInfo, orgInfo.ID)
 		if err != nil {
 			return nil, err
 		}
 	}
-
-	tkn, err := s.loginUser(ctx, userInfo, orgInfo)
+	tkn, err := s.completeUserLogin(ctx, userInfo, orgInfo)
 	if err != nil {
 		return nil, err
 	}
-
 	return &authpb.LoginReply{
 		Token:       tkn.token,
 		ExpiresAt:   tkn.expiresAt.Unix(),
@@ -178,8 +187,8 @@ type token struct {
 	expiresAt time.Time
 }
 
-// loginUser does the final login steps and generates a token for the user.
-func (s *Server) loginUser(ctx context.Context, userInfo *UserInfo, orgInfo *profilepb.OrgInfo) (*token, error) {
+// completeUserLogin does the final login steps and generates a token for the user.
+func (s *Server) completeUserLogin(ctx context.Context, userInfo *UserInfo, orgInfo *profilepb.OrgInfo) (*token, error) {
 	pc := s.env.ProfileClient()
 	// Check to make sure the user is approved to login. They are default approved
 	// if the org does not EnableApprovals.
@@ -214,7 +223,7 @@ func (s *Server) loginUser(ctx context.Context, userInfo *UserInfo, orgInfo *pro
 }
 
 func (s *Server) signupUser(ctx context.Context, userInfo *UserInfo, orgInfo *profilepb.OrgInfo, newOrg bool) (*authpb.SignupReply, error) {
-	tkn, err := s.loginUser(ctx, userInfo, orgInfo)
+	tkn, err := s.completeUserLogin(ctx, userInfo, orgInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -230,6 +239,31 @@ func (s *Server) signupUser(ctx context.Context, userInfo *UserInfo, orgInfo *pr
 		},
 		OrgID: orgInfo.ID,
 	}, nil
+}
+
+func (s *Server) getMatchingOrgForUser(ctx context.Context, userInfo *UserInfo) (*profilepb.OrgInfo, error) {
+	pc := s.env.ProfileClient()
+	// Case 1: Search for an org that has a domain matching the IdentityProviderOrgName.
+	orgInfoByIponDomain, _ := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{
+		DomainName: userInfo.IdentityProviderOrgName,
+	})
+	if orgInfoByIponDomain != nil {
+		return orgInfoByIponDomain, nil
+	}
+
+	// Case 2: Search for an org that matches the email domain.
+	// Users who have an IdentityProviderOrgName might be able to join a matching domainName org.
+	emailComponents := strings.Split(userInfo.Email, "@")
+	if len(emailComponents) != 2 {
+		return nil, status.Error(codes.InvalidArgument, "bad format email received from auth")
+	}
+	domainName := emailComponents[1]
+
+	orgInfoByEmailDomain, _ := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: domainName})
+	if orgInfoByEmailDomain != nil {
+		return orgInfoByEmailDomain, nil
+	}
+	return nil, nil
 }
 
 // Signup uses the AuthProvider to authenticate and sign up the user. It autocreates the org if the org doesn't exist.
@@ -262,33 +296,17 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 		return s.signupUser(ctx, updatedUserInfo, orgInfoPb, true /* newOrg */)
 	}
 
-	// Case 2: Search for an org that has a domain matching the IdentityProviderOrgName.
-	orgInfoByIponDomain, _ := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{
-		DomainName: userInfo.IdentityProviderOrgName,
-	})
-	if orgInfoByIponDomain != nil {
-		updatedUserInfo, err := s.createUser(ctx, userID, userInfo, orgInfoByIponDomain.ID)
+	// Case 2: We go through all permutations of orgs that might exist for a user and find any that exist.
+	orgInfo, err := s.getMatchingOrgForUser(ctx, userInfo)
+	if err != nil {
+		return nil, err
+	}
+	if orgInfo != nil {
+		updatedUserInfo, err := s.createUser(ctx, userID, userInfo, orgInfo.ID)
 		if err != nil {
 			return nil, err
 		}
-		return s.signupUser(ctx, updatedUserInfo, orgInfoByIponDomain, false /* newOrg */)
-	}
-
-	// Case 3: Search for an org that matches the email domain.
-	// Users who have an IdentityProviderOrgName might be able to join a matching domainName org.
-	emailComponents := strings.Split(userInfo.Email, "@")
-	if len(emailComponents) != 2 {
-		return nil, status.Error(codes.InvalidArgument, "bad format email received from auth")
-	}
-	domainName := emailComponents[1]
-
-	orgInfoByEmailDomain, _ := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: domainName})
-	if orgInfoByEmailDomain != nil {
-		updatedUserInfo, err := s.createUser(ctx, userID, userInfo, orgInfoByEmailDomain.ID)
-		if err != nil {
-			return nil, err
-		}
-		return s.signupUser(ctx, updatedUserInfo, orgInfoByEmailDomain, false /* newOrg */)
+		return s.signupUser(ctx, updatedUserInfo, orgInfo, false /* newOrg */)
 	}
 
 	// Final case: User is the first to join and their org will be created with them.
@@ -296,11 +314,11 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 	if err != nil {
 		return nil, err
 	}
-	orgInfoPb, err := pc.GetOrg(ctx, orgID)
+	newOrgInfo, err := pc.GetOrg(ctx, orgID)
 	if err != nil {
 		return nil, err
 	}
-	return s.signupUser(ctx, updatedUserInfo, orgInfoPb, true /* newOrg */)
+	return s.signupUser(ctx, updatedUserInfo, newOrgInfo, true /* newOrg */)
 }
 
 // Creates a user as well as an org.
@@ -331,8 +349,11 @@ func (s *Server) createUserAndOrg(ctx context.Context, domainName string, orgNam
 	orgIDpb := resp.OrgID
 	userIDpb := resp.UserID
 
-	userInfo, err = s.updateAuthProviderUser(userID, utils.UUIDFromProtoOrNil(orgIDpb).String(), utils.UUIDFromProtoOrNil(userIDpb).String())
-	return userInfo, orgIDpb, err
+	updatedUserInfo, err := s.updateAuthProviderUser(userID, utils.UUIDFromProtoOrNil(orgIDpb).String(), utils.UUIDFromProtoOrNil(userIDpb).String())
+	if err != nil {
+		return nil, nil, err
+	}
+	return updatedUserInfo, orgIDpb, nil
 }
 
 // Creates a user for the orgID.
@@ -537,7 +558,6 @@ func (s *Server) CreateOrgAndInviteUser(ctx context.Context, req *authpb.CreateO
 		return nil, fmt.Errorf("error while creating identity for '%s': %v", req.User.Email, err)
 	}
 
-	// TODO(philkuz) GetUserInfo instead of filling out the UserInfo struct.
 	_, _, err = s.createUserAndOrg(ctx, req.Org.DomainName, req.Org.OrgName, ident.AuthProviderID, &UserInfo{
 		Email:            req.User.Email,
 		FirstName:        req.User.FirstName,
