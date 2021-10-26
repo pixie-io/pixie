@@ -1,3 +1,4 @@
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -9,9 +10,9 @@ metadata:
 spec:
   type: NodePort
   ports:
-    - port: 51600
-      protocol: TCP
-      targetPort: 51600
-      name: tcp-http2
+  - port: 51600
+    protocol: TCP
+    targetPort: 51600
+    name: tcp-http2
   selector:
     name: vzconn-server

@@ -34,7 +34,7 @@ spec:
         - ReadWriteOnce
         resources:
           requests:
-            storage: 0Gi # this is replaced by version specific patches
+            storage: 0Gi  # this is replaced by version specific patches
   - name: data
     count: 4
     config:
@@ -76,4 +76,4 @@ spec:
         - ReadWriteOnce
         resources:
           requests:
-            storage: 0Gi # this is replaced by version specific patches
+            storage: 0Gi  # this is replaced by version specific patches

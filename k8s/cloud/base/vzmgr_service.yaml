@@ -1,3 +1,4 @@
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -6,9 +7,9 @@ spec:
   type: ClusterIP
   clusterIP: None
   ports:
-    - port: 51800
-      protocol: TCP
-      targetPort: 51800
-      name: tcp-http2
+  - port: 51800
+    protocol: TCP
+    targetPort: 51800
+    name: tcp-http2
   selector:
     name: vzmgr-server

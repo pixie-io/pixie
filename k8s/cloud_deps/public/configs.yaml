@@ -2,40 +2,40 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-    name: pl-announcement-config
+  name: pl-announcement-config
 data:
-    # Flip this flag to enable announce kit for changelogs, release notes etc.
-    ANNOUNCEMENT_ENABLED: "false"
-    # The URL for the announce kit widget.
-    ANNOUNCE_WIDGET_URL: ""
+  # Flip this flag to enable announce kit for changelogs, release notes etc.
+  ANNOUNCEMENT_ENABLED: "false"
+  # The URL for the announce kit widget.
+  ANNOUNCE_WIDGET_URL: ""
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-    name: pl-ld-config
+  name: pl-ld-config
 data:
-    # Set this key to enable launchdarkly to gate development features.
-    PL_LD_CLIENT_ID: ""
+  # Set this key to enable launchdarkly to gate development features.
+  PL_LD_CLIENT_ID: ""
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-    name: pl-oauth-config
+  name: pl-oauth-config
 data:
-    # Currently supported options are hydra and auth0.
-    # Hydra is the easiest option to get started with.
-    PL_OAUTH_PROVIDER: hydra
-    PL_AUTH_URI: oauth/hydra/oauth2/auth
-    PL_AUTH_CLIENT_ID: auth-code-client
+  # Currently supported options are hydra and auth0.
+  # Hydra is the easiest option to get started with.
+  PL_OAUTH_PROVIDER: hydra
+  PL_AUTH_URI: oauth/hydra/oauth2/auth
+  PL_AUTH_CLIENT_ID: auth-code-client
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-    name: segment-config
+  name: segment-config
 data:
-    write-key: ""
-    ui-write-key: ""
-    cli-write-key: ""
+  write-key: ""
+  ui-write-key: ""
+  cli-write-key: ""
 ---
 apiVersion: v1
 kind: ConfigMap

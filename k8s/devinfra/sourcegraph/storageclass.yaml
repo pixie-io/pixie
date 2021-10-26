@@ -7,5 +7,5 @@ metadata:
     deploy: sourcegraph
 provisioner: kubernetes.io/gce-pd
 parameters:
-  type: pd-ssd # This configures SSDs (recommended).
+  type: pd-ssd  # This configures SSDs (recommended).
 reclaimPolicy: Retain

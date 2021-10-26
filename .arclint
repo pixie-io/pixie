@@ -221,10 +221,13 @@
       "script-and-regex.regex": "/^(?P<file>.*):(?P<line>\\d+):(?P<char>\\d+): \\[(?P<severity>warning|error)\\] (?P<message>.*) \\((?P<name>.*)\\)$/m",
       "include": [
         "(\\.yml$)",
-        "(\\.yaml$)"
+        "(\\.yaml$)",
+        "(^.yamllint$)"
       ],
       "exclude": [
-        "(^demos/)"
+        "(^demos/)",
+        "(^k8s/operator/helm/crds/olm_crd.yaml$)",
+        "(^k8s/operator/helm/templates)"
       ]
     }
   }
