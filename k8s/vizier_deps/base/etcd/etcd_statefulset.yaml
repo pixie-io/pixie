@@ -68,6 +68,7 @@ spec:
           name: client
         - containerPort: 2380
           name: server
+        # yamllint disable
         command:
         - /bin/sh
         - -ec
@@ -203,7 +204,7 @@ spec:
               --max-snapshots 1 \
               --quota-backend-bytes 8589934592 \
               --snapshot-count 5000
-
+        # yamllint enable
         env:
         - name: INITIAL_CLUSTER_SIZE
           value: '3'
@@ -225,8 +226,10 @@ spec:
             command:
             - /bin/sh
             - -ec
-            - etcdctl --endpoints=https://localhost:2379 --cert=/etc/etcdtls/client/etcd-tls/etcd-client.crt
-              --key=/etc/etcdtls/client/etcd-tls/etcd-client.key --cacert=/etc/etcdtls/client/etcd-tls/etcd-client-ca.crt
+            - etcdctl --endpoints=https://localhost:2379
+              --cert=/etc/etcdtls/client/etcd-tls/etcd-client.crt
+              --key=/etc/etcdtls/client/etcd-tls/etcd-client.key
+              --cacert=/etc/etcdtls/client/etcd-tls/etcd-client-ca.crt
               endpoint status
           failureThreshold: 3
           initialDelaySeconds: 1
@@ -245,6 +248,7 @@ spec:
         lifecycle:
           preStop:
             exec:
+              # yamllint disable
               command:
               - /bin/sh
               - -ec
@@ -284,6 +288,7 @@ spec:
                     rm -rf /var/run/etcd/*
                   fi
                 fi
+              # yamllint enable
       volumes:
       - name: member-peer-tls
         secret:
