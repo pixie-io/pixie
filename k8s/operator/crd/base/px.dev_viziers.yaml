@@ -1,3 +1,4 @@
+
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -59,6 +60,17 @@ spec:
                 - Full
                 - Restricted
                 type: string
+              dataCollectorParams:
+                description: DataCollectorParams specifies the set of params for configuring
+                  the dataCollector. If no params are specified, defaults are used.
+                properties:
+                  datastreamBufferSize:
+                    description: DatastreamBufferSize is the data buffer size per
+                      connection. Default size is 1 Mbyte. For high-throughput applications,
+                      try increasing this number if experiencing data loss.
+                    format: int32
+                    type: integer
+                type: object
               deployKey:
                 description: DeployKey is the deploy key associated with the Vizier
                   instance. This is used to link the Vizier to a specific user/org.

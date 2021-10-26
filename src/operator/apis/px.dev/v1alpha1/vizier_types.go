@@ -63,6 +63,8 @@ type VizierSpec struct {
 	// DataAccess defines the level of data that may be accesssed when executing a script on the cluster. If none specified,
 	// assumes full data access.
 	DataAccess DataAccessLevel `json:"dataAccess,omitempty"`
+	// DataCollectorParams specifies the set of params for configuring the dataCollector. If no params are specified, defaults are used.
+	DataCollectorParams *DataCollectorParams `json:"dataCollectorParams,omitempty"`
 }
 
 // DataAccessLevel defines the levels of data access that can be used when executing a script on a cluster.
@@ -155,6 +157,13 @@ type PodPolicy struct {
 	// Resources is the resource requirements for a container.
 	// This field cannot be updated once the cluster is created.
 	Resources v1.ResourceRequirements `json:"resources,omitempty"`
+}
+
+// DataCollectorParams specifies internal data collector configurations.
+type DataCollectorParams struct {
+	// DatastreamBufferSize is the data buffer size per connection.
+	// Default size is 1 Mbyte. For high-throughput applications, try increasing this number if experiencing data loss.
+	DatastreamBufferSize uint32 `json:"datastreamBufferSize,omitempty"`
 }
 
 // Vizier is the Schema for the viziers API

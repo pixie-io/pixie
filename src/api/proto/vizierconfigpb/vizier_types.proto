@@ -57,6 +57,8 @@ message VizierSpec {
     // DataAccess defines the level of data that may be accesssed when executing a script on the cluster. If none specified,
     // assumes full data access.
     string data_access = 13;
+    // DataCollectorParams specifies configurable values for the data collectors running in the PEMs.
+    DataCollectorParams data_collector_params = 14;
 }
 
 // PodPolicyReq defines the policy for creating Vizier pods.
@@ -84,4 +86,11 @@ message ResourceList {
 
 message ResourceQuantity {
     string value = 1;
+}
+
+// DataCollectorParams specifies configurable values for the data collectors running in the PEMs.
+message DataCollectorParams {
+    // DatastreamBufferSize is the data buffer size per connection.
+    // Default size is 1 Mbyte. For high-throughput applications, try increasing this number if experiencing data loss.
+    uint32 datastream_buffer_size = 1;
 }
