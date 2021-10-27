@@ -61,6 +61,14 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "abi_model_test",
+    srcs = ["abi_model_test.cc"],
+    deps = [
+        ":cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "dwarf_reader_test",
     srcs = ["dwarf_reader_test.cc"],
     data = [

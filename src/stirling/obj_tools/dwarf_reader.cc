@@ -24,6 +24,7 @@
 #include <llvm/Object/ObjectFile.h>
 
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
+#include "src/stirling/obj_tools/abi_model.h"
 #include "src/stirling/obj_tools/dwarf_utils.h"
 #include "src/stirling/obj_tools/init.h"
 
@@ -806,132 +807,39 @@ StatusOr<VarLocation> DwarfReader::GetArgumentLocation(std::string_view function
 
 namespace {
 
-// Return the number of registers available for passing arguments,
-// according to the calling convention.
-// NOTE: We currently only support the System V AMD64 ABI for C/C++.
-int NumArgPassingRegs(llvm::dwarf::SourceLanguage lang) {
+ABI LanguageToABI(llvm::dwarf::SourceLanguage lang) {
   switch (lang) {
     case llvm::dwarf::DW_LANG_Go:
       // No arguments are passed through register on Go.
-      return 0;
+      // TODO(oazizi): This should be expanded to cover Go's new ABI depending on version.
+      return ABI::kGolangStack;
     case llvm::dwarf::DW_LANG_C:
     case llvm::dwarf::DW_LANG_C_plus_plus:
     case llvm::dwarf::DW_LANG_C_plus_plus_03:
     case llvm::dwarf::DW_LANG_C_plus_plus_11:
     case llvm::dwarf::DW_LANG_C_plus_plus_14:
+      // TODO(oazizi): We assume AMD64 for now, but need to support other architectures.
+      return ABI::kSystemVAMD64;
     default:
-      // These languages use the System V AMD64 ABI, which uses 6 registers.
-      // Note that we assume 64-bit machines here.
-      return 6;
+      return ABI::kUnknown;
   }
 }
-
-// Return the number of registers available for return values,
-// according to the calling convention.
-int NumRetValPassingRegs(llvm::dwarf::SourceLanguage lang) {
-  switch (lang) {
-    case llvm::dwarf::DW_LANG_Go:
-      // Return values are passed through a hidden parameter.
-      return 0;
-    case llvm::dwarf::DW_LANG_C:
-    case llvm::dwarf::DW_LANG_C_plus_plus:
-    case llvm::dwarf::DW_LANG_C_plus_plus_03:
-    case llvm::dwarf::DW_LANG_C_plus_plus_11:
-    case llvm::dwarf::DW_LANG_C_plus_plus_14:
-    default:
-      // These languages use the System V AMD64 ABI, which uses up to 2 registers to return values.
-      // Note that we assume 64-bit machines here.
-      return 2;
-  }
-}
-
-// TODO(oazizi): This is a placeholder. This information can come from DWARF.
-uint32_t RegisterSize() { return 8; }
-
-// This function takes a value, and if it is not a multiple of the `size` parameter,
-// it rounds it up to so that it is aligned to the given `size`.
-// Examples:
-//   SnapUpToMultiple(64, 8) = 64
-//   SnapUpToMultiple(66, 8) = 72
-uint64_t SnapUpToMultiple(uint64_t val, uint64_t size) {
-  // Alternate implementation: std::ceil(val / size) * size.
-  // But the one below avoids floating point math.
-  return ((val + (size - 1)) / size) * size;
-}
-
-// Helper for DwarfReader::GetFunctionArgInfo.
-// Keeps track of stack/register positions that have been used for
-// each successive argument, so that it can report the next location.
-class FunctionArgTracker {
- public:
-  explicit FunctionArgTracker(llvm::dwarf::SourceLanguage lang)
-      : reg_size_(RegisterSize()),
-        num_arg_regs_(NumArgPassingRegs(lang)),
-        num_ret_val_regs_(NumRetValPassingRegs(lang)),
-        total_register_bytes_(num_arg_regs_ * reg_size_) {}
-
-  // Get the location of the next argument according to the argument type.
-  // Depending on the ABI, the result may be a register location or a location on the stack.
-  StatusOr<VarLocation> PopLocation(const DWARFDie& type_die) {
-    PL_ASSIGN_OR_RETURN(uint64_t type_size, GetTypeByteSize(type_die));
-    PL_ASSIGN_OR_RETURN(uint64_t alignment_size, GetAlignmentByteSize(type_die));
-
-    VarLocation location;
-
-    if (type_size <= 16 && current_reg_offset_ + type_size <= total_register_bytes_) {
-      location.loc_type = LocationType::kRegister;
-      location.offset = current_reg_offset_;
-
-      current_reg_offset_ += SnapUpToMultiple(type_size, reg_size_);
-    } else {
-      // Align to the type's required alignment.
-      current_offset_ = SnapUpToMultiple(current_offset_, alignment_size);
-      location.loc_type = LocationType::kStack;
-      location.offset = current_offset_;
-
-      current_offset_ += type_size;
-    }
-
-    return location;
-  }
-
-  // In the SystemV AMD64 ABI, the return value is stored in rax+rdx.
-  // If return value is too large to be returned via register however,
-  // then there is an implicit first argument which is a pointer to the return value.
-  // This implicitly added argument is passed through a register, so
-  // enable a way to account for that here.
-  void AdjustForReturnValue(uint64_t ret_val_size) {
-    if (ret_val_size > num_ret_val_regs_ * reg_size_) {
-      current_reg_offset_ += reg_size_;
-    }
-  }
-
- private:
-  const uint32_t reg_size_;
-  const int num_arg_regs_;
-  const int num_ret_val_regs_;
-  const uint64_t total_register_bytes_;
-
-  uint64_t current_offset_ = 0;
-  uint64_t current_reg_offset_ = 0;
-};
-
 }  // namespace
 
-// A large part of this function's responsibilities is to determine where
-// arguments are located in memory (i.e. on the stack) or in registers.
-// For Golang, everything is always on the stack, so the algorithm is easy.
-// For C/C++, which uses the System V ABI, the rules are more complex:
-//   https://uclibc.org/docs/psABI-x86_64.pdf
-// TODO(oazizi): Finish implementing the rules.
 StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
     std::string_view function_symbol_name) {
   std::map<std::string, ArgInfo> arg_info;
 
   // Ideally, we'd use DW_AT_location directly from DWARF, (via GetDieLocationAttr(die),
   // but DW_AT_location has been found to be blank in some cases, making it unreliable.
-  // Instead, we use an ArgTracker that tries to reverse engineer the calling convention.
-  FunctionArgTracker arg_tracker(source_language_);
+  // Instead, we use a FunctionArgTracker that tries to reverse engineer the calling convention.
+
+  ABI abi = LanguageToABI(source_language_);
+  if (abi == ABI::kUnknown) {
+    return error::Unimplemented("Unable to determine ABI from language: $0",
+                                magic_enum::enum_name(source_language_));
+  }
+  FunctionArgTracker arg_tracker(abi);
 
   // If return value is not able to be passed in as a register,
   // then the first argument register becomes a pointer to the return value.
@@ -948,7 +856,10 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
 
     PL_ASSIGN_OR_RETURN(const DWARFDie type_die, GetTypeDie(die));
     PL_ASSIGN_OR_RETURN(arg.type_info, GetTypeInfo(die, type_die));
-    PL_ASSIGN_OR_RETURN(arg.location, arg_tracker.PopLocation(type_die));
+
+    PL_ASSIGN_OR_RETURN(uint64_t type_size, GetTypeByteSize(type_die));
+    PL_ASSIGN_OR_RETURN(uint64_t alignment_size, GetAlignmentByteSize(type_die));
+    PL_ASSIGN_OR_RETURN(arg.location, arg_tracker.PopLocation(type_size, alignment_size));
 
     if (source_language_ == llvm::dwarf::DW_LANG_Go) {
       arg.retarg = IsGolangRetArg(die).ValueOr(false);

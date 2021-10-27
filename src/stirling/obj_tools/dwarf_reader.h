@@ -32,6 +32,7 @@
 #include <vector>
 
 #include "src/common/base/base.h"
+#include "src/stirling/obj_tools/abi_model.h"
 
 namespace px {
 namespace stirling {
@@ -47,15 +48,6 @@ enum class VarType {
   kClass,
   kStruct,
   kSubroutine,
-};
-
-// Identifies where an argument is located when tracing a function entry:
-// in memory (kStack), or in registers (kRegister).
-enum class LocationType {
-  kUnknown,
-  kStack,
-  kStackBP,
-  kRegister,
 };
 
 struct TypeInfo {
@@ -82,20 +74,6 @@ struct StructMemberInfo {
 
   std::string ToString() const {
     return absl::Substitute("offset=$0 type_info=[$1]", offset, type_info.ToString());
-  }
-};
-
-// Location of a variable or argument, according to DWARF information.
-// The location may be on the stack or in registers.
-struct VarLocation {
-  LocationType loc_type = LocationType::kUnknown;
-
-  // For stack locations, the offset represents the offset off the SP.
-  // For register locations, the offset represents the register number.
-  int64_t offset = std::numeric_limits<uint64_t>::max();
-
-  std::string ToString() const {
-    return absl::Substitute("type=$0 offset=$1", magic_enum::enum_name(loc_type), offset);
   }
 };
 
@@ -147,7 +125,7 @@ inline bool operator==(const StructMemberInfo& a, const StructMemberInfo& b) {
 }
 
 inline bool operator==(const VarLocation& a, const VarLocation& b) {
-  return a.loc_type == b.loc_type && a.offset == b.offset;
+  return a.loc_type == b.loc_type && a.offset == b.offset && a.registers == b.registers;
 }
 
 inline bool operator==(const ArgInfo& a, const ArgInfo& b) {

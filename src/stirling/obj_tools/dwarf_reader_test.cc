@@ -334,22 +334,25 @@ TEST_P(DwarfReaderTest, CppFunctionArgInfo) {
   EXPECT_OK_AND_THAT(
       dwarf_reader->GetFunctionArgInfo("CanYouFindThis"),
       UnorderedElementsAre(Pair("a", ArgInfo{TypeInfo{VarType::kBaseType, "int", "int"},
-                                             {LocationType::kRegister, 0}}),
+                                             {LocationType::kRegister, 0, {RegisterName::kRDI}}}),
                            Pair("b", ArgInfo{TypeInfo{VarType::kBaseType, "int", "int"},
-                                             {LocationType::kRegister, 8}})));
-  EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("ABCSum32"),
-                     UnorderedElementsAre(
-                         Pair("x", ArgInfo{TypeInfo{VarType::kStruct, "ABCStruct32", "ABCStruct32"},
-                                           {LocationType::kRegister, 0}}),
-                         Pair("y", ArgInfo{TypeInfo{VarType::kStruct, "ABCStruct32", "ABCStruct32"},
-                                           {LocationType::kRegister, 16}})));
+                                             {LocationType::kRegister, 8, {RegisterName::kRSI}}})));
+  EXPECT_OK_AND_THAT(
+      dwarf_reader->GetFunctionArgInfo("ABCSum32"),
+      UnorderedElementsAre(
+          Pair("x",
+               ArgInfo{TypeInfo{VarType::kStruct, "ABCStruct32", "ABCStruct32"},
+                       {LocationType::kRegister, 0, {RegisterName::kRDI, RegisterName::kRSI}}}),
+          Pair("y",
+               ArgInfo{TypeInfo{VarType::kStruct, "ABCStruct32", "ABCStruct32"},
+                       {LocationType::kRegister, 16, {RegisterName::kRDX, RegisterName::kRCX}}})));
   EXPECT_OK_AND_THAT(
       dwarf_reader->GetFunctionArgInfo("SomeFunctionWithPointerArgs"),
       UnorderedElementsAre(
-          Pair("a",
-               ArgInfo{TypeInfo{VarType::kPointer, "int*", "int*"}, {LocationType::kRegister, 0}}),
+          Pair("a", ArgInfo{TypeInfo{VarType::kPointer, "int*", "int*"},
+                            {LocationType::kRegister, 0, {RegisterName::kRDI}}}),
           Pair("x", ArgInfo{TypeInfo{VarType::kPointer, "ABCStruct32*", "ABCStruct32*"},
-                            {LocationType::kRegister, 8}})));
+                            {LocationType::kRegister, 8, {RegisterName::kRSI}}})));
 }
 
 TEST_P(DwarfReaderTest, CppFunctionRetValInfo) {
