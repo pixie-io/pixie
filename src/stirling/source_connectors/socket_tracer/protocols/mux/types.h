@@ -63,7 +63,7 @@ inline bool IsMuxType(int8_t t) {
   return mux_type.has_value();
 }
 
-inline std::optional<Type> GetMatchingRespType(Type req_type) {
+inline StatusOr<Type> GetMatchingRespType(Type req_type) {
   switch (req_type) {
     case Type::kRerrOld:
       return Type::kRerrOld;

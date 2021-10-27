@@ -59,11 +59,11 @@ RecordsWithErrorCount<mux::Record> StitchFrames(std::deque<mux::Frame>* reqs,
                 continue;
             }
 
-            std::optional<Type> matching_resp_type = GetMatchingRespType(req_type);
+            StatusOr<Type> matching_resp_type = GetMatchingRespType(req_type);
             Type res_type = static_cast<Type>(res.type);
             if (
-                !matching_resp_type.has_value() ||
-                res_type != matching_resp_type.value() ||
+                !matching_resp_type.ok() ||
+                res_type != matching_resp_type.ValueOrDie() ||
                 res.tag != req.tag
             ) {
                 continue;
