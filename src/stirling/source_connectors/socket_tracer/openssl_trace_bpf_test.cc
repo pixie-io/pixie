@@ -68,6 +68,13 @@ class Node16_9ContainerWrapper : public ::px::stirling::testing::Node16_9Contain
   int32_t PID() const { return process_pid(); }
 };
 
+// Includes all information we need to extract from the trace records, which are used to verify
+// against the expected results.
+struct TraceRecords {
+  std::vector<http::Record> http_records;
+  std::vector<std::string> remote_address;
+};
+
 template <typename ServerContainer>
 class OpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ false> {
  protected:
@@ -80,6 +87,22 @@ class OpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ fals
 
     // Sleep an additional second, just to be safe.
     sleep(1);
+  }
+
+  // Returns the trace records of the process specified by the input pid.
+  TraceRecords GetTraceRecords(int pid) {
+    std::vector<TaggedRecordBatch> tablets =
+        this->ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
+    if (tablets.empty()) {
+      return {};
+    }
+    types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+    std::vector<size_t> server_record_indices =
+        FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, pid);
+    std::vector<http::Record> http_records = ToRecordVector(record_batch, server_record_indices);
+    std::vector<std::string> remote_addresses =
+        testing::GetRemoteAddrs(record_batch, server_record_indices);
+    return {std::move(http_records), std::move(remote_addresses)};
   }
 
   ServerContainer server_;
@@ -144,35 +167,13 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
                  {absl::Substitute("--network=container:$0", this->server_.container_name())},
                  {"--insecure", "-s", "-S", "https://localhost:443/index.html"}));
   client.Wait();
-
-  int server_pid = this->server_.PID();
-
   this->StopTransferDataThread();
 
-  // Grab the data from Stirling.
-  std::vector<TaggedRecordBatch> tablets =
-      this->ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
-  ASSERT_FALSE(tablets.empty());
-  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
-
-  for (size_t i = 0; i < record_batch[0]->Size(); ++i) {
-    uint32_t pid = record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(i).High64();
-    std::string req_path = record_batch[kHTTPReqPathIdx]->Get<types::StringValue>(i);
-    VLOG(1) << absl::Substitute("$0 $1", pid, req_path);
-  }
-
+  TraceRecords records = this->GetTraceRecords(this->server_.PID());
   http::Record expected_record = GetExpectedHTTPRecord();
 
-  std::vector<size_t> server_record_indices =
-      FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, server_pid);
-
-  // Check server-side tracing results.
-  {
-    std::vector<http::Record> records = ToRecordVector(record_batch, server_record_indices);
-    EXPECT_THAT(records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
-    EXPECT_THAT(testing::GetRemoteAddrs(record_batch, server_record_indices),
-                UnorderedElementsAre(StrEq("127.0.0.1")));
-  }
+  EXPECT_THAT(records.http_records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
+  EXPECT_THAT(records.remote_address, UnorderedElementsAre(StrEq("127.0.0.1")));
 }
 
 TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
@@ -207,31 +208,16 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
                  {absl::Substitute("--network=container:$0", this->server_.container_name())},
                  {"ruby", "-e", rb_script}));
   client.Wait();
-
-  int server_pid = this->server_.PID();
-
   this->StopTransferDataThread();
 
-  // Grab the data from Stirling.
-  std::vector<TaggedRecordBatch> tablets =
-      this->ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
-  ASSERT_FALSE(tablets.empty());
-  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
-
+  TraceRecords records = this->GetTraceRecords(this->server_.PID());
   http::Record expected_record = GetExpectedHTTPRecord();
 
-  std::vector<size_t> server_record_indices =
-      FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, server_pid);
-
-  // Check server-side tracing results.
-  {
-    std::vector<http::Record> records = ToRecordVector(record_batch, server_record_indices);
-    EXPECT_THAT(records,
-                UnorderedElementsAre(EqHTTPRecord(expected_record), EqHTTPRecord(expected_record),
-                                     EqHTTPRecord(expected_record)));
-    EXPECT_THAT(testing::GetRemoteAddrs(record_batch, server_record_indices),
-                UnorderedElementsAre(StrEq("127.0.0.1"), StrEq("127.0.0.1"), StrEq("127.0.0.1")));
-  }
+  EXPECT_THAT(records.http_records,
+              UnorderedElementsAre(EqHTTPRecord(expected_record), EqHTTPRecord(expected_record),
+                                   EqHTTPRecord(expected_record)));
+  EXPECT_THAT(records.remote_address,
+              UnorderedElementsAre(StrEq("127.0.0.1"), StrEq("127.0.0.1"), StrEq("127.0.0.1")));
 }
 
 TYPED_TEST(OpenSSLTraceTest, ssl_capture_node_client) {
@@ -245,29 +231,13 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_node_client) {
                  {absl::Substitute("--network=container:$0", this->server_.container_name())},
                  {"node", "/etc/node/https_client.js"}));
   client.Wait();
-
-  int server_pid = this->server_.PID();
-
   this->StopTransferDataThread();
 
-  // Grab the data from Stirling.
-  std::vector<TaggedRecordBatch> tablets =
-      this->ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
-  ASSERT_FALSE(tablets.empty());
-  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
-
+  TraceRecords records = this->GetTraceRecords(this->server_.PID());
   http::Record expected_record = GetExpectedHTTPRecord();
 
-  std::vector<size_t> server_record_indices =
-      FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, server_pid);
-
-  // Check server-side tracing results.
-  {
-    std::vector<http::Record> records = ToRecordVector(record_batch, server_record_indices);
-    EXPECT_THAT(records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
-    EXPECT_THAT(testing::GetRemoteAddrs(record_batch, server_record_indices),
-                UnorderedElementsAre(StrEq("127.0.0.1")));
-  }
+  EXPECT_THAT(records.http_records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
+  EXPECT_THAT(records.remote_address, UnorderedElementsAre(StrEq("127.0.0.1")));
 }
 
 }  // namespace stirling
