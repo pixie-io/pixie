@@ -116,17 +116,14 @@ TEST_F(StitchFramesTest, UnmatchedResponsesAreHandled) {
     RecordsWithErrorCount<mux::Record> result = mux::StitchFrames(&reqs, &resps);
 
     EXPECT_EQ(result.error_count, 1);
-    EXPECT_EQ(result.records.size(), 2);
+    EXPECT_EQ(result.records.size(), 1);
     EXPECT_EQ(mux::Type(result.records[0].resp.type), mux::Type::kRerrOld);
-    // Verify that the request in the unmatched request has an
-    // uninitialized type field
-    EXPECT_EQ(result.records[0].req.type, 0);
 
     EXPECT_THAT(reqs, IsEmpty());
     EXPECT_THAT(resps, IsEmpty());
 }
 
-TEST_F(StitchFramesTest, UnmatchedRequestsAreHandled) {
+TEST_F(StitchFramesTest, UnmatchedRequestsAreNotCleanedUp) {
     std::deque<mux::Frame> reqs = {
         // tinit check message
         CreateMuxFrame(0, mux::Type::kRerrOld, 1),
@@ -140,14 +137,18 @@ TEST_F(StitchFramesTest, UnmatchedRequestsAreHandled) {
 
     RecordsWithErrorCount<mux::Record> result = mux::StitchFrames(&reqs, &resps);
 
-    EXPECT_EQ(result.error_count, 1);
-    EXPECT_EQ(result.records.size(), 3);
-    EXPECT_EQ(mux::Type(result.records[0].req.type), mux::Type::kRerrOld);
-    // Verify that the response in the unmatched request has an
-    // uninitialized type field
-    EXPECT_EQ(result.records[0].resp.type, 0);
+    EXPECT_EQ(result.error_count, 0);
+    EXPECT_EQ(result.records.size(), 2);
+    EXPECT_EQ(mux::Type(result.records[0].req.type), mux::Type::kTdispatch);
+    EXPECT_EQ(mux::Type(result.records[1].req.type), mux::Type::kTdrain);
 
-    EXPECT_THAT(reqs, IsEmpty());
+    // Since we can't know if the response pair has arrived
+    // yet the stitcher must keep unmatched requests arround
+    EXPECT_THAT(reqs.size(), 3);
+    EXPECT_THAT(reqs[0].consumed, false);
+    EXPECT_THAT(reqs[1].consumed, true);
+    EXPECT_THAT(reqs[2].consumed, true);
+
     EXPECT_THAT(resps, IsEmpty());
 }
 

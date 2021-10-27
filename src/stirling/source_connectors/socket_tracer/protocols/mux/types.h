@@ -139,6 +139,7 @@ struct Frame : public FrameBase {
   int8_t type = 0;
   uint24_t tag = 0;
   std::string why;
+  bool consumed = false;
   // Reply status codes. Only present in Rdispatch messages types
   int8_t reply_status = 0;
   absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, std::string>> context;

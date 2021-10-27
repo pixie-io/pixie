@@ -41,20 +41,18 @@ RecordsWithErrorCount<mux::Record> StitchFrames(std::deque<mux::Frame>* reqs,
     int error_count = 0;
 
     for (auto& req : *reqs) {
-        auto req_consumed = false;
         for (auto& res : *resps) {
             Type req_type = static_cast<Type>(req.type);
 
             // Tlease messages do not have a response pair
             if (req_type == Type::kTlease) {
 
-                records.push_back({req, {}});
-                req_consumed = true;
+                req.consumed = true;
+                records.push_back({std::move(req), {}});
                 break;
             }
             if (req.timestamp_ns > res.timestamp_ns) {
 
-                records.push_back({{}, res});
                 resps->pop_front();
                 error_count++;
                 continue;
@@ -70,19 +68,21 @@ RecordsWithErrorCount<mux::Record> StitchFrames(std::deque<mux::Frame>* reqs,
                 continue;
             }
 
-            records.push_back({req, res});
+            req.consumed = true;
+            records.push_back({
+                std::move(req),
+                std::move(res)
+            });
             resps->pop_front();
-            req_consumed = true;
             break;
         }
-
-        if (!req_consumed) {
-            records.push_back({req, {}});
-
-            error_count++;
-        }
     }
-    reqs->erase(reqs->begin(), reqs->end());
+    for (const auto& req_frame : *reqs) {
+        if (!req_frame.consumed) {
+            break;
+        }
+        reqs->pop_front();
+    }
     resps->erase(resps->begin(), resps->end());
 
     return {records, error_count};
