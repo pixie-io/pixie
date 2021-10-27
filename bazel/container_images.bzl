@@ -156,11 +156,21 @@ def stirling_test_images():
         "confluentinc/cp-zookeeper",
     )
 
-    # Tag: node:14.18
+    # Tag: node:12.3.1
+    # Arch: linux/amd64
+    # This is the oldest tag on docker hub that can be pulled. Older tags cannot be pulled because
+    # of server error on docker hub, which presumably is because of they are too old.
+    _docker_io_image(
+        "node_12_3_1_linux_amd64_image",
+        "sha256:ade8d367d98b5074a8c3a4e2d74bd657b578d4a500090d66c2da33801ec4b58d",
+        "node",
+    )
+
+    # Tag: node:14.18.1
     # Arch: linux/amd64
     _docker_io_image(
-        "node_14.18_linux_amd64_image",
-        "sha256:c0d52db04cdb02454a0fd12e42356433a1e884eb717c1c60be9c9263e8ede2ca",
+        "node_14_18_1_linux_amd64_image",
+        "sha256:e0dd89382d4f7da3b2be5d5fb74c65bfa1836deecae3c5f88919f44b469025f9",
         "node",
     )
 
