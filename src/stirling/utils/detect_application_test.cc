@@ -34,7 +34,7 @@ TEST(DetectApplicationTest, ResultsAreAsExpected) {
   EXPECT_EQ(Application::kNode, DetectApplication("/usr/bin/nodejs"));
 }
 
-TEST(GetSemVer, AsExpected) {
+TEST(GetSemVerTest, AsExpected) {
   ASSERT_OK_AND_ASSIGN(SemVer sem_ver, GetSemVer("v1.2.3-test"));
   EXPECT_EQ(sem_ver.major, 1);
   EXPECT_EQ(sem_ver.minor, 2);
@@ -42,6 +42,22 @@ TEST(GetSemVer, AsExpected) {
   EXPECT_THAT(GetSemVer("v1.2.test").status(),
               StatusIs(px::statuspb::INVALID_ARGUMENT,
                        "Input 'v1.2.test' does not contain a semantic version number"));
+}
+
+TEST(SemVerCompareTest, AsExpected) {
+  SemVer v1{1, 1, 1};
+  SemVer v2{1, 1, 1};
+  EXPECT_FALSE(v1 < v2);
+  EXPECT_FALSE(v2 < v1);
+
+  SemVer v3{1, 1, 2};
+  EXPECT_TRUE(v1 < v3);
+
+  SemVer v4{1, 2, 1};
+  EXPECT_TRUE(v1 < v4);
+
+  SemVer v5{2, 1, 1};
+  EXPECT_TRUE(v1 < v5);
 }
 
 }  // namespace stirling

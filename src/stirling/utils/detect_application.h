@@ -45,7 +45,14 @@ struct SemVer {
   int major = 0;
   int minor = 0;
   int patch = 0;
+
+  std::string ToString() const {
+    return absl::Substitute("major=$0 minor=$1 patch=$2", major, minor, patch);
+  }
 };
+
+// Returns true if lhs is before rhs in lexical order.
+bool operator<(const SemVer& lhs, const SemVer& rhs);
 
 // Returns semantic version from a version string that include a substring that represent the
 // semantic version numbers. For example, v1.1.0 returns SemVer{1, 1, 0}.

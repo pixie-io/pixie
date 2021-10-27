@@ -54,6 +54,13 @@ StatusOr<std::string> GetVersion(const std::filesystem::path& exe, std::string_v
   return version;
 }
 
+bool operator<(const SemVer& lhs, const SemVer& rhs) {
+  std::vector<int> lhs_vec = {lhs.major, lhs.minor, lhs.patch};
+  std::vector<int> rhs_vec = {rhs.major, rhs.minor, rhs.patch};
+  return std::lexicographical_compare(lhs_vec.begin(), lhs_vec.end(), rhs_vec.begin(),
+                                      rhs_vec.end());
+}
+
 StatusOr<SemVer> GetSemVer(const std::string& version) {
   std::regex sem_ver_regex(R"([0-9]+\.[0-9]+\.[0-9])");
   std::smatch match;
