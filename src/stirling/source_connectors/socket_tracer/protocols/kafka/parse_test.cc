@@ -56,7 +56,7 @@ TEST(KafkaParserTest, Basics) {
   EXPECT_TRUE(state.seen_correlation_ids.contains(4));
 
   state = {};
-  auto short_produce_frame_view = produce_frame_view.substr(0, kMinReqHeaderLength - 1);
+  auto short_produce_frame_view = produce_frame_view.substr(0, kMinReqPacketLength - 1);
   parse_state = ParseFrame(message_type_t::kRequest, &short_produce_frame_view, &packet, &state);
   EXPECT_EQ(parse_state, ParseState::kNeedsMoreData);
   EXPECT_TRUE(state.seen_correlation_ids.empty());

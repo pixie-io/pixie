@@ -41,19 +41,18 @@ namespace kafka {
 ParseState ParseFrame(message_type_t type, std::string_view* buf, Packet* result, State* state) {
   DCHECK(type == message_type_t::kRequest || type == message_type_t::kResponse);
 
-  if (type == message_type_t::kRequest && buf->size() < kafka::kMinReqHeaderLength) {
-    return ParseState::kNeedsMoreData;
-  }
+  int min_packet_length =
+      type == message_type_t::kRequest ? kafka::kMinReqPacketLength : kafka::kMinRespPacketLength;
 
-  if (type == message_type_t::kResponse && buf->size() < kafka::kMinRespHeaderLength) {
+  if (buf->size() < static_cast<size_t>(min_packet_length)) {
     return ParseState::kNeedsMoreData;
   }
 
   BinaryDecoder binary_decoder(*buf);
 
-  PL_ASSIGN_OR_RETURN_INVALID(int32_t packet_length, binary_decoder.ExtractInt<int32_t>());
+  PL_ASSIGN_OR_RETURN_INVALID(int32_t payload_length, binary_decoder.ExtractInt<int32_t>());
 
-  if (packet_length < 0) {
+  if (payload_length + kafka::kMessageLengthBytes <= min_packet_length) {
     return ParseState::kInvalid;
   }
 
@@ -82,7 +81,7 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Packet* result
   }
 
   // Putting this check at the end, to avoid invalid packet classified as NeedsMoreData.
-  if (buf->size() - kMessageLengthBytes < (size_t)packet_length) {
+  if (buf->size() - kMessageLengthBytes < (size_t)payload_length) {
     return ParseState::kNeedsMoreData;
   }
 
@@ -94,8 +93,8 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Packet* result
   //  responses. If not, e.g. request is missing, get into a confused state.
 
   result->correlation_id = correlation_id;
-  result->msg = buf->substr(kMessageLengthBytes, packet_length);
-  buf->remove_prefix(kMessageLengthBytes + packet_length);
+  result->msg = buf->substr(kMessageLengthBytes, payload_length);
+  buf->remove_prefix(kMessageLengthBytes + payload_length);
 
   return ParseState::kSuccess;
 }
@@ -106,7 +105,7 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Packet* result
 // in requests, and correlation_id that appeared before in responses.
 size_t FindFrameBoundary(message_type_t type, std::string_view buf, size_t start_pos,
                          State* state) {
-  size_t min_length = type == message_type_t::kRequest ? kMinReqHeaderLength : kMinRespHeaderLength;
+  size_t min_length = type == message_type_t::kRequest ? kMinReqPacketLength : kMinRespPacketLength;
 
   if (buf.length() < min_length) {
     return std::string::npos;

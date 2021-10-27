@@ -320,10 +320,10 @@ constexpr int kAPIVersionLength = 2;
 constexpr int kCorrelationIDLength = 4;
 
 // length, request_api_key, request_api_version, correlation_id
-constexpr int kMinReqHeaderLength =
+constexpr int kMinReqPacketLength =
     kMessageLengthBytes + kAPIKeyLength + kAPIVersionLength + kCorrelationIDLength;
 // length, correlation_id
-constexpr int kMinRespHeaderLength = kMessageLengthBytes + kCorrelationIDLength;
+constexpr int kMinRespPacketLength = kMessageLengthBytes + kCorrelationIDLength;
 constexpr int kMaxAPIVersion = 12;
 
 struct Packet : public FrameBase {
