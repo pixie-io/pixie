@@ -55,6 +55,7 @@ RecordsWithErrorCount<mux::Record> StitchFrames(std::deque<mux::Frame>* reqs,
 
                 resps->pop_front();
                 error_count++;
+                VLOG(1) << absl::Substitute("Did not find a request matching the response. Tag = $0 Type = $1", uint32_t(res.tag), res.type);
                 continue;
             }
 
