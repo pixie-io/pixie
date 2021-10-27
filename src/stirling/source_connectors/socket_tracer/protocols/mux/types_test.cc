@@ -45,8 +45,7 @@ TEST(GetMatchingRespType, ReturnsCorrespondingResponseTypes) {
   ASSERT_OK_AND_EQ(GetMatchingRespType(Type::kTdrain), Type::kRdrain);
   ASSERT_OK_AND_EQ(GetMatchingRespType(Type::kTdispatch), Type::kRdispatch);
   ASSERT_OK_AND_EQ(GetMatchingRespType(Type::kTreq), Type::kRreq);
-  // TODO(ddelnano): This does not pass because of the LOG(DFATAL) statement in GetMatchingRespType
-  /* ASSERT_NOT_OK(GetMatchingRespType(static_cast<Type>(0))); */
+  ASSERT_DEATH([&] { GetMatchingRespType(static_cast<Type>(0)); }(), "Unexpected request type");
 }
 
 }  // namespace mux
