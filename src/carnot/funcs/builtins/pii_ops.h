@@ -62,6 +62,20 @@ class RedactPIIUDF : public udf::ScalarUDF {
   Status Init(FunctionContext*);
   StringValue Exec(FunctionContext*, StringValue input);
 
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder(
+               "Make a best effort to redact Personally Identifiable Information (PII).")
+        .Details(
+            "Replace instances of PII with '<REDACTED_$TYPE>' eg. '<REDACTED_EMAIL>' or "
+            "'<REDACTED_IPv4>'. Currently, it will (on a best effort basis) redact IP addresses, "
+            "email addresses, MAC addresses, IMEI numbers and credit card numbers. However, the "
+            "redaction is not perfect, so it should not be used in a context where privacy needs "
+            "to be guaranteed.")
+        .Example(R"doc(df.redacted = px.redact_pii_best_effort(df.req_body))doc")
+        .Arg("input_str", "The string to redact PII from.")
+        .Returns("The input string with instances of PII replaced with <REDACTED>.");
+  }
+
  private:
   std::vector<std::unique_ptr<Tagger>> taggers_;
 };

@@ -32,6 +32,36 @@ namespace builtins {
 
 using PIITypeGen = std::pair<std::string, std::vector<std::string>>;
 
+PIITypeGen IPv4Gen() {
+  std::vector<std::string> vals{
+      "192.168.0.1",
+      "255.255.255.255",
+      "0.0.0.0",
+      "10.0.0.1",
+  };
+  return std::make_pair("<REDACTED_IPV4>", vals);
+}
+
+PIITypeGen IPv6Gen() {
+  std::vector<std::string> vals{
+      "ab:12:34:56:789:1011:1213:0",
+      "00ab:1234:5678:9100:1112:ffff:192.168.0.1",
+      "::abcd:1234:ffff",
+      "::abcd:1234:ffff:0000:1.1.1.1",
+      "0123::abcd:1234:ffff:ab",
+      "0123::abcd:1234:ffff:0.0.0.0",
+      "0123:abcd::eeee:beef:feed",
+      "0123:abcd::eeee:10.0.0.1",
+      "0000:abcd:1234::beef:feed:0101",
+      "0000:abcd:1234::beef:255.255.255.255",
+      "0:1:2:3::beef:feed",
+      "0:1:2:3::10.1.2.3",
+      "1234:0:1234:a:b::beef",
+      "1:2:abcd:a:b:c::",
+  };
+  return std::make_pair("<REDACTED_IPV6>", vals);
+}
+
 PIITypeGen EmailGen() {
   std::vector<std::string> vals{
       "test@pixie.io",
@@ -41,6 +71,34 @@ PIITypeGen EmailGen() {
       "test%40pixie.io",
   };
   return std::make_pair("<REDACTED_EMAIL>", vals);
+}
+
+PIITypeGen MACGen() {
+  std::vector<std::string> vals{
+      "ab:12:00:64:99:ff",
+      "00:00:00:00:00:00",
+      "ff-ff-ff-ff-ff-ff",
+  };
+  return std::make_pair("<REDACTED_MAC_ADDR>", vals);
+}
+
+PIITypeGen CCGen() {
+  std::vector<std::string> vals{
+      "3782 8224631 0005",   "3714 4963539 8431",  "3787 3449367 1000",  "5610 5910810 18250",
+      "3056 9309025 904",    "3852 0000023 237",   "6011 1111111 11117", "6011 0009901 39424",
+      "3530 1113333 00000",  "3566 0020203 60505", "5555 5555555 54444", "5105 1051051 05100",
+      "4111 1111111 11111",  "4012 8888888 81881", "4222-2222-222-22",   "5019-7170-1010-3742",
+      "6331-1019-9999-0016",
+  };
+  return std::make_pair("<REDACTED_CC_NUMBER>", vals);
+}
+
+PIITypeGen IMEIGen() {
+  std::vector<std::string> vals{
+      "01-786058-312233-6",  "01-786058-312233-22", "52-635024-498175-3",
+      "52-635024-498175-97", "51-942642-588642-2",  "51-942642-588642-55",
+  };
+  return std::make_pair("<REDACTED_IMEI>", vals);
 }
 
 // These values will be injected into templates, but shouldn't be redacted by the pipeline.
@@ -160,7 +218,8 @@ TEST_P(RedactionTest, basic) {
 }
 
 INSTANTIATE_TEST_SUITE_P(TemplatedRedactionTest, RedactionTest,
-                         testing::ValuesIn(TestCaseGen({EmailGen(), NegativeExampleGen()})));
+                         testing::ValuesIn(TestCaseGen({IPv4Gen(), IPv6Gen(), EmailGen(), CCGen(),
+                                                        IMEIGen(), NegativeExampleGen()})));
 
 }  // namespace builtins
 }  // namespace carnot
