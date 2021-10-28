@@ -78,6 +78,7 @@ RecordsWithErrorCount<mux::Record> StitchFrames(std::deque<mux::Frame>* reqs,
             break;
         }
     }
+    // TODO(ddelnano): Clean up stale requests once there is a mechanism to do so
     for (const auto& req_frame : *reqs) {
         if (!req_frame.consumed) {
             break;
