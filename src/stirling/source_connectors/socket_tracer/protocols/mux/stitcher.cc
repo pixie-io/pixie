@@ -41,7 +41,7 @@ RecordsWithErrorCount<mux::Record> StitchFrames(std::deque<mux::Frame>* reqs,
     int error_count = 0;
 
     for (auto& req : *reqs) {
-        for (auto& res : *resps) {
+        for (auto& resp : *resps) {
             Type req_type = static_cast<Type>(req.type);
 
             // Tlease messages do not have a response pair
@@ -51,20 +51,20 @@ RecordsWithErrorCount<mux::Record> StitchFrames(std::deque<mux::Frame>* reqs,
                 records.push_back({std::move(req), {}});
                 break;
             }
-            if (req.timestamp_ns > res.timestamp_ns) {
+            if (req.timestamp_ns > resp.timestamp_ns) {
 
                 resps->pop_front();
                 error_count++;
-                VLOG(1) << absl::Substitute("Did not find a request matching the response. Tag = $0 Type = $1", uint32_t(res.tag), res.type);
+                VLOG(1) << absl::Substitute("Did not find a request matching the response. Tag = $0 Type = $1", uint32_t(resp.tag), resp.type);
                 continue;
             }
 
             StatusOr<Type> matching_resp_type = GetMatchingRespType(req_type);
-            Type res_type = static_cast<Type>(res.type);
+            Type res_type = static_cast<Type>(resp.type);
             if (
                 !matching_resp_type.ok() ||
                 res_type != matching_resp_type.ValueOrDie() ||
-                res.tag != req.tag
+                resp.tag != req.tag
             ) {
                 continue;
             }
@@ -72,7 +72,7 @@ RecordsWithErrorCount<mux::Record> StitchFrames(std::deque<mux::Frame>* reqs,
             req.consumed = true;
             records.push_back({
                 std::move(req),
-                std::move(res)
+                std::move(resp)
             });
             resps->pop_front();
             break;
@@ -85,7 +85,7 @@ RecordsWithErrorCount<mux::Record> StitchFrames(std::deque<mux::Frame>* reqs,
         }
         reqs->pop_front();
     }
-    resps->erase(resps->begin(), resps->end());
+    resps->clear();
 
     return {records, error_count};
 }
