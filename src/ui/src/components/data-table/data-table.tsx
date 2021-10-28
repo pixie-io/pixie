@@ -515,13 +515,15 @@ const DataTableImpl = React.memo<DataTableProps>(function DataTable({ table, ...
     expanded,
     toggleRowExpanded,
     ...options,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    /* eslint-disable react-hooks/exhaustive-deps */
   }), [
     // Monitoring specific parts of the instance ensures that the <List /> updates upon sort/resize/expand/etc events.
     instance, instance.totalColumnsWidth, instance.state.sortBy,
+    instance.rows.length, instance.rows[0], // Monitoring first row's identity ensures pruning still causes updates.
     options.enableRowSelect, options.enableColumnSelect,
     options.onRowSelected, options.onRowsRendered,
     colNames, expanded, toggleRowExpanded,
+    /* eslint-enable react-hooks/exhaustive-deps */
   ]);
 
   const ready = containerWidth > 0 && containerHeight > 0 && defaultWidth > 0;
