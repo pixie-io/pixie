@@ -46,17 +46,28 @@ enum Register {
   // to the data.
   RC_PTR = 101;
 
-  // Simple function arguments for C/C++ System V AMD64 ABI.
-  PARM1 = 200;
-  PARM2 = 201;
-  PARM3 = 202;
-  PARM4 = 203;
-  PARM5 = 204;
-  PARM6 = 205;
+  // X86_64 Registers (http://6.s081.scripts.mit.edu/sp18/x86-64-architecture-guide.html).
+  RAX = 200;
+  RBX = 201;
+  RCX = 202;
+  RDX = 203;
+  RDI = 204;
+  RSI = 205;
+  R8 = 206;
+  R9 = 207;
+  R10 = 208;
+  R11 = 209;
+  R12 = 210;
+  R13 = 211;
+  R14 = 212;
+  R15 = 213;
 
-  // Places PARM1-PARM6 onto the BPF stack as a contiguous piece of memory,
+  // Places argument-passing registers onto the BPF stack as a contiguous piece of memory,
   // and returns the pointer to that memory.
-  PARM_PTR = 210;
+  // System V ABI: https://wiki.osdev.org/System_V_ABI
+  // Golang register ABI: https://go.googlesource.com/go/+/refs/heads/dev.regabi/src/cmd/compile/internal-abi.md
+  SYSV_AMD64_ARGS_PTR = 300;
+  GOLANG_ARGS_PTR = 301;
 }
 
 enum VariableStmtOp {

@@ -565,8 +565,12 @@ void Dwarvifier::AddEntryProbeVariables(ir::physical::Probe* output_probe) {
   if ((language_ == ir::shared::C || language_ == ir::shared::CPP)) {
     auto* parm_ptr_var =
         AddVariable<ScalarVariable>(output_probe, kParmPtrVarName, ir::shared::VOID_POINTER);
-    parm_ptr_var->set_reg(ir::physical::Register::PARM_PTR);
+    parm_ptr_var->set_reg(ir::physical::Register::SYSV_AMD64_ARGS_PTR);
   }
+  // TODO(oazizi): For Golang 1.17+, will need the following:
+  //  auto* parm_ptr_var =
+  //          AddVariable<ScalarVariable>(output_probe, kParmPtrVarName, ir::shared::VOID_POINTER);
+  //  parm_ptr_var->set_reg(ir::physical::Register::GOLANG_ARGS_PTR);
 }
 
 void Dwarvifier::AddRetProbeVariables(ir::physical::Probe* output_probe) {

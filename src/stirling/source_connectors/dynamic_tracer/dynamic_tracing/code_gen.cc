@@ -243,42 +243,71 @@ std::string GenRegister(const ScalarVariable& var) {
     case Register::RC:
       return absl::Substitute("$0 $1 = ($0)PT_REGS_RC(ctx);", type, var.name());
     case Register::RC_PTR:
-      // Note that in the System V AMD64 ABI,
-      // a return value less than 16B in size is held in registers.
-      // The first half is stored in rax (PT_REGS_RC), while the second half (if needed),
-      // is stored in rdx (PT_REGS_PARM3).
-      // We use the PT_REGS format for improved portability.
+      // In the System V AMD64 ABI, a return value less than 16B in size is held in registers.
+      // The first half is stored in rax, while the second half (if needed), is stored in rdx.
       // Copy the register values onto the BPF stack and return a pointer to the return value.
       return absl::Substitute(
           "uint64_t rc___[2];"
-          "rc___[0] = PT_REGS_RC(ctx);"
-          "rc___[1] = PT_REGS_PARM3(ctx);"
+          "rc___[0] = ctx->ax;"
+          "rc___[1] = ctx->dx;"
           "void* $0 = &rc___;",
           var.name());
-    case Register::PARM1:
-      return absl::Substitute("$0 $1 = ($0)PT_REGS_PARM1(ctx);", type, var.name());
-    case Register::PARM2:
-      return absl::Substitute("$0 $1 = ($0)PT_REGS_PARM2(ctx);", type, var.name());
-    case Register::PARM3:
-      return absl::Substitute("$0 $1 = ($0)PT_REGS_PARM3(ctx);", type, var.name());
-    case Register::PARM4:
-      return absl::Substitute("$0 $1 = ($0)PT_REGS_PARM4(ctx);", type, var.name());
-    case Register::PARM5:
-      return absl::Substitute("$0 $1 = ($0)PT_REGS_PARM5(ctx);", type, var.name());
-    case Register::PARM6:
+    case Register::RAX:
+      return absl::Substitute("$0 $1 = ($0)ctx->ax;", type, var.name());
+    case Register::RBX:
+      return absl::Substitute("$0 $1 = ($0)ctx->bx;", type, var.name());
+    case Register::RCX:
+      return absl::Substitute("$0 $1 = ($0)ctx->cx;", type, var.name());
+    case Register::RDX:
+      return absl::Substitute("$0 $1 = ($0)ctx->dx;", type, var.name());
+    case Register::RDI:
+      return absl::Substitute("$0 $1 = ($0)ctx->di;", type, var.name());
+    case Register::RSI:
+      return absl::Substitute("$0 $1 = ($0)ctx->si;", type, var.name());
+    case Register::R8:
+      return absl::Substitute("$0 $1 = ($0)ctx->r8;", type, var.name());
+    case Register::R9:
       return absl::Substitute("$0 $1 = ($0)ctx->r9;", type, var.name());
-    case Register::PARM_PTR:
+    case Register::R10:
+      return absl::Substitute("$0 $1 = ($0)ctx->r10;", type, var.name());
+    case Register::R11:
+      return absl::Substitute("$0 $1 = ($0)ctx->r11;", type, var.name());
+    case Register::R12:
+      return absl::Substitute("$0 $1 = ($0)ctx->r12;", type, var.name());
+    case Register::R13:
+      return absl::Substitute("$0 $1 = ($0)ctx->r13;", type, var.name());
+    case Register::R14:
+      return absl::Substitute("$0 $1 = ($0)ctx->r14;", type, var.name());
+    case Register::R15:
+      return absl::Substitute("$0 $1 = ($0)ctx->r15;", type, var.name());
+    case Register::SYSV_AMD64_ARGS_PTR:
       // In the System V AMD64 ABI, there are 6 registers dedicated to passing arguments.
       // Small arguments may be passed through these registers.
       // Copy the register values onto the BPF stack and return a pointer to the return value.
       return absl::Substitute(
           "uint64_t parm___[6];"
-          "parm___[0] = PT_REGS_PARM1(ctx);"
-          "parm___[1] = PT_REGS_PARM2(ctx);"
-          "parm___[2] = PT_REGS_PARM3(ctx);"
-          "parm___[3] = PT_REGS_PARM4(ctx);"
-          "parm___[4] = PT_REGS_PARM5(ctx);"
-          "parm___[5] = PT_REGS_PARM6(ctx);"
+          "parm___[0] = ctx->di;"
+          "parm___[1] = ctx->si;"
+          "parm___[2] = ctx->dx;"
+          "parm___[3] = ctx->cx;"
+          "parm___[4] = ctx->r8;"
+          "parm___[5] = ctx->r9;"
+          "void* $0 = &parm___;",
+          var.name());
+    case Register::GOLANG_ARGS_PTR:
+      // In the new Golang ABI, there are 8 registers dedicated to passing arguments.
+      // Copy the register values onto the BPF stack and return a pointer to the return value.
+      return absl::Substitute(
+          "uint64_t parm___[9];"
+          "parm___[0] = ctx->ax;"
+          "parm___[1] = ctx->bx;"
+          "parm___[2] = ctx->cx;"
+          "parm___[3] = ctx->di;"
+          "parm___[4] = ctx->si;"
+          "parm___[5] = ctx->r8;"
+          "parm___[7] = ctx->r9;"
+          "parm___[8] = ctx->r10;"
+          "parm___[9] = ctx->r11;"
           "void* $0 = &parm___;",
           var.name());
     default:
