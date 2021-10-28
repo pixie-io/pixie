@@ -1,0 +1,3 @@
+---
+short: Resource Usage of Services.
+long: Get the average pod CPU, pod memory, HTTP throughput and latency by service.

@@ -1,0 +1,90 @@
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+import px
+
+# Window size to use on time_ column for bucketing.
+ns_per_s = 1000 * 1000 * 1000
+window_ns = px.DurationNanos(10 * ns_per_s)
+
+
+def services_for_cluster(start_time: str):
+    pods = process_stats_by_service(start_time)
+    service_let = inbound_service_http_traffic_summary(start_time)
+    joined = pods.merge(service_let, how='left', left_on='service', right_on='service',
+                        suffixes=['', '_x'])
+    joined.http_request_throughput = joined.http_throughput_total / px.DurationNanos(joined.time_window)
+    return joined[['service', 'pod_count', 'avg_pod_cpu', 'avg_pod_rss', 'http_request_throughput', 'http_latency']]
+
+
+def process_stats_by_service(start_time: str):
+    df = px.DataFrame(table='process_stats', start_time=start_time)
+    df.pod = df.ctx['pod']
+    df.service = df.ctx['service']
+    df = df[df.service != '']
+    df.timestamp = px.bin(df.time_, window_ns)
+    df = df.groupby(['service', 'pod', 'upid']).agg(
+        time_min=('time_', px.min),
+        time_max=('time_', px.max),
+        avg_upid_rss=('rss_bytes', px.mean),
+        avg_upid_vsz=('vsize_bytes', px.mean),
+        # The fields below are counters, so we take the min and the max to subtract them.
+        cpu_utime_ns_max=('cpu_utime_ns', px.max),
+        cpu_utime_ns_min=('cpu_utime_ns', px.min),
+        cpu_ktime_ns_max=('cpu_ktime_ns', px.max),
+        cpu_ktime_ns_min=('cpu_ktime_ns', px.min)
+    )
+    df.cpu_utime_ns = df.cpu_utime_ns_max - df.cpu_utime_ns_min
+    df.cpu_ktime_ns = df.cpu_ktime_ns_max - df.cpu_ktime_ns_min
+    # Sum by UPID.
+    df = df.groupby(['service', 'pod']).agg(
+        time_min=('time_min', px.min),
+        time_max=('time_max', px.max),
+        cpu_ktime_ns=('cpu_ktime_ns', px.sum),
+        cpu_utime_ns=('cpu_utime_ns', px.sum),
+        avg_rss=('avg_upid_rss', px.sum),
+        avg_vsz=('avg_upid_vsz', px.sum)
+    )
+    # Calculate total (kernel + user time)  percentage used over window.
+    df.time_window = df.time_max - df.time_min
+    df.cpu_usage = px.Percent((df.cpu_ktime_ns + df.cpu_utime_ns) / df.time_window)
+    # Take averages across service.
+    df = df.groupby('service').agg(avg_pod_cpu=('cpu_usage', px.mean),
+                                   avg_pod_rss=('avg_rss', px.mean),
+                                   avg_pod_vsz=('avg_vsz', px.mean),
+                                   pod_count=('pod', px.count),
+                                   time_window=('time_window', px.max))
+    return df
+
+
+def inbound_service_http_traffic_summary(start_time: str):
+    df = px.DataFrame(table='http_events', start_time=start_time)
+    df.service = df.ctx['service']
+    df.pod = df.ctx['pod']
+
+    # Filter only to inbound service traffic (server-side).
+    # Don't include traffic initiated by this service to an external location.
+    df = df[df.service != '']
+    df = df[df.trace_role == 2]
+    df = df.groupby('service').agg(
+        http_throughput_total=('latency', px.count),
+        http_latency=('latency', px.quantiles)
+    )
+    return df
+
+
+df = services_for_cluster('-10m')
+px.display(df)
