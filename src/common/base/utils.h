@@ -23,6 +23,7 @@
 #include <array>
 #include <bitset>
 #include <cstring>
+#include <map>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -355,6 +356,20 @@ template <typename T, typename TToString = decltype(std::declval<T&>().ToString(
 inline std::ostream& operator<<(std::ostream& os, const T& v) {
   os << v.ToString();
   return os;
+}
+
+/**
+ * Returns the value of the key that is the largest key not greater than the input key.
+ * The "Floor" is used as analogy to the math operation.
+ */
+template <typename TContainerType>
+typename TContainerType::const_iterator Floor(const TContainerType& c,
+                                              const typename TContainerType::key_type& key) {
+  auto iter = c.upper_bound(key);
+  if (iter != c.begin()) {
+    return --iter;
+  }
+  return c.end();
 }
 
 }  // namespace px

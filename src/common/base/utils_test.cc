@@ -339,4 +339,15 @@ TEST(AutoStreamOperator, Basic) {
   }
 }
 
+TEST(FloorTest, Basic) {
+  std::map<int, int> v = {{1, 100}, {3, 300}, {5, 500}};
+  EXPECT_EQ(Floor(v, 0), v.end());
+  EXPECT_EQ(Floor(v, 1), v.begin());
+  EXPECT_EQ(Floor(v, 2), v.begin());
+  EXPECT_EQ(Floor(v, 3), v.find(3));
+  EXPECT_EQ(Floor(v, 4), v.find(3));
+  EXPECT_EQ(Floor(v, 5), v.find(5));
+  EXPECT_EQ(Floor(v, 6), v.find(5));
+}
+
 }  // namespace px
