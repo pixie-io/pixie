@@ -30,14 +30,14 @@ namespace stirling {
 namespace protocols {
 namespace mux {
 
-    RecordsWithErrorCount<mux::Record> StitchFrames(std::deque<mux::Frame>* reqs,
-                                                         std::deque<mux::Frame>* resps);
+RecordsWithErrorCount<mux::Record> StitchFrames(std::deque<mux::Frame>* reqs,
+                                                std::deque<mux::Frame>* resps);
 }  // namespace mux
 
 template <>
 inline RecordsWithErrorCount<mux::Record> StitchFrames(std::deque<mux::Frame>* reqs,
-                                                         std::deque<mux::Frame>* resps,
-                                                         NoState* /*state*/) {
+                                                       std::deque<mux::Frame>* resps,
+                                                       NoState* /*state*/) {
   return mux::StitchFrames(reqs, resps);
 }
 

@@ -18,10 +18,10 @@
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/mux/stitcher.h"
 
+#include <set>
 #include <string>
 #include <utility>
 #include <variant>
-#include <set>
 
 #include <absl/strings/str_replace.h>
 
@@ -36,58 +36,52 @@ namespace protocols {
 namespace mux {
 
 RecordsWithErrorCount<mux::Record> StitchFrames(std::deque<mux::Frame>* reqs,
-                                                  std::deque<mux::Frame>* resps) {
-    std::vector<mux::Record> records;
-    int error_count = 0;
+                                                std::deque<mux::Frame>* resps) {
+  std::vector<mux::Record> records;
+  int error_count = 0;
 
-    for (auto& req : *reqs) {
-        for (auto& resp : *resps) {
-            Type req_type = static_cast<Type>(req.type);
+  for (auto& req : *reqs) {
+    for (auto& resp : *resps) {
+      Type req_type = static_cast<Type>(req.type);
 
-            // Tlease messages do not have a response pair
-            if (req_type == Type::kTlease) {
+      // Tlease messages do not have a response pair
+      if (req_type == Type::kTlease) {
+        req.consumed = true;
+        records.push_back({std::move(req), {}});
+        break;
+      }
+      if (req.timestamp_ns > resp.timestamp_ns) {
+        resps->pop_front();
+        error_count++;
+        VLOG(1) << absl::Substitute(
+            "Did not find a request matching the response. Tag = $0 Type = $1", uint32_t(resp.tag),
+            resp.type);
+        continue;
+      }
 
-                req.consumed = true;
-                records.push_back({std::move(req), {}});
-                break;
-            }
-            if (req.timestamp_ns > resp.timestamp_ns) {
+      StatusOr<Type> matching_resp_type = GetMatchingRespType(req_type);
+      Type res_type = static_cast<Type>(resp.type);
+      if (!matching_resp_type.ok() || res_type != matching_resp_type.ValueOrDie() ||
+          resp.tag != req.tag) {
+        continue;
+      }
 
-                resps->pop_front();
-                error_count++;
-                VLOG(1) << absl::Substitute("Did not find a request matching the response. Tag = $0 Type = $1", uint32_t(resp.tag), resp.type);
-                continue;
-            }
-
-            StatusOr<Type> matching_resp_type = GetMatchingRespType(req_type);
-            Type res_type = static_cast<Type>(resp.type);
-            if (
-                !matching_resp_type.ok() ||
-                res_type != matching_resp_type.ValueOrDie() ||
-                resp.tag != req.tag
-            ) {
-                continue;
-            }
-
-            req.consumed = true;
-            records.push_back({
-                std::move(req),
-                std::move(resp)
-            });
-            resps->pop_front();
-            break;
-        }
+      req.consumed = true;
+      records.push_back({std::move(req), std::move(resp)});
+      resps->pop_front();
+      break;
     }
-    // TODO(ddelnano): Clean up stale requests once there is a mechanism to do so
-    for (const auto& req_frame : *reqs) {
-        if (!req_frame.consumed) {
-            break;
-        }
-        reqs->pop_front();
+  }
+  // TODO(ddelnano): Clean up stale requests once there is a mechanism to do so
+  for (const auto& req_frame : *reqs) {
+    if (!req_frame.consumed) {
+      break;
     }
-    resps->clear();
+    reqs->pop_front();
+  }
+  resps->clear();
 
-    return {records, error_count};
+  return {records, error_count};
 }
 
 }  // namespace mux
