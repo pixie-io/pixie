@@ -23,6 +23,7 @@ import {
   ApolloLink,
   createHttpLink,
   ServerError,
+  ServerParseError,
   gql,
 } from '@apollo/client/core';
 import { setContext } from '@apollo/client/link/context';
@@ -52,7 +53,7 @@ const loginRedirectLink = (on401: (errorMessage?: string) => void) => onError(({
   }
 
   if (!!networkError && (networkError as ServerError).statusCode === 401) {
-    on401(networkError.message);
+    on401((networkError as ServerParseError).bodyText?.trim() ?? networkError.message);
   }
 });
 

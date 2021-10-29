@@ -102,6 +102,13 @@ function useIsAuthenticated() {
   return { authenticated, loading, error };
 }
 
+function getAuthRedirectLocation(): string {
+  const authRedirectUri = window.location.pathname.length > 1
+    ? encodeURIComponent(window.location.pathname + window.location.search)
+    : '';
+  return authRedirectUri ? `/login?redirect_uri=${authRedirectUri}` : '/login';
+}
+
 // eslint-disable-next-line react-memo/require-memo
 export const App: React.FC = () => {
   const { authenticated, loading } = useIsAuthenticated();
@@ -115,10 +122,7 @@ export const App: React.FC = () => {
     return null;
   }
 
-  const authRedirectUri = window.location.pathname.length > 1
-    ? encodeURIComponent(window.location.pathname + window.location.search)
-    : '';
-  const authRedirectTo = authRedirectUri ? `/login?redirect_uri=${authRedirectUri}` : '/login';
+  const authRedirectTo = getAuthRedirectLocation();
 
   return loading ? null : (
     <ErrorBoundary name='App' fallback={PixienautCrashFallback}>
@@ -337,10 +341,17 @@ const ThemedApp: React.FC = () => {
     };
   }, [listener]);
 
+  const onUnauthorized = React.useCallback(() => {
+    const isEmbedded = window.location.pathname.startsWith('/embed');
+    if (!isEmbedded) {
+      window.location.href = window.location.origin + getAuthRedirectLocation();
+    }
+  }, []);
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-        <PixieAPIContextProvider apiKey=''>
+        <PixieAPIContextProvider apiKey='' onUnauthorized={onUnauthorized}>
           <StyledApp />
         </PixieAPIContextProvider>
     </ThemeProvider>
