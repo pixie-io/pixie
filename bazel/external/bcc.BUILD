@@ -43,7 +43,6 @@ cmake(
         "libbcc-loader-static.a",
         "libb_frontend.a",
         "libclang_frontend.a",
-        "libusdt-static.a",
     ],
     visibility = ["//visibility:public"],
 )

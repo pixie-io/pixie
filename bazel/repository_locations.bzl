@@ -296,15 +296,21 @@ REPOSITORY_LOCATIONS = dict(
     ),
 )
 
+# To modify one of the forked repos below:
+#  1. Make the changes to the repo and push the changes to the `pixie` on github.
+#  2. Update the commit below to point to the commit hash of the new `pixie` branch.
+#
+# To use a local repo for local development, change `remote` to a file path.
+#   ex: remote = "/home/user/src/pixie-io/bcc"
 GIT_REPOSITORY_LOCATIONS = dict(
     com_github_iovisor_bcc = dict(
         remote = "https://github.com/pixie-io/bcc.git",
-        commit = "c50098cadc54a602a7e423ae958dca8562ee2cf9",
+        commit = "649670959a0e7376358d4c8e455cfd5c75321d53",
         shallow_since = "1618606641 -0700",
     ),
     com_github_iovisor_bpftrace = dict(
         remote = "https://github.com/pixie-io/bpftrace.git",
-        commit = "b63b4902f7865f2d7a995e0732333b8439fc78ab",
+        commit = "fb8094cb84798a633364e912b83e5a4c2e26347e",
         shallow_since = "1632863490 -0700",
     ),
 )
