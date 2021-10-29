@@ -72,10 +72,29 @@ TEST_F(DwarfReaderTest, NonExistentPath) {
 }
 
 TEST_F(DwarfReaderTest, SourceLanguage) {
-  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kCppBinaryPath, /*index*/ true));
-  // We use C++17, but the dwarf shows 14.
-  EXPECT_EQ(dwarf_reader->source_language(), llvm::dwarf::DW_LANG_C_plus_plus_14);
+  {
+    ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                         DwarfReader::Create(kCppBinaryPath));
+    // We use C++17, but the dwarf shows 14.
+    EXPECT_EQ(dwarf_reader->source_language(), llvm::dwarf::DW_LANG_C_plus_plus_14);
+    EXPECT_THAT(dwarf_reader->compiler(), ::testing::HasSubstr("clang"));
+  }
+
+  {
+    ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                         DwarfReader::Create(kGo1_16BinaryPath));
+    EXPECT_EQ(dwarf_reader->source_language(), llvm::dwarf::DW_LANG_Go);
+    EXPECT_THAT(dwarf_reader->compiler(), ::testing::HasSubstr("go"));
+    EXPECT_THAT(dwarf_reader->compiler(), ::testing::Not(::testing::HasSubstr("regabi")));
+  }
+
+  {
+    ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                         DwarfReader::Create(kGo1_17BinaryPath));
+    EXPECT_EQ(dwarf_reader->source_language(), llvm::dwarf::DW_LANG_Go);
+    EXPECT_THAT(dwarf_reader->compiler(), ::testing::HasSubstr("go"));
+    EXPECT_THAT(dwarf_reader->compiler(), ::testing::HasSubstr("regabi"));
+  }
 }
 
 TEST_P(DwarfReaderTest, CppGetStructByteSize) {

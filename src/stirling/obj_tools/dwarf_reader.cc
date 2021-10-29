@@ -159,19 +159,21 @@ bool IsNamespace(llvm::dwarf::Tag tag) { return tag == llvm::dwarf::DW_TAG_names
 
 Status DwarfReader::DetectSourceLanguage() {
   for (size_t i = 0; i < dwarf_context_->getNumCompileUnits(); ++i) {
-    auto lang_opt =
-        dwarf_context_->getUnitAtIndex(i)->getUnitDIE().find(llvm::dwarf::DW_AT_language);
-    if (!lang_opt.hasValue()) {
-      // Found that node executable built from the source can have the following DIE returned by
-      // getUnitAtIndex()->getUnitDie().
-      // 0x0000000b: DW_TAG_partial_unit
-      //               DW_AT_stmt_list   (0x00000000)
-      //               DW_AT_comp_dir    ("/home/yzhao/src/node/out")
-      // This is not a DW_TAG_compile_unit.
+    const auto& unit_die = dwarf_context_->getUnitAtIndex(i)->getUnitDIE();
+    if (unit_die.getTag() != llvm::dwarf::DW_TAG_compile_unit) {
+      // Skip over DW_TAG_partial_unit, and potentially other tags.
       continue;
     }
+
+    PL_ASSIGN_OR(const DWARFFormValue& lang_attr,
+                 GetAttribute(unit_die, llvm::dwarf::DW_AT_language), continue);
     source_language_ =
-        static_cast<llvm::dwarf::SourceLanguage>(llvm::dwarf::toUnsigned(lang_opt, /*default*/ 0));
+        static_cast<llvm::dwarf::SourceLanguage>(lang_attr.getAsUnsignedConstant().getValue());
+
+    const DWARFFormValue& producer_attr =
+        GetAttribute(unit_die, llvm::dwarf::DW_AT_producer).ValueOr({});
+    compiler_ = producer_attr.getAsCString().getValueOr("");
+
     return Status::OK();
   }
   return error::Internal(
@@ -797,11 +799,15 @@ StatusOr<VarLocation> DwarfReader::GetArgumentLocation(std::string_view function
 
 namespace {
 
-ABI LanguageToABI(llvm::dwarf::SourceLanguage lang) {
+ABI LanguageToABI(llvm::dwarf::SourceLanguage lang, const std::string& compiler) {
   switch (lang) {
     case llvm::dwarf::DW_LANG_Go:
-      // No arguments are passed through register on Go.
-      // TODO(oazizi): This should be expanded to cover Go's new ABI depending on version.
+      // Go has different ABIs, so check the compiler to choose the right one.
+      // Sample output: "Go cmd/compile go1.17; regabi"
+      // The regabi means the register-based ABI was used (empirically verified only).
+      if (absl::StrContains(compiler, "regabi")) {
+        return ABI::kGolangRegister;
+      }
       return ABI::kGolangStack;
     case llvm::dwarf::DW_LANG_C:
     case llvm::dwarf::DW_LANG_C_plus_plus:
@@ -824,7 +830,7 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
   // but DW_AT_location has been found to be blank in some cases, making it unreliable.
   // Instead, we use a FunctionArgTracker that tries to reverse engineer the calling convention.
 
-  ABI abi = LanguageToABI(source_language_);
+  ABI abi = LanguageToABI(source_language_, compiler_);
   if (abi == ABI::kUnknown) {
     return error::Unimplemented("Unable to determine ABI from language: $0",
                                 magic_enum::enum_name(source_language_));

@@ -287,6 +287,7 @@ class DwarfReader {
   bool IsValid() const { return dwarf_context_->getNumCompileUnits() != 0; }
 
   const llvm::dwarf::SourceLanguage& source_language() const { return source_language_; }
+  const std::string& compiler() const { return compiler_; }
 
  private:
   DwarfReader(std::unique_ptr<llvm::MemoryBuffer> buffer,
@@ -311,6 +312,7 @@ class DwarfReader {
 
   // Records the source language of the DWARF information.
   llvm::dwarf::SourceLanguage source_language_;
+  std::string compiler_;
 
   std::unique_ptr<llvm::MemoryBuffer> memory_buffer_;
   std::unique_ptr<llvm::DWARFContext> dwarf_context_;
