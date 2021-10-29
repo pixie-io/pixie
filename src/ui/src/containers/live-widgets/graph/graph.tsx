@@ -25,10 +25,7 @@ import {
   parseDOTNetwork,
 } from 'vis-network/standalone';
 import * as React from 'react';
-import {
-  makeStyles,
-  useTheme,
-} from '@material-ui/core/styles';
+import { makeStyles, useTheme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import { useHistory } from 'react-router-dom';
 import { ClusterContext } from 'app/common/cluster-context';
@@ -37,12 +34,15 @@ import { Arguments } from 'app/utils/args-utils';
 import Button from '@material-ui/core/Button';
 import { Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
 import { buildClass } from 'app/utils/build-class';
+import { GaugeLevel, getColor, getLatencyNSLevel } from 'app/utils/metric-thresholds';
 import {
-  getGraphOptions, semTypeToShapeConfig, colInfoFromName, ColInfo,
+  ColInfo,
+  colInfoFromName,
+  getGraphOptions,
+  semTypeToShapeConfig,
 } from './graph-utils';
 import { toEntityURL, toSingleEntityPage } from '../utils/live-view-params';
 import { formatByDataType, formatBySemType } from '../../format-data/format-data';
-import { getColor, getLatencyNSLevel, GaugeLevel } from '../../../utils/metric-thresholds';
 
 interface AdjacencyList {
   toColumn: string;
@@ -74,8 +74,16 @@ interface GraphWidgetProps {
   propagatedArgs?: Arguments;
 }
 
-const INVALID_NODE_TYPES = [SemanticType.ST_SCRIPT_REFERENCE, SemanticType.ST_HTTP_RESP_MESSAGE];
-const LATENCY_TYPES = [SemanticType.ST_DURATION_NS, SemanticType.ST_THROUGHPUT_PER_NS];
+const INVALID_NODE_TYPES = [
+  SemanticType.ST_SCRIPT_REFERENCE,
+  SemanticType.ST_HTTP_RESP_MESSAGE,
+];
+
+const LATENCY_TYPES = [
+  SemanticType.ST_DURATION_NS,
+  SemanticType.ST_THROUGHPUT_PER_NS,
+  SemanticType.ST_THROUGHPUT_BYTES_PER_NS,
+];
 
 const useStyles = makeStyles((theme) => createStyles({
   root: {

@@ -27,6 +27,7 @@ import {
   HTTPStatusCodeRenderer,
   PercentRenderer,
   PortRenderer,
+  ThroughputBytesRenderer,
   ThroughputRenderer,
 } from 'app/containers/format-data/format-data';
 import { JSONData } from 'app/containers/format-data/json-data';
@@ -242,6 +243,8 @@ export function getLiveCellRenderer(
       return PercentRenderer;
     case SemanticType.ST_THROUGHPUT_PER_NS:
       return ThroughputRenderer;
+    case SemanticType.ST_THROUGHPUT_BYTES_PER_NS:
+      return ThroughputBytesRenderer;
     case SemanticType.ST_SCRIPT_REFERENCE:
       return getScriptReferenceCellRenderer(clusterName, propagatedArgs);
     default:
