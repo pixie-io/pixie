@@ -30,29 +30,19 @@ using llvm::DWARFDie;
 using llvm::DWARFFormValue;
 
 std::string_view GetShortName(const DWARFDie& die) {
-  const char* short_name = die.getName(llvm::DINameKind::ShortName);
-  if (short_name != nullptr) {
-    return std::string_view(short_name);
-  }
-  return {};
+  const char* name = die.getShortName();
+  return (name == nullptr) ? "" : name;
 }
 
 std::string_view GetLinkageName(const DWARFDie& die) {
-  auto name_or = AdaptLLVMOptional(llvm::dwarf::toString(die.find(llvm::dwarf::DW_AT_linkage_name)),
-                                   "Failed to read DW_AT_linkage_name.");
-  if (name_or.ok() && name_or.ValueOrDie() != nullptr) {
-    return std::string_view(name_or.ValueOrDie());
-  }
+  const char* name = die.getLinkageName();
+  return (name == nullptr) ? "" : name;
+}
 
-  DWARFDie spec_die = die.getAttributeValueAsReferencedDie(llvm::dwarf::DW_AT_specification);
-
-  name_or = AdaptLLVMOptional(llvm::dwarf::toString(spec_die.find(llvm::dwarf::DW_AT_linkage_name)),
-                              "Failed to read DW_AT_linkage_name of the specification DIE.");
-  if (name_or.ok() && name_or.ValueOrDie() != nullptr) {
-    return std::string_view(name_or.ValueOrDie());
-  }
-
-  return {};
+StatusOr<DWARFFormValue> GetAttribute(const DWARFDie& die, llvm::dwarf::Attribute attribute) {
+  return AdaptLLVMOptional(die.find(attribute),
+                           absl::Substitute("Could not find attribute $0 in DIE $1",
+                                            magic_enum::enum_name(attribute), GetShortName(die)));
 }
 
 std::string Dump(const llvm::DWARFDie& die) {

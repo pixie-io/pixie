@@ -115,13 +115,11 @@ bool IsMatchingDIE(std::string_view name, std::optional<llvm::dwarf::Tag> tag,
     return false;
   }
 
-  const char* die_short_name = die.getName(llvm::DINameKind::ShortName);
-
   // May also want to consider the linkage name (e.g. the mangled name).
   // That is what llvm-dwarfdebug appears to do.
-  // const char* die_linkage_name = die.getName(llvm::DINameKind::LinkageName);
+  // const char* die_linkage_name = die.getLinkageName();
 
-  return (die_short_name && name == die_short_name);
+  return (name == GetShortName(die));
 }
 
 }  // namespace
@@ -130,8 +128,8 @@ Status DwarfReader::GetMatchingDIEs(DWARFContext::unit_iterator_range CUs, std::
                                     std::optional<llvm::dwarf::Tag> tag,
                                     std::vector<DWARFDie>* dies_out) {
   for (const auto& CU : CUs) {
-    for (const auto& Entry : CU->dies()) {
-      DWARFDie die = {CU.get(), &Entry};
+    for (const auto& entry : CU->dies()) {
+      DWARFDie die = {CU.get(), &entry};
       if (IsMatchingDIE(name, tag, die)) {
         dies_out->push_back(std::move(die));
       }
@@ -340,8 +338,6 @@ StatusOr<uint64_t> GetMemberOffset(const DWARFDie& die) {
       // Parent class inherited from.
       die.getTag() == llvm::dwarf::DW_TAG_inheritance);
 
-  const char* die_short_name = die.getName(llvm::DINameKind::ShortName);
-
   PL_ASSIGN_OR_RETURN(
       const DWARFFormValue& attr,
       AdaptLLVMOptional(die.find(llvm::dwarf::DW_AT_data_member_location),
@@ -369,7 +365,7 @@ StatusOr<uint64_t> GetMemberOffset(const DWARFDie& die) {
   PL_ASSIGN_OR_RETURN(uint64_t offset,
                       AdaptLLVMOptional(attr.getAsUnsignedConstant(),
                                         absl::Substitute("Could not extract offset for member $0.",
-                                                         die_short_name)));
+                                                         GetShortName(die))));
   return offset;
 }
 
@@ -478,18 +474,12 @@ StatusOr<TypeInfo> GetTypeInfo(const DWARFDie& die, const DWARFDie& type_die) {
   return type_info;
 }
 
-StatusOr<DWARFFormValue> GetDieAttribute(const DWARFDie& die, llvm::dwarf::Attribute attribute) {
-  return AdaptLLVMOptional(die.find(attribute),
-                           absl::Substitute("Could not find attribute $0 in DIE $1",
-                                            magic_enum::enum_name(attribute), GetShortName(die)));
-}
-
 StatusOr<uint64_t> GetBaseOrStructTypeByteSize(const DWARFDie& die) {
   DCHECK((die.getTag() == llvm::dwarf::DW_TAG_base_type) ||
          (die.getTag() == llvm::dwarf::DW_TAG_structure_type));
 
   PL_ASSIGN_OR_RETURN(const DWARFFormValue& byte_size_attr,
-                      GetDieAttribute(die, llvm::dwarf::DW_AT_byte_size));
+                      GetAttribute(die, llvm::dwarf::DW_AT_byte_size));
 
   PL_ASSIGN_OR_RETURN(uint64_t byte_size,
                       AdaptLLVMOptional(byte_size_attr.getAsUnsignedConstant(),
@@ -572,7 +562,7 @@ std::vector<DWARFDie> GetChildDIEs(const DWARFDie& die, llvm::dwarf::Tag filter_
 }
 
 bool IsDeclaration(const llvm::DWARFDie& die) {
-  auto value_or = GetDieAttribute(die, llvm::dwarf::DW_AT_declaration);
+  auto value_or = GetAttribute(die, llvm::dwarf::DW_AT_declaration);
   if (value_or.ok()) {
     DCHECK(value_or.ValueOrDie().getForm() == llvm::dwarf::DW_FORM_flag_present)
         << "DW_AT_declaration should be of DW_FORM_flag_present. DIE: " << Dump(die);

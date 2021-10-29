@@ -30,7 +30,10 @@ namespace px {
 namespace stirling {
 namespace obj_tools {
 
-// Returns a StatusOr that holds the llvm_opt's value, or an error Status with the input message.
+/**
+ * Converts llvm::Optional<T> to StatusOr<T>.
+ * When the optional value is not present, an error with the provided message is returned.
+ */
 template <typename TValueType>
 StatusOr<TValueType> AdaptLLVMOptional(llvm::Optional<TValueType>&& llvm_opt,
                                        std::string_view msg) {
@@ -40,15 +43,27 @@ StatusOr<TValueType> AdaptLLVMOptional(llvm::Optional<TValueType>&& llvm_opt,
   return llvm_opt.getValue();
 }
 
-// Returns the DW_AT_name attribute of the input DIE. Returns an empty string if attribute does not
-// exist, or for any errors.
+/**
+ * Returns the DW_AT_name attribute of the input DIE.
+ * Returns an empty string if attribute does not exist, or for any errors.
+ */
 std::string_view GetShortName(const llvm::DWARFDie& die);
 
-// Returns the DW_AT_linkage_name attribute of the input DIE. Returns an empty string if attribute
-// does not exist, or for any errors.
+/**
+ * Returns the DW_AT_linkage_name attribute of the input DIE.
+ * Returns an empty string if attribute does not exist, or for any errors.
+ */
 std::string_view GetLinkageName(const llvm::DWARFDie& die);
 
-// Returns the text representation of the input DIE.
+/**
+ * Returns the specified attribute (DW_AT_*) for the die.
+ */
+StatusOr<llvm::DWARFFormValue> GetAttribute(const llvm::DWARFDie& die,
+                                            llvm::dwarf::Attribute attribute);
+
+/**
+ * Returns the text representation of the input DIE.
+ */
 std::string Dump(const llvm::DWARFDie& die);
 
 }  // namespace obj_tools
