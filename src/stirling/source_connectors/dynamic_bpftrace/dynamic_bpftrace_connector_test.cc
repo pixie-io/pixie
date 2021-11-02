@@ -386,7 +386,7 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceSyntacticError) {
 
   // TODO(oazizi): Find a way to get the clang error passed up.
   ASSERT_THAT(DynamicBPFTraceConnector::Create("test", tracepoint).status(),
-              StatusIs(statuspb::INTERNAL, HasSubstr("Could not load bpftrace script")));
+              StatusIs(statuspb::INTERNAL, HasSubstr("Could not parse bpftrace script")));
 }
 
 TEST(DynamicBPFTraceConnectorTest, BPFTraceSemanticError) {

@@ -18,7 +18,7 @@
 
 #include "src/stirling/source_connectors/dynamic_bpftrace/dynamic_bpftrace_connector.h"
 
-#include <bpftrace/src/ast/async_event_types.h>
+#include <ast/async_event_types.h>
 
 #include <utility>
 #include <vector>
@@ -99,7 +99,7 @@ StatusOr<BackedDataElements> ConvertFields(const std::vector<bpftrace::Field> fi
 
     // Check: Any integers must be an expected size.
     if (bpftrace_type == bpftrace::Type::integer) {
-      size_t bpftrace_type_size = fields[i].type.size;
+      size_t bpftrace_type_size = fields[i].type.size();
 
       switch (bpftrace_type_size) {
         case 8:
@@ -196,7 +196,7 @@ Status CheckOutputFields(const std::vector<bpftrace::Field>& fields,
 
     // Check #2: Any integers must be an expected size.
     if (bpftrace_type == bpftrace::Type::integer) {
-      size_t bpftrace_type_size = fields[i].type.size;
+      size_t bpftrace_type_size = fields[i].type.size();
 
       switch (bpftrace_type_size) {
         case 8:
@@ -287,7 +287,7 @@ void DynamicBPFTraceConnector::HandleEvent(uint8_t* data) {
     }                                                              \
   }
 
-        switch (field.type.size) {
+        switch (field.type.size()) {
           case 8:
             APPEND_INTEGER(uint64_t, data + field.offset);
             break;
@@ -304,14 +304,14 @@ void DynamicBPFTraceConnector::HandleEvent(uint8_t* data) {
             LOG(DFATAL) << absl::Substitute(
                 "[DataTable: $0, col: $1] Invalid integer size: $2. Table is now inconsistent. "
                 "This is a critical error.",
-                name_, col, field.type.size);
+                name_, col, field.type.size());
             break;
         }
         break;
 #undef APPEND_INTEGER
       case bpftrace::Type::string: {
         auto p = reinterpret_cast<char*>(data + field.offset);
-        r.Append(col, types::StringValue(std::string(p, strnlen(p, field.type.size))));
+        r.Append(col, types::StringValue(std::string(p, strnlen(p, field.type.size()))));
         break;
       }
       case bpftrace::Type::inet: {

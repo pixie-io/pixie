@@ -18,16 +18,23 @@
 
 #include "src/stirling/bpf_tools/bpftrace_wrapper.h"
 
-#include <bpftrace/src/ast/codegen_llvm.h>
-#include <bpftrace/src/ast/field_analyser.h>
-#include <bpftrace/src/ast/printer.h>
-#include <bpftrace/src/ast/semantic_analyser.h>
-#include <bpftrace/src/clang_parser.h>
-#include <bpftrace/src/driver.h>
-#include <bpftrace/src/procmon.h>
-#include <bpftrace/src/tracepoint_format_parser.h>
+#include <aot/aot.h>
+#include <ast/bpforc/bpforc.h>
+#include <ast/pass_manager.h>
+#include <ast/passes/codegen_llvm.h>
+#include <ast/passes/field_analyser.h>
+#include <ast/passes/node_counter.h>
+#include <ast/passes/printer.h>
+#include <ast/passes/resource_analyser.h>
+#include <ast/passes/semantic_analyser.h>
+#include <bpftrace.h>
+#include <clang_parser.h>
+#include <driver.h>
+#include <tracepoint_format_parser.h>
 
+#include <limits>
 #include <sstream>
+#include <utility>
 
 #include "src/common/base/base.h"
 #include "src/common/system/config.h"
@@ -44,8 +51,44 @@ std::string DumpDriver(const Driver& driver) {
   std::ostringstream oss;
 
   Printer p(oss);
-  driver.root_->accept(p);
+  driver.root->accept(p);
   return oss.str();
+}
+
+// Required to support strftime() in bpftrace code.
+// Since BPF nsecs uses monotonic clock, but strftime() needs to know the real time,
+// BPFtrace requires the offset to be passed in directly.
+// BPFTrace then applies the offset before performing the formatting.
+struct timespec GetBootTime() {
+  constexpr uint64_t kNanosPerSecond = 1000 * 1000 * 1000;
+
+  // Convert the current monotonic time to real time and calculate an offset. With our current real
+  // time conversion this is equivalent, but when we add more complicated time conversion this won't
+  // be 100% accurate for the duration of the probe. But since its only used for strftime in
+  // BPFTrace it won't matter for our BPFTrace scripts.
+  struct timespec mono_time;
+  clock_gettime(CLOCK_MONOTONIC, &mono_time);
+  uint64_t mono_nsecs = kNanosPerSecond * mono_time.tv_sec + mono_time.tv_nsec;
+  uint64_t real_nsecs = px::system::Config::GetInstance().ConvertToRealTime(mono_nsecs);
+  uint64_t time_offset = real_nsecs - mono_nsecs;
+
+  struct timespec boottime;
+  boottime.tv_sec = time_offset / kNanosPerSecond;
+  boottime.tv_nsec = time_offset % kNanosPerSecond;
+
+  return boottime;
+}
+
+BPFTraceWrapper::BPFTraceWrapper() {
+  bpftrace_.ast_max_nodes_ = std::numeric_limits<uint64_t>::max();
+  bpftrace_.boottime_ = GetBootTime();
+
+  // Change these values for debug
+  // bpftrace::bt_verbose = true;
+  // bpftrace::bt_debug = bpftrace::DebugLevel::kFullDebug;
+
+  // Suppress bpftrace output to avoid pollution.
+  bpftrace::bt_quiet = true;
 }
 
 Status BPFTraceWrapper::CompileForPrintfOutput(std::string_view script,
@@ -62,86 +105,14 @@ Status BPFTraceWrapper::CompileForMapOutput(std::string_view script,
   return Status::OK();
 }
 
-Status BPFTraceWrapper::Compile(std::string_view script, const std::vector<std::string>& params) {
-  // Because BPFTrace uses global state (related to clear_struct_list()),
-  // multiple simultaneous compiles may not be safe. For now, introduce a lock for safety.
-  // TODO(oazizi): Update BPFTrace repo to avoid use of global state if possible.
-  const std::lock_guard<std::mutex> lock(compilation_mutex_);
-
-  int err;
-  int success;
-
-  // Reset some BPFTrace global state, which may be dirty because of a previous compile.
-  bpftrace::TracepointFormatParser::clear_struct_list();
-
-  bpftrace::Driver driver(bpftrace_);
-
-  // Change these values for debug
-  // bpftrace::bt_verbose = true;
-  // bpftrace::bt_debug = bpftrace::DebugLevel::kFullDebug;
-
-  // Convert the current monotonic time to real time and calculate an offset. With our current real
-  // time conversion this is equivalent, but when we add more complicated time conversion this won't
-  // be 100% accurate for the duration of the probe. But since its only used for strftime in
-  // BPFTrace it won't matter for our BPFTrace scripts.
-  constexpr uint64_t kNanosPerSecond = 1000 * 1000 * 1000;
-  struct timespec mono_time;
-  clock_gettime(CLOCK_MONOTONIC, &mono_time);
-  uint64_t mono_nsecs = kNanosPerSecond * mono_time.tv_sec + mono_time.tv_nsec;
-  uint64_t time_offset =
-      px::system::Config::GetInstance().ConvertToRealTime(mono_nsecs) - mono_nsecs;
-
-  // Set boottime. Required to support strftime() in bpftrace code.
-  // Since BPF nsecs uses monotonic clock, but strftime() needs to know the real time,
-  // BPFtrace requires the offset to be passed in directly.
-  // BPFTrace then applies the offset before performing the formatting.
-  struct timespec boottime;
-  boottime.tv_sec = time_offset / kNanosPerSecond;
-  boottime.tv_nsec = time_offset % kNanosPerSecond;
-  bpftrace_.boottime_ = boottime;
-
-  // Script from string (command line argument)
-  err = driver.parse_str(std::string(script));
-  if (err != 0) {
-    return error::Internal("Could not load bpftrace script.");
-  }
-
-  // Use this to pass parameters to bpftrace script ($1, $2 in the script)
-  for (const auto& param : params) {
-    bpftrace_.add_param(param);
-  }
-
-  // Appears to be required for printfs in bt file, so keep them.
-  bpftrace_.join_argnum_ = 16;
-  bpftrace_.join_argsize_ = 1024;
-
-  bpftrace::ast::FieldAnalyser fields(driver.root_.get(), bpftrace_);
-  err = fields.analyse();
-  if (err != 0) {
-    return error::Internal("Field analyser failed.");
-  }
-
-  success = bpftrace::TracepointFormatParser::parse(driver.root_.get(), bpftrace_);
-  if (!success) {
-    return error::Internal("TracepointFormatParser failed.");
-  }
-
-  // This ensures system headers be installed correctly inside a container.
-  PL_ASSIGN_OR_RETURN(std::filesystem::path sys_headers_dir,
-                      utils::FindOrInstallLinuxHeaders({utils::kDefaultHeaderSearchOrder}));
-  LOG(INFO) << absl::Substitute("Using linux headers found at $0 for BPFtrace runtime.",
-                                sys_headers_dir.string());
-
-  // TODO(oazizi): Include dirs and include files not used right now.
-  //               Consider either removing them or pushing them up into the Deploy() interface.
-  std::vector<std::string> include_dirs;
-  std::vector<std::string> include_files;
+std::vector<std::string> ClangCompileFlags(bool has_btf, std::vector<std::string> include_dirs = {},
+                                           std::vector<std::string> include_files = {}) {
   std::vector<std::string> extra_flags;
   {
     struct utsname utsname;
     uname(&utsname);
     std::string ksrc, kobj;
-    auto kdirs = bpftrace::get_kernel_dirs(utsname);
+    auto kdirs = bpftrace::get_kernel_dirs(utsname, !has_btf);
     ksrc = std::get<0>(kdirs);
     kobj = std::get<1>(kdirs);
 
@@ -161,33 +132,81 @@ Status BPFTraceWrapper::Compile(std::string_view script, const std::vector<std::
     extra_flags.push_back(file);
   }
 
+  return extra_flags;
+}
+
+// This compile function is inspired from the bpftrace project's main.cpp.
+// Changes to bpftrace may need to be reflected back to this function on a bpftrace update.
+Status BPFTraceWrapper::Compile(std::string_view script, const std::vector<std::string>& params) {
+  // Because BPFTrace uses global state (related to clear_struct_list()),
+  // multiple simultaneous compiles may not be safe. For now, introduce a lock for safety.
+  // TODO(oazizi): Update BPFTrace repo to avoid use of global state if possible.
+
+  const std::lock_guard<std::mutex> lock(compilation_mutex_);
+
+  // Some functions below return errors, while others success as positive numbers.
+  // For readability, use two separate variables for the two models.
+  int err;
+  int success;
+
+  // This ensures system headers be installed correctly inside a container.
+  PL_ASSIGN_OR_RETURN(std::filesystem::path sys_headers_dir,
+                      utils::FindOrInstallLinuxHeaders({utils::kDefaultHeaderSearchOrder}));
+  LOG(INFO) << absl::Substitute("Using linux headers found at $0 for BPFtrace runtime.",
+                                sys_headers_dir.string());
+
+  // Reset some BPFTrace global state, which may be dirty because of a previous compile.
+  bpftrace::TracepointFormatParser::clear_struct_list();
+
+  // Use this to pass parameters to bpftrace script ($1, $2 in the script)
+  for (const auto& param : params) {
+    bpftrace_.add_param(param);
+  }
+
+  // Script from string (command line argument)
+  bpftrace::Driver driver(bpftrace_);
+  driver.source("stdin", std::string(script));
+  err = driver.parse();
+  if (err != 0) {
+    return error::Internal("Could not parse bpftrace script.");
+  }
+
+  bpftrace::ast::FieldAnalyser fields(driver.root.get(), bpftrace_);
+  err = fields.analyse();
+  if (err != 0) {
+    return error::Internal("FieldAnalyser failed.");
+  }
+
+  success = bpftrace::TracepointFormatParser::parse(driver.root.get(), bpftrace_);
+  if (!success) {
+    return error::Internal("TracepointFormatParser failed.");
+  }
+
+  std::vector<std::string> clang_compile_flags = ClangCompileFlags(bpftrace_.feature_->has_btf());
+
   bpftrace::ClangParser clang;
-  success = clang.parse(driver.root_.get(), bpftrace_, extra_flags);
+  success = clang.parse(driver.root.get(), bpftrace_, clang_compile_flags);
   if (!success) {
     return error::Internal("Clang parse failed.");
   }
 
-  std::ostringstream semantic_analyser_out;
-  bpftrace::ast::SemanticAnalyser semantics(driver.root_.get(), bpftrace_, bpftrace_.feature_,
-                                            semantic_analyser_out);
-  err = semantics.analyse();
-  if (err != 0) {
-    return error::Internal("Semantic analyser failed with message: $0",
-                           semantic_analyser_out.str());
+  bpftrace::ast::PassContext ctx(bpftrace_);
+  bpftrace::ast::PassManager pm;
+  pm.AddPass(bpftrace::ast::CreateSemanticPass());
+  pm.AddPass(bpftrace::ast::CreateCounterPass());
+  pm.AddPass(bpftrace::ast::CreateResourcePass());
+  auto result = pm.Run(std::move(driver.root), ctx);
+  if (!result.Ok()) {
+    return error::Internal("$0 pass failed: $1", result.GetErrorPass().value_or("Unknown pass"),
+                           result.GetErrorMsg().value_or("-"));
   }
+  std::unique_ptr<bpftrace::ast::Node> ast_root(result.Root());
 
-  err = semantics.create_maps(bpftrace::bt_debug != bpftrace::DebugLevel::kNone);
-  if (err != 0) {
-    return error::Internal("Failed to create BPF maps");
-  }
-
-  bpftrace::ast::CodegenLLVM llvm(driver.root_.get(), bpftrace_);
-  bpforc_ = llvm.compile();
-  bpftrace_.bpforc_ = bpforc_.get();
-
-  if (bpftrace_.num_probes() == 0) {
-    return error::Internal("No bpftrace probes to deploy.");
-  }
+  bpftrace::ast::CodegenLLVM llvm(ast_root.get(), bpftrace_);
+  llvm.generate_ir();
+  llvm.optimize();
+  std::unique_ptr<bpftrace::BpfOrc> bpforc = llvm.emit();
+  bytecode_ = bpforc->getBytecode();
 
   compiled_ = true;
 
@@ -199,6 +218,10 @@ Status BPFTraceWrapper::Deploy(const PrintfCallback& printf_callback) {
   DCHECK_EQ(printf_callback != nullptr, printf_to_table_)
       << "Provide callback if and only if compiled for printfs output";
 
+  if (bpftrace_.num_probes() == 0) {
+    return error::Internal("No bpftrace probes to deploy.");
+  }
+
   if (!IsRoot()) {
     return error::PermissionDenied("Bpftrace currently only supported as the root user.");
   }
@@ -207,7 +230,7 @@ Status BPFTraceWrapper::Deploy(const PrintfCallback& printf_callback) {
     bpftrace_.printf_callback_ = printf_callback;
   }
 
-  int err = bpftrace_.deploy();
+  int err = bpftrace_.deploy(bytecode_);
   if (err != 0) {
     return error::Internal("Failed to run BPF code.");
   }
@@ -223,13 +246,13 @@ void BPFTraceWrapper::Stop() {
 }
 
 Status BPFTraceWrapper::CheckPrintfs() const {
-  if (bpftrace_.printf_args_.empty()) {
+  if (bpftrace_.resources.printf_args.empty()) {
     return error::Internal("The BPFTrace program must contain at least one printf statement.");
   }
 
-  const std::string& fmt = std::get<0>(bpftrace_.printf_args_[0]);
-  for (size_t i = 1; i < bpftrace_.printf_args_.size(); ++i) {
-    const std::string& fmt_i = std::get<0>(bpftrace_.printf_args_[i]);
+  const std::string& fmt = std::get<0>(bpftrace_.resources.printf_args[0]);
+  for (size_t i = 1; i < bpftrace_.resources.printf_args.size(); ++i) {
+    const std::string& fmt_i = std::get<0>(bpftrace_.resources.printf_args[i]);
     if (fmt_i != fmt) {
       return error::Internal(
           "All printf statements must have exactly the same format string. [$0] does not match "
@@ -245,14 +268,14 @@ const std::vector<bpftrace::Field>& BPFTraceWrapper::OutputFields() const {
   DCHECK(compiled_) << "Must compile first.";
   DCHECK(printf_to_table_) << "OutputFields() on supported if compiling with printf_to_table";
 
-  return std::get<1>(bpftrace_.printf_args_.front());
+  return std::get<1>(bpftrace_.resources.printf_args.front());
 }
 
 std::string_view BPFTraceWrapper::OutputFmtStr() const {
   DCHECK(compiled_) << "Must compile first.";
   DCHECK(printf_to_table_) << "OutputFmtStr() on supported if compiling with printf_to_table";
 
-  return std::string_view(std::get<0>(bpftrace_.printf_args_.front()));
+  return std::string_view(std::get<0>(bpftrace_.resources.printf_args.front()));
 }
 
 bpftrace::BPFTraceMap BPFTraceWrapper::GetBPFMap(const std::string& name) {

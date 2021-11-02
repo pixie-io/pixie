@@ -32,6 +32,12 @@ pl_cc_library(
             "*.h",
         ],
     ),
+    # This is a critical define. The cmake build uses this define,
+    # and if we don't include it, the headers will mismatch the object files,
+    # resulting in obscure segmentation faults around BpfOrc.
+    # For reference, see the cmake build in bpftrace.BUILD.
+    # TODO(oazizi): See if we can contribute to the bpftrace repo to help with this case.
+    defines = ["LLVM_ORC_V2"],
     deps = [
         "//src/common/system:cc_library",
         "//src/stirling/obj_tools:cc_library",

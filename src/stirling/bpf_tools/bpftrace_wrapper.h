@@ -18,9 +18,8 @@
 
 #pragma once
 
-#include <bpftrace/src/bpforc.h>
-#include <bpftrace/src/bpftrace.h>
-#include <bpftrace/src/driver.h>
+#include <bpftrace.h>
+#include <driver.h>
 
 #include <memory>
 #include <mutex>
@@ -46,6 +45,8 @@ class BPFTraceWrapper {
    * interpreted as the printf data.
    */
   using PrintfCallback = std::function<void(uint8_t*)>;
+
+  BPFTraceWrapper();
 
   ~BPFTraceWrapper() { Stop(); }
 
@@ -116,9 +117,8 @@ class BPFTraceWrapper {
   // The primary BPFtrace object.
   bpftrace::BPFtrace bpftrace_;
 
-  // BPFTrace on-request compilation class.
-  // Required by bpftrace_.
-  std::unique_ptr<bpftrace::BpfOrc> bpforc_;
+  // The compiled BPF bytecode.
+  bpftrace::BpfBytecode bytecode_;
 
   std::mutex compilation_mutex_;
 
