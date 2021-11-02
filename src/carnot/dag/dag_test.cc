@@ -148,14 +148,6 @@ class DAGTestMultipleSubGraphs : public ::testing::Test {
   DAG dag_;
 };
 
-TEST_F(DAGTestMultipleSubGraphs, test_independent_graphs) {
-  auto independent_graphs = dag_.IndependentGraphs();
-
-  EXPECT_THAT(independent_graphs, UnorderedElementsAre(UnorderedElementsAre(1, 2, 3, 4, 5),
-                                                       UnorderedElementsAre(6, 7, 8),
-                                                       UnorderedElementsAre(9, 10, 11, 12, 13)));
-}
-
 TEST_F(DAGTestMultipleSubGraphs, delete_node_removes_all_deps) {
   // When there were two elements as children, this used to fail.
   dag_.AddEdge(10, 13);

@@ -107,7 +107,7 @@ StatusOr<IRNode*> IR::MakeNodeWithType(IRNodeType node_type, int64_t new_node_id
   return error::Internal("Received unknown IRNode type");
 }
 
-std::string IR::DebugString() {
+std::string IR::DebugString() const {
   std::string debug_string = dag().DebugString() + "\n";
   for (auto const& a : id_node_map_) {
     debug_string += a.second->DebugString() + "\n";
@@ -139,57 +139,42 @@ std::vector<OperatorIR*> IR::GetSources() const {
 }
 
 std::vector<absl::flat_hash_set<int64_t>> IR::IndependentGraphs() const {
-  auto sources = FindNodesThatMatch(SourceOperator());
+  auto sources = GetSources();
   CHECK(!sources.empty()) << "no source operators found";
 
-  std::unordered_map<int64_t, int64_t> set_parents;
-  // The map that keeps track of the actual sets.
-  std::unordered_map<int64_t, absl::flat_hash_set<int64_t>> out_map;
+  std::vector<absl::flat_hash_set<int64_t>> subgraphs;
+  absl::flat_hash_set<int64_t> visited;
+  // We treat the graph as undirected (both parent -> child and child -> parent count as edges), and
+  // do BFS from each source (skipping sources we have already visited). Each BFS yields one
+  // connected component of the undirected graph, which is also a "weakly" connected
+  // component in the directed graph. This is linear in the number of nodes since each node is only
+  // visited once.
   for (auto s : sources) {
-    auto source_op = static_cast<OperatorIR*>(s);
-
-    int64_t current_set_parent = s->id();
-    set_parents[current_set_parent] = current_set_parent;
-    // The queue of children to iterate through.
-    std::queue<OperatorIR*> q;
-    q.push(source_op);
-
-    absl::flat_hash_set<int64_t> current_set({current_set_parent});
-    // Iterate through the children.
-    while (!q.empty()) {
-      OperatorIR* cur_parent = q.front();
-      auto children = cur_parent->Children();
-      q.pop();
-      for (OperatorIR* child : children) {
-        if (set_parents.find(child->id()) != set_parents.end()) {
-          // If the child has already been visited, then it already belongs to another set.
-          // Point to that set, and merge the existing set.
-          int64_t new_set_parent = set_parents[child->id()];
-          set_parents[current_set_parent] = new_set_parent;
-          current_set_parent = new_set_parent;
-          out_map[new_set_parent].merge(current_set);
-          current_set = out_map[new_set_parent];
-
-        } else {
-          // If the child has been visited, its children have already been visited.
-          q.push(child);
-        }
-        current_set.insert(child->id());
-        set_parents[child->id()] = current_set_parent;
-      }
-    }
-    out_map[current_set_parent] = current_set;
-  }
-
-  std::vector<absl::flat_hash_set<int64_t>> out_vec;
-  for (const auto& [out_map_id, set] : out_map) {
-    if (set_parents[out_map_id] != out_map_id) {
+    if (visited.contains(s->id())) {
       continue;
     }
-    out_vec.push_back(set);
+    absl::flat_hash_set<int64_t> current_subgraph;
+    std::queue<OperatorIR*> q;
+    q.push(s);
+    while (!q.empty()) {
+      OperatorIR* curr_node = q.front();
+      q.pop();
+      visited.insert(curr_node->id());
+      current_subgraph.insert(curr_node->id());
+      for (auto child : curr_node->Children()) {
+        if (!visited.contains(child->id())) {
+          q.push(child);
+        }
+      }
+      for (auto parent : curr_node->parents()) {
+        if (!visited.contains(parent->id())) {
+          q.push(parent);
+        }
+      }
+    }
+    subgraphs.push_back(current_subgraph);
   }
-
-  return out_vec;
+  return subgraphs;
 }
 
 StatusOr<std::unique_ptr<IR>> IR::Clone() const {

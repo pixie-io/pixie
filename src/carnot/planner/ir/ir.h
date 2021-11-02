@@ -173,7 +173,7 @@ class IR {
 
   plan::DAG& dag() { return dag_; }
   const plan::DAG& dag() const { return dag_; }
-  std::string DebugString();
+  std::string DebugString() const;
   std::string OperatorsDebugString();
 
   /**

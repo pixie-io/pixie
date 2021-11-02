@@ -90,13 +90,6 @@ class DAG {
 
   const absl::flat_hash_set<int64_t>& nodes() const { return nodes_; }
 
-  /**
-   * @brief Returns the sets that compose the independent graphs.
-   *
-   * @return const std::vector<const std::unordered_set<int64_t>&>&
-   */
-  std::vector<absl::flat_hash_set<int64_t>> IndependentGraphs() const;
-
  private:
   void AddForwardEdge(int64_t from_node, int64_t to_node);
   void AddReverseEdge(int64_t to_node, int64_t from_node);

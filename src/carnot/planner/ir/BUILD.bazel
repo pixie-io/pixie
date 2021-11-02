@@ -76,3 +76,11 @@ pl_cc_test(
         "//src/carnot/udf_exporter:cc_library",
     ],
 )
+
+pl_cc_test(
+    name = "ir_test",
+    srcs = ["ir_test.cc"],
+    deps = [
+        ":cc_library",
+    ],
+)
