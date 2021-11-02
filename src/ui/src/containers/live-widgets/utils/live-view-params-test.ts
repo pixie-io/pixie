@@ -89,6 +89,11 @@ describe('deepLinkURLFromScript test', () => {
     expect(url).toEqual('/live/clusters/gke%3Afoobar/namespaces/foobar/services');
   });
 
+  it('should generate the URL for the IP page', () => {
+    const url = deepLinkURLFromScript('px/ip', 'gke:foobar', noEmbed, { ip: '127.0.0.1' });
+    expect(url).toEqual('/live/clusters/gke%3Afoobar?ip=127.0.0.1&script=px%2Fip');
+  });
+
   it('should generate the URL for the service page', () => {
     const url = deepLinkURLFromScript('px/service', 'gke:foobar', noEmbed, { service: 'ns/svc-123' });
     expect(url).toEqual('/live/clusters/gke%3Afoobar/namespaces/ns/services/svc-123');
@@ -108,6 +113,12 @@ describe('deepLinkURLFromScript test', () => {
 });
 
 describe('deepLinkURLFromSemanticType test', () => {
+  it('should generate the URL for an IP', () => {
+    const url = deepLinkURLFromSemanticType(SemanticType.ST_IP_ADDRESS, '127.0.0.1',
+      'gke:foobar', noEmbed);
+    expect(url).toEqual('/live/clusters/gke%3Afoobar?ip=127.0.0.1&script=px%2Fip');
+  });
+
   it('should generate the URL for a namespace', () => {
     const url = deepLinkURLFromSemanticType(SemanticType.ST_NAMESPACE_NAME, 'px-sock-shop',
       'gke:foobar', noEmbed);

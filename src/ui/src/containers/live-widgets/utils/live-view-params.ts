@@ -179,10 +179,11 @@ export const deepLinkURLFromScript = (script: string, clusterName: string,
  */
 export function semanticTypeDeepLinks(semanticType: SemanticType): boolean {
   switch (semanticType) {
-    case SemanticType.ST_SERVICE_NAME:
-    case SemanticType.ST_POD_NAME:
-    case SemanticType.ST_NODE_NAME:
+    case SemanticType.ST_IP_ADDRESS:
     case SemanticType.ST_NAMESPACE_NAME:
+    case SemanticType.ST_NODE_NAME:
+    case SemanticType.ST_POD_NAME:
+    case SemanticType.ST_SERVICE_NAME:
       return true;
     default:
       return false;
@@ -197,6 +198,11 @@ export function semanticTypeDeepLinks(semanticType: SemanticType): boolean {
 export const deepLinkURLFromSemanticType = (semanticType: SemanticType, value: string,
   clusterName: string, embedState: EmbedState, propagatedArgs?: Arguments): string => {
   switch (semanticType) {
+    case SemanticType.ST_IP_ADDRESS:
+      return deepLinkURLFromScript('px/ip', clusterName, embedState, {
+        ...propagatedArgs,
+        ip: value,
+      });
     case SemanticType.ST_POD_NAME:
       return deepLinkURLFromScript('px/pod', clusterName, embedState, {
         ...propagatedArgs,
