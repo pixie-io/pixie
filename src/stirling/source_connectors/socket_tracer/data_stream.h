@@ -28,7 +28,8 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/data_stream_buffer.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/types.h"
 
-DECLARE_uint32(datastream_buffer_size);
+DECLARE_uint32(datastream_buffer_retention_size);
+DECLARE_uint32(datastream_buffer_spike_size);
 
 namespace px {
 namespace stirling {
@@ -45,7 +46,9 @@ namespace stirling {
 class DataStream : NotCopyMoveable {
  public:
   // Make the underlying raw buffer size limit the same as the parsed frames byte limit.
-  DataStream() : data_buffer_(FLAGS_datastream_buffer_size) {}
+  DataStream(uint32_t spike_capacity = FLAGS_datastream_buffer_spike_size,
+             uint32_t retention_capacity = FLAGS_datastream_buffer_retention_size)
+      : data_buffer_(spike_capacity), retention_capacity_(retention_capacity) {}
 
   /**
    * Adds a raw (unparsed) chunk of data into the stream.
@@ -219,6 +222,8 @@ class DataStream : NotCopyMoveable {
 
   // Raw data events from BPF.
   protocols::DataStreamBuffer data_buffer_;
+
+  uint32_t retention_capacity_ = 0;
 
   // Vector of parsed HTTP/MySQL messages.
   // Once parsed, the raw data events should be discarded.

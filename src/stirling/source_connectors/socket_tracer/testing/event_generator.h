@@ -177,6 +177,13 @@ constexpr std::string_view kHTTPUpgradeResp =
     "Connection: Upgrade\r\n"
     "\r\n";
 
+constexpr std::string_view kHTTPIncompleteResp =
+    "HTTP/1.1 200 OK\r\n"
+    "Content-Type: application/json; charset=utf-8\r\n"
+    "Content-Length: 100\r\n"
+    "\r\n"
+    "pixie";
+
 static constexpr std::string_view kHTTP2EndStreamHeadersFrame =
     ConstStringView("\x0\x0\x0\x1\x5\x0\x0\x0\x1");
 static constexpr std::string_view kHTTP2EndStreamDataFrame =

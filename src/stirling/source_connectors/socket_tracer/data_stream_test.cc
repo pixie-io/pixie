@@ -35,9 +35,11 @@ namespace mysql = protocols::mysql;
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
 
+using testing::kHTTPIncompleteResp;
 using testing::kHTTPReq0;
 using testing::kHTTPReq1;
 using testing::kHTTPReq2;
+using testing::kHTTPResp0;
 
 class DataStreamTest : public ::testing::Test {
  protected:
@@ -365,6 +367,25 @@ TEST_F(DataStreamTest, CannotSwitchType) {
   EXPECT_THROW(stream.ProcessBytesToFrames<mysql::Packet>(message_type_t::kRequest, &mysql_state),
                std::exception);
 #endif
+}
+
+TEST_F(DataStreamTest, SpikeCapacityWithLargeDataChunk) {
+  DataStream stream(1024, 16);
+
+  testing::EventGenerator event_gen(&real_clock_);
+  std::unique_ptr<SocketDataEvent> resp0 = event_gen.InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
+  std::unique_ptr<SocketDataEvent> resp1 = event_gen.InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
+  std::unique_ptr<SocketDataEvent> resp2 =
+      event_gen.InitRecvEvent<kProtocolHTTP>(kHTTPIncompleteResp);
+
+  stream.AddData(std::move(resp0));
+  stream.AddData(std::move(resp1));
+  stream.AddData(std::move(resp2));
+
+  protocols::NoState state{};
+  stream.ProcessBytesToFrames<http::Message>(message_type_t::kResponse, &state);
+  EXPECT_THAT(stream.Frames<http::Message>(), SizeIs(2));
+  EXPECT_EQ(stream.data_buffer().size(), 16);
 }
 
 }  // namespace stirling

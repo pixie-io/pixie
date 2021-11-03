@@ -22,7 +22,10 @@
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/types.h"
 
-DEFINE_uint32(datastream_buffer_size, 1024 * 1024, "The maximum size of a data stream buffer.");
+DEFINE_uint32(datastream_buffer_retention_size, 1024 * 1024,
+              "The maximum size of a data stream buffer retained between cycles.");
+DEFINE_uint32(datastream_buffer_spike_size, 1024 * 1024 * 500,
+              "The maximum temporary size of a data stream buffer before processing.");
 
 namespace px {
 namespace stirling {
@@ -156,6 +159,11 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
   bool events_but_no_progress = !data_buffer_.empty() && (data_buffer_.position() == orig_pos);
   if (events_but_no_progress) {
     ++stuck_count_;
+  }
+
+  // If the size of the buffer after the processing loop is bigger than capacity, truncate the head.
+  if (data_buffer_.size() > retention_capacity_) {
+    data_buffer_.RemovePrefix(data_buffer_.size() - retention_capacity_);
   }
 
   if (parse_result.state == ParseState::kEOS) {
