@@ -76,11 +76,19 @@ function getCtaDetails(config: CallbackConfig) {
   let ctaMessage: string;
   let ctaDestination: string;
   let errorMessage: string;
+  let showDetails = true;
   if (config.err.errorType === 'internal') {
     if (config.signup) {
-      errorMessage = 'We hit a snag in creating an account. Please try again later.';
-      ctaMessage = 'Back to Sign Up';
-      ctaDestination = '/auth/signup';
+      if (config.err.errMessage.match(/user.*already.*exists/ig)) {
+        errorMessage = 'Account already exists. Please login.';
+        ctaMessage = 'Back to Log In';
+        ctaDestination = '/auth/login';
+        showDetails = false;
+      } else {
+        errorMessage = 'We hit a snag in creating an account. Please try again later.';
+        ctaMessage = 'Back to Sign Up';
+        ctaDestination = '/auth/signup';
+      }
     } else if (config.err.errMessage.match(/.*organization.*not.*found.*/g)
       || config.err.errMessage.match(/.*user.*not.*found.*/g)) {
       errorMessage = 'We hit a snag trying to authenticate you. User not registered. Please sign up.';
@@ -97,7 +105,12 @@ function getCtaDetails(config: CallbackConfig) {
     ctaMessage = 'Go Back';
     ctaDestination = '/';
   }
-  return { ctaMessage, ctaDestination, errorMessage };
+  return {
+    ctaMessage,
+    ctaDestination,
+    errorMessage,
+    showDetails,
+  };
 }
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
@@ -150,7 +163,12 @@ const ErrorMessage = React.memo<{ config: CallbackConfig }>(function ErrorMessag
   const title = config.signup ? 'Failed to Sign Up' : 'Failed to Log In';
   const errorDetails = config.err.errorType === 'internal' ? config.err.errMessage : undefined;
 
-  const { ctaMessage, ctaDestination, errorMessage } = getCtaDetails(config);
+  const {
+    ctaMessage,
+    ctaDestination,
+    errorMessage,
+    showDetails,
+  } = getCtaDetails(config);
 
   const cta = React.useMemo(() => (
     <div className={classes.ctaGutter}>
@@ -165,7 +183,7 @@ const ErrorMessage = React.memo<{ config: CallbackConfig }>(function ErrorMessag
       error='recoverable'
       title={title}
       message={errorMessage}
-      errorDetails={errorDetails}
+      errorDetails={showDetails ? errorDetails : ''}
       cta={cta}
     />
   );
