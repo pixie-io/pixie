@@ -82,6 +82,7 @@ const (
 )
 
 // ClockConverterType defines which clock conversion routine to use for converting timestamps to a synced reference time.
+// +kubebuilder:validation:Enum=default;grpc
 type ClockConverterType string
 
 const (
@@ -164,6 +165,8 @@ type DataCollectorParams struct {
 	// DatastreamBufferSize is the data buffer size per connection.
 	// Default size is 1 Mbyte. For high-throughput applications, try increasing this number if experiencing data loss.
 	DatastreamBufferSize uint32 `json:"datastreamBufferSize,omitempty"`
+	// DatastreamBufferSpikeSize is the maximum temporary size of a data stream buffer before processing.
+	DatastreamBufferSpikeSize uint32 `json:"datastreamBufferSpikeSize,omitempty"`
 }
 
 // Vizier is the Schema for the viziers API

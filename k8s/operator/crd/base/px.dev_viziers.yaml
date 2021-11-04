@@ -70,6 +70,11 @@ spec:
                       try increasing this number if experiencing data loss.
                     format: int32
                     type: integer
+                  datastreamBufferSpikeSize:
+                    description: DatastreamBufferSpikeSize is the maximum temporary
+                      size of a data stream buffer before processing.
+                    format: int32
+                    type: integer
                 type: object
               deployKey:
                 description: DeployKey is the deploy key associated with the Vizier

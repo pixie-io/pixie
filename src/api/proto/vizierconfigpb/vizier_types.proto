@@ -90,7 +90,9 @@ message ResourceQuantity {
 
 // DataCollectorParams specifies configurable values for the data collectors running in the PEMs.
 message DataCollectorParams {
-    // DatastreamBufferSize is the data buffer size per connection.
+    // DatastreamBufferSize is the maximum size of a data stream buffer retained between cycles.
     // Default size is 1 Mbyte. For high-throughput applications, try increasing this number if experiencing data loss.
     uint32 datastream_buffer_size = 1;
+    // DatastreamBufferSpikeSize is the maximum temporary size of a data stream buffer before processing.
+    uint32 datastream_buffer_spike_size = 2;
 }
