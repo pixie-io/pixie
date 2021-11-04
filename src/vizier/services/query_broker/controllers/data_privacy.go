@@ -25,20 +25,28 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
+	"px.dev/pixie/src/carnot/planner/distributedpb"
+
 	pixie "px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 )
 
 func init() {
-	pflag.String("data_access", "Full", "The data access level for queries. Options are 'Full' or 'Restricted'")
+	pflag.String("data_access", "Full", "The data access level for queries. Options are 'Full' or 'Restricted' or 'PIIRestricted")
 }
 
 type vizierCachedDataPrivacy struct {
 	dataAccess pixie.DataAccessLevel
 }
 
-// ShouldRedactSensitiveColumns returns whether we should redact sensitive columns or not.
-func (dp *vizierCachedDataPrivacy) ShouldRedactSensitiveColumns(ctx context.Context) (bool, error) {
-	return dp.dataAccess == pixie.DataAccessRestricted, nil
+// RedactionOptions returns the proto message containing options for redaction based on the cached data privacy level.
+func (dp *vizierCachedDataPrivacy) RedactionOptions(ctx context.Context) (*distributedpb.RedactionOptions, error) {
+	if dp.dataAccess == pixie.DataAccessFull {
+		return nil, nil
+	}
+	return &distributedpb.RedactionOptions{
+		UseFullRedaction:         dp.dataAccess == pixie.DataAccessRestricted,
+		UsePxRedactPiiBestEffort: dp.dataAccess == pixie.DataAccessPIIRestricted,
+	}, nil
 }
 
 // CreateDataPrivacyManager creates a privacy manager for the namespace.

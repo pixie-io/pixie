@@ -33,9 +33,21 @@ class RestrictColumnsRule : public Rule {
    */
  public:
   explicit RestrictColumnsRule(CompilerState* compiler_state)
-      : Rule(compiler_state, /*use_topo*/ true, /*reverse_topological_execution*/ false) {}
+      : Rule(compiler_state, /*use_topo*/ true, /*reverse_topological_execution*/ false) {
+    if (compiler_state->redaction_options().use_full_redaction) {
+      redaction_impl_ = std::bind(&RestrictColumnsRule::RedactAllData, this, std::placeholders::_1);
+    } else if (compiler_state->redaction_options().use_px_redact_pii_best_effort) {
+      redaction_impl_ = std::bind(&RestrictColumnsRule::RedactPIIData, this, std::placeholders::_1);
+    }
+  }
 
   StatusOr<bool> Apply(IRNode* ir_node) override;
+
+ private:
+  std::function<StatusOr<OperatorIR*>(MemorySourceIR*)> redaction_impl_;
+
+  StatusOr<OperatorIR*> RedactAllData(MemorySourceIR*);
+  StatusOr<OperatorIR*> RedactPIIData(MemorySourceIR*);
 };
 
 }  // namespace compiler

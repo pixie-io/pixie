@@ -46,6 +46,9 @@ TEST_F(RulesTest, redact_column_using_map) {
   compiler_state_->relation_map()->emplace("sensitive_table", sensitive_table);
   compiler_state_->table_names_to_sensitive_columns()->emplace(
       "sensitive_table", absl::flat_hash_set<std::string>{"sensitive_data"});
+  RedactionOptions options;
+  options.use_full_redaction = true;
+  compiler_state_->set_redaction_options(options);
   EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(0, 1));
 
   // ResolveTypes first.
@@ -76,6 +79,9 @@ TEST_F(RulesTest, dont_add_map_if_not_necessary) {
       std::vector<types::DataType>({types::DataType::INT64, types::DataType::STRING}),
       std::vector<std::string>({"id", "sensitive_data"}));
   compiler_state_->relation_map()->emplace("sensitive_table", sensitive_table);
+  RedactionOptions options;
+  options.use_full_redaction = true;
+  compiler_state_->set_redaction_options(options);
   MemorySinkIR* sink = MakeMemSink(mem_src, "sink");
   EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(0, 1));
 
@@ -90,6 +96,43 @@ TEST_F(RulesTest, dont_add_map_if_not_necessary) {
   EXPECT_FALSE(status.ValueOrDie());
 
   ASSERT_MATCH(sink->parents()[0], MemorySource());
+}
+
+TEST_F(RulesTest, redact_column_using_px_redact_pii_best_effort) {
+  MemorySourceIR* mem_src =
+      graph->CreateNode<MemorySourceIR>(ast, "sensitive_table", std::vector<std::string>{})
+          .ConsumeValueOrDie();
+
+  MemorySinkIR* sink = MakeMemSink(mem_src, "sink");
+  auto sensitive_table = table_store::schema::Relation(
+      std::vector<types::DataType>({types::DataType::INT64, types::DataType::STRING}),
+      std::vector<std::string>({"id", "sensitive_data"}));
+  compiler_state_->relation_map()->emplace("sensitive_table", sensitive_table);
+  compiler_state_->table_names_to_sensitive_columns()->emplace(
+      "sensitive_table", absl::flat_hash_set<std::string>{"sensitive_data"});
+  RedactionOptions options;
+  options.use_px_redact_pii_best_effort = true;
+  compiler_state_->set_redaction_options(options);
+  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(0, 1));
+
+  // ResolveTypes first.
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
+
+  // Now apply the rule.
+  RestrictColumnsRule rule(compiler_state_.get());
+  auto status = rule.Execute(graph.get());
+  ASSERT_OK(status);
+  EXPECT_TRUE(status.ValueOrDie());
+
+  ASSERT_MATCH(sink->parents()[0], Map());
+
+  auto map = static_cast<MapIR*>(sink->parents()[0]);
+  EXPECT_MATCH(map->col_exprs()[0].node, ColumnNode("id"));
+  EXPECT_MATCH(map->col_exprs()[1].node,
+               Func("redact_pii_best_effort", ColumnNode("sensitive_data")));
+
+  EXPECT_TRUE(map->is_type_resolved());
 }
 
 }  // namespace compiler

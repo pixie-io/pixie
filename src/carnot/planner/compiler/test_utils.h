@@ -1122,7 +1122,7 @@ class ASTVisitorTest : public OperatorTests {
     auto max_output_rows_per_table = 10000;
     compiler_state_ = std::make_unique<CompilerState>(
         std::move(relation_map_), SensitiveColumnMap{}, registry_info_.get(), time_now,
-        max_output_rows_per_table, "result_addr", "result_ssl_targetname");
+        max_output_rows_per_table, "result_addr", "result_ssl_targetname", RedactionOptions{});
   }
 
   StatusOr<std::shared_ptr<IR>> CompileGraph(const std::string& query) {

@@ -118,12 +118,19 @@ message DistributedPlan {
   px.carnot.planpb.DAG dag = 3;
 }
 
+// RedactionOptions message specifies how to redact sensitive columns.
+message RedactionOptions {
+  // Fully redact all sensitive columns. If this is true, all other redaction options are ignored.
+  bool use_full_redaction = 1;
+  // Redact sensitive columns by calling px.redact_pii_best_effort on them.
+  bool use_px_redact_pii_best_effort = 2;
+}
+
 // LogicalPlannerState contains the information necessary to create the Logical
 // Plan. This message is used by the query broker to send to the logical
 // planner.
 message LogicalPlannerState {
-  // Previously used to store a global schema for the agents.
-  reserved 1;
+  reserved 1, 6;
   // The distributed state of all Carnot instances in the system.
   DistributedState distributed_state = 2;
   // The query options for how the plans should be executed.
@@ -132,8 +139,9 @@ message LogicalPlannerState {
   string result_address = 4;
   // The SSL target override for the result address, if applicable.
   string result_ssl_targetname = 5 [(gogoproto.customname) = "ResultSSLTargetName"];
-  // Whether the query should redact sensitive columns or not.
-  bool redact_sensitive_columns = 6;
+  // RedactionOptions specifies whether redaction should be done, and how to do it.
+  // If redaction_options is nil, then no redaction is done.
+  RedactionOptions redaction_options = 7;
 }
 
 // The result for the planner. Contains a status to track any errors

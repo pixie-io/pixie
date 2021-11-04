@@ -50,28 +50,34 @@ StatusOr<std::unique_ptr<RelationMap>> MakeRelationMapFromDistributedState(
   return rel_map;
 }
 
+static inline RedactionOptions RedactionOptionsFromPb(
+    const distributedpb::RedactionOptions& redaction_options) {
+  RedactionOptions options;
+  options.use_full_redaction = redaction_options.use_full_redaction();
+  options.use_px_redact_pii_best_effort = redaction_options.use_px_redact_pii_best_effort();
+  return options;
+}
+
 StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
     const distributedpb::LogicalPlannerState& logical_state, RegistryInfo* registry_info,
     int64_t max_output_rows_per_table) {
   PL_ASSIGN_OR_RETURN(std::unique_ptr<RelationMap> rel_map,
                       MakeRelationMapFromDistributedState(logical_state.distributed_state()));
 
-  SensitiveColumnMap sensitive_columns;
-  if (logical_state.redact_sensitive_columns()) {
-    // Block columns.
-    sensitive_columns = {{"cql_events", {"req_body", "resp_body"}},
-                         {"http_events", {"req_headers", "req_body", "resp_headers", "resp_body"}},
-                         {"kafka_events.beta", {"req_body", "resp"}},
-                         {"mysql_events", {"req_body", "resp_body"}},
-                         {"nats_events.beta", {"body", "resp"}},
-                         {"pgsql_events", {"req", "resp"}},
-                         {"redis_events", {"req_args", "resp"}}};
-  }
+  SensitiveColumnMap sensitive_columns = {
+      {"cql_events", {"req_body", "resp_body"}},
+      {"http_events", {"req_headers", "req_body", "resp_headers", "resp_body"}},
+      {"kafka_events.beta", {"req_body", "resp"}},
+      {"mysql_events", {"req_body", "resp_body"}},
+      {"nats_events.beta", {"body", "resp"}},
+      {"pgsql_events", {"req", "resp"}},
+      {"redis_events", {"req_args", "resp"}}};
   // Create a CompilerState obj using the relation map and grabbing the current time.
   return std::make_unique<planner::CompilerState>(
       std::move(rel_map), sensitive_columns, registry_info, px::CurrentTimeNS(),
       max_output_rows_per_table, logical_state.result_address(),
-      logical_state.result_ssl_targetname());
+      logical_state.result_ssl_targetname(),
+      RedactionOptionsFromPb(logical_state.redaction_options()));
 }
 
 StatusOr<std::unique_ptr<LogicalPlanner>> LogicalPlanner::Create(const udfspb::UDFInfo& udf_info) {

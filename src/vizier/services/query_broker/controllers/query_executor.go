@@ -54,8 +54,8 @@ type QueryExecutor interface {
 
 // DataPrivacy is an interface that manages data privacy in the query executor.
 type DataPrivacy interface {
-	// ShouldRedactSensitiveColumns returns true if the execution should redact sensitive columns.
-	ShouldRedactSensitiveColumns(ctx context.Context) (bool, error)
+	// RedactionOptions returns the proto message containing options for redaction based on the cached data privacy level.
+	RedactionOptions(ctx context.Context) (*distributedpb.RedactionOptions, error)
 }
 
 // MutationExecFactory is a function that creates a new MutationExecutorImpl.
@@ -269,17 +269,17 @@ func (q *QueryExecutorImpl) compilePlan(ctx context.Context, resultCh chan<- *vi
 		return nil, status.Error(codes.Unavailable, "not ready yet")
 	}
 
-	redactSensitiveColumns, err := q.dataPrivacy.ShouldRedactSensitiveColumns(ctx)
+	redactOptions, err := q.dataPrivacy.RedactionOptions(ctx)
 	if err != nil {
-		log.WithError(err).Errorf("Failed to get the redaction info")
+		log.WithError(err).Errorf("Failed to get the redaction options")
 		return nil, status.Errorf(codes.Internal, "error setting up the compiler")
 	}
 	plannerState := &distributedpb.LogicalPlannerState{
-		DistributedState:       distributedState,
-		PlanOptions:            planOpts,
-		ResultAddress:          q.resultAddress,
-		ResultSSLTargetName:    q.resultSSLTargetName,
-		RedactSensitiveColumns: redactSensitiveColumns,
+		DistributedState:    distributedState,
+		PlanOptions:         planOpts,
+		ResultAddress:       q.resultAddress,
+		ResultSSLTargetName: q.resultSSLTargetName,
+		RedactionOptions:    redactOptions,
 	}
 
 	// Compile the query plan.

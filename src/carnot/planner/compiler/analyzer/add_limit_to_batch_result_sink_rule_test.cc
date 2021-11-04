@@ -38,7 +38,7 @@ TEST_F(AddLimitToBatchResultSinkRuleTest, basic) {
 
   auto compiler_state = std::make_unique<CompilerState>(
       std::make_unique<RelationMap>(), SensitiveColumnMap{}, info_.get(), time_now, 1000,
-      "result_addr", "result_ssl_targetname");
+      "result_addr", "result_ssl_targetname", RedactionOptions{});
 
   AddLimitToBatchResultSinkRule rule(compiler_state.get());
   auto result = rule.Execute(graph.get());
@@ -63,7 +63,7 @@ TEST_F(AddLimitToBatchResultSinkRuleTest, overwrite_higher) {
 
   auto compiler_state = std::make_unique<CompilerState>(
       std::make_unique<RelationMap>(), SensitiveColumnMap{}, info_.get(), time_now, 1000,
-      "result_addr", "result_ssl_targetname");
+      "result_addr", "result_ssl_targetname", RedactionOptions{});
 
   AddLimitToBatchResultSinkRule rule(compiler_state.get());
   auto result = rule.Execute(graph.get());
@@ -83,7 +83,7 @@ TEST_F(AddLimitToBatchResultSinkRuleTest, dont_overwrite_lower) {
 
   auto compiler_state = std::make_unique<CompilerState>(
       std::make_unique<RelationMap>(), SensitiveColumnMap{}, info_.get(), time_now, 1000,
-      "result_addr", "result_ssl_targetname");
+      "result_addr", "result_ssl_targetname", RedactionOptions{});
 
   AddLimitToBatchResultSinkRule rule(compiler_state.get());
   auto result = rule.Execute(graph.get());

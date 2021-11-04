@@ -35,15 +35,16 @@ namespace compiler {
 
 StatusOr<carnot::planner::dynamic_tracing::ir::logical::TracepointDeployment> CompileTracepoint(
     std::string_view query) {
-  // Create a dummy compiler state; it doesn't affect the tracepoint compilation.
+  // Create a compiler state; it doesn't affect the tracepoint compilation.
   // TODO(oazizi): Try inserting nullptr for registry_info.
   px::carnot::planner::RegistryInfo registry_info;
-  px::carnot::planner::CompilerState dummy_compiler_state(
+  px::carnot::planner::CompilerState compiler_state(
       std::make_unique<px::carnot::planner::RelationMap>(),
       px::carnot::planner::SensitiveColumnMap{}, &registry_info,
       // Time now isn't used to generate probes, but we still need to pass one in.
       /*time_now*/ 1552607213931245000,
-      /*max_output_rows_per_table*/ 10000, "dummy_result_addr", /* SSL target name override */ "");
+      /*max_output_rows_per_table*/ 10000, "result_addr", /* SSL target name override */ "",
+      RedactionOptions{});
 
   Parser parser;
   PL_ASSIGN_OR_RETURN(auto ast, parser.Parse(query));
@@ -53,7 +54,7 @@ StatusOr<carnot::planner::dynamic_tracing::ir::logical::TracepointDeployment> Co
   ModuleHandler module_handler;
 
   PL_ASSIGN_OR_RETURN(auto ast_walker,
-                      compiler::ASTVisitorImpl::Create(&ir, &probe_ir, &dummy_compiler_state,
+                      compiler::ASTVisitorImpl::Create(&ir, &probe_ir, &compiler_state,
                                                        &module_handler, false, {}, {}));
 
   PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));

@@ -368,12 +368,12 @@ func (c *testConsumer) Consume(result *vizierpb.ExecuteScriptResponse) error {
 }
 
 type fakeDataPrivacy struct {
-	Value bool
+	Options *distributedpb.RedactionOptions
 }
 
-// ShouldRedactSensitiveColumns returns true if the execution should redact sensitive columns.
-func (fdp *fakeDataPrivacy) ShouldRedactSensitiveColumns(_ context.Context) (bool, error) {
-	return fdp.Value, nil
+// RedactionOptions returns RedactionOptions proto message that was set on the fakeDataPrivacy struct.
+func (fdp *fakeDataPrivacy) RedactionOptions(_ context.Context) (*distributedpb.RedactionOptions, error) {
+	return fdp.Options, nil
 }
 
 func runTestCase(t *testing.T, test *queryExecTestCase) {
