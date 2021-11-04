@@ -51,20 +51,20 @@ type ServiceURLParams = {
   service: string;
 };
 
-export type EntityURLParams =
+type EntityURLParams =
   | Record<string, string>
   | NamespaceURLParams
   | NodeURLParams
   | PodURLParams
   | ServiceURLParams;
 
-export interface EntityPage {
+interface EntityPage {
   clusterName?: string;
   page: LiveViewPage;
   params: EntityURLParams;
 }
 
-export const LiveViewPageScriptIds = new Map<LiveViewPage, string>([
+const LiveViewPageScriptIds = new Map<LiveViewPage, string>([
   [LiveViewPage.Cluster, 'px/cluster'],
   [LiveViewPage.Namespace, 'px/namespace'],
   [LiveViewPage.Namespaces, 'px/namespaces'],
@@ -76,7 +76,7 @@ export const LiveViewPageScriptIds = new Map<LiveViewPage, string>([
   [LiveViewPage.Services, 'px/services'],
 ]);
 
-export function entityPageForScriptId(id: string): LiveViewPage {
+function entityPageForScriptId(id: string): LiveViewPage {
   for (const [page, scriptId] of LiveViewPageScriptIds) {
     if (scriptId === id) return page;
   }
@@ -84,7 +84,7 @@ export function entityPageForScriptId(id: string): LiveViewPage {
 }
 
 // List of all of the keys of the entity arguments for a given live view page.
-export const LiveViewEntityParams = new Map<LiveViewPage, Set<string>>([
+const LiveViewEntityParams = new Map<LiveViewPage, Set<string>>([
   [LiveViewPage.Default, new Set()],
   [LiveViewPage.Cluster, new Set()],
   [LiveViewPage.Namespace, new Set(['namespace'])],
@@ -172,7 +172,7 @@ export function toEntityURL(entity: EntityPage, embedState: EmbedState, propagat
 }
 
 // Gets the arguments that are entity-specific (and should go in the URL path).
-export function getEntityParams(liveViewPage: LiveViewPage, args: Arguments): EntityURLParams {
+function getEntityParams(liveViewPage: LiveViewPage, args: Arguments): EntityURLParams {
   const entityParamNames = LiveViewEntityParams.get(liveViewPage) || new Set();
   const entityParams = {};
   entityParamNames.forEach((paramName: string) => {
@@ -184,7 +184,7 @@ export function getEntityParams(liveViewPage: LiveViewPage, args: Arguments): En
 }
 
 // Gets the arguments that are not entity-specific (and should go in the query string).
-export function getNonEntityParams(liveViewPage: LiveViewPage, args: Arguments): Arguments {
+function getNonEntityParams(liveViewPage: LiveViewPage, args: Arguments): Arguments {
   const entityParamNames = LiveViewEntityParams.get(liveViewPage) || new Set();
   const nonEntityParams = {};
   Object.keys(args).forEach((argName: string) => {
@@ -202,8 +202,11 @@ export interface EmbedState {
   widget: string | null;
 }
 
-// Takes a script and arguments and formats it as an entity URL if applicable.
-export function scriptToEntityURL(script: string, clusterName: string, embedState: EmbedState,
+/**
+ * Takes a script and arguments and returns the URL for the deep link to this script.
+ * It formats it as an entity URL if applicable.
+ */
+export function deepLinkURLFromScript(script: string, clusterName: string, embedState: EmbedState,
   args: Arguments): string {
   const liveViewPage = entityPageForScriptId(script);
   const entityParams = getEntityParams(liveViewPage, args);

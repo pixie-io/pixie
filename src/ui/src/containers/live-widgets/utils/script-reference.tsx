@@ -25,7 +25,7 @@ import { createStyles } from '@material-ui/styles';
 import { Arguments } from 'app/utils/args-utils';
 import { SemanticType } from 'app/types/generated/vizierapi_pb';
 import {
-  EmbedState, scriptToEntityURL, toEntityURL, toSingleEntityPage,
+  deepLinkURLFromScript, EmbedState, toEntityURL, toSingleEntityPage,
 } from './live-view-params';
 
 const styles = ({ palette }: Theme) => createStyles({
@@ -41,33 +41,38 @@ const styles = ({ palette }: Theme) => createStyles({
   },
 });
 
-// EntityLink is used when we are creating a deep link to an entity's script
-// based on its semantic type.
-export interface EntityLinkProps extends WithStyles<typeof styles>{
-  entity: string;
+/**
+ * DeepLink is used when we are creating a deep link to another script for an input
+ * value based on the semantic type of the column the value belongs to. For example,
+ * the value `pl/pl-nats-0` would deep link to `px/pod` when the semantic type is
+ * equal to ST_POD_NAME.
+ */
+export interface DeepLinkProps extends WithStyles<typeof styles>{
+  // replace entity with `value`.
+  value: string;
   semanticType: SemanticType;
   clusterName: string;
   embedState: EmbedState;
   propagatedParams?: Arguments;
 }
 
-const EntityLinkPlain = ({
-  entity, semanticType, clusterName, classes, embedState, propagatedParams,
-}: EntityLinkProps) => {
-  const page = toSingleEntityPage(entity, semanticType, clusterName);
+const DeepLinkPlain = React.memo(function DeepLink({
+  value, semanticType, clusterName, classes, embedState, propagatedParams,
+}: DeepLinkProps) {
+  const page = toSingleEntityPage(value, semanticType, clusterName);
   const path = toEntityURL(page, embedState, propagatedParams);
 
   if (embedState?.widget) {
-    return <>{entity}</>;
+    return <>{value}</>;
   }
   return (
-    <Link to={path} className={classes.root}>{entity}</Link>
+    <Link to={path} className={classes.root}>{value}</Link>
   );
-};
+});
 
-export const EntityLink = withStyles(styles)(EntityLinkPlain);
+export const DeepLink = withStyles(styles)(DeepLinkPlain);
 
-export function isEntityType(semanticType: SemanticType): boolean {
+export function semanticTypeDeepLinks(semanticType: SemanticType): boolean {
   switch (semanticType) {
     case SemanticType.ST_SERVICE_NAME:
     case SemanticType.ST_POD_NAME:
@@ -91,7 +96,7 @@ export interface ScriptReferenceProps extends WithStyles<typeof styles>{
 const ScriptReferencePlain = ({
   label, script, args, embedState, clusterName, classes,
 }: ScriptReferenceProps) => {
-  const path = scriptToEntityURL(script, clusterName, embedState, args);
+  const path = deepLinkURLFromScript(script, clusterName, embedState, args);
 
   if (embedState.widget) {
     return <>{label}</>;

@@ -18,8 +18,7 @@
 
 import { SemanticType } from 'app/types/generated/vizierapi_pb';
 import {
-  entityPageForScriptId, LiveViewPage,
-  scriptToEntityURL, toEntityPathname, toEntityURL,
+  deepLinkURLFromScript, LiveViewPage, toEntityPathname, toEntityURL,
   toSingleEntityPage,
 } from './live-view-params';
 
@@ -267,26 +266,16 @@ describe('toSingleEntityPage test', () => {
   });
 });
 
-describe('entityPageForScriptId', () => {
-  it('should return the right enum for an entity script id', () => {
-    expect(entityPageForScriptId('px/cluster')).toEqual(LiveViewPage.Cluster);
-  });
-
-  it('should return the right enum for a non-entity script id', () => {
-    expect(entityPageForScriptId('px/http_data')).toEqual(LiveViewPage.Default);
-  });
-});
-
-describe('scriptToEntityURL', () => {
-  it('should return an entity URL for an entity script', () => {
-    expect(scriptToEntityURL('px/namespace', 'aClusterName', noEmbed, {
+describe('deepLinkURLFromScript', () => {
+  it('should return an entity vanity URL for an entity script', () => {
+    expect(deepLinkURLFromScript('px/namespace', 'aClusterName', noEmbed, {
       namespace: 'foobar',
       anotherArg: '-30s',
     })).toEqual('/live/clusters/aClusterName/namespaces/foobar?anotherArg=-30s');
   });
 
-  it('should return a non entity URL for a non entity script', () => {
-    expect(scriptToEntityURL('px/http_data', 'aClusterName', noEmbed, {
+  it('should return a non vanity URL for a non entity script', () => {
+    expect(deepLinkURLFromScript('px/http_data', 'aClusterName', noEmbed, {
       namespace: 'foobar',
       anotherArg: '-30s',
     })).toEqual('/live/clusters/aClusterName?anotherArg=-30s&namespace=foobar&script=px%2Fhttp_data');

@@ -32,8 +32,8 @@ import {
 } from 'app/containers/format-data/format-data';
 import { JSONData } from 'app/containers/format-data/json-data';
 import {
-  EntityLink,
-  isEntityType,
+  DeepLink,
+  semanticTypeDeepLinks,
   ScriptReference,
   STATUS_TYPES,
   toStatusIndicator,
@@ -76,28 +76,28 @@ function useIsPlaceholder() {
   return isPlaceholder;
 }
 
-function getEntityCellRenderer(
+function getDeepLinkCellRenderer(
   st: SemanticType, clusterName: string, propagatedArgs?: Arguments,
 ): React.ComponentType<LiveCellProps> {
   return React.memo<LiveCellProps>(function EntityCell({ data }) {
     const { embedState } = React.useContext(LiveRouteContext);
 
-    let entities: string[] = [data];
+    let values: string[] = [data];
 
     if (st === SemanticType.ST_SERVICE_NAME) {
       try {
         const parsed = JSON.parse(data);
         if (Array.isArray(parsed)) {
-          entities = parsed;
+          values = parsed;
         }
       } catch { /**/ }
     }
 
-    const components = entities.map((entity, i) => (
+    const components = values.map((value, i) => (
       <React.Fragment key={i}>
         {i > 0 && ', '}
-        <EntityLink
-          entity={data}
+        <DeepLink
+          value={value}
           semanticType={st}
           clusterName={clusterName}
           embedState={embedState}
@@ -222,8 +222,8 @@ export function getLiveCellRenderer(
   const { type: dt, semanticType: st, columnName } = display;
   const dataRenderer = getDataRenderer(dt);
 
-  if (isEntityType(st)) {
-    return getEntityCellRenderer(st, clusterName, propagatedArgs);
+  if (semanticTypeDeepLinks(st)) {
+    return getDeepLinkCellRenderer(st, clusterName, propagatedArgs);
   }
 
   switch (st) {
