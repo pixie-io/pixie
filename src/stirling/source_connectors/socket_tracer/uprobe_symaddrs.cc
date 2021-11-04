@@ -29,6 +29,7 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/stirling/obj_tools/dwarf_reader.h"
 #include "src/stirling/obj_tools/elf_reader.h"
+#include "src/stirling/utils/detect_application.h"
 
 using ::px::stirling::obj_tools::DwarfReader;
 using ::px::stirling::obj_tools::ElfReader;
@@ -590,18 +591,61 @@ StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(const std::filesystem::path&
   return symaddrs;
 }
 
+// Instructions of get symbol offsets for nodejs.
+//   git clone nodejs repo.
+//   git checkout v<version>  # Checkout the tagged release
+//   ./configure --debug && make -j8  # build the debug version
+//   sudo out/Debug/node src/stirling/.../containers/ssl/https_server.js
+//   Launch stirling_wrapper, log the output of NodeTLSWrapSymAddrsFromDwarf() from inside
+//   UProbeManager::UpdateNodeTLSWrapSymAddrs().
+constexpr struct node_tlswrap_symaddrs_t kNodeSymaddrsV12_3_1 = {
+    .TLSWrap_StreamListener_offset = 0x0130,
+    .StreamListener_stream_offset = 0x08,
+    .StreamBase_StreamResource_offset = 0x00,
+    .LibuvStreamWrap_StreamBase_offset = 0x50,
+    .LibuvStreamWrap_stream_offset = 0x90,
+    .uv_stream_s_io_watcher_offset = 0x88,
+    .uv__io_s_fd_offset = 0x30,
+};
+
+constexpr struct node_tlswrap_symaddrs_t kNodeSymaddrsV14_18_1 = {
+    .TLSWrap_StreamListener_offset = 0x0138,
+    .StreamListener_stream_offset = 0x08,
+    .StreamBase_StreamResource_offset = 0x00,
+    .LibuvStreamWrap_StreamBase_offset = 0x58,
+    .LibuvStreamWrap_stream_offset = 0x98,
+    .uv_stream_s_io_watcher_offset = 0x88,
+    .uv__io_s_fd_offset = 0x30,
+};
+
+// This works for version from 15.0 to 16.9 as tested. Versions newer than 16.9 should still be
+// compatible, but requires testing.
+constexpr struct node_tlswrap_symaddrs_t kNodeSymaddrsV15_0_1 = {
+    .TLSWrap_StreamListener_offset = 0x78,
+    .StreamListener_stream_offset = 0x08,
+    .StreamBase_StreamResource_offset = 0x00,
+    .LibuvStreamWrap_StreamBase_offset = 0x58,
+    .LibuvStreamWrap_stream_offset = 0x98,
+    .uv_stream_s_io_watcher_offset = 0x88,
+    .uv__io_s_fd_offset = 0x30,
+};
+
 struct node_tlswrap_symaddrs_t DefaultNodeTLSWrapSymAddrs() {
-  // This works for version from 15.0 to 16.9 as tested. Versions newer than 16.9 should still be
-  // compatible, but requires testing.
-  return {
-      .TLSWrap_StreamListener_offset = 0x78,
-      .StreamListener_stream_offset = 0x08,
-      .StreamBase_StreamResource_offset = 0x00,
-      .LibuvStreamWrap_StreamBase_offset = 0x58,
-      .LibuvStreamWrap_stream_offset = 0x98,
-      .uv_stream_s_io_watcher_offset = 0x88,
-      .uv__io_s_fd_offset = 0x30,
+  return kNodeSymaddrsV15_0_1;
+}
+
+StatusOr<struct node_tlswrap_symaddrs_t> NodeTLSWrapSymAddrsFromVersion(const SemVer& ver) {
+  LOG(INFO) << "Getting symbol offsets for version: " << ver.ToString();
+  static const std::map<SemVer, struct node_tlswrap_symaddrs_t> kNodeVersionSymaddrs = {
+      {SemVer{12, 3, 1}, kNodeSymaddrsV12_3_1},
+      {SemVer{14, 18, 1}, kNodeSymaddrsV14_18_1},
+      {SemVer{15, 0, 1}, kNodeSymaddrsV15_0_1},
   };
+  auto iter = Floor(kNodeVersionSymaddrs, ver);
+  if (iter == kNodeVersionSymaddrs.end()) {
+    return error::NotFound("Found no symbol offsets for version '$0'", ver.ToString());
+  }
+  return iter->second;
 }
 
 StatusOr<struct node_tlswrap_symaddrs_t> NodeTLSWrapSymAddrsFromDwarf(DwarfReader* dwarf_reader) {
@@ -629,6 +673,33 @@ StatusOr<struct node_tlswrap_symaddrs_t> NodeTLSWrapSymAddrsFromDwarf(DwarfReade
                       dwarf_reader->GetStructMemberOffset("uv__io_s", "fd"));
 
   return symaddrs;
+}
+
+StatusOr<struct node_tlswrap_symaddrs_t> NodeTLSWrapSymAddrs(const std::filesystem::path& node_exe,
+                                                             const SemVer& ver) {
+  // Indexing is disabled, because nodejs has 700+MB debug info file, and it takes >100 seconds to
+  // index them.
+  //
+  // TODO(yzhao): We can implement "selective caching". The input needs to be a collection of symbol
+  // patterns, which means only indexing the matched symbols.
+  auto dwarf_reader_or = DwarfReader::Create(node_exe.string(), /*index*/ false);
+
+  // Creation might fail if source language cannot be detected, which means that there is no dwarf
+  // info.
+  if (dwarf_reader_or.ok()) {
+    auto symaddrs_or = NodeTLSWrapSymAddrsFromDwarf(dwarf_reader_or.ValueOrDie().get());
+    if (symaddrs_or.ok()) {
+      return symaddrs_or.ConsumeValueOrDie();
+    }
+  }
+
+  // Try to lookup hard-coded symbol offsets with version.
+  auto symaddrs_or = NodeTLSWrapSymAddrsFromVersion(ver);
+  if (symaddrs_or.ok()) {
+    return symaddrs_or.ConsumeValueOrDie();
+  }
+
+  return error::NotFound("Nodejs version cannot be older than 12.3.1, got '$0'", ver.ToString());
 }
 
 }  // namespace stirling

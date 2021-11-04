@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <map>
 #include <memory>
 #include <string>
 #include <utility>
@@ -32,6 +33,7 @@
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
 
+#include "src/stirling/utils/detect_application.h"
 #include "src/stirling/utils/proc_path_tools.h"
 #include "src/stirling/utils/proc_tracker.h"
 
@@ -81,10 +83,10 @@ class UserSpaceManagedBPFMap {
 
  private:
   UserSpaceManagedBPFMap(bpf_tools::BCCWrapper* bcc, const std::string& map_name)
-      : map_(std::make_unique<ebpf::BPFHashTable<TKeyType, TValueType> >(
+      : map_(std::make_unique<ebpf::BPFHashTable<TKeyType, TValueType>>(
             bcc->GetHashTable<TKeyType, TValueType>(map_name))) {}
 
-  std::unique_ptr<ebpf::BPFHashTable<TKeyType, TValueType> > map_;
+  std::unique_ptr<ebpf::BPFHashTable<TKeyType, TValueType>> map_;
   absl::flat_hash_set<TKeyType> shadow_keys_;
 };
 
@@ -217,44 +219,87 @@ class UProbeManager {
   // Probes on node' C++ functions for obtaining the file descriptor from TLSWrap object.
   // The match type is kPrefix to (hopefully) tolerate potential changes in argument
   // order/type/count etc.
-  inline static const auto kNodejsOpenSSLUProbeTmpls = MakeArray<UProbeTmpl>({
-      UProbeTmpl{
-          .symbol = "_ZN4node6crypto7TLSWrapC2E",
-          .match_type = obj_tools::SymbolMatchType::kPrefix,
-          .probe_fn = "probe_entry_TLSWrap_memfn",
-          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
-      },
-      UProbeTmpl{
-          .symbol = "_ZN4node6crypto7TLSWrapC2E",
-          .match_type = obj_tools::SymbolMatchType::kPrefix,
-          .probe_fn = "probe_ret_TLSWrap_memfn",
-          .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
-      },
-      UProbeTmpl{
-          .symbol = "_ZN4node6crypto7TLSWrap7ClearInE",
-          .match_type = obj_tools::SymbolMatchType::kPrefix,
-          .probe_fn = "probe_entry_TLSWrap_memfn",
-          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
-      },
-      UProbeTmpl{
-          .symbol = "_ZN4node6crypto7TLSWrap7ClearInE",
-          .match_type = obj_tools::SymbolMatchType::kPrefix,
-          .probe_fn = "probe_ret_TLSWrap_memfn",
-          .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
-      },
-      UProbeTmpl{
-          .symbol = "_ZN4node6crypto7TLSWrap8ClearOutE",
-          .match_type = obj_tools::SymbolMatchType::kPrefix,
-          .probe_fn = "probe_entry_TLSWrap_memfn",
-          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
-      },
-      UProbeTmpl{
-          .symbol = "_ZN4node6crypto7TLSWrap8ClearOutE",
-          .match_type = obj_tools::SymbolMatchType::kPrefix,
-          .probe_fn = "probe_ret_TLSWrap_memfn",
-          .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
-      },
-  });
+  inline static const std::array<UProbeTmpl, 6> kNodeOpenSSLUProbeTmplsV12_3_1 =
+      MakeArray<UProbeTmpl>({
+          UProbeTmpl{
+              .symbol = "_ZN4node7TLSWrapC2E",
+              .match_type = obj_tools::SymbolMatchType::kPrefix,
+              .probe_fn = "probe_entry_TLSWrap_memfn",
+              .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+          },
+          UProbeTmpl{
+              .symbol = "_ZN4node7TLSWrapC2E",
+              .match_type = obj_tools::SymbolMatchType::kPrefix,
+              .probe_fn = "probe_ret_TLSWrap_memfn",
+              .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
+          },
+          UProbeTmpl{
+              .symbol = "_ZN4node7TLSWrap7ClearInE",
+              .match_type = obj_tools::SymbolMatchType::kPrefix,
+              .probe_fn = "probe_entry_TLSWrap_memfn",
+              .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+          },
+          UProbeTmpl{
+              .symbol = "_ZN4node7TLSWrap7ClearInE",
+              .match_type = obj_tools::SymbolMatchType::kPrefix,
+              .probe_fn = "probe_ret_TLSWrap_memfn",
+              .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
+          },
+          UProbeTmpl{
+              .symbol = "_ZN4node7TLSWrap8ClearOutE",
+              .match_type = obj_tools::SymbolMatchType::kPrefix,
+              .probe_fn = "probe_entry_TLSWrap_memfn",
+              .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+          },
+          UProbeTmpl{
+              .symbol = "_ZN4node7TLSWrap8ClearOutE",
+              .match_type = obj_tools::SymbolMatchType::kPrefix,
+              .probe_fn = "probe_ret_TLSWrap_memfn",
+              .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
+          },
+      });
+
+  inline static const std::array<UProbeTmpl, 6> kNodeOpenSSLUProbeTmplsV15_0_1 =
+      MakeArray<UProbeTmpl>({
+          UProbeTmpl{
+              .symbol = "_ZN4node6crypto7TLSWrapC2E",
+              .match_type = obj_tools::SymbolMatchType::kPrefix,
+              .probe_fn = "probe_entry_TLSWrap_memfn",
+              .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+          },
+          UProbeTmpl{
+              .symbol = "_ZN4node6crypto7TLSWrapC2E",
+              .match_type = obj_tools::SymbolMatchType::kPrefix,
+              .probe_fn = "probe_ret_TLSWrap_memfn",
+              .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
+          },
+          UProbeTmpl{
+              .symbol = "_ZN4node6crypto7TLSWrap7ClearInE",
+              .match_type = obj_tools::SymbolMatchType::kPrefix,
+              .probe_fn = "probe_entry_TLSWrap_memfn",
+              .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+          },
+          UProbeTmpl{
+              .symbol = "_ZN4node6crypto7TLSWrap7ClearInE",
+              .match_type = obj_tools::SymbolMatchType::kPrefix,
+              .probe_fn = "probe_ret_TLSWrap_memfn",
+              .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
+          },
+          UProbeTmpl{
+              .symbol = "_ZN4node6crypto7TLSWrap8ClearOutE",
+              .match_type = obj_tools::SymbolMatchType::kPrefix,
+              .probe_fn = "probe_entry_TLSWrap_memfn",
+              .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+          },
+          UProbeTmpl{
+              .symbol = "_ZN4node6crypto7TLSWrap8ClearOutE",
+              .match_type = obj_tools::SymbolMatchType::kPrefix,
+              .probe_fn = "probe_ret_TLSWrap_memfn",
+              .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
+          },
+      });
+
+  static StatusOr<std::array<UProbeTmpl, 6>> GetNodeOpensslUProbeTmpls(const SemVer& ver);
 
   // Probes for OpenSSL tracing.
   inline static const auto kOpenSSLUProbes = MakeArray<bpf_tools::UProbeSpec>({
@@ -391,7 +436,8 @@ class UProbeManager {
                                const std::vector<int32_t>& pids);
   Status UpdateGoTLSSymAddrs(obj_tools::ElfReader* elf_reader, obj_tools::DwarfReader* dwarf_reader,
                              const std::vector<int32_t>& pids);
-  Status UpdateNodeTLSWrapSymAddrs(int32_t pid, const std::filesystem::path& exe);
+  Status UpdateNodeTLSWrapSymAddrs(int32_t pid, const std::filesystem::path& node_exe,
+                                   const SemVer& ver);
 
   // Clean-up various BPF maps used to communicate symbol addresses per PID.
   // Once the PID has terminated, the information is not required anymore.
@@ -434,14 +480,14 @@ class UProbeManager {
   absl::flat_hash_set<std::string> nodejs_binaries_;
 
   // BPF maps through which the addresses of symbols for a given pid are communicated to uprobes.
-  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct openssl_symaddrs_t> >
+  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct openssl_symaddrs_t>>
       openssl_symaddrs_map_;
-  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct go_common_symaddrs_t> >
+  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct go_common_symaddrs_t>>
       go_common_symaddrs_map_;
-  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct go_http2_symaddrs_t> >
+  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct go_http2_symaddrs_t>>
       go_http2_symaddrs_map_;
-  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct go_tls_symaddrs_t> > go_tls_symaddrs_map_;
-  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct node_tlswrap_symaddrs_t> >
+  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct go_tls_symaddrs_t>> go_tls_symaddrs_map_;
+  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct node_tlswrap_symaddrs_t>>
       node_tlswrap_symaddrs_map_;
 };
 

@@ -91,17 +91,11 @@ TEST_F(UprobeSymaddrsTest, GoTLSSymAddrs) {
   EXPECT_EQ(symaddrs.Read_b_offset, 16);
 }
 
-std::unique_ptr<DwarfReader> CreateDwarfReader(const std::filesystem::path& exe) {
-  std::filesystem::path p = px::testing::BazelBinTestFilePath(exe);
-  auto dwarf_reader_or = DwarfReader::Create(p.string(), /*index*/ false);
-  return dwarf_reader_or.ConsumeValueOrDie();
-}
-
 // Note that DwarfReader cannot be created if there is no dwarf info.
 TEST(UprobeSymaddrsNodeTest, TLSWrapSymAddrsFromDwarfInfo) {
-  auto dwarf_reader = CreateDwarfReader("src/stirling/testing/demo_apps/node/node.debug");
-  ASSERT_OK_AND_ASSIGN(struct node_tlswrap_symaddrs_t symaddrs,
-                       NodeTLSWrapSymAddrsFromDwarf(dwarf_reader.get()));
+  ASSERT_OK_AND_ASSIGN(
+      struct node_tlswrap_symaddrs_t symaddrs,
+      NodeTLSWrapSymAddrs("src/stirling/testing/demo_apps/node/node.debug", {0, 0, 0}));
   EXPECT_EQ(symaddrs.TLSWrap_StreamListener_offset, 0x08);
   EXPECT_EQ(symaddrs.StreamListener_stream_offset, 0x08);
   EXPECT_EQ(symaddrs.StreamBase_StreamResource_offset, 0x00);

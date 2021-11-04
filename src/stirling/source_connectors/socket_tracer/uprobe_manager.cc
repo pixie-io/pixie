@@ -33,7 +33,6 @@
 #include "src/stirling/obj_tools/go_syms.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
 #include "src/stirling/source_connectors/socket_tracer/uprobe_symaddrs.h"
-#include "src/stirling/utils/detect_application.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
 DEFINE_bool(stirling_rescan_for_dlopen, false,
@@ -172,20 +171,11 @@ Status UProbeManager::UpdateGoTLSSymAddrs(ElfReader* elf_reader, DwarfReader* dw
   return Status::OK();
 }
 
-Status UProbeManager::UpdateNodeTLSWrapSymAddrs(int32_t pid, const std::filesystem::path& exe) {
-  // Creation might fail if source language cannot be detected, which means that there is no dwarf
-  // info.
-  auto dwarf_reader_or = DwarfReader::Create(exe.string());
-  if (dwarf_reader_or.ok()) {
-    auto symaddrs_or = NodeTLSWrapSymAddrsFromDwarf(dwarf_reader_or.ValueOrDie().get());
-    if (symaddrs_or.ok()) {
-      node_tlswrap_symaddrs_map_->UpdateValue(pid, symaddrs_or.ValueOrDie());
-      return Status::OK();
-    }
-  }
-  // The executable can have only partial dwarf info. Therefore the symbol offsets might not be
-  // available. In that case, we use the default offset.
-  node_tlswrap_symaddrs_map_->UpdateValue(pid, DefaultNodeTLSWrapSymAddrs());
+Status UProbeManager::UpdateNodeTLSWrapSymAddrs(int32_t pid, const std::filesystem::path& node_exe,
+                                                const SemVer& ver) {
+  PL_ASSIGN_OR_RETURN(struct node_tlswrap_symaddrs_t symbol_offsets,
+                      NodeTLSWrapSymAddrs(node_exe, ver));
+  node_tlswrap_symaddrs_map_->UpdateValue(pid, symbol_offsets);
   return Status::OK();
 }
 
@@ -292,6 +282,29 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
   return kOpenSSLUProbes.size();
 }
 
+namespace {
+
+StatusOr<SemVer> GetNodeVersion(const std::filesystem::path& node_exe) {
+  PL_ASSIGN_OR_RETURN(std::string ver_str, GetVersion(node_exe, "--version"));
+  PL_ASSIGN_OR_RETURN(SemVer ver, GetSemVer(ver_str));
+  return ver;
+}
+
+}  // namespace
+
+StatusOr<std::array<UProbeTmpl, 6>> UProbeManager::GetNodeOpensslUProbeTmpls(const SemVer& ver) {
+  static const std::map<SemVer, std::array<UProbeTmpl, 6>> kNodeVersionUProbeTmpls = {
+      {SemVer{12, 3, 1}, kNodeOpenSSLUProbeTmplsV12_3_1},
+      {SemVer{15, 0, 1}, kNodeOpenSSLUProbeTmplsV15_0_1},
+  };
+  auto iter = Floor(kNodeVersionUProbeTmpls, ver);
+  if (iter == kNodeVersionUProbeTmpls.end()) {
+    return error::NotFound("The nodejs version cannot be older than 12.3.1, got '$0'",
+                           ver.ToString());
+  }
+  return iter->second;
+}
+
 StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(uint32_t pid) {
   PL_ASSIGN_OR_RETURN(std::filesystem::path proc_exe, proc_parser_->GetExePath(pid));
 
@@ -324,7 +337,8 @@ StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(uint32_t pid) {
     return 0;
   }
 
-  PL_RETURN_IF_ERROR(UpdateNodeTLSWrapSymAddrs(pid, host_proc_exe));
+  PL_ASSIGN_OR_RETURN(SemVer ver, GetNodeVersion(host_proc_exe));
+  PL_RETURN_IF_ERROR(UpdateNodeTLSWrapSymAddrs(pid, host_proc_exe, ver));
 
   // These probes are attached on OpenSSL dynamic library (if present) as well.
   // Here they are attached on statically linked OpenSSL library (eg. for node).
@@ -333,10 +347,10 @@ StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(uint32_t pid) {
     PL_RETURN_IF_ERROR(bcc_->AttachUProbe(spec));
   }
 
-  PL_ASSIGN_OR_RETURN(auto elf_reader, ElfReader::Create(host_proc_exe));
   // These are node-specific probes.
-  PL_ASSIGN_OR_RETURN(int count,
-                      AttachUProbeTmpl(kNodejsOpenSSLUProbeTmpls, host_proc_exe, elf_reader.get()));
+  PL_ASSIGN_OR_RETURN(auto uprobe_tmpls, GetNodeOpensslUProbeTmpls(ver));
+  PL_ASSIGN_OR_RETURN(auto elf_reader, ElfReader::Create(host_proc_exe));
+  PL_ASSIGN_OR_RETURN(int count, AttachUProbeTmpl(uprobe_tmpls, host_proc_exe, elf_reader.get()));
 
   return kOpenSSLUProbes.size() + count;
 }
@@ -446,6 +460,8 @@ void UProbeManager::CleanupSymaddrMaps(const absl::flat_hash_set<md::UPID>& dele
 int UProbeManager::DeployOpenSSLUProbes(const absl::flat_hash_set<md::UPID>& pids) {
   int uprobe_count = 0;
 
+  // TODO(yzhao): Change to use ConvertPIDsListToMap() to avoid processing the same executable
+  // multiple times for different processes.
   for (const auto& pid : pids) {
     if (cfg_disable_self_probing_ && pid.pid() == static_cast<uint32_t>(getpid())) {
       continue;

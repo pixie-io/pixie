@@ -112,6 +112,32 @@ class CurlContainer : public ContainerRunner {
   static constexpr std::string_view kReadyMessage = "";
 };
 
+class Node12_3_1Container : public ContainerRunner {
+ public:
+  Node12_3_1Container()
+      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+                        kReadyMessage) {}
+
+ private:
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/node_12_3_1_image.tar";
+  static constexpr std::string_view kContainerNamePrefix = "node_server";
+  static constexpr std::string_view kReadyMessage = "Nodejs https server started!";
+};
+
+class Node14_18_1Container : public ContainerRunner {
+ public:
+  Node14_18_1Container()
+      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+                        kReadyMessage) {}
+
+ private:
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/node_14_18_1_image.tar";
+  static constexpr std::string_view kContainerNamePrefix = "node_server";
+  static constexpr std::string_view kReadyMessage = "Nodejs https server started!";
+};
+
 class Node15_0Container : public ContainerRunner {
  public:
   Node15_0Container()
@@ -121,19 +147,6 @@ class Node15_0Container : public ContainerRunner {
  private:
   static constexpr std::string_view kBazelImageTar =
       "src/stirling/source_connectors/socket_tracer/testing/containers/node_15_0_image.tar";
-  static constexpr std::string_view kContainerNamePrefix = "node_server";
-  static constexpr std::string_view kReadyMessage = "Nodejs https server started!";
-};
-
-class Node16_9Container : public ContainerRunner {
- public:
-  Node16_9Container()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
-                        kReadyMessage) {}
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/node_16_9_image.tar";
   static constexpr std::string_view kContainerNamePrefix = "node_server";
   static constexpr std::string_view kReadyMessage = "Nodejs https server started!";
 };

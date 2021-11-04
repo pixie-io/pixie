@@ -103,11 +103,16 @@ container_image(
 )
 
 node_http_server_image(
-    name = "node_15_0_image",
-    base = "@node_15_0_linux_amd64_image//image",
+    name = "node_12_3_1_image",
+    base = "@node_12_3_1_linux_amd64_image//image",
 )
 
 node_http_server_image(
-    name = "node_16_9_image",
-    base = "@node_16_9_linux_amd64_image//image",
+    name = "node_14_18_1_image",
+    base = "@node_14_18_1_linux_amd64_image//image",
+)
+
+node_http_server_image(
+    name = "node_15_0_image",
+    base = "@node_15_0_linux_amd64_image//image",
 )

@@ -22,6 +22,7 @@
 #include "src/stirling/obj_tools/dwarf_reader.h"
 #include "src/stirling/obj_tools/elf_reader.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
+#include "src/stirling/utils/detect_application.h"
 
 namespace px {
 namespace stirling {
@@ -54,16 +55,12 @@ StatusOr<struct go_tls_symaddrs_t> GoTLSSymAddrs(obj_tools::ElfReader* elf_reade
 StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(const std::filesystem::path& openssl_lib);
 
 /**
- * Detects the version of node executable, and returns the locations of all relevant symbols for
- * OpenSSL uprobe deployment.
+ * Returns the corresponding symbol offsets of the input Nodejs executable.
+ * If the executable includes the dwarf info, the offsets are read directly from that.
+ * Otherwise, consult the provided version (if available) to lookup for hard-coded symbol offsets.
  */
-StatusOr<struct node_tlswrap_symaddrs_t> NodeTLSWrapSymAddrsFromDwarf(
-    obj_tools::DwarfReader* dwarf_reader);
-
-/**
- * Returns a default symbol addresses.
- */
-struct node_tlswrap_symaddrs_t DefaultNodeTLSWrapSymAddrs();
+StatusOr<struct node_tlswrap_symaddrs_t> NodeTLSWrapSymAddrs(const std::filesystem::path& node_exe,
+                                                             const SemVer& ver);
 
 }  // namespace stirling
 }  // namespace px
