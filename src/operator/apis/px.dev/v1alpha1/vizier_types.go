@@ -79,6 +79,9 @@ const (
 	// DataAccessRestricted restricts users from accessing columns that may contain sensitive data, for example: HTTP response
 	// bodies. These columns will be entirely replaced by a redacted string.
 	DataAccessRestricted DataAccessLevel = "Restricted"
+	// DataAccessPIIRestricted does a best effort redaction of PII. Current PII types include: IP addresses, email addresses, MAC addresses, credit card numbers, and IMEI numbers.
+	// Note that the best effort redaction is not perfect and as such if security and privacy are of the utmost concern, one should use DataAccessRestricted.
+	DataAccessPIIRestricted DataAccessLevel = "PIIRestricted"
 )
 
 // ClockConverterType defines which clock conversion routine to use for converting timestamps to a synced reference time.

@@ -46,7 +46,7 @@ func CreateDataPrivacyManager(ns string) (DataPrivacy, error) {
 	dataAccessStr := viper.GetString("data_access")
 	dataAccess := pixie.DataAccessLevel(dataAccessStr)
 	switch dataAccess {
-	case pixie.DataAccessFull, pixie.DataAccessRestricted:
+	case pixie.DataAccessFull, pixie.DataAccessRestricted, pixie.DataAccessPIIRestricted:
 		return &vizierCachedDataPrivacy{dataAccess}, nil
 	default:
 		return nil, fmt.Errorf("Invalid DataAccess: '%s'", dataAccessStr)
