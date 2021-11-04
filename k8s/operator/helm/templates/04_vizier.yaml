@@ -26,6 +26,10 @@ spec:
   {{- if .Values.patches }}
   patches: {{ .Values.patches | toYaml | nindent 4 }}
   {{- end }}
+  {{- if .Values.dataCollectorParams }}
+  dataCollectorParams:
+    datastreamBufferSize: {{ .Values.dataCollectorParams.datastreamBufferSize }}
+  {{- end}}
   {{- if or .Values.pod.annotations (or .Values.pod.labels .Values.pod.resources) }}
   pod:
     {{- if .Values.pod.annotations }}

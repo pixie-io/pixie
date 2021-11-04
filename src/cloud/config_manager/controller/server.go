@@ -97,6 +97,10 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 		ClockConverter:    in.VzSpec.ClockConverter,
 	}
 
+	if in.VzSpec.DataCollectorParams != nil {
+		tmplValues.DatastreamBufferSize = in.VzSpec.DataCollectorParams.DatastreamBufferSize
+	}
+
 	vzYamls, err := yamls.ExecuteTemplatedYAMLs(templatedYAMLs, vizieryamls.VizierTmplValuesToArgs(tmplValues))
 	if err != nil {
 		log.WithError(err).Error("Failed to execute templates")

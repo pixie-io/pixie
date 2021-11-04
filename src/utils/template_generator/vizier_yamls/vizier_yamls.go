@@ -40,19 +40,20 @@ const (
 
 // VizierTmplValues are the template values that can be used to fill out templated Vizier YAMLs.
 type VizierTmplValues struct {
-	DeployKey         string
-	CustomAnnotations string
-	CustomLabels      string
-	CloudAddr         string
-	ClusterName       string
-	CloudUpdateAddr   string
-	UseEtcdOperator   bool
-	PEMMemoryLimit    string
-	Namespace         string
-	DisableAutoUpdate bool
-	SentryDSN         string
-	ClockConverter    string
-	DataAccess        string
+	DeployKey            string
+	CustomAnnotations    string
+	CustomLabels         string
+	CloudAddr            string
+	ClusterName          string
+	CloudUpdateAddr      string
+	UseEtcdOperator      bool
+	PEMMemoryLimit       string
+	Namespace            string
+	DisableAutoUpdate    bool
+	SentryDSN            string
+	ClockConverter       string
+	DataAccess           string
+	DatastreamBufferSize uint32
 }
 
 // VizierTmplValuesToArgs converts the vizier template values to args which can be used to fill out a template.
@@ -386,6 +387,12 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
 			Patch:           `{"spec": {"template": {"spec": {"containers": [{"name": "app", "env": [{"name": "PL_DATA_ACCESS","value": "__PX_DATA_ACCESS__"}]}] } } } }`,
 			Placeholder:     "__PX_DATA_ACCESS__",
 			TemplateValue:   fmt.Sprintf(`{{ if .Values.dataAccess }}"{{ .Values.dataAccess }}"{{else}}"%s"{{end}}`, defaultDataAccess),
+		},
+		{
+			TemplateMatcher: yamls.GenerateContainerNameMatcherFn("pem"),
+			Patch:           `{"spec": {"template": { "spec": { "containers": [{"name": "pem", "env": [{"name": "PL_DATASTREAM_BUFFER_SIZE", "value": "__PX_DATASTREAM_BUFFER_SIZE__"}]}] } } } }`,
+			Placeholder:     "__PX_DATASTREAM_BUFFER_SIZE__",
+			TemplateValue:   fmt.Sprintf(`{{ if .Values.datastreamBufferSize }}"{{.Values.datastreamBufferSize}}"{{else}}"%d"{{end}}`, defaultDatastreamBufferSize),
 		},
 	}...)
 
