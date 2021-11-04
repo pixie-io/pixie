@@ -35,6 +35,7 @@ const (
 	natsYAMLPath                  = "./yamls/vizier_deps/nats_prod.yaml"
 	defaultMemoryLimit            = "2Gi"
 	defaultDataAccess             = "Full"
+	defaultDatastreamBufferSize   = 1024 * 1024
 )
 
 // VizierTmplValues are the template values that can be used to fill out templated Vizier YAMLs.
@@ -58,18 +59,19 @@ type VizierTmplValues struct {
 func VizierTmplValuesToArgs(tmplValues *VizierTmplValues) *yamls.YAMLTmplArguments {
 	return &yamls.YAMLTmplArguments{
 		Values: &map[string]interface{}{
-			"deployKey":         tmplValues.DeployKey,
-			"customAnnotations": tmplValues.CustomAnnotations,
-			"customLabels":      tmplValues.CustomLabels,
-			"cloudAddr":         tmplValues.CloudAddr,
-			"clusterName":       tmplValues.ClusterName,
-			"cloudUpdateAddr":   tmplValues.CloudUpdateAddr,
-			"useEtcdOperator":   tmplValues.UseEtcdOperator,
-			"pemMemoryLimit":    tmplValues.PEMMemoryLimit,
-			"disableAutoUpdate": tmplValues.DisableAutoUpdate,
-			"sentryDSN":         tmplValues.SentryDSN,
-			"clockConverter":    tmplValues.ClockConverter,
-			"dataAccess":        tmplValues.DataAccess,
+			"deployKey":            tmplValues.DeployKey,
+			"customAnnotations":    tmplValues.CustomAnnotations,
+			"customLabels":         tmplValues.CustomLabels,
+			"cloudAddr":            tmplValues.CloudAddr,
+			"clusterName":          tmplValues.ClusterName,
+			"cloudUpdateAddr":      tmplValues.CloudUpdateAddr,
+			"useEtcdOperator":      tmplValues.UseEtcdOperator,
+			"pemMemoryLimit":       tmplValues.PEMMemoryLimit,
+			"disableAutoUpdate":    tmplValues.DisableAutoUpdate,
+			"sentryDSN":            tmplValues.SentryDSN,
+			"clockConverter":       tmplValues.ClockConverter,
+			"dataAccess":           tmplValues.DataAccess,
+			"datastreamBufferSize": tmplValues.DatastreamBufferSize,
 		},
 		Release: &map[string]interface{}{
 			"Namespace": tmplValues.Namespace,

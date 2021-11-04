@@ -696,6 +696,13 @@ func generateVizierYAMLsConfig(ctx context.Context, ns string, vz *v1alpha1.Vizi
 			Patches: vz.Spec.Patches,
 		},
 	}
+
+	if vz.Spec.DataCollectorParams != nil {
+		req.VzSpec.DataCollectorParams = &vizierconfigpb.DataCollectorParams{
+			DatastreamBufferSize: vz.Spec.DataCollectorParams.DatastreamBufferSize,
+		}
+	}
+
 	resp, err := client.GetConfigForVizier(ctx, req)
 	if err != nil {
 		return nil, err
