@@ -53,6 +53,7 @@ enum traffic_protocol_t {
   kProtocolNATS,
   kProtocolMongo,
   kProtocolKafka,
+  kProtocolMux,
   kNumProtocols
 };
 

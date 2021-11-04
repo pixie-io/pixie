@@ -182,6 +182,8 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
 // PROTOCOL_LIST: Requires update on new protocols.
 template void DataStream::ProcessBytesToFrames<protocols::http::Message, protocols::NoState>(
     message_type_t type, protocols::NoState* state);
+template void DataStream::ProcessBytesToFrames<protocols::mux::Frame, protocols::NoState>(
+    message_type_t type, protocols::NoState* state);
 template void
 DataStream::ProcessBytesToFrames<protocols::mysql::Packet, protocols::mysql::StateWrapper>(
     message_type_t type, protocols::mysql::StateWrapper* state);

@@ -86,6 +86,8 @@ DEFINE_bool(stirling_enable_nats_tracing, true,
             "If true, stirling will trace and process NATS messages.");
 DEFINE_bool(stirling_enable_kafka_tracing, true,
             "If true, stirling will trace and process Kafka messages.");
+DEFINE_bool(stirling_enable_mux_tracing, true,
+            "If true, stirling will trace and process Mux messages.");
 
 DEFINE_bool(stirling_disable_self_tracing, true,
             "If true, stirling will not trace and process syscalls made by itself.");
@@ -164,6 +166,10 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
                                     kKafkaTableNum,
                                     {kRoleClient, kRoleServer},
                                     TRANSFER_STREAM_PROTOCOL(kafka)}},
+      {kProtocolMux, TransferSpec{FLAGS_stirling_enable_mux_tracing,
+                                    kMuxTableNum,
+                                    {kRoleClient, kRoleServer},
+                                    TRANSFER_STREAM_PROTOCOL(mux)}},
       {kProtocolUnknown, TransferSpec{false /*enabled*/,
                                       // Unknown protocols attached to HTTP table so that they run
                                       // their cleanup functions, but the use of nullptr transfer_fn
@@ -813,6 +819,25 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("req_body")>(entry.req.query);
   r.Append<r.ColIndex("resp_header")>(entry.resp.header);
   r.Append<r.ColIndex("resp_body")>(entry.resp.msg);
+  r.Append<r.ColIndex("latency")>(
+      CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
+#ifndef NDEBUG
+  r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
+#endif
+}
+
+template <>
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
+                                         protocols::mux::Record entry, DataTable* data_table) {
+  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
+                conn_tracker.conn_id().upid.start_time_ticks);
+
+  DataTable::RecordBuilder<&kMuxTable> r(data_table, entry.resp.timestamp_ns);
+  r.Append<r.ColIndex("time_")>(entry.resp.timestamp_ns);
+  r.Append<r.ColIndex("upid")>(upid.value());
+  r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
+  r.Append<r.ColIndex("trace_role")>(conn_tracker.role());
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 #ifndef NDEBUG
