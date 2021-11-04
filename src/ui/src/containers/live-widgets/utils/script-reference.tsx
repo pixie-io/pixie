@@ -25,7 +25,7 @@ import { createStyles } from '@material-ui/styles';
 import { Arguments } from 'app/utils/args-utils';
 import { SemanticType } from 'app/types/generated/vizierapi_pb';
 import {
-  deepLinkURLFromScript, EmbedState, toEntityURL, toSingleEntityPage,
+  deepLinkURLFromScript, deepLinkURLFromSemanticType, EmbedState,
 } from './live-view-params';
 
 const styles = ({ palette }: Theme) => createStyles({
@@ -59,9 +59,8 @@ export interface DeepLinkProps extends WithStyles<typeof styles>{
 const DeepLinkPlain = React.memo(function DeepLink({
   value, semanticType, clusterName, classes, embedState, propagatedParams,
 }: DeepLinkProps) {
-  const page = toSingleEntityPage(value, semanticType, clusterName);
-  const path = toEntityURL(page, embedState, propagatedParams);
-
+  const path = deepLinkURLFromSemanticType(semanticType, value, clusterName, embedState,
+    propagatedParams);
   if (embedState?.widget) {
     return <>{value}</>;
   }
@@ -71,18 +70,6 @@ const DeepLinkPlain = React.memo(function DeepLink({
 });
 
 export const DeepLink = withStyles(styles)(DeepLinkPlain);
-
-export function semanticTypeDeepLinks(semanticType: SemanticType): boolean {
-  switch (semanticType) {
-    case SemanticType.ST_SERVICE_NAME:
-    case SemanticType.ST_POD_NAME:
-    case SemanticType.ST_NODE_NAME:
-    case SemanticType.ST_NAMESPACE_NAME:
-      return true;
-    default:
-      return false;
-  }
-}
 
 // ScriptReference is used when we are creating a deep link from a script name.
 export interface ScriptReferenceProps extends WithStyles<typeof styles>{

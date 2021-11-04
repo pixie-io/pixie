@@ -38,7 +38,8 @@ import UserContext from 'app/common/user-context';
 import {
   ClusterIcon, DocsIcon, NamespaceIcon,
 } from 'app/components';
-import { toEntityPathname, LiveViewPage } from 'app/containers/live-widgets/utils/live-view-params';
+import { LiveRouteContext } from 'app/containers/App/live-routing';
+import { deepLinkURLFromScript } from 'app/containers/live-widgets/utils/live-view-params';
 import {
   DOMAIN_NAME, ANNOUNCEMENT_ENABLED,
   ANNOUNCE_WIDGET_URL,
@@ -157,6 +158,8 @@ const SideBarExternalLinkItem = React.memo<LinkItemProps>(function SideBarExtern
 export const SideBar: React.FC<{ open: boolean }> = React.memo(({ open }) => {
   const classes = useStyles();
   const selectedClusterName = React.useContext(ClusterContext)?.selectedClusterName ?? '';
+  const { embedState } = React.useContext(LiveRouteContext);
+
   const { user } = React.useContext(UserContext);
 
   const navItems = React.useMemo(() => {
@@ -165,20 +168,12 @@ export const SideBar: React.FC<{ open: boolean }> = React.memo(({ open }) => {
     }
     return [{
       icon: <ClusterIcon />,
-      link: toEntityPathname({
-        params: {},
-        clusterName: selectedClusterName,
-        page: LiveViewPage.Cluster,
-      }, false),
+      link: deepLinkURLFromScript('px/cluster', selectedClusterName, embedState, {}),
       text: 'Cluster',
     },
     {
       icon: <NamespaceIcon />,
-      link: toEntityPathname({
-        params: {},
-        clusterName: selectedClusterName,
-        page: LiveViewPage.Namespaces,
-      }, false),
+      link: deepLinkURLFromScript('px/namespaces', selectedClusterName, embedState, {}),
       text: 'Namespaces',
     }];
     // eslint-disable-next-line react-hooks/exhaustive-deps

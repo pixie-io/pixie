@@ -41,7 +41,7 @@ import {
   getGraphOptions,
   semTypeToShapeConfig,
 } from './graph-utils';
-import { toEntityURL, toSingleEntityPage } from '../utils/live-view-params';
+import { deepLinkURLFromSemanticType } from '../utils/live-view-params';
 import { formatByDataType, formatBySemType } from '../../format-data/format-data';
 
 interface AdjacencyList {
@@ -144,12 +144,10 @@ export const Graph = React.memo<GraphProps>(function Graph({
     if (params.nodes.length > 0 && !embedState.widget) {
       const nodeID = params.nodes[0];
       const semType = graph.idToSemType[nodeID];
-      if (semType === SemanticType.ST_SERVICE_NAME
-        || semType === SemanticType.ST_POD_NAME
-        || semType === SemanticType.ST_NAMESPACE_NAME) {
-        const page = toSingleEntityPage(nodeID, semType, selectedClusterName);
-        const pathname = toEntityURL(page, embedState, propagatedArgs);
-        history.push(pathname);
+      const url = deepLinkURLFromSemanticType(semType, nodeID, selectedClusterName, embedState,
+        propagatedArgs);
+      if (url) {
+        history.push(url);
       }
     }
   }, [history, selectedClusterName, graph, propagatedArgs, embedState]);

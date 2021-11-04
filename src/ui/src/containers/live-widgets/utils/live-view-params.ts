@@ -21,180 +21,6 @@ import * as QueryString from 'query-string';
 import { SemanticType } from 'app/types/generated/vizierapi_pb';
 import { Arguments } from 'app/utils/args-utils';
 
-export enum LiveViewPage {
-  Default,
-  Cluster,
-  Namespace,
-  Namespaces,
-  Node,
-  Nodes,
-  Pod,
-  Pods,
-  Service,
-  Services,
-}
-
-// Use type not interface here so that these params are compatible with Arguments.
-type NamespaceURLParams = {
-  namespace: string;
-};
-
-type NodeURLParams = {
-  node: string;
-};
-
-type PodURLParams = {
-  pod: string;
-};
-
-type ServiceURLParams = {
-  service: string;
-};
-
-type EntityURLParams =
-  | Record<string, string>
-  | NamespaceURLParams
-  | NodeURLParams
-  | PodURLParams
-  | ServiceURLParams;
-
-interface EntityPage {
-  clusterName?: string;
-  page: LiveViewPage;
-  params: EntityURLParams;
-}
-
-const LiveViewPageScriptIds = new Map<LiveViewPage, string>([
-  [LiveViewPage.Cluster, 'px/cluster'],
-  [LiveViewPage.Namespace, 'px/namespace'],
-  [LiveViewPage.Namespaces, 'px/namespaces'],
-  [LiveViewPage.Node, 'px/node'],
-  [LiveViewPage.Nodes, 'px/nodes'],
-  [LiveViewPage.Pod, 'px/pod'],
-  [LiveViewPage.Pods, 'px/pods'],
-  [LiveViewPage.Service, 'px/service'],
-  [LiveViewPage.Services, 'px/services'],
-]);
-
-function entityPageForScriptId(id: string): LiveViewPage {
-  for (const [page, scriptId] of LiveViewPageScriptIds) {
-    if (scriptId === id) return page;
-  }
-  return LiveViewPage.Default;
-}
-
-// List of all of the keys of the entity arguments for a given live view page.
-const LiveViewEntityParams = new Map<LiveViewPage, Set<string>>([
-  [LiveViewPage.Default, new Set()],
-  [LiveViewPage.Cluster, new Set()],
-  [LiveViewPage.Namespace, new Set(['namespace'])],
-  [LiveViewPage.Namespaces, new Set()],
-  [LiveViewPage.Node, new Set(['node'])],
-  [LiveViewPage.Nodes, new Set()],
-  [LiveViewPage.Pod, new Set(['pod'])],
-  [LiveViewPage.Pods, new Set(['namespace'])],
-  [LiveViewPage.Service, new Set(['service'])],
-  [LiveViewPage.Services, new Set(['namespace'])],
-]);
-
-export function toEntityPathname(entity: EntityPage, isEmbedded: boolean): string {
-  const pathPrefix = isEmbedded ? '/embed/live' : '/live';
-
-  const encodedCluster = encodeURIComponent(entity.clusterName);
-  switch (entity.page) {
-    case LiveViewPage.Cluster: {
-      return `${pathPrefix}/clusters/${encodedCluster}`;
-    }
-    case LiveViewPage.Namespace: {
-      const { namespace } = entity.params as NamespaceURLParams;
-      return `${pathPrefix}/clusters/${encodedCluster}/namespaces/${namespace}`;
-    }
-    case LiveViewPage.Namespaces: {
-      return `${pathPrefix}/clusters/${encodedCluster}/namespaces`;
-    }
-    case LiveViewPage.Node: {
-      const { node } = entity.params as NodeURLParams;
-      return `${pathPrefix}/clusters/${encodedCluster}/nodes/${node}`;
-    }
-    case LiveViewPage.Nodes: {
-      return `${pathPrefix}/clusters/${encodedCluster}/nodes`;
-    }
-    case LiveViewPage.Pod: {
-      const { pod } = entity.params as PodURLParams;
-      const [namespace, podName] = (pod || 'unknown/unknown').split('/');
-      return `${pathPrefix}/clusters/${encodedCluster}/namespaces/${namespace}/pods/${podName}`;
-    }
-    case LiveViewPage.Pods: {
-      const { namespace } = entity.params as NamespaceURLParams;
-      return `${pathPrefix}/clusters/${encodedCluster}/namespaces/${namespace}/pods`;
-    }
-    case LiveViewPage.Service: {
-      const { service } = entity.params as ServiceURLParams;
-      const [namespace, serviceName] = (service || 'unknown/unknown').split('/');
-      return `${pathPrefix}/clusters/${encodedCluster}/namespaces/${namespace}/services/${serviceName}`;
-    }
-    case LiveViewPage.Services: {
-      const { namespace } = entity.params as NamespaceURLParams;
-      return `${pathPrefix}/clusters/${encodedCluster}/namespaces/${namespace}/services`;
-    }
-    case LiveViewPage.Default:
-    default:
-      return `${pathPrefix}/clusters/${encodedCluster}`;
-  }
-}
-
-function getQueryParams(embedState: EmbedState, propagatedArgs?: Arguments) {
-  const params = {
-    ...propagatedArgs,
-  };
-  if (embedState.widget) {
-    return {
-      ...params,
-      widget: embedState.widget,
-    };
-  }
-  if (embedState.disableTimePicker) {
-    return {
-      ...params,
-      disable_time_picker: 'true',
-    };
-  }
-  return params;
-}
-
-export function toEntityURL(entity: EntityPage, embedState: EmbedState, propagatedArgs?: Arguments): string {
-  const pathname = toEntityPathname(entity, embedState.isEmbedded);
-  let queryString = '';
-  if (propagatedArgs) {
-    queryString = QueryString.stringify(getQueryParams(embedState, propagatedArgs));
-  }
-  return queryString ? `${pathname}?${queryString}` : pathname;
-}
-
-// Gets the arguments that are entity-specific (and should go in the URL path).
-function getEntityParams(liveViewPage: LiveViewPage, args: Arguments): EntityURLParams {
-  const entityParamNames = LiveViewEntityParams.get(liveViewPage) || new Set();
-  const entityParams = {};
-  entityParamNames.forEach((paramName: string) => {
-    if (args[paramName] != null) {
-      entityParams[paramName] = args[paramName];
-    }
-  });
-  return entityParams;
-}
-
-// Gets the arguments that are not entity-specific (and should go in the query string).
-function getNonEntityParams(liveViewPage: LiveViewPage, args: Arguments): Arguments {
-  const entityParamNames = LiveViewEntityParams.get(liveViewPage) || new Set();
-  const nonEntityParams = {};
-  Object.keys(args).forEach((argName: string) => {
-    if (!entityParamNames.has(argName)) {
-      nonEntityParams[argName] = args[argName];
-    }
-  });
-  return nonEntityParams;
-}
-
 // Specification taken from the URL for how the live view should be rendered.
 export interface EmbedState {
   isEmbedded: boolean;
@@ -202,86 +28,196 @@ export interface EmbedState {
   widget: string | null;
 }
 
-/**
- * Takes a script and arguments and returns the URL for the deep link to this script.
- * It formats it as an entity URL if applicable.
- */
-export function deepLinkURLFromScript(script: string, clusterName: string, embedState: EmbedState,
-  args: Arguments): string {
-  const liveViewPage = entityPageForScriptId(script);
-  const entityParams = getEntityParams(liveViewPage, args);
-  const nonEntityParams = getNonEntityParams(liveViewPage, args);
-  const entityPage = {
-    clusterName,
-    page: liveViewPage,
-    params: entityParams,
-  };
-  return toEntityURL(entityPage, embedState, liveViewPage === LiveViewPage.Default ? {
-    ...nonEntityParams,
-    // non-entity pages require a script query parameter.
-    script,
-  } : nonEntityParams);
-}
-
-// Handle the case where service is a stringified JSON array.
-function getServicePage(service: string, clusterName: string): EntityPage {
+// If the service is an arrary, return the first element. Otherwise, return
+// the service.
+const getFirstServiceIfArray = (service: string): string => {
   try {
     const parsedArray = JSON.parse(service);
-
     if (Array.isArray(parsedArray)) {
-      if (!parsedArray.length) {
-        return null;
+      if (parsedArray.length) {
+        return parsedArray[0];
       }
-      return {
-        clusterName,
-        page: LiveViewPage.Service,
-        params: {
-          service: parsedArray[0],
-        },
-      };
     }
   } catch {
     // Do nothing.
   }
+  return service;
+};
 
-  return {
-    clusterName,
-    page: LiveViewPage.Service,
-    params: {
-      service,
-    },
+// Returns the base URL prefix for all deep links (both vanity and non-vanity URLs).
+const getClusterURLPrefix = (clusterName: string, embedState: EmbedState): string => {
+  const pathPrefix = embedState.isEmbedded ? '/embed/live' : '/live';
+  const encodedCluster = encodeURIComponent(clusterName);
+  return `${pathPrefix}/clusters/${encodedCluster}`;
+};
+
+// Get the query string portion of the deep link from the input arguments.
+const getQueryString = (embedState: EmbedState, args: Arguments, script?: string): string => {
+  const params = {
+    ...args,
   };
-}
+  if (script) {
+    params.script = script;
+  }
+  if (embedState.widget) {
+    params.widget = embedState.widget;
+  }
+  if (embedState.disableTimePicker) {
+    params.disable_time_picker = 'true';
+  }
+  const result = QueryString.stringify(params);
+  if (!result) {
+    return '';
+  }
+  return `?${result}`;
+};
 
-export function toSingleEntityPage(entityName: string, semanticType: SemanticType, clusterName: string): EntityPage {
+type URLFormatter = (clusterName: string, embedState: EmbedState, args: Arguments,
+  script?: string) => string;
+
+// Creates the default deep link for a given input script (non-vanity URL).
+const defaultURLFormatter: URLFormatter = (clusterName, embedState, args, script) => {
+  const pathName = getClusterURLPrefix(clusterName, embedState);
+  const queryString = getQueryString(embedState, args, script);
+  return `${pathName}${queryString}`;
+};
+
+// Creates the vanity URL for px/cluster.
+// Same thing as the default URL formatter, but with no script name passed in.
+const clusterURLFormatter: URLFormatter = (clusterName, embedState, args) => defaultURLFormatter(
+  clusterName, embedState, args);
+
+// Helper function to reduce repetition when formatting vanity URLs.
+const formatVanityURL = (clusterName: string, embedState: EmbedState, vanityPath: string,
+  scriptArgs: Arguments): string => {
+  const pathName = getClusterURLPrefix(clusterName, embedState);
+  const queryString = getQueryString(embedState, scriptArgs);
+  return `${pathName}/${vanityPath}${queryString}`;
+};
+
+// Creates the vanity URL for px/namespace.
+const namespaceURLFormatter: URLFormatter = (clusterName, embedState, args) => {
+  const { namespace, ...scriptArgs } = args;
+  return formatVanityURL(clusterName, embedState, `namespaces/${namespace}`, scriptArgs);
+};
+
+// Creates the vanity URL for px/namespaces.
+const namespacesURLFormatter: URLFormatter = (clusterName, embedState, args) => formatVanityURL(
+  clusterName, embedState, 'namespaces', args);
+
+// Creates the vanity URL for px/node.
+const nodeURLFormatter: URLFormatter = (clusterName, embedState, args) => {
+  const { node, ...scriptArgs } = args;
+  return formatVanityURL(clusterName, embedState, `nodes/${node}`, scriptArgs);
+};
+
+// Creates the vanity URL for px/nodes.
+const nodesURLFormatter: URLFormatter = (clusterName, embedState, args) => formatVanityURL(
+  clusterName, embedState, 'nodes', args);
+
+// Creates the vanity URL for px/pod.
+const podURLFormatter: URLFormatter = (clusterName, embedState, args) => {
+  const { pod, ...scriptArgs } = args;
+  const [namespace, podName] = (pod as string || 'unknown/unknown').split('/');
+  return formatVanityURL(clusterName, embedState, `namespaces/${namespace}/pods/${podName}`,
+    scriptArgs);
+};
+
+// Creates the vanity URL for px/pods.
+const podsURLFormatter: URLFormatter = (clusterName, embedState, args) => {
+  const { namespace, ...scriptArgs } = args;
+  return formatVanityURL(clusterName, embedState, `namespaces/${namespace}/pods`, scriptArgs);
+};
+
+// Creates the vanity URL for px/pod.
+const serviceURLFormatter: URLFormatter = (clusterName, embedState, args) => {
+  const { service, ...scriptArgs } = args;
+  const [namespace, serviceName] = (getFirstServiceIfArray(service as string) || 'unknown/unknown').split('/');
+  return formatVanityURL(clusterName, embedState, `namespaces/${namespace}/services/${serviceName}`,
+    scriptArgs);
+};
+
+// Creates the vanity URL for px/pods.
+const servicesURLFormatter: URLFormatter = (clusterName, embedState, args) => {
+  const { namespace, ...scriptArgs } = args;
+  return formatVanityURL(clusterName, embedState, `namespaces/${namespace}/services`, scriptArgs);
+};
+
+// URL formatters for any deep link that should be formatted differently than the
+// default URL format.
+const vanityURLFormatters = new Map<string, URLFormatter>([
+  ['px/cluster', clusterURLFormatter],
+  ['px/namespace', namespaceURLFormatter],
+  ['px/namespaces', namespacesURLFormatter],
+  ['px/node', nodeURLFormatter],
+  ['px/nodes', nodesURLFormatter],
+  ['px/pod', podURLFormatter],
+  ['px/pods', podsURLFormatter],
+  ['px/service', serviceURLFormatter],
+  ['px/services', servicesURLFormatter],
+]);
+
+/**
+ * Takes a script and arguments and returns the URL for the deep link to this script.
+ * It formats it as an entity URL if applicable.
+ */
+export const deepLinkURLFromScript = (script: string, clusterName: string,
+  embedState: EmbedState, args: Arguments): string => {
+  let urlFormatter: URLFormatter;
+
+  if (vanityURLFormatters.has(script)) {
+    urlFormatter = vanityURLFormatters.get(script);
+  } else {
+    urlFormatter = defaultURLFormatter;
+  }
+
+  return urlFormatter(clusterName, embedState, args, script);
+};
+
+/**
+ * Returns true if the input semantic type deep links.
+ */
+export function semanticTypeDeepLinks(semanticType: SemanticType): boolean {
   switch (semanticType) {
     case SemanticType.ST_SERVICE_NAME:
-      return getServicePage(entityName, clusterName);
     case SemanticType.ST_POD_NAME:
-      return {
-        clusterName,
-        page: LiveViewPage.Pod,
-        params: {
-          pod: entityName,
-        },
-      };
     case SemanticType.ST_NODE_NAME:
-      return {
-        clusterName,
-        page: LiveViewPage.Node,
-        params: {
-          node: entityName,
-        },
-      };
     case SemanticType.ST_NAMESPACE_NAME:
-      return {
-        clusterName,
-        page: LiveViewPage.Namespace,
-        params: {
-          namespace: entityName,
-        },
-      };
+      return true;
+    default:
+      return false;
+  }
+}
+
+/**
+ * Takes a value with a semantic type and generates a deep link if that semantic type
+ * should be automatically deep linked. Returns null if there is no deep link for that
+ * semantic type.
+ */
+export const deepLinkURLFromSemanticType = (semanticType: SemanticType, value: string,
+  clusterName: string, embedState: EmbedState, propagatedArgs?: Arguments): string => {
+  switch (semanticType) {
+    case SemanticType.ST_POD_NAME:
+      return deepLinkURLFromScript('px/pod', clusterName, embedState, {
+        ...propagatedArgs,
+        pod: value,
+      });
+    case SemanticType.ST_NAMESPACE_NAME:
+      return deepLinkURLFromScript('px/namespace', clusterName, embedState, {
+        ...propagatedArgs,
+        namespace: value,
+      });
+    case SemanticType.ST_NODE_NAME:
+      return deepLinkURLFromScript('px/node', clusterName, embedState, {
+        ...propagatedArgs,
+        node: value,
+      });
+    case SemanticType.ST_SERVICE_NAME:
+      return deepLinkURLFromScript('px/service', clusterName, embedState, {
+        ...propagatedArgs,
+        service: value,
+      });
     default:
       return null;
   }
-}
+};

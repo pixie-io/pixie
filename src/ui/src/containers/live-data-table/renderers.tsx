@@ -31,9 +31,9 @@ import {
   ThroughputRenderer,
 } from 'app/containers/format-data/format-data';
 import { JSONData } from 'app/containers/format-data/json-data';
+import { semanticTypeDeepLinks } from 'app/containers/live-widgets/utils/live-view-params';
 import {
   DeepLink,
-  semanticTypeDeepLinks,
   ScriptReference,
   STATUS_TYPES,
   toStatusIndicator,

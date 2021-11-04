@@ -19,9 +19,7 @@
 import { data as visData } from 'vis-network/standalone';
 import { formatBySemType } from 'app/containers/format-data/format-data';
 import { WidgetDisplay } from 'app/containers/live/vis';
-import {
-  EmbedState, toEntityURL, toSingleEntityPage,
-} from 'app/containers/live-widgets/utils/live-view-params';
+import { deepLinkURLFromSemanticType, EmbedState } from 'app/containers/live-widgets/utils/live-view-params';
 import { Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
 import { Arguments } from 'app/utils/args-utils';
 import { formatFloat64Data } from 'app/utils/format-data';
@@ -204,8 +202,9 @@ const upsertNode = (nodes: Map<string, Entity>, name: string, semType: SemanticT
     return;
   }
 
-  const page = toSingleEntityPage(name, semType, selectedClusterName);
-  const url = page ? toEntityURL(page, embedState, propagatedArgs) : '';
+  const url = deepLinkURLFromSemanticType(semType, name, selectedClusterName, embedState,
+    propagatedArgs);
+
   nodes.set(name, {
     ...semTypeToShapeConfig(semType),
     id: name,

@@ -18,8 +18,7 @@
 
 import { SemanticType } from 'app/types/generated/vizierapi_pb';
 import {
-  deepLinkURLFromScript, LiveViewPage, toEntityPathname, toEntityURL,
-  toSingleEntityPage,
+  deepLinkURLFromScript, deepLinkURLFromSemanticType,
 } from './live-view-params';
 
 const noEmbed = {
@@ -28,256 +27,115 @@ const noEmbed = {
   widget: null,
 };
 
-describe('toEntityPathname test', () => {
-  it('should generate the pathname for the cluster page', () => {
-    const entity = {
-      page: LiveViewPage.Cluster,
-      params: {},
-      clusterName: 'gke:foobar',
-    };
-    expect(toEntityPathname(entity, false)).toEqual('/live/clusters/gke%3Afoobar');
+const withEmbed = {
+  isEmbedded: true,
+  disableTimePicker: true,
+  widget: null,
+};
+
+const startTimeArgs = {
+  start_time: '-7m',
+};
+
+describe('deepLinkURLFromScript test', () => {
+  it('should generate the URL for the cluster page', () => {
+    const url = deepLinkURLFromScript('px/cluster', 'gke:foobar', noEmbed, startTimeArgs);
+    expect(url).toEqual('/live/clusters/gke%3Afoobar?start_time=-7m');
   });
 
-  it('should generate the pathname for the namespaces page', () => {
-    const entity = {
-      page: LiveViewPage.Namespaces,
-      params: {},
-      clusterName: 'gke:foobar',
-    };
-    expect(toEntityPathname(entity, false)).toEqual('/live/clusters/gke%3Afoobar/namespaces');
+  it('should generate the URL for the namespaces page (with empty args)', () => {
+    const url = deepLinkURLFromScript('px/namespaces', 'gke:foobar', noEmbed, null);
+    expect(url).toEqual('/live/clusters/gke%3Afoobar/namespaces');
   });
 
-  it('should generate the pathname for the namespace page', () => {
-    const entity = {
-      page: LiveViewPage.Namespace,
-      params: {
-        namespace: 'px-sock-shop',
-      },
-      clusterName: 'gke:foobar',
-    };
-    expect(toEntityPathname(entity, false)).toEqual('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop');
-  });
-
-  it('should generate the pathname for the nodes page', () => {
-    const entity = {
-      page: LiveViewPage.Nodes,
-      params: {},
-      clusterName: 'gke:foobar',
-    };
-    expect(toEntityPathname(entity, false)).toEqual('/live/clusters/gke%3Afoobar/nodes');
-  });
-
-  it('should generate the pathname for the node page', () => {
-    const entity = {
-      page: LiveViewPage.Node,
-      params: {
-        node: 'node-123',
-      },
-      clusterName: 'gke:foobar',
-    };
-    expect(toEntityPathname(entity, false)).toEqual('/live/clusters/gke%3Afoobar/nodes/node-123');
-  });
-
-  it('should generate the pathname for the pods page', () => {
-    const entity = {
-      page: LiveViewPage.Pods,
-      params: {
-        namespace: 'px-sock-shop',
-      },
-      clusterName: 'gke:foobar',
-    };
-    expect(toEntityPathname(entity, false)).toEqual('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/pods');
-  });
-
-  it('should generate the pathname for the pod page', () => {
-    const entity = {
-      page: LiveViewPage.Pod,
-      params: {
-        pod: 'px-sock-shop/orders-123',
-      },
-      clusterName: 'gke:foobar',
-    };
-    expect(toEntityPathname(entity, false)).toEqual(
-      '/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/pods/orders-123',
-    );
-  });
-
-  it('should generate the pathname for the services page', () => {
-    const entity = {
-      page: LiveViewPage.Services,
-      params: {
-        namespace: 'px-sock-shop',
-      },
-      clusterName: 'gke:foobar',
-    };
-    expect(toEntityPathname(entity, false)).toEqual('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/services');
-  });
-
-  it('should generate the pathname for the service page', () => {
-    const entity = {
-      page: LiveViewPage.Service,
-      params: {
-        service: 'px-sock-shop/orders',
-      },
-      clusterName: 'gke:foobar',
-    };
-    expect(toEntityPathname(entity, false)).toEqual(
-      '/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/services/orders',
-    );
-  });
-
-  it('should generate the pathname for the default page', () => {
-    const entity = {
-      page: LiveViewPage.Default,
-      params: {},
-      clusterName: 'gke:foobar',
-    };
-    expect(toEntityPathname(entity, false)).toEqual('/live/clusters/gke%3Afoobar');
-  });
-});
-
-describe('toEntityURL test', () => {
-  it('should generate the url for an entity page ', () => {
-    const entity = {
-      page: LiveViewPage.Cluster,
-      params: {},
-      clusterName: 'gke:foobar',
-    };
-    expect(toEntityURL(entity, noEmbed, {
-      propagatedParam: 'foo',
-    })).toEqual('/live/clusters/gke%3Afoobar?propagatedParam=foo');
-  });
-
-  it('should generate the url an entity page with no params', () => {
-    const entity = {
-      page: LiveViewPage.Namespaces,
-      params: {},
-      clusterName: 'gke:foobar',
-    };
-    expect(toEntityURL(entity, noEmbed)).toEqual('/live/clusters/gke%3Afoobar/namespaces');
-  });
-
-  it('should generate the url an entity page with empty params', () => {
-    const entity = {
-      page: LiveViewPage.Namespaces,
-      params: {},
-      clusterName: 'gke:foobar',
-    };
-    expect(toEntityURL(entity, noEmbed, {})).toEqual('/live/clusters/gke%3Afoobar/namespaces');
-  });
-
-  it('should generate the url for a non-entity page ', () => {
-    const entity = {
-      page: LiveViewPage.Default,
-      params: {},
-      clusterName: 'gke:foobar',
-    };
-    expect(toEntityURL(entity, noEmbed, {
-      propagatedParam: 'foo',
-    })).toEqual('/live/clusters/gke%3Afoobar?propagatedParam=foo');
-  });
-
-  it('should generate the url for an entity page with widget', () => {
-    const entity = {
-      page: LiveViewPage.Cluster,
-      params: {},
-      clusterName: 'gke:foobar',
-    };
-    expect(toEntityURL(entity, {
-      isEmbedded: true,
-      widget: 'foo',
-      disableTimePicker: false,
-    }, {
-      propagatedParam: 'foo',
-    })).toEqual('/embed/live/clusters/gke%3Afoobar?propagatedParam=foo&widget=foo');
-  });
-
-  it('should generate the url for an entity page with disableTimePicker', () => {
-    const entity = {
-      page: LiveViewPage.Cluster,
-      params: {},
-      clusterName: 'gke:foobar',
-    };
-    expect(toEntityURL(entity, {
-      isEmbedded: true,
-      disableTimePicker: true,
-      widget: null,
-    }, {
-      propagatedParam: 'foo',
-    })).toEqual('/embed/live/clusters/gke%3Afoobar?disable_time_picker=true&propagatedParam=foo');
-  });
-});
-
-describe('toSingleEntityPage test', () => {
-  it('should generate the entity for a namespace', () => {
-    const entity = toSingleEntityPage('px-sock-shop', SemanticType.ST_NAMESPACE_NAME, 'gke:foobar');
-    expect(entity).toStrictEqual({
-      page: LiveViewPage.Namespace,
-      params: {
-        namespace: 'px-sock-shop',
-      },
-      clusterName: 'gke:foobar',
-    });
-  });
-
-  it('should generate the entity for a node', () => {
-    const entity = toSingleEntityPage('node-123', SemanticType.ST_NODE_NAME, 'gke:foobar');
-    expect(entity).toStrictEqual({
-      page: LiveViewPage.Node,
-      params: {
-        node: 'node-123',
-      },
-      clusterName: 'gke:foobar',
-    });
-  });
-
-  it('should generate the entity for a pod', () => {
-    const entity = toSingleEntityPage('px-sock-shop/orders-123', SemanticType.ST_POD_NAME, 'gke:foobar');
-    expect(entity).toStrictEqual({
-      page: LiveViewPage.Pod,
-      params: {
-        pod: 'px-sock-shop/orders-123',
-      },
-      clusterName: 'gke:foobar',
-    });
-  });
-
-  it('should generate the entity for a service', () => {
-    const entity = toSingleEntityPage('px-sock-shop/orders', SemanticType.ST_SERVICE_NAME, 'gke:foobar');
-    expect(entity).toStrictEqual({
-      page: LiveViewPage.Service,
-      params: {
-        service: 'px-sock-shop/orders',
-      },
-      clusterName: 'gke:foobar',
-    });
-  });
-
-  it('should generate the entity for a service array', () => {
-    const entity = toSingleEntityPage('["px-sock-shop/orders", "px-sock-shop/carts"]',
-      SemanticType.ST_SERVICE_NAME, 'gke:foobar');
-    expect(entity).toStrictEqual({
-      page: LiveViewPage.Service,
-      params: {
-        service: 'px-sock-shop/orders',
-      },
-      clusterName: 'gke:foobar',
-    });
-  });
-});
-
-describe('deepLinkURLFromScript', () => {
-  it('should return an entity vanity URL for an entity script', () => {
-    expect(deepLinkURLFromScript('px/namespace', 'aClusterName', noEmbed, {
+  it('should generate the URL for the namespace page (with embed)', () => {
+    const url = deepLinkURLFromScript('px/namespace', 'gke:foobar', withEmbed, {
       namespace: 'foobar',
-      anotherArg: '-30s',
-    })).toEqual('/live/clusters/aClusterName/namespaces/foobar?anotherArg=-30s');
+    });
+    expect(url).toEqual('/embed/live/clusters/gke%3Afoobar/namespaces/foobar?disable_time_picker=true');
   });
 
-  it('should return a non vanity URL for a non entity script', () => {
-    expect(deepLinkURLFromScript('px/http_data', 'aClusterName', noEmbed, {
+  it('should generate the URL for the namespace page (with embed)', () => {
+    const url = deepLinkURLFromScript('px/namespace', 'gke:foobar', withEmbed, {
+      ...startTimeArgs,
       namespace: 'foobar',
-      anotherArg: '-30s',
-    })).toEqual('/live/clusters/aClusterName?anotherArg=-30s&namespace=foobar&script=px%2Fhttp_data');
+    });
+    expect(url).toEqual(
+      '/embed/live/clusters/gke%3Afoobar/namespaces/foobar?disable_time_picker=true&start_time=-7m');
+  });
+
+  it('should generate the URL for the nodes page', () => {
+    const url = deepLinkURLFromScript('px/nodes', 'gke:foobar', noEmbed, startTimeArgs);
+    expect(url).toEqual('/live/clusters/gke%3Afoobar/nodes?start_time=-7m');
+  });
+
+  it('should generate the URL for the node page', () => {
+    const url = deepLinkURLFromScript('px/node', 'gke:foobar', noEmbed, { node: 'node-123' });
+    expect(url).toEqual('/live/clusters/gke%3Afoobar/nodes/node-123');
+  });
+
+  it('should generate the URL for the pods page', () => {
+    const url = deepLinkURLFromScript('px/pods', 'gke:foobar', noEmbed, { namespace: 'foobar' });
+    expect(url).toEqual('/live/clusters/gke%3Afoobar/namespaces/foobar/pods');
+  });
+
+  it('should generate the URL for the pod page', () => {
+    const url = deepLinkURLFromScript('px/pod', 'gke:foobar', noEmbed, { pod: 'ns/pod-123' });
+    expect(url).toEqual('/live/clusters/gke%3Afoobar/namespaces/ns/pods/pod-123');
+  });
+
+  it('should generate the URL for the services page', () => {
+    const url = deepLinkURLFromScript('px/services', 'gke:foobar', noEmbed, { namespace: 'foobar' });
+    expect(url).toEqual('/live/clusters/gke%3Afoobar/namespaces/foobar/services');
+  });
+
+  it('should generate the URL for the service page', () => {
+    const url = deepLinkURLFromScript('px/service', 'gke:foobar', noEmbed, { service: 'ns/svc-123' });
+    expect(url).toEqual('/live/clusters/gke%3Afoobar/namespaces/ns/services/svc-123');
+  });
+
+  it('should generate the URL for the service page (with service array)', () => {
+    const url = deepLinkURLFromScript('px/service', 'gke:foobar', noEmbed, {
+      service: '["px-sock-shop/orders", "px-sock-shop/carts"]',
+    });
+    expect(url).toEqual('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/services/orders');
+  });
+
+  it('should generate a non-vanity URL (with no arguments)', () => {
+    const url = deepLinkURLFromScript('px/somescript', 'gke:foobar', noEmbed, null);
+    expect(url).toEqual('/live/clusters/gke%3Afoobar?script=px%2Fsomescript');
+  });
+});
+
+describe('deepLinkURLFromSemanticType test', () => {
+  it('should generate the URL for a namespace', () => {
+    const url = deepLinkURLFromSemanticType(SemanticType.ST_NAMESPACE_NAME, 'px-sock-shop',
+      'gke:foobar', noEmbed);
+    expect(url).toEqual('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop');
+  });
+
+  it('should generate the URL for a node', () => {
+    const url = deepLinkURLFromSemanticType(SemanticType.ST_NODE_NAME, 'node-123', 'gke:foobar',
+      noEmbed, startTimeArgs);
+    expect(url).toEqual('/live/clusters/gke%3Afoobar/nodes/node-123?start_time=-7m');
+  });
+
+  it('should generate the URL for a pod', () => {
+    const url = deepLinkURLFromSemanticType(SemanticType.ST_POD_NAME, 'px-sock-shop/orders-123',
+      'gke:foobar', noEmbed, startTimeArgs);
+    expect(url).toEqual('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/pods/orders-123?start_time=-7m');
+  });
+
+  it('should generate the URL for a service', () => {
+    const url = deepLinkURLFromSemanticType(SemanticType.ST_SERVICE_NAME, 'px-sock-shop/orders',
+      'gke:foobar', withEmbed, null);
+    expect(url).toEqual(
+      '/embed/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/services/orders?disable_time_picker=true');
+  });
+
+  it('should generate the URL for a service array', () => {
+    const url = deepLinkURLFromSemanticType(SemanticType.ST_SERVICE_NAME,
+      '["px-sock-shop/orders", "px-sock-shop/carts"]', 'gke:foobar', noEmbed);
+    expect(url).toEqual('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/services/orders');
   });
 });
