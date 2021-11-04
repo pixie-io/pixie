@@ -306,11 +306,11 @@ GIT_REPOSITORY_LOCATIONS = dict(
     com_github_iovisor_bcc = dict(
         remote = "https://github.com/pixie-io/bcc.git",
         commit = "649670959a0e7376358d4c8e455cfd5c75321d53",
-        shallow_since = "1618606641 -0700",
+        shallow_since = "1635525770 -0700",
     ),
     com_github_iovisor_bpftrace = dict(
         remote = "https://github.com/pixie-io/bpftrace.git",
         commit = "fb8094cb84798a633364e912b83e5a4c2e26347e",
-        shallow_since = "1632863490 -0700",
+        shallow_since = "1635531007 -0700",
     ),
 )
