@@ -3,7 +3,7 @@ module px.dev/pixie
 go 1.16
 
 require (
-	cloud.google.com/go/bigquery v1.18.0 // indirect
+	cloud.google.com/go/bigquery v1.18.0
 	cloud.google.com/go/storage v1.10.0
 	github.com/EvilSuperstars/go-cidrman v0.0.0-20190607145828-28e79e32899a
 	github.com/Masterminds/sprig/v3 v3.2.2

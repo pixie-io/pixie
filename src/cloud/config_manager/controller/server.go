@@ -95,6 +95,7 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 		DisableAutoUpdate: in.VzSpec.DisableAutoUpdate,
 		SentryDSN:         getSentryDSN(in.VzSpec.Version),
 		ClockConverter:    in.VzSpec.ClockConverter,
+		DataAccess:        in.VzSpec.DataAccess,
 	}
 
 	if in.VzSpec.DataCollectorParams != nil {

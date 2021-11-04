@@ -55,6 +55,7 @@ func (c *ConfigServiceServer) GetConfigForVizier(ctx context.Context,
 			Patches:             vizSpecReq.Patches,
 			ClockConverter:      vizSpecReq.ClockConverter,
 			DataCollectorParams: vizSpecReq.DataCollectorParams,
+			DataAccess:          vizSpecReq.DataAccess,
 		},
 	})
 	if err != nil {
