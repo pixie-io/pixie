@@ -700,7 +700,8 @@ func generateVizierYAMLsConfig(ctx context.Context, ns string, vz *v1alpha1.Vizi
 
 	if vz.Spec.DataCollectorParams != nil {
 		req.VzSpec.DataCollectorParams = &vizierconfigpb.DataCollectorParams{
-			DatastreamBufferSize: vz.Spec.DataCollectorParams.DatastreamBufferSize,
+			DatastreamBufferSize:      vz.Spec.DataCollectorParams.DatastreamBufferSize,
+			DatastreamBufferSpikeSize: vz.Spec.DataCollectorParams.DatastreamBufferSpikeSize,
 		}
 	}
 

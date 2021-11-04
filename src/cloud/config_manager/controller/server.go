@@ -98,8 +98,11 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 		DataAccess:        in.VzSpec.DataAccess,
 	}
 
-	if in.VzSpec.DataCollectorParams != nil {
+	if in.VzSpec.DataCollectorParams != nil && in.VzSpec.DataCollectorParams.DatastreamBufferSize != 0 {
 		tmplValues.DatastreamBufferSize = in.VzSpec.DataCollectorParams.DatastreamBufferSize
+	}
+	if in.VzSpec.DataCollectorParams != nil && in.VzSpec.DataCollectorParams.DatastreamBufferSpikeSize != 0 {
+		tmplValues.DatastreamBufferSpikeSize = in.VzSpec.DataCollectorParams.DatastreamBufferSpikeSize
 	}
 
 	vzYamls, err := yamls.ExecuteTemplatedYAMLs(templatedYAMLs, vizieryamls.VizierTmplValuesToArgs(tmplValues))

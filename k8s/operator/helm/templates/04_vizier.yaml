@@ -28,7 +28,12 @@ spec:
   {{- end }}
   {{- if .Values.dataCollectorParams }}
   dataCollectorParams:
+    {{- if .Values.dataCollectorParams.datastreamBufferSize }}
     datastreamBufferSize: {{ .Values.dataCollectorParams.datastreamBufferSize }}
+    {{- end }}
+    {{- if .Values.dataCollectorParams.datastreamBufferSpikeSize }}
+    datastreamBufferSpikeSize: {{ .Values.dataCollectorParams.datastreamBufferSpikeSize }}
+    {{- end }}
   {{- end}}
   {{- if or .Values.pod.annotations (or .Values.pod.labels .Values.pod.resources) }}
   pod:

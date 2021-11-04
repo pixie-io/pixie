@@ -29,50 +29,53 @@ import (
 )
 
 const (
-	vizierEtcdYAMLPath            = "./yamls/vizier/vizier_etcd_metadata_prod.yaml"
-	vizierMetadataPersistYAMLPath = "./yamls/vizier/vizier_metadata_persist_prod.yaml"
-	etcdYAMLPath                  = "./yamls/vizier_deps/etcd_prod.yaml"
-	natsYAMLPath                  = "./yamls/vizier_deps/nats_prod.yaml"
-	defaultMemoryLimit            = "2Gi"
-	defaultDataAccess             = "Full"
-	defaultDatastreamBufferSize   = 1024 * 1024
+	vizierEtcdYAMLPath               = "./yamls/vizier/vizier_etcd_metadata_prod.yaml"
+	vizierMetadataPersistYAMLPath    = "./yamls/vizier/vizier_metadata_persist_prod.yaml"
+	etcdYAMLPath                     = "./yamls/vizier_deps/etcd_prod.yaml"
+	natsYAMLPath                     = "./yamls/vizier_deps/nats_prod.yaml"
+	defaultMemoryLimit               = "2Gi"
+	defaultDataAccess                = "Full"
+	defaultDatastreamBufferSize      = 1024 * 1024
+	defaultDatastreamBufferSpikeSize = 1024 * 1024 * 500
 )
 
 // VizierTmplValues are the template values that can be used to fill out templated Vizier YAMLs.
 type VizierTmplValues struct {
-	DeployKey            string
-	CustomAnnotations    string
-	CustomLabels         string
-	CloudAddr            string
-	ClusterName          string
-	CloudUpdateAddr      string
-	UseEtcdOperator      bool
-	PEMMemoryLimit       string
-	Namespace            string
-	DisableAutoUpdate    bool
-	SentryDSN            string
-	ClockConverter       string
-	DataAccess           string
-	DatastreamBufferSize uint32
+	DeployKey                 string
+	CustomAnnotations         string
+	CustomLabels              string
+	CloudAddr                 string
+	ClusterName               string
+	CloudUpdateAddr           string
+	UseEtcdOperator           bool
+	PEMMemoryLimit            string
+	Namespace                 string
+	DisableAutoUpdate         bool
+	SentryDSN                 string
+	ClockConverter            string
+	DataAccess                string
+	DatastreamBufferSize      uint32
+	DatastreamBufferSpikeSize uint32
 }
 
 // VizierTmplValuesToArgs converts the vizier template values to args which can be used to fill out a template.
 func VizierTmplValuesToArgs(tmplValues *VizierTmplValues) *yamls.YAMLTmplArguments {
 	return &yamls.YAMLTmplArguments{
 		Values: &map[string]interface{}{
-			"deployKey":            tmplValues.DeployKey,
-			"customAnnotations":    tmplValues.CustomAnnotations,
-			"customLabels":         tmplValues.CustomLabels,
-			"cloudAddr":            tmplValues.CloudAddr,
-			"clusterName":          tmplValues.ClusterName,
-			"cloudUpdateAddr":      tmplValues.CloudUpdateAddr,
-			"useEtcdOperator":      tmplValues.UseEtcdOperator,
-			"pemMemoryLimit":       tmplValues.PEMMemoryLimit,
-			"disableAutoUpdate":    tmplValues.DisableAutoUpdate,
-			"sentryDSN":            tmplValues.SentryDSN,
-			"clockConverter":       tmplValues.ClockConverter,
-			"dataAccess":           tmplValues.DataAccess,
-			"datastreamBufferSize": tmplValues.DatastreamBufferSize,
+			"deployKey":                 tmplValues.DeployKey,
+			"customAnnotations":         tmplValues.CustomAnnotations,
+			"customLabels":              tmplValues.CustomLabels,
+			"cloudAddr":                 tmplValues.CloudAddr,
+			"clusterName":               tmplValues.ClusterName,
+			"cloudUpdateAddr":           tmplValues.CloudUpdateAddr,
+			"useEtcdOperator":           tmplValues.UseEtcdOperator,
+			"pemMemoryLimit":            tmplValues.PEMMemoryLimit,
+			"disableAutoUpdate":         tmplValues.DisableAutoUpdate,
+			"sentryDSN":                 tmplValues.SentryDSN,
+			"clockConverter":            tmplValues.ClockConverter,
+			"dataAccess":                tmplValues.DataAccess,
+			"datastreamBufferSize":      tmplValues.DatastreamBufferSize,
+			"datastreamBufferSpikeSize": tmplValues.DatastreamBufferSpikeSize,
 		},
 		Release: &map[string]interface{}{
 			"Namespace": tmplValues.Namespace,
@@ -393,6 +396,12 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
 			Patch:           `{"spec": {"template": { "spec": { "containers": [{"name": "pem", "env": [{"name": "PL_DATASTREAM_BUFFER_SIZE", "value": "__PX_DATASTREAM_BUFFER_SIZE__"}]}] } } } }`,
 			Placeholder:     "__PX_DATASTREAM_BUFFER_SIZE__",
 			TemplateValue:   fmt.Sprintf(`{{ if .Values.datastreamBufferSize }}"{{.Values.datastreamBufferSize}}"{{else}}"%d"{{end}}`, defaultDatastreamBufferSize),
+		},
+		{
+			TemplateMatcher: yamls.GenerateContainerNameMatcherFn("pem"),
+			Patch:           `{"spec": {"template": { "spec": { "containers": [{"name": "pem", "env": [{"name": "PL_DATASTREAM_BUFFER_SPIKE_SIZE", "value": "__PX_DATASTREAM_BUFFER_SPIKE_SIZE__"}]}] } } } }`,
+			Placeholder:     "__PX_DATASTREAM_BUFFER_SPIKE_SIZE__",
+			TemplateValue:   fmt.Sprintf(`{{ if .Values.datastreamBufferSpikeSize }}"{{.Values.datastreamBufferSpikeSize}}"{{else}}"%d"{{end}}`, defaultDatastreamBufferSpikeSize),
 		},
 	}...)
 
