@@ -19,17 +19,19 @@
 package controller
 
 import (
+	"cloud.google.com/go/bigquery"
 	"github.com/nats-io/nats.go"
 )
 
 // Server defines an gRPC server type.
 type Server struct {
-	nc *nats.Conn
+	nc       *nats.Conn
+	bqClient *bigquery.Client
 }
 
 // NewServer creates GRPC handlers.
-func NewServer(nc *nats.Conn) *Server {
+func NewServer(nc *nats.Conn, bqClient *bigquery.Client) *Server {
 	return &Server{
-		nc,
+		nc, bqClient,
 	}
 }

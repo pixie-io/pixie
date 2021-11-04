@@ -24,6 +24,7 @@ resources:
 - ../base
 - ../overlays/exposed_services_gclb
 patchesStrategicMerge:
+- bq_config.yaml
 - support_access_config.yaml
 - analytics_config.yaml
 - contact_config.yaml

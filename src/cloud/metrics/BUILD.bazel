@@ -55,7 +55,10 @@ go_library(
         "//src/shared/services/healthz",
         "//src/shared/services/msgbus",
         "//src/shared/services/server",
+        "@com_github_sirupsen_logrus//:logrus",
         "@com_github_spf13_pflag//:pflag",
         "@com_github_spf13_viper//:viper",
+        "@com_google_cloud_go_bigquery//:bigquery",
+        "@org_golang_google_api//option",
     ],
 )
