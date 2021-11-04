@@ -310,6 +310,9 @@ class DwarfReader {
   Status FlattenedStructSpec(const llvm::DWARFDie& struct_die, std::vector<StructSpecEntry>* output,
                              const std::string& path_prefix, int offset);
 
+  void InsertToDIEMap(std::string name, llvm::dwarf::Tag tag, llvm::DWARFDie die);
+  std::optional<llvm::DWARFDie> FindInDIEMap(const std::string& name, llvm::dwarf::Tag tag) const;
+
   // Records the source language of the DWARF information.
   llvm::dwarf::SourceLanguage source_language_;
   std::string compiler_;

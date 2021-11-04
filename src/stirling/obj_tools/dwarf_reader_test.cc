@@ -97,6 +97,16 @@ TEST_F(DwarfReaderTest, SourceLanguage) {
   }
 }
 
+// Tests that GetMatchingDIEs() returns empty vector when nothing is found.
+TEST_P(DwarfReaderTest, GetMatchingDIEsReturnsEmptyVector) {
+  DwarfReaderTestParam p = GetParam();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       DwarfReader::Create(kCppBinaryPath, p.index));
+  ASSERT_OK_AND_THAT(
+      dwarf_reader->GetMatchingDIEs("non-existent-name", llvm::dwarf::DW_TAG_structure_type),
+      IsEmpty());
+}
+
 TEST_P(DwarfReaderTest, CppGetStructByteSize) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,

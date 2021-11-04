@@ -234,16 +234,7 @@ void DwarfReader::IndexDIEs() {
         }
 
         if (IsIndexedType(tag)) {
-          auto& die_type_map = die_map_[tag];
-
-          // TODO(oazizi): What's the right way to deal with duplicate names?
-          // Only appears to happen with structs like the following:
-          //  ThreadStart, _IO_FILE, _IO_marker, G, in6_addr
-          // So probably okay for now. But need to be wary of this.
-          if (die_type_map.find(name) != die_type_map.end()) {
-            VLOG(1) << "Duplicate name: " << name;
-          }
-          die_type_map[name] = die;
+          InsertToDIEMap(std::move(name), tag, die);
         }
       }
     }
@@ -262,28 +253,22 @@ void DwarfReader::IndexDIEs() {
   }
 }
 
-StatusOr<std::vector<DWARFDie>> DwarfReader::GetMatchingDIEs(std::string_view name,
-                                                             std::optional<llvm::dwarf::Tag> type) {
+StatusOr<std::vector<DWARFDie>> DwarfReader::GetMatchingDIEs(
+    std::string_view name, std::optional<llvm::dwarf::Tag> type_opt) {
   DCHECK(dwarf_context_ != nullptr);
-  std::vector<DWARFDie> dies;
 
   // Special case for types that are indexed.
-  if (type.has_value() && !die_map_.empty()) {
-    llvm::dwarf::Tag tag = type.value();
-    if (IsIndexedType(tag)) {
-      auto& die_type_map = die_map_[tag];
-      auto iter = die_type_map.find(name);
-      if (iter != die_type_map.end()) {
-        return std::vector<DWARFDie>{iter->second};
-      }
-
-      // Indexing was on, but nothing was found, so return empty vector.
-      return std::vector<DWARFDie>{};
+  if (type_opt.has_value() && IsIndexedType(type_opt.value()) && !die_map_.empty()) {
+    auto die_opt = FindInDIEMap(std::string(name), type_opt.value());
+    if (die_opt.has_value()) {
+      return std::vector<DWARFDie>{die_opt.value()};
     }
+    return std::vector<DWARFDie>{};
   }
 
   // When there is no index, fall-back to manual search.
-  PL_RETURN_IF_ERROR(GetMatchingDIEs(dwarf_context_->normal_units(), name, type, &dies));
+  std::vector<DWARFDie> dies;
+  PL_RETURN_IF_ERROR(GetMatchingDIEs(dwarf_context_->normal_units(), name, type_opt, &dies));
 
   return dies;
 }
@@ -667,6 +652,32 @@ Status DwarfReader::FlattenedStructSpec(const llvm::DWARFDie& struct_die,
   }
 
   return Status::OK();
+}
+
+void DwarfReader::InsertToDIEMap(std::string name, llvm::dwarf::Tag tag, llvm::DWARFDie die) {
+  auto& die_type_map = die_map_[tag];
+  // TODO(oazizi): What's the right way to deal with duplicate names?
+  // Only appears to happen with structs like the following:
+  //  ThreadStart, _IO_FILE, _IO_marker, G, in6_addr
+  // So probably okay for now. But need to be wary of this.
+  if (die_type_map.find(name) != die_type_map.end()) {
+    return;
+  }
+  die_type_map[name] = die;
+}
+
+std::optional<llvm::DWARFDie> DwarfReader::FindInDIEMap(const std::string& name,
+                                                        llvm::dwarf::Tag tag) const {
+  auto iter = die_map_.find(tag);
+  if (iter == die_map_.end()) {
+    return std::nullopt;
+  }
+  const auto& die_type_map = iter->second;
+  auto die_iter = die_type_map.find(name);
+  if (die_iter == die_type_map.end()) {
+    return std::nullopt;
+  }
+  return die_iter->second;
 }
 
 StatusOr<TypeInfo> DwarfReader::DereferencePointerType(std::string type_name) {
