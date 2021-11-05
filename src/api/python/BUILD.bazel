@@ -48,7 +48,7 @@ py_wheel(
         "six==1.15.0",
     ],
     strip_path_prefixes = ["src/api/python/"],
-    version = "0.4.0",
+    version = "0.4.1",
     deps = [
         "//src/api/proto/cloudpb:cloudapi_pl_py_grpc",
         "//src/api/proto/uuidpb:uuid_pl_py_proto",
