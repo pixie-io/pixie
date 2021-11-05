@@ -57,3 +57,9 @@ pl_cc_test(
     srcs = ["fetch_test.cc"],
     deps = [":cc_library"],
 )
+
+pl_cc_test(
+    name = "join_group_test",
+    srcs = ["join_group_test.cc"],
+    deps = [":cc_library"],
+)

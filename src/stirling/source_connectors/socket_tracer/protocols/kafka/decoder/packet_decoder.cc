@@ -137,6 +137,56 @@ StatusOr<std::string> PacketDecoder::ExtractNullableString() {
   return ExtractRegularNullableString();
 }
 
+StatusOr<std::string> PacketDecoder::ExtractRegularBytes() {
+  PL_ASSIGN_OR_RETURN(int32_t len, ExtractInt16());
+  return ExtractBytesCore<char>(len);
+}
+
+StatusOr<std::string> PacketDecoder::ExtractRegularNullableBytes() {
+  PL_ASSIGN_OR_RETURN(int32_t len, ExtractInt16());
+  if (len == -1) {
+    return std::string();
+  }
+  return ExtractBytesCore<char>(len);
+}
+
+StatusOr<std::string> PacketDecoder::ExtractCompactBytes() {
+  PL_ASSIGN_OR_RETURN(int32_t len, ExtractUnsignedVarint());
+  // length N + 1 is encoded.
+  len -= 1;
+  if (len < 0) {
+    return error::Internal("Compact Bytes has negative length.");
+  }
+  return ExtractBytesCore<char>(len);
+}
+
+StatusOr<std::string> PacketDecoder::ExtractCompactNullableBytes() {
+  PL_ASSIGN_OR_RETURN(int32_t len, ExtractUnsignedVarint());
+  // length N + 1 is encoded.
+  len -= 1;
+  if (len < -1) {
+    return error::Internal("Compact Nullable Bytes has negative length.");
+  }
+  if (len == -1) {
+    return std::string();
+  }
+  return ExtractBytesCore<char>(len);
+}
+
+StatusOr<std::string> PacketDecoder::ExtractBytes() {
+  if (is_flexible_) {
+    return ExtractCompactBytes();
+  }
+  return ExtractRegularBytes();
+}
+
+StatusOr<std::string> PacketDecoder::ExtractNullableBytes() {
+  if (is_flexible_) {
+    return ExtractCompactNullableBytes();
+  }
+  return ExtractRegularNullableBytes();
+}
+
 StatusOr<std::string> PacketDecoder::ExtractBytesZigZag() {
   PL_ASSIGN_OR_RETURN(int32_t len, ExtractVarint());
   if (len < -1) {

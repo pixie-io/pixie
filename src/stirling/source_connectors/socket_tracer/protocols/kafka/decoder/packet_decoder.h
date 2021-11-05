@@ -94,6 +94,9 @@ class PacketDecoder {
   StatusOr<std::string> ExtractString();
   StatusOr<std::string> ExtractNullableString();
 
+  StatusOr<std::string> ExtractBytes();
+  StatusOr<std::string> ExtractNullableBytes();
+
   // Represents bytes whose length is encoded with zigzag varint.
   StatusOr<std::string> ExtractBytesZigZag();
 
@@ -207,6 +210,12 @@ class PacketDecoder {
   // Topic Data in Fetch Response.
   StatusOr<FetchRespTopic> ExtractFetchRespTopic();
 
+  // Protocol in Join Group Request.
+  StatusOr<JoinGroupProtocol> ExtractJoinGroupProtocol();
+
+  // Member in Join Group Response.
+  StatusOr<JoinGroupMember> ExtractJoinGroupMember();
+
   Status ExtractReqHeader(Request* req);
   Status ExtractRespHeader(Response* resp);
 
@@ -214,6 +223,8 @@ class PacketDecoder {
   StatusOr<ProduceResp> ExtractProduceResp();
   StatusOr<FetchReq> ExtractFetchReq();
   StatusOr<FetchResp> ExtractFetchResp();
+  StatusOr<JoinGroupReq> ExtractJoinGroupReq();
+  StatusOr<JoinGroupResp> ExtractJoinGroupResp();
 
   bool eof() { return binary_decoder_.eof(); }
 
@@ -242,6 +253,23 @@ class PacketDecoder {
   // as an UNSIGNED_VARINT . Then N bytes follow which are the UTF-8 encoding of the character
   // sequence. A null string is represented with a length of 0.
   StatusOr<std::string> ExtractCompactNullableString();
+
+  // Represents a raw sequence of bytes. First the length N is given as an INT32. Then N bytes
+  // follow.
+  StatusOr<std::string> ExtractRegularBytes();
+
+  // Represents a raw sequence of bytes or null. For non-null values, first the length N is given
+  // as an INT32. Then N bytes follow. A null value is encoded with length of -1 and there are no
+  // following bytes.
+  StatusOr<std::string> ExtractRegularNullableBytes();
+
+  // Represents a raw sequence of bytes. First the length N+1 is given as an UNSIGNED_VARINT.Then
+  // N bytes follow.
+  StatusOr<std::string> ExtractCompactBytes();
+
+  // Represents a raw sequence of bytes. First the length N+1 is given as an UNSIGNED_VARINT.Then
+  // N bytes follow. A null object is represented with a length of 0.
+  StatusOr<std::string> ExtractCompactNullableBytes();
 
   template <typename TCharType>
   StatusOr<std::basic_string<TCharType>> ExtractBytesCore(int32_t len);

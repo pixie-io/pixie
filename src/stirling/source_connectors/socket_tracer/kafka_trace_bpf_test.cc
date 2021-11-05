@@ -171,10 +171,18 @@ KafkaTraceRecord kConsumerApiVersionsRecord = {.req_cmd = kafka::APIKey::kApiVer
                                                .req_body = "",
                                                .resp = ""};
 
-KafkaTraceRecord kJoinGroupRecord = {.req_cmd = kafka::APIKey::kJoinGroup,
-                                     .client_id = "console-consumer",
-                                     .req_body = "",
-                                     .resp = ""};
+KafkaTraceRecord kJoinGroupRecord = {
+    .req_cmd = kafka::APIKey::kJoinGroup,
+    .client_id = "console-consumer",
+    .req_body =
+        "{\"group_id\":\"console-consumer\",\"session_timeout_ms\":10000,\"rebalance_timeout_ms\":"
+        "300000,\"member_id\":\"consumer-console-consumer\",\"group_instance_id\":\"\",\"protocol_"
+        "type\":\"consumer\",\"protocols\":[{\"protocol\":\"range\"}]}",
+    .resp =
+        "{\"throttle_time_ms\":0,\"error_code\":0,\"generation_id\":1,\"protocol_type\":"
+        "\"consumer\",\"protocol_name\":\"range\",\"leader\":\"consumer-console-consumer\","
+        "\"member_id\":\"consumer-console-consumer\",\"members\":[{\"member_id\":\"consumer-"
+        "console-consumer\",\"group_instance_id\":\"\"}]}"};
 
 KafkaTraceRecord kSyncGroupRecord = {.req_cmd = kafka::APIKey::kSyncGroup,
                                      .client_id = "console-consumer",
@@ -221,16 +229,22 @@ std::vector<KafkaTraceRecord> GetKafkaTraceRecords(
     const types::ColumnWrapperRecordBatch& record_batch, int pid) {
   std::vector<KafkaTraceRecord> res;
   for (const auto& idx : FindRecordIdxMatchesPID(record_batch, kKafkaUPIDIdx, pid)) {
-    // Masking the session_id field in the response, because it's dynamic.
     std::string resp = std::string(record_batch[kKafkaRespIdx]->Get<types::StringValue>(idx));
+    std::string req = std::string(record_batch[kKafkaReqBodyIdx]->Get<types::StringValue>(idx));
+
+    // Masking the session_id in the response, because it is dynamic.
     std::regex session_id_re(",\"session_id\":\\d+");
     resp = std::regex_replace(resp, session_id_re, ",\"session_id\":<removed>");
+
+    // Masking the consumer-consumer-* in the request and response, because it is dynamic.
+    std::regex client_id_re("console-consumer[a-z0-9-]+");
+    req = std::regex_replace(req, client_id_re, "console-consumer");
+    resp = std::regex_replace(resp, client_id_re, "console-consumer");
 
     res.push_back(KafkaTraceRecord{
         record_batch[kKafkaTimeIdx]->Get<types::Time64NSValue>(idx).val,
         static_cast<kafka::APIKey>(record_batch[kKafkaReqCmdIdx]->Get<types::Int64Value>(idx).val),
-        std::string(record_batch[kKafkaClientIDIdx]->Get<types::StringValue>(idx)),
-        std::string(record_batch[kKafkaReqBodyIdx]->Get<types::StringValue>(idx)), resp});
+        std::string(record_batch[kKafkaClientIDIdx]->Get<types::StringValue>(idx)), req, resp});
   }
   return res;
 }
