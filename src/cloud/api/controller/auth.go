@@ -130,31 +130,14 @@ func AuthSignupHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 	userIDStr := utils.UUIDFromProtoOrNil(resp.UserInfo.UserID).String()
 	orgIDStr := utils.UUIDFromProtoOrNil(resp.OrgID).String()
 
-	// Get orgName for analytics events.
-	pc := env.(apienv.APIEnv).ProfileClient()
-	orgResp, err := pc.GetOrg(ctxWithCreds, resp.OrgID)
-	if err != nil {
-		return services.HTTPStatusFromError(err, "Failed to get org")
-	}
-
 	events.Client().Enqueue(&analytics.Track{
 		UserId: userIDStr,
 		Event:  events.UserSignedUp,
 		Properties: analytics.NewProperties().
-			Set("site_name", orgResp.OrgName),
+			Set("org_id", orgIDStr),
 	})
 
 	if resp.OrgCreated {
-		events.Client().Enqueue(&analytics.Group{
-			UserId:  userIDStr,
-			GroupId: orgIDStr,
-			Traits: map[string]interface{}{
-				"kind":        "organization",
-				"name":        orgResp.OrgName,
-				"domain_name": orgResp.DomainName,
-			},
-		})
-
 		events.Client().Enqueue(&analytics.Track{
 			UserId: utils.UUIDFromProtoOrNil(resp.UserID).String(),
 			Event:  events.OrgCreated,

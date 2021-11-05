@@ -37,11 +37,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/cloud/api/controller"
 	"px.dev/pixie/src/cloud/api/controller/testutils"
 	"px.dev/pixie/src/cloud/auth/authpb"
-	"px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/shared/services/handler"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/testingutils"
@@ -88,14 +86,6 @@ func TestAuthSignupHandler(t *testing.T) {
 		OrgID: utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c9"),
 	}
 	mockClients.MockAuth.EXPECT().Signup(gomock.Any(), expectedAuthServiceReq).Return(signupReply, nil)
-
-	getOrgReply := &profilepb.OrgInfo{
-		OrgName: "defg.com",
-	}
-	mockClients.MockProfile.EXPECT().GetOrg(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, in *uuidpb.UUID) {
-		assert.Equal(t, utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c9"), in)
-	}).Return(getOrgReply, nil)
-
 	rr := httptest.NewRecorder()
 	h := handler.New(env, controller.AuthSignupHandler)
 	h.ServeHTTP(rr, req)
@@ -161,13 +151,6 @@ func TestAuthSignupHandler_IDToken(t *testing.T) {
 		OrgID: utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c9"),
 	}
 	mockClients.MockAuth.EXPECT().Signup(gomock.Any(), expectedAuthServiceReq).Return(signupReply, nil)
-
-	getOrgReply := &profilepb.OrgInfo{
-		OrgName: "defg.com",
-	}
-	mockClients.MockProfile.EXPECT().GetOrg(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, in *uuidpb.UUID) {
-		assert.Equal(t, utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c9"), in)
-	}).Return(getOrgReply, nil)
 
 	rr := httptest.NewRecorder()
 	h := handler.New(env, controller.AuthSignupHandler)
