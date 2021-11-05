@@ -158,12 +158,14 @@ const SideBarExternalLinkItem = React.memo<LinkItemProps>(function SideBarExtern
 export const SideBar: React.FC<{ open: boolean }> = React.memo(({ open }) => {
   const classes = useStyles();
   const selectedClusterName = React.useContext(ClusterContext)?.selectedClusterName ?? '';
-  const { embedState } = React.useContext(LiveRouteContext);
+
+  // If we're not in the live view, LiveViewContext is null.
+  const embedState = React.useContext(LiveRouteContext)?.embedState ?? null;
 
   const { user } = React.useContext(UserContext);
 
   const navItems = React.useMemo(() => {
-    if (!selectedClusterName) {
+    if (!selectedClusterName || !embedState) {
       return [];
     }
     return [{
@@ -177,7 +179,7 @@ export const SideBar: React.FC<{ open: boolean }> = React.memo(({ open }) => {
       text: 'Namespaces',
     }];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedClusterName]);
+  }, [selectedClusterName, embedState]);
 
   const drawerClasses = React.useMemo(
     () => ({ paper: open ? classes.drawerOpen : classes.drawerClose }),
