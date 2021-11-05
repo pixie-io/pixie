@@ -16,18 +16,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { StatusGroup } from 'app/components';
-import {
-  makeStyles, Theme, withStyles,
-} from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
-import Button from '@material-ui/core/Button';
-import Tab from '@material-ui/core/Tab';
-import Tabs from '@material-ui/core/Tabs';
-import TableCell from '@material-ui/core/TableCell';
-import Tooltip from '@material-ui/core/Tooltip';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
+
+import {
+  Button,
+  Tab,
+  Tabs,
+  TableCell,
+  Tooltip,
+} from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles, withStyles } from '@mui/styles';
+
+import { StatusGroup } from 'app/components';
 import { GQLClusterStatus } from 'app/types/schema';
 
 const tooltipStyles = makeStyles(() => createStyles({
@@ -136,9 +138,10 @@ export const StyledTabs = withStyles(() => createStyles({
 // eslint-disable-next-line react-memo/require-memo
 export const StyledTab = withStyles((theme: Theme) => createStyles({
   root: {
-    fontSize: '16px',
+    fontSize: theme.typography.subtitle1.fontSize,
     fontWeight: theme.typography.fontWeightLight,
     textTransform: 'none',
+    minWidth: theme.spacing(20),
     '&:focus': {
       color: theme.palette.foreground.two,
     },

@@ -16,15 +16,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import Highlight, { defaultProps } from 'prism-react-renderer';
 import * as React from 'react';
-import { CopyIcon } from 'app/components/icons/copy';
 
+import { Box, IconButton } from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { withStyles } from '@mui/styles';
+
+import Highlight, { defaultProps } from 'prism-react-renderer';
+import { CopyIcon } from 'app/components/icons/copy';
 import { scrollbarStyles } from 'app/components';
-import { Box } from '@material-ui/core';
-import { Theme } from '@material-ui/core/styles';
-import IconButton from '@material-ui/core/IconButton';
-import withStyles from '@material-ui/core/styles/withStyles';
 
 // eslint-disable-next-line react-memo/require-memo
 export const CodeRenderer = withStyles((theme: Theme) => ({

@@ -19,13 +19,9 @@
 import * as React from 'react';
 import { useLocation } from 'react-router';
 import { PixienautBox } from 'app/components';
-import {
-  Button,
-  makeStyles,
-  Theme,
-  Typography,
-} from '@material-ui/core';
-import { createStyles } from '@material-ui/styles';
+import { Button, Typography } from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 const useStyles = makeStyles(({ palette, spacing }: Theme) => createStyles({
   title: {

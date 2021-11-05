@@ -25,13 +25,13 @@ import {
   parseDOTNetwork,
 } from 'vis-network/standalone';
 import * as React from 'react';
-import { makeStyles, useTheme, Theme } from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
+import { Button } from '@mui/material';
+import { Theme, useTheme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 import { useHistory } from 'react-router-dom';
 import { ClusterContext } from 'app/common/cluster-context';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { Arguments } from 'app/utils/args-utils';
-import Button from '@material-ui/core/Button';
 import { Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
 import { buildClass } from 'app/utils/build-class';
 import { GaugeLevel, getColor, getLatencyNSLevel } from 'app/utils/metric-thresholds';

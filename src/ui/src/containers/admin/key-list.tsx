@@ -16,17 +16,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-  makeStyles, Theme, withStyles,
-} from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
-import ListItemIcon from '@material-ui/core/ListItemIcon';
-import ListItemText from '@material-ui/core/ListItemText';
-import Menu from '@material-ui/core/Menu';
-import IconButton from '@material-ui/core/IconButton';
-import DeleteIcon from '@material-ui/icons/DeleteForeverOutlined';
-import CopyIcon from '@material-ui/icons/CopyAllOutlined';
 import * as React from 'react';
+
+import {
+  IconButton,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+} from '@mui/material';
+import {
+  DeleteForeverOutlined as DeleteIcon,
+  CopyAllOutlined as CopyIcon,
+} from '@mui/icons-material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles, withStyles } from '@mui/styles';
 
 export const useKeyListStyles = makeStyles((theme: Theme) => createStyles({
   keyValue: {

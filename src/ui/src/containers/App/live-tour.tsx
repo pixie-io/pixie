@@ -17,14 +17,12 @@
  */
 
 import * as React from 'react';
-import { makeStyles, Theme } from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
-import Tooltip from '@material-ui/core/Tooltip';
-import { Dialog } from '@material-ui/core';
-import CloseButton from '@material-ui/icons/Close';
-import IconButton from '@material-ui/core/IconButton';
+
+import { Dialog, IconButton, Tooltip } from '@mui/material';
+import { Close as CloseButton } from '@mui/icons-material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 import 'typeface-walter-turncoat';
-import { Spacing } from '@material-ui/core/styles/createSpacing';
 import { SetStateFunc } from 'app/context/common';
 import { CONTACT_ENABLED } from 'app/containers/constants';
 
@@ -45,7 +43,7 @@ export const LiveTourContextProvider: React.FC = React.memo(function LiveTourCon
  * Generates the CSS properties needed to punch holes in the backdrop
  * where the described components are, to make them easy to notice
  */
-function buildBackdropMask(s: Spacing) {
+function buildBackdropMask(s: Theme['spacing']) {
   const commonMaskShape = ''
       + '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none">'
       + '<rect width="100" height="100" fill="black"></rect>'

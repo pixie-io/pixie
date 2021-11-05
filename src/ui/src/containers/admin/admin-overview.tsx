@@ -19,14 +19,10 @@
 import { gql, useMutation } from '@apollo/client';
 import * as React from 'react';
 
-import {
-  makeStyles,
-  Theme,
-} from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
-import Button from '@material-ui/core/Button';
-import TableContainer from '@material-ui/core/TableContainer';
-import Add from '@material-ui/icons/Add';
+import { Button, TableContainer } from '@mui/material';
+import { Add } from '@mui/icons-material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 import { DeploymentKeysTable } from 'app/containers/admin/deployment-keys';
 import { APIKeysTable } from 'app/containers/admin/api-keys';

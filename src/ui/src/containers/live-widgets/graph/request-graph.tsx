@@ -18,15 +18,16 @@
 
 import * as React from 'react';
 
+import { IconButton, Tooltip } from '@mui/material';
+import {
+  AccountTree as AccountTreeIcon,
+  Workspaces as WorkspacesIcon,
+  Speed as SpeedIcon,
+  ErrorOutline as ErrorOutlineIcon,
+} from '@mui/icons-material';
+import { Theme, useTheme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 import { Network } from 'vis-network/standalone';
-import { makeStyles, useTheme, Theme } from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
-import AccountTreeIcon from '@material-ui/icons/AccountTree';
-import WorkspacesIcon from '@material-ui/icons/Workspaces';
-import SpeedIcon from '@material-ui/icons/Speed';
-import ErrorOutlineIcon from '@material-ui/icons/ErrorOutline';
-import IconButton from '@material-ui/core/IconButton';
-import Tooltip from '@material-ui/core/Tooltip';
 import { ClusterContext } from 'app/common/cluster-context';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { Relation } from 'app/types/generated/vizierapi_pb';
@@ -76,6 +77,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   buttonContainer: {
     '& > .MuiIconButton-root': {
       marginRight: theme.spacing(2),
+      padding: theme.spacing(0.375), // 3px
     },
   },
 }), { name: 'RequestGraphWidget' });

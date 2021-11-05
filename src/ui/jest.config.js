@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const esModules = ['@material-ui/core', '@babel/runtime/helpers/esm'].join('|');
+const esModules = ['@mui', '@babel/runtime/helpers/esm'].join('|');
 
 module.exports = {
   globals: {

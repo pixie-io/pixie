@@ -18,8 +18,8 @@
 
 import * as React from 'react';
 
-import { useTheme } from '@material-ui/core/styles';
-import useMediaQuery from '@material-ui/core/useMediaQuery';
+import { useMediaQuery } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 type SetOpenFunc = React.Dispatch<React.SetStateAction<boolean>>;
 type Splits = [number, number];

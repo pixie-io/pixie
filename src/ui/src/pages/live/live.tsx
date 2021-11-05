@@ -21,12 +21,12 @@ import * as React from 'react';
 import { EditIcon, Footer, scrollbarStyles } from 'app/components';
 import { GQLClusterStatus } from 'app/types/schema';
 import { buildClass } from 'app/utils/build-class';
-import { makeStyles, Theme } from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
 import {
   Alert, AlertTitle, IconButton, Link, Tooltip,
-} from '@material-ui/core';
-import MoveIcon from '@material-ui/icons/OpenWith';
+} from '@mui/material';
+import { OpenWith as MoveIcon } from '@mui/icons-material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 import { Copyright } from 'configurable/copyright';
 import { ClusterContext } from 'app/common/cluster-context';
@@ -458,6 +458,7 @@ const LiveView = React.memo(function LiveView() {
               )}
             </div>
             {!isEmbedded && <div className={classes.mainFooter}>
+              {/* eslint-disable-next-line react-memo/require-usememo */}
               <Footer copyright={Copyright} />
             </div>}
           </div>

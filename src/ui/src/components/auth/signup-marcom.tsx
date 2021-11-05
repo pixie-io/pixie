@@ -19,14 +19,12 @@
 import * as React from 'react';
 import {
   Grid,
-  WithStyles,
-  withStyles,
-  Theme,
   Typography,
   Container,
   alpha,
-} from '@material-ui/core';
-import { createStyles } from '@material-ui/styles';
+} from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, withStyles, WithStyles } from '@mui/styles';
 
 import { CPPIcon } from 'app/components/logos/cpp';
 import { GolangIcon } from 'app/components/logos/golang';

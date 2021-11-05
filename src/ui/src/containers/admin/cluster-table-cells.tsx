@@ -17,10 +17,8 @@
  */
 
 import { StatusCell } from 'app/components';
-import {
-  makeStyles, Theme,
-} from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 import { GaugeLevel } from 'app/utils/metric-thresholds';
 import { GQLClusterInfo, GQLClusterStatus } from 'app/types/schema';
 import * as React from 'react';

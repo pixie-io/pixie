@@ -16,10 +16,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { PaletteMode } from '@material-ui/core';
-import { createTheme, Theme } from '@material-ui/core/styles';
+import { PaletteMode } from '@mui/material';
+import { createTheme, Theme } from '@mui/material/styles';
 
-declare module '@material-ui/core/styles/createPalette' {
+declare module '@mui/material/styles/createPalette' {
   interface TypeBackground {
     one?: string;
     two?: string;
@@ -101,15 +101,26 @@ declare module '@material-ui/core/styles/createPalette' {
   }
 }
 
-declare module '@material-ui/core/styles/shape' {
+declare module '@mui/material/styles' {
   interface RoundedBorderRadius {
     small: string;
     large: string;
   }
 
   export interface Shape {
+    borderRadius: string | number;
     leftRoundedBorderRadius: RoundedBorderRadius;
     rightRoundedBorderRadius: RoundedBorderRadius;
+  }
+
+  interface Theme {
+    shape: Shape;
+  }
+}
+
+declare module '@mui/material/styles/createTheme' {
+  interface ThemeOptions {
+    shape?: Partial<Theme['shape']>;
   }
 }
 

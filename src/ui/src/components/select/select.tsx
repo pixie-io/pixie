@@ -17,9 +17,9 @@
  */
 
 import * as React from 'react';
-import { makeStyles, Theme } from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
-import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
+import { ArrowDropDown as ArrowDropDownIcon } from '@mui/icons-material';
 import { DialogDropdown, BreadcrumbListItem } from 'app/components/breadcrumbs/breadcrumbs';
 import { AutocompleteContext } from 'app/components/autocomplete/autocomplete-context';
 

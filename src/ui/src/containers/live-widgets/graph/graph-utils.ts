@@ -17,7 +17,7 @@
  */
 
 import { Options } from 'vis-network/standalone';
-import { Theme } from '@material-ui/core/styles';
+import { Theme } from '@mui/material/styles';
 
 import { DataType, Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
 import * as podSVG from './pod.svg';

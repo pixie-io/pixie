@@ -19,11 +19,10 @@
 import { buildClass } from 'app/utils/build-class';
 import * as React from 'react';
 
-import IconButton from '@material-ui/core/IconButton';
-import MUIModal from '@material-ui/core/Modal';
-import { makeStyles, Theme } from '@material-ui/core/styles';
-import CloseIcon from '@material-ui/icons/Close';
-import { createStyles } from '@material-ui/styles';
+import { IconButton, Modal as MUIModal } from '@mui/material';
+import { createStyles, makeStyles } from '@mui/styles';
+import { Theme } from '@mui/material/styles';
+import { Close as CloseIcon } from '@mui/icons-material';
 
 interface ModalTriggerProps {
   trigger: React.ReactNode;

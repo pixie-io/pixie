@@ -18,10 +18,8 @@
 
 import * as React from 'react';
 import { Link } from 'react-router-dom';
-import {
-  Theme, withStyles, WithStyles,
-} from '@material-ui/core';
-import { createStyles } from '@material-ui/styles';
+import { Theme } from '@mui/material/styles';
+import { createStyles, withStyles, WithStyles } from '@mui/styles';
 import { Arguments } from 'app/utils/args-utils';
 import { SemanticType } from 'app/types/generated/vizierapi_pb';
 import {

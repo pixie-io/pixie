@@ -18,12 +18,10 @@
 
 import * as React from 'react';
 
-import { makeStyles, Theme } from '@material-ui/core';
-import { createStyles } from '@material-ui/styles';
-import Button from '@material-ui/core/Button';
-import IconButton from '@material-ui/core/IconButton';
-import Snackbar from '@material-ui/core/Snackbar';
-import CloseIcon from '@material-ui/icons/Close';
+import { Button, IconButton, Snackbar } from '@mui/material';
+import { Close as CloseIcon } from '@mui/icons-material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 const noop = () => {};
 

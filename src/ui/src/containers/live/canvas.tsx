@@ -32,16 +32,15 @@ import * as React from 'react';
 import * as GridLayout from 'react-grid-layout';
 import { resizeEvent, triggerResize } from 'app/utils/resize';
 import { dataFromProto } from 'app/utils/result-data-utils';
-import { Alert, AlertTitle } from '@material-ui/core';
 import { VizierQueryError, VizierTable } from 'app/api';
 import { containsMutation } from 'app/utils/pxl';
 import { VizierErrorDetails } from 'app/common/errors';
 
+import { Alert, AlertTitle, Paper } from '@mui/material';
 import {
-  alpha, makeStyles, Theme,
-} from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
-import Paper from '@material-ui/core/Paper';
+  alpha, Theme,
+} from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 import Vega from 'app/containers/live-widgets/vega/vega';
 import { LiveRouteContext } from 'app/containers/App/live-routing';

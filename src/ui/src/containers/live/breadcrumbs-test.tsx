@@ -21,7 +21,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { waitFor, render } from '@testing-library/react';
 import * as React from 'react';
-import { ThemeProvider } from '@material-ui/core/styles';
+import { ThemeProvider } from '@mui/material/styles';
 import { DARK_THEME } from 'app/components';
 import { MockClusterContextProvider } from 'app/testing/mocks/cluster-context-mock';
 import { MockLiveRouteContextProvider } from 'app/testing/mocks/live-routing-mock';

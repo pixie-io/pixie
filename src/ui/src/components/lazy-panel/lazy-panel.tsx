@@ -19,8 +19,7 @@
 import { buildClass } from 'app/utils/build-class';
 import * as React from 'react';
 
-import { makeStyles } from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 let called = false;
 function triggerResize() {

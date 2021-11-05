@@ -17,9 +17,9 @@
  */
 
 import * as React from 'react';
-import { Theme, makeStyles } from '@material-ui/core';
-import Paper from '@material-ui/core/Paper';
-import { createStyles } from '@material-ui/styles';
+import { Paper } from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 import { PixienautBalloonSvg } from './pixienaut-balloon';
 import { PixienautOctopusSvg } from './pixienaut-octopus';
 import { PixienautToiletSvg } from './pixienaut-toilet';

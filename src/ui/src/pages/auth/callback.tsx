@@ -24,10 +24,9 @@ import * as RedirectUtils from 'app/utils/redirect-utils';
 import { isValidAnalytics } from 'app/utils/env';
 import { AuthMessageBox } from 'app/components';
 import { Link } from 'react-router-dom';
-import {
-  Button, ButtonProps, makeStyles, Theme,
-} from '@material-ui/core';
-import { createStyles } from '@material-ui/styles';
+import { Button, ButtonProps } from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 import { BasePage } from './base';
 import { AuthCallbackMode, GetOAuthProvider } from './utils';
 import { Token } from './oauth-provider';

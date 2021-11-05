@@ -18,9 +18,9 @@
 
 import * as React from 'react';
 import { PixienautBox } from 'app/components';
-import { Typography, alpha, Link } from '@material-ui/core';
-import { Theme, makeStyles } from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
+import { Typography, alpha, Link } from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 export interface ErrorBoundaryFallbackProps {
   error: Error;

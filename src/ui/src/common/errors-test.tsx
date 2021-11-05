@@ -19,14 +19,24 @@
 import * as React from 'react';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { screen, render } from '@testing-library/react';
+import { ThemeProvider } from '@mui/material/styles';
+import { DARK_THEME } from 'app/components';
 
 import { VizierQueryError } from 'app/api';
 import { VizierErrorDetails } from './errors';
 
+/* eslint-disable react-memo/require-memo, react-memo/require-usememo */
+
+const Tester = ({ error }) => (
+  <ThemeProvider theme={DARK_THEME}>
+    <VizierErrorDetails error={error} />
+  </ThemeProvider>
+);
+
 describe('<VizierErrorDetails/> test', () => {
   it('renders the details if it is a VizierQueryError', async () => {
     render(
-      <VizierErrorDetails error={
+      <Tester error={
         new VizierQueryError('server', 'a well formatted server error')
       }
       />,
@@ -36,7 +46,7 @@ describe('<VizierErrorDetails/> test', () => {
 
   it('renders a list of errors if the details is a list', async () => {
     const { container } = render(
-      <VizierErrorDetails error={
+      <Tester error={
         new VizierQueryError('script', ['error 1', 'error 2', 'error 3'])
       }
       />,
@@ -46,7 +56,7 @@ describe('<VizierErrorDetails/> test', () => {
 
   it('renders the message for other errors', async () => {
     render(
-      <VizierErrorDetails error={
+      <Tester error={
         new Error('generic error')
       }
       />,

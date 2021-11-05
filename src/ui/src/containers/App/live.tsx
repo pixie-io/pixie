@@ -30,8 +30,7 @@ import { Redirect, Route, Switch } from 'react-router-dom';
 import { generatePath } from 'react-router';
 import * as QueryString from 'query-string';
 
-import { makeStyles } from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 import { useLDClient } from 'launchdarkly-react-client-sdk';
 import {
   GQLClusterInfo, GQLUserInfo, GQLUserSettings, GQLOrgInfo,

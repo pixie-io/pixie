@@ -27,10 +27,13 @@ import {
   ColumnInstance, TableInstance,
 } from 'react-table';
 import { FixedSizeList as List, areEqual, ListOnItemsRenderedProps } from 'react-window';
-import { makeStyles, Theme } from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
-import DownIcon from '@material-ui/icons/KeyboardArrowDown';
-import UpIcon from '@material-ui/icons/KeyboardArrowUp';
+import {
+  KeyboardArrowDown as DownIcon,
+  KeyboardArrowUp as UpIcon,
+  Menu as MenuIcon,
+} from '@mui/icons-material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 import { useScrollbarSize } from 'app/utils/use-scrollbar-size';
 import { buildClass } from 'app/utils/build-class';
 
@@ -39,9 +42,8 @@ import './react-table-config.d';
 import { AutoSizerContext, withAutoSizerContext } from 'app/utils/autosizer';
 import {
   alpha, Button, Checkbox, FormControlLabel, Menu, MenuItem, Tooltip,
-} from '@material-ui/core';
+} from '@mui/material';
 import { UnexpandedIcon } from 'app/components/icons/unexpanded';
-import MenuIcon from '@material-ui/icons/Menu';
 
 export type CellAlignment = 'center' | 'start' | 'end' | 'fill';
 
@@ -219,7 +221,7 @@ const ColumnSelector = React.memo<{ columns: ColumnInstance[] }>(function Column
       <Menu open={open} anchorEl={anchorEl.current} onBackdropClick={close}>
         {editableColumns.map((column) => (
           // eslint-disable-next-line react-memo/require-usememo
-          <MenuItem key={column.id} button onClick={() => column.toggleHidden()}>
+          <MenuItem key={column.id} onClick={() => column.toggleHidden()}>
             <FormControlLabel
               style={noPointerEvents}
               label={column.id || JSON.stringify(column)}

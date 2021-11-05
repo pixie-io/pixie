@@ -19,10 +19,8 @@
 // This contains the base template all auth pages. We really only allow inserting the
 // middle part of the page which has either a dialog, or marcom information.
 import * as React from 'react';
-import {
-  Theme, WithStyles, withStyles,
-} from '@material-ui/core';
-import { createStyles } from '@material-ui/styles';
+import { Theme } from '@mui/material/styles';
+import { createStyles, withStyles, WithStyles } from '@mui/styles';
 import { Footer } from 'app/components';
 import { Copyright } from 'configurable/copyright';
 import * as pixieLogo from 'assets/images/pixie-logo.svg';

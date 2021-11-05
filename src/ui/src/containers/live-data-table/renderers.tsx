@@ -49,7 +49,7 @@ import {
   looksLikePIDCol,
 } from 'app/utils/format-data';
 import { getColor, getLatencyNSLevel } from 'app/utils/metric-thresholds';
-import { useTheme } from '@material-ui/core/styles';
+import { useTheme } from '@mui/material/styles';
 import { VizierTable } from 'app/api';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { ColumnDisplayInfo, QuantilesDisplayState } from './column-display-info';

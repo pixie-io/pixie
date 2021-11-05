@@ -19,6 +19,8 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { render } from '@testing-library/react';
 import * as React from 'react';
+import { ThemeProvider } from '@mui/material/styles';
+import { DARK_THEME } from 'app/components';
 import {
   AlertData, DurationRenderer, formatBytes, formatDuration,
 } from './format-data';
@@ -55,19 +57,31 @@ describe('formatters Test', () => {
 
 describe('DurationRenderer test', () => {
   it('should render correctly for low latency', () => {
-    const { container } = render(<DurationRenderer data={20 * 1000 * 1000} />);
+    const { container } = render(
+      <ThemeProvider theme={DARK_THEME}>
+        <DurationRenderer data={20 * 1000 * 1000} />
+      </ThemeProvider>,
+    );
 
     expect(container).toMatchSnapshot();
   });
 
   it('should render correctly for medium latency', () => {
-    const { container } = render(<DurationRenderer data={250 * 1000 * 1000} />);
+    const { container } = render(
+      <ThemeProvider theme={DARK_THEME}>
+        <DurationRenderer data={250 * 1000 * 1000} />
+      </ThemeProvider>,
+    );
 
     expect(container).toMatchSnapshot();
   });
 
   it('should render correctly for high latency', () => {
-    const { container } = render(<DurationRenderer data={400 * 1000 * 1000} />);
+    const { container } = render(
+      <ThemeProvider theme={DARK_THEME}>
+        <DurationRenderer data={400 * 1000 * 1000} />
+      </ThemeProvider>,
+    );
 
     expect(container).toMatchSnapshot();
   });
@@ -75,13 +89,21 @@ describe('DurationRenderer test', () => {
 
 describe('<AlertData/> test', () => {
   it('should render correctly for true alert', () => {
-    const { container } = render(<AlertData data={true} />);
+    const { container } = render(
+      <ThemeProvider theme={DARK_THEME}>
+        <AlertData data={true} />
+      </ThemeProvider>,
+    );
 
     expect(container).toMatchSnapshot();
   });
 
   it('should render correctly for false alert', () => {
-    const { container } = render(<AlertData data={false} />);
+    const { container } = render(
+      <ThemeProvider theme={DARK_THEME}>
+        <AlertData data={false} />
+      </ThemeProvider>,
+    );
 
     expect(container).toMatchSnapshot();
   });

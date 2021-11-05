@@ -20,12 +20,9 @@ import * as React from 'react';
 import { Vega } from 'react-vega';
 import { VisualizationSpec } from 'vega-embed';
 import { Handler } from 'vega-tooltip';
-import {
-  Theme,
-  useTheme,
-  makeStyles,
-} from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
+
+import { Theme, useTheme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 interface QuantilesBoxWhiskerFields {
   p50: number;

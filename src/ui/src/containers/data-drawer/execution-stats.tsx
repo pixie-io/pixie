@@ -20,8 +20,8 @@ import { ResultsContext } from 'app/context/results-context';
 import * as numeral from 'numeral';
 import * as React from 'react';
 
-import { makeStyles, Theme } from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 function nanoSecDisplay(ns: number) {
   const ms = ns / 1e6;

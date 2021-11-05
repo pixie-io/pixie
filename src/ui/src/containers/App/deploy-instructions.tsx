@@ -21,10 +21,9 @@ import { CodeRenderer, Spinner } from 'app/components';
 import * as logoImage from 'assets/images/pixie-logo.svg';
 import * as React from 'react';
 
-import Button from '@material-ui/core/Button';
-import Paper from '@material-ui/core/Paper';
-import { makeStyles, Theme } from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
+import { Button, Paper } from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   dialog: {

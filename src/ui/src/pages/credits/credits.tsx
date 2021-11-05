@@ -19,10 +19,9 @@
 import { buildClass, scrollbarStyles, Footer } from 'app/components';
 import { Copyright } from 'configurable/copyright';
 
-import {
-  Theme, makeStyles, Button,
-} from '@material-ui/core';
-import { createStyles } from '@material-ui/styles';
+import { Button } from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 import * as React from 'react';
 

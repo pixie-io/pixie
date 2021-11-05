@@ -19,17 +19,20 @@
 import AnnounceKit from 'announcekit-react';
 import * as React from 'react';
 
-import Drawer from '@material-ui/core/Drawer';
-import { makeStyles, Theme } from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
-
-import HelpIcon from '@material-ui/icons/Help';
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemIcon from '@material-ui/core/ListItemIcon';
-import ListItemText from '@material-ui/core/ListItemText';
-import CampaignIcon from '@material-ui/icons/Campaign';
-import Tooltip from '@material-ui/core/Tooltip';
+import {
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Tooltip,
+} from '@mui/material';
+import {
+  Help as HelpIcon,
+  Campaign as CampaignIcon,
+} from '@mui/icons-material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 import { Link } from 'react-router-dom';
 

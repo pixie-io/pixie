@@ -17,22 +17,22 @@
  */
 
 import * as React from 'react';
+
 import {
-  Theme,
-  makeStyles,
-  ThemeProvider,
-} from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
-import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
-import { Card, Popover, PopoverProps } from '@material-ui/core';
-import createTypography from '@material-ui/core/styles/createTypography';
-import createSpacing from '@material-ui/core/styles/createSpacing';
+  Card,
+  Paper,
+  Popover,
+  PopoverProps,
+} from '@mui/material';
+import { ArrowDropDown as ArrowDropDownIcon } from '@mui/icons-material';
+import { Theme, ThemeProvider } from '@mui/material/styles';
+import createTypography from '@mui/material/styles/createTypography';
+import { createStyles, makeStyles } from '@mui/styles';
 
 import { CompletionItem } from 'app/components/autocomplete/completions';
 import { Autocomplete } from 'app/components/autocomplete/autocomplete';
 import useIsMounted from 'app/utils/use-is-mounted';
 import { AutocompleteContext } from 'app/components/autocomplete/autocomplete-context';
-import Paper from '@material-ui/core/Paper';
 
 const useStyles = makeStyles(({
   spacing, typography, palette, breakpoints,
@@ -194,7 +194,7 @@ const themeCompactor = (theme: Theme) => ({
   typography: createTypography(theme.palette, {
     fontSize: theme.typography.fontSize * 0.8,
   }),
-  spacing: createSpacing((factor) => theme.spacing(factor * 0.8)),
+  spacing: (factor) => theme.spacing(factor * 0.8),
 });
 
 const useDialogStyles = makeStyles((theme: Theme) => createStyles({

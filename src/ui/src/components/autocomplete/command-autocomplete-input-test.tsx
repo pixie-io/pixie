@@ -20,6 +20,8 @@ import * as React from 'react';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { render } from '@testing-library/react';
 
+import { ThemeProvider } from '@mui/material/styles';
+import { DARK_THEME } from 'app/components';
 import { CommandAutocompleteInput } from 'app/components/autocomplete/command-autocomplete-input';
 
 const noop = () => {};
@@ -27,24 +29,27 @@ const noop = () => {};
 describe('<AutcompleteInput/> test', () => {
   it('renders the correct spans', () => {
     const { container } = render(
-      <CommandAutocompleteInput
-        onKey={noop}
-        onChange={noop}
-        setCursor={noop}
-        cursorPos={8}
-        placeholder='test'
-        isValid={false}
-        value={[
-          {
-            type: 'key',
-            value: 'svc: ',
-          },
-          {
-            type: 'value',
-            value: 'pl/test',
-          },
-        ]}
-      />,
+      <ThemeProvider theme={DARK_THEME}>
+        <CommandAutocompleteInput
+          onKey={noop}
+          onChange={noop}
+          setCursor={noop}
+          cursorPos={8}
+          placeholder='test'
+          isValid={false}
+          // eslint-disable-next-line react-memo/require-usememo
+          value={[
+            {
+              type: 'key',
+              value: 'svc: ',
+            },
+            {
+              type: 'value',
+              value: 'pl/test',
+            },
+          ]}
+        />
+      </ThemeProvider>,
     );
     const spans = container.querySelectorAll('span');
     expect(spans).toHaveLength(4);
@@ -56,15 +61,18 @@ describe('<AutcompleteInput/> test', () => {
 
   it('renders placeholder', () => {
     const { container } = render(
-      <CommandAutocompleteInput
-        onKey={noop}
-        onChange={noop}
-        setCursor={noop}
-        cursorPos={0}
-        placeholder='test'
-        value={[]}
-        isValid={false}
-      />,
+      <ThemeProvider theme={DARK_THEME}>
+        <CommandAutocompleteInput
+          onKey={noop}
+          onChange={noop}
+          setCursor={noop}
+          cursorPos={0}
+          placeholder='test'
+          // eslint-disable-next-line react-memo/require-usememo
+          value={[]}
+          isValid={false}
+        />
+      </ThemeProvider>,
     );
     expect(container.querySelectorAll('span')).toHaveLength(1);
     expect(container.querySelector('span').innerHTML).toBe('test'); // Placeholder span.

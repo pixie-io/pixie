@@ -18,7 +18,7 @@
 
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable no-param-reassign */
-import { Theme } from '@material-ui/core/styles';
+import { Theme } from '@mui/material/styles';
 import { getFormatFnMetadata, DataWithUnits, FormatFnMetadata } from 'app/containers/format-data/format-data';
 import { addPxTimeFormatExpression } from 'app/containers/live-widgets/vega/timeseries-axis';
 import { Relation, SemanticType } from 'app/types/generated/vizierapi_pb';

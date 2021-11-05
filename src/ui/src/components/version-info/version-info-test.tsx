@@ -19,11 +19,17 @@
 import * as React from 'react';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { render } from '@testing-library/react';
+import { ThemeProvider } from '@mui/material/styles';
+import { DARK_THEME } from 'app/components';
 import { VersionInfo } from './version-info';
 
 describe('<VersionInfo/>', () => {
   it('renders correctly', () => {
-    const { container } = render(<VersionInfo cloudVersion='testing 123' />);
+    const { container } = render(
+      <ThemeProvider theme={DARK_THEME}>
+        <VersionInfo cloudVersion='testing 123' />
+      </ThemeProvider>,
+    );
     expect(container).toMatchSnapshot();
   });
 });

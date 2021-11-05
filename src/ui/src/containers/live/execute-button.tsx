@@ -19,13 +19,13 @@
 import { PlayIcon, StopIcon } from 'app/components';
 import * as React from 'react';
 
-import Tooltip from '@material-ui/core/Tooltip';
+import { Button, Tooltip } from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 import { ResultsContext } from 'app/context/results-context';
 import { EditorContext } from 'app/context/editor-context';
 import { ScriptContext } from 'app/context/script-context';
-import { Button, Theme, makeStyles } from '@material-ui/core';
-import { createStyles } from '@material-ui/styles';
 import { ClusterContext } from 'app/common/cluster-context';
 import { PixieAPIClient, PixieAPIContext } from 'app/api';
 import { GQLClusterStatus } from 'app/types/schema';

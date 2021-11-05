@@ -16,15 +16,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import Link from '@material-ui/core/Link';
-import ListItem from '@material-ui/core/ListItem';
-import Menu from '@material-ui/core/Menu';
-import MenuItem from '@material-ui/core/MenuItem';
+import * as React from 'react';
+
+import {
+  Link,
+  ListItem,
+  Menu,
+  MenuItem,
+} from '@mui/material';
 import OrgContext from 'app/common/org-context';
 import { ClusterContext } from 'app/common/cluster-context';
 import { GQLIDEPath } from 'app/types/schema';
 import Mustache from 'mustache';
-import * as React from 'react';
 
 interface FlamegraphConfig {
   name: string;

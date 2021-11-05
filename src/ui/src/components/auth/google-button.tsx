@@ -18,12 +18,9 @@
 
 // This is the primary auth box, which has either the login or signin variant.
 import * as React from 'react';
-import {
-  Button,
-  Theme,
-  makeStyles,
-} from '@material-ui/core';
-import { createStyles } from '@material-ui/styles';
+import { Button } from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 import { GoogleIcon } from 'app/components/icons/google';
 
 const useStyles = makeStyles(({ spacing }: Theme) => createStyles({

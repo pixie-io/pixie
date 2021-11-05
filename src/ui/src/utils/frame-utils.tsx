@@ -18,13 +18,9 @@
 
 import * as React from 'react';
 
-import {
-  Box,
-  Theme,
-  WithStyles,
-  withStyles,
-} from '@material-ui/core';
-import { createStyles } from '@material-ui/styles';
+import { Box } from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, withStyles, WithStyles } from '@mui/styles';
 
 const styles = ({ palette, spacing }: Theme) => createStyles({
   root: {

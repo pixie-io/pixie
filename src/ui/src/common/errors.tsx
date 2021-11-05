@@ -18,9 +18,10 @@
 
 import * as React from 'react';
 
-import Link from '@material-ui/core/Link';
-import { makeStyles, Theme } from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
+import { Link } from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
+
 import { VizierQueryError } from 'app/api';
 import { showIntercomTrigger, triggerID } from 'app/utils/intercom';
 

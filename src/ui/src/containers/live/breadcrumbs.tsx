@@ -18,8 +18,8 @@
 
 import * as React from 'react';
 
-import { Theme, makeStyles } from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 import { GQLAutocompleteEntityKind, GQLAutocompleteSuggestion } from 'app/types/schema';
 import { PixieAPIClient, PixieAPIContext } from 'app/api';
 import { gql } from '@apollo/client';

@@ -17,8 +17,9 @@
  */
 
 import * as React from 'react';
-import { Theme, Typography, makeStyles } from '@material-ui/core';
-import { createStyles } from '@material-ui/styles';
+import { Typography } from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 const useDefaultStyles = makeStyles(({ spacing, breakpoints, palette }: Theme) => createStyles({
   root: {

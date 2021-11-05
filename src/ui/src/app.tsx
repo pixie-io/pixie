@@ -16,6 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as React from 'react';
+import * as ReactDOM from 'react-dom';
+
 import {
   COMMON_THEME, DARK_THEME, LIGHT_THEME, SnackbarProvider, VersionInfo,
 } from 'app/components';
@@ -34,16 +37,16 @@ import history from 'app/utils/pl-history';
 import * as QueryString from 'query-string';
 import CreditsView from 'app/pages/credits/credits';
 
+import { CssBaseline } from '@mui/material';
 import {
-  Theme, ThemeProvider, withStyles, createTheme,
-} from '@material-ui/core/styles';
-import StyledEngineProvider from '@material-ui/core/StyledEngineProvider';
-import { createStyles } from '@material-ui/styles';
+  Theme,
+  ThemeProvider,
+  StyledEngineProvider,
+  createTheme,
+} from '@mui/material/styles';
+import { createStyles, withStyles } from '@mui/styles';
 
 import Axios from 'axios';
-import * as React from 'react';
-import * as ReactDOM from 'react-dom';
-import { CssBaseline } from '@material-ui/core';
 import { withLDProvider } from 'launchdarkly-react-client-sdk';
 import { AuthRouter } from 'app/pages/auth/auth';
 import 'typeface-roboto';

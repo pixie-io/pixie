@@ -19,7 +19,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import * as React from 'react';
 import { render } from '@testing-library/react';
-import { ThemeProvider } from '@material-ui/core/styles';
+import { ThemeProvider } from '@mui/material/styles';
 import { DARK_THEME } from 'app/components';
 import { JSONData } from './json-data';
 

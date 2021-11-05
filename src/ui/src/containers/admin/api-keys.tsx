@@ -16,15 +16,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as React from 'react';
+
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableRow,
+} from '@mui/material';
 import {
   gql, useQuery, useMutation, useLazyQuery,
 } from '@apollo/client';
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import TableHead from '@material-ui/core/TableHead';
-import TableRow from '@material-ui/core/TableRow';
 import { distanceInWords } from 'date-fns';
-import * as React from 'react';
 
 import { GQLAPIKey, GQLAPIKeyMetadata } from 'app/types/schema';
 import {

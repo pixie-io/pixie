@@ -20,12 +20,8 @@ import { buildClass } from 'app/utils/build-class';
 import * as React from 'react';
 import Split from 'react-split';
 
-import {
-  makeStyles,
-  Theme,
-  useTheme,
-} from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
+import { Theme, useTheme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 interface SplitPaneContextProps {
   togglePane: (id: string) => void;

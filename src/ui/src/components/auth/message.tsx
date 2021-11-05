@@ -19,12 +19,10 @@
 import * as React from 'react';
 import {
   alpha,
-  Theme,
   Typography,
-  withStyles,
-  WithStyles,
-} from '@material-ui/core';
-import { createStyles } from '@material-ui/styles';
+} from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, withStyles, WithStyles } from '@mui/styles';
 import { CodeRenderer } from 'app/components/code-renderer/code-renderer';
 import { PixienautBox, PixienautBoxProps } from './pixienaut-box';
 

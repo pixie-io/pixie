@@ -18,14 +18,9 @@
 
 // This is the primary auth box, which has either the login or signin variant.
 import * as React from 'react';
-import {
-  Button,
-  Link,
-  Theme,
-  Typography,
-  makeStyles,
-} from '@material-ui/core';
-import { createStyles } from '@material-ui/styles';
+import { Button, Link, Typography } from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 import { PixienautBox } from './pixienaut-box';
 
 const useStyles = makeStyles(({ spacing, palette }: Theme) => createStyles({

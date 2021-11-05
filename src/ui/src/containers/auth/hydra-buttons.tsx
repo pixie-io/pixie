@@ -18,10 +18,7 @@
 
 import * as React from 'react';
 import { UsernamePasswordButton } from 'app/components';
-import {
-  makeStyles,
-} from '@material-ui/core';
-import { createStyles } from '@material-ui/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 export interface HydraButtonsProps {
   usernamePasswordText: string;

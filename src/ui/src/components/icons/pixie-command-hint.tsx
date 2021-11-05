@@ -19,7 +19,7 @@
 /* eslint-disable max-len */
 import * as React from 'react';
 
-import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
+import { SvgIcon, SvgIconProps } from '@mui/material';
 
 // eslint-disable-next-line react-memo/require-memo
 export const PixieCommandHint: React.FC<SvgIconProps> = (props) => (

@@ -24,13 +24,10 @@ import {
   ResizableDrawer,
 } from 'app/components';
 
-import {
-  makeStyles, Theme, withStyles, useTheme,
-} from '@material-ui/core/styles';
-import Tab from '@material-ui/core/Tab';
-import Tabs from '@material-ui/core/Tabs';
-import ChevronRight from '@material-ui/icons/ChevronRight';
-import { createStyles } from '@material-ui/styles';
+import { Tab, Tabs } from '@mui/material';
+import { ChevronRight } from '@mui/icons-material';
+import { Theme, useTheme } from '@mui/material/styles';
+import { createStyles, makeStyles, withStyles } from '@mui/styles';
 
 import { getKeyMap } from 'app/containers/live/shortcuts';
 import { LayoutContext } from 'app/context/layout-context';
@@ -163,6 +160,8 @@ const StyledTabs = withStyles((theme: Theme) => createStyles({
 const StyledTab = withStyles((theme: Theme) => createStyles({
   root: {
     textTransform: 'none',
+    fontSize: theme.typography.subtitle2.fontSize,
+    minWidth: theme.spacing(20),
     '&:focus': {
       color: theme.palette.foreground.two,
     },

@@ -20,11 +20,13 @@ import * as _ from 'lodash';
 import * as React from 'react';
 import { CSSProperties } from 'react';
 
-import { IconButton, Tooltip } from '@material-ui/core';
-import { makeStyles, Theme } from '@material-ui/core/styles';
-import KeyboardArrowLeftIcon from '@material-ui/icons/KeyboardArrowLeft';
-import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
-import { createStyles } from '@material-ui/styles';
+import { IconButton, Tooltip } from '@mui/material';
+import {
+  KeyboardArrowLeft as KeyboardArrowLeftIcon,
+  KeyboardArrowRight as KeyboardArrowRightIcon,
+} from '@mui/icons-material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 import { LegendData, LegendEntry } from './legend-data';
 
 const NUM_ROWS = 2;

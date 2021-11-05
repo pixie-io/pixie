@@ -19,8 +19,9 @@
 import { WidgetDisplay } from 'app/containers/live/vis';
 import { ROW_RETENTION_LIMIT, VizierTable } from 'app/api';
 import * as React from 'react';
-import { Theme, makeStyles, alpha } from '@material-ui/core';
-import { createStyles } from '@material-ui/styles';
+import { alpha } from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 import { Arguments } from 'app/utils/args-utils';
 import { LiveDataTable } from 'app/containers/live-data-table/live-data-table';
 import { ResultsContext, useLatestRowCount } from 'app/context/results-context';

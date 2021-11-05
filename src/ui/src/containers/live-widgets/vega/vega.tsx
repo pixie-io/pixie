@@ -40,10 +40,8 @@ import { Vega as ReactVega } from 'react-vega';
 import noop from 'app/utils/noop';
 import { View } from 'vega-typings';
 
-import {
-  makeStyles, useTheme, Theme,
-} from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
+import { Theme, useTheme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { formatFloat64Data } from 'app/utils/format-data';

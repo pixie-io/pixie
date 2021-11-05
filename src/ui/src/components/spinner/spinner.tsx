@@ -17,7 +17,7 @@
  */
 
 import * as React from 'react';
-import { CircularProgress } from '@material-ui/core';
+import { CircularProgress } from '@mui/material';
 
 // eslint-disable-next-line react-memo/require-memo
 export const Spinner: React.FC = () => <CircularProgress size={24} />;

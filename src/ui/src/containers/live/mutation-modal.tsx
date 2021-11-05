@@ -17,21 +17,21 @@
  */
 
 import * as React from 'react';
-import Card from '@material-ui/core/Card';
-import Modal from '@material-ui/core/Modal';
-import Button from '@material-ui/core/Button';
-import Grid from '@material-ui/core/Grid';
 
 import {
-  Theme, withStyles, WithStyles,
-} from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
+  Button,
+  Card,
+  CircularProgress,
+  Grid,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Modal,
+} from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, withStyles, WithStyles } from '@mui/styles';
 import { MutationInfo, LifeCycleState } from 'app/types/generated/vizierapi_pb';
 import { StatusCell } from 'app/components';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemIcon from '@material-ui/core/ListItemIcon';
-import ListItemText from '@material-ui/core/ListItemText';
-import { CircularProgress } from '@material-ui/core';
 import { ScriptContext } from 'app/context/script-context';
 
 import * as moonwalkerSVG from 'assets/images/moonwalker.svg';

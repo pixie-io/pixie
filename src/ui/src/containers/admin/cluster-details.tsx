@@ -26,19 +26,23 @@ import { useHistory, useParams } from 'react-router';
 import { Link } from 'react-router-dom';
 import { dataFromProto } from 'app/utils/result-data-utils';
 
-import { Theme, makeStyles, withStyles } from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
-import HelpIcon from '@material-ui/icons/Help';
-import MaterialBreadcrumbs from '@material-ui/core/Breadcrumbs';
-import IconButton from '@material-ui/core/IconButton';
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
-import TableContainer from '@material-ui/core/TableContainer';
-import TableHead from '@material-ui/core/TableHead';
-import TableRow from '@material-ui/core/TableRow';
-import DownIcon from '@material-ui/icons/KeyboardArrowDown';
-import UpIcon from '@material-ui/icons/KeyboardArrowUp';
+import {
+  Breadcrumbs as MaterialBreadcrumbs,
+  IconButton,
+  Table,
+  TableBody,
+  TableContainer,
+  TableCell,
+  TableHead,
+  TableRow,
+} from '@mui/material';
+import {
+  Help as HelpIcon,
+  KeyboardArrowDown as DownIcon,
+  KeyboardArrowUp as UpIcon,
+} from '@mui/icons-material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles, withStyles } from '@mui/styles';
 
 import { ExecutionStateUpdate, PixieAPIContext, VizierQueryResult } from 'app/api';
 import {

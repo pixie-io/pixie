@@ -19,8 +19,8 @@
 import { buildClass } from 'app/utils/build-class';
 import * as React from 'react';
 
-import { makeStyles, Theme } from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 import { Key } from './key';
 

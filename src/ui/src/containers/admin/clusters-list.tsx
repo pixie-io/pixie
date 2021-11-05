@@ -16,14 +16,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { gql, useQuery } from '@apollo/client';
-import { Theme, withStyles } from '@material-ui/core/styles';
-import Button from '@material-ui/core/Button';
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import TableHead from '@material-ui/core/TableHead';
-import TableRow from '@material-ui/core/TableRow';
 import * as React from 'react';
+
+import {
+  Button,
+  Table,
+  TableBody,
+  TableHead,
+  TableRow,
+} from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { withStyles } from '@mui/styles';
+import { gql, useQuery } from '@apollo/client';
 import { Link } from 'react-router-dom';
 
 import { GQLClusterInfo } from 'app/types/schema';

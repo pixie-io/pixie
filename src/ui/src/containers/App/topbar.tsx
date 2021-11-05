@@ -17,51 +17,41 @@
  */
 
 import * as React from 'react';
-import AppBar from '@material-ui/core/AppBar';
-import { buildClass } from 'app/utils/build-class';
+import { Link } from 'react-router-dom';
 
-import Toolbar from '@material-ui/core/Toolbar';
-import IconButton from '@material-ui/core/IconButton';
-import MenuIcon from '@material-ui/icons/Menu';
+import { useQuery, useMutation, gql } from '@apollo/client';
+
 import {
-  makeStyles, withStyles, Theme,
-} from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
+  AppBar,
+  IconButton,
+  ListItemIcon,
+  ListItemText,
+  MenuItem,
+  Toolbar,
+} from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import {
+  Explore as ExploreIcon,
+  Keyboard as KeyboardIcon,
+  Menu as MenuIcon,
+} from '@mui/icons-material';
+import { createStyles, makeStyles } from '@mui/styles';
+
+import { buildClass } from 'app/utils/build-class';
 import {
   Avatar,
   ProfileMenuWrapper,
   LogoutIcon,
   SettingsIcon,
 } from 'app/components';
-import { useQuery, useMutation, gql } from '@apollo/client';
 import { LiveShortcutsContext } from 'app/containers/live/shortcuts';
 import { SidebarContext } from 'app/context/sidebar-context';
 import { LiveTourContext, LiveTourDialog } from 'app/containers/App/live-tour';
-import ListItemIcon from '@material-ui/core/ListItemIcon';
-import ListItemText from '@material-ui/core/ListItemText';
 import { LayoutContext } from 'app/context/layout-context';
-import MenuItem from '@material-ui/core/MenuItem';
-import ExploreIcon from '@material-ui/icons/Explore';
-import KeyboardIcon from '@material-ui/icons/Keyboard';
-import { Link } from 'react-router-dom';
-import { Logo } from 'configurable/logo';
 import { GQLUserInfo, GQLUserAttributes } from 'app/types/schema';
 import pixieAnalytics from 'app/utils/analytics';
 import { SetStateFunc } from 'app/context/common';
-
-// eslint-disable-next-line react-memo/require-memo
-const StyledListItemText = withStyles((theme: Theme) => createStyles({
-  primary: {
-    ...theme.typography.body2,
-  },
-}))(ListItemText);
-
-// eslint-disable-next-line react-memo/require-memo
-const StyledListItemIcon = withStyles(() => createStyles({
-  root: {
-    minWidth: '30px',
-  },
-}))(ListItemIcon);
+import { Logo } from 'configurable/logo';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   container: {
@@ -81,6 +71,23 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   clickable: {
     cursor: 'pointer',
+  },
+  expandedProfile: {
+    alignItems: 'center',
+    padding: `${theme.spacing(0.75)} ${theme.spacing(2)}`,
+  },
+  menuItem: {
+    ...theme.typography.body2,
+    paddingTop: theme.spacing(1),
+    paddingBottom: theme.spacing(1),
+  },
+  menuItemIcon: {
+    '&.MuiListItemIcon-root': { // Precedence
+      minWidth: theme.spacing(3.75),
+    },
+  },
+  menuItemText: {
+    margin: `${theme.spacing(0.5)} 0`,
   },
   avatarSm: {
     backgroundColor: theme.palette.primary.main,
@@ -233,39 +240,41 @@ const ProfileItem = React.memo<{ setSidebarOpen: SetStateFunc<boolean> }>(functi
         email={email}
         picture={picture}
       >
-        <MenuItem key='admin' button component={Link} to='/admin'>
-          <StyledListItemIcon>
+        <MenuItem key='admin' component={Link} to='/admin' className={classes.menuItem}>
+          <ListItemIcon className={classes.menuItemIcon}>
             <SettingsIcon />
-          </StyledListItemIcon>
-          <StyledListItemText primary='Admin' />
+          </ListItemIcon>
+          <ListItemText primary='Admin' disableTypography className={classes.menuItemText} />
         </MenuItem>
         {
           inLiveView && (
             [
               (
-                <MenuItem key='tour' button component='a' onClick={openTour} className={classes.hideOnMobile}>
-                  <StyledListItemIcon>
+                <MenuItem
+                  key='tour' component='a' onClick={openTour} className={`${classes.hideOnMobile} ${classes.menuItem}`}
+                >
+                  <ListItemIcon className={classes.menuItemIcon}>
                     <ExploreIcon />
-                  </StyledListItemIcon>
-                  <StyledListItemText primary='Tour' />
+                  </ListItemIcon>
+                  <ListItemText primary='Tour' disableTypography className={classes.menuItemText} />
                 </MenuItem>
               ),
               (
-                <MenuItem key='shortcuts' button component='a' onClick={showShortcuts}>
-                  <StyledListItemIcon>
+                <MenuItem key='shortcuts' component='a' onClick={showShortcuts} className={classes.menuItem}>
+                  <ListItemIcon className={classes.menuItemIcon}>
                     <KeyboardIcon />
-                  </StyledListItemIcon>
-                  <StyledListItemText primary='Keyboard Shortcuts' />
+                  </ListItemIcon>
+                  <ListItemText primary='Keyboard Shortcuts' disableTypography className={classes.menuItemText} />
                 </MenuItem>
               ),
             ]
           )
         }
-        <MenuItem key='logout' button component={Link} to='/logout'>
-          <StyledListItemIcon>
+        <MenuItem key='logout' component={Link} to='/logout' className={classes.menuItem}>
+          <ListItemIcon className={classes.menuItemIcon}>
             <LogoutIcon />
-          </StyledListItemIcon>
-          <StyledListItemText primary='Logout' />
+          </ListItemIcon>
+          <ListItemText primary='Logout' disableTypography className={classes.menuItemText} />
         </MenuItem>
       </ProfileMenuWrapper>
     </>
@@ -285,7 +294,7 @@ export const TopBar: React.FC<TopBarProps> = React.memo(function TopBar({
     <AppBar className={classes.container} position='static'>
       <Toolbar>
         {/* eslint-disable-next-line react-memo/require-usememo */}
-        <IconButton edge='start' color='inherit' aria-label='menu' sx={{ mr: 2 }} onClick={toggleSidebar}>
+        <IconButton edge='start' size='large' color='inherit' aria-label='menu' sx={{ mr: 2 }} onClick={toggleSidebar}>
           <MenuIcon className={classes.menu} />
         </IconButton>
         <Link to='/'><Logo /></Link>

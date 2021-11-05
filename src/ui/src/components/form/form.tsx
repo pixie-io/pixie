@@ -18,13 +18,9 @@
 
 // This component renders a form from a JSON object. Useful for Username and Password Authentication.
 import * as React from 'react';
-import {
-  Button,
-  Theme,
-  makeStyles,
-  TextField,
-} from '@material-ui/core';
-import { createStyles } from '@material-ui/styles';
+import { Button, TextField } from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 import { PixienautBox, PixienautImage } from 'app/components/auth/pixienaut-box';
 

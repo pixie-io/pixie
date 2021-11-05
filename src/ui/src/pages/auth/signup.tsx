@@ -16,10 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-  Theme, WithStyles, withStyles,
-} from '@material-ui/core';
-import { createStyles } from '@material-ui/styles';
+import { Theme } from '@mui/material/styles';
+import { createStyles, withStyles, WithStyles } from '@mui/styles';
 import * as React from 'react';
 import { AuthBox, SignupMarcom } from 'app/components';
 import { BasePage } from './base';

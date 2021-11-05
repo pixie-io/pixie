@@ -18,10 +18,9 @@
 
 import { gql, useQuery } from '@apollo/client';
 import * as React from 'react';
-import {
-  Theme, makeStyles, Tooltip,
-} from '@material-ui/core';
-import { createStyles } from '@material-ui/styles';
+import { Tooltip } from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 import { ClusterContext } from 'app/common/cluster-context';
 
 import { StatusCell, Select } from 'app/components';

@@ -22,8 +22,8 @@ import { OAUTH_PROVIDER } from 'app/containers/constants';
 import { Form } from 'app/components';
 
 import { GQLUserInvite } from 'app/types/schema';
-import { makeStyles, Theme } from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   invitationForm: {

@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Theme } from '@material-ui/core/styles';
+import { Theme } from '@mui/material/styles';
 
 const LATENCY_HIGH_THRESHOLD = 300;
 const LATENCY_MED_THRESHOLD = 150;

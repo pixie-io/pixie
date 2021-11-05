@@ -16,12 +16,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import UnknownIcon from '@material-ui/icons/Brightness1';
-import HealthyIcon from '@material-ui/icons/CheckCircle';
-import UnhealthyIcon from '@material-ui/icons/Error';
-import PendingIcon from '@material-ui/icons/WatchLater';
-import { makeStyles, Theme } from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
+import {
+  Brightness1 as UnknownIcon,
+  CheckCircle as HealthyIcon,
+  Error as UnhealthyIcon,
+  WatchLater as PendingIcon,
+} from '@mui/icons-material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 import * as React from 'react';
 
 export type StatusGroup = 'healthy' | 'unhealthy' | 'pending' | 'unknown';

@@ -17,9 +17,8 @@
  */
 
 import * as React from 'react';
-import Drawer from '@material-ui/core/Drawer';
-import { makeStyles } from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
+import { Drawer } from '@mui/material';
+import { createStyles, makeStyles } from '@mui/styles';
 
 export type DrawerDirection = 'top' | 'bottom' | 'left' | 'right';
 

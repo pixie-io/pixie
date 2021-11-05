@@ -18,11 +18,13 @@
 
 import * as React from 'react';
 
-import { WithStyles } from '@material-ui/core';
-import BaseAvatar from '@material-ui/core/Avatar';
-import ListItemText from '@material-ui/core/ListItemText';
-import Menu, { MenuProps } from '@material-ui/core/Menu';
-import MenuItem from '@material-ui/core/MenuItem';
+import {
+  Avatar as BaseAvatar,
+  ListItem,
+  ListItemText,
+  Menu,
+  MenuProps,
+} from '@mui/material';
 
 interface AvatarProps {
   name: string;
@@ -46,14 +48,21 @@ export const Avatar = React.memo<AvatarProps>(function Avatar(props) {
   );
 });
 
-interface ProfileMenuWrapperProps extends WithStyles<any>, Pick<MenuProps, 'anchorOrigin'|'open'|'anchorEl'> {
+interface ProfileMenuWrapperProps extends React.PropsWithChildren<Pick<MenuProps, 'anchorOrigin'|'open'|'anchorEl'>> {
   onCloseMenu: () => void;
   name: string;
   email: string;
   picture?: string;
+  classes: { // WithStyles has trouble with optional items. Easier to specify the Record manually.
+    expandedProfile?: string;
+    avatarSm?: string;
+    listItemHeader?: string;
+    listItemText?: string;
+    centeredListItemText?: string;
+  };
 }
 
-export const ProfileMenuWrapper: React.FC<ProfileMenuWrapperProps> = React.memo(function ProfileMenuWrapper({
+export const ProfileMenuWrapper = React.memo<ProfileMenuWrapperProps>(function ProfileMenuWrapper({
   classes,
   children,
   anchorOrigin,
@@ -72,24 +81,21 @@ export const ProfileMenuWrapper: React.FC<ProfileMenuWrapperProps> = React.memo(
       anchorEl={anchorEl}
       anchorOrigin={anchorOrigin}
     >
-      <MenuItem
+      <ListItem
         key='profile'
-        alignItems='center'
-        button={false}
         className={classes.expandedProfile}
       >
         <Avatar name={name} picture={picture} className={classes.avatarSm} />
         <ListItemText
           primary={name}
           secondary={email}
-          // eslint-disable-next-line react-memo/require-usememo
-          classes={{
+          classes={React.useMemo(() => ({
             primary: classes.listItemHeader,
             secondary: classes.listItemText,
-          }}
+          }), [classes])}
           className={classes.centeredListItemText}
         />
-      </MenuItem>
+      </ListItem>
       {children}
     </Menu>
   );

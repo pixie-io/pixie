@@ -20,6 +20,8 @@ import * as React from 'react';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { render } from '@testing-library/react';
 
+import { ThemeProvider } from '@mui/material/styles';
+import { DARK_THEME } from 'app/components';
 import { Completion, Completions } from './completions';
 
 const noop = () => {};
@@ -27,35 +29,38 @@ const noop = () => {};
 describe('<Completions/> test', () => {
   it('renders', () => {
     const { container } = render(
-      <Completions
-        items={[
-          { type: 'header', header: 'Recently used' },
-          {
-            type: 'item',
-            title: 'px/script1',
-            id: 'px-0',
-            highlights: [3, 4, 5],
-          },
-          {
-            type: 'item',
-            title: 'px/script2',
-            id: 'px-1',
-            highlights: [3, 4, 5],
-          },
-          {
-            type: 'item',
-            title: 'px/script3',
-            id: 'px-2',
-            highlights: [3, 4, 5],
-          },
-          { type: 'header', header: 'Org scripts' },
-          { type: 'item', title: 'my-org/script1', id: 'my-org-4' },
-          { type: 'item', title: 'my-org/script2', id: 'my-org-5' },
-        ]}
-        onActiveChange={noop}
-        activeItem='px-1'
-        onSelection={noop}
-      />,
+      <ThemeProvider theme={DARK_THEME}>
+        <Completions
+          // eslint-disable-next-line react-memo/require-usememo
+          items={[
+            { type: 'header', header: 'Recently used' },
+            {
+              type: 'item',
+              title: 'px/script1',
+              id: 'px-0',
+              highlights: [3, 4, 5],
+            },
+            {
+              type: 'item',
+              title: 'px/script2',
+              id: 'px-1',
+              highlights: [3, 4, 5],
+            },
+            {
+              type: 'item',
+              title: 'px/script3',
+              id: 'px-2',
+              highlights: [3, 4, 5],
+            },
+            { type: 'header', header: 'Org scripts' },
+            { type: 'item', title: 'my-org/script1', id: 'my-org-4' },
+            { type: 'item', title: 'my-org/script2', id: 'my-org-5' },
+          ]}
+          onActiveChange={noop}
+          activeItem='px-1'
+          onSelection={noop}
+        />
+      </ThemeProvider>,
     );
     expect(container).toMatchSnapshot();
   });
@@ -65,28 +70,34 @@ describe('<Completion> test', () => {
   describe('renders highlights', () => {
     it('from the beginning', () => {
       const { container } = render(
-        <Completion
-          id='some id'
-          title='0123456789'
-          highlights={[0, 1, 2, 4]}
-          active={false}
-          onActiveChange={noop}
-          onSelection={noop}
-        />,
+        <ThemeProvider theme={DARK_THEME}>
+          <Completion
+            id='some id'
+            title='0123456789'
+            // eslint-disable-next-line react-memo/require-usememo
+            highlights={[0, 1, 2, 4]}
+            active={false}
+            onActiveChange={noop}
+            onSelection={noop}
+          />
+        </ThemeProvider>,
       );
       expect(container).toMatchSnapshot();
     });
 
     it('in the middle', () => {
       const { container } = render(
-        <Completion
-          id='some id'
-          title='0123456789'
-          highlights={[1, 2]}
-          active={false}
-          onActiveChange={noop}
-          onSelection={noop}
-        />,
+        <ThemeProvider theme={DARK_THEME}>
+          <Completion
+            id='some id'
+            title='0123456789'
+            // eslint-disable-next-line react-memo/require-usememo
+            highlights={[1, 2]}
+            active={false}
+            onActiveChange={noop}
+            onSelection={noop}
+          />
+        </ThemeProvider>,
       );
       expect(container).toMatchSnapshot();
     });

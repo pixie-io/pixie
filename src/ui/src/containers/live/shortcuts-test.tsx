@@ -25,8 +25,11 @@ import {
   getByText,
   getByTestId,
 } from '@testing-library/react';
+import { ThemeProvider } from '@mui/material/styles';
+import { DARK_THEME } from 'app/components';
 import LiveViewShortcutsProvider, { getKeyMap, LiveShortcutsContext } from './shortcuts';
 
+// eslint-disable-next-line react-memo/require-memo
 const Consumer = () => {
   const ctx = React.useContext(LiveShortcutsContext);
   // The handlers actually want keyboard events, so the buttons attach to those.
@@ -47,6 +50,15 @@ const Consumer = () => {
     </>
   );
 };
+
+// eslint-disable-next-line react-memo/require-memo
+const Tester = ({ inputHandlers }) => (
+  <ThemeProvider theme={DARK_THEME}>
+    <LiveViewShortcutsProvider handlers={inputHandlers}>
+      <Consumer />
+    </LiveViewShortcutsProvider>
+  </ThemeProvider>
+);
 
 describe('Shortcut keys', () => {
   // The shortcut handler ignores combinations that would edit text in a currently-focused element (simple heuristic).
@@ -84,8 +96,7 @@ describe('Shortcut keys', () => {
     });
 
     it('exposes programmatically callable handlers', () => {
-      const { container } = render(
-        <LiveViewShortcutsProvider handlers={inputHandlers}><Consumer /></LiveViewShortcutsProvider>);
+      const { container } = render(<Tester inputHandlers={inputHandlers} />);
       for (const name of Object.keys(inputHandlers)) {
         expect(inputHandlers[name]).not.toHaveBeenCalled();
         fireEvent.keyPress(getByText(container, name), capturedEvent);
@@ -94,8 +105,7 @@ describe('Shortcut keys', () => {
     });
 
     it('exposes a handler to show help about registered commands', () => {
-      const { container } = render(
-        <LiveViewShortcutsProvider handlers={inputHandlers}><Consumer /></LiveViewShortcutsProvider>);
+      const { container } = render(<Tester inputHandlers={inputHandlers} />);
 
       expect(screen.queryByText('Available Shortcuts')).toBeNull();
       fireEvent.keyPress(getByText(container, 'show-help'), capturedEvent);
@@ -103,8 +113,7 @@ describe('Shortcut keys', () => {
     });
 
     it('ignores conflicting handlers when an editable element has focus', () => {
-      const { container } = render(
-        <LiveViewShortcutsProvider handlers={inputHandlers}><Consumer /></LiveViewShortcutsProvider>);
+      const { container } = render(<Tester inputHandlers={inputHandlers} />);
       const input = getByTestId(container, 'shortcuts-input');
       for (const name of Object.keys(inputHandlers)) {
         expect(inputHandlers[name]).not.toHaveBeenCalled();

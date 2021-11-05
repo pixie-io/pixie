@@ -16,22 +16,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as React from 'react';
+
+import { Fab, Tab, Tabs } from '@mui/material';
+import {
+  KeyboardArrowDown as DownIcon,
+  KeyboardArrowUp as UpIcon,
+} from '@mui/icons-material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles, withStyles } from '@mui/styles';
+
 import { LazyPanel, ResizableDrawer, Spinner } from 'app/components';
 import { DataDrawerContext } from 'app/context/data-drawer-context';
 import { LayoutContext } from 'app/context/layout-context';
 import { ResultsContext } from 'app/context/results-context';
-
-import * as React from 'react';
 import { MinimalLiveDataTable } from 'app/containers/live-data-table/live-data-table';
-import DownIcon from '@material-ui/icons/KeyboardArrowDown';
-import UpIcon from '@material-ui/icons/KeyboardArrowUp';
-import {
-  makeStyles, Theme, withStyles,
-} from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
-import Tab from '@material-ui/core/Tab';
-import Tabs from '@material-ui/core/Tabs';
-import Fab from '@material-ui/core/Fab';
 import ExecutionStats from './execution-stats';
 
 export const STATS_TAB_NAME = 'stats';
@@ -104,14 +103,11 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     whiteSpace: 'nowrap',
   },
   statsTabLabel: {
+    paddingRight: `${theme.spacing(2)} !important`,
+    color: theme.palette.foreground.three,
     '&:focus': {
       color: `${theme.palette.primary.light} !important`,
     },
-    '& span': {
-      alignItems: 'flex-end',
-      paddingRight: theme.spacing(2),
-    },
-    color: theme.palette.foreground.three,
   },
   toggle: {
     display: 'flex',

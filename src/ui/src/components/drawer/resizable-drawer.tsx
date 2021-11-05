@@ -18,8 +18,8 @@
 
 import * as React from 'react';
 import { DraggableCore } from 'react-draggable';
-import { Theme, makeStyles } from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 import { FixedSizeDrawer, DrawerDirection } from './drawer';
 

@@ -17,8 +17,8 @@
  */
 
 import * as React from 'react';
-import { Theme, makeStyles } from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 const useStyles = makeStyles(({ palette }: Theme) => createStyles({
   root: {
