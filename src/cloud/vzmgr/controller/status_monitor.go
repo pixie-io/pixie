@@ -95,7 +95,7 @@ func (s *StatusMonitor) UpdateDBEntries() {
 		     WHERE (last_heartbeat < NOW() - INTERVAL '%f seconds' AND status != 'UPDATING' AND status != 'DISCONNECTED')
 			   OR (last_heartbeat < NOW() - INTERVAL '%f seconds' AND status = 'UPDATING')) y
      WHERE x.vizier_cluster_id = y.vizier_cluster_id
-     RETURNING y.vizier_cluster_id, y.status as prev_status, y.vizier_version, y.cluster_version;`
+     RETURNING y.vizier_cluster_id;`
 	// Variable substitution does not seem to work for intervals. Since we control this entire
 	// query and input data it should be safe to add the value to the query using
 	// a format directive.
@@ -112,23 +112,18 @@ func (s *StatusMonitor) UpdateDBEntries() {
 	for rows.Next() {
 		entryUpdated++
 		var vizierID uuid.UUID
-		var prevStatus vizierStatus
-		var vizierVersion string
-		var k8sClusterVersion string
-		err = rows.Scan(&vizierID, &prevStatus, &vizierVersion, &k8sClusterVersion)
+		err = rows.Scan(&vizierID)
 		if err != nil {
 			log.Info("Failed to read data for updated vizier, ignoring")
+		} else {
+			events.Client().Enqueue(&analytics.Track{
+				UserId: vizierID.String(),
+				Event:  events.VizierStatusChange,
+				Properties: analytics.NewProperties().
+					Set("cluster_id", vizierID.String()).
+					Set("status", cvmsgspb.VZ_ST_DISCONNECTED.String()),
+			})
 		}
-		events.Client().Enqueue(&analytics.Track{
-			UserId: vizierID.String(),
-			Event:  events.VizierStatusChange,
-			Properties: analytics.NewProperties().
-				Set("cluster_id", vizierID.String()).
-				Set("prev_status", cvmsgspb.VizierStatus(prevStatus).String()).
-				Set("status", cvmsgspb.VZ_ST_DISCONNECTED.String()).
-				Set("k8s_version", k8sClusterVersion).
-				Set("vizier_version", vizierVersion),
-		})
 	}
 	log.WithField("entries_update", entryUpdated).
 		WithField("update_time", time.Since(start)).

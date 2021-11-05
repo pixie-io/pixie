@@ -24,7 +24,6 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -847,30 +846,17 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 
 	// Send analytics event for cluster status changes.
 	if info.Changed {
-		controlPods, err := json.Marshal(req.PodStatuses)
-		if err != nil {
-			log.WithError(err).Error("failed to marshal control_pod_statuses")
-		}
-		dataPods, err := json.Marshal(req.UnhealthyDataPlanePodStatuses)
-		if err != nil {
-			log.WithError(err).Error("failed to marshal data_plane_pod_statuses")
-		}
-
 		events.Client().Enqueue(&analytics.Track{
 			UserId: vizierID.String(),
 			Event:  events.VizierStatusChange,
 			Properties: analytics.NewProperties().
 				Set("cluster_id", vizierID.String()).
-				Set("prev_status", cvmsgspb.VizierStatus(info.PrevStatus).String()).
 				Set("status", req.Status.String()).
 				Set("num_nodes", req.NumNodes).
 				Set("num_instrumented_nodes", req.NumInstrumentedNodes).
-				Set("auto_update_enabled", !req.DisableAutoUpdate).
 				Set("k8s_version", req.K8sClusterVersion).
 				Set("vizier_version", info.Version).
-				Set("disable_auto_update", req.DisableAutoUpdate).
-				Set("control_pod_statuses", string(controlPods)).
-				Set("data_plane_pod_statuses", string(dataPods)).
+				Set("auto_update_enabled", !req.DisableAutoUpdate).
 				Set("status_message", req.StatusMessage),
 		})
 	}
