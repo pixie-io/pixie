@@ -26,7 +26,6 @@ resources:
 patchesStrategicMerge:
 - support_access_config.yaml
 - analytics_config.yaml
-- bq_config.yaml
 - contact_config.yaml
 - db_config.yaml
 - service_config.yaml

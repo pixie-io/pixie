@@ -19,15 +19,11 @@
 package main
 
 import (
-	"context"
 	"net/http"
 	_ "net/http/pprof"
 
-	"cloud.google.com/go/bigquery"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"google.golang.org/api/option"
 
 	"px.dev/pixie/src/cloud/metrics/controller"
 	"px.dev/pixie/src/shared/services"
@@ -38,8 +34,9 @@ import (
 )
 
 func init() {
-	pflag.String("bq_project", "", "The BigQuery project to write metrics to.")
-	pflag.String("bq_sa_key_path", "", "The service account for the BigQuery instance that should be used.")
+	pflag.String("artifact_tracker_service", "kubernetes:///artifact-tracker-service.plc:50750", "The artifact tracker service url (load balancer/list is ok)")
+	pflag.String("prod_sentry", "", "Key for prod Viziers that is used to send errors and stacktraces to Sentry.")
+	pflag.String("dev_sentry", "", "Key for dev Viziers that is used to send errors and stacktraces to Sentry.")
 }
 
 func main() {
@@ -55,21 +52,7 @@ func main() {
 
 	// Connect to NATS.
 	nc := msgbus.MustConnectNATS()
-
-	// Connect to BigQuery.
-	var client *bigquery.Client
-	var err error
-
-	if viper.GetString("bq_sa_key_path") != "" {
-		client, err = bigquery.NewClient(context.Background(), viper.GetString("bq_project"), option.WithCredentialsFile(viper.GetString("bq_sa_key_path")))
-		if err != nil {
-			log.WithError(err).Fatal("Could not start up BigQuery client for metrics server")
-		}
-		defer client.Close()
-		_ = controller.NewServer(nc, client)
-	} else {
-		log.Info("No BigQuery instance configured, no metrics will be sent")
-	}
+	_ = controller.NewServer(nc)
 
 	s := server.NewPLServer(env.New(viper.GetString("domain_name")), mux)
 	s.Start()

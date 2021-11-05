@@ -32,8 +32,6 @@ spec:
             name: pl-tls-config
         - configMapRef:
             name: pl-domain-config
-        - configMapRef:
-            name: pl-bq-config
         env:
         - name: PL_JWT_SIGNING_KEY
           valueFrom:
@@ -43,14 +41,7 @@ spec:
         volumeMounts:
         - name: certs
           mountPath: /certs
-        - name: bq-access-sa
-          mountPath: /creds
-          readOnly: true
       volumes:
       - name: certs
         secret:
           secretName: service-tls-certs
-      - name: bq-access-sa
-        secret:
-          secretName: bq-access-sa
-          optional: true
