@@ -75,3 +75,19 @@ cc_proto_library(
     name = "trace_service_proto_cc",
     deps = [":trace_service_proto"],
 )
+
+proto_library(
+    name = "metrics_proto",
+    srcs = [
+        "opentelemetry/proto/metrics/v1/metrics.proto",
+    ],
+    deps = [
+        ":common_proto",
+        ":resource_proto",
+    ],
+)
+
+cc_proto_library(
+    name = "metrics_proto_cc",
+    deps = [":metrics_proto"],
+)
