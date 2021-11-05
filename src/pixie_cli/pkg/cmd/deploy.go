@@ -178,6 +178,12 @@ func init() {
 	DeployCmd.Flags().String("data_access", "Full", "Data access level defines the level of data that may be accesssed when executing a script on the cluster. Options: 'Full' and 'Restricted'")
 	viper.BindPFlag("data_access", DeployCmd.Flags().Lookup("data_access"))
 
+	DeployCmd.Flags().Uint32("datastream_buffer_size", 1024*1024, "Internal data collector parameters: the maximum size of a data stream buffer retained between cycles.")
+	viper.BindPFlag("datastream_buffer_size", DeployCmd.Flags().Lookup("datastream_buffer_size"))
+
+	DeployCmd.Flags().Uint32("datastream_buffer_spike_size", 500*1024*1024, "Internal data collector parameters: the maximum temporary size of a data stream buffer before processing.")
+	viper.BindPFlag("datastream_buffer_spike_size", DeployCmd.Flags().Lookup("datastream_buffer_spike_size"))
+
 	// Super secret flags for Pixies.
 	DeployCmd.Flags().MarkHidden("namespace")
 }
@@ -245,6 +251,8 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	pemMemoryLimit, _ := cmd.Flags().GetString("pem_memory_limit")
 	patches, _ := cmd.Flags().GetStringArray("patches")
 	dataAccess, _ := cmd.Flags().GetString("data_access")
+	datastreamBufferSize, _ := cmd.Flags().GetUint32("datastream_buffer_size")
+	datastreamBufferSpikeSize, _ := cmd.Flags().GetUint32("datastream_buffer_spike_size")
 
 	labelMap := make(map[string]string)
 	if customLabels != "" {
@@ -417,6 +425,10 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 			},
 			"patches":    patchesMap,
 			"dataAccess": castedDataAccess,
+			"dataCollectorParams": &map[string]interface{}{
+				"datastreamBufferSize":      datastreamBufferSize,
+				"datastreamBufferSpikeSize": datastreamBufferSpikeSize,
+			},
 		},
 		Release: &map[string]interface{}{
 			"Namespace": namespace,
