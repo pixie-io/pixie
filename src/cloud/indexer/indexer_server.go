@@ -19,10 +19,6 @@
 package main
 
 import (
-	"crypto/tls"
-	"crypto/x509"
-	"fmt"
-	"io/ioutil"
 	"net/http"
 	_ "net/http/pprof"
 
@@ -36,6 +32,7 @@ import (
 
 	"px.dev/pixie/src/cloud/indexer/controllers"
 	"px.dev/pixie/src/cloud/indexer/md"
+	"px.dev/pixie/src/cloud/shared/esutils"
 	"px.dev/pixie/src/cloud/vzmgr/vzmgrpb"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/env"
@@ -67,41 +64,16 @@ func newVZMgrClient() (vzmgrpb.VZMgrServiceClient, error) {
 	return vzmgrpb.NewVZMgrServiceClient(vzmgrChannel), nil
 }
 
-func getESHTTPSClient() (*http.Client, error) {
-	caFile := viper.GetString("es_ca_cert")
-	caCert, err := ioutil.ReadFile(caFile)
-	if err != nil {
-		return nil, err
-	}
-	caCertPool := x509.NewCertPool()
-	ok := caCertPool.AppendCertsFromPEM(caCert)
-	if !ok {
-		return nil, fmt.Errorf("failed to append caCert to pool")
-	}
-	tlsConfig := &tls.Config{
-		RootCAs: caCertPool,
-	}
-	tlsConfig.BuildNameToCertificate()
-	transport := &http.Transport{
-		TLSClientConfig: tlsConfig,
-	}
-	httpClient := &http.Client{
-		Transport: transport,
-	}
-	return httpClient, nil
-}
-
 func mustConnectElastic() *elastic.Client {
 	esURL := viper.GetString("es_url")
-	httpClient, err := getESHTTPSClient()
-	if err != nil {
-		log.WithError(err).Fatal("Failed to create HTTPS client")
-	}
-	es, err := elastic.NewClient(elastic.SetURL(esURL),
-		elastic.SetHttpClient(httpClient),
-		elastic.SetBasicAuth(viper.GetString("es_user"), viper.GetString("es_passwd")),
-		// Sniffing seems to be broken with TLS, don't turn this on unless you want pain.
-		elastic.SetSniff(false))
+
+	es, err := esutils.NewEsClient(&esutils.Config{
+		URL:        []string{esURL},
+		User:       viper.GetString("es_user"),
+		Passwd:     viper.GetString("es_passwd"),
+		CaCertFile: viper.GetString("es_ca_cert"),
+	})
+
 	if err != nil {
 		log.WithError(err).Fatalf("Failed to connect to elastic at url: %s", esURL)
 	}
