@@ -28,6 +28,7 @@ go_library(
     deps = [
         "//src/cloud/indexer/controllers",
         "//src/cloud/indexer/md",
+        "//src/cloud/shared/esutils",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
         "//src/shared/services",
         "//src/shared/services/env",
