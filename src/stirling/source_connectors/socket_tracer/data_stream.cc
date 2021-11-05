@@ -22,9 +22,11 @@
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/types.h"
 
-DEFINE_uint32(datastream_buffer_retention_size, 1024 * 1024,
+DEFINE_uint32(datastream_buffer_retention_size,
+              gflags::Uint32FromEnv("PL_DATASTREAM_BUFFER_SIZE", 1024 * 1024),
               "The maximum size of a data stream buffer retained between cycles.");
-DEFINE_uint32(datastream_buffer_spike_size, 1024 * 1024 * 500,
+DEFINE_uint32(datastream_buffer_spike_size,
+              gflags::Uint32FromEnv("PL_DATASTREAM_BUFFER_SPIKE_SIZE", 500 * 1024 * 1024),
               "The maximum temporary size of a data stream buffer before processing.");
 
 namespace px {
