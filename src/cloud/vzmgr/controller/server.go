@@ -858,7 +858,7 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 
 		events.Client().Enqueue(&analytics.Track{
 			UserId: vizierID.String(),
-			Event:  events.ClusterStatusChange,
+			Event:  events.VizierStatusChange,
 			Properties: analytics.NewProperties().
 				Set("cluster_id", vizierID.String()).
 				Set("prev_status", cvmsgspb.VizierStatus(info.PrevStatus).String()).
@@ -1122,6 +1122,14 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 			log.WithError(err).Error("Failed to commit transaction")
 			return uuid.Nil, vzerrors.ErrInternalDB
 		}
+
+		events.Client().Enqueue(&analytics.Track{
+			UserId: clusterID.String(),
+			Event:  events.VizierCreated,
+			Properties: analytics.NewProperties().
+				Set("cluster_id", clusterID.String()).
+				Set("org_id", orgID.String()),
+		})
 		return clusterID, nil
 	}
 
@@ -1133,7 +1141,6 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 		if status != vizierStatus(cvmsgspb.VZ_ST_DISCONNECTED) {
 			return uuid.Nil, vzerrors.ErrProvisionFailedVizierIsActive
 		}
-
 		return assignNameAndCommit()
 	}
 
@@ -1162,6 +1169,5 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 	if err != nil {
 		return uuid.Nil, err
 	}
-
 	return assignNameAndCommit()
 }

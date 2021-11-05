@@ -121,7 +121,7 @@ func (s *StatusMonitor) UpdateDBEntries() {
 		}
 		events.Client().Enqueue(&analytics.Track{
 			UserId: vizierID.String(),
-			Event:  events.ClusterStatusChange,
+			Event:  events.VizierStatusChange,
 			Properties: analytics.NewProperties().
 				Set("cluster_id", vizierID.String()).
 				Set("prev_status", cvmsgspb.VizierStatus(prevStatus).String()).
