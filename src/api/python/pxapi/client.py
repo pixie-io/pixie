@@ -389,6 +389,7 @@ class ScriptExecutor:
         """
         self._fail_on_multi_run()
         self._has_run = True
+        # Runs the script itself + all of the "tasks" (table processors) asynchronously.
         await asyncio.gather(self._run_conn(self._conn), *[t() for t in self._tasks])
 
     def run(self) -> None:
@@ -403,12 +404,7 @@ class ScriptExecutor:
                 `ScriptExecutor`.
         """
         loop = asyncio.get_event_loop()
-        if loop.is_closed():
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
         loop.run_until_complete(self.run_async())
-        loop.close()
 
     def _close_table_q(self) -> None:
         self._add_table_to_q(EOF)
