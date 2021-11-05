@@ -30,7 +30,7 @@ spec:
   selector:
     etcd_cluster: pl-etcd
 ---
-apiVersion: policy/v1
+apiVersion: policy/v1beta1
 kind: PodDisruptionBudget
 metadata:
   name: pl-etcd-pdb

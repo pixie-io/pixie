@@ -51,6 +51,7 @@ rules:
   - cronjobs
   - jobs
   - natsclusters
+  - poddisruptionbudgets
   - podsecuritypolicies
   - viziers
   - viziers/status
