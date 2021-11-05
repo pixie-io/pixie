@@ -167,3 +167,22 @@ pl_cc_test(
         "//src/carnot/udf:udf_testutils",
     ],
 )
+
+pl_cc_test(
+    name = "pii_ops_test",
+    srcs = ["pii_ops_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/udf:udf_testutils",
+    ],
+)
+
+pl_cc_binary(
+    name = "pii_ops_benchmark",
+    testonly = 1,
+    srcs = ["pii_ops_benchmark.cc"],
+    deps = [
+        ":cc_library",
+        "//src/common/benchmark:cc_library",
+    ],
+)
