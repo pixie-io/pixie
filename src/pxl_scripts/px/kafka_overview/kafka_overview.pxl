@@ -1,0 +1,165 @@
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+''' Kafka Overview Map
+
+Shows a graph of Kafka topic-based data flow in the cluster.
+'''
+
+import px
+
+
+# Hack to get the time window for the script.
+# TODO(philkuz): Replace this with a built-in.
+def get_time_window(start_time: str):
+    ''' Converts the start_time string into a table with a single column and single row.
+    The approach is hacky, and will round to roughly 1 second.
+    '''
+    df = px.DataFrame('process_stats', start_time=start_time)
+
+    df = df.agg(
+        time_min=('time_', px.min),
+        time_max=('time_', px.max),
+    )
+
+    df.window = px.DurationNanos(df.time_max - df.time_min)
+    df = df[['window']]
+
+    return df
+
+
+def add_time_window_column(df, start_time):
+    tw = get_time_window(start_time)
+    df = df.merge(tw, how='inner', left_on=[], right_on=[])
+    return df
+
+
+def kafka_flow_graph(start_time: str):
+    df = px.DataFrame(table='kafka_events.beta', start_time=start_time)
+    df.namespace = df.ctx['namespace']
+
+    # Produce requests have command 0 and fetch requests have command 1.
+    producer_df = df[df.req_cmd == 0]
+    consumer_df = df[df.req_cmd == 1]
+
+    producer_df = unnest_topics_and_partitions(producer_df, 'req_body')
+    consumer_df = unnest_topics_and_partitions(consumer_df, 'resp')
+
+    # Setting src and dest for each edge.
+    producer_df.src = producer_df.client_id
+    producer_df.dest = "topic" + "/" + producer_df.topic_name
+
+    consumer_df.src = "topic" + "/" + consumer_df.topic_name
+    consumer_df.dest = consumer_df.client_id
+
+    df = producer_df.append(consumer_df)
+
+    # Get throughput by adding size of message_sets. Note that this is the total size of the
+    # message batches, not the total number of bytes sent or received.
+    df = df.groupby(['src', 'dest']).agg(record_bytes_total=('message_size', px.sum))
+    df.record_bytes_total = px.Bytes(df.record_bytes_total)
+
+    # Compute time window for the query and add it as a column.
+    df = add_time_window_column(df, start_time)
+
+    df.record_throughput = df.record_bytes_total / df.window
+    return df
+
+
+def kafka_topics_overview(start_time: str):
+    df = px.DataFrame(table='kafka_events.beta', start_time=start_time)
+    producer_df = df[df.req_cmd == 0]
+    consumer_df = df[df.req_cmd == 1]
+
+    # Expand the topics and partitions.
+    producer_df = unnest_topics_and_partitions(producer_df, 'req_body')
+    consumer_df = unnest_topics_and_partitions(consumer_df, 'resp')
+
+    df = producer_df.append(consumer_df)
+
+    # Count the number of unique partitions, producers, and consumers for each topic.
+    num_partitions_df = count_unique(df, 'partition_idx', 'num_partitions')
+    num_producers_df = count_unique(producer_df, 'client_id', 'num_producers')
+    num_consumers_df = count_unique(consumer_df, 'client_id', 'num_consumers')
+
+    # Get total bytes in/out through a topic
+    df_bytes_in = producer_df.groupby('topic_name').agg(produced_bytes_total=('message_size', px.sum))
+    df_bytes_in.produced_bytes_total = px.Bytes(df_bytes_in.produced_bytes_total)
+    df_bytes_out = consumer_df.groupby('topic_name').agg(consumed_bytes_total=('message_size', px.sum))
+    df_bytes_out.consumed_bytes_total = px.Bytes(df_bytes_out.consumed_bytes_total)
+
+    # Join the 5 tables together.
+    df = num_partitions_df.merge(num_producers_df, how='inner', left_on='topic_name', right_on='topic_name',
+                                 suffixes=['', '_a'])
+    df = df.merge(num_consumers_df, how='inner', left_on='topic_name', right_on='topic_name',
+                  suffixes=['', '_b'])
+    df = df.merge(df_bytes_in, how='inner', left_on='topic_name', right_on='topic_name',
+                  suffixes=['', '_c'])
+    df = df.merge(df_bytes_out, how='inner', left_on='topic_name', right_on='topic_name',
+                  suffixes=['', '_d'])
+    df = df[['topic_name', 'num_partitions', 'num_producers', 'num_consumers',
+             'produced_bytes_total', 'consumed_bytes_total']]
+    return df
+
+
+def count_unique(df, src_col, dest_col):
+    '''
+    Count the unique number of values in src_col and put the result in dest_col.
+    '''
+    df = df.groupby(['topic_name', src_col]).agg()
+    df = df.groupby('topic_name').agg(tmp=(src_col, px.count))
+    df[dest_col] = df['tmp']
+    df = df['topic_name', dest_col]
+    return df
+
+
+def unnest_topics_and_partitions(df, body_field):
+    # Get topic_name
+    df.topics = px.pluck(df[body_field], 'topics')
+    df = json_unnest_first5(df, 'topic', 'topics', ['client_id', 'topic', 'time_'])
+    df = df[df.topic != '']
+    df.topic_name = px.pluck(df.topic, 'name')
+
+    # Get partition_idx
+    df.partitions = px.pluck(df.topic, 'partitions')
+    df = json_unnest_first5(df, 'partition', 'partitions', ['client_id', 'topic_name', 'partition', 'time_'])
+    df = df[df.partition != '']
+    df.partition_idx = px.pluck(df.partition, 'index')
+
+    # Get message_size
+    df.message_set = px.pluck(df.partition, 'message_set')
+    df.message_size = px.pluck(df.message_set, 'size')
+    df.message_size = px.atoi(df.message_size, 0)
+    return df
+
+
+def json_unnest_first5(df, dest_col, src_col, fields):
+    ''' Unnest the first 5 values in a JSON array in the src_col, and put it in the
+    dest_col. Fields are the columns to keep in the resulting table.
+    '''
+    df0 = json_array_index(df, dest_col, src_col, fields, 0)
+    df1 = json_array_index(df, dest_col, src_col, fields, 1)
+    df2 = json_array_index(df, dest_col, src_col, fields, 2)
+    df3 = json_array_index(df, dest_col, src_col, fields, 3)
+    df4 = json_array_index(df, dest_col, src_col, fields, 4)
+    df = df0.append(df1).append(df2).append(df3).append(df4)
+    return df
+
+
+def json_array_index(df, dest_col, src_col, fields, idx):
+    df[dest_col] = px.pluck_array(df[src_col], idx)
+    df = df[fields]
+    return df

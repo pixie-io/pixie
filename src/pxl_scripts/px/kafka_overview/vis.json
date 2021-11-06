@@ -1,0 +1,75 @@
+{
+  "variables": [
+    {
+      "name": "start_time",
+      "type": "PX_STRING",
+      "description": "The start time of the window in time units before now.",
+      "defaultValue": "-5m"
+    }
+  ],
+  "globalFuncs": [
+    {
+      "outputName": "kafka_flow_graph",
+      "func": {
+        "name": "kafka_flow_graph",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          }
+        ]
+      }
+    },
+    {
+      "outputName": "kafka_topics_overview",
+      "func": {
+        "name": "kafka_topics_overview",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          }
+        ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Kafka Flow Graph",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 3
+      },
+      "globalFuncOutputName": "kafka_flow_graph",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Graph",
+        "adjacencyList": {
+          "fromColumn": "src",
+          "toColumn": "dest"
+        },
+        "edgeWeightColumn": "record_throughput",
+        "enableDefaultHierarchy": true,
+        "edgeHoverInfo": [
+          "record_bytes_total",
+          "record_throughput"
+        ],
+        "edgeLength": 300
+      }
+    },
+    {
+      "name": "Kafka Topics",
+      "position": {
+        "x": 0,
+        "y": 3,
+        "w": 12,
+        "h": 2
+      },
+      "globalFuncOutputName": "kafka_topics_overview",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      }
+    }
+  ]
+}
