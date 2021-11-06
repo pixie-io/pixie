@@ -487,6 +487,54 @@ static __inline bool is_redis_message(const char* buf, size_t count) {
   return true;
 }
 
+static __inline enum message_type_t infer_mux_message(const char* buf, size_t count) {
+  static const int8_t kTreq = 1;
+  static const int8_t kRreq = -1;
+  static const int8_t kTdispatch = 2;
+  static const int8_t kRdispatch = -2;
+  static const int8_t kTdrain = 64;
+  static const int8_t kRdrain = -64;
+  static const int8_t kTping = 65;
+  static const int8_t kRping = -65;
+  static const int8_t kTdiscarded = 66;
+  static const int8_t kRdiscarded = -66;
+  static const int8_t kTlease = 67;
+  static const int8_t kTinit = 68;
+  static const int8_t kRinit = -68;
+  static const int8_t kRerr = -128;
+  static const int8_t kTdiscardedOld = -62;
+  static const int8_t kRerrOld = 127;
+
+    if (count < 8) {
+        return kUnknown;
+    }
+
+    int8_t mux_type = buf[4];
+    switch (mux_type) {
+        case kTreq:
+        case kTdispatch:
+        case kTdrain:
+        case kTping:
+        case kTdiscarded:
+        case kTinit:
+        case kTlease:
+        case kTdiscardedOld:
+        // TODO(ddelnano): Verify if this should be a req or a resp
+        case kRerrOld:
+            return kRequest;
+        case kRreq:
+        case kRdispatch:
+        case kRdrain:
+        case kRping:
+        case kRdiscarded:
+        case kRinit:
+        case kRerr:
+            return kResponse;
+        default:
+            return kUnknown;
+    }
+}
+
 // NATS messages are in texts. The role is inferred from the message type.
 // See https://github.com/nats-io/docs/blob/master/nats_protocol/nats-protocol.md
 //
@@ -555,6 +603,8 @@ static __inline struct protocol_message_t infer_protocol(const char* buf, size_t
     inferred_message.protocol = kProtocolPGSQL;
   } else if ((inferred_message.type = infer_mysql_message(buf, count, conn_info)) != kUnknown) {
     inferred_message.protocol = kProtocolMySQL;
+  } else if ((inferred_message.type = infer_mux_message(buf, count)) != kUnknown) {
+    inferred_message.protocol = kProtocolMux;
   } else if ((inferred_message.type = infer_kafka_message(buf, count, conn_info)) != kUnknown) {
     inferred_message.protocol = kProtocolKafka;
   } else if ((inferred_message.type = infer_dns_message(buf, count)) != kUnknown) {

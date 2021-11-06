@@ -787,7 +787,9 @@ INSTANTIATE_TEST_SUITE_P(
         UpdateStateParam{kProtocolMongo, kRoleClient, ConnTracker::State::kCollecting},
         UpdateStateParam{kProtocolMongo, kRoleServer, ConnTracker::State::kTransferring},
         UpdateStateParam{kProtocolKafka, kRoleClient, ConnTracker::State::kCollecting},
-        UpdateStateParam{kProtocolKafka, kRoleServer, ConnTracker::State::kTransferring}));
+        UpdateStateParam{kProtocolKafka, kRoleServer, ConnTracker::State::kTransferring},
+        UpdateStateParam{kProtocolMux, kRoleClient, ConnTracker::State::kCollecting},
+        UpdateStateParam{kProtocolMux, kRoleServer, ConnTracker::State::kTransferring}));
 
 }  // namespace stirling
 }  // namespace px

@@ -613,7 +613,8 @@ auto CreateTraceRoles() {
   res.Set(kProtocolNATS, {kRoleServer});
   res.Set(kProtocolMongo, {kRoleServer});
   res.Set(kProtocolKafka, {kRoleServer});
-  res.Set(kProtocolMux, {kRoleClient, kRoleServer});
+  // TODO(ddelnano): Not sure of the tradeoffs between client and server-side tracing
+  res.Set(kProtocolMux, {kRoleServer});
   DCHECK(res.AreAllKeysSet());
   return res;
 }

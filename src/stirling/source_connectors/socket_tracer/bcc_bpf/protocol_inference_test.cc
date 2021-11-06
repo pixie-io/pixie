@@ -369,3 +369,43 @@ TEST(ProtocolInferenceTest, NATS) {
   constexpr std::string_view kERRMessage = "-ERR {} \r\n";
   EXPECT_EQ(call(kERRMessage), kResponse);
 }
+
+TEST(ProtocolInferenceTest, Mux) {
+  struct conn_info_t conn_info = {};
+
+  constexpr uint8_t kReqFrame[] = {
+    // mux length (15 bytes)
+    0x00, 0x00, 0x00, 0x0f,
+    // Tdrain type
+    0x40,
+    // tag
+    0x00, 0x00, 0x01,
+    // why
+    0x74, 0x69, 0x6e, 0x69, 0x74, 0x20, 0x63, 0x68, 0x65, 0x63, 0x6b,
+  };
+
+  auto protocol_message =
+      infer_protocol(reinterpret_cast<const char*>(kReqFrame), sizeof(kReqFrame), &conn_info);
+  EXPECT_EQ(protocol_message.protocol, kProtocolMux);
+  EXPECT_EQ(protocol_message.type, kRequest);
+
+  constexpr uint8_t kResp[] = {
+    // mux length (15 bytes)
+    0x00, 0x00, 0x00, 0x0f,
+    // RerrOld type
+    0x7f,
+    // tag
+    0x00, 0x00, 0x01,
+    // why
+    0x74, 0x69, 0x6e, 0x69, 0x74, 0x20, 0x63, 0x68, 0x65, 0x63, 0x6b,
+  };
+
+  /* protocol_message = infer_protocol(reinterpret_cast<const char*>(kReqHeaderFrame), */
+  /*                                   sizeof(kReqHeaderFrame), &conn_info); */
+  /* EXPECT_EQ(protocol_message.protocol, kProtocolUnknown); */
+
+  protocol_message = infer_protocol(reinterpret_cast<const char*>(kResp),
+                                    sizeof(kResp), &conn_info);
+  EXPECT_EQ(protocol_message.protocol, kProtocolMux);
+  EXPECT_EQ(protocol_message.type, kResponse);
+}
