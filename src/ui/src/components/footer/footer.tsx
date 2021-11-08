@@ -57,15 +57,15 @@ const useDefaultStyles = makeStyles(({ spacing, breakpoints, palette }: Theme) =
 }));
 
 export interface FooterProps {
-  copyright: React.ReactNode,
+  copyright: React.ComponentType<Record<string, never>>,
   /** Defaults to a layout with Terms & Conditions and Privacy Policy to the left; copyright to the right. */
   classes?: ReturnType<typeof useDefaultStyles>,
 }
 
-export const Footer: React.FC<FooterProps> = ({
+export const Footer: React.FC<FooterProps> = React.memo(function Footer({
   classes: overrideClasses,
-  copyright,
-}) => {
+  copyright: Copyright,
+}) {
   const defaultClasses = useDefaultStyles();
   const classes = overrideClasses ?? defaultClasses;
 
@@ -81,9 +81,9 @@ export const Footer: React.FC<FooterProps> = ({
       </div>
       <div className={classes.right}>
         <Typography variant='subtitle2' className={classes.text}>
-          {copyright}
+          <Copyright />
         </Typography>
       </div>
     </div>
   );
-};
+});
