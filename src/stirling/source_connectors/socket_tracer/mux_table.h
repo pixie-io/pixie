@@ -34,22 +34,18 @@ static constexpr DataElement kMuxElements[] = {
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
         canonical_data_elements::kTraceRole,
-        /* {"req_header", "Request header", */
-        /*  types::DataType::STRING, */
-        /*  types::SemanticType::ST_NONE, */
-        /*  types::PatternType::GENERAL}, */
-        /* {"req_body", "Request", */
-        /*  types::DataType::STRING, */
-        /*  types::SemanticType::ST_NONE, */
-        /*  types::PatternType::GENERAL}, */
-        /* {"resp_header", "Response header", */
-        /*  types::DataType::STRING, */
-        /*  types::SemanticType::ST_NONE, */
-        /*  types::PatternType::GENERAL}, */
-        /* {"resp_body", "Response", */
-        /*  types::DataType::STRING, */
-        /*  types::SemanticType::ST_NONE, */
-        /*  types::PatternType::GENERAL}, */
+        {"req_type", "Mux message request type",
+         types::DataType::INT64,
+         types::SemanticType::ST_NONE,
+         types::PatternType::GENERAL_ENUM},
+        {"resp_type", "Mux message response type",
+         types::DataType::INT64,
+         types::SemanticType::ST_NONE,
+         types::PatternType::GENERAL_ENUM},
+        {"tag", "Mux message request tag",
+         types::DataType::INT64,
+         types::SemanticType::ST_NONE,
+         types::PatternType::GENERAL_ENUM},
         canonical_data_elements::kLatencyNS,
 #ifndef NDEBUG
         canonical_data_elements::kPXInfo,
@@ -62,11 +58,9 @@ static constexpr auto kMuxTable =
 DEFINE_PRINT_TABLE(Mux)
 
 static constexpr int kMuxUPIDIdx = kMuxTable.ColIndex("upid");
-// TODO(ddelnano): Add these once the mux protocol is closer to working
-/* static constexpr int kMuxReqHdrIdx = kMuxTable.ColIndex("req_header"); */
-/* static constexpr int kMuxReqBodyIdx = kMuxTable.ColIndex("req_body"); */
-/* static constexpr int kMuxRespHdrIdx = kMuxTable.ColIndex("resp_header"); */
-/* static constexpr int kMuxRespBodyIdx = kMuxTable.ColIndex("resp_body"); */
+static constexpr int kMuxReqTypeIdx = kMuxTable.ColIndex("req_type");
+static constexpr int kMuxRespTypeIdx = kMuxTable.ColIndex("resp_type");
+static constexpr int kMuxTagIdx = kMuxTable.ColIndex("tag");
 
 }  // namespace stirling
 }  // namespace px

@@ -1861,12 +1861,12 @@ TEST_F(SocketTraceConnectorTest, MuxBasic) {
 
   std::vector<TaggedRecordBatch> tablets = mux_table_->ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
-  /* RecordBatch record_batch = tablets[0].records; */
 
-  /* EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(1))); */
-  /* EXPECT_THAT(ToStringVector(record_batch[kHTTPReqBodyIdx]), ElementsAre("I have a message
-   * body")); */
-  /* EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]), ElementsAre("foo")); */
+  RecordBatch record_batch = tablets[0].records;
+  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
+  EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kMuxReqTypeIdx]), ElementsAre(0x7f));
+  EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kMuxRespTypeIdx]), ElementsAre(0x7f));
+  EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kMuxTagIdx]), ElementsAre(1));
 }
 
 }  // namespace stirling
