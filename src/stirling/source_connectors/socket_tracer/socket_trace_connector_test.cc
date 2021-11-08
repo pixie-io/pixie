@@ -1821,6 +1821,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2OldStream) {
 
 // TODO(ddelnano): Add more mux test cases here
 TEST_F(SocketTraceConnectorTest, MuxBasic) {
+  // clang-format off
   char req[] = {
     // mux length (15 bytes)
     0x00, 0x00, 0x00, 0x0f,
@@ -1836,17 +1837,16 @@ TEST_F(SocketTraceConnectorTest, MuxBasic) {
     // mux length (4 bytes)
     0x00, 0x00, 0x00, 0x04,
     // type
-    /* 0x44, */
     0x7f,
     // tag
     0x00, 0x00, 0x01,
   };
+  // clang-format on
   std::string kMuxResp = std::string(resp, sizeof(resp));
   testing::EventGenerator event_gen(&mock_clock_);
   struct socket_control_event_t conn = event_gen.InitConn();
   std::unique_ptr<SocketDataEvent> event0_req = event_gen.InitSendEvent<kProtocolMux>(kMuxReq);
-  std::unique_ptr<SocketDataEvent> event0_resp =
-      event_gen.InitRecvEvent<kProtocolMux>(kMuxResp);
+  std::unique_ptr<SocketDataEvent> event0_resp = event_gen.InitRecvEvent<kProtocolMux>(kMuxResp);
   struct socket_control_event_t close_event = event_gen.InitClose();
 
   EXPECT_NE(0, source_->ClockRealTimeOffset());
@@ -1864,7 +1864,8 @@ TEST_F(SocketTraceConnectorTest, MuxBasic) {
   /* RecordBatch record_batch = tablets[0].records; */
 
   /* EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(1))); */
-  /* EXPECT_THAT(ToStringVector(record_batch[kHTTPReqBodyIdx]), ElementsAre("I have a message body")); */
+  /* EXPECT_THAT(ToStringVector(record_batch[kHTTPReqBodyIdx]), ElementsAre("I have a message
+   * body")); */
   /* EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]), ElementsAre("foo")); */
 }
 

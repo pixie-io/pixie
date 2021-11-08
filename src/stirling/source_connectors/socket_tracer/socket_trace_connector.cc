@@ -167,9 +167,9 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
                                     {kRoleClient, kRoleServer},
                                     TRANSFER_STREAM_PROTOCOL(kafka)}},
       {kProtocolMux, TransferSpec{FLAGS_stirling_enable_mux_tracing,
-                                    kMuxTableNum,
-                                    {kRoleClient, kRoleServer},
-                                    TRANSFER_STREAM_PROTOCOL(mux)}},
+                                  kMuxTableNum,
+                                  {kRoleClient, kRoleServer},
+                                  TRANSFER_STREAM_PROTOCOL(mux)}},
       {kProtocolUnknown, TransferSpec{false /*enabled*/,
                                       // Unknown protocols attached to HTTP table so that they run
                                       // their cleanup functions, but the use of nullptr transfer_fn
