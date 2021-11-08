@@ -121,7 +121,7 @@ func (s *StatusMonitor) UpdateDBEntries() {
 				Event:  events.VizierStatusChange,
 				Properties: analytics.NewProperties().
 					Set("cluster_id", vizierID.String()).
-					Set("status", cvmsgspb.VZ_ST_DISCONNECTED.String()),
+					Set("status", vizierStatus(cvmsgspb.VZ_ST_DISCONNECTED).Stringify()),
 			})
 		}
 	}

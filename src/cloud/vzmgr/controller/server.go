@@ -162,25 +162,13 @@ func (s *Server) sendNATSMessage(topic string, msg *types.Any, vizierID uuid.UUI
 
 type vizierStatus cvmsgspb.VizierStatus
 
-func (s vizierStatus) Value() (driver.Value, error) {
+func (s vizierStatus) Stringify() string {
 	v := cvmsgspb.VizierStatus(s)
-	switch v {
-	case cvmsgspb.VZ_ST_UNKNOWN:
-		return "UNKNOWN", nil
-	case cvmsgspb.VZ_ST_HEALTHY:
-		return "HEALTHY", nil
-	case cvmsgspb.VZ_ST_UNHEALTHY:
-		return "UNHEALTHY", nil
-	case cvmsgspb.VZ_ST_DISCONNECTED:
-		return "DISCONNECTED", nil
-	case cvmsgspb.VZ_ST_UPDATING:
-		return "UPDATING", nil
-	case cvmsgspb.VZ_ST_CONNECTED:
-		return "CONNECTED", nil
-	case cvmsgspb.VZ_ST_UPDATE_FAILED:
-		return "UPDATE_FAILED", nil
-	}
-	return nil, fmt.Errorf("failed to parse status: %v", s)
+	return strings.TrimPrefix(v.String(), "VZ_ST_")
+}
+
+func (s vizierStatus) Value() (driver.Value, error) {
+	return s.Stringify(), nil
 }
 
 func (s *vizierStatus) Scan(value interface{}) error {
@@ -188,47 +176,16 @@ func (s *vizierStatus) Scan(value interface{}) error {
 		*s = vizierStatus(cvmsgspb.VZ_ST_UNKNOWN)
 		return nil
 	}
-	if sv, err := driver.String.ConvertValue(value); err == nil {
-		switch sv {
-		case "UNKNOWN":
-			{
-				*s = vizierStatus(cvmsgspb.VZ_ST_UNKNOWN)
-				return nil
-			}
-		case "HEALTHY":
-			{
-				*s = vizierStatus(cvmsgspb.VZ_ST_HEALTHY)
-				return nil
-			}
-		case "UNHEALTHY":
-			{
-				*s = vizierStatus(cvmsgspb.VZ_ST_UNHEALTHY)
-				return nil
-			}
-		case "DISCONNECTED":
-			{
-				*s = vizierStatus(cvmsgspb.VZ_ST_DISCONNECTED)
-				return nil
-			}
-		case "UPDATING":
-			{
-				*s = vizierStatus(cvmsgspb.VZ_ST_UPDATING)
-				return nil
-			}
-		case "CONNECTED":
-			{
-				*s = vizierStatus(cvmsgspb.VZ_ST_CONNECTED)
-				return nil
-			}
-		case "UPDATE_FAILED":
-			{
-				*s = vizierStatus(cvmsgspb.VZ_ST_UPDATE_FAILED)
-				return nil
-			}
-		}
+	sv, err := driver.String.ConvertValue(value)
+	if err != nil {
+		return errors.New("failed to scan vizier status")
 	}
-
-	return errors.New("failed to scan vizier status")
+	v, ok := cvmsgspb.VizierStatus_value[fmt.Sprintf("VZ_ST_%s", sv)]
+	if !ok {
+		return errors.New("failed to scan vizier status")
+	}
+	*s = vizierStatus(v)
+	return nil
 }
 
 func (s vizierStatus) ToProto() cvmsgspb.VizierStatus {
@@ -816,12 +773,11 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 		  OR ((x.num_instrumented_nodes is not NULL) AND (x.num_instrumented_nodes != y.num_instrumented_nodes))
 		  OR ((x.auto_update_enabled IS NOT NULL) AND (x.auto_update_enabled != y.auto_update_enabled))
 		  OR ((x.cluster_version IS NOT NULL) AND (x.cluster_version != y.cluster_version))
-		  OR ((x.status_message is not NULL) AND (x.status_message != y.status_message))) as changed, x.vizier_version, y.prev_status as prev_status`
+		  OR ((x.status_message is not NULL) AND (x.status_message != y.status_message))) as changed, x.vizier_version`
 
 	var info struct {
-		Changed    bool         `db:"changed"`
-		PrevStatus vizierStatus `db:"prev_status"`
-		Version    string       `db:"vizier_version"`
+		Changed bool   `db:"changed"`
+		Version string `db:"vizier_version"`
 	}
 
 	rows, err := s.db.Queryx(query, time.Now(), vizierStatus(req.Status), addr, PodStatuses(req.PodStatuses), req.NumNodes,
@@ -851,7 +807,7 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 			Event:  events.VizierStatusChange,
 			Properties: analytics.NewProperties().
 				Set("cluster_id", vizierID.String()).
-				Set("status", req.Status.String()).
+				Set("status", vizierStatus(req.Status).Stringify()).
 				Set("num_nodes", req.NumNodes).
 				Set("num_instrumented_nodes", req.NumInstrumentedNodes).
 				Set("k8s_version", req.K8sClusterVersion).
