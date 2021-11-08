@@ -134,7 +134,7 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 		// Some running systems have users who are in their email domain org, but not their org according to IdentityProviderOrgName.
 		// This flags those users and informs them that they should contact support to fix their org info in the database.
 		if userInfo.IdentityProvider == googleIdentityProvider && userInfo.IdentityProviderOrgName == "" && userInfo.Email != orgInfo.OrgName {
-			return nil, status.Errorf(codes.PermissionDenied, "There is an organizational issue with your account. Please contact support letting them know you received this error for your email, %s", userInfo.Email)
+			return nil, status.Errorf(codes.PermissionDenied, "Our system found an issue with your account. Please contact support and include your email '%s' and this error in your message", userInfo.Email)
 		}
 	} else {
 		// Users can login without registering if their org already exists. If org doesn't exist, they must complete sign up flow.
