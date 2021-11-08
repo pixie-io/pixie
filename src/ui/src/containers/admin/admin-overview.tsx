@@ -69,7 +69,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-export const AdminOverview: React.FC = () => {
+export const AdminOverview = React.memo(function AdminOverview() {
   const history = useHistory();
   const location = useLocation();
   const { path } = useRouteMatch();
@@ -105,6 +105,7 @@ export const AdminOverview: React.FC = () => {
 
   const authClient = React.useMemo(() => GetOAuthProvider(), []);
   const InvitationTab = React.useMemo(
+    // eslint-disable-next-line react-memo/require-memo
     () => (authClient.getInvitationComponent() ?? (() => (<>This tab should not have been reachable.</>))),
     [authClient]);
 
@@ -115,6 +116,7 @@ export const AdminOverview: React.FC = () => {
       <div className={classes.tabBar}>
         <StyledTabs
           value={tab}
+          // eslint-disable-next-line react-memo/require-usememo
           onChange={(event, newTab) => navTab(newTab)}
         >
           <StyledTab value='clusters' label='Clusters' />
@@ -128,6 +130,7 @@ export const AdminOverview: React.FC = () => {
         {tab.endsWith('deployment-keys')
           && (
             <Button
+              // eslint-disable-next-line react-memo/require-usememo
               onClick={() => createDeploymentKey({
                 // This immediately adds a row to the table, so gives the user
                 // an indication that clicking "Add" did something but the data
@@ -153,6 +156,7 @@ export const AdminOverview: React.FC = () => {
               })}
               className={classes.createButton}
               variant='outlined'
+              // eslint-disable-next-line react-memo/require-usememo
               startIcon={<Add />}
             >
               New key
@@ -161,6 +165,7 @@ export const AdminOverview: React.FC = () => {
         {tab.endsWith('api-keys')
           && (
             <Button
+              // eslint-disable-next-line react-memo/require-usememo
               onClick={() => createAPIKey({
                 // This immediately adds a row to the table, so gives the user
                 // an indication that clicking "Add" did something but the data
@@ -186,6 +191,7 @@ export const AdminOverview: React.FC = () => {
               })}
               className={classes.createButton}
               variant='outlined'
+              // eslint-disable-next-line react-memo/require-usememo
               startIcon={<Add />}
             >
               New key
@@ -207,4 +213,4 @@ export const AdminOverview: React.FC = () => {
       </div>
     </div>
   );
-};
+});

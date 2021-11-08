@@ -32,7 +32,7 @@ import {
   StyledLeftTableCell,
 } from './utils';
 import {
-  UseKeyListStyles, KeyActionButtons,
+  useKeyListStyles, KeyActionButtons,
 } from './key-list';
 import { MonoSpaceCell } from './cluster-table-cells';
 
@@ -53,7 +53,9 @@ export function formatDeploymentKey(depKey: GQLDeploymentKeyMetadata): Deploymen
   };
 }
 
-export const DeploymentKeyRow: React.FC<{ deploymentKey: DeploymentKeyDisplay }> = ({ deploymentKey }) => {
+export const DeploymentKeyRow = React.memo<{
+  deploymentKey: DeploymentKeyDisplay
+}>(function DeploymentKeyRow({ deploymentKey }) {
   const [deleteDeploymentKey] = useMutation<{ DeleteDeploymentKey: boolean }, { id: string }>(gql`
     mutation DeleteDeploymentKeyFromAdminPage($id: ID!) {
       DeleteDeploymentKey(id: $id)
@@ -69,9 +71,34 @@ export const DeploymentKeyRow: React.FC<{ deploymentKey: DeploymentKeyDisplay }>
     }`, {
     fetchPolicy: 'network-only',
     onCompleted: (data) => {
-      navigator.clipboard.writeText(data?.deploymentKey?.key);
+      navigator.clipboard.writeText(data?.deploymentKey?.key).then();
     },
   });
+
+  const copyAction = React.useCallback(() => {
+    copyKeyToClipboard({ variables: { id: deploymentKey.id } });
+  }, [deploymentKey.id, copyKeyToClipboard]);
+
+  const deleteAction = React.useCallback(() => {
+    deleteDeploymentKey({
+      variables: { id: deploymentKey.id },
+      update: (cache, { data }) => {
+        if (!data.DeleteDeploymentKey) {
+          return;
+        }
+        cache.modify({
+          fields: {
+            deploymentKeys(existingKeys, { readField }) {
+              return existingKeys.filter(
+                (key) => (deploymentKey.id !== readField('id', key)),
+              );
+            },
+          },
+        });
+      },
+      optimisticResponse: { DeleteDeploymentKey: true },
+    }).then();
+  }, [deploymentKey.id, deleteDeploymentKey]);
 
   return (
     <TableRow key={deploymentKey.id}>
@@ -83,32 +110,15 @@ export const DeploymentKeyRow: React.FC<{ deploymentKey: DeploymentKeyDisplay }>
       <MonoSpaceCell data={'••••••••••••'} />
       <StyledTableCell>
         <KeyActionButtons
-          copyOnClick={() => { copyKeyToClipboard({ variables: { id: deploymentKey.id } }); }}
-          deleteOnClick={() => deleteDeploymentKey({
-            variables: { id: deploymentKey.id },
-            update: (cache, { data }) => {
-              if (!data.DeleteDeploymentKey) {
-                return;
-              }
-              cache.modify({
-                fields: {
-                  deploymentKeys(existingKeys, { readField }) {
-                    return existingKeys.filter(
-                      (key) => (deploymentKey.id !== readField('id', key)),
-                    );
-                  },
-                },
-              });
-            },
-            optimisticResponse: { DeleteDeploymentKey: true },
-          })} />
+          copyOnClick={copyAction}
+          deleteOnClick={deleteAction} />
       </StyledTableCell>
     </TableRow>
   );
-};
+});
 
-export const DeploymentKeysTable: React.FC = () => {
-  const classes = UseKeyListStyles();
+export const DeploymentKeysTable = React.memo(function DeploymentKeysTable() {
+  const classes = useKeyListStyles();
   const { data, error } = useQuery<{ deploymentKeys: GQLDeploymentKey[] }>(
     gql`
       query getDeploymentKeysForAdminPage{
@@ -137,7 +147,7 @@ export const DeploymentKeysTable: React.FC = () => {
             <StyledTableHeaderCell>Created</StyledTableHeaderCell>
             <StyledTableHeaderCell>Description</StyledTableHeaderCell>
             <StyledTableHeaderCell>Value</StyledTableHeaderCell>
-            <StyledTableHeaderCell></StyledTableHeaderCell>
+            <StyledTableHeaderCell />
           </TableRow>
         </TableHead>
         <TableBody>
@@ -148,4 +158,4 @@ export const DeploymentKeysTable: React.FC = () => {
       </Table>
     </>
   );
-};
+});

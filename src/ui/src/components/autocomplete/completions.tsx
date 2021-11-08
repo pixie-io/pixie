@@ -145,6 +145,7 @@ type CompletionProps = Omit<CompletionItem, 'type'> & {
   icon?: React.ReactNode;
 };
 
+// eslint-disable-next-line react-memo/require-memo
 const CompletionInternal = (props: CompletionProps) => {
   const {
     id,
@@ -254,6 +255,7 @@ CompletionInternal.defaultProps = {
   icon: null,
 };
 
+// eslint-disable-next-line react-memo/require-memo
 export const Completion: React.FC<CompletionProps> = (props) => {
   const { title } = props;
 
@@ -264,6 +266,7 @@ export const Completion: React.FC<CompletionProps> = (props) => {
   return <CompletionInternal {...props} />;
 };
 
+// eslint-disable-next-line react-memo/require-memo
 export const Completions: React.FC<CompletionsProps> = (props) => {
   const {
     items, activeItem, onActiveChange, onSelection, className,

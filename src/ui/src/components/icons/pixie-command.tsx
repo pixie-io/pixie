@@ -20,6 +20,7 @@ import * as React from 'react';
 
 import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
+// eslint-disable-next-line react-memo/require-memo
 export const PixieCommandIcon: React.FC<SvgIconProps> = (props) => (
   <SvgIcon {...props} viewBox='0 0 32 26'>
     <path d='M5.3999 7.47998H12.3599V14.44H10.3699V9.24998H5.3999V7.47998Z' />

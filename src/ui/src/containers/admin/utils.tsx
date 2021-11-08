@@ -111,6 +111,7 @@ export function containerStatusGroup(status: string): StatusGroup {
   }
 }
 
+// eslint-disable-next-line react-memo/require-memo
 export const AdminTooltip = ({
   children, title,
 }: { children: React.ReactElement, title: string }): React.ReactElement => {
@@ -122,6 +123,7 @@ export const AdminTooltip = ({
   );
 };
 
+// eslint-disable-next-line react-memo/require-memo
 export const StyledTabs = withStyles(() => createStyles({
   root: {
     flex: 1,
@@ -131,6 +133,7 @@ export const StyledTabs = withStyles(() => createStyles({
   },
 }))(Tabs);
 
+// eslint-disable-next-line react-memo/require-memo
 export const StyledTab = withStyles((theme: Theme) => createStyles({
   root: {
     fontSize: '16px',
@@ -142,6 +145,7 @@ export const StyledTab = withStyles((theme: Theme) => createStyles({
   },
 }))(Tab);
 
+// eslint-disable-next-line react-memo/require-memo
 export const StyledTableHeaderCell = withStyles((theme: Theme) => createStyles({
   root: {
     fontWeight: theme.typography.fontWeightLight,
@@ -150,6 +154,7 @@ export const StyledTableHeaderCell = withStyles((theme: Theme) => createStyles({
   },
 }))(TableCell);
 
+// eslint-disable-next-line react-memo/require-memo
 export const StyledTableCell = withStyles((theme: Theme) => createStyles({
   root: {
     fontWeight: theme.typography.fontWeightLight,
@@ -160,23 +165,27 @@ export const StyledTableCell = withStyles((theme: Theme) => createStyles({
   },
 }))(TableCell);
 
+// eslint-disable-next-line react-memo/require-memo
 export const StyledLeftTableCell = withStyles((theme: Theme) => createStyles({
   root: {
     borderRadius: theme.shape.leftRoundedBorderRadius.large,
   },
 }))(StyledTableCell);
 
+// eslint-disable-next-line react-memo/require-memo
 export const StyledRightTableCell = withStyles((theme: Theme) => createStyles({
   root: {
     borderRadius: theme.shape.rightRoundedBorderRadius.large,
   },
 }))(StyledTableCell);
 
+// eslint-disable-next-line react-memo/require-memo
 export const LiveViewButton = withStyles((theme: Theme) => createStyles({
   root: {
     color: theme.palette.foreground.grey5,
     height: theme.spacing(4),
   },
+// eslint-disable-next-line react-memo/require-memo
 }))(({ classes }: any) => (
   <Button classes={classes} component={Link} to='/live'>
     Live View

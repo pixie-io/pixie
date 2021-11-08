@@ -40,7 +40,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-export const OrgSettings: React.FC = () => {
+export const OrgSettings = React.memo(function OrgSettings() {
   const classes = useStyles();
 
   const { data, loading, error } = useQuery<{ org: GQLOrgInfo }>(
@@ -103,6 +103,7 @@ export const OrgSettings: React.FC = () => {
             <StyledTableCell>
               <Button
                 className={classes.button}
+                // eslint-disable-next-line react-memo/require-usememo
                 onClick={() => {
                   updateOrgApprovalSetting({
                     optimisticResponse: {
@@ -113,7 +114,7 @@ export const OrgSettings: React.FC = () => {
                       },
                     },
                     variables: { orgID: org.id, enableApprovals: !org.enableApprovals },
-                  });
+                  }).then();
                 }}
                 variant='outlined'
                 color='primary'
@@ -126,4 +127,4 @@ export const OrgSettings: React.FC = () => {
       </Table>
     </>
   );
-};
+});

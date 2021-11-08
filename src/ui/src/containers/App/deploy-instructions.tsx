@@ -114,7 +114,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-export const DeployInstructions: React.FC = () => {
+export const DeployInstructions = React.memo(function DeployInstructions() {
   const classes = useStyles();
 
   return (
@@ -177,13 +177,13 @@ export const DeployInstructions: React.FC = () => {
       </div>
     </div>
   );
-};
+});
 
 interface ClusterInstructionsProps {
   message: string;
 }
 
-export const ClusterInstructions: React.FC<ClusterInstructionsProps> = ({ message }) => {
+export const ClusterInstructions = React.memo<ClusterInstructionsProps>(function ClusterInstructions({ message }) {
   const classes = useStyles();
 
   return (
@@ -199,4 +199,4 @@ export const ClusterInstructions: React.FC<ClusterInstructionsProps> = ({ messag
       </Paper>
     </div>
   );
-};
+});

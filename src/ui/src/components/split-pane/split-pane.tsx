@@ -74,9 +74,11 @@ interface SplitContainerState {
   prevSizes: number[];
 }
 
-// Split pane component that supports resizing of vertial panes and headers for collapsing panes.
-// Currently this component only supports 2 panes (only 1 pane is collapsed at a time).
-export const SplitContainer: React.FC<SplitContainerProps> = (props) => {
+/**
+ * Split pane component that supports resizing of vertical panes and headers for collapsing panes.
+ * Currently this component only supports 2 panes (only 1 pane is collapsed at a time).
+ */
+export const SplitContainer = React.memo<SplitContainerProps>(function SplitContainer(props) {
   const classes = useStyles();
   const theme = useTheme();
   const splitRef = React.useRef(null);
@@ -161,18 +163,18 @@ export const SplitContainer: React.FC<SplitContainerProps> = (props) => {
       </Split>
     </SplitPaneContext.Provider>
   );
-};
+});
 
 interface SplitPaneProps {
   id: string;
   title: string;
 }
 
-export const SplitPane: React.FC<SplitPaneProps> = ({
+export const SplitPane = React.memo<SplitPaneProps>(function SplitPane({
   title,
   id,
   children,
-}) => {
+}) {
   const classes = useStyles();
   const { togglePane } = React.useContext(SplitPaneContext);
   const headerClickHandler = React.useCallback(() => {
@@ -187,4 +189,4 @@ export const SplitPane: React.FC<SplitPaneProps> = ({
       <div className={classes.paneContent}>{children}</div>
     </div>
   );
-};
+});

@@ -102,6 +102,7 @@ interface MutationModalProps extends WithStyles<typeof styles> {
   mutationInfo: MutationInfo;
 }
 
+// eslint-disable-next-line react-memo/require-memo
 const MutationState = (props) => {
   switch (props.state) {
     case LifeCycleState.RUNNING_STATE:
@@ -115,6 +116,7 @@ const MutationState = (props) => {
   return <CircularProgress size={18} />;
 };
 
+// eslint-disable-next-line react-memo/require-memo
 const MutationModal = ({ classes, mutationInfo }: MutationModalProps) => {
   const { cancelExecution } = React.useContext(ScriptContext);
 

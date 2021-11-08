@@ -58,6 +58,7 @@ interface ExecutionMetricProps {
   metricValue: string;
 }
 
+// eslint-disable-next-line react-memo/require-memo
 const ExecutionMetric = (props: ExecutionMetricProps) => {
   const classes = useStyles();
   return (
@@ -72,6 +73,7 @@ const ExecutionMetric = (props: ExecutionMetricProps) => {
   );
 };
 
+// eslint-disable-next-line react-memo/require-memo
 const ExecutionStats: React.FC = () => {
   const { stats } = React.useContext(ResultsContext);
   const classes = useStyles();

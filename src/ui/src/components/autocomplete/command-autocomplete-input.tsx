@@ -88,6 +88,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 
 const BLINK_INTERVAL = 500; // 500ms = .5s
 
+// eslint-disable-next-line react-memo/require-memo
 const Caret: React.FC<{ active: boolean }> = ({ active }) => {
   const classes = useStyles();
   const [visible, setVisible] = React.useState(true);
@@ -126,6 +127,7 @@ interface AutocompleteInputProps {
   isValid: boolean;
 }
 
+// eslint-disable-next-line react-memo/require-memo
 export const CommandAutocompleteInput: React.FC<AutocompleteInputProps> = ({
   onChange,
   onKey,

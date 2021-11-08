@@ -45,7 +45,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-export const StatusCell: React.FC<{ statusGroup: StatusGroup }> = ({ statusGroup }) => {
+export const StatusCell: React.FC<{ statusGroup: StatusGroup }> = React.memo(function StatusCell({ statusGroup }) {
   const classes = useStyles();
   switch (statusGroup) {
     case 'healthy':
@@ -57,4 +57,4 @@ export const StatusCell: React.FC<{ statusGroup: StatusGroup }> = ({ statusGroup
     default:
       return <UnknownIcon fontSize='small' className={classes.unknown} />;
   }
-};
+});

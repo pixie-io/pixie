@@ -63,14 +63,14 @@ interface FixedSizeDrawerProps {
   overlay: boolean;
 }
 
-export const FixedSizeDrawer: React.FC<FixedSizeDrawerProps> = ({
+export const FixedSizeDrawer: React.FC<FixedSizeDrawerProps> = React.memo(function FixedSizeDrawer({
   children,
   otherContent,
   drawerDirection,
   drawerSize,
   open,
   overlay,
-}) => {
+}) {
   const classes = useStyles();
   const drawerStyle = drawerDirection === 'top' || drawerDirection === 'bottom'
     ? { height: drawerSize }
@@ -97,10 +97,12 @@ export const FixedSizeDrawer: React.FC<FixedSizeDrawerProps> = ({
       </div>
       <Drawer
         anchor={drawerDirection}
+        // eslint-disable-next-line react-memo/require-usememo
         PaperProps={{ elevation: 4 }}
         style={drawerStyle}
         variant='persistent'
         open={open}
+        // eslint-disable-next-line react-memo/require-usememo
         classes={{
           paper: classes.drawerPaper,
           docked:
@@ -115,4 +117,4 @@ export const FixedSizeDrawer: React.FC<FixedSizeDrawerProps> = ({
       </Drawer>
     </div>
   );
-};
+});

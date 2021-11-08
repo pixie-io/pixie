@@ -71,6 +71,7 @@ describe('<Breadcrumbs/>', () => {
 
     const { container } = render(
       <ThemeProvider theme={DARK_THEME}>
+        {/* eslint-disable-next-line react-memo/require-usememo */}
         <Breadcrumbs breadcrumbs={breadcrumbs} />
       </ThemeProvider>,
     );

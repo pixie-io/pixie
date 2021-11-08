@@ -80,9 +80,9 @@ export interface ScriptReferenceProps extends WithStyles<typeof styles>{
   args: Arguments;
 }
 
-const ScriptReferencePlain = ({
+const ScriptReferencePlain = React.memo<ScriptReferenceProps>(function ScriptReferencePlain({
   label, script, args, embedState, clusterName, classes,
-}: ScriptReferenceProps) => {
+}) {
   const path = deepLinkURLFromScript(script, clusterName, embedState, args);
 
   if (embedState.widget) {
@@ -91,6 +91,6 @@ const ScriptReferencePlain = ({
   return (
     <Link to={path} className={classes.root}>{label}</Link>
   );
-};
+});
 
 export const ScriptReference = withStyles(styles)(ScriptReferencePlain);

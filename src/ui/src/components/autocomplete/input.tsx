@@ -94,6 +94,7 @@ interface InputProps {
   customRef?: React.MutableRefObject<HTMLInputElement>;
 }
 
+// eslint-disable-next-line react-memo/require-memo
 export const Input: React.FC<InputProps> = ({
   onChange,
   onKey,
@@ -200,6 +201,7 @@ interface InputFormProps {
   form: FormField[];
 }
 
+// eslint-disable-next-line react-memo/require-memo
 export const FormInput: React.FC<InputFormProps> = ({ form }) => {
   const classes = useStyles();
   const ref = React.useRef<HTMLTextAreaElement>(null);

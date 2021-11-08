@@ -119,6 +119,7 @@ interface FormFieldProps extends FormField {
   onChange?: React.ChangeEventHandler<HTMLTextAreaElement | HTMLInputElement>;
 }
 
+// eslint-disable-next-line react-memo/require-memo
 const FormFieldImpl: React.FC<FormFieldProps> = ({ onChange, children, ...field }) => {
   const classes = useStyles();
   // TODO(philkuz) figure out how to keep the value set OR wipe the value away beforehand to avoid this.
@@ -129,6 +130,7 @@ const FormFieldImpl: React.FC<FormFieldProps> = ({ onChange, children, ...field 
     <TextField
       className={isHidden ? classes.hiddenFormField : classes.formField}
       label={isHidden ? null : field.name}
+      // eslint-disable-next-line react-memo/require-usememo
       InputLabelProps={{ className: classes.inputLabel }}
       name={field.name}
       onChange={onChange}
@@ -141,6 +143,7 @@ const FormFieldImpl: React.FC<FormFieldProps> = ({ onChange, children, ...field 
   );
 };
 
+// eslint-disable-next-line react-memo/require-memo
 export const Form: React.FC<FormStructure> = ({
   submitBtnText,
   action,
@@ -196,6 +199,7 @@ export const Form: React.FC<FormStructure> = ({
   );
 };
 
+// eslint-disable-next-line react-memo/require-memo
 export const PixienautForm: React.FC<{ formProps: FormStructure }> = ({ formProps }) => {
   const hasError = formProps.errors != null;
   const image: PixienautImage = hasError ? 'octopus' : 'balloon';

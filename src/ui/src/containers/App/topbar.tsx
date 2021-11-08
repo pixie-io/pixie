@@ -28,8 +28,10 @@ import {
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import {
-  Avatar, ProfileMenuWrapper, CodeIcon,
-  LogoutIcon, SettingsIcon,
+  Avatar,
+  ProfileMenuWrapper,
+  LogoutIcon,
+  SettingsIcon,
 } from 'app/components';
 import { useQuery, useMutation, gql } from '@apollo/client';
 import { LiveShortcutsContext } from 'app/containers/live/shortcuts';
@@ -47,12 +49,14 @@ import { GQLUserInfo, GQLUserAttributes } from 'app/types/schema';
 import pixieAnalytics from 'app/utils/analytics';
 import { SetStateFunc } from 'app/context/common';
 
+// eslint-disable-next-line react-memo/require-memo
 const StyledListItemText = withStyles((theme: Theme) => createStyles({
   primary: {
     ...theme.typography.body2,
   },
 }))(ListItemText);
 
+// eslint-disable-next-line react-memo/require-memo
 const StyledListItemIcon = withStyles(() => createStyles({
   root: {
     minWidth: '30px',
@@ -179,6 +183,10 @@ const ProfileItem = React.memo<{ setSidebarOpen: SetStateFunc<boolean> }>(functi
     setDataDrawerOpen(wasDrawerOpenBeforeTour);
   }, [setDataDrawerOpen, setSidebarOpen, setTourOpen, wasDrawerOpenBeforeTour, wasSidebarOpenBeforeTour]);
 
+  const showShortcuts = React.useCallback(() => {
+    shortcuts?.['show-help'].handler();
+  }, [shortcuts]);
+
   React.useEffect(() => {
     if (!loadingTourSeen && tourSeen !== true && inLiveView) {
       openTour();
@@ -187,10 +195,12 @@ const ProfileItem = React.memo<{ setSidebarOpen: SetStateFunc<boolean> }>(functi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadingTourSeen, tourSeen, inLiveView]);
 
+  /* eslint-disable react-memo/require-usememo */
   let name = '';
   let picture = '';
   let email = '';
   let id = '';
+  /* eslint-enable react-memo/require-usememo */
   if (userInfo) {
     ({
       name, picture, email, id,
@@ -218,7 +228,7 @@ const ProfileItem = React.memo<{ setSidebarOpen: SetStateFunc<boolean> }>(functi
         open={open}
         onCloseMenu={closeMenu}
         anchorEl={anchorEl}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        anchorOrigin={React.useMemo(() => ({ vertical: 'bottom', horizontal: 'right' }), [])}
         name={name}
         email={email}
         picture={picture}
@@ -241,7 +251,7 @@ const ProfileItem = React.memo<{ setSidebarOpen: SetStateFunc<boolean> }>(functi
                 </MenuItem>
               ),
               (
-                <MenuItem key='shortcuts' button component='a' onClick={() => shortcuts['show-help'].handler()}>
+                <MenuItem key='shortcuts' button component='a' onClick={showShortcuts}>
                   <StyledListItemIcon>
                     <KeyboardIcon />
                   </StyledListItemIcon>
@@ -274,6 +284,7 @@ export const TopBar: React.FC<TopBarProps> = React.memo(function TopBar({
   return (
     <AppBar className={classes.container} position='static'>
       <Toolbar>
+        {/* eslint-disable-next-line react-memo/require-usememo */}
         <IconButton edge='start' color='inherit' aria-label='menu' sx={{ mr: 2 }} onClick={toggleSidebar}>
           <MenuIcon className={classes.menu} />
         </IconButton>

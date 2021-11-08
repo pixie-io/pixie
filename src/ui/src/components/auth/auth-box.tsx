@@ -81,7 +81,7 @@ export interface AuthBoxProps {
   showTOSDisclaimer?: boolean;
 }
 
-export const AuthBox: React.FC<AuthBoxProps> = (props) => {
+export const AuthBox: React.FC<AuthBoxProps> = React.memo(function AuthBox(props) {
   const {
     toggleURL,
     showTOSDisclaimer,
@@ -132,4 +132,4 @@ export const AuthBox: React.FC<AuthBoxProps> = (props) => {
       </div>
     </PixienautBox>
   );
-};
+});

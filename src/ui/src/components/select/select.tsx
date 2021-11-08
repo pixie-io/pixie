@@ -46,9 +46,9 @@ export interface SelectProps {
   placeholder?: string;
 }
 
-export const Select: React.FC<SelectProps> = ({
+export const Select: React.FC<SelectProps> = React.memo(function Select({
   value, getListItems, onSelect, requireCompletion, placeholder,
-}) => {
+}) {
   const classes = useStyles();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
@@ -85,4 +85,4 @@ export const Select: React.FC<SelectProps> = ({
       />
     </AutocompleteContext.Provider>
   );
-};
+});

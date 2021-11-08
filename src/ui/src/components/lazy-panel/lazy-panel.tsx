@@ -49,6 +49,7 @@ const useStyles = makeStyles(() => createStyles({
 }));
 
 // LazyPanel is a component that renders the content lazily.
+// eslint-disable-next-line react-memo/require-memo
 export const LazyPanel: React.FC<LazyPanelProps> = ({ show, className, children }) => {
   const [rendered, setRendered] = React.useState(false);
   const classes = useStyles();

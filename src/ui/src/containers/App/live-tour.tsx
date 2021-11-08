@@ -17,7 +17,6 @@
  */
 
 import * as React from 'react';
-import { PropsWithChildren } from 'react';
 import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import Tooltip from '@material-ui/core/Tooltip';
@@ -37,11 +36,10 @@ export const LiveTourContext = React.createContext<LiveTourContextProps>({
   tourOpen: false,
   setTourOpen: () => {},
 });
-export const LiveTourContextProvider = ({ children }: PropsWithChildren<Record<string, unknown>>)
-: React.ReactElement => {
+export const LiveTourContextProvider: React.FC = React.memo(function LiveTourContextProvider({ children }) {
   const [tourOpen, setTourOpen] = React.useState<boolean>(false);
   return <LiveTourContext.Provider value={{ tourOpen, setTourOpen }}>{children}</LiveTourContext.Provider>;
-};
+});
 
 /**
  * Generates the CSS properties needed to punch holes in the backdrop
@@ -194,7 +192,7 @@ interface LiveTourArrowProps {
   className: string;
 }
 
-const LiveTourArrow: React.FC<LiveTourArrowProps> = ({
+const LiveTourArrow = React.memo<LiveTourArrowProps>(function LiveTourArrow({
   path,
   width,
   height,
@@ -203,7 +201,7 @@ const LiveTourArrow: React.FC<LiveTourArrowProps> = ({
   tipAngleDeg,
   pointLength = 10,
   className,
-}) => {
+}) {
   const tipPath = `M ${tipX + pointLength} ${tipY} h -${pointLength} v ${pointLength}`;
   return (
     <svg width={width} height={height} className={className} xmlns='http://www.w3.org/2000/svg'>
@@ -218,13 +216,13 @@ const LiveTourArrow: React.FC<LiveTourArrowProps> = ({
       />
     </svg>
   );
-};
+});
 
 /**
  * Contents of the tour for Live pages. Meant to exist within a fullscreen MUIDialog.
  * @constructor
  */
-export const LiveTour: React.FC = () => {
+export const LiveTour = React.memo(function LiveTour() {
   const classes = useStyles();
   // TODO(nick): On mobile, the layout is entirely different (and as of this writing, core functionality is unavailable)
   //  For now, this is hidden for those users (the component to open this hides).
@@ -300,24 +298,25 @@ export const LiveTour: React.FC = () => {
       </div>
     </div>
   );
-};
+});
 
-const LiveTourBackdrop = () => {
+const LiveTourBackdrop = React.memo(function LiveTourBackdrop() {
   const classes = useStyles();
   return <div className={classes.tourModalBackdrop} />;
-};
+});
 
 interface LiveTourDialogProps {
   onClose: () => void;
 }
 
-export const LiveTourDialog: React.FC<LiveTourDialogProps> = ({ onClose }) => {
+export const LiveTourDialog = React.memo<LiveTourDialogProps>(function LiveTourDialog({ onClose }) {
   const classes = useStyles();
   const { tourOpen } = React.useContext(LiveTourContext);
   return (
     <Dialog
       open={tourOpen}
       onClose={onClose}
+      // eslint-disable-next-line react-memo/require-usememo
       classes={{
         paperFullScreen: classes.tourModal,
       }}
@@ -332,4 +331,4 @@ export const LiveTourDialog: React.FC<LiveTourDialogProps> = ({ onClose }) => {
       <LiveTour />
     </Dialog>
   );
-};
+});

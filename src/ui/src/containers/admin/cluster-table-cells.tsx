@@ -77,6 +77,7 @@ const useInstrumentationLevelStyles = makeStyles((theme: Theme) => createStyles(
   },
 }));
 
+// eslint-disable-next-line react-memo/require-memo
 export const InstrumentationLevelCell: React.FC<{ cluster: InstrumentationClusterInfo }> = ({ cluster }) => {
   const classes = useInstrumentationLevelStyles();
   const display = instrumentationLevel(cluster);
@@ -95,6 +96,7 @@ const useClusterStatusCellStyle = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
+// eslint-disable-next-line react-memo/require-memo
 export const ClusterStatusCell: React.FC<{ status: GQLClusterStatus, message?: string }> = ({ status, message }) => {
   const classes = useClusterStatusCellStyle();
 
@@ -109,6 +111,7 @@ export const ClusterStatusCell: React.FC<{ status: GQLClusterStatus, message?: s
   );
 };
 
+// eslint-disable-next-line react-memo/require-memo
 export const VizierVersionCell: React.FC<{ version: string }> = ({ version }) => (
   <AdminTooltip title={version}>
     <StyledTableCell>{version.split('+')[0]}</StyledTableCell>
@@ -122,6 +125,7 @@ const useMonoCells = makeStyles(() => createStyles({
 }));
 
 // MonoSpaceCell renders the in monospace.
+// eslint-disable-next-line react-memo/require-memo
 export const MonoSpaceCell: React.FC<{ data: string }> = ({ data }) => {
   const classes = useMonoCells();
   return (

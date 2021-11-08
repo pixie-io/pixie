@@ -20,6 +20,7 @@ import * as React from 'react';
 
 import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
+// eslint-disable-next-line react-memo/require-memo
 export const MagicIcon: React.FC<SvgIconProps> = (props) => (
   <SvgIcon {...props} viewBox='0 0 17.91 19.38'>
     <path d='M6 3V5H7V3H9V2H7V0H6V2H4V3H6Z' />

@@ -48,6 +48,7 @@ const useStyles = makeStyles(({ palette, spacing }: Theme) => createStyles({
   },
 }));
 
+// eslint-disable-next-line react-memo/require-memo
 export const RouteNotFound: React.FC = () => {
   const styles = useStyles();
   const { pathname } = useLocation();

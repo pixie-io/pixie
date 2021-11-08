@@ -28,7 +28,7 @@ import DeleteIcon from '@material-ui/icons/DeleteForeverOutlined';
 import CopyIcon from '@material-ui/icons/CopyAllOutlined';
 import * as React from 'react';
 
-export const UseKeyListStyles = makeStyles((theme: Theme) => createStyles({
+export const useKeyListStyles = makeStyles((theme: Theme) => createStyles({
   keyValue: {
     padding: 0,
     fontWeight: theme.typography.fontWeightLight,
@@ -48,6 +48,7 @@ export const UseKeyListStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
+// eslint-disable-next-line react-memo/require-memo
 export const KeyListItemIcon = withStyles(() => createStyles({
   root: {
     minWidth: 30,
@@ -55,6 +56,7 @@ export const KeyListItemIcon = withStyles(() => createStyles({
   },
 }))(ListItemIcon);
 
+// eslint-disable-next-line react-memo/require-memo
 export const KeyListItemText = withStyles((theme: Theme) => createStyles({
   primary: {
     fontWeight: theme.typography.fontWeightLight,
@@ -63,6 +65,7 @@ export const KeyListItemText = withStyles((theme: Theme) => createStyles({
   },
 }))(ListItemText);
 
+// eslint-disable-next-line react-memo/require-memo
 export const KeyListMenu = withStyles((theme: Theme) => createStyles({
   paper: {
     borderWidth: 8,
@@ -70,15 +73,17 @@ export const KeyListMenu = withStyles((theme: Theme) => createStyles({
   },
 }))(Menu);
 
-const copyDeleteStyles = makeStyles(() => createStyles({
+const useCopyDeleteStyles = makeStyles(() => createStyles({
   button: {
     padding: 6,
   },
 }));
+
+// eslint-disable-next-line react-memo/require-memo
 export const KeyActionButtons = ({
   deleteOnClick, copyOnClick,
 }: { deleteOnClick: any, copyOnClick: any }): React.ReactElement => {
-  const classes = copyDeleteStyles();
+  const classes = useCopyDeleteStyles();
   return (<>
     <IconButton onClick={copyOnClick} className={classes.button}>
       <CopyIcon />

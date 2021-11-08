@@ -40,7 +40,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-export const UserSettings: React.FC = () => {
+export const UserSettings = React.memo(function UserSettings() {
   const classes = useStyles();
 
   const { data, loading, error } = useQuery<{ userSettings: GQLUserSettings }>(
@@ -100,6 +100,7 @@ export const UserSettings: React.FC = () => {
             <StyledTableCell>
               <Button
                 className={classes.button}
+                // eslint-disable-next-line react-memo/require-usememo
                 onClick={() => {
                   updateUserAnalyticsSetting({
                     optimisticResponse: {
@@ -109,7 +110,7 @@ export const UserSettings: React.FC = () => {
                       },
                     },
                     variables: { analyticsOptout: !userSettings.analyticsOptout },
-                  });
+                  }).then();
                 }}
                 variant='outlined'
                 color='primary'
@@ -122,4 +123,4 @@ export const UserSettings: React.FC = () => {
       </Table>
     </>
   );
-};
+});

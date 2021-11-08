@@ -40,6 +40,7 @@ const styles = ({ breakpoints }: Theme) => createStyles({
   },
 });
 
+// eslint-disable-next-line react-memo/require-memo
 export const SignupPage = withStyles(styles)(({ classes }: WithStyles<typeof styles>) => {
   const authClient = React.useMemo(() => GetOAuthProvider(), []);
   const buttons = React.useMemo(

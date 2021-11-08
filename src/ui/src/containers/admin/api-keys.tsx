@@ -31,7 +31,7 @@ import {
   AdminTooltip, StyledTableCell, StyledTableHeaderCell, StyledLeftTableCell,
 } from './utils';
 import {
-  UseKeyListStyles, KeyActionButtons,
+  useKeyListStyles, KeyActionButtons,
 } from './key-list';
 import { MonoSpaceCell } from './cluster-table-cells';
 
@@ -52,7 +52,7 @@ export function formatAPIKey(apiKey: GQLAPIKeyMetadata): APIKeyDisplay {
   };
 }
 
-export const APIKeyRow: React.FC<{ apiKey: APIKeyDisplay }> = ({ apiKey }) => {
+export const APIKeyRow = React.memo<{ apiKey: APIKeyDisplay }>(function APIKeyRow({ apiKey }) {
   const [deleteAPIKey] = useMutation<{ DeleteAPIKey: boolean }, { id: string }>(gql`
     mutation DeleteAPIKeyFromAdminPage($id: ID!) {
       DeleteAPIKey(id: $id)
@@ -68,9 +68,34 @@ export const APIKeyRow: React.FC<{ apiKey: APIKeyDisplay }> = ({ apiKey }) => {
     }`, {
     fetchPolicy: 'network-only',
     onCompleted: (data) => {
-      navigator.clipboard.writeText(data?.apiKey?.key);
+      navigator.clipboard.writeText(data?.apiKey?.key).then();
     },
   });
+
+  const copyAction = React.useCallback(() => {
+    copyKeyToClipboard({ variables: { id: apiKey.id } });
+  }, [apiKey.id, copyKeyToClipboard]);
+
+  const deleteAction = React.useCallback(() => {
+    deleteAPIKey({
+      variables: { id: apiKey.id },
+      update: (cache, { data }) => {
+        if (!data.DeleteAPIKey) {
+          return;
+        }
+        cache.modify({
+          fields: {
+            apiKeys(existingKeys, { readField }) {
+              return existingKeys.filter(
+                (key) => (apiKey.id !== readField('id', key)),
+              );
+            },
+          },
+        });
+      },
+      optimisticResponse: { DeleteAPIKey: true },
+    }).then();
+  }, [apiKey.id, deleteAPIKey]);
 
   return (
     <TableRow key={apiKey.id}>
@@ -82,32 +107,15 @@ export const APIKeyRow: React.FC<{ apiKey: APIKeyDisplay }> = ({ apiKey }) => {
       <MonoSpaceCell data={'••••••••••••'} />
       <StyledTableCell>
         <KeyActionButtons
-          copyOnClick={() => { copyKeyToClipboard({ variables: { id: apiKey.id } }); }}
-          deleteOnClick={() => deleteAPIKey({
-            variables: { id: apiKey.id },
-            update: (cache, { data }) => {
-              if (!data.DeleteAPIKey) {
-                return;
-              }
-              cache.modify({
-                fields: {
-                  apiKeys(existingKeys, { readField }) {
-                    return existingKeys.filter(
-                      (key) => (apiKey.id !== readField('id', key)),
-                    );
-                  },
-                },
-              });
-            },
-            optimisticResponse: { DeleteAPIKey: true },
-          })} />
+          copyOnClick={copyAction}
+          deleteOnClick={deleteAction} />
       </StyledTableCell>
     </TableRow >
   );
-};
+});
 
-export const APIKeysTable: React.FC = () => {
-  const classes = UseKeyListStyles();
+export const APIKeysTable = React.memo(function APIKeysTable() {
+  const classes = useKeyListStyles();
 
   const { data, error } = useQuery<{ apiKeys: GQLAPIKeyMetadata[] }>(
     gql`
@@ -137,7 +145,7 @@ export const APIKeysTable: React.FC = () => {
             <StyledTableHeaderCell>Created</StyledTableHeaderCell>
             <StyledTableHeaderCell>Description</StyledTableHeaderCell>
             <StyledTableHeaderCell>Value</StyledTableHeaderCell>
-            <StyledTableHeaderCell></StyledTableHeaderCell>
+            <StyledTableHeaderCell />
           </TableRow>
         </TableHead>
         <TableBody>
@@ -148,4 +156,4 @@ export const APIKeysTable: React.FC = () => {
       </Table>
     </>
   );
-};
+});

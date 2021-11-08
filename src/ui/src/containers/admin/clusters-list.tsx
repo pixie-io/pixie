@@ -28,8 +28,9 @@ import { Link } from 'react-router-dom';
 
 import { GQLClusterInfo } from 'app/types/schema';
 import {
-  AdminTooltip, getClusterDetailsURL,
-  StyledTableCell, StyledTableHeaderCell,
+  getClusterDetailsURL,
+  StyledTableCell,
+  StyledTableHeaderCell,
 } from './utils';
 
 import {
@@ -49,6 +50,7 @@ type ClusterRowInfo = Pick<GQLClusterInfo,
 'numInstrumentedNodes' |
 'lastHeartbeatMs'>;
 
+// eslint-disable-next-line react-memo/require-memo
 export const ClustersTable = withStyles((theme: Theme) => ({
   error: {
     padding: theme.spacing(1),
@@ -56,6 +58,7 @@ export const ClustersTable = withStyles((theme: Theme) => ({
   removePadding: {
     padding: 0,
   },
+  // eslint-disable-next-line react-memo/require-memo
 }))(({ classes }: any) => {
   const { data, loading, error } = useQuery<{
     clusters: ClusterRowInfo[]

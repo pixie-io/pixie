@@ -37,7 +37,10 @@ export interface UsernamePasswordButtonProps {
   text: string;
   onClick: () => void;
 }
-export const UsernamePasswordButton: React.FC<UsernamePasswordButtonProps> = ({ text, onClick }) => {
+export const UsernamePasswordButton = React.memo<UsernamePasswordButtonProps>(function UsernamePasswordButton({
+  text,
+  onClick,
+}) {
   const classes = useStyles();
   return (
     <Button
@@ -49,4 +52,4 @@ export const UsernamePasswordButton: React.FC<UsernamePasswordButtonProps> = ({ 
       {text}
     </Button>
   );
-};
+});

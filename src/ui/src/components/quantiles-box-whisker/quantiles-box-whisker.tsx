@@ -346,7 +346,7 @@ interface QuantilesBoxWhiskerProps {
   onChangePercentile?: (percentile: SelectedPercentile) => void;
 }
 
-export const QuantilesBoxWhisker: React.FC<QuantilesBoxWhiskerProps> = (props) => {
+export const QuantilesBoxWhisker: React.FC<QuantilesBoxWhiskerProps> = React.memo(function QuantilesBoxWhisker(props) {
   const {
     p50,
     p90,
@@ -427,6 +427,7 @@ export const QuantilesBoxWhisker: React.FC<QuantilesBoxWhiskerProps> = (props) =
       <div className={classes.vegaWrapper}>
         <Vega
           className={classes.vega}
+          // eslint-disable-next-line react-memo/require-usememo
           signalListeners={{
             p50Click: () => changePercentileIfDifferent('p50'),
             p90Click: () => changePercentileIfDifferent('p90'),
@@ -442,4 +443,4 @@ export const QuantilesBoxWhisker: React.FC<QuantilesBoxWhiskerProps> = (props) =
       </span>
     </div>
   );
-};
+});

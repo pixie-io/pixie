@@ -22,10 +22,10 @@ import * as React from 'react';
 import IconButton from '@material-ui/core/IconButton';
 import MUIModal from '@material-ui/core/Modal';
 import { makeStyles, Theme } from '@material-ui/core/styles';
-import CloseButton from '@material-ui/icons/Close';
+import CloseIcon from '@material-ui/icons/Close';
 import { createStyles } from '@material-ui/styles';
 
-interface ModalTrigerProps {
+interface ModalTriggerProps {
   trigger: React.ReactNode;
   triggerClassName?: string;
   content: React.ReactNode;
@@ -43,12 +43,12 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-export const ModalTrigger: React.FC<ModalTrigerProps> = ({
+export const ModalTrigger = React.memo<ModalTriggerProps>(function ModalTrigger({
   trigger,
   triggerClassName,
   content,
   contentClassName,
-}) => {
+}) {
   const [open, setOpen] = React.useState(false);
   const openModal = React.useCallback(() => setOpen(true), []);
   const closeModal = React.useCallback(() => setOpen(false), []);
@@ -66,11 +66,11 @@ export const ModalTrigger: React.FC<ModalTrigerProps> = ({
       >
         <div>
           <IconButton onClick={closeModal} className={classes.closeButton}>
-            <CloseButton />
+            <CloseIcon />
           </IconButton>
           {content}
         </div>
       </MUIModal>
     </>
   );
-};
+});

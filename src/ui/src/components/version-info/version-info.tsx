@@ -34,7 +34,7 @@ interface VersionInfoProps {
   cloudVersion: string;
 }
 
-export const VersionInfo: React.FC<VersionInfoProps> = ({ cloudVersion }) => {
+export const VersionInfo: React.FC<VersionInfoProps> = React.memo(function VersionInfo({ cloudVersion }) {
   const classes = useStyles();
   return <div className={classes.root}>{cloudVersion}</div>;
-};
+});

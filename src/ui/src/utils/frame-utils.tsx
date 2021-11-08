@@ -39,6 +39,7 @@ export interface FrameElementProps extends WithStyles<typeof styles> {
 }
 
 export const FrameElement = withStyles(styles)(
+  // eslint-disable-next-line react-memo/require-memo
   ({ width, children, classes }: FrameElementProps) => (
     <Box width={width} className={classes.root}>
       {children}

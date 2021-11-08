@@ -63,7 +63,9 @@ function podPhaseToStatusGroup(status: string, ready: boolean): StatusGroup {
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function toStatusIndicator(status: any, semanticType: SemanticType) {
+  // eslint-disable-next-line react-memo/require-usememo
   let statusGroup: StatusGroup = 'unknown';
+  // eslint-disable-next-line react-memo/require-usememo
   let tooltipMsg: string = typeof status === 'string' ? status : JSON.stringify(status);
 
   switch (semanticType) {

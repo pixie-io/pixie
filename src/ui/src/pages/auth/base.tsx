@@ -73,6 +73,7 @@ export interface BasePageProps extends WithStyles<typeof styles> {
   children?: React.ReactNode;
 }
 
+// eslint-disable-next-line react-memo/require-memo
 export const BasePage = withStyles(styles)(({ children, classes }: BasePageProps) => (
   <div className={classes.root}>
     <div className={classes.logo}>

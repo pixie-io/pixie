@@ -197,7 +197,7 @@ const themeCompactor = (theme: Theme) => ({
   spacing: createSpacing((factor) => theme.spacing(factor * 0.8)),
 });
 
-const useDialogStyles = makeStyles((theme) => createStyles({
+const useDialogStyles = makeStyles((theme: Theme) => createStyles({
   card: {
     width: '608px',
   },
@@ -217,14 +217,14 @@ const useDialogStyles = makeStyles((theme) => createStyles({
   },
 }));
 
-export const DialogDropdown: React.FC<DialogDropdownProps> = ({
+export const DialogDropdown = React.memo<DialogDropdownProps>(function DialogDropdown({
   placeholder,
   onSelect,
   onClose,
   getListItems,
   anchorEl,
   explanation,
-}) => {
+}) {
   const classes = useDialogStyles();
 
   const mounted = useIsMounted();
@@ -357,7 +357,7 @@ export const DialogDropdown: React.FC<DialogDropdownProps> = ({
       </ThemeProvider>
     </Popover>
   );
-};
+});
 
 export interface BreadcrumbProps {
   title: string;
@@ -370,7 +370,7 @@ export interface BreadcrumbProps {
   explanation?: React.ReactElement;
 }
 
-const Breadcrumb: React.FC<BreadcrumbProps> = ({
+const Breadcrumb = React.memo<BreadcrumbProps>(function Breadcrumb({
   title,
   value,
   selectable,
@@ -379,7 +379,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
   omitKey,
   placeholder,
   explanation,
-}) => {
+}) {
   const classes = useStyles();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
@@ -422,7 +422,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
       </div>
     </div>
   );
-};
+});
 
 export interface BreadcrumbListItem {
   value: string;

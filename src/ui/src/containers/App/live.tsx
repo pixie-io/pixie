@@ -55,6 +55,7 @@ const useStyles = makeStyles(() => createStyles({
   },
 }));
 
+// eslint-disable-next-line react-memo/require-memo
 const ClusterWarningBanner: React.FC<{ user: Pick<GQLUserInfo, 'email' | 'orgName' > }> = ({ user }) => {
   const classes = useStyles();
 
@@ -72,6 +73,7 @@ const ClusterWarningBanner: React.FC<{ user: Pick<GQLUserInfo, 'email' | 'orgNam
 };
 
 // Convenience routes: sends `/clusterID/:clusterID`,  to the appropriate Live url.
+// eslint-disable-next-line react-memo/require-memo
 const ClusterIDShortcut = ({ match, location }) => {
   const { data, loading, error } = useQuery<{
     cluster: Pick<GQLClusterInfo, 'clusterName'>
@@ -88,6 +90,7 @@ const ClusterIDShortcut = ({ match, location }) => {
   const cluster = data?.cluster.clusterName;
   if (cluster == null || loading || error) return null; // Wait for things to be ready
 
+  // eslint-disable-next-line react-memo/require-usememo
   let path = generatePath('/live/clusters/:cluster', { cluster });
   if (match.path.startsWith('/embed')) {
     path = `/embed${path}`;
@@ -100,6 +103,7 @@ const ClusterIDShortcut = ({ match, location }) => {
 };
 
 // Convenience routes: sends `/scratch`, `/script/http_data`, and others to the appropriate Live url.
+// eslint-disable-next-line react-memo/require-memo
 const ScriptShortcut = ({ match, location }) => {
   const { data } = useQuery<{
     clusters: Pick<GQLClusterInfo, 'clusterName' | 'status'>[]
@@ -139,6 +143,7 @@ const ScriptShortcut = ({ match, location }) => {
   return <Redirect to={newPath} />;
 };
 
+// eslint-disable-next-line react-memo/require-memo
 const Live = () => {
   const { data: countData, loading: countLoading } = useQuery<{
     clusters: Pick<GQLClusterInfo, 'id'>[]
@@ -164,6 +169,7 @@ const Live = () => {
   return <LiveView />;
 };
 
+// eslint-disable-next-line react-memo/require-memo
 const LiveWithProvider = () => (
   <ScriptsContextProvider>
     <LiveContextRouter>

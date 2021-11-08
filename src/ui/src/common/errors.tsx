@@ -36,7 +36,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-export const VizierErrorDetails: React.FC<{ error: Error }> = ({ error }) => {
+export const VizierErrorDetails = React.memo<{ error: Error }>(function VizierErrorDetails({ error }) {
   const classes = useStyles();
   const { details } = error as VizierQueryError;
 
@@ -67,4 +67,4 @@ export const VizierErrorDetails: React.FC<{ error: Error }> = ({ error }) => {
       )}
     </>
   );
-};
+});

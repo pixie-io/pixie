@@ -67,6 +67,7 @@ export interface AuthMessageBoxProps extends WithStyles<typeof styles> {
   cta?: React.ReactNode;
 }
 
+// eslint-disable-next-line react-memo/require-memo
 export const AuthMessageBox = withStyles(styles)((props: AuthMessageBoxProps) => {
   const {
     error,
@@ -77,6 +78,7 @@ export const AuthMessageBox = withStyles(styles)((props: AuthMessageBoxProps) =>
     cta,
     classes,
   } = props;
+  // eslint-disable-next-line react-memo/require-usememo
   let scenario: PixienautBoxProps['image'] = 'balloon';
   if (error) {
     scenario = error === 'recoverable' ? 'octopus' : 'toilet';

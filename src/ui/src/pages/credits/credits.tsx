@@ -25,8 +25,6 @@ import {
 import { createStyles } from '@material-ui/styles';
 
 import * as React from 'react';
-import { LiveViewButton } from 'app/containers/admin/utils';
-import NavBars from 'app/containers/App/nav-bars';
 
 import licenseJson from 'configurable/licenses.json';
 
@@ -110,6 +108,7 @@ interface LicenseEntry {
   licenseText?: string;
 }
 
+// eslint-disable-next-line react-memo/require-memo
 const CreditsPage: React.FC = ({ children }) => {
   const classes = useStyles();
   return (
@@ -121,7 +120,7 @@ const CreditsPage: React.FC = ({ children }) => {
   );
 };
 
-const LicenseEntryRow: React.FC<LicenseEntry> = ({ name, url, licenseText }) => {
+const LicenseEntryRow = React.memo<LicenseEntry>(function LicenseEntryRow({ name, url, licenseText }) {
   const classes = useStyles();
   const [showLicense, setShowLicense] = React.useState(false);
   return (
@@ -131,6 +130,7 @@ const LicenseEntryRow: React.FC<LicenseEntry> = ({ name, url, licenseText }) => 
       </div>
       <div className={classes.creditsShow}>
         <Button
+          // eslint-disable-next-line react-memo/require-usememo
           onClick={() => setShowLicense((show) => !show)}
           className={buildClass(classes.button, !licenseText && 'hidden')}
         >
@@ -152,8 +152,9 @@ const LicenseEntryRow: React.FC<LicenseEntry> = ({ name, url, licenseText }) => 
         ) : null}
     </div>
   );
-};
+});
 
+// eslint-disable-next-line react-memo/require-memo
 const Credits: React.FC<{ licenses: LicenseEntry[] }> = ({ licenses }) => {
   const classes = useStyles();
 
@@ -174,6 +175,7 @@ const Credits: React.FC<{ licenses: LicenseEntry[] }> = ({ licenses }) => {
   );
 };
 
+// eslint-disable-next-line react-memo/require-memo
 const CreditsOverviewPage: React.FC = () => {
   const classes = useStyles();
   return (

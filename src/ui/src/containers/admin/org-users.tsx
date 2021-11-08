@@ -53,7 +53,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-export const UserRow: React.FC<UserRowProps> = ({ user }) => {
+export const UserRow = React.memo<UserRowProps>(function UserRow({ user }) {
   const classes = useStyles();
 
   const [updateUserInfo] = useMutation<
@@ -80,6 +80,7 @@ export const UserRow: React.FC<UserRowProps> = ({ user }) => {
           <AdminTooltip title='Approved users are users who can login and use Pixie.'>
             <div>
               <Button
+                // eslint-disable-next-line react-memo/require-usememo
                 onClick={() => {
                   updateUserInfo({
                     optimisticResponse: {
@@ -91,7 +92,7 @@ export const UserRow: React.FC<UserRowProps> = ({ user }) => {
                       },
                     },
                     variables: { id: user.id, isApproved: true },
-                  });
+                  }).then();
                 }}
                 className={classes.approveButton}
                 disabled={user.isApproved}
@@ -106,9 +107,9 @@ export const UserRow: React.FC<UserRowProps> = ({ user }) => {
       </StyledRightTableCell>
     </TableRow>
   );
-};
+});
 
-export const UsersTable: React.FC = () => {
+export const UsersTable = React.memo(function UsersTable() {
   const { data, loading, error } = useQuery<{ orgUsers: UserDisplay[] }>(
     gql`
       query getUsersForCurrentOrg{
@@ -151,4 +152,4 @@ export const UsersTable: React.FC = () => {
       </Table>
     </>
   );
-};
+});

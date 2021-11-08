@@ -30,7 +30,7 @@ interface AvatarProps {
   className?: string;
 }
 
-export const Avatar: React.FC<AvatarProps> = (props) => {
+export const Avatar = React.memo<AvatarProps>(function Avatar(props) {
   // When the picture is an empty string, we use a fallback letter-style avatar.
   // If we don't have a name either, this shows a silhouette.
   const name = props.name.trim();
@@ -44,7 +44,7 @@ export const Avatar: React.FC<AvatarProps> = (props) => {
       className={props.className}
     />
   );
-};
+});
 
 interface ProfileMenuWrapperProps extends WithStyles<any>, Pick<MenuProps, 'anchorOrigin'|'open'|'anchorEl'> {
   onCloseMenu: () => void;
@@ -53,7 +53,7 @@ interface ProfileMenuWrapperProps extends WithStyles<any>, Pick<MenuProps, 'anch
   picture?: string;
 }
 
-export const ProfileMenuWrapper: React.FC<ProfileMenuWrapperProps> = ({
+export const ProfileMenuWrapper: React.FC<ProfileMenuWrapperProps> = React.memo(function ProfileMenuWrapper({
   classes,
   children,
   anchorOrigin,
@@ -63,31 +63,34 @@ export const ProfileMenuWrapper: React.FC<ProfileMenuWrapperProps> = ({
   name,
   picture,
   email,
-}) => (
-  <Menu
-    open={open}
-    onClose={onCloseMenu}
-    onBlur={onCloseMenu}
-    anchorEl={anchorEl}
-    anchorOrigin={anchorOrigin}
-  >
-    <MenuItem
-      key='profile'
-      alignItems='center'
-      button={false}
-      className={classes.expandedProfile}
+}) {
+  return (
+    <Menu
+      open={open}
+      onClose={onCloseMenu}
+      onBlur={onCloseMenu}
+      anchorEl={anchorEl}
+      anchorOrigin={anchorOrigin}
     >
-      <Avatar name={name} picture={picture} className={classes.avatarSm} />
-      <ListItemText
-        primary={name}
-        secondary={email}
-        classes={{
-          primary: classes.listItemHeader,
-          secondary: classes.listItemText,
-        }}
-        className={classes.centeredListItemText}
-      />
-    </MenuItem>
-    {children}
-  </Menu>
-);
+      <MenuItem
+        key='profile'
+        alignItems='center'
+        button={false}
+        className={classes.expandedProfile}
+      >
+        <Avatar name={name} picture={picture} className={classes.avatarSm} />
+        <ListItemText
+          primary={name}
+          secondary={email}
+          // eslint-disable-next-line react-memo/require-usememo
+          classes={{
+            primary: classes.listItemHeader,
+            secondary: classes.listItemText,
+          }}
+          className={classes.centeredListItemText}
+        />
+      </MenuItem>
+      {children}
+    </Menu>
+  );
+});

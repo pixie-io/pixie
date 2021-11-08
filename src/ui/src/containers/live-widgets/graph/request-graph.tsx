@@ -17,9 +17,8 @@
  */
 
 import * as React from 'react';
-import { WidgetDisplay } from 'app/containers/live/vis';
 
-import { data as visData, Network, Options } from 'vis-network/standalone';
+import { Network } from 'vis-network/standalone';
 import { makeStyles, useTheme, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import AccountTreeIcon from '@material-ui/icons/AccountTree';
@@ -30,7 +29,7 @@ import IconButton from '@material-ui/core/IconButton';
 import Tooltip from '@material-ui/core/Tooltip';
 import { ClusterContext } from 'app/common/cluster-context';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
-import { SemanticType, Relation } from 'app/types/generated/vizierapi_pb';
+import { Relation } from 'app/types/generated/vizierapi_pb';
 import { useHistory } from 'react-router-dom';
 import { Arguments } from 'app/utils/args-utils';
 import { buildClass } from 'app/utils/build-class';
@@ -38,9 +37,6 @@ import {
   getColorForErrorRate,
   getColorForLatency,
   getGraphOptions,
-  LABEL_OPTIONS as labelOpts,
-  semTypeToShapeConfig,
-  ColInfo,
 } from './graph-utils';
 import {
   Edge, Entity, RequestGraphDisplay, RequestGraphManager,

@@ -66,6 +66,7 @@ interface FormFieldProps {
   dispatch: (action) => void;
 }
 
+// eslint-disable-next-line react-memo/require-memo
 const FormField: React.FC<FormFieldProps> = ({
   field,
   value,
@@ -124,6 +125,7 @@ interface FormFieldInputProps {
   form: Form;
 }
 
+// eslint-disable-next-line react-memo/require-memo
 export const FormFieldInput: React.FC<FormFieldInputProps> = ({
   onValueChange,
   form,

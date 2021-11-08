@@ -20,6 +20,7 @@ import * as React from 'react';
 
 import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
+// eslint-disable-next-line react-memo/require-memo
 export const ServiceIcon: React.FC<SvgIconProps> = (props) => (
   <SvgIcon {...props} viewBox='0 0 32 32'>
     <path

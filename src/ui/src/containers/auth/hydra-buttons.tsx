@@ -28,6 +28,7 @@ export interface HydraButtonsProps {
   onUsernamePasswordButtonClick: () => void;
 }
 
+// eslint-disable-next-line react-memo/require-memo
 export const HydraButtons: React.FC<HydraButtonsProps> = ({ usernamePasswordText, onUsernamePasswordButtonClick }) => (
   <>
     <UsernamePasswordButton
@@ -43,6 +44,7 @@ const useStyles = makeStyles(() => createStyles({
   },
 }));
 
+// eslint-disable-next-line react-memo/require-memo
 export const RejectHydraSignup: React.FC = () => {
   const classes = useStyles();
   return (

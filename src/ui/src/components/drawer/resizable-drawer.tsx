@@ -126,6 +126,7 @@ export const ResizableDrawer: React.FC<ResizableDrawerProps> = React.memo(functi
 
   const dragHandle = (
     <DraggableCore
+      // eslint-disable-next-line react-memo/require-usememo
       onDrag={(_, { deltaX, deltaY }) => {
         resize({
           deltaY,
@@ -164,6 +165,7 @@ export const ResizableDrawer: React.FC<ResizableDrawerProps> = React.memo(functi
   return (
     <>
       <FixedSizeDrawer
+        // eslint-disable-next-line react-memo/require-usememo
         otherContent={draggableContent}
         drawerDirection={drawerDirection}
         open={open}

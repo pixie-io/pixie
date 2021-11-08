@@ -58,6 +58,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
+// eslint-disable-next-line react-memo/require-memo
 export const HydraInvitationForm: React.FC = () => {
   const classes = useStyles();
 
@@ -96,6 +97,7 @@ export const HydraInvitationForm: React.FC = () => {
       <Form
         submitBtnText='Invite'
         defaultSubmit={false}
+        // eslint-disable-next-line react-memo/require-usememo
         onClick={() => {
           inviteUser({
             variables: {
@@ -120,6 +122,7 @@ export const HydraInvitationForm: React.FC = () => {
           });
         }}
         onChange={update}
+        // eslint-disable-next-line react-memo/require-usememo
         fields={[
           {
             name: 'Given Name',

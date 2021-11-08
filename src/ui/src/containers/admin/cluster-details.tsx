@@ -124,6 +124,9 @@ interface AgentDisplayState {
   data: Array<unknown>;
 }
 
+// TODO(nick,PC-1246): After MUI stuff is done, come back and fix the lint warnings here instead of suppressing.
+/* eslint-disable react-memo/require-memo,react-memo/require-usememo */
+
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function formatAgent(agentInfo): AgentDisplay {
   const now = new Date();
@@ -364,28 +367,6 @@ const ExpandablePodRow: React.FC<{ podStatus: GroupedPodStatus }> = (({ podStatu
     </React.Fragment>
   );
 });
-
-const PodsTable: React.FC<{ pods: GQLPodStatus[] }> = ({ pods }) => {
-  const display = pods.map((podStatus) => formatPodStatus(podStatus));
-  return (
-    <Table>
-      <TableHead>
-        <TableRow>
-          <StyledTableHeaderCell />
-          <StyledTableHeaderCell>Name</StyledTableHeaderCell>
-          <StyledTableHeaderCell>Status</StyledTableHeaderCell>
-          <StyledTableHeaderCell>Restart Count</StyledTableHeaderCell>
-          <StyledTableHeaderCell />
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {display.map((podStatus) => (
-          <ExpandablePodRow key={podStatus.name} podStatus={podStatus} />
-        ))}
-      </TableBody>
-    </Table>
-  );
-};
 
 const useClusterDetailStyles = makeStyles((theme: Theme) => createStyles({
   errorMessage: {

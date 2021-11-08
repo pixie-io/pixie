@@ -77,6 +77,7 @@ interface NewAutoCompleteProps {
   isValid: boolean;
 }
 
+// eslint-disable-next-line react-memo/require-memo
 export const CommandAutocomplete: React.FC<NewAutoCompleteProps> = ({
   onSubmit,
   onChange,
@@ -240,6 +241,7 @@ export const CommandAutocomplete: React.FC<NewAutoCompleteProps> = ({
         cursorPos={cursorPos}
         setCursor={setCursorPos}
         onChange={onChangeHandler}
+        // eslint-disable-next-line react-memo/require-usememo
         onKey={handleKey}
         value={tsInfo.getInput()}
         prefix={prefix}

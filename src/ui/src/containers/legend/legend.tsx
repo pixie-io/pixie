@@ -171,6 +171,14 @@ const Legend = React.memo((props: LegendProps) => {
     setInteractState({ ...interactState, hoveredSeries: null });
   }, [interactState, setInteractState]);
 
+  const handlePageBack = React.useCallback(() => {
+    setCurrentPage((page) => page - 1);
+  }, []);
+
+  const handlePageForward = React.useCallback(() => {
+    setCurrentPage((page) => page + 1);
+  }, []);
+
   if (vegaOrigin.length < 2) {
     return <div />;
   }
@@ -288,14 +296,6 @@ const Legend = React.memo((props: LegendProps) => {
     paddingLeft: `${leftPadding}px`,
     paddingRight: `${rightPadding}px`,
     width: '100%',
-  };
-
-  const handlePageBack = () => {
-    setCurrentPage((page) => page - 1);
-  };
-
-  const handlePageForward = () => {
-    setCurrentPage((page) => page + 1);
   };
 
   return (

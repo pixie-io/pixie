@@ -39,17 +39,18 @@ export interface GoogleButtonProps {
   onClick: () => void;
 }
 
-export const GoogleButton: React.FC<GoogleButtonProps> = ({ text, onClick }: GoogleButtonProps) => {
+export const GoogleButton = React.memo<GoogleButtonProps>(function GoogleButton({ text, onClick }) {
   const classes = useStyles();
   return (
     <Button
       variant='contained'
       color='primary'
       className={classes.button}
+      // eslint-disable-next-line react-memo/require-usememo
       startIcon={<GoogleIcon />}
       onClick={onClick}
     >
       {text}
     </Button>
   );
-};
+});

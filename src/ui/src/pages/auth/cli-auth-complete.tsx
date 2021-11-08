@@ -22,6 +22,7 @@ import * as QueryString from 'query-string';
 import { AuthMessageBox } from 'app/components';
 import { BasePage } from './base';
 
+// eslint-disable-next-line react-memo/require-memo
 export const CLIAuthCompletePage: React.FC = () => {
   const params = QueryString.parse(window.location.search.substr(1));
 

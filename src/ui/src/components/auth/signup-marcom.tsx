@@ -67,6 +67,7 @@ const styles = ({ palette, spacing }: Theme) => createStyles({
 });
 
 export const SignupMarcom = withStyles(styles)(
+  // eslint-disable-next-line react-memo/require-memo
   ({ classes }: WithStyles<typeof styles>) => (
     <>
       <Container maxWidth='sm' className={classes.root}>

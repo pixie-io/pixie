@@ -214,7 +214,7 @@ const DataDrawer = React.memo<{ open: boolean }>(function DataDrawer({ open }) {
   return (
     <div className={classes.drawer}>
       <StyledTabs
-        value={activeTabExists ? activeTab : ''}
+        value={activeTabExists ? activeTab : false}
         onChange={onTabChange}
         variant='scrollable'
         scrollButtons='auto'

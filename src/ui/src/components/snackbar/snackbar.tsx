@@ -56,6 +56,7 @@ const useSnackbarStyles = makeStyles(createStyles({
   },
 }));
 
+// eslint-disable-next-line react-memo/require-memo
 export const SnackbarProvider: React.FC = (props) => {
   const classes = useStyles();
   const snackbarClasses = useSnackbarStyles();
@@ -98,6 +99,7 @@ export const SnackbarProvider: React.FC = (props) => {
       <>
         {state.action !== noop && state.actionTitle && (
           <Button
+            // eslint-disable-next-line react-memo/require-usememo
             onClick={() => {
               state.action();
               hideSnackbar();
@@ -121,7 +123,9 @@ export const SnackbarProvider: React.FC = (props) => {
         {props.children}
       </SnackbarContext.Provider>
       <Snackbar
+        // eslint-disable-next-line react-memo/require-usememo
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        // eslint-disable-next-line react-memo/require-usememo
         ContentProps={{ className: classes.snackbar, classes: snackbarClasses }}
         open={state.opened}
         onClose={hideSnackbar}

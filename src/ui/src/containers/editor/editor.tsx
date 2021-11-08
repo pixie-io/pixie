@@ -82,7 +82,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 
 const shortcutKeys = Object.values(getKeyMap()).map((keyBinding) => keyBinding.sequence);
 
-const VisEditor = ({ visible }: { visible: boolean }) => {
+const VisEditor = React.memo<{ visible: boolean }>(function VisEditor({ visible }) {
   const classes = useStyles();
   const { script } = React.useContext(ScriptContext);
   const { setVisEditorText } = React.useContext(EditorContext);
@@ -112,9 +112,9 @@ const VisEditor = ({ visible }: { visible: boolean }) => {
       language='json'
     />
   );
-};
+});
 
-const PxLEditor = ({ visible }: { visible: boolean }) => {
+const PxLEditor = React.memo<{ visible: boolean }>(function PxlEditor({ visible }) {
   const classes = useStyles();
   const { script } = React.useContext(ScriptContext);
   const { setPxlEditorText } = React.useContext(EditorContext);
@@ -147,8 +147,9 @@ const PxLEditor = ({ visible }: { visible: boolean }) => {
       theme={EDITOR_THEME_MAP[theme.palette.mode]}
     />
   );
-};
+});
 
+// eslint-disable-next-line react-memo/require-memo
 const StyledTabs = withStyles((theme: Theme) => createStyles({
   root: {
     flex: 1,
@@ -158,6 +159,7 @@ const StyledTabs = withStyles((theme: Theme) => createStyles({
   },
 }))(Tabs);
 
+// eslint-disable-next-line react-memo/require-memo
 const StyledTab = withStyles((theme: Theme) => createStyles({
   root: {
     textTransform: 'none',
@@ -167,7 +169,7 @@ const StyledTab = withStyles((theme: Theme) => createStyles({
   },
 }))(Tab);
 
-const LiveViewEditor = ({ visible }: { visible: boolean }) => {
+const LiveViewEditor = React.memo<{ visible: boolean }>(function LiveViewEditor({ visible }) {
   const classes = useStyles();
   const [tab, setTab] = React.useState('pixie');
   const { setEditorPanelOpen } = React.useContext(LayoutContext);
@@ -179,6 +181,7 @@ const LiveViewEditor = ({ visible }: { visible: boolean }) => {
         <div className={classes.tabs}>
           <StyledTabs
             value={tab}
+            // eslint-disable-next-line react-memo/require-usememo
             onChange={(event, newTab) => setTab(newTab)}
           >
             <StyledTab value='pixie' label='PxL Script' />
@@ -197,9 +200,9 @@ const LiveViewEditor = ({ visible }: { visible: boolean }) => {
       </LazyPanel>
     </div>
   );
-};
+});
 
-export const EditorSplitPanel: React.FC = (props) => {
+export const EditorSplitPanel: React.FC = React.memo(function EditorSplitPanel({ children }) {
   const { editorPanelOpen } = React.useContext(LayoutContext);
 
   return (
@@ -208,10 +211,10 @@ export const EditorSplitPanel: React.FC = (props) => {
       initialSize={850}
       minSize={25}
       open={editorPanelOpen}
-      otherContent={props.children}
+      otherContent={children}
       overlay
     >
       <LiveViewEditor visible={editorPanelOpen} />
     </ResizableDrawer>
   );
-};
+});

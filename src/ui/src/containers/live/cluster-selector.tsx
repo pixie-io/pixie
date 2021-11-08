@@ -48,6 +48,7 @@ const useStyles = makeStyles(({ spacing, palette }: Theme) => createStyles({
   },
 }));
 
+// eslint-disable-next-line react-memo/require-memo
 const ClusterSelector: React.FC = () => {
   const classes = useStyles();
 

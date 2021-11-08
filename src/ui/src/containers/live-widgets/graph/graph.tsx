@@ -25,7 +25,7 @@ import {
   parseDOTNetwork,
 } from 'vis-network/standalone';
 import * as React from 'react';
-import { makeStyles, useTheme } from '@material-ui/core/styles';
+import { makeStyles, useTheme, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import { useHistory } from 'react-router-dom';
 import { ClusterContext } from 'app/common/cluster-context';
@@ -85,7 +85,7 @@ const LATENCY_TYPES = [
   SemanticType.ST_THROUGHPUT_BYTES_PER_NS,
 ];
 
-const useStyles = makeStyles((theme) => createStyles({
+const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
     width: '100%',
     flex: 1,

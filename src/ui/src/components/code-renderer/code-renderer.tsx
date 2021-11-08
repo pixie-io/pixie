@@ -26,6 +26,7 @@ import { Theme } from '@material-ui/core/styles';
 import IconButton from '@material-ui/core/IconButton';
 import withStyles from '@material-ui/core/styles/withStyles';
 
+// eslint-disable-next-line react-memo/require-memo
 export const CodeRenderer = withStyles((theme: Theme) => ({
   code: {
     backgroundColor: theme.palette.foreground.grey3,
@@ -52,6 +53,7 @@ export const CodeRenderer = withStyles((theme: Theme) => ({
     right: '0',
     cursor: 'pointer',
   },
+// eslint-disable-next-line react-memo/require-memo
 }))(({ classes, code, language = 'javascript' }: any) => (
   <div className={classes.code}>
     <Box className={`${classes.codeHighlight} small-scroll`}>
@@ -78,9 +80,9 @@ export const CodeRenderer = withStyles((theme: Theme) => ({
       edge='start'
       color='inherit'
       className={classes.copyBtn}
-      onClick={() => {
-        navigator.clipboard.writeText(code);
-      }}
+      onClick={React.useCallback(() => {
+        navigator.clipboard.writeText(code).then();
+      }, [code])}
     >
       <CopyIcon />
     </IconButton>

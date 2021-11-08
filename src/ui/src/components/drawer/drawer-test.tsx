@@ -33,6 +33,7 @@ describe('<FixedSizeDrawer/>', () => {
           drawerDirection='left'
           drawerSize='50px'
           open={false}
+          // eslint-disable-next-line react-memo/require-usememo
           otherContent={otherContent}
           overlay={false}
         >

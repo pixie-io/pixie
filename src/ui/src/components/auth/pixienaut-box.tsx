@@ -101,33 +101,35 @@ export interface PixienautBoxProps {
   image?: PixienautImage;
 }
 
-export const PixienautBox: React.FC<PixienautBoxProps> = ({ children, image = 'balloon' }) => {
-  const classes = useStyles();
-  const pixienautScenarios = {
-    balloon: (
-      <div className={classes.pixienautBalloonContainer}>
-        <PixienautBalloonSvg className={classes.pixienautBalloonImage} />
-      </div>
-    ),
-    octopus: (
-      <div className={classes.pixienautOctopusContainer}>
-        <PixienautOctopusSvg className={classes.pixienautOctopusImage} />
-      </div>
-    ),
-    toilet: (
-      <div className={classes.pixienautToiletContainer}>
-        <PixienautToiletSvg className={classes.pixienautToiletImage} />
-      </div>
-    ),
-  };
-  return (
-    <Paper className={classes.root} elevation={1}>
-      <div className={classes.splashImageContainer}>
-        {pixienautScenarios[image]}
-      </div>
-      <div className={classes.content}>
-        {children}
-      </div>
-    </Paper>
-  );
-};
+export const PixienautBox: React.FC<PixienautBoxProps> = React.memo<PixienautBoxProps>(
+  function PixienautBox({ children, image = 'balloon' }) {
+    const classes = useStyles();
+    const pixienautScenarios = {
+      balloon: (
+        <div className={classes.pixienautBalloonContainer}>
+          <PixienautBalloonSvg className={classes.pixienautBalloonImage} />
+        </div>
+      ),
+      octopus: (
+        <div className={classes.pixienautOctopusContainer}>
+          <PixienautOctopusSvg className={classes.pixienautOctopusImage} />
+        </div>
+      ),
+      toilet: (
+        <div className={classes.pixienautToiletContainer}>
+          <PixienautToiletSvg className={classes.pixienautToiletImage} />
+        </div>
+      ),
+    };
+    return (
+      <Paper className={classes.root} elevation={1}>
+        <div className={classes.splashImageContainer}>
+          {pixienautScenarios[image]}
+        </div>
+        <div className={classes.content}>
+          {children}
+        </div>
+      </Paper>
+    );
+  },
+);

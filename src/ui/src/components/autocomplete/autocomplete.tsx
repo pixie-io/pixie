@@ -93,13 +93,13 @@ function autoSelectItem(completions: CompletionItems): CompletionItem|null {
   return selectable[0] ?? null;
 }
 
-export const Autocomplete: React.FC<AutoCompleteProps> = ({
+export const Autocomplete = React.memo<AutoCompleteProps>(function Autocomplete({
   onSelection,
   getCompletions,
   placeholder,
   prefix,
   className,
-}) => {
+}) {
   const classes = useStyles();
   const {
     allowTyping,
@@ -146,7 +146,7 @@ export const Autocomplete: React.FC<AutoCompleteProps> = ({
     [inputValue, requireCompletion, itemsMap, onSelection],
   );
 
-  const handleKey = (key: Key) => {
+  const handleKey = React.useCallback((key: Key) => {
     switch (key) {
       case 'UP':
         setActiveItem(findNextItem(activeItem, itemsMap, completions, -1));
@@ -160,7 +160,7 @@ export const Autocomplete: React.FC<AutoCompleteProps> = ({
       default:
         break;
     }
-  };
+  }, [activeItem, completions, handleSelection, itemsMap]);
 
   return (
     <div className={buildClass(classes.root, className)}>
@@ -185,4 +185,4 @@ export const Autocomplete: React.FC<AutoCompleteProps> = ({
       />
     </div>
   );
-};
+});

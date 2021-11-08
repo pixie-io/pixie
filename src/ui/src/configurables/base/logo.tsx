@@ -30,12 +30,12 @@ const useStyles = makeStyles(() => createStyles({
   },
 }));
 
-export const Logo = (): React.ReactElement => {
+export const Logo = React.memo(function Logo() {
   const classes = useStyles();
 
   return (
     <div className={classes.logo}>
-      <img src={logo} />
+      <img src={logo} alt='Logo' />
     </div>
   );
-};
+});

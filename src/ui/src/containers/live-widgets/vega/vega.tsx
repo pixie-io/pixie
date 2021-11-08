@@ -194,7 +194,7 @@ const Vega = React.memo((props: VegaProps) => {
       }
       called = true;
       setTimeout(() => {
-        currentView.runAsync();
+        currentView.runAsync().then();
         called = false;
       });
     };
