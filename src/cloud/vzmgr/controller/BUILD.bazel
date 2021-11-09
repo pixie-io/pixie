@@ -20,6 +20,7 @@ go_library(
     name = "controller",
     srcs = [
         "metadata_reader.go",
+        "metrics.go",
         "server.go",
         "status_monitor.go",
         "utils.go",
@@ -51,6 +52,8 @@ go_library(
         "@com_github_gogo_protobuf//types",
         "@com_github_jmoiron_sqlx//:sqlx",
         "@com_github_nats_io_nats_go//:nats_go",
+        "@com_github_prometheus_client_golang//prometheus",
+        "@com_github_prometheus_client_golang//prometheus/collectors",
         "@com_github_sirupsen_logrus//:logrus",
         "@com_github_spf13_viper//:viper",
         "@in_gopkg_segmentio_analytics_go_v3//:analytics-go_v3",

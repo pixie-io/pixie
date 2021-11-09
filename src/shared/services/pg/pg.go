@@ -25,6 +25,8 @@ import (
 	// This is required to get the "pgx" driver.
 	_ "github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -73,6 +75,9 @@ func MustCreateDefaultPostgresDB() *sqlx.DB {
 	db.SetConnMaxLifetime(30 * time.Minute)
 	db.SetMaxOpenConns(10)
 
+	// It's possible we already registered a prometheus collector with multiple DB connections.
+	_ = prometheus.Register(
+		collectors.NewDBStatsCollector(db.DB, viper.GetString("postgres_db")))
 	return db
 }
 

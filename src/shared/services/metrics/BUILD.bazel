@@ -14,30 +14,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "pg",
-    srcs = ["pg.go"],
-    importpath = "px.dev/pixie/src/shared/services/pg",
-    visibility = ["//src:__subpackages__"],
+    name = "metrics",
+    srcs = ["metrics.go"],
+    importpath = "px.dev/pixie/src/shared/services/metrics",
+    visibility = ["//visibility:public"],
     deps = [
-        "@com_github_jackc_pgx//stdlib",
-        "@com_github_jmoiron_sqlx//:sqlx",
         "@com_github_prometheus_client_golang//prometheus",
-        "@com_github_prometheus_client_golang//prometheus/collectors",
-        "@com_github_sirupsen_logrus//:logrus",
-        "@com_github_spf13_pflag//:pflag",
-        "@com_github_spf13_viper//:viper",
-    ],
-)
-
-go_test(
-    name = "pg_test",
-    srcs = ["pg_test.go"],
-    embed = [":pg"],
-    deps = [
-        "@com_github_spf13_viper//:viper",
-        "@com_github_stretchr_testify//assert",
+        "@com_github_prometheus_client_golang//prometheus/promhttp",
     ],
 )

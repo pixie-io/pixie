@@ -62,12 +62,21 @@ func isHealthEndpoint(input string) bool {
 	return false
 }
 
+func isMetricsEndpoint(input string) bool {
+	return strings.HasPrefix(input, "/metrics")
+}
+
 // WithBearerAuthMiddleware checks for valid bearer auth or rejects the request.
 // This middleware should be use on all services (except auth/api) to validate our tokens.
 func WithBearerAuthMiddleware(env env.Env, next http.Handler) http.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) {
 		if isHealthEndpoint(r.URL.Path) {
 			// Skip auth for healthcheck endpoints.
+			next.ServeHTTP(w, r)
+			return
+		}
+		if isMetricsEndpoint(r.URL.Path) {
+			// Skip auth for metric endpoints.
 			next.ServeHTTP(w, r)
 			return
 		}

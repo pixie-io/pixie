@@ -43,6 +43,7 @@ import (
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/env"
 	"px.dev/pixie/src/shared/services/healthz"
+	"px.dev/pixie/src/shared/services/metrics"
 	"px.dev/pixie/src/shared/services/msgbus"
 	"px.dev/pixie/src/shared/services/pg"
 	"px.dev/pixie/src/shared/services/server"
@@ -111,6 +112,7 @@ func main() {
 		err: errors.New("metadata reader is not yet ready"),
 	}
 	healthz.InstallPathHandler(mux, "/readyz", rc)
+	metrics.MustRegisterMetricsHandler(mux)
 
 	s := server.NewPLServer(env.New(viper.GetString("domain_name")), mux)
 

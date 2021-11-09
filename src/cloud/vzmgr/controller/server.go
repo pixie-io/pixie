@@ -35,6 +35,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/jmoiron/sqlx"
 	"github.com/nats-io/nats.go"
+	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
@@ -96,6 +97,8 @@ func New(db *sqlx.DB, dbKey string, dnsMgrClient dnsmgrpb.DNSMgrServiceClient, n
 		updater:      updater,
 		done:         make(chan struct{}),
 	}
+
+	_ = prometheus.Register(NewStatusMetricsCollector(db))
 
 	for _, shard := range vzshard.GenerateShardRange() {
 		s.startShardedHandler(shard, "heartbeat", s.HandleVizierHeartbeat)
