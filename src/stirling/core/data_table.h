@@ -92,8 +92,9 @@ class DataTable : public NotCopyable {
   size_t Occupancy() const {
     size_t occupancy = 0;
     for (auto& [tablet_id, tablet] : tablets_) {
-      PL_UNUSED(tablet_id);
-      occupancy += tablet.records[0]->Size();
+      if (!tablet.records.empty()) {
+        occupancy += tablet.records[0]->Size();
+      }
     }
     return occupancy;
   }
