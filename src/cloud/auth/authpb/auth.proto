@@ -109,8 +109,10 @@ message SignupReply {
   px.uuidpb.UUID user_id = 4 [(gogoproto.customname) = "UserID"];
   // Information about the logged in user.
   AuthenticatedUserInfo user_info = 5;
-  // Org ID of the logged in user.
+  // Org ID of the user's org.
   px.uuidpb.UUID org_id = 6 [(gogoproto.customname) = "OrgID"];
+  // Org name of the user's org.
+  string org_name = 7;
 }
 
 message GetAugmentedAuthTokenRequest {

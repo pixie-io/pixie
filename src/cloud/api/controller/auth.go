@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/gorilla/sessions"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -142,6 +143,7 @@ func AuthSignupHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 			UserId: utils.UUIDFromProtoOrNil(resp.UserID).String(),
 			Event:  events.OrgCreated,
 			Properties: analytics.NewProperties().
+				Set("org_name", resp.OrgName).
 				Set("org_id", orgIDStr),
 		})
 	}
@@ -214,6 +216,7 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 	var expiresAt int64
 	userCreated := false
 	userID := ""
+	var orgID string
 
 	// If logging in using an API key, just get the augmented token.
 	token, expiresAt, err = loginWithAPIKey(ctxWithCreds, env, r, w)
@@ -242,26 +245,28 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 		userCreated = resp.UserCreated
 		userInfo = resp.UserInfo
 		orgInfo = resp.OrgInfo
+		orgID = orgInfo.OrgID
 		userID = utils.UUIDFromProtoOrNil(resp.UserInfo.UserID).String()
+	} else {
+		orgID, _ = parseOrgIDFromAPIKey(token, env.JWTSigningKey(), viper.GetString("domain_name"))
 	}
 
-	ev := events.UserLoggedIn
 	if userCreated {
-		ev = events.UserSignedUp
-
-		events.Client().Enqueue(&analytics.Identify{
+		events.Client().Enqueue(&analytics.Track{
 			UserId: userID,
-			Traits: analytics.NewTraits().
-				SetFirstName(userInfo.FirstName).
-				SetLastName(userInfo.LastName).
-				SetEmail(userInfo.Email),
+			Event:  events.UserSignedUp,
+			Properties: analytics.NewProperties().
+				Set("org_id", orgID),
+		})
+	} else {
+		events.Client().Enqueue(&analytics.Track{
+			UserId: userID,
+			Event:  events.UserLoggedIn,
+			Properties: analytics.NewProperties().
+				Set("org_id", orgID).
+				Set("embedded", false),
 		})
 	}
-
-	events.Client().Enqueue(&analytics.Track{
-		UserId: userID,
-		Event:  ev,
-	})
 
 	setSessionCookie(session, token, expiresAt, r, w, http.SameSiteNoneMode)
 
@@ -316,6 +321,7 @@ func AuthLoginHandlerEmbed(env commonenv.Env, w http.ResponseWriter, r *http.Req
 	var expiresAt int64
 	userCreated := false
 	userID := ""
+	var orgID string
 
 	// If logging in using an API key, just get the augmented token.
 	token, expiresAt, err = loginWithAPIKey(ctxWithCreds, env, r, w)
@@ -345,14 +351,19 @@ func AuthLoginHandlerEmbed(env commonenv.Env, w http.ResponseWriter, r *http.Req
 		userCreated = resp.UserCreated
 		userInfo = resp.UserInfo
 		orgInfo = resp.OrgInfo
+		orgID = orgInfo.OrgID
 		userID = utils.UUIDFromProtoOrNil(resp.UserInfo.UserID).String()
+	} else {
+		orgID, _ = parseOrgIDFromAPIKey(token, env.JWTSigningKey(), viper.GetString("domain_name"))
 	}
-
-	ev := events.UserLoggedIn
 
 	events.Client().Enqueue(&analytics.Track{
 		UserId: userID,
-		Event:  ev,
+		Event:  events.UserLoggedIn,
+		Properties: analytics.NewProperties().
+			Set("user_id", userID).
+			Set("org_id", orgID).
+			Set("embedded", true),
 	})
 
 	err = sendUserInfo(w, userInfo, orgInfo, token, expiresAt, userCreated)
@@ -554,4 +565,15 @@ func loginWithAPIKey(ctx context.Context, env commonenv.Env, r *http.Request, w 
 	}
 
 	return apiKeyResp.Token, apiKeyResp.ExpiresAt, nil
+}
+
+func parseOrgIDFromAPIKey(token string, key string, audience string) (string, error) {
+	claims := jwt.MapClaims{}
+	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(key), nil
+	}, jwt.WithAudience(audience))
+	if err != nil {
+		return "", err
+	}
+	return claims["OrgID"].(string), nil
 }

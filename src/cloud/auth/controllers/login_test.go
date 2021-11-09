@@ -966,7 +966,8 @@ func TestServer_Signup_LookupIPONDomain(t *testing.T) {
 		Return(nil, errors.New("user does not exist"))
 
 	fakeOrgInfo := &profilepb.OrgInfo{
-		ID: orgPb,
+		ID:      orgPb,
+		OrgName: "testOrg",
 	}
 	mockProfile.EXPECT().
 		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
@@ -1004,6 +1005,7 @@ func TestServer_Signup_LookupIPONDomain(t *testing.T) {
 	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
 	assert.False(t, resp.OrgCreated)
 	assert.Equal(t, resp.OrgID, utils.ProtoFromUUIDStrOrNil(orgID))
+	assert.Equal(t, resp.OrgName, "testOrg")
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt <= maxExpiryTime)
 	assert.Equal(t, resp.UserInfo.UserID, utils.ProtoFromUUIDStrOrNil(userID))
 	assert.Equal(t, resp.UserInfo.FirstName, "first")
@@ -1058,7 +1060,8 @@ func TestServer_Signup_FallbackToDomainLookupAfterIPON(t *testing.T) {
 		Return(nil, errors.New("user does not exist"))
 
 	fakeOrgInfo := &profilepb.OrgInfo{
-		ID: orgPb,
+		ID:      orgPb,
+		OrgName: "testOrg",
 	}
 	mockProfile.EXPECT().
 		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
@@ -1101,6 +1104,7 @@ func TestServer_Signup_FallbackToDomainLookupAfterIPON(t *testing.T) {
 	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
 	assert.False(t, resp.OrgCreated)
 	assert.Equal(t, resp.OrgID, utils.ProtoFromUUIDStrOrNil(orgID))
+	assert.Equal(t, resp.OrgName, "testOrg")
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt <= maxExpiryTime)
 	assert.Equal(t, resp.UserInfo.UserID, utils.ProtoFromUUIDStrOrNil(userID))
 	assert.Equal(t, resp.UserInfo.FirstName, "first")
@@ -1181,7 +1185,8 @@ func TestServer_Signup_AlwaysCreateOrgWhenIdentityProviderDoesntReturnOrgName(t 
 		}, nil)
 
 	fakeOrgInfo := &profilepb.OrgInfo{
-		ID: orgPb,
+		ID:      orgPb,
+		OrgName: "testOrg",
 	}
 	mockProfile.EXPECT().
 		GetOrg(gomock.Any(), orgPb).
@@ -1206,6 +1211,7 @@ func TestServer_Signup_AlwaysCreateOrgWhenIdentityProviderDoesntReturnOrgName(t 
 
 	// Check to make sure the response values match our userInfo.
 	assert.Equal(t, resp.OrgID, utils.ProtoFromUUIDStrOrNil(orgID))
+	assert.Equal(t, resp.OrgName, "testOrg")
 	assert.Equal(t, resp.UserInfo.UserID, utils.ProtoFromUUIDStrOrNil(userID))
 	assert.Equal(t, resp.UserInfo.FirstName, "first")
 	assert.Equal(t, resp.UserInfo.LastName, "last")
@@ -1258,7 +1264,8 @@ func TestServer_Signup_ExistingOrgWithIdentityProviderOrgName(t *testing.T) {
 		Return(nil, errors.New("user does not exist"))
 
 	fakeOrgInfo := &profilepb.OrgInfo{
-		ID: orgPb,
+		ID:      orgPb,
+		OrgName: "testOrg",
 	}
 	mockProfile.EXPECT().
 		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
@@ -1296,6 +1303,7 @@ func TestServer_Signup_ExistingOrgWithIdentityProviderOrgName(t *testing.T) {
 	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
 	assert.False(t, resp.OrgCreated)
 	assert.Equal(t, resp.OrgID, utils.ProtoFromUUIDStrOrNil(orgID))
+	assert.Equal(t, resp.OrgName, "testOrg")
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt <= maxExpiryTime)
 	assert.Equal(t, resp.UserInfo.UserID, utils.ProtoFromUUIDStrOrNil(userID))
 	assert.Equal(t, resp.UserInfo.FirstName, "first")
@@ -1369,6 +1377,7 @@ func TestServer_Signup_CreateOrg_ForSelfUser(t *testing.T) {
 	fakeOrgInfo := &profilepb.OrgInfo{
 		ID:              orgPb,
 		EnableApprovals: false,
+		OrgName:         "testOrg",
 	}
 	mockProfile.EXPECT().
 		GetOrg(gomock.Any(), orgPb).
@@ -1397,6 +1406,7 @@ func TestServer_Signup_CreateOrg_ForSelfUser(t *testing.T) {
 	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
 	assert.True(t, resp.OrgCreated)
 	assert.Equal(t, resp.OrgID, utils.ProtoFromUUIDStrOrNil(orgID))
+	assert.Equal(t, resp.OrgName, "testOrg")
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt <= maxExpiryTime)
 	assert.Equal(t, resp.UserInfo.UserID, utils.ProtoFromUUIDStrOrNil(userID))
 	assert.Equal(t, resp.UserInfo.FirstName, "first")

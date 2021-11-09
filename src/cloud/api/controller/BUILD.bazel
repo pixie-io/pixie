@@ -73,6 +73,7 @@ go_library(
         "//src/shared/services/httpmiddleware",
         "//src/shared/services/utils",
         "//src/utils",
+        "@com_github_dgrijalva_jwt_go_v4//:jwt-go",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_gogo_protobuf//jsonpb",
         "@com_github_gogo_protobuf//types",

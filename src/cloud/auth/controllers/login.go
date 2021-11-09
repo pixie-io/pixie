@@ -237,7 +237,8 @@ func (s *Server) signupUser(ctx context.Context, userInfo *UserInfo, orgInfo *pr
 			LastName:  userInfo.LastName,
 			Email:     userInfo.Email,
 		},
-		OrgID: orgInfo.ID,
+		OrgID:   orgInfo.ID,
+		OrgName: orgInfo.OrgName,
 	}, nil
 }
 
