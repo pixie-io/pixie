@@ -22,7 +22,7 @@
 
 #include <string>
 
-#include <absl/strings/substitute.h>
+#include <absl/strings/str_format.h>
 
 #endif
 
@@ -248,14 +248,14 @@ struct node_tlswrap_symaddrs_t {
 #ifdef __cplusplus
 
 inline std::string ToString(const struct node_tlswrap_symaddrs_t& symaddrs) {
-  return absl::Substitute(
-      "TLSWrap_StreamListener_offset=$0\n"
-      "StreamListener_stream_offset=$1\n"
-      "StreamBase_StreamResource_offset=$2\n"
-      "LibuvStreamWrap_StreamBase_offset=$3\n"
-      "LibuvStreamWrap_stream_offset=$4\n"
-      "uv_stream_s_io_watcher_offset=$5\n"
-      "uv__io_s_fd_offset=$6\n",
+  return absl::StrFormat(
+      "TLSWrap_StreamListener_offset=%#x\n"
+      "StreamListener_stream_offset=%#x\n"
+      "StreamBase_StreamResource_offset=%#x\n"
+      "LibuvStreamWrap_StreamBase_offset=%#x\n"
+      "LibuvStreamWrap_stream_offset=%#x\n"
+      "uv_stream_s_io_watcher_offset=%#x\n"
+      "uv__io_s_fd_offset=%#x\n",
       symaddrs.TLSWrap_StreamListener_offset, symaddrs.StreamListener_stream_offset,
       symaddrs.StreamBase_StreamResource_offset, symaddrs.LibuvStreamWrap_StreamBase_offset,
       symaddrs.LibuvStreamWrap_stream_offset, symaddrs.uv_stream_s_io_watcher_offset,

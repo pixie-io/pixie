@@ -295,7 +295,7 @@ StatusOr<SemVer> GetNodeVersion(const std::filesystem::path& node_exe) {
 StatusOr<std::array<UProbeTmpl, 6>> UProbeManager::GetNodeOpensslUProbeTmpls(const SemVer& ver) {
   static const std::map<SemVer, std::array<UProbeTmpl, 6>> kNodeVersionUProbeTmpls = {
       {SemVer{12, 3, 1}, kNodeOpenSSLUProbeTmplsV12_3_1},
-      {SemVer{15, 0, 1}, kNodeOpenSSLUProbeTmplsV15_0_1},
+      {SemVer{15, 0, 0}, kNodeOpenSSLUProbeTmplsV15_0_0},
   };
   auto iter = Floor(kNodeVersionUProbeTmpls, ver);
   if (iter == kNodeVersionUProbeTmpls.end()) {

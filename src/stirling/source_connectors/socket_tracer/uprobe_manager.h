@@ -259,7 +259,7 @@ class UProbeManager {
           },
       });
 
-  inline static const std::array<UProbeTmpl, 6> kNodeOpenSSLUProbeTmplsV15_0_1 =
+  inline static const std::array<UProbeTmpl, 6> kNodeOpenSSLUProbeTmplsV15_0_0 =
       MakeArray<UProbeTmpl>({
           UProbeTmpl{
               .symbol = "_ZN4node6crypto7TLSWrapC2E",

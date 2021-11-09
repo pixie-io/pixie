@@ -608,8 +608,48 @@ constexpr struct node_tlswrap_symaddrs_t kNodeSymaddrsV12_3_1 = {
     .uv__io_s_fd_offset = 0x30,
 };
 
-constexpr struct node_tlswrap_symaddrs_t kNodeSymaddrsV14_18_1 = {
-    .TLSWrap_StreamListener_offset = 0x0138,
+constexpr struct node_tlswrap_symaddrs_t kNodeSymaddrsV12_16_2 = {
+    .TLSWrap_StreamListener_offset = 0x138,
+    .StreamListener_stream_offset = 0x08,
+    .StreamBase_StreamResource_offset = 0x00,
+    .LibuvStreamWrap_StreamBase_offset = 0x58,
+    .LibuvStreamWrap_stream_offset = 0x98,
+    .uv_stream_s_io_watcher_offset = 0x88,
+    .uv__io_s_fd_offset = 0x30,
+};
+
+constexpr struct node_tlswrap_symaddrs_t kNodeSymaddrsV13_0_0 = {
+    .TLSWrap_StreamListener_offset = 0x130,
+    .StreamListener_stream_offset = 0x8,
+    .StreamBase_StreamResource_offset = 0x00,
+    .LibuvStreamWrap_StreamBase_offset = 0x50,
+    .LibuvStreamWrap_stream_offset = 0x90,
+    .uv_stream_s_io_watcher_offset = 0x88,
+    .uv__io_s_fd_offset = 0x30,
+};
+
+constexpr struct node_tlswrap_symaddrs_t kNodeSymaddrsV13_2_0 = {
+    .TLSWrap_StreamListener_offset = 0x138,
+    .StreamListener_stream_offset = 0x08,
+    .StreamBase_StreamResource_offset = 0x00,
+    .LibuvStreamWrap_StreamBase_offset = 0x58,
+    .LibuvStreamWrap_stream_offset = 0x98,
+    .uv_stream_s_io_watcher_offset = 0x88,
+    .uv__io_s_fd_offset = 0x30,
+};
+
+constexpr struct node_tlswrap_symaddrs_t kNodeSymaddrsV13_10_1 = {
+    .TLSWrap_StreamListener_offset = 0x140,
+    .StreamListener_stream_offset = 0x8,
+    .StreamBase_StreamResource_offset = 0x00,
+    .LibuvStreamWrap_StreamBase_offset = 0x60,
+    .LibuvStreamWrap_stream_offset = 0xa0,
+    .uv_stream_s_io_watcher_offset = 0x88,
+    .uv__io_s_fd_offset = 0x30,
+};
+
+constexpr struct node_tlswrap_symaddrs_t kNodeSymaddrsV14_5_0 = {
+    .TLSWrap_StreamListener_offset = 0x138,
     .StreamListener_stream_offset = 0x08,
     .StreamBase_StreamResource_offset = 0x00,
     .LibuvStreamWrap_StreamBase_offset = 0x58,
@@ -620,7 +660,7 @@ constexpr struct node_tlswrap_symaddrs_t kNodeSymaddrsV14_18_1 = {
 
 // This works for version from 15.0 to 16.9 as tested. Versions newer than 16.9 should still be
 // compatible, but requires testing.
-constexpr struct node_tlswrap_symaddrs_t kNodeSymaddrsV15_0_1 = {
+constexpr struct node_tlswrap_symaddrs_t kNodeSymaddrsV15_0_0 = {
     .TLSWrap_StreamListener_offset = 0x78,
     .StreamListener_stream_offset = 0x08,
     .StreamBase_StreamResource_offset = 0x00,
@@ -630,16 +670,13 @@ constexpr struct node_tlswrap_symaddrs_t kNodeSymaddrsV15_0_1 = {
     .uv__io_s_fd_offset = 0x30,
 };
 
-struct node_tlswrap_symaddrs_t DefaultNodeTLSWrapSymAddrs() {
-  return kNodeSymaddrsV15_0_1;
-}
-
 StatusOr<struct node_tlswrap_symaddrs_t> NodeTLSWrapSymAddrsFromVersion(const SemVer& ver) {
   LOG(INFO) << "Getting symbol offsets for version: " << ver.ToString();
   static const std::map<SemVer, struct node_tlswrap_symaddrs_t> kNodeVersionSymaddrs = {
-      {SemVer{12, 3, 1}, kNodeSymaddrsV12_3_1},
-      {SemVer{14, 18, 1}, kNodeSymaddrsV14_18_1},
-      {SemVer{15, 0, 1}, kNodeSymaddrsV15_0_1},
+      {SemVer{12, 3, 1}, kNodeSymaddrsV12_3_1},   {SemVer{12, 16, 2}, kNodeSymaddrsV12_16_2},
+      {SemVer{13, 0, 0}, kNodeSymaddrsV13_0_0},   {SemVer{13, 2, 0}, kNodeSymaddrsV13_2_0},
+      {SemVer{13, 10, 1}, kNodeSymaddrsV13_10_1}, {SemVer{14, 5, 0}, kNodeSymaddrsV14_5_0},
+      {SemVer{15, 0, 0}, kNodeSymaddrsV15_0_0},
   };
   auto iter = Floor(kNodeVersionSymaddrs, ver);
   if (iter == kNodeVersionSymaddrs.end()) {

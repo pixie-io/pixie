@@ -31,14 +31,18 @@ namespace stirling {
 using ::px::system::ProcParser;
 using ::testing::StrEq;
 
+struct NodeVersionTestParam {
+  std::filesystem::path tar;
+  std::string expected_version;
+};
+
+using NodeVersionTest = ::testing::TestWithParam<NodeVersionTestParam>;
+
 // Tests that GetVersion() can execute the executable of container process (with the set of
 // permissions granted through our requires_bpf tag, although the exact permission might be more
 // limited, perhaps only need 'root' permission to have access to the file).
-TEST(NodeVersionTest, ResultsAreAsExpected) {
-  constexpr std::string_view kNode15_0ImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/node_15_0_image.tar";
-  ContainerRunner node_server(px::testing::BazelBinTestFilePath(kNode15_0ImageTar), "node_server",
-                              "");
+TEST_P(NodeVersionTest, ResultsAreAsExpected) {
+  ContainerRunner node_server(px::testing::BazelBinTestFilePath(GetParam().tar), "node_server", "");
   ASSERT_OK_AND_ASSIGN(std::string output, node_server.Run(std::chrono::seconds{60}));
   pid_t node_server_pid = node_server.process_pid();
 
@@ -47,8 +51,18 @@ TEST(NodeVersionTest, ResultsAreAsExpected) {
 
   ASSERT_OK_AND_ASSIGN(const std::filesystem::path proc_exe_path,
                        ProcExe(node_server_pid, &proc_parser, &fp_resolver));
-  ASSERT_OK_AND_THAT(GetVersion(proc_exe_path), StrEq("v15.0.1"));
+  ASSERT_OK_AND_THAT(GetVersion(proc_exe_path), StrEq(GetParam().expected_version));
 }
+
+INSTANTIATE_TEST_SUITE_P(
+    AllVersions, NodeVersionTest,
+    ::testing::Values(
+        NodeVersionTestParam{
+            "src/stirling/source_connectors/socket_tracer/testing/containers/node_15_0_image.tar",
+            "v15.0.1"},
+        NodeVersionTestParam{
+            "src/stirling/source_connectors/socket_tracer/testing/containers/node_16_9_image.tar",
+            "v16.9.1"}));
 
 }  // namespace stirling
 }  // namespace px
