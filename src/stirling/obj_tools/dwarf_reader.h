@@ -300,10 +300,6 @@ class DwarfReader {
   // When making multiple DwarfReader calls, this speeds up the process at the cost of some memory.
   void IndexDIEs();
 
-  static Status GetMatchingDIEs(llvm::DWARFContext::unit_iterator_range CUs, std::string_view name,
-                                std::optional<llvm::dwarf::Tag> tag,
-                                std::vector<llvm::DWARFDie>* dies_out);
-
   // Walks the struct_die for all members, recursively visiting any members which are also structs,
   // to capture information of all base type members of the struct in a flattened form.
   // See GetStructSpec() for the public interface, and the output format.

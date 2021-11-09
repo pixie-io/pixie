@@ -104,13 +104,9 @@ DwarfReader::DwarfReader(std::unique_ptr<llvm::MemoryBuffer> buffer,
 
 namespace {
 
-bool IsMatchingTag(std::optional<llvm::dwarf::Tag> tag, const DWARFDie& die) {
-  return (!tag.has_value() || (tag == die.getTag()));
-}
-
 bool IsMatchingDIE(std::string_view name, std::optional<llvm::dwarf::Tag> tag,
                    const DWARFDie& die) {
-  if (!IsMatchingTag(tag, die)) {
+  if (tag.has_value() && (tag != die.getTag())) {
     // Not the right type.
     return false;
   }
@@ -123,21 +119,6 @@ bool IsMatchingDIE(std::string_view name, std::optional<llvm::dwarf::Tag> tag,
 }
 
 }  // namespace
-
-Status DwarfReader::GetMatchingDIEs(DWARFContext::unit_iterator_range CUs, std::string_view name,
-                                    std::optional<llvm::dwarf::Tag> tag,
-                                    std::vector<DWARFDie>* dies_out) {
-  for (const auto& CU : CUs) {
-    for (const auto& entry : CU->dies()) {
-      DWARFDie die = {CU.get(), &entry};
-      if (IsMatchingDIE(name, tag, die)) {
-        dies_out->push_back(std::move(die));
-      }
-    }
-  }
-
-  return Status::OK();
-}
 
 namespace {
 
@@ -182,17 +163,16 @@ Status DwarfReader::DetectSourceLanguage() {
 }
 
 void DwarfReader::IndexDIEs() {
-  DWARFContext::unit_iterator_range CUs = dwarf_context_->normal_units();
-
   absl::flat_hash_map<const llvm::DWARFDebugInfoEntry*, std::string> dwarf_entry_names;
 
   // Map from DW_AT_specification to DIE. Only DW_TAG_subprogram can have this attribute.
   // Also only applies to CPP binaries.
   absl::flat_hash_map<uint64_t, DWARFDie> fn_spec_offsets;
 
-  for (const auto& CU : CUs) {
-    for (const auto& Entry : CU->dies()) {
-      DWARFDie die = {CU.get(), &Entry};
+  DWARFContext::unit_iterator_range units = dwarf_context_->normal_units();
+  for (const std::unique_ptr<llvm::DWARFUnit>& unit : units) {
+    for (const llvm::DWARFDebugInfoEntry& entry : unit->dies()) {
+      DWARFDie die = {unit.get(), &entry};
 
       if (die.isSubprogramDIE()) {
         auto spec_or =
@@ -268,7 +248,15 @@ StatusOr<std::vector<DWARFDie>> DwarfReader::GetMatchingDIEs(
 
   // When there is no index, fall-back to manual search.
   std::vector<DWARFDie> dies;
-  PL_RETURN_IF_ERROR(GetMatchingDIEs(dwarf_context_->normal_units(), name, type_opt, &dies));
+  DWARFContext::unit_iterator_range units = dwarf_context_->normal_units();
+  for (const std::unique_ptr<llvm::DWARFUnit>& unit : units) {
+    for (const llvm::DWARFDebugInfoEntry& entry : unit->dies()) {
+      DWARFDie die = {unit.get(), &entry};
+      if (IsMatchingDIE(name, type_opt, die)) {
+        dies.push_back(std::move(die));
+      }
+    }
+  }
 
   return dies;
 }
@@ -357,18 +345,13 @@ StatusOr<uint64_t> GetMemberOffset(const DWARFDie& die) {
 }
 
 StatusOr<DWARFDie> GetTypeAttribute(const DWARFDie& die) {
-  PL_ASSIGN_OR_RETURN(
-      const DWARFFormValue& type_attr,
-      AdaptLLVMOptional(die.find(llvm::dwarf::DW_AT_type), "Could not find DW_AT_type."));
+  PL_ASSIGN_OR_RETURN(const DWARFFormValue& type_attr, GetAttribute(die, llvm::dwarf::DW_AT_type));
   return die.getAttributeValueAsReferencedDie(type_attr);
 }
 
 std::string_view GetTypeName(const DWARFDie& die) {
-  auto die_or = GetTypeAttribute(die);
-  if (die_or.ok()) {
-    return GetShortName(die_or.ValueOrDie());
-  }
-  return {};
+  PL_ASSIGN_OR(DWARFDie type_die, GetTypeAttribute(die), return {});
+  return GetShortName(type_die);
 }
 
 // Recursively resolve the type of the input DIE until reaching a leaf type that has no further
@@ -801,7 +784,7 @@ StatusOr<VarLocation> DwarfReader::GetArgumentLocation(std::string_view function
                       GetMatchingDIE(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
 
   for (const auto& die : GetParamDIEs(function_die)) {
-    if (die.getName(llvm::DINameKind::ShortName) == arg_name) {
+    if (die.getShortName() == arg_name) {
       return GetDieLocationAttr(die);
     }
   }
