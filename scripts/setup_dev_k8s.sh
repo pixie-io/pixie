@@ -53,9 +53,7 @@ else
   ret=0
   minikube status "${profile_args_str}" || ret=$?
   if [ $ret -ne 0 ]; then
-      # Ping k8s to v1.16, later versions seem to cause issues with PVs.
-      # See https://github.com/kubernetes/minikube/issues/7828#issuecomment-627182963
-      minikube start --cpus=${cpus} --memory=${memory} --vm-driver=${vm_driver} --kubernetes-version=v1.16.1 "${profile_args_str}"
+      minikube start --cpus=${cpus} --memory=${memory} --vm-driver=${vm_driver} "${profile_args_str}"
   fi
 fi
 

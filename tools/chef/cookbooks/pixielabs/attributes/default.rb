@@ -79,9 +79,9 @@ if node[:platform] == 'ubuntu'
   default['kubectl']['sha256']        = '5f8e8d8de929f64b8f779d0428854285e1a1c53a02cc2ad6b1ce5d32eefad25c'
 
   default['minikube']['download_path'] =
-    'https://github.com/kubernetes/minikube/releases/download/v1.9.2/minikube-linux-amd64'
+    'https://github.com/kubernetes/minikube/releases/download/v1.24.0/minikube-linux-amd64'
   default['minikube']['sha256']        =
-    '3121f933bf8d608befb24628a045ce536658738c14618504ba46c92e656ea6b5'
+    '3bc218476cf205acf11b078d45210a4882e136d24a3cbb7d8d645408e423b8fe'
 
   default['nodejs']['download_path'] = 'https://nodejs.org/dist/v16.1.0/node-v16.1.0-linux-x64.tar.xz'
   default['nodejs']['sha256']        = '94d14ed1871a69e3dedd3a54d8c547c978b49566892616a227bf8be2f171a8a8'
@@ -176,8 +176,8 @@ elsif node[:platform] == 'mac_os_x'
   default['kubectl']['sha256']        = 'de42dd22f67c135b749c75f389c70084c3fe840e3d89a03804edd255ac6ee829'
 
   default['minikube']['download_path'] =
-    'https://github.com/kubernetes/minikube/releases/download/v1.9.2/minikube-darwin-amd64'
-  default['minikube']['sha256']        = 'f27016246850b3145e1509e98f7ed060fd9575ac4d455c7bdc15277734372e85'
+    'https://github.com/kubernetes/minikube/releases/download/v1.24.0/minikube-darwin-amd64'
+  default['minikube']['sha256']        = '55f14e4f411370da18d7b9432ae4edd128f4f047bbc87a278e08ba256ff6f669'
 
   default['nodejs']['download_path'] = 'https://nodejs.org/dist/v16.1.0/node-v16.1.0-darwin-x64.tar.gz'
   default['nodejs']['sha256']        = '22525ecc3b91f4d9a5d44dffe061cdb23f1a3e4a5555552e7940987883a93547'
