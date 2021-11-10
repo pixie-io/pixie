@@ -73,8 +73,7 @@ func setupHTTPS(config *Config) ([]elastic.ClientOptionFunc, error) {
 		return opts, err
 	}
 	opts = append(opts,
-		elastic.SetHttpClient(httpClient),
-		elastic.SetBasicAuth(config.User, config.Passwd))
+		elastic.SetHttpClient(httpClient))
 	return opts, nil
 }
 
@@ -94,7 +93,7 @@ func NewEsClient(config *Config) (*elastic.Client, error) {
 		}
 	}
 
-	opts = append(opts, elastic.SetURL(config.URL...), elastic.SetSniff(false))
+	opts = append(opts, elastic.SetURL(config.URL...), elastic.SetBasicAuth(config.User, config.Passwd), elastic.SetSniff(false))
 
 	return elastic.NewClient(opts...)
 }
