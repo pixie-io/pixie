@@ -112,9 +112,11 @@ type ArtifactsInfoResolver struct {
 func (q *QueryResolver) Artifacts(ctx context.Context, args *artifactsArgs) (*ArtifactsInfoResolver, error) {
 	grpcAPI := q.Env.ArtifactTrackerServer
 
-	artifactType := cloudpb.AT_LINUX_AMD64
-	if args.ArtifactName == "vizier" {
-		artifactType = cloudpb.AT_CONTAINER_SET_LINUX_AMD64
+	// Both operator and vizier artifacts have this artifact type.
+	artifactType := cloudpb.AT_CONTAINER_SET_LINUX_AMD64
+	if args.ArtifactName == "cli" {
+		// cli artifacts have a different type.
+		artifactType = cloudpb.AT_LINUX_AMD64
 	}
 
 	artifactReq := &cloudpb.GetArtifactListRequest{

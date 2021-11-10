@@ -214,6 +214,7 @@ func LoadUnauthenticatedSchema(gqlEnv controller.GraphQLEnv) *graphql.Schema {
 	gqlSchema := graphql.MustParseSchema(schemaData, qr, opts...)
 	return gqlSchema
 }
+
 func TestArtifacts_Unauthenticated(t *testing.T) {
 	gqlEnv, mockClients, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
@@ -234,6 +235,42 @@ func TestArtifacts_Unauthenticated(t *testing.T) {
 				VersionStr: "1.2.2",
 				Changelog:  "some changes go here",
 				Timestamp:  &types.Timestamp{Seconds: 5},
+			}},
+		}, nil)
+
+	mockClients.MockArtifact.EXPECT().GetArtifactList(gomock.Any(),
+		&cloudpb.GetArtifactListRequest{
+			ArtifactName: "operator",
+			ArtifactType: cloudpb.AT_CONTAINER_SET_LINUX_AMD64,
+		}).
+		Return(&cloudpb.ArtifactSet{
+			Name: "operator",
+			Artifact: []*cloudpb.Artifact{{
+				VersionStr: "0.2.3",
+				Changelog:  "better operator",
+				Timestamp:  &types.Timestamp{Seconds: 5},
+			}, {
+				VersionStr: "0.2.2",
+				Changelog:  "operator tracking",
+				Timestamp:  &types.Timestamp{Seconds: 2},
+			}},
+		}, nil)
+
+	mockClients.MockArtifact.EXPECT().GetArtifactList(gomock.Any(),
+		&cloudpb.GetArtifactListRequest{
+			ArtifactName: "cli",
+			ArtifactType: cloudpb.AT_LINUX_AMD64,
+		}).
+		Return(&cloudpb.ArtifactSet{
+			Name: "cli",
+			Artifact: []*cloudpb.Artifact{{
+				VersionStr: "0.0.2",
+				Changelog:  "new cli",
+				Timestamp:  &types.Timestamp{Seconds: 2},
+			}, {
+				VersionStr: "0.0.1",
+				Changelog:  "initial cli",
+				Timestamp:  &types.Timestamp{Seconds: 1},
 			}},
 		}, nil)
 
@@ -266,6 +303,72 @@ func TestArtifacts_Unauthenticated(t *testing.T) {
 								"version": "1.2.2",
 								"changelog": "some changes go here",
 								"timestampMs": 5000
+							}
+						]
+					}
+				}
+			`,
+		},
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				query {
+					artifacts(artifactName: "cli") {
+						items {
+							version
+							changelog
+							timestampMs
+						}
+					}
+				}
+			`,
+			ExpectedResult: `
+				{
+					"artifacts": {
+						"items": [
+							{
+								"version": "0.0.2",
+								"changelog": "new cli",
+								"timestampMs": 2000
+							},
+							{
+								"version": "0.0.1",
+								"changelog": "initial cli",
+								"timestampMs": 1000
+							}
+						]
+					}
+				}
+			`,
+		},
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				query {
+					artifacts(artifactName: "operator") {
+						items {
+							version
+							changelog
+							timestampMs
+						}
+					}
+				}
+			`,
+			ExpectedResult: `
+				{
+					"artifacts": {
+						"items": [
+							{
+								"version": "0.2.3",
+								"changelog": "better operator",
+								"timestampMs": 5000
+							},
+							{
+								"version": "0.2.2",
+								"changelog": "operator tracking",
+								"timestampMs": 2000
 							}
 						]
 					}
