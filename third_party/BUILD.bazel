@@ -106,3 +106,9 @@ cmake(
     lib_name = "libarchive",
     lib_source = "@com_github_libarchive_libarchive//:all",
 )
+
+cc_binary(
+    name = "prom_test",
+    srcs = ["prom_test.cc"],
+    deps = ["@com_github_jupp0r_prometheus_cpp//core:core"],
+)

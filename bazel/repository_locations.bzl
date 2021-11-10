@@ -294,6 +294,11 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "opentelemetry-proto-0.10.0",
         sha256 = "f1004a49f40d7acb43e86b1fd95f73e80c778acb163e309bba86f0cbd7fa8a71",
     ),
+    com_github_jupp0r_prometheus_cpp = dict(
+        urls = ["https://github.com/jupp0r/prometheus-cpp/archive/refs/tags/v0.13.0.tar.gz"],
+        strip_prefix = "prometheus-cpp-0.13.0",
+        sha256 = "5319b77d6dc73af34bc256e7b18a7e0da50c787ef6f9e32785d045428b6473cc",
+    ),
 )
 
 # To modify one of the forked repos below:

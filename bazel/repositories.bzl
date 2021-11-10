@@ -104,6 +104,10 @@ def _cc_deps():
     _bazel_repo("rules_python")
     _bazel_repo("com_github_google_re2")
 
+    # Remove the pull and push directory since they depends on civet and we don't
+    # want to pull in the dependency for now.
+    _bazel_repo("com_github_jupp0r_prometheus_cpp", patch_cmds = ["rm -rf pull push 3rdparty"])
+
     _include_all_repo("com_github_gperftools_gperftools", patch_cmds = ["./autogen.sh"])
     _include_all_repo("com_github_nats_io_natsc", patches = ["//bazel/external:natsc.patch"], patch_args = ["-p1"])
     _include_all_repo("com_github_libuv_libuv", patches = ["//bazel/external:libuv.patch"], patch_args = ["-p1"])
