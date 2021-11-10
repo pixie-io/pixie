@@ -13,6 +13,10 @@ spec:
     metadata:
       labels:
         name: vzmgr-server
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '51800'
+        prometheus.io/scheme: 'https'
     spec:
       containers:
       - name: vzmgr-server
