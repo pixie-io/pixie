@@ -128,7 +128,7 @@ class MatchRegexRule : public udf::ScalarUDF {
       std::string name = itr->name.GetString();
       std::string regex_pattern = itr->value.GetString();
       PL_RETURN_IF_ERROR(regex_match_udf.Init(ctx, regex_pattern));
-      regex_rules.push_back(make_pair(name, std::move(regex_match_udf)));
+      regex_rules.emplace_back(make_pair(name, std::move(regex_match_udf)));
       regex_rules_length++;
     }
     return Status::OK();
