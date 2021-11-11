@@ -299,6 +299,11 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "prometheus-cpp-0.13.0",
         sha256 = "5319b77d6dc73af34bc256e7b18a7e0da50c787ef6f9e32785d045428b6473cc",
     ),
+    com_github_USCiLab_cereal = dict(
+        urls = ["https://github.com/USCiLab/cereal/archive/af0700efb25e7dc7af637b9e6f970dbb94813bff.tar.gz"],
+        strip_prefix = "cereal-af0700efb25e7dc7af637b9e6f970dbb94813bff",
+        sha256 = "6b8e8975400a84eed20dcf4490f1b16efaadbbad6d1b5ffcc5e1da3e5be1c324",
+    ),
 )
 
 # To modify one of the forked repos below:
