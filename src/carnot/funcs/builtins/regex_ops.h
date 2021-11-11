@@ -24,6 +24,8 @@
 #include <memory>
 #include <regex>
 #include <string>
+#include <utility>
+#include <vector>
 #include "re2/re2.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/base/utils.h"
