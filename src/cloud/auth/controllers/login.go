@@ -49,23 +49,23 @@ const (
 	AuthConnectorTokenValidDuration = 30 * time.Minute
 )
 
-func (s *Server) getUserInfoFromToken(accessToken string) (string, *UserInfo, error) {
+func (s *Server) getUserInfoFromToken(accessToken string) (*UserInfo, error) {
 	if accessToken == "" {
-		return "", nil, status.Error(codes.Unauthenticated, "missing access token")
+		return nil, status.Error(codes.Unauthenticated, "missing access token")
 	}
 
 	userID, err := s.a.GetUserIDFromToken(accessToken)
 	if err != nil {
-		return "", nil, status.Error(codes.Unauthenticated, "failed to get user ID")
+		return nil, status.Error(codes.Unauthenticated, "failed to get user ID")
 	}
 
 	// Make request to get user info.
 	userInfo, err := s.a.GetUserInfo(userID)
 	if err != nil {
-		return "", nil, status.Error(codes.Internal, "failed to get user info")
+		return nil, status.Error(codes.Internal, "failed to get user info")
 	}
 
-	return userID, userInfo, nil
+	return userInfo, nil
 }
 
 func (s *Server) updateAuthProviderUser(authUserID string, orgID string, userID string) (*UserInfo, error) {
@@ -86,7 +86,7 @@ func (s *Server) updateAuthProviderUser(authUserID string, orgID string, userID 
 
 // Login uses the AuthProvider to authenticate and login the user. Errors out if their org doesn't exist.
 func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.LoginReply, error) {
-	userID, userInfo, err := s.getUserInfoFromToken(in.AccessToken)
+	userInfo, err := s.getUserInfoFromToken(in.AccessToken)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 		if userInfo.IdentityProvider == googleIdentityProvider && userInfo.HostedDomain == "" && userInfo.Email != orgInfo.OrgName {
 			return nil, status.Errorf(codes.PermissionDenied, "Our system found an issue with your account. Please contact support and include your email '%s' and this error in your message", userInfo.Email)
 		}
-		return s.loginUser(ctx, userID, userInfo, orgInfo, newUser)
+		return s.loginUser(ctx, userInfo, orgInfo, newUser)
 	}
 
 	// Users can login without registering if their org already exists. If org doesn't exist, they must complete sign up flow.
@@ -139,13 +139,13 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 	if err != nil {
 		return nil, err
 	}
-	return s.loginUser(ctx, userID, userInfo, orgInfo, newUser)
+	return s.loginUser(ctx, userInfo, orgInfo, newUser)
 }
 
-func (s *Server) loginUser(ctx context.Context, userID string, userInfo *UserInfo, orgInfo *profilepb.OrgInfo, newUser bool) (*authpb.LoginReply, error) {
+func (s *Server) loginUser(ctx context.Context, userInfo *UserInfo, orgInfo *profilepb.OrgInfo, newUser bool) (*authpb.LoginReply, error) {
 	var err error
 	if newUser {
-		userInfo, err = s.createUser(ctx, userID, userInfo, orgInfo.ID)
+		userInfo, err = s.createUser(ctx, userInfo, orgInfo.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -261,7 +261,7 @@ func (s *Server) getMatchingOrgForUser(ctx context.Context, userInfo *UserInfo) 
 
 // Signup uses the AuthProvider to authenticate and sign up the user. It autocreates the org if the org doesn't exist.
 func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.SignupReply, error) {
-	userID, userInfo, err := s.getUserInfoFromToken(in.AccessToken)
+	userInfo, err := s.getUserInfoFromToken(in.AccessToken)
 	if err != nil {
 		return nil, err
 	}
@@ -278,7 +278,7 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 
 	// Case 1: An empty HostedDomain means this user will be assigned to a self-org.
 	if userInfo.HostedDomain == "" {
-		updatedUserInfo, orgID, err := s.createUserAndOrg(ctx, userInfo.HostedDomain, userInfo.Email, userID, userInfo)
+		updatedUserInfo, orgID, err := s.createUserAndOrg(ctx, userInfo.HostedDomain, userInfo.Email, userInfo)
 		if err != nil {
 			return nil, err
 		}
@@ -295,7 +295,7 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 		return nil, err
 	}
 	if orgInfo != nil {
-		updatedUserInfo, err := s.createUser(ctx, userID, userInfo, orgInfo.ID)
+		updatedUserInfo, err := s.createUser(ctx, userInfo, orgInfo.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -303,7 +303,7 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 	}
 
 	// Final case: User is the first to join and their org will be created with them.
-	updatedUserInfo, orgID, err := s.createUserAndOrg(ctx, userInfo.HostedDomain, userInfo.HostedDomain, userID, userInfo)
+	updatedUserInfo, orgID, err := s.createUserAndOrg(ctx, userInfo.HostedDomain, userInfo.HostedDomain, userInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +315,7 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 }
 
 // Creates a user as well as an org.
-func (s *Server) createUserAndOrg(ctx context.Context, domainName string, orgName string, userID string, userInfo *UserInfo) (*UserInfo, *uuidpb.UUID, error) {
+func (s *Server) createUserAndOrg(ctx context.Context, domainName string, orgName string, userInfo *UserInfo) (*UserInfo, *uuidpb.UUID, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
@@ -342,7 +342,7 @@ func (s *Server) createUserAndOrg(ctx context.Context, domainName string, orgNam
 	orgIDpb := resp.OrgID
 	userIDpb := resp.UserID
 
-	updatedUserInfo, err := s.updateAuthProviderUser(userID, utils.UUIDFromProtoOrNil(orgIDpb).String(), utils.UUIDFromProtoOrNil(userIDpb).String())
+	updatedUserInfo, err := s.updateAuthProviderUser(userInfo.AuthProviderID, utils.UUIDFromProtoOrNil(orgIDpb).String(), utils.UUIDFromProtoOrNil(userIDpb).String())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -350,7 +350,7 @@ func (s *Server) createUserAndOrg(ctx context.Context, domainName string, orgNam
 }
 
 // Creates a user for the orgID.
-func (s *Server) createUser(ctx context.Context, userID string, userInfo *UserInfo, orgID *uuidpb.UUID) (*UserInfo, error) {
+func (s *Server) createUser(ctx context.Context, userInfo *UserInfo, orgID *uuidpb.UUID) (*UserInfo, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
@@ -372,7 +372,7 @@ func (s *Server) createUser(ctx context.Context, userID string, userInfo *UserIn
 	if err != nil {
 		return nil, err
 	}
-	userInfo, err = s.updateAuthProviderUser(userID, utils.UUIDFromProtoOrNil(orgID).String(), utils.UUIDFromProtoOrNil(userIDpb).String())
+	userInfo, err = s.updateAuthProviderUser(userInfo.AuthProviderID, utils.UUIDFromProtoOrNil(orgID).String(), utils.UUIDFromProtoOrNil(userIDpb).String())
 	return userInfo, err
 }
 
@@ -481,7 +481,7 @@ func (s *Server) createInvitedUser(ctx context.Context, req *authpb.InviteUserRe
 	}
 
 	// Create the user inside of Pixie.
-	user, err := s.createUser(ctx, ident.AuthProviderID, &UserInfo{
+	user, err := s.createUser(ctx, &UserInfo{
 		Email:            req.Email,
 		FirstName:        req.FirstName,
 		LastName:         req.LastName,
@@ -550,7 +550,7 @@ func (s *Server) CreateOrgAndInviteUser(ctx context.Context, req *authpb.CreateO
 		return nil, fmt.Errorf("error while creating identity for '%s': %v", req.User.Email, err)
 	}
 
-	_, _, err = s.createUserAndOrg(ctx, req.Org.DomainName, req.Org.OrgName, ident.AuthProviderID, &UserInfo{
+	_, _, err = s.createUserAndOrg(ctx, req.Org.DomainName, req.Org.OrgName, &UserInfo{
 		Email:            req.User.Email,
 		FirstName:        req.User.FirstName,
 		LastName:         req.User.LastName,
