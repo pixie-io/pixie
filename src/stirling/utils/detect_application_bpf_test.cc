@@ -50,5 +50,25 @@ TEST(NodeVersionTest, ResultsAreAsExpected) {
   ASSERT_OK_AND_THAT(GetVersion(proc_exe_path), StrEq("v15.0.1"));
 }
 
+// Tests that the mntexec cli can execute into the alpine container.
+TEST(AlpineNodeExecTest, MountNSSubprocessWorks) {
+  ContainerRunner node_server(px::testing::BazelBinTestFilePath(
+                                  "src/stirling/source_connectors/socket_tracer/testing/containers/"
+                                  "node_14_18_1_alpine_image.tar"),
+                              "node_server", "");
+  ASSERT_OK_AND_ASSIGN(std::string output, node_server.Run(std::chrono::seconds{60}));
+  pid_t node_server_pid = node_server.process_pid();
+
+  ProcParser proc_parser(system::Config::GetInstance());
+  ASSERT_OK_AND_ASSIGN(std::filesystem::path exe, proc_parser.GetExePath(node_server_pid));
+
+  SubProcess proc(node_server_pid);
+  ASSERT_OK(proc.Start({exe.string(), "--version"}));
+  std::string node_proc_stdout;
+  ASSERT_OK(proc.Stdout(&node_proc_stdout));
+  EXPECT_THAT(node_proc_stdout, StrEq("v14.18.1\n"));
+  ASSERT_EQ(proc.Wait(), 0) << "Subprocess' exit code should be 0";
+}
+
 }  // namespace stirling
 }  // namespace px

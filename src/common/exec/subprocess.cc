@@ -30,6 +30,32 @@
 
 namespace px {
 
+SubProcess::SubProcess(int mnt_ns_pid) : mnt_ns_pid_(mnt_ns_pid) {}
+
+namespace {
+
+std::string MountNamespacePath(int pid) {
+  return system::Config::GetInstance()
+      .ToHostPath(absl::Substitute("/proc/$0/ns/mnt", pid))
+      .string();
+}
+
+Status SetMountNS(int pid) {
+  DCHECK_GE(pid, 0);
+
+  const std::string mnt_ns_path = MountNamespacePath(pid);
+  int fd = open(mnt_ns_path.c_str(), O_RDONLY);
+  if (fd == -1) {
+    return error::Internal("Could not open mount namespace path '$0'", mnt_ns_path);
+  }
+  if (setns(fd, 0) != 0) {
+    return error::Internal("setns() failed");
+  }
+  return Status::OK();
+}
+
+}  // namespace
+
 Status SubProcess::Start(const std::vector<std::string>& args, bool stderr_to_stdout) {
   DCHECK(!started_);
   started_ = true;
@@ -67,6 +93,15 @@ Status SubProcess::Start(const std::vector<std::string>& args, bool stderr_to_st
 
     close(pipefd_[kRead]);   // Close read end, as read is done by parent.
     close(pipefd_[kWrite]);  // Close after being duplicated.
+
+    if (mnt_ns_pid_ != -1) {
+      auto status = SetMountNS(mnt_ns_pid_);
+      if (!status.ok()) {
+        LOG(ERROR) << absl::Substitute("Could not set mount namespace to pid='$0' error: $1",
+                                       mnt_ns_pid_, status.ToString());
+        exit(1);
+      }
+    }
 
     // This will run "ls -la" as if it were a command:
     // char* cmd = "ls";

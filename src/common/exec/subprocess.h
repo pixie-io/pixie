@@ -38,6 +38,12 @@ namespace px {
 class SubProcess : public NotCopyMoveable {
  public:
   /**
+   * Accepts a target process's PID. When executing a command, the child process enters the target
+   * process' mount namespace, and execute the command.
+   */
+  explicit SubProcess(int mnt_ns_pid = -1);
+
+  /**
    * Start the command.
    *
    * @return OK if succeed, otherwise an error status.
@@ -76,6 +82,10 @@ class SubProcess : public NotCopyMoveable {
   // Handy constants to access the pipe's two file descriptor array.
   const int kRead = 0;
   const int kWrite = 1;
+
+  // The PID of a process that runs inside another mount namespace.
+  // If set, the subprocess is executed inside the mount namespace of this process.
+  int mnt_ns_pid_ = -1;
 
   int child_pid_ = -1;
   bool started_ = false;
