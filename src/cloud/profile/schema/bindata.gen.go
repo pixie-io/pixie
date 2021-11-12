@@ -36,6 +36,8 @@
 // 000018_add_unique_constraint_auth_provider_id.up.sql
 // 000019_create_org_ide_configs_tables.down.sql
 // 000019_create_org_ide_configs_tables.up.sql
+// 000020_empty_domain_name_col.down.sql
+// 000020_empty_domain_name_col.up.sql
 package schema
 
 import (
@@ -832,6 +834,46 @@ func _000019_create_org_ide_configs_tablesUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000020_empty_domain_name_colDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x0a\x0d\x70\x71\x0c\x71\x55\xc8\x2f\x4a\x2f\x56\x08\x76\x0d\x51\x48\xc9\xcf\x4d\xcc\xcc\x8b\xcf\x4b\xcc\x4d\x55\xb0\x05\x09\x83\x99\xd6\x5c\x5c\x2e\x41\xfe\x01\x0a\x9e\x7e\x2e\xae\x11\x0a\x99\x29\x15\xf1\x20\x0d\xf1\x48\x8a\xad\xb9\xb8\x1c\x7d\x42\x5c\x83\x14\x42\x1c\x9d\x7c\xa0\xe6\x39\xba\xb8\x28\x38\xfb\xfb\x05\x87\x04\x39\x7a\xfa\x85\x28\xa0\x6b\x89\xcf\x4e\xad\x54\x08\xf5\xf3\x0c\x0c\x75\x55\xd0\x40\x12\xd7\xb4\xe6\x02\x04\x00\x00\xff\xff\xd2\x6d\x74\xec\x96\x00\x00\x00")
+
+func _000020_empty_domain_name_colDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000020_empty_domain_name_colDownSql,
+		"000020_empty_domain_name_col.down.sql",
+	)
+}
+
+func _000020_empty_domain_name_colDownSql() (*asset, error) {
+	bytes, err := _000020_empty_domain_name_colDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000020_empty_domain_name_col.down.sql", size: 150, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000020_empty_domain_name_colUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\xc8\x2f\x4a\x2f\x56\x70\x09\xf2\x0f\x50\x70\xf6\xf7\x0b\x0e\x09\x72\xf4\xf4\x0b\x01\x0b\xc6\xa7\xe4\xe7\x26\x66\xe6\xc5\xe7\x25\xe6\xa6\xc6\x67\xa7\x56\x5a\x73\x71\x39\x07\xb9\x3a\x86\xb8\x2a\x78\xfa\xb9\xb8\x46\x28\x64\xa6\x54\xc4\xa3\xab\x53\xf0\xf7\x03\xeb\xd5\x40\x12\xd3\xb4\xe6\xe2\x0a\x0d\x70\x01\x69\x04\xdb\x15\xec\x1a\xa2\x80\xac\xc5\x56\xc1\x2f\xd4\xc7\xc7\x9a\x0b\x10\x00\x00\xff\xff\x4b\x81\xec\xba\x95\x00\x00\x00")
+
+func _000020_empty_domain_name_colUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000020_empty_domain_name_colUpSql,
+		"000020_empty_domain_name_col.up.sql",
+	)
+}
+
+func _000020_empty_domain_name_colUpSql() (*asset, error) {
+	bytes, err := _000020_empty_domain_name_colUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000020_empty_domain_name_col.up.sql", size: 149, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -920,6 +962,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000018_add_unique_constraint_auth_provider_id.up.sql":   _000018_add_unique_constraint_auth_provider_idUpSql,
 	"000019_create_org_ide_configs_tables.down.sql":          _000019_create_org_ide_configs_tablesDownSql,
 	"000019_create_org_ide_configs_tables.up.sql":            _000019_create_org_ide_configs_tablesUpSql,
+	"000020_empty_domain_name_col.down.sql":                  _000020_empty_domain_name_colDownSql,
+	"000020_empty_domain_name_col.up.sql":                    _000020_empty_domain_name_colUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -999,6 +1043,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000018_add_unique_constraint_auth_provider_id.up.sql":   &bintree{_000018_add_unique_constraint_auth_provider_idUpSql, map[string]*bintree{}},
 	"000019_create_org_ide_configs_tables.down.sql":          &bintree{_000019_create_org_ide_configs_tablesDownSql, map[string]*bintree{}},
 	"000019_create_org_ide_configs_tables.up.sql":            &bintree{_000019_create_org_ide_configs_tablesUpSql, map[string]*bintree{}},
+	"000020_empty_domain_name_col.down.sql":                  &bintree{_000020_empty_domain_name_colDownSql, map[string]*bintree{}},
+	"000020_empty_domain_name_col.up.sql":                    &bintree{_000020_empty_domain_name_colUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory

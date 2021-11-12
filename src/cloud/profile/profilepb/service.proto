@@ -45,6 +45,7 @@ service ProfileService {
   // TODO(michellenguyen): These have calls have moved to the OrgService. Remove them once
   // all consumers (API service) have been updated to use the new service.
   rpc GetOrg(px.uuidpb.UUID) returns (OrgInfo);
+  rpc GetOrgByName(GetOrgByNameRequest) returns (OrgInfo);
   rpc GetOrgByDomain(GetOrgByDomainRequest) returns (OrgInfo);
   rpc UpdateOrg(UpdateOrgRequest) returns (OrgInfo);
   rpc GetOrgs(GetOrgsRequest) returns (GetOrgsResponse);
@@ -54,6 +55,7 @@ service ProfileService {
 // Org service tracks organization information.
 service OrgService {
   rpc GetOrg(px.uuidpb.UUID) returns (OrgInfo);
+  rpc GetOrgByName(GetOrgByNameRequest) returns (OrgInfo);
   rpc GetOrgByDomain(GetOrgByDomainRequest) returns (OrgInfo);
   rpc UpdateOrg(UpdateOrgRequest) returns (OrgInfo);
   rpc GetOrgs(GetOrgsRequest) returns (GetOrgsResponse);
@@ -136,6 +138,10 @@ message CreateOrgAndUserResponse {
   px.uuidpb.UUID user_id = 2 [(gogoproto.customname) = "UserID"];
 }
 
+message GetOrgByNameRequest {
+  string name = 1;
+}
+
 message GetOrgByDomainRequest {
   string domain_name = 1;
 }
@@ -161,6 +167,7 @@ message UpdateOrgRequest {
   px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
   // Whether to enable/disable the requirement for admins to approve new users.
   google.protobuf.BoolValue enable_approvals = 2;
+  google.protobuf.StringValue domain_name = 3;
 }
 
 // A request to get the user settings for a particular user.

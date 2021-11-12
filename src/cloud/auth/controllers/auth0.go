@@ -41,9 +41,9 @@ func init() {
 	pflag.String("auth0_client_secret", "", "Auth0 client secret")
 }
 
-// Returns an OrgName for the identity according to the IdentityProvider.
+// Returns an DomainName for the identity according to the IdentityProvider.
 // If the returned string is empty, the identity does not belong to an org.
-func (a *Auth0Connector) retrieveOrgName(ident *auth0Identity) (string, error) {
+func (a *Auth0Connector) retrieveHostedDomain(ident *auth0Identity) (string, error) {
 	// We only implement for google-oauth2 connections for now.
 	if ident.Provider != googleIdentityProvider {
 		return "", nil
@@ -298,21 +298,21 @@ func (a *Auth0Connector) GetUserInfo(userID string) (*UserInfo, error) {
 		return nil, fmt.Errorf("User has multiple idproviders: %s", strings.Join(idps, ","))
 	}
 
-	orgName, err := a.retrieveOrgName(userInfo.Identities[0])
+	hostedDomain, err := a.retrieveHostedDomain(userInfo.Identities[0])
 	if err != nil {
 		return nil, err
 	}
 
 	// Convert auth0UserInfo to UserInfo.
 	u := &UserInfo{
-		Email:                   userInfo.Email,
-		FirstName:               userInfo.FirstName,
-		LastName:                userInfo.LastName,
-		Name:                    userInfo.Name,
-		Picture:                 userInfo.Picture,
-		IdentityProvider:        idp,
-		AuthProviderID:          userInfo.UserID,
-		IdentityProviderOrgName: orgName,
+		Email:            userInfo.Email,
+		FirstName:        userInfo.FirstName,
+		LastName:         userInfo.LastName,
+		Name:             userInfo.Name,
+		Picture:          userInfo.Picture,
+		IdentityProvider: idp,
+		AuthProviderID:   userInfo.UserID,
+		HostedDomain:     hostedDomain,
 	}
 	clientID := a.cfg.Auth0ClientID
 	// If user does not exist in userInfo, then create a new user if specified.

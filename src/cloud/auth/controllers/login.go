@@ -123,32 +123,22 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 			return nil, status.Errorf(codes.NotFound, "organization not found, please register, or contact support '%v'", err)
 		}
 
-		// We've switched over to use IdentityProviderOrgName instead of email domain to determine org membership.
-		// Some running systems have users who are in their email domain org, but not their org according to IdentityProviderOrgName.
+		// We've switched over to use HostedDomain instead of email domain to determine org membership.
+		// Some running systems have users who are in their email domain org, but not their org according to HostedDomain.
 		// This flags those users and informs them that they should contact support to fix their org info in the database.
-		if userInfo.IdentityProvider == googleIdentityProvider && userInfo.IdentityProviderOrgName == "" && userInfo.Email != orgInfo.OrgName {
+		if userInfo.IdentityProvider == googleIdentityProvider && userInfo.HostedDomain == "" && userInfo.Email != orgInfo.OrgName {
 			return nil, status.Errorf(codes.PermissionDenied, "Our system found an issue with your account. Please contact support and include your email '%s' and this error in your message", userInfo.Email)
 		}
 		return s.loginUser(ctx, userID, userInfo, orgInfo, newUser)
 	}
 
-	// This case shouldn't really happen because self-orgs (where domain == user email) should already have registered.
-	if userInfo.IdentityProviderOrgName == "" {
-		orgInfo, err := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: userInfo.Email})
-		if err != nil || orgInfo == nil {
-			return nil, status.Error(codes.NotFound, "organization not found, please register.")
-		}
-
-		return s.loginUser(ctx, userID, userInfo, orgInfo, newUser)
-	}
-
 	// Users can login without registering if their org already exists. If org doesn't exist, they must complete sign up flow.
 	orgInfo, err := s.getMatchingOrgForUser(ctx, userInfo)
+	if status.Code(err) == codes.NotFound {
+		return nil, status.Error(codes.NotFound, "organization not found, please register.")
+	}
 	if err != nil {
 		return nil, err
-	}
-	if orgInfo == nil {
-		return nil, status.Error(codes.NotFound, "organization not found, please register.")
 	}
 	return s.loginUser(ctx, userID, userInfo, orgInfo, newUser)
 }
@@ -161,6 +151,10 @@ func (s *Server) loginUser(ctx context.Context, userID string, userInfo *UserInf
 			return nil, err
 		}
 	}
+	_, _ = s.env.ProfileClient().UpdateOrg(ctx, &profilepb.UpdateOrgRequest{
+		ID:         orgInfo.ID,
+		DomainName: &types.StringValue{Value: userInfo.HostedDomain},
+	})
 	tkn, err := s.completeUserLogin(ctx, userInfo, orgInfo)
 	if err != nil {
 		return nil, err
@@ -244,27 +238,27 @@ func (s *Server) signupUser(ctx context.Context, userInfo *UserInfo, orgInfo *pr
 
 func (s *Server) getMatchingOrgForUser(ctx context.Context, userInfo *UserInfo) (*profilepb.OrgInfo, error) {
 	pc := s.env.ProfileClient()
-	// Case 1: Search for an org that has a domain matching the IdentityProviderOrgName.
-	orgInfoByIponDomain, _ := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{
-		DomainName: userInfo.IdentityProviderOrgName,
+	if userInfo.HostedDomain == "" {
+		return pc.GetOrgByName(ctx, &profilepb.GetOrgByNameRequest{Name: userInfo.Email})
+	}
+
+	// Case 1: Search for an org that has a domain matching the HostedDomain.
+	orgInfo, err := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{
+		DomainName: userInfo.HostedDomain,
 	})
-	if orgInfoByIponDomain != nil {
-		return orgInfoByIponDomain, nil
+	if err == nil || status.Code(err) != codes.NotFound {
+		return orgInfo, err
 	}
 
 	// Case 2: Search for an org that matches the email domain.
-	// Users who have an IdentityProviderOrgName might be able to join a matching domainName org.
+	// Users who have an HostedDomain might be able to join a matching domainName org.
 	emailComponents := strings.Split(userInfo.Email, "@")
 	if len(emailComponents) != 2 {
 		return nil, status.Error(codes.InvalidArgument, "bad format email received from auth")
 	}
-	domainName := emailComponents[1]
+	emailDomain := emailComponents[1]
 
-	orgInfoByEmailDomain, _ := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: domainName})
-	if orgInfoByEmailDomain != nil {
-		return orgInfoByEmailDomain, nil
-	}
-	return nil, nil
+	return pc.GetOrgByName(ctx, &profilepb.GetOrgByNameRequest{Name: emailDomain})
 }
 
 // Signup uses the AuthProvider to authenticate and sign up the user. It autocreates the org if the org doesn't exist.
@@ -284,9 +278,9 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 		return nil, status.Error(codes.PermissionDenied, "user already exists, please login.")
 	}
 
-	// Case 1: An empty IdentityProviderOrgName means this user will be assigned to a self-org.
-	if userInfo.IdentityProviderOrgName == "" {
-		updatedUserInfo, orgID, err := s.createUserAndOrg(ctx, userInfo.Email, userInfo.Email, userID, userInfo)
+	// Case 1: An empty HostedDomain means this user will be assigned to a self-org.
+	if userInfo.HostedDomain == "" {
+		updatedUserInfo, orgID, err := s.createUserAndOrg(ctx, userInfo.HostedDomain, userInfo.Email, userID, userInfo)
 		if err != nil {
 			return nil, err
 		}
@@ -299,7 +293,7 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 
 	// Case 2: We go through all permutations of orgs that might exist for a user and find any that exist.
 	orgInfo, err := s.getMatchingOrgForUser(ctx, userInfo)
-	if err != nil {
+	if err != nil && status.Code(err) != codes.NotFound {
 		return nil, err
 	}
 	if orgInfo != nil {
@@ -311,7 +305,7 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 	}
 
 	// Final case: User is the first to join and their org will be created with them.
-	updatedUserInfo, orgID, err := s.createUserAndOrg(ctx, userInfo.IdentityProviderOrgName, userInfo.IdentityProviderOrgName, userID, userInfo)
+	updatedUserInfo, orgID, err := s.createUserAndOrg(ctx, userInfo.HostedDomain, userInfo.HostedDomain, userID, userInfo)
 	if err != nil {
 		return nil, err
 	}

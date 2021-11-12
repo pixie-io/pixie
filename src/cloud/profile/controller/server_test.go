@@ -520,7 +520,7 @@ func TestServer_CreateOrgAndUser_SuccessCases(t *testing.T) {
 				AuthProviderID:   tc.req.User.AuthProviderID,
 			}
 			exOrg := &datastore.OrgInfo{
-				DomainName: tc.req.Org.DomainName,
+				DomainName: &tc.req.Org.DomainName,
 				OrgName:    tc.req.Org.OrgName,
 			}
 			uds.EXPECT().
@@ -552,22 +552,6 @@ func TestServer_CreateOrgAndUser_InvalidArgumentCases(t *testing.T) {
 				Org: &profilepb.CreateOrgAndUserRequest_Org{
 					OrgName:    "",
 					DomainName: "my-org.com",
-				},
-				User: &profilepb.CreateOrgAndUserRequest_User{
-					Username:         "foobar",
-					FirstName:        "foo",
-					LastName:         "bar",
-					Email:            "foo@bar.com",
-					IdentityProvider: "github",
-				},
-			},
-		},
-		{
-			name: "invalid domain name",
-			req: &profilepb.CreateOrgAndUserRequest{
-				Org: &profilepb.CreateOrgAndUserRequest_Org{
-					OrgName:    "my-org",
-					DomainName: "",
 				},
 				User: &profilepb.CreateOrgAndUserRequest_User{
 					Username:         "foobar",
@@ -688,7 +672,7 @@ func TestServer_CreateOrgAndUser_CreateProjectFailed(t *testing.T) {
 		IdentityProvider: "github",
 	}
 	exOrg := &datastore.OrgInfo{
-		DomainName: req.Org.DomainName,
+		DomainName: &req.Org.DomainName,
 		OrgName:    req.Org.OrgName,
 	}
 	uds.EXPECT().
@@ -716,9 +700,10 @@ func TestServer_GetOrg(t *testing.T) {
 	orgUUID := uuid.Must(uuid.NewV4())
 	s := controller.NewServer(nil, uds, usds, ods, osds)
 
+	orgDomain := "my-org.com"
 	mockReply := &datastore.OrgInfo{
 		ID:         orgUUID,
-		DomainName: "my-org.com",
+		DomainName: &orgDomain,
 		OrgName:    "my-org",
 	}
 
@@ -748,16 +733,20 @@ func TestServer_GetOrgs(t *testing.T) {
 
 	s := controller.NewServer(nil, uds, usds, ods, osds)
 
-	mockReply := []*datastore.OrgInfo{{
-		ID:         orgUUID,
-		DomainName: "my-org.com",
-		OrgName:    "my-org",
-	},
+	org1Domain := "my-org.com"
+	org2Domain := "pixie.com"
+	mockReply := []*datastore.OrgInfo{
+		{
+			ID:         orgUUID,
+			DomainName: &org1Domain,
+			OrgName:    "my-org",
+		},
 		{
 			ID:         org2UUID,
-			DomainName: "pixie.com",
+			DomainName: &org2Domain,
 			OrgName:    "pixie",
-		}}
+		},
+	}
 
 	ods.EXPECT().
 		GetOrgs().
@@ -797,6 +786,63 @@ func TestServer_GetOrg_MissingOrg(t *testing.T) {
 	assert.Equal(t, status.Code(err), codes.NotFound)
 }
 
+func TestServer_GetOrgByName(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
+
+	orgUUID := uuid.Must(uuid.NewV4())
+	s := controller.NewServer(nil, uds, usds, ods, osds)
+
+	orgDomain := "my-org.com"
+	mockReply := &datastore.OrgInfo{
+		ID:         orgUUID,
+		DomainName: &orgDomain,
+		OrgName:    "my-org",
+	}
+
+	ods.EXPECT().
+		GetOrgByName("my-org").
+		Return(mockReply, nil)
+
+	resp, err := s.GetOrgByName(
+		context.Background(),
+		&profilepb.GetOrgByNameRequest{Name: "my-org"})
+
+	require.NoError(t, err)
+	assert.Equal(t, resp.ID, utils.ProtoFromUUID(orgUUID))
+	assert.Equal(t, resp.DomainName, "my-org.com")
+	assert.Equal(t, resp.OrgName, "my-org")
+}
+
+func TestServer_GetOrgByName_MissingOrg(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
+
+	s := controller.NewServer(nil, uds, usds, ods, osds)
+
+	ods.EXPECT().
+		GetOrgByName("my-org").
+		Return(nil, datastore.ErrOrgNotFound)
+
+	resp, err := s.GetOrgByName(
+		context.Background(),
+		&profilepb.GetOrgByNameRequest{Name: "my-org"})
+
+	assert.Nil(t, resp)
+	assert.NotNil(t, err)
+	assert.Equal(t, status.Code(err), codes.NotFound)
+}
+
 func TestServer_GetOrgByDomain(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -809,9 +855,10 @@ func TestServer_GetOrgByDomain(t *testing.T) {
 	orgUUID := uuid.Must(uuid.NewV4())
 	s := controller.NewServer(nil, uds, usds, ods, osds)
 
+	orgDomain := "my-org.com"
 	mockReply := &datastore.OrgInfo{
 		ID:         orgUUID,
-		DomainName: "my-org.com",
+		DomainName: &orgDomain,
 		OrgName:    "my-org",
 	}
 
@@ -866,9 +913,10 @@ func TestServer_DeleteOrgAndUsers(t *testing.T) {
 
 	orgUUID := uuid.Must(uuid.NewV4())
 
+	orgDomain := "my-org.com"
 	mockReply := &datastore.OrgInfo{
 		ID:         orgUUID,
-		DomainName: "my-org.com",
+		DomainName: &orgDomain,
 		OrgName:    "my-org",
 	}
 	ods.EXPECT().GetOrg(orgUUID).Return(mockReply, nil)
@@ -995,7 +1043,7 @@ func TestServer_UpdateUser(t *testing.T) {
 	}
 }
 
-func TestServer_UpdateOrg(t *testing.T) {
+func TestServer_UpdateOrg_EnableApprovals(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -1154,6 +1202,157 @@ func TestServer_UpdateOrg_EnableApprovalsIsNull(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, resp.ID, utils.ProtoFromUUID(orgID))
 	assert.Equal(t, resp.EnableApprovals, true)
+}
+
+func TestServer_UpdateOrg_DomainName(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
+
+	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	s := controller.NewServer(nil, uds, usds, ods, osds)
+
+	mockReply := &datastore.OrgInfo{
+		ID:         orgID,
+		DomainName: nil,
+	}
+
+	domainName := "asdf.com"
+	mockUpdateReq := &datastore.OrgInfo{
+		ID:         orgID,
+		DomainName: &domainName,
+	}
+
+	ods.EXPECT().
+		GetOrg(orgID).
+		Return(mockReply, nil)
+
+	ods.EXPECT().
+		UpdateOrg(gomock.Any()).
+		Do(func(arg *datastore.OrgInfo) {
+			assert.Equal(t, mockUpdateReq.ID, arg.ID)
+			assert.Equal(t, mockUpdateReq.EnableApprovals, arg.EnableApprovals)
+			assert.NotNil(t, arg.DomainName)
+			assert.Equal(t, *mockUpdateReq.DomainName, *arg.DomainName)
+		}).
+		Return(nil)
+
+	resp, err := s.UpdateOrg(
+		CreateTestContext(),
+		&profilepb.UpdateOrgRequest{
+			ID:         utils.ProtoFromUUID(orgID),
+			DomainName: &types.StringValue{Value: "asdf.com"},
+		})
+
+	require.NoError(t, err)
+	assert.Equal(t, resp.ID, utils.ProtoFromUUID(orgID))
+	assert.Equal(t, resp.GetDomainName(), "asdf.com")
+}
+
+func TestServer_UpdateOrg_NilToEmptyDomainName(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
+
+	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	s := controller.NewServer(nil, uds, usds, ods, osds)
+
+	mockReply := &datastore.OrgInfo{
+		ID:         orgID,
+		DomainName: nil,
+	}
+
+	domainName := ""
+	mockUpdateReq := &datastore.OrgInfo{
+		ID:         orgID,
+		DomainName: &domainName,
+	}
+
+	ods.EXPECT().
+		GetOrg(orgID).
+		Return(mockReply, nil)
+
+	ods.EXPECT().
+		UpdateOrg(gomock.Any()).
+		Do(func(arg *datastore.OrgInfo) {
+			assert.Equal(t, mockUpdateReq.ID, arg.ID)
+			assert.Equal(t, mockUpdateReq.EnableApprovals, arg.EnableApprovals)
+			assert.NotNil(t, arg.DomainName)
+			assert.Equal(t, *mockUpdateReq.DomainName, *arg.DomainName)
+		}).
+		Return(nil)
+
+	resp, err := s.UpdateOrg(
+		CreateTestContext(),
+		&profilepb.UpdateOrgRequest{
+			ID:         utils.ProtoFromUUID(orgID),
+			DomainName: &types.StringValue{Value: ""},
+		})
+
+	require.NoError(t, err)
+	assert.Equal(t, resp.ID, utils.ProtoFromUUID(orgID))
+	assert.NotNil(t, resp.DomainName)
+	assert.Equal(t, resp.GetDomainName(), "")
+}
+
+func TestServer_UpdateOrg_DomainName_EnableApprovals(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
+
+	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	s := controller.NewServer(nil, uds, usds, ods, osds)
+
+	mockReply := &datastore.OrgInfo{
+		ID:              orgID,
+		DomainName:      nil,
+		EnableApprovals: false,
+	}
+
+	domainName := "asdf.com"
+	mockUpdateReq := &datastore.OrgInfo{
+		ID:              orgID,
+		DomainName:      &domainName,
+		EnableApprovals: true,
+	}
+
+	ods.EXPECT().
+		GetOrg(orgID).
+		Return(mockReply, nil)
+
+	ods.EXPECT().
+		UpdateOrg(gomock.Any()).
+		Do(func(arg *datastore.OrgInfo) {
+			assert.Equal(t, mockUpdateReq.ID, arg.ID)
+			assert.Equal(t, mockUpdateReq.EnableApprovals, arg.EnableApprovals)
+			assert.NotNil(t, arg.DomainName)
+			assert.Equal(t, *mockUpdateReq.DomainName, *arg.DomainName)
+		}).
+		Return(nil)
+
+	resp, err := s.UpdateOrg(
+		CreateTestContext(),
+		&profilepb.UpdateOrgRequest{
+			ID:              utils.ProtoFromUUID(orgID),
+			DomainName:      &types.StringValue{Value: "asdf.com"},
+			EnableApprovals: &types.BoolValue{Value: true},
+		})
+
+	require.NoError(t, err)
+	assert.Equal(t, resp.ID, utils.ProtoFromUUID(orgID))
+	assert.Equal(t, resp.DomainName, "asdf.com")
 }
 
 func TestServer_UpdateOrg_RequestBlockedForUserOutsideOrg(t *testing.T) {

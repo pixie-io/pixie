@@ -50,10 +50,19 @@ type UserInfo struct {
 type OrgInfo struct {
 	ID              uuid.UUID  `db:"id"`
 	OrgName         string     `db:"org_name"`
-	DomainName      string     `db:"domain_name"`
+	DomainName      *string    `db:"domain_name"`
 	EnableApprovals bool       `db:"enable_approvals"`
 	UpdatedAt       *time.Time `db:"updated_at"`
 	CreatedAt       *time.Time `db:"created_at"`
+}
+
+// GetDomainName is a helper to nil check the DomainName column value and convert
+// NULLs into empty strings for ease of use.
+func (o *OrgInfo) GetDomainName() string {
+	if o.DomainName == nil {
+		return ""
+	}
+	return *o.DomainName
 }
 
 // Datastore is a postgres backed storage for entities.
@@ -208,6 +217,23 @@ func (d *Datastore) GetOrgs() ([]*OrgInfo, error) {
 	return orgs, nil
 }
 
+// GetOrgByName gets org information by domain.
+func (d *Datastore) GetOrgByName(name string) (*OrgInfo, error) {
+	query := `SELECT * from orgs WHERE org_name=$1`
+	rows, err := d.db.Queryx(query, name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		var orgInfo OrgInfo
+		err := rows.StructScan(&orgInfo)
+		return &orgInfo, err
+	}
+	return nil, ErrOrgNotFound
+}
+
 // GetOrgByDomain gets org information by domain.
 func (d *Datastore) GetOrgByDomain(domainName string) (*OrgInfo, error) {
 	query := `SELECT * from orgs WHERE domain_name=$1`
@@ -346,7 +372,7 @@ func (d *Datastore) UpdateUser(userInfo *UserInfo) error {
 
 // UpdateOrg updates the org in the database.
 func (d *Datastore) UpdateOrg(orgInfo *OrgInfo) error {
-	query := `UPDATE orgs SET enable_approvals = :enable_approvals WHERE id = :id`
+	query := `UPDATE orgs SET enable_approvals = :enable_approvals, domain_name = :domain_name WHERE id = :id`
 	_, err := d.db.NamedExec(query, orgInfo)
 	return err
 }

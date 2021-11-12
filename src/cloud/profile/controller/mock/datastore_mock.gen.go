@@ -206,6 +206,21 @@ func (mr *MockOrgDatastoreMockRecorder) GetOrgByDomain(arg0 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgByDomain", reflect.TypeOf((*MockOrgDatastore)(nil).GetOrgByDomain), arg0)
 }
 
+// GetOrgByName mocks base method.
+func (m *MockOrgDatastore) GetOrgByName(arg0 string) (*datastore.OrgInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrgByName", arg0)
+	ret0, _ := ret[0].(*datastore.OrgInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrgByName indicates an expected call of GetOrgByName.
+func (mr *MockOrgDatastoreMockRecorder) GetOrgByName(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgByName", reflect.TypeOf((*MockOrgDatastore)(nil).GetOrgByName), arg0)
+}
+
 // GetOrgs mocks base method.
 func (m *MockOrgDatastore) GetOrgs() ([]*datastore.OrgInfo, error) {
 	m.ctrl.T.Helper()

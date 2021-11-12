@@ -165,8 +165,28 @@ func TestDatastore(t *testing.T) {
 		require.NotNil(t, orgInfo)
 
 		assert.Equal(t, orgInfo.ID, uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"))
-		assert.Equal(t, orgInfo.DomainName, "my-org.com")
+		assert.Equal(t, orgInfo.GetDomainName(), "my-org.com")
 		assert.Equal(t, orgInfo.OrgName, "my-org")
+	})
+
+	t.Run("get org by name", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db)
+		orgInfo, err := d.GetOrgByName("my-org")
+		require.NoError(t, err)
+		require.NotNil(t, orgInfo)
+
+		assert.Equal(t, orgInfo.OrgName, "my-org")
+		assert.Equal(t, orgInfo.GetDomainName(), "my-org.com")
+	})
+
+	t.Run("get org by name for missing name should return a specific error", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db)
+		orgInfo, err := d.GetOrgByDomain("goo")
+		require.NotNil(t, err)
+		require.Equal(t, err, datastore.ErrOrgNotFound)
+		require.Nil(t, orgInfo)
 	})
 
 	t.Run("get org by domain", func(t *testing.T) {
@@ -177,7 +197,7 @@ func TestDatastore(t *testing.T) {
 		require.NotNil(t, orgInfo)
 
 		assert.Equal(t, orgInfo.OrgName, "my-org")
-		assert.Equal(t, orgInfo.DomainName, "my-org.com")
+		assert.Equal(t, orgInfo.GetDomainName(), "my-org.com")
 	})
 
 	t.Run("get orgs", func(t *testing.T) {
@@ -189,10 +209,10 @@ func TestDatastore(t *testing.T) {
 
 		assert.Equal(t, 1, len(orgs))
 		assert.Equal(t, "my-org", orgs[0].OrgName)
-		assert.Equal(t, "my-org.com", orgs[0].DomainName)
+		assert.Equal(t, "my-org.com", orgs[0].GetDomainName())
 	})
 
-	t.Run("get org by domain for missing domain should a specific error", func(t *testing.T) {
+	t.Run("get org by domain for missing domain should return a specific error", func(t *testing.T) {
 		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 		orgInfo, err := d.GetOrgByDomain("goo.com")
@@ -204,9 +224,10 @@ func TestDatastore(t *testing.T) {
 	t.Run("create org and user first time user", func(t *testing.T) {
 		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
+		domain := "pg.com"
 		orgInfo := datastore.OrgInfo{
 			OrgName:    "pg",
-			DomainName: "pg.com",
+			DomainName: &domain,
 		}
 		userInfo := datastore.UserInfo{
 			Username:       "johnd",
@@ -254,9 +275,10 @@ func TestDatastore(t *testing.T) {
 	t.Run("create org and user first time user case should fail for existing org", func(t *testing.T) {
 		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
+		domain := "my-org.com"
 		orgInfo := datastore.OrgInfo{
 			OrgName:    "my-org",
-			DomainName: "my-org.com",
+			DomainName: &domain,
 		}
 		userInfo := datastore.UserInfo{
 			Username:  "johnd",
@@ -274,9 +296,10 @@ func TestDatastore(t *testing.T) {
 	t.Run("create org and user should fail for existing user", func(t *testing.T) {
 		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
+		domain := "my-org.com"
 		orgInfo := datastore.OrgInfo{
 			OrgName:    "my-org",
-			DomainName: "my-org.com",
+			DomainName: &domain,
 		}
 		userInfo := datastore.UserInfo{
 			Username:  "person@my-org.com",
@@ -456,7 +479,7 @@ func TestDatastore(t *testing.T) {
 		assert.Equal(t, 2, len(users))
 	})
 
-	t.Run("update org", func(t *testing.T) {
+	t.Run("update org approvals", func(t *testing.T) {
 		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 
@@ -470,6 +493,23 @@ func TestDatastore(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, orgInfoFetched)
 		assert.True(t, orgInfoFetched.EnableApprovals)
+	})
+
+	t.Run("update org domain name", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db)
+
+		orgID := "123e4567-e89b-12d3-a456-426655440000"
+		domain := "asdf.com"
+		require.NoError(t, d.UpdateOrg(&datastore.OrgInfo{
+			ID:         uuid.FromStringOrNil(orgID),
+			DomainName: &domain,
+		}))
+
+		orgInfoFetched, err := d.GetOrg(uuid.FromStringOrNil(orgID))
+		require.NoError(t, err)
+		require.NotNil(t, orgInfoFetched)
+		assert.Equal(t, "asdf.com", orgInfoFetched.GetDomainName())
 	})
 
 	t.Run("approve all users", func(t *testing.T) {

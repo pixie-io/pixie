@@ -212,7 +212,7 @@ func TestAuth0ConnectorImpl_GetUserInfo(t *testing.T) {
 	assert.Equal(t, "test_pl_user_id", userInfo.PLUserID)
 	assert.Equal(t, "github", userInfo.IdentityProvider)
 	assert.Equal(t, "github|123990813094", userInfo.AuthProviderID)
-	assert.Equal(t, "", userInfo.IdentityProviderOrgName)
+	assert.Equal(t, "", userInfo.HostedDomain)
 }
 
 func TestAuth0ConnectorImpl_GetUserInfo_GoogleOAuth(t *testing.T) {
@@ -271,7 +271,7 @@ func TestAuth0ConnectorImpl_GetUserInfo_GoogleOAuth(t *testing.T) {
 	assert.Equal(t, "test_pl_user_id", userInfo.PLUserID)
 	assert.Equal(t, "google-oauth2", userInfo.IdentityProvider)
 	assert.Equal(t, "google-oauth2|123990813094", userInfo.AuthProviderID)
-	assert.Equal(t, "test.com", userInfo.IdentityProviderOrgName)
+	assert.Equal(t, "test.com", userInfo.HostedDomain)
 }
 
 func TestAuth0ConnectorImpl_GetUserInfo_BadResponse(t *testing.T) {

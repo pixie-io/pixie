@@ -75,6 +75,8 @@ type OrgDatastore interface {
 	GetUsersInOrg(uuid.UUID) ([]*datastore.UserInfo, error)
 	// GetOrg gets and org by ID.
 	GetOrg(uuid.UUID) (*datastore.OrgInfo, error)
+	// GetOrgByName gets an org by name.
+	GetOrgByName(string) (*datastore.OrgInfo, error)
 	// GetOrgByDomain gets an org by domain name.
 	GetOrgByDomain(string) (*datastore.OrgInfo, error)
 	// Delete Org and all of its users
@@ -143,7 +145,7 @@ func orgInfoToProto(o *datastore.OrgInfo) *profilepb.OrgInfo {
 	return &profilepb.OrgInfo{
 		ID:              utils.ProtoFromUUID(o.ID),
 		OrgName:         o.OrgName,
-		DomainName:      o.DomainName,
+		DomainName:      o.GetDomainName(),
 		EnableApprovals: o.EnableApprovals,
 	}
 }
@@ -243,7 +245,7 @@ func (s *Server) GetUserByAuthProviderID(ctx context.Context, req *profilepb.Get
 // CreateOrgAndUser is the GRPC method to create a new org and user.
 func (s *Server) CreateOrgAndUser(ctx context.Context, req *profilepb.CreateOrgAndUserRequest) (*profilepb.CreateOrgAndUserResponse, error) {
 	orgInfo := &datastore.OrgInfo{
-		DomainName: req.Org.DomainName,
+		DomainName: &req.Org.DomainName,
 		OrgName:    req.Org.OrgName,
 	}
 
@@ -256,9 +258,6 @@ func (s *Server) CreateOrgAndUser(ctx context.Context, req *profilepb.CreateOrgA
 		// By default, the creating user is the owner and should be approved.
 		IsApproved:     true,
 		AuthProviderID: req.User.AuthProviderID,
-	}
-	if len(orgInfo.DomainName) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "invalid domain name")
 	}
 	if len(orgInfo.OrgName) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "invalid org name")
@@ -333,7 +332,21 @@ func (s *Server) GetOrgs(ctx context.Context, req *profilepb.GetOrgsRequest) (*p
 	return &profilepb.GetOrgsResponse{Orgs: orgProtos}, nil
 }
 
+// GetOrgByName gets an org by name.
+// This is the org_name field, and currently happens to be either the entire email of a user or
+// just the domain from a user's email depending on whether said user is in a self org or not.
+func (s *Server) GetOrgByName(ctx context.Context, req *profilepb.GetOrgByNameRequest) (*profilepb.OrgInfo, error) {
+	orgInfo, err := s.ods.GetOrgByName(req.Name)
+	if err != nil {
+		return nil, toExternalError(err)
+	}
+	return orgInfoToProto(orgInfo), nil
+}
+
 // GetOrgByDomain gets an org by domain name.
+// This is the domain_name field which is auto populated by the hosted domain returned from the auth provider.
+// This might be an empty string for auth users that don't have a hosted domain or
+// NULL for orgs that haven't been backfilled.
 func (s *Server) GetOrgByDomain(ctx context.Context, req *profilepb.GetOrgByDomainRequest) (*profilepb.OrgInfo, error) {
 	orgInfo, err := s.ods.GetOrgByDomain(req.DomainName)
 	if err != nil {
@@ -494,17 +507,27 @@ func (s *Server) UpdateOrg(ctx context.Context, req *profilepb.UpdateOrgRequest)
 		return nil, toExternalError(err)
 	}
 
+	var hasUpdate bool
+	if req.EnableApprovals != nil && orgInfo.EnableApprovals != req.EnableApprovals.Value {
+		hasUpdate = true
+		orgInfo.EnableApprovals = req.EnableApprovals.Value
+	}
+	if req.DomainName != nil {
+		if orgInfo.DomainName == nil || orgInfo.GetDomainName() != req.DomainName.Value {
+			hasUpdate = true
+			orgInfo.DomainName = &req.DomainName.Value
+		}
+	}
 	// If the values are the same, no need to update.
-	if req.EnableApprovals == nil || orgInfo.EnableApprovals == req.EnableApprovals.Value {
+	if !hasUpdate {
 		return orgInfoToProto(orgInfo), nil
 	}
 
-	orgInfo.EnableApprovals = req.EnableApprovals.Value
 	if err := s.ods.UpdateOrg(orgInfo); err != nil {
 		return nil, toExternalError(err)
 	}
 	// If EnableApprovals has changed to false, we flip the flag for all users to approve them.
-	if !orgInfo.EnableApprovals {
+	if req.EnableApprovals != nil && !orgInfo.EnableApprovals {
 		err = s.ods.ApproveAllOrgUsers(id)
 		if err != nil {
 			return nil, toExternalError(err)

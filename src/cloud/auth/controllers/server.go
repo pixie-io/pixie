@@ -48,9 +48,9 @@ type UserInfo struct {
 	IdentityProvider string
 	// AuthProviderID is the ID assigned to the user internal to the AuthProvider.
 	AuthProviderID string
-	// IdentityProviderOrgName is the name of an org that a user belongs to according to the IdentityProvider.
+	// HostedDomain is the name of an org that a user belongs to according to the IdentityProvider.
 	// If empty, the IdentityProvider does not consider the user as part of an org.
-	IdentityProviderOrgName string
+	HostedDomain string
 }
 
 // CreateInviteLinkResponse contaions the InviteLink and any accompanying information.
