@@ -16,15 +16,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const esModules = ['@mui', '@babel/runtime/helpers/esm'].join('|');
+const esModules = ['@mui/material', '@babel/runtime/helpers/esm'].join('|');
 
 module.exports = {
-  globals: {
-    window: true,
-  },
-  setupFiles: [
-    'jest-canvas-mock',
-  ],
+  testEnvironment: 'jsdom',
   setupFilesAfterEnv: [
     '<rootDir>/src/testing/jest-test-setup.js',
   ],

@@ -22,7 +22,7 @@
 // the tranform views is not enough since some Babel config is
 // preventing the transformation without this.
 
-const babelJest = require('babel-jest').createTransformer(require('./.babelrc.json'));
+const babelJest = require('babel-jest').default.createTransformer(require('./.babelrc.json'));
 
 module.exports = {
   process: function(src, file, config, transformOptions) {

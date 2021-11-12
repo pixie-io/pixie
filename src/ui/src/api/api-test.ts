@@ -17,6 +17,7 @@
  */
 
 import fetch from 'cross-fetch';
+import type { ClusterConnection } from 'app/api/cloud-gql-client';
 import { mockApolloClient } from 'app/testing/mocks/apollo-mock';
 import { PixieAPIClient } from './api';
 
@@ -72,10 +73,11 @@ describe('Pixie TypeScript API Client', () => {
   describe('gRPC proxy methods', () => {
     it('connects to a cluster to request a health check', async () => {
       const spy = jest.fn(() => Promise.resolve('bar'));
-      spyOn(vizierDependency, 'VizierGRPCClient').and.returnValue({ health: spy });
+      jest.spyOn(vizierDependency as any, 'VizierGRPCClient').mockReturnValue({ health: spy });
 
       const client = await PixieAPIClient.create({ apiKey: '' });
-      spyOn(client.getCloudClient(), 'getClusterConnection').and.returnValue({});
+      jest.spyOn(client.getCloudClient(), 'getClusterConnection')
+        .mockReturnValue({} as unknown as Promise<ClusterConnection>);
 
       const out = await client.health('foo').toPromise();
       expect(spy).toHaveBeenCalled();
@@ -84,10 +86,11 @@ describe('Pixie TypeScript API Client', () => {
 
     it('connects to a cluster to request a script execution', async () => {
       const spy = jest.fn(() => Promise.resolve('bar'));
-      spyOn(vizierDependency, 'VizierGRPCClient').and.returnValue({ executeScript: spy });
+      jest.spyOn(vizierDependency as any, 'VizierGRPCClient').mockReturnValue({ executeScript: spy });
 
       const client = await PixieAPIClient.create({ apiKey: '' });
-      spyOn(client.getCloudClient(), 'getClusterConnection').and.returnValue({});
+      jest.spyOn(client.getCloudClient(), 'getClusterConnection')
+        .mockReturnValue({} as unknown as Promise<ClusterConnection>);
 
       const out = await client.executeScript('foo', 'import px', { enableE2EEncryption: false }).toPromise();
       expect(spy).toHaveBeenCalled();

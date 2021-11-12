@@ -30,7 +30,7 @@ describe('Cloud client (GQL wrapper)', () => {
 
   it('gets cluster connections from GraphQL', async () => {
     const cloudClient = new CloudClient({ apiKey: '', uri: 'irrelevant' });
-    spyOn(cloudClient.graphQL, 'query').and.callFake(() => Promise.resolve({
+    jest.spyOn(cloudClient.graphQL, 'query').mockImplementation(() => Promise.resolve({
       data: new Proxy({}, {
         get: () => 'retrieved',
       }),
