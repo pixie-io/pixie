@@ -93,7 +93,7 @@ data:
         lb_policy: round_robin
         hosts:
         - socket_address:
-            address: vizier-cloud-connector.pl.svc
+            address: vizier-cloud-connector-svc.pl.svc
             port_value: 50800
         tls_context:
           common_tls_context:

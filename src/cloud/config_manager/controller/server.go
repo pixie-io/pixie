@@ -105,6 +105,10 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 		tmplValues.DatastreamBufferSpikeSize = in.VzSpec.DataCollectorParams.DatastreamBufferSpikeSize
 	}
 
+	if in.VzSpec.LeadershipElectionParams != nil {
+		tmplValues.ElectionPeriodMs = in.VzSpec.LeadershipElectionParams.ElectionPeriodMs
+	}
+
 	vzYamls, err := yamls.ExecuteTemplatedYAMLs(templatedYAMLs, vizieryamls.VizierTmplValuesToArgs(tmplValues))
 	if err != nil {
 		log.WithError(err).Error("Failed to execute templates")

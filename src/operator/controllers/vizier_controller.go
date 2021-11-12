@@ -705,6 +705,12 @@ func generateVizierYAMLsConfig(ctx context.Context, ns string, vz *v1alpha1.Vizi
 		}
 	}
 
+	if vz.Spec.LeadershipElectionParams != nil {
+		req.VzSpec.LeadershipElectionParams = &vizierconfigpb.LeadershipElectionParams{
+			ElectionPeriodMs: vz.Spec.LeadershipElectionParams.ElectionPeriodMs,
+		}
+	}
+
 	resp, err := client.GetConfigForVizier(ctx, req)
 	if err != nil {
 		return nil, err

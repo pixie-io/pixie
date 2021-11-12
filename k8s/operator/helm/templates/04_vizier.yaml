@@ -35,6 +35,11 @@ spec:
     datastreamBufferSpikeSize: {{ .Values.dataCollectorParams.datastreamBufferSpikeSize }}
     {{- end }}
   {{- end}}
+  {{- if .Values.leadershipElectionParams }}
+    {{- if .Values.leadershipElectionParams.electionPeriodMs }}
+    electionPeriodMs: {{ .Values.leadershipElectionParams.electionPeriodMs }}
+    {{- end }}
+  {{- end }}
   {{- if or .Values.pod.annotations (or .Values.pod.labels .Values.pod.resources) }}
   pod:
     {{- if .Values.pod.annotations }}

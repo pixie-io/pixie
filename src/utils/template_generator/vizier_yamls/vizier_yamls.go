@@ -37,6 +37,7 @@ const (
 	defaultDataAccess                = "Full"
 	defaultDatastreamBufferSize      = 1024 * 1024
 	defaultDatastreamBufferSpikeSize = 1024 * 1024 * 500
+	defaultElectionPeriodMs          = 7500
 )
 
 // VizierTmplValues are the template values that can be used to fill out templated Vizier YAMLs.
@@ -56,6 +57,7 @@ type VizierTmplValues struct {
 	DataAccess                string
 	DatastreamBufferSize      uint32
 	DatastreamBufferSpikeSize uint32
+	ElectionPeriodMs          int64
 }
 
 // VizierTmplValuesToArgs converts the vizier template values to args which can be used to fill out a template.
@@ -76,6 +78,7 @@ func VizierTmplValuesToArgs(tmplValues *VizierTmplValues) *yamls.YAMLTmplArgumen
 			"dataAccess":                tmplValues.DataAccess,
 			"datastreamBufferSize":      tmplValues.DatastreamBufferSize,
 			"datastreamBufferSpikeSize": tmplValues.DatastreamBufferSpikeSize,
+			"electionPeriodMs":          tmplValues.ElectionPeriodMs,
 		},
 		Release: &map[string]interface{}{
 			"Namespace": tmplValues.Namespace,
@@ -402,6 +405,18 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
 			Patch:           `{"spec": {"template": { "spec": { "containers": [{"name": "pem", "env": [{"name": "PL_DATASTREAM_BUFFER_SPIKE_SIZE", "value": "__PX_DATASTREAM_BUFFER_SPIKE_SIZE__"}]}] } } } }`,
 			Placeholder:     "__PX_DATASTREAM_BUFFER_SPIKE_SIZE__",
 			TemplateValue:   fmt.Sprintf(`{{ if .Values.datastreamBufferSpikeSize }}"{{.Values.datastreamBufferSpikeSize}}"{{else}}"%d"{{end}}`, defaultDatastreamBufferSpikeSize),
+		},
+		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("vizier-metadata"),
+			Patch:           `{"spec": {"template": {"spec": {"containers": [{"name": "app", "env": [{"name": "PL_RENEW_PERIOD","value": "__PX_RENEW_PERIOD__"}]}] } } } }`,
+			Placeholder:     "__PX_RENEW_PERIOD__",
+			TemplateValue:   fmt.Sprintf(`{{ if .Values.electionPeriodMs }}"{{ .Values.electionPeriodMs }}"{{else}}"%d"{{end}}`, defaultElectionPeriodMs),
+		},
+		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("vizier-cloud-connector"),
+			Patch:           `{"spec": {"template": {"spec": {"containers": [{"name": "app", "env": [{"name": "PL_RENEW_PERIOD","value": "__PX_RENEW_PERIOD__"}]}] } } } }`,
+			Placeholder:     "__PX_RENEW_PERIOD__",
+			TemplateValue:   fmt.Sprintf(`{{ if .Values.electionPeriodMs }}"{{ .Values.electionPeriodMs }}"{{else}}"%d"{{end}}`, defaultElectionPeriodMs),
 		},
 	}...)
 

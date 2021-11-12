@@ -53,7 +53,7 @@ func init() {
 	pflag.String("cluster_id", "", "The Cluster ID to use for Pixie Cloud")
 	pflag.String("pod_ip_address", "", "The IP address of this pod to allow the agent to connect to this"+
 		" particular query broker instance across multiple requests")
-	pflag.String("mds_service", "vizier-metadata", "The metadata service name")
+	pflag.String("mds_service", "vizier-metadata-svc", "The metadata service name")
 	pflag.String("mds_port", "50400", "The querybroker service port")
 	pflag.String("pod_namespace", "pl", "The namespace this pod runs in.")
 }
