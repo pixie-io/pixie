@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "src/stirling/source_connectors/pid_runtime_bpftrace/pid_runtime_bpftrace_connector.h"
+
 #include <algorithm>
 #include <cstring>
 #include <ctime>
@@ -24,7 +26,6 @@
 
 #include "src/common/base/base.h"
 #include "src/stirling/bpf_tools/macros.h"
-#include "src/stirling/source_connectors/pid_runtime_bpftrace/pid_runtime_bpftrace_connector.h"
 
 // The following is a string_view into a BT file that is included in the binary by the linker.
 // The BT files are permanently resident in memory, so the string view is permanent too.

@@ -28,7 +28,6 @@ bpf_flags=(--privileged \
   -v /sys:/sys \
   -v /var/lib/docker:/var/lib/docker \
   "--pid=host" \
-  "--network=host" \
   --env "PL_HOST_PATH=/host")
 
 PX_RUN_DOCKER_EXTRA_ARGS="${bpf_flags[*]}"  "${run_docker_script}" "$@"

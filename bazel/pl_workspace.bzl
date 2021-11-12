@@ -48,6 +48,8 @@ def _package_manager_setup():
         packages = [
             "libc6",
             "libelf1",
+            "libdw1",
+            "libbinutils",
             "liblzma5",
             "libtinfo6",
             "zlib1g",
