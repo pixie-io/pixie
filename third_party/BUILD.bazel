@@ -63,7 +63,6 @@ cmake(
         # Cert SAN seems to fail.
         "NATS_BUILD_TLS_FORCE_HOST_VERIFY": "OFF",
     },
-    generate_crosstool_file = True,
     lib_name = "libnats_static",
     lib_source = "@com_github_nats_io_natsc//:all",
     make_commands = [
@@ -81,7 +80,6 @@ cmake(
         "LIBUV_BUILD_TESTS": "OFF",
         "USING_UV_SHARED": "OFF",
     },
-    generate_crosstool_file = True,
     lib_name = "libuv_a",
     lib_source = "@com_github_libuv_libuv//:all",
     make_commands = [
@@ -102,7 +100,6 @@ cmake(
         "ENABLE_TAR_SHARED": "OFF",
         "ENABLE_TEST": "OFF",
     },
-    generate_crosstool_file = True,
     lib_name = "libarchive",
     lib_source = "@com_github_libarchive_libarchive//:all",
 )

@@ -20,13 +20,11 @@ licenses(["notice"])
 
 filegroup(
     name = "bcc_source",
-    srcs = glob(["**/*"]),
+    srcs = glob(["**"]),
 )
 
 cmake(
     name = "bcc",
-    generate_crosstool_file = True,
-    lib_name = "libbcc_static",
     lib_source = ":bcc_source",
     # These link opts are dependencies of bcc.
     linkopts = [

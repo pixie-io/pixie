@@ -23,7 +23,6 @@ filegroup(
 
 cmake(
     name = "libsimdutf",
-    generate_crosstool_file = True,
     lib_source = ":all",
     visibility = ["//visibility:public"],
 )

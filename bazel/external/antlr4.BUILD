@@ -23,7 +23,6 @@ filegroup(
 
 cmake(
     name = "libantlr",
-    generate_crosstool_file = True,
     lib_source = ":all",
     make_commands = [
         "make -j$(nproc) install",
