@@ -56,7 +56,8 @@ class BPFTraceWrapper {
    *         Also errors if there is no printf statement in the compiled program,
    *         or if all the printfs in the program do not have a consistent format string.
    */
-  Status CompileForPrintfOutput(std::string_view script, const std::vector<std::string>& params);
+  Status CompileForPrintfOutput(std::string_view script,
+                                const std::vector<std::string>& params = {});
 
   /**
    * Compiles the BPFTrace program, but without treating printfs in any special way.
@@ -64,7 +65,7 @@ class BPFTraceWrapper {
    *
    * @return error if there is a syntax or semantic error.
    */
-  Status CompileForMapOutput(std::string_view script, const std::vector<std::string>& params);
+  Status CompileForMapOutput(std::string_view script, const std::vector<std::string>& params = {});
 
   /**
    * Deploys the previously compiled BPFTrace program.
