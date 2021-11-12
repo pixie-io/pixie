@@ -65,6 +65,8 @@ type VizierSpec struct {
 	DataAccess DataAccessLevel `json:"dataAccess,omitempty"`
 	// DataCollectorParams specifies the set of params for configuring the dataCollector. If no params are specified, defaults are used.
 	DataCollectorParams *DataCollectorParams `json:"dataCollectorParams,omitempty"`
+	// LeadershipElectionParams specifies configurable values for the K8s leaderships elections which Vizier uses manage pod leadership.
+	LeadershipElectionParams *LeadershipElectionParams `json:"leadershipElectionParams,omitempty"`
 }
 
 // DataAccessLevel defines the levels of data access that can be used when executing a script on a cluster.
@@ -170,6 +172,14 @@ type DataCollectorParams struct {
 	DatastreamBufferSize uint32 `json:"datastreamBufferSize,omitempty"`
 	// DatastreamBufferSpikeSize is the maximum temporary size of a data stream buffer before processing.
 	DatastreamBufferSpikeSize uint32 `json:"datastreamBufferSpikeSize,omitempty"`
+}
+
+// LeadershipElectionParams specifies configurable values for the K8s leaderships elections which Vizier uses manage pod leadership.
+type LeadershipElectionParams struct {
+	// ElectionPeriodMs defines how frequently Vizier attempts to run a K8s leader election, in milliseconds. The period
+	// also determines how long Vizier waits for a leader election response back from the K8s API. If the K8s API is
+	// slow to respond, consider increasing this number.
+	ElectionPeriodMs int64 `json:"electionPeriodMs,omitempty"`
 }
 
 // Vizier is the Schema for the viziers API

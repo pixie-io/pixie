@@ -59,6 +59,8 @@ message VizierSpec {
     string data_access = 13;
     // DataCollectorParams specifies configurable values for the data collectors running in the PEMs.
     DataCollectorParams data_collector_params = 14;
+    // LeadershipElectionParams specifies configurable values for the K8s leaderships elections which Vizier uses manage pod leadership.
+    LeadershipElectionParams leadership_election_params = 15;
 }
 
 // PodPolicyReq defines the policy for creating Vizier pods.
@@ -95,4 +97,12 @@ message DataCollectorParams {
     uint32 datastream_buffer_size = 1;
     // DatastreamBufferSpikeSize is the maximum temporary size of a data stream buffer before processing.
     uint32 datastream_buffer_spike_size = 2;
+}
+
+// LeadershipElectionParams specifies configurable values for the K8s leaderships elections which Vizier uses manage pod leadership.
+message LeadershipElectionParams {
+    // ElectionPeriodMs defines how frequently Vizier attempts to run a K8s leader election, in milliseconds. The period
+    // also determines how long Vizier waits for a leader election response back from the K8s API. If the K8s API is
+    // slow to respond, consider increasing this number.
+    int64 election_period_ms = 1;
 }

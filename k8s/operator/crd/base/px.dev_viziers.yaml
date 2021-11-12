@@ -90,6 +90,19 @@ spec:
                 description: DisableAutoUpdate specifies whether auto update should
                   be enabled for the Vizier instance.
                 type: boolean
+              leadershipElectionParams:
+                description: LeadershipElectionParams specifies configurable values
+                  for the K8s leaderships elections which Vizier uses manage pod leadership.
+                properties:
+                  electionPeriodMs:
+                    description: ElectionPeriodMs defines how frequently Vizier attempts
+                      to run a K8s leader election, in milliseconds. The period also
+                      determines how long Vizier waits for a leader election response
+                      back from the K8s API. If the K8s API is slow to respond, consider
+                      increasing this number.
+                    format: int64
+                    type: integer
+                type: object
               patches:
                 additionalProperties:
                   type: string
