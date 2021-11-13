@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake", "configure_make")
 
 package(default_visibility = ["//visibility:public"])
@@ -107,5 +107,5 @@ cmake(
 cc_binary(
     name = "prom_test",
     srcs = ["prom_test.cc"],
-    deps = ["@com_github_jupp0r_prometheus_cpp//core:core"],
+    deps = ["@com_github_jupp0r_prometheus_cpp//core"],
 )
