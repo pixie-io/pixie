@@ -23,8 +23,6 @@ import (
 	"errors"
 
 	"github.com/gofrs/uuid"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/api/proto/uuidpb"
@@ -38,36 +36,6 @@ import (
 type UserServiceServer struct {
 	ProfileServiceClient profilepb.ProfileServiceClient
 	OrgServiceClient     profilepb.OrgServiceClient
-}
-
-// GetOrg will retrieve org based on uuid.
-func (u *UserServiceServer) GetOrg(ctx context.Context, req *uuidpb.UUID) (*cloudpb.OrgInfo, error) {
-	ctx, err := contextWithAuthToken(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	sCtx, err := authcontext.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if req == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "No such org")
-	}
-	if uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID) != utils.UUIDFromProtoOrNil(req) {
-		return nil, status.Errorf(codes.PermissionDenied, "User may only get info about their own org")
-	}
-
-	resp, err := u.OrgServiceClient.GetOrg(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	return &cloudpb.OrgInfo{
-		ID:              resp.ID,
-		OrgName:         resp.OrgName,
-		DomainName:      resp.DomainName.GetValue(),
-		EnableApprovals: resp.EnableApprovals,
-	}, nil
 }
 
 // GetUser will retrieve user based on UUID.
