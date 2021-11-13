@@ -22,6 +22,12 @@ package px.cloudapi;
 
 option go_package = "cloudpb";
 
+//
+// * NOTICE: EXTERNAL
+// * This file is meant as the external protobuf interface for the cloud.
+// * Please do not include dependencies that are outside of src/api
+// * and only include protobufs that are useful to external-facing users.
+//
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
@@ -40,13 +46,6 @@ service UserService {
   rpc SetUserAttributes(SetUserAttributesRequest) returns (SetUserAttributesResponse);
   rpc UpdateUser(UpdateUserRequest) returns (UserInfo);
 }
-
-//
-// * NOTICE: EXTERNAL
-// * This file is meant as the external protobuf interface for the cloud.
-// * Please do not include dependencies that are outside of /src/common
-// * and only include protobufs that are useful to external-facing users.
-//
 
 // OrganizationService enables users to make changes to their organization.
 service OrganizationService {
@@ -113,7 +112,6 @@ message SetUserAttributesRequest {
 
 // The response for a SetUserAttributes call.
 message SetUserAttributesResponse {}
-
 
 message InviteUserRequest {
   string email = 1;
@@ -761,9 +759,12 @@ message AutocompleteFieldResponse {
   repeated AutocompleteSuggestion suggestions = 1;
 }
 
+// TODO(vihang): This can be removed after 2021-12-16.
 service ProfileService {
   // Get more info about an org, given the org ID.
-  rpc GetOrgInfo(px.uuidpb.UUID) returns (OrgInfo);
+  rpc GetOrgInfo(px.uuidpb.UUID) returns (OrgInfo) {
+    option deprecated = true;
+  };
 }
 
 // OrgInfo contains information about a company in our system.
