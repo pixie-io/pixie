@@ -57,13 +57,13 @@ func TestProfileServer_GetOrgInfo(t *testing.T) {
 			defer cleanup()
 			ctx := test.ctx
 
-			mockClients.MockProfile.EXPECT().GetOrg(gomock.Any(), orgID).
+			mockClients.MockOrg.EXPECT().GetOrg(gomock.Any(), orgID).
 				Return(&profilepb.OrgInfo{
 					OrgName: "someOrg",
 					ID:      orgID,
 				}, nil)
 
-			profileServer := &controller.ProfileServer{mockClients.MockProfile}
+			profileServer := &controller.ProfileServer{mockClients.MockOrg}
 
 			resp, err := profileServer.GetOrgInfo(ctx, orgID)
 

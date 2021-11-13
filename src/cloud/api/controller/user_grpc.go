@@ -35,6 +35,7 @@ import (
 // UserServiceServer is the server that implements the UserService gRPC service.
 type UserServiceServer struct {
 	ProfileServiceClient profilepb.ProfileServiceClient
+	OrgServiceClient     profilepb.OrgServiceClient
 }
 
 // GetOrg will retrieve org based on uuid.
@@ -44,7 +45,7 @@ func (u *UserServiceServer) GetOrg(ctx context.Context, req *uuidpb.UUID) (*clou
 		return nil, err
 	}
 
-	resp, err := u.ProfileServiceClient.GetOrg(ctx, req)
+	resp, err := u.OrgServiceClient.GetOrg(ctx, req)
 	if err != nil {
 		return nil, err
 	}

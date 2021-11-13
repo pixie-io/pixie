@@ -92,8 +92,9 @@ func TestServer_LoginNewUser(t *testing.T) {
 	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfoSecondRequest, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		GetOrgByName(gomock.Any(), &profilepb.GetOrgByNameRequest{Name: "abc@gmail.com"}).
 		Return(fakeOrgInfo, nil)
 
@@ -115,7 +116,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 		}).
 		Return(nil, nil)
 
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		UpdateOrg(gomock.Any(), &profilepb.UpdateOrgRequest{
 			ID:         orgPb,
 			DomainName: &types.StringValue{Value: ""},
@@ -125,7 +126,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -171,6 +172,7 @@ func TestServer_Login_OldGoogleOrgNameShouldError(t *testing.T) {
 	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfo1, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 	mockProfile.EXPECT().
 		GetUser(gomock.Any(), userPb).
 		Return(nil, nil)
@@ -178,14 +180,14 @@ func TestServer_Login_OldGoogleOrgNameShouldError(t *testing.T) {
 		OrgName: "randomorg.com",
 		ID:      orgPb,
 	}
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		GetOrg(gomock.Any(), orgPb).
 		Return(fakeOrgInfo, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -218,6 +220,7 @@ func TestServer_Login_OldGoogleOrgNameThatMatchesWorks(t *testing.T) {
 	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfo1, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 	mockProfile.EXPECT().
 		GetUser(gomock.Any(), userPb).
 		Return(nil, nil)
@@ -225,7 +228,7 @@ func TestServer_Login_OldGoogleOrgNameThatMatchesWorks(t *testing.T) {
 		OrgName: "randomorg.com",
 		ID:      orgPb,
 	}
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		GetOrg(gomock.Any(), orgPb).
 		Return(fakeOrgInfo, nil)
 	mockProfile.EXPECT().
@@ -234,7 +237,7 @@ func TestServer_Login_OldGoogleOrgNameThatMatchesWorks(t *testing.T) {
 			DisplayPicture: &types.StringValue{Value: ""},
 		}).
 		Return(nil, nil)
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		UpdateOrg(gomock.Any(), &profilepb.UpdateOrgRequest{
 			ID:         orgPb,
 			DomainName: &types.StringValue{Value: "randomorg.com"},
@@ -244,7 +247,7 @@ func TestServer_Login_OldGoogleOrgNameThatMatchesWorks(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -270,11 +273,12 @@ func TestServer_LoginNewUser_NoAutoCreate(t *testing.T) {
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -301,15 +305,16 @@ func TestServer_Login_MissingOrgError(t *testing.T) {
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		GetOrgByName(gomock.Any(), &profilepb.GetOrgByNameRequest{Name: "abc@gmail.com"}).
 		Return(nil, errors.New("organization does not exist"))
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -336,15 +341,16 @@ func TestServer_LoginNewUser_InvalidOrg(t *testing.T) {
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		GetOrgByName(gomock.Any(), &profilepb.GetOrgByNameRequest{Name: "abc@gmail.com"}).
 		Return(nil, errors.New("organization does not exist"))
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -377,8 +383,9 @@ func TestServer_LoginNewUser_CreateUserFailed(t *testing.T) {
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		GetOrgByName(gomock.Any(), &profilepb.GetOrgByNameRequest{Name: "abc@gmail.com"}).
 		Return(fakeOrgInfo, nil)
 
@@ -395,7 +402,7 @@ func TestServer_LoginNewUser_CreateUserFailed(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -413,11 +420,12 @@ func TestServer_Login_BadToken(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("", errors.New("bad token"))
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -453,13 +461,14 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfo1, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 	mockProfile.EXPECT().
 		GetUser(gomock.Any(), userPb).
 		Return(nil, nil)
 	fakeOrgInfo := &profilepb.OrgInfo{
 		ID: orgPb,
 	}
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		GetOrg(gomock.Any(), orgPb).
 		Return(fakeOrgInfo, nil)
 	mockProfile.EXPECT().
@@ -468,7 +477,7 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 			DisplayPicture: &types.StringValue{Value: ""},
 		}).
 		Return(nil, nil)
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		UpdateOrg(gomock.Any(), &profilepb.UpdateOrgRequest{
 			ID:         orgPb,
 			DomainName: &types.StringValue{Value: ""},
@@ -478,7 +487,7 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -531,6 +540,7 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfoSecondRequest, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 	mockProfile.EXPECT().
 		GetUser(gomock.Any(), userPb).
 		Return(nil, errors.New("Could not find user"))
@@ -539,7 +549,7 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 		ID: orgPb,
 	}
 
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		GetOrg(gomock.Any(), orgPb).
 		Return(fakeOrgInfo, nil)
 
@@ -559,7 +569,7 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 			DisplayPicture: &types.StringValue{Value: ""},
 		}).
 		Return(nil, nil)
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		UpdateOrg(gomock.Any(), &profilepb.UpdateOrgRequest{
 			ID:         orgPb,
 			DomainName: &types.StringValue{Value: ""},
@@ -569,7 +579,7 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -591,6 +601,7 @@ func TestServer_GetAugmentedToken(t *testing.T) {
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 	mockUserInfo := &profilepb.UserInfo{
 		ID:    utils.ProtoFromUUIDStrOrNil(testingutils.TestUserID),
 		OrgID: utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
@@ -601,13 +612,13 @@ func TestServer_GetAugmentedToken(t *testing.T) {
 	mockProfile.EXPECT().
 		GetUser(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestUserID)).
 		Return(mockUserInfo, nil)
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		GetOrg(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
 		Return(mockOrgInfo, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -638,8 +649,9 @@ func TestServer_GetAugmentedToken_Service(t *testing.T) {
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -675,15 +687,16 @@ func TestServer_GetAugmentedToken_NoOrg(t *testing.T) {
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		GetOrg(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
 		Return(nil, status.Error(codes.NotFound, "no such org"))
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -710,11 +723,12 @@ func TestServer_GetAugmentedToken_NoUser(t *testing.T) {
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
 	mockOrgInfo := &profilepb.OrgInfo{
 		ID: utils.ProtoFromUUIDStrOrNil("test"),
 	}
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		GetOrg(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
 		Return(mockOrgInfo, nil)
 	mockProfile.EXPECT().
@@ -724,7 +738,7 @@ func TestServer_GetAugmentedToken_NoUser(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -751,6 +765,7 @@ func TestServer_GetAugmentedToken_MismatchedOrg(t *testing.T) {
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
 	mockUserInfo := &profilepb.UserInfo{
 		ID:    utils.ProtoFromUUIDStrOrNil(testingutils.TestUserID),
@@ -762,14 +777,14 @@ func TestServer_GetAugmentedToken_MismatchedOrg(t *testing.T) {
 	mockProfile.EXPECT().
 		GetUser(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestUserID)).
 		Return(mockUserInfo, nil)
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		GetOrg(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
 		Return(mockOrgInfo, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -796,11 +811,12 @@ func TestServer_GetAugmentedTokenBadSigningKey(t *testing.T) {
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -825,11 +841,12 @@ func TestServer_GetAugmentedTokenBadToken(t *testing.T) {
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -854,17 +871,18 @@ func TestServer_GetAugmentedTokenAPIUser(t *testing.T) {
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 	mockOrgInfo := &profilepb.OrgInfo{
 		ID: utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
 	}
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		GetOrg(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
 		Return(mockOrgInfo, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -905,17 +923,18 @@ func TestServer_GetAugmentedTokenFromAPIKey(t *testing.T) {
 	apiKeyServer.EXPECT().FetchOrgUserIDUsingAPIKey(gomock.Any(), "test_api").Return(uuid.FromStringOrNil(testingutils.TestOrgID), uuid.FromStringOrNil(testingutils.TestUserID), nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 	mockOrgInfo := &profilepb.OrgInfo{
 		ID: utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
 	}
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		GetOrg(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
 		Return(mockOrgInfo, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, apiKeyServer)
 	require.NoError(t, err)
@@ -985,6 +1004,7 @@ func TestServer_Signup_LookupHostedDomain(t *testing.T) {
 	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfoSecondRequest, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
 	mockProfile.EXPECT().
 		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: "github|abcdefg"}).
@@ -1001,7 +1021,7 @@ func TestServer_Signup_LookupHostedDomain(t *testing.T) {
 		}).
 		Return(nil, nil)
 
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abcorg"}).
 		Return(fakeOrgInfo, nil)
 
@@ -1017,7 +1037,7 @@ func TestServer_Signup_LookupHostedDomain(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -1079,6 +1099,7 @@ func TestServer_Signup_FallbackToEmailDomainLookupAfterHostedDomain(t *testing.T
 	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfoSecondRequest, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
 	mockProfile.EXPECT().
 		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: "github|abcdefg"}).
@@ -1096,11 +1117,11 @@ func TestServer_Signup_FallbackToEmailDomainLookupAfterHostedDomain(t *testing.T
 		Return(nil, nil)
 
 	// Will make an attempt to use the HostedDomain as the domain.
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abcorg"}).
 		Return(nil, status.Error(codes.NotFound, "not found"))
 
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		GetOrgByName(gomock.Any(), &profilepb.GetOrgByNameRequest{Name: "abcorg.com"}).
 		Return(fakeOrgInfo, nil)
 
@@ -1116,7 +1137,7 @@ func TestServer_Signup_FallbackToEmailDomainLookupAfterHostedDomain(t *testing.T
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -1178,6 +1199,7 @@ func TestServer_Signup_AlwaysCreateOrgWhenIdentityProviderDoesntReturnOrgName(t 
 	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfoSecondRequest, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
 	mockProfile.EXPECT().
 		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: "github|abcdefg"}).
@@ -1212,14 +1234,14 @@ func TestServer_Signup_AlwaysCreateOrgWhenIdentityProviderDoesntReturnOrgName(t 
 		ID:      orgPb,
 		OrgName: "testOrg",
 	}
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		GetOrg(gomock.Any(), orgPb).
 		Return(fakeOrgInfo, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -1283,6 +1305,7 @@ func TestServer_Signup_ExistingOrgWithHostedDomain(t *testing.T) {
 	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfoSecondRequest, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
 	mockProfile.EXPECT().
 		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: "github|abcdefg"}).
@@ -1299,7 +1322,7 @@ func TestServer_Signup_ExistingOrgWithHostedDomain(t *testing.T) {
 		}).
 		Return(nil, nil)
 
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "asdf.com"}).
 		Return(fakeOrgInfo, nil)
 
@@ -1315,7 +1338,7 @@ func TestServer_Signup_ExistingOrgWithHostedDomain(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -1376,6 +1399,7 @@ func TestServer_Signup_CreateOrg_ForSelfUser(t *testing.T) {
 	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfoSecondRequest, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
 	mockProfile.EXPECT().
 		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: "github|abcdefg"}).
@@ -1404,7 +1428,7 @@ func TestServer_Signup_CreateOrg_ForSelfUser(t *testing.T) {
 		EnableApprovals: false,
 		OrgName:         "testOrg",
 	}
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		GetOrg(gomock.Any(), orgPb).
 		Return(fakeOrgInfo, nil)
 
@@ -1418,7 +1442,7 @@ func TestServer_Signup_CreateOrg_ForSelfUser(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -1458,6 +1482,7 @@ func TestServer_Signup_CreateUserOrgFailed(t *testing.T) {
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
 	mockProfile.EXPECT().
 		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: "github|abcdefg"}).
@@ -1482,7 +1507,7 @@ func TestServer_Signup_CreateUserOrgFailed(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -1510,6 +1535,7 @@ func TestServer_Signup_UserAlreadyExists(t *testing.T) {
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
 	mockProfile.EXPECT().
 		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: "github|abcdefg"}).
@@ -1518,7 +1544,7 @@ func TestServer_Signup_UserAlreadyExists(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -1584,13 +1610,14 @@ func TestServer_LoginUserForOrgMembership(t *testing.T) {
 	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfo1, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 	mockProfile.EXPECT().
 		GetUser(gomock.Any(), userPb).
 		Return(nil, nil)
 	fakeOrgInfo := &profilepb.OrgInfo{
 		ID: orgPb,
 	}
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		GetOrg(gomock.Any(), orgPb).
 		Return(fakeOrgInfo, nil)
 	mockProfile.EXPECT().
@@ -1599,7 +1626,7 @@ func TestServer_LoginUserForOrgMembership(t *testing.T) {
 			DisplayPicture: &types.StringValue{Value: ""},
 		}).
 		Return(nil, nil)
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		UpdateOrg(gomock.Any(), &profilepb.UpdateOrgRequest{
 			ID:         orgPb,
 			DomainName: &types.StringValue{Value: ""},
@@ -1609,7 +1636,7 @@ func TestServer_LoginUserForOrgMembership(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -1645,6 +1672,7 @@ func TestServer_Signup_UserNotApproved(t *testing.T) {
 	a.EXPECT().GetUserInfo(testingutils.TestUserID).Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
 	mockProfile.EXPECT().
 		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: "github|abcdefg"}).
@@ -1655,7 +1683,7 @@ func TestServer_Signup_UserNotApproved(t *testing.T) {
 		EnableApprovals: true,
 	}
 
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "asdf.com"}).
 		Return(fakeOrgInfo, nil)
 
@@ -1695,7 +1723,7 @@ func TestServer_Signup_UserNotApproved(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -1723,6 +1751,7 @@ func TestServer_Login_UserNotApproved(t *testing.T) {
 	a.EXPECT().GetUserInfo(testingutils.TestUserID).Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 	orgPb := utils.ProtoFromUUIDStrOrNil(orgID)
 	fakeOrgInfo := &profilepb.OrgInfo{
@@ -1730,7 +1759,7 @@ func TestServer_Login_UserNotApproved(t *testing.T) {
 		EnableApprovals: true,
 	}
 
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		GetOrg(gomock.Any(), orgPb).
 		Return(fakeOrgInfo, nil)
 
@@ -1742,7 +1771,7 @@ func TestServer_Login_UserNotApproved(t *testing.T) {
 			OrgID:      utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
 			IsApproved: false,
 		}, nil)
-	mockProfile.EXPECT().
+	mockOrg.EXPECT().
 		UpdateOrg(gomock.Any(), &profilepb.UpdateOrgRequest{
 			ID:         orgPb,
 			DomainName: &types.StringValue{Value: ""},
@@ -1752,7 +1781,7 @@ func TestServer_Login_UserNotApproved(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -1805,7 +1834,8 @@ func TestServer_InviteUser(t *testing.T) {
 
 			a := mock_controllers.NewMockAuthProvider(ctrl)
 			mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-			env, err := authenv.New(mockProfile)
+			mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
+			env, err := authenv.New(mockProfile, mockOrg)
 			require.NoError(t, err)
 			s, err := controllers.NewServer(env, a, nil)
 			require.NoError(t, err)
@@ -1896,7 +1926,8 @@ func TestServer_CreateOrgAndInviteUser(t *testing.T) {
 
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-	env, err := authenv.New(mockProfile)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
@@ -1984,6 +2015,7 @@ func TestServer_GetAuthConnectorToken(t *testing.T) {
 	ctx := authcontext.NewContext(context.Background(), sCtx)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
 	mockProfile.EXPECT().
 		GetUser(gomock.Any(), userPb).
@@ -1996,7 +2028,7 @@ func TestServer_GetAuthConnectorToken(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
 
-	env, err := authenv.New(mockProfile)
+	env, err := authenv.New(mockProfile, mockOrg)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, nil, nil)
 	require.NoError(t, err)

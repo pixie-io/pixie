@@ -93,7 +93,6 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 
 	md, _ := metadata.FromIncomingContext(ctx)
 	ctx = metadata.NewOutgoingContext(ctx, md)
-	pc := s.env.ProfileClient()
 
 	// If user does not exist in the AuthProvider, then create a new user if specified.
 	newUser := userInfo.PLUserID == ""
@@ -101,7 +100,7 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 	// A user can exist in the AuthProvider, but not the profile service. If that's the case, we want to create a new user.
 	if !newUser {
 		upb := utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID)
-		_, err := pc.GetUser(ctx, upb)
+		_, err := s.env.ProfileClient().GetUser(ctx, upb)
 		if err != nil {
 			newUser = true
 		}
@@ -118,7 +117,7 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 	if userInfo.PLOrgID != "" {
 		// If the user already belongs to an org according to the AuthProvider (userInfo),
 		// we log that user into the corresponding org.
-		orgInfo, err := pc.GetOrg(ctx, utils.ProtoFromUUIDStrOrNil(userInfo.PLOrgID))
+		orgInfo, err := s.env.OrgClient().GetOrg(ctx, utils.ProtoFromUUIDStrOrNil(userInfo.PLOrgID))
 		if err != nil {
 			return nil, status.Errorf(codes.NotFound, "organization not found, please register, or contact support '%v'", err)
 		}
@@ -151,7 +150,7 @@ func (s *Server) loginUser(ctx context.Context, userID string, userInfo *UserInf
 			return nil, err
 		}
 	}
-	_, _ = s.env.ProfileClient().UpdateOrg(ctx, &profilepb.UpdateOrgRequest{
+	_, _ = s.env.OrgClient().UpdateOrg(ctx, &profilepb.UpdateOrgRequest{
 		ID:         orgInfo.ID,
 		DomainName: &types.StringValue{Value: userInfo.HostedDomain},
 	})
@@ -237,13 +236,12 @@ func (s *Server) signupUser(ctx context.Context, userInfo *UserInfo, orgInfo *pr
 }
 
 func (s *Server) getMatchingOrgForUser(ctx context.Context, userInfo *UserInfo) (*profilepb.OrgInfo, error) {
-	pc := s.env.ProfileClient()
 	if userInfo.HostedDomain == "" {
-		return pc.GetOrgByName(ctx, &profilepb.GetOrgByNameRequest{Name: userInfo.Email})
+		return s.env.OrgClient().GetOrgByName(ctx, &profilepb.GetOrgByNameRequest{Name: userInfo.Email})
 	}
 
 	// Case 1: Search for an org that has a domain matching the HostedDomain.
-	orgInfo, err := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{
+	orgInfo, err := s.env.OrgClient().GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{
 		DomainName: userInfo.HostedDomain,
 	})
 	if err == nil || status.Code(err) != codes.NotFound {
@@ -258,7 +256,7 @@ func (s *Server) getMatchingOrgForUser(ctx context.Context, userInfo *UserInfo) 
 	}
 	emailDomain := emailComponents[1]
 
-	return pc.GetOrgByName(ctx, &profilepb.GetOrgByNameRequest{Name: emailDomain})
+	return s.env.OrgClient().GetOrgByName(ctx, &profilepb.GetOrgByNameRequest{Name: emailDomain})
 }
 
 // Signup uses the AuthProvider to authenticate and sign up the user. It autocreates the org if the org doesn't exist.
@@ -284,7 +282,7 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 		if err != nil {
 			return nil, err
 		}
-		orgInfoPb, err := pc.GetOrg(ctx, orgID)
+		orgInfoPb, err := s.env.OrgClient().GetOrg(ctx, orgID)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
@@ -309,7 +307,7 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 	if err != nil {
 		return nil, err
 	}
-	newOrgInfo, err := pc.GetOrg(ctx, orgID)
+	newOrgInfo, err := s.env.OrgClient().GetOrg(ctx, orgID)
 	if err != nil {
 		return nil, err
 	}
@@ -396,8 +394,7 @@ func (s *Server) GetAugmentedTokenForAPIKey(ctx context.Context, in *authpb.GetA
 		fmt.Sprintf("bearer %s", svcClaims))
 
 	// Fetch org to validate it exists.
-	pc := s.env.ProfileClient()
-	_, err = pc.GetOrg(ctxWithSvcCreds, utils.ProtoFromUUID(orgID))
+	_, err = s.env.OrgClient().GetOrg(ctxWithSvcCreds, utils.ProtoFromUUID(orgID))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to generate auth token")
 	}
@@ -440,7 +437,7 @@ func (s *Server) GetAugmentedToken(
 		ctx = metadata.NewOutgoingContext(ctx, md)
 
 		orgIDstr := aCtx.Claims.GetUserClaims().OrgID
-		_, err := pc.GetOrg(ctx, utils.ProtoFromUUIDStrOrNil(orgIDstr))
+		_, err := s.env.OrgClient().GetOrg(ctx, utils.ProtoFromUUIDStrOrNil(orgIDstr))
 		if err != nil {
 			return nil, status.Error(codes.Unauthenticated, "Invalid auth/org")
 		}

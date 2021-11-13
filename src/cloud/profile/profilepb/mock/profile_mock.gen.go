@@ -77,86 +77,6 @@ func (mr *MockProfileServiceClientMockRecorder) CreateUser(ctx, in interface{}, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockProfileServiceClient)(nil).CreateUser), varargs...)
 }
 
-// GetOrg mocks base method.
-func (m *MockProfileServiceClient) GetOrg(ctx context.Context, in *uuidpb.UUID, opts ...grpc.CallOption) (*profilepb.OrgInfo, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetOrg", varargs...)
-	ret0, _ := ret[0].(*profilepb.OrgInfo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetOrg indicates an expected call of GetOrg.
-func (mr *MockProfileServiceClientMockRecorder) GetOrg(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrg", reflect.TypeOf((*MockProfileServiceClient)(nil).GetOrg), varargs...)
-}
-
-// GetOrgByDomain mocks base method.
-func (m *MockProfileServiceClient) GetOrgByDomain(ctx context.Context, in *profilepb.GetOrgByDomainRequest, opts ...grpc.CallOption) (*profilepb.OrgInfo, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetOrgByDomain", varargs...)
-	ret0, _ := ret[0].(*profilepb.OrgInfo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetOrgByDomain indicates an expected call of GetOrgByDomain.
-func (mr *MockProfileServiceClientMockRecorder) GetOrgByDomain(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgByDomain", reflect.TypeOf((*MockProfileServiceClient)(nil).GetOrgByDomain), varargs...)
-}
-
-// GetOrgByName mocks base method.
-func (m *MockProfileServiceClient) GetOrgByName(ctx context.Context, in *profilepb.GetOrgByNameRequest, opts ...grpc.CallOption) (*profilepb.OrgInfo, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetOrgByName", varargs...)
-	ret0, _ := ret[0].(*profilepb.OrgInfo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetOrgByName indicates an expected call of GetOrgByName.
-func (mr *MockProfileServiceClientMockRecorder) GetOrgByName(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgByName", reflect.TypeOf((*MockProfileServiceClient)(nil).GetOrgByName), varargs...)
-}
-
-// GetOrgs mocks base method.
-func (m *MockProfileServiceClient) GetOrgs(ctx context.Context, in *profilepb.GetOrgsRequest, opts ...grpc.CallOption) (*profilepb.GetOrgsResponse, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetOrgs", varargs...)
-	ret0, _ := ret[0].(*profilepb.GetOrgsResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetOrgs indicates an expected call of GetOrgs.
-func (mr *MockProfileServiceClientMockRecorder) GetOrgs(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgs", reflect.TypeOf((*MockProfileServiceClient)(nil).GetOrgs), varargs...)
-}
-
 // GetUser mocks base method.
 func (m *MockProfileServiceClient) GetUser(ctx context.Context, in *uuidpb.UUID, opts ...grpc.CallOption) (*profilepb.UserInfo, error) {
 	m.ctrl.T.Helper()
@@ -257,26 +177,6 @@ func (mr *MockProfileServiceClientMockRecorder) GetUserSettings(ctx, in interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserSettings", reflect.TypeOf((*MockProfileServiceClient)(nil).GetUserSettings), varargs...)
 }
 
-// GetUsersInOrg mocks base method.
-func (m *MockProfileServiceClient) GetUsersInOrg(ctx context.Context, in *profilepb.GetUsersInOrgRequest, opts ...grpc.CallOption) (*profilepb.GetUsersInOrgResponse, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetUsersInOrg", varargs...)
-	ret0, _ := ret[0].(*profilepb.GetUsersInOrgResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetUsersInOrg indicates an expected call of GetUsersInOrg.
-func (mr *MockProfileServiceClientMockRecorder) GetUsersInOrg(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersInOrg", reflect.TypeOf((*MockProfileServiceClient)(nil).GetUsersInOrg), varargs...)
-}
-
 // SetUserAttributes mocks base method.
 func (m *MockProfileServiceClient) SetUserAttributes(ctx context.Context, in *profilepb.SetUserAttributesRequest, opts ...grpc.CallOption) (*profilepb.SetUserAttributesResponse, error) {
 	m.ctrl.T.Helper()
@@ -295,26 +195,6 @@ func (mr *MockProfileServiceClientMockRecorder) SetUserAttributes(ctx, in interf
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetUserAttributes", reflect.TypeOf((*MockProfileServiceClient)(nil).SetUserAttributes), varargs...)
-}
-
-// UpdateOrg mocks base method.
-func (m *MockProfileServiceClient) UpdateOrg(ctx context.Context, in *profilepb.UpdateOrgRequest, opts ...grpc.CallOption) (*profilepb.OrgInfo, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "UpdateOrg", varargs...)
-	ret0, _ := ret[0].(*profilepb.OrgInfo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdateOrg indicates an expected call of UpdateOrg.
-func (mr *MockProfileServiceClientMockRecorder) UpdateOrg(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrg", reflect.TypeOf((*MockProfileServiceClient)(nil).UpdateOrg), varargs...)
 }
 
 // UpdateUser mocks base method.
@@ -410,66 +290,6 @@ func (mr *MockProfileServiceServerMockRecorder) CreateUser(arg0, arg1 interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockProfileServiceServer)(nil).CreateUser), arg0, arg1)
 }
 
-// GetOrg mocks base method.
-func (m *MockProfileServiceServer) GetOrg(arg0 context.Context, arg1 *uuidpb.UUID) (*profilepb.OrgInfo, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOrg", arg0, arg1)
-	ret0, _ := ret[0].(*profilepb.OrgInfo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetOrg indicates an expected call of GetOrg.
-func (mr *MockProfileServiceServerMockRecorder) GetOrg(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrg", reflect.TypeOf((*MockProfileServiceServer)(nil).GetOrg), arg0, arg1)
-}
-
-// GetOrgByDomain mocks base method.
-func (m *MockProfileServiceServer) GetOrgByDomain(arg0 context.Context, arg1 *profilepb.GetOrgByDomainRequest) (*profilepb.OrgInfo, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOrgByDomain", arg0, arg1)
-	ret0, _ := ret[0].(*profilepb.OrgInfo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetOrgByDomain indicates an expected call of GetOrgByDomain.
-func (mr *MockProfileServiceServerMockRecorder) GetOrgByDomain(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgByDomain", reflect.TypeOf((*MockProfileServiceServer)(nil).GetOrgByDomain), arg0, arg1)
-}
-
-// GetOrgByName mocks base method.
-func (m *MockProfileServiceServer) GetOrgByName(arg0 context.Context, arg1 *profilepb.GetOrgByNameRequest) (*profilepb.OrgInfo, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOrgByName", arg0, arg1)
-	ret0, _ := ret[0].(*profilepb.OrgInfo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetOrgByName indicates an expected call of GetOrgByName.
-func (mr *MockProfileServiceServerMockRecorder) GetOrgByName(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgByName", reflect.TypeOf((*MockProfileServiceServer)(nil).GetOrgByName), arg0, arg1)
-}
-
-// GetOrgs mocks base method.
-func (m *MockProfileServiceServer) GetOrgs(arg0 context.Context, arg1 *profilepb.GetOrgsRequest) (*profilepb.GetOrgsResponse, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOrgs", arg0, arg1)
-	ret0, _ := ret[0].(*profilepb.GetOrgsResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetOrgs indicates an expected call of GetOrgs.
-func (mr *MockProfileServiceServerMockRecorder) GetOrgs(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgs", reflect.TypeOf((*MockProfileServiceServer)(nil).GetOrgs), arg0, arg1)
-}
-
 // GetUser mocks base method.
 func (m *MockProfileServiceServer) GetUser(arg0 context.Context, arg1 *uuidpb.UUID) (*profilepb.UserInfo, error) {
 	m.ctrl.T.Helper()
@@ -545,21 +365,6 @@ func (mr *MockProfileServiceServerMockRecorder) GetUserSettings(arg0, arg1 inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserSettings", reflect.TypeOf((*MockProfileServiceServer)(nil).GetUserSettings), arg0, arg1)
 }
 
-// GetUsersInOrg mocks base method.
-func (m *MockProfileServiceServer) GetUsersInOrg(arg0 context.Context, arg1 *profilepb.GetUsersInOrgRequest) (*profilepb.GetUsersInOrgResponse, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUsersInOrg", arg0, arg1)
-	ret0, _ := ret[0].(*profilepb.GetUsersInOrgResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetUsersInOrg indicates an expected call of GetUsersInOrg.
-func (mr *MockProfileServiceServerMockRecorder) GetUsersInOrg(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersInOrg", reflect.TypeOf((*MockProfileServiceServer)(nil).GetUsersInOrg), arg0, arg1)
-}
-
 // SetUserAttributes mocks base method.
 func (m *MockProfileServiceServer) SetUserAttributes(arg0 context.Context, arg1 *profilepb.SetUserAttributesRequest) (*profilepb.SetUserAttributesResponse, error) {
 	m.ctrl.T.Helper()
@@ -573,21 +378,6 @@ func (m *MockProfileServiceServer) SetUserAttributes(arg0 context.Context, arg1 
 func (mr *MockProfileServiceServerMockRecorder) SetUserAttributes(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetUserAttributes", reflect.TypeOf((*MockProfileServiceServer)(nil).SetUserAttributes), arg0, arg1)
-}
-
-// UpdateOrg mocks base method.
-func (m *MockProfileServiceServer) UpdateOrg(arg0 context.Context, arg1 *profilepb.UpdateOrgRequest) (*profilepb.OrgInfo, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateOrg", arg0, arg1)
-	ret0, _ := ret[0].(*profilepb.OrgInfo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdateOrg indicates an expected call of UpdateOrg.
-func (mr *MockProfileServiceServerMockRecorder) UpdateOrg(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrg", reflect.TypeOf((*MockProfileServiceServer)(nil).UpdateOrg), arg0, arg1)
 }
 
 // UpdateUser mocks base method.

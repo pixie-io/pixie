@@ -82,7 +82,7 @@ func (o *OrganizationServiceServer) GetOrg(ctx context.Context, req *uuidpb.UUID
 		return nil, err
 	}
 
-	resp, err := o.ProfileServiceClient.GetOrg(ctx, req)
+	resp, err := o.OrgServiceClient.GetOrg(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (o *OrganizationServiceServer) UpdateOrg(ctx context.Context, req *cloudpb.
 		return nil, err
 	}
 
-	resp, err := o.ProfileServiceClient.UpdateOrg(ctx, &profilepb.UpdateOrgRequest{
+	resp, err := o.OrgServiceClient.UpdateOrg(ctx, &profilepb.UpdateOrgRequest{
 		ID:              req.ID,
 		EnableApprovals: req.EnableApprovals,
 	})
@@ -130,7 +130,7 @@ func (o *OrganizationServiceServer) GetUsersInOrg(ctx context.Context, req *clou
 		OrgID: req.OrgID,
 	}
 
-	resp, err := o.ProfileServiceClient.GetUsersInOrg(ctx, inReq)
+	resp, err := o.OrgServiceClient.GetUsersInOrg(ctx, inReq)
 	if err != nil {
 		return nil, err
 	}

@@ -207,7 +207,7 @@ func TestServer_UpdateUser(t *testing.T) {
 					Return(updatedUserInfo, nil)
 			}
 
-			userServer := &controller.UserServiceServer{mockClients.MockProfile}
+			userServer := &controller.UserServiceServer{mockClients.MockProfile, mockClients.MockOrg}
 			resp, err := userServer.UpdateUser(tc.ctx, req)
 
 			if !tc.shouldReject {

@@ -252,13 +252,13 @@ func main() {
 	as := &controller.AutocompleteServer{Suggester: esSuggester}
 	cloudpb.RegisterAutocompleteServiceServer(s.GRPCServer(), as)
 
-	profileServer := &controller.ProfileServer{ProfileServiceClient: pc}
+	profileServer := &controller.ProfileServer{OrgServiceClient: oc}
 	cloudpb.RegisterProfileServiceServer(s.GRPCServer(), profileServer)
 
 	os := &controller.OrganizationServiceServer{ProfileServiceClient: pc, AuthServiceClient: ac, OrgServiceClient: oc}
 	cloudpb.RegisterOrganizationServiceServer(s.GRPCServer(), os)
 
-	us := &controller.UserServiceServer{ProfileServiceClient: pc}
+	us := &controller.UserServiceServer{ProfileServiceClient: pc, OrgServiceClient: oc}
 	cloudpb.RegisterUserServiceServer(s.GRPCServer(), us)
 
 	cs := &controller.ConfigServiceServer{ConfigServiceClient: cm}

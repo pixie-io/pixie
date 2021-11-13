@@ -44,3 +44,17 @@ func newProfileServiceClient() (profilepb.ProfileServiceClient, error) {
 
 	return profilepb.NewProfileServiceClient(profileChannel), nil
 }
+
+func newOrgServiceClient() (profilepb.OrgServiceClient, error) {
+	dialOpts, err := services.GetGRPCClientDialOpts()
+	if err != nil {
+		return nil, err
+	}
+
+	profileChannel, err := grpc.Dial(viper.GetString("profile_service"), dialOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return profilepb.NewOrgServiceClient(profileChannel), nil
+}

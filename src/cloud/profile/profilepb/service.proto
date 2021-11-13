@@ -41,15 +41,6 @@ service ProfileService {
   // Calls for handling user attributes.
   rpc GetUserAttributes(GetUserAttributesRequest) returns (GetUserAttributesResponse);
   rpc SetUserAttributes(SetUserAttributesRequest) returns (SetUserAttributesResponse);
-
-  // TODO(michellenguyen): These have calls have moved to the OrgService. Remove them once
-  // all consumers (API service) have been updated to use the new service.
-  rpc GetOrg(px.uuidpb.UUID) returns (OrgInfo);
-  rpc GetOrgByName(GetOrgByNameRequest) returns (OrgInfo);
-  rpc GetOrgByDomain(GetOrgByDomainRequest) returns (OrgInfo);
-  rpc UpdateOrg(UpdateOrgRequest) returns (OrgInfo);
-  rpc GetOrgs(GetOrgsRequest) returns (GetOrgsResponse);
-  rpc GetUsersInOrg(GetUsersInOrgRequest) returns (GetUsersInOrgResponse);
 }
 
 // Org service tracks organization information.

@@ -40,8 +40,8 @@ func init() {
 	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
 }
 
-// NewProfileServiceClient creates a new profile RPC client stub.
-func NewProfileServiceClient() (profilepb.ProfileServiceClient, error) {
+// NewOrgServiceClient creates a new org RPC client stub.
+func NewOrgServiceClient() (profilepb.OrgServiceClient, error) {
 	dialOpts, err := services.GetGRPCClientDialOpts()
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func NewProfileServiceClient() (profilepb.ProfileServiceClient, error) {
 		return nil, err
 	}
 
-	return profilepb.NewProfileServiceClient(authChannel), nil
+	return profilepb.NewOrgServiceClient(authChannel), nil
 }
 
 // NewAuthClient creates a new auth RPC client stub.
@@ -76,7 +76,7 @@ func main() {
 	services.CheckServiceFlags()
 	services.CheckSSLClientFlags()
 
-	pc, err := NewProfileServiceClient()
+	oc, err := NewOrgServiceClient()
 	if err != nil {
 		logrus.WithError(err).Fatal("Unable to connect to Profile Service")
 	}
@@ -102,7 +102,7 @@ func main() {
 	}
 
 	// Ignore error, just try the org.
-	org, _ := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{
+	org, _ := oc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{
 		DomainName: orgInfo.DomainName,
 	})
 	if org != nil {

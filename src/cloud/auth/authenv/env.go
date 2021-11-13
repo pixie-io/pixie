@@ -29,12 +29,14 @@ import (
 type AuthEnv interface {
 	env.Env
 	ProfileClient() profilepb.ProfileServiceClient
+	OrgClient() profilepb.OrgServiceClient
 }
 
 // Impl is an implementation of the AuthEnv interface
 type Impl struct {
 	*env.BaseEnv
 	profileClient profilepb.ProfileServiceClient
+	orgClient     profilepb.OrgServiceClient
 }
 
 // NewWithDefaults creates a new auth authenv with defaults.
@@ -43,16 +45,25 @@ func NewWithDefaults() (*Impl, error) {
 	if err != nil {
 		return nil, err
 	}
+	oc, err := newOrgServiceClient()
+	if err != nil {
+		return nil, err
+	}
 
-	return New(pc)
+	return New(pc, oc)
 }
 
 // New creates a new auth authenv.
-func New(pc profilepb.ProfileServiceClient) (*Impl, error) {
-	return &Impl{env.New(viper.GetString("domain_name")), pc}, nil
+func New(pc profilepb.ProfileServiceClient, oc profilepb.OrgServiceClient) (*Impl, error) {
+	return &Impl{env.New(viper.GetString("domain_name")), pc, oc}, nil
 }
 
 // ProfileClient returns the authenv's profile client.
 func (e *Impl) ProfileClient() profilepb.ProfileServiceClient {
 	return e.profileClient
+}
+
+// OrgClient returns the authenv's org client.
+func (e *Impl) OrgClient() profilepb.OrgServiceClient {
+	return e.orgClient
 }

@@ -33,7 +33,7 @@ import (
 
 // ProfileServer provides info about users and orgs.
 type ProfileServer struct {
-	ProfileServiceClient profilepb.ProfileServiceClient
+	OrgServiceClient profilepb.OrgServiceClient
 }
 
 // GetOrgInfo gets the org info for a given org ID.
@@ -53,7 +53,7 @@ func (p *ProfileServer) GetOrgInfo(ctx context.Context, req *uuidpb.UUID) (*clou
 		return nil, status.Error(codes.Unauthenticated, "Unable to fetch org info")
 	}
 
-	resp, err := p.ProfileServiceClient.GetOrg(ctx, req)
+	resp, err := p.OrgServiceClient.GetOrg(ctx, req)
 	if err != nil {
 		return nil, err
 	}
