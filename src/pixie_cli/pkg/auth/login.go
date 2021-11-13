@@ -407,12 +407,12 @@ func (p *PixieCloudLogin) getRefreshToken(accessToken string, apiKey string) (*R
 		}
 	}
 
-	profileClient := cloudpb.NewProfileServiceClient(conn)
+	orgClient := cloudpb.NewOrganizationServiceClient(conn)
 	ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
 		fmt.Sprintf("bearer %s", resp.Token))
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
-	orgResp, err := profileClient.GetOrgInfo(ctx, apiutils.ProtoFromUUIDStrOrNil(orgID))
+	orgResp, err := orgClient.GetOrg(ctx, apiutils.ProtoFromUUIDStrOrNil(orgID))
 	if err != nil {
 		return nil, err
 	}
