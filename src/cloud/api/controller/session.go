@@ -32,7 +32,7 @@ import (
 // session has expired.
 func GetDefaultSession(env apienv.APIEnv, r *http.Request) (*sessions.Session, error) {
 	store := env.CookieStore()
-	session, err := store.Get(r, "default-session4")
+	session, err := store.Get(r, "default-session5")
 	if err != nil {
 		// CookieStore().Get(...) will always return a valid session, even if it has
 		// errored trying to decode the previous existing session.
