@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go/v4"
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
@@ -436,10 +437,14 @@ func (s *Server) GetAugmentedToken(
 		md, _ := metadata.FromIncomingContext(ctx)
 		ctx = metadata.NewOutgoingContext(ctx, md)
 
+		// If the OrgID is empty, we will approve the user but they will have low
+		// functionality in Pixie.
 		orgIDstr := aCtx.Claims.GetUserClaims().OrgID
-		_, err := s.env.OrgClient().GetOrg(ctx, utils.ProtoFromUUIDStrOrNil(orgIDstr))
-		if err != nil {
-			return nil, status.Error(codes.Unauthenticated, "Invalid auth/org")
+		if orgIDstr != "" {
+			_, err := s.env.OrgClient().GetOrg(ctx, utils.ProtoFromUUIDStrOrNil(orgIDstr))
+			if err != nil {
+				return nil, status.Error(codes.Unauthenticated, "Invalid auth/org")
+			}
 		}
 
 		if !aCtx.Claims.GetUserClaims().IsAPIUser {
@@ -449,7 +454,7 @@ func (s *Server) GetAugmentedToken(
 				return nil, status.Error(codes.Unauthenticated, "Invalid auth/user")
 			}
 
-			if orgIDstr != utils.UUIDFromProtoOrNil(userInfo.OrgID).String() {
+			if uuid.FromStringOrNil(orgIDstr) != utils.UUIDFromProtoOrNil(userInfo.OrgID) {
 				return nil, status.Error(codes.Unauthenticated, "Mismatched org")
 			}
 		}

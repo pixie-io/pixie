@@ -697,7 +697,45 @@ func TestServer_GetAugmentedToken_Service(t *testing.T) {
 	assert.Equal(t, "vzmgr", jwtclaims["ServiceID"])
 }
 
-func TestServer_GetAugmentedToken_NoOrg(t *testing.T) {
+func TestServer_GetAugmentedToken_EmptyOrg(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
+
+	mockProfile.EXPECT().
+		GetUser(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestUserID)).
+		Return(&profilepb.UserInfo{
+			ID:    utils.ProtoFromUUIDStrOrNil(testingutils.TestUserID),
+			OrgID: utils.ProtoFromUUIDStrOrNil(""),
+		}, nil)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
+	env, err := authenv.New(mockProfile, mockOrg)
+	require.NoError(t, err)
+	s, err := controllers.NewServer(env, a, nil)
+	require.NoError(t, err)
+
+	claims := claimsutils.GenerateJWTForUser(testingutils.TestUserID, "", "testing@testing.org", time.Now().Add(time.Hour), "withpixie.ai")
+	token := testingutils.SignPBClaims(t, claims, "jwtkey")
+	req := &authpb.GetAugmentedAuthTokenRequest{
+		Token: token,
+	}
+	sCtx := authcontext.New()
+	sCtx.Claims = claims
+	resp, err := s.GetAugmentedToken(context.Background(), req)
+
+	require.Nil(t, err)
+
+	// Make sure expiry time is in the future & > 0.
+	assert.True(t, resp.ExpiresAt > time.Now().Unix() && resp.ExpiresAt <= time.Now().Add(90*time.Minute).Unix())
+	verifyToken(t, resp.Token, testingutils.TestUserID, "", resp.ExpiresAt, "jwtkey")
+}
+
+func TestServer_GetAugmentedToken_OrgDoesntExist(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 
