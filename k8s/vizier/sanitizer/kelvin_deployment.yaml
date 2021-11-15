@@ -25,7 +25,7 @@ spec:
         ']
         env:
         - name: SERVICE_NAME
-          value: "vizier-query-broker"
+          value: "vizier-query-broker-svc"
         - name: SERVICE_PORT
           value: "50300"
       containers:

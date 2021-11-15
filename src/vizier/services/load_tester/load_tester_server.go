@@ -151,7 +151,7 @@ func init() {
 	pflag.Duration("max_expected_clock_skew", 2000, "Duration in ms of expected maximum clock skew in a cluster")
 	pflag.Duration("renew_period", 5000, "Duration in ms of the time to wait to renew lease")
 	pflag.String("pod_namespace", "pl", "The namespace this pod runs in.")
-	pflag.String("qb_service", "vizier-query-broker", "The querybroker service url (load balancer/list is ok)")
+	pflag.String("qb_service", "vizier-query-broker-svc", "The querybroker service url (load balancer/list is ok)")
 	pflag.String("qb_port", "50300", "The querybroker service port")
 	pflag.String("cluster_name", "", "The name of the user's K8s cluster")
 	pflag.String("deploy_key", "", "The deploy key for the cluster")

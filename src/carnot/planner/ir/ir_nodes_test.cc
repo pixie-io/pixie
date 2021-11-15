@@ -1005,7 +1005,7 @@ TEST_F(CloneTests, external_grpc_sink) {
   GRPCSinkIR* grpc_sink =
       MakeGRPCSink(mem_source, "output_table", std::vector<std::string>{"count"});
   grpc_sink->SetDestinationAddress("1111");
-  grpc_sink->SetDestinationSSLTargetName("vizier-query-broker.pl.svc");
+  grpc_sink->SetDestinationSSLTargetName("vizier-query-broker-svc.pl.svc");
 
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));

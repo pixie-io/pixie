@@ -46,7 +46,7 @@ import (
 )
 
 const (
-	querybrokerHostname = "vizier-query-broker"
+	querybrokerHostname = "vizier-query-broker-svc"
 )
 
 func init() {
