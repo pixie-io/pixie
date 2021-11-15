@@ -37,6 +37,7 @@ const (
 	defaultDataAccess                = "Full"
 	defaultDatastreamBufferSize      = 1024 * 1024
 	defaultDatastreamBufferSpikeSize = 1024 * 1024 * 500
+	defaultTableStoreTableSizeLimit  = 1024 * 1024 * 64
 	defaultElectionPeriodMs          = 7500
 )
 
@@ -57,6 +58,7 @@ type VizierTmplValues struct {
 	DataAccess                string
 	DatastreamBufferSize      uint32
 	DatastreamBufferSpikeSize uint32
+	TableStoreTableSizeLimit  int32
 	ElectionPeriodMs          int64
 }
 
@@ -78,6 +80,7 @@ func VizierTmplValuesToArgs(tmplValues *VizierTmplValues) *yamls.YAMLTmplArgumen
 			"dataAccess":                tmplValues.DataAccess,
 			"datastreamBufferSize":      tmplValues.DatastreamBufferSize,
 			"datastreamBufferSpikeSize": tmplValues.DatastreamBufferSpikeSize,
+			"tableStoreTableSizeLimit":  tmplValues.TableStoreTableSizeLimit,
 			"electionPeriodMs":          tmplValues.ElectionPeriodMs,
 		},
 		Release: &map[string]interface{}{
@@ -405,6 +408,12 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
 			Patch:           `{"spec": {"template": { "spec": { "containers": [{"name": "pem", "env": [{"name": "PL_DATASTREAM_BUFFER_SPIKE_SIZE", "value": "__PX_DATASTREAM_BUFFER_SPIKE_SIZE__"}]}] } } } }`,
 			Placeholder:     "__PX_DATASTREAM_BUFFER_SPIKE_SIZE__",
 			TemplateValue:   fmt.Sprintf(`{{ if .Values.datastreamBufferSpikeSize }}"{{.Values.datastreamBufferSpikeSize}}"{{else}}"%d"{{end}}`, defaultDatastreamBufferSpikeSize),
+		},
+		{
+			TemplateMatcher: yamls.GenerateContainerNameMatcherFn("pem"),
+			Patch:           `{"spec": {"template": { "spec": { "containers": [{"name": "pem", "env": [{"name": "PL_TABLE_STORE_TABLE_SIZE_LIMIT", "value": "__PX_TABLE_STORE_TABLE_SIZE_LIMIT__"}]}] } } } }`,
+			Placeholder:     "__PX_TABLE_STORE_TABLE_SIZE_LIMIT__",
+			TemplateValue:   fmt.Sprintf(`{{ if .Values.tableStoreTableSizeLimit }}"{{.Values.tableStoreTableSizeLimit}}"{{else}}"%d"{{end}}`, defaultTableStoreTableSizeLimit),
 		},
 		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("vizier-metadata"),

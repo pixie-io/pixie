@@ -34,6 +34,9 @@ spec:
     {{- if .Values.dataCollectorParams.datastreamBufferSpikeSize }}
     datastreamBufferSpikeSize: {{ .Values.dataCollectorParams.datastreamBufferSpikeSize }}
     {{- end }}
+    {{- if .Values.dataCollectorParams.tableStoreTableSizeLimit }}
+    tableStoreTableSizeLimit: {{ .Values.dataCollectorParams.tableStoreTableSizeLimit }}
+    {{- end }}
   {{- end}}
   {{- if .Values.leadershipElectionParams }}
     {{- if .Values.leadershipElectionParams.electionPeriodMs }}

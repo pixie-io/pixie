@@ -33,7 +33,8 @@
 #include "src/table_store/schema/relation.h"
 #include "src/table_store/table/table.h"
 
-DEFINE_int32(table_store_table_size_limit, 64 * 1024 * 1024,
+DEFINE_int32(table_store_table_size_limit,
+             gflags::Int32FromEnv("PL_TABLE_STORE_TABLE_SIZE_LIMIT", 1024 * 1024 * 64),
              "The maximal size a table allows. When the size grows beyond this limit, "
              "old data will be discarded.");
 
