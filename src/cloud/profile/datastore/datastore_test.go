@@ -314,6 +314,48 @@ func TestDatastore(t *testing.T) {
 		assert.Equal(t, userID, uuid.Nil)
 	})
 
+	t.Run("create org", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db)
+		domain := "asdf.com"
+		orgInfo := datastore.OrgInfo{
+			OrgName:    "asdf",
+			DomainName: &domain,
+		}
+
+		orgID, err := d.CreateOrg(&orgInfo)
+		require.NoError(t, err)
+		assert.NotEqual(t, orgID, uuid.Nil)
+		assert.Equal(t, orgInfo.ID, orgID)
+	})
+
+	t.Run("create org blank domain", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db)
+		orgInfo := datastore.OrgInfo{
+			OrgName: "asdf",
+		}
+
+		orgID, err := d.CreateOrg(&orgInfo)
+		require.NoError(t, err)
+		assert.NotEqual(t, orgID, uuid.Nil)
+		assert.Equal(t, orgInfo.ID, orgID)
+	})
+
+	t.Run("create duplicate org name fails", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db)
+		domain := "my-org.com"
+		orgInfo := datastore.OrgInfo{
+			OrgName:    "my-org",
+			DomainName: &domain,
+		}
+
+		orgID, err := d.CreateOrg(&orgInfo)
+		require.Error(t, err)
+		assert.Equal(t, orgID, uuid.Nil)
+	})
+
 	t.Run("get user by email", func(t *testing.T) {
 		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)

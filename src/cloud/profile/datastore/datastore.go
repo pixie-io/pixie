@@ -141,6 +141,7 @@ func (d *Datastore) CreateOrg(orgInfo *OrgInfo) (uuid.UUID, error) {
 	if err != nil {
 		return uuid.Nil, err
 	}
+	orgInfo.ID = u
 	return u, txn.Commit()
 }
 

@@ -162,6 +162,21 @@ func (mr *MockOrgDatastoreMockRecorder) ApproveAllOrgUsers(arg0 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApproveAllOrgUsers", reflect.TypeOf((*MockOrgDatastore)(nil).ApproveAllOrgUsers), arg0)
 }
 
+// CreateOrg mocks base method.
+func (m *MockOrgDatastore) CreateOrg(arg0 *datastore.OrgInfo) (uuid.UUID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateOrg", arg0)
+	ret0, _ := ret[0].(uuid.UUID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateOrg indicates an expected call of CreateOrg.
+func (mr *MockOrgDatastoreMockRecorder) CreateOrg(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrg", reflect.TypeOf((*MockOrgDatastore)(nil).CreateOrg), arg0)
+}
+
 // DeleteOrgAndUsers mocks base method.
 func (m *MockOrgDatastore) DeleteOrgAndUsers(arg0 uuid.UUID) error {
 	m.ctrl.T.Helper()

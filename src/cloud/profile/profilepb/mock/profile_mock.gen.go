@@ -453,6 +453,26 @@ func (mr *MockOrgServiceClientMockRecorder) AddOrgIDEConfig(ctx, in interface{},
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddOrgIDEConfig", reflect.TypeOf((*MockOrgServiceClient)(nil).AddOrgIDEConfig), varargs...)
 }
 
+// CreateOrg mocks base method.
+func (m *MockOrgServiceClient) CreateOrg(ctx context.Context, in *profilepb.CreateOrgRequest, opts ...grpc.CallOption) (*uuidpb.UUID, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CreateOrg", varargs...)
+	ret0, _ := ret[0].(*uuidpb.UUID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateOrg indicates an expected call of CreateOrg.
+func (mr *MockOrgServiceClientMockRecorder) CreateOrg(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrg", reflect.TypeOf((*MockOrgServiceClient)(nil).CreateOrg), varargs...)
+}
+
 // DeleteOrgIDEConfig mocks base method.
 func (m *MockOrgServiceClient) DeleteOrgIDEConfig(ctx context.Context, in *profilepb.DeleteOrgIDEConfigRequest, opts ...grpc.CallOption) (*profilepb.DeleteOrgIDEConfigResponse, error) {
 	m.ctrl.T.Helper()
@@ -649,6 +669,21 @@ func (m *MockOrgServiceServer) AddOrgIDEConfig(arg0 context.Context, arg1 *profi
 func (mr *MockOrgServiceServerMockRecorder) AddOrgIDEConfig(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddOrgIDEConfig", reflect.TypeOf((*MockOrgServiceServer)(nil).AddOrgIDEConfig), arg0, arg1)
+}
+
+// CreateOrg mocks base method.
+func (m *MockOrgServiceServer) CreateOrg(arg0 context.Context, arg1 *profilepb.CreateOrgRequest) (*uuidpb.UUID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateOrg", arg0, arg1)
+	ret0, _ := ret[0].(*uuidpb.UUID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateOrg indicates an expected call of CreateOrg.
+func (mr *MockOrgServiceServerMockRecorder) CreateOrg(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrg", reflect.TypeOf((*MockOrgServiceServer)(nil).CreateOrg), arg0, arg1)
 }
 
 // DeleteOrgIDEConfig mocks base method.

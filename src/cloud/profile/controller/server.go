@@ -69,6 +69,8 @@ type OrgDatastore interface {
 	ApproveAllOrgUsers(uuid.UUID) error
 	// UpdateOrg updates the orgs info.
 	UpdateOrg(*datastore.OrgInfo) error
+	// CreateOrg creates a new org.
+	CreateOrg(*datastore.OrgInfo) (uuid.UUID, error)
 	// GetOrgs gets all the orgs.
 	GetOrgs() ([]*datastore.OrgInfo, error)
 	// GetUsersInOrg gets all of the users in the given org.
@@ -303,6 +305,23 @@ func (s *Server) CreateOrgAndUser(ctx context.Context, req *profilepb.CreateOrgA
 	}
 
 	return resp, nil
+}
+
+// CreateOrg is the GRPC method to create a new org.
+func (s *Server) CreateOrg(ctx context.Context, req *profilepb.CreateOrgRequest) (*uuidpb.UUID, error) {
+	orgInfo := &datastore.OrgInfo{
+		OrgName: req.OrgName,
+	}
+	if req.DomainName != nil {
+		orgInfo.DomainName = &req.DomainName.Value
+	}
+
+	if len(orgInfo.OrgName) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "invalid org name")
+	}
+
+	oid, err := s.ods.CreateOrg(orgInfo)
+	return utils.ProtoFromUUID(oid), err
 }
 
 // GetOrg is the GRPC method to get an org by ID.

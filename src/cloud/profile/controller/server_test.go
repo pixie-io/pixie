@@ -272,6 +272,34 @@ func TestServer_CreateUser(t *testing.T) {
 	}
 }
 
+func TestServer_CreateOrg(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
+
+	testOrgUUID := uuid.Must(uuid.NewV4())
+	s := controller.NewServer(nil, nil, nil, ods, osds)
+	domain := "pixielabs.ai"
+	req := &datastore.OrgInfo{
+		OrgName:    "pixie",
+		DomainName: &domain,
+	}
+	ods.EXPECT().
+		CreateOrg(req).
+		Return(testOrgUUID, nil)
+	resp, err := s.CreateOrg(context.Background(), &profilepb.CreateOrgRequest{
+		OrgName:    "pixie",
+		DomainName: &types.StringValue{Value: "pixielabs.ai"},
+	})
+
+	assert.Nil(t, err)
+	c := status.Code(err)
+	assert.Equal(t, codes.OK, c)
+	assert.Equal(t, utils.ProtoFromUUID(testOrgUUID), resp)
+}
+
 func TestServer_GetUser(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
