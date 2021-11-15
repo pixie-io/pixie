@@ -97,6 +97,10 @@ message DataCollectorParams {
     uint32 datastream_buffer_size = 1;
     // DatastreamBufferSpikeSize is the maximum temporary size of a data stream buffer before processing.
     uint32 datastream_buffer_spike_size = 2;
+    // TableStoreTableSizeLimit is the maximum allowed size for a table in the table store. When the size grows beyond this limit,
+    // old data will be discarded.
+    int32 table_store_table_size_limit = 3;
+
 }
 
 // LeadershipElectionParams specifies configurable values for the K8s leaderships elections which Vizier uses manage pod leadership.

@@ -75,6 +75,12 @@ spec:
                       size of a data stream buffer before processing.
                     format: int32
                     type: integer
+                  tableStoreTableSizeLimit:
+                    description: TableStoreTableSizeLimit is the maximum allowed size
+                      for a table in the table store. When the size grows beyond this
+                      limit, old data will be discarded.
+                    format: int32
+                    type: integer
                 type: object
               deployKey:
                 description: DeployKey is the deploy key associated with the Vizier

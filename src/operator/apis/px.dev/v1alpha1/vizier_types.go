@@ -172,6 +172,9 @@ type DataCollectorParams struct {
 	DatastreamBufferSize uint32 `json:"datastreamBufferSize,omitempty"`
 	// DatastreamBufferSpikeSize is the maximum temporary size of a data stream buffer before processing.
 	DatastreamBufferSpikeSize uint32 `json:"datastreamBufferSpikeSize,omitempty"`
+	// TableStoreTableSizeLimit is the maximum allowed size for a table in the table store. When the size grows beyond this limit,
+	// old data will be discarded.
+	TableStoreTableSizeLimit int32 `json:"tableStoreTableSizeLimit,omitempty"`
 }
 
 // LeadershipElectionParams specifies configurable values for the K8s leaderships elections which Vizier uses manage pod leadership.
