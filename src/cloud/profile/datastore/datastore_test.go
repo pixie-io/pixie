@@ -157,6 +157,20 @@ func TestDatastore(t *testing.T) {
 		assert.Equal(t, userID, uuid.Nil)
 	})
 
+	t.Run("creating user with no org should work", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db)
+		userInfo := datastore.UserInfo{
+			Username:  "zain",
+			FirstName: "zain",
+			LastName:  "asgar",
+			Email:     "zasgar@pixielabs.ai",
+		}
+		userID, err := d.CreateUser(&userInfo)
+		assert.NotNil(t, err)
+		assert.Equal(t, userID, uuid.Nil)
+	})
+
 	t.Run("test get org", func(t *testing.T) {
 		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)

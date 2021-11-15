@@ -180,25 +180,25 @@ func toExternalError(err error) error {
 
 // CreateUser is the GRPC method to create  new user.
 func (s *Server) CreateUser(ctx context.Context, req *profilepb.CreateUserRequest) (*uuidpb.UUID, error) {
-	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
-	if orgID == uuid.Nil {
-		return nil, status.Error(codes.InvalidArgument, "invalid org id")
-	}
-	orgInfo, err := s.ods.GetOrg(orgID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to get org info")
-	}
-	// If enable approvals is true, that means new users by default will not be approved. (approval = false).
-	defaultIsApproved := !orgInfo.EnableApprovals
+	// Users with no org are considered approved by default.
 	userInfo := &datastore.UserInfo{
-		OrgID:            orgID,
 		Username:         req.Username,
 		FirstName:        req.FirstName,
 		LastName:         req.LastName,
 		Email:            req.Email,
-		IsApproved:       defaultIsApproved,
+		IsApproved:       true,
 		IdentityProvider: req.IdentityProvider,
 		AuthProviderID:   req.AuthProviderID,
+	}
+	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
+	if orgID != uuid.Nil {
+		orgInfo, err := s.ods.GetOrg(orgID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "failed to get org info")
+		}
+		userInfo.OrgID = orgID
+		// Mark user as needing approval if this org requires approvals.
+		userInfo.IsApproved = !orgInfo.EnableApprovals
 	}
 	if len(userInfo.Username) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "invalid username")

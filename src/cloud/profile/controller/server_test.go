@@ -85,10 +85,9 @@ func TestServer_CreateUser(t *testing.T) {
 			enableApprovals: false,
 		},
 		{
-			name:      "invalid orgid",
-			makesCall: false,
+			name:      "no orgid",
+			makesCall: true,
 			userInfo: &profilepb.CreateUserRequest{
-				OrgID:            &uuidpb.UUID{},
 				Username:         "foobar",
 				FirstName:        "foo",
 				LastName:         "bar",
@@ -96,9 +95,26 @@ func TestServer_CreateUser(t *testing.T) {
 				IdentityProvider: "github",
 				AuthProviderID:   "github|asdfghjkl;",
 			},
-			expectErr:       true,
-			expectCode:      codes.InvalidArgument,
-			respID:          nil,
+			expectErr:       false,
+			expectCode:      codes.OK,
+			respID:          utils.ProtoFromUUID(testUUID),
+			enableApprovals: false,
+		},
+		{
+			name:      "nil orgid",
+			makesCall: true,
+			userInfo: &profilepb.CreateUserRequest{
+				OrgID:            utils.ProtoFromUUID(uuid.Nil),
+				Username:         "foobar",
+				FirstName:        "foo",
+				LastName:         "bar",
+				Email:            "foo@bar.com",
+				IdentityProvider: "github",
+				AuthProviderID:   "github|asdfghjkl;",
+			},
+			expectErr:       false,
+			expectCode:      codes.OK,
+			respID:          utils.ProtoFromUUID(testUUID),
 			enableApprovals: false,
 		},
 		{
@@ -245,7 +261,6 @@ func TestServer_CreateUser(t *testing.T) {
 			}
 			if tc.makesCall {
 				req := &datastore.UserInfo{
-					OrgID:            testOrgUUID,
 					Username:         tc.userInfo.Username,
 					FirstName:        tc.userInfo.FirstName,
 					LastName:         tc.userInfo.LastName,
@@ -253,6 +268,9 @@ func TestServer_CreateUser(t *testing.T) {
 					IsApproved:       !tc.enableApprovals,
 					IdentityProvider: tc.userInfo.IdentityProvider,
 					AuthProviderID:   tc.userInfo.AuthProviderID,
+				}
+				if utils.UUIDFromProtoOrNil(tc.userInfo.OrgID) != uuid.Nil {
+					req.OrgID = testOrgUUID
 				}
 				uds.EXPECT().
 					CreateUser(req).
