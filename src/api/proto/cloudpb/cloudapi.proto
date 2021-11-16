@@ -52,6 +52,7 @@ service OrganizationService {
   // Create an Invite Link that a new user can follow to create a password for their account.
   rpc InviteUser(InviteUserRequest) returns (InviteUserResponse);
   rpc GetOrg(px.uuidpb.UUID) returns (OrgInfo);
+  rpc CreateOrg(CreateOrgRequest) returns (px.uuidpb.UUID);
   rpc UpdateOrg(UpdateOrgRequest) returns (OrgInfo);
   rpc GetUsersInOrg(GetUsersInOrgRequest) returns (GetUsersInOrgResponse);
   rpc AddOrgIDEConfig(AddOrgIDEConfigRequest) returns (AddOrgIDEConfigResponse);
@@ -777,6 +778,10 @@ message OrgInfo {
   string domain_name = 3;
   // Whether this org requires admin approval to authorize new users.
   bool enable_approvals = 4;
+}
+
+message CreateOrgRequest {
+  string org_name = 1;
 }
 
 message UpdateOrgRequest {

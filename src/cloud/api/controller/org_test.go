@@ -89,6 +89,73 @@ func TestOrganizationServiceServer_InviteUser(t *testing.T) {
 	}
 }
 
+func TestOrganizationServiceServer_CreateOrg_UserAlreadyInOrg(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	os := &controller.OrganizationServiceServer{mockClients.MockProfile, mockClients.MockAuth, mockClients.MockOrg}
+
+	_, err := os.CreateOrg(ctx, &cloudpb.CreateOrgRequest{
+		OrgName: "new_org_name",
+	})
+
+	assert.NotNil(t, err)
+	assert.Equal(t, status.Code(err), codes.PermissionDenied)
+}
+
+func TestOrganizationServiceServer_CreateOrg_UserWithNoOrg(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContextNoOrg()
+
+	orgID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	mockClients.MockOrg.EXPECT().CreateOrg(gomock.Any(), &profilepb.CreateOrgRequest{
+		OrgName: "new_org_name",
+	}).Return(orgID, nil)
+
+	mockClients.MockProfile.EXPECT().UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
+		ID:    utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9"),
+		OrgID: orgID,
+	}).Return(&profilepb.UserInfo{
+		ID:    utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9"),
+		OrgID: orgID,
+	}, nil)
+
+	os := &controller.OrganizationServiceServer{mockClients.MockProfile, mockClients.MockAuth, mockClients.MockOrg}
+
+	resp, err := os.CreateOrg(ctx, &cloudpb.CreateOrgRequest{
+		OrgName: "new_org_name",
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, resp, orgID)
+}
+
+func TestOrganizationServiceServer_CreateOrg_BadOrgName(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContextNoOrg()
+
+	os := &controller.OrganizationServiceServer{mockClients.MockProfile, mockClients.MockAuth, mockClients.MockOrg}
+
+	_, err := os.CreateOrg(ctx, &cloudpb.CreateOrgRequest{
+		OrgName: "a.b",
+	})
+
+	assert.NotNil(t, err)
+	assert.Equal(t, status.Code(err), codes.InvalidArgument)
+}
+
 func TestOrganizationServiceServer_AddOrgIDEConfig(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

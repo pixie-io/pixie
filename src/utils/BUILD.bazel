@@ -22,6 +22,7 @@ go_library(
         "clutils.go",
         "erroraccumulator.go",
         "genutils.go",
+        "org_name_validator.go",
         "uuid.go",
     ],
     importpath = "px.dev/pixie/src/utils",
