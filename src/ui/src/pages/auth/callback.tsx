@@ -16,20 +16,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as React from 'react';
-import * as QueryString from 'query-string';
-import Axios, { AxiosError } from 'axios';
-import pixieAnalytics from 'app/utils/analytics';
-import * as RedirectUtils from 'app/utils/redirect-utils';
-import { isValidAnalytics } from 'app/utils/env';
-import { AuthMessageBox } from 'app/components';
-import { Link } from 'react-router-dom';
 import { Button, ButtonProps } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+import { AuthMessageBox } from 'app/components';
+import pixieAnalytics from 'app/utils/analytics';
+import { isValidAnalytics } from 'app/utils/env';
+import * as RedirectUtils from 'app/utils/redirect-utils';
+import Axios, { AxiosError } from 'axios';
+import * as QueryString from 'query-string';
+import * as React from 'react';
+import { Link } from 'react-router-dom';
 import { BasePage } from './base';
-import { AuthCallbackMode, GetOAuthProvider } from './utils';
 import { Token } from './oauth-provider';
+import { AuthCallbackMode, GetOAuthProvider } from './utils';
 
 // Send token header to enable CORS check. Token is still allowed with Pixie CLI.
 const redirectGet = async (url: string, data: { accessToken: string }) => (
@@ -80,7 +80,7 @@ function getCtaDetails(config: CallbackConfig) {
     if (config.signup) {
       if (config.err.errMessage.match(/user.*already.*exists/ig)) {
         errorMessage = 'Account already exists. Please login.';
-        ctaMessage = 'Back to Log In';
+        ctaMessage = 'Go to Log In';
         ctaDestination = '/auth/login';
         showDetails = false;
       } else {
@@ -94,6 +94,11 @@ function getCtaDetails(config: CallbackConfig) {
       // If user or organization not found, direct to sign up page first.
       ctaMessage = 'Go to Sign Up';
       ctaDestination = '/auth/signup';
+    } else if (config.err.errMessage.match(/verify.*your.*email/ig)) {
+      errorMessage = 'Please verify your email before logging in.';
+      ctaMessage = 'Go to Log In';
+      ctaDestination = '/auth/login';
+      showDetails = false;
     } else {
       errorMessage = 'We hit a snag trying to authenticate you. Please try again later.';
       ctaMessage = 'Back to Log In';
