@@ -56,6 +56,8 @@
 // 000027_add_vizier_cluster_indices.up.sql
 // 000028_remove_previous_status_cols.down.sql
 // 000028_remove_previous_status_cols.up.sql
+// 000029_remove_first_seen.down.sql
+// 000029_remove_first_seen.up.sql
 package schema
 
 import (
@@ -1252,6 +1254,46 @@ func _000028_remove_previous_status_colsUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000029_remove_first_seenDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x4f\xce\x29\x2d\x2e\x49\x2d\xe2\x52\x50\x70\x74\x71\x51\x70\xf6\xf7\x09\xf5\xf5\x53\x48\xcb\x2c\x2a\x2e\x89\x2f\x4e\x4d\xcd\x8b\x4f\x2c\x51\x08\xf1\xf4\x75\x0d\x0e\x71\xf4\x0d\xb0\xe6\x02\x04\x00\x00\xff\xff\xee\x41\x97\xf8\x41\x00\x00\x00")
+
+func _000029_remove_first_seenDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000029_remove_first_seenDownSql,
+		"000029_remove_first_seen.down.sql",
+	)
+}
+
+func _000029_remove_first_seenDownSql() (*asset, error) {
+	bytes, err := _000029_remove_first_seenDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000029_remove_first_seen.down.sql", size: 65, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000029_remove_first_seenUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x4f\xce\x29\x2d\x2e\x49\x2d\xe2\x52\x50\x70\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x53\x48\xcb\x2c\x2a\x2e\x89\x2f\x4e\x4d\xcd\x8b\x4f\x2c\xb1\xe6\x02\x04\x00\x00\xff\xff\xc3\x6a\xb9\xb0\x38\x00\x00\x00")
+
+func _000029_remove_first_seenUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000029_remove_first_seenUpSql,
+		"000029_remove_first_seen.up.sql",
+	)
+}
+
+func _000029_remove_first_seenUpSql() (*asset, error) {
+	bytes, err := _000029_remove_first_seenUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000029_remove_first_seen.up.sql", size: 56, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -1360,6 +1402,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000027_add_vizier_cluster_indices.up.sql":               _000027_add_vizier_cluster_indicesUpSql,
 	"000028_remove_previous_status_cols.down.sql":            _000028_remove_previous_status_colsDownSql,
 	"000028_remove_previous_status_cols.up.sql":              _000028_remove_previous_status_colsUpSql,
+	"000029_remove_first_seen.down.sql":                      _000029_remove_first_seenDownSql,
+	"000029_remove_first_seen.up.sql":                        _000029_remove_first_seenUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -1459,6 +1503,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000027_add_vizier_cluster_indices.up.sql":               &bintree{_000027_add_vizier_cluster_indicesUpSql, map[string]*bintree{}},
 	"000028_remove_previous_status_cols.down.sql":            &bintree{_000028_remove_previous_status_colsDownSql, map[string]*bintree{}},
 	"000028_remove_previous_status_cols.up.sql":              &bintree{_000028_remove_previous_status_colsUpSql, map[string]*bintree{}},
+	"000029_remove_first_seen.down.sql":                      &bintree{_000029_remove_first_seenDownSql, map[string]*bintree{}},
+	"000029_remove_first_seen.up.sql":                        &bintree{_000029_remove_first_seenUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
