@@ -539,22 +539,20 @@ type IDEConfig struct {
 // AddIDEConfig adds the IDE config to the org.
 func (d *Datastore) AddIDEConfig(orgID uuid.UUID, config *IDEConfig) error {
 	query := `INSERT INTO org_ide_configs (org_id, ide_name, path) VALUES ($1, $2, $3)`
-	rows, err := d.db.Queryx(query, orgID, config.Name, config.Path)
+	_, err := d.db.Exec(query, orgID, config.Name, config.Path)
 	if err != nil {
 		return err
 	}
-	rows.Close()
 	return nil
 }
 
 // DeleteIDEConfig deletes the IDE config from the org.
 func (d *Datastore) DeleteIDEConfig(orgID uuid.UUID, name string) error {
 	query := `DELETE FROM org_ide_configs WHERE org_id=$1 AND ide_name=$2`
-	rows, err := d.db.Queryx(query, orgID, name)
+	_, err := d.db.Exec(query, orgID, name)
 	if err != nil {
 		return err
 	}
-	rows.Close()
 	return nil
 }
 
