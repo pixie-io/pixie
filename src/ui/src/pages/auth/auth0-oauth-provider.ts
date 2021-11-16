@@ -78,7 +78,7 @@ export class Auth0Client extends OAuthProviderClient {
 
   redirectToEmailSignup(): void {
     this.makeAuth0OIDCClient(
-      this.getRedirectURL(/* isSignup */ false),
+      this.getRedirectURL(/* isSignup */ true),
       {
         connection: AUTH_EMAIL_PASSWORD_CONN,
         // Manually configured in Classic Universal Login settings.
