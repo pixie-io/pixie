@@ -16,17 +16,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type * as React from 'react';
-
-import {
-  AUTH_URI, AUTH_CLIENT_ID,
-} from 'app/containers/constants';
-import ClientOAuth2 from 'client-oauth2';
 import { PublicApiFactory } from '@ory/kratos-client';
 import { FormStructure } from 'app/components';
-import * as QueryString from 'query-string';
 import { HydraInvitationForm } from 'app/containers/admin/hydra-invitation-form';
 import { HydraButtons, RejectHydraSignup } from 'app/containers/auth/hydra-buttons';
+import { AUTH_CLIENT_ID, AUTH_URI } from 'app/containers/constants';
+import ClientOAuth2 from 'client-oauth2';
+import * as QueryString from 'query-string';
+import type * as React from 'react';
 import { OAuthProviderClient, Token } from './oauth-provider';
 
 // Copied from auth0-js/src/helper/window.js
@@ -91,7 +88,7 @@ export class HydraClient extends OAuthProviderClient {
   handleToken(): Promise<Token> {
     return new Promise<Token>((resolve, reject) => {
       this.makeClient(this.getStoredState(), false).token.getToken(window.location).then((user) => {
-        resolve({ accessToken: user.accessToken, isEmailUnverified: false });
+        resolve({ accessToken: user.accessToken });
       }).catch((err) => reject(err));
     });
   }

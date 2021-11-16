@@ -102,7 +102,6 @@ export class Auth0Client extends OAuthProviderClient {
           resolve({
             accessToken: user.access_token,
             idToken: user.id_token,
-            isEmailUnverified: false,
           });
         }).catch(reject);
     });

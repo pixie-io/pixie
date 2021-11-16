@@ -49,7 +49,6 @@ interface CallbackConfig {
   token?: string;
   loading?: boolean;
   err?: ErrorDetails;
-  isEmailUnverified?: boolean;
 }
 
 function trackAuthEvent(event: string, id: string, email: string): Promise<void> {
@@ -138,28 +137,6 @@ const CLICodeBox = React.memo<{ code: string }>(function CLICodeBox({ code }) {
 
 const CtaButton = React.memo<ButtonProps>(function CtaButton({ children, ...props }) {
   return <Button color='primary' variant='contained' {...props}>{children}</Button>;
-});
-
-const UnverifiedEmailMessage = React.memo(function UnverifiedEmailMessage() {
-  const classes = useStyles();
-  const ctaMessage = 'Back to Sign Up';
-  const ctaDestination = '/auth/signup';
-  const cta = React.useMemo(() => (
-    <div className={classes.ctaGutter}>
-      <Link to={ctaDestination} component={CtaButton}>
-        {ctaMessage}
-      </Link>
-    </div>
-  ), [classes.ctaGutter]);
-
-  return (
-    <AuthMessageBox
-      error='recoverable'
-      title='Check your inbox to finish signup.'
-      message='We sent a signup link to your email.'
-      cta={cta}
-    />
-  );
 });
 
 const ErrorMessage = React.memo<{ config: CallbackConfig }>(function ErrorMessage({ config }) {
@@ -346,7 +323,6 @@ export const AuthCallbackPage: React.FC = React.memo(function AuthCallbackPage()
       signup,
       token: token?.accessToken,
       loading: true,
-      isEmailUnverified: token.isEmailUnverified,
     });
 
     if (!token?.accessToken) {
@@ -355,7 +331,6 @@ export const AuthCallbackPage: React.FC = React.memo(function AuthCallbackPage()
         signup,
         token: token?.accessToken,
         loading: false,
-        isEmailUnverified: token.isEmailUnverified,
       });
       return;
     }
@@ -381,10 +356,6 @@ export const AuthCallbackPage: React.FC = React.memo(function AuthCallbackPage()
   ), [config]);
 
   const normalMessage = React.useMemo(() => {
-    if (config?.isEmailUnverified) {
-      return <UnverifiedEmailMessage />;
-    }
-
     if (config?.mode === 'cli_token') {
       return (
         <CLICodeBox
@@ -394,7 +365,7 @@ export const AuthCallbackPage: React.FC = React.memo(function AuthCallbackPage()
     }
 
     return loadingMessage;
-  }, [config?.isEmailUnverified, config?.mode, config?.token, loadingMessage]);
+  }, [config?.mode, config?.token, loadingMessage]);
 
   const loading = !config || config.loading;
   return (

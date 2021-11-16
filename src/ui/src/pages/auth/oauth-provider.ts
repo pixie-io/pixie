@@ -17,12 +17,10 @@
  */
 
 // Not actually using React in this class, but implementors may offer a component that does.
+import { FormStructure } from 'app/components';
 import type * as React from 'react';
 
-import { FormStructure } from 'app/components';
-
 export type Token = {
-  isEmailUnverified?: boolean;
   accessToken?: string;
   idToken?: string;
 };
