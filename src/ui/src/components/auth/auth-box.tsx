@@ -17,10 +17,10 @@
  */
 
 // This is the primary auth box, which has either the login or signin variant.
-import * as React from 'react';
 import { Button, Link, Typography } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+import * as React from 'react';
 import { PixienautBox } from './pixienaut-box';
 
 const useStyles = makeStyles(({ spacing, palette }: Theme) => createStyles({
@@ -116,7 +116,7 @@ export const AuthBox: React.FC<AuthBoxProps> = React.memo(function AuthBox(props
           </>
         )
       }
-      { children}
+      {children}
       <div className={classes.gutter}>
         <Typography variant='subtitle2' className={classes.account}>
           {buttonCaption}

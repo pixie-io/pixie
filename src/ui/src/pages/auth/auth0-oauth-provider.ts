@@ -16,17 +16,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type * as React from 'react';
-
 import { FormStructure } from 'app/components';
 import { Auth0Buttons } from 'app/containers/auth/auth0-buttons';
+import { AUTH_CLIENT_ID, AUTH_EMAIL_PASSWORD_CONN, AUTH_URI } from 'app/containers/constants';
 import { UserManager } from 'oidc-client';
-import { AUTH_CLIENT_ID, AUTH_URI } from 'app/containers/constants';
+import type * as React from 'react';
 import { OAuthProviderClient, Token } from './oauth-provider';
 
-// Connection type is the Auth0 Connection type that's currently allowed. Add connection
-// values here as needed.
-type Connection = 'google-oauth2';
 export class Auth0Client extends OAuthProviderClient {
   getRedirectURL: (boolean) => string;
 
@@ -36,14 +32,12 @@ export class Auth0Client extends OAuthProviderClient {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  makeAuth0OIDCClient(connectionName: Connection, redirectURI: string): UserManager {
+  makeAuth0OIDCClient(redirectURI: string, extraQueryParams?: Record<string, any>): UserManager {
     return new UserManager({
       authority: `https://${AUTH_URI}`,
       client_id: AUTH_CLIENT_ID,
       redirect_uri: redirectURI,
-      extraQueryParams: {
-        connection: connectionName,
-      },
+      extraQueryParams,
       prompt: 'login',
       scope: 'openid profile email',
       // "token" is returned and propagated as the main authorization access_token.
@@ -55,15 +49,39 @@ export class Auth0Client extends OAuthProviderClient {
 
   redirectToGoogleLogin(): void {
     this.makeAuth0OIDCClient(
-      'google-oauth2',
       this.getRedirectURL(/* isSignup */ false),
+      {
+        connection: 'google-oauth2',
+      },
     ).signinRedirect();
   }
 
   redirectToGoogleSignup(): void {
     this.makeAuth0OIDCClient(
-      'google-oauth2',
       this.getRedirectURL(/* isSignup */ true),
+      {
+        connection: 'google-oauth2',
+      },
+    ).signinRedirect();
+  }
+
+  redirectToEmailLogin(): void {
+    this.makeAuth0OIDCClient(
+      this.getRedirectURL(/* isSignup */ false),
+      {
+        connection: AUTH_EMAIL_PASSWORD_CONN,
+        mode: 'login',
+      },
+    ).signinRedirect();
+  }
+
+  redirectToEmailSignup(): void {
+    this.makeAuth0OIDCClient(
+      this.getRedirectURL(/* isSignup */ false),
+      {
+        connection: AUTH_EMAIL_PASSWORD_CONN,
+        mode: 'signUp',
+      },
     ).signinRedirect();
   }
 
@@ -98,15 +116,21 @@ export class Auth0Client extends OAuthProviderClient {
 
   getLoginButtons(): React.ReactElement {
     return Auth0Buttons({
+      enableEmailPassword: !!AUTH_EMAIL_PASSWORD_CONN,
       googleButtonText: 'Login with Google',
       onGoogleButtonClick: () => this.redirectToGoogleLogin(),
+      emailPasswordButtonText: 'Login with Email',
+      onEmailPasswordButtonClick: () => this.redirectToEmailLogin(),
     });
   }
 
   getSignupButtons(): React.ReactElement {
     return Auth0Buttons({
+      enableEmailPassword: !!AUTH_EMAIL_PASSWORD_CONN,
       googleButtonText: 'Sign-up with Google',
       onGoogleButtonClick: () => this.redirectToGoogleSignup(),
+      emailPasswordButtonText: 'Sign-up with Email',
+      onEmailPasswordButtonClick: () => this.redirectToEmailSignup(),
     });
   }
 

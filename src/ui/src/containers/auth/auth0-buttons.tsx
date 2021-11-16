@@ -16,19 +16,33 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { GoogleButton, UsernamePasswordButton } from 'app/components';
 import * as React from 'react';
-import { GoogleButton } from 'app/components';
 
 export interface Auth0ButtonsProps {
+  enableEmailPassword: boolean;
   googleButtonText: string;
   onGoogleButtonClick: () => void;
+  emailPasswordButtonText: string;
+  onEmailPasswordButtonClick: () => void;
 }
 
-export const Auth0Buttons: React.FC<Auth0ButtonsProps> = ({ googleButtonText, onGoogleButtonClick }) => (
+// eslint-disable-next-line react-memo/require-memo
+export const Auth0Buttons: React.FC<Auth0ButtonsProps> = ({
+  enableEmailPassword,
+  googleButtonText,
+  onGoogleButtonClick,
+  emailPasswordButtonText,
+  onEmailPasswordButtonClick,
+}) => (
   <>
     <GoogleButton
       text={googleButtonText}
       onClick={onGoogleButtonClick}
     />
+    {enableEmailPassword && <UsernamePasswordButton
+      text={emailPasswordButtonText}
+      onClick={onEmailPasswordButtonClick}
+    />}
   </>
 );

@@ -268,6 +268,7 @@ module.exports = (env, argv) => {
   const oauthProvider = oauthYAML.data.PL_OAUTH_PROVIDER;
   const authURI = oauthYAML.data.PL_AUTH_URI;
   const authClientID = oauthYAML.data.PL_AUTH_CLIENT_ID;
+  const authEmailPasswordConnection = oauthYAML.data.PL_AUTH_EMAIL_PASSWORD_CONN;
 
   // Get LDClientID.
   const ldYAML = utils.readYAMLFile(join(topLevelDir, 'credentials', 'k8s',
@@ -298,6 +299,7 @@ module.exports = (env, argv) => {
       __CONFIG_OAUTH_PROVIDER__: JSON.stringify(oauthProvider),
       __CONFIG_AUTH_URI__: JSON.stringify(authURI),
       __CONFIG_AUTH_CLIENT_ID__: JSON.stringify(authClientID),
+      __CONFIG_AUTH_EMAIL_PASSWORD_CONN__: JSON.stringify(authEmailPasswordConnection),
       __CONFIG_DOMAIN_NAME__: JSON.stringify(domainYAML.data.PL_DOMAIN_NAME),
       __CONFIG_LD_CLIENT_ID__: JSON.stringify(ldYAML.data.PL_LD_CLIENT_ID),
       __SEGMENT_ANALYTICS_JS_DOMAIN__: `"segment.${domainYAML.data.PL_DOMAIN_NAME}"`,
