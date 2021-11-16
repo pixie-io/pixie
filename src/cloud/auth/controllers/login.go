@@ -388,7 +388,6 @@ func (s *Server) createUser(ctx context.Context, userInfo *UserInfo, orgID *uuid
 		return nil, err
 	}
 
-	// We assign here to avoid converting a nil OrgID into all 0s.
 	var orgIDStr string
 	if orgID != nil {
 		orgIDStr = utils.UUIDFromProtoOrNil(orgID).String()

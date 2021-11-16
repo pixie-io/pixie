@@ -51,7 +51,6 @@ func getTestContext() context.Context {
 }
 
 func TestServer_LoginNewUser_NoOrg(t *testing.T) {
-	// Need to make sure T&C are ok
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
