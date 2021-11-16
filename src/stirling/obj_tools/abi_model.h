@@ -20,6 +20,7 @@
 
 #include <deque>
 #include <limits>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -78,6 +79,31 @@ enum class RegisterName : int {
   kXMM14 = 114,
 };
 
+enum class TypeClass { kNone, kInteger, kFloat, kMixed };
+
+inline TypeClass Combine(TypeClass a, TypeClass b) {
+  if (a == TypeClass::kMixed || b == TypeClass::kMixed) {
+    return TypeClass::kMixed;
+  }
+
+  if (a == TypeClass::kNone) {
+    return b;
+  }
+
+  if (b == TypeClass::kNone) {
+    return a;
+  }
+
+  DCHECK(a == TypeClass::kInteger || a == TypeClass::kFloat);
+  DCHECK(b == TypeClass::kInteger || b == TypeClass::kFloat);
+
+  if (a != b) {
+    return TypeClass::kMixed;
+  }
+
+  return a;
+}
+
 // Location of a variable or argument.
 // The location may be on the stack or in registers.
 struct VarLocation {
@@ -103,27 +129,98 @@ struct VarLocation {
   }
 };
 
-// FunctionArgTracker's responsibility is to determine where
-// arguments are located: in memory (i.e. on the stack) or in registers.
-// FunctionArgTracker keeps track of stack/register positions that have been
-// used for each successive argument, so that it can report the next location.
-// For Golang, everything is always on the stack, so the algorithm is easy.
-// For C/C++, which uses the System V ABI, the rules are more complex:
-//   https://uclibc.org/docs/psABI-x86_64.pdf
-// TODO(oazizi): Finish implementing the rules.
-class FunctionArgTracker {
+// ABICallingConventionModel's responsibility is to determine where arguments are located on a
+// function call: in memory (i.e. on the stack) or in registers. ABICallingConventionModel keeps
+// track of stack/register positions that have been used for each successive argument, so that it
+// can report the next location.
+class ABICallingConventionModel {
  public:
-  explicit FunctionArgTracker(ABI abi);
+  static std::unique_ptr<ABICallingConventionModel> Create(ABI abi);
 
-  StatusOr<VarLocation> PopLocation(uint64_t type_size, uint64_t alignment_size);
+  virtual ~ABICallingConventionModel() = default;
 
-  void AdjustForReturnValue(uint64_t ret_val_size);
+  /**
+   * Get the location of the next argument.
+   *
+   * @param type_class Class of the argument, which may be a struct (e.g. integer, float, mixed).
+   * @param type_size The size of the argument when laid out in memory.
+   * @param alignment_size The size of the largest primitive member inside the argument,
+   *                       used for determining the alignment of the argument in memory.
+   * @param num_vars The number of primitive variables in the argument.
+   *                 This is 1 for a primitive type.
+   *                 For structs, it counts the number of primitives after a full traversal.
+   * @return The location where the argument would be placed according to the calling convention.
+   */
+  virtual StatusOr<VarLocation> PopLocation(TypeClass type_class, uint64_t type_size,
+                                            uint64_t alignment_size, int num_vars) = 0;
+
+  virtual Status AdjustForReturnValue(TypeClass type_class, uint64_t ret_val_size) = 0;
+};
+
+/**
+ * A model for the original Golang ABI, where arguments are always passed through the stack.
+ */
+class GolangStackABIModel : public ABICallingConventionModel {
+ public:
+  GolangStackABIModel();
+  ~GolangStackABIModel() = default;
+
+  StatusOr<VarLocation> PopLocation(TypeClass type_class, uint64_t type_size,
+                                    uint64_t alignment_size, int num_vars) override;
+
+  Status AdjustForReturnValue(TypeClass type_class, uint64_t ret_val_size) override;
+
+ private:
+  uint64_t current_stack_offset_ = 0;
+};
+
+/**
+ * A model for the original Golang register ABI, where arguments are passed through registers,
+ * and/or the stack, according to the ABI's rules.
+ */
+class GolangRegABIModel : public ABICallingConventionModel {
+ public:
+  GolangRegABIModel();
+  ~GolangRegABIModel() = default;
+
+  StatusOr<VarLocation> PopLocation(TypeClass type_class, uint64_t type_size,
+                                    uint64_t alignment_size, int num_vars) override;
+
+  Status AdjustForReturnValue(TypeClass type_class, uint64_t ret_val_size) override;
 
  private:
   const uint64_t reg_size_;
 
   uint64_t current_stack_offset_ = 0;
-  uint64_t current_shadow_reg_offset_ = 0;
+  uint64_t current_fp_reg_offset_ = 0;
+  uint64_t current_int_reg_offset_ = 0;
+
+  std::deque<RegisterName> int_arg_registers_;
+  std::deque<RegisterName> fp_arg_registers_;
+};
+
+/**
+ * The System V ABI model, used by C/C++ programs.
+ * The calling convention uses registers and the stack.
+ * Reference: https://uclibc.org/docs/psABI-x86_64.pdf
+ */
+// TODO(oazizi): Finish implementing the rules.
+class SysVABIModel : public ABICallingConventionModel {
+ public:
+  SysVABIModel();
+  ~SysVABIModel() = default;
+
+  StatusOr<VarLocation> PopLocation(TypeClass type_class, uint64_t type_size,
+                                    uint64_t alignment_size, int num_vars) override;
+
+  Status AdjustForReturnValue(TypeClass type_class, uint64_t ret_val_size) override;
+
+ private:
+  const uint64_t reg_size_;
+
+  uint64_t current_stack_offset_ = 0;
+  uint64_t current_fp_reg_offset_ = 0;
+  uint64_t current_int_reg_offset_ = 0;
 
   std::deque<RegisterName> int_arg_registers_;
   std::deque<RegisterName> fp_arg_registers_;

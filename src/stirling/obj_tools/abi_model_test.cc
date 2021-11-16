@@ -27,36 +27,74 @@ namespace obj_tools {
 
 using px::operator<<;
 
-TEST(FunctionArgTracker, GolangStack) {
-  FunctionArgTracker arg_tracker(ABI::kGolangStack);
-  EXPECT_OK_AND_EQ(arg_tracker.PopLocation(8, 8), (VarLocation{LocationType::kStack, 0}));
-  EXPECT_OK_AND_EQ(arg_tracker.PopLocation(4, 4), (VarLocation{LocationType::kStack, 8}));
-  EXPECT_OK_AND_EQ(arg_tracker.PopLocation(4, 4), (VarLocation{LocationType::kStack, 12}));
-  EXPECT_OK_AND_EQ(arg_tracker.PopLocation(4, 4), (VarLocation{LocationType::kStack, 16}));
-  EXPECT_OK_AND_EQ(arg_tracker.PopLocation(8, 4), (VarLocation{LocationType::kStack, 20}));
-  EXPECT_OK_AND_EQ(arg_tracker.PopLocation(8, 8), (VarLocation{LocationType::kStack, 32}));
-  EXPECT_OK_AND_EQ(arg_tracker.PopLocation(2, 2), (VarLocation{LocationType::kStack, 40}));
-  EXPECT_OK_AND_EQ(arg_tracker.PopLocation(120, 8), (VarLocation{LocationType::kStack, 48}));
-  EXPECT_OK_AND_EQ(arg_tracker.PopLocation(8, 8), (VarLocation{LocationType::kStack, 168}));
+TEST(GolangStackABIModel, FunctionParameters) {
+  std::unique_ptr<ABICallingConventionModel> abi_model =
+      ABICallingConventionModel::Create(ABI::kGolangStack);
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 8, 8, 1),
+                   (VarLocation{LocationType::kStack, 0}));
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 4, 4, 1),
+                   (VarLocation{LocationType::kStack, 8}));
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 4, 4, 1),
+                   (VarLocation{LocationType::kStack, 12}));
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 4, 4, 1),
+                   (VarLocation{LocationType::kStack, 16}));
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 8, 4, 2),
+                   (VarLocation{LocationType::kStack, 20}));
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 8, 8, 1),
+                   (VarLocation{LocationType::kStack, 32}));
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 2, 2, 1),
+                   (VarLocation{LocationType::kStack, 40}));
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 120, 8, 15),
+                   (VarLocation{LocationType::kStack, 48}));
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 8, 8, 1),
+                   (VarLocation{LocationType::kStack, 168}));
 }
 
-TEST(FunctionArgTracker, SystemVAMD64) {
-  FunctionArgTracker arg_tracker(ABI::kSystemVAMD64);
-  EXPECT_OK_AND_EQ(arg_tracker.PopLocation(8, 8),
+TEST(GolangRegisterABIModel, FunctionParameters) {
+  std::unique_ptr<ABICallingConventionModel> abi_model =
+      ABICallingConventionModel::Create(ABI::kGolangRegister);
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 8, 8, 1),
+                   (VarLocation{LocationType::kRegister, 0, {RegisterName::kRAX}}));
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 4, 4, 1),
+                   (VarLocation{LocationType::kRegister, 8, {RegisterName::kRBX}}));
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 4, 4, 1),
+                   (VarLocation{LocationType::kRegister, 16, {RegisterName::kRCX}}));
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 4, 4, 1),
+                   (VarLocation{LocationType::kRegister, 24, {RegisterName::kRDI}}));
+  EXPECT_OK_AND_EQ(
+      abi_model->PopLocation(TypeClass::kInteger, 8, 4, 2),
+      (VarLocation{LocationType::kRegister, 32, {RegisterName::kRSI, RegisterName::kR8}}));
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 8, 8, 1),
+                   (VarLocation{LocationType::kRegister, 48, {RegisterName::kR9}}));
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 2, 2, 1),
+                   (VarLocation{LocationType::kRegister, 56, {RegisterName::kR10}}));
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 120, 8, 15),
+                   (VarLocation{LocationType::kStack, 0}));
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 8, 8, 1),
+                   (VarLocation{LocationType::kRegister, 64, {RegisterName::kR11}}));
+}
+
+TEST(SystemVAMD64ABIModel, FunctionParameters) {
+  std::unique_ptr<ABICallingConventionModel> abi_model =
+      ABICallingConventionModel::Create(ABI::kSystemVAMD64);
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 8, 8, 1),
                    (VarLocation{LocationType::kRegister, 0, {RegisterName::kRDI}}));
-  EXPECT_OK_AND_EQ(arg_tracker.PopLocation(4, 4),
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 4, 4, 1),
                    (VarLocation{LocationType::kRegister, 8, {RegisterName::kRSI}}));
-  EXPECT_OK_AND_EQ(arg_tracker.PopLocation(4, 4),
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 4, 4, 1),
                    (VarLocation{LocationType::kRegister, 16, {RegisterName::kRDX}}));
-  EXPECT_OK_AND_EQ(arg_tracker.PopLocation(4, 4),
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 4, 4, 1),
                    (VarLocation{LocationType::kRegister, 24, {RegisterName::kRCX}}));
-  EXPECT_OK_AND_EQ(arg_tracker.PopLocation(8, 4),
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 8, 4, 2),
                    (VarLocation{LocationType::kRegister, 32, {RegisterName::kR8}}));
-  EXPECT_OK_AND_EQ(arg_tracker.PopLocation(8, 8),
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 8, 8, 1),
                    (VarLocation{LocationType::kRegister, 40, {RegisterName::kR9}}));
-  EXPECT_OK_AND_EQ(arg_tracker.PopLocation(2, 2), (VarLocation{LocationType::kStack, 0}));
-  EXPECT_OK_AND_EQ(arg_tracker.PopLocation(120, 8), (VarLocation{LocationType::kStack, 8}));
-  EXPECT_OK_AND_EQ(arg_tracker.PopLocation(8, 8), (VarLocation{LocationType::kStack, 128}));
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 2, 2, 1),
+                   (VarLocation{LocationType::kStack, 0}));
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 120, 8, 15),
+                   (VarLocation{LocationType::kStack, 8}));
+  EXPECT_OK_AND_EQ(abi_model->PopLocation(TypeClass::kInteger, 8, 8, 1),
+                   (VarLocation{LocationType::kStack, 128}));
 }
 
 }  // namespace obj_tools

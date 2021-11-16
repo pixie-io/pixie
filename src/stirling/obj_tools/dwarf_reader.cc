@@ -829,27 +829,31 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
     return error::Unimplemented("Unable to determine ABI from language: $0",
                                 magic_enum::enum_name(source_language_));
   }
-  FunctionArgTracker arg_tracker(abi);
+  std::unique_ptr<ABICallingConventionModel> arg_tracker = ABICallingConventionModel::Create(abi);
 
   // If return value is not able to be passed in as a register,
   // then the first argument register becomes a pointer to the return value.
   // Account for that here.
   PL_ASSIGN_OR_RETURN(RetValInfo ret_val_info, GetFunctionRetValInfo(function_symbol_name));
-  arg_tracker.AdjustForReturnValue(ret_val_info.byte_size);
+  // TODO(oazizi): Set TypeClass correctly (coming in future diff).
+  PL_RETURN_IF_ERROR(
+      arg_tracker->AdjustForReturnValue(TypeClass::kInteger, ret_val_info.byte_size));
 
   PL_ASSIGN_OR_RETURN(const DWARFDie& function_die,
                       GetMatchingDIE(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
 
   for (const auto& die : GetParamDIEs(function_die)) {
-    VLOG(1) << die.getName(llvm::DINameKind::ShortName);
-    auto& arg = arg_info[die.getName(llvm::DINameKind::ShortName)];
+    VLOG(1) << die.getShortName();
+    auto& arg = arg_info[die.getShortName()];
 
     PL_ASSIGN_OR_RETURN(const DWARFDie type_die, GetTypeDie(die));
     PL_ASSIGN_OR_RETURN(arg.type_info, GetTypeInfo(die, type_die));
 
     PL_ASSIGN_OR_RETURN(uint64_t type_size, GetTypeByteSize(type_die));
     PL_ASSIGN_OR_RETURN(uint64_t alignment_size, GetAlignmentByteSize(type_die));
-    PL_ASSIGN_OR_RETURN(arg.location, arg_tracker.PopLocation(type_size, alignment_size));
+    // TODO(oazizi): Set TypeClass and num_vars correctly (coming in future diff).
+    PL_ASSIGN_OR_RETURN(arg.location, arg_tracker->PopLocation(TypeClass::kInteger, type_size,
+                                                               alignment_size, /* num_vars */ 0));
 
     if (source_language_ == llvm::dwarf::DW_LANG_Go) {
       arg.retarg = IsGolangRetArg(die).ValueOr(false);
