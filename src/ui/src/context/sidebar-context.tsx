@@ -19,9 +19,11 @@
 import React from 'react';
 
 export interface SidebarContextProps {
-  inLiveView: boolean;
+  showLiveOptions: boolean;
+  showAdmin: boolean;
 }
 
 export const SidebarContext = React.createContext<SidebarContextProps>({
-  inLiveView: true,
+  showLiveOptions: true,
+  showAdmin: true,
 });

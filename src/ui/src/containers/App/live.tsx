@@ -21,7 +21,7 @@ import UserContext from 'app/common/user-context';
 import OrgContext from 'app/common/org-context';
 import { useSnackbar } from 'app/components';
 import AdminView from 'app/pages/admin/admin';
-import CreditsView from 'app/pages/credits/credits';
+import { SetupRedirect, SetupView } from 'app/pages/setup/setup';
 import { SCRATCH_SCRIPT, ScriptsContextProvider } from 'app/containers/App/scripts-context';
 import LiveView from 'app/pages/live/live';
 import pixieAnalytics from 'app/utils/analytics';
@@ -33,7 +33,10 @@ import * as QueryString from 'query-string';
 import { createStyles, makeStyles } from '@mui/styles';
 import { useLDClient } from 'launchdarkly-react-client-sdk';
 import {
-  GQLClusterInfo, GQLUserInfo, GQLUserSettings, GQLOrgInfo,
+  GQLClusterInfo,
+  GQLUserInfo,
+  GQLUserSettings,
+  GQLOrgInfo,
 } from 'app/types/schema';
 import { useQuery, gql } from '@apollo/client';
 
@@ -224,7 +227,7 @@ export default function PixieWithContext(): React.ReactElement {
     },
   }), [userEmail, userOrg]);
 
-  const { data: orgData } = useQuery<{
+  const { data: orgData, loading: loadingOrg } = useQuery<{
     org: Omit<GQLOrgInfo, 'enableApprovals'>
   }>(
     gql`
@@ -246,6 +249,13 @@ export default function PixieWithContext(): React.ReactElement {
   const orgID = org?.id;
   const orgName = org?.name;
   const idePaths = org?.idePaths;
+
+  // TODO(vihang,PC-1197): Update this heuristic when the backend logic is ready.
+  const setupComplete = (
+    // Example: If the user exists and their org doesn't, they need to create the org.
+    // userEmail && userOrg && orgID?.trim().length > 0
+    true
+  );
 
   const orgContext = React.useMemo(() => ({
     org: {
@@ -291,21 +301,35 @@ export default function PixieWithContext(): React.ReactElement {
     '/embed/clusterID/:clusterID',
   ], []);
 
-  if (loadingUser) { return <div>Loading...</div>; }
+  const returnUri = window.location.pathname.length > 1
+    ? encodeURIComponent(window.location.pathname + window.location.search)
+    : '';
+  const setupRedirectUri = returnUri ? `/setup?redirect_uri=${returnUri}` : '/setup';
+
+  if (loadingUser || loadingOrg) { return <div>Loading...</div>; }
   return (
     <UserContext.Provider value={userContext}>
       <OrgContext.Provider value={orgContext}>
         <ClusterWarningBanner user={user} />
-        <Switch>
-          <Route path='/admin' component={AdminView} />
-          <Route path='/credits' component={CreditsView} />
-          <Route path={clusterPaths} component={ClusterIDShortcut} />
-          <Route path='/live' component={LiveWithProvider} />
-          <Route path='/embed/live' component={LiveWithProvider} />
-          <Route path={scriptPaths} component={ScriptShortcut} />
-          <Redirect exact from='/' to='/live' />
-          <Route path='/*' component={RouteNotFound} />
-        </Switch>
+        {
+          setupComplete ? (
+            <Switch>
+              <Route path='/admin' component={AdminView} />
+              <Route path={clusterPaths} component={ClusterIDShortcut} />
+              <Route path='/live' component={LiveWithProvider} />
+              <Route path='/embed/live' component={LiveWithProvider} />
+              <Route path={scriptPaths} component={ScriptShortcut} />
+              <Route path='/setup' component={SetupRedirect} />
+              <Redirect exact from='/' to='/live' />
+              <Route path='/*' component={RouteNotFound} />
+            </Switch>
+          ) : (
+            <Switch>
+              <Route path='/setup' component={SetupView} />
+              <Redirect from='/*' to={setupRedirectUri} />
+            </Switch>
+          )
+        }
       </OrgContext.Provider>
     </UserContext.Provider>
   );

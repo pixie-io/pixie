@@ -121,7 +121,7 @@ const ProfileItem = React.memo<{ setSidebarOpen: SetStateFunc<boolean> }>(functi
   const { setDataDrawerOpen } = React.useContext(LayoutContext) ?? { setDataDrawerOpen: () => {} };
   const [anchorEl, setAnchorEl] = React.useState(null);
   const shortcuts = React.useContext(LiveShortcutsContext);
-  const { inLiveView } = React.useContext(SidebarContext);
+  const { showLiveOptions, showAdmin } = React.useContext(SidebarContext);
 
   const { data } = useQuery<{
     user: Pick<GQLUserInfo, 'name' | 'picture' | 'id' | 'email' >,
@@ -195,12 +195,12 @@ const ProfileItem = React.memo<{ setSidebarOpen: SetStateFunc<boolean> }>(functi
   }, [shortcuts]);
 
   React.useEffect(() => {
-    if (!loadingTourSeen && tourSeen !== true && inLiveView) {
+    if (!loadingTourSeen && tourSeen !== true && showLiveOptions) {
       openTour();
       setTourSeen().then();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadingTourSeen, tourSeen, inLiveView]);
+  }, [loadingTourSeen, tourSeen, showLiveOptions]);
 
   /* eslint-disable react-memo/require-usememo */
   let name = '';
@@ -240,14 +240,18 @@ const ProfileItem = React.memo<{ setSidebarOpen: SetStateFunc<boolean> }>(functi
         email={email}
         picture={picture}
       >
-        <MenuItem key='admin' component={Link} to='/admin' className={classes.menuItem}>
-          <ListItemIcon className={classes.menuItemIcon}>
-            <SettingsIcon />
-          </ListItemIcon>
-          <ListItemText primary='Admin' disableTypography className={classes.menuItemText} />
-        </MenuItem>
         {
-          inLiveView && (
+          showAdmin && (
+            <MenuItem key='admin' component={Link} to='/admin' className={classes.menuItem}>
+              <ListItemIcon className={classes.menuItemIcon}>
+                <SettingsIcon />
+              </ListItemIcon>
+              <ListItemText primary='Admin' disableTypography className={classes.menuItemText} />
+            </MenuItem>
+          )
+        }
+        {
+          showLiveOptions && (
             [
               (
                 <MenuItem

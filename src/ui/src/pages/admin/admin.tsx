@@ -73,7 +73,7 @@ export const AdminPage: React.FC = React.memo(function AdminPage({ children }) {
   const classes = useStyles();
   return (
     <div className={classes.root}>
-      <SidebarContext.Provider value={{ inLiveView: false }}>
+      <SidebarContext.Provider value={{ showLiveOptions: false, showAdmin: true }}>
         <NavBars>
           <div className={classes.title}>
             <div className={classes.titleText}>Admin</div>
