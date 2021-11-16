@@ -33,7 +33,7 @@ import (
 // UserInfo tracks information about a specific end-user.
 type UserInfo struct {
 	ID               uuid.UUID  `db:"id"`
-	OrgID            uuid.UUID  `db:"org_id"`
+	OrgID            *uuid.UUID `db:"org_id"`
 	Username         string     `db:"username"`
 	FirstName        string     `db:"first_name"`
 	LastName         string     `db:"last_name"`
@@ -157,7 +157,7 @@ func (d *Datastore) CreateUserAndOrg(orgInfo *OrgInfo, userInfo *UserInfo) (uuid
 	if err != nil {
 		return uuid.Nil, uuid.Nil, err
 	}
-	userInfo.OrgID = orgID
+	userInfo.OrgID = &orgID
 	userID, err := d.createUserUsingTxn(txn, userInfo)
 	if err != nil {
 		return uuid.Nil, uuid.Nil, err
@@ -175,7 +175,7 @@ func (d *Datastore) CreateUserAndOrg(orgInfo *OrgInfo, userInfo *UserInfo) (uuid
 
 	orgInfo.ID = orgID
 	userInfo.ID = userID
-	userInfo.OrgID = orgID
+	userInfo.OrgID = &orgID
 
 	return orgID, userID, txn.Commit()
 }

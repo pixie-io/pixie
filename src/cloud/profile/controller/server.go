@@ -131,7 +131,7 @@ func userInfoToProto(u *datastore.UserInfo) *profilepb.UserInfo {
 	}
 	return &profilepb.UserInfo{
 		ID:               utils.ProtoFromUUID(u.ID),
-		OrgID:            utils.ProtoFromUUID(u.OrgID),
+		OrgID:            utils.ProtoFromUUID(*u.OrgID),
 		Username:         u.Username,
 		FirstName:        u.FirstName,
 		LastName:         u.LastName,
@@ -196,7 +196,7 @@ func (s *Server) CreateUser(ctx context.Context, req *profilepb.CreateUserReques
 		if err != nil {
 			return nil, status.Error(codes.Internal, "failed to get org info")
 		}
-		userInfo.OrgID = orgID
+		userInfo.OrgID = &orgID
 		// Mark user as needing approval if this org requires approvals.
 		userInfo.IsApproved = !orgInfo.EnableApprovals
 	}

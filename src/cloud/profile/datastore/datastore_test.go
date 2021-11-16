@@ -90,8 +90,9 @@ func TestDatastore(t *testing.T) {
 	t.Run("test insert and get user", func(t *testing.T) {
 		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
+		orgID := uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000")
 		userInfo := datastore.UserInfo{
-			OrgID:          uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"),
+			OrgID:          &orgID,
 			Username:       "zain",
 			FirstName:      "zain",
 			LastName:       "asgar",
@@ -129,8 +130,9 @@ func TestDatastore(t *testing.T) {
 	t.Run("inserting existing user should fail", func(t *testing.T) {
 		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
+		orgID := uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000")
 		userInfo := datastore.UserInfo{
-			OrgID:     uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"),
+			OrgID:     &orgID,
 			Username:  "person@my-org.com",
 			FirstName: "first",
 			LastName:  "last",
@@ -144,9 +146,10 @@ func TestDatastore(t *testing.T) {
 	t.Run("insert user with bad org should fail", func(t *testing.T) {
 		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
+		// Changed 123 to 133.
+		orgID := uuid.FromStringOrNil("133e4567-e89b-12d3-a456-426655440000")
 		userInfo := datastore.UserInfo{
-			// Changed 123 to 133.
-			OrgID:     uuid.FromStringOrNil("133e4567-e89b-12d3-a456-426655440000"),
+			OrgID:     &orgID,
 			Username:  "zain",
 			FirstName: "zain",
 			LastName:  "asgar",
@@ -167,8 +170,8 @@ func TestDatastore(t *testing.T) {
 			Email:     "zasgar@pixielabs.ai",
 		}
 		userID, err := d.CreateUser(&userInfo)
-		assert.NotNil(t, err)
-		assert.Equal(t, userID, uuid.Nil)
+		assert.Nil(t, err)
+		assert.NotEqual(t, userID, uuid.Nil)
 	})
 
 	t.Run("test get org", func(t *testing.T) {
@@ -258,7 +261,7 @@ func TestDatastore(t *testing.T) {
 
 		assert.Equal(t, orgInfo.ID, orgID)
 		assert.Equal(t, userInfo.ID, userID)
-		assert.Equal(t, userInfo.OrgID, orgID)
+		assert.Equal(t, *userInfo.OrgID, orgID)
 		userInfoFetched, err := d.GetUser(userID)
 		require.NoError(t, err)
 		assert.Equal(t, userInfo.AuthProviderID, userInfoFetched.AuthProviderID)

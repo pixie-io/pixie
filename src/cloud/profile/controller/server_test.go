@@ -270,7 +270,7 @@ func TestServer_CreateUser(t *testing.T) {
 					AuthProviderID:   tc.userInfo.AuthProviderID,
 				}
 				if utils.UUIDFromProtoOrNil(tc.userInfo.OrgID) != uuid.Nil {
-					req.OrgID = testOrgUUID
+					req.OrgID = &testOrgUUID
 				}
 				uds.EXPECT().
 					CreateUser(req).
@@ -333,7 +333,7 @@ func TestServer_GetUser(t *testing.T) {
 
 	mockReply := &datastore.UserInfo{
 		ID:             userUUID,
-		OrgID:          orgUUID,
+		OrgID:          &orgUUID,
 		Username:       "foobar",
 		FirstName:      "foo",
 		LastName:       "bar",
@@ -393,7 +393,7 @@ func TestServer_GetUserByEmail(t *testing.T) {
 
 	mockReply := &datastore.UserInfo{
 		ID:               userUUID,
-		OrgID:            orgUUID,
+		OrgID:            &orgUUID,
 		Username:         "foobar",
 		FirstName:        "foo",
 		LastName:         "bar",
@@ -433,7 +433,7 @@ func TestServer_GetUserByAuthProviderID(t *testing.T) {
 
 	mockReply := &datastore.UserInfo{
 		ID:               userUUID,
-		OrgID:            orgUUID,
+		OrgID:            &orgUUID,
 		Username:         "foobar",
 		FirstName:        "foo",
 		LastName:         "bar",
@@ -1037,6 +1037,7 @@ func TestServer_UpdateUser(t *testing.T) {
 			ctx := CreateTestContext()
 			s := controller.NewServer(nil, uds, usds, ods, osds)
 			userID := uuid.FromStringOrNil(tc.userID)
+			orgID := uuid.FromStringOrNil(tc.userOrg)
 
 			// This is the original user's info.
 			profilePicture := "something"
@@ -1046,7 +1047,7 @@ func TestServer_UpdateUser(t *testing.T) {
 				LastName:       "last",
 				ProfilePicture: &profilePicture,
 				IsApproved:     false,
-				OrgID:          uuid.FromStringOrNil(tc.userOrg),
+				OrgID:          &orgID,
 			}
 
 			req := &profilepb.UpdateUserRequest{
@@ -1059,7 +1060,7 @@ func TestServer_UpdateUser(t *testing.T) {
 				LastName:       "last",
 				ProfilePicture: &profilePicture,
 				IsApproved:     false,
-				OrgID:          uuid.FromStringOrNil(tc.userOrg),
+				OrgID:          &orgID,
 			}
 
 			if tc.updatedProfilePic != profilePicture {
@@ -1558,7 +1559,7 @@ func TestServer_GetUsersInOrg(t *testing.T) {
 		GetUsersInOrg(orgID).
 		Return([]*datastore.UserInfo{
 			{
-				OrgID:            orgID,
+				OrgID:            &orgID,
 				Username:         "test@test.com",
 				FirstName:        "first",
 				LastName:         "last",
