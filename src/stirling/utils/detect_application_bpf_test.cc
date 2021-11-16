@@ -31,7 +31,7 @@ namespace stirling {
 using ::px::system::ProcParser;
 using ::testing::StrEq;
 
-// Tests that GetVersion() can execute the executable of container process (with the set of
+// Tests that we can execute the executable of container process (with the set of
 // permissions granted through our requires_bpf tag, although the exact permission might be more
 // limited, perhaps only need 'root' permission to have access to the file).
 TEST(NodeVersionTest, ResultsAreAsExpected) {
@@ -47,7 +47,8 @@ TEST(NodeVersionTest, ResultsAreAsExpected) {
 
   ASSERT_OK_AND_ASSIGN(const std::filesystem::path proc_exe_path,
                        ProcExe(node_server_pid, &proc_parser, &fp_resolver));
-  ASSERT_OK_AND_THAT(GetVersion(proc_exe_path), StrEq("v15.0.1"));
+  ASSERT_OK_AND_THAT(px::Exec(absl::StrCat(proc_exe_path.string(), " --version")),
+                     StrEq("v15.0.1\n"));
 }
 
 // Tests that the mntexec cli can execute into the alpine container.
@@ -64,10 +65,11 @@ TEST(AlpineNodeExecTest, MountNSSubprocessWorks) {
 
   SubProcess proc(node_server_pid);
   ASSERT_OK(proc.Start({exe.string(), "--version"}));
+  ASSERT_EQ(proc.Wait(/*close_pipe*/ false), 0) << "Subprocess' exit code should be 0";
+
   std::string node_proc_stdout;
   ASSERT_OK(proc.Stdout(&node_proc_stdout));
   EXPECT_THAT(node_proc_stdout, StrEq("v14.18.1\n"));
-  ASSERT_EQ(proc.Wait(), 0) << "Subprocess' exit code should be 0";
 }
 
 }  // namespace stirling

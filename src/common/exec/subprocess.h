@@ -42,6 +42,7 @@ class SubProcess : public NotCopyMoveable {
    * process' mount namespace, and execute the command.
    */
   explicit SubProcess(int mnt_ns_pid = -1);
+  ~SubProcess();
 
   /**
    * Start the command.
@@ -67,8 +68,14 @@ class SubProcess : public NotCopyMoveable {
 
   /**
    * Wait for the subprocess to finish, and return its exit code.
+   * If close_pipe is true, the pipe to the child process is closed after waiting.
+   *
+   * If close_pipe is false, the pipe to the child process is kept open after waiting.
+   * This is useful if you want to capture the output after the child process exits.
+   * For example, to get the version of nodejs, we can run `node --version`. It is only after the
+   * child process finishes that the output is complete. Otherwise, the output might be incomplete.
    */
-  int Wait();
+  int Wait(bool close_pipe = true);
 
   /**
    * Read the child process' stdout, and append to provided string pointer.

@@ -108,11 +108,6 @@ node_http_server_image(
 )
 
 node_http_server_image(
-    name = "node_14_18_1_image",
-    base = "@node_14_18_1_linux_amd64_image//image",
-)
-
-node_http_server_image(
     name = "node_14_18_1_alpine_image",
     base = "@node_14_18_1_alpine_amd64_image//image",
 )

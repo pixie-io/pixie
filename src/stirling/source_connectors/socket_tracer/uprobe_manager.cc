@@ -27,6 +27,7 @@
 
 #include "src/common/base/base.h"
 #include "src/common/base/utils.h"
+#include "src/common/exec/subprocess.h"
 #include "src/common/fs/fs_wrapper.h"
 #include "src/stirling/bpf_tools/macros.h"
 #include "src/stirling/obj_tools/dwarf_reader.h"
@@ -284,8 +285,15 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
 
 namespace {
 
-StatusOr<SemVer> GetNodeVersion(const std::filesystem::path& node_exe) {
-  PL_ASSIGN_OR_RETURN(std::string ver_str, GetVersion(node_exe, "--version"));
+StatusOr<SemVer> GetNodeVersion(pid_t node_pid, const std::filesystem::path& node_exe) {
+  SubProcess node_version_proc(node_pid);
+  PL_RETURN_IF_ERROR(node_version_proc.Start({node_exe.string(), "--version"}));
+  // Wont check the exit code since we are only interested in the output.
+  node_version_proc.Wait(/*close_pipe*/ false);
+
+  std::string ver_str;
+  // Wait subprocess to finish and then get stdout, to avoid race condition.
+  PL_RETURN_IF_ERROR(node_version_proc.Stdout(&ver_str));
   PL_ASSIGN_OR_RETURN(SemVer ver, GetSemVer(ver_str));
   return ver;
 }
@@ -337,7 +345,7 @@ StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(uint32_t pid) {
     return 0;
   }
 
-  PL_ASSIGN_OR_RETURN(SemVer ver, GetNodeVersion(host_proc_exe));
+  PL_ASSIGN_OR_RETURN(const SemVer ver, GetNodeVersion(pid, proc_exe));
   PL_RETURN_IF_ERROR(UpdateNodeTLSWrapSymAddrs(pid, host_proc_exe, ver));
 
   // These probes are attached on OpenSSL dynamic library (if present) as well.

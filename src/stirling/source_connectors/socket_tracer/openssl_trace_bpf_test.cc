@@ -63,7 +63,8 @@ class Node12_3_1ContainerWrapper : public ::px::stirling::testing::Node12_3_1Con
   int32_t PID() const { return process_pid(); }
 };
 
-class Node14_18_1ContainerWrapper : public ::px::stirling::testing::Node14_18_1Container {
+class Node14_18_1AlpineContainerWrapper
+    : public ::px::stirling::testing::Node14_18_1AlpineContainer {
  public:
   int32_t PID() const { return process_pid(); }
 };
@@ -153,7 +154,7 @@ http::Record GetExpectedHTTPRecord() {
 }
 
 typedef ::testing::Types<NginxOpenSSL_1_1_0_ContainerWrapper, NginxOpenSSL_1_1_1_ContainerWrapper,
-                         Node12_3_1ContainerWrapper, Node14_18_1ContainerWrapper,
+                         Node12_3_1ContainerWrapper, Node14_18_1AlpineContainerWrapper,
                          Node15_0ContainerWrapper>
     OpenSSLServerImplementations;
 TYPED_TEST_SUITE(OpenSSLTraceTest, OpenSSLServerImplementations);

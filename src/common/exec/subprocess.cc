@@ -32,6 +32,12 @@ namespace px {
 
 SubProcess::SubProcess(int mnt_ns_pid) : mnt_ns_pid_(mnt_ns_pid) {}
 
+SubProcess::~SubProcess() {
+  // close() might fail, but won't affect anything, so just ignore the results.
+  close(pipefd_[kRead]);
+  close(pipefd_[kWrite]);
+}
+
 namespace {
 
 std::string MountNamespacePath(int pid) {
@@ -122,7 +128,9 @@ Status SubProcess::Start(const std::vector<std::string>& args, bool stderr_to_st
     // interact with it.
     system::ProcParser proc_parser(system::Config::GetInstance());
 
-    // Wait until the exe path changes.
+    // Wait until the exe path changes. The contract of Start() is such that after the call,
+    // the child process already started. We use the change of child process' exe path as the signal
+    // that the child process actually already started.
     PL_ASSIGN_OR_RETURN(std::filesystem::path parent_exe_path, proc_parser.GetExePath(getpid()));
     while (proc_parser.GetExePath(child_pid_).ValueOr({}) == parent_exe_path) {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -147,13 +155,17 @@ void SubProcess::Signal(int signal) {
   }
 }
 
-int SubProcess::Wait() {
+// TODO(yzhao): Consider change SubProcess to be immutable. So that we can rely on SubProcess
+// destructor to close the pipe to child process.
+int SubProcess::Wait(bool close_pipe) {
   if (child_pid_ != -1) {
     int status = -1;
     waitpid(child_pid_, &status, WUNTRACED);
-    // Close the read endpoint of the pipe. This must happen after waitpid(), otherwise the process
-    // will exits abnormally because it's STDOUT cannot be written.
-    close(pipefd_[kRead]);
+    if (close_pipe) {
+      // Close the read endpoint of the pipe. This must happen after waitpid(), otherwise the
+      // process will exits abnormally because it's STDOUT cannot be written.
+      close(pipefd_[kRead]);
+    }
     return status;
   }
   return 0;

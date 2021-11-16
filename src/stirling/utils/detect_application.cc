@@ -47,13 +47,6 @@ Application DetectApplication(const std::filesystem::path& exe) {
   return Application::kUnknown;
 }
 
-StatusOr<std::string> GetVersion(const std::filesystem::path& exe, std::string_view version_flag) {
-  PL_ASSIGN_OR_RETURN(std::string version, px::Exec(absl::StrCat(exe.string(), " ", version_flag)));
-  absl::StripLeadingAsciiWhitespace(&version);
-  absl::StripTrailingAsciiWhitespace(&version);
-  return version;
-}
-
 bool operator<(const SemVer& lhs, const SemVer& rhs) {
   std::vector<int> lhs_vec = {lhs.major, lhs.minor, lhs.patch};
   std::vector<int> rhs_vec = {rhs.major, rhs.minor, rhs.patch};

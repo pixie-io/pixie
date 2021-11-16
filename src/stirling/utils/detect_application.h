@@ -36,10 +36,6 @@ enum class Application {
 // Returns the application of the input executable.
 Application DetectApplication(const std::filesystem::path& exe);
 
-// Returns the output of the <executable> <version flag>.
-StatusOr<std::string> GetVersion(const std::filesystem::path& exe,
-                                 std::string_view version_flag = "--version");
-
 // Describes a semantic versioning number.
 struct SemVer {
   int major = 0;

@@ -166,14 +166,6 @@ def stirling_test_images():
         "node",
     )
 
-    # Tag: node:14.18.1
-    # Arch: linux/amd64
-    _docker_io_image(
-        "node_14_18_1_linux_amd64_image",
-        "sha256:e0dd89382d4f7da3b2be5d5fb74c65bfa1836deecae3c5f88919f44b469025f9",
-        "node",
-    )
-
     # Tag: node:14.18.1-alpine
     # Arch: linux/amd64
     _docker_io_image(
