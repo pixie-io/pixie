@@ -70,6 +70,7 @@ export class Auth0Client extends OAuthProviderClient {
       this.getRedirectURL(/* isSignup */ false),
       {
         connection: AUTH_EMAIL_PASSWORD_CONN,
+        // Manually configured in Classic Universal Login settings.
         mode: 'login',
       },
     ).signinRedirect();
@@ -80,7 +81,10 @@ export class Auth0Client extends OAuthProviderClient {
       this.getRedirectURL(/* isSignup */ false),
       {
         connection: AUTH_EMAIL_PASSWORD_CONN,
+        // Manually configured in Classic Universal Login settings.
         mode: 'signUp',
+        // Used by New Universal Login https://auth0.com/docs/login/universal-login/new-experience#signup
+        screen_hint: 'signup',
       },
     ).signinRedirect();
   }
