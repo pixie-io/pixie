@@ -17,11 +17,12 @@
  */
 
 import * as React from 'react';
+import { Box } from '@mui/material';
 import { AuthBox } from 'app/components';
 import { BasePage } from './base';
 import { GetOAuthProvider } from './utils';
 
-export const LoginPage: React.FC = () => {
+export const LoginPage = React.memo(function LoginPage() {
   const authClient = React.useMemo(() => GetOAuthProvider(), []);
   const buttons = React.useMemo(
     () => (authClient.getLoginButtons()),
@@ -35,8 +36,15 @@ export const LoginPage: React.FC = () => {
         buttonCaption="Don't have an account yet?"
         buttonText='Sign Up'
       >
-        {buttons}
+        {/* eslint-disable-next-line react-memo/require-usememo */}
+        <Box sx={{
+          display: 'grid',
+          gap: 1,
+          columns: 1,
+        }}>
+          {buttons}
+        </Box>
       </AuthBox>
     </BasePage>
   );
-};
+});

@@ -51,6 +51,7 @@ const useStyles = makeStyles(({ spacing, palette }: Theme) => createStyles({
     alignItems: 'center',
     marginTop: spacing(3),
     paddingTop: spacing(1),
+    paddingBottom: spacing(1),
     borderTop: `1px solid ${palette.foreground.grey1}`,
   },
   centerSelf: {
@@ -58,6 +59,7 @@ const useStyles = makeStyles(({ spacing, palette }: Theme) => createStyles({
   },
   disclaimer: {
     fontStyle: 'italic',
+    marginBottom: spacing(3),
   },
   disclaimerLink: {
     color: palette.primary.main,
@@ -112,7 +114,6 @@ export const AuthBox: React.FC<AuthBoxProps> = React.memo(function AuthBox(props
               <a href='https://pixielabs.ai/privacy' className={classes.disclaimerLink}>Privacy Policy</a>
               .
             </Typography>
-            <br />
           </>
         )
       }
@@ -121,10 +122,12 @@ export const AuthBox: React.FC<AuthBoxProps> = React.memo(function AuthBox(props
         <Typography variant='subtitle2' className={classes.account}>
           {buttonCaption}
         </Typography>
-        <Button component={Link} color='primary' href={toggleURL}>
+        {/* eslint-disable-next-line react-memo/require-usememo */}
+        <Button component={Link} color='primary' href={toggleURL} sx={{ ml: buttonCaption ? 1 : 0 }}>
           {buttonText}
         </Button>
       </div>
+      <div/>
     </PixienautBox>
   );
 });

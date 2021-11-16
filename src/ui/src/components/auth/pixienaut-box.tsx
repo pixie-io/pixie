@@ -34,7 +34,8 @@ const useStyles = makeStyles(({ spacing, breakpoints }: Theme) => createStyles({
     minWidth: '370px',
     // Cap at 960px or the width of the screen minus some padding, whichever is lesser.
     maxWidth: `calc(min(${breakpoints.values.md}px, 100vw - ${spacing(4)}))`,
-    maxHeight: '550px',
+    // Same, but 600px here.
+    maxHeight: `calc(min(${breakpoints.values.sm}px, 100vh - ${spacing(4)}))`,
   },
   splashImageContainer: {
     display: 'flex',

@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { Box } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, withStyles, WithStyles } from '@mui/styles';
 import * as React from 'react';
@@ -61,7 +62,14 @@ export const SignupPage = withStyles(styles)(({ classes }: WithStyles<typeof sty
             buttonText='Login'
             showTOSDisclaimer
           >
-            {buttons}
+            {/* eslint-disable-next-line react-memo/require-usememo */}
+            <Box sx={{
+              display: 'grid',
+              gap: 1,
+              columns: 1,
+            }}>
+              {buttons}
+            </Box>
           </AuthBox>
         </div>
       </div>
