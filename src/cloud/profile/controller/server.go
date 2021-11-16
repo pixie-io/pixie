@@ -129,9 +129,13 @@ func userInfoToProto(u *datastore.UserInfo) *profilepb.UserInfo {
 	if u.ProfilePicture != nil {
 		profilePicture = *u.ProfilePicture
 	}
+	var orgID *uuidpb.UUID
+	if u.OrgID != nil {
+		orgID = utils.ProtoFromUUID(*u.OrgID)
+	}
 	return &profilepb.UserInfo{
 		ID:               utils.ProtoFromUUID(u.ID),
-		OrgID:            utils.ProtoFromUUID(*u.OrgID),
+		OrgID:            orgID,
 		Username:         u.Username,
 		FirstName:        u.FirstName,
 		LastName:         u.LastName,

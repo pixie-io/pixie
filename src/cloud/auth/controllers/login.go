@@ -115,7 +115,7 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 	// All users who have logged in before will have their PLOrgID already set. However, some new users will also have PLOrgID
 	// set by the AuthProvider, but they have yet to login to Pixie and therefore the users does not exist in the profile service.
 	// This case must handle that flow as well - and hence why we propagate `newUser`.
-	if userInfo.PLOrgID != "" {
+	if uuid.FromStringOrNil(userInfo.PLOrgID) != uuid.Nil {
 		// If the user already belongs to an org according to the AuthProvider (userInfo),
 		// we log that user into the corresponding org.
 		orgInfo, err := s.env.OrgClient().GetOrg(ctx, utils.ProtoFromUUIDStrOrNil(userInfo.PLOrgID))
@@ -132,6 +132,13 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 		return s.loginUser(ctx, userInfo, orgInfo, newUser)
 	}
 
+	// TODO(philkuz, PC-1264) Remove the special casing for auth0 when CreateOrg is done.
+	// We want to support this case generally.
+	// Create and login user without orgID.
+	if userInfo.HostedDomain == "" && userInfo.IdentityProvider == "auth0" {
+		return s.loginUser(ctx, userInfo, nil, newUser)
+	}
+
 	// Users can login without registering if their org already exists. If org doesn't exist, they must complete sign up flow.
 	orgInfo, err := s.getMatchingOrgForUser(ctx, userInfo)
 	if status.Code(err) == codes.NotFound {
@@ -144,17 +151,27 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 }
 
 func (s *Server) loginUser(ctx context.Context, userInfo *UserInfo, orgInfo *profilepb.OrgInfo, newUser bool) (*authpb.LoginReply, error) {
+	var orgName string
+	var orgID *uuidpb.UUID
+	var orgIDStr string
+	if orgInfo != nil {
+		orgID = orgInfo.ID
+		orgIDStr = utils.UUIDFromProtoOrNil(orgID).String()
+		orgName = orgInfo.OrgName
+	}
 	var err error
 	if newUser {
-		userInfo, err = s.createUser(ctx, userInfo, orgInfo.ID)
+		userInfo, err = s.createUser(ctx, userInfo, orgID)
 		if err != nil {
 			return nil, err
 		}
 	}
-	_, _ = s.env.OrgClient().UpdateOrg(ctx, &profilepb.UpdateOrgRequest{
-		ID:         orgInfo.ID,
-		DomainName: &types.StringValue{Value: userInfo.HostedDomain},
-	})
+	if orgID != nil {
+		_, _ = s.env.OrgClient().UpdateOrg(ctx, &profilepb.UpdateOrgRequest{
+			ID:         orgID,
+			DomainName: &types.StringValue{Value: userInfo.HostedDomain},
+		})
+	}
 	tkn, err := s.completeUserLogin(ctx, userInfo, orgInfo)
 	if err != nil {
 		return nil, err
@@ -170,8 +187,8 @@ func (s *Server) loginUser(ctx context.Context, userInfo *UserInfo, orgInfo *pro
 			Email:     userInfo.Email,
 		},
 		OrgInfo: &authpb.LoginReply_OrgInfo{
-			OrgName: orgInfo.OrgName,
-			OrgID:   utils.UUIDFromProtoOrNil(orgInfo.ID).String(),
+			OrgName: orgName,
+			OrgID:   orgIDStr,
 		},
 	}, nil
 }
@@ -186,7 +203,7 @@ func (s *Server) completeUserLogin(ctx context.Context, userInfo *UserInfo, orgI
 	pc := s.env.ProfileClient()
 	// Check to make sure the user is approved to login. They are default approved
 	// if the org does not EnableApprovals.
-	if orgInfo.EnableApprovals {
+	if orgInfo != nil && orgInfo.EnableApprovals {
 		user, err := pc.GetUser(ctx, utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID))
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
@@ -355,9 +372,6 @@ func (s *Server) createUser(ctx context.Context, userInfo *UserInfo, orgID *uuid
 	md, _ := metadata.FromIncomingContext(ctx)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
-	if orgID == nil {
-		return nil, fmt.Errorf("orgInfo should not be nil")
-	}
 	// Create a new user to register them.
 	userCreateReq := &profilepb.CreateUserRequest{
 		OrgID:            orgID,
@@ -373,8 +387,14 @@ func (s *Server) createUser(ctx context.Context, userInfo *UserInfo, orgID *uuid
 	if err != nil {
 		return nil, err
 	}
-	userInfo, err = s.updateAuthProviderUser(userInfo.AuthProviderID, utils.UUIDFromProtoOrNil(orgID).String(), utils.UUIDFromProtoOrNil(userIDpb).String())
-	return userInfo, err
+
+	// We assign here to avoid converting a nil OrgID into all 0s.
+	var orgIDStr string
+	if orgID != nil {
+		orgIDStr = utils.UUIDFromProtoOrNil(orgID).String()
+	}
+
+	return s.updateAuthProviderUser(userInfo.AuthProviderID, orgIDStr, utils.UUIDFromProtoOrNil(userIDpb).String())
 }
 
 // GetAugmentedTokenForAPIKey produces an augmented token for the user given a API key.
@@ -440,7 +460,7 @@ func (s *Server) GetAugmentedToken(
 		// If the OrgID is empty, we will approve the user but they will have low
 		// functionality in Pixie.
 		orgIDstr := aCtx.Claims.GetUserClaims().OrgID
-		if orgIDstr != "" {
+		if uuid.FromStringOrNil(orgIDstr) != uuid.Nil {
 			_, err := s.env.OrgClient().GetOrg(ctx, utils.ProtoFromUUIDStrOrNil(orgIDstr))
 			if err != nil {
 				return nil, status.Error(codes.Unauthenticated, "Invalid auth/org")
