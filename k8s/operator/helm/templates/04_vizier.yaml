@@ -39,6 +39,7 @@ spec:
     {{- end }}
   {{- end}}
   {{- if .Values.leadershipElectionParams }}
+  leadershipElectionParams:
     {{- if .Values.leadershipElectionParams.electionPeriodMs }}
     electionPeriodMs: {{ .Values.leadershipElectionParams.electionPeriodMs }}
     {{- end }}
