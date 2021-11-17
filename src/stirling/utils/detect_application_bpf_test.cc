@@ -34,7 +34,10 @@ using ::testing::StrEq;
 // Tests that we can execute the executable of container process (with the set of
 // permissions granted through our requires_bpf tag, although the exact permission might be more
 // limited, perhaps only need 'root' permission to have access to the file).
-TEST(NodeVersionTest, ResultsAreAsExpected) {
+//
+// NOTE: Disabled to reduce flakiness. The mechanism tested here is replaced by the mount namespace
+// execution. Didn't remove it because it's an interesting case that might be useful.
+TEST(NodeVersionTest, DISABLED_ResultsAreAsExpected) {
   constexpr std::string_view kNode15_0ImageTar =
       "src/stirling/source_connectors/socket_tracer/testing/containers/node_15_0_image.tar";
   ContainerRunner node_server(px::testing::BazelBinTestFilePath(kNode15_0ImageTar), "node_server",
