@@ -32,6 +32,11 @@ bool operator==(const KernelVersion& a, const KernelVersion& b) {
   return (a.version == b.version) && (a.major_rev == b.major_rev) && (a.minor_rev == b.minor_rev);
 }
 
+// A list of kernel version identification methods that use /proc only.
+// Used in a number of tests below.
+const absl::flat_hash_set<KernelVersionSource> kProcFSKernelVersionSources = {
+    KernelVersionSource::kProcVersionSignature, KernelVersionSource::kProcSysKernelVersion};
+
 TEST(LinuxHeadersUtils, LinuxVersionCode) {
   KernelVersion version{4, 18, 1};
   EXPECT_EQ(version.code(), 266753);
@@ -44,8 +49,23 @@ TEST(LinuxHeadersUtils, ParseKernelVersionString) {
   EXPECT_NOT_OK(ParseKernelVersionString("linux-4.18.0-25-generic"));
 }
 
-TEST(LinuxHeadersUtils, GetKernelVersion) {
-  StatusOr<KernelVersion> kernel_version_status = GetKernelVersion();
+TEST(LinuxHeadersUtils, GetKernelVersionFromUname) {
+  StatusOr<KernelVersion> kernel_version_status = GetKernelVersion({KernelVersionSource::kUname});
+  ASSERT_OK(kernel_version_status);
+  KernelVersion kernel_version = kernel_version_status.ValueOrDie();
+
+  // We don't know on what host this test will run, so we don't know what the version code will be.
+  // But we can put some bounds, to check for obvious screw-ups.
+  // We assume test will run on a Linux machine with kernel 3.x.x or higher,
+  // and version 9.x.x or lower.
+  // Yes, we're being very generous here, but we want this test to pass the test of time.
+  EXPECT_GE(kernel_version.code(), 0x030000);
+  EXPECT_LE(kernel_version.code(), 0x090000);
+}
+
+TEST(LinuxHeadersUtils, GetKernelVersionFromNoteSection) {
+  StatusOr<KernelVersion> kernel_version_status =
+      GetKernelVersion({KernelVersionSource::kNoteSection});
   ASSERT_OK(kernel_version_status);
   KernelVersion kernel_version = kernel_version_status.ValueOrDie();
 
@@ -65,7 +85,7 @@ TEST(LinuxHeadersUtils, GetKernelVersionUbuntu) {
   system::Config::ResetInstance();
 
   // Main test.
-  StatusOr<KernelVersion> kernel_version_status = GetKernelVersion();
+  StatusOr<KernelVersion> kernel_version_status = GetKernelVersion(kProcFSKernelVersionSources);
   ASSERT_OK(kernel_version_status);
   KernelVersion kernel_version = kernel_version_status.ValueOrDie();
   EXPECT_EQ(kernel_version.code(), 0x050441);
@@ -82,7 +102,7 @@ TEST(LinuxHeadersUtils, GetKernelVersionDebian) {
   system::Config::ResetInstance();
 
   // Main test.
-  StatusOr<KernelVersion> kernel_version_status = GetKernelVersion();
+  StatusOr<KernelVersion> kernel_version_status = GetKernelVersion(kProcFSKernelVersionSources);
   ASSERT_OK(kernel_version_status);
   KernelVersion kernel_version = kernel_version_status.ValueOrDie();
   EXPECT_EQ(kernel_version.code(), 0x041398);

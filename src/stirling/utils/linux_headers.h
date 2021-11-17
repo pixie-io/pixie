@@ -22,6 +22,8 @@
 #include <string>
 #include <vector>
 
+#include <absl/container/flat_hash_set.h>
+
 #include "src/common/base/base.h"
 
 namespace px {
@@ -29,12 +31,31 @@ namespace stirling {
 namespace utils {
 
 struct KernelVersion {
-  uint16_t version = 0;
+  uint8_t version = 0;
   uint8_t major_rev = 0;
   uint8_t minor_rev = 0;
 
   uint32_t code() { return (version << 16) | (major_rev << 8) | (minor_rev); }
 };
+
+enum class KernelVersionSource {
+  // Get the Linux version from VDSO .note section.
+  // Most reliable if available.
+  kNoteSection,
+
+  // Get the Linux version from /proc/version_signature.
+  kProcVersionSignature,
+
+  // Get the Linux version from /proc/sys/kernel/version
+  kProcSysKernelVersion,
+
+  // Get the Linux version from `uname -r`
+  kUname,
+};
+
+const absl::flat_hash_set<KernelVersionSource> kDefaultKernelVersionSources = {
+    KernelVersionSource::kNoteSection, KernelVersionSource::kProcVersionSignature,
+    KernelVersionSource::kProcSysKernelVersion, KernelVersionSource::kUname};
 
 uint64_t KernelHeadersDistance(KernelVersion a, KernelVersion b);
 
@@ -45,6 +66,11 @@ uint64_t KernelHeadersDistance(KernelVersion a, KernelVersion b);
  * @return Linux version as {version, major, minor}.
  */
 StatusOr<KernelVersion> ParseKernelVersionString(const std::string& linux_release);
+
+/**
+ * Returns the kernel version from vDSO .note section.
+ */
+StatusOr<KernelVersion> GetLinuxVersionFromNoteSection();
 
 /**
  * Returns the kernel version from /proc/version_signature.
@@ -65,7 +91,8 @@ StatusOr<std::string> GetProcVersionSignature();
  *
  * @return The kernel version, or error if it could not be determined.
  */
-StatusOr<KernelVersion> GetKernelVersion();
+StatusOr<KernelVersion> GetKernelVersion(
+    absl::flat_hash_set<KernelVersionSource> sources = kDefaultKernelVersionSources);
 
 /**
  * Modifies the version.h on the filesystem to the specified version.

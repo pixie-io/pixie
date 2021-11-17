@@ -71,6 +71,16 @@ constexpr TIntType IntRoundUpDivide(TIntType x, TIntType y) {
 }
 
 /**
+ * Snap up to a multiple of the size.
+ *   SnapUpToMultiple(64, 8) = 64
+ *   SnapUpToMultiple(66, 8) = 72
+ */
+template <typename TIntType>
+constexpr TIntType SnapUpToMultiple(TIntType x, TIntType size) {
+  return IntRoundUpDivide(x, size) * size;
+}
+
+/**
  * Rounds an integer up to the next closest power of 2.
  * If already a power of 2, returns the same value.
  */
