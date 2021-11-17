@@ -85,6 +85,9 @@ func (o *OrganizationServiceServer) GetOrg(ctx context.Context, req *uuidpb.UUID
 	if err != nil {
 		return nil, err
 	}
+	if req == nil {
+		return nil, status.Errorf(codes.FailedPrecondition, "No such org")
+	}
 	if uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID) != utils.UUIDFromProtoOrNil(req) {
 		return nil, status.Errorf(codes.PermissionDenied, "User may only get info about their own org")
 	}

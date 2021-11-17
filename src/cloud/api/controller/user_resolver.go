@@ -79,7 +79,7 @@ func (u *UserInfoResolver) OrgID() string {
 
 // OrgName returns the user's org name.
 func (u *UserInfoResolver) OrgName() string {
-	org, err := u.GQLEnv.UserServer.GetOrg(u.ctx, u.UserInfo.OrgID)
+	org, err := u.GQLEnv.OrgServer.GetOrg(u.ctx, u.UserInfo.OrgID)
 	if err != nil {
 		return ""
 	}
