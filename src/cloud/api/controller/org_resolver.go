@@ -21,6 +21,7 @@ package controller
 import (
 	"context"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
 	"github.com/graph-gophers/graphql-go"
 
@@ -113,6 +114,23 @@ func (u *OrgInfoResolver) Name() string {
 // EnableApprovals returns whether the org requires admin approval for new users or not.
 func (u *OrgInfoResolver) EnableApprovals() bool {
 	return u.OrgInfo.EnableApprovals
+}
+
+type createOrgArgs struct {
+	OrgName string
+}
+
+// CreateOrg creates an org with the given name and associates the current user with the
+// newly created org.
+func (q *QueryResolver) CreateOrg(ctx context.Context, args *createOrgArgs) (graphql.ID, error) {
+	grpcAPI := q.Env.OrgServer
+	resp, err := grpcAPI.CreateOrg(ctx, &cloudpb.CreateOrgRequest{
+		OrgName: args.OrgName,
+	})
+	if err != nil {
+		return graphql.ID(uuid.Nil.String()), err
+	}
+	return graphql.ID(utils.ProtoToUUIDStr(resp)), nil
 }
 
 // IDEPathResolver is a resolver for an IDE path.
