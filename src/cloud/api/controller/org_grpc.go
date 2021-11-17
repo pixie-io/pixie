@@ -51,8 +51,7 @@ func (o *OrganizationServiceServer) InviteUser(ctx context.Context, externalReq 
 	if err != nil {
 		return nil, err
 	}
-	claimsOrgID := sCtx.Claims.GetUserClaims().OrgID
-	orgIDPb := utils.ProtoFromUUIDStrOrNil(claimsOrgID)
+	orgIDPb := utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().OrgID)
 	if orgIDPb == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Could not identify user's org")
 	}
@@ -82,6 +81,13 @@ func (o *OrganizationServiceServer) GetOrg(ctx context.Context, req *uuidpb.UUID
 		return nil, err
 	}
 
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID) != utils.UUIDFromProtoOrNil(req) {
+		return nil, status.Errorf(codes.PermissionDenied, "User may only get info about their own org")
+	}
 	resp, err := o.OrgServiceClient.GetOrg(ctx, req)
 	if err != nil {
 		return nil, err
@@ -102,6 +108,13 @@ func (o *OrganizationServiceServer) UpdateOrg(ctx context.Context, req *cloudpb.
 		return nil, err
 	}
 
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID) != utils.UUIDFromProtoOrNil(req.ID) {
+		return nil, status.Errorf(codes.PermissionDenied, "User may only update their own org")
+	}
 	resp, err := o.OrgServiceClient.UpdateOrg(ctx, &profilepb.UpdateOrgRequest{
 		ID:              req.ID,
 		EnableApprovals: req.EnableApprovals,
@@ -124,6 +137,14 @@ func (o *OrganizationServiceServer) GetUsersInOrg(ctx context.Context, req *clou
 	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID) != utils.UUIDFromProtoOrNil(req.OrgID) {
+		return nil, status.Errorf(codes.PermissionDenied, "User may only request info about their own org")
 	}
 
 	inReq := &profilepb.GetUsersInOrgRequest{
@@ -165,10 +186,8 @@ func (o *OrganizationServiceServer) AddOrgIDEConfig(ctx context.Context, req *cl
 	if err != nil {
 		return nil, err
 	}
-	claimsOrgID := sCtx.Claims.GetUserClaims().OrgID
-	reqOrgID := utils.UUIDFromProtoOrNil(req.OrgID)
-	if uuid.FromStringOrNil(claimsOrgID) != reqOrgID {
-		return nil, status.Errorf(codes.Unauthenticated, "Could not add IDE config for org")
+	if uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID) != utils.UUIDFromProtoOrNil(req.OrgID) {
+		return nil, status.Errorf(codes.PermissionDenied, "Could not add IDE config for org")
 	}
 
 	resp, err := o.OrgServiceClient.AddOrgIDEConfig(ctx, &profilepb.AddOrgIDEConfigRequest{
@@ -201,10 +220,8 @@ func (o *OrganizationServiceServer) DeleteOrgIDEConfig(ctx context.Context, req 
 	if err != nil {
 		return nil, err
 	}
-	claimsOrgID := sCtx.Claims.GetUserClaims().OrgID
-	reqOrgID := utils.UUIDFromProtoOrNil(req.OrgID)
-	if uuid.FromStringOrNil(claimsOrgID) != reqOrgID {
-		return nil, status.Errorf(codes.Unauthenticated, "Could not delete IDE config for org")
+	if uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID) != utils.UUIDFromProtoOrNil(req.OrgID) {
+		return nil, status.Errorf(codes.PermissionDenied, "Could not delete IDE config for org")
 	}
 
 	_, err = o.OrgServiceClient.DeleteOrgIDEConfig(ctx, &profilepb.DeleteOrgIDEConfigRequest{
@@ -229,10 +246,8 @@ func (o *OrganizationServiceServer) GetOrgIDEConfigs(ctx context.Context, req *c
 	if err != nil {
 		return nil, err
 	}
-	claimsOrgID := sCtx.Claims.GetUserClaims().OrgID
-	reqOrgID := utils.UUIDFromProtoOrNil(req.OrgID)
-	if uuid.FromStringOrNil(claimsOrgID) != reqOrgID {
-		return nil, status.Errorf(codes.Unauthenticated, "Could not get IDE configs for org")
+	if uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID) != utils.UUIDFromProtoOrNil(req.OrgID) {
+		return nil, status.Errorf(codes.PermissionDenied, "Could not get IDE configs for org")
 	}
 
 	resp, err := o.OrgServiceClient.GetOrgIDEConfigs(ctx, &profilepb.GetOrgIDEConfigsRequest{

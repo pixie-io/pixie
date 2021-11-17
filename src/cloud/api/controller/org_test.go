@@ -22,11 +22,16 @@ import (
 	"context"
 	"testing"
 
+	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
+	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/cloud/api/controller"
 	"px.dev/pixie/src/cloud/api/controller/testutils"
 	"px.dev/pixie/src/cloud/auth/authpb"
@@ -142,6 +147,130 @@ func TestOrganizationServiceServer_DeleteOrgIDEConfig(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.NotNil(t, resp)
+}
+
+type fakeOrg struct{}
+
+func (*fakeOrg) GetOrg(ctx context.Context, in *uuidpb.UUID, _ ...grpc.CallOption) (*profilepb.OrgInfo, error) {
+	return &profilepb.OrgInfo{}, nil
+}
+
+func (*fakeOrg) GetOrgByDomain(ctx context.Context, _ *profilepb.GetOrgByDomainRequest, _ ...grpc.CallOption) (*profilepb.OrgInfo, error) {
+	return &profilepb.OrgInfo{}, nil
+}
+
+func (*fakeOrg) GetOrgByName(ctx context.Context, _ *profilepb.GetOrgByNameRequest, _ ...grpc.CallOption) (*profilepb.OrgInfo, error) {
+	return &profilepb.OrgInfo{}, nil
+}
+
+func (*fakeOrg) UpdateOrg(ctx context.Context, _ *profilepb.UpdateOrgRequest, _ ...grpc.CallOption) (*profilepb.OrgInfo, error) {
+	return &profilepb.OrgInfo{}, nil
+}
+
+func (*fakeOrg) CreateOrg(ctx context.Context, _ *profilepb.CreateOrgRequest, _ ...grpc.CallOption) (*uuidpb.UUID, error) {
+	return &uuidpb.UUID{}, nil
+}
+
+func (*fakeOrg) GetOrgs(ctx context.Context, _ *profilepb.GetOrgsRequest, _ ...grpc.CallOption) (*profilepb.GetOrgsResponse, error) {
+	return &profilepb.GetOrgsResponse{}, nil
+}
+
+func (*fakeOrg) GetUsersInOrg(ctx context.Context, _ *profilepb.GetUsersInOrgRequest, _ ...grpc.CallOption) (*profilepb.GetUsersInOrgResponse, error) {
+	return &profilepb.GetUsersInOrgResponse{}, nil
+}
+
+func (*fakeOrg) AddOrgIDEConfig(ctx context.Context, _ *profilepb.AddOrgIDEConfigRequest, _ ...grpc.CallOption) (*profilepb.AddOrgIDEConfigResponse, error) {
+	return &profilepb.AddOrgIDEConfigResponse{
+		Config: &profilepb.IDEConfig{},
+	}, nil
+}
+
+func (*fakeOrg) DeleteOrgIDEConfig(ctx context.Context, _ *profilepb.DeleteOrgIDEConfigRequest, _ ...grpc.CallOption) (*profilepb.DeleteOrgIDEConfigResponse, error) {
+	return &profilepb.DeleteOrgIDEConfigResponse{}, nil
+}
+
+func (*fakeOrg) GetOrgIDEConfigs(ctx context.Context, _ *profilepb.GetOrgIDEConfigsRequest, _ ...grpc.CallOption) (*profilepb.GetOrgIDEConfigsResponse, error) {
+	return &profilepb.GetOrgIDEConfigsResponse{}, nil
+}
+
+func TestOrganizationServiceServer_CorrectOrgPermissions(t *testing.T) {
+	tests := []struct {
+		name     string
+		funcCall func(ctx context.Context, os *controller.OrganizationServiceServer, id *uuidpb.UUID) error
+	}{
+		{
+			name: "GetUsersInOrg",
+			funcCall: func(ctx context.Context, os *controller.OrganizationServiceServer, id *uuidpb.UUID) error {
+				_, err := os.GetUsersInOrg(ctx, &cloudpb.GetUsersInOrgRequest{OrgID: id})
+				return err
+			},
+		},
+		{
+			name: "GetOrg",
+			funcCall: func(ctx context.Context, os *controller.OrganizationServiceServer, id *uuidpb.UUID) error {
+				_, err := os.GetOrg(ctx, id)
+				return err
+			},
+		},
+		{
+			name: "UpdateOrg",
+			funcCall: func(ctx context.Context, os *controller.OrganizationServiceServer, id *uuidpb.UUID) error {
+				_, err := os.UpdateOrg(ctx, &cloudpb.UpdateOrgRequest{
+					ID:              id,
+					EnableApprovals: &types.BoolValue{Value: true},
+				})
+				return err
+			},
+		},
+		{
+			name: "GetOrgsIDEConfigs",
+			funcCall: func(ctx context.Context, os *controller.OrganizationServiceServer, id *uuidpb.UUID) error {
+				_, err := os.GetOrgIDEConfigs(ctx, &cloudpb.GetOrgIDEConfigsRequest{
+					OrgID: id,
+				})
+				return err
+			},
+		},
+		{
+			name: "DeleteOrgIDEConfigs",
+			funcCall: func(ctx context.Context, os *controller.OrganizationServiceServer, id *uuidpb.UUID) error {
+				_, err := os.DeleteOrgIDEConfig(ctx, &cloudpb.DeleteOrgIDEConfigRequest{
+					OrgID:   id,
+					IDEName: "test",
+				})
+				return err
+			},
+		},
+		{
+			name: "AddOrgIDEConfigs",
+			funcCall: func(ctx context.Context, os *controller.OrganizationServiceServer, id *uuidpb.UUID) error {
+				_, err := os.AddOrgIDEConfig(ctx, &cloudpb.AddOrgIDEConfigRequest{
+					OrgID:  id,
+					Config: &cloudpb.IDEConfig{},
+				})
+				return err
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+			defer cleanup()
+			ctx := CreateTestContext()
+
+			os := &controller.OrganizationServiceServer{mockClients.MockProfile, mockClients.MockAuth, &fakeOrg{}}
+			// Incorrect orrg call.
+			err := test.funcCall(ctx, os, utils.ProtoFromUUIDStrOrNil("11111111-9dad-11d1-80b4-00c04fd430c8"))
+			require.Error(t, err)
+			assert.Equal(t, codes.PermissionDenied, status.Code(err))
+			// Correct org call.
+			err = test.funcCall(ctx, os, utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"))
+			require.NoError(t, err)
+		})
+	}
 }
 
 func TestOrganizationServiceServer_GetOrgIDEConfigs(t *testing.T) {
