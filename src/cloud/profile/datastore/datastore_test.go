@@ -461,6 +461,33 @@ func TestDatastore(t *testing.T) {
 		assert.Equal(t, false, userInfoFetched.IsApproved)
 	})
 
+	t.Run("update user org", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db)
+
+		userInfo := datastore.UserInfo{
+			Username:  "zain",
+			FirstName: "zain",
+			LastName:  "asgar",
+			Email:     "zasgar@pixielabs.ai",
+		}
+		userID, err := d.CreateUser(&userInfo)
+		require.Nil(t, err)
+		require.NotEqual(t, userID, uuid.Nil)
+
+		orgID := uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000")
+		userInfo.ID = userID
+		userInfo.OrgID = &orgID
+
+		err = d.UpdateUser(&userInfo)
+		require.NoError(t, err)
+
+		userInfoFetched, err := d.GetUser(userID)
+		require.NoError(t, err)
+		require.NotNil(t, userInfoFetched.OrgID)
+		assert.Equal(t, *userInfoFetched.OrgID, orgID)
+	})
+
 	t.Run("Get user attributes", func(t *testing.T) {
 		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
@@ -536,6 +563,15 @@ func TestDatastore(t *testing.T) {
 		users, err := d.GetUsersInOrg(uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"))
 		require.NoError(t, err)
 		assert.Equal(t, 2, len(users))
+	})
+
+	t.Run("count users in org", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db)
+
+		count, err := d.NumUsersInOrg(uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"))
+		require.NoError(t, err)
+		assert.Equal(t, 2, count)
 	})
 
 	t.Run("update org approvals", func(t *testing.T) {
