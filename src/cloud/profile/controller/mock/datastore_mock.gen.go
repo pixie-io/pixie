@@ -266,6 +266,21 @@ func (mr *MockOrgDatastoreMockRecorder) GetUsersInOrg(arg0 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersInOrg", reflect.TypeOf((*MockOrgDatastore)(nil).GetUsersInOrg), arg0)
 }
 
+// NumUsersInOrg mocks base method.
+func (m *MockOrgDatastore) NumUsersInOrg(arg0 uuid.UUID) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NumUsersInOrg", arg0)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// NumUsersInOrg indicates an expected call of NumUsersInOrg.
+func (mr *MockOrgDatastoreMockRecorder) NumUsersInOrg(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NumUsersInOrg", reflect.TypeOf((*MockOrgDatastore)(nil).NumUsersInOrg), arg0)
+}
+
 // UpdateOrg mocks base method.
 func (m *MockOrgDatastore) UpdateOrg(arg0 *datastore.OrgInfo) error {
 	m.ctrl.T.Helper()

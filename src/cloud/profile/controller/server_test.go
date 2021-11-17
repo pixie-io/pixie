@@ -1008,6 +1008,7 @@ func TestServer_UpdateUser(t *testing.T) {
 		userOrg           string
 		updatedProfilePic string
 		updatedIsApproved bool
+		updatedOrg        string
 	}{
 		{
 			name:              "user can update their own profile picture",
@@ -1029,6 +1030,12 @@ func TestServer_UpdateUser(t *testing.T) {
 			userOrg:           "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
 			updatedProfilePic: "something",
 			updatedIsApproved: true,
+		},
+		{
+			name:       "user should be able to update org if org isn't already set",
+			userID:     "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			userOrg:    "00000000-0000-0000-0000-000000000000",
+			updatedOrg: "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
 		},
 	}
 
@@ -1073,6 +1080,16 @@ func TestServer_UpdateUser(t *testing.T) {
 				mockUpdateReq.IsApproved = tc.updatedIsApproved
 			}
 
+			if tc.updatedOrg != "" {
+				req.OrgID = utils.ProtoFromUUIDStrOrNil(tc.updatedOrg)
+				newOrgID := uuid.FromStringOrNil(tc.updatedOrg)
+				mockUpdateReq.OrgID = &newOrgID
+
+				ods.EXPECT().
+					NumUsersInOrg(newOrgID).
+					Return(0, nil)
+			}
+
 			uds.EXPECT().
 				GetUser(userID).
 				Return(originalUserInfo, nil)
@@ -1086,8 +1103,88 @@ func TestServer_UpdateUser(t *testing.T) {
 			assert.Equal(t, resp.ID, utils.ProtoFromUUID(userID))
 			assert.Equal(t, resp.ProfilePicture, tc.updatedProfilePic)
 			assert.Equal(t, resp.IsApproved, tc.updatedIsApproved)
+			if tc.updatedOrg != "" {
+				assert.Equal(t, utils.ProtoToUUIDStr(resp.OrgID), tc.updatedOrg)
+			}
 		})
 	}
+}
+
+func TestServer_UpdateUser_FailsIfAlreadySet(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	userID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9")
+	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
+
+	uds.EXPECT().
+		GetUser(userID).
+		Return(&datastore.UserInfo{
+			ID:         userID,
+			FirstName:  "first",
+			LastName:   "last",
+			IsApproved: true,
+			OrgID:      &orgID,
+		}, nil)
+
+	newOrgID, err := uuid.NewV4()
+	require.NoError(t, err)
+	s := controller.NewServer(nil, uds, usds, ods, osds)
+
+	_, err = s.UpdateUser(
+		CreateTestContext(),
+		&profilepb.UpdateUserRequest{
+			ID:    utils.ProtoFromUUID(userID),
+			OrgID: utils.ProtoFromUUID(newOrgID),
+		})
+
+	assert.NotNil(t, err)
+	assert.Equal(t, status.Code(err), codes.InvalidArgument)
+}
+
+func TestServer_UpdateUser_FailsIfOrgIsNotEmpty(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	userID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9")
+
+	uds := mock_controller.NewMockUserDatastore(ctrl)
+	ods := mock_controller.NewMockOrgDatastore(ctrl)
+	usds := mock_controller.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controller.NewMockOrgSettingsDatastore(ctrl)
+
+	uds.EXPECT().
+		GetUser(userID).
+		Return(&datastore.UserInfo{
+			ID:         userID,
+			FirstName:  "first",
+			LastName:   "last",
+			IsApproved: true,
+		}, nil)
+
+	newOrgID, err := uuid.NewV4()
+	require.NoError(t, err)
+
+	ods.EXPECT().
+		NumUsersInOrg(newOrgID).
+		Return(10, nil)
+
+	s := controller.NewServer(nil, uds, usds, ods, osds)
+
+	_, err = s.UpdateUser(
+		CreateTestContext(),
+		&profilepb.UpdateUserRequest{
+			ID:    utils.ProtoFromUUID(userID),
+			OrgID: utils.ProtoFromUUID(newOrgID),
+		})
+
+	assert.NotNil(t, err)
+	assert.Equal(t, status.Code(err), codes.InvalidArgument)
 }
 
 func TestServer_UpdateOrg_EnableApprovals(t *testing.T) {

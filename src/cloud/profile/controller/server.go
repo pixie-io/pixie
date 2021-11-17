@@ -75,6 +75,8 @@ type OrgDatastore interface {
 	GetOrgs() ([]*datastore.OrgInfo, error)
 	// GetUsersInOrg gets all of the users in the given org.
 	GetUsersInOrg(uuid.UUID) ([]*datastore.UserInfo, error)
+	// NumUsersInOrg gets the count of users in the given org.
+	NumUsersInOrg(uuid.UUID) (int, error)
 	// GetOrg gets and org by ID.
 	GetOrg(uuid.UUID) (*datastore.OrgInfo, error)
 	// GetOrgByName gets an org by name.
@@ -393,6 +395,21 @@ func (s *Server) UpdateUser(ctx context.Context, req *profilepb.UpdateUserReques
 	userInfo, err := s.uds.GetUser(userID)
 	if err != nil {
 		return nil, toExternalError(err)
+	}
+
+	newOrgID := utils.UUIDFromProtoOrNil(req.OrgID)
+	if newOrgID != uuid.Nil {
+		if userInfo.OrgID != nil && *userInfo.OrgID != uuid.Nil {
+			return nil, status.Error(codes.InvalidArgument, "cannot update org for a user that already belongs to an org")
+		}
+		count, err := s.ods.NumUsersInOrg(newOrgID)
+		if err != nil {
+			return nil, err
+		}
+		if count > 0 {
+			return nil, status.Error(codes.InvalidArgument, "cannot add self to an org that isn't empty")
+		}
+		userInfo.OrgID = &newOrgID
 	}
 
 	if req.DisplayPicture != nil {
