@@ -74,8 +74,9 @@ TEST_F(UprobeSymaddrsTest, GoHTTP2SymAddrs) {
   // Check some member offsets.
   // The values may change when golang version is updated.
   // If the test breaks because of that, just update the numbers here.
-  EXPECT_EQ(symaddrs.http2Framer_WriteDataPadded_f_offset, 8);
-  EXPECT_EQ(symaddrs.writeHeader_hf_offset, 24);
+  EXPECT_EQ(symaddrs.http2Framer_WriteDataPadded_f_loc,
+            (location_t{.type = kLocationTypeStack, .offset = 8}));
+  EXPECT_EQ(symaddrs.writeHeader_hf_loc, (location_t{.type = kLocationTypeStack, .offset = 24}));
 }
 
 TEST_F(UprobeSymaddrsTest, GoTLSSymAddrs) {
@@ -85,10 +86,10 @@ TEST_F(UprobeSymaddrsTest, GoTLSSymAddrs) {
   // Check some member offsets.
   // The values may change when golang version is updated.
   // If the test breaks because of that, just update the numbers here.
-  EXPECT_EQ(symaddrs.Write_c_offset, 8);
-  EXPECT_EQ(symaddrs.Write_b_offset, 16);
-  EXPECT_EQ(symaddrs.Read_c_offset, 8);
-  EXPECT_EQ(symaddrs.Read_b_offset, 16);
+  EXPECT_EQ(symaddrs.Write_c_loc, (location_t{.type = kLocationTypeStack, .offset = 8}));
+  EXPECT_EQ(symaddrs.Write_b_loc, (location_t{.type = kLocationTypeStack, .offset = 16}));
+  EXPECT_EQ(symaddrs.Read_c_loc, (location_t{.type = kLocationTypeStack, .offset = 8}));
+  EXPECT_EQ(symaddrs.Read_b_loc, (location_t{.type = kLocationTypeStack, .offset = 16}));
 }
 
 // Note that DwarfReader cannot be created if there is no dwarf info.

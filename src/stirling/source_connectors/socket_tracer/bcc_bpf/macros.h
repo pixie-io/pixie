@@ -26,3 +26,8 @@
   if (symaddr == -1) {                   \
     return retval;                       \
   }
+
+#define REQUIRE_LOCATION(loc, retval)     \
+  if (loc.type == kLocationTypeInvalid) { \
+    return retval;                        \
+  }

@@ -38,6 +38,7 @@ enum class ABI {
 };
 
 // Identifies where an variable is located.
+// TODO(oazizi): Consider consolidating with location_t in symaddrs.h.
 enum class LocationType {
   kUnknown,
   // Stack address relative to the frame stack pointer (SP)

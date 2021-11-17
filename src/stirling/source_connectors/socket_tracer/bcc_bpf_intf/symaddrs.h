@@ -47,6 +47,33 @@
 // Note: number values in comments represent known offsets, in case we need to fall back.
 //       Eventually, they can be removed, because they are not reliable.
 
+enum location_type_t {
+  kLocationTypeInvalid = 0,
+  kLocationTypeStack = 1,
+  kLocationTypeRegisters = 2
+};
+
+struct location_t {
+  enum location_type_t type;
+  int32_t offset;
+};
+
+#ifdef __cplusplus
+inline std::string ToString(const struct location_t& location) {
+  return absl::Substitute("type=$0 offset=$1", magic_enum::enum_name(location.type),
+                          location.offset);
+}
+
+inline std::ostream& operator<<(std::ostream& os, const struct location_t& location) {
+  os << ToString(location);
+  return os;
+}
+
+inline bool operator==(const struct location_t& a, const struct location_t& b) {
+  return a.type == b.type && a.offset == b.offset;
+}
+#endif
+
 // A set of symbols that are useful for various different uprobes.
 // Currently, this includes mostly connection related items,
 // which applies to any network protocol tracing (HTTP2, TLS, etc.).
@@ -78,53 +105,55 @@ struct go_http2_symaddrs_t {
   int64_t http_http2bufferedWriter;  // "go.itab.*net/http.http2bufferedWriter,io.Writer
   int64_t transport_bufWriter;  // "google.golang.org/grpc/internal/transport.bufWriter,io.Writer
 
-  // ---- struct member offsets ----
+  // ---- function argument locations ----
 
   // Arguments of net/http.(*http2Framer).WriteDataPadded.
-  int32_t http2Framer_WriteDataPadded_f_offset;          // 8
-  int32_t http2Framer_WriteDataPadded_streamID_offset;   // 16
-  int32_t http2Framer_WriteDataPadded_endStream_offset;  // 20
-  int32_t http2Framer_WriteDataPadded_data_offset;       // 24
+  struct location_t http2Framer_WriteDataPadded_f_loc;          // 8
+  struct location_t http2Framer_WriteDataPadded_streamID_loc;   // 16
+  struct location_t http2Framer_WriteDataPadded_endStream_loc;  // 20
+  struct location_t http2Framer_WriteDataPadded_data_loc;       // 24
 
   // Arguments of golang.org/x/net/http2.(*Framer).WriteDataPadded.
-  int32_t http2_WriteDataPadded_f_offset;          // 8
-  int32_t http2_WriteDataPadded_streamID_offset;   // 16
-  int32_t http2_WriteDataPadded_endStream_offset;  // 20
-  int32_t http2_WriteDataPadded_data_offset;       // 24
+  struct location_t http2_WriteDataPadded_f_loc;          // 8
+  struct location_t http2_WriteDataPadded_streamID_loc;   // 16
+  struct location_t http2_WriteDataPadded_endStream_loc;  // 20
+  struct location_t http2_WriteDataPadded_data_loc;       // 24
 
   // Arguments of net/http.(*http2Framer).checkFrameOrder.
-  int32_t http2Framer_checkFrameOrder_fr_offset;  // 8
-  int32_t http2Framer_checkFrameOrder_f_offset;   // 16
+  struct location_t http2Framer_checkFrameOrder_fr_loc;  // 8
+  struct location_t http2Framer_checkFrameOrder_f_loc;   // 16
 
   // Arguments of golang.org/x/net/http2.(*Framer).checkFrameOrder.
-  int32_t http2_checkFrameOrder_fr_offset;  // 8
-  int32_t http2_checkFrameOrder_f_offset;   // 16
+  struct location_t http2_checkFrameOrder_fr_loc;  // 8
+  struct location_t http2_checkFrameOrder_f_loc;   // 16
 
   // Arguments of net/http.(*http2writeResHeaders).writeFrame.
-  int32_t writeFrame_w_offset;    // 8
-  int32_t writeFrame_ctx_offset;  // 16
+  struct location_t writeFrame_w_loc;    // 8
+  struct location_t writeFrame_ctx_loc;  // 16
 
   // Arguments of golang.org/x/net/http2/hpack.(*Encoder).WriteField.
-  int32_t WriteField_e_offset;  // 8
-  int32_t WriteField_f_offset;  // 16
+  struct location_t WriteField_e_loc;  // 8
+  struct location_t WriteField_f_loc;  // 16
 
   // Arguments of net/http.(*http2serverConn).processHeaders.
-  int32_t processHeaders_sc_offset;  // 8
-  int32_t processHeaders_f_offset;   // 16
+  struct location_t processHeaders_sc_loc;  // 8
+  struct location_t processHeaders_f_loc;   // 16
 
   // Arguments of google.golang.org/grpc/internal/transport.(*http2Server).operateHeaders.
-  int32_t http2Server_operateHeaders_t_offset;      // 8
-  int32_t http2Server_operateHeaders_frame_offset;  // 16
+  struct location_t http2Server_operateHeaders_t_loc;      // 8
+  struct location_t http2Server_operateHeaders_frame_loc;  // 16
 
   // Arguments of google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders.
-  int32_t http2Client_operateHeaders_t_offset;      // 8
-  int32_t http2Client_operateHeaders_frame_offset;  // 16
+  struct location_t http2Client_operateHeaders_t_loc;      // 8
+  struct location_t http2Client_operateHeaders_frame_loc;  // 16
 
   // Arguments of google.golang.org/grpc/internal/transport.(*loopyWriter).writeHeader.
-  int32_t writeHeader_l_offset;          // 8
-  int32_t writeHeader_streamID_offset;   // 16
-  int32_t writeHeader_endStream_offset;  // 20
-  int32_t writeHeader_hf_offset;         // 24
+  struct location_t writeHeader_l_loc;          // 8
+  struct location_t writeHeader_streamID_loc;   // 16
+  struct location_t writeHeader_endStream_loc;  // 20
+  struct location_t writeHeader_hf_loc;         // 24
+
+  // ---- struct member offsets ----
 
   // Struct member offsets.
   // Naming maintains golang style: <struct>_<member>_offset
@@ -196,15 +225,15 @@ struct go_http2_symaddrs_t {
 };
 
 struct go_tls_symaddrs_t {
-  // ---- struct member offsets ----
+  // ---- function argument locations ----
 
   // Arguments of crypto/tls.(*Conn).Write.
-  int32_t Write_c_offset;  // 8
-  int32_t Write_b_offset;  // 16
+  struct location_t Write_c_loc;  // 8
+  struct location_t Write_b_loc;  // 16
 
   // Arguments of crypto/tls.(*Conn).Read.
-  int32_t Read_c_offset;  // 8
-  int32_t Read_b_offset;  // 16
+  struct location_t Read_c_loc;  // 8
+  struct location_t Read_b_loc;  // 16
 };
 
 struct openssl_symaddrs_t {

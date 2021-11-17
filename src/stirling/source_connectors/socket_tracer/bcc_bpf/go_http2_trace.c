@@ -270,10 +270,10 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
   }
 
   // Required argument offsets.
-  REQUIRE_SYMADDR(symaddrs->writeHeader_l_offset, 0);
-  REQUIRE_SYMADDR(symaddrs->writeHeader_streamID_offset, 0);
-  REQUIRE_SYMADDR(symaddrs->writeHeader_endStream_offset, 0);
-  REQUIRE_SYMADDR(symaddrs->writeHeader_hf_offset, 0);
+  REQUIRE_LOCATION(symaddrs->writeHeader_l_loc, 0);
+  REQUIRE_LOCATION(symaddrs->writeHeader_streamID_loc, 0);
+  REQUIRE_LOCATION(symaddrs->writeHeader_endStream_loc, 0);
+  REQUIRE_LOCATION(symaddrs->writeHeader_hf_loc, 0);
 
   // Required member offsets.
   REQUIRE_SYMADDR(symaddrs->loopyWriter_framer_offset, 0);
@@ -285,21 +285,21 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
   const void* sp = (const void*)PT_REGS_SP(ctx);
 
   void* loopy_writer_ptr;
-  bpf_probe_read(&loopy_writer_ptr, sizeof(void*), sp + symaddrs->writeHeader_l_offset);
+  bpf_probe_read(&loopy_writer_ptr, sizeof(void*), sp + symaddrs->writeHeader_l_loc.offset);
 
   uint32_t stream_id;
-  bpf_probe_read(&stream_id, sizeof(uint32_t), sp + symaddrs->writeHeader_streamID_offset);
+  bpf_probe_read(&stream_id, sizeof(uint32_t), sp + symaddrs->writeHeader_streamID_loc.offset);
 
   bool end_stream;
-  bpf_probe_read(&end_stream, sizeof(bool), sp + symaddrs->writeHeader_endStream_offset);
+  bpf_probe_read(&end_stream, sizeof(bool), sp + symaddrs->writeHeader_endStream_loc.offset);
 
   void* fields_ptr;
   bpf_probe_read(&fields_ptr, sizeof(void*),
-                 sp + symaddrs->writeHeader_hf_offset + kGoArrayPtrOffset);
+                 sp + symaddrs->writeHeader_hf_loc.offset + kGoArrayPtrOffset);
 
   int64_t fields_len;
   bpf_probe_read(&fields_len, sizeof(int64_t),
-                 sp + symaddrs->writeHeader_hf_offset + kGoArrayLenOffset);
+                 sp + symaddrs->writeHeader_hf_loc.offset + kGoArrayLenOffset);
 
   // ---------------------------------------------
   // Extract members
@@ -413,8 +413,8 @@ int probe_http2_client_operate_headers(struct pt_regs* ctx) {
   }
 
   // Required argument offsets.
-  REQUIRE_SYMADDR(symaddrs->http2Client_operateHeaders_t_offset, 0);
-  REQUIRE_SYMADDR(symaddrs->http2Client_operateHeaders_frame_offset, 0);
+  REQUIRE_LOCATION(symaddrs->http2Client_operateHeaders_t_loc, 0);
+  REQUIRE_LOCATION(symaddrs->http2Client_operateHeaders_frame_loc, 0);
 
   // Required member offsets.
   REQUIRE_SYMADDR(symaddrs->http2Client_conn_offset, 0);
@@ -427,10 +427,11 @@ int probe_http2_client_operate_headers(struct pt_regs* ctx) {
 
   void* http2_client_ptr;
   bpf_probe_read(&http2_client_ptr, sizeof(void*),
-                 sp + symaddrs->http2Client_operateHeaders_t_offset);
+                 sp + symaddrs->http2Client_operateHeaders_t_loc.offset);
 
   void* frame_ptr;
-  bpf_probe_read(&frame_ptr, sizeof(void*), sp + symaddrs->http2Client_operateHeaders_frame_offset);
+  bpf_probe_read(&frame_ptr, sizeof(void*),
+                 sp + symaddrs->http2Client_operateHeaders_frame_loc.offset);
 
   // ---------------------------------------------
   // Extract arguments (on stack)
@@ -466,8 +467,8 @@ int probe_http2_server_operate_headers(struct pt_regs* ctx) {
   }
 
   // Required argument offsets.
-  REQUIRE_SYMADDR(symaddrs->http2Server_operateHeaders_t_offset, 0);
-  REQUIRE_SYMADDR(symaddrs->http2Server_operateHeaders_frame_offset, 0);
+  REQUIRE_LOCATION(symaddrs->http2Server_operateHeaders_t_loc, 0);
+  REQUIRE_LOCATION(symaddrs->http2Server_operateHeaders_frame_loc, 0);
 
   // Required member offsets.
   REQUIRE_SYMADDR(symaddrs->http2Server_conn_offset, 0);
@@ -480,10 +481,11 @@ int probe_http2_server_operate_headers(struct pt_regs* ctx) {
 
   void* http2_server_ptr;
   bpf_probe_read(&http2_server_ptr, sizeof(void*),
-                 sp + symaddrs->http2Server_operateHeaders_t_offset);
+                 sp + symaddrs->http2Server_operateHeaders_t_loc.offset);
 
   void* frame_ptr;
-  bpf_probe_read(&frame_ptr, sizeof(void*), sp + symaddrs->http2Server_operateHeaders_frame_offset);
+  bpf_probe_read(&frame_ptr, sizeof(void*),
+                 sp + symaddrs->http2Server_operateHeaders_frame_loc.offset);
 
   // ---------------------------------------------
   // Extract members
@@ -520,8 +522,8 @@ int probe_http_http2serverConn_processHeaders(struct pt_regs* ctx) {
   }
 
   // Required argument offsets.
-  REQUIRE_SYMADDR(symaddrs->processHeaders_sc_offset, 0);
-  REQUIRE_SYMADDR(symaddrs->processHeaders_f_offset, 0);
+  REQUIRE_LOCATION(symaddrs->processHeaders_sc_loc, 0);
+  REQUIRE_LOCATION(symaddrs->processHeaders_f_loc, 0);
 
   // Required member offsets.
   REQUIRE_SYMADDR(symaddrs->http2MetaHeadersFrame_http2HeadersFrame_offset, 0);
@@ -538,10 +540,11 @@ int probe_http_http2serverConn_processHeaders(struct pt_regs* ctx) {
   const void* sp = (const void*)PT_REGS_SP(ctx);
 
   void* http2serverConn_ptr;
-  bpf_probe_read(&http2serverConn_ptr, sizeof(void*), sp + symaddrs->processHeaders_sc_offset);
+  bpf_probe_read(&http2serverConn_ptr, sizeof(void*), sp + symaddrs->processHeaders_sc_loc.offset);
 
   void* http2MetaHeadersFrame_ptr;
-  bpf_probe_read(&http2MetaHeadersFrame_ptr, sizeof(void*), sp + symaddrs->processHeaders_f_offset);
+  bpf_probe_read(&http2MetaHeadersFrame_ptr, sizeof(void*),
+                 sp + symaddrs->processHeaders_f_loc.offset);
 
   // ------------------------------------------------------
   // Extract members of http2MetaHeadersFrame_ptr (headers)
@@ -618,8 +621,8 @@ int probe_hpack_header_encoder(struct pt_regs* ctx) {
   }
 
   // Required argument offsets.
-  REQUIRE_SYMADDR(symaddrs->WriteField_e_offset, 0);
-  REQUIRE_SYMADDR(symaddrs->WriteField_f_offset, 0);
+  REQUIRE_LOCATION(symaddrs->WriteField_e_loc, 0);
+  REQUIRE_LOCATION(symaddrs->WriteField_f_loc, 0);
 
   // ---------------------------------------------
   // Extract arguments (on stack)
@@ -628,9 +631,9 @@ int probe_hpack_header_encoder(struct pt_regs* ctx) {
   const void* sp = (const void*)ctx->sp;
 
   void* encoder_ptr;
-  bpf_probe_read(&encoder_ptr, sizeof(void*), sp + symaddrs->WriteField_e_offset);
+  bpf_probe_read(&encoder_ptr, sizeof(void*), sp + symaddrs->WriteField_e_loc.offset);
 
-  const void* header_field_ptr = sp + symaddrs->WriteField_f_offset;
+  const void* header_field_ptr = sp + symaddrs->WriteField_f_loc.offset;
 
   // ------------------------------------------------------
   // Process
@@ -659,8 +662,8 @@ int probe_http_http2writeResHeaders_write_frame(struct pt_regs* ctx) {
   }
 
   // Required argument offsets.
-  REQUIRE_SYMADDR(symaddrs->writeFrame_w_offset, 0);
-  REQUIRE_SYMADDR(symaddrs->writeFrame_ctx_offset, 0);
+  REQUIRE_LOCATION(symaddrs->writeFrame_w_loc, 0);
+  REQUIRE_LOCATION(symaddrs->writeFrame_ctx_loc, 0);
 
   // Required member offsets.
   REQUIRE_SYMADDR(symaddrs->http2serverConn_hpackEncoder_offset, 0);
@@ -675,11 +678,11 @@ int probe_http_http2writeResHeaders_write_frame(struct pt_regs* ctx) {
   const void* sp = (const void*)PT_REGS_SP(ctx);
 
   void* http2writeResHeaders_ptr;
-  bpf_probe_read(&http2writeResHeaders_ptr, sizeof(void*), sp + symaddrs->writeFrame_w_offset);
+  bpf_probe_read(&http2writeResHeaders_ptr, sizeof(void*), sp + symaddrs->writeFrame_w_loc.offset);
 
   struct go_interface http2writeContext;
   bpf_probe_read(&http2writeContext, sizeof(struct go_interface),
-                 sp + symaddrs->writeFrame_ctx_offset);
+                 sp + symaddrs->writeFrame_ctx_loc.offset);
 
   void* http2serverConn_ptr = http2writeContext.ptr;
 
@@ -827,8 +830,8 @@ int probe_http2_framer_check_frame_order(struct pt_regs* ctx) {
   }
 
   // Required argument offsets.
-  REQUIRE_SYMADDR(symaddrs->http2_checkFrameOrder_fr_offset, 0);
-  REQUIRE_SYMADDR(symaddrs->http2_checkFrameOrder_f_offset, 0);
+  REQUIRE_LOCATION(symaddrs->http2_checkFrameOrder_fr_loc, 0);
+  REQUIRE_LOCATION(symaddrs->http2_checkFrameOrder_f_loc, 0);
 
   // Required member offsets.
   REQUIRE_SYMADDR(symaddrs->FrameHeader_Type_offset, 0);
@@ -843,11 +846,11 @@ int probe_http2_framer_check_frame_order(struct pt_regs* ctx) {
   const void* sp = (const void*)ctx->sp;
 
   void* framer_ptr;
-  bpf_probe_read(&framer_ptr, sizeof(void*), sp + symaddrs->http2_checkFrameOrder_fr_offset);
+  bpf_probe_read(&framer_ptr, sizeof(void*), sp + symaddrs->http2_checkFrameOrder_fr_loc.offset);
 
   struct go_interface frame_interface;
   bpf_probe_read(&frame_interface, sizeof(struct go_interface),
-                 sp + symaddrs->http2_checkFrameOrder_f_offset);
+                 sp + symaddrs->http2_checkFrameOrder_f_loc.offset);
 
   // ------------------------------------------------------
   // Extract members of Framer (fd)
@@ -928,8 +931,8 @@ int probe_http_http2framer_check_frame_order(struct pt_regs* ctx) {
   }
 
   // Required argument offsets.
-  REQUIRE_SYMADDR(symaddrs->http2Framer_checkFrameOrder_fr_offset, 0);
-  REQUIRE_SYMADDR(symaddrs->http2Framer_checkFrameOrder_f_offset, 0);
+  REQUIRE_LOCATION(symaddrs->http2Framer_checkFrameOrder_fr_loc, 0);
+  REQUIRE_LOCATION(symaddrs->http2Framer_checkFrameOrder_f_loc, 0);
 
   // Required member offsets.
   REQUIRE_SYMADDR(symaddrs->http2FrameHeader_Type_offset, 0);
@@ -944,11 +947,12 @@ int probe_http_http2framer_check_frame_order(struct pt_regs* ctx) {
   const void* sp = (const void*)ctx->sp;
 
   void* framer_ptr;
-  bpf_probe_read(&framer_ptr, sizeof(void*), sp + symaddrs->http2Framer_checkFrameOrder_fr_offset);
+  bpf_probe_read(&framer_ptr, sizeof(void*),
+                 sp + symaddrs->http2Framer_checkFrameOrder_fr_loc.offset);
 
   struct go_interface frame_interface;
   bpf_probe_read(&frame_interface, sizeof(struct go_interface),
-                 sp + symaddrs->http2Framer_checkFrameOrder_f_offset);
+                 sp + symaddrs->http2Framer_checkFrameOrder_f_loc.offset);
 
   // ------------------------------------------------------
   // Extract members of Framer (fd)
@@ -1027,10 +1031,10 @@ int probe_http2_framer_write_data(struct pt_regs* ctx) {
   }
 
   // Required argument offsets.
-  REQUIRE_SYMADDR(symaddrs->http2_WriteDataPadded_f_offset, 0);
-  REQUIRE_SYMADDR(symaddrs->http2_WriteDataPadded_streamID_offset, 0);
-  REQUIRE_SYMADDR(symaddrs->http2_WriteDataPadded_endStream_offset, 0);
-  REQUIRE_SYMADDR(symaddrs->http2_WriteDataPadded_data_offset, 0);
+  REQUIRE_LOCATION(symaddrs->http2_WriteDataPadded_f_loc, 0);
+  REQUIRE_LOCATION(symaddrs->http2_WriteDataPadded_streamID_loc, 0);
+  REQUIRE_LOCATION(symaddrs->http2_WriteDataPadded_endStream_loc, 0);
+  REQUIRE_LOCATION(symaddrs->http2_WriteDataPadded_data_loc, 0);
 
   // ---------------------------------------------
   // Extract arguments (on stack)
@@ -1039,22 +1043,23 @@ int probe_http2_framer_write_data(struct pt_regs* ctx) {
   const char* sp = (const char*)ctx->sp;
 
   void* framer_ptr;
-  bpf_probe_read(&framer_ptr, sizeof(void*), sp + symaddrs->http2_WriteDataPadded_f_offset);
+  bpf_probe_read(&framer_ptr, sizeof(void*), sp + symaddrs->http2_WriteDataPadded_f_loc.offset);
 
   uint32_t stream_id;
   bpf_probe_read(&stream_id, sizeof(uint32_t),
-                 sp + symaddrs->http2_WriteDataPadded_streamID_offset);
+                 sp + symaddrs->http2_WriteDataPadded_streamID_loc.offset);
 
   bool end_stream;
-  bpf_probe_read(&end_stream, sizeof(bool), sp + symaddrs->http2_WriteDataPadded_endStream_offset);
+  bpf_probe_read(&end_stream, sizeof(bool),
+                 sp + symaddrs->http2_WriteDataPadded_endStream_loc.offset);
 
   char* data_ptr;
   bpf_probe_read(&data_ptr, sizeof(char*),
-                 sp + symaddrs->http2_WriteDataPadded_data_offset + kGoArrayPtrOffset);
+                 sp + symaddrs->http2_WriteDataPadded_data_loc.offset + kGoArrayPtrOffset);
 
   int64_t data_len;
   bpf_probe_read(&data_len, sizeof(int64_t),
-                 sp + symaddrs->http2_WriteDataPadded_data_offset + kGoArrayLenOffset);
+                 sp + symaddrs->http2_WriteDataPadded_data_loc.offset + kGoArrayLenOffset);
 
   // ------------------------------------------------------
   // Extract members of Framer (fd)
@@ -1092,10 +1097,10 @@ int probe_http_http2framer_write_data(struct pt_regs* ctx) {
   }
 
   // Required argument offsets.
-  REQUIRE_SYMADDR(symaddrs->http2Framer_WriteDataPadded_f_offset, 0);
-  REQUIRE_SYMADDR(symaddrs->http2Framer_WriteDataPadded_streamID_offset, 0);
-  REQUIRE_SYMADDR(symaddrs->http2Framer_WriteDataPadded_endStream_offset, 0);
-  REQUIRE_SYMADDR(symaddrs->http2Framer_WriteDataPadded_data_offset, 0);
+  REQUIRE_LOCATION(symaddrs->http2Framer_WriteDataPadded_f_loc, 0);
+  REQUIRE_LOCATION(symaddrs->http2Framer_WriteDataPadded_streamID_loc, 0);
+  REQUIRE_LOCATION(symaddrs->http2Framer_WriteDataPadded_endStream_loc, 0);
+  REQUIRE_LOCATION(symaddrs->http2Framer_WriteDataPadded_data_loc, 0);
 
   // ---------------------------------------------
   // Extract arguments (on stack)
@@ -1104,23 +1109,24 @@ int probe_http_http2framer_write_data(struct pt_regs* ctx) {
   const void* sp = (const void*)ctx->sp;
 
   void* framer_ptr;
-  bpf_probe_read(&framer_ptr, sizeof(void*), sp + symaddrs->http2Framer_WriteDataPadded_f_offset);
+  bpf_probe_read(&framer_ptr, sizeof(void*),
+                 sp + symaddrs->http2Framer_WriteDataPadded_f_loc.offset);
 
   uint32_t stream_id;
   bpf_probe_read(&stream_id, sizeof(uint32_t),
-                 sp + symaddrs->http2Framer_WriteDataPadded_streamID_offset);
+                 sp + symaddrs->http2Framer_WriteDataPadded_streamID_loc.offset);
 
   bool end_stream;
   bpf_probe_read(&end_stream, sizeof(bool),
-                 sp + symaddrs->http2Framer_WriteDataPadded_endStream_offset);
+                 sp + symaddrs->http2Framer_WriteDataPadded_endStream_loc.offset);
 
   char* data_ptr;
   bpf_probe_read(&data_ptr, sizeof(char*),
-                 sp + symaddrs->http2Framer_WriteDataPadded_data_offset + kGoArrayPtrOffset);
+                 sp + symaddrs->http2Framer_WriteDataPadded_data_loc.offset + kGoArrayPtrOffset);
 
   int64_t data_len;
   bpf_probe_read(&data_len, sizeof(int64_t),
-                 sp + symaddrs->http2Framer_WriteDataPadded_data_offset + kGoArrayLenOffset);
+                 sp + symaddrs->http2Framer_WriteDataPadded_data_loc.offset + kGoArrayLenOffset);
 
   // ------------------------------------------------------
   // Extract members of Framer (fd)

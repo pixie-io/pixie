@@ -46,8 +46,8 @@ int probe_tls_conn_write(struct pt_regs* ctx) {
   }
 
   // Required argument offsets.
-  REQUIRE_SYMADDR(symaddrs->Write_c_offset, 0);
-  REQUIRE_SYMADDR(symaddrs->Write_b_offset, 0);
+  REQUIRE_LOCATION(symaddrs->Write_c_loc, 0);
+  REQUIRE_LOCATION(symaddrs->Write_b_loc, 0);
 
   // ---------------------------------------------
   // Extract arguments (on stack)
@@ -56,10 +56,10 @@ int probe_tls_conn_write(struct pt_regs* ctx) {
   const void* sp = (const void*)ctx->sp;
 
   void* conn_ptr;
-  bpf_probe_read(&conn_ptr, sizeof(void*), sp + symaddrs->Write_c_offset);
+  bpf_probe_read(&conn_ptr, sizeof(void*), sp + symaddrs->Write_c_loc.offset);
 
   char* plaintext_ptr;
-  bpf_probe_read(&plaintext_ptr, sizeof(char*), sp + symaddrs->Write_b_offset);
+  bpf_probe_read(&plaintext_ptr, sizeof(char*), sp + symaddrs->Write_b_loc.offset);
 
   // TODO(oazizi): Use symaddrs instead of constant offsets.
   int64_t retval0;
@@ -117,8 +117,8 @@ int probe_tls_conn_read(struct pt_regs* ctx) {
   }
 
   // Required argument offsets.
-  REQUIRE_SYMADDR(symaddrs->Read_c_offset, 0);
-  REQUIRE_SYMADDR(symaddrs->Read_b_offset, 0);
+  REQUIRE_LOCATION(symaddrs->Read_c_loc, 0);
+  REQUIRE_LOCATION(symaddrs->Read_b_loc, 0);
 
   // ---------------------------------------------
   // Extract arguments (on stack)
@@ -127,10 +127,10 @@ int probe_tls_conn_read(struct pt_regs* ctx) {
   const void* sp = (const void*)ctx->sp;
 
   void* conn_ptr;
-  bpf_probe_read(&conn_ptr, sizeof(void*), sp + symaddrs->Read_c_offset);
+  bpf_probe_read(&conn_ptr, sizeof(void*), sp + symaddrs->Read_c_loc.offset);
 
   char* plaintext_ptr;
-  bpf_probe_read(&plaintext_ptr, sizeof(char*), sp + symaddrs->Read_b_offset);
+  bpf_probe_read(&plaintext_ptr, sizeof(char*), sp + symaddrs->Read_b_loc.offset);
 
   int64_t retval0;
   bpf_probe_read(&retval0, sizeof(retval0), sp + 40);
