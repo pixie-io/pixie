@@ -38,7 +38,10 @@ import "src/api/proto/vizierconfigpb/vizier_types.proto";
 
 // service UserService enables users to update/retrieve user information.
 service UserService {
-  rpc GetOrg(px.uuidpb.UUID) returns (OrgInfo);
+  // TODO(vihang): This can be removed after 2021-12-17.
+  rpc GetOrg(px.uuidpb.UUID) returns (OrgInfo) {
+    option deprecated = true;
+  };
   rpc GetUser(px.uuidpb.UUID) returns (UserInfo);
   rpc GetUserSettings(GetUserSettingsRequest) returns (GetUserSettingsResponse);
   rpc UpdateUserSettings(UpdateUserSettingsRequest) returns (UpdateUserSettingsResponse);
