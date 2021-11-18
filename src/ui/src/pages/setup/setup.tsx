@@ -24,6 +24,8 @@ import { createStyles, makeStyles } from '@mui/styles';
 
 import { Redirect, useLocation } from 'react-router';
 import * as QueryString from 'query-string';
+import { gql, useMutation } from '@apollo/client';
+import Axios from 'axios';
 
 import * as pixienautSetup from 'assets/images/pixienaut-setup.svg';
 import { Footer, scrollbarStyles } from 'app/components';
@@ -150,25 +152,40 @@ const SetupOrganization = React.memo<{ redirectUri: string }>(function SetupOrga
     setInputValue(event.target.value);
   }, []);
 
-  // TODO(vihang,PC-1197): Call validation code here
   const [valid, validationMessage] = React.useMemo(() => {
-    const isOkay = inputValue.trim().length > 2;
-    return [
-      isOkay,
-      isOkay || !inputValue.length ? ' ' : 'Name is too short',
-    ];
+    if (!inputValue.trim().length) {
+      return [false, ''];
+    }
+    if (inputValue.trim().length <= 5) {
+      return [false, 'Name is too short'];
+    }
+    if (inputValue.trim().length > 50) {
+      return [false, 'Name is too long'];
+    }
+    if (inputValue.includes('.') || inputValue.includes('$')) {
+      return [false, 'Name must not contain special characters (ex. $.)'];
+    }
+    return [true, ''];
   }, [inputValue]);
+
+  const [createOrgMutation] = useMutation<{ CreateOrg: string }, { orgName: string }>(
+    gql`
+    mutation CreateOrgFromSetupOrgPage($orgName: String!){
+      CreateOrg(orgName: $orgName)
+    }
+  `);
 
   const createOrg = React.useCallback(() => {
     if (!valid) return;
 
-    // TODO(vihang,PC-1197): Call org creation code here
-    // eslint-disable-next-line no-alert
-    alert('This is where we should create the org. Redirecting momentarily instead.');
-    setTimeout(() => {
+    createOrgMutation({
+      variables: { orgName: inputValue.trim() },
+    }).then(() => (
+      Axios.post('/api/auth/refetch')
+    )).then(() => {
       window.location.href = redirectUri;
-    }, 1000);
-  }, [valid, redirectUri]);
+    });
+  }, [createOrgMutation, inputValue, redirectUri, valid]);
 
   const onSubmit = React.useCallback((event: React.FormEvent) => {
     createOrg();
