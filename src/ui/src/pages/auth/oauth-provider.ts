@@ -27,9 +27,6 @@ export type Token = {
 
 /** OAuthProviderClient is the interface for OAuth providers such as Auth0 and ORY/Hydra. */
 export abstract class OAuthProviderClient {
-  /** refetchToken will get the OAuthProvider to refetch and store the token. */
-  abstract refetchToken(): void;
-
   /** handleToken will get the token wherever it's stored by the OAuthProvider and pass it to the callback. */
   abstract handleToken(): Promise<Token>;
 

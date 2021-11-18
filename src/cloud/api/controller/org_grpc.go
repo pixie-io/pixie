@@ -85,9 +85,6 @@ func (o *OrganizationServiceServer) GetOrg(ctx context.Context, req *uuidpb.UUID
 	if err != nil {
 		return nil, err
 	}
-	if req == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "No such org")
-	}
 	if uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID) != utils.UUIDFromProtoOrNil(req) {
 		return nil, status.Errorf(codes.PermissionDenied, "User may only get info about their own org")
 	}
@@ -102,43 +99,6 @@ func (o *OrganizationServiceServer) GetOrg(ctx context.Context, req *uuidpb.UUID
 		DomainName:      resp.DomainName,
 		EnableApprovals: resp.EnableApprovals,
 	}, nil
-}
-
-// CreateOrg will create a new org.
-func (o *OrganizationServiceServer) CreateOrg(ctx context.Context, req *cloudpb.CreateOrgRequest) (*uuidpb.UUID, error) {
-	err := utils.ValidateOrgName(req.OrgName)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	ctx, err = contextWithAuthToken(ctx)
-	if err != nil {
-		return nil, err
-	}
-	sCtx, err := authcontext.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	claimsOrgID := uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID)
-	if claimsOrgID != uuid.Nil {
-		return nil, status.Error(codes.PermissionDenied, "Users who already belong to an org may not create new orgs.")
-	}
-
-	orgID, err := o.OrgServiceClient.CreateOrg(ctx, &profilepb.CreateOrgRequest{
-		OrgName: req.OrgName,
-	})
-	if err != nil {
-		return nil, err
-	}
-	_, err = o.ProfileServiceClient.UpdateUser(ctx, &profilepb.UpdateUserRequest{
-		ID:    utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID),
-		OrgID: orgID,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return orgID, nil
 }
 
 // UpdateOrg will update org approval details.

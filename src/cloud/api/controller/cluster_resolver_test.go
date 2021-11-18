@@ -43,12 +43,6 @@ func CreateTestContext() context.Context {
 	return authcontext.NewContext(context.Background(), sCtx)
 }
 
-func CreateTestContextNoOrg() context.Context {
-	sCtx := authcontext.New()
-	sCtx.Claims = svcutils.GenerateJWTForUser("6ba7b810-9dad-11d1-80b4-00c04fd430c9", "00000000-0000-0000-0000-000000000000", "email-password@fancy.com", time.Now(), "pixie")
-	return authcontext.NewContext(context.Background(), sCtx)
-}
-
 func CreateAPIUserTestContext() context.Context {
 	sCtx := authcontext.New()
 	sCtx.Claims = svcutils.GenerateJWTForAPIUser("6ba7b810-9dad-11d1-80b4-00c04fd430c9", "6ba7b810-9dad-11d1-80b4-00c04fd430c8", time.Now(), "pixie")

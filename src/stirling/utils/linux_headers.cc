@@ -18,9 +18,6 @@
 
 #include "src/stirling/utils/linux_headers.h"
 
-#include <elf.h>
-#include <link.h>
-#include <sys/auxv.h>
 #include <sys/utsname.h>
 
 #include <fstream>
@@ -133,109 +130,26 @@ StatusOr<std::string> GetProcSysKernelVersion() {
   return error::NotFound("Could not find version number in /proc/sys/kernel/version file.");
 }
 
-// The Linux vDSO is a virtual dynamic shared object exposed by the Linux kernel.
-// The shared object is in ELF format and can contains metadata in a .note ELF section.
-// These notes--which are key, value pairs--can contain the Linux version code.
-// This function searches the vDSO to find a note about the Linux kernel version.
-StatusOr<KernelVersion> GetLinuxVersionFromNoteSection() {
-  // Get the vDSO object through getauxval().
-  // More information here: https://man7.org/linux/man-pages/man7/vdso.7.html
-  auto* vdso = reinterpret_cast<char*>(getauxval(AT_SYSINFO_EHDR));
-  if (vdso == nullptr) {
-    return error::NotFound("Could not find vDSO.");
-  }
-
-  if (!absl::StartsWith(vdso, ELFMAG)) {
-    return error::NotFound("vDSO does not appear to be ELF.");
-  }
-
-  // Get the ELF header.
-  auto elf_hdr = reinterpret_cast<const ElfW(Ehdr)*>(vdso);
-
-  // Go through all ELF section headers, looking for a .note section.
-  for (int i = 0; i < elf_hdr->e_shnum; ++i) {
-    auto sec_hdr =
-        reinterpret_cast<const ElfW(Shdr)*>(vdso + elf_hdr->e_shoff + (i * elf_hdr->e_shentsize));
-
-    // Look for a .note section.
-    if (sec_hdr->sh_type == SHT_NOTE) {
-      std::string_view note_data(reinterpret_cast<const char*>(vdso + sec_hdr->sh_offset),
-                                 sec_hdr->sh_size);
-
-      // Now prcess the .note data as {name, description} pairs.
-      // We search for a note that has name "Linux".
-      while (!note_data.empty()) {
-        auto notes_hdr = reinterpret_cast<const ElfW(Nhdr)*>(note_data.data());
-        note_data.remove_prefix(sizeof(const ElfW(Nhdr)));
-
-        std::string_view name(note_data.data(), notes_hdr->n_namesz);
-        note_data.remove_prefix(SnapUpToMultiple(name.size(), sizeof(ElfW(Word))));
-
-        std::string_view desc(note_data.data(), notes_hdr->n_descsz);
-        note_data.remove_prefix(SnapUpToMultiple(desc.size(), sizeof(ElfW(Word))));
-
-        // Strip off null terminator.
-        while (!name.empty() && name.back() == '\x00') {
-          name.remove_suffix(1);
-        }
-
-        if (name == "Linux" && desc.size() == 4 && notes_hdr->n_type == 0) {
-          uint32_t code = *reinterpret_cast<const uint32_t*>(desc.data());
-
-          KernelVersion kversion;
-          kversion.version = (code >> 16) & 0xff;
-          kversion.major_rev = (code >> 8) & 0xff;
-          kversion.minor_rev = (code >> 0) & 0xff;
-          return kversion;
-        }
-      }
-    }
-  }
-
-  return error::NotFound("Could not extract kernel version from vDSO .note section.");
-}
-
-StatusOr<KernelVersion> GetKernelVersion(absl::flat_hash_set<KernelVersionSource> sources) {
-  if (sources.contains(KernelVersionSource::kNoteSection)) {
-    const StatusOr<KernelVersion> version = GetLinuxVersionFromNoteSection();
-    if (version.ok()) {
-      LOG(INFO) << "Found Linux kernel version using .note section.";
-      return version.ValueOrDie();
-    }
-  }
-
-  // Check /proc/version_signature.
+StatusOr<KernelVersion> GetKernelVersion() {
+  // First option is to check /proc/version_signature.
   // Required for Ubuntu distributions.
-  if (sources.contains(KernelVersionSource::kProcVersionSignature)) {
-    const StatusOr<std::string> version_string = GetProcVersionSignature();
-    if (version_string.ok()) {
-      LOG(INFO) << "Found Linux kernel version using /proc/version_signature.";
-      return ParseKernelVersionString(version_string.ValueOrDie());
-    }
-  }
+  StatusOr<std::string> version_string_status = GetProcVersionSignature();
 
   // Second option is to use /proc/sys/kernel/version.
   // Required for Debian distributions.
-  if (sources.contains(KernelVersionSource::kProcSysKernelVersion)) {
-    const StatusOr<std::string> version_string = GetProcSysKernelVersion();
-    if (version_string.ok()) {
-      LOG(INFO) << "Found Linux kernel version using /proc/sys/kernel/version.";
-      return ParseKernelVersionString(version_string.ValueOrDie());
-    }
+  if (!version_string_status.ok()) {
+    version_string_status = GetProcSysKernelVersion();
   }
 
   // Last option is to use `uname -r`.
   // This must be the last option, because on Debian and Ubuntu, the uname does
   // not provide the correct minor version.
-  if (sources.contains(KernelVersionSource::kUname)) {
-    const StatusOr<std::string> version_string = GetUname();
-    if (version_string.ok()) {
-      LOG(INFO) << "Found Linux kernel version using uname.";
-      return ParseKernelVersionString(version_string.ValueOrDie());
-    }
+  if (!version_string_status.ok()) {
+    version_string_status = GetUname();
   }
 
-  return error::Internal("Could not determine kernel version.");
+  PL_RETURN_IF_ERROR(version_string_status);
+  return ParseKernelVersionString(version_string_status.ConsumeValueOrDie());
 }
 
 Status ModifyKernelVersion(const std::filesystem::path& linux_headers_base,

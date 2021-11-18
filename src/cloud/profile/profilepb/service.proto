@@ -155,7 +155,6 @@ message UpdateUserRequest {
   px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
   google.protobuf.StringValue display_picture = 3;
   google.protobuf.BoolValue is_approved = 4;
-  px.uuidpb.UUID org_id = 5 [(gogoproto.customname) = "OrgID"];;
   // This used to be `profile_picture` which has been replaced with `display_picture`
   // which correctly uses google's StringValues.
   reserved 2;

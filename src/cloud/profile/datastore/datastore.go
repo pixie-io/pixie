@@ -364,29 +364,9 @@ func (d *Datastore) GetUsersInOrg(orgID uuid.UUID) ([]*UserInfo, error) {
 	return users, nil
 }
 
-// NumUsersInOrg gets the count of users in the given org.
-func (d *Datastore) NumUsersInOrg(orgID uuid.UUID) (int, error) {
-	query := `SELECT count(1) FROM users WHERE org_id=$1`
-	rows, err := d.db.Queryx(query, orgID)
-	if err != nil {
-		return 0, err
-	}
-	defer rows.Close()
-
-	if rows.Next() {
-		var count int
-		err := rows.Scan(&count)
-		if err != nil {
-			return 0, err
-		}
-		return count, nil
-	}
-	return 0, errors.New("failed to count number of users in org")
-}
-
 // UpdateUser updates the user in the database.
 func (d *Datastore) UpdateUser(userInfo *UserInfo) error {
-	query := `UPDATE users SET profile_picture = :profile_picture, is_approved = :is_approved, org_id = :org_id WHERE id = :id`
+	query := `UPDATE users SET profile_picture = :profile_picture, is_approved = :is_approved WHERE id = :id`
 	_, err := d.db.NamedExec(query, userInfo)
 	return err
 }

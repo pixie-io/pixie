@@ -24,14 +24,13 @@ import (
 	"px.dev/pixie/src/cloud/shared/idprovider"
 )
 
-const kratosIdentityProvider = "kratos"
-
 func transformKratosUserInfoToUserInfo(kratosUser *idprovider.KratosUserInfo) (*UserInfo, error) {
+	// If user does not exist in Auth0, then create a new user if specified.
 	u := &UserInfo{
 		Email:            kratosUser.Email,
 		PLUserID:         kratosUser.PLUserID,
 		PLOrgID:          kratosUser.PLOrgID,
-		IdentityProvider: kratosIdentityProvider,
+		IdentityProvider: "kratos",
 		AuthProviderID:   kratosUser.KratosID,
 	}
 	return u, nil

@@ -39,7 +39,6 @@ extend type Mutation {
   SetUserAttributes(attributes: EditableUserAttributes!): UserAttributes!
   InviteUser(email: String!, firstName: String!, lastName: String!): UserInvite!
   UpdateUserPermissions(userID: ID!, userPermissions: EditableUserPermissions!): UserInfo!
-  CreateOrg(orgName: String!): ID!
   UpdateOrgSettings(orgID: ID!, orgSettings: EditableOrgSettings!): OrgInfo!
 }
 

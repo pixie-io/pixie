@@ -27,6 +27,17 @@ namespace {
 // TODO(oazizi): This is a placeholder. This information can come from DWARF.
 uint32_t RegisterSize() { return 8; }
 
+// This function takes a value, and if it is not a multiple of the `size` parameter,
+// it rounds it up to so that it is aligned to the given `size`.
+// Examples:
+//   SnapUpToMultiple(64, 8) = 64
+//   SnapUpToMultiple(66, 8) = 72
+uint64_t SnapUpToMultiple(uint64_t val, uint64_t size) {
+  // Alternate implementation: std::ceil(val / size) * size.
+  // But the one below avoids floating point math.
+  return ((val + (size - 1)) / size) * size;
+}
+
 }  // namespace
 
 // TODO(oazizi): Consider a better way to inject the ABI parameters.

@@ -30,8 +30,7 @@ Please attach the logs by running the following command:
 **App information (please complete the following information):**
 - Pixie version
 - K8s cluster version
-- Node Kernel version
-- Browser version
+
 
 **Additional context**
 Add any other context about the problem here.

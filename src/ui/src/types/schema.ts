@@ -54,7 +54,6 @@ export interface GQLMutation {
   SetUserAttributes: GQLUserAttributes;
   InviteUser: GQLUserInvite;
   UpdateUserPermissions: GQLUserInfo;
-  CreateOrg: string;
   UpdateOrgSettings: GQLOrgInfo;
 }
 
@@ -499,7 +498,6 @@ export interface GQLMutationTypeResolver<TParent = any> {
   SetUserAttributes?: MutationToSetUserAttributesResolver<TParent>;
   InviteUser?: MutationToInviteUserResolver<TParent>;
   UpdateUserPermissions?: MutationToUpdateUserPermissionsResolver<TParent>;
-  CreateOrg?: MutationToCreateOrgResolver<TParent>;
   UpdateOrgSettings?: MutationToUpdateOrgSettingsResolver<TParent>;
 }
 
@@ -570,13 +568,6 @@ export interface MutationToUpdateUserPermissionsArgs {
 }
 export interface MutationToUpdateUserPermissionsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: MutationToUpdateUserPermissionsArgs, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface MutationToCreateOrgArgs {
-  orgName: string;
-}
-export interface MutationToCreateOrgResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: MutationToCreateOrgArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface MutationToUpdateOrgSettingsArgs {

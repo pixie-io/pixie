@@ -250,9 +250,12 @@ export default function PixieWithContext(): React.ReactElement {
   const orgName = org?.name;
   const idePaths = org?.idePaths;
 
-  const setupComplete = React.useMemo(() => (
-    !!orgName && !loadingOrg
-  ), [orgName, loadingOrg]);
+  // TODO(vihang,PC-1197): Update this heuristic when the backend logic is ready.
+  const setupComplete = (
+    // Example: If the user exists and their org doesn't, they need to create the org.
+    // userEmail && userOrg && orgID?.trim().length > 0
+    true
+  );
 
   const orgContext = React.useMemo(() => ({
     org: {

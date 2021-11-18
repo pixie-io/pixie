@@ -69,7 +69,7 @@ func TestUserInfoResolver_GetUserInfo(t *testing.T) {
 				IsApproved:     true,
 			}, nil)
 
-			mockClients.MockOrg.EXPECT().GetOrg(gomock.Any(), orgID).Return(&cloudpb.OrgInfo{
+			mockClients.MockUser.EXPECT().GetOrg(gomock.Any(), orgID).Return(&cloudpb.OrgInfo{
 				EnableApprovals: true,
 				OrgName:         "test.com",
 				ID:              orgID,

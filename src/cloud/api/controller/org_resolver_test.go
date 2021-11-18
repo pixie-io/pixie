@@ -32,7 +32,7 @@ import (
 	"px.dev/pixie/src/utils/testingutils"
 )
 
-func TestOrgSettingsResolver_UpdateOrg(t *testing.T) {
+func TestUserSettingsResolver_UpdateOrg(t *testing.T) {
 	tests := []struct {
 		name string
 		ctx  context.Context
@@ -95,7 +95,7 @@ func TestOrgSettingsResolver_UpdateOrg(t *testing.T) {
 	}
 }
 
-func TestOrgSettingsResolver_InviteUser(t *testing.T) {
+func TestUserSettingsResolver_InviteUser(t *testing.T) {
 	tests := []struct {
 		name string
 		ctx  context.Context
@@ -152,51 +152,7 @@ func TestOrgSettingsResolver_InviteUser(t *testing.T) {
 	}
 }
 
-func TestOrgSettingsResolver_CreateOrg(t *testing.T) {
-	tests := []struct {
-		name string
-		ctx  context.Context
-	}{
-		{
-			name: "user no org",
-			ctx:  CreateTestContextNoOrg(),
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
-			defer cleanup()
-			ctx := test.ctx
-
-			orgID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
-
-			mockClients.MockOrg.EXPECT().CreateOrg(gomock.Any(), &cloudpb.CreateOrgRequest{
-				OrgName: "my_new_org",
-			}).Return(orgID, nil)
-
-			gqlSchema := LoadSchema(gqlEnv)
-			gqltesting.RunTests(t, []*gqltesting.Test{
-				{
-					Schema:  gqlSchema,
-					Context: ctx,
-					Query: `
-						mutation {
-							CreateOrg(orgName: "my_new_org")
-						}
-					`,
-					ExpectedResult: `
-						{
-							"CreateOrg": "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
-						}
-					`,
-				},
-			})
-		})
-	}
-}
-
-func TestOrgSettingsResolver_OrgUsers(t *testing.T) {
+func TestUserSettingsResolver_OrgUsers(t *testing.T) {
 	tests := []struct {
 		name string
 		ctx  context.Context
@@ -267,7 +223,7 @@ func TestOrgSettingsResolver_OrgUsers(t *testing.T) {
 	}
 }
 
-func TestOrgSettingsResolver_OrgInfo(t *testing.T) {
+func TestUserSettingsResolver_OrgInfo(t *testing.T) {
 	tests := []struct {
 		name string
 		ctx  context.Context
@@ -322,7 +278,7 @@ func TestOrgSettingsResolver_OrgInfo(t *testing.T) {
 	}
 }
 
-func TestOrgSettingsResolver_IDEConfigs(t *testing.T) {
+func TestUserSettingsResolver_IDEConfigs(t *testing.T) {
 	tests := []struct {
 		name string
 		ctx  context.Context

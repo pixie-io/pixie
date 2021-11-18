@@ -90,44 +90,6 @@ func WithAugmentedAuthMiddleware(env apienv.APIEnv, next http.Handler) http.Hand
 	return http.HandlerFunc(f)
 }
 
-// getTokenFromRequest grabs the token according to the parameters in the request.
-func getTokenFromRequest(env apienv.APIEnv, r *http.Request) (string, error) {
-	referer, err := url.Parse(r.Referer())
-	if err != nil {
-		return "", err
-	}
-	// If referrer is set, force the origin check. This mitigates CSRF issues if the browser uses
-	// bearer auth.
-	if len(referer.Host) != 0 {
-		if !checkOrigin(referer) {
-			return "", ErrCSRFOriginCheckFailed
-		}
-	}
-	// If the header "X-Use-Bearer is true we force the use of Bearer auth and ignore sessions.
-	// This is needed to prevent logged in pixie sessions to show up in embedded versions.
-	forceBearer := strings.ToLower(r.Header.Get("X-Use-Bearer")) == "true"
-	var token string
-	var ok bool
-
-	// Try to get it from bearer.
-	token, ok = httpmiddleware.GetTokenFromBearer(r)
-	if !ok && !forceBearer && len(token) == 0 {
-		// Try fallback session auth.
-		token, ok = GetTokenFromSession(env, r)
-		if ok {
-			// We need to validate origin.
-			if !checkOrigin(referer) {
-				return "", ErrCSRFOriginCheckFailed
-			}
-		}
-	}
-	if len(token) == 0 {
-		// No auth available.
-		return "", ErrFetchAugmentedTokenFailedUnauthenticated
-	}
-	return token, nil
-}
-
 func getAugmentedToken(env apienv.APIEnv, r *http.Request) (string, error) {
 	referer, err := url.Parse(r.Referer())
 	if err != nil {

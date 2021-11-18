@@ -177,7 +177,7 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		log.WithError(err).Info("Failed to update Vizier instance")
 	}
 
-	// Check if there if we are already monitoring this Vizier.
+	// Check if we are already monitoring this Vizier.
 	if r.monitor == nil || r.monitor.namespace != req.Namespace {
 		if r.monitor != nil {
 			r.monitor.Quit()
@@ -303,6 +303,11 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 
 	if vz.Spec.Pod.Labels == nil {
 		vz.Spec.Pod.Labels = make(map[string]string)
+	}
+
+	vz.Spec.Pod.NodeSelector = make(map[string]string)
+	if vz.Spec.Pod.NodeSelector == nil {
+		vz.Spec.Pod.NodeSelector = make(map[string]string)
 	}
 
 	if !vz.Spec.UseEtcdOperator {
@@ -652,6 +657,7 @@ func updateResourceConfiguration(resource *k8s.Resource, vz *v1alpha1.Vizier) er
 	addKeyValueMapToResource("labels", vz.Spec.Pod.Labels, resource.Object.Object)
 	addKeyValueMapToResource("annotations", vz.Spec.Pod.Annotations, resource.Object.Object)
 	updateResourceRequirements(vz.Spec.Pod.Resources, resource.Object.Object)
+	updatePodSpec(vz.Spec.Pod.NodeSelector, resource.Object.Object)
 	return nil
 }
 
@@ -693,6 +699,7 @@ func generateVizierYAMLsConfig(ctx context.Context, ns string, vz *v1alpha1.Vizi
 					Limits:   convertResourceType(vz.Spec.Pod.Resources.Limits),
 					Requests: convertResourceType(vz.Spec.Pod.Resources.Requests),
 				},
+				NodeSelector: vz.Spec.Pod.NodeSelector,
 			},
 			Patches: vz.Spec.Patches,
 		},
@@ -817,6 +824,24 @@ func updateResourceRequirements(requirements v1.ResourceRequirements, res map[st
 
 		castedContainer["resources"] = resources
 	}
+}
+func updatePodSpec(nodeSelector map[string]string, res map[string]interface{}) {
+	podSpec := make(map[string]interface{})
+	md, ok, err := unstructured.NestedFieldNoCopy(res,  "spec", "template", "spec")
+	if ok && err == nil {
+		if podSpecCast, castOk := md.(map[string]interface{}); castOk {
+			podSpec = podSpecCast
+		}
+	}
+
+	castedNodeSelector := make(map[string]interface{})
+	for k, v := range nodeSelector {
+		if _, ok := castedNodeSelector[k]; ok {
+			continue
+		}
+		castedNodeSelector[k] = v
+	}
+	podSpec["nodeSelector"] = nodeSelector
 }
 
 func waitForCluster(clientset *kubernetes.Clientset, namespace string) error {

@@ -69,9 +69,12 @@ message PodPolicyReq {
     map<string, string> labels = 1;
     // Annotations specifies the annotations to attach to pods the operator creates.
     map<string, string> annotations = 2;
+    // NodeSelector is a selector which must be true for the pod to fit on a node.
+    // This field cannot be updated once the cluster is created.
+    map<string, string> nodeSelector = 3;
     // Resources is the resource requirements for a container.
     // This field cannot be updated once the cluster is created.
-    ResourceReqs resources = 3;
+    ResourceReqs resources = 4;
 }
 
 // ResourceReqs is copied from the k8s api: https://pkg.go.dev/k8s.io/api/core/v1#ResourceRequirements
