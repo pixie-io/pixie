@@ -5,13 +5,14 @@ package vizierconfigpb
 
 import (
 	fmt "fmt"
-	proto "github.com/gogo/protobuf/proto"
-	github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
 	io "io"
 	math "math"
 	math_bits "math/bits"
 	reflect "reflect"
 	strings "strings"
+
+	proto "github.com/gogo/protobuf/proto"
+	github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -173,9 +174,10 @@ func (m *VizierSpec) GetLeadershipElectionParams() *LeadershipElectionParams {
 }
 
 type PodPolicyReq struct {
-	Labels      map[string]string `protobuf:"bytes,1,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	Annotations map[string]string `protobuf:"bytes,2,rep,name=annotations,proto3" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	Resources   *ResourceReqs     `protobuf:"bytes,3,opt,name=resources,proto3" json:"resources,omitempty"`
+	Labels       map[string]string `protobuf:"bytes,1,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Annotations  map[string]string `protobuf:"bytes,2,rep,name=annotations,proto3" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	NodeSelector map[string]string `protobuf:"bytes,3,opt,name=nodeSelector,proto3" json:"nodeSelector,omitempty"`
+	Resources    *ResourceReqs     `protobuf:"bytes,4,opt,name=resources,proto3" json:"resources,omitempty"`
 }
 
 func (m *PodPolicyReq) Reset()      { *m = PodPolicyReq{} }
@@ -213,6 +215,13 @@ var xxx_messageInfo_PodPolicyReq proto.InternalMessageInfo
 func (m *PodPolicyReq) GetLabels() map[string]string {
 	if m != nil {
 		return m.Labels
+	}
+	return nil
+}
+
+func (m *PodPolicyReq) GetNodeSelector() map[string]string {
+	if m != nil {
+		return m.NodeSelector
 	}
 	return nil
 }
@@ -476,6 +485,7 @@ func init() {
 	proto.RegisterType((*PodPolicyReq)(nil), "px.vizierconfigpb.PodPolicyReq")
 	proto.RegisterMapType((map[string]string)(nil), "px.vizierconfigpb.PodPolicyReq.AnnotationsEntry")
 	proto.RegisterMapType((map[string]string)(nil), "px.vizierconfigpb.PodPolicyReq.LabelsEntry")
+	proto.RegisterMapType((map[string]string)(nil), "px.vizierconfigpb.PodPolicyReq.NodeSelectorEntry")
 	proto.RegisterType((*ResourceReqs)(nil), "px.vizierconfigpb.ResourceReqs")
 	proto.RegisterType((*ResourceList)(nil), "px.vizierconfigpb.ResourceList")
 	proto.RegisterMapType((map[string]*ResourceQuantity)(nil), "px.vizierconfigpb.ResourceList.ResourceListEntry")
@@ -648,6 +658,14 @@ func (this *PodPolicyReq) Equal(that interface{}) bool {
 	}
 	for i := range this.Annotations {
 		if this.Annotations[i] != that1.Annotations[i] {
+			return false
+		}
+	}
+	if len(this.NodeSelector) != len(that1.NodeSelector) {
+		return false
+	}
+	for i := range this.NodeSelector {
+		if this.NodeSelector[i] != that1.NodeSelector[i] {
 			return false
 		}
 	}
@@ -862,6 +880,19 @@ func (this *PodPolicyReq) GoString() string {
 	mapStringForAnnotations += "}"
 	if this.Annotations != nil {
 		s = append(s, "Annotations: "+mapStringForAnnotations+",\n")
+	}
+	keysForNodeSelector := make([]string, 0, len(this.NodeSelector))
+	for k, _ := range this.NodeSelector {
+		keysForNodeSelector = append(keysForNodeSelector, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForNodeSelector)
+	mapStringForNodeSelector := "map[string]string{"
+	for _, k := range keysForNodeSelector {
+		mapStringForNodeSelector += fmt.Sprintf("%#v: %#v,", k, this.NodeSelector[k])
+	}
+	mapStringForNodeSelector += "}"
+	if this.NodeSelector != nil {
+		s = append(s, "NodeSelector: "+mapStringForNodeSelector+",\n")
 	}
 	if this.Resources != nil {
 		s = append(s, "Resources: "+fmt.Sprintf("%#v", this.Resources)+",\n")
@@ -1131,6 +1162,25 @@ func (m *PodPolicyReq) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		}
 		i--
 		dAtA[i] = 0x1a
+	}
+	if len(m.NodeSelector) > 0 {
+		for k := range m.NodeSelector {
+			v := m.NodeSelector[k]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
+			i = encodeVarintVizierTypes(dAtA, i, uint64(len(v)))
+			i--
+			dAtA[i] = 0x12
+			i -= len(k)
+			copy(dAtA[i:], k)
+			i = encodeVarintVizierTypes(dAtA, i, uint64(len(k)))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintVizierTypes(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
+		}
 	}
 	if len(m.Annotations) > 0 {
 		for k := range m.Annotations {
@@ -1465,6 +1515,14 @@ func (m *PodPolicyReq) Size() (n int) {
 			n += mapEntrySize + 1 + sovVizierTypes(uint64(mapEntrySize))
 		}
 	}
+	if len(m.NodeSelector) > 0 {
+		for k, v := range m.NodeSelector {
+			_ = k
+			_ = v
+			mapEntrySize := 1 + len(k) + sovVizierTypes(uint64(len(k))) + 1 + len(v) + sovVizierTypes(uint64(len(v)))
+			n += mapEntrySize + 1 + sovVizierTypes(uint64(mapEntrySize))
+		}
+	}
 	if m.Resources != nil {
 		l = m.Resources.Size()
 		n += 1 + l + sovVizierTypes(uint64(l))
@@ -1617,9 +1675,20 @@ func (this *PodPolicyReq) String() string {
 		mapStringForAnnotations += fmt.Sprintf("%v: %v,", k, this.Annotations[k])
 	}
 	mapStringForAnnotations += "}"
+	keysForNodeSelector := make([]string, 0, len(this.NodeSelector))
+	for k, _ := range this.NodeSelector {
+		keysForNodeSelector = append(keysForNodeSelector, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForNodeSelector)
+	mapStringForNodeSelector := "map[string]string{"
+	for _, k := range keysForNodeSelector {
+		mapStringForNodeSelector += fmt.Sprintf("%v: %v,", k, this.NodeSelector[k])
+	}
+	mapStringForNodeSelector += "}"
 	s := strings.Join([]string{`&PodPolicyReq{`,
 		`Labels:` + mapStringForLabels + `,`,
 		`Annotations:` + mapStringForAnnotations + `,`,
+		`NodeSelector:` + mapStringForNodeSelector + `,`,
 		`Resources:` + strings.Replace(this.Resources.String(), "ResourceReqs", "ResourceReqs", 1) + `,`,
 		`}`,
 	}, "")
@@ -2561,6 +2630,133 @@ func (m *PodPolicyReq) Unmarshal(dAtA []byte) error {
 			m.Annotations[mapkey] = mapvalue
 			iNdEx = postIndex
 		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NodeSelector", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowVizierTypes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthVizierTypes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthVizierTypes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.NodeSelector == nil {
+				m.NodeSelector = make(map[string]string)
+			}
+			var mapkey string
+			var mapvalue string
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowVizierTypes
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					wire |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					var stringLenmapkey uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowVizierTypes
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapkey |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapkey := int(stringLenmapkey)
+					if intStringLenmapkey < 0 {
+						return ErrInvalidLengthVizierTypes
+					}
+					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey < 0 {
+						return ErrInvalidLengthVizierTypes
+					}
+					if postStringIndexmapkey > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
+					iNdEx = postStringIndexmapkey
+				} else if fieldNum == 2 {
+					var stringLenmapvalue uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowVizierTypes
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapvalue |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapvalue := int(stringLenmapvalue)
+					if intStringLenmapvalue < 0 {
+						return ErrInvalidLengthVizierTypes
+					}
+					postStringIndexmapvalue := iNdEx + intStringLenmapvalue
+					if postStringIndexmapvalue < 0 {
+						return ErrInvalidLengthVizierTypes
+					}
+					if postStringIndexmapvalue > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapvalue = string(dAtA[iNdEx:postStringIndexmapvalue])
+					iNdEx = postStringIndexmapvalue
+				} else {
+					iNdEx = entryPreIndex
+					skippy, err := skipVizierTypes(dAtA[iNdEx:])
+					if err != nil {
+						return err
+					}
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
+						return ErrInvalidLengthVizierTypes
+					}
+					if (iNdEx + skippy) > postIndex {
+						return io.ErrUnexpectedEOF
+					}
+					iNdEx += skippy
+				}
+			}
+			m.NodeSelector[mapkey] = mapvalue
+			iNdEx = postIndex
+		case 4:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Resources", wireType)
 			}
