@@ -46,6 +46,12 @@ import (
 	"px.dev/pixie/src/utils/testingutils"
 )
 
+const (
+	googleIdentityProvider = "google-oauth2"
+	auth0IdentityProvider  = "auth0"
+	kratosIdentityProvider = "kratos"
+)
+
 func getTestContext() context.Context {
 	return authcontext.NewContext(context.Background(), authcontext.New())
 }
@@ -68,7 +74,7 @@ func TestServer_LoginNewUser_NoOrg(t *testing.T) {
 		LastName:         "last",
 		Picture:          "something",
 		AuthProviderID:   authProviderID,
-		IdentityProvider: "auth0",
+		IdentityProvider: auth0IdentityProvider,
 	}
 
 	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
@@ -80,7 +86,7 @@ func TestServer_LoginNewUser_NoOrg(t *testing.T) {
 		LastName:         "last",
 		Picture:          "something",
 		AuthProviderID:   authProviderID,
-		IdentityProvider: "auth0",
+		IdentityProvider: auth0IdentityProvider,
 	}
 	a.EXPECT().SetPLMetadata(authProviderID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.PLUserID = plid
@@ -98,9 +104,15 @@ func TestServer_LoginNewUser_NoOrg(t *testing.T) {
 			LastName:         "last",
 			Email:            "abc@gmail.com",
 			AuthProviderID:   authProviderID,
-			IdentityProvider: "auth0",
+			IdentityProvider: auth0IdentityProvider,
 		}).
-		Return(utils.ProtoFromUUIDStrOrNil(userID), nil)
+		Return(userPb, nil)
+
+	mockProfile.EXPECT().
+		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{
+			AuthProviderID: authProviderID,
+		}).
+		Return(nil, status.Error(codes.NotFound, "user not found"))
 
 	mockProfile.EXPECT().
 		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
@@ -150,13 +162,19 @@ func TestServer_LoginNewUser_NoHostDomainAndNotAuth0FailsSignup(t *testing.T) {
 		LastName:         "last",
 		Picture:          "something",
 		AuthProviderID:   authProviderID,
-		IdentityProvider: "google-oauth2",
+		IdentityProvider: googleIdentityProvider,
 	}
 
 	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
+
+	mockProfile.EXPECT().
+		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{
+			AuthProviderID: authProviderID,
+		}).
+		Return(nil, status.Error(codes.NotFound, "user not found"))
 
 	mockOrg.EXPECT().
 		GetOrgByName(gomock.Any(), &profilepb.GetOrgByNameRequest{Name: "abc@gmail.com"}).
@@ -190,12 +208,13 @@ func TestServer_LoginNewUser_ExistingOrgWithHostedDomain(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		Email:          "abc@test.com",
-		FirstName:      "first",
-		LastName:       "last",
-		Picture:        "something",
-		AuthProviderID: authProviderID,
-		HostedDomain:   "test.com",
+		Email:            "abc@test.com",
+		FirstName:        "first",
+		LastName:         "last",
+		Picture:          "something",
+		AuthProviderID:   authProviderID,
+		IdentityProvider: googleIdentityProvider,
+		HostedDomain:     "test.com",
 	}
 
 	fakeOrgInfo := &profilepb.OrgInfo{
@@ -222,18 +241,25 @@ func TestServer_LoginNewUser_ExistingOrgWithHostedDomain(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
+	mockProfile.EXPECT().
+		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{
+			AuthProviderID: authProviderID,
+		}).
+		Return(nil, status.Error(codes.NotFound, "user not found"))
+
 	mockOrg.EXPECT().
 		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "test.com"}).
 		Return(fakeOrgInfo, nil)
 
 	mockProfile.EXPECT().
 		CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
-			OrgID:          orgPb,
-			Username:       "abc@test.com",
-			FirstName:      "first",
-			LastName:       "last",
-			Email:          "abc@test.com",
-			AuthProviderID: authProviderID,
+			OrgID:            orgPb,
+			Username:         "abc@test.com",
+			FirstName:        "first",
+			LastName:         "last",
+			Email:            "abc@test.com",
+			IdentityProvider: googleIdentityProvider,
+			AuthProviderID:   authProviderID,
 		}).
 		Return(utils.ProtoFromUUIDStrOrNil(userID), nil)
 
@@ -294,7 +320,7 @@ func TestServer_Login_GoogleUser_ImproperHostedDomain(t *testing.T) {
 		Email:            "abc@randomorg.com",
 		PLUserID:         userID,
 		PLOrgID:          orgID,
-		IdentityProvider: "google-oauth2",
+		IdentityProvider: googleIdentityProvider,
 		HostedDomain:     "",
 		AuthProviderID:   authProviderID,
 	}
@@ -304,8 +330,14 @@ func TestServer_Login_GoogleUser_ImproperHostedDomain(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 	mockProfile.EXPECT().
-		GetUser(gomock.Any(), userPb).
-		Return(nil, nil)
+		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{
+			AuthProviderID: authProviderID,
+		}).
+		Return(&profilepb.UserInfo{
+			ID:    userPb,
+			OrgID: orgPb,
+		}, nil)
+
 	fakeOrgInfo := &profilepb.OrgInfo{
 		OrgName: "randomorg.com",
 		ID:      orgPb,
@@ -344,7 +376,7 @@ func TestServer_Login_GoogleUser_ProperHostedDomain(t *testing.T) {
 		Email:            "abc@randomorg.com",
 		PLUserID:         userID,
 		PLOrgID:          orgID,
-		IdentityProvider: "google-oauth2",
+		IdentityProvider: googleIdentityProvider,
 		HostedDomain:     "randomorg.com",
 		AuthProviderID:   authProviderID,
 	}
@@ -354,8 +386,13 @@ func TestServer_Login_GoogleUser_ProperHostedDomain(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 	mockProfile.EXPECT().
-		GetUser(gomock.Any(), userPb).
-		Return(nil, nil)
+		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{
+			AuthProviderID: authProviderID,
+		}).
+		Return(&profilepb.UserInfo{
+			ID:    userPb,
+			OrgID: orgPb,
+		}, nil)
 	fakeOrgInfo := &profilepb.OrgInfo{
 		OrgName: "randomorg.com",
 		ID:      orgPb,
@@ -421,7 +458,7 @@ func TestServer_LoginNewUser_NoAutoCreate(t *testing.T) {
 	assert.Nil(t, resp)
 }
 
-func TestServer_Login_OrgLookupThrowsError(t *testing.T) {
+func TestServer_LoginNewUser_OrgLookupThrowsError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -431,18 +468,25 @@ func TestServer_Login_OrgLookupThrowsError(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		Email:          "abc@test.com",
-		FirstName:      "first",
-		LastName:       "last",
-		Picture:        "something",
-		AuthProviderID: authProviderID,
-		HostedDomain:   "test.com",
+		Email:            "abc@test.com",
+		FirstName:        "first",
+		LastName:         "last",
+		Picture:          "something",
+		AuthProviderID:   authProviderID,
+		IdentityProvider: googleIdentityProvider,
+		HostedDomain:     "test.com",
 	}
 
 	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
+
+	mockProfile.EXPECT().
+		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{
+			AuthProviderID: authProviderID,
+		}).
+		Return(nil, status.Error(codes.NotFound, "user not found"))
 
 	mockOrg.EXPECT().
 		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "test.com"}).
@@ -474,12 +518,13 @@ func TestServer_LoginNewUser_CreateUserFailed(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		Email:          "abc@test.com",
-		FirstName:      "first",
-		LastName:       "last",
-		Picture:        "something",
-		AuthProviderID: authProviderID,
-		HostedDomain:   "test.com",
+		Email:            "abc@test.com",
+		FirstName:        "first",
+		LastName:         "last",
+		Picture:          "something",
+		AuthProviderID:   authProviderID,
+		IdentityProvider: googleIdentityProvider,
+		HostedDomain:     "test.com",
 	}
 
 	fakeOrgInfo := &profilepb.OrgInfo{
@@ -491,18 +536,25 @@ func TestServer_LoginNewUser_CreateUserFailed(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
+	mockProfile.EXPECT().
+		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{
+			AuthProviderID: authProviderID,
+		}).
+		Return(nil, status.Error(codes.NotFound, "user not found"))
+
 	mockOrg.EXPECT().
 		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "test.com"}).
 		Return(fakeOrgInfo, nil)
 
 	mockProfile.EXPECT().
 		CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
-			OrgID:          orgPb,
-			Username:       "abc@test.com",
-			FirstName:      "first",
-			LastName:       "last",
-			Email:          "abc@test.com",
-			AuthProviderID: authProviderID,
+			OrgID:            orgPb,
+			Username:         "abc@test.com",
+			FirstName:        "first",
+			LastName:         "last",
+			Email:            "abc@test.com",
+			AuthProviderID:   authProviderID,
+			IdentityProvider: googleIdentityProvider,
 		}).
 		Return(nil, errors.New("Could not create user"))
 
@@ -561,10 +613,11 @@ func TestServer_Login_UserInExistingOrg(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo1 := &controllers.UserInfo{
-		Email:          "abc@gmail.com",
-		PLUserID:       userID,
-		PLOrgID:        orgID,
-		AuthProviderID: authProviderID,
+		Email:            "abc@gmail.com",
+		PLUserID:         userID,
+		PLOrgID:          orgID,
+		AuthProviderID:   authProviderID,
+		IdentityProvider: auth0IdentityProvider,
 	}
 
 	a.EXPECT().GetUserInfo(fakeUserInfo1.AuthProviderID).Return(fakeUserInfo1, nil)
@@ -572,8 +625,13 @@ func TestServer_Login_UserInExistingOrg(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 	mockProfile.EXPECT().
-		GetUser(gomock.Any(), userPb).
-		Return(nil, nil)
+		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{
+			AuthProviderID: authProviderID,
+		}).
+		Return(&profilepb.UserInfo{
+			ID:    userPb,
+			OrgID: orgPb,
+		}, nil)
 	fakeOrgInfo := &profilepb.OrgInfo{
 		ID: orgPb,
 	}
@@ -628,12 +686,13 @@ func TestServer_LoginNewUser_JoinOrgByPLOrgID(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo1 := &controllers.UserInfo{
-		Email:          "abc@gmail.com",
-		FirstName:      "first",
-		LastName:       "last",
-		PLUserID:       userID,
-		PLOrgID:        orgID,
-		AuthProviderID: authProviderID,
+		Email:            "abc@gmail.com",
+		FirstName:        "first",
+		LastName:         "last",
+		PLUserID:         userID,
+		PLOrgID:          orgID,
+		AuthProviderID:   authProviderID,
+		IdentityProvider: kratosIdentityProvider,
 	}
 
 	a.EXPECT().GetUserInfo(fakeUserInfo1.AuthProviderID).Return(fakeUserInfo1, nil)
@@ -654,8 +713,10 @@ func TestServer_LoginNewUser_JoinOrgByPLOrgID(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 	mockProfile.EXPECT().
-		GetUser(gomock.Any(), userPb).
-		Return(nil, errors.New("Could not find user"))
+		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{
+			AuthProviderID: authProviderID,
+		}).
+		Return(nil, status.Error(codes.NotFound, "user not found"))
 
 	fakeOrgInfo := &profilepb.OrgInfo{
 		ID: orgPb,
@@ -667,12 +728,13 @@ func TestServer_LoginNewUser_JoinOrgByPLOrgID(t *testing.T) {
 
 	mockProfile.EXPECT().
 		CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
-			AuthProviderID: authProviderID,
-			OrgID:          orgPb,
-			Username:       "abc@gmail.com",
-			FirstName:      "first",
-			LastName:       "last",
-			Email:          "abc@gmail.com",
+			AuthProviderID:   authProviderID,
+			OrgID:            orgPb,
+			Username:         "abc@gmail.com",
+			FirstName:        "first",
+			LastName:         "last",
+			Email:            "abc@gmail.com",
+			IdentityProvider: kratosIdentityProvider,
 		}).
 		Return(userPb, nil)
 
@@ -1836,11 +1898,13 @@ func TestServer_Login_UserNotApproved(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		Email:     "abc@gmail.com",
-		FirstName: "first",
-		LastName:  "last",
-		PLUserID:  testingutils.TestUserID,
-		PLOrgID:   testingutils.TestOrgID,
+		Email:            "abc@gmail.com",
+		FirstName:        "first",
+		LastName:         "last",
+		PLUserID:         testingutils.TestUserID,
+		PLOrgID:          testingutils.TestOrgID,
+		AuthProviderID:   authProviderID,
+		IdentityProvider: auth0IdentityProvider,
 	}
 
 	a.EXPECT().GetUserInfo(authProviderID).Return(fakeUserInfo, nil)
@@ -1859,8 +1923,17 @@ func TestServer_Login_UserNotApproved(t *testing.T) {
 		Return(fakeOrgInfo, nil)
 
 	mockProfile.EXPECT().
+		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{
+			AuthProviderID: authProviderID,
+		}).
+		Return(&profilepb.UserInfo{
+			ID:         utils.ProtoFromUUIDStrOrNil(testingutils.TestUserID),
+			OrgID:      utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
+			IsApproved: false,
+		}, nil)
+
+	mockProfile.EXPECT().
 		GetUser(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestUserID)).
-		Times(2).
 		Return(&profilepb.UserInfo{
 			ID:         utils.ProtoFromUUIDStrOrNil(testingutils.TestUserID),
 			OrgID:      utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
@@ -1949,7 +2022,7 @@ func TestServer_InviteUser(t *testing.T) {
 				a.EXPECT().
 					CreateIdentity("bobloblaw@lawblog.com").
 					Return(&controllers.CreateIdentityResponse{
-						IdentityProvider: "kratos",
+						IdentityProvider: kratosIdentityProvider,
 						AuthProviderID:   authProviderID,
 					}, nil)
 				mockProfile.EXPECT().
@@ -1963,7 +2036,7 @@ func TestServer_InviteUser(t *testing.T) {
 						FirstName:        req.FirstName,
 						LastName:         req.LastName,
 						Email:            req.Email,
-						IdentityProvider: "kratos",
+						IdentityProvider: kratosIdentityProvider,
 						AuthProviderID:   authProviderID,
 					}).
 					Return(userID, nil)
@@ -2043,7 +2116,7 @@ func TestServer_CreateOrgAndInviteUser(t *testing.T) {
 			LastName:         "admin",
 			Email:            email,
 			AuthProviderID:   authProviderID,
-			IdentityProvider: "kratos",
+			IdentityProvider: kratosIdentityProvider,
 		},
 	}).
 		Return(&profilepb.CreateOrgAndUserResponse{
@@ -2068,7 +2141,7 @@ func TestServer_CreateOrgAndInviteUser(t *testing.T) {
 	a.EXPECT().
 		CreateIdentity(email).
 		Return(&controllers.CreateIdentityResponse{
-			IdentityProvider: "kratos",
+			IdentityProvider: kratosIdentityProvider,
 			AuthProviderID:   authProviderID,
 		}, nil)
 

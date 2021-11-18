@@ -32,7 +32,10 @@ import (
 	"github.com/spf13/viper"
 )
 
-const googleIdentityProvider = "google-oauth2"
+const (
+	googleIdentityProvider = "google-oauth2"
+	auth0IdentityProvider  = "auth0"
+)
 
 func init() {
 	pflag.String("auth0_host", "https://pixie-labs.auth0.com", "The auth0 hostname")

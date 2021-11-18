@@ -91,62 +91,95 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 	if err != nil {
 		return nil, err
 	}
-
 	md, _ := metadata.FromIncomingContext(ctx)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
-	// If user does not exist in the AuthProvider, then create a new user if specified.
-	newUser := userInfo.PLUserID == ""
-
-	// A user can exist in the AuthProvider, but not the profile service. If that's the case, we want to create a new user.
-	if !newUser {
-		upb := utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID)
-		_, err := s.env.ProfileClient().GetUser(ctx, upb)
-		if err != nil {
-			newUser = true
-		}
+	switch userInfo.IdentityProvider {
+	case kratosIdentityProvider:
+		return s.kratosLogin(ctx, userInfo)
+	case googleIdentityProvider:
+		return s.googleOAuthLogin(ctx, userInfo, in.CreateUserIfNotExists)
+	case auth0IdentityProvider:
+		return s.auth0Login(ctx, userInfo, in.CreateUserIfNotExists)
+	default:
+		return nil, status.Error(codes.InvalidArgument, "received unexpected identity provider for user login")
 	}
+}
+
+func (s *Server) auth0Login(ctx context.Context, userInfo *UserInfo, canCreateUser bool) (*authpb.LoginReply, error) {
+	user, err := s.env.ProfileClient().GetUserByAuthProviderID(ctx, &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: userInfo.AuthProviderID})
 
 	// If we can't find the user and aren't in auto create mode.
-	if newUser && !in.CreateUserIfNotExists {
+	if (err != nil || user == nil) && !canCreateUser {
 		return nil, status.Error(codes.NotFound, "user not found, please register.")
 	}
 
-	// All users who have logged in before will have their PLOrgID already set. However, some new users will also have PLOrgID
-	// set by the AuthProvider, but they have yet to login to Pixie and therefore the users does not exist in the profile service.
-	// This case must handle that flow as well - and hence why we propagate `newUser`.
-	if uuid.FromStringOrNil(userInfo.PLOrgID) != uuid.Nil {
-		// If the user already belongs to an org according to the AuthProvider (userInfo),
-		// we log that user into the corresponding org.
-		orgInfo, err := s.env.OrgClient().GetOrg(ctx, utils.ProtoFromUUIDStrOrNil(userInfo.PLOrgID))
+	var orgInfo *profilepb.OrgInfo
+	if user != nil && !utils.IsNilUUIDProto(user.OrgID) {
+		orgInfo, err = s.env.OrgClient().GetOrg(ctx, user.OrgID)
 		if err != nil {
 			return nil, status.Errorf(codes.NotFound, "organization not found, please register, or contact support '%v'", err)
 		}
+	}
 
-		// We've switched over to use HostedDomain instead of email domain to determine org membership.
-		// Some running systems have users who are in their email domain org, but not their org according to HostedDomain.
-		// This flags those users and informs them that they should contact support to fix their org info in the database.
-		if userInfo.IdentityProvider == googleIdentityProvider && userInfo.HostedDomain == "" && userInfo.Email != orgInfo.OrgName {
-			return nil, status.Errorf(codes.PermissionDenied, "Our system found an issue with your account. Please contact support and include your email '%s' and this error in your message", userInfo.Email)
+	newUser := user == nil
+	return s.loginUser(ctx, userInfo, orgInfo, newUser)
+}
+
+func (s *Server) googleOAuthLogin(ctx context.Context, userInfo *UserInfo, canCreateUser bool) (*authpb.LoginReply, error) {
+	user, err := s.env.ProfileClient().GetUserByAuthProviderID(ctx, &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: userInfo.AuthProviderID})
+	// If we can't find the user and aren't in auto create mode.
+	if (err != nil || user == nil) && !canCreateUser {
+		return nil, status.Error(codes.NotFound, "user not found, please register.")
+	}
+
+	newUser := user == nil
+	if newUser {
+		// Users can login without registering if their org already exists. If org doesn't exist, they must complete sign up flow.
+		orgInfo, err := s.getMatchingOrgForUser(ctx, userInfo)
+		if status.Code(err) == codes.NotFound {
+			return nil, status.Error(codes.NotFound, "organization not found, please register.")
+		}
+		if err != nil {
+			return nil, err
 		}
 		return s.loginUser(ctx, userInfo, orgInfo, newUser)
 	}
 
-	// TODO(philkuz, PC-1264) Remove the special casing for auth0 when CreateOrg is done.
-	// We want to support this case generally.
-	// Create and login user without orgID.
-	if userInfo.HostedDomain == "" && userInfo.IdentityProvider == "auth0" {
-		return s.loginUser(ctx, userInfo, nil, newUser)
+	var orgInfo *profilepb.OrgInfo
+	if !utils.IsNilUUIDProto(user.OrgID) {
+		orgInfo, err = s.env.OrgClient().GetOrg(ctx, user.OrgID)
+		if err != nil {
+			return nil, status.Errorf(codes.NotFound, "organization not found, please register, or contact support '%v'", err)
+		}
 	}
 
-	// Users can login without registering if their org already exists. If org doesn't exist, they must complete sign up flow.
-	orgInfo, err := s.getMatchingOrgForUser(ctx, userInfo)
-	if status.Code(err) == codes.NotFound {
-		return nil, status.Error(codes.NotFound, "organization not found, please register.")
+	// We've switched over to use HostedDomain instead of email domain to determine org membership.
+	// Some running systems have users who are in their email domain org, but not their org according to HostedDomain.
+	// This flags those users and informs them that they should contact support to fix their org info in the database.
+	if userInfo.HostedDomain == "" && orgInfo != nil && userInfo.Email != orgInfo.OrgName {
+		return nil, status.Errorf(codes.PermissionDenied, "Our system found an issue with your account. Please contact support and include your email '%s' and this error in your message", userInfo.Email)
 	}
+	return s.loginUser(ctx, userInfo, orgInfo, newUser)
+}
+
+func (s *Server) kratosLogin(ctx context.Context, userInfo *UserInfo) (*authpb.LoginReply, error) {
+	orgID := utils.ProtoFromUUIDStrOrNil(userInfo.PLOrgID)
+	user, err := s.env.ProfileClient().GetUserByAuthProviderID(ctx, &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: userInfo.AuthProviderID})
+	if user != nil {
+		orgID = user.OrgID
+	}
+
+	if utils.IsNilUUIDProto(orgID) {
+		return nil, status.Errorf(codes.NotFound, "organization not found, please register, or contact support '%v'", err)
+	}
+
+	orgInfo, err := s.env.OrgClient().GetOrg(ctx, orgID)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.NotFound, "organization not found, please register, or contact support '%v'", err)
 	}
+
+	newUser := user == nil
 	return s.loginUser(ctx, userInfo, orgInfo, newUser)
 }
 
@@ -201,6 +234,10 @@ type token struct {
 // completeUserLogin does the final login steps and generates a token for the user.
 func (s *Server) completeUserLogin(ctx context.Context, userInfo *UserInfo, orgInfo *profilepb.OrgInfo) (*token, error) {
 	pc := s.env.ProfileClient()
+	orgID := userInfo.PLOrgID
+	if orgInfo != nil {
+		orgID = utils.ProtoToUUIDStr(orgInfo.ID)
+	}
 	// Check to make sure the user is approved to login. They are default approved
 	// if the org does not EnableApprovals.
 	if orgInfo != nil && orgInfo.EnableApprovals {
@@ -222,7 +259,7 @@ func (s *Server) completeUserLogin(ctx context.Context, userInfo *UserInfo, orgI
 	}
 
 	expiresAt := time.Now().Add(RefreshTokenValidDuration)
-	claims := srvutils.GenerateJWTForUser(userInfo.PLUserID, userInfo.PLOrgID, userInfo.Email, expiresAt, viper.GetString("domain_name"))
+	claims := srvutils.GenerateJWTForUser(userInfo.PLUserID, orgID, userInfo.Email, expiresAt, viper.GetString("domain_name"))
 	tkn, err := srvutils.SignJWTClaims(claims, s.env.JWTSigningKey())
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to generate token")
