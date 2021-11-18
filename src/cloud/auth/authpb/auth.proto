@@ -44,6 +44,8 @@ service AuthService {
   rpc Signup(SignupRequest) returns (SignupReply);
   // Takes an opaque identifier (from above) and produces a token with user details.
   rpc GetAugmentedToken(GetAugmentedAuthTokenRequest) returns (GetAugmentedAuthTokenResponse);
+  // Takes in a valid token, updates the claims with new data, then returns a new token.
+  rpc RefetchToken(RefetchTokenRequest) returns (RefetchTokenResponse);
   // Takes an API key and produces a token with user details.
   rpc GetAugmentedTokenForAPIKey(GetAugmentedTokenForAPIKeyRequest) returns (GetAugmentedTokenForAPIKeyResponse);
   // Create a new account for the user's org and return an invite link.
@@ -126,6 +128,19 @@ message GetAugmentedAuthTokenResponse {
   // This token will have a short lifetime of ~30 mins.
   string token = 1;
   // When this login expires.
+  int64 expires_at = 2;
+}
+
+message RefetchTokenRequest {
+  // The signed token that the user already has. Must be valid, with the exception of matching org
+  // to work.
+  string token = 1;
+}
+
+message RefetchTokenResponse {
+  // The signed token matches the latest state in the database.
+  string token = 1;
+  // When this token expires.
   int64 expires_at = 2;
 }
 

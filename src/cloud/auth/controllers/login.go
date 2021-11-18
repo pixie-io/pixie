@@ -674,3 +674,48 @@ func (s *Server) GetAuthConnectorToken(ctx context.Context, req *authpb.GetAuthC
 		ExpiresAt: expiresAt.Unix(),
 	}, nil
 }
+
+// RefetchToken takes in a valid token updates the claims with new data then returns a new token.
+func (s *Server) RefetchToken(ctx context.Context, in *authpb.RefetchTokenRequest) (*authpb.RefetchTokenResponse, error) {
+	// Validate the passed in token.
+	aCtx := authcontext.New()
+	if err := aCtx.UseJWTAuth(s.env.JWTSigningKey(), in.Token, viper.GetString("domain_name")); err != nil {
+		return nil, status.Errorf(codes.Unauthenticated, "Invalid auth token")
+	}
+	if !aCtx.ValidClaims() {
+		return nil, status.Error(codes.Unauthenticated, "Invalid auth/user")
+	}
+	if srvutils.GetClaimsType(aCtx.Claims) != srvutils.UserClaimType {
+		return nil, status.Error(codes.InvalidArgument, "can only call on user claims")
+	}
+
+	// Populate the new claims with up to date user info.
+	md, _ := metadata.FromIncomingContext(ctx)
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
+	user, err := s.env.ProfileClient().GetUser(ctx, utils.ProtoFromUUIDStrOrNil(aCtx.Claims.GetUserClaims().UserID))
+	if err != nil || user == nil {
+		return nil, status.Error(codes.Unauthenticated, "Invalid auth/user")
+	}
+	orgIDStr := ""
+	if !utils.IsNilUUIDProto(user.OrgID) {
+		orgIDStr = utils.UUIDFromProtoOrNil(user.OrgID).String()
+	}
+
+	expiresAt := time.Now().Add(RefreshTokenValidDuration)
+	claims := srvutils.GenerateJWTForUser(
+		utils.UUIDFromProtoOrNil(user.ID).String(),
+		orgIDStr,
+		user.Email,
+		expiresAt,
+		viper.GetString("domain_name"),
+	)
+	tkn, err := srvutils.SignJWTClaims(claims, s.env.JWTSigningKey())
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to generate token")
+	}
+	return &authpb.RefetchTokenResponse{
+		Token:     tkn,
+		ExpiresAt: expiresAt.Unix(),
+	}, nil
+}

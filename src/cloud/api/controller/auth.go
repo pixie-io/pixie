@@ -428,6 +428,55 @@ func AuthLogoutHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 	return nil
 }
 
+// AuthRefetchHandler return a new user token with updated claims.
+// Request-type: application/json.
+func AuthRefetchHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request) error {
+	if r.Method != http.MethodPost {
+		return handler.NewStatusError(http.StatusMethodNotAllowed, "not a post request")
+	}
+
+	apiEnv, ok := env.(apienv.APIEnv)
+	if !ok {
+		return handler.NewStatusError(http.StatusInternalServerError, "failed to get environment")
+	}
+
+	token, err := getTokenFromRequest(apiEnv, r)
+	if err != nil {
+		return err
+	}
+
+	// Make a request to the Auth service to get an augmented token.
+	// We don't need to check the token validity since the Auth service will just reject bad tokens.
+	req := &authpb.RefetchTokenRequest{
+		Token: token,
+	}
+
+	ctxWithCreds := metadata.AppendToOutgoingContext(r.Context(), "authorization",
+		fmt.Sprintf("bearer %s", token))
+
+	resp, err := apiEnv.AuthClient().RefetchToken(ctxWithCreds, req)
+	if status.Code(err) == codes.Unauthenticated {
+		return ErrFetchAugmentedTokenFailedUnauthenticated
+	}
+	if err != nil {
+		return ErrFetchAugmentedTokenFailedInternal
+	}
+
+	// GetDefaultSession, will always return a valid session, even if it is empty.
+	// We don't check the err here because even if the preexisting
+	// session cookie is expired or couldn't be decoded, we will overwrite it below anyway.
+	session, _ := GetDefaultSession(apiEnv, r)
+	// This should never be nil, but we check to be sure.
+	if session == nil {
+		return handler.NewStatusError(http.StatusInternalServerError, "failed to get session cookie")
+	}
+
+	setSessionCookie(session, resp.Token, resp.ExpiresAt, r, w, http.SameSiteStrictMode)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	return nil
+}
+
 // AuthConnectorHandler receives an auth connector request and redirects to the auth connector callback with the access token.
 func AuthConnectorHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request) error {
 	apiEnv, ok := env.(apienv.APIEnv)

@@ -158,6 +158,26 @@ func (mr *MockAuthServiceClientMockRecorder) Login(ctx, in interface{}, opts ...
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Login", reflect.TypeOf((*MockAuthServiceClient)(nil).Login), varargs...)
 }
 
+// RefetchToken mocks base method.
+func (m *MockAuthServiceClient) RefetchToken(ctx context.Context, in *authpb.RefetchTokenRequest, opts ...grpc.CallOption) (*authpb.RefetchTokenResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "RefetchToken", varargs...)
+	ret0, _ := ret[0].(*authpb.RefetchTokenResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RefetchToken indicates an expected call of RefetchToken.
+func (mr *MockAuthServiceClientMockRecorder) RefetchToken(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RefetchToken", reflect.TypeOf((*MockAuthServiceClient)(nil).RefetchToken), varargs...)
+}
+
 // Signup mocks base method.
 func (m *MockAuthServiceClient) Signup(ctx context.Context, in *authpb.SignupRequest, opts ...grpc.CallOption) (*authpb.SignupReply, error) {
 	m.ctrl.T.Helper()
@@ -289,6 +309,21 @@ func (m *MockAuthServiceServer) Login(arg0 context.Context, arg1 *authpb.LoginRe
 func (mr *MockAuthServiceServerMockRecorder) Login(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Login", reflect.TypeOf((*MockAuthServiceServer)(nil).Login), arg0, arg1)
+}
+
+// RefetchToken mocks base method.
+func (m *MockAuthServiceServer) RefetchToken(arg0 context.Context, arg1 *authpb.RefetchTokenRequest) (*authpb.RefetchTokenResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RefetchToken", arg0, arg1)
+	ret0, _ := ret[0].(*authpb.RefetchTokenResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RefetchToken indicates an expected call of RefetchToken.
+func (mr *MockAuthServiceServerMockRecorder) RefetchToken(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RefetchToken", reflect.TypeOf((*MockAuthServiceServer)(nil).RefetchToken), arg0, arg1)
 }
 
 // Signup mocks base method.
