@@ -182,11 +182,15 @@ StatusOr<KernelVersion> GetLinuxVersionFromNoteSection() {
         if (name == "Linux" && desc.size() == 4 && notes_hdr->n_type == 0) {
           uint32_t code = *reinterpret_cast<const uint32_t*>(desc.data());
 
-          KernelVersion kversion;
-          kversion.version = (code >> 16) & 0xff;
-          kversion.major_rev = (code >> 8) & 0xff;
-          kversion.minor_rev = (code >> 0) & 0xff;
-          return kversion;
+          uint8_t version = (code >> 16);
+          uint8_t major_rev = (code >> 8);
+          uint8_t minor_rev = (code >> 0);
+
+          if (code >> 24 != 0 || version < 1 || version > 9) {
+            return error::Internal("Linux version from vDSO appears corrupted.");
+          }
+
+          return KernelVersion{version, major_rev, minor_rev};
         }
       }
     }
@@ -195,43 +199,53 @@ StatusOr<KernelVersion> GetLinuxVersionFromNoteSection() {
   return error::NotFound("Could not extract kernel version from vDSO .note section.");
 }
 
-StatusOr<KernelVersion> GetKernelVersion(absl::flat_hash_set<KernelVersionSource> sources) {
-  if (sources.contains(KernelVersionSource::kNoteSection)) {
-    const StatusOr<KernelVersion> version = GetLinuxVersionFromNoteSection();
-    if (version.ok()) {
-      LOG(INFO) << "Found Linux kernel version using .note section.";
-      return version.ValueOrDie();
-    }
-  }
+StatusOr<KernelVersion> GetKernelVersion(std::vector<KernelVersionSource> sources) {
+  for (const auto& source : sources) {
+    switch (source) {
+      // Use vDSO .note section to find Linux kernel version.
+      case KernelVersionSource::kVDSONoteSection: {
+        const StatusOr<KernelVersion> version = GetLinuxVersionFromNoteSection();
+        if (version.ok()) {
+          LOG(INFO) << "Found Linux kernel version using .note section.";
+          return version.ValueOrDie();
+        }
+      } break;
 
-  // Check /proc/version_signature.
-  // Required for Ubuntu distributions.
-  if (sources.contains(KernelVersionSource::kProcVersionSignature)) {
-    const StatusOr<std::string> version_string = GetProcVersionSignature();
-    if (version_string.ok()) {
-      LOG(INFO) << "Found Linux kernel version using /proc/version_signature.";
-      return ParseKernelVersionString(version_string.ValueOrDie());
-    }
-  }
+      // Check /proc/version_signature.
+      // Required for Ubuntu distributions.
+      case KernelVersionSource::kProcVersionSignature: {
+        const StatusOr<std::string> version_string = GetProcVersionSignature();
+        if (version_string.ok()) {
+          LOG(INFO) << "Found Linux kernel version using /proc/version_signature.";
+          return ParseKernelVersionString(version_string.ValueOrDie());
+        }
+      } break;
 
-  // Second option is to use /proc/sys/kernel/version.
-  // Required for Debian distributions.
-  if (sources.contains(KernelVersionSource::kProcSysKernelVersion)) {
-    const StatusOr<std::string> version_string = GetProcSysKernelVersion();
-    if (version_string.ok()) {
-      LOG(INFO) << "Found Linux kernel version using /proc/sys/kernel/version.";
-      return ParseKernelVersionString(version_string.ValueOrDie());
-    }
-  }
+      // Use /proc/sys/kernel/version.
+      // Required for Debian distributions.
+      case KernelVersionSource::kProcSysKernelVersion: {
+        const StatusOr<std::string> version_string = GetProcSysKernelVersion();
+        if (version_string.ok()) {
+          LOG(INFO) << "Found Linux kernel version using /proc/sys/kernel/version.";
+          return ParseKernelVersionString(version_string.ValueOrDie());
+        }
+      } break;
 
-  // Last option is to use `uname -r`.
-  // This must be the last option, because on Debian and Ubuntu, the uname does
-  // not provide the correct minor version.
-  if (sources.contains(KernelVersionSource::kUname)) {
-    const StatusOr<std::string> version_string = GetUname();
-    if (version_string.ok()) {
-      LOG(INFO) << "Found Linux kernel version using uname.";
-      return ParseKernelVersionString(version_string.ValueOrDie());
+      // Use `uname -r`.
+      // Use this as a lower priority, because on Debian and Ubuntu,
+      // the uname does  not provide the correct minor version.
+      case KernelVersionSource::kUname: {
+        const StatusOr<std::string> version_string = GetUname();
+        if (version_string.ok()) {
+          LOG(INFO) << "Found Linux kernel version using uname.";
+          return ParseKernelVersionString(version_string.ValueOrDie());
+        }
+      } break;
+
+      default:
+        LOG(DFATAL) << absl::Substitute("Unhandled KernelVersionSource: $0",
+                                        magic_enum::enum_name(source));
+        break;
     }
   }
 

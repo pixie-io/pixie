@@ -34,7 +34,7 @@ bool operator==(const KernelVersion& a, const KernelVersion& b) {
 
 // A list of kernel version identification methods that use /proc only.
 // Used in a number of tests below.
-const absl::flat_hash_set<KernelVersionSource> kProcFSKernelVersionSources = {
+const std::vector<KernelVersionSource> kProcFSKernelVersionSources = {
     KernelVersionSource::kProcVersionSignature, KernelVersionSource::kProcSysKernelVersion};
 
 TEST(LinuxHeadersUtils, LinuxVersionCode) {
@@ -65,7 +65,7 @@ TEST(LinuxHeadersUtils, GetKernelVersionFromUname) {
 
 TEST(LinuxHeadersUtils, GetKernelVersionFromNoteSection) {
   StatusOr<KernelVersion> kernel_version_status =
-      GetKernelVersion({KernelVersionSource::kNoteSection});
+      GetKernelVersion({KernelVersionSource::kVDSONoteSection});
   ASSERT_OK(kernel_version_status);
   KernelVersion kernel_version = kernel_version_status.ValueOrDie();
 

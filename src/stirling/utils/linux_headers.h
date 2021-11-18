@@ -41,20 +41,23 @@ struct KernelVersion {
 enum class KernelVersionSource {
   // Get the Linux version from VDSO .note section.
   // Most reliable if available.
-  kNoteSection,
+  kVDSONoteSection,
 
   // Get the Linux version from /proc/version_signature.
   kProcVersionSignature,
 
-  // Get the Linux version from /proc/sys/kernel/version
+  // Get the Linux version from /proc/sys/kernel/version.
   kProcSysKernelVersion,
 
-  // Get the Linux version from `uname -r`
+  // Get the Linux version from `uname -r`.
   kUname,
 };
 
-const absl::flat_hash_set<KernelVersionSource> kDefaultKernelVersionSources = {
-    KernelVersionSource::kNoteSection, KernelVersionSource::kProcVersionSignature,
+// Order matters.
+// Uname should always be last because it does not report the correct minor version on
+// Ubuntu/Debian version
+const std::vector<KernelVersionSource> kDefaultKernelVersionSources = {
+    KernelVersionSource::kVDSONoteSection, KernelVersionSource::kProcVersionSignature,
     KernelVersionSource::kProcSysKernelVersion, KernelVersionSource::kUname};
 
 uint64_t KernelHeadersDistance(KernelVersion a, KernelVersion b);
@@ -92,7 +95,7 @@ StatusOr<std::string> GetProcVersionSignature();
  * @return The kernel version, or error if it could not be determined.
  */
 StatusOr<KernelVersion> GetKernelVersion(
-    absl::flat_hash_set<KernelVersionSource> sources = kDefaultKernelVersionSources);
+    std::vector<KernelVersionSource> sources = kDefaultKernelVersionSources);
 
 /**
  * Modifies the version.h on the filesystem to the specified version.
