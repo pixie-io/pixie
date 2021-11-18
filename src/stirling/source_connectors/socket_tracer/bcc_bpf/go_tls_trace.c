@@ -39,6 +39,33 @@ struct go_tls_conn_args {
 // This map is used to connect arguments to return values.
 BPF_HASH(active_tls_conn_op_map, struct tgid_goid_t, struct go_tls_conn_args);
 
+// Copies the registers of the golang ABI, so that they can be
+// easily accessed using an offset.
+static __inline void init_regs_go_regabi(const struct pt_regs* ctx, uint64_t* regs) {
+  regs[0] = ctx->ax;
+  regs[1] = ctx->bx;
+  regs[2] = ctx->cx;
+  regs[3] = ctx->di;
+  regs[4] = ctx->si;
+  regs[5] = ctx->r8;
+  regs[6] = ctx->r9;
+  regs[7] = ctx->r10;
+  regs[8] = ctx->r11;
+}
+
+// Reads a golang function argument, taking into account the ABI.
+// Go arguments may be in registers or on the stack.
+static __inline void assign_arg(void* arg, size_t arg_size, struct location_t loc, const void* sp,
+                                const uint64_t* regs) {
+  if (loc.type == kLocationTypeStack) {
+    bpf_probe_read(arg, arg_size, sp + loc.offset);
+  } else if (loc.type == kLocationTypeRegisters) {
+    if (loc.offset >= 0) {
+      bpf_probe_read(arg, arg_size, (char*)regs + loc.offset);
+    }
+  }
+}
+
 // Probe for the crypto/tls library's write.
 //
 // Function signature:
@@ -70,14 +97,16 @@ int probe_entry_tls_conn_write(struct pt_regs* ctx) {
   REQUIRE_LOCATION(symaddrs->Write_b_loc, 0);
 
   // ---------------------------------------------
-  // Extract arguments (on stack)
+  // Extract arguments
   // ---------------------------------------------
 
   const void* sp = (const void*)ctx->sp;
+  uint64_t regs[9];
+  init_regs_go_regabi(ctx, regs);
 
-  struct go_tls_conn_args args;
-  bpf_probe_read(&args.conn_ptr, sizeof(void*), sp + symaddrs->Write_c_loc.offset);
-  bpf_probe_read(&args.plaintext_ptr, sizeof(char*), sp + symaddrs->Write_b_loc.offset);
+  struct go_tls_conn_args args = {};
+  assign_arg(&args.conn_ptr, sizeof(args.conn_ptr), symaddrs->Write_c_loc, sp, regs);
+  assign_arg(&args.plaintext_ptr, sizeof(args.plaintext_ptr), symaddrs->Write_b_loc, sp, regs);
 
   active_tls_conn_op_map.update(&tgid_goid, &args);
 
@@ -95,12 +124,14 @@ static __inline int probe_return_tls_conn_write_core(struct pt_regs* ctx, uint64
   REQUIRE_LOCATION(symaddrs->Write_retval1_loc, 0);
 
   const void* sp = (const void*)ctx->sp;
+  uint64_t regs[9];
+  init_regs_go_regabi(ctx, regs);
 
-  int64_t retval0;
-  bpf_probe_read(&retval0, sizeof(retval0), sp + symaddrs->Write_retval0_loc.offset);
+  int64_t retval0 = 0;
+  assign_arg(&retval0, sizeof(retval0), symaddrs->Write_retval0_loc, sp, regs);
 
-  struct go_interface retval1;
-  bpf_probe_read(&retval1, sizeof(retval1), sp + symaddrs->Write_retval1_loc.offset);
+  struct go_interface retval1 = {};
+  assign_arg(&retval1, sizeof(retval1), symaddrs->Write_retval1_loc, sp, regs);
 
   // If function returns an error, then there's no data to trace.
   if (retval1.ptr != 0) {
@@ -181,9 +212,6 @@ int probe_entry_tls_conn_read(struct pt_regs* ctx) {
   tgid_goid.tgid = tgid;
   tgid_goid.goid = *goid_ptr;
 
-  //  bpf_trace_printk("probe_entry_tls_conn_read id=%llx goid=%lld sp=%llx\n", id, *goid_ptr,
-  //  ctx->sp);
-
   struct go_tls_symaddrs_t* symaddrs = go_tls_symaddrs_map.lookup(&tgid);
   if (symaddrs == NULL) {
     return 0;
@@ -194,14 +222,16 @@ int probe_entry_tls_conn_read(struct pt_regs* ctx) {
   REQUIRE_LOCATION(symaddrs->Read_b_loc, 0);
 
   // ---------------------------------------------
-  // Extract arguments (on stack)
+  // Extract arguments
   // ---------------------------------------------
 
   const void* sp = (const void*)ctx->sp;
+  uint64_t regs[9];
+  init_regs_go_regabi(ctx, regs);
 
-  struct go_tls_conn_args args;
-  bpf_probe_read(&args.conn_ptr, sizeof(void*), sp + symaddrs->Read_c_loc.offset);
-  bpf_probe_read(&args.plaintext_ptr, sizeof(char*), sp + symaddrs->Read_b_loc.offset);
+  struct go_tls_conn_args args = {};
+  assign_arg(&args.conn_ptr, sizeof(args.conn_ptr), symaddrs->Read_c_loc, sp, regs);
+  assign_arg(&args.plaintext_ptr, sizeof(args.plaintext_ptr), symaddrs->Read_b_loc, sp, regs);
 
   active_tls_conn_op_map.update(&tgid_goid, &args);
 
@@ -219,12 +249,14 @@ static __inline int probe_return_tls_conn_read_core(struct pt_regs* ctx, uint64_
   REQUIRE_LOCATION(symaddrs->Read_retval1_loc, 0);
 
   const void* sp = (const void*)ctx->sp;
+  uint64_t regs[9];
+  init_regs_go_regabi(ctx, regs);
 
-  int64_t retval0;
-  bpf_probe_read(&retval0, sizeof(retval0), sp + symaddrs->Read_retval0_loc.offset);
+  int64_t retval0 = 0;
+  assign_arg(&retval0, sizeof(retval0), symaddrs->Read_retval0_loc, sp, regs);
 
-  struct go_interface retval1;
-  bpf_probe_read(&retval1, sizeof(retval1), sp + symaddrs->Read_retval1_loc.offset);
+  struct go_interface retval1 = {};
+  assign_arg(&retval1, sizeof(retval1), symaddrs->Read_retval1_loc, sp, regs);
 
   // If function returns an error, then there's no data to trace.
   if (retval1.ptr != 0) {

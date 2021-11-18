@@ -69,7 +69,8 @@ struct Go1_17TLSClientServerContainers {
   using GoTLSClientContainer = ::px::stirling::testing::Go1_17_TLSClientContainer;
 };
 
-typedef ::testing::Types<Go1_16TLSClientServerContainers> GoVersions;
+typedef ::testing::Types<Go1_16TLSClientServerContainers, Go1_17TLSClientServerContainers>
+    GoVersions;
 TYPED_TEST_SUITE(GoTLSTraceTest, GoVersions);
 
 //-----------------------------------------------------------------------------
