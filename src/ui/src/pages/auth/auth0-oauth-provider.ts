@@ -78,7 +78,9 @@ export class Auth0Client extends OAuthProviderClient {
 
   redirectToEmailSignup(): void {
     this.makeAuth0OIDCClient(
-      this.getRedirectURL(/* isSignup */ true),
+      // Even though we are in a signup flow, the callback shouldn't "sign up" the
+      // user until verification is complete.
+      this.getRedirectURL(/* isSignup */ false),
       {
         connection: AUTH_EMAIL_PASSWORD_CONN,
         // Manually configured in Classic Universal Login settings.
@@ -87,6 +89,20 @@ export class Auth0Client extends OAuthProviderClient {
         screen_hint: 'signup',
       },
     ).signinRedirect();
+  }
+
+  refetchToken(): void {
+    // Omitting the prompt parameter with the New Universal Login will cause this to fetch the token
+    // from an existing Auth0 session if possible. https://auth0.com/docs/login/universal-login/new-experience#signup
+    const client = new UserManager({
+      authority: `https://${AUTH_URI}`,
+      client_id: AUTH_CLIENT_ID,
+      redirect_uri: this.getRedirectURL(/* isSignup */ false),
+      extraQueryParams: { connection: AUTH_EMAIL_PASSWORD_CONN },
+      scope: 'openid profile email',
+      response_type: 'token id_token',
+    });
+    client.signinRedirect();
   }
 
   // eslint-disable-next-line class-methods-use-this

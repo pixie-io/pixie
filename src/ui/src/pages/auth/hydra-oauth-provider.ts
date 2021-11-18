@@ -85,6 +85,10 @@ export class HydraClient extends OAuthProviderClient {
     window.location.href = this.makeClient(this.makeAndStoreState(), /* isSignup */ true).token.getUri();
   }
 
+  refetchToken(): void {
+    window.location.href = this.makeClient(this.makeAndStoreState(), /* isSignup */ false).token.getUri();
+  }
+
   handleToken(): Promise<Token> {
     return new Promise<Token>((resolve, reject) => {
       this.makeClient(this.getStoredState(), false).token.getToken(window.location).then((user) => {
