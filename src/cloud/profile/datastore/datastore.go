@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
+	"github.com/jackc/pgx"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -84,6 +85,10 @@ var (
 	ErrUserAttributesNotFound = fmt.Errorf("user attributes not found")
 	// ErrUserSettingsNotFound is used when no settings can be found for the given user.
 	ErrUserSettingsNotFound = fmt.Errorf("user settings not found")
+	// ErrDuplicateOrgName is used when the given org name is already in use.
+	ErrDuplicateOrgName = errors.New("cannot create org (name already in use)")
+	// ErrDuplicateUser is used when the user creation violates unique constraints for auth_provider_id or email.
+	ErrDuplicateUser = errors.New("cannot create duplicate user")
 )
 
 // CreateUser creates a new user.
@@ -309,38 +314,52 @@ func (d *Datastore) DeleteOrgAndUsers(orgID uuid.UUID) error {
 
 func (d *Datastore) createUserUsingTxn(txn *sqlx.Tx, userInfo *UserInfo) (uuid.UUID, error) {
 	query := `INSERT INTO users (org_id, username, first_name, last_name, email, is_approved, identity_provider, auth_provider_id) VALUES (:org_id, :username, :first_name, :last_name, :email, :is_approved, :identity_provider, :auth_provider_id) RETURNING id`
-	row, err := txn.NamedQuery(query, userInfo)
+	rows, err := txn.NamedQuery(query, userInfo)
 	if err != nil {
 		return uuid.Nil, err
 	}
-	defer row.Close()
+	defer rows.Close()
 
-	if row.Next() {
+	if rows.Next() {
 		var id uuid.UUID
-		if err := row.Scan(&id); err != nil {
+		if err := rows.Scan(&id); err != nil {
 			return uuid.Nil, err
 		}
 		return id, nil
 	}
-	return uuid.Nil, errors.New("failed to read user id from the database after user creation")
+	err = rows.Err()
+	switch e := err.(type) {
+	case pgx.PgError:
+		if e.Code == "23505" {
+			return uuid.Nil, ErrDuplicateUser
+		}
+	}
+	return uuid.Nil, err
 }
 
 func (d *Datastore) createOrgUsingTxn(txn *sqlx.Tx, orgInfo *OrgInfo) (uuid.UUID, error) {
 	query := `INSERT INTO orgs (org_name, domain_name) VALUES (:org_name, :domain_name) RETURNING id`
-	row, err := txn.NamedQuery(query, orgInfo)
+	rows, err := txn.NamedQuery(query, orgInfo)
 	if err != nil {
 		return uuid.Nil, err
 	}
-	defer row.Close()
+	defer rows.Close()
 
-	if row.Next() {
+	if rows.Next() {
 		var id uuid.UUID
-		if err := row.Scan(&id); err != nil {
+		if err := rows.Scan(&id); err != nil {
 			return uuid.Nil, err
 		}
 		return id, nil
 	}
-	return uuid.Nil, errors.New("failed to read org id from the database after org creation")
+	err = rows.Err()
+	switch e := err.(type) {
+	case pgx.PgError:
+		if e.Code == "23505" {
+			return uuid.Nil, ErrDuplicateOrgName
+		}
+	}
+	return uuid.Nil, err
 }
 
 // GetUsersInOrg gets all users in the given org.

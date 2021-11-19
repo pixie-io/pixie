@@ -327,6 +327,9 @@ func (s *Server) CreateOrg(ctx context.Context, req *profilepb.CreateOrgRequest)
 	}
 
 	oid, err := s.ods.CreateOrg(orgInfo)
+	if err == datastore.ErrDuplicateOrgName {
+		return nil, status.Error(codes.AlreadyExists, err.Error())
+	}
 	return utils.ProtoFromUUID(oid), err
 }
 

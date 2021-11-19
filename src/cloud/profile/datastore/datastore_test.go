@@ -370,6 +370,7 @@ func TestDatastore(t *testing.T) {
 
 		orgID, err := d.CreateOrg(&orgInfo)
 		require.Error(t, err)
+		assert.Equal(t, err, datastore.ErrDuplicateOrgName)
 		assert.Equal(t, orgID, uuid.Nil)
 	})
 
