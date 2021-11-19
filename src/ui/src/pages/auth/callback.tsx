@@ -71,6 +71,7 @@ function trackAuthEvent(event: string, id: string, email: string): Promise<void>
 }
 
 function getCtaDetails(config: CallbackConfig) {
+  let title: string;
   let ctaMessage: string;
   let ctaDestination: string;
   let errorMessage: string;
@@ -94,7 +95,8 @@ function getCtaDetails(config: CallbackConfig) {
       ctaMessage = 'Go to Sign Up';
       ctaDestination = '/auth/signup';
     } else if (config.err.errMessage.match(/verify.*your.*email/ig)) {
-      errorMessage = 'Please verify your email before logging in.';
+      title = 'Please verify your email to continue';
+      errorMessage = 'Check your email for a verification link.';
       ctaMessage = 'Go to Log In';
       ctaDestination = '/auth/login';
       showDetails = false;
@@ -109,6 +111,7 @@ function getCtaDetails(config: CallbackConfig) {
     ctaDestination = '/';
   }
   return {
+    title,
     ctaMessage,
     ctaDestination,
     errorMessage,
@@ -145,6 +148,7 @@ const ErrorMessage = React.memo<{ config: CallbackConfig }>(function ErrorMessag
   const errorDetails = config.err.errorType === 'internal' ? config.err.errMessage : undefined;
 
   const {
+    title: ctaTitle,
     ctaMessage,
     ctaDestination,
     errorMessage,
@@ -162,7 +166,7 @@ const ErrorMessage = React.memo<{ config: CallbackConfig }>(function ErrorMessag
   return (
     <AuthMessageBox
       error='recoverable'
-      title={title}
+      title={ctaTitle || title}
       message={errorMessage}
       errorDetails={showDetails ? errorDetails : ''}
       cta={cta}
