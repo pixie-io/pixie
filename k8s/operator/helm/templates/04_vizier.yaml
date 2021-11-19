@@ -55,4 +55,7 @@ spec:
     {{- if .Values.pod.resources }}
     resources: {{ .Values.pod.resources | toYaml | nindent 6 }}
     {{- end }}
+    {{- if .Values.pod.nodeSelector }}
+    nodeSelector: {{ .Values.pod.nodeSelector | toYaml | nindent 6 }}
+    {{- end }}
   {{- end }}
