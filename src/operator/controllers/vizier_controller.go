@@ -305,7 +305,6 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 		vz.Spec.Pod.Labels = make(map[string]string)
 	}
 
-	vz.Spec.Pod.NodeSelector = make(map[string]string)
 	if vz.Spec.Pod.NodeSelector == nil {
 		vz.Spec.Pod.NodeSelector = make(map[string]string)
 	}
