@@ -224,7 +224,7 @@ func (q *QueryResolver) Clusters(ctx context.Context) ([]*ClusterInfoResolver, e
 	grpcAPI := q.Env.VizierClusterInfo
 	resp, err := grpcAPI.GetClusterInfo(ctx, &cloudpb.GetClusterInfoRequest{})
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 
 	var res []*ClusterInfoResolver
@@ -245,7 +245,7 @@ func (q *QueryResolver) Cluster(ctx context.Context, args *clusterArgs) (*Cluste
 		ID: utils.ProtoFromUUIDStrOrNil(string(args.ID)),
 	})
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 	if len(res.Clusters) == 0 {
 		return nil, errors.New("org has no matching clusters")
@@ -265,7 +265,7 @@ func (q *QueryResolver) ClusterByName(ctx context.Context, args *clusterNameArgs
 	grpcAPI := q.Env.VizierClusterInfo
 	res, err := grpcAPI.GetClusterInfo(ctx, &cloudpb.GetClusterInfoRequest{})
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 	if len(res.Clusters) == 0 {
 		return nil, errors.New("org has no matching clusters")
@@ -304,14 +304,14 @@ func (q *QueryResolver) UpdateVizierConfig(ctx context.Context, args *updateVizi
 
 	_, err := grpcAPI.UpdateClusterVizierConfig(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 
 	res, err := grpcAPI.GetClusterInfo(ctx, &cloudpb.GetClusterInfoRequest{
 		ID: clusterID,
 	})
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 	if len(res.Clusters) == 0 {
 		return nil, errors.New("org has no matching clusters")
@@ -337,7 +337,7 @@ func (q *QueryResolver) ClusterConnection(ctx context.Context, args *clusterArgs
 		ID: clusterID,
 	})
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 	return &ClusterConnectionInfoResolver{
 		info.IPAddress,

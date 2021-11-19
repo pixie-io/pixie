@@ -66,7 +66,7 @@ func (q *QueryResolver) CLIArtifact(ctx context.Context, args *cliArtifactArgs) 
 
 	cliInfo, err := grpcAPI.GetArtifactList(ctx, artifactReq)
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 
 	if len(cliInfo.Artifact) == 0 {
@@ -84,7 +84,7 @@ func (q *QueryResolver) CLIArtifact(ctx context.Context, args *cliArtifactArgs) 
 
 	linkResp, err := grpcAPI.GetDownloadLink(ctx, linkReq)
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 
 	return &CLIArtifactResolver{
@@ -126,7 +126,7 @@ func (q *QueryResolver) Artifacts(ctx context.Context, args *artifactsArgs) (*Ar
 
 	resp, err := grpcAPI.GetArtifactList(ctx, artifactReq)
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 
 	artifacts := make([]ArtifactResolver, len(resp.Artifact))

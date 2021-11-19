@@ -70,7 +70,7 @@ func (q *QueryResolver) CreateDeploymentKey(ctx context.Context) (*DeploymentKey
 	grpcAPI := q.Env.VizierDeployKeyMgr
 	res, err := grpcAPI.Create(ctx, &cloudpb.CreateDeploymentKeyRequest{})
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 	return deploymentKeyToResolver(res)
 }
@@ -130,7 +130,7 @@ func (q *QueryResolver) DeploymentKey(ctx context.Context, args *getOrDeleteDepl
 		ID: utils.ProtoFromUUIDStrOrNil(string(args.ID)),
 	})
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 	return deploymentKeyToResolver(res.Key)
 }
@@ -140,7 +140,7 @@ func (q *QueryResolver) DeleteDeploymentKey(ctx context.Context, args *getOrDele
 	grpcAPI := q.Env.VizierDeployKeyMgr
 	_, err := grpcAPI.Delete(ctx, utils.ProtoFromUUIDStrOrNil(string(args.ID)))
 	if err != nil {
-		return false, err
+		return false, rpcErrorHelper(err)
 	}
 	return true, nil
 }

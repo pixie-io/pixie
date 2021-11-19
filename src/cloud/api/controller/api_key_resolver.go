@@ -67,7 +67,7 @@ func (q *QueryResolver) CreateAPIKey(ctx context.Context) (*APIKeyResolver, erro
 	grpcAPI := q.Env.APIKeyMgr
 	res, err := grpcAPI.Create(ctx, &cloudpb.CreateAPIKeyRequest{})
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 	return apiKeyToResolver(res)
 }
@@ -111,7 +111,7 @@ func (q *QueryResolver) APIKeys(ctx context.Context) ([]*APIKeyMetadataResolver,
 	grpcAPI := q.Env.APIKeyMgr
 	res, err := grpcAPI.List(ctx, &cloudpb.ListAPIKeyRequest{})
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 
 	return apiKeyMetadatasToResolver(res.Keys)
@@ -128,7 +128,7 @@ func (q *QueryResolver) APIKey(ctx context.Context, args *getOrDeleteAPIKeyArgs)
 		ID: utils.ProtoFromUUIDStrOrNil(string(args.ID)),
 	})
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 	return apiKeyToResolver(res.Key)
 }
@@ -138,7 +138,7 @@ func (q *QueryResolver) DeleteAPIKey(ctx context.Context, args *getOrDeleteAPIKe
 	grpcAPI := q.Env.APIKeyMgr
 	_, err := grpcAPI.Delete(ctx, utils.ProtoFromUUIDStrOrNil(string(args.ID)))
 	if err != nil {
-		return false, err
+		return false, rpcErrorHelper(err)
 	}
 	return true, nil
 }

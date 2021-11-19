@@ -42,7 +42,7 @@ func (q *QueryResolver) LiveViews(ctx context.Context) ([]LiveViewMetadataResolv
 
 	resp, err := grpcAPI.GetLiveViews(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 
 	resolver := make([]LiveViewMetadataResolver, len(resp.LiveViews))
@@ -76,7 +76,7 @@ func (q *QueryResolver) LiveViewContents(ctx context.Context, args *liveViewCont
 	}
 	resp, err := grpcAPI.GetLiveViewContents(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 
 	visJSON := ""
@@ -115,7 +115,7 @@ func (q *QueryResolver) Scripts(ctx context.Context) ([]ScriptMetadataResolver, 
 
 	resp, err := grpcAPI.GetScripts(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 
 	resolver := make([]ScriptMetadataResolver, len(resp.Scripts))
@@ -149,7 +149,7 @@ func (q *QueryResolver) ScriptContents(ctx context.Context, args *scriptContents
 	}
 	resp, err := grpcAPI.GetScriptContents(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 
 	return &ScriptContentsResolver{

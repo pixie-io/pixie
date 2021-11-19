@@ -47,7 +47,7 @@ func (q *QueryResolver) User(ctx context.Context) (*UserInfoResolver, error) {
 	userID := utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID)
 	userInfo, err := q.Env.UserServer.GetUser(ctx, userID)
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 	return &UserInfoResolver{ctx, &q.Env, userInfo}, nil
 }
@@ -118,7 +118,7 @@ func (q *QueryResolver) UserSettings(ctx context.Context) (*UserSettingsResolver
 		ID: utils.ProtoFromUUIDStrOrNil(id),
 	})
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 
 	return &UserSettingsResolver{AnalyticsOptout: resp.AnalyticsOptout, ID: graphql.ID(id)}, nil
@@ -145,7 +145,7 @@ func (q *QueryResolver) UpdateUserSettings(ctx context.Context, args *updateUser
 
 	_, err = q.Env.UserServer.UpdateUserSettings(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 
 	return resp, nil
@@ -173,12 +173,12 @@ func (q *QueryResolver) UpdateUserPermissions(ctx context.Context, args *updateU
 
 	_, err := q.Env.UserServer.UpdateUser(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 
 	userInfo, err := q.Env.UserServer.GetUser(ctx, userID)
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 	return &UserInfoResolver{ctx, &q.Env, userInfo}, nil
 }
@@ -201,7 +201,7 @@ func (q *QueryResolver) UserAttributes(ctx context.Context) (*UserAttributesReso
 		ID: utils.ProtoFromUUIDStrOrNil(id),
 	})
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 
 	return &UserAttributesResolver{TourSeen: resp.TourSeen, ID: graphql.ID(id)}, nil
@@ -236,7 +236,7 @@ func (q *QueryResolver) SetUserAttributes(ctx context.Context, args *setUserAttr
 
 	_, err = q.Env.UserServer.SetUserAttributes(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 
 	return resp, nil

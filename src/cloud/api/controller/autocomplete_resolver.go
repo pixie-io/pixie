@@ -80,7 +80,7 @@ func (q *QueryResolver) AutocompleteField(ctx context.Context, args *autocomplet
 		ClusterUID:       clusterUID,
 	})
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 
 	suggestions := make([]*AutocompleteSuggestion, len(res.Suggestions))
@@ -119,7 +119,7 @@ func (q *QueryResolver) Autocomplete(ctx context.Context, args *autocompleteArgs
 		ClusterUID: clusterUID,
 	})
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 
 	suggestions := make([]*TabSuggestion, len(res.TabSuggestions))

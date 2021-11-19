@@ -24,6 +24,7 @@ import (
 
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/relay"
+	"google.golang.org/grpc/status"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/cloud/api/controller/schema/complete"
@@ -45,6 +46,25 @@ type GraphQLEnv struct {
 // QueryResolver resolves queries for GQL.
 type QueryResolver struct {
 	Env GraphQLEnv
+}
+
+type resolverError struct {
+	status *status.Status
+}
+
+func (re resolverError) Error() string {
+	return re.status.Message()
+}
+
+func (re resolverError) Extensions() map[string]interface{} {
+	return map[string]interface{}{
+		"code":    re.status.Code(),
+		"message": re.status.Message(),
+	}
+}
+
+func rpcErrorHelper(err error) resolverError {
+	return resolverError{status: status.Convert(err)}
 }
 
 // Noop is added to the query resolver to handle the fact that we can't define

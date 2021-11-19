@@ -54,7 +54,7 @@ func (q *QueryResolver) InviteUser(ctx context.Context, args *inviteUserArgs) (*
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 
 	return &UserInviteResolver{
@@ -74,7 +74,7 @@ func (q *QueryResolver) OrgUsers(ctx context.Context) ([]*UserInfoResolver, erro
 		OrgID: utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().OrgID),
 	})
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 
 	userResolvers := make([]*UserInfoResolver, len(resp.Users))
@@ -128,7 +128,7 @@ func (q *QueryResolver) CreateOrg(ctx context.Context, args *createOrgArgs) (gra
 		OrgName: args.OrgName,
 	})
 	if err != nil {
-		return graphql.ID(uuid.Nil.String()), err
+		return graphql.ID(uuid.Nil.String()), rpcErrorHelper(err)
 	}
 	return graphql.ID(utils.ProtoToUUIDStr(resp)), nil
 }
@@ -210,7 +210,7 @@ func (q *QueryResolver) UpdateOrgSettings(ctx context.Context, args updateOrgSet
 	grpcAPI := q.Env.OrgServer
 	_, err := grpcAPI.UpdateOrg(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, rpcErrorHelper(err)
 	}
 
 	orgInfo, err := grpcAPI.GetOrg(ctx, idPb)
