@@ -147,10 +147,12 @@ const SetupPage = React.memo(function SetupPage({ children }) {
 const SetupOrganization = React.memo<{ redirectUri: string }>(function SetupOrganization({ redirectUri }) {
   const classes = useStyles();
 
+  const [createOrgError, setCreateOrgError] = React.useState('');
   const [inputValue, setInputValue] = React.useState('');
   const onInputChange = React.useCallback((event) => {
+    setCreateOrgError('');
     setInputValue(event.target.value);
-  }, []);
+  }, [setInputValue, setCreateOrgError]);
 
   const [valid, validationMessage] = React.useMemo(() => {
     if (!inputValue.trim().length) {
@@ -184,8 +186,10 @@ const SetupOrganization = React.memo<{ redirectUri: string }>(function SetupOrga
       Axios.post('/api/auth/refetch')
     )).then(() => {
       window.location.href = redirectUri;
+    }).catch((error) => {
+      setCreateOrgError(error.message);
     });
-  }, [createOrgMutation, inputValue, redirectUri, valid]);
+  }, [createOrgMutation, inputValue, redirectUri, setCreateOrgError, valid]);
 
   const onSubmit = React.useCallback((event: React.FormEvent) => {
     createOrg();
@@ -210,9 +214,9 @@ const SetupOrganization = React.memo<{ redirectUri: string }>(function SetupOrga
         <div className={classes.inputContainer}>
           <TextField
             variant='outlined'
-            error={!valid && inputValue.length > 0}
+            error={((!valid && inputValue.length > 0) || !!createOrgError)}
             label='Organization Name'
-            helperText={validationMessage}
+            helperText={createOrgError}
             value={inputValue}
             onChange={onInputChange}
           />
