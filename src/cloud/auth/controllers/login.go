@@ -237,6 +237,9 @@ func (s *Server) completeUserLogin(ctx context.Context, userInfo *UserInfo, orgI
 	orgID := userInfo.PLOrgID
 	if orgInfo != nil {
 		orgID = utils.ProtoToUUIDStr(orgInfo.ID)
+		if orgID != userInfo.PLOrgID {
+			_, _ = s.updateAuthProviderUser(userInfo.AuthProviderID, orgID, userInfo.PLUserID)
+		}
 	}
 	// Check to make sure the user is approved to login. They are default approved
 	// if the org does not EnableApprovals.
