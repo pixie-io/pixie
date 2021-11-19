@@ -28,8 +28,8 @@ import (
 // and returns nil for valid orgs, else returns and error informing why the
 // name is considered invalid.
 func ValidateOrgName(name string) error {
-	if strings.ContainsAny(name, ".") {
-		return errors.New("Org name contains disallowed char `.`")
+	if strings.ContainsAny(name, "./\\$") {
+		return errors.New("Org name contains disallowed characters (ex. $./\\)")
 	}
 	if !utf8.ValidString(name) {
 		return errors.New("Org name is not valid UTF-8")
