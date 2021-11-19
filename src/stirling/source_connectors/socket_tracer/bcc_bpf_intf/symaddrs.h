@@ -228,12 +228,16 @@ struct go_tls_symaddrs_t {
   // ---- function argument locations ----
 
   // Arguments of crypto/tls.(*Conn).Write.
-  struct location_t Write_c_loc;  // 8
-  struct location_t Write_b_loc;  // 16
+  struct location_t Write_c_loc;        // 8
+  struct location_t Write_b_loc;        // 16
+  struct location_t Write_retval0_loc;  // 40
+  struct location_t Write_retval1_loc;  // 48
 
   // Arguments of crypto/tls.(*Conn).Read.
-  struct location_t Read_c_loc;  // 8
-  struct location_t Read_b_loc;  // 16
+  struct location_t Read_c_loc;        // 8
+  struct location_t Read_b_loc;        // 16
+  struct location_t Read_retval0_loc;  // 40
+  struct location_t Read_retval1_loc;  // 48
 };
 
 struct openssl_symaddrs_t {

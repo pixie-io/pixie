@@ -409,6 +409,8 @@ Status PopulateGoTLSDebugSymbols(DwarfReader* dwarf_reader, struct go_tls_symadd
     auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     LOG_ASSIGN(symaddrs->Write_c_loc, GetArgOffset(args_map, "c"));
     LOG_ASSIGN(symaddrs->Write_b_loc, GetArgOffset(args_map, "b"));
+    LOG_ASSIGN(symaddrs->Write_retval0_loc, GetArgOffset(args_map, "~r1"));
+    LOG_ASSIGN(symaddrs->Write_retval1_loc, GetArgOffset(args_map, "~r2"));
   }
 
   // Arguments of crypto/tls.(*Conn).Read.
@@ -417,6 +419,8 @@ Status PopulateGoTLSDebugSymbols(DwarfReader* dwarf_reader, struct go_tls_symadd
     auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     LOG_ASSIGN(symaddrs->Read_c_loc, GetArgOffset(args_map, "c"));
     LOG_ASSIGN(symaddrs->Read_b_loc, GetArgOffset(args_map, "b"));
+    LOG_ASSIGN(symaddrs->Read_retval0_loc, GetArgOffset(args_map, "~r1"));
+    LOG_ASSIGN(symaddrs->Read_retval1_loc, GetArgOffset(args_map, "~r2"));
   }
 
   // List mandatory symaddrs here (symaddrs without which all probes become useless).

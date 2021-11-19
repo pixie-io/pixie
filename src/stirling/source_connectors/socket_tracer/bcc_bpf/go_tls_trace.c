@@ -48,6 +48,8 @@ int probe_tls_conn_write(struct pt_regs* ctx) {
   // Required argument offsets.
   REQUIRE_LOCATION(symaddrs->Write_c_loc, 0);
   REQUIRE_LOCATION(symaddrs->Write_b_loc, 0);
+  REQUIRE_LOCATION(symaddrs->Write_retval0_loc, 0);
+  REQUIRE_LOCATION(symaddrs->Write_retval1_loc, 0);
 
   // ---------------------------------------------
   // Extract arguments (on stack)
@@ -61,12 +63,11 @@ int probe_tls_conn_write(struct pt_regs* ctx) {
   char* plaintext_ptr;
   bpf_probe_read(&plaintext_ptr, sizeof(char*), sp + symaddrs->Write_b_loc.offset);
 
-  // TODO(oazizi): Use symaddrs instead of constant offsets.
   int64_t retval0;
-  bpf_probe_read(&retval0, sizeof(retval0), sp + 40);
+  bpf_probe_read(&retval0, sizeof(retval0), sp + symaddrs->Write_retval0_loc.offset);
 
   struct go_interface retval1;
-  bpf_probe_read(&retval1, sizeof(retval1), sp + 48);
+  bpf_probe_read(&retval1, sizeof(retval1), sp + symaddrs->Write_retval1_loc.offset);
 
   // If function returns an error, then there's no data to trace.
   if (retval1.ptr != 0) {
@@ -119,6 +120,8 @@ int probe_tls_conn_read(struct pt_regs* ctx) {
   // Required argument offsets.
   REQUIRE_LOCATION(symaddrs->Read_c_loc, 0);
   REQUIRE_LOCATION(symaddrs->Read_b_loc, 0);
+  REQUIRE_LOCATION(symaddrs->Read_retval0_loc, 0);
+  REQUIRE_LOCATION(symaddrs->Read_retval1_loc, 0);
 
   // ---------------------------------------------
   // Extract arguments (on stack)
@@ -133,10 +136,10 @@ int probe_tls_conn_read(struct pt_regs* ctx) {
   bpf_probe_read(&plaintext_ptr, sizeof(char*), sp + symaddrs->Read_b_loc.offset);
 
   int64_t retval0;
-  bpf_probe_read(&retval0, sizeof(retval0), sp + 40);
+  bpf_probe_read(&retval0, sizeof(retval0), sp + symaddrs->Read_retval0_loc.offset);
 
   struct go_interface retval1;
-  bpf_probe_read(&retval1, sizeof(retval1), sp + 48);
+  bpf_probe_read(&retval1, sizeof(retval1), sp + symaddrs->Read_retval1_loc.offset);
 
   // If function returns an error, then there's no data to trace.
   if (retval1.ptr != 0) {
