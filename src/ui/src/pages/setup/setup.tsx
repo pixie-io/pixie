@@ -164,8 +164,8 @@ const SetupOrganization = React.memo<{ redirectUri: string }>(function SetupOrga
     if (inputValue.trim().length > 50) {
       return [false, 'Name is too long'];
     }
-    if (inputValue.includes('.') || inputValue.includes('$')) {
-      return [false, 'Name must not contain special characters (ex. $.)'];
+    if (inputValue.match(/[.$/\\]/g)) {
+      return [false, 'Name must not contain special characters (ex. ./\\$)'];
     }
     return [true, ''];
   }, [inputValue]);
@@ -216,7 +216,7 @@ const SetupOrganization = React.memo<{ redirectUri: string }>(function SetupOrga
             variant='outlined'
             error={((!valid && inputValue.length > 0) || !!createOrgError)}
             label='Organization Name'
-            helperText={createOrgError}
+            helperText={createOrgError || validationMessage}
             value={inputValue}
             onChange={onInputChange}
           />
