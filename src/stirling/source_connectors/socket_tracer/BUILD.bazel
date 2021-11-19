@@ -85,7 +85,6 @@ pl_cc_test(
 
 pl_cc_test(
     name = "conn_trackers_manager_test",
-    timeout = "moderate",
     srcs = ["conn_trackers_manager_test.cc"],
     deps = [
         ":cc_library",
@@ -158,7 +157,6 @@ pl_cc_test(
     name = "http_trace_bpf_test",
     timeout = "moderate",
     srcs = ["http_trace_bpf_test.cc"],
-    # This test sometimes times out.
     flaky = True,
     shard_count = 3,
     tags = [
@@ -346,9 +344,10 @@ pl_cc_test(
 
 pl_cc_test(
     name = "openssl_trace_bpf_test",
-    timeout = "moderate",
+    timeout = "long",
     srcs = ["openssl_trace_bpf_test.cc"],
     flaky = True,
+    shard_count = 2,
     tags = [
         "no_asan",
         "requires_bpf",
