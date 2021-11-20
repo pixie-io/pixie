@@ -37,6 +37,7 @@ core.workflow(
             "*_private.*",
             "credentials/**",
             "experimental/**",
+            "private/**",
         ],
     ),
     authoring = authoring.pass_thru("Copybara <copybara@pixielabs.ai>"),
