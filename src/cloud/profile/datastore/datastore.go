@@ -29,6 +29,12 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+const (
+	// See https://www.postgresql.org/docs/current/errcodes-appendix.html
+	// Code for `unique_violation`
+	uniqueViolation = "23505"
+)
+
 // TODO(zasgar): Move these to models ?
 
 // UserInfo tracks information about a specific end-user.
@@ -330,7 +336,7 @@ func (d *Datastore) createUserUsingTxn(txn *sqlx.Tx, userInfo *UserInfo) (uuid.U
 	err = rows.Err()
 	switch e := err.(type) {
 	case pgx.PgError:
-		if e.Code == "23505" {
+		if e.Code == uniqueViolation {
 			return uuid.Nil, ErrDuplicateUser
 		}
 	}
@@ -355,7 +361,7 @@ func (d *Datastore) createOrgUsingTxn(txn *sqlx.Tx, orgInfo *OrgInfo) (uuid.UUID
 	err = rows.Err()
 	switch e := err.(type) {
 	case pgx.PgError:
-		if e.Code == "23505" {
+		if e.Code == uniqueViolation {
 			return uuid.Nil, ErrDuplicateOrgName
 		}
 	}
