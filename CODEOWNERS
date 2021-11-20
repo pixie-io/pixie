@@ -1,20 +1,24 @@
 # The default assignees if none of the subpaths match.
-.               @pixie-io/core-maintainers
+*               @pixie-io/core-maintainers
 
 # Build files.
-Jenkinsfile     @pixie-io/build
-bazel           @pixie-io/build
-ci/             @pixie-io/build
+/Jenkinsfile    @pixie-io/build
+/bazel/         @pixie-io/build
+/ci/            @pixie-io/build
+/scripts/       @pixie-io/build
+/third_party/   @pixie-io/build
+/tools/         @pixie-io/build
+.arc*           @pixie-io/build
 go.mod          @pixie-io/build
 package.json    @pixie-io/build
-scripts         @pixie-io/build
-third_party     @pixie-io/build
+WORKSPACE       @pixie-io/build
+*.bzl           @pixie-io/build
 
 # Main source code paths.
-src/            @pixie-io/vizier
-src/cloud       @pixie-io/cloud
-src/common      @pixie-io/maintainers
-src/shared      @pixie-io/maintainers
-src/stirling    @pixie-io/stirling
-src/ui          @pixie-io/ui
-src/vizier      @pixie-io/vizier
+/src/           @pixie-io/vizier
+/src/cloud/     @pixie-io/cloud
+/src/common/    @pixie-io/maintainers
+/src/shared/    @pixie-io/maintainers
+/src/stirling/  @pixie-io/stirling
+/src/ui/        @pixie-io/ui
+/src/vizier/    @pixie-io/vizier
