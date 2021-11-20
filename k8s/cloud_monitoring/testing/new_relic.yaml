@@ -149,7 +149,7 @@ metadata:
     app.kubernetes.io/name: nri-prometheus
     helm.sh/chart: nri-prometheus-1.10.0
     app.kubernetes.io/instance: nri-bundle
-    app.kubernetes.io/version: "2.9.0"
+    app.kubernetes.io/version: "2.10.0"
   annotations:
     null
 ---
@@ -664,7 +664,7 @@ metadata:
     app.kubernetes.io/name: nri-prometheus
     helm.sh/chart: nri-prometheus-1.10.0
     app.kubernetes.io/instance: nri-bundle
-    app.kubernetes.io/version: "2.9.0"
+    app.kubernetes.io/version: "2.10.0"
 rules:
 - apiGroups: [""]
   resources:
@@ -934,13 +934,13 @@ metadata:
     app.kubernetes.io/name: nri-prometheus
     helm.sh/chart: nri-prometheus-1.10.0
     app.kubernetes.io/instance: nri-bundle
-    app.kubernetes.io/version: "2.9.0"
+    app.kubernetes.io/version: "2.10.0"
 apiVersion: v1
 data:
   config.yaml: |
     cluster_name: pixie-plc-testing
     audit: false
-    insecure_skip_verify: false
+    insecure_skip_verify: true
     require_scrape_enabled_label_for_nodes: true
     scrape_enabled_label: prometheus.io/scrape
     scrape_endpoints: false
@@ -1092,7 +1092,7 @@ metadata:
     app.kubernetes.io/name: nri-prometheus
     helm.sh/chart: nri-prometheus-1.10.0
     app.kubernetes.io/instance: nri-bundle
-    app.kubernetes.io/version: "2.9.0"
+    app.kubernetes.io/version: "2.10.0"
 spec:
   replicas: 1
   selector:
@@ -1104,12 +1104,12 @@ spec:
         app.kubernetes.io/name: nri-prometheus
         helm.sh/chart: nri-prometheus-1.10.0
         app.kubernetes.io/instance: nri-bundle
-        app.kubernetes.io/version: "2.9.0"
+        app.kubernetes.io/version: "2.10.0"
     spec:
       serviceAccountName: nri-prometheus
       containers:
       - name: nri-prometheus
-        image: newrelic/nri-prometheus:2.9.0
+        image: newrelic/nri-prometheus:2.10.0
         args:
           - "--configfile=/etc/nri-prometheus/config.yaml"
         ports:
@@ -1143,7 +1143,7 @@ metadata:
     app.kubernetes.io/name: nri-prometheus
     helm.sh/chart: nri-prometheus-1.10.0
     app.kubernetes.io/instance: nri-bundle
-    app.kubernetes.io/version: "2.9.0"
+    app.kubernetes.io/version: "2.10.0"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
