@@ -139,8 +139,6 @@ func main() {
 	mux.Handle("/api/auth/signup", handler.New(env, controller.AuthSignupHandler))
 	mux.Handle("/api/auth/login", handler.New(env, controller.AuthLoginHandler))
 	mux.Handle("/api/auth/loginEmbed", handler.New(env, controller.AuthLoginHandlerEmbed))
-	// TODO(michelle): Phase out this endpoint after 6/27/21. It is now replaced by `loginEmbed`.
-	mux.Handle("/api/auth/loginEmbedNew", handler.New(env, controller.AuthLoginHandlerEmbed))
 	mux.Handle("/api/auth/logout", handler.New(env, controller.AuthLogoutHandler))
 	mux.Handle("/api/auth/refetch", handler.New(env, controller.AuthRefetchHandler))
 	mux.Handle("/api/auth/oauth/login", handler.New(env, controller.AuthOAuthLoginHandler))

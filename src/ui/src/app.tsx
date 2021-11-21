@@ -321,7 +321,7 @@ const ThemedApp: React.FC = () => {
 
       let response = null;
       try {
-        response = await Axios.post('/api/auth/loginEmbedNew', {
+        response = await Axios.post('/api/auth/loginEmbed', {
           accessToken: embedPixieAPIKey ?? '',
           orgName: '',
         }, embedPixieAPIToken ? { headers: { 'pixie-api-key': embedPixieAPIToken } } : null);
