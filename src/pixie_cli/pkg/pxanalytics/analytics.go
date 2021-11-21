@@ -58,28 +58,14 @@ func Client() analytics.Client {
 
 		cloudAddr := viper.GetString("cloud_addr")
 		resp, err := http.Get(fmt.Sprintf("https://segment.%s/cli-write-key", cloudAddr))
+		if err != nil || resp == nil || resp.StatusCode != 200 {
+			return
+		}
+
+		analyticsKey, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
 		if err != nil {
 			return
-		}
-		if resp == nil {
-			return
-		}
-
-		var analyticsKey []byte
-
-		// TODO(vihang): Remove this once cloud proxy supports the `cli-write-key` path
-		// and we are past the revert window for cloud.
-		// This is to support a new cli talking to an older version of cloud.
-		if resp.StatusCode == 404 && cloudAddr == "withpixie.ai:443" {
-			analyticsKey = []byte("ehDrHWhR396KwcAQz0syA8YjwhwLXD1v")
-		}
-
-		if err == nil && resp.StatusCode == 200 {
-			analyticsKey, err = io.ReadAll(resp.Body)
-			resp.Body.Close()
-			if err != nil {
-				return
-			}
 		}
 
 		if len(analyticsKey) == 0 {
