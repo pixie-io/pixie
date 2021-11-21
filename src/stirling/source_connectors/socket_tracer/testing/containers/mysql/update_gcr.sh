@@ -17,7 +17,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Increment this number on every upload.
-version=1.2
+version=1.3
 tag="gcr.io/pixie-oss/pixie-dev-public/python_mysql_connector:$version"
 
 docker build . -t $tag
@@ -28,4 +28,4 @@ sha=$(docker inspect --format='{{index .RepoDigests 0}}' $tag | cut -f2 -d'@')
 
 echo ""
 echo "Image pushed!"
-echo "IMPORTANT: Now update //bazel/pl_workspace.bzl with the following digest: $sha"
+echo "IMPORTANT: Now update //bazel/container_images.bzl with the following digest: $sha"

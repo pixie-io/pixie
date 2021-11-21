@@ -130,7 +130,7 @@ def stirling_test_images():
     # Custom-built container with python MySQL client, for MySQL tests.
     _gcr_io_image(
         "python_mysql_connector_image",
-        "sha256:fe281dfaaf51dd00bdc4b6f8064c22138cfbc656d44372cd71b97449d790d241",
+        "sha256:ae7fb76afe1ab7c34e2d31c351579ee340c019670559716fd671126e85894452",
         "pixie-oss/pixie-dev-public/python_mysql_connector",
     )
 
