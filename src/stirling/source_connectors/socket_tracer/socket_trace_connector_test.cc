@@ -42,7 +42,6 @@ namespace stirling {
 namespace http = protocols::http;
 namespace mysql = protocols::mysql;
 namespace cass = protocols::cass;
-namespace mux = protocols::mux;
 
 using ::testing::Each;
 using ::testing::ElementsAre;
@@ -197,14 +196,12 @@ class SocketTraceConnectorTest : public ::testing::Test {
     http_table_ = (*data_tables_)[SocketTraceConnector::kHTTPTableNum];
     mysql_table_ = (*data_tables_)[SocketTraceConnector::kMySQLTableNum];
     cql_table_ = (*data_tables_)[SocketTraceConnector::kCQLTableNum];
-    mux_table_ = (*data_tables_)[SocketTraceConnector::kMuxTableNum];
   }
 
   std::unique_ptr<testing::DataTables> data_tables_;
   DataTable* http_table_;
   DataTable* mysql_table_;
   DataTable* cql_table_;
-  DataTable* mux_table_;
 
   std::unique_ptr<SourceConnector> connector_;
   SocketTraceConnector* source_ = nullptr;
@@ -215,7 +212,6 @@ class SocketTraceConnectorTest : public ::testing::Test {
   static constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
   static constexpr int kMySQLTableNum = SocketTraceConnector::kMySQLTableNum;
   static constexpr int kCQLTableNum = SocketTraceConnector::kCQLTableNum;
-  static constexpr int kMuxTableNum = SocketTraceConnector::kMuxTableNum;
 };
 
 auto ToStringVector(const types::SharedColumnWrapper& col) {
@@ -1817,56 +1813,6 @@ TEST_F(SocketTraceConnectorTest, HTTP2OldStream) {
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(3), "Request121");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(3), "Response121");
   EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(3), 0);
-}
-
-// TODO(ddelnano): Add more mux test cases here
-TEST_F(SocketTraceConnectorTest, MuxBasic) {
-  // clang-format off
-  char req[] = {
-    // mux length (15 bytes)
-    0x00, 0x00, 0x00, 0x0f,
-    // type
-    0x7f,
-    // tag
-    0x00, 0x00, 0x01,
-    // why
-    0x74, 0x69, 0x6e, 0x69, 0x74, 0x20, 0x63, 0x68, 0x65, 0x63, 0x6b,
-  };
-  std::string kMuxReq = std::string(req, sizeof(req));
-  char resp[] = {
-    // mux length (4 bytes)
-    0x00, 0x00, 0x00, 0x04,
-    // type
-    0x7f,
-    // tag
-    0x00, 0x00, 0x01,
-  };
-  // clang-format on
-  std::string kMuxResp = std::string(resp, sizeof(resp));
-  testing::EventGenerator event_gen(&mock_clock_);
-  struct socket_control_event_t conn = event_gen.InitConn();
-  std::unique_ptr<SocketDataEvent> event0_req = event_gen.InitSendEvent<kProtocolMux>(kMuxReq);
-  std::unique_ptr<SocketDataEvent> event0_resp = event_gen.InitRecvEvent<kProtocolMux>(kMuxResp);
-  struct socket_control_event_t close_event = event_gen.InitClose();
-
-  EXPECT_NE(0, source_->ClockRealTimeOffset());
-
-  // Registers a new connection.
-  source_->AcceptControlEvent(conn);
-  source_->AcceptDataEvent(std::move(event0_req));
-  source_->AcceptDataEvent(std::move(event0_resp));
-  source_->AcceptControlEvent(close_event);
-
-  connector_->TransferData(ctx_.get(), data_tables_->tables());
-
-  std::vector<TaggedRecordBatch> tablets = mux_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-
-  RecordBatch record_batch = tablets[0].records;
-  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
-  EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kMuxReqTypeIdx]), ElementsAre(0x7f));
-  EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kMuxRespTypeIdx]), ElementsAre(0x7f));
-  EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kMuxTagIdx]), ElementsAre(1));
 }
 
 }  // namespace stirling
