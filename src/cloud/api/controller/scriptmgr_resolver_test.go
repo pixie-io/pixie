@@ -28,6 +28,7 @@ import (
 	"github.com/graph-gophers/graphql-go/gqltesting"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
+	"px.dev/pixie/src/api/proto/vispb"
 	"px.dev/pixie/src/cloud/api/controller/testutils"
 )
 
@@ -86,67 +87,65 @@ func TestScriptMgrResolver(t *testing.T) {
 			`,
 			variables: map[string]interface{}{},
 		},
-		// TODO(michellenguyen, PP-2613): Re-enable when our proto migration
-		// of moving 'px' to 'pl' is complete.
-		// {
-		// 	name:     "GetLiveViewContents returns correct graphql",
-		// 	endpoint: "GetLiveViewContents",
-		// 	req: &cloudpb.GetLiveViewContentsReq{
-		// 		LiveViewID: "test-id-1",
-		// 	},
-		// 	resp: &cloudpb.GetLiveViewContentsResp{
-		// 		Metadata: &cloudpb.LiveViewMetadata{
-		// 			ID:   "test-id-1",
-		// 			Name: "1",
-		// 			Desc: "1 desc",
-		// 		},
-		// 		PxlContents: "1 pxl",
-		// 		Vis: &pl_vispb.Vis{
-		// 			Widgets: []*pl_vispb.Widget{
-		// 				{
-		// 					FuncOrRef: &pl_vispb.Widget_Func_{
-		// 						Func: &pl_vispb.Widget_Func{
-		// 							Name: "my_func",
-		// 						},
-		// 					},
-		// 					DisplaySpec: toAny(t, &pl_vispb.VegaChart{
-		// 						Spec: "{}",
-		// 					}),
-		// 				},
-		// 			},
-		// 		},
-		// 	},
-		// 	query: `
-		// 		query LiveViewContents($id: ID!) {
-		// 			liveViewContents(id: $id) {
-		// 				metadata {
-		// 					id
-		// 					name
-		// 					desc
-		// 				},
-		// 				pxlContents
-		// 				visJSON
-		// 			}
-		// 		}
-		// 	`,
-		// 	expectedResult: `
-		// 		{
-		// 			"liveViewContents": {
-		// 				"metadata": {
-		// 					"id": "test-id-1",
-		// 					"name": "1",
-		// 					"desc": "1 desc"
-		// 				},
-		// 				"pxlContents": "1 pxl",
-		// 				"visJSON": "{\"widgets\":[{\"func\":{\"name\":\"my_func\"},\"displaySpec\":` +
-		// 		`{\"@type\":\"type.googleapis.com/px.vispb.VegaChart\",\"spec\":\"{}\"}}]}"
-		// 			}
-		// 		}
-		// 	`,
-		// 	variables: map[string]interface{}{
-		// 		"id": "test-id-1",
-		// 	},
-		// },
+		{
+			name:     "GetLiveViewContents returns correct graphql",
+			endpoint: "GetLiveViewContents",
+			req: &cloudpb.GetLiveViewContentsReq{
+				LiveViewID: "test-id-1",
+			},
+			resp: &cloudpb.GetLiveViewContentsResp{
+				Metadata: &cloudpb.LiveViewMetadata{
+					ID:   "test-id-1",
+					Name: "1",
+					Desc: "1 desc",
+				},
+				PxlContents: "1 pxl",
+				Vis: &vispb.Vis{
+					Widgets: []*vispb.Widget{
+						{
+							FuncOrRef: &vispb.Widget_Func_{
+								Func: &vispb.Widget_Func{
+									Name: "my_func",
+								},
+							},
+							DisplaySpec: toAny(t, &vispb.VegaChart{
+								Spec: "{}",
+							}),
+						},
+					},
+				},
+			},
+			query: `
+				query LiveViewContents($id: ID!) {
+					liveViewContents(id: $id) {
+						metadata {
+							id
+							name
+							desc
+						},
+						pxlContents
+						visJSON
+					}
+				}
+			`,
+			expectedResult: `
+				{
+					"liveViewContents": {
+						"metadata": {
+							"id": "test-id-1",
+							"name": "1",
+							"desc": "1 desc"
+						},
+						"pxlContents": "1 pxl",
+						"visJSON": "{\"widgets\":[{\"func\":{\"name\":\"my_func\"},\"displaySpec\":` +
+				`{\"@type\":\"type.googleapis.com/px.vispb.VegaChart\",\"spec\":\"{}\"}}]}"
+					}
+				}
+			`,
+			variables: map[string]interface{}{
+				"id": "test-id-1",
+			},
+		},
 		{
 			name:     "GetScripts returns correct graphql",
 			endpoint: "GetScripts",
