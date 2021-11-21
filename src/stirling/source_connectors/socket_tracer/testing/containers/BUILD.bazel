@@ -35,6 +35,11 @@ container_image(
 )
 
 container_image(
+    name = "thriftmux_image",
+    base = "@thriftmux_base_image//image",
+)
+
+container_image(
     name = "mysql_image",
     base = "@mysql_base_image//image",
 )

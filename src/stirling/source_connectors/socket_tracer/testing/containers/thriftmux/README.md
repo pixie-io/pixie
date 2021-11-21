@@ -12,7 +12,7 @@ You will then have to update `//bazel/container_images.bzl` with the updated SHA
 
 ## About the container
 
-The container uses a multi-stage build where the first container installs `sbt` and other build dependencies. The final stage just copies the jars needed to run the application. This image provides both a thriftmux client and server. The docker container's default command will start the server process but this can be overriden. See the commands below for examples on how to use the image.
+The container uses a multi-stage build where the first container installs `sbt` and other build dependencies. The final stage just copies the jars needed to run the application. This image provides both a thriftmux client and server. The docker container's default command will start the server process but this can be overridden. See the commands below for examples on how to use the image.
 
 ```bash
 # Will run the server by default

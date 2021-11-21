@@ -149,6 +149,14 @@ def stirling_test_images():
         "confluentinc/cp-kafka",
     )
 
+    # TODO(ddelnano): Use a more appropriate docker registry. The pixie owned
+    # GCR repo seems like a much better fit than my personal docker hub one
+    _docker_io_image(
+        "thriftmux_base_image",
+        "sha256:1481ac809bfc1206a7eb10d220de2b8adb4280bad2cd05d4e88f5adc0dbd131e",
+        "ddelnano/thriftmux-example",
+    )
+
     # Zookeeper image for Kafka.
     _docker_io_image(
         "zookeeper_base_image",
