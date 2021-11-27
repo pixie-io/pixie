@@ -176,6 +176,8 @@ def pl_deps():
     _bazel_repo("bazel_gazelle")
     _bazel_repo("distroless")
     _bazel_repo("io_bazel_rules_go")
+    _bazel_repo("io_bazel_rules_scala")
+    _bazel_repo("rules_jvm_external")
     _bazel_repo("io_bazel_toolchains")
     _bazel_repo("rules_foreign_cc")
     _bazel_repo("io_bazel_rules_k8s")

@@ -31,6 +31,13 @@ REPOSITORY_LOCATIONS = dict(
             "https://github.com/bazelbuild/rules_go/releases/download/v0.26.0/rules_go-v0.26.0.tar.gz",
         ],
     ),
+    io_bazel_rules_scala = dict(
+        sha256 = "76e1abb8a54f61ada974e6e9af689c59fd9f0518b49be6be7a631ce9fa45f236",
+        urls = [
+            "https://github.com/bazelbuild/rules_scala/archive/e7a948ad1948058a7a5ddfbd9d1629d6db839933.zip",
+        ],
+        strip_prefix = "rules_scala-e7a948ad1948058a7a5ddfbd9d1629d6db839933",
+    ),
     io_bazel_rules_k8s = dict(
         sha256 = "cc75cf0d86312e1327d226e980efd3599704e01099b58b3c2fc4efe5e321fcd9",
         strip_prefix = "rules_k8s-0.3.1",
@@ -303,6 +310,11 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/USCiLab/cereal/archive/af0700efb25e7dc7af637b9e6f970dbb94813bff.tar.gz"],
         strip_prefix = "cereal-af0700efb25e7dc7af637b9e6f970dbb94813bff",
         sha256 = "6b8e8975400a84eed20dcf4490f1b16efaadbbad6d1b5ffcc5e1da3e5be1c324",
+    ),
+    rules_jvm_external = dict(
+        urls = ["https://github.com/bazelbuild/rules_jvm_external/archive/4.2.zip"],
+        sha256 = "cd1a77b7b02e8e008439ca76fd34f5b07aecb8c752961f9640dea15e9e5ba1ca",
+        strip_prefix = "rules_jvm_external-4.2",
     ),
 )
 
