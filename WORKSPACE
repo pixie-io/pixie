@@ -100,6 +100,58 @@ load("@vizier_api_python_deps//:requirements.bzl", "install_deps")
 
 install_deps()
 
+# java_external
+load("@rules_jvm_external//:defs.bzl", "maven_install")
+
+finagle_version = "21.4.0"
+scala_version = "2.13.6"
+scala_minor_version = ".".join(scala_version.split(".")[:2])
+maven_install(
+    artifacts = [
+        "com.twitter:finagle-thriftmux_%s:%s" % (scala_minor_version, finagle_version),
+        "com.twitter:finagle-mux_%s:%s" % (scala_minor_version, finagle_version),
+        "com.twitter:finagle-core_%s:%s" % (scala_minor_version, finagle_version),
+        "com.twitter:scrooge-core_%s:%s" % (scala_minor_version, finagle_version),
+        "com.twitter:finagle-http_%s:%s" % (scala_minor_version, finagle_version),
+        "org.apache.thrift:libthrift:0.10.0",
+    ],
+    repositories = ["https://repo1.maven.org/maven2"],
+)
+
+# Setup scala_image
+load("@io_bazel_rules_scala//:scala_config.bzl", "scala_config")
+scala_config(scala_version = scala_version)
+
+load("@io_bazel_rules_scala//scala:scala.bzl", "scala_repositories")
+scala_repositories()
+
+load("@io_bazel_rules_scala//scala:toolchains.bzl", "scala_register_toolchains")
+scala_register_toolchains()
+
+load(
+    "@io_bazel_rules_docker//scala:image.bzl",
+    scala_image_repos = "repositories",
+)
+
+scala_image_repos()
+
+load("@io_bazel_rules_scala//twitter_scrooge:twitter_scrooge.bzl", "twitter_scrooge")
+twitter_scrooge()
+
+# twitter_scrooge will use incompatible versions of @scrooge_jars and @thrift_jars.
+# These bind statements ensure that the correct versions of finagle libthrift are used
+# so that compiliation is successful. See https://github.com/bazelbuild/rules_scala/issues/592
+# and https://github.com/bazelbuild/rules_scala/pull/847 for more details.
+bind(
+    name = "io_bazel_rules_scala/dependency/thrift/scrooge_core",
+    actual = "//src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux:scrooge_jars"
+)
+
+bind(
+    name = "io_bazel_rules_scala/dependency/thrift/libthrift",
+    actual = "//src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux:thrift_jars"
+)
+
 # gazelle:repo bazel_gazelle
 
 load("//:go_deps.bzl", "pl_go_dependencies")

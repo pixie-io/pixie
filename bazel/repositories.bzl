@@ -173,6 +173,8 @@ def pl_deps():
     _com_llvm_lib()
 
     _bazel_repo("io_bazel_rules_go")
+    _bazel_repo("io_bazel_rules_scala")
+    _bazel_repo("rules_jvm_external")
     _bazel_repo("com_github_bazelbuild_buildtools")
     _bazel_repo("bazel_skylib")
 
