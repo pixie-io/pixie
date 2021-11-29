@@ -17,7 +17,6 @@
  */
 
 import * as React from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import { LiveRouteContext, push } from 'app/containers/App/live-routing';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
 import { getQueryFuncs } from 'app/containers/live/vis';
@@ -126,8 +125,6 @@ export const ScriptContextProvider: React.FC = React.memo(function ScriptContext
   const readyToExecute = !loadingAvailableScripts;
   const [awaitingExecution, setAwaitingExecution] = React.useState(false);
 
-  const { enableE2EEncryption } = useFlags();
-
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const execute: () => void = React.useMemo(() => () => {
     if (!readyToExecute) {
@@ -165,7 +162,7 @@ export const ScriptContextProvider: React.FC = React.memo(function ScriptContext
     const execution = apiClient.executeScript(
       clusterConfig,
       script.code,
-      { enableE2EEncryption },
+      { enableE2EEncryption: true },
       getQueryFuncs(script.vis, args, embedState.widget),
     );
     setRunningExecution(execution);

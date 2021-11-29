@@ -17,7 +17,6 @@
  */
 
 import * as React from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { gql, useQuery } from '@apollo/client';
 import { Breadcrumbs, StatusCell, StatusGroup } from 'app/components';
@@ -185,7 +184,6 @@ const AgentsTable: React.FC = () => {
   const client = React.useContext(PixieAPIContext);
 
   const [state, setState] = React.useState<AgentDisplayState>({ data: [] });
-  const { enableE2EEncryption } = useFlags();
 
   React.useEffect(() => {
     if (!client) {
@@ -209,7 +207,7 @@ const AgentsTable: React.FC = () => {
       const onError = (error) => {
         setState({ data: [], error: error?.message });
       };
-      client.executeScript(clusterConfig, AGENT_STATUS_SCRIPT, { enableE2EEncryption }, []).pipe(
+      client.executeScript(clusterConfig, AGENT_STATUS_SCRIPT, { enableE2EEncryption: true }, []).pipe(
         filter((update) => !['data', 'cancel', 'error'].includes(update.event.type)),
         tap((update) => {
           if (update.event.type === 'error') {
@@ -232,7 +230,7 @@ const AgentsTable: React.FC = () => {
       }
       executionSubject.unsubscribe();
     };
-  }, [client, clusterConfig, enableE2EEncryption]);
+  }, [client, clusterConfig]);
 
   if (state.error) {
     return (
