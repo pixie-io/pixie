@@ -30,7 +30,7 @@ import {
 import { QueryResultTableDisplay, QueryResultTable } from 'app/containers/live-widgets/table/query-result-viewer';
 import * as React from 'react';
 import * as GridLayout from 'react-grid-layout';
-import { resizeEvent, triggerResize } from 'app/utils/resize';
+import { triggerResize } from 'app/utils/resize';
 import { dataFromProto } from 'app/utils/result-data-utils';
 import { VizierQueryError, VizierTable } from 'app/api';
 import { containsMutation } from 'app/utils/pxl';
@@ -351,29 +351,25 @@ const Canvas: React.FC<CanvasProps> = React.memo(function Canvas({ editable, par
     }
   }, [loading, tables, isEmbedded]);
 
+  const updateDefaultHeight = React.useCallback(() => {
+    const newHeight = parentRef.current?.getBoundingClientRect()?.height ?? 0;
+    if (newHeight !== 0 && newHeight !== defaultHeight) {
+      setDefaultHeight(newHeight);
+    }
+  }, [defaultHeight, parentRef]);
+
   React.useEffect(() => {
-    // TODO(nick,PC-1050): Check if the below is still true with react-window and react-virtualized-auto-sizer.
-    //  If that issue has been fixed, remove this handler. In fact, defaultHeight might be redundant now anyway?
-    //  We have withAutosizerContext that can do this work in less code. Might as well.
     /**
      * React-virtualized's AutoSizer works whenever the window receives a resize event. However, this only works with
      * trusted (real) events, synthetic ones don't trigger it. Listening for the untrusted events and manually updating
      * the container's height when that happens is sufficient to fix this.
      */
-    const listener = (event: Event) => {
-      if (event.type === 'resize' && !event.isTrusted) {
-        setDefaultHeight(parentRef.current.getBoundingClientRect().height);
-      }
-    };
-    window.addEventListener('resize', listener);
-    return () => window.removeEventListener('resize', listener);
-  }, [parentRef]);
+    window.addEventListener('resize', updateDefaultHeight);
+    return () => window.removeEventListener('resize', updateDefaultHeight);
+  }, [updateDefaultHeight]);
 
   if (parentRef.current && !defaultHeight) {
-    const newHeight = parentRef.current.getBoundingClientRect().height;
-    if (newHeight !== defaultHeight) {
-      setDefaultHeight(newHeight);
-    }
+    updateDefaultHeight();
   }
 
   // These are that we want to propagate to any downstream links in the data table
@@ -381,17 +377,6 @@ const Canvas: React.FC<CanvasProps> = React.memo(function Canvas({ editable, par
   const propagatedArgs = React.useMemo(() => ({
     start_time: args.start_time,
   }), [args]);
-
-  React.useEffect(() => {
-    const handler = (event) => {
-      if (event === resizeEvent || !parentRef.current) {
-        return;
-      }
-      setDefaultHeight(parentRef.current.getBoundingClientRect().height);
-    };
-    window.addEventListener('resize', handler);
-    return () => window.removeEventListener('resize', handler);
-  }, [parentRef, setDefaultHeight]);
 
   const setVis = React.useCallback(
     (vis: Vis) => setScriptAndArgs({ ...script, vis }, args),
