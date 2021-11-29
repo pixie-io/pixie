@@ -487,6 +487,72 @@ static __inline bool is_redis_message(const char* buf, size_t count) {
   return true;
 }
 
+// TODO(ddelnano): Mux protocol traffic is currently misidentified as ssh. Since
+// stirling doesn't have ssh support yet, but will need to be addressed. In addition,
+// mux seems to send the header and body on its protocol in two separate syscalls on
+// the server side.
+static __inline enum message_type_t infer_mux_message(const char* buf, size_t count) {
+  // mux's on the wire format causes false positives for protocol inference
+  // In order to address this, we only infer mux messages by the
+  // most useful message types and if they are easy to identify
+  static const int8_t kTdispatch = 2;
+  static const int8_t kRdispatch = -2;
+  static const int8_t kTinit = 68;
+  static const int8_t kRinit = -68;
+  static const int8_t kRerr = -128;
+  static const int8_t kRerrOld = 127;
+  uint32_t mux_header_size = 8;
+  // TODO(ddelnano): Determine why mux-framer text in T/Rinit is
+  // 6 bytes after the mux header
+  int32_t mux_framer_pos = mux_header_size + 6;
+
+  if (count < mux_header_size) {
+    return kUnknown;
+  }
+
+  uint32_t length = read_big_endian_int32(buf) + 4;
+  enum message_type_t msg_type;
+
+  int32_t type_and_tag = read_big_endian_int32(buf + 4);
+  int8_t mux_type = (type_and_tag & 0xff000000) >> 24;
+  uint32_t tag = (type_and_tag & 0xffffff);
+  switch (mux_type) {
+    case kTdispatch:
+    case kTinit:
+    case kRerrOld:
+      msg_type = kRequest;
+      break;
+    case kRdispatch:
+    case kRinit:
+    case kRerr:
+      msg_type = kResponse;
+      break;
+    default:
+      return kUnknown;
+  }
+
+  if (mux_type == kRerr || mux_type == kRerrOld) {
+    if (buf[length - 5] != 'c' || buf[length - 4] != 'h' || buf[length - 3] != 'e' ||
+        buf[length - 2] != 'c' || buf[length - 1] != 'k')
+      return kUnknown;
+  }
+
+  if (mux_type == kRinit || mux_type == kTinit) {
+    if (buf[mux_framer_pos] != 'm' || buf[mux_framer_pos + 1] != 'u' ||
+        buf[mux_framer_pos + 2] != 'x' || buf[mux_framer_pos + 3] != '-' ||
+        buf[mux_framer_pos + 4] != 'f' || buf[mux_framer_pos + 5] != 'r' ||
+        buf[mux_framer_pos + 6] != 'a' || buf[mux_framer_pos + 7] != 'm' ||
+        buf[mux_framer_pos + 8] != 'e' || buf[mux_framer_pos + 9] != 'r')
+      return kUnknown;
+  }
+
+  if (tag < 1 || tag > ((1 << 23) - 1)) {
+    return kUnknown;
+  }
+
+  return msg_type;
+}
+
 // NATS messages are in texts. The role is inferred from the message type.
 // See https://github.com/nats-io/docs/blob/master/nats_protocol/nats-protocol.md
 //
@@ -565,6 +631,9 @@ static __inline struct protocol_message_t infer_protocol(const char* buf, size_t
   } else if (ENABLE_MYSQL_TRACING &&
              (inferred_message.type = infer_mysql_message(buf, count, conn_info)) != kUnknown) {
     inferred_message.protocol = kProtocolMySQL;
+  } else if (ENABLE_MUX_TRACING &&
+             (inferred_message.type = infer_mux_message(buf, count)) != kUnknown) {
+    inferred_message.protocol = kProtocolMux;
   } else if (ENABLE_KAFKA_TRACING &&
              (inferred_message.type = infer_kafka_message(buf, count, conn_info)) != kUnknown) {
     inferred_message.protocol = kProtocolKafka;
