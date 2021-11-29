@@ -612,6 +612,7 @@ auto CreateTraceRoles() {
   res.Set(kProtocolNATS, {kRoleServer});
   res.Set(kProtocolMongo, {kRoleServer});
   res.Set(kProtocolKafka, {kRoleServer});
+  res.Set(kProtocolMux, {kRoleServer});
   DCHECK(res.AreAllKeysSet());
   return res;
 }

@@ -37,6 +37,7 @@ enum class Protocol {
   kNATS = 8,
   kMongo = 9,
   kKafka = 10,
+  kMux = 11,
 };
 
 }  // namespace protocols
