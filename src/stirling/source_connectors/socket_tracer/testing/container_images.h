@@ -239,6 +239,25 @@ class DNSServerContainer : public ContainerRunner {
   static constexpr std::string_view kReadyMessage = "all zones loaded";
 };
 
+//
+//-----------------------------------------------------------------------------
+// Mux
+//-----------------------------------------------------------------------------
+
+// A ThriftMux server
+class ThriftMuxServerContainer : public ContainerRunner {
+ public:
+  ThriftMuxServerContainer()
+      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+                        kReadyMessage) {}
+
+ private:
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux/server_image.tar";
+  static constexpr std::string_view kContainerNamePrefix = "thriftmux_server";
+  static constexpr std::string_view kReadyMessage = "Finagle version";
+};
+
 //-----------------------------------------------------------------------------
 // MySQL
 //-----------------------------------------------------------------------------

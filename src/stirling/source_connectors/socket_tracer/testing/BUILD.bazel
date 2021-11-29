@@ -43,6 +43,7 @@ pl_cc_test_library(
         "//src/stirling/source_connectors/socket_tracer/testing/containers:ruby_image.tar",
         "//src/stirling/source_connectors/socket_tracer/testing/containers:zookeeper_image.tar",
         "//src/stirling/source_connectors/socket_tracer/testing/containers/pgsql:demo_client_image.tar",
+        "//src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux:server_image.tar",
         "//src/stirling/testing/demo_apps/go_grpc_tls_pl/client:client_image.tar",
         "//src/stirling/testing/demo_apps/go_grpc_tls_pl/server:server_image.tar",
         "//src/stirling/testing/demo_apps/go_https/client:client_image.tar",

@@ -19,6 +19,8 @@ load("@io_bazel_rules_scala//scala:scala.bzl", "scala_binary", "scala_library")
 load("@io_bazel_rules_scala//thrift:thrift.bzl", "thrift_library")
 load("@io_bazel_rules_scala//twitter_scrooge:twitter_scrooge.bzl", "scrooge_scala_library")
 
+package(default_visibility = ["//src/stirling:__subpackages__"])
+
 thrift_library(
     name = "thrift_library",
     srcs = glob(["**/*.thrift"]),
@@ -74,15 +76,6 @@ scala_image(
     name = "server_image",
     srcs = glob(["**/*.scala"]),
     main_class = "Server",
-    deps = [
-        ":thriftmux_scrooge",
-    ],
-)
-
-scala_image(
-    name = "client_image",
-    srcs = glob(["**/*.scala"]),
-    main_class = "Client",
     deps = [
         ":thriftmux_scrooge",
     ],
