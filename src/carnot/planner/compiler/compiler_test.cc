@@ -3229,6 +3229,32 @@ TEST_F(CompilerTest, syntax_error_in_func_params) {
   EXPECT_THAT(plan_or_s.status(), HasCompilerError("SyntaxError"));
 }
 
+constexpr char kCrashQuery[] = R"pxl(
+import px
+
+ns_per_ms = 1000 * 1000
+ns_per_s = 1000 * ns_per_ms
+# Window size to use on time_ column for bucketing.
+window_ns = px.DurationNanos(10 * ns_per_s)
+
+def getWavelength(node: str):
+    return "test"
+
+def nodes(start_time: str):
+    df = px.DataFrame(table='process_stats', start_time=start_time)
+    df.node = df.ctx['node_name']
+    df['wavelength_zone'] = getWavelength(df.node)
+    return df.groupby(['node','wavelength_zone']).agg()
+
+px.display(nodes('-5m'))
+)pxl";
+TEST_F(CompilerTest, crash) {
+  auto plan_or_s = compiler_.CompileToIR(kCrashQuery, compiler_state_.get());
+  ASSERT_NOT_OK(plan_or_s);
+  EXPECT_THAT(plan_or_s.status(),
+              HasCompilerError(R"err(Expected 'string', received 'data_type_unknown')err"));
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

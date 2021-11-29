@@ -106,7 +106,12 @@ class ColumnIR : public ExpressionIR {
     PL_ASSIGN_OR_RETURN(OperatorIR * referenced_op, ReferencedOperator());
     return referenced_op->id();
   }
-  types::DataType EvaluatedDataType() const override { return resolved_value_type()->data_type(); }
+  types::DataType EvaluatedDataType() const override {
+    if (!is_type_resolved()) {
+      return types::DataType::DATA_TYPE_UNKNOWN;
+    }
+    return resolved_value_type()->data_type();
+  }
   bool IsDataTypeEvaluated() const override { return is_type_resolved(); }
 
   StatusOr<int64_t> GetColumnIndex() const;
