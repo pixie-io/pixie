@@ -26,6 +26,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/kafka/common/types.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/mux/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/nats/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/pgsql/types.h"
@@ -40,6 +41,7 @@ namespace protocols {
 using FrameDequeVariant = std::variant<std::monostate,
                                        std::deque<cass::Frame>,
                                        std::deque<http::Message>,
+                                       std::deque<mux::Frame>,
                                        std::deque<mysql::Packet>,
                                        std::deque<pgsql::RegularMessage>,
                                        std::deque<dns::Frame>,

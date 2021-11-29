@@ -59,6 +59,7 @@ enum traffic_protocol_t {
   kProtocolNATS = 8,
   kProtocolMongo = 9,
   kProtocolKafka = 10,
+  kProtocolMux = 11,
 
 // We use magic enum to iterate through protocols in C++ land,
 // and don't want the C-enum-size trick to show up there.
