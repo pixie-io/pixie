@@ -41,7 +41,11 @@ RecordsWithErrorCount<mux::Record> StitchFrames(std::deque<mux::Frame>* reqs,
   int error_count = 0;
 
   for (auto& req : *reqs) {
-    for (auto& resp : *resps) {
+    for (auto resp_it = resps->begin(); resp_it != resps->end(); resp_it++) {
+      auto& resp = *resp_it;
+
+      if (resp.consumed) continue;
+
       Type req_type = static_cast<Type>(req.type);
 
       // Tlease messages do not have a response pair
@@ -51,7 +55,7 @@ RecordsWithErrorCount<mux::Record> StitchFrames(std::deque<mux::Frame>* reqs,
         break;
       }
       if (req.timestamp_ns > resp.timestamp_ns) {
-        resps->pop_front();
+        resp.consumed = true;
         error_count++;
         VLOG(1) << absl::Substitute(
             "Did not find a request matching the response. Tag = $0 Type = $1", uint32_t(resp.tag),
@@ -67,18 +71,20 @@ RecordsWithErrorCount<mux::Record> StitchFrames(std::deque<mux::Frame>* reqs,
       }
 
       req.consumed = true;
+      resp.consumed = true;
       records.push_back({std::move(req), std::move(resp)});
-      resps->pop_front();
       break;
     }
   }
   // TODO(ddelnano): Clean up stale requests once there is a mechanism to do so
-  for (const auto& req_frame : *reqs) {
-    if (!req_frame.consumed) {
+  auto it = reqs->begin();
+  while (it != reqs->end()) {
+    if (!(*it).consumed) {
       break;
     }
-    reqs->pop_front();
+    it++;
   }
+  reqs->erase(reqs->begin(), it);
   resps->clear();
 
   return {records, error_count};

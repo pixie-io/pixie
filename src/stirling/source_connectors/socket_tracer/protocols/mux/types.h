@@ -171,7 +171,7 @@ struct Record {
   Frame resp;
 };
 
-struct ProtocolTraits {
+struct ProtocolTraits : public BaseProtocolTraits<Record> {
   using frame_type = Frame;
   using record_type = Record;
   // TODO(ddelnano): mux does have state but assume no state for now

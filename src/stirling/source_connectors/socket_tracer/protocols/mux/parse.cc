@@ -30,6 +30,10 @@ namespace mux {
 ParseState ParseFullFrame(BinaryDecoder* decoder, Frame* frame) {
   PL_ASSIGN_OR(frame->tag, decoder->ExtractInt<uint24_t>(), return ParseState::kInvalid);
 
+  if (frame->tag < 1 || frame->tag > ((1 << 23) - 1)) {
+    return ParseState::kInvalid;
+  }
+
   Type frame_type = static_cast<Type>(frame->type);
 
   if (frame_type == Type::kRerrOld || frame_type == Type::kRerr) {
@@ -41,6 +45,10 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, Frame* frame) {
 
   if (frame_type == Type::kRinit || frame_type == Type::kTinit) {
     // TODO(ddelnano): Add support for reading Tinit and Rinit compression, tls and other parameters
+    return ParseState::kSuccess;
+  }
+
+  if (frame_type == Type::kTping || frame_type == Type::kRping) {
     return ParseState::kSuccess;
   }
 
@@ -119,7 +127,8 @@ ParseState ParseFrame(message_type_t, std::string_view* buf, mux::Frame* frame, 
 
   ParseState parse_state = mux::ParseFullFrame(&decoder, frame);
   if (parse_state == ParseState::kSuccess) {
-    buf->remove_prefix(frame->length);
+    constexpr int kHeaderLength = 4;
+    buf->remove_prefix(frame->length + kHeaderLength);
   }
   return parse_state;
 }
