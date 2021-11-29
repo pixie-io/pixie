@@ -55,13 +55,13 @@ std::vector<DWARFDie> GetParamDIEs(const DWARFDie& function_die) {
 // https://superuser.com/questions/791506/how-to-determine-if-a-linux-binary-file-is-32-bit-or-64-bit
 uint8_t kAddressSize = sizeof(void*);
 
-StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::Create(
-    const std::filesystem::path& obj_file_path, bool index) {
+StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::CreateWithoutIndexing(
+    const std::filesystem::path& path) {
   using llvm::MemoryBuffer;
 
   std::error_code ec;
 
-  std::string obj_filename = obj_file_path.string();
+  std::string obj_filename = path.string();
 
   llvm::ErrorOr<std::unique_ptr<MemoryBuffer>> buff_or_err =
       MemoryBuffer::getFileOrSTDIN(obj_filename);
@@ -88,10 +88,20 @@ StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::Create(
 
   PL_RETURN_IF_ERROR(dwarf_reader->DetectSourceLanguage());
 
-  if (index) {
-    dwarf_reader->IndexDIEs();
-  }
+  return dwarf_reader;
+}
 
+StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::CreateIndexingAll(
+    const std::filesystem::path& path) {
+  PL_ASSIGN_OR_RETURN(auto dwarf_reader, CreateWithoutIndexing(path));
+  dwarf_reader->IndexDIEs(std::nullopt);
+  return dwarf_reader;
+}
+
+StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::CreateWithSelectiveIndexing(
+    const std::filesystem::path& path, const std::vector<SymbolSearchPattern>& symbol_patterns) {
+  PL_ASSIGN_OR_RETURN(auto dwarf_reader, CreateWithoutIndexing(path));
+  dwarf_reader->IndexDIEs(symbol_patterns);
   return dwarf_reader;
 }
 
@@ -162,7 +172,8 @@ Status DwarfReader::DetectSourceLanguage() {
       "any compilation unit.");
 }
 
-void DwarfReader::IndexDIEs() {
+void DwarfReader::IndexDIEs(
+    const std::optional<std::vector<SymbolSearchPattern>>& symbol_search_patterns_opt) {
   absl::flat_hash_map<const llvm::DWARFDebugInfoEntry*, std::string> dwarf_entry_names;
 
   // Map from DW_AT_specification to DIE. Only DW_TAG_subprogram can have this attribute.
@@ -190,6 +201,12 @@ void DwarfReader::IndexDIEs() {
       auto name = std::string(GetShortName(die));
 
       if (name.empty()) {
+        continue;
+      }
+
+      // Only check matching if patterns are provided.
+      if (symbol_search_patterns_opt.has_value() &&
+          !MatchesSymbolAny(name, symbol_search_patterns_opt.value())) {
         continue;
       }
 

@@ -50,6 +50,13 @@ struct DwarfReaderTestParam {
   bool index;
 };
 
+auto CreateDwarfReader(const std::filesystem::path& path, bool indexing) {
+  if (indexing) {
+    return DwarfReader::CreateIndexingAll(path);
+  }
+  return DwarfReader::CreateWithoutIndexing(path);
+}
+
 class DwarfReaderTest : public ::testing::TestWithParam<DwarfReaderTestParam> {
  protected:
   DwarfReaderTest()
@@ -67,14 +74,14 @@ class DwarfReaderTest : public ::testing::TestWithParam<DwarfReaderTestParam> {
 };
 
 TEST_F(DwarfReaderTest, NonExistentPath) {
-  auto s = px::stirling::obj_tools::DwarfReader::Create("/bogus");
+  auto s = DwarfReader::CreateWithoutIndexing("/bogus");
   ASSERT_NOT_OK(s);
 }
 
 TEST_F(DwarfReaderTest, SourceLanguage) {
   {
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                         DwarfReader::Create(kCppBinaryPath));
+                         DwarfReader::CreateWithoutIndexing(kCppBinaryPath));
     // We use C++17, but the dwarf shows 14.
     EXPECT_EQ(dwarf_reader->source_language(), llvm::dwarf::DW_LANG_C_plus_plus_14);
     EXPECT_THAT(dwarf_reader->compiler(), ::testing::HasSubstr("clang"));
@@ -82,7 +89,7 @@ TEST_F(DwarfReaderTest, SourceLanguage) {
 
   {
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                         DwarfReader::Create(kGo1_16BinaryPath));
+                         DwarfReader::CreateWithoutIndexing(kGo1_16BinaryPath));
     EXPECT_EQ(dwarf_reader->source_language(), llvm::dwarf::DW_LANG_Go);
     EXPECT_THAT(dwarf_reader->compiler(), ::testing::HasSubstr("go"));
     EXPECT_THAT(dwarf_reader->compiler(), ::testing::Not(::testing::HasSubstr("regabi")));
@@ -90,7 +97,7 @@ TEST_F(DwarfReaderTest, SourceLanguage) {
 
   {
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                         DwarfReader::Create(kGo1_17BinaryPath));
+                         DwarfReader::CreateWithoutIndexing(kGo1_17BinaryPath));
     EXPECT_EQ(dwarf_reader->source_language(), llvm::dwarf::DW_LANG_Go);
     EXPECT_THAT(dwarf_reader->compiler(), ::testing::HasSubstr("go"));
     EXPECT_THAT(dwarf_reader->compiler(), ::testing::HasSubstr("regabi"));
@@ -101,7 +108,7 @@ TEST_F(DwarfReaderTest, SourceLanguage) {
 TEST_P(DwarfReaderTest, GetMatchingDIEsReturnsEmptyVector) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kCppBinaryPath, p.index));
+                       CreateDwarfReader(kCppBinaryPath, p.index));
   ASSERT_OK_AND_THAT(
       dwarf_reader->GetMatchingDIEs("non-existent-name", llvm::dwarf::DW_TAG_structure_type),
       IsEmpty());
@@ -110,7 +117,7 @@ TEST_P(DwarfReaderTest, GetMatchingDIEsReturnsEmptyVector) {
 TEST_P(DwarfReaderTest, CppGetStructByteSize) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kCppBinaryPath, p.index));
+                       CreateDwarfReader(kCppBinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetStructByteSize("ABCStruct32"), 12);
   EXPECT_OK_AND_EQ(dwarf_reader->GetStructByteSize("ABCStruct64"), 24);
@@ -119,7 +126,7 @@ TEST_P(DwarfReaderTest, CppGetStructByteSize) {
 TEST_P(DwarfReaderTest, Go1_16GetStructByteSize) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kGo1_16BinaryPath, p.index));
+                       CreateDwarfReader(kGo1_16BinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetStructByteSize("main.Vertex"), 16);
 }
@@ -127,7 +134,7 @@ TEST_P(DwarfReaderTest, Go1_16GetStructByteSize) {
 TEST_P(DwarfReaderTest, Go1_17GetStructByteSize) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kGo1_17BinaryPath, p.index));
+                       CreateDwarfReader(kGo1_17BinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetStructByteSize("main.Vertex"), 16);
 }
@@ -135,7 +142,7 @@ TEST_P(DwarfReaderTest, Go1_17GetStructByteSize) {
 TEST_P(DwarfReaderTest, CppGetStructMemberInfo) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kCppBinaryPath, p.index));
+                       CreateDwarfReader(kCppBinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(
       dwarf_reader->GetStructMemberInfo("ABCStruct32", llvm::dwarf::DW_TAG_structure_type, "b",
@@ -148,7 +155,7 @@ TEST_P(DwarfReaderTest, CppGetStructMemberInfo) {
 TEST_P(DwarfReaderTest, Go1_16GetStructMemberInfo) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kGo1_16BinaryPath, p.index));
+                       CreateDwarfReader(kGo1_16BinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(
       dwarf_reader->GetStructMemberInfo("main.Vertex", llvm::dwarf::DW_TAG_structure_type, "Y",
@@ -161,7 +168,7 @@ TEST_P(DwarfReaderTest, Go1_16GetStructMemberInfo) {
 TEST_P(DwarfReaderTest, Go1_17GetStructMemberInfo) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kGo1_17BinaryPath, p.index));
+                       CreateDwarfReader(kGo1_17BinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(
       dwarf_reader->GetStructMemberInfo("main.Vertex", llvm::dwarf::DW_TAG_structure_type, "Y",
@@ -174,7 +181,7 @@ TEST_P(DwarfReaderTest, Go1_17GetStructMemberInfo) {
 TEST_P(DwarfReaderTest, CppGetStructMemberOffset) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kCppBinaryPath, p.index));
+                       CreateDwarfReader(kCppBinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("ABCStruct32", "a"), 0);
   EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("ABCStruct32", "b"), 4);
@@ -184,7 +191,7 @@ TEST_P(DwarfReaderTest, CppGetStructMemberOffset) {
 TEST_P(DwarfReaderTest, Go1_16GetStructMemberOffset) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kGo1_16BinaryPath, p.index));
+                       CreateDwarfReader(kGo1_16BinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("main.Vertex", "Y"), 8);
   EXPECT_NOT_OK(dwarf_reader->GetStructMemberOffset("main.Vertex", "bogus"));
@@ -193,7 +200,7 @@ TEST_P(DwarfReaderTest, Go1_16GetStructMemberOffset) {
 TEST_P(DwarfReaderTest, Go1_17GetStructMemberOffset) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kGo1_17BinaryPath, p.index));
+                       CreateDwarfReader(kGo1_17BinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("main.Vertex", "Y"), 8);
   EXPECT_NOT_OK(dwarf_reader->GetStructMemberOffset("main.Vertex", "bogus"));
@@ -203,7 +210,7 @@ TEST_P(DwarfReaderTest, Go1_17GetStructMemberOffset) {
 TEST_P(DwarfReaderTest, GoUnconventionalGetStructMemberOffset) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kGoBinaryUnconventionalPath, p.index));
+                       CreateDwarfReader(kGoBinaryUnconventionalPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("runtime.g", "goid"), 192);
 }
@@ -211,7 +218,7 @@ TEST_P(DwarfReaderTest, GoUnconventionalGetStructMemberOffset) {
 TEST_P(DwarfReaderTest, CppGetStructSpec) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kCppBinaryPath, p.index));
+                       CreateDwarfReader(kCppBinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(
       dwarf_reader->GetStructSpec("OuterStruct"),
@@ -256,7 +263,7 @@ TEST_P(DwarfReaderTest, CppGetStructSpec) {
 TEST_P(DwarfReaderTest, GoGetStructSpec) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kGo1_17BinaryPath, p.index));
+                       CreateDwarfReader(kGo1_17BinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(
       dwarf_reader->GetStructSpec("main.OuterStruct"),
@@ -301,7 +308,7 @@ TEST_P(DwarfReaderTest, GoGetStructSpec) {
 TEST_P(DwarfReaderTest, CppArgumentTypeByteSize) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kCppBinaryPath, p.index));
+                       CreateDwarfReader(kCppBinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("CanYouFindThis", "a"), 4);
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("ABCSum32", "x"), 12);
@@ -312,7 +319,7 @@ TEST_P(DwarfReaderTest, CppArgumentTypeByteSize) {
 TEST_P(DwarfReaderTest, Golang1_16ArgumentTypeByteSize) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kGo1_16BinaryPath, p.index));
+                       CreateDwarfReader(kGo1_16BinaryPath, p.index));
 
   // v is of type *Vertex.
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("main.(*Vertex).Scale", "v"), 8);
@@ -325,7 +332,7 @@ TEST_P(DwarfReaderTest, Golang1_16ArgumentTypeByteSize) {
 TEST_P(DwarfReaderTest, Golang1_17ArgumentTypeByteSize) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kGo1_17BinaryPath, p.index));
+                       CreateDwarfReader(kGo1_17BinaryPath, p.index));
 
   // v is of type *Vertex.
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("main.(*Vertex).Scale", "v"), 8);
@@ -338,7 +345,7 @@ TEST_P(DwarfReaderTest, Golang1_17ArgumentTypeByteSize) {
 TEST_P(DwarfReaderTest, CppArgumentLocation) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kCppBinaryPath, p.index));
+                       CreateDwarfReader(kCppBinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("ABCSum32", "x"),
                    (VarLocation{.loc_type = LocationType::kRegister, .offset = 32}));
@@ -357,7 +364,7 @@ TEST_P(DwarfReaderTest, CppArgumentLocation) {
 TEST_P(DwarfReaderTest, Golang1_16ArgumentLocation) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kGo1_16BinaryPath, p.index));
+                       CreateDwarfReader(kGo1_16BinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).Scale", "v"),
                    (VarLocation{.loc_type = LocationType::kStack, .offset = 0}));
@@ -376,7 +383,7 @@ TEST_P(DwarfReaderTest, Golang1_16ArgumentLocation) {
 TEST_P(DwarfReaderTest, Golang1_17ArgumentLocation) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kGo1_17BinaryPath, p.index));
+                       CreateDwarfReader(kGo1_17BinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).Scale", "v"),
                    (VarLocation{.loc_type = LocationType::kRegister, .offset = 0}));
@@ -401,7 +408,7 @@ TEST_P(DwarfReaderTest, Golang1_17ArgumentLocation) {
 TEST_P(DwarfReaderTest, CppFunctionArgInfo) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kCppBinaryPath, p.index));
+                       CreateDwarfReader(kCppBinaryPath, p.index));
 
   EXPECT_OK_AND_THAT(
       dwarf_reader->GetFunctionArgInfo("CanYouFindThis"),
@@ -430,7 +437,7 @@ TEST_P(DwarfReaderTest, CppFunctionArgInfo) {
 TEST_P(DwarfReaderTest, CppFunctionRetValInfo) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kCppBinaryPath, p.index));
+                       CreateDwarfReader(kCppBinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetFunctionRetValInfo("CanYouFindThis"),
                    (RetValInfo{TypeInfo{VarType::kBaseType, "int"}, 4}));
@@ -445,7 +452,7 @@ TEST_P(DwarfReaderTest, Go1_16FunctionArgInfo) {
 
   {
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                         DwarfReader::Create(kGo1_16BinaryPath, p.index));
+                         CreateDwarfReader(kGo1_16BinaryPath, p.index));
 
     EXPECT_OK_AND_THAT(
         dwarf_reader->GetFunctionArgInfo("main.(*Vertex).Scale"),
@@ -494,7 +501,7 @@ TEST_P(DwarfReaderTest, Go1_16FunctionArgInfo) {
 
   {
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                         DwarfReader::Create(kGoServerBinaryPath, p.index));
+                         CreateDwarfReader(kGoServerBinaryPath, p.index));
 
     // func (f *http2Framer) WriteDataPadded(streamID uint32, endStream bool, data, pad []byte)
     // error
@@ -522,7 +529,7 @@ TEST_P(DwarfReaderTest, Go1_17FunctionArgInfo) {
 
   {
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                         DwarfReader::Create(kGo1_17BinaryPath, p.index));
+                         CreateDwarfReader(kGo1_17BinaryPath, p.index));
 
     EXPECT_OK_AND_THAT(
         dwarf_reader->GetFunctionArgInfo("main.(*Vertex).Scale"),
@@ -591,7 +598,7 @@ TEST_P(DwarfReaderTest, GoFunctionVarLocationConsistency) {
   DwarfReaderTestParam p = GetParam();
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kGo1_16BinaryPath, p.index));
+                       CreateDwarfReader(kGo1_16BinaryPath, p.index));
 
   // First run GetFunctionArgInfo to automatically get all arguments.
   ASSERT_OK_AND_ASSIGN(auto function_arg_locations,

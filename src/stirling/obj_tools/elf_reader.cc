@@ -237,23 +237,7 @@ StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::SearchSymbols(
       continue;
     }
 
-    // Check for symbol match.
-    bool match = false;
-    switch (match_type) {
-      case SymbolMatchType::kExact:
-        match = (name == search_symbol);
-        break;
-      case SymbolMatchType::kPrefix:
-        match = absl::StartsWith(name, search_symbol);
-        break;
-      case SymbolMatchType::kSuffix:
-        match = absl::EndsWith(name, search_symbol);
-        break;
-      case SymbolMatchType::kSubstr:
-        match = (name.find(search_symbol) != std::string::npos);
-        break;
-    }
-    if (!match) {
+    if (!MatchesSymbol(name, {match_type, search_symbol})) {
       continue;
     }
 

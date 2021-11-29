@@ -114,7 +114,8 @@ StatusOr<ObjInfo> Prepare(const ir::logical::TracepointDeployment& input_program
 
   const auto& debug_symbols_path = obj_info.elf_reader->debug_symbols_path().string();
 
-  obj_info.dwarf_reader = DwarfReader::Create(debug_symbols_path).ConsumeValueOr(nullptr);
+  obj_info.dwarf_reader =
+      DwarfReader::CreateIndexingAll(debug_symbols_path).ConsumeValueOr(nullptr);
 
   return obj_info;
 }

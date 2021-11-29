@@ -37,7 +37,7 @@ class UprobeSymaddrsTest : public ::testing::Test {
  protected:
   void SetUp() {
     std::filesystem::path p = px::testing::BazelBinTestFilePath(kGoGRPCServer);
-    ASSERT_OK_AND_ASSIGN(dwarf_reader_, DwarfReader::Create(p.string()));
+    ASSERT_OK_AND_ASSIGN(dwarf_reader_, DwarfReader::CreateIndexingAll(p));
     ASSERT_OK_AND_ASSIGN(elf_reader_, ElfReader::Create(p));
   }
 

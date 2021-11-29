@@ -29,24 +29,11 @@
 #include <elfio/elfio.hpp>
 
 #include "src/common/base/base.h"
+#include "src/stirling/obj_tools/utils.h"
 
 namespace px {
 namespace stirling {
 namespace obj_tools {
-
-enum class SymbolMatchType {
-  // Search for a symbol that is an exact match of the search string.
-  kExact,
-
-  // Search for a symbol that starts with the search string.
-  kPrefix,
-
-  // Search for a symbol that ends with the search string.
-  kSuffix,
-
-  // Search for a symbol that contains the search string.
-  kSubstr
-};
 
 class ElfReader {
  public:

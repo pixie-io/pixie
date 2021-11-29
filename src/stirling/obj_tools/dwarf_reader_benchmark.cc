@@ -79,7 +79,7 @@ static void BM_noindex(benchmark::State& state) {
     SymAddrs symaddrs;
 
     PL_ASSIGN_OR_EXIT(std::unique_ptr<DwarfReader> dwarf_reader,
-                      DwarfReader::Create(kBinary, /* index */ false));
+                      DwarfReader::CreateWithoutIndexing(kBinary));
 
     for (size_t i = 0; i < num_lookup_iterations; ++i) {
       GetSymAddrs(dwarf_reader.get(), &symaddrs);
@@ -95,7 +95,8 @@ static void BM_indexed(benchmark::State& state) {
   for (auto _ : state) {
     SymAddrs symaddrs;
 
-    PL_ASSIGN_OR_EXIT(std::unique_ptr<DwarfReader> dwarf_reader, DwarfReader::Create(kBinary));
+    PL_ASSIGN_OR_EXIT(std::unique_ptr<DwarfReader> dwarf_reader,
+                      DwarfReader::CreateIndexingAll(kBinary));
 
     for (size_t i = 0; i < num_lookup_iterations; ++i) {
       GetSymAddrs(dwarf_reader.get(), &symaddrs);

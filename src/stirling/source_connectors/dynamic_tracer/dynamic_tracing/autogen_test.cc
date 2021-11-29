@@ -173,7 +173,7 @@ class ProbeGenTest : public ::testing::TestWithParam<ProbeGenTestParam> {
   ProbeGenTest() : binary_path_(px::testing::BazelBinTestFilePath(kBinaryPath)) {}
 
   void SetUp() {
-    ASSERT_OK_AND_ASSIGN(dwarf_reader_, DwarfReader::Create(binary_path_));
+    ASSERT_OK_AND_ASSIGN(dwarf_reader_, DwarfReader::CreateIndexingAll(binary_path_));
     ASSERT_OK_AND_ASSIGN(elf_reader_, ElfReader::Create(binary_path_));
   }
 

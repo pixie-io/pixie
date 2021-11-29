@@ -57,8 +57,8 @@ int main(int argc, char** argv) {
     exit(1);
   }
 
-  PL_ASSIGN_OR_EXIT(auto dwarf_reader, px::stirling::obj_tools::DwarfReader::Create(
-                                           FLAGS_filename, /* index */ false));
+  PL_ASSIGN_OR_EXIT(auto dwarf_reader,
+                    px::stirling::obj_tools::DwarfReader::CreateWithoutIndexing(FLAGS_filename));
   PL_ASSIGN_OR_EXIT(std::vector<llvm::DWARFDie> dies,
                     dwarf_reader->GetMatchingDIEs(FLAGS_die_name));
 

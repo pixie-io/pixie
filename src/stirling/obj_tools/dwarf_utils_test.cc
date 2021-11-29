@@ -42,7 +42,7 @@ class DwarfReaderTest : public ::testing::Test {
 
 TEST_F(DwarfReaderTest, GetMatchingDIEs) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kCppBinaryPath));
+                       DwarfReader::CreateIndexingAll(kCppBinaryPath));
 
   std::vector<llvm::DWARFDie> dies;
   ASSERT_OK_AND_ASSIGN(dies, dwarf_reader->GetMatchingDIEs("foo"));

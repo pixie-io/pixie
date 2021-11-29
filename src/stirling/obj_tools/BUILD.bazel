@@ -83,6 +83,14 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "utils_test",
+    srcs = ["utils_test.cc"],
+    deps = [
+        ":cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "dwarf_utils_test",
     srcs = ["dwarf_utils_test.cc"],
     data = [

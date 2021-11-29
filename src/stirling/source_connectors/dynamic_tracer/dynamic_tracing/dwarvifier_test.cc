@@ -1485,7 +1485,7 @@ TEST_P(DwarfInfoTest, Transform) {
 
   std::string expected_output_str = absl::Substitute(p.expected_output, binary_path_);
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(binary_path_));
+                       DwarfReader::CreateIndexingAll(binary_path_));
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(binary_path_));
   ASSERT_OK_AND_ASSIGN(
       ir::physical::Program physical_program,

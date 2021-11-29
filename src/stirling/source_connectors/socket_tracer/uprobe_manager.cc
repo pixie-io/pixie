@@ -538,7 +538,8 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
       continue;
     }
 
-    StatusOr<std::unique_ptr<DwarfReader>> dwarf_reader_status = DwarfReader::Create(binary);
+    StatusOr<std::unique_ptr<DwarfReader>> dwarf_reader_status =
+        DwarfReader::CreateIndexingAll(binary);
     if (!dwarf_reader_status.ok()) {
       VLOG(1) << absl::Substitute(
           "Failed to get binary $0 debug symbols. Cannot deploy uprobes. "

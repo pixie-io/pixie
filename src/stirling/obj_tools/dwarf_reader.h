@@ -33,6 +33,7 @@
 
 #include "src/common/base/base.h"
 #include "src/stirling/obj_tools/abi_model.h"
+#include "src/stirling/obj_tools/utils.h"
 
 namespace px {
 namespace stirling {
@@ -153,8 +154,12 @@ class DwarfReader {
    * @return error if file does not exist or is not a valid object file. Otherwise returns
    * a unique pointer to a DwarfReader.
    */
-  static StatusOr<std::unique_ptr<DwarfReader>> Create(const std::filesystem::path& obj_file_path,
-                                                       bool index = true);
+  static StatusOr<std::unique_ptr<DwarfReader>> CreateWithoutIndexing(
+      const std::filesystem::path& path);
+  static StatusOr<std::unique_ptr<DwarfReader>> CreateIndexingAll(
+      const std::filesystem::path& path);
+  static StatusOr<std::unique_ptr<DwarfReader>> CreateWithSelectiveIndexing(
+      const std::filesystem::path& path, const std::vector<SymbolSearchPattern>& symbol_patterns);
 
   /**
    * Searches the debug information for Debugging information entries (DIEs)
@@ -298,7 +303,10 @@ class DwarfReader {
 
   // Builds an index for certain commonly used DIE types (e.g. structs and functions).
   // When making multiple DwarfReader calls, this speeds up the process at the cost of some memory.
-  void IndexDIEs();
+  //
+  // If the search patterns are not provided, all DIEs of the matching tags are indexed.
+  // Otherwise, only the ones whose names match are indexed.
+  void IndexDIEs(const std::optional<std::vector<SymbolSearchPattern>>& symbol_search_patterns_opt);
 
   // Walks the struct_die for all members, recursively visiting any members which are also structs,
   // to capture information of all base type members of the struct in a flattened form.

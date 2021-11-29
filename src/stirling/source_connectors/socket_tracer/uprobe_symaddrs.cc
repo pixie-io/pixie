@@ -750,7 +750,7 @@ StatusOr<struct node_tlswrap_symaddrs_t> NodeTLSWrapSymAddrs(const std::filesyst
   //
   // TODO(yzhao): We can implement "selective caching". The input needs to be a collection of symbol
   // patterns, which means only indexing the matched symbols.
-  auto dwarf_reader_or = DwarfReader::Create(node_exe.string(), /*index*/ false);
+  auto dwarf_reader_or = DwarfReader::CreateWithoutIndexing(node_exe);
 
   // Creation might fail if source language cannot be detected, which means that there is no dwarf
   // info.
