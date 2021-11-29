@@ -17,9 +17,11 @@
  */
 
 import * as _ from 'lodash';
+
 import {
   Column, Relation, RowBatchData,
 } from 'app/types/generated/vizierapi_pb';
+
 import { formatUInt128Protobuf } from './format-data';
 import { nanoToMilliSeconds } from './time';
 

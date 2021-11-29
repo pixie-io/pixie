@@ -17,6 +17,12 @@
  */
 
 import * as React from 'react';
+
+import { useTheme } from '@mui/material/styles';
+
+import { VizierTable } from 'app/api';
+import { QuantilesBoxWhisker, SelectedPercentile } from 'app/components';
+import { LiveRouteContext } from 'app/containers/App/live-routing';
 import {
   AlertData,
   BytesRenderer,
@@ -31,14 +37,13 @@ import {
   ThroughputRenderer,
 } from 'app/containers/format-data/format-data';
 import { JSONData } from 'app/containers/format-data/json-data';
-import { semanticTypeDeepLinks } from 'app/containers/live-widgets/utils/live-view-params';
 import {
   DeepLink,
   ScriptReference,
   STATUS_TYPES,
   toStatusIndicator,
 } from 'app/containers/live-widgets/utils';
-import { QuantilesBoxWhisker, SelectedPercentile } from 'app/components';
+import { semanticTypeDeepLinks } from 'app/containers/live-widgets/utils/live-view-params';
 import { DataType, SemanticType } from 'app/types/generated/vizierapi_pb';
 import { Arguments, stableSerializeArgs } from 'app/utils/args-utils';
 import {
@@ -49,9 +54,7 @@ import {
   looksLikePIDCol,
 } from 'app/utils/format-data';
 import { getColor, getLatencyNSLevel } from 'app/utils/metric-thresholds';
-import { useTheme } from '@mui/material/styles';
-import { VizierTable } from 'app/api';
-import { LiveRouteContext } from 'app/containers/App/live-routing';
+
 import { ColumnDisplayInfo, QuantilesDisplayState } from './column-display-info';
 
 interface Quant { p50: number; p90: number; p99: number; }

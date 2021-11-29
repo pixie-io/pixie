@@ -17,10 +17,11 @@
  */
 
 import * as React from 'react';
+
 import { ClusterContext } from 'app/common/cluster-context';
+import { useSnackbar } from 'app/components';
 import { ScriptContext } from 'app/context/script-context';
 import { stableSerializeArgs } from 'app/utils/args-utils';
-import { useSnackbar } from 'app/components';
 
 /**
  * Automatically runs the selected script whenever it changes, the args change, or the vis spec changes.

@@ -17,16 +17,18 @@
  */
 
 import * as React from 'react';
+
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+
+import { buildClass } from 'app/components';
+import { DataType, SemanticType } from 'app/types/generated/vizierapi_pb';
 import { formatBoolData, formatFloat64Data, formatUInt128Protobuf } from 'app/utils/format-data';
 import {
   GaugeLevel,
   getCPULevel,
   getLatencyNSLevel,
 } from 'app/utils/metric-thresholds';
-import { buildClass } from 'app/components';
-import { DataType, SemanticType } from 'app/types/generated/vizierapi_pb';
 
 const useAlertDataStyles = makeStyles(({ palette }: Theme) => createStyles({
   true: {

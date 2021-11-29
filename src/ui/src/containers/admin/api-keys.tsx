@@ -19,24 +19,25 @@
 import * as React from 'react';
 
 import {
+  gql, useQuery, useMutation, useLazyQuery,
+} from '@apollo/client';
+import {
   Table,
   TableBody,
   TableHead,
   TableRow,
 } from '@mui/material';
-import {
-  gql, useQuery, useMutation, useLazyQuery,
-} from '@apollo/client';
 import { distanceInWords } from 'date-fns';
 
 import { GQLAPIKey, GQLAPIKeyMetadata } from 'app/types/schema';
-import {
-  AdminTooltip, StyledTableCell, StyledTableHeaderCell, StyledLeftTableCell,
-} from './utils';
+
+import { MonoSpaceCell } from './cluster-table-cells';
 import {
   useKeyListStyles, KeyActionButtons,
 } from './key-list';
-import { MonoSpaceCell } from './cluster-table-cells';
+import {
+  AdminTooltip, StyledTableCell, StyledTableHeaderCell, StyledLeftTableCell,
+} from './utils';
 
 interface APIKeyDisplay {
   id: string;

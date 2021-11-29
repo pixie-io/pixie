@@ -17,6 +17,7 @@
  */
 
 import * as React from 'react';
+
 import { makeCancellable, silentlyCatchCancellation } from 'app/utils/cancellable-promise';
 
 /**

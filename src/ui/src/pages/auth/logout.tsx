@@ -17,7 +17,9 @@
  */
 
 import * as React from 'react';
+
 import Axios from 'axios';
+
 import pixieAnalytics from 'app/utils/analytics';
 import * as RedirectUtils from 'app/utils/redirect-utils';
 

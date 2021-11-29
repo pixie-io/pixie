@@ -16,14 +16,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import type * as React from 'react';
+
 import { PublicApiFactory } from '@ory/kratos-client';
+import ClientOAuth2 from 'client-oauth2';
+import * as QueryString from 'query-string';
+
 import { FormStructure } from 'app/components';
 import { HydraInvitationForm } from 'app/containers/admin/hydra-invitation-form';
 import { HydraButtons, RejectHydraSignup } from 'app/containers/auth/hydra-buttons';
 import { AUTH_CLIENT_ID, AUTH_URI } from 'app/containers/constants';
-import ClientOAuth2 from 'client-oauth2';
-import * as QueryString from 'query-string';
-import type * as React from 'react';
+
 import { OAuthProviderClient, Token } from './oauth-provider';
 
 // Copied from auth0-js/src/helper/window.js

@@ -17,12 +17,13 @@
  */
 
 import * as React from 'react';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { screen, render } from '@testing-library/react';
+
 import { ThemeProvider } from '@mui/material/styles';
-import { DARK_THEME } from 'app/components';
+import { screen, render } from '@testing-library/react';
 
 import { VizierQueryError } from 'app/api';
+import { DARK_THEME } from 'app/components';
+
 import { VizierErrorDetails } from './errors';
 
 /* eslint-disable react-memo/require-memo, react-memo/require-usememo */

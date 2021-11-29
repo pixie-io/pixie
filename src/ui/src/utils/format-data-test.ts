@@ -17,6 +17,7 @@
  */
 
 import { DataType, SemanticType, UInt128 } from 'app/types/generated/vizierapi_pb';
+
 import * as FormatData from './format-data';
 
 describe('looksLikeLatencyCol test', () => {

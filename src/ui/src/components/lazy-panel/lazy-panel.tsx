@@ -16,10 +16,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { buildClass } from 'app/utils/build-class';
 import * as React from 'react';
 
 import { createStyles, makeStyles } from '@mui/styles';
+
+import { buildClass } from 'app/utils/build-class';
 
 let called = false;
 function triggerResize() {

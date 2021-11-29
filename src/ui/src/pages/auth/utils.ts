@@ -17,11 +17,13 @@
  */
 
 import * as QueryString from 'query-string';
+import Cookies from 'universal-cookie';
+
 import { OAUTH_PROVIDER } from 'app/containers/constants';
 import pixieAnalytics from 'app/utils/analytics';
-import Cookies from 'universal-cookie';
-import { HydraClient } from './hydra-oauth-provider';
+
 import { Auth0Client } from './auth0-oauth-provider';
+import { HydraClient } from './hydra-oauth-provider';
 import { OAuthProviderClient } from './oauth-provider';
 
 export type AuthCallbackMode = 'cli_get' | 'cli_token' | 'ui';

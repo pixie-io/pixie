@@ -18,6 +18,7 @@
 
 import Axios from 'axios';
 import * as QueryString from 'query-string';
+
 import {
   parseVis, Vis,
 } from 'app/containers/live/vis';

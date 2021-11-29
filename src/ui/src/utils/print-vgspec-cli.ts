@@ -17,9 +17,9 @@
  */
 
 /* eslint-disable no-console */
-import { DARK_THEME } from 'app/components';
 import { Data } from 'vega';
 
+import { DARK_THEME } from 'app/components';
 import {
   BAR_CHART_TYPE,
   ChartDisplay,

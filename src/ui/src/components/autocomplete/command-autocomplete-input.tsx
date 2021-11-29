@@ -16,11 +16,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { buildClass } from 'app/utils/build-class';
 import * as React from 'react';
 
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+
+import { buildClass } from 'app/utils/build-class';
 
 import { Key } from './key';
 

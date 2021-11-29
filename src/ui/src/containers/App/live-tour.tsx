@@ -18,13 +18,15 @@
 
 import * as React from 'react';
 
-import { Dialog, IconButton, Tooltip } from '@mui/material';
 import { Close as CloseButton } from '@mui/icons-material';
+import { Dialog, IconButton, Tooltip } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+
 import 'typeface-walter-turncoat';
-import { SetStateFunc } from 'app/context/common';
+
 import { CONTACT_ENABLED } from 'app/containers/constants';
+import { SetStateFunc } from 'app/context/common';
 
 export interface LiveTourContextProps {
   tourOpen: boolean;

@@ -18,7 +18,9 @@
 
 // STATUS_TYPES contains types that should be displayed as a status indicator.
 import * as React from 'react';
+
 import { Tooltip } from '@mui/material';
+
 import { StatusCell, StatusGroup } from 'app/components';
 import { SemanticType } from 'app/types/generated/vizierapi_pb';
 

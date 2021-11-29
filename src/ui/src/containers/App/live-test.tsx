@@ -17,6 +17,7 @@
  */
 
 import { GQLClusterInfo as Cluster, GQLClusterStatus as ClusterStatus } from 'app/types/schema';
+
 import { selectClusterName } from './cluster-info';
 
 describe('selectCluster', () => {

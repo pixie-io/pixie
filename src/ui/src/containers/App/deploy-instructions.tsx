@@ -16,14 +16,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import NavBars from 'app/containers/App/nav-bars';
-import { CodeRenderer, Spinner } from 'app/components';
-import * as logoImage from 'assets/images/pixie-logo.svg';
 import * as React from 'react';
 
 import { Button, Paper } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+
+import { CodeRenderer, Spinner } from 'app/components';
+import NavBars from 'app/containers/App/nav-bars';
+import * as logoImage from 'assets/images/pixie-logo.svg';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   dialog: {

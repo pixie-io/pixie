@@ -21,6 +21,7 @@
 
 import fetch from 'cross-fetch';
 import { Observable, of as observableOf } from 'rxjs';
+
 import {
   ClusterConfig, PixieAPIClient, PixieAPIClientAbstract, PixieAPIClientOptions,
   ExecutionStateUpdate, VizierQueryFunc, ExecuteScriptOptions,

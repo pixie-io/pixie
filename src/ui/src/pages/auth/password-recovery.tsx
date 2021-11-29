@@ -17,9 +17,12 @@
  */
 
 import * as React from 'react';
-import { PixienautForm, FormStructure } from 'app/components';
-import { RouteProps } from 'react-router';
+
 import * as QueryString from 'query-string';
+import { RouteProps } from 'react-router';
+
+import { PixienautForm, FormStructure } from 'app/components';
+
 import { BasePage } from './base';
 import { GetOAuthProvider } from './utils';
 

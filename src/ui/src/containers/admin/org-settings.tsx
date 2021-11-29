@@ -17,8 +17,8 @@
  */
 
 import * as React from 'react';
-import { gql, useMutation, useQuery } from '@apollo/client';
 
+import { gql, useMutation, useQuery } from '@apollo/client';
 import {
   Table,
   Button,
@@ -30,6 +30,7 @@ import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
 import { GQLOrgInfo } from 'app/types/schema';
+
 import {
   StyledTableCell, StyledTableHeaderCell,
 } from './utils';

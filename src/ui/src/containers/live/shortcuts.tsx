@@ -17,14 +17,14 @@
  */
 
 import * as React from 'react';
-import { configure, GlobalHotKeys } from 'react-hotkeys';
-import { isMac } from 'app/utils/detect-os';
 
 import { Card, Modal } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+import { configure, GlobalHotKeys } from 'react-hotkeys';
 
 import { Handlers, KeyMap, ShortcutsContextProps } from 'app/context/shortcuts-context';
+import { isMac } from 'app/utils/detect-os';
 
 type LiveHotKeyAction =
   'pixie-command' |

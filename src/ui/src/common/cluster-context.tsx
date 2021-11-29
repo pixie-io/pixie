@@ -17,13 +17,15 @@
  */
 
 import * as React from 'react';
+
 import { useQuery, gql } from '@apollo/client';
-import { GQLClusterInfo, GQLVizierConfig, GQLClusterStatus } from 'app/types/schema';
+
 import { ClusterConfig } from 'app/api';
-import { isDev } from 'app/utils/env';
 import { useSnackbar } from 'app/components';
 import { LiveRouteContext, push } from 'app/containers/App/live-routing';
+import { GQLClusterInfo, GQLVizierConfig, GQLClusterStatus } from 'app/types/schema';
 import { stableSerializeArgs } from 'app/utils/args-utils';
+import { isDev } from 'app/utils/env';
 
 export interface ClusterContextProps {
   selectedClusterID: string;

@@ -18,42 +18,41 @@
 
 import * as React from 'react';
 
-import { EditIcon, Footer, scrollbarStyles } from 'app/components';
-import { GQLClusterStatus } from 'app/types/schema';
-import { buildClass } from 'app/utils/build-class';
+import { OpenWith as MoveIcon } from '@mui/icons-material';
 import {
   Alert, AlertTitle, IconButton, Link, Tooltip,
 } from '@mui/material';
-import { OpenWith as MoveIcon } from '@mui/icons-material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
-import { Copyright } from 'configurable/copyright';
+import { PixieAPIClient, PixieAPIContext } from 'app/api';
 import { ClusterContext } from 'app/common/cluster-context';
-import { DataDrawerContextProvider } from 'app/context/data-drawer-context';
-import { EditorContext, EditorContextProvider } from 'app/context/editor-context';
-import { LayoutContext, LayoutContextProvider } from 'app/context/layout-context';
-import { ScriptContext, ScriptContextProvider } from 'app/context/script-context';
-import { ResultsContext, ResultsContextProvider } from 'app/context/results-context';
-import { Script } from 'app/utils/script-bundle';
-
+import { EditIcon, Footer, scrollbarStyles } from 'app/components';
 import { Spinner } from 'app/components/spinner/spinner';
 import { ClusterInstructions } from 'app/containers/App/deploy-instructions';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
+import { LiveTourContextProvider } from 'app/containers/App/live-tour';
 import NavBars from 'app/containers/App/nav-bars';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
 import { DataDrawerSplitPanel } from 'app/containers/data-drawer/data-drawer';
 import { EditorSplitPanel } from 'app/containers/editor/editor';
-import Canvas from 'app/containers/live/canvas';
 import { LiveViewBreadcrumbs } from 'app/containers/live/breadcrumbs';
+import Canvas from 'app/containers/live/canvas';
+import ClusterSelector from 'app/containers/live/cluster-selector';
+import ExecuteScriptButton from 'app/containers/live/execute-button';
 import { ScriptLoader } from 'app/containers/live/script-loader';
 import LiveViewShortcutsProvider from 'app/containers/live/shortcuts';
-import ExecuteScriptButton from 'app/containers/live/execute-button';
-import ClusterSelector from 'app/containers/live/cluster-selector';
-import { LiveTourContextProvider } from 'app/containers/App/live-tour';
-import { PixieAPIClient, PixieAPIContext } from 'app/api';
-import { showIntercomTrigger, triggerID } from 'app/utils/intercom';
 import { SetStateFunc } from 'app/context/common';
+import { DataDrawerContextProvider } from 'app/context/data-drawer-context';
+import { EditorContext, EditorContextProvider } from 'app/context/editor-context';
+import { LayoutContext, LayoutContextProvider } from 'app/context/layout-context';
+import { ResultsContext, ResultsContextProvider } from 'app/context/results-context';
+import { ScriptContext, ScriptContextProvider } from 'app/context/script-context';
+import { GQLClusterStatus } from 'app/types/schema';
+import { buildClass } from 'app/utils/build-class';
+import { showIntercomTrigger, triggerID } from 'app/utils/intercom';
+import { Script } from 'app/utils/script-bundle';
+import { Copyright } from 'configurable/copyright';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {

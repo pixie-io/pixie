@@ -17,25 +17,6 @@
  */
 
 import * as React from 'react';
-import * as ReactDOM from 'react-dom';
-
-import {
-  COMMON_THEME, DARK_THEME, LIGHT_THEME, SnackbarProvider, VersionInfo,
-} from 'app/components';
-import Live from 'app/containers/App/live';
-import { PixieCookieBanner } from 'configurable/cookie-banner';
-import { LD_CLIENT_ID } from 'app/containers/constants';
-import {
-  Redirect, RedirectProps, Route, Router, Switch,
-} from 'react-router-dom';
-import { useLocation } from 'react-router';
-import { makeCancellable, silentlyCatchCancellation } from 'app/utils/cancellable-promise';
-import { isProd, PIXIE_CLOUD_VERSION } from 'app/utils/env';
-import { dateToEpoch } from 'app/utils/time';
-import { parseJWT } from 'app/utils/jwt';
-import history from 'app/utils/pl-history';
-import * as QueryString from 'query-string';
-import CreditsView from 'app/pages/credits/credits';
 
 import { CssBaseline } from '@mui/material';
 import {
@@ -45,16 +26,35 @@ import {
   createTheme,
 } from '@mui/material/styles';
 import { createStyles, withStyles } from '@mui/styles';
-
 import Axios from 'axios';
 import { withLDProvider } from 'launchdarkly-react-client-sdk';
-import { AuthRouter } from 'app/pages/auth/auth';
-import 'typeface-roboto';
-import 'typeface-roboto-mono';
+import * as QueryString from 'query-string';
+import * as ReactDOM from 'react-dom';
+import { useLocation } from 'react-router';
+import {
+  Redirect, RedirectProps, Route, Router, Switch,
+} from 'react-router-dom';
+
 import { PixieAPIContext, PixieAPIContextProvider } from 'app/api';
 import { AuthContextProvider, AuthContext } from 'app/common/auth-context';
 import { EmbedContext, EmbedContextProvider } from 'app/common/embed-context';
+import {
+  COMMON_THEME, DARK_THEME, LIGHT_THEME, SnackbarProvider, VersionInfo,
+} from 'app/components';
+import Live from 'app/containers/App/live';
+import { LD_CLIENT_ID } from 'app/containers/constants';
+import { AuthRouter } from 'app/pages/auth/auth';
+import CreditsView from 'app/pages/credits/credits';
+import { makeCancellable, silentlyCatchCancellation } from 'app/utils/cancellable-promise';
+import { isProd, PIXIE_CLOUD_VERSION } from 'app/utils/env';
 import { ErrorBoundary, PixienautCrashFallback } from 'app/utils/error-boundary';
+import { parseJWT } from 'app/utils/jwt';
+import history from 'app/utils/pl-history';
+import { dateToEpoch } from 'app/utils/time';
+import { PixieCookieBanner } from 'configurable/cookie-banner';
+
+import 'typeface-roboto';
+import 'typeface-roboto-mono';
 
 // This side-effect-only import has to be a `require`, or else it gets erroneously optimized away during compilation.
 require('./wdyr');

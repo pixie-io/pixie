@@ -16,12 +16,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ResultsContext } from 'app/context/results-context';
-import * as numeral from 'numeral';
 import * as React from 'react';
 
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+import * as numeral from 'numeral';
+
+import { ResultsContext } from 'app/context/results-context';
 
 function nanoSecDisplay(ns: number) {
   const ms = ns / 1e6;

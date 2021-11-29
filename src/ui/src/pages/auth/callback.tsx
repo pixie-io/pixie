@@ -16,17 +16,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as React from 'react';
+
 import { Button, ButtonProps } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+import Axios, { AxiosError } from 'axios';
+import * as QueryString from 'query-string';
+import { Link } from 'react-router-dom';
+
 import { AuthMessageBox } from 'app/components';
 import pixieAnalytics from 'app/utils/analytics';
 import { isValidAnalytics } from 'app/utils/env';
 import * as RedirectUtils from 'app/utils/redirect-utils';
-import Axios, { AxiosError } from 'axios';
-import * as QueryString from 'query-string';
-import * as React from 'react';
-import { Link } from 'react-router-dom';
+
 import { BasePage } from './base';
 import { Token } from './oauth-provider';
 import { AuthCallbackMode, GetOAuthProvider } from './utils';

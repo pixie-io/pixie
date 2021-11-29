@@ -17,6 +17,7 @@
  */
 
 import * as React from 'react';
+
 import AutoSizer from 'react-virtualized-auto-sizer';
 
 export const AutoSizerContext = React.createContext<{ width: number, height: number }>({ width: 0, height: 0 });

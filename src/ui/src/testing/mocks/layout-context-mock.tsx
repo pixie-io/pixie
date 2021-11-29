@@ -17,6 +17,7 @@
  */
 
 import * as React from 'react';
+
 import { LayoutContext, LayoutContextProps } from 'app/context/layout-context';
 
 export const LAYOUT_CONTEXT_DEFUALTS: LayoutContextProps = {

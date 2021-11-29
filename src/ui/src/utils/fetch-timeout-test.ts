@@ -17,6 +17,7 @@
  */
 
 import fetch from 'cross-fetch';
+
 import fetchWithTimeout from './fetch-timeout';
 
 jest.mock('cross-fetch', () => jest.fn());

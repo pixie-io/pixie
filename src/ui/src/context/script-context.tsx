@@ -17,23 +17,25 @@
  */
 
 import * as React from 'react';
-import { LiveRouteContext, push } from 'app/containers/App/live-routing';
-import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
-import { getQueryFuncs } from 'app/containers/live/vis';
-import { Script } from 'app/utils/script-bundle';
-import pixieAnalytics from 'app/utils/analytics';
+
+import { Observable } from 'rxjs';
+
 import {
   PixieAPIContext, ExecutionStateUpdate, VizierQueryError, GRPCStatusCode, VizierTable,
 } from 'app/api';
-import { containsMutation, isStreaming } from 'app/utils/pxl';
-import { Observable } from 'rxjs';
-import { checkExhaustive } from 'app/utils/check-exhaustive';
-import { ResultsContext } from 'app/context/results-context';
+import { ClusterContext, useClusterConfig } from 'app/common/cluster-context';
 import { useSnackbar } from 'app/components';
+import { LiveRouteContext, push } from 'app/containers/App/live-routing';
+import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
+import { getQueryFuncs } from 'app/containers/live/vis';
+import { ResultsContext } from 'app/context/results-context';
+import pixieAnalytics from 'app/utils/analytics';
 import {
   argsForVis, Arguments, stableSerializeArgs, validateArgs,
 } from 'app/utils/args-utils';
-import { ClusterContext, useClusterConfig } from 'app/common/cluster-context';
+import { checkExhaustive } from 'app/utils/check-exhaustive';
+import { containsMutation, isStreaming } from 'app/utils/pxl';
+import { Script } from 'app/utils/script-bundle';
 
 const NUM_MUTATION_RETRIES = 5;
 const MUTATION_RETRY_MS = 5000; // 5s.
@@ -303,7 +305,6 @@ export const ScriptContextProvider: React.FC = React.memo(function ScriptContext
           break;
         default:
           checkExhaustive(update.event);
-          break;
       }
     });
     return () => {

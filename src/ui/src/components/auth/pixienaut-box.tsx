@@ -17,9 +17,11 @@
  */
 
 import * as React from 'react';
+
 import { Paper } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+
 import { PixienautBalloonSvg } from './pixienaut-balloon';
 import { PixienautOctopusSvg } from './pixienaut-octopus';
 import { PixienautToiletSvg } from './pixienaut-toilet';

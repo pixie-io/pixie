@@ -16,14 +16,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { buildClass } from 'app/utils/build-class';
 import * as React from 'react';
 
-import { Spinner } from 'app/components/spinner/spinner';
 import { editor as MonacoEditorTypes } from 'monaco-editor';
-
 // This must be `import type`, not `import`. The latter would defeat the lazy import of the actual component below.
 import type { MonacoEditorProps } from 'react-monaco-editor';
+
+import { Spinner } from 'app/components/spinner/spinner';
+import { buildClass } from 'app/utils/build-class';
 
 interface CodeEditorProps {
   code?: string;

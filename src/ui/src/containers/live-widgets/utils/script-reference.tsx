@@ -17,11 +17,14 @@
  */
 
 import * as React from 'react';
-import { Link } from 'react-router-dom';
+
 import { Theme } from '@mui/material/styles';
 import { createStyles, withStyles, WithStyles } from '@mui/styles';
-import { Arguments } from 'app/utils/args-utils';
+import { Link } from 'react-router-dom';
+
 import { SemanticType } from 'app/types/generated/vizierapi_pb';
+import { Arguments } from 'app/utils/args-utils';
+
 import {
   deepLinkURLFromScript, deepLinkURLFromSemanticType, EmbedState,
 } from './live-view-params';

@@ -6,6 +6,8 @@
   },
   "extends": [
     "eslint:recommended",
+    "plugin:import/recommended",
+    "plugin:import/typescript",
     "plugin:react-hooks/recommended"
   ],
   "ignorePatterns": [
@@ -15,9 +17,6 @@
   "parserOptions": {
     "ecmaVersion": 2021,
     "sourceType": "module"
-  },
-  "settings": {
-    "import/extensions": [".js", ".jsx", ".ts", ".tsx", ".mjs"]
   },
   "globals": {
     "BigInt": true,
@@ -48,6 +47,46 @@
           "webpack.config.js",
           "webpack-utils.js"
         ]
+      }
+    ],
+    "import/order": [
+      "error",
+      {
+        "alphabetize": {
+          "order": "asc",
+          "caseInsensitive": true
+        },
+        "pathGroups": [
+          {
+            "pattern": "react",
+            "group": "external",
+            "position": "before"
+          },
+          {
+            "pattern": "assets/**",
+            "group": "internal"
+          },
+          {
+            "pattern": "configurable/**",
+            "group": "internal"
+          },
+          {
+            "pattern": "!app/**",
+            "group": "external"
+          },
+          {
+            "pattern": "app/**",
+            "group": "internal"
+          }
+        ],
+        "groups": [
+          "builtin",
+          "external",
+          "internal",
+          ["parent", "sibling", "index"]
+        ],
+        "pathGroupsExcludedImportTypes": ["parent", "sibling", "index"],
+        "newlines-between": "always"
       }
     ]
   },
@@ -108,29 +147,71 @@
             "code": 120
           }
         ],
-        "import/extensions": 0,
         "no-mixed-operators": [
-            "error",
-            {
-                "groups": [
-                    ["&", "|", "^", "~", "<<", ">>", ">>>"],
-                    ["==", "!=", "===", "!==", ">", ">=", "<", "<="],
-                    ["&&", "||"],
-                    ["in", "instanceof"]
-                ]
-            }
+          "error",
+          {
+            "groups": [
+              ["&", "|", "^", "~", "<<", ">>", ">>>"],
+              ["==", "!=", "===", "!==", ">", ">=", "<", "<="],
+              ["&&", "||"],
+              ["in", "instanceof"]
+            ]
+          }
         ],
         "no-restricted-syntax": 0,
         "no-continue": 0,
         "no-plusplus": 0,
         "function-paren-newline": 0,
+        "import/extensions": 0,
+        "import/order": [
+          "error",
+          {
+            "alphabetize": {
+              "order": "asc",
+              "caseInsensitive": true
+            },
+            "pathGroups": [
+              {
+                "pattern": "react",
+                "group": "external",
+                "position": "before"
+              },
+              {
+                "pattern": "assets/**",
+                "group": "internal"
+              },
+              {
+                "pattern": "configurable/**",
+                "group": "internal"
+              },
+              {
+                "pattern": "!app/**",
+                "group": "external"
+              },
+              {
+                "pattern": "app/**",
+                "group": "internal"
+              }
+            ],
+            "pathGroupsExcludedImportTypes": ["parent", "sibling", "index"],
+            "groups": [
+              "builtin",
+              "external",
+              "internal",
+              ["parent", "sibling", "index"],
+              "object",
+              "type"
+            ],
+            "newlines-between": "always"
+          }
+        ],
+        "import/prefer-default-export": 0,
         "react/jsx-props-no-spreading": 0,
         "react/destructuring-assignment": 0,
         "react/no-array-index-key": 0,
         "react-memo/require-memo": 1,
         "react-memo/require-usememo": 1,
         "react-memo/require-usememo-children": 0,
-        "import/prefer-default-export": 0,
         "prefer-arrow-callback": ["error", {"allowNamedFunctions": true}],
         "prefer-destructuring": ["error", {"object": true, "array": false}],
         "react/jsx-filename-extension": [

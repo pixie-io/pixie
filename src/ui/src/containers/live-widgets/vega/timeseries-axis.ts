@@ -16,8 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vega from 'vega';
 import { timeFormat } from 'd3-time-format';
+import * as vega from 'vega';
 import { scale, tickValues } from 'vega-scale';
 import { textMetrics } from 'vega-scenegraph';
 

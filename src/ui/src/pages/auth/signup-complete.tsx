@@ -16,8 +16,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AuthMessageBox } from 'app/components';
 import * as React from 'react';
+
+import { AuthMessageBox } from 'app/components';
+
 import { GetOAuthProvider } from './utils';
 
 // eslint-disable-next-line react-memo/require-memo

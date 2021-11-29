@@ -20,12 +20,12 @@ import * as React from 'react';
 
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-
 import { Route, Switch, Redirect } from 'react-router-dom';
+
 import { scrollbarStyles, Footer } from 'app/components';
-import { LiveViewButton } from 'app/containers/admin/utils';
 import { AdminOverview } from 'app/containers/admin/admin-overview';
 import { ClusterDetails } from 'app/containers/admin/cluster-details';
+import { LiveViewButton } from 'app/containers/admin/utils';
 import NavBars from 'app/containers/App/nav-bars';
 import { SidebarContext } from 'app/context/sidebar-context';
 import { Copyright } from 'configurable/copyright';

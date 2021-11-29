@@ -16,17 +16,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as _ from 'lodash';
 import * as React from 'react';
 import { CSSProperties } from 'react';
 
-import { IconButton, Tooltip } from '@mui/material';
 import {
   KeyboardArrowLeft as KeyboardArrowLeftIcon,
   KeyboardArrowRight as KeyboardArrowRightIcon,
 } from '@mui/icons-material';
+import { IconButton, Tooltip } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+import * as _ from 'lodash';
+
 import { LegendData, LegendEntry } from './legend-data';
 
 const NUM_ROWS = 2;

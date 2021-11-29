@@ -17,6 +17,7 @@
  */
 
 import * as React from 'react';
+
 import { ScriptsContext, ScriptsContextProps } from 'app/containers/App/scripts-context';
 
 export const SCRIPTS_CONTEXT_DEFUALTS: ScriptsContextProps = {

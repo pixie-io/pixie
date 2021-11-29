@@ -18,10 +18,8 @@
 
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable no-param-reassign */
+
 import { Theme } from '@mui/material/styles';
-import { getFormatFnMetadata, DataWithUnits, FormatFnMetadata } from 'app/containers/format-data/format-data';
-import { addPxTimeFormatExpression } from 'app/containers/live-widgets/vega/timeseries-axis';
-import { Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
 import {
   Axis,
   Data,
@@ -44,6 +42,10 @@ import {
 } from 'vega';
 import { vegaLite, VisualizationSpec } from 'vega-embed';
 import { TopLevelSpec as VlSpec } from 'vega-lite';
+
+import { getFormatFnMetadata, DataWithUnits, FormatFnMetadata } from 'app/containers/format-data/format-data';
+import { addPxTimeFormatExpression } from 'app/containers/live-widgets/vega/timeseries-axis';
+import { Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
 
 import { DISPLAY_TYPE_KEY, WidgetDisplay } from './vis';
 

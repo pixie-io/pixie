@@ -16,9 +16,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import AnnounceKit from 'announcekit-react';
 import * as React from 'react';
 
+import {
+  Help as HelpIcon,
+  Campaign as CampaignIcon,
+} from '@mui/icons-material';
 import {
   Drawer,
   List,
@@ -27,13 +30,9 @@ import {
   ListItemText,
   Tooltip,
 } from '@mui/material';
-import {
-  Help as HelpIcon,
-  Campaign as CampaignIcon,
-} from '@mui/icons-material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-
+import AnnounceKit from 'announcekit-react';
 import { Link } from 'react-router-dom';
 
 import { ClusterContext } from 'app/common/cluster-context';
@@ -42,13 +41,13 @@ import {
   ClusterIcon, DocsIcon, NamespaceIcon,
 } from 'app/components';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
-import { deepLinkURLFromScript } from 'app/containers/live-widgets/utils/live-view-params';
 import {
   DOMAIN_NAME, ANNOUNCEMENT_ENABLED,
   ANNOUNCE_WIDGET_URL,
 } from 'app/containers/constants';
-import { SidebarFooter } from 'configurable/sidebar-footer';
+import { deepLinkURLFromScript } from 'app/containers/live-widgets/utils/live-view-params';
 import { showIntercomTrigger, triggerID } from 'app/utils/intercom';
+import { SidebarFooter } from 'configurable/sidebar-footer';
 
 const useStyles = makeStyles(({
   spacing,

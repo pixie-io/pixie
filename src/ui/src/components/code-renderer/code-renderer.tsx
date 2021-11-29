@@ -21,10 +21,10 @@ import * as React from 'react';
 import { Box, IconButton } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { withStyles } from '@mui/styles';
-
 import Highlight, { defaultProps } from 'prism-react-renderer';
-import { CopyIcon } from 'app/components/icons/copy';
+
 import { scrollbarStyles } from 'app/components';
+import { CopyIcon } from 'app/components/icons/copy';
 
 // eslint-disable-next-line react-memo/require-memo
 export const CodeRenderer = withStyles((theme: Theme) => ({

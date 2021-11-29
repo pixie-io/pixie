@@ -17,6 +17,7 @@
  */
 
 import * as React from 'react';
+
 import { ResultsContext, ResultsContextProps } from 'app/context/results-context';
 
 export const RESULTS_CONTEXT_DEFUALTS: ResultsContextProps = {

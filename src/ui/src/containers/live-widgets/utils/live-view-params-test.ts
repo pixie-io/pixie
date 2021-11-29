@@ -17,6 +17,7 @@
  */
 
 import { SemanticType } from 'app/types/generated/vizierapi_pb';
+
 import {
   deepLinkURLFromScript, deepLinkURLFromSemanticType,
 } from './live-view-params';

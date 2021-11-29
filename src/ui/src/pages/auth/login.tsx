@@ -17,8 +17,11 @@
  */
 
 import * as React from 'react';
+
 import { Box } from '@mui/material';
+
 import { AuthBox } from 'app/components';
+
 import { BasePage } from './base';
 import { GetOAuthProvider } from './utils';
 

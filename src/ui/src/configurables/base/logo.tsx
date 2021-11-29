@@ -17,7 +17,9 @@
  */
 
 import * as React from 'react';
+
 import { createStyles, makeStyles } from '@mui/styles';
+
 import * as logo from 'assets/images/pixie-oss.svg';
 
 const useStyles = makeStyles(() => createStyles({

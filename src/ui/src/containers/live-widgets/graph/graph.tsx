@@ -16,7 +16,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { WidgetDisplay } from 'app/containers/live/vis';
+import * as React from 'react';
+
+import { Button } from '@mui/material';
+import { Theme, useTheme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
+import { useHistory } from 'react-router-dom';
 import {
   data as visData,
   Edge,
@@ -24,25 +29,23 @@ import {
   Node,
   parseDOTNetwork,
 } from 'vis-network/standalone';
-import * as React from 'react';
-import { Button } from '@mui/material';
-import { Theme, useTheme } from '@mui/material/styles';
-import { createStyles, makeStyles } from '@mui/styles';
-import { useHistory } from 'react-router-dom';
+
 import { ClusterContext } from 'app/common/cluster-context';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
-import { Arguments } from 'app/utils/args-utils';
+import { WidgetDisplay } from 'app/containers/live/vis';
 import { Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
+import { Arguments } from 'app/utils/args-utils';
 import { buildClass } from 'app/utils/build-class';
 import { GaugeLevel, getColor, getLatencyNSLevel } from 'app/utils/metric-thresholds';
+
+import { formatByDataType, formatBySemType } from '../../format-data/format-data';
+import { deepLinkURLFromSemanticType } from '../utils/live-view-params';
 import {
   ColInfo,
   colInfoFromName,
   getGraphOptions,
   semTypeToShapeConfig,
 } from './graph-utils';
-import { deepLinkURLFromSemanticType } from '../utils/live-view-params';
-import { formatByDataType, formatBySemType } from '../../format-data/format-data';
 
 interface AdjacencyList {
   toColumn: string;

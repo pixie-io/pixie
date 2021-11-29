@@ -16,15 +16,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { WidgetDisplay } from 'app/containers/live/vis';
-import { ROW_RETENTION_LIMIT, VizierTable } from 'app/api';
 import * as React from 'react';
+
 import { alpha } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-import { Arguments } from 'app/utils/args-utils';
+
+import { ROW_RETENTION_LIMIT, VizierTable } from 'app/api';
 import { LiveDataTable } from 'app/containers/live-data-table/live-data-table';
+import { WidgetDisplay } from 'app/containers/live/vis';
 import { ResultsContext, useLatestRowCount } from 'app/context/results-context';
+import { Arguments } from 'app/utils/args-utils';
 
 const useStyles = makeStyles(({ spacing, typography, palette }: Theme) => createStyles({
   root: {

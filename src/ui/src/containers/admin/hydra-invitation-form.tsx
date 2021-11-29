@@ -16,14 +16,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { gql, useMutation } from '@apollo/client';
 import * as React from 'react';
-import { OAUTH_PROVIDER } from 'app/containers/constants';
-import { Form } from 'app/components';
 
-import { GQLUserInvite } from 'app/types/schema';
+import { gql, useMutation } from '@apollo/client';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+
+import { Form } from 'app/components';
+import { OAUTH_PROVIDER } from 'app/containers/constants';
+import { GQLUserInvite } from 'app/types/schema';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   invitationForm: {

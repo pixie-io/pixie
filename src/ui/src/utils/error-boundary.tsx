@@ -17,10 +17,12 @@
  */
 
 import * as React from 'react';
-import { PixienautBox } from 'app/components';
+
 import { Typography, alpha, Link } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+
+import { PixienautBox } from 'app/components';
 
 export interface ErrorBoundaryFallbackProps {
   error: Error;

@@ -16,28 +16,27 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { gql, useMutation } from '@apollo/client';
 import * as React from 'react';
 
-import { Button, TableContainer } from '@mui/material';
+import { gql, useMutation } from '@apollo/client';
 import { Add } from '@mui/icons-material';
+import { Button, TableContainer } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-
-import { DeploymentKeysTable } from 'app/containers/admin/deployment-keys';
-import { APIKeysTable } from 'app/containers/admin/api-keys';
-import { UsersTable } from 'app/containers/admin/org-users';
-import { ClustersTable } from 'app/containers/admin/clusters-list';
-import { OrgSettings } from 'app/containers/admin/org-settings';
-import { UserSettings } from 'app/containers/admin/user-settings';
-import { StyledTab, StyledTabs } from 'app/containers/admin/utils';
-import { GetOAuthProvider } from 'app/pages/auth/utils';
-import { scrollbarStyles } from 'app/components';
-import { GQLAPIKeyMetadata, GQLDeploymentKeyMetadata } from 'app/types/schema';
-
 import {
   Route, Switch, useHistory, useLocation, useRouteMatch,
 } from 'react-router-dom';
+
+import { scrollbarStyles } from 'app/components';
+import { APIKeysTable } from 'app/containers/admin/api-keys';
+import { ClustersTable } from 'app/containers/admin/clusters-list';
+import { DeploymentKeysTable } from 'app/containers/admin/deployment-keys';
+import { OrgSettings } from 'app/containers/admin/org-settings';
+import { UsersTable } from 'app/containers/admin/org-users';
+import { UserSettings } from 'app/containers/admin/user-settings';
+import { StyledTab, StyledTabs } from 'app/containers/admin/utils';
+import { GetOAuthProvider } from 'app/pages/auth/utils';
+import { GQLAPIKeyMetadata, GQLDeploymentKeyMetadata } from 'app/types/schema';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   createButton: {

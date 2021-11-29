@@ -18,22 +18,24 @@
 
 import * as React from 'react';
 
-import { IconButton, Tooltip } from '@mui/material';
 import {
   AccountTree as AccountTreeIcon,
   Workspaces as WorkspacesIcon,
   Speed as SpeedIcon,
   ErrorOutline as ErrorOutlineIcon,
 } from '@mui/icons-material';
+import { IconButton, Tooltip } from '@mui/material';
 import { Theme, useTheme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+import { useHistory } from 'react-router-dom';
 import { Network } from 'vis-network/standalone';
+
 import { ClusterContext } from 'app/common/cluster-context';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { Relation } from 'app/types/generated/vizierapi_pb';
-import { useHistory } from 'react-router-dom';
 import { Arguments } from 'app/utils/args-utils';
 import { buildClass } from 'app/utils/build-class';
+
 import {
   getColorForErrorRate,
   getColorForLatency,

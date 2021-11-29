@@ -17,8 +17,10 @@
  */
 
 import * as React from 'react';
-import { UsernamePasswordButton } from 'app/components';
+
 import { createStyles, makeStyles } from '@mui/styles';
+
+import { UsernamePasswordButton } from 'app/components';
 
 export interface HydraButtonsProps {
   usernamePasswordText: string;

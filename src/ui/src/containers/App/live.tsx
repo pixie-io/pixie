@@ -16,34 +16,35 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ClusterContextProvider } from 'app/common/cluster-context';
-import UserContext from 'app/common/user-context';
-import OrgContext from 'app/common/org-context';
-import { useSnackbar } from 'app/components';
-import AdminView from 'app/pages/admin/admin';
-import { SetupRedirect, SetupView } from 'app/pages/setup/setup';
-import { SCRATCH_SCRIPT, ScriptsContextProvider } from 'app/containers/App/scripts-context';
-import LiveView from 'app/pages/live/live';
-import pixieAnalytics from 'app/utils/analytics';
 import * as React from 'react';
-import { Redirect, Route, Switch } from 'react-router-dom';
-import { generatePath } from 'react-router';
-import * as QueryString from 'query-string';
 
+import { useQuery, gql } from '@apollo/client';
 import { createStyles, makeStyles } from '@mui/styles';
 import { useLDClient } from 'launchdarkly-react-client-sdk';
+import * as QueryString from 'query-string';
+import { generatePath } from 'react-router';
+import { Redirect, Route, Switch } from 'react-router-dom';
+
+import { ClusterContextProvider } from 'app/common/cluster-context';
+import OrgContext from 'app/common/org-context';
+import UserContext from 'app/common/user-context';
+import { useSnackbar } from 'app/components';
+import { SCRATCH_SCRIPT, ScriptsContextProvider } from 'app/containers/App/scripts-context';
+import AdminView from 'app/pages/admin/admin';
+import LiveView from 'app/pages/live/live';
+import { SetupRedirect, SetupView } from 'app/pages/setup/setup';
 import {
   GQLClusterInfo,
   GQLUserInfo,
   GQLUserSettings,
   GQLOrgInfo,
 } from 'app/types/schema';
-import { useQuery, gql } from '@apollo/client';
+import pixieAnalytics from 'app/utils/analytics';
 
-import { DeployInstructions } from './deploy-instructions';
 import { selectClusterName } from './cluster-info';
-import { RouteNotFound } from './route-not-found';
+import { DeployInstructions } from './deploy-instructions';
 import { LiveContextRouter } from './live-routing';
+import { RouteNotFound } from './route-not-found';
 
 const useStyles = makeStyles(() => createStyles({
   banner: {

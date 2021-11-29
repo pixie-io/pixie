@@ -16,18 +16,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { PlayIcon, StopIcon } from 'app/components';
 import * as React from 'react';
 
 import { Button, Tooltip } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
-import { ResultsContext } from 'app/context/results-context';
-import { EditorContext } from 'app/context/editor-context';
-import { ScriptContext } from 'app/context/script-context';
-import { ClusterContext } from 'app/common/cluster-context';
 import { PixieAPIClient, PixieAPIContext } from 'app/api';
+import { ClusterContext } from 'app/common/cluster-context';
+import { PlayIcon, StopIcon } from 'app/components';
+import { EditorContext } from 'app/context/editor-context';
+import { ResultsContext } from 'app/context/results-context';
+import { ScriptContext } from 'app/context/script-context';
 import { GQLClusterStatus } from 'app/types/schema';
 
 const useStyles = makeStyles(({ breakpoints, typography, shape }: Theme) => createStyles({

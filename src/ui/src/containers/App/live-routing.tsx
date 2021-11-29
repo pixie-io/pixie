@@ -16,20 +16,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { gql, useQuery } from '@apollo/client';
 import * as React from 'react';
+
+import { gql, useQuery } from '@apollo/client';
+import * as QueryString from 'query-string';
 import {
   Switch, Route, Redirect, useRouteMatch, useLocation,
 } from 'react-router-dom';
-import * as QueryString from 'query-string';
 
 import { EmbedContext } from 'app/common/embed-context';
-import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
-import { RouteNotFound } from 'app/containers/App/route-not-found';
 import { selectClusterName } from 'app/containers/App/cluster-info';
+import { RouteNotFound } from 'app/containers/App/route-not-found';
+import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
+import { EmbedState } from 'app/containers/live-widgets/utils/live-view-params';
 import { GQLClusterInfo } from 'app/types/schema';
 import { argsForVis, Arguments } from 'app/utils/args-utils';
-import { EmbedState } from 'app/containers/live-widgets/utils/live-view-params';
 import plHistory from 'app/utils/pl-history';
 
 export interface LiveRouteContextProps {

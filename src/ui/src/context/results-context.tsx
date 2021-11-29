@@ -17,6 +17,7 @@
  */
 
 import * as React from 'react';
+
 import { VizierTable } from 'app/api';
 import { QueryExecutionStats, MutationInfo } from 'app/types/generated/vizierapi_pb';
 

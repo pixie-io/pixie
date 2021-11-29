@@ -17,8 +17,9 @@
  */
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { screen, render } from '@testing-library/react';
 import * as React from 'react';
+
+import { screen, render } from '@testing-library/react';
 
 import { LazyPanel } from './lazy-panel';
 

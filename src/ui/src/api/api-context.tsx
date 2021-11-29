@@ -17,9 +17,12 @@
  */
 
 import * as React from 'react';
+
 import { ApolloProvider } from '@apollo/client/react';
-import { makeCancellable, silentlyCatchCancellation } from 'app/utils/cancellable-promise';
+
 import { AuthContext } from 'app/common/auth-context';
+import { makeCancellable, silentlyCatchCancellation } from 'app/utils/cancellable-promise';
+
 import { PixieAPIClientAbstract, PixieAPIClient } from './api';
 import { PixieAPIClientOptions } from './api-options';
 

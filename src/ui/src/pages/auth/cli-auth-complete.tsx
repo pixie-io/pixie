@@ -17,9 +17,12 @@
  */
 
 import * as React from 'react';
+
 import { Grid } from '@mui/material';
 import * as QueryString from 'query-string';
+
 import { AuthMessageBox } from 'app/components';
+
 import { BasePage } from './base';
 
 // eslint-disable-next-line react-memo/require-memo

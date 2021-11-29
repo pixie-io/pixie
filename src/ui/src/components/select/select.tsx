@@ -17,11 +17,13 @@
  */
 
 import * as React from 'react';
+
+import { ArrowDropDown as ArrowDropDownIcon } from '@mui/icons-material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-import { ArrowDropDown as ArrowDropDownIcon } from '@mui/icons-material';
-import { DialogDropdown, BreadcrumbListItem } from 'app/components/breadcrumbs/breadcrumbs';
+
 import { AutocompleteContext } from 'app/components/autocomplete/autocomplete-context';
+import { DialogDropdown, BreadcrumbListItem } from 'app/components/breadcrumbs/breadcrumbs';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {

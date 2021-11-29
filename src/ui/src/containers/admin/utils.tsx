@@ -17,7 +17,6 @@
  */
 
 import * as React from 'react';
-import { Link } from 'react-router-dom';
 
 import {
   Button,
@@ -28,6 +27,7 @@ import {
 } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles, withStyles } from '@mui/styles';
+import { Link } from 'react-router-dom';
 
 import { StatusGroup } from 'app/components';
 import { GQLClusterStatus } from 'app/types/schema';

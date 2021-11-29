@@ -16,19 +16,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { buildClass } from 'app/utils/build-class';
 import * as React from 'react';
 
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
-import { CommandAutocompleteInput } from 'app/components/autocomplete/command-autocomplete-input';
 import { scrollbarStyles } from 'app/components';
+import { CommandAutocompleteInput } from 'app/components/autocomplete/command-autocomplete-input';
+import { buildClass } from 'app/utils/build-class';
+
 import { Completions, CompletionId, CompletionItem } from './completions';
+import { Key } from './key';
 import {
   TabStop, findNextItem, ItemsMap, TabStopParser,
 } from './utils';
-import { Key } from './key';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {

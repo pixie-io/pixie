@@ -16,8 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { GoogleButton, UsernamePasswordButton } from 'app/components';
 import * as React from 'react';
+
+import { GoogleButton, UsernamePasswordButton } from 'app/components';
 
 export interface Auth0ButtonsProps {
   enableEmailPassword: boolean;

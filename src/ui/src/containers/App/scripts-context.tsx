@@ -17,10 +17,12 @@
  */
 
 import * as React from 'react';
-import { GetPxScripts, Script } from 'app/utils/script-bundle';
-import { GQLUserInfo } from 'app/types/schema';
+
 import { useQuery, gql } from '@apollo/client';
+
+import { GQLUserInfo } from 'app/types/schema';
 import { makeCancellable, silentlyCatchCancellation } from 'app/utils/cancellable-promise';
+import { GetPxScripts, Script } from 'app/utils/script-bundle';
 
 export interface ScriptsContextProps {
   scripts: Map<string, Script>;

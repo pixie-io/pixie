@@ -17,6 +17,7 @@
  */
 
 import * as React from 'react';
+
 import { CircularProgress } from '@mui/material';
 
 // eslint-disable-next-line react-memo/require-memo

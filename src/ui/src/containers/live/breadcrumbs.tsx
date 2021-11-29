@@ -18,22 +18,23 @@
 
 import * as React from 'react';
 
+import { gql } from '@apollo/client';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-import { GQLAutocompleteEntityKind, GQLAutocompleteSuggestion } from 'app/types/schema';
-import { PixieAPIClient, PixieAPIContext } from 'app/api';
-import { gql } from '@apollo/client';
 
+import { PixieAPIClient, PixieAPIContext } from 'app/api';
+import { ClusterContext } from 'app/common/cluster-context';
 import {
   Breadcrumbs, BreadcrumbOptions, StatusCell,
 } from 'app/components';
-import { ClusterContext } from 'app/common/cluster-context';
-import { argVariableMap, argTypesForVis } from 'app/utils/args-utils';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
-import { ScriptContext } from 'app/context/script-context';
 import { pxTypeToEntityType, entityStatusGroup } from 'app/containers/command-input/autocomplete-utils';
+import { ScriptContext } from 'app/context/script-context';
+import { GQLAutocompleteEntityKind, GQLAutocompleteSuggestion } from 'app/types/schema';
+import { argVariableMap, argTypesForVis } from 'app/utils/args-utils';
 import { TimeArgDetail } from 'configurable/time-arg-detail';
+
 import { Variable } from './vis';
 
 type AutocompleteFieldSuggester = (

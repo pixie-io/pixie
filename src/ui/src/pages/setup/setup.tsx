@@ -18,19 +18,18 @@
 
 import * as React from 'react';
 
+import { gql, useMutation } from '@apollo/client';
 import { Button, TextField, Paper } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-
-import { Redirect, useLocation } from 'react-router';
-import * as QueryString from 'query-string';
-import { gql, useMutation } from '@apollo/client';
 import Axios from 'axios';
+import * as QueryString from 'query-string';
+import { Redirect, useLocation } from 'react-router';
 
-import * as pixienautSetup from 'assets/images/pixienaut-setup.svg';
 import { Footer, scrollbarStyles } from 'app/components';
-import { SidebarContext } from 'app/context/sidebar-context';
 import NavBars from 'app/containers/App/nav-bars';
+import { SidebarContext } from 'app/context/sidebar-context';
+import * as pixienautSetup from 'assets/images/pixienaut-setup.svg';
 import { Copyright } from 'configurable/copyright';
 
 function useRedirectUri(): string {

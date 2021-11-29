@@ -19,16 +19,18 @@
 // This file has the auth pages that we exposes to the users to login, signup
 // and related error pages.
 import * as React from 'react';
+
 import { Route, Switch } from 'react-router';
+
+import { AuthCallbackPage } from './callback';
+import { CLIAuthCompletePage } from './cli-auth-complete';
 import { LoginPage } from './login';
+import { LogoutPage } from './logout';
+import { ErrorPage } from './password-error';
 import { PasswordLoginPage } from './password-login';
+import { PasswordRecoveryPage } from './password-recovery';
 import { SignupPage } from './signup';
 import { SignupCompletePage } from './signup-complete';
-import { AuthCallbackPage } from './callback';
-import { LogoutPage } from './logout';
-import { CLIAuthCompletePage } from './cli-auth-complete';
-import { ErrorPage } from './password-error';
-import { PasswordRecoveryPage } from './password-recovery';
 
 export const AuthRouter: React.FC = () => (
   <Switch>

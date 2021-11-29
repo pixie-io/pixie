@@ -16,15 +16,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { buildClass, scrollbarStyles, Footer } from 'app/components';
-import { Copyright } from 'configurable/copyright';
+import * as React from 'react';
 
 import { Button } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
-import * as React from 'react';
-
+import { buildClass, scrollbarStyles, Footer } from 'app/components';
+import { Copyright } from 'configurable/copyright';
 import licenseJson from 'configurable/licenses.json';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({

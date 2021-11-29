@@ -18,19 +18,20 @@
 
 import * as React from 'react';
 
-import { Fab, Tab, Tabs } from '@mui/material';
 import {
   KeyboardArrowDown as DownIcon,
   KeyboardArrowUp as UpIcon,
 } from '@mui/icons-material';
+import { Fab, Tab, Tabs } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles, withStyles } from '@mui/styles';
 
 import { LazyPanel, ResizableDrawer, Spinner } from 'app/components';
+import { MinimalLiveDataTable } from 'app/containers/live-data-table/live-data-table';
 import { DataDrawerContext } from 'app/context/data-drawer-context';
 import { LayoutContext } from 'app/context/layout-context';
 import { ResultsContext } from 'app/context/results-context';
-import { MinimalLiveDataTable } from 'app/containers/live-data-table/live-data-table';
+
 import ExecutionStats from './execution-stats';
 
 export const STATS_TAB_NAME = 'stats';

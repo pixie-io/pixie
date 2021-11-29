@@ -17,11 +17,12 @@
  */
 
 import * as React from 'react';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { render } from '@testing-library/react';
 
 import { ThemeProvider } from '@mui/material/styles';
+import { render } from '@testing-library/react';
+
 import { DARK_THEME } from 'app/components';
+
 import { Completion, Completions } from './completions';
 
 const noop = () => {};

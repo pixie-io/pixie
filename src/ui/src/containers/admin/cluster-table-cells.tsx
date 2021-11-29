@@ -16,12 +16,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { StatusCell } from 'app/components';
+import * as React from 'react';
+
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-import { GaugeLevel } from 'app/utils/metric-thresholds';
+
+import { StatusCell } from 'app/components';
 import { GQLClusterInfo, GQLClusterStatus } from 'app/types/schema';
-import * as React from 'react';
+import { GaugeLevel } from 'app/utils/metric-thresholds';
+
 import {
   AdminTooltip, clusterStatusGroup, StyledLeftTableCell, StyledTableCell,
 } from './utils';

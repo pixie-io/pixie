@@ -17,22 +17,22 @@
  */
 
 import * as React from 'react';
+
+import { ChevronRight } from '@mui/icons-material';
+import { Tab, Tabs } from '@mui/material';
+import { Theme, useTheme } from '@mui/material/styles';
+import { createStyles, makeStyles, withStyles } from '@mui/styles';
+
 import {
   CodeEditor,
   EDITOR_THEME_MAP,
   LazyPanel,
   ResizableDrawer,
 } from 'app/components';
-
-import { Tab, Tabs } from '@mui/material';
-import { ChevronRight } from '@mui/icons-material';
-import { Theme, useTheme } from '@mui/material/styles';
-import { createStyles, makeStyles, withStyles } from '@mui/styles';
-
 import { getKeyMap } from 'app/containers/live/shortcuts';
+import { EditorContext } from 'app/context/editor-context';
 import { LayoutContext } from 'app/context/layout-context';
 import { ScriptContext } from 'app/context/script-context';
-import { EditorContext } from 'app/context/editor-context';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {

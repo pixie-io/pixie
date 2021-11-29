@@ -16,12 +16,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { buildClass } from 'app/utils/build-class';
 import * as React from 'react';
-import Split from 'react-split';
 
 import { Theme, useTheme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+import Split from 'react-split';
+
+import { buildClass } from 'app/utils/build-class';
 
 interface SplitPaneContextProps {
   togglePane: (id: string) => void;

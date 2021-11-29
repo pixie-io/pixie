@@ -17,10 +17,12 @@
  */
 
 import * as React from 'react';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { screen, render } from '@testing-library/react';
+
 import { ThemeProvider } from '@mui/material/styles';
+import { screen, render } from '@testing-library/react';
+
 import { DARK_THEME } from 'app/components';
+
 import { Breadcrumbs } from './breadcrumbs';
 
 describe('<Breadcrumbs/>', () => {

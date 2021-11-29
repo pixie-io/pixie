@@ -16,9 +16,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { Spec } from 'vega';
+
 import { DARK_THEME } from 'app/components';
 import { Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
-import { Spec } from 'vega';
+
 import {
   convertWidgetDisplayToVegaSpec,
   TRANSFORMED_DATA_SOURCE_NAME,

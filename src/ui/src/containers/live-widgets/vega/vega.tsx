@@ -17,6 +17,16 @@
  */
 
 /* eslint-disable no-underscore-dangle */
+
+import * as React from 'react';
+
+import { Theme, useTheme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
+import { useFlags } from 'launchdarkly-react-client-sdk';
+import * as _ from 'lodash';
+import { Vega as ReactVega } from 'react-vega';
+import { View } from 'vega-typings';
+
 import Legend, { LegendInteractState } from 'app/containers/legend/legend';
 import {
   buildHoverDataCache, formatLegendData, HoverDataCache, LegendData,
@@ -34,17 +44,9 @@ import {
 import {
   Relation, SemanticType,
 } from 'app/types/generated/vizierapi_pb';
-import * as _ from 'lodash';
-import * as React from 'react';
-import { Vega as ReactVega } from 'react-vega';
-import noop from 'app/utils/noop';
-import { View } from 'vega-typings';
-
-import { Theme, useTheme } from '@mui/material/styles';
-import { createStyles, makeStyles } from '@mui/styles';
-import { useFlags } from 'launchdarkly-react-client-sdk';
-
 import { formatFloat64Data } from 'app/utils/format-data';
+import noop from 'app/utils/noop';
+
 import { TimeSeriesContext } from '../context/time-series-context';
 import { FlamegraphIDEMenu } from './flamegraph-ide';
 

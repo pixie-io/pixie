@@ -17,21 +17,23 @@
  */
 
 import * as React from 'react';
-import { VizierTable } from 'app/api';
-import { Arguments } from 'app/utils/args-utils';
-import { ReactTable, DataTable, DataTableProps } from 'app/components/data-table/data-table';
-import { DataType, Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
-import { buildClass, CellAlignment } from 'app/components';
+
 import { Theme, useTheme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+
+import { VizierTable } from 'app/api';
 import { ClusterContext } from 'app/common/cluster-context';
+import { buildClass, CellAlignment } from 'app/components';
+import { ReactTable, DataTable, DataTableProps } from 'app/components/data-table/data-table';
 import { JSONData } from 'app/containers/format-data/json-data';
 import { getLiveCellRenderer } from 'app/containers/live-data-table/renderers';
 import { getSortFunc } from 'app/containers/live-data-table/sort-funcs';
 import { useLatestRowCount } from 'app/context/results-context';
+import { DataType, Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
+import { Arguments } from 'app/utils/args-utils';
 import { AutoSizerContext, withAutoSizerContext } from 'app/utils/autosizer';
+
 import { ColumnDisplayInfo, displayInfoFromColumn, titleFromInfo } from './column-display-info';
-import ColumnInfo = Relation.ColumnInfo;
 
 // Note: if an alignment exists for both a column's semantic type and its data type, the semantic type takes precedence.
 const SemanticAlignmentMap = new Map<SemanticType, CellAlignment>(
@@ -64,7 +66,7 @@ function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutte
 
   const [displayMap, setDisplayMap] = React.useState<Map<string, ColumnDisplayInfo>>(new Map());
 
-  const convertColumn = React.useCallback((col: ColumnInfo) => {
+  const convertColumn = React.useCallback((col: Relation.ColumnInfo) => {
     const display = displayMap.get(col.getColumnName()) ?? displayInfoFromColumn(col);
     const justify = SemanticAlignmentMap.get(display.semanticType) ?? DataAlignmentMap.get(display.type) ?? 'start';
 

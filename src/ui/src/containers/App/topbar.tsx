@@ -17,10 +17,13 @@
  */
 
 import * as React from 'react';
-import { Link } from 'react-router-dom';
 
 import { useQuery, useMutation, gql } from '@apollo/client';
-
+import {
+  Explore as ExploreIcon,
+  Keyboard as KeyboardIcon,
+  Menu as MenuIcon,
+} from '@mui/icons-material';
 import {
   AppBar,
   IconButton,
@@ -30,27 +33,23 @@ import {
   Toolbar,
 } from '@mui/material';
 import { Theme } from '@mui/material/styles';
-import {
-  Explore as ExploreIcon,
-  Keyboard as KeyboardIcon,
-  Menu as MenuIcon,
-} from '@mui/icons-material';
 import { createStyles, makeStyles } from '@mui/styles';
+import { Link } from 'react-router-dom';
 
-import { buildClass } from 'app/utils/build-class';
 import {
   Avatar,
   ProfileMenuWrapper,
   LogoutIcon,
   SettingsIcon,
 } from 'app/components';
-import { LiveShortcutsContext } from 'app/containers/live/shortcuts';
-import { SidebarContext } from 'app/context/sidebar-context';
 import { LiveTourContext, LiveTourDialog } from 'app/containers/App/live-tour';
+import { LiveShortcutsContext } from 'app/containers/live/shortcuts';
+import { SetStateFunc } from 'app/context/common';
 import { LayoutContext } from 'app/context/layout-context';
+import { SidebarContext } from 'app/context/sidebar-context';
 import { GQLUserInfo, GQLUserAttributes } from 'app/types/schema';
 import pixieAnalytics from 'app/utils/analytics';
-import { SetStateFunc } from 'app/context/common';
+import { buildClass } from 'app/utils/build-class';
 import { Logo } from 'configurable/logo';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({

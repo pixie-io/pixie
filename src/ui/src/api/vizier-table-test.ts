@@ -25,6 +25,7 @@ import {
   RowBatchData,
   SemanticType, Int64Column,
 } from 'app/types/generated/vizierapi_pb';
+
 import { ROW_RETENTION_LIMIT, VizierTable } from './vizier-table';
 
 describe('VizierTable', () => {

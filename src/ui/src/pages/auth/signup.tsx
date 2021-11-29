@@ -16,11 +16,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as React from 'react';
+
 import { Box } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, withStyles, WithStyles } from '@mui/styles';
-import * as React from 'react';
+
 import { AuthBox, SignupMarcom } from 'app/components';
+
 import { BasePage } from './base';
 import { GetOAuthProvider } from './utils';
 

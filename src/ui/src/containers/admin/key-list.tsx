@@ -19,15 +19,15 @@
 import * as React from 'react';
 
 import {
+  DeleteForeverOutlined as DeleteIcon,
+  CopyAllOutlined as CopyIcon,
+} from '@mui/icons-material';
+import {
   IconButton,
   ListItemIcon,
   ListItemText,
   Menu,
 } from '@mui/material';
-import {
-  DeleteForeverOutlined as DeleteIcon,
-  CopyAllOutlined as CopyIcon,
-} from '@mui/icons-material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles, withStyles } from '@mui/styles';
 

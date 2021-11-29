@@ -16,11 +16,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import * as React from 'react';
-import { render } from '@testing-library/react';
+
 import { ThemeProvider } from '@mui/material/styles';
+import { render } from '@testing-library/react';
+
 import { DARK_THEME } from 'app/components';
+
 import { JSONData } from './json-data';
 
 /* eslint-disable react-memo/require-usememo */

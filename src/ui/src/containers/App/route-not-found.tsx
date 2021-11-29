@@ -17,11 +17,13 @@
  */
 
 import * as React from 'react';
-import { useLocation } from 'react-router';
-import { PixienautBox } from 'app/components';
+
 import { Button, Typography } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+import { useLocation } from 'react-router';
+
+import { PixienautBox } from 'app/components';
 
 const useStyles = makeStyles(({ palette, spacing }: Theme) => createStyles({
   title: {

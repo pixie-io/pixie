@@ -68,6 +68,7 @@ import {
   UseSortByOptions,
   UseSortByState,
 } from 'react-table';
+
 import { CellAlignment } from 'app/components';
 import { Relation } from 'app/types/generated/vizierapi_pb';
 

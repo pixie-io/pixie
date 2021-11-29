@@ -17,12 +17,14 @@
  */
 
 import { data as visData } from 'vis-network/standalone';
+
 import { formatBySemType } from 'app/containers/format-data/format-data';
-import { WidgetDisplay } from 'app/containers/live/vis';
 import { deepLinkURLFromSemanticType, EmbedState } from 'app/containers/live-widgets/utils/live-view-params';
+import { WidgetDisplay } from 'app/containers/live/vis';
 import { Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
 import { Arguments } from 'app/utils/args-utils';
 import { formatFloat64Data } from 'app/utils/format-data';
+
 import { semTypeToShapeConfig } from './graph-utils';
 
 // An entity in the service graph. Could be a service, pod, or IP address.

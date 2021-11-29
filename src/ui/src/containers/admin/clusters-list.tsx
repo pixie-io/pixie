@@ -18,6 +18,7 @@
 
 import * as React from 'react';
 
+import { gql, useQuery } from '@apollo/client';
 import {
   Button,
   Table,
@@ -27,19 +28,18 @@ import {
 } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { withStyles } from '@mui/styles';
-import { gql, useQuery } from '@apollo/client';
 import { Link } from 'react-router-dom';
 
 import { GQLClusterInfo } from 'app/types/schema';
+
+import {
+  ClusterStatusCell, InstrumentationLevelCell, VizierVersionCell, MonoSpaceCell,
+} from './cluster-table-cells';
 import {
   getClusterDetailsURL,
   StyledTableCell,
   StyledTableHeaderCell,
 } from './utils';
-
-import {
-  ClusterStatusCell, InstrumentationLevelCell, VizierVersionCell, MonoSpaceCell,
-} from './cluster-table-cells';
 
 // Cluster that are older that has not been healthy in over a day are labelled inactive.
 const INACTIVE_CLUSTER_THRESHOLD_MS = 24 * 60 * 60 * 1000;

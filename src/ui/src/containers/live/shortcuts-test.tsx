@@ -17,7 +17,8 @@
  */
 
 import * as React from 'react';
-// eslint-disable-next-line import/no-extraneous-dependencies
+
+import { ThemeProvider } from '@mui/material/styles';
 import {
   render,
   fireEvent,
@@ -25,8 +26,9 @@ import {
   getByText,
   getByTestId,
 } from '@testing-library/react';
-import { ThemeProvider } from '@mui/material/styles';
+
 import { DARK_THEME } from 'app/components';
+
 import LiveViewShortcutsProvider, { getKeyMap, LiveShortcutsContext } from './shortcuts';
 
 // eslint-disable-next-line react-memo/require-memo

@@ -16,13 +16,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { buildClass } from 'app/utils/build-class';
 import * as React from 'react';
 
-import { IconButton, Modal as MUIModal } from '@mui/material';
-import { createStyles, makeStyles } from '@mui/styles';
-import { Theme } from '@mui/material/styles';
 import { Close as CloseIcon } from '@mui/icons-material';
+import { IconButton, Modal as MUIModal } from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
+
+import { buildClass } from 'app/utils/build-class';
 
 interface ModalTriggerProps {
   trigger: React.ReactNode;

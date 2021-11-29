@@ -18,14 +18,14 @@
 
 import * as React from 'react';
 
-import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
 import { VizierQueryError } from 'app/api';
-import { ResultsContext } from 'app/context/results-context';
+import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
 import { parseVis, Vis } from 'app/containers/live/vis';
-import { SetStateFunc } from './common';
+import { ResultsContext } from 'app/context/results-context';
 
-import { ScriptContext } from './script-context';
+import { SetStateFunc } from './common';
 import { LayoutContext } from './layout-context';
+import { ScriptContext } from './script-context';
 
 export interface EditorContextProps {
   setVisEditorText: SetStateFunc<string>;

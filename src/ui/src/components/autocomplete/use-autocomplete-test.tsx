@@ -16,7 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { act, renderHook } from '@testing-library/react-hooks';
 
 import { CompletionItems } from './completions';

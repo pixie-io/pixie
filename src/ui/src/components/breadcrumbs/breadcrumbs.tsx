@@ -18,21 +18,21 @@
 
 import * as React from 'react';
 
+import { ArrowDropDown as ArrowDropDownIcon } from '@mui/icons-material';
 import {
   Card,
   Paper,
   Popover,
   PopoverProps,
 } from '@mui/material';
-import { ArrowDropDown as ArrowDropDownIcon } from '@mui/icons-material';
 import { Theme, ThemeProvider } from '@mui/material/styles';
 import createTypography from '@mui/material/styles/createTypography';
 import { createStyles, makeStyles } from '@mui/styles';
 
-import { CompletionItem } from 'app/components/autocomplete/completions';
 import { Autocomplete } from 'app/components/autocomplete/autocomplete';
-import useIsMounted from 'app/utils/use-is-mounted';
 import { AutocompleteContext } from 'app/components/autocomplete/autocomplete-context';
+import { CompletionItem } from 'app/components/autocomplete/completions';
+import useIsMounted from 'app/utils/use-is-mounted';
 
 const useStyles = makeStyles(({
   spacing, typography, palette, breakpoints,

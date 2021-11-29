@@ -17,12 +17,12 @@
  */
 
 import * as React from 'react';
-import { Vega } from 'react-vega';
-import { VisualizationSpec } from 'vega-embed';
-import { Handler } from 'vega-tooltip';
 
 import { Theme, useTheme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+import { Vega } from 'react-vega';
+import { VisualizationSpec } from 'vega-embed';
+import { Handler } from 'vega-tooltip';
 
 interface QuantilesBoxWhiskerFields {
   p50: number;

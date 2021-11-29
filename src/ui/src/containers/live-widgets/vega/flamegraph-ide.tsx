@@ -24,10 +24,11 @@ import {
   Menu,
   MenuItem,
 } from '@mui/material';
-import OrgContext from 'app/common/org-context';
-import { ClusterContext } from 'app/common/cluster-context';
-import { GQLIDEPath } from 'app/types/schema';
 import Mustache from 'mustache';
+
+import { ClusterContext } from 'app/common/cluster-context';
+import OrgContext from 'app/common/org-context';
+import { GQLIDEPath } from 'app/types/schema';
 
 interface FlamegraphConfig {
   name: string;

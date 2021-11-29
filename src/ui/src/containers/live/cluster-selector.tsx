@@ -16,16 +16,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { gql, useQuery } from '@apollo/client';
 import * as React from 'react';
+
+import { gql, useQuery } from '@apollo/client';
 import { Tooltip } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-import { ClusterContext } from 'app/common/cluster-context';
 
+import { ClusterContext } from 'app/common/cluster-context';
 import { StatusCell, Select } from 'app/components';
-import { GQLClusterInfo, GQLClusterStatus } from 'app/types/schema';
 import { clusterStatusGroup } from 'app/containers/admin/utils';
+import { GQLClusterInfo, GQLClusterStatus } from 'app/types/schema';
 
 const useStyles = makeStyles(({ spacing, palette }: Theme) => createStyles({
   container: {

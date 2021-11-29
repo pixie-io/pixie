@@ -16,18 +16,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as pako from 'pako';
-import { ClientReadableStream } from 'grpc-web';
 import { compactDecrypt } from '@inrupt/jose-legacy-modules';
+import { ClientReadableStream } from 'grpc-web';
+import * as pako from 'pako';
 import { Observable, of, from } from 'rxjs';
 import {
   bufferTime, catchError, concatMap, finalize, mergeMap, map, timeout, startWith,
 } from 'rxjs/operators';
+
 import {
   ErrorDetails, ExecuteScriptRequest, HealthCheckRequest, QueryExecutionStats, Relation,
   RowBatchData, Status, MutationInfo, HealthCheckResponse, ExecuteScriptResponse,
 } from 'app/types/generated/vizierapi_pb';
 import { VizierServiceClient } from 'app/types/generated/VizierapiServiceClientPb';
+
 import { GRPCStatusCode, VizierQueryError } from './vizier';
 import { VizierTable } from './vizier-table';
 

@@ -19,12 +19,11 @@
 import * as React from 'react';
 
 import { gql, useQuery } from '@apollo/client';
-import { Breadcrumbs, StatusCell, StatusGroup } from 'app/components';
-import { distanceInWords } from 'date-fns';
-import { useHistory, useParams } from 'react-router';
-import { Link } from 'react-router-dom';
-import { dataFromProto } from 'app/utils/result-data-utils';
-
+import {
+  Help as HelpIcon,
+  KeyboardArrowDown as DownIcon,
+  KeyboardArrowUp as UpIcon,
+} from '@mui/icons-material';
 import {
   Breadcrumbs as MaterialBreadcrumbs,
   IconButton,
@@ -35,15 +34,17 @@ import {
   TableHead,
   TableRow,
 } from '@mui/material';
-import {
-  Help as HelpIcon,
-  KeyboardArrowDown as DownIcon,
-  KeyboardArrowUp as UpIcon,
-} from '@mui/icons-material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles, withStyles } from '@mui/styles';
+import { distanceInWords } from 'date-fns';
+import { useHistory, useParams } from 'react-router';
+import { Link } from 'react-router-dom';
+import { BehaviorSubject } from 'rxjs';
+import { filter, tap } from 'rxjs/operators';
 
 import { ExecutionStateUpdate, PixieAPIContext, VizierQueryResult } from 'app/api';
+import { ClusterContext, ClusterContextProps, useClusterConfig } from 'app/common/cluster-context';
+import { Breadcrumbs, StatusCell, StatusGroup } from 'app/components';
 import {
   GQLClusterInfo,
   GQLClusterStatus as ClusterStatus,
@@ -51,19 +52,17 @@ import {
   GQLContainerStatus as ContainerStatus,
   GQLPodStatus,
 } from 'app/types/schema';
+import { dataFromProto } from 'app/utils/result-data-utils';
 
-import { BehaviorSubject } from 'rxjs';
-import { filter, tap } from 'rxjs/operators';
-import { ClusterContext, ClusterContextProps, useClusterConfig } from 'app/common/cluster-context';
+import {
+  ClusterStatusCell, InstrumentationLevelCell, VizierVersionCell, MonoSpaceCell,
+} from './cluster-table-cells';
 import {
   AdminTooltip, agentStatusGroup, clusterStatusGroup, containerStatusGroup,
   convertHeartbeatMS, getClusterDetailsURL, podStatusGroup, StyledLeftTableCell,
   StyledRightTableCell,
   StyledTab, StyledTableCell, StyledTableHeaderCell, StyledTabs,
 } from './utils';
-import {
-  ClusterStatusCell, InstrumentationLevelCell, VizierVersionCell, MonoSpaceCell,
-} from './cluster-table-cells';
 
 const useLinkStyles = makeStyles((theme: Theme) => createStyles({
   root: {

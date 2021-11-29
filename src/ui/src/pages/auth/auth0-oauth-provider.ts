@@ -16,11 +16,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import type * as React from 'react';
+
+import { UserManager } from 'oidc-client';
+
 import { FormStructure } from 'app/components';
 import { Auth0Buttons } from 'app/containers/auth/auth0-buttons';
 import { AUTH_CLIENT_ID, AUTH_EMAIL_PASSWORD_CONN, AUTH_URI } from 'app/containers/constants';
-import { UserManager } from 'oidc-client';
-import type * as React from 'react';
+
 import { OAuthProviderClient, Token } from './oauth-provider';
 
 export class Auth0Client extends OAuthProviderClient {

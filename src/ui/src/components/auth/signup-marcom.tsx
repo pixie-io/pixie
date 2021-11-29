@@ -17,6 +17,7 @@
  */
 
 import * as React from 'react';
+
 import {
   Grid,
   Typography,
@@ -26,10 +27,10 @@ import {
 import { Theme } from '@mui/material/styles';
 import { createStyles, withStyles, WithStyles } from '@mui/styles';
 
+import { PixieLogo } from 'app/components/icons/pixie-logo';
 import { CPPIcon } from 'app/components/logos/cpp';
 import { GolangIcon } from 'app/components/logos/golang';
 import { HeartIcon } from 'app/components/logos/heart';
-import { PixieLogo } from 'app/components/icons/pixie-logo';
 import { RustIcon } from 'app/components/logos/rust';
 
 const styles = ({ palette, spacing }: Theme) => createStyles({

@@ -16,17 +16,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// This ignore shouldn't be necessary because it is ignored in eslintrc.json but
-// that seems to not work at the moment.
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { waitFor, render } from '@testing-library/react';
 import * as React from 'react';
+
 import { ThemeProvider } from '@mui/material/styles';
+import { waitFor, render } from '@testing-library/react';
+
 import { DARK_THEME } from 'app/components';
 import { MockClusterContextProvider } from 'app/testing/mocks/cluster-context-mock';
 import { MockLiveRouteContextProvider } from 'app/testing/mocks/live-routing-mock';
 import { MockScriptContextProvider } from 'app/testing/mocks/script-context-mock';
 import { MockScriptsContextProvider } from 'app/testing/mocks/scripts-context-mock';
+
 import { LiveViewBreadcrumbs } from './breadcrumbs';
 
 describe('Live view breadcrumbs', () => {

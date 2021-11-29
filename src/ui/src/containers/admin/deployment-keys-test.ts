@@ -17,6 +17,7 @@
  */
 
 import { GQLDeploymentKeyMetadata } from 'app/types/schema';
+
 import { formatDeploymentKey } from './deployment-keys';
 
 describe('formatDeploymentKey', () => {

@@ -19,39 +19,39 @@
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
-import { buildClass, Spinner } from 'app/components';
-import { GraphDisplay, GraphWidget } from 'app/containers/live-widgets/graph/graph';
-import { RequestGraphWidget } from 'app/containers/live-widgets/graph/request-graph';
-import { RequestGraphDisplay } from 'app/containers/live-widgets/graph/request-graph-manager';
-
-import {
-  TimeSeriesContext, withTimeSeriesContext,
-} from 'app/containers/live-widgets/context/time-series-context';
-import { QueryResultTableDisplay, QueryResultTable } from 'app/containers/live-widgets/table/query-result-viewer';
 import * as React from 'react';
-import * as GridLayout from 'react-grid-layout';
-import { triggerResize } from 'app/utils/resize';
-import { dataFromProto } from 'app/utils/result-data-utils';
-import { VizierQueryError, VizierTable } from 'app/api';
-import { containsMutation } from 'app/utils/pxl';
-import { VizierErrorDetails } from 'app/common/errors';
 
 import { Alert, AlertTitle, Paper } from '@mui/material';
 import {
   alpha, Theme,
 } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+import * as GridLayout from 'react-grid-layout';
 
-import Vega from 'app/containers/live-widgets/vega/vega';
+import { VizierQueryError, VizierTable } from 'app/api';
+import { VizierErrorDetails } from 'app/common/errors';
+import { buildClass, Spinner } from 'app/components';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
+import {
+  TimeSeriesContext, withTimeSeriesContext,
+} from 'app/containers/live-widgets/context/time-series-context';
+import { GraphDisplay, GraphWidget } from 'app/containers/live-widgets/graph/graph';
+import { RequestGraphWidget } from 'app/containers/live-widgets/graph/request-graph';
+import { RequestGraphDisplay } from 'app/containers/live-widgets/graph/request-graph-manager';
+import { QueryResultTableDisplay, QueryResultTable } from 'app/containers/live-widgets/table/query-result-viewer';
+import Vega from 'app/containers/live-widgets/vega/vega';
+import { SetStateFunc } from 'app/context/common';
 import { LayoutContext } from 'app/context/layout-context';
 import { ResultsContext } from 'app/context/results-context';
 import { ScriptContext } from 'app/context/script-context';
-import { SetStateFunc } from 'app/context/common';
-import MutationModal from './mutation-modal';
+import { containsMutation } from 'app/utils/pxl';
+import { triggerResize } from 'app/utils/resize';
+import { dataFromProto } from 'app/utils/result-data-utils';
+
 import {
   addLayout, addTableLayout, getGridWidth, Layout, toLayout, updatePositions,
 } from './layout';
+import MutationModal from './mutation-modal';
 import {
   DISPLAY_TYPE_KEY, GRAPH_DISPLAY_TYPE, REQUEST_GRAPH_DISPLAY_TYPE,
   TABLE_DISPLAY_TYPE, Vis, widgetTableName, WidgetDisplay as VisWidgetDisplay,

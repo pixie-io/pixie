@@ -17,6 +17,17 @@
  */
 
 import * as React from 'react';
+
+import {
+  KeyboardArrowDown as DownIcon,
+  KeyboardArrowUp as UpIcon,
+  Menu as MenuIcon,
+} from '@mui/icons-material';
+import {
+  alpha, Button, Checkbox, FormControlLabel, Menu, MenuItem, Tooltip,
+} from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 import {
   useTable,
   useBlockLayout,
@@ -27,23 +38,14 @@ import {
   ColumnInstance, TableInstance,
 } from 'react-table';
 import { FixedSizeList as List, areEqual, ListOnItemsRenderedProps } from 'react-window';
-import {
-  KeyboardArrowDown as DownIcon,
-  KeyboardArrowUp as UpIcon,
-  Menu as MenuIcon,
-} from '@mui/icons-material';
-import { Theme } from '@mui/material/styles';
-import { createStyles, makeStyles } from '@mui/styles';
-import { useScrollbarSize } from 'app/utils/use-scrollbar-size';
+
+import { UnexpandedIcon } from 'app/components/icons/unexpanded';
+import { AutoSizerContext, withAutoSizerContext } from 'app/utils/autosizer';
 import { buildClass } from 'app/utils/build-class';
+import { useScrollbarSize } from 'app/utils/use-scrollbar-size';
 
 // Augments `@types/react-table` to recognize the plugins we're using
 import './react-table-config.d';
-import { AutoSizerContext, withAutoSizerContext } from 'app/utils/autosizer';
-import {
-  alpha, Button, Checkbox, FormControlLabel, Menu, MenuItem, Tooltip,
-} from '@mui/material';
-import { UnexpandedIcon } from 'app/components/icons/unexpanded';
 
 export type CellAlignment = 'center' | 'start' | 'end' | 'fill';
 

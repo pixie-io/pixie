@@ -17,6 +17,7 @@
  */
 
 import { createBrowserHistory } from 'history';
+
 import pixieAnalytics from 'app/utils/analytics';
 
 const history = createBrowserHistory();

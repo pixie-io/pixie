@@ -30,10 +30,10 @@ import {
 } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, withStyles, WithStyles } from '@mui/styles';
-import { MutationInfo, LifeCycleState } from 'app/types/generated/vizierapi_pb';
+
 import { StatusCell } from 'app/components';
 import { ScriptContext } from 'app/context/script-context';
-
+import { MutationInfo, LifeCycleState } from 'app/types/generated/vizierapi_pb';
 import * as moonwalkerSVG from 'assets/images/moonwalker.svg';
 
 const styles = ({ spacing, typography, palette }: Theme) => createStyles({

@@ -30,8 +30,9 @@ import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 import { persistCache } from 'apollo3-cache-persist';
 import fetch from 'cross-fetch';
-import { PixieAPIClientOptions } from './api-options';
+
 import { GetCSRFCookie } from '../pages/auth/utils';
+import { PixieAPIClientOptions } from './api-options';
 
 // Apollo link that adds cookies in the request.
 const makeCloudAuthLink = (opts: PixieAPIClientOptions) => setContext((_, { headers }) => ({

@@ -17,9 +17,10 @@
  */
 
 import * as React from 'react';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { render } from '@testing-library/react';
+
 import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { render } from '@testing-library/react';
+
 import { FixedSizeDrawer } from './drawer';
 
 describe('<FixedSizeDrawer/>', () => {

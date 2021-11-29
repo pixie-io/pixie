@@ -17,6 +17,7 @@
  */
 
 import { GQLAPIKeyMetadata } from 'app/types/schema';
+
 import { formatAPIKey } from './api-keys';
 
 describe('formatApiKey', () => {

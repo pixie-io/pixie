@@ -17,10 +17,11 @@
  */
 
 import fetch from 'cross-fetch';
+
 import type { ClusterConnection } from 'app/api/cloud-gql-client';
 import { mockApolloClient } from 'app/testing/mocks/apollo-mock';
-import { PixieAPIClient } from './api';
 
+import { PixieAPIClient } from './api';
 // Imported only so that its import in the test subject can be mocked successfully.
 import * as vizierDependency from './vizier-grpc-client';
 
