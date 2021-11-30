@@ -36,7 +36,7 @@ REPOSITORY_LOCATIONS = dict(
         urls = [
             "https://github.com/bazelbuild/rules_scala/archive/e7a948ad1948058a7a5ddfbd9d1629d6db839933.zip",
         ],
-        strip_prefix = "rules_scala-%s" % "e7a948ad1948058a7a5ddfbd9d1629d6db839933",
+        strip_prefix = "rules_scala-e7a948ad1948058a7a5ddfbd9d1629d6db839933",
     ),
     io_bazel_rules_k8s = dict(
         sha256 = "cc75cf0d86312e1327d226e980efd3599704e01099b58b3c2fc4efe5e321fcd9",
