@@ -317,9 +317,8 @@ func getControlPlanePodState(pods *concurrentPodMap) *vizierState {
 			continue
 		}
 		for _, p := range labelMap {
-			plane, ok := p.pod.ObjectMeta.Labels["plane"]
-			// We only want to check pods that are not data plane pods.
-			if ok && plane == "data" {
+			// We only want to check control plane pods.
+			if p.pod.ObjectMeta.Labels["plane"] != "control" {
 				continue
 			}
 			if p.pod.Status.Phase == v1.PodPending {

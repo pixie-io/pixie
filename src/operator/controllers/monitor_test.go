@@ -425,8 +425,8 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 			expectedReason: "",
 		},
 		{
-			name:                "updating if no-plane-pod is pending",
-			expectedVizierPhase: v1alpha1.VizierPhaseUnhealthy,
+			name:                "healthy even if no-plane-pod is pending",
+			expectedVizierPhase: v1alpha1.VizierPhaseHealthy,
 			podPhases: map[string]phasePlane{
 				"vizier-metadata": {
 					phase:      v1.PodRunning,
@@ -443,7 +443,7 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 					plane: "",
 				},
 			},
-			expectedReason: status.ControlPlanePodsPending,
+			expectedReason: "",
 		},
 		{
 			name:                "unhealthy if any control pod is failing",
