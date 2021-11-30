@@ -25,7 +25,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"px.dev/pixie/src/cloud/metrics/controller"
+	"px.dev/pixie/src/cloud/metrics/controllers"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/env"
 	"px.dev/pixie/src/shared/services/healthz"
@@ -52,7 +52,7 @@ func main() {
 
 	// Connect to NATS.
 	nc := msgbus.MustConnectNATS()
-	_ = controller.NewServer(nc)
+	_ = controllers.NewServer(nc)
 
 	s := server.NewPLServer(env.New(viper.GetString("domain_name")), mux)
 	s.Start()

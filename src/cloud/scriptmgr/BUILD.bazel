@@ -26,7 +26,7 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/scriptmgr",
     visibility = ["//visibility:private"],
     deps = [
-        "//src/cloud/scriptmgr/controller",
+        "//src/cloud/scriptmgr/controllers",
         "//src/cloud/scriptmgr/scriptmgrpb:service_pl_go_proto",
         "//src/shared/services",
         "//src/shared/services/env",

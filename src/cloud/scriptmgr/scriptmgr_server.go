@@ -30,7 +30,7 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/api/option"
 
-	"px.dev/pixie/src/cloud/scriptmgr/controller"
+	"px.dev/pixie/src/cloud/scriptmgr/controllers"
 	"px.dev/pixie/src/cloud/scriptmgr/scriptmgrpb"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/env"
@@ -61,7 +61,7 @@ func main() {
 		log.WithError(err).Fatal("Failed to initialize GCS client.")
 	}
 
-	svr := controller.NewServer(
+	svr := controllers.NewServer(
 		viper.GetString("bundle_bucket"),
 		viper.GetString("bundle_path"),
 		stiface.AdaptClient(client))

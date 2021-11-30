@@ -26,7 +26,7 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/dnsmgr",
     visibility = ["//visibility:private"],
     deps = [
-        "//src/cloud/dnsmgr/controller",
+        "//src/cloud/dnsmgr/controllers",
         "//src/cloud/dnsmgr/dnsmgrenv",
         "//src/cloud/dnsmgr/dnsmgrpb:service_pl_go_proto",
         "//src/cloud/dnsmgr/schema",

@@ -30,7 +30,7 @@ go_library(
         "//src/cloud/dnsmgr/dnsmgrpb:service_pl_go_proto",
         "//src/cloud/shared/pgmigrate",
         "//src/cloud/shared/vzshard",
-        "//src/cloud/vzmgr/controller",
+        "//src/cloud/vzmgr/controllers",
         "//src/cloud/vzmgr/deployment",
         "//src/cloud/vzmgr/deploymentkey",
         "//src/cloud/vzmgr/schema",

@@ -25,7 +25,7 @@ import (
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	log "github.com/sirupsen/logrus"
 
-	"px.dev/pixie/src/cloud/profile/controller"
+	"px.dev/pixie/src/cloud/profile/controllers"
 	"px.dev/pixie/src/cloud/profile/datastore"
 	"px.dev/pixie/src/cloud/profile/profileenv"
 	"px.dev/pixie/src/cloud/profile/profilepb"
@@ -61,7 +61,7 @@ func main() {
 		log.WithError(err).Fatal("Failed to set up profileenv")
 	}
 
-	svr := controller.NewServer(env, datastore, datastore, datastore, datastore)
+	svr := controllers.NewServer(env, datastore, datastore, datastore, datastore)
 
 	s := server.NewPLServer(env, mux)
 	profilepb.RegisterProfileServiceServer(s.GRPCServer(), svr)

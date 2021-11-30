@@ -23,7 +23,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"px.dev/pixie/src/cloud/jobs/elastic_migration/controller"
+	"px.dev/pixie/src/cloud/jobs/elastic_migration/controllers"
 	"px.dev/pixie/src/cloud/jobs/elastic_migration/schema"
 	"px.dev/pixie/src/cloud/shared/esutils"
 )
@@ -65,7 +65,7 @@ func main() {
 		log.WithError(err).Fatalf("Can't find mapping '%s'", schemaFile)
 	}
 
-	im := controller.NewIndexManager(es)
+	im := controllers.NewIndexManager(es)
 	err = im.PrepareIndex(index, string(srcMapping))
 	if err != nil {
 		log.WithError(err).Fatalf("Failed to create '%s'", index)

@@ -160,18 +160,18 @@ analyze:
     type: go
     target: px.dev/pixie/src/cloud/api/controller
     path: src/cloud/api/controller
-  - name: px.dev/pixie/src/cloud/api/controller/schema/complete
+  - name: px.dev/pixie/src/cloud/api/controllers/schema/complete
     type: go
-    target: px.dev/pixie/src/cloud/api/controller/schema/complete
-    path: src/cloud/api/controller/schema/complete
-  - name: px.dev/pixie/src/cloud/api/controller/schema/noauth
+    target: px.dev/pixie/src/cloud/api/controllers/schema/complete
+    path: src/cloud/api/controllers/schema/complete
+  - name: px.dev/pixie/src/cloud/api/controllers/schema/noauth
     type: go
-    target: px.dev/pixie/src/cloud/api/controller/schema/noauth
-    path: src/cloud/api/controller/schema/noauth
-  - name: px.dev/pixie/src/cloud/api/controller/testutils
+    target: px.dev/pixie/src/cloud/api/controllers/schema/noauth
+    path: src/cloud/api/controllers/schema/noauth
+  - name: px.dev/pixie/src/cloud/api/controllers/testutils
     type: go
-    target: px.dev/pixie/src/cloud/api/controller/testutils
-    path: src/cloud/api/controller/testutils
+    target: px.dev/pixie/src/cloud/api/controllers/testutils
+    path: src/cloud/api/controllers/testutils
   - name: px.dev/pixie/src/cloud/api/ptproxy
     type: go
     target: px.dev/pixie/src/cloud/api/ptproxy
@@ -268,10 +268,10 @@ analyze:
     type: go
     target: px.dev/pixie/src/cloud/dnsmgr/controller
     path: src/cloud/dnsmgr/controller
-  - name: px.dev/pixie/src/cloud/dnsmgr/controller/mock
+  - name: px.dev/pixie/src/cloud/dnsmgr/controllers/mock
     type: go
-    target: px.dev/pixie/src/cloud/dnsmgr/controller/mock
-    path: src/cloud/dnsmgr/controller/mock
+    target: px.dev/pixie/src/cloud/dnsmgr/controllers/mock
+    path: src/cloud/dnsmgr/controllers/mock
   - name: px.dev/pixie/src/cloud/dnsmgr/dnsmgrenv
     type: go
     target: px.dev/pixie/src/cloud/dnsmgr/dnsmgrenv
@@ -328,10 +328,10 @@ analyze:
     type: go
     target: px.dev/pixie/src/cloud/profile/controller
     path: src/cloud/profile/controller
-  - name: px.dev/pixie/src/cloud/profile/controller/mock
+  - name: px.dev/pixie/src/cloud/profile/controllers/mock
     type: go
-    target: px.dev/pixie/src/cloud/profile/controller/mock
-    path: src/cloud/profile/controller/mock
+    target: px.dev/pixie/src/cloud/profile/controllers/mock
+    path: src/cloud/profile/controllers/mock
   - name: px.dev/pixie/src/cloud/profile/datastore
     type: go
     target: px.dev/pixie/src/cloud/profile/datastore
@@ -452,10 +452,10 @@ analyze:
     type: go
     target: px.dev/pixie/src/cloud/vzmgr/controller
     path: src/cloud/vzmgr/controller
-  - name: px.dev/pixie/src/cloud/vzmgr/controller/mock
+  - name: px.dev/pixie/src/cloud/vzmgr/controllers/mock
     type: go
-    target: px.dev/pixie/src/cloud/vzmgr/controller/mock
-    path: src/cloud/vzmgr/controller/mock
+    target: px.dev/pixie/src/cloud/vzmgr/controllers/mock
+    path: src/cloud/vzmgr/controllers/mock
   - name: px.dev/pixie/src/cloud/vzmgr/deployment
     type: go
     target: px.dev/pixie/src/cloud/vzmgr/deployment
@@ -828,10 +828,10 @@ analyze:
     type: go
     target: px.dev/pixie/src/vizier/services/certmgr/controller
     path: src/vizier/services/certmgr/controller
-  - name: px.dev/pixie/src/vizier/services/certmgr/controller/mock
+  - name: px.dev/pixie/src/vizier/services/certmgr/controllers/mock
     type: go
-    target: px.dev/pixie/src/vizier/services/certmgr/controller/mock
-    path: src/vizier/services/certmgr/controller/mock
+    target: px.dev/pixie/src/vizier/services/certmgr/controllers/mock
+    path: src/vizier/services/certmgr/controllers/mock
   - name: px.dev/pixie/src/vizier/services/cloud_connector
     type: go
     target: px.dev/pixie/src/vizier/services/cloud_connector

@@ -26,7 +26,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
-	controllers "px.dev/pixie/src/cloud/project_manager/controller"
+	controllers "px.dev/pixie/src/cloud/project_manager/controllers"
 	"px.dev/pixie/src/cloud/project_manager/datastore"
 	"px.dev/pixie/src/cloud/project_manager/projectmanagerpb"
 	"px.dev/pixie/src/cloud/project_manager/schema"

@@ -25,7 +25,7 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/jobs/elastic_migration",
     visibility = ["//visibility:private"],
     deps = [
-        "//src/cloud/jobs/elastic_migration/controller",
+        "//src/cloud/jobs/elastic_migration/controllers",
         "//src/cloud/jobs/elastic_migration/schema",
         "//src/cloud/shared/esutils",
         "@com_github_sirupsen_logrus//:logrus",

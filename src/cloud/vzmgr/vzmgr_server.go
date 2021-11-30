@@ -35,7 +35,7 @@ import (
 	"px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
 	"px.dev/pixie/src/cloud/shared/pgmigrate"
 	"px.dev/pixie/src/cloud/shared/vzshard"
-	"px.dev/pixie/src/cloud/vzmgr/controller"
+	"px.dev/pixie/src/cloud/vzmgr/controllers"
 	"px.dev/pixie/src/cloud/vzmgr/deployment"
 	"px.dev/pixie/src/cloud/vzmgr/deploymentkey"
 	"px.dev/pixie/src/cloud/vzmgr/schema"
@@ -161,26 +161,26 @@ func main() {
 		log.Fatal("Could not connect to artifact tracker")
 	}
 
-	updater, err := controller.NewUpdater(db, at, nc)
+	updater, err := controllers.NewUpdater(db, at, nc)
 	if err != nil {
 		log.WithError(err).Fatal("Could not start vizier updater")
 	}
 	go updater.ProcessUpdateQueue()
 	defer updater.Stop()
 
-	c := controller.New(db, dbKey, dnsMgrClient, nc, updater)
+	c := controllers.New(db, dbKey, dnsMgrClient, nc, updater)
 	dks := deploymentkey.New(db, dbKey)
 	ds := deployment.New(dks, c)
 
-	sm := controller.NewStatusMonitor(db)
+	sm := controllers.NewStatusMonitor(db)
 	defer sm.Stop()
 	vzmgrpb.RegisterVZMgrServiceServer(s.GRPCServer(), c)
 	vzmgrpb.RegisterVZDeploymentKeyServiceServer(s.GRPCServer(), dks)
 	vzmgrpb.RegisterVZDeploymentServiceServer(s.GRPCServer(), ds)
 
-	var mdr *controller.MetadataReader
+	var mdr *controllers.MetadataReader
 	go func() {
-		mdr, err = controller.NewMetadataReader(db, strmr, nc)
+		mdr, err = controllers.NewMetadataReader(db, strmr, nc)
 		if err != nil {
 			log.WithError(err).Fatal("Could not start metadata listener")
 		}

@@ -27,7 +27,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"px.dev/pixie/src/cloud/dnsmgr/controller"
+	"px.dev/pixie/src/cloud/dnsmgr/controllers"
 	"px.dev/pixie/src/cloud/dnsmgr/dnsmgrenv"
 	"px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
 	"px.dev/pixie/src/cloud/dnsmgr/schema"
@@ -64,7 +64,7 @@ func main() {
 	}
 
 	env := dnsmgrenv.New()
-	dnsService, err := controller.NewCloudDNSService(
+	dnsService, err := controllers.NewCloudDNSService(
 		viper.GetString("dns_zone"),
 		viper.GetString("dns_project"),
 		"/secrets/clouddns/dns_service_account.json",
@@ -75,7 +75,7 @@ func main() {
 		dnsService = nil
 	}
 
-	svr := controller.NewServer(env, dnsService, db)
+	svr := controllers.NewServer(env, dnsService, db)
 
 	s := server.NewPLServer(env, mux)
 	dnsmgrpb.RegisterDNSMgrServiceServer(s.GRPCServer(), svr)

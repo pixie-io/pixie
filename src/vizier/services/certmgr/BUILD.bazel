@@ -29,7 +29,7 @@ go_library(
         "//src/shared/services/server",
         "//src/vizier/services/certmgr/certmgrenv",
         "//src/vizier/services/certmgr/certmgrpb:service_pl_go_proto",
-        "//src/vizier/services/certmgr/controller",
+        "//src/vizier/services/certmgr/controllers",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_nats_io_nats_go//:nats_go",
         "@com_github_sirupsen_logrus//:logrus",

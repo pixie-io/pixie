@@ -31,9 +31,9 @@ final class ArcanistGraphqlGenCheckerTestEngine extends ArcanistBaseGenCheckerTe
         continue;
       }
 
-      $test_results[] = $this->checkFile($file, 'src/ui/src/types/schema.ts', 'To regenerate, run src/cloud/api/controller/schema/update.sh');
-      $test_results[] = $this->checkFile($file, 'src/cloud/api/controller/schema/complete/bindata.gen.go', 'To regenerate, run src/cloud/api/controller/schema/update.sh');
-      $test_results[] = $this->checkFile($file, 'src/cloud/api/controller/schema/noauth/bindata.gen.go', 'To regenerate, run src/cloud/api/controller/schema/update.sh');
+      $test_results[] = $this->checkFile($file, 'src/ui/src/types/schema.ts', 'To regenerate, run src/cloud/api/controllers/schema/update.sh');
+      $test_results[] = $this->checkFile($file, 'src/cloud/api/controllers/schema/complete/bindata.gen.go', 'To regenerate, run src/cloud/api/controllers/schema/update.sh');
+      $test_results[] = $this->checkFile($file, 'src/cloud/api/controllers/schema/noauth/bindata.gen.go', 'To regenerate, run src/cloud/api/controllers/schema/update.sh');
     }
 
     return $test_results;

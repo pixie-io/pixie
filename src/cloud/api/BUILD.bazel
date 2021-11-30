@@ -27,7 +27,7 @@ go_library(
         "//src/api/proto/cloudpb:cloudapi_pl_go_proto",
         "//src/api/proto/vizierpb:vizier_pl_go_proto",
         "//src/cloud/api/apienv",
-        "//src/cloud/api/controller",
+        "//src/cloud/api/controllers",
         "//src/cloud/api/ptproxy",
         "//src/cloud/autocomplete",
         "//src/cloud/shared/esutils",

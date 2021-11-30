@@ -30,7 +30,7 @@ import (
 
 	atpb "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
 	"px.dev/pixie/src/cloud/config_manager/configmanagerpb"
-	"px.dev/pixie/src/cloud/config_manager/controller"
+	"px.dev/pixie/src/cloud/config_manager/controllers"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/env"
 	"px.dev/pixie/src/shared/services/healthz"
@@ -86,7 +86,7 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("Could not connect with Artifact Service.")
 	}
-	svr := controller.NewServer(atClient, clientset, rm)
+	svr := controllers.NewServer(atClient, clientset, rm)
 	serverOpts := &server.GRPCServerOptions{
 		DisableAuth: map[string]bool{
 			"/px.services.ConfigManagerService/GetConfigForVizier": true,

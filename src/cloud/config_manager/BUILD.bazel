@@ -51,7 +51,7 @@ go_library(
     deps = [
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
         "//src/cloud/config_manager/configmanagerpb:service_pl_go_proto",
-        "//src/cloud/config_manager/controller",
+        "//src/cloud/config_manager/controllers",
         "//src/shared/services",
         "//src/shared/services/env",
         "//src/shared/services/healthz",

@@ -49,7 +49,7 @@ go_library(
     srcs = ["metrics_server.go"],
     importpath = "px.dev/pixie/src/cloud/metrics",
     deps = [
-        "//src/cloud/metrics/controller",
+        "//src/cloud/metrics/controllers",
         "//src/shared/services",
         "//src/shared/services/env",
         "//src/shared/services/healthz",

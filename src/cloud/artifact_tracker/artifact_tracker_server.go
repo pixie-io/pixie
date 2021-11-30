@@ -37,7 +37,7 @@ import (
 
 	"px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerenv"
 	atpb "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
-	"px.dev/pixie/src/cloud/artifact_tracker/controller"
+	"px.dev/pixie/src/cloud/artifact_tracker/controllers"
 	"px.dev/pixie/src/cloud/artifact_tracker/schema"
 	"px.dev/pixie/src/cloud/shared/pgmigrate"
 	"px.dev/pixie/src/shared/services"
@@ -112,7 +112,7 @@ func main() {
 	db := mustLoadDB()
 	bucket := viper.GetString("artifact_bucket")
 	releaseBucket := viper.GetString("release_artifact_bucket")
-	svr := controller.NewServer(db, stiface.AdaptClient(client), bucket, releaseBucket, saCfg)
+	svr := controllers.NewServer(db, stiface.AdaptClient(client), bucket, releaseBucket, saCfg)
 
 	serverOpts := &server.GRPCServerOptions{
 		DisableAuth: map[string]bool{

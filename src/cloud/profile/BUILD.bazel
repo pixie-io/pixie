@@ -26,7 +26,7 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/profile",
     visibility = ["//visibility:private"],
     deps = [
-        "//src/cloud/profile/controller",
+        "//src/cloud/profile/controllers",
         "//src/cloud/profile/datastore",
         "//src/cloud/profile/profileenv",
         "//src/cloud/profile/profilepb:service_pl_go_proto",

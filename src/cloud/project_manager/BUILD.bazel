@@ -26,7 +26,7 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/project_manager",
     visibility = ["//visibility:private"],
     deps = [
-        "//src/cloud/project_manager/controller",
+        "//src/cloud/project_manager/controllers",
         "//src/cloud/project_manager/datastore",
         "//src/cloud/project_manager/projectmanagerpb:service_pl_go_proto",
         "//src/cloud/project_manager/schema",

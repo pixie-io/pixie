@@ -35,7 +35,7 @@ import (
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/cloud/api/apienv"
-	"px.dev/pixie/src/cloud/api/controller"
+	"px.dev/pixie/src/cloud/api/controllers"
 	"px.dev/pixie/src/cloud/api/ptproxy"
 	"px.dev/pixie/src/cloud/autocomplete"
 	"px.dev/pixie/src/cloud/shared/esutils"
@@ -76,7 +76,7 @@ func main() {
 	services.CheckSSLClientFlags()
 	services.SetupServiceLogging()
 
-	ac, err := controller.NewAuthClient()
+	ac, err := controllers.NewAuthClient()
 	if err != nil {
 		log.WithError(err).Fatal("Failed to init auth client")
 	}
@@ -106,7 +106,7 @@ func main() {
 		log.WithError(err).Fatal("Failed to init artifact tracker client")
 	}
 
-	ak, err := controller.NewAPIKeyClient()
+	ak, err := controllers.NewAPIKeyClient()
 	if err != nil {
 		log.WithError(err).Fatal("Failed to init API key client")
 	}
@@ -136,21 +136,21 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("/api/auth/signup", handler.New(env, controller.AuthSignupHandler))
-	mux.Handle("/api/auth/login", handler.New(env, controller.AuthLoginHandler))
-	mux.Handle("/api/auth/loginEmbed", handler.New(env, controller.AuthLoginHandlerEmbed))
-	mux.Handle("/api/auth/logout", handler.New(env, controller.AuthLogoutHandler))
-	mux.Handle("/api/auth/refetch", handler.New(env, controller.AuthRefetchHandler))
-	mux.Handle("/api/auth/oauth/login", handler.New(env, controller.AuthOAuthLoginHandler))
+	mux.Handle("/api/auth/signup", handler.New(env, controllers.AuthSignupHandler))
+	mux.Handle("/api/auth/login", handler.New(env, controllers.AuthLoginHandler))
+	mux.Handle("/api/auth/loginEmbed", handler.New(env, controllers.AuthLoginHandlerEmbed))
+	mux.Handle("/api/auth/logout", handler.New(env, controllers.AuthLogoutHandler))
+	mux.Handle("/api/auth/refetch", handler.New(env, controllers.AuthRefetchHandler))
+	mux.Handle("/api/auth/oauth/login", handler.New(env, controllers.AuthOAuthLoginHandler))
 	// This is an unauthenticated path that will check and validate if a particular domain
 	// is available for registration. This need to be unauthenticated because we need to check this before
 	// the user registers.
-	mux.Handle("/api/authorized", controller.WithAugmentedAuthMiddleware(env, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("/api/authorized", controllers.WithAugmentedAuthMiddleware(env, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "OK")
 	})))
 
 	if viper.GetString("auth_connector_name") != "" {
-		mux.Handle(fmt.Sprintf("/api/auth/%s", viper.GetString("auth_connector_name")), handler.New(env, controller.AuthConnectorHandler))
+		mux.Handle(fmt.Sprintf("/api/auth/%s", viper.GetString("auth_connector_name")), handler.New(env, controllers.AuthConnectorHandler))
 	}
 
 	// This handles all the pprof endpoints.
@@ -164,7 +164,7 @@ func main() {
 			if !ok {
 				return "", errors.New("Could not convert env to apiEnv")
 			}
-			return controller.GetAugmentedTokenGRPC(ctx, apiEnv)
+			return controllers.GetAugmentedTokenGRPC(ctx, apiEnv)
 		},
 		DisableAuth: map[string]bool{
 			"/px.cloudapi.ArtifactTracker/GetArtifactList":  true,
@@ -183,24 +183,24 @@ func main() {
 	}
 	s := server.NewPLServerWithOptions(env, handlers.CORS(services.DefaultCORSConfig(allowedOrigins)...)(mux), serverOpts)
 
-	imageAuthServer := &controller.VizierImageAuthServer{}
+	imageAuthServer := &controllers.VizierImageAuthServer{}
 	cloudpb.RegisterVizierImageAuthorizationServer(s.GRPCServer(), imageAuthServer)
 
-	artifactTrackerServer := controller.ArtifactTrackerServer{
+	artifactTrackerServer := controllers.ArtifactTrackerServer{
 		ArtifactTrackerClient: at,
 	}
 	cloudpb.RegisterArtifactTrackerServer(s.GRPCServer(), artifactTrackerServer)
 
-	cis := &controller.VizierClusterInfo{VzMgr: vc, ArtifactTrackerClient: at}
+	cis := &controllers.VizierClusterInfo{VzMgr: vc, ArtifactTrackerClient: at}
 	cloudpb.RegisterVizierClusterInfoServer(s.GRPCServer(), cis)
 
-	vdks := &controller.VizierDeploymentKeyServer{VzDeploymentKey: vk}
+	vdks := &controllers.VizierDeploymentKeyServer{VzDeploymentKey: vk}
 	cloudpb.RegisterVizierDeploymentKeyManagerServer(s.GRPCServer(), vdks)
 
-	aks := &controller.APIKeyServer{APIKeyClient: ak}
+	aks := &controllers.APIKeyServer{APIKeyClient: ak}
 	cloudpb.RegisterAPIKeyManagerServer(s.GRPCServer(), aks)
 
-	authServer := &controller.AuthServer{AuthClient: ac}
+	authServer := &controllers.AuthServer{AuthClient: ac}
 	cloudpb.RegisterAuthServiceServer(s.GRPCServer(), authServer)
 
 	vpt := ptproxy.NewVizierPassThroughProxy(nc, vc)
@@ -211,7 +211,7 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("Failed to init scriptmgr client.")
 	}
-	sms := &controller.ScriptMgrServer{ScriptMgr: sm}
+	sms := &controllers.ScriptMgrServer{ScriptMgr: sm}
 	cloudpb.RegisterScriptMgrServer(s.GRPCServer(), sms)
 
 	esSuggester, err := autocomplete.NewElasticSuggester(es, "scripts", pc)
@@ -248,22 +248,22 @@ func main() {
 	}()
 	defer close(quitCh)
 
-	as := &controller.AutocompleteServer{Suggester: esSuggester}
+	as := &controllers.AutocompleteServer{Suggester: esSuggester}
 	cloudpb.RegisterAutocompleteServiceServer(s.GRPCServer(), as)
 
-	profileServer := &controller.ProfileServer{OrgServiceClient: oc}
+	profileServer := &controllers.ProfileServer{OrgServiceClient: oc}
 	cloudpb.RegisterProfileServiceServer(s.GRPCServer(), profileServer)
 
-	os := &controller.OrganizationServiceServer{ProfileServiceClient: pc, AuthServiceClient: ac, OrgServiceClient: oc}
+	os := &controllers.OrganizationServiceServer{ProfileServiceClient: pc, AuthServiceClient: ac, OrgServiceClient: oc}
 	cloudpb.RegisterOrganizationServiceServer(s.GRPCServer(), os)
 
-	us := &controller.UserServiceServer{ProfileServiceClient: pc, OrgServiceClient: oc}
+	us := &controllers.UserServiceServer{ProfileServiceClient: pc, OrgServiceClient: oc}
 	cloudpb.RegisterUserServiceServer(s.GRPCServer(), us)
 
-	cs := &controller.ConfigServiceServer{ConfigServiceClient: cm}
+	cs := &controllers.ConfigServiceServer{ConfigServiceClient: cm}
 	cloudpb.RegisterConfigServiceServer(s.GRPCServer(), cs)
 
-	gqlEnv := controller.GraphQLEnv{
+	gqlEnv := controllers.GraphQLEnv{
 		ArtifactTrackerServer: artifactTrackerServer,
 		VizierClusterInfo:     cis,
 		VizierDeployKeyMgr:    vdks,
@@ -274,9 +274,9 @@ func main() {
 		UserServer:            us,
 	}
 
-	mux.Handle("/api/graphql", controller.WithAugmentedAuthMiddleware(env, controller.NewGraphQLHandler(gqlEnv)))
+	mux.Handle("/api/graphql", controllers.WithAugmentedAuthMiddleware(env, controllers.NewGraphQLHandler(gqlEnv)))
 
-	mux.Handle("/api/unauthenticated/graphql", controller.NewUnauthenticatedGraphQLHandler(gqlEnv))
+	mux.Handle("/api/unauthenticated/graphql", controllers.NewUnauthenticatedGraphQLHandler(gqlEnv))
 
 	s.Start()
 	s.StopOnInterrupt()

@@ -33,7 +33,7 @@ import (
 	"px.dev/pixie/src/shared/services/server"
 	"px.dev/pixie/src/vizier/services/certmgr/certmgrenv"
 	"px.dev/pixie/src/vizier/services/certmgr/certmgrpb"
-	"px.dev/pixie/src/vizier/services/certmgr/controller"
+	"px.dev/pixie/src/vizier/services/certmgr/controllers"
 )
 
 func init() {
@@ -84,10 +84,10 @@ func main() {
 	healthz.RegisterDefaultChecks(mux)
 
 	k8sWait := make(chan struct{})
-	var k8sAPI *controller.K8sAPIImpl
+	var k8sAPI *controllers.K8sAPIImpl
 
 	go func() {
-		k8sAPI, err = controller.NewK8sAPI(viper.GetString("namespace"))
+		k8sAPI, err = controllers.NewK8sAPI(viper.GetString("namespace"))
 		if err != nil {
 			log.WithError(err).Fatal("Failed to connect to K8S API")
 		}
@@ -102,7 +102,7 @@ func main() {
 	}
 
 	env := certmgrenv.New("vizier")
-	svr := controller.NewServer(env, clusterID, nc, k8sAPI)
+	svr := controllers.NewServer(env, clusterID, nc, k8sAPI)
 	go svr.CertRequester()
 	defer svr.StopCertRequester()
 
