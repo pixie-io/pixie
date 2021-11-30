@@ -1,5 +1,4 @@
 {
-  "schemaPath": "src/cloud/api/controllers/schema/schema.graphql",
-  "includes": ["src/**"],
-  "excludes": ["src/cloud/api/controllers/unauthenticated_schema/**/*.graphql", "src/ui/**/node_modules/**"]
+  "schemaPath": "src/cloud/api/controllers/schema/01_base_schema.graphql",
+  "includes": ["src/**"]
 }
