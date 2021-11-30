@@ -18,4 +18,6 @@
 
 import * as React from 'react';
 
+// eslint-disable-next-line react-memo/require-memo
 export const TimeArgDetail: React.FC<{ clusterName: string }> = () => <></>;
+TimeArgDetail.displayName = 'TimeArgDetail';

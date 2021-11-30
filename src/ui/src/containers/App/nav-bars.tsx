@@ -21,7 +21,7 @@ import * as React from 'react';
 import { SideBar } from 'app/containers/App/sidebar';
 import { TopBar } from 'app/containers/App/topbar';
 
-const NavBars: React.FC = ({ children }) => {
+const NavBars = React.memo(({ children }) => {
   const [sidebarOpen, setSidebarOpen] = React.useState<boolean>(false);
   const toggleSidebar = React.useCallback(() => setSidebarOpen((open) => !open), [setSidebarOpen]);
 
@@ -33,6 +33,7 @@ const NavBars: React.FC = ({ children }) => {
       <SideBar open={sidebarOpen} />
     </>
   );
-};
+});
+NavBars.displayName = 'NavBars';
 
 export default NavBars;

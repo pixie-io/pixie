@@ -18,6 +18,7 @@
 
 import * as React from 'react';
 
+// eslint-disable-next-line react-memo/require-memo
 export const AuthErrorSvg: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg {...props} width={77} height={69} viewBox='0 0 77 69' fill='none'>
     <path

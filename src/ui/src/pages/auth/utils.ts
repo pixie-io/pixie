@@ -83,6 +83,7 @@ const getRedirectURL = (isSignup: boolean) => {
   return redirectURL;
 };
 
+// eslint-disable-next-line react-memo/require-memo
 export const GetOAuthProvider = (): OAuthProviderClient => {
   if (OAUTH_PROVIDER === 'auth0') {
     return new Auth0Client(getRedirectURL);
@@ -93,4 +94,5 @@ export const GetOAuthProvider = (): OAuthProviderClient => {
   throw new Error(`OAUTH_PROVIDER ${OAUTH_PROVIDER} invalid. Expected hydra or auth0.`);
 };
 
+// eslint-disable-next-line react-memo/require-memo
 export const GetCSRFCookie = (): string => (cookies.get(CSRF_COOKIE_NAME));

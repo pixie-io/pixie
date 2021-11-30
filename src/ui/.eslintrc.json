@@ -241,6 +241,20 @@
           }
         ]
       }
+    },
+    {
+      "files": [
+        "*test.ts",
+        "*test.tsx",
+        "*mock.ts",
+        "*mock.tsx",
+        "src/testing/**/*"
+      ],
+      "rules": {
+        "react-memo/require-memo": 0,
+        "react-memo/require-usememo": 0,
+        "react-memo/require-usememo-children": 0
+      }
     }
   ]
 }

@@ -18,6 +18,7 @@
 
 import React from 'react';
 
+// eslint-disable-next-line react-memo/require-memo
 export const PixienautOctopusSvg: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   /* eslint-disable max-len */
   <svg {...props} width='3681' height='1684' viewBox='0 0 3681 1684' fill='none' xmlns='http://www.w3.org/2000/svg'>

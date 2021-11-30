@@ -16,17 +16,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const { resolve, join } = require('path');
-const { execSync } = require('child_process');
-
-const webpack = require('webpack');
 const CaseSensitivePathsPlugin = require('case-sensitive-paths-webpack-plugin');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const fs = require('fs');
+const { execSync } = require('child_process');
 const CompressionPlugin = require('compression-webpack-plugin');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const FaviconsWebpackPlugin = require('favicons-webpack-plugin');
+const fs = require('fs');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
+const { resolve, join } = require('path');
+const webpack = require('webpack');
+
 const utils = require('./webpack-utils');
 
 const isDevServer = process.argv.find((v) => v.includes('serve'));

@@ -18,4 +18,6 @@
 
 import * as React from 'react';
 
+// eslint-disable-next-line react-memo/require-memo
 export const SidebarFooter: React.FC<{ clusterName: string }> = () => <></>;
+SidebarFooter.displayName = 'SidebarFooter';

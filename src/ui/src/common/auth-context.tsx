@@ -25,7 +25,7 @@ export interface AuthContextProps {
 
 export const AuthContext = React.createContext<AuthContextProps>(null);
 
-export const AuthContextProvider: React.FC = ({ children }) => {
+export const AuthContextProvider = React.memo(({ children }) => {
   const [authToken, setAuthToken] = React.useState<string>('');
 
   return (
@@ -33,4 +33,5 @@ export const AuthContextProvider: React.FC = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
-};
+});
+AuthContextProvider.displayName = 'AuthContextProvider';

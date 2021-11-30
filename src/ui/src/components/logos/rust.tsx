@@ -18,6 +18,7 @@
 
 import * as React from 'react';
 
+// eslint-disable-next-line react-memo/require-memo
 export const RustIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   /* eslint-disable max-len */
   <svg

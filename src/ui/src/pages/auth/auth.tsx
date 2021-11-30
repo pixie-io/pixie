@@ -32,6 +32,7 @@ import { PasswordRecoveryPage } from './password-recovery';
 import { SignupPage } from './signup';
 import { SignupCompletePage } from './signup-complete';
 
+// eslint-disable-next-line react-memo/require-memo
 export const AuthRouter: React.FC = () => (
   <Switch>
     <Route exact path='/auth/password-login' component={PasswordLoginPage} />

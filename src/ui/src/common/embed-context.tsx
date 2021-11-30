@@ -25,7 +25,7 @@ export interface EmbedContextProps {
 
 export const EmbedContext = React.createContext<EmbedContextProps>(null);
 
-export const EmbedContextProvider: React.FC = ({ children }) => {
+export const EmbedContextProvider = React.memo(({ children }) => {
   const [timeArg, setTimeArg] = React.useState<string>('');
 
   return (
@@ -33,4 +33,5 @@ export const EmbedContextProvider: React.FC = ({ children }) => {
       {children}
     </EmbedContext.Provider>
   );
-};
+});
+EmbedContextProvider.displayName = 'EmbedContextProvider';

@@ -30,7 +30,7 @@ export const PixieAPIContext = React.createContext<PixieAPIClientAbstract>(null)
 
 export type PixieAPIContextProviderProps = PixieAPIClientOptions;
 
-export const PixieAPIContextProvider: React.FC<PixieAPIContextProviderProps> = ({ children, ...opts }) => {
+export const PixieAPIContextProvider: React.FC<PixieAPIContextProviderProps> = React.memo(({ children, ...opts }) => {
   const [pixieClient, setPixieClient] = React.useState<PixieAPIClient>(null);
   const { authToken } = React.useContext(AuthContext);
 
@@ -52,4 +52,5 @@ export const PixieAPIContextProvider: React.FC<PixieAPIContextProviderProps> = (
       </ApolloProvider>
     </PixieAPIContext.Provider>
   );
-};
+});
+PixieAPIContextProvider.displayName = 'PixieAPIContextProvider';

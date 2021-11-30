@@ -26,7 +26,7 @@ import * as RedirectUtils from 'app/utils/redirect-utils';
 import { BasePage } from './base';
 import { GetCSRFCookie } from './utils';
 
-// eslint-disable-next-line react/prefer-stateless-function
+// eslint-disable-next-line react-memo/require-memo
 export const LogoutPage: React.FC = () => {
   // eslint-disable-next-line class-methods-use-this
   React.useEffect(() => {

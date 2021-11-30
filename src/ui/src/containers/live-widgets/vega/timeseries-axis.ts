@@ -116,7 +116,7 @@ export function formatTime(tick: Date, showAmPm = false,
   return timeFormat(fmtStr)(tick);
 }
 
-function AmPmFormatter(): LabelsFormatter {
+function amPmFormatter(): LabelsFormatter {
   // Add AM and PM to the first and last labels.
   return {
     format: (label: Label): string => formatTime(label.tick, true),
@@ -153,7 +153,7 @@ export function prepareLabels(
   });
 
   // Add AM/PM to the first and last labels.
-  applyFormat(AmPmFormatter(), labels);
+  applyFormat(amPmFormatter(), labels);
 
   // We loop through the labels and "hide" (set to empty string) every other
   // label until we no longer have overlapping labels or we only have 3 elements showing.

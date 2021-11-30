@@ -17,10 +17,10 @@
  */
 
 const archiver = require('archiver');
+const { execSync } = require('child_process');
 const fs = require('fs');
 const { dirname } = require('path');
 const shell = require('shelljs');
-const { execSync } = require('child_process');
 const YAML = require('yaml');
 
 // Executes the passed in command. On non-zero exit code an exception

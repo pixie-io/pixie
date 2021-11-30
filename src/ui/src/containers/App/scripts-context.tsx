@@ -48,7 +48,7 @@ export const SCRATCH_SCRIPT: Script = {
   hidden: false,
 };
 
-export const ScriptsContextProvider: React.FC = ({ children }) => {
+export const ScriptsContextProvider = React.memo(({ children }) => {
   const { data, loading, error } = useQuery<{
     user: Pick<GQLUserInfo, 'orgName' | 'orgID' >,
   }>(gql`
@@ -96,4 +96,5 @@ export const ScriptsContextProvider: React.FC = ({ children }) => {
       {children}
     </ScriptsContext.Provider>
   );
-};
+});
+ScriptsContext.displayName = 'ScriptsContext';

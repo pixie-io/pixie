@@ -37,9 +37,12 @@ const AutoSizerContextProvider: React.FC<{
 
 /** Wraps component in an <AutoSizer>, and provides the width/height properties that creates in AutoSizerContext. */
 export function withAutoSizerContext<P>(Component: React.ComponentType<P>): React.ComponentType<P> {
+  // Note: no memoization in this component, as it's wrapping a component that may not be pure.
+  // eslint-disable-next-line react-memo/require-memo
   const Wrapped: React.FC<P> = (props) => (
     <AutoSizer>
       {({ width, height }) => (
+        // eslint-disable-next-line react-memo/require-usememo
         <AutoSizerContextProvider width={width} height={height} content={<Component {...props} />} />
       )}
     </AutoSizer>

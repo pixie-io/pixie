@@ -26,6 +26,7 @@ import { PixienautForm, FormStructure } from 'app/components';
 import { BasePage } from './base';
 import { GetOAuthProvider } from './utils';
 
+// eslint-disable-next-line react-memo/require-memo
 export const PasswordRecoveryPage: React.FC = ({ location }: RouteProps) => {
   const parsed = QueryString.parse(location.search);
   const flow = parsed.flow as string;
