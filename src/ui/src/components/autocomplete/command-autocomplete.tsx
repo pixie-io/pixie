@@ -260,3 +260,4 @@ export const CommandAutocomplete: React.FC<NewAutoCompleteProps> = ({
     </div>
   );
 };
+CommandAutocomplete.displayName = 'CommandAutocomplete';

@@ -46,3 +46,4 @@ export const LogoutPage: React.FC = () => {
     </BasePage>
   );
 };
+LogoutPage.displayName = 'LogoutPage';

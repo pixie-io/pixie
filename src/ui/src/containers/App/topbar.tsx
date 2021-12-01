@@ -111,7 +111,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }), { name: 'TopBar' });
 
-const ProfileItem = React.memo<{ setSidebarOpen: SetStateFunc<boolean> }>(function ProfileItem({ setSidebarOpen }) {
+const ProfileItem = React.memo<{ setSidebarOpen: SetStateFunc<boolean> }>(({ setSidebarOpen }) => {
   const classes = useStyles();
   const [open, setOpen] = React.useState<boolean>(false);
   const { setTourOpen } = React.useContext(LiveTourContext);
@@ -283,15 +283,16 @@ const ProfileItem = React.memo<{ setSidebarOpen: SetStateFunc<boolean> }>(functi
     </>
   );
 });
+ProfileItem.displayName = 'ProfileItem';
 
 interface TopBarProps {
   toggleSidebar: () => void;
   setSidebarOpen: SetStateFunc<boolean>;
 }
 
-export const TopBar: React.FC<TopBarProps> = React.memo(function TopBar({
+export const TopBar: React.FC<TopBarProps> = React.memo(({
   children, toggleSidebar, setSidebarOpen,
-}) {
+}) => {
   const classes = useStyles();
   return (
     <AppBar className={classes.container} position='static'>
@@ -309,3 +310,4 @@ export const TopBar: React.FC<TopBarProps> = React.memo(function TopBar({
     </AppBar>
   );
 });
+TopBar.displayName = 'TopBar';

@@ -69,7 +69,7 @@ const useStyles = makeStyles(({ spacing, palette }: Theme) => createStyles({
       color: palette.primary.main,
     },
   },
-}));
+}), { name: 'AuthBox' });
 
 export interface AuthBoxProps {
   title: string;
@@ -80,7 +80,7 @@ export interface AuthBoxProps {
   showTOSDisclaimer?: boolean;
 }
 
-export const AuthBox: React.FC<AuthBoxProps> = React.memo(function AuthBox(props) {
+export const AuthBox: React.FC<AuthBoxProps> = React.memo((props) => {
   const {
     toggleURL,
     showTOSDisclaimer,
@@ -133,3 +133,4 @@ export const AuthBox: React.FC<AuthBoxProps> = React.memo(function AuthBox(props
     </PixienautBox>
   );
 });
+AuthBox.displayName = 'AuthBox';

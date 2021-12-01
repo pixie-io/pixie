@@ -135,7 +135,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
       fill: theme.palette.foreground?.grey1,
     },
   },
-}));
+}), { name: 'Completions' });
 
 type CompletionProps = Omit<CompletionItem, 'type'> & {
   active: boolean;
@@ -265,6 +265,7 @@ export const Completion: React.FC<CompletionProps> = (props) => {
   // Need an internal component because of useEffect.
   return <CompletionInternal {...props} />;
 };
+Completion.displayName = 'Completion';
 
 // eslint-disable-next-line react-memo/require-memo
 export const Completions: React.FC<CompletionsProps> = (props) => {
@@ -318,3 +319,4 @@ export const Completions: React.FC<CompletionsProps> = (props) => {
     </div>
   );
 };
+Completions.displayName = 'Completions';

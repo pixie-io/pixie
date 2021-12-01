@@ -85,7 +85,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     border: theme.palette.background.two,
     borderStyle: 'solid',
   },
-}));
+}), { name: 'CommandAutocompleteInput' });
 
 const BLINK_INTERVAL = 500; // 500ms = .5s
 
@@ -107,6 +107,7 @@ const Caret: React.FC<{ active: boolean }> = ({ active }) => {
     </div>
   );
 };
+Caret.displayName = 'Caret';
 
 export interface AutocompleteField {
   type: 'key' | 'value'; // The type signifies what color the text should be.
@@ -272,3 +273,4 @@ export const CommandAutocompleteInput: React.FC<AutocompleteInputProps> = ({
     </div>
   );
 };
+CommandAutocompleteInput.displayName = 'CommandAutocompleteInput';

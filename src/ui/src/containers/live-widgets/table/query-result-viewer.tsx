@@ -63,9 +63,9 @@ export interface QueryResultTableProps {
   propagatedArgs: Arguments;
 }
 
-export const QueryResultTable = React.memo<QueryResultTableProps>(function QueryResultTable({
+export const QueryResultTable = React.memo<QueryResultTableProps>(({
   display, table, propagatedArgs,
-}) {
+}) => {
   const classes = useStyles();
   const { streaming } = React.useContext(ResultsContext);
 
@@ -110,3 +110,4 @@ export const QueryResultTable = React.memo<QueryResultTableProps>(function Query
     </div>
   );
 });
+QueryResultTable.displayName = 'QueryResultTable';

@@ -99,12 +99,12 @@ export interface FlamegraphIDEMenuProps {
   onClose: (boolean) => void;
 }
 
-export const FlamegraphIDEMenu: React.FC<FlamegraphIDEMenuProps> = React.memo(function FlamegraphIDEMenu({
+export const FlamegraphIDEMenu: React.FC<FlamegraphIDEMenuProps> = React.memo(({
   symbol,
   fullPath,
   open,
   onClose,
-}) {
+}) => {
   const { org } = React.useContext(OrgContext);
   const selectedClusterName = React.useContext(ClusterContext)?.selectedClusterName ?? '';
 
@@ -140,3 +140,4 @@ export const FlamegraphIDEMenu: React.FC<FlamegraphIDEMenuProps> = React.memo(fu
     </Menu>
   );
 });
+FlamegraphIDEMenu.displayName = 'FlamegraphIDEMenu';

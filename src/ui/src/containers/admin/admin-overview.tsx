@@ -64,7 +64,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-export const AdminOverview = React.memo(function AdminOverview() {
+export const AdminOverview = React.memo(() => {
   const history = useHistory();
   const location = useLocation();
   const { path } = useRouteMatch();
@@ -209,3 +209,4 @@ export const AdminOverview = React.memo(function AdminOverview() {
     </div>
   );
 });
+AdminOverview.displayName = 'AdminOverview';

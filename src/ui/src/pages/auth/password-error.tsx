@@ -49,3 +49,4 @@ export const ErrorPage: React.FC = ({ location }: RouteProps) => {
     </BasePage>
   );
 };
+ErrorPage.displayName = 'ErrorPage';

@@ -44,7 +44,7 @@ const useStyles = makeStyles(({ palette, spacing }: Theme) => createStyles({
     borderTop: `1px solid ${palette.foreground.grey1}`,
     width: '81%', // Lines up with the border under the octopus graphic and puts space between the buttons
   },
-}));
+}), { name: 'RouteNotFound' });
 
 // eslint-disable-next-line react-memo/require-memo
 export const RouteNotFound: React.FC = () => {
@@ -66,3 +66,4 @@ export const RouteNotFound: React.FC = () => {
     </PixienautBox>
   );
 };
+RouteNotFound.displayName = 'RouteNotFound';

@@ -121,7 +121,7 @@ const useStyles = makeStyles(({ shape, palette, spacing }: Theme) => createStyle
   },
 }), { name: 'LiveViewBreadcrumbs' });
 
-export const LiveViewBreadcrumbs: React.FC = React.memo(function LiveViewBreadcrumbs() {
+export const LiveViewBreadcrumbs: React.FC = React.memo(() => {
   const classes = useStyles();
   const { selectedClusterUID, selectedClusterName } = React.useContext(ClusterContext);
   const { scripts } = React.useContext(ScriptsContext);
@@ -276,3 +276,4 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(function LiveViewBreadcr
     </>
   );
 });
+LiveViewBreadcrumbs.displayName = 'LiveViewBreadcrumbs';

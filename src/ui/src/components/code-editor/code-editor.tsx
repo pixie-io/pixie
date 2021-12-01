@@ -65,6 +65,8 @@ function removeKeybindings(editor, keys: string[]) {
 }
 
 export class CodeEditor extends React.PureComponent<CodeEditorProps, CodeEditorState> {
+  static readonly displayName = 'CodeEditor';
+
   private editorRef: MonacoEditorTypes.ICodeEditor;
 
   // Holder for code in the editor.

@@ -63,14 +63,14 @@ interface FixedSizeDrawerProps {
   overlay: boolean;
 }
 
-export const FixedSizeDrawer: React.FC<FixedSizeDrawerProps> = React.memo(function FixedSizeDrawer({
+export const FixedSizeDrawer: React.FC<FixedSizeDrawerProps> = React.memo(({
   children,
   otherContent,
   drawerDirection,
   drawerSize,
   open,
   overlay,
-}) {
+}) => {
   const classes = useStyles();
   const drawerStyle = drawerDirection === 'top' || drawerDirection === 'bottom'
     ? { height: drawerSize }
@@ -118,3 +118,4 @@ export const FixedSizeDrawer: React.FC<FixedSizeDrawerProps> = React.memo(functi
     </div>
   );
 });
+FixedSizeDrawer.displayName = 'FixedSizeDrawer';

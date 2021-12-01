@@ -27,3 +27,4 @@ export const SidebarContext = React.createContext<SidebarContextProps>({
   showLiveOptions: true,
   showAdmin: true,
 });
+SidebarContext.displayName = 'SidebarContext';

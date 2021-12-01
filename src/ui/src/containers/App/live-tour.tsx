@@ -36,10 +36,13 @@ export const LiveTourContext = React.createContext<LiveTourContextProps>({
   tourOpen: false,
   setTourOpen: () => {},
 });
-export const LiveTourContextProvider: React.FC = React.memo(function LiveTourContextProvider({ children }) {
+LiveTourContext.displayName = 'LiveTourContext';
+
+export const LiveTourContextProvider: React.FC = React.memo(({ children }) => {
   const [tourOpen, setTourOpen] = React.useState<boolean>(false);
   return <LiveTourContext.Provider value={{ tourOpen, setTourOpen }}>{children}</LiveTourContext.Provider>;
 });
+LiveTourContextProvider.displayName = 'LiveTourContextProvider';
 
 /**
  * Generates the CSS properties needed to punch holes in the backdrop
@@ -192,7 +195,7 @@ interface LiveTourArrowProps {
   className: string;
 }
 
-const LiveTourArrow = React.memo<LiveTourArrowProps>(function LiveTourArrow({
+const LiveTourArrow = React.memo<LiveTourArrowProps>(({
   path,
   width,
   height,
@@ -201,7 +204,7 @@ const LiveTourArrow = React.memo<LiveTourArrowProps>(function LiveTourArrow({
   tipAngleDeg,
   pointLength = 10,
   className,
-}) {
+}) => {
   const tipPath = `M ${tipX + pointLength} ${tipY} h -${pointLength} v ${pointLength}`;
   return (
     <svg width={width} height={height} className={className} xmlns='http://www.w3.org/2000/svg'>
@@ -217,12 +220,13 @@ const LiveTourArrow = React.memo<LiveTourArrowProps>(function LiveTourArrow({
     </svg>
   );
 });
+LiveTourArrow.displayName = 'LiveTourArrow';
 
 /**
  * Contents of the tour for Live pages. Meant to exist within a fullscreen MUIDialog.
  * @constructor
  */
-export const LiveTour = React.memo(function LiveTour() {
+export const LiveTour = React.memo(() => {
   const classes = useStyles();
   // TODO(nick): On mobile, the layout is entirely different (and as of this writing, core functionality is unavailable)
   //  For now, this is hidden for those users (the component to open this hides).
@@ -299,17 +303,16 @@ export const LiveTour = React.memo(function LiveTour() {
     </div>
   );
 });
+LiveTour.displayName = 'LiveTour';
 
-const LiveTourBackdrop = React.memo(function LiveTourBackdrop() {
-  const classes = useStyles();
-  return <div className={classes.tourModalBackdrop} />;
-});
+const LiveTourBackdrop = React.memo(() => <div className={useStyles().tourModalBackdrop} />);
+LiveTourBackdrop.displayName = 'LiveTourBackdrop';
 
 interface LiveTourDialogProps {
   onClose: () => void;
 }
 
-export const LiveTourDialog = React.memo<LiveTourDialogProps>(function LiveTourDialog({ onClose }) {
+export const LiveTourDialog = React.memo<LiveTourDialogProps>(({ onClose }) => {
   const classes = useStyles();
   const { tourOpen } = React.useContext(LiveTourContext);
   return (
@@ -332,3 +335,4 @@ export const LiveTourDialog = React.memo<LiveTourDialogProps>(function LiveTourD
     </Dialog>
   );
 });
+LiveTourDialog.displayName = 'LiveTourDialog';

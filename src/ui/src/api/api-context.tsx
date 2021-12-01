@@ -27,6 +27,7 @@ import { PixieAPIClientAbstract, PixieAPIClient } from './api';
 import { PixieAPIClientOptions } from './api-options';
 
 export const PixieAPIContext = React.createContext<PixieAPIClientAbstract>(null);
+PixieAPIContext.displayName = 'PixieAPIContext';
 
 export type PixieAPIContextProviderProps = PixieAPIClientOptions;
 

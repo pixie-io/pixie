@@ -44,7 +44,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-export const UserSettings = React.memo(function UserSettings() {
+export const UserSettings = React.memo(() => {
   const classes = useStyles();
 
   const { data, loading, error } = useQuery<{ userSettings: GQLUserSettings }>(
@@ -128,3 +128,4 @@ export const UserSettings = React.memo(function UserSettings() {
     </>
   );
 });
+UserSettings.displayName = 'UserSettings';

@@ -67,9 +67,9 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     alignItems: 'center',
     height: '100%',
   },
-}));
+}), { name: 'AdminPage' });
 
-export const AdminPage: React.FC = React.memo(function AdminPage({ children }) {
+export const AdminPage: React.FC = React.memo(({ children }) => {
   const classes = useStyles();
   return (
     <div className={classes.root}>
@@ -92,6 +92,7 @@ export const AdminPage: React.FC = React.memo(function AdminPage({ children }) {
     </div>
   );
 });
+AdminPage.displayName = 'AdminPage';
 
 // eslint-disable-next-line react-memo/require-memo
 const AdminOverviewPage = () => (
@@ -99,6 +100,7 @@ const AdminOverviewPage = () => (
     <AdminOverview />
   </AdminPage>
 );
+AdminOverviewPage.displayName = 'AdminOverviewPage';
 
 // eslint-disable-next-line react-memo/require-memo
 const ClusterDetailsPage = () => (
@@ -106,6 +108,7 @@ const ClusterDetailsPage = () => (
     <ClusterDetails />
   </AdminPage>
 );
+ClusterDetailsPage.displayName = 'ClusterDetailsPage';
 
 // eslint-disable-next-line react-memo/require-memo
 const AdminView: React.FC = () => (
@@ -115,5 +118,6 @@ const AdminView: React.FC = () => (
     <Route path='/admin' component={AdminOverviewPage} />
   </Switch>
 );
+AdminView.displayName = 'AdminView';
 
 export default AdminView;

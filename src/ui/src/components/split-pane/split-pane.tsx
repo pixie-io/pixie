@@ -31,6 +31,7 @@ interface SplitPaneContextProps {
 const SplitPaneContext = React.createContext<Partial<SplitPaneContextProps>>(
   {},
 );
+SplitPaneContext.displayName = 'SplitPaneContext';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -55,7 +56,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     minHeight: '0',
     overflow: 'auto',
   },
-}));
+}), { name: 'SplitPane' });
 
 interface SplitContainerProps {
   initialSizes?: number[];
@@ -75,7 +76,7 @@ interface SplitContainerState {
  * Split pane component that supports resizing of vertical panes and headers for collapsing panes.
  * Currently this component only supports 2 panes (only 1 pane is collapsed at a time).
  */
-export const SplitContainer = React.memo<SplitContainerProps>(function SplitContainer(props) {
+export const SplitContainer = React.memo<SplitContainerProps>((props) => {
   const classes = useStyles();
   const theme = useTheme();
   const splitRef = React.useRef(null);
@@ -161,17 +162,18 @@ export const SplitContainer = React.memo<SplitContainerProps>(function SplitCont
     </SplitPaneContext.Provider>
   );
 });
+SplitContainer.displayName = 'SplitContainer';
 
 interface SplitPaneProps {
   id: string;
   title: string;
 }
 
-export const SplitPane = React.memo<SplitPaneProps>(function SplitPane({
+export const SplitPane = React.memo<SplitPaneProps>(({
   title,
   id,
   children,
-}) {
+}) => {
   const classes = useStyles();
   const { togglePane } = React.useContext(SplitPaneContext);
   const headerClickHandler = React.useCallback(() => {
@@ -187,3 +189,4 @@ export const SplitPane = React.memo<SplitPaneProps>(function SplitPane({
     </div>
   );
 });
+SplitPane.displayName = 'SplitPane';

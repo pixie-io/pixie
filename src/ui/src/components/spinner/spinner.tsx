@@ -22,3 +22,4 @@ import { CircularProgress } from '@mui/material';
 
 // eslint-disable-next-line react-memo/require-memo
 export const Spinner: React.FC = () => <CircularProgress size={24} />;
+Spinner.displayName = 'Spinner';

@@ -33,3 +33,4 @@ export const SignupCompletePage: React.FC = () => {
     />
   );
 };
+SignupCompletePage.displayName = 'SignupCompletePage';

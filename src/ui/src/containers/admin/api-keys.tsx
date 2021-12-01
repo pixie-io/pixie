@@ -56,7 +56,7 @@ export function formatAPIKey(apiKey: GQLAPIKeyMetadata): APIKeyDisplay {
   };
 }
 
-export const APIKeyRow = React.memo<{ apiKey: APIKeyDisplay }>(function APIKeyRow({ apiKey }) {
+export const APIKeyRow = React.memo<{ apiKey: APIKeyDisplay }>(({ apiKey }) => {
   const [deleteAPIKey] = useMutation<{ DeleteAPIKey: boolean }, { id: string }>(gql`
     mutation DeleteAPIKeyFromAdminPage($id: ID!) {
       DeleteAPIKey(id: $id)
@@ -117,8 +117,9 @@ export const APIKeyRow = React.memo<{ apiKey: APIKeyDisplay }>(function APIKeyRo
     </TableRow >
   );
 });
+APIKeyRow.displayName = 'APIKeyRow';
 
-export const APIKeysTable = React.memo(function APIKeysTable() {
+export const APIKeysTable = React.memo(() => {
   const classes = useKeyListStyles();
 
   const { data, error } = useQuery<{ apiKeys: GQLAPIKeyMetadata[] }>(
@@ -161,3 +162,4 @@ export const APIKeysTable = React.memo(function APIKeysTable() {
     </>
   );
 });
+APIKeysTable.displayName = 'APIKeysTable';

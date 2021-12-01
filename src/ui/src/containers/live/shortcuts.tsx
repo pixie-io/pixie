@@ -119,47 +119,46 @@ const useShortcutHelpStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-const LiveViewShortcutsHelp = React.memo<LiveViewShortcutsHelpProps>(
-  function LiveViewShortcutsHelp({ open, onClose, keyMap }) {
-    const classes = useShortcutHelpStyles();
-    const makeKey = (key) => <div className={classes.key} key={key}>{key}</div>;
+const LiveViewShortcutsHelp = React.memo<LiveViewShortcutsHelpProps>(({ open, onClose, keyMap }) => {
+  const classes = useShortcutHelpStyles();
+  const makeKey = (key) => <div className={classes.key} key={key}>{key}</div>;
 
-    const shortcuts = Object.keys(keyMap).map((action) => {
-      const shortcut = keyMap[action];
-      let sequence: React.ReactNode;
-      if (Array.isArray(shortcut.displaySequence)) {
-        const keys = [];
-        shortcut.displaySequence.forEach((key) => {
-          keys.push(makeKey(key));
-          keys.push('+');
-        });
-        keys.pop();
-        sequence = keys;
-      } else {
-        sequence = makeKey(shortcut.displaySequence);
-      }
-      return (
-        <div className={classes.row} key={action}>
-          <div className={classes.sequence}>
-            {sequence}
-          </div>
-          <div className={classes.description}>{shortcut.description}</div>
-        </div>
-      );
-    });
-
+  const shortcuts = Object.keys(keyMap).map((action) => {
+    const shortcut = keyMap[action];
+    let sequence: React.ReactNode;
+    if (Array.isArray(shortcut.displaySequence)) {
+      const keys = [];
+      shortcut.displaySequence.forEach((key) => {
+        keys.push(makeKey(key));
+        keys.push('+');
+      });
+      keys.pop();
+      sequence = keys;
+    } else {
+      sequence = makeKey(shortcut.displaySequence);
+    }
     return (
-      <Modal open={open} onClose={onClose}>
-        <Card className={classes.root}>
-          <div className={classes.title}>
-            Available Shortcuts
-          </div>
-          {shortcuts}
-        </Card>
-      </Modal>
+      <div className={classes.row} key={action}>
+        <div className={classes.sequence}>
+          {sequence}
+        </div>
+        <div className={classes.description}>{shortcut.description}</div>
+      </div>
     );
-  },
-);
+  });
+
+  return (
+    <Modal open={open} onClose={onClose}>
+      <Card className={classes.root}>
+        <div className={classes.title}>
+          Available Shortcuts
+        </div>
+        {shortcuts}
+      </Card>
+    </Modal>
+  );
+});
+LiveViewShortcutsHelp.displayName = 'LiveViewShortcutsHelp';
 
 /**
  * Provides access to globally-defined hotkeys, both their shortcuts and their actual handlers. Use this to:
@@ -167,6 +166,7 @@ const LiveViewShortcutsHelp = React.memo<LiveViewShortcutsHelpProps>(
  * - Programmatically trigger an action as if the user had activated it themselves
  */
 export const LiveShortcutsContext = React.createContext<ShortcutsContextProps<LiveHotKeyAction>>(null);
+LiveShortcutsContext.displayName = 'LiveShortcutsContext';
 
 /**
  * A behavior adjustment for hotkey handlers. Blocks triggers for shortcuts that would change text, focus, or selection.
@@ -199,58 +199,57 @@ const handlerWrapper = (handler) => (e?: KeyboardEvent) => {
  *
  * The keybindings are declared here, handlers can be registered by child components of the live view.
  */
-const LiveViewShortcutsProvider: React.FC<LiveViewShortcutsProps> = React.memo(
-  function LiveViewShortcutsProvider({ handlers, children }) {
-    // Run this setup once.
-    React.useEffect(() => {
-      configure({
-        // React hotkeys defaults to ignore events from within ['input', 'select', 'textarea'].
-        // We want the Pixie command to work from anywhere.
-        ignoreTags: ['select'],
-      });
-    }, []);
+const LiveViewShortcutsProvider: React.FC<LiveViewShortcutsProps> = React.memo(({ handlers, children }) => {
+  // Run this setup once.
+  React.useEffect(() => {
+    configure({
+      // React hotkeys defaults to ignore events from within ['input', 'select', 'textarea'].
+      // We want the Pixie command to work from anywhere.
+      ignoreTags: ['select'],
+    });
+  }, []);
 
-    const [openHelp, setOpenHelp] = React.useState(false);
-    const toggleOpenHelp = React.useCallback(() => setOpenHelp((cur) => !cur), []);
+  const [openHelp, setOpenHelp] = React.useState(false);
+  const toggleOpenHelp = React.useCallback(() => setOpenHelp((cur) => !cur), []);
 
-    const keyMap: KeyMap<LiveHotKeyAction> = React.useMemo(getKeyMap, []);
-    const actionSequences = React.useMemo(() => {
-      const map = {};
-      Object.keys(keyMap).forEach((key) => {
-        map[key] = keyMap[key].sequence;
-      });
-      return map;
-    }, [keyMap]);
+  const keyMap: KeyMap<LiveHotKeyAction> = React.useMemo(getKeyMap, []);
+  const actionSequences = React.useMemo(() => {
+    const map = {};
+    Object.keys(keyMap).forEach((key) => {
+      map[key] = keyMap[key].sequence;
+    });
+    return map;
+  }, [keyMap]);
 
-    const wrappedHandlers: Handlers<LiveHotKeyAction> = React.useMemo(() => {
-      const wrapped: Handlers<LiveHotKeyAction> = {
-        'show-help': handlerWrapper(toggleOpenHelp),
-        ...Object.keys(handlers).reduce((result, action) => ({
-          ...result,
-          [action]: handlerWrapper(handlers[action]),
-        }), {}) as LiveViewShortcutsProps['handlers'],
-      };
-      return wrapped;
-    }, [handlers, toggleOpenHelp]);
+  const wrappedHandlers: Handlers<LiveHotKeyAction> = React.useMemo(() => {
+    const wrapped: Handlers<LiveHotKeyAction> = {
+      'show-help': handlerWrapper(toggleOpenHelp),
+      ...Object.keys(handlers).reduce((result, action) => ({
+        ...result,
+        [action]: handlerWrapper(handlers[action]),
+      }), {}) as LiveViewShortcutsProps['handlers'],
+    };
+    return wrapped;
+  }, [handlers, toggleOpenHelp]);
 
-    const context = React.useMemo(() => Object.keys(wrappedHandlers).reduce((result, action) => ({
-      ...result,
-      [action]: {
-        handler: wrappedHandlers[action],
-        ...keyMap[action],
-      },
-    }), {}) as ShortcutsContextProps<LiveHotKeyAction>, [wrappedHandlers, keyMap]);
+  const context = React.useMemo(() => Object.keys(wrappedHandlers).reduce((result, action) => ({
+    ...result,
+    [action]: {
+      handler: wrappedHandlers[action],
+      ...keyMap[action],
+    },
+  }), {}) as ShortcutsContextProps<LiveHotKeyAction>, [wrappedHandlers, keyMap]);
 
-    return (
-      <>
-        <GlobalHotKeys keyMap={actionSequences} handlers={wrappedHandlers} allowChanges />
-        <LiveViewShortcutsHelp keyMap={keyMap} open={openHelp} onClose={toggleOpenHelp} />
-        <LiveShortcutsContext.Provider value={context}>
-          {children}
-        </LiveShortcutsContext.Provider>
-      </>
-    );
-  },
-);
+  return (
+    <>
+      <GlobalHotKeys keyMap={actionSequences} handlers={wrappedHandlers} allowChanges />
+      <LiveViewShortcutsHelp keyMap={keyMap} open={openHelp} onClose={toggleOpenHelp} />
+      <LiveShortcutsContext.Provider value={context}>
+        {children}
+      </LiveShortcutsContext.Provider>
+    </>
+  );
+});
+LiveViewShortcutsProvider.displayName = 'LiveViewShortcutsProvider';
 
 export default LiveViewShortcutsProvider;

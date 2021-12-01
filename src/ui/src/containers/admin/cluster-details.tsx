@@ -74,11 +74,12 @@ const useLinkStyles = makeStyles((theme: Theme) => createStyles({
     height: theme.spacing(3),
     color: theme.palette.foreground.grey5,
   },
-}));
-const StyledBreadcrumbLink: React.FC<{ to: string }> = React.memo(function StyledBreadcrumbsLink({ children, to }) {
+}), { name: 'BreadcrumbLink' });
+const StyledBreadcrumbLink: React.FC<{ to: string }> = React.memo(({ children, to }) => {
   const classes = useLinkStyles();
   return <Link className={classes.root} to={to}>{children}</Link>;
 });
+StyledBreadcrumbLink.displayName = 'StyledBreadcrumbLink';
 
 const useBreadcrumbsStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -97,7 +98,7 @@ const useBreadcrumbsStyles = makeStyles((theme: Theme) => createStyles({
     width: theme.spacing(1),
   },
 }));
-const StyledBreadcrumbs: React.FC = React.memo(function StyledBreadcrumbs({ children }) {
+const StyledBreadcrumbs: React.FC = React.memo(({ children }) => {
   const classes = useBreadcrumbsStyles();
   return (
     <MaterialBreadcrumbs classes={classes}>
@@ -105,6 +106,7 @@ const StyledBreadcrumbs: React.FC = React.memo(function StyledBreadcrumbs({ chil
     </MaterialBreadcrumbs>
   );
 });
+StyledBreadcrumbs.displayName = 'StyledBreadcrumbs';
 
 const AGENT_STATUS_SCRIPT = `import px
 px.display(px.GetAgentStatus())`;
@@ -177,6 +179,7 @@ const AgentsTableContent = ({ agents }) => {
     </Table>
   );
 };
+AgentsTableContent.displayName = 'AgentsTableContent';
 
 const AgentsTable: React.FC = () => {
   const clusterConfig = useClusterConfig();
@@ -241,6 +244,7 @@ const AgentsTable: React.FC = () => {
   }
   return <AgentsTableContent agents={state.data} />;
 };
+AgentsTable.displayName = 'AgentsTable';
 
 interface GroupedPodStatus extends Omit<PodStatus, 'containers'> {
   statusGroup: StatusGroup;
@@ -368,6 +372,7 @@ const ExpandablePodRow: React.FC<{ podStatus: GroupedPodStatus }> = (({ podStatu
     </React.Fragment>
   );
 });
+ExpandablePodRow.displayName = 'ExpandablePodRow';
 
 const useClusterDetailStyles = makeStyles((theme: Theme) => createStyles({
   errorMessage: {
@@ -401,7 +406,20 @@ const useClusterDetailStyles = makeStyles((theme: Theme) => createStyles({
   detailsTable: {
     maxWidth: theme.breakpoints.values.md,
   },
-}));
+}), { name: 'ClusterDetail' });
+
+const PodHeader = () => (
+  <TableHead>
+    <TableRow>
+      <StyledTableHeaderCell />
+      <StyledTableHeaderCell>Name</StyledTableHeaderCell>
+      <StyledTableHeaderCell>Status</StyledTableHeaderCell>
+      <StyledTableHeaderCell>Restart Count</StyledTableHeaderCell>
+      <StyledTableHeaderCell />
+    </TableRow>
+  </TableHead>
+);
+PodHeader.displayName = 'PodHeader';
 
 const PixiePodsTab: React.FC<{
   controlPlanePods: GQLPodStatus[],
@@ -411,18 +429,6 @@ const PixiePodsTab: React.FC<{
   const controlPlaneDisplay = controlPlanePods.map((podStatus) => formatPodStatus(podStatus));
   const dataPlaneDisplay = dataPlanePods.map((podStatus) => formatPodStatus(podStatus));
 
-  const PodHeader = () => (
-    <TableHead>
-      <TableRow>
-        <StyledTableHeaderCell />
-        <StyledTableHeaderCell>Name</StyledTableHeaderCell>
-        <StyledTableHeaderCell>Status</StyledTableHeaderCell>
-        <StyledTableHeaderCell>Restart Count</StyledTableHeaderCell>
-        <StyledTableHeaderCell />
-      </TableRow>
-    </TableHead>
-
-  );
   return (
     <>
       <div className={`${classes.podTypeHeader} ${classes.topPadding}`}> Control Plane Pods </div>
@@ -465,6 +471,7 @@ const PixiePodsTab: React.FC<{
     </>
   );
 };
+PixiePodsTab.displayName = 'PixiePodsTab';
 
 const AgentsTab: React.FC<{
   cluster: Pick<GQLClusterInfo, 'id' | 'clusterName' | 'status' | 'unhealthyDataPlanePodStatuses'>
@@ -486,6 +493,7 @@ const AgentsTab: React.FC<{
     </>
   );
 };
+AgentsTab.displayName = 'AgentsTab';
 
 const ClusterSummaryTable = ({ cluster }: {
   cluster: Pick<
@@ -570,6 +578,7 @@ const ClusterSummaryTable = ({ cluster }: {
     </TableContainer>
   );
 };
+ClusterSummaryTable.displayName = 'ClusterSummaryTable';
 
 const ClusterDetailsNavigationBreadcrumbs = ({ selectedClusterName }) => {
   const history = useHistory();
@@ -617,6 +626,7 @@ const ClusterDetailsNavigationBreadcrumbs = ({ selectedClusterName }) => {
   }];
   return (<Breadcrumbs breadcrumbs={breadcrumbs} />);
 };
+ClusterDetailsNavigationBreadcrumbs.displayName = 'ClusterDetailsNavigationBreadcrumbs';
 
 const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) => {
   const classes = useClusterDetailStyles();
@@ -769,6 +779,7 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
     </>
   );
 };
+ClusterDetailsTabs.displayName = 'ClusterDetailsTabs';
 
 export const ClusterDetails: React.FC = () => {
   const { name } = useParams<{ name: string }>();
@@ -785,3 +796,4 @@ export const ClusterDetails: React.FC = () => {
     </div>
   );
 };
+ClusterDetails.displayName = 'ClusterDetails';

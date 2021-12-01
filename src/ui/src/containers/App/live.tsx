@@ -56,7 +56,7 @@ const useStyles = makeStyles(() => createStyles({
     color: 'white',
     background: 'rgba(220,0,0,0.5)',
   },
-}));
+}), { name: 'App' });
 
 // eslint-disable-next-line react-memo/require-memo
 const ClusterWarningBanner: React.FC<{ user: Pick<GQLUserInfo, 'email' | 'orgName' > }> = ({ user }) => {
@@ -74,6 +74,7 @@ const ClusterWarningBanner: React.FC<{ user: Pick<GQLUserInfo, 'email' | 'orgNam
 
   return null;
 };
+ClusterWarningBanner.displayName = 'ClusterWarningBanner';
 
 // Convenience routes: sends `/clusterID/:clusterID`,  to the appropriate Live url.
 // eslint-disable-next-line react-memo/require-memo
@@ -104,6 +105,7 @@ const ClusterIDShortcut = ({ match, location }) => {
 
   return <Redirect to={path} />;
 };
+ClusterIDShortcut.displayName = 'ClusterIDShortcut';
 
 // Convenience routes: sends `/scratch`, `/script/http_data`, and others to the appropriate Live url.
 // eslint-disable-next-line react-memo/require-memo
@@ -145,6 +147,7 @@ const ScriptShortcut = ({ match, location }) => {
 
   return <Redirect to={newPath} />;
 };
+ScriptShortcut.displayName = 'ScriptShortcut';
 
 // eslint-disable-next-line react-memo/require-memo
 const Live = () => {
@@ -171,6 +174,7 @@ const Live = () => {
 
   return <LiveView />;
 };
+Live.displayName = 'Live';
 
 // eslint-disable-next-line react-memo/require-memo
 const LiveWithProvider = () => (
@@ -182,6 +186,7 @@ const LiveWithProvider = () => (
     </LiveContextRouter>
   </ScriptsContextProvider>
 );
+LiveWithProvider.displayName = 'LiveWithProvider';
 
 export default function PixieWithContext(): React.ReactElement {
   const showSnackbar = useSnackbar();
@@ -332,3 +337,4 @@ export default function PixieWithContext(): React.ReactElement {
     </UserContext.Provider>
   );
 }
+PixieWithContext.displayName = 'PixieWithContext';

@@ -124,6 +124,7 @@ export const AdminTooltip = ({
     </Tooltip>
   );
 };
+AdminTooltip.displayName = 'AdminTooltip';
 
 // eslint-disable-next-line react-memo/require-memo
 export const StyledTabs = withStyles(() => createStyles({

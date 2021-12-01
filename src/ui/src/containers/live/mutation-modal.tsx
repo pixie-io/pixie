@@ -115,6 +115,7 @@ const MutationState = (props) => {
 
   return <CircularProgress size={18} />;
 };
+MutationState.displayName = 'MutationState';
 
 // eslint-disable-next-line react-memo/require-memo
 const MutationModal = ({ classes, mutationInfo }: MutationModalProps) => {
@@ -179,5 +180,6 @@ const MutationModal = ({ classes, mutationInfo }: MutationModalProps) => {
     </Modal>
   );
 };
+MutationModal.displayName = 'MutationModal';
 
 export default withStyles(styles)(MutationModal);

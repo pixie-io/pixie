@@ -46,7 +46,7 @@ const useStyles = makeStyles(({ spacing, palette }: Theme) => createStyles({
     alignSelf: 'center',
     marginRight: spacing(0.5),
   },
-}));
+}), { name: 'ClusterSelector' });
 
 // eslint-disable-next-line react-memo/require-memo
 const ClusterSelector: React.FC = () => {
@@ -113,5 +113,6 @@ const ClusterSelector: React.FC = () => {
     </div>
   );
 };
+ClusterSelector.displayName = 'ClusterSelector';
 
 export default ClusterSelector;

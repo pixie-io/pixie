@@ -3,23 +3,23 @@
 exports[`<Completion> test renders highlights from the beginning 1`] = `
 <div>
   <div
-    class="makeStyles-completion-17"
+    class="Completions-completion-17"
   >
     <div
-      class="makeStyles-itemType-20"
+      class="Completions-itemType-20"
     />
     <span
-      class="makeStyles-highlight-18"
+      class="Completions-highlight-18"
     >
       0
     </span>
     <span
-      class="makeStyles-highlight-18"
+      class="Completions-highlight-18"
     >
       1
     </span>
     <span
-      class="makeStyles-highlight-18"
+      class="Completions-highlight-18"
     >
       2
     </span>
@@ -27,7 +27,7 @@ exports[`<Completion> test renders highlights from the beginning 1`] = `
       3
     </span>
     <span
-      class="makeStyles-highlight-18"
+      class="Completions-highlight-18"
     >
       4
     </span>
@@ -41,21 +41,21 @@ exports[`<Completion> test renders highlights from the beginning 1`] = `
 exports[`<Completion> test renders highlights in the middle 1`] = `
 <div>
   <div
-    class="makeStyles-completion-29"
+    class="Completions-completion-29"
   >
     <div
-      class="makeStyles-itemType-32"
+      class="Completions-itemType-32"
     />
     <span>
       0
     </span>
     <span
-      class="makeStyles-highlight-30"
+      class="Completions-highlight-30"
     >
       1
     </span>
     <span
-      class="makeStyles-highlight-30"
+      class="Completions-highlight-30"
     >
       2
     </span>
@@ -69,37 +69,37 @@ exports[`<Completion> test renders highlights in the middle 1`] = `
 exports[`<Completions/> test renders 1`] = `
 <div>
   <div
-    class="makeStyles-root-1"
+    class="Completions-root-1"
   >
     <div
-      class="makeStyles-items-2"
+      class="Completions-items-2"
     >
       <div
-        class="makeStyles-header-4"
+        class="Completions-header-4"
       >
         Recently used
       </div>
       <div
-        class="makeStyles-completion-5"
+        class="Completions-completion-5"
       >
         <div
-          class="makeStyles-itemType-8"
+          class="Completions-itemType-8"
         />
         <span>
           px/
         </span>
         <span
-          class="makeStyles-highlight-6"
+          class="Completions-highlight-6"
         >
           s
         </span>
         <span
-          class="makeStyles-highlight-6"
+          class="Completions-highlight-6"
         >
           c
         </span>
         <span
-          class="makeStyles-highlight-6"
+          class="Completions-highlight-6"
         >
           r
         </span>
@@ -108,26 +108,26 @@ exports[`<Completions/> test renders 1`] = `
         </span>
       </div>
       <div
-        class="makeStyles-completion-5 active"
+        class="Completions-completion-5 active"
       >
         <div
-          class="makeStyles-itemType-8"
+          class="Completions-itemType-8"
         />
         <span>
           px/
         </span>
         <span
-          class="makeStyles-highlight-6"
+          class="Completions-highlight-6"
         >
           s
         </span>
         <span
-          class="makeStyles-highlight-6"
+          class="Completions-highlight-6"
         >
           c
         </span>
         <span
-          class="makeStyles-highlight-6"
+          class="Completions-highlight-6"
         >
           r
         </span>
@@ -136,26 +136,26 @@ exports[`<Completions/> test renders 1`] = `
         </span>
       </div>
       <div
-        class="makeStyles-completion-5"
+        class="Completions-completion-5"
       >
         <div
-          class="makeStyles-itemType-8"
+          class="Completions-itemType-8"
         />
         <span>
           px/
         </span>
         <span
-          class="makeStyles-highlight-6"
+          class="Completions-highlight-6"
         >
           s
         </span>
         <span
-          class="makeStyles-highlight-6"
+          class="Completions-highlight-6"
         >
           c
         </span>
         <span
-          class="makeStyles-highlight-6"
+          class="Completions-highlight-6"
         >
           r
         </span>
@@ -164,25 +164,25 @@ exports[`<Completions/> test renders 1`] = `
         </span>
       </div>
       <div
-        class="makeStyles-header-4"
+        class="Completions-header-4"
       >
         Org scripts
       </div>
       <div
-        class="makeStyles-completion-5"
+        class="Completions-completion-5"
       >
         <div
-          class="makeStyles-itemType-8"
+          class="Completions-itemType-8"
         />
         <span>
           my-org/script1
         </span>
       </div>
       <div
-        class="makeStyles-completion-5"
+        class="Completions-completion-5"
       >
         <div
-          class="makeStyles-itemType-8"
+          class="Completions-itemType-8"
         />
         <span>
           my-org/script2

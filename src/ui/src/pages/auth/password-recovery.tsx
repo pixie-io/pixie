@@ -50,3 +50,4 @@ export const PasswordRecoveryPage: React.FC = ({ location }: RouteProps) => {
     </BasePage>
   );
 };
+PasswordRecoveryPage.displayName = 'PasswordRecoveryPage';

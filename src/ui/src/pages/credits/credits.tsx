@@ -97,7 +97,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
       visibility: 'hidden',
     },
   },
-}));
+}), { name: 'Credits' });
 
 interface LicenseEntry {
   name: string;
@@ -117,8 +117,9 @@ const CreditsPage: React.FC = ({ children }) => {
     </div>
   );
 };
+CreditsPage.displayName = 'CreditsPage';
 
-const LicenseEntryRow = React.memo<LicenseEntry>(function LicenseEntryRow({ name, url, licenseText }) {
+const LicenseEntryRow = React.memo<LicenseEntry>(({ name, url, licenseText }) => {
   const classes = useStyles();
   const [showLicense, setShowLicense] = React.useState(false);
   return (
@@ -151,6 +152,7 @@ const LicenseEntryRow = React.memo<LicenseEntry>(function LicenseEntryRow({ name
     </div>
   );
 });
+LicenseEntryRow.displayName = 'LicenseEntryRow';
 
 // eslint-disable-next-line react-memo/require-memo
 const Credits: React.FC<{ licenses: LicenseEntry[] }> = ({ licenses }) => {
@@ -172,6 +174,7 @@ const Credits: React.FC<{ licenses: LicenseEntry[] }> = ({ licenses }) => {
     </>
   );
 };
+Credits.displayName = 'Credits';
 
 // eslint-disable-next-line react-memo/require-memo
 const CreditsOverviewPage: React.FC = () => {
@@ -187,5 +190,6 @@ const CreditsOverviewPage: React.FC = () => {
     </CreditsPage>
   );
 };
+CreditsOverviewPage.displayName = 'CreditsOverviewPage';
 
 export default CreditsOverviewPage;

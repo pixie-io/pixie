@@ -60,7 +60,7 @@ interface ResizableDrawerProps {
   minSize: number;
 }
 
-export const ResizableDrawer: React.FC<ResizableDrawerProps> = React.memo(function ResizableDrawer({
+export const ResizableDrawer: React.FC<ResizableDrawerProps> = React.memo(({
   children,
   otherContent,
   drawerDirection,
@@ -68,7 +68,7 @@ export const ResizableDrawer: React.FC<ResizableDrawerProps> = React.memo(functi
   overlay,
   initialSize,
   minSize,
-}) {
+}) => {
   const classes = useStyles();
   const [drawerSize, setDrawerSize] = React.useState(initialSize);
   // State responsible for tracking whether the user is actively resizing. This is used for debouncing.
@@ -178,3 +178,4 @@ export const ResizableDrawer: React.FC<ResizableDrawerProps> = React.memo(functi
     </>
   );
 });
+ResizableDrawer.displayName = 'ResizableDrawer';

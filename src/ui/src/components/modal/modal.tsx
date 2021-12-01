@@ -41,14 +41,14 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     top: theme.spacing(2),
     right: theme.spacing(2),
   },
-}));
+}), { name: 'Modal' });
 
-export const ModalTrigger = React.memo<ModalTriggerProps>(function ModalTrigger({
+export const ModalTrigger = React.memo<ModalTriggerProps>(({
   trigger,
   triggerClassName,
   content,
   contentClassName,
-}) {
+}) => {
   const [open, setOpen] = React.useState(false);
   const openModal = React.useCallback(() => setOpen(true), []);
   const closeModal = React.useCallback(() => setOpen(false), []);
@@ -74,3 +74,4 @@ export const ModalTrigger = React.memo<ModalTriggerProps>(function ModalTrigger(
     </>
   );
 });
+ModalTrigger.displayName = 'ModalTrigger';

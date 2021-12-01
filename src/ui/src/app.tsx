@@ -64,7 +64,7 @@ require('./wdyr');
 const REFRESH_TOKEN_TIMEOUT_S = 60 * 5; // 5 minutes
 
 const RedirectWithArgs = React.memo<Pick<RedirectProps, 'from'|'to'|'exact'>>(
-  function RedirectWithArgs({ from, to, exact }) {
+  ({ from, to, exact }) => {
     const location = useLocation();
     return (
       <Redirect
@@ -75,6 +75,7 @@ const RedirectWithArgs = React.memo<Pick<RedirectProps, 'from'|'to'|'exact'>>(
     );
   },
 );
+RedirectWithArgs.displayName = 'RedirectWithArgs';
 
 function useIsAuthenticated() {
   // Using an object instead of separate variables because using multiple setState does NOT batch if it happens outside
@@ -154,6 +155,7 @@ export const App: React.FC = () => {
     </ErrorBoundary>
   );
 };
+App.displayName = 'App';
 
 // TODO(zasgar): Cleanup these styles. We probably don't need them all after we
 // fix all of material styling.
@@ -360,6 +362,7 @@ const ThemedApp: React.FC = () => {
     </ThemeProvider>
   );
 };
+ThemedApp.displayName = 'ThemedApp';
 
 ReactDOM.render(
   <ErrorBoundary name='Root'>

@@ -41,6 +41,7 @@ export interface LiveRouteContextProps {
 }
 
 export const LiveRouteContext = React.createContext<LiveRouteContextProps>(null);
+LiveRouteContext.displayName = 'LiveRouteContext';
 
 /** Some scripts have special mnemonic routes. They are vanity URLs for /clusters/:cluster?... and map as such */
 const VANITY_ROUTES = new Map<string, string>([
@@ -101,9 +102,9 @@ export function push(
   }
 }
 
-const LiveRoute: React.FC<LiveRouteContextProps> = React.memo(function LiveRoute({
+const LiveRoute: React.FC<LiveRouteContextProps> = React.memo(({
   args, scriptId, embedState, clusterName, children,
-}) {
+}) => {
   const { timeArg } = React.useContext(EmbedContext);
   const copiedArgs = React.useMemo(() => {
     const copy = { ...args };
@@ -124,8 +125,9 @@ const LiveRoute: React.FC<LiveRouteContextProps> = React.memo(function LiveRoute
     <LiveRouteContext.Provider value={context}>{children}</LiveRouteContext.Provider>
   );
 });
+LiveRoute.displayName = 'LiveRoute';
 
-const VanityRouter: React.FC<{ outerPath: string }> = React.memo(function VanityRouter({ outerPath, children }) {
+const VanityRouter: React.FC<{ outerPath: string }> = React.memo(({ outerPath, children }) => {
   const location = useLocation();
   const { path, params: routeParams } = useRouteMatch();
   const nestedPath = path.substr(outerPath.length);
@@ -204,8 +206,9 @@ const VanityRouter: React.FC<{ outerPath: string }> = React.memo(function Vanity
     </LiveRoute>
   );
 });
+VanityRouter.displayName = 'VanityRouter';
 
-export const LiveContextRouter = React.memo(function LiveContextRouter({ children }) {
+export const LiveContextRouter = React.memo(({ children }) => {
   const { path } = useRouteMatch();
   const vanities = React.useMemo(() => [...VANITY_ROUTES.keys()].map((r) => `${path}${r}`), [path]);
 
@@ -218,3 +221,4 @@ export const LiveContextRouter = React.memo(function LiveContextRouter({ childre
     </Switch>
   );
 });
+LiveContextRouter.displayName = 'LiveContextRouter';

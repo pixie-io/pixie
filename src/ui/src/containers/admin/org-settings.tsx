@@ -44,7 +44,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-export const OrgSettings = React.memo(function OrgSettings() {
+export const OrgSettings = React.memo(() => {
   const classes = useStyles();
 
   const { data, loading, error } = useQuery<{ org: GQLOrgInfo }>(
@@ -132,3 +132,4 @@ export const OrgSettings = React.memo(function OrgSettings() {
     </>
   );
 });
+OrgSettings.displayName = 'OrgSettings';

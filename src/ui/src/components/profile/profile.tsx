@@ -32,7 +32,7 @@ interface AvatarProps {
   className?: string;
 }
 
-export const Avatar = React.memo<AvatarProps>(function Avatar(props) {
+export const Avatar = React.memo<AvatarProps>((props) => {
   // When the picture is an empty string, we use a fallback letter-style avatar.
   // If we don't have a name either, this shows a silhouette.
   const name = props.name.trim();
@@ -47,6 +47,7 @@ export const Avatar = React.memo<AvatarProps>(function Avatar(props) {
     />
   );
 });
+Avatar.displayName = 'Avatar';
 
 interface ProfileMenuWrapperProps extends React.PropsWithChildren<Pick<MenuProps, 'anchorOrigin'|'open'|'anchorEl'>> {
   onCloseMenu: () => void;
@@ -62,7 +63,7 @@ interface ProfileMenuWrapperProps extends React.PropsWithChildren<Pick<MenuProps
   };
 }
 
-export const ProfileMenuWrapper = React.memo<ProfileMenuWrapperProps>(function ProfileMenuWrapper({
+export const ProfileMenuWrapper = React.memo<ProfileMenuWrapperProps>(({
   classes,
   children,
   anchorOrigin,
@@ -72,31 +73,30 @@ export const ProfileMenuWrapper = React.memo<ProfileMenuWrapperProps>(function P
   name,
   picture,
   email,
-}) {
-  return (
-    <Menu
-      open={open}
-      onClose={onCloseMenu}
-      onBlur={onCloseMenu}
-      anchorEl={anchorEl}
-      anchorOrigin={anchorOrigin}
+}) => (
+  <Menu
+    open={open}
+    onClose={onCloseMenu}
+    onBlur={onCloseMenu}
+    anchorEl={anchorEl}
+    anchorOrigin={anchorOrigin}
+  >
+    <ListItem
+      key='profile'
+      className={classes.expandedProfile}
     >
-      <ListItem
-        key='profile'
-        className={classes.expandedProfile}
-      >
-        <Avatar name={name} picture={picture} className={classes.avatarSm} />
-        <ListItemText
-          primary={name}
-          secondary={email}
-          classes={React.useMemo(() => ({
-            primary: classes.listItemHeader,
-            secondary: classes.listItemText,
-          }), [classes])}
-          className={classes.centeredListItemText}
-        />
-      </ListItem>
-      {children}
-    </Menu>
-  );
-});
+      <Avatar name={name} picture={picture} className={classes.avatarSm} />
+      <ListItemText
+        primary={name}
+        secondary={email}
+        classes={React.useMemo(() => ({
+          primary: classes.listItemHeader,
+          secondary: classes.listItemText,
+        }), [classes])}
+        className={classes.centeredListItemText}
+      />
+    </ListItem>
+    {children}
+  </Menu>
+));
+ProfileMenuWrapper.displayName = 'ProfileMenuWrapper';

@@ -50,3 +50,4 @@ export const PasswordLoginPage: React.FC = ({ location }: RouteProps) => {
     </BasePage>
   );
 };
+PasswordLoginPage.displayName = 'PasswordLoginPage';

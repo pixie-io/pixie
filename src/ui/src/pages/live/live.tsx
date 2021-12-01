@@ -211,9 +211,9 @@ interface ClusterLoadingProps {
   healthy: boolean;
 }
 
-const ClusterLoadingComponent = React.memo<ClusterLoadingProps>(function ClusterLoadingComponent({
+const ClusterLoadingComponent = React.memo<ClusterLoadingProps>(({
   clusterPrettyName, clusterStatus, clusterStatusMessage, script, healthy,
-}) {
+}) => {
   const classes = useStyles();
 
   const { loading: loadingAvailableScripts } = React.useContext(ScriptsContext);
@@ -281,11 +281,12 @@ const ClusterLoadingComponent = React.memo<ClusterLoadingProps>(function Cluster
   // Tell the user they may run a script here.
   return <div>Select a script, then click &quot;Run&quot;.</div>;
 });
+ClusterLoadingComponent.displayName = 'ClusterLoadingComponent';
 
 const Nav: React.FC<{
   widgetsMoveable: boolean,
   setWidgetsMoveable: React.Dispatch<React.SetStateAction<boolean>>,
-}> = React.memo(function Nav({ widgetsMoveable, setWidgetsMoveable }) {
+}> = React.memo(({ widgetsMoveable, setWidgetsMoveable }) => {
   const classes = useStyles();
   const {
     embedState: { isEmbedded },
@@ -312,8 +313,9 @@ const Nav: React.FC<{
     </div>
   </>;
 });
+Nav.displayName = 'Nav';
 
-const BreadcrumbsWithOptionalRun = React.memo(function BreadcrumbsWithOptionalRun() {
+const BreadcrumbsWithOptionalRun = React.memo(() => {
   const classes = useStyles();
   const {
     embedState: { isEmbedded, widget },
@@ -336,8 +338,9 @@ const BreadcrumbsWithOptionalRun = React.memo(function BreadcrumbsWithOptionalRu
     </div>
   </div>;
 });
+BreadcrumbsWithOptionalRun.displayName = 'BreadcrumbsWithOptionalRun';
 
-const LiveView = React.memo(function LiveView() {
+const LiveView = React.memo(() => {
   const classes = useStyles();
 
   const {
@@ -466,6 +469,7 @@ const LiveView = React.memo(function LiveView() {
     </div>
   );
 });
+LiveView.displayName = 'LiveView';
 
 // eslint-disable-next-line react-memo/require-memo
 const ContextualizedLiveView: React.FC = () => (
@@ -484,5 +488,6 @@ const ContextualizedLiveView: React.FC = () => (
     </LiveTourContextProvider>
   </LayoutContextProvider>
 );
+ContextualizedLiveView.displayName = 'ContextualizedLiveView';
 
 export default ContextualizedLiveView;

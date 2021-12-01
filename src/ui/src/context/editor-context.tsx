@@ -34,8 +34,9 @@ export interface EditorContextProps {
 }
 
 export const EditorContext = React.createContext<EditorContextProps>(null);
+EditorContext.displayName = 'EditorContext';
 
-export const EditorContextProvider: React.FC = React.memo(function EditorContextProvider({ children }) {
+export const EditorContextProvider: React.FC = React.memo(({ children }) => {
   const resultsContext = React.useContext(ResultsContext);
 
   const {
@@ -101,3 +102,4 @@ export const EditorContextProvider: React.FC = React.memo(function EditorContext
     </EditorContext.Provider>
   );
 });
+EditorContextProvider.displayName = 'EditorContextProvider';

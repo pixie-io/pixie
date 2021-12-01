@@ -36,7 +36,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     border: 'none',
     color: 'inherit',
   },
-}));
+}), { name: 'Form' });
 
 interface Form {
   [field: string]: string;
@@ -119,6 +119,7 @@ const FormField: React.FC<FormFieldProps> = ({
     </>
   );
 };
+FormField.displayName = 'FormField';
 
 interface FormFieldInputProps {
   onValueChange: (val: FieldValuePair) => void;
@@ -158,3 +159,4 @@ export const FormFieldInput: React.FC<FormFieldInputProps> = ({
     </div>
   );
 };
+FormFieldInput.displayName = 'FormFieldInput';

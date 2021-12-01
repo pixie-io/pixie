@@ -82,7 +82,7 @@ function useIsPlaceholder() {
 function getDeepLinkCellRenderer(
   st: SemanticType, clusterName: string, propagatedArgs?: Arguments,
 ): React.ComponentType<LiveCellProps> {
-  return React.memo<LiveCellProps>(function EntityCell({ data }) {
+  const Renderer = React.memo<LiveCellProps>(({ data }) => {
     const { embedState } = React.useContext(LiveRouteContext);
 
     let values: string[] = [data];
@@ -111,6 +111,8 @@ function getDeepLinkCellRenderer(
 
     return <>{components}</>;
   });
+  Renderer.displayName = 'EntityCell';
+  return Renderer;
 }
 
 function getQuantilesCellRenderer(
@@ -123,7 +125,7 @@ function getQuantilesCellRenderer(
     ? ((val: number) => dataWithUnitsToString(formatDuration(val)))
     : getDataRenderer(DataType.FLOAT64);
 
-  return React.memo<LiveCellProps>(function QuantilesCell({ data }) {
+  const Renderer = React.memo<LiveCellProps>(({ data }) => {
     const theme = useTheme();
     const fill = React.useMemo(() => getColor('none', theme), [theme]);
 
@@ -169,12 +171,14 @@ function getQuantilesCellRenderer(
       />
     );
   });
+  Renderer.displayName = 'QuantilesCell';
+  return Renderer;
 }
 
 function getScriptReferenceCellRenderer(
   clusterName: string, propagatedArgs?: Arguments,
 ): React.ComponentType<LiveCellProps> {
-  return React.memo(function ScriptReferenceCell({ data }) {
+  const Renderer = React.memo<LiveCellProps>(({ data }) => {
     const { embedState } = React.useContext(LiveRouteContext);
     const { script, label, args } = data;
     const stabilizedArgs = stableSerializeArgs(args);
@@ -191,9 +195,11 @@ function getScriptReferenceCellRenderer(
       />
     );
   });
+  Renderer.displayName = 'ScriptReferenceCell';
+  return Renderer;
 }
 
-const JSONCell = React.memo<LiveCellProps>(function JSONCell({ data }) {
+const JSONCell = React.memo<LiveCellProps>(({ data }) => {
   const isPlaceholder = useIsPlaceholder();
   if (isPlaceholder) return <>{data}</>;
 
@@ -204,15 +210,15 @@ const JSONCell = React.memo<LiveCellProps>(function JSONCell({ data }) {
     return <>{data}</>;
   }
 });
+JSONCell.displayName = 'JSONCell';
 
-const PlainCell = React.memo<LiveCellProps>(function PlainCell({ data }) {
-  return <>{data}</>;
-});
+const PlainCell = React.memo<LiveCellProps>(({ data }) => <>{data}</>);
+PlainCell.displayName = 'PlainCell';
 
 function getDataCell(formatter: (data: any) => string) {
-  return React.memo<LiveCellProps>(function DataCell({ data }) {
-    return <>{formatter(data)}</>;
-  });
+  const Renderer = React.memo<LiveCellProps>(({ data }) => <>{formatter(data)}</>);
+  Renderer.displayName = 'DataCell';
+  return Renderer;
 }
 
 export function getLiveCellRenderer(

@@ -93,13 +93,13 @@ function autoSelectItem(completions: CompletionItems): CompletionItem|null {
   return selectable[0] ?? null;
 }
 
-export const Autocomplete = React.memo<AutoCompleteProps>(function Autocomplete({
+export const Autocomplete = React.memo<AutoCompleteProps>(({
   onSelection,
   getCompletions,
   placeholder,
   prefix,
   className,
-}) {
+}) => {
   const classes = useStyles();
   const {
     allowTyping,
@@ -186,3 +186,4 @@ export const Autocomplete = React.memo<AutoCompleteProps>(function Autocomplete(
     </div>
   );
 });
+Autocomplete.displayName = 'Autocomplete';

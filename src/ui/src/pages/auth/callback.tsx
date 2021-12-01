@@ -131,21 +131,21 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-const CLICodeBox = React.memo<{ code: string }>(function CLICodeBox({ code }) {
-  return (
-    <AuthMessageBox
-      title='Pixie Auth Token'
-      message='Please copy this code, switch to the CLI and paste it there:'
-      code={code}
-    />
-  );
-});
+const CLICodeBox = React.memo<{ code: string }>(({ code }) => (
+  <AuthMessageBox
+    title='Pixie Auth Token'
+    message='Please copy this code, switch to the CLI and paste it there:'
+    code={code}
+  />
+));
+CLICodeBox.displayName = 'CLICodeBox';
 
-const CtaButton = React.memo<ButtonProps>(function CtaButton({ children, ...props }) {
-  return <Button color='primary' variant='contained' {...props}>{children}</Button>;
-});
+const CtaButton = React.memo<ButtonProps>(({ children, ...props }) => (
+  <Button color='primary' variant='contained' {...props}>{children}</Button>
+));
+CtaButton.displayName = 'CtaButton';
 
-const ErrorMessage = React.memo<{ config: CallbackConfig }>(function ErrorMessage({ config }) {
+const ErrorMessage = React.memo<{ config: CallbackConfig }>(({ config }) => {
   const classes = useStyles();
   const title = config.signup ? 'Failed to Sign Up' : 'Failed to Log In';
   const errorDetails = config.err.errorType === 'internal' ? config.err.errMessage : undefined;
@@ -176,6 +176,7 @@ const ErrorMessage = React.memo<{ config: CallbackConfig }>(function ErrorMessag
     />
   );
 });
+ErrorMessage.displayName = 'ErrorMessage';
 
 /**
  * This is the main component to handle the callback from auth.
@@ -183,7 +184,7 @@ const ErrorMessage = React.memo<{ config: CallbackConfig }>(function ErrorMessag
  * This component gets the token from Auth0 and either sends it to the CLI or
  * makes a request to Pixie cloud to perform a signup/login.
  */
-export const AuthCallbackPage: React.FC = React.memo(function AuthCallbackPage() {
+export const AuthCallbackPage: React.FC = React.memo(() => {
   const [config, setConfig] = React.useState<CallbackConfig>(null);
 
   const setErr = React.useCallback((errType: ErrorType, errMsg: string) => {
@@ -382,3 +383,4 @@ export const AuthCallbackPage: React.FC = React.memo(function AuthCallbackPage()
     </BasePage>
   );
 });
+AuthCallbackPage.displayName = 'AuthCallbackPage';

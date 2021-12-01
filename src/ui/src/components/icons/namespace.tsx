@@ -20,7 +20,7 @@ import * as React from 'react';
 
 import { SvgIcon, SvgIconProps } from '@mui/material';
 
-// eslint-disable-next-line react-memo/require-memo
+// eslint-disable-next-line react-memo/require-memo,react/display-name
 export const NamespaceIcon: React.FC<SvgIconProps> = (props) => (
   <SvgIcon {...props} viewBox='0 0 26 25'>
     <path

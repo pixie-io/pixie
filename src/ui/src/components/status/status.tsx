@@ -46,9 +46,9 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     verticalAlign: 'text-bottom',
     color: theme.palette.foreground.grey1,
   },
-}));
+}), { name: 'StatusCell' });
 
-export const StatusCell: React.FC<{ statusGroup: StatusGroup }> = React.memo(function StatusCell({ statusGroup }) {
+export const StatusCell: React.FC<{ statusGroup: StatusGroup }> = React.memo(({ statusGroup }) => {
   const classes = useStyles();
   switch (statusGroup) {
     case 'healthy':
@@ -61,3 +61,4 @@ export const StatusCell: React.FC<{ statusGroup: StatusGroup }> = React.memo(fun
       return <UnknownIcon fontSize='small' className={classes.unknown} />;
   }
 });
+StatusCell.displayName = 'StatusCell';

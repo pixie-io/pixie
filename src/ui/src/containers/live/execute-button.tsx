@@ -48,7 +48,7 @@ const useStyles = makeStyles(({ breakpoints, typography, shape }: Theme) => crea
 
 const CANCELLABILITY_DELAY_MS = 1000;
 
-const ExecuteScriptButton: React.FC = React.memo(function ExecuteScriptButton() {
+const ExecuteScriptButton: React.FC = React.memo(() => {
   const classes = useStyles();
   const cloudClient = (React.useContext(PixieAPIContext) as PixieAPIClient).getCloudClient();
   const { selectedClusterStatus } = React.useContext(ClusterContext);
@@ -99,5 +99,6 @@ const ExecuteScriptButton: React.FC = React.memo(function ExecuteScriptButton() 
     </Tooltip>
   );
 });
+ExecuteScriptButton.displayName = 'ExecuteScriptButton';
 
 export default ExecuteScriptButton;

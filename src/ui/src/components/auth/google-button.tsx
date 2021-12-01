@@ -30,14 +30,14 @@ const useStyles = makeStyles(({ spacing }: Theme) => createStyles({
     paddingBottom: spacing(1),
     textTransform: 'capitalize',
   },
-}));
+}), { name: 'GoogleButton' });
 
 export interface GoogleButtonProps {
   text: string;
   onClick: () => void;
 }
 
-export const GoogleButton = React.memo<GoogleButtonProps>(function GoogleButton({ text, onClick }) {
+export const GoogleButton = React.memo<GoogleButtonProps>(({ text, onClick }) => {
   const classes = useStyles();
   return (
     <Button
@@ -52,3 +52,4 @@ export const GoogleButton = React.memo<GoogleButtonProps>(function GoogleButton(
     </Button>
   );
 });
+GoogleButton.displayName = 'GoogleButton';

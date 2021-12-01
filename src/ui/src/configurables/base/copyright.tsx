@@ -18,10 +18,9 @@
 
 import * as React from 'react';
 
-export const Copyright = React.memo(function Copyright() {
-  return (
-    <span>
-      &copy; 2018- The Pixie Authors
-    </span>
-  );
-});
+export const Copyright = React.memo(() => (
+  <span>
+    &copy; 2018- The Pixie Authors
+  </span>
+));
+Copyright.displayName = 'Copyright';

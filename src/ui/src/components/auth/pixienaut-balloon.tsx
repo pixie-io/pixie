@@ -18,7 +18,7 @@
 
 import * as React from 'react';
 
-// eslint-disable-next-line react-memo/require-memo
+// eslint-disable-next-line react-memo/require-memo,react/display-name
 export const PixienautBalloonSvg: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   /* eslint-disable max-len */
   <svg width={129} height={179} viewBox='0 0 129 179' fill='none' {...props}>

@@ -84,7 +84,7 @@ const useStyles = makeStyles(({ palette, spacing }: Theme) => createStyles({
   },
 }), { name: 'JSONData' });
 
-const JSONObject = React.memo<{ data: Record<string, any> }>(function JSONObject({ data }) {
+const JSONObject = React.memo<{ data: Record<string, any> }>(({ data }) => {
   const classes = useStyles();
   const entries = Object.entries(data);
   return (
@@ -106,8 +106,9 @@ const JSONObject = React.memo<{ data: Record<string, any> }>(function JSONObject
     </>
   );
 });
+JSONObject.displayName = 'JSONObject';
 
-const JSONArray = React.memo<{ data: any[] }>(function JSONArray({ data }) {
+const JSONArray = React.memo<{ data: any[] }>(({ data }) => {
   const classes = useStyles();
   return (
     <>
@@ -127,8 +128,10 @@ const JSONArray = React.memo<{ data: any[] }>(function JSONArray({ data }) {
     </>
   );
 });
+JSONArray.displayName = 'JSONArray';
 
-const JSONInner = React.memo<{ data: any }>(function JSONInner({ data }) {
+// eslint-disable-next-line consistent-return
+const JSONInner = React.memo<{ data: any }>(({ data }) => {
   const classes = useStyles();
   if (data === undefined) {
     return <span className={classes.undefined}>undefined</span>;
@@ -169,11 +172,12 @@ const JSONInner = React.memo<{ data: any }>(function JSONInner({ data }) {
       break;
   }
 });
+JSONInner.displayName = 'JSONInner';
 
 export const JSONData: React.FC<{
   data: any,
   multiline?: boolean,
-}> = React.memo(function JSONData({ data, multiline = false }) {
+}> = React.memo(({ data, multiline = false }) => {
   const classes = useStyles();
   return (
     <div className={buildClass(classes.root, multiline && classes.multiline)}>
@@ -181,3 +185,4 @@ export const JSONData: React.FC<{
     </div>
   );
 });
+JSONData.displayName = 'JSONData';

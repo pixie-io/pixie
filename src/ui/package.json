@@ -181,7 +181,7 @@
     "coverage": "jest --coverage",
     "coverage_ci": "jest --coverage --maxWorkers=4",
     "license_check": "yarn pnpify license-checker",
-    "lint": "tsc --noEmit && eslint '*/**/*.{js,ts,tsx}'",
+    "lint": "tsc --noEmit && eslint -c .eslintrc.json .",
     "vgspec": "NODE_PATH=./src ts-node --compiler-options '{\"module\":\"commonjs\"}' src/utils/print-vgspec-cli.ts"
   },
   "resolutions": {

@@ -21,6 +21,7 @@ import * as React from 'react';
 import AutoSizer from 'react-virtualized-auto-sizer';
 
 export const AutoSizerContext = React.createContext<{ width: number, height: number }>({ width: 0, height: 0 });
+AutoSizerContext.displayName = 'AutoSizerContext';
 
 const AutoSizerContextProvider: React.FC<{
   width: number, height: number, content: React.ReactNode,
@@ -34,6 +35,7 @@ const AutoSizerContextProvider: React.FC<{
     );
   },
 );
+AutoSizerContextProvider.displayName = 'AutoSizerContextProvider';
 
 /** Wraps component in an <AutoSizer>, and provides the width/height properties that creates in AutoSizerContext. */
 export function withAutoSizerContext<P>(Component: React.ComponentType<P>): React.ComponentType<P> {
@@ -47,6 +49,6 @@ export function withAutoSizerContext<P>(Component: React.ComponentType<P>): Reac
       )}
     </AutoSizer>
   );
-  Wrapped.displayName = `AutoSizerWrapped${Component.displayName}`;
+  Wrapped.displayName = Component.displayName ? `AutoSizerWrapped${Component.displayName}` : 'AutoSizerWrapper';
   return Wrapped;
 }

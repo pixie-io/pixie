@@ -18,7 +18,7 @@
 
 import * as React from 'react';
 
-// eslint-disable-next-line react-memo/require-memo
+// eslint-disable-next-line react-memo/require-memo,react/display-name
 export const HeartIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   /* eslint-disable max-len */
   <svg

@@ -40,6 +40,7 @@ export interface ResultsContextProps extends Results {
 }
 
 export const ResultsContext = React.createContext<ResultsContextProps>(null);
+ResultsContext.displayName = 'ResultsContext';
 
 /**
  * When streaming queries, row batch data updates happen outside of React's lifecycle and mutate tables' contents.
@@ -54,7 +55,7 @@ export function useLatestRowCount(tableName: string): number {
   return count;
 }
 
-export const ResultsContextProvider = React.memo(function ResultsContextProvider({ children }) {
+export const ResultsContextProvider = React.memo(({ children }) => {
   const [results, setResults] = React.useState<Results>({ tables: new Map() });
   const [loading, setLoading] = React.useState(false);
   const [streaming, setStreaming] = React.useState(false);
@@ -86,3 +87,4 @@ export const ResultsContextProvider = React.memo(function ResultsContextProvider
     </ResultsContext.Provider>
   );
 });
+ResultsContextProvider.displayName = 'ResultsContextProvider';

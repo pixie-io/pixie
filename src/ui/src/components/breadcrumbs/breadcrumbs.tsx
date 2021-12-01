@@ -217,14 +217,14 @@ const useDialogStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-export const DialogDropdown = React.memo<DialogDropdownProps>(function DialogDropdown({
+export const DialogDropdown = React.memo<DialogDropdownProps>(({
   placeholder,
   onSelect,
   onClose,
   getListItems,
   anchorEl,
   explanation,
-}) {
+}) => {
   const classes = useDialogStyles();
 
   const mounted = useIsMounted();
@@ -358,6 +358,7 @@ export const DialogDropdown = React.memo<DialogDropdownProps>(function DialogDro
     </Popover>
   );
 });
+DialogDropdown.displayName = 'DialogDropdown';
 
 export interface BreadcrumbProps {
   title: string;
@@ -370,7 +371,7 @@ export interface BreadcrumbProps {
   explanation?: React.ReactElement;
 }
 
-const Breadcrumb = React.memo<BreadcrumbProps>(function Breadcrumb({
+const Breadcrumb = React.memo<BreadcrumbProps>(({
   title,
   value,
   selectable,
@@ -379,7 +380,7 @@ const Breadcrumb = React.memo<BreadcrumbProps>(function Breadcrumb({
   omitKey,
   placeholder,
   explanation,
-}) {
+}) => {
   const classes = useStyles();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
@@ -423,6 +424,7 @@ const Breadcrumb = React.memo<BreadcrumbProps>(function Breadcrumb({
     </div>
   );
 });
+Breadcrumb.displayName = 'Breadcrumb';
 
 export interface BreadcrumbListItem {
   value: string;
@@ -443,7 +445,7 @@ export interface BreadcrumbsProps {
   breadcrumbs: BreadcrumbOptions[];
 }
 
-export const Breadcrumbs: React.FC<BreadcrumbsProps> = React.memo(function Breadcrumbs({ breadcrumbs }) {
+export const Breadcrumbs: React.FC<BreadcrumbsProps> = React.memo(({ breadcrumbs }) => {
   const classes = useStyles();
   // In case a breadcrumb doesn't override, give it the nearest context's values.
   const { allowTyping, requireCompletion } = React.useContext(
@@ -473,3 +475,4 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = React.memo(function Bread
     </Paper>
   );
 });
+Breadcrumbs.displayName = 'Breadcrumbs';

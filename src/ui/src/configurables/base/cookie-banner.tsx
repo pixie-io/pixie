@@ -21,3 +21,4 @@ import * as React from 'react';
 export function PixieCookieBanner(): React.ReactElement {
   return (<></>);
 }
+PixieCookieBanner.displayName = 'PixieCookieBanner';

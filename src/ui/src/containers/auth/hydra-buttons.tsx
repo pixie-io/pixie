@@ -36,6 +36,7 @@ export const HydraButtons: React.FC<HydraButtonsProps> = ({ usernamePasswordText
     />
   </>
 );
+HydraButtons.displayName = 'HydraButtons';
 
 const useStyles = makeStyles(() => createStyles({
   rejectText: {
@@ -52,3 +53,4 @@ export const RejectHydraSignup: React.FC = () => {
     </div>
   );
 };
+RejectHydraSignup.displayName = 'RejectHydraSignup';

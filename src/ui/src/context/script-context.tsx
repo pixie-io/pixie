@@ -76,8 +76,9 @@ export const ScriptContext = React.createContext<ScriptContextProps>({
   execute: () => {},
   cancelExecution: () => {},
 });
+ScriptContext.displayName = 'ScriptContext';
 
-export const ScriptContextProvider: React.FC = React.memo(function ScriptContextProvider({ children }) {
+export const ScriptContextProvider: React.FC = React.memo(({ children }) => {
   const apiClient = React.useContext(PixieAPIContext);
   const {
     scriptId,
@@ -345,3 +346,4 @@ export const ScriptContextProvider: React.FC = React.memo(function ScriptContext
 
   return <ScriptContext.Provider value={context}>{children}</ScriptContext.Provider>;
 });
+ScriptContextProvider.displayName = 'ScriptContextProvider';

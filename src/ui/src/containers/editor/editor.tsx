@@ -75,11 +75,11 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     display: 'flex',
     alignItems: 'center',
   },
-}));
+}), { name: 'Editor' });
 
 const shortcutKeys = Object.values(getKeyMap()).map((keyBinding) => keyBinding.sequence);
 
-const VisEditor = React.memo<{ visible: boolean }>(function VisEditor({ visible }) {
+const VisEditor = React.memo<{ visible: boolean }>(({ visible }) => {
   const classes = useStyles();
   const { script } = React.useContext(ScriptContext);
   const { setVisEditorText } = React.useContext(EditorContext);
@@ -110,8 +110,9 @@ const VisEditor = React.memo<{ visible: boolean }>(function VisEditor({ visible 
     />
   );
 });
+VisEditor.displayName = 'VisEditor';
 
-const PxLEditor = React.memo<{ visible: boolean }>(function PxlEditor({ visible }) {
+const PxLEditor = React.memo<{ visible: boolean }>(({ visible }) => {
   const classes = useStyles();
   const { script } = React.useContext(ScriptContext);
   const { setPxlEditorText } = React.useContext(EditorContext);
@@ -145,6 +146,7 @@ const PxLEditor = React.memo<{ visible: boolean }>(function PxlEditor({ visible 
     />
   );
 });
+PxLEditor.displayName = 'PxLEditor';
 
 // eslint-disable-next-line react-memo/require-memo
 const StyledTabs = withStyles((theme: Theme) => createStyles({
@@ -168,7 +170,7 @@ const StyledTab = withStyles((theme: Theme) => createStyles({
   },
 }))(Tab);
 
-const LiveViewEditor = React.memo<{ visible: boolean }>(function LiveViewEditor({ visible }) {
+const LiveViewEditor = React.memo<{ visible: boolean }>(({ visible }) => {
   const classes = useStyles();
   const [tab, setTab] = React.useState('pixie');
   const { setEditorPanelOpen } = React.useContext(LayoutContext);
@@ -200,8 +202,9 @@ const LiveViewEditor = React.memo<{ visible: boolean }>(function LiveViewEditor(
     </div>
   );
 });
+LiveViewEditor.displayName = 'LiveViewEditor';
 
-export const EditorSplitPanel: React.FC = React.memo(function EditorSplitPanel({ children }) {
+export const EditorSplitPanel: React.FC = React.memo(({ children }) => {
   const { editorPanelOpen } = React.useContext(LayoutContext);
 
   return (
@@ -217,3 +220,4 @@ export const EditorSplitPanel: React.FC = React.memo(function EditorSplitPanel({
     </ResizableDrawer>
   );
 });
+EditorSplitPanel.displayName = 'EditorSplitPanel';

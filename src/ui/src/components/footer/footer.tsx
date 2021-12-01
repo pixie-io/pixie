@@ -64,10 +64,10 @@ export interface FooterProps {
   classes?: ReturnType<typeof useDefaultStyles>,
 }
 
-export const Footer: React.FC<FooterProps> = React.memo(function Footer({
+export const Footer = React.memo<FooterProps>(({
   classes: overrideClasses,
   copyright: Copyright,
-}) {
+}) => {
   const defaultClasses = useDefaultStyles();
   const classes = overrideClasses ?? defaultClasses;
 
@@ -89,3 +89,4 @@ export const Footer: React.FC<FooterProps> = React.memo(function Footer({
     </div>
   );
 });
+Footer.displayName = 'Footer';

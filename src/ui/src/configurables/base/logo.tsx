@@ -27,9 +27,9 @@ const useStyles = makeStyles(() => createStyles({
     height: '100%',
     display: 'flex',
   },
-}));
+}), { name: 'Logo' });
 
-export const Logo = React.memo(function Logo() {
+export const Logo = React.memo(() => {
   const classes = useStyles();
 
   return (
@@ -38,3 +38,4 @@ export const Logo = React.memo(function Logo() {
     </div>
   );
 });
+Logo.displayName = 'Logo';

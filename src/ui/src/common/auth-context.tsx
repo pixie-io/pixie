@@ -24,6 +24,7 @@ export interface AuthContextProps {
 }
 
 export const AuthContext = React.createContext<AuthContextProps>(null);
+AuthContext.displayName = 'AuthContext';
 
 export const AuthContextProvider = React.memo(({ children }) => {
   const [authToken, setAuthToken] = React.useState<string>('');

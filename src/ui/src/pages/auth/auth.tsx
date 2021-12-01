@@ -46,3 +46,4 @@ export const AuthRouter: React.FC = () => (
     <Route exact path='/auth/logout' component={LogoutPage} />
   </Switch>
 );
+AuthRouter.displayName = 'AuthRouter';

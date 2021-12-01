@@ -54,7 +54,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-export const UserRow = React.memo<UserRowProps>(function UserRow({ user }) {
+export const UserRow = React.memo<UserRowProps>(({ user }) => {
   const classes = useStyles();
 
   const [updateUserInfo] = useMutation<
@@ -109,8 +109,9 @@ export const UserRow = React.memo<UserRowProps>(function UserRow({ user }) {
     </TableRow>
   );
 });
+UserRow.displayName = 'UserRow';
 
-export const UsersTable = React.memo(function UsersTable() {
+export const UsersTable = React.memo(() => {
   const { data, loading, error } = useQuery<{ orgUsers: UserDisplay[] }>(
     gql`
       query getUsersForCurrentOrg{
@@ -154,3 +155,4 @@ export const UsersTable = React.memo(function UsersTable() {
     </>
   );
 });
+UsersTable.displayName = 'UsersTable';

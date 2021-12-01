@@ -31,6 +31,7 @@ export interface ScriptsContextProps {
 }
 
 export const ScriptsContext = React.createContext<ScriptsContextProps>(null);
+ScriptsContext.displayName = 'ScriptsContext';
 
 export const SCRATCH_SCRIPT: Script = {
   id: 'Scratch Pad',
@@ -97,4 +98,4 @@ export const ScriptsContextProvider = React.memo(({ children }) => {
     </ScriptsContext.Provider>
   );
 });
-ScriptsContext.displayName = 'ScriptsContext';
+ScriptsContextProvider.displayName = 'ScriptsContextProvider';

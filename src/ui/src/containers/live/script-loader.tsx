@@ -27,7 +27,7 @@ import { stableSerializeArgs } from 'app/utils/args-utils';
  * Automatically runs the selected script whenever it changes, the args change, or the vis spec changes.
  * @constructor
  */
-export const ScriptLoader: React.FC = React.memo(function ScriptLoader() {
+export const ScriptLoader: React.FC = React.memo(() => {
   const {
     script, args, execute, cancelExecution, manual,
   } = React.useContext(ScriptContext);
@@ -61,3 +61,4 @@ export const ScriptLoader: React.FC = React.memo(function ScriptLoader() {
 
   return null;
 });
+ScriptLoader.displayName = 'ScriptLoader';

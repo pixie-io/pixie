@@ -73,6 +73,7 @@ const ExecutionMetric = (props: ExecutionMetricProps) => {
     </div>
   );
 };
+ExecutionMetric.displayName = 'ExecutionMetric';
 
 // eslint-disable-next-line react-memo/require-memo
 const ExecutionStats: React.FC = () => {
@@ -108,5 +109,6 @@ const ExecutionStats: React.FC = () => {
     </div>
   );
 };
+ExecutionStats.displayName = 'ExecutionStats';
 
 export default ExecutionStats;

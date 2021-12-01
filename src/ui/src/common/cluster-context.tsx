@@ -39,6 +39,7 @@ export interface ClusterContextProps {
 }
 
 export const ClusterContext = React.createContext<ClusterContextProps>(null);
+ClusterContext.displayName = 'ClusterContext';
 
 type SelectedClusterInfo = Pick<
 GQLClusterInfo,
@@ -55,7 +56,7 @@ const invalidCluster = (name: string): SelectedClusterInfo => ({
   prettyClusterName: name,
 });
 
-export const ClusterContextProvider = React.memo(function ClusterContextProvider({ children }) {
+export const ClusterContextProvider = React.memo(({ children }) => {
   const showSnackbar = useSnackbar();
 
   const {
@@ -123,6 +124,7 @@ export const ClusterContextProvider = React.memo(function ClusterContextProvider
     </ClusterContext.Provider>
   );
 });
+ClusterContextProvider.displayName = 'ClusterContextProvider';
 
 export function useClusterConfig(): ClusterConfig | null {
   const { selectedClusterID, selectedClusterVizierConfig } = React.useContext(ClusterContext);

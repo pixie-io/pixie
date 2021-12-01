@@ -47,3 +47,4 @@ export const Auth0Buttons: React.FC<Auth0ButtonsProps> = ({
     />}
   </>
 );
+Auth0Buttons.displayName = 'Auth0Buttons';

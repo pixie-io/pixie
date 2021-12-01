@@ -28,16 +28,16 @@ const useStyles = makeStyles(({ spacing }: Theme) => createStyles({
     paddingBottom: spacing(1),
     textTransform: 'capitalize',
   },
-}));
+}), { name: 'UsernamePasswordButton' });
 
 export interface UsernamePasswordButtonProps {
   text: string;
   onClick: () => void;
 }
-export const UsernamePasswordButton = React.memo<UsernamePasswordButtonProps>(function UsernamePasswordButton({
+export const UsernamePasswordButton = React.memo<UsernamePasswordButtonProps>(({
   text,
   onClick,
-}) {
+}) => {
   const classes = useStyles();
   return (
     <Button
@@ -50,3 +50,4 @@ export const UsernamePasswordButton = React.memo<UsernamePasswordButtonProps>(fu
     </Button>
   );
 });
+UsernamePasswordButton.displayName = 'UsernamePasswordButton';

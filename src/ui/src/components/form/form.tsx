@@ -140,6 +140,7 @@ const FormFieldImpl: React.FC<FormFieldProps> = ({ onChange, children, ...field 
     />
   );
 };
+FormFieldImpl.displayName = 'FormFieldImpl';
 
 // eslint-disable-next-line react-memo/require-memo
 export const Form: React.FC<FormStructure> = ({
@@ -196,6 +197,7 @@ export const Form: React.FC<FormStructure> = ({
     </>
   );
 };
+Form.displayName = 'Form';
 
 // eslint-disable-next-line react-memo/require-memo
 export const PixienautForm: React.FC<{ formProps: FormStructure }> = ({ formProps }) => {
@@ -208,3 +210,4 @@ export const PixienautForm: React.FC<{ formProps: FormStructure }> = ({ formProp
     </PixienautBox>
   );
 };
+PixienautForm.displayName = 'PixienautForm';

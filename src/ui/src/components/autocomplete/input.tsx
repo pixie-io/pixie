@@ -82,7 +82,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   prefix: {
     paddingRight: theme.spacing(2),
   },
-}));
+}), { name: 'Input' });
 
 interface InputProps {
   onChange: (val: string) => void;
@@ -194,6 +194,7 @@ export const Input: React.FC<InputProps> = ({
     </div>
   );
 };
+Input.displayName = 'Input';
 
 type FormField = [string, string];
 
@@ -215,3 +216,4 @@ export const FormInput: React.FC<InputFormProps> = ({ form }) => {
 
   return <textarea className={classes.textArea} ref={ref} value={value} />;
 };
+FormInput.displayName = 'FormInput';

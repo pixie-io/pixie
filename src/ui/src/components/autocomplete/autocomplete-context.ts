@@ -42,3 +42,4 @@ export const AutocompleteContext = React.createContext<AutocompleteContextProps>
   onOpen: 'none',
   hidden: false,
 });
+AutocompleteContext.displayName = 'AutocompleteContext';

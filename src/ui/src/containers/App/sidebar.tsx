@@ -129,9 +129,9 @@ interface LinkItemProps {
   text: string;
 }
 
-const SideBarInternalLinkItem = React.memo<LinkItemProps>(function SideBarInternalLinkItem({
+const SideBarInternalLinkItem = React.memo<LinkItemProps>(({
   icon, link, text,
-}) {
+}) => {
   const classes = useStyles();
   return (
     <Tooltip title={text} disableInteractive>
@@ -142,10 +142,11 @@ const SideBarInternalLinkItem = React.memo<LinkItemProps>(function SideBarIntern
     </Tooltip>
   );
 });
+SideBarInternalLinkItem.displayName = 'SideBarInternalLinkItem';
 
-const SideBarExternalLinkItem = React.memo<LinkItemProps>(function SideBarExternalLinkItem({
+const SideBarExternalLinkItem = React.memo<LinkItemProps>(({
   icon, link, text,
-}) {
+}) => {
   const classes = useStyles();
   return (
     <Tooltip title={text} disableInteractive>
@@ -156,6 +157,7 @@ const SideBarExternalLinkItem = React.memo<LinkItemProps>(function SideBarExtern
     </Tooltip>
   );
 });
+SideBarExternalLinkItem.displayName = 'SideBarExternalLinkItem';
 
 export const SideBar: React.FC<{ open: boolean }> = React.memo(({ open }) => {
   const classes = useStyles();

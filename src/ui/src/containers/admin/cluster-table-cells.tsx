@@ -86,6 +86,7 @@ export const InstrumentationLevelCell: React.FC<{ cluster: InstrumentationCluste
     {display.percentInstrumented}
   </StyledTableCell>);
 };
+InstrumentationLevelCell.displayName = 'InstrumentationLevelCell';
 
 const useClusterStatusCellStyle = makeStyles((theme: Theme) => createStyles({
   status: {
@@ -111,6 +112,7 @@ export const ClusterStatusCell: React.FC<{ status: GQLClusterStatus, message?: s
   </AdminTooltip>
   );
 };
+ClusterStatusCell.displayName = 'ClusterStatusCell';
 
 // eslint-disable-next-line react-memo/require-memo
 export const VizierVersionCell: React.FC<{ version: string }> = ({ version }) => (
@@ -118,6 +120,7 @@ export const VizierVersionCell: React.FC<{ version: string }> = ({ version }) =>
     <StyledTableCell>{version.split('+')[0]}</StyledTableCell>
   </AdminTooltip>
 );
+VizierVersionCell.displayName = 'VizierVersionCell';
 
 const useMonoCells = makeStyles(() => createStyles({
   mono: {
@@ -133,3 +136,4 @@ export const MonoSpaceCell: React.FC<{ data: string }> = ({ data }) => {
     <StyledTableCell className={classes.mono}>{data}</StyledTableCell>
   );
 };
+MonoSpaceCell.displayName = 'MonoSpaceCell';

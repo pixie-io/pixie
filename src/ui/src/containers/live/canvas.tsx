@@ -170,12 +170,12 @@ interface VegaWidgetProps {
   data: any[];
 }
 
-const VegaWidget: React.FC<VegaWidgetProps> = React.memo(function VegaWidget({
+const VegaWidget: React.FC<VegaWidgetProps> = React.memo(({
   tableName,
   display,
   table,
   data,
-}) {
+}) => {
   const classes = useStyles();
   const [focused, setFocused] = React.useState(false);
   const toggleFocus = React.useCallback(() => setFocused((enabled) => !enabled), []);
@@ -198,6 +198,7 @@ const VegaWidget: React.FC<VegaWidgetProps> = React.memo(function VegaWidget({
     </div>
   );
 });
+VegaWidget.displayName = 'VegaWidget';
 
 const WidgetDisplay: React.FC<{
   display: VisWidgetDisplay,
@@ -206,9 +207,9 @@ const WidgetDisplay: React.FC<{
   widgetName: string,
   propagatedArgs: Record<string, any>,
   emptyTableMsg: string,
-}> = React.memo(function WidgetDisplay({
+}> = React.memo(({
   display, table, tableName, widgetName, propagatedArgs, emptyTableMsg,
-}) {
+}) => {
   const classes = useStyles();
 
   if (!table) {
@@ -286,15 +287,16 @@ const WidgetDisplay: React.FC<{
     );
   }
 });
+WidgetDisplay.displayName = 'WidgetDisplay';
 
 const ErrorDisplay: React.FC<{
   classes: Record<string, string>,
   error: any,
   setOpen: SetStateFunc<boolean>,
   open: boolean,
-}> = React.memo(function ErrorDisplay({
+}> = React.memo(({
   classes, error, setOpen, open,
-}) {
+}) => {
   const toggleOpen = React.useCallback(() => setOpen((opened) => !opened), [setOpen]);
   React.useEffect(() => {
     setOpen(true);
@@ -313,6 +315,7 @@ const ErrorDisplay: React.FC<{
     </div>
   );
 });
+ErrorDisplay.displayName = 'ErrorDisplay';
 
 const Grid = GridLayout.WidthProvider(GridLayout);
 const gridMargin = [20, 20];
@@ -322,7 +325,7 @@ interface CanvasProps {
   parentRef: React.RefObject<HTMLElement>;
 }
 
-const Canvas: React.FC<CanvasProps> = React.memo(function Canvas({ editable, parentRef }) {
+const Canvas: React.FC<CanvasProps> = React.memo(({ editable, parentRef }) => {
   const classes = useStyles();
   const {
     tables, loading, error, mutationInfo,
@@ -525,5 +528,6 @@ const Canvas: React.FC<CanvasProps> = React.memo(function Canvas({ editable, par
     </>
   );
 });
+Canvas.displayName = 'Canvas';
 
 export default withTimeSeriesContext(Canvas);

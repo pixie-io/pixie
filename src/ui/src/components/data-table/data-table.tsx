@@ -201,10 +201,11 @@ interface DataTableContextProps extends Omit<DataTableProps, 'table'> {
   toggleRowExpanded: (rowId: string) => void;
 }
 const DataTableContext = React.createContext<DataTableContextProps>(null);
+DataTableContext.displayName = 'DataTableContext';
 
 const noPointerEvents = { pointerEvents: 'none' as const };
 
-const ColumnSelector = React.memo<{ columns: ColumnInstance[] }>(function ColumnSelector({ columns }) {
+const ColumnSelector = React.memo<{ columns: ColumnInstance[] }>(({ columns }) => {
   const classes = useDataTableStyles();
 
   const [open, setOpen] = React.useState(false);
@@ -239,8 +240,9 @@ const ColumnSelector = React.memo<{ columns: ColumnInstance[] }>(function Column
     </>
   );
 });
+ColumnSelector.displayName = 'ColumnSelector';
 
-const ColumnSortButton = React.memo<{ column: ColumnInstance }>(function ColumnSortButton({ column }) {
+const ColumnSortButton = React.memo<{ column: ColumnInstance }>(({ column }) => {
   const classes = useDataTableStyles();
   const className = buildClass(
     classes.sortButton,
@@ -248,8 +250,9 @@ const ColumnSortButton = React.memo<{ column: ColumnInstance }>(function ColumnS
   );
   return column.isSortedDesc ? <DownIcon className={className} /> : <UpIcon className={className} />;
 });
+ColumnSortButton.displayName = 'ColumnSortButton';
 
-const ColumnResizeHandle = React.memo<{ column: ColumnInstance }>(function ColumnResizeHandle({ column }) {
+const ColumnResizeHandle = React.memo<{ column: ColumnInstance }>(({ column }) => {
   const classes = useDataTableStyles();
   const { instance: { resetResizing } } = React.useContext(DataTableContext);
 
@@ -263,8 +266,9 @@ const ColumnResizeHandle = React.memo<{ column: ColumnInstance }>(function Colum
     </span>
   );
 });
+ColumnResizeHandle.displayName = 'ColumnResizeHandle';
 
-const HeaderCell: React.FC<{ column: ColumnInstance }> = React.memo(function HeaderCell({ column }) {
+const HeaderCell: React.FC<{ column: ColumnInstance }> = React.memo(({ column }) => {
   const classes = useDataTableStyles();
 
   const cellClass = buildClass(classes.headerCell, column.isGutter && classes.gutterCell);
@@ -311,6 +315,7 @@ const HeaderCell: React.FC<{ column: ColumnInstance }> = React.memo(function Hea
   }
   return true;
 });
+HeaderCell.displayName = 'HeaderCell';
 
 const HeaderRow = React.memo(React.forwardRef<HTMLDivElement, { scrollbarWidth: number }>(({ scrollbarWidth }, ref) => {
   const classes = useDataTableStyles();
@@ -337,7 +342,7 @@ const HeaderRow = React.memo(React.forwardRef<HTMLDivElement, { scrollbarWidth: 
 }));
 HeaderRow.displayName = 'HeaderRow';
 
-const BodyCell: React.FC<{ cell: Cell }> = React.memo(function BodyCell({ cell }) {
+const BodyCell: React.FC<{ cell: Cell }> = React.memo(({ cell }) => {
   const classes = useDataTableStyles();
   const { column: col } = cell;
 
@@ -359,12 +364,13 @@ const BodyCell: React.FC<{ cell: Cell }> = React.memo(function BodyCell({ cell }
     && pCol.width === nCol.width
     && prev.cell.value === next.cell.value;
 });
+BodyCell.displayName = 'BodyCell';
 
 const BodyRow = React.memo<{ index: number, style: React.CSSProperties }>(
-  function BodyRow({
+  ({
     index: rowIndex,
     style: vRowStyle,
-  }) {
+  }) => {
     const classes = useDataTableStyles();
     const {
       instance: {
@@ -407,14 +413,17 @@ const BodyRow = React.memo<{ index: number, style: React.CSSProperties }>(
   },
   areEqual,
 );
+BodyRow.displayName = 'BodyRow';
 
 function decorateTable({ table: { columns, data }, enableColumnSelect, enableRowSelect }: DataTableProps): ReactTable {
   // Enabling row select will add icon indicators, but only if something else gives a reason to show a controls column.
   if (enableColumnSelect && !columns.some((col) => col.id === 'controls')) {
     columns.unshift({
+      // eslint-disable-next-line react/display-name
       Header: function ControlHeader({ columns: columnInstances }) {
         return enableRowSelect ? <ColumnSelector columns={columnInstances} /> : <></>;
       },
+      // eslint-disable-next-line react/display-name
       Cell: function ControlCell() {
         const classes = useDataTableStyles();
         return enableRowSelect ? (
@@ -437,7 +446,7 @@ function decorateTable({ table: { columns, data }, enableColumnSelect, enableRow
   return { columns, data };
 }
 
-const DataTableImpl = React.memo<DataTableProps>(function DataTable({ table, ...options }) {
+const DataTableImpl = React.memo<DataTableProps>(({ table, ...options }) => {
   const classes = useDataTableStyles();
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -557,5 +566,6 @@ const DataTableImpl = React.memo<DataTableProps>(function DataTable({ table, ...
     </DataTableContext.Provider>
   );
 });
+DataTableImpl.displayName = 'DataTable';
 
 export const DataTable = withAutoSizerContext(DataTableImpl);

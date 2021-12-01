@@ -59,7 +59,7 @@ export function formatDeploymentKey(depKey: GQLDeploymentKeyMetadata): Deploymen
 
 export const DeploymentKeyRow = React.memo<{
   deploymentKey: DeploymentKeyDisplay
-}>(function DeploymentKeyRow({ deploymentKey }) {
+}>(({ deploymentKey }) => {
   const [deleteDeploymentKey] = useMutation<{ DeleteDeploymentKey: boolean }, { id: string }>(gql`
     mutation DeleteDeploymentKeyFromAdminPage($id: ID!) {
       DeleteDeploymentKey(id: $id)
@@ -120,8 +120,9 @@ export const DeploymentKeyRow = React.memo<{
     </TableRow>
   );
 });
+DeploymentKeyRow.displayName = 'DeploymentKeyRow';
 
-export const DeploymentKeysTable = React.memo(function DeploymentKeysTable() {
+export const DeploymentKeysTable = React.memo(() => {
   const classes = useKeyListStyles();
   const { data, error } = useQuery<{ deploymentKeys: GQLDeploymentKey[] }>(
     gql`
@@ -163,3 +164,4 @@ export const DeploymentKeysTable = React.memo(function DeploymentKeysTable() {
     </>
   );
 });
+DeploymentKeysTable.displayName = 'DeploymentKeysTable';

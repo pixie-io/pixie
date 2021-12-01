@@ -49,7 +49,7 @@ export const useKeyListStyles = makeStyles((theme: Theme) => createStyles({
   error: {
     padding: theme.spacing(1),
   },
-}));
+}), { name: 'KeyList' });
 
 // eslint-disable-next-line react-memo/require-memo
 export const KeyListItemIcon = withStyles(() => createStyles({
@@ -96,3 +96,4 @@ export const KeyActionButtons = ({
     </IconButton>
   </>);
 };
+KeyActionButtons.displayName = 'KeyActionButtons';

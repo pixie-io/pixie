@@ -40,8 +40,9 @@ export interface LayoutContextProps {
 }
 
 export const LayoutContext = React.createContext<LayoutContextProps>(null);
+LayoutContext.displayName = 'LayoutContext';
 
-export const LayoutContextProvider: React.FC = React.memo(function LayoutContextProvider({ children }) {
+export const LayoutContextProvider: React.FC = React.memo(({ children }) => {
   const [editorSplitsSizes, setEditorSplitSizes] = React.useState<Splits>([40, 60]);
   const [editorPanelOpen, setEditorPanelOpen] = React.useState<boolean>(false);
 
@@ -84,3 +85,4 @@ export const LayoutContextProvider: React.FC = React.memo(function LayoutContext
     </LayoutContext.Provider>
   );
 });
+LayoutContextProvider.displayName = 'LayoutContextProvider';

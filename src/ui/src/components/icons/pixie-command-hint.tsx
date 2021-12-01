@@ -21,7 +21,7 @@ import * as React from 'react';
 
 import { SvgIcon, SvgIconProps } from '@mui/material';
 
-// eslint-disable-next-line react-memo/require-memo
+// eslint-disable-next-line react-memo/require-memo,react/display-name
 export const PixieCommandHint: React.FC<SvgIconProps> = (props) => (
   <SvgIcon {...props} viewBox='0 0 924 283' fill='none' xmlns='http://www.w3.org/2000/svg'>
     <path

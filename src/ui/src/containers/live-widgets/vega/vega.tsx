@@ -380,4 +380,6 @@ const Vega = React.memo((props: VegaProps) => {
     </div>
   );
 });
+Vega.displayName = 'Vega';
+
 export default Vega;

@@ -120,7 +120,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }), { name: 'SetupView' });
 
-const SetupPage = React.memo(function SetupPage({ children }) {
+const SetupPage = React.memo(({ children }) => {
   const classes = useStyles();
   return (
     <div className={classes.root}>
@@ -142,8 +142,9 @@ const SetupPage = React.memo(function SetupPage({ children }) {
     </div>
   );
 });
+SetupPage.displayName = 'SetupPage';
 
-const SetupOrganization = React.memo<{ redirectUri: string }>(function SetupOrganization({ redirectUri }) {
+const SetupOrganization = React.memo<{ redirectUri: string }>(({ redirectUri }) => {
   const classes = useStyles();
 
   const [createOrgError, setCreateOrgError] = React.useState('');
@@ -232,9 +233,10 @@ const SetupOrganization = React.memo<{ redirectUri: string }>(function SetupOrga
     </Paper>
   );
 });
+SetupOrganization.displayName = 'SetupOrganization';
 
 /** Route to this page when the user needs to perform some first-time setup before they can use Pixie. */
-export const SetupView = React.memo(function SetupView() {
+export const SetupView = React.memo(() => {
   const redirectUri = useRedirectUri();
 
   return (
@@ -243,10 +245,12 @@ export const SetupView = React.memo(function SetupView() {
     </SetupPage>
   );
 });
+SetupView.displayName = 'SetupView';
 
 /** Use as the target of a route when setup should be skipped, and immediately follow its redirect_uri query param. */
-export const SetupRedirect = React.memo(function SetupRedirect() {
+export const SetupRedirect = React.memo(() => {
   const redirectUri = useRedirectUri();
 
   return <Redirect to={redirectUri} />;
 });
+SetupRedirect.displayName = 'SetupRedirect';

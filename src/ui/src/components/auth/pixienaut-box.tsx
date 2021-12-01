@@ -105,7 +105,7 @@ export interface PixienautBoxProps {
 }
 
 export const PixienautBox: React.FC<PixienautBoxProps> = React.memo<PixienautBoxProps>(
-  function PixienautBox({ children, image = 'balloon' }) {
+  ({ children, image = 'balloon' }) => {
     const classes = useStyles();
     const pixienautScenarios = {
       balloon: (
@@ -136,3 +136,4 @@ export const PixienautBox: React.FC<PixienautBoxProps> = React.memo<PixienautBox
     );
   },
 );
+PixienautBox.displayName = 'PixienautBox';

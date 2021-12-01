@@ -132,9 +132,8 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-const TabSpacer = React.memo(function TabSpacer() {
-  return <div className={useStyles().spacer} />;
-});
+const TabSpacer = React.memo(() => <div className={useStyles().spacer} />);
+TabSpacer.displayName = 'TabSpacer';
 
 // eslint-disable-next-line react-memo/require-memo
 const StyledTabs = withStyles((theme: Theme) => createStyles({
@@ -166,7 +165,7 @@ const StyledTab = withStyles((theme: Theme) => createStyles({
 
 }))(Tab);
 
-const DataDrawer = React.memo<{ open: boolean }>(function DataDrawer({ open }) {
+const DataDrawer = React.memo<{ open: boolean }>(({ open }) => {
   const classes = useStyles();
   const { loading, stats, tables } = React.useContext(ResultsContext);
   const { activeTab, setActiveTab } = React.useContext(DataDrawerContext);
@@ -265,8 +264,9 @@ const DataDrawer = React.memo<{ open: boolean }>(function DataDrawer({ open }) {
     </div>
   );
 });
+DataDrawer.displayName = 'DataDrawer';
 
-const DrawerToggleButton = React.memo(function DrawerToggleButton() {
+const DrawerToggleButton = React.memo(() => {
   const classes = useStyles();
   const { dataDrawerOpen, setDataDrawerOpen } = React.useContext(LayoutContext);
 
@@ -283,8 +283,9 @@ const DrawerToggleButton = React.memo(function DrawerToggleButton() {
     </div>
   );
 });
+DrawerToggleButton.displayName = 'DrawerToggleButton';
 
-export const DataDrawerSplitPanel = React.memo(function DataDrawerSplitPanel() {
+export const DataDrawerSplitPanel = React.memo(() => {
   const { dataDrawerOpen } = React.useContext(LayoutContext);
 
   return (
@@ -300,3 +301,4 @@ export const DataDrawerSplitPanel = React.memo(function DataDrawerSplitPanel() {
     </ResizableDrawer>
   );
 });
+DataDrawerSplitPanel.displayName = 'DataDrawerSplitPanel';

@@ -96,6 +96,7 @@ function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutte
       accessor: col.getColumnName(),
       // TODO(nick,PC-1123): We're not doing width weights yet. Need to. Convert to ratio of default in DataTable?
       // TODO(nick,PC-1102): Head/tail mode (data-table.tsx) for not-the-data-drawer.
+      // eslint-disable-next-line react/display-name
       Cell({ value }) {
         return value != null ? <Renderer data={value} /> : null;
       },
@@ -158,7 +159,7 @@ const useLiveDataTableStyles = makeStyles((theme: Theme) => createStyles({
   },
 }), { name: 'LiveDataTable' });
 
-export const MinimalLiveDataTable = React.memo<{ table: VizierTable }>(function MinimalLiveDataTable({ table }) {
+export const MinimalLiveDataTable = React.memo<{ table: VizierTable }>(({ table }) => {
   const classes = useLiveDataTableStyles();
   const reactTable = useConvertedTable(table);
 
@@ -178,6 +179,7 @@ export const MinimalLiveDataTable = React.memo<{ table: VizierTable }>(function 
     </div>
   );
 });
+MinimalLiveDataTable.displayName = 'MinimalLiveDataTable';
 
 export interface LiveDataTableProps extends Pick<DataTableProps, 'onRowsRendered'> {
   table: VizierTable;
@@ -185,7 +187,7 @@ export interface LiveDataTableProps extends Pick<DataTableProps, 'onRowsRendered
   gutterColumn?: string;
 }
 
-const LiveDataTableImpl = React.memo<LiveDataTableProps>(function LiveDataTable({ table, ...options }) {
+const LiveDataTableImpl = React.memo<LiveDataTableProps>(({ table, ...options }) => {
   const classes = useLiveDataTableStyles();
   const reactTable = useConvertedTable(table, options.propagatedArgs, options.gutterColumn);
   const { width: containerWidth, height: containerHeight } = React.useContext(AutoSizerContext);
@@ -214,5 +216,6 @@ const LiveDataTableImpl = React.memo<LiveDataTableProps>(function LiveDataTable(
     </div>
   );
 });
+LiveDataTableImpl.displayName = 'LiveDataTable';
 
 export const LiveDataTable = withAutoSizerContext(LiveDataTableImpl);

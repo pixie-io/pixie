@@ -84,9 +84,9 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }), { name: 'RequestGraphWidget' });
 
-export const RequestGraphWidget = React.memo<RequestGraphProps>(function RequestGraphWidget({
+export const RequestGraphWidget = React.memo<RequestGraphProps>(({
   data, relation, display, propagatedArgs,
-}) {
+}) => {
   const { selectedClusterName } = React.useContext(ClusterContext);
   const { embedState } = React.useContext(LiveRouteContext);
   const history = useHistory();
@@ -242,3 +242,4 @@ export const RequestGraphWidget = React.memo<RequestGraphProps>(function Request
     </div>
   );
 });
+RequestGraphWidget.displayName = 'RequestGraphWidget';

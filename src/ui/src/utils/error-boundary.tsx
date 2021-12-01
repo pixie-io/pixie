@@ -46,6 +46,8 @@ interface ErrorBoundaryState {
  * bubbling up any higher than their relevant context as well, preserving parts of the app that didn't break.
  */
 export class ErrorBoundary extends React.PureComponent<ErrorBoundaryProps, ErrorBoundaryState> {
+  static readonly displayName = 'ErrorBoundary';
+
   constructor(props: React.PropsWithChildren<ErrorBoundaryProps>) {
     super(props);
     this.state = { error: null, errorInfo: null };
@@ -123,7 +125,7 @@ const useErrorStyles = makeStyles((theme: Theme) => createStyles({
  * An alternative state to show when a component crashes (throws an uncaught error).
  * Takes up the page with a Pixienaut graphic, the error, and a message explaining possible remedies.
  */
-export const PixienautCrashFallback = React.memo<ErrorBoundaryFallbackProps>(function CrashFallback({ error, info }) {
+export const PixienautCrashFallback = React.memo<ErrorBoundaryFallbackProps>(({ error, info }) => {
   const classes = useErrorStyles();
 
   return (
@@ -155,3 +157,4 @@ export const PixienautCrashFallback = React.memo<ErrorBoundaryFallbackProps>(fun
     </div>
   );
 });
+PixienautCrashFallback.displayName = 'PixienautCrashFallback';

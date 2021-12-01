@@ -24,6 +24,7 @@ export interface EmbedContextProps {
 }
 
 export const EmbedContext = React.createContext<EmbedContextProps>(null);
+EmbedContext.displayName = 'EmbedContext';
 
 export const EmbedContextProvider = React.memo(({ children }) => {
   const [timeArg, setTimeArg] = React.useState<string>('');

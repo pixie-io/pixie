@@ -27,4 +27,6 @@ interface UserContextProps {
   user: User;
 }
 
-export default React.createContext<UserContextProps>(null);
+const UserContext = React.createContext<UserContextProps>(null);
+UserContext.displayName = 'UserContext';
+export default UserContext;

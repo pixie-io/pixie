@@ -159,3 +159,4 @@ export const HydraInvitationForm: React.FC = () => {
     </div>
   );
 };
+HydraInvitationForm.displayName = 'HydraInvitationForm';

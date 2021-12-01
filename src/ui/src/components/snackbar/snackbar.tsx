@@ -36,6 +36,7 @@ interface ShowArgs {
 type ShowSnackbarFunc = (args: ShowArgs) => void;
 
 export const SnackbarContext = React.createContext<ShowSnackbarFunc>(null);
+SnackbarContext.displayName = 'SnackbarContext';
 
 type SnackbarState = {
   opened: boolean;
@@ -46,13 +47,13 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     backgroundColor: theme.palette.background.three,
     color: theme.palette.text.secondary,
   },
-}));
+}), { name: 'Snackbar' });
 
 const useSnackbarStyles = makeStyles(createStyles({
   message: {
     whiteSpace: 'pre-wrap',
   },
-}));
+}), { name: 'SnackbarInner' });
 
 // eslint-disable-next-line react-memo/require-memo
 export const SnackbarProvider: React.FC = (props) => {
@@ -134,6 +135,7 @@ export const SnackbarProvider: React.FC = (props) => {
     </>
   );
 };
+SnackbarProvider.displayName = 'SnackbarProvider';
 
 export function useSnackbar(): ShowSnackbarFunc {
   const show = React.useContext(SnackbarContext);

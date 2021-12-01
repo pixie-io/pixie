@@ -125,10 +125,10 @@ function getColorForEdge(col: ColInfo, val: number, thresholds: EdgeThresholds):
   return val > highThreshold ? 'high' : 'med';
 }
 
-export const Graph = React.memo<GraphProps>(function Graph({
+export const Graph = React.memo<GraphProps>(({
   dot, toCol, fromCol, data, propagatedArgs, edgeWeightColumn,
   nodeWeightColumn, edgeColorColumn, edgeThresholds, edgeHoverInfo, edgeLength, enableDefaultHierarchy,
-}) {
+}) => {
   const theme = useTheme();
 
   const { selectedClusterName } = React.useContext(ClusterContext);
@@ -285,10 +285,11 @@ export const Graph = React.memo<GraphProps>(function Graph({
     </div>
   );
 });
+Graph.displayName = 'Graph';
 
-export const GraphWidget = React.memo<GraphWidgetProps>(function GraphWidget({
+export const GraphWidget = React.memo<GraphWidgetProps>(({
   display, data, relation, propagatedArgs,
-}) {
+}) => {
   if (display.dotColumn && data.length > 0) {
     return (
       <Graph dot={data[0][display.dotColumn]} />
@@ -338,6 +339,7 @@ export const GraphWidget = React.memo<GraphWidgetProps>(function GraphWidget({
   }
   return <div key={display.dotColumn}>Invalid spec for graph</div>;
 });
+GraphWidget.displayName = 'GraphWidget';
 
 interface GraphProps {
   dot?: any;

@@ -30,4 +30,6 @@ interface OrgContextProps {
   org: Org;
 }
 
-export default React.createContext<OrgContextProps>(null);
+const OrgContext = React.createContext<OrgContextProps>(null);
+OrgContext.displayName = 'OrgContext';
+export default OrgContext;

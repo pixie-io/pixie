@@ -25,7 +25,7 @@ import { AuthBox } from 'app/components';
 import { BasePage } from './base';
 import { GetOAuthProvider } from './utils';
 
-export const LoginPage = React.memo(function LoginPage() {
+export const LoginPage = React.memo(() => {
   const authClient = React.useMemo(() => GetOAuthProvider(), []);
   const buttons = React.useMemo(
     () => (authClient.getLoginButtons()),
@@ -51,3 +51,4 @@ export const LoginPage = React.memo(function LoginPage() {
     </BasePage>
   );
 });
+LoginPage.displayName = 'LoginPage';

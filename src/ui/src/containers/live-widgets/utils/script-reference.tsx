@@ -57,9 +57,9 @@ export interface DeepLinkProps extends WithStyles<typeof styles>{
   propagatedParams?: Arguments;
 }
 
-const DeepLinkPlain = React.memo(function DeepLink({
+const DeepLinkPlain = React.memo<DeepLinkProps>(({
   value, semanticType, clusterName, classes, embedState, propagatedParams,
-}: DeepLinkProps) {
+}) => {
   const path = deepLinkURLFromSemanticType(semanticType, value, clusterName, embedState,
     propagatedParams);
   if (embedState?.widget) {
@@ -69,6 +69,7 @@ const DeepLinkPlain = React.memo(function DeepLink({
     <Link to={path} className={classes.root}>{value}</Link>
   );
 });
+DeepLinkPlain.displayName = 'DeepLinkPlain';
 
 export const DeepLink = withStyles(styles)(DeepLinkPlain);
 
@@ -81,9 +82,9 @@ export interface ScriptReferenceProps extends WithStyles<typeof styles>{
   args: Arguments;
 }
 
-const ScriptReferencePlain = React.memo<ScriptReferenceProps>(function ScriptReferencePlain({
+const ScriptReferencePlain = React.memo<ScriptReferenceProps>(({
   label, script, args, embedState, clusterName, classes,
-}) {
+}) => {
   const path = deepLinkURLFromScript(script, clusterName, embedState, args);
 
   if (embedState.widget) {
@@ -93,5 +94,6 @@ const ScriptReferencePlain = React.memo<ScriptReferenceProps>(function ScriptRef
     <Link to={path} className={classes.root}>{label}</Link>
   );
 });
+ScriptReferencePlain.displayName = 'ScriptReferencePlain';
 
 export const ScriptReference = withStyles(styles)(ScriptReferencePlain);

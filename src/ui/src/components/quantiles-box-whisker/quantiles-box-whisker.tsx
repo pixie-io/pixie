@@ -323,7 +323,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     marginLeft: 5,
     marginRight: 10,
   },
-}));
+}), { name: 'QuantilesBoxWhisker' });
 
 export type SelectedPercentile = 'p50' | 'p90' | 'p99';
 
@@ -343,7 +343,7 @@ interface QuantilesBoxWhiskerProps {
   onChangePercentile?: (percentile: SelectedPercentile) => void;
 }
 
-export const QuantilesBoxWhisker: React.FC<QuantilesBoxWhiskerProps> = React.memo(function QuantilesBoxWhisker(props) {
+export const QuantilesBoxWhisker: React.FC<QuantilesBoxWhiskerProps> = React.memo((props) => {
   const {
     p50,
     p90,
@@ -441,3 +441,4 @@ export const QuantilesBoxWhisker: React.FC<QuantilesBoxWhiskerProps> = React.mem
     </div>
   );
 });
+QuantilesBoxWhisker.displayName = 'QuantilesBoxWhisker';

@@ -27,6 +27,7 @@ interface DataDrawerContextProps {
 }
 
 export const DataDrawerContext = React.createContext<DataDrawerContextProps>(null);
+DataDrawerContext.displayName = 'DataDrawerContext';
 
 export const DataDrawerContextProvider = React.memo(({ children }) => {
   const [activeTab, setActiveTab] = React.useState<string>('');

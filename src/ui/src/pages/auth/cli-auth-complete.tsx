@@ -54,3 +54,4 @@ export const CLIAuthCompletePage: React.FC = () => {
     </>
   );
 };
+CLIAuthCompletePage.displayName = 'CLIAuthCompletePage';

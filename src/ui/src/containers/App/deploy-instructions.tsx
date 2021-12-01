@@ -112,9 +112,9 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     width: '100%',
     justifyContent: 'center',
   },
-}));
+}), { name: 'DeployInstructions' });
 
-export const DeployInstructions = React.memo(function DeployInstructions() {
+export const DeployInstructions = React.memo(() => {
   const classes = useStyles();
 
   return (
@@ -178,12 +178,13 @@ export const DeployInstructions = React.memo(function DeployInstructions() {
     </div>
   );
 });
+DeployInstructions.displayName = 'DeployInstructions';
 
 interface ClusterInstructionsProps {
   message: string;
 }
 
-export const ClusterInstructions = React.memo<ClusterInstructionsProps>(function ClusterInstructions({ message }) {
+export const ClusterInstructions = React.memo<ClusterInstructionsProps>(({ message }) => {
   const classes = useStyles();
 
   return (
@@ -200,3 +201,4 @@ export const ClusterInstructions = React.memo<ClusterInstructionsProps>(function
     </div>
   );
 });
+ClusterInstructions.displayName = 'ClusterInstructions';
