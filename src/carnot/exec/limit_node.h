@@ -51,6 +51,7 @@ class LimitNode : public ProcessingNode {
 
  private:
   size_t records_processed_ = 0;
+  bool limit_reached_ = false;
   std::unique_ptr<plan::LimitOperator> plan_node_;
 };
 

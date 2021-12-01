@@ -100,6 +100,28 @@ TEST_F(LimitNodeTest, single_empty_batch) {
       .Close();
 }
 
+TEST_F(LimitNodeTest, limit_zero) {
+  RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64});
+  RowDescriptor output_rd({types::DataType::INT64, types::DataType::INT64});
+
+  auto op_proto = planpb::testutils::CreateTestLimit1PB();
+  op_proto.mutable_limit_op()->set_limit(0);
+  plan_node_ = plan::LimitOperator::FromProto(op_proto, 1);
+  auto tester = exec::ExecNodeTester<LimitNode, plan::LimitOperator>(*plan_node_, output_rd,
+                                                                     {input_rd}, exec_state_.get());
+  tester
+      .ConsumeNext(RowBatchBuilder(input_rd, 12, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6})
+                       .AddColumn<types::Int64Value>({1, 3, 6, 9, 12, 15, 1, 3, 6, 9, 12, 15})
+                       .get(),
+                   0)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 0, true, true)
+                          .AddColumn<types::Int64Value>({})
+                          .AddColumn<types::Int64Value>({})
+                          .get())
+      .Close();
+}
+
 TEST_F(LimitNodeTest, single_batch_exact_boundary) {
   RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64});
   RowDescriptor output_rd({types::DataType::INT64, types::DataType::INT64});
