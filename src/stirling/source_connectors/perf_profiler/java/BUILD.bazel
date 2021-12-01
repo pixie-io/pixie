@@ -15,6 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@bazel_tools//tools/jdk:default_java_toolchain.bzl", "java_runtime_files")
+load("//bazel:pl_build_system.bzl", "pl_cc_library")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -45,4 +46,14 @@ cc_binary(
     visibility = [
         "//visibility:public",
     ],
+)
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = ["agent.cc"],
+    ),
+    hdrs = glob(["*.h"]),
+    deps = [],
 )

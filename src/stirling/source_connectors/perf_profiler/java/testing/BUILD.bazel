@@ -43,3 +43,12 @@ pl_cc_test(
         "//src/stirling/testing:cc_library",
     ],
 )
+
+pl_cc_test(
+    name = "demangle_test",
+    srcs = ["demangle_test.cc"],
+    deps = [
+        "//src/stirling/source_connectors/perf_profiler/java:cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
