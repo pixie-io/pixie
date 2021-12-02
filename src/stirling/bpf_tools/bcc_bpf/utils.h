@@ -74,3 +74,7 @@ static __inline int bpf_strncmp(const char* lhs, const char* rhs, size_t n) {
   }
   return 0;
 }
+
+// There is a macro min() defined by a kernel header.
+// We prefer being more self-contained, so define this with a different name.
+static __inline int64_t min_int64(int64_t l, int64_t r) { return l < r ? l : r; }

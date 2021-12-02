@@ -21,6 +21,7 @@
 
 // LINT_C_FILE: Do not remove this line. It ensures cpplint treats this as a C file.
 
+#include "src/stirling/bpf_tools/bcc_bpf/utils.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf/go_trace_common.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf/macros.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/go_grpc_types.h"
@@ -161,20 +162,12 @@ static __inline int32_t get_fd_from_http_http2Framer(const void* framer_ptr,
 //-----------------------------------------------------------------------------
 
 static __inline void copy_header_field(struct header_field_t* dst, struct gostring* src) {
-  dst->size = src->len < HEADER_FIELD_STR_SIZE ? src->len : HEADER_FIELD_STR_SIZE;
-
-  // Note that we have some black magic below with the string sizes.
-  // This is to avoid passing a size of 0 to bpf_probe_read(),
-  // which causes BPF verifier issues on kernel 4.14.
-  // The black magic includes an asm volatile, because otherwise Clang
-  // will optimize our magic away.
-  size_t size_minus_1 = dst->size - 1;
-  asm volatile("" : "+r"(size_minus_1) :);
-  size_t size = size_minus_1 + 1;
-
-  if (size_minus_1 < HEADER_FIELD_STR_SIZE) {
-    bpf_probe_read(dst->msg, size, src->ptr);
+  if (src->len <= 0) {
+    dst->size = 0;
+    return;
   }
+  dst->size = min_int64(src->len, (int64_t)HEADER_FIELD_STR_SIZE);
+  bpf_probe_read(dst->msg, dst->size, src->ptr);
 }
 
 static __inline void fill_header_field(struct go_grpc_http2_header_event_t* event,
