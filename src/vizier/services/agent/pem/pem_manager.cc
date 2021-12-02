@@ -73,10 +73,10 @@ Status PEMManager::InitSchemas() {
     if (relation_info.name == "http_events") {
       // Make http_events hold 512Mi. This is a hack and will be removed once we have proactive
       // backup. Also increase the compacted batch size for the http table.
-      table_ptr = std::make_shared<table_store::Table>(relation_info.relation, 1024 * 1024 * 512,
-                                                       256 * 1024);
+      table_ptr = std::make_shared<table_store::Table>(relation_info.name, relation_info.relation,
+                                                       1024 * 1024 * 512, 256 * 1024);
     } else {
-      table_ptr = table_store::Table::Create(relation_info.relation);
+      table_ptr = table_store::Table::Create(relation_info.name, relation_info.relation);
     }
 
     table_store()->AddTable(std::move(table_ptr), relation_info.name, relation_info.id);

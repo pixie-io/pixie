@@ -137,7 +137,7 @@ std::shared_ptr<px::table_store::Table> GetTableFromCsv(const std::string& filen
 
   // Construct the table.
   px::table_store::schema::Relation rel(types, names);
-  auto table = px::table_store::Table::Create(rel);
+  auto table = px::table_store::Table::Create("csv_table", rel);
 
   // Add rowbatches to the table.
   row_idx = 0;

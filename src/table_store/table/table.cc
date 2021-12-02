@@ -80,8 +80,10 @@ Status ArrowArrayCompactor::Finish() {
   return Status::OK();
 }
 
-Table::Table(const schema::Relation& relation, size_t max_table_size, size_t min_cold_batch_size)
-    : rel_(relation),
+Table::Table(std::string_view table_name, const schema::Relation& relation, size_t max_table_size,
+             size_t min_cold_batch_size)
+    : metrics_(&(GetMetricsRegistry()), std::string(table_name)),
+      rel_(relation),
       max_table_size_(max_table_size),
       min_cold_batch_size_(min_cold_batch_size),
       ring_capacity_(max_table_size / min_cold_batch_size) {

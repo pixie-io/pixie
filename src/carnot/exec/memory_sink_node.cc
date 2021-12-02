@@ -62,7 +62,7 @@ Status MemorySinkNode::PrepareImpl(ExecState* exec_state_) {
     col_names.push_back(plan_node_->ColumnName(i));
   }
 
-  table_ = Table::Create(Relation(input_descriptor_->types(), col_names));
+  table_ = Table::Create(TableName(), Relation(input_descriptor_->types(), col_names));
   exec_state_->table_store()->AddTable(plan_node_->TableName(), table_);
 
   return Status::OK();

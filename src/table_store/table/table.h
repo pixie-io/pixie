@@ -33,12 +33,14 @@
 #include <absl/base/internal/spinlock.h>
 #include <absl/strings/str_format.h>
 #include "src/common/base/base.h"
+#include "src/common/metrics/metrics.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
 #include "src/table_store/schema/relation.h"
 #include "src/table_store/schema/row_batch.h"
 #include "src/table_store/schema/row_descriptor.h"
 #include "src/table_store/schemapb/schema.pb.h"
+#include "src/table_store/table/table_metrics.h"
 
 DECLARE_int32(table_store_table_size_limit);
 
@@ -193,9 +195,11 @@ class Table : public NotCopyable {
  public:
   static inline constexpr int64_t kMaxBatchesPerCompactionCall = 256;
   using StopPosition = int64_t;
-  static inline std::shared_ptr<Table> Create(const schema::Relation& relation) {
+  static inline std::shared_ptr<Table> Create(std::string_view table_name,
+                                              const schema::Relation& relation) {
     // Create naked pointer, because std::make_shared() cannot access the private ctor.
-    return std::shared_ptr<Table>(new Table(relation, FLAGS_table_store_table_size_limit));
+    return std::shared_ptr<Table>(
+        new Table(table_name, relation, FLAGS_table_store_table_size_limit));
   }
 
   /**
@@ -206,10 +210,12 @@ class Table : public NotCopyable {
    * @param max_table_size the maximum number of bytes that the table can hold. This is limitless
    * (-1) by default.
    */
-  explicit Table(const schema::Relation& relation, size_t max_table_size)
-      : Table(relation, max_table_size, kDefaultColdBatchMinSize) {}
+  explicit Table(std::string_view table_name, const schema::Relation& relation,
+                 size_t max_table_size)
+      : Table(table_name, relation, max_table_size, kDefaultColdBatchMinSize) {}
 
-  Table(const schema::Relation& relation, size_t max_table_size, size_t min_cold_batch_size);
+  Table(std::string_view table_name, const schema::Relation& relation, size_t max_table_size,
+        size_t min_cold_batch_size);
 
   /**
    * Get a RowBatch of data corresponding to the passed in BatchSlice.
@@ -308,6 +314,7 @@ class Table : public NotCopyable {
   Status CompactHotToCold(arrow::MemoryPool* mem_pool);
 
  private:
+  TableMetrics metrics_;
   Status ExpireRowBatches(int64_t row_batch_size);
 
   schema::Relation rel_;

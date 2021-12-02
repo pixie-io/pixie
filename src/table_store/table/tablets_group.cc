@@ -24,7 +24,7 @@ namespace table_store {
 void TabletsGroup::CreateTablet(const types::TabletID& tablet_id) {
   LOG_IF(DFATAL, HasTablet(tablet_id))
       << absl::Substitute("Tablet with id $0 already exists in Table.", tablet_id);
-  tablet_id_to_tablet_map_[tablet_id] = Table::Create(relation_);
+  tablet_id_to_tablet_map_[tablet_id] = Table::Create(tablet_id, relation_);
 }
 
 void TabletsGroup::AddTablet(const types::TabletID& tablet_id, std::shared_ptr<Table> tablet) {

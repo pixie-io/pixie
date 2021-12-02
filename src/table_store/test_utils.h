@@ -61,7 +61,7 @@ inline StatusOr<std::shared_ptr<Table>> CreateTable(
     const datagen::DistributionParams* dist_vars, const datagen::DistributionParams* len_vars) {
   schema::RowDescriptor rd(types);
 
-  auto table = Table::Create(table_store::schema::Relation(types, col_names));
+  auto table = Table::Create("test_table", table_store::schema::Relation(types, col_names));
 
   for (int batch_idx = 0; batch_idx < num_batches; batch_idx++) {
     auto rb = schema::RowBatch(schema::RowDescriptor(types), rb_size);

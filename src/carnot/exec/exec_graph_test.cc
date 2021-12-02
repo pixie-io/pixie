@@ -149,7 +149,7 @@ TEST_P(ExecGraphExecuteTest, execute) {
   table_store::schema::Relation rel(
       {types::DataType::INT64, types::DataType::BOOLEAN, types::DataType::FLOAT64},
       {"col1", "col2", "col3"});
-  auto table = Table::Create(rel);
+  auto table = Table::Create("test", rel);
 
   auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
   std::vector<types::Int64Value> col1_in1 = {1, 2, 3};
@@ -234,7 +234,7 @@ TEST_F(ExecGraphTest, execute_time) {
   table_store::schema::Relation rel(
       {types::DataType::TIME64NS, types::DataType::BOOLEAN, types::DataType::FLOAT64},
       {"col1", "col2", "col3"});
-  auto table = Table::Create(rel);
+  auto table = Table::Create("test", rel);
 
   auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
   std::vector<types::Time64NSValue> col1_in1 = {types::Time64NSValue(1), types::Time64NSValue(2),
@@ -309,7 +309,7 @@ TEST_F(ExecGraphTest, two_limits_dont_interfere) {
   table_store::schema::Relation rel(
       {types::DataType::INT64, types::DataType::BOOLEAN, types::DataType::FLOAT64},
       {"col1", "col2", "col3"});
-  auto table = Table::Create(rel);
+  auto table = Table::Create("test", rel);
 
   auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
   std::vector<types::Int64Value> col1_in1 = {1, 2, 3};
@@ -381,7 +381,7 @@ TEST_F(ExecGraphTest, limit_w_multiple_srcs) {
   table_store::schema::Relation rel(
       {types::DataType::INT64, types::DataType::BOOLEAN, types::DataType::FLOAT64},
       {"col1", "col2", "col3"});
-  auto table = Table::Create(rel);
+  auto table = Table::Create("test", rel);
 
   auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
   std::vector<types::Int64Value> col1_in1 = {1, 2, 3};
@@ -443,7 +443,7 @@ TEST_F(ExecGraphTest, two_sequential_limits) {
   table_store::schema::Relation rel(
       {types::DataType::INT64, types::DataType::BOOLEAN, types::DataType::FLOAT64},
       {"col1", "col2", "col3"});
-  auto table = Table::Create(rel);
+  auto table = Table::Create("test", rel);
 
   auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
   std::vector<types::Int64Value> col1_in1 = {1, 2, 3};
@@ -507,7 +507,7 @@ TEST_F(ExecGraphTest, execute_with_two_limits) {
   table_store::schema::Relation rel(
       {types::DataType::INT64, types::DataType::BOOLEAN, types::DataType::FLOAT64},
       {"col1", "col2", "col3"});
-  auto table = Table::Create(rel);
+  auto table = Table::Create("test", rel);
 
   auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
   std::vector<types::Int64Value> col1_in1 = {1, 2, 3};

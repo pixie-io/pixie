@@ -55,6 +55,7 @@ class CarnotTest : public ::testing::Test {
     big_table_ = CarnotTestUtils::BigTestTable();
     table_store_->AddTable("big_test_table", big_table_);
     empty_table_ = table_store::Table::Create(
+        "empty_table",
         table_store::schema::Relation({types::UINT128, types::INT64}, {"upid", "cycles"}));
     table_store_->AddTable("empty_table", empty_table_);
     table_store_->AddTable("duration_table", CarnotTestUtils::TestDuration64Table());

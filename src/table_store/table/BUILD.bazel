@@ -29,6 +29,7 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     deps = [
+        "//src/common/metrics:cc_library",
         "//src/shared/types:cc_library",
         "//src/table_store/schema:cc_library",
         "//src/table_store/schemapb:schema_pl_cc_proto",

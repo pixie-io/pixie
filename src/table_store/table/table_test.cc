@@ -36,7 +36,7 @@ namespace {
 // TOOD(zasgar): deduplicate this with exec/test_utils.
 std::shared_ptr<Table> TestTable() {
   schema::Relation rel({types::DataType::FLOAT64, types::DataType::INT64}, {"col1", "col2"});
-  auto table = Table::Create(rel);
+  auto table = Table::Create("test_table", rel);
 
   auto rb1 = schema::RowBatch(schema::RowDescriptor(rel.col_types()), 3);
   std::vector<types::Float64Value> col1_in1 = {0.5, 1.2, 5.3};
@@ -65,7 +65,7 @@ static inline BatchSlice BatchSliceFromRowIds(int64_t uniq_row_start_idx,
 TEST(TableTest, basic_test) {
   schema::Relation rel({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
 
-  std::shared_ptr<Table> table_ptr = Table::Create(rel);
+  std::shared_ptr<Table> table_ptr = Table::Create("test_table", rel);
   Table& table = *table_ptr;
 
   auto rb1 = schema::RowBatch(schema::RowDescriptor(rel.col_types()), 3);
@@ -114,7 +114,7 @@ TEST(TableTest, bytes_test) {
   auto rd = schema::RowDescriptor({types::DataType::INT64, types::DataType::STRING});
   schema::Relation rel(rd.types(), {"col1", "col2"});
 
-  std::shared_ptr<Table> table_ptr = Table::Create(rel);
+  std::shared_ptr<Table> table_ptr = Table::Create("test_table", rel);
   Table& table = *table_ptr;
 
   schema::RowBatch rb1(rd, 3);
@@ -204,7 +204,8 @@ TEST(TableTest, bytes_test_w_compaction) {
 
   // Make minimum batch size rb1_size + rb2_size so that compaction causes 2 of the 3 batches to be
   // compacted into cold.
-  std::shared_ptr<Table> table_ptr = std::make_shared<Table>(rel, 128 * 1024, rb1_size + rb2_size);
+  std::shared_ptr<Table> table_ptr =
+      std::make_shared<Table>("test_table", rel, 128 * 1024, rb1_size + rb2_size);
   Table& table = *table_ptr;
 
   EXPECT_OK(table.WriteRowBatch(rb1));
@@ -224,7 +225,7 @@ TEST(TableTest, expiry_test) {
   auto rd = schema::RowDescriptor({types::DataType::INT64, types::DataType::STRING});
   schema::Relation rel(rd.types(), {"col1", "col2"});
 
-  Table table(rel, 60);
+  Table table("test_table", rel, 60);
 
   schema::RowBatch rb1(rd, 3);
   std::vector<types::Int64Value> col1_rb1 = {4, 5, 10};
@@ -370,7 +371,7 @@ TEST(TableTest, expiry_test_w_compaction) {
   wrapper_batch_1_2->push_back(col_wrapper_2_2);
   int64_t rb5_size = 5 * sizeof(int64_t) + 20 * sizeof(char);
 
-  Table table(rel, 60, 40);
+  Table table("test_table", rel, 60, 40);
   EXPECT_OK(table.WriteRowBatch(rb1));
   EXPECT_EQ(table.GetTableStats().bytes, rb1_size);
 
@@ -392,7 +393,7 @@ TEST(TableTest, batch_size_too_big) {
   auto rd = schema::RowDescriptor({types::DataType::INT64, types::DataType::STRING});
   schema::Relation rel(rd.types(), {"col1", "col2"});
 
-  Table table(rel, 10);
+  Table table("test_table", rel, 10);
 
   schema::RowBatch rb1(rd, 3);
   std::vector<types::Int64Value> col1_rb1 = {4, 5, 10};
@@ -410,7 +411,7 @@ TEST(TableTest, write_row_batch) {
   auto rd = schema::RowDescriptor({types::DataType::BOOLEAN, types::DataType::INT64});
   schema::Relation rel({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
 
-  std::shared_ptr<Table> table_ptr = Table::Create(rel);
+  std::shared_ptr<Table> table_ptr = Table::Create("test_table", rel);
   Table& table = *table_ptr;
 
   schema::RowBatch rb1(rd, 2);
@@ -433,7 +434,7 @@ TEST(TableTest, write_row_batch) {
 TEST(TableTest, hot_batches_test) {
   schema::Relation rel({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
 
-  std::shared_ptr<Table> table_ptr = Table::Create(rel);
+  std::shared_ptr<Table> table_ptr = Table::Create("table_name", rel);
   Table& table = *table_ptr;
 
   std::vector<types::BoolValue> col1_in1 = {true, false, true};
@@ -501,7 +502,7 @@ TEST(TableTest, hot_batches_w_compaction_test) {
   rb_wrapper_2->push_back(col1_in2_wrapper);
   rb_wrapper_2->push_back(col2_in2_wrapper);
 
-  Table table(rel, 128 * 1024, rb1_size + 1);
+  Table table("test_table", rel, 128 * 1024, rb1_size + 1);
 
   EXPECT_OK(table.TransferRecordBatch(std::move(rb_wrapper_1)));
   EXPECT_OK(table.TransferRecordBatch(std::move(rb_wrapper_2)));
@@ -526,7 +527,7 @@ TEST(TableTest, hot_batches_w_compaction_test) {
 TEST(TableTest, find_batch_slice_greater_or_eq) {
   schema::Relation rel(std::vector<types::DataType>({types::DataType::TIME64NS}),
                        std::vector<std::string>({"time_"}));
-  std::shared_ptr<Table> table_ptr = Table::Create(rel);
+  std::shared_ptr<Table> table_ptr = Table::Create("test_table", rel);
   Table& table = *table_ptr;
 
   std::vector<types::Time64NSValue> time_batch_1 = {2, 3, 4, 6};
@@ -623,7 +624,7 @@ TEST(TableTest, find_batch_slice_greater_or_eq_w_compaction) {
   schema::Relation rel(std::vector<types::DataType>({types::DataType::TIME64NS}),
                        std::vector<std::string>({"time_"}));
   int64_t compaction_size = 4 * sizeof(int64_t);
-  Table table(rel, 128 * 1024, compaction_size);
+  Table table("test_table", rel, 128 * 1024, compaction_size);
 
   std::vector<types::Time64NSValue> time_batch_1 = {2, 3, 4, 6};
   std::vector<types::Time64NSValue> time_batch_2 = {8, 8, 8};
@@ -777,7 +778,7 @@ TEST(TableTest, transfer_empty_record_batch_test) {
   schema::Relation rel({types::DataType::INT64}, {"col1"});
   schema::RowDescriptor rd({types::DataType::INT64});
 
-  std::shared_ptr<Table> table_ptr = Table::Create(rel);
+  std::shared_ptr<Table> table_ptr = Table::Create("test_table", rel);
   Table& table = *table_ptr;
 
   // ColumnWrapper with no columns should not be added to row batches.
@@ -799,7 +800,7 @@ TEST(TableTest, write_zero_row_row_batch) {
   schema::Relation rel({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
   schema::RowDescriptor rd({types::DataType::BOOLEAN, types::DataType::INT64});
 
-  std::shared_ptr<Table> table_ptr = Table::Create(rel);
+  std::shared_ptr<Table> table_ptr = Table::Create("test_table", rel);
 
   auto result = schema::RowBatch::WithZeroRows(rd, /*eow*/ false, /*eos*/ false);
   ASSERT_OK(result);
@@ -813,7 +814,8 @@ TEST(TableTest, write_zero_row_row_batch) {
 TEST(TableTest, threaded) {
   schema::Relation rel({types::DataType::TIME64NS}, {"time_"});
   schema::RowDescriptor rd({types::DataType::TIME64NS});
-  std::shared_ptr<Table> table_ptr = std::make_shared<Table>(rel, 8 * 1024 * 1024, 5 * 1024);
+  std::shared_ptr<Table> table_ptr =
+      std::make_shared<Table>("test_table", rel, 8 * 1024 * 1024, 5 * 1024);
 
   int64_t max_time_counter = 1024 * 1024;
 
@@ -894,7 +896,7 @@ TEST(TableTest, NextBatch_generation_bug) {
   schema::Relation rel(rd.types(), {"col1", "col2"});
 
   int64_t rb1_size = 3 * sizeof(int64_t) + 12 * sizeof(char);
-  Table table(rel, rb1_size, rb1_size);
+  Table table("test_table", rel, rb1_size, rb1_size);
 
   schema::RowBatch rb1(rd, 3);
   std::vector<types::Int64Value> col1_rb1 = {4, 5, 10};

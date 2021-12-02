@@ -219,8 +219,8 @@ Status TracepointManager::UpdateSchema(const stirling::stirlingpb::Publish& publ
   // figure out how to handle this as part of the data model refactor project.
   for (const auto& relation_info : relation_info_vec) {
     if (!relation_info_manager_->HasRelation(relation_info.name)) {
-      table_store_->AddTable(table_store::Table::Create(relation_info.relation), relation_info.name,
-                             relation_info.id);
+      table_store_->AddTable(table_store::Table::Create(relation_info.name, relation_info.relation),
+                             relation_info.name, relation_info.id);
       PL_RETURN_IF_ERROR(relation_info_manager_->AddRelationInfo(relation_info));
     } else {
       if (relation_info.relation != table_store_->GetTable(relation_info.name)->GetRelation()) {

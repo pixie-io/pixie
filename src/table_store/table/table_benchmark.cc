@@ -24,7 +24,7 @@
 #include <numeric>
 #include <random>
 #include <thread>
-#include "external/com_google_benchmark/_virtual_includes/benchmark/benchmark/benchmark.h"
+
 #include "src/shared/types/types.h"
 #include "src/table_store/table/table.h"
 
@@ -34,7 +34,7 @@ static inline std::unique_ptr<Table> MakeTable(int64_t max_size, int64_t compact
   schema::Relation rel(
       std::vector<types::DataType>({types::DataType::TIME64NS, types::DataType::FLOAT64}),
       std::vector<std::string>({"time_", "float"}));
-  return std::make_unique<Table>(rel, max_size, compaction_size);
+  return std::make_unique<Table>("test_table", rel, max_size, compaction_size);
 }
 
 static inline std::unique_ptr<types::ColumnWrapperRecordBatch> MakeHotBatch(int64_t batch_size) {
@@ -234,7 +234,8 @@ static void BM_TableCompaction(benchmark::State& state) {
 static void BM_TableThreaded(benchmark::State& state) {
   schema::Relation rel({types::DataType::TIME64NS}, {"time_"});
   schema::RowDescriptor rd({types::DataType::TIME64NS});
-  std::shared_ptr<Table> table_ptr = std::make_shared<Table>(rel, 16 * 1024 * 1024, 5 * 1024);
+  std::shared_ptr<Table> table_ptr =
+      std::make_shared<Table>("test_table", rel, 16 * 1024 * 1024, 5 * 1024);
 
   int64_t batch_size = 1024;
   int64_t num_batches = 16 * 1024;
