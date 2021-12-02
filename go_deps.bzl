@@ -460,8 +460,8 @@ def pl_go_dependencies():
     go_repository(
         name = "com_github_cloudykit_fastprinter",
         importpath = "github.com/CloudyKit/fastprinter",
-        sum = "h1:3SgJcK9l5uPdBC/X17wanyJAMxM33+4ZhEIV96MIH8U=",
-        version = "v0.0.0-20170127035650-74b38d55f37a",
+        sum = "h1:sR+/8Yb4slttB4vD+b9btVEnWgL3Q00OBTzVT8B9C0c=",
+        version = "v0.0.0-20200109182630-33d98a066a53",
     )
 
     go_repository(
@@ -469,6 +469,12 @@ def pl_go_dependencies():
         importpath = "github.com/CloudyKit/jet",
         sum = "h1:rZgFj+Gtf3NMi/U5FvCvhzaxzW/TaPYgUYx3bAPz9DE=",
         version = "v2.1.3-0.20180809161101-62edd43e4f88+incompatible",
+    )
+    go_repository(
+        name = "com_github_cloudykit_jet_v3",
+        importpath = "github.com/CloudyKit/jet/v3",
+        sum = "h1:1PwO5w5VCtlUUl+KTOBsTGZlhjWkcybsGaAau52tOy8=",
+        version = "v3.0.0",
     )
 
     go_repository(
@@ -1110,8 +1116,8 @@ def pl_go_dependencies():
     go_repository(
         name = "com_github_getsentry_sentry_go",
         importpath = "github.com/getsentry/sentry-go",
-        sum = "h1:MIPe7ScHADsrK2vznqmhksIUFxq7m0JfTh+ZIMkI+VQ=",
-        version = "v0.5.1",
+        sum = "h1:qro8uttJGvNAMr5CLcFI9CHR0aDzXl0Vs3Pmw/oTPg8=",
+        version = "v0.11.0",
     )
 
     go_repository(
@@ -1935,6 +1941,18 @@ def pl_go_dependencies():
         sum = "h1:Kyp9KiXwsyZRTeoNjgVCrWks7D8ht9+kg6yCjh8K97o=",
         version = "v0.0.0-20171121225848-987a633949d0",
     )
+    go_repository(
+        name = "com_github_iris_contrib_jade",
+        importpath = "github.com/iris-contrib/jade",
+        sum = "h1:p7J/50I0cjo0wq/VWVCDFd8taPJbuFC+bq23SniRFX0=",
+        version = "v1.1.3",
+    )
+    go_repository(
+        name = "com_github_iris_contrib_pongo2",
+        importpath = "github.com/iris-contrib/pongo2",
+        sum = "h1:zGP7pW51oi5eQZMIlGA3I+FHY9/HOQWDB+572yin0to=",
+        version = "v0.0.1",
+    )
 
     go_repository(
         name = "com_github_iris_contrib_schema",
@@ -2105,30 +2123,37 @@ def pl_go_dependencies():
     go_repository(
         name = "com_github_kataras_golog",
         importpath = "github.com/kataras/golog",
-        sum = "h1:J7Dl82843nbKQDrQM/abbNJZvQjS6PfmkkffhOTXEpM=",
-        version = "v0.0.9",
+        sum = "h1:vRDRUmwacco/pmBAm8geLn8rHEdc+9Z4NAr5Sh7TG/4=",
+        version = "v0.0.10",
     )
 
     go_repository(
         name = "com_github_kataras_iris_v12",
         importpath = "github.com/kataras/iris/v12",
-        sum = "h1:Wo5S7GMWv5OAzJmvFTvss/C4TS1W0uo6LkDlSymT4rM=",
-        version = "v12.0.1",
+        sum = "h1:O3gJasjm7ZxpxwTH8tApZsvf274scSGQAUpNe47c37U=",
+        version = "v12.1.8",
     )
 
     go_repository(
         name = "com_github_kataras_neffos",
         importpath = "github.com/kataras/neffos",
-        sum = "h1:O06dvQlxjdWvzWbm2Bq+Si6psUhvSmEctAMk9Xujqms=",
-        version = "v0.0.10",
+        sum = "h1:pdJaTvUG3NQfeMbbVCI8JT2T5goPldyyfUB2PJfh1Bs=",
+        version = "v0.0.14",
     )
 
     go_repository(
         name = "com_github_kataras_pio",
         importpath = "github.com/kataras/pio",
-        sum = "h1:V5Rs9ztEWdp58oayPq/ulmlqJJZeJP6pP79uP3qjcao=",
-        version = "v0.0.0-20190103105442-ea782b38602d",
+        sum = "h1:6NAi+uPJ/Zuid6mrAKlgpbI11/zK/lV4B2rxWaJN98Y=",
+        version = "v0.0.2",
     )
+    go_repository(
+        name = "com_github_kataras_sitemap",
+        importpath = "github.com/kataras/sitemap",
+        sum = "h1:4HCONX5RLgVy6G4RkYOV3vKNcma9p236LdGOipJsaFE=",
+        version = "v0.0.5",
+    )
+
     go_repository(
         name = "com_github_kevinburke_ssh_config",
         importpath = "github.com/kevinburke/ssh_config",
@@ -2418,8 +2443,8 @@ def pl_go_dependencies():
     go_repository(
         name = "com_github_mediocregopher_radix_v3",
         importpath = "github.com/mediocregopher/radix/v3",
-        sum = "h1:oacPXPKHJg0hcngVVrdtTnfGJiS+PtwoQwTBZGFlV4k=",
-        version = "v3.3.0",
+        sum = "h1:galbPBjIwmyREgwGCfQEN4X8lxbJnKBYurgz+VfcStA=",
+        version = "v3.4.2",
     )
 
     go_repository(
@@ -3009,6 +3034,12 @@ def pl_go_dependencies():
         importpath = "github.com/satori/go.uuid",
         sum = "h1:0uYX9dsZ2yD7q2RtLRtPSdGDWzjeM3TbMJP9utgA0ww=",
         version = "v1.2.0",
+    )
+    go_repository(
+        name = "com_github_schollz_closestmatch",
+        importpath = "github.com/schollz/closestmatch",
+        sum = "h1:Uel2GXEpJqOWBrlyI+oY9LTiyyjYS17cCYRqP13/SHk=",
+        version = "v2.1.0+incompatible",
     )
 
     go_repository(

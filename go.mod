@@ -25,7 +25,7 @@ require (
 	github.com/evanphx/json-patch v4.9.0+incompatible
 	github.com/fatih/color v1.10.0
 	github.com/gdamore/tcell v1.3.0
-	github.com/getsentry/sentry-go v0.5.1
+	github.com/getsentry/sentry-go v0.11.0
 	github.com/go-openapi/runtime v0.19.26
 	github.com/go-openapi/strfmt v0.20.0
 	github.com/gofrs/uuid v4.0.0+incompatible
