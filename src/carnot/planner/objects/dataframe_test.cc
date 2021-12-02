@@ -203,13 +203,21 @@ TEST_F(DropHandlerTest, DropTestStringWithoutList) {
   EXPECT_EQ(drop->col_names(), std::vector<std::string>({"foo"}));
 }
 
+StatusOr<QLObjectPtr> UDFHandler(IR* graph, const std::string& name, const pypa::AstPtr& ast,
+                                 const ParsedArgs&, ASTVisitor* visitor) {
+  PL_ASSIGN_OR_RETURN(FuncIR * node,
+                      graph->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", name},
+                                                std::vector<ExpressionIR*>{}));
+  return ExprObject::Create(node, visitor);
+}
+
 StatusOr<std::shared_ptr<FuncObject>> MakeUDFFunc(ASTVisitor* visitor, IR* graph,
                                                   std::string_view func_name) {
   return FuncObject::Create(
       func_name, {}, {},
       /* has_variable_len_args */ true,
       /* has_variable_len_kwargs */ false,
-      std::bind(&UDFHandler::Eval, graph, std::string(func_name), std::placeholders::_1,
+      std::bind(&UDFHandler, graph, std::string(func_name), std::placeholders::_1,
                 std::placeholders::_2, std::placeholders::_3),
       visitor);
 }

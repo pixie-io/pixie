@@ -266,7 +266,6 @@ class PixieModule : public QLObject {
   Status RegisterUDFFuncs();
   Status RegisterUDTFs();
   Status RegisterCompileTimeFuncs();
-  Status RegisterCompileTimeUnitFunction(const std::string& name, std::chrono::nanoseconds unit_ns);
   Status RegisterTypeObjs();
 
  private:
@@ -275,88 +274,6 @@ class PixieModule : public QLObject {
   absl::flat_hash_set<std::string> compiler_time_fns_;
   const bool func_based_exec_;
   absl::flat_hash_set<std::string> reserved_names_;
-};
-
-/**
- * @brief Implements the px.display() logic.
- */
-class DisplayHandler {
- public:
-  static StatusOr<QLObjectPtr> Eval(IR* graph, CompilerState* compiler_state,
-                                    const pypa::AstPtr& ast, const ParsedArgs& args,
-                                    ASTVisitor* visitor);
-};
-
-/**
- * @brief Implements the px.display() logic, when doing function based execution.
- */
-class NoopDisplayHandler {
- public:
-  static StatusOr<QLObjectPtr> Eval(IR* graph, CompilerState* compiler_state,
-                                    const pypa::AstPtr& ast, const ParsedArgs& args,
-                                    ASTVisitor* visitor);
-};
-
-/**
- * @brief Implements the px.debug() logic.
- */
-class DebugDisplayHandler {
- public:
-  static StatusOr<QLObjectPtr> Eval(IR* graph, CompilerState* compiler_state,
-                                    const absl::flat_hash_set<std::string>& reserved_names,
-                                    const pypa::AstPtr& ast, const ParsedArgs& args,
-                                    ASTVisitor* visitor);
-};
-
-/**
- * @brief Implements the px.now(), px.minutes(), px.hours(), etc.
- *
- */
-class CompileTimeFuncHandler {
- public:
-  static StatusOr<QLObjectPtr> NowEval(CompilerState* compiler_state, IR* graph,
-                                       const pypa::AstPtr& ast, const ParsedArgs& args,
-                                       ASTVisitor* visitor);
-  static StatusOr<QLObjectPtr> TimeEval(IR* graph, std::chrono::nanoseconds scale,
-                                        const pypa::AstPtr& ast, const ParsedArgs& args,
-                                        ASTVisitor* visitor);
-  static StatusOr<QLObjectPtr> UInt128Conversion(IR* graph, const pypa::AstPtr& ast,
-                                                 const ParsedArgs& args, ASTVisitor* visitor);
-  static StatusOr<QLObjectPtr> UPIDConstructor(IR* graph, const pypa::AstPtr& ast,
-                                               const ParsedArgs& args, ASTVisitor* visitor);
-  static StatusOr<QLObjectPtr> AbsTime(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
-                                       ASTVisitor* visitor);
-  static StatusOr<QLObjectPtr> EqualsAny(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
-                                         ASTVisitor* visitor);
-  static StatusOr<QLObjectPtr> ScriptReference(IR* graph, const pypa::AstPtr& ast,
-                                               const ParsedArgs& args, ASTVisitor* visitor);
-  static StatusOr<QLObjectPtr> ParseDuration(IR* graph, const pypa::AstPtr& ast,
-                                             const ParsedArgs& args, ASTVisitor* visitor);
-};
-
-/**
- * @brief Implements the udf logic.
- *
- */
-class UDFHandler {
- public:
-  static StatusOr<QLObjectPtr> Eval(IR* graph, std::string name, const pypa::AstPtr& ast,
-                                    const ParsedArgs& args, ASTVisitor* visitor);
-};
-
-/**
- * @brief Implements the logic that implements udtf_source_specification.
- *
- */
-class UDTFSourceHandler {
- public:
-  static StatusOr<QLObjectPtr> Eval(IR* graph, const udfspb::UDTFSourceSpec& udtf_source_spec,
-                                    const pypa::AstPtr& ast, const ParsedArgs& args,
-                                    ASTVisitor* visitor);
-
- private:
-  static StatusOr<ExpressionIR*> EvaluateExpression(IR* graph, IRNode* arg_node,
-                                                    const udfspb::UDTFSourceSpec::Arg& arg);
 };
 
 // Helper function to add a result sink to an IR.
