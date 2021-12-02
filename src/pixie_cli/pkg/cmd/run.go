@@ -31,11 +31,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"gopkg.in/segmentio/analytics-go.v3"
 
 	"px.dev/pixie/src/cloud/api/ptproxy"
-	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
-	"px.dev/pixie/src/pixie_cli/pkg/pxconfig"
 	"px.dev/pixie/src/pixie_cli/pkg/script"
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
 	"px.dev/pixie/src/pixie_cli/pkg/vizier"
@@ -186,16 +183,6 @@ func createNewCobraCommand() *cobra.Command {
 			}
 
 			conns := vizier.MustConnectHealthyDefaultVizier(cloudAddr, allClusters, clusterID)
-
-			// TODO(zasgar): Refactor this when we change to the new API to make analytics cleaner.
-			_ = pxanalytics.Client().Enqueue(&analytics.Track{
-				UserId: pxconfig.Cfg().UniqueClientID,
-				Event:  "Script Execution Started",
-				Properties: analytics.NewProperties().
-					Set("scriptName", execScript.ScriptName).
-					Set("scriptString", execScript.ScriptString),
-			})
-
 			useEncryption, _ := cmd.Flags().GetBool("e2e_encryption")
 
 			// Support Ctrl+C to cancel a query.
