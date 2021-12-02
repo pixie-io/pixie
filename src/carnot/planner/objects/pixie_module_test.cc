@@ -371,6 +371,45 @@ TEST_F(PixieModuleTest, script_reference_test_no_args) {
   EXPECT_MATCH(args[1], String("px/namespace"));
 }
 
+TEST_F(PixieModuleTest, parse_duration) {
+  auto parse_duration_or_s = module_->GetMethod(PixieModule::kParseDurationOpID);
+  ASSERT_OK(parse_duration_or_s);
+
+  std::shared_ptr<FuncObject> fn = parse_duration_or_s.ConsumeValueOrDie();
+
+  // Test positive.
+  {
+    auto result_or_s = fn->Call({{}, {ToQLObject(MakeString("5m"))}}, ast);
+
+    ASSERT_OK(result_or_s);
+    QLObjectPtr result = result_or_s.ConsumeValueOrDie();
+    ASSERT_EQ(result->type(), QLObjectType::kExpr);
+    ASSERT_MATCH(result->node(), Int());
+    EXPECT_EQ(static_cast<IntIR*>(result->node())->val(), 300000000000);
+  }
+
+  // Test negative value.
+  {
+    auto result_or_s = fn->Call({{}, {ToQLObject(MakeString("-5m"))}}, ast);
+
+    ASSERT_OK(result_or_s);
+    QLObjectPtr result = result_or_s.ConsumeValueOrDie();
+    ASSERT_EQ(result->type(), QLObjectType::kExpr);
+    ASSERT_MATCH(result->node(), Int());
+    EXPECT_EQ(static_cast<IntIR*>(result->node())->val(), -300000000000);
+  }
+  // Test that bad format fails
+  {
+    auto stringobj = MakeString("randomstring");
+    auto stringast = MakeTestAstPtr();
+    stringast->line = 3;
+    stringast->column = 35;
+    stringobj->SetLineCol(stringast);
+    EXPECT_COMPILER_ERROR_AT(fn->Call({{}, {ToQLObject(stringobj)}}, ast), 3, 35,
+                             "Time string is in wrong format.");
+  }
+}
+
 TEST_F(PixieModuleTest, script_reference_test_with_args) {
   auto script_reference_or_s = module_->GetMethod(PixieModule::kScriptReferenceID);
   ASSERT_OK(script_reference_or_s);

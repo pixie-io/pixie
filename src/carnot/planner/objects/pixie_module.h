@@ -173,6 +173,26 @@ class PixieModule : public QLObject {
   Returns:
     px.Time: The time value represented in the data.
   )doc";
+  inline static constexpr char kParseDurationOpID[] = "parse_duration";
+  inline static constexpr char kParseDurationDocstring[] = R"doc(
+  Parse a duration string to a duration in nanoseconds.
+
+  Parse a duration string ("-5m") to integer nanoseconds (-3,000,000,000) while preserving
+  the sign from the string.
+
+  Examples:
+    # duration = -300000000000
+    duration = px.parse_duration("-5m")
+    # duration = 300000000000
+    duration = px.parse_duration("5m")
+
+  :topic: compile_time_fn
+
+  Args:
+    duration (string): The duration in string form.
+  Returns:
+    px.Duration: The duration in nanoseconds.
+  )doc";
 
   inline static constexpr char kScriptReferenceID[] = "script_reference";
   inline static constexpr char kScriptReferenceDocstring[] = R"doc(
@@ -310,6 +330,8 @@ class CompileTimeFuncHandler {
                                          ASTVisitor* visitor);
   static StatusOr<QLObjectPtr> ScriptReference(IR* graph, const pypa::AstPtr& ast,
                                                const ParsedArgs& args, ASTVisitor* visitor);
+  static StatusOr<QLObjectPtr> ParseDuration(IR* graph, const pypa::AstPtr& ast,
+                                             const ParsedArgs& args, ASTVisitor* visitor);
 };
 
 /**

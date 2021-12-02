@@ -188,8 +188,20 @@ Status PixieModule::RegisterCompileTimeFuncs() {
                     std::placeholders::_2, std::placeholders::_3),
           ast_visitor()));
 
-  PL_RETURN_IF_ERROR(equals_any_fn->SetDocString(kScriptReferenceDocstring));
+  PL_RETURN_IF_ERROR(script_reference_fn->SetDocString(kScriptReferenceDocstring));
   AddMethod(kScriptReferenceID, script_reference_fn);
+
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> parse_duration_fn,
+      FuncObject::Create(
+          kParseDurationOpID, {"duration"}, {},
+          /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
+          std::bind(&CompileTimeFuncHandler::ParseDuration, graph_, std::placeholders::_1,
+                    std::placeholders::_2, std::placeholders::_3),
+          ast_visitor()));
+
+  PL_RETURN_IF_ERROR(parse_duration_fn->SetDocString(kParseDurationDocstring));
+  AddMethod(kParseDurationOpID, parse_duration_fn);
 
   return Status::OK();
 }
@@ -507,6 +519,19 @@ StatusOr<QLObjectPtr> CompileTimeFuncHandler::ScriptReference(IR* graph, const p
 
   FuncIR::Op op{FuncIR::Opcode::non_op, "", "_script_reference"};
   PL_ASSIGN_OR_RETURN(FuncIR * node, graph->CreateNode<FuncIR>(ast, op, udf_args));
+  return ExprObject::Create(node, visitor);
+}
+
+StatusOr<QLObjectPtr> CompileTimeFuncHandler::ParseDuration(IR* graph, const pypa::AstPtr& ast,
+                                                            const ParsedArgs& args,
+                                                            ASTVisitor* visitor) {
+  PL_ASSIGN_OR_RETURN(StringIR * duration_string, GetArgAs<StringIR>(ast, args, "duration"));
+  auto int_or_s = StringToTimeInt(duration_string->str());
+  if (!int_or_s.ok()) {
+    return WrapAstError(duration_string->ast(), int_or_s.status());
+  }
+
+  PL_ASSIGN_OR_RETURN(IntIR * node, graph->CreateNode<IntIR>(ast, int_or_s.ConsumeValueOrDie()));
   return ExprObject::Create(node, visitor);
 }
 
