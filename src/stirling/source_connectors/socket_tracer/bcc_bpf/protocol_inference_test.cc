@@ -409,5 +409,5 @@ TEST(ProtocolInferenceTest, Mux) {
   protocol_message =
       infer_protocol(reinterpret_cast<const char*>(kResp), sizeof(kResp), &conn_info);
   EXPECT_EQ(protocol_message.protocol, kProtocolMux);
-  EXPECT_EQ(protocol_message.type, kResponse);
+  EXPECT_EQ(protocol_message.type, kRequest);
 }

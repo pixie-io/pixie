@@ -509,7 +509,11 @@ static __inline enum message_type_t infer_mux_message(const char* buf, size_t co
     return kUnknown;
   }
 
-  int8_t mux_type = buf[4];
+  enum message_type_t msg_type;
+
+  int32_t type_and_tag = read_big_endian_int32(buf + 4);
+  int8_t mux_type = (type_and_tag & 0xff000000) >> 24;
+  uint32_t tag = (type_and_tag & 0xffffff);
   switch (mux_type) {
     case kTreq:
     case kTdispatch:
@@ -521,7 +525,8 @@ static __inline enum message_type_t infer_mux_message(const char* buf, size_t co
     case kTdiscardedOld:
     // TODO(ddelnano): Verify if this should be a req or a resp
     case kRerrOld:
-      return kRequest;
+      msg_type = kRequest;
+      break;
     case kRreq:
     case kRdispatch:
     case kRdrain:
@@ -529,10 +534,17 @@ static __inline enum message_type_t infer_mux_message(const char* buf, size_t co
     case kRdiscarded:
     case kRinit:
     case kRerr:
-      return kResponse;
+      msg_type = kResponse;
+      break;
     default:
       return kUnknown;
   }
+
+  if (tag < 1 || tag > ((1 << 23) - 1)) {
+       return kUnknown;
+  }
+
+  return msg_type;
 }
 
 // NATS messages are in texts. The role is inferred from the message type.
