@@ -295,7 +295,7 @@ std::string GenRegister(const ScalarVariable& var) {
           "void* $0 = &parm___;",
           var.name());
     case Register::GOLANG_ARGS_PTR:
-      // In the new Golang ABI, there are 8 registers dedicated to passing arguments.
+      // In the new Golang ABI, there are 9 registers dedicated to passing arguments.
       // Copy the register values onto the BPF stack and return a pointer to the return value.
       return absl::Substitute(
           "uint64_t parm___[9];"
@@ -305,9 +305,9 @@ std::string GenRegister(const ScalarVariable& var) {
           "parm___[3] = ctx->di;"
           "parm___[4] = ctx->si;"
           "parm___[5] = ctx->r8;"
-          "parm___[7] = ctx->r9;"
-          "parm___[8] = ctx->r10;"
-          "parm___[9] = ctx->r11;"
+          "parm___[6] = ctx->r9;"
+          "parm___[7] = ctx->r10;"
+          "parm___[8] = ctx->r11;"
           "void* $0 = &parm___;",
           var.name());
     default:
