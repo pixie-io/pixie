@@ -108,10 +108,6 @@ func LoadDefaultCredentials() (*RefreshToken, error) {
 	if err := json.NewDecoder(f).Decode(token); err != nil {
 		return nil, err
 	}
-	_ = pxanalytics.Client().Enqueue(&analytics.Track{
-		UserId: pxconfig.Cfg().UniqueClientID,
-		Event:  "Load Stored Creds",
-	})
 
 	if token, _ := jwt.Parse(token.Token, nil); token != nil {
 		sc, ok := token.Claims.(jwt.MapClaims)
@@ -121,9 +117,6 @@ func LoadDefaultCredentials() (*RefreshToken, error) {
 			_ = pxanalytics.Client().Enqueue(&analytics.Alias{
 				UserId:     pxconfig.Cfg().UniqueClientID,
 				PreviousId: userID,
-			})
-			_ = pxanalytics.Client().Enqueue(&analytics.Identify{
-				UserId: userID,
 			})
 		}
 	}
