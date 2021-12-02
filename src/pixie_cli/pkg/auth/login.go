@@ -56,6 +56,7 @@ var errServerListenerFailed = errors.New("failed to start up local server")
 var errUserNotRegistered = errors.New("user is not registered. Please sign up")
 var localServerRedirectURL = "http://localhost:8085/auth_complete"
 var localServerPort = int32(8085)
+var sentSegmentAlias = false
 
 // EnsureDefaultAuthFilePath returns and creates the file path is missing.
 func EnsureDefaultAuthFilePath() (string, error) {
@@ -111,13 +112,14 @@ func LoadDefaultCredentials() (*RefreshToken, error) {
 
 	if token, _ := jwt.Parse(token.Token, nil); token != nil {
 		sc, ok := token.Claims.(jwt.MapClaims)
-		if ok {
+		if ok && !sentSegmentAlias {
 			userID, _ := sc["UserID"].(string)
 			// Associate UserID with AnalyticsID.
 			_ = pxanalytics.Client().Enqueue(&analytics.Alias{
 				UserId:     pxconfig.Cfg().UniqueClientID,
 				PreviousId: userID,
 			})
+			sentSegmentAlias = true
 		}
 	}
 
