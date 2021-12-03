@@ -6,6 +6,7 @@ commonLabels:
 namespace: plc
 resources:
 - analytics_config.yaml
+- bq_config.yaml
 - contact_config.yaml
 - proxy_envoy.yaml
 - kuberesolver_role.yaml

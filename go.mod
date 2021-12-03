@@ -3,6 +3,7 @@ module px.dev/pixie
 go 1.16
 
 require (
+	cloud.google.com/go/bigquery v1.18.0
 	cloud.google.com/go/storage v1.10.0
 	github.com/EvilSuperstars/go-cidrman v0.0.0-20190607145828-28e79e32899a
 	github.com/Masterminds/sprig/v3 v3.2.2
@@ -84,7 +85,7 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210611083646-a4fc73990273
 	golang.org/x/term v0.0.0-20210317153231-de623e64d2a6
-	google.golang.org/api v0.44.0
+	google.golang.org/api v0.46.0
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
 	google.golang.org/grpc v1.38.0
 	gopkg.in/segmentio/analytics-go.v3 v3.1.0
