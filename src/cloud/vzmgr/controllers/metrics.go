@@ -23,22 +23,45 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	log "github.com/sirupsen/logrus"
-
-	"px.dev/pixie/src/cloud/shared/vzshard"
 )
 
 const statusQuery = `
 SELECT
-  LEFT(vizier_cluster_id::text, 2) AS shard_id,
-  status,
-  COUNT(1)
-FROM
-  vizier_cluster_info
-GROUP BY
-  shard_id,
-  status
-HAVING
-  LEFT(vizier_cluster_id::text, 2) IN (?);
+  enumerated.shard_id,
+  enumerated.status,
+  COALESCE(count, 0) as count
+FROM (
+  SELECT
+    LEFT(vizier_cluster_id::text, 2) AS shard_id,
+    status,
+    COUNT(1)
+  FROM
+    vizier_cluster_info AS info
+  GROUP BY
+    shard_id,
+    status
+  ) AS stats
+RIGHT JOIN (
+  SELECT
+    RIGHT('0' || TO_HEX(generate_series), 2) AS shard_id,
+    status
+  FROM
+    GENERATE_SERIES(0, 255)
+  CROSS JOIN (
+    VALUES
+      ('UNKNOWN'),
+      ('HEALTHY'),
+      ('UNHEALTHY'),
+      ('DISCONNECTED'),
+      ('UPDATING'),
+      ('CONNECTED'),
+      ('UPDATE_FAILED'),
+      ('DEGRADED')
+    ) statuses(status)
+  ) AS enumerated
+ON
+  stats.shard_id = enumerated.shard_id
+  AND stats.status::text = enumerated.status;
 `
 
 func init() {
@@ -48,18 +71,10 @@ func init() {
 type statusMetricsCollector struct {
 	db         *sqlx.DB
 	statusDesc *prometheus.Desc
-
-	parsedQuery     string
-	parsedShardArgs []interface{}
 }
 
 // NewStatusMetricsCollector creats a new vizier status metrics prometheus collector.
 func NewStatusMetricsCollector(db *sqlx.DB) prometheus.Collector {
-	query, args, err := sqlx.In(statusQuery, vzshard.GenerateShardRange())
-	if err != nil {
-		log.WithError(err).Fatal("Failed to create status query")
-	}
-	query = db.Rebind(query)
 	return &statusMetricsCollector{
 		db: db,
 		statusDesc: prometheus.NewDesc(
@@ -67,9 +82,6 @@ func NewStatusMetricsCollector(db *sqlx.DB) prometheus.Collector {
 			"Status of the viziers",
 			[]string{"shard", "status"},
 			nil),
-
-		parsedQuery:     query,
-		parsedShardArgs: args,
 	}
 }
 
@@ -80,7 +92,7 @@ func (c *statusMetricsCollector) Describe(ch chan<- *prometheus.Desc) {
 
 // Collect implements Collector.
 func (c *statusMetricsCollector) Collect(ch chan<- prometheus.Metric) {
-	rows, err := c.db.Queryx(c.parsedQuery, c.parsedShardArgs...)
+	rows, err := c.db.Queryx(statusQuery)
 	if err != nil {
 		log.WithError(err).Warn("Failed to run status query")
 		return
