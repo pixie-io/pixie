@@ -66,7 +66,7 @@ func main() {
 			log.WithError(err).Fatal("Could not start up BigQuery client for metrics server")
 		}
 		defer client.Close()
-		_ = controller.NewServer(nc, client)
+		_ = controllers.NewServer(nc, client)
 	} else {
 		log.Info("No BigQuery instance configured, no metrics will be sent")
 	}
