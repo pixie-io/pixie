@@ -71,223 +71,45 @@ StatusOr<std::vector<std::string>> ParseAsListOfStrings(QLObjectPtr obj,
   return strs;
 }
 
-Status Dataframe::Init() {
-  PL_ASSIGN_OR_RETURN(
-      std::shared_ptr<FuncObject> constructor_fn,
-      FuncObject::Create(name(), {"table", "select", "start_time", "end_time"},
-                         {{"select", "[]"},
-                          {"start_time", "0"},
-                          {"end_time", absl::Substitute("$0.$1()", PixieModule::kPixieModuleObjName,
-                                                        PixieModule::kNowOpID)}},
-                         /* has_variable_len_args */ false,
-                         /* has_variable_len_kwargs */ false,
-                         std::bind(&DataFrameHandler::Eval, graph(), std::placeholders::_1,
-                                   std::placeholders::_2, std::placeholders::_3),
-                         ast_visitor()));
-  AddCallMethod(constructor_fn);
-  PL_RETURN_IF_ERROR(constructor_fn->SetDocString(kDataFrameConstuctorDocString));
-  // If the op is null, then don't init the other funcs.
-  if (op() == nullptr) {
-    return Status::OK();
+/**
+ * @brief Implements the DataFrame() constructor logic.
+ */
+StatusOr<QLObjectPtr> DataFrameConstructor(IR* graph, const pypa::AstPtr& ast,
+                                           const ParsedArgs& args, ASTVisitor* visitor) {
+  PL_ASSIGN_OR_RETURN(StringIR * table, GetArgAs<StringIR>(ast, args, "table"));
+  PL_ASSIGN_OR_RETURN(std::vector<std::string> columns,
+                      ParseAsListOfStrings(args.GetArg("select"), "select"));
+  PL_ASSIGN_OR_RETURN(ExpressionIR * start_time, GetArgAs<ExpressionIR>(ast, args, "start_time"));
+  PL_ASSIGN_OR_RETURN(ExpressionIR * end_time, GetArgAs<ExpressionIR>(ast, args, "end_time"));
+
+  std::string table_name = table->str();
+  PL_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_op,
+                      graph->CreateNode<MemorySourceIR>(ast, table_name, columns));
+  // If both start_time and end_time are default arguments, then we don't substitute them.
+  if (!(args.default_subbed_args().contains("start_time") &&
+        args.default_subbed_args().contains("end_time"))) {
+    PL_RETURN_IF_ERROR(mem_source_op->SetTimeExpressions(start_time, end_time));
   }
-
-  /**
-   * # Equivalent to the python method method syntax:
-   * def merge(self, right, how, left_on, right_on, suffixes=['_x', '_y']):
-   *     ...
-   */
-  PL_ASSIGN_OR_RETURN(
-      std::shared_ptr<FuncObject> mergefn,
-      FuncObject::Create(kMergeOpID, {"right", "how", "left_on", "right_on", "suffixes"},
-                         {{"suffixes", "['_x', '_y']"}},
-                         /* has_variable_len_args */ false,
-                         /* has_variable_len_kwargs */ false,
-                         std::bind(&JoinHandler::Eval, graph(), op(), std::placeholders::_1,
-                                   std::placeholders::_2, std::placeholders::_3),
-                         ast_visitor()));
-
-  PL_RETURN_IF_ERROR(mergefn->SetDocString(kMergeOpDocstring));
-  AddMethod(kMergeOpID, mergefn);
-
-  /**
-   * # Equivalent to the python method method syntax:
-   * def agg(self, **kwargs):
-   *     ...
-   */
-  PL_ASSIGN_OR_RETURN(
-      std::shared_ptr<FuncObject> aggfn,
-      FuncObject::Create(kBlockingAggOpID, {}, {},
-                         /* has_variable_len_args */ false,
-                         /* has_variable_len_kwargs */ true,
-                         std::bind(&AggHandler::Eval, graph(), op(), std::placeholders::_1,
-                                   std::placeholders::_2, std::placeholders::_3),
-                         ast_visitor()));
-  PL_RETURN_IF_ERROR(aggfn->SetDocString(kBlockingAggOpDocstring));
-  AddMethod(kBlockingAggOpID, aggfn);
-
-  /**
-   * # Equivalent to the python method method syntax:
-   * def agg(self, **kwargs):
-   *     ...
-   */
-  // TODO(philkuz) temporary measure, need to fix the subscript assignment.
-  PL_ASSIGN_OR_RETURN(
-      std::shared_ptr<FuncObject> mapfn,
-      FuncObject::Create(kMapOpID, {"column_name", "expr"}, {},
-                         /* has_variable_len_args */ false,
-                         /* has_variable_len_kwargs */ false,
-                         std::bind(&MapAssignHandler::Eval, graph(), op(), std::placeholders::_1,
-                                   std::placeholders::_2, std::placeholders::_3),
-                         ast_visitor()));
-  PL_RETURN_IF_ERROR(mapfn->SetDocString(kMapOpDocstring));
-  AddMethod(kMapOpID, mapfn);
-  /**
-   * # Equivalent to the python method method syntax:
-   * def drop(self, fn):
-   *     ...
-   */
-  PL_ASSIGN_OR_RETURN(
-      std::shared_ptr<FuncObject> dropfn,
-      FuncObject::Create(kDropOpID, {"columns"}, {}, /* has_variable_len_args */ false,
-                         /* has_variable_len_kwargs */ false,
-                         std::bind(&DropHandler::Eval, graph(), op(), std::placeholders::_1,
-                                   std::placeholders::_2, std::placeholders::_3),
-                         ast_visitor()));
-  PL_RETURN_IF_ERROR(dropfn->SetDocString(kDropOpDocstring));
-  AddMethod(kDropOpID, dropfn);
-
-  /**
-   * # Equivalent to the python method method syntax:
-   * def head(self, n=5, _pem_only=False):
-   *     ...
-   */
-  PL_ASSIGN_OR_RETURN(
-      std::shared_ptr<FuncObject> limitfn,
-      FuncObject::Create(kLimitOpID, {"n", "_pem_only"}, {{"n", "5"}, {"_pem_only", "0"}},
-                         /* has_variable_len_args */ false,
-                         /* has_variable_len_kwargs */ false,
-                         std::bind(&LimitHandler::Eval, graph(), op(), std::placeholders::_1,
-                                   std::placeholders::_2, std::placeholders::_3),
-                         ast_visitor()));
-  PL_RETURN_IF_ERROR(limitfn->SetDocString(kLimitOpDocstring));
-  AddMethod(kLimitOpID, limitfn);
-
-  /**
-   *
-   * # Equivalent to the python method method syntax:
-   * def __getitem__(self, key):
-   *     ...
-   *
-   * # It's important to note that this is added as a subscript method instead.
-   */
-  std::shared_ptr<FuncObject> subscript_fn(
-      new FuncObject(kSubscriptMethodName, {"key"}, {},
-                     /* has_variable_len_args */ false,
-                     /* has_variable_len_kwargs */ false,
-                     std::bind(&SubscriptHandler::Eval, graph(), op(), std::placeholders::_1,
-                               std::placeholders::_2, std::placeholders::_3),
-                     ast_visitor()));
-  // TODO(philkuz) figure out how to combine these.
-  PL_RETURN_IF_ERROR(subscript_fn->SetDocString(kKeepOpDocstring));
-  AddSubscriptMethod(subscript_fn);
-  // TODO(philkuz) temporary measure to make sure this is recorded.
-  std::shared_ptr<FuncObject> filter_fn(
-      new FuncObject(kFilterOpID, {"key"}, {},
-                     /* has_variable_len_args */ false,
-                     /* has_variable_len_kwargs */ false,
-                     std::bind(&SubscriptHandler::Eval, graph(), op(), std::placeholders::_1,
-                               std::placeholders::_2, std::placeholders::_3),
-                     ast_visitor()));
-  PL_RETURN_IF_ERROR(filter_fn->SetDocString(kFilterOpDocstring));
-  AddMethod(kFilterOpID, filter_fn);
-
-  std::shared_ptr<FuncObject> group_by_fn(
-      new FuncObject(kGroupByOpID, {"by"}, {},
-                     /* has_variable_len_args */ false,
-                     /* has_variable_len_kwargs */ false,
-                     std::bind(&GroupByHandler::Eval, graph(), op(), std::placeholders::_1,
-                               std::placeholders::_2, std::placeholders::_3),
-                     ast_visitor()));
-  PL_RETURN_IF_ERROR(group_by_fn->SetDocString(kGroupByOpDocstring));
-  AddMethod(kGroupByOpID, group_by_fn);
-
-  /**
-   * # Equivalent to the python method method syntax:
-   * def append(self, fn):
-   *     ...
-   */
-  PL_ASSIGN_OR_RETURN(
-      std::shared_ptr<FuncObject> union_fn,
-      FuncObject::Create(kUnionOpID, {"objs"}, {}, /* has_variable_len_args */ false,
-                         /* has_variable_len_kwargs */ false,
-                         std::bind(&UnionHandler::Eval, graph(), op(), std::placeholders::_1,
-                                   std::placeholders::_2, std::placeholders::_3),
-                         ast_visitor()));
-  PL_RETURN_IF_ERROR(union_fn->SetDocString(kUnionOpDocstring));
-  AddMethod(kUnionOpID, union_fn);
-
-  /**
-   * # Equivalent to the python method syntax:
-   * def rolling(self, window, on="time_"):
-   *     ...
-   */
-  PL_ASSIGN_OR_RETURN(
-      std::shared_ptr<FuncObject> rolling_fn,
-      FuncObject::Create(kRollingOpID, {"window", "on"}, {{"on", "'time_'"}},
-                         /* has_variable_len_args */ false,
-                         /* has_variable_len_kwargs */ false,
-                         std::bind(&RollingHandler::Eval, graph(), op(), std::placeholders::_1,
-                                   std::placeholders::_2, std::placeholders::_3),
-                         ast_visitor()));
-  PL_RETURN_IF_ERROR(rolling_fn->SetDocString(kRollingOpDocstring));
-  AddMethod(kRollingOpID, rolling_fn);
-
-  /**
-   * # Equivalent to the python method syntax:
-   * def stream(self):
-   *     ...
-   */
-  PL_ASSIGN_OR_RETURN(
-      std::shared_ptr<FuncObject> stream_fn,
-      FuncObject::Create(kStreamOpId, {}, {},
-                         /* has_variable_len_args */ false,
-                         /* has_variable_len_kwargs */ false,
-                         std::bind(&StreamHandler::Eval, graph(), op(), std::placeholders::_1,
-                                   std::placeholders::_2, std::placeholders::_3),
-                         ast_visitor()));
-  PL_RETURN_IF_ERROR(stream_fn->SetDocString(kStreamOpDocstring));
-  AddMethod(kStreamOpId, stream_fn);
-
-  PL_ASSIGN_OR_RETURN(auto md, MetadataObject::Create(op(), ast_visitor()));
-  return AssignAttribute(kMetadataAttrName, md);
+  return Dataframe::Create(mem_source_op, visitor);
 }
 
-StatusOr<QLObjectPtr> Dataframe::GetAttributeImpl(const pypa::AstPtr& ast,
-                                                  std::string_view name) const {
-  // If this gets to this point, should fail here.
-  DCHECK(HasNonMethodAttribute(name));
+StatusOr<std::vector<ColumnIR*>> ProcessCols(IR* graph, const pypa::AstPtr& ast, QLObjectPtr obj,
+                                             std::string arg_name, int64_t parent_index) {
+  DCHECK(obj != nullptr);
+  PL_ASSIGN_OR_RETURN(std::vector<std::string> column_names, ParseAsListOfStrings(obj, arg_name));
+  std::vector<ColumnIR*> columns;
+  columns.reserve(column_names.size());
 
-  if (QLObject::HasNonMethodAttribute(name)) {
-    return QLObject::GetAttributeImpl(ast, name);
+  for (const auto& col_name : column_names) {
+    PL_ASSIGN_OR_RETURN(ColumnIR * col, graph->CreateNode<ColumnIR>(ast, col_name, parent_index));
+    columns.push_back(col);
   }
-  // We evaluate schemas in the analyzer, so at this point assume 'name' is a valid column.
-  PL_ASSIGN_OR_RETURN(ColumnIR * column,
-                      graph()->CreateNode<ColumnIR>(ast, std::string(name), /* parent_op_idx */ 0));
-  return ExprObject::Create(column, ast_visitor());
+  return columns;
 }
 
-StatusOr<std::shared_ptr<Dataframe>> Dataframe::FromColumnAssignment(const pypa::AstPtr& expr_node,
-                                                                     ColumnIR* column,
-                                                                     ExpressionIR* expr) {
-  auto col_name = column->col_name();
-  ColExpressionVector map_exprs{{col_name, expr}};
-  PL_ASSIGN_OR_RETURN(MapIR * ir_node, graph_->CreateNode<MapIR>(expr_node, op(), map_exprs,
-                                                                 /*keep_input_cols*/ true));
-  return Dataframe::Create(ir_node, ast_visitor());
-}
-
-StatusOr<QLObjectPtr> JoinHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                        const ParsedArgs& args, ASTVisitor* visitor) {
+// Handles the merge() operator logic.
+StatusOr<QLObjectPtr> JoinHandler(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
+                                  const ParsedArgs& args, ASTVisitor* visitor) {
   // GetArg returns non-nullptr or errors out in Debug mode. No need
   // to check again.
   PL_ASSIGN_OR_RETURN(OperatorIR * right, GetArgAs<OperatorIR>(ast, args, "right"));
@@ -320,44 +142,8 @@ StatusOr<QLObjectPtr> JoinHandler::Eval(IR* graph, OperatorIR* op, const pypa::A
   return Dataframe::Create(join_op, visitor);
 }
 
-StatusOr<std::vector<ColumnIR*>> JoinHandler::ProcessCols(IR* graph, const pypa::AstPtr& ast,
-                                                          QLObjectPtr obj, std::string arg_name,
-                                                          int64_t parent_index) {
-  DCHECK(obj != nullptr);
-  PL_ASSIGN_OR_RETURN(std::vector<std::string> column_names, ParseAsListOfStrings(obj, arg_name));
-  std::vector<ColumnIR*> columns;
-  columns.reserve(column_names.size());
-
-  for (const auto& col_name : column_names) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * col, graph->CreateNode<ColumnIR>(ast, col_name, parent_index));
-    columns.push_back(col);
-  }
-  return columns;
-}
-
-StatusOr<QLObjectPtr> AggHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                       const ParsedArgs& args, ASTVisitor* visitor) {
-  // converts the mapping of args.kwargs into ColExpressionvector
-  ColExpressionVector aggregate_expressions;
-  for (const auto& [name, expr_obj] : args.kwargs()) {
-    if (expr_obj->type() != QLObjectType::kTuple) {
-      return expr_obj->CreateError("Expected tuple for value at kwarg $0 but received $1", name,
-                                   expr_obj->name());
-    }
-    PL_ASSIGN_OR_RETURN(
-        FuncIR * parsed_expr,
-        ParseNameTuple(graph, ast, std::static_pointer_cast<TupleObject>(expr_obj)));
-    aggregate_expressions.push_back({name, parsed_expr});
-  }
-
-  PL_ASSIGN_OR_RETURN(
-      BlockingAggIR * agg_op,
-      graph->CreateNode<BlockingAggIR>(ast, op, std::vector<ColumnIR*>{}, aggregate_expressions));
-  return Dataframe::Create(agg_op, visitor);
-}
-
-StatusOr<FuncIR*> AggHandler::ParseNameTuple(IR* ir, const pypa::AstPtr& ast,
-                                             std::shared_ptr<TupleObject> tuple) {
+StatusOr<FuncIR*> ParseNameTuple(IR* ir, const pypa::AstPtr& ast,
+                                 std::shared_ptr<TupleObject> tuple) {
   DCHECK_GE(tuple->items().size(), 2UL);
   auto num_args = tuple->items().size() - 1;
   std::vector<StringIR*> arg_names;
@@ -396,8 +182,36 @@ StatusOr<FuncIR*> AggHandler::ParseNameTuple(IR* ir, const pypa::AstPtr& ast,
   return func_ir;
 }
 
-StatusOr<QLObjectPtr> DropHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                        const ParsedArgs& args, ASTVisitor* visitor) {
+StatusOr<QLObjectPtr> AggHandler(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
+                                 const ParsedArgs& args, ASTVisitor* visitor) {
+  // converts the mapping of args.kwargs into ColExpressionvector
+  ColExpressionVector aggregate_expressions;
+  for (const auto& [name, expr_obj] : args.kwargs()) {
+    if (expr_obj->type() != QLObjectType::kTuple) {
+      return expr_obj->CreateError("Expected tuple for value at kwarg $0 but received $1", name,
+                                   expr_obj->name());
+    }
+    PL_ASSIGN_OR_RETURN(
+        FuncIR * parsed_expr,
+        ParseNameTuple(graph, ast, std::static_pointer_cast<TupleObject>(expr_obj)));
+    aggregate_expressions.push_back({name, parsed_expr});
+  }
+
+  PL_ASSIGN_OR_RETURN(
+      BlockingAggIR * agg_op,
+      graph->CreateNode<BlockingAggIR>(ast, op, std::vector<ColumnIR*>{}, aggregate_expressions));
+  return Dataframe::Create(agg_op, visitor);
+}
+
+StatusOr<QLObjectPtr> MapAssignHandler(const pypa::AstPtr& ast, const ParsedArgs&, ASTVisitor*) {
+  // TODO(philkuz) convert this to be an assign attribute.
+  return CreateAstError(ast,
+                        "Map assign not callable. use the attribute assignment syntax instead.");
+}
+
+// Handles the drop() DataFrame operator.
+StatusOr<QLObjectPtr> DropHandler(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
+                                  const ParsedArgs& args, ASTVisitor* visitor) {
   QLObjectPtr columns_arg = args.GetArg("columns");
   PL_ASSIGN_OR_RETURN(std::vector<std::string> columns,
                       ParseAsListOfStrings(args.GetArg("columns"), "columns"));
@@ -405,8 +219,9 @@ StatusOr<QLObjectPtr> DropHandler::Eval(IR* graph, OperatorIR* op, const pypa::A
   return Dataframe::Create(drop_op, visitor);
 }
 
-StatusOr<QLObjectPtr> LimitHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                         const ParsedArgs& args, ASTVisitor* visitor) {
+// Handles the head() DataFrame logic.
+StatusOr<QLObjectPtr> LimitHandler(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
+                                   const ParsedArgs& args, ASTVisitor* visitor) {
   // TODO(philkuz) (PL-1161) Add support for compile time evaluation of Limit argument.
   PL_ASSIGN_OR_RETURN(IntIR * rows_node, GetArgAs<IntIR>(ast, args, "n"));
   PL_ASSIGN_OR_RETURN(IntIR * pem_only, GetArgAs<IntIR>(ast, args, "_pem_only"));
@@ -418,6 +233,22 @@ StatusOr<QLObjectPtr> LimitHandler::Eval(IR* graph, OperatorIR* op, const pypa::
   return Dataframe::Create(limit_op, visitor);
 }
 
+class SubscriptHandler {
+ public:
+  /**
+   * @brief Evaluates the subscript operator (filter and keep)
+   */
+  static StatusOr<QLObjectPtr> Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
+                                    const ParsedArgs& args, ASTVisitor* visitor);
+
+ private:
+  static StatusOr<QLObjectPtr> EvalFilter(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
+                                          ExpressionIR* expr, ASTVisitor* visitor);
+  static StatusOr<QLObjectPtr> EvalKeep(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
+                                        std::vector<StringIR*> keep_cols, ASTVisitor* visitor);
+  static StatusOr<QLObjectPtr> EvalColumn(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
+                                          StringIR* cols, ASTVisitor* visitor);
+};
 StatusOr<QLObjectPtr> SubscriptHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
                                              const ParsedArgs& args, ASTVisitor* visitor) {
   QLObjectPtr key = args.GetArg("key");
@@ -476,8 +307,9 @@ StatusOr<QLObjectPtr> SubscriptHandler::EvalKeep(IR* graph, OperatorIR* op, cons
   return Dataframe::Create(map_op, visitor);
 }
 
-StatusOr<QLObjectPtr> GroupByHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                           const ParsedArgs& args, ASTVisitor* visitor) {
+// Handles the groupby() method.
+StatusOr<QLObjectPtr> GroupByHandler(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
+                                     const ParsedArgs& args, ASTVisitor* visitor) {
   PL_ASSIGN_OR_RETURN(std::vector<std::string> group_names,
                       ParseAsListOfStrings(args.GetArg("by"), "by"));
   std::vector<ColumnIR*> groups;
@@ -492,8 +324,9 @@ StatusOr<QLObjectPtr> GroupByHandler::Eval(IR* graph, OperatorIR* op, const pypa
   return Dataframe::Create(group_by_op, visitor);
 }
 
-StatusOr<QLObjectPtr> UnionHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                         const ParsedArgs& args, ASTVisitor* visitor) {
+// Handles the append() dataframe method and creates the union node.
+StatusOr<QLObjectPtr> UnionHandler(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
+                                   const ParsedArgs& args, ASTVisitor* visitor) {
   std::vector<OperatorIR*> parents{op};
   PL_ASSIGN_OR_RETURN(std::vector<OperatorIR*> list_of_ops,
                       ParseAsListOf<OperatorIR>(args.GetArg("objs"), "objs"));
@@ -502,8 +335,9 @@ StatusOr<QLObjectPtr> UnionHandler::Eval(IR* graph, OperatorIR* op, const pypa::
   return Dataframe::Create(union_op, visitor);
 }
 
-StatusOr<QLObjectPtr> RollingHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                           const ParsedArgs& args, ASTVisitor* visitor) {
+// Handles the rolling() dataframe method.
+StatusOr<QLObjectPtr> RollingHandler(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
+                                     const ParsedArgs& args, ASTVisitor* visitor) {
   PL_ASSIGN_OR_RETURN(StringIR * window_col_name, GetArgAs<StringIR>(ast, args, "on"));
   PL_ASSIGN_OR_RETURN(ExpressionIR * window_size, GetArgAs<ExpressionIR>(ast, args, "window"));
 
@@ -520,29 +354,223 @@ StatusOr<QLObjectPtr> RollingHandler::Eval(IR* graph, OperatorIR* op, const pypa
   return Dataframe::Create(rolling_op, visitor);
 }
 
-StatusOr<QLObjectPtr> StreamHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                          const ParsedArgs&, ASTVisitor* visitor) {
+/**
+ * @brief Implements the stream() method and creates the stream node.
+ *
+ */
+StatusOr<QLObjectPtr> StreamHandler(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
+                                    const ParsedArgs&, ASTVisitor* visitor) {
   PL_ASSIGN_OR_RETURN(StreamIR * stream_op, graph->CreateNode<StreamIR>(ast, op));
   return Dataframe::Create(stream_op, visitor);
 }
 
-StatusOr<QLObjectPtr> DataFrameHandler::Eval(IR* graph, const pypa::AstPtr& ast,
-                                             const ParsedArgs& args, ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(StringIR * table, GetArgAs<StringIR>(ast, args, "table"));
-  PL_ASSIGN_OR_RETURN(std::vector<std::string> columns,
-                      ParseAsListOfStrings(args.GetArg("select"), "select"));
-  PL_ASSIGN_OR_RETURN(ExpressionIR * start_time, GetArgAs<ExpressionIR>(ast, args, "start_time"));
-  PL_ASSIGN_OR_RETURN(ExpressionIR * end_time, GetArgAs<ExpressionIR>(ast, args, "end_time"));
-
-  std::string table_name = table->str();
-  PL_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_op,
-                      graph->CreateNode<MemorySourceIR>(ast, table_name, columns));
-  // If both start_time and end_time are default arguments, then we don't substitute them.
-  if (!(args.default_subbed_args().contains("start_time") &&
-        args.default_subbed_args().contains("end_time"))) {
-    PL_RETURN_IF_ERROR(mem_source_op->SetTimeExpressions(start_time, end_time));
+Status Dataframe::Init() {
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> constructor_fn,
+      FuncObject::Create(name(), {"table", "select", "start_time", "end_time"},
+                         {{"select", "[]"},
+                          {"start_time", "0"},
+                          {"end_time", absl::Substitute("$0.$1()", PixieModule::kPixieModuleObjName,
+                                                        PixieModule::kNowOpID)}},
+                         /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(&DataFrameConstructor, graph(), std::placeholders::_1,
+                                   std::placeholders::_2, std::placeholders::_3),
+                         ast_visitor()));
+  AddCallMethod(constructor_fn);
+  PL_RETURN_IF_ERROR(constructor_fn->SetDocString(kDataFrameConstuctorDocString));
+  // If the op is null, then don't init the other funcs.
+  if (op() == nullptr) {
+    return Status::OK();
   }
-  return Dataframe::Create(mem_source_op, visitor);
+
+  /**
+   * # Equivalent to the python method method syntax:
+   * def merge(self, right, how, left_on, right_on, suffixes=['_x', '_y']):
+   *     ...
+   */
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> mergefn,
+      FuncObject::Create(kMergeOpID, {"right", "how", "left_on", "right_on", "suffixes"},
+                         {{"suffixes", "['_x', '_y']"}},
+                         /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(&JoinHandler, graph(), op(), std::placeholders::_1,
+                                   std::placeholders::_2, std::placeholders::_3),
+                         ast_visitor()));
+
+  PL_RETURN_IF_ERROR(mergefn->SetDocString(kMergeOpDocstring));
+  AddMethod(kMergeOpID, mergefn);
+
+  /**
+   * # Equivalent to the python method method syntax:
+   * def agg(self, **kwargs):
+   *     ...
+   */
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> aggfn,
+      FuncObject::Create(kBlockingAggOpID, {}, {},
+                         /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ true,
+                         std::bind(&AggHandler, graph(), op(), std::placeholders::_1,
+                                   std::placeholders::_2, std::placeholders::_3),
+                         ast_visitor()));
+  PL_RETURN_IF_ERROR(aggfn->SetDocString(kBlockingAggOpDocstring));
+  AddMethod(kBlockingAggOpID, aggfn);
+
+  // TODO(philkuz) temporary measure, need to fix the subscript assignment.
+  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> mapfn,
+                      FuncObject::Create(kMapOpID, {"column_name", "expr"}, {},
+                                         /* has_variable_len_args */ false,
+                                         /* has_variable_len_kwargs */ false,
+                                         std::bind(&MapAssignHandler, std::placeholders::_1,
+                                                   std::placeholders::_2, std::placeholders::_3),
+                                         ast_visitor()));
+  PL_RETURN_IF_ERROR(mapfn->SetDocString(kMapOpDocstring));
+  AddMethod(kMapOpID, mapfn);
+  /**
+   * # Equivalent to the python method method syntax:
+   * def drop(self, fn):
+   *     ...
+   */
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> dropfn,
+      FuncObject::Create(kDropOpID, {"columns"}, {}, /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(&DropHandler, graph(), op(), std::placeholders::_1,
+                                   std::placeholders::_2, std::placeholders::_3),
+                         ast_visitor()));
+  PL_RETURN_IF_ERROR(dropfn->SetDocString(kDropOpDocstring));
+  AddMethod(kDropOpID, dropfn);
+
+  /**
+   * # Equivalent to the python method method syntax:
+   * def head(self, n=5, _pem_only=False):
+   *     ...
+   */
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> limitfn,
+      FuncObject::Create(kLimitOpID, {"n", "_pem_only"}, {{"n", "5"}, {"_pem_only", "0"}},
+                         /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(&LimitHandler, graph(), op(), std::placeholders::_1,
+                                   std::placeholders::_2, std::placeholders::_3),
+                         ast_visitor()));
+  PL_RETURN_IF_ERROR(limitfn->SetDocString(kLimitOpDocstring));
+  AddMethod(kLimitOpID, limitfn);
+
+  /**
+   *
+   * # Equivalent to the python method method syntax:
+   * def __getitem__(self, key):
+   *     ...
+   *
+   * # It's important to note that this is added as a subscript method instead.
+   */
+  std::shared_ptr<FuncObject> subscript_fn(
+      new FuncObject(kSubscriptMethodName, {"key"}, {},
+                     /* has_variable_len_args */ false,
+                     /* has_variable_len_kwargs */ false,
+                     std::bind(&SubscriptHandler::Eval, graph(), op(), std::placeholders::_1,
+                               std::placeholders::_2, std::placeholders::_3),
+                     ast_visitor()));
+  // TODO(philkuz) figure out how to combine these.
+  PL_RETURN_IF_ERROR(subscript_fn->SetDocString(kKeepOpDocstring));
+  AddSubscriptMethod(subscript_fn);
+  // TODO(philkuz) temporary measure to make sure this is recorded.
+  std::shared_ptr<FuncObject> filter_fn(
+      new FuncObject(kFilterOpID, {"key"}, {},
+                     /* has_variable_len_args */ false,
+                     /* has_variable_len_kwargs */ false,
+                     std::bind(&SubscriptHandler::Eval, graph(), op(), std::placeholders::_1,
+                               std::placeholders::_2, std::placeholders::_3),
+                     ast_visitor()));
+  PL_RETURN_IF_ERROR(filter_fn->SetDocString(kFilterOpDocstring));
+  AddMethod(kFilterOpID, filter_fn);
+
+  std::shared_ptr<FuncObject> group_by_fn(
+      new FuncObject(kGroupByOpID, {"by"}, {},
+                     /* has_variable_len_args */ false,
+                     /* has_variable_len_kwargs */ false,
+                     std::bind(&GroupByHandler, graph(), op(), std::placeholders::_1,
+                               std::placeholders::_2, std::placeholders::_3),
+                     ast_visitor()));
+  PL_RETURN_IF_ERROR(group_by_fn->SetDocString(kGroupByOpDocstring));
+  AddMethod(kGroupByOpID, group_by_fn);
+
+  /**
+   * # Equivalent to the python method method syntax:
+   * def append(self, fn):
+   *     ...
+   */
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> union_fn,
+      FuncObject::Create(kUnionOpID, {"objs"}, {}, /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(&UnionHandler, graph(), op(), std::placeholders::_1,
+                                   std::placeholders::_2, std::placeholders::_3),
+                         ast_visitor()));
+  PL_RETURN_IF_ERROR(union_fn->SetDocString(kUnionOpDocstring));
+  AddMethod(kUnionOpID, union_fn);
+
+  /**
+   * # Equivalent to the python method syntax:
+   * def rolling(self, window, on="time_"):
+   *     ...
+   */
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> rolling_fn,
+      FuncObject::Create(kRollingOpID, {"window", "on"}, {{"on", "'time_'"}},
+                         /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(&RollingHandler, graph(), op(), std::placeholders::_1,
+                                   std::placeholders::_2, std::placeholders::_3),
+                         ast_visitor()));
+  PL_RETURN_IF_ERROR(rolling_fn->SetDocString(kRollingOpDocstring));
+  AddMethod(kRollingOpID, rolling_fn);
+
+  /**
+   * # Equivalent to the python method syntax:
+   * def stream(self):
+   *     ...
+   */
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> stream_fn,
+      FuncObject::Create(kStreamOpId, {}, {},
+                         /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(&StreamHandler, graph(), op(), std::placeholders::_1,
+                                   std::placeholders::_2, std::placeholders::_3),
+                         ast_visitor()));
+  PL_RETURN_IF_ERROR(stream_fn->SetDocString(kStreamOpDocstring));
+  AddMethod(kStreamOpId, stream_fn);
+
+  PL_ASSIGN_OR_RETURN(auto md, MetadataObject::Create(op(), ast_visitor()));
+  return AssignAttribute(kMetadataAttrName, md);
+}
+
+StatusOr<QLObjectPtr> Dataframe::GetAttributeImpl(const pypa::AstPtr& ast,
+                                                  std::string_view name) const {
+  // If this gets to this point, should fail here.
+  DCHECK(HasNonMethodAttribute(name));
+
+  if (QLObject::HasNonMethodAttribute(name)) {
+    return QLObject::GetAttributeImpl(ast, name);
+  }
+  // We evaluate schemas in the analyzer, so at this point assume 'name' is a valid column.
+  PL_ASSIGN_OR_RETURN(ColumnIR * column,
+                      graph()->CreateNode<ColumnIR>(ast, std::string(name), /* parent_op_idx */ 0));
+  return ExprObject::Create(column, ast_visitor());
+}
+
+StatusOr<std::shared_ptr<Dataframe>> Dataframe::FromColumnAssignment(const pypa::AstPtr& expr_node,
+                                                                     ColumnIR* column,
+                                                                     ExpressionIR* expr) {
+  auto col_name = column->col_name();
+  ColExpressionVector map_exprs{{col_name, expr}};
+  PL_ASSIGN_OR_RETURN(MapIR * ir_node, graph_->CreateNode<MapIR>(expr_node, op(), map_exprs,
+                                                                 /*keep_input_cols*/ true));
+  return Dataframe::Create(ir_node, ast_visitor());
 }
 
 }  // namespace compiler
