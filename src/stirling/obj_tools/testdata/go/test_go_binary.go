@@ -34,6 +34,11 @@ type Vertex struct {
 	Y float64
 }
 
+type Vertex2 struct {
+	X float32
+	Y float64
+}
+
 // This struct is interesting to test alignment code.
 // It is a 4-byte struct, but can be aligned on any byte boundary.
 type BoolWrapper struct {
@@ -90,6 +95,11 @@ func (v Vertex) Abs() float64 {
 }
 
 func (v *Vertex) Scale(f float64) {
+	v.X = v.X * float32(f)
+	v.Y = v.Y * f
+}
+
+func (v *Vertex2) Scale(f float64) {
 	v.X = v.X * float32(f)
 	v.Y = v.Y * f
 }
@@ -168,8 +178,11 @@ func main() {
 	for {
 		v := Vertex{3, 4}
 		v2 := Vertex{2, 9}
+		u := Vertex2{0, 0}
+		u.Scale(1)
 		v.CrossScale(v2, 10)
 		fmt.Println(v.Abs())
+		fmt.Println(u.X)
 		fmt.Println(MixedArgTypes(
 			rand.Intn(100),
 			rand.Intn(2) == 0,

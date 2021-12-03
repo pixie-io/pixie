@@ -31,6 +31,7 @@ namespace dynamic_tracing {
 
 using ::google::protobuf::TextFormat;
 using ::px::testing::proto::EqualsProto;
+using ::testing::HasSubstr;
 
 using ::px::stirling::obj_tools::DwarfReader;
 using ::px::stirling::obj_tools::ElfReader;
@@ -231,6 +232,57 @@ TEST_P(ResolveProbeSymbolTest, Transform) {
 INSTANTIATE_TEST_SUITE_P(ResolveProbeSymbolTestSuite, ResolveProbeSymbolTest,
                          ::testing::Values(ProbeGenTestParam{kProgramWithLanguage,
                                                              kProgramWithSymbol}));
+
+TEST_F(ResolveProbeSymbolTest, IncompleteSymbol) {
+  constexpr std::string_view kInputProgramWithIncompleteSymbol = R"(
+deployment_spec {
+  path: "$0"
+}
+tracepoints {
+  program {
+    probes {
+      name: "probe0"
+      tracepoint {
+        symbol: "ixedArgTypes"
+        type: LOGICAL
+      }
+    }
+  }
+}
+)";
+
+  ir::logical::TracepointDeployment program;
+  ASSERT_NO_FATAL_FAILURE(PrepareInput(kInputProgramWithIncompleteSymbol, &program));
+
+  ASSERT_NOT_OK(ResolveProbeSymbol(elf_reader_.get(), &program));
+}
+
+TEST_F(ResolveProbeSymbolTest, AmbiguousSymbol) {
+  constexpr std::string_view kInputProgramWithAmbiguousSymbol = R"(
+deployment_spec {
+  path: "$0"
+}
+tracepoints {
+  program {
+    probes {
+      name: "probe0"
+      tracepoint {
+        symbol: "Scale"
+        type: LOGICAL
+      }
+    }
+  }
+}
+)";
+
+  ir::logical::TracepointDeployment program;
+  ASSERT_NO_FATAL_FAILURE(PrepareInput(kInputProgramWithAmbiguousSymbol, &program));
+
+  Status result = ResolveProbeSymbol(elf_reader_.get(), &program);
+  ASSERT_NOT_OK(result);
+  ASSERT_THAT(result.ToString(),
+              HasSubstr("Symbol is ambiguous. Found at least 2 possible matches"));
+}
 
 //-------------------------------------
 // AutoTraceExpansion Tests

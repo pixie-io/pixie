@@ -41,6 +41,7 @@ StatusOr<ir::shared::Language> TransformSourceLanguage(
     case llvm::dwarf::DW_LANG_Go:
       return ir::shared::Language::GOLANG;
     case llvm::dwarf::DW_LANG_C:
+    case llvm::dwarf::DW_LANG_C99:
     case llvm::dwarf::DW_LANG_C_plus_plus:
     case llvm::dwarf::DW_LANG_C_plus_plus_03:
     case llvm::dwarf::DW_LANG_C_plus_plus_11:
@@ -90,6 +91,24 @@ void DetectSourceLanguage(obj_tools::ElfReader* elf_reader, obj_tools::DwarfRead
         input_program->deployment_spec().path());
   }
 }
+namespace {
+
+bool IsWholeWordSuffix(std::string_view name, std::string_view suffix) {
+  if (!absl::EndsWith(name, suffix)) {
+    return false;
+  }
+
+  name.remove_suffix(suffix.size());
+
+  if (name.empty()) {
+    return true;
+  }
+
+  char c = name.back();
+  return (!std::isalnum(c) && c != '_');
+}
+
+}  // namespace
 
 Status ResolveProbeSymbol(obj_tools::ElfReader* elf_reader,
                           ir::logical::TracepointDeployment* input_program) {
@@ -103,13 +122,41 @@ Status ResolveProbeSymbol(obj_tools::ElfReader* elf_reader,
       if (symbol_matches.empty()) {
         return error::Internal("Could not find symbol");
       }
-      if (symbol_matches.size() > 2) {
-        return error::Internal("Too many symbol matches");
+
+      const std::string* symbol_name = nullptr;
+
+      // First search for an exact match, since is the best we can do.
+      for (const auto& candidate : symbol_matches) {
+        if (probe.tracepoint().symbol() == candidate.name) {
+          symbol_name = &candidate.name;
+          break;
+        }
       }
 
-      const std::string& symbol_name = symbol_matches.front().name;
-      LOG(INFO) << symbol_name;
-      *probe.mutable_tracepoint()->mutable_symbol() = symbol_name;
+      // Next search for valid suffix matches.
+      // A valid suffix match is one that has a special character preceding the suffix.
+      // Example: Searching for Func1
+      //   MyFunc1: Not a valid match
+      //   (*Obj).Func1: Valid match.
+      if (symbol_name == nullptr) {
+        for (const auto& candidate : symbol_matches) {
+          LOG(INFO) << candidate.name;
+          if (IsWholeWordSuffix(candidate.name, probe.tracepoint().symbol())) {
+            if (symbol_name != nullptr) {
+              return error::Internal(
+                  "Symbol is ambiguous. Found at least 2 possible matches: $0 -> $1", *symbol_name,
+                  candidate.name);
+            }
+            symbol_name = &candidate.name;
+          }
+        }
+      }
+
+      if (symbol_name == nullptr) {
+        return error::Internal("Could not find valid symbol match");
+      }
+
+      *probe.mutable_tracepoint()->mutable_symbol() = *symbol_name;
     }
   }
 
