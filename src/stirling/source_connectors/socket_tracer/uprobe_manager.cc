@@ -68,6 +68,8 @@ void UProbeManager::Init(bool enable_http2_tracing, bool disable_self_probing) {
   node_tlswrap_symaddrs_map_ =
       UserSpaceManagedBPFMap<uint32_t, struct node_tlswrap_symaddrs_t>::Create(
           bcc_, "node_tlswrap_symaddrs_map");
+  go_goid_map_ = UserSpaceManagedBPFMap<uint32_t, int, ebpf::BPFMapInMapTable<uint32_t>>::Create(
+      bcc_, "tgid_goid_map");
 }
 
 void UProbeManager::NotifyMMapEvent(upid_t upid) { upids_with_mmap_.insert(upid); }
@@ -359,6 +361,26 @@ StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(uint32_t pid) {
   return kOpenSSLUProbes.size() + count;
 }
 
+void UProbeManager::SetupGOIDMaps(const std::string& binary, const std::vector<int32_t>& pids) {
+  for (const auto& pid : pids) {
+    std::string map_name = absl::StrCat("goid_map_", std::to_string(pid));
+    // The map interface must match pid_goid_map as defined in go_runtime_trace.c.
+    // The key type, the value type and the capacity must all match.
+    int map_fd = bcc_create_map(BPF_MAP_TYPE_HASH, map_name.c_str(), sizeof(uint32_t),
+                                sizeof(int64_t), /* max_entries */ 1024, /* flags */ 0);
+    if (map_fd > 0) {
+      go_goid_map_->UpdateValue(pid, map_fd);
+
+      // Now the outer map owns a reference to the fd,
+      // close the fd so we don't have to clean it up later.
+      close(map_fd);
+    } else {
+      LOG(ERROR) << absl::Substitute("Failed to create BPF map for binary=$0 pid=$1 fd=$2 errno=$3",
+                                     binary, pid, map_fd, errno);
+    }
+  }
+}
+
 StatusOr<int> UProbeManager::AttachGoRuntimeUProbes(const std::string& binary,
                                                     obj_tools::ElfReader* elf_reader,
                                                     obj_tools::DwarfReader* /* dwarf_reader */,
@@ -467,13 +489,14 @@ std::thread UProbeManager::RunDeployUProbesThread(const absl::flat_hash_set<md::
   return {};
 }
 
-void UProbeManager::CleanupSymaddrMaps(const absl::flat_hash_set<md::UPID>& deleted_upids) {
+void UProbeManager::CleanupPIDMaps(const absl::flat_hash_set<md::UPID>& deleted_upids) {
   for (const auto& pid : deleted_upids) {
     openssl_symaddrs_map_->RemoveValue(pid.pid());
     go_common_symaddrs_map_->RemoveValue(pid.pid());
     go_tls_symaddrs_map_->RemoveValue(pid.pid());
     go_http2_symaddrs_map_->RemoveValue(pid.pid());
     node_tlswrap_symaddrs_map_->RemoveValue(pid.pid());
+    go_goid_map_->RemoveValue(pid.pid());
   }
 }
 
@@ -572,6 +595,9 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
       continue;
     }
 
+    // Setup thread to GOID mapping.
+    SetupGOIDMaps(binary, pid_vec);
+
     // Go Runtime Probes.
     {
       StatusOr<int> attach_status =
@@ -664,7 +690,7 @@ void UProbeManager::DeployUProbes(const absl::flat_hash_set<md::UPID>& pids) {
   proc_tracker_.Update(pids);
 
   // Before deploying new probes, clean-up map entries for old processes that are now dead.
-  CleanupSymaddrMaps(proc_tracker_.deleted_upids());
+  CleanupPIDMaps(proc_tracker_.deleted_upids());
 
   // Refresh our file path resolver so it is aware of all new mounts.
   fp_resolver_.Refresh();

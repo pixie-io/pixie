@@ -57,7 +57,8 @@ struct UProbeTmpl {
 // A wrapper around BPF maps that are exclusively written by user-space.
 // Provides an optimized RemoveValue() interface that avoids the BPF access
 // if the key doesn't exist.
-template <typename TKeyType, typename TValueType>
+template <typename TKeyType, typename TValueType,
+          typename TMapType = ebpf::BPFHashTable<TKeyType, TValueType>>
 class UserSpaceManagedBPFMap {
  public:
   static std::unique_ptr<UserSpaceManagedBPFMap> Create(bpf_tools::BCCWrapper* bcc,
@@ -82,11 +83,15 @@ class UserSpaceManagedBPFMap {
   }
 
  private:
-  UserSpaceManagedBPFMap(bpf_tools::BCCWrapper* bcc, const std::string& map_name)
-      : map_(std::make_unique<ebpf::BPFHashTable<TKeyType, TValueType>>(
-            bcc->GetHashTable<TKeyType, TValueType>(map_name))) {}
+  UserSpaceManagedBPFMap(bpf_tools::BCCWrapper* bcc, const std::string& map_name) {
+    if constexpr (std::is_same_v<TMapType, ebpf::BPFMapInMapTable<TKeyType>>) {
+      map_ = std::make_unique<TMapType>(bcc->GetMapInMapTable<TKeyType>(map_name));
+    } else {
+      map_ = std::make_unique<TMapType>(bcc->GetHashTable<TKeyType, TValueType>(map_name));
+    }
+  }
 
-  std::unique_ptr<ebpf::BPFHashTable<TKeyType, TValueType>> map_;
+  std::unique_ptr<TMapType> map_;
   absl::flat_hash_set<TKeyType> shadow_keys_;
 };
 
@@ -380,10 +385,18 @@ class UProbeManager {
   int DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids);
 
   /**
+   * Sets up the BPF maps used for GOID tracking. Required for general Go tracing.
+   *
+   * @param binary The path to the binary on which to deploy Go probes.
+   * @param pids The list of PIDs that are new instances of the binary.
+   */
+  void SetupGOIDMaps(const std::string& binary, const std::vector<int32_t>& pids);
+
+  /**
    * Attaches the required probes for general Go tracing to the specified binary, if it is a
    * compatible Go binary.
    *
-   * @param binary The path to the binary on which to deploy Go HTTP2 probes.
+   * @param binary The path to the binary on which to deploy Go probes.
    * @param elf_reader ELF reader for the binary.
    * @param dwarf_reader DWARF reader for the binary.
    * @param pids The list of PIDs that are new instances of the binary. Used to populate symbol
@@ -480,7 +493,7 @@ class UProbeManager {
   // Clean-up various BPF maps used to communicate symbol addresses per PID.
   // Once the PID has terminated, the information is not required anymore.
   // Note that BPF maps can fill up if this is not done.
-  void CleanupSymaddrMaps(const absl::flat_hash_set<md::UPID>& deleted_upids);
+  void CleanupPIDMaps(const absl::flat_hash_set<md::UPID>& deleted_upids);
 
   bpf_tools::BCCWrapper* bcc_;
 
@@ -528,6 +541,8 @@ class UProbeManager {
   std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct go_tls_symaddrs_t>> go_tls_symaddrs_map_;
   std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct node_tlswrap_symaddrs_t>>
       node_tlswrap_symaddrs_map_;
+  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, int, ebpf::BPFMapInMapTable<uint32_t>>>
+      go_goid_map_;
 };
 
 }  // namespace stirling

@@ -348,6 +348,11 @@ class BCCWrapper {
     return bpf_.get_stack_table(table_name);
   }
 
+  template <typename TKeyType>
+  ebpf::BPFMapInMapTable<TKeyType> GetMapInMapTable(const std::string& table_name) {
+    return bpf_.get_map_in_map_table<TKeyType>(table_name);
+  }
+
   ebpf::BPFPerfBuffer* GetPerfBuffer(const std::string& perf_buffer_name) {
     return bpf_.get_perf_buffer(perf_buffer_name);
   }

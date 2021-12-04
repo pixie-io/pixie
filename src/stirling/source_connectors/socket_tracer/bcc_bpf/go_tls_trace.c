@@ -49,8 +49,9 @@ BPF_HASH(active_tls_conn_op_map, struct tgid_goid_t, struct go_tls_conn_args);
 int probe_entry_tls_conn_write(struct pt_regs* ctx) {
   uint64_t id = bpf_get_current_pid_tgid();
   uint32_t tgid = id >> 32;
+  uint32_t pid = id;
 
-  int64_t* goid_ptr = active_goid_map.lookup(&id);
+  int64_t* goid_ptr = get_goid(tgid, pid);
   if (goid_ptr == NULL) {
     return 0;
   }
@@ -136,8 +137,9 @@ static __inline int probe_return_tls_conn_write_core(struct pt_regs* ctx, uint64
 int probe_return_tls_conn_write(struct pt_regs* ctx) {
   uint64_t id = bpf_get_current_pid_tgid();
   uint32_t tgid = id >> 32;
+  uint32_t pid = id;
 
-  int64_t* goid_ptr = active_goid_map.lookup(&id);
+  int64_t* goid_ptr = get_goid(tgid, pid);
   if (goid_ptr == NULL) {
     return 0;
   }
@@ -168,8 +170,9 @@ int probe_return_tls_conn_write(struct pt_regs* ctx) {
 int probe_entry_tls_conn_read(struct pt_regs* ctx) {
   uint64_t id = bpf_get_current_pid_tgid();
   uint32_t tgid = id >> 32;
+  uint32_t pid = id;
 
-  int64_t* goid_ptr = active_goid_map.lookup(&id);
+  int64_t* goid_ptr = get_goid(tgid, pid);
   if (goid_ptr == NULL) {
     return 0;
   }
@@ -260,8 +263,9 @@ static __inline int probe_return_tls_conn_read_core(struct pt_regs* ctx, uint64_
 int probe_return_tls_conn_read(struct pt_regs* ctx) {
   uint64_t id = bpf_get_current_pid_tgid();
   uint32_t tgid = id >> 32;
+  uint32_t pid = id;
 
-  int64_t* goid_ptr = active_goid_map.lookup(&id);
+  int64_t* goid_ptr = get_goid(tgid, pid);
   if (goid_ptr == NULL) {
     return 0;
   }
