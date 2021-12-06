@@ -37,6 +37,7 @@ interface RedirectArgs {
   org_name?: string;
   signup?: boolean;
   redirect_uri?: string;
+  invite_token?: string;
 }
 
 const getRedirectURL = (isSignup: boolean) => {
@@ -70,6 +71,11 @@ const getRedirectURL = (isSignup: boolean) => {
   if (parsed.org_name && typeof parsed.org_name === 'string') {
     redirectArgs.org_name = parsed.org_name;
   }
+
+  if (parsed.invite_token && typeof parsed.invite_token === 'string') {
+    redirectArgs.invite_token = parsed.invite_token;
+  }
+
   if (isSignup) {
     redirectArgs.signup = true;
   }

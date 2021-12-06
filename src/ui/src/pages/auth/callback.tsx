@@ -206,10 +206,10 @@ export const AuthCallbackPage: React.FC = React.memo(() => {
     }
   }, [setErr]);
 
-  const performSignup = React.useCallback(async (accessToken: string, idToken: string) => {
+  const performSignup = React.useCallback(async (accessToken: string, idToken: string, inviteToken: string) => {
     let response = null;
     try {
-      response = await Axios.post('/api/auth/signup', { accessToken, idToken });
+      response = await Axios.post('/api/auth/signup', { accessToken, idToken, inviteToken });
     } catch (err) {
       pixieAnalytics.track('User signup failed', { error: err.response.data });
       handleHTTPError(err as AxiosError);
@@ -219,12 +219,13 @@ export const AuthCallbackPage: React.FC = React.memo(() => {
     return true;
   }, [handleHTTPError]);
 
-  const performUILogin = React.useCallback(async (accessToken: string, idToken: string) => {
+  const performUILogin = React.useCallback(async (accessToken: string, idToken: string, inviteToken: string) => {
     let response = null;
     try {
       response = await Axios.post('/api/auth/login', {
         accessToken,
         idToken,
+        inviteToken,
       });
     } catch (err) {
       pixieAnalytics.track('User login failed', { error: err.response.data });
@@ -253,13 +254,14 @@ export const AuthCallbackPage: React.FC = React.memo(() => {
     location: string,
     accessToken: string,
     idToken: string,
+    inviteToken: string,
   ) => {
     let signupSuccess = false;
     let loginSuccess = false;
 
     if (signup) {
       // We always need to perform signup, even if the mode is CLI.
-      signupSuccess = await performSignup(accessToken, idToken);
+      signupSuccess = await performSignup(accessToken, idToken, inviteToken);
     }
     // eslint-disable-next-line default-case
     switch (mode) {
@@ -291,7 +293,7 @@ export const AuthCallbackPage: React.FC = React.memo(() => {
         break;
       case 'ui':
         if (!signup) {
-          loginSuccess = await performUILogin(accessToken, idToken);
+          loginSuccess = await performUILogin(accessToken, idToken, inviteToken);
         }
         // We just need to redirect if in signup or login were successful since
         // the cookies are installed.
@@ -322,6 +324,7 @@ export const AuthCallbackPage: React.FC = React.memo(() => {
     const location = params.location && String(params.location);
     const signup = !!params.signup;
     const redirectURI = params.redirect_uri && String(params.redirect_uri);
+    const inviteToken = params.invite_token && String(params.invite_token);
 
     setConfig({
       mode,
@@ -340,7 +343,7 @@ export const AuthCallbackPage: React.FC = React.memo(() => {
       return;
     }
 
-    doAuth(mode, signup, redirectURI, location, token?.accessToken, token?.idToken).then();
+    doAuth(mode, signup, redirectURI, location, token?.accessToken, token?.idToken, inviteToken).then();
   }, [doAuth]);
 
   React.useEffect(() => {
