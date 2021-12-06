@@ -196,7 +196,6 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 		AccessToken string `json:"accessToken"`
 		IDToken     string `json:"idToken"`
 		State       string `json:"state"`
-		OrgName     string `json:"orgName"`
 	}
 
 	defer r.Body.Close()

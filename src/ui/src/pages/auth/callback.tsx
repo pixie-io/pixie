@@ -219,13 +219,12 @@ export const AuthCallbackPage: React.FC = React.memo(() => {
     return true;
   }, [handleHTTPError]);
 
-  const performUILogin = React.useCallback(async (accessToken: string, idToken: string, orgName: string) => {
+  const performUILogin = React.useCallback(async (accessToken: string, idToken: string) => {
     let response = null;
     try {
       response = await Axios.post('/api/auth/login', {
         accessToken,
         idToken,
-        orgName,
       });
     } catch (err) {
       pixieAnalytics.track('User login failed', { error: err.response.data });
@@ -252,7 +251,6 @@ export const AuthCallbackPage: React.FC = React.memo(() => {
     signup: boolean,
     redirectURI: string,
     location: string,
-    orgName: string,
     accessToken: string,
     idToken: string,
   ) => {
@@ -293,7 +291,7 @@ export const AuthCallbackPage: React.FC = React.memo(() => {
         break;
       case 'ui':
         if (!signup) {
-          loginSuccess = await performUILogin(accessToken, idToken, orgName);
+          loginSuccess = await performUILogin(accessToken, idToken);
         }
         // We just need to redirect if in signup or login were successful since
         // the cookies are installed.
@@ -323,7 +321,6 @@ export const AuthCallbackPage: React.FC = React.memo(() => {
 
     const location = params.location && String(params.location);
     const signup = !!params.signup;
-    const orgName = params.org_name && String(params.org_name);
     const redirectURI = params.redirect_uri && String(params.redirect_uri);
 
     setConfig({
@@ -343,7 +340,7 @@ export const AuthCallbackPage: React.FC = React.memo(() => {
       return;
     }
 
-    doAuth(mode, signup, redirectURI, location, orgName, token?.accessToken, token?.idToken).then();
+    doAuth(mode, signup, redirectURI, location, token?.accessToken, token?.idToken).then();
   }, [doAuth]);
 
   React.useEffect(() => {
