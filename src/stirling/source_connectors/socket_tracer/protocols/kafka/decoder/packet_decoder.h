@@ -60,10 +60,9 @@ enum class DataType : uint16_t {
 
 template <typename T>
 std::string ToString(T obj) {
-  rapidjson::StringBuffer sb;
-  rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
-  obj.ToJSON(&writer);
-  return sb.GetString();
+  utils::JSONObjectBuilder json_object_builder;
+  obj.ToJSON(&json_object_builder);
+  return json_object_builder.GetString();
 }
 
 class PacketDecoder {

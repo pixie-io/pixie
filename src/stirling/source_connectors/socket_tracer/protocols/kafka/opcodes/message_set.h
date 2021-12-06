@@ -35,28 +35,17 @@ struct RecordMessage {
   std::string key;
   std::string value;
 
-  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
-    writer->StartObject();
-    writer->Key("key");
-    writer->String(key.c_str());
-    writer->Key("value");
-    writer->String(value.c_str());
-    writer->EndObject();
+  void ToJSON(utils::JSONObjectBuilder* builder) const {
+    builder->WriteKV("key", key);
+    builder->WriteKV("value", value);
   }
 };
 
 struct RecordBatch {
   std::vector<RecordMessage> records;
 
-  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
-    writer->StartObject();
-    writer->Key("records");
-    writer->StartArray();
-    for (const auto& r : records) {
-      r.ToJSON(writer);
-    }
-    writer->EndArray();
-    writer->EndObject();
+  void ToJSON(utils::JSONObjectBuilder* builder) const {
+    builder->WriteKVArrayRecursive<RecordMessage>("records", records);
   }
 };
 
@@ -64,20 +53,11 @@ struct MessageSet {
   int64_t size = 0;
   std::vector<RecordBatch> record_batches;
 
-  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer,
-              bool omit_record_batches = false) const {
-    writer->StartObject();
-    writer->Key("size");
-    writer->Int(size);
+  void ToJSON(utils::JSONObjectBuilder* builder, bool omit_record_batches = true) const {
+    builder->WriteKV("size", size);
     if (!omit_record_batches) {
-      writer->Key("record_batches");
-      writer->StartArray();
-      for (const auto& r : record_batches) {
-        r.ToJSON(writer);
-      }
-      writer->EndArray();
+      builder->WriteKVArrayRecursive<RecordBatch>("record_batchs", record_batches);
     }
-    writer->EndObject();
   }
 };
 

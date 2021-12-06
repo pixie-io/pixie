@@ -26,6 +26,7 @@ pl_cc_library(
         ],
     ),
     deps = [
+        "//src/common/json:cc_library",
         "//src/stirling/source_connectors/socket_tracer/protocols/kafka/common:cc_library",
     ],
 )

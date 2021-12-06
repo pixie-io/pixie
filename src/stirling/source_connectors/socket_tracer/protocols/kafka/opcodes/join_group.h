@@ -33,24 +33,15 @@ struct JoinGroupMember {
   std::string member_id;
   std::string group_instance_id;
 
-  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
-    writer->StartObject();
-    writer->Key("member_id");
-    writer->String(member_id.c_str());
-    writer->Key("group_instance_id");
-    writer->String(group_instance_id.c_str());
-    writer->EndObject();
+  void ToJSON(utils::JSONObjectBuilder* builder) const {
+    builder->WriteKV("member_id", member_id);
+    builder->WriteKV("group_instance_id", group_instance_id);
   }
 };
 
 struct JoinGroupProtocol {
   std::string protocol;
-  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
-    writer->StartObject();
-    writer->Key("protocol");
-    writer->String(protocol.c_str());
-    writer->EndObject();
-  }
+  void ToJSON(utils::JSONObjectBuilder* builder) const { builder->WriteKV("protocol", protocol); }
 };
 
 struct JoinGroupReq {
@@ -62,27 +53,14 @@ struct JoinGroupReq {
   std::string protocol_type;
   std::vector<JoinGroupProtocol> protocols;
 
-  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
-    writer->StartObject();
-    writer->Key("group_id");
-    writer->String(group_id.c_str());
-    writer->Key("session_timeout_ms");
-    writer->Int(session_timeout_ms);
-    writer->Key("rebalance_timeout_ms");
-    writer->Int(rebalance_timeout_ms);
-    writer->Key("member_id");
-    writer->String(member_id.c_str());
-    writer->Key("group_instance_id");
-    writer->String(group_instance_id.c_str());
-    writer->Key("protocol_type");
-    writer->String(protocol_type.c_str());
-    writer->Key("protocols");
-    writer->StartArray();
-    for (const auto& r : protocols) {
-      r.ToJSON(writer);
-    }
-    writer->EndArray();
-    writer->EndObject();
+  void ToJSON(utils::JSONObjectBuilder* builder) const {
+    builder->WriteKV("group_id", group_id);
+    builder->WriteKV("session_timeout_ms", session_timeout_ms);
+    builder->WriteKV("rebalance_timeout_ms", rebalance_timeout_ms);
+    builder->WriteKV("member_id", member_id);
+    builder->WriteKV("group_instance_id", group_instance_id);
+    builder->WriteKV("protocol_type", protocol_type);
+    builder->WriteKVArrayRecursive<JoinGroupProtocol>("protocols", protocols);
   }
 };
 
@@ -96,29 +74,15 @@ struct JoinGroupResp {
   std::string member_id;
   std::vector<JoinGroupMember> members;
 
-  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
-    writer->StartObject();
-    writer->Key("throttle_time_ms");
-    writer->Int(throttle_time_ms);
-    writer->Key("error_code");
-    writer->Int(error_code);
-    writer->Key("generation_id");
-    writer->Int(generation_id);
-    writer->Key("protocol_type");
-    writer->String(protocol_type.c_str());
-    writer->Key("protocol_name");
-    writer->String(protocol_name.c_str());
-    writer->Key("leader");
-    writer->String(leader.c_str());
-    writer->Key("member_id");
-    writer->String(member_id.c_str());
-    writer->Key("members");
-    writer->StartArray();
-    for (const auto& r : members) {
-      r.ToJSON(writer);
-    }
-    writer->EndArray();
-    writer->EndObject();
+  void ToJSON(utils::JSONObjectBuilder* builder) const {
+    builder->WriteKV("throttle_time_ms", throttle_time_ms);
+    builder->WriteKV("error_code", error_code);
+    builder->WriteKV("generation_id", generation_id);
+    builder->WriteKV("protocol_type", protocol_type);
+    builder->WriteKV("protocol_name", protocol_name);
+    builder->WriteKV("leader", leader);
+    builder->WriteKV("member_id", member_id);
+    builder->WriteKVArrayRecursive<JoinGroupMember>("members", members);
   }
 };
 

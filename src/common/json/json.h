@@ -148,13 +148,38 @@ class JSONObjectBuilder {
     writer_.String(value.data(), value.size());
   }
 
-  // Writes a key and array value pair.
+  // Writes a key-value pair where value is an int.
+  void WriteKV(std::string_view key, int value) {
+    DCHECK(!object_ended_);
+    writer_.String(key.data(), key.size());
+    writer_.Int(value);
+  }
+
+  // Writes a key-value pair where value is an int.
+  void WriteKV(std::string_view key, int64_t value) {
+    DCHECK(!object_ended_);
+    writer_.String(key.data(), key.size());
+    writer_.Int64(value);
+  }
+
+  // Writes a key-value pair where value is an array of strings.
   void WriteKV(std::string_view key, VectorView<std::string> value) {
     DCHECK(!object_ended_);
     writer_.String(key.data(), key.size());
     writer_.StartArray();
     for (auto v : value) {
       writer_.String(v.data(), v.size());
+    }
+    writer_.EndArray();
+  }
+
+  // Writes a key-value pair where value is an array of ints.
+  void WriteKV(std::string_view key, VectorView<int32_t> value) {
+    DCHECK(!object_ended_);
+    writer_.String(key.data(), key.size());
+    writer_.StartArray();
+    for (auto v : value) {
+      writer_.Int(v);
     }
     writer_.EndArray();
   }
@@ -175,6 +200,42 @@ class JSONObjectBuilder {
     for (size_t i = 0; i < values.size(); ++i) {
       writer_.StartObject();
       WriteKV(keys[i % keys.size()], values[i]);
+      writer_.EndObject();
+    }
+    writer_.EndArray();
+  }
+
+  // Writes a key and an object as value.
+  // The ToJSON method of the object is called to recursively build a nested JSON structure.
+  // For example:
+  // WriteKVRecursive("partition", partition0);
+  //
+  // Returns: "partitions": {"name": "part0", ...}
+  template <typename T>
+  void WriteKVRecursive(std::string_view key, const T& value) {
+    DCHECK(!object_ended_);
+
+    writer_.String(key.data(), key.size());
+    writer_.StartObject();
+    value.ToJSON(this);
+    writer_.EndObject();
+  }
+
+  // Writes a key and an array of objects as value.
+  // For each object, the ToJSON method is called recursively to build a nested JSON structure.
+  // For example:
+  // WriteKVArrayRecursive("partitions", {partition0, partition1});
+  //
+  // Returns: "partitions": [{"name": "part0", ...}, {"name": "part1", ...}]
+  template <typename T>
+  void WriteKVArrayRecursive(std::string_view key, const VectorView<T>& values) {
+    DCHECK(!object_ended_);
+
+    writer_.String(key.data(), key.size());
+    writer_.StartArray();
+    for (size_t i = 0; i < values.size(); ++i) {
+      writer_.StartObject();
+      values[i].ToJSON(this);
       writer_.EndObject();
     }
     writer_.EndArray();

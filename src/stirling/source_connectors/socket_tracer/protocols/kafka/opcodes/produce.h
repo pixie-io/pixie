@@ -24,6 +24,7 @@
 #include <string>
 #include <vector>
 
+#include "src/common/json/json.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/kafka/common/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/kafka/opcodes/message_set.h"
 
@@ -36,13 +37,9 @@ struct ProduceReqPartition {
   int32_t index = 0;
   MessageSet message_set;
 
-  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
-    writer->StartObject();
-    writer->Key("index");
-    writer->Int(index);
-    writer->Key("message_set");
-    message_set.ToJSON(writer, /* omit_record_batches */ true);
-    writer->EndObject();
+  void ToJSON(utils::JSONObjectBuilder* builder) const {
+    builder->WriteKV("index", index);
+    builder->WriteKVRecursive("message_set", message_set);
   }
 };
 
@@ -50,17 +47,9 @@ struct ProduceReqTopic {
   std::string name;
   std::vector<ProduceReqPartition> partitions;
 
-  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
-    writer->StartObject();
-    writer->Key("name");
-    writer->String(name.c_str());
-    writer->Key("partitions");
-    writer->StartArray();
-    for (const auto& r : partitions) {
-      r.ToJSON(writer);
-    }
-    writer->EndArray();
-    writer->EndObject();
+  void ToJSON(utils::JSONObjectBuilder* builder) const {
+    builder->WriteKV("name", name);
+    builder->WriteKVArrayRecursive<ProduceReqPartition>("partitions", partitions);
   }
 };
 
@@ -71,21 +60,11 @@ struct ProduceReq {
   int32_t timeout_ms = 0;
   std::vector<ProduceReqTopic> topics;
 
-  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
-    writer->StartObject();
-    writer->Key("transactional_id");
-    writer->String(transactional_id.c_str());
-    writer->Key("acks");
-    writer->Int(acks);
-    writer->Key("timeout_ms");
-    writer->Int(timeout_ms);
-    writer->Key("topics");
-    writer->StartArray();
-    for (const auto& r : topics) {
-      r.ToJSON(writer);
-    }
-    writer->EndArray();
-    writer->EndObject();
+  void ToJSON(utils::JSONObjectBuilder* builder) const {
+    builder->WriteKV("transactional_id", transactional_id);
+    builder->WriteKV("acks", acks);
+    builder->WriteKV("timeout_ms", timeout_ms);
+    builder->WriteKVArrayRecursive<ProduceReqTopic>("topics", topics);
   }
 };
 
@@ -93,13 +72,9 @@ struct RecordError {
   int32_t batch_index = 0;
   std::string error_message;
 
-  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
-    writer->StartObject();
-    writer->Key("batch_index");
-    writer->Int(batch_index);
-    writer->Key("error_message");
-    writer->String(error_message.c_str());
-    writer->EndObject();
+  void ToJSON(utils::JSONObjectBuilder* builder) const {
+    builder->WriteKV("batch_index", batch_index);
+    builder->WriteKV("error_message", error_message);
   }
 };
 
@@ -112,27 +87,14 @@ struct ProduceRespPartition {
   std::vector<RecordError> record_errors;
   std::string error_message;
 
-  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
-    writer->StartObject();
-    writer->Key("index");
-    writer->Int(index);
-    writer->Key("error_code");
-    writer->String(magic_enum::enum_name(static_cast<ErrorCode>(error_code)).data());
-    writer->Key("base_offset");
-    writer->Int(base_offset);
-    writer->Key("log_append_time_ms");
-    writer->Int(log_append_time_ms);
-    writer->Key("log_start_offset");
-    writer->Int(log_start_offset);
-    writer->Key("record_errors");
-    writer->StartArray();
-    for (const auto& r : record_errors) {
-      r.ToJSON(writer);
-    }
-    writer->EndArray();
-    writer->Key("error_message");
-    writer->String(error_message.c_str());
-    writer->EndObject();
+  void ToJSON(utils::JSONObjectBuilder* builder) const {
+    builder->WriteKV("index", index);
+    builder->WriteKV("error_code", magic_enum::enum_name(static_cast<ErrorCode>(error_code)));
+    builder->WriteKV("base_offset", base_offset);
+    builder->WriteKV("log_append_time_ms", log_append_time_ms);
+    builder->WriteKV("log_start_offset", log_start_offset);
+    builder->WriteKVArrayRecursive<RecordError>("record_errors", record_errors);
+    builder->WriteKV("error_message", error_message);
   }
 };
 
@@ -140,17 +102,9 @@ struct ProduceRespTopic {
   std::string name;
   std::vector<ProduceRespPartition> partitions;
 
-  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
-    writer->StartObject();
-    writer->Key("name");
-    writer->String(name.c_str());
-    writer->Key("partitions");
-    writer->StartArray();
-    for (const auto& r : partitions) {
-      r.ToJSON(writer);
-    }
-    writer->EndArray();
-    writer->EndObject();
+  void ToJSON(utils::JSONObjectBuilder* builder) const {
+    builder->WriteKV("name", name);
+    builder->WriteKVArrayRecursive<ProduceRespPartition>("partitions", partitions);
   }
 };
 
@@ -158,17 +112,9 @@ struct ProduceResp {
   std::vector<ProduceRespTopic> topics;
   int32_t throttle_time_ms = 0;
 
-  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
-    writer->StartObject();
-    writer->Key("topics");
-    writer->StartArray();
-    for (const auto& r : topics) {
-      r.ToJSON(writer);
-    }
-    writer->EndArray();
-    writer->Key("throttle_time_ms");
-    writer->Int(throttle_time_ms);
-    writer->EndObject();
+  void ToJSON(utils::JSONObjectBuilder* builder) const {
+    builder->WriteKVArrayRecursive<ProduceRespTopic>("topics", topics);
+    builder->WriteKV("throttle_time_ms", throttle_time_ms);
   }
 };
 
