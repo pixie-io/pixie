@@ -541,7 +541,7 @@ static __inline enum message_type_t infer_mux_message(const char* buf, size_t co
   }
 
   if (tag < 1 || tag > ((1 << 23) - 1)) {
-       return kUnknown;
+    return kUnknown;
   }
 
   return msg_type;

@@ -114,6 +114,16 @@ std::vector<mux::Record> ToRecordVector(const types::ColumnWrapperRecordBatch& r
   return result;
 }
 
+mux::Record GetRecordWithTagAndType(uint24_t tag, mux::Type req_type, mux::Type resp_type) {
+  mux::Record r = {};
+  r.req.tag = tag;
+  r.req.type = static_cast<int8_t>(req_type);
+  r.resp.tag = tag;
+  r.resp.type = static_cast<int8_t>(resp_type);
+
+  return r;
+}
+
 std::vector<mux::Record> GetTargetRecords(const types::ColumnWrapperRecordBatch& record_batch,
                                           int32_t pid) {
   std::vector<size_t> target_record_indices =
@@ -135,6 +145,8 @@ inline auto EqMuxRecord(const mux::Record& x) {
 //-----------------------------------------------------------------------------
 
 TEST_F(MuxTraceTest, Capture) {
+  // Uncomment to enable tracing
+  // FLAGS_stirling_conn_trace_pid = server_.process_pid();
   StartTransferDataThread();
 
   ASSERT_OK(RunThriftMuxClient());
@@ -148,15 +160,16 @@ TEST_F(MuxTraceTest, Capture) {
 
   std::vector<mux::Record> server_records = GetTargetRecords(record_batch, server_.process_pid());
 
-  mux::Record expected = {};
-  expected.req.tag = 1;
-  expected.req.type = 127;
-  expected.resp.tag = 1;
-  expected.resp.type = 127;
+  mux::Record tinitCheck = GetRecordWithTagAndType(1, mux::Type::kRerrOld, mux::Type::kRerrOld);
+  mux::Record tinit = GetRecordWithTagAndType(1, mux::Type::kTinit, mux::Type::kRinit);
+  mux::Record pingRecord = GetRecordWithTagAndType(1, mux::Type::kTping, mux::Type::kRping);
+  mux::Record dispatchRecord =
+      GetRecordWithTagAndType(2, mux::Type::kTdispatch, mux::Type::kRdispatch);
 
-  // TODO(ddelnano): Figure out why only the Rerr message is recorded.
-  // There should be a Tinit/Rinit, Tdispatch/Rdispatch and Tping/Rping as well
-  EXPECT_THAT(server_records, Contains(EqMuxRecord(expected)));
+  EXPECT_THAT(server_records, Contains(EqMuxRecord(tinitCheck)));
+  EXPECT_THAT(server_records, Contains(EqMuxRecord(tinit)));
+  EXPECT_THAT(server_records, Contains(EqMuxRecord(pingRecord)));
+  EXPECT_THAT(server_records, Contains(EqMuxRecord(dispatchRecord)));
 }
 
 }  // namespace stirling
