@@ -38,6 +38,8 @@
 // 000019_create_org_ide_configs_tables.up.sql
 // 000020_empty_domain_name_col.down.sql
 // 000020_empty_domain_name_col.up.sql
+// 000021_org_add_invite_signing_key.down.sql
+// 000021_org_add_invite_signing_key.up.sql
 package schema
 
 import (
@@ -874,6 +876,46 @@ func _000020_empty_domain_name_colUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000021_org_add_invite_signing_keyDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x09\xf2\x0f\x50\x70\x8d\x08\x71\xf5\x0b\xf6\xf4\xf7\x53\xf0\x74\x53\x70\x8d\xf0\x0c\x0e\x09\x56\x50\x2a\x48\x4f\x2e\xaa\x2c\x28\xc9\x57\xb2\xe6\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\xc8\x2f\x4a\x2f\x56\x00\xeb\x72\xf6\xf7\x09\xf5\xf5\x53\xc8\xcc\x2b\xcb\x2c\x49\x8d\x2f\xce\x4c\xcf\xcb\xcc\x4b\x8f\xcf\x4e\xad\xb4\xe6\x02\x04\x00\x00\xff\xff\x06\x0e\x35\x73\x56\x00\x00\x00")
+
+func _000021_org_add_invite_signing_keyDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000021_org_add_invite_signing_keyDownSql,
+		"000021_org_add_invite_signing_key.down.sql",
+	)
+}
+
+func _000021_org_add_invite_signing_keyDownSql() (*asset, error) {
+	bytes, err := _000021_org_add_invite_signing_keyDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000021_org_add_invite_signing_key.down.sql", size: 86, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000021_org_add_invite_signing_keyUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x04\xc0\x41\x0a\x83\x30\x14\x04\xd0\xbd\xa7\x18\xbc\x86\xab\x54\xa7\x10\x48\x13\x30\x53\xc8\xce\x45\x91\xf0\x29\x44\x51\x29\x78\xfb\xbe\x71\xa6\x13\xc1\x22\xc6\xec\x53\x84\x7f\x22\x26\x81\xc5\x67\x65\xf4\x7b\xfd\x1c\xf7\x7e\x6d\xfd\xd0\xb9\x20\xce\x90\x7b\x04\x62\x3b\xea\x09\x37\x4d\x18\x53\x78\xbf\x22\xac\xfd\xec\x5a\x97\xd3\x6a\xb3\x56\x97\xef\x7a\x43\x2c\x1a\xba\x7f\x00\x00\x00\xff\xff\x34\xfd\x8d\xf9\x60\x00\x00\x00")
+
+func _000021_org_add_invite_signing_keyUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000021_org_add_invite_signing_keyUpSql,
+		"000021_org_add_invite_signing_key.up.sql",
+	)
+}
+
+func _000021_org_add_invite_signing_keyUpSql() (*asset, error) {
+	bytes, err := _000021_org_add_invite_signing_keyUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000021_org_add_invite_signing_key.up.sql", size: 96, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -964,6 +1006,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000019_create_org_ide_configs_tables.up.sql":            _000019_create_org_ide_configs_tablesUpSql,
 	"000020_empty_domain_name_col.down.sql":                  _000020_empty_domain_name_colDownSql,
 	"000020_empty_domain_name_col.up.sql":                    _000020_empty_domain_name_colUpSql,
+	"000021_org_add_invite_signing_key.down.sql":             _000021_org_add_invite_signing_keyDownSql,
+	"000021_org_add_invite_signing_key.up.sql":               _000021_org_add_invite_signing_keyUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -1045,6 +1089,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000019_create_org_ide_configs_tables.up.sql":            &bintree{_000019_create_org_ide_configs_tablesUpSql, map[string]*bintree{}},
 	"000020_empty_domain_name_col.down.sql":                  &bintree{_000020_empty_domain_name_colDownSql, map[string]*bintree{}},
 	"000020_empty_domain_name_col.up.sql":                    &bintree{_000020_empty_domain_name_colUpSql, map[string]*bintree{}},
+	"000021_org_add_invite_signing_key.down.sql":             &bintree{_000021_org_add_invite_signing_keyDownSql, map[string]*bintree{}},
+	"000021_org_add_invite_signing_key.up.sql":               &bintree{_000021_org_add_invite_signing_keyUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
