@@ -139,19 +139,6 @@ class Node14_18_1AlpineContainer : public ContainerRunner {
   static constexpr std::string_view kReadyMessage = "Nodejs https server started!";
 };
 
-class Node15_0Container : public ContainerRunner {
- public:
-  Node15_0Container()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
-                        kReadyMessage) {}
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/node_15_0_image.tar";
-  static constexpr std::string_view kContainerNamePrefix = "node_server";
-  static constexpr std::string_view kReadyMessage = "Nodejs https server started!";
-};
-
 class NodeClientContainer : public ContainerRunner {
  public:
   NodeClientContainer()
@@ -160,7 +147,8 @@ class NodeClientContainer : public ContainerRunner {
 
  private:
   static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/node_15_0_image.tar";
+      "src/stirling/source_connectors/socket_tracer/testing/containers/"
+      "node_14_18_1_alpine_image.tar";
   static constexpr std::string_view kContainerNamePrefix = "node_client";
   static constexpr std::string_view kReadyMessage = "";
 };

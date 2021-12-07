@@ -69,11 +69,6 @@ class Node14_18_1AlpineContainerWrapper
   int32_t PID() const { return process_pid(); }
 };
 
-class Node15_0ContainerWrapper : public ::px::stirling::testing::Node15_0Container {
- public:
-  int32_t PID() const { return process_pid(); }
-};
-
 // Includes all information we need to extract from the trace records, which are used to verify
 // against the expected results.
 struct TraceRecords {
@@ -154,8 +149,7 @@ http::Record GetExpectedHTTPRecord() {
 }
 
 typedef ::testing::Types<NginxOpenSSL_1_1_0_ContainerWrapper, NginxOpenSSL_1_1_1_ContainerWrapper,
-                         Node12_3_1ContainerWrapper, Node14_18_1AlpineContainerWrapper,
-                         Node15_0ContainerWrapper>
+                         Node12_3_1ContainerWrapper, Node14_18_1AlpineContainerWrapper>
     OpenSSLServerImplementations;
 TYPED_TEST_SUITE(OpenSSLTraceTest, OpenSSLServerImplementations);
 

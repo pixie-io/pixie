@@ -174,15 +174,6 @@ def stirling_test_images():
         "node",
     )
 
-    # Tag: node:15.0
-    # Arch: linux/amd64
-    # This is the oldest version that works correctly with the hard-coded offsets.
-    _docker_io_image(
-        "node_15_0_linux_amd64_image",
-        "sha256:91aa606ed3ea471af8ea2b5bae066c753b3103ee4a902fbfb4a6db0b7f938d97",
-        "node",
-    )
-
     # Tag: node:16.9
     # Arch: linux/amd64
     _docker_io_image(
