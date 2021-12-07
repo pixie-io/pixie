@@ -310,6 +310,8 @@ func vzStatusToClusterStatus(s cvmsgspb.VizierStatus) cloudpb.ClusterStatus {
 		return cloudpb.CS_CONNECTED
 	case cvmsgspb.VZ_ST_UPDATE_FAILED:
 		return cloudpb.CS_UPDATE_FAILED
+	case cvmsgspb.VZ_ST_DEGRADED:
+		return cloudpb.CS_DEGRADED
 	default:
 		return cloudpb.CS_UNKNOWN
 	}

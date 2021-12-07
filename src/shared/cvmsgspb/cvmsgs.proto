@@ -84,6 +84,7 @@ enum VizierStatus {
   VZ_ST_UPDATING = 4;
   VZ_ST_CONNECTED = 5;
   VZ_ST_UPDATE_FAILED = 6;
+  VZ_ST_DEGRADED = 7;
 }
 
 message VizierHeartbeat {

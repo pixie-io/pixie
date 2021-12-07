@@ -58,6 +58,8 @@
 // 000028_remove_previous_status_cols.up.sql
 // 000029_remove_first_seen.down.sql
 // 000029_remove_first_seen.up.sql
+// 000030_add_degraded_cluster_status_enum.down.sql
+// 000030_add_degraded_cluster_status_enum.up.sql
 package schema
 
 import (
@@ -1294,6 +1296,46 @@ func _000029_remove_first_seenUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000030_add_degraded_cluster_status_enumDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x09\xf2\x0f\x50\x08\x89\x0c\x70\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x2f\x2e\x49\x2c\x29\x2d\xb6\xe6\x72\x0e\x72\x75\x0c\x71\xc5\x22\xa5\xe0\x18\xac\xe0\xea\x17\xea\xab\xa0\xa1\x1e\xea\xe7\xed\xe7\x1f\xee\xa7\xae\xa3\xa0\xee\xe1\xea\xe8\x13\xe2\x11\x09\x62\x86\xfa\x21\x71\x5c\x3c\x83\x9d\xfd\xfd\xfc\x5c\x9d\x43\x5c\x5d\xc0\x92\x01\x2e\x8e\x21\x9e\x7e\xee\x20\x36\xa6\x84\x6b\xbc\x9b\xa3\xa7\x8f\xab\x8b\xba\xa6\x35\x17\x20\x00\x00\xff\xff\xd6\x55\xa4\x36\x9a\x00\x00\x00")
+
+func _000030_add_degraded_cluster_status_enumDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000030_add_degraded_cluster_status_enumDownSql,
+		"000030_add_degraded_cluster_status_enum.down.sql",
+	)
+}
+
+func _000030_add_degraded_cluster_status_enumDownSql() (*asset, error) {
+	bytes, err := _000030_add_degraded_cluster_status_enumDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000030_add_degraded_cluster_status_enum.down.sql", size: 154, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000030_add_degraded_cluster_status_enumUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x89\x0c\x70\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x2f\x2e\x49\x2c\x29\x2d\x56\x70\x74\x71\x51\x08\x73\xf4\x09\x75\x55\x50\x77\x71\x75\x0f\x72\x74\x71\x75\x51\x57\x70\x74\x03\xa9\x56\x0f\x0d\x70\x71\x0c\x71\x8d\x77\x73\xf4\xf4\x71\x75\x51\xb7\xe6\x02\x04\x00\x00\xff\xff\xaf\xeb\xf4\x7c\x45\x00\x00\x00")
+
+func _000030_add_degraded_cluster_status_enumUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000030_add_degraded_cluster_status_enumUpSql,
+		"000030_add_degraded_cluster_status_enum.up.sql",
+	)
+}
+
+func _000030_add_degraded_cluster_status_enumUpSql() (*asset, error) {
+	bytes, err := _000030_add_degraded_cluster_status_enumUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000030_add_degraded_cluster_status_enum.up.sql", size: 69, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -1404,6 +1446,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000028_remove_previous_status_cols.up.sql":              _000028_remove_previous_status_colsUpSql,
 	"000029_remove_first_seen.down.sql":                      _000029_remove_first_seenDownSql,
 	"000029_remove_first_seen.up.sql":                        _000029_remove_first_seenUpSql,
+	"000030_add_degraded_cluster_status_enum.down.sql":       _000030_add_degraded_cluster_status_enumDownSql,
+	"000030_add_degraded_cluster_status_enum.up.sql":         _000030_add_degraded_cluster_status_enumUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -1505,6 +1549,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000028_remove_previous_status_cols.up.sql":              &bintree{_000028_remove_previous_status_colsUpSql, map[string]*bintree{}},
 	"000029_remove_first_seen.down.sql":                      &bintree{_000029_remove_first_seenDownSql, map[string]*bintree{}},
 	"000029_remove_first_seen.up.sql":                        &bintree{_000029_remove_first_seenUpSql, map[string]*bintree{}},
+	"000030_add_degraded_cluster_status_enum.down.sql":       &bintree{_000030_add_degraded_cluster_status_enumDownSql, map[string]*bintree{}},
+	"000030_add_degraded_cluster_status_enum.up.sql":         &bintree{_000030_add_degraded_cluster_status_enumUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory

@@ -287,6 +287,7 @@ enum ClusterStatus {
   CS_UPDATING = 4;
   CS_CONNECTED = 5;
   CS_UPDATE_FAILED = 6;
+  CS_DEGRADED = 7;
 }
 
 // K8sEvent represents a K8s event belonging to a pod.

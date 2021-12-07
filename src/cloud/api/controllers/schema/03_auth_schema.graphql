@@ -206,6 +206,9 @@ enum ClusterStatus {
   CS_CONNECTED
   # The vizier was trying to update, but failed and is now in a bad state.
   CS_UPDATE_FAILED
+  # The state is degraded if the cluster is likely to be queryable but might be missing
+  # data.
+  CS_DEGRADED
 }
 
 type VizierConfig {
