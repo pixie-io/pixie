@@ -16,78 +16,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as QueryString from 'query-string';
 import Cookies from 'universal-cookie';
 
 import { OAUTH_PROVIDER } from 'app/containers/constants';
-import pixieAnalytics from 'app/utils/analytics';
 
 import { Auth0Client } from './auth0-oauth-provider';
+import { getRedirectURL } from './callback-url';
 import { HydraClient } from './hydra-oauth-provider';
 import { OAuthProviderClient } from './oauth-provider';
 
-export type AuthCallbackMode = 'cli_get' | 'cli_token' | 'ui';
 const CSRF_COOKIE_NAME = 'csrf-cookie';
 
 const cookies = new Cookies();
-
-interface RedirectArgs {
-  mode?: AuthCallbackMode;
-  location?: string;
-  org_name?: string;
-  signup?: boolean;
-  redirect_uri?: string;
-  invite_token?: string;
-}
-
-const getRedirectURL = (isSignup: boolean) => {
-  // Translate the old API parameters to new versions. In paricular:
-  // local, (no redirect_url) -> cli_token
-  // local -> cli_get
-  // default: ui
-  // We also translate the location parameters so redirects work as expected.
-  // TODO(zasgar/michelle): When we finish porting everything to the new API this code
-  // can be simplified.
-
-  const redirectArgs: RedirectArgs = {};
-  const parsed = QueryString.parse(window.location.search.substring(1));
-  if (parsed.local_mode && !!parsed.local_mode) {
-    if (parsed.redirect_uri) {
-      redirectArgs.redirect_uri = typeof parsed.redirect_uri === 'string' && String(parsed.redirect_uri);
-      redirectArgs.mode = 'cli_get';
-    } else {
-      redirectArgs.mode = 'cli_token';
-    }
-  } else {
-    if (parsed.redirect_uri && typeof parsed.redirect_uri === 'string') {
-      redirectArgs.redirect_uri = String(parsed.redirect_uri);
-    }
-    redirectArgs.mode = 'ui';
-  }
-
-  if (parsed.location && typeof parsed.location === 'string') {
-    redirectArgs.location = parsed.location;
-  }
-  if (parsed.org_name && typeof parsed.org_name === 'string') {
-    redirectArgs.org_name = parsed.org_name;
-  }
-
-  if (parsed.invite_token && typeof parsed.invite_token === 'string') {
-    redirectArgs.invite_token = parsed.invite_token;
-  }
-
-  if (isSignup) {
-    redirectArgs.signup = true;
-  }
-  const qs = QueryString.stringify(redirectArgs as any);
-  const redirectURL = `${window.location.origin}/auth/callback?${qs}`;
-
-  const segmentId = typeof parsed.tid === 'string' ? parsed.tid : '';
-  if (segmentId) {
-    pixieAnalytics.alias(segmentId);
-  }
-  return redirectURL;
-};
 
 // eslint-disable-next-line react-memo/require-memo
 export const GetOAuthProvider = (): OAuthProviderClient => {

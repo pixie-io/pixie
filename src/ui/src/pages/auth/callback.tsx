@@ -31,8 +31,9 @@ import { isValidAnalytics } from 'app/utils/env';
 import * as RedirectUtils from 'app/utils/redirect-utils';
 
 import { BasePage } from './base';
+import { AuthCallbackMode, parseRedirectArgs } from './callback-url';
 import { Token } from './oauth-provider';
-import { AuthCallbackMode, GetOAuthProvider } from './utils';
+import { GetOAuthProvider } from './utils';
 
 // Send token header to enable CORS check. Token is still allowed with Pixie CLI.
 const redirectGet = async (url: string, data: { accessToken: string }) => (
@@ -309,41 +310,34 @@ export const AuthCallbackPage: React.FC = React.memo(() => {
   }, [config?.err?.errorType, performSignup, performUILogin, sendTokenToCLI]);
 
   const handleAccessToken = React.useCallback((token: Token) => {
-    const params = QueryString.parse(window.location.search.substr(1));
-    let mode: AuthCallbackMode = 'ui';
-    switch (params.mode) {
-      case 'cli_get':
-      case 'cli_token':
-      case 'ui':
-        ({ mode } = params);
-        break;
-      default:
-        break;
-    }
-
-    const location = params.location && String(params.location);
-    const signup = !!params.signup;
-    const redirectURI = params.redirect_uri && String(params.redirect_uri);
-    const inviteToken = params.invite_token && String(params.invite_token);
+    const args = parseRedirectArgs(QueryString.parse(window.location.search));
 
     setConfig({
-      mode,
-      signup,
+      mode: args.mode,
+      signup: args.signup,
       token: token?.accessToken,
       loading: true,
     });
 
     if (!token?.accessToken) {
       setConfig({
-        mode,
-        signup,
+        mode: args.mode,
+        signup: args.signup,
         token: token?.accessToken,
         loading: false,
       });
       return;
     }
 
-    doAuth(mode, signup, redirectURI, location, token?.accessToken, token?.idToken, inviteToken).then();
+    doAuth(
+      args.mode,
+      args.signup,
+      args.redirect_uri,
+      args.location,
+      token?.accessToken,
+      token?.idToken,
+      args.invite_token,
+    ).then();
   }, [doAuth]);
 
   React.useEffect(() => {
