@@ -180,6 +180,7 @@ func TestAuth0ConnectorImpl_GetUserInfo(t *testing.T) {
 		_, err := w.Write([]byte(`
          {
 						"email": "testuser@test.com",
+						"email_verified": false,
 						"name": "Test User",
 						"picture": "picture.jpg",
 						"user_id": "github|123990813094",
@@ -207,6 +208,7 @@ func TestAuth0ConnectorImpl_GetUserInfo(t *testing.T) {
 	assert.Equal(t, 2, callCount)
 	require.NoError(t, err)
 	assert.Equal(t, "testuser@test.com", userInfo.Email)
+	assert.False(t, userInfo.EmailVerified)
 	assert.Equal(t, "Test User", userInfo.Name)
 	assert.Equal(t, "picture.jpg", userInfo.Picture)
 	assert.Equal(t, "test_pl_user_id", userInfo.PLUserID)
@@ -238,6 +240,7 @@ func TestAuth0ConnectorImpl_GetUserInfo_GoogleOAuth(t *testing.T) {
 		_, err := w.Write([]byte(`
 			{
 				"email": "testuser@test.com",
+				"email_verified": true,
 				"name": "Test User",
 				"picture": "picture.jpg",
 				"user_id": "google-oauth2|123990813094",
@@ -266,6 +269,7 @@ func TestAuth0ConnectorImpl_GetUserInfo_GoogleOAuth(t *testing.T) {
 	assert.Equal(t, 3, callCount)
 	require.NoError(t, err)
 	assert.Equal(t, "testuser@test.com", userInfo.Email)
+	assert.True(t, userInfo.EmailVerified)
 	assert.Equal(t, "Test User", userInfo.Name)
 	assert.Equal(t, "picture.jpg", userInfo.Picture)
 	assert.Equal(t, "test_pl_user_id", userInfo.PLUserID)

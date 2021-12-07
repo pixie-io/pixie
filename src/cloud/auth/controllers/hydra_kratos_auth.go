@@ -28,7 +28,9 @@ const kratosIdentityProvider = "kratos"
 
 func transformKratosUserInfoToUserInfo(kratosUser *idprovider.KratosUserInfo) (*UserInfo, error) {
 	u := &UserInfo{
-		Email:            kratosUser.Email,
+		Email: kratosUser.Email,
+		// Stop gap while email server has not been added to the deploy scheme.
+		EmailVerified:    true,
 		PLUserID:         kratosUser.PLUserID,
 		PLOrgID:          kratosUser.PLOrgID,
 		IdentityProvider: kratosIdentityProvider,

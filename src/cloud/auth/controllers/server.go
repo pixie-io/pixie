@@ -33,11 +33,12 @@ type APIKeyMgr interface {
 
 // UserInfo contains all the info about a user. It's not tied to any specific AuthProvider.
 type UserInfo struct {
-	Email     string
-	FirstName string
-	LastName  string
-	Name      string
-	Picture   string
+	Email         string
+	EmailVerified bool
+	FirstName     string
+	LastName      string
+	Name          string
+	Picture       string
 	// PLUserID is the ID assigned to the user by Pixie.
 	PLUserID string
 	// PLOrgID is the ID of the Pixie Org that the user belongs to.

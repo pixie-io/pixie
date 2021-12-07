@@ -58,4 +58,5 @@ func TestGetUserInfoReturnsKratosAsIdProvider(t *testing.T) {
 	userInfo, err := connector.GetUserInfo("")
 	require.NoError(t, err)
 	assert.Equal(t, "kratos", userInfo.IdentityProvider)
+	assert.True(t, userInfo.EmailVerified)
 }

@@ -101,15 +101,16 @@ type auth0Identity struct {
 
 // auth0UserInfo tracks the returned auth0 info.
 type auth0UserInfo struct {
-	Email       string                        `json:",omitempty"`
-	FirstName   string                        `json:"given_name,omitempty"`
-	LastName    string                        `json:"family_name,omitempty"`
-	UserID      string                        `json:"user_id,omitempty"`
-	Name        string                        `json:",omitempty"`
-	Picture     string                        `json:",omitempty"`
-	Sub         string                        `json:"sub,omitempty"`
-	AppMetadata map[string]*auth0UserMetadata `json:"app_metadata,omitempty"`
-	Identities  []*auth0Identity              `json:"identities,omitempty"`
+	Email         string                        `json:",omitempty"`
+	EmailVerified bool                          `json:"email_verified,omitempty"`
+	FirstName     string                        `json:"given_name,omitempty"`
+	LastName      string                        `json:"family_name,omitempty"`
+	UserID        string                        `json:"user_id,omitempty"`
+	Name          string                        `json:",omitempty"`
+	Picture       string                        `json:",omitempty"`
+	Sub           string                        `json:"sub,omitempty"`
+	AppMetadata   map[string]*auth0UserMetadata `json:"app_metadata,omitempty"`
+	Identities    []*auth0Identity              `json:"identities,omitempty"`
 }
 
 // Auth0Config is the config data required for Auth0.
@@ -309,6 +310,7 @@ func (a *Auth0Connector) GetUserInfo(userID string) (*UserInfo, error) {
 	// Convert auth0UserInfo to UserInfo.
 	u := &UserInfo{
 		Email:            userInfo.Email,
+		EmailVerified:    userInfo.EmailVerified,
 		FirstName:        userInfo.FirstName,
 		LastName:         userInfo.LastName,
 		Name:             userInfo.Name,
