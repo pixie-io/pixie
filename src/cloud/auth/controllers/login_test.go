@@ -70,6 +70,7 @@ func TestServer_LoginNewUser_NoOrg(t *testing.T) {
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:            "abc@gmail.com",
+		EmailVerified:    true,
 		FirstName:        "first",
 		LastName:         "last",
 		Picture:          "something",
@@ -82,6 +83,7 @@ func TestServer_LoginNewUser_NoOrg(t *testing.T) {
 	// Add PL UserID to the response of the second call.
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
 		Email:            "abc@gmail.com",
+		EmailVerified:    true,
 		FirstName:        "first",
 		LastName:         "last",
 		Picture:          "something",
@@ -157,6 +159,7 @@ func TestServer_LoginNewUser_NoHostDomainAndNotAuth0FailsSignup(t *testing.T) {
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:            "abc@gmail.com",
+		EmailVerified:    true,
 		FirstName:        "first",
 		LastName:         "last",
 		Picture:          "something",
@@ -208,6 +211,7 @@ func TestServer_LoginNewUser_ExistingOrgWithHostedDomain(t *testing.T) {
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:            "abc@test.com",
+		EmailVerified:    true,
 		FirstName:        "first",
 		LastName:         "last",
 		Picture:          "something",
@@ -225,6 +229,7 @@ func TestServer_LoginNewUser_ExistingOrgWithHostedDomain(t *testing.T) {
 	// Add PL UserID to the response of the second call.
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
 		Email:          "abc@test.com",
+		EmailVerified:  true,
 		FirstName:      "first",
 		LastName:       "last",
 		Picture:        "something",
@@ -316,6 +321,7 @@ func TestServer_Login_GoogleUser_ImproperHostedDomain(t *testing.T) {
 
 	fakeUserInfo1 := &controllers.UserInfo{
 		Email:            "abc@randomorg.com",
+		EmailVerified:    true,
 		PLUserID:         userID,
 		PLOrgID:          orgID,
 		IdentityProvider: googleIdentityProvider,
@@ -372,6 +378,7 @@ func TestServer_Login_GoogleUser_ProperHostedDomain(t *testing.T) {
 
 	fakeUserInfo1 := &controllers.UserInfo{
 		Email:            "abc@randomorg.com",
+		EmailVerified:    true,
 		PLUserID:         userID,
 		PLOrgID:          orgID,
 		IdentityProvider: googleIdentityProvider,
@@ -433,9 +440,10 @@ func TestServer_LoginNewUser_NoAutoCreate(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		Email:     "abc@gmail.com",
-		FirstName: "first",
-		LastName:  "last",
+		Email:         "abc@gmail.com",
+		EmailVerified: true,
+		FirstName:     "first",
+		LastName:      "last",
 	}
 
 	a.EXPECT().GetUserInfo(authProviderID).Return(fakeUserInfo, nil)
@@ -467,6 +475,7 @@ func TestServer_LoginNewUser_OrgLookupThrowsError(t *testing.T) {
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:            "abc@test.com",
+		EmailVerified:    true,
 		FirstName:        "first",
 		LastName:         "last",
 		Picture:          "something",
@@ -517,6 +526,7 @@ func TestServer_LoginNewUser_CreateUserFailed(t *testing.T) {
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:            "abc@test.com",
+		EmailVerified:    true,
 		FirstName:        "first",
 		LastName:         "last",
 		Picture:          "something",
@@ -611,6 +621,7 @@ func TestServer_Login_UserInExistingOrg(t *testing.T) {
 
 	fakeUserInfo1 := &controllers.UserInfo{
 		Email:            "abc@gmail.com",
+		EmailVerified:    true,
 		PLUserID:         userID,
 		PLOrgID:          orgID,
 		AuthProviderID:   authProviderID,
@@ -684,6 +695,7 @@ func TestServer_LoginNewUser_JoinOrgByPLOrgID(t *testing.T) {
 
 	fakeUserInfo1 := &controllers.UserInfo{
 		Email:            "abc@gmail.com",
+		EmailVerified:    true,
 		FirstName:        "first",
 		LastName:         "last",
 		PLUserID:         userID,
@@ -696,6 +708,7 @@ func TestServer_LoginNewUser_JoinOrgByPLOrgID(t *testing.T) {
 
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
 		Email:          "abc@gmail.com",
+		EmailVerified:  true,
 		FirstName:      "first",
 		LastName:       "last",
 		AuthProviderID: authProviderID,
@@ -1190,6 +1203,7 @@ func TestServer_Signup_LookupHostedDomain(t *testing.T) {
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:          "abc@abcorg.com",
+		EmailVerified:  true,
 		FirstName:      "first",
 		LastName:       "last",
 		AuthProviderID: authProviderID,
@@ -1201,6 +1215,7 @@ func TestServer_Signup_LookupHostedDomain(t *testing.T) {
 
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
 		Email:          "abc@abcorg.com",
+		EmailVerified:  true,
 		FirstName:      "first",
 		LastName:       "last",
 		AuthProviderID: authProviderID,
@@ -1285,6 +1300,7 @@ func TestServer_Signup_FallbackToEmailDomainLookupAfterHostedDomain(t *testing.T
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:          "abc@abcorg.com",
+		EmailVerified:  true,
 		FirstName:      "first",
 		LastName:       "last",
 		AuthProviderID: authProviderID,
@@ -1296,6 +1312,7 @@ func TestServer_Signup_FallbackToEmailDomainLookupAfterHostedDomain(t *testing.T
 
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
 		Email:          "abc@abcorg.com",
+		EmailVerified:  true,
 		FirstName:      "first",
 		LastName:       "last",
 		AuthProviderID: authProviderID,
@@ -1385,6 +1402,7 @@ func TestServer_Signup_AlwaysCreateOrgOnEmptyHostedDomain(t *testing.T) {
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:          "abc@gmail.com",
+		EmailVerified:  true,
 		FirstName:      "first",
 		LastName:       "last",
 		AuthProviderID: authProviderID,
@@ -1396,6 +1414,7 @@ func TestServer_Signup_AlwaysCreateOrgOnEmptyHostedDomain(t *testing.T) {
 
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
 		Email:          "abc@gmail.com",
+		EmailVerified:  true,
 		FirstName:      "first",
 		LastName:       "last",
 		AuthProviderID: authProviderID,
@@ -1491,6 +1510,7 @@ func TestServer_Signup_ExistingOrgWithHostedDomain(t *testing.T) {
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:          "asdf@asdf.com",
+		EmailVerified:  true,
 		FirstName:      "first",
 		LastName:       "last",
 		AuthProviderID: authProviderID,
@@ -1502,6 +1522,7 @@ func TestServer_Signup_ExistingOrgWithHostedDomain(t *testing.T) {
 
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
 		Email:          "asdf@asdf.com",
+		EmailVerified:  true,
 		FirstName:      "first",
 		LastName:       "last",
 		AuthProviderID: authProviderID,
@@ -1586,6 +1607,7 @@ func TestServer_Signup_CreateOrg_ForSelfUser(t *testing.T) {
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:          "abc@gmail.com",
+		EmailVerified:  true,
 		FirstName:      "first",
 		LastName:       "last",
 		AuthProviderID: authProviderID,
@@ -1597,6 +1619,7 @@ func TestServer_Signup_CreateOrg_ForSelfUser(t *testing.T) {
 	// Add PL UserID to the response of the second call.
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
 		Email:          "abc@gmail.com",
+		EmailVerified:  true,
 		FirstName:      "first",
 		LastName:       "last",
 		AuthProviderID: authProviderID,
@@ -1684,6 +1707,7 @@ func TestServer_Signup_CreateUserOrgFailed(t *testing.T) {
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:          "abc@gmail.com",
+		EmailVerified:  true,
 		FirstName:      "first",
 		LastName:       "last",
 		AuthProviderID: authProviderID,
@@ -1737,6 +1761,7 @@ func TestServer_Signup_UserAlreadyExists(t *testing.T) {
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:          "abc@gmail.com",
+		EmailVerified:  true,
 		FirstName:      "first",
 		LastName:       "last",
 		AuthProviderID: authProviderID,
@@ -1809,6 +1834,7 @@ func TestServer_Signup_UserNotApproved(t *testing.T) {
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:          "asdf@asdf.com",
+		EmailVerified:  true,
 		FirstName:      "first",
 		LastName:       "last",
 		AuthProviderID: authProviderID,
@@ -1853,10 +1879,11 @@ func TestServer_Signup_UserNotApproved(t *testing.T) {
 		Return(mockUserInfo, nil)
 
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
-		Email:        "asdf@asdf.com",
-		FirstName:    "first",
-		LastName:     "last",
-		HostedDomain: "asdf.com",
+		Email:         "asdf@asdf.com",
+		EmailVerified: true,
+		FirstName:     "first",
+		LastName:      "last",
+		HostedDomain:  "asdf.com",
 	}
 
 	a.EXPECT().SetPLMetadata(authProviderID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
@@ -1888,6 +1915,7 @@ func TestServer_Login_UserNotApproved(t *testing.T) {
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:            "abc@gmail.com",
+		EmailVerified:    true,
 		FirstName:        "first",
 		LastName:         "last",
 		PLUserID:         testingutils.TestUserID,
@@ -2114,6 +2142,7 @@ func TestServer_CreateOrgAndInviteUser(t *testing.T) {
 	a.EXPECT().
 		GetUserInfo(authProviderID).
 		Return(&controllers.UserInfo{
+			EmailVerified:  true,
 			AuthProviderID: authProviderID,
 			PLUserID:       utils.ProtoToUUIDStr(userID),
 		}, nil)
@@ -2194,4 +2223,78 @@ func TestServer_GetAuthConnectorToken(t *testing.T) {
 	require.NotNil(t, resp)
 	// Make sure expiry time is in the future.
 	verifyToken(t, resp.Token, userID, orgID, resp.ExpiresAt, "jwtkey")
+}
+
+func TestServer_Login_UnverifiedUser_FailsLogin(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// Setup expectations for the mocks.
+	a := mock_controllers.NewMockAuthProvider(ctrl)
+	authProviderID := "github|abc123"
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
+
+	fakeUserInfo := &controllers.UserInfo{
+		Email:            "abc@gmail.com",
+		EmailVerified:    false,
+		FirstName:        "first",
+		LastName:         "last",
+		Picture:          "something",
+		AuthProviderID:   authProviderID,
+		IdentityProvider: auth0IdentityProvider,
+	}
+
+	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
+	env, err := authenv.New(mockProfile, mockOrg)
+	require.NoError(t, err)
+	s, err := controllers.NewServer(env, a, nil)
+	require.NoError(t, err)
+
+	resp, err := doLoginRequest(getTestContext(), t, s)
+	assert.Nil(t, resp)
+	assert.Regexp(t, "please verify your email before proceeding", err)
+}
+
+func TestServer_Signup_UnverifiedUser_FailsLogin(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// Setup expectations for the mocks.
+	a := mock_controllers.NewMockAuthProvider(ctrl)
+	authProviderID := "github|abc123"
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
+
+	fakeUserInfo := &controllers.UserInfo{
+		Email:            "abc@gmail.com",
+		EmailVerified:    false,
+		FirstName:        "first",
+		LastName:         "last",
+		Picture:          "something",
+		AuthProviderID:   authProviderID,
+		IdentityProvider: auth0IdentityProvider,
+	}
+
+	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
+	env, err := authenv.New(mockProfile, mockOrg)
+	require.NoError(t, err)
+	s, err := controllers.NewServer(env, a, nil)
+	require.NoError(t, err)
+
+	resp, err := doSignupRequest(getTestContext(), t, s)
+	assert.Nil(t, resp)
+	assert.Regexp(t, "please verify your email before proceeding", err)
 }

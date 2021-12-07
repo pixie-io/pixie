@@ -91,6 +91,9 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 	if err != nil {
 		return nil, err
 	}
+	if !userInfo.EmailVerified {
+		return nil, status.Error(codes.PermissionDenied, "please verify your email before proceeding")
+	}
 	md, _ := metadata.FromIncomingContext(ctx)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
@@ -322,6 +325,10 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 	userInfo, err := s.getUserInfoFromToken(in.AccessToken)
 	if err != nil {
 		return nil, err
+	}
+
+	if !userInfo.EmailVerified {
+		return nil, status.Error(codes.PermissionDenied, "please verify your email before proceeding")
 	}
 
 	md, _ := metadata.FromIncomingContext(ctx)
