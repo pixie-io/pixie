@@ -35,6 +35,7 @@ const (
 	VizierStatusHealthy      VizierStatus = "Healthy"
 	VizierStatusUnhealthy    VizierStatus = "Unhealthy"
 	VizierStatusDisconnected VizierStatus = "Disconnected"
+	VizierStatusDegraded     VizierStatus = "Degraded"
 )
 
 // VizierInfo has information of a single Vizier.
@@ -59,6 +60,8 @@ func clusterStatusToVizierStatus(status cloudpb.ClusterStatus) VizierStatus {
 		return VizierStatusUnhealthy
 	case cloudpb.CS_DISCONNECTED:
 		return VizierStatusDisconnected
+	case cloudpb.CS_DEGRADED:
+		return VizierStatusDegraded
 	default:
 		return VizierStatusUnknown
 	}
