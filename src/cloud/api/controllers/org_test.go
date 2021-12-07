@@ -330,6 +330,22 @@ func TestOrganizationServiceServer_CorrectOrgPermissions(t *testing.T) {
 				return err
 			},
 		},
+		{
+			name: "CreateInviteToken",
+			funcCall: func(ctx context.Context, os *controllers.OrganizationServiceServer, id *uuidpb.UUID) error {
+				_, err := os.CreateInviteToken(ctx, &cloudpb.CreateInviteTokenRequest{
+					OrgID: id,
+				})
+				return err
+			},
+		},
+		{
+			name: "RevokeAllInviteTokens",
+			funcCall: func(ctx context.Context, os *controllers.OrganizationServiceServer, id *uuidpb.UUID) error {
+				_, err := os.RevokeAllInviteTokens(ctx, id)
+				return err
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -341,7 +357,7 @@ func TestOrganizationServiceServer_CorrectOrgPermissions(t *testing.T) {
 			ctx := CreateTestContext()
 
 			os := &controllers.OrganizationServiceServer{mockClients.MockProfile, mockClients.MockAuth, &fakeOrg{}}
-			// Incorrect orrg call.
+			// Incorrect org call.
 			err := test.funcCall(ctx, os, utils.ProtoFromUUIDStrOrNil("11111111-9dad-11d1-80b4-00c04fd430c8"))
 			require.Error(t, err)
 			assert.Equal(t, codes.PermissionDenied, status.Code(err))

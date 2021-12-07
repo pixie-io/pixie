@@ -22,6 +22,7 @@ import (
 	"context"
 
 	"github.com/gofrs/uuid"
+	"github.com/gogo/protobuf/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -308,4 +309,54 @@ func (o *OrganizationServiceServer) GetOrgIDEConfigs(ctx context.Context, req *c
 	return &cloudpb.GetOrgIDEConfigsResponse{
 		Configs: configs,
 	}, nil
+}
+
+// CreateInviteToken creates a signed invite JWT for the given org with an expiration of 1 week.
+func (o *OrganizationServiceServer) CreateInviteToken(ctx context.Context, req *cloudpb.CreateInviteTokenRequest) (*cloudpb.InviteToken, error) {
+	ctx, err := contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID) != utils.UUIDFromProtoOrNil(req.OrgID) {
+		return nil, status.Errorf(codes.PermissionDenied, "cannot create invite for org")
+	}
+
+	resp, err := o.OrgServiceClient.CreateInviteToken(ctx, &profilepb.CreateInviteTokenRequest{
+		OrgID: req.OrgID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &cloudpb.InviteToken{SignedClaims: resp.SignedClaims}, nil
+}
+
+// RevokeAllInviteTokens revokes all pending invited for the given org by rotating the JWT signing key.
+func (o *OrganizationServiceServer) RevokeAllInviteTokens(ctx context.Context, req *uuidpb.UUID) (*types.Empty, error) {
+	ctx, err := contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID) != utils.UUIDFromProtoOrNil(req) {
+		return nil, status.Errorf(codes.PermissionDenied, "cannot revoke invites for org")
+	}
+
+	return o.OrgServiceClient.RevokeAllInviteTokens(ctx, req)
+}
+
+// VerifyInviteToken verifies that the given invite JWT is still valid by performing expiration and
+// signing key checks.
+func (o *OrganizationServiceServer) VerifyInviteToken(ctx context.Context, req *cloudpb.InviteToken) (*types.BoolValue, error) {
+	// Contexts without an org claim should still be able to verify invite validity.
+	return o.OrgServiceClient.VerifyInviteToken(ctx, &profilepb.InviteToken{SignedClaims: req.SignedClaims})
 }

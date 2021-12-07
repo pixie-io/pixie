@@ -52,8 +52,11 @@ service UserService {
 
 // OrganizationService enables users to make changes to their organization.
 service OrganizationService {
+  // TODO(philkuz): Deprecate and remove once we have new invites working and move
+  // hydra/kratos to use the new invite model.
   // Create an Invite Link that a new user can follow to create a password for their account.
   rpc InviteUser(InviteUserRequest) returns (InviteUserResponse);
+
   rpc GetOrg(px.uuidpb.UUID) returns (OrgInfo);
   rpc CreateOrg(CreateOrgRequest) returns (px.uuidpb.UUID);
   rpc UpdateOrg(UpdateOrgRequest) returns (OrgInfo);
@@ -61,6 +64,10 @@ service OrganizationService {
   rpc AddOrgIDEConfig(AddOrgIDEConfigRequest) returns (AddOrgIDEConfigResponse);
   rpc DeleteOrgIDEConfig(DeleteOrgIDEConfigRequest) returns (DeleteOrgIDEConfigResponse);
   rpc GetOrgIDEConfigs(GetOrgIDEConfigsRequest) returns (GetOrgIDEConfigsResponse);
+
+  rpc CreateInviteToken(CreateInviteTokenRequest) returns (InviteToken);
+  rpc RevokeAllInviteTokens(px.uuidpb.UUID) returns (google.protobuf.Empty);
+  rpc VerifyInviteToken(InviteToken) returns (google.protobuf.BoolValue);
 }
 
 message UpdateUserRequest {
@@ -806,6 +813,14 @@ message GetUsersInOrgRequest {
 message GetUsersInOrgResponse {
   // The users in the requested org.
   repeated UserInfo users = 1;
+}
+
+message CreateInviteTokenRequest {
+  px.uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
+}
+
+message InviteToken {
+  string signed_claims = 1;
 }
 
 // IDEConfig is used to configure an IDE with Pixie.
