@@ -21,6 +21,7 @@ package md
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/gofrs/uuid"
 	"github.com/olivere/elastic/v7"
@@ -30,10 +31,16 @@ import (
 	"px.dev/pixie/src/shared/services/msgbus"
 )
 
+const (
+	maxActionsPerBatch          = 256
+	maxActionBatchFlushInterval = time.Second * 30
+)
+
 // VizierIndexer run the indexer for a single vizier index.
 type VizierIndexer struct {
 	st       msgbus.Streamer
 	es       *elastic.Client
+	bulk     *elastic.BulkService
 	vizierID uuid.UUID
 	orgID    uuid.UUID
 	k8sUID   string
@@ -41,19 +48,35 @@ type VizierIndexer struct {
 	sub    msgbus.PersistentSub
 	quitCh chan bool
 	errCh  chan error
+
+	// Specification for when to flush updates to Elastic using the bulk API.
+	maxActionsPerBatch          int
+	maxActionBatchFlushInterval time.Duration
+	lastFlushTime               time.Time
+}
+
+// NewVizierIndexerWithBulkSettings creates a new Vizier indexer with bulk settings.
+func NewVizierIndexerWithBulkSettings(vizierID uuid.UUID, orgID uuid.UUID, k8sUID string, st msgbus.Streamer,
+	es *elastic.Client, actionsPerBatch int, batchFlushInterval time.Duration) *VizierIndexer {
+	return &VizierIndexer{
+		st: st,
+		es: es,
+		// This will get automatically reset for reuse after every call to `bulk.Do`.
+		bulk:                        es.Bulk().Index(IndexName),
+		vizierID:                    vizierID,
+		orgID:                       orgID,
+		k8sUID:                      k8sUID,
+		quitCh:                      make(chan bool),
+		errCh:                       make(chan error),
+		maxActionsPerBatch:          actionsPerBatch,
+		maxActionBatchFlushInterval: batchFlushInterval,
+		lastFlushTime:               time.Now(),
+	}
 }
 
 // NewVizierIndexer creates a new Vizier indexer.
 func NewVizierIndexer(vizierID uuid.UUID, orgID uuid.UUID, k8sUID string, st msgbus.Streamer, es *elastic.Client) *VizierIndexer {
-	return &VizierIndexer{
-		st:       st,
-		es:       es,
-		vizierID: vizierID,
-		orgID:    orgID,
-		k8sUID:   k8sUID,
-		quitCh:   make(chan bool),
-		errCh:    make(chan error),
-	}
+	return NewVizierIndexerWithBulkSettings(vizierID, orgID, k8sUID, st, es, maxActionsPerBatch, maxActionBatchFlushInterval)
 }
 
 // Run starts the indexer.
@@ -229,8 +252,7 @@ func (v *VizierIndexer) HandleResourceUpdate(update *metadatapb.ResourceUpdate) 
 	}
 
 	id := fmt.Sprintf("%s-%s-%s", v.vizierID, v.k8sUID, esEntity.UID)
-	_, err := v.es.Update().
-		Index(IndexName).
+	req := elastic.NewBulkUpdateRequest().
 		Id(id).
 		Script(
 			elastic.NewScript(elasticUpdateScript).
@@ -239,8 +261,14 @@ func (v *VizierIndexer) HandleResourceUpdate(update *metadatapb.ResourceUpdate) 
 				Param("updateVersion", esEntity.UpdateVersion).
 				Param("state", esEntity.State).
 				Lang("painless")).
-		Upsert(esEntity).
-		Refresh("true").
-		Do(context.Background())
-	return err
+		Upsert(esEntity)
+	v.bulk.Add(req)
+
+	if v.bulk.NumberOfActions() >= v.maxActionsPerBatch || time.Since(v.lastFlushTime) > v.maxActionBatchFlushInterval {
+		_, err := v.bulk.Refresh("wait_for").Do(context.Background())
+		v.lastFlushTime = time.Now()
+		return err
+	}
+
+	return nil
 }

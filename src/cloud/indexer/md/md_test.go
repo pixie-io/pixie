@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/gofrs/uuid"
 	"github.com/olivere/elastic/v7"
@@ -280,19 +281,21 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			indexer := md.NewVizierIndexer(vzID, orgID, "test", nil, elasticClient)
+			indexer := md.NewVizierIndexerWithBulkSettings(vzID, orgID, "test", nil, elasticClient, 1, time.Second*1)
 
 			for _, u := range test.updates {
 				err := indexer.HandleResourceUpdate(u)
 				require.NoError(t, err)
 			}
 
+			// Refresh the data since we are using "wait_for" on the indexer.
+			elasticClient.Refresh()
 			resp, err := elasticClient.Search().
 				Index(md.IndexName).
 				Query(elastic.NewTermQuery("kind", test.updateKind)).
 				Do(context.Background())
 			require.NoError(t, err)
-			assert.Equal(t, int64(len(test.expectedResults)), resp.TotalHits())
+			require.Equal(t, int64(len(test.expectedResults)), resp.TotalHits())
 			for i, r := range test.expectedResults {
 				res := &md.EsMDEntity{}
 				err = json.Unmarshal(resp.Hits.Hits[i].Source, res)
