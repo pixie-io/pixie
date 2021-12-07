@@ -252,7 +252,6 @@ export const AuthCallbackPage: React.FC = React.memo(() => {
     mode: AuthCallbackMode,
     signup: boolean,
     redirectURI: string,
-    location: string,
     accessToken: string,
     idToken: string,
     inviteToken: string,
@@ -299,7 +298,7 @@ export const AuthCallbackPage: React.FC = React.memo(() => {
         // We just need to redirect if in signup or login were successful since
         // the cookies are installed.
         if ((signup && signupSuccess) || loginSuccess) {
-          RedirectUtils.redirect(redirectURI || location || '/', {});
+          RedirectUtils.redirect(redirectURI || '/', {});
         }
     }
 
@@ -333,7 +332,6 @@ export const AuthCallbackPage: React.FC = React.memo(() => {
       args.mode,
       args.signup,
       args.redirect_uri,
-      args.location,
       token?.accessToken,
       token?.idToken,
       args.invite_token,

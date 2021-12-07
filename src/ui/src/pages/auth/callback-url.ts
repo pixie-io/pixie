@@ -24,7 +24,6 @@ export type AuthCallbackMode = 'cli_get' | 'cli_token' | 'ui';
 
 export interface RedirectArgs {
   mode?: AuthCallbackMode;
-  location?: string;
   signup?: boolean;
   redirect_uri?: string;
   invite_token?: string;
@@ -48,10 +47,6 @@ export const getRedirectURL = (isSignup: boolean): string => {
     redirectArgs.mode = 'cli_get';
   } else if (parsed.local_mode) {
     redirectArgs.mode = 'cli_token';
-  }
-
-  if (parsed.location && typeof parsed.location === 'string') {
-    redirectArgs.location = parsed.location;
   }
 
   if (parsed.invite_token && typeof parsed.invite_token === 'string') {
