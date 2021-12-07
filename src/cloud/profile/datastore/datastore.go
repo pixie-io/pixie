@@ -23,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/gofrs/uuid"
 	"github.com/jackc/pgx"
@@ -50,8 +49,6 @@ type UserInfo struct {
 	LastName         string     `db:"last_name"`
 	Email            string     `db:"email"`
 	ProfilePicture   *string    `db:"profile_picture"`
-	UpdatedAt        *time.Time `db:"updated_at"`
-	CreatedAt        *time.Time `db:"created_at"`
 	IsApproved       bool       `db:"is_approved"`
 	IdentityProvider string     `db:"identity_provider"`
 	AuthProviderID   string     `db:"auth_provider_id"`
@@ -59,13 +56,10 @@ type UserInfo struct {
 
 // OrgInfo tracks information about an organization.
 type OrgInfo struct {
-	ID               uuid.UUID  `db:"id"`
-	OrgName          string     `db:"org_name"`
-	DomainName       *string    `db:"domain_name"`
-	EnableApprovals  bool       `db:"enable_approvals"`
-	UpdatedAt        *time.Time `db:"updated_at"`
-	CreatedAt        *time.Time `db:"created_at"`
-	InviteSigningKey *string    `db:"invite_signing_key"`
+	ID              uuid.UUID `db:"id"`
+	OrgName         string    `db:"org_name"`
+	DomainName      *string   `db:"domain_name"`
+	EnableApprovals bool      `db:"enable_approvals"`
 }
 
 // GetDomainName is a helper to nil check the DomainName column value and convert
@@ -133,7 +127,7 @@ func (d *Datastore) CreateUser(userInfo *UserInfo) (uuid.UUID, error) {
 
 // GetUser gets user information by user ID.
 func (d *Datastore) GetUser(id uuid.UUID) (*UserInfo, error) {
-	query := `SELECT * from users WHERE id=$1`
+	query := `SELECT id, org_id, username, first_name, last_name, email, profile_picture, is_approved, identity_provider, auth_provider_id FROM users WHERE id=$1`
 	rows, err := d.db.Queryx(query, id)
 	if err != nil {
 		return nil, err
@@ -201,7 +195,7 @@ func (d *Datastore) CreateUserAndOrg(orgInfo *OrgInfo, userInfo *UserInfo) (uuid
 
 // GetOrg gets org information by ID.
 func (d *Datastore) GetOrg(id uuid.UUID) (*OrgInfo, error) {
-	query := `SELECT * from orgs WHERE id=$1`
+	query := `SELECT id, org_name, domain_name, enable_approvals FROM orgs WHERE id=$1`
 	rows, err := d.db.Queryx(query, id)
 	if err != nil {
 		return nil, err
@@ -218,7 +212,7 @@ func (d *Datastore) GetOrg(id uuid.UUID) (*OrgInfo, error) {
 
 // GetOrgs gets all orgs.
 func (d *Datastore) GetOrgs() ([]*OrgInfo, error) {
-	query := `SELECT * from orgs`
+	query := `SELECT id, org_name, domain_name, enable_approvals FROM orgs`
 	rows, err := d.db.Queryx(query)
 	if err != nil {
 		return nil, err
@@ -239,7 +233,7 @@ func (d *Datastore) GetOrgs() ([]*OrgInfo, error) {
 
 // GetOrgByName gets org information by domain.
 func (d *Datastore) GetOrgByName(name string) (*OrgInfo, error) {
-	query := `SELECT * from orgs WHERE org_name=$1`
+	query := `SELECT id, org_name, domain_name, enable_approvals FROM orgs WHERE org_name=$1`
 	rows, err := d.db.Queryx(query, name)
 	if err != nil {
 		return nil, err
@@ -256,7 +250,7 @@ func (d *Datastore) GetOrgByName(name string) (*OrgInfo, error) {
 
 // GetOrgByDomain gets org information by domain.
 func (d *Datastore) GetOrgByDomain(domainName string) (*OrgInfo, error) {
-	query := `SELECT * from orgs WHERE domain_name=$1`
+	query := `SELECT id, org_name, domain_name, enable_approvals FROM orgs WHERE domain_name=$1`
 	rows, err := d.db.Queryx(query, domainName)
 	if err != nil {
 		return nil, err
@@ -322,7 +316,7 @@ func (d *Datastore) CreateInviteSigningKey(id uuid.UUID) (string, error) {
 
 // GetUserByEmail gets user info by email.
 func (d *Datastore) GetUserByEmail(email string) (*UserInfo, error) {
-	query := `SELECT * from users WHERE email=$1`
+	query := `SELECT id, org_id, username, first_name, last_name, email, profile_picture, is_approved, identity_provider, auth_provider_id FROM users WHERE email=$1`
 	rows, err := d.db.Queryx(query, email)
 	if err != nil {
 		return nil, err
@@ -339,7 +333,7 @@ func (d *Datastore) GetUserByEmail(email string) (*UserInfo, error) {
 
 // GetUserByAuthProviderID gets userinfo by auth provider id.
 func (d *Datastore) GetUserByAuthProviderID(id string) (*UserInfo, error) {
-	query := `SELECT * from users WHERE auth_provider_id=$1`
+	query := `SELECT id, org_id, username, first_name, last_name, email, profile_picture, is_approved, identity_provider, auth_provider_id FROM users WHERE auth_provider_id=$1`
 	rows, err := d.db.Queryx(query, id)
 	if err != nil {
 		return nil, err
@@ -427,7 +421,7 @@ func (d *Datastore) createOrgUsingTxn(txn *sqlx.Tx, orgInfo *OrgInfo) (uuid.UUID
 
 // GetUsersInOrg gets all users in the given org.
 func (d *Datastore) GetUsersInOrg(orgID uuid.UUID) ([]*UserInfo, error) {
-	query := `SELECT * from users WHERE org_id=$1 order by created_at desc`
+	query := `SELECT id, org_id, username, first_name, last_name, email, profile_picture, is_approved, identity_provider, auth_provider_id FROM users WHERE org_id=$1 order by created_at desc`
 	rows, err := d.db.Queryx(query, orgID)
 	if err != nil {
 		return nil, err
