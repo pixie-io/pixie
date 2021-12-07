@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
@@ -1770,4 +1771,252 @@ func TestServer_GetOrgIDEConfigs_Multi(t *testing.T) {
 			},
 		},
 	}, resp)
+}
+
+func TestServer_CreateInviteToken(t *testing.T) {
+	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	ctx := CreateTestContext()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uds := mock_controllers.NewMockUserDatastore(ctrl)
+	ods := mock_controllers.NewMockOrgDatastore(ctrl)
+	usds := mock_controllers.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controllers.NewMockOrgSettingsDatastore(ctrl)
+
+	s := controllers.NewServer(nil, uds, usds, ods, osds)
+
+	inviteSigningKey := "secret_jwt_key"
+	ods.EXPECT().
+		GetInviteSigningKey(orgID).
+		Return(inviteSigningKey, nil)
+
+	resp, err := s.CreateInviteToken(ctx, &profilepb.CreateInviteTokenRequest{
+		OrgID: utils.ProtoFromUUID(orgID),
+	})
+	require.NoError(t, err)
+
+	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
+	claims := &jwt.StandardClaims{}
+	_, err = parser.ParseWithClaims(resp.SignedClaims, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(inviteSigningKey), nil
+	})
+
+	exp := time.Until(claims.ExpiresAt.Time)
+
+	require.NoError(t, err)
+	assert.Equal(t, claims.Subject, orgID.String())
+	assert.Greater(t, exp.Hours(), 0.0)
+	assert.Less(t, exp.Hours(), 7.0*24.0)
+}
+
+func TestServer_CreateInviteToken_NoSigningKey(t *testing.T) {
+	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	ctx := CreateTestContext()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uds := mock_controllers.NewMockUserDatastore(ctrl)
+	ods := mock_controllers.NewMockOrgDatastore(ctrl)
+	usds := mock_controllers.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controllers.NewMockOrgSettingsDatastore(ctrl)
+
+	s := controllers.NewServer(nil, uds, usds, ods, osds)
+
+	inviteSigningKey := "secret_jwt_key"
+	ods.EXPECT().
+		GetInviteSigningKey(orgID).
+		Return("", nil)
+
+	ods.EXPECT().
+		CreateInviteSigningKey(orgID).
+		Return(inviteSigningKey, nil)
+
+	resp, err := s.CreateInviteToken(ctx, &profilepb.CreateInviteTokenRequest{
+		OrgID: utils.ProtoFromUUID(orgID),
+	})
+	require.NoError(t, err)
+
+	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
+	claims := &jwt.StandardClaims{}
+	_, err = parser.ParseWithClaims(resp.SignedClaims, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(inviteSigningKey), nil
+	})
+
+	exp := time.Until(claims.ExpiresAt.Time)
+
+	require.NoError(t, err)
+	assert.Equal(t, claims.Subject, orgID.String())
+	assert.Greater(t, exp.Hours(), 0.0)
+	assert.Less(t, exp.Hours(), 7.0*24.0)
+}
+
+func TestServer_CreateInviteToken_BadOrg(t *testing.T) {
+	ctx := CreateTestContext()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uds := mock_controllers.NewMockUserDatastore(ctrl)
+	ods := mock_controllers.NewMockOrgDatastore(ctrl)
+	usds := mock_controllers.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controllers.NewMockOrgSettingsDatastore(ctrl)
+
+	s := controllers.NewServer(nil, uds, usds, ods, osds)
+
+	_, err := s.CreateInviteToken(ctx, &profilepb.CreateInviteTokenRequest{
+		OrgID: utils.ProtoFromUUID(uuid.Nil),
+	})
+	require.Error(t, err)
+}
+
+func TestServer_RevokeInvites(t *testing.T) {
+	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	ctx := CreateTestContext()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uds := mock_controllers.NewMockUserDatastore(ctrl)
+	ods := mock_controllers.NewMockOrgDatastore(ctrl)
+	usds := mock_controllers.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controllers.NewMockOrgSettingsDatastore(ctrl)
+
+	s := controllers.NewServer(nil, uds, usds, ods, osds)
+
+	ods.EXPECT().
+		CreateInviteSigningKey(orgID)
+
+	_, err := s.RevokeAllInviteTokens(ctx, utils.ProtoFromUUID(orgID))
+	require.NoError(t, err)
+}
+
+func TestServer_RevokeInvites_BadOrg(t *testing.T) {
+	ctx := CreateTestContext()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uds := mock_controllers.NewMockUserDatastore(ctrl)
+	ods := mock_controllers.NewMockOrgDatastore(ctrl)
+	usds := mock_controllers.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controllers.NewMockOrgSettingsDatastore(ctrl)
+
+	s := controllers.NewServer(nil, uds, usds, ods, osds)
+
+	_, err := s.RevokeAllInviteTokens(ctx, utils.ProtoFromUUID(uuid.Nil))
+	require.Error(t, err)
+}
+
+func TestServer_VerifyInvites_Good(t *testing.T) {
+	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	ctx := CreateTestContext()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uds := mock_controllers.NewMockUserDatastore(ctrl)
+	ods := mock_controllers.NewMockOrgDatastore(ctrl)
+	usds := mock_controllers.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controllers.NewMockOrgSettingsDatastore(ctrl)
+
+	s := controllers.NewServer(nil, uds, usds, ods, osds)
+
+	inviteSigningKey := "secret_jwt_key"
+	inviteClaims := jwt.MapClaims{}
+	inviteClaims["sub"] = orgID.String()
+	inviteClaims["exp"] = time.Now().Add(7 * 24 * time.Hour).Unix()
+
+	signedClaims, err := jwt.NewWithClaims(jwt.SigningMethodHS256, inviteClaims).SignedString([]byte(inviteSigningKey))
+	require.NoError(t, err)
+
+	ods.EXPECT().
+		GetInviteSigningKey(orgID).
+		Return(inviteSigningKey, nil)
+
+	resp, err := s.VerifyInviteToken(ctx, &profilepb.InviteToken{SignedClaims: signedClaims})
+	require.NoError(t, err)
+	assert.Equal(t, &types.BoolValue{Value: true}, resp)
+}
+
+func TestServer_VerifyInvites_Expired(t *testing.T) {
+	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	ctx := CreateTestContext()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uds := mock_controllers.NewMockUserDatastore(ctrl)
+	ods := mock_controllers.NewMockOrgDatastore(ctrl)
+	usds := mock_controllers.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controllers.NewMockOrgSettingsDatastore(ctrl)
+
+	s := controllers.NewServer(nil, uds, usds, ods, osds)
+
+	inviteSigningKey := "secret_jwt_key"
+	inviteClaims := jwt.MapClaims{}
+	inviteClaims["sub"] = orgID.String()
+	inviteClaims["exp"] = time.Now().Add(-1 * time.Minute).Unix()
+
+	signedClaims, err := jwt.NewWithClaims(jwt.SigningMethodHS256, inviteClaims).SignedString([]byte(inviteSigningKey))
+	require.NoError(t, err)
+
+	resp, err := s.VerifyInviteToken(ctx, &profilepb.InviteToken{SignedClaims: signedClaims})
+	require.NoError(t, err)
+	assert.Equal(t, &types.BoolValue{Value: false}, resp)
+}
+
+func TestServer_VerifyInvites_BadSigningKey(t *testing.T) {
+	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	ctx := CreateTestContext()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uds := mock_controllers.NewMockUserDatastore(ctrl)
+	ods := mock_controllers.NewMockOrgDatastore(ctrl)
+	usds := mock_controllers.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controllers.NewMockOrgSettingsDatastore(ctrl)
+
+	s := controllers.NewServer(nil, uds, usds, ods, osds)
+
+	inviteSigningKey := "secret_jwt_key"
+	inviteClaims := jwt.MapClaims{}
+	inviteClaims["sub"] = orgID.String()
+	inviteClaims["exp"] = time.Now().Add(7 * 24 * time.Hour).Unix()
+
+	signedClaims, err := jwt.NewWithClaims(jwt.SigningMethodHS256, inviteClaims).SignedString([]byte("wrong_key"))
+	require.NoError(t, err)
+
+	ods.EXPECT().
+		GetInviteSigningKey(orgID).
+		Return(inviteSigningKey, nil)
+
+	resp, err := s.VerifyInviteToken(ctx, &profilepb.InviteToken{SignedClaims: signedClaims})
+	require.NoError(t, err)
+	assert.Equal(t, &types.BoolValue{Value: false}, resp)
+}
+
+func TestServer_VerifyInvites_BadOrg(t *testing.T) {
+	ctx := CreateTestContext()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uds := mock_controllers.NewMockUserDatastore(ctrl)
+	ods := mock_controllers.NewMockOrgDatastore(ctrl)
+	usds := mock_controllers.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controllers.NewMockOrgSettingsDatastore(ctrl)
+
+	s := controllers.NewServer(nil, uds, usds, ods, osds)
+
+	inviteSigningKey := "secret_jwt_key"
+	inviteClaims := jwt.MapClaims{}
+	inviteClaims["sub"] = uuid.Nil.String()
+	inviteClaims["exp"] = time.Now().Add(7 * 24 * time.Hour).Unix()
+
+	signedClaims, err := jwt.NewWithClaims(jwt.SigningMethodHS256, inviteClaims).SignedString([]byte(inviteSigningKey))
+	require.NoError(t, err)
+
+	_, err = s.VerifyInviteToken(ctx, &profilepb.InviteToken{SignedClaims: signedClaims})
+	require.Error(t, err)
 }

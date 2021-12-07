@@ -162,6 +162,21 @@ func (mr *MockOrgDatastoreMockRecorder) ApproveAllOrgUsers(arg0 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApproveAllOrgUsers", reflect.TypeOf((*MockOrgDatastore)(nil).ApproveAllOrgUsers), arg0)
 }
 
+// CreateInviteSigningKey mocks base method.
+func (m *MockOrgDatastore) CreateInviteSigningKey(arg0 uuid.UUID) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateInviteSigningKey", arg0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateInviteSigningKey indicates an expected call of CreateInviteSigningKey.
+func (mr *MockOrgDatastoreMockRecorder) CreateInviteSigningKey(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInviteSigningKey", reflect.TypeOf((*MockOrgDatastore)(nil).CreateInviteSigningKey), arg0)
+}
+
 // CreateOrg mocks base method.
 func (m *MockOrgDatastore) CreateOrg(arg0 *datastore.OrgInfo) (uuid.UUID, error) {
 	m.ctrl.T.Helper()
@@ -189,6 +204,21 @@ func (m *MockOrgDatastore) DeleteOrgAndUsers(arg0 uuid.UUID) error {
 func (mr *MockOrgDatastoreMockRecorder) DeleteOrgAndUsers(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrgAndUsers", reflect.TypeOf((*MockOrgDatastore)(nil).DeleteOrgAndUsers), arg0)
+}
+
+// GetInviteSigningKey mocks base method.
+func (m *MockOrgDatastore) GetInviteSigningKey(arg0 uuid.UUID) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetInviteSigningKey", arg0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetInviteSigningKey indicates an expected call of GetInviteSigningKey.
+func (mr *MockOrgDatastoreMockRecorder) GetInviteSigningKey(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInviteSigningKey", reflect.TypeOf((*MockOrgDatastore)(nil).GetInviteSigningKey), arg0)
 }
 
 // GetOrg mocks base method.

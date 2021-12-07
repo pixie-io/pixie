@@ -8,6 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	types "github.com/gogo/protobuf/types"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 	uuidpb "px.dev/pixie/src/api/proto/uuidpb"
@@ -453,6 +454,26 @@ func (mr *MockOrgServiceClientMockRecorder) AddOrgIDEConfig(ctx, in interface{},
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddOrgIDEConfig", reflect.TypeOf((*MockOrgServiceClient)(nil).AddOrgIDEConfig), varargs...)
 }
 
+// CreateInviteToken mocks base method.
+func (m *MockOrgServiceClient) CreateInviteToken(ctx context.Context, in *profilepb.CreateInviteTokenRequest, opts ...grpc.CallOption) (*profilepb.InviteToken, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CreateInviteToken", varargs...)
+	ret0, _ := ret[0].(*profilepb.InviteToken)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateInviteToken indicates an expected call of CreateInviteToken.
+func (mr *MockOrgServiceClientMockRecorder) CreateInviteToken(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInviteToken", reflect.TypeOf((*MockOrgServiceClient)(nil).CreateInviteToken), varargs...)
+}
+
 // CreateOrg mocks base method.
 func (m *MockOrgServiceClient) CreateOrg(ctx context.Context, in *profilepb.CreateOrgRequest, opts ...grpc.CallOption) (*uuidpb.UUID, error) {
 	m.ctrl.T.Helper()
@@ -613,6 +634,26 @@ func (mr *MockOrgServiceClientMockRecorder) GetUsersInOrg(ctx, in interface{}, o
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersInOrg", reflect.TypeOf((*MockOrgServiceClient)(nil).GetUsersInOrg), varargs...)
 }
 
+// RevokeAllInviteTokens mocks base method.
+func (m *MockOrgServiceClient) RevokeAllInviteTokens(ctx context.Context, in *uuidpb.UUID, opts ...grpc.CallOption) (*types.Empty, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "RevokeAllInviteTokens", varargs...)
+	ret0, _ := ret[0].(*types.Empty)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RevokeAllInviteTokens indicates an expected call of RevokeAllInviteTokens.
+func (mr *MockOrgServiceClientMockRecorder) RevokeAllInviteTokens(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RevokeAllInviteTokens", reflect.TypeOf((*MockOrgServiceClient)(nil).RevokeAllInviteTokens), varargs...)
+}
+
 // UpdateOrg mocks base method.
 func (m *MockOrgServiceClient) UpdateOrg(ctx context.Context, in *profilepb.UpdateOrgRequest, opts ...grpc.CallOption) (*profilepb.OrgInfo, error) {
 	m.ctrl.T.Helper()
@@ -631,6 +672,26 @@ func (mr *MockOrgServiceClientMockRecorder) UpdateOrg(ctx, in interface{}, opts 
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrg", reflect.TypeOf((*MockOrgServiceClient)(nil).UpdateOrg), varargs...)
+}
+
+// VerifyInviteToken mocks base method.
+func (m *MockOrgServiceClient) VerifyInviteToken(ctx context.Context, in *profilepb.InviteToken, opts ...grpc.CallOption) (*types.BoolValue, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "VerifyInviteToken", varargs...)
+	ret0, _ := ret[0].(*types.BoolValue)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// VerifyInviteToken indicates an expected call of VerifyInviteToken.
+func (mr *MockOrgServiceClientMockRecorder) VerifyInviteToken(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyInviteToken", reflect.TypeOf((*MockOrgServiceClient)(nil).VerifyInviteToken), varargs...)
 }
 
 // MockOrgServiceServer is a mock of OrgServiceServer interface.
@@ -669,6 +730,21 @@ func (m *MockOrgServiceServer) AddOrgIDEConfig(arg0 context.Context, arg1 *profi
 func (mr *MockOrgServiceServerMockRecorder) AddOrgIDEConfig(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddOrgIDEConfig", reflect.TypeOf((*MockOrgServiceServer)(nil).AddOrgIDEConfig), arg0, arg1)
+}
+
+// CreateInviteToken mocks base method.
+func (m *MockOrgServiceServer) CreateInviteToken(arg0 context.Context, arg1 *profilepb.CreateInviteTokenRequest) (*profilepb.InviteToken, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateInviteToken", arg0, arg1)
+	ret0, _ := ret[0].(*profilepb.InviteToken)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateInviteToken indicates an expected call of CreateInviteToken.
+func (mr *MockOrgServiceServerMockRecorder) CreateInviteToken(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInviteToken", reflect.TypeOf((*MockOrgServiceServer)(nil).CreateInviteToken), arg0, arg1)
 }
 
 // CreateOrg mocks base method.
@@ -791,6 +867,21 @@ func (mr *MockOrgServiceServerMockRecorder) GetUsersInOrg(arg0, arg1 interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersInOrg", reflect.TypeOf((*MockOrgServiceServer)(nil).GetUsersInOrg), arg0, arg1)
 }
 
+// RevokeAllInviteTokens mocks base method.
+func (m *MockOrgServiceServer) RevokeAllInviteTokens(arg0 context.Context, arg1 *uuidpb.UUID) (*types.Empty, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RevokeAllInviteTokens", arg0, arg1)
+	ret0, _ := ret[0].(*types.Empty)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RevokeAllInviteTokens indicates an expected call of RevokeAllInviteTokens.
+func (mr *MockOrgServiceServerMockRecorder) RevokeAllInviteTokens(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RevokeAllInviteTokens", reflect.TypeOf((*MockOrgServiceServer)(nil).RevokeAllInviteTokens), arg0, arg1)
+}
+
 // UpdateOrg mocks base method.
 func (m *MockOrgServiceServer) UpdateOrg(arg0 context.Context, arg1 *profilepb.UpdateOrgRequest) (*profilepb.OrgInfo, error) {
 	m.ctrl.T.Helper()
@@ -804,4 +895,19 @@ func (m *MockOrgServiceServer) UpdateOrg(arg0 context.Context, arg1 *profilepb.U
 func (mr *MockOrgServiceServerMockRecorder) UpdateOrg(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrg", reflect.TypeOf((*MockOrgServiceServer)(nil).UpdateOrg), arg0, arg1)
+}
+
+// VerifyInviteToken mocks base method.
+func (m *MockOrgServiceServer) VerifyInviteToken(arg0 context.Context, arg1 *profilepb.InviteToken) (*types.BoolValue, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VerifyInviteToken", arg0, arg1)
+	ret0, _ := ret[0].(*types.BoolValue)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// VerifyInviteToken indicates an expected call of VerifyInviteToken.
+func (mr *MockOrgServiceServerMockRecorder) VerifyInviteToken(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyInviteToken", reflect.TypeOf((*MockOrgServiceServer)(nil).VerifyInviteToken), arg0, arg1)
 }

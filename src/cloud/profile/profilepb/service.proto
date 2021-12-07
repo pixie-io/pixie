@@ -23,6 +23,7 @@ package px.services;
 option go_package = "profilepb";
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/protobuf/empty.proto";
 import "google/protobuf/wrappers.proto";
 import "src/api/proto/uuidpb/uuid.proto";
 
@@ -55,6 +56,10 @@ service OrgService {
   rpc AddOrgIDEConfig(AddOrgIDEConfigRequest) returns (AddOrgIDEConfigResponse);
   rpc DeleteOrgIDEConfig(DeleteOrgIDEConfigRequest) returns (DeleteOrgIDEConfigResponse);
   rpc GetOrgIDEConfigs(GetOrgIDEConfigsRequest) returns (GetOrgIDEConfigsResponse);
+
+  rpc CreateInviteToken(CreateInviteTokenRequest) returns (InviteToken);
+  rpc RevokeAllInviteTokens(px.uuidpb.UUID) returns (google.protobuf.Empty);
+  rpc VerifyInviteToken(InviteToken) returns (google.protobuf.BoolValue);
 }
 
 // UserInfo has information about a single end user in our system.
@@ -282,4 +287,12 @@ message GetOrgIDEConfigsRequest {
 message GetOrgIDEConfigsResponse {
   // The IDE configs belonging to the org.
   repeated IDEConfig configs = 1;
+}
+
+message CreateInviteTokenRequest {
+  px.uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
+}
+
+message InviteToken {
+  string signed_claims = 1;
 }

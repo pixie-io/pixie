@@ -23,9 +23,12 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/badoux/checkmail"
+	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/gofrs/uuid"
+	"github.com/gogo/protobuf/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -85,6 +88,10 @@ type OrgDatastore interface {
 	GetOrgByDomain(string) (*datastore.OrgInfo, error)
 	// Delete Org and all of its users
 	DeleteOrgAndUsers(uuid.UUID) error
+	// GetInviteSigningKey gets the invite signing key for the given orgID.
+	GetInviteSigningKey(uuid.UUID) (string, error)
+	// CreateInviteSigningKey creates an invite signing key for the given orgID.
+	CreateInviteSigningKey(uuid.UUID) (string, error)
 }
 
 // UserSettingsDatastore is the interface used to the backing store for user settings.
@@ -631,4 +638,81 @@ func (s *Server) GetOrgIDEConfigs(ctx context.Context, req *profilepb.GetOrgIDEC
 	return &profilepb.GetOrgIDEConfigsResponse{
 		Configs: configPbs,
 	}, nil
+}
+
+// CreateInviteToken creates a signed invite JWT for the given org with an expiration of 1 week.
+func (s *Server) CreateInviteToken(ctx context.Context, req *profilepb.CreateInviteTokenRequest) (*profilepb.InviteToken, error) {
+	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
+	if orgID == uuid.Nil {
+		return nil, status.Error(codes.InvalidArgument, "org ID improperly formatted")
+	}
+	var inviteSigningKey string
+	inviteSigningKey, err := s.ods.GetInviteSigningKey(orgID)
+	if err != nil || inviteSigningKey == "" {
+		inviteSigningKey, err = s.ods.CreateInviteSigningKey(orgID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	inviteClaims := jwt.MapClaims{}
+	inviteClaims["sub"] = orgID.String()
+	inviteClaims["exp"] = time.Now().Add(7 * 24 * time.Hour).Unix()
+
+	signedClaims, err := jwt.NewWithClaims(jwt.SigningMethodHS256, inviteClaims).SignedString([]byte(inviteSigningKey))
+	if err != nil {
+		return nil, err
+	}
+
+	return &profilepb.InviteToken{SignedClaims: signedClaims}, nil
+}
+
+// RevokeAllInviteTokens revokes all pending invited for the given org by rotating the JWT signing key.
+func (s *Server) RevokeAllInviteTokens(ctx context.Context, req *uuidpb.UUID) (*types.Empty, error) {
+	orgID := utils.UUIDFromProtoOrNil(req)
+	if orgID == uuid.Nil {
+		return nil, status.Error(codes.InvalidArgument, "org ID improperly formatted")
+	}
+	_, err := s.ods.CreateInviteSigningKey(orgID)
+	if err != nil {
+		return nil, err
+	}
+	return &types.Empty{}, nil
+}
+
+// VerifyInviteToken verifies that the given invite JWT is still valid by performing expiration and
+// signing key checks.
+func (s *Server) VerifyInviteToken(ctx context.Context, req *profilepb.InviteToken) (*types.BoolValue, error) {
+	signedClaims := req.GetSignedClaims()
+	if signedClaims == "" {
+		return nil, status.Error(codes.InvalidArgument, "invite token misformatted")
+	}
+
+	// Parse without verification to pull out the orgID first.
+	parser := jwt.Parser{}
+	claims := &jwt.StandardClaims{}
+	_, _, err := parser.ParseUnverified(signedClaims, claims)
+	if err != nil {
+		return nil, err
+	}
+	// Check expiration.
+	err = claims.Valid(nil)
+	if err != nil {
+		return &types.BoolValue{Value: false}, nil
+	}
+
+	// Get the signing key for the orgID.
+	orgID := uuid.FromStringOrNil(claims.Subject)
+	if orgID == uuid.Nil {
+		return nil, status.Error(codes.InvalidArgument, "invite token misformatted")
+	}
+	inviteSigningKey, err := s.ods.GetInviteSigningKey(orgID)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = parser.Parse(signedClaims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(inviteSigningKey), nil
+	})
+	return &types.BoolValue{Value: err == nil}, nil
 }

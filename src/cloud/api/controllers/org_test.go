@@ -260,6 +260,18 @@ func (*fakeOrg) GetOrgIDEConfigs(ctx context.Context, _ *profilepb.GetOrgIDEConf
 	return &profilepb.GetOrgIDEConfigsResponse{}, nil
 }
 
+func (*fakeOrg) CreateInviteToken(ctx context.Context, _ *profilepb.CreateInviteTokenRequest, _ ...grpc.CallOption) (*profilepb.InviteToken, error) {
+	return &profilepb.InviteToken{}, nil
+}
+
+func (*fakeOrg) RevokeAllInviteTokens(ctx context.Context, _ *uuidpb.UUID, _ ...grpc.CallOption) (*types.Empty, error) {
+	return &types.Empty{}, nil
+}
+
+func (*fakeOrg) VerifyInviteToken(ctx context.Context, _ *profilepb.InviteToken, _ ...grpc.CallOption) (*types.BoolValue, error) {
+	return &types.BoolValue{}, nil
+}
+
 func TestOrganizationServiceServer_CorrectOrgPermissions(t *testing.T) {
 	tests := []struct {
 		name     string
