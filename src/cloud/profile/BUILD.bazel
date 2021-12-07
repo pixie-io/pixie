@@ -38,6 +38,7 @@ go_library(
         "//src/shared/services/server",
         "@com_github_golang_migrate_migrate//source/go_bindata",
         "@com_github_sirupsen_logrus//:logrus",
+        "@com_github_spf13_viper//:viper",
     ],
 )
 

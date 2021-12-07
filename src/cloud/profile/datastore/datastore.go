@@ -19,6 +19,7 @@
 package datastore
 
 import (
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"strings"
@@ -33,6 +34,9 @@ const (
 	// See https://www.postgresql.org/docs/current/errcodes-appendix.html
 	// Code for `unique_violation`
 	uniqueViolation = "23505"
+
+	// SaltLength is the length of the salt used when encrypting the invite signing key.
+	SaltLength = 10
 )
 
 // TODO(zasgar): Move these to models ?
@@ -75,23 +79,26 @@ func (o *OrgInfo) GetDomainName() string {
 
 // Datastore is a postgres backed storage for entities.
 type Datastore struct {
-	db *sqlx.DB
+	db    *sqlx.DB
+	dbKey string
 }
 
 // NewDatastore creates a Datastore.
-func NewDatastore(db *sqlx.DB) *Datastore {
-	return &Datastore{db: db}
+func NewDatastore(db *sqlx.DB, dbKey string) *Datastore {
+	return &Datastore{db: db, dbKey: dbKey}
 }
 
 var (
 	// ErrUserNotFound is used when a user is not found when looking up by a filter condition.
-	ErrUserNotFound = fmt.Errorf("user not found")
+	ErrUserNotFound = errors.New("user not found")
 	// ErrOrgNotFound is used when the org is not found when looking up by a filter condition.
-	ErrOrgNotFound = fmt.Errorf("org not found")
+	ErrOrgNotFound = errors.New("org not found")
+	// ErrNoInviteKey is used when the org doesn't have a invite key set.
+	ErrNoInviteKey = errors.New("org has no invite signing key")
 	// ErrUserAttributesNotFound is used when no attributes can be found for the given user.
-	ErrUserAttributesNotFound = fmt.Errorf("user attributes not found")
+	ErrUserAttributesNotFound = errors.New("user attributes not found")
 	// ErrUserSettingsNotFound is used when no settings can be found for the given user.
-	ErrUserSettingsNotFound = fmt.Errorf("user settings not found")
+	ErrUserSettingsNotFound = errors.New("user settings not found")
 	// ErrDuplicateOrgName is used when the given org name is already in use.
 	ErrDuplicateOrgName = errors.New("cannot create org (name already in use)")
 	// ErrDuplicateUser is used when the user creation violates unique constraints for auth_provider_id or email.
@@ -262,6 +269,55 @@ func (d *Datastore) GetOrgByDomain(domainName string) (*OrgInfo, error) {
 		return &orgInfo, err
 	}
 	return nil, ErrOrgNotFound
+}
+
+// GetInviteSigningKey gets the invite signing key for the given orgID.
+func (d *Datastore) GetInviteSigningKey(id uuid.UUID) (string, error) {
+	query := `SELECT PGP_SYM_DECRYPT(invite_signing_key::bytea, $2) FROM orgs WHERE id=$1`
+	rows, err := d.db.Queryx(query, id, d.dbKey)
+	if err != nil {
+		return "", ErrNoInviteKey
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		var saltedKey string
+		err := rows.Scan(&saltedKey)
+		if err != nil {
+			return "", ErrNoInviteKey
+		}
+		if len(saltedKey) > SaltLength {
+			inviteKey := saltedKey[SaltLength:]
+			return inviteKey, nil
+		}
+	}
+
+	return "", ErrNoInviteKey
+}
+
+// CreateInviteSigningKey creates an invite signing key for the given orgID.
+func (d *Datastore) CreateInviteSigningKey(id uuid.UUID) (string, error) {
+	inviteKey := make([]byte, 64)
+	_, err := rand.Read(inviteKey)
+	if err != nil {
+		return "", errors.New("could not generate signing key")
+	}
+
+	// Add a salt to the signing key.
+	salt := make([]byte, SaltLength/2)
+	_, err = rand.Read(salt)
+	if err != nil {
+		return "", errors.New("could not create salt")
+	}
+	saltedKey := fmt.Sprintf("%x%x", salt, inviteKey)
+
+	query := `UPDATE orgs SET invite_signing_key = PGP_SYM_ENCRYPT($2, $3) WHERE id = $1`
+	_, err = d.db.Exec(query, id, saltedKey, d.dbKey)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", inviteKey), nil
 }
 
 // GetUserByEmail gets user info by email.

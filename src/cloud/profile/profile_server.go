@@ -24,6 +24,7 @@ import (
 
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 
 	"px.dev/pixie/src/cloud/profile/controllers"
 	"px.dev/pixie/src/cloud/profile/datastore"
@@ -55,7 +56,12 @@ func main() {
 		log.WithError(err).Fatal("Failed to apply migrations")
 	}
 
-	datastore := datastore.NewDatastore(db)
+	dbKey := viper.GetString("database_key")
+	if dbKey == "" {
+		log.Fatal("Database encryption key is required")
+	}
+
+	datastore := datastore.NewDatastore(db, dbKey)
 	env, err := profileenv.NewWithDefaults()
 	if err != nil {
 		log.WithError(err).Fatal("Failed to set up profileenv")

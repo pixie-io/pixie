@@ -89,7 +89,7 @@ func mustLoadTestData(db *sqlx.DB) {
 func TestDatastore(t *testing.T) {
 	t.Run("test insert and get user", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 		orgID := uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000")
 		userInfo := datastore.UserInfo{
 			OrgID:          &orgID,
@@ -129,7 +129,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("inserting existing user should fail", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 		orgID := uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000")
 		userInfo := datastore.UserInfo{
 			OrgID:     &orgID,
@@ -145,7 +145,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("insert user with bad org should fail", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 		// Changed 123 to 133.
 		orgID := uuid.FromStringOrNil("133e4567-e89b-12d3-a456-426655440000")
 		userInfo := datastore.UserInfo{
@@ -162,7 +162,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("creating user with no org should work", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 		userInfo := datastore.UserInfo{
 			Username:  "zain",
 			FirstName: "zain",
@@ -176,7 +176,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("test get org", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 		orgInfo, err := d.GetOrg(uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"))
 		require.NoError(t, err)
 		require.NotNil(t, orgInfo)
@@ -188,7 +188,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("get org by name", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 		orgInfo, err := d.GetOrgByName("my-org")
 		require.NoError(t, err)
 		require.NotNil(t, orgInfo)
@@ -199,7 +199,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("get org by name for missing name should return a specific error", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 		orgInfo, err := d.GetOrgByDomain("goo")
 		require.NotNil(t, err)
 		require.Equal(t, err, datastore.ErrOrgNotFound)
@@ -208,7 +208,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("get org by domain", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 		orgInfo, err := d.GetOrgByDomain("my-org.com")
 		require.NoError(t, err)
 		require.NotNil(t, orgInfo)
@@ -219,7 +219,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("get orgs", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 		orgs, err := d.GetOrgs()
 		require.NoError(t, err)
 		require.NotNil(t, orgs)
@@ -231,7 +231,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("get org by domain for missing domain should return a specific error", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 		orgInfo, err := d.GetOrgByDomain("goo.com")
 		require.NotNil(t, err)
 		require.Equal(t, err, datastore.ErrOrgNotFound)
@@ -240,7 +240,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("create org and user first time user", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 		domain := "pg.com"
 		orgInfo := datastore.OrgInfo{
 			OrgName:    "pg",
@@ -291,7 +291,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("create org and user first time user case should fail for existing org", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 		domain := "my-org.com"
 		orgInfo := datastore.OrgInfo{
 			OrgName:    "my-org",
@@ -312,7 +312,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("create org and user should fail for existing user", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 		domain := "my-org.com"
 		orgInfo := datastore.OrgInfo{
 			OrgName:    "my-org",
@@ -333,7 +333,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("create org", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 		domain := "asdf.com"
 		orgInfo := datastore.OrgInfo{
 			OrgName:    "asdf",
@@ -348,7 +348,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("create org blank domain", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 		orgInfo := datastore.OrgInfo{
 			OrgName: "asdf",
 		}
@@ -361,7 +361,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("create duplicate org name fails", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 		domain := "my-org.com"
 		orgInfo := datastore.OrgInfo{
 			OrgName:    "my-org",
@@ -374,9 +374,51 @@ func TestDatastore(t *testing.T) {
 		assert.Equal(t, orgID, uuid.Nil)
 	})
 
+	t.Run("get blank org invite signing key", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db, "test_key")
+		orgID := "123e4567-e89b-12d3-a456-426655440000"
+		key, err := d.GetInviteSigningKey(uuid.FromStringOrNil(orgID))
+		require.Error(t, err)
+		assert.Equal(t, err, datastore.ErrNoInviteKey)
+		assert.Equal(t, key, "")
+	})
+
+	t.Run("create invite signing key", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db, "test_key")
+		orgID := "123e4567-e89b-12d3-a456-426655440000"
+		key1, err := d.CreateInviteSigningKey(uuid.FromStringOrNil(orgID))
+		require.NoError(t, err)
+		assert.NotEqual(t, key1, "")
+
+		key2, err := d.GetInviteSigningKey(uuid.FromStringOrNil(orgID))
+		require.NoError(t, err)
+		assert.Equal(t, key2, key1)
+	})
+
+	t.Run("recreate invite signing key", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db, "test_key")
+		orgID := "123e4567-e89b-12d3-a456-426655440000"
+		key1, err := d.CreateInviteSigningKey(uuid.FromStringOrNil(orgID))
+		require.NoError(t, err)
+		assert.NotEqual(t, key1, "")
+
+		key2, err := d.CreateInviteSigningKey(uuid.FromStringOrNil(orgID))
+		require.NoError(t, err)
+		// Key should have changed.
+		assert.NotEqual(t, key2, key1)
+
+		// We should fetch the latest key.
+		key3, err := d.GetInviteSigningKey(uuid.FromStringOrNil(orgID))
+		require.NoError(t, err)
+		assert.Equal(t, key3, key2)
+	})
+
 	t.Run("get user by email", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 		userInfo, err := d.GetUserByEmail("person@my-org.com")
 		require.NoError(t, err)
 		require.NotNil(t, userInfo)
@@ -386,7 +428,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("get user by email for missing email should return specific error", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 		userInfo, err := d.GetUserByEmail("noemail@gmail.com")
 		require.NotNil(t, err)
 		require.Equal(t, err, datastore.ErrUserNotFound)
@@ -395,7 +437,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("get user by auth provider id", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 		userInfo, err := d.GetUserByAuthProviderID("github|123456789")
 		require.NoError(t, err)
 		require.NotNil(t, userInfo)
@@ -405,7 +447,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("get user by auth provider id for missing auth provider id should return specific error", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 		userInfo, err := d.GetUserByAuthProviderID("noid")
 		require.NotNil(t, err)
 		require.Equal(t, err, datastore.ErrUserNotFound)
@@ -423,7 +465,7 @@ func TestDatastore(t *testing.T) {
 		insertUserQuery := `INSERT INTO users (id, org_id, username, first_name, last_name, email, identity_provider) VALUES ($1, $2, $3, $4, $5, $6, $7)`
 		db.MustExec(insertUserQuery, userID, orgID, "person@not-my-org.com", "first", "last", "person@not-my-org.com", "github")
 
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 
 		// Should show up before the deletion
 		userInfo, err := d.GetUser(uuid.FromStringOrNil(userID))
@@ -447,7 +489,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("update user", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 
 		userID := "123e4567-e89b-12d3-a456-426655440001"
 		profilePicture := "http://somepicture"
@@ -464,7 +506,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("update user org", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 
 		userInfo := datastore.UserInfo{
 			Username:  "zain",
@@ -491,7 +533,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("Get user attributes", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 
 		attrs, err := d.GetUserAttributes(uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440001"))
 		require.NoError(t, err)
@@ -501,7 +543,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("Set user attributes", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 
 		id := "123e4567-e89b-12d3-a456-426655440001"
 		tourSeen := true
@@ -525,7 +567,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("Get user settings", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 
 		attrs, err := d.GetUserSettings(uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440001"))
 		require.NoError(t, err)
@@ -535,7 +577,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("Set user settings", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 
 		id := "123e4567-e89b-12d3-a456-426655440001"
 		analyticsOptout := true
@@ -559,7 +601,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("Get users in org", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 
 		users, err := d.GetUsersInOrg(uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"))
 		require.NoError(t, err)
@@ -568,7 +610,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("count users in org", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 
 		count, err := d.NumUsersInOrg(uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"))
 		require.NoError(t, err)
@@ -577,7 +619,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("update org approvals", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 
 		orgID := "123e4567-e89b-12d3-a456-426655440000"
 		require.NoError(t, d.UpdateOrg(&datastore.OrgInfo{
@@ -593,7 +635,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("update org domain name", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 
 		orgID := "123e4567-e89b-12d3-a456-426655440000"
 		domain := "asdf.com"
@@ -610,7 +652,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("approve all users", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 
 		orgID := uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000")
 		require.NoError(t, d.ApproveAllOrgUsers(orgID))
@@ -624,7 +666,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("delete IDE config from org", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 		orgID := uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000")
 
 		err := d.DeleteIDEConfig(orgID, "sublime")
@@ -639,7 +681,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("insert IDE config for org", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 		orgID := uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000")
 
 		err := d.AddIDEConfig(orgID, &datastore.IDEConfig{Path: "test://123/{{symbol}}", Name: "test2"})
@@ -659,7 +701,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("get IDE config", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 		orgID := uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000")
 
 		ideConfig, err := d.GetIDEConfig(orgID, "sublime")
@@ -672,7 +714,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("get IDE configs for org", func(t *testing.T) {
 		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
+		d := datastore.NewDatastore(db, "test_key")
 		orgID := uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000")
 
 		ideConfigs, err := d.GetIDEConfigs(orgID)
