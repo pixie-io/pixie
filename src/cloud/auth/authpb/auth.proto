@@ -177,10 +177,11 @@ message CreateOrgAndInviteUserRequest {
     string domain_name = 2;
   }
   message User {
-    string username = 1;
     string first_name = 2;
     string last_name = 3;
     string email = 4;
+
+    reserved 1;
   }
   Org org = 1;
   User user = 2;

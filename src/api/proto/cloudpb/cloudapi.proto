@@ -861,12 +861,13 @@ message UserInfo {
   px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
   // The ID of the organization that they belong to.
   px.uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
-  string username = 3;
   string first_name = 4;
   string last_name = 5;
   string email = 6;
   string profile_picture = 7;
   bool is_approved = 8;
+
+  reserved 3;
 }
 
 // ConfigService provides configuration specs from the Cloud.

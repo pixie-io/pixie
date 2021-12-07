@@ -383,7 +383,6 @@ func (s *Server) createUserAndOrg(ctx context.Context, domainName string, orgNam
 			DomainName: domainName,
 		},
 		User: &profilepb.CreateOrgAndUserRequest_User{
-			Username:         userInfo.Email,
 			FirstName:        userInfo.FirstName,
 			LastName:         userInfo.LastName,
 			Email:            userInfo.Email,
@@ -415,7 +414,6 @@ func (s *Server) createUser(ctx context.Context, userInfo *UserInfo, orgID *uuid
 	// Create a new user to register them.
 	userCreateReq := &profilepb.CreateUserRequest{
 		OrgID:            orgID,
-		Username:         userInfo.Email,
 		FirstName:        userInfo.FirstName,
 		LastName:         userInfo.LastName,
 		Email:            userInfo.Email,

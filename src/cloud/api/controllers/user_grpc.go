@@ -84,7 +84,6 @@ func (u *UserServiceServer) GetUser(ctx context.Context, req *uuidpb.UUID) (*clo
 	return &cloudpb.UserInfo{
 		ID:             resp.ID,
 		OrgID:          resp.OrgID,
-		Username:       resp.Username,
 		FirstName:      resp.FirstName,
 		LastName:       resp.LastName,
 		Email:          resp.Email,
@@ -185,7 +184,6 @@ func (u *UserServiceServer) UpdateUser(ctx context.Context, req *cloudpb.UpdateU
 	return &cloudpb.UserInfo{
 		ID:             resp.ID,
 		OrgID:          resp.OrgID,
-		Username:       resp.Username,
 		FirstName:      resp.FirstName,
 		LastName:       resp.LastName,
 		Email:          resp.Email,

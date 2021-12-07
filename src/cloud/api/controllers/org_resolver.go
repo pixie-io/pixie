@@ -82,7 +82,6 @@ func (q *QueryResolver) OrgUsers(ctx context.Context) ([]*UserInfoResolver, erro
 		userResolvers[idx] = &UserInfoResolver{ctx, &q.Env, &cloudpb.UserInfo{
 			ID:             user.ID,
 			OrgID:          user.OrgID,
-			Username:       user.Username,
 			FirstName:      user.FirstName,
 			LastName:       user.LastName,
 			Email:          user.Email,

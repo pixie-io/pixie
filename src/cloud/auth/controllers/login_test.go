@@ -99,7 +99,6 @@ func TestServer_LoginNewUser_NoOrg(t *testing.T) {
 
 	mockProfile.EXPECT().
 		CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
-			Username:         "abc@gmail.com",
 			FirstName:        "first",
 			LastName:         "last",
 			Email:            "abc@gmail.com",
@@ -254,7 +253,6 @@ func TestServer_LoginNewUser_ExistingOrgWithHostedDomain(t *testing.T) {
 	mockProfile.EXPECT().
 		CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
 			OrgID:            orgPb,
-			Username:         "abc@test.com",
 			FirstName:        "first",
 			LastName:         "last",
 			Email:            "abc@test.com",
@@ -549,7 +547,6 @@ func TestServer_LoginNewUser_CreateUserFailed(t *testing.T) {
 	mockProfile.EXPECT().
 		CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
 			OrgID:            orgPb,
-			Username:         "abc@test.com",
 			FirstName:        "first",
 			LastName:         "last",
 			Email:            "abc@test.com",
@@ -730,7 +727,6 @@ func TestServer_LoginNewUser_JoinOrgByPLOrgID(t *testing.T) {
 		CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
 			AuthProviderID:   authProviderID,
 			OrgID:            orgPb,
-			Username:         "abc@gmail.com",
 			FirstName:        "first",
 			LastName:         "last",
 			Email:            "abc@gmail.com",
@@ -1241,7 +1237,6 @@ func TestServer_Signup_LookupHostedDomain(t *testing.T) {
 
 	mockProfile.EXPECT().CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
 		OrgID:          orgPb,
-		Username:       "abc@abcorg.com",
 		FirstName:      "first",
 		LastName:       "last",
 		Email:          "abc@abcorg.com",
@@ -1342,7 +1337,6 @@ func TestServer_Signup_FallbackToEmailDomainLookupAfterHostedDomain(t *testing.T
 
 	mockProfile.EXPECT().CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
 		OrgID:          orgPb,
-		Username:       "abc@abcorg.com",
 		FirstName:      "first",
 		LastName:       "last",
 		Email:          "abc@abcorg.com",
@@ -1434,7 +1428,6 @@ func TestServer_Signup_AlwaysCreateOrgOnEmptyHostedDomain(t *testing.T) {
 			DomainName: "",
 		},
 		User: &profilepb.CreateOrgAndUserRequest_User{
-			Username:       "abc@gmail.com",
 			FirstName:      "first",
 			LastName:       "last",
 			Email:          "abc@gmail.com",
@@ -1545,7 +1538,6 @@ func TestServer_Signup_ExistingOrgWithHostedDomain(t *testing.T) {
 
 	mockProfile.EXPECT().CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
 		OrgID:          orgPb,
-		Username:       "asdf@asdf.com",
 		FirstName:      "first",
 		LastName:       "last",
 		Email:          "asdf@asdf.com",
@@ -1629,7 +1621,6 @@ func TestServer_Signup_CreateOrg_ForSelfUser(t *testing.T) {
 			DomainName: "",
 		},
 		User: &profilepb.CreateOrgAndUserRequest_User{
-			Username:       "abc@gmail.com",
 			FirstName:      "first",
 			LastName:       "last",
 			Email:          "abc@gmail.com",
@@ -1714,7 +1705,6 @@ func TestServer_Signup_CreateUserOrgFailed(t *testing.T) {
 				DomainName: "",
 			},
 			User: &profilepb.CreateOrgAndUserRequest_User{
-				Username:       "abc@gmail.com",
 				FirstName:      "first",
 				LastName:       "last",
 				Email:          "abc@gmail.com",
@@ -1845,7 +1835,6 @@ func TestServer_Signup_UserNotApproved(t *testing.T) {
 
 	mockProfile.EXPECT().CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
 		OrgID:          utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
-		Username:       "asdf@asdf.com",
 		FirstName:      "first",
 		LastName:       "last",
 		Email:          "asdf@asdf.com",
@@ -2032,7 +2021,6 @@ func TestServer_InviteUser(t *testing.T) {
 				mockProfile.EXPECT().
 					CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
 						OrgID:            orgID,
-						Username:         req.Email,
 						FirstName:        req.FirstName,
 						LastName:         req.LastName,
 						Email:            req.Email,
@@ -2111,7 +2099,6 @@ func TestServer_CreateOrgAndInviteUser(t *testing.T) {
 			OrgName:    "default",
 		},
 		User: &profilepb.CreateOrgAndUserRequest_User{
-			Username:         email,
 			FirstName:        "admin",
 			LastName:         "admin",
 			Email:            email,
@@ -2157,7 +2144,6 @@ func TestServer_CreateOrgAndInviteUser(t *testing.T) {
 			OrgName:    "default",
 		},
 		User: &authpb.CreateOrgAndInviteUserRequest_User{
-			Username:  email,
 			FirstName: "admin",
 			LastName:  "admin",
 			Email:     email,

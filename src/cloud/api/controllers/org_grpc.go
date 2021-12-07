@@ -201,7 +201,6 @@ func (o *OrganizationServiceServer) GetUsersInOrg(ctx context.Context, req *clou
 		userList[idx] = &cloudpb.UserInfo{
 			ID:             user.ID,
 			OrgID:          user.OrgID,
-			Username:       user.Username,
 			FirstName:      user.FirstName,
 			LastName:       user.LastName,
 			Email:          user.Email,

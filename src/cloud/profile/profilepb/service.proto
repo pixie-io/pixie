@@ -63,7 +63,6 @@ message UserInfo {
   px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
   // The ID of the organization that they belong to.
   px.uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
-  string username = 3;
   string first_name = 4;
   string last_name = 5;
   string email = 6;
@@ -72,6 +71,8 @@ message UserInfo {
   string identity_provider = 9;
   // The auth_provider_id is the user ID that an auth_provider uses for an ID of the corresponding user.
   string auth_provider_id = 10 [(gogoproto.customname) = "AuthProviderID"];
+
+  reserved 3;
 }
 
 message GetUserByEmailRequest {
@@ -99,13 +100,14 @@ message OrgInfo {
 message CreateUserRequest {
   // Optional, the org_id (if any) that this user should belong to.
   px.uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
-  string username = 2;
   string first_name = 3;
   string last_name = 4;
   string email = 5;
   string identity_provider = 6;
   // The auth_provider_id is the user ID that an auth_provider uses for an ID of the corresponding user.
   string auth_provider_id = 7 [(gogoproto.customname) = "AuthProviderID"];
+
+  reserved 2;
 }
 
 message CreateOrgAndUserRequest {
@@ -114,13 +116,14 @@ message CreateOrgAndUserRequest {
     string domain_name = 2;
   }
   message User {
-    string username = 1;
     string first_name = 2;
     string last_name = 3;
     string email = 4;
     string identity_provider = 5;
     // The auth_provider_id is the user ID that an auth_provider uses for an ID of the corresponding user.
     string auth_provider_id = 6 [(gogoproto.customname) = "AuthProviderID"];
+
+    reserved 1;
   }
   Org org = 1;
   User user = 2;

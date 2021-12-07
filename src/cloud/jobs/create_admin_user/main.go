@@ -111,7 +111,6 @@ func main() {
 
 	email := "admin@default.com"
 	userInfo := &authpb.CreateOrgAndInviteUserRequest_User{
-		Username:  email,
 		FirstName: "admin",
 		LastName:  "admin",
 		Email:     email,
