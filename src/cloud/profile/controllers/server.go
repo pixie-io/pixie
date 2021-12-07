@@ -138,7 +138,6 @@ func userInfoToProto(u *datastore.UserInfo) *profilepb.UserInfo {
 	return &profilepb.UserInfo{
 		ID:               utils.ProtoFromUUID(u.ID),
 		OrgID:            orgID,
-		Username:         u.Username,
 		FirstName:        u.FirstName,
 		LastName:         u.LastName,
 		Email:            u.Email,
@@ -188,7 +187,6 @@ func toExternalError(err error) error {
 func (s *Server) CreateUser(ctx context.Context, req *profilepb.CreateUserRequest) (*uuidpb.UUID, error) {
 	// Users with no org are considered approved by default.
 	userInfo := &datastore.UserInfo{
-		Username:         req.Username,
 		FirstName:        req.FirstName,
 		LastName:         req.LastName,
 		Email:            req.Email,
@@ -205,9 +203,6 @@ func (s *Server) CreateUser(ctx context.Context, req *profilepb.CreateUserReques
 		userInfo.OrgID = &orgID
 		// Mark user as needing approval if this org requires approvals.
 		userInfo.IsApproved = !orgInfo.EnableApprovals
-	}
-	if len(userInfo.Username) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "invalid username")
 	}
 	if err := checkValidEmail(userInfo.Email); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -258,7 +253,6 @@ func (s *Server) CreateOrgAndUser(ctx context.Context, req *profilepb.CreateOrgA
 	}
 
 	userInfo := &datastore.UserInfo{
-		Username:         req.User.Username,
 		FirstName:        req.User.FirstName,
 		LastName:         req.User.LastName,
 		Email:            req.User.Email,
@@ -269,9 +263,6 @@ func (s *Server) CreateOrgAndUser(ctx context.Context, req *profilepb.CreateOrgA
 	}
 	if len(orgInfo.OrgName) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "invalid org name")
-	}
-	if len(userInfo.Username) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "invalid username")
 	}
 	if userInfo.IdentityProvider == "" {
 		return nil, status.Error(codes.InvalidArgument, "identity provider must not be empty")

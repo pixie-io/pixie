@@ -71,9 +71,9 @@ func mustLoadTestData(db *sqlx.DB) {
 
 	insertOrgQuery := `INSERT INTO orgs (id, org_name, domain_name, enable_approvals) VALUES ($1, $2, $3, $4)`
 	db.MustExec(insertOrgQuery, "123e4567-e89b-12d3-a456-426655440000", "my-org", "my-org.com", "false")
-	insertUserQuery := `INSERT INTO users (id, org_id, username, first_name, last_name, email, is_approved, identity_provider, auth_provider_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
-	db.MustExec(insertUserQuery, "123e4567-e89b-12d3-a456-426655440001", "123e4567-e89b-12d3-a456-426655440000", "person@my-org.com", "first", "last", "person@my-org.com", "true", "github", "github|123456789")
-	db.MustExec(insertUserQuery, "123e4567-e89b-12d3-a456-426655440002", "123e4567-e89b-12d3-a456-426655440000", "person2@my-org.com", "first2", "last2", "person2@my-org.com", "false", "google-oauth2", "google-oauth2|123456789")
+	insertUserQuery := `INSERT INTO users (id, org_id, first_name, last_name, email, is_approved, identity_provider, auth_provider_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+	db.MustExec(insertUserQuery, "123e4567-e89b-12d3-a456-426655440001", "123e4567-e89b-12d3-a456-426655440000", "first", "last", "person@my-org.com", "true", "github", "github|123456789")
+	db.MustExec(insertUserQuery, "123e4567-e89b-12d3-a456-426655440002", "123e4567-e89b-12d3-a456-426655440000", "first2", "last2", "person2@my-org.com", "false", "google-oauth2", "google-oauth2|123456789")
 
 	insertUserSetting := `INSERT INTO user_settings (user_id, analytics_optout) VALUES ($1, $2)`
 	db.MustExec(insertUserSetting, "123e4567-e89b-12d3-a456-426655440001", false)
@@ -93,7 +93,6 @@ func TestDatastore(t *testing.T) {
 		orgID := uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000")
 		userInfo := datastore.UserInfo{
 			OrgID:          &orgID,
-			Username:       "zain",
 			FirstName:      "zain",
 			LastName:       "asgar",
 			Email:          "zasgar@pixielabs.ai",
@@ -109,7 +108,6 @@ func TestDatastore(t *testing.T) {
 
 		assert.Equal(t, userID, userInfoFetched.ID)
 		assert.Equal(t, userInfo.OrgID, userInfoFetched.OrgID)
-		assert.Equal(t, userInfo.Username, userInfoFetched.Username)
 		assert.Equal(t, userInfo.FirstName, userInfoFetched.FirstName)
 		assert.Equal(t, userInfo.LastName, userInfoFetched.LastName)
 		assert.Equal(t, userInfo.Email, userInfoFetched.Email)
@@ -133,7 +131,6 @@ func TestDatastore(t *testing.T) {
 		orgID := uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000")
 		userInfo := datastore.UserInfo{
 			OrgID:     &orgID,
-			Username:  "person@my-org.com",
 			FirstName: "first",
 			LastName:  "last",
 			Email:     "person@my-org.com",
@@ -150,7 +147,6 @@ func TestDatastore(t *testing.T) {
 		orgID := uuid.FromStringOrNil("133e4567-e89b-12d3-a456-426655440000")
 		userInfo := datastore.UserInfo{
 			OrgID:     &orgID,
-			Username:  "zain",
 			FirstName: "zain",
 			LastName:  "asgar",
 			Email:     "zasgar@pixielabs.ai",
@@ -164,7 +160,6 @@ func TestDatastore(t *testing.T) {
 		mustLoadTestData(db)
 		d := datastore.NewDatastore(db, "test_key")
 		userInfo := datastore.UserInfo{
-			Username:  "zain",
 			FirstName: "zain",
 			LastName:  "asgar",
 			Email:     "zasgar@pixielabs.ai",
@@ -247,7 +242,6 @@ func TestDatastore(t *testing.T) {
 			DomainName: &domain,
 		}
 		userInfo := datastore.UserInfo{
-			Username:       "johnd",
 			FirstName:      "john",
 			LastName:       "doe",
 			Email:          "john@pg.com",
@@ -298,7 +292,6 @@ func TestDatastore(t *testing.T) {
 			DomainName: &domain,
 		}
 		userInfo := datastore.UserInfo{
-			Username:  "johnd",
 			FirstName: "john",
 			LastName:  "doe",
 			Email:     "john@my-org.com",
@@ -319,7 +312,6 @@ func TestDatastore(t *testing.T) {
 			DomainName: &domain,
 		}
 		userInfo := datastore.UserInfo{
-			Username:  "person@my-org.com",
 			FirstName: "first",
 			LastName:  "last",
 			Email:     "person@my-org.com",
@@ -462,8 +454,8 @@ func TestDatastore(t *testing.T) {
 		// Add in data to be deleted
 		insertOrgQuery := `INSERT INTO orgs (id, org_name, domain_name) VALUES ($1, $2, $3)`
 		db.MustExec(insertOrgQuery, orgID, "not-my-org", "not-my-org.com")
-		insertUserQuery := `INSERT INTO users (id, org_id, username, first_name, last_name, email, identity_provider) VALUES ($1, $2, $3, $4, $5, $6, $7)`
-		db.MustExec(insertUserQuery, userID, orgID, "person@not-my-org.com", "first", "last", "person@not-my-org.com", "github")
+		insertUserQuery := `INSERT INTO users (id, org_id, first_name, last_name, email, identity_provider) VALUES ($1, $2, $3, $4, $5, $6)`
+		db.MustExec(insertUserQuery, userID, orgID, "first", "last", "person@not-my-org.com", "github")
 
 		d := datastore.NewDatastore(db, "test_key")
 
@@ -509,7 +501,6 @@ func TestDatastore(t *testing.T) {
 		d := datastore.NewDatastore(db, "test_key")
 
 		userInfo := datastore.UserInfo{
-			Username:  "zain",
 			FirstName: "zain",
 			LastName:  "asgar",
 			Email:     "zasgar@pixielabs.ai",

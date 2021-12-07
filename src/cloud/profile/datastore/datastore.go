@@ -44,7 +44,6 @@ const (
 type UserInfo struct {
 	ID               uuid.UUID  `db:"id"`
 	OrgID            *uuid.UUID `db:"org_id"`
-	Username         string     `db:"username"`
 	FirstName        string     `db:"first_name"`
 	LastName         string     `db:"last_name"`
 	Email            string     `db:"email"`
@@ -127,7 +126,7 @@ func (d *Datastore) CreateUser(userInfo *UserInfo) (uuid.UUID, error) {
 
 // GetUser gets user information by user ID.
 func (d *Datastore) GetUser(id uuid.UUID) (*UserInfo, error) {
-	query := `SELECT id, org_id, username, first_name, last_name, email, profile_picture, is_approved, identity_provider, auth_provider_id FROM users WHERE id=$1`
+	query := `SELECT id, org_id, first_name, last_name, email, profile_picture, is_approved, identity_provider, auth_provider_id FROM users WHERE id=$1`
 	rows, err := d.db.Queryx(query, id)
 	if err != nil {
 		return nil, err
@@ -316,7 +315,7 @@ func (d *Datastore) CreateInviteSigningKey(id uuid.UUID) (string, error) {
 
 // GetUserByEmail gets user info by email.
 func (d *Datastore) GetUserByEmail(email string) (*UserInfo, error) {
-	query := `SELECT id, org_id, username, first_name, last_name, email, profile_picture, is_approved, identity_provider, auth_provider_id FROM users WHERE email=$1`
+	query := `SELECT id, org_id, first_name, last_name, email, profile_picture, is_approved, identity_provider, auth_provider_id FROM users WHERE email=$1`
 	rows, err := d.db.Queryx(query, email)
 	if err != nil {
 		return nil, err
@@ -333,7 +332,7 @@ func (d *Datastore) GetUserByEmail(email string) (*UserInfo, error) {
 
 // GetUserByAuthProviderID gets userinfo by auth provider id.
 func (d *Datastore) GetUserByAuthProviderID(id string) (*UserInfo, error) {
-	query := `SELECT id, org_id, username, first_name, last_name, email, profile_picture, is_approved, identity_provider, auth_provider_id FROM users WHERE auth_provider_id=$1`
+	query := `SELECT id, org_id, first_name, last_name, email, profile_picture, is_approved, identity_provider, auth_provider_id FROM users WHERE auth_provider_id=$1`
 	rows, err := d.db.Queryx(query, id)
 	if err != nil {
 		return nil, err
@@ -370,7 +369,7 @@ func (d *Datastore) DeleteOrgAndUsers(orgID uuid.UUID) error {
 }
 
 func (d *Datastore) createUserUsingTxn(txn *sqlx.Tx, userInfo *UserInfo) (uuid.UUID, error) {
-	query := `INSERT INTO users (org_id, username, first_name, last_name, email, is_approved, identity_provider, auth_provider_id) VALUES (:org_id, :username, :first_name, :last_name, :email, :is_approved, :identity_provider, :auth_provider_id) RETURNING id`
+	query := `INSERT INTO users (org_id, first_name, last_name, email, is_approved, identity_provider, auth_provider_id) VALUES (:org_id, :first_name, :last_name, :email, :is_approved, :identity_provider, :auth_provider_id) RETURNING id`
 	rows, err := txn.NamedQuery(query, userInfo)
 	if err != nil {
 		return uuid.Nil, err
@@ -421,7 +420,7 @@ func (d *Datastore) createOrgUsingTxn(txn *sqlx.Tx, orgInfo *OrgInfo) (uuid.UUID
 
 // GetUsersInOrg gets all users in the given org.
 func (d *Datastore) GetUsersInOrg(orgID uuid.UUID) ([]*UserInfo, error) {
-	query := `SELECT id, org_id, username, first_name, last_name, email, profile_picture, is_approved, identity_provider, auth_provider_id FROM users WHERE org_id=$1 order by created_at desc`
+	query := `SELECT id, org_id, first_name, last_name, email, profile_picture, is_approved, identity_provider, auth_provider_id FROM users WHERE org_id=$1 order by created_at desc`
 	rows, err := d.db.Queryx(query, orgID)
 	if err != nil {
 		return nil, err

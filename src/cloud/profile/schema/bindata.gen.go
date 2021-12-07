@@ -40,6 +40,8 @@
 // 000020_empty_domain_name_col.up.sql
 // 000021_org_add_invite_signing_key.down.sql
 // 000021_org_add_invite_signing_key.up.sql
+// 000022_users_drop_usernames.down.sql
+// 000022_users_drop_usernames.up.sql
 package schema
 
 import (
@@ -916,6 +918,46 @@ func _000021_org_add_invite_signing_keyUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000022_users_drop_usernamesDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\xc8\x2f\x4a\x2f\x56\x70\x74\x71\x51\x70\xf6\xf7\x09\xf5\xf5\x53\x28\x2d\x4e\x2d\xca\x4b\xcc\x4d\x55\x28\x4b\x2c\x4a\xce\x48\x2c\xd2\x30\x35\xd0\xb4\xe6\x02\x04\x00\x00\xff\xff\xd4\x8b\xdd\x3a\x32\x00\x00\x00")
+
+func _000022_users_drop_usernamesDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000022_users_drop_usernamesDownSql,
+		"000022_users_drop_usernames.down.sql",
+	)
+}
+
+func _000022_users_drop_usernamesDownSql() (*asset, error) {
+	bytes, err := _000022_users_drop_usernamesDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000022_users_drop_usernames.down.sql", size: 50, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000022_users_drop_usernamesUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\x2d\x4e\x2d\x2a\x56\x70\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x03\x8b\xe4\x25\xe6\xa6\x5a\x73\x01\x02\x00\x00\xff\xff\xcb\xe3\x6c\xd1\x28\x00\x00\x00")
+
+func _000022_users_drop_usernamesUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000022_users_drop_usernamesUpSql,
+		"000022_users_drop_usernames.up.sql",
+	)
+}
+
+func _000022_users_drop_usernamesUpSql() (*asset, error) {
+	bytes, err := _000022_users_drop_usernamesUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000022_users_drop_usernames.up.sql", size: 40, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -1008,6 +1050,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000020_empty_domain_name_col.up.sql":                    _000020_empty_domain_name_colUpSql,
 	"000021_org_add_invite_signing_key.down.sql":             _000021_org_add_invite_signing_keyDownSql,
 	"000021_org_add_invite_signing_key.up.sql":               _000021_org_add_invite_signing_keyUpSql,
+	"000022_users_drop_usernames.down.sql":                   _000022_users_drop_usernamesDownSql,
+	"000022_users_drop_usernames.up.sql":                     _000022_users_drop_usernamesUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -1091,6 +1135,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000020_empty_domain_name_col.up.sql":                    &bintree{_000020_empty_domain_name_colUpSql, map[string]*bintree{}},
 	"000021_org_add_invite_signing_key.down.sql":             &bintree{_000021_org_add_invite_signing_keyDownSql, map[string]*bintree{}},
 	"000021_org_add_invite_signing_key.up.sql":               &bintree{_000021_org_add_invite_signing_keyUpSql, map[string]*bintree{}},
+	"000022_users_drop_usernames.down.sql":                   &bintree{_000022_users_drop_usernamesDownSql, map[string]*bintree{}},
+	"000022_users_drop_usernames.up.sql":                     &bintree{_000022_users_drop_usernamesUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
