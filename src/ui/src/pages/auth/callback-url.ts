@@ -25,42 +25,33 @@ export type AuthCallbackMode = 'cli_get' | 'cli_token' | 'ui';
 export interface RedirectArgs {
   mode?: AuthCallbackMode;
   location?: string;
-  org_name?: string;
   signup?: boolean;
   redirect_uri?: string;
   invite_token?: string;
 }
 
 export const getRedirectURL = (isSignup: boolean): string => {
-  // Translate the old API parameters to new versions. In paricular:
-  // local, (no redirect_url) -> cli_token
-  // local -> cli_get
+  // Translate the login parameters to type of login flow.
+  // local_mode && (no redirect_uri) -> cli_token
+  // local_mode && redirect_uri -> cli_get
   // default: ui
-  // We also translate the location parameters so redirects work as expected.
-  // TODO(zasgar/michelle): When we finish porting everything to the new API this code
-  // can be simplified.
 
-  const redirectArgs: RedirectArgs = {};
+  const redirectArgs: RedirectArgs = {
+    mode: 'ui',
+  };
   const parsed = QueryString.parse(window.location.search);
-  if (parsed.local_mode && !!parsed.local_mode) {
-    if (parsed.redirect_uri) {
-      redirectArgs.redirect_uri = typeof parsed.redirect_uri === 'string' && String(parsed.redirect_uri);
-      redirectArgs.mode = 'cli_get';
-    } else {
-      redirectArgs.mode = 'cli_token';
-    }
-  } else {
-    if (parsed.redirect_uri && typeof parsed.redirect_uri === 'string') {
-      redirectArgs.redirect_uri = String(parsed.redirect_uri);
-    }
-    redirectArgs.mode = 'ui';
+  if (parsed.redirect_uri && typeof parsed.redirect_uri === 'string') {
+    redirectArgs.redirect_uri = String(parsed.redirect_uri);
+  }
+
+  if (parsed.local_mode && !!redirectArgs.redirect_uri) {
+    redirectArgs.mode = 'cli_get';
+  } else if (parsed.local_mode) {
+    redirectArgs.mode = 'cli_token';
   }
 
   if (parsed.location && typeof parsed.location === 'string') {
     redirectArgs.location = parsed.location;
-  }
-  if (parsed.org_name && typeof parsed.org_name === 'string') {
-    redirectArgs.org_name = parsed.org_name;
   }
 
   if (parsed.invite_token && typeof parsed.invite_token === 'string') {
@@ -70,21 +61,17 @@ export const getRedirectURL = (isSignup: boolean): string => {
   if (isSignup) {
     redirectArgs.signup = true;
   }
-  const qs = QueryString.stringify(redirectArgs as any);
-  const redirectURL = `${window.location.origin}/auth/callback?${qs}`;
 
-  const segmentId = typeof parsed.tid === 'string' ? parsed.tid : '';
-  if (segmentId) {
-    pixieAnalytics.alias(segmentId);
+  if (parsed.tid && typeof parsed.tid === 'string') {
+    pixieAnalytics.alias(parsed.tid);
   }
-  return redirectURL;
+  return `${window.location.origin}/auth/callback?${QueryString.stringify(redirectArgs)}`;
 };
 
 // Takes in the window.location.search from a page and returns the params
 // parsed into redirectArgs.
 export const parseRedirectArgs = (params: QueryString.ParsedQuery): RedirectArgs => {
   const redirectArgs: RedirectArgs = {
-    location: params.location && String(params.location),
     signup: !!params.signup,
     redirect_uri: params.redirect_uri && String(params.redirect_uri),
     invite_token: params.invite_token && String(params.invite_token),
