@@ -312,6 +312,7 @@ REPOSITORY_LOCATIONS = dict(
 #
 # To use a local repo for local development, change `remote` to a file path.
 #   ex: remote = "/home/user/src/pixie-io/bcc"
+# Then change the local repo, commit the change, and replace `commit` with your new commit.
 GIT_REPOSITORY_LOCATIONS = dict(
     com_github_iovisor_bcc = dict(
         remote = "https://github.com/pixie-io/bcc.git",
