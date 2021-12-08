@@ -20,7 +20,7 @@ import * as React from 'react';
 
 import { gql, useMutation, useQuery } from '@apollo/client';
 import {
-  Button,
+  Button, Dialog, DialogContent, DialogTitle,
   Table,
   TableBody,
   TableHead,
@@ -28,7 +28,9 @@ import {
 } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
+import { useSnackbar } from 'app/components';
 import { GQLUserInfo } from 'app/types/schema';
 
 import {
@@ -45,6 +47,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   buttonContainer: {
     display: 'flex',
     justifyContent: 'flex-end',
+    gap: theme.spacing(1),
   },
   approveButton: {
     width: theme.spacing(12),
@@ -52,10 +55,72 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   error: {
     padding: theme.spacing(1),
   },
+  removeDialogActions: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: theme.spacing(1),
+    margin: theme.spacing(1),
+  },
 }));
+
+const RemoveUserButton = React.memo<{ user: UserDisplay }>(({ user }) => {
+  const classes = useStyles();
+
+  const [open, setOpen] = React.useState(false);
+  const openModal = React.useCallback(() => setOpen(true), []);
+  const closeModal = React.useCallback(() => setOpen(false), []);
+
+  const [pendingRemoval, setPendingRemoval] = React.useState(false);
+
+  const showSnackbar = useSnackbar();
+  const removeUser = React.useCallback(() => {
+    // TODO: This is where the callback would go.
+    setPendingRemoval(true);
+    setTimeout(() => {
+      showSnackbar({ message: 'Failed to remove user (because this function is not implemented yet)!' });
+      setPendingRemoval(false);
+      closeModal();
+    }, 1000);
+  }, [showSnackbar, closeModal]);
+
+  return (
+    <>
+      <Button onClick={openModal} variant='contained' color='error'>
+        Remove
+      </Button>
+      <Dialog open={open} onClose={closeModal}>
+        <DialogTitle>{`Remove ${user.name}?`}</DialogTitle>
+        {/* eslint-disable-next-line react-memo/require-usememo */}
+        <DialogContent sx={{ lineHeight: 1.6 }}>
+          <p>
+            {/* eslint-disable-next-line max-len */}
+            Once {user.name} is removed, they will no longer have access to any resources in the organization,
+            including clusters and data.
+          </p>
+          <p>
+            API keys created by this user will also be deleted.
+          </p>
+        </DialogContent>
+        <div className={classes.removeDialogActions}>
+          <Button onClick={closeModal}>Cancel</Button>
+          <Button
+            onClick={removeUser}
+            disabled={pendingRemoval}
+            color='error'
+          >
+            Remove
+          </Button>
+        </div>
+      </Dialog>
+    </>
+  );
+});
+RemoveUserButton.displayName = 'RemoveUserButton';
 
 export const UserRow = React.memo<UserRowProps>(({ user }) => {
   const classes = useStyles();
+  const { invite: invitationsEnabled } = useFlags();
 
   const [updateUserInfo] = useMutation<
   { UpdateUserPermissions: UserDisplay }, { id: string, isApproved: boolean }
@@ -104,6 +169,13 @@ export const UserRow = React.memo<UserRowProps>(({ user }) => {
               </Button>
             </div>
           </AdminTooltip>
+          {invitationsEnabled && (
+            <AdminTooltip title={'Removed users can be added back by sending them new invite links.'}>
+              <div>
+                <RemoveUserButton user={user} />
+              </div>
+            </AdminTooltip>
+          )}
         </div>
       </StyledRightTableCell>
     </TableRow>
