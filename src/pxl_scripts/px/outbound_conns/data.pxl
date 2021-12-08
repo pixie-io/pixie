@@ -27,8 +27,9 @@ def outbound_conns(start_time: str, ip_filter: str):
     df.namespace = df.ctx['namespace']
     df.pod = df.ctx['pod']
 
-    # Trace-role of 1 means client-side tracing.
-    # Pixie only traces on the client side when traffic is leaving the cluster.
+    # Filter for outbound traffic only.
+    # Trace-role of 1 means client-side tracing. Pixie only traces
+    # on the client side when traffic is leaving the cluster.
     df = df[df.trace_role == 1]
 
     # Filter out any client-side tracing to known pods.
@@ -36,18 +37,40 @@ def outbound_conns(start_time: str, ip_filter: str):
     df.remote_service_id = px.ip_to_service_id(df.remote_addr)
     df = df[df.remote_pod_id == '' and df.remote_service_id == '']
 
-    # Filter out localhost.
+    # Filter out connections to localhost.
     df = df[not df.remote_addr == '127.0.0.1']
     df = df[not df.remote_addr == '0.0.0.0']
 
     # Apply user supplied filter.
     df = df[px.contains(df.remote_addr, ip_filter)]
 
-    df = df.groupby(['pod', 'remote_addr', 'remote_port']).agg(
-        conn_open=('conn_open', px.max),
-        bytes_sent=('bytes_sent', px.max),
-        byts_recv=('bytes_recv', px.max),
-        last_activity_time=('time_', px.max),
+    # Calculate connection stats for each process for each unique pod / remote_addr pair.
+    df = df.groupby(['pod', 'upid', 'remote_addr', 'remote_port']).agg(
+        # The fields below are counters per UPID, so we take
+        # the min (starting value) and the max (ending value) to subtract them.
+        conn_open_min=('conn_open', px.min),
+        conn_open_max=('conn_open', px.max),
+        bytes_sent_min=('bytes_sent', px.min),
+        bytes_sent_max=('bytes_sent', px.max),
+        bytes_recv_min=('bytes_recv', px.min),
+        bytes_recv_max=('bytes_recv', px.max),
+        last_activity_time=('time_', px.max)
     )
 
-    return df
+    # Calculate connection stats over the time window.
+    df.conn_open = df.conn_open_max - df.conn_open_min
+    df.bytes_sent = df.bytes_sent_max - df.bytes_sent_min
+    df.bytes_recv = df.bytes_recv_max - df.bytes_recv_min
+
+    # Calculate connection stats for each unique pod / remote_addr pair. Since there
+    # may be multiple processes per pod we perform an additional aggregation to
+    # consolidate those into one entry.
+    df = df.groupby(['pod', 'remote_addr', 'remote_port']).agg(
+        conn_open=('conn_open', px.sum),
+        bytes_sent=('bytes_sent', px.sum),
+        bytes_recv=('bytes_recv', px.sum),
+        last_activity_time=('last_activity_time', px.max)
+    )
+
+    return df[['pod', 'remote_addr', 'remote_port', 'conn_open', 'bytes_sent', 'bytes_recv',
+               'last_activity_time']]

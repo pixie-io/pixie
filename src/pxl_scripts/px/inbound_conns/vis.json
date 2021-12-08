@@ -4,7 +4,7 @@
             "name": "start_time",
             "type": "PX_STRING",
             "description": "The start time of the window in time units before now.",
-            "defaultValue": "-5m"
+            "defaultValue": "-24h"
         },
         {
             "name": "ip_filter",
