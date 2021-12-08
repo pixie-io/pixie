@@ -1042,7 +1042,7 @@ func crdPhaseToHeartbeatStatus(phase v1alpha1.VizierPhase) cvmsgspb.VizierStatus
 	case v1alpha1.VizierPhaseUnhealthy:
 		return cvmsgspb.VZ_ST_UNHEALTHY
 	case v1alpha1.VizierPhaseDegraded:
-		return cvmsgspb.VZ_ST_UNHEALTHY
+		return cvmsgspb.VZ_ST_DEGRADED
 	default:
 		return cvmsgspb.VZ_ST_UNKNOWN
 	}
@@ -1074,6 +1074,9 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) chan *cvmsgspb.VizierHeart
 			if vz.Status.ReconciliationPhase == v1alpha1.ReconciliationPhaseUpdating {
 				status = cvmsgspb.VZ_ST_UPDATING
 			}
+		} else if status == cvmsgspb.VZ_ST_HEALTHY {
+			// If running on non-operator, and is healthy, consider the vizier in a degraded state.
+			status = cvmsgspb.VZ_ST_DEGRADED
 		}
 
 		hbMsg := &cvmsgspb.VizierHeartbeat{
