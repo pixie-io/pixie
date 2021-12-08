@@ -59,7 +59,8 @@ const ExecuteScriptButton: React.FC = React.memo(() => {
   const [cancellable, setCancellable] = React.useState<boolean>(false);
   const [cancellabilityTimer, setCancellabilityTimer] = React.useState<number>(undefined);
 
-  const healthy = cloudClient && selectedClusterStatus === GQLClusterStatus.CS_HEALTHY;
+  const healthy = cloudClient && (selectedClusterStatus === GQLClusterStatus.CS_HEALTHY
+    || selectedClusterStatus === GQLClusterStatus.CS_DEGRADED);
 
   React.useEffect(() => {
     window.clearTimeout(cancellabilityTimer);
