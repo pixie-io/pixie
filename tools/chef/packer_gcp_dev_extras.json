@@ -1,24 +1,23 @@
 {
   "builders": [
     {
-      "type": "googlecompute",
+      "image_family": "pl-dev-with-extras",
+      "image_name": "pl-dev-with-extras-{{ timestamp }}",
       "project_id": "pl-dev-infra",
       "source_image": "ubuntu-1804-bionic-v20181120",
       "ssh_username": "packer",
-      "zone": "us-west1-a",
-      "image_name": "pl-dev-with-extras-{{ timestamp }}",
-      "image_family": "pl-dev-with-extras"
+      "type": "googlecompute",
+      "zone": "us-west1-a"
     }
   ],
   "provisioners": [
     {
-      "type": "shell",
       "inline": [
         "sudo apt-get -y update; sudo apt-get install -y curl"
-      ]
+      ],
+      "type": "shell"
     },
     {
-      "type": "chef-solo",
       "cookbook_paths": [
         "cookbooks"
       ],
@@ -27,6 +26,7 @@
         "role[pl_workstation]",
         "recipe[pixielabs::docker_extras]"
       ],
+      "type": "chef-solo",
       "version": "17.8.25"
     }
   ]

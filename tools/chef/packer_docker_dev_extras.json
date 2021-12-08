@@ -1,52 +1,54 @@
 {
-  "variables": {
-    "base_image_and_tag": "",
-    "generated_image_repository": "",
-    "generated_image_tag": ""
-  },
   "builders": [
     {
-      "type": "docker",
+      "commit": true,
       "image": "{{ user `base_image_and_tag` }}",
-      "commit": true
-    }
-  ],
-  "provisioners": [
-    {
-      "type": "shell",
-      "inline": [
-        "apt-get -y update; apt-get install -y curl"
-      ]
-    },
-    {
-      "type": "chef-solo",
-      "cookbook_paths": [
-        "cookbooks"
-      ],
-      "roles_path": "roles",
-      "run_list": [
-        "recipe[pixielabs::dev_extras]"
-      ],
-      "prevent_sudo": true,
-      "version": "17.8.25"
-    },
-    {
-      "type": "shell",
-      "inline": [
-        "rm -rf /tmp/*",
-        "rm -rf /root/.npm",
-        "rm -rf /var/lib/apt/lists/*"
-      ]
+      "type": "docker"
     }
   ],
   "post-processors": [
     [
       {
-        "type": "docker-tag",
         "repository": "{{ user `generated_image_repository` }}",
-        "tag": "{{ user `generated_image_tag` }}"
+        "tags": [
+          "{{ user `generated_image_tag` }}"
+        ],
+        "type": "docker-tag"
       },
       "docker-push"
     ]
-  ]
+  ],
+  "provisioners": [
+    {
+      "inline": [
+        "apt-get -y update; apt-get install -y curl"
+      ],
+      "type": "shell"
+    },
+    {
+      "cookbook_paths": [
+        "cookbooks"
+      ],
+      "prevent_sudo": true,
+      "roles_path": "roles",
+      "run_list": [
+        "recipe[pixielabs::dev_extras]"
+      ],
+      "type": "chef-solo",
+      "version": "17.8.25"
+    },
+    {
+      "inline": [
+        "rm -rf /tmp/*",
+        "rm -rf /root/.npm",
+        "rm -rf /var/lib/apt/lists/*"
+      ],
+      "type": "shell"
+    }
+  ],
+  "variables": {
+    "base_image_and_tag": "",
+    "generated_image_repository": "",
+    "generated_image_tag": ""
+  }
 }
