@@ -40,6 +40,20 @@ const (
 	ESMDEntityStateTerminated
 )
 
+// EsMDType are the types for metadata entities in elastic.
+type EsMDType string
+
+const (
+	// EsMDTypeNamespace is for namespace entities.
+	EsMDTypeNamespace EsMDType = "namespace"
+	// EsMDTypeService is for service entities.
+	EsMDTypeService EsMDType = "service"
+	// EsMDTypePod is for pod entities.
+	EsMDTypePod EsMDType = "pod"
+	// EsMDTypeScript is for script entities.
+	EsMDTypeScript EsMDType = "script"
+)
+
 // EsMDEntity is the struct that is stored in elastic.
 type EsMDEntity struct {
 	OrgID      string `json:"orgID"`

@@ -21,6 +21,7 @@ package autocomplete
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/gofrs/uuid"
@@ -43,18 +44,18 @@ type ElasticSuggester struct {
 	br *script.BundleManager
 }
 
-var protoToElasticLabelMap = map[cloudpb.AutocompleteEntityKind]string{
-	cloudpb.AEK_SVC:       "service",
-	cloudpb.AEK_POD:       "pod",
-	cloudpb.AEK_SCRIPT:    "script",
-	cloudpb.AEK_NAMESPACE: "script",
+var protoToElasticLabelMap = map[cloudpb.AutocompleteEntityKind]md.EsMDType{
+	cloudpb.AEK_SVC:       md.EsMDTypeService,
+	cloudpb.AEK_POD:       md.EsMDTypePod,
+	cloudpb.AEK_SCRIPT:    md.EsMDTypeScript,
+	cloudpb.AEK_NAMESPACE: md.EsMDTypeNamespace,
 }
 
-var elasticLabelToProtoMap = map[string]cloudpb.AutocompleteEntityKind{
-	"service":   cloudpb.AEK_SVC,
-	"pod":       cloudpb.AEK_POD,
-	"script":    cloudpb.AEK_SCRIPT,
-	"namespace": cloudpb.AEK_NAMESPACE,
+var elasticLabelToProtoMap = map[md.EsMDType]cloudpb.AutocompleteEntityKind{
+	md.EsMDTypeService:   cloudpb.AEK_SVC,
+	md.EsMDTypePod:       cloudpb.AEK_POD,
+	md.EsMDTypeScript:    cloudpb.AEK_SCRIPT,
+	md.EsMDTypeNamespace: cloudpb.AEK_NAMESPACE,
 }
 
 var elasticStateToProtoMap = map[md.ESMDEntityState]cloudpb.AutocompleteEntityState{
@@ -248,10 +249,17 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 			if len(h.Highlight["name"]) > 0 {
 				matchedIndexes = append(matchedIndexes, parseHighlightIndexes(h.Highlight["name"][0], len(res.NS)+1)...)
 			}
+
+			resName := fmt.Sprintf("%s/%s", res.NS, res.Name)
+			if md.EsMDType(res.Kind) == md.EsMDTypeNamespace {
+				// Don't prepend the namespace object with a namespace.
+				resName = res.Name
+			}
+
 			results = append(results, &Suggestion{
-				Name:           res.NS + "/" + res.Name,
+				Name:           resName,
 				Score:          float64(*h.Score),
-				Kind:           elasticLabelToProtoMap[res.Kind],
+				Kind:           elasticLabelToProtoMap[md.EsMDType(res.Kind)],
 				MatchedIndexes: matchedIndexes,
 				State:          elasticStateToProtoMap[res.State],
 			})

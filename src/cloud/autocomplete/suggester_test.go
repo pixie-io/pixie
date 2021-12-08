@@ -74,7 +74,7 @@ var mdEntities = []md.EsMDEntity{
 		OrgID:              org1.String(),
 		UID:                "ns1",
 		Name:               "testNamespace",
-		NS:                 "pl",
+		NS:                 "testNamespace",
 		Kind:               "namespace",
 		TimeStartedNS:      1,
 		TimeStoppedNS:      0,
@@ -427,6 +427,35 @@ func TestGetSuggestions(t *testing.T) {
 						{
 							Name: "pl/abcd",
 							Kind: cloudpb.AEK_SVC,
+						},
+					},
+				},
+			},
+		},
+		{
+			name:            "empty req",
+			reqs:            []*autocomplete.SuggestionRequest{},
+			expectedResults: []*autocomplete.SuggestionResult{},
+		},
+		{
+			name: "namespace",
+			reqs: []*autocomplete.SuggestionRequest{
+				{
+					Input: "test",
+					OrgID: org1,
+					AllowedKinds: []cloudpb.AutocompleteEntityKind{
+						cloudpb.AEK_NAMESPACE,
+					},
+					AllowedArgs: []cloudpb.AutocompleteEntityKind{},
+				},
+			},
+			expectedResults: []*autocomplete.SuggestionResult{
+				{
+					ExactMatch: false,
+					Suggestions: []*autocomplete.Suggestion{
+						{
+							Name: "testNamespace",
+							Kind: cloudpb.AEK_NAMESPACE,
 						},
 					},
 				},
