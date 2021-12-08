@@ -138,6 +138,8 @@ func podPhaseToState(podUpdate *metadatapb.PodUpdate) ESMDEntityState {
 		return ESMDEntityStateTerminated
 	case metadatapb.FAILED:
 		return ESMDEntityStateFailed
+	case metadatapb.TERMINATED:
+		return ESMDEntityStateTerminated
 	default:
 		return ESMDEntityStateUnknown
 	}

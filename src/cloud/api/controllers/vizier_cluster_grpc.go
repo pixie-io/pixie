@@ -114,6 +114,8 @@ func convertPodPhase(p metadatapb.PodPhase) cloudpb.PodPhase {
 		return cloudpb.SUCCEEDED
 	case metadatapb.FAILED:
 		return cloudpb.FAILED
+	case metadatapb.TERMINATED:
+		return cloudpb.TERMINATED
 	case metadatapb.PHASE_UNKNOWN:
 		return cloudpb.PHASE_UNKNOWN
 	default:

@@ -57,6 +57,7 @@ function podPhaseToStatusGroup(status: string, ready: boolean): StatusGroup {
       return 'unhealthy';
     case 'Pending':
       return 'pending';
+    case 'Terminated':
     case 'Unknown':
     default:
       return 'unknown';

@@ -54,6 +54,10 @@ var podPhasePbToObjMap = map[metadatapb.PodPhase]v1.PodPhase{
 	metadatapb.SUCCEEDED:     v1.PodSucceeded,
 	metadatapb.FAILED:        v1.PodFailed,
 	metadatapb.PHASE_UNKNOWN: v1.PodUnknown,
+	// Terminated is not a Kubernetes pod phase, because Kubernetes does not keep track
+	// of pods that are terminated. It is useful for us to keep Terminated as a separate
+	// pod phase since Pixie does track terminated pods.
+	metadatapb.TERMINATED: v1.PodUnknown,
 }
 
 var podConditionTypeObjToPbMap = map[v1.PodConditionType]metadatapb.PodConditionType{

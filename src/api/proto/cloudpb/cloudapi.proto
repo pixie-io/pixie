@@ -314,6 +314,7 @@ enum PodPhase {
   RUNNING = 2;
   SUCCEEDED = 3;
   FAILED = 4;
+  TERMINATED = 5;
 }
 
 // PodStatus represents a pod's status at a moment in time. Currently this message

@@ -119,7 +119,7 @@ message PodSpec {
   int32 priority = 7;
 }
 
-// There are five possible pod phase values:
+// There are six possible pod phase values:
 //
 // Pending: The pod has been accepted by the Kubernetes system, but one or more of the
 // container images has not been created. This includes time before being scheduled as
@@ -130,6 +130,8 @@ message PodSpec {
 // Failed: All containers in the pod have terminated, and at least one container has
 // terminated in failure. The container either exited with non-zero status or was terminated
 // by the system.
+// Terminated: The pod has been terminated by the system (rather than run to completion)
+// without failure. Unlike the other phases, this is not an official Kubernetes pod phase.
 // Unknown: For some reason the state of the pod could not be obtained, typically due to an
 // error in communicating with the host of the pod.
 enum PodPhase {
@@ -138,6 +140,7 @@ enum PodPhase {
   RUNNING = 2;
   SUCCEEDED = 3;
   FAILED = 4;
+  TERMINATED = 5;
 }
 
 enum PodQOSClass {
