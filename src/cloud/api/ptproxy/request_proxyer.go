@@ -142,7 +142,7 @@ func (p requestProxyer) validateRequestAndFetchCreds(ctx context.Context, debugM
 				return ErrNotAvailable
 			}
 		} else {
-			if resp.Status != cvmsgspb.VZ_ST_HEALTHY {
+			if resp.Status != cvmsgspb.VZ_ST_HEALTHY && resp.Status != cvmsgspb.VZ_ST_DEGRADED {
 				return ErrNotAvailable
 			}
 		}
