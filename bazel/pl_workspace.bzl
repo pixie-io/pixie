@@ -21,12 +21,10 @@ load("@distroless//package_manager:package_manager.bzl", "package_manager_reposi
 load("@io_bazel_rules_docker//go:image.bzl", _go_image_repos = "repositories")
 load("@io_bazel_rules_docker//java:image.bzl", _java_image_repos = "repositories")
 load("@io_bazel_rules_docker//repositories:deps.bzl", container_deps = "deps")
-load(
-    "@io_bazel_rules_docker//repositories:repositories.bzl",
-    container_repositories = "repositories",
-)
+load("@io_bazel_rules_docker//repositories:repositories.bzl", container_repositories = "repositories")
 load("@io_bazel_rules_k8s//k8s:k8s.bzl", "k8s_repositories")
 load("@io_bazel_rules_k8s//k8s:k8s_go_deps.bzl", k8s_go_deps = "deps")
+load("@io_bazel_toolchains//rules:gcs.bzl", "gcs_file")
 load("//bazel:container_images.bzl", "base_images", "stirling_test_images")
 load("//bazel:linux_headers.bzl", "linux_headers")
 
@@ -81,9 +79,7 @@ def pl_workspace_setup():
     gazelle_dependencies()
     buildifier_dependencies()
 
-    bazel_version_repository(
-        name = "bazel_version",
-    )
+    bazel_version_repository(name = "bazel_version")
 
     container_repositories()
     container_deps()
@@ -95,3 +91,21 @@ def pl_container_images():
     _package_manager_setup()
     _container_images_setup()
     linux_headers()
+
+def pl_model_files():
+    # Download model files
+    gcs_file(
+        name = "embedding_model",
+        bucket = "gs://pixie-dev-public",
+        downloaded_file_path = "embedding.proto",
+        file = "ml-data/models/current-embedding-model.proto",
+        sha256 = "a23c515c139670e71c0cad5c962f7e2d968fcc57ab251e49f4b5636134628813",
+    )
+
+    gcs_file(
+        name = "sentencepiece_model",
+        bucket = "gs://pixie-dev-public",
+        downloaded_file_path = "sentencepiece.proto",
+        file = "ml-data/models/current-sentencepiece-model.proto",
+        sha256 = "7e17e04ecc207d9204dc8755357f988bf77c135f7a34a88984943c8649d6a790",
+    )
