@@ -392,8 +392,10 @@ class BCCWrapper {
 
   std::string system_headers_include_dir_;
 
-  // Initialize this with one of the below bitmask flags to turn on different debug output,
-  // for example, bpf_{0x2} instructs to print the BPF bytecode:
+  // Initialize this with one of the below bitmask flags to turn on different debug output.
+  // For example, bpf_{0x2} instructs to print the BPF bytecode.
+  // See https://github.com/iovisor/bcc/blob/master/src/cc/bpf_module.h for the effects of these
+  // flags.
   //   DEBUG_LLVM_IR = 0x1,
   //   DEBUG_BPF = 0x2,
   //   DEBUG_PREPROCESSOR = 0x4,
