@@ -41,6 +41,8 @@ extend type Mutation {
   UpdateUserPermissions(userID: ID!, userPermissions: EditableUserPermissions!): UserInfo!
   CreateOrg(orgName: String!): ID!
   UpdateOrgSettings(orgID: ID!, orgSettings: EditableOrgSettings!): OrgInfo!
+  CreateInviteToken(orgID: ID!): String!
+  RevokeAllInviteTokens(orgID: ID!): Boolean!
 }
 
 type UserInfo {

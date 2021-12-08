@@ -1,5 +1,6 @@
 extend type Query {
   artifacts(artifactName: String!): ArtifactsInfo!
+  verifyInviteToken(inviteToken: String!): Boolean!
 }
 
 type ArtifactsInfo {

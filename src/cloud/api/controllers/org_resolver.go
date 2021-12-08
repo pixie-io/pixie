@@ -220,3 +220,57 @@ func (q *QueryResolver) UpdateOrgSettings(ctx context.Context, args updateOrgSet
 	}
 	return &OrgInfoResolver{ctx, orgInfo, &q.Env}, nil
 }
+
+type createInviteTokenArgs struct {
+	OrgID graphql.ID
+}
+
+// CreateInviteToken creates a signed invite JWT for the given org with an expiration of 1 week.
+func (q *QueryResolver) CreateInviteToken(ctx context.Context, args *createInviteTokenArgs) (string, error) {
+	grpcAPI := q.Env.OrgServer
+
+	resp, err := grpcAPI.CreateInviteToken(ctx, &cloudpb.CreateInviteTokenRequest{
+		OrgID: utils.ProtoFromUUIDStrOrNil(string(args.OrgID)),
+	})
+
+	if err != nil {
+		return "", rpcErrorHelper(err)
+	}
+
+	return resp.SignedClaims, nil
+}
+
+type revokeAllInviteTokensArgs struct {
+	OrgID graphql.ID
+}
+
+// RevokeAllInviteTokens revokes all pending invited for the given org by rotating the JWT signing key.
+func (q *QueryResolver) RevokeAllInviteTokens(ctx context.Context, args *revokeAllInviteTokensArgs) (bool, error) {
+	grpcAPI := q.Env.OrgServer
+
+	_, err := grpcAPI.RevokeAllInviteTokens(ctx, utils.ProtoFromUUIDStrOrNil(string(args.OrgID)))
+
+	if err != nil {
+		return false, rpcErrorHelper(err)
+	}
+
+	return true, nil
+}
+
+type verifyInviteTokenArgs struct {
+	InviteToken string
+}
+
+// VerifyInviteToken verifies that the given invite JWT is still valid by performing expiration and
+// signing key checks.
+func (q *QueryResolver) VerifyInviteToken(ctx context.Context, args *verifyInviteTokenArgs) (bool, error) {
+	grpcAPI := q.Env.OrgServer
+
+	resp, err := grpcAPI.VerifyInviteToken(ctx, &cloudpb.InviteToken{SignedClaims: args.InviteToken})
+
+	if err != nil {
+		return false, rpcErrorHelper(err)
+	}
+
+	return resp.Valid, nil
+}

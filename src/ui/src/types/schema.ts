@@ -15,6 +15,7 @@ import { GraphQLResolveInfo } from 'graphql';
 export interface GQLQuery {
   noop: boolean;
   artifacts: GQLArtifactsInfo;
+  verifyInviteToken: boolean;
   user: GQLUserInfo;
   org: GQLOrgInfo;
   userSettings: GQLUserSettings;
@@ -56,6 +57,8 @@ export interface GQLMutation {
   UpdateUserPermissions: GQLUserInfo;
   CreateOrg: string;
   UpdateOrgSettings: GQLOrgInfo;
+  CreateInviteToken: string;
+  RevokeAllInviteTokens: boolean;
 }
 
 export interface GQLArtifactsInfo {
@@ -339,6 +342,7 @@ export interface GQLResolver {
 export interface GQLQueryTypeResolver<TParent = any> {
   noop?: QueryToNoopResolver<TParent>;
   artifacts?: QueryToArtifactsResolver<TParent>;
+  verifyInviteToken?: QueryToVerifyInviteTokenResolver<TParent>;
   user?: QueryToUserResolver<TParent>;
   org?: QueryToOrgResolver<TParent>;
   userSettings?: QueryToUserSettingsResolver<TParent>;
@@ -370,6 +374,13 @@ export interface QueryToArtifactsArgs {
 }
 export interface QueryToArtifactsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: QueryToArtifactsArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToVerifyInviteTokenArgs {
+  inviteToken: string;
+}
+export interface QueryToVerifyInviteTokenResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: QueryToVerifyInviteTokenArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface QueryToUserResolver<TParent = any, TResult = any> {
@@ -502,6 +513,8 @@ export interface GQLMutationTypeResolver<TParent = any> {
   UpdateUserPermissions?: MutationToUpdateUserPermissionsResolver<TParent>;
   CreateOrg?: MutationToCreateOrgResolver<TParent>;
   UpdateOrgSettings?: MutationToUpdateOrgSettingsResolver<TParent>;
+  CreateInviteToken?: MutationToCreateInviteTokenResolver<TParent>;
+  RevokeAllInviteTokens?: MutationToRevokeAllInviteTokensResolver<TParent>;
 }
 
 export interface MutationToNoopResolver<TParent = any, TResult = any> {
@@ -586,6 +599,20 @@ export interface MutationToUpdateOrgSettingsArgs {
 }
 export interface MutationToUpdateOrgSettingsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: MutationToUpdateOrgSettingsArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface MutationToCreateInviteTokenArgs {
+  orgID: string;
+}
+export interface MutationToCreateInviteTokenResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: MutationToCreateInviteTokenArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface MutationToRevokeAllInviteTokensArgs {
+  orgID: string;
+}
+export interface MutationToRevokeAllInviteTokensResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: MutationToRevokeAllInviteTokensArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface GQLArtifactsInfoTypeResolver<TParent = any> {

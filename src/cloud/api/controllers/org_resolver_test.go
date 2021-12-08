@@ -398,3 +398,131 @@ func TestOrgSettingsResolver_IDEConfigs(t *testing.T) {
 		})
 	}
 }
+
+func TestOrgSettingsResolver_CreateInviteToken(t *testing.T) {
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "user",
+			ctx:  CreateTestContext(),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
+			defer cleanup()
+			ctx := test.ctx
+
+			idPb := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9")
+
+			mockClients.MockOrg.EXPECT().CreateInviteToken(gomock.Any(), &cloudpb.CreateInviteTokenRequest{
+				OrgID: idPb,
+			}).Return(&cloudpb.InviteToken{SignedClaims: "jwt_invite_claim.with_signature"}, nil)
+
+			gqlSchema := LoadSchema(gqlEnv)
+			gqltesting.RunTests(t, []*gqltesting.Test{
+				{
+					Schema:  gqlSchema,
+					Context: ctx,
+					Query: `
+						mutation {
+							CreateInviteToken(orgID: "6ba7b810-9dad-11d1-80b4-00c04fd430c9")
+						}
+					`,
+					ExpectedResult: `
+						{
+							"CreateInviteToken": "jwt_invite_claim.with_signature"
+						}
+					`,
+				},
+			})
+		})
+	}
+}
+
+func TestOrgSettingsResolver_RevokeAllInviteTokens(t *testing.T) {
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "user",
+			ctx:  CreateTestContext(),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
+			defer cleanup()
+			ctx := test.ctx
+
+			idPb := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9")
+
+			mockClients.MockOrg.EXPECT().RevokeAllInviteTokens(gomock.Any(), idPb).Return(&types.Empty{}, nil)
+
+			gqlSchema := LoadSchema(gqlEnv)
+			gqltesting.RunTests(t, []*gqltesting.Test{
+				{
+					Schema:  gqlSchema,
+					Context: ctx,
+					Query: `
+						mutation {
+							RevokeAllInviteTokens(orgID: "6ba7b810-9dad-11d1-80b4-00c04fd430c9")
+						}
+					`,
+					ExpectedResult: `
+						{
+							"RevokeAllInviteTokens": true
+						}
+					`,
+				},
+			})
+		})
+	}
+}
+
+func TestOrgSettingsResolver_VerifyInviteToken(t *testing.T) {
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "no auth",
+			ctx:  context.Background(),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
+			defer cleanup()
+			ctx := test.ctx
+
+			mockClients.MockOrg.EXPECT().VerifyInviteToken(gomock.Any(), &cloudpb.InviteToken{
+				SignedClaims: "jwt_invite_claim.with_signature",
+			}).Return(&cloudpb.VerifyInviteTokenResponse{Valid: true}, nil)
+
+			gqlSchema := LoadSchema(gqlEnv)
+			gqltesting.RunTests(t, []*gqltesting.Test{
+				{
+					Schema:  gqlSchema,
+					Context: ctx,
+					Query: `
+						query {
+							verifyInviteToken(inviteToken: "jwt_invite_claim.with_signature")
+						}
+					`,
+					ExpectedResult: `
+						{
+							"verifyInviteToken": true
+						}
+					`,
+				},
+			})
+		})
+	}
+}
