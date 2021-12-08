@@ -297,6 +297,12 @@ func (s *Server) signupUser(ctx context.Context, userInfo *UserInfo, orgInfo *pr
 	if err != nil {
 		return nil, err
 	}
+	var orgID *uuidpb.UUID
+	var orgName string
+	if orgInfo != nil {
+		orgID = orgInfo.ID
+		orgName = orgInfo.OrgName
+	}
 	return &authpb.SignupReply{
 		Token:      tkn.token,
 		ExpiresAt:  tkn.expiresAt.Unix(),
@@ -307,8 +313,8 @@ func (s *Server) signupUser(ctx context.Context, userInfo *UserInfo, orgInfo *pr
 			LastName:  userInfo.LastName,
 			Email:     userInfo.Email,
 		},
-		OrgID:   orgInfo.ID,
-		OrgName: orgInfo.OrgName,
+		OrgID:   orgID,
+		OrgName: orgName,
 	}, nil
 }
 
@@ -398,17 +404,13 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 		return s.signupUser(ctx, updatedUserInfo, orgInfoPb, false /* newOrg */)
 	}
 
-	// Case 2: An empty HostedDomain means this user will be assigned to a self-org.
+	// Case 2: An empty HostedDomain means this user will be created without an org.
 	if userInfo.HostedDomain == "" {
-		updatedUserInfo, orgID, err := s.createUserAndOrg(ctx, userInfo.HostedDomain, userInfo.Email, userInfo)
+		updatedUserInfo, err := s.createUser(ctx, userInfo, nil)
 		if err != nil {
 			return nil, err
 		}
-		orgInfoPb, err := s.env.OrgClient().GetOrg(ctx, orgID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
-		}
-		return s.signupUser(ctx, updatedUserInfo, orgInfoPb, true /* newOrg */)
+		return s.signupUser(ctx, updatedUserInfo, nil, false /* newOrg */)
 	}
 
 	// Case 3: We go through all permutations of orgs that might exist for a user and find any that exist.
@@ -425,6 +427,7 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 	}
 
 	// Final case: User is the first to join and their org will be created with them.
+	// Note HostedDomain will never be empty because of case 2.
 	updatedUserInfo, orgID, err := s.createUserAndOrg(ctx, userInfo.HostedDomain, userInfo.HostedDomain, userInfo)
 	if err != nil {
 		return nil, err
