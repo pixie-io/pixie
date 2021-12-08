@@ -207,7 +207,6 @@ RecordsWithErrorCount<Record> StitchFrames(std::deque<Frame>* req_frames,
         // Just mark the request as consumed, and clean-up when they reach the head of the queue.
         // Note that responses are always head-processed, so they don't require this optimization.
         found_match = true;
-        resp_frames->pop_front();
         req_frame.consumed = true;
         break;
       }
@@ -222,17 +221,21 @@ RecordsWithErrorCount<Record> StitchFrames(std::deque<Frame>* req_frames,
     // Clean-up consumed frames at the head.
     // Do this inside the resp loop to aggressively clean-out req_frames whenever a frame consumed.
     // Should speed up the req_frames search for the next iteration.
-    for (auto& req_frame : *req_frames) {
-      if (!req_frame.consumed) {
+    auto it = req_frames->begin();
+    while (it != req_frames->end()) {
+      if (!(*it).consumed) {
         break;
       }
-      req_frames->pop_front();
+      it++;
     }
+    req_frames->erase(req_frames->begin(), it);
 
     // TODO(oazizi): Consider removing requests that are too old, otherwise a lost response can mean
     // the are never processed. This would result in a memory leak until the more drastic connection
     // tracker clean-up mechanisms kick in.
   }
+
+  resp_frames->clear();
 
   return {entries, error_count};
 }

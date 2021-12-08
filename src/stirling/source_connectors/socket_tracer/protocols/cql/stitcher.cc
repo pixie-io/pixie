@@ -377,10 +377,8 @@ RecordsWithErrorCount<Record> StitchFrames(std::deque<Frame>* req_frames,
   std::vector<Record> entries;
   int error_count = 0;
 
-  for (auto iter = resp_frames->begin(); iter != resp_frames->end();
-       iter = resp_frames->erase(resp_frames->begin())) {
+  for (auto& resp_frame : *resp_frames) {
     bool found_match = false;
-    Frame resp_frame = *iter;
 
     // Event responses are special: they have no request.
     if (resp_frame.hdr.opcode == Opcode::kEvent) {
@@ -429,17 +427,21 @@ RecordsWithErrorCount<Record> StitchFrames(std::deque<Frame>* req_frames,
     // Clean-up consumed frames at the head.
     // Do this inside the resp loop to aggressively clean-out req_frames whenever a frame consumed.
     // Should speed up the req_frames search for the next iteration.
-    for (auto& req_frame : *req_frames) {
-      if (!req_frame.consumed) {
+    auto it = req_frames->begin();
+    while (it != req_frames->end()) {
+      if (!(*it).consumed) {
         break;
       }
-      req_frames->pop_front();
+      it++;
     }
+    req_frames->erase(req_frames->begin(), it);
 
     // TODO(oazizi): Consider removing requests that are too old, otherwise a lost response can mean
     // the are never processed. This would result in a memory leak until the more drastic connection
     // tracker clean-up mechanisms kick in.
   }
+
+  resp_frames->clear();
 
   return {entries, error_count};
 }

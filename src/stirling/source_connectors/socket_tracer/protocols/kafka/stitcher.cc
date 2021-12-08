@@ -169,12 +169,14 @@ RecordsWithErrorCount<Record> StitchFrames(std::deque<Packet>* req_packets,
   }
 
   // Clean-up consumed req_packets at the head.
-  for (const auto& req_packet : *req_packets) {
-    if (!req_packet.consumed) {
+  auto it = req_packets->begin();
+  while (it != req_packets->end()) {
+    if (!(*it).consumed) {
       break;
     }
-    req_packets->pop_front();
+    it++;
   }
+  req_packets->erase(req_packets->begin(), it);
 
   resp_packets->clear();
 
