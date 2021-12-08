@@ -87,6 +87,11 @@ func (s *Server) updateAuthProviderUser(authUserID string, orgID string, userID 
 
 // Login uses the AuthProvider to authenticate and login the user. Errors out if their org doesn't exist.
 func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.LoginReply, error) {
+	inviteOrgID, err := s.getInviteOrgID(ctx, in.InviteToken)
+	if err != nil {
+		return nil, err
+	}
+
 	userInfo, err := s.getUserInfoFromToken(in.AccessToken)
 	if err != nil {
 		return nil, err
@@ -94,30 +99,47 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 	if !userInfo.EmailVerified {
 		return nil, status.Error(codes.PermissionDenied, "please verify your email before proceeding")
 	}
+
+	if userInfo.HostedDomain != "" && !utils.IsNilUUIDProto(inviteOrgID) {
+		return nil, status.Error(codes.PermissionDenied, "gsuite users are not allowed to follow invites. Please join the org with another account")
+	}
+
 	md, _ := metadata.FromIncomingContext(ctx)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
+	user, err := s.env.ProfileClient().GetUserByAuthProviderID(ctx, &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: userInfo.AuthProviderID})
+
+	// If we can't find the user and aren't in auto create mode.
+	if (err != nil || user == nil) && !in.CreateUserIfNotExists {
+		return nil, status.Error(codes.NotFound, "user not found, please register.")
+	}
+	if user != nil && !utils.IsNilUUIDProto(inviteOrgID) && !utils.IsNilUUIDProto(user.OrgID) {
+		return nil, status.Error(codes.PermissionDenied, "cannot join org - user already belongs to another org")
+	}
+	newUser := user == nil
+	if !utils.IsNilUUIDProto(inviteOrgID) {
+		orgInfo, err := s.env.OrgClient().GetOrg(ctx, inviteOrgID)
+		if err != nil {
+			return nil, err
+		}
+		return s.loginUser(ctx, userInfo, orgInfo, newUser)
+	}
+
 	switch userInfo.IdentityProvider {
 	case kratosIdentityProvider:
-		return s.kratosLogin(ctx, userInfo)
+		return s.kratosLogin(ctx, userInfo, user)
 	case googleIdentityProvider:
-		return s.googleOAuthLogin(ctx, userInfo, in.CreateUserIfNotExists)
+		return s.googleOAuthLogin(ctx, userInfo, user)
 	case auth0IdentityProvider:
-		return s.auth0Login(ctx, userInfo, in.CreateUserIfNotExists)
+		return s.auth0Login(ctx, userInfo, user)
 	default:
 		return nil, status.Error(codes.InvalidArgument, "received unexpected identity provider for user login")
 	}
 }
 
-func (s *Server) auth0Login(ctx context.Context, userInfo *UserInfo, canCreateUser bool) (*authpb.LoginReply, error) {
-	user, err := s.env.ProfileClient().GetUserByAuthProviderID(ctx, &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: userInfo.AuthProviderID})
-
-	// If we can't find the user and aren't in auto create mode.
-	if (err != nil || user == nil) && !canCreateUser {
-		return nil, status.Error(codes.NotFound, "user not found, please register.")
-	}
-
+func (s *Server) auth0Login(ctx context.Context, userInfo *UserInfo, user *profilepb.UserInfo) (*authpb.LoginReply, error) {
 	var orgInfo *profilepb.OrgInfo
+	var err error
 	if user != nil && !utils.IsNilUUIDProto(user.OrgID) {
 		orgInfo, err = s.env.OrgClient().GetOrg(ctx, user.OrgID)
 		if err != nil {
@@ -129,13 +151,7 @@ func (s *Server) auth0Login(ctx context.Context, userInfo *UserInfo, canCreateUs
 	return s.loginUser(ctx, userInfo, orgInfo, newUser)
 }
 
-func (s *Server) googleOAuthLogin(ctx context.Context, userInfo *UserInfo, canCreateUser bool) (*authpb.LoginReply, error) {
-	user, err := s.env.ProfileClient().GetUserByAuthProviderID(ctx, &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: userInfo.AuthProviderID})
-	// If we can't find the user and aren't in auto create mode.
-	if (err != nil || user == nil) && !canCreateUser {
-		return nil, status.Error(codes.NotFound, "user not found, please register.")
-	}
-
+func (s *Server) googleOAuthLogin(ctx context.Context, userInfo *UserInfo, user *profilepb.UserInfo) (*authpb.LoginReply, error) {
 	newUser := user == nil
 	if newUser {
 		// Users can login without registering if their org already exists. If org doesn't exist, they must complete sign up flow.
@@ -150,6 +166,7 @@ func (s *Server) googleOAuthLogin(ctx context.Context, userInfo *UserInfo, canCr
 	}
 
 	var orgInfo *profilepb.OrgInfo
+	var err error
 	if !utils.IsNilUUIDProto(user.OrgID) {
 		orgInfo, err = s.env.OrgClient().GetOrg(ctx, user.OrgID)
 		if err != nil {
@@ -166,15 +183,14 @@ func (s *Server) googleOAuthLogin(ctx context.Context, userInfo *UserInfo, canCr
 	return s.loginUser(ctx, userInfo, orgInfo, newUser)
 }
 
-func (s *Server) kratosLogin(ctx context.Context, userInfo *UserInfo) (*authpb.LoginReply, error) {
+func (s *Server) kratosLogin(ctx context.Context, userInfo *UserInfo, user *profilepb.UserInfo) (*authpb.LoginReply, error) {
 	orgID := utils.ProtoFromUUIDStrOrNil(userInfo.PLOrgID)
-	user, err := s.env.ProfileClient().GetUserByAuthProviderID(ctx, &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: userInfo.AuthProviderID})
 	if user != nil {
 		orgID = user.OrgID
 	}
 
 	if utils.IsNilUUIDProto(orgID) {
-		return nil, status.Errorf(codes.NotFound, "organization not found, please register, or contact support '%v'", err)
+		return nil, status.Errorf(codes.NotFound, "organization not found, please register, or contact support")
 	}
 
 	orgInfo, err := s.env.OrgClient().GetOrg(ctx, orgID)
@@ -320,8 +336,29 @@ func (s *Server) getMatchingOrgForUser(ctx context.Context, userInfo *UserInfo) 
 	return s.env.OrgClient().GetOrgByName(ctx, &profilepb.GetOrgByNameRequest{Name: emailDomain})
 }
 
+func (s *Server) getInviteOrgID(ctx context.Context, inviteToken string) (*uuidpb.UUID, error) {
+	if inviteToken == "" {
+		return nil, nil
+	}
+	verifiedToken, err := s.env.OrgClient().VerifyInviteToken(ctx, &profilepb.InviteToken{
+		SignedClaims: inviteToken,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if !verifiedToken.Valid {
+		return nil, status.Error(codes.PermissionDenied, "received invalid or expired invite")
+	}
+	return verifiedToken.OrgID, nil
+}
+
 // Signup uses the AuthProvider to authenticate and sign up the user. It autocreates the org if the org doesn't exist.
 func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.SignupReply, error) {
+	inviteOrgID, err := s.getInviteOrgID(ctx, in.InviteToken)
+	if err != nil {
+		return nil, err
+	}
+
 	userInfo, err := s.getUserInfoFromToken(in.AccessToken)
 	if err != nil {
 		return nil, err
@@ -329,6 +366,10 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 
 	if !userInfo.EmailVerified {
 		return nil, status.Error(codes.PermissionDenied, "please verify your email before proceeding")
+	}
+
+	if userInfo.HostedDomain != "" && !utils.IsNilUUIDProto(inviteOrgID) {
+		return nil, status.Error(codes.PermissionDenied, "gsuite users are not allowed to follow invites. Please join the org with another account")
 	}
 
 	md, _ := metadata.FromIncomingContext(ctx)
@@ -341,7 +382,23 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 		return nil, status.Error(codes.PermissionDenied, "user already exists, please login.")
 	}
 
-	// Case 1: An empty HostedDomain means this user will be assigned to a self-org.
+	// Case 1: User was invited to join an organization.
+	if !utils.IsNilUUIDProto(inviteOrgID) {
+		orgInfoPb, err := s.env.OrgClient().GetOrg(ctx, inviteOrgID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		if orgInfoPb == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "misformatted invite link")
+		}
+		updatedUserInfo, err := s.createUser(ctx, userInfo, inviteOrgID)
+		if err != nil {
+			return nil, err
+		}
+		return s.signupUser(ctx, updatedUserInfo, orgInfoPb, false /* newOrg */)
+	}
+
+	// Case 2: An empty HostedDomain means this user will be assigned to a self-org.
 	if userInfo.HostedDomain == "" {
 		updatedUserInfo, orgID, err := s.createUserAndOrg(ctx, userInfo.HostedDomain, userInfo.Email, userInfo)
 		if err != nil {
@@ -354,7 +411,7 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 		return s.signupUser(ctx, updatedUserInfo, orgInfoPb, true /* newOrg */)
 	}
 
-	// Case 2: We go through all permutations of orgs that might exist for a user and find any that exist.
+	// Case 3: We go through all permutations of orgs that might exist for a user and find any that exist.
 	orgInfo, err := s.getMatchingOrgForUser(ctx, userInfo)
 	if err != nil && status.Code(err) != codes.NotFound {
 		return nil, err
