@@ -192,6 +192,12 @@ func FirstHealthyVizier(cloudAddr string) (uuid.UUID, error) {
 			return utils.UUIDFromProtoOrNil(vz.ID), nil
 		}
 	}
+	// If no healthy vizier was found, try to look for a degraded cluster.
+	for _, vz := range vzInfo {
+		if vz.Status == cloudpb.CS_DEGRADED {
+			return utils.UUIDFromProtoOrNil(vz.ID), nil
+		}
+	}
 	return uuid.Nil, errors.New("no healthy Viziers available")
 }
 
@@ -229,7 +235,7 @@ func GetCurrentOrFirstHealthyVizier(cloudAddr string) (uuid.UUID, error) {
 		if err != nil {
 			cliUtils.WithError(err).Error("The current cluster in the kubeconfig not found within this org.")
 			clusterID = uuid.Nil
-		} else if clusterInfo.Status != cloudpb.CS_HEALTHY {
+		} else if clusterInfo.Status != cloudpb.CS_HEALTHY && clusterInfo.Status != cloudpb.CS_DEGRADED {
 			cliUtils.WithError(err).Errorf("'%s'in the kubeconfig's Pixie instance is unhealthy.", clusterInfo.PrettyClusterName)
 			clusterID = uuid.Nil
 		}
@@ -256,13 +262,16 @@ func ConnectionToHealthyVizierByID(cloudAddr string, clusterID uuid.UUID) (*Conn
 	if err != nil {
 		return nil, errors.New("Could not fetch vizier")
 	}
-	if clusterInfo.Status != cloudpb.CS_HEALTHY {
+	if clusterInfo.Status != cloudpb.CS_HEALTHY && clusterInfo.Status != cloudpb.CS_DEGRADED {
 		msg := fmt.Sprintf("Cluster %s is not healthy. Status is %s.",
 			clusterID.String(), clusterInfo.Status.String())
 		if clusterInfo.StatusMessage != "" {
 			msg = msg + fmt.Sprintf(" Status Message: %s", clusterInfo.StatusMessage)
 		}
 		return nil, errors.New(msg)
+	}
+	if clusterInfo.Status == cloudpb.CS_DEGRADED {
+		cliUtils.Infof("Data may not be complete.\nCluster '%s' is in a degraded state: %s", clusterID.String(), clusterInfo.StatusMessage)
 	}
 	return ConnectionToVizierByID(cloudAddr, clusterID)
 }
@@ -309,7 +318,7 @@ func ConnectToAllViziers(cloudAddr string) ([]*Connector, error) {
 
 	var conns []*Connector
 	for _, vzInfo := range vzInfos {
-		if vzInfo.Status != cloudpb.CS_HEALTHY {
+		if vzInfo.Status != cloudpb.CS_HEALTHY && vzInfo.Status != cloudpb.CS_DEGRADED {
 			continue
 		}
 		c, err := createVizierConnection(cloudAddr, vzInfo)
