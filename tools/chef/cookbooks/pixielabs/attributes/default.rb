@@ -86,8 +86,8 @@ if node[:platform] == 'ubuntu'
   default['nodejs']['download_path'] = 'https://nodejs.org/dist/v16.1.0/node-v16.1.0-linux-x64.tar.xz'
   default['nodejs']['sha256']        = '94d14ed1871a69e3dedd3a54d8c547c978b49566892616a227bf8be2f171a8a8'
 
-  default['packer']['download_path'] = 'https://releases.hashicorp.com/packer/1.3.2/packer_1.3.2_linux_amd64.zip'
-  default['packer']['sha256']        = '5e51808299135fee7a2e664b09f401b5712b5ef18bd4bad5bc50f4dcd8b149a1'
+  default['packer']['download_path'] = 'https://releases.hashicorp.com/packer/1.7.8/packer_1.7.8_linux_amd64.zip'
+  default['packer']['sha256']        = '8a94b84542d21b8785847f4cccc8a6da4c7be5e16d4b1a2d0a5f7ec5532faec0'
 
   default['kustomize']['download_path'] =
     'https://github.com/kubernetes-sigs/kustomize/releases/download/v3.2.0/kustomize_3.2.0_linux_amd64'
@@ -182,8 +182,8 @@ elsif node[:platform] == 'mac_os_x'
   default['nodejs']['download_path'] = 'https://nodejs.org/dist/v16.1.0/node-v16.1.0-darwin-x64.tar.gz'
   default['nodejs']['sha256']        = '22525ecc3b91f4d9a5d44dffe061cdb23f1a3e4a5555552e7940987883a93547'
 
-  default['packer']['download_path'] = 'https://releases.hashicorp.com/packer/1.3.2/packer_1.3.2_darwin_amd64.zip'
-  default['packer']['sha256']        = '1c2433239d801b017def8e66bbff4be3e7700b70248261b0abff2cd9c980bf5b'
+  default['packer']['download_path'] = 'https://releases.hashicorp.com/packer/1.7.8/packer_1.7.8_darwin_amd64.zip'
+  default['packer']['sha256']        = 'f8abe5d8660be2e6bea04bbb165ede4026e66f2f48ae5f076f9ea858699357ae'
 
   default['kustomize']['download_path'] =
     'https://github.com/kubernetes-sigs/kustomize/releases/download/v3.2.0/kustomize_3.2.0_darwin_amd64'

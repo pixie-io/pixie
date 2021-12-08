@@ -1,14 +1,6 @@
 {
-  "variables": {
-    "base_image_and_tag": "",
-    "generated_image_repository": "",
-    "generated_image_tag": ""
-  },
   "builders": [
     {
-      "type": "docker",
-      "image": "{{ user `base_image_and_tag` }}",
-      "commit": true,
       "changes": [
         "ENV PATH /opt/golang/bin:/opt/pixielabs/bin:/opt/clang-11.1/bin:/pl/bin:/opt/google-cloud-sdk/bin:/opt/gsutil:/opt/node/bin:/opt/phab/arcanist/bin:/usr/lib/go-1.10/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
         "ENV LD_LIBRARY_PATH /opt/clang-11.1/lib",
@@ -16,47 +8,59 @@
         "ENV CC clang",
         "ENV CXX clang++",
         "ENV ASAN_SYMBOLIZER_PATH /opt/clang-11.1/bin/llvm-symbolizer",
-        "WORKDIR /pl/src/px.dev/pixie"
-      ]
-    }
-  ],
-  "provisioners": [
-    {
-      "type": "shell",
-      "inline": [
-        "apt-get -y update; DEBIAN_FRONTEND=noninteractive apt-get install -y curl"
-      ]
-    },
-    {
-      "type": "chef-solo",
-      "cookbook_paths": [
-        "cookbooks"
+        "WORKDIR /pl/src/px.dev/pixie",
+        "ENTRYPOINT [\"\"]",
+        "CMD [\"\"]"
       ],
-      "roles_path": "roles",
-      "run_list": [
-        "role[pl_base_dev]",
-        "recipe[pixielabs::docker_extras]"
-      ],
-      "prevent_sudo": true,
-      "version": "14.7.17"
-    },
-    {
-      "type": "shell",
-      "inline": [
-        "rm -rf /tmp/*",
-        "rm -rf /root/.npm",
-        "rm -rf /var/lib/apt/lists/*"
-      ]
+      "commit": true,
+      "image": "{{ user `base_image_and_tag` }}",
+      "type": "docker"
     }
   ],
   "post-processors": [
     [
       {
-        "type": "docker-tag",
         "repository": "{{ user `generated_image_repository` }}",
-        "tag": "{{ user `generated_image_tag` }}"
+        "tags": [
+          "{{ user `generated_image_tag` }}"
+        ],
+        "type": "docker-tag"
       },
       "docker-push"
     ]
-  ]
+  ],
+  "provisioners": [
+    {
+      "inline": [
+        "apt-get -y update; DEBIAN_FRONTEND=noninteractive apt-get install -y curl"
+      ],
+      "type": "shell"
+    },
+    {
+      "cookbook_paths": [
+        "cookbooks"
+      ],
+      "prevent_sudo": true,
+      "roles_path": "roles",
+      "run_list": [
+        "role[pl_base_dev]",
+        "recipe[pixielabs::docker_extras]"
+      ],
+      "type": "chef-solo",
+      "version": "17.8.25"
+    },
+    {
+      "inline": [
+        "rm -rf /tmp/*",
+        "rm -rf /root/.npm",
+        "rm -rf /var/lib/apt/lists/*"
+      ],
+      "type": "shell"
+    }
+  ],
+  "variables": {
+    "base_image_and_tag": "",
+    "generated_image_repository": "",
+    "generated_image_tag": ""
+  }
 }

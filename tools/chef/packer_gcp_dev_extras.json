@@ -27,7 +27,7 @@
         "role[pl_workstation]",
         "recipe[pixielabs::docker_extras]"
       ],
-      "version": "14.7.17"
+      "version": "17.8.25"
     }
   ]
 }

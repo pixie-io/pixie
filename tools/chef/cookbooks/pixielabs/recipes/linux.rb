@@ -69,7 +69,8 @@ execute 'enable docker' do
 end
 
 apt_repository 'ubuntu-toolchain-ppa' do
-   uri         'ppa:ubuntu-toolchain-r/ppa'
+  uri         'ppa:ubuntu-toolchain-r/ppa'
+  distribution 'focal'
 end
 
 apt_update 'update packages' do

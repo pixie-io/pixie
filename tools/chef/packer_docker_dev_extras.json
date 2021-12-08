@@ -28,7 +28,7 @@
         "recipe[pixielabs::dev_extras]"
       ],
       "prevent_sudo": true,
-      "version": "14.7.17"
+      "version": "17.8.25"
     },
     {
       "type": "shell",
