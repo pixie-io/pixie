@@ -71,7 +71,12 @@ const ClusterSelector: React.FC = () => {
   );
 
   const clusters = data?.clusters;
-  const { selectedClusterPrettyName, selectedClusterStatus, setClusterByName } = React.useContext(ClusterContext);
+  const {
+    selectedClusterPrettyName,
+    selectedClusterStatus,
+    setClusterByName,
+    selectedClusterStatusMessage,
+  } = React.useContext(ClusterContext);
 
   const getListItems = React.useCallback(async (input: string) => (
     clusters
@@ -98,7 +103,7 @@ const ClusterSelector: React.FC = () => {
   return (
     <div className={classes.container}>
       {statusGroup !== 'healthy' && (
-        <Tooltip title={`Status: ${statusGroup}`}>
+        <Tooltip title={`Status: ${selectedClusterStatusMessage}`}>
           <div className={classes.status}>
             <StatusCell statusGroup={statusGroup} />
           </div>

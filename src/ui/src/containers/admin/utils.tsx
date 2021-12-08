@@ -76,6 +76,8 @@ export function clusterStatusGroup(status: GQLClusterStatus): StatusGroup {
     return 'pending';
   } if (['CS_UNHEALTHY', 'CS_UPDATE_FAILED'].indexOf(status) !== -1) {
     return 'unhealthy';
+  } if (['CS_DEGRADED'].indexOf(status) !== -1) {
+    return 'degraded';
   }
   return 'unknown';
 }

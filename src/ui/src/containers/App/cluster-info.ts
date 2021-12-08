@@ -33,6 +33,7 @@ export function selectClusterName(clusters: Pick<Cluster, 'clusterName' | 'statu
     [ClusterStatus.CS_UPDATING]: 1,
     [ClusterStatus.CS_CONNECTED]: 1,
     [ClusterStatus.CS_UPDATE_FAILED]: 2,
+    [ClusterStatus.CS_DEGRADED]: 1,
   };
   const defaultStatusValue = 3;
   // Copy over in case clusters is read only.

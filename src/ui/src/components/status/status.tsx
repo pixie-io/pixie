@@ -23,11 +23,12 @@ import {
   CheckCircle as HealthyIcon,
   Error as UnhealthyIcon,
   WatchLater as PendingIcon,
+  Warning as WarningIcon,
 } from '@mui/icons-material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
-export type StatusGroup = 'healthy' | 'unhealthy' | 'pending' | 'unknown';
+export type StatusGroup = 'healthy' | 'unhealthy' | 'pending' | 'unknown' | 'degraded';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   unhealthy: {
@@ -39,6 +40,10 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     color: theme.palette.success.main,
   },
   pending: {
+    verticalAlign: 'text-bottom',
+    color: theme.palette.warning.main,
+  },
+  warning: {
     verticalAlign: 'text-bottom',
     color: theme.palette.warning.main,
   },
@@ -57,6 +62,8 @@ export const StatusCell: React.FC<{ statusGroup: StatusGroup }> = React.memo(({ 
       return <UnhealthyIcon fontSize='small' className={classes.unhealthy} />;
     case 'pending':
       return <PendingIcon fontSize='small' className={classes.pending} />;
+    case 'degraded':
+      return <WarningIcon fontSize='small' className={classes.warning} />;
     default:
       return <UnknownIcon fontSize='small' className={classes.unknown} />;
   }

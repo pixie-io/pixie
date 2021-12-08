@@ -238,7 +238,7 @@ const ClusterLoadingComponent = React.memo<ClusterLoadingProps>(({
     );
   }
 
-  if (clusterStatus !== GQLClusterStatus.CS_HEALTHY) {
+  if (clusterStatus !== GQLClusterStatus.CS_HEALTHY && clusterStatus !== GQLClusterStatus.CS_DEGRADED) {
     return (
       <div>
         <Alert severity='error'>
@@ -372,7 +372,8 @@ const LiveView = React.memo(() => {
 
   const cloudClient = (React.useContext(PixieAPIContext) as PixieAPIClient).getCloudClient();
 
-  const healthy = cloudClient && selectedClusterStatus === GQLClusterStatus.CS_HEALTHY;
+  const healthy = cloudClient && (selectedClusterStatus === GQLClusterStatus.CS_HEALTHY
+    || selectedClusterStatus === GQLClusterStatus.CS_DEGRADED);
 
   // Healthy might flicker on and off. We only care to show the loading state for first load,
   // and want to ignore future health check failures. So we use healthyOnce to start as false
