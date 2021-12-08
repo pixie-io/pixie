@@ -29,6 +29,7 @@ import {
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
+import { InviteLinkReset } from 'app/containers/admin/invite-link-reset';
 import { GQLOrgInfo } from 'app/types/schema';
 
 import {
@@ -129,6 +130,7 @@ export const OrgSettings = React.memo(() => {
           </TableRow>
         </TableBody>
       </Table>
+      <InviteLinkReset />
     </>
   );
 });
