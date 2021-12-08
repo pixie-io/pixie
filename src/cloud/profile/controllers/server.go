@@ -682,7 +682,7 @@ func (s *Server) RevokeAllInviteTokens(ctx context.Context, req *uuidpb.UUID) (*
 
 // VerifyInviteToken verifies that the given invite JWT is still valid by performing expiration and
 // signing key checks.
-func (s *Server) VerifyInviteToken(ctx context.Context, req *profilepb.InviteToken) (*types.BoolValue, error) {
+func (s *Server) VerifyInviteToken(ctx context.Context, req *profilepb.InviteToken) (*profilepb.VerifyInviteTokenResponse, error) {
 	signedClaims := req.GetSignedClaims()
 	if signedClaims == "" {
 		return nil, status.Error(codes.InvalidArgument, "invite token misformatted")
@@ -698,7 +698,7 @@ func (s *Server) VerifyInviteToken(ctx context.Context, req *profilepb.InviteTok
 	// Check expiration.
 	err = claims.Valid(nil)
 	if err != nil {
-		return &types.BoolValue{Value: false}, nil
+		return &profilepb.VerifyInviteTokenResponse{Valid: false}, nil
 	}
 
 	// Get the signing key for the orgID.
@@ -714,5 +714,8 @@ func (s *Server) VerifyInviteToken(ctx context.Context, req *profilepb.InviteTok
 	_, err = parser.Parse(signedClaims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(inviteSigningKey), nil
 	})
-	return &types.BoolValue{Value: err == nil}, nil
+	if err != nil {
+		return &profilepb.VerifyInviteTokenResponse{Valid: false}, nil
+	}
+	return &profilepb.VerifyInviteTokenResponse{Valid: true, OrgID: utils.ProtoFromUUID(orgID)}, nil
 }

@@ -356,7 +356,11 @@ func (o *OrganizationServiceServer) RevokeAllInviteTokens(ctx context.Context, r
 
 // VerifyInviteToken verifies that the given invite JWT is still valid by performing expiration and
 // signing key checks.
-func (o *OrganizationServiceServer) VerifyInviteToken(ctx context.Context, req *cloudpb.InviteToken) (*types.BoolValue, error) {
+func (o *OrganizationServiceServer) VerifyInviteToken(ctx context.Context, req *cloudpb.InviteToken) (*cloudpb.VerifyInviteTokenResponse, error) {
 	// Contexts without an org claim should still be able to verify invite validity.
-	return o.OrgServiceClient.VerifyInviteToken(ctx, &profilepb.InviteToken{SignedClaims: req.SignedClaims})
+	resp, err := o.OrgServiceClient.VerifyInviteToken(ctx, &profilepb.InviteToken{SignedClaims: req.SignedClaims})
+	if err != nil {
+		return nil, err
+	}
+	return &cloudpb.VerifyInviteTokenResponse{Valid: resp.Valid}, nil
 }

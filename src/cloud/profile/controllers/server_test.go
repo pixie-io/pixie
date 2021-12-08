@@ -1936,7 +1936,10 @@ func TestServer_VerifyInvites_Good(t *testing.T) {
 
 	resp, err := s.VerifyInviteToken(ctx, &profilepb.InviteToken{SignedClaims: signedClaims})
 	require.NoError(t, err)
-	assert.Equal(t, &types.BoolValue{Value: true}, resp)
+	assert.Equal(t, &profilepb.VerifyInviteTokenResponse{
+		Valid: true,
+		OrgID: utils.ProtoFromUUID(orgID),
+	}, resp)
 }
 
 func TestServer_VerifyInvites_Expired(t *testing.T) {
@@ -1963,7 +1966,7 @@ func TestServer_VerifyInvites_Expired(t *testing.T) {
 
 	resp, err := s.VerifyInviteToken(ctx, &profilepb.InviteToken{SignedClaims: signedClaims})
 	require.NoError(t, err)
-	assert.Equal(t, &types.BoolValue{Value: false}, resp)
+	assert.Equal(t, &profilepb.VerifyInviteTokenResponse{Valid: false}, resp)
 }
 
 func TestServer_VerifyInvites_BadSigningKey(t *testing.T) {
@@ -1994,7 +1997,7 @@ func TestServer_VerifyInvites_BadSigningKey(t *testing.T) {
 
 	resp, err := s.VerifyInviteToken(ctx, &profilepb.InviteToken{SignedClaims: signedClaims})
 	require.NoError(t, err)
-	assert.Equal(t, &types.BoolValue{Value: false}, resp)
+	assert.Equal(t, &profilepb.VerifyInviteTokenResponse{Valid: false}, resp)
 }
 
 func TestServer_VerifyInvites_BadOrg(t *testing.T) {

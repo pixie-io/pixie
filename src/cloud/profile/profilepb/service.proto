@@ -59,7 +59,7 @@ service OrgService {
 
   rpc CreateInviteToken(CreateInviteTokenRequest) returns (InviteToken);
   rpc RevokeAllInviteTokens(px.uuidpb.UUID) returns (google.protobuf.Empty);
-  rpc VerifyInviteToken(InviteToken) returns (google.protobuf.BoolValue);
+  rpc VerifyInviteToken(InviteToken) returns (VerifyInviteTokenResponse);
 }
 
 // UserInfo has information about a single end user in our system.
@@ -295,4 +295,11 @@ message CreateInviteTokenRequest {
 
 message InviteToken {
   string signed_claims = 1;
+}
+
+message VerifyInviteTokenResponse {
+  // Tells you if the invite is valid or not.
+  bool valid = 1;
+  // If valid, the org that this invite belongs to.
+  px.uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
 }

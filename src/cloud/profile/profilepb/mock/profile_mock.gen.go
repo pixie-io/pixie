@@ -675,14 +675,14 @@ func (mr *MockOrgServiceClientMockRecorder) UpdateOrg(ctx, in interface{}, opts 
 }
 
 // VerifyInviteToken mocks base method.
-func (m *MockOrgServiceClient) VerifyInviteToken(ctx context.Context, in *profilepb.InviteToken, opts ...grpc.CallOption) (*types.BoolValue, error) {
+func (m *MockOrgServiceClient) VerifyInviteToken(ctx context.Context, in *profilepb.InviteToken, opts ...grpc.CallOption) (*profilepb.VerifyInviteTokenResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "VerifyInviteToken", varargs...)
-	ret0, _ := ret[0].(*types.BoolValue)
+	ret0, _ := ret[0].(*profilepb.VerifyInviteTokenResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -898,10 +898,10 @@ func (mr *MockOrgServiceServerMockRecorder) UpdateOrg(arg0, arg1 interface{}) *g
 }
 
 // VerifyInviteToken mocks base method.
-func (m *MockOrgServiceServer) VerifyInviteToken(arg0 context.Context, arg1 *profilepb.InviteToken) (*types.BoolValue, error) {
+func (m *MockOrgServiceServer) VerifyInviteToken(arg0 context.Context, arg1 *profilepb.InviteToken) (*profilepb.VerifyInviteTokenResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "VerifyInviteToken", arg0, arg1)
-	ret0, _ := ret[0].(*types.BoolValue)
+	ret0, _ := ret[0].(*profilepb.VerifyInviteTokenResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

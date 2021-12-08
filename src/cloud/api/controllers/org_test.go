@@ -268,8 +268,8 @@ func (*fakeOrg) RevokeAllInviteTokens(ctx context.Context, _ *uuidpb.UUID, _ ...
 	return &types.Empty{}, nil
 }
 
-func (*fakeOrg) VerifyInviteToken(ctx context.Context, _ *profilepb.InviteToken, _ ...grpc.CallOption) (*types.BoolValue, error) {
-	return &types.BoolValue{}, nil
+func (*fakeOrg) VerifyInviteToken(ctx context.Context, _ *profilepb.InviteToken, _ ...grpc.CallOption) (*profilepb.VerifyInviteTokenResponse, error) {
+	return &profilepb.VerifyInviteTokenResponse{}, nil
 }
 
 func TestOrganizationServiceServer_CorrectOrgPermissions(t *testing.T) {

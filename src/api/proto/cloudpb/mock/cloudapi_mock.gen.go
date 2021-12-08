@@ -530,14 +530,14 @@ func (mr *MockOrganizationServiceClientMockRecorder) UpdateOrg(ctx, in interface
 }
 
 // VerifyInviteToken mocks base method.
-func (m *MockOrganizationServiceClient) VerifyInviteToken(ctx context.Context, in *cloudpb.InviteToken, opts ...grpc.CallOption) (*types.BoolValue, error) {
+func (m *MockOrganizationServiceClient) VerifyInviteToken(ctx context.Context, in *cloudpb.InviteToken, opts ...grpc.CallOption) (*cloudpb.VerifyInviteTokenResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "VerifyInviteToken", varargs...)
-	ret0, _ := ret[0].(*types.BoolValue)
+	ret0, _ := ret[0].(*cloudpb.VerifyInviteTokenResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -723,10 +723,10 @@ func (mr *MockOrganizationServiceServerMockRecorder) UpdateOrg(arg0, arg1 interf
 }
 
 // VerifyInviteToken mocks base method.
-func (m *MockOrganizationServiceServer) VerifyInviteToken(arg0 context.Context, arg1 *cloudpb.InviteToken) (*types.BoolValue, error) {
+func (m *MockOrganizationServiceServer) VerifyInviteToken(arg0 context.Context, arg1 *cloudpb.InviteToken) (*cloudpb.VerifyInviteTokenResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "VerifyInviteToken", arg0, arg1)
-	ret0, _ := ret[0].(*types.BoolValue)
+	ret0, _ := ret[0].(*cloudpb.VerifyInviteTokenResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
