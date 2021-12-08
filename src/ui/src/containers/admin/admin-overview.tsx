@@ -31,6 +31,7 @@ import { scrollbarStyles } from 'app/components';
 import { APIKeysTable } from 'app/containers/admin/api-keys';
 import { ClustersTable } from 'app/containers/admin/clusters-list';
 import { DeploymentKeysTable } from 'app/containers/admin/deployment-keys';
+import { InviteUserButton } from 'app/containers/admin/invite-user-button';
 import { OrgSettings } from 'app/containers/admin/org-settings';
 import { UsersTable } from 'app/containers/admin/org-users';
 import { UserSettings } from 'app/containers/admin/user-settings';
@@ -192,6 +193,7 @@ export const AdminOverview = React.memo(() => {
               New key
             </Button>
           )}
+        {tab.endsWith('users') && <InviteUserButton className={classes.createButton} />}
       </div>
       <div className={classes.tabContents}>
         <TableContainer className={classes.table}>
