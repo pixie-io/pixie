@@ -19,7 +19,6 @@
 package controllers_test
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -359,12 +358,77 @@ func TestAuthLoginHandler_WithOrgName(t *testing.T) {
 		},
 	}
 
-	mockClients.MockAuth.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {
-		assert.Equal(t, "the-token", in.AccessToken)
-	}).Return(loginResp, nil)
+	mockClients.MockAuth.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Return(loginResp, nil)
 
 	rr := httptest.NewRecorder()
 	h := handler.New(env, controllers.AuthLoginHandler)
+	h.ServeHTTP(rr, req)
+}
+
+func TestAuthLoginHandler_WithInviteToken(t *testing.T) {
+	// Simple API forwarding check.
+	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	req, err := http.NewRequest("POST", "/login",
+		strings.NewReader("{\"accessToken\": \"access-token\", \"inviteToken\": \"invite-token\"}"))
+	require.NoError(t, err)
+
+	// After support account removal, we ignore the orgName  parameter
+	expectedAuthServiceReq := &authpb.LoginRequest{
+		AccessToken:           "access-token",
+		InviteToken:           "invite-token",
+		CreateUserIfNotExists: true,
+	}
+
+	loginResp := &authpb.LoginReply{
+		UserInfo: &authpb.AuthenticatedUserInfo{
+			UserID:    utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+			FirstName: "first",
+			LastName:  "last",
+			Email:     "abc@defg.com",
+		},
+		OrgInfo: &authpb.LoginReply_OrgInfo{
+			OrgID:   "test",
+			OrgName: "testOrg",
+		},
+	}
+
+	mockClients.MockAuth.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).
+		Return(loginResp, nil)
+
+	rr := httptest.NewRecorder()
+	h := handler.New(env, controllers.AuthLoginHandler)
+	h.ServeHTTP(rr, req)
+}
+
+func TestAuthSignupHandler_WithInviteToken(t *testing.T) {
+	// Simple API forwarding check.
+	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	req, err := http.NewRequest("POST", "/signup",
+		strings.NewReader("{\"accessToken\": \"access-token\", \"inviteToken\": \"invite-token\"}"))
+	require.NoError(t, err)
+
+	expectedAuthServiceReq := &authpb.SignupRequest{
+		AccessToken: "access-token",
+		InviteToken: "invite-token",
+	}
+
+	signupResp := &authpb.SignupReply{
+		UserInfo: &authpb.AuthenticatedUserInfo{
+			UserID:    utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+			FirstName: "first",
+			LastName:  "last",
+			Email:     "abc@defg.com",
+		},
+		OrgID: utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c9"),
+	}
+
+	mockClients.MockAuth.EXPECT().Signup(gomock.Any(), expectedAuthServiceReq).
+		Return(signupResp, nil)
+
+	rr := httptest.NewRecorder()
+	h := handler.New(env, controllers.AuthSignupHandler)
 	h.ServeHTTP(rr, req)
 }
 
@@ -380,9 +444,8 @@ func TestAuthLoginHandler_FailedAuthServiceRequestFailed(t *testing.T) {
 		CreateUserIfNotExists: true,
 	}
 
-	mockClients.MockAuth.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {
-		assert.Equal(t, "the-token", in.AccessToken)
-	}).Return(nil, status.New(codes.Unauthenticated, "bad token").Err())
+	mockClients.MockAuth.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).
+		Return(nil, status.New(codes.Unauthenticated, "bad token").Err())
 
 	rr := httptest.NewRecorder()
 	h := handler.New(env, controllers.AuthLoginHandler)
@@ -402,9 +465,8 @@ func TestAuthLoginHandler_FailedAuthRequest(t *testing.T) {
 		CreateUserIfNotExists: true,
 	}
 
-	mockClients.MockAuth.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {
-		assert.Equal(t, "the-token", in.AccessToken)
-	}).Return(nil, errors.New("badness"))
+	mockClients.MockAuth.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).
+		Return(nil, errors.New("badness"))
 
 	rr := httptest.NewRecorder()
 	h := handler.New(env, controllers.AuthLoginHandler)
