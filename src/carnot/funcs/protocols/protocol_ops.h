@@ -60,7 +60,7 @@ class MySQLCommandNameUDF : public px::carnot::udf::ScalarUDF {
     return udf::ScalarUDFDocBuilder("Convert a MySQL command code to its name.")
         .Details("UDF to convert MySQL request command codes into their corresponding names.")
         .Arg("cmd", "A MySQL command code")
-        .Example("df.cmd = px.kafka_api_key_name(df.req_cmd)")
+        .Example("df.cmd = px.mysql_command_name(df.req_cmd)")
         .Returns("The request code's name.");
   }
 };
