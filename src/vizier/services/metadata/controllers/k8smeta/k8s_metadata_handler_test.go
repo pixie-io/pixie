@@ -396,6 +396,7 @@ func TestHandler_ProcessUpdates(t *testing.T) {
 		FullResourceStore:    make(map[int64]*storepb.K8SResource),
 	}
 	mds.RVStore[k8smeta.KelvinUpdateTopic] = 3
+	mds.RVStore["127.0.0.1"] = 3
 
 	nc, natsCleanup := testingutils.MustStartTestNATS(t)
 	defer natsCleanup()
@@ -403,7 +404,7 @@ func TestHandler_ProcessUpdates(t *testing.T) {
 	mdh := k8smeta.NewHandler(updateCh, mds, nc)
 	defer mdh.Stop()
 
-	expectedMsg := &messagespb.VizierMessage{
+	expectedNSMsg := &messagespb.VizierMessage{
 		Msg: &messagespb.VizierMessage_K8SMetadataMessage{
 			K8SMetadataMessage: &messagespb.K8SMetadataMessage{
 				Msg: &messagespb.K8SMetadataMessage_K8SMetadataUpdate{
@@ -422,28 +423,65 @@ func TestHandler_ProcessUpdates(t *testing.T) {
 			},
 		},
 	}
-	// We should expect a message to be sent out to the kelvin topic and 127.0.0.1
+
+	expectedNodeMsg := &messagespb.VizierMessage{
+		Msg: &messagespb.VizierMessage_K8SMetadataMessage{
+			K8SMetadataMessage: &messagespb.K8SMetadataMessage{
+				Msg: &messagespb.K8SMetadataMessage_K8SMetadataUpdate{
+					K8SMetadataUpdate: &metadatapb.ResourceUpdate{
+						Update: &metadatapb.ResourceUpdate_NodeUpdate{
+							NodeUpdate: &metadatapb.NodeUpdate{
+								UID:              "ijkl",
+								Name:             "object_md",
+								StartTimestampNS: 4,
+								Phase:            metadatapb.NODE_PHASE_RUNNING,
+								PodCIDR:          "pod_cidr",
+							},
+						},
+						UpdateVersion: 4,
+					},
+				},
+			},
+		},
+	}
+	// We should expect a message to be sent out to the kelvin topic and 127.0.0.1 for the node and namespace updates.
 	var wg sync.WaitGroup
-	wg.Add(1)
+	wg.Add(2)
 	_, err := nc.Subscribe(fmt.Sprintf("%s/%s", k8smeta.K8sMetadataUpdateChannel, k8smeta.KelvinUpdateTopic), func(msg *nats.Msg) {
 		m := &messagespb.VizierMessage{}
 		err := proto.Unmarshal(msg.Data, m)
 		require.NoError(t, err)
-		assert.Equal(t, int64(3), m.GetK8SMetadataMessage().GetK8SMetadataUpdate().PrevUpdateVersion)
+
+		prevUpdateVersion := m.GetK8SMetadataMessage().GetK8SMetadataUpdate().PrevUpdateVersion
+		// Reset prevUpdateVersion for proto comparison.
 		m.GetK8SMetadataMessage().GetK8SMetadataUpdate().PrevUpdateVersion = 0
-		assert.Equal(t, expectedMsg, m)
-		wg.Done()
+
+		if prevUpdateVersion == 3 {
+			assert.Equal(t, expectedNodeMsg, m)
+			wg.Done()
+		} else if prevUpdateVersion == 4 {
+			assert.Equal(t, expectedNSMsg, m)
+			wg.Done()
+		}
 	})
 	require.NoError(t, err)
-	wg.Add(1)
+	wg.Add(2)
 	_, err = nc.Subscribe(fmt.Sprintf("%s/127.0.0.1", k8smeta.K8sMetadataUpdateChannel), func(msg *nats.Msg) {
 		m := &messagespb.VizierMessage{}
 		err := proto.Unmarshal(msg.Data, m)
 		require.NoError(t, err)
-		assert.Equal(t, int64(5), m.GetK8SMetadataMessage().GetK8SMetadataUpdate().PrevUpdateVersion)
+
+		prevUpdateVersion := m.GetK8SMetadataMessage().GetK8SMetadataUpdate().PrevUpdateVersion
+		// Reset prevUpdateVersion for proto comparison.
 		m.GetK8SMetadataMessage().GetK8SMetadataUpdate().PrevUpdateVersion = 0
-		assert.Equal(t, expectedMsg, m)
-		wg.Done()
+
+		if prevUpdateVersion == 3 {
+			assert.Equal(t, expectedNodeMsg, m)
+			wg.Done()
+		} else if prevUpdateVersion == 4 {
+			assert.Equal(t, expectedNSMsg, m)
+			wg.Done()
+		}
 	})
 	require.NoError(t, err)
 
@@ -526,7 +564,7 @@ func TestHandler_ProcessUpdates(t *testing.T) {
 	assert.Equal(t, &storepb.K8SResourceUpdate{
 		Update: &metadatapb.ResourceUpdate{
 			UpdateVersion:     5,
-			PrevUpdateVersion: 5,
+			PrevUpdateVersion: 4,
 			Update: &metadatapb.ResourceUpdate_NamespaceUpdate{
 				NamespaceUpdate: &metadatapb.NamespaceUpdate{
 					UID:              "ijkl",
@@ -1084,10 +1122,32 @@ func TestNodeUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 		},
 	}
 
-	state := &k8smeta.ProcessorState{}
+	state := &k8smeta.ProcessorState{NodeToIP: map[string]string{
+		"object_md": "127.0.0.1",
+		"node-2":    "127.0.0.2",
+	}}
 	p := k8smeta.NodeUpdateProcessor{}
 	updates := p.GetUpdatesToSend(storedProtos, state)
-	assert.Equal(t, 0, len(updates))
+	assert.Equal(t, 1, len(updates))
+
+	nodeUpdate := &k8smeta.OutgoingUpdate{
+		Update: &metadatapb.ResourceUpdate{
+			UpdateVersion: 2,
+			Update: &metadatapb.ResourceUpdate_NodeUpdate{
+				NodeUpdate: &metadatapb.NodeUpdate{
+					UID:              "ijkl",
+					Name:             "object_md",
+					StartTimestampNS: 4,
+					StopTimestampNS:  6,
+					Phase:            metadatapb.NODE_PHASE_RUNNING,
+					PodCIDR:          "pod_cidr",
+				},
+			},
+		},
+	}
+	assert.Equal(t, nodeUpdate.Update, updates[0].Update)
+	assert.Contains(t, updates[0].Topics, k8smeta.KelvinUpdateTopic)
+	assert.Contains(t, updates[0].Topics, "127.0.0.1")
 }
 
 func TestNamespaceUpdateProcessor_SetDeleted(t *testing.T) {

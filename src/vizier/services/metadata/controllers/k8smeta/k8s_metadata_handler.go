@@ -766,8 +766,25 @@ func (p *NodeUpdateProcessor) GetStoredProtos(obj *storepb.K8SResource) []*store
 
 // GetUpdatesToSend gets the resource updates that should be sent out to the agents, along with the agent IPs that the update should be sent to.
 func (p *NodeUpdateProcessor) GetUpdatesToSend(updates []*StoredUpdate, state *ProcessorState) []*OutgoingUpdate {
-	// Currently we don't send node updates to the agents.
-	return nil
+	if len(updates) == 0 {
+		return nil
+	}
+
+	rv := updates[0].UpdateVersion
+	node := updates[0].Update.GetNode()
+
+	// Send the update to the node's PEM + Kelvin.
+	agents := []string{KelvinUpdateTopic}
+	if val, ok := state.NodeToIP[node.Metadata.Name]; ok {
+		agents = append(agents, val)
+	}
+
+	return []*OutgoingUpdate{
+		{
+			Update: getResourceUpdateFromNode(node, rv),
+			Topics: agents,
+		},
+	}
 }
 
 // NamespaceUpdateProcessor is a processor for namespaces.
@@ -946,6 +963,23 @@ func getResourceUpdateFromPod(pod *metadatapb.Pod, uv int64) *metadatapb.Resourc
 	}
 
 	return update
+}
+
+func getResourceUpdateFromNode(node *metadatapb.Node, uv int64) *metadatapb.ResourceUpdate {
+	return &metadatapb.ResourceUpdate{
+		UpdateVersion: uv,
+		Update: &metadatapb.ResourceUpdate_NodeUpdate{
+			NodeUpdate: &metadatapb.NodeUpdate{
+				UID:              node.Metadata.UID,
+				Name:             node.Metadata.Name,
+				StartTimestampNS: node.Metadata.CreationTimestampNS,
+				StopTimestampNS:  node.Metadata.DeletionTimestampNS,
+				Phase:            node.Status.Phase,
+				PodCIDR:          node.Spec.PodCIDR,
+				PodCIDRs:         node.Spec.PodCIDRs,
+			},
+		},
+	}
 }
 
 // Stop stops processing incoming k8s metadata updates.
