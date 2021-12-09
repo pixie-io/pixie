@@ -141,6 +141,8 @@ func toString(val interface{}) string {
 
 func (d *dataFormatterImpl) getStringForVal(dt vizierpb.DataType, st vizierpb.SemanticType, val interface{}) string {
 	switch st {
+	case vizierpb.ST_SCRIPT_REFERENCE:
+		return formatScriptReference(val)
 	case vizierpb.ST_BYTES:
 		return formatBytes(val)
 	case vizierpb.ST_DURATION_NS:
@@ -175,6 +177,23 @@ func withSign(neg bool, val string) string {
 		sign = "-"
 	}
 	return fmt.Sprintf(`%s%s`, sign, val)
+}
+
+func formatScriptReference(val interface{}) string {
+	strVal, ok := val.(string)
+	if !ok {
+		return toString(val)
+	}
+	var result map[string]interface{}
+	err := json.Unmarshal([]byte(strVal), &result)
+	if err != nil {
+		return toString(val)
+	}
+	labelVal, ok := result["label"].(string)
+	if !ok {
+		return toString(result["label"])
+	}
+	return labelVal
 }
 
 func formatBytesInternal(val float64) string {

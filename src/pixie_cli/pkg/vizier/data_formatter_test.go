@@ -111,6 +111,21 @@ func TestDuration(t *testing.T) {
 	assert.Equal(t, "2160000 s", formatter.FormatValue(1, int64(25*24*60*60*1000*1000*1000+133514124)))
 }
 
+func TestScriptReferences(t *testing.T) {
+	relation := &vizierpb.Relation{
+		Columns: []*vizierpb.Relation_ColumnInfo{
+			{
+				ColumnName:         "source",
+				ColumnType:         vizierpb.STRING,
+				ColumnSemanticType: vizierpb.ST_SCRIPT_REFERENCE,
+			},
+		},
+	}
+
+	formatter := vizier.NewDataFormatterForTable(relation)
+
+	assert.Equal(t, "px-sock-shop/load-test-799f9dffff-s6m2c", formatter.FormatValue(0, `{"label":"px-sock-shop/load-test-799f9dffff-s6m2c","script":"px/pod","args":{"start_time":"-5m","pod":"px-sock-shop/load-test-799f9dffff-s6m2c"}}`))
+}
 func TestBytes(t *testing.T) {
 	relation := &vizierpb.Relation{
 		Columns: []*vizierpb.Relation_ColumnInfo{
