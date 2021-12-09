@@ -1,6 +1,10 @@
 {
   "builders": [
     {
+      "changes": [
+        "ENTRYPOINT [\"\"]",
+        "CMD [\"\"]"
+      ],
       "commit": true,
       "image": "{{ user `base_image_and_tag` }}",
       "type": "docker"
