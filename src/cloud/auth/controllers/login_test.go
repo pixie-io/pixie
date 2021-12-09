@@ -2102,8 +2102,42 @@ func TestServer_Login_UnverifiedUser_FailsLogin(t *testing.T) {
 	}
 
 	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
+	fakeUserInfoSecondRequest := &controllers.UserInfo{
+		Email:            "abc@gmail.com",
+		EmailVerified:    false,
+		FirstName:        "first",
+		LastName:         "last",
+		Picture:          "something",
+		AuthProviderID:   authProviderID,
+		IdentityProvider: auth0IdentityProvider,
+	}
+	a.EXPECT().SetPLMetadata(authProviderID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
+		fakeUserInfoSecondRequest.PLUserID = plid
+		fakeUserInfoSecondRequest.PLOrgID = plorgid
+	}).Return(nil)
+	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfoSecondRequest, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockProfile.EXPECT().
+		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: authProviderID}).
+		Return(nil, errors.New("user does not exist"))
+
+	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	mockProfile.EXPECT().CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
+		FirstName:        "first",
+		LastName:         "last",
+		Email:            "abc@gmail.com",
+		AuthProviderID:   authProviderID,
+		IdentityProvider: auth0IdentityProvider,
+	}).Return(utils.ProtoFromUUIDStrOrNil(userID), nil)
+
+	mockProfile.EXPECT().
+		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
+			ID:             utils.ProtoFromUUIDStrOrNil(userID),
+			DisplayPicture: &types.StringValue{Value: "something"},
+		}).
+		Return(nil, nil)
+
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
 	viper.Set("jwt_signing_key", "jwtkey")
@@ -2141,6 +2175,39 @@ func TestServer_Signup_UnverifiedUser_FailsLogin(t *testing.T) {
 	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockProfile.EXPECT().
+		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: authProviderID}).
+		Return(nil, errors.New("user does not exist"))
+	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	mockProfile.EXPECT().CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
+		FirstName:        "first",
+		LastName:         "last",
+		Email:            "abc@gmail.com",
+		AuthProviderID:   authProviderID,
+		IdentityProvider: auth0IdentityProvider,
+	}).Return(utils.ProtoFromUUIDStrOrNil(userID), nil)
+
+	fakeUserInfoSecondRequest := &controllers.UserInfo{
+		Email:          "abc@abcorg.com",
+		EmailVerified:  false,
+		FirstName:      "first",
+		LastName:       "last",
+		AuthProviderID: authProviderID,
+		Picture:        "something",
+	}
+	a.EXPECT().SetPLMetadata(authProviderID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
+		fakeUserInfoSecondRequest.PLUserID = plid
+		fakeUserInfoSecondRequest.PLOrgID = plorgid
+	}).Return(nil)
+	a.EXPECT().GetUserInfo(authProviderID).Return(fakeUserInfoSecondRequest, nil)
+
+	mockProfile.EXPECT().
+		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
+			ID:             utils.ProtoFromUUIDStrOrNil(userID),
+			DisplayPicture: &types.StringValue{Value: "something"},
+		}).
+		Return(nil, nil)
+
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
 	viper.Set("jwt_signing_key", "jwtkey")
@@ -2608,4 +2675,206 @@ func TestServer_Signup_PreventFollowingInviteIfUserHasHostedDomain(t *testing.T)
 		InviteToken: "invite-token",
 	})
 	assert.Regexp(t, "gsuite users are not allowed to follow invites. Please join the org with another account", err)
+}
+
+func TestServer_Login_UnverifiedUserWithInviteLink_CreatesUser(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	userPb := utils.ProtoFromUUIDStrOrNil(userID)
+
+	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	orgPb := utils.ProtoFromUUIDStrOrNil(orgID)
+
+	// Setup expectations for the mocks.
+	a := mock_controllers.NewMockAuthProvider(ctrl)
+	authProviderID := "github|abc123"
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
+
+	fakeUserInfo := &controllers.UserInfo{
+		Email:            "abc@gmail.com",
+		EmailVerified:    false,
+		FirstName:        "first",
+		LastName:         "last",
+		Picture:          "something",
+		AuthProviderID:   authProviderID,
+		IdentityProvider: auth0IdentityProvider,
+	}
+
+	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
+
+	fakeUserInfoSecondRequest := &controllers.UserInfo{
+		Email:            "abc@gmail.com",
+		EmailVerified:    false,
+		FirstName:        "first",
+		LastName:         "last",
+		Picture:          "something",
+		AuthProviderID:   authProviderID,
+		IdentityProvider: auth0IdentityProvider,
+	}
+	a.EXPECT().SetPLMetadata(authProviderID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
+		fakeUserInfoSecondRequest.PLUserID = plid
+		fakeUserInfoSecondRequest.PLOrgID = plorgid
+	}).Return(nil)
+	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfoSecondRequest, nil)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
+
+	fakeOrgInfo := &profilepb.OrgInfo{
+		ID:      orgPb,
+		OrgName: "invitedorg",
+	}
+	mockOrg.EXPECT().
+		GetOrg(gomock.Any(), orgPb).
+		Return(fakeOrgInfo, nil)
+
+	mockProfile.EXPECT().
+		CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
+			OrgID:            orgPb,
+			FirstName:        "first",
+			LastName:         "last",
+			Email:            "abc@gmail.com",
+			AuthProviderID:   authProviderID,
+			IdentityProvider: auth0IdentityProvider,
+		}).
+		Return(userPb, nil)
+
+	mockProfile.EXPECT().
+		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{
+			AuthProviderID: authProviderID,
+		}).
+		Return(nil, status.Error(codes.NotFound, "user not found"))
+
+	mockProfile.EXPECT().
+		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
+			ID:             userPb,
+			DisplayPicture: &types.StringValue{Value: "something"},
+		}).
+		Return(nil, nil)
+
+	mockOrg.EXPECT().
+		VerifyInviteToken(gomock.Any(), &profilepb.InviteToken{
+			SignedClaims: "invite-token",
+		}).
+		Return(&profilepb.VerifyInviteTokenResponse{
+			Valid: true,
+			OrgID: utils.ProtoFromUUIDStrOrNil(orgID),
+		}, nil)
+
+	mockOrg.EXPECT().
+		UpdateOrg(gomock.Any(), &profilepb.UpdateOrgRequest{
+			ID:         orgPb,
+			DomainName: &types.StringValue{Value: ""},
+		}).
+		Return(nil, nil)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
+	env, err := authenv.New(mockProfile, mockOrg)
+	require.NoError(t, err)
+	s, err := controllers.NewServer(env, a, nil)
+	require.NoError(t, err)
+
+	_, err = s.Login(getTestContext(), &authpb.LoginRequest{
+		AccessToken:           "tokenabc",
+		CreateUserIfNotExists: true,
+		InviteToken:           "invite-token",
+	})
+	assert.Regexp(t, "please verify your email before proceeding", err)
+}
+
+func TestServer_Signup_UnverifiedUserWithInviteLink_CreatesUser(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	orgPb := utils.ProtoFromUUIDStrOrNil(orgID)
+
+	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	userPb := utils.ProtoFromUUIDStrOrNil(userID)
+
+	authProviderID := "github|abcdefg"
+	// Setup expectations for the mocks.
+	a := mock_controllers.NewMockAuthProvider(ctrl)
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
+
+	fakeUserInfo := &controllers.UserInfo{
+		Email:          "abc@abcorg.com",
+		EmailVerified:  false,
+		FirstName:      "first",
+		LastName:       "last",
+		AuthProviderID: authProviderID,
+	}
+
+	a.EXPECT().GetUserInfo(authProviderID).Return(fakeUserInfo, nil)
+
+	fakeUserInfoSecondRequest := &controllers.UserInfo{
+		Email:          "abc@abcorg.com",
+		EmailVerified:  false,
+		FirstName:      "first",
+		LastName:       "last",
+		AuthProviderID: authProviderID,
+		Picture:        "something",
+	}
+	a.EXPECT().SetPLMetadata(authProviderID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
+		fakeUserInfoSecondRequest.PLUserID = plid
+		fakeUserInfoSecondRequest.PLOrgID = plorgid
+	}).Return(nil)
+	a.EXPECT().GetUserInfo(authProviderID).Return(fakeUserInfoSecondRequest, nil)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
+
+	mockProfile.EXPECT().
+		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: authProviderID}).
+		Return(nil, errors.New("user does not exist"))
+
+	fakeOrgInfo := &profilepb.OrgInfo{
+		ID:      orgPb,
+		OrgName: "invitedorg",
+	}
+	mockProfile.EXPECT().
+		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
+			ID:             userPb,
+			DisplayPicture: &types.StringValue{Value: "something"},
+		}).
+		Return(nil, nil)
+
+	mockOrg.EXPECT().
+		GetOrg(gomock.Any(), orgPb).
+		Return(fakeOrgInfo, nil)
+
+	mockProfile.EXPECT().CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
+		OrgID:          orgPb,
+		FirstName:      "first",
+		LastName:       "last",
+		Email:          "abc@abcorg.com",
+		AuthProviderID: "github|abcdefg",
+	}).Return(utils.ProtoFromUUIDStrOrNil(userID), nil)
+
+	mockOrg.EXPECT().
+		VerifyInviteToken(gomock.Any(), &profilepb.InviteToken{
+			SignedClaims: "invite-token",
+		}).
+		Return(&profilepb.VerifyInviteTokenResponse{
+			Valid: true,
+			OrgID: utils.ProtoFromUUIDStrOrNil(orgID),
+		}, nil)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
+	env, err := authenv.New(mockProfile, mockOrg)
+	require.NoError(t, err)
+	s, err := controllers.NewServer(env, a, nil)
+	require.NoError(t, err)
+
+	_, err = s.Signup(getTestContext(), &authpb.SignupRequest{
+		AccessToken: "tokenabc",
+		InviteToken: "invite-token",
+	})
+	assert.Regexp(t, "please verify your email before proceeding", err)
 }

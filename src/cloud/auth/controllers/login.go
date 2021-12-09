@@ -96,10 +96,6 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 	if err != nil {
 		return nil, err
 	}
-	if !userInfo.EmailVerified {
-		return nil, status.Error(codes.PermissionDenied, "please verify your email before proceeding")
-	}
-
 	if userInfo.HostedDomain != "" && !utils.IsNilUUIDProto(inviteOrgID) {
 		return nil, status.Error(codes.PermissionDenied, "gsuite users are not allowed to follow invites. Please join the org with another account")
 	}
@@ -280,6 +276,10 @@ func (s *Server) completeUserLogin(ctx context.Context, userInfo *UserInfo, orgI
 		return nil, err
 	}
 
+	if !userInfo.EmailVerified {
+		return nil, status.Error(codes.PermissionDenied, "please verify your email before proceeding")
+	}
+
 	expiresAt := time.Now().Add(RefreshTokenValidDuration)
 	claims := srvutils.GenerateJWTForUser(userInfo.PLUserID, orgID, userInfo.Email, expiresAt, viper.GetString("domain_name"))
 	tkn, err := srvutils.SignJWTClaims(claims, s.env.JWTSigningKey())
@@ -368,10 +368,6 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 	userInfo, err := s.getUserInfoFromToken(in.AccessToken)
 	if err != nil {
 		return nil, err
-	}
-
-	if !userInfo.EmailVerified {
-		return nil, status.Error(codes.PermissionDenied, "please verify your email before proceeding")
 	}
 
 	if userInfo.HostedDomain != "" && !utils.IsNilUUIDProto(inviteOrgID) {
