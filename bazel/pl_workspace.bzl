@@ -22,6 +22,7 @@ load("@io_bazel_rules_docker//go:image.bzl", _go_image_repos = "repositories")
 load("@io_bazel_rules_docker//java:image.bzl", _java_image_repos = "repositories")
 load("@io_bazel_rules_docker//repositories:deps.bzl", container_deps = "deps")
 load("@io_bazel_rules_docker//repositories:repositories.bzl", container_repositories = "repositories")
+load("@io_bazel_rules_docker//scala:image.bzl", _scala_image_repos = "repositories")
 load("@io_bazel_rules_k8s//k8s:k8s.bzl", "k8s_repositories")
 load("@io_bazel_rules_k8s//k8s:k8s_go_deps.bzl", k8s_go_deps = "deps")
 load("@io_bazel_toolchains//rules:gcs.bzl", "gcs_file")
@@ -59,6 +60,7 @@ def _package_manager_setup():
 def _container_images_setup():
     _go_image_repos()
     _java_image_repos()
+    _scala_image_repos()
     base_images()
     stirling_test_images()
 
