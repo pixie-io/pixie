@@ -52,6 +52,8 @@ const (
 	EsMDTypePod EsMDType = "pod"
 	// EsMDTypeScript is for script entities.
 	EsMDTypeScript EsMDType = "script"
+	// EsMDTypeNode is for node entities.
+	EsMDTypeNode EsMDType = "node"
 )
 
 // EsMDEntity is the struct that is stored in elastic.

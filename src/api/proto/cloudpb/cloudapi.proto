@@ -689,6 +689,7 @@ enum AutocompleteEntityKind {
   AEK_SVC = 2;
   AEK_SCRIPT = 3;
   AEK_NAMESPACE = 4;
+  AEK_NODE = 5;
 }
 
 // This is a proto representation for common lifecycle states.

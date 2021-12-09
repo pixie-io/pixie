@@ -135,6 +135,7 @@ enum AutocompleteEntityKind {
   AEK_SVC
   AEK_SCRIPT
   AEK_NAMESPACE
+  AEK_NODE
 }
 
 type AutocompleteSuggestion {

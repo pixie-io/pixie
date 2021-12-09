@@ -156,7 +156,8 @@ export enum GQLAutocompleteEntityKind {
   AEK_POD = 'AEK_POD',
   AEK_SVC = 'AEK_SVC',
   AEK_SCRIPT = 'AEK_SCRIPT',
-  AEK_NAMESPACE = 'AEK_NAMESPACE'
+  AEK_NAMESPACE = 'AEK_NAMESPACE',
+  AEK_NODE = 'AEK_NODE'
 }
 
 export interface GQLAutocompleteSuggestion {
