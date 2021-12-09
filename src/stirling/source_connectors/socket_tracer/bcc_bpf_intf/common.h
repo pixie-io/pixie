@@ -41,18 +41,24 @@ enum traffic_direction_t {
 
 // Protocol being used on a connection (HTTP, MySQL, etc.).
 // PROTOCOL_LIST: Requires update on new protocols.
+// WARNING: Changes to this enum are API-breaking.
+// You may add a protocol, but do not change values for existing protocols,
+// and do not remove any protocols.
+// This is a C-style enum to make it compatible with C BPF code.
+// HACK ALERT: This must also match the list in //src/shared/protocols/protocols.h
+// TODO(oazizi): Find a way to make a common source, while also keeping compatibility with BPF.
 enum traffic_protocol_t {
   kProtocolUnknown = 0,
-  kProtocolHTTP,
-  kProtocolHTTP2,
-  kProtocolMySQL,
-  kProtocolCQL,
-  kProtocolPGSQL,
-  kProtocolDNS,
-  kProtocolRedis,
-  kProtocolNATS,
-  kProtocolMongo,
-  kProtocolKafka,
+  kProtocolHTTP = 1,
+  kProtocolHTTP2 = 2,
+  kProtocolMySQL = 3,
+  kProtocolCQL = 4,
+  kProtocolPGSQL = 5,
+  kProtocolDNS = 6,
+  kProtocolRedis = 7,
+  kProtocolNATS = 8,
+  kProtocolMongo = 9,
+  kProtocolKafka = 10,
 
 // We use magic enum to iterate through protocols in C++ land,
 // and don't want the C-enum-size trick to show up there.

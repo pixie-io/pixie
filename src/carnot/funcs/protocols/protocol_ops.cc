@@ -21,6 +21,7 @@
 #include "src/carnot/funcs/protocols/http.h"
 #include "src/carnot/funcs/protocols/kafka.h"
 #include "src/carnot/funcs/protocols/mysql.h"
+#include "src/carnot/funcs/protocols/protocols.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/base/base.h"
 
@@ -34,9 +35,14 @@ void RegisterProtocolOpsOrDie(px::carnot::udf::Registry* registry) {
   /*****************************************
    * Scalar UDFs.
    *****************************************/
+  registry->RegisterOrDie<ProtocolNameUDF>("protocol_name");
   registry->RegisterOrDie<HTTPRespMessageUDF>("http_resp_message");
   registry->RegisterOrDie<KafkaAPIKeyNameUDF>("kafka_api_key_name");
   registry->RegisterOrDie<MySQLCommandNameUDF>("mysql_command_name");
+}
+
+types::StringValue ProtocolNameUDF::Exec(FunctionContext*, Int64Value protocol) {
+  return ProtocolName(protocol.val);
 }
 
 types::StringValue HTTPRespMessageUDF::Exec(FunctionContext*, Int64Value resp_code) {

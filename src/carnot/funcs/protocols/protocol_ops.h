@@ -26,6 +26,21 @@ namespace carnot {
 namespace funcs {
 namespace protocols {
 
+class ProtocolNameUDF : public px::carnot::udf::ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext*, Int64Value resp_code);
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Convert a protocol code to its corresponding name.")
+        .Details(
+            "UDF to convert the internal Pixie protocol numbers into their corresponding protocol "
+            "names.")
+        .Arg("protocol", "A protocol code")
+        .Example("df.protocol_name = px.protocol_name(df.protocol)")
+        .Returns("The name of the protocol.");
+  }
+};
+
 class HTTPRespMessageUDF : public px::carnot::udf::ScalarUDF {
  public:
   StringValue Exec(FunctionContext*, Int64Value resp_code);

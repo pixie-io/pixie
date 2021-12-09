@@ -27,6 +27,14 @@ namespace carnot {
 namespace funcs {
 namespace protocols {
 
+TEST(ProtocolOps, ProtocolNameUDF) {
+  auto udf_tester = udf::UDFTester<ProtocolNameUDF>();
+  udf_tester.ForInput(0).Expect("Unknown");
+  udf_tester.ForInput(1).Expect("HTTP");
+  udf_tester.ForInput(10).Expect("Kafka");
+  udf_tester.ForInput(9999).Expect("Invalid (9999)");
+}
+
 TEST(ProtocolOps, HTTPRespMessageUDF) {
   auto udf_tester = udf::UDFTester<HTTPRespMessageUDF>();
   udf_tester.ForInput(400).Expect("Bad Request");
