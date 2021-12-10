@@ -27,10 +27,9 @@
 #define PX_AF_UNKNOWN 0xff
 
 const char kControlMapName[] = "control_map";
-const uint64_t kSocketTraceNothing = 0;
+const char kControlValuesArrayName[] = "control_values";
 
 const int64_t kTraceAllTGIDs = -1;
-const char kControlValuesArrayName[] = "control_values";
 
 // Note: A value of 100 results in >4096 BPF instructions, which is too much for older kernels.
 #define CONN_CLEANUP_ITERS 90

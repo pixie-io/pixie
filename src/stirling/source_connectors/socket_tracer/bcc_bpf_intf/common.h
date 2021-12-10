@@ -53,10 +53,17 @@ enum traffic_protocol_t {
   kProtocolNATS,
   kProtocolMongo,
   kProtocolKafka,
+
+// We use magic enum to iterate through protocols in C++ land,
+// and don't want the C-enum-size trick to show up there.
+#ifndef __cplusplus
   kNumProtocols
+#endif
 };
 
 #ifdef __cplusplus
+constexpr int kNumProtocols = magic_enum::enum_count<traffic_protocol_t>();
+
 static const std::map<int64_t, std::string_view> kTrafficProtocolDecoder =
     px::EnumDefToMap<traffic_protocol_t>();
 #endif
@@ -65,18 +72,6 @@ struct protocol_message_t {
   enum traffic_protocol_t protocol;
   enum message_type_t type;
 };
-
-#ifdef __cplusplus
-inline auto TrafficProtocolEnumValues() {
-  auto protocols_array = magic_enum::enum_values<traffic_protocol_t>();
-
-  // Strip off last element in protocols_array, which is not a real protocol.
-  constexpr int kNumProtocols = magic_enum::enum_count<traffic_protocol_t>() - 1;
-  std::array<traffic_protocol_t, kNumProtocols> protocols;
-  std::copy(protocols_array.begin(), protocols_array.end() - 1, protocols.begin());
-  return protocols;
-}
-#endif
 
 // The direction of traffic expected on a probe.
 // Values have single bit set, so that they could be used as bit masks.

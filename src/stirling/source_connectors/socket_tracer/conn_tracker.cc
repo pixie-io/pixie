@@ -594,8 +594,6 @@ namespace {
 auto CreateTraceRoles() {
   EnumMap<traffic_protocol_t, absl::flat_hash_set<endpoint_role_t>> res;
   res.Set(kProtocolUnknown, {});
-  // This should never be used, but kept for simpler code pattern below.
-  res.Set(kNumProtocols, {});
   res.Set(kProtocolHTTP, {kRoleServer});
   res.Set(kProtocolHTTP2, {kRoleServer});
   // MySQL server-side tracing is functional, but leave client-side on for legacy reasons.

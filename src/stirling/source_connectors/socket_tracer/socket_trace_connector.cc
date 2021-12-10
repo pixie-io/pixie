@@ -203,7 +203,7 @@ Status SocketTraceConnector::InitImpl() {
   LOG(INFO) << absl::Substitute("Number of perf buffers opened = $0", kPerfBufferSpecs.size());
 
   // Set trace role to BPF probes.
-  for (const auto& p : TrafficProtocolEnumValues()) {
+  for (const auto& p : magic_enum::enum_values<traffic_protocol_t>()) {
     if (protocol_transfer_specs_[p].enabled) {
       uint64_t role_mask = 0;
       for (auto role : protocol_transfer_specs_[p].trace_roles) {
