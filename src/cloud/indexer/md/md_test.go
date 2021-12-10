@@ -71,6 +71,41 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 		expectedResults []*md.EsMDEntity
 	}{
 		{
+			name: "node update",
+			updates: []*metadatapb.ResourceUpdate{
+				{
+					Update: &metadatapb.ResourceUpdate_NodeUpdate{
+						NodeUpdate: &metadatapb.NodeUpdate{
+							UID:              "400",
+							Name:             "test-node",
+							StartTimestampNS: 1000,
+							StopTimestampNS:  0,
+							Phase:            metadatapb.NODE_PHASE_RUNNING,
+						},
+					},
+					UpdateVersion:     1,
+					PrevUpdateVersion: 0,
+				},
+			},
+			updateKind: "node",
+			expectedResults: []*md.EsMDEntity{
+				{
+					OrgID:              orgID.String(),
+					VizierID:           vzID.String(),
+					ClusterUID:         "test",
+					UID:                "400",
+					NS:                 "",
+					Name:               "test-node",
+					Kind:               "node",
+					TimeStartedNS:      int64(1000),
+					TimeStoppedNS:      int64(0),
+					RelatedEntityNames: []string{},
+					UpdateVersion:      1,
+					State:              md.ESMDEntityStateRunning,
+				},
+			},
+		},
+		{
 			name: "namespace update",
 			updates: []*metadatapb.ResourceUpdate{
 				{

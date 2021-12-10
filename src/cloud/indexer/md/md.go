@@ -189,6 +189,36 @@ func (v *VizierIndexer) serviceUpdateToEMD(u *metadatapb.ResourceUpdate, service
 	}
 }
 
+func nodePhaseToState(nodeUpdate *metadatapb.NodeUpdate) ESMDEntityState {
+	switch nodeUpdate.Phase {
+	case metadatapb.NODE_PHASE_PENDING:
+		return ESMDEntityStatePending
+	case metadatapb.NODE_PHASE_RUNNING:
+		return ESMDEntityStateRunning
+	case metadatapb.NODE_PHASE_TERMINATED:
+		return ESMDEntityStateTerminated
+	default:
+		return ESMDEntityStateUnknown
+	}
+}
+
+func (v *VizierIndexer) nodeUpdateToEMD(u *metadatapb.ResourceUpdate, nodeUpdate *metadatapb.NodeUpdate) *EsMDEntity {
+	return &EsMDEntity{
+		OrgID:              v.orgID.String(),
+		VizierID:           v.vizierID.String(),
+		ClusterUID:         v.k8sUID,
+		UID:                nodeUpdate.UID,
+		Name:               nodeUpdate.Name,
+		NS:                 "", // Nodes are not associated with a namespace.
+		Kind:               string(EsMDTypeNode),
+		TimeStartedNS:      nodeUpdate.StartTimestampNS,
+		TimeStoppedNS:      nodeUpdate.StopTimestampNS,
+		RelatedEntityNames: []string{},
+		UpdateVersion:      u.UpdateVersion,
+		State:              nodePhaseToState(nodeUpdate),
+	}
+}
+
 func (v *VizierIndexer) resourceUpdateToEMD(update *metadatapb.ResourceUpdate) *EsMDEntity {
 	switch update.Update.(type) {
 	case *metadatapb.ResourceUpdate_NamespaceUpdate:
@@ -197,6 +227,8 @@ func (v *VizierIndexer) resourceUpdateToEMD(update *metadatapb.ResourceUpdate) *
 		return v.podUpdateToEMD(update, update.GetPodUpdate())
 	case *metadatapb.ResourceUpdate_ServiceUpdate:
 		return v.serviceUpdateToEMD(update, update.GetServiceUpdate())
+	case *metadatapb.ResourceUpdate_NodeUpdate:
+		return v.nodeUpdateToEMD(update, update.GetNodeUpdate())
 	default:
 		// We don't care about any other update types.
 		// Notably containerUpdates and nodeUpdates.

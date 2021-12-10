@@ -251,8 +251,8 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 			}
 
 			resName := fmt.Sprintf("%s/%s", res.NS, res.Name)
-			if md.EsMDType(res.Kind) == md.EsMDTypeNamespace {
-				// Don't prepend the namespace object with a namespace.
+			if md.EsMDType(res.Kind) == md.EsMDTypeNamespace || md.EsMDType(res.Kind) == md.EsMDTypeNode {
+				// Don't prepend the namespace/node object with a namespace.
 				resName = res.Name
 			}
 
