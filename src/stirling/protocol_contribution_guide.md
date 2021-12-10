@@ -122,7 +122,7 @@ With the basic types defined for our new protocol, we can now start implementing
 - Jsonification
 
 
-![black_boxes](protocol_parsing_overview.png)
+![black_boxes](protocol_parser_flow.png)
 
 Implement one black box at the time and submit a pull request on Github to get some feedbacks before moving onto the next one.
 
