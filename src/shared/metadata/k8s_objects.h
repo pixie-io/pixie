@@ -124,7 +124,14 @@ inline PodQOSClass ConvertToPodQOsClass(px::shared::k8s::metadatapb::PodQOSClass
   }
 }
 
-enum class PodPhase : uint8_t { kUnknown = 0, kPending, kRunning, kSucceeded, kFailed };
+enum class PodPhase : uint8_t {
+  kUnknown = 0,
+  kPending,
+  kRunning,
+  kSucceeded,
+  kFailed,
+  kTerminated
+};
 
 inline PodPhase ConvertToPodPhase(px::shared::k8s::metadatapb::PodPhase pb_enum) {
   using phase_pb = px::shared::k8s::metadatapb::PodPhase;
@@ -137,6 +144,8 @@ inline PodPhase ConvertToPodPhase(px::shared::k8s::metadatapb::PodPhase pb_enum)
       return PodPhase::kSucceeded;
     case phase_pb::FAILED:
       return PodPhase::kFailed;
+    case phase_pb::TERMINATED:
+      return PodPhase::kTerminated;
     default:
       return PodPhase::kUnknown;
   }

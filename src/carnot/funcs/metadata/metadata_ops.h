@@ -1107,6 +1107,8 @@ inline std::string PodPhaseToString(const px::md::PodPhase& pod_phase) {
       return "Succeeded";
     case md::PodPhase::kFailed:
       return "Failed";
+    case md::PodPhase::kTerminated:
+      return "Terminated";
     case md::PodPhase::kUnknown:
     default:
       return "Unknown";

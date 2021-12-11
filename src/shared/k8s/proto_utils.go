@@ -310,10 +310,20 @@ func PodStatusFromProto(pb *metadatapb.PodStatus) *v1.PodStatus {
 
 // PodToProto converts a Pod into a proto.
 func PodToProto(p *v1.Pod) *metadatapb.Pod {
+	objMeta := ObjectMetadataToProto(&p.ObjectMeta)
+	status := PodStatusToProto(&p.Status)
+
+	// If the delete timestamp is set on the pod, then we use a non-K8s pod phase "Terminated" here
+	// to indicate the pod has been terminated by the system. If the phase is Failed or Succeeded,
+	// we maintain it, since it's clear to the user in that status that the pod isn't running anymore.
+	if (status.Phase != metadatapb.FAILED && status.Phase != metadatapb.SUCCEEDED) && objMeta.DeletionTimestampNS != 0 {
+		status.Phase = metadatapb.TERMINATED
+	}
+
 	return &metadatapb.Pod{
-		Metadata: ObjectMetadataToProto(&p.ObjectMeta),
+		Metadata: objMeta,
 		Spec:     PodSpecToProto(&p.Spec),
-		Status:   PodStatusToProto(&p.Status),
+		Status:   status,
 	}
 }
 

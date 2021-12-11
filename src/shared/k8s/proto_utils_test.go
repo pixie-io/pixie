@@ -120,7 +120,7 @@ container_statuses {
 
 `
 
-const podPb = `
+const terminatedPodPb = `
 metadata {
 	name: "object_md"
 	namespace: "a_namespace"
@@ -134,6 +134,49 @@ metadata {
 	}
 	creation_timestamp_ns: 4
 	deletion_timestamp_ns: 6
+}
+status {
+	message: "this is message"
+	phase: 5
+	conditions {
+		type: 2
+		status: 2
+	}
+	restart_count: 4
+	container_statuses {
+	   name: "test_container_2"
+	   container_id: "test_id_2"
+	   container_state: 1
+	   start_timestamp_ns: 4
+		 restart_count: 0
+	}
+	container_statuses {
+	   name: "test_container"
+	   container_id: "test_id"
+	   container_state: 3
+		 restart_count: 4
+	}
+}
+spec {
+	node_name: "test"
+	hostname: "hostname"
+	dns_policy: 2
+}
+`
+
+const podPb = `
+metadata {
+	name: "object_md"
+	namespace: "a_namespace"
+	uid: "ijkl"
+	resource_version: "1",
+	cluster_name: "a_cluster",
+	owner_references {
+	  kind: "pod"
+	  name: "test"
+	  uid: "abcd"
+	}
+	creation_timestamp_ns: 4
 }
 status {
 	message: "this is message"
@@ -630,6 +673,82 @@ func TestPodToProto(t *testing.T) {
 		UID:  "abcd",
 	}
 
+	creationTime := metav1.Unix(0, 4)
+	metadata := metav1.ObjectMeta{
+		Name:              "object_md",
+		Namespace:         "a_namespace",
+		UID:               "ijkl",
+		ResourceVersion:   "1",
+		ClusterName:       "a_cluster",
+		OwnerReferences:   ownerRefs,
+		CreationTimestamp: creationTime,
+	}
+
+	conditions := make([]v1.PodCondition, 1)
+	conditions[0] = v1.PodCondition{
+		Type:   v1.PodReady,
+		Status: v1.ConditionFalse,
+	}
+
+	containers := make([]v1.ContainerStatus, 2)
+	startTime := metav1.Unix(0, 4)
+	runningState := v1.ContainerStateRunning{
+		StartedAt: startTime,
+	}
+	containers[0] = v1.ContainerStatus{
+		Name:        "test_container_2",
+		ContainerID: "test_id_2",
+		State: v1.ContainerState{
+			Running: &runningState,
+		},
+		RestartCount: int32(0),
+	}
+	waitingState := v1.ContainerStateWaiting{}
+	containers[1] = v1.ContainerStatus{
+		Name:        "test_container",
+		ContainerID: "test_id",
+		State: v1.ContainerState{
+			Waiting: &waitingState,
+		},
+		RestartCount: int32(4),
+	}
+
+	status := v1.PodStatus{
+		Message:           "this is message",
+		Phase:             v1.PodRunning,
+		Conditions:        conditions,
+		ContainerStatuses: containers,
+	}
+
+	spec := v1.PodSpec{
+		NodeName:  "test",
+		Hostname:  "hostname",
+		DNSPolicy: v1.DNSClusterFirst,
+	}
+
+	o := v1.Pod{
+		ObjectMeta: metadata,
+		Status:     status,
+		Spec:       spec,
+	}
+
+	oPb := k8s.PodToProto(&o)
+
+	expectedPb := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(podPb, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	assert.Equal(t, expectedPb, oPb)
+}
+
+func TestTerminatedPodToProto(t *testing.T) {
+	ownerRefs := make([]metav1.OwnerReference, 1)
+	ownerRefs[0] = metav1.OwnerReference{
+		Kind: "pod",
+		Name: "test",
+		UID:  "abcd",
+	}
+
 	delTime := metav1.Unix(0, 6)
 	creationTime := metav1.Unix(0, 4)
 	metadata := metav1.ObjectMeta{
@@ -694,7 +813,7 @@ func TestPodToProto(t *testing.T) {
 	oPb := k8s.PodToProto(&o)
 
 	expectedPb := &metadatapb.Pod{}
-	if err := proto.UnmarshalText(podPb, expectedPb); err != nil {
+	if err := proto.UnmarshalText(terminatedPodPb, expectedPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	assert.Equal(t, expectedPb, oPb)
