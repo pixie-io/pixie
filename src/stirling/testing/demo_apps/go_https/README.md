@@ -2,18 +2,16 @@
 
 To run, first build everything:
 ```
-bazel build //src/stirling/testing/demo_apps/go_https/...
+bazel run //src/stirling/testing/demo_apps/go_https/server:golang_1_16_https_server
+bazel run //src/stirling/testing/demo_apps/go_https/client:golang_1_16_https_client
 ```
 
 Then execute the following commands in two separate terminals:
 
 ```
-${PIXIE_ROOT}/bazel-bin/src/stirling/testing/demo_apps/go_https/server/https_server_/https_server \
-  --cert=${PIXIE_ROOT}/bazel-bin/src/stirling/testing/demo_apps/go_https/server/server.crt \
-  --key=${PIXIE_ROOT}/bazel-bin/src/stirling/testing/demo_apps/go_https/server/server.key
+docker run --name=go_https_server bazel/src/stirling/testing/demo_apps/go_https/server:golang_1_16_https_server
 ```
 
 ```
-${PIXIE_ROOT}/bazel-bin/src/stirling/testing/demo_apps/go_https/client/https_client_/https_client \
-  --iters 3 --sub_iters 3
+docker run --name=go_https_client --network=container:go_https_server bazel/src/stirling/testing/demo_apps/go_https/client:golang_1_16_https_client --iters 3 --sub_iters 3
 ```

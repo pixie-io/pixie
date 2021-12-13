@@ -14,27 +14,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# Build of test data binaries is controlled by dockerized builds, not bazel/gazelle.
+#gazelle:ignore
+
 load("@io_bazel_rules_docker//container:container.bzl", "container_image")
-load("@io_bazel_rules_docker//go:image.bzl", "go_image")
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_docker//docker/util:run.bzl", "container_run_and_commit")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
-
-go_library(
-    name = "server_lib",
-    srcs = ["https_server.go"],
-    importpath = "px.dev/pixie/src/stirling/testing/demo_apps/go_https/server",
-    visibility = ["//visibility:private"],
-    deps = [
-        "@com_github_spf13_pflag//:pflag",
-        "@com_github_spf13_viper//:viper",
-    ],
-)
-
-go_binary(
-    name = "https_server",
-    embed = [":server_lib"],
-)
 
 genrule(
     name = "certs",
@@ -57,18 +43,31 @@ filegroup(
 )
 
 container_image(
-    name = "server_image_base",
-    base = "@go_image_base//image",
-    directory = "/certs",
-    files = [":server_certs"],
+    name = "golang_1_16_https_server_source",
+    base = "@golang_1_16_image//image",
+    directory = "/go/src/https_server",
+    files = ["https_server.go"],
 )
 
-go_image(
-    name = "server_image",
-    args = [
+container_run_and_commit(
+    name = "golang_1_16_https_server_build",
+    commands = [
+        "go mod init",
+        "go get",
+        "go build -v",
+    ],
+    docker_run_flags = ["-w /go/src/https_server"],
+    image = ":golang_1_16_https_server_source.tar",
+)
+
+container_image(
+    name = "golang_1_16_https_server",
+    base = ":golang_1_16_https_server_build_commit.tar",
+    directory = "/certs",
+    entrypoint = [
+        "./https_server",
         "--cert=/certs/server.crt",
         "--key=/certs/server.key",
     ],
-    base = ":server_image_base",
-    binary = ":https_server",
+    files = [":server_certs"],
 )

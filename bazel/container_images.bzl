@@ -69,6 +69,13 @@ def base_images():
         "library/openjdk",
     )
 
+def stirling_test_build_images():
+    _docker_io_image(
+        "golang_1_16_image",
+        "sha256:3cd70083126ae2f17c4d79eb4b4717fcef8711c1c25a55944960bf809aea782a",
+        "library/golang",
+    )
+
 def stirling_test_images():
     # NGINX with OpenSSL 1.1.0, for OpenSSL tracing tests.
     _docker_io_image(

@@ -14,29 +14,36 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_docker//go:image.bzl", "go_image")
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+# Build of test data binaries is controlled by dockerized builds, not bazel/gazelle.
+#gazelle:ignore
+
+load("@io_bazel_rules_docker//container:container.bzl", "container_image")
+load("@io_bazel_rules_docker//docker/util:run.bzl", "container_run_and_commit")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
-go_library(
-    name = "client_lib",
-    srcs = ["https_client.go"],
-    importpath = "px.dev/pixie/src/stirling/testing/demo_apps/go_https/client",
-    visibility = ["//visibility:private"],
-    deps = [
-        "@com_github_spf13_pflag//:pflag",
-        "@com_github_spf13_viper//:viper",
+container_image(
+    name = "golang_1_16_https_client_source",
+    base = "@golang_1_16_image//image",
+    directory = "/go/src/https_client",
+    files = ["https_client.go"],
+)
+
+container_run_and_commit(
+    name = "golang_1_16_https_client_build",
+    commands = [
+        "go mod init",
+        "go get",
+        "go build -v",
     ],
+    docker_run_flags = ["-w /go/src/https_client"],
+    image = ":golang_1_16_https_client_source.tar",
 )
 
-go_binary(
-    name = "https_client",
-    embed = [":client_lib"],
-)
-
-go_image(
-    name = "client_image",
-    base = "@go_image_base//image",
-    binary = ":https_client",
+container_image(
+    name = "golang_1_16_https_client",
+    base = ":golang_1_16_https_client_build_commit.tar",
+    entrypoint = [
+        "./https_client",
+    ],
 )
