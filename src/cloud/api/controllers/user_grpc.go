@@ -65,7 +65,7 @@ func (u *UserServiceServer) GetOrg(ctx context.Context, req *uuidpb.UUID) (*clou
 	return &cloudpb.OrgInfo{
 		ID:              resp.ID,
 		OrgName:         resp.OrgName,
-		DomainName:      resp.DomainName,
+		DomainName:      resp.DomainName.GetValue(),
 		EnableApprovals: resp.EnableApprovals,
 	}, nil
 }

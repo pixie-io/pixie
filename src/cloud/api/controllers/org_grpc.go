@@ -100,7 +100,7 @@ func (o *OrganizationServiceServer) GetOrg(ctx context.Context, req *uuidpb.UUID
 	return &cloudpb.OrgInfo{
 		ID:              resp.ID,
 		OrgName:         resp.OrgName,
-		DomainName:      resp.DomainName,
+		DomainName:      resp.DomainName.GetValue(),
 		EnableApprovals: resp.EnableApprovals,
 	}, nil
 }
@@ -168,7 +168,7 @@ func (o *OrganizationServiceServer) UpdateOrg(ctx context.Context, req *cloudpb.
 	return &cloudpb.OrgInfo{
 		ID:              resp.ID,
 		OrgName:         resp.OrgName,
-		DomainName:      resp.DomainName,
+		DomainName:      resp.DomainName.GetValue(),
 		EnableApprovals: resp.EnableApprovals,
 	}, nil
 }

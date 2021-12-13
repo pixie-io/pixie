@@ -96,8 +96,9 @@ message OrgInfo {
   // The name of the organization (this is currently the same as the domain_name below and is the
   // last part of the email).
   string org_name = 2;
-  // The last part of their email.
-  string domain_name = 3;
+  // The domain that the user belongs to, if they have one. Some older users will not have this
+  // field set and will be null.
+  google.protobuf.StringValue domain_name = 3;
   // Whether this org requires admin approval to authorize new users.
   bool enable_approvals = 4;
 }

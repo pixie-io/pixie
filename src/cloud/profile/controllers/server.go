@@ -156,10 +156,14 @@ func userInfoToProto(u *datastore.UserInfo) *profilepb.UserInfo {
 }
 
 func orgInfoToProto(o *datastore.OrgInfo) *profilepb.OrgInfo {
+	var domainName *types.StringValue
+	if o.DomainName != nil {
+		domainName = &types.StringValue{Value: o.GetDomainName()}
+	}
 	return &profilepb.OrgInfo{
 		ID:              utils.ProtoFromUUID(o.ID),
 		OrgName:         o.OrgName,
-		DomainName:      o.GetDomainName(),
+		DomainName:      domainName,
 		EnableApprovals: o.EnableApprovals,
 	}
 }

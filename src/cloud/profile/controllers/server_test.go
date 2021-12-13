@@ -291,6 +291,32 @@ func TestServer_CreateOrg(t *testing.T) {
 	assert.Equal(t, utils.ProtoFromUUID(testOrgUUID), resp)
 }
 
+func TestServer_CreateOrg_NilDomainName(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ods := mock_controllers.NewMockOrgDatastore(ctrl)
+	osds := mock_controllers.NewMockOrgSettingsDatastore(ctrl)
+
+	testOrgUUID := uuid.Must(uuid.NewV4())
+	s := controllers.NewServer(nil, nil, nil, ods, osds)
+	req := &datastore.OrgInfo{
+		OrgName: "pixie",
+	}
+	ods.EXPECT().
+		CreateOrg(req).
+		Return(testOrgUUID, nil)
+	resp, err := s.CreateOrg(context.Background(), &profilepb.CreateOrgRequest{
+		OrgName:    "pixie",
+		DomainName: nil,
+	})
+
+	assert.Nil(t, err)
+	c := status.Code(err)
+	assert.Equal(t, codes.OK, c)
+	assert.Equal(t, utils.ProtoFromUUID(testOrgUUID), resp)
+}
+
 func TestServer_GetUser(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -705,9 +731,39 @@ func TestServer_GetOrg(t *testing.T) {
 	resp, err := s.GetOrg(context.Background(), utils.ProtoFromUUID(orgUUID))
 
 	require.NoError(t, err)
-	assert.Equal(t, resp.ID, utils.ProtoFromUUID(orgUUID))
-	assert.Equal(t, resp.DomainName, "my-org.com")
-	assert.Equal(t, resp.OrgName, "my-org")
+	assert.Equal(t, utils.ProtoFromUUID(orgUUID), resp.ID)
+	assert.Equal(t, "my-org.com", resp.DomainName.GetValue())
+	assert.Equal(t, "my-org", resp.OrgName)
+}
+
+func TestServer_GetOrg_NilDomain(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uds := mock_controllers.NewMockUserDatastore(ctrl)
+	ods := mock_controllers.NewMockOrgDatastore(ctrl)
+	usds := mock_controllers.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controllers.NewMockOrgSettingsDatastore(ctrl)
+
+	orgUUID := uuid.Must(uuid.NewV4())
+	s := controllers.NewServer(nil, uds, usds, ods, osds)
+
+	mockReply := &datastore.OrgInfo{
+		ID:         orgUUID,
+		DomainName: nil,
+		OrgName:    "my-org",
+	}
+
+	ods.EXPECT().
+		GetOrg(orgUUID).
+		Return(mockReply, nil)
+
+	resp, err := s.GetOrg(context.Background(), utils.ProtoFromUUID(orgUUID))
+
+	require.NoError(t, err)
+	assert.Equal(t, utils.ProtoFromUUID(orgUUID), resp.ID)
+	assert.Nil(t, resp.DomainName)
+	assert.Equal(t, "my-org", resp.OrgName)
 }
 
 func TestServer_GetOrgs(t *testing.T) {
@@ -748,10 +804,10 @@ func TestServer_GetOrgs(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(resp.Orgs))
 	assert.Equal(t, utils.ProtoFromUUID(orgUUID), resp.Orgs[0].ID)
-	assert.Equal(t, "my-org.com", resp.Orgs[0].DomainName)
+	assert.Equal(t, "my-org.com", resp.Orgs[0].DomainName.GetValue())
 	assert.Equal(t, "my-org", resp.Orgs[0].OrgName)
 	assert.Equal(t, utils.ProtoFromUUID(org2UUID), resp.Orgs[1].ID)
-	assert.Equal(t, "pixie.com", resp.Orgs[1].DomainName)
+	assert.Equal(t, "pixie.com", resp.Orgs[1].DomainName.GetValue())
 	assert.Equal(t, "pixie", resp.Orgs[1].OrgName)
 }
 
@@ -774,7 +830,7 @@ func TestServer_GetOrg_MissingOrg(t *testing.T) {
 	resp, err := s.GetOrg(context.Background(), utils.ProtoFromUUID(orgUUID))
 	assert.Nil(t, resp)
 	assert.NotNil(t, err)
-	assert.Equal(t, status.Code(err), codes.NotFound)
+	assert.Equal(t, codes.NotFound, status.Code(err))
 }
 
 func TestServer_GetOrgByName(t *testing.T) {
@@ -805,9 +861,9 @@ func TestServer_GetOrgByName(t *testing.T) {
 		&profilepb.GetOrgByNameRequest{Name: "my-org"})
 
 	require.NoError(t, err)
-	assert.Equal(t, resp.ID, utils.ProtoFromUUID(orgUUID))
-	assert.Equal(t, resp.DomainName, "my-org.com")
-	assert.Equal(t, resp.OrgName, "my-org")
+	assert.Equal(t, utils.ProtoFromUUID(orgUUID), resp.ID)
+	assert.Equal(t, "my-org.com", resp.DomainName.GetValue())
+	assert.Equal(t, "my-org", resp.OrgName)
 }
 
 func TestServer_GetOrgByName_MissingOrg(t *testing.T) {
@@ -831,7 +887,7 @@ func TestServer_GetOrgByName_MissingOrg(t *testing.T) {
 
 	assert.Nil(t, resp)
 	assert.NotNil(t, err)
-	assert.Equal(t, status.Code(err), codes.NotFound)
+	assert.Equal(t, codes.NotFound, status.Code(err))
 }
 
 func TestServer_GetOrgByDomain(t *testing.T) {
@@ -862,9 +918,9 @@ func TestServer_GetOrgByDomain(t *testing.T) {
 		&profilepb.GetOrgByDomainRequest{DomainName: "my-org.com"})
 
 	require.NoError(t, err)
-	assert.Equal(t, resp.ID, utils.ProtoFromUUID(orgUUID))
-	assert.Equal(t, resp.DomainName, "my-org.com")
-	assert.Equal(t, resp.OrgName, "my-org")
+	assert.Equal(t, utils.ProtoFromUUID(orgUUID), resp.ID)
+	assert.Equal(t, "my-org.com", resp.DomainName.GetValue())
+	assert.Equal(t, "my-org", resp.OrgName)
 }
 
 func TestServer_GetOrgByDomain_MissingOrg(t *testing.T) {
@@ -888,7 +944,7 @@ func TestServer_GetOrgByDomain_MissingOrg(t *testing.T) {
 
 	assert.Nil(t, resp)
 	assert.NotNil(t, err)
-	assert.Equal(t, status.Code(err), codes.NotFound)
+	assert.Equal(t, codes.NotFound, status.Code(err))
 }
 
 func TestServer_DeleteOrgAndUsers(t *testing.T) {
@@ -1273,7 +1329,7 @@ func TestServer_UpdateOrg_DomainName(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, resp.ID, utils.ProtoFromUUID(orgID))
-	assert.Equal(t, resp.GetDomainName(), "asdf.com")
+	assert.Equal(t, resp.DomainName.GetValue(), "asdf.com")
 }
 
 func TestServer_UpdateOrg_NilToEmptyDomainName(t *testing.T) {
@@ -1321,9 +1377,9 @@ func TestServer_UpdateOrg_NilToEmptyDomainName(t *testing.T) {
 		})
 
 	require.NoError(t, err)
-	assert.Equal(t, resp.ID, utils.ProtoFromUUID(orgID))
+	assert.Equal(t, utils.ProtoFromUUID(orgID), resp.ID)
 	assert.NotNil(t, resp.DomainName)
-	assert.Equal(t, resp.GetDomainName(), "")
+	assert.Equal(t, "", resp.DomainName.GetValue())
 }
 
 func TestServer_UpdateOrg_DomainName_EnableApprovals(t *testing.T) {
@@ -1374,8 +1430,8 @@ func TestServer_UpdateOrg_DomainName_EnableApprovals(t *testing.T) {
 		})
 
 	require.NoError(t, err)
-	assert.Equal(t, resp.ID, utils.ProtoFromUUID(orgID))
-	assert.Equal(t, resp.DomainName, "asdf.com")
+	assert.Equal(t, utils.ProtoFromUUID(orgID), resp.ID)
+	assert.Equal(t, "asdf.com", resp.DomainName.GetValue())
 }
 
 func TestServer_UpdateOrg_RequestBlockedForUserOutsideOrg(t *testing.T) {
@@ -1420,7 +1476,7 @@ func TestServer_GetUserAttributes(t *testing.T) {
 		ID: utils.ProtoFromUUID(userID),
 	})
 	require.NoError(t, err)
-	assert.Equal(t, true, resp.TourSeen)
+	assert.True(t, resp.TourSeen)
 }
 
 func TestServer_SetUserAttributes(t *testing.T) {
