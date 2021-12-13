@@ -117,7 +117,8 @@ func TestOrganizationServiceServer_CreateOrg_UserWithNoOrg(t *testing.T) {
 
 	orgID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	mockClients.MockOrg.EXPECT().CreateOrg(gomock.Any(), &profilepb.CreateOrgRequest{
-		OrgName: "new_org_name",
+		OrgName:    "new_org_name",
+		DomainName: &types.StringValue{Value: ""},
 	}).Return(orgID, nil)
 
 	mockClients.MockProfile.EXPECT().UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{

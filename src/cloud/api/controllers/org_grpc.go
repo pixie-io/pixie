@@ -127,7 +127,8 @@ func (o *OrganizationServiceServer) CreateOrg(ctx context.Context, req *cloudpb.
 	}
 
 	orgID, err := o.OrgServiceClient.CreateOrg(ctx, &profilepb.CreateOrgRequest{
-		OrgName: req.OrgName,
+		OrgName:    req.OrgName,
+		DomainName: &types.StringValue{Value: ""},
 	})
 	if err != nil {
 		return nil, err
