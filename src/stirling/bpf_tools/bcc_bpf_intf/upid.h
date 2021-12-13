@@ -19,6 +19,7 @@
 #pragma once
 
 #ifdef __cplusplus
+#include <cstdint>
 #include <utility>
 #include "src/common/base/hash_utils.h"
 #endif
