@@ -341,8 +341,9 @@ func TestServer_Login_GoogleUser_ImproperHostedDomain(t *testing.T) {
 		}, nil)
 
 	fakeOrgInfo := &profilepb.OrgInfo{
-		OrgName: "randomorg.com",
-		ID:      orgPb,
+		OrgName:    "randomorg.com",
+		ID:         orgPb,
+		DomainName: nil,
 	}
 	mockOrg.EXPECT().
 		GetOrg(gomock.Any(), orgPb).
@@ -413,6 +414,76 @@ func TestServer_Login_GoogleUser_ProperHostedDomain(t *testing.T) {
 		UpdateOrg(gomock.Any(), &profilepb.UpdateOrgRequest{
 			ID:         orgPb,
 			DomainName: &types.StringValue{Value: "randomorg.com"},
+		}).
+		Return(nil, nil)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
+	env, err := authenv.New(mockProfile, mockOrg)
+	require.NoError(t, err)
+	s, err := controllers.NewServer(env, a, nil)
+	require.NoError(t, err)
+
+	_, err = doLoginRequest(getTestContext(), t, s)
+	assert.NoError(t, err)
+}
+
+func TestServer_Login_GoogleUser_ManualOrgNoHostedDomain(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	orgPb := utils.ProtoFromUUIDStrOrNil(orgID)
+	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	userPb := utils.ProtoFromUUIDStrOrNil(userID)
+
+	// Setup expectations for the mocks.
+	a := mock_controllers.NewMockAuthProvider(ctrl)
+	authProviderID := "github|abc123"
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
+
+	fakeUserInfo1 := &controllers.UserInfo{
+		Email:            "abc@randomorg.com",
+		EmailVerified:    true,
+		PLUserID:         userID,
+		PLOrgID:          orgID,
+		IdentityProvider: googleIdentityProvider,
+		HostedDomain:     "",
+		AuthProviderID:   authProviderID,
+	}
+
+	a.EXPECT().GetUserInfo(fakeUserInfo1.AuthProviderID).Return(fakeUserInfo1, nil)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
+	mockProfile.EXPECT().
+		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{
+			AuthProviderID: authProviderID,
+		}).
+		Return(&profilepb.UserInfo{
+			ID:    userPb,
+			OrgID: orgPb,
+		}, nil)
+	fakeOrgInfo := &profilepb.OrgInfo{
+		OrgName: "randomorg.com",
+		ID:      orgPb,
+		// DomainName will be an empty string.
+		DomainName: &types.StringValue{Value: ""},
+	}
+	mockOrg.EXPECT().
+		GetOrg(gomock.Any(), orgPb).
+		Return(fakeOrgInfo, nil)
+	mockProfile.EXPECT().
+		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
+			ID:             userPb,
+			DisplayPicture: &types.StringValue{Value: ""},
+		}).
+		Return(nil, nil)
+	mockOrg.EXPECT().
+		UpdateOrg(gomock.Any(), &profilepb.UpdateOrgRequest{
+			ID:         orgPb,
+			DomainName: &types.StringValue{Value: ""},
 		}).
 		Return(nil, nil)
 

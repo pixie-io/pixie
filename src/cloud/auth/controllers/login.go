@@ -182,7 +182,7 @@ func (s *Server) googleOAuthLogin(ctx context.Context, userInfo *UserInfo, user 
 	// We've switched over to use HostedDomain instead of email domain to determine org membership.
 	// Some running systems have users who are in their email domain org, but not their org according to HostedDomain.
 	// This flags those users and informs them that they should contact support to fix their org info in the database.
-	if userInfo.HostedDomain == "" && orgInfo != nil && userInfo.Email != orgInfo.OrgName {
+	if userInfo.HostedDomain == "" && orgInfo != nil && userInfo.Email != orgInfo.OrgName && orgInfo.DomainName == nil {
 		return nil, status.Errorf(codes.PermissionDenied, "Our system found an issue with your account. Please contact support and include your email '%s' and this error in your message", userInfo.Email)
 	}
 	return s.loginUser(ctx, userInfo, orgInfo, newUser)
