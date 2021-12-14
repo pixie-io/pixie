@@ -45,6 +45,7 @@ using ::testing::UnorderedElementsAre;
 // Test Class and Test Cases
 //-----------------------------------------------------------------------------
 
+template <typename TClientServerContainers>
 class GoTLSTraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ false> {
  protected:
   GoTLSTraceTest() {
@@ -54,32 +55,47 @@ class GoTLSTraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing 
     PL_CHECK_OK(server_.Run(std::chrono::seconds{60}, {}));
   }
 
-  ::px::stirling::testing::Go1_16_TLSServerContainer server_;
-  ::px::stirling::testing::Go1_16_TLSClientContainer client_;
+  typename TClientServerContainers::GoTLSServerContainer server_;
+  typename TClientServerContainers::GoTLSClientContainer client_;
 };
+
+struct Go1_16TLSClientServerContainers {
+  using GoTLSServerContainer = ::px::stirling::testing::Go1_16_TLSServerContainer;
+  using GoTLSClientContainer = ::px::stirling::testing::Go1_16_TLSClientContainer;
+};
+
+struct Go1_17TLSClientServerContainers {
+  using GoTLSServerContainer = ::px::stirling::testing::Go1_17_TLSServerContainer;
+  using GoTLSClientContainer = ::px::stirling::testing::Go1_17_TLSClientContainer;
+};
+
+typedef ::testing::Types<Go1_16TLSClientServerContainers> GoVersions;
+TYPED_TEST_SUITE(GoTLSTraceTest, GoVersions);
 
 //-----------------------------------------------------------------------------
 // Result Checking: Helper Functions and Matchers
 //-----------------------------------------------------------------------------
 
-TEST_F(GoTLSTraceTest, Basic) {
-  StartTransferDataThread();
+TYPED_TEST(GoTLSTraceTest, Basic) {
+  this->StartTransferDataThread();
 
   // Run the client in the network of the server, so they can connect to each other.
-  PL_CHECK_OK(client_.Run(std::chrono::seconds{10},
-                          {absl::Substitute("--network=container:$0", server_.container_name())}));
-  client_.Wait();
+  PL_CHECK_OK(this->client_.Run(
+      std::chrono::seconds{10},
+      {absl::Substitute("--network=container:$0", this->server_.container_name())}));
+  this->client_.Wait();
 
-  StopTransferDataThread();
+  this->StopTransferDataThread();
 
   // Grab the data from Stirling.
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
+  std::vector<TaggedRecordBatch> tablets =
+      this->ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
   {
     const std::vector<size_t> target_record_indices =
-        FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, server_.process_pid());
+        FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, this->server_.process_pid());
 
     std::vector<http::Record> records = ToRecordVector(record_batch, target_record_indices);
 

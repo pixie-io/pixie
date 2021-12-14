@@ -76,7 +76,7 @@ struct TraceRecords {
   std::vector<std::string> remote_address;
 };
 
-template <typename ServerContainer>
+template <typename TServerContainer>
 class OpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ false> {
  protected:
   OpenSSLTraceTest() {
@@ -106,7 +106,7 @@ class OpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ fals
     return {std::move(http_records), std::move(remote_addresses)};
   }
 
-  ServerContainer server_;
+  TServerContainer server_;
 };
 
 //-----------------------------------------------------------------------------
