@@ -253,12 +253,10 @@ class DNSServerContainer : public ContainerRunner {
   static constexpr std::string_view kReadyMessage = "all zones loaded";
 };
 
-//
 //-----------------------------------------------------------------------------
 // Mux
 //-----------------------------------------------------------------------------
 
-// A ThriftMux server
 class ThriftMuxServerContainer : public ContainerRunner {
  public:
   ThriftMuxServerContainer()
