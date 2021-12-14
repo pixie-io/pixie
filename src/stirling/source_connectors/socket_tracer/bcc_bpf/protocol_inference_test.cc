@@ -377,8 +377,8 @@ TEST(ProtocolInferenceTest, Mux) {
   constexpr uint8_t kReqFrame[] = {
     // mux length (15 bytes)
     0x00, 0x00, 0x00, 0x0f,
-    // Tdrain type
-    0x40,
+    // RerrOld type
+    0x7f,
     // tag
     0x00, 0x00, 0x01,
     // why
@@ -388,8 +388,8 @@ TEST(ProtocolInferenceTest, Mux) {
   constexpr uint8_t kResp[] = {
     // mux length (15 bytes)
     0x00, 0x00, 0x00, 0x0f,
-    // RerrOld type
-    0x7f,
+    // Rerr type
+    0x80,
     // tag
     0x00, 0x00, 0x01,
     // why
@@ -402,12 +402,8 @@ TEST(ProtocolInferenceTest, Mux) {
   EXPECT_EQ(protocol_message.protocol, kProtocolMux);
   EXPECT_EQ(protocol_message.type, kRequest);
 
-  /* protocol_message = infer_protocol(reinterpret_cast<const char*>(kReqHeaderFrame), */
-  /*                                   sizeof(kReqHeaderFrame), &conn_info); */
-  /* EXPECT_EQ(protocol_message.protocol, kProtocolUnknown); */
-
   protocol_message =
       infer_protocol(reinterpret_cast<const char*>(kResp), sizeof(kResp), &conn_info);
   EXPECT_EQ(protocol_message.protocol, kProtocolMux);
-  EXPECT_EQ(protocol_message.type, kRequest);
+  EXPECT_EQ(protocol_message.type, kResponse);
 }
