@@ -127,6 +127,7 @@ build:asan --define tcmalloc=disabled
 build:asan --linkopt=-L/opt/clang-11.1/lib/clang/11.1.0/lib/linux
 build:asan --linkopt=-l:libclang_rt.ubsan_standalone-x86_64.a
 build:asan --linkopt=-l:libclang_rt.ubsan_standalone_cxx-x86_64.a
+build:asan --linkopt=-l:libclang_rt.builtins-x86_64.a
 
 # bazel build --config msan
 build:msan --define PL_CONFIG_MSAN=1
