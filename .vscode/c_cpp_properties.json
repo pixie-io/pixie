@@ -9,7 +9,7 @@
             "macFrameworkPath": [
                 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk/System/Library/Frameworks"
             ],
-            "compilerPath": "/opt/clang-11.1/bin/clang",
+            "compilerPath": "/opt/clang-13.0/bin/clang",
             "cStandard": "c11"
         }
     ],

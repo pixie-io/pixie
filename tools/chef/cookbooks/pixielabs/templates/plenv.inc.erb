@@ -1,6 +1,6 @@
 # If changing this file, make sure to also update the ENV in tools/chef/packer_docker_dev.json.
 # DO NOT EDIT! This is an automatically generated file by Chef and may be changed.
-export CLANG_PATH=/opt/clang-11.1
+export CLANG_PATH=/opt/clang-13.0
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH
 export PATH=/opt/google-cloud-sdk/bin:$PATH
 export PATH=/opt/node/bin:$PATH
@@ -13,7 +13,7 @@ export LD_LIBRARY_PATH=${CLANG_PATH}/lib:${LD_LIBRARY_PATH}
 export CC=clang
 export CXX=clang++
 
-export ASAN_SYMBOLIZER_PATH=/opt/clang-11.1/bin/llvm-symbolizer
+export ASAN_SYMBOLIZER_PATH=/opt/clang-13.0/bin/llvm-symbolizer
 
 if [ -n "`$SHELL -c 'echo $ZSH_VERSION'`" ]; then
    # Assume Zsh.

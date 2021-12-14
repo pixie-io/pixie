@@ -71,11 +71,11 @@ fi
 # We can have the Clang tidy script in a few different places. Check them in priority
 # order.
 clang_tidy_full_scripts=(
-    "/opt/clang-11.1/share/clang/run-clang-tidy.py"
+    "/opt/clang-13.0/share/clang/run-clang-tidy.py"
     "/usr/local/opt/llvm/share/clang/run-clang-tidy.py")
 
 clang_tidy_diff_scripts=(
-    "/opt/clang-11.1/share/clang/clang-tidy-diff.py"
+    "/opt/clang-13.0/share/clang/clang-tidy-diff.py"
     "/usr/local/opt/llvm/share/clang/clang-tidy-diff.py")
 
 search_scripts="${clang_tidy_full_scripts[@]}"

@@ -119,6 +119,7 @@ cmake(
         "ENABLE_TAR": "OFF",
         "ENABLE_TAR_SHARED": "OFF",
         "ENABLE_TEST": "OFF",
+        "ENABLE_WERROR": "OFF",
     },
     lib_name = "libarchive",
     lib_source = "@com_github_libarchive_libarchive//:all",

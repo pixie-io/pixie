@@ -2,8 +2,14 @@
   "builders": [
     {
       "changes": [
-        "ENTRYPOINT [\"\"]",
-        "CMD [\"\"]"
+        "ENV PATH /opt/golang/bin:/opt/pixielabs/bin:/opt/clang-13.0/bin:/pl/bin:/opt/google-cloud-sdk/bin:/opt/gsutil:/opt/node/bin:/opt/phab/arcanist/bin:/usr/lib/go-1.10/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "ENV LD_LIBRARY_PATH /opt/clang-13.0/lib",
+        "ENV GOPATH /pl",
+        "ENV CC clang",
+        "ENV CXX clang++",
+        "ENV ASAN_SYMBOLIZER_PATH /opt/clang-13.0/bin/llvm-symbolizer",
+        "WORKDIR /pl/src/px.dev/pixie",
+        "ENTRYPOINT [\"\"]"
       ],
       "commit": true,
       "image": "{{ user `base_image_and_tag` }}",

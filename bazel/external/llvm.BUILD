@@ -56,7 +56,6 @@ cc_library(
         "lib/libLLVMPasses.a",
         "lib/libPolly.a",
         "lib/libPollyISL.a",
-        "lib/libPollyPPCG.a",
         "lib/libLLVMipo.a",
         "lib/libLLVMAggressiveInstCombine.a",
         "lib/libLLVMVectorize.a",
@@ -98,8 +97,9 @@ cc_library(
         "lib/libLLVMSupport.a",
         "lib/libLLVMDemangle.a",
         "lib/libLLVMX86Disassembler.a",
-        "lib/libLLVMOrcError.a",
-
+        "lib/libLLVMJITLink.a",
+        "lib/libLLVMOrcTargetProcess.a",
+        "lib/libLLVMOrcShared.a",
         # WARNING HACK: This adds a stub so that we don't have to include all of
         # clang-tidy with the LLVM build. We don't need to use clang-tidy since we don't
         # do any auto cleanup/formatting during our compile process. If this ever changes,

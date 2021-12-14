@@ -30,7 +30,7 @@ file '/tmp/clang.deb' do
   action :delete
 end
 
-ENV['PATH'] = "/opt/clang-11.1/bin:#{ENV['PATH']}"
-ENV['LD_LIBRARY_PATH'] = "/opt/clang-11.1/lib:#{ENV['LD_LIBRARY_PATH']}"
+ENV['PATH'] = "/opt/clang-13.0/bin:#{ENV['PATH']}"
+ENV['LD_LIBRARY_PATH'] = "/opt/clang-13.0/lib:#{ENV['LD_LIBRARY_PATH']}"
 ENV['CC'] = "clang"
 ENV['CXX'] = "clang++"

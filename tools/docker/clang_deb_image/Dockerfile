@@ -29,12 +29,12 @@ ENV CC=clang
 ENV CXX=clang++
 
 WORKDIR /llvm_all
-RUN git clone --branch llvmorg-11.1.0 --depth 1 https://github.com/llvm/llvm-project.git
+RUN git clone --branch llvmorg-13.0.0 --depth 1 https://github.com/llvm/llvm-project.git
 
 WORKDIR /llvm_all/build
 RUN triple=$(gcc -v 2>&1 | grep "^Target:" | cut -d ' ' -f 2) && \
     cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
-    -DLLVM_BUILD_DOCS=OFF -DCMAKE_INSTALL_PREFIX=/opt/clang-11.1 \
+    -DLLVM_BUILD_DOCS=OFF -DCMAKE_INSTALL_PREFIX=/opt/clang-13.0 \
     -DLLVM_TARGETS_TO_BUILD="BPF;X86" \
     -DLLVM_ENABLE_SPHINX=Off \
     -DLLVM_ENABLE_DOXYGEN=OFF \
@@ -50,7 +50,7 @@ RUN make -j $(nproc)
 RUN make install
 
 # We need libclang.a, but the clang build system excludes it during make install.
-RUN cp -a /llvm_all/build/lib/libclang.a /opt/clang-11.1/lib
+RUN cp -a /llvm_all/build/lib/libclang.a /opt/clang-13.0/lib
 
 #######################################################
 # This installs Clang/LLVM with libc++.
@@ -65,14 +65,14 @@ RUN git clone https://github.com/pixie-io/install-clang
 WORKDIR /llvm_libc++/install-clang
 RUN git fetch
 RUN git checkout 978976c108249f542c189b7afa14a5a8c0204a3a
-RUN ./install-clang -j $(nproc) -A /opt/clang-11.1-libc++ -C
-RUN rm -rf /opt/clang-11.1-libc++/src
+RUN ./install-clang -j $(nproc) -A /opt/clang-13.0-libc++ -C
+RUN rm -rf /opt/clang-13.0-libc++/src
 
 # TODO(zasgar): MSAN version. It's currently failing to build because
 # of an MSAN failure inside of LLVM.
 #COPY msan.patch msan.patch
 #RUN patch -p1 < msan.patch
-#RUN ./install-clang -j $(nproc) -A /opt/clang-11.1-libc++-msan -C
+#RUN ./install-clang -j $(nproc) -A /opt/clang-13.0-libc++-msan -C
 
 # Add clang-lsif for our image. This needs to be patched for the version of clang being used.
 WORKDIR /tmp
@@ -80,12 +80,12 @@ RUN git clone https://github.com/pixie-io/lsif-clang.git
 
 WORKDIR /tmp/lsif-clang
 RUN git checkout llvm-11
-RUN cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/clang-11.1
+RUN cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/clang-13.0
 RUN make -C build -j $(nproc)
 RUN make -C build install
 
 WORKDIR /opt
 VOLUME /image
-ENV deb_name clang-11.1-pl1.deb
+ENV deb_name clang-13.0-pl1.deb
 CMD ["sh", "-c",  "fpm -p /image/${deb_name} \
-        -s dir -t deb -n clang-11.1 -v 11.1-pl1 --prefix /opt clang-11.1 clang-11.1-libc++"]
+        -s dir -t deb -n clang-13.0 -v 13.0-pl1 --prefix /opt clang-13.0 clang-13.0-libc++"]
