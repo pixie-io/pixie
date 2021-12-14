@@ -87,6 +87,9 @@ func (s *Server) updateAuthProviderUser(authUserID string, orgID string, userID 
 
 // Login uses the AuthProvider to authenticate and login the user. Errors out if their org doesn't exist.
 func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.LoginReply, error) {
+	md, _ := metadata.FromIncomingContext(ctx)
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
 	inviteOrgID, err := s.getInviteOrgID(ctx, in.InviteToken)
 	if err != nil {
 		return nil, err
@@ -99,9 +102,6 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 	if userInfo.HostedDomain != "" && !utils.IsNilUUIDProto(inviteOrgID) {
 		return nil, status.Error(codes.PermissionDenied, "gsuite users are not allowed to follow invites. Please join the org with another account")
 	}
-
-	md, _ := metadata.FromIncomingContext(ctx)
-	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	user, err := s.env.ProfileClient().GetUserByAuthProviderID(ctx, &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: userInfo.AuthProviderID})
 
@@ -117,6 +117,15 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 		orgInfo, err := s.env.OrgClient().GetOrg(ctx, inviteOrgID)
 		if err != nil {
 			return nil, err
+		}
+		if user != nil {
+			_, err := s.env.ProfileClient().UpdateUser(ctx, &profilepb.UpdateUserRequest{
+				ID:    user.ID,
+				OrgID: inviteOrgID,
+			})
+			if err != nil {
+				return nil, err
+			}
 		}
 		return s.loginUser(ctx, userInfo, orgInfo, newUser)
 	}
