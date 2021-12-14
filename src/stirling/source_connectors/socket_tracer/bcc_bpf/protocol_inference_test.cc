@@ -374,7 +374,7 @@ TEST(ProtocolInferenceTest, Mux) {
   struct conn_info_t conn_info = {};
 
   // clang-format off
-  constexpr uint8_t kReqFrame[] = {
+  constexpr uint8_t kRerrReqFrame[] = {
     // mux length (15 bytes)
     0x00, 0x00, 0x00, 0x0f,
     // RerrOld type
@@ -385,7 +385,7 @@ TEST(ProtocolInferenceTest, Mux) {
     0x74, 0x69, 0x6e, 0x69, 0x74, 0x20, 0x63, 0x68, 0x65, 0x63, 0x6b,
   };
 
-  constexpr uint8_t kResp[] = {
+  constexpr uint8_t kRerrResp[] = {
     // mux length (15 bytes)
     0x00, 0x00, 0x00, 0x0f,
     // Rerr type
@@ -395,15 +395,59 @@ TEST(ProtocolInferenceTest, Mux) {
     // why
     0x74, 0x69, 0x6e, 0x69, 0x74, 0x20, 0x63, 0x68, 0x65, 0x63, 0x6b,
   };
+
+  constexpr uint8_t kTinitReqFrame[] = {
+    // mux length (42 bytes)
+    0x00, 0x00, 0x00, 0x2a,
+    // Tinit type
+    0x44,
+    // tag
+    0x00, 0x00, 0x01,
+    // TODO(ddelnano): figure out what these 6 bytes
+    // are for T/Rinit messages
+    0x00, 0x01, 0x00, 0x00, 0x00, 0x0a,
+    // m     u     x     -     f     r     a     m     e     r
+    0x6d, 0x75, 0x78, 0x2d, 0x66, 0x72, 0x61, 0x6d, 0x65, 0x72,
+    // Rest of the Rinit frame
+    0x00, 0x00, 0x00, 0x04, 0x7f, 0xff, 0xff, 0xff,
+    0x00, 0x00, 0x00, 0x03, 0x74, 0x6c, 0x73, 0x00, 0x00, 0x00, 0x03, 0x6f, 0x66, 0x66,
+  };
+
+  constexpr uint8_t kRinitResp[] = {
+    // mux length (42 bytes)
+    0x00, 0x00, 0x00, 0x2a,
+    // Rinit type
+    0xbc,
+    // tag
+    0x00, 0x00, 0x01,
+    // TODO(ddelnano): figure out what these 6 bytes
+    // are for T/Rinit messages
+    0x00, 0x01, 0x00, 0x00, 0x00, 0x0a,
+    // m     u     x     -     f     r     a     m     e     r
+    0x6d, 0x75, 0x78, 0x2d, 0x66, 0x72, 0x61, 0x6d, 0x65, 0x72,
+    // Rest of the Rinit frame
+    0x00, 0x00, 0x00, 0x04, 0x7f, 0xff, 0xff, 0xff,
+    0x00, 0x00, 0x00, 0x03, 0x74, 0x6c, 0x73, 0x00, 0x00, 0x00, 0x03, 0x6f, 0x66, 0x66,
+  };
   // clang-format on
 
   auto protocol_message =
-      infer_protocol(reinterpret_cast<const char*>(kReqFrame), sizeof(kReqFrame), &conn_info);
+      infer_protocol(reinterpret_cast<const char*>(kRerrReqFrame), sizeof(kRerrReqFrame), &conn_info);
   EXPECT_EQ(protocol_message.protocol, kProtocolMux);
   EXPECT_EQ(protocol_message.type, kRequest);
 
   protocol_message =
-      infer_protocol(reinterpret_cast<const char*>(kResp), sizeof(kResp), &conn_info);
+      infer_protocol(reinterpret_cast<const char*>(kRerrResp), sizeof(kRerrResp), &conn_info);
+  EXPECT_EQ(protocol_message.protocol, kProtocolMux);
+  EXPECT_EQ(protocol_message.type, kResponse);
+
+  protocol_message =
+      infer_protocol(reinterpret_cast<const char*>(kTinitReqFrame), sizeof(kTinitReqFrame), &conn_info);
+  EXPECT_EQ(protocol_message.protocol, kProtocolMux);
+  EXPECT_EQ(protocol_message.type, kRequest);
+
+  protocol_message =
+      infer_protocol(reinterpret_cast<const char*>(kRinitResp), sizeof(kRinitResp), &conn_info);
   EXPECT_EQ(protocol_message.protocol, kProtocolMux);
   EXPECT_EQ(protocol_message.type, kResponse);
 }
