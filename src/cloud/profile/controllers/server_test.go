@@ -1029,10 +1029,6 @@ func TestServer_UpdateUser(t *testing.T) {
 				req.OrgID = utils.ProtoFromUUIDStrOrNil(tc.updatedOrg)
 				newOrgID := uuid.FromStringOrNil(tc.updatedOrg)
 				mockUpdateReq.OrgID = &newOrgID
-
-				ods.EXPECT().
-					NumUsersInOrg(newOrgID).
-					Return(0, nil)
 			}
 
 			uds.EXPECT().
@@ -1079,46 +1075,6 @@ func TestServer_UpdateUser_FailsIfAlreadySet(t *testing.T) {
 
 	newOrgID, err := uuid.NewV4()
 	require.NoError(t, err)
-	s := controllers.NewServer(nil, uds, usds, ods, osds)
-
-	_, err = s.UpdateUser(
-		CreateTestContext(),
-		&profilepb.UpdateUserRequest{
-			ID:    utils.ProtoFromUUID(userID),
-			OrgID: utils.ProtoFromUUID(newOrgID),
-		})
-
-	assert.NotNil(t, err)
-	assert.Equal(t, status.Code(err), codes.InvalidArgument)
-}
-
-func TestServer_UpdateUser_FailsIfOrgIsNotEmpty(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	userID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9")
-
-	uds := mock_controllers.NewMockUserDatastore(ctrl)
-	ods := mock_controllers.NewMockOrgDatastore(ctrl)
-	usds := mock_controllers.NewMockUserSettingsDatastore(ctrl)
-	osds := mock_controllers.NewMockOrgSettingsDatastore(ctrl)
-
-	uds.EXPECT().
-		GetUser(userID).
-		Return(&datastore.UserInfo{
-			ID:         userID,
-			FirstName:  "first",
-			LastName:   "last",
-			IsApproved: true,
-		}, nil)
-
-	newOrgID, err := uuid.NewV4()
-	require.NoError(t, err)
-
-	ods.EXPECT().
-		NumUsersInOrg(newOrgID).
-		Return(10, nil)
-
 	s := controllers.NewServer(nil, uds, usds, ods, osds)
 
 	_, err = s.UpdateUser(

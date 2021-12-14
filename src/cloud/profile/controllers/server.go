@@ -403,13 +403,6 @@ func (s *Server) UpdateUser(ctx context.Context, req *profilepb.UpdateUserReques
 		if userInfo.OrgID != nil && *userInfo.OrgID != uuid.Nil {
 			return nil, status.Error(codes.InvalidArgument, "cannot update org for a user that already belongs to an org")
 		}
-		count, err := s.ods.NumUsersInOrg(newOrgID)
-		if err != nil {
-			return nil, err
-		}
-		if count > 0 {
-			return nil, status.Error(codes.InvalidArgument, "cannot add self to an org that isn't empty")
-		}
 		userInfo.OrgID = &newOrgID
 	}
 
