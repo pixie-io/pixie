@@ -73,16 +73,42 @@ const RemoveUserButton = React.memo<{ user: UserDisplay }>(({ user }) => {
 
   const [pendingRemoval, setPendingRemoval] = React.useState(false);
 
+  const [removeUserMutation] = useMutation<{ RemoveUserFromOrg: boolean }, { userID: string }>(
+    gql`
+    mutation RemoveUserFromOrg($userID: ID!) {
+      RemoveUserFromOrg(userID: $userID)
+    }
+  `);
+
   const showSnackbar = useSnackbar();
   const removeUser = React.useCallback(() => {
-    // TODO: This is where the callback would go.
     setPendingRemoval(true);
-    setTimeout(() => {
-      showSnackbar({ message: 'Failed to remove user (because this function is not implemented yet)!' });
+    removeUserMutation({
+      variables: { userID: user.id },
+      update: (cache, { data }) => {
+        if (!data.RemoveUserFromOrg) {
+          return;
+        }
+        cache.modify({
+          fields: {
+            users(existingUsers, { readField }) {
+              return existingUsers.filter(
+                (u) => (user.id !== readField('id', u)),
+              );
+            },
+          },
+        });
+      },
+      optimisticResponse: { RemoveUserFromOrg: true },
+    }).then(() => {
+      showSnackbar({ message: `Removed "${user.email}" from org` });
+    }).catch((e) => {
+      showSnackbar({ message: `Could not remove user: ${e.message}` });
+    }).finally(() => {
       setPendingRemoval(false);
       closeModal();
-    }, 1000);
-  }, [showSnackbar, closeModal]);
+    });
+  }, [closeModal, removeUserMutation, showSnackbar, user]);
 
   return (
     <>
@@ -122,9 +148,7 @@ export const UserRow = React.memo<UserRowProps>(({ user }) => {
   const classes = useStyles();
   const { invite: invitationsEnabled } = useFlags();
 
-  const [updateUserInfo] = useMutation<
-  { UpdateUserPermissions: UserDisplay }, { id: string, isApproved: boolean }
-  >(
+  const [updateUserInfo] = useMutation<{ UpdateUserPermissions: UserDisplay }, { id: string, isApproved: boolean }>(
     gql`
       mutation UpdateUserApproval ($id: ID!, $isApproved: Boolean) {
         UpdateUserPermissions(userID: $id, userPermissions: {isApproved: $isApproved}) {
@@ -165,7 +189,7 @@ export const UserRow = React.memo<UserRowProps>(({ user }) => {
                 variant='outlined'
                 color='primary'
               >
-                { user.isApproved ? 'Approved' : 'Approve' }
+                {user.isApproved ? 'Approved' : 'Approve'}
               </Button>
             </div>
           </AdminTooltip>
@@ -184,7 +208,7 @@ export const UserRow = React.memo<UserRowProps>(({ user }) => {
 UserRow.displayName = 'UserRow';
 
 export const UsersTable = React.memo(() => {
-  const { data, loading, error } = useQuery<{ orgUsers: UserDisplay[] }>(
+  const { data, error } = useQuery<{ orgUsers: UserDisplay[] }>(
     gql`
       query getUsersForCurrentOrg{
         orgUsers {
@@ -201,9 +225,6 @@ export const UsersTable = React.memo(() => {
   const users = data?.orgUsers;
   const classes = useStyles();
 
-  if (loading) {
-    return <div className={classes.error}>Loading...</div>;
-  }
   if (error) {
     return <div className={classes.error}>{error.toString()}</div>;
   }
