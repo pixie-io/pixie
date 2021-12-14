@@ -14,46 +14,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@bazel_tools//tools/jdk:default_java_toolchain.bzl", "java_runtime_files")
 load("//bazel:pl_build_system.bzl", "pl_cc_library")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
-java_runtime_files(
-    name = "jvmti_headers",
-    srcs = [
-        "include/jni.h",
-        "include/jvmti.h",
-        "include/linux/jni_md.h",
-    ],
-)
-
-cc_binary(
-    # This "name" is constructed so that the generated .so file is named:
-    # lib-px-java-symbol-agent-glibc.so.
-    name = "-px-java-symbol-agent-glibc",
-    srcs = [
-        "agent.cc",
-        "raw_symbol_update.h",
-        ":jvmti_headers",
-    ],
-    includes = [
-        "include",
-        "include/linux",
-    ],
-    linkshared = True,
-    linkstatic = 1,
-    visibility = [
-        "//visibility:public",
-    ],
-)
-
 pl_cc_library(
     name = "cc_library",
-    srcs = glob(
-        ["*.cc"],
-        exclude = ["agent.cc"],
-    ),
-    hdrs = glob(["*.h"]),
+    srcs = ["demangle.cc"],
+    hdrs = ["demangle.h"],
     deps = [],
 )

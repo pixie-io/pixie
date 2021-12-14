@@ -22,15 +22,16 @@ package(default_visibility = ["//src/stirling:__subpackages__"])
 java_binary(
     name = "fib",
     srcs = ["Fib.java"],
-    jvm_flags = ["-agentpath:$(location //src/stirling/source_connectors/perf_profiler/java:-px-java-symbol-agent-glibc)"],
+    data = ["//src/stirling/source_connectors/perf_profiler/java/agent:glibc"],
+    jvm_flags = ["-agentpath:$(location //src/stirling/source_connectors/perf_profiler/java/agent:glibc)"],
     main_class = "JavaFib",
-    deps = ["//src/stirling/source_connectors/perf_profiler/java:-px-java-symbol-agent-glibc"],
 )
 
 pl_cc_test(
     name = "agent_test",
     srcs = ["agent_test.cc"],
     data = [
+        "//src/stirling/source_connectors/perf_profiler/java/agent:glibc",
         "//src/stirling/source_connectors/perf_profiler/java/testing:fib",
     ],
     tags = [

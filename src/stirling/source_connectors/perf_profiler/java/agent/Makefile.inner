@@ -1,0 +1,28 @@
+all: agent.so
+
+INCLUDES := -isystem $(INNER_JDK_PATH)/include
+INCLUDES += -isystem $(INNER_JDK_PATH)/include/linux
+
+CXXOPTS := -fPIC
+CXXOPTS += -std=c++17
+CXXOPTS += -Iquote=/build
+
+LOPTS := '-fuse-ld=/usr/bin/x86_64-linux-gnu-ld.gold'
+LOPTS += -Wl,-no-as-needed
+LOPTS += -Wl,-z,relro,-z,now
+LOPTS += -lm
+LOPTS += -static-libgcc
+LOPTS += -l:libstdc++.a
+LOPTS += '-fuse-ld=lld'
+
+CXX := clang
+
+agent.so: agent.o
+	$(CXX) $(CXXOPTS) $(LOPTS) -shared -o $@ $^
+
+agent.o: agent.cc
+	$(CXX) $(INCLUDES) $(CXXOPTS) -o $@ -c $<
+
+clean:
+	rm -f agent.o
+	rm -f px-java-agent.so

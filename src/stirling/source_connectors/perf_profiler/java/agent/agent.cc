@@ -24,7 +24,8 @@
 
 #include <mutex>
 
-#include "src/stirling/source_connectors/perf_profiler/java/raw_symbol_update.h"
+// NOLINTNEXTLINE: build/include_subdir
+#include "raw_symbol_update.h"
 
 namespace {
 constexpr bool kUsingTxtLogFile = false;

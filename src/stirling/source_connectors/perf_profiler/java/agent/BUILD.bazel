@@ -1,0 +1,80 @@
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+load("@io_bazel_rules_docker//container:container.bzl", "container_image")
+load("@io_bazel_rules_docker//docker/util:run.bzl", "container_run_and_extract")
+
+package(default_visibility = ["//src/stirling:__subpackages__"])
+
+container_image(
+    name = "image-glibc",
+    base = "@openjdk-base-glibc//image",
+    directory = "/build",
+    files = [
+        "Makefile.inner",
+        "agent.cc",
+        "raw_symbol_update.h",
+    ],
+)
+
+container_image(
+    name = "image-musl",
+    base = "@openjdk-base-musl//image",
+    directory = "/build",
+    files = [
+        "Makefile.inner",
+        "agent.cc",
+        "raw_symbol_update.h",
+    ],
+)
+
+container_run_and_extract(
+    name = "build-glibc",
+    commands = [
+        "apt-get update",
+        "apt-get install -y lld",
+        "apt-get install -y make",
+        "apt-get install -y clang",
+        "export INNER_JDK_PATH=/usr/local/openjdk-18",
+        "make -C build -f Makefile.inner agent.so",
+    ],
+    extract_file = "/build/agent.so",
+    image = ":image-glibc.tar",
+)
+
+container_run_and_extract(
+    name = "build-musl",
+    commands = [
+        "apk --no-cache add g++",
+        "apk --no-cache add lld",
+        "apk --no-cache add make",
+        "apk --no-cache add clang",
+        "export INNER_JDK_PATH=/opt/openjdk-18",
+        "make -C build -f Makefile.inner agent.so",
+    ],
+    extract_file = "/build/agent.so",
+    image = ":image-musl.tar",
+)
+
+filegroup(
+    name = "glibc",
+    srcs = ["build-glibc/build/agent.so"],
+)
+
+filegroup(
+    name = "musl",
+    srcs = ["build-musl/build/agent.so"],
+)

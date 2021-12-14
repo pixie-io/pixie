@@ -39,6 +39,16 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   const std::filesystem::path bazel_app_path = BazelBinTestFilePath(kToyAppPath);
   ASSERT_OK(fs::Exists(bazel_app_path));
 
+  if (fs::Exists(kSymbolFilePath).ok()) {
+    // The symbol file is created by the Java process when the agent is attached.
+    // It is created in /tmp because that is a canonical location where Stirling
+    // can find it (and where we can write files inside of containers).
+    // A left over stale symbol file can cause this test to pass when it should fail.
+    // Here, we prevent that from happening.
+    LOG(INFO) << "Removing stale file: " << kSymbolFilePath << ".";
+    ASSERT_OK(fs::Remove(kSymbolFilePath));
+  }
+
   SubProcess sub_process;
   ASSERT_OK(sub_process.Start({bazel_app_path})) << "Could not start Java app: " << kJavaAppName;
   std::this_thread::sleep_for(std::chrono::seconds(5));

@@ -57,6 +57,18 @@ def base_images():
         "distroless/base",
     )
 
+    _docker_io_image(
+        "openjdk-base-glibc",
+        "sha256:d7048f5a32ca7598f583c492c960496848cc9017fdb55942370f02603c83561d",
+        "library/openjdk",
+    )
+
+    _docker_io_image(
+        "openjdk-base-musl",
+        "sha256:25b910311bfe15547ecab6895d5eb3f4ec718d6d53cced7eec78e4b889962e1f",
+        "library/openjdk",
+    )
+
 def stirling_test_images():
     # NGINX with OpenSSL 1.1.0, for OpenSSL tracing tests.
     _docker_io_image(
