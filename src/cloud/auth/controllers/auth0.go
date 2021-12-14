@@ -90,8 +90,9 @@ func (a *Auth0Connector) retrieveHostedDomain(ident *auth0Identity) (string, err
 
 // auth0UserMetadata is a part of the Auth0 response.
 type auth0UserMetadata struct {
-	PLUserID string `json:"pl_user_id,omitempty"`
-	PLOrgID  string `json:"pl_org_id,omitempty"`
+	PLUserID   string `json:"pl_user_id,omitempty"`
+	PLOrgID    string `json:"pl_org_id,omitempty"`
+	UseSelfOrg bool   `json:"use_self_org,omitempty"`
 }
 
 type auth0Identity struct {
@@ -320,10 +321,10 @@ func (a *Auth0Connector) GetUserInfo(userID string) (*UserInfo, error) {
 		HostedDomain:     hostedDomain,
 	}
 	clientID := a.cfg.Auth0ClientID
-	// If user does not exist in userInfo, then create a new user if specified.
-	if !(userInfo.AppMetadata == nil || userInfo.AppMetadata[clientID] == nil) {
+	if userInfo.AppMetadata != nil && userInfo.AppMetadata[clientID] != nil {
 		u.PLUserID = userInfo.AppMetadata[clientID].PLUserID
 		u.PLOrgID = userInfo.AppMetadata[clientID].PLOrgID
+		u.UseSelfOrg = userInfo.AppMetadata[clientID].UseSelfOrg
 	}
 	return u, nil
 }

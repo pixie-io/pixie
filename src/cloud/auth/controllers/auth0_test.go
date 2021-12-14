@@ -186,7 +186,8 @@ func TestAuth0ConnectorImpl_GetUserInfo(t *testing.T) {
 						"user_id": "github|123990813094",
 						"app_metadata": {
 							"foo": {
-								"pl_user_id": "test_pl_user_id"
+								"pl_user_id": "test_pl_user_id",
+								"use_self_org": true
 							}
 						},
 						"identities": [{
@@ -212,6 +213,7 @@ func TestAuth0ConnectorImpl_GetUserInfo(t *testing.T) {
 	assert.Equal(t, "Test User", userInfo.Name)
 	assert.Equal(t, "picture.jpg", userInfo.Picture)
 	assert.Equal(t, "test_pl_user_id", userInfo.PLUserID)
+	assert.True(t, userInfo.UseSelfOrg)
 	assert.Equal(t, "github", userInfo.IdentityProvider)
 	assert.Equal(t, "github|123990813094", userInfo.AuthProviderID)
 	assert.Equal(t, "", userInfo.HostedDomain)
@@ -273,6 +275,7 @@ func TestAuth0ConnectorImpl_GetUserInfo_GoogleOAuth(t *testing.T) {
 	assert.Equal(t, "Test User", userInfo.Name)
 	assert.Equal(t, "picture.jpg", userInfo.Picture)
 	assert.Equal(t, "test_pl_user_id", userInfo.PLUserID)
+	assert.False(t, userInfo.UseSelfOrg)
 	assert.Equal(t, "google-oauth2", userInfo.IdentityProvider)
 	assert.Equal(t, "google-oauth2|123990813094", userInfo.AuthProviderID)
 	assert.Equal(t, "test.com", userInfo.HostedDomain)
