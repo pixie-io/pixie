@@ -336,4 +336,9 @@ GIT_REPOSITORY_LOCATIONS = dict(
         commit = "4dba68c62465ac35ff52c47eec376d1bfc035368",
         shallow_since = "1635531007 -0700",
     ),
+    com_github_apangin_jattach = dict(
+        remote = "https://github.com/pixie-io/jattach.git",
+        commit = "fa36a4fa141b4e9486b9126640d54a94c1d36fce",
+        shallow_since = "1638898188 -0800",
+    ),
 )
