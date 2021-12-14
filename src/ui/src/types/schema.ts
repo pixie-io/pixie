@@ -59,6 +59,7 @@ export interface GQLMutation {
   UpdateOrgSettings: GQLOrgInfo;
   CreateInviteToken: string;
   RevokeAllInviteTokens: boolean;
+  RemoveUserFromOrg: boolean;
 }
 
 export interface GQLArtifactsInfo {
@@ -516,6 +517,7 @@ export interface GQLMutationTypeResolver<TParent = any> {
   UpdateOrgSettings?: MutationToUpdateOrgSettingsResolver<TParent>;
   CreateInviteToken?: MutationToCreateInviteTokenResolver<TParent>;
   RevokeAllInviteTokens?: MutationToRevokeAllInviteTokensResolver<TParent>;
+  RemoveUserFromOrg?: MutationToRemoveUserFromOrgResolver<TParent>;
 }
 
 export interface MutationToNoopResolver<TParent = any, TResult = any> {
@@ -614,6 +616,13 @@ export interface MutationToRevokeAllInviteTokensArgs {
 }
 export interface MutationToRevokeAllInviteTokensResolver<TParent = any, TResult = any> {
   (parent: TParent, args: MutationToRevokeAllInviteTokensArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface MutationToRemoveUserFromOrgArgs {
+  userID: string;
+}
+export interface MutationToRemoveUserFromOrgResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: MutationToRemoveUserFromOrgArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface GQLArtifactsInfoTypeResolver<TParent = any> {

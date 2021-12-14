@@ -526,3 +526,47 @@ func TestOrgSettingsResolver_VerifyInviteToken(t *testing.T) {
 		})
 	}
 }
+
+func TestOrgSettingsResolver_RemoveUserFromOrg(t *testing.T) {
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "user",
+			ctx:  CreateTestContext(),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
+			defer cleanup()
+			ctx := test.ctx
+
+			idPb := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd43000")
+
+			mockClients.MockOrg.EXPECT().RemoveUserFromOrg(gomock.Any(), &cloudpb.RemoveUserFromOrgRequest{
+				UserID: idPb,
+			}).Return(&cloudpb.RemoveUserFromOrgResponse{Success: true}, nil)
+
+			gqlSchema := LoadSchema(gqlEnv)
+			gqltesting.RunTests(t, []*gqltesting.Test{
+				{
+					Schema:  gqlSchema,
+					Context: ctx,
+					Query: `
+						mutation {
+							RemoveUserFromOrg(userID: "6ba7b810-9dad-11d1-80b4-00c04fd43000")
+						}
+					`,
+					ExpectedResult: `
+						{
+							"RemoveUserFromOrg": true
+						}
+					`,
+				},
+			})
+		})
+	}
+}

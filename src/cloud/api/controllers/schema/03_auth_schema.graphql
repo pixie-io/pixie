@@ -43,6 +43,7 @@ extend type Mutation {
   UpdateOrgSettings(orgID: ID!, orgSettings: EditableOrgSettings!): OrgInfo!
   CreateInviteToken(orgID: ID!): String!
   RevokeAllInviteTokens(orgID: ID!): Boolean!
+  RemoveUserFromOrg(userID: ID!): Boolean!
 }
 
 type UserInfo {

@@ -274,3 +274,20 @@ func (q *QueryResolver) VerifyInviteToken(ctx context.Context, args *verifyInvit
 
 	return resp.Valid, nil
 }
+
+type removeUserFromOrg struct {
+	UserID graphql.ID
+}
+
+// RemoveUserFromOrg removes the given user from the current org.
+func (q *QueryResolver) RemoveUserFromOrg(ctx context.Context, args *removeUserFromOrg) (bool, error) {
+	grpcAPI := q.Env.OrgServer
+
+	resp, err := grpcAPI.RemoveUserFromOrg(ctx, &cloudpb.RemoveUserFromOrgRequest{UserID: utils.ProtoFromUUIDStrOrNil(string(args.UserID))})
+
+	if err != nil {
+		return false, rpcErrorHelper(err)
+	}
+
+	return resp.Success, nil
+}
