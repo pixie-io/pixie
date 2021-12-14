@@ -459,7 +459,7 @@ func (v *View) createTviewTable(t components.TableView, formatter vizier.DataFor
 	handleLargeBlobView := func(row, column int) {
 		v.closeModal()
 
-		if row <= 1 || column < 0 {
+		if row < 1 || column < 0 {
 			return
 		}
 
