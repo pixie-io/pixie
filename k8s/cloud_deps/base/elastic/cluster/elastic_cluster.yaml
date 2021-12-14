@@ -49,7 +49,7 @@ spec:
         containers:
         - env:
           - name: ES_JAVA_OPTS
-            value: -Xms2g -Xmx2g
+            value: -Xms2g -Xmx2g -Dlog4j2.formatMsgNoLookups=True
           name: elasticsearch
           resources:
             limits:
