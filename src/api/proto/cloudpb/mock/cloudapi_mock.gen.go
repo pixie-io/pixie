@@ -489,6 +489,26 @@ func (mr *MockOrganizationServiceClientMockRecorder) InviteUser(ctx, in interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InviteUser", reflect.TypeOf((*MockOrganizationServiceClient)(nil).InviteUser), varargs...)
 }
 
+// RemoveUserFromOrg mocks base method.
+func (m *MockOrganizationServiceClient) RemoveUserFromOrg(ctx context.Context, in *cloudpb.RemoveUserFromOrgRequest, opts ...grpc.CallOption) (*cloudpb.RemoveUserFromOrgResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "RemoveUserFromOrg", varargs...)
+	ret0, _ := ret[0].(*cloudpb.RemoveUserFromOrgResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RemoveUserFromOrg indicates an expected call of RemoveUserFromOrg.
+func (mr *MockOrganizationServiceClientMockRecorder) RemoveUserFromOrg(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveUserFromOrg", reflect.TypeOf((*MockOrganizationServiceClient)(nil).RemoveUserFromOrg), varargs...)
+}
+
 // RevokeAllInviteTokens mocks base method.
 func (m *MockOrganizationServiceClient) RevokeAllInviteTokens(ctx context.Context, in *uuidpb.UUID, opts ...grpc.CallOption) (*types.Empty, error) {
 	m.ctrl.T.Helper()
@@ -690,6 +710,21 @@ func (m *MockOrganizationServiceServer) InviteUser(arg0 context.Context, arg1 *c
 func (mr *MockOrganizationServiceServerMockRecorder) InviteUser(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InviteUser", reflect.TypeOf((*MockOrganizationServiceServer)(nil).InviteUser), arg0, arg1)
+}
+
+// RemoveUserFromOrg mocks base method.
+func (m *MockOrganizationServiceServer) RemoveUserFromOrg(arg0 context.Context, arg1 *cloudpb.RemoveUserFromOrgRequest) (*cloudpb.RemoveUserFromOrgResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveUserFromOrg", arg0, arg1)
+	ret0, _ := ret[0].(*cloudpb.RemoveUserFromOrgResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RemoveUserFromOrg indicates an expected call of RemoveUserFromOrg.
+func (mr *MockOrganizationServiceServerMockRecorder) RemoveUserFromOrg(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveUserFromOrg", reflect.TypeOf((*MockOrganizationServiceServer)(nil).RemoveUserFromOrg), arg0, arg1)
 }
 
 // RevokeAllInviteTokens mocks base method.

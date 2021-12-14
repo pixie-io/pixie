@@ -982,6 +982,18 @@ func TestServer_UpdateUser(t *testing.T) {
 			userOrg:    "00000000-0000-0000-0000-000000000000",
 			updatedOrg: "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
 		},
+		{
+			name:       "user should be able to update org to leave org",
+			userID:     "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			userOrg:    "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			updatedOrg: "00000000-0000-0000-0000-000000000000",
+		},
+		{
+			name:       "user should be able to change orgs (unused but allowed)",
+			userID:     "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			userOrg:    "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			updatedOrg: "6ba7b810-9dad-11d1-80b4-00c04fd430c9",
+		},
 	}
 
 	for _, tc := range updateUserTest {
@@ -1029,6 +1041,9 @@ func TestServer_UpdateUser(t *testing.T) {
 				req.OrgID = utils.ProtoFromUUIDStrOrNil(tc.updatedOrg)
 				newOrgID := uuid.FromStringOrNil(tc.updatedOrg)
 				mockUpdateReq.OrgID = &newOrgID
+				if newOrgID == uuid.Nil {
+					mockUpdateReq.OrgID = nil
+				}
 			}
 
 			uds.EXPECT().
@@ -1049,43 +1064,6 @@ func TestServer_UpdateUser(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestServer_UpdateUser_FailsIfAlreadySet(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	userID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9")
-	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
-
-	uds := mock_controllers.NewMockUserDatastore(ctrl)
-	ods := mock_controllers.NewMockOrgDatastore(ctrl)
-	usds := mock_controllers.NewMockUserSettingsDatastore(ctrl)
-	osds := mock_controllers.NewMockOrgSettingsDatastore(ctrl)
-
-	uds.EXPECT().
-		GetUser(userID).
-		Return(&datastore.UserInfo{
-			ID:         userID,
-			FirstName:  "first",
-			LastName:   "last",
-			IsApproved: true,
-			OrgID:      &orgID,
-		}, nil)
-
-	newOrgID, err := uuid.NewV4()
-	require.NoError(t, err)
-	s := controllers.NewServer(nil, uds, usds, ods, osds)
-
-	_, err = s.UpdateUser(
-		CreateTestContext(),
-		&profilepb.UpdateUserRequest{
-			ID:    utils.ProtoFromUUID(userID),
-			OrgID: utils.ProtoFromUUID(newOrgID),
-		})
-
-	assert.NotNil(t, err)
-	assert.Equal(t, status.Code(err), codes.InvalidArgument)
 }
 
 func TestServer_UpdateOrg_EnableApprovals(t *testing.T) {

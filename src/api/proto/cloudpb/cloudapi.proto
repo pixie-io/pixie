@@ -60,7 +60,10 @@ service OrganizationService {
   rpc GetOrg(px.uuidpb.UUID) returns (OrgInfo);
   rpc CreateOrg(CreateOrgRequest) returns (px.uuidpb.UUID);
   rpc UpdateOrg(UpdateOrgRequest) returns (OrgInfo);
+
   rpc GetUsersInOrg(GetUsersInOrgRequest) returns (GetUsersInOrgResponse);
+  rpc RemoveUserFromOrg(RemoveUserFromOrgRequest) returns (RemoveUserFromOrgResponse);
+
   rpc AddOrgIDEConfig(AddOrgIDEConfigRequest) returns (AddOrgIDEConfigResponse);
   rpc DeleteOrgIDEConfig(DeleteOrgIDEConfigRequest) returns (DeleteOrgIDEConfigResponse);
   rpc GetOrgIDEConfigs(GetOrgIDEConfigsRequest) returns (GetOrgIDEConfigsResponse);
@@ -815,6 +818,14 @@ message GetUsersInOrgRequest {
 message GetUsersInOrgResponse {
   // The users in the requested org.
   repeated UserInfo users = 1;
+}
+
+message RemoveUserFromOrgRequest {
+  px.uuidpb.UUID user_id = 1 [(gogoproto.customname) = "UserID"];
+}
+
+message RemoveUserFromOrgResponse {
+  bool success = 1;
 }
 
 message CreateInviteTokenRequest {

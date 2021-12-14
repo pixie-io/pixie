@@ -398,12 +398,13 @@ func (s *Server) UpdateUser(ctx context.Context, req *profilepb.UpdateUserReques
 		return nil, toExternalError(err)
 	}
 
-	newOrgID := utils.UUIDFromProtoOrNil(req.OrgID)
-	if newOrgID != uuid.Nil {
-		if userInfo.OrgID != nil && *userInfo.OrgID != uuid.Nil {
-			return nil, status.Error(codes.InvalidArgument, "cannot update org for a user that already belongs to an org")
+	if req.OrgID != nil {
+		newOrgID := utils.UUIDFromProtoOrNil(req.OrgID)
+		if newOrgID == uuid.Nil {
+			userInfo.OrgID = nil
+		} else {
+			userInfo.OrgID = &newOrgID
 		}
-		userInfo.OrgID = &newOrgID
 	}
 
 	if req.DisplayPicture != nil {

@@ -216,6 +216,37 @@ func (o *OrganizationServiceServer) GetUsersInOrg(ctx context.Context, req *clou
 	}, nil
 }
 
+// RemoveUserFromOrg will remove the given user from this org.
+func (o *OrganizationServiceServer) RemoveUserFromOrg(ctx context.Context, req *cloudpb.RemoveUserFromOrgRequest) (*cloudpb.RemoveUserFromOrgResponse, error) {
+	ctx, err := contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	userInfo, err := o.ProfileServiceClient.GetUser(ctx, req.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	if uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID) != utils.UUIDFromProtoOrNil(userInfo.OrgID) {
+		return nil, status.Errorf(codes.PermissionDenied, "User may only remove users from their own org")
+	}
+
+	_, err = o.ProfileServiceClient.UpdateUser(ctx, &profilepb.UpdateUserRequest{
+		ID:    req.UserID,
+		OrgID: &uuidpb.UUID{},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &cloudpb.RemoveUserFromOrgResponse{Success: true}, nil
+}
+
 // AddOrgIDEConfig adds the IDE config for the given org.
 func (o *OrganizationServiceServer) AddOrgIDEConfig(ctx context.Context, req *cloudpb.AddOrgIDEConfigRequest) (*cloudpb.AddOrgIDEConfigResponse, error) {
 	ctx, err := contextWithAuthToken(ctx)

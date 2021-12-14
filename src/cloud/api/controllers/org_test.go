@@ -157,6 +157,67 @@ func TestOrganizationServiceServer_CreateOrg_BadOrgName(t *testing.T) {
 	assert.Equal(t, status.Code(err), codes.InvalidArgument)
 }
 
+func TestOrganizationServiceServer_RemoveUserFromOrg(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	os := &controllers.OrganizationServiceServer{mockClients.MockProfile, mockClients.MockAuth, mockClients.MockOrg}
+
+	userID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd43000")
+	orgID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	mockClients.MockProfile.EXPECT().GetUser(gomock.Any(), userID).Return(&profilepb.UserInfo{
+		ID:    userID,
+		OrgID: orgID,
+	}, nil)
+
+	mockClients.MockProfile.EXPECT().UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
+		ID:    userID,
+		OrgID: &uuidpb.UUID{},
+	}).Return(&profilepb.UserInfo{
+		ID:    userID,
+		OrgID: nil,
+	}, nil)
+
+	resp, err := os.RemoveUserFromOrg(ctx, &cloudpb.RemoveUserFromOrgRequest{
+		UserID: userID,
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, &cloudpb.RemoveUserFromOrgResponse{Success: true}, resp)
+}
+
+func TestOrganizationServiceServer_RemoveUserFromOrg_UserNotInOrg(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	os := &controllers.OrganizationServiceServer{mockClients.MockProfile, mockClients.MockAuth, mockClients.MockOrg}
+
+	userID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd43010")
+	orgID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430d0")
+
+	mockClients.MockProfile.EXPECT().GetUser(gomock.Any(), userID).Return(&profilepb.UserInfo{
+		ID:    userID,
+		OrgID: orgID,
+	}, nil)
+
+	_, err := os.RemoveUserFromOrg(ctx, &cloudpb.RemoveUserFromOrgRequest{
+		UserID: userID,
+	})
+
+	require.Error(t, err)
+	assert.Equal(t, codes.PermissionDenied, status.Code(err))
+	assert.Equal(t, "User may only remove users from their own org", status.Convert(err).Message())
+}
+
 func TestOrganizationServiceServer_AddOrgIDEConfig(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
