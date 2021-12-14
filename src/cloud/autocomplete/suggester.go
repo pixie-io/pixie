@@ -49,6 +49,7 @@ var protoToElasticLabelMap = map[cloudpb.AutocompleteEntityKind]md.EsMDType{
 	cloudpb.AEK_POD:       md.EsMDTypePod,
 	cloudpb.AEK_SCRIPT:    md.EsMDTypeScript,
 	cloudpb.AEK_NAMESPACE: md.EsMDTypeNamespace,
+	cloudpb.AEK_NODE:      md.EsMDTypeNode,
 }
 
 var elasticLabelToProtoMap = map[md.EsMDType]cloudpb.AutocompleteEntityKind{
@@ -56,6 +57,7 @@ var elasticLabelToProtoMap = map[md.EsMDType]cloudpb.AutocompleteEntityKind{
 	md.EsMDTypePod:       cloudpb.AEK_POD,
 	md.EsMDTypeScript:    cloudpb.AEK_SCRIPT,
 	md.EsMDTypeNamespace: cloudpb.AEK_NAMESPACE,
+	md.EsMDTypeNode:      cloudpb.AEK_NODE,
 }
 
 var elasticStateToProtoMap = map[md.ESMDEntityState]cloudpb.AutocompleteEntityState{

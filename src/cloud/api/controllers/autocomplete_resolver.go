@@ -37,6 +37,7 @@ var protoToKindMap = map[cloudpb.AutocompleteEntityKind]string{
 	cloudpb.AEK_SVC:       "AEK_SVC",
 	cloudpb.AEK_SCRIPT:    "AEK_SCRIPT",
 	cloudpb.AEK_NAMESPACE: "AEK_NAMESPACE",
+	cloudpb.AEK_NODE:      "AEK_NODE",
 }
 
 var kindToProtoMap = map[string]cloudpb.AutocompleteEntityKind{
@@ -45,6 +46,7 @@ var kindToProtoMap = map[string]cloudpb.AutocompleteEntityKind{
 	"AEK_SVC":       cloudpb.AEK_SVC,
 	"AEK_SCRIPT":    cloudpb.AEK_SCRIPT,
 	"AEK_NAMESPACE": cloudpb.AEK_NAMESPACE,
+	"AEK_NODE":      cloudpb.AEK_NODE,
 }
 
 var protoToStateMap = map[cloudpb.AutocompleteEntityState]string{

@@ -19,7 +19,7 @@
 import { StatusGroup } from 'app/components';
 import { GQLAutocompleteEntityKind } from 'app/types/schema';
 
-export type EntityType = 'AEK_UNKNOWN' | 'AEK_POD' | 'AEK_SVC' | 'AEK_SCRIPT' | 'AEK_NAMESPACE';
+export type EntityType = 'AEK_UNKNOWN' | 'AEK_POD' | 'AEK_SVC' | 'AEK_SCRIPT' | 'AEK_NAMESPACE' | 'AEK_NODE';
 
 // Converts a vixpb.PXType to an entityType that is accepted by autocomplete.
 export function pxTypeToEntityType(pxType: string): GQLAutocompleteEntityKind {
@@ -30,6 +30,8 @@ export function pxTypeToEntityType(pxType: string): GQLAutocompleteEntityKind {
       return GQLAutocompleteEntityKind.AEK_POD;
     case 'PX_NAMESPACE':
       return GQLAutocompleteEntityKind.AEK_NAMESPACE;
+    case 'PX_NODE':
+      return GQLAutocompleteEntityKind.AEK_NODE;
     default:
       return GQLAutocompleteEntityKind.AEK_UNKNOWN;
   }
@@ -45,6 +47,8 @@ export function entityTypeToString(entityType: GQLAutocompleteEntityKind): strin
       return 'pod';
     case GQLAutocompleteEntityKind.AEK_NAMESPACE:
       return 'ns';
+    case GQLAutocompleteEntityKind.AEK_NODE:
+      return 'node';
     default:
       return '';
   }
