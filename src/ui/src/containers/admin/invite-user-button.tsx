@@ -18,6 +18,7 @@
 
 import * as React from 'react';
 
+import { gql, useMutation, useLazyQuery } from '@apollo/client';
 import { Add } from '@mui/icons-material';
 import {
   Button,
@@ -31,6 +32,7 @@ import { createStyles, makeStyles } from '@mui/styles';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { useSnackbar } from 'app/components';
+import { GQLOrgInfo } from 'app/types/schema';
 import { getRedirectPath } from 'app/utils/redirect-utils';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
@@ -66,14 +68,46 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 }), { name: 'InviteUserButton' });
 
 export const InviteUserButton = React.memo<{ className: string }>(({ className }) => {
-  // TODO: Pull this from somewhere real.
-  const inviteId = 'abc123';
-
-  const invitationLink = React.useMemo(() => getRedirectPath('/signup', { invite: inviteId }), [inviteId]);
   const classes = useStyles();
-
   const [open, setOpen] = React.useState(false);
-  const openModal = React.useCallback(() => setOpen(true), []);
+  const [getOrg, { data: orgData, loading: orgLoading }] = useLazyQuery<{
+    org: Pick<GQLOrgInfo, 'id'>
+  }>(gql`
+      query getOrgInfoOnInviteButton {
+        org {
+          id
+        }
+      }
+    `);
+
+  const [createInviteToken, { data: inviteTokenData }] = useMutation<{ CreateInviteToken: string }, { id: string }>(
+    gql`
+    mutation CreateInviteToken($id: ID!) {
+      CreateInviteToken(orgID: $id)
+    }
+  `);
+
+  const openModal = React.useCallback(() => {
+    getOrg();
+    setOpen(true);
+  }, [getOrg]);
+
+  // We want to get the invite token only after orgData is valid
+  // and loaded. This should happen when the modal opens up.
+  React.useEffect(() => {
+    if (orgLoading || !orgData) {
+      return;
+    }
+    createInviteToken({ variables: { id: orgData?.org?.id } });
+  }, [createInviteToken, orgData, orgLoading]);
+
+  const invitationLink = React.useMemo(() => {
+    if (!inviteTokenData) {
+      return null;
+    }
+    return getRedirectPath('/signup', { invite_token: inviteTokenData?.CreateInviteToken });
+  }, [inviteTokenData]);
+
   const closeModal = React.useCallback(() => setOpen(false), []);
 
   const showSnackbar = useSnackbar();
@@ -125,6 +159,7 @@ export const InviteUserButton = React.memo<{ className: string }>(({ className }
               variant='contained'
               size='medium'
               onClick={copyLink}
+              disabled={!invitationLink}
             >
               Copy Link
             </Button>
