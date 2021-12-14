@@ -161,14 +161,27 @@ func (d *dataFormatterImpl) getStringForVal(dt vizierpb.DataType, st vizierpb.Se
 		return d.formatKV(vizierpb.FLOAT64, vizierpb.ST_NONE, val)
 	}
 
-	if dt == vizierpb.FLOAT64 {
+	switch dt {
+	case vizierpb.BOOLEAN:
+		return d.formatBoolean(val)
+	case vizierpb.FLOAT64:
 		if floatVal, ok := val.(float64); ok {
 			return strconv.FormatFloat(floatVal, 'g', 6, 64)
 		}
 	}
-
 	// We may want to add logic by data type as well, if no relevant semantic types match.
 	return toString(val)
+}
+
+func (d *dataFormatterImpl) formatBoolean(val interface{}) string {
+	boolVal, ok := val.(bool)
+	if !ok {
+		return toString(val)
+	}
+	if boolVal {
+		return d.greenSprintf(toString(boolVal))
+	}
+	return d.redSprintf(toString(boolVal))
 }
 
 func withSign(neg bool, val string) string {
