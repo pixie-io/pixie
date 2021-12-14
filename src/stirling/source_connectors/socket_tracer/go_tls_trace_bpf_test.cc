@@ -54,8 +54,8 @@ class GoTLSTraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing 
     PL_CHECK_OK(server_.Run(std::chrono::seconds{60}, {}));
   }
 
-  ::px::stirling::testing::GoTLSServerContainer server_;
-  ::px::stirling::testing::GoTLSClientContainer client_;
+  ::px::stirling::testing::Go1_16_TLSServerContainer server_;
+  ::px::stirling::testing::Go1_16_TLSClientContainer client_;
 };
 
 //-----------------------------------------------------------------------------

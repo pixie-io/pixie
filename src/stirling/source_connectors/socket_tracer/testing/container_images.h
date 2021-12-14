@@ -153,9 +153,9 @@ class NodeClientContainer : public ContainerRunner {
   static constexpr std::string_view kReadyMessage = "";
 };
 
-class GoTLSServerContainer : public ContainerRunner {
+class Go1_16_TLSServerContainer : public ContainerRunner {
  public:
-  GoTLSServerContainer()
+  Go1_16_TLSServerContainer()
       : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
@@ -166,15 +166,41 @@ class GoTLSServerContainer : public ContainerRunner {
   static constexpr std::string_view kReadyMessage = "Starting HTTPS service";
 };
 
-class GoTLSClientContainer : public ContainerRunner {
+class Go1_16_TLSClientContainer : public ContainerRunner {
  public:
-  GoTLSClientContainer()
+  Go1_16_TLSClientContainer()
       : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
   static constexpr std::string_view kBazelImageTar =
       "src/stirling/testing/demo_apps/go_https/client/golang_1_16_https_client.tar";
+  static constexpr std::string_view kContainerNamePrefix = "https_client";
+  static constexpr std::string_view kReadyMessage = R"({"status":"ok"})";
+};
+
+class Go1_17_TLSServerContainer : public ContainerRunner {
+ public:
+  Go1_17_TLSServerContainer()
+      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+                        kReadyMessage) {}
+
+ private:
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/testing/demo_apps/go_https/server/golang_1_17_https_server.tar";
+  static constexpr std::string_view kContainerNamePrefix = "https_server";
+  static constexpr std::string_view kReadyMessage = "Starting HTTPS service";
+};
+
+class Go1_17_TLSClientContainer : public ContainerRunner {
+ public:
+  Go1_17_TLSClientContainer()
+      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+                        kReadyMessage) {}
+
+ private:
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/testing/demo_apps/go_https/client/golang_1_17_https_client.tar";
   static constexpr std::string_view kContainerNamePrefix = "https_client";
   static constexpr std::string_view kReadyMessage = R"({"status":"ok"})";
 };
