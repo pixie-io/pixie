@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library")
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -23,4 +23,13 @@ pl_cc_library(
     srcs = ["demangle.cc"],
     hdrs = ["demangle.h"],
     deps = [],
+)
+
+pl_cc_test(
+    name = "demangle_test",
+    srcs = ["demangle_test.cc"],
+    deps = [
+        "//src/stirling/source_connectors/perf_profiler/java:cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
 )
