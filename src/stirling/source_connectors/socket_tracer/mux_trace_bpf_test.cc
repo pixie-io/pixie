@@ -114,7 +114,7 @@ std::vector<mux::Record> ToRecordVector(const types::ColumnWrapperRecordBatch& r
   return result;
 }
 
-mux::Record GetRecordWithTagAndType(uint24_t tag, mux::Type req_type, mux::Type resp_type) {
+mux::Record RecordWithTagAndType(uint24_t tag, mux::Type req_type, mux::Type resp_type) {
   mux::Record r = {};
   r.req.tag = tag;
   r.req.type = static_cast<int8_t>(req_type);
@@ -160,11 +160,11 @@ TEST_F(MuxTraceTest, Capture) {
 
   std::vector<mux::Record> server_records = GetTargetRecords(record_batch, server_.process_pid());
 
-  mux::Record tinitCheck = GetRecordWithTagAndType(1, mux::Type::kRerrOld, mux::Type::kRerrOld);
-  mux::Record tinit = GetRecordWithTagAndType(1, mux::Type::kTinit, mux::Type::kRinit);
-  mux::Record pingRecord = GetRecordWithTagAndType(1, mux::Type::kTping, mux::Type::kRping);
+  mux::Record tinitCheck = RecordWithTagAndType(1, mux::Type::kRerrOld, mux::Type::kRerrOld);
+  mux::Record tinit = RecordWithTagAndType(1, mux::Type::kTinit, mux::Type::kRinit);
+  mux::Record pingRecord = RecordWithTagAndType(1, mux::Type::kTping, mux::Type::kRping);
   mux::Record dispatchRecord =
-      GetRecordWithTagAndType(2, mux::Type::kTdispatch, mux::Type::kRdispatch);
+      RecordWithTagAndType(2, mux::Type::kTdispatch, mux::Type::kRdispatch);
 
   EXPECT_THAT(server_records, Contains(EqMuxRecord(tinitCheck)));
   EXPECT_THAT(server_records, Contains(EqMuxRecord(tinit)));
