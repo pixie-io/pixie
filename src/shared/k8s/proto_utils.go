@@ -148,6 +148,20 @@ var nodeAddressTypeToPbMap = map[v1.NodeAddressType]metadatapb.NodeAddressType{
 	v1.NodeInternalDNS: metadatapb.NODE_ADDR_TYPE_INTERNAL_DNS,
 }
 
+var conditionStatusToPbMap = map[v1.ConditionStatus]metadatapb.ConditionStatus{
+	v1.ConditionTrue:    metadatapb.NODE_CONDITION_STATUS_TRUE,
+	v1.ConditionFalse:   metadatapb.NODE_CONDITION_STATUS_FALSE,
+	v1.ConditionUnknown: metadatapb.NODE_CONDITION_STATUS_UNKNOWN,
+}
+
+var conditionTypeToPbMap = map[v1.NodeConditionType]metadatapb.NodeConditionType{
+	v1.NodeReady:              metadatapb.NODE_CONDITION_READY,
+	v1.NodeMemoryPressure:     metadatapb.NODE_CONDITION_MEMORY_PRESSURE,
+	v1.NodeDiskPressure:       metadatapb.NODE_CONDITION_DISK_PRESSURE,
+	v1.NodePIDPressure:        metadatapb.NODE_CONDITION_PID_PRESSURE,
+	v1.NodeNetworkUnavailable: metadatapb.NODE_CONDITION_NETWORK_UNAVAILABLE,
+}
+
 // OwnerReferenceToProto converts an OwnerReference into a proto.
 func OwnerReferenceToProto(o *metav1.OwnerReference) *metadatapb.OwnerReference {
 	return &metadatapb.OwnerReference{
@@ -598,9 +612,18 @@ func NodeStatusToProto(n *v1.NodeStatus) *metadatapb.NodeStatus {
 		}
 	}
 
+	conds := make([]*metadatapb.NodeCondition, len(n.Conditions))
+	for i, c := range n.Conditions {
+		conds[i] = &metadatapb.NodeCondition{
+			Type:   conditionTypeToPbMap[c.Type],
+			Status: conditionStatusToPbMap[c.Status],
+		}
+	}
+
 	return &metadatapb.NodeStatus{
-		Phase:     nodePhaseToPbMap[n.Phase],
-		Addresses: addrs,
+		Phase:      nodePhaseToPbMap[n.Phase],
+		Addresses:  addrs,
+		Conditions: conds,
 	}
 }
 

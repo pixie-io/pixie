@@ -532,10 +532,35 @@ enum NodeAddressType {
   NODE_ADDR_TYPE_INTERNAL_DNS = 5;
 }
 
+// ConditionStatus describes the possible status for a condition.
+enum ConditionStatus {
+  NODE_CONDITION_STATUS_UNKNOWN = 0;
+  NODE_CONDITION_STATUS_TRUE = 1;
+  NODE_CONDITION_STATUS_FALSE = 2;
+}
+
+// NodeConditionType describes the types of conditions a node can be in.
+enum NodeConditionType {
+  NODE_CONDITION_UNKNOWN = 0;
+  NODE_CONDITION_READY = 1;
+  NODE_CONDITION_MEMORY_PRESSURE = 2;
+  NODE_CONDITION_DISK_PRESSURE = 3;
+  NODE_CONDITION_PID_PRESSURE = 4;
+  NODE_CONDITION_NETWORK_UNAVAILABLE = 5;
+}
+
 // NodeAddress contains information for the node's address.
 message NodeAddress {
   NodeAddressType type = 1;
   string address = 2;
+}
+
+// NodeCondition is the condition that a node can be in.
+message NodeCondition {
+  // NodeConditionType is the type of the node condition.
+  NodeConditionType type = 1;
+  // ConditionStatus is the status of the condition.
+  ConditionStatus status = 2;
 }
 
 // NodeStatus is information about the current status of a node.
@@ -543,6 +568,8 @@ message NodeStatus {
   NodePhase phase = 1;
   // List of addresses reachable to the node.
   repeated NodeAddress addresses = 2;
+  // Conditions is an array of current observed node conditions.
+  repeated NodeCondition conditions = 3;
 }
 
 // NodeUpdate is the update that is sent to the agents when there are any node changes.
@@ -564,6 +591,8 @@ message NodeUpdate {
   // field is specified, the 0th entry must match the podCIDR field. It may contain at most 1 value for
   // each of IPv4 and IPv6.
   repeated string pod_cidrs = 7 [(gogoproto.customname) = "PodCIDRs"];
+  // Conditions is an array of current observed node conditions.
+  repeated NodeCondition conditions = 8;
 }
 
 // Resource update is the message we send to the agent/compute nodes

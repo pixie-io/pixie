@@ -975,6 +975,7 @@ func getResourceUpdateFromNode(node *metadatapb.Node, uv int64) *metadatapb.Reso
 				StartTimestampNS: node.Metadata.CreationTimestampNS,
 				StopTimestampNS:  node.Metadata.DeletionTimestampNS,
 				Phase:            node.Status.Phase,
+				Conditions:       node.Status.Conditions,
 				PodCIDR:          node.Spec.PodCIDR,
 				PodCIDRs:         node.Spec.PodCIDRs,
 			},

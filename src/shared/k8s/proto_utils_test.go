@@ -433,6 +433,14 @@ status {
 		type: 2
 	}
 	phase: 2
+	conditions: {
+		status: 1
+		type: 2
+	}
+	conditions: {
+		status: 2
+		type: 1
+	}
 }
 spec {
 	pod_cidr: "10.60.4.0/24"
@@ -1404,6 +1412,16 @@ func TestNodeToProto(t *testing.T) {
 	status := v1.NodeStatus{
 		Phase:     v1.NodeRunning,
 		Addresses: addresses,
+		Conditions: []v1.NodeCondition{
+			{
+				Type:   v1.NodeMemoryPressure,
+				Status: v1.ConditionTrue,
+			},
+			{
+				Type:   v1.NodeReady,
+				Status: v1.ConditionFalse,
+			},
+		},
 	}
 
 	spec := v1.NodeSpec{

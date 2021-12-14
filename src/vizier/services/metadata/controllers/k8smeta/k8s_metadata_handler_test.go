@@ -1107,11 +1107,21 @@ func TestNodeUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 							PodCIDR: "pod_cidr",
 						},
 						Status: &metadatapb.NodeStatus{
-							Phase: metadatapb.NODE_PHASE_RUNNING,
 							Addresses: []*metadatapb.NodeAddress{
 								{
 									Type:    metadatapb.NODE_ADDR_TYPE_INTERNAL_IP,
 									Address: "127.0.0.1",
+								},
+							},
+							Phase: metadatapb.NODE_PHASE_RUNNING,
+							Conditions: []*metadatapb.NodeCondition{
+								{
+									Type:   metadatapb.NODE_CONDITION_MEMORY_PRESSURE,
+									Status: metadatapb.NODE_CONDITION_STATUS_FALSE,
+								},
+								{
+									Type:   metadatapb.NODE_CONDITION_READY,
+									Status: metadatapb.NODE_CONDITION_STATUS_TRUE,
 								},
 							},
 						},
@@ -1141,6 +1151,16 @@ func TestNodeUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 					StopTimestampNS:  6,
 					Phase:            metadatapb.NODE_PHASE_RUNNING,
 					PodCIDR:          "pod_cidr",
+					Conditions: []*metadatapb.NodeCondition{
+						{
+							Type:   metadatapb.NODE_CONDITION_MEMORY_PRESSURE,
+							Status: metadatapb.NODE_CONDITION_STATUS_FALSE,
+						},
+						{
+							Type:   metadatapb.NODE_CONDITION_READY,
+							Status: metadatapb.NODE_CONDITION_STATUS_TRUE,
+						},
+					},
 				},
 			},
 		},
