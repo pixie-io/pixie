@@ -2,7 +2,10 @@
 # PXL Scripts Overview
 
 Pixie open sources all of its scripts, which serve as examples of scripting in the PxL language.
-To learn more about PxL, take a look at our [documentation](https://docs.px.dev/reference/pxl).
+To learn more about PxL, take a look at the [reference documentation](https://docs.px.dev/reference/pxl) or [tutorials](https://docs.px.dev/tutorials/pxl-scripts/write-pxl-scripts/).
+
+To update this README, run `make update_readme` in this directory.
+
 - bpftrace/[capable](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/bpftrace/capable): Traces calls to the kernel cap_capable() function, which does security capability checks.
 - bpftrace/[dc_snoop](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/bpftrace/dc_snoop): Traces directory entry cache (dcache) lookups.
 - bpftrace/[md_flush](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/bpftrace/md_flush): Traces flushes at the md driver level, and prints details.
@@ -15,7 +18,6 @@ To learn more about PxL, take a look at our [documentation](https://docs.px.dev/
 - px/[cluster](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/cluster): This view lists the namespaces and the node that are available on the current cluster.
 - px/[cql_data](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/cql_data): Shows a sample of CQL (Cassandra) requests in the cluster.
 - px/[cql_stats](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/cql_stats): This live view calculates the latency, error rate, and throughput of a pod's CQL (Cassandra) requests.
-- px/[demo_script](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/demo_script): Shows a sample of HTTP requests in the cluster with a very terse display format.
 - px/[dns_data](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/dns_data): Show a sample of DNS traffic in the cluster.
 - px/[dns_flow_graph](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/dns_flow_graph): Overview of DNS requests in the cluster, with latency stats.
 - px/[dns_query_summary](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/dns_query_summary): Overview of DNS queries from pods in a namespace, grouped by the name being resolved and the rates of success.
@@ -24,10 +26,13 @@ To learn more about PxL, take a look at our [documentation](https://docs.px.dev/
 - px/[http_data_filtered](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/http_data_filtered): Show a sample of HTTP requests in the Cluster filtered by service, pod, request path & response status code.
 - px/[http_post_requests](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/http_post_requests): Show a sample of HTTP requests in the Cluster that have method POST.
 - px/[http_request_stats](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/http_request_stats): HTTP request statistics aggregated by Service
+- px/[inbound_conns](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/inbound_conns): Shows a list of connections originating from endpoints outside the k8s cluster.
+- px/[ip](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/ip): This view displays a summary of the traffic from the cluster to the input IP address.
 - px/[jvm_data](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/jvm_data): JVM stats for Java processes running on the cluster
 - px/[jvm_stats](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/jvm_stats): Returns the JVM Stats per Pod. You can filter this by node.
 - px/[kafka_data](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/kafka_data): Shows a sample of Kafka messages in the cluster.
 - px/[kafka_flow_graph](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/kafka_flow_graph): Graph of Kafka messages in the cluster, with latency stats.
+- px/[kafka_overview](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/kafka_overview): Overview of the Kafka cluster.
 - px/[kafka_producer_consumer_latency](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/kafka_producer_consumer_latency): Shows the producer-consumer latency for a given topic. Values above 0 indicate that the consumer is falling behind the producer.
 - px/[kafka_stats](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/kafka_stats): This live view calculates the latency, error rate, and throughput of a pod's Kafka requests.
 - px/[largest_http_request](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/largest_http_request): Calculates the largest HTTP Request according to the passed in filter value.
@@ -60,12 +65,14 @@ To learn more about PxL, take a look at our [documentation](https://docs.px.dev/
 - px/[schemas](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/schemas): Get all the table schemas available in the system
 - px/[service](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/service): This script gets an overview of an individual service, summarizing its request statistics.
 - px/[service_edge_stats](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/service_edge_stats): Gets service latency, error rate and throughput according to another service. Edit the requestor filter to the name of the incoming service you want to filter by. Visualize these in three separate time series charts.
-- px/[service_memory_usage](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/service_memory_usage): Get the Virtual memory usage and average memory for all services in the k8s cluster.
+- px/[service_resource_usage](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/service_resource_usage): Get the average pod CPU, pod memory, HTTP throughput and latency by service.
 - px/[service_stats](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/service_stats): Gets service latency, error rate and throughput. Visualize them in three separate time series charts.
 - px/[services](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/services): This script gets an overview of the services in a namespace, summarizing their request statistics.
 - px/[slow_http_requests](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/slow_http_requests): This view shows a sample of slow requests by service.
 - px/[sql_queries](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/sql_queries): This live view calculates the latency, error rate, and throughput of each distinct normalized SQL Query. Only supports Postgres or MySQL.
 - px/[sql_query](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/sql_query): This live view calculates the latency, error rate, and throughput of each distinct parameter set for a given normalized SQL query. Only supports PostgresSQL or MySQL.
+- px/[tcp_drops](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/tcp_drops): Shows TCP drop counts in the cluster.
+- px/[tcp_retransmits](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/tcp_retransmits): Shows TCP retransmission counts in the cluster.
 - px/[tracepoint_status](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/tracepoint_status): Returns information about tracepoints running on the cluster.
 - px/[upids](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/upids): Shows a list of UPIDs running in a given namespace.
 - pxbeta/[service_endpoint](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/pxbeta/service_endpoint): This script gets an overview of an individual endpoint for an individual service, summarizing its request statistics.
