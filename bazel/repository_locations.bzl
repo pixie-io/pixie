@@ -121,9 +121,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/r-lyeh-archived/sole/archive/1.0.2.tar.gz"],
     ),
     com_google_absl = dict(
-        sha256 = "af4bcd1a5a2710216931cb6ee1b6b6e814490082d56b3230beede8a954f7995d",
-        strip_prefix = "abseil-cpp-fb7dd24b18e82893e5922be5d1c8ae0f3fe3c9fa",
-        urls = ["https://github.com/abseil/abseil-cpp/archive/fb7dd24b18e82893e5922be5d1c8ae0f3fe3c9fa.tar.gz"],
+        sha256 = "ebe2ad1480d27383e4bf4211e2ca2ef312d5e6a09eba869fd2e8a5c5d553ded2",
+        strip_prefix = "abseil-cpp-20200923.3",
+        urls = ["https://github.com/abseil/abseil-cpp/archive/20200923.3.tar.gz"],
     ),
     com_google_flatbuffers = dict(
         sha256 = "b2bb0311ca40b12ebe36671bdda350b10c7728caf0cfe2d432ea3b6e409016f3",
