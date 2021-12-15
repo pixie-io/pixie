@@ -431,8 +431,8 @@ TEST(ProtocolInferenceTest, Mux) {
   };
   // clang-format on
 
-  auto protocol_message =
-      infer_protocol(reinterpret_cast<const char*>(kRerrReqFrame), sizeof(kRerrReqFrame), &conn_info);
+  auto protocol_message = infer_protocol(reinterpret_cast<const char*>(kRerrReqFrame),
+                                         sizeof(kRerrReqFrame), &conn_info);
   EXPECT_EQ(protocol_message.protocol, kProtocolMux);
   EXPECT_EQ(protocol_message.type, kRequest);
 
@@ -441,8 +441,8 @@ TEST(ProtocolInferenceTest, Mux) {
   EXPECT_EQ(protocol_message.protocol, kProtocolMux);
   EXPECT_EQ(protocol_message.type, kResponse);
 
-  protocol_message =
-      infer_protocol(reinterpret_cast<const char*>(kTinitReqFrame), sizeof(kTinitReqFrame), &conn_info);
+  protocol_message = infer_protocol(reinterpret_cast<const char*>(kTinitReqFrame),
+                                    sizeof(kTinitReqFrame), &conn_info);
   EXPECT_EQ(protocol_message.protocol, kProtocolMux);
   EXPECT_EQ(protocol_message.type, kRequest);
 

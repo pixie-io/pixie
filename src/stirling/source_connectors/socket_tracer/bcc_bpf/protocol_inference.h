@@ -536,28 +536,18 @@ static __inline enum message_type_t infer_mux_message(const char* buf, size_t co
   }
 
   if (mux_type == kRerr || mux_type == kRerrOld) {
-    if (
-      buf[length-5] != 'c' ||
-      buf[length-4] != 'h' ||
-      buf[length-3] != 'e' ||
-      buf[length-2] != 'c' ||
-      buf[length-1] != 'k'
-    ) return kUnknown;
+    if (buf[length - 5] != 'c' || buf[length - 4] != 'h' || buf[length - 3] != 'e' ||
+        buf[length - 2] != 'c' || buf[length - 1] != 'k')
+      return kUnknown;
   }
 
   if (mux_type == kRinit || mux_type == kTinit) {
-    if (
-      buf[mux_framer_pos]     != 'm' ||
-      buf[mux_framer_pos + 1] != 'u' ||
-      buf[mux_framer_pos + 2] != 'x' ||
-      buf[mux_framer_pos + 3] != '-' ||
-      buf[mux_framer_pos + 4] != 'f' ||
-      buf[mux_framer_pos + 5] != 'r' ||
-      buf[mux_framer_pos + 6] != 'a' ||
-      buf[mux_framer_pos + 7] != 'm' ||
-      buf[mux_framer_pos + 8] != 'e' ||
-      buf[mux_framer_pos + 9] != 'r'
-    ) return kUnknown;
+    if (buf[mux_framer_pos] != 'm' || buf[mux_framer_pos + 1] != 'u' ||
+        buf[mux_framer_pos + 2] != 'x' || buf[mux_framer_pos + 3] != '-' ||
+        buf[mux_framer_pos + 4] != 'f' || buf[mux_framer_pos + 5] != 'r' ||
+        buf[mux_framer_pos + 6] != 'a' || buf[mux_framer_pos + 7] != 'm' ||
+        buf[mux_framer_pos + 8] != 'e' || buf[mux_framer_pos + 9] != 'r')
+      return kUnknown;
   }
 
   if (tag < 1 || tag > ((1 << 23) - 1)) {
