@@ -91,7 +91,11 @@ export class CloudClient {
       link: ApolloLink.from([
         makeCloudAuthLink(opts),
         loginRedirectLink(opts.onUnauthorized ?? (() => {})),
-        createHttpLink({ uri: `${opts.uri}/graphql`, fetch }),
+        ApolloLink.split(
+          (operation) => operation.getContext().connType === 'unauthenticated',
+          createHttpLink({ uri: `${opts.uri}/unauthenticated/graphql`, fetch }),
+          createHttpLink({ uri: `${opts.uri}/graphql`, fetch }),
+        ),
       ]),
     });
 

@@ -18,17 +18,83 @@
 
 import * as React from 'react';
 
+import { gql, useQuery } from '@apollo/client';
+import { Button } from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
+import * as QueryString from 'query-string';
 import { useLocation } from 'react-router';
 import {
-  Redirect,
+  Redirect, Link,
 } from 'react-router-dom';
 
-export const InvitePage = React.memo(() => {
+import { AuthMessageBox } from 'app/components';
+
+import { BasePage } from './base';
+
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  ctaGutter: {
+    marginTop: theme.spacing(3),
+    paddingTop: theme.spacing(3),
+    borderTop: `1px solid ${theme.palette.foreground.grey1}`,
+    width: '80%',
+  },
+}));
+// eslint-disable-next-line react-memo/require-memo
+export const InvitePage: React.FC = () => {
+  const parsed = QueryString.parse(window.location.search);
+  let inviteToken = '';
+  if (parsed.invite_token && typeof parsed.invite_token === 'string') {
+    inviteToken = parsed.invite_token;
+  }
+
+  const { data, loading } = useQuery<{ verifyInviteToken: boolean }>(
+    gql`
+      query VerifyInviteToken($inviteToken: String!){
+        verifyInviteToken(inviteToken: $inviteToken)
+      }
+    `,
+    {
+      variables: { inviteToken },
+      context: { connType: 'unauthenticated' },
+      fetchPolicy: 'network-only',
+    });
+
+  const validToken = data?.verifyInviteToken;
+
+  const classes = useStyles();
   const location = useLocation();
+  const redirect = React.useMemo(() => ({ pathname: '/auth/signup', search: location.search }), [location]);
+  const cta = React.useMemo(() => (
+    <div className={classes.ctaGutter}>
+      <Link to={'/auth/signup'} component={Button}>
+        Go To Signup
+      </Link>
+    </div>
+  ), [classes.ctaGutter]);
+  if (loading) {
+    return (
+      <BasePage>
+      </BasePage>
+    );
+  }
+  if (!validToken) {
+    return (
+      <BasePage>
+        <AuthMessageBox
+          error='recoverable'
+          title={'Invalid Invite link'}
+          message={'Invite link is expired or improperly formatted.'}
+          errorDetails={'Ask for a new invite from your org admin.'}
+          cta={cta}
+        />
+      </BasePage>
+    );
+  }
   return (<Redirect
     from={'/*'}
     exact={false}
-    to={React.useMemo(() => ({ pathname: '/auth/signup', search: location.search }), [location])}
+    to={redirect}
   />);
-});
+};
 InvitePage.displayName = 'InvitePage';
