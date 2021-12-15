@@ -24,8 +24,10 @@ filegroup(
 cmake(
     name = "libantlr",
     lib_source = ":all",
-    make_commands = [
-        "make -j$(nproc) install",
+    build_args = [
+        "--",  # <- Pass remaining options to the native tool.
+        "-j$(nproc)",
+        "-l$(nproc)",
     ],
     out_include_dir = "include/antlr4-runtime",
     out_static_libs = [

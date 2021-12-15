@@ -24,7 +24,6 @@ filegroup(
 
 make(
     name = "jattach",
-    make_commands = ["make install"],
     out_static_libs = ["jattach.a"],
     lib_source = ":jattach-sources",
     visibility = ["//visibility:public"],

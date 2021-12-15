@@ -45,8 +45,14 @@ cmake(
         "LIBCEREAL_INCLUDE_DIRS": "$EXT_BUILD_DEPS/include",
     },
     lib_source = ":bpftrace_source",
+    build_args = [
+        "--",  # <- Pass remaining options to the native tool.
+        "-j$(nproc)",
+        "-l$(nproc)",
+    ],
     linkopts = [
         "-lelf",
+        "-lz",
     ],
     out_static_libs = [
         "libbpftrace.a",

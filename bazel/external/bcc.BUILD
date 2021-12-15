@@ -31,9 +31,16 @@ cmake(
         # ELF binary parsing.
         "-lelf",
     ],
-    make_commands = [
-        "make -j$(nproc) -C src/cc install",
+    targets = [
+        "api-static",
+        "bcc-static",
+        "bcc-loader-static",
+        "bpf-static",
+        "b_frontend",
+        "clang_frontend",
     ],
+    install = False,
+    postfix_script = "make -C src/cc install",
     out_static_libs = [
         "libapi-static.a",
         "libbcc.a",
