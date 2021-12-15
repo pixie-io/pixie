@@ -20,7 +20,7 @@ build --workspace_status_command=bazel/get_workspace_status.sh
 build --host_force_python=PY3
 
 # Limit memory for JVM to reduce runaway usage.
-startup --host_jvm_args=-Xmx1g
+startup --host_jvm_args=-Xmx1500m
 
 # For all builds, by default, exclude tests that require root or BPF privileges.
 # To run a test that was filtered out:
