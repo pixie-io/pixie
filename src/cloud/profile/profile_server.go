@@ -69,7 +69,12 @@ func main() {
 
 	svr := controllers.NewServer(env, datastore, datastore, datastore, datastore)
 
-	s := server.NewPLServer(env, mux)
+	serverOpts := &server.GRPCServerOptions{
+		DisableAuth: map[string]bool{
+			"/px.services.OrgService/VerifyInviteToken": true,
+		},
+	}
+	s := server.NewPLServerWithOptions(env, mux, serverOpts)
 	profilepb.RegisterProfileServiceServer(s.GRPCServer(), svr)
 	profilepb.RegisterOrgServiceServer(s.GRPCServer(), svr)
 	s.Start()
