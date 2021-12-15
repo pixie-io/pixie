@@ -24,6 +24,7 @@ import { Route, Switch } from 'react-router';
 
 import { AuthCallbackPage } from './callback';
 import { CLIAuthCompletePage } from './cli-auth-complete';
+import { InvitePage } from './invite';
 import { LoginPage } from './login';
 import { LogoutPage } from './logout';
 import { ErrorPage } from './password-error';
@@ -40,6 +41,7 @@ export const AuthRouter: React.FC = () => (
     <Route exact path='/auth/password/error' component={ErrorPage} />
     <Route exact path='/auth/callback' component={AuthCallbackPage} />
     <Route exact path='/auth/login' component={LoginPage} />
+    <Route exact path='/auth/invite' component={InvitePage} />
     <Route exact path='/auth/signup' component={SignupPage} />
     <Route exact path='/auth/signup-complete' component={SignupCompletePage} />
     <Route exact path='/auth/cli-auth-complete' component={CLIAuthCompletePage} />

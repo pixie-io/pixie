@@ -139,6 +139,7 @@ export const App: React.FC = () => {
               <RedirectWithArgs exact from='/login' to='/auth/login' />
               <RedirectWithArgs exact from='/logout' to='/auth/logout' />
               <RedirectWithArgs exact from='/signup' to='/auth/signup' />
+              <RedirectWithArgs exact from='/invite' to='/auth/invite' />
               <RedirectWithArgs exact from='/auth-complete' to='/auth/cli-auth-complete' />
               {
                 // 404s are handled within the Live route, after the user authenticates.

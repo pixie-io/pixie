@@ -105,7 +105,7 @@ export const InviteUserButton = React.memo<{ className: string }>(({ className }
     if (!inviteTokenData) {
       return null;
     }
-    return getRedirectPath('/signup', { invite_token: inviteTokenData?.CreateInviteToken });
+    return getRedirectPath('/invite', { invite_token: inviteTokenData?.CreateInviteToken });
   }, [inviteTokenData]);
 
   const closeModal = React.useCallback(() => setOpen(false), []);
