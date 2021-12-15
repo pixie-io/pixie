@@ -130,7 +130,7 @@ export const OrgSettings = React.memo(() => {
           </TableRow>
         </TableBody>
       </Table>
-      <InviteLinkReset />
+      <InviteLinkReset orgID={org?.id} />
     </>
   );
 });

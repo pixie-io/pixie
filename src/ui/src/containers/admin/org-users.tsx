@@ -104,6 +104,8 @@ const RemoveUserButton = React.memo<{ user: UserDisplay }>(({ user }) => {
       showSnackbar({ message: `Removed "${user.email}" from org` });
     }).catch((e) => {
       showSnackbar({ message: `Could not remove user: ${e.message}` });
+      // eslint-disable-next-line no-console
+      console.error(e);
     }).finally(() => {
       setPendingRemoval(false);
       closeModal();

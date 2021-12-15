@@ -18,6 +18,7 @@
 
 import * as React from 'react';
 
+import { gql, useMutation } from '@apollo/client';
 import {
   Button,
   Dialog,
@@ -30,7 +31,6 @@ import { createStyles, makeStyles } from '@mui/styles';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { useSnackbar } from 'app/components';
-import { CancellablePromise, makeCancellable, silentlyCatchCancellation } from 'app/utils/cancellable-promise';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -53,37 +53,42 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }), { name: 'InviteLinkReset' });
 
-export const InviteLinkReset = React.memo(() => {
+export const InviteLinkReset = React.memo<{
+  orgID: string
+}>(({ orgID }) => {
+  const [revokeAllInviteTokens] = useMutation<{ RevokeAllInviteTokens: boolean }, { orgID: string }>(
+    gql`
+    mutation RevokeAllInviteTokens($orgID: ID!) {
+      RevokeAllInviteTokens(orgID: $orgID)
+    }
+  `);
+
   const classes = useStyles();
 
+  const [pendingReset, setPendingReset] = React.useState(false);
   const [open, setOpen] = React.useState(false);
-  const [pendingReset, setPendingReset] = React.useState<CancellablePromise<void>|null>(null);
   const openModal = React.useCallback(() => setOpen(true), []);
   const closeModal = React.useCallback(() => {
     setOpen(false);
-    pendingReset?.cancel();
-    setPendingReset(null);
-  }, [pendingReset]);
+  }, []);
 
   const showSnackbar = useSnackbar();
   const resetLinks = React.useCallback(async () => {
-    // TODO: This is where the API call goes.
-    setPendingReset(makeCancellable(new Promise((resolve) => setTimeout(resolve, 1500))));
-  }, []);
-
-  React.useEffect(() => {
-    pendingReset
-      ?.then(() => {
+    setPendingReset(true);
+    revokeAllInviteTokens({ variables: { orgID } })
+      .then(() => {
         showSnackbar({ message: 'Links reset!' });
       })
-      .catch(silentlyCatchCancellation)
       .catch((e) => {
         showSnackbar({ message: 'Failed to reset invite links. Please try again later.' });
         // eslint-disable-next-line no-console
         console.error(e);
       })
-      .finally(closeModal);
-  }, [closeModal, pendingReset, showSnackbar]);
+      .finally(() => {
+        closeModal();
+        setPendingReset(false);
+      });
+  }, [closeModal, orgID, revokeAllInviteTokens, showSnackbar]);
 
   const { invite: invitationsEnabled } = useFlags();
   if (!invitationsEnabled) return <></>;
@@ -93,7 +98,7 @@ export const InviteLinkReset = React.memo(() => {
       <hr className={classes.divider} />
       <Typography variant='body1'>Invite Links</Typography>
       <p className={classes.body}>
-        Invitations expire 7 days after the are created.<br/>
+        Invitations expire 7 days after the are created.<br />
         You can invalidate all of them now, if needed.
       </p>
       <Button onClick={openModal} variant='contained' color='error'>
@@ -108,7 +113,7 @@ export const InviteLinkReset = React.memo(() => {
           <Button onClick={closeModal}>Cancel</Button>
           <Button
             onClick={resetLinks}
-            disabled={!!pendingReset}
+            disabled={pendingReset}
             color='error'
           >
             Reset Invite Links
