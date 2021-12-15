@@ -224,7 +224,7 @@ export const UsersTable = React.memo(() => {
     { pollInterval: 60000, fetchPolicy: 'cache-and-network' },
   );
 
-  const users = data?.orgUsers;
+  const users = data?.orgUsers || [];
   const classes = useStyles();
 
   if (error) {
