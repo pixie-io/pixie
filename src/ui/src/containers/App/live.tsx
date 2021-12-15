@@ -233,7 +233,7 @@ export default function PixieWithContext(): React.ReactElement {
     },
   }), [userEmail, userOrg]);
 
-  const { data: orgData, loading: loadingOrg } = useQuery<{
+  const { data: orgData } = useQuery<{
     org: Omit<GQLOrgInfo, 'enableApprovals'>
   }>(
     gql`
@@ -256,9 +256,7 @@ export default function PixieWithContext(): React.ReactElement {
   const orgName = org?.name;
   const idePaths = org?.idePaths;
 
-  const setupComplete = React.useMemo(() => (
-    !!orgName && !loadingOrg
-  ), [orgName, loadingOrg]);
+  const setupComplete = !!orgData;
 
   const orgContext = React.useMemo(() => ({
     org: {
@@ -309,7 +307,7 @@ export default function PixieWithContext(): React.ReactElement {
     : '';
   const setupRedirectUri = returnUri ? `/setup?redirect_uri=${returnUri}` : '/setup';
 
-  if (loadingUser || loadingOrg) { return <div>Loading...</div>; }
+  if (loadingUser || !orgData) { return <div>Loading...</div>; }
   return (
     <UserContext.Provider value={userContext}>
       <OrgContext.Provider value={orgContext}>
