@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -26,6 +26,7 @@ pl_cc_library(
         ],
         exclude = [
             "**/*_test.cc",
+            "*_benchmark.cc",
         ],
     ),
     hdrs = glob(
@@ -55,4 +56,13 @@ pl_cc_test(
     name = "types_test",
     srcs = ["types_test.cc"],
     deps = [":cc_library"],
+)
+
+pl_cc_binary(
+    name = "tostring_benchmark",
+    srcs = ["tostring_benchmark.cc"],
+    deps = [
+        ":cc_library",
+        "@com_google_benchmark//:benchmark_main",
+    ],
 )

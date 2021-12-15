@@ -276,11 +276,12 @@ struct RowDesc {
     FmtCode fmt_code;
 
     std::string ToString() const {
-      return absl::Substitute(
-          "[name=$0 table_oid=$1 attr_num=$2 type_oid=$3 type_size=$4 type_modifier=$5 "
-          "fmt_code=$6]",
-          name, table_oid, attr_num, type_oid, type_size, type_modifier,
-          magic_enum::enum_name(fmt_code));
+      // RowDesc::ToString() uses too much CPU time if absl::Substitute() is used, which costs
+      // ~200ns CPU time in benchmark. This form using absl::StrCat() uses ~120ns.
+      return absl::StrCat("name=", name, " table_oid=", table_oid, " attr_num=", attr_num,
+                          " type_oid=", type_oid, " type_size=", type_size,
+                          " type_modifier=", type_modifier,
+                          " fmt_code=", magic_enum::enum_name(fmt_code));
     }
   };
 
@@ -297,7 +298,14 @@ struct RowDesc {
   }
 
   std::string ToString() const {
-    return absl::StrCat("ROW DESCRIPTION ", absl::StrJoin(fields, " ", ToStringFormatter<Field>()));
+    return absl::StrCat(
+        "ROW DESCRIPTION [",
+        absl::StrJoin(fields,
+                      // Avoid one concatenation in Field::ToString(), which saves additional
+                      // 10ns. The version that appends "]" in Field::ToString() costs ~130ns,
+                      // and this version takes ~120ns.
+                      "] [", ToStringFormatter<Field>()),
+        "]");
   }
 };
 

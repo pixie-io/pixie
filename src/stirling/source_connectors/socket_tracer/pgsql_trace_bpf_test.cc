@@ -157,7 +157,7 @@ TEST_F(PostgreSQLTraceTest, GolangSqlxDemo) {
           ReqRespCmd("BEGIN READ WRITE", "BEGIN", Tag::kQuery),
           ReqRespCmd("INSERT INTO person (first_name, last_name, email) VALUES ($1, $2, $3)",
                      "PARSE COMPLETE", Tag::kParse),
-          ReqRespCmd("type=kStatement name=", "ROW DESCRIPTION ", Tag::kDesc),
+          ReqRespCmd("type=kStatement name=", "ROW DESCRIPTION []", Tag::kDesc),
           ReqRespCmd("portal= statement= parameters=[[format=kText value=Jason], "
                      "[format=kText value=Moiron], "
                      "[format=kText value=jmoiron@jmoiron.net]] result_format_codes=[]",
