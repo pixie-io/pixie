@@ -343,7 +343,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupInactiveDead);
   FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive);
   FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupNoProtocol);
-  FRIEND_TEST(SocketTraceConnectorTest, MuxBasic);
   FRIEND_TEST(SocketTraceConnectorTest, MySQLPrepareExecuteClose);
   FRIEND_TEST(SocketTraceConnectorTest, MySQLQuery);
   FRIEND_TEST(SocketTraceConnectorTest, MySQLMultipleCommands);
