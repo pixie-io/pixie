@@ -34,7 +34,7 @@ spec:
                 - linux
       initContainers:
       - name: mds-wait
-        image: gcr.io/pixie-prod/pixie-prod-artifacts/curl:1.0
+        image: gcr.io/pixie-oss/pixie-dev-public/curl:1.0
         # yamllint disable
         command: ['sh', '-c', 'set -x;
           URL="https://${SERVICE_NAME}:${SERVICE_PORT}/healthz";
