@@ -288,6 +288,7 @@ export const DialogDropdown = React.memo<DialogDropdownProps>(({
             description: item.description,
             icon: item.icon,
             title: item?.title ?? item.value,
+            highlights: item.highlights ?? [],
             autoSelectPriority: item.autoSelectPriority ?? 0,
           }));
 
@@ -431,6 +432,8 @@ export interface BreadcrumbListItem {
   title?: string;
   description?: string;
   icon?: React.ReactNode;
+  /** @see{CompletionItem} */
+  highlights?: number[];
   /** @see{CompletionItem} */
   autoSelectPriority?: number;
 }

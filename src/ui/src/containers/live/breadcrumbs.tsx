@@ -33,6 +33,7 @@ import { pxTypeToEntityType, entityStatusGroup } from 'app/containers/command-in
 import { ScriptContext } from 'app/context/script-context';
 import { GQLAutocompleteEntityKind, GQLAutocompleteSuggestion } from 'app/types/schema';
 import { argVariableMap, argTypesForVis } from 'app/utils/args-utils';
+import { highlightMatch, normalize } from 'app/utils/string-search';
 import { TimeArgDetail } from 'configurable/time-arg-detail';
 
 import { Variable } from './vis';
@@ -154,8 +155,6 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(() => {
       allowTyping: true,
       divider: true,
       getListItems: async (input) => {
-        // Turns "  px/be_spoke-  " into "px/bespoke"
-        const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9/]+/gi, '');
         const normalizedInput = normalize(input);
         const normalizedScratchId = normalize(SCRATCH_SCRIPT.id);
 
@@ -182,6 +181,7 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(() => {
           value: scriptId,
           description: scripts.get(scriptId).description,
           autoSelectPriority: scriptId === SCRATCH_SCRIPT.id ? -1 : 0,
+          highlights: scriptId === SCRATCH_SCRIPT.id ? [] : highlightMatch(input, scriptId),
         }));
       },
       onSelect: (newVal) => {
@@ -224,6 +224,7 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(() => {
           .map((suggestion) => ({
             value: suggestion,
             description: '',
+            highlights: highlightMatch(input, suggestion),
           })));
 
         argProps.requireCompletion = true;
@@ -235,6 +236,7 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(() => {
           (await getCompletions(input, entityType)).map((suggestion) => ({
             value: suggestion.name,
             description: suggestion.description,
+            highlights: suggestion.matchedIndexes,
             icon: <StatusCell statusGroup={entityStatusGroup(suggestion.state)} />,
           })));
       }
