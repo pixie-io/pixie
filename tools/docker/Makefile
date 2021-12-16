@@ -17,10 +17,6 @@
 # Commands.
 DOCKER := docker
 
-## SSH private key.
-SSH_PRIVATE_KEY_FILE := $(HOME)/.ssh/id_rsa
-SSH_PRIVATE_KEY := `cat $(SSH_PRIVATE_KEY_FILE)`
-
 ## Clang deb parameters
 CLANG_DEB_IMAGE_VERSION := 11.1-pl1
 clang_deb_fname := "clang-$(CLANG_DEB_IMAGE_VERSION).deb"
@@ -51,14 +47,10 @@ curl_image_tag := "gcr.io/pixie-oss/pixie-dev-public/curl:$(CURL_IMAGE_VERSION)"
 COPYBARA_IMAGE_VERSION := 20210420
 copybara_image_tag := "gcr.io/pixie-oss/pixie-dev-public/copybara:$(COPYBARA_IMAGE_VERSION)"
 
-mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
-mkfile_dir := $(dir $(mkfile_path))
-
 # Clang DEB Image configuration.
 .PHONY: build_clang_deb_image
 build_clang_deb_image:
-	cd $(mkfile_dir)/clang_deb_image && \
-	$(DOCKER) build . -t $(clang_deb_image_tag)
+	$(DOCKER) build clang_deb_image -t $(clang_deb_image_tag)
 
 .PHONY: upload_clang_deb
 upload_clang_deb: build_clang_deb_image ## Target to build and upload clang deb image
@@ -70,8 +62,7 @@ upload_clang_deb: build_clang_deb_image ## Target to build and upload clang deb 
 
 .PHONY: build_gperftools_deb_image
 build_gperftools_deb_image:
-	cd $(mkfile_dir)/gperftools_deb_image && \
-	$(DOCKER) build . -t $(gperftools_deb_image_tag)
+	$(DOCKER) build gperftools_deb_image -t $(gperftools_deb_image_tag)
 
 .PHONY: upload_gperftools_deb
 upload_gperftools_deb: build_gperftools_deb_image ## Target to build and upload gperftools deb image
@@ -83,8 +74,7 @@ upload_gperftools_deb: build_gperftools_deb_image ## Target to build and upload 
 
 .PHONY: build_linux_headers_image
 build_linux_headers_image:
-	cd $(mkfile_dir)/linux_headers_image && \
-	$(DOCKER) build --build-arg KERN_VERSION=${LINUX_KERNEL_VERSION} --build-arg KERN_MAJ=${LINUX_MAJOR_VERSION} . -t $(linux_headers_image_tag)
+	$(DOCKER) build --build-arg KERN_VERSION=${LINUX_KERNEL_VERSION} --build-arg KERN_MAJ=${LINUX_MAJOR_VERSION} linux_headers_image -t $(linux_headers_image_tag)
 
 .PHONY: upload_linux_headers
 upload_linux_headers: build_linux_headers_image ## Target to build and upload linux headers image
@@ -105,14 +95,12 @@ upload_linux_headers: build_linux_headers_image ## Target to build and upload li
 
 .PHONY: build_and_upload_curl_image
 build_and_upload_curl_image:
-	cd $(mkfile_dir)/curl_image && \
-	$(DOCKER) build . -t $(curl_image_tag)
+	$(DOCKER) build curl_image -t $(curl_image_tag)
 	$(DOCKER) push $(curl_image_tag)
 
 .PHONY: build_and_upload_copybara_image
 build_and_upload_copybara_image:
-	cd $(mkfile_dir)/copybara && \
-	$(DOCKER) build . -t $(copybara_image_tag)
+	$(DOCKER) build copybara -t $(copybara_image_tag)
 	$(DOCKER) push $(copybara_image_tag)
 
 help: ## Print help for targets with comments.
