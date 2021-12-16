@@ -189,19 +189,6 @@ func (v *VizierIndexer) serviceUpdateToEMD(u *metadatapb.ResourceUpdate, service
 	}
 }
 
-func nodePhaseToState(nodeUpdate *metadatapb.NodeUpdate) ESMDEntityState {
-	switch nodeUpdate.Phase {
-	case metadatapb.NODE_PHASE_PENDING:
-		return ESMDEntityStatePending
-	case metadatapb.NODE_PHASE_RUNNING:
-		return ESMDEntityStateRunning
-	case metadatapb.NODE_PHASE_TERMINATED:
-		return ESMDEntityStateTerminated
-	default:
-		return ESMDEntityStateUnknown
-	}
-}
-
 func (v *VizierIndexer) nodeUpdateToEMD(u *metadatapb.ResourceUpdate, nodeUpdate *metadatapb.NodeUpdate) *EsMDEntity {
 	return &EsMDEntity{
 		OrgID:              v.orgID.String(),
@@ -215,8 +202,28 @@ func (v *VizierIndexer) nodeUpdateToEMD(u *metadatapb.ResourceUpdate, nodeUpdate
 		TimeStoppedNS:      nodeUpdate.StopTimestampNS,
 		RelatedEntityNames: []string{},
 		UpdateVersion:      u.UpdateVersion,
-		State:              nodePhaseToState(nodeUpdate),
+		State:              nodeConditionToState(nodeUpdate),
 	}
+}
+
+func nodeConditionToState(node *metadatapb.NodeUpdate) ESMDEntityState {
+	if node.StopTimestampNS != 0 {
+		return ESMDEntityStateTerminated
+	}
+
+	if node.Conditions == nil {
+		return ESMDEntityStateUnknown
+	}
+
+	for _, c := range node.Conditions {
+		if c.Type == metadatapb.NODE_CONDITION_READY {
+			if c.Status == metadatapb.NODE_CONDITION_STATUS_TRUE {
+				return ESMDEntityStateRunning
+			}
+		}
+	}
+
+	return ESMDEntityStatePending
 }
 
 func (v *VizierIndexer) resourceUpdateToEMD(update *metadatapb.ResourceUpdate) *EsMDEntity {
