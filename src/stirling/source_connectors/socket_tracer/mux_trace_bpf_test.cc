@@ -124,9 +124,7 @@ std::vector<mux::Record> GetTargetRecords(const types::ColumnWrapperRecordBatch&
   return ToRecordVector(record_batch, target_record_indices);
 }
 
-inline auto EqMux(const mux::Frame& x) {
-  return Field(&mux::Frame::type, ::testing::Eq(x.type));
-}
+inline auto EqMux(const mux::Frame& x) { return Field(&mux::Frame::type, ::testing::Eq(x.type)); }
 
 inline auto EqMuxRecord(const mux::Record& x) {
   return AllOf(Field(&mux::Record::req, EqMux(x.req)), Field(&mux::Record::resp, EqMux(x.resp)));
