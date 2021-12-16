@@ -45,6 +45,11 @@ static constexpr DataElement kMuxElements[] = {
 };
 // clang-format on
 
+// TODO(ddelnano): We may choose to augment the mux table with any
+// nested thrift data during thriftmux (apache thrift over mux)
+// or choose to store thrift data separately. stirling does not
+// have support for handling nested protcols so this will require
+// more discussion.
 static constexpr auto kMuxTable =
     DataTableSchema("mux_events", "Mux request-response pair events", kMuxElements);
 DEFINE_PRINT_TABLE(Mux)
