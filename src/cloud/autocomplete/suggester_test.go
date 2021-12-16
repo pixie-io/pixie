@@ -41,8 +41,7 @@ var mdEntities = []md.EsMDEntity{
 	{
 		OrgID:              org1.String(),
 		UID:                "svc1",
-		Name:               "testService",
-		NS:                 "pl",
+		Name:               "pl/testService",
 		Kind:               "service",
 		TimeStartedNS:      1,
 		TimeStoppedNS:      0,
@@ -52,8 +51,7 @@ var mdEntities = []md.EsMDEntity{
 		OrgID:              org1.String(),
 		ClusterUID:         "test",
 		UID:                "svc2",
-		Name:               "testService",
-		NS:                 "anotherNS",
+		Name:               "anotherNS/testService",
 		Kind:               "service",
 		TimeStartedNS:      1,
 		TimeStoppedNS:      0,
@@ -62,8 +60,7 @@ var mdEntities = []md.EsMDEntity{
 	{
 		OrgID:              org1.String(),
 		UID:                "pod1",
-		Name:               "test-Pod",
-		NS:                 "anotherNS",
+		Name:               "anotherNS/test-Pod",
 		Kind:               "pod",
 		TimeStartedNS:      1,
 		TimeStoppedNS:      0,
@@ -74,7 +71,6 @@ var mdEntities = []md.EsMDEntity{
 		OrgID:              org1.String(),
 		UID:                "ns1",
 		Name:               "testNamespace",
-		NS:                 "testNamespace",
 		Kind:               "namespace",
 		TimeStartedNS:      1,
 		TimeStoppedNS:      0,
@@ -83,8 +79,7 @@ var mdEntities = []md.EsMDEntity{
 	{
 		OrgID:              org1.String(),
 		UID:                "svc3",
-		Name:               "abcd",
-		NS:                 "pl",
+		Name:               "pl/abcd",
 		Kind:               "service",
 		TimeStartedNS:      1,
 		TimeStoppedNS:      0,
@@ -461,11 +456,6 @@ func TestGetSuggestions(t *testing.T) {
 				},
 			},
 		},
-		{
-			name:            "empty req",
-			reqs:            []*autocomplete.SuggestionRequest{},
-			expectedResults: []*autocomplete.SuggestionResult{},
-		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -475,13 +465,15 @@ func TestGetSuggestions(t *testing.T) {
 			assert.NotNil(t, results)
 			assert.Equal(t, len(test.expectedResults), len(results))
 			for i, r := range results {
-				assert.Equal(t, len(test.expectedResults[i].Suggestions), len(r.Suggestions))
+				// Ensure that the expected results are atleast contained in the actual results.
+				assert.GreaterOrEqual(t, len(r.Suggestions), len(test.expectedResults[i].Suggestions))
 				// Remove the score so we can do a comparison.
 				for j := range r.Suggestions {
 					r.Suggestions[j].Score = 0
 					r.Suggestions[j].MatchedIndexes = nil
 				}
-				assert.ElementsMatch(t, test.expectedResults[i].Suggestions, r.Suggestions)
+				// Check that the expected results are contained in the results.
+				assert.Subset(t, r.Suggestions, test.expectedResults[i].Suggestions)
 				assert.Equal(t, test.expectedResults[i].ExactMatch, r.ExactMatch)
 			}
 		})

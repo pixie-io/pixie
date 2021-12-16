@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/gofrs/uuid"
 	"github.com/olivere/elastic/v7"
@@ -245,17 +244,15 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 
 			matchedIndexes := make([]int64, 0)
 			// Parse highlight string into indexes.
-			if len(h.Highlight["ns"]) > 0 {
-				matchedIndexes = append(matchedIndexes, parseHighlightIndexes(h.Highlight["ns"][0], 0)...)
-			}
 			if len(h.Highlight["name"]) > 0 {
 				matchedIndexes = append(matchedIndexes, parseHighlightIndexes(h.Highlight["name"][0], len(res.NS)+1)...)
 			}
 
-			resName := fmt.Sprintf("%s/%s", res.NS, res.Name)
-			if md.EsMDType(res.Kind) == md.EsMDTypeNamespace || md.EsMDType(res.Kind) == md.EsMDTypeNode {
-				// Don't prepend the namespace/node object with a namespace.
-				resName = res.Name
+			// TODO(michellenguyen): Remove namespace handling when we create a new index and ensure there are no more
+			// documents with namespace.
+			resName := res.Name
+			if res.NS != "" && !(md.EsMDType(res.Kind) == md.EsMDTypeNamespace || md.EsMDType(res.Kind) == md.EsMDTypeNode) {
+				resName = fmt.Sprintf("%s/%s", res.NS, res.Name)
 			}
 
 			results = append(results, &Suggestion{
@@ -298,19 +295,8 @@ func (e *ElasticSuggester) getMDEntityQuery(orgID uuid.UUID, clusterUID string, 
 	entityQuery := elastic.NewBoolQuery()
 	entityQuery.Must(elastic.NewTermQuery("_index", md.IndexName))
 
-	// Search by name + namespace.
-	splitInput := strings.Split(input, "/") // If contains "/", then everything preceding "/" is a namespace.
-	name := input
-	if len(splitInput) > 1 {
-		entityQuery.Must(elastic.NewMatchQuery("ns", splitInput[0]))
-		name = splitInput[1]
-
-		if name != "" {
-			entityQuery.Must(elastic.NewMatchQuery("name", name))
-		}
-	} else if name != "" {
-		nsOrNameQuery := elastic.NewMultiMatchQuery(name, "name", "ns")
-		entityQuery.Must(nsOrNameQuery)
+	if len(input) > 1 {
+		entityQuery.Must(elastic.NewMatchQuery("name", input))
 	}
 
 	// Only search for entities in org.

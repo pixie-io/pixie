@@ -77,6 +77,7 @@ type EsMDEntity struct {
 }
 
 // IndexMapping is the index structure for metadata entities.
+// TODO(michellenguyen): Remove namespace from the index once we stop writing and reading from it.
 const IndexMapping = `
 {
   "settings": {
@@ -89,6 +90,7 @@ const IndexMapping = `
         "dim"
       ]
     },
+    "max_ngram_diff": 10,
     "number_of_shards": 4,
     "number_of_replicas": 4,
     "analysis": {
@@ -110,13 +112,15 @@ const IndexMapping = `
           "pattern": "-"
         },
         "ngram_tokenizer": {
-          "type": "edge_ngram",
-          "min_gram": 1,
-          "max_gram": 6,
+          "type": "nGram",
+          "min_gram": 2,
+          "max_gram": 10,
           "token_chars": [
             "letter",
-            "digit"
-          ]
+            "digit",
+            "custom"
+          ],
+          "custom_token_chars": "-/"
         }
       },
       "analyzer": {

@@ -111,6 +111,13 @@ func (v *VizierIndexer) Stop() {
 	}
 }
 
+func namespacedName(namespace string, name string) string {
+	if namespace == "" {
+		return name
+	}
+	return fmt.Sprintf("%s/%s", namespace, name)
+}
+
 func (v *VizierIndexer) nsUpdateToEMD(u *metadatapb.ResourceUpdate, nsUpdate *metadatapb.NamespaceUpdate) *EsMDEntity {
 	return &EsMDEntity{
 		OrgID:              v.orgID.String(),
@@ -118,7 +125,6 @@ func (v *VizierIndexer) nsUpdateToEMD(u *metadatapb.ResourceUpdate, nsUpdate *me
 		ClusterUID:         v.k8sUID,
 		UID:                nsUpdate.UID,
 		Name:               nsUpdate.Name,
-		NS:                 nsUpdate.Name,
 		Kind:               string(EsMDTypeNamespace),
 		TimeStartedNS:      nsUpdate.StartTimestampNS,
 		TimeStoppedNS:      nsUpdate.StopTimestampNS,
@@ -158,8 +164,7 @@ func (v *VizierIndexer) podUpdateToEMD(u *metadatapb.ResourceUpdate, podUpdate *
 		VizierID:           v.vizierID.String(),
 		ClusterUID:         v.k8sUID,
 		UID:                podUpdate.UID,
-		Name:               podUpdate.Name,
-		NS:                 podUpdate.Namespace,
+		Name:               namespacedName(podUpdate.Namespace, podUpdate.Name),
 		Kind:               string(EsMDTypePod),
 		TimeStartedNS:      podUpdate.StartTimestampNS,
 		TimeStoppedNS:      podUpdate.StopTimestampNS,
@@ -178,8 +183,7 @@ func (v *VizierIndexer) serviceUpdateToEMD(u *metadatapb.ResourceUpdate, service
 		VizierID:           v.vizierID.String(),
 		ClusterUID:         v.k8sUID,
 		UID:                serviceUpdate.UID,
-		Name:               serviceUpdate.Name,
-		NS:                 serviceUpdate.Namespace,
+		Name:               namespacedName(serviceUpdate.Namespace, serviceUpdate.Name),
 		Kind:               string(EsMDTypeService),
 		TimeStartedNS:      serviceUpdate.StartTimestampNS,
 		TimeStoppedNS:      serviceUpdate.StopTimestampNS,
@@ -196,7 +200,6 @@ func (v *VizierIndexer) nodeUpdateToEMD(u *metadatapb.ResourceUpdate, nodeUpdate
 		ClusterUID:         v.k8sUID,
 		UID:                nodeUpdate.UID,
 		Name:               nodeUpdate.Name,
-		NS:                 "", // Nodes are not associated with a namespace.
 		Kind:               string(EsMDTypeNode),
 		TimeStartedNS:      nodeUpdate.StartTimestampNS,
 		TimeStoppedNS:      nodeUpdate.StopTimestampNS,
