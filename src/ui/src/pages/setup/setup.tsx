@@ -164,8 +164,8 @@ const SetupOrganization = React.memo<{ redirectUri: string }>(({ redirectUri }) 
     if (inputValue.trim().length > 50) {
       return [false, 'Name is too long'];
     }
-    if (inputValue.match(/[.$/\\]/g)) {
-      return [false, 'Name must not contain special characters (ex. ./\\$)'];
+    if (inputValue.match(/[.$@/\\]/g)) {
+      return [false, 'Name must not contain special characters (ex. ./\\$@)'];
     }
     return [true, ''];
   }, [inputValue]);
