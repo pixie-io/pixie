@@ -104,22 +104,15 @@ std::vector<mux::Record> ToRecordVector(const types::ColumnWrapperRecordBatch& r
 
   for (const auto& idx : indices) {
     mux::Record r;
-    uint24_t tag = static_cast<uint24_t>(rb[kMuxTagIdx]->Get<types::Int64Value>(idx).val);
-    r.req.tag = tag;
     r.req.type = static_cast<int8_t>(rb[kMuxReqTypeIdx]->Get<types::Int64Value>(idx).val);
-    r.resp.tag = tag;
-    r.resp.type = static_cast<int8_t>(rb[kMuxRespTypeIdx]->Get<types::Int64Value>(idx).val);
     result.push_back(r);
   }
   return result;
 }
 
-mux::Record RecordWithTagAndType(uint24_t tag, mux::Type req_type, mux::Type resp_type) {
+mux::Record RecordWithType(mux::Type req_type) {
   mux::Record r = {};
-  r.req.tag = tag;
   r.req.type = static_cast<int8_t>(req_type);
-  r.resp.tag = tag;
-  r.resp.type = static_cast<int8_t>(resp_type);
 
   return r;
 }
@@ -132,8 +125,7 @@ std::vector<mux::Record> GetTargetRecords(const types::ColumnWrapperRecordBatch&
 }
 
 inline auto EqMux(const mux::Frame& x) {
-  return AllOf(Field(&mux::Frame::type, ::testing::Eq(x.type)),
-               Field(&mux::Frame::tag, ::testing::Eq(x.tag)));
+  return Field(&mux::Frame::type, ::testing::Eq(x.type));
 }
 
 inline auto EqMuxRecord(const mux::Record& x) {
@@ -160,11 +152,10 @@ TEST_F(MuxTraceTest, Capture) {
 
   std::vector<mux::Record> server_records = GetTargetRecords(record_batch, server_.process_pid());
 
-  mux::Record tinitCheck = RecordWithTagAndType(1, mux::Type::kRerrOld, mux::Type::kRerrOld);
-  mux::Record tinit = RecordWithTagAndType(1, mux::Type::kTinit, mux::Type::kRinit);
-  mux::Record pingRecord = RecordWithTagAndType(1, mux::Type::kTping, mux::Type::kRping);
-  mux::Record dispatchRecord =
-      RecordWithTagAndType(2, mux::Type::kTdispatch, mux::Type::kRdispatch);
+  mux::Record tinitCheck = RecordWithType(mux::Type::kRerrOld);
+  mux::Record tinit = RecordWithType(mux::Type::kTinit);
+  mux::Record pingRecord = RecordWithType(mux::Type::kTping);
+  mux::Record dispatchRecord = RecordWithType(mux::Type::kTdispatch);
 
   EXPECT_THAT(server_records, Contains(EqMuxRecord(tinitCheck)));
   EXPECT_THAT(server_records, Contains(EqMuxRecord(tinit)));

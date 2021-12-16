@@ -38,14 +38,6 @@ static constexpr DataElement kMuxElements[] = {
          types::DataType::INT64,
          types::SemanticType::ST_NONE,
          types::PatternType::GENERAL_ENUM},
-        {"resp_type", "Mux message response type",
-         types::DataType::INT64,
-         types::SemanticType::ST_NONE,
-         types::PatternType::GENERAL_ENUM},
-        {"tag", "Mux message request tag",
-         types::DataType::INT64,
-         types::SemanticType::ST_NONE,
-         types::PatternType::GENERAL_ENUM},
         canonical_data_elements::kLatencyNS,
 #ifndef NDEBUG
         canonical_data_elements::kPXInfo,
@@ -59,8 +51,6 @@ DEFINE_PRINT_TABLE(Mux)
 
 static constexpr int kMuxUPIDIdx = kMuxTable.ColIndex("upid");
 static constexpr int kMuxReqTypeIdx = kMuxTable.ColIndex("req_type");
-static constexpr int kMuxRespTypeIdx = kMuxTable.ColIndex("resp_type");
-static constexpr int kMuxTagIdx = kMuxTable.ColIndex("tag");
 
 }  // namespace stirling
 }  // namespace px
