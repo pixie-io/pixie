@@ -43,7 +43,7 @@ const MOCK_COMPLETIONS: CompletionItems = [
 
 describe('use-autocomplete hook', () => {
   it('fetches completions on initial render', async () => {
-    const mockGetCompletions = jest.fn().mockResolvedValue([]);
+    const mockGetCompletions = jest.fn().mockResolvedValue({ items: [], hasMoreItems: false });
     const { waitForNextUpdate } = renderHook(() => useAutocomplete(mockGetCompletions, 'initial input'),
     );
     await act(() => waitForNextUpdate());
@@ -51,7 +51,7 @@ describe('use-autocomplete hook', () => {
   });
 
   it('fetches completions on input change', async () => {
-    const mockGetCompletions = jest.fn().mockResolvedValue([]);
+    const mockGetCompletions = jest.fn().mockResolvedValue({ items: [], hasMoreItems: false });
     const { rerender, waitForNextUpdate } = renderHook(
       (input: string) => useAutocomplete(mockGetCompletions, input),
       { initialProps: 'initial input' },
@@ -65,8 +65,8 @@ describe('use-autocomplete hook', () => {
     expect(mockGetCompletions).toHaveBeenCalledTimes(2);
   });
 
-  it('does not refect completions if the input did not change', async () => {
-    const mockGetCompletions = jest.fn().mockResolvedValue([]);
+  it('does not fetch new completions if the input did not change', async () => {
+    const mockGetCompletions = jest.fn().mockResolvedValue({ items: [], hasMoreItems: false });
     const { rerender, waitForNextUpdate } = renderHook(
       (input: string) => useAutocomplete(mockGetCompletions, input),
       { initialProps: 'initial input' },
@@ -81,7 +81,7 @@ describe('use-autocomplete hook', () => {
   });
 
   it('highlights the first completion', async () => {
-    const mockGetCompletions = jest.fn().mockResolvedValue(MOCK_COMPLETIONS);
+    const mockGetCompletions = jest.fn().mockResolvedValue({ items: MOCK_COMPLETIONS, hasMoreItems: false });
     const { waitForNextUpdate, result } = renderHook(
       (input: string) => useAutocomplete(mockGetCompletions, input),
       { initialProps: 'initial input' },
@@ -91,7 +91,7 @@ describe('use-autocomplete hook', () => {
   });
 
   it('highlights by id', async () => {
-    const mockGetCompletions = jest.fn().mockResolvedValue(MOCK_COMPLETIONS);
+    const mockGetCompletions = jest.fn().mockResolvedValue({ items: MOCK_COMPLETIONS, hasMoreItems: false });
     const { waitForNextUpdate, result } = renderHook(
       (input: string) => useAutocomplete(mockGetCompletions, input),
       { initialProps: 'initial input' },
@@ -102,7 +102,7 @@ describe('use-autocomplete hook', () => {
   });
 
   it('wraps around to the last completion when moving up from the first', async () => {
-    const mockGetCompletions = jest.fn().mockResolvedValue(MOCK_COMPLETIONS);
+    const mockGetCompletions = jest.fn().mockResolvedValue({ items: MOCK_COMPLETIONS, hasMoreItems: false });
     const { waitForNextUpdate, result } = renderHook(
       (input: string) => useAutocomplete(mockGetCompletions, input),
       { initialProps: 'initial input' },
@@ -114,7 +114,7 @@ describe('use-autocomplete hook', () => {
   });
 
   it('wraps around to the first completion when moving to next from the last', async () => {
-    const mockGetCompletions = jest.fn().mockResolvedValue(MOCK_COMPLETIONS);
+    const mockGetCompletions = jest.fn().mockResolvedValue({ items: MOCK_COMPLETIONS, hasMoreItems: false });
     const { waitForNextUpdate, result } = renderHook(
       (input: string) => useAutocomplete(mockGetCompletions, input),
       { initialProps: 'initial input' },

@@ -180,12 +180,13 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(() => {
           }
         }
 
-        return ids.map((scriptId) => ({
+        const items = ids.map((scriptId) => ({
           value: scriptId,
           description: scripts.get(scriptId).description,
           autoSelectPriority: scriptId === SCRATCH_SCRIPT.id ? -1 : 0,
           highlights: scriptId === SCRATCH_SCRIPT.id ? [] : highlightMatch(input, scriptId),
         }));
+        return { items, hasMoreItems: false };
       },
       onSelect: (newVal) => {
         const newScript = scripts.get(newVal);
@@ -222,26 +223,32 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(() => {
       }
 
       if (variable?.validValues?.length) {
-        argProps.getListItems = async (input) => (variable.validValues
-          .filter((suggestion) => input === '' || suggestion.indexOf(input) >= 0)
-          .map((suggestion) => ({
-            value: suggestion,
-            description: '',
-            highlights: highlightMatch(input, suggestion),
-          })));
+        argProps.getListItems = async (input) => ({
+          items: variable.validValues
+            .filter((suggestion) => input === '' || suggestion.indexOf(input) >= 0)
+            .map((suggestion) => ({
+              value: suggestion,
+              description: '',
+              highlights: highlightMatch(input, suggestion),
+            })),
+          hasMoreItems: false,
+        });
 
         argProps.requireCompletion = true;
       }
 
       const entityType = pxTypeToEntityType(argTypes[argName]);
       if (entityType !== 'AEK_UNKNOWN') {
-        argProps.getListItems = async (input) => (
-          (await getCompletions(input, entityType)).suggestions.map((suggestion) => ({
+        argProps.getListItems = async (input) => {
+          const { suggestions, hasAdditionalMatches } = await getCompletions(input, entityType);
+          const items = suggestions.map((suggestion) => ({
             value: suggestion.name,
             description: suggestion.description,
             highlights: suggestion.matchedIndexes,
             icon: <StatusCell statusGroup={entityStatusGroup(suggestion.state)} />,
-          })));
+          }));
+          return { items, hasMoreItems: hasAdditionalMatches };
+        };
       }
 
       // TODO(michelle): Ideally we should just be able to use the entityType to determine whether the

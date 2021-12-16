@@ -78,16 +78,17 @@ const ClusterSelector: React.FC = () => {
     selectedClusterStatusMessage,
   } = React.useContext(ClusterContext);
 
-  const getListItems = React.useCallback(async (input: string) => (
-    clusters
+  const getListItems = React.useCallback(async (input: string) => {
+    const items = clusters
       ?.filter((c) => c.status !== GQLClusterStatus.CS_DISCONNECTED && c.clusterName.includes(input))
       .map((c) => ({
         title: c.prettyClusterName,
         value: c.clusterName,
         icon: <StatusCell statusGroup={clusterStatusGroup(c.status)} />,
       }))
-      .sort((clusterA, clusterB) => clusterA.title.localeCompare(clusterB.title))
-  ), [clusters]);
+      .sort((clusterA, clusterB) => clusterA.title.localeCompare(clusterB.title));
+    return { items, hasMoreItems: false };
+  }, [clusters]);
 
   const statusGroup = clusterStatusGroup(selectedClusterStatus);
 

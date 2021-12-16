@@ -42,7 +42,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 
 export interface SelectProps {
   value: React.ReactNode;
-  getListItems?: (input: string) => Promise<BreadcrumbListItem[]>;
+  getListItems?: (input: string) => Promise<{ items: BreadcrumbListItem[], hasMoreItems: boolean }>;
   onSelect?: (input: string) => void;
   requireCompletion?: boolean;
   placeholder?: string;

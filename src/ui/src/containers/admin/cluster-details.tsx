@@ -616,10 +616,12 @@ const ClusterDetailsNavigationBreadcrumbs = ({ selectedClusterName }) => {
     selectable: true,
     omitKey: true,
     // eslint-disable-next-line
-    getListItems: async (input) => (clusters
-      .filter((c) => c.status !== ClusterStatus.CS_DISCONNECTED && c.prettyClusterName.indexOf(input) >= 0)
-      .map((c) => ({ value: c.prettyClusterName }))
-    ),
+    getListItems: async (input) => {
+      const items = clusters
+        .filter((c) => c.status !== ClusterStatus.CS_DISCONNECTED && c.prettyClusterName.indexOf(input) >= 0)
+        .map((c) => ({ value: c.prettyClusterName }));
+      return { items, hasMoreItems: false };
+    },
     onSelect: (input) => {
       history.push(getClusterDetailsURL(clusterPrettyNameToFullName[input]));
     },

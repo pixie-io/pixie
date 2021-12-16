@@ -181,7 +181,7 @@ const useStyles = makeStyles(({
 
 export interface DialogDropdownProps {
   onSelect: (input: string) => void;
-  getListItems: (input: string) => Promise<BreadcrumbListItem[]>;
+  getListItems: (input: string) => Promise<{ items: BreadcrumbListItem[], hasMoreItems: boolean }>;
   onClose: () => void;
   anchorEl: HTMLElement;
   placeholder: string;
@@ -247,7 +247,7 @@ export const DialogDropdown = React.memo<DialogDropdownProps>(({
             `List items not gettable when selecting "${itemValue}"!`,
           );
         }
-        getListItems(itemValue).then((items) => {
+        getListItems(itemValue).then(({ items }) => {
           if (items.length < 1) throw new Error('Failed to match the input to a valid choice!');
           if (mounted.current) {
             onSelect(itemValue);
@@ -272,7 +272,7 @@ export const DialogDropdown = React.memo<DialogDropdownProps>(({
   const getCompletions = React.useCallback(
     (input: string) => {
       if (typeof getListItems === 'function') {
-        return getListItems(input).then((items) => {
+        return getListItems(input).then(({ items, hasMoreItems }) => {
           // TODO(nick,PC-630): This should be done on the API side. Once it is, remove this defensive coding.
           const seenNames = new Set<string>();
           const deduped = items.filter((item) => {
@@ -306,11 +306,11 @@ export const DialogDropdown = React.memo<DialogDropdownProps>(({
             });
           }
 
-          return mapped;
+          return { items: mapped, hasMoreItems };
         });
       }
 
-      return Promise.resolve([]);
+      return Promise.resolve({ items: [], hasMoreItems: false });
     },
     [getListItems, requireCompletion],
   );
@@ -365,7 +365,7 @@ export interface BreadcrumbProps {
   title: string;
   value: string;
   selectable: boolean;
-  getListItems?: (input: string) => Promise<Array<BreadcrumbListItem>>;
+  getListItems?: (input: string) => Promise<{ items: BreadcrumbListItem[], hasMoreItems: boolean }>;
   onSelect?: (input: string) => void;
   omitKey?: boolean;
   placeholder?: string;

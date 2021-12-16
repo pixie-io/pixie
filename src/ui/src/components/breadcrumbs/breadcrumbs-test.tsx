@@ -33,20 +33,14 @@ describe('<Breadcrumbs/>', () => {
         value: 'gke-prod',
         selectable: true,
         allowTyping: false,
-        getListItems: async (input) => {
-          if (input) {
-            return [
-              { value: 'cluster1' },
-              { value: 'cluster2' },
-              { value: 'cluster3' },
-            ];
-          }
-          return [
+        getListItems: async () => ({
+          items: [
             { value: 'cluster1' },
             { value: 'cluster2' },
             { value: 'cluster3' },
-          ];
-        },
+          ],
+          hasMoreItems: false,
+        }),
       },
       {
         title: 'pod',
@@ -55,13 +49,16 @@ describe('<Breadcrumbs/>', () => {
         allowTyping: true,
         getListItems: async (input) => {
           if (input === '') {
-            return [{ value: 'pod1' }, { value: 'pod2' }];
+            return { items: [{ value: 'pod1' }, { value: 'pod2' }], hasMoreItems: false };
           }
-          return [
-            { value: 'some pod' },
-            { value: 'another pod' },
-            { value: 'pod' },
-          ];
+          return {
+            items: [
+              { value: 'some pod' },
+              { value: 'another pod' },
+              { value: 'pod' },
+            ],
+            hasMoreItems: false,
+          };
         },
       },
       {

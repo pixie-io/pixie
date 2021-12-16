@@ -51,11 +51,19 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     flex: 1,
     minHeight: 0,
   },
-}));
+  limitedResultsTip: {
+    ...theme.typography.body2,
+    width: '100%',
+    textAlign: 'right',
+    opacity: 0.75,
+    fontStyle: 'italic',
+    padding: '0.5em',
+  },
+}), { name: 'AutoComplete' });
 
 interface AutoCompleteProps {
   onSelection: (id: CompletionId) => void;
-  getCompletions: (input: string) => Promise<CompletionItems>;
+  getCompletions: (input: string) => Promise<{ items: CompletionItems, hasMoreItems: boolean }>;
   placeholder?: string;
   prefix?: React.ReactNode;
   className?: string;
@@ -109,6 +117,7 @@ export const Autocomplete = React.memo<AutoCompleteProps>(({
   } = React.useContext(AutocompleteContext);
   const [inputValue, setInputValue] = React.useState('');
   const [completions, setCompletions] = React.useState([]);
+  const [hasMoreCompletions, setHasMoreCompletions] = React.useState(false);
   const [activeItem, setActiveItem] = React.useState<CompletionId>('');
   const itemsMap = React.useMemo(() => {
     const map: ItemsMap = new Map();
@@ -122,9 +131,10 @@ export const Autocomplete = React.memo<AutoCompleteProps>(({
 
   React.useEffect(() => {
     const promise = makeCancellable(getCompletions(inputValue));
-    promise.then((cmpls) => {
-      setCompletions(cmpls);
-      const selection = autoSelectItem(cmpls);
+    promise.then(({ items, hasMoreItems }) => {
+      setCompletions(items);
+      setHasMoreCompletions(hasMoreItems);
+      const selection = autoSelectItem(items);
       if (selection?.title && selection?.id) setActiveItem(selection.id);
     }).catch(silentlyCatchCancellation);
     return () => promise.cancel();
@@ -184,6 +194,11 @@ export const Autocomplete = React.memo<AutoCompleteProps>(({
         onSelection={handleSelection}
         activeItem={activeItem}
       />
+      {hasMoreCompletions && (
+        <div className={classes.limitedResultsTip}>
+          Showing top matches
+        </div>
+      )}
     </div>
   );
 });

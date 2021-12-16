@@ -20,7 +20,7 @@ import * as React from 'react';
 
 import { CompletionItem, CompletionItems } from './completions';
 
-export type GetCompletionsFunc = (input: string) => Promise<CompletionItems>;
+export type GetCompletionsFunc = (input: string) => Promise<{ items: CompletionItems, hasMoreItems: boolean }>;
 
 interface AutocompleteState {
   loading: boolean;
@@ -56,7 +56,7 @@ export const useAutocomplete = (
   React.useEffect(() => {
     setLoading(true);
     getCompletions(input)
-      .then(setCompletions)
+      .then(({ items }) => setCompletions(items))
       .finally(() => {
         setLoading(false);
       });
