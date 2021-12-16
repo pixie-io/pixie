@@ -47,6 +47,10 @@ curl_image_tag := "gcr.io/pixie-oss/pixie-dev-public/curl:$(CURL_IMAGE_VERSION)"
 COPYBARA_IMAGE_VERSION := 20210420
 copybara_image_tag := "gcr.io/pixie-oss/pixie-dev-public/copybara:$(COPYBARA_IMAGE_VERSION)"
 
+## Elasticsearch image parameters.
+ELASTICSEARCH_IMAGE_VERSION := 7.6.0-patched1
+elasticsearch_image_tag := "gcr.io/pixie-oss/pixie-dev-public/elasticsearch:$(ELASTICSEARCH_IMAGE_VERSION)"
+
 # Clang DEB Image configuration.
 .PHONY: build_clang_deb_image
 build_clang_deb_image:
@@ -102,6 +106,11 @@ build_and_upload_curl_image:
 build_and_upload_copybara_image:
 	$(DOCKER) build copybara -t $(copybara_image_tag)
 	$(DOCKER) push $(copybara_image_tag)
+
+.PHONY: build_and_upload_elasticsearch_image
+build_and_upload_elasticsearch_image:
+	$(DOCKER) build elasticsearch -t $(elasticsearch_image_tag)
+	$(DOCKER) push $(elasticsearch_image_tag)
 
 help: ## Print help for targets with comments.
 	@echo "Usage:"

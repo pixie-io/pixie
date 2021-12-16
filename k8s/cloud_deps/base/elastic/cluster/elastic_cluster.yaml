@@ -4,6 +4,7 @@ kind: Elasticsearch
 metadata:
   name: pl-elastic
 spec:
+  image: gcr.io/pixie-oss/pixie-dev-public/elasticsearch:7.6.0-patched1
   version: 7.6.0
   nodeSets:
   - name: master
