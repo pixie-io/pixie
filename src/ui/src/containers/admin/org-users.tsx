@@ -41,6 +41,7 @@ type UserDisplay = Pick<GQLUserInfo, 'id' | 'name' | 'email' | 'isApproved'>;
 
 interface UserRowProps {
   user: UserDisplay;
+  numUsers: number;
 }
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
@@ -64,7 +65,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-const RemoveUserButton = React.memo<{ user: UserDisplay }>(({ user }) => {
+const RemoveUserButton = React.memo<UserRowProps>(({ user, numUsers }) => {
   const classes = useStyles();
 
   const [open, setOpen] = React.useState(false);
@@ -114,7 +115,7 @@ const RemoveUserButton = React.memo<{ user: UserDisplay }>(({ user }) => {
 
   return (
     <>
-      <Button onClick={openModal} variant='contained' color='error'>
+      <Button onClick={openModal} variant='contained' color='error' disabled={numUsers <= 1}>
         Remove
       </Button>
       <Dialog open={open} onClose={closeModal}>
@@ -146,7 +147,7 @@ const RemoveUserButton = React.memo<{ user: UserDisplay }>(({ user }) => {
 });
 RemoveUserButton.displayName = 'RemoveUserButton';
 
-export const UserRow = React.memo<UserRowProps>(({ user }) => {
+export const UserRow = React.memo<UserRowProps>(({ user, numUsers }) => {
   const classes = useStyles();
   const { invite: invitationsEnabled } = useFlags();
 
@@ -198,7 +199,7 @@ export const UserRow = React.memo<UserRowProps>(({ user }) => {
           {invitationsEnabled && (
             <AdminTooltip title={'Removed users can be added back by sending them new invite links.'}>
               <div>
-                <RemoveUserButton user={user} />
+                <RemoveUserButton user={user} numUsers={numUsers} />
               </div>
             </AdminTooltip>
           )}
@@ -243,7 +244,7 @@ export const UsersTable = React.memo(() => {
         </TableHead>
         <TableBody>
           {users.map((user: UserDisplay) => (
-            <UserRow key={user.email} user={user} />
+            <UserRow key={user.email} user={user} numUsers={users.length} />
           ))}
         </TableBody>
       </Table>
