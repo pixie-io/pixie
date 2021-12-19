@@ -487,6 +487,10 @@ static __inline bool is_redis_message(const char* buf, size_t count) {
   return true;
 }
 
+// TODO(ddelnano): Mux protocol traffic is currently misidentified as ssh. Since
+// stirling doesn't have ssh support yet, but will need to be addressed. In addition,
+// mux seems to send the header and body on its protocol in two separate syscalls on
+// the server side.
 static __inline enum message_type_t infer_mux_message(const char* buf, size_t count) {
   // mux's on the wire format causes false positives for protocol inference
   // In order to address this, we only infer mux messages by the
@@ -525,14 +529,6 @@ static __inline enum message_type_t infer_mux_message(const char* buf, size_t co
       break;
     default:
       return kUnknown;
-  }
-
-  // Since protocol inference only has access to data from a given syscall
-  // it's possible we cannot read enough data to more confidently classify
-  // if it's the mux protocol. Therefore return what our best guess
-  // is if we cannot provide a stronger guarantee
-  if (count < length) {
-    return msg_type;
   }
 
   if (mux_type == kRerr || mux_type == kRerrOld) {
