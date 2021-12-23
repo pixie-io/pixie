@@ -32,7 +32,7 @@ const char kControlValuesArrayName[] = "control_values";
 const int64_t kTraceAllTGIDs = -1;
 
 // Note: A value of 100 results in >4096 BPF instructions, which is too much for older kernels.
-#define CONN_CLEANUP_ITERS 90
+#define CONN_CLEANUP_ITERS 85
 const int kMaxConnMapCleanupItems = CONN_CLEANUP_ITERS;
 
 union sockaddr_t {

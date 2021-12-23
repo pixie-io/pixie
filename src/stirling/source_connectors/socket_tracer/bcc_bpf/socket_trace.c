@@ -35,7 +35,7 @@
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.h"
 
 // This keeps instruction count below BPF's limit of 4096 per probe.
-#define LOOP_LIMIT 44
+#define LOOP_LIMIT 43
 
 const int32_t kInvalidFD = -1;
 
@@ -401,8 +401,7 @@ static __inline void perf_submit_buf(struct pt_regs* ctx, const enum traffic_dir
   // safe.
   //
   // Tested to work on the following kernels:
-  //   4.14.104
-  //   4.15.18 (Ubuntu 4.15.0-96-generic)
+  //   4.14
 
   if (buf_size == 0) {
     return;
@@ -426,7 +425,9 @@ static __inline void perf_submit_buf(struct pt_regs* ctx, const enum traffic_dir
   if (buf_size_minus_1 < MAX_MSG_SIZE) {
     bpf_probe_read(&event->msg, buf_size, buf);
     amount_copied = buf_size;
-  } else {
+  } else if (buf_size_minus_1 < 0x7fffffff) {
+    // If-statement condition above is only required to prevent clang from optimizing
+    // away the `if (amount_copied > 0)` below.
     bpf_probe_read(&event->msg, MAX_MSG_SIZE, buf);
     amount_copied = MAX_MSG_SIZE;
   }
