@@ -266,7 +266,7 @@ df.failure = df.resp_status >= 400
 df.timestamp = px.bin(df.time_, px.seconds(num_seconds))
 df[k8s_object] = df.ctx[k8s_object]
 filter_pods = px.contains(df[k8s_object], match_name)
-filter_out_conds = ((df.req_path != '/health' or not filter_health) and (
+filter_out_conds = ((df.req_path != '/healthz' or not filter_health) and (
     df.req_path != '/readyz' or not filter_readyz)) and (
     df[ip] != '-' or not filter_dash)
 
