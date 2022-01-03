@@ -74,7 +74,7 @@ pl_cc_test(
     data = [
         "//src/stirling/obj_tools/testdata/cc:test_exe_fixture",
         "//src/stirling/obj_tools/testdata/go:precompiled_test_binaries",
-        "//src/stirling/testing/demo_apps/go_grpc_tls_pl/server",
+        "//src/stirling/testing/demo_apps/go_grpc_tls_pl/server:grpc_tls_server",
     ],
     deps = [
         ":cc_library",
@@ -141,12 +141,10 @@ pl_cc_binary(
     ],
 )
 
-# NOTE: This benchmark only currently works with `-c opt`, because path to test binary is hard-coded.
-# But we should be running benchmarks with `-c opt` anyways.
 pl_cc_binary(
     name = "dwarf_reader_benchmark",
     srcs = ["dwarf_reader_benchmark.cc"],
-    data = ["//src/stirling/testing/demo_apps/go_grpc_tls_pl/server"],
+    data = ["//src/stirling/testing/demo_apps/go_grpc_tls_pl/server:grpc_tls_server"],
     deps = [
         ":cc_library",
         "//src/common/testing:cc_library",

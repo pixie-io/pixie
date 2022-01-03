@@ -217,7 +217,7 @@ class GRPCServerContainer : public ContainerRunner {
 
  private:
   static constexpr std::string_view kBazelImageTar =
-      "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/server_image.tar";
+      "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/golang_1_16_grpc_tls_server.tar";
   static constexpr std::string_view kContainerNamePrefix = "grpc_server";
   static constexpr std::string_view kReadyMessage = "Starting HTTP/2 server";
 };
@@ -230,7 +230,7 @@ class GRPCClientContainer : public ContainerRunner {
 
  private:
   static constexpr std::string_view kBazelImageTar =
-      "src/stirling/testing/demo_apps/go_grpc_tls_pl/client/client_image.tar";
+      "src/stirling/testing/demo_apps/go_grpc_tls_pl/client/golang_1_16_grpc_tls_client.tar";
   static constexpr std::string_view kContainerNamePrefix = "grpc_client";
   static constexpr std::string_view kReadyMessage = "";
 };
