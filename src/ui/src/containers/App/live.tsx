@@ -234,7 +234,7 @@ export default function PixieWithContext(): React.ReactElement {
   }), [userEmail, userOrg]);
 
   const { data: orgData } = useQuery<{
-    org: Omit<GQLOrgInfo, 'enableApprovals'>
+    org: Pick<GQLOrgInfo, 'id' | 'name' | 'idePaths'>
   }>(
     gql`
       query getOrgInfo {
@@ -256,7 +256,9 @@ export default function PixieWithContext(): React.ReactElement {
   const orgName = org?.name;
   const idePaths = org?.idePaths;
 
-  const setupComplete = !!orgData;
+  // We check the orgName as valid here. orgData will still be returned even if the org doesn't
+  // exist, but orgs must have a non-empty string name to be valid.
+  const setupComplete = !!orgName;
 
   const orgContext = React.useMemo(() => ({
     org: {
