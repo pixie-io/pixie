@@ -132,7 +132,8 @@ export const Autocomplete = React.memo<AutoCompleteProps>(({
 
   const handleSelection = React.useCallback(
     (id) => {
-      const item = itemsMap.get(id);
+      // Don't count the empty string (the default completion).
+      const item = id ? itemsMap.get(id) : null;
       if (!item && requireCompletion) {
         return;
       }
@@ -155,12 +156,12 @@ export const Autocomplete = React.memo<AutoCompleteProps>(({
         setActiveItem(findNextItem(activeItem, itemsMap, completions));
         break;
       case 'ENTER':
-        handleSelection(activeItem);
+        handleSelection(activeItem || inputValue.trim());
         break;
       default:
         break;
     }
-  }, [activeItem, completions, handleSelection, itemsMap]);
+  }, [activeItem, inputValue, completions, handleSelection, itemsMap]);
 
   return (
     <div className={buildClass(classes.root, className)}>
