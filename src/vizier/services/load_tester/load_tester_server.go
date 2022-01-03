@@ -127,6 +127,10 @@ func (f *fakeVZInfo) GetVizierPods() ([]*vizierpb.VizierPodStatus, []*vizierpb.V
 	return fakeAgents, fakeControlPlane, nil
 }
 
+func (f *fakeVZInfo) UpdateClusterIDAnnotation(string) error {
+	return nil
+}
+
 // fakeVZUpdater is an interface for faking calls to the Vizier CRD.
 type fakeVZOperator struct{}
 

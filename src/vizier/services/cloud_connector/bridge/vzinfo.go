@@ -709,6 +709,27 @@ func (v *K8sVizierInfo) UpdateClusterID(id string) error {
 	return err
 }
 
+// UpdateClusterIDAnnotation updates the `cluster-id` annotation for the cloudconnector.
+func (v *K8sVizierInfo) UpdateClusterIDAnnotation(id string) error {
+	ccPodsList, err := v.clientset.CoreV1().Pods(v.ns).List(context.Background(), metav1.ListOptions{
+		LabelSelector: "name=vizier-cloud-connector",
+	})
+	if err != nil {
+		return err
+	}
+
+	// No cloud-connector pods were found. This should never happen.
+	if len(ccPodsList.Items) == 0 {
+		return nil
+	}
+
+	ccPod := ccPodsList.Items[0]
+	ccPod.Annotations["cluster-id"] = id
+
+	_, err = v.clientset.CoreV1().Pods(v.ns).Update(context.Background(), &ccPod, metav1.UpdateOptions{})
+	return err
+}
+
 // GetVizierCRD gets the Vizier CRD for the running Vizier, if running using an operator.
 func (v *K8sVizierInfo) GetVizierCRD() (*v1alpha1.Vizier, error) {
 	viziers, err := v.vzClient.PxV1alpha1().Viziers(v.ns).List(context.Background(), metav1.ListOptions{})

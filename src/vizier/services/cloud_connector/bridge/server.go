@@ -148,6 +148,7 @@ type VizierInfo interface {
 	GetJob(string) (*batchv1.Job, error)
 	GetClusterUID() (string, error)
 	UpdateClusterID(string) error
+	UpdateClusterIDAnnotation(string) error
 	GetVizierPodLogs(string, bool, string) (string, error)
 	GetVizierPods() ([]*vizierpb.VizierPodStatus, []*vizierpb.VizierPodStatus, error)
 }
@@ -382,6 +383,11 @@ func (s *Bridge) RunStream() {
 		if err != nil {
 			log.WithError(err).Fatal("Failed to register vizier deployment")
 		}
+	}
+
+	err = s.vzInfo.UpdateClusterIDAnnotation(s.vizierID.String())
+	if err != nil {
+		log.WithError(err).Error("Error updating cluster ID annotation")
 	}
 
 	s.wdWg.Add(1)

@@ -159,6 +159,10 @@ func (f *FakeVZInfo) GetAddress() (string, int32, error) {
 	return f.externalAddr, f.port, nil
 }
 
+func (f *FakeVZInfo) UpdateClusterIDAnnotation(string) error {
+	return nil
+}
+
 func (f *FakeVZInfo) GetVizierClusterInfo() (*cvmsgspb.VizierClusterInfo, error) {
 	return &cvmsgspb.VizierClusterInfo{
 		ClusterUID:  "084cb5f0-ff69-11e9-a63e-42010a8a0193",
