@@ -111,13 +111,15 @@ struct go_http2_symaddrs_t {
   struct location_t http2Framer_WriteDataPadded_f_loc;          // 8
   struct location_t http2Framer_WriteDataPadded_streamID_loc;   // 16
   struct location_t http2Framer_WriteDataPadded_endStream_loc;  // 20
-  struct location_t http2Framer_WriteDataPadded_data_loc;       // 24
+  struct location_t http2Framer_WriteDataPadded_data_ptr_loc;   // 24
+  struct location_t http2Framer_WriteDataPadded_data_len_loc;   // 32
 
   // Arguments of golang.org/x/net/http2.(*Framer).WriteDataPadded.
   struct location_t http2_WriteDataPadded_f_loc;          // 8
   struct location_t http2_WriteDataPadded_streamID_loc;   // 16
   struct location_t http2_WriteDataPadded_endStream_loc;  // 20
-  struct location_t http2_WriteDataPadded_data_loc;       // 24
+  struct location_t http2_WriteDataPadded_data_ptr_loc;   // 24
+  struct location_t http2_WriteDataPadded_data_len_loc;   // 32
 
   // Arguments of net/http.(*http2Framer).checkFrameOrder.
   struct location_t http2Framer_checkFrameOrder_fr_loc;  // 8
@@ -151,7 +153,8 @@ struct go_http2_symaddrs_t {
   struct location_t writeHeader_l_loc;          // 8
   struct location_t writeHeader_streamID_loc;   // 16
   struct location_t writeHeader_endStream_loc;  // 20
-  struct location_t writeHeader_hf_loc;         // 24
+  struct location_t writeHeader_hf_ptr_loc;     // 24
+  struct location_t writeHeader_hf_len_loc;     // 32
 
   // ---- struct member offsets ----
 

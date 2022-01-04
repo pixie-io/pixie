@@ -37,6 +37,14 @@ using ::px::stirling::obj_tools::ElfReader;
 namespace px {
 namespace stirling {
 
+namespace {
+// A golang array consists of a pointer, a length and a capacity.
+// These could come from DWARF information, but are hard-coded,
+// since an array is a pretty stable type.
+constexpr int kGoArrayPtrOffset = 0;
+constexpr int kGoArrayLenOffset = 8;
+}  // namespace
+
 //-----------------------------------------------------------------------------
 // Symbol Population Functions
 //-----------------------------------------------------------------------------
@@ -313,7 +321,12 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
                GetArgOffset(args_map, "streamID"));
     LOG_ASSIGN(symaddrs->http2Framer_WriteDataPadded_endStream_loc,
                GetArgOffset(args_map, "endStream"));
-    LOG_ASSIGN(symaddrs->http2Framer_WriteDataPadded_data_loc, GetArgOffset(args_map, "data"));
+
+    LOG_ASSIGN(symaddrs->http2Framer_WriteDataPadded_data_ptr_loc, GetArgOffset(args_map, "data"));
+    symaddrs->http2Framer_WriteDataPadded_data_ptr_loc.offset += kGoArrayPtrOffset;
+
+    LOG_ASSIGN(symaddrs->http2Framer_WriteDataPadded_data_len_loc, GetArgOffset(args_map, "data"));
+    symaddrs->http2Framer_WriteDataPadded_data_len_loc.offset += kGoArrayLenOffset;
   }
 
   // Arguments of golang.org/x/net/http2.(*Framer).WriteDataPadded.
@@ -323,7 +336,12 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
     LOG_ASSIGN(symaddrs->http2_WriteDataPadded_f_loc, GetArgOffset(args_map, "f"));
     LOG_ASSIGN(symaddrs->http2_WriteDataPadded_streamID_loc, GetArgOffset(args_map, "streamID"));
     LOG_ASSIGN(symaddrs->http2_WriteDataPadded_endStream_loc, GetArgOffset(args_map, "endStream"));
-    LOG_ASSIGN(symaddrs->http2_WriteDataPadded_data_loc, GetArgOffset(args_map, "data"));
+
+    LOG_ASSIGN(symaddrs->http2_WriteDataPadded_data_ptr_loc, GetArgOffset(args_map, "data"));
+    symaddrs->http2_WriteDataPadded_data_ptr_loc.offset += kGoArrayPtrOffset;
+
+    LOG_ASSIGN(symaddrs->http2_WriteDataPadded_data_len_loc, GetArgOffset(args_map, "data"));
+    symaddrs->http2_WriteDataPadded_data_len_loc.offset += kGoArrayLenOffset;
   }
 
   // Arguments of net/http.(*http2Framer).checkFrameOrder.
@@ -392,7 +410,12 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
     LOG_ASSIGN(symaddrs->writeHeader_l_loc, GetArgOffset(args_map, "l"));
     LOG_ASSIGN(symaddrs->writeHeader_streamID_loc, GetArgOffset(args_map, "streamID"));
     LOG_ASSIGN(symaddrs->writeHeader_endStream_loc, GetArgOffset(args_map, "endStream"));
-    LOG_ASSIGN(symaddrs->writeHeader_hf_loc, GetArgOffset(args_map, "hf"));
+
+    LOG_ASSIGN(symaddrs->writeHeader_hf_ptr_loc, GetArgOffset(args_map, "hf"));
+    symaddrs->writeHeader_hf_ptr_loc.offset += kGoArrayPtrOffset;
+
+    LOG_ASSIGN(symaddrs->writeHeader_hf_len_loc, GetArgOffset(args_map, "hf"));
+    symaddrs->writeHeader_hf_len_loc.offset += kGoArrayLenOffset;
   }
 
 #undef VENDOR_SYMBOL

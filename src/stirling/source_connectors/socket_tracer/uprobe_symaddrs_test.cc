@@ -76,7 +76,8 @@ TEST_F(UprobeSymaddrsTest, GoHTTP2SymAddrs) {
   // If the test breaks because of that, just update the numbers here.
   EXPECT_EQ(symaddrs.http2Framer_WriteDataPadded_f_loc,
             (location_t{.type = kLocationTypeStack, .offset = 8}));
-  EXPECT_EQ(symaddrs.writeHeader_hf_loc, (location_t{.type = kLocationTypeStack, .offset = 24}));
+  EXPECT_EQ(symaddrs.writeHeader_hf_ptr_loc,
+            (location_t{.type = kLocationTypeStack, .offset = 24}));
 }
 
 TEST_F(UprobeSymaddrsTest, GoTLSSymAddrs) {
