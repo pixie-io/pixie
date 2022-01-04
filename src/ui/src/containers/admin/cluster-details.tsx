@@ -482,7 +482,7 @@ const AgentsTab: React.FC<{
   return (
     <>
       <TableContainer className={classes.tableContainer}>
-        {(statusGroup !== 'healthy') ? (
+        {(statusGroup !== 'healthy' && statusGroup !== 'degraded') ? (
           <div className={classes.errorMessage}>
             {`Cannot get agents for cluster ${cluster.clusterName}, reason: ${statusGroup}`}
           </div>
