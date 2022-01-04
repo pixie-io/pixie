@@ -2412,13 +2412,6 @@ func TestServer_Login_UnverifiedUser_FailsLogin(t *testing.T) {
 		IdentityProvider: auth0IdentityProvider,
 	}).Return(utils.ProtoFromUUIDStrOrNil(userID), nil)
 
-	mockProfile.EXPECT().
-		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
-			ID:             utils.ProtoFromUUIDStrOrNil(userID),
-			DisplayPicture: &types.StringValue{Value: "something"},
-		}).
-		Return(nil, nil)
-
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
 	viper.Set("jwt_signing_key", "jwtkey")
@@ -2481,13 +2474,6 @@ func TestServer_Signup_UnverifiedUser_FailsLogin(t *testing.T) {
 		fakeUserInfoSecondRequest.PLOrgID = plorgid
 	}).Return(nil)
 	a.EXPECT().GetUserInfo(authProviderID).Return(fakeUserInfoSecondRequest, nil)
-
-	mockProfile.EXPECT().
-		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
-			ID:             utils.ProtoFromUUIDStrOrNil(userID),
-			DisplayPicture: &types.StringValue{Value: "something"},
-		}).
-		Return(nil, nil)
 
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
 
@@ -3028,13 +3014,6 @@ func TestServer_Login_UnverifiedUserWithInviteLink_CreatesUser(t *testing.T) {
 		}).
 		Return(nil, status.Error(codes.NotFound, "user not found"))
 
-	mockProfile.EXPECT().
-		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
-			ID:             userPb,
-			DisplayPicture: &types.StringValue{Value: "something"},
-		}).
-		Return(nil, nil)
-
 	mockOrg.EXPECT().
 		VerifyInviteToken(gomock.Any(), &profilepb.InviteToken{
 			SignedClaims: "invite-token",
@@ -3075,7 +3054,6 @@ func TestServer_Signup_UnverifiedUserWithInviteLink_CreatesUser(t *testing.T) {
 	orgPb := utils.ProtoFromUUIDStrOrNil(orgID)
 
 	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
-	userPb := utils.ProtoFromUUIDStrOrNil(userID)
 
 	authProviderID := "github|abcdefg"
 	// Setup expectations for the mocks.
@@ -3117,12 +3095,6 @@ func TestServer_Signup_UnverifiedUserWithInviteLink_CreatesUser(t *testing.T) {
 		ID:      orgPb,
 		OrgName: "invitedorg",
 	}
-	mockProfile.EXPECT().
-		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
-			ID:             userPb,
-			DisplayPicture: &types.StringValue{Value: "something"},
-		}).
-		Return(nil, nil)
 
 	mockOrg.EXPECT().
 		GetOrg(gomock.Any(), orgPb).
