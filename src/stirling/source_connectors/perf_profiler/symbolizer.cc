@@ -24,7 +24,7 @@
 
 using ::px::stirling::obj_tools::ElfReader;
 DEFINE_uint64(
-    stirling_profiler_cache_eviction_threshold, 0,
+    stirling_profiler_cache_eviction_threshold, 1000,
     "Number of symbols in the current generation of the cache that triggers an eviction.");
 
 namespace px {
