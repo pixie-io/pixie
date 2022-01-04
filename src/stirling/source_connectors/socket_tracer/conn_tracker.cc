@@ -591,6 +591,7 @@ bool ConnTracker::IsRemoteAddrInCluster(const std::vector<CIDRBlock>& cluster_ci
 
 namespace {
 
+// PROTOCOL_LIST: Requires update on new protocols. Add trace role(s) for your new protocol.
 auto CreateTraceRoles() {
   EnumMap<traffic_protocol_t, absl::flat_hash_set<endpoint_role_t>> res;
   res.Set(kProtocolUnknown, {});
