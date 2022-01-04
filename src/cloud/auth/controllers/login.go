@@ -170,12 +170,43 @@ func (s *Server) googleOAuthLogin(ctx context.Context, userInfo *UserInfo, user 
 		return s.loginUser(ctx, userInfo, orgInfo, newUser)
 	}
 
+	// If existing users don't belong to an org, but have a non-empty HostedDomain
+	// we try add them to the corresponding DomainName org. We want
+	// HostedDomain users to use HostedDomain orgs and nothing else.
+	if utils.IsNilUUIDProto(user.OrgID) && userInfo.HostedDomain != "" {
+		orgInfo, err := s.getMatchingOrgForUser(ctx, userInfo)
+		if status.Code(err) == codes.NotFound {
+			return nil, status.Error(codes.NotFound, "matching org for existing user does not exist, contact support")
+		}
+		if err != nil {
+			return nil, err
+		}
+		// Add user to org.
+		_, err = s.env.ProfileClient().UpdateUser(ctx, &profilepb.UpdateUserRequest{
+			ID:    user.ID,
+			OrgID: orgInfo.ID,
+			IsApproved: &types.BoolValue{
+				// User should only be auto-approved if the org doesn't require
+				// approvals (EnableApprovals = false).
+				Value: !orgInfo.EnableApprovals,
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return s.loginUser(ctx, userInfo, orgInfo, newUser)
+	}
+
 	var orgInfo *profilepb.OrgInfo
 	var err error
 	if !utils.IsNilUUIDProto(user.OrgID) {
 		orgInfo, err = s.env.OrgClient().GetOrg(ctx, user.OrgID)
+		if status.Code(err) == codes.NotFound {
+			return nil, status.Error(codes.NotFound, "organization ID does not exist, please contact support")
+		}
 		if err != nil {
-			return nil, status.Errorf(codes.NotFound, "organization not found, please register, or contact support '%v'", err)
+			return nil, status.Errorf(codes.Internal, "%v", err)
 		}
 	}
 
