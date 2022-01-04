@@ -205,8 +205,8 @@ const useDialogStyles = makeStyles((theme: Theme) => createStyles({
     maxHeight: '60vh',
   },
   completionsContainer: {
-    // 80% as wide as the Command Input, and using 80% of the fontSize and 80% of the spacing
-    maxWidth: '608px',
+    // 608px is 80% as wide as the Command Input; fontSize and spacing are reduced similarly.
+    maxWidth: 'min(95vw, min(auto, 608px))',
     maxHeight: '60vh',
   },
   explanationContainer: {
@@ -215,7 +215,7 @@ const useDialogStyles = makeStyles((theme: Theme) => createStyles({
     borderTop: 'solid 1px',
     borderColor: theme.palette.background.three,
   },
-}));
+}), { name: 'DialogDropdown' });
 
 export const DialogDropdown = React.memo<DialogDropdownProps>(({
   placeholder,
