@@ -186,6 +186,24 @@ const styles = () => createStyles({
       alignItems: 'center',
       justifyContent: 'center',
     },
+    // Vega-Tooltip (included in Vega-Lite) doesn't quite get the math right when constraining a tooltip to the screen.
+    // Additionally, we sometimes use titles so long as to fill the screen (generated method signatures in flamegraphs).
+    // Sticky positioning and multi-line word wrap, respectively, handle both issues with just CSS.
+    '#vg-tooltip-element.vg-tooltip': {
+      maxWidth: 'min(400px, 80vw)',
+      width: 'fit-content',
+      position: 'sticky',
+      // The div#root element confuses sticky positioning without this negative margin.
+      marginTop: '-100vh',
+      '& > h2': {
+        display: '-webkit-box',
+        maxWidth: '100%',
+        '-webkit-line-clamp': 4,
+        '-webkit-box-orient': 'vertical',
+        overflow: 'hidden',
+        overflowWrap: 'anywhere',
+      },
+    },
   },
 });
 
