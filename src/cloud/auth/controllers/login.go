@@ -122,6 +122,11 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 			_, err := s.env.ProfileClient().UpdateUser(ctx, &profilepb.UpdateUserRequest{
 				ID:    user.ID,
 				OrgID: inviteOrgID,
+				IsApproved: &types.BoolValue{
+					// User should only be auto-approved if the org doesn't require
+					// approvals (EnableApprovals = false).
+					Value: !orgInfo.EnableApprovals,
+				},
 			})
 			if err != nil {
 				return nil, err
