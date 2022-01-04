@@ -258,12 +258,12 @@ type token struct {
 // completeUserLogin does the final login steps and generates a token for the user.
 func (s *Server) completeUserLogin(ctx context.Context, userInfo *UserInfo, orgInfo *profilepb.OrgInfo) (*token, error) {
 	pc := s.env.ProfileClient()
-	orgID := userInfo.PLOrgID
+	var orgID string
 	if orgInfo != nil {
 		orgID = utils.ProtoToUUIDStr(orgInfo.ID)
-		if orgID != userInfo.PLOrgID {
-			_, _ = s.updateAuthProviderUser(userInfo.AuthProviderID, orgID, userInfo.PLUserID)
-		}
+	}
+	if orgID != userInfo.PLOrgID {
+		_, _ = s.updateAuthProviderUser(userInfo.AuthProviderID, orgID, userInfo.PLUserID)
 	}
 	// Check to make sure the user is approved to login. They are default approved
 	// if the org does not EnableApprovals.
