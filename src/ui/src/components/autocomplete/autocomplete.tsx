@@ -73,7 +73,7 @@ function findNextItem(
   if (!activeItem || completions.length === 0) {
     return '';
   }
-  const { index } = itemsMap.get(activeItem);
+  const { index } = itemsMap.get(activeItem) ?? { index: 0 };
   const { length } = completions;
   for (let i = 1; i < length; i++) {
     const nextIndex = (index + i * direction + length) % length;
