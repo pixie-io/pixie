@@ -184,10 +184,16 @@ KafkaTraceRecord kJoinGroupRecord = {
         "\"member_id\":\"consumer-console-consumer\",\"members\":[{\"member_id\":\"consumer-"
         "console-consumer\",\"group_instance_id\":\"\"}]}"};
 
-KafkaTraceRecord kSyncGroupRecord = {.req_cmd = kafka::APIKey::kSyncGroup,
-                                     .client_id = "console-consumer",
-                                     .req_body = "",
-                                     .resp = ""};
+KafkaTraceRecord kSyncGroupRecord = {
+    .req_cmd = kafka::APIKey::kSyncGroup,
+    .client_id = "console-consumer",
+    .req_body =
+        "{\"group_id\":\"console-consumer\",\"generation_id\":1,\"member_id\":\"consumer-console-"
+        "consumer\",\"group_instance_id\":\"\",\"protocol_type\":\"consumer\",\"protocol_name\":"
+        "\"range\",\"assignments\":[{\"member_id\":\"consumer-console-consumer\"}]}",
+    .resp =
+        "{\"throttle_time_ms\":0,\"error_code\":0,\"protocol_type\":\"consumer\",\"protocol_name\":"
+        "\"range\"}"};
 
 KafkaTraceRecord kProduceRecord = {
     .req_cmd = kafka::APIKey::kProduce,

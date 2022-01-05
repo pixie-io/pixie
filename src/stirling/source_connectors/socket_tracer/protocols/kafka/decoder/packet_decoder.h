@@ -215,6 +215,9 @@ class PacketDecoder {
   // Member in Join Group Response.
   StatusOr<JoinGroupMember> ExtractJoinGroupMember();
 
+  // Assignment in Sync Group Request.
+  StatusOr<SyncGroupAssignment> ExtractSyncGroupAssignment();
+
   Status ExtractReqHeader(Request* req);
   Status ExtractRespHeader(Response* resp);
 
@@ -224,6 +227,8 @@ class PacketDecoder {
   StatusOr<FetchResp> ExtractFetchResp();
   StatusOr<JoinGroupReq> ExtractJoinGroupReq();
   StatusOr<JoinGroupResp> ExtractJoinGroupResp();
+  StatusOr<SyncGroupReq> ExtractSyncGroupReq();
+  StatusOr<SyncGroupResp> ExtractSyncGroupResp();
 
   bool eof() { return binary_decoder_.eof(); }
 

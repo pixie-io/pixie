@@ -74,6 +74,20 @@ Status ProcessJoinGroupResp(PacketDecoder* decoder, Response* resp) {
   return Status::OK();
 }
 
+Status ProcessSyncGroupReq(PacketDecoder* decoder, Request* req) {
+  PL_ASSIGN_OR_RETURN(SyncGroupReq r, decoder->ExtractSyncGroupReq());
+
+  req->msg = ToString(r);
+  return Status::OK();
+}
+
+Status ProcessSyncGroupResp(PacketDecoder* decoder, Response* resp) {
+  PL_ASSIGN_OR_RETURN(SyncGroupResp r, decoder->ExtractSyncGroupResp());
+
+  resp->msg = ToString(r);
+  return Status::OK();
+}
+
 Status ProcessReq(Packet* req_packet, Request* req) {
   req->timestamp_ns = req_packet->timestamp_ns;
   PacketDecoder decoder(*req_packet);
@@ -88,6 +102,8 @@ Status ProcessReq(Packet* req_packet, Request* req) {
       return ProcessFetchReq(&decoder, req);
     case APIKey::kJoinGroup:
       return ProcessJoinGroupReq(&decoder, req);
+    case APIKey::kSyncGroup:
+      return ProcessSyncGroupReq(&decoder, req);
     default:
       VLOG(1) << absl::Substitute("Unparsed cmd $0", magic_enum::enum_name(req->api_key));
   }
@@ -108,6 +124,8 @@ Status ProcessResp(Packet* resp_packet, Response* resp, APIKey api_key, int16_t 
       return ProcessFetchResp(&decoder, resp);
     case APIKey::kJoinGroup:
       return ProcessJoinGroupResp(&decoder, resp);
+    case APIKey::kSyncGroup:
+      return ProcessSyncGroupResp(&decoder, resp);
     // TODO(chengruizhe): Add support for more api keys.
     default:
       VLOG(1) << absl::Substitute("Unparsed cmd $0", magic_enum::enum_name(api_key));
