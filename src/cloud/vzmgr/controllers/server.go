@@ -510,6 +510,9 @@ func (s *Server) UpdateVizierConfig(ctx context.Context, req *cvmsgspb.UpdateViz
 	auEnabled := currentConfig.AutoUpdateEnabled
 
 	if req.ConfigUpdate.PassthroughEnabled != nil {
+		if !req.ConfigUpdate.PassthroughEnabled.Value {
+			return nil, status.Error(codes.InvalidArgument, "Deprecated. Disabling passthrough is no longer supported and is being phased out.")
+		}
 		ptEnabled = req.ConfigUpdate.PassthroughEnabled.Value
 	}
 
