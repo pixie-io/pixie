@@ -53,6 +53,8 @@ export const ScriptLoader: React.FC = React.memo(() => {
         execute();
       } catch (e) {
         showSnackbar({ message: `Could not execute script: ${e.message}` });
+        // eslint-disable-next-line no-console
+        console.error(e.toString());
       }
     }
 

@@ -65,4 +65,11 @@ export class VizierQueryError extends Error {
   ) {
     super(getUserFacingMessage(errType));
   }
+
+  toString(): string {
+    const details = Array.isArray(this.details) ? this.details : [this.details];
+    const detailsString = details.map((m) => `\n  ${m}`).join('');
+
+    return `VizierQueryError(type=${this.errType}, status=${this.status}): ${this.message}${detailsString}`;
+  }
 }
