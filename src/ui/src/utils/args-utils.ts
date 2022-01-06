@@ -88,7 +88,7 @@ export function argsForVis(vis: Vis, args: Arguments): Arguments {
   const outArgs: Arguments = {};
   for (const { name, defaultValue } of vis.variables) {
     // Note: if defaultValue is undefined, the arg is required.
-    outArgs[name] = args[name] ?? defaultValue ?? '';
+    outArgs[name] = (args[name] || defaultValue) ?? '';
   }
 
   return outArgs;

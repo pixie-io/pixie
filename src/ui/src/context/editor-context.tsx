@@ -22,9 +22,9 @@ import { VizierQueryError } from 'app/api';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
 import { parseVis, Vis } from 'app/containers/live/vis';
 import { ResultsContext } from 'app/context/results-context';
+import { argsForVis } from 'app/utils/args-utils';
 
 import { SetStateFunc } from './common';
-import { LayoutContext } from './layout-context';
 import { ScriptContext } from './script-context';
 
 export interface EditorContextProps {
@@ -47,17 +47,11 @@ export const EditorContextProvider: React.FC = React.memo(({ children }) => {
     setScratchScript,
   } = React.useContext(ScriptsContext);
 
-  const {
-    editorPanelOpen,
-  } = React.useContext(LayoutContext);
-
   const [visEditorText, setVisEditorText] = React.useState<string>('');
   const [pxlEditorText, setPxlEditorText] = React.useState<string>('');
 
   // Saves the editor values in the script.
   const saveEditor = React.useCallback(() => {
-    const id = editorPanelOpen ? SCRATCH_SCRIPT.id : script.id;
-
     // Parse Vis for any possible formatting errors.
     let vis: Vis;
     try {
@@ -70,16 +64,22 @@ export const EditorContextProvider: React.FC = React.memo(({ children }) => {
       return;
     }
 
+    const pxlDirty = pxlEditorText !== script.code;
+    const visDirty = JSON.stringify(vis) !== JSON.stringify(script.vis);
+
+    const id = (pxlDirty || visDirty) ? SCRATCH_SCRIPT.id : script.id;
+    const newArgs = visDirty ? argsForVis(vis, args) : args;
+
     const scratchScript = {
       ...script, id, code: pxlEditorText, vis,
     };
-    if (editorPanelOpen) {
+    if (pxlDirty || visDirty) {
       setScratchScript(scratchScript);
     }
-    setScriptAndArgsManually(scratchScript, args);
+    setScriptAndArgsManually(scratchScript, newArgs);
   }, [
     setScratchScript, setScriptAndArgsManually, script, args,
-    editorPanelOpen, pxlEditorText, visEditorText, resultsContext,
+    pxlEditorText, visEditorText, resultsContext,
   ]);
 
   // Update the text when the script changes, but not edited.
