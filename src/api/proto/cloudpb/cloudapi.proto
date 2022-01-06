@@ -276,8 +276,9 @@ message VizierConfig {
 }
 
 message VizierConfigUpdate {
+  // Deprecated: We no longer let users disable passthrough. This will be removed in a future release.
   google.protobuf.BoolValue passthrough_enabled = 1;
-  google.protobuf.BoolValue auto_update_enabled = 2;
+  reserved 2;
 }
 
 message GetClusterInfoRequest {

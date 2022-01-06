@@ -402,7 +402,6 @@ func TestVizierClusterInfo_UpdateClusterVizierConfig(t *testing.T) {
 				VizierID: clusterID,
 				ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
 					PassthroughEnabled: &types.BoolValue{Value: true},
-					AutoUpdateEnabled:  &types.BoolValue{Value: false},
 				},
 			}
 
@@ -416,7 +415,6 @@ func TestVizierClusterInfo_UpdateClusterVizierConfig(t *testing.T) {
 				ID: clusterID,
 				ConfigUpdate: &cloudpb.VizierConfigUpdate{
 					PassthroughEnabled: &types.BoolValue{Value: true},
-					AutoUpdateEnabled:  &types.BoolValue{Value: false},
 				},
 			})
 

@@ -507,7 +507,6 @@ func (s *Server) UpdateVizierConfig(ctx context.Context, req *cvmsgspb.UpdateViz
 	}
 
 	ptEnabled := currentConfig.PassthroughEnabled
-	auEnabled := currentConfig.AutoUpdateEnabled
 
 	if req.ConfigUpdate.PassthroughEnabled != nil {
 		if !req.ConfigUpdate.PassthroughEnabled.Value {
@@ -516,17 +515,12 @@ func (s *Server) UpdateVizierConfig(ctx context.Context, req *cvmsgspb.UpdateViz
 		ptEnabled = req.ConfigUpdate.PassthroughEnabled.Value
 	}
 
-	if req.ConfigUpdate.AutoUpdateEnabled != nil {
-		return nil, status.Error(codes.InvalidArgument, "Deprecated. Please configure auto-update through Vizier pl-cluster-config ConfigMap.")
-	}
-
 	query := `
     UPDATE vizier_cluster_info
-    SET passthrough_enabled = $1,
-        auto_update_enabled = $2
-    WHERE vizier_cluster_id = $3`
+    SET passthrough_enabled = $1
+    WHERE vizier_cluster_id = $2`
 
-	res, err := s.db.Exec(query, ptEnabled, auEnabled, vizierID)
+	res, err := s.db.Exec(query, ptEnabled, vizierID)
 	if err != nil {
 		return nil, err
 	}

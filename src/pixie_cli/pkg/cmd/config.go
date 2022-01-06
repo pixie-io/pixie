@@ -38,8 +38,6 @@ func init() {
 
 	UpdateConfigCmd.Flags().StringP("passthrough", "t", "", "Whether pasthrough should be enabled")
 	viper.BindPFlag("passthrough", UpdateConfigCmd.Flags().Lookup("passthrough"))
-	UpdateConfigCmd.Flags().StringP("auto_update", "u", "", "Whether auto-updates should be enabled")
-	viper.BindPFlag("auto_update", UpdateConfigCmd.Flags().Lookup("auto_update"))
 
 	ConfigCmd.AddCommand(GetConfigCmd)
 	ConfigCmd.AddCommand(UpdateConfigCmd)
@@ -86,7 +84,6 @@ var GetConfigCmd = &cobra.Command{
 		}
 
 		cliUtils.Infof("%s: %t", "PassthroughEnabled", vzInfo[0].Config.PassthroughEnabled)
-		cliUtils.Infof("%s: %t", "AutoUpdateEnabled", vzInfo[0].Config.AutoUpdateEnabled)
 	},
 }
 
@@ -116,9 +113,8 @@ var UpdateConfigCmd = &cobra.Command{
 		}
 
 		ptEnabled, _ := cmd.Flags().GetString("passthrough")
-		auEnabled, _ := cmd.Flags().GetString("auto_update")
 
-		if ptEnabled == "" && auEnabled == "" {
+		if ptEnabled == "" {
 			return // No config settings specified.
 		}
 
@@ -129,13 +125,6 @@ var UpdateConfigCmd = &cobra.Command{
 				update.PassthroughEnabled = &types.BoolValue{Value: pt}
 			} else {
 				cliUtils.Errorf("Invalid value provided for passthrough: %s", err.Error())
-			}
-		}
-		if auEnabled != "" {
-			if au, err := strconv.ParseBool(auEnabled); err == nil {
-				update.AutoUpdateEnabled = &types.BoolValue{Value: au}
-			} else {
-				cliUtils.Errorf("Invalid value provided for auto_update: %s", err.Error())
 			}
 		}
 

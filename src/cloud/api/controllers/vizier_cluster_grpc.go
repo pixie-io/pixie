@@ -251,7 +251,6 @@ func (v *VizierClusterInfo) UpdateClusterVizierConfig(ctx context.Context, req *
 		VizierID: req.ID,
 		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
 			PassthroughEnabled: req.ConfigUpdate.PassthroughEnabled,
-			AutoUpdateEnabled:  req.ConfigUpdate.AutoUpdateEnabled,
 		},
 	})
 	if err != nil {
