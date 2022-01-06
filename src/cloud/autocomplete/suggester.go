@@ -146,11 +146,13 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 	highlight := elastic.NewHighlight()
 	highlight = highlight.Fields(elastic.NewHighlighterField("*"))
 
+	// Deduplicate results by name, and prefer the result with the most recent updateVersion.
+	coll := elastic.NewCollapseBuilder("name.keyword").InnerHit(elastic.NewInnerHit().Size(1).Name("collapse").Sort("updateVersion", false))
+
 	for _, r := range reqs {
 		ms.Add(elastic.NewSearchRequest().
 			Highlight(highlight).
-			Query(e.getQueryForRequest(r.OrgID, r.ClusterUID, r.Input, r.AllowedKinds, r.AllowedArgs)).
-			Size(searchLimit).FetchSourceIncludeExclude([]string{"kind", "name", "ns", "state"}, []string{}))
+			Query(e.getQueryForRequest(r.OrgID, r.ClusterUID, r.Input, r.AllowedKinds, r.AllowedArgs)).FetchSourceIncludeExclude([]string{"kind", "name", "ns", "state", "updateVersion"}, []string{}).Collapse(coll).Size(searchLimit))
 	}
 
 	resp, err := ms.Do(context.Background())
@@ -247,8 +249,15 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 		hasAdditionalMatches := false
 		results := make([]*Suggestion, 0)
 		for _, h := range r.Hits.Hits {
+			src := h.Source
+			// Use the top-ranked result from the collapse. For some reason, this doesn't automatically
+			// become the main hit in Elastic and we need to pull it out of the innerHits.
+			// The innerHits from the collapse should always be defined, so this just is extra defensive.
+			if h.InnerHits["collapse"].Hits != nil && len(h.InnerHits["collapse"].Hits.Hits) > 0 {
+				src = h.InnerHits["collapse"].Hits.Hits[0].Source
+			}
 			res := &md.EsMDEntity{}
-			err = json.Unmarshal(h.Source, res)
+			err = json.Unmarshal(src, res)
 			if err != nil {
 				return nil, err
 			}

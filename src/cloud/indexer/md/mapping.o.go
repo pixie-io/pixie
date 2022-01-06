@@ -163,7 +163,12 @@ const IndexMapping = `
       "name": {
         "type": "text",
         "analyzer": "autocomplete",
-        "eager_global_ordinals": true
+        "eager_global_ordinals": true,
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
       },
       "ns": {
         "type": "text",
