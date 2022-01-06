@@ -129,7 +129,7 @@ export const ScriptContextProvider: React.FC = React.memo(({ children }) => {
   const [awaitingExecution, setAwaitingExecution] = React.useState(false);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const execute: () => void = React.useMemo(() => () => {
+  const execute: () => void = React.useCallback(() => {
     if (!readyToExecute) {
       setAwaitingExecution(true);
       return;
@@ -169,6 +169,7 @@ export const ScriptContextProvider: React.FC = React.memo(({ children }) => {
       getQueryFuncs(script.vis, args, embedState.widget),
     );
     setRunningExecution(execution);
+    setManual(false);
     resultsContext.clearResults();
     resultsContext.setLoading(true);
     resultsContext.setStreaming(isStreaming(script.code));

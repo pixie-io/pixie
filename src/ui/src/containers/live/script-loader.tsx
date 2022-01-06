@@ -20,8 +20,10 @@ import * as React from 'react';
 
 import { ClusterContext } from 'app/common/cluster-context';
 import { useSnackbar } from 'app/components';
+import { ResultsContext } from 'app/context/results-context';
 import { ScriptContext } from 'app/context/script-context';
 import { stableSerializeArgs } from 'app/utils/args-utils';
+import { containsMutation } from 'app/utils/pxl';
 
 /**
  * Automatically runs the selected script whenever it changes, the args change, or the vis spec changes.
@@ -32,6 +34,7 @@ export const ScriptLoader: React.FC = React.memo(() => {
     script, args, execute, cancelExecution, manual,
   } = React.useContext(ScriptContext);
   const { selectedClusterName: clusterName } = React.useContext(ClusterContext);
+  const resultsContext = React.useContext(ResultsContext);
 
   const showSnackbar = useSnackbar();
 
@@ -45,10 +48,7 @@ export const ScriptLoader: React.FC = React.memo(() => {
     if (script == null || args == null) return;
     cancelExecution?.();
 
-    if (
-      script
-      && serializedArgs
-    ) {
+    if (!containsMutation(script.code) || manual) {
       try {
         execute();
       } catch (e) {
@@ -56,10 +56,18 @@ export const ScriptLoader: React.FC = React.memo(() => {
         // eslint-disable-next-line no-console
         console.error(e.toString());
       }
+    } else {
+      // This can come up when executing a mutation script, then switching clusters. `manual` will not be set after
+      // the first execution, but we still need to clear results when we've changed the parameters.
+      resultsContext.clearResults();
+      resultsContext.setLoading(false);
+      resultsContext.setStreaming(false);
     }
 
+    // `manual` is omitted because it's updated together with script, and disabled again when the script executes.
+    // Putting it in the dependency array would immediately cancel a script that's run this way.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [script, serializedArgs, serializedVis, clusterName, manual]);
+  }, [script, serializedArgs, serializedVis, clusterName]);
 
   return null;
 });
