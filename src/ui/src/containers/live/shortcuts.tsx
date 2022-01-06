@@ -27,7 +27,6 @@ import { Handlers, KeyMap, ShortcutsContextProps } from 'app/context/shortcuts-c
 import { isMac } from 'app/utils/detect-os';
 
 type LiveHotKeyAction =
-  'pixie-command' |
   'show-help' |
   'toggle-editor' |
   'toggle-data-drawer' |
@@ -45,10 +44,6 @@ export function getKeyMap(): KeyMap<LiveHotKeyAction> {
     displaySequence: [displayPrefix, key],
   });
   return {
-    'pixie-command': {
-      ...withPrefix('k'),
-      description: 'Activate Pixie Command',
-    },
     'toggle-editor': {
       ...withPrefix('e'),
       description: 'Show/hide script editor',

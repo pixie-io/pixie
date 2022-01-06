@@ -38,7 +38,6 @@ const Consumer = () => {
   return (
     <>
       <button type='button' onKeyPress={(e?) => ctx['show-help'].handler(e?.nativeEvent)}>show-help</button>
-      <button type='button' onKeyPress={(e?) => ctx['pixie-command'].handler(e?.nativeEvent)}>pixie-command</button>
       <button type='button' onKeyPress={(e?) => ctx['toggle-editor'].handler(e?.nativeEvent)}>toggle-editor</button>
       <button
         type='button'
@@ -87,7 +86,6 @@ describe('Shortcut keys', () => {
   // That happens upstream, in react-hotkeys, and should be tested there.
   describe('handlers', () => {
     const inputHandlers = {
-      'pixie-command': jest.fn(),
       'toggle-editor': jest.fn(),
       'toggle-data-drawer': jest.fn(),
       execute: jest.fn(),

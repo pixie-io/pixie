@@ -369,8 +369,6 @@ const LiveView = React.memo(() => {
     'toggle-editor': () => setEditorPanelOpen((editable) => !editable),
     execute: () => saveEditor(),
     'toggle-data-drawer': () => setDataDrawerOpen((open) => !open),
-    // TODO(philkuz,PC-917) Pixie Command shortcut has been removed while we work to resolve its quirks.
-    'pixie-command': () => {},
   }), [setEditorPanelOpen, saveEditor, setDataDrawerOpen]);
 
   const canvasRef = React.useRef<HTMLDivElement>(null);
