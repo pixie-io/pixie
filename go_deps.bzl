@@ -333,6 +333,13 @@ def pl_go_dependencies():
         version = "v0.4.1",
     )
     go_repository(
+        name = "com_github_bsm_go_vlq",
+        importpath = "github.com/bsm/go-vlq",
+        sum = "h1:D64GF/Xr5zSUnM3q1Jylzo4sK7szhP/ON+nb2DB5XJA=",
+        version = "v0.0.0-20150828105119-ec6e8d4f5f4e",
+    )
+
+    go_repository(
         name = "com_github_buger_jsonparser",
         importpath = "github.com/buger/jsonparser",
         sum = "h1:y853v6rXx+zefEcjET3JuKAqvhj+FKflQijjeaSv2iA=",
