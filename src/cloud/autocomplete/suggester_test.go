@@ -85,6 +85,60 @@ var mdEntities = []md.EsMDEntity{
 		TimeStoppedNS:      0,
 		RelatedEntityNames: []string{},
 	},
+	{
+		OrgID:              org1.String(),
+		UID:                "dup1",
+		Name:               "dup/dup1",
+		Kind:               "node",
+		TimeStartedNS:      1,
+		TimeStoppedNS:      0,
+		RelatedEntityNames: []string{},
+	},
+	{
+		OrgID:              org1.String(),
+		UID:                "dup2",
+		Name:               "dup/dup2",
+		Kind:               "node",
+		TimeStartedNS:      1,
+		TimeStoppedNS:      0,
+		RelatedEntityNames: []string{},
+	},
+	{
+		OrgID:              org1.String(),
+		UID:                "dup3",
+		Name:               "dup/dup3",
+		Kind:               "node",
+		TimeStartedNS:      1,
+		TimeStoppedNS:      0,
+		RelatedEntityNames: []string{},
+	},
+	{
+		OrgID:              org1.String(),
+		UID:                "dup4",
+		Name:               "dup/dup4",
+		Kind:               "node",
+		TimeStartedNS:      1,
+		TimeStoppedNS:      0,
+		RelatedEntityNames: []string{},
+	},
+	{
+		OrgID:              org1.String(),
+		UID:                "dup5",
+		Name:               "dup/dup5",
+		Kind:               "node",
+		TimeStartedNS:      1,
+		TimeStoppedNS:      0,
+		RelatedEntityNames: []string{},
+	},
+	{
+		OrgID:              org1.String(),
+		UID:                "dup6",
+		Name:               "dup/dup6",
+		Kind:               "node",
+		TimeStartedNS:      1,
+		TimeStoppedNS:      0,
+		RelatedEntityNames: []string{},
+	},
 }
 
 var elasticClient *elastic.Client
@@ -152,7 +206,8 @@ func TestGetSuggestions(t *testing.T) {
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
 				{
-					ExactMatch: false,
+					ExactMatch:           false,
+					HasAdditionalMatches: false,
 					Suggestions: []*autocomplete.Suggestion{
 						{
 							Name: "pl/testService",
@@ -180,11 +235,53 @@ func TestGetSuggestions(t *testing.T) {
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
 				{
-					ExactMatch: true,
+					ExactMatch:           true,
+					HasAdditionalMatches: false,
 					Suggestions: []*autocomplete.Suggestion{
 						{
 							Name: "pl/testService",
 							Kind: cloudpb.AEK_SVC,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "additional_matches",
+			reqs: []*autocomplete.SuggestionRequest{
+				{
+					Input: "dup",
+					OrgID: org1,
+					AllowedKinds: []cloudpb.AutocompleteEntityKind{
+						cloudpb.AEK_NODE,
+					},
+					AllowedArgs: []cloudpb.AutocompleteEntityKind{},
+				},
+			},
+			expectedResults: []*autocomplete.SuggestionResult{
+				{
+					ExactMatch:           false,
+					HasAdditionalMatches: true,
+					Suggestions: []*autocomplete.Suggestion{
+						{
+							Name: "dup/dup1",
+							Kind: cloudpb.AEK_NODE,
+						},
+						{
+							Name: "dup/dup2",
+							Kind: cloudpb.AEK_NODE,
+						},
+						{
+							Name: "dup/dup3",
+							Kind: cloudpb.AEK_NODE,
+						},
+						{
+							Name: "dup/dup4",
+							Kind: cloudpb.AEK_NODE,
+						},
+						{
+							Name: "dup/dup6",
+							Kind: cloudpb.AEK_NODE,
 						},
 					},
 				},
@@ -204,7 +301,8 @@ func TestGetSuggestions(t *testing.T) {
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
 				{
-					ExactMatch: false,
+					ExactMatch:           false,
+					HasAdditionalMatches: false,
 					Suggestions: []*autocomplete.Suggestion{
 						{
 							Name: "pl/testService",
@@ -228,7 +326,8 @@ func TestGetSuggestions(t *testing.T) {
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
 				{
-					ExactMatch: false,
+					ExactMatch:           false,
+					HasAdditionalMatches: false,
 					Suggestions: []*autocomplete.Suggestion{
 						{
 							Name:  "anotherNS/test-Pod",
@@ -253,7 +352,8 @@ func TestGetSuggestions(t *testing.T) {
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
 				{
-					ExactMatch: false,
+					ExactMatch:           false,
+					HasAdditionalMatches: false,
 					Suggestions: []*autocomplete.Suggestion{
 						{
 							Name:  "anotherNS/test-Pod",
@@ -278,7 +378,8 @@ func TestGetSuggestions(t *testing.T) {
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
 				{
-					ExactMatch: false,
+					ExactMatch:           false,
+					HasAdditionalMatches: false,
 					Suggestions: []*autocomplete.Suggestion{
 						{
 							Name: "pl/testService",
@@ -312,7 +413,8 @@ func TestGetSuggestions(t *testing.T) {
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
 				{
-					ExactMatch: false,
+					ExactMatch:           false,
+					HasAdditionalMatches: false,
 					Suggestions: []*autocomplete.Suggestion{
 						{
 							Name: "anotherNS/testService",
@@ -344,7 +446,8 @@ func TestGetSuggestions(t *testing.T) {
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
 				{
-					ExactMatch: true,
+					ExactMatch:           true,
+					HasAdditionalMatches: false,
 					Suggestions: []*autocomplete.Suggestion{
 						{
 							Name: "pl/testService",
@@ -353,7 +456,8 @@ func TestGetSuggestions(t *testing.T) {
 					},
 				},
 				{
-					ExactMatch: false,
+					ExactMatch:           false,
+					HasAdditionalMatches: false,
 					Suggestions: []*autocomplete.Suggestion{
 						{
 							Name: "pl/testService",
@@ -381,7 +485,8 @@ func TestGetSuggestions(t *testing.T) {
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
 				{
-					ExactMatch: false,
+					ExactMatch:           false,
+					HasAdditionalMatches: false,
 					Suggestions: []*autocomplete.Suggestion{
 						{
 							Name: "pl/testService",
@@ -413,7 +518,8 @@ func TestGetSuggestions(t *testing.T) {
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
 				{
-					ExactMatch: false,
+					ExactMatch:           false,
+					HasAdditionalMatches: false,
 					Suggestions: []*autocomplete.Suggestion{
 						{
 							Name: "pl/testService",
@@ -446,7 +552,8 @@ func TestGetSuggestions(t *testing.T) {
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
 				{
-					ExactMatch: false,
+					ExactMatch:           false,
+					HasAdditionalMatches: false,
 					Suggestions: []*autocomplete.Suggestion{
 						{
 							Name: "testNamespace",
@@ -475,6 +582,7 @@ func TestGetSuggestions(t *testing.T) {
 				// Check that the expected results are contained in the results.
 				assert.Subset(t, r.Suggestions, test.expectedResults[i].Suggestions)
 				assert.Equal(t, test.expectedResults[i].ExactMatch, r.ExactMatch)
+				assert.Equal(t, test.expectedResults[i].HasAdditionalMatches, r.HasAdditionalMatches)
 			}
 		})
 	}

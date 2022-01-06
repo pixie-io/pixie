@@ -194,21 +194,26 @@ func TestAutocompleteField(t *testing.T) {
 					Query: `
 						query {
 							autocompleteField(input: "px/svc_info", fieldType: AEK_SVC, clusterUID: "test") {
-								kind
-								name
-								description
-								matchedIndexes
-								state
+								suggestions {
+									kind
+									name
+									description
+									matchedIndexes
+									state
+								}
+								hasAdditionalMatches
 							}
 						}
 					`,
 					ExpectedResult: `
 						{
-							"autocompleteField":
-								[
+							"autocompleteField": {
+								"suggestions": [
 								 {"kind": "AEK_SVC", "name": "px/svc_info", "description": "test", "matchedIndexes": [0, 1, 2], "state": "AES_TERMINATED"},
 								 {"kind": "AEK_SVC", "name": "px/svc_info2", "description": "test2", "matchedIndexes": [0, 1, 2], "state": "AES_RUNNING"}
-								]
+								],
+								"hasAdditionalMatches": false
+							}
 						}
 					`,
 				},

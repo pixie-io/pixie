@@ -31,7 +31,7 @@ import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
 import { pxTypeToEntityType, entityStatusGroup } from 'app/containers/command-input/autocomplete-utils';
 import { ScriptContext } from 'app/context/script-context';
-import { GQLAutocompleteEntityKind, GQLAutocompleteSuggestion } from 'app/types/schema';
+import { GQLAutocompleteEntityKind, GQLAutocompleteFieldResult } from 'app/types/schema';
 import { argVariableMap, argTypesForVis } from 'app/utils/args-utils';
 import { highlightMatch, normalize } from 'app/utils/string-search';
 import { TimeArgDetail } from 'configurable/time-arg-detail';
@@ -40,7 +40,7 @@ import { Variable } from './vis';
 
 type AutocompleteFieldSuggester = (
   input: string, kind: GQLAutocompleteEntityKind
-) => Promise<GQLAutocompleteSuggestion[]>;
+) => Promise<GQLAutocompleteFieldResult>;
 
 /**
  * Given a cluster to check against, returns an @link{AutocompleteFieldSuggester} for that cluster.
@@ -57,14 +57,17 @@ type AutocompleteFieldSuggester = (
 function useAutocompleteFieldSuggester(clusterUID: string): AutocompleteFieldSuggester {
   const client = React.useContext(PixieAPIContext) as PixieAPIClient;
   return React.useCallback<AutocompleteFieldSuggester>((partialInput: string, kind: GQLAutocompleteEntityKind) => (
-    client.getCloudClient().graphQL.query<{ autocompleteField: GQLAutocompleteSuggestion[] }>({
+    client.getCloudClient().graphQL.query<{ autocompleteField: GQLAutocompleteFieldResult }>({
       query: gql`
         query getCompletions($input: String, $kind: AutocompleteEntityKind, $clusterUID: String) {
           autocompleteField(input: $input, fieldType: $kind, clusterUID: $clusterUID) {
-            name
-            description
-            matchedIndexes
-            state
+            suggestions {
+              name
+              description
+              matchedIndexes
+              state
+            }
+            hasAdditionalMatches
           }
         }
       `,
@@ -233,7 +236,7 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(() => {
       const entityType = pxTypeToEntityType(argTypes[argName]);
       if (entityType !== 'AEK_UNKNOWN') {
         argProps.getListItems = async (input) => (
-          (await getCompletions(input, entityType)).map((suggestion) => ({
+          (await getCompletions(input, entityType)).suggestions.map((suggestion) => ({
             value: suggestion.name,
             description: suggestion.description,
             highlights: suggestion.matchedIndexes,

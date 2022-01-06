@@ -43,6 +43,14 @@ type ElasticSuggester struct {
 	br *script.BundleManager
 }
 
+const (
+	// Search for 1 more result than we return so we can efficiently
+	// mark whether or not more results exist (without needing to find every
+	// single result).
+	resultLimit = 5
+	searchLimit = resultLimit + 1
+)
+
 var protoToElasticLabelMap = map[cloudpb.AutocompleteEntityKind]md.EsMDType{
 	cloudpb.AEK_SVC:       md.EsMDTypeService,
 	cloudpb.AEK_POD:       md.EsMDTypePod,
@@ -87,8 +95,9 @@ type SuggestionRequest struct {
 
 // SuggestionResult contains results for an autocomplete request.
 type SuggestionResult struct {
-	Suggestions []*Suggestion
-	ExactMatch  bool
+	Suggestions          []*Suggestion
+	ExactMatch           bool
+	HasAdditionalMatches bool
 }
 
 func parseHighlightIndexes(highlightStr string, offset int) []int64 {
@@ -122,6 +131,7 @@ func (e *ElasticSuggester) UpdateScriptBundle(br *script.BundleManager) {
 }
 
 // GetSuggestions get suggestions for the given input using Elastic.
+// It returns the suggestions, whether or not more matches exist, and an error.
 func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*SuggestionResult, error) {
 	br := e.br
 
@@ -140,7 +150,7 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 		ms.Add(elastic.NewSearchRequest().
 			Highlight(highlight).
 			Query(e.getQueryForRequest(r.OrgID, r.ClusterUID, r.Input, r.AllowedKinds, r.AllowedArgs)).
-			Size(5).FetchSourceIncludeExclude([]string{"kind", "name", "ns", "state"}, []string{}))
+			Size(searchLimit).FetchSourceIncludeExclude([]string{"kind", "name", "ns", "state"}, []string{}))
 	}
 
 	resp, err := ms.Do(context.Background())
@@ -234,6 +244,7 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 		exactMatch := len(scriptResults) > 0 && scriptResults[0].Name == reqs[i].Input
 
 		// Convert elastic entity into a suggestion object.
+		hasAdditionalMatches := false
 		results := make([]*Suggestion, 0)
 		for _, h := range r.Hits.Hits {
 			res := &md.EsMDEntity{}
@@ -255,6 +266,13 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 				resName = fmt.Sprintf("%s/%s", res.NS, res.Name)
 			}
 
+			// We asked for resultLimit+1 results but will send only resultLimit.
+			// This way, we can communicate to the downstream consumer whether or not more
+			// results are present for that search term.
+			if len(results) == resultLimit {
+				hasAdditionalMatches = true
+				break
+			}
 			results = append(results, &Suggestion{
 				Name:           resName,
 				Score:          float64(*h.Score),
@@ -273,12 +291,13 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 		}
 
 		results = append(scriptResults, results...)
-
 		resps[i] = &SuggestionResult{
-			Suggestions: results,
-			ExactMatch:  exactMatch,
+			Suggestions:          results,
+			ExactMatch:           exactMatch,
+			HasAdditionalMatches: hasAdditionalMatches,
 		}
 	}
+
 	return resps, nil
 }
 

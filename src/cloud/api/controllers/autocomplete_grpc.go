@@ -105,6 +105,7 @@ func (a *AutocompleteServer) AutocompleteField(ctx context.Context, req *cloudpb
 	}
 
 	return &cloudpb.AutocompleteFieldResponse{
-		Suggestions: acSugg,
+		Suggestions:          acSugg,
+		HasAdditionalMatches: suggestions[0].HasAdditionalMatches,
 	}, nil
 }

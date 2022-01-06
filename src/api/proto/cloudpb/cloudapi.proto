@@ -668,7 +668,11 @@ message GetScriptContentsResp {
 
 // AutocompleteService responds to autocomplete requests.
 service AutocompleteService {
+  // Autocomplete is the endpoint for completing CLI or UI commands to execute a PxL script.
+  // It helps the end user fill out the necessary script and arguments to execute a script.
   rpc Autocomplete(AutocompleteRequest) returns (AutocompleteResponse);
+  // AutocompleteField is the endpoint for suggesting values for a particular field, such as
+  // pod names in the `pod` argument for px/pod.
   rpc AutocompleteField(AutocompleteFieldRequest) returns (AutocompleteFieldResponse);
 }
 
@@ -771,6 +775,8 @@ message AutocompleteFieldRequest {
 message AutocompleteFieldResponse {
   // The suggestions for the single field being autocompleted.
   repeated AutocompleteSuggestion suggestions = 1;
+  // Whether or not the results being returned are the full set or if other matches exist.
+  bool has_additional_matches = 2;
 }
 
 // OrgInfo contains information about a company in our system.

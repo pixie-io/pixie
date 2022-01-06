@@ -58,7 +58,7 @@ var protoToStateMap = map[cloudpb.AutocompleteEntityState]string{
 }
 
 // AutocompleteField is the resolver for autocompleting a single field.
-func (q *QueryResolver) AutocompleteField(ctx context.Context, args *autocompleteFieldArgs) (*[]*AutocompleteSuggestion, error) {
+func (q *QueryResolver) AutocompleteField(ctx context.Context, args *autocompleteFieldArgs) (*AutocompleteFieldResolver, error) {
 	grpcAPI := q.Env.AutocompleteServer
 	allowedArgs := make([]cloudpb.AutocompleteEntityKind, 0)
 	if args.RequiredArgTypes != nil {
@@ -103,7 +103,10 @@ func (q *QueryResolver) AutocompleteField(ctx context.Context, args *autocomplet
 		}
 	}
 
-	return &suggestions, nil
+	return &AutocompleteFieldResolver{
+		Suggestions:          suggestions,
+		HasAdditionalMatches: res.HasAdditionalMatches,
+	}, nil
 }
 
 // Autocomplete responds to an autocomplete request.
@@ -185,6 +188,12 @@ type TabSuggestion struct {
 	TabIndex              *int32
 	ExecutableAfterSelect *bool
 	Suggestions           *[]*AutocompleteSuggestion
+}
+
+// AutocompleteFieldResolver is the resolver for an autocomplete field response.
+type AutocompleteFieldResolver struct {
+	Suggestions          []*AutocompleteSuggestion
+	HasAdditionalMatches bool
 }
 
 // AutocompleteSuggestion represents a single suggestion.

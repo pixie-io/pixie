@@ -11,7 +11,7 @@ extend type Query {
   cliArtifact(artifactType: ArtifactType!): CLIArtifact!
   autocomplete(input: String, cursorPos: Int, action: AutocompleteActionType, clusterUID: String): AutocompleteResult!
   autocompleteField(input: String, fieldType: AutocompleteEntityKind,
-    requiredArgTypes: [AutocompleteEntityKind], clusterUID: String): [AutocompleteSuggestion]
+    requiredArgTypes: [AutocompleteEntityKind], clusterUID: String): AutocompleteFieldResult!
 
   # Scriptmgr endpoints, refer to docs in cloudapi.proto
   liveViews: [LiveViewMetadata!]!
@@ -163,6 +163,13 @@ type AutocompleteResult {
   isExecutable: Boolean
   # All suggestions for each of the tabStops.
   tabSuggestions: [TabSuggestion]
+}
+
+type AutocompleteFieldResult {
+  # The autocomplete suggestions for the input provided
+  suggestions: [AutocompleteSuggestion]!
+  # Whether or not the returned results are partial (true) or complete (false)
+  hasAdditionalMatches: Boolean!
 }
 
 type ContainerStatus {
