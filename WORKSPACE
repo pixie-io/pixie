@@ -99,6 +99,15 @@ load("@vizier_api_python_deps//:requirements.bzl", "install_deps")
 
 install_deps()
 
+pip_parse(
+    name = "pxapi_python_doc_deps",
+    requirements_lock = "//src/api/python/doc:requirements.txt",
+)
+
+load("@pxapi_python_doc_deps//:requirements.bzl", "install_deps")
+
+install_deps()
+
 # Setup thrift: used for building Stirling tracing targets.
 load("//bazel:thrift.bzl", "thrift_deps")
 

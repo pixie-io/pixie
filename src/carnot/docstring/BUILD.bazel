@@ -46,6 +46,7 @@ sh_binary(
     srcs = ["docstring_integration.sh"],
     data = [
         ":docstring",
+        "//src/api/python/doc:generate",
         "//src/carnot/planner/docs:doc_extractor",
     ],
     deps = ["@bazel_tools//tools/bash/runfiles"],

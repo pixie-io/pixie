@@ -19,6 +19,7 @@
 package main
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"os"
 
@@ -34,41 +35,73 @@ import (
 )
 
 func init() {
-	pflag.String("input_doc_pb", "", "The file that holds a serialized protobuf")
+	pflag.String("input_doc_pb", "", "The file that holds Pxl docs serialized as protobuf")
+	pflag.String("py_api_docs", "", "The file to write output JSON to")
 	pflag.String("output_json", "output.json", "The file to write output JSON to")
 }
 
 func main() {
 	services.PostFlagSetupAndParse()
 
-	// Read input doc file.
-	allDoc := &docspb.InternalPXLDocs{}
-
-	// ReadFile fails if the input doc doesn't exist.
-	b, err := ioutil.ReadFile(viper.GetString("input_doc_pb"))
+	// Read the raw pxlDocs File.
+	pxlDocs := &docspb.InternalPXLDocs{}
+	pxlB, err := ioutil.ReadFile(viper.GetString("input_doc_pb"))
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	err = proto.UnmarshalText(string(pxlB), pxlDocs)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
-	err = proto.UnmarshalText(string(b), allDoc)
+	// Parse and format the docstrings.
+	formattedPxlDocs, err := docstring.ParseAllDocStrings(pxlDocs)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
-	newDocs, err := docstring.ParseAllDocStrings(allDoc)
+	// Read in the python api doc file.
+	var pyAPI json.RawMessage
+	pyB, err := ioutil.ReadFile(viper.GetString("py_api_docs"))
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	err = json.Unmarshal(pyB, &pyAPI)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
+	// First marshal the protobuf to a json format. The
+	// protobuf marshaller handles enums and nesting nicely.
+	m := jsonpb.Marshaler{}
+	pxlDocsString, err := m.MarshalToString(formattedPxlDocs)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	// Next, unmarshal the protobuf into a raw message.
+	var pxlJSON map[string]*json.RawMessage
+	if err := json.Unmarshal([]byte(pxlDocsString), &pxlJSON); err != nil {
+		logrus.Fatal(err)
+	}
+
+	// Add on the pyApiDocs.
+	pxlJSON["pyApiDocs"] = &pyAPI
+
+	// Finally, Marshal out the full structure.
+	outb, err := json.MarshalIndent(&pxlJSON, "", "  ")
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	// Write out the file.
 	outputF, err := os.Create(viper.GetString("output_json"))
 	if err != nil {
 		logrus.Fatal(err)
 	}
 	defer outputF.Close()
 
-	// Write output JSON to file.
-	m := jsonpb.Marshaler{}
-	err = m.Marshal(outputF, newDocs)
+	_, err = outputF.Write(outb)
 	if err != nil {
 		logrus.Fatal(err)
 	}

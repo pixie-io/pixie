@@ -38,6 +38,11 @@ if [[ ! -f "${parser:-}" ]]; then
   echo >&2 "ERROR: could not find the docstring binary parser"
   exit 1
 fi
+pyAPIDocs=$(rlocation "px/src/api/python/doc/py_api_docs.json")
+if [[ ! -f "${pyAPIDocs:-}" ]]; then
+  echo >&2 "ERROR: could not find the docstring binary parser"
+  exit 1
+fi
 # -- end loading the docstring binaries ---
 
 # Check to make sure the output JSON is specified.
@@ -47,8 +52,9 @@ if [ $# -eq 0 ]; then
 fi
 
 raw_docstring_pb=./input.pb.txt
+out=$1
 echo "Extracting the raw docs to a temporary file"
-${extractor} --output_file ${raw_docstring_pb}
-echo "Parsing the raw docs into '$1'"
-${parser} --input_doc_pb ${raw_docstring_pb} --output_json "$1"
+${extractor} --output_file "${raw_docstring_pb}"
+echo "Parsing the raw docs into '${out}'"
+${parser} --input_doc_pb "${raw_docstring_pb}" --py_api_docs="${pyAPIDocs}" --output_json "${out}"
 echo "Parsing complete"
