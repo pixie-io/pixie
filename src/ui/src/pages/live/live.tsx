@@ -51,6 +51,7 @@ import { ScriptContext, ScriptContextProvider } from 'app/context/script-context
 import { GQLClusterStatus } from 'app/types/schema';
 import { buildClass } from 'app/utils/build-class';
 import { showIntercomTrigger, triggerID } from 'app/utils/intercom';
+import { containsMutation } from 'app/utils/pxl';
 import { Script } from 'app/utils/script-bundle';
 import { Copyright } from 'configurable/copyright';
 
@@ -221,6 +222,7 @@ const ClusterLoadingComponent = React.memo<ClusterLoadingProps>(({
 }) => {
   const classes = useStyles();
 
+  const { loading: loadingCluster } = React.useContext(ClusterContext);
   const { loading: loadingAvailableScripts } = React.useContext(ScriptsContext);
   const { loading: loadingResults, streaming: streamingResults } = React.useContext(ResultsContext);
 
@@ -243,7 +245,7 @@ const ClusterLoadingComponent = React.memo<ClusterLoadingProps>(({
     );
   }
 
-  if (clusterStatus !== GQLClusterStatus.CS_HEALTHY && clusterStatus !== GQLClusterStatus.CS_DEGRADED) {
+  if (!loadingCluster && !([GQLClusterStatus.CS_HEALTHY, GQLClusterStatus.CS_DEGRADED].includes(clusterStatus))) {
     return (
       <div>
         <Alert severity='error'>
@@ -274,11 +276,11 @@ const ClusterLoadingComponent = React.memo<ClusterLoadingProps>(({
     return <div>Script name invalid, choose a new script in the dropdown</div>;
   }
 
-  if (!healthy) {
+  if (!loadingCluster && !healthy) {
     return <ClusterInstructions message='Connecting to cluster...' />;
   }
 
-  if (loadingResults && !streamingResults) {
+  if (loadingCluster || (loadingResults && !streamingResults)) {
     return <Spinner />;
   }
 
@@ -353,8 +355,11 @@ const LiveView = React.memo(() => {
     selectedClusterPrettyName,
     selectedClusterStatus,
     selectedClusterStatusMessage,
+    loading: loadingCluster,
   } = React.useContext(ClusterContext);
-  const { script, args, cancelExecution } = React.useContext(ScriptContext);
+  const {
+    script, args, cancelExecution, manual,
+  } = React.useContext(ScriptContext);
   const {
     tables, error, mutationInfo, loading: loadingResults, streaming: streamingResults,
   } = React.useContext(ResultsContext);
@@ -430,8 +435,9 @@ const LiveView = React.memo(() => {
 
   if (!selectedClusterName || !args) return null;
 
+  const willRun = script && (!containsMutation(script?.code) || manual);
   const showResults = script && healthyOnce && (
-    tables.size || loadingResults || streamingResults || error || mutationInfo);
+    (loadingCluster && willRun) || tables.size || loadingResults || streamingResults || error || mutationInfo);
 
   return (
     <div className={classes.root}>

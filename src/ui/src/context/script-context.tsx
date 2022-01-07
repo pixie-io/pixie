@@ -85,7 +85,7 @@ export const ScriptContextProvider: React.FC = React.memo(({ children }) => {
     args,
     embedState,
   } = React.useContext(LiveRouteContext);
-  const { selectedClusterName } = React.useContext(ClusterContext);
+  const { selectedClusterName, loading: loadingCluster } = React.useContext(ClusterContext);
   const { scripts: availableScripts, loading: loadingAvailableScripts } = React.useContext(ScriptsContext);
   const resultsContext = React.useContext(ResultsContext);
   const showSnackbar = useSnackbar();
@@ -125,7 +125,7 @@ export const ScriptContextProvider: React.FC = React.memo(({ children }) => {
 
   // Timing: execute can be called before the API has finished returning all needed data, because VizierRoutingContext
   // does not depend on the API and can update (triggering ScriptLoader) before required data has loaded for execution.
-  const readyToExecute = !loadingAvailableScripts;
+  const readyToExecute = !loadingAvailableScripts && !loadingCluster;
   const [awaitingExecution, setAwaitingExecution] = React.useState(false);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

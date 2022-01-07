@@ -22,6 +22,7 @@ import { ClusterContext, ClusterContextProps } from 'app/common/cluster-context'
 import { GQLClusterStatus } from 'app/types/schema';
 
 export const CLUSTER_CONTEXT_DEFAULTS: ClusterContextProps = {
+  loading: false,
   selectedClusterID: '',
   selectedClusterName: '',
   selectedClusterPrettyName: '',

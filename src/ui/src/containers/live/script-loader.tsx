@@ -33,7 +33,7 @@ export const ScriptLoader: React.FC = React.memo(() => {
   const {
     script, args, execute, cancelExecution, manual,
   } = React.useContext(ScriptContext);
-  const { selectedClusterName: clusterName } = React.useContext(ClusterContext);
+  const { loading: clusterLoading, selectedClusterName: clusterName } = React.useContext(ClusterContext);
   const resultsContext = React.useContext(ResultsContext);
 
   const showSnackbar = useSnackbar();
@@ -48,7 +48,9 @@ export const ScriptLoader: React.FC = React.memo(() => {
     if (script == null || args == null) return;
     cancelExecution?.();
 
-    if (!containsMutation(script.code) || manual) {
+    const hasMutation = containsMutation(script.code);
+
+    if (!clusterLoading && (!hasMutation || manual)) {
       try {
         execute();
       } catch (e) {
@@ -60,14 +62,16 @@ export const ScriptLoader: React.FC = React.memo(() => {
       // This can come up when executing a mutation script, then switching clusters. `manual` will not be set after
       // the first execution, but we still need to clear results when we've changed the parameters.
       resultsContext.clearResults();
-      resultsContext.setLoading(false);
+      // When switching clusters but not scripts, we want to avoid blanking the widgets or marking them with errors.
+      // If we're about to run the script as soon as the cluster switch resolves, mark that early for a smooth switch.
+      resultsContext.setLoading(!hasMutation || manual);
       resultsContext.setStreaming(false);
     }
 
     // `manual` is omitted because it's updated together with script, and disabled again when the script executes.
     // Putting it in the dependency array would immediately cancel a script that's run this way.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [script, serializedArgs, serializedVis, clusterName]);
+  }, [script, serializedArgs, serializedVis, clusterName, clusterLoading]);
 
   return null;
 });

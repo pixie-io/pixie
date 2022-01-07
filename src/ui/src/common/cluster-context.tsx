@@ -28,6 +28,7 @@ import { stableSerializeArgs } from 'app/utils/args-utils';
 import { isDev } from 'app/utils/env';
 
 export interface ClusterContextProps {
+  loading: boolean;
   selectedClusterID: string;
   selectedClusterName: string;
   selectedClusterPrettyName: string;
@@ -101,9 +102,11 @@ export const ClusterContextProvider = React.memo(({ children }) => {
     selectedClusterStatus: cluster?.status,
     selectedClusterStatusMessage: cluster?.statusMessage,
     setClusterByName,
+    loading,
   }), [
     cluster,
     setClusterByName,
+    loading,
   ]);
 
   React.useEffect(() => {
@@ -116,8 +119,6 @@ export const ClusterContextProvider = React.memo(({ children }) => {
     }
   }, [showSnackbar, clusterName, error?.message]);
 
-  if (loading && !data) { return <div>Loading...</div>; }
-
   return (
     <ClusterContext.Provider value={clusterContext}>
       {children}
@@ -127,9 +128,9 @@ export const ClusterContextProvider = React.memo(({ children }) => {
 ClusterContextProvider.displayName = 'ClusterContextProvider';
 
 export function useClusterConfig(): ClusterConfig | null {
-  const { selectedClusterID, selectedClusterVizierConfig } = React.useContext(ClusterContext);
+  const { loading, selectedClusterID, selectedClusterVizierConfig } = React.useContext(ClusterContext);
   return React.useMemo(() => {
-    if (!selectedClusterID) return null;
+    if (loading || !selectedClusterID) return null;
     // If cloud is running in dev mode, automatically direct to Envoy's port, since there is
     // no GCLB to redirect for us in dev.
     const passthroughClusterAddress = selectedClusterVizierConfig.passthroughEnabled
@@ -139,5 +140,5 @@ export function useClusterConfig(): ClusterConfig | null {
       attachCredentials: true,
       passthroughClusterAddress,
     };
-  }, [selectedClusterID, selectedClusterVizierConfig]);
+  }, [selectedClusterID, selectedClusterVizierConfig, loading]);
 }

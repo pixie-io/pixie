@@ -51,8 +51,8 @@ const CANCELLABILITY_DELAY_MS = 1000;
 const ExecuteScriptButton: React.FC = React.memo(() => {
   const classes = useStyles();
   const cloudClient = (React.useContext(PixieAPIContext) as PixieAPIClient).getCloudClient();
-  const { selectedClusterStatus } = React.useContext(ClusterContext);
-  const { loading, streaming } = React.useContext(ResultsContext);
+  const { loading: clusterLoading, selectedClusterStatus } = React.useContext(ClusterContext);
+  const { loading: resultsLoading, streaming } = React.useContext(ResultsContext);
   const { saveEditor } = React.useContext(EditorContext);
   const { cancelExecution } = React.useContext(ScriptContext);
 
@@ -64,9 +64,9 @@ const ExecuteScriptButton: React.FC = React.memo(() => {
 
   React.useEffect(() => {
     window.clearTimeout(cancellabilityTimer);
-    if ((loading || streaming) && healthy) {
+    if ((resultsLoading || streaming) && healthy) {
       setCancellabilityTimer(window.setTimeout(() => {
-        setCancellable((loading || streaming) && healthy);
+        setCancellable((resultsLoading || streaming) && healthy);
       }, CANCELLABILITY_DELAY_MS));
     } else {
       setCancellable(false);
@@ -74,13 +74,13 @@ const ExecuteScriptButton: React.FC = React.memo(() => {
 
     // cancellabilityTimer must not appear in this hook's deps. Infinite loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, streaming, healthy, cancelExecution]);
+  }, [resultsLoading, streaming, healthy, cancelExecution]);
 
   const tooltipTitle = React.useMemo(() => {
-    if (loading || streaming) return 'Executing';
+    if (resultsLoading || streaming) return 'Executing';
     if (!healthy) return 'Cluster Disconnected';
     return 'Execute script';
-  }, [loading, streaming, healthy]);
+  }, [resultsLoading, streaming, healthy]);
 
   return (
     <Tooltip title={tooltipTitle}>
@@ -89,7 +89,7 @@ const ExecuteScriptButton: React.FC = React.memo(() => {
           classes={React.useMemo(() => ({ root: classes.buttonRoot }), [classes.buttonRoot])}
           variant={cancellable ? 'outlined' : 'contained'}
           color='primary'
-          disabled={!healthy || ((loading || streaming) && !cancellable)}
+          disabled={clusterLoading || !healthy || ((resultsLoading || streaming) && !cancellable)}
           onClick={cancellable ? cancelExecution : saveEditor}
           size='small'
           startIcon={cancellable ? <StopIcon /> : <PlayIcon />}

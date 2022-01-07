@@ -52,6 +52,9 @@ export const EditorContextProvider: React.FC = React.memo(({ children }) => {
 
   // Saves the editor values in the script.
   const saveEditor = React.useCallback(() => {
+    // Don't keep setting the script when spamming the "execute" hotkey. Once is enough.
+    if (resultsContext.loading) return;
+
     // Parse Vis for any possible formatting errors.
     let vis: Vis;
     try {

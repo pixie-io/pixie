@@ -713,6 +713,7 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
   const cluster = data?.clusterByName;
 
   const clusterContext: ClusterContextProps = React.useMemo(() => (cluster && {
+    loading: false,
     selectedClusterID: cluster?.id,
     selectedClusterName: cluster?.clusterName,
     selectedClusterPrettyName: cluster?.prettyClusterName,
