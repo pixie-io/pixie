@@ -25,7 +25,7 @@ namespace stirling {
 namespace bpf_tools {
 
 // A bogus BPF STACK_TRACE table descriptor.
-// It's purpose is only to provide access to the BCC symbolizer.
+// Its purpose is only to provide access to the BCC symbolizer.
 // The table itself is bogus and is never read/written, so its params mostly don't matter.
 const ebpf::TableDesc kBogusTable(
     /* name */ "bogus",
@@ -36,7 +36,7 @@ const ebpf::TableDesc kBogusTable(
     /* flags */ 0);
 
 BCCSymbolizer::BCCSymbolizer()
-    : bcc_stack_table_(kBogusTable, /* use_debug_file */ false, /* check_debuf_file_crc */ false) {}
+    : bcc_stack_table_(kBogusTable, /* use_debug_file */ false, /* check_debug_file_crc */ false) {}
 
 std::string BCCSymbolizer::Symbol(const uintptr_t addr, const int pid) {
   return bcc_stack_table_.get_addr_symbol(addr, pid);
