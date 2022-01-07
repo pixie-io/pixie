@@ -737,6 +737,9 @@ void StirlingImpl::RunCore() {
   }
   // TODO(oazizi): We need to call InitContext on dynamic sources too. Fix.
 
+  // Indicates completion of initialization, and start of data collection.
+  LOG(INFO) << "Stirling is running.";
+
   while (run_enable_) {
     auto sleep_duration = std::chrono::milliseconds::zero();
 

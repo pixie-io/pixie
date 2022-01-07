@@ -95,7 +95,7 @@ pid=$(echo "$pid_line" | awk -F"PID: " '{print $2}' | awk -F" " '{print $1}')
 echo "Stirling PID = $pid"
 
 # Now wait to see that Stirling has passed its initialization phase.
-grep -m 1 'Probes successfully deployed.' <&3 &> /dev/null
+grep -m 1 'Stirling is running.' <&1 &> /dev/null
 
 ###############################################################################
 # Run Perf profiler
