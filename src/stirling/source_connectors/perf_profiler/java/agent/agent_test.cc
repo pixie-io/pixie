@@ -28,32 +28,52 @@ namespace stirling {
 using ::px::testing::BazelBinTestFilePath;
 using ::testing::HasSubstr;
 
+std::string GetLogin() {
+  constexpr size_t kBufSize = 4096;
+  char login[kBufSize];
+
+  const int err = getlogin_r(login, kBufSize);
+  const uid_t uid = getuid();
+
+  if (err == 0) {
+    return login;
+  }
+  if (uid == 0) {
+    return "root";
+  }
+  return "none";
+}
+
 TEST(JavaAgentTest, ExpectedSymbolsTest) {
-  // TODO(jps): move this file to be a peer to agent.cc in the directory structure.
+  // Reconstruct the symbolization log file name that is specified in the bazel BUILD file
+  // for the java test app. In the BUILD file, we use whoami to uniquify the file name.
+  // Our motivation here is that previously, tests from different users collided because
+  // they referenced the same symbolization log file.
+  // TODO(jps): consider building the Java test app "fib" inside of a container (i.e. to explicitly
+  // *not* use java_binary() in Bazel). This would allow the agent test (this code) to completely
+  // own the symbol file name, i.e. to coordinate between logic in the BUILD file and this code.
+  const std::string symbolFilePath = absl::StrFormat("px-java-symbols-%s.bin", GetLogin());
   const std::string kJavaAppName = "fib";
-  const std::string kSymbolFilePath = "/tmp/px-java-symbolization-agent.bin";
 
-  const std::filesystem::path kPathToJavaTesting =
-      "src/stirling/source_connectors/perf_profiler/java/testing";
-  const std::filesystem::path kToyAppPath = kPathToJavaTesting / kJavaAppName;
-  const std::filesystem::path bazel_app_path = BazelBinTestFilePath(kToyAppPath);
-  ASSERT_OK(fs::Exists(bazel_app_path));
+  using fs_path = std::filesystem::path;
+  const fs_path kPathToJavaTesting = "src/stirling/source_connectors/perf_profiler/java/testing";
+  const fs_path kToyAppPath = kPathToJavaTesting / kJavaAppName;
+  const fs_path kBazelAppPath = BazelBinTestFilePath(kToyAppPath);
+  ASSERT_OK(fs::Exists(kBazelAppPath));
 
-  if (fs::Exists(kSymbolFilePath).ok()) {
+  if (fs::Exists(symbolFilePath).ok()) {
     // The symbol file is created by the Java process when the agent is attached.
-    // It is created in /tmp because that is a canonical location where Stirling
-    // can find it (and where we can write files inside of containers).
     // A left over stale symbol file can cause this test to pass when it should fail.
     // Here, we prevent that from happening.
-    LOG(INFO) << "Removing stale file: " << kSymbolFilePath << ".";
-    ASSERT_OK(fs::Remove(kSymbolFilePath));
+    LOG(INFO) << "Removing stale file: " << symbolFilePath << ".";
+    ASSERT_OK(fs::Remove(symbolFilePath));
   }
 
   SubProcess sub_process;
-  ASSERT_OK(sub_process.Start({bazel_app_path})) << "Could not start Java app: " << kJavaAppName;
+  ASSERT_OK(sub_process.Start({kBazelAppPath})) << "Could not start Java app: " << kJavaAppName;
   std::this_thread::sleep_for(std::chrono::seconds(5));
 
-  const auto r = ReadFileToString(kSymbolFilePath, std::ios_base::binary);
+  const auto r = ReadFileToString(symbolFilePath, std::ios_base::binary);
   ASSERT_OK(r);
   const auto s = r.ValueOrDie();
 
@@ -63,6 +83,10 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
       "Ljava/lang/Math;", "fib52",       "()J"};
   for (const auto& expected_symbol : expected_symbols) {
     EXPECT_THAT(s, HasSubstr(expected_symbol));
+  }
+  if (fs::Exists(symbolFilePath).ok()) {
+    LOG(INFO) << "Removing symbol file: " << symbolFilePath;
+    ASSERT_OK(fs::Remove(symbolFilePath));
   }
 }
 

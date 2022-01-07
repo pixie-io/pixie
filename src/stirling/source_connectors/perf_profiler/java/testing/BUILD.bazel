@@ -18,10 +18,25 @@ load("@rules_java//java:defs.bzl", "java_binary")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
+# We need somethting like:
+# -agentpath:/path/to/libagent.so=<symbolization-file-path-prefix>
+# on the java cmd line so that 1. the symbolization agent is injected and 2. it has a path
+# for the symbolization log file.
+
+# Construct the agent path portion of the command line arg.
+so_path = "-agentpath:$(location //src/stirling/source_connectors/perf_profiler/java/agent:glibc)"
+
+# Construct a file path prefix for the symbolization log file. Out of an abundance of caution,
+# we inject the user name to uniquify file names.
+log_pfx = "px-java-symbols-$$(whoami)"
+
+# Construct the full cmd line args here.
+jvm_flags = [so_path + "=" + log_pfx]
+
 java_binary(
     name = "fib",
     srcs = ["Fib.java"],
     data = ["//src/stirling/source_connectors/perf_profiler/java/agent:glibc"],
-    jvm_flags = ["-agentpath:$(location //src/stirling/source_connectors/perf_profiler/java/agent:glibc)"],
+    jvm_flags = jvm_flags,
     main_class = "JavaFib",
 )

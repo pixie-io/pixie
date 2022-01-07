@@ -16,6 +16,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// This file is compiled into agent.so, a shared library that will be injected into the target
+// Java process. Once injected, it creates a symbol log file into which it writes every
+// symbol compiled by the JVM along with the symbol address and code size. This symbol file
+// is then used by the Stirling data collector inside of the PEM (Pixie Edge Module) to
+// populate Java symbols that cannot be found by inspecting binaries (i.e. cannot be found
+// by the "normal" means used to find symbols in compiled binaries from C, C++, Go, and Rust).
+
 #include <jvmti.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -282,32 +289,38 @@ FILE* FOpenLogFile(const std::string& file_path) {
   return f;
 }
 
-jint OpenLogFiles() {
+jint OpenLogFiles(const char* options) {
+  if (options == nullptr) {
+    return JNI_ERR;
+  }
+
+  std::string tmp_path_pfx(options);
   g_log_file_ptr = nullptr;
   g_bin_file_ptr = nullptr;
 
   if (kUsingTxtLogFile) {
     // TODO(jps): remove the txt based log file once we finalize java symbolization.
-    g_log_file_ptr = FOpenLogFile("/tmp/px-java-symbolization-agent.log");
+    g_log_file_ptr = FOpenLogFile(tmp_path_pfx + ".log");
     if (g_log_file_ptr == nullptr) {
       return JNI_ERR;
     }
   }
   if (kUsingBinLogFile) {
-    g_bin_file_ptr = FOpenLogFile("/tmp/px-java-symbolization-agent.bin");
+    g_bin_file_ptr = FOpenLogFile(tmp_path_pfx + ".bin");
     if (g_bin_file_ptr == nullptr) {
       return JNI_ERR;
     }
   }
+  LogF("OpenLogFiles(), log file path pfx: %s.", options);
   return JNI_OK;
 }
 
-jint GetJVMTIEnv(JavaVM* jvm, void** jvmti) {
+jint GetJVMTIEnv(JavaVM* jvm, jvmtiEnv** jvmti) {
   if (jvm == nullptr || jvmti == nullptr) {
     return JNI_ERR;
   }
 
-  jint error = jvm->GetEnv(jvmti, JVMTI_VERSION_1_0);
+  jint error = jvm->GetEnv(reinterpret_cast<void**>(jvmti), JVMTI_VERSION_1_0);
   if (error != JNI_OK || *jvmti == nullptr) {
     LogF("[error] Unable to access JVMTI.");
     error = JNI_ERR;
@@ -323,24 +336,19 @@ JNIEXPORT uint64_t PixieJavaAgentTestFn() {
   return 42;
 }
 
-JNIEXPORT jint JNICALL Agent_OnAttach(JavaVM* jvm, char* /*options*/, void* /*reserved*/) {
+JNIEXPORT jint JNICALL Agent_OnAttach(JavaVM* jvm, char* options, void* /*reserved*/) {
   if (g_callbacks_attached) {
     LogF("Agent_OnAttach().");
     LogF("pem restart detected, skipping callback attach.");
     LogF("return JNI_OK.");
     return JNI_OK;
   }
-  jint error;
-  error = OpenLogFiles();
-  if (error != JNI_OK) {
-    return error;
-  }
-  LogF("Agent_OnAttach().");
 
-  // Passing jvmti as a "void **" into the underlying getEnv is how most JVMTI code is written.
+  jint error = JNI_OK;
   static jvmtiEnv* jvmti = nullptr;
 
-  error = error == JNI_OK ? GetJVMTIEnv(jvm, reinterpret_cast<void**>(&jvmti)) : error;
+  error = error == JNI_OK ? OpenLogFiles(options) : error;
+  error = error == JNI_OK ? GetJVMTIEnv(jvm, &jvmti) : error;
   error = error == JNI_OK ? AddJVMTICapabilities(jvmti) : error;
   error = error == JNI_OK ? SetNotificationModes(jvmti) : error;
   error = error == JNI_OK ? SetCallbackFunctions(jvmti) : error;
@@ -351,7 +359,7 @@ JNIEXPORT jint JNICALL Agent_OnAttach(JavaVM* jvm, char* /*options*/, void* /*re
   return error;
 }
 
-JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM* jvm, char* /*options*/, void* /*reserved*/) {
-  return Agent_OnAttach(jvm, nullptr, nullptr);
+JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM* jvm, char* options, void* /*reserved*/) {
+  return Agent_OnAttach(jvm, options, nullptr);
 }
 }
