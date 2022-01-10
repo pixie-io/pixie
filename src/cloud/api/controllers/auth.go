@@ -137,7 +137,8 @@ func AuthSignupHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 		UserId: userIDStr,
 		Event:  events.UserSignedUp,
 		Properties: analytics.NewProperties().
-			Set("org_id", orgIDStr),
+			Set("org_id", orgIDStr).
+			Set("had_invite", params.InviteToken != ""),
 	})
 
 	if resp.OrgCreated {
@@ -145,6 +146,7 @@ func AuthSignupHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 			UserId: userIDStr,
 			Event:  events.OrgCreated,
 			Properties: analytics.NewProperties().
+				Set("auto_created", true).
 				Set("org_name", resp.OrgName).
 				Set("org_id", orgIDStr),
 		})
@@ -259,7 +261,8 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 			UserId: userID,
 			Event:  events.UserSignedUp,
 			Properties: analytics.NewProperties().
-				Set("org_id", orgID),
+				Set("org_id", orgID).
+				Set("had_invite", params.InviteToken != ""),
 		})
 	} else {
 		events.Client().Enqueue(&analytics.Track{
@@ -267,7 +270,8 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 			Event:  events.UserLoggedIn,
 			Properties: analytics.NewProperties().
 				Set("org_id", orgID).
-				Set("embedded", false),
+				Set("embedded", false).
+				Set("had_invite", params.InviteToken != ""),
 		})
 	}
 
@@ -366,6 +370,7 @@ func AuthLoginHandlerEmbed(env commonenv.Env, w http.ResponseWriter, r *http.Req
 		Properties: analytics.NewProperties().
 			Set("user_id", userID).
 			Set("org_id", orgID).
+			Set("had_invite", false).
 			Set("embedded", true),
 	})
 

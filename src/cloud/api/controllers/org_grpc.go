@@ -25,12 +25,14 @@ import (
 	"github.com/gogo/protobuf/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"gopkg.in/segmentio/analytics-go.v3"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/cloud/auth/authpb"
 	"px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/shared/services/authcontext"
+	"px.dev/pixie/src/shared/services/events"
 	"px.dev/pixie/src/utils"
 )
 
@@ -133,6 +135,14 @@ func (o *OrganizationServiceServer) CreateOrg(ctx context.Context, req *cloudpb.
 	if err != nil {
 		return nil, err
 	}
+	events.Client().Enqueue(&analytics.Track{
+		UserId: sCtx.Claims.GetUserClaims().UserID,
+		Event:  events.OrgCreated,
+		Properties: analytics.NewProperties().
+			Set("auto_created", false).
+			Set("org_name", req.OrgName).
+			Set("org_id", utils.ProtoToUUIDStr(orgID)),
+	})
 	_, err = o.ProfileServiceClient.UpdateUser(ctx, &profilepb.UpdateUserRequest{
 		ID:    utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID),
 		OrgID: orgID,
