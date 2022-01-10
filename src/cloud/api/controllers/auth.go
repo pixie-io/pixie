@@ -138,6 +138,7 @@ func AuthSignupHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 		Event:  events.UserSignedUp,
 		Properties: analytics.NewProperties().
 			Set("org_id", orgIDStr).
+			Set("identity_provider", resp.IdentityProvider).
 			Set("had_invite", params.InviteToken != ""),
 	})
 
@@ -221,6 +222,7 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 	userCreated := false
 	userID := ""
 	var orgID string
+	var identityProvider string
 
 	// If logging in using an API key, just get the augmented token.
 	token, expiresAt, err = loginWithAPIKey(ctxWithCreds, env, r, w)
@@ -252,6 +254,7 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 		orgInfo = resp.OrgInfo
 		orgID = orgInfo.OrgID
 		userID = utils.UUIDFromProtoOrNil(resp.UserInfo.UserID).String()
+		identityProvider = resp.IdentityProvider
 	} else {
 		orgID, _ = parseOrgIDFromAPIKey(token, env.JWTSigningKey(), viper.GetString("domain_name"))
 	}
@@ -262,6 +265,7 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 			Event:  events.UserSignedUp,
 			Properties: analytics.NewProperties().
 				Set("org_id", orgID).
+				Set("identity_provider", identityProvider).
 				Set("had_invite", params.InviteToken != ""),
 		})
 	} else {
@@ -271,6 +275,7 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 			Properties: analytics.NewProperties().
 				Set("org_id", orgID).
 				Set("embedded", false).
+				Set("identity_provider", identityProvider).
 				Set("had_invite", params.InviteToken != ""),
 		})
 	}
@@ -329,6 +334,7 @@ func AuthLoginHandlerEmbed(env commonenv.Env, w http.ResponseWriter, r *http.Req
 	userCreated := false
 	userID := ""
 	var orgID string
+	var identityProvider string
 
 	// If logging in using an API key, just get the augmented token.
 	token, expiresAt, err = loginWithAPIKey(ctxWithCreds, env, r, w)
@@ -360,6 +366,7 @@ func AuthLoginHandlerEmbed(env commonenv.Env, w http.ResponseWriter, r *http.Req
 		orgInfo = resp.OrgInfo
 		orgID = orgInfo.OrgID
 		userID = utils.UUIDFromProtoOrNil(resp.UserInfo.UserID).String()
+		identityProvider = resp.IdentityProvider
 	} else {
 		orgID, _ = parseOrgIDFromAPIKey(token, env.JWTSigningKey(), viper.GetString("domain_name"))
 	}
@@ -370,6 +377,7 @@ func AuthLoginHandlerEmbed(env commonenv.Env, w http.ResponseWriter, r *http.Req
 		Properties: analytics.NewProperties().
 			Set("user_id", userID).
 			Set("org_id", orgID).
+			Set("identity_provider", identityProvider).
 			Set("had_invite", false).
 			Set("embedded", true),
 	})
