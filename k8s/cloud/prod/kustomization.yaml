@@ -12,7 +12,7 @@ replicas:
 - name: profile-server
   count: 3
 - name: cloud-proxy
-  count: 3
+  count: 5
 - name: project-manager-server
   count: 3
 - name: vzmgr-server
