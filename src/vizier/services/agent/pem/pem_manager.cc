@@ -22,6 +22,18 @@
 #include "src/vizier/services/agent/manager/exec.h"
 #include "src/vizier/services/agent/manager/manager.h"
 
+DEFINE_int32(
+    table_store_data_limit, gflags::Int32FromEnv("PL_TABLE_STORE_DATA_LIMIT_MB", 1024 + 256),
+    "The maximum amount of data to store in the table store. Defaults to 1.25GB. "
+    "(Note that this is the maximum amount of data stored in all tables, but the "
+    "actual memory usage of all tables could be slightly higher because of indexing and other "
+    "overheads.");
+
+DEFINE_int32(table_store_http_events_percent,
+             gflags::Int32FromEnv("PL_TABLE_STORE_HTTP_EVENTS_PERCENT", 40),
+             "The percent of the table store data limit that should be devoted to the http_events "
+             "table. Defaults to 40%.");
+
 namespace px {
 namespace vizier {
 namespace agent {
@@ -68,15 +80,23 @@ Status PEMManager::InitSchemas() {
   px::stirling::stirlingpb::Publish publish_pb;
   stirling_->GetPublishProto(&publish_pb);
   auto relation_info_vec = ConvertPublishPBToRelationInfo(publish_pb);
+
+  int64_t memory_limit = FLAGS_table_store_data_limit * 1024 * 1024;
+  int64_t num_tables = relation_info_vec.size();
+  int64_t http_table_size = (FLAGS_table_store_http_events_percent * memory_limit) / 100;
+  int64_t other_table_size = (memory_limit - http_table_size) / (num_tables - 1);
+
   for (const auto& relation_info : relation_info_vec) {
     std::shared_ptr<table_store::Table> table_ptr;
     if (relation_info.name == "http_events") {
-      // Make http_events hold 512Mi. This is a hack and will be removed once we have proactive
-      // backup. Also increase the compacted batch size for the http table.
+      // Special case to set the max size of the http_events table differently from the other
+      // tables. For now, the min cold batch size is set to 256kB to be consistent with previous
+      // behaviour.
       table_ptr = std::make_shared<table_store::Table>(relation_info.name, relation_info.relation,
-                                                       1024 * 1024 * 512, 256 * 1024);
+                                                       http_table_size, 256 * 1024);
     } else {
-      table_ptr = table_store::Table::Create(relation_info.name, relation_info.relation);
+      table_ptr = std::make_shared<table_store::Table>(relation_info.name, relation_info.relation,
+                                                       other_table_size);
     }
 
     table_store()->AddTable(std::move(table_ptr), relation_info.name, relation_info.id);
