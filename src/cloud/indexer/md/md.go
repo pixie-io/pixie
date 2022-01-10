@@ -79,8 +79,8 @@ func NewVizierIndexer(vizierID uuid.UUID, orgID uuid.UUID, k8sUID string, st msg
 	return NewVizierIndexerWithBulkSettings(vizierID, orgID, k8sUID, st, es, maxActionsPerBatch, maxActionBatchFlushInterval)
 }
 
-// Run starts the indexer.
-func (v *VizierIndexer) Run(topic string) {
+// Start starts the indexer.
+func (v *VizierIndexer) Start(topic string) error {
 	log.
 		WithField("VizierID", v.vizierID).
 		WithField("ClusterUID", v.k8sUID).
@@ -88,18 +88,21 @@ func (v *VizierIndexer) Run(topic string) {
 
 	sub, err := v.st.PersistentSubscribe(topic, "indexer"+IndexName, v.streamHandler)
 	if err != nil {
-		log.WithError(err).Error("Failed to subscribe")
+		return fmt.Errorf("Failed to subscribe to topic %s: %s", topic, err.Error())
 	}
 	v.sub = sub
 
-	for {
-		select {
-		case <-v.quitCh:
-			return
-		case <-v.errCh:
-			log.WithField("vizier", v.vizierID.String()).WithError(err).Error("Error during indexing")
+	go func() {
+		for {
+			select {
+			case <-v.quitCh:
+				return
+			case err = <-v.errCh:
+				log.WithField("vizier", v.vizierID.String()).WithError(err).Error("Error during indexing")
+			}
 		}
-	}
+	}()
+	return nil
 }
 
 // Stop stops the indexer.

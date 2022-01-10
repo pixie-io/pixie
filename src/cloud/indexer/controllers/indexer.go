@@ -94,7 +94,6 @@ func NewIndexer(nc *nats.Conn, vzmgrClient vzmgrpb.VZMgrServiceClient, st msgbus
 	if err != nil {
 		return nil, err
 	}
-
 	return i, nil
 }
 
@@ -117,8 +116,12 @@ func (i *Indexer) handleVizier(id uuid.UUID, orgID uuid.UUID, uid string) error 
 
 	// Start indexer.
 	vzIndexer := md.NewVizierIndexer(id, orgID, uid, i.st, i.es)
-	i.clusters.write(uid, vzIndexer)
-	go vzIndexer.Run(fmt.Sprintf("%s.%s", indexerMetadataTopic, uid))
+	err := vzIndexer.Start(fmt.Sprintf("%s.%s", indexerMetadataTopic, uid))
+	if err != nil {
+		log.WithField("UID", uid).WithError(err).Error("Could not set up Vizier watcher for metadata updates")
+		return err
+	}
 
+	i.clusters.write(uid, vzIndexer)
 	return nil
 }
