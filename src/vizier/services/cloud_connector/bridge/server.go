@@ -1059,7 +1059,10 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) chan *cvmsgspb.VizierHeart
 		state := s.vzInfo.GetK8sState()
 
 		// Try to get the status from the Vizier CRD.
-		vz, _ := s.vzOperator.GetVizierCRD()
+		vz, err := s.vzOperator.GetVizierCRD()
+		if err != nil && atomic.LoadInt64(&s.hbSeqNum)%128 == 0 {
+			log.WithError(err).Warn("Failed to get CRD")
+		}
 		// Report default message and status if not running the Pixie operator.
 		msg := operatorMessage
 		status := s.currentStatus()
