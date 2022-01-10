@@ -314,7 +314,15 @@ func (e *ElasticSuggester) getMDEntityQuery(orgID uuid.UUID, clusterUID string, 
 	entityQuery := elastic.NewBoolQuery()
 	entityQuery.Must(elastic.NewTermQuery("_index", md.IndexName))
 
-	if len(input) > 1 {
+	// Use a boosting query to rank running resources higher than terminated resources.
+	negativeQuery := elastic.NewBoolQuery()
+	negativeQuery.Should(elastic.NewTermQuery("state", md.ESMDEntityStateFailed)).Should(elastic.NewTermQuery("state", md.ESMDEntityStateTerminated)).Should(elastic.NewTermQuery("state", md.ESMDEntityStateUnknown))
+	positiveQuery := elastic.NewBoolQuery()
+	positiveQuery.Should(elastic.NewTermQuery("state", md.ESMDEntityStateRunning)).Should(elastic.NewTermQuery("state", md.ESMDEntityStatePending))
+	entityQuery.Should(elastic.NewBoostingQuery().Positive(positiveQuery).Negative(negativeQuery).NegativeBoost(0.7))
+
+	// If the user hasn't provided any input string, don't run bother running a match query.
+	if len(input) >= 1 {
 		entityQuery.Must(elastic.NewMatchQuery("name", input))
 	}
 
