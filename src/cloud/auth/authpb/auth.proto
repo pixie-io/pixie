@@ -88,6 +88,8 @@ message LoginReply {
     string org_name = 2;
   }
   OrgInfo org_info = 6;
+  // The service that provided the identity for this login.
+  string identity_provider = 7;
 
   reserved 4;
 }
@@ -120,6 +122,8 @@ message SignupReply {
   px.uuidpb.UUID org_id = 6 [(gogoproto.customname) = "OrgID"];
   // Org name of the user's org.
   string org_name = 7;
+  // The service that provided the identity for this signup.
+  string identity_provider = 8;
 
   reserved 4;
 }

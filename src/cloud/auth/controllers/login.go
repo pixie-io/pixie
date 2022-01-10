@@ -283,6 +283,7 @@ func (s *Server) loginUser(ctx context.Context, userInfo *UserInfo, orgInfo *pro
 			OrgName: orgName,
 			OrgID:   orgIDStr,
 		},
+		IdentityProvider: userInfo.IdentityProvider,
 	}, nil
 }
 
@@ -359,8 +360,9 @@ func (s *Server) signupUser(ctx context.Context, userInfo *UserInfo, orgInfo *pr
 			LastName:  userInfo.LastName,
 			Email:     userInfo.Email,
 		},
-		OrgID:   orgID,
-		OrgName: orgName,
+		OrgID:            orgID,
+		OrgName:          orgName,
+		IdentityProvider: userInfo.IdentityProvider,
 	}, nil
 }
 
