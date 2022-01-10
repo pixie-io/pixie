@@ -1,0 +1,103 @@
+{
+  "variables": [
+    {
+      "name": "start_time",
+      "type": "PX_STRING",
+      "description": "The start time of the window in time units before now.",
+      "defaultValue": "-5m"
+    },
+    {
+      "name": "consumer_group_id",
+      "type": "PX_STRING",
+      "description": "The group id of the consumer group.",
+      "defaultValue": ""
+    }
+  ],
+  "globalFuncs": [
+    {
+      "outputName": "consumer_group_ids",
+      "func": {
+        "name": "kafka_group_ids",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          }
+        ]
+      }
+    },
+    {
+      "outputName": "consumer_rebalancing_events",
+      "func": {
+        "name": "kafka_join_sync_group_events",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "consumer_group_id",
+            "variable": "consumer_group_id"
+          }
+        ]
+      }
+    },
+    {
+      "outputName": "consumer_rebalancing_delay",
+      "func": {
+        "name": "kafka_join_sync_delay",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "consumer_group_id",
+            "variable": "consumer_group_id"
+          }
+        ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Consumer Groups",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 3,
+        "h": 3
+      },
+      "globalFuncOutputName": "consumer_group_ids",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      }
+    },
+    {
+      "name": "Consumer Rebalancing Delay",
+      "position": {
+        "x": 3,
+        "y": 0,
+        "w": 9,
+        "h": 3
+      },
+      "globalFuncOutputName": "consumer_rebalancing_delay",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      }
+    },
+    {
+      "name": "Consumer Rebalancing Events",
+      "position": {
+        "x": 0,
+        "y": 3,
+        "w": 12,
+        "h": 3
+      },
+      "globalFuncOutputName": "consumer_rebalancing_events",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      }
+    }
+  ]
+}

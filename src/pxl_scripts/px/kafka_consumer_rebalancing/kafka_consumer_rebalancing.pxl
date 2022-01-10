@@ -1,0 +1,163 @@
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+''' Kafka Consumer Rebalancing Events
+
+Visualizes the most recent Kafka consumer rebalancing events, with delay.
+'''
+
+import px
+
+
+def kafka_join_sync_group_data(start_time: str):
+    '''
+    Get the raw JoinGroup and SyncGroup events from the kafka table.
+    '''
+    df = px.DataFrame(table='kafka_events.beta', start_time=start_time)
+    df = add_source_dest_columns(df)
+
+    df.req_cmd = px.kafka_api_key_name(df.req_cmd)
+    df = df['time_', 'source', 'destination', 'remote_port', 'req_cmd',
+            'req_body', 'resp', 'latency']
+
+    # Filter JoinGroup and SyncGroup events.
+    df = df[df.req_cmd == 'JoinGroup' or df.req_cmd == 'SyncGroup']
+
+    return df
+
+
+def kafka_join_sync_group_events(start_time: str, consumer_group_id: str):
+    '''
+    Filter the raw JoinGroup and SyncGroup events with a given group_id.
+    '''
+    df = kafka_join_sync_group_data(start_time)
+
+    df = get_and_filter_group_id(df, consumer_group_id)
+
+    df = df.drop('group_id')
+    return df
+
+
+def kafka_group_ids(start_time: str):
+    '''
+    Computes a list of consumer groups and the number of active members in each group.
+    '''
+    df = kafka_join_sync_delay(start_time, '')
+    df.generation_id = px.atoi(df.generation_id, -1)
+    df = df[df.generation_id != -1]
+
+    # Calculate the number of members in each group.
+    df = df.groupby(['group_id', 'generation_id']).agg(num_members=('generation_id', px.count))
+
+    # Calculate the max generation_id in each group.
+    df_max_generation_id = df.groupby('group_id').agg(generation_id=('generation_id', px.max))
+
+    # Join the two tables to get the most recent number of members in each group.
+    df = df.merge(df_max_generation_id,
+                  how='inner',
+                  left_on=['group_id', 'generation_id'],
+                  right_on=['group_id', 'generation_id'],
+                  suffixes=['', '_x'])
+    df = df['group_id', 'num_members']
+    return df
+
+
+def kafka_join_sync_delay(start_time: str, consumer_group_id: str):
+    '''
+    Computes the delay from the JoinGroup Request to SyncGroup Response. During this delay,
+    consumers in the group are stopped due to group rebalancing.
+    '''
+    df = kafka_join_sync_group_data(start_time)
+    df = get_and_filter_group_id(df, consumer_group_id)
+
+    df_join = df[df.req_cmd == 'JoinGroup']
+    df_sync = df[df.req_cmd == 'SyncGroup']
+
+    # The generation_id is incremented after each successful rebalancing.
+    df_join.generation_id = px.pluck(df_join.resp, 'generation_id')
+    df_sync.generation_id = px.pluck(df_sync.req_body, 'generation_id')
+
+    # The member_id is the unique id for each consumer in a consumer group.
+    df_join.member_id = px.pluck(df_join.resp, 'member_id')
+    df_sync.member_id = px.pluck(df_sync.req_body, 'member_id')
+
+    # Filter out invalid generation_ids and member_ids.
+    df_join = df_join[df_join.generation_id != '-1' and df_join.member_id != ""]
+    df_sync = df_sync[df_sync.generation_id != '-1' and df_sync.member_id != ""]
+
+    # Merge on group_id, generation_id, and member_id.
+    df = df_join.merge(df_sync,
+                       how='inner',
+                       left_on=['group_id', 'generation_id', 'member_id'],
+                       right_on=['group_id', 'generation_id', 'member_id'],
+                       suffixes=['', '_sync'])
+
+    # Delay is the difference between join and sync request plus sync request's latency.
+    df.delay = df.time__sync - df.time_ + df.latency_sync
+    # Under normal circumstances, delay should never be smaller than zero. This is a safety check
+    # to make sure the data shown makes sense.
+    df.delay = px.DurationNanos(px.select(df.delay < 0, 0, df.delay))
+    df = df['time_', 'group_id', 'generation_id', 'member_id', 'delay']
+
+    return df
+
+
+def get_and_filter_group_id(df, target_group_id):
+    '''
+    Pluck the group_id field from request body and keep the rows equal to target_group_id.
+    If target_group_id is empty, all rows are retained.
+    '''
+    df.group_id = px.pluck(df.req_body, 'group_id')
+    df = df[px.equal(df.group_id, target_group_id) or target_group_id == '']
+
+    return df
+
+
+def add_source_dest_columns(df):
+    ''' Add source and destination columns for the Kafka request.
+
+    Kafka requests are traced server-side (trace_role==2), unless the server is
+    outside of the cluster in which case the request is traced client-side (trace_role==1).
+
+    When trace_role==2, the Kafka request source is the remote_addr column
+    and destination is the pod column. When trace_role==1, the Kafka request
+    source is the pod column and the destination is the remote_addr column.
+
+    Input DataFrame must contain trace_role, upid, remote_addr columns.
+    '''
+    df.pod = df.ctx['pod']
+    df.namespace = df.ctx['namespace']
+
+    # If remote_addr is a pod, get its name. If not, use IP address.
+    df.ra_pod = px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_addr))
+    df.is_ra_pod = df.ra_pod != ''
+    df.ra_name = px.select(df.is_ra_pod, df.ra_pod, df.remote_addr)
+
+    df.is_server_tracing = df.trace_role == 2
+    df.is_source_pod_type = px.select(df.is_server_tracing, df.is_ra_pod, True)
+    df.is_dest_pod_type = px.select(df.is_server_tracing, True, df.is_ra_pod)
+
+    # Set source and destination based on trace_role.
+    df.source = px.select(df.is_server_tracing, df.ra_name, df.pod)
+    df.destination = px.select(df.is_server_tracing, df.pod, df.ra_name)
+
+    # Filter out messages with empty source / destination.
+    df = df[df.source != '']
+    df = df[df.destination != '']
+
+    df = df.drop(['ra_pod', 'is_ra_pod', 'ra_name', 'is_server_tracing'])
+
+    return df

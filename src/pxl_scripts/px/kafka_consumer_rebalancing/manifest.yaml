@@ -1,0 +1,4 @@
+---
+short: Kafka Consumer Rebalancing Events
+long: >
+  Visualizes the most recent Kafka consumer rebalancing events, with delay.
