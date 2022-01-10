@@ -81,8 +81,6 @@ message LoginReply {
   // True if a new user was created while processing the LoginRequest. This is only possible if
   // create_user_if_not_exists is set in the LoginRequest.
   bool user_created = 3;
-  // User ID of the logged in user.
-  px.uuidpb.UUID user_id = 4 [(gogoproto.customname) = "UserID"];
   // Information about the logged in user.
   AuthenticatedUserInfo user_info = 5;
   message OrgInfo {
@@ -90,6 +88,8 @@ message LoginReply {
     string org_name = 2;
   }
   OrgInfo org_info = 6;
+
+  reserved 4;
 }
 
 message SignupRequest {
@@ -114,14 +114,14 @@ message SignupReply {
   int64 expires_at = 2;
   // True if a new org was created while processing the SignupRequest.
   bool org_created = 3;
-  // User ID of the logged in user.
-  px.uuidpb.UUID user_id = 4 [(gogoproto.customname) = "UserID"];
   // Information about the logged in user.
   AuthenticatedUserInfo user_info = 5;
   // Org ID of the user's org.
   px.uuidpb.UUID org_id = 6 [(gogoproto.customname) = "OrgID"];
   // Org name of the user's org.
   string org_name = 7;
+
+  reserved 4;
 }
 
 message GetAugmentedAuthTokenRequest {

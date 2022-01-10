@@ -142,7 +142,7 @@ func AuthSignupHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 
 	if resp.OrgCreated {
 		events.Client().Enqueue(&analytics.Track{
-			UserId: utils.UUIDFromProtoOrNil(resp.UserID).String(),
+			UserId: userIDStr,
 			Event:  events.OrgCreated,
 			Properties: analytics.NewProperties().
 				Set("org_name", resp.OrgName).
