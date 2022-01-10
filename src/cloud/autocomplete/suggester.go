@@ -256,7 +256,7 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 			matchedIndexes := make([]int64, 0)
 			// Parse highlight string into indexes.
 			if len(h.Highlight["name"]) > 0 {
-				matchedIndexes = append(matchedIndexes, parseHighlightIndexes(h.Highlight["name"][0], len(res.NS)+1)...)
+				matchedIndexes = append(matchedIndexes, parseHighlightIndexes(h.Highlight["name"][0], 0)...)
 			}
 
 			// TODO(michellenguyen): Remove namespace handling when we create a new index and ensure there are no more
