@@ -503,6 +503,8 @@ const DataTableImpl = React.memo<DataTableProps>(({ table, ...options }) => {
       defaultColumn,
       disableSortRemove: true,
       autoResetSortBy: false,
+      autoResetHiddenColumns: false,
+      autoResetResize: false,
       initialState: {
         sortBy: firstDataColumn ? [{ id: firstDataColumn.accessor as string }] : [],
       },
