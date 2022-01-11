@@ -348,7 +348,7 @@ def WithSourceCodeAndTargetsDocker(String stashName = SRC_STASH_NAME, Closure bo
   * This function checks out the source code and wraps the builds steps.
   */
 def WithSourceCodeFatalError(String stashName = SRC_STASH_NAME, Closure body) {
-  timeout(time: 60, unit: 'MINUTES') {
+  timeout(time: 90, unit: 'MINUTES') {
     node(WORKER_NODE) {
       sh 'hostname'
       deleteDir()
