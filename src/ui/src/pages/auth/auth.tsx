@@ -22,7 +22,7 @@ import * as React from 'react';
 
 import { Route, Switch } from 'react-router';
 
-import { AuthCallbackPage } from './callback';
+import { AuthCallbackPage, CLITokenPage } from './callback';
 import { CLIAuthCompletePage } from './cli-auth-complete';
 import { InvitePage } from './invite';
 import { LoginPage } from './login';
@@ -40,6 +40,7 @@ export const AuthRouter: React.FC = () => (
     <Route exact path='/auth/password/recovery' component={PasswordRecoveryPage} />
     <Route exact path='/auth/password/error' component={ErrorPage} />
     <Route exact path='/auth/callback' component={AuthCallbackPage} />
+    <Route exact path='/auth/cli-token' component={CLITokenPage} />
     <Route exact path='/auth/login' component={LoginPage} />
     <Route exact path='/auth/invite' component={InvitePage} />
     <Route exact path='/auth/signup' component={SignupPage} />

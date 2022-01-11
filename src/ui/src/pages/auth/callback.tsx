@@ -179,6 +179,23 @@ const ErrorMessage = React.memo<{ config: CallbackConfig }>(({ config }) => {
 });
 ErrorMessage.displayName = 'ErrorMessage';
 
+const checkOrg = (response: any, accessToken: string, mode: AuthCallbackMode, redirectURI: string) => {
+  if (response.data.orgInfo && response.data.orgInfo.orgName !== '') {
+    return true;
+  }
+  if (mode !== 'cli_get' && mode !== 'cli_token') {
+    return true;
+  }
+
+  const postSetupParams = { token: accessToken, mode, redirect: redirectURI };
+  const postSetupRedirect = `/auth/cli-token?${QueryString.stringify(postSetupParams)}`;
+  const setupParams = { redirect_uri: postSetupRedirect };
+  const setupURI = `/setup?${QueryString.stringify(setupParams)}`;
+
+  RedirectUtils.redirect(setupURI, {});
+  return false;
+};
+
 /**
  * This is the main component to handle the callback from auth.
  *
@@ -207,7 +224,13 @@ export const AuthCallbackPage: React.FC = React.memo(() => {
     }
   }, [setErr]);
 
-  const performSignup = React.useCallback(async (accessToken: string, idToken: string, inviteToken: string) => {
+  const performSignup = React.useCallback(async (
+    accessToken: string,
+    idToken: string,
+    inviteToken: string,
+    mode: AuthCallbackMode,
+    redirectURI: string,
+  ) => {
     let response = null;
     try {
       response = await Axios.post('/api/auth/signup', { accessToken, idToken, inviteToken });
@@ -217,10 +240,16 @@ export const AuthCallbackPage: React.FC = React.memo(() => {
       return false;
     }
     await trackAuthEvent('User signed up', response.data.userInfo.userID, response.data.userInfo.email);
-    return true;
+    return checkOrg(response, accessToken, mode, redirectURI);
   }, [handleHTTPError]);
 
-  const performUILogin = React.useCallback(async (accessToken: string, idToken: string, inviteToken: string) => {
+  const performUILogin = React.useCallback(async (
+    accessToken: string,
+    idToken: string,
+    inviteToken: string,
+    mode: AuthCallbackMode,
+    redirectURI: string,
+  ) => {
     let response = null;
     try {
       response = await Axios.post('/api/auth/login', {
@@ -234,7 +263,7 @@ export const AuthCallbackPage: React.FC = React.memo(() => {
       return false;
     }
     await trackAuthEvent('User logged in', response.data.userInfo.userID, response.data.userInfo.email);
-    return true;
+    return checkOrg(response, accessToken, mode, redirectURI);
   }, [handleHTTPError]);
 
   const sendTokenToCLI = React.useCallback(async (accessToken: string, idToken: string, redirectURI: string) => {
@@ -256,48 +285,38 @@ export const AuthCallbackPage: React.FC = React.memo(() => {
     idToken: string,
     inviteToken: string,
   ) => {
-    let signupSuccess = false;
-    let loginSuccess = false;
+    const loginFunc = signup ? performSignup : performUILogin;
+    const loginSuccess = await loginFunc(accessToken, idToken, inviteToken, mode, redirectURI);
 
-    if (signup) {
-      // We always need to perform signup, even if the mode is CLI.
-      signupSuccess = await performSignup(accessToken, idToken, inviteToken);
-    }
     // eslint-disable-next-line default-case
     switch (mode) {
       case 'cli_get':
-        loginSuccess = await sendTokenToCLI(accessToken, idToken, redirectURI);
         if (loginSuccess) {
-          setConfig((c) => ({
-            ...c,
-            loading: false,
-          }));
-          RedirectUtils.redirect('/auth/cli-auth-complete', {});
-          return;
+          const cliSuccess = await sendTokenToCLI(accessToken, idToken, redirectURI);
+          if (cliSuccess) {
+            setConfig((c) => ({
+              ...c,
+              loading: false,
+            }));
+            RedirectUtils.redirect('/auth/cli-auth-complete', {});
+            return;
+          }
+          // Fallback to manual auth unless there is an actual authentication error.
+          if (config.err?.errorType !== 'auth') {
+            setConfig((c) => ({
+              ...c,
+              mode: 'cli_token',
+            }));
+          }
         }
-
-        // Don't fallback to manual auth if there is an actual
-        // authentication error.
-        if (config.err?.errorType === 'auth') {
-          break;
-        }
-
-        // If it fails, switch to token auth.
-        setConfig((c) => ({
-          ...c,
-          mode: 'cli_token',
-        }));
         break;
       case 'cli_token':
         // Nothing to do, it will just render.
         break;
       case 'ui':
-        if (!signup) {
-          loginSuccess = await performUILogin(accessToken, idToken, inviteToken);
-        }
         // We just need to redirect if in signup or login were successful since
         // the cookies are installed.
-        if ((signup && signupSuccess) || loginSuccess) {
+        if (loginSuccess) {
           RedirectUtils.redirect(redirectURI || '/', {});
         }
     }
@@ -376,3 +395,36 @@ export const AuthCallbackPage: React.FC = React.memo(() => {
   );
 });
 AuthCallbackPage.displayName = 'AuthCallbackPage';
+
+export const CLITokenPage: React.FC = React.memo(() => {
+  const { token, mode, redirect } = QueryString.parse(window.location.search);
+  const tokenStr = typeof token === 'string' ? token : '';
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    if (mode === 'cli_get' && typeof redirect === 'string') {
+      redirectGet(redirect, { accessToken: tokenStr }).then((response) => {
+        if (response.status === 200 && response.data === 'OK') {
+          RedirectUtils.redirect('/auth/cli-auth-complete', {});
+        }
+      }).catch(() => {
+        // passthrough
+      }).finally(() => {
+        setLoading(false);
+      });
+    } else {
+      setLoading(false);
+    }
+  }, [mode, redirect, tokenStr, setLoading]);
+
+  if (loading) {
+    return <></>;
+  }
+
+  return (
+    <CLICodeBox
+      code={tokenStr}
+    />
+  );
+});
+CLITokenPage.displayName = 'CLITokenPage';
