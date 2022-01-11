@@ -33,6 +33,7 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { useSnackbar } from 'app/components';
 import { GQLOrgInfo } from 'app/types/schema';
+import pixieAnalytics from 'app/utils/analytics';
 import { getRedirectPath } from 'app/utils/redirect-utils';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
@@ -90,6 +91,7 @@ export const InviteUserButton = React.memo<{ className: string }>(({ className }
   const openModal = React.useCallback(() => {
     getOrg();
     setOpen(true);
+    pixieAnalytics.track('Open Invite Modal', {});
   }, [getOrg]);
 
   // We want to get the invite token only after orgData is valid
