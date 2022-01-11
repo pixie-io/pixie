@@ -95,11 +95,6 @@ const IndexMapping = `
     "number_of_replicas": 4,
     "analysis": {
       "filter": {
-        "autocomplete_filter": {
-          "type": "edge_ngram",
-          "min_gram": 1,
-          "max_gram": 6
-        },
         "dont_split_on_numerics": {
           "type": "word_delimiter",
           "preserve_original": true,
@@ -107,13 +102,9 @@ const IndexMapping = `
         }
       },
       "tokenizer": {
-        "my_tokenizer": {
-          "type": "pattern",
-          "pattern": "-"
-        },
         "ngram_tokenizer": {
           "type": "nGram",
-          "min_gram": 2,
+          "min_gram": 1,
           "max_gram": 10,
           "token_chars": [
             "letter",
@@ -121,12 +112,28 @@ const IndexMapping = `
             "custom"
           ],
           "custom_token_chars": "-/"
-        }
+        },
+        "search_tokenizer": {
+          "type": "char_group",
+          "tokenize_on_chars": [
+            "whitespace",
+	          "-",
+            "\n",
+	          "/",
+	          "_"
+    	  ]
+	}
       },
       "analyzer": {
         "autocomplete": {
           "type": "custom",
           "tokenizer": "ngram_tokenizer",
+          "filter": [
+            "lowercase"
+          ]
+        },
+        "autocomplete_search": {
+          "tokenizer": "search_tokenizer",
           "filter": [
             "lowercase"
           ]
@@ -163,17 +170,13 @@ const IndexMapping = `
       "name": {
         "type": "text",
         "analyzer": "autocomplete",
+        "search_analyzer": "autocomplete_search",
         "eager_global_ordinals": true,
         "fields": {
           "keyword": {
             "type": "keyword"
           }
         }
-      },
-      "ns": {
-        "type": "text",
-        "analyzer": "autocomplete",
-        "eager_global_ordinals": true
       },
       "kind": {
         "type": "text",
@@ -202,7 +205,7 @@ const IndexMapping = `
 // IndexName is the name of the ES index.
 // This can be incremented when we have breaking changes,
 // and are willing to lose data in the old index.
-const IndexName = "md_entities_5"
+const IndexName = "md_entities_6"
 
 // InitializeMapping creates the index in elastic.
 func InitializeMapping(es *elastic.Client) error {
