@@ -31,6 +31,7 @@ import { createStyles, makeStyles } from '@mui/styles';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { useSnackbar } from 'app/components';
+import pixieAnalytics from 'app/utils/analytics';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -75,6 +76,7 @@ export const InviteLinkReset = React.memo<{
   const showSnackbar = useSnackbar();
   const resetLinks = React.useCallback(async () => {
     setPendingReset(true);
+    pixieAnalytics.track('Reset Links', {});
     revokeAllInviteTokens({ variables: { orgID } })
       .then(() => {
         showSnackbar({ message: 'Links reset!' });
