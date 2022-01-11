@@ -103,7 +103,7 @@ export const InviteUserButton = React.memo<{ className: string }>(({ className }
 
   const invitationLink = React.useMemo(() => {
     if (!inviteTokenData) {
-      return null;
+      return '';
     }
     return getRedirectPath('/invite', { invite_token: inviteTokenData?.CreateInviteToken });
   }, [inviteTokenData]);
