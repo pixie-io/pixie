@@ -1050,6 +1050,7 @@ func crdPhaseToHeartbeatStatus(phase v1alpha1.VizierPhase) cvmsgspb.VizierStatus
 
 func (s *Bridge) generateHeartbeats(done <-chan bool) chan *cvmsgspb.VizierHeartbeat {
 	hbCh := make(chan *cvmsgspb.VizierHeartbeat)
+	crdSeen := false
 
 	sendHeartbeat := func() {
 		addr, port, err := s.vzInfo.GetAddress()
@@ -1063,11 +1064,12 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) chan *cvmsgspb.VizierHeart
 		if err != nil && atomic.LoadInt64(&s.hbSeqNum)%128 == 0 {
 			log.WithError(err).Warn("Failed to get CRD")
 		}
-		// Report default message and status if not running the Pixie operator.
-		msg := operatorMessage
+
+		var msg string
 		status := s.currentStatus()
 
 		if vz != nil {
+			crdSeen = true
 			msg = vz.Status.Message
 			vzStatus := crdPhaseToHeartbeatStatus(vz.Status.VizierPhase)
 			if vzStatus != cvmsgspb.VZ_ST_UNKNOWN {
@@ -1077,9 +1079,10 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) chan *cvmsgspb.VizierHeart
 			if vz.Status.ReconciliationPhase == v1alpha1.ReconciliationPhaseUpdating {
 				status = cvmsgspb.VZ_ST_UPDATING
 			}
-		} else if status == cvmsgspb.VZ_ST_HEALTHY {
+		} else if status == cvmsgspb.VZ_ST_HEALTHY && !crdSeen {
 			// If running on non-operator, and is healthy, consider the vizier in a degraded state.
 			status = cvmsgspb.VZ_ST_DEGRADED
+			msg = operatorMessage
 		}
 
 		hbMsg := &cvmsgspb.VizierHeartbeat{
