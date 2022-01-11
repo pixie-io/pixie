@@ -19,6 +19,8 @@
  * SPDX-License-Identifier: GPL-2.0
  */
 
+// LINT_C_FILE: Do not remove this line. It ensures cpplint treats this as a C file.
+
 #pragma once
 
 #include "src/stirling/bpf_tools/bcc_bpf_intf/go_types.h"
@@ -31,6 +33,51 @@
 //   Key: TGID
 //   Value: Symbol addresses for the binary with that TGID.
 BPF_HASH(go_common_symaddrs_map, uint32_t, struct go_common_symaddrs_t);
+
+// Contains the registers of the golang register ABI.
+// This struct is required because we use it in the regs_heap BPF map,
+// which enables us to allocate this memory on the BPF heap instead of the BPF map.
+struct go_regabi_regs {
+  uint64_t regs[9];
+};
+
+// The BPF map used to store the registers of Go's register-based calling convention.
+BPF_PERCPU_ARRAY(regs_heap, struct go_regabi_regs, 1);
+
+// Copies the registers of the golang ABI, so that they can be
+// easily accessed using an offset.
+static __inline uint64_t* go_regabi_regs(const struct pt_regs* ctx) {
+  uint32_t kZero = 0;
+  struct go_regabi_regs* regs_heap_var = regs_heap.lookup(&kZero);
+  if (regs_heap_var == NULL) {
+    return NULL;
+  }
+
+  regs_heap_var->regs[0] = ctx->ax;
+  regs_heap_var->regs[1] = ctx->bx;
+  regs_heap_var->regs[2] = ctx->cx;
+  regs_heap_var->regs[3] = ctx->di;
+  regs_heap_var->regs[4] = ctx->si;
+  regs_heap_var->regs[5] = ctx->r8;
+  regs_heap_var->regs[6] = ctx->r9;
+  regs_heap_var->regs[7] = ctx->r10;
+  regs_heap_var->regs[8] = ctx->r11;
+
+  return regs_heap_var->regs;
+}
+
+// Reads a golang function argument, taking into account the ABI.
+// Go arguments may be in registers or on the stack.
+static __inline void assign_arg(void* arg, size_t arg_size, struct location_t loc, const void* sp,
+                                uint64_t* regs) {
+  if (loc.type == kLocationTypeStack) {
+    bpf_probe_read(arg, arg_size, sp + loc.offset);
+  } else if (loc.type == kLocationTypeRegisters) {
+    if (loc.offset >= 0) {
+      bpf_probe_read(arg, arg_size, (char*)regs + loc.offset);
+    }
+  }
+}
 
 //-----------------------------------------------------------------------------
 // FD extraction functions

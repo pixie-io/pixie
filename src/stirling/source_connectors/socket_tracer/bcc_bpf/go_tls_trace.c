@@ -39,33 +39,6 @@ struct go_tls_conn_args {
 // This map is used to connect arguments to return values.
 BPF_HASH(active_tls_conn_op_map, struct tgid_goid_t, struct go_tls_conn_args);
 
-// Copies the registers of the golang ABI, so that they can be
-// easily accessed using an offset.
-static __inline void init_regs_go_regabi(const struct pt_regs* ctx, uint64_t* regs) {
-  regs[0] = ctx->ax;
-  regs[1] = ctx->bx;
-  regs[2] = ctx->cx;
-  regs[3] = ctx->di;
-  regs[4] = ctx->si;
-  regs[5] = ctx->r8;
-  regs[6] = ctx->r9;
-  regs[7] = ctx->r10;
-  regs[8] = ctx->r11;
-}
-
-// Reads a golang function argument, taking into account the ABI.
-// Go arguments may be in registers or on the stack.
-static __inline void assign_arg(void* arg, size_t arg_size, struct location_t loc, const void* sp,
-                                const uint64_t* regs) {
-  if (loc.type == kLocationTypeStack) {
-    bpf_probe_read(arg, arg_size, sp + loc.offset);
-  } else if (loc.type == kLocationTypeRegisters) {
-    if (loc.offset >= 0) {
-      bpf_probe_read(arg, arg_size, (char*)regs + loc.offset);
-    }
-  }
-}
-
 // Probe for the crypto/tls library's write.
 //
 // Function signature:
@@ -101,8 +74,10 @@ int probe_entry_tls_conn_write(struct pt_regs* ctx) {
   // ---------------------------------------------
 
   const void* sp = (const void*)ctx->sp;
-  uint64_t regs[9];
-  init_regs_go_regabi(ctx, regs);
+  uint64_t* regs = go_regabi_regs(ctx);
+  if (regs == NULL) {
+    return 0;
+  }
 
   struct go_tls_conn_args args = {};
   assign_arg(&args.conn_ptr, sizeof(args.conn_ptr), symaddrs->Write_c_loc, sp, regs);
@@ -124,8 +99,10 @@ static __inline int probe_return_tls_conn_write_core(struct pt_regs* ctx, uint64
   REQUIRE_LOCATION(symaddrs->Write_retval1_loc, 0);
 
   const void* sp = (const void*)ctx->sp;
-  uint64_t regs[9];
-  init_regs_go_regabi(ctx, regs);
+  uint64_t* regs = go_regabi_regs(ctx);
+  if (regs == NULL) {
+    return 0;
+  }
 
   int64_t retval0 = 0;
   assign_arg(&retval0, sizeof(retval0), symaddrs->Write_retval0_loc, sp, regs);
@@ -226,8 +203,10 @@ int probe_entry_tls_conn_read(struct pt_regs* ctx) {
   // ---------------------------------------------
 
   const void* sp = (const void*)ctx->sp;
-  uint64_t regs[9];
-  init_regs_go_regabi(ctx, regs);
+  uint64_t* regs = go_regabi_regs(ctx);
+  if (regs == NULL) {
+    return 0;
+  }
 
   struct go_tls_conn_args args = {};
   assign_arg(&args.conn_ptr, sizeof(args.conn_ptr), symaddrs->Read_c_loc, sp, regs);
@@ -249,8 +228,10 @@ static __inline int probe_return_tls_conn_read_core(struct pt_regs* ctx, uint64_
   REQUIRE_LOCATION(symaddrs->Read_retval1_loc, 0);
 
   const void* sp = (const void*)ctx->sp;
-  uint64_t regs[9];
-  init_regs_go_regabi(ctx, regs);
+  uint64_t* regs = go_regabi_regs(ctx);
+  if (regs == NULL) {
+    return 0;
+  }
 
   int64_t retval0 = 0;
   assign_arg(&retval0, sizeof(retval0), symaddrs->Read_retval0_loc, sp, regs);
