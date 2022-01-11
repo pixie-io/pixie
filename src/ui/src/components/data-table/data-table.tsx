@@ -392,9 +392,8 @@ const BodyRow = React.memo<{ index: number, style: React.CSSProperties }>(
       enableRowSelect && expanded === row.id && classes.bodyRowSelected,
     );
     const onClick = React.useMemo(() => enableRowSelect && ((event) => {
-      // The canvas in QuantilesBoxWhisker takes clicks (through Vega), which it doesn't prevent from bubbling.
-      // Let those clicks do just one thing, not two.
-      if (event.target.tagName !== 'CANVAS') {
+      // QuantilesBoxWhisker has click handlers; let it handle those instead of expanding/collapsing the row.
+      if (event.target.tagName !== 'BUTTON') {
         toggleRowExpanded(row.id);
         onRowSelected?.(expanded === row.id ? null : row.original);
       }

@@ -18,302 +18,71 @@
 
 import * as React from 'react';
 
+import { Tooltip } from '@mui/material';
 import { Theme, useTheme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-import { Vega } from 'react-vega';
-import { VisualizationSpec } from 'vega-embed';
-import { Handler } from 'vega-tooltip';
-
-interface QuantilesBoxWhiskerFields {
-  p50: number;
-  p90: number;
-  p99: number;
-  max: number;
-  p50Display: string;
-  p90Display: string;
-  p99Display: string;
-  p50Fill: string;
-  p90Fill: string;
-  p99Fill: string;
-  p50HoverFill: string;
-  p90HoverFill: string;
-  p99HoverFill: string;
-  barFill: string;
-  whiskerFill: string;
-}
-
-const makeSpec = (fields: QuantilesBoxWhiskerFields): VisualizationSpec => {
-  const {
-    p50,
-    p90,
-    p99,
-    max,
-    p50Display,
-    p90Display,
-    p99Display,
-    p50Fill,
-    p90Fill,
-    p99Fill,
-    p50HoverFill,
-    p90HoverFill,
-    p99HoverFill,
-    barFill,
-    whiskerFill,
-  } = fields;
-
-  return {
-    $schema: 'https://vega.github.io/schema/vega/v5.json',
-    style: 'cell',
-    data: [
-      {
-        name: 'values',
-        values: [
-          {
-            p50,
-            boxMin: 0,
-            boxMax: p90,
-            whiskerMin: 0,
-            whiskerMax: p99,
-            p50Display,
-            p90Display,
-            p99Display,
-          },
-        ],
-      },
-      {
-        name: 'data_1',
-        source: 'values',
-        transform: [
-          {
-            type: 'filter',
-            expr:
-              'isValid(datum["whiskerMax"]) && isFinite(+datum["whiskerMax"])',
-          },
-        ],
-      },
-      {
-        name: 'data_2',
-        source: 'values',
-        transform: [
-          {
-            type: 'filter',
-            expr: 'isValid(datum["p50"]) && isFinite(+datum["p50"])',
-          },
-        ],
-      },
-    ],
-    marks: [
-      {
-        name: 'whisker',
-        type: 'rule',
-        style: ['rule', 'boxplot-rule'],
-        aria: false,
-        from: { data: 'values' },
-        encode: {
-          update: {
-            stroke: { value: whiskerFill },
-            x: { scale: 'x', field: 'boxMax' },
-            x2: { scale: 'x', field: 'whiskerMax' },
-            y: { signal: 'height', mult: 0.5 },
-          },
-        },
-      },
-      {
-        name: 'bar',
-        type: 'rect',
-        style: ['bar', 'boxplot-box'],
-        aria: false,
-        from: { data: 'values' },
-        encode: {
-          update: {
-            strokeWidth: { value: 0 },
-            opacity: { value: 0.6 },
-            fill: { value: barFill },
-            x: { scale: 'x', field: 'boxMin' },
-            x2: { scale: 'x', field: 'boxMax' },
-            yc: { signal: 'height', mult: 0.5 },
-            height: { value: 14 },
-          },
-        },
-      },
-      {
-        name: 'p50',
-        type: 'rect',
-        style: ['tick'],
-        from: { data: 'data_2' },
-        encode: {
-          update: {
-            opacity: { value: 0.7 },
-            fill: { value: p50Fill },
-            ariaRoleDescription: { value: 'tick' },
-            description: {
-              signal: '"p50: " + datum["p50Display"]',
-            },
-            xc: { scale: 'x', field: 'p50' },
-            yc: { signal: 'height', mult: 0.5 },
-            height: { value: 14 },
-            width: { value: 2 },
-          },
-          hover: {
-            fill: { value: p50HoverFill },
-            fillOpacity: { value: 1 },
-            tooltip: {
-              signal: '"p50: " + datum["p50Display"]',
-            },
-          },
-        },
-      },
-      {
-        name: 'p90',
-        type: 'rect',
-        style: ['tick'],
-        from: { data: 'data_2' },
-        encode: {
-          update: {
-            opacity: { value: 0.7 },
-            fill: { value: p90Fill },
-            ariaRoleDescription: { value: 'tick' },
-            description: {
-              signal: '"p90: " + datum["p90Display"]',
-            },
-            xc: { scale: 'x', field: 'boxMax' },
-            yc: { signal: 'height', mult: 0.5 },
-            height: { value: 14 },
-            width: { value: 2 },
-          },
-          hover: {
-            fill: { value: p90HoverFill },
-            fillOpacity: { value: 1 },
-            tooltip: {
-              signal: '"p90: " + datum["p90Display"]',
-            },
-          },
-        },
-      },
-      {
-        name: 'p99',
-        type: 'rect',
-        style: ['tick'],
-        from: { data: 'data_1' },
-        encode: {
-          update: {
-            opacity: { value: 0.7 },
-            fill: { value: p99Fill },
-            ariaRoleDescription: { value: 'tick' },
-            description: {
-              signal: '"p99: " + datum["p99Display"]',
-            },
-            xc: { scale: 'x', field: 'whiskerMax' },
-            yc: { signal: 'height', mult: 0.5 },
-            height: { value: 14 },
-            width: { value: 2 },
-          },
-          hover: {
-            fill: { value: p99HoverFill },
-            fillOpacity: { value: 1 },
-            tooltip: {
-              signal: '"p99: " + datum["p99Display"]',
-            },
-          },
-        },
-      },
-    ],
-    scales: [
-      {
-        name: 'x',
-        type: 'sqrt',
-        domain: [0, max],
-        range: [
-          0,
-          {
-            signal: 'width',
-          },
-        ],
-        nice: true,
-        zero: true,
-      },
-    ],
-    config: {
-      style: {
-        cell: {
-          stroke: 'transparent',
-        },
-      },
-    },
-    signals: [
-      {
-        name: 'p50Click',
-        on: [
-          {
-            events: { type: 'click', markname: 'p50' },
-            update: '{}',
-          },
-        ],
-      },
-      {
-        name: 'p90Click',
-        on: [
-          {
-            events: { type: 'click', markname: 'p90' },
-            update: '{}',
-          },
-        ],
-      },
-      {
-        name: 'p99Click',
-        on: [
-          {
-            events: { type: 'click', markname: 'p99' },
-            update: '{}',
-          },
-        ],
-      },
-      {
-        name: 'width',
-        init: 'isFinite(containerSize()[0]) ? containerSize()[0] : 200',
-        on: [
-          {
-            update: 'isFinite(containerSize()[0]) ? containerSize()[0] : 200',
-            events: 'window: resize',
-          },
-        ],
-      },
-    ],
-  };
-};
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
-  '@global': {
-    // This style is used to override vega-tooltip default style.
-    // ...custom-theme maps to theme: 'custom' in the options below.
-    // This mirrors the default style in our existing Material UI tooltips for consistency.
-    '#vg-tooltip-element.vg-tooltip.custom-theme': {
-      borderWidth: 0,
-      color: theme.palette.foreground.white,
-      padding: '4px 8px',
-      fontSize: '0.625rem',
-      maxWidth: 300,
-      wordWrap: 'break-word',
-      fontFamily: 'Roboto',
-      fontWeight: 500,
-      lineHeight: '1.4em',
-      borderRadius: '4px',
-      backgroundColor: theme.palette.foreground.grey1,
-      opacity: 0.9,
-      zIndex: '1501', // Has to show above the data drawer and anything else that can show a Vega chart.
-    },
-  },
   root: {
     display: 'flex',
     alignItems: 'center',
     flexGrow: 1,
   },
-  vegaWrapper: {
-    paddingRight: theme.spacing(1),
-    flex: '0 1 100%',
+  chart: {
+    margin: 0, // <figure> has a margin by default.
+    flex: '1 1 100%',
+    overflowX: 'hidden',
+    textAlign: 'left',
+    position: 'relative',
+    height: '0.875rem', // 14px
+    cursor: 'default',
+
+    '& > *': {
+      position: 'absolute',
+      top: 0,
+    },
   },
-  vega: {
+  greenBar: {
+    left: 0,
+    height: '100%',
+    backgroundColor: theme.palette.primary.dark,
+    zIndex: 1, // Appear above the whisker
+    opacity: 0.7,
+  },
+  pBar: {
+    height: '100%',
+    width: '8px',
+    transform: 'translateX(-4px)',
+    cursor: 'pointer',
+    opacity: 0.9,
+    zIndex: 2, // Make sure the clickable area is above the green bar
+    // It's a button (for both accessibility and to separate click events properly), so remove the default styles too
+    border: 'none',
+    margin: 0,
+    padding: 0,
+    background: 'transparent',
+    '&::after': {
+      display: 'block',
+      position: 'relative',
+      top: 0,
+      left: '3px',
+      content: '""',
+      width: '2px',
+      backgroundColor: 'var(--fill)',
+      height: '100%',
+    },
+    '&:hover': {
+      '&::after': {
+        backgroundColor: 'var(--hover-fill)',
+      },
+    },
+  },
+  whisker: {
+    top: '49%',
+    height: '1px',
     width: '100%',
+    backgroundColor: theme.palette.text.primary,
+    zIndex: 0, // Under both the green bar and the p50/p90/p99 bars
   },
   label: {
     textAlign: 'right',
@@ -326,6 +95,35 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 }), { name: 'QuantilesBoxWhisker' });
 
 export type SelectedPercentile = 'p50' | 'p90' | 'p99';
+
+const PercentileBar: React.FC<{
+  onClick: () => void;
+  fill: string;
+  hoverFill: string;
+  tooltip: string;
+  left: string;
+}> = React.memo(({
+  onClick, fill, hoverFill, tooltip, left,
+}) => {
+  const classes = useStyles();
+  const style = {
+    left,
+    '--fill': fill,
+    '--hover-fill': hoverFill,
+  } as React.CSSProperties;
+  return (
+    // eslint-disable-next-line react-memo/require-usememo
+    <Tooltip title={tooltip} enterDelay={0} enterNextDelay={0} TransitionProps={{ timeout: 0 }}>
+      <button
+        aria-label={tooltip}
+        className={classes.pBar}
+        style={style}
+        onClick={onClick}
+      />
+    </Tooltip>
+  );
+});
+PercentileBar.displayName = 'PercentileBar';
 
 interface QuantilesBoxWhiskerProps {
   p50: number;
@@ -343,22 +141,21 @@ interface QuantilesBoxWhiskerProps {
   onChangePercentile?: (percentile: SelectedPercentile) => void;
 }
 
-export const QuantilesBoxWhisker: React.FC<QuantilesBoxWhiskerProps> = React.memo((props) => {
-  const {
-    p50,
-    p90,
-    p99,
-    max,
-    p50HoverFill,
-    p90HoverFill,
-    p99HoverFill,
-    p50Display,
-    p90Display,
-    p99Display,
-    selectedPercentile,
-    onChangePercentile,
-  } = props;
-
+export const QuantilesBoxWhisker: React.FC<QuantilesBoxWhiskerProps> = React.memo(({
+  p50,
+  p90,
+  p99,
+  max,
+  p50HoverFill,
+  p90HoverFill,
+  p99HoverFill,
+  p50Display,
+  p90Display,
+  p99Display,
+  selectedPercentile,
+  onChangePercentile,
+}) => {
+  /* eslint-disable react-memo/require-usememo */
   const classes = useStyles();
   const theme = useTheme();
   let p50Fill = theme.palette.text.secondary;
@@ -394,51 +191,43 @@ export const QuantilesBoxWhisker: React.FC<QuantilesBoxWhiskerProps> = React.mem
     }
   }
 
-  // Vega's chart sets an explicit width on its canvas, even in responsive mode. It doesn't figure out the right width
-  // when it's in a flex child and tries to grow too large. Telling it how wide its container is fixes this.
-  const spec = makeSpec({
-    p50,
-    p90,
-    p99,
-    max,
-    p50Display,
-    p90Display,
-    p99Display,
-    p50Fill,
-    p90Fill,
-    p99Fill,
-    p50HoverFill,
-    p90HoverFill,
-    p99HoverFill,
-    barFill: theme.palette.primary.dark,
-    whiskerFill: theme.palette.text.primary,
-  });
+  // Translate values to a percentage of the highest value among all rows; use a nonlinear scale so that microsecond
+  // response times don't end up 1px wide when there was a single 1sec outlier.
+  const rtMax = Math.sqrt(max);
+  const [p50pct, p90pct, p99pct] = [p50, p90, p99].map((v) => `${99 * Math.sqrt(v) / rtMax}%`);
 
-  const tooltipHandler = new Handler({
-    offsetY: -15,
-    theme: 'custom',
-  }).call;
+  const a11yLabel = `p50: ${p50Display}; p90: ${p90Display}; p99: ${p99Display}`;
 
   return (
-    <div className={classes.root}>
-      <div className={classes.vegaWrapper}>
-        <Vega
-          className={classes.vega}
-          // eslint-disable-next-line react-memo/require-usememo
-          signalListeners={{
-            p50Click: () => changePercentileIfDifferent('p50'),
-            p90Click: () => changePercentileIfDifferent('p90'),
-            p99Click: () => changePercentileIfDifferent('p99'),
-          }}
-          spec={spec}
-          actions={false}
-          tooltip={tooltipHandler}
-        />
-      </div>
+    <div className={classes.root} role='graphics-document' aria-roledescription='visualization' aria-label={a11yLabel}>
+      {/* Using <figure> so that a click handler in data-table.tsx can decide whether to ignore the click event. */}
+      <figure className={classes.chart}>
+        <div className={classes.greenBar} style={{ width: p90pct }} />
+        <div className={classes.whisker} style={{ left: p90pct, width: `calc(${p99pct} - ${p90pct})` }} />
+        <PercentileBar
+          onClick={() => changePercentileIfDifferent('p50')}
+          fill={p50Fill}
+          hoverFill={p50HoverFill}
+          tooltip={`p50: ${p50Display}`}
+          left={p50pct} />
+        <PercentileBar
+          onClick={() => changePercentileIfDifferent('p90')}
+          fill={p90Fill}
+          hoverFill={p90HoverFill}
+          tooltip={`p90: ${p90Display}`}
+          left={p90pct} />
+        <PercentileBar
+          onClick={() => changePercentileIfDifferent('p99')}
+          fill={p99Fill}
+          hoverFill={p99HoverFill}
+          tooltip={`p99: ${p99Display}`}
+          left={p99pct} />
+      </figure>
       <span className={classes.label} style={{ color: selectedPercentileFill }}>
         {selectedPercentileDisplay}
       </span>
     </div>
   );
+  /* eslint-enable react-memo/require-usememo */
 });
 QuantilesBoxWhisker.displayName = 'QuantilesBoxWhisker';
