@@ -409,7 +409,6 @@ export const CLITokenPage: React.FC = React.memo(() => {
         }
       }).catch(() => {
         // passthrough
-      }).finally(() => {
         setLoading(false);
       });
     } else {
