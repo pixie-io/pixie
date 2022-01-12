@@ -54,8 +54,8 @@ class HTTP2TraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing 
     PL_CHECK_OK(server_.Run(std::chrono::seconds{60}));
   }
 
-  ::px::stirling::testing::GRPCServerContainer server_;
-  ::px::stirling::testing::GRPCClientContainer client_;
+  ::px::stirling::testing::Go1_16_GRPCServerContainer server_;
+  ::px::stirling::testing::Go1_16_GRPCClientContainer client_;
 };
 
 TEST_F(HTTP2TraceTest, Basic) {

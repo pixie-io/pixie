@@ -53,10 +53,10 @@ TEST(BCCWrapper, UnexpectedExtraTrigger) {
   BCCWrapper bcc_wrapper;
   ASSERT_OK(bcc_wrapper.InitBPFProgram(kBCCProgram));
 
-  ::px::stirling::testing::GRPCServerContainer server1;
-  ::px::stirling::testing::GRPCServerContainer server2;
-  ::px::stirling::testing::GRPCClientContainer client1;
-  ::px::stirling::testing::GRPCClientContainer client2;
+  ::px::stirling::testing::Go1_16_GRPCServerContainer server1;
+  ::px::stirling::testing::Go1_16_GRPCServerContainer server2;
+  ::px::stirling::testing::Go1_16_GRPCClientContainer client1;
+  ::px::stirling::testing::Go1_16_GRPCClientContainer client2;
 
   // A Uprobe template for the GRPCServerContainer.
   // Binary path is set later.

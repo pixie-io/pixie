@@ -209,9 +209,9 @@ class Go1_17_TLSClientContainer : public ContainerRunner {
 // GRPC
 //-----------------------------------------------------------------------------
 
-class GRPCServerContainer : public ContainerRunner {
+class Go1_16_GRPCServerContainer : public ContainerRunner {
  public:
-  GRPCServerContainer()
+  Go1_16_GRPCServerContainer()
       : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
@@ -222,15 +222,41 @@ class GRPCServerContainer : public ContainerRunner {
   static constexpr std::string_view kReadyMessage = "Starting HTTP/2 server";
 };
 
-class GRPCClientContainer : public ContainerRunner {
+class Go1_16_GRPCClientContainer : public ContainerRunner {
  public:
-  GRPCClientContainer()
+  Go1_16_GRPCClientContainer()
       : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
   static constexpr std::string_view kBazelImageTar =
       "src/stirling/testing/demo_apps/go_grpc_tls_pl/client/golang_1_16_grpc_tls_client.tar";
+  static constexpr std::string_view kContainerNamePrefix = "grpc_client";
+  static constexpr std::string_view kReadyMessage = "";
+};
+
+class Go1_17_GRPCServerContainer : public ContainerRunner {
+ public:
+  Go1_17_GRPCServerContainer()
+      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+                        kReadyMessage) {}
+
+ private:
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/golang_1_17_grpc_tls_server.tar";
+  static constexpr std::string_view kContainerNamePrefix = "grpc_server";
+  static constexpr std::string_view kReadyMessage = "Starting HTTP/2 server";
+};
+
+class Go1_17_GRPCClientContainer : public ContainerRunner {
+ public:
+  Go1_17_GRPCClientContainer()
+      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+                        kReadyMessage) {}
+
+ private:
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/testing/demo_apps/go_grpc_tls_pl/client/golang_1_17_grpc_tls_client.tar";
   static constexpr std::string_view kContainerNamePrefix = "grpc_client";
   static constexpr std::string_view kReadyMessage = "";
 };
