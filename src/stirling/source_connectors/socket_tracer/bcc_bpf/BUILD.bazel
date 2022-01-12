@@ -59,6 +59,19 @@ pl_cc_test(
         "//src/stirling/bpf_tools/bcc_bpf_intf:headers",
         "//src/stirling/source_connectors/socket_tracer/bcc_bpf_intf:headers",
     ],
+    # PROTOCOL_LIST: Requires update on new protocols.
+    defines = [
+        "ENABLE_HTTP_TRACING=true",
+        "ENABLE_CQL_TRACING=true",
+        "ENABLE_MUX_TRACING=true",
+        "ENABLE_PGSQL_TRACING=true",
+        "ENABLE_MYSQL_TRACING=true",
+        "ENABLE_KAFKA_TRACING=true",
+        "ENABLE_DNS_TRACING=true",
+        "ENABLE_REDIS_TRACING=true",
+        "ENABLE_NATS_TRACING=true",
+        "ENABLE_MONGO_TRACING=true",
+    ],
     deps = [
         "//src/stirling/utils:cc_library",
     ],

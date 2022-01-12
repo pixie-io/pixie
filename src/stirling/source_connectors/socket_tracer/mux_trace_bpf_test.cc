@@ -54,6 +54,21 @@ using ::testing::Each;
 using ::testing::Field;
 using ::testing::MatchesRegex;
 
+// The Init() function is used to set flags for the entire test.
+// We can't do this in the MuxTraceTest constructor, because it will be too late
+// (SocketTraceBPFTest will already have been constructed).
+bool Init() {
+  // Make sure Mux tracing is enabled.
+  FLAGS_stirling_enable_mux_tracing = true;
+
+  // We turn off CQL tracing to give some BPF instructions back for Mux.
+  // This is required for older kernels with only 4096 BPF instructions.
+  FLAGS_stirling_enable_cass_tracing = false;
+  return true;
+}
+
+bool kInit = Init();
+
 class MuxTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {
  protected:
   MuxTraceTest() {

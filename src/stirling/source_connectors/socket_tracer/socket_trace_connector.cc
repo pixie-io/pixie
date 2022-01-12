@@ -200,7 +200,21 @@ Status SocketTraceConnector::InitImpl() {
         "timestamps in a way that matches how /proc/stat does it");
   }
 
-  PL_RETURN_IF_ERROR(InitBPFProgram(socket_trace_bcc_script));
+  PL_RETURN_IF_ERROR(InitBPFProgram(
+      socket_trace_bcc_script,
+      // PROTOCOL_LIST: Requires update on new protocols.
+      {
+          absl::StrCat("-DENABLE_HTTP_TRACING=", FLAGS_stirling_enable_http_tracing),
+          absl::StrCat("-DENABLE_CQL_TRACING=", FLAGS_stirling_enable_cass_tracing),
+          absl::StrCat("-DENABLE_MUX_TRACING=", FLAGS_stirling_enable_mux_tracing),
+          absl::StrCat("-DENABLE_PGSQL_TRACING=", FLAGS_stirling_enable_pgsql_tracing),
+          absl::StrCat("-DENABLE_MYSQL_TRACING=", FLAGS_stirling_enable_mysql_tracing),
+          absl::StrCat("-DENABLE_KAFKA_TRACING=", FLAGS_stirling_enable_kafka_tracing),
+          absl::StrCat("-DENABLE_DNS_TRACING=", FLAGS_stirling_enable_dns_tracing),
+          absl::StrCat("-DENABLE_REDIS_TRACING=", FLAGS_stirling_enable_redis_tracing),
+          absl::StrCat("-DENABLE_NATS_TRACING=", FLAGS_stirling_enable_nats_tracing),
+          absl::StrCat("-DENABLE_MONGO_TRACING=", "true"),
+      }));
   PL_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
   LOG(INFO) << absl::Substitute("Number of kprobes deployed = $0", kProbeSpecs.size());
   LOG(INFO) << "Probes successfully deployed.";

@@ -545,25 +545,38 @@ static __inline struct protocol_message_t infer_protocol(const char* buf, size_t
   // in user space.
   conn_info->prepend_length_header = false;
 
-  if ((inferred_message.type = infer_http_message(buf, count)) != kUnknown) {
+  // TODO(oazizi): Get rid of `inferred_message.type` and convert the functions below to
+  //               is_xyz_message().
+  //               This is potentially possible because of the fact that we now infer connection
+  //               role by considering which side called accept() vs connect(). Once the clean-up
+  //               above is done, the code below can be turned into a chained ternary.
+  // PROTOCOL_LIST: Requires update on new protocols.
+  if (ENABLE_HTTP_TRACING && (inferred_message.type = infer_http_message(buf, count)) != kUnknown) {
     inferred_message.protocol = kProtocolHTTP;
-  } else if ((inferred_message.type = infer_cql_message(buf, count)) != kUnknown) {
+  } else if (ENABLE_CQL_TRACING &&
+             (inferred_message.type = infer_cql_message(buf, count)) != kUnknown) {
     inferred_message.protocol = kProtocolCQL;
-  } else if ((inferred_message.type = infer_mongo_message(buf, count)) != kUnknown) {
+  } else if (ENABLE_MONGO_TRACING &&
+             (inferred_message.type = infer_mongo_message(buf, count)) != kUnknown) {
     inferred_message.protocol = kProtocolMongo;
-  } else if ((inferred_message.type = infer_pgsql_message(buf, count)) != kUnknown) {
+  } else if (ENABLE_PGSQL_TRACING &&
+             (inferred_message.type = infer_pgsql_message(buf, count)) != kUnknown) {
     inferred_message.protocol = kProtocolPGSQL;
-  } else if ((inferred_message.type = infer_mysql_message(buf, count, conn_info)) != kUnknown) {
+  } else if (ENABLE_MYSQL_TRACING &&
+             (inferred_message.type = infer_mysql_message(buf, count, conn_info)) != kUnknown) {
     inferred_message.protocol = kProtocolMySQL;
-  } else if ((inferred_message.type = infer_kafka_message(buf, count, conn_info)) != kUnknown) {
+  } else if (ENABLE_KAFKA_TRACING &&
+             (inferred_message.type = infer_kafka_message(buf, count, conn_info)) != kUnknown) {
     inferred_message.protocol = kProtocolKafka;
-  } else if ((inferred_message.type = infer_dns_message(buf, count)) != kUnknown) {
+  } else if (ENABLE_DNS_TRACING &&
+             (inferred_message.type = infer_dns_message(buf, count)) != kUnknown) {
     inferred_message.protocol = kProtocolDNS;
-  } else if (is_redis_message(buf, count)) {
+  } else if (ENABLE_REDIS_TRACING && is_redis_message(buf, count)) {
     // For Redis, the message type is left to be kUnknown.
     // The message types are then inferred via traffic direction and client/server role.
     inferred_message.protocol = kProtocolRedis;
-  } else if ((inferred_message.type = infer_nats_message(buf, count)) != kUnknown) {
+  } else if (ENABLE_NATS_TRACING &&
+             (inferred_message.type = infer_nats_message(buf, count)) != kUnknown) {
     inferred_message.protocol = kProtocolNATS;
   }
 
