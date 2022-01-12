@@ -49,24 +49,29 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static constexpr auto kTables = MakeArray(kStackTraceTable);
   static constexpr uint32_t kPerfProfileTableNum = TableNum(kTables, kStackTraceTable);
 
-  // kBPFSamplingPeriod: the time interval in between stack trace samples.
-  static constexpr auto kBPFSamplingPeriod = std::chrono::milliseconds{11};
-
-  // Push period is set to 1/2 of the sample period such that we push each new
-  // sample when it becomes available. This is a UX decision so that the user
-  // gets fresh profiler data every 30 seconds (or worst case w/in 45 seconds).
-  static constexpr auto kSamplingPeriod = std::chrono::milliseconds{30000};
-  static constexpr auto kPushPeriod = std::chrono::milliseconds{15000};
-
-  static std::unique_ptr<SourceConnector> Create(std::string_view name) {
-    return std::unique_ptr<SourceConnector>(new PerfProfileConnector(name));
+  static std::unique_ptr<PerfProfileConnector> Create(std::string_view name) {
+    return std::unique_ptr<PerfProfileConnector>(new PerfProfileConnector(name));
   }
 
   Status InitImpl() override;
   Status StopImpl() override;
   void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
 
+  std::chrono::milliseconds SamplingPeriod() const { return sampling_period_; }
+  std::chrono::milliseconds StackTraceSamplingPeriod() const {
+    return stack_trace_sampling_period_;
+  }
+
  private:
+  // The time interval between stack trace samples, i.e. the sample rate used inside of BPF.
+  const std::chrono::milliseconds stack_trace_sampling_period_;
+
+  // Push period is set to 1/2 of the sample period such that we push each new
+  // sample when it becomes available. This is a UX decision so that the user
+  // gets fresh profiler data every 30 seconds (or worst case w/in 45 seconds).
+  const std::chrono::milliseconds sampling_period_;
+  const std::chrono::milliseconds push_period_;
+
   // StackTraceHisto: SymbolicStackTrace => observation-count
   using StackTraceHisto = absl::flat_hash_map<SymbolicStackTrace, uint64_t>;
 
@@ -108,26 +113,11 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // TODO(oazizi): Investigate ways of sharing across source_connectors.
   ProcTracker proc_tracker_;
 
-  static constexpr auto kProbeSpecs =
-      MakeArray<bpf_tools::SamplingProbeSpec>({"sample_call_stack", kBPFSamplingPeriod.count()});
-
-  static const uint32_t kExpectedStackTracesPerCPU =
-      IntRoundUpDivide(kSamplingPeriod.count(), kBPFSamplingPeriod.count());
-  static const uint32_t kMaxNCPUs = 128;
-  static const uint32_t kExpectedStackTraces = kMaxNCPUs * kExpectedStackTracesPerCPU;
-
-  // Overprovision:
-  static const uint32_t kNumPerfBufferEntries = 4 * kExpectedStackTraces;
-
   static void HandleHistoEvent(void* cb_cookie, void* data, int /*data_size*/);
   static void HandleHistoLoss(void* cb_cookie, uint64_t lost);
 
   // Called by HandleHistoEvent() to add the stack-trace-key to raw_histo_data_.
   void AcceptStackTraceKey(stack_trace_key_t* data);
-
-  inline static const auto kPerfBufferSpecs = MakeArray<bpf_tools::PerfBufferSpec>(
-      {{"histogram_a", HandleHistoEvent, HandleHistoLoss, kNumPerfBufferEntries},
-       {"histogram_b", HandleHistoEvent, HandleHistoLoss, kNumPerfBufferEntries}});
 
   ebpf::BPFPerfBuffer* histogram_a_perf_buffer_;
   ebpf::BPFPerfBuffer* histogram_b_perf_buffer_;
@@ -138,6 +128,7 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
     kLossHistoEvent,
   };
 
+  const uint32_t stats_log_interval_;
   utils::StatCounter<StatKey> stats_;
 };
 

@@ -32,32 +32,62 @@ BPF_SRC_STRVIEW(profiler_bcc_script, profiler);
 DEFINE_string(stirling_profiler_symbolizer, "bcc",
               "Choice of which symbolizer to use. Options: bcc, elf");
 DEFINE_bool(stirling_profiler_cache_symbols, true, "Whether to cache symbols");
-
-DEFINE_uint32(stirling_perf_profiler_stats_logging_ratio,
-              std::chrono::minutes(10) / px::stirling::PerfProfileConnector::kSamplingPeriod,
-              "Sets the frequency of printing perf profiler stats.");
+DEFINE_uint32(stirling_profiler_log_period_minutes, 10,
+              "Number of minutes between profiler stats log printouts.");
+DEFINE_uint32(stirling_profiler_table_update_period_seconds, 30,
+              "Number of seconds between profiler table updates.");
+DEFINE_uint32(stirling_profiler_stack_trace_sample_period_ms, 11,
+              "Number of milliseconds between stack trace samples.");
 
 namespace px {
 namespace stirling {
 
 PerfProfileConnector::PerfProfileConnector(std::string_view source_name)
-    : SourceConnector(source_name, kTables) {}
+    : SourceConnector(source_name, kTables),
+      stack_trace_sampling_period_(
+          std::chrono::milliseconds{FLAGS_stirling_profiler_stack_trace_sample_period_ms}),
+      sampling_period_(
+          std::chrono::milliseconds{1000 * FLAGS_stirling_profiler_table_update_period_seconds}),
+      push_period_(sampling_period_ / 2),
+      stats_log_interval_(std::chrono::minutes(FLAGS_stirling_profiler_log_period_minutes) /
+                          sampling_period_) {
+  constexpr auto kMaxSamplingPeriod = std::chrono::milliseconds{30000};
+  DCHECK(sampling_period_ <= kMaxSamplingPeriod) << "Sampling period set too high.";
+  DCHECK(sampling_period_ >= stack_trace_sampling_period_);
+}
 
 Status PerfProfileConnector::InitImpl() {
-  sampling_freq_mgr_.set_period(kSamplingPeriod);
-  push_freq_mgr_.set_period(kPushPeriod);
+  sampling_freq_mgr_.set_period(sampling_period_);
+  push_freq_mgr_.set_period(push_period_);
 
   const size_t ncpus = get_nprocs_conf();
-  VLOG(1) << "PerfProfiler: get_nprocs_conf(): " << ncpus;
+
+  // TODO(jps): Move this out into section of code where we log kernel version, etc.
+  LOG(INFO) << "PerfProfiler: get_nprocs_conf(): " << ncpus;
 
   const std::vector<std::string> defines = {
       absl::Substitute("-DNCPUS=$0", ncpus),
-      absl::Substitute("-DTRANSFER_PERIOD=$0", kSamplingPeriod.count()),
-      absl::Substitute("-DSAMPLE_PERIOD=$0", kBPFSamplingPeriod.count())};
+      absl::Substitute("-DTRANSFER_PERIOD=$0", sampling_period_.count()),
+      absl::Substitute("-DSAMPLE_PERIOD=$0", stack_trace_sampling_period_.count())};
+
+  // Compute the perf buffer size.
+  const int32_t expected_stack_traces_per_cpu =
+      IntRoundUpDivide(sampling_period_.count(), stack_trace_sampling_period_.count());
+  const int32_t expected_stack_races = ncpus * expected_stack_traces_per_cpu;
+  const int32_t overprovision_factor = 4;
+  const int32_t num_perf_buffer_entries = overprovision_factor * expected_stack_races;
+
+  const uint64_t probe_sample_period_ms = stack_trace_sampling_period_.count();
+  const auto probe_specs =
+      MakeArray<bpf_tools::SamplingProbeSpec>({"sample_call_stack", probe_sample_period_ms});
+
+  const auto perf_buffer_specs = MakeArray<bpf_tools::PerfBufferSpec>(
+      {{"histogram_a", HandleHistoEvent, HandleHistoLoss, num_perf_buffer_entries},
+       {"histogram_b", HandleHistoEvent, HandleHistoLoss, num_perf_buffer_entries}});
 
   PL_RETURN_IF_ERROR(InitBPFProgram(profiler_bcc_script, defines));
-  PL_RETURN_IF_ERROR(AttachSamplingProbes(kProbeSpecs));
-  PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
+  PL_RETURN_IF_ERROR(AttachSamplingProbes(probe_specs));
+  PL_RETURN_IF_ERROR(OpenPerfBuffers(perf_buffer_specs, this));
 
   stack_traces_a_ = std::make_unique<ebpf::BPFStackTable>(GetStackTable("stack_traces_a"));
   stack_traces_b_ = std::make_unique<ebpf::BPFStackTable>(GetStackTable("stack_traces_b"));
@@ -229,7 +259,7 @@ void PerfProfileConnector::CreateRecords(ebpf::BPFStackTable* stack_traces, Conn
   StackTraceHisto stack_trace_histogram = AggregateStackTraces(ctx, stack_traces);
 
   constexpr auto age_tick_period = std::chrono::minutes(5);
-  if (sampling_freq_mgr_.count() % (age_tick_period / kSamplingPeriod) == 0) {
+  if (sampling_freq_mgr_.count() % (age_tick_period / sampling_period_) == 0) {
     stack_trace_ids_.AgeTick();
   }
 
@@ -287,7 +317,7 @@ void PerfProfileConnector::TransferDataImpl(ConnectorContext* ctx,
 
   stats_.Increment(StatKey::kBPFMapSwitchoverEvent, 1);
 
-  if (sampling_freq_mgr_.count() % FLAGS_stirling_perf_profiler_stats_logging_ratio == 0) {
+  if (sampling_freq_mgr_.count() % stats_log_interval_ == 0) {
     VLOG(1) << "PerfProfileConnector statistics: " << stats_.Print();
   }
 }

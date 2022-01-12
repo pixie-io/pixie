@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <algorithm>
+
 #include <sys/sysinfo.h>
 
 #include <absl/strings/substitute.h>
@@ -27,6 +29,8 @@
 #include "src/stirling/source_connectors/perf_profiler/perf_profile_connector.h"
 #include "src/stirling/source_connectors/perf_profiler/stack_traces_table.h"
 #include "src/stirling/testing/common.h"
+
+DEFINE_uint32(test_run_time, 90, "Number of seconds to run the test.");
 
 namespace px {
 namespace stirling {
@@ -56,12 +60,14 @@ class CPUPinnedBinaryRunner {
 
 class PerfProfileBPFTest : public ::testing::Test {
  public:
-  PerfProfileBPFTest() : data_table_(/*id*/ 0, kStackTraceTable) {}
+  PerfProfileBPFTest()
+      : test_run_time_(FLAGS_test_run_time), data_table_(/*id*/ 0, kStackTraceTable) {}
 
  protected:
   void SetUp() override {
     source_ = PerfProfileConnector::Create("perf_profile_connector");
     ASSERT_OK(source_->Init());
+    ASSERT_LT(source_->SamplingPeriod(), test_run_time_);
   }
 
   void TearDown() override { ASSERT_OK(source_->Stop()); }
@@ -144,14 +150,18 @@ class PerfProfileBPFTest : public ::testing::Test {
   void CheckExpectedStackTraceCounts(const ssize_t num_subprocesses,
                                      const std::chrono::duration<double> elapsed_time,
                                      const std::string& key1x, const std::string& key2x) {
-    const uint64_t kBPFSamplingPeriodMillis = PerfProfileConnector::kBPFSamplingPeriod.count();
-    const double expected_rate = 1000.0 / static_cast<double>(kBPFSamplingPeriodMillis);
+    const uint64_t table_period_ms = source_->SamplingPeriod().count();
+    const uint64_t bpf_period_ms = source_->StackTraceSamplingPeriod().count();
+    const double expected_rate = 1000.0 / static_cast<double>(bpf_period_ms);
     const double expected_num_samples = num_subprocesses * elapsed_time.count() * expected_rate;
     const uint64_t expected_num_sample_lower = uint64_t(0.9 * expected_num_samples);
     const uint64_t expected_num_sample_upper = uint64_t(1.1 * expected_num_samples);
     const double observedNumSamples = static_cast<double>(cumulative_sum_);
     const double observed_rate = observedNumSamples / elapsed_time.count() / num_subprocesses;
 
+    LOG(INFO) << absl::StrFormat("Table sampling period: %d [ms]", table_period_ms);
+    LOG(INFO) << absl::StrFormat("BPF sampling period: %d [ms]", bpf_period_ms);
+    LOG(INFO) << absl::StrFormat("Number of processes: %d", num_subprocesses);
     LOG(INFO) << absl::StrFormat("expected num samples: %d", uint64_t(expected_num_samples));
     LOG(INFO) << absl::StrFormat("total samples: %d", cumulative_sum_);
     LOG(INFO) << absl::StrFormat("elapsed time: %.1f [sec]", elapsed_time.count());
@@ -209,10 +219,10 @@ class PerfProfileBPFTest : public ::testing::Test {
     column_ptrs_populated_ = true;
   }
 
-  std::chrono::duration<double> RunTest(const std::chrono::seconds test_run_time) {
-    constexpr std::chrono::milliseconds t_sleep = PerfProfileConnector::kSamplingPeriod;
+  std::chrono::duration<double> RunTest() {
+    const std::chrono::milliseconds t_sleep = source_->SamplingPeriod();
     const auto start_time = std::chrono::steady_clock::now();
-    const auto stop_time = start_time + test_run_time;
+    const auto stop_time = start_time + test_run_time_;
 
     // Continuously poke Stirling TransferData() using the underlying schema periodicity;
     // break from this loop when the elapsed time exceeds the targeted run time.
@@ -227,7 +237,8 @@ class PerfProfileBPFTest : public ::testing::Test {
     return std::chrono::steady_clock::now() - start_time;
   }
 
-  std::unique_ptr<SourceConnector> source_;
+  const std::chrono::seconds test_run_time_;
+  std::unique_ptr<PerfProfileConnector> source_;
   std::unique_ptr<StandaloneContext> ctx_;
   DataTable data_table_;
   const std::vector<DataTable*> data_tables_{&data_table_};
@@ -267,7 +278,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
   // finds the upids that belong to the sub-processes that we have just created.
   ctx_ = std::make_unique<StandaloneContext>();
 
-  const std::chrono::duration<double> elapsed_time = RunTest(std::chrono::seconds(120));
+  const std::chrono::duration<double> elapsed_time = RunTest();
 
   // Pull the data into this test (as columns_) using ConsumeRecords(), and
   // find the row indices that belong to our sub-processes using GetTargetRowIdxs().
@@ -305,7 +316,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
   // finds the upids that belong to the sub-processes that we have just created.
   ctx_ = std::make_unique<StandaloneContext>();
 
-  const std::chrono::duration<double> elapsed_time = RunTest(std::chrono::seconds(120));
+  const std::chrono::duration<double> elapsed_time = RunTest();
 
   // Pull the data into this test (as columns_) using ConsumeRecords(), and
   // find the row indices that belong to our sub-processes using GetTargetRowIdxs().
@@ -338,7 +349,8 @@ TEST_F(PerfProfileBPFTest, TestOutOfContext) {
   // Start they toy apps as sub-processes, then,
   // for a certain amount of time, collect data using RunTest().
   auto sub_processes = StartSubProcesses<CPUPinnedBinaryRunner>(bazel_app_path, kTestIdx);
-  RunTest(std::chrono::seconds(30));
+
+  RunTest();
 
   // Pull the data into this test (as columns_) using ConsumeRecords(), and
   // find the row indices that belong to our sub-processes using GetTargetRowIdxs().
