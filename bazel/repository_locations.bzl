@@ -171,9 +171,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/bazelbuild/rules_foreign_cc/archive/0.7.0.tar.gz"],
     ),
     com_github_gperftools_gperftools = dict(
-        sha256 = "18574813a062eee487bc1b761e8024a346075a7cb93da19607af362dc09565ef",
-        strip_prefix = "gperftools-fc00474ddc21fff618fc3f009b46590e241e425e",
-        urls = ["https://github.com/gperftools/gperftools/archive/fc00474ddc21fff618fc3f009b46590e241e425e.tar.gz"],
+        sha256 = "ea566e528605befb830671e359118c2da718f721c27225cbbc93858c7520fee3",
+        strip_prefix = "gperftools-2.9.1",
+        urls = ["https://github.com/gperftools/gperftools/releases/download/gperftools-2.9.1/gperftools-2.9.1.tar.gz"],
     ),
     com_github_h2o_picohttpparser = dict(
         sha256 = "cb47971984d77dc81ed5684d51d668a7bc7804d3b7814a3072c2187dfa37a013",

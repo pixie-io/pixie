@@ -145,7 +145,7 @@ def _cc_deps():
     _git_repo("com_github_apangin_jattach", build_file = "//bazel/external:jattach.BUILD")
 
     # Dependencies used in foreign cc rules (e.g. cmake-based builds)
-    _include_all_repo("com_github_gperftools_gperftools", patch_cmds = ["./autogen.sh"])
+    _include_all_repo("com_github_gperftools_gperftools")
     _include_all_repo("com_github_nats_io_natsc", patches = ["//bazel/external:natsc.patch"], patch_args = ["-p1"])
     _include_all_repo("com_github_libuv_libuv", patches = ["//bazel/external:libuv.patch"], patch_args = ["-p1"])
     _include_all_repo("com_github_libarchive_libarchive")
