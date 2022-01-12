@@ -296,6 +296,13 @@ Status K8sMetadataState::HandleNamespaceUpdate(const NamespaceUpdate& update) {
   return Status::OK();
 }
 
+Status K8sMetadataState::HandleNodeUpdate(const NodeUpdate& update) {
+  // We currently do not use node updates in the PEM.
+  VLOG(1) << "node update: " << update.name();
+
+  return Status::OK();
+}
+
 template <typename T>
 bool IsExpired(const T& obj, int64_t retention_time, int64_t now) {
   if (obj.stop_time_ns() == 0) {

@@ -151,6 +151,9 @@ Status ApplyK8sUpdates(
         PL_RETURN_IF_ERROR(
             HandleNamespaceUpdate(update->namespace_update(), state, metadata_filter));
         break;
+      case ResourceUpdate::kNodeUpdate:
+        PL_RETURN_IF_ERROR(HandleNodeUpdate(update->node_update(), state, metadata_filter));
+        break;
       default:
         LOG(ERROR) << "Unhandled Update Type: " << update->update_case() << " (ignoring)";
     }
@@ -325,6 +328,12 @@ Status HandleNamespaceUpdate(const NamespaceUpdate& update, AgentMetadataState* 
   VLOG(2) << "Namespace Update: " << update.DebugString();
 
   return state->k8s_metadata_state()->HandleNamespaceUpdate(update);
+}
+
+Status HandleNodeUpdate(const NodeUpdate& update, AgentMetadataState* state, AgentMetadataFilter*) {
+  VLOG(2) << "Node Update: " << update.DebugString();
+
+  return state->k8s_metadata_state()->HandleNodeUpdate(update);
 }
 
 }  // namespace md

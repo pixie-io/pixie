@@ -49,6 +49,7 @@ class K8sMetadataState : NotCopyable {
   using ContainerUpdate = px::shared::k8s::metadatapb::ContainerUpdate;
   using ServiceUpdate = px::shared::k8s::metadatapb::ServiceUpdate;
   using NamespaceUpdate = px::shared::k8s::metadatapb::NamespaceUpdate;
+  using NodeUpdate = px::shared::k8s::metadatapb::NodeUpdate;
 
   // K8s names consist of both a namespace and name : <ns, name>.
   using K8sNameIdent = std::pair<std::string, std::string>;
@@ -193,6 +194,7 @@ class K8sMetadataState : NotCopyable {
   Status HandleContainerUpdate(const ContainerUpdate& update);
   Status HandleServiceUpdate(const ServiceUpdate& update);
   Status HandleNamespaceUpdate(const NamespaceUpdate& update);
+  Status HandleNodeUpdate(const NodeUpdate& update);
 
   Status CleanupExpiredMetadata(int64_t retention_time_ns);
 
