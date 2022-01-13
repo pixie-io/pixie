@@ -18,6 +18,7 @@
 
 #include "src/common/system/system_info.h"
 
+#include <sys/sysinfo.h>
 #include <string>
 
 #include "src/common/fs/fs_wrapper.h"
@@ -39,6 +40,7 @@ void LogSystemInfo() {
   const system::Config& sysconfig = system::Config::GetInstance();
   LOG(INFO) << absl::StrCat("Location of proc: ", sysconfig.proc_path().string());
   LOG(INFO) << absl::StrCat("Location of sysfs: ", sysconfig.sysfs_path().string());
+  LOG(INFO) << absl::StrCat("Number of CPUs: ", get_nprocs_conf());
 
   // Log /proc/version.
   LogFileContents(sysconfig.proc_path() / "version");

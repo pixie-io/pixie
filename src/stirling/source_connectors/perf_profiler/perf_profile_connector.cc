@@ -62,9 +62,6 @@ Status PerfProfileConnector::InitImpl() {
 
   const size_t ncpus = get_nprocs_conf();
 
-  // TODO(jps): Move this out into section of code where we log kernel version, etc.
-  LOG(INFO) << "PerfProfiler: get_nprocs_conf(): " << ncpus;
-
   const std::vector<std::string> defines = {
       absl::Substitute("-DNCPUS=$0", ncpus),
       absl::Substitute("-DTRANSFER_PERIOD=$0", sampling_period_.count()),
