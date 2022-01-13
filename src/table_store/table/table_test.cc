@@ -811,6 +811,19 @@ TEST(TableTest, write_zero_row_row_batch) {
   EXPECT_EQ(table_ptr->GetTableStats().batches_added, 0);
 }
 
+class NotifyOnDeath {
+ public:
+  explicit NotifyOnDeath(absl::Notification* notification) : notification_(notification) {}
+  ~NotifyOnDeath() {
+    if (!notification_->HasBeenNotified()) {
+      notification_->Notify();
+    }
+  }
+
+ private:
+  absl::Notification* notification_;
+};
+
 TEST(TableTest, threaded) {
   schema::Relation rel({types::DataType::TIME64NS}, {"time_"});
   schema::RowDescriptor rd({types::DataType::TIME64NS});
@@ -833,6 +846,10 @@ TEST(TableTest, threaded) {
     std::default_random_engine gen;
     std::uniform_int_distribution<int64_t> dist(256, 1024);
     int64_t time_counter = 0;
+    // This RAII wrapper around done, will notify threads waiting on done when it goes out of scope
+    // if done->Notify hasn't been called yet. This way if the writer thread dies for some reason
+    // the test will fail immediately instead of timing out.
+    NotifyOnDeath notifier(done.get());
     while (time_counter < max_time_counter) {
       int64_t batch_size = dist(gen);
       if (time_counter + batch_size > max_time_counter) {
@@ -859,6 +876,7 @@ TEST(TableTest, threaded) {
       slice = table_ptr->FirstBatch();
     }
 
+    // Loop over slices whilst the writer is still writing and we haven't seen all of the data yet.
     while (time_counter < max_time_counter &&
            !done->WaitForNotificationWithTimeout(absl::Milliseconds(1))) {
       EXPECT_TRUE(slice.IsValid());
@@ -869,9 +887,20 @@ TEST(TableTest, threaded) {
         EXPECT_EQ(time_counter, time_col->Value(i));
         time_counter++;
       }
-      slice = table_ptr->NextBatch(slice);
+      // If the reader gets ahead of the writer we have to wait for the writer to write more data.
+      auto next_slice = table_ptr->NextBatch(slice);
+      if (time_counter < max_time_counter) {
+        // We check the done notifcation here so that if the writer fails to write all the data for
+        // some reason we still exit.
+        while (!next_slice.IsValid() &&
+               !done->WaitForNotificationWithTimeout(absl::Milliseconds(1))) {
+          next_slice = table_ptr->NextBatch(slice);
+        }
+      }
+      slice = next_slice;
     }
 
+    // Once the writer is finished, we loop over the remaining data in the table.
     while (time_counter < max_time_counter && slice.IsValid()) {
       auto batch =
           table_ptr->GetRowBatchSlice(slice, {0}, arrow::default_memory_pool()).ConsumeValueOrDie();
