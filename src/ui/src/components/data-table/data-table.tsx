@@ -191,7 +191,7 @@ export interface DataTableProps {
   table: ReactTable;
   enableColumnSelect?: boolean;
   enableRowSelect?: boolean;
-  onRowSelected?: (row: Record<string, any>|null) => void;
+  onRowSelected?: (row: Record<string, any> | null) => void;
   onRowsRendered?: (rendered: ListOnItemsRenderedProps) => void;
 }
 

@@ -94,7 +94,7 @@ function findNextItem(
 }
 
 // Honors autoSelectPriority
-function autoSelectItem(completions: CompletionItems): CompletionItem|null {
+function autoSelectItem(completions: CompletionItems): CompletionItem | null {
   const items: CompletionItem[] = completions.filter((c) => c.type === 'item') as CompletionItem[];
   const highestPriority = items.reduce((hi, cmpl) => Math.max(hi, cmpl.autoSelectPriority ?? 0), -Infinity);
   const selectable = items.filter((c) => (c.autoSelectPriority ?? 0) === highestPriority);

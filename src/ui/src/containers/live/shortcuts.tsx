@@ -171,7 +171,7 @@ const handlerWrapper = (handler) => (e?: KeyboardEvent) => {
   const active = document.activeElement;
   const editable = active?.tagName === 'INPUT'
       || active?.tagName === 'TEXTAREA'
-      || (active as HTMLElement|null)?.isContentEditable;
+      || (active as HTMLElement | null)?.isContentEditable;
 
   const allowedComboInEditable = (e?.ctrlKey || e?.metaKey || e?.altKey)
       && !['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight', 'Home', 'End', 'PageDown', 'PageUp'].includes(e?.key);

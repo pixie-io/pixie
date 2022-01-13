@@ -63,7 +63,7 @@ require('./wdyr');
 // be requested from the parent.
 const REFRESH_TOKEN_TIMEOUT_S = 60 * 5; // 5 minutes
 
-const RedirectWithArgs = React.memo<Pick<RedirectProps, 'from'|'to'|'exact'>>(
+const RedirectWithArgs = React.memo<Pick<RedirectProps, 'from' | 'to' | 'exact'>>(
   ({ from, to, exact }) => {
     const location = useLocation();
     return (

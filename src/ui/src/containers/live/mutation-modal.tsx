@@ -29,14 +29,14 @@ import {
   Modal,
 } from '@mui/material';
 import { Theme } from '@mui/material/styles';
-import { createStyles, withStyles, WithStyles } from '@mui/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 import { StatusCell } from 'app/components';
 import { ScriptContext } from 'app/context/script-context';
 import { MutationInfo, LifeCycleState } from 'app/types/generated/vizierapi_pb';
 import * as moonwalkerSVG from 'assets/images/moonwalker.svg';
 
-const styles = ({ spacing, typography, palette }: Theme) => createStyles({
+const useStyles = makeStyles(({ spacing, typography, palette }: Theme) => createStyles({
   mutationDisplay: {
     position: 'absolute',
     width: '100%',
@@ -96,15 +96,14 @@ const styles = ({ spacing, typography, palette }: Theme) => createStyles({
   schemaText: {
     flex: 'none',
   },
-});
+}), { name: 'MutationModal' });
 
-interface MutationModalProps extends WithStyles<typeof styles> {
+interface MutationModalProps {
   mutationInfo: MutationInfo;
 }
 
-// eslint-disable-next-line react-memo/require-memo
-const MutationState = (props) => {
-  switch (props.state) {
+const MutationState = React.memo<{ state?: LifeCycleState }>(({ state }) => {
+  switch (state) {
     case LifeCycleState.RUNNING_STATE:
       return (<StatusCell statusGroup='healthy' />);
     case LifeCycleState.FAILED_STATE:
@@ -114,11 +113,11 @@ const MutationState = (props) => {
   }
 
   return <CircularProgress size={18} />;
-};
+});
 MutationState.displayName = 'MutationState';
 
-// eslint-disable-next-line react-memo/require-memo
-const MutationModal = ({ classes, mutationInfo }: MutationModalProps) => {
+const MutationModal = React.memo<MutationModalProps>(({ mutationInfo }) => {
+  const classes = useStyles();
   const { cancelExecution } = React.useContext(ScriptContext);
 
   return (
@@ -135,7 +134,7 @@ const MutationModal = ({ classes, mutationInfo }: MutationModalProps) => {
                mutationInfo.getStatesList().slice(0, Math.ceil(mutationInfo.getStatesList().length)).map((mutation) => (
                  <ListItem className={classes.mutation} key={mutation.getId()}>
                    <ListItemIcon className={classes.icon}>
-                     <MutationState state={mutation.getState()} classes={classes} />
+                     <MutationState state={mutation.getState()} />
                    </ListItemIcon>
                    <ListItemText>{mutation.getName()}</ListItemText>
                  </ListItem>
@@ -147,7 +146,7 @@ const MutationModal = ({ classes, mutationInfo }: MutationModalProps) => {
               mutationInfo.getStatesList().slice(Math.ceil(mutationInfo.getStatesList().length)).map((mutation) => (
                 <ListItem className={classes.mutation} key={mutation.getId()}>
                   <ListItemIcon className={classes.icon}>
-                    <MutationState state={mutation.getState()} classes={classes} />
+                    <MutationState state={mutation.getState()} />
                   </ListItemIcon>
                   <ListItemText>{mutation.getName()}</ListItemText>
                 </ListItem>
@@ -160,7 +159,7 @@ const MutationModal = ({ classes, mutationInfo }: MutationModalProps) => {
               && (
                 <ListItem className={classes.schema} key='schema'>
                   <ListItemIcon className={classes.icon}>
-                    <MutationState state={LifeCycleState.PENDING_STATE} classes={classes} />
+                    <MutationState state={LifeCycleState.PENDING_STATE} />
                   </ListItemIcon>
                   <ListItemText className={classes.schemaText}>Prepare schema</ListItemText>
                 </ListItem>
@@ -168,7 +167,7 @@ const MutationModal = ({ classes, mutationInfo }: MutationModalProps) => {
             }
           </Grid>
           <Grid item xs={6}>
-            <img className={classes.image} src={moonwalkerSVG} />
+            <img alt='' className={classes.image} src={moonwalkerSVG} />
           </Grid>
           <Grid item xs={6} className={classes.cancelButton}>
             <Button onClick={cancelExecution}>
@@ -179,7 +178,7 @@ const MutationModal = ({ classes, mutationInfo }: MutationModalProps) => {
       </Card>
     </Modal>
   );
-};
+});
 MutationModal.displayName = 'MutationModal';
 
-export default withStyles(styles)(MutationModal);
+export default MutationModal;

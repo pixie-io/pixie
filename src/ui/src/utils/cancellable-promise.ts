@@ -22,7 +22,7 @@
  * - cancel: a function that will cause the function to reject with the string 'cancelled' when it would have otherwise
  *   resolved or rejected normally. Sets `cancelled` to true.
  */
-export interface CancellablePromise<R extends unknown = void> extends Promise<R> {
+export interface CancellablePromise<R = void> extends Promise<R> {
   cancel: () => void;
   cancelled: boolean;
 }
@@ -33,7 +33,7 @@ export interface CancellablePromise<R extends unknown = void> extends Promise<R>
  * If you do not wish to do anything with a cancel-induced rejection, use the helper method `silentlyCatchCancellation`.
  * @param source
  */
-export function makeCancellable<R extends unknown = void>(source: Promise<R>): CancellablePromise<R> {
+export function makeCancellable<R = void>(source: Promise<R>): CancellablePromise<R> {
   let cancelled = false;
   let cancel: () => void;
 
@@ -55,11 +55,11 @@ export function makeCancellable<R extends unknown = void>(source: Promise<R>): C
     writable: false,
     configurable: false,
     enumerable: false,
-  });
+  }).then();
 
   Object.defineProperty(wrapped, 'cancelled', {
     get: () => cancelled,
-  });
+  }).then();
 
   return wrapped as CancellablePromise<R>;
 }

@@ -49,7 +49,8 @@ export const Avatar = React.memo<AvatarProps>((props) => {
 });
 Avatar.displayName = 'Avatar';
 
-interface ProfileMenuWrapperProps extends React.PropsWithChildren<Pick<MenuProps, 'anchorOrigin'|'open'|'anchorEl'>> {
+interface ProfileMenuWrapperProps
+  extends React.PropsWithChildren<Pick<MenuProps, 'anchorOrigin' | 'open' | 'anchorEl'>> {
   onCloseMenu: () => void;
   name: string;
   email: string;

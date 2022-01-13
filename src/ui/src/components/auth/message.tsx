@@ -60,7 +60,7 @@ const styles = ({ palette, spacing }: Theme) => createStyles({
 });
 
 export interface AuthMessageBoxProps extends WithStyles<typeof styles> {
-  error?: 'recoverable'|'fatal';
+  error?: 'recoverable' | 'fatal';
   title: string;
   message: string;
   errorDetails?: string;

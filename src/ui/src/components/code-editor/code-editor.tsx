@@ -39,7 +39,7 @@ interface CodeEditorProps {
 }
 
 interface CodeEditorState {
-  editorModule: React.ComponentType<MonacoEditorProps>|null;
+  editorModule: React.ComponentType<MonacoEditorProps> | null;
   options: MonacoEditorTypes.IEditorOptions;
 }
 

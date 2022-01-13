@@ -20,14 +20,13 @@ import * as React from 'react';
 
 import { Box, IconButton } from '@mui/material';
 import { Theme } from '@mui/material/styles';
-import { withStyles } from '@mui/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 import Highlight, { defaultProps } from 'prism-react-renderer';
 
 import { scrollbarStyles } from 'app/components';
 import { CopyIcon } from 'app/components/icons/copy';
 
-// eslint-disable-next-line react-memo/require-memo
-export const CodeRenderer = withStyles((theme: Theme) => ({
+const useStyles = makeStyles((theme: Theme) => createStyles({
   code: {
     backgroundColor: theme.palette.foreground.grey3,
     borderRadius: '5px',
@@ -37,7 +36,6 @@ export const CodeRenderer = withStyles((theme: Theme) => ({
     padding: '8px 55px 8px 8px',
     ...scrollbarStyles(theme),
   },
-
   codeHighlight: {
     display: 'block',
     width: '100%',
@@ -45,7 +43,6 @@ export const CodeRenderer = withStyles((theme: Theme) => ({
     fontFamily: '"Roboto Mono", Monospace',
     marginLeft: '1rem',
   },
-
   copyBtn: {
     position: 'absolute',
     top: '50%',
@@ -53,38 +50,46 @@ export const CodeRenderer = withStyles((theme: Theme) => ({
     right: '0',
     cursor: 'pointer',
   },
-// eslint-disable-next-line react-memo/require-memo
-}))(({ classes, code, language = 'javascript' }: any) => (
-  <div className={classes.code}>
-    <Box className={`${classes.codeHighlight} small-scroll`}>
-      <Highlight {...defaultProps} code={code.trim()} language={language}>
-        {({
-          className, style, tokens, getLineProps, getTokenProps,
-        }) => (
-          <pre
-            className={className}
-            style={{ ...style, backgroundColor: 'transparent' }}
-          >
-            {tokens.map((line, i) => (
-              <div key={i} {...getLineProps({ line, key: i })}>
-                {line.map((token, key) => (
-                  <span key={key} {...getTokenProps({ token, key })} />
-                ))}
-              </div>
-            ))}
-          </pre>
-        )}
-      </Highlight>
-    </Box>
-    <IconButton
-      edge='start'
-      color='inherit'
-      className={classes.copyBtn}
-      onClick={React.useCallback(() => {
-        navigator.clipboard.writeText(code).then();
-      }, [code])}
-    >
-      <CopyIcon />
-    </IconButton>
-  </div>
-));
+}), { name: 'CodeRenderer' });
+
+export const CodeRenderer: React.FC<{
+  code: string,
+  language?: React.ComponentProps<typeof Highlight>['language'],
+}> = React.memo(({ code, language = 'javascript' }) => {
+  const classes = useStyles();
+  return (
+    <div className={classes.code}>
+      <Box className={`${classes.codeHighlight} small-scroll`}>
+        <Highlight {...defaultProps} code={code.trim()} language={language}>
+          {({
+            className, style, tokens, getLineProps, getTokenProps,
+          }) => (
+            <pre
+              className={className}
+              style={{ ...style, backgroundColor: 'transparent' }}
+            >
+              {tokens.map((line, i) => (
+                <div key={i} {...getLineProps({ line, key: i })}>
+                  {line.map((token, key) => (
+                    <span key={key} {...getTokenProps({ token, key })} />
+                  ))}
+                </div>
+              ))}
+            </pre>
+          )}
+        </Highlight>
+      </Box>
+      <IconButton
+        edge='start'
+        color='inherit'
+        className={classes.copyBtn}
+        onClick={React.useCallback(() => {
+          navigator.clipboard.writeText(code).then();
+        }, [code])}
+      >
+        <CopyIcon />
+      </IconButton>
+    </div>
+  );
+});
+CodeRenderer.displayName = 'CodeRenderer';

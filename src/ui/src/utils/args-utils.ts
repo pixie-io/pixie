@@ -19,7 +19,7 @@
 import { VizierQueryError } from 'app/api';
 import { Variable, Vis } from 'app/containers/live/vis';
 
-export type Arguments = Record<string, string|string[]>;
+export type Arguments = Record<string, string | string[]>;
 
 /** Deep equality test for two sets of script arguments */
 export function argsEquals(args1: Arguments, args2: Arguments): boolean {
@@ -42,14 +42,14 @@ export function argsEquals(args1: Arguments, args2: Arguments): boolean {
  * Checks that all variables in the vis spec are specified with valid values (or have a default), and that no extra
  * args were provided that don't exist in the vis spec.
  */
-export function validateArgs(vis: Vis, args: Arguments): VizierQueryError|null {
+export function validateArgs(vis: Vis, args: Arguments): VizierQueryError | null {
   if (!vis?.variables.length) {
     return null;
   }
 
   const errors: string[] = [];
 
-  for (const { name, defaultValue, validValues } of vis?.variables) {
+  for (const { name, defaultValue, validValues } of (vis?.variables ?? [])) {
     if (defaultValue == null && (args[name] == null || args[name] === '')) {
       errors.push(`Missing value for required arg \`${name}\`.`);
     } else if (validValues?.length) {

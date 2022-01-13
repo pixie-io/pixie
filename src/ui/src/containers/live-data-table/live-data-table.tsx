@@ -164,7 +164,7 @@ export const MinimalLiveDataTable = React.memo<{ table: VizierTable }>(({ table 
   const reactTable = useConvertedTable(table);
 
   const [details, setDetails] = React.useState<Record<string, any>>(null);
-  const onRowSelected = React.useCallback((row: Record<string, any>|null) => setDetails(row), [setDetails]);
+  const onRowSelected = React.useCallback((row: Record<string, any> | null) => setDetails(row), [setDetails]);
 
   return (
     <div className={buildClass(classes.root, classes.minimalRoot)}>
@@ -193,10 +193,10 @@ const LiveDataTableImpl = React.memo<LiveDataTableProps>(({ table, ...options })
   const { width: containerWidth, height: containerHeight } = React.useContext(AutoSizerContext);
 
   const [details, setDetails] = React.useState<Record<string, any>>(null);
-  const onRowSelected = React.useCallback((row: Record<string, any>|null) => setDetails(row), [setDetails]);
+  const onRowSelected = React.useCallback((row: Record<string, any> | null) => setDetails(row), [setDetails]);
 
   // Determine if we should render row details in a horizontal split or a vertical one based on available space
-  const splitMode: 'horizontal'|'vertical' = React.useMemo(
+  const splitMode: 'horizontal' | 'vertical' = React.useMemo(
     () => (containerWidth / 4 < 240 ? 'horizontal' : 'vertical'),
     [containerWidth]);
 

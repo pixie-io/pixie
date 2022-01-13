@@ -36,8 +36,8 @@ export interface ErrorBoundaryProps {
 }
 
 interface ErrorBoundaryState {
-  error: Error|null;
-  errorInfo: React.ErrorInfo|null;
+  error: Error | null;
+  errorInfo: React.ErrorInfo | null;
 }
 
 /**

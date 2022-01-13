@@ -90,7 +90,7 @@ export class TabStopParser {
 
   private tabBoundaries: [number, number][];
 
-  private input: Array<{ type: 'key'|'value', value: string }>;
+  private input: Array<{ type: 'key' | 'value', value: string }>;
 
   private initialCursor: number;
 
@@ -135,7 +135,7 @@ export class TabStopParser {
 
   public getTabBoundaries = (): [number, number][] => this.tabBoundaries;
 
-  public getInput = (): Array<{ type: 'key'|'value', value: string }> => this.input;
+  public getInput = (): Array<{ type: 'key' | 'value', value: string }> => this.input;
 
   // Find the tabstop that the cursor is currently in.
   public getActiveTab = (cursorPos: number): number => {

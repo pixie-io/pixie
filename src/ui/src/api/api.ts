@@ -57,10 +57,10 @@ export abstract class PixieAPIClientAbstract {
 
   readonly options: Required<PixieAPIClientOptions>;
 
-  abstract health(cluster: string|ClusterConfig): Observable<Status>;
+  abstract health(cluster: string | ClusterConfig): Observable<Status>;
 
   abstract executeScript(
-    cluster: string|ClusterConfig,
+    cluster: string | ClusterConfig,
     script: string,
     opts: ExecuteScriptOptions,
     funcs?: VizierQueryFunc[],
@@ -134,7 +134,7 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
     return client;
   }
 
-  private async getClusterClient(cluster: string|ClusterConfig) {
+  private async getClusterClient(cluster: string | ClusterConfig) {
     let id: string;
     let passthroughClusterAddress: string;
     let attachCredentials = false;
@@ -174,7 +174,7 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
    * @param cluster Which cluster to use. Either just its ID, or a full config. If that cluster has previously been
    *        connected in this session, that connection will be reused without changing its configuration.
    */
-  health(cluster: string|ClusterConfig): Observable<Status> {
+  health(cluster: string | ClusterConfig): Observable<Status> {
     return from(this.getClusterClient(cluster))
       .pipe(switchMap((client) => client.health()));
   }
@@ -192,10 +192,11 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
    * @param cluster Which cluster to use. Either just its ID, or a full config. If that cluster has previously been
    *        connected in this session, that connection will be reused without changing its configuration.
    * @param script The source code of the script to be compiled and executed; whitespace and all.
+   * @param opts Any extra options, such as encryption.
    * @param funcs Descriptions of which functions in the script to run, and what to do with their output.
    */
   executeScript(
-    cluster: string|ClusterConfig,
+    cluster: string | ClusterConfig,
     script: string,
     opts: ExecuteScriptOptions,
     funcs: VizierQueryFunc[] = [],

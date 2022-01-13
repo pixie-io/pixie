@@ -140,7 +140,7 @@ function getFuncArgs(variableValues: VariableValues, func: Func): VizierQueryArg
   return args;
 }
 
-type VariableValues = Record<string, string|string[]>;
+type VariableValues = Record<string, string | string[]>;
 
 function preprocessVariables(variableValues: VariableValues, argTypes: ArgTypeMap): VariableValues {
   const processedVariables: VariableValues = {};

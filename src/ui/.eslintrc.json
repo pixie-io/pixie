@@ -11,7 +11,8 @@
     "plugin:react-hooks/recommended"
   ],
   "ignorePatterns": [
-    "dist/**"
+    "dist/**",
+    "coverage/**"
   ],
   "parser": "babel-eslint",
   "parserOptions": {

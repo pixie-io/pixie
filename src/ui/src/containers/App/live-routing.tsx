@@ -61,11 +61,11 @@ const VANITY_ROUTES = new Map<string, string>([
   /* eslint-enable no-multi-spaces */
 ]);
 
-function unwrapQueryParam(param: string|string[]): string {
+function unwrapQueryParam(param: string | string[]): string {
   return Array.isArray(param) ? param[0] : param;
 }
 
-function buildMatchParams(scriptId: string, routeParams: Record<string, string|string[]>) {
+function buildMatchParams(scriptId: string, routeParams: Record<string, string | string[]>) {
   const cluster = unwrapQueryParam(routeParams.cluster || '');
   const matchParams = { ...routeParams };
   delete matchParams.cluster;
