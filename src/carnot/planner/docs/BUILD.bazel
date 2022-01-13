@@ -53,7 +53,10 @@ pl_cc_test(
 pl_cc_binary(
     name = "doc_extractor",
     srcs = ["doc_extractor_main.cc"],
+    stamp = -1,
     deps = [
         ":cc_library",
+        "//src/shared/version:cc_library",
+        "//src/shared/version:version_linkstamp",
     ],
 )

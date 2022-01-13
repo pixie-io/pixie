@@ -54,10 +54,12 @@ pl_cc_test(
 pl_cc_binary(
     name = "pem",
     srcs = ["pem_main.cc"],
+    stamp = -1,
     deps = [
         ":cc_library",
         "//src/common/signal:cc_library",
         "//src/shared/version:cc_library",
+        "//src/shared/version:version_linkstamp",
     ],
 )
 

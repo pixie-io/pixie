@@ -49,8 +49,11 @@ pl_cc_library(
 pl_cc_binary(
     name = "export_funcs",
     srcs = ["export.cc"],
+    stamp = -1,
     deps = [
         ":cc_library",
+        "//src/shared/version:cc_library",
+        "//src/shared/version:version_linkstamp",
     ],
 )
 

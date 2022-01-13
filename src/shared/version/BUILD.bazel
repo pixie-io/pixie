@@ -14,12 +14,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library")
+load("//bazel:pl_build_system.bzl", "pl_cc_library_internal")
 
 package(default_visibility = ["//src:__subpackages__"])
 
-# https://github.com/bazelbuild/bazel/issues/1992
-# Borrowed from envoy build.
+## https://github.com/bazelbuild/bazel/issues/1992
+## Borrowed from envoy build.
 genrule(
     name = "gen_version_linkstamp",
     srcs = ["version_linkstamp.cc"],
@@ -31,9 +31,6 @@ genrule(
     STABLE_BUILD_SCM_STATUS=$$(
           grep STABLE_BUILD_SCM_STATUS bazel-out/stable-status.txt \\
         | sed 's/^STABLE_BUILD_SCM_STATUS //')
-    BUILD_TIMESTAMP=$$(
-          grep BUILD_TIMESTAMP bazel-out/volatile-status.txt \\
-        | sed 's/^BUILD_TIMESTAMP //')
     STABLE_BUILD_TAG=$$(
           grep STABLE_BUILD_TAG bazel-out/stable-status.txt \\
         | sed 's/^STABLE_BUILD_TAG //')
@@ -41,27 +38,54 @@ genrule(
           grep STABLE_BUILD_NUMBER bazel-out/stable-status.txt \\
         | sed 's/^STABLE_BUILD_NUMBER //')
 
+
+    BUILD_TIMESTAMP=$$(
+          grep BUILD_TIMESTAMP bazel-out/volatile-status.txt \\
+        | sed 's/^BUILD_TIMESTAMP //')
+
     echo "#define BUILD_SCM_REVISION \\"$$STABLE_BUILD_SCM_REVISION\\"" >> $@
     echo "#define BUILD_SCM_STATUS \\"$$STABLE_BUILD_SCM_STATUS\\"" >> $@
-    echo "#define BUILD_TIMESTAMP $$BUILD_TIMESTAMP" >> $@
     echo "#define BUILD_TAG \\"$$STABLE_BUILD_TAG\\"" >> $@
     echo "#define BUILD_NUMBER \\"$$STABLE_BUILD_NUMBER\\"" >> $@
+
+    echo "#define BUILD_TIMESTAMP $$BUILD_TIMESTAMP" >> $@
     cat $(location :version_linkstamp.cc) >> $@
     """,
-    stamp = 1,
+    stamp = True,
+    visibility = ["//visibility:private"],
 )
 
-pl_cc_library(
+pl_cc_library_internal(
     name = "cc_library",
     srcs = [
-        "gen_version_linkstamp.cc",
         "version.cc",
     ],
     hdrs = ["version.h"],
-    deps = [
-        "//src/shared/types/typespb/wrapper:cc_library",
-        "@com_github_apache_arrow//:arrow",
-        "@com_google_absl//absl/time",
-        "@com_google_farmhash//:farmhash",
+)
+
+pl_cc_library_internal(
+    name = "version_linkstamp",
+    srcs = select({
+        "//bazel:stamped": [":gen_version_linkstamp"],
+        "//conditions:default": ["placeholder_version_linkstamp.cc"],
+    }),
+    # Usage of this library has serious implications for caching. The use should
+    # be restricted to binaries.
+    # TODO(zasgar): Refactor dependent code so we can more precisely apply the visbility rules.
+    visibility = [
+        "//src/carnot/planner/docs:__pkg__",
+        "//src/vizier/funcs:__pkg__",
+        "//src/vizier/services/agent/kelvin:__pkg__",
+        "//src/vizier/services/agent/pem:__pkg__",
+    ],
+)
+
+# This is a version of the library that can be linked with tests to prevent
+# busting the cache.
+pl_cc_library_internal(
+    name = "test_version_linkstamp",
+    testonly = 1,
+    srcs = [
+        "placeholder_version_linkstamp.cc",
     ],
 )

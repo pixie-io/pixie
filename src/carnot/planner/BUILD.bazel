@@ -85,5 +85,6 @@ pl_cc_binary(
         ":cc_library",
         ":test_utils",
         "//src/common/benchmark:cc_library",
+        "//src/shared/version:test_version_linkstamp",
     ],
 )
