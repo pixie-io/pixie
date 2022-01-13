@@ -143,7 +143,7 @@ const ScriptShortcut = ({ match, location }) => {
 
   const queryParams: Record<string, string> = { script: scriptID };
   const params = QueryString.stringify(queryParams);
-  const newPath = generatePath(`/live/clusters/:cluster\\?${params}`, { cluster });
+  const newPath = generatePath<string>(`/live/clusters/:cluster\\?${params}`, { cluster });
 
   return <Redirect to={newPath} />;
 };
