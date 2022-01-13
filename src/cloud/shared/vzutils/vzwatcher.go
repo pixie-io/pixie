@@ -60,7 +60,7 @@ type Watcher struct {
 
 // NewWatcher creates a new vizier watcher.
 func NewWatcher(nc *nats.Conn, vzmgrClient vzmgrpb.VZMgrServiceClient, fromShardID string, toShardID string) (*Watcher, error) {
-	ch := make(chan *nats.Msg, 1024)
+	ch := make(chan *nats.Msg, 4096)
 	sub, err := nc.ChanSubscribe(messages.VizierConnectedChannel, ch)
 	if err != nil {
 		close(ch)

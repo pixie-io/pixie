@@ -110,7 +110,7 @@ func newRequestProxyer(vzmgr vzmgrClient, nc *nats.Conn, debugMode bool, r Clust
 	replyTopic := p.getRecvTopic()
 	// We create a buffered channel to make sure we don't drop messages if we fall behind processing them.
 	// This is not a permanent fix because we need to be more robust to this condition.
-	natsCh := make(chan *nats.Msg, 1024)
+	natsCh := make(chan *nats.Msg, 4096)
 	sub, err := p.nc.ChanSubscribe(replyTopic, natsCh)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Failed to listen for message")

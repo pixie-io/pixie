@@ -75,7 +75,7 @@ func NewNATSBridgeController(clusterID uuid.UUID, srv vzconnpb.VZConnService_NAT
 		grpcInCh:  make(chan *vzconnpb.V2CBridgeMessage, 1000),
 
 		quitCh: make(chan bool),
-		subCh:  make(chan *nats.Msg, 1000),
+		subCh:  make(chan *nats.Msg, 4096),
 	}
 }
 

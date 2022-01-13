@@ -129,7 +129,7 @@ func NewMetadataReader(db *sqlx.DB, st msgbus.Streamer, nc *nats.Conn) (*Metadat
 
 // listenForViziers listens for any newly connected Viziers and subscribes to their update channel.
 func (m *MetadataReader) listenForViziers() {
-	ch := make(chan *nats.Msg)
+	ch := make(chan *nats.Msg, 4096)
 	sub, err := m.nc.ChanSubscribe(messages.VizierConnectedChannel, ch)
 	if err != nil {
 		log.WithError(err).Error("Failed to listen for connected viziers")
@@ -408,7 +408,7 @@ func (m *MetadataReader) getMissingUpdates(from, to int64, vzState *VizierState)
 	}
 
 	// Subscribe to topic that the response will be sent on.
-	subCh := make(chan *nats.Msg, 1024)
+	subCh := make(chan *nats.Msg, 4096)
 	sub, err := m.nc.ChanSubscribe(vzshard.V2CTopic(missingResponseTopic, vzState.id), subCh)
 	if err != nil {
 		return err
