@@ -43,6 +43,8 @@ void BCCSymbolizer::DeleteUPID(const struct upid_t& upid) {
 }
 
 std::string_view BCCSymbolizer::Symbolize(const int pid, const uintptr_t addr) {
+  ++stat_hits_;
+  ++stat_accesses_;
   static std::string symbol;
   symbol = bcc_symbolizer_.SymbolOrAddrIfUnknown(addr, pid);
   return symbol;

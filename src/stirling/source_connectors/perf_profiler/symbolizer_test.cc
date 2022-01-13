@@ -71,8 +71,17 @@ TEST_F(BCCSymbolizerTest, KernelSymbols) {
   std::string_view kSymbolName = "cpu_detect";
   ASSERT_OK_AND_ASSIGN(uint64_t kaddr, GetKernelSymAddr(kSymbolName));
 
+  EXPECT_EQ(symbolizer_->stat_accesses(), 0);
+  EXPECT_EQ(symbolizer_->stat_hits(), 0);
+
   auto symbolize = symbolizer_->GetSymbolizerFn(profiler::kKernelUPID);
   EXPECT_EQ(std::string(symbolize(kaddr)), kSymbolName);
+  EXPECT_EQ(symbolizer_->stat_accesses(), 1);
+  EXPECT_EQ(symbolizer_->stat_hits(), 1);
+
+  EXPECT_EQ(std::string(symbolize(kaddr)), kSymbolName);
+  EXPECT_EQ(symbolizer_->stat_accesses(), 2);
+  EXPECT_EQ(symbolizer_->stat_hits(), 2);
 }
 
 // Test the symbolizer with caching enabled and disabled.

@@ -90,6 +90,8 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   void CleanupSymbolizers(const absl::flat_hash_set<md::UPID>& deleted_upids);
 
+  void PrintStats() const;
+
   // data structures shared with BPF:
   std::unique_ptr<ebpf::BPFStackTable> stack_traces_a_;
   std::unique_ptr<ebpf::BPFStackTable> stack_traces_b_;
