@@ -28,5 +28,5 @@
     "__mocks__/**/*",
     "*.js"
   ],
-  "exclude": [".pnp.js", "node_modules/.cache"]
+  "exclude": [".pnp.*", "node_modules/.cache"]
 }

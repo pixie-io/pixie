@@ -209,7 +209,7 @@ const webpackConfig = {
           minSize: 0, // This is example is too small to create commons chunks
         },
         vendor: {
-          // Yarn PnP still puts this in the string (`.../.yarn/$$virtual/.../depName/.../node_modules/...)
+          // Yarn PnP still puts this in the string (`.../.yarn/__virtual__/.../depName/.../node_modules/...`)
           // so we can still split the vendor bundle based on that.
           test: /[\\/]node_modules[\\/]/,
           chunks: 'initial',
