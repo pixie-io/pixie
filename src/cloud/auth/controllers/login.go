@@ -100,7 +100,7 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 		return nil, err
 	}
 	if userInfo.HostedDomain != "" && !utils.IsNilUUIDProto(inviteOrgID) {
-		return nil, status.Error(codes.PermissionDenied, "gsuite users are not allowed to follow invites. Please join the org with another account")
+		return nil, status.Error(codes.PermissionDenied, "This email is managed by Google Workspace and can only be used to join its associated Google Workspace managed org. Please retry the invite link using another email.")
 	}
 
 	user, err := s.env.ProfileClient().GetUserByAuthProviderID(ctx, &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: userInfo.AuthProviderID})

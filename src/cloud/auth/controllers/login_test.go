@@ -2893,7 +2893,7 @@ func TestServer_Login_PreventFollowingInviteIfUserHasHostedDomain(t *testing.T) 
 		CreateUserIfNotExists: true,
 		InviteToken:           "invite-token",
 	})
-	assert.Regexp(t, "gsuite users are not allowed to follow invites. Please join the org with another account", err)
+	assert.Regexp(t, "This email is managed by Google Workspace and can only be used to join its associated Google Workspace managed org. Please retry the invite link using another email.", err)
 }
 
 func TestServer_Signup_PreventFollowingInviteIfUserHasHostedDomain(t *testing.T) {
