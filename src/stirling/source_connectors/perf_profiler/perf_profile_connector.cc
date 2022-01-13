@@ -73,14 +73,15 @@ Status PerfProfileConnector::InitImpl() {
   const int32_t expected_stack_races = ncpus * expected_stack_traces_per_cpu;
   const int32_t overprovision_factor = 4;
   const int32_t num_perf_buffer_entries = overprovision_factor * expected_stack_races;
+  const int32_t perf_buffer_size = sizeof(stack_trace_key_t) * num_perf_buffer_entries;
 
   const uint64_t probe_sample_period_ms = stack_trace_sampling_period_.count();
   const auto probe_specs =
       MakeArray<bpf_tools::SamplingProbeSpec>({"sample_call_stack", probe_sample_period_ms});
 
   const auto perf_buffer_specs = MakeArray<bpf_tools::PerfBufferSpec>(
-      {{"histogram_a", HandleHistoEvent, HandleHistoLoss, num_perf_buffer_entries},
-       {"histogram_b", HandleHistoEvent, HandleHistoLoss, num_perf_buffer_entries}});
+      {{"histogram_a", HandleHistoEvent, HandleHistoLoss, perf_buffer_size},
+       {"histogram_b", HandleHistoEvent, HandleHistoLoss, perf_buffer_size}});
 
   PL_RETURN_IF_ERROR(InitBPFProgram(profiler_bcc_script, defines));
   PL_RETURN_IF_ERROR(AttachSamplingProbes(probe_specs));
