@@ -26,6 +26,7 @@ import (
 	"github.com/cenkalti/backoff/v3"
 	"github.com/gofrs/uuid"
 	"github.com/olivere/elastic/v7"
+	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 
 	"px.dev/pixie/src/shared/k8s/metadatapb"
@@ -37,6 +38,17 @@ const (
 	maxActionBatchFlushInterval = time.Second * 30
 	maxElasticBackoffInterval   = time.Second * 60
 )
+
+var (
+	elasticRetriesCollector = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "elastic_index_retries",
+		Help: "The number of retries for this particular index",
+	}, []string{"vizier_id"})
+)
+
+func init() {
+	prometheus.MustRegister(elasticRetriesCollector)
+}
 
 // VizierIndexer run the indexer for a single vizier index.
 type VizierIndexer struct {
@@ -320,8 +332,11 @@ func (v *VizierIndexer) HandleResourceUpdate(update *metadatapb.ResourceUpdate) 
 		bo.MaxElapsedTime = 0
 		bo.MaxInterval = maxElasticBackoffInterval
 
+		retryCount := 0.0
 		retryErr := backoff.Retry(func() error {
 			_, err := v.bulk.Refresh("wait_for").Do(context.Background())
+			elasticRetriesCollector.WithLabelValues(v.vizierID.String()).Set(retryCount)
+			retryCount++
 			return err
 		}, bo)
 		v.lastFlushTime = time.Now()

@@ -37,6 +37,7 @@ import (
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/env"
 	"px.dev/pixie/src/shared/services/healthz"
+	"px.dev/pixie/src/shared/services/metrics"
 	"px.dev/pixie/src/shared/services/msgbus"
 	"px.dev/pixie/src/shared/services/server"
 )
@@ -90,6 +91,7 @@ func main() {
 	// This handles all the pprof endpoints.
 	mux.Handle("/debug/", http.DefaultServeMux)
 	healthz.RegisterDefaultChecks(mux)
+	metrics.MustRegisterMetricsHandler(mux)
 
 	s := server.NewPLServer(env.New(viper.GetString("domain_name")), mux)
 	nc := msgbus.MustConnectNATS()

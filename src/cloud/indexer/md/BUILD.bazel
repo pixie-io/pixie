@@ -30,6 +30,7 @@ go_library(
         "@com_github_cenkalti_backoff_v3//:backoff",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_olivere_elastic_v7//:elastic",
+        "@com_github_prometheus_client_golang//prometheus",
         "@com_github_sirupsen_logrus//:logrus",
     ],
 )
