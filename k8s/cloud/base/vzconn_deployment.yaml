@@ -11,6 +11,10 @@ spec:
     metadata:
       labels:
         name: vzconn-server
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '51600'
+        prometheus.io/scheme: 'https'
     spec:
       containers:
       - name: vzconn-server

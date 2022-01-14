@@ -21,7 +21,6 @@ package controllers
 import (
 	"github.com/jmoiron/sqlx"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/collectors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -63,10 +62,6 @@ ON
   stats.shard_id = enumerated.shard_id
   AND stats.status::text = enumerated.status;
 `
-
-func init() {
-	prometheus.MustRegister(collectors.NewBuildInfoCollector())
-}
 
 type statusMetricsCollector struct {
 	db         *sqlx.DB

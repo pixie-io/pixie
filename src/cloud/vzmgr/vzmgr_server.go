@@ -23,6 +23,9 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
+	"github.com/nats-io/stan.go"
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/gofrs/uuid"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/nats-io/nats.go"
@@ -54,6 +57,21 @@ func init() {
 	pflag.String("dnsmgr_service", "dnsmgr-service.plc.svc.cluster.local:51900", "The dns manager service url (load balancer/list is ok)")
 	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
 }
+
+var (
+	slowConsumerMetric = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "nats_slow_consumer",
+		Help: "NATS message dropped due to a slow consumer",
+	},
+		[]string{"subscription"},
+	)
+	natsErrorMetric = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "nats_error",
+		Help: "NATS message bus error",
+	},
+		[]string{"subscription"},
+	)
+)
 
 // NewDNSMgrServiceClient creates a new profile RPC client stub.
 func NewDNSMgrServiceClient() (dnsmgrpb.DNSMgrServiceClient, error) {
@@ -95,6 +113,29 @@ func (r *readinessCheck) Name() string {
 
 func (r *readinessCheck) Check() error {
 	return r.err
+}
+
+func mustSetupNATSAndSTAN() (*nats.Conn, stan.Conn, msgbus.Streamer) {
+	nc := msgbus.MustConnectNATS()
+	stc := msgbus.MustConnectSTAN(nc, uuid.Must(uuid.NewV4()).String())
+	strmr, err := msgbus.NewSTANStreamer(stc)
+	if err != nil {
+		log.WithError(err).Fatal("Could not start STAN streamer")
+	}
+
+	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
+		if err != nil {
+			log.WithError(err).
+				WithField("Subject", subscription.Subject).
+				Error("Got NATS error")
+		}
+		switch err {
+		case nats.ErrSlowConsumer:
+			slowConsumerMetric.WithLabelValues(subscription.Subject).Inc()
+		}
+		natsErrorMetric.WithLabelValues(subscription.Subject).Inc()
+	})
+	return nc, stc, strmr
 }
 
 func main() {
@@ -139,22 +180,9 @@ func main() {
 	}
 
 	// Connect to NATS.
-	nc := msgbus.MustConnectNATS()
-	stc := msgbus.MustConnectSTAN(nc, uuid.Must(uuid.NewV4()).String())
+	nc, stc, strmr := mustSetupNATSAndSTAN()
 	defer nc.Close()
 	defer stc.Close()
-	strmr, err := msgbus.NewSTANStreamer(stc)
-	if err != nil {
-		log.WithError(err).Fatal("Could not start STAN streamer")
-	}
-
-	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
-		if err != nil {
-			log.WithError(err).
-				WithField("Subject", subscription.Subject).
-				Error("Got NATS error")
-		}
-	})
 
 	at, err := NewArtifactTrackerServiceClient()
 	if err != nil {

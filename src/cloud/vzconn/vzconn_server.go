@@ -22,6 +22,12 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
+	"github.com/nats-io/nats.go"
+	"github.com/nats-io/stan.go"
+	"github.com/prometheus/client_golang/prometheus"
+
+	"px.dev/pixie/src/shared/services/metrics"
+
 	"github.com/gofrs/uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -43,6 +49,21 @@ func init() {
 	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
 }
 
+var (
+	slowConsumerMetric = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "nats_slow_consumer",
+		Help: "NATS message dropped due to a slow consumer",
+	},
+		[]string{"subscription"},
+	)
+	natsErrorMetric = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "nats_error",
+		Help: "NATS message bus error",
+	},
+		[]string{"subscription"},
+	)
+)
+
 func newVZMgrClients() (vzmgrpb.VZMgrServiceClient, vzmgrpb.VZDeploymentServiceClient, error) {
 	dialOpts, err := services.GetGRPCClientDialOpts()
 	if err != nil {
@@ -55,6 +76,29 @@ func newVZMgrClients() (vzmgrpb.VZMgrServiceClient, vzmgrpb.VZDeploymentServiceC
 	}
 
 	return vzmgrpb.NewVZMgrServiceClient(vzmgrChannel), vzmgrpb.NewVZDeploymentServiceClient(vzmgrChannel), nil
+}
+
+func mustSetupNATSAndSTAN() (*nats.Conn, stan.Conn, msgbus.Streamer) {
+	nc := msgbus.MustConnectNATS()
+	stc := msgbus.MustConnectSTAN(nc, uuid.Must(uuid.NewV4()).String())
+	strmr, err := msgbus.NewSTANStreamer(stc)
+	if err != nil {
+		log.WithError(err).Fatal("Could not start STAN streamer")
+	}
+
+	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
+		if err != nil {
+			log.WithError(err).
+				WithField("Subject", subscription.Subject).
+				Error("Got NATS error")
+		}
+		switch err {
+		case nats.ErrSlowConsumer:
+			slowConsumerMetric.WithLabelValues(subscription.Subject).Inc()
+		}
+		natsErrorMetric.WithLabelValues(subscription.Subject).Inc()
+	})
+	return nc, stc, strmr
 }
 
 func main() {
@@ -70,6 +114,8 @@ func main() {
 	// VZConn is the backend for a GCLB and that health checks on "/" instead of the regular health check endpoint.
 	healthz.InstallPathHandler(mux, "/")
 
+	metrics.MustRegisterMetricsHandler(mux)
+
 	// Communication from Vizier to VZConn is not auth'd via GRPC auth.
 	serverOpts := &server.GRPCServerOptions{
 		DisableAuth: map[string]bool{
@@ -79,12 +125,10 @@ func main() {
 	}
 
 	s := server.NewPLServerWithOptions(env.New(viper.GetString("domain_name")), mux, serverOpts)
-	nc := msgbus.MustConnectNATS()
-	sc := msgbus.MustConnectSTAN(nc, uuid.Must(uuid.NewV4()).String())
-	strmr, err := msgbus.NewSTANStreamer(sc)
-	if err != nil {
-		log.WithError(err).Fatal("failed to start streamer")
-	}
+	// Connect to NATS.
+	nc, stc, strmr := mustSetupNATSAndSTAN()
+	defer nc.Close()
+	defer stc.Close()
 
 	vzmgrClient, vzdeployClient, err := newVZMgrClients()
 	if err != nil {
