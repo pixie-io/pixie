@@ -44,21 +44,36 @@ import (
 	"px.dev/pixie/src/shared/services/msgbus"
 )
 
+var msgHistBuckets = []float64{4 << 4, 4 << 6, 4 << 8, 4 << 10, 4 << 12, 4 << 14}
+
 var (
 	cloudToVizierMsgCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "cloud_to_vizier_msg_count",
 		Help: "Number of messages from cloud to vizier.",
 	}, []string{"vizier_id", "kind"})
+	cloudToVizierMsgSizeDist = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "cloud_to_vizier_msg_size_dist",
+		Help:    "Histogram for message size from cloud to vizier.",
+		Buckets: msgHistBuckets,
+	}, []string{"kind"})
 
 	vizierToCloudMsgCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "vizier_to_cloud_msg_count",
 		Help: "Number of messages from vizier to cloud",
 	}, []string{"vizier_id", "kind"})
+	vizierToCloudMsgSizeDist = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "vizier_to_cloud_msg_size_dist",
+		Help:    "Histogram for message size from cloud to vizier.",
+		Buckets: msgHistBuckets,
+	}, []string{"kind"})
 )
 
 func init() {
 	prometheus.MustRegister(cloudToVizierMsgCount)
+	prometheus.MustRegister(cloudToVizierMsgSizeDist)
+
 	prometheus.MustRegister(vizierToCloudMsgCount)
+	prometheus.MustRegister(vizierToCloudMsgSizeDist)
 }
 
 // NATSBridgeController is responsible for routing messages from Vizier to NATS. It assumes that all authentication/handshakes
@@ -151,11 +166,17 @@ func (s *NATSBridgeController) _run(ctx context.Context) error {
 			cloudToVizierMsgCount.
 				WithLabelValues(s.clusterID.String(), msg.Subject).
 				Inc()
+			cloudToVizierMsgSizeDist.
+				WithLabelValues(msg.Subject).
+				Observe(float64(len(msg.Data)))
 			err = s.sendNATSMessageToGRPC(msg)
 		case msg := <-s.grpcInCh:
 			vizierToCloudMsgCount.
 				WithLabelValues(s.clusterID.String(), msg.Topic).
 				Inc()
+			vizierToCloudMsgSizeDist.
+				WithLabelValues(msg.Topic).
+				Observe(float64(len(msg.Msg.Value)))
 			err = s.sendMessageToMessageBus(msg)
 		case <-ctx.Done():
 			return ctx.Err()
