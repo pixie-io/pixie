@@ -19,6 +19,7 @@
 package vzshard
 
 import (
+	"encoding/hex"
 	"fmt"
 
 	"github.com/gofrs/uuid"
@@ -67,8 +68,7 @@ func GenerateShardRange() []string {
 
 // VizierIDToShard provides the shardID for a given vizierID.
 func VizierIDToShard(vizierID uuid.UUID) string {
-	stringID := vizierID.String()
-	return stringID[len(stringID)-2:]
+	return hex.EncodeToString(vizierID.Bytes()[uuid.Size-1:])
 }
 
 // C2VTopic returns the sharded topic.
