@@ -23,12 +23,11 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
-	"github.com/nats-io/stan.go"
-	"github.com/prometheus/client_golang/prometheus"
-
 	"github.com/gofrs/uuid"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/nats-io/nats.go"
+	"github.com/nats-io/stan.go"
+	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"

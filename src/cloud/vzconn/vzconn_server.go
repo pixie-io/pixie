@@ -22,13 +22,10 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
+	"github.com/gofrs/uuid"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/stan.go"
 	"github.com/prometheus/client_golang/prometheus"
-
-	"px.dev/pixie/src/shared/services/metrics"
-
-	"github.com/gofrs/uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -40,6 +37,7 @@ import (
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/env"
 	"px.dev/pixie/src/shared/services/healthz"
+	"px.dev/pixie/src/shared/services/metrics"
 	"px.dev/pixie/src/shared/services/msgbus"
 	"px.dev/pixie/src/shared/services/server"
 )
