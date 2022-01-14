@@ -71,8 +71,8 @@ func NewNATSBridgeController(clusterID uuid.UUID, srv vzconnpb.VZConnService_NAT
 		nc:        nc,
 		st:        st,
 
-		grpcOutCh: make(chan *vzconnpb.C2VBridgeMessage, 1000),
-		grpcInCh:  make(chan *vzconnpb.V2CBridgeMessage, 1000),
+		grpcOutCh: make(chan *vzconnpb.C2VBridgeMessage, 4096),
+		grpcInCh:  make(chan *vzconnpb.V2CBridgeMessage, 4096),
 
 		quitCh: make(chan bool),
 		subCh:  make(chan *nats.Msg, 4096),
