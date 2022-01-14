@@ -198,11 +198,12 @@ func (s *NATSBridgeController) _run(ctx context.Context) error {
 		case <-s.quitCh:
 			return nil
 		case msg := <-s.subCh:
+			msgKind := cleanCloudToVizierMessageKind(msg.Subject)
 			cloudToVizierMsgCount.
-				WithLabelValues(s.clusterID.String(), cleanCloudToVizierMessageKind(msg.Subject)).
+				WithLabelValues(s.clusterID.String(), msgKind).
 				Inc()
 			cloudToVizierMsgSizeDist.
-				WithLabelValues(msg.Subject).
+				WithLabelValues(msgKind).
 				Observe(float64(len(msg.Data)))
 			cloudToVizierMsgQueueLen.
 				WithLabelValues(s.clusterID.String()).
@@ -210,11 +211,12 @@ func (s *NATSBridgeController) _run(ctx context.Context) error {
 
 			err = s.sendNATSMessageToGRPC(msg)
 		case msg := <-s.grpcInCh:
+			msgKind := cleanVizierToCloudMessageKind(msg.Topic)
 			vizierToCloudMsgCount.
-				WithLabelValues(s.clusterID.String(), cleanVizierToCloudMessageKind(msg.Topic)).
+				WithLabelValues(s.clusterID.String(), msgKind).
 				Inc()
 			vizierToCloudMsgSizeDist.
-				WithLabelValues(msg.Topic).
+				WithLabelValues(msgKind).
 				Observe(float64(len(msg.Msg.Value)))
 			vizierToCloudMsgQueueLen.
 				WithLabelValues(s.clusterID.String()).
