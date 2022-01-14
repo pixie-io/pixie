@@ -148,7 +148,6 @@ func (s *NATSBridgeController) _run(ctx context.Context) error {
 		case <-s.quitCh:
 			return nil
 		case msg := <-s.subCh:
-			s.l.WithField("msg", msg).Trace("Got regular NATS message")
 			cloudToVizierMsgCount.
 				WithLabelValues(s.clusterID.String(), msg.Subject).
 				Inc()
@@ -188,9 +187,7 @@ func (s *NATSBridgeController) sendNATSMessageToGRPC(msg *nats.Msg) error {
 		Topic: topic,
 		Msg:   c2vMsg.Msg,
 	}
-	s.l.WithField("topic", topic).
-		WithField("msg", outMsg.String()).
-		Trace("Sending message to grpc channel")
+
 	s.grpcOutCh <- outMsg
 	return nil
 }
@@ -206,10 +203,6 @@ func (s *NATSBridgeController) sendMessageToMessageBus(msg *vzconnpb.V2CBridgeMe
 		return err
 	}
 	topic := vzshard.V2CTopic(msg.Topic, s.clusterID)
-	s.l.
-		WithField("Message", natsMsg.String()).
-		WithField("topic", topic).
-		Trace("sending message to nats")
 
 	if strings.Contains(topic, "Durable") {
 		return s.st.Publish(topic, b)
@@ -258,7 +251,6 @@ func (s *NATSBridgeController) startStreamGRPCWriter(ctx context.Context) error 
 		case <-ctx.Done():
 			return ctx.Err()
 		case m := <-s.grpcOutCh:
-			s.l.WithField("message", m.String()).Trace("Sending message over GRPC connection")
 			// Write message to GRPC if it exists.
 			err := s.srv.Send(m)
 			if err != nil {
