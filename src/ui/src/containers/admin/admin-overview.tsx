@@ -23,6 +23,7 @@ import { Add } from '@mui/icons-material';
 import { Button, TableContainer } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+import * as QueryString from 'query-string';
 import {
   Route, Switch, useHistory, useLocation, useRouteMatch,
 } from 'react-router-dom';
@@ -69,6 +70,14 @@ export const AdminOverview = React.memo(() => {
   const history = useHistory();
   const location = useLocation();
   const { path } = useRouteMatch();
+
+  const showInviteDialog = QueryString.parse(location.search).invite === 'true';
+  const onCloseInviteDialog = React.useCallback(() => {
+    if (showInviteDialog) {
+      // So that a page refresh after closing the dialog doesn't immediately open it again
+      history.replace({ search: '' });
+    }
+  }, [history, showInviteDialog]);
 
   const [createAPIKey] = useMutation<{ CreateAPIKey: GQLAPIKeyMetadata }, void>(gql`
     mutation CreateAPIKeyFromAdminPage {
@@ -193,7 +202,13 @@ export const AdminOverview = React.memo(() => {
               New key
             </Button>
           )}
-        {tab.endsWith('users') && <InviteUserButton className={classes.createButton} />}
+        {tab.endsWith('users') && (
+          <InviteUserButton
+            className={classes.createButton}
+            startOpen={showInviteDialog}
+            onClose={onCloseInviteDialog}
+          />
+        )}
       </div>
       <div className={classes.tabContents}>
         <TableContainer className={classes.table}>

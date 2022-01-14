@@ -68,7 +68,17 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }), { name: 'InviteUserButton' });
 
-export const InviteUserButton = React.memo<{ className: string }>(({ className }) => {
+interface InviteUserButtonProps {
+  className: string;
+  startOpen?: boolean;
+  onClose?: () => void;
+}
+
+export const InviteUserButton = React.memo<InviteUserButtonProps>(({
+  className,
+  onClose: onCloseHandler,
+  startOpen = true,
+}) => {
   const classes = useStyles();
   const [open, setOpen] = React.useState(false);
   const [getOrg, { data: orgData, loading: orgLoading }] = useLazyQuery<{
@@ -94,6 +104,11 @@ export const InviteUserButton = React.memo<{ className: string }>(({ className }
     pixieAnalytics.track('Open Invite Modal', {});
   }, [getOrg]);
 
+  // If told to open immediately, do so.
+  React.useEffect(() => {
+    if (startOpen) openModal();
+  }, [openModal, startOpen]);
+
   // We want to get the invite token only after orgData is valid
   // and loaded. This should happen when the modal opens up.
   React.useEffect(() => {
@@ -110,7 +125,10 @@ export const InviteUserButton = React.memo<{ className: string }>(({ className }
     return getRedirectPath('/invite', { invite_token: inviteTokenData?.CreateInviteToken });
   }, [inviteTokenData]);
 
-  const closeModal = React.useCallback(() => setOpen(false), []);
+  const closeModal = React.useCallback(() => {
+    setOpen(false);
+    onCloseHandler?.();
+  }, [onCloseHandler]);
 
   const showSnackbar = useSnackbar();
   const copyLink = React.useCallback(async () => {

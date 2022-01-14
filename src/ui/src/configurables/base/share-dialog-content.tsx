@@ -26,7 +26,7 @@ export const ShareDialogContent = React.memo<{ classes: Record<string, string> }
       {'Send this link to share this page with other users in your organization.'}
       <br/>
       {'You may invite other users to your organization in the '}
-      <Link className={classes.link} to='/admin/users'>Admin View</Link>.
+      <Link className={classes.link} to='/admin/users?invite=true'>Admin View</Link>.
     </div>
     <div className={classes.body}>
       {'If Pixie Cloud has not been exposed to a public domain, the other user must run '}
