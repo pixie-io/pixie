@@ -32,7 +32,6 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/nats-io/nats.go"
-	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
@@ -43,53 +42,6 @@ import (
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/services/msgbus"
 )
-
-var msgHistBuckets = []float64{4 << 4, 4 << 6, 4 << 8, 4 << 10, 4 << 12, 4 << 14}
-
-var (
-	cloudToVizierMsgCount = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "cloud_to_vizier_msg_count",
-		Help: "Number of messages from cloud to vizier.",
-	}, []string{"vizier_id", "kind"})
-	cloudToVizierMsgSizeDist = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Name:    "cloud_to_vizier_msg_size_dist",
-		Help:    "Histogram for message size from cloud to vizier.",
-		Buckets: msgHistBuckets,
-	}, []string{"kind"})
-	cloudToVizierMsgQueueLen = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "cloud_to_vizier_msg_queue_len",
-		Help: "Message queue length from cloud to vizier.",
-	}, []string{"vizier_id"})
-	cloudToVizierGRPCMsgQueueLen = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "cloud_to_vizier_grpc_msg_queue_len",
-		Help: "Message queue length from cloud to vizier on the GRPC buffer.",
-	}, []string{"vizier_id"})
-
-	vizierToCloudMsgCount = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "vizier_to_cloud_msg_count",
-		Help: "Number of messages from vizier to cloud.",
-	}, []string{"vizier_id", "kind"})
-	vizierToCloudMsgSizeDist = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Name:    "vizier_to_cloud_msg_size_dist",
-		Help:    "Histogram for message size from cloud to vizier.",
-		Buckets: msgHistBuckets,
-	}, []string{"kind"})
-	vizierToCloudMsgQueueLen = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "vizier_to_cloud_msg_queue_len",
-		Help: "Message queue length from vizier to cloud.",
-	}, []string{"vizier_id"})
-)
-
-func init() {
-	prometheus.MustRegister(cloudToVizierMsgCount)
-	prometheus.MustRegister(cloudToVizierMsgSizeDist)
-	prometheus.MustRegister(cloudToVizierMsgQueueLen)
-	prometheus.MustRegister(cloudToVizierGRPCMsgQueueLen)
-
-	prometheus.MustRegister(vizierToCloudMsgCount)
-	prometheus.MustRegister(vizierToCloudMsgSizeDist)
-	prometheus.MustRegister(vizierToCloudMsgQueueLen)
-}
 
 // NATSBridgeController is responsible for routing messages from Vizier to NATS. It assumes that all authentication/handshakes
 // are completed before being created.
@@ -169,26 +121,6 @@ func (s *NATSBridgeController) Run() error {
 	}
 	s.l.WithError(err).Error("Closing stream with error")
 	return err
-}
-
-func cleanVizierToCloudMessageKind(s string) string {
-	// For query responses just return "reply".
-	if strings.HasPrefix(s, "reply-") {
-		return "reply"
-	}
-	// Drop everything after colon. These are nats message channels.
-	if idx := strings.Index(s, ":"); idx != -1 {
-		s = s[:idx]
-	}
-	return s
-}
-
-func cleanCloudToVizierMessageKind(s string) string {
-	// Just keep the part after the last dot.
-	if idx := strings.LastIndex(s, "."); idx != -1 {
-		s = s[idx+1:]
-	}
-	return s
 }
 
 func (s *NATSBridgeController) _run(ctx context.Context) error {
