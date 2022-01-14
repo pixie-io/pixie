@@ -21,6 +21,7 @@ package main
 import (
 	"net/http"
 	_ "net/http/pprof"
+	"strings"
 
 	"github.com/gofrs/uuid"
 	"github.com/nats-io/nats.go"
@@ -43,23 +44,17 @@ import (
 )
 
 var (
-	slowConsumerMetric = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "nats_slow_consumer",
-		Help: "NATS message dropped due to a slow consumer",
-	}, []string{"subscription"})
-
-	natsErrorMetric = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "nats_error",
+	natsErrorCount = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "nats_error_count",
 		Help: "NATS message bus error",
-	}, []string{"subscription"})
+	}, []string{"shardID", "vizierID", "messageKind", "errorKind"})
 )
 
 func init() {
 	pflag.String("vzmgr_service", "kubernetes:///vzmgr-service.plc:51800", "The profile service url (load balancer/list is ok)")
 	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
 
-	prometheus.MustRegister(slowConsumerMetric)
-	prometheus.MustRegister(natsErrorMetric)
+	prometheus.MustRegister(natsErrorCount)
 }
 
 func newVZMgrClients() (vzmgrpb.VZMgrServiceClient, vzmgrpb.VZDeploymentServiceClient, error) {
@@ -76,6 +71,18 @@ func newVZMgrClients() (vzmgrpb.VZMgrServiceClient, vzmgrpb.VZDeploymentServiceC
 	return vzmgrpb.NewVZMgrServiceClient(vzmgrChannel), vzmgrpb.NewVZDeploymentServiceClient(vzmgrChannel), nil
 }
 
+// Extracts information from the subject and return shard, vizierID, messageType.
+func extractMessageInfo(subject string) (string, string, string) {
+	vals := strings.Split(subject, ":")
+	if len(vals) > 0 {
+		strings.Split(vals[0], ".")
+		if len(vals) >= 4 {
+			return vals[1], vals[2], vals[3]
+		}
+	}
+	return "", "", ""
+}
+
 func mustSetupNATSAndSTAN() (*nats.Conn, stan.Conn, msgbus.Streamer) {
 	nc := msgbus.MustConnectNATS()
 	stc := msgbus.MustConnectSTAN(nc, uuid.Must(uuid.NewV4()).String())
@@ -90,11 +97,13 @@ func mustSetupNATSAndSTAN() (*nats.Conn, stan.Conn, msgbus.Streamer) {
 				WithField("Subject", subscription.Subject).
 				Error("Got NATS error")
 		}
+		shard, vizierID, messageType := extractMessageInfo(subscription.Subject)
 		switch err {
 		case nats.ErrSlowConsumer:
-			slowConsumerMetric.WithLabelValues(subscription.Subject).Inc()
+			natsErrorCount.WithLabelValues(shard, vizierID, messageType, "ErrSlowConsumer").Inc()
+		default:
+			natsErrorCount.WithLabelValues(shard, vizierID, messageType, "ErrUnknown").Inc()
 		}
-		natsErrorMetric.WithLabelValues(subscription.Subject).Inc()
 	})
 	return nc, stc, strmr
 }
