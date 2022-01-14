@@ -29,6 +29,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+
+	// Enables gzip encoding for GRPC.
+	_ "google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/status"
 
 	"px.dev/pixie/src/shared/services/authcontext"

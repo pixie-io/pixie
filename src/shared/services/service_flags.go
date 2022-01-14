@@ -32,6 +32,7 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/encoding/gzip"
 
 	version "px.dev/pixie/src/shared/goversion"
 )
@@ -139,6 +140,7 @@ func CheckSSLClientFlags() {
 // GetGRPCClientDialOpts gets default dial options for GRPC clients used for our services.
 func GetGRPCClientDialOpts() ([]grpc.DialOption, error) {
 	dialOpts := make([]grpc.DialOption, 0)
+	dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)))
 
 	if viper.GetBool("disable_ssl") {
 		dialOpts = append(dialOpts, grpc.WithInsecure())
@@ -187,6 +189,7 @@ func GetGRPCClientDialOpts() ([]grpc.DialOption, error) {
 // GetGRPCClientDialOptsServerSideTLS gets default dial options for GRPC clients accessing a server with server-side TLS.
 func GetGRPCClientDialOptsServerSideTLS(isInternal bool) ([]grpc.DialOption, error) {
 	dialOpts := make([]grpc.DialOption, 0)
+	dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)))
 
 	if viper.GetBool("disable_ssl") {
 		dialOpts = append(dialOpts, grpc.WithInsecure())
