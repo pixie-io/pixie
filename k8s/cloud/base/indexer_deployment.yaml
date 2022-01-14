@@ -36,6 +36,9 @@ spec:
             name: pl-tls-config
         - configMapRef:
             name: pl-domain-config
+        - configMapRef:
+            name: pl-errors-config
+            optional: true
         env:
         - name: PL_JWT_SIGNING_KEY
           valueFrom:

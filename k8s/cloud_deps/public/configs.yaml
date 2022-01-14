@@ -55,3 +55,11 @@ data:
   # Pixie can send user info and access tokens to other products through the given callback URL.
   PL_AUTH_CONNECTOR_NAME: ""
   PL_AUTH_CONNECTOR_CALLBACK_URL: ""
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pl-errors-config
+data:
+  # Pixie can send errors to Sentry. To do so, you can add the DSN for your sentry project here.
+  PL_SENTRY_DSN: ""

@@ -44,6 +44,9 @@ func main() {
 	services.CheckServiceFlags()
 	services.SetupServiceLogging()
 
+	flush := services.InitDefaultSentry()
+	defer flush()
+
 	mux := http.NewServeMux()
 	// This handles all the pprof endpoints.
 	mux.Handle("/debug/", http.DefaultServeMux)

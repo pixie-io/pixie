@@ -71,20 +71,29 @@ func getSentryVal(envNamespaceStr string) (string, error) {
 
 // InitDefaultSentry initialize sentry with default options. The options are set based on values
 // from viper.
-func InitDefaultSentry(id, envNamespaceStr string) func() {
-	// Query the Vizier CRD API to get the Sentry Value. If error,
-	// just use the environment variable for backwards compatibility.
-	// Once all users use Operator + CRD, we can remove backwards
-	// compatibility.
-	dsn, err := getSentryVal(envNamespaceStr)
+func InitDefaultSentry() func() {
+	dsn := viper.GetString("sentry_dsn")
+
+	return initSentryWithDSN("", dsn)
+}
+
+// InitSentryFromCRD attempts to initialize sentry using the sentry DSN value from the Vizier CRD.
+func InitSentryFromCRD(id, crdNamespace string) func() {
+	dsn, err := getSentryVal(crdNamespace)
 	if err != nil {
 		dsn = viper.GetString("sentry_dsn")
 		log.WithError(err).Trace("Cannot initialize sentry value from Vizier CRD.")
 	}
+
+	return initSentryWithDSN(id, dsn)
+}
+
+// InitSentryWithDSN initializes sentry with the given DSN.
+func initSentryWithDSN(id, dsn string) func() {
 	podName := viper.GetString("pod_name")
 	executable, _ := os.Executable()
 
-	err = sentry.Init(sentry.ClientOptions{
+	err := sentry.Init(sentry.ClientOptions{
 		Dsn:              dsn,
 		AttachStacktrace: true,
 		Release:          version.GetVersion().ToString(),
@@ -96,9 +105,11 @@ func InitDefaultSentry(id, envNamespaceStr string) func() {
 	} else {
 		tags := map[string]string{
 			"version":    version.GetVersion().ToString(),
-			"ID":         id,
 			"executable": executable,
 			"pod_name":   podName,
+		}
+		if id != "" {
+			tags["ID"] = id
 		}
 		hook := sentryhook.New([]log.Level{
 			log.ErrorLevel, log.PanicLevel, log.FatalLevel,

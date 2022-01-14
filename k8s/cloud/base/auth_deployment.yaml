@@ -40,6 +40,9 @@ spec:
             name: pl-support-access-config
         - configMapRef:
             name: pl-ory-service-config
+        - configMapRef:
+            name: pl-errors-config
+            optional: true
         env:
         - name: PL_JWT_SIGNING_KEY
           valueFrom:

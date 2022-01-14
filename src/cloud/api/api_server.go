@@ -76,6 +76,9 @@ func main() {
 	services.CheckSSLClientFlags()
 	services.SetupServiceLogging()
 
+	flush := services.InitDefaultSentry()
+	defer flush()
+
 	ac, err := controllers.NewAuthClient()
 	if err != nil {
 		log.WithError(err).Fatal("Failed to init auth client")
