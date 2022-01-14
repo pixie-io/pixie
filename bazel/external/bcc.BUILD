@@ -25,22 +25,13 @@ filegroup(
 
 cmake(
     name = "bcc",
+    install = False,
     lib_source = ":bcc_source",
     # These link opts are dependencies of bcc.
     linkopts = [
         # ELF binary parsing.
         "-lelf",
     ],
-    targets = [
-        "api-static",
-        "bcc-static",
-        "bcc-loader-static",
-        "bpf-static",
-        "b_frontend",
-        "clang_frontend",
-    ],
-    install = False,
-    postfix_script = "make -C src/cc install",
     out_static_libs = [
         "libapi-static.a",
         "libbcc.a",
@@ -48,6 +39,15 @@ cmake(
         "libbcc-loader-static.a",
         "libb_frontend.a",
         "libclang_frontend.a",
+    ],
+    postfix_script = "make -C src/cc install",
+    targets = [
+        "api-static",
+        "bcc-static",
+        "bcc-loader-static",
+        "bpf-static",
+        "b_frontend",
+        "clang_frontend",
     ],
     visibility = ["//visibility:public"],
 )

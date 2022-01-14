@@ -23,12 +23,12 @@ filegroup(
 
 cmake(
     name = "libantlr",
-    lib_source = ":all",
     build_args = [
         "--",  # <- Pass remaining options to the native tool.
         "-j$(nproc)",
         "-l$(nproc)",
     ],
+    lib_source = ":all",
     out_include_dir = "include/antlr4-runtime",
     out_static_libs = [
         "libantlr4-runtime.a",

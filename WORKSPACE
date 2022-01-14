@@ -52,7 +52,7 @@ load("@build_bazel_apple_support//lib:repositories.bzl", "apple_support_dependen
 
 apple_support_dependencies()
 
-load("//bazel:pl_workspace.bzl", "pl_container_images", "pl_workspace_setup")
+load("//bazel:pl_workspace.bzl", "pl_container_images", "pl_model_files", "pl_workspace_setup")
 
 pl_workspace_setup()
 
@@ -82,8 +82,6 @@ gogo_grpc_proto(name = "gogo_grpc_proto")
 load("@org_tensorflow//tensorflow:workspace.bzl", "tf_repositories")
 
 tf_repositories()
-
-load("//bazel:pl_workspace.bzl", "pl_model_files")
 
 pl_model_files()
 

@@ -141,6 +141,7 @@ def _cc_deps():
 
     _git_repo("com_github_iovisor_bcc", build_file = "//bazel/external:bcc.BUILD")
     _git_repo("com_github_iovisor_bpftrace", build_file = "//bazel/external:bpftrace.BUILD")
+
     # TODO(jps): For jattach, consider using a patch and directly pulling from upstream (vs. fork).
     _git_repo("com_github_apangin_jattach", build_file = "//bazel/external:jattach.BUILD")
 

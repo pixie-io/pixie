@@ -28,25 +28,25 @@ cc_library(
 
 configure_make(
     name = "gperftools_build",
+    args = [
+        "-j$(nproc)",
+        "-l$(nproc)",
+    ],
     configure_options = [
         "--enable-shared=no",
         "--disable-frame-pointers",
         "--enable-libunwind",
     ],
-    args = [
-        "-j$(nproc)",
-        "-l$(nproc)",
-    ],
     lib_source = "@com_github_gperftools_gperftools//:all",
     linkopts = ["-lpthread"],
-    targets = [
-        "install-libLTLIBRARIES",
-        "install-perftoolsincludeHEADERS",
-    ],
     out_static_libs = select({
         "//bazel:debug_tcmalloc": ["libtcmalloc_debug.a"],
         "//conditions:default": ["libtcmalloc_and_profiler.a"],
     }),
+    targets = [
+        "install-libLTLIBRARIES",
+        "install-perftoolsincludeHEADERS",
+    ],
 )
 
 # Workaround for https://github.com/bazelbuild/rules_foreign_cc/issues/227
@@ -59,6 +59,11 @@ cc_library(
 
 cmake(
     name = "natsc",
+    build_args = [
+        "--",  # <- Pass remaining options to the native tool.
+        "-j$(nproc)",
+        "-l$(nproc)",
+    ],
     cache_entries = {
         # This forces nats to link against boringssl instead of openssl.
         # Since some of our services use both GRPC and nats, this lets
@@ -70,11 +75,6 @@ cmake(
         # Cert SAN seems to fail.
         "NATS_BUILD_TLS_FORCE_HOST_VERIFY": "OFF",
     },
-    build_args = [
-        "--",  # <- Pass remaining options to the native tool.
-        "-j$(nproc)",
-        "-l$(nproc)",
-    ],
     lib_name = "libnats_static",
     lib_source = "@com_github_nats_io_natsc//:all",
     targets = [
@@ -85,17 +85,17 @@ cmake(
 
 cmake(
     name = "libuv",
+    build_args = [
+        "--",  # <- Pass remaining options to the native tool.
+        "-j$(nproc)",
+        "-l$(nproc)",
+    ],
     cache_entries = {
         "BUILDING_UV_SHARED": "OFF",
         "BUILD_TESTING": "OFF",
         "LIBUV_BUILD_TESTS": "OFF",
         "USING_UV_SHARED": "OFF",
     },
-    build_args = [
-        "--",  # <- Pass remaining options to the native tool.
-        "-j$(nproc)",
-        "-l$(nproc)",
-    ],
     lib_name = "libuv_a",
     lib_source = "@com_github_libuv_libuv//:all",
     targets = [
@@ -105,6 +105,11 @@ cmake(
 
 cmake(
     name = "libarchive",
+    build_args = [
+        "--",  # <- Pass remaining options to the native tool.
+        "-j$(nproc)",
+        "-l$(nproc)",
+    ],
     cache_entries = {
         "ENABLE_CAT": "OFF",
         "ENABLE_CAT_SHARED": "OFF",
@@ -115,11 +120,6 @@ cmake(
         "ENABLE_TAR_SHARED": "OFF",
         "ENABLE_TEST": "OFF",
     },
-    build_args = [
-        "--",  # <- Pass remaining options to the native tool.
-        "-j$(nproc)",
-        "-l$(nproc)",
-    ],
     lib_name = "libarchive",
     lib_source = "@com_github_libarchive_libarchive//:all",
 )
