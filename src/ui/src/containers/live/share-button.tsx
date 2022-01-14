@@ -28,6 +28,7 @@ import { createStyles, makeStyles } from '@mui/styles';
 import { SnackbarContext } from 'app/components';
 import { SCRATCH_SCRIPT } from 'app/containers/App/scripts-context';
 import { ScriptContext } from 'app/context/script-context';
+import pixieAnalytics from 'app/utils/analytics';
 import { ShareDialogContent } from 'configurable/share-dialog-content';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
@@ -74,14 +75,17 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 }), { name: 'ShareButton' });
 
 const ShareButton = React.memo<{
-  classes: Record<'iconButton'|'iconActive'|'iconInactive', string>
+  classes: Record<'iconButton' | 'iconActive' | 'iconInactive', string>
 }>(({ classes: buttonClasses }) => {
   const modalClasses = useStyles();
   const showSnackbar = React.useContext(SnackbarContext);
   const { script } = React.useContext(ScriptContext);
 
   const [isOpen, setIsOpen] = React.useState(false);
-  const openDialog = React.useCallback(() => setIsOpen(true), []);
+  const openDialog = React.useCallback(() => {
+    pixieAnalytics.track('Live View Script Sharing', { action: 'open-dialog', scriptId: script?.id ?? null });
+    setIsOpen(true);
+  }, [script?.id]);
   const closeDialog = React.useCallback(() => setIsOpen(false), []);
 
   const tooltip = React.useMemo(() => (
@@ -100,7 +104,8 @@ const ShareButton = React.memo<{
       // eslint-disable-next-line no-console
       console.error(e);
     }
-  }, [shareLink, showSnackbar]);
+    pixieAnalytics.track('Live View Script Sharing', { action: 'copy-url', scriptId: script?.id ?? null });
+  }, [script?.id, shareLink, showSnackbar]);
 
   return (
     <>
