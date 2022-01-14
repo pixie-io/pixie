@@ -43,3 +43,6 @@ patches:
   target:
     kind: Deployment
     labelSelector: db=pgsql
+- path: node_selector_patch.yaml
+  target:
+    kind: Deployment

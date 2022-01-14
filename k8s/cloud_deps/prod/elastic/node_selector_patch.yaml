@@ -1,0 +1,9 @@
+---
+- op: add
+  path: /spec/nodeSets/0/podTemplate/spec/nodeSelector
+  value:
+    node-size: large
+- op: add
+  path: /spec/nodeSets/1/podTemplate/spec/nodeSelector
+  value:
+    node-size: large

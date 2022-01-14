@@ -1,0 +1,5 @@
+---
+- op: add
+  path: /spec/template/spec/nodeSelector
+  value:
+    node-size: large

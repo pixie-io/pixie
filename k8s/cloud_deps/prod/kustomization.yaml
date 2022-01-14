@@ -8,3 +8,7 @@ resources:
 - elastic
 - nats
 - stan
+patches:
+- path: node_selector_patch.yaml
+  target:
+    kind: StatefulSet
