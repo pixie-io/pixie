@@ -51,26 +51,26 @@ import (
 	"px.dev/pixie/src/shared/services/server"
 )
 
-func init() {
-	pflag.String("database_key", "", "The encryption key to use for the database")
-	pflag.String("dnsmgr_service", "dnsmgr-service.plc.svc.cluster.local:51900", "The dns manager service url (load balancer/list is ok)")
-	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
-}
-
 var (
 	slowConsumerMetric = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "nats_slow_consumer",
 		Help: "NATS message dropped due to a slow consumer",
-	},
-		[]string{"subscription"},
-	)
+	}, []string{"subscription"})
+
 	natsErrorMetric = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "nats_error",
 		Help: "NATS message bus error",
-	},
-		[]string{"subscription"},
-	)
+	}, []string{"subscription"})
 )
+
+func init() {
+	pflag.String("database_key", "", "The encryption key to use for the database")
+	pflag.String("dnsmgr_service", "dnsmgr-service.plc.svc.cluster.local:51900", "The dns manager service url (load balancer/list is ok)")
+	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
+
+	prometheus.MustRegister(slowConsumerMetric)
+	prometheus.MustRegister(natsErrorMetric)
+}
 
 // NewDNSMgrServiceClient creates a new profile RPC client stub.
 func NewDNSMgrServiceClient() (dnsmgrpb.DNSMgrServiceClient, error) {
