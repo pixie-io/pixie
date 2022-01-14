@@ -41,6 +41,7 @@ import Canvas from 'app/containers/live/canvas';
 import ClusterSelector from 'app/containers/live/cluster-selector';
 import ExecuteScriptButton from 'app/containers/live/execute-button';
 import { ScriptLoader } from 'app/containers/live/script-loader';
+import ShareButton from 'app/containers/live/share-button';
 import LiveViewShortcutsProvider from 'app/containers/live/shortcuts';
 import { SetStateFunc } from 'app/context/common';
 import { DataDrawerContextProvider } from 'app/context/data-drawer-context';
@@ -194,6 +195,7 @@ const ScriptOptions = React.memo<{ widgetsMoveable: boolean, setWidgetsMoveable:
 
   return (
     <div className={classes.iconPanel}>
+      <ShareButton classes={classes} />
       <Tooltip title={`${editorPanelOpen ? 'Close' : 'Open'} editor`} className={classes.iconButton}>
         <IconButton className={classes.iconButton} onClick={toggleEditorOpen}>
           <EditIcon className={editorPanelOpen ? classes.iconActive : classes.iconInactive} />
