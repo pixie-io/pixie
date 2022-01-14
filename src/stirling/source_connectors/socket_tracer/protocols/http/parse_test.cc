@@ -495,6 +495,92 @@ TEST_F(HTTPParserTest, ParseRequestWithoutLengthOrChunking) {
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
 }
 
+// Test scenario with a HEAD response followed by a GET response.
+// This is special, because the HEAD has no body despite its Content-Length.
+// Here we want to make sure the subsequent GET response isn't affected.
+TEST_F(HTTPParserTest, ParseHeadAndGetResponse) {
+  std::string head_resp =
+      "HTTP/1.1 200 OK\r\n"
+      "Content-Length: 5\r\n"
+      "Content-Type: text/plain; charset=utf-8\r\n"
+      "\r\n";
+
+  std::string get_resp =
+      "HTTP/1.1 200 OK\r\n"
+      "Content-Length: 5\r\n"
+      "Content-Type: text/plain; charset=utf-8\r\n"
+      "\r\n"
+      "pixie";
+
+  std::deque<Message> parsed_messages;
+  ParseResult result = ParseFramesLoop(message_type_t::kResponse, absl::StrCat(head_resp, get_resp),
+                                       &parsed_messages);
+
+  Message expected_message1 = EmptyHTTPResp();
+  expected_message1.type = message_type_t::kResponse;
+  expected_message1.minor_version = 1;
+  expected_message1.headers = {{"Content-Length", "5"},
+                               {"Content-Type", "text/plain; charset=utf-8"}};
+  expected_message1.body = "";
+
+  Message expected_message2 = EmptyHTTPResp();
+  expected_message2.type = message_type_t::kResponse;
+  expected_message2.minor_version = 1;
+  expected_message2.headers = {{"Content-Length", "5"},
+                               {"Content-Type", "text/plain; charset=utf-8"}};
+  expected_message2.body = "pixie";
+
+  EXPECT_EQ(ParseState::kSuccess, result.state);
+  EXPECT_THAT(parsed_messages, ElementsAre(expected_message1, expected_message2));
+}
+
+// Test a HEAD response where there is no subsequent traffic, nor is there a connection close.
+// This case is problematic because we'll be stuck assuming more data is required.
+// This test highlights this problem, for which we need a fix.
+// TODO(rcheng): Fix this test after the re-architecture enables us to consider the request
+//               in response parsing.
+TEST_F(HTTPParserTest, ParseHeadResponseWithNoConnClose) {
+  std::string head_resp =
+      "HTTP/1.1 200 OK\r\n"
+      "Content-Length: 5\r\n"
+      "Content-Type: text/plain; charset=utf-8\r\n"
+      "\r\n";
+
+  std::deque<Message> parsed_messages;
+  ParseResult result =
+      ParseFramesLoop(message_type_t::kResponse, absl::StrCat(head_resp), &parsed_messages);
+
+  EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
+  EXPECT_THAT(parsed_messages, ElementsAre());
+}
+
+// Test a HEAD response followed by a connection close.
+// The connection close should make it clear that we can process the response.
+// Contrast this test to ParseHeadResponseWithNoConnClose where the ambiguity
+// makes it impossible for us to know when to parse the response.
+// TODO(rcheng): Enable once conn_close is piped through.
+TEST_F(HTTPParserTest, DISABLED_ParseHeadResponseWithConnClose) {
+  std::string head_resp =
+      "HTTP/1.1 200 OK\r\n"
+      "Content-Length: 5\r\n"
+      "Content-Type: text/plain; charset=utf-8\r\n"
+      "\r\n";
+
+  std::deque<Message> parsed_messages;
+  ParseResult result =
+      ParseFramesLoop(message_type_t::kResponse, absl::StrCat(head_resp), &parsed_messages);
+
+  Message expected_message1 = EmptyHTTPResp();
+  expected_message1.type = message_type_t::kResponse;
+  expected_message1.minor_version = 1;
+  expected_message1.headers = {{"Content-Length", "5"},
+                               {"Content-Type", "text/plain; charset=utf-8"}};
+  expected_message1.body = "";
+
+  EXPECT_EQ(ParseState::kSuccess, result.state);
+  EXPECT_THAT(parsed_messages, ElementsAre(expected_message1));
+}
+
 // When a response has no content-length or transfer-encoding,
 // and it is not one of a set of known status codes with known bodies,
 // then we capture as much data as is available at the time.

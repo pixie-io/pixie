@@ -136,6 +136,28 @@ ParseState ParseBody(std::string_view* buf, Message* result) {
   //  a payload body and the method semantics do not anticipate such a
   //  body.
 
+  // Case 0: Check for a HEAD response with no body.
+  // Responses to HEAD requests are special, because they may include Content-Length
+  // or Transfer-Encodings, but the body will still be empty.
+  // Reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/HEAD
+  // TODO(rcheng): Pass in state to the parser so we know when to expect HEAD responses.
+  if (result->type == message_type_t::kResponse) {
+    // We typically expect a body at this point, but for responses to HEAD requests,
+    // there won't be a body. To detect such HEAD responses, we check to see if the next bytes
+    // are actually the beginning of the next response by attempting to parse it.
+    pico_wrapper::HTTPResponse r;
+    bool adjacent_resp =
+        absl::StartsWith(*buf, "HTTP") && (pico_wrapper::ParseResponse(*buf, &r) > 0);
+
+    // TODO(rcheng): Use actual conn_closed information once it's piped in.
+    bool conn_closed = false;
+
+    if (adjacent_resp || (buf->empty() && conn_closed)) {
+      result->body = "";
+      return ParseState::kSuccess;
+    }
+  }
+
   // Case 1: Content-Length
   const auto content_length_iter = result->headers.find(kContentLength);
   if (content_length_iter != result->headers.end()) {
