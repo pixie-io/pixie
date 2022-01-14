@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cenkalti/backoff/v3"
 	"github.com/gofrs/uuid"
 	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
@@ -34,6 +35,7 @@ import (
 const (
 	maxActionsPerBatch          = 256
 	maxActionBatchFlushInterval = time.Second * 30
+	maxElasticBackoffInterval   = time.Second * 60
 )
 
 // VizierIndexer run the indexer for a single vizier index.
@@ -312,9 +314,18 @@ func (v *VizierIndexer) HandleResourceUpdate(update *metadatapb.ResourceUpdate) 
 	v.bulk.Add(req)
 
 	if v.bulk.NumberOfActions() >= v.maxActionsPerBatch || time.Since(v.lastFlushTime) > v.maxActionBatchFlushInterval {
-		_, err := v.bulk.Refresh("wait_for").Do(context.Background())
+		bo := backoff.NewExponentialBackOff()
+		// We never want this to return for now and are hoping
+		// that elastic should start to respond after enough time.
+		bo.MaxElapsedTime = 0
+		bo.MaxInterval = maxElasticBackoffInterval
+
+		retryErr := backoff.Retry(func() error {
+			_, err := v.bulk.Refresh("wait_for").Do(context.Background())
+			return err
+		}, bo)
 		v.lastFlushTime = time.Now()
-		return err
+		return retryErr
 	}
 
 	return nil
