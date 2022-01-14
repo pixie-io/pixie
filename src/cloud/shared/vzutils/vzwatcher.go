@@ -101,7 +101,7 @@ func (w *Watcher) runWatch() {
 			}
 			vzID := utils.UUIDFromProtoOrNil(vcMsg.VizierID)
 			orgID := utils.UUIDFromProtoOrNil(vcMsg.OrgID)
-			w.onVizier(vzID, orgID, vcMsg.K8sUID)
+			go w.onVizier(vzID, orgID, vcMsg.K8sUID)
 		}
 	}
 }
@@ -140,7 +140,7 @@ func (w *Watcher) RegisterVizierHandler(fn VizierHandlerFn) error {
 	for _, vz := range vzmgrResp.Viziers {
 		vzID := utils.UUIDFromProtoOrNil(vz.VizierID)
 		orgID := utils.UUIDFromProtoOrNil(vz.OrgID)
-		w.onVizier(vzID, orgID, vz.K8sUID)
+		go w.onVizier(vzID, orgID, vz.K8sUID)
 	}
 
 	return nil
