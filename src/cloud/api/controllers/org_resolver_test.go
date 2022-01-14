@@ -293,6 +293,7 @@ func TestOrgSettingsResolver_OrgInfo(t *testing.T) {
 				Return(&cloudpb.OrgInfo{
 					EnableApprovals: true,
 					OrgName:         "test.com",
+					DomainName:      "test.com",
 					ID:              utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
 				}, nil)
 			gqlSchema := LoadSchema(gqlEnv)
@@ -304,6 +305,7 @@ func TestOrgSettingsResolver_OrgInfo(t *testing.T) {
 						query {
 							org {
 								name
+								domainName
 								enableApprovals
 							}
 						}
@@ -312,6 +314,7 @@ func TestOrgSettingsResolver_OrgInfo(t *testing.T) {
 						{
 							"org": {
 								"name": "test.com",
+								"domainName": "test.com",
 								"enableApprovals": true
 							}
 						}

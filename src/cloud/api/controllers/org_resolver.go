@@ -115,6 +115,11 @@ func (u *OrgInfoResolver) EnableApprovals() bool {
 	return u.OrgInfo.EnableApprovals
 }
 
+// DomainName returns the domain name (if this org is a GSuite based org) for the given org.
+func (u *OrgInfoResolver) DomainName() string {
+	return u.OrgInfo.DomainName
+}
+
 type createOrgArgs struct {
 	OrgName string
 }

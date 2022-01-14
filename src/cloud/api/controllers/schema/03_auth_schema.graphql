@@ -64,6 +64,7 @@ type IDEPath {
 type OrgInfo {
   id: ID!
   name: String!
+  domainName: String!
   enableApprovals: Boolean!
   idePaths: [IDEPath!]!
 }

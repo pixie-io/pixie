@@ -48,7 +48,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 export const OrgSettings = React.memo(() => {
   const classes = useStyles();
 
-  const { data, loading, error } = useQuery<{ org: GQLOrgInfo }>(
+  const { data, loading, error } = useQuery<{ org: Pick<GQLOrgInfo, 'id' | 'name' | 'enableApprovals'> }>(
     gql`
       query getSettingsForCurrentOrg{
         org {
