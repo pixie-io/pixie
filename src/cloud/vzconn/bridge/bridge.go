@@ -32,6 +32,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/nats-io/nats.go"
+	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
@@ -42,6 +43,23 @@ import (
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/services/msgbus"
 )
+
+var (
+	cloudToVizierMsgCount = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "cloud_to_vizier_msg_count",
+		Help: "Number of messages from cloud to vizier.",
+	}, []string{"vizier_id", "kind"})
+
+	vizierToCloudMsgCount = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "vizier_to_cloud_msg_count",
+		Help: "Number of messages from vizier to cloud",
+	}, []string{"vizier_id", "kind"})
+)
+
+func init() {
+	prometheus.MustRegister(cloudToVizierMsgCount)
+	prometheus.MustRegister(vizierToCloudMsgCount)
+}
 
 // NATSBridgeController is responsible for routing messages from Vizier to NATS. It assumes that all authentication/handshakes
 // are completed before being created.
@@ -131,8 +149,14 @@ func (s *NATSBridgeController) _run(ctx context.Context) error {
 			return nil
 		case msg := <-s.subCh:
 			s.l.WithField("msg", msg).Trace("Got regular NATS message")
+			cloudToVizierMsgCount.
+				WithLabelValues(s.clusterID.String(), msg.Subject).
+				Inc()
 			err = s.sendNATSMessageToGRPC(msg)
 		case msg := <-s.grpcInCh:
+			vizierToCloudMsgCount.
+				WithLabelValues(s.clusterID.String(), msg.Topic).
+				Inc()
 			err = s.sendMessageToMessageBus(msg)
 		case <-ctx.Done():
 			return ctx.Err()

@@ -42,14 +42,6 @@ import (
 	"px.dev/pixie/src/shared/services/server"
 )
 
-func init() {
-	pflag.String("vzmgr_service", "kubernetes:///vzmgr-service.plc:51800", "The profile service url (load balancer/list is ok)")
-	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
-
-	prometheus.MustRegister(slowConsumerMetric)
-	prometheus.MustRegister(natsErrorMetric)
-}
-
 var (
 	slowConsumerMetric = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "nats_slow_consumer",
@@ -61,6 +53,14 @@ var (
 		Help: "NATS message bus error",
 	}, []string{"subscription"})
 )
+
+func init() {
+	pflag.String("vzmgr_service", "kubernetes:///vzmgr-service.plc:51800", "The profile service url (load balancer/list is ok)")
+	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
+
+	prometheus.MustRegister(slowConsumerMetric)
+	prometheus.MustRegister(natsErrorMetric)
+}
 
 func newVZMgrClients() (vzmgrpb.VZMgrServiceClient, vzmgrpb.VZDeploymentServiceClient, error) {
 	dialOpts, err := services.GetGRPCClientDialOpts()
