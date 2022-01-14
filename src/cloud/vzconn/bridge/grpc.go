@@ -25,6 +25,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
+	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
@@ -38,6 +39,14 @@ import (
 	"px.dev/pixie/src/shared/services/utils"
 	utils2 "px.dev/pixie/src/utils"
 )
+
+var (
+	bridgeMetricsCollector = &natsBridgeMetricCollector{}
+)
+
+func init() {
+	prometheus.MustRegister(bridgeMetricsCollector)
+}
 
 // GRPCServer is implementation of the vzconn server.
 type GRPCServer struct {
@@ -114,6 +123,9 @@ func (s *GRPCServer) NATSBridge(srv vzconnpb.VZConnService_NATSBridgeServer) err
 	// Each Vizier calls this endpoint. Once it's called we will basically
 	// create NATS bridge and subscribe to the relevant channels.
 	c := NewNATSBridgeController(utils2.UUIDFromProtoOrNil(clusterID), srv, s.nc, s.st)
+	bridgeMetricsCollector.Register(c)
+	defer bridgeMetricsCollector.Unregister(c)
+
 	return convertToGRPCErr(c.Run())
 }
 

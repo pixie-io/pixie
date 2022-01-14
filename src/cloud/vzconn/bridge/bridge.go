@@ -92,6 +92,7 @@ func (s *NATSBridgeController) Run() error {
 	log.WithField("ClusterID:", s.clusterID).Info("Subscribing to cluster IDs")
 	topics := vzshard.C2VTopic("*", s.clusterID)
 	natsSub, err := s.nc.ChanSubscribe(topics, s.subCh)
+
 	if err != nil {
 		s.l.WithError(err).Error("error with ChanQueueSubscribe")
 		return err
@@ -137,9 +138,6 @@ func (s *NATSBridgeController) _run(ctx context.Context) error {
 			cloudToVizierMsgSizeDist.
 				WithLabelValues(msgKind).
 				Observe(float64(len(msg.Data)))
-			cloudToVizierMsgQueueLen.
-				WithLabelValues(s.clusterID.String()).
-				Set(float64(len(s.subCh)))
 
 			err = s.sendNATSMessageToGRPC(msg)
 		case msg := <-s.grpcInCh:
@@ -150,9 +148,6 @@ func (s *NATSBridgeController) _run(ctx context.Context) error {
 			vizierToCloudMsgSizeDist.
 				WithLabelValues(msgKind).
 				Observe(float64(len(msg.Msg.Value)))
-			vizierToCloudMsgQueueLen.
-				WithLabelValues(s.clusterID.String()).
-				Set(float64(len(s.grpcInCh)))
 
 			err = s.sendMessageToMessageBus(msg)
 		case <-ctx.Done():
@@ -186,16 +181,14 @@ func (s *NATSBridgeController) sendNATSMessageToGRPC(msg *nats.Msg) error {
 		Msg:   c2vMsg.Msg,
 	}
 
-	cloudToVizierGRPCMsgQueueLen.
-		WithLabelValues(s.clusterID.String()).
-		Set(float64(len(s.grpcOutCh)))
 	s.grpcOutCh <- outMsg
 	return nil
 }
 
 func (s *NATSBridgeController) sendMessageToMessageBus(msg *vzconnpb.V2CBridgeMessage) error {
+	cid := s.clusterID.String()
 	natsMsg := &cvmsgspb.V2CMessage{
-		VizierID:  s.clusterID.String(),
+		VizierID:  cid,
 		SessionId: msg.SessionId,
 		Msg:       msg.Msg,
 	}
@@ -206,9 +199,11 @@ func (s *NATSBridgeController) sendMessageToMessageBus(msg *vzconnpb.V2CBridgeMe
 	topic := vzshard.V2CTopic(msg.Topic, s.clusterID)
 
 	if strings.Contains(topic, "Durable") {
+		stanPublishCount.WithLabelValues(cid).Inc()
 		return s.st.Publish(topic, b)
 	}
 
+	natsPublishCount.WithLabelValues(cid).Inc()
 	return s.nc.Publish(topic, b)
 }
 

@@ -20,6 +20,7 @@ package bridge
 
 import (
 	"strings"
+	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -36,14 +37,6 @@ var (
 		Help:    "Histogram for message size from cloud to vizier.",
 		Buckets: msgHistBuckets,
 	}, []string{"kind"})
-	cloudToVizierMsgQueueLen = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "cloud_to_vizier_msg_queue_len",
-		Help: "Message queue length from cloud to vizier.",
-	}, []string{"vizier_id"})
-	cloudToVizierGRPCMsgQueueLen = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "cloud_to_vizier_grpc_msg_queue_len",
-		Help: "Message queue length from cloud to vizier on the GRPC buffer.",
-	}, []string{"vizier_id"})
 
 	vizierToCloudMsgCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "vizier_to_cloud_msg_count",
@@ -54,21 +47,43 @@ var (
 		Help:    "Histogram for message size from cloud to vizier.",
 		Buckets: msgHistBuckets,
 	}, []string{"kind"})
-	vizierToCloudMsgQueueLen = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "vizier_to_cloud_msg_queue_len",
-		Help: "Message queue length from vizier to cloud.",
+
+	stanPublishCount = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "stan_publish_count",
+		Help: "Number of messages published to STAN for each vizier",
 	}, []string{"vizier_id"})
+	natsPublishCount = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "nats_publish_count",
+		Help: "Number of messages published to NATSfor each vizier",
+	}, []string{"vizier_id"})
+
+	// Descriptions used for per vizier bridge metrics.
+	cloudToVizierNATSMsgQueueLenDesc = prometheus.NewDesc(
+		"cloud_to_vizier_nats_msg_queue_len",
+		"Message queue length of NATS from cloud to vizier.",
+		[]string{"vizier_id"},
+		nil)
+	cloudToVizierGRPCMsgQueueLenDesc = prometheus.NewDesc(
+		"cloud_to_vizier_grpc_msg_queue_len",
+		"Message queue length of GRPC from cloud to vizier.",
+		[]string{"vizier_id"},
+		nil)
+	vizierToCloudGRPCMsgQueueLenDesc = prometheus.NewDesc(
+		"vizier_to_cloud_grpc_msg_queue_len",
+		"Message queue length from vizier to cloud over GRPC.",
+		[]string{"vizier_id"},
+		nil)
 )
 
 func init() {
 	prometheus.MustRegister(cloudToVizierMsgCount)
 	prometheus.MustRegister(cloudToVizierMsgSizeDist)
-	prometheus.MustRegister(cloudToVizierMsgQueueLen)
-	prometheus.MustRegister(cloudToVizierGRPCMsgQueueLen)
 
 	prometheus.MustRegister(vizierToCloudMsgCount)
 	prometheus.MustRegister(vizierToCloudMsgSizeDist)
-	prometheus.MustRegister(vizierToCloudMsgQueueLen)
+
+	prometheus.MustRegister(stanPublishCount)
+	prometheus.MustRegister(natsPublishCount)
 }
 
 func cleanVizierToCloudMessageKind(s string) string {
@@ -89,4 +104,49 @@ func cleanCloudToVizierMessageKind(s string) string {
 		s = s[idx+1:]
 	}
 	return s
+}
+
+type natsBridgeMetricCollector struct {
+	natsBridges sync.Map
+}
+
+func (n *natsBridgeMetricCollector) Register(b *NATSBridgeController) {
+	n.natsBridges.Store(b, true)
+}
+
+func (n *natsBridgeMetricCollector) Unregister(b *NATSBridgeController) {
+	n.natsBridges.Delete(b)
+}
+
+// Describe implements Collector.
+func (*natsBridgeMetricCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- cloudToVizierNATSMsgQueueLenDesc
+	ch <- cloudToVizierGRPCMsgQueueLenDesc
+	ch <- vizierToCloudGRPCMsgQueueLenDesc
+}
+
+// Collect implements Collector.
+func (n *natsBridgeMetricCollector) Collect(ch chan<- prometheus.Metric) {
+	n.natsBridges.Range(func(key, value interface{}) bool {
+		b := key.(*NATSBridgeController)
+		cid := b.clusterID.String()
+
+		ch <- prometheus.MustNewConstMetric(
+			cloudToVizierNATSMsgQueueLenDesc,
+			prometheus.GaugeValue,
+			float64(len(b.subCh)),
+			cid)
+		ch <- prometheus.MustNewConstMetric(
+			cloudToVizierGRPCMsgQueueLenDesc,
+			prometheus.GaugeValue,
+			float64(len(b.grpcInCh)),
+			cid)
+		ch <- prometheus.MustNewConstMetric(
+			vizierToCloudGRPCMsgQueueLenDesc,
+			prometheus.GaugeValue,
+			float64(len(b.grpcOutCh)),
+			cid)
+
+		return true
+	})
 }
