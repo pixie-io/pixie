@@ -60,10 +60,10 @@ kind: Service
 metadata:
   name: pl-nats
   labels:
-    app: nats
+    name: pl-nats
 spec:
   selector:
-    app: nats
+    name: pl-nats
   clusterIP: None
   ports:
   - name: client
@@ -84,17 +84,17 @@ kind: StatefulSet
 metadata:
   name: pl-nats
   labels:
-    app: nats
+    name: pl-nats
 spec:
   selector:
     matchLabels:
-      app: nats
+      name: pl-nats
   replicas: 5
   serviceName: pl-nats
   template:
     metadata:
       labels:
-        app: nats
+        name: pl-nats
     spec:
       affinity:
         podAntiAffinity:
@@ -104,10 +104,10 @@ spec:
               topologyKey: "kubernetes.io/hostname"
               labelSelector:
                 matchExpressions:
-                - key: app
+                - key: name
                   operator: In
                   values:
-                  - nats
+                  - pl-nats
       # Common volumes for the containers
       volumes:
       - name: nats-server-tls-volume

@@ -64,10 +64,10 @@ kind: Service
 metadata:
   name: pl-stan
   labels:
-    app: stan
+    name: pl-stan
 spec:
   selector:
-    app: stan
+    name: pl-stan
   clusterIP: None
   ports:
   - name: metrics
@@ -78,11 +78,11 @@ kind: StatefulSet
 metadata:
   name: pl-stan
   labels:
-    app: stan
+    name: pl-stan
 spec:
   selector:
     matchLabels:
-      app: stan
+      name: pl-stan
   serviceName: pl-stan
   replicas: 5
   volumeClaimTemplates:
@@ -98,7 +98,7 @@ spec:
   template:
     metadata:
       labels:
-        app: stan
+        name: pl-stan
     spec:
       affinity:
         podAntiAffinity:
@@ -108,10 +108,10 @@ spec:
               topologyKey: "kubernetes.io/hostname"
               labelSelector:
                 matchExpressions:
-                - key: app
+                - key: name
                   operator: In
                   values:
-                  - stan
+                  - pl-stan
       # STAN Server
       containers:
       - name: pl-stan
