@@ -213,32 +213,23 @@ func validateOrgID(ctx context.Context, providedOrgIDPB *uuidpb.UUID) error {
 }
 
 func (s *Server) validateOrgOwnsCluster(ctx context.Context, clusterID *uuidpb.UUID) error {
+	clusterUUID := utils.UUIDFromProtoOrNil(clusterID)
+	if clusterUUID == uuid.Nil {
+		return status.Error(codes.InvalidArgument, "invalid cluster id")
+	}
+
 	sCtx, err := authcontext.FromContext(ctx)
 	if err != nil {
 		return err
 	}
 	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
 
-	query := `SELECT org_id from vizier_cluster WHERE id=$1`
-	parsedID := utils.UUIDFromProtoOrNil(clusterID)
+	query := `SELECT EXISTS(SELECT 1 FROM vizier_cluster WHERE id=$1 AND org_id=$2)`
 
-	if parsedID == uuid.Nil {
-		return status.Error(codes.InvalidArgument, "invalid cluster id")
-	}
-
-	// Say not found for clusters that this user doesn't have permission for.
-	retError := status.Error(codes.NotFound, "invalid cluster ID for org")
-
-	var actualIDStr string
-	err = s.db.QueryRowx(query, parsedID).Scan(&actualIDStr)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return retError
-		}
-		return status.Errorf(codes.Internal, "failed to fetch viziers by ID: %s", err.Error())
-	}
-	if orgIDstr != actualIDStr {
-		return retError
+	var exists bool
+	err = s.db.QueryRow(query, clusterUUID, orgIDstr).Scan(&exists)
+	if err == sql.ErrNoRows || !exists {
+		return status.Error(codes.NotFound, "invalid cluster ID for org")
 	}
 	return nil
 }
