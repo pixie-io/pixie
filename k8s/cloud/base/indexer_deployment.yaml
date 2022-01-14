@@ -24,6 +24,8 @@ spec:
             scheme: HTTPS
             path: /healthz
             port: 51800
+          failureThreshold: 6
+          periodSeconds: 15
         livenessProbe:
           httpGet:
             scheme: HTTPS
