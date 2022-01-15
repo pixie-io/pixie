@@ -120,9 +120,23 @@ ParseState ParseChunk(std::string_view* data, Message* result) {
   return ParseState::kUnknown;
 }
 
-ParseState ParseBody(std::string_view* buf, Message* result) {
-  // Try to find boundary of message by looking at Content-Length and Transfer-Encoding.
+ParseState ParseContent(std::string_view content_len_str, std::string_view* data, Message* result) {
+  size_t len;
+  if (!absl::SimpleAtoi(content_len_str, &len)) {
+    LOG(ERROR) << absl::Substitute("Unable to parse Content-Length: $0", content_len_str);
+    return ParseState::kInvalid;
+  }
 
+  if (data->size() < len) {
+    return ParseState::kNeedsMoreData;
+  }
+
+  result->body = data->substr(0, len);
+  data->remove_prefix(std::min(len, data->size()));
+  return ParseState::kSuccess;
+}
+
+ParseState ParseRequestBody(std::string_view* buf, Message* result) {
   // From https://tools.ietf.org/html/rfc7230:
   //  A sender MUST NOT send a Content-Length header field in any message
   //  that contains a Transfer-Encoding header field.
@@ -136,9 +150,35 @@ ParseState ParseBody(std::string_view* buf, Message* result) {
   //  a payload body and the method semantics do not anticipate such a
   //  body.
 
+  // Case 1: Content-Length
+  const auto content_length_iter = result->headers.find(kContentLength);
+  if (content_length_iter != result->headers.end()) {
+    std::string_view content_len_str = content_length_iter->second;
+    return ParseContent(content_len_str, buf, result);
+  }
+
+  // Case 2: Chunked transfer.
+  const auto transfer_encoding_iter = result->headers.find(kTransferEncoding);
+  if (transfer_encoding_iter != result->headers.end() &&
+      transfer_encoding_iter->second == "chunked") {
+    return ParseChunk(buf, result);
+  }
+
+  // Case 3: Message has no Content-Length or Transfer-Encoding.
+  // An HTTP request with no Content-Length and no Transfer-Encoding should not have a body when
+  // no Content-Length or Transfer-Encoding is set:
+  // "A user agent SHOULD NOT send a Content-Length header field when the request message does
+  // not contain a payload body and the method semantics do not anticipate such a body."
+  //
+  // We apply this to all methods, since we have no better strategy in other cases.
+  result->body = "";
+  return ParseState::kSuccess;
+}
+
+ParseState ParseResponseBody(std::string_view* buf, Message* result) {
   // Case 0: Check for a HEAD response with no body.
   // Responses to HEAD requests are special, because they may include Content-Length
-  // or Transfer-Encodings, but the body will still be empty.
+  // or Transfer-Encoding, but the body will still be empty.
   // Reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/HEAD
   // TODO(rcheng): Pass in state to the parser so we know when to expect HEAD responses.
   if (result->type == message_type_t::kResponse) {
@@ -161,20 +201,8 @@ ParseState ParseBody(std::string_view* buf, Message* result) {
   // Case 1: Content-Length
   const auto content_length_iter = result->headers.find(kContentLength);
   if (content_length_iter != result->headers.end()) {
-    size_t len;
-    if (!absl::SimpleAtoi(content_length_iter->second, &len)) {
-      LOG(ERROR) << absl::Substitute("Unable to parse Content-Length: $0",
-                                     content_length_iter->second);
-      return ParseState::kInvalid;
-    }
-
-    if (buf->size() < len) {
-      return ParseState::kNeedsMoreData;
-    }
-
-    result->body = buf->substr(0, len);
-    buf->remove_prefix(std::min(len, buf->size()));
-    return ParseState::kSuccess;
+    std::string_view content_len_str = content_length_iter->second;
+    return ParseContent(content_len_str, buf, result);
   }
 
   // Case 2: Chunked transfer.
@@ -184,24 +212,8 @@ ParseState ParseBody(std::string_view* buf, Message* result) {
     return ParseChunk(buf, result);
   }
 
-  // Case 3: Message has content, but no Content-Length or Transfer-Encoding.
-
-  // Case 3A: Requests where we can assume no body.
-  // An HTTP request with no Content-Length and no Transfer-Encoding should not have a body when
-  // no Content-Length or Transfer-Encoding is set:
-  // "A user agent SHOULD NOT send a Content-Length header field when the request message does
-  // not contain a payload body and the method semantics do not anticipate such a body."
-  //
-  // We apply this to all methods, since we have no better strategy in other cases.
-  if (result->type == message_type_t::kRequest) {
-    result->body = "";
-    return ParseState::kSuccess;
-  }
-
-  // Case 3B: Responses where we can assume no body.
-  // The status codes below MUST not have a body, according to the spec,
-  // so if no Content-Length or Transfer-Encoding are present,
-  // assume they don't have a body.
+  // Case 3: Responses where we can assume no body.
+  // The status codes below MUST not have a body, according to the spec.
   // See: https://tools.ietf.org/html/rfc2616#section-4.4
   if ((result->resp_status >= 100 && result->resp_status < 200) || result->resp_status == 204 ||
       result->resp_status == 304) {
@@ -212,22 +224,16 @@ ParseState ParseBody(std::string_view* buf, Message* result) {
       const auto upgrade_iter = result->headers.find(kUpgrade);
       if (upgrade_iter == result->headers.end()) {
         LOG(WARNING) << "Expected an Upgrade header with HTTP status 101";
-        return ParseState::kEOS;
       }
 
-      // Header 'Upgrade: h2c' indicates protocol switch is to HTTP/2.
-      // See: https://http2.github.io/http2-spec/#discover-http
-      if (upgrade_iter->second == "h2c") {
-        LOG(WARNING) << "HTTP upgrades to HTTP2 are not yet supported";
-      }
-
+      LOG(WARNING) << "HTTP upgrades are not yet supported";
       return ParseState::kEOS;
     }
 
     return ParseState::kSuccess;
   }
 
-  // Case 3C: Response where we can't assume no body, but where no Content-Length or
+  // Case 4: Response where we can't assume no body, but where no Content-Length or
   // Transfer-Encoding is provided. In these cases we should wait for close().
   // According to HTTP/1.1 standard:
   // https://www.w3.org/Protocols/HTTP/1.0/draft-ietf-http-spec.html#BodyLength
@@ -265,7 +271,7 @@ ParseState ParseRequest(std::string_view* buf, Message* result) {
     result->req_path = std::string(req.path, req.path_len);
     result->headers_byte_size = retval;
 
-    return ParseBody(buf, result);
+    return ParseRequestBody(buf, result);
   }
   if (retval == -2) {
     return ParseState::kNeedsMoreData;
@@ -287,7 +293,7 @@ ParseState ParseResponse(std::string_view* buf, Message* result) {
     result->resp_message = std::string(resp.msg, resp.msg_len);
     result->headers_byte_size = retval;
 
-    return ParseBody(buf, result);
+    return ParseResponseBody(buf, result);
   }
   if (retval == -2) {
     return ParseState::kNeedsMoreData;
