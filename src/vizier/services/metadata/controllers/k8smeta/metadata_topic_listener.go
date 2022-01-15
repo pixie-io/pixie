@@ -43,7 +43,7 @@ var (
 	MissingMetadataRequestTopic = "MissingMetadataRequests"
 )
 
-const batchSize = 24
+const batchSize = 128
 
 // SendMessageFn is the function the TopicListener uses to publish messages back to NATS.
 type SendMessageFn func(string, []byte) error

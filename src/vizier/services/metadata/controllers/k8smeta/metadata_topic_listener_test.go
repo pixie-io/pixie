@@ -32,6 +32,8 @@ import (
 	"px.dev/pixie/src/vizier/services/metadata/storepb"
 )
 
+const mdBatchSize = 128
+
 type FakeStore struct{}
 
 func (s *FakeStore) FetchResourceUpdates(topic string, from int64, to int64) ([]*storepb.K8SResourceUpdate, error) {
@@ -93,19 +95,19 @@ func TestMetadataTopicListener_GetUpdatesInBatches(t *testing.T) {
 		{
 			name:               "batch sized update",
 			firstAvailable:     3,
-			lastAvailable:      26,
+			lastAvailable:      3 + mdBatchSize - 1,
 			expectedNumBatches: 1,
 		},
 		{
 			name:               "greater than one batch update",
 			firstAvailable:     3,
-			lastAvailable:      27,
+			lastAvailable:      3 + mdBatchSize,
 			expectedNumBatches: 2,
 		},
 		{
 			name:               "multiple batches",
 			firstAvailable:     102,
-			lastAvailable:      181,
+			lastAvailable:      102 + 4*mdBatchSize - 1,
 			expectedNumBatches: 4,
 		},
 	}
@@ -175,7 +177,7 @@ func TestMetadataTopicListener_ProcessAgentMessage(t *testing.T) {
 					MissingK8SMetadataRequest: &metadatapb.MissingK8SMetadataRequest{
 						Selector:          "127.0.0.1",
 						FromUpdateVersion: 102,
-						ToUpdateVersion:   182,
+						ToUpdateVersion:   102 + 4*mdBatchSize - 1,
 					},
 				},
 			},
@@ -194,7 +196,7 @@ func TestMetadataTopicListener_ProcessAgentMessage(t *testing.T) {
 	for _, u := range sentUpdates {
 		resp := u.GetK8SMetadataMessage().GetMissingK8SMetadataResponse()
 		assert.Equal(t, int64(102), resp.FirstUpdateAvailable)
-		assert.Equal(t, int64(181), resp.LastUpdateAvailable)
+		assert.Equal(t, int64(102+4*mdBatchSize-2), resp.LastUpdateAvailable)
 		assert.NotEqual(t, 0, len(resp.Updates))
 	}
 }
