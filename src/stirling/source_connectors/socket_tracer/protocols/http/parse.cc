@@ -17,6 +17,7 @@
  */
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/parse.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/http/chunked_decoder.h"
 
 #include <picohttpparser.h>
 
@@ -82,45 +83,6 @@ HeadersMap GetHTTPHeadersMap(const phr_header* headers, size_t num_headers) {
 
 }  // namespace pico_wrapper
 
-// TODO(oazizi): ParseChunk makes a copy of the data. Consider finding a way
-//               to mutate the input buffer such that we can avoid this copy.
-//               phr_decode_chunked() already mutates the input buffer, but
-//               this needs to be done in a way that doesn't mess up the rest of
-//               the parsing, since there will be "unused" bytes at the end of the
-//               chunk, but before the rest of the data in the DataStreamBuffer.
-//               Note that the copy is not overhead when a complete message is found,
-//               since the data is std::moved to the result.
-ParseState ParseChunk(std::string_view* data, Message* result) {
-  phr_chunked_decoder chunk_decoder = {};
-  std::string data_copy(*data);
-  char* buf = data_copy.data();
-  size_t buf_size = data_copy.size();
-  ssize_t retval = phr_decode_chunked(&chunk_decoder, buf, &buf_size);
-  if (retval == -1) {
-    // Parse failed.
-    return ParseState::kInvalid;
-  } else if (retval >= 0) {
-    // Complete message.
-    data_copy.resize(buf_size);
-    data_copy.shrink_to_fit();
-    result->body = std::move(data_copy);
-    // phr_decode_chunked rewrites the buffer in place, removing chunked-encoding headers.
-    // So we cannot simply remove the prefix, but rather have to shorten the buffer too.
-    // This is done via retval, which specifies how many unprocessed bytes are left.
-    data->remove_prefix(data->size() - retval);
-    // Pico claims that the last \r\n are unparsed, manually remove them.
-    while (!data->empty() && (data->front() == '\r' || data->front() == '\n')) {
-      data->remove_prefix(1);
-    }
-    return ParseState::kSuccess;
-  } else if (retval == -2) {
-    // Incomplete message.
-    return ParseState::kNeedsMoreData;
-  }
-  LOG(DFATAL) << "Unexpected retval from phr_decode_chunked()";
-  return ParseState::kUnknown;
-}
-
 ParseState ParseContent(std::string_view content_len_str, std::string_view* data, Message* result) {
   size_t len;
   if (!absl::SimpleAtoi(content_len_str, &len)) {
@@ -162,7 +124,7 @@ ParseState ParseRequestBody(std::string_view* buf, Message* result) {
   const auto transfer_encoding_iter = result->headers.find(kTransferEncoding);
   if (transfer_encoding_iter != result->headers.end() &&
       transfer_encoding_iter->second == "chunked") {
-    return ParseChunk(buf, result);
+    return ParseChunked(buf, &result->body);
   }
 
   // Case 3: Message has no Content-Length or Transfer-Encoding.
@@ -210,7 +172,7 @@ ParseState ParseResponseBody(std::string_view* buf, Message* result) {
   const auto transfer_encoding_iter = result->headers.find(kTransferEncoding);
   if (transfer_encoding_iter != result->headers.end() &&
       transfer_encoding_iter->second == "chunked") {
-    return ParseChunk(buf, result);
+    return ParseChunked(buf, &result->body);
   }
 
   // Case 3: Responses where we can assume no body.

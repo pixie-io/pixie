@@ -442,7 +442,8 @@ TEST_F(HTTPParserTest, ParseCompleteChunkEncodedMessage) {
       "pixielabs\r\n"
       "C\r\n"
       " is awesome!\r\n"
-      "0\r\n";
+      "0\r\n"
+      "\r\n";
   Message expected_message = EmptyChunkedHTTPResp();
   expected_message.body = "pixielabs is awesome!";
 
