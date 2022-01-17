@@ -13,6 +13,7 @@
       <excludeFolder url="file://$MODULE_DIR$/bazel-bin" />
       <excludeFolder url="file://$MODULE_DIR$/bazel-genfiles" />
       <excludeFolder url="file://$MODULE_DIR$/bazel-out" />
+      <excludeFolder url="file://$MODULE_DIR$/bazel-pixie" />
       <excludeFolder url="file://$MODULE_DIR$/bazel-pixielabs" />
       <excludeFolder url="file://$MODULE_DIR$/bazel-testlogs" />
       <excludeFolder url="file://$MODULE_DIR$/src/ui/dist" />
