@@ -20,10 +20,6 @@
 
 #include <algorithm>
 
-DEFINE_uint32(stirling_http2_stream_id_gap_threshold, 100,
-              "If a stream ID jumps by this many spots or more, an error is assumed and the entire "
-              "connection info is cleared.");
-
 namespace px {
 namespace stirling {
 
