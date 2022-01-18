@@ -34,7 +34,8 @@ DEFINE_string(stirling_profiler_symbolizer, "bcc",
 DEFINE_bool(stirling_profiler_cache_symbols, true, "Whether to cache symbols");
 DEFINE_uint32(stirling_profiler_log_period_minutes, 10,
               "Number of minutes between profiler stats log printouts.");
-DEFINE_uint32(stirling_profiler_table_update_period_seconds, 30,
+DEFINE_uint32(stirling_profiler_table_update_period_seconds,
+              gflags::Uint32FromEnv("PL_PROFILER_UPDATE_PERIOD", 30),
               "Number of seconds between profiler table updates.");
 DEFINE_uint32(stirling_profiler_stack_trace_sample_period_ms, 11,
               "Number of milliseconds between stack trace samples.");
