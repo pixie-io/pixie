@@ -60,8 +60,10 @@ enum class Tag : char {
   kDesc = 'D',
   kSync = 'S',
   kExecute = 'E',
+  kTerminate = 'X',
 
   // B.
+  kEmptyQueryResponse = 'I',
   kDataRow = 'D',
   kReadyForQuery = 'Z',
   kCopyOutResponse = 'H',
@@ -74,6 +76,7 @@ enum class Tag : char {
   kAuth = 'R',
   kParseComplete = '1',
   kParamDesc = 't',
+  kParamStatus = 'S',
   kRowDesc = 'T',
   kNoData = 'n',
 
@@ -106,6 +109,7 @@ inline std::string ToString(Tag tag, bool is_req) {
       TAG_CASE(Tag::kDesc, "Describe")
       TAG_CASE(Tag::kSync, "Sync")
       TAG_CASE(Tag::kExecute, "Execute")
+      TAG_CASE(Tag::kTerminate, "Terminate")
       TAG_CASE(Tag::kUnknown, "Unknown")
       default:
         DCHECK(false) << "Request tag " << magic_enum::enum_name(tag) << " has no ToString case";
@@ -113,6 +117,7 @@ inline std::string ToString(Tag tag, bool is_req) {
     }
   } else {
     switch (tag) {
+      TAG_CASE(Tag::kEmptyQueryResponse, "Empty Query Response")
       TAG_CASE(Tag::kCopyData, "Copy Data")
       TAG_CASE(Tag::kCopyDone, "Copy Done")
       TAG_CASE(Tag::kDataRow, "Data Row")
@@ -127,6 +132,7 @@ inline std::string ToString(Tag tag, bool is_req) {
       TAG_CASE(Tag::kAuth, "Authentication")
       TAG_CASE(Tag::kParseComplete, "Parse Complete")
       TAG_CASE(Tag::kParamDesc, "Parameter Description")
+      TAG_CASE(Tag::kParamStatus, "Parameter Status")
       TAG_CASE(Tag::kRowDesc, "Row Description")
       TAG_CASE(Tag::kNoData, "No Data")
       TAG_CASE(Tag::kUnknown, "Unknown")

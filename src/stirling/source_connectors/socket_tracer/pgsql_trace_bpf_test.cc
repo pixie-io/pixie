@@ -149,6 +149,7 @@ TEST_F(PostgreSQLTraceTest, GolangSqlxDemo) {
   EXPECT_THAT(
       RecordBatchToReqRespCmds(record_batch, indices),
       ElementsAre(
+          ReqRespCmd(";", "", Tag::kQuery),
           ReqRespCmd("CREATE TABLE IF NOT EXISTS person (\n"
                      "    first_name text,\n"
                      "    last_name text,\n"

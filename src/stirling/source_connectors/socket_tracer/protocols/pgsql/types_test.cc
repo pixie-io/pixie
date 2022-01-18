@@ -30,13 +30,16 @@ namespace pgsql {
 
 TEST(TagToString, AllTagsHaveToString) {
   absl::flat_hash_set<Tag> req_tags = {
-      Tag::kCopyData, Tag::kCopyDone, Tag::kQuery, Tag::kCopyFail, Tag::kClose,   Tag::kBind,
-      Tag::kPasswd,   Tag::kParse,    Tag::kDesc,  Tag::kSync,     Tag::kExecute, Tag::kUnknown};
+      Tag::kCopyData, Tag::kCopyDone,  Tag::kQuery,  Tag::kCopyFail, Tag::kClose,
+      Tag::kBind,     Tag::kPasswd,    Tag::kParse,  Tag::kDesc,     Tag::kSync,
+      Tag::kExecute,  Tag::kTerminate, Tag::kUnknown};
   absl::flat_hash_set<Tag> resp_tags = {
-      Tag::kCopyData,        Tag::kCopyDone,       Tag::kDataRow, Tag::kReadyForQuery,
-      Tag::kCopyOutResponse, Tag::kCopyInResponse, Tag::kErrResp, Tag::kCmdComplete,
-      Tag::kCloseComplete,   Tag::kBindComplete,   Tag::kKey,     Tag::kAuth,
-      Tag::kParseComplete,   Tag::kParamDesc,      Tag::kRowDesc, Tag::kNoData,
+      Tag::kCopyData,      Tag::kCopyDone,        Tag::kDataRow,
+      Tag::kReadyForQuery, Tag::kCopyOutResponse, Tag::kCopyInResponse,
+      Tag::kErrResp,       Tag::kCmdComplete,     Tag::kEmptyQueryResponse,
+      Tag::kCloseComplete, Tag::kBindComplete,    Tag::kKey,
+      Tag::kAuth,          Tag::kParseComplete,   Tag::kParamDesc,
+      Tag::kParamStatus,   Tag::kRowDesc,         Tag::kNoData,
       Tag::kUnknown};
 
   auto tag_values = magic_enum::enum_values<Tag>();

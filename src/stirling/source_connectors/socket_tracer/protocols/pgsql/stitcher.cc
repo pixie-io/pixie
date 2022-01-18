@@ -151,27 +151,31 @@ Status HandleQuery(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDe
 
   // TODO(yzhao): Turn the rest code of this function to another function.
 
-  bool found_row_desc = false;
-  bool found_cmd_cmpl = false;
-  bool found_err_resp = false;
+  bool found_resp = false;
 
   for (auto& iter = *resp_iter; iter != end; ++iter) {
+    if (iter->tag == Tag::kEmptyQueryResponse) {
+      found_resp = true;
+      req_resp->resp.timestamp_ns = iter->timestamp_ns;
+      break;
+    }
+
     if (iter->tag == Tag::kCmdComplete) {
-      found_cmd_cmpl = true;
+      found_resp = true;
       PL_RETURN_IF_ERROR(ParseCmdCmpl(*iter, &req_resp->resp.cmd_cmpl));
       req_resp->resp.timestamp_ns = req_resp->resp.cmd_cmpl.timestamp_ns;
       break;
     }
 
     if (iter->tag == Tag::kErrResp) {
-      found_err_resp = true;
+      found_resp = true;
       PL_RETURN_IF_ERROR(ParseErrResp(*iter, &req_resp->resp.err_resp));
       req_resp->resp.timestamp_ns = req_resp->resp.err_resp.timestamp_ns;
       break;
     }
 
     if (iter->tag == Tag::kRowDesc) {
-      found_row_desc = true;
+      found_resp = true;
       req_resp->resp.cmd_cmpl.timestamp_ns = iter->timestamp_ns;
       PL_RETURN_IF_ERROR(ParseRowDesc(*iter, &req_resp->resp.row_desc));
 
@@ -191,8 +195,8 @@ Status HandleQuery(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDe
     ++(*resp_iter);
   }
 
-  if (!found_row_desc && !(found_cmd_cmpl || found_err_resp)) {
-    return error::InvalidArgument("Did not find kRowDesc and one of {kCmdComplete, kErrResp}");
+  if (!found_resp) {
+    return error::InvalidArgument("Did not find a valid query response.");
   }
 
   return Status::OK();
@@ -442,6 +446,10 @@ RecordsWithErrorCount<pgsql::Record> StitchFrames(std::deque<pgsql::RegularMessa
       case Tag::kExecute: {
         CALL_HANDLER(ExecReqResp,
                      HandleExecute(*cur_iter, &resp_iter, resps->end(), &req_resp, state));
+        break;
+      }
+      case Tag::kTerminate: {
+        // TODO(oazizi): Add a record here.
         break;
       }
       default:

@@ -216,9 +216,15 @@ static __inline enum message_type_t infer_pgsql_startup_message(const char* buf,
     return kUnknown;
   }
 
-  const char kPgsqlUser[] = "user";
-  if (bpf_strncmp((const char*)buf + 8, kPgsqlUser, 4) != 0) {
-    return kUnknown;
+  // Next we expect a key like "user", "datestyle" or "extra_float_digits".
+  // For inference purposes, we simply look for a short sequence of alphabetic characters.
+  for (int i = 0; i < 3; ++i) {
+    // Loosely check for an alphabetic character.
+    // This is a loose check and still covers some non alphabetic characters (e.g. `\`),
+    // but we want to keep the BPF instruction count low.
+    if (*((const char*)buf + 8 + i) < 'A') {
+      return kUnknown;
+    }
   }
 
   return kRequest;
