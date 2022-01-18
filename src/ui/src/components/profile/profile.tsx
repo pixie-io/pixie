@@ -54,8 +54,10 @@ interface ProfileMenuWrapperProps
   onCloseMenu: () => void;
   name: string;
   email: string;
+  domainName: string;
   picture?: string;
   classes: { // WithStyles has trouble with optional items. Easier to specify the Record manually.
+    managedDomainBanner?: string;
     expandedProfile?: string;
     avatarSm?: string;
     listItemHeader?: string;
@@ -74,6 +76,7 @@ export const ProfileMenuWrapper = React.memo<ProfileMenuWrapperProps>(({
   name,
   picture,
   email,
+  domainName,
 }) => (
   <Menu
     open={open}
@@ -82,6 +85,15 @@ export const ProfileMenuWrapper = React.memo<ProfileMenuWrapperProps>(({
     anchorEl={anchorEl}
     anchorOrigin={anchorOrigin}
   >
+    {domainName && (
+      <ListItem key='managedDomain' className={classes.managedDomainBanner}>
+        <span>
+          {'This account is managed by '}
+          <strong>{domainName}</strong>
+          {'.'}
+        </span>
+      </ListItem>
+    )}
     <ListItem
       key='profile'
       className={classes.expandedProfile}

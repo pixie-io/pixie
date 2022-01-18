@@ -20,7 +20,9 @@ import * as React from 'react';
 
 import { gql, useMutation, useQuery } from '@apollo/client';
 import {
-  Button, Dialog, DialogContent, DialogTitle,
+  Alert,
+  Button,
+  Dialog, DialogContent, DialogTitle,
   Table,
   TableBody,
   TableHead,
@@ -29,9 +31,11 @@ import {
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import { Link } from 'react-router-dom';
 
+import OrgContext from 'app/common/org-context';
 import { useSnackbar } from 'app/components';
-import { GQLUserInfo } from 'app/types/schema';
+import { GQLOrgInfo, GQLUserInfo } from 'app/types/schema';
 
 import {
   AdminTooltip, StyledTableCell, StyledTableHeaderCell, StyledRightTableCell,
@@ -62,6 +66,20 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     alignItems: 'center',
     gap: theme.spacing(1),
     margin: theme.spacing(1),
+  },
+  managedDomainBanner: {
+    margin: `0 ${theme.spacing(2)}`,
+    '& p:first-child': { marginTop: 0 },
+    '& p:last-child': { marginBottom: 0 },
+  },
+  link: {
+    textDecoration: 'none',
+    '&, &:visited': {
+      color: theme.palette.primary.main,
+    },
+    '&:hover': {
+      textDecoration: 'underline',
+    },
   },
 }));
 
@@ -211,6 +229,21 @@ export const UserRow = React.memo<UserRowProps>(({ user, numUsers }) => {
 UserRow.displayName = 'UserRow';
 
 export const UsersTable = React.memo(() => {
+  const { org: { domainName } } = React.useContext(OrgContext);
+
+  const { data: settings } = useQuery<{ org: Pick<GQLOrgInfo, 'enableApprovals'> }>(
+    gql`
+      query getSettingsForCurrentOrg{
+        org {
+          enableApprovals
+        }
+      }
+    `,
+    // To avoid a confusing desync, ignore the cache on first fetch.
+    { pollInterval: 60000, fetchPolicy: 'network-only', nextFetchPolicy: 'cache-and-network' },
+  );
+  const enableApprovals = settings?.org.enableApprovals ?? false;
+
   const { data, error } = useQuery<{ orgUsers: UserDisplay[] }>(
     gql`
       query getUsersForCurrentOrg{
@@ -234,6 +267,29 @@ export const UsersTable = React.memo(() => {
 
   return (
     <>
+      {domainName && (
+        // @ts-expect-error We would want `info` here, but that's yellow in our palette (should fix).
+        <Alert icon={false} className={classes.managedDomainBanner} color='secondary' variant='outlined'>
+          <p>
+            This organization is managed by <strong>{domainName}</strong>.
+          </p>
+          <p>
+            Membership is restricted to users within the <strong>{domainName}</strong> Google Workspace.
+            <br/>
+            {enableApprovals ? (
+              <>
+                Users signing up with their managed email must be <strong>manually approved</strong>.
+                This can be changed by <Link to='/admin/org' className={classes.link}>disabling approvals</Link>.
+              </>
+            ) : (
+              <>
+                Users signing up with their managed email will be <strong>automatically approved</strong>.
+                This can be changed by <Link to='/admin/org' className={classes.link}>enabling approvals</Link>.
+              </>
+            )}
+          </p>
+        </Alert>
+      )}
       <Table>
         <TableHead>
           <TableRow>

@@ -23,6 +23,7 @@ import { GQLIDEPath } from 'app/types/schema';
 export interface Org {
   id: string;
   name: string;
+  domainName: string;
   idePaths: GQLIDEPath[];
 }
 

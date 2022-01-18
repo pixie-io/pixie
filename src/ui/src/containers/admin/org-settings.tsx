@@ -29,6 +29,7 @@ import {
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
+import OrgContext from 'app/common/org-context';
 import { InviteLinkReset } from 'app/containers/admin/invite-link-reset';
 import { GQLOrgInfo } from 'app/types/schema';
 
@@ -47,6 +48,8 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 
 export const OrgSettings = React.memo(() => {
   const classes = useStyles();
+
+  const { org: { domainName } } = React.useContext(OrgContext);
 
   const { data, loading, error } = useQuery<{ org: Pick<GQLOrgInfo, 'id' | 'name' | 'enableApprovals'> }>(
     gql`
@@ -130,7 +133,7 @@ export const OrgSettings = React.memo(() => {
           </TableRow>
         </TableBody>
       </Table>
-      <InviteLinkReset orgID={org?.id} />
+      {!domainName && <InviteLinkReset orgID={org?.id} />}
     </>
   );
 });

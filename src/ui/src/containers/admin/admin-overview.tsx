@@ -42,7 +42,7 @@ import { GQLAPIKeyMetadata, GQLDeploymentKeyMetadata } from 'app/types/schema';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   createButton: {
-    margin: theme.spacing(1),
+    margin: `${theme.spacing(0.75)} ${theme.spacing(3)}`,
     padding: '3px 15px',
   },
   tabRoot: {
@@ -107,6 +107,14 @@ export const AdminOverview = React.memo(() => {
     setTab(newTab);
     history.push(newTab);
   }
+
+  // In case one tab has a <Link> to another, update the tab bar.
+  React.useEffect(() => {
+    const pathTab = location.pathname.slice(path.length > 1 ? path.length + 1 : 0);
+    if (['clusters', 'deployment-keys', 'api-keys', 'users', 'org', 'user'].includes(pathTab) && tab !== pathTab) {
+      setTab(pathTab);
+    }
+  }, [tab, path, location.pathname]);
 
   const authClient = React.useMemo(() => GetOAuthProvider(), []);
   const InvitationTab = React.useMemo(

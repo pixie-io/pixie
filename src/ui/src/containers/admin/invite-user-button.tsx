@@ -31,6 +31,7 @@ import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
+import OrgContext from 'app/common/org-context';
 import { useSnackbar } from 'app/components';
 import { GQLOrgInfo } from 'app/types/schema';
 import pixieAnalytics from 'app/utils/analytics';
@@ -98,6 +99,8 @@ export const InviteUserButton = React.memo<InviteUserButtonProps>(({
     }
   `);
 
+  const { org: { domainName } } = React.useContext(OrgContext);
+
   const openModal = React.useCallback(() => {
     getOrg();
     setOpen(true);
@@ -111,19 +114,23 @@ export const InviteUserButton = React.memo<InviteUserButtonProps>(({
 
   // We want to get the invite token only after orgData is valid
   // and loaded. This should happen when the modal opens up.
+  // Managed accounts don't use this feature; they use a different model.
   React.useEffect(() => {
-    if (orgLoading || !orgData) {
+    if (orgLoading || !orgData || domainName) {
       return;
     }
     createInviteToken({ variables: { id: orgData?.org?.id } });
-  }, [createInviteToken, orgData, orgLoading]);
+  }, [createInviteToken, orgData, orgLoading, domainName]);
 
   const invitationLink = React.useMemo(() => {
+    if (domainName) {
+      return getRedirectPath('/signup');
+    }
     if (!inviteTokenData) {
       return '';
     }
     return getRedirectPath('/invite', { invite_token: inviteTokenData?.CreateInviteToken });
-  }, [inviteTokenData]);
+  }, [inviteTokenData, domainName]);
 
   const closeModal = React.useCallback(() => {
     setOpen(false);
@@ -154,16 +161,27 @@ export const InviteUserButton = React.memo<InviteUserButtonProps>(({
         // eslint-disable-next-line react-memo/require-usememo
         startIcon={<Add />}
       >
-        Invite Users
+        Invite {domainName ? 'Members' : 'Users'}
       </Button>
       <Dialog open={open} onClose={closeModal}>
         <DialogTitle>Invite Users to Organization</DialogTitle>
         <DialogContent>
-          <div className={classes.heading}>Invite Link</div>
-          <div className={classes.body}>
-            Share this link to invite others to your organization.
-            Anyone with this link will automatically join your organization.
-          </div>
+          {domainName ? (
+            // Managed domain (such as a Google Workspace)
+            <div className={classes.body}>
+              Invite users to join your Pixie organization with the link below.<br/>
+              Invited teammates must sign up using their Google Workspace account.<br/>
+            </div>
+          ) : (
+            // Non-managed domain
+            <>
+              <div className={classes.heading}>Invite Link</div>
+              <div className={classes.body}>
+                Share this link to invite others to your organization.
+                Anyone with this link will automatically join your organization.
+              </div>
+            </>
+          )}
           <div className={classes.fieldContainer}>
             <TextField
               className={classes.textField}
@@ -184,9 +202,11 @@ export const InviteUserButton = React.memo<InviteUserButtonProps>(({
               Copy Link
             </Button>
           </div>
-          <div className={classes.expirationWarning}>
-            This link will expire after 7 days. Invite links can be managed in org settings.
-          </div>
+          {!domainName && (
+            <div className={classes.expirationWarning}>
+              This link will expire after 7 days. Invite links can be managed in org settings.
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </>

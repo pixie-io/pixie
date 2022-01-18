@@ -36,6 +36,7 @@ import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 import { Link } from 'react-router-dom';
 
+import OrgContext from 'app/common/org-context';
 import {
   Avatar,
   ProfileMenuWrapper,
@@ -70,6 +71,16 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   clickable: {
     cursor: 'pointer',
+  },
+  managedDomainBanner: {
+    background: theme.palette.background.one,
+    fontSize: theme.typography.caption.fontSize,
+    fontStyle: 'italic',
+    opacity: 0.8,
+    padding: theme.spacing(1),
+    margin: `0 ${theme.spacing(1)}`,
+    width: 'auto', // For flex calculations with margins
+    textAlign: 'center',
   },
   expandedProfile: {
     alignItems: 'center',
@@ -121,6 +132,7 @@ const ProfileItem = React.memo<{ setSidebarOpen: SetStateFunc<boolean> }>(({ set
   const [anchorEl, setAnchorEl] = React.useState(null);
   const shortcuts = React.useContext(LiveShortcutsContext);
   const { showLiveOptions, showAdmin } = React.useContext(SidebarContext);
+  const { org: { domainName } } = React.useContext(OrgContext);
 
   const { data } = useQuery<{
     user: Pick<GQLUserInfo, 'name' | 'picture' | 'id' | 'email' >,
@@ -236,6 +248,7 @@ const ProfileItem = React.memo<{ setSidebarOpen: SetStateFunc<boolean> }>(({ set
         anchorEl={anchorEl}
         anchorOrigin={React.useMemo(() => ({ vertical: 'bottom', horizontal: 'right' }), [])}
         name={name}
+        domainName={domainName}
         email={email}
         picture={picture}
       >

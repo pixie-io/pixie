@@ -18,11 +18,7 @@
 
 import { DOMAIN_NAME } from 'app/containers/constants';
 
-interface StringMap {
-  [s: string]: string;
-}
-
-export function getRedirectPath(path: string, params: StringMap): string {
+export function getRedirectPath(path: string, params: Record<string, string> = {}): string {
   const port = window.location.port ? `:${window.location.port}` : '';
   let queryParams = '';
 
@@ -35,6 +31,6 @@ export function getRedirectPath(path: string, params: StringMap): string {
   return `${window.location.protocol}//${DOMAIN_NAME}${port}${path}${queryParams}`;
 }
 
-export function redirect(path: string, params: StringMap): void {
+export function redirect(path: string, params: Record<string, string> = {}): void {
   window.location.href = getRedirectPath(path, params);
 }

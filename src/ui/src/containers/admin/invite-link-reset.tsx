@@ -100,7 +100,7 @@ export const InviteLinkReset = React.memo<{
       <hr className={classes.divider} />
       <Typography variant='body1'>Invite Links</Typography>
       <p className={classes.body}>
-        Invitations expire 7 days after the are created.<br />
+        Invitations expire 7 days after they are created.<br />
         You can invalidate all of them now, if needed.
       </p>
       <Button onClick={openModal} variant='contained' color='error'>

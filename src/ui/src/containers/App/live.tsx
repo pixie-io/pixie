@@ -234,13 +234,14 @@ export default function PixieWithContext(): React.ReactElement {
   }), [userEmail, userOrg]);
 
   const { data: orgData } = useQuery<{
-    org: Pick<GQLOrgInfo, 'id' | 'name' | 'idePaths'>
+    org: Pick<GQLOrgInfo, 'id' | 'name' | 'domainName' | 'idePaths'>
   }>(
     gql`
       query getOrgInfo {
         org {
           id
           name
+          domainName
           idePaths {
             IDEName
             path
@@ -254,6 +255,7 @@ export default function PixieWithContext(): React.ReactElement {
   const org = orgData?.org;
   const orgID = org?.id;
   const orgName = org?.name;
+  const orgDomain = org?.domainName;
   const idePaths = org?.idePaths;
 
   // We check the orgName as valid here. orgData will still be returned even if the org doesn't
@@ -264,9 +266,10 @@ export default function PixieWithContext(): React.ReactElement {
     org: {
       id: orgID,
       name: orgName,
+      domainName: orgDomain,
       idePaths,
     },
-  }), [orgID, orgName, idePaths]);
+  }), [orgID, orgName, orgDomain, idePaths]);
   React.useEffect(() => {
     if (ldClient != null && userEmail != null) {
       ldClient.identify({
