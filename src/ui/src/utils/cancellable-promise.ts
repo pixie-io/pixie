@@ -31,22 +31,23 @@ export interface CancellablePromise<R = void> extends Promise<R> {
  * Wraps the source Promise in a `cancel()`-able Promise.
  * Cancelling it causes it to reject immediately.
  * If you do not wish to do anything with a cancel-induced rejection, use the helper method `silentlyCatchCancellation`.
- * @param source
+ * @param source Promise to make cancellable
+ * @param cancelSilently If set, a cancelled promise gets cut off - if it didn't settle yet, it never will.
  */
-export function makeCancellable<R = void>(source: Promise<R>): CancellablePromise<R> {
+export function makeCancellable<R = void>(source: Promise<R>, cancelSilently = false): CancellablePromise<R> {
   let cancelled = false;
   let cancel: () => void;
 
   const wrapped = new Promise((resolve, reject) => {
     cancel = () => {
       cancelled = true;
-      reject(new Error('cancelled'));
+      if (!cancelSilently) reject(new Error('cancelled'));
     };
 
     // When the source Promise does try to resolve or reject, don't even attempt to resolve/reject with normal results.
     source.then(
-      (result: R) => (cancelled ? reject(new Error('cancelled')) : resolve(result)),
-      (error: any) => (cancelled ? reject(new Error('cancelled')) : reject(error)),
+      (result: R) => (cancelled ? (!cancelSilently && reject(new Error('cancelled'))) : resolve(result)),
+      (error: any) => (cancelled ? (!cancelSilently && reject(new Error('cancelled'))) : reject(error)),
     );
   });
 

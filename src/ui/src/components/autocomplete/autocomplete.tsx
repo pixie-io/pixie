@@ -130,13 +130,17 @@ export const Autocomplete = React.memo<AutoCompleteProps>(({
   }, [completions]);
 
   React.useEffect(() => {
-    const promise = makeCancellable(getCompletions(inputValue));
+    if (hidden) return () => {};
+    // Using silent mode because, when Autocomplete is hidden, the listener vanishes.
+    // This can result in an uncaught promise rejection when the Autocomplete closes.
+    // As the handler is destroyed here, we don't care if the promise never settles.
+    const promise = makeCancellable(getCompletions(inputValue), true);
     promise.then(({ items, hasMoreItems }) => {
       setCompletions(items);
       setHasMoreCompletions(hasMoreItems);
       const selection = autoSelectItem(items);
       if (selection?.title && selection?.id) setActiveItem(selection.id);
-    }).catch(silentlyCatchCancellation);
+    });
     return () => promise.cancel();
   }, [inputValue, getCompletions, hidden]);
 
