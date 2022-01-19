@@ -102,6 +102,7 @@ ParseState ParseChunk(std::string_view* data, Message* result) {
   } else if (retval >= 0) {
     // Complete message.
     data_copy.resize(buf_size);
+    data_copy.shrink_to_fit();
     result->body = std::move(data_copy);
     // phr_decode_chunked rewrites the buffer in place, removing chunked-encoding headers.
     // So we cannot simply remove the prefix, but rather have to shorten the buffer too.
