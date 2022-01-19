@@ -174,12 +174,21 @@ func (m *VizierMonitor) onAddPod(obj interface{}) {
 	if !ok {
 		return
 	}
+	if pod.Status.Phase == v1.PodFailed {
+		// Don't include failed pods, we only care about the currently running or pending pod.
+		return
+	}
 	m.podStates.write(pod.ObjectMeta.Labels["name"], pod.ObjectMeta.Name, &podWrapper{pod: pod})
 }
 
 func (m *VizierMonitor) onUpdatePod(oldObj, newObj interface{}) {
 	pod, ok := newObj.(*v1.Pod)
 	if !ok {
+		return
+	}
+	if pod.Status.Phase == v1.PodFailed {
+		// Remove failed pods, we only care about the currently running or pending pod.
+		m.podStates.delete(pod.ObjectMeta.Labels["name"], pod.ObjectMeta.Name)
 		return
 	}
 	m.podStates.write(pod.ObjectMeta.Labels["name"], pod.ObjectMeta.Name, &podWrapper{pod: pod})
