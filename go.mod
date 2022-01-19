@@ -47,7 +47,7 @@ require (
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
 	github.com/kylelemons/godebug v1.1.0 // indirect
-	github.com/lestrrat-go/jwx v1.2.4
+	github.com/lestrrat-go/jwx v1.2.17
 	github.com/lib/pq v1.10.0
 	github.com/mattn/go-runewidth v0.0.9
 	github.com/nats-io/nats-server/v2 v2.2.0

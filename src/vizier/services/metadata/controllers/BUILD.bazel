@@ -59,8 +59,8 @@ go_test(
         "agent_topic_listener_test.go",
         "server_test.go",
     ],
-    embed = [":controllers"],
     deps = [
+        ":controllers",
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
         "//src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_go_proto",

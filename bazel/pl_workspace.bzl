@@ -14,7 +14,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 load("@com_github_bazelbuild_buildtools//buildifier:deps.bzl", "buildifier_dependencies")
 load("@distroless//package_manager:dpkg.bzl", "dpkg_list", "dpkg_src")
 load("@distroless//package_manager:package_manager.bzl", "package_manager_repositories")
@@ -79,7 +78,6 @@ bazel_version_repository = repository_rule(
 )
 
 def pl_workspace_setup():
-    gazelle_dependencies()
     buildifier_dependencies()
 
     bazel_version_repository(name = "bazel_version")

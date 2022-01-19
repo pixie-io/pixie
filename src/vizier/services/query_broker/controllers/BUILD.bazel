@@ -93,8 +93,8 @@ go_test(
         "query_result_forwarder_test.go",
         "server_test.go",
     ],
-    embed = [":controllers"],
     deps = [
+        ":controllers",
         "//src/api/proto/vizierpb:vizier_pl_go_proto",
         "//src/api/proto/vizierpb/mock",
         "//src/carnot/carnotpb:carnot_pl_go_proto",

@@ -40,8 +40,8 @@ go_test(
         "proto_utils_test.go",
         "upid_test.go",
     ],
-    embed = [":k8s"],
     deps = [
+        ":k8s",
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
         "//src/shared/types/gotypes",
         "@com_github_gogo_protobuf//proto",

@@ -43,8 +43,8 @@ go_library(
 go_test(
     name = "controllers_test",
     srcs = ["server_test.go"],
-    embed = [":controllers"],
     deps = [
+        ":controllers",
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/cloud/profile/controllers/mock",
         "//src/cloud/profile/datastore",

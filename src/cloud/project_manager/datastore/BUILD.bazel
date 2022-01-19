@@ -30,8 +30,8 @@ go_library(
 go_test(
     name = "datastore_test",
     srcs = ["datastore_test.go"],
-    embed = [":datastore"],
     deps = [
+        ":datastore",
         "//src/cloud/project_manager/schema",
         "//src/shared/services/pgtest",
         "@com_github_gofrs_uuid//:uuid",

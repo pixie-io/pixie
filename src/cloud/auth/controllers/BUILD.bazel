@@ -56,8 +56,8 @@ go_test(
         "hydra_kratos_auth_test.go",
         "login_test.go",
     ],
-    embed = [":controllers"],
     deps = [
+        ":controllers",
         "//src/cloud/auth/authenv",
         "//src/cloud/auth/authpb:auth_pl_go_proto",
         "//src/cloud/auth/controllers/mock",

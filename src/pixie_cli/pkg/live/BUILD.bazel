@@ -52,8 +52,8 @@ go_library(
 go_test(
     name = "live_test",
     srcs = ["ebnf_parser_test.go"],
-    embed = [":live"],
     deps = [
+        ":live",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],

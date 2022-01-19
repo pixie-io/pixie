@@ -30,8 +30,8 @@ go_library(
 go_test(
     name = "controllers_test",
     srcs = ["index_manager_test.go"],
-    embed = [":controllers"],
     deps = [
+        ":controllers",
         "//src/cloud/jobs/elastic_migration/schema",
         "//src/utils/testingutils",
         "@com_github_olivere_elastic_v7//:elastic",

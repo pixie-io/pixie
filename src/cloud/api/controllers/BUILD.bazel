@@ -115,8 +115,8 @@ go_test(
         "user_test.go",
         "vizier_cluster_test.go",
     ],
-    embed = [":controllers"],
     deps = [
+        ":controllers",
         "//src/api/proto/cloudpb:cloudapi_pl_go_proto",
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/api/proto/vispb:vis_pl_go_proto",

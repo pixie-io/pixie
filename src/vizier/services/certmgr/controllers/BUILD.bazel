@@ -45,8 +45,8 @@ go_library(
 go_test(
     name = "controllers_test",
     srcs = ["server_test.go"],
-    embed = [":controllers"],
     deps = [
+        ":controllers",
         "//src/vizier/services/certmgr/certmgrpb:service_pl_go_proto",
         "//src/vizier/services/certmgr/controllers/mock",
         "@com_github_gofrs_uuid//:uuid",

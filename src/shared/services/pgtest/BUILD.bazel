@@ -37,8 +37,8 @@ go_library(
 go_test(
     name = "pgtest_test",
     srcs = ["pgtest_test.go"],
-    embed = [":pgtest"],
     deps = [
+        ":pgtest",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],

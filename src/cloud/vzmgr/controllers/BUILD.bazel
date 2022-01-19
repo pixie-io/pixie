@@ -71,8 +71,8 @@ go_test(
         "utils_test.go",
         "vizier_updater_test.go",
     ],
-    embed = [":controllers"],
     deps = [
+        ":controllers",
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
         "//src/cloud/artifact_tracker/artifacttrackerpb/mock",

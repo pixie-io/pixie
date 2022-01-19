@@ -27,8 +27,8 @@ go_library(
 go_test(
     name = "statusz_test",
     srcs = ["statusz_test.go"],
-    embed = [":statusz"],
     deps = [
+        ":statusz",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],

@@ -43,8 +43,8 @@ go_test(
         "index_test.go",
         "managed_index_test.go",
     ],
-    embed = [":esutils"],
     deps = [
+        ":esutils",
         "//src/utils/testingutils",
         "@com_github_olivere_elastic_v7//:elastic",
         "@com_github_stretchr_testify//assert",

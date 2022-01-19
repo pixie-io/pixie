@@ -30,8 +30,8 @@ go_library(
 go_test(
     name = "httpmiddleware_test",
     srcs = ["middleware_test.go"],
-    embed = [":httpmiddleware"],
     deps = [
+        ":httpmiddleware",
         "//src/shared/services/authcontext",
         "//src/shared/services/env",
         "//src/utils/testingutils",

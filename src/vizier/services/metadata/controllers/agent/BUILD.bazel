@@ -46,8 +46,8 @@ go_library(
 go_test(
     name = "agent_test",
     srcs = ["agent_test.go"],
-    embed = [":agent"],
     deps = [
+        ":agent",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
         "//src/shared/bloomfilterpb:bloomfilter_pl_go_proto",
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",

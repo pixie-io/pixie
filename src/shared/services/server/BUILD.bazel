@@ -47,8 +47,8 @@ go_library(
 go_test(
     name = "server_test",
     srcs = ["grpc_server_test.go"],
-    embed = [":server"],
     deps = [
+        ":server",
         "//src/shared/services/env",
         "//src/shared/services/testproto:ping_pl_go_proto",
         "//src/utils/testingutils",

@@ -10,11 +10,24 @@ load("//bazel:repositories.bzl", "pl_deps")
 pl_deps()
 
 # Order is important. Try to go from most basic/primitive to higher level packages.
+# - go_rules_dependencies
 # - protobuf_deps
 # - grpc_deps (must come after protobuf_deps)
-# - go_rules_dependencies
 # - apple_rules_dependencies (must come after grpc_deps)
 # ...
+load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
+
+go_rules_dependencies()
+
+go_register_toolchains(go_version = "1.16")
+
+load("//:go_deps.bzl", "pl_go_dependencies")
+
+# Pixie go dependencies need to be loaded before other go dependencies
+# to make sure we get the correct version.
+# gazelle:repository_macro go_deps.bzl%pl_go_dependencies
+pl_go_dependencies()
+
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 
 protobuf_deps()
@@ -22,12 +35,6 @@ protobuf_deps()
 load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps")
 
 grpc_deps()
-
-load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
-
-go_rules_dependencies()
-
-go_register_toolchains(go_version = "1.16")
 
 load("@io_bazel_rules_scala//:scala_config.bzl", "scala_config")
 
@@ -126,8 +133,8 @@ bind(
 )
 
 # gazelle:repo bazel_gazelle
+# Gazelle depes need to be loaded last to make sure they don't override our dependencies.
+# The first one wins when it comes to package declaration.
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 
-load("//:go_deps.bzl", "pl_go_dependencies")
-
-# gazelle:repository_macro go_deps.bzl%pl_go_dependencies
-pl_go_dependencies()
+gazelle_dependencies()

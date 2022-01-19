@@ -68,8 +68,8 @@ go_library(
 go_test(
     name = "bridge_test",
     srcs = ["server_test.go"],
-    embed = [":bridge"],
     deps = [
+        ":bridge",
         "//src/api/proto/vizierpb:vizier_pl_go_proto",
         "//src/cloud/vzconn/vzconnpb:service_pl_go_proto",
         "//src/operator/apis/px.dev/v1alpha1",

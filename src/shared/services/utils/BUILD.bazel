@@ -37,8 +37,8 @@ go_test(
         "claims_test.go",
         "error_test.go",
     ],
-    embed = [":utils"],
     deps = [
+        ":utils",
         "//src/shared/services/jwtpb:jwt_pl_go_proto",
         "@com_github_dgrijalva_jwt_go_v4//:jwt-go",
         "@com_github_stretchr_testify//assert",

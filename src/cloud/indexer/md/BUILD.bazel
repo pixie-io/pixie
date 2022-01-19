@@ -38,8 +38,8 @@ go_library(
 go_test(
     name = "md_test",
     srcs = ["md_test.go"],
-    embed = [":md"],
     deps = [
+        ":md",
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
         "//src/utils/testingutils",
         "@com_github_gofrs_uuid//:uuid",

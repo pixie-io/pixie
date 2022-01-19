@@ -27,8 +27,8 @@ go_library(
 go_test(
     name = "handler_test",
     srcs = ["handler_test.go"],
-    embed = [":handler"],
     deps = [
+        ":handler",
         "//src/shared/services/env",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",

@@ -43,8 +43,8 @@ go_library(
 go_test(
     name = "script_test",
     srcs = ["flagset_test.go"],
-    embed = [":script"],
     deps = [
+        ":script",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],

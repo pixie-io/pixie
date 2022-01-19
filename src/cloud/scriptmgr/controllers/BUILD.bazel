@@ -44,8 +44,8 @@ go_test(
         "placement_compile_test.go",
         "server_test.go",
     ],
-    embed = [":controllers"],
     deps = [
+        ":controllers",
         "//src/api/proto/vispb:vis_pl_go_proto",
         "//src/cloud/scriptmgr/scriptmgrpb:service_pl_go_proto",
         "//src/utils",

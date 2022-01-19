@@ -40,8 +40,8 @@ go_test(
         "nats_test.go",
         "stan_test.go",
     ],
-    embed = [":msgbus"],
     deps = [
+        ":msgbus",
         "//src/utils/testingutils",
         "@com_github_nats_io_nats_go//:nats_go",
         "@com_github_nats_io_stan_go//:stan_go",

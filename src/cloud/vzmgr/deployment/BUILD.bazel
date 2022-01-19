@@ -34,8 +34,8 @@ go_library(
 go_test(
     name = "deployment_test",
     srcs = ["deployment_test.go"],
-    embed = [":deployment"],
     deps = [
+        ":deployment",
         "//src/cloud/vzmgr/vzerrors",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
         "//src/utils",

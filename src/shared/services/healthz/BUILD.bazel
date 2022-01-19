@@ -27,8 +27,8 @@ go_library(
 go_test(
     name = "healthz_test",
     srcs = ["healthz_test.go"],
-    embed = [":healthz"],
     deps = [
+        ":healthz",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],

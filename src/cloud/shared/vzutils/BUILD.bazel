@@ -39,8 +39,8 @@ go_library(
 go_test(
     name = "vzutils_test",
     srcs = ["vzwatcher_test.go"],
-    embed = [":vzutils"],
     deps = [
+        ":vzutils",
         "//src/cloud/shared/messages",
         "//src/cloud/shared/messagespb:messages_pl_go_proto",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",

@@ -27,8 +27,8 @@ go_library(
 go_test(
     name = "env_test",
     srcs = ["env_test.go"],
-    embed = [":env"],
     deps = [
+        ":env",
         "@com_github_spf13_viper//:viper",
         "@com_github_stretchr_testify//assert",
     ],
