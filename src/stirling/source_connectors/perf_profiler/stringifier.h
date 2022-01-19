@@ -23,7 +23,7 @@
 
 #include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
 #include "src/stirling/source_connectors/perf_profiler/bcc_bpf_intf/stack_event.h"
-#include "src/stirling/source_connectors/perf_profiler/symbolizer.h"
+#include "src/stirling/source_connectors/perf_profiler/symbolizers/symbolizer.h"
 
 namespace px {
 namespace stirling {

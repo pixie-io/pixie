@@ -21,7 +21,7 @@
 #include <memory>
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/source_connectors/perf_profiler/symbol_cache.h"
+#include "src/stirling/source_connectors/perf_profiler/symbol_cache/symbol_cache.h"
 
 namespace px {
 namespace stirling {

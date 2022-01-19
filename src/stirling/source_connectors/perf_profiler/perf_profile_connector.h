@@ -29,11 +29,11 @@
 #include "src/stirling/core/source_connector.h"
 #include "src/stirling/core/types.h"
 #include "src/stirling/source_connectors/perf_profiler/bcc_bpf_intf/stack_event.h"
+#include "src/stirling/source_connectors/perf_profiler/shared/types.h"
 #include "src/stirling/source_connectors/perf_profiler/stack_trace_id_cache.h"
 #include "src/stirling/source_connectors/perf_profiler/stack_traces_table.h"
 #include "src/stirling/source_connectors/perf_profiler/stringifier.h"
-#include "src/stirling/source_connectors/perf_profiler/symbolizer.h"
-#include "src/stirling/source_connectors/perf_profiler/types.h"
+#include "src/stirling/source_connectors/perf_profiler/symbolizers/symbolizer.h"
 #include "src/stirling/utils/stat_counter.h"
 
 namespace px {

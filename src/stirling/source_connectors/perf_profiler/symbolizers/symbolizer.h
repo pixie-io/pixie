@@ -26,8 +26,8 @@
 #include "src/stirling/bpf_tools/bcc_symbolizer.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/obj_tools/elf_reader.h"
-#include "src/stirling/source_connectors/perf_profiler/symbol_cache.h"
-#include "src/stirling/source_connectors/perf_profiler/types.h"
+#include "src/stirling/source_connectors/perf_profiler/shared/types.h"
+#include "src/stirling/source_connectors/perf_profiler/symbol_cache/symbol_cache.h"
 
 DECLARE_uint64(stirling_profiler_cache_eviction_threshold);
 

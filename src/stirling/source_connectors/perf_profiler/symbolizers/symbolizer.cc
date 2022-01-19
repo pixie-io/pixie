@@ -19,7 +19,7 @@
 #include <utility>
 
 #include "src/stirling/bpf_tools/bcc_symbolizer.h"
-#include "src/stirling/source_connectors/perf_profiler/symbolizer.h"
+#include "src/stirling/source_connectors/perf_profiler/symbolizers/symbolizer.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
 using ::px::stirling::obj_tools::ElfReader;

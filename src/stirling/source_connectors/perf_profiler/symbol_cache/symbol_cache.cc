@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/stirling/source_connectors/perf_profiler/symbol_cache.h"
+#include "src/stirling/source_connectors/perf_profiler/symbol_cache/symbol_cache.h"
 
 #include "src/common/base/base.h"
 

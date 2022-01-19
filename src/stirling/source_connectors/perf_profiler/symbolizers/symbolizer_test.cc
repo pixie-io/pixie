@@ -22,7 +22,7 @@
 
 #include "src/common/testing/testing.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
-#include "src/stirling/source_connectors/perf_profiler/symbolizer.h"
+#include "src/stirling/source_connectors/perf_profiler/symbolizers/symbolizer.h"
 #include "src/stirling/testing/symbolization.h"
 
 namespace test {

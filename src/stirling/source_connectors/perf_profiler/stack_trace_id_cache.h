@@ -22,7 +22,7 @@
 
 #include <absl/container/flat_hash_map.h>
 
-#include "src/stirling/source_connectors/perf_profiler/types.h"
+#include "src/stirling/source_connectors/perf_profiler/shared/types.h"
 
 namespace px {
 namespace stirling {
