@@ -106,6 +106,15 @@
       }
     },
     {
+      "files": [
+        "cypress/**/*"
+      ],
+      "plugins": ["cypress"],
+      "env": {
+        "cypress/globals": true
+      }
+    },
+    {
       "files": ["./tools/licenses/*.js"],
       "env": {
         "node": true

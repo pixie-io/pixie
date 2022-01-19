@@ -41,6 +41,7 @@
     "compression-webpack-plugin": "^4.0.0",
     "concurrently": "^6.2.0",
     "css-loader": "^5.2.6",
+    "cypress": "^9.3.0",
     "esbuild": "^0.13.13",
     "esbuild-jest": "^0.5.0",
     "esbuild-loader": "^2.16.0",
@@ -48,6 +49,7 @@
     "eslint-config-airbnb-typescript": "^16.1.0",
     "eslint-import-resolver-node": "^0.3.6",
     "eslint-import-resolver-typescript": "^2.5.0",
+    "eslint-plugin-cypress": "^2.12.1",
     "eslint-plugin-import": "^2.25.4",
     "eslint-plugin-jest": "^25.3.4",
     "eslint-plugin-react": "^7.28.0",
@@ -182,7 +184,9 @@
     "coverage_ci": "jest --coverage --maxWorkers=4",
     "license_check": "yarn pnpify license-checker",
     "lint": "tsc --noEmit && eslint -c .eslintrc.json .",
-    "vgspec": "NODE_PATH=./src ts-node --compiler-options '{\"module\":\"commonjs\"}' src/utils/print-vgspec-cli.ts"
+    "vgspec": "NODE_PATH=./src ts-node --compiler-options '{\"module\":\"commonjs\"}' src/utils/print-vgspec-cli.ts",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run"
   },
   "resolutions": {
     "@types/react": "^17.0.2",

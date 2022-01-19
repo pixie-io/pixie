@@ -4,6 +4,12 @@ dist/*
 # Coverage results.
 coverage/
 
+# Cypress integration/e2e tests
+cypress/downloads/
+cypress/screenshots/
+cypress/videos/
+cypress.env.json
+
 # For Jenkins test results.
 junit.xml
 
