@@ -648,7 +648,7 @@ def buildDbg = {
 def buildGoRace = {
   WithSourceCodeAndTargetsK8s('build-go-race') {
     container('pxbuild') {
-      bazelCICmd('build-go-race', 'clang', 'opt', 'go_race', '--@io_bazel_rules_go//go/config:race')
+      bazelCICmd('build-go-race', 'go_race', 'opt', 'go_race')
     }
   }
 }

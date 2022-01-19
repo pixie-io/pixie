@@ -179,6 +179,15 @@ build:bpf_tsan --build_tag_filters=requires_bpf,requires_root,-no_tsan
 build:bpf_tsan --test_tag_filters=requires_bpf,requires_root,-no_tsan,-disabled
 test:bpf_tsan --jobs=4 --strategy=TestRunner=standalone
 
+# bazel build --config go_race
+build:go_race --define tcmalloc=disabled
+build:go_race --@io_bazel_rules_go//go/config:race
+test:go_race --define tcmalloc=disabled
+test:go_race --@io_bazel_rules_go//go/config:race
+run:go_race --define tcmalloc=disabled
+run:go_race --@io_bazel_rules_go//go/config:race
+
+
 coverage --config=gcc
 coverage --cxxopt -fprofile-arcs
 coverage --cxxopt -ftest-coverage
