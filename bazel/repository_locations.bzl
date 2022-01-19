@@ -41,10 +41,10 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "rules_scala-9d0d4f99ff79d5d454180a1c799ff1af1d380ed2",
     ),
     io_bazel_rules_k8s = dict(
-        sha256 = "cc75cf0d86312e1327d226e980efd3599704e01099b58b3c2fc4efe5e321fcd9",
-        strip_prefix = "rules_k8s-0.3.1",
+        sha256 = "a08850199d6900328ef899906717fb1dfcc6cde62701c63725748b2e6ca1d5d9",
+        strip_prefix = "rules_k8s-d05cbea5c56738ef02c667c10951294928a1d64a",
         urls = [
-            "https://github.com/bazelbuild/rules_k8s/releases/download/v0.3.1/rules_k8s-v0.3.1.tar.gz",
+            "https://github.com/bazelbuild/rules_k8s/archive/d05cbea5c56738ef02c667c10951294928a1d64a.tar.gz",
         ],
     ),
     com_github_apache_arrow = dict(
@@ -53,9 +53,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/pixie-io/arrow/archive/ecbb9de0b4c8739347f7ffa9e7aee7e46926bbab.tar.gz"],
     ),
     com_github_bazelbuild_buildtools = dict(
-        sha256 = "a02ba93b96a8151b5d8d3466580f6c1f7e77212c4eb181cba53eb2cae7752a23",
-        strip_prefix = "buildtools-3.5.0",
-        urls = ["https://github.com/bazelbuild/buildtools/archive/3.5.0.tar.gz"],
+        sha256 = "d368c47bbfc055010f118efb2962987475418737e901f7782d2a966d1dc80296",
+        strip_prefix = "buildtools-4.2.5",
+        urls = ["https://github.com/bazelbuild/buildtools/archive/4.2.5.tar.gz"],
     ),
     com_google_benchmark = dict(
         sha256 = "dccbdab796baa1043f04982147e67bb6e118fe610da2c65f88912d73987e700c",
@@ -78,9 +78,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/bazelbuild/bazel-skylib/archive/1.0.2.tar.gz"],
     ),
     io_bazel_rules_docker = dict(
-        sha256 = "4349f2b0b45c860dd2ffe18802e9f79183806af93ce5921fb12cbd6c07ab69a8",
-        strip_prefix = "rules_docker-0.21.0",
-        urls = ["https://github.com/bazelbuild/rules_docker/archive/v0.21.0.tar.gz"],
+        sha256 = "59536e6ae64359b716ba9c46c39183403b01eabfbd57578e84398b4829ca499a",
+        strip_prefix = "rules_docker-0.22.0",
+        urls = ["https://github.com/bazelbuild/rules_docker/archive/v0.22.0.tar.gz"],
     ),
     com_google_googletest = dict(
         sha256 = "9dc9157a9a1551ec7a7e43daea9a694a0bb5fb8bec81235d8a1e6ef64c716dcb",
