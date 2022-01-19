@@ -330,14 +330,18 @@ void PerfProfileConnector::PrintStats() const {
     const uint64_t k_hits = k_symbolizer->stat_hits();
     const uint64_t u_accesses = u_symbolizer->stat_accesses();
     const uint64_t k_accesses = k_symbolizer->stat_accesses();
+    const uint64_t u_num_symbols = u_symbolizer->GetNumberOfSymbolsCached();
+    const uint64_t k_num_symbols = k_symbolizer->GetNumberOfSymbolsCached();
     const double u_hit_rate = 100.0 * static_cast<double>(u_hits) / static_cast<double>(u_accesses);
     const double k_hit_rate = 100.0 * static_cast<double>(k_hits) / static_cast<double>(k_accesses);
     LOG(INFO) << absl::Substitute(
-        "PerfProfileConnector u_symbolizer hits, accesses, hit rate: $0, $1, $2%.", u_hits,
-        u_accesses, u_hit_rate);
+        "PerfProfileConnector u_symbolizer num. symbols cached, hits, accesses, hit rate: $0, $1, "
+        "$2, $3%.",
+        u_num_symbols, u_hits, u_accesses, u_hit_rate);
     LOG(INFO) << absl::Substitute(
-        "PerfProfileConnector k_symbolizer hits, accesses, hit rate: $0, $1, $2%.", k_hits,
-        k_accesses, k_hit_rate);
+        "PerfProfileConnector k_symbolizer num. symbols cached, hits, accesses, hit rate: $0, $1, "
+        "$2, $3%.",
+        k_num_symbols, k_hits, k_accesses, k_hit_rate);
   }
 }
 
