@@ -97,7 +97,7 @@ func (a *AgentsInfoImpl) UpdateAgentsInfo(update *metadatapb.AgentUpdatesRespons
 		carnotInfoMap[agentUUID] = carnotInfo
 	}
 
-	log.Infof("%d agents present in tracker before update", len(carnotInfoMap))
+	log.Tracef("%d agents present in tracker before update", len(carnotInfoMap))
 
 	createdAgents := 0
 	deletedAgents := 0
@@ -154,9 +154,9 @@ func (a *AgentsInfoImpl) UpdateAgentsInfo(update *metadatapb.AgentUpdatesRespons
 		}
 	}
 
-	log.Infof("Created %d agents, deleted %d agents, updated %d agents, updated %d agents data info",
+	log.Tracef("Created %d agents, deleted %d agents, updated %d agents, updated %d agents data info",
 		createdAgents, deletedAgents, updatedAgents, updatedAgentsDataInfo)
-	log.Infof("%d agents present in tracker after update", len(carnotInfoMap))
+	log.Tracef("%d agents present in tracker after update", len(carnotInfoMap))
 
 	// reset the array and recreate.
 	a.pendingDs.CarnotInfo = []*distributedpb.CarnotInfo{}

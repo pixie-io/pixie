@@ -302,10 +302,10 @@ func (s *Bridge) RunStream() {
 		var err error
 
 		connect := func() error {
-			log.Info("Connecting to VZConn...")
+			log.Info("Connecting to VZConn in Pixie Cloud...")
 			vzClient, err = NewVZConnClient(s.vzOperator)
 			if err != nil {
-				log.WithError(err).Error("Failed to connect to VZConn")
+				log.WithError(err).Error(fmt.Sprintf("Failed to connect to Pixie Cloud. Please check your firewall settings and confirm that %s is correct and accessible from your cluster.", viper.GetString("cloud_addr")))
 			}
 			return err
 		}
@@ -316,9 +316,9 @@ func (s *Bridge) RunStream() {
 		backOffOpts.MaxElapsedTime = 30 * time.Minute
 		err = backoff.Retry(connect, backOffOpts)
 		if err != nil {
-			log.WithError(err).Fatal("Could not connect to VZConn")
+			log.WithError(err).Fatal(fmt.Sprintf("Failed to connect to Pixie Cloud. Please check your firewall settings and confirm that %s is correct and accessible from your cluster.", viper.GetString("cloud_addr")))
 		}
-		log.Info("Successfully connected to VZConn")
+		log.Info("Successfully connected to Pixie Cloud via VZConn")
 		s.vzConnClient = vzClient
 	}
 
@@ -340,7 +340,7 @@ func (s *Bridge) RunStream() {
 		backOffOpts.MaxElapsedTime = 10 * time.Minute
 		err = backoff.Retry(connectNats, backOffOpts)
 		if err != nil {
-			log.WithError(err).Fatal("Could not connect to NATS")
+			log.WithError(err).Fatal("Could not connect to NATS. Please check for the `pl-nats` pods in the namespace to confirm they are healthy and running.")
 		}
 		log.Info("Successfully connected to NATS")
 		s.nc = nc
@@ -357,7 +357,7 @@ func (s *Bridge) RunStream() {
 		log.WithField("topic", natsTopic).Trace("Subscribing to NATS")
 		natsSub, err := s.nc.ChanSubscribe(natsTopic, s.natsCh)
 		if err != nil {
-			log.WithError(err).Fatal("Failed to subscribe to NATS.")
+			log.WithError(err).Fatal("Could not subscribe to NATS. Please check for the `pl-nats` pods in the namespace to confirm they are healthy and running.")
 		}
 		defer func() {
 			err := natsSub.Unsubscribe()
@@ -381,7 +381,7 @@ func (s *Bridge) RunStream() {
 	if s.vizierID == uuid.Nil {
 		err = s.RegisterDeployment()
 		if err != nil {
-			log.WithError(err).Fatal("Failed to register vizier deployment")
+			log.WithError(err).Fatal("Failed to register vizier deployment. If deploying via Helm or Manifest, please check your deployment key. Otherwise, ensure you have deployed with an authorized account.")
 		}
 	}
 
@@ -837,7 +837,7 @@ func (s *Bridge) parseV2CNatsMsg(data *nats.Msg) (*cvmsgspb.V2CMessage, string, 
 // HandleNATSBridging routes message to and from cloud NATS.
 func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClient, done chan bool, errCh chan error) error {
 	defer s.wg.Done()
-	defer log.Info("Closing NATS Bridge")
+	defer log.Info("Closing NATS Bridge. This is expected behavior which happens periodically")
 	// Vizier -> Cloud side:
 	// 1. Listen to NATS on v2c.<topic>.
 	// 2. Extract Topic from the stream name above.

@@ -92,7 +92,7 @@ func mustInitEtcdDatastore() (*etcd.DataStore, func()) {
 		TLS:         tlsConfig,
 	})
 	if err != nil {
-		log.WithError(err).Fatalf("Failed to connect to etcd at %s", viper.GetString("md_etcd_server"))
+		log.WithError(err).Fatalf("Failed to connect to etcd at %s. Please check status and logs for `pl-etcd` pods in the cluster.", viper.GetString("md_etcd_server"))
 	}
 
 	etcdMgr := controllers.NewEtcdManager(etcdClient)
@@ -150,7 +150,7 @@ func main() {
 	}
 
 	if err != nil {
-		log.WithError(err).Fatal("Could not connect to NATS")
+		log.WithError(err).Fatal("Could not connect to NATS. Please check for the `pl-nats` pods in the namespace to confirm they are healthy and running.")
 	}
 
 	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
