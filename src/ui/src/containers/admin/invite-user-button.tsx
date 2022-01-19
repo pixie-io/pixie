@@ -170,7 +170,7 @@ export const InviteUserButton = React.memo<InviteUserButtonProps>(({
             // Managed domain (such as a Google Workspace)
             <div className={classes.body}>
               Invite users to join your Pixie organization with the link below.<br/>
-              Invited teammates must sign up using their Google Workspace account.<br/>
+              Invited teammates must select the “Login with Google” option and use their Google Workspace account.<br/>
             </div>
           ) : (
             // Non-managed domain
