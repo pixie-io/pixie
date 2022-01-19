@@ -60,13 +60,6 @@ class Symbolizer {
    * Delete the state associated with a symbolizer created by a previous call to GetSymbolizerFn
    */
   virtual void DeleteUPID(const struct upid_t& upid) = 0;
-
-  int64_t stat_accesses() const { return stat_accesses_; }
-  int64_t stat_hits() const { return stat_hits_; }
-
- protected:
-  int64_t stat_accesses_ = 0;
-  int64_t stat_hits_ = 0;
 };
 
 /**
@@ -117,6 +110,10 @@ class CachingSymbolizer : public Symbolizer {
   void DeleteUPID(const struct upid_t& upid) override;
   size_t PerformEvictions();
 
+  int64_t stat_accesses() const { return stat_accesses_; }
+  int64_t stat_hits() const { return stat_hits_; }
+  uint64_t GetNumberOfSymbolsCached() const;
+
  private:
   CachingSymbolizer() = default;
 
@@ -125,6 +122,9 @@ class CachingSymbolizer : public Symbolizer {
   std::unique_ptr<Symbolizer> symbolizer_;
 
   absl::flat_hash_map<struct upid_t, std::unique_ptr<SymbolCache>> symbol_caches_;
+
+  int64_t stat_accesses_ = 0;
+  int64_t stat_hits_ = 0;
 };
 
 }  // namespace stirling

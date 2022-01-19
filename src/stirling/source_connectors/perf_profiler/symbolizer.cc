@@ -43,8 +43,6 @@ void BCCSymbolizer::DeleteUPID(const struct upid_t& upid) {
 }
 
 std::string_view BCCSymbolizer::Symbolize(const int pid, const uintptr_t addr) {
-  ++stat_hits_;
-  ++stat_accesses_;
   static std::string symbol;
   symbol = bcc_symbolizer_.SymbolOrAddrIfUnknown(addr, pid);
   return symbol;
@@ -164,6 +162,14 @@ std::string_view CachingSymbolizer::Symbolize(SymbolCache* symbol_cache, const u
     ++stat_hits_;
   }
   return result.symbol;
+}
+
+uint64_t CachingSymbolizer::GetNumberOfSymbolsCached() const {
+  uint64_t n = 0;
+  for (const auto& [upid, symbol_cache] : symbol_caches_) {
+    n += symbol_cache->total_entries();
+  }
+  return n;
 }
 
 }  // namespace stirling

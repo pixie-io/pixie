@@ -69,19 +69,10 @@ TEST_F(BCCSymbolizerTest, KernelSymbols) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<Symbolizer> symbolizer, BCCSymbolizer::Create());
 
   std::string_view kSymbolName = "cpu_detect";
-  ASSERT_OK_AND_ASSIGN(uint64_t kaddr, GetKernelSymAddr(kSymbolName));
-
-  EXPECT_EQ(symbolizer_->stat_accesses(), 0);
-  EXPECT_EQ(symbolizer_->stat_hits(), 0);
+  ASSERT_OK_AND_ASSIGN(const uint64_t kaddr, GetKernelSymAddr(kSymbolName));
 
   auto symbolize = symbolizer_->GetSymbolizerFn(profiler::kKernelUPID);
   EXPECT_EQ(std::string(symbolize(kaddr)), kSymbolName);
-  EXPECT_EQ(symbolizer_->stat_accesses(), 1);
-  EXPECT_EQ(symbolizer_->stat_hits(), 1);
-
-  EXPECT_EQ(std::string(symbolize(kaddr)), kSymbolName);
-  EXPECT_EQ(symbolizer_->stat_accesses(), 2);
-  EXPECT_EQ(symbolizer_->stat_hits(), 2);
 }
 
 // Test the symbolizer with caching enabled and disabled.
@@ -105,12 +96,14 @@ TEST_F(BCCSymbolizerTest, Caching) {
     EXPECT_EQ(symbolize(kFooAddr), "test::foo()");
     EXPECT_EQ(symbolizer.stat_accesses(), 1);
     EXPECT_EQ(symbolizer.stat_hits(), 0);
+    EXPECT_EQ(symbolizer.GetNumberOfSymbolsCached(), 1);
   }
   {
     auto symbolize = symbolizer.GetSymbolizerFn(this_upid);
     EXPECT_EQ(symbolize(kBarAddr), "test::bar()");
     EXPECT_EQ(symbolizer.stat_accesses(), 2);
     EXPECT_EQ(symbolizer.stat_hits(), 0);
+    EXPECT_EQ(symbolizer.GetNumberOfSymbolsCached(), 2);
   }
 
   // Lookup the addresses a second time. We should get cache hits.
@@ -119,6 +112,7 @@ TEST_F(BCCSymbolizerTest, Caching) {
     EXPECT_EQ(symbolize(kFooAddr), "test::foo()");
     EXPECT_EQ(symbolizer.stat_accesses(), 3);
     EXPECT_EQ(symbolizer.stat_hits(), 1);
+    EXPECT_EQ(symbolizer.GetNumberOfSymbolsCached(), 2);
   }
 
   {
@@ -126,6 +120,7 @@ TEST_F(BCCSymbolizerTest, Caching) {
     EXPECT_EQ(symbolize(kBarAddr), "test::bar()");
     EXPECT_EQ(symbolizer.stat_accesses(), 4);
     EXPECT_EQ(symbolizer.stat_hits(), 2);
+    EXPECT_EQ(symbolizer.GetNumberOfSymbolsCached(), 2);
   }
 
   std::string_view kSymbolName = "cpu_detect";
@@ -136,54 +131,64 @@ TEST_F(BCCSymbolizerTest, Caching) {
     EXPECT_EQ(std::string(symbolize(kaddr)), kSymbolName);
     EXPECT_EQ(symbolizer.stat_accesses(), 5);
     EXPECT_EQ(symbolizer.stat_hits(), 2);
+    EXPECT_EQ(symbolizer.GetNumberOfSymbolsCached(), 3);
   }
   {
     auto symbolize = symbolizer.GetSymbolizerFn(profiler::kKernelUPID);
     EXPECT_EQ(std::string(symbolize(kaddr)), kSymbolName);
     EXPECT_EQ(symbolizer.stat_accesses(), 6);
     EXPECT_EQ(symbolizer.stat_hits(), 3);
+    EXPECT_EQ(symbolizer.GetNumberOfSymbolsCached(), 3);
   }
 
   // This will flush the caches, access count & hit count will remain the same.
   // We will lookup the symbols and again expect a miss then a hit.
   symbolizer.DeleteUPID(this_upid);
+  EXPECT_EQ(symbolizer.GetNumberOfSymbolsCached(), 1);
   symbolizer.DeleteUPID(profiler::kKernelUPID);
+  EXPECT_EQ(symbolizer.GetNumberOfSymbolsCached(), 0);
 
   {
     auto symbolize = symbolizer.GetSymbolizerFn(this_upid);
     EXPECT_EQ(symbolize(kFooAddr), "test::foo()");
     EXPECT_EQ(symbolizer.stat_accesses(), 7);
     EXPECT_EQ(symbolizer.stat_hits(), 3);
+    EXPECT_EQ(symbolizer.GetNumberOfSymbolsCached(), 1);
   }
   {
     auto symbolize = symbolizer.GetSymbolizerFn(this_upid);
     EXPECT_EQ(symbolize(kBarAddr), "test::bar()");
     EXPECT_EQ(symbolizer.stat_accesses(), 8);
     EXPECT_EQ(symbolizer.stat_hits(), 3);
+    EXPECT_EQ(symbolizer.GetNumberOfSymbolsCached(), 2);
   }
   {
     auto symbolize = symbolizer.GetSymbolizerFn(profiler::kKernelUPID);
     EXPECT_EQ(std::string(symbolize(kaddr)), kSymbolName);
     EXPECT_EQ(symbolizer.stat_accesses(), 9);
     EXPECT_EQ(symbolizer.stat_hits(), 3);
+    EXPECT_EQ(symbolizer.GetNumberOfSymbolsCached(), 3);
   }
   {
     auto symbolize = symbolizer.GetSymbolizerFn(this_upid);
     EXPECT_EQ(symbolize(kFooAddr), "test::foo()");
     EXPECT_EQ(symbolizer.stat_accesses(), 10);
     EXPECT_EQ(symbolizer.stat_hits(), 4);
+    EXPECT_EQ(symbolizer.GetNumberOfSymbolsCached(), 3);
   }
   {
     auto symbolize = symbolizer.GetSymbolizerFn(this_upid);
     EXPECT_EQ(symbolize(kBarAddr), "test::bar()");
     EXPECT_EQ(symbolizer.stat_accesses(), 11);
     EXPECT_EQ(symbolizer.stat_hits(), 5);
+    EXPECT_EQ(symbolizer.GetNumberOfSymbolsCached(), 3);
   }
   {
     auto symbolize = symbolizer.GetSymbolizerFn(profiler::kKernelUPID);
     EXPECT_EQ(std::string(symbolize(kaddr)), kSymbolName);
     EXPECT_EQ(symbolizer.stat_accesses(), 12);
     EXPECT_EQ(symbolizer.stat_hits(), 6);
+    EXPECT_EQ(symbolizer.GetNumberOfSymbolsCached(), 3);
   }
 
   // Test the feature that converts "[UNKNOWN]" into 0x<addr>.
@@ -192,12 +197,14 @@ TEST_F(BCCSymbolizerTest, Caching) {
     EXPECT_EQ(symbolize(0x1234123412341234ULL), "0x1234123412341234");
     EXPECT_EQ(symbolizer.stat_accesses(), 13);
     EXPECT_EQ(symbolizer.stat_hits(), 6);
+    EXPECT_EQ(symbolizer.GetNumberOfSymbolsCached(), 4);
   }
   {
     auto symbolize = symbolizer.GetSymbolizerFn(this_upid);
     EXPECT_EQ(symbolize(0x1234123412341234ULL), "0x1234123412341234");
     EXPECT_EQ(symbolizer.stat_accesses(), 14);
     EXPECT_EQ(symbolizer.stat_hits(), 7);
+    EXPECT_EQ(symbolizer.GetNumberOfSymbolsCached(), 4);
   }
 }
 
