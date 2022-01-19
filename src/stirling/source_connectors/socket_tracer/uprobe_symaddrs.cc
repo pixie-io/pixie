@@ -373,7 +373,11 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
     std::string fn = VENDOR_SYMBOL("golang.org/x/net/http2/hpack.(*Encoder).WriteField");
     auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     LOG_ASSIGN(symaddrs->WriteField_e_loc, GetArgOffset(args_map, "e"));
-    LOG_ASSIGN(symaddrs->WriteField_f_loc, GetArgOffset(args_map, "f"));
+    LOG_ASSIGN(symaddrs->WriteField_f_name_loc, GetArgOffset(args_map, "f"));
+    symaddrs->WriteField_f_name_loc.offset += 0;
+
+    LOG_ASSIGN(symaddrs->WriteField_f_value_loc, GetArgOffset(args_map, "f"));
+    symaddrs->WriteField_f_value_loc.offset += 16;
   }
 
   // Arguments of net/http.(*http2serverConn).processHeaders.

@@ -223,7 +223,7 @@ static __inline void submit_headers(struct pt_regs* ctx, enum http2_probe_type_t
 
 static __inline void submit_header(struct pt_regs* ctx, enum http2_probe_type_t probe_type,
                                    enum HeaderEventType type, void* encoder_ptr,
-                                   const void* header_field_ptr,
+                                   struct gostring* name_ptr, struct gostring* value_ptr,
                                    const struct go_http2_symaddrs_t* symaddrs) {
   struct header_attr_t* attr = active_write_headers_frame_map.lookup(&encoder_ptr);
   if (attr == NULL) {
@@ -237,7 +237,9 @@ static __inline void submit_header(struct pt_regs* ctx, enum http2_probe_type_t 
   event.attr.conn_id = attr->conn_id;
   event.attr.stream_id = attr->stream_id;
 
-  fill_header_field(&event, header_field_ptr, symaddrs);
+  copy_header_field(&event.name, name_ptr);
+  copy_header_field(&event.value, value_ptr);
+
   go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
 }
 
@@ -631,7 +633,8 @@ int probe_hpack_header_encoder(struct pt_regs* ctx) {
 
   // Required argument offsets.
   REQUIRE_LOCATION(symaddrs->WriteField_e_loc, 0);
-  REQUIRE_LOCATION(symaddrs->WriteField_f_loc, 0);
+  REQUIRE_LOCATION(symaddrs->WriteField_f_name_loc, 0);
+  REQUIRE_LOCATION(symaddrs->WriteField_f_value_loc, 0);
 
   // ---------------------------------------------
   // Extract arguments (on stack)
@@ -646,13 +649,17 @@ int probe_hpack_header_encoder(struct pt_regs* ctx) {
   void* encoder_ptr = NULL;
   assign_arg(&encoder_ptr, sizeof(encoder_ptr), symaddrs->WriteField_e_loc, sp, regs);
 
-  const void* header_field_ptr = (const void*)ctx->sp + symaddrs->WriteField_f_loc.offset;
+  struct gostring name = {};
+  assign_arg(&name, sizeof(struct gostring), symaddrs->WriteField_f_name_loc, sp, regs);
+
+  struct gostring value = {};
+  assign_arg(&value, sizeof(struct gostring), symaddrs->WriteField_f_value_loc, sp, regs);
 
   // ------------------------------------------------------
   // Process
   // ------------------------------------------------------
 
-  submit_header(ctx, k_probe_hpack_header_encoder, kHeaderEventWrite, encoder_ptr, header_field_ptr,
+  submit_header(ctx, k_probe_hpack_header_encoder, kHeaderEventWrite, encoder_ptr, &name, &value,
                 symaddrs);
 
   return 0;

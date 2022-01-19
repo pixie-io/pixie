@@ -45,6 +45,7 @@ using ::testing::UnorderedElementsAre;
 // HTTP2TraceTest
 //-----------------------------------------------------------------------------
 
+// Test is templated so it can use Go 1.16 or 1.17 versions of client/server.
 template <typename TClientServerContainers>
 class HTTP2TraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ false> {
  protected:
@@ -69,7 +70,9 @@ struct Go1_17GRPCClientServerContainers {
   using ClientContainer = ::px::stirling::testing::Go1_17_GRPCClientContainer;
 };
 
-typedef ::testing::Types<Go1_16GRPCClientServerContainers> GoVersions;
+// Use a typed test to run the test for both Go 1.16 and Go 1.17.
+typedef ::testing::Types<Go1_16GRPCClientServerContainers, Go1_17GRPCClientServerContainers>
+    GoVersions;
 TYPED_TEST_SUITE(HTTP2TraceTest, GoVersions);
 
 TYPED_TEST(HTTP2TraceTest, Basic) {

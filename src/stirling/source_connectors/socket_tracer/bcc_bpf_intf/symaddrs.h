@@ -135,7 +135,11 @@ struct go_http2_symaddrs_t {
 
   // Arguments of golang.org/x/net/http2/hpack.(*Encoder).WriteField.
   struct location_t WriteField_e_loc;  // 8
-  struct location_t WriteField_f_loc;  // 16
+  // Note that the HeaderField `f` is further broken down to its name and value members.
+  // This is done so we can better control the location of these members from user-space.
+  // In theory, there could be an ABI that splits these two members across stack and registers.
+  struct location_t WriteField_f_name_loc;   // 16
+  struct location_t WriteField_f_value_loc;  // 32
 
   // Arguments of net/http.(*http2serverConn).processHeaders.
   struct location_t processHeaders_sc_loc;  // 8
