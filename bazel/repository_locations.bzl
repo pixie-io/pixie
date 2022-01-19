@@ -34,11 +34,11 @@ REPOSITORY_LOCATIONS = dict(
         ],
     ),
     io_bazel_rules_scala = dict(
-        sha256 = "76e1abb8a54f61ada974e6e9af689c59fd9f0518b49be6be7a631ce9fa45f236",
+        sha256 = "0485168f15607ca3eab999ed531bd25596cf4a43b295552c80032ba0e056cd1a",
         urls = [
-            "https://github.com/bazelbuild/rules_scala/archive/e7a948ad1948058a7a5ddfbd9d1629d6db839933.zip",
+            "https://github.com/bazelbuild/rules_scala/archive/9d0d4f99ff79d5d454180a1c799ff1af1d380ed2.tar.gz",
         ],
-        strip_prefix = "rules_scala-e7a948ad1948058a7a5ddfbd9d1629d6db839933",
+        strip_prefix = "rules_scala-9d0d4f99ff79d5d454180a1c799ff1af1d380ed2",
     ),
     io_bazel_rules_k8s = dict(
         sha256 = "cc75cf0d86312e1327d226e980efd3599704e01099b58b3c2fc4efe5e321fcd9",
