@@ -31,7 +31,6 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/jmoiron/sqlx"
 	"github.com/nats-io/nats.go"
-	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/metadata"
@@ -42,14 +41,6 @@ import (
 	"px.dev/pixie/src/shared/cvmsgspb"
 	jwtutils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils"
-)
-
-var (
-	vizierUpdatedCounter = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "vizier_updated",
-			Help: "Number of viziers that were updated",
-		})
 )
 
 // Updater is responsible for tracking and updating Viziers.
@@ -76,8 +67,6 @@ func NewUpdater(db *sqlx.DB, atClient artifacttrackerpb.ArtifactTrackerClient, n
 		updateQueue:   make(chan uuid.UUID, 32),
 		queuedViziers: make(map[uuid.UUID]bool),
 	}
-
-	_ = prometheus.Register(vizierUpdatedCounter)
 
 	latestVersion, err := updater.getLatestVizierVersion()
 	if err != nil {

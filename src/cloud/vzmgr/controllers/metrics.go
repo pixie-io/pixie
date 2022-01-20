@@ -24,6 +24,24 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var (
+	missingUpdateCount = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "missing_update_count",
+		Help: "Number of updates we think we might be missing for a given vizier.",
+	}, []string{"shardID", "vizierID"})
+
+	vizierUpdatedCounter = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "vizier_updated",
+			Help: "Number of viziers that were updated",
+		})
+)
+
+func init() {
+	prometheus.MustRegister(missingUpdateCount)
+	prometheus.MustRegister(vizierUpdatedCounter)
+}
+
 const statusQuery = `
 SELECT
   enumerated.shard_id,

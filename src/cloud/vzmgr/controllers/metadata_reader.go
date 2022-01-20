@@ -375,15 +375,20 @@ func (m *MetadataReader) processVizierUpdate(update *metadatapb.ResourceUpdate, 
 }
 
 func (m *MetadataReader) getMissingUpdates(from, to int64, vzState *VizierState) error {
+	vizierIDStr := vzState.id.String()
 	log.
-		WithField("vizier", vzState.id.String()).
+		WithField("vizier", vizierIDStr).
 		WithField("from", from).
 		WithField("to", to).
 		Info("Making request for missing metadata updates")
 
+	missingUpdateCount.
+		WithLabelValues(vzshard.VizierIDToShard(vzState.id), vizierIDStr).
+		Add(float64(to - from))
+
 	defer func() {
 		log.
-			WithField("vizier", vzState.id.String()).
+			WithField("vizier", vizierIDStr).
 			WithField("vizier.updateVersion", vzState.updateVersion).
 			WithField("from", from).
 			WithField("to", to).
