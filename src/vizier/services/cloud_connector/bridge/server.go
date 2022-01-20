@@ -656,39 +656,60 @@ func (s *Bridge) doRegistrationHandshake(stream vzconnpb.VZConnService_NATSBridg
 
 // StartStream starts the stream between the cloud connector and Vizier connector.
 func (s *Bridge) StartStream() error {
-	ctx, cancel := context.WithCancel(context.Background())
-	stream, err := s.vzConnClient.NATSBridge(ctx)
-	if err != nil {
-		log.WithError(err).Error("Error starting stream")
-		cancel()
-		return err
-	}
+	var stream vzconnpb.VZConnService_NATSBridgeClient
+	cancel := func() {}
 	// Wait for  all goroutines to terminate.
 	defer func() {
 		s.wg.Wait()
 	}()
-
-	// Setup the stream reader go routine.
 	done := make(chan bool)
 	defer close(done)
-	// Cancel the stream to make sure everything get shutdown properly.
-	defer func() {
-		cancel()
-	}()
 
-	s.wg.Add(1)
-	go s.startStreamGRPCReader(stream, done)
-	s.wg.Add(1)
-	go s.startStreamGRPCWriter(stream, done)
+	// We backoff-retry the registration logic but immediately fail the core-logic.
+	backOffOpts := backoff.NewExponentialBackOff()
+	backOffOpts.InitialInterval = 30 * time.Second
+	backOffOpts.Multiplier = 2
+	backOffOpts.MaxElapsedTime = 30 * time.Minute
+	err := backoff.Retry(func() error {
+		select {
+		case <-s.quitCh:
+			return nil
+		default:
+		}
 
-	if !s.registered {
-		// Need to do registration handshake before we allow any cvmsgs.
-		err := s.doRegistrationHandshake(stream)
+		log.Trace("Start Vizier registration")
+		var err error
+		var ctx context.Context
+		ctx, cancel = context.WithCancel(context.Background())
+		stream, err = s.vzConnClient.NATSBridge(ctx)
 		if err != nil {
+			log.WithError(err).Error("Error starting grpc stream")
+			cancel()
 			return err
 		}
+		s.wg.Add(1)
+		go s.startStreamGRPCReader(stream, done)
+		s.wg.Add(1)
+		go s.startStreamGRPCWriter(stream, done)
+
+		if !s.registered {
+			// Need to do registration handshake before we allow any cvmsgs.
+			err = s.doRegistrationHandshake(stream)
+			if err != nil {
+				log.WithError(err).Error("Error doing registration handshake")
+				cancel()
+				return err
+			}
+		}
+		log.Trace("Complete Vizier registration")
+		return nil
+	}, backOffOpts)
+
+	// Defer is placed after backoff because we re-assign the cancel inside the backoff retry.
+	defer cancel()
+	if err != nil {
+		return err
 	}
-	log.Trace("Registration Complete.")
 
 	// Check to see if Stop was called while we waited for the
 	// registrationHandshake and if so, skip setting up NATS
@@ -701,7 +722,11 @@ func (s *Bridge) StartStream() error {
 
 	s.wg.Add(1)
 	err = s.HandleNATSBridging(stream, done)
-	return err
+	if err != nil {
+		log.WithError(err).Error("Error inside NATS bridge")
+		return err
+	}
+	return nil
 }
 
 func (s *Bridge) startStreamGRPCReader(stream vzconnpb.VZConnService_NATSBridgeClient, done chan bool) {
