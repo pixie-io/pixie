@@ -30,11 +30,11 @@ import {
 } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import { Link } from 'react-router-dom';
 
 import OrgContext from 'app/common/org-context';
 import { useSnackbar } from 'app/components';
+import { OAUTH_PROVIDER } from 'app/containers/constants';
 import { GQLOrgInfo, GQLUserInfo } from 'app/types/schema';
 
 import {
@@ -46,6 +46,7 @@ type UserDisplay = Pick<GQLUserInfo, 'id' | 'name' | 'email' | 'isApproved'>;
 interface UserRowProps {
   user: UserDisplay;
   numUsers: number;
+  domainName: string;
 }
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
@@ -165,9 +166,8 @@ const RemoveUserButton = React.memo<UserRowProps>(({ user, numUsers }) => {
 });
 RemoveUserButton.displayName = 'RemoveUserButton';
 
-export const UserRow = React.memo<UserRowProps>(({ user, numUsers }) => {
+export const UserRow = React.memo<UserRowProps>(({ user, numUsers, domainName }) => {
   const classes = useStyles();
-  const { invite: invitationsEnabled } = useFlags();
 
   const [updateUserInfo] = useMutation<{ UpdateUserPermissions: UserDisplay }, { id: string, isApproved: boolean }>(
     gql`
@@ -181,6 +181,10 @@ export const UserRow = React.memo<UserRowProps>(({ user, numUsers }) => {
       }
     `,
   );
+
+  const removeTooltip = domainName ?
+    'Removed users can join the org again by using Google SSO and signing in with their Google Workspace account.' :
+    'Removed users can be added back by sending them new invite links.';
 
   return (
     <TableRow key={user.email}>
@@ -214,10 +218,10 @@ export const UserRow = React.memo<UserRowProps>(({ user, numUsers }) => {
               </Button>
             </div>
           </AdminTooltip>
-          {invitationsEnabled && (
-            <AdminTooltip title={'Removed users can be added back by sending them new invite links.'}>
+          {OAUTH_PROVIDER === 'auth0' && (
+            <AdminTooltip title={removeTooltip}>
               <div>
-                <RemoveUserButton user={user} numUsers={numUsers} />
+                <RemoveUserButton user={user} numUsers={numUsers} domainName={domainName} />
               </div>
             </AdminTooltip>
           )}
@@ -300,7 +304,7 @@ export const UsersTable = React.memo(() => {
         </TableHead>
         <TableBody>
           {users.map((user: UserDisplay) => (
-            <UserRow key={user.email} user={user} numUsers={users.length} />
+            <UserRow key={user.email} user={user} numUsers={users.length} domainName={domainName}/>
           ))}
         </TableBody>
       </Table>

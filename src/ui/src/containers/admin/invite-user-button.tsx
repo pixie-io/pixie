@@ -29,10 +29,10 @@ import {
 } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import OrgContext from 'app/common/org-context';
 import { useSnackbar } from 'app/components';
+import { OAUTH_PROVIDER } from 'app/containers/constants';
 import { GQLOrgInfo } from 'app/types/schema';
 import pixieAnalytics from 'app/utils/analytics';
 import { getRedirectPath } from 'app/utils/redirect-utils';
@@ -149,8 +149,7 @@ export const InviteUserButton = React.memo<InviteUserButtonProps>(({
     }
   }, [invitationLink, showSnackbar]);
 
-  const { invite: invitationsEnabled } = useFlags();
-  if (!invitationsEnabled) return <></>;
+  if (OAUTH_PROVIDER !== 'auth0') return <></>;
 
   return (
     <>

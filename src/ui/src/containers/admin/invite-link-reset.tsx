@@ -28,9 +28,9 @@ import {
 } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { useSnackbar } from 'app/components';
+import { OAUTH_PROVIDER } from 'app/containers/constants';
 import pixieAnalytics from 'app/utils/analytics';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
@@ -92,8 +92,7 @@ export const InviteLinkReset = React.memo<{
       });
   }, [closeModal, orgID, revokeAllInviteTokens, showSnackbar]);
 
-  const { invite: invitationsEnabled } = useFlags();
-  if (!invitationsEnabled) return <></>;
+  if (OAUTH_PROVIDER !== 'auth0') return <></>;
 
   return (
     <div className={classes.root}>
