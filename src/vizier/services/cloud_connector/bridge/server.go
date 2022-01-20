@@ -178,9 +178,8 @@ type Bridge struct {
 
 	hbSeqNum int64
 
-	nc         *nats.Conn
-	natsCh     chan *nats.Msg
-	registered bool
+	nc     *nats.Conn
+	natsCh chan *nats.Msg
 	// There are a two sets of streams that we manage for the GRPC side. The incoming
 	// data and the outgoing data. GRPC does not natively provide a channel based interface
 	// so we wrap the Send/Recv calls with goroutines that are responsible for
@@ -223,7 +222,6 @@ func New(vizierID uuid.UUID, jwtSigningKey string, deployKey string, sessionID i
 		nc:            nc,
 		// Buffer NATS channels to make sure we don't back-pressure NATS
 		natsCh:            make(chan *nats.Msg, 5000),
-		registered:        false,
 		ptOutCh:           make(chan *vzconnpb.V2CBridgeMessage, 5000),
 		grpcOutCh:         make(chan *vzconnpb.V2CBridgeMessage, 5000),
 		grpcInCh:          make(chan *vzconnpb.C2VBridgeMessage, 5000),
@@ -392,7 +390,6 @@ func (s *Bridge) RunStream() {
 	go s.WatchDog()
 
 	for {
-		s.registered = false
 		select {
 		case <-s.quitCh:
 			return
@@ -644,7 +641,6 @@ func (s *Bridge) doRegistrationHandshake(stream vzconnpb.VZConnService_NATSBridg
 			case cvmsgspb.ST_FAILED_NOT_FOUND:
 				return errors.New("registration not found, cluster unknown in pixie-cloud")
 			case cvmsgspb.ST_OK:
-				s.registered = true
 				return nil
 			default:
 
@@ -692,14 +688,12 @@ func (s *Bridge) StartStream() error {
 		s.wg.Add(1)
 		go s.startStreamGRPCWriter(stream, done)
 
-		if !s.registered {
-			// Need to do registration handshake before we allow any cvmsgs.
-			err = s.doRegistrationHandshake(stream)
-			if err != nil {
-				log.WithError(err).Error("Error doing registration handshake")
-				cancel()
-				return err
-			}
+		// Need to do registration handshake before we allow any cvmsgs.
+		err = s.doRegistrationHandshake(stream)
+		if err != nil {
+			log.WithError(err).Error("Error doing registration handshake")
+			cancel()
+			return err
 		}
 		log.Trace("Complete Vizier registration")
 		return nil
