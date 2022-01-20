@@ -23,26 +23,26 @@ package status
 
 var reasonToMessageMap = map[VizierReason]string{
 	"":                             "",
-	VizierVersionTooOld:            "Vizier version is older by more than one major version and may no longer be supported. Please update to the latest version.",
-	KernelVersionsIncompatible:     "Majority of nodes on the cluster have an incompatible Kernel version. Instrumentation may be incomplete.",
-	CloudConnectorFailedToConnect:  "Cloud connector failed to connect to Pixie Cloud. Please check the cloud address in the Vizier object.",
+	VizierVersionTooOld:            "Vizier version is older by more than one major version and may no longer be supported. Please update to the latest version by redeploying or running `px update vizier`.",
+	KernelVersionsIncompatible:     "Majority of nodes on the cluster have an incompatible Kernel version. Instrumentation may be incomplete. See https://docs.px.dev/installing-pixie/requirements/ for list of supported Kernel versions.",
+	CloudConnectorFailedToConnect:  "Cloud connector failed to connect to Pixie Cloud. Please check the cloud address in the Vizier object to ensure it is correct and accesible within your firewall and network configurations.",
 	CloudConnectorRegistering:      "Cloud connector is registering with Pixie Cloud. This may take a few minutes.",
-	CloudConnectorInvalidDeployKey: "Invalid deploy key specified. Please check that the deploy key is correct.",
-	CloudConnectorBasicQueryFailed: "Unable to run basic healthcheck query on cluster.",
-	CloudConnectorPodPending:       "Cloud connector pod is pending. If this status persists, investigate failures on the vizier-cloud-connector pod.",
-	CloudConnectorPodFailed:        "Cloud connector pod failed to start. If this status persists, investigate failures on the vizier-cloud-connector pod.",
+	CloudConnectorInvalidDeployKey: "Invalid deploy key specified. If deploying via Helm or Manifest, please check your deployment key. Otherwise, ensure you have deployed with an authorized account and retry.",
+	CloudConnectorBasicQueryFailed: "Unable to run basic healthcheck query on cluster. Refer to https://docs.px.dev/about-pixie/faq/ for troubleshooting recommendations.",
+	CloudConnectorPodPending:       "Cloud connector pod is pending. If this status persists, investigate failures on the vizier-cloud-connector pod using `kubectl describe` and verify your cluster is not resource constrained.",
+	CloudConnectorPodFailed:        "Cloud connector pod failed to start. If this status persists, investigate failures on the vizier-cloud-connector pod using `kubectl describe` and `kubectl logs`.",
 	CloudConnectorMissing: "Cloud connector pod not found. Something is preventing the vizier-operator from deploying Pixie. " +
 		"If this status persists, clobber and re-deploy your Pixie instance.",
 	MetadataPVCMissing: "The PVC requested by Pixie cannot be found. The vizier-metadata service is unable to start without the PVC. " +
-		"If this status persists, clobber and re-deploy your Pixie instance.",
+		"If this status persists, ensure that PersistentVolumes may be mounted in your cluster and clobber and re-deploy your Pixie instance.",
 	MetadataPVCStorageClassUnavailable: "The PVC requested by Pixie cannot be created successfully: cluster lacks PersistentVolumes or dynamic storage provisioning. " +
 		"See https://kubernetes.io/docs/concepts/storage/persistent-volumes/#lifecycle-of-a-volume-and-claim for info on setting up this feature on the cluster.",
-	MetadataPVCPendingBinding: "The PVC requested by Pixie is still Pending. If stuck in this status, investigate the status of PVC in the Vizier namespace (default `pl`).",
+	MetadataPVCPendingBinding: "The PVC requested by Pixie is still Pending. If stuck in this status, investigate the status of PVC in the Vizier namespace (default `pl`) using `kubectl describe`.",
 	ControlPlaneFailedToScheduleBecauseOfTaints: "The Vizier control plane could not be scheduled because taints exist on " +
-		"every node. Consider removing taints from some nodes or manually adding tolerations to each deployment in Vizier.",
-	ControlPlaneFailedToSchedule: "Vizier control plane pods failed to schedule. Investigate the failures of non-Ready pods in the Vizier namespace (default `pl`).",
-	ControlPlanePodsPending:      "Vizier control plane pods are still pending. If this status persists, investigate details of Pending pods in the Vizier namespace (default `pl`).",
-	ControlPlanePodsFailed:       "Vizier control plane pods are failing. If this status persists, investigate details on the Failed pods in the Vizier namespace (default pl).",
+		"every node. Consider removing taints from some nodes or manually adding tolerations to each deployment in Vizier using the `patches` or `nodeSelector` flags.",
+	ControlPlaneFailedToSchedule: "Vizier control plane pods failed to schedule. Investigate the failures of non-Ready pods in the Vizier namespace (default `pl`) using `kubectl describe`. Refer to https://docs.px.dev/about-pixie/faq/ for troubleshooting recommendations.",
+	ControlPlanePodsPending:      "Vizier control plane pods are still pending. If this status persists, investigate details of Pending pods in the Vizier namespace (default `pl`) using `kubectl describe`. Refer to https://docs.px.dev/about-pixie/faq/ for troubleshooting recommendations.",
+	ControlPlanePodsFailed:       "Vizier control plane pods are failing. If this status persists, investigate details on the Failed pods in the Vizier namespace (default pl) using `kubectl describe`. Refer to https://docs.px.dev/about-pixie/faq/ for troubleshooting recommendations.",
 	NATSPodPending:               "NATS message bus pods are still pending. If this status persists, investigate failures on the Pending NATS pods in the Vizier namespace (default `pl`).",
 	NATSPodMissing:               "NATS message bus pods are missing. If this status persists, clobber and redeploy this Pixie instance.",
 	NATSPodFailed:                "NATS message bus pods have failed. Investigate failures on the Pending NATS pods in the Vizier namespace (default `pl`).",
@@ -52,8 +52,8 @@ var reasonToMessageMap = map[VizierReason]string{
 		"Free up memory on all nodes to enable Pixie to schedule.",
 	PEMsMissing: "Cannot find any PEMs in the Vizier namespace (default `pl`). You will not receive data until some PEMs show up. " +
 		"If this problem persists, clobber and re-deploy your Pixie instance",
-	PEMsHighFailureRate: "PEMs are experiencing a high crash rate. Your Pixie experience will be degraded while this occurs.",
-	PEMsAllFailing:      "PEMs are all crashing. Consider filing a bug so someone can address your problem: https://github.com/pixie-labs/pixie",
+	PEMsHighFailureRate: "PEMs are experiencing a high crash rate. Your Pixie experience will be degraded while this occurs. If PEMs are getting OOMKilled, increase your PEM memory limits using the `pemMemoryLimit` flag.",
+	PEMsAllFailing:      "PEMs are all crashing. If PEMs are getting OOMKilled, increase your PEM memory limits using the `pemMemoryLimit` flag. Otherwise, consider filing a bug so someone can address your problem: https://github.com/pixie-io/pixie",
 }
 
 // GetMessageFromReason gets the human-readable message for a Vizier status reason.
