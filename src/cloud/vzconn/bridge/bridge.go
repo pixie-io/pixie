@@ -120,6 +120,13 @@ func (s *NATSBridgeController) Run() error {
 		s.l.Info("Closing stream, context cancellation")
 		return nil
 	}
+
+	// Return early to avoid logging this as an error, as this case is relatively frequent when
+	// viziers disconnect.
+	if status.Code(err) == codes.Unavailable {
+		return err
+	}
+
 	s.l.WithError(err).Error("Closing stream with error")
 	return err
 }

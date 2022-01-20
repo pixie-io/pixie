@@ -22,6 +22,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
@@ -230,7 +231,11 @@ func (p *requestProxyer) run() error {
 				if err == io.EOF {
 					return nil
 				}
-				log.WithError(err).Error("Failed to process nats message")
+
+				// These errors happen frequently, for example, if a Kelvin isn't ready for a cluster yet, or there is slight clock skew on the Vizier. Do not log an error in these situations.
+				if !strings.Contains(err.Error(), "InvalidArgument") && !strings.Contains(err.Error(), "Unauthenticated") {
+					log.WithError(err).Error("Failed to process nats message")
+				}
 				// Try to cancel stream.
 				if cancelErr := p.sendCancelMessageToVizier(); cancelErr != nil {
 					log.WithError(cancelErr).Error("Failed to cancel stream")
