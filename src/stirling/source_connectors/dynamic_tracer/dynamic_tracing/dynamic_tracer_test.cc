@@ -46,8 +46,7 @@ using ::testing::SizeIs;
 
 constexpr char kServerPath[] =
     "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
-    "go_grpc_server_/"
-    "go_grpc_server";
+    "golang_1_16_grpc_server_binary/go/src/grpc_server/grpc_server";
 
 constexpr char kPod0UpdateTxt[] = R"(
   uid: "pod0"
