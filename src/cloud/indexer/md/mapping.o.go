@@ -205,7 +205,7 @@ const IndexMapping = `
 // IndexName is the name of the ES index.
 // This can be incremented when we have breaking changes,
 // and are willing to lose data in the old index.
-const IndexName = "md_entities_6"
+const IndexName = "md_entities_7"
 
 // InitializeMapping creates the index in elastic.
 func InitializeMapping(es *elastic.Client) error {
