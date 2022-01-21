@@ -108,14 +108,28 @@ func cleanCloudToVizierMessageKind(s string) string {
 
 type natsBridgeMetricCollector struct {
 	natsBridges sync.Map
+	// We use mutex here to prevent a race between the Register and UnRegister.
+	// We need to make sure the same value is getting deleted as was registered and
+	// that we don't unregister the wrong collector. The last Register wins and we don't
+	// check to make sure the id was not previously registered.
+	mu sync.Mutex
 }
 
 func (n *natsBridgeMetricCollector) Register(b *NATSBridgeController) {
-	n.natsBridges.Store(b, true)
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	n.natsBridges.Store(b.clusterID.String(), b)
 }
 
 func (n *natsBridgeMetricCollector) Unregister(b *NATSBridgeController) {
-	n.natsBridges.Delete(b)
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	cid := b.clusterID.String()
+	val, _ := n.natsBridges.Load(cid)
+	if val != b {
+		return
+	}
+	n.natsBridges.Delete(cid)
 }
 
 // Describe implements Collector.
@@ -128,7 +142,7 @@ func (*natsBridgeMetricCollector) Describe(ch chan<- *prometheus.Desc) {
 // Collect implements Collector.
 func (n *natsBridgeMetricCollector) Collect(ch chan<- prometheus.Metric) {
 	n.natsBridges.Range(func(key, value interface{}) bool {
-		b := key.(*NATSBridgeController)
+		b := value.(*NATSBridgeController)
 		cid := b.clusterID.String()
 
 		ch <- prometheus.MustNewConstMetric(
