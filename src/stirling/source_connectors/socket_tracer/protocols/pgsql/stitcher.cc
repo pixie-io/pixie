@@ -44,9 +44,9 @@ void AdvanceIterBeyondTimestamp(MsgDeqIter* start, const MsgDeqIter& end, uint64
 template <typename TElemType>
 class DequeView {
  public:
-  using Iteraotr = typename std::deque<TElemType>::iterator;
+  using Iterator = typename std::deque<TElemType>::iterator;
 
-  DequeView(Iteraotr begin, Iteraotr end)
+  DequeView(Iterator begin, Iterator end)
       : size_(std::distance(begin, end)), begin_(begin), end_(end) {}
 
   const TElemType& operator[](size_t i) const { return *(begin_ + i); }
@@ -59,14 +59,14 @@ class DequeView {
 
   bool Empty() const { return size_ == 0; }
 
-  const Iteraotr& begin() const { return begin_; }
+  const Iterator& begin() const { return begin_; }
 
-  const Iteraotr& end() const { return end_; }
+  const Iterator& end() const { return end_; }
 
  private:
   size_t size_ = 0;
-  Iteraotr begin_;
-  Iteraotr end_;
+  Iterator begin_;
+  Iterator end_;
 };
 
 // Query response messages end with a kCmdComplete message. Its payload determines the content prior
