@@ -33,7 +33,9 @@
 #include "src/stirling/source_connectors/perf_profiler/stack_trace_id_cache.h"
 #include "src/stirling/source_connectors/perf_profiler/stack_traces_table.h"
 #include "src/stirling/source_connectors/perf_profiler/stringifier.h"
-#include "src/stirling/source_connectors/perf_profiler/symbolizers/symbolizer.h"
+#include "src/stirling/source_connectors/perf_profiler/symbolizers/bcc_symbolizer.h"
+#include "src/stirling/source_connectors/perf_profiler/symbolizers/caching_symbolizer.h"
+#include "src/stirling/source_connectors/perf_profiler/symbolizers/elf_symbolizer.h"
 #include "src/stirling/utils/stat_counter.h"
 
 namespace px {

@@ -29,15 +29,8 @@
 #include "src/stirling/source_connectors/perf_profiler/shared/types.h"
 #include "src/stirling/source_connectors/perf_profiler/symbol_cache/symbol_cache.h"
 
-DECLARE_uint64(stirling_profiler_cache_eviction_threshold);
-
 namespace px {
 namespace stirling {
-
-namespace profiler {
-static constexpr upid_t kKernelUPID = {
-    .pid = static_cast<uint32_t>(bpf_tools::BCCSymbolizer::kKernelPID), .start_time_ticks = 0};
-}  // namespace profiler
 
 /**
  * Symbolizer: provides an API to resolve a program address to a symbol.
@@ -60,71 +53,6 @@ class Symbolizer {
    * Delete the state associated with a symbolizer created by a previous call to GetSymbolizerFn
    */
   virtual void DeleteUPID(const struct upid_t& upid) = 0;
-};
-
-/**
- * A Symbolizer that uses BCC's symbolizer under the hood.
- */
-class BCCSymbolizer : public Symbolizer, public NotCopyMoveable {
- public:
-  static StatusOr<std::unique_ptr<Symbolizer>> Create();
-
-  SymbolizerFn GetSymbolizerFn(const struct upid_t& upid) override;
-  void DeleteUPID(const struct upid_t& upid) override;
-
- private:
-  BCCSymbolizer() = default;
-  std::string_view Symbolize(const int pid, const uintptr_t addr);
-
-  bpf_tools::BCCSymbolizer bcc_symbolizer_;
-};
-
-/**
- * A Symbolizer using the ElfReader symbolization core.
- */
-class ElfSymbolizer : public Symbolizer, public NotCopyMoveable {
- public:
-  static StatusOr<std::unique_ptr<Symbolizer>> Create();
-
-  SymbolizerFn GetSymbolizerFn(const struct upid_t& upid) override;
-  void DeleteUPID(const struct upid_t& upid) override;
-
- private:
-  ElfSymbolizer() = default;
-
-  // A symbolizer per UPID.
-  absl::flat_hash_map<struct upid_t,
-                      std::unique_ptr<px::stirling::obj_tools::ElfReader::Symbolizer>>
-      symbolizers_;
-};
-
-/**
- * A class that takes another symbolizer and adds a cache to it.
- */
-class CachingSymbolizer : public Symbolizer {
- public:
-  static StatusOr<std::unique_ptr<Symbolizer>> Create(std::unique_ptr<Symbolizer> inner_symbolizer);
-
-  SymbolizerFn GetSymbolizerFn(const struct upid_t& upid) override;
-
-  void DeleteUPID(const struct upid_t& upid) override;
-  size_t PerformEvictions();
-
-  int64_t stat_accesses() const { return stat_accesses_; }
-  int64_t stat_hits() const { return stat_hits_; }
-  uint64_t GetNumberOfSymbolsCached() const;
-
- private:
-  CachingSymbolizer() = default;
-
-  std::string_view Symbolize(SymbolCache* symbol_cache, const uintptr_t addr);
-
-  std::unique_ptr<Symbolizer> symbolizer_;
-
-  absl::flat_hash_map<struct upid_t, std::unique_ptr<SymbolCache>> symbol_caches_;
-
-  int64_t stat_accesses_ = 0;
-  int64_t stat_hits_ = 0;
 };
 
 }  // namespace stirling

@@ -22,7 +22,9 @@
 
 #include "src/common/testing/testing.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
-#include "src/stirling/source_connectors/perf_profiler/symbolizers/symbolizer.h"
+#include "src/stirling/source_connectors/perf_profiler/symbolizers/bcc_symbolizer.h"
+#include "src/stirling/source_connectors/perf_profiler/symbolizers/caching_symbolizer.h"
+#include "src/stirling/source_connectors/perf_profiler/symbolizers/elf_symbolizer.h"
 #include "src/stirling/testing/symbolization.h"
 
 namespace test {
@@ -124,7 +126,7 @@ TEST_F(BCCSymbolizerTest, Caching) {
   }
 
   std::string_view kSymbolName = "cpu_detect";
-  ASSERT_OK_AND_ASSIGN(uint64_t kaddr, GetKernelSymAddr(kSymbolName));
+  ASSERT_OK_AND_ASSIGN(const uint64_t kaddr, GetKernelSymAddr(kSymbolName));
 
   {
     auto symbolize = symbolizer.GetSymbolizerFn(profiler::kKernelUPID);

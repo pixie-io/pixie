@@ -29,7 +29,7 @@
 #include "src/stirling/bpf_tools/macros.h"
 #include "src/stirling/source_connectors/perf_profiler/bcc_bpf_intf/stack_event.h"
 #include "src/stirling/source_connectors/perf_profiler/stringifier.h"
-#include "src/stirling/source_connectors/perf_profiler/symbolizers/symbolizer.h"
+#include "src/stirling/source_connectors/perf_profiler/symbolizers/bcc_symbolizer.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
 // Create a std::string_view named stringifer_test_bcc_script based

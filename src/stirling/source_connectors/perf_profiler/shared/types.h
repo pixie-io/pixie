@@ -22,9 +22,17 @@
 #include <utility>
 
 #include "src/shared/upid/upid.h"
+#include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
+#include "src/stirling/bpf_tools/bcc_symbolizer.h"
 
 namespace px {
 namespace stirling {
+namespace profiler {
+static constexpr upid_t kKernelUPID = {
+    .pid = static_cast<uint32_t>(bpf_tools::BCCSymbolizer::kKernelPID), .start_time_ticks = 0};
+}  // namespace profiler
+
+// TODO(jps): Move these types into the profiler namespace.
 
 /**
  * A function that takes an address as input and provides a symbolized string out.
