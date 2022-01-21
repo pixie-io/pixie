@@ -88,7 +88,7 @@ class GoHTTPDynamicTraceTest : public ::testing::Test {
                          DynamicTraceConnector::Create("my_dynamic_source", &logical_program_));
     ASSERT_OK(connector_->Init());
 
-    ASSERT_OK(c_.Start({client_path_, "-name=PixieLabs", "-count=200",
+    ASSERT_OK(c_.Start({client_path_, "-name=PixieLabs", "-count=10",
                         absl::StrCat("-address=localhost:", s_port_)}));
     EXPECT_EQ(0, c_.Wait()) << "Client should be killed";
   }
@@ -186,7 +186,7 @@ TEST_F(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
     types::ColumnWrapperRecordBatch records =
         FindRecordsMatchingPID(tablets[0].records, /*index*/ 0, s_.child_pid());
 
-    ASSERT_THAT(records, Each(ColWrapperSizeIs(200)));
+    ASSERT_THAT(records, Each(ColWrapperSizeIs(10)));
 
     constexpr size_t kStreamIDIdx = 3;
     constexpr size_t kEndStreamIdx = 4;
@@ -210,7 +210,7 @@ TEST_F(GoHTTPDynamicTraceTest, TraceReturnValue) {
     types::ColumnWrapperRecordBatch records =
         FindRecordsMatchingPID(tablets[0].records, /*index*/ 0, s_.child_pid());
 
-    ASSERT_THAT(records, Each(ColWrapperSizeIs(1600)));
+    ASSERT_THAT(records, Each(ColWrapperSizeIs(80)));
 
     constexpr size_t kFrameHeaderValidIdx = 3;
 
