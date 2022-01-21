@@ -32,13 +32,6 @@
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 
-constexpr std::string_view kClientPath =
-    "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client/"
-    "golang_1_16_grpc_client_binary/go/src/grpc_client/grpc_client";
-constexpr std::string_view kServerPath =
-    "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
-    "golang_1_16_grpc_server_binary/go/src/grpc_server/grpc_server";
-
 namespace px {
 namespace stirling {
 
@@ -77,10 +70,15 @@ HelloRequest GetHelloRequest(const ColumnWrapperRecordBatch& record_batch, const
 
 class GRPCServer {
  public:
+  static constexpr std::string_view kServerPath =
+      "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
+      "golang_$0_grpc_server_binary/go/src/grpc_server/grpc_server";
+
   GRPCServer() = default;
 
-  void LaunchServer(bool use_https) {
-    std::string server_path = px::testing::BazelBinTestFilePath(kServerPath).string();
+  void LaunchServer(std::string go_version, bool use_https) {
+    std::string server_path = absl::Substitute(kServerPath, go_version);
+    server_path = px::testing::BazelBinTestFilePath(server_path).string();
     PL_CHECK_OK(fs::Exists(server_path));
 
     std::string https_flag = use_https ? "--https=true" : "--https=false";
@@ -105,8 +103,14 @@ class GRPCServer {
 
 class GRPCClient {
  public:
-  void LaunchClient(bool use_https, int port) {
-    std::string client_path = px::testing::BazelBinTestFilePath(kClientPath).string();
+  static constexpr std::string_view kClientPath =
+      "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client/"
+      "golang_1_16_grpc_client_binary/go/src/grpc_client/grpc_client";
+
+  void LaunchClient(std::string_view go_version, bool use_https, int port) {
+    std::string client_path = absl::Substitute(kClientPath, go_version);
+    client_path = px::testing::BazelBinTestFilePath(client_path).string();
+
     PL_CHECK_OK(fs::Exists(client_path));
 
     const std::string https_flag = use_https ? "--https=true" : "--https=false";
@@ -119,8 +123,13 @@ class GRPCClient {
   SubProcess c_;
 };
 
+struct TestParams {
+  std::string go_version;
+  bool use_https;
+};
+
 class GRPCTraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ false>,
-                      public ::testing::WithParamInterface<bool> {
+                      public ::testing::WithParamInterface<TestParams> {
  protected:
   GRPCTraceTest() {}
 
@@ -134,16 +143,16 @@ class GRPCTraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing *
 };
 
 TEST_P(GRPCTraceTest, CaptureRPCTraceRecord) {
-  bool use_https = GetParam();
+  auto params = GetParam();
 
-  server_.LaunchServer(use_https);
+  server_.LaunchServer(params.go_version, params.use_https);
 
   // Deploy uprobes on the newly launched server.
   RefreshContext(/* blocking_deploy_uprobes */ true);
 
   StartTransferDataThread();
 
-  client_.LaunchClient(use_https, server_.port());
+  client_.LaunchClient(params.go_version, params.use_https, server_.port());
 
   StopTransferDataThread();
 
@@ -156,7 +165,7 @@ TEST_P(GRPCTraceTest, CaptureRPCTraceRecord) {
 
   // We should get exactly one record.
   const size_t idx = target_record_indices.front();
-  const std::string scheme_text = use_https ? R"(":scheme":"https")" : R"(":scheme":"http")";
+  const std::string scheme_text = params.use_https ? R"(":scheme":"https")" : R"(":scheme":"http")";
 
   md::UPID upid(rb[kHTTPUPIDIdx]->Get<types::UInt128Value>(idx).val);
   std::filesystem::path proc_pid_path =
@@ -169,7 +178,7 @@ TEST_P(GRPCTraceTest, CaptureRPCTraceRecord) {
       std::string(rb[kHTTPReqHeadersIdx]->Get<types::StringValue>(idx)),
       AllOf(HasSubstr(absl::Substitute(R"(":authority":"localhost:$0")", server_.port())),
             HasSubstr(R"(":method":"POST")"), HasSubstr(scheme_text),
-            HasSubstr(absl::StrCat(R"(":scheme":)", use_https ? R"("https")" : R"("http")")),
+            HasSubstr(absl::StrCat(R"(":scheme":)", params.use_https ? R"("https")" : R"("http")")),
             HasSubstr(R"("content-type":"application/grpc")"), HasSubstr(R"("grpc-timeout")"),
             HasSubstr(R"("te":"trailers","user-agent")")));
   EXPECT_THAT(
@@ -186,7 +195,9 @@ TEST_P(GRPCTraceTest, CaptureRPCTraceRecord) {
   EXPECT_EQ(rb[kHTTPRespBodyIdx]->Get<types::StringValue>(idx).string(), R"(1: "Hello PixieLabs")");
 }
 
-INSTANTIATE_TEST_SUITE_P(SecurityModeTest, GRPCTraceTest, ::testing::Values(true, false));
+INSTANTIATE_TEST_SUITE_P(SecurityModeTest, GRPCTraceTest,
+                         ::testing::Values(TestParams{"1_16", true}, TestParams{"1_16", false},
+                                           TestParams{"1_17", true}, TestParams{"1_17", false}));
 
 }  // namespace stirling
 }  // namespace px

@@ -59,3 +59,34 @@ container_push(
     repository = "pl-dev-infra/demos/go_grpc_client",
     tag = "{BUILD_USER}",
 )
+
+container_image(
+    name = "golang_1_17_grpc_client_source",
+    base = "@golang_1_17_image//image",
+    directory = "/go/src/grpc_client",
+    files = ["main.go"],
+)
+
+container_run_and_commit(
+    name = "golang_1_17_grpc_client_build",
+    commands = [
+        "go mod init",
+        "go get",
+        "go build -v",
+    ],
+    docker_run_flags = ["-w /go/src/grpc_client"],
+    image = ":golang_1_17_grpc_client_source.tar",
+)
+
+container_run_and_extract(
+    name = "golang_1_17_grpc_client_binary",
+    commands = ["echo"],
+    extract_file = "/go/src/grpc_client/grpc_client",
+    image = ":golang_1_17_grpc_client_build_commit.tar",
+)
+
+filegroup(
+    name = "go_1_17_grpc_client",
+    srcs = [":golang_1_17_grpc_client_binary/go/src/grpc_client/grpc_client"],
+    visibility = ["//src/stirling:__subpackages__"],
+)
