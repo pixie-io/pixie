@@ -871,7 +871,9 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 		case data := <-s.natsCh:
 			v2cPrefix := messagebus.V2CTopic("")
 			if !strings.HasPrefix(data.Subject, v2cPrefix) {
-				return errors.New("invalid subject: " + data.Subject)
+				err := errors.New("invalid subject: " + data.Subject)
+				log.WithError(err).Error("Invalid subject sent to nats channel")
+				return err
 			}
 
 			v2cMsg, topic, err := s.parseV2CNatsMsg(data)
@@ -896,11 +898,6 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 			if bridgeMsg == nil {
 				return nil
 			}
-
-			log.
-				WithField("msg", bridgeMsg.String()).
-				WithField("type", bridgeMsg.Msg.TypeUrl).
-				Trace("Got Message on GRPC channel")
 
 			if bridgeMsg.Topic == "VizierUpdate" {
 				err := s.handleUpdateMessage(bridgeMsg.Msg)
@@ -946,16 +943,12 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 				return err
 			}
 
-			log.WithField("topic", topic).
-				WithField("msg", natsMsg.String()).
-				Trace("Publishing to NATS")
 			err = s.nc.Publish(topic, b)
 			if err != nil {
 				log.WithError(err).Error("Failed to publish")
 				return err
 			}
 		case hbMsg := <-hbChan:
-			log.WithField("heartbeat", hbMsg.GoString()).Trace("Sending heartbeat")
 			err := s.publishProtoToBridgeCh(HeartbeatTopic, hbMsg)
 			if err != nil {
 				return err
