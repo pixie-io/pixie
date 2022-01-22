@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM python:3.10.0-alpine3.14
+FROM python:3.10.2-alpine3.14
 
 RUN pip install --trusted-host pypi.python.org -q mysql-connector-python
 
