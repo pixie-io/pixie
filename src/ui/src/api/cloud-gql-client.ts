@@ -48,8 +48,11 @@ const makeCloudAuthLink = (opts: PixieAPIClientOptions) => setContext((_, { head
 }));
 
 // Apollo link that redirects to login page on HTTP status 401.
-const loginRedirectLink = (on401: (errorMessage?: string) => void) => onError(({ networkError }) => {
-  if (window.location.pathname.startsWith('/embed')) {
+const loginRedirectLink = (on401: (errorMessage?: string) => void) => onError(({ networkError, operation }) => {
+  const isEmbed = window.location.pathname.startsWith('/embed');
+  const isLogin = window.location.pathname.endsWith('/login');
+  const isCacheOnly = operation.operationName.endsWith('Cache');
+  if (isEmbed || isLogin || isCacheOnly) {
     return;
   }
 
@@ -70,11 +73,7 @@ export interface GetClusterConnResults {
 export class CloudClient {
   graphQL: ApolloClient<NormalizedCacheObject>;
 
-  private readonly persistPromise: Promise<void>;
-
   private readonly cache: InMemoryCache;
-
-  private loaded = false;
 
   constructor(opts: PixieAPIClientOptions) {
     this.cache = new InMemoryCache({
@@ -123,19 +122,39 @@ export class CloudClient {
       };
     })();
 
-    this.persistPromise = persistCache({
-      cache: this.cache,
-      storage,
-    }).then(() => {
-      this.loaded = true;
-    });
-  }
+    let userId: string;
+    this.cache.watch({
+      optimistic: true,
+      query: gql`
+        query getUserIdFromCache {
+          user {
+            id
+          }
+        }
+      `,
+      callback: ({ result }) => {
+        // Don't persist until we know which user we're caching for.
+        if (!result.user?.id) return;
 
-  async getGraphQLPersist(): Promise<CloudClient['graphQL']> {
-    if (!this.loaded) {
-      await this.persistPromise;
-    }
-    return this.graphQL;
+        // The user ID shouldn't be changing without a logout or refresh.
+        // If it does, that's a new feature that we didn't account for, so throw.
+        if (userId && userId !== result.user.id) {
+          throw new Error(
+            `Cache key is set to "${userId}", but user ID changed to, "${result.user.id}"`,
+          );
+        }
+        userId = result.user.id;
+        // Note: Even if a few queries fire before the user ID enters the in-memory cache,
+        // the persisted cache will reconcile with in-memory just fine (new overwrites old).
+        // The user is checked (and enters in-memory cache) before any heavy GQL fires,
+        // which gives cache persistence a chance to restore before it's needed.
+        persistCache({
+          key: `apollo-cache-${userId}`,
+          cache: this.cache,
+          storage,
+        }).then();
+      },
+    });
   }
 
   /**

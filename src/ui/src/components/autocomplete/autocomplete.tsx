@@ -24,7 +24,7 @@ import { createStyles, makeStyles } from '@mui/styles';
 import { scrollbarStyles } from 'app/components';
 import { AutocompleteContext } from 'app/components/autocomplete/autocomplete-context';
 import { buildClass } from 'app/utils/build-class';
-import { makeCancellable, silentlyCatchCancellation } from 'app/utils/cancellable-promise';
+import { makeCancellable } from 'app/utils/cancellable-promise';
 
 import {
   CompletionId,

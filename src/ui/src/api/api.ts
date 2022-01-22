@@ -95,9 +95,9 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
    *
    * @param options Set these to change the client's behavior or to listen for authorization errors.
    */
-  static async create(
+  static create(
     options: PixieAPIClientOptions,
-  ): Promise<PixieAPIClient> {
+  ): PixieAPIClient {
     const client = new PixieAPIClient({ ...PixieAPIClient.DEFAULT_OPTIONS, ...options });
     return client.init();
   }
@@ -108,9 +108,8 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
     super();
   }
 
-  private async init(): Promise<PixieAPIClient> {
+  private init(): PixieAPIClient {
     this.gqlClient = new CloudClient(this.options);
-    await this.gqlClient.getGraphQLPersist();
     this.clusterConnections = new Map();
 
     return this;

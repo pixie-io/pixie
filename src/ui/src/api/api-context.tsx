@@ -21,7 +21,6 @@ import * as React from 'react';
 import { ApolloProvider } from '@apollo/client/react';
 
 import { AuthContext } from 'app/common/auth-context';
-import { makeCancellable, silentlyCatchCancellation } from 'app/utils/cancellable-promise';
 
 import { PixieAPIClientAbstract, PixieAPIClient } from './api';
 import { PixieAPIClientOptions } from './api-options';
@@ -36,10 +35,8 @@ export const PixieAPIContextProvider: React.FC<PixieAPIContextProviderProps> = R
   const { authToken } = React.useContext(AuthContext);
 
   React.useEffect(() => {
-    const creator = makeCancellable(PixieAPIClient.create({ ...opts, authToken }));
-    creator.then(setPixieClient).catch(silentlyCatchCancellation);
+    setPixieClient(PixieAPIClient.create({ ...opts, authToken }));
     return () => {
-      creator.cancel();
       setPixieClient(null);
     };
     // Destructuring the options instead of checking directly because the identity of the object changes every render.

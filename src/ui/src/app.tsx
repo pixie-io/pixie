@@ -107,9 +107,11 @@ function useIsAuthenticated() {
 }
 
 function getAuthRedirectLocation(): string {
-  const authRedirectUri = window.location.pathname.length > 1
-    ? encodeURIComponent(window.location.pathname + window.location.search)
-    : '';
+  let authRedirectUri: string;
+  const path = window.location.pathname;
+  if (path.length && path !== '/' && !path.endsWith('/login') && !path.endsWith('/logout')) {
+    authRedirectUri = encodeURIComponent(path + window.location.search);
+  }
   return authRedirectUri ? `/login?redirect_uri=${authRedirectUri}` : '/login';
 }
 
@@ -367,8 +369,12 @@ const ThemedApp: React.FC = () => {
 
   const onUnauthorized = React.useCallback(() => {
     const isEmbedded = window.location.pathname.startsWith('/embed');
-    if (!isEmbedded) {
-      window.location.href = window.location.origin + getAuthRedirectLocation();
+    const isLogin = window.location.pathname.endsWith('/login');
+    if (!isEmbedded && !isLogin) {
+      const path = window.location.origin + getAuthRedirectLocation();
+      if (path !== window.location.href) {
+        window.location.href = path;
+      }
     }
   }, []);
 

@@ -38,29 +38,29 @@ describe('Pixie TypeScript API Client', () => {
     );
   };
 
-  it('can be instantiated', async () => {
-    const client = await PixieAPIClient.create({ apiKey: '' });
+  it('can be instantiated', () => {
+    const client = PixieAPIClient.create({ apiKey: '' });
     expect(client).toBeTruthy();
   });
 
   describe('authentication check', () => {
     it('treats HTTP 200 to mean successful authentication', async () => {
       mockFetchResponse({ status: 200 } as Response);
-      const client = await PixieAPIClient.create({ apiKey: '' });
+      const client = PixieAPIClient.create({ apiKey: '' });
       const authenticated = await client.isAuthenticated();
       expect(authenticated).toBe(true);
     });
 
     it('treats any other HTTP status as not authenticated', async () => {
       mockFetchResponse({ status: 500 } as Response);
-      const client = await PixieAPIClient.create({ apiKey: '' });
+      const client = PixieAPIClient.create({ apiKey: '' });
       const authenticated = await client.isAuthenticated();
       expect(authenticated).toBe(false);
     });
 
     it('treats a failed request as an error', async () => {
       mockFetchResponse('Ah, bugger.', true);
-      const client = await PixieAPIClient.create({ apiKey: '' });
+      const client = PixieAPIClient.create({ apiKey: '' });
       try {
         const authenticated = await client.isAuthenticated();
         if (authenticated) fail('The fetch request rejected, but isAuthenticated came back with true.');
@@ -76,7 +76,7 @@ describe('Pixie TypeScript API Client', () => {
       const spy = jest.fn(() => Promise.resolve('bar'));
       jest.spyOn(vizierDependency as any, 'VizierGRPCClient').mockReturnValue({ health: spy });
 
-      const client = await PixieAPIClient.create({ apiKey: '' });
+      const client = PixieAPIClient.create({ apiKey: '' });
       jest.spyOn(client.getCloudClient(), 'getClusterConnection')
         .mockReturnValue({} as unknown as Promise<ClusterConnection>);
 
@@ -89,7 +89,7 @@ describe('Pixie TypeScript API Client', () => {
       const spy = jest.fn(() => Promise.resolve('bar'));
       jest.spyOn(vizierDependency as any, 'VizierGRPCClient').mockReturnValue({ executeScript: spy });
 
-      const client = await PixieAPIClient.create({ apiKey: '' });
+      const client = PixieAPIClient.create({ apiKey: '' });
       jest.spyOn(client.getCloudClient(), 'getClusterConnection')
         .mockReturnValue({} as unknown as Promise<ClusterConnection>);
 
