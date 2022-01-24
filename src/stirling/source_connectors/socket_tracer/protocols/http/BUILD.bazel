@@ -44,16 +44,16 @@ pl_cc_library(
 )
 
 pl_cc_test(
-    name = "chunked_decoder_test",
-    srcs = ["chunked_decoder_test.cc"],
+    name = "body_decoder_test",
+    srcs = ["body_decoder_test.cc"],
     deps = [
         ":cc_library",
     ],
 )
 
 pl_cc_binary(
-    name = "chunked_decoder_benchmark",
-    srcs = ["chunked_decoder_benchmark.cc"],
+    name = "body_decoder_benchmark",
+    srcs = ["body_decoder_benchmark.cc"],
     deps = [
         ":cc_library",
         "@com_github_h2o_picohttpparser//:picohttpparser",

@@ -40,7 +40,22 @@ namespace http {
  *         ParseState::kNeedsMoreData if the message is incomplete.
  *         ParseState::kSuccess if the chunk length was extracted and chunk header is well-formed.
  */
-ParseState ParseChunked(std::string_view* buf, std::string* result);
+ParseState ParseChunked(std::string_view* buf, size_t body_size_limit_bytes, std::string* result,
+                        size_t* body_size);
+
+/**
+ * Parse an HTTP body based on Content-Length.
+ *
+ * @param content_len_str Hex string of the content-length
+ * @param data View into the data buffer contained the body. If parsing succeeds, the corresponding
+ * bytes are consumed; otherwise the string_view bytes are not modified.
+ * @param result  Result where the body is placed upon success.
+ * @return ParseState::kInvalid if content length cannot be parsed.
+ *         ParseState::kNeedsMoreData if the message is incomplete.
+ *         ParseState::kSuccess if the entire body is present and well-formed.
+ */
+ParseState ParseContent(std::string_view content_len_str, std::string_view* data,
+                        size_t body_size_limit_bytes, std::string* result, size_t* body_size);
 
 }  // namespace http
 }  // namespace protocols

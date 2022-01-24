@@ -17,13 +17,16 @@
  */
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/parse.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/http/chunked_decoder.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/http/body_decoder.h"
 
 #include <picohttpparser.h>
 
 #include <algorithm>
 #include <string>
 #include <utility>
+
+DEFINE_int32(http_body_limit_bytes, 1024,
+             "The amount of an HTTP body that will be returned on a parse");
 
 namespace px {
 namespace stirling {
@@ -83,22 +86,6 @@ HeadersMap GetHTTPHeadersMap(const phr_header* headers, size_t num_headers) {
 
 }  // namespace pico_wrapper
 
-ParseState ParseContent(std::string_view content_len_str, std::string_view* data, Message* result) {
-  size_t len;
-  if (!absl::SimpleAtoi(content_len_str, &len)) {
-    LOG(ERROR) << absl::Substitute("Unable to parse Content-Length: $0", content_len_str);
-    return ParseState::kInvalid;
-  }
-
-  if (data->size() < len) {
-    return ParseState::kNeedsMoreData;
-  }
-
-  result->body = data->substr(0, len);
-  data->remove_prefix(std::min(len, data->size()));
-  return ParseState::kSuccess;
-}
-
 ParseState ParseRequestBody(std::string_view* buf, Message* result) {
   // From https://tools.ietf.org/html/rfc7230:
   //  A sender MUST NOT send a Content-Length header field in any message
@@ -117,14 +104,19 @@ ParseState ParseRequestBody(std::string_view* buf, Message* result) {
   const auto content_length_iter = result->headers.find(kContentLength);
   if (content_length_iter != result->headers.end()) {
     std::string_view content_len_str = content_length_iter->second;
-    return ParseContent(content_len_str, buf, result);
+    auto r = ParseContent(content_len_str, buf, FLAGS_http_body_limit_bytes, &result->body,
+                          &result->body_size);
+    DCHECK_LE(result->body.size(), FLAGS_http_body_limit_bytes);
+    return r;
   }
 
   // Case 2: Chunked transfer.
   const auto transfer_encoding_iter = result->headers.find(kTransferEncoding);
   if (transfer_encoding_iter != result->headers.end() &&
       transfer_encoding_iter->second == "chunked") {
-    return ParseChunked(buf, &result->body);
+    auto s = ParseChunked(buf, FLAGS_http_body_limit_bytes, &result->body, &result->body_size);
+    DCHECK_LE(result->body.size(), FLAGS_http_body_limit_bytes);
+    return s;
   }
 
   // Case 3: Message has no Content-Length or Transfer-Encoding.
@@ -162,14 +154,19 @@ ParseState ParseResponseBody(std::string_view* buf, Message* result, State* stat
   const auto content_length_iter = result->headers.find(kContentLength);
   if (content_length_iter != result->headers.end()) {
     std::string_view content_len_str = content_length_iter->second;
-    return ParseContent(content_len_str, buf, result);
+    auto s = ParseContent(content_len_str, buf, FLAGS_http_body_limit_bytes, &result->body,
+                          &result->body_size);
+    DCHECK_LE(result->body.size(), FLAGS_http_body_limit_bytes);
+    return s;
   }
 
   // Case 2: Chunked transfer.
   const auto transfer_encoding_iter = result->headers.find(kTransferEncoding);
   if (transfer_encoding_iter != result->headers.end() &&
       transfer_encoding_iter->second == "chunked") {
-    return ParseChunked(buf, &result->body);
+    auto s = ParseChunked(buf, FLAGS_http_body_limit_bytes, &result->body, &result->body_size);
+    DCHECK_LE(result->body.size(), FLAGS_http_body_limit_bytes);
+    return s;
   }
 
   // Case 3: Responses where we can assume no body.

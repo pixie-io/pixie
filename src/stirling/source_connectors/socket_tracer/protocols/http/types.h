@@ -59,6 +59,7 @@ struct Message : public FrameBase {
   std::string resp_message = "-";
 
   std::string body = "-";
+  size_t body_size = 0;
 
   // The number of bytes in the HTTP header, used in ByteSize(),
   // as an approximation of the size of the non-body fields.

@@ -19,12 +19,14 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "src/stirling/source_connectors/socket_tracer/protocols/http/chunked_decoder.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/http/body_decoder.h"
 
 namespace px {
 namespace stirling {
 namespace protocols {
 namespace http {
+
+size_t kBodySizeLimitBytes = 1000000;
 
 struct TestParams {
   bool use_pico_chunked_decoder;
@@ -52,7 +54,8 @@ TEST_P(ChunkedDecoderTest, Basic) {
       "\r\n";
 
   std::string out;
-  ParseState result = ParseChunked(&body, &out);
+  size_t body_size;
+  ParseState result = ParseChunked(&body, kBodySizeLimitBytes, &out, &body_size);
 
   EXPECT_EQ(result, ParseState::kSuccess);
   EXPECT_EQ(out, "pixielabs is so very awesome!");
@@ -70,7 +73,8 @@ TEST_P(ChunkedDecoderTest, IncludingNext) {
       "HTTP/1.1 200 OK\r\n";
 
   std::string out;
-  ParseState result = ParseChunked(&body, &out);
+  size_t body_size;
+  ParseState result = ParseChunked(&body, kBodySizeLimitBytes, &out, &body_size);
 
   EXPECT_EQ(result, ParseState::kSuccess);
   EXPECT_EQ(out, "pixielabs is awesome!");
@@ -83,7 +87,8 @@ TEST_P(ChunkedDecoderTest, Empty) {
       "\r\n";
 
   std::string out;
-  ParseState result = ParseChunked(&body, &out);
+  size_t body_size;
+  ParseState result = ParseChunked(&body, kBodySizeLimitBytes, &out, &body_size);
 
   EXPECT_EQ(result, ParseState::kSuccess);
   EXPECT_EQ(out, "");
@@ -104,7 +109,8 @@ TEST_P(ChunkedDecoderTest, Incomplete) {
     std::string_view body_substr = body.substr(0, i);
 
     std::string out;
-    ParseState result = ParseChunked(&body_substr, &out);
+    size_t body_size;
+    ParseState result = ParseChunked(&body_substr, kBodySizeLimitBytes, &out, &body_size);
 
     EXPECT_EQ(result, ParseState::kNeedsMoreData);
     EXPECT_EQ(out, "");
@@ -123,7 +129,8 @@ TEST_P(ChunkedDecoderTest, InconsistentLength) {
   std::string original(body);
 
   std::string out;
-  ParseState result = ParseChunked(&body, &out);
+  size_t body_size;
+  ParseState result = ParseChunked(&body, kBodySizeLimitBytes, &out, &body_size);
 
   EXPECT_EQ(result, ParseState::kInvalid);
   EXPECT_EQ(out, "");
@@ -141,7 +148,8 @@ TEST_P(ChunkedDecoderTest, UnexpectedTerminatorInLength) {
   std::string original(body);
 
   std::string out;
-  ParseState result = ParseChunked(&body, &out);
+  size_t body_size;
+  ParseState result = ParseChunked(&body, kBodySizeLimitBytes, &out, &body_size);
 
   auto params = GetParam();
 
@@ -164,7 +172,8 @@ TEST_P(ChunkedDecoderTest, UnexpectedTerminatorInData) {
   std::string original(body);
 
   std::string out;
-  ParseState result = ParseChunked(&body, &out);
+  size_t body_size;
+  ParseState result = ParseChunked(&body, kBodySizeLimitBytes, &out, &body_size);
 
   EXPECT_EQ(result, ParseState::kInvalid);
   EXPECT_EQ(out, "");
@@ -182,7 +191,8 @@ TEST_P(ChunkedDecoderTest, UnexpectedTerminatorAtEnd) {
   std::string original(body);
 
   std::string out;
-  ParseState result = ParseChunked(&body, &out);
+  size_t body_size;
+  ParseState result = ParseChunked(&body, kBodySizeLimitBytes, &out, &body_size);
 
   EXPECT_EQ(result, ParseState::kInvalid);
   EXPECT_EQ(out, "");
@@ -200,7 +210,8 @@ TEST_P(ChunkedDecoderTest, ChunkExtensions) {
   std::string original(body);
 
   std::string out;
-  ParseState result = ParseChunked(&body, &out);
+  size_t body_size;
+  ParseState result = ParseChunked(&body, kBodySizeLimitBytes, &out, &body_size);
 
   EXPECT_EQ(result, ParseState::kSuccess);
   EXPECT_EQ(out, "pixielabs is awesome!");
@@ -219,7 +230,8 @@ TEST_P(ChunkedDecoderTest, Trailers) {
   std::string original(body);
 
   std::string out;
-  ParseState result = ParseChunked(&body, &out);
+  size_t body_size;
+  ParseState result = ParseChunked(&body, kBodySizeLimitBytes, &out, &body_size);
 
   EXPECT_EQ(result, ParseState::kSuccess);
   EXPECT_EQ(out, "pixielabs is awesome!");

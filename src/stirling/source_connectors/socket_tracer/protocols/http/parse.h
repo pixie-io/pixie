@@ -24,6 +24,8 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/types.h"
 
+DECLARE_int32(http_body_limit_bytes);
+
 namespace px {
 namespace stirling {
 namespace protocols {

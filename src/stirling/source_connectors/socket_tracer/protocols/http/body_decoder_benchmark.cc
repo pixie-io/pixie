@@ -23,9 +23,11 @@
 #include <benchmark/benchmark.h>
 
 #include "src/common/base/base.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/http/chunked_decoder.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/http/body_decoder.h"
 
 using px::stirling::protocols::http::ParseChunked;
+
+const size_t kBodyLimitSizeBytes = 1000000;
 
 std::string CreateData(size_t chunks) {
   std::string s;
@@ -62,9 +64,10 @@ static void BM_custom_body_parser(benchmark::State& state) {
 
   for (auto _ : state) {
     std::string result;
+    size_t body_size;
     std::string_view data_view(data);
-    px::stirling::ParseState parse_state =
-        px::stirling::protocols::http::ParseChunked(&data_view, &result);
+    px::stirling::ParseState parse_state = px::stirling::protocols::http::ParseChunked(
+        &data_view, kBodyLimitSizeBytes, &result, &body_size);
     CHECK(parse_state == px::stirling::ParseState::kSuccess);
     benchmark::DoNotOptimize(parse_state);
     benchmark::DoNotOptimize(result);
@@ -77,9 +80,11 @@ static void BM_pico_body_parser(benchmark::State& state) {
 
   for (auto _ : state) {
     std::string result;
+    size_t body_size;
     std::string_view data_view(data);
 
-    px::stirling::ParseState parse_state = ParseChunked(&data_view, &result);
+    px::stirling::ParseState parse_state =
+        ParseChunked(&data_view, kBodyLimitSizeBytes, &result, &body_size);
     CHECK(parse_state == px::stirling::ParseState::kSuccess);
     benchmark::DoNotOptimize(parse_state);
     benchmark::DoNotOptimize(result);

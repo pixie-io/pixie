@@ -16,10 +16,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/stirling/source_connectors/socket_tracer/protocols/http/chunked_decoder.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/http/body_decoder.h"
 
 #include <picohttpparser.h>
 
+#include <algorithm>
 #include <utility>
 #include <vector>
 
@@ -124,8 +125,10 @@ ParseState ExtractChunkData(std::string_view* data, size_t chunk_len, std::strin
 // We may attempt parsing in the middle of a stream and cannot
 // have both the result fail and the input buffer be modified.
 // Reference: https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.6.1
-ParseState CustomParseChunked(std::string_view* buf, std::string* result) {
+ParseState CustomParseChunked(std::string_view* buf, size_t body_size_limit_bytes,
+                              std::string* result, size_t* body_size) {
   std::vector<std::string_view> chunks;
+  size_t total_bytes = 0;
 
   std::string_view data = *buf;
 
@@ -151,7 +154,16 @@ ParseState CustomParseChunked(std::string_view* buf, std::string* result) {
       return s;
     }
 
-    chunks.push_back(chunk_data);
+    // Only bother collecting chunks up to a certain size, since we will truncate anyways.
+    // Don't break out of the parsing though, since we need to know where the body ends.
+    if (total_bytes + chunk_data.size() < body_size_limit_bytes) {
+      chunks.push_back(chunk_data);
+    } else if (total_bytes < body_size_limit_bytes) {
+      size_t bytes_available = body_size_limit_bytes - total_bytes;
+      chunks.push_back(chunk_data.substr(0, bytes_available));
+    }
+
+    total_bytes += chunk_data.size();
   }
 
   // Two scenarios to wrap up:
@@ -174,6 +186,7 @@ ParseState CustomParseChunked(std::string_view* buf, std::string* result) {
   }
 
   *result = absl::StrJoin(chunks, "");
+  *body_size = total_bytes;
 
   // Update the input buffer only if the data was parsed properly, because
   // we don't want to be destructive on failure.
@@ -185,7 +198,8 @@ ParseState CustomParseChunked(std::string_view* buf, std::string* result) {
 // has the disadvantage that it incurs a potentially expensive copy even when
 // the final result is kNeedsMoreData.
 // See our Custom implementation for an alternative that doesn't have that cost.
-ParseState PicoParseChunked(std::string_view* data, std::string* result) {
+ParseState PicoParseChunked(std::string_view* data, size_t body_size_limit_bytes,
+                            std::string* result, size_t* body_size) {
   // Make a copy of the data because phr_decode_chunked mutates the input,
   // and if the original parse fails due to a lack of data, we need the original
   // state to be preserved.
@@ -205,9 +219,10 @@ ParseState PicoParseChunked(std::string_view* data, std::string* result) {
     return ParseState::kNeedsMoreData;
   } else if (retval >= 0) {
     // Found a complete message.
-    data_copy.resize(buf_size);
+    data_copy.resize(std::min(buf_size, body_size_limit_bytes));
     data_copy.shrink_to_fit();
     *result = std::move(data_copy);
+    *body_size = buf_size;
 
     // phr_decode_chunked rewrites the buffer in place, removing chunked-encoding headers.
     // So we cannot simply remove the prefix, but rather have to shorten the buffer too.
@@ -223,9 +238,29 @@ ParseState PicoParseChunked(std::string_view* data, std::string* result) {
 
 // Parse an HTTP message body in the chunked transfer-encoding.
 // Reference: https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.6.1
-ParseState ParseChunked(std::string_view* data, std::string* result) {
-  return (FLAGS_use_pico_chunked_decoder) ? PicoParseChunked(data, result)
-                                          : CustomParseChunked(data, result);
+ParseState ParseChunked(std::string_view* data, size_t body_size_limit_bytes, std::string* result,
+                        size_t* body_size) {
+  return (FLAGS_use_pico_chunked_decoder)
+             ? PicoParseChunked(data, body_size_limit_bytes, result, body_size)
+             : CustomParseChunked(data, body_size_limit_bytes, result, body_size);
+}
+
+ParseState ParseContent(std::string_view content_len_str, std::string_view* data,
+                        size_t body_size_limit_bytes, std::string* result, size_t* body_size) {
+  size_t len;
+  if (!absl::SimpleAtoi(content_len_str, &len)) {
+    LOG(ERROR) << absl::Substitute("Unable to parse Content-Length: $0", content_len_str);
+    return ParseState::kInvalid;
+  }
+
+  if (data->size() < len) {
+    return ParseState::kNeedsMoreData;
+  }
+
+  *result = data->substr(0, std::min(len, body_size_limit_bytes));
+  *body_size = len;
+  data->remove_prefix(std::min(len, data->size()));
+  return ParseState::kSuccess;
 }
 
 }  // namespace http

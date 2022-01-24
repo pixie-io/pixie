@@ -144,6 +144,8 @@ TEST_F(GoHTTPTraceTest, LargePostMessage) {
           "tRzQMDQiYCOhgHOvgSeycJPJHYNufNjJhhjUVRuSqfgqVMkPYVkURUpiFvIZRgBmyArKCtzkjkZIvaBjMkXVbWGv"
           "bqzgexyALBsdjSGpngCwFkDifIBuufFMoWdiTskZoQJMqrTICTojIYxyeSxZyfroRODMbNDRZnPNRWCJPMHDtJmH"
           "AYORsUfUMApsVgzHblmYYtEjVgwfFbbGGcnqbaEREunUZjQXmZOtaRLUtmYgmSVYB... [TRUNCATED]"));
+  EXPECT_THAT(record_batch[kHTTPReqBodySizeIdx]->Get<types::Int64Value>(target_record_idx).val,
+              131096);
 }
 
 struct TraceRoleTestParam {

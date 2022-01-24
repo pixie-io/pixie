@@ -865,12 +865,12 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("req_headers"), kMaxHTTPHeadersBytes>(ToJSONString(req_message.headers));
   r.Append<r.ColIndex("req_method")>(std::move(req_message.req_method));
   r.Append<r.ColIndex("req_path")>(std::move(req_message.req_path));
-  r.Append<r.ColIndex("req_body_size")>(req_message.body.size());
+  r.Append<r.ColIndex("req_body_size")>(req_message.body_size);
   r.Append<r.ColIndex("req_body"), kMaxBodyBytes>(std::move(req_message.body));
   r.Append<r.ColIndex("resp_headers"), kMaxHTTPHeadersBytes>(ToJSONString(resp_message.headers));
   r.Append<r.ColIndex("resp_status")>(resp_message.resp_status);
   r.Append<r.ColIndex("resp_message")>(std::move(resp_message.resp_message));
-  r.Append<r.ColIndex("resp_body_size")>(resp_message.body.size());
+  r.Append<r.ColIndex("resp_body_size")>(resp_message.body_size);
   r.Append<r.ColIndex("resp_body"), kMaxBodyBytes>(std::move(resp_message.body));
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));

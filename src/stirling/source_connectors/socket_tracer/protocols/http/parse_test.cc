@@ -60,6 +60,7 @@ Message HTTPGetReq0ExpectedMessage() {
   expected_message.req_method = "GET";
   expected_message.req_path = "/index.html";
   expected_message.body = "";
+  expected_message.body_size = 0;
   return expected_message;
 }
 
@@ -80,6 +81,7 @@ Message HTTPGetReq1ExpectedMessage() {
   expected_message.req_method = "GET";
   expected_message.req_path = "/foo.html";
   expected_message.body = "";
+  expected_message.body_size = 0;
   return expected_message;
 }
 
@@ -101,6 +103,7 @@ Message HTTPPostReq0ExpectedMessage() {
   expected_message.req_method = "POST";
   expected_message.req_path = "/test";
   expected_message.body = "field1=value1&field2=value2";
+  expected_message.body_size = 27;
   return expected_message;
 }
 
@@ -119,6 +122,7 @@ Message HTTPResp0ExpectedMessage() {
   expected_message.resp_status = 200;
   expected_message.resp_message = "OK";
   expected_message.body = "pixielabs";
+  expected_message.body_size = 9;
   return expected_message;
 }
 
@@ -137,6 +141,7 @@ Message HTTPResp1ExpectedMessage() {
   expected_message.resp_status = 200;
   expected_message.resp_message = "OK";
   expected_message.body = "pixielabs is awesome!";
+  expected_message.body_size = 21;
   return expected_message;
 }
 
@@ -159,6 +164,7 @@ Message HTTPResp2ExpectedMessage() {
   expected_message.resp_status = 200;
   expected_message.resp_message = "OK";
   expected_message.body = "pixielabs is awesome!";
+  expected_message.body_size = 21;
   return expected_message;
 }
 
@@ -219,6 +225,8 @@ bool operator==(const Message& lhs, const Message& rhs) {
   CMP(minor_version);
   CMP(resp_status);
   CMP(resp_message);
+  CMP(body);
+  CMP(body_size);
   if (lhs.headers != rhs.headers) {
     LOG(INFO) << absl::StrJoin(std::begin(lhs.headers), std::end(lhs.headers), " ",
                                absl::PairFormatter(":"))
@@ -261,7 +269,9 @@ struct TestParam {
 };
 
 class HTTPParserTest : public DataStreamBufferTestWrapper,
-                       public ::testing::TestWithParam<TestParam> {};
+                       public ::testing::TestWithParam<TestParam> {
+  void SetUp() { FLAGS_http_body_limit_bytes = 256; }
+};
 
 //=============================================================================
 // HTTP Parse() Tests
@@ -379,6 +389,7 @@ TEST_F(HTTPParserTest, ParseCompleteHTTPResponseWithContentLengthHeader) {
   expected_message1.resp_status = 200;
   expected_message1.resp_message = "OK";
   expected_message1.body = "pixielabs";
+  expected_message1.body_size = 9;
 
   Message expected_message2;
   expected_message2.type = message_type_t::kResponse;
@@ -387,6 +398,7 @@ TEST_F(HTTPParserTest, ParseCompleteHTTPResponseWithContentLengthHeader) {
   expected_message2.resp_status = 200;
   expected_message2.resp_message = "OK";
   expected_message2.body = "pixielabs!";
+  expected_message2.body_size = 10;
 
   std::deque<Message> parsed_messages;
   const std::string buf = absl::StrCat(msg1, msg2);
@@ -414,6 +426,7 @@ TEST_F(HTTPParserTest, ParseIncompleteHTTPResponseWithContentLengthHeader) {
   expected_message1.resp_status = 200;
   expected_message1.resp_message = "OK";
   expected_message1.body = "pixielabs is awesome!";
+  expected_message1.body_size = 21;
 
   const std::string buf = absl::StrCat(msg1, msg2, msg3);
   std::deque<Message> parsed_messages;
@@ -456,6 +469,78 @@ TEST_F(HTTPParserTest, ParseCompleteChunkEncodedMessage) {
       "\r\n";
   Message expected_message = EmptyChunkedHTTPResp();
   expected_message.body = "pixielabs is awesome!";
+  expected_message.body_size = 21;
+
+  std::deque<Message> parsed_messages;
+  ParseResult result = ParseFramesLoop(message_type_t::kResponse, msg, &parsed_messages, &state);
+
+  EXPECT_EQ(ParseState::kSuccess, result.state);
+  EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
+}
+
+TEST_F(HTTPParserTest, LongChunkedMessageTruncated) {
+  StateWrapper state{};
+
+  std::string msg =
+      "HTTP/1.1 200 OK\r\n"
+      "Transfer-Encoding: chunked\r\n"
+      "\r\n"
+      "9\r\n"
+      "pixielabs\r\n"
+      "C\r\n"
+      " is awesome!\r\n"
+      "100\r\n"
+      "0000000000000000000000000000000000000000000000000000000000000000"
+      "1111111111111111111111111111111111111111111111111111111111111111"
+      "2222222222222222222222222222222222222222222222222222222222222222"
+      "3333333333333333333333333333333333333333333333333333333333333333"
+      "\r\n"
+      "0\r\n"
+      "\r\n";
+  Message expected_message = EmptyChunkedHTTPResp();
+  // Notice the truncation.
+  expected_message.body =
+      "pixielabs is awesome!"
+      "0000000000000000000000000000000000000000000000000000000000000000"
+      "1111111111111111111111111111111111111111111111111111111111111111"
+      "2222222222222222222222222222222222222222222222222222222222222222"
+      "3333333333333333333333333333333333333333333";
+  expected_message.body_size = 277;
+
+  std::deque<Message> parsed_messages;
+  ParseResult result = ParseFramesLoop(message_type_t::kResponse, msg, &parsed_messages, &state);
+
+  EXPECT_EQ(ParseState::kSuccess, result.state);
+  EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
+}
+
+TEST_F(HTTPParserTest, LongContentLengthBodyTruncated) {
+  StateWrapper state{};
+
+  // Headers are complete but body is not 40 bytes, indicating a partial body.
+  std::string msg =
+      "HTTP/1.1 200 OK\r\n"
+      "Content-Length: 320\r\n"
+      "\r\n"
+      "0000000000000000000000000000000000000000000000000000000000000000"
+      "1111111111111111111111111111111111111111111111111111111111111111"
+      "2222222222222222222222222222222222222222222222222222222222222222"
+      "3333333333333333333333333333333333333333333333333333333333333333"
+      "4444444444444444444444444444444444444444444444444444444444444444";
+
+  Message expected_message;
+  expected_message.type = message_type_t::kResponse;
+  expected_message.minor_version = 1;
+  expected_message.headers = {{"Content-Length", "320"}};
+  expected_message.resp_status = 200;
+  expected_message.resp_message = "OK";
+  // Notice the truncation.
+  expected_message.body =
+      "0000000000000000000000000000000000000000000000000000000000000000"
+      "1111111111111111111111111111111111111111111111111111111111111111"
+      "2222222222222222222222222222222222222222222222222222222222222222"
+      "3333333333333333333333333333333333333333333333333333333333333333";
+  expected_message.body_size = 320;
 
   std::deque<Message> parsed_messages;
   ParseResult result = ParseFramesLoop(message_type_t::kResponse, msg, &parsed_messages, &state);
@@ -536,6 +621,7 @@ TEST_F(HTTPParserTest, ParseHeadAndGetResponse) {
   expected_message1.headers = {{"Content-Length", "5"},
                                {"Content-Type", "text/plain; charset=utf-8"}};
   expected_message1.body = "";
+  expected_message1.body_size = 0;
 
   Message expected_message2 = EmptyHTTPResp();
   expected_message2.type = message_type_t::kResponse;
@@ -543,6 +629,7 @@ TEST_F(HTTPParserTest, ParseHeadAndGetResponse) {
   expected_message2.headers = {{"Content-Length", "5"},
                                {"Content-Type", "text/plain; charset=utf-8"}};
   expected_message2.body = "pixie";
+  expected_message2.body_size = 5;
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message1, expected_message2));
