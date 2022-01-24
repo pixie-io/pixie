@@ -237,6 +237,9 @@ const absl::flat_hash_map<std::string_view, ir::shared::ScalarType> kGoTypesMap 
         {"uint16",  ir::shared::ScalarType::UINT16},
         {"uint32",  ir::shared::ScalarType::UINT32},
         {"uint64",  ir::shared::ScalarType::UINT64},
+        // TODO(nserrino,oazizi): The width of this is architecture dependent. We should
+        // properly implement this mapping based on the system architecture of the machine.
+        {"uintptr", ir::shared::ScalarType::UINT64},
         {"float32", ir::shared::ScalarType::FLOAT},
         {"float64", ir::shared::ScalarType::DOUBLE},
 };
