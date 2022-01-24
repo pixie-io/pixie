@@ -190,12 +190,7 @@ gcloud beta container --project "${PROJECT}" clusters create "${CLUSTER_NAME}" \
  --disk-size ${DISK_SIZE} \
  --cluster-ipv4-cidr=/21 \
  --services-ipv4-cidr=/20 \
- --scopes "https://www.googleapis.com/auth/compute",\
-"https://www.googleapis.com/auth/devstorage.read_only",\
-"https://www.googleapis.com/auth/logging.write",\
-"https://www.googleapis.com/auth/monitoring.write",\
-"https://www.googleapis.com/auth/service.management",\
-"https://www.googleapis.com/auth/servicecontrol" \
+ --scopes gke-default,compute-rw \
  --num-nodes ${NUM_NODES} \
  "${AUTOSCALING_ARGS[@]}" \
  --enable-ip-alias \
