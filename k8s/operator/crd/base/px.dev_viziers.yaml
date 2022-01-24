@@ -172,6 +172,32 @@ spec:
                           to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                         type: object
                     type: object
+                  securityContext:
+                    description: The securityContext which should be set on non-privileged
+                      pods. All pods which require privileged permissions will still
+                      require a privileged securityContext.
+                    properties:
+                      enabled:
+                        description: Whether a securityContext should be set on the
+                          pod. In cases where no PSPs are applied to the cluster,
+                          this is not necessary.
+                        type: boolean
+                      fsGroup:
+                        description: A special supplemental group that applies to
+                          all containers in a pod.
+                        format: int64
+                        type: integer
+                      runAsGroup:
+                        description: The GID to run the entrypoint of the container
+                          process.
+                        format: int64
+                        type: integer
+                      runAsUser:
+                        description: The UID to run the entrypoint of the container
+                          process.
+                        format: int64
+                        type: integer
+                    type: object
                 type: object
               useEtcdOperator:
                 description: UseEtcdOperator specifies whether the metadata service

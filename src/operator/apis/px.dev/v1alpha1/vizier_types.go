@@ -168,6 +168,23 @@ type PodPolicy struct {
 	// More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
 	// This field cannot be updated once the cluster is created.
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+	// The securityContext which should be set on non-privileged pods. All pods which require privileged permissions
+	// will still require a privileged securityContext.
+	SecurityContext *PodSecurityContext `json:"securityContext,omitempty"`
+}
+
+// PodSecurityContext describes the desired security context for non-privileged pods. This may be required for some
+// cases with more restrictive PodSecurityPolicies.
+type PodSecurityContext struct {
+	// Whether a securityContext should be set on the pod. In cases where no PSPs are applied to the cluster, this is
+	// not necessary.
+	Enabled bool `json:"enabled,omitempty"`
+	// A special supplemental group that applies to all containers in a pod.
+	FSGroup int64 `json:"fsGroup,omitempty"`
+	// The UID to run the entrypoint of the container process.
+	RunAsUser int64 `json:"runAsUser,omitempty"`
+	// The GID to run the entrypoint of the container process.
+	RunAsGroup int64 `json:"runAsGroup,omitempty"`
 }
 
 // DataCollectorParams specifies internal data collector configurations.
