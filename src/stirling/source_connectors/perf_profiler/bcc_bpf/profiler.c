@@ -42,48 +42,18 @@
 // 2b. histogram_b.
 
 // Periodically, we need to switch over from map-set-a to map-set-b, and vice versa.
-// We will conservatively assume that each sample inserts a new key into the stack_traces
-// and into the histogram. Also, we will target some nominal time frame (the "transfer period")
-// for the sampling to continue before doing the switch over.
-
-// Given the targeted "transfer period" and the "sample period", we can find the
-// number of entries required to be allocated in each of the maps,
-// i.e. the number of expected stack traces:
-// kExpectedStackTracesPerCPU = transfer_period / sample_period.
-//
-// Because sampling occurs per-cpu, the total number of expected stack traces is:
-// kExpectedStackTraces = ncpus * kExpectedStackTracesPerCPU
-//
-// But, we will include some margin to make sure that hash collisions and
-// data races do not cause us to drop data:
-// kNumMapEntries = 4 * kExpectedStackTraces
+// We conservatively assume that each sample inserts a new key into the stack_traces
+// and into the histogram. The transfer between sets is controlled by user-space.
 
 // Notes:
 // [1] A stack trace is an (ordered) vector of addresses (u64s), i.e.
 // the set of instruction pointers found in the call stack at the moment
 // the sample was triggered.
 
-// Here, we compute the number of expected stack traces (used to allocate space
-// in the shared BPF maps) per the notes above. NCPUS, TRANSFER_PERIOD, and SAMPLE_PERIOD
-// pre-processor defines specified on the compiler command line (e.g. -DNCPUS=24).
-
-#define DIV_ROUND_UP(NUM, DEN) ((NUM + DEN - 1) / DEN)
-
-static const uint32_t kExpectedStackTracesPerCPU = DIV_ROUND_UP(TRANSFER_PERIOD, SAMPLE_PERIOD);
-static const uint32_t kExpectedStackTraces = NCPUS * kExpectedStackTracesPerCPU;
-
-// Oversize to avoid hash collisions.
-static const uint32_t kNumMapEntries = 4 * kExpectedStackTraces;
-
-// A threshold for checking that we've overrun the maps.
-// This should be higher than kExpectedStackTraces due to timing variations,
-// but it should be lower than kNumMapEntries.
-static const uint32_t kSampleThreshold = 2 * kExpectedStackTraces;
-
 BPF_PERF_OUTPUT(histogram_a);
 BPF_PERF_OUTPUT(histogram_b);
-BPF_STACK_TRACE(stack_traces_a, kNumMapEntries);
-BPF_STACK_TRACE(stack_traces_b, kNumMapEntries);
+BPF_STACK_TRACE(stack_traces_a, CFG_STACK_TRACE_ENTRIES);
+BPF_STACK_TRACE(stack_traces_b, CFG_STACK_TRACE_ENTRIES);
 
 // profiler_state: shared state vector between BPF & user space.
 // See comments in shared header file "stack_event.h".
@@ -134,10 +104,10 @@ int sample_call_stack(struct bpf_perf_event_data* ctx) {
     *sample_count_b_ptr += 1;
   }
 
-  // sample_count >= kSampleThreshold: indicates the number of samples taken has exceeded a
+  // sample_count >= CFG_OVERRUN_THRESHOLD: indicates the number of samples taken has exceeded a
   // threshold such that we risk dropping data. User-space code should have read the data by now.
   // Report this error.
-  if (sample_count >= kSampleThreshold) {
+  if (sample_count >= CFG_OVERRUN_THRESHOLD) {
     uint64_t overflow_status_code = kOverflowError;
     profiler_state.update(&error_status_idx, &overflow_status_code);
     return 0;

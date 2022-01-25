@@ -63,22 +63,39 @@ Status PerfProfileConnector::InitImpl() {
 
   const size_t ncpus = get_nprocs_conf();
 
-  const std::vector<std::string> defines = {
-      absl::Substitute("-DNCPUS=$0", ncpus),
-      absl::Substitute("-DTRANSFER_PERIOD=$0", sampling_period_.count()),
-      absl::Substitute("-DSAMPLE_PERIOD=$0", stack_trace_sampling_period_.count())};
+  // Compute sizes of eBPF data structures:
 
-  // Compute the perf buffer size.
+  // Given the targeted "transfer period" and the "stack trace sample period",
+  // we can find the number of entries required to be allocated in each of the maps,
+  // i.e. the number of expected stack traces:
   const int32_t expected_stack_traces_per_cpu =
       IntRoundUpDivide(sampling_period_.count(), stack_trace_sampling_period_.count());
-  const int32_t expected_stack_races = ncpus * expected_stack_traces_per_cpu;
+
+  // Because sampling occurs per-cpu, the total number of expected stack traces is:
+  const int32_t expected_stack_traces = ncpus * expected_stack_traces_per_cpu;
+
+  // Include some margin to ensure that hash collisions and data races do not cause data drop:
   const int32_t overprovision_factor = 4;
-  const int32_t num_perf_buffer_entries = overprovision_factor * expected_stack_races;
+
+  // Compute the size of the stack traces map.
+  const int32_t provisioned_stack_traces = overprovision_factor * expected_stack_traces;
+
+  // A threshold for checking that we've overrun the maps.
+  // This should be higher than expected_stack_traces due to timing variations,
+  // but it should be lower than provisioned_stack_traces.
+  const int32_t overrun_threshold = (expected_stack_traces + provisioned_stack_traces) / 2;
+
+  // Compute the size of the perf buffers.
+  const int32_t num_perf_buffer_entries = overprovision_factor * expected_stack_traces;
   const int32_t perf_buffer_size = sizeof(stack_trace_key_t) * num_perf_buffer_entries;
 
-  const uint64_t probe_sample_period_ms = stack_trace_sampling_period_.count();
-  const auto probe_specs =
-      MakeArray<bpf_tools::SamplingProbeSpec>({"sample_call_stack", probe_sample_period_ms});
+  const std::vector<std::string> defines = {
+      absl::Substitute("-DCFG_STACK_TRACE_ENTRIES=$0", provisioned_stack_traces),
+      absl::Substitute("-DCFG_OVERRUN_THRESHOLD=$0", overrun_threshold),
+  };
+
+  const auto probe_specs = MakeArray<bpf_tools::SamplingProbeSpec>(
+      {"sample_call_stack", static_cast<uint64_t>(stack_trace_sampling_period_.count())});
 
   const auto perf_buffer_specs = MakeArray<bpf_tools::PerfBufferSpec>(
       {{"histogram_a", HandleHistoEvent, HandleHistoLoss, perf_buffer_size},
