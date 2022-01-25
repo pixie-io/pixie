@@ -93,6 +93,38 @@ class NoGapsPosGenerator : public PosGenerator {
   uint64_t pos_ = 0;
 };
 
+// GapPosGenerator creates a stream of byte positions that has gaps of size `gap_size` every
+// `max_segment_size`.
+class GapPosGenerator : public PosGenerator {
+ public:
+  GapPosGenerator(uint64_t max_segment_size, uint64_t gap_size)
+      : max_segment_size_(max_segment_size), gap_size_(gap_size) {}
+
+  uint64_t NextPos(uint64_t msg_size) override;
+
+ private:
+  const uint64_t max_segment_size_;
+  const uint64_t gap_size_;
+  uint64_t pos_ = 0;
+  uint64_t curr_segment_ = 0;
+};
+
+// IterationGapPosGenerator creates a stream of byte positions such that for each polling iteration
+// (ie. an emulated equivalent of a call to PollPerfBuffers()), the byte positions are completely in
+// order, but between polling iterations it adds gaps.
+class IterationGapPosGenerator : public PosGenerator {
+ public:
+  explicit IterationGapPosGenerator(uint64_t gap_size) : gap_size_(gap_size) {}
+
+  uint64_t NextPos(uint64_t msg_size) override;
+
+  void NextPollIteration() override;
+
+ private:
+  const uint64_t gap_size_;
+  uint64_t pos_ = 0;
+};
+
 }  // namespace testing
 }  // namespace stirling
 }  // namespace px

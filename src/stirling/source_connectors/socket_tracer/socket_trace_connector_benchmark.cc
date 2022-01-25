@@ -44,8 +44,10 @@ using ::px::stirling::SocketTraceConnectorFriend;
 using ::px::stirling::StandaloneContext;
 using ::px::stirling::testing::BenchmarkDataGenerationSpec;
 using ::px::stirling::testing::DataTables;
+using ::px::stirling::testing::GapPosGenerator;
 using ::px::stirling::testing::GenerateBenchmarkData;
 using ::px::stirling::testing::HTTP1SingleReqRespGen;
+using ::px::stirling::testing::IterationGapPosGenerator;
 using ::px::stirling::testing::NoGapsPosGenerator;
 
 namespace {
@@ -238,5 +240,40 @@ BENCHMARK_CAPTURE(BM_SocketTraceConnector, http1_encode_chunked_no_gaps,
                             return std::make_unique<HTTP1SingleReqRespGen>(kRecordSize, 3 * 1024);
                           },
                       .pos_gen_func = []() { return std::make_unique<NoGapsPosGenerator>(); },
+                  })
+    ->Unit(benchmark::kMillisecond);
+
+BENCHMARK_CAPTURE(
+    BM_SocketTraceConnector, http1_inter_iter_gaps,
+    BenchmarkDataGenerationSpec{
+        .num_conns = 10,
+        .num_poll_iterations = 5,
+        .records_per_conn = 16,
+        .protocol = kProtocolHTTP,
+        .role = kRoleServer,
+        .rec_gen_func =
+            []() { return std::make_unique<HTTP1SingleReqRespGen>(/*body size*/ kRecordSize); },
+        .pos_gen_func =
+            []() {
+              return std::make_unique<IterationGapPosGenerator>(/*gap size*/ 500 * 1024 * 1024);
+            },
+    })
+    ->Unit(benchmark::kMillisecond);
+
+BENCHMARK_CAPTURE(BM_SocketTraceConnector, http1_intra_iter_gaps,
+                  BenchmarkDataGenerationSpec{
+                      .num_conns = 10,
+                      .num_poll_iterations = 1,
+                      .records_per_conn = 48,
+                      .protocol = kProtocolHTTP,
+                      .role = kRoleServer,
+                      .rec_gen_func =
+                          []() { return std::make_unique<HTTP1SingleReqRespGen>(kRecordSize); },
+                      .pos_gen_func =
+                          []() {
+                            return std::make_unique<GapPosGenerator>(
+                                /*continuous chunk size*/ 10 * kRecordSize,
+                                /*gap size*/ 5 * 1024 * 1024);
+                          },
                   })
     ->Unit(benchmark::kMillisecond);

@@ -77,6 +77,26 @@ uint64_t NoGapsPosGenerator::NextPos(uint64_t msg_size) {
   return ret;
 }
 
+uint64_t GapPosGenerator::NextPos(uint64_t msg_size) {
+  uint64_t ret = pos_;
+  curr_segment_ += msg_size;
+  if (curr_segment_ > max_segment_size_) {
+    curr_segment_ = msg_size;
+    pos_ += gap_size_;
+    ret = pos_;
+  }
+  pos_ += msg_size;
+  return ret;
+}
+
+uint64_t IterationGapPosGenerator::NextPos(uint64_t msg_size) {
+  uint64_t ret = pos_;
+  pos_ += msg_size;
+  return ret;
+}
+
+void IterationGapPosGenerator::NextPollIteration() { pos_ += gap_size_; }
+
 }  // namespace testing
 }  // namespace stirling
 }  // namespace px
