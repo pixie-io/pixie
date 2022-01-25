@@ -61,9 +61,18 @@ const (
 	// ClusterTypeMinikubeOther is a minikube cluster running with a driver not specified in
 	// the other enums.
 	ClusterTypeMinikubeOther
+	// ClusterTypeK0S is a k0s cluster.
+	ClusterTypeK0S
 )
 
-var allowedClusterTypes = []ClusterType{ClusterTypeGKE, ClusterTypeEKS, ClusterTypeAKS, ClusterTypeMinikubeKVM2, ClusterTypeMinikubeHyperkit}
+var allowedClusterTypes = []ClusterType{
+	ClusterTypeGKE,
+	ClusterTypeEKS,
+	ClusterTypeAKS,
+	ClusterTypeMinikubeKVM2,
+	ClusterTypeMinikubeHyperkit,
+	ClusterTypeK0S,
+}
 
 // detectClusterType gets the cluster type of the cluster for the current kube config context.
 func detectClusterType() ClusterType {
@@ -128,6 +137,13 @@ func detectClusterType() ClusterType {
 		matchEks, _ := regexp.Match(`eks-.*`, []byte(sp[1]))
 		if matchEks {
 			return ClusterTypeEKS
+		}
+	}
+
+	sp = strings.SplitN(version.GitVersion, "+", 2)
+	if len(sp) > 1 {
+		if sp[1] == "k0s" {
+			return ClusterTypeK0S
 		}
 	}
 
