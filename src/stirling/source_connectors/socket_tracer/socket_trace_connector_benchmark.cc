@@ -43,6 +43,7 @@ using ::px::stirling::SocketTraceConnector;
 using ::px::stirling::SocketTraceConnectorFriend;
 using ::px::stirling::SystemWideStandaloneContext;
 using ::px::stirling::testing::BenchmarkDataGenerationSpec;
+using ::px::stirling::testing::CQLQueryReqRespGen;
 using ::px::stirling::testing::DataTables;
 using ::px::stirling::testing::GapPosGenerator;
 using ::px::stirling::testing::GenerateBenchmarkData;
@@ -271,6 +272,19 @@ BENCHMARK_CAPTURE(BM_SocketTraceConnector, postgres_no_gaps,
                   })
     ->Unit(benchmark::kMillisecond);
 
+BENCHMARK_CAPTURE(BM_SocketTraceConnector, cql_no_gaps,
+                  BenchmarkDataGenerationSpec{
+                      .num_conns = 10,
+                      .num_poll_iterations = 1,
+                      .records_per_conn = 16,
+                      .protocol = kProtocolCQL,
+                      .role = kRoleServer,
+                      .rec_gen_func =
+                          []() { return std::make_unique<CQLQueryReqRespGen>(kRecordSize); },
+                      .pos_gen_func = []() { return std::make_unique<NoGapsPosGenerator>(); },
+                  })
+    ->Unit(benchmark::kMillisecond);
+
 BENCHMARK_CAPTURE(
     BM_SocketTraceConnector, http1_inter_iter_gaps,
     BenchmarkDataGenerationSpec{
@@ -313,6 +327,22 @@ BENCHMARK_CAPTURE(
         .protocol = kProtocolPGSQL,
         .role = kRoleServer,
         .rec_gen_func = []() { return std::make_unique<PostgresSelectReqRespGen>(kRecordSize); },
+        .pos_gen_func =
+            []() {
+              return std::make_unique<IterationGapPosGenerator>(/*gap_size*/ 500 * 1024 * 1024);
+            },
+    })
+    ->Unit(benchmark::kMillisecond);
+
+BENCHMARK_CAPTURE(
+    BM_SocketTraceConnector, cql_inter_iter_gaps,
+    BenchmarkDataGenerationSpec{
+        .num_conns = 10,
+        .num_poll_iterations = 5,
+        .records_per_conn = 16,
+        .protocol = kProtocolCQL,
+        .role = kRoleServer,
+        .rec_gen_func = []() { return std::make_unique<CQLQueryReqRespGen>(kRecordSize); },
         .pos_gen_func =
             []() {
               return std::make_unique<IterationGapPosGenerator>(/*gap_size*/ 500 * 1024 * 1024);

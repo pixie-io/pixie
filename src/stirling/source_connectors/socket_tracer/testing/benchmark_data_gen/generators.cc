@@ -17,6 +17,9 @@
  */
 
 #include "src/stirling/source_connectors/socket_tracer/testing/benchmark_data_gen/generators.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/cql/frame_body_decoder.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/cql/test_utils.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/cql/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/test_data.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/test_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/pgsql/test_utils.h"
@@ -224,6 +227,73 @@ PostgresSelectReqRespGen::PostgresSelectReqRespGen(size_t total_size) : SingleRe
 
   resp_bytes_ += cmd_cmpl_bytes;
   resp_bytes_ += ready_for_query_bytes;
+}
+
+CQLQueryReqRespGen::CQLQueryReqRespGen(size_t total_size)
+    : SingleReqRespGen(/*req_bytes*/ "", /*resp_bytes*/ "") {
+  using protocols::cass::ColSpec;
+  using protocols::cass::QueryReq;
+  using protocols::cass::ResultMetadata;
+  using protocols::cass::ResultResp;
+  using protocols::cass::ResultRespKind;
+  using protocols::cass::ResultRowsResp;
+  using protocols::cass::testutils::CreateCQLEvent;
+  using protocols::cass::testutils::CreateCQLHeader;
+  using protocols::cass::testutils::QueryReqToEvent;
+  using protocols::cass::testutils::ResultRespToByteString;
+  using protocols::cass::testutils::RowToByteString;
+
+  size_t remaining = total_size;
+
+  QueryReq req;
+  req.query = "SELECT * FROM table";
+  req.qp.consistency = 0;
+  req.qp.flags = 0;
+
+  uint16_t stream_id = 1;
+  req_bytes_ = QueryReqToEvent(req, stream_id);
+  remaining -= req_bytes_.size();
+
+  // CQL has fixed header sizes, so we can pass in an empty body length to calculate its size.
+  auto hdr_size = CreateCQLHeader(protocols::cass::RespOp::kResult, stream_id, 0).size();
+  remaining -= hdr_size;
+
+  ResultResp resp;
+  resp.kind = ResultRespKind::kRows;
+
+  ResultRowsResp rows_resp;
+  rows_resp.metadata.flags = 0;
+  rows_resp.metadata.columns_count = 2;
+  ColSpec col_spec;
+  col_spec.ks_name = "keyspace";
+  col_spec.table_name = "table";
+  col_spec.name = "col1";
+  col_spec.type = {
+      .type = protocols::cass::DataType::kVarchar,
+      .value = "",
+  };
+  rows_resp.metadata.col_specs.push_back(col_spec);
+  col_spec.name = "col2";
+  rows_resp.metadata.col_specs.push_back(col_spec);
+
+  // Estimate body size (without rows) by settings rows_count to 0.
+  rows_resp.rows_count = 0;
+  resp.resp = rows_resp;
+  auto resp_body = ResultRespToByteString(resp);
+  remaining -= resp_body.size();
+
+  auto row = RowToByteString({"my col1 value", "my col2 value but longer"});
+  auto rows_count = remaining / row.size();
+
+  rows_resp.rows_count = rows_count;
+  resp.resp = rows_resp;
+  resp_body = ResultRespToByteString(resp);
+
+  for (size_t i = 0; i < rows_count; ++i) {
+    absl::StrAppend(&resp_body, row);
+  }
+
+  resp_bytes_ = CreateCQLEvent(protocols::cass::RespOp::kResult, resp_body, stream_id);
 }
 
 uint64_t NoGapsPosGenerator::NextPos(uint64_t msg_size) {

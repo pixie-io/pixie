@@ -81,6 +81,11 @@ class PostgresSelectReqRespGen : public SingleReqRespGen {
   explicit PostgresSelectReqRespGen(size_t total_size);
 };
 
+class CQLQueryReqRespGen : public SingleReqRespGen {
+ public:
+  explicit CQLQueryReqRespGen(size_t total_size);
+};
+
 // Base class for all pos generators. Pos generators generate a sequence of byte positions, based on
 // the sequence of message sizes. This allows for interesting distributions of pos, eg. big gaps or
 // out of order messages. This is to emulate the byte position bpf adds to each event.
