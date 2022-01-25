@@ -47,7 +47,7 @@ class Symbolizer {
    * Create a symbolizer for the process specified by UPID.
    * The returned symbolizer function converts addresses to symbols for the process.
    */
-  virtual SymbolizerFn GetSymbolizerFn(const struct upid_t& upid) = 0;
+  virtual profiler::SymbolizerFn GetSymbolizerFn(const struct upid_t& upid) = 0;
 
   /**
    * Delete the state associated with a symbolizer created by a previous call to GetSymbolizerFn

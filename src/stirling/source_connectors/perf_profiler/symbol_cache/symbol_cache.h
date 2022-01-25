@@ -31,7 +31,7 @@ namespace stirling {
 
 class SymbolCache {
  public:
-  explicit SymbolCache(SymbolizerFn symbolizer_fn) : symbolizer_fn_(symbolizer_fn) {}
+  explicit SymbolCache(profiler::SymbolizerFn symbolizer_fn) : symbolizer_fn_(symbolizer_fn) {}
 
   struct LookupResult {
     std::string_view symbol;
@@ -54,7 +54,7 @@ class SymbolCache {
    */
   class Symbol {
    public:
-    Symbol(SymbolizerFn symbolizer_fn, const uintptr_t addr);
+    Symbol(profiler::SymbolizerFn symbolizer_fn, const uintptr_t addr);
 
     // A move constructor that takes consumes a string.
     explicit Symbol(std::string&& symbol_str) : symbol_(std::move(symbol_str)) {}
@@ -62,7 +62,7 @@ class SymbolCache {
     std::string symbol_;
   };
 
-  SymbolizerFn symbolizer_fn_;
+  profiler::SymbolizerFn symbolizer_fn_;
   absl::flat_hash_map<uintptr_t, Symbol> cache_;
   absl::flat_hash_map<uintptr_t, Symbol> prev_cache_;
 };

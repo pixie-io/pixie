@@ -43,7 +43,7 @@ std::string_view BCCSymbolizer::Symbolize(const int pid, const uintptr_t addr) {
   return symbol;
 }
 
-SymbolizerFn BCCSymbolizer::GetSymbolizerFn(const struct upid_t& upid) {
+profiler::SymbolizerFn BCCSymbolizer::GetSymbolizerFn(const struct upid_t& upid) {
   using std::placeholders::_1;
   auto fn = std::bind(&BCCSymbolizer::Symbolize, this, static_cast<int32_t>(upid.pid), _1);
   return fn;

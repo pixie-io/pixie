@@ -32,7 +32,7 @@ class ElfSymbolizer : public Symbolizer, public NotCopyMoveable {
  public:
   static StatusOr<std::unique_ptr<Symbolizer>> Create();
 
-  SymbolizerFn GetSymbolizerFn(const struct upid_t& upid) override;
+  profiler::SymbolizerFn GetSymbolizerFn(const struct upid_t& upid) override;
   void DeleteUPID(const struct upid_t& upid) override;
 
  private:

@@ -23,7 +23,7 @@
 namespace px {
 namespace stirling {
 
-SymbolCache::Symbol::Symbol(SymbolizerFn symbolizer_fn, const uintptr_t addr)
+SymbolCache::Symbol::Symbol(profiler::SymbolizerFn symbolizer_fn, const uintptr_t addr)
     : symbol_(symbolizer_fn(addr)) {}
 
 SymbolCache::LookupResult SymbolCache::Lookup(const uintptr_t addr) {

@@ -35,7 +35,7 @@ StatusOr<std::unique_ptr<Symbolizer>> CachingSymbolizer::Create(
   return uptr;
 }
 
-SymbolizerFn CachingSymbolizer::GetSymbolizerFn(const struct upid_t& upid) {
+profiler::SymbolizerFn CachingSymbolizer::GetSymbolizerFn(const struct upid_t& upid) {
   using std::placeholders::_1;
   const auto [iter, inserted] = symbol_caches_.try_emplace(upid, nullptr);
   if (inserted) {

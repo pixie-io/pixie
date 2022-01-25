@@ -22,8 +22,9 @@
 
 namespace px {
 namespace stirling {
+// TODO(jps): Add profiler namespace for all profiler code.
 
-uint64_t StackTraceIDCache::Lookup(const SymbolicStackTrace& stack_trace) {
+uint64_t StackTraceIDCache::Lookup(const profiler::SymbolicStackTrace& stack_trace) {
   // Case 1: Stack trace ID is in the current set. Just return it.
   const auto it = stack_trace_ids_.find(stack_trace);
   if (it != stack_trace_ids_.end()) {

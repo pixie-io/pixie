@@ -75,7 +75,7 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   const std::chrono::milliseconds push_period_;
 
   // StackTraceHisto: SymbolicStackTrace => observation-count
-  using StackTraceHisto = absl::flat_hash_map<SymbolicStackTrace, uint64_t>;
+  using StackTraceHisto = absl::flat_hash_map<profiler::SymbolicStackTrace, uint64_t>;
 
   // RawHistoData: a list of stack trace keys that will need to be histogrammed.
   using RawHistoData = std::vector<stack_trace_key_t>;

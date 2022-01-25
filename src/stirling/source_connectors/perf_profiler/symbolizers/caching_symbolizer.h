@@ -35,7 +35,7 @@ class CachingSymbolizer : public Symbolizer {
  public:
   static StatusOr<std::unique_ptr<Symbolizer>> Create(std::unique_ptr<Symbolizer> inner_symbolizer);
 
-  SymbolizerFn GetSymbolizerFn(const struct upid_t& upid) override;
+  profiler::SymbolizerFn GetSymbolizerFn(const struct upid_t& upid) override;
 
   void DeleteUPID(const struct upid_t& upid) override;
   size_t PerformEvictions();

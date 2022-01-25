@@ -29,7 +29,7 @@ Stringifier::Stringifier(Symbolizer* u_symbolizer, Symbolizer* k_symbolizer,
     : u_symbolizer_(u_symbolizer), k_symbolizer_(k_symbolizer), stack_traces_(stack_traces) {}
 
 std::string Stringifier::BuildStackTraceString(const std::vector<uintptr_t>& addrs,
-                                               SymbolizerFn symbolize_fn,
+                                               profiler::SymbolizerFn symbolize_fn,
                                                const std::string_view& suffix) {
   // TODO(jps): re-evaluate the correct amount to reserve here.
   std::string stack_trace_str;
@@ -61,7 +61,8 @@ std::string Stringifier::BuildStackTraceString(const std::vector<uintptr_t>& add
   return stack_trace_str;
 }
 
-std::string Stringifier::FindOrBuildStackTraceString(const int stack_id, SymbolizerFn symbolize_fn,
+std::string Stringifier::FindOrBuildStackTraceString(const int stack_id,
+                                                     profiler::SymbolizerFn symbolize_fn,
                                                      const std::string_view& suffix) {
   // First try to find the memoized result in the stack_trace_strs_ map,
   // if no memoized result is available, build the folded stack trace string.

@@ -57,10 +57,10 @@ std::string_view EmptySymbolizerFn(const uintptr_t addr) {
 
 std::string_view BogusKernelSymbolizerFn(const uintptr_t) { return "<kernel symbol>"; }
 
-SymbolizerFn ElfSymbolizer::GetSymbolizerFn(const struct upid_t& upid) {
+profiler::SymbolizerFn ElfSymbolizer::GetSymbolizerFn(const struct upid_t& upid) {
   constexpr uint32_t kKernelPID = static_cast<uint32_t>(-1);
   if (upid.pid == kKernelPID) {
-    return SymbolizerFn(&(BogusKernelSymbolizerFn));
+    return profiler::SymbolizerFn(&(BogusKernelSymbolizerFn));
   }
 
   std::unique_ptr<ElfReader::Symbolizer>& upid_symbolizer = symbolizers_[upid];
@@ -70,7 +70,7 @@ SymbolizerFn ElfSymbolizer::GetSymbolizerFn(const struct upid_t& upid) {
     if (!upid_symbolizer_status.ok()) {
       VLOG(1) << absl::Substitute("Failed to create Symbolizer function for $0 [error=$1]",
                                   upid.pid, upid_symbolizer_status.ToString());
-      return SymbolizerFn(&(EmptySymbolizerFn));
+      return profiler::SymbolizerFn(&(EmptySymbolizerFn));
     }
 
     upid_symbolizer = upid_symbolizer_status.ConsumeValueOrDie();

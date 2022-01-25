@@ -30,9 +30,6 @@ namespace stirling {
 namespace profiler {
 static constexpr upid_t kKernelUPID = {
     .pid = static_cast<uint32_t>(bpf_tools::BCCSymbolizer::kKernelPID), .start_time_ticks = 0};
-}  // namespace profiler
-
-// TODO(jps): Move these types into the profiler namespace.
 
 /**
  * A function that takes an address as input and provides a symbolized string out.
@@ -68,5 +65,6 @@ struct SymbolicStackTrace {
   }
 };
 
+}  // namespace profiler
 }  // namespace stirling
 }  // namespace px

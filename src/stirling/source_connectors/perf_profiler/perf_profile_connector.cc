@@ -211,7 +211,7 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
       stack_trace_str = std::string(profiler::kNotSymbolizedMessage);
     }
 
-    SymbolicStackTrace symbolic_stack_trace = {upid, std::move(stack_trace_str)};
+    profiler::SymbolicStackTrace symbolic_stack_trace = {upid, std::move(stack_trace_str)};
 
     ++symbolic_histogram[symbolic_stack_trace];
     ++cum_sum_count;

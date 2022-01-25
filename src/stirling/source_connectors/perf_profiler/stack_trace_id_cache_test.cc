@@ -27,8 +27,8 @@ TEST(StackTraceIDCache, Basic) {
   StackTraceIDCache stack_trace_ids;
 
   const md::UPID kUPID(1, 1, 1);
-  const SymbolicStackTrace kStackTrace1{kUPID, "a();b();c();"};
-  const SymbolicStackTrace kStackTrace2{kUPID, "d();e();f();"};
+  const profiler::SymbolicStackTrace kStackTrace1{kUPID, "a();b();c();"};
+  const profiler::SymbolicStackTrace kStackTrace2{kUPID, "d();e();f();"};
 
   uint64_t id1 = stack_trace_ids.Lookup(kStackTrace1);
   uint64_t id2 = stack_trace_ids.Lookup(kStackTrace2);
