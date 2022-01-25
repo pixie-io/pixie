@@ -319,6 +319,7 @@ REPOSITORY_LOCATIONS = dict(
 # To use a local repo for local development, change `remote` to a file path.
 #   ex: remote = "/home/user/src/pixie-io/bcc"
 # Then change the local repo, commit the change, and replace `commit` with your new commit.
+# See LOCAL_REPOSITORY_LOCATIONS for an alternative approach.
 GIT_REPOSITORY_LOCATIONS = dict(
     com_github_iovisor_bcc = dict(
         remote = "https://github.com/pixie-io/bcc.git",
@@ -334,5 +335,22 @@ GIT_REPOSITORY_LOCATIONS = dict(
         remote = "https://github.com/pixie-io/jattach.git",
         commit = "fa36a4fa141b4e9486b9126640d54a94c1d36fce",
         shallow_since = "1638898188 -0800",
+    ),
+)
+
+# To use a local repo for local development, update the path to point to your local repo.
+#   ex: path = "/home/user/pixie-io/bcc"
+# then uncomment the lines with `_local_repo(name_of_repo_you_care_about, ...)` in `repositories.bzl` and
+# comment out the corresponding lines with `_git_repo(name_of_repo_you_care_about, ...)`.
+# Note that if you do this, you have to handle the building of these repos' artifacts yourself.
+# See `bazel/external/local_dev` for more info about the right cmake commands for building these repos yourself.
+# WARNING: doing this has some downsides, so don't do it for production builds. For instance,
+# cflags and other settings set by bazel (eg -O3) won't be used, since you have to do the building manually.
+LOCAL_REPOSITORY_LOCATIONS = dict(
+    com_github_iovisor_bcc = dict(
+        path = "/home/user/pixie-io/bcc",
+    ),
+    com_github_iovisor_bpftrace = dict(
+        path = "/home/user/pixie-io/bpftrace",
     ),
 )

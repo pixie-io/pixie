@@ -16,7 +16,7 @@
 
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load(":repository_locations.bzl", "GIT_REPOSITORY_LOCATIONS", "REPOSITORY_LOCATIONS")
+load(":repository_locations.bzl", "GIT_REPOSITORY_LOCATIONS", "LOCAL_REPOSITORY_LOCATIONS", "REPOSITORY_LOCATIONS")
 
 # Make all contents of an external repository accessible under a filegroup.
 # Used for external HTTP archives, e.g. cares.
@@ -68,8 +68,30 @@ def _git_repo_impl(name, **kwargs):
         **kwargs
     )
 
+def _local_repo_impl(name, **kwargs):
+    # `existing_rule_keys` contains the names of repositories that have already
+    # been defined in the Bazel workspace. By skipping repos with existing keys,
+    # users can override dependency versions by using standard Bazel repository
+    # rules in their WORKSPACE files.
+    existing_rule_keys = native.existing_rules().keys()
+    if name in existing_rule_keys:
+        # This repository has already been defined, probably because the user
+        # wants to override the version. Do nothing.
+        return
+
+    location = LOCAL_REPOSITORY_LOCATIONS[name]
+
+    native.new_local_repository(
+        name = name,
+        path = location["path"],
+        **kwargs
+    )
+
 def _git_repo(name, **kwargs):
     _git_repo_impl(name, **kwargs)
+
+def _local_repo(name, **kwargs):
+    _local_repo_impl(name, **kwargs)
 
 # For bazel repos do not require customization.
 def _bazel_repo(name, **kwargs):
@@ -139,6 +161,9 @@ def _cc_deps():
     _bazel_repo("com_github_h2o_picohttpparser", build_file = "//bazel/external:picohttpparser.BUILD")
     _bazel_repo("com_github_opentelemetry_proto", build_file = "//bazel/external:opentelemetry.BUILD")
 
+    # Uncomment these to develop bcc and/or bpftrace locally. Should also comment out the corresponding _git_repo lines.
+    # _local_repo("com_github_iovisor_bcc", build_file = "//bazel/external/local_dev:bcc.BUILD")
+    # _local_repo("com_github_iovisor_bpftrace", build_file = "//bazel/external/local_dev:bpftrace.BUILD")
     _git_repo("com_github_iovisor_bcc", build_file = "//bazel/external:bcc.BUILD")
     _git_repo("com_github_iovisor_bpftrace", build_file = "//bazel/external:bpftrace.BUILD")
 
