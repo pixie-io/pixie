@@ -1,5 +1,5 @@
 ---
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: cloud-ingress
@@ -12,55 +12,94 @@ spec:
       paths:
       # GCP does not support multiple wildcards so unfortunately we need this for each
       # GRPC API service.
-      - path: /pl.cloudapi.ArtifactTracker/*
+      - path: /pl.cloudapi.ArtifactTracker/
+        pathType: Prefix
         backend:
-          serviceName: cloud-proxy-service
-          servicePort: 5555
-      - path: /px.services.VZConnService/*
+          service:
+            name: cloud-proxy-service
+            port:
+              number: 5555
+      - path: /px.services.VZConnService/
+        pathType: Prefix
         backend:
-          serviceName: vzconn-service
-          servicePort: 51600
-      - path: /px.cloudapi.ArtifactTracker/*
+          service:
+            name: vzconn-service
+            port:
+              number: 51600
+      - path: /px.cloudapi.ArtifactTracker/
+        pathType: Prefix
         backend:
-          serviceName: cloud-proxy-service
-          servicePort: 5555
-      - path: /px.cloudapi.APIKeyManager/*
+          service:
+            name: cloud-proxy-service
+            port:
+              number: 5555
+      - path: /px.cloudapi.APIKeyManager/
+        pathType: Prefix
         backend:
-          serviceName: cloud-proxy-service
-          servicePort: 5555
-      - path: /px.cloudapi.AuthService/*
+          service:
+            name: cloud-proxy-service
+            port:
+              number: 5555
+      - path: /px.cloudapi.AuthService/
+        pathType: Prefix
         backend:
-          serviceName: cloud-proxy-service
-          servicePort: 5555
-      - path: /px.cloudapi.ConfigService/*
+          service:
+            name: cloud-proxy-service
+            port:
+              number: 5555
+      - path: /px.cloudapi.ConfigService/
+        pathType: Prefix
         backend:
-          serviceName: cloud-proxy-service
-          servicePort: 5555
-      - path: /px.cloudapi.OrganizationService/*
+          service:
+            name: cloud-proxy-service
+            port:
+              number: 5555
+      - path: /px.cloudapi.OrganizationService/
+        pathType: Prefix
         backend:
-          serviceName: cloud-proxy-service
-          servicePort: 5555
-      - path: /px.cloudapi.UserService/*
+          service:
+            name: cloud-proxy-service
+            port:
+              number: 5555
+      - path: /px.cloudapi.UserService/
+        pathType: Prefix
         backend:
-          serviceName: cloud-proxy-service
-          servicePort: 5555
-      - path: /px.cloudapi.VizierClusterInfo/*
+          service:
+            name: cloud-proxy-service
+            port:
+              number: 5555
+      - path: /px.cloudapi.VizierClusterInfo/
+        pathType: Prefix
         backend:
-          serviceName: cloud-proxy-service
-          servicePort: 5555
-      - path: /px.cloudapi.VizierDeploymentKeyManager/*
+          service:
+            name: cloud-proxy-service
+            port:
+              number: 5555
+      - path: /px.cloudapi.VizierDeploymentKeyManager/
+        pathType: Prefix
         backend:
-          serviceName: cloud-proxy-service
-          servicePort: 5555
-      - path: /px.cloudapi.VizierImageAuthorization/*
+          service:
+            name: cloud-proxy-service
+            port:
+              number: 5555
+      - path: /px.cloudapi.VizierImageAuthorization/
+        pathType: Prefix
         backend:
-          serviceName: cloud-proxy-service
-          servicePort: 5555
-      - path: /px.api.vizierpb.VizierService/*
+          service:
+            name: cloud-proxy-service
+            port:
+              number: 5555
+      - path: /px.api.vizierpb.VizierService/
+        pathType: Prefix
         backend:
-          serviceName: cloud-proxy-service
-          servicePort: 4444
-      - path: /*
+          service:
+            name: cloud-proxy-service
+            port:
+              number: 4444
+      - path: /
+        pathType: Prefix
         backend:
-          serviceName: cloud-proxy-service
-          servicePort: 443
+          service:
+            name: cloud-proxy-service
+            port:
+              number: 443

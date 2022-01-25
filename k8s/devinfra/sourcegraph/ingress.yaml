@@ -12,7 +12,10 @@ spec:
   rules:
   - http:
       paths:
-      - path: /*
+      - path: /
+        pathType: Prefix
         backend:
-          serviceName: sourcegraph-frontend
-          servicePort: 3080
+          service:
+            name: sourcegraph-frontend
+            port:
+              number: 3080
