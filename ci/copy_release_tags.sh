@@ -52,6 +52,20 @@ for tagRef in "${tagRefs[@]}"; do
   IFS=" " read -r -a hashToTag <<< "${tagRef}"
   hash="${hashToTag[0]}"
   tag="${hashToTag[1]}"
+  if [[ $tag == *"-"* ]]; then
+    # Skip tags with a "-" in them since those are RCs.
+    continue
+  fi
+  if [[ $tag != "release/"* ]]; then
+    # Skip tags that are not release tags.
+    continue
+  fi
+  if [[ $tag == "release/cloud/"* ]]; then
+    if [[ $tag != "release/cloud/prod"* ]]; then
+      # If this is a cloud release tag, skip non-prod tags.
+      continue
+    fi
+  fi
   pubHash=${privateHashToPublicHash[$hash]}
   tagMessage=$(git tag -l --format='%(contents)' "${tag}")
   if [[ -n "${pubHash}" ]]; then
