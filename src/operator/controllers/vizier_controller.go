@@ -656,7 +656,7 @@ func updateResourceConfiguration(resource *k8s.Resource, vz *v1alpha1.Vizier) er
 	addKeyValueMapToResource("labels", vz.Spec.Pod.Labels, resource.Object.Object)
 	addKeyValueMapToResource("annotations", vz.Spec.Pod.Annotations, resource.Object.Object)
 	updateResourceRequirements(vz.Spec.Pod.Resources, resource.Object.Object)
-	updatePodSpec(vz.Spec.Pod.NodeSelector, resource.Object.Object)
+	updatePodSpec(vz.Spec.Pod.NodeSelector, vz.Spec.Pod.SecurityContext, resource.Object.Object)
 	return nil
 }
 
@@ -824,7 +824,7 @@ func updateResourceRequirements(requirements v1.ResourceRequirements, res map[st
 		castedContainer["resources"] = resources
 	}
 }
-func updatePodSpec(nodeSelector map[string]string, res map[string]interface{}) {
+func updatePodSpec(nodeSelector map[string]string, securityCtx *v1alpha1.PodSecurityContext, res map[string]interface{}) {
 	podSpec := make(map[string]interface{})
 	md, ok, err := unstructured.NestedFieldNoCopy(res, "spec", "template", "spec")
 	if ok && err == nil {
@@ -841,6 +841,30 @@ func updatePodSpec(nodeSelector map[string]string, res map[string]interface{}) {
 		castedNodeSelector[k] = v
 	}
 	podSpec["nodeSelector"] = nodeSelector
+
+	// Add securityContext only if enabled.
+	if securityCtx == nil || !securityCtx.Enabled {
+		return
+	}
+	sc, ok, err := unstructured.NestedFieldNoCopy(res, "spec", "template", "spec", "securityContext")
+	if ok && err == nil {
+		if scCast, castOk := sc.(map[string]interface{}); castOk && len(scCast) > 0 {
+			return // A security context is already specified, we should use that one.
+		}
+	}
+
+	sCtx := make(map[string]interface{})
+	if securityCtx.FSGroup != 0 {
+		sCtx["fsGroup"] = securityCtx.FSGroup
+	}
+	if securityCtx.RunAsUser != 0 {
+		sCtx["runAsUser"] = securityCtx.RunAsUser
+	}
+	if securityCtx.RunAsGroup != 0 {
+		sCtx["runAsGroup"] = securityCtx.RunAsGroup
+	}
+
+	podSpec["securityContext"] = sCtx
 }
 
 func waitForCluster(clientset *kubernetes.Clientset, namespace string) error {
