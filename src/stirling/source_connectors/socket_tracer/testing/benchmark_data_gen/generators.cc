@@ -17,6 +17,8 @@
  */
 
 #include "src/stirling/source_connectors/socket_tracer/testing/benchmark_data_gen/generators.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/pgsql/test_utils.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/pgsql/types.h"
 
 namespace px {
 namespace stirling {
@@ -69,6 +71,78 @@ HTTP1SingleReqRespGen::HTTP1SingleReqRespGen(size_t total_size, size_t chunk_siz
   }
 
   resp_bytes_ = absl::Substitute(kDefaultHTTPRespFmt, additional_headers, body);
+}
+
+PostgresSelectReqRespGen::PostgresSelectReqRespGen(size_t total_size) : SingleReqRespGen("", "") {
+  using protocols::pgsql::CmdCmpl;
+  using protocols::pgsql::DataRow;
+  using protocols::pgsql::RegularMessage;
+  using protocols::pgsql::RowDesc;
+  using protocols::pgsql::Tag;
+  using protocols::pgsql::testutils::CmdCmplToByteString;
+  using protocols::pgsql::testutils::DataRowToByteString;
+  using protocols::pgsql::testutils::RegularMessageToByteString;
+  using protocols::pgsql::testutils::RowDescToByteString;
+
+  size_t remaining = total_size;
+
+  RegularMessage req;
+  req.tag = Tag::kQuery;
+  req.payload = "select * from table\x00";
+  req_bytes_ = RegularMessageToByteString(req);
+
+  remaining -= req_bytes_.size();
+
+  RowDesc row_desc;
+  row_desc.fields.push_back(RowDesc::Field{
+      .name = "col1",
+      .table_oid = 0,
+      .attr_num = 0,
+      .type_oid = 1,
+      .type_size = -1,
+      .type_modifier = 0,
+      .fmt_code = protocols::pgsql::FmtCode::kText,
+  });
+  row_desc.fields.push_back(RowDesc::Field{
+      .name = "col2",
+      .table_oid = 0,
+      .attr_num = 0,
+      .type_oid = 1,
+      .type_size = -1,
+      .type_modifier = 0,
+      .fmt_code = protocols::pgsql::FmtCode::kText,
+  });
+  auto row_desc_bytes = RowDescToByteString(row_desc);
+  remaining -= row_desc_bytes.size();
+
+  RegularMessage ready_for_query;
+  ready_for_query.tag = Tag::kReadyForQuery;
+  ready_for_query.payload = "I";
+  auto ready_for_query_bytes = RegularMessageToByteString(ready_for_query);
+  remaining -= ready_for_query_bytes.size();
+
+  DataRow row;
+  row.cols.push_back(std::string(512, '1'));
+  row.cols.push_back(std::string(512, '2'));
+  auto row_bytes = DataRowToByteString(row);
+
+  // Estimate CmdCmpl size based on the number of rows we would have without the CmdCmpl message.
+  int num_rows_estimate = remaining / row_bytes.size();
+  CmdCmpl cmd_cmpl;
+  cmd_cmpl.cmd_tag = absl::StrCat("SELECT ", num_rows_estimate);
+  remaining -= CmdCmplToByteString(cmd_cmpl).size();
+
+  int num_rows = remaining / row_bytes.size();
+  cmd_cmpl.cmd_tag = absl::StrCat("SELECT ", num_rows);
+  auto cmd_cmpl_bytes = CmdCmplToByteString(cmd_cmpl);
+
+  resp_bytes_ = row_desc_bytes;
+  for (int i = 0; i < num_rows; ++i) {
+    resp_bytes_ += row_bytes;
+  }
+
+  resp_bytes_ += cmd_cmpl_bytes;
+  resp_bytes_ += ready_for_query_bytes;
 }
 
 uint64_t NoGapsPosGenerator::NextPos(uint64_t msg_size) {
