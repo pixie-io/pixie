@@ -136,6 +136,9 @@ export class CloudClient {
         // Don't persist until we know which user we're caching for.
         if (!result.user?.id) return;
 
+        // If nothing changed, don't reset persistence.
+        if (userId && userId === result.user.id) return;
+
         // The user ID shouldn't be changing without a logout or refresh.
         // If it does, that's a new feature that we didn't account for, so throw.
         if (userId && userId !== result.user.id) {
