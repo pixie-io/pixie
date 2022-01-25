@@ -12,7 +12,7 @@ spec:
     metadata:
       name: vizier-deleter
     spec:
-      serviceAccountName: updater-service-account
+      serviceAccountName: pl-deleter-service-account
       restartPolicy: Never
       containers:
       - name: delete-job
