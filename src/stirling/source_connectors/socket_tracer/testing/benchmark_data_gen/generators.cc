@@ -296,6 +296,21 @@ CQLQueryReqRespGen::CQLQueryReqRespGen(size_t total_size)
   resp_bytes_ = CreateCQLEvent(protocols::cass::RespOp::kResult, resp_body, stream_id);
 }
 
+NATSMSGGen::NATSMSGGen(size_t total_size, char body_char) {
+  const std::string_view msg_fmt("MSG MYSUBJECT 0 $0\r\n$1\r\n");
+  size_t remaining = total_size;
+  remaining -= msg_fmt.size() - std::string_view("$0$1").size();
+  remaining -= absl::StrCat(remaining).size();
+  msg_ = absl::Substitute(msg_fmt, remaining, std::string(remaining, body_char));
+}
+
+RecordGenerator::Record NATSMSGGen::Next(int32_t) {
+  Record record;
+  record.send_bytes = msg_.size();
+  record.frames.push_back({kEgress, msg_});
+  return record;
+}
+
 uint64_t NoGapsPosGenerator::NextPos(uint64_t msg_size) {
   uint64_t ret = pos_;
   pos_ += msg_size;

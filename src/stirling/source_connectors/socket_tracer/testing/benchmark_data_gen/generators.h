@@ -86,6 +86,15 @@ class CQLQueryReqRespGen : public SingleReqRespGen {
   explicit CQLQueryReqRespGen(size_t total_size);
 };
 
+class NATSMSGGen : public RecordGenerator {
+ public:
+  explicit NATSMSGGen(size_t total_size, char body_char = 'm');
+  Record Next(int32_t conn_id) override;
+
+ private:
+  std::string msg_;
+};
+
 // Base class for all pos generators. Pos generators generate a sequence of byte positions, based on
 // the sequence of message sizes. This allows for interesting distributions of pos, eg. big gaps or
 // out of order messages. This is to emulate the byte position bpf adds to each event.
