@@ -119,7 +119,7 @@ export const ClustersTable = withStyles((theme: Theme) => ({
                 className={classes.removePadding}
                 component={Link}
                 to={getClusterDetailsURL(encodeURIComponent(cluster.clusterName))}
-                color='secondary'
+                color='info'
                 variant='text'
                 disabled={cluster.status === 'CS_DISCONNECTED'}
               >

@@ -226,10 +226,10 @@ export const COMMON_THEME = {
       dark: '#dc9406',
       light: '#ffc656',
     },
-    info: {
-      main: '#f0de3d',
-      dark: '#dac92f',
-      light: '#fff48f',
+    info: { // Same as secondary
+      main: '#24b2ff',
+      dark: '#21a1e7',
+      light: '#79d0ff',
     },
     error: {
       main: '#ff5e6d',
@@ -387,10 +387,10 @@ export const LIGHT_THEME = createTheme({
       warning: {
         main: '#dc9406',
       },
-      info: {
-        main: '#f0de3d',
-        dark: '#dac92f',
-        light: '#fff48f',
+      info: { // Same as secondary
+        main: '#24b2ff',
+        dark: '#21a1e7',
+        light: '#79d0ff',
       },
       error: {
         main: '#e54e5c',

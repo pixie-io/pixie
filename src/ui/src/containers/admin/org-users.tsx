@@ -272,8 +272,7 @@ export const UsersTable = React.memo(() => {
   return (
     <>
       {domainName && (
-        // @ts-expect-error We would want `info` here, but that's yellow in our palette (should fix).
-        <Alert icon={false} className={classes.managedDomainBanner} color='secondary' variant='outlined'>
+        <Alert icon={false} className={classes.managedDomainBanner} color='info' variant='outlined'>
           <p>
             This organization is managed by <strong>{domainName}</strong>.
           </p>

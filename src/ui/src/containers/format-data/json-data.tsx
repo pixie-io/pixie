@@ -72,7 +72,7 @@ const useStyles = makeStyles(({ palette, spacing }: Theme) => createStyles({
     color: palette.foreground.three,
   },
   string: {
-    color: palette.mode === 'dark' ? palette.info.light : palette.info.dark,
+    color: palette.mode === 'dark' ? palette.graph.ramp[0] : palette.graph.ramp[2],
     wordBreak: 'break-all',
   },
   boolean: {

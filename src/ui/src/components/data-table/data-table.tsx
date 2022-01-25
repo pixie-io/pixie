@@ -229,7 +229,7 @@ const ColumnSelector = React.memo<{ columns: ColumnInstance[] }>(({ columns }) =
               style={noPointerEvents}
               label={column.id || JSON.stringify(column)}
               // eslint-disable-next-line react-memo/require-usememo
-              control={<Checkbox color='secondary' disableRipple checked={column.isVisible} />}
+              control={<Checkbox color='info' disableRipple checked={column.isVisible} />}
             />
           </MenuItem>
         ))}
