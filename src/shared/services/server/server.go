@@ -49,11 +49,12 @@ func isGRPCRequest(r *http.Request) bool {
 // PLServer is the services server component used across all Pixie Labs services.
 // It starts both an HTTP and a GRPC server and handles middelware and env injection.
 type PLServer struct {
-	ch          chan bool
-	wg          *sync.WaitGroup
-	grpcServer  *grpc.Server
-	httpHandler http.Handler
-	httpServer  *http.Server
+	ch            chan bool
+	wg            *sync.WaitGroup
+	grpcServer    *grpc.Server
+	httpHandler   http.Handler
+	httpServer    *http.Server
+	metricsServer *http.Server
 }
 
 // NewPLServer creates a new PLServer.
@@ -64,11 +65,21 @@ func NewPLServer(env env.Env, httpHandler http.Handler, grpcServerOpts ...grpc.S
 
 // NewPLServerWithOptions creates a new PLServer.
 func NewPLServerWithOptions(env env.Env, httpHandler http.Handler, opts *GRPCServerOptions) *PLServer {
+	grpcServer := CreateGRPCServer(env, opts)
+	// If it's a GRPC request we use the GRPC handler, otherwise forward to the regular HTTP(/2) handler.
+	muxHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if isGRPCRequest(r) {
+			grpcServer.ServeHTTP(w, r)
+			return
+		}
+		httpHandler.ServeHTTP(w, r)
+	})
+	wrappedHandler := services.HTTPLoggingMiddleware(muxHandler)
 	s := &PLServer{
 		ch:          make(chan bool),
 		wg:          &sync.WaitGroup{},
-		grpcServer:  CreateGRPCServer(env, opts),
-		httpHandler: httpHandler,
+		grpcServer:  grpcServer,
+		httpHandler: wrappedHandler,
 	}
 	return s
 }
@@ -94,18 +105,9 @@ func (s *PLServer) serveHTTP2() {
 		}
 	}
 	serverAddr := fmt.Sprintf(":%d", viper.GetInt("http2_port"))
-	// If it's a GRPC request we use the GRPC handler, otherwise forward to the regular HTTP(/2) handler.
-	muxHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if isGRPCRequest(r) {
-			s.grpcServer.ServeHTTP(w, r)
-			return
-		}
-		s.httpHandler.ServeHTTP(w, r)
-	})
-	wrappedHandler := services.HTTPLoggingMiddleware(muxHandler)
 	s.httpServer = &http.Server{
 		Addr:           serverAddr,
-		Handler:        h2c.NewHandler(wrappedHandler, &http2.Server{}),
+		Handler:        h2c.NewHandler(s.httpHandler, &http2.Server{}),
 		TLSConfig:      tlsConfig,
 		ReadTimeout:    1800 * time.Second,
 		WriteTimeout:   1800 * time.Second,
@@ -128,10 +130,59 @@ func (s *PLServer) serveHTTP2() {
 	log.Info("HTTP/2 server stopped.")
 }
 
+func (s *PLServer) serveMetricsHTTP() {
+	s.wg.Add(1)
+	defer s.wg.Done()
+	serverAddr := fmt.Sprintf(":%d", viper.GetInt("metrics_http_port"))
+	wrappedHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/metrics") {
+			s.httpHandler.ServeHTTP(w, r)
+			return
+		}
+		fmt.Fprintf(w, "only metrics requests are allowed")
+		w.WriteHeader(http.StatusNotFound)
+	})
+	s.metricsServer = &http.Server{
+		Addr:           serverAddr,
+		Handler:        wrappedHandler,
+		ReadTimeout:    60 * time.Second,
+		WriteTimeout:   60 * time.Second,
+		MaxHeaderBytes: 1 << 20,
+	}
+	log.WithField("addr", serverAddr).Print("Starting HTTP metrics server")
+	lis, err := net.Listen("tcp", serverAddr)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to listen (metrics_http)")
+	}
+	if err := s.metricsServer.Serve(lis); err != nil {
+		// Check for graceful termination.
+		if err != http.ErrServerClosed {
+			log.WithError(err).Fatal("Failed to run HTTP metrics server")
+		}
+	}
+	log.Info("HTTP metrics server stopped.")
+}
+
 // Start runs the services in go routines. It returns immediately.
 // On error in starting services the program will terminate.
 func (s *PLServer) Start() {
 	go s.serveHTTP2()
+	go s.serveMetricsHTTP()
+}
+
+func tryGracefulShutdown(s *http.Server) {
+	wait := make(chan bool)
+	go func() {
+		defer close(wait)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := s.Shutdown(ctx); err != nil {
+			log.WithError(err).Warn("Failed to do a graceful shutdown of HTTP server.")
+		}
+		log.Info("Shutdown HTTP server complete. ")
+	}()
+	<-wait
 }
 
 // Stop will gracefully shutdown underlying GRPC and HTTP servers.
@@ -140,19 +191,11 @@ func (s *PLServer) Stop() {
 	if s.grpcServer != nil {
 		go s.grpcServer.Stop()
 	}
+	if s.metricsServer != nil {
+		tryGracefulShutdown(s.metricsServer)
+	}
 	if s.httpServer != nil {
-		wait := make(chan bool)
-		go func() {
-			defer close(wait)
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-
-			if err := s.httpServer.Shutdown(ctx); err != nil {
-				log.WithError(err).Warn("Failed to do a graceful shutdown of HTTP server.")
-			}
-			log.Info("Shutdown HTTP server complete. ")
-		}()
-		<-wait
+		tryGracefulShutdown(s.httpServer)
 	}
 	s.wg.Wait()
 	log.Info("Waiting is complete")

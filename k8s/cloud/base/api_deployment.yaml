@@ -17,6 +17,9 @@ spec:
         image: gcr.io/pixie-oss/pixie-dev/cloud/api_server_image
         ports:
         - containerPort: 51200
+          name: http2
+        - containerPort: 51201
+          name: metrics-http
         readinessProbe:
           httpGet:
             scheme: HTTPS
