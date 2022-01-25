@@ -71,6 +71,11 @@ class HTTP1SingleReqRespGen : public SingleReqRespGen {
   explicit HTTP1SingleReqRespGen(size_t total_size, size_t chunk_size = 0, char c = 'b');
 };
 
+class MySQLExecuteReqRespGen : public SingleReqRespGen {
+ public:
+  explicit MySQLExecuteReqRespGen(size_t total_size);
+};
+
 class PostgresSelectReqRespGen : public SingleReqRespGen {
  public:
   explicit PostgresSelectReqRespGen(size_t total_size);

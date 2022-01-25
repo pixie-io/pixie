@@ -48,6 +48,7 @@ using ::px::stirling::testing::GapPosGenerator;
 using ::px::stirling::testing::GenerateBenchmarkData;
 using ::px::stirling::testing::HTTP1SingleReqRespGen;
 using ::px::stirling::testing::IterationGapPosGenerator;
+using ::px::stirling::testing::MySQLExecuteReqRespGen;
 using ::px::stirling::testing::NoGapsPosGenerator;
 using ::px::stirling::testing::PostgresSelectReqRespGen;
 
@@ -244,6 +245,19 @@ BENCHMARK_CAPTURE(BM_SocketTraceConnector, http1_encode_chunked_no_gaps,
                   })
     ->Unit(benchmark::kMillisecond);
 
+BENCHMARK_CAPTURE(BM_SocketTraceConnector, mysql_no_gaps,
+                  BenchmarkDataGenerationSpec{
+                      .num_conns = 10,
+                      .num_poll_iterations = 1,
+                      .records_per_conn = 16,
+                      .protocol = kProtocolMySQL,
+                      .role = kRoleServer,
+                      .rec_gen_func =
+                          []() { return std::make_unique<MySQLExecuteReqRespGen>(kRecordSize); },
+                      .pos_gen_func = []() { return std::make_unique<NoGapsPosGenerator>(); },
+                  })
+    ->Unit(benchmark::kMillisecond);
+
 BENCHMARK_CAPTURE(BM_SocketTraceConnector, postgres_no_gaps,
                   BenchmarkDataGenerationSpec{
                       .num_conns = 10,
@@ -270,6 +284,22 @@ BENCHMARK_CAPTURE(
         .pos_gen_func =
             []() {
               return std::make_unique<IterationGapPosGenerator>(/*gap size*/ 500 * 1024 * 1024);
+            },
+    })
+    ->Unit(benchmark::kMillisecond);
+
+BENCHMARK_CAPTURE(
+    BM_SocketTraceConnector, mysql_inter_iter_gaps,
+    BenchmarkDataGenerationSpec{
+        .num_conns = 10,
+        .num_poll_iterations = 5,
+        .records_per_conn = 16,
+        .protocol = kProtocolMySQL,
+        .role = kRoleServer,
+        .rec_gen_func = []() { return std::make_unique<MySQLExecuteReqRespGen>(kRecordSize); },
+        .pos_gen_func =
+            []() {
+              return std::make_unique<IterationGapPosGenerator>(/*gap_size*/ 500 * 1024 * 1024);
             },
     })
     ->Unit(benchmark::kMillisecond);

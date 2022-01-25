@@ -17,6 +17,8 @@
  */
 
 #include "src/stirling/source_connectors/socket_tracer/testing/benchmark_data_gen/generators.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/mysql/test_data.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/mysql/test_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/pgsql/test_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/pgsql/types.h"
 
@@ -71,6 +73,85 @@ HTTP1SingleReqRespGen::HTTP1SingleReqRespGen(size_t total_size, size_t chunk_siz
   }
 
   resp_bytes_ = absl::Substitute(kDefaultHTTPRespFmt, additional_headers, body);
+}
+
+MySQLExecuteReqRespGen::MySQLExecuteReqRespGen(size_t total_size) : SingleReqRespGen("", "") {
+  using protocols::mysql::ColDefinition;
+  using protocols::mysql::ColType;
+  using protocols::mysql::Resultset;
+  using protocols::mysql::ResultsetRow;
+  using protocols::mysql::StmtExecuteRequest;
+  using protocols::mysql::testutils::GenRawPacket;
+  using protocols::mysql::testutils::GenResultset;
+  using protocols::mysql::testutils::GenResultsetRow;
+  using protocols::mysql::testutils::GenStmtExecuteRequest;
+  using protocols::mysql::testutils::LengthEncodedString;
+  size_t remaining = total_size;
+
+  StmtExecuteRequest req{
+      1,
+      {
+          {ColType::kString, "col1"},
+          {ColType::kString, "col2"},
+      },
+  };
+
+  req_bytes_ = GenRawPacket(GenStmtExecuteRequest(req));
+  remaining -= req_bytes_.size();
+
+  Resultset result{
+      .num_col = 2,
+      .col_defs =
+          std::vector<ColDefinition>{
+              ColDefinition{
+                  .catalog = "def",
+                  .schema = "schema",
+                  .table = "tbl",
+                  .org_table = "tbl",
+                  .name = "col1",
+                  .org_name = "tbl_col1",
+                  .next_length = 12,
+                  .character_set = 33,
+                  .column_length = 512,
+                  .column_type = ColType::kVarString,
+                  .flags = 0x1001,
+                  .decimals = 0x00,
+              },
+              ColDefinition{
+                  .catalog = "def",
+                  .schema = "schema",
+                  .table = "tbl",
+                  .org_table = "tbl",
+                  .name = "col2",
+                  .org_name = "tbl_col2",
+                  .next_length = 12,
+                  .character_set = 33,
+                  .column_length = 512,
+                  .column_type = ColType::kVarString,
+                  .flags = 0x1001,
+                  .decimals = 0x00,
+              },
+          },
+      .results = {},
+  };
+
+  for (auto packet : GenResultset(result)) {
+    remaining -= GenRawPacket(packet).size();
+  }
+
+  ResultsetRow row;
+  row.msg = absl::StrCat(std::string(2, '\x00'), LengthEncodedString(std::string(512, '1')),
+                         LengthEncodedString(std::string(512, '2')));
+  auto row_size = GenRawPacket(GenResultsetRow(0, row)).size();
+  int num_rows = remaining / row_size;
+
+  for (int i = 0; i < num_rows; ++i) {
+    result.results.push_back(row);
+  }
+
+  for (auto packet : GenResultset(result)) {
+    resp_bytes_ += GenRawPacket(packet);
+  }
 }
 
 PostgresSelectReqRespGen::PostgresSelectReqRespGen(size_t total_size) : SingleReqRespGen("", "") {
