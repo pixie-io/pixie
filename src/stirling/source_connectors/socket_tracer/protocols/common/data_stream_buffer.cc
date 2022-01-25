@@ -52,6 +52,7 @@ void DataStreamBuffer::Reset() {
   chunks_.clear();
   timestamps_.clear();
   position_ = 0;
+  ShrinkToFit();
 }
 
 // TODO(oazizi): Add checking that the new chunk doesn't overlap with any existing chunk.

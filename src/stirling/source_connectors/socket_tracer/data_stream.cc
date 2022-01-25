@@ -183,6 +183,9 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
     stuck_count_ = 0;
   }
 
+  // Shrink the data buffer's allocated memory to fit just what is retained.
+  data_buffer_.ShrinkToFit();
+
   last_parse_state_ = parse_result.state;
 
   // has_new_events_ should be false for the next transfer cycle.

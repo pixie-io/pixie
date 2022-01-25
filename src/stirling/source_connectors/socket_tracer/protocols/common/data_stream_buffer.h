@@ -115,6 +115,13 @@ class DataStreamBuffer {
    */
   void Reset();
 
+  /**
+   * Shrink the internal buffer, so that the allocated memory matches its size.
+   * Note this has to be an external API, because `RemovePrefix` is called in situations where it
+   * doesn't make sense to shrink.
+   */
+  void ShrinkToFit() { buffer_.shrink_to_fit(); }
+
  private:
   std::map<size_t, size_t>::const_iterator GetChunkForPos(size_t pos) const;
   void AddNewChunk(size_t pos, size_t size);
