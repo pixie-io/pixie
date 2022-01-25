@@ -32,7 +32,7 @@ namespace px {
 namespace stirling {
 
 /**
- * @brief This class maintains a registry of all the sources available to the
+ * This class maintains a registry of all the sources available to the
  * the data collector.
  * The registry contains a map of source name -> RegistryElements.
  * RegistryElement contains the source type and an std::function using which
@@ -41,23 +41,29 @@ namespace stirling {
 class SourceRegistry : public NotCopyable {
  public:
   struct RegistryElement {
+    std::string name;
     std::function<std::unique_ptr<SourceConnector>(std::string_view)> create_source_fn;
     ArrayView<DataTableSchema> schema;
   };
 
   template <typename TSourceConnector>
-  static RegistryElement CreateRegistryElement() {
-    return {TSourceConnector::Create, TSourceConnector::kTables};
+  static RegistryElement CreateRegistryElement(std::string_view name) {
+    return {std::string(name), TSourceConnector::Create, TSourceConnector::kTables};
   }
 
-  Status Register(std::string_view name, RegistryElement registry_element) {
-    if (name.empty()) {
+  Status Register(RegistryElement registry_element) {
+    if (registry_element.name.empty()) {
       return error::InvalidArgument("Name cannot be empty.");
     }
-    if (sources_map_.contains(name)) {
-      return error::AlreadyExists("The data source with name \"$0\" already exists", name);
+
+    for (const auto& entry : sources_) {
+      if (entry.name == registry_element.name) {
+        return error::AlreadyExists("The data source with name \"$0\" already exists",
+                                    registry_element.name);
+      }
     }
-    sources_map_.insert({std::string(name), std::move(registry_element)});
+
+    sources_.push_back(std::move(registry_element));
     return Status::OK();
   }
 
@@ -66,14 +72,14 @@ class SourceRegistry : public NotCopyable {
     if (name.empty()) {
       name = TSourceConnector::kName;
     }
-    auto status = Register(name, CreateRegistryElement<TSourceConnector>());
+    auto status = Register(CreateRegistryElement<TSourceConnector>(name));
     PL_CHECK_OK(status);
   }
 
-  const auto& sources() { return sources_map_; }
+  const auto& sources() { return sources_; }
 
  private:
-  absl::flat_hash_map<std::string, RegistryElement> sources_map_;
+  std::vector<RegistryElement> sources_;
 };
 
 }  // namespace stirling

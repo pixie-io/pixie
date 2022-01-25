@@ -61,8 +61,8 @@ namespace stirling {
 namespace {
 
 #define REGISTRY_PAIR(source) \
-  { source::kName, SourceRegistry::CreateRegistryElement<source>() }
-const absl::flat_hash_map<std::string_view, SourceRegistry::RegistryElement> kAllSources = {
+  { SourceRegistry::CreateRegistryElement<source>(source::kName) }
+const std::vector<SourceRegistry::RegistryElement> kAllSources = {
     REGISTRY_PAIR(JVMStatsConnector),          REGISTRY_PAIR(PIDRuntimeConnector),
     REGISTRY_PAIR(ProcStatConnector),          REGISTRY_PAIR(SeqGenConnector),
     REGISTRY_PAIR(SocketTraceConnector),       REGISTRY_PAIR(ProcessStatsConnector),
@@ -74,7 +74,7 @@ const absl::flat_hash_map<std::string_view, SourceRegistry::RegistryElement> kAl
 }  // namespace
 
 // clang-format off
-absl::flat_hash_set<std::string_view> GetSourceNamesForGroup(SourceConnectorGroup group) {
+std::vector<std::string_view> GetSourceNamesForGroup(SourceConnectorGroup group) {
   switch (group) {
     case SourceConnectorGroup::kNone:
       return {};
@@ -120,18 +120,25 @@ absl::flat_hash_set<std::string_view> GetSourceNamesForGroup(SourceConnectorGrou
 // clang-format on
 
 StatusOr<std::unique_ptr<SourceRegistry>> CreateSourceRegistry(
-    const absl::flat_hash_set<std::string_view>& source_names) {
-  auto result = std::make_unique<SourceRegistry>();
+    const std::vector<std::string_view>& source_names) {
+  auto registry = std::make_unique<SourceRegistry>();
 
-  for (auto name : source_names) {
-    auto iter = kAllSources.find(name);
-    if (iter == kAllSources.end()) {
+  for (const auto name : source_names) {
+    bool found = false;
+    for (const auto& source : kAllSources) {
+      if (name == source.name) {
+        PL_RETURN_IF_ERROR(registry->Register(source));
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
       return error::InvalidArgument("Source name $0 is not available.", name);
     }
-    PL_RETURN_IF_ERROR(result->Register(iter->first, iter->second));
   }
 
-  return result;
+  return registry;
 }
 
 std::unique_ptr<SourceRegistry> CreateProdSourceRegistry() {
@@ -352,8 +359,8 @@ Status StirlingImpl::Init() {
     return error::NotFound("Source registry doesn't exist");
   }
 
-  for (const auto& [name, registry_element] : registry_->sources()) {
-    Status s = AddSource(registry_element.create_source_fn(name));
+  for (const auto& [name, create_source_fn, _] : registry_->sources()) {
+    Status s = AddSource(create_source_fn(name));
     LOG_IF(DFATAL, !s.ok()) << absl::Substitute(
         "Source Connector (registry name=$0) not instantiated, error: $1", name, s.ToString());
   }
@@ -833,7 +840,7 @@ std::unique_ptr<Stirling> Stirling::Create(std::unique_ptr<SourceRegistry> regis
   LOG(INFO) << absl::Substitute(
       "Creating Stirling, registered sources: [$0]",
       absl::StrJoin(registry->sources(), ", ",
-                    [](std::string* out, const auto& v) { absl::StrAppend(out, v.first); }));
+                    [](std::string* out, const auto& v) { absl::StrAppend(out, v.name); }));
 
   auto stirling = std::unique_ptr<StirlingImpl>(new StirlingImpl(std::move(registry)));
 

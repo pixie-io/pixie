@@ -24,42 +24,22 @@
 namespace px {
 namespace stirling {
 
-void RegisterTestSources(SourceRegistry* registry) {
-  registry->RegisterOrDie<SeqGenConnector>("source_0");
-  registry->RegisterOrDie<SeqGenConnector>("source_1");
-}
+using ::testing::ElementsAre;
+using ::testing::Field;
 
-class SourceRegistryTest : public ::testing::Test {
- protected:
-  SourceRegistryTest() = default;
-  void SetUp() override { RegisterTestSources(&registry_); }
-  SourceRegistry registry_;
-};
+TEST(SourceRegistryTest, register_sources) {
+  SourceRegistry registry;
+  registry.RegisterOrDie<SeqGenConnector>("source_0");
+  registry.RegisterOrDie<SeqGenConnector>("source_1");
 
-TEST_F(SourceRegistryTest, register_sources) {
-  std::string name;
-  {
-    name = "fake_proc_stat";
-    auto iter = registry_.sources().find("source_0");
-    auto element = iter->second;
-    ASSERT_NE(registry_.sources().end(), iter);
-    auto source_fn = element.create_source_fn;
-    auto source = source_fn(name);
-    EXPECT_EQ(name, source->name());
-  }
+  ASSERT_THAT(registry.sources(),
+              ElementsAre(Field(&SourceRegistry::RegistryElement::name, "source_0"),
+                          Field(&SourceRegistry::RegistryElement::name, "source_1")));
 
-  {
-    name = "proc_stat";
-    auto iter = registry_.sources().find("source_1");
-    ASSERT_NE(registry_.sources().end(), iter);
-    auto element = iter->second;
-    auto source_fn = element.create_source_fn;
-    auto source = source_fn(name);
-    EXPECT_EQ(name, source->name());
-  }
-
-  auto all_sources = registry_.sources();
-  EXPECT_EQ(2, all_sources.size());
+  // Test that we can use the registry to create a source.
+  auto create_source_fn = registry.sources()[0].create_source_fn;
+  auto source = create_source_fn("foo");
+  EXPECT_EQ(source->name(), "foo");
 }
 
 }  // namespace stirling

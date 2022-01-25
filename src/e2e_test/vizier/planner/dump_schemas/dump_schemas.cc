@@ -27,7 +27,7 @@ int main() {
   auto sources = source_registry->sources();
 
   absl::flat_hash_map<std::string, px::table_store::schema::Relation> rel_map;
-  for (const auto& [_, reg_element] : sources) {
+  for (const auto& reg_element : sources) {
     for (auto schema : reg_element.schema) {
       px::table_store::schema::Relation relation;
       for (const auto& element : schema.elements()) {

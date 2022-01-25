@@ -282,7 +282,7 @@ int main(int argc, char** argv) {
     FLAGS_sources = "";
   }
 
-  absl::flat_hash_set<std::string_view> source_names;
+  std::vector<std::string_view> source_names;
 
   if (!FLAGS_sources.empty()) {
     std::optional<SourceConnectorGroup> group =
