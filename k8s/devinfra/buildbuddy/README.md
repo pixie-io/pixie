@@ -1,5 +1,6 @@
-# Managed by Helm.
-## Install instructions:
+# Managed by Helm
+
+## Install instructions
 
 ```
 helm repo add buildbuddy https://helm.buildbuddy.io
@@ -7,7 +8,7 @@ helm repo update
 
 # Install secrets.
 kubectl create namespace buildbuddy
-sops -d $(bazel info workspace)/credentials/dev_infra/buildbuddy/sa_secret.yaml | kubectl -n buildbuddy -f -
+sops -d $(bazel info workspace)/credentials/dev_infra/buildbuddy/sa_secret.yaml | kubectl apply -n buildbuddy -f -
 
 # Get the config.
 sops -d $(bazel info workspace)/credentials/dev_infra/buildbuddy/config.yaml > config.yaml
