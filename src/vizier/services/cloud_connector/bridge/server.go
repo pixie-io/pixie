@@ -235,7 +235,7 @@ func New(vizierID uuid.UUID, jwtSigningKey string, deployKey string, sessionID i
 // WatchDog watches and make sure the bridge is functioning. If not commits suicide to try to self-heal.
 func (s *Bridge) WatchDog() {
 	defer s.wdWg.Done()
-	t := time.NewTicker(30 * time.Second)
+	t := time.NewTicker(10 * time.Minute)
 
 	for {
 		lastHbSeq := atomic.LoadInt64(&s.hbSeqNum)
