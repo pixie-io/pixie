@@ -40,6 +40,16 @@ DEFINE_uint32(stirling_profiler_table_update_period_seconds,
 DEFINE_uint32(stirling_profiler_stack_trace_sample_period_ms, 11,
               "Number of milliseconds between stack trace samples.");
 
+// Scaling factor is sized to avoid hash table collisions and timing variations.
+DEFINE_double(stirling_profiler_stack_trace_size_factor, 3.0,
+              "Scaling factor to apply to Profiler's eBPF stack trace map sizes");
+
+// Scaling factor for perf buffer to account for timing variations.
+// This factor is smaller than the stack trace scaling factor because there is no need to account
+// for hash table collisions.
+DEFINE_double(stirling_profiler_perf_buffer_size_factor, 1.5,
+              "Scaling factor to apply to Profiler's eBPF perf buffer map sizes");
+
 namespace px {
 namespace stirling {
 
@@ -75,10 +85,11 @@ Status PerfProfileConnector::InitImpl() {
   const int32_t expected_stack_traces = ncpus * expected_stack_traces_per_cpu;
 
   // Include some margin to ensure that hash collisions and data races do not cause data drop:
-  const int32_t overprovision_factor = 4;
+  const double stack_traces_overprovision_factor = FLAGS_stirling_profiler_stack_trace_size_factor;
 
   // Compute the size of the stack traces map.
-  const int32_t provisioned_stack_traces = overprovision_factor * expected_stack_traces;
+  const int32_t provisioned_stack_traces =
+      static_cast<int32_t>(stack_traces_overprovision_factor * expected_stack_traces);
 
   // A threshold for checking that we've overrun the maps.
   // This should be higher than expected_stack_traces due to timing variations,
@@ -86,7 +97,9 @@ Status PerfProfileConnector::InitImpl() {
   const int32_t overrun_threshold = (expected_stack_traces + provisioned_stack_traces) / 2;
 
   // Compute the size of the perf buffers.
-  const int32_t num_perf_buffer_entries = overprovision_factor * expected_stack_traces;
+  const double perf_buffer_overprovision_factor = FLAGS_stirling_profiler_perf_buffer_size_factor;
+  const int32_t num_perf_buffer_entries =
+      static_cast<int32_t>(perf_buffer_overprovision_factor * expected_stack_traces);
   const int32_t perf_buffer_size = sizeof(stack_trace_key_t) * num_perf_buffer_entries;
 
   const std::vector<std::string> defines = {
