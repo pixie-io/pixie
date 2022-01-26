@@ -62,6 +62,9 @@ DECLARE_bool(stirling_enable_mux_tracing);
 DECLARE_bool(stirling_disable_self_tracing);
 DECLARE_string(stirling_role_to_trace);
 
+DECLARE_uint32(stirling_socket_tracer_target_data_bw_percpu);
+DECLARE_uint32(stirling_socket_tracer_target_control_bw_percpu);
+
 DECLARE_uint32(messages_expiration_duration_secs);
 DECLARE_uint32(messages_size_limit_bytes);
 
@@ -145,82 +148,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static void HandleHTTP2Data(void* cb_cookie, void* data, int data_size);
   static void HandleHTTP2DataLoss(void* cb_cookie, uint64_t lost);
 
-  static constexpr auto kProbeSpecs = MakeArray<bpf_tools::KProbeSpec>(
-      {{"connect", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_connect"},
-       {"connect", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_connect"},
-       {"accept", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_accept"},
-       {"accept", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_accept"},
-       {"accept4", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_accept4"},
-       {"accept4", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_accept4"},
-       {"write", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_write"},
-       {"write", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_write"},
-       {"writev", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_writev"},
-       {"writev", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_writev"},
-       {"send", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_send"},
-       {"send", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_send"},
-       {"sendto", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_sendto"},
-       {"sendto", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_sendto"},
-       {"sendmsg", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_sendmsg"},
-       {"sendmsg", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_sendmsg"},
-       {"sendmmsg", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_sendmmsg"},
-       {"sendmmsg", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_sendmmsg"},
-       {"sendfile", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_sendfile"},
-       {"sendfile", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_sendfile"},
-       {"sendfile64", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_sendfile"},
-       {"sendfile64", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_sendfile"},
-       {"read", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_read"},
-       {"read", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_read"},
-       {"readv", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_readv"},
-       {"readv", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_readv"},
-       {"recv", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_recv"},
-       {"recv", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_recv"},
-       {"recvfrom", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_recvfrom"},
-       {"recvfrom", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_recvfrom"},
-       {"recvmsg", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_recvmsg"},
-       {"recvmsg", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_recvmsg"},
-       {"recvmmsg", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_recvmmsg"},
-       {"recvmmsg", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_recvmmsg"},
-       {"close", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_close"},
-       {"close", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_close"},
-       {"mmap", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_mmap"},
-       {"sock_alloc", bpf_tools::BPFProbeAttachType::kReturn, "probe_ret_sock_alloc",
-        /*is_syscall*/ false},
-       {"security_socket_sendmsg", bpf_tools::BPFProbeAttachType::kEntry,
-        "probe_entry_security_socket_sendmsg",
-        /*is_syscall*/ false},
-       {"security_socket_recvmsg", bpf_tools::BPFProbeAttachType::kEntry,
-        "probe_entry_security_socket_recvmsg",
-        /*is_syscall*/ false}});
-
-  // TODO(oazizi): Remove send and recv probes once we are confident that they don't trace anything.
-  //               Note that send/recv are not in the syscall table
-  //               (https://filippo.io/linux-syscall-table/), but are defined as SYSCALL_DEFINE4 in
-  //               https://elixir.bootlin.com/linux/latest/source/net/socket.c.
-
-  // Assume a moderate network bandwidth peak of 100MiB/s across socket connections for data.
-  inline static constexpr int64_t kTargetDataBytesPerSec = 100 * 1024 * 1024;
-  inline static constexpr int64_t kTargetDataBufferSize =
-      kTargetDataBytesPerSec * kSamplingPeriod.count() / 1000;
-
-  // Assume a 5MiB/s across socket connections for control events.
-  inline static constexpr int64_t kTargetControlBytesPerSec = 5 * 1024 * 1024;
-  inline static constexpr int64_t kTargetControlBufferSize =
-      kTargetControlBytesPerSec * kSamplingPeriod.count() / 1000;
-
-  inline static const auto kPerfBufferSpecs = MakeArray<bpf_tools::PerfBufferSpec>({
-      // For data events. The order must be consistent with output tables.
-      {"socket_data_events", HandleDataEvent, HandleDataEventLoss, kTargetDataBufferSize},
-      // For non-data events. Must not mix with the above perf buffers for data events.
-      {"socket_control_events", HandleControlEvent, HandleControlEventLoss,
-       kTargetControlBufferSize},
-      {"conn_stats_events", HandleConnStatsEvent, HandleConnStatsEventLoss,
-       kTargetControlBufferSize},
-      {"mmap_events", HandleMMapEvent, HandleMMapEventLoss, kTargetControlBufferSize},
-      {"go_grpc_header_events", HandleHTTP2HeaderEvent, HandleHTTP2HeaderEventLoss,
-       kTargetDataBufferSize / 10},
-      {"go_grpc_data_events", HandleHTTP2Data, HandleHTTP2DataLoss, kTargetDataBufferSize},
-  });
-
   // Most HTTP servers support 8K headers, so we truncate after that.
   // https://stackoverflow.com/questions/686217/maximum-on-http-header-values
   inline static constexpr size_t kMaxHTTPHeadersBytes = 8192;
@@ -230,7 +157,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   explicit SocketTraceConnector(std::string_view source_name);
 
-  // Initialize protocol_transfer_specs_.
+  Status InitBPF();
+  auto InitPerfBufferSpecs();
   void InitProtocolTransferSpecs();
 
   ConnTracker& GetOrCreateConnTracker(struct conn_id_t conn_id);

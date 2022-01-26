@@ -329,9 +329,9 @@ Status BCCWrapper::OpenPerfBuffer(const PerfBufferSpec& perf_buffer, void* cb_co
   // Perf buffers must be sized to a power of 2.
   num_pages = IntRoundUpToPow2(num_pages);
 
-  VLOG(1) << absl::Substitute("Opening perf buffer: $0 [requested_size=$1 num_pages=$2 size=$3]",
-                              perf_buffer.name, perf_buffer.size_bytes, num_pages,
-                              num_pages * kPageSizeBytes);
+  LOG(INFO) << absl::Substitute(
+      "Opening perf buffer: $0 [requested_size=$1 num_pages=$2 size=$3] (per cpu)",
+      perf_buffer.name, perf_buffer.size_bytes, num_pages, num_pages * kPageSizeBytes);
   PL_RETURN_IF_ERROR(bpf_.open_perf_buffer(std::string(perf_buffer.name),
                                            perf_buffer.probe_output_fn, perf_buffer.probe_loss_fn,
                                            cb_cookie, num_pages));
