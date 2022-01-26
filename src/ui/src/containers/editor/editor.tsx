@@ -20,8 +20,8 @@ import * as React from 'react';
 
 import { ChevronRight } from '@mui/icons-material';
 import { Tab, Tabs } from '@mui/material';
-import { Theme, useTheme } from '@mui/material/styles';
-import { createStyles, makeStyles, withStyles } from '@mui/styles';
+import { Theme, useTheme, styled } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 import {
   CodeEditor,
@@ -149,26 +149,22 @@ const PxLEditor = React.memo<{ visible: boolean }>(({ visible }) => {
 PxLEditor.displayName = 'PxLEditor';
 
 // eslint-disable-next-line react-memo/require-memo
-const StyledTabs = withStyles((theme: Theme) => createStyles({
-  root: {
-    flex: 1,
-  },
-  indicator: {
+const StyledTabs = styled(Tabs)(({ theme }) => ({
+  flex: 1,
+  '.MuiTabs-indicator': {
     backgroundColor: theme.palette.foreground.one,
   },
-}))(Tabs);
+}));
 
 // eslint-disable-next-line react-memo/require-memo
-const StyledTab = withStyles((theme: Theme) => createStyles({
-  root: {
-    textTransform: 'none',
-    fontSize: theme.typography.subtitle2.fontSize,
-    minWidth: theme.spacing(20),
-    '&:focus': {
-      color: theme.palette.foreground.two,
-    },
+const StyledTab = styled(Tab)(({ theme }) => ({
+  textTransform: 'none',
+  fontSize: theme.typography.subtitle2.fontSize,
+  minWidth: theme.spacing(20),
+  '&:focus': {
+    color: theme.palette.foreground.two,
   },
-}))(Tab);
+}));
 
 const LiveViewEditor = React.memo<{ visible: boolean }>(({ visible }) => {
   const classes = useStyles();

@@ -34,8 +34,8 @@ import {
   TableHead,
   TableRow,
 } from '@mui/material';
-import { Theme } from '@mui/material/styles';
-import { createStyles, makeStyles, withStyles } from '@mui/styles';
+import { Theme, styled } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 import { distanceInWords } from 'date-fns';
 import { useHistory, useParams } from 'react-router';
 import { Link } from 'react-router-dom';
@@ -272,13 +272,11 @@ const usePodRowStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-const StyledSmallTableCell = withStyles((theme: Theme) => createStyles({
-  root: {
-    fontWeight: theme.typography.fontWeightLight,
-    backgroundColor: theme.palette.foreground.grey2,
-    borderWidth: 0,
-  },
-}))(StyledTableCell);
+const StyledSmallTableCell = styled(StyledTableCell, { name: 'SmallTableCell' })(({ theme }) => ({
+  fontWeight: theme.typography.fontWeightLight,
+  backgroundColor: theme.palette.foreground.grey2,
+  borderWidth: 0,
+}));
 
 // combineReasonAndMessage returns a combination of a reason and a message. These fields are
 // used by Kubernetes to detail state However, we don't need to separate them when we

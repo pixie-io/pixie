@@ -25,8 +25,8 @@ import {
   TableCell,
   Tooltip,
 } from '@mui/material';
-import { Theme } from '@mui/material/styles';
-import { createStyles, makeStyles, withStyles } from '@mui/styles';
+import { styled } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 import { Link } from 'react-router-dom';
 
 import { StatusGroup } from 'app/components';
@@ -129,71 +129,58 @@ export const AdminTooltip = ({
 AdminTooltip.displayName = 'AdminTooltip';
 
 // eslint-disable-next-line react-memo/require-memo
-export const StyledTabs = withStyles(() => createStyles({
-  root: {
-    flex: 1,
+export const StyledTabs = styled(Tabs)(({ theme }) => ({
+  flex: 1,
+  '.MuiTabs-indicator': {
+    height: theme.spacing(0.5),
   },
-  indicator: {
-    height: '4px',
-  },
-}))(Tabs);
+}));
 
 // eslint-disable-next-line react-memo/require-memo
-export const StyledTab = withStyles((theme: Theme) => createStyles({
-  root: {
-    fontSize: theme.typography.subtitle1.fontSize,
-    fontWeight: theme.typography.fontWeightLight,
-    textTransform: 'none',
-    minWidth: theme.spacing(20),
-    '&:focus': {
-      color: theme.palette.foreground.two,
-    },
+export const StyledTab = styled(Tab)(({ theme }) => ({
+  fontSize: theme.typography.subtitle1.fontSize,
+  fontWeight: theme.typography.fontWeightLight,
+  textTransform: 'none',
+  minWidth: theme.spacing(20),
+  '&:focus': {
+    color: theme.palette.foreground.two,
   },
-}))(Tab);
+}));
 
 // eslint-disable-next-line react-memo/require-memo
-export const StyledTableHeaderCell = withStyles((theme: Theme) => createStyles({
-  root: {
-    fontWeight: theme.typography.fontWeightLight,
-    fontSize: '14px',
-    borderBottom: 'none',
-  },
-}))(TableCell);
+export const StyledTableHeaderCell = styled(TableCell, { name: 'TableHeaderCell' })(({ theme }) => ({
+  fontWeight: theme.typography.fontWeightLight,
+  fontSize: '14px',
+  borderBottom: 'none',
+}));
 
 // eslint-disable-next-line react-memo/require-memo
-export const StyledTableCell = withStyles((theme: Theme) => createStyles({
-  root: {
-    fontWeight: theme.typography.fontWeightLight,
-    fontSize: '14px',
-    color: theme.palette.foreground.one,
-    borderWidth: theme.spacing(1),
-    borderColor: theme.palette.background.default,
-  },
-}))(TableCell);
+export const StyledTableCell = styled(TableCell)(({ theme }) => ({
+  fontWeight: theme.typography.fontWeightLight,
+  fontSize: '14px',
+  color: theme.palette.foreground.one,
+  borderWidth: theme.spacing(1),
+  borderColor: theme.palette.background.default,
+}));
 
 // eslint-disable-next-line react-memo/require-memo
-export const StyledLeftTableCell = withStyles((theme: Theme) => createStyles({
-  root: {
-    borderRadius: theme.shape.leftRoundedBorderRadius.large,
-  },
-}))(StyledTableCell);
+export const StyledLeftTableCell = styled(StyledTableCell)(({ theme }) => ({
+  borderRadius: theme.shape.leftRoundedBorderRadius.large,
+}));
 
 // eslint-disable-next-line react-memo/require-memo
-export const StyledRightTableCell = withStyles((theme: Theme) => createStyles({
-  root: {
-    borderRadius: theme.shape.rightRoundedBorderRadius.large,
-  },
-}))(StyledTableCell);
+export const StyledRightTableCell = styled(StyledTableCell)(({ theme }) => ({
+  borderRadius: theme.shape.rightRoundedBorderRadius.large,
+}));
 
-// eslint-disable-next-line react-memo/require-memo
-export const LiveViewButton = withStyles((theme: Theme) => createStyles({
-  root: {
-    color: theme.palette.foreground.grey5,
-    height: theme.spacing(4),
-  },
-// eslint-disable-next-line react-memo/require-memo
-}))(({ classes }: any) => (
-  <Button classes={classes} component={Link} to='/live'>
+export const LiveViewButton = React.memo(() => (
+  <Button
+    // eslint-disable-next-line react-memo/require-usememo
+    sx={{ color: 'foreground.grey5', height: 4 }}
+    component={Link}
+    to='/live'
+  >
     Live View
   </Button>
 ));
+LiveViewButton.displayName = 'LiveViewButton';

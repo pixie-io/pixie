@@ -58,6 +58,13 @@ import {
 } from './vis';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
+  centerContent: {
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   grid: {
     '& .react-grid-item.react-grid-placeholder': {
       borderRadius: theme.spacing(0.5),
@@ -474,7 +481,7 @@ const Canvas: React.FC<CanvasProps> = React.memo(({ editable, parentRef }) => {
       // TODO(philkuz) MutationModal is located here and below. Code smell.
       <>
         {loading && mutationInfo && <MutationModal mutationInfo={mutationInfo} />}
-        <div className='center-content'><Spinner /></div>
+        <div className={classes.centerContent}><Spinner /></div>
       </>
     );
   }

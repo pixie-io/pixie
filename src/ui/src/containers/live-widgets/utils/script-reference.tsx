@@ -19,7 +19,7 @@
 import * as React from 'react';
 
 import { Theme } from '@mui/material/styles';
-import { createStyles, withStyles, WithStyles } from '@mui/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 import { Link } from 'react-router-dom';
 
 import { SemanticType } from 'app/types/generated/vizierapi_pb';
@@ -29,7 +29,7 @@ import {
   deepLinkURLFromScript, deepLinkURLFromSemanticType, EmbedState,
 } from './live-view-params';
 
-const styles = ({ palette }: Theme) => createStyles({
+const useStyles = makeStyles(({ palette }: Theme) => createStyles({
   root: {
     '&:hover': {
       color: palette.secondary.main,
@@ -40,7 +40,7 @@ const styles = ({ palette }: Theme) => createStyles({
     color: palette.text.primary,
     backgroundColor: 'transparent',
   },
-});
+}), { name: 'ScriptReference' });
 
 /**
  * DeepLink is used when we are creating a deep link to another script for an input
@@ -48,7 +48,7 @@ const styles = ({ palette }: Theme) => createStyles({
  * the value `pl/pl-nats-0` would deep link to `px/pod` when the semantic type is
  * equal to ST_POD_NAME.
  */
-export interface DeepLinkProps extends WithStyles<typeof styles>{
+export interface DeepLinkProps {
   // replace entity with `value`.
   value: string;
   semanticType: SemanticType;
@@ -57,9 +57,10 @@ export interface DeepLinkProps extends WithStyles<typeof styles>{
   propagatedParams?: Arguments;
 }
 
-const DeepLinkPlain = React.memo<DeepLinkProps>(({
-  value, semanticType, clusterName, classes, embedState, propagatedParams,
+export const DeepLink = React.memo<DeepLinkProps>(({
+  value, semanticType, clusterName, embedState, propagatedParams,
 }) => {
+  const classes = useStyles();
   const path = deepLinkURLFromSemanticType(semanticType, value, clusterName, embedState,
     propagatedParams);
   if (embedState?.widget) {
@@ -69,12 +70,10 @@ const DeepLinkPlain = React.memo<DeepLinkProps>(({
     <Link to={path} className={classes.root}>{value}</Link>
   );
 });
-DeepLinkPlain.displayName = 'DeepLinkPlain';
-
-export const DeepLink = withStyles(styles)(DeepLinkPlain);
+DeepLink.displayName = 'DeepLink';
 
 // ScriptReference is used when we are creating a deep link from a script name.
-export interface ScriptReferenceProps extends WithStyles<typeof styles>{
+export interface ScriptReferenceProps {
   label: string;
   script: string;
   clusterName: string;
@@ -82,9 +81,10 @@ export interface ScriptReferenceProps extends WithStyles<typeof styles>{
   args: Arguments;
 }
 
-const ScriptReferencePlain = React.memo<ScriptReferenceProps>(({
-  label, script, args, embedState, clusterName, classes,
+export const ScriptReference = React.memo<ScriptReferenceProps>(({
+  label, script, args, embedState, clusterName,
 }) => {
+  const classes = useStyles();
   const path = deepLinkURLFromScript(script, clusterName, embedState, args);
 
   if (embedState.widget) {
@@ -94,6 +94,4 @@ const ScriptReferencePlain = React.memo<ScriptReferenceProps>(({
     <Link to={path} className={classes.root}>{label}</Link>
   );
 });
-ScriptReferencePlain.displayName = 'ScriptReferencePlain';
-
-export const ScriptReference = withStyles(styles)(ScriptReferencePlain);
+ScriptReference.displayName = 'ScriptReference';

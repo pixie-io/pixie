@@ -259,10 +259,45 @@ export const COMMON_THEME = {
     },
   },
   components: {
-    MuiDivider: {
+    MuiCssBaseline: {
+      // Global styles.
       styleOverrides: {
-        root: {
-          backgroundColor: '#353535', // background three.
+        '#root': {
+          height: '100%',
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        html: {
+          height: '100%',
+        },
+        body: {
+          height: '100%',
+          overflow: 'hidden',
+          margin: 0,
+          boxSizing: 'border-box',
+        },
+        ':focus': {
+          outline: 'none !important',
+        },
+        // Vega-Tooltip (included in Vega-Lite) doesn't quite get right math when constraining a tooltip to the screen.
+        // Also, we sometimes use titles so long they fill the screen (like generated method signatures in flamegraphs).
+        // Sticky positioning and multi-line word wrap, respectively, handle both issues with just CSS.
+        '#vg-tooltip-element.vg-tooltip': {
+          maxWidth: 'min(400px, 80vw)',
+          width: 'fit-content',
+          position: 'sticky',
+          // The div#root element confuses sticky positioning without this negative margin.
+          marginTop: '-100vh',
+          '& > h2': {
+            display: '-webkit-box',
+            maxWidth: '100%',
+            WebkitLineClamp: 4,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            overflowWrap: 'anywhere',
+          },
         },
       },
     },
@@ -338,6 +373,16 @@ export const DARK_THEME: Theme = createTheme({
         },
       },
     },
+    components: {
+      ...COMMON_THEME.components,
+      MuiDivider: {
+        styleOverrides: {
+          root: {
+            backgroundColor: '#353535', // background three.
+          },
+        },
+      },
+    },
   },
 });
 
@@ -400,6 +445,16 @@ export const LIGHT_THEME: Theme = createTheme({
           kernel: '#90cb84',
           app: '#00b1d8',
           k8s: '#4796c1',
+        },
+      },
+    },
+    components: {
+      ...COMMON_THEME.components,
+      MuiDivider: {
+        styleOverrides: {
+          root: {
+            backgroundColor: '#a9adb1', // background three.
+          },
         },
       },
     },

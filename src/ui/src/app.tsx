@@ -25,7 +25,6 @@ import {
   StyledEngineProvider,
   createTheme,
 } from '@mui/material/styles';
-import { createStyles, withStyles } from '@mui/styles';
 import Axios from 'axios';
 import { withLDProvider } from 'launchdarkly-react-client-sdk';
 import * as QueryString from 'query-string';
@@ -134,23 +133,21 @@ export const App: React.FC = () => {
     <ErrorBoundary name='App' fallback={PixienautCrashFallback}>
       <SnackbarProvider>
         <Router history={history}>
-          <div className='center-content'>
-            <Switch>
-              <Route path='/credits' component={CreditsView} />
-              <Route path='/auth' component={AuthRouter} />
-              <RedirectWithArgs exact from='/login' to='/auth/login' />
-              <RedirectWithArgs exact from='/logout' to='/auth/logout' />
-              <RedirectWithArgs exact from='/signup' to='/auth/signup' />
-              <RedirectWithArgs exact from='/invite' to='/auth/invite' />
-              <RedirectWithArgs exact from='/auth-complete' to='/auth/cli-auth-complete' />
-              {
-                // 404s are handled within the Live route, after the user authenticates.
-                // Logged out users get redirected to /login before the possibility of a 404 is checked.
-                authenticated || isEmbedded ? <Route component={Live} />
-                  : <Redirect from='/*' to={authRedirectTo} />
-              }
-            </Switch>
-          </div>
+          <Switch>
+            <Route path='/credits' component={CreditsView} />
+            <Route path='/auth' component={AuthRouter} />
+            <RedirectWithArgs exact from='/login' to='/auth/login' />
+            <RedirectWithArgs exact from='/logout' to='/auth/logout' />
+            <RedirectWithArgs exact from='/signup' to='/auth/signup' />
+            <RedirectWithArgs exact from='/invite' to='/auth/invite' />
+            <RedirectWithArgs exact from='/auth-complete' to='/auth/cli-auth-complete' />
+            {
+              // 404s are handled within the Live route, after the user authenticates.
+              // Logged out users get redirected to /login before the possibility of a 404 is checked.
+              authenticated || isEmbedded ? <Route component={Live} />
+                : <Redirect from='/*' to={authRedirectTo} />
+            }
+          </Switch>
         </Router>
         {!isProd() ? <VersionInfo cloudVersion={PIXIE_CLOUD_VERSION} /> : null}
       </SnackbarProvider>
@@ -160,62 +157,9 @@ export const App: React.FC = () => {
 };
 App.displayName = 'App';
 
-// TODO(zasgar): Cleanup these styles. We probably don't need them all after we
-// fix all of material styling.
-const styles = () => createStyles({
-  '@global': {
-    '#root': {
-      height: '100%',
-      width: '100%',
-    },
-    html: {
-      height: '100%',
-    },
-    body: {
-      height: '100%',
-      overflow: 'hidden',
-      margin: 0,
-      boxSizing: 'border-box',
-    },
-    ':focus': {
-      outline: 'none !important',
-    },
-    // TODO(zasgar): remove this center content global.
-    '.center-content': {
-      height: '100%',
-      width: '100%',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    // Vega-Tooltip (included in Vega-Lite) doesn't quite get the math right when constraining a tooltip to the screen.
-    // Additionally, we sometimes use titles so long as to fill the screen (generated method signatures in flamegraphs).
-    // Sticky positioning and multi-line word wrap, respectively, handle both issues with just CSS.
-    '#vg-tooltip-element.vg-tooltip': {
-      maxWidth: 'min(400px, 80vw)',
-      width: 'fit-content',
-      position: 'sticky',
-      // The div#root element confuses sticky positioning without this negative margin.
-      marginTop: '-100vh',
-      '& > h2': {
-        display: '-webkit-box',
-        maxWidth: '100%',
-        '-webkit-line-clamp': 4,
-        '-webkit-box-orient': 'vertical',
-        overflow: 'hidden',
-        overflowWrap: 'anywhere',
-      },
-    },
-  },
-});
-
-let StyledApp = withStyles(styles)(App);
-
-if (LD_CLIENT_ID !== '') {
-  StyledApp = withLDProvider({
-    clientSideID: LD_CLIENT_ID,
-  })(StyledApp);
-}
+const FlaggedApp = LD_CLIENT_ID !== ''
+  ? withLDProvider({ clientSideID: LD_CLIENT_ID })(App)
+  : App;
 
 // eslint-disable-next-line react-memo/require-memo
 const ThemedApp: React.FC = () => {
@@ -381,9 +325,9 @@ const ThemedApp: React.FC = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-        <PixieAPIContextProvider apiKey='' onUnauthorized={onUnauthorized}>
-          <StyledApp />
-        </PixieAPIContextProvider>
+      <PixieAPIContextProvider apiKey='' onUnauthorized={onUnauthorized}>
+        <FlaggedApp />
+      </PixieAPIContextProvider>
     </ThemeProvider>
   );
 };

@@ -22,7 +22,7 @@
 import * as React from 'react';
 
 import { Theme } from '@mui/material/styles';
-import { createStyles, withStyles, WithStyles } from '@mui/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 import { Footer } from 'app/components';
 import * as pixieLogo from 'assets/images/pixie-logo.svg';
@@ -30,7 +30,7 @@ import { Copyright } from 'configurable/copyright';
 
 import * as StarsPNG from './stars.png';
 
-const styles = ({ spacing, breakpoints }: Theme) => createStyles({
+const useStyles = makeStyles(({ spacing, breakpoints }: Theme) => createStyles({
   root: {
     minHeight: breakpoints.values.xs,
     height: '100vh',
@@ -69,21 +69,20 @@ const styles = ({ spacing, breakpoints }: Theme) => createStyles({
       width: 'auto',
     },
   },
+}), { name: 'AuthPage' });
+
+export const BasePage: React.FC = React.memo(({ children }) => {
+  const classes = useStyles();
+  return (
+    <div className={classes.root}>
+      <div className={classes.logo}>
+        <img src={pixieLogo} alt='Pixie Logo' />
+      </div>
+      <div className={classes.content}>
+        {children}
+      </div>
+      <Footer copyright={Copyright} />
+    </div>
+  );
 });
-
-export interface BasePageProps extends WithStyles<typeof styles> {
-  children?: React.ReactNode;
-}
-
-// eslint-disable-next-line react-memo/require-memo
-export const BasePage = withStyles(styles)(({ children, classes }: BasePageProps) => (
-  <div className={classes.root}>
-    <div className={classes.logo}>
-      <img src={pixieLogo} alt='Pixie Logo' />
-    </div>
-    <div className={classes.content}>
-      {children}
-    </div>
-    <Footer copyright={Copyright} />
-  </div>
-));
+BasePage.displayName = 'AuthBasePage';

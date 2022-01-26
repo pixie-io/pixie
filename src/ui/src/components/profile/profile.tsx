@@ -56,14 +56,14 @@ interface ProfileMenuWrapperProps
   email: string;
   domainName: string;
   picture?: string;
-  classes: { // WithStyles has trouble with optional items. Easier to specify the Record manually.
-    managedDomainBanner?: string;
-    expandedProfile?: string;
-    avatarSm?: string;
-    listItemHeader?: string;
-    listItemText?: string;
-    centeredListItemText?: string;
-  };
+  classes: Partial<Record<
+  'managedDomainBanner'
+  | 'expandedProfile'
+  | 'avatarSm'
+  | 'listItemHeader'
+  | 'listItemText'
+  | 'centeredListItemText',
+  string>>;
 }
 
 export const ProfileMenuWrapper = React.memo<ProfileMenuWrapperProps>(({

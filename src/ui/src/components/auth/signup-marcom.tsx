@@ -25,7 +25,7 @@ import {
   alpha,
 } from '@mui/material';
 import { Theme } from '@mui/material/styles';
-import { createStyles, withStyles, WithStyles } from '@mui/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 import { PixieLogo } from 'app/components/icons/pixie-logo';
 import { CPPIcon } from 'app/components/logos/cpp';
@@ -33,7 +33,7 @@ import { GolangIcon } from 'app/components/logos/golang';
 import { HeartIcon } from 'app/components/logos/heart';
 import { RustIcon } from 'app/components/logos/rust';
 
-const styles = ({ palette, spacing }: Theme) => createStyles({
+const useStyles = makeStyles(({ palette, spacing }: Theme) => createStyles({
   root: {
     backgroundColor: palette.background.default,
   },
@@ -63,11 +63,11 @@ const styles = ({ palette, spacing }: Theme) => createStyles({
     paddingLeft: spacing(1),
     paddingRight: spacing(1),
   },
-});
+}), { name: 'SignupMarcom' });
 
-export const SignupMarcom = withStyles(styles)(
-  // eslint-disable-next-line react-memo/require-memo
-  ({ classes }: WithStyles<typeof styles>) => (
+export const SignupMarcom = React.memo(() => {
+  const classes = useStyles();
+  return (
     <>
       <Container maxWidth='sm' className={classes.root}>
         <Grid
@@ -107,5 +107,6 @@ export const SignupMarcom = withStyles(styles)(
         </Grid>
       </Container>
     </>
-  ),
-);
+  );
+});
+SignupMarcom.displayName = 'SignupMarcom';

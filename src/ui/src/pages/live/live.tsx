@@ -138,6 +138,13 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     flexDirection: 'row',
     minHeight: 0,
   },
+  centerContent: {
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   canvas: {
     marginLeft: theme.spacing(0.5),
     height: '100%',
@@ -469,7 +476,7 @@ const LiveView = React.memo(() => {
                   <Canvas editable={widgetsMoveable} parentRef={canvasRef} />
                 </div>
               ) : (
-                <div className='center-content'>
+                <div className={classes.centerContent}>
                   <ClusterLoadingComponent
                     clusterPrettyName={selectedClusterPrettyName}
                     clusterStatus={selectedClusterStatus}

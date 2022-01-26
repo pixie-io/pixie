@@ -23,8 +23,8 @@ import {
   KeyboardArrowUp as UpIcon,
 } from '@mui/icons-material';
 import { Fab, Tab, Tabs } from '@mui/material';
-import { Theme } from '@mui/material/styles';
-import { createStyles, makeStyles, withStyles } from '@mui/styles';
+import { Theme, styled } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 import { LazyPanel, ResizableDrawer, Spinner } from 'app/components';
 import { MinimalLiveDataTable } from 'app/containers/live-data-table/live-data-table';
@@ -136,17 +136,17 @@ const TabSpacer = React.memo(() => <div className={useStyles().spacer} />);
 TabSpacer.displayName = 'TabSpacer';
 
 // eslint-disable-next-line react-memo/require-memo
-const StyledTabs = withStyles((theme: Theme) => createStyles({
+const StyledTabs = styled(Tabs)(({ theme }) => ({
   root: {
     minHeight: theme.spacing(4),
   },
   indicator: {
     backgroundColor: theme.palette.foreground.one,
   },
-}))(Tabs);
+}));
 
 // eslint-disable-next-line react-memo/require-memo
-const StyledTab = withStyles((theme: Theme) => createStyles({
+const StyledTab = styled(Tab)(({ theme }) => ({
   root: {
     minHeight: theme.spacing(4),
     padding: 0,
@@ -162,8 +162,7 @@ const StyledTab = withStyles((theme: Theme) => createStyles({
   wrapper: {
     alignItems: 'flex-start',
   },
-
-}))(Tab);
+}));
 
 const DataDrawer = React.memo<{ open: boolean }>(({ open }) => {
   const classes = useStyles();

@@ -20,14 +20,14 @@ import * as React from 'react';
 
 import { Box } from '@mui/material';
 import { Theme } from '@mui/material/styles';
-import { createStyles, withStyles, WithStyles } from '@mui/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 import { AuthBox, SignupMarcom } from 'app/components';
 
 import { BasePage } from './base';
 import { GetOAuthProvider } from './utils';
 
-const styles = ({ breakpoints }: Theme) => createStyles({
+const useStyles = makeStyles(({ breakpoints }: Theme) => createStyles({
   root: {
     width: '100%',
     display: 'flex',
@@ -40,10 +40,10 @@ const styles = ({ breakpoints }: Theme) => createStyles({
       display: 'none',
     },
   },
-});
+}), { name: 'SignupPage' });
 
-// eslint-disable-next-line react-memo/require-memo
-export const SignupPage = withStyles(styles)(({ classes }: WithStyles<typeof styles>) => {
+export const SignupPage = React.memo(() => {
+  const classes = useStyles();
   const authClient = React.useMemo(() => GetOAuthProvider(), []);
   const buttons = React.useMemo(
     () => (authClient.getSignupButtons()),
@@ -79,3 +79,4 @@ export const SignupPage = withStyles(styles)(({ classes }: WithStyles<typeof sty
     </BasePage>
   );
 });
+SignupPage.displayName = 'SignupPage';
