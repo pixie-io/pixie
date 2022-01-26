@@ -258,38 +258,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   utils::StatCounter<StatKey> stats_;
 
-  FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);
-  FRIEND_TEST(SocketTraceConnectorTest, NoEvents);
-  FRIEND_TEST(SocketTraceConnectorTest, SortedByResponseTime);
-  FRIEND_TEST(SocketTraceConnectorTest, HTTPBasic);
-  FRIEND_TEST(SocketTraceConnectorTest, HTTPContentType);
-  FRIEND_TEST(SocketTraceConnectorTest, UPIDCheck);
-  FRIEND_TEST(SocketTraceConnectorTest, RequestResponseMatching);
-  FRIEND_TEST(SocketTraceConnectorTest, MissingEventInStream);
-  FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupInOrder);
-  FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupOutOfOrder);
-  FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupMissingDataEvent);
-  FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupOldGenerations);
-  FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupInactiveDead);
-  FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive);
-  FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupNoProtocol);
-  FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupCollecting);
-  FRIEND_TEST(SocketTraceConnectorTest, MySQLPrepareExecuteClose);
-  FRIEND_TEST(SocketTraceConnectorTest, MySQLQuery);
-  FRIEND_TEST(SocketTraceConnectorTest, MySQLMultipleCommands);
-  FRIEND_TEST(SocketTraceConnectorTest, MySQLQueryWithLargeResultset);
-  FRIEND_TEST(SocketTraceConnectorTest, MySQLMultiResultset);
-  FRIEND_TEST(SocketTraceConnectorTest, CQLQuery);
-  FRIEND_TEST(SocketTraceConnectorTest, HTTP2ClientTest);
-  FRIEND_TEST(SocketTraceConnectorTest, HTTP2ServerTest);
-  FRIEND_TEST(SocketTraceConnectorTest, HTTP2PartialStream);
-  FRIEND_TEST(SocketTraceConnectorTest, HTTP2ResponseOnly);
-  FRIEND_TEST(SocketTraceConnectorTest, HTTP2SpanAcrossTransferData);
-  FRIEND_TEST(SocketTraceConnectorTest, HTTP2SequentialStreams);
-  FRIEND_TEST(SocketTraceConnectorTest, HTTP2ParallelStreams);
-  FRIEND_TEST(SocketTraceConnectorTest, HTTP2StreamSandwich);
-  FRIEND_TEST(SocketTraceConnectorTest, HTTP2StreamIDRace);
-  FRIEND_TEST(SocketTraceConnectorTest, HTTP2OldStream);
+  friend class SocketTraceConnectorFriend;
 };
 
 }  // namespace stirling

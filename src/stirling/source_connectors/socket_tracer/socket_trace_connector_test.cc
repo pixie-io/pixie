@@ -34,6 +34,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/test_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/event_generator.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/http2_stream_generator.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_connector_friend.h"
 #include "src/stirling/testing/common.h"
 
 namespace px {
@@ -174,8 +175,8 @@ class SocketTraceConnectorTest : public ::testing::Test {
 
   void SetUp() override {
     // Create and configure the connector.
-    connector_ = SocketTraceConnector::Create("socket_trace_connector");
-    source_ = dynamic_cast<SocketTraceConnector*>(connector_.get());
+    connector_ = SocketTraceConnectorFriend::Create("socket_trace_connector");
+    source_ = dynamic_cast<SocketTraceConnectorFriend*>(connector_.get());
     ASSERT_NE(nullptr, source_);
 
     ctx_ = std::make_unique<StandaloneContext>();
@@ -204,7 +205,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
   DataTable* cql_table_;
 
   std::unique_ptr<SourceConnector> connector_;
-  SocketTraceConnector* source_ = nullptr;
+  SocketTraceConnectorFriend* source_ = nullptr;
   std::unique_ptr<StandaloneContext> ctx_;
   testing::MockClock mock_clock_;
   testing::RealClock real_clock_;
