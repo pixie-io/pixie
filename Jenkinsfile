@@ -507,7 +507,7 @@ def InitializeRepoState(String stashName = SRC_STASH_NAME) {
 def DefaultGitPodTemplate(String suffix, Closure body) {
   RetryOnK8sDownscale {
     def label = "worker-git-${env.BUILD_TAG}-${suffix}"
-    podTemplate(label: label, cloud: 'devinfra-cluster', containers: [
+    podTemplate(label: label, cloud: 'devinfra-cluster-usw1-0', containers: [
       containerTemplate(name: 'git', image: 'bitnami/git:2.33.0', command: 'cat', ttyEnabled: true)
     ]) {
       node(label) {
@@ -520,7 +520,7 @@ def DefaultGitPodTemplate(String suffix, Closure body) {
 def DefaultGCloudPodTemplate(String suffix, Closure body) {
   RetryOnK8sDownscale {
     def label = "worker-gcloud-${env.BUILD_TAG}-${suffix}"
-    podTemplate(label: label, cloud: 'devinfra-cluster', containers: [
+    podTemplate(label: label, cloud: 'devinfra-cluster-usw1-0', containers: [
       containerTemplate(name: 'gcloud', image: GCLOUD_DOCKER_IMAGE, command: 'cat', ttyEnabled: true)
     ]) {
       node(label) {
@@ -533,7 +533,7 @@ def DefaultGCloudPodTemplate(String suffix, Closure body) {
 def DefaultCopybaraPodTemplate(String suffix, Closure body) {
   RetryOnK8sDownscale {
     def label = "worker-copybara-${env.BUILD_TAG}-${suffix}"
-    podTemplate(label: label, cloud: 'devinfra-cluster', containers: [
+    podTemplate(label: label, cloud: 'devinfra-cluster-usw1-0', containers: [
       containerTemplate(name: 'copybara', image: COPYBARA_DOCKER_IMAGE, command: 'cat', ttyEnabled: true),
     ]) {
       node(label) {
@@ -547,7 +547,7 @@ def DefaultBuildPodTemplate(String suffix, Closure body) {
   RetryOnK8sDownscale {
     def label = "worker-${env.BUILD_TAG}-${suffix}"
     podTemplate(
-      label: label, cloud: 'devinfra-cluster', containers: [
+      label: label, cloud: 'devinfra-cluster-usw1-0', containers: [
         containerTemplate(
           name: 'pxbuild', image: 'gcr.io/' + devDockerImageWithTag,
           command: 'cat', ttyEnabled: true,
