@@ -65,6 +65,12 @@ profiles:
       push: false
   activation:
   - kubeContext: minikube
+- name: dbg
+  patches:
+  - op: add
+    path: /build/artifacts/context=./bazel/args
+    value:
+    - --compilation_mode=dbg
 - name: opt
   patches:
   - op: add
