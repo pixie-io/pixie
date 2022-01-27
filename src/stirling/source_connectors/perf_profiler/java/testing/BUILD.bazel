@@ -40,3 +40,9 @@ java_binary(
     jvm_flags = jvm_flags,
     main_class = "JavaFib",
 )
+
+java_binary(
+    name = "fib_no_agent",
+    srcs = ["Fib.java"],
+    main_class = "JavaFib",
+)
