@@ -115,12 +115,12 @@ void WriteSymbol(const uint64_t addr, const uint32_t code_size, const bool metho
   const char* const symbol = symbol_valid ? symbol_ptr : &nullchar;
   const char* const class_sig = class_sig_valid ? class_sig_ptr : &nullchar;
 
-  px::stirling::JavaRawSymbolUpdate symbol_metadata = {.addr = addr,
-                                                       .code_size = code_size,
-                                                       .symbol_size = 1 + strlen(symbol),
-                                                       .fn_sig_size = 1 + strlen(fn_sig),
-                                                       .class_sig_size = 1 + strlen(class_sig),
-                                                       .method_unload = method_unload};
+  px::stirling::java::RawSymbolUpdate symbol_metadata = {.addr = addr,
+                                                         .code_size = code_size,
+                                                         .symbol_size = 1 + strlen(symbol),
+                                                         .fn_sig_size = 1 + strlen(fn_sig),
+                                                         .class_sig_size = 1 + strlen(class_sig),
+                                                         .method_unload = method_unload};
 
   g_mtx.lock();
   LogF("WriteSymbol|0x%016llx|%u|%s|%s|%s", addr, code_size, symbol, fn_sig, class_sig);

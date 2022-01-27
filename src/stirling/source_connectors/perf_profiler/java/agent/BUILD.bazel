@@ -16,9 +16,16 @@
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_image")
 load("@io_bazel_rules_docker//docker/util:run.bzl", "container_run_and_extract")
-load("//bazel:pl_build_system.bzl", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
+
+pl_cc_library(
+    # This is a "header only" pl_cc_library: agent.cc is used to create a .so that will be injected
+    # to a target Java process.
+    name = "cc_headers",
+    hdrs = glob(["*.h"]),
+)
 
 container_image(
     name = "image-glibc",

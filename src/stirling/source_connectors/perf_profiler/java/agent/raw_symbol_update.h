@@ -22,8 +22,9 @@
 
 namespace px {
 namespace stirling {
+namespace java {
 
-class JavaRawSymbolUpdate {
+class RawSymbolUpdate {
  public:
   uint64_t addr;
   uint64_t code_size;
@@ -39,5 +40,6 @@ class JavaRawSymbolUpdate {
   bool IsMethodUnload() const { return method_unload; }
 };
 
+}  // namespace java
 }  // namespace stirling
 }  // namespace px
