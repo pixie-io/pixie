@@ -99,11 +99,7 @@ void AgentAttacher::CopyAgentLibsOrDie() {
   // First we get the uid & gid of the target process. Will need these to downgrade the
   // uid & gid of the file that we create (we are root).
   const std::string proc_path = absl::Substitute("/proc/$0", target_pid_);
-  struct stat sb;
-
-  if (stat(proc_path.c_str(), &sb) == -1) {
-    LOG(FATAL) << absl::Substitute("Could not stat file: $0.", proc_path);
-  }
+  const struct stat sb = fs::Stat(proc_path).ConsumeValueOrDie();
   const uid_t uid = sb.st_uid;
   const gid_t gid = sb.st_gid;
 
@@ -116,11 +112,7 @@ void AgentAttacher::CopyAgentLibsOrDie() {
     const std::string dst_path = absl::Substitute("/proc/$0/root/tmp/$1", target_pid_, basename);
 
     PL_EXIT_IF_ERROR(fs::Copy(src_path, dst_path, copy_options));
-
-    // TODO(jps): add a wrapper for chown into our fs_wrapper class.
-    if (0 != chown(dst_path.c_str(), uid, gid)) {
-      LOG(FATAL) << absl::Substitute("Could not chown file: $0.", dst_path);
-    }
+    PL_EXIT_IF_ERROR(fs::Chown(dst_path, uid, gid));
   }
 
   for (std::string& agent_lib : agent_libs_) {
