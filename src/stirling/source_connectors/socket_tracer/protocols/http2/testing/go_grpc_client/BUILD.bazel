@@ -17,76 +17,31 @@
 # Build of test data binaries is controlled by dockerized builds, not bazel/gazelle.
 #gazelle:ignore
 
-load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_push")
-load("@io_bazel_rules_docker//docker/util:run.bzl", "container_run_and_commit", "container_run_and_extract")
+load("@io_bazel_rules_docker//container:container.bzl", "container_push")
+load("//src/stirling/testing/bazel:containerized_build.bzl", "pl_aux_go_binary")
 
-container_image(
-    name = "golang_1_16_grpc_client_source",
+package(default_visibility = ["//src/stirling:__subpackages__"])
+
+#TODO(oazizi): The px.dev/pixie/src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto
+#              should be made local to the build containers, so that things don't break on proto update.
+
+pl_aux_go_binary(
+    name = "golang_1_16_grpc_client",
     base = "@golang_1_16_image//image",
-    directory = "/go/src/grpc_client",
     files = ["main.go"],
 )
 
-container_run_and_commit(
-    name = "golang_1_16_grpc_client_build",
-    commands = [
-        "go mod init",
-        "go get",
-        "go build -v",
-    ],
-    docker_run_flags = ["-w /go/src/grpc_client"],
-    image = ":golang_1_16_grpc_client_source.tar",
-)
-
-container_run_and_extract(
-    name = "golang_1_16_grpc_client_binary",
-    commands = ["echo"],
-    extract_file = "/go/src/grpc_client/grpc_client",
-    image = ":golang_1_16_grpc_client_build_commit.tar",
-)
-
-filegroup(
-    name = "grpc_client",
-    srcs = [":golang_1_16_grpc_client_binary/go/src/grpc_client/grpc_client"],
-    visibility = ["//src/stirling:__subpackages__"],
+pl_aux_go_binary(
+    name = "golang_1_17_grpc_client",
+    base = "@golang_1_17_image//image",
+    files = ["main.go"],
 )
 
 container_push(
     name = "push_image",
     format = "Docker",
-    image = ":golang_1_16_grpc_client_build_commit.tar",
+    image = ":golang_1_16_grpc_client_image_with_binary_commit.tar",
     registry = "gcr.io",
     repository = "pl-dev-infra/demos/go_grpc_client",
     tag = "{BUILD_USER}",
-)
-
-container_image(
-    name = "golang_1_17_grpc_client_source",
-    base = "@golang_1_17_image//image",
-    directory = "/go/src/grpc_client",
-    files = ["main.go"],
-)
-
-container_run_and_commit(
-    name = "golang_1_17_grpc_client_build",
-    commands = [
-        "go mod init",
-        "go get",
-        "go build -v",
-    ],
-    docker_run_flags = ["-w /go/src/grpc_client"],
-    image = ":golang_1_17_grpc_client_source.tar",
-)
-
-container_run_and_extract(
-    name = "golang_1_17_grpc_client_binary",
-    commands = ["echo"],
-    extract_file = "/go/src/grpc_client/grpc_client",
-    image = ":golang_1_17_grpc_client_build_commit.tar",
-)
-
-filegroup(
-    name = "go_1_17_grpc_client",
-    srcs = [":golang_1_17_grpc_client_binary/go/src/grpc_client/grpc_client"],
-    visibility = ["//src/stirling:__subpackages__"],
 )

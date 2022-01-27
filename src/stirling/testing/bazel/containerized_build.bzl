@@ -22,6 +22,9 @@ load("@io_bazel_rules_docker//docker/util:run.bzl", "container_run_and_commit", 
 # This lets us control the go version with which to build the auxiliary test binaries,
 # so we can ensure Stirling works on different versions of Go.
 # It also provides more determinism in our tests (e.g. less churn on go toolchain upgrades).
+# Main outputs:
+#  <name>: The stand-alone binary
+#  <name>_image_with_binary_commit.tar: A container with the built binary in the CWD.
 def pl_aux_go_binary(name, files, base, build_flags = ""):
     # Build path within the binary where the sources will be placed and built.
     container_build_dir = "/go/src/" + name

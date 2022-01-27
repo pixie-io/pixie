@@ -33,8 +33,8 @@ if [ -z "$BUILD_WORKSPACE_DIRECTORY" ] && [ -z "$TEST_TMPDIR" ]; then
     echo "Running test in stand-alone mode"
     echo "Building stirling_wrapper and test binaries. This may take some time."
     stirling_wrapper=$pixie_root/$(bazel_build //src/stirling/binaries:stirling_wrapper)
-    go_grpc_server=$pixie_root/$(bazel_build //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:grpc_server)
-    go_grpc_client=$pixie_root/$(bazel_build //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:grpc_client)
+    go_grpc_server=$pixie_root/$(bazel_build //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:go_1_16_grpc_server)
+    go_grpc_client=$pixie_root/$(bazel_build //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:go_1_16_grpc_client)
 else
     # If the script was run through bazel, the locations are passed as arguments.
     stirling_wrapper=$1

@@ -72,7 +72,7 @@ class GRPCServer {
  public:
   static constexpr std::string_view kServerPath =
       "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
-      "golang_$0_grpc_server_binary/go/src/grpc_server/grpc_server";
+      "golang_$0_grpc_server";
 
   GRPCServer() = default;
 
@@ -105,7 +105,7 @@ class GRPCClient {
  public:
   static constexpr std::string_view kClientPath =
       "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client/"
-      "golang_1_16_grpc_client_binary/go/src/grpc_client/grpc_client";
+      "golang_$0_grpc_client";
 
   void LaunchClient(std::string_view go_version, bool use_https, int port) {
     std::string client_path = absl::Substitute(kClientPath, go_version);

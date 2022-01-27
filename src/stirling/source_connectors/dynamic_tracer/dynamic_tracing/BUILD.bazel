@@ -92,7 +92,7 @@ pl_cc_test(
     srcs = ["dynamic_tracer_test.cc"],
     data = [
         "//src/stirling/obj_tools/testdata/go:test_go_binary",
-        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:grpc_server",
+        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_16_grpc_server_with_certs",
     ],
     tags = [
         "exclusive",
