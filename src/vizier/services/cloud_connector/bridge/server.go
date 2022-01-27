@@ -346,29 +346,27 @@ func (s *Bridge) RunStream() {
 		s.nc = nc
 	}
 
-	if s.nc != nil {
-		s.nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
-			log.WithField("Sub", subscription.Subject).
-				WithError(err).
-				Error("Error with NATS handler")
-		})
+	s.nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
+		log.WithField("Sub", subscription.Subject).
+			WithError(err).
+			Error("Error with NATS handler")
+	})
 
-		natsTopic := messagebus.V2CTopic("*")
-		log.WithField("topic", natsTopic).Trace("Subscribing to NATS")
-		natsSub, err := s.nc.ChanSubscribe(natsTopic, s.natsCh)
-		if err != nil {
-			log.WithError(err).Fatal("Could not subscribe to NATS. Please check for the `pl-nats` pods in the namespace to confirm they are healthy and running.")
-		}
-		defer func() {
-			err := natsSub.Unsubscribe()
-			if err != nil {
-				log.WithError(err).Error("Failed to unsubscribe from NATS")
-			}
-		}()
+	natsTopic := messagebus.V2CTopic("*")
+	log.WithField("topic", natsTopic).Trace("Subscribing to NATS")
+	natsSub, err := s.nc.ChanSubscribe(natsTopic, s.natsCh)
+	if err != nil {
+		log.WithError(err).Fatal("Could not subscribe to NATS. Please check for the `pl-nats` pods in the namespace to confirm they are healthy and running.")
 	}
+	defer func() {
+		err := natsSub.Unsubscribe()
+		if err != nil {
+			log.WithError(err).Error("Failed to unsubscribe from NATS")
+		}
+	}()
 
 	// Check if there is an existing update job. If so, then set the status to "UPDATING".
-	_, err := s.vzInfo.GetJob(upgradeJobName)
+	_, err = s.vzInfo.GetJob(upgradeJobName)
 	if err != nil && !k8sErrors.IsNotFound(err) {
 		log.WithError(err).Fatal("Could not check for upgrade job")
 	}
@@ -400,14 +398,12 @@ func (s *Bridge) RunStream() {
 			return
 		default:
 			log.Trace("Starting stream")
-			errCh := make(chan error)
-			err := s.StartStream(errCh)
+			err := s.StartStream()
 			if err == nil {
 				log.Trace("Stream ending")
 			} else {
 				log.WithError(err).Error("Stream errored. Restarting stream")
 			}
-			close(errCh)
 		}
 	}
 }
@@ -657,7 +653,7 @@ func (s *Bridge) doRegistrationHandshake(stream vzconnpb.VZConnService_NATSBridg
 }
 
 // StartStream starts the stream between the cloud connector and Vizier connector.
-func (s *Bridge) StartStream(errCh chan error) error {
+func (s *Bridge) StartStream() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	stream, err := s.vzConnClient.NATSBridge(ctx)
 	if err != nil {
@@ -665,6 +661,8 @@ func (s *Bridge) StartStream(errCh chan error) error {
 		cancel()
 		return err
 	}
+	errCh := make(chan error)
+	defer close(errCh)
 	// Wait for  all goroutines to terminate.
 	defer func() {
 		s.wg.Wait()
