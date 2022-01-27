@@ -5,5 +5,3 @@ namespace: sourcegraph
 resources:
 - storageclass.yaml
 - ingress.yaml
-- managedcert.yaml
-- frontend_service.yaml
