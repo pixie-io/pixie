@@ -74,11 +74,12 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   // and (2) attempting to use a function from the lib by mapping it w/ dlopen.
   // Currently, we have a symbolization agent library for glibc and for musl.
   const fs_path lib_path_pfx = "src/stirling/source_connectors/perf_profiler/java/agent";
-  const fs_path lib_path_sfx = "build/agent.so";
+  const fs_path musl_lib = "build-musl/lib-px-java-agent-musl.so";
+  const fs_path glibc_lib = "build-glibc/lib-px-java-agent-glibc.so";
 
   const std::vector<std::string> libs = {
-      std::filesystem::absolute(BazelBinTestFilePath(lib_path_pfx / "build-musl" / lib_path_sfx)),
-      std::filesystem::absolute(BazelBinTestFilePath(lib_path_pfx / "build-glibc" / lib_path_sfx)),
+      std::filesystem::absolute(BazelBinTestFilePath(lib_path_pfx / musl_lib)),
+      std::filesystem::absolute(BazelBinTestFilePath(lib_path_pfx / glibc_lib)),
   };
   for (const auto& lib : libs) {
     ASSERT_OK(fs::Exists(lib)) << lib;
