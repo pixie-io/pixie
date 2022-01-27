@@ -124,6 +124,25 @@ Status Remove(const std::filesystem::path& f) {
   return error::InvalidArgument("Could not delete $0 [ec=$1]", f.string(), ec.message());
 }
 
+Status Chown(const std::filesystem::path& path, const uid_t uid, const gid_t gid) {
+  const int r = chown(path.string().c_str(), uid, gid);
+  if (r != 0) {
+    char const* const msg = "Could not chown $0 to uid: $1, gid: $2. $3 ($4).";
+    return error::InvalidArgument(msg, path.string(), uid, gid, strerror(errno), errno);
+  }
+  return Status::OK();
+}
+
+StatusOr<struct stat> Stat(const std::filesystem::path& path) {
+  struct stat sb;
+  const int r = stat(path.string().c_str(), &sb);
+  if (r != 0) {
+    char const* const msg = "Could not stat $0. $1 ($2).";
+    return error::InvalidArgument(msg, path.string(), strerror(errno), errno);
+  }
+  return sb;
+}
+
 StatusOr<bool> IsEmpty(const std::filesystem::path& f) {
   std::error_code ec;
   bool val = std::filesystem::is_empty(f, ec);

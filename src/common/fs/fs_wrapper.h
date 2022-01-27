@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include <sys/stat.h>
+
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -61,9 +63,11 @@ Status CreateSymlinkIfNotExists(const std::filesystem::path& target,
 Status Exists(const std::filesystem::path& path);
 Status Copy(const std::filesystem::path& from, const std::filesystem::path& to,
             std::filesystem::copy_options options = std::filesystem::copy_options::none);
-Status Remove(const std::filesystem::path& f);
+Status Remove(const std::filesystem::path& path);
+Status Chown(const std::filesystem::path& path, const uid_t uid, const gid_t gid);
+StatusOr<struct stat> Stat(const std::filesystem::path& path);
 
-StatusOr<bool> IsEmpty(const std::filesystem::path& f);
+StatusOr<bool> IsEmpty(const std::filesystem::path& path);
 
 StatusOr<std::filesystem::path> Absolute(const std::filesystem::path& path);
 
