@@ -238,9 +238,8 @@ TEST(ElfReaderTest, FuncByteCode) {
 }
 
 TEST(ElfReaderTest, GolangAppRuntimeBuildVersion) {
-  const std::string kPath = px::testing::BazelBinTestFilePath(
-      "src/stirling/obj_tools/testdata/go/test_go_binary_extractor/go/src/test_go_binary/"
-      "test_go_binary");
+  const std::string kPath =
+      px::testing::BazelBinTestFilePath("src/stirling/obj_tools/testdata/go/test_go_binary");
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
   ASSERT_OK_AND_ASSIGN(ElfReader::SymbolInfo symbol,
                        elf_reader->SearchTheOnlySymbol("runtime.buildVersion"));

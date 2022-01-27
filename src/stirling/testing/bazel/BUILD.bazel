@@ -14,25 +14,4 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Build of test data binaries is controlled by dockerized builds, not bazel/gazelle.
-#gazelle:ignore
-
-load("//src/stirling/testing/bazel:containerized_build.bzl", "pl_aux_go_binary")
-
 package(default_visibility = ["//src/stirling:__subpackages__"])
-
-pl_aux_go_binary(
-    name = "test_go_binary",
-    base = "@golang_1_16_image//image",
-    build_flags = "-gcflags='-N -l'",
-    files = ["test_go_binary.go"],
-)
-
-filegroup(
-    name = "precompiled_test_binaries",
-    srcs = [
-        "sockshop_payments_service",
-        "test_go_1_16_binary",
-        "test_go_1_17_binary",
-    ],
-)
