@@ -216,15 +216,25 @@ async function generateRSAKeyPair(): Promise<KeyPair> {
   return { publicKeyJWK, privateKey: keyPair.privateKey };
 }
 
+let keyPairCache: string;
 async function getRSAKeyPair(): Promise<KeyPair> {
   // If key pair exists in our cache, then we parse it out.
-  const keyPairCache = sessionStorage.getItem('pixie-e2e-encryption-key');
+  try {
+    keyPairCache = sessionStorage.getItem('pixie-e2e-encryption-key');
+  } catch (_) {
+    // If sessionStorage isn't available, we may be in an incognito tab.
+    // Fall back to memory that won't survive a refresh.
+  }
+
   if (keyPairCache) {
     return parseKeyPair(keyPairCache);
   }
   // Generate if not found in keyparse.
   const keyPair = await generateRSAKeyPair();
-  sessionStorage.setItem('pixie-e2e-encryption-key', await serializeKeyPair(keyPair));
+  keyPairCache = await serializeKeyPair(keyPair);
+  try {
+    sessionStorage.setItem('pixie-e2e-encryption-key', keyPairCache);
+  } catch (_) { /* See above: likely in an incognito tab. */ }
   return keyPair;
 }
 

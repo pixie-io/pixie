@@ -35,7 +35,10 @@ export const LogoutPage: React.FC = () => {
         localStorage.clear();
         sessionStorage.clear();
         pixieAnalytics.reset();
-      } catch { /* When embedded, referencing localStorage can throw if user settings are strict enough. */ }
+      } catch {
+        // When embedded, referencing localStorage can throw if user settings are strict enough.
+        // Similarly, some browsers block sessionStorage when in private/incognito/etc tabs.
+      }
       RedirectUtils.redirect('', {});
     });
   }, []);
