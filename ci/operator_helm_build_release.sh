@@ -35,6 +35,10 @@ parse_args "$@"
 tmp_dir="$(mktemp -d)"
 
 helm_gcs_bucket="pixie-operator-charts"
+if [[ $VERSION == *"-"* ]]; then
+  helm_gcs_bucket="pixie-operator-charts-dev"
+fi
+
 repo_path=$(pwd)
 helm_path="${repo_path}/k8s/operator/helm"
 

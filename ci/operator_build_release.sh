@@ -120,7 +120,5 @@ sha256sum "${yamls_tar}" | awk '{print $1}' > tmplSha
 gsutil cp "${yamls_tar}" "${output_path}/operator_template_yamls.tar"
 gsutil cp tmplSha "${output_path}/operator_template_yamls.tar.sha256"
 
-# Update helm chart if it is a release.
-if [[ $public == "True" ]]; then
-  ./ci/operator_helm_build_release.sh "${release_tag}"
-fi
+
+./ci/operator_helm_build_release.sh "${release_tag}"
