@@ -27,7 +27,8 @@
 #include "src/stirling/testing/common.h"
 
 constexpr std::string_view kBinaryPath =
-    "src/stirling/obj_tools/testdata/go/test_go_binary_/test_go_binary";
+    "src/stirling/obj_tools/testdata/go/test_go_binary_extractor/go/src/test_go_binary/"
+    "test_go_binary";
 
 namespace px {
 namespace stirling {

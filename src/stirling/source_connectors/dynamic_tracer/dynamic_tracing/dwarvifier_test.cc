@@ -23,7 +23,8 @@
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dwarvifier.h"
 
 constexpr std::string_view kBinaryPath =
-    "src/stirling/obj_tools/testdata/go/test_go_binary_/test_go_binary";
+    "src/stirling/obj_tools/testdata/go/test_go_binary_extractor/go/src/test_go_binary/"
+    "test_go_binary";
 
 namespace px {
 namespace stirling {
@@ -1371,14 +1372,14 @@ probes {
     scalar_var {
       name: "main__IntStruct_sym_addr1"
       type: UINT64
-      constant: "5104296"
+      constant: "5104424"
     }
   }
   vars {
     scalar_var {
       name: "runtime__errorString_sym_addr2"
       type: UINT64
-      constant: "5104328"
+      constant: "5104456"
     }
   }
   vars {
@@ -1491,17 +1492,7 @@ TEST_P(DwarfInfoTest, Transform) {
       ir::physical::Program physical_program,
       GeneratePhysicalProgram(input_program, dwarf_reader.get(), elf_reader.get()));
 
-// Check for `bazel coverage` so we can bypass the final checks.
-// Note that we still get accurate coverage metrics, because this only skips the final check.
-// Ideally, we'd get bazel to deterministically build test_go_binary,
-// but it's not easy to tell bazel to use a different config for just one target.
-#ifdef PL_COVERAGE
-  LOG(INFO) << "Whoa...`bazel coverage` is messaging with test_go_binary. Shame on you bazel. "
-               "Skipping final checks.";
-  return;
-#else
   ASSERT_THAT(physical_program, EqualsProto(expected_output_str));
-#endif
 }
 
 INSTANTIATE_TEST_SUITE_P(

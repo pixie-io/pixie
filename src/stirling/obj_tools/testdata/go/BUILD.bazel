@@ -14,25 +14,42 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+# Build of test data binaries is controlled by dockerized builds, not bazel/gazelle.
+#gazelle:ignore
+
+load("@io_bazel_rules_docker//container:container.bzl", "container_image")
+load("@io_bazel_rules_docker//docker/util:run.bzl", "container_run_and_commit", "container_run_and_extract")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
-go_library(
-    name = "testdata_lib",
-    srcs = ["test_go_binary.go"],
-    importpath = "px.dev/pixie/src/stirling/obj_tools/testdata/go",
+container_image(
+    name = "test_go_binary_builder_source",
+    base = "@golang_1_16_image//image",
+    directory = "/go/src/test_go_binary",
+    files = ["test_go_binary.go"],
 )
 
-go_binary(
-    name = "test_go_binary",
-    embed = [":testdata_lib"],
-    # To force no optimizations and no inlining, we need to pass -N -l
-    gc_goopts = [
-        "-N",
-        "-l",
+container_run_and_commit(
+    name = "test_go_binary_builder",
+    commands = [
+        "go mod init",
+        "go get",
+        "go build -gcflags='-N -l' -v",
     ],
-    importpath = "px.dev/pixie/src/stirling/obj_tools/testdata/go",
+    docker_run_flags = ["-w /go/src/test_go_binary"],
+    image = ":test_go_binary_builder_source.tar",
+)
+
+container_run_and_extract(
+    name = "test_go_binary_extractor",
+    commands = ["echo"],
+    extract_file = "/go/src/test_go_binary/test_go_binary",
+    image = ":test_go_binary_builder_commit.tar",
+)
+
+filegroup(
+    name = "test_go_binary",
+    srcs = [":test_go_binary_extractor/go/src/test_go_binary/test_go_binary"],
 )
 
 filegroup(

@@ -29,37 +29,28 @@ namespace obj_tools {
 using ::testing::Field;
 using ::testing::StrEq;
 
+constexpr std::string_view kTestGoBinaryPath =
+    "src/stirling/obj_tools/testdata/go/test_go_binary_extractor/go/src/test_go_binary/"
+    "test_go_binary";
+
 TEST(ReadBuildVersionTest, WorkingOnBasicGoBinary) {
-  const std::string kPath = px::testing::BazelBinTestFilePath(
-      "src/stirling/obj_tools/testdata/go/test_go_binary_/test_go_binary");
+  const std::string kPath = px::testing::BazelBinTestFilePath(kTestGoBinaryPath);
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
   ASSERT_OK_AND_ASSIGN(std::string version, ReadBuildVersion(elf_reader.get()));
-  EXPECT_THAT(version, StrEq("go1.16"));
+  EXPECT_THAT(version, StrEq("go1.16.12"));
 }
 
 TEST(IsGoExecutableTest, WorkingOnBasicGoBinary) {
-  const std::string kPath = px::testing::BazelBinTestFilePath(
-      "src/stirling/obj_tools/testdata/go/test_go_binary_/test_go_binary");
+  const std::string kPath = px::testing::BazelBinTestFilePath(kTestGoBinaryPath);
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
   EXPECT_TRUE(IsGoExecutable(elf_reader.get()));
 }
 
 TEST(ElfGolangItableTest, ExtractInterfaceTypes) {
-  const std::string kPath = px::testing::BazelBinTestFilePath(
-      "src/stirling/obj_tools/testdata/go/test_go_binary_/test_go_binary");
+  const std::string kPath = px::testing::BazelBinTestFilePath(kTestGoBinaryPath);
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
   ASSERT_OK_AND_ASSIGN(const auto interfaces, ExtractGolangInterfaces(elf_reader.get()));
-
-  // Check for `bazel coverage` so we can bypass the final checks.
-  // Note that we still get accurate coverage metrics, because this only skips the final check.
-  // Ideally, we'd get bazel to deterministically build test_go_binary,
-  // but it's not easy to tell bazel to use a different config for just one target.
-#ifdef PL_COVERAGE
-  LOG(INFO) << "Whoa...`bazel coverage` is messaging with test_go_binary. Shame on you bazel. "
-               "Ending this test early.";
-  return;
-#else
 
   EXPECT_THAT(
       interfaces,
@@ -83,7 +74,6 @@ TEST(ElfGolangItableTest, ExtractInterfaceTypes) {
           Pair("reflect.Type",
                UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name, "*reflect.rtype"))),
           Pair("fmt.State", UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name, "*fmt.pp")))));
-#endif
 }
 
 }  // namespace obj_tools
