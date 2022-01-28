@@ -44,9 +44,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     flexGrow: 1,
     marginRight: theme.spacing(1),
   },
-  modalRoot: {
-    width: '500px',
-  },
   heading: {
     ...theme.typography.body1,
     marginBottom: theme.spacing(1),

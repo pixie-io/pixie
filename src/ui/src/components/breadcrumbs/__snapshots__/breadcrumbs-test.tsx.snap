@@ -12,10 +12,10 @@ exports[`<Breadcrumbs/> renders correctly 1`] = `
         class="Breadcrumbs-breadcrumb-2"
       >
         <div
-          class="Breadcrumbs-body-8"
+          class="Breadcrumbs-body-6"
         >
           <div
-            class="Breadcrumbs-content-9"
+            class="Breadcrumbs-content-7"
           >
             <span
               class="Breadcrumbs-title-3"
@@ -23,15 +23,15 @@ exports[`<Breadcrumbs/> renders correctly 1`] = `
               cluster: 
             </span>
             <span
-              class="Breadcrumbs-selectable-7"
+              class="Breadcrumbs-selectable-5"
             >
               <span
-                class="Breadcrumbs-value-6"
+                class="Breadcrumbs-value-4"
               >
                 gke-prod
               </span>
               <div
-                class="Breadcrumbs-dropdownArrow-10"
+                class="Breadcrumbs-dropdownArrow-8"
               >
                 <svg
                   aria-hidden="true"
@@ -53,10 +53,10 @@ exports[`<Breadcrumbs/> renders correctly 1`] = `
         class="Breadcrumbs-breadcrumb-2"
       >
         <div
-          class="Breadcrumbs-body-8"
+          class="Breadcrumbs-body-6"
         >
           <div
-            class="Breadcrumbs-content-9"
+            class="Breadcrumbs-content-7"
           >
             <span
               class="Breadcrumbs-title-3"
@@ -64,15 +64,15 @@ exports[`<Breadcrumbs/> renders correctly 1`] = `
               pod: 
             </span>
             <span
-              class="Breadcrumbs-selectable-7"
+              class="Breadcrumbs-selectable-5"
             >
               <span
-                class="Breadcrumbs-value-6"
+                class="Breadcrumbs-value-4"
               >
                 pod-123
               </span>
               <div
-                class="Breadcrumbs-dropdownArrow-10"
+                class="Breadcrumbs-dropdownArrow-8"
               >
                 <svg
                   aria-hidden="true"
@@ -94,10 +94,10 @@ exports[`<Breadcrumbs/> renders correctly 1`] = `
         class="Breadcrumbs-breadcrumb-2"
       >
         <div
-          class="Breadcrumbs-body-8"
+          class="Breadcrumbs-body-6"
         >
           <div
-            class="Breadcrumbs-content-9"
+            class="Breadcrumbs-content-7"
           >
             <span
               class="Breadcrumbs-title-3"
@@ -108,13 +108,13 @@ exports[`<Breadcrumbs/> renders correctly 1`] = `
               class=""
             >
               <span
-                class="Breadcrumbs-value-6"
+                class="Breadcrumbs-value-4"
               >
                 px/pod
               </span>
             </span>
             <div
-              class="Breadcrumbs-spacer-11"
+              class="Breadcrumbs-spacer-9"
             />
           </div>
         </div>

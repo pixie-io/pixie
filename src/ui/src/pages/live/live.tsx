@@ -112,31 +112,12 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   nestedRun: {
     display: 'flex',
   },
-  title: {
-    ...theme.typography.h3,
-    marginLeft: theme.spacing(3),
-    marginBottom: theme.spacing(0),
-    color: theme.palette.primary.main,
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-  },
   dataDrawer: {
     width: `calc(100% - ${theme.spacing(8)})`,
     position: 'absolute',
     pointerEvents: 'none',
     marginLeft: theme.spacing(8),
     height: '100%',
-  },
-  moveWidgetToggle: {
-    border: 'none',
-    borderRadius: '50%',
-    color: theme.palette.action.active,
-  },
-  editorPanel: {
-    display: 'flex',
-    flexDirection: 'row',
-    minHeight: 0,
   },
   centerContent: {
     width: '100%',
@@ -148,9 +129,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   canvas: {
     marginLeft: theme.spacing(0.5),
     height: '100%',
-  },
-  hidden: {
-    display: 'none',
   },
   iconActive: {
     width: theme.spacing(2),

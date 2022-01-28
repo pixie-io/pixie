@@ -18,10 +18,7 @@
 
 import * as React from 'react';
 
-import {
-  alpha,
-  Typography,
-} from '@mui/material';
+import { Typography } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
@@ -30,15 +27,6 @@ import { CodeRenderer } from 'app/components/code-renderer/code-renderer';
 import { PixienautBox, PixienautBoxProps } from './pixienaut-box';
 
 const useStyles = makeStyles(({ palette, spacing }: Theme) => createStyles({
-  root: {
-    backgroundColor: alpha(palette.foreground.grey3, 0.8),
-    paddingLeft: spacing(6),
-    paddingRight: spacing(6),
-    paddingTop: spacing(10),
-    paddingBottom: spacing(10),
-    boxShadow: `0px ${spacing(0.25)}px ${spacing(2)}px rgba(0, 0, 0, 0.6)`,
-    borderRadius: spacing(3),
-  },
   title: {
     color: palette.foreground.two,
   },

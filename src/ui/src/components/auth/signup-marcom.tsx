@@ -34,9 +34,6 @@ import { HeartIcon } from 'app/components/logos/heart';
 import { RustIcon } from 'app/components/logos/rust';
 
 const useStyles = makeStyles(({ palette, spacing }: Theme) => createStyles({
-  root: {
-    backgroundColor: palette.background.default,
-  },
   heading: {
     color: palette.foreground.white,
     textAlign: 'center',
@@ -68,45 +65,43 @@ const useStyles = makeStyles(({ palette, spacing }: Theme) => createStyles({
 export const SignupMarcom = React.memo(() => {
   const classes = useStyles();
   return (
-    <>
-      <Container maxWidth='sm' className={classes.root}>
-        <Grid
-          container
-          direction='column'
-          spacing={4}
-          justifyContent='flex-start'
-          alignItems='center'
-        >
-          <Grid item>
-            <Typography variant='h1' className={classes.heading}>
-              Instantly troubleshoot your applications on Kubernetes
-            </Typography>
-          </Grid>
-          <Grid item>
-            <Typography variant='subtitle1' className={classes.message}>
-              NO CODE CHANGES. NO MANUAL INTERFACES. ALL INSIDE K8S.
-            </Typography>
-          </Grid>
-          <Grid item>
-            <div className={classes.pixieLove}>
-              <PixieLogo fontSize='large' />
-              <div className={classes.pixieLoveItem}>
-                <HeartIcon />
-              </div>
-              <div className={classes.pixieLoveItem}>
-                <GolangIcon />
-              </div>
-              <div className={classes.pixieLoveItem}>
-                <CPPIcon />
-              </div>
-              <div className={classes.pixieLoveItem}>
-                <RustIcon />
-              </div>
-            </div>
-          </Grid>
+    <Container maxWidth='sm'>
+      <Grid
+        container
+        direction='column'
+        spacing={4}
+        justifyContent='flex-start'
+        alignItems='center'
+      >
+        <Grid item>
+          <Typography variant='h1' className={classes.heading}>
+            Instantly troubleshoot your applications on Kubernetes
+          </Typography>
         </Grid>
-      </Container>
-    </>
+        <Grid item>
+          <Typography variant='subtitle1' className={classes.message}>
+            NO CODE CHANGES. NO MANUAL INTERFACES. ALL INSIDE K8S.
+          </Typography>
+        </Grid>
+        <Grid item>
+          <div className={classes.pixieLove}>
+            <PixieLogo fontSize='large' />
+            <div className={classes.pixieLoveItem}>
+              <HeartIcon />
+            </div>
+            <div className={classes.pixieLoveItem}>
+              <GolangIcon />
+            </div>
+            <div className={classes.pixieLoveItem}>
+              <CPPIcon />
+            </div>
+            <div className={classes.pixieLoveItem}>
+              <RustIcon />
+            </div>
+          </div>
+        </Grid>
+      </Grid>
+    </Container>
   );
 });
 SignupMarcom.displayName = 'SignupMarcom';

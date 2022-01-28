@@ -22,7 +22,7 @@ import { Link } from 'react-router-dom';
 
 import pixieAnalytics from 'app/utils/analytics';
 
-export const ShareDialogContent = React.memo<{ classes: Record<string, string> }>(({ classes }) => {
+export const ShareDialogContent = React.memo<{ classes: Record<'body' | 'link', string> }>(({ classes }) => {
   const onInviteLinkClicked = React.useCallback(() => {
     pixieAnalytics.track('Live View Script Sharing', { action: 'goto-invitations' });
   }, []);

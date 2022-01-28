@@ -29,7 +29,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   errorRow: {
     ...theme.typography.body2,
     fontFamily: '"Roboto Mono", Monospace',
-    marginLeft: `-${theme.spacing(3.3)}px`,
     paddingBottom: theme.spacing(0.5),
   },
   link: {

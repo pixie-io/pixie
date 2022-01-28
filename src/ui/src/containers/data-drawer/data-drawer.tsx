@@ -37,10 +37,6 @@ import ExecutionStats from './execution-stats';
 export const STATS_TAB_NAME = 'stats';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
-  splits: {
-    '& .gutter': {
-    },
-  },
   drawerRoot: {
     position: 'relative',
     display: 'flex',
@@ -76,10 +72,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   emptyLabel: {
     display: 'none',
   },
-  label: {
-    paddingLeft: theme.spacing(2),
-    paddingRight: theme.spacing(2),
-  },
   selectedTabLabel: {
     color: `${theme.palette.primary.light} !important`,
   },
@@ -94,7 +86,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
       right: 0,
     },
     opacity: 1,
-    color: theme.palette.foreground.three,
     minWidth: 0,
     paddingLeft: `${theme.spacing(1.4)} !important`,
     paddingRight: `${theme.spacing(1.4)} !important`,
@@ -105,10 +96,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   statsTabLabel: {
     paddingRight: `${theme.spacing(2)} !important`,
-    color: theme.palette.foreground.three,
-    '&:focus': {
-      color: `${theme.palette.primary.light} !important`,
-    },
   },
   toggle: {
     display: 'flex',

@@ -37,12 +37,6 @@ import { MutationInfo, LifeCycleState } from 'app/types/generated/vizierapi_pb';
 import * as moonwalkerSVG from 'assets/images/moonwalker.svg';
 
 const useStyles = makeStyles(({ spacing, typography, palette }: Theme) => createStyles({
-  mutationDisplay: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    zIndex: 1,
-  },
   mutationCard: {
     width: '40%',
     display: 'flex',
@@ -74,13 +68,6 @@ const useStyles = makeStyles(({ spacing, typography, palette }: Theme) => create
     paddingTop: spacing(1),
     paddingBottom: spacing(1),
     paddingLeft: spacing(5),
-  },
-  spinner: {
-    width: spacing(5),
-    height: spacing(5),
-  },
-  states: {
-    paddingBottom: spacing(2),
   },
   leftStates: {
     '& > li': {

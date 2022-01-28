@@ -35,10 +35,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     color: theme.palette.text.primary,
     ...scrollbarStyles(theme),
   },
-  title: {
-    flexGrow: 1,
-    marginLeft: theme.spacing(2),
-  },
   row: {
     width: '100%',
     float: 'left',
@@ -62,14 +58,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     ...theme.typography.h6,
     color: theme.palette.foreground.grey5,
     fontWeight: theme.typography.fontWeightBold,
-  },
-  topbarTitle: {
-    ...theme.typography.h6,
-    color: theme.palette.foreground.grey5,
-    fontWeight: theme.typography.fontWeightBold,
-    display: 'flex',
-    alignItems: 'center',
-    height: '100%',
   },
   floatLeft: {
     float: 'left',
