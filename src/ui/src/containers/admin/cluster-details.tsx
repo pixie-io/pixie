@@ -97,7 +97,8 @@ const useBreadcrumbsStyles = makeStyles((theme: Theme) => createStyles({
     fontWeight: 1000,
     width: theme.spacing(1),
   },
-}));
+}), { name: 'ClusterDetailsBreadcrumbs' });
+
 const StyledBreadcrumbs: React.FC = React.memo(({ children }) => {
   const classes = useBreadcrumbsStyles();
   return (

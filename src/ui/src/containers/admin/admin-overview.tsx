@@ -64,7 +64,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   table: {
     paddingBottom: '1px', // Prevent an incorrect height calculation that shows a second scrollbar
   },
-}));
+}), { name: 'AdminOverview' });
 
 export const AdminOverview = React.memo(() => {
   const history = useHistory();

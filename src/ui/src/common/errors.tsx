@@ -35,7 +35,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   link: {
     cursor: 'pointer',
   },
-}));
+}), { name: 'VizierErrorDetails' });
 
 export const VizierErrorDetails = React.memo<{ error: Error }>(({ error }) => {
   const classes = useStyles();

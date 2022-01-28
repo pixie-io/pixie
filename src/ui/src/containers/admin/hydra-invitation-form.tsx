@@ -57,7 +57,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     padding: theme.spacing(2),
     marginTop: theme.spacing(4),
   },
-}));
+}), { name: 'HydraInvitationForm' });
 
 // eslint-disable-next-line react-memo/require-memo
 export const HydraInvitationForm: React.FC = () => {

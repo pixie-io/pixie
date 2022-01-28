@@ -82,7 +82,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
       textDecoration: 'underline',
     },
   },
-}));
+}), { name: 'OrgUsers' });
 
 const RemoveUserButton = React.memo<UserRowProps>(({ user, numUsers }) => {
   const classes = useStyles();

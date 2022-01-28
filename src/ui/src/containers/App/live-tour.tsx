@@ -181,7 +181,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     bottom: theme.spacing(0.5),
     transform: 'translate(-50%, 100%)',
   },
-}));
+}), { name: 'LiveTour' });
 
 interface LiveTourArrowProps {
   width: number;

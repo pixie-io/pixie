@@ -112,7 +112,7 @@ const useShortcutHelpStyles = makeStyles((theme: Theme) => createStyles({
   description: {
     flex: 3,
   },
-}));
+}), { name: 'LiveShortcutsHelp' });
 
 const LiveViewShortcutsHelp = React.memo<LiveViewShortcutsHelpProps>(({ open, onClose, keyMap }) => {
   const classes = useShortcutHelpStyles();

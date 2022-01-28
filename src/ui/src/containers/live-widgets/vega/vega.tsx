@@ -76,7 +76,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   noDataMessage: {
     ...theme.typography.body1,
   },
-}));
+}), { name: 'Vega' });
 
 interface VegaProps {
   data: Array<Record<string, unknown>>;

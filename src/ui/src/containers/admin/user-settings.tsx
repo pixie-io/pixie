@@ -42,7 +42,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   button: {
     width: theme.spacing(12),
   },
-}));
+}), { name: 'UserSettings' });
 
 export const UserSettings = React.memo(() => {
   const classes = useStyles();

@@ -130,7 +130,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     flexDirection: 'column',
     width: '100%',
   },
-}));
+}), { name: 'DataDrawer' });
 
 const TabSpacer = React.memo(() => <div className={useStyles().spacer} />);
 TabSpacer.displayName = 'TabSpacer';

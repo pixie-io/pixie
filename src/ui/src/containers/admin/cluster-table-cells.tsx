@@ -76,7 +76,7 @@ const useInstrumentationLevelStyles = makeStyles((theme: Theme) => createStyles(
   high: {
     color: theme.palette.success.main,
   },
-}));
+}), { name: 'InstrumentationLevel' });
 
 // eslint-disable-next-line react-memo/require-memo
 export const InstrumentationLevelCell: React.FC<{ cluster: InstrumentationClusterInfo }> = ({ cluster }) => {
@@ -96,7 +96,7 @@ const useClusterStatusCellStyle = makeStyles((theme: Theme) => createStyles({
     paddingLeft: theme.spacing(1),
     display: 'inline-block',
   },
-}));
+}), { name: 'ClusterStatusCell' });
 
 // eslint-disable-next-line react-memo/require-memo
 export const ClusterStatusCell: React.FC<{ status: GQLClusterStatus, message?: string }> = ({ status, message }) => {
@@ -126,7 +126,7 @@ const useMonoCells = makeStyles(() => createStyles({
   mono: {
     fontFamily: '"Roboto Mono", Monospace',
   },
-}));
+}), { name: 'MonoSpaceCell' });
 
 // MonoSpaceCell renders the in monospace.
 // eslint-disable-next-line react-memo/require-memo

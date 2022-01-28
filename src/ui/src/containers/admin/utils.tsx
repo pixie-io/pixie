@@ -36,7 +36,7 @@ const tooltipStyles = makeStyles(() => createStyles({
   tooltip: {
     margin: 0,
   },
-}));
+}), { name: 'Tooltip' });
 
 const SEC_MS = 1000;
 const MIN_MS = 60 * SEC_MS;

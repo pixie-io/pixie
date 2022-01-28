@@ -52,7 +52,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   value: {
     ...theme.typography.h2,
   },
-}));
+}), { name: 'ExecutionStats' });
 
 interface ExecutionMetricProps {
   metricName: string;

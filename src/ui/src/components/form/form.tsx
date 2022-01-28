@@ -49,7 +49,7 @@ const useStyles = makeStyles(({ spacing, typography }: Theme) => createStyles({
     whiteSpace: 'pre',
     marginBottom: spacing(4),
   },
-}));
+}), { name: 'Form' });
 
 /**
  * Represents a message that should be shown above a field.

@@ -56,7 +56,7 @@ const useDefaultStyles = makeStyles(({ spacing, breakpoints, palette }: Theme) =
     textDecoration: 'none',
     fontSize: '0.875rem', // 14px
   },
-}));
+}), { name: 'Footer' });
 
 export interface FooterProps {
   copyright: React.ComponentType<Record<string, never>>,

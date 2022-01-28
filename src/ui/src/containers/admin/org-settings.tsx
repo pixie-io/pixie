@@ -44,7 +44,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   button: {
     width: theme.spacing(12),
   },
-}));
+}), { name: 'OrgSettings' });
 
 export const OrgSettings = React.memo(() => {
   const classes = useStyles();

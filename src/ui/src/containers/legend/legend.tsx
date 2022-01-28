@@ -118,7 +118,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     justifyContent: 'center',
     flex: '1',
   },
-}));
+}), { name: 'Legend' });
 
 const toRowMajorOrder = (entries: LegendEntry[], numCols: number, numRows: number): LegendEntry[] => {
   const newEntries: LegendEntry[] = [];
