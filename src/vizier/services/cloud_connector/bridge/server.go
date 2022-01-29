@@ -625,6 +625,8 @@ func (s *Bridge) doRegistrationHandshake(stream vzconnpb.VZConnService_NATSBridg
 
 	for {
 		select {
+		case <-stream.Context().Done():
+			return errors.New("registration unsuccessful: stream closed before complete")
 		case <-time.After(registrationTimeout):
 			log.Info("Timeout with registration terminating stream")
 			return ErrRegistrationTimeout
