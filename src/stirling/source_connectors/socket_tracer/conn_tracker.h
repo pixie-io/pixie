@@ -264,11 +264,30 @@ class ConnTracker : NotCopyMoveable {
         protocols::StitchFrames<TRecordType, TFrameType, TStateType>(&req_frames, &resp_frames,
                                                                      state_ptr);
 
-    CONN_TRACE(1) << absl::Substitute("records=$0", result.records.size());
+    CONN_TRACE(1) << absl::Substitute("Processed records, count=$0", result.records.size());
 
     UpdateResultStats(result);
 
-    return result.records;
+    return std::move(result.records);
+  }
+
+  // Explicit template specialization must be declared in namespace scope.
+  // See https://en.cppreference.com/w/cpp/language/member_template
+  template <>
+  std::vector<protocols::http2::Record> ProcessToRecords<protocols::http2::ProtocolTraits>() {
+    protocols::RecordsWithErrorCount<protocols::http2::Record> result;
+
+    CONN_TRACE(1) << absl::Substitute("HTTP2 client_streams=$0 server_streams=$1",
+                                      http2_client_streams_size(), http2_server_streams_size());
+
+    protocols::http2::ProcessHTTP2Streams(&http2_client_streams_, IsZombie(), &result);
+    protocols::http2::ProcessHTTP2Streams(&http2_server_streams_, IsZombie(), &result);
+
+    CONN_TRACE(1) << absl::Substitute("Processed records, count=$0", result.records.size());
+
+    UpdateResultStats(result);
+
+    return std::move(result.records);
   }
 
   /**
@@ -703,12 +722,6 @@ class ConnTracker : NotCopyMoveable {
   // A subclass expose private member as public.
   friend class ConnTrackerTestDouble;
 };
-
-// Explicit template specialization must be declared in namespace scope.
-// See https://en.cppreference.com/w/cpp/language/member_template
-template <>
-std::vector<protocols::http2::Record>
-ConnTracker::ProcessToRecords<protocols::http2::ProtocolTraits>();
 
 template <typename TProtocolTraits>
 std::string DebugString(const ConnTracker& c, std::string_view prefix) {
