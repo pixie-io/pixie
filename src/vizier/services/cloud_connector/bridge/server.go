@@ -663,8 +663,6 @@ func (s *Bridge) StartStream() error {
 		cancel()
 		return err
 	}
-	errCh := make(chan error)
-	defer close(errCh)
 	// Wait for  all goroutines to terminate.
 	defer func() {
 		s.wg.Wait()
@@ -679,9 +677,9 @@ func (s *Bridge) StartStream() error {
 	}()
 
 	s.wg.Add(1)
-	go s.startStreamGRPCReader(stream, done, errCh)
+	go s.startStreamGRPCReader(stream, done)
 	s.wg.Add(1)
-	go s.startStreamGRPCWriter(stream, done, errCh)
+	go s.startStreamGRPCWriter(stream, done)
 
 	if !s.registered {
 		// Need to do registration handshake before we allow any cvmsgs.
@@ -702,11 +700,11 @@ func (s *Bridge) StartStream() error {
 	}
 
 	s.wg.Add(1)
-	err = s.HandleNATSBridging(stream, done, errCh)
+	err = s.HandleNATSBridging(stream, done)
 	return err
 }
 
-func (s *Bridge) startStreamGRPCReader(stream vzconnpb.VZConnService_NATSBridgeClient, done chan bool, errCh chan<- error) {
+func (s *Bridge) startStreamGRPCReader(stream vzconnpb.VZConnService_NATSBridgeClient, done chan bool) {
 	defer s.wg.Done()
 	log.Trace("Starting GRPC reader stream")
 	defer log.Trace("Closing GRPC read stream")
@@ -740,7 +738,7 @@ func (s *Bridge) startStreamGRPCReader(stream vzconnpb.VZConnService_NATSBridgeC
 	}
 }
 
-func (s *Bridge) startStreamGRPCWriter(stream vzconnpb.VZConnService_NATSBridgeClient, done chan bool, errCh chan<- error) {
+func (s *Bridge) startStreamGRPCWriter(stream vzconnpb.VZConnService_NATSBridgeClient, done chan bool) {
 	defer s.wg.Done()
 	log.Trace("Starting GRPC writer stream")
 	defer log.Trace("Closing GRPC writer stream")
@@ -750,14 +748,7 @@ func (s *Bridge) startStreamGRPCWriter(stream vzconnpb.VZConnService_NATSBridgeC
 		if s.pendingGRPCOutMsg != nil {
 			err := stream.Send(s.pendingGRPCOutMsg)
 			if err != nil {
-				// Error sending message. The stream might terminate in the middle so the select
-				// guards against exited goroutines to prevent a hang.
-				select {
-				case errCh <- err:
-				case <-done:
-				case <-s.quitCh:
-				}
-
+				log.WithError(err).Error("Error sending GRPC message")
 				return
 			}
 			s.pendingGRPCOutMsg = nil
@@ -768,6 +759,7 @@ func (s *Bridge) startStreamGRPCWriter(stream vzconnpb.VZConnService_NATSBridgeC
 			err := stream.Send(m)
 			if err != nil {
 				// Need to resend this message.
+				log.WithError(err).Error("Error sending GRPC message")
 				s.pendingGRPCOutMsg = m
 				return
 			}
@@ -835,7 +827,7 @@ func (s *Bridge) parseV2CNatsMsg(data *nats.Msg) (*cvmsgspb.V2CMessage, string, 
 }
 
 // HandleNATSBridging routes message to and from cloud NATS.
-func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClient, done chan bool, errCh chan error) error {
+func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClient, done chan bool) error {
 	defer s.wg.Done()
 	defer log.Info("Closing NATS Bridge. This is expected behavior which happens periodically")
 	// Vizier -> Cloud side:
@@ -857,9 +849,6 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 			return nil
 		case <-done:
 			return nil
-		case e := <-errCh:
-			log.WithError(e).Error("GRPC error, terminating stream")
-			return e
 		case data := <-s.natsCh:
 			v2cPrefix := messagebus.V2CTopic("")
 			if !strings.HasPrefix(data.Subject, v2cPrefix) {
