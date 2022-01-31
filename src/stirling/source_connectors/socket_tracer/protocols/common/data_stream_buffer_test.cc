@@ -25,7 +25,7 @@ namespace stirling {
 namespace protocols {
 
 TEST(DataStreamTest, AddAndGet) {
-  DataStreamBuffer stream_buffer(15);
+  DataStreamBuffer stream_buffer(15, 15, 15);
 
   // Initially everything should be empty.
   EXPECT_EQ(stream_buffer.Get(0), "");
@@ -122,7 +122,7 @@ TEST(DataStreamTest, AddAndGet) {
 }
 
 TEST(DataStreamTest, RemovePrefixAndTrim) {
-  DataStreamBuffer stream_buffer(15);
+  DataStreamBuffer stream_buffer(15, 15, 15);
 
   // Add some events with a gap.
   stream_buffer.Add(0, "0123", 0);
@@ -176,7 +176,7 @@ TEST(DataStreamTest, RemovePrefixAndTrim) {
 }
 
 TEST(DataStreamTest, Timestamp) {
-  DataStreamBuffer stream_buffer(15);
+  DataStreamBuffer stream_buffer(15, 15, 15);
 
   EXPECT_NOT_OK(stream_buffer.GetTimestamp(0));
   EXPECT_NOT_OK(stream_buffer.GetTimestamp(20));
@@ -194,7 +194,7 @@ TEST(DataStreamTest, Timestamp) {
 }
 
 TEST(DataStreamTest, TimestampWithGap) {
-  DataStreamBuffer stream_buffer(15);
+  DataStreamBuffer stream_buffer(15, 15, 15);
 
   stream_buffer.Add(0, "0123", 0);
   stream_buffer.Add(10, "abcd", 10);
@@ -226,7 +226,7 @@ TEST(DataStreamTest, TimestampWithGap) {
 }
 
 TEST(DataStreamTest, SizeAndGetPos) {
-  DataStreamBuffer stream_buffer(15);
+  DataStreamBuffer stream_buffer(15, 15, 15);
 
   // Start off empty.
   EXPECT_EQ(stream_buffer.position(), 0);
@@ -289,6 +289,40 @@ TEST(DataStreamTest, SizeAndGetPos) {
   stream_buffer.Add(105, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", 105);
   EXPECT_EQ(stream_buffer.size(), 15);
   EXPECT_FALSE(stream_buffer.empty());
+}
+
+TEST(DataStreamTest, LargeGap) {
+  const size_t kMaxGapSize = 32;
+  const size_t kAllowBeforeGapSize = 8;
+  DataStreamBuffer stream_buffer(128, kMaxGapSize, kAllowBeforeGapSize);
+
+  // Add basic event.
+  stream_buffer.Add(0, "0123", 0);
+  EXPECT_EQ(stream_buffer.position(), 0);
+  EXPECT_EQ(stream_buffer.size(), 4);
+  EXPECT_FALSE(stream_buffer.empty());
+
+  // Add event with gap less than max_gap_size.
+  stream_buffer.Add(32, "4567", 10);
+  EXPECT_EQ(stream_buffer.Get(0), "0123");
+  EXPECT_EQ(stream_buffer.Get(32), "4567");
+
+  // Add event with gap larger than max_gap_size.
+  stream_buffer.Add(100, "abcd", 20);
+  // We should only have 4 bytes of data left in the buffer, plus size for the allow_before_gap_size
+  // amount.
+  EXPECT_EQ(stream_buffer.size(), 4 + kAllowBeforeGapSize);
+  EXPECT_EQ(stream_buffer.Get(100), "abcd");
+
+  // Add event more than allow_before_gap_size before the last event. This event should not be added
+  // to the buffer.
+  stream_buffer.Add(100 - kMaxGapSize, "test", 18);
+  EXPECT_EQ(stream_buffer.Get(100 - kMaxGapSize), "");
+
+  // Add event before the gap event but not more than allow_before_gap_size before. This event
+  // should be added to the buffer.
+  stream_buffer.Add(100 - kAllowBeforeGapSize, "allow", 19);
+  EXPECT_EQ(stream_buffer.Get(100 - kAllowBeforeGapSize), "allow");
 }
 
 }  // namespace protocols

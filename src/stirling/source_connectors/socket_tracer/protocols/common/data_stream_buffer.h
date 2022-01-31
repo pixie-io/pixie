@@ -45,7 +45,10 @@ namespace protocols {
  */
 class DataStreamBuffer {
  public:
-  explicit DataStreamBuffer(size_t max_capacity) : capacity_(max_capacity) {}
+  DataStreamBuffer(size_t max_capacity, size_t max_gap_size, size_t allow_before_gap_size)
+      : capacity_(max_capacity),
+        max_gap_size_(max_gap_size),
+        allow_before_gap_size_(allow_before_gap_size) {}
 
   /**
    * Adds data to the buffer at the specified logical position.
@@ -133,7 +136,12 @@ class DataStreamBuffer {
   // Umbrella that calls CleanupTimestamps and CleanupChunks.
   void CleanupMetadata();
 
+  // Get the end of valid data in the buffer.
+  size_t EndPosition();
+
   const size_t capacity_;
+  const size_t max_gap_size_;
+  const size_t allow_before_gap_size_;
 
   // Logical position of data stream buffer.
   // In other words, the position of buffer_[0].

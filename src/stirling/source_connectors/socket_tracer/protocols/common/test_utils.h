@@ -32,8 +32,10 @@ namespace protocols {
 class DataStreamBufferTestWrapper {
  protected:
   static constexpr size_t kDataBufferSize = 128 * 1024;
+  static constexpr size_t kMaxGapSize = 128 * 1024;
+  static constexpr size_t kAllowBeforeGapSize = 128 * 1024;
 
-  DataStreamBufferTestWrapper() : data_buffer_(kDataBufferSize) {}
+  DataStreamBufferTestWrapper() : data_buffer_(kDataBufferSize, kMaxGapSize, kAllowBeforeGapSize) {}
 
   void AddEvent(const SocketDataEvent& event) {
     data_buffer_.Add(event.attr.pos, event.msg, event.attr.timestamp_ns);

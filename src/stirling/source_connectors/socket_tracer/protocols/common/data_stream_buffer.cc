@@ -141,6 +141,18 @@ void DataStreamBuffer::Add(size_t pos, std::string_view data, uint64_t timestamp
   } else if (ppos_back > static_cast<ssize_t>(buffer_.size())) {
     // Case 3: Data being added extends the buffer. Resize the buffer.
 
+    // Subcase: If the data is more than max_gap_size_ ahead of the last chunk in the buffer (or
+    // more than max_gap_size_ ahead of position_ if there aren't any chunks) than we give up on the
+    // data currently in the buffer, and stick the new data `allow_before_gap_size_` bytes from the
+    // front of the buffer. This allows `allow_before_gap_size_` bytes of new data to come in out of
+    // order after this event that caused the gap.
+    if (pos > EndPosition() + max_gap_size_) {
+      position_ = pos - allow_before_gap_size_;
+      ppos_front = allow_before_gap_size_;
+      ppos_back = allow_before_gap_size_ + data.size();
+      CleanupMetadata();
+    }
+
     if (pos > position_ + capacity_) {
       // This has been observed to happen a lot on initial deployment,
       // where a large batch of events, with cumulative size greater than the buffer size
@@ -168,11 +180,12 @@ void DataStreamBuffer::Add(size_t pos, std::string_view data, uint64_t timestamp
     DCHECK_GE(ppos_back, 0);
     DCHECK_LE(ppos_back, capacity_);
 
-    ssize_t extension = ppos_back - buffer_.size();
-    DCHECK_GE(extension, 0);
-    DCHECK_LE(extension, capacity_);
+    ssize_t new_size = ppos_back;
+    DCHECK_LE(new_size, capacity_);
+    DCHECK_GE(new_size, 0);
 
-    buffer_.resize(buffer_.size() + extension);
+    buffer_.resize(new_size);
+
     DCHECK_GE(buffer_.size(), 0);
     DCHECK_LE(buffer_.size(), capacity_);
   } else {
@@ -324,6 +337,15 @@ void DataStreamBuffer::Trim() {
 
   buffer_.erase(0, trim_size);
   position_ += trim_size;
+}
+
+size_t DataStreamBuffer::EndPosition() {
+  size_t end_position = position_;
+  if (!chunks_.empty()) {
+    auto last_chunk = std::prev(chunks_.end());
+    end_position = last_chunk->first + last_chunk->second;
+  }
+  return end_position;
 }
 
 std::string DataStreamBuffer::DebugInfo() const {

@@ -30,6 +30,8 @@
 
 DECLARE_uint32(datastream_buffer_retention_size);
 DECLARE_uint32(datastream_buffer_spike_size);
+DECLARE_uint32(datastream_buffer_max_gap_size);
+DECLARE_uint32(datastream_buffer_allow_before_gap_size);
 
 namespace px {
 namespace stirling {
@@ -47,8 +49,11 @@ class DataStream : NotCopyMoveable {
  public:
   // Make the underlying raw buffer size limit the same as the parsed frames byte limit.
   DataStream(uint32_t spike_capacity = FLAGS_datastream_buffer_spike_size,
-             uint32_t retention_capacity = FLAGS_datastream_buffer_retention_size)
-      : data_buffer_(spike_capacity), retention_capacity_(retention_capacity) {}
+             uint32_t retention_capacity = FLAGS_datastream_buffer_retention_size,
+             uint32_t max_gap_size = FLAGS_datastream_buffer_max_gap_size,
+             uint32_t allow_before_gap_size = FLAGS_datastream_buffer_allow_before_gap_size)
+      : data_buffer_(spike_capacity, max_gap_size, allow_before_gap_size),
+        retention_capacity_(retention_capacity) {}
 
   /**
    * Adds a raw (unparsed) chunk of data into the stream.

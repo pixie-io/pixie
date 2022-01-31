@@ -16,10 +16,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/stirling/source_connectors/socket_tracer/data_stream.h"
-
+#include <gflags/gflags.h>
 #include <utility>
 
+#include "src/stirling/source_connectors/socket_tracer/data_stream.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/types.h"
 
 DEFINE_uint32(datastream_buffer_retention_size,
@@ -28,6 +28,14 @@ DEFINE_uint32(datastream_buffer_retention_size,
 DEFINE_uint32(datastream_buffer_spike_size,
               gflags::Uint32FromEnv("PL_DATASTREAM_BUFFER_SPIKE_SIZE", 500 * 1024 * 1024),
               "The maximum temporary size of a data stream buffer before processing.");
+DEFINE_uint32(
+    datastream_buffer_max_gap_size,
+    gflags::Uint32FromEnv("PL_DATASTREAM_BUFFER_MAX_GAP_SIZE", 100 * 1024 * 1024),
+    "The maximum gap in data to allow before giving up on previous events in the buffer.");
+DEFINE_uint32(datastream_buffer_allow_before_gap_size,
+              gflags::Uint32FromEnv("PL_DATASTREAM_BUFFER_ALLOW_BEFORE_GAP_SIZE", 1 * 1024 * 1024),
+              "After a PL_DATASTREAM_BUFFER_MAX_GAP_SIZE gap occurs, we allow for this amount of "
+              "data to come in before (byte position wise) the event that caused the large gap.");
 
 namespace px {
 namespace stirling {
