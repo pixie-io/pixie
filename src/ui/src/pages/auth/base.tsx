@@ -34,7 +34,7 @@ const useStyles = makeStyles(({ spacing, breakpoints }: Theme) => createStyles({
   root: {
     minHeight: breakpoints.values.xs,
     height: '100vh',
-    minWidth: '400px',
+    minWidth: spacing(50), // 400px
     width: '100vw',
     overflow: 'auto',
     backgroundImage: `url(${StarsPNG})`,

@@ -57,7 +57,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     textAlign: 'right',
     opacity: 0.75,
     fontStyle: 'italic',
-    padding: '0.5em',
+    padding: theme.spacing(0.75),
   },
 }), { name: 'AutoComplete' });
 

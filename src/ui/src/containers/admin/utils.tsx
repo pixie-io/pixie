@@ -150,14 +150,14 @@ export const StyledTab = styled(Tab)(({ theme }) => ({
 // eslint-disable-next-line react-memo/require-memo
 export const StyledTableHeaderCell = styled(TableCell, { name: 'TableHeaderCell' })(({ theme }) => ({
   fontWeight: theme.typography.fontWeightLight,
-  fontSize: '14px',
+  fontSize: theme.typography.body2.fontSize,
   borderBottom: 'none',
 }));
 
 // eslint-disable-next-line react-memo/require-memo
 export const StyledTableCell = styled(TableCell)(({ theme }) => ({
   fontWeight: theme.typography.fontWeightLight,
-  fontSize: '14px',
+  fontSize: theme.typography.body2.fontSize,
   color: theme.palette.foreground.one,
   borderWidth: theme.spacing(1),
   borderColor: theme.palette.background.default,

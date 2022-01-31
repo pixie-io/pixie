@@ -43,7 +43,7 @@ import { GQLAPIKeyMetadata, GQLDeploymentKeyMetadata } from 'app/types/schema';
 const useStyles = makeStyles((theme: Theme) => createStyles({
   createButton: {
     margin: `${theme.spacing(0.75)} ${theme.spacing(3)}`,
-    padding: '3px 15px',
+    padding: `${theme.spacing(0.375)} ${theme.spacing(1.875)}`, // 3px 15px
   },
   tabRoot: {
     height: '100%',

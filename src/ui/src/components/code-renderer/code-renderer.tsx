@@ -29,11 +29,12 @@ import { CopyIcon } from 'app/components/icons/copy';
 const useStyles = makeStyles((theme: Theme) => createStyles({
   code: {
     backgroundColor: theme.palette.foreground.grey3,
-    borderRadius: '5px',
+    borderRadius: theme.shape.borderRadius,
     boxShadow: '0px 6px 18px rgba(0, 0, 0, 0.0864292)',
-    marginTop: '24px',
+    marginTop: theme.spacing(3),
     position: 'relative',
-    padding: '8px 55px 8px 8px',
+    padding: theme.spacing(1),
+    paddingRight: theme.spacing(6.875), // 55px
     ...scrollbarStyles(theme),
   },
   codeHighlight: {

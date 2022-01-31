@@ -144,7 +144,7 @@ const StyledTab = styled(Tab)(({ theme }) => ({
     color: `${theme.palette.primary.dark}80`, // Make text darker by lowering opacity to 50%.
     ...theme.typography.subtitle1,
     fontWeight: 400,
-    maxWidth: 300,
+    maxWidth: theme.spacing(37.5), // 300px
   },
   wrapper: {
     alignItems: 'flex-start',

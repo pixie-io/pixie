@@ -124,14 +124,13 @@ const themeCompactor = (theme: Theme) => ({
 
 const useDialogStyles = makeStyles((theme: Theme) => createStyles({
   card: {
-    width: '608px',
+    width: theme.spacing(76), // 608px
   },
   autocomplete: {
     maxHeight: '60vh',
   },
   completionsContainer: {
-    // 608px is 80% as wide as the Command Input; fontSize and spacing are reduced similarly.
-    maxWidth: 'min(95vw, min(auto, 608px))',
+    maxWidth: `min(95vw, min(auto, ${theme.spacing(76)}px))`,
     maxHeight: '60vh',
   },
   explanationContainer: {

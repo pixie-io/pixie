@@ -34,7 +34,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     overflowX: 'hidden',
     textAlign: 'left',
     position: 'relative',
-    height: '0.875rem', // 14px
+    height: theme.spacing(1.75), // 14px
     cursor: 'default',
 
     '& > *': {
@@ -51,7 +51,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   pBar: {
     height: '100%',
-    width: '8px',
+    width: theme.spacing(1),
     transform: 'translateX(-4px)',
     cursor: 'pointer',
     opacity: 0.9,
@@ -65,9 +65,9 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
       display: 'block',
       position: 'relative',
       top: 0,
-      left: '3px',
+      left: theme.spacing(0.375),
       content: '""',
-      width: '2px',
+      width: theme.spacing(0.25),
       backgroundColor: 'var(--fill)',
       height: '100%',
     },
@@ -87,7 +87,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   label: {
     textAlign: 'right',
     justifyContent: 'flex-end',
-    width: '4rem',
+    width: theme.spacing(8), // 64px
     flex: '0 0 auto',
     marginLeft: 5,
     marginRight: 10,

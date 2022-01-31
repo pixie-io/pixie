@@ -33,7 +33,7 @@ const useStyles = makeStyles(({ spacing, breakpoints }: Theme) => createStyles({
     paddingTop: spacing(0),
     paddingBottom: spacing(1),
     borderRadius: spacing(3),
-    minWidth: '370px',
+    minWidth: spacing(46.25), // 370px
     // Cap at 960px or the width of the screen minus some padding, whichever is lesser.
     maxWidth: `calc(min(${breakpoints.values.md}px, 100vw - ${spacing(4)}))`,
     // Same, but 600px here.
@@ -45,7 +45,7 @@ const useStyles = makeStyles(({ spacing, breakpoints }: Theme) => createStyles({
     alignItems: 'flex-start',
     padding: spacing(3),
     margin: '0 auto',
-    width: '290px',
+    width: spacing(36.25), // 290px
   },
   pixienautBalloonContainer: {
     // The Pixienaut is still kinda close to Earth (this component's content)

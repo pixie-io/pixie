@@ -22,7 +22,7 @@ import { Typography } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
-const useDefaultStyles = makeStyles(({ spacing, breakpoints, palette }: Theme) => createStyles({
+const useDefaultStyles = makeStyles(({ spacing, typography, breakpoints, palette }: Theme) => createStyles({
   root: {
     display: 'flex',
     flexFlow: 'row wrap',
@@ -54,7 +54,7 @@ const useDefaultStyles = makeStyles(({ spacing, breakpoints, palette }: Theme) =
     padding: `0 ${spacing(3)}`,
     color: palette.foreground.three,
     textDecoration: 'none',
-    fontSize: '0.875rem', // 14px
+    fontSize: typography.body2.fontSize,
   },
 }), { name: 'Footer' });
 

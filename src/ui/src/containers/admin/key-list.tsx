@@ -30,16 +30,16 @@ export const useKeyListStyles = makeStyles((theme: Theme) => createStyles({
   keyValue: {
     padding: 0,
     fontWeight: theme.typography.fontWeightLight,
-    fontSize: '14px',
+    fontSize: theme.typography.body2.fontSize,
     color: theme.palette.foreground.one,
-    borderWidth: 8,
+    borderWidth: theme.spacing(1),
     borderColor: theme.palette.background.default,
   },
   actionsButton: {
-    padding: 6,
+    padding: theme.spacing(0.75),
   },
   copyBtn: {
-    minWidth: '30px',
+    minWidth: theme.spacing(3.75),
   },
   error: {
     padding: theme.spacing(1),

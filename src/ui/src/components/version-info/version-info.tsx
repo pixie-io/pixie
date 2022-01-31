@@ -27,7 +27,7 @@ const useStyles = makeStyles(({ palette }: Theme) => createStyles({
     top: 0,
     right: 0,
     color: palette.grey['800'],
-    fontSize: '12px',
+    fontSize: '0.75rem',
   },
 }), { name: 'VersionInfo' });
 

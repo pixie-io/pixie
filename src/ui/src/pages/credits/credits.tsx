@@ -66,7 +66,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     textAlign: 'center',
   },
   container: {
-    maxWidth: '1290px',
+    maxWidth: theme.breakpoints.values.lg,
     marginLeft: 'auto',
     marginRight: 'auto',
     width: '80%',

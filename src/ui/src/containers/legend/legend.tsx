@@ -81,7 +81,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     justifyContent: 'flex-start',
     overflow: 'hidden',
     alignItems: 'center',
-    paddingTop: '5px',
+    paddingTop: theme.spacing(0.675), // 5px
   },
   rowContainer: {
     display: 'contents',

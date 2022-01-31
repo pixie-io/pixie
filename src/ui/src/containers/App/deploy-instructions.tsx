@@ -28,7 +28,7 @@ import * as logoImage from 'assets/images/pixie-logo.svg';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   dialog: {
-    width: '700px',
+    width: theme.spacing(87.5), // '700px'
   },
   content: {
     padding: theme.spacing(6),
@@ -98,6 +98,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     float: 'right',
     marginRight: theme.spacing(2),
     marginBottom: theme.spacing(2),
+    width: theme.spacing(6.875), // 55px
   },
   centered: {
     display: 'flex',
@@ -172,7 +173,7 @@ export const DeployInstructions = React.memo(() => {
               </Button>
             </div>
           </div>
-          <img alt='logo' className={classes.logo} src={logoImage} style={{ width: '55px' }} />
+          <img alt='logo' className={classes.logo} src={logoImage} />
         </Paper>
       </div>
     </div>
@@ -196,7 +197,7 @@ export const ClusterInstructions = React.memo<ClusterInstructionsProps>(({ messa
             <Spinner />
           </div>
         </div>
-        <img alt='logo' className={classes.logo} src={logoImage} style={{ width: '55px' }} />
+        <img alt='logo' className={classes.logo} src={logoImage} />
       </Paper>
     </div>
   );

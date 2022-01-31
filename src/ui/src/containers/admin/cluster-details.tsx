@@ -382,7 +382,7 @@ const useClusterDetailStyles = makeStyles((theme: Theme) => createStyles({
     margin: theme.spacing(1),
   },
   tableContainer: {
-    maxHeight: 800,
+    maxHeight: theme.spacing(100),
   },
   podTypeHeader: {
     ...theme.typography.h6,

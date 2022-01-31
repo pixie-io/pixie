@@ -72,7 +72,7 @@ interface LiveViewShortcutsHelpProps {
 
 const useShortcutHelpStyles = makeStyles((theme: Theme) => createStyles({
   root: {
-    width: '500px',
+    width: theme.spacing(62.5), // 500px
     position: 'absolute',
     top: '50%',
     left: '50%',
@@ -93,7 +93,7 @@ const useShortcutHelpStyles = makeStyles((theme: Theme) => createStyles({
     paddingRight: theme.spacing(1),
     textAlign: 'center',
     ...theme.typography.caption,
-    lineHeight: '30px',
+    lineHeight: theme.spacing(3.75), // 30px; caption.fontSize is 14px
   },
   row: {
     display: 'flex',

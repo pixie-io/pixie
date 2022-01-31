@@ -168,6 +168,7 @@ export const EDITOR_THEME_MAP: Record<PaletteMode, string> = {
 // will still recognize if the merged object is missing anything.
 export const COMMON_THEME = {
   shape: {
+    borderRadius: '5px',
     leftRoundedBorderRadius: {
       large: '10px 0px 0px 10px',
       small: '5px 0px 0px 5px',
