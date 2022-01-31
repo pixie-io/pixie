@@ -122,9 +122,9 @@ export const VizierVersionCell: React.FC<{ version: string }> = ({ version }) =>
 );
 VizierVersionCell.displayName = 'VizierVersionCell';
 
-const useMonoCells = makeStyles(() => createStyles({
+const useMonoCells = makeStyles(({ typography }: Theme) => createStyles({
   mono: {
-    fontFamily: '"Roboto Mono", Monospace',
+    fontFamily: typography.monospace.fontFamily,
   },
 }), { name: 'MonoSpaceCell' });
 

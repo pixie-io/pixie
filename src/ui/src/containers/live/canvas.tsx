@@ -145,7 +145,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   errorTitle: {
     ...theme.typography.body2,
-    fontFamily: '"Roboto Mono", Monospace',
+    fontFamily: theme.typography.monospace.fontFamily,
     color: theme.palette.error.dark,
     paddingBottom: theme.spacing(3),
   },

@@ -78,10 +78,10 @@ export const CPUData: React.FC<{ data: any }> = React.memo(
 );
 CPUData.displayName = 'CPUData';
 
-const usePortRendererStyles = makeStyles(() => createStyles({
+const usePortRendererStyles = makeStyles(({ typography }: Theme) => createStyles({
   value: {
-    fontFamily: '"Roboto Mono", serif',
-    fontSize: '14px',
+    fontFamily: typography.monospace.fontFamily,
+    fontSize: typography.body2.fontSize,
   },
 }), { name: 'PortRenderer' });
 
@@ -137,15 +137,15 @@ export const formatThroughputBytes = (data: number): DataWithUnits => (
     1)
 );
 
-const useRenderValueWithUnitsStyles = makeStyles(() => createStyles({
+const useRenderValueWithUnitsStyles = makeStyles(({ typography }: Theme) => createStyles({
   units: {
     opacity: 0.5,
-    fontFamily: '"Roboto Mono", serif',
-    fontSize: '14px',
+    fontFamily: typography.monospace.fontFamily,
+    fontSize: typography.body2.fontSize,
   },
   value: {
-    fontFamily: '"Roboto Mono", serif',
-    fontSize: '14px',
+    fontFamily: typography.monospace.fontFamily,
+    fontSize: typography.body2.fontSize,
   },
 }), { name: 'RenderValueWithUnits' });
 

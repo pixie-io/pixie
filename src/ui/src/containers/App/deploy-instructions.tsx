@@ -54,7 +54,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   instructions: {
     marginTop: theme.spacing(3),
     ...theme.typography.body1,
-    fontFamily: 'monospace',
+    fontFamily: theme.typography.monospace.fontFamily,
   },
   linksHeader: {
     ...theme.typography.body1,
@@ -71,12 +71,12 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   linkItem: {
     ...theme.typography.subtitle1,
-    fontFamily: 'monospace',
+    fontFamily: theme.typography.monospace.fontFamily,
     color: theme.palette.foreground.one,
     textDecoration: 'underline',
   },
   instructionLink: {
-    fontFamily: 'monospace',
+    fontFamily: theme.typography.monospace.fontFamily,
     color: theme.palette.foreground.one,
     textDecoration: 'underline',
   },

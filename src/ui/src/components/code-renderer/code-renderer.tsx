@@ -40,7 +40,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     display: 'block',
     width: '100%',
     overflowX: 'auto',
-    fontFamily: '"Roboto Mono", Monospace',
+    fontFamily: theme.typography.monospace.fontFamily,
     marginLeft: '1rem',
   },
   copyBtn: {

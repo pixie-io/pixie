@@ -43,6 +43,7 @@ import {
 import { vegaLite, VisualizationSpec } from 'vega-embed';
 import { TopLevelSpec as VlSpec } from 'vega-lite';
 
+import { COMMON_THEME } from 'app/components';
 import { getFormatFnMetadata, DataWithUnits, FormatFnMetadata } from 'app/containers/format-data/format-data';
 import { addPxTimeFormatExpression } from 'app/containers/live-widgets/vega/timeseries-axis';
 import { Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
@@ -2121,7 +2122,7 @@ function convertToStacktraceFlameGraph(
         baseline: { value: 'middle' },
         fontSize: { value: STACKTRACE_LABEL_PX },
         dx: { value: 8 },
-        font: { value: 'Roboto Mono' },
+        font: { value: COMMON_THEME.typography.monospace.fontFamily },
         fontWeight: { value: 400 },
         fill: { value: theme.palette.background.four },
       },

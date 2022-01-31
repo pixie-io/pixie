@@ -22,6 +22,7 @@ import { editor as MonacoEditorTypes } from 'monaco-editor';
 // This must be `import type`, not `import`. The latter would defeat the lazy import of the actual component below.
 import type { MonacoEditorProps } from 'react-monaco-editor';
 
+import { COMMON_THEME } from 'app/components/mui-theme';
 import { Spinner } from 'app/components/spinner/spinner';
 import { buildClass } from 'app/utils/build-class';
 
@@ -81,7 +82,7 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, CodeEditorS
         lineDecorationsWidth: 0,
         scrollBeyondLastColumn: 3, // Prevents hiding text behind the minimap or the scrollbar. Expands the scroll area.
         scrollBeyondLastLine: false,
-        fontFamily: 'Roboto Mono, monospace',
+        fontFamily: COMMON_THEME.typography.monospace.fontFamily,
       },
     };
     this.onChange = this.onChange.bind(this);

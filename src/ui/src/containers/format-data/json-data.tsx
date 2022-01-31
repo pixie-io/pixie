@@ -24,11 +24,11 @@ import { createStyles, makeStyles } from '@mui/styles';
 import { buildClass } from 'app/utils/build-class';
 import { checkExhaustive } from 'app/utils/check-exhaustive';
 
-const useStyles = makeStyles(({ palette, spacing }: Theme) => createStyles({
+const useStyles = makeStyles(({ palette, spacing, typography }: Theme) => createStyles({
   root: {
     display: 'inline', // Ensures single-line mode honors text-overflow:ellipsis if its parent specifies as much.
-    fontFamily: '"Roboto Mono", serif',
-    fontSize: '14px',
+    fontFamily: typography.monospace.fontFamily,
+    fontSize: typography.body2.fontSize,
     '&$multiline': {
       lineHeight: spacing(3),
       '& $closure': {

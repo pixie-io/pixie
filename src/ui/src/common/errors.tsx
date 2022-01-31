@@ -25,11 +25,11 @@ import { createStyles, makeStyles } from '@mui/styles';
 import { VizierQueryError } from 'app/api';
 import { showIntercomTrigger, triggerID } from 'app/utils/intercom';
 
-const useStyles = makeStyles((theme: Theme) => createStyles({
+const useStyles = makeStyles(({ spacing, typography }: Theme) => createStyles({
   errorRow: {
-    ...theme.typography.body2,
-    fontFamily: '"Roboto Mono", Monospace',
-    paddingBottom: theme.spacing(0.5),
+    ...typography.body2,
+    fontFamily: typography.monospace.fontFamily,
+    paddingBottom: spacing(0.5),
   },
   link: {
     cursor: 'pointer',

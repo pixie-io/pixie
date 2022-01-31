@@ -115,6 +115,20 @@ declare module '@mui/material/styles' {
   interface Theme {
     shape: Shape;
   }
+
+  interface TypographyVariants {
+    monospace: React.CSSProperties;
+  }
+
+  interface TypographyVariantOptions {
+    monospace?: React.CSSProperties;
+  }
+}
+
+declare module '@mui/material/Typography' {
+  interface TypographyPropsVariantOverrides {
+    monospace: true;
+  }
 }
 
 declare module '@mui/material/styles/createTheme' {
@@ -165,15 +179,19 @@ export const COMMON_THEME = {
   },
   typography: {
     // The below rem conversions are based on a root font-size of 16px.
+    h1: {
+      fontSize: '2.125rem', // 34px
+      fontWeight: 400,
+    },
+    h2: {
+      fontSize: '1.5rem', // 24px
+      fontWeight: 500,
+    },
     h3: {
       fontSize: '1.125rem', // 18px
       fontWeight: 500,
       marginBottom: '16px',
       marginTop: '12px',
-    },
-    h2: {
-      fontSize: '1.5rem', // 24px
-      fontWeight: 500,
     },
     h4: {
       fontSize: '0.875rem', // 14px
@@ -189,9 +207,8 @@ export const COMMON_THEME = {
       fontSize: '0.875rem', // 14px
       fontWeight: 400,
     },
-    h1: {
-      fontSize: '2.125rem', // 34px
-      fontWeight: 400,
+    monospace: {
+      fontFamily: '"Roboto Mono", monospace',
     },
   },
   palette: {
