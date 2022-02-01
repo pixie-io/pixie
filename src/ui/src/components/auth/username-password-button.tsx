@@ -19,35 +19,19 @@
 import * as React from 'react';
 
 import { Button } from '@mui/material';
-import { Theme } from '@mui/material/styles';
-import { createStyles, makeStyles } from '@mui/styles';
 
-const useStyles = makeStyles(({ spacing }: Theme) => createStyles({
-  button: {
-    paddingTop: spacing(1),
-    paddingBottom: spacing(1),
-    textTransform: 'capitalize',
-  },
-}), { name: 'UsernamePasswordButton' });
-
-export interface UsernamePasswordButtonProps {
-  text: string;
-  onClick: () => void;
-}
-export const UsernamePasswordButton = React.memo<UsernamePasswordButtonProps>(({
+export const UsernamePasswordButton = React.memo<{ text: string; onClick: () => void }>(({
   text,
   onClick,
-}) => {
-  const classes = useStyles();
-  return (
-    <Button
-      variant='contained'
-      color='primary'
-      className={classes.button}
-      onClick={onClick}
-    >
-      {text}
-    </Button>
-  );
-});
+}) => (
+  <Button
+    variant='contained'
+    color='primary'
+    onClick={onClick}
+    // eslint-disable-next-line react-memo/require-usememo
+    sx={{ pt: 1, pb: 1, textTransform: 'capitalize' }}
+  >
+    {text}
+  </Button>
+));
 UsernamePasswordButton.displayName = 'UsernamePasswordButton';

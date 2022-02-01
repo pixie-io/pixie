@@ -19,37 +19,20 @@
 import * as React from 'react';
 
 import { Button } from '@mui/material';
-import { Theme } from '@mui/material/styles';
-import { createStyles, makeStyles } from '@mui/styles';
 
 import { GoogleIcon } from 'app/components/icons/google';
 
-const useStyles = makeStyles(({ spacing }: Theme) => createStyles({
-  button: {
-    paddingTop: spacing(1),
-    paddingBottom: spacing(1),
-    textTransform: 'capitalize',
-  },
-}), { name: 'GoogleButton' });
-
-export interface GoogleButtonProps {
-  text: string;
-  onClick: () => void;
-}
-
-export const GoogleButton = React.memo<GoogleButtonProps>(({ text, onClick }) => {
-  const classes = useStyles();
-  return (
-    <Button
-      variant='contained'
-      color='primary'
-      className={classes.button}
-      // eslint-disable-next-line react-memo/require-usememo
-      startIcon={<GoogleIcon />}
-      onClick={onClick}
-    >
-      {text}
-    </Button>
-  );
-});
+export const GoogleButton = React.memo<{ text: string; onClick: () => void }>(({ text, onClick }) => (
+  <Button
+    variant='contained'
+    color='primary'
+    // eslint-disable-next-line react-memo/require-usememo
+    startIcon={<GoogleIcon />}
+    onClick={onClick}
+    // eslint-disable-next-line react-memo/require-usememo
+    sx={{ pt: 1, pb: 1, textTransform: 'capitalize' }}
+  >
+    {text}
+  </Button>
+));
 GoogleButton.displayName = 'GoogleButton';

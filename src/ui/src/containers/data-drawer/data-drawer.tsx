@@ -22,7 +22,7 @@ import {
   KeyboardArrowDown as DownIcon,
   KeyboardArrowUp as UpIcon,
 } from '@mui/icons-material';
-import { Fab, Tab, Tabs } from '@mui/material';
+import { alpha, Fab, Tab, Tabs } from '@mui/material';
 import { Theme, styled } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
@@ -124,31 +124,24 @@ TabSpacer.displayName = 'TabSpacer';
 
 // eslint-disable-next-line react-memo/require-memo
 const StyledTabs = styled(Tabs)(({ theme }) => ({
-  root: {
-    minHeight: theme.spacing(4),
-  },
-  indicator: {
+  minHeight: theme.spacing(4),
+  '& .MuiTabs-indicator': {
     backgroundColor: theme.palette.foreground.one,
   },
 }));
 
 // eslint-disable-next-line react-memo/require-memo
 const StyledTab = styled(Tab)(({ theme }) => ({
-  root: {
-    minHeight: theme.spacing(4),
-    padding: 0,
-    textTransform: 'none',
-    '&:focus': {
-      color: theme.palette.foreground.two,
-    },
-    color: `${theme.palette.primary.dark}80`, // Make text darker by lowering opacity to 50%.
-    ...theme.typography.subtitle1,
-    fontWeight: 400,
-    maxWidth: theme.spacing(37.5), // 300px
+  minHeight: theme.spacing(4),
+  padding: 0,
+  textTransform: 'none',
+  '&:focus': {
+    color: theme.palette.foreground.two,
   },
-  wrapper: {
-    alignItems: 'flex-start',
-  },
+  color: alpha(theme.palette.primary.dark, 0.5),
+  ...theme.typography.subtitle1,
+  fontWeight: 400,
+  maxWidth: theme.spacing(37.5), // 300px
 }));
 
 const DataDrawer = React.memo<{ open: boolean }>(({ open }) => {
@@ -215,7 +208,7 @@ const DataDrawer = React.memo<{ open: boolean }>(({ open }) => {
         {
           stats ? (
             <StyledTab
-              className={classes.statsTabLabel}
+              className={`${classes.statsTabLabel} ${STATS_TAB_NAME !== activeTab ? '' : classes.selectedTabLabel}`}
               value={STATS_TAB_NAME}
               label='Execution Stats'
             />

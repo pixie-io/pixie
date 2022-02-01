@@ -19,8 +19,7 @@
 import * as React from 'react';
 
 import { Button, ButtonProps } from '@mui/material';
-import { Theme } from '@mui/material/styles';
-import { createStyles, makeStyles } from '@mui/styles';
+import { styled } from '@mui/material/styles';
 import Axios, { AxiosError } from 'axios';
 import * as QueryString from 'query-string';
 import { Link } from 'react-router-dom';
@@ -123,13 +122,12 @@ function getCtaDetails(config: CallbackConfig) {
   };
 }
 
-const useStyles = makeStyles((theme: Theme) => createStyles({
-  ctaGutter: {
-    marginTop: theme.spacing(3),
-    paddingTop: theme.spacing(3),
-    borderTop: `1px solid ${theme.palette.foreground.grey1}`,
-    width: '80%',
-  },
+// eslint-disable-next-line react-memo/require-memo
+const CtaContainer = styled('div')(({ theme }) => ({
+  marginTop: theme.spacing(3),
+  paddingTop: theme.spacing(3),
+  borderTop: `1px solid ${theme.palette.foreground.grey1}`,
+  width: '80%',
 }));
 
 const CLICodeBox = React.memo<{ code: string }>(({ code }) => (
@@ -147,7 +145,6 @@ const CtaButton = React.memo<ButtonProps>(({ children, ...props }) => (
 CtaButton.displayName = 'CtaButton';
 
 const ErrorMessage = React.memo<{ config: CallbackConfig }>(({ config }) => {
-  const classes = useStyles();
   const title = config.signup ? 'Failed to Sign Up' : 'Failed to Log In';
   const errorDetails = config.err.errorType === 'internal' ? config.err.errMessage : undefined;
 
@@ -160,12 +157,12 @@ const ErrorMessage = React.memo<{ config: CallbackConfig }>(({ config }) => {
   } = getCtaDetails(config);
 
   const cta = React.useMemo(() => (
-    <div className={classes.ctaGutter}>
+    <CtaContainer>
       <Link to={ctaDestination} component={CtaButton}>
         {ctaMessage}
       </Link>
-    </div>
-  ), [classes.ctaGutter, ctaDestination, ctaMessage]);
+    </CtaContainer>
+  ), [ctaDestination, ctaMessage]);
 
   return (
     <AuthMessageBox

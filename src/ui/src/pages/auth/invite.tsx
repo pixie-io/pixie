@@ -20,8 +20,7 @@ import * as React from 'react';
 
 import { gql, useQuery } from '@apollo/client';
 import { Button } from '@mui/material';
-import { Theme } from '@mui/material/styles';
-import { createStyles, makeStyles } from '@mui/styles';
+import { styled } from '@mui/material/styles';
 import * as QueryString from 'query-string';
 import { useLocation } from 'react-router';
 import {
@@ -32,14 +31,14 @@ import { AuthMessageBox } from 'app/components';
 
 import { BasePage } from './base';
 
-const useStyles = makeStyles((theme: Theme) => createStyles({
-  ctaGutter: {
-    marginTop: theme.spacing(3),
-    paddingTop: theme.spacing(3),
-    borderTop: `1px solid ${theme.palette.foreground.grey1}`,
-    width: '80%',
-  },
+// eslint-disable-next-line react-memo/require-memo
+const CtaGutter = styled('div')(({ theme }) => ({
+  marginTop: theme.spacing(3),
+  paddingTop: theme.spacing(3),
+  borderTop: `1px solid ${theme.palette.foreground.grey1}`,
+  width: '80%',
 }));
+
 // eslint-disable-next-line react-memo/require-memo
 export const InvitePage: React.FC = () => {
   const parsed = QueryString.parse(window.location.search);
@@ -62,16 +61,15 @@ export const InvitePage: React.FC = () => {
 
   const validToken = data?.verifyInviteToken;
 
-  const classes = useStyles();
   const location = useLocation();
   const redirect = React.useMemo(() => ({ pathname: '/auth/signup', search: location.search }), [location]);
   const cta = React.useMemo(() => (
-    <div className={classes.ctaGutter}>
+    <CtaGutter>
       <Link to={'/auth/signup'} component={Button}>
         Go To Signup
       </Link>
-    </div>
-  ), [classes.ctaGutter]);
+    </CtaGutter>
+  ), []);
   if (loading) {
     return (
       <BasePage>

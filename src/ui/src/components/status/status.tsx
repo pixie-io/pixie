@@ -30,26 +30,26 @@ import { createStyles, makeStyles } from '@mui/styles';
 
 export type StatusGroup = 'healthy' | 'unhealthy' | 'pending' | 'unknown' | 'degraded';
 
-const useStyles = makeStyles((theme: Theme) => createStyles({
+const useStyles = makeStyles(({ palette }: Theme) => createStyles({
   unhealthy: {
     verticalAlign: 'text-bottom',
-    color: theme.palette.error.main,
+    color: palette.error.main,
   },
   healthy: {
     verticalAlign: 'text-bottom',
-    color: theme.palette.success.main,
+    color: palette.success.main,
   },
   pending: {
     verticalAlign: 'text-bottom',
-    color: theme.palette.warning.main,
+    color: palette.warning.main,
   },
   warning: {
     verticalAlign: 'text-bottom',
-    color: theme.palette.warning.main,
+    color: palette.warning.main,
   },
   unknown: {
     verticalAlign: 'text-bottom',
-    color: theme.palette.foreground.grey1,
+    color: palette.foreground.grey1,
   },
 }), { name: 'StatusCell' });
 

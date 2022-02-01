@@ -146,7 +146,7 @@ PxLEditor.displayName = 'PxLEditor';
 // eslint-disable-next-line react-memo/require-memo
 const StyledTabs = styled(Tabs)(({ theme }) => ({
   flex: 1,
-  '.MuiTabs-indicator': {
+  '& .MuiTabs-indicator': {
     backgroundColor: theme.palette.foreground.one,
   },
 }));

@@ -18,7 +18,7 @@
 
 import * as React from 'react';
 
-import { createStyles, makeStyles } from '@mui/styles';
+import { Box } from '@mui/material';
 
 import { UsernamePasswordButton } from 'app/components';
 
@@ -29,28 +29,18 @@ export interface HydraButtonsProps {
 
 // eslint-disable-next-line react-memo/require-memo
 export const HydraButtons: React.FC<HydraButtonsProps> = ({ usernamePasswordText, onUsernamePasswordButtonClick }) => (
-  <>
-    <UsernamePasswordButton
-      text={usernamePasswordText}
-      onClick={onUsernamePasswordButtonClick}
-    />
-  </>
+  <UsernamePasswordButton
+    text={usernamePasswordText}
+    onClick={onUsernamePasswordButtonClick}
+  />
 );
 HydraButtons.displayName = 'HydraButtons';
 
-const useStyles = makeStyles(() => createStyles({
-  rejectText: {
-    color: 'red',
-  },
-}));
-
 // eslint-disable-next-line react-memo/require-memo
-export const RejectHydraSignup: React.FC = () => {
-  const classes = useStyles();
-  return (
-    <div className={classes.rejectText}>
-      Self-service sign up not supported for Open-Source authentication. Ask for an invite from your admin.
-    </div>
-  );
-};
+export const RejectHydraSignup: React.FC = () => (
+  // eslint-disable-next-line react-memo/require-usememo
+  <Box sx={{ color: 'error.main' }}>
+    Self-service sign up not supported for Open-Source authentication. Ask for an invite from your admin.
+  </Box>
+);
 RejectHydraSignup.displayName = 'RejectHydraSignup';

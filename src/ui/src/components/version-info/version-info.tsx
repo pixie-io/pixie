@@ -18,25 +18,22 @@
 
 import * as React from 'react';
 
-import { Theme } from '@mui/material/styles';
-import { createStyles, makeStyles } from '@mui/styles';
+import { styled } from '@mui/material/styles';
 
-const useStyles = makeStyles(({ palette }: Theme) => createStyles({
-  root: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    color: palette.grey['800'],
-    fontSize: '0.75rem',
-  },
-}), { name: 'VersionInfo' });
+// eslint-disable-next-line react-memo/require-memo
+const Container = styled('div', { name: 'VersionInfo' })(({ theme }) => ({
+  position: 'absolute',
+  top: 0,
+  right: 0,
+  color: theme.palette.grey['800'],
+  fontSize: '0.75rem',
+}));
 
 interface VersionInfoProps {
   cloudVersion: string;
 }
 
-export const VersionInfo: React.FC<VersionInfoProps> = React.memo(({ cloudVersion }) => {
-  const classes = useStyles();
-  return <div className={classes.root}>{cloudVersion}</div>;
-});
+export const VersionInfo: React.FC<VersionInfoProps> = React.memo(({ cloudVersion }) => (
+  <Container>{cloudVersion}</Container>
+));
 VersionInfo.displayName = 'VersionInfo';
