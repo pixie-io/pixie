@@ -347,6 +347,19 @@ void ConnTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
   half_stream_ptr->UpdateTimestamp(data->attr.timestamp_ns);
 }
 
+template <>
+std::vector<protocols::http2::Record>
+ConnTracker::ProcessToRecords<protocols::http2::ProtocolTraits>() {
+  protocols::RecordsWithErrorCount<protocols::http2::Record> result;
+
+  protocols::http2::ProcessHTTP2Streams(&http2_client_streams_, IsZombie(), &result);
+  protocols::http2::ProcessHTTP2Streams(&http2_server_streams_, IsZombie(), &result);
+
+  UpdateResultStats(result);
+
+  return std::move(result.records);
+}
+
 void ConnTracker::Reset() {
   send_data_.Reset();
   recv_data_.Reset();
