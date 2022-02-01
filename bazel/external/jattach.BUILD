@@ -24,10 +24,10 @@ filegroup(
 
 make(
     name = "jattach",
-    lib_source = ":jattach-sources",
-    out_static_libs = ["jattach.a"],
-    visibility = ["//visibility:public"],
     # We add -Dredacted to avoid a compile error resulting from incorrect shell escaping, see:
     # https://github.com/bazelbuild/rules_foreign_cc/issues/239
     copts = ["-Dredacted='\\\"redacted\\\"'"],
+    lib_source = ":jattach-sources",
+    out_static_libs = ["jattach.a"],
+    visibility = ["//visibility:public"],
 )
