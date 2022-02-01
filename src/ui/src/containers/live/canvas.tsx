@@ -40,7 +40,6 @@ import { RequestGraphWidget } from 'app/containers/live-widgets/graph/request-gr
 import { RequestGraphDisplay } from 'app/containers/live-widgets/graph/request-graph-manager';
 import { QueryResultTableDisplay, QueryResultTable } from 'app/containers/live-widgets/table/query-result-viewer';
 import Vega from 'app/containers/live-widgets/vega/vega';
-import { SetStateFunc } from 'app/context/common';
 import { LayoutContext } from 'app/context/layout-context';
 import { ResultsContext } from 'app/context/results-context';
 import { ScriptContext } from 'app/context/script-context';
@@ -117,43 +116,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     transform: 'translate(-50%, -50%)',
   },
   errorDisplay: {
-    position: 'absolute',
-    zIndex: 1, // Position on top of canvas.
-    height: '100%',
-    width: '100%',
-  },
-  error: {
-    position: 'absolute',
-    '& .MuiAlert-root': {
-      padding: theme.spacing(3),
-    },
-    '& .MuiAlert-icon': {
-      paddingTop: theme.spacing(0.6),
-    },
-    '& .MuiAlert-action': {
-      display: 'block',
-      color: theme.palette.text.secondary,
-      opacity: 0.65,
-    },
-    marginTop: theme.spacing(5),
-    marginLeft: theme.spacing(5),
-  },
-  errorOverlay: {
-    width: '100%',
-    height: '100%',
-    position: 'absolute',
-  },
-  errorTitle: {
-    ...theme.typography.body2,
-    fontFamily: theme.typography.monospace.fontFamily,
-    color: theme.palette.error.dark,
-    paddingBottom: theme.spacing(3),
-  },
-  hidden: {
-    display: 'none',
-  },
-  blur: {
-    filter: `blur(${theme.spacing(0.2)}px)`,
+    margin: `${theme.spacing(2.5)} ${theme.spacing(2.5)} 0`,
   },
   graphContainer: {
     display: 'flex',
@@ -296,30 +259,21 @@ const WidgetDisplay: React.FC<{
 });
 WidgetDisplay.displayName = 'WidgetDisplay';
 
-const ErrorDisplay: React.FC<{
-  classes: Record<string, string>,
-  error: any,
-  setOpen: SetStateFunc<boolean>,
-  open: boolean,
-}> = React.memo(({
-  classes, error, setOpen, open,
-}) => {
-  const toggleOpen = React.useCallback(() => setOpen((opened) => !opened), [setOpen]);
+const ErrorDisplay = React.memo<{ error: any }>(({ error }) => {
+  const classes = useStyles();
+
+  const [open, setOpen] = React.useState(false);
+  const close = React.useCallback(() => setOpen(false), []);
   React.useEffect(() => {
     setOpen(true);
-  }, [error, setOpen]);
+  }, [error]);
 
   const vzError = error as VizierQueryError;
-  return (
-    <div className={open ? classes.errorDisplay : classes.hidden}>
-      <div className={classes.errorOverlay} />
-      <div className={classes.error}>
-        <Alert severity='error' onClose={toggleOpen}>
-          <AlertTitle className={classes.errorTitle}>{vzError?.message || error}</AlertTitle>
-          <VizierErrorDetails error={error} />
-        </Alert>
-      </div>
-    </div>
+  return open && (
+    <Alert severity='error' variant='outlined' onClose={close} className={classes.errorDisplay}>
+      <AlertTitle>{vzError?.message || error}</AlertTitle>
+      <VizierErrorDetails error={error} />
+    </Alert>
   );
 });
 ErrorDisplay.displayName = 'ErrorDisplay';
@@ -427,7 +381,6 @@ const Canvas: React.FC<CanvasProps> = React.memo(({ editable, parentRef }) => {
 
   const layout = React.useMemo(() => toLayout(script.vis?.widgets, isMobile, widget),
     [script.vis, isMobile, widget]);
-  const [errorOpen, setErrorOpen] = React.useState(false);
 
   const emptyTableMsg = React.useMemo(() => {
     if (containsMutation(script.code)) {
@@ -495,7 +448,7 @@ const Canvas: React.FC<CanvasProps> = React.memo(({ editable, parentRef }) => {
         layout={tableLayout.layout}
         rowHeight={tableLayout.rowHeight - 40}
         cols={tableLayout.numCols}
-        className={buildClass(classes.grid, errorOpen && error && classes.blur)}
+        className={classes.grid}
         onLayoutChange={updateDefaultLayout}
         isDraggable={editable}
         isResizable={editable}
@@ -516,7 +469,7 @@ const Canvas: React.FC<CanvasProps> = React.memo(({ editable, parentRef }) => {
       <Grid
         layout={layout}
         cols={getGridWidth(isMobile)}
-        className={buildClass(classes.grid, errorOpen && error && classes.blur)}
+        className={classes.grid}
         onLayoutChange={updateLayoutInVis}
         isDraggable={editable}
         isResizable={editable}
@@ -529,8 +482,7 @@ const Canvas: React.FC<CanvasProps> = React.memo(({ editable, parentRef }) => {
   return (
     <>
       {loading && mutationInfo && <MutationModal mutationInfo={mutationInfo} />}
-      { error
-        && <ErrorDisplay classes={classes} error={error} setOpen={setErrorOpen} open={errorOpen} />}
+      { error && <ErrorDisplay error={error} />}
       {displayGrid}
     </>
   );
