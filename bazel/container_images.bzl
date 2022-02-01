@@ -64,8 +64,12 @@ def base_images():
     )
 
     _docker_io_image(
+        # OpenJDK: 18, Alpine 3.13.
+        # https://hub.docker.com/layers/openjdk/library/openjdk/18-ea-jdk-alpine3.13/images/sha256-0c12d28e7627a890cbc731099fd1e71a524fadf796ec72ceeb65b2abe36b977a
+        # TODO(jps): Previously, we had 18/3.15. We downgraded to Alpine 3.13 to avoid a build
+        # issue affecting hosts with Docker < v20.10.0. Go back to 3.15+ after upgrading Docker.
         "openjdk-base-musl",
-        "sha256:25b910311bfe15547ecab6895d5eb3f4ec718d6d53cced7eec78e4b889962e1f",
+        "sha256:0c12d28e7627a890cbc731099fd1e71a524fadf796ec72ceeb65b2abe36b977a",
         "library/openjdk",
     )
 
