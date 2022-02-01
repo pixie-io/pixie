@@ -306,8 +306,8 @@ REPOSITORY_LOCATIONS = dict(
         sha256 = "6b8e8975400a84eed20dcf4490f1b16efaadbbad6d1b5ffcc5e1da3e5be1c324",
     ),
     rules_jvm_external = dict(
-        urls = ["https://github.com/bazelbuild/rules_jvm_external/archive/4.2.zip"],
-        sha256 = "cd1a77b7b02e8e008439ca76fd34f5b07aecb8c752961f9640dea15e9e5ba1ca",
+        urls = ["https://github.com/bazelbuild/rules_jvm_external/archive/refs/tags/4.2.tar.gz"],
+        sha256 = "2cd77de091e5376afaf9cc391c15f093ebd0105192373b334f0a855d89092ad5",
         strip_prefix = "rules_jvm_external-4.2",
     ),
 )
