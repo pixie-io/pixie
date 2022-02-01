@@ -46,7 +46,7 @@ type watcher interface {
 }
 
 // NewController creates a new Controller.
-func NewController(mds Store, updateCh chan *K8sResourceMessage) (*Controller, error) {
+func NewController(updateCh chan *K8sResourceMessage) (*Controller, error) {
 	// There is a specific config for services running in the cluster.
 	kubeConfig, err := rest.InClusterConfig()
 	if err != nil {

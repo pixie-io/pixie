@@ -230,7 +230,7 @@ func main() {
 	updateCh := make(chan *k8smeta.K8sResourceMessage)
 	mdh := k8smeta.NewHandler(updateCh, k8sMds, nc)
 
-	k8sMc, err := k8smeta.NewController(k8sMds, updateCh)
+	k8sMc, err := k8smeta.NewController(updateCh)
 	defer k8sMc.Stop()
 
 	ads := agent.NewDatastore(dataStore, 24*time.Hour)
