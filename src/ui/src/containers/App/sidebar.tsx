@@ -54,6 +54,7 @@ const useStyles = makeStyles(({
   palette,
   transitions,
   breakpoints,
+  zIndex,
 }: Theme) => createStyles({
   announcekit: {
     '& .announcekit-widget-badge': {
@@ -70,7 +71,7 @@ const useStyles = makeStyles(({
       duration: transitions.duration.leavingScreen,
     }),
     width: spacing(8),
-    zIndex: 1250,
+    zIndex: zIndex.appBar - 1,
     overflowX: 'hidden',
     [breakpoints.down('sm')]: {
       display: 'none',
@@ -87,7 +88,7 @@ const useStyles = makeStyles(({
     borderRightWidth: spacing(0.2),
     borderRightStyle: 'solid',
     width: spacing(29),
-    zIndex: 1250,
+    zIndex: zIndex.appBar - 1,
     flexShrink: 0,
     whiteSpace: 'nowrap',
     transition: transitions.create('width', {

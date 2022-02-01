@@ -55,7 +55,7 @@ import { Logo } from 'configurable/logo';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   container: {
-    zIndex: 1300,
+    zIndex: theme.zIndex.appBar,
     backgroundColor: theme.palette.background.paper,
   },
   contents: {

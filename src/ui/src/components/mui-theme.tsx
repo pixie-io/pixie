@@ -178,6 +178,9 @@ export const COMMON_THEME = {
       small: '0px 5px 5px 0px',
     },
   },
+  zIndex: {
+    drawer: 1075, // Normally higher than appBar and below modal. We want it below appBar.
+  },
   typography: {
     // The below rem conversions are based on a root font-size of 16px.
     h1: {

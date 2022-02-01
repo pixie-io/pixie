@@ -104,7 +104,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   fab: {
     height: theme.spacing(2),
-    zIndex: 100,
+    zIndex: theme.zIndex.drawer - 1, // Let overflow hide behind the drawer
     borderTopLeftRadius: theme.spacing(1),
     borderTopRightRadius: theme.spacing(1),
     borderBottomLeftRadius: 0,

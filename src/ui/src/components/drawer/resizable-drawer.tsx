@@ -27,7 +27,7 @@ import { FixedSizeDrawer, DrawerDirection } from './drawer';
 // The amount of time elasped since a user has last resized the drawer.
 const RESIZE_WAIT_INTERVAL_MS = 100;
 
-const useStyles = makeStyles(({ spacing }: Theme) => createStyles({
+const useStyles = makeStyles(({ spacing, zIndex }: Theme) => createStyles({
   draggableContent: {
     flex: 1,
     minHeight: 0,
@@ -37,7 +37,7 @@ const useStyles = makeStyles(({ spacing }: Theme) => createStyles({
     cursor: 'row-resize',
     width: '100%',
     height: spacing(1),
-    zIndex: 1500,
+    zIndex: zIndex.drawer + 1,
     position: 'absolute',
     pointerEvents: 'auto',
   },
@@ -45,7 +45,7 @@ const useStyles = makeStyles(({ spacing }: Theme) => createStyles({
     cursor: 'col-resize',
     height: '100%',
     width: spacing(1),
-    zIndex: 1500,
+    zIndex: zIndex.drawer + 1,
     position: 'absolute',
     pointerEvents: 'auto',
   },
