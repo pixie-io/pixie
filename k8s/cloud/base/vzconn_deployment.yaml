@@ -11,6 +11,7 @@ spec:
     metadata:
       labels:
         name: vzconn-server
+        monitoring.gke.io/scrape: 'true'
       annotations:
         prometheus.io/scrape: 'true'
         prometheus.io/port: '51600'

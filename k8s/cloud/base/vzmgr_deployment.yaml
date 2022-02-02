@@ -13,6 +13,7 @@ spec:
     metadata:
       labels:
         name: vzmgr-server
+        monitoring.gke.io/scrape: 'true'
       annotations:
         prometheus.io/scrape: 'true'
         prometheus.io/port: '51800'

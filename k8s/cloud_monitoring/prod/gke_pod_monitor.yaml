@@ -8,6 +8,7 @@ spec:
   selector:
     matchLabels:
       app: pl-cloud
+      monitoring.gke.io/scrape: 'true'
   podMetricsEndpoints:
   - port: metrics-http
     path: /metrics
