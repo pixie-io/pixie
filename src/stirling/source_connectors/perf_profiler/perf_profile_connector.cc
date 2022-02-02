@@ -17,6 +17,7 @@
  */
 
 #include "src/stirling/source_connectors/perf_profiler/perf_profile_connector.h"
+#include "src/stirling/source_connectors/perf_profiler/symbolizers/java_symbolizer.h"
 
 #include <sys/sysinfo.h>
 
@@ -32,6 +33,7 @@ BPF_SRC_STRVIEW(profiler_bcc_script, profiler);
 DEFINE_string(stirling_profiler_symbolizer, "bcc",
               "Choice of which symbolizer to use. Options: bcc, elf");
 DEFINE_bool(stirling_profiler_cache_symbols, true, "Whether to cache symbols");
+DEFINE_bool(stirling_profiler_java_symbols, false, "Java symbols.");
 DEFINE_uint32(stirling_profiler_log_period_minutes, 10,
               "Number of minutes between profiler stats log printouts.");
 DEFINE_uint32(stirling_profiler_table_update_period_seconds,
@@ -141,6 +143,10 @@ Status PerfProfileConnector::InitImpl() {
   // Create a symbolizer for kernel symbols.
   // Kernel symbolizer always uses BCC symbolizer.
   PL_ASSIGN_OR_RETURN(k_symbolizer_, BCCSymbolizer::Create());
+
+  if (FLAGS_stirling_profiler_java_symbols) {
+    PL_ASSIGN_OR_RETURN(u_symbolizer_, JavaSymbolizer::Create(std::move(u_symbolizer_)));
+  }
 
   if (FLAGS_stirling_profiler_cache_symbols) {
     // Add a caching layer on top of the existing symbolizer.
