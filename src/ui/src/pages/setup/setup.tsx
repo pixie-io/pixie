@@ -26,6 +26,7 @@ import Axios from 'axios';
 import * as QueryString from 'query-string';
 import { Redirect, useLocation } from 'react-router';
 
+import { PixieAPIContext, type PixieAPIClient } from 'app/api';
 import { Footer, scrollbarStyles } from 'app/components';
 import NavBars from 'app/containers/App/nav-bars';
 import { SidebarContext } from 'app/context/sidebar-context';
@@ -147,6 +148,7 @@ SetupPage.displayName = 'SetupPage';
 const SetupOrganization = React.memo<{ redirectUri: string }>(({ redirectUri }) => {
   const classes = useStyles();
 
+  const api = React.useContext(PixieAPIContext);
   const [createOrgError, setCreateOrgError] = React.useState('');
   const [inputValue, setInputValue] = React.useState('');
   const onInputChange = React.useCallback((event) => {
@@ -172,10 +174,11 @@ const SetupOrganization = React.memo<{ redirectUri: string }>(({ redirectUri }) 
 
   const [createOrgMutation] = useMutation<{ CreateOrg: string }, { orgName: string }>(
     gql`
-    mutation CreateOrgFromSetupOrgPage($orgName: String!){
-      CreateOrg(orgName: $orgName)
-    }
-  `);
+      mutation CreateOrgFromSetupOrgPage($orgName: String!) {
+        CreateOrg(orgName: $orgName)
+      }
+    `,
+  );
 
   const createOrg = React.useCallback(() => {
     if (!valid) return;
@@ -185,11 +188,16 @@ const SetupOrganization = React.memo<{ redirectUri: string }>(({ redirectUri }) 
     }).then(() => (
       Axios.post('/api/auth/refetch')
     )).then(() => {
+      // The cache already contains a null org ID at this point, which is propagated in a few places.
+      // Since this is a new org on an account that wasn't part of one, purging the whole cache and
+      // refetching is quicker than telling Apollo to evict only the right stuff and refetch anyway.
+      (api as PixieAPIClient).purgeCloudClientCache();
+    }).then(() => {
       window.location.href = redirectUri;
     }).catch((error) => {
       setCreateOrgError(error.message);
     });
-  }, [createOrgMutation, inputValue, redirectUri, setCreateOrgError, valid]);
+  }, [api, createOrgMutation, inputValue, redirectUri, setCreateOrgError, valid]);
 
   const onSubmit = React.useCallback((event: React.FormEvent) => {
     createOrg();

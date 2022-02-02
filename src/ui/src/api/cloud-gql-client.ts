@@ -75,6 +75,8 @@ export class CloudClient {
 
   private readonly cache: InMemoryCache;
 
+  private cacheKey: string;
+
   constructor(opts: PixieAPIClientOptions) {
     this.cache = new InMemoryCache({
       typePolicies: {
@@ -147,17 +149,31 @@ export class CloudClient {
           );
         }
         userId = result.user.id;
+        this.cacheKey = `apollo-cache-${userId}`;
         // Note: Even if a few queries fire before the user ID enters the in-memory cache,
         // the persisted cache will reconcile with in-memory just fine (new overwrites old).
         // The user is checked (and enters in-memory cache) before any heavy GQL fires,
         // which gives cache persistence a chance to restore before it's needed.
         persistCache({
-          key: `apollo-cache-${userId}`,
+          key: this.cacheKey,
           cache: this.cache,
           storage,
         }).then();
       },
     });
+  }
+
+  async purgeCache(): Promise<void> {
+    if (this.cacheKey) {
+      try {
+        // Technically we should be using CachePersistor and invoking methods on that,
+        // but we're always using localStorage if available and an in-memory map otherwise.
+        localStorage.removeItem(this.cacheKey);
+      } catch {
+        /* If localStorage wasn't available, then it's in memory anyway */
+      }
+    }
+    return this.graphQL.clearStore().then();
   }
 
   /**

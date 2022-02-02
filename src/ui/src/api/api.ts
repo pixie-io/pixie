@@ -217,4 +217,8 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
   getCloudClient(): CloudClient {
     return this.gqlClient;
   }
+
+  purgeCloudClientCache(): Promise<void> {
+    return this.gqlClient.purgeCache();
+  }
 }
