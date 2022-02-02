@@ -239,6 +239,7 @@ export const UsersTable = React.memo(() => {
     gql`
       query getSettingsForCurrentOrg{
         org {
+          id
           enableApprovals
         }
       }
