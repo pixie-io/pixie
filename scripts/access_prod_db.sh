@@ -71,7 +71,7 @@ fi
 POD_NAME=$(kubectl get pod --namespace $READER_NS \
     --selector="name=db-reader" --output jsonpath='{.items[0].metadata.name}')
 
-kubectl exec -it "$POD_NAME" -n $READER_NS -- bash -c \
+kubectl exec -it "$POD_NAME" -n $READER_NS -c psql -- bash -c \
 "psql postgresql://$(kubectl get secret $SECRET_NAME -n $SECRET_NS -o json | \
 jq -r '.data."PL_POSTGRES_USERNAME"'  | base64 --decode):$(kubectl get secret $SECRET_NAME  -n $SECRET_NS  -o json | \
 jq -r '.data."PL_POSTGRES_PASSWORD"'  | base64 --decode)@localhost:5432/$DB"
