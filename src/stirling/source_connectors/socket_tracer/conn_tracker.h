@@ -268,7 +268,7 @@ class ConnTracker : NotCopyMoveable {
 
     UpdateResultStats(result);
 
-    return result.records;
+    return std::move(result.records);
   }
 
   /**
@@ -706,6 +706,8 @@ class ConnTracker : NotCopyMoveable {
 
 // Explicit template specialization must be declared in namespace scope.
 // See https://en.cppreference.com/w/cpp/language/member_template
+// This cannot be declared or defined inside class ConnTracker. Clang does not enforce this, but
+// GCC does. Since we use GCC for coverage build, we have to follow this rule.
 template <>
 std::vector<protocols::http2::Record>
 ConnTracker::ProcessToRecords<protocols::http2::ProtocolTraits>();
