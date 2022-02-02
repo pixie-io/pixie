@@ -89,12 +89,12 @@ export const InstrumentationLevelCell: React.FC<{ cluster: InstrumentationCluste
 InstrumentationLevelCell.displayName = 'InstrumentationLevelCell';
 
 const useClusterStatusCellStyle = makeStyles((theme: Theme) => createStyles({
-  status: {
-    display: 'inline-block',
-  },
-  message: {
-    paddingLeft: theme.spacing(1),
-    display: 'inline-block',
+  statusCell: {
+    display: 'flex',
+    flexFlow: 'row nowrap',
+    '& :not(:last-child)': {
+      marginRight: theme.spacing(1),
+    },
   },
 }), { name: 'ClusterStatusCell' });
 
@@ -104,10 +104,10 @@ export const ClusterStatusCell: React.FC<{ status: GQLClusterStatus, message?: s
 
   return (<AdminTooltip title={status.replace('CS_', '')}>
     <StyledLeftTableCell>
-      <div className={classes.status}>
+      <div className={classes.statusCell}>
         <StatusCell statusGroup={clusterStatusGroup(status)} />
+        {message && <span>{message}</span>}
       </div>
-      {message && <div className={classes.message}>{message}</div>}
     </StyledLeftTableCell>
   </AdminTooltip>
   );
