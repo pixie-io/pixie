@@ -174,7 +174,7 @@ func main() {
 	}
 
 	// Delete StatefulSet, if present.
-	_, err = od.DeleteByLabel("app=pl-monitoring", "StatefulSet")
+	_, err = od.DeleteByLabel("app=pl-monitoring,name!=pl-nats,name!=pl-etcd", "StatefulSet")
 	if err != nil {
 		if isTimeoutError(err) {
 			log.WithError(err).Error("Existing etcd taking longer to terminate than timeout")
