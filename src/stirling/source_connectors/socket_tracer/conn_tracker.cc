@@ -355,8 +355,8 @@ ConnTracker::ProcessToRecords<protocols::http2::ProtocolTraits>() {
   CONN_TRACE(1) << absl::Substitute("HTTP2 client_streams=$0 server_streams=$1",
                                     http2_client_streams_size(), http2_server_streams_size());
 
-  protocols::http2::ProcessHTTP2Streams(&http2_client_streams_, IsZombie(), &result);
-  protocols::http2::ProcessHTTP2Streams(&http2_server_streams_, IsZombie(), &result);
+  protocols::http2::ProcessHTTP2Streams(&http2_client_streams_, &result);
+  protocols::http2::ProcessHTTP2Streams(&http2_server_streams_, &result);
 
   CONN_TRACE(1) << absl::Substitute("Processed records, count=$0", result.records.size());
 

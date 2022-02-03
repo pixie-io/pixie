@@ -25,13 +25,20 @@ namespace stirling {
 namespace protocols {
 namespace http2 {
 
-void ProcessHTTP2Streams(HTTP2StreamsContainer* http2_streams_container, bool conn_closed,
+void ProcessHTTP2Streams(HTTP2StreamsContainer* http2_streams_container,
                          RecordsWithErrorCount<http2::Record>* result) {
   auto& streams = *http2_streams_container->mutable_streams();
   auto iter = streams.begin();
   while (iter != streams.end()) {
     auto& stream = iter->second;
-    if (conn_closed || stream.StreamEnded()) {
+    if (
+        // This is true when the stream_end headers event were received from bpf. In practice,
+        // this event can be received earlier than other headers events, even if they were
+        // submitted to the perf buffer later.
+        stream.StreamEnded() &&
+        // This avoids the case where stream_end headers event were received before other
+        // headers events. Also gives time for late-arriving response headers to be received.
+        stream.HasHeaders()) {
       result->records.emplace_back(std::move(stream));
       streams.erase(iter++);
     } else {

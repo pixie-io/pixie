@@ -1434,35 +1434,6 @@ TEST_F(SocketTraceConnectorTest, HTTP2ServerTest) {
               ::testing::HasSubstr(R"(":status":"200")"));
 }
 
-// This test models capturing data mid-stream, where we may have missed the request headers.
-TEST_F(SocketTraceConnectorTest, HTTP2PartialStream) {
-  testing::EventGenerator event_gen(&real_clock_);
-
-  auto conn = event_gen.InitConn();
-
-  testing::StreamEventGenerator frame_generator(&real_clock_, conn.conn_id, 7);
-
-  source_->AcceptControlEvent(conn);
-  // Request headers are missing to model mid-stream capture.
-  source_->AcceptHTTP2Data(
-      frame_generator.GenDataFrame<kDataFrameEventWrite>("uest", /* end_stream */ true));
-  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("Resp"));
-  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("onse"));
-  source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":status", "200"));
-  source_->AcceptHTTP2Header(frame_generator.GenEndStreamHeader<kHeaderEventRead>());
-  source_->AcceptControlEvent(event_gen.InitClose());
-
-  connector_->TransferData(ctx_.get(), data_tables_->tables());
-
-  std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  RecordBatch record_batch = tablets[0].records;
-  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
-  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "uest");
-  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
-  EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 0);
-}
-
 // This test models capturing data mid-stream, where we may have missed the request entirely.
 TEST_F(SocketTraceConnectorTest, HTTP2ResponseOnly) {
   testing::EventGenerator event_gen(&real_clock_);

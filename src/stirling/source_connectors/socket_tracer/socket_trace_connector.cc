@@ -837,8 +837,11 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("req_body")>(std::move(req_data));
   r.Append<r.ColIndex("resp_body_size")>(resp_data_size);
   r.Append<r.ColIndex("resp_body")>(std::move(resp_data));
-  r.Append<r.ColIndex("latency")>(
-      CalculateLatency(req_stream->timestamp_ns, resp_stream->timestamp_ns));
+  int64_t latency_ns = CalculateLatency(req_stream->timestamp_ns, resp_stream->timestamp_ns);
+  r.Append<r.ColIndex("latency")>(latency_ns);
+  // TODO(yzhao): Remove once http2::Record::bpf_timestamp_ns is removed.
+  LOG_IF_EVERY_N(WARNING, latency_ns < 0, 100)
+      << absl::Substitute("Negative latency found in HTTP2 records, record=$0", record.ToString());
 #ifndef NDEBUG
   r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
 #endif

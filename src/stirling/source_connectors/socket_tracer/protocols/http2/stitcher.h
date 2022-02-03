@@ -29,9 +29,10 @@ namespace stirling {
 namespace protocols {
 namespace http2 {
 
-// Outputs HTTP2 messages with the same stream ID into req & resp records. If conn_closed is true,
-// also outputs messages without END_STREAM flag.
-void ProcessHTTP2Streams(HTTP2StreamsContainer* http2_streams, bool conn_closed,
+// Outputs HTTP2 messages with the same stream ID into req & resp records.
+// Incomplete records are not exported, they might be erased when the parent ConnTracker is
+// destroyed.
+void ProcessHTTP2Streams(HTTP2StreamsContainer* http2_streams,
                          RecordsWithErrorCount<http2::Record>* result);
 
 }  // namespace http2

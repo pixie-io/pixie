@@ -92,8 +92,10 @@ struct HalfStream {
   void UpdateTimestamp(uint64_t t) {
     if (timestamp_ns == 0) {
       timestamp_ns = t;
+      bpf_timestamp_ns = t;
     } else {
       timestamp_ns = std::min<uint64_t>(timestamp_ns, t);
+      bpf_timestamp_ns = std::min<uint64_t>(bpf_timestamp_ns, t);
     }
   }
 
@@ -134,12 +136,18 @@ struct HalfStream {
   std::string ToString() const {
     return absl::Substitute(
         "[headers=$0 data=$1 trailers=$2 end_stream=$3 byte_size=$4 original_data_size=$5 "
-        "data_truncated=$6]",
+        "data_truncated=$6 ts_ns=$7 bpf_ts_ns=$8]",
         headers_.ToString(), BytesToString<bytes_format::HexAsciiMix>(data_), trailers_.ToString(),
-        end_stream_, byte_size_, original_data_size_, data_truncated_);
+        end_stream_, byte_size_, original_data_size_, data_truncated_, timestamp_ns,
+        bpf_timestamp_ns);
   }
 
+  // Timestamp initially assigned from BPF runtime and later adjusted to wall time clock.
   uint64_t timestamp_ns = 0;
+
+  // Timestamp set in the BPF runtime.
+  // TODO(yzhao): Remove this after negative latency is not showing anymore.
+  uint64_t bpf_timestamp_ns = 0;
 
  private:
   NVMap headers_;
@@ -178,6 +186,10 @@ struct Stream {
     return absl::Substitute("[consumed=$0] [send=$1] [recv=$2]", consumed, send.ToString(),
                             recv.ToString());
   }
+
+  // Returns true if both send and recv half streams have headers. AFAIK, HTTP2 client and server
+  // always send some headers frame.
+  bool HasHeaders() const { return !send.headers().empty() && !recv.headers().empty(); }
 };
 
 using Record = Stream;
