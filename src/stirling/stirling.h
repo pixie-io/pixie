@@ -194,7 +194,7 @@ namespace stirlingpb {
 inline std::ostream& operator<<(std::ostream& os, const Publish& pub) {
   os << pub.DebugString();
   return os;
-}  // namespace stirlingpb
+}
 
 }  // namespace stirlingpb
 }  // namespace stirling

@@ -104,10 +104,11 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/gflags/gflags/archive/524b83d0264cb9f1b2d134c564ef1aa23f207a41.tar.gz"],
     ),
     com_github_google_glog = dict(
-        sha256 = "51992e76446e384643e474b15d11a3937d2eb9e82c3f546360dfa48e96a0684c",
-        # Nov 9, 2019.
-        strip_prefix = "glog-1863b4228c85dd88885695476e943a1d5758f8ab",
-        urls = ["https://github.com/google/glog/archive/1863b4228c85dd88885695476e943a1d5758f8ab.tar.gz"],
+        sha256 = "95dc9dd17aca4e12e2cb18087a5851001f997682f5f0d0c441a5be3b86f285bd",
+        strip_prefix = "glog-bc1fada1cf63ad12aee26847ab9ed4c62cffdcf9",
+        # We cannot use the last released version due to https://github.com/google/glog/pull/706
+        # Once there is a realease that includes that fix, we can switch to a released version.
+        urls = ["https://github.com/google/glog/archive/bc1fada1cf63ad12aee26847ab9ed4c62cffdcf9.tar.gz"],
     ),
     com_github_rlyeh_sole = dict(
         sha256 = "ff82a1d6071cbc9c709864266210ddedecdb2b1e507ac5e7c4290ca6453e89b3",
@@ -115,19 +116,19 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/r-lyeh-archived/sole/archive/refs/tags/1.0.2.tar.gz"],
     ),
     com_google_absl = dict(
-        sha256 = "af4bcd1a5a2710216931cb6ee1b6b6e814490082d56b3230beede8a954f7995d",
-        strip_prefix = "abseil-cpp-fb7dd24b18e82893e5922be5d1c8ae0f3fe3c9fa",
-        urls = ["https://github.com/abseil/abseil-cpp/archive/fb7dd24b18e82893e5922be5d1c8ae0f3fe3c9fa.tar.gz"],
+        sha256 = "dcf71b9cba8dc0ca9940c4b316a0c796be8fab42b070bb6b7cab62b48f0e66c4",
+        strip_prefix = "abseil-cpp-20211102.0",
+        urls = ["https://github.com/abseil/abseil-cpp/archive/refs/tags/20211102.0.tar.gz"],
     ),
     com_google_flatbuffers = dict(
-        sha256 = "b2bb0311ca40b12ebe36671bdda350b10c7728caf0cfe2d432ea3b6e409016f3",
-        strip_prefix = "flatbuffers-1f5eae5d6a135ff6811724f6c57f911d1f46bb15",
-        urls = ["https://github.com/google/flatbuffers/archive/1f5eae5d6a135ff6811724f6c57f911d1f46bb15.tar.gz"],
+        sha256 = "9ddb9031798f4f8754d00fca2f1a68ecf9d0f83dfac7239af1311e4fd9a565c4",
+        strip_prefix = "flatbuffers-2.0.0",
+        urls = ["https://github.com/google/flatbuffers/archive/refs/tags/v2.0.0.tar.gz"],
     ),
     com_google_double_conversion = dict(
-        sha256 = "2d589cbdcde9c8e611ecfb8cc570715a618d3c2503fa983f87ac88afac68d1bf",
-        strip_prefix = "double-conversion-4199ef3d456ed0549e5665cf4186f0ee6210db3b",
-        urls = ["https://github.com/google/double-conversion/archive/4199ef3d456ed0549e5665cf4186f0ee6210db3b.tar.gz"],
+        sha256 = "3dbcdf186ad092a8b71228a5962009b5c96abde9a315257a3452eb988414ea3b",
+        strip_prefix = "double-conversion-3.2.0",
+        urls = ["https://github.com/google/double-conversion/archive/refs/tags/v3.2.0.tar.gz"],
     ),
     com_google_protobuf = dict(
         sha256 = "bc3dbf1f09dba1b2eb3f2f70352ee97b9049066c9040ce0c9b67fb3294e91e4b",
@@ -191,16 +192,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/libuv/libuv/archive/refs/tags/v1.42.0.tar.gz"],
     ),
     com_github_cameron314_concurrentqueue = dict(
-        sha256 = "dde227e8fd561b46bdb3c211fa843adc543227b30607acf8eff049006cdffcd1",
-        strip_prefix = "concurrentqueue-dea078cf5b6e742cd67a0d725e36f872feca4de4",
-        urls = ["https://github.com/cameron314/concurrentqueue/" +
-                "archive/dea078cf5b6e742cd67a0d725e36f872feca4de4.tar.gz"],
-    ),
-    # June 14, 2019.
-    com_github_nghttp2_nghttp2 = dict(
-        sha256 = "863e366c530d09d7cebce67c6d7449bdb85bccb5ae0ecff84295a80697a6c989",
-        strip_prefix = "nghttp2-ee4431344511886efc66395a38b9bf5dddd7151b",
-        urls = ["https://github.com/nghttp2/nghttp2/archive/ee4431344511886efc66395a38b9bf5dddd7151b.tar.gz"],
+        sha256 = "eb37336bf9ae59aca7b954db3350d9b30d1cab24b96c7676f36040aa76e915e8",
+        strip_prefix = "concurrentqueue-1.0.3",
+        urls = ["https://github.com/cameron314/concurrentqueue/archive/refs/tags/v1.0.3.tar.gz"],
     ),
     com_github_neargye_magic_enum = dict(
         sha256 = "4fe6627407a656d0d73879c0346b251ccdcfb718c37bef5410ba172c7c7d5f9a",
@@ -212,7 +206,6 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "cpp-jwt-1.1.1",
         urls = ["https://github.com/arun11299/cpp-jwt/archive/refs/tags/v1.1.1.tar.gz"],
     ),
-    # April 21, 2020.
     com_github_cyan4973_xxhash = dict(
         sha256 = "952ebbf5b11fbf59ae5d760a562d1e9112278f244340ad7714e8556cbe54f7f7",
         strip_prefix = "xxHash-0.7.3",
@@ -222,18 +215,15 @@ REPOSITORY_LOCATIONS = dict(
         sha256 = "87b5884741427220d3a33df1363ae0e8b898099fbc59f1c451113f6732891014",
         urls = ["https://github.com/nlohmann/json/releases/download/v3.7.3/include.zip"],
     ),
-    # August 18, 2020.
     org_tensorflow = dict(
         sha256 = "f681331f8fc0800883761c7709d13cda11942d4ad5ff9f44ad855e9dc78387e0",
         strip_prefix = "tensorflow-2.4.1",
         urls = ["https://github.com/tensorflow/tensorflow/archive/refs/tags/v2.4.1.tar.gz"],
     ),
     io_bazel_rules_closure = dict(
-        sha256 = "5b00383d08dd71f28503736db0500b6fb4dda47489ff5fc6bed42557c07c6ba9",
-        strip_prefix = "rules_closure-308b05b2419edb5c8ee0471b67a40403df940149",
-        urls = [
-            "https://github.com/bazelbuild/rules_closure/archive/308b05b2419edb5c8ee0471b67a40403df940149.tar.gz",
-        ],
+        sha256 = "9498e57368efb82b985db1ed426a767cbf1ba0398fd7aed632fc3908654e1b1e",
+        strip_prefix = "rules_closure-0.12.0",
+        urls = ["https://github.com/bazelbuild/rules_closure/archive/refs/tags/0.12.0.tar.gz"],
     ),
     # August 19, 2020.
     com_github_google_sentencepiece = dict(
@@ -301,9 +291,9 @@ REPOSITORY_LOCATIONS = dict(
         sha256 = "5319b77d6dc73af34bc256e7b18a7e0da50c787ef6f9e32785d045428b6473cc",
     ),
     com_github_USCiLab_cereal = dict(
-        urls = ["https://github.com/USCiLab/cereal/archive/af0700efb25e7dc7af637b9e6f970dbb94813bff.tar.gz"],
-        strip_prefix = "cereal-af0700efb25e7dc7af637b9e6f970dbb94813bff",
-        sha256 = "6b8e8975400a84eed20dcf4490f1b16efaadbbad6d1b5ffcc5e1da3e5be1c324",
+        urls = ["https://github.com/USCiLab/cereal/archive/refs/tags/v1.3.1.tar.gz"],
+        strip_prefix = "cereal-1.3.1",
+        sha256 = "65ea6ddda98f4274f5c10fb3e07b2269ccdd1e5cbb227be6a2fd78b8f382c976",
     ),
     rules_jvm_external = dict(
         urls = ["https://github.com/bazelbuild/rules_jvm_external/archive/refs/tags/4.2.tar.gz"],
