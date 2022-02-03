@@ -29,6 +29,7 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/segmentio/analytics-go.v3"
 
+	"px.dev/pixie/src/pixie_cli/pkg/auth"
 	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
 	"px.dev/pixie/src/pixie_cli/pkg/pxconfig"
 	"px.dev/pixie/src/pixie_cli/pkg/update"
@@ -165,7 +166,28 @@ var RootCmd = &cobra.Command{
 			c := color.New(color.Bold, color.FgGreen)
 			_, _ = c.Fprintf(os.Stderr, "Update to version \"%s\" available. Run \"px update cli\" to update.\n", versionStr)
 		}
+
+		// If the command requires auth, check that the user is logged in before running the command. Most of these commands,
+		// such as `px deploy` run through most of the command before suddenly complaining partway through when we
+		// actually hit Pixie Cloud.
+
+		// Check if the subcommand requires auth.
+		checkAuthForCmd(cmd)
+		// Check if any parents of the subcommand requires auth.
+		cmd.VisitParents(checkAuthForCmd)
 	},
+}
+
+func checkAuthForCmd(c *cobra.Command) {
+	switch c {
+	case DeployCmd, UpdateCmd, RunCmd, LiveCmd, GetCmd, ConfigCmd, ScriptCmd, DeployKeyCmd, APIKeyCmd:
+		authenticated := auth.IsAuthenticated(viper.GetString("cloud_addr"))
+		if !authenticated {
+			utils.Errorf("Failed to authenticate. Please retry `px auth login`.")
+			os.Exit(1)
+		}
+	default:
+	}
 }
 
 // Execute is the main function for the Cobra CLI.

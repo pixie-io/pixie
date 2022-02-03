@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -125,6 +126,31 @@ func LoadDefaultCredentials() (*RefreshToken, error) {
 
 	// TODO(zasgar): Exchange refresh token for new token type.
 	return token, nil
+}
+
+// IsAuthenticated returns whether the user is currently authenticated. This includes whether they have
+// existing credentials and whether those are actually valid.
+func IsAuthenticated(cloudAddr string) bool {
+	creds := MustLoadDefaultCredentials()
+	client := http.Client{}
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s/api/authorized", cloudAddr), nil)
+	if err != nil {
+		return false
+	}
+
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", creds.Token))
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return false
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return false
+	}
+
+	return string(body) == "OK"
 }
 
 // MustLoadDefaultCredentials loads the default credentials for the user.
