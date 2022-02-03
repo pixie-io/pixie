@@ -132,7 +132,7 @@ TEST_F(DataStreamTest, StuckTooLong) {
   EXPECT_THAT(stream.Frames<http::Message>(), IsEmpty());
 
   // Sleep for buffer_resync_duration_secs to a trigger resync starting from pos 1.
-  SET_TEST_FLAG(FLAGS_buffer_resync_duration_secs, 1);
+  PL_SET_FOR_SCOPE(FLAGS_buffer_resync_duration_secs, 1);
   sleep(FLAGS_buffer_resync_duration_secs);
 
   // Remaining data does not arrive in time, so stuck recovery has already removed req0a.

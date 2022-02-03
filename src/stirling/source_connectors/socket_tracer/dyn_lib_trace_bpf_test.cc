@@ -79,8 +79,8 @@ Commercial support is available at
 <a href... [TRUNCATED])";
 
 TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
-  FLAGS_stirling_rescan_for_dlopen = true;
-  FLAGS_stirling_rescan_exp_backoff_factor = 1.0;
+  PL_SET_FOR_SCOPE(FLAGS_stirling_rescan_for_dlopen, true);
+  PL_SET_FOR_SCOPE(FLAGS_stirling_rescan_exp_backoff_factor, 1.0);
 
   // Note that stirling is deployed before starting this test.
 

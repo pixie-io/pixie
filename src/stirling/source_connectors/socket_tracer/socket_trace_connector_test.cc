@@ -760,7 +760,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupCollecting) {
   }
 
   // Now set retention size to 0 and expect the collecting tracker to be cleaned-up.
-  SET_TEST_FLAG(FLAGS_datastream_buffer_retention_size, 0);
+  PL_SET_FOR_SCOPE(FLAGS_datastream_buffer_retention_size, 0);
   connector_->TransferData(ctx_.get(), data_tables_->tables());
 
   {
@@ -771,7 +771,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupCollecting) {
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
-  FLAGS_stirling_check_proc_for_conn_close = true;
+  PL_SET_FOR_SCOPE(FLAGS_stirling_check_proc_for_conn_close, true);
 
   // Inactive dead connections are determined by checking the /proc filesystem.
   // Here we create a PID that is a valid number, but non-existent on any Linux system.
@@ -808,7 +808,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
-  FLAGS_stirling_check_proc_for_conn_close = true;
+  PL_SET_FOR_SCOPE(FLAGS_stirling_check_proc_for_conn_close, true);
   ConnTracker::set_inactivity_duration(std::chrono::seconds(1));
 
   // Inactive alive connections are determined by checking the /proc filesystem.
