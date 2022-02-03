@@ -21,7 +21,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 go_library(
     name = "server_lib",
     srcs = ["main.go"],
-    importpath = "px.dev/pixie/src/e2e_test/http_loadtest_server/server",
+    importpath = "px.dev/pixie/src/e2e_test/http_loadtest/server",
     tags = ["manual"],
     visibility = ["//visibility:private"],
 )

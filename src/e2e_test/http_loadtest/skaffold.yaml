@@ -6,11 +6,11 @@ build:
   - image: gcr.io/pixie-oss/pixie-dev/experimental/http_high_throughput_workload
     context: .
     bazel:
-      target: //src/e2e_test/http_loadtest_server/server:http_workload_server_image.tar
+      target: //src/e2e_test/http_loadtest/server:http_workload_server_image.tar
   - image: gcr.io/pixie-oss/pixie-dev/experimental/wrk
-    context: src/e2e_test/http_loadtest_server/wrk_image
+    context: src/e2e_test/http_loadtest/wrk_image
   - image: gcr.io/pixie-oss/pixie-dev/experimental/hey
-    context: src/e2e_test/http_loadtest_server/hey_image
+    context: src/e2e_test/http_loadtest/hey_image
   tagPolicy:
     dateTime: {}
   local:
@@ -18,4 +18,4 @@ build:
 deploy:
   kustomize:
     paths:
-    - src/e2e_test/http_loadtest_server/k8s
+    - src/e2e_test/http_loadtest/k8s
