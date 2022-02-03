@@ -35,6 +35,8 @@ StatusOr<std::unique_ptr<Symbolizer>> CachingSymbolizer::Create(
   return uptr;
 }
 
+void CachingSymbolizer::IterationPreTick() { symbolizer_->IterationPreTick(); }
+
 profiler::SymbolizerFn CachingSymbolizer::GetSymbolizerFn(const struct upid_t& upid) {
   using std::placeholders::_1;
   const auto [iter, inserted] = symbol_caches_.try_emplace(upid, nullptr);

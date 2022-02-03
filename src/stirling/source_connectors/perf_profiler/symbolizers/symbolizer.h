@@ -50,6 +50,11 @@ class Symbolizer {
   virtual profiler::SymbolizerFn GetSymbolizerFn(const struct upid_t& upid) = 0;
 
   /**
+   * Performs any preprocessing that should happen per iteration on this Symbolizer.
+   */
+  virtual void IterationPreTick() = 0;
+
+  /**
    * Delete the state associated with a symbolizer created by a previous call to GetSymbolizerFn
    */
   virtual void DeleteUPID(const struct upid_t& upid) = 0;

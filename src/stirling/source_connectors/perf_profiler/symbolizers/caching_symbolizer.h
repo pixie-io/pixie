@@ -38,6 +38,7 @@ class CachingSymbolizer : public Symbolizer {
   profiler::SymbolizerFn GetSymbolizerFn(const struct upid_t& upid) override;
 
   void DeleteUPID(const struct upid_t& upid) override;
+  void IterationPreTick() override;
   size_t PerformEvictions();
 
   int64_t stat_accesses() const { return stat_accesses_; }

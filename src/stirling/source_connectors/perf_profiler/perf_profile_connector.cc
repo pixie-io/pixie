@@ -214,6 +214,10 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
   const uint32_t asid = ctx->GetASID();
   const absl::flat_hash_set<md::UPID>& upids_for_symbolization = ctx->GetUPIDs();
 
+  // Cause symbolizers to perform any necessary updates before we put them to work.
+  u_symbolizer_->IterationPreTick();
+  k_symbolizer_->IterationPreTick();
+
   // Create a new stringifier for this iteration of the continuous perf profiler.
   Stringifier stringifier(u_symbolizer_.get(), k_symbolizer_.get(), stack_traces);
 
