@@ -19,12 +19,12 @@
 usage() {
   echo "This script effectively executes 'bazel run' with sudo"
   echo ""
-  echo "Usage: $0 <bazel_flags> <bazel_target> [-- <arguments to binary>]"
+  echo "Usage: $0 <bazel_flags> <bazel_target> [-- <arguments to binary>] [-- <pass thru env vars>]"
   echo ""
   echo "Example:"
-  echo "  sudo_bazel_run.sh -c opt //src/stirling:socket_trace_bpf_test -- --gtest_filter=Test.Test"
-  echo "  if you wanted to run the following as sudo (which won't work)"
-  echo "  bazel run -c opt //src/stirling:socket_trace_bpf_test -- --gtest_filter=Test.Test"
+  echo "  # To run the following as root (contrived to show bazel args, test args, and pass thru env. vars):"
+  echo "  # PL_HOST_PATH=/tmp/pl bazel run -c dbg //src/stirling:socket_trace_bpf_test -- --gtest_filter=Test.Test"
+  echo "  PL_HOST_PATH=/tmp/pl scripts/sudo_bazel_run.sh -c dbg //src/stirling:socket_trace_bpf_test -- --gtest_filter=Test.Test -- PL_HOST_PATH"
 
   exit
 }
@@ -53,13 +53,38 @@ for x in "$@"; do
   shift
 done
 
+# Extract run args.
+# But leave pass through env. vars in the array.
+for x in "$@"; do
+  # Look for the argument separator.
+  if [[ "$x" == "--" ]]; then
+    shift
+    break;
+  fi
+  run_args+=("$x")
+  shift
+done
+
+for x in "$@"; do
+  # Fail if an additional argument separator is found.
+  if [[ "$x" == "--" ]]; then
+    echo "Extra \"--\" indicates more args, but this script does not understand them."
+    exit 1;
+  fi
+  # ${!x} expands to the value assigned to the env. var whose name is stored in x.
+  # If $x expands to FOO, and FOO is an env. var with value "123" then ${!x} expands to 123.
+  pass_thru_env_args+=("$x=${!x}")
+  pass_thru_env_vars+=("$x")
+  shift
+done
+
 options=("${build_args[@]::${#build_args[@]}-1}")
 target="${build_args[-1]}"
-run_args=("${@}")
 
 echo "Bazel options: ${options[*]}"
 echo "Bazel target: $target"
 echo "Run args: ${run_args[*]}"
+echo "Pass through env. vars: ${pass_thru_env_vars[*]}"
 
 # Perform the build as user (not as root).
 bazel build "${options[@]}" "$target"
@@ -73,4 +98,4 @@ target=${target//"//"/""}
 target=${bazel_bin}/${target}
 
 # Run the binary with sudo.
-sudo "$target" "${run_args[@]}"
+sudo "${pass_thru_env_args[@]}" "$target" "${run_args[@]}"
