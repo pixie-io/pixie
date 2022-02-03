@@ -19,13 +19,40 @@
 package main
 
 import (
+	"compress/gzip"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 )
+
+// Gzip handling adapted from https://gist.github.com/the42/1956518
+type gzipResponseWriter struct {
+	io.Writer
+	http.ResponseWriter
+}
+
+func (w gzipResponseWriter) Write(b []byte) (int, error) {
+	return w.Writer.Write(b)
+}
+
+func optionallyGzipMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			next(w, r)
+			return
+		}
+		w.Header().Set("Content-Encoding", "gzip")
+		w.Header().Set("Content-Type", "text/plain")
+		gz := gzip.NewWriter(w)
+		defer gz.Close()
+		gzr := gzipResponseWriter{Writer: gz, ResponseWriter: w}
+		next(gzr, r)
+	}
+}
 
 type httpContent struct {
 	headers map[string]string
@@ -45,14 +72,15 @@ func makeSimpleServeFunc(numBytesHeaders int, numBytesBody int) http.HandlerFunc
 	content := buildHTTPContent(numBytesHeaders, numBytesBody, "s")
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Force content to not be chunked.
-		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(content.body)))
-		_, err := fmt.Fprint(w, content.body)
+		bytesWritten, err := fmt.Fprint(w, content.body)
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", bytesWritten))
 		if err != nil {
 			log.Println("error")
 		}
 	}
 }
 
+// Chunked+GZip not currently supported.
 func makeChunkedServeFunc(numBytesHeaders int, numBytesBody int, numChunks int) http.HandlerFunc {
 	content := buildHTTPContent(numBytesHeaders, numBytesBody, "c")
 	chunkedBody := make([]string, numChunks)
@@ -87,7 +115,7 @@ func main() {
 		log.Fatalln("Must specify valid integer NUM_BYTES_BODY in environment")
 	}
 
-	http.HandleFunc("/", makeSimpleServeFunc(numBytesHeaders, numBytesBody))
+	http.HandleFunc("/", optionallyGzipMiddleware(makeSimpleServeFunc(numBytesHeaders, numBytesBody)))
 	http.HandleFunc("/chunked", makeChunkedServeFunc(numBytesHeaders, numBytesBody, 10))
 
 	port := os.Getenv("PORT")
