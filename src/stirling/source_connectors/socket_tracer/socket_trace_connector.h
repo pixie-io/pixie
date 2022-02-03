@@ -49,7 +49,7 @@
 
 DECLARE_uint32(stirling_conn_stats_sampling_ratio);
 DECLARE_bool(stirling_enable_periodic_bpf_map_cleanup);
-DECLARE_string(perf_buffer_events_output_path);
+DECLARE_string(socket_trace_data_events_output_path);
 DECLARE_bool(stirling_enable_http_tracing);
 DECLARE_bool(stirling_enable_http2_tracing);
 DECLARE_bool(stirling_enable_mysql_tracing);

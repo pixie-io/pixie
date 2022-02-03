@@ -62,7 +62,7 @@ DEFINE_int32(test_only_socket_trace_target_pid, kTraceAllTGIDs, "The process to 
 // TODO(yzhao): If we ever need to write all events from different perf buffers, then we need either
 // write to different files for individual perf buffers, or create a protobuf message with an oneof
 // field to include all supported message types.
-DEFINE_string(perf_buffer_events_output_path, "",
+DEFINE_string(socket_trace_data_events_output_path, "",
               "If not empty, specifies the path & format to a file to which the socket tracer "
               "writes data events. If the filename ends with '.bin', the events are serialized in "
               "binary format; otherwise, text format.");
@@ -313,8 +313,8 @@ Status SocketTraceConnector::InitBPF() {
   if (FLAGS_stirling_disable_self_tracing) {
     PL_RETURN_IF_ERROR(DisableSelfTracing());
   }
-  if (!FLAGS_perf_buffer_events_output_path.empty()) {
-    SetupOutput(FLAGS_perf_buffer_events_output_path);
+  if (!FLAGS_socket_trace_data_events_output_path.empty()) {
+    SetupOutput(FLAGS_socket_trace_data_events_output_path);
   }
 
   return Status::OK();
@@ -1063,7 +1063,7 @@ void SocketTraceConnector::SetupOutput(const std::filesystem::path& path) {
   perf_buffer_events_output_stream_ = std::make_unique<std::ofstream>(abs_path);
   std::string format = "text";
   constexpr char kBinSuffix[] = ".bin";
-  if (absl::EndsWith(FLAGS_perf_buffer_events_output_path, kBinSuffix)) {
+  if (absl::EndsWith(FLAGS_socket_trace_data_events_output_path, kBinSuffix)) {
     perf_buffer_events_output_format_ = OutputFormat::kBin;
     format = "binary";
   }
