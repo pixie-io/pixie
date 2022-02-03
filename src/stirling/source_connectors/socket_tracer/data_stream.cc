@@ -26,11 +26,11 @@ DEFINE_uint32(datastream_buffer_retention_size,
               gflags::Uint32FromEnv("PL_DATASTREAM_BUFFER_SIZE", 1024 * 1024),
               "The maximum size of a data stream buffer retained between cycles.");
 DEFINE_uint32(datastream_buffer_spike_size,
-              gflags::Uint32FromEnv("PL_DATASTREAM_BUFFER_SPIKE_SIZE", 500 * 1024 * 1024),
+              gflags::Uint32FromEnv("PL_DATASTREAM_BUFFER_SPIKE_SIZE", 50 * 1024 * 1024),
               "The maximum temporary size of a data stream buffer before processing.");
 DEFINE_uint32(
     datastream_buffer_max_gap_size,
-    gflags::Uint32FromEnv("PL_DATASTREAM_BUFFER_MAX_GAP_SIZE", 100 * 1024 * 1024),
+    gflags::Uint32FromEnv("PL_DATASTREAM_BUFFER_MAX_GAP_SIZE", 10 * 1024 * 1024),
     "The maximum gap in data to allow before giving up on previous events in the buffer.");
 DEFINE_uint32(datastream_buffer_allow_before_gap_size,
               gflags::Uint32FromEnv("PL_DATASTREAM_BUFFER_ALLOW_BEFORE_GAP_SIZE", 1 * 1024 * 1024),
