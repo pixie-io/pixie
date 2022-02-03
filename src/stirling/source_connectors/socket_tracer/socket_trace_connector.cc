@@ -1129,18 +1129,17 @@ void SocketTraceConnector::TransferStream(ConnectorContext* ctx, ConnTracker* tr
           &record, [&](uint64_t mono_time) { return ConvertToRealTime(mono_time); });
       AppendMessage(ctx, *tracker, std::move(record), data_table);
     }
-
-    auto message_expiry_timestamp =
-        iteration_time_ - std::chrono::seconds(FLAGS_messages_expiry_duration_secs);
-
-    auto buffer_expiry_timestamp =
-        std::chrono::steady_clock::now() -
-        std::chrono::seconds(FLAGS_datastream_buffer_expiry_duration_secs);
-
-    tracker->Cleanup<TProtocolTraits>(FLAGS_messages_size_limit_bytes,
-                                      FLAGS_datastream_buffer_retention_size,
-                                      message_expiry_timestamp, buffer_expiry_timestamp);
   }
+
+  auto message_expiry_timestamp =
+      iteration_time_ - std::chrono::seconds(FLAGS_messages_expiry_duration_secs);
+
+  auto buffer_expiry_timestamp = std::chrono::steady_clock::now() -
+                                 std::chrono::seconds(FLAGS_datastream_buffer_expiry_duration_secs);
+
+  tracker->Cleanup<TProtocolTraits>(FLAGS_messages_size_limit_bytes,
+                                    FLAGS_datastream_buffer_retention_size,
+                                    message_expiry_timestamp, buffer_expiry_timestamp);
 }
 
 void SocketTraceConnector::TransferConnStats(ConnectorContext* ctx, DataTable* data_table) {

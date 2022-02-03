@@ -31,6 +31,13 @@
 #include "src/shared/upid/upid.h"
 #include "src/stirling/core/data_table.h"
 
+// A macro that sets a flag, but then restore it to its original value after the scope exits.
+// Useful for setting a flag for the duration of a test.
+#define SET_TEST_FLAG(var, val) \
+  auto var##__orig = var;       \
+  DEFER(var = var##__orig);     \
+  var = val;
+
 namespace px {
 
 namespace types {

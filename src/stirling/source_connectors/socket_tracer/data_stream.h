@@ -169,6 +169,11 @@ class DataStream : NotCopyMoveable {
   template <typename TFrameType>
   void CleanupFrames(size_t size_limit_bytes,
                      std::chrono::time_point<std::chrono::steady_clock> expiry_timestamp) {
+    // This call has the side-effect of initializing the frames deque appropriately.
+    // Without this, FramesSize() can error out.
+    // TODO(oazizi): Find a better way to make sure the frames deque is initialized.
+    PL_UNUSED(Frames<TFrameType>());
+
     size_t size = FramesSize<TFrameType>();
     if (size > size_limit_bytes) {
       VLOG(1) << absl::Substitute("Messages cleared due to size limit ($0 > $1).", size,

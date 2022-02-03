@@ -726,6 +726,49 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupNoProtocol) {
   EXPECT_NOT_OK(source_->GetConnTracker(kPID, kFD));
 }
 
+TEST_F(SocketTraceConnectorTest, ConnectionCleanupCollecting) {
+  testing::EventGenerator event_gen(&mock_clock_);
+
+  // Create an event with family PX_AF_UNKNOWN so that tracker goes into collecting state.
+  struct socket_control_event_t conn0 = event_gen.InitConn();
+  conn0.open.addr.sa.sa_family = PX_AF_UNKNOWN;
+
+  std::unique_ptr<SocketDataEvent> conn0_req_event =
+      event_gen.InitSendEvent<kProtocolHTTP>(kReq0.substr(0, 10));
+
+  // Need an initial TransferData() to initialize the times.
+  connector_->TransferData(ctx_.get(), data_tables_->tables());
+
+  source_->AcceptControlEvent(conn0);
+  source_->AcceptDataEvent(std::move(conn0_req_event));
+
+  // After events arrive, we expect the tracker to be in collecting state
+  {
+    ASSERT_OK_AND_ASSIGN(const ConnTracker* tracker, source_->GetConnTracker(kPID, kFD));
+    ASSERT_EQ(tracker->state(), ConnTracker::State::kCollecting);
+    ASSERT_GT(tracker->send_data().data_buffer().size(), 0);
+  }
+
+  connector_->TransferData(ctx_.get(), data_tables_->tables());
+
+  // With default TransferData(), we expect the data to be retained.
+  {
+    ASSERT_OK_AND_ASSIGN(const ConnTracker* tracker, source_->GetConnTracker(kPID, kFD));
+    ASSERT_EQ(tracker->state(), ConnTracker::State::kCollecting);
+    ASSERT_GT(tracker->send_data().data_buffer().size(), 0);
+  }
+
+  // Now set retention size to 0 and expect the collecting tracker to be cleaned-up.
+  SET_TEST_FLAG(FLAGS_datastream_buffer_retention_size, 0);
+  connector_->TransferData(ctx_.get(), data_tables_->tables());
+
+  {
+    ASSERT_OK_AND_ASSIGN(const ConnTracker* tracker, source_->GetConnTracker(kPID, kFD));
+    ASSERT_EQ(tracker->state(), ConnTracker::State::kCollecting);
+    ASSERT_EQ(tracker->send_data().data_buffer().size(), 0);
+  }
+}
+
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
   FLAGS_stirling_check_proc_for_conn_close = true;
 

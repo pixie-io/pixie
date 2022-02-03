@@ -723,13 +723,13 @@ std::string DebugString(const ConnTracker& c, std::string_view prefix) {
   info += absl::Substitute("$0remote_addr=$1:$2\n", prefix, c.remote_endpoint().AddrStr(),
                            c.remote_endpoint().port());
   info += absl::Substitute("$0protocol=$1\n", prefix, magic_enum::enum_name(c.protocol()));
-  info += absl::Substitute("$0recv queue\n", prefix);
-  info += absl::Substitute("$0send queue\n", prefix);
   if constexpr (std::is_same_v<TFrameType, protocols::http2::Stream>) {
     info += c.http2_client_streams_.DebugString(absl::StrCat(prefix, "  "));
     info += c.http2_server_streams_.DebugString(absl::StrCat(prefix, "  "));
   } else {
+    info += absl::Substitute("$0recv queue\n", prefix);
     info += DebugString<TFrameType>(c.recv_data(), absl::StrCat(prefix, "  "));
+    info += absl::Substitute("$0send queue\n", prefix);
     info += DebugString<TFrameType>(c.send_data(), absl::StrCat(prefix, "  "));
   }
 
