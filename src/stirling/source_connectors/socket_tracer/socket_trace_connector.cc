@@ -101,12 +101,19 @@ DEFINE_uint32(stirling_socket_tracer_target_data_bw_percpu, 100 * 1024 * 1024,
 DEFINE_uint32(stirling_socket_tracer_target_control_bw_percpu, 5 * 1024 * 1024,
               "Target bytes/sec of control events per CPU");
 
-DEFINE_uint32(messages_expiration_duration_secs, 10 * 60,
-              "The duration for which a cached message to be erased.");
+DEFINE_uint32(messages_expiry_duration_secs, 10 * 60,
+              "The duration after which a parsed message is erased.");
 DEFINE_uint32(messages_size_limit_bytes, 1024 * 1024,
               "The limit of the size of the parsed messages, not the BPF events, "
               "for each direction, of each connection tracker. "
-              "All cached messages are erased if this limit is breached.");
+              "All stored messages are erased if this limit is breached.");
+
+DEFINE_uint32(
+    datastream_buffer_expiry_duration_secs, 10,
+    "The duration after which a buffer will be cleared if there is no progress in the parser.");
+DEFINE_uint32(datastream_buffer_retention_size,
+              gflags::Uint32FromEnv("PL_DATASTREAM_BUFFER_SIZE", 1024 * 1024),
+              "The maximum size of a data stream buffer retained between cycles.");
 
 BPF_SRC_STRVIEW(socket_trace_bcc_script, socket_trace);
 
@@ -1123,9 +1130,16 @@ void SocketTraceConnector::TransferStream(ConnectorContext* ctx, ConnTracker* tr
       AppendMessage(ctx, *tracker, std::move(record), data_table);
     }
 
-    auto expiry_timestamp =
-        iteration_time_ - std::chrono::seconds(FLAGS_messages_expiration_duration_secs);
-    tracker->Cleanup<TProtocolTraits>(FLAGS_messages_size_limit_bytes, expiry_timestamp);
+    auto message_expiry_timestamp =
+        iteration_time_ - std::chrono::seconds(FLAGS_messages_expiry_duration_secs);
+
+    auto buffer_expiry_timestamp =
+        std::chrono::steady_clock::now() -
+        std::chrono::seconds(FLAGS_datastream_buffer_expiry_duration_secs);
+
+    tracker->Cleanup<TProtocolTraits>(FLAGS_messages_size_limit_bytes,
+                                      FLAGS_datastream_buffer_retention_size,
+                                      message_expiry_timestamp, buffer_expiry_timestamp);
   }
 }
 

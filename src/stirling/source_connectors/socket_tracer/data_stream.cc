@@ -22,9 +22,6 @@
 #include "src/stirling/source_connectors/socket_tracer/data_stream.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/types.h"
 
-DEFINE_uint32(datastream_buffer_retention_size,
-              gflags::Uint32FromEnv("PL_DATASTREAM_BUFFER_SIZE", 1024 * 1024),
-              "The maximum size of a data stream buffer retained between cycles.");
 DEFINE_uint32(datastream_buffer_spike_size,
               gflags::Uint32FromEnv("PL_DATASTREAM_BUFFER_SPIKE_SIZE", 50 * 1024 * 1024),
               "The maximum temporary size of a data stream buffer before processing.");
@@ -169,11 +166,8 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
   bool events_but_no_progress = !data_buffer_.empty() && (data_buffer_.position() == orig_pos);
   if (events_but_no_progress) {
     ++stuck_count_;
-  }
-
-  // If the size of the buffer after the processing loop is bigger than capacity, truncate the head.
-  if (data_buffer_.size() > retention_capacity_) {
-    data_buffer_.RemovePrefix(data_buffer_.size() - retention_capacity_);
+  } else {
+    UpdateLastProgressTime();
   }
 
   if (parse_result.state == ParseState::kEOS) {
@@ -189,6 +183,7 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
     // TODO(oazizi): A dedicated data_buffer_.Flush() implementation would be more efficient.
     data_buffer_.RemovePrefix(data_buffer_.size());
     stuck_count_ = 0;
+    UpdateLastProgressTime();
   }
 
   // Shrink the data buffer's allocated memory to fit just what is retained.
@@ -227,6 +222,7 @@ void DataStream::Reset() {
   data_buffer_.Reset();
   has_new_events_ = false;
   stuck_count_ = 0;
+  UpdateLastProgressTime();
 
   frames_ = std::monostate();
 }

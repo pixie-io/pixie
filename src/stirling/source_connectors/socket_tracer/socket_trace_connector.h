@@ -65,8 +65,10 @@ DECLARE_string(stirling_role_to_trace);
 DECLARE_uint32(stirling_socket_tracer_target_data_bw_percpu);
 DECLARE_uint32(stirling_socket_tracer_target_control_bw_percpu);
 
-DECLARE_uint32(messages_expiration_duration_secs);
+DECLARE_uint32(messages_expiry_duration_secs);
 DECLARE_uint32(messages_size_limit_bytes);
+DECLARE_uint32(datastream_buffer_expiry_duration_secs);
+DECLARE_uint32(datastream_buffer_retention_size);
 
 namespace px {
 namespace stirling {

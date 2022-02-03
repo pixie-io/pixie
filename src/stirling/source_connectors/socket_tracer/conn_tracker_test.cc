@@ -358,39 +358,59 @@ TEST_F(ConnTrackerTest, DataEventsChangesCounter) {
   EXPECT_EQ(kHTTPResp0.size(), tracker.GetStat(ConnTracker::StatKey::kBytesSent));
 }
 
-TEST_F(ConnTrackerTest, HTTPStuckEventsAreRemoved) {
+TEST_F(ConnTrackerTest, BufferClearedAfterExpiration) {
   // Use incomplete data to make it stuck.
   testing::EventGenerator event_gen(&real_clock_);
   auto data0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(0, 10));
-  auto data1 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(10, 10));
+  auto data1 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
 
   ConnTracker tracker;
 
   // Set limit and expiry very large to make them non-factors.
-  int size_limit_bytes = 10000;
-  auto expiry_timestamp = std::chrono::steady_clock::now() - std::chrono::seconds(10000);
+  int frame_size_limit_bytes = 10000;
+  int buffer_size_limit_bytes = 10000;
+  auto frame_expiry_timestamp = std::chrono::steady_clock::now() - std::chrono::seconds(10000);
+  auto buffer_expiry_timestamp = std::chrono::steady_clock::now() - std::chrono::seconds(10000);
 
   tracker.AddDataEvent(std::move(data0));
   tracker.ProcessToRecords<http::ProtocolTraits>();
-  tracker.Cleanup<http::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
-  EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
-  tracker.ProcessToRecords<http::ProtocolTraits>();
-  tracker.Cleanup<http::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
-  EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
-  tracker.ProcessToRecords<http::ProtocolTraits>();
-  tracker.Cleanup<http::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
-  EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
+  tracker.Cleanup<http::ProtocolTraits>(frame_size_limit_bytes, buffer_size_limit_bytes,
+                                        frame_expiry_timestamp, buffer_expiry_timestamp);
+  EXPECT_FALSE(tracker.req_data()->data_buffer().empty());
 
-  // The 4th time, the stuck condition is detected and all data is purged.
+  // After buffer expires upon timeout, all data in the buffer is purged.
+  buffer_expiry_timestamp = std::chrono::steady_clock::now();
   tracker.ProcessToRecords<http::ProtocolTraits>();
-  tracker.Cleanup<http::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
-  EXPECT_TRUE(tracker.req_data()->Empty<http::Message>());
+  tracker.Cleanup<http::ProtocolTraits>(frame_size_limit_bytes, buffer_size_limit_bytes,
+                                        frame_expiry_timestamp, buffer_expiry_timestamp);
+  EXPECT_TRUE(tracker.req_data()->data_buffer().empty());
 
-  // Now the stuck count is reset, so the event is kept.
+  // Set the buffer_expiry_timestamp to a long time ago, so next event is kept.
+  buffer_expiry_timestamp = std::chrono::steady_clock::now() - std::chrono::seconds(10000);
   tracker.AddDataEvent(std::move(data1));
   tracker.ProcessToRecords<http::ProtocolTraits>();
-  tracker.Cleanup<http::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
-  EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
+  tracker.Cleanup<http::ProtocolTraits>(frame_size_limit_bytes, buffer_size_limit_bytes,
+                                        frame_expiry_timestamp, buffer_expiry_timestamp);
+  EXPECT_EQ(tracker.req_data()->Frames<http::Message>().size(), 1);
+}
+
+TEST_F(ConnTrackerTest, BufferTruncatedBeyondSizeLimit) {
+  testing::EventGenerator event_gen(&real_clock_);
+  auto data0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(0, 20));
+
+  ConnTracker tracker;
+
+  int frame_size_limit_bytes = 10000;
+  int buffer_size_limit_bytes = 10;
+  auto frame_expiry_timestamp = std::chrono::steady_clock::now() - std::chrono::seconds(10000);
+  auto buffer_expiry_timestamp = std::chrono::steady_clock::now() - std::chrono::seconds(10000);
+
+  tracker.AddDataEvent(std::move(data0));
+  tracker.ProcessToRecords<http::ProtocolTraits>();
+  tracker.Cleanup<http::ProtocolTraits>(frame_size_limit_bytes, buffer_size_limit_bytes,
+                                        frame_expiry_timestamp, buffer_expiry_timestamp);
+  EXPECT_EQ(tracker.req_data()->data_buffer().size(), buffer_size_limit_bytes);
+  EXPECT_THAT(tracker.req_frames<http::Message>(), IsEmpty());
 }
 
 TEST_F(ConnTrackerTest, MessagesErasedAfterExpiration) {
@@ -402,20 +422,22 @@ TEST_F(ConnTrackerTest, MessagesErasedAfterExpiration) {
 
   ConnTracker tracker;
 
-  int size_limit_bytes = 10000;
-  auto expiry_timestamp = std::chrono::steady_clock::now() - std::chrono::seconds(10000);
+  int frame_size_limit_bytes = 10000;
+  int buffer_size_limit_bytes = 10000;
+  auto frame_expiry_timestamp = std::chrono::steady_clock::now() - std::chrono::seconds(10000);
+  auto buffer_expiry_timestamp = std::chrono::steady_clock::now() - std::chrono::seconds(10000);
+
   tracker.AddDataEvent(std::move(frame0));
   tracker.ProcessToRecords<http::ProtocolTraits>();
-  tracker.Cleanup<http::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
+  tracker.Cleanup<http::ProtocolTraits>(frame_size_limit_bytes, buffer_size_limit_bytes,
+                                        frame_expiry_timestamp, buffer_expiry_timestamp);
   EXPECT_THAT(tracker.req_frames<http::Message>(), SizeIs(1));
 
-  expiry_timestamp = std::chrono::steady_clock::now();
+  frame_expiry_timestamp = std::chrono::steady_clock::now();
   tracker.ProcessToRecords<http::ProtocolTraits>();
-  tracker.Cleanup<http::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
+  tracker.Cleanup<http::ProtocolTraits>(frame_size_limit_bytes, buffer_size_limit_bytes,
+                                        frame_expiry_timestamp, buffer_expiry_timestamp);
   EXPECT_THAT(tracker.req_frames<http::Message>(), IsEmpty());
-
-  // TODO(yzhao): It's not possible to test the response messages, as they are immediately exported
-  // without waiting for the requests.
 }
 
 // Tests that tracker state is kDisabled if the remote address is in the cluster's CIDR range.

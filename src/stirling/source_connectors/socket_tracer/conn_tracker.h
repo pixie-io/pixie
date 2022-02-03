@@ -511,27 +511,28 @@ class ConnTracker : NotCopyMoveable {
   }
 
   template <typename TProtocolTraits>
-  void Cleanup(size_t size_limit_bytes,
-               std::chrono::time_point<std::chrono::steady_clock> expiry_timestamp) {
+  void Cleanup(size_t frame_size_limit_bytes, size_t buffer_size_limit_bytes,
+               std::chrono::time_point<std::chrono::steady_clock> frame_expiry_timestamp,
+               std::chrono::time_point<std::chrono::steady_clock> buffer_expiry_timestamp) {
     using TFrameType = typename TProtocolTraits::frame_type;
     using TStateType = typename TProtocolTraits::state_type;
 
     if constexpr (std::is_same_v<TFrameType, protocols::http2::Stream>) {
-      http2_client_streams_.Cleanup(size_limit_bytes, expiry_timestamp);
-      http2_server_streams_.Cleanup(size_limit_bytes, expiry_timestamp);
+      http2_client_streams_.Cleanup(frame_size_limit_bytes, frame_expiry_timestamp);
+      http2_server_streams_.Cleanup(frame_size_limit_bytes, frame_expiry_timestamp);
     } else {
-      send_data_.CleanupFrames<TFrameType>(size_limit_bytes, expiry_timestamp);
-      recv_data_.CleanupFrames<TFrameType>(size_limit_bytes, expiry_timestamp);
+      send_data_.CleanupFrames<TFrameType>(frame_size_limit_bytes, frame_expiry_timestamp);
+      recv_data_.CleanupFrames<TFrameType>(frame_size_limit_bytes, frame_expiry_timestamp);
     }
 
     auto* state = protocol_state<TStateType>();
-    if (send_data_.CleanupEvents()) {
+    if (send_data_.CleanupEvents(buffer_size_limit_bytes, buffer_expiry_timestamp)) {
       if (state != nullptr) {
         state->global = {};
         state->send = {};
       }
     }
-    if (recv_data_.CleanupEvents()) {
+    if (recv_data_.CleanupEvents(buffer_size_limit_bytes, buffer_expiry_timestamp)) {
       if (state != nullptr) {
         state->global = {};
         state->recv = {};

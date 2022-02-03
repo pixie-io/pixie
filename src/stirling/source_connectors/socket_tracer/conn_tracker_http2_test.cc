@@ -237,19 +237,23 @@ TEST_F(ConnTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterBreachingSizeLimit) {
   // Events with even stream IDs are put on recv_data_.
   header_event2->attr.stream_id = 8;
 
-  int size_limit_bytes = 10000;
-  auto expiry_timestamp = std::chrono::steady_clock::now() - std::chrono::seconds(10000);
+  int frame_size_limit_bytes = 10000;
+  int buffer_size_limit_bytes = 10000;
+  auto frame_expiry_timestamp = std::chrono::steady_clock::now() - std::chrono::seconds(10000);
+  auto buffer_expiry_timestamp = std::chrono::steady_clock::now() - std::chrono::seconds(10000);
   tracker_.AddHTTP2Header(std::move(header_event1));
   tracker_.AddHTTP2Header(std::move(header_event2));
   tracker_.ProcessToRecords<http2::ProtocolTraits>();
-  tracker_.Cleanup<http2::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
+  tracker_.Cleanup<http2::ProtocolTraits>(frame_size_limit_bytes, buffer_size_limit_bytes,
+                                          frame_expiry_timestamp, buffer_expiry_timestamp);
 
   EXPECT_EQ(tracker_.http2_client_streams_size(), 1);
   EXPECT_EQ(tracker_.http2_server_streams_size(), 1);
 
-  size_limit_bytes = 0;
+  frame_size_limit_bytes = 0;
   tracker_.ProcessToRecords<http2::ProtocolTraits>();
-  tracker_.Cleanup<http2::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
+  tracker_.Cleanup<http2::ProtocolTraits>(frame_size_limit_bytes, buffer_size_limit_bytes,
+                                          frame_expiry_timestamp, buffer_expiry_timestamp);
   EXPECT_EQ(tracker_.http2_client_streams_size(), 0);
   EXPECT_EQ(tracker_.http2_server_streams_size(), 0);
 }
@@ -262,20 +266,23 @@ TEST_F(ConnTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterExpiration) {
   // Change the second to be a different stream ID.
   header_event2->attr.stream_id = 8;
 
-  int size_limit_bytes = 10000;
-  auto expiry_timestamp = std::chrono::steady_clock::now() - std::chrono::seconds(10000);
+  int frame_size_limit_bytes = 10000;
+  int buffer_size_limit_bytes = 10000;
+  auto frame_expiry_timestamp = std::chrono::steady_clock::now() - std::chrono::seconds(10000);
+  auto buffer_expiry_timestamp = std::chrono::steady_clock::now() - std::chrono::seconds(10000);
   tracker_.AddHTTP2Header(std::move(header_event1));
   tracker_.AddHTTP2Header(std::move(header_event2));
   tracker_.ProcessToRecords<http2::ProtocolTraits>();
-  tracker_.Cleanup<http2::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
+  tracker_.Cleanup<http2::ProtocolTraits>(frame_size_limit_bytes, buffer_size_limit_bytes,
+                                          frame_expiry_timestamp, buffer_expiry_timestamp);
 
   EXPECT_EQ(tracker_.http2_client_streams_size(), 1);
   EXPECT_EQ(tracker_.http2_server_streams_size(), 1);
 
-  size_limit_bytes = 10000;
-  expiry_timestamp = std::chrono::steady_clock::now();
+  frame_expiry_timestamp = std::chrono::steady_clock::now();
   tracker_.ProcessToRecords<http2::ProtocolTraits>();
-  tracker_.Cleanup<http2::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
+  tracker_.Cleanup<http2::ProtocolTraits>(frame_size_limit_bytes, buffer_size_limit_bytes,
+                                          frame_expiry_timestamp, buffer_expiry_timestamp);
   EXPECT_EQ(tracker_.http2_client_streams_size(), 0);
   EXPECT_EQ(tracker_.http2_server_streams_size(), 0);
 }

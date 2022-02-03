@@ -28,7 +28,6 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/data_stream_buffer.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/types.h"
 
-DECLARE_uint32(datastream_buffer_retention_size);
 DECLARE_uint32(datastream_buffer_spike_size);
 DECLARE_uint32(datastream_buffer_max_gap_size);
 DECLARE_uint32(datastream_buffer_allow_before_gap_size);
@@ -49,11 +48,9 @@ class DataStream : NotCopyMoveable {
  public:
   // Make the underlying raw buffer size limit the same as the parsed frames byte limit.
   DataStream(uint32_t spike_capacity = FLAGS_datastream_buffer_spike_size,
-             uint32_t retention_capacity = FLAGS_datastream_buffer_retention_size,
              uint32_t max_gap_size = FLAGS_datastream_buffer_max_gap_size,
              uint32_t allow_before_gap_size = FLAGS_datastream_buffer_allow_before_gap_size)
-      : data_buffer_(spike_capacity, max_gap_size, allow_before_gap_size),
-        retention_capacity_(retention_capacity) {}
+      : data_buffer_(spike_capacity, max_gap_size, allow_before_gap_size) {}
 
   /**
    * Adds a raw (unparsed) chunk of data into the stream.
@@ -116,7 +113,7 @@ class DataStream : NotCopyMoveable {
   }
 
   /**
-   * Clears all unparsed and parsed data from the Datastream.
+   * Clears all the data in the data buffer;
    */
   void Reset();
 
@@ -130,20 +127,11 @@ class DataStream : NotCopyMoveable {
                                     std::get<std::deque<TFrameType>>(frames_).empty());
   }
 
-  /**
-   * Checks if the DataStream is in a Stuck state, which means that it has
-   * raw events with no missing events, but that it cannot parse anything.
-   *
-   * @return true if DataStream is stuck.
-   */
-  bool IsStuck() const {
-    constexpr int kMaxStuckCount = 3;
-    return stuck_count_ > kMaxStuckCount;
-  }
-
   int stat_invalid_frames() const { return stat_invalid_frames_; }
   int stat_valid_frames() const { return stat_valid_frames_; }
   int stat_raw_data_gaps() const { return stat_raw_data_gaps_; }
+
+  void UpdateLastProgressTime() { last_progress_time_ = std::chrono::steady_clock::now(); }
 
   /**
    * Fraction of frame parsing attempts that resulted in an invalid frame.
@@ -193,12 +181,18 @@ class DataStream : NotCopyMoveable {
   /**
    * Cleanup BPF events that are not able to be be processed.
    */
-  bool CleanupEvents() {
-    if (IsStuck()) {
-      // We are assuming that when this stream is stuck, the messages previously parsed are unlikely
-      // to be useful, as they are even older than the events being purged now.
+  bool CleanupEvents(size_t size_limit_bytes,
+                     std::chrono::time_point<std::chrono::steady_clock> expiry_timestamp) {
+    // We are assuming that when this stream is stuck, we clear the data buffer.
+    if (last_progress_time_ < expiry_timestamp) {
       Reset();
       return true;
+    }
+
+    // If the size of the buffer after the processing loop is bigger than capacity, truncate the
+    // head.
+    if (data_buffer_.size() > size_limit_bytes) {
+      data_buffer_.RemovePrefix(data_buffer_.size() - size_limit_bytes);
     }
 
     return false;
@@ -228,8 +222,6 @@ class DataStream : NotCopyMoveable {
   // Raw data events from BPF.
   protocols::DataStreamBuffer data_buffer_;
 
-  uint32_t retention_capacity_ = 0;
-
   // Vector of parsed HTTP/MySQL messages.
   // Once parsed, the raw data events should be discarded.
   // std::variant adds 8 bytes of overhead (to 80->88 for deque)
@@ -252,6 +244,10 @@ class DataStream : NotCopyMoveable {
   // Note: unlike the monotonic stats below, this resets when the stuck condition is cleared.
   // Thus it is a state, not a statistic.
   int stuck_count_ = 0;
+
+  // The timestamp when progress was last made in the data buffer. It's used in CleanupEvents().
+  std::chrono::time_point<std::chrono::steady_clock> last_progress_time_ =
+      std::chrono::steady_clock::now();
 
   // Keep some stats on ParseFrames() attempts.
   int stat_valid_frames_ = 0;
