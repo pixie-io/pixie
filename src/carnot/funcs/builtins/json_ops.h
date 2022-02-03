@@ -96,8 +96,17 @@ class PluckAsInt64UDF : public udf::ScalarUDF {
     if (!d.IsObject()) {
       return 0;
     }
+    if (!d.HasMember(key.data())) {
+      return 0;
+    }
     const auto& plucked_value = d[key.data()];
-    return plucked_value.GetInt64();
+    if (plucked_value.IsNull()) {
+      return 0;
+    }
+    if (plucked_value.IsInt64()) {
+      return plucked_value.GetInt64();
+    }
+    return 0;
   }
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder(
@@ -131,8 +140,17 @@ class PluckAsFloat64UDF : public udf::ScalarUDF {
     if (!d.IsObject()) {
       return 0.0;
     }
+    if (!d.HasMember(key.data())) {
+      return 0.0;
+    }
     const auto& plucked_value = d[key.data()];
-    return plucked_value.GetDouble();
+    if (plucked_value.IsNull()) {
+      return 0.0;
+    }
+    if (plucked_value.IsDouble()) {
+      return plucked_value.GetDouble();
+    }
+    return 0.0;
   }
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder(
