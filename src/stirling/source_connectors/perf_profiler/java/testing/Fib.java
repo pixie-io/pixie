@@ -39,11 +39,23 @@ class JavaFib {
   }
 
   public static long fib27() {
-    return fib(27);
+    // Need to loop here for the stack trace sampler to pick up symbol fib27.
+    long ntrials = 10000;
+    long x = 0;
+    for(long i=0; i < ntrials; i++) {
+      x = fib(27);
+    }
+    return x;
   }
 
   public static long fib52() {
-    return fib(52);
+    // Need to loop here for the stack trace sampler to pick up symbol fib52.
+    long ntrials = 10000;
+    long x = 0;
+    for(long i=0; i < ntrials; i++) {
+      x = fib(52);
+    }
+    return x;
   }
 
   public static void main(String[] args) {
@@ -54,6 +66,9 @@ class JavaFib {
 
     for(long i=0; i < ntrials; i++) {
       for(long j=0; j < ntrials; j++) {
+        // Contrived to do the following:
+        // 1. Run for a (really) long time (i.e. until the process is externally killed).
+        // 2. Spend twice as much time in fib52() vs. fib27().
         f27 = fib27();
         f52 = fib52();
         if(j % update_interval == 0) {

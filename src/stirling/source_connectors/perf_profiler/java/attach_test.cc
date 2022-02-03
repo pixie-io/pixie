@@ -58,7 +58,7 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   // Also, this is the same as in agent_test, so we keep the test logic consistent.
   const std::string symbol_file_path_pfx = absl::StrCat("px-java-symbols-", GetLogin());
   const std::string symbol_file_path = absl::StrCat(symbol_file_path_pfx, ".bin");
-  const std::string java_app_name = "fib_no_agent";
+  const std::string java_app_name = "fib";
 
   using fs_path = std::filesystem::path;
   const fs_path java_testing_path = "src/stirling/source_connectors/perf_profiler/java/testing";

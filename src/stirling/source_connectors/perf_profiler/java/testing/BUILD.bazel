@@ -34,7 +34,7 @@ log_pfx = "px-java-symbols-$$(whoami)"
 jvm_flags = [so_path + "=" + log_pfx]
 
 java_binary(
-    name = "fib",
+    name = "fib_with_agent",
     srcs = ["Fib.java"],
     data = ["//src/stirling/source_connectors/perf_profiler/java/agent:glibc"],
     jvm_flags = jvm_flags,
@@ -42,7 +42,7 @@ java_binary(
 )
 
 java_binary(
-    name = "fib_no_agent",
+    name = "fib",
     srcs = ["Fib.java"],
     main_class = "JavaFib",
 )

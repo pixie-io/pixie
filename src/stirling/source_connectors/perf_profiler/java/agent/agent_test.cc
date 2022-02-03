@@ -53,7 +53,7 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   // *not* use java_binary() in Bazel). This would allow the agent test (this code) to completely
   // own the symbol file name, i.e. to coordinate between logic in the BUILD file and this code.
   const std::string symbolFilePath = absl::StrFormat("px-java-symbols-%s.bin", GetLogin());
-  const std::string kJavaAppName = "fib";
+  const std::string kJavaAppName = "fib_with_agent";
 
   using fs_path = std::filesystem::path;
   const fs_path kPathToJavaTesting = "src/stirling/source_connectors/perf_profiler/java/testing";
@@ -78,9 +78,17 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   const auto s = r.ValueOrDie();
 
   const absl::flat_hash_set<std::string> expected_symbols = {
-      "([B[B)Z",          "main",        "([Ljava/lang/String;)V",
-      "LJavaFib;",        "vtable stub", "(Ljava/lang/Object;)I",
-      "Ljava/lang/Math;", "fib52",       "()J"};
+      "()J",
+      "fib52",
+      "([B[B)Z",
+      "LJavaFib;",
+      "call_stub",
+      "Interpreter",
+      "vtable stub",
+      "Ljava/lang/Math;",
+      "()Ljava/lang/String;",
+      "(Ljava/lang/Object;)I",
+  };
   for (const auto& expected_symbol : expected_symbols) {
     EXPECT_THAT(s, HasSubstr(expected_symbol));
   }

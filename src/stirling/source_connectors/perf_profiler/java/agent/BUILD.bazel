@@ -106,7 +106,7 @@ pl_cc_test(
     srcs = ["agent_test.cc"],
     data = [
         "//src/stirling/source_connectors/perf_profiler/java/agent:glibc",
-        "//src/stirling/source_connectors/perf_profiler/java/testing:fib",
+        "//src/stirling/source_connectors/perf_profiler/java/testing:fib_with_agent",
     ],
     tags = [
         "exclusive",
