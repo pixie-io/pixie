@@ -64,6 +64,12 @@ spec:
                 description: DataCollectorParams specifies the set of params for configuring
                   the dataCollector. If no params are specified, defaults are used.
                 properties:
+                  customPEMFlags:
+                    additionalProperties:
+                      type: string
+                    description: This contains custom flags that should be passed
+                      to the PEM via environment variables.
+                    type: object
                   datastreamBufferSize:
                     description: DatastreamBufferSize is the data buffer size per
                       connection. Default size is 1 Mbyte. For high-throughput applications,

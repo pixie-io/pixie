@@ -22,6 +22,8 @@ package px.vizierconfigpb;
 
 option go_package = "vizierconfigpb";
 
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
 // Note: Any changes to this file should be in sync with operatpro/api/v1alpha1/vizier_types.go.
 // VizierSpec defines the desired state of Vizier
 message VizierSpec {
@@ -103,7 +105,8 @@ message DataCollectorParams {
     // TableStoreTableSizeLimit is the maximum allowed size for a table in the table store. When the size grows beyond this limit,
     // old data will be discarded.
     int32 table_store_table_size_limit = 3;
-
+    // CustomPEMFlags specifies custom flags that should be passed to the PEM via environment variables.
+    map<string, string> custom_pem_flags = 4 [(gogoproto.customname) = "CustomPEMFlags"];
 }
 
 // LeadershipElectionParams specifies configurable values for the K8s leaderships elections which Vizier uses manage pod leadership.
