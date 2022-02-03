@@ -101,7 +101,7 @@ DEFINE_uint32(stirling_socket_tracer_target_data_bw_percpu, 100 * 1024 * 1024,
 DEFINE_uint32(stirling_socket_tracer_target_control_bw_percpu, 5 * 1024 * 1024,
               "Target bytes/sec of control events per CPU");
 
-DEFINE_uint32(messages_expiry_duration_secs, 10 * 60,
+DEFINE_uint32(messages_expiry_duration_secs, 1 * 60,
               "The duration after which a parsed message is erased.");
 DEFINE_uint32(messages_size_limit_bytes, 1024 * 1024,
               "The limit of the size of the parsed messages, not the BPF events, "
