@@ -595,10 +595,16 @@ StatusOr<std::filesystem::path> FindOrInstallLinuxHeaders(
         // Nothing to link or install.
         break;
       case LinuxHeaderStrategy::kLinkHostHeaders: {
-        PL_RETURN_IF_ERROR(LinkHostLinuxHeaders(lib_modules_dir));
+        if (!LinkHostLinuxHeaders(lib_modules_dir).ok()) {
+          // This attempt has failed, but we can try the next strategy.
+          continue;
+        }
       } break;
       case LinuxHeaderStrategy::kInstallPackagedHeaders: {
-        PL_RETURN_IF_ERROR(InstallPackagedLinuxHeaders(lib_modules_dir));
+        if (!InstallPackagedLinuxHeaders(lib_modules_dir).ok()) {
+          // This attempt has failed, but we can try the next strategy.
+          continue;
+        }
         break;
       }
     }
