@@ -1,0 +1,58 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hey
+  namespace: px-http-loadtest
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: hey
+  template:
+    metadata:
+      labels:
+        name: hey
+    spec:
+      initContainers:
+      - name: server-wait
+        image: gcr.io/pixie-oss/pixie-dev-public/curl:1.0
+        # yamllint disable
+        command: ['sh', '-c', 'set -xe;
+          URL="${PROTOCOL}://${SERVICE_NAME}:${SERVICE_PORT}${HEALTH_PATH}";
+          until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
+            echo "waiting for ${URL}";
+            sleep 2;
+          done;']
+        env:
+        - name: SERVICE_NAME
+          value: "http-server"
+        - name: SERVICE_PORT
+          value: "8080"
+        - name: HEALTH_PATH
+          value: ""
+        - name: PROTOCOL
+          value: "http"
+      containers:
+      - name: app
+        image: gcr.io/pixie-oss/pixie-dev/experimental/hey:latest
+        # yamllint disable
+        command: ['sh', '-c', 'set -xe;
+          while true; do
+            hey -c ${NUM_WORKERS} -q ${QUERIES_PER_WORKER_PER_SECOND} -z ${DURATION} http://${SERVICE_NAME}:${SERVICE_PORT}${REQ_PATH};
+          done;']
+        env:
+        - name: SERVICE_NAME
+          value: "http-server"
+        - name: SERVICE_PORT
+          value: "8080"
+        - name: QUERIES_PER_WORKER_PER_SECOND
+          value: "10"
+        - name: NUM_WORKERS
+          value: "10"
+        # change to "/chunked" to test with Transfer-Encoding: chunked data.
+        - name: REQ_PATH
+          value: "/"
+        # duration doesn't really matter because the load generator is called in a loop.
+        - name: DURATION
+          value: "1m"
