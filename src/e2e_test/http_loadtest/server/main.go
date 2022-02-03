@@ -20,13 +20,20 @@ package main
 
 import (
 	"compress/gzip"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"log"
+	"math/big"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Gzip handling adapted from https://gist.github.com/the42/1956518
@@ -105,6 +112,89 @@ func makeChunkedServeFunc(numBytesHeaders int, numBytesBody int, numChunks int) 
 	}
 }
 
+const (
+	bitsize  = 4096
+	certFile = "server.crt"
+	keyFile  = "server.key"
+)
+
+var x509Name = pkix.Name{
+	Organization: []string{"Pixie Labs Inc."},
+	Country:      []string{"US"},
+	Province:     []string{"California"},
+	Locality:     []string{"San Francisco"},
+}
+
+func generateCertFiles(dnsNames []string) (string, string, error) {
+	ca := &x509.Certificate{
+		SerialNumber:          big.NewInt(1653),
+		Subject:               x509Name,
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(10, 0, 0),
+		IsCA:                  true,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		BasicConstraintsValid: true,
+	}
+	caKey, err := rsa.GenerateKey(rand.Reader, bitsize)
+	if err != nil {
+		return "", "", err
+	}
+	cert := &x509.Certificate{
+		SerialNumber:          big.NewInt(1658),
+		Subject:               x509Name,
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(10, 0, 0),
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		BasicConstraintsValid: true,
+		DNSNames:              dnsNames,
+	}
+	privateKey, err := rsa.GenerateKey(rand.Reader, bitsize)
+	if err != nil {
+		return "", "", err
+	}
+	certBytes, err := x509.CreateCertificate(rand.Reader, cert, ca, &privateKey.PublicKey, caKey)
+
+	if err != nil {
+		return "", "", err
+	}
+
+	certData := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certBytes})
+	if err != nil {
+		return "", "", err
+	}
+	if err = os.WriteFile(certFile, certData, 0666); err != nil {
+		return "", "", err
+	}
+
+	keyData := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)})
+	if err != nil {
+		return "", "", err
+	}
+	if err = os.WriteFile(keyFile, keyData, 0666); err != nil {
+		return "", "", err
+	}
+
+	return certFile, keyFile, nil
+}
+
+func setupHTTPServer(ssl bool, port string, numBytesHeaders, numBytesBody int) {
+	if ssl {
+		certFile, keyFile, err := generateCertFiles([]string{"localhost"})
+		if err != nil {
+			panic(fmt.Sprintf("Could not create cert files: %s", err.Error()))
+		}
+		if err := http.ListenAndServeTLS(fmt.Sprintf(":%s", port), certFile, keyFile, nil); err != nil {
+			panic(fmt.Sprintf("HTTP TLS server failed: %s", err.Error()))
+		}
+	} else {
+		if err := http.ListenAndServe(fmt.Sprintf(":%s", port), nil); err != nil {
+			panic(fmt.Sprintf("HTTP server failed: %s", err.Error()))
+		}
+	}
+}
+
 func main() {
 	numBytesHeaders, err := strconv.Atoi(os.Getenv("NUM_BYTES_HEADERS"))
 	if err != nil {
@@ -118,8 +208,9 @@ func main() {
 	http.HandleFunc("/", optionallyGzipMiddleware(makeSimpleServeFunc(numBytesHeaders, numBytesBody)))
 	http.HandleFunc("/chunked", makeChunkedServeFunc(numBytesHeaders, numBytesBody, 10))
 
+	sslPort := os.Getenv("SSL_PORT")
+	go setupHTTPServer(true, sslPort, numBytesHeaders, numBytesBody)
+
 	port := os.Getenv("PORT")
-	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), nil); err != nil {
-		panic("HTTP server failed")
-	}
+	setupHTTPServer(false, port, numBytesHeaders, numBytesBody)
 }

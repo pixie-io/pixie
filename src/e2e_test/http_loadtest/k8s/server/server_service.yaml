@@ -11,5 +11,9 @@ spec:
     protocol: TCP
     targetPort: 8080
     name: tcp-http
+  - port: 8081
+    protocol: TCP
+    targetPort: 8081
+    name: tcp-http-ssl
   selector:
     name: server

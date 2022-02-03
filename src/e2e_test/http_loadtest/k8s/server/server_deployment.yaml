@@ -20,6 +20,8 @@ spec:
         env:
         - name: PORT
           value: "8080"
+        - name: SSL_PORT
+          value: "8081"
         - name: NUM_BYTES_HEADERS
           value: "8192"
         - name: NUM_BYTES_BODY
