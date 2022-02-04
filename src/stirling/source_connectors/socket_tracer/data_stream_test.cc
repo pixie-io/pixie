@@ -25,6 +25,7 @@
 
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/event_generator.h"
+#include "src/stirling/testing/common.h"
 
 namespace px {
 namespace stirling {
@@ -130,8 +131,9 @@ TEST_F(DataStreamTest, StuckTooLong) {
   stream.ProcessBytesToFrames<http::Message>(message_type_t::kRequest, &state);
   EXPECT_THAT(stream.Frames<http::Message>(), IsEmpty());
 
-  stream.ProcessBytesToFrames<http::Message>(message_type_t::kRequest, &state);
-  EXPECT_THAT(stream.Frames<http::Message>(), IsEmpty());
+  // Sleep for buffer_resync_duration_secs to a trigger resync starting from pos 1.
+  SET_TEST_FLAG(FLAGS_buffer_resync_duration_secs, 1);
+  sleep(FLAGS_buffer_resync_duration_secs);
 
   // Remaining data does not arrive in time, so stuck recovery has already removed req0a.
   // req0b will be noticed as invalid and cleared out as well.
@@ -227,11 +229,12 @@ TEST_F(DataStreamTest, LateArrivalPlusMissingEvents) {
   stream.ProcessBytesToFrames<http::Message>(message_type_t::kRequest, &state);
   ASSERT_THAT(stream.Frames<http::Message>(), IsEmpty());
 
-  stream.ProcessBytesToFrames<http::Message>(message_type_t::kRequest, &state);
-  ASSERT_THAT(stream.Frames<http::Message>(), IsEmpty());
+  // Setting buffer_expiry_timestamp to now to simulate a large delay.
+  int buffer_size_limit = 10000;
+  auto buffer_expiry_timestamp = std::chrono::steady_clock::now();
 
-  stream.ProcessBytesToFrames<http::Message>(message_type_t::kRequest, &state);
-  ASSERT_THAT(stream.Frames<http::Message>(), IsEmpty());
+  stream.CleanupEvents(buffer_size_limit, buffer_expiry_timestamp);
+  EXPECT_TRUE(stream.Empty<http::Message>());
 
   stream.AddData(std::move(req0b));
   stream.AddData(std::move(req1a));

@@ -32,6 +32,9 @@ DECLARE_uint32(datastream_buffer_spike_size);
 DECLARE_uint32(datastream_buffer_max_gap_size);
 DECLARE_uint32(datastream_buffer_allow_before_gap_size);
 
+DECLARE_uint32(buffer_resync_duration_secs);
+DECLARE_uint32(buffer_expiration_duration_secs);
+
 namespace px {
 namespace stirling {
 
@@ -137,11 +140,25 @@ class DataStream : NotCopyMoveable {
                                     std::get<std::deque<TFrameType>>(frames_).empty());
   }
 
+  /**
+   * If buffer has not been successfully processed in the past kSyncTimeout duration,
+   * run ParseFrames() with a search for a new message boundary.
+   * A long stuck time implies there is something unparsable at the head. It is neither returning
+   * ParseState::kInvalid nor ParseState::kSuccess, but instead is returning
+   * ParseState::kNeedsMoreData.
+   * @return true if a resync will be performed in the next ParseFrames().
+   */
+  bool IsSyncRequired() const {
+    const auto kSyncTimeout = std::chrono::seconds(FLAGS_buffer_resync_duration_secs);
+
+    return (std::chrono::steady_clock::now() - last_progress_time_) >= kSyncTimeout;
+  }
+
   int stat_invalid_frames() const { return stat_invalid_frames_; }
   int stat_valid_frames() const { return stat_valid_frames_; }
   int stat_raw_data_gaps() const { return stat_raw_data_gaps_; }
 
-  void UpdateLastProgressTime() { last_progress_time_ = std::chrono::steady_clock::now(); }
+  void ResetLastProgressTimeToNow() { last_progress_time_ = std::chrono::steady_clock::now(); }
 
   /**
    * Fraction of frame parsing attempts that resulted in an invalid frame.
@@ -195,12 +212,12 @@ class DataStream : NotCopyMoveable {
                      std::chrono::time_point<std::chrono::steady_clock> expiry_timestamp) {
     // We are assuming that when this stream is stuck, we clear the data buffer.
     if (last_progress_time_ < expiry_timestamp) {
-      Reset();
+      data_buffer_.Reset();
+      has_new_events_ = false;
+      ResetLastProgressTimeToNow();
       return true;
     }
 
-    // If the size of the buffer after the processing loop is bigger than capacity, truncate the
-    // head.
     if (data_buffer_.size() > size_limit_bytes) {
       data_buffer_.RemovePrefix(data_buffer_.size() - size_limit_bytes);
     }
@@ -249,11 +266,9 @@ class DataStream : NotCopyMoveable {
   // changed.
   bool has_new_events_ = false;
 
-  // Number of consecutive calls to ProcessToRecords(), where there are a non-zero number of events,
-  // but no parsed messages are produced.
-  // Note: unlike the monotonic stats below, this resets when the stuck condition is cleared.
-  // Thus it is a state, not a statistic.
-  int stuck_count_ = 0;
+  // The timestamp when progress was last made in the data buffer. It's used in CleanupEvents().
+  std::chrono::time_point<std::chrono::steady_clock> last_progress_time_ =
+      std::chrono::steady_clock::now();
 
   // The timestamp when progress was last made in the data buffer. It's used in CleanupEvents().
   std::chrono::time_point<std::chrono::steady_clock> last_progress_time_ =

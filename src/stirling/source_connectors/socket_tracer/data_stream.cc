@@ -34,6 +34,14 @@ DEFINE_uint32(datastream_buffer_allow_before_gap_size,
               "After a PL_DATASTREAM_BUFFER_MAX_GAP_SIZE gap occurs, we allow for this amount of "
               "data to come in before (byte position wise) the event that caused the large gap.");
 
+DEFINE_uint32(buffer_resync_duration_secs, 5,
+              "The duration, in seconds, after which a buffer resync will happen if there has been "
+              "no progress in the parser.");
+DEFINE_uint32(
+    buffer_expiration_duration_secs, 10,
+    "The duration, in seconds, after which the buffer will be cleared if there is no progress in "
+    "the parser.");
+
 namespace px {
 namespace stirling {
 
@@ -46,34 +54,6 @@ void DataStream::AddData(std::unique_ptr<SocketDataEvent> event) {
 
   has_new_events_ = true;
 }
-
-namespace {
-
-bool IsSyncRequired(int64_t stuck_count) {
-  ECHECK_GE(stuck_count, 0);
-
-  // Stuck counts where we switch the sync policy.
-  static constexpr int64_t kBasicSyncThreshold = 1;
-
-  // Thresholds must be in increasing order.
-  static_assert(kBasicSyncThreshold > 0);
-
-  if (stuck_count <= kBasicSyncThreshold) {
-    // If stuck_count == 0, then no reason to sync.
-    // If stuck_count != 0, but is low, it could mean we have partial data (i.e. kNeedsMoreData).
-    // The rest of the data could now be avilable in this new iteration,
-    // so still don't try to search for a message boundary yet.
-    return false;
-  }
-
-  // Multiple stuck cycles implies there is something unparseable at the head.
-  // It is neither returning ParseState::kInvalid nor ParseState::kSuccess.
-  // It constantly is returning ParseState::kNeedsMoreData.
-  // Run ParseFrames() with a search for a new message boundary;
-  return true;
-}
-
-}  // namespace
 
 // ProcessBytesToFrames() processes the raw data in the DataStream to extract parsed frames.
 //
@@ -99,8 +79,8 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
 
   // A description of some key variables in this function:
   //
-  // - stuck_count_: Number of calls to where no new frames were produced.
-  //                 indicates an unparseable event at the head that is blocking progress.
+  // - last_progress_time_: The timestamp of when progress was made in the parser. It's used to
+  //                        calculate if we are stuck.
   //
   // - has_new_events_: An optimization to avoid the expensive call to ParseFrames() when
   //                    nothing has changed in the DataStream. Note that we *do* want to call
@@ -117,8 +97,8 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
   //                 new events, because we have hit the threshold to attempt a stream recovery.
   //                 Used for the first iteration only.
 
-  // We appear to be stuck with an an unparseable sequence of events blocking the head.
-  bool attempt_sync = IsSyncRequired(stuck_count_);
+  // We appear to be stuck with an an unparsable sequence of events blocking the head.
+  bool attempt_sync = IsSyncRequired();
 
   bool keep_processing = has_new_events_ || attempt_sync;
 
@@ -130,18 +110,14 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
     size_t contiguous_bytes = data_buffer_.Head().size();
 
     // Now parse the raw data.
-    parse_result = protocols::ParseFrames(type, data_buffer_, &typed_messages,
-                                          IsSyncRequired(stuck_count_), state);
-
+    parse_result =
+        protocols::ParseFrames(type, data_buffer_, &typed_messages, IsSyncRequired(), state);
     if (contiguous_bytes != data_buffer_.size()) {
       // We weren't able to submit all bytes, which means we ran into a missing event.
       // We don't expect missing events to arrive in the future, so just cut our losses.
       // Drop all events up to this point, and then try to resume.
       data_buffer_.RemovePrefix(contiguous_bytes);
       data_buffer_.Trim();
-
-      // Update stuck count so we use the correct sync type on the next iteration.
-      stuck_count_ = 0;
 
       keep_processing = (parse_result.state != ParseState::kEOS);
     } else {
@@ -150,7 +126,6 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
       // If anything was processed at all, reset stuck count.
       if (parse_result.end_position != 0) {
         data_buffer_.RemovePrefix(parse_result.end_position);
-        stuck_count_ = 0;
       }
 
       keep_processing = false;
@@ -163,15 +138,13 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
 
   // Check to see if we are blocked on parsing.
   // Note that missing events is handled separately (not considered stuck).
-  bool events_but_no_progress = !data_buffer_.empty() && (data_buffer_.position() == orig_pos);
-  if (events_but_no_progress) {
-    ++stuck_count_;
-  } else {
-    UpdateLastProgressTime();
+  bool made_progress = data_buffer_.empty() || (data_buffer_.position() != orig_pos);
+  if (made_progress) {
+    ResetLastProgressTimeToNow();
   }
 
   if (parse_result.state == ParseState::kEOS) {
-    ECHECK(!events_but_no_progress);
+    ECHECK(made_progress);
   }
 
   // If parse state is kInvalid, then no amount of waiting is going to help us.
@@ -182,8 +155,7 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
 
     // TODO(oazizi): A dedicated data_buffer_.Flush() implementation would be more efficient.
     data_buffer_.RemovePrefix(data_buffer_.size());
-    stuck_count_ = 0;
-    UpdateLastProgressTime();
+    ResetLastProgressTimeToNow();
   }
 
   // Shrink the data buffer's allocated memory to fit just what is retained.
@@ -221,8 +193,7 @@ template void DataStream::ProcessBytesToFrames<protocols::nats::Message, protoco
 void DataStream::Reset() {
   data_buffer_.Reset();
   has_new_events_ = false;
-  stuck_count_ = 0;
-  UpdateLastProgressTime();
+  ResetLastProgressTimeToNow();
 
   frames_ = std::monostate();
 }
