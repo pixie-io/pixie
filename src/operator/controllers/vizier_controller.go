@@ -709,6 +709,7 @@ func generateVizierYAMLsConfig(ctx context.Context, ns string, vz *v1alpha1.Vizi
 			DatastreamBufferSize:      vz.Spec.DataCollectorParams.DatastreamBufferSize,
 			DatastreamBufferSpikeSize: vz.Spec.DataCollectorParams.DatastreamBufferSpikeSize,
 			TableStoreTableSizeLimit:  vz.Spec.DataCollectorParams.TableStoreTableSizeLimit,
+			CustomPEMFlags:            vz.Spec.DataCollectorParams.CustomPEMFlags,
 		}
 	}
 

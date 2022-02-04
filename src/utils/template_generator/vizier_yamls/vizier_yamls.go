@@ -60,6 +60,7 @@ type VizierTmplValues struct {
 	DatastreamBufferSpikeSize uint32
 	TableStoreTableSizeLimit  int32
 	ElectionPeriodMs          int64
+	CustomPEMFlags            map[string]string
 }
 
 // VizierTmplValuesToArgs converts the vizier template values to args which can be used to fill out a template.
@@ -82,6 +83,7 @@ func VizierTmplValuesToArgs(tmplValues *VizierTmplValues) *yamls.YAMLTmplArgumen
 			"datastreamBufferSpikeSize": tmplValues.DatastreamBufferSpikeSize,
 			"tableStoreTableSizeLimit":  tmplValues.TableStoreTableSizeLimit,
 			"electionPeriodMs":          tmplValues.ElectionPeriodMs,
+			"customPEMFlags":            tmplValues.CustomPEMFlags,
 		},
 		Release: &map[string]interface{}{
 			"Namespace": tmplValues.Namespace,
@@ -426,6 +428,16 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
 			Patch:           `{"spec": {"template": {"spec": {"containers": [{"name": "app", "env": [{"name": "PL_RENEW_PERIOD","value": "__PX_RENEW_PERIOD__"}]}] } } } }`,
 			Placeholder:     "__PX_RENEW_PERIOD__",
 			TemplateValue:   fmt.Sprintf(`{{ if .Values.electionPeriodMs }}"{{ .Values.electionPeriodMs }}"{{else}}"%d"{{end}}`, defaultElectionPeriodMs),
+		},
+		{
+			TemplateMatcher: yamls.GenerateContainerNameMatcherFn("pem"),
+			Patch:           `{"spec": {"template": { "spec": { "containers": [{"name": "pem", "env": [{"name": "PL_PEM_ENV_VAR_PLACEHOLDER", "value": "__PL_PEM_ENV_VAR_VALUE__"}]}] } } } }`,
+			Placeholder:     `__PL_PEM_ENV_VAR_VALUE__`,
+			TemplateValue: `"true" # This is un-used, and is just a placeholder used to templatize our YAMLs for Helm.
+        {{- range $key, $value := .Values.customPEMFlags}}
+        - name: {{$key}}
+          value: "{{$value}}"
+        {{- end}}`,
 		},
 	}...)
 

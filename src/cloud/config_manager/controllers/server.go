@@ -107,6 +107,9 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 	if in.VzSpec.DataCollectorParams != nil && in.VzSpec.DataCollectorParams.TableStoreTableSizeLimit != 0 {
 		tmplValues.TableStoreTableSizeLimit = in.VzSpec.DataCollectorParams.TableStoreTableSizeLimit
 	}
+	if in.VzSpec.DataCollectorParams != nil && in.VzSpec.DataCollectorParams.CustomPEMFlags != nil {
+		tmplValues.CustomPEMFlags = in.VzSpec.DataCollectorParams.CustomPEMFlags
+	}
 
 	if in.VzSpec.LeadershipElectionParams != nil {
 		tmplValues.ElectionPeriodMs = in.VzSpec.LeadershipElectionParams.ElectionPeriodMs

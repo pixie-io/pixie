@@ -37,6 +37,12 @@ spec:
     {{- if .Values.dataCollectorParams.tableStoreTableSizeLimit }}
     tableStoreTableSizeLimit: {{ .Values.dataCollectorParams.tableStoreTableSizeLimit }}
     {{- end }}
+    {{- if .Values.dataCollectorParams.customPEMFlags }}
+    customPEMFlags:
+    {{- range $key, $value := .Values.dataCollectorParams.customPEMFlags}}
+      {{$key}}: "{{$value}}"
+    {{- end}}
+    {{- end }}
   {{- end}}
   {{- if .Values.leadershipElectionParams }}
   leadershipElectionParams:
