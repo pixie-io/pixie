@@ -31,6 +31,7 @@
 #include "src/stirling/testing/common.h"
 
 DEFINE_uint32(test_run_time, 90, "Number of seconds to run the test.");
+DECLARE_bool(stirling_profiler_java_symbols);
 
 namespace px {
 namespace stirling {
@@ -65,6 +66,7 @@ class PerfProfileBPFTest : public ::testing::Test {
 
  protected:
   void SetUp() override {
+    FLAGS_stirling_profiler_java_symbols = true;
     source_ = PerfProfileConnector::Create("perf_profile_connector");
     ASSERT_OK(source_->Init());
     ASSERT_LT(source_->SamplingPeriod(), test_run_time_);
@@ -91,6 +93,14 @@ class PerfProfileBPFTest : public ::testing::Test {
     return bazel_app_path;
   }
 
+  std::filesystem::path BazelJavaTestAppPath(const std::filesystem::path& app_name) {
+    const std::filesystem::path kToyAppsPath =
+        "src/stirling/source_connectors/perf_profiler/testing/java";
+    const std::filesystem::path app_path = fs::JoinPath({&kToyAppsPath, &app_name});
+    const std::filesystem::path bazel_app_path = BazelBinTestFilePath(app_path);
+    return bazel_app_path;
+  }
+
   // This is templatized because we anticipate having more than one kind of binary runner,
   // i.e. because future test applications will be threaded, so the CPU pinning will be
   // done "inside" of the test app.
@@ -106,6 +116,9 @@ class PerfProfileBPFTest : public ::testing::Test {
     for (uint32_t cpu_idx = 0; cpu_idx < kNumSubProcesses; ++cpu_idx) {
       sub_processes[cpu_idx].Run(app_path, cpu_idx);
     }
+
+    // Give test apps a little time to start running (necessary for Java, at least).
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 
     return sub_processes;
   }
@@ -183,9 +196,8 @@ class PerfProfileBPFTest : public ::testing::Test {
     // We expect the ratio of fib52:fib27 to be approx. 2:1;
     // or sqrt, or something else that was in the toy test app.
     // TODO(jps): Increase sampling frequency and then tighten this margin.
-    constexpr double kMargin = 0.5;
-    EXPECT_GT(ratio, 2.0 - kMargin);
-    EXPECT_LT(ratio, 2.0 + kMargin);
+    EXPECT_GT(ratio, 2.0 - kRatioMargin);
+    EXPECT_LT(ratio, 2.0 + kRatioMargin);
   }
 
   template <typename T>
@@ -254,6 +266,7 @@ class PerfProfileBPFTest : public ::testing::Test {
 
   // To reduce variance in results, we add more run-time or add sub-processes:
   static constexpr uint64_t kNumSubProcesses = 4;
+  static constexpr double kRatioMargin = 0.5;
 };
 
 TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
@@ -320,6 +333,66 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
   EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key2x, Gt(0))));
   ASSERT_NO_FATAL_FAILURE(
       CheckExpectedStackTraceCounts(kNumSubProcesses, elapsed_time, key1x, key2x));
+}
+
+TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
+  const std::filesystem::path bazel_app_path = BazelJavaTestAppPath("fib");
+  LOG(INFO) << "bazel_app_path: " << bazel_app_path;
+  ASSERT_OK(fs::Exists(bazel_app_path));
+
+  // Start they toy apps as sub-processes, then,
+  // for a certain amount of time, collect data using RunTest().
+  auto sub_processes = StartSubProcesses<CPUPinnedBinaryRunner>(bazel_app_path);
+
+  // We wait until here to create the connector context, i.e. so that perf_profile_connector
+  // finds the upids that belong to the sub-processes that we have just created.
+  ctx_ = std::make_unique<StandaloneContext>();
+
+  RunTest();
+
+  // Pull the data into this test (as columns_) using ConsumeRecords(), and
+  // find the row indices that belong to our sub-processes using GetTargetRowIdxs().
+  ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
+  const std::vector<size_t> target_row_idxs = GetTargetRowIdxs(sub_processes);
+
+  // Populate the cumulative sum & the observed stack traces histo.
+  ASSERT_NO_FATAL_FAILURE(PopulateCumulativeSum(target_row_idxs));
+  ASSERT_NO_FATAL_FAILURE(PopulateObservedStackTraces(target_row_idxs));
+
+  // Previous test cases matched entire stack traces. For Java, parts of the stack trace
+  // remain unpredictable, but we can predict the leaf symbols.
+  // Here, we find stack traces with the expected leaf symbols,
+  // and expect that fib52() occurs with 2x the frequency of fib27().
+  constexpr std::string_view fib52_symbol = "[j] long JavaFib::fib52()";
+  constexpr std::string_view fib27_symbol = "[j] long JavaFib::fib27()";
+  double fib27_count = 0;
+  double fib52_count = 0;
+
+  std::multimap<uint64_t, std::string> traces;
+
+  for (const auto& [stack_trace, count] : observed_stack_traces_) {
+    // Extract the leaf symbol.
+    const std::vector<std::string> symbols = absl::StrSplit(stack_trace, ";");
+    const std::string_view leaf_symbol = symbols.back();
+
+    // Increment the count for fib52 & fib27, based on the leaf symbol.
+    if (leaf_symbol == fib52_symbol) {
+      fib52_count += count;
+    }
+    if (leaf_symbol == fib27_symbol) {
+      fib27_count += count;
+    }
+  }
+  const double ratio = fib52_count / fib27_count;
+
+  // This is useful info, log it.
+  LOG(INFO) << absl::StrFormat("fib52_count: %d.", static_cast<uint64_t>(fib52_count));
+  LOG(INFO) << absl::StrFormat("fib27_count: %d.", static_cast<uint64_t>(fib27_count));
+  LOG(INFO) << absl::StrFormat("ratio: %.2fx.", ratio);
+
+  // The test itself. We expect, if everything is working, to see twice as much fib52() as fib27().
+  EXPECT_GT(ratio, 2.0 - kRatioMargin);
+  EXPECT_LT(ratio, 2.0 + kRatioMargin);
 }
 
 TEST_F(PerfProfileBPFTest, TestOutOfContext) {

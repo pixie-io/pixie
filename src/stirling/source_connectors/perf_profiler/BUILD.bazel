@@ -36,14 +36,25 @@ pl_cc_library(
     ],
 )
 
+agent_libs = [
+    "//src/stirling/source_connectors/perf_profiler/java/agent:musl",
+    "//src/stirling/source_connectors/perf_profiler/java/agent:glibc",
+]
+
+agent_libs_arg = ",".join(["$(location %s)" % lib for lib in agent_libs])
+
 pl_cc_test(
     name = "perf_profiler_test",
-    timeout = "moderate",
+    timeout = "long",
     srcs = ["perf_profiler_test.cc"],
+    args = [
+        "-stirling_profiler_java_agent_libs %s" % agent_libs_arg,
+    ],
     data = [
         "//src/stirling/source_connectors/perf_profiler/testing/cc:profiler_test_app_fib_cpp",
         "//src/stirling/source_connectors/perf_profiler/testing/go:profiler_test_app_sqrt_go",
-    ],
+        "//src/stirling/source_connectors/perf_profiler/testing/java:fib",
+    ] + agent_libs,
     tags = [
         "exclusive",
         "requires_bpf",
