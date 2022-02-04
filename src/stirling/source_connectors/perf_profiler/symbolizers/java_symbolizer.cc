@@ -27,6 +27,14 @@
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/java_symbolizer.h"
 #include "src/stirling/utils/detect_application.h"
 
+namespace {
+char const* const kLibsHelpMessage = "Comma separated list of Java symbolization agent lib files.";
+char const* const kPEMAgentLibs =
+    "/pl/lib-px-java-agent-musl.so,"
+    "/pl/lib-px-java-agent-glibc.so";
+}  // namespace
+DEFINE_string(stirling_profiler_java_agent_libs, kPEMAgentLibs, kLibsHelpMessage);
+
 namespace px {
 namespace stirling {
 
@@ -183,10 +191,7 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
     return native_symbolizer_fn;
   }
 
-  const std::vector<std::string> libs = {
-      "/pl/lib-px-java-agent-musl.so",
-      "/pl/lib-px-java-agent-glibc.so",
-  };
+  const auto libs = absl::StrSplit(FLAGS_stirling_profiler_java_agent_libs, ",");
   const std::string kSymFilePathPfx = "/tmp/px-java-symbolization-agent";
 
   auto attacher = java::AgentAttacher(upid.pid, kSymFilePathPfx, libs);
