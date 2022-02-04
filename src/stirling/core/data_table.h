@@ -163,6 +163,7 @@ class DataTable : public NotCopyable {
           val.resize(TMaxStringBytes);
           val.append(kTruncatedMsg);
         }
+        val.shrink_to_fit();
       }
 
       tablet_.records[TIndex]->Append(std::move(val));
