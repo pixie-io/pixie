@@ -270,10 +270,6 @@ class DataStream : NotCopyMoveable {
   std::chrono::time_point<std::chrono::steady_clock> last_progress_time_ =
       std::chrono::steady_clock::now();
 
-  // The timestamp when progress was last made in the data buffer. It's used in CleanupEvents().
-  std::chrono::time_point<std::chrono::steady_clock> last_progress_time_ =
-      std::chrono::steady_clock::now();
-
   // Keep some stats on ParseFrames() attempts.
   int stat_valid_frames_ = 0;
   int stat_invalid_frames_ = 0;
