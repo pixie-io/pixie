@@ -68,11 +68,17 @@ class JavaSymbolizer : public Symbolizer {
   explicit JavaSymbolizer(const std::vector<std::filesystem::path> agent_libs);
   std::string_view Symbolize(JavaSymbolizationContext* ctx, const uintptr_t addr);
 
+  std::filesystem::path GetAgentSymbolFilePathPfx(const uint32_t pid) const;
+  std::filesystem::path GetStirlingSymbolFilePath(const uint32_t pid) const;
+
   std::unique_ptr<Symbolizer> native_symbolizer_;
   absl::flat_hash_map<struct upid_t, profiler::SymbolizerFn> symbolizer_functions_;
   absl::flat_hash_map<struct upid_t, std::unique_ptr<JavaSymbolizationContext>>
       symbolization_contexts_;
   const std::vector<std::filesystem::path> agent_libs_;
+  static constexpr char const* const kSymbolFileAgentTemplate = "/tmp/px-java-symbols-$0";
+  static constexpr char const* const kSymbolFileStirlingTemplate =
+      "/proc/$0/root/tmp/px-java-symbols-$0.bin";
 };
 
 }  // namespace stirling

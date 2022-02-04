@@ -166,6 +166,14 @@ StatusOr<std::unique_ptr<Symbolizer>> JavaSymbolizer::Create(
   return std::unique_ptr<Symbolizer>(jsymbolizer.release());
 }
 
+std::filesystem::path JavaSymbolizer::GetAgentSymbolFilePathPfx(const uint32_t pid) const {
+  return absl::Substitute(kSymbolFileAgentTemplate, pid);
+}
+
+std::filesystem::path JavaSymbolizer::GetStirlingSymbolFilePath(const uint32_t pid) const {
+  return absl::Substitute(kSymbolFileStirlingTemplate, pid);
+}
+
 void JavaSymbolizer::IterationPreTick() {
   native_symbolizer_->IterationPreTick();
   for (auto& [upid, ctx] : symbolization_contexts_) {
@@ -212,9 +220,7 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
     return native_symbolizer_fn;
   }
 
-  const std::string kSymFilePathPfx = "/tmp/px-java-symbolization-agent";
-
-  auto attacher = java::AgentAttacher(upid.pid, kSymFilePathPfx, agent_libs_);
+  auto attacher = java::AgentAttacher(upid.pid, GetAgentSymbolFilePathPfx(upid.pid), agent_libs_);
 
   constexpr auto kTimeOutForAttach = std::chrono::milliseconds{250};
   constexpr auto kAttachRecheckPeriod = std::chrono::milliseconds{10};
@@ -241,10 +247,8 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
     return native_symbolizer_fn;
   }
 
-  char const* const symbol_file_path_template = "/proc/$0/root/tmp/px-java-symbolization-agent.bin";
-  const std::string symbol_file_path = absl::Substitute(symbol_file_path_template, upid.pid);
   auto symbol_file = std::unique_ptr<std::ifstream>(
-      new std::ifstream(symbol_file_path, std::ios::in | std::ios::binary));
+      new std::ifstream(GetStirlingSymbolFilePath(upid.pid), std::ios::in | std::ios::binary));
 
   if (symbol_file->fail()) {
     // Could not open the symbol file from the symbolization agent: fall back to native symbolizer.
