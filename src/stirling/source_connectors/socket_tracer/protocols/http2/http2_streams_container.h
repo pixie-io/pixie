@@ -51,7 +51,7 @@ class HTTP2StreamsContainer : NotCopyMoveable {
   /**
    * Returns the approximate memory consumption of the HTTP2StreamsContainer.
    */
-  size_t StreamsSize();
+  size_t StreamsSize() const;
 
   /**
    * Cleans up the HTTP2 events from BPF uprobes that are too old,

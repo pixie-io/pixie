@@ -42,7 +42,7 @@ void EraseExpiredStreams(std::chrono::time_point<std::chrono::steady_clock> expi
 }
 }  // namespace
 
-size_t HTTP2StreamsContainer::StreamsSize() {
+size_t HTTP2StreamsContainer::StreamsSize() const {
   size_t size = 0;
   for (const auto& [id, stream] : streams_) {
     size += stream.ByteSize();

@@ -61,7 +61,6 @@ class ConnectorContext {
 
   /**
    * Return K8s information (Pod and container information)
-   * @return
    */
   // TODO(oazizi): Consider breaking up into GetPods() and GetContainers().
   virtual const md::K8sMetadataState& GetK8SMetadata() = 0;
