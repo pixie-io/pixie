@@ -162,6 +162,9 @@ func init() {
 	DeployCmd.Flags().StringArray("patches", []string{}, "Custom patches to apply to Pixie yamls, for example: 'vizier-pem:{\"spec\":{\"template\":{\"spec\":{\"nodeSelector\":{\"pixie\": \"allowed\"}}}}}'")
 	viper.BindPFlag("patches", DeployCmd.Flags().Lookup("patches"))
 
+	DeployCmd.Flags().String("pem_flags", "", "Flags to be set on the PEM.")
+	viper.BindPFlag("pem_flags", DeployCmd.Flags().Lookup("pem_flags"))
+
 	// Flags for deploying OLM.
 	DeployCmd.Flags().String("operator_version", "", "Operator version to deploy")
 	viper.BindPFlag("operator_version", DeployCmd.Flags().Lookup("operator_version"))
@@ -252,6 +255,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	customLabels, _ := cmd.Flags().GetString("labels")
 	customAnnotations, _ := cmd.Flags().GetString("annotations")
 	pemMemoryLimit, _ := cmd.Flags().GetString("pem_memory_limit")
+	pemFlags, _ := cmd.Flags().GetString("pem_flags")
 	patches, _ := cmd.Flags().GetStringArray("patches")
 	dataAccess, _ := cmd.Flags().GetString("data_access")
 	datastreamBufferSize, _ := cmd.Flags().GetUint32("datastream_buffer_size")
@@ -291,6 +295,15 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 			patchesMap[p[:colon]] = p[colon+1:]
 		}
 	}
+	pemFlagsMap := make(map[string]string)
+	if pemFlags != "" {
+		pf, err := k8s.KeyValueStringToMap(pemFlags)
+		if err != nil {
+			utils.WithError(err).Fatal("--pem_flags must be specified through the following format: PL_KEY_1=value1,PL_KEY_2=value2")
+		}
+		pemFlagsMap = pf
+	}
+
 	castedDataAccess := vztypes.DataAccessLevel(dataAccess)
 	if castedDataAccess != vztypes.DataAccessFull && castedDataAccess != vztypes.DataAccessRestricted {
 		utils.Fatal("--data_access must be a valid data access level")
@@ -433,6 +446,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 				"datastreamBufferSize":      datastreamBufferSize,
 				"datastreamBufferSpikeSize": datastreamBufferSpikeSize,
 				"tableStoreTableSize":       tableStoreTableSize,
+				"customPEMFlags":            pemFlagsMap,
 			},
 		},
 		Release: &map[string]interface{}{
