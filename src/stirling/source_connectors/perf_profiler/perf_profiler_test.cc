@@ -95,7 +95,7 @@ class PerfProfileBPFTest : public ::testing::Test {
   // i.e. because future test applications will be threaded, so the CPU pinning will be
   // done "inside" of the test app.
   template <typename T>
-  std::vector<T> StartSubProcesses(const std::filesystem::path& app_path, const uint32_t test_idx) {
+  std::vector<T> StartSubProcesses(const std::filesystem::path& app_path) {
     // Before poking the subProcess.Run() method, we need the vector to be
     // fully populated (or else vector re-sizing will want to make copies).
     // Copying an already running sub-process kills the sub-process.
@@ -103,9 +103,8 @@ class PerfProfileBPFTest : public ::testing::Test {
     // with default constructor initialized values.
     std::vector<T> sub_processes(kNumSubProcesses);
 
-    for (uint64_t sub_process_idx = 0; sub_process_idx < kNumSubProcesses; ++sub_process_idx) {
-      const uint32_t cpu_idx = kNumSubProcesses * test_idx + sub_process_idx;
-      sub_processes[sub_process_idx].Run(app_path, cpu_idx);
+    for (uint32_t cpu_idx = 0; cpu_idx < kNumSubProcesses; ++cpu_idx) {
+      sub_processes[cpu_idx].Run(app_path, cpu_idx);
     }
 
     return sub_processes;
@@ -258,11 +257,6 @@ class PerfProfileBPFTest : public ::testing::Test {
 };
 
 TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
-  // Needs to be unique across test fixtures because we use this to map
-  // into CPU index. If non-unique, two or more different test fixtures
-  // will run their toy apps. on the same CPU.
-  constexpr uint32_t kTestIdx = 1;
-
   const std::filesystem::path bazel_app_path = BazelGoTestAppPath("profiler_test_app_sqrt_go");
 
   // The toy test app. should be written such that we can expect one stack trace
@@ -272,7 +266,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
 
   // Start they toy apps as sub-processes, then,
   // for a certain amount of time (kTestRunTime), collect data using RunTest().
-  auto sub_processes = StartSubProcesses<CPUPinnedBinaryRunner>(bazel_app_path, kTestIdx);
+  auto sub_processes = StartSubProcesses<CPUPinnedBinaryRunner>(bazel_app_path);
 
   // We wait until here to create the connector context, i.e. so that perf_profile_connector
   // finds the upids that belong to the sub-processes that we have just created.
@@ -296,11 +290,6 @@ TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
 }
 
 TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
-  // Needs to be unique across test fixtures because we use this to map
-  // into CPU index. If non-unique, two or more different test fixtures
-  // will run their toy apps. on the same CPU.
-  constexpr uint32_t kTestIdx = 0;
-
   const std::filesystem::path bazel_app_path = BazelCCTestAppPath("profiler_test_app_fib");
 
   // The toy test app. should be written such that we can expect one stack trace
@@ -310,7 +299,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
 
   // Start they toy apps as sub-processes, then,
   // for a certain amount of time, collect data using RunTest().
-  auto sub_processes = StartSubProcesses<CPUPinnedBinaryRunner>(bazel_app_path, kTestIdx);
+  auto sub_processes = StartSubProcesses<CPUPinnedBinaryRunner>(bazel_app_path);
 
   // We wait until here to create the connector context, i.e. so that perf_profile_connector
   // finds the upids that belong to the sub-processes that we have just created.
@@ -334,11 +323,6 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
 }
 
 TEST_F(PerfProfileBPFTest, TestOutOfContext) {
-  // Needs to be unique across test fixtures because we use this to map
-  // into CPU index. If non-unique, two or more different test fixtures
-  // will run their toy apps. on the same CPU.
-  constexpr uint32_t kTestIdx = 2;
-
   const std::filesystem::path bazel_app_path = BazelCCTestAppPath("profiler_test_app_fib");
 
   // For this test case, we create the connector context *before*
@@ -348,7 +332,7 @@ TEST_F(PerfProfileBPFTest, TestOutOfContext) {
 
   // Start they toy apps as sub-processes, then,
   // for a certain amount of time, collect data using RunTest().
-  auto sub_processes = StartSubProcesses<CPUPinnedBinaryRunner>(bazel_app_path, kTestIdx);
+  auto sub_processes = StartSubProcesses<CPUPinnedBinaryRunner>(bazel_app_path);
 
   RunTest();
 
