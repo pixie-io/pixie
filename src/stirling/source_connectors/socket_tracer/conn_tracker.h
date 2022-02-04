@@ -517,6 +517,8 @@ class ConnTracker : NotCopyMoveable {
     using TFrameType = typename TProtocolTraits::frame_type;
     using TStateType = typename TProtocolTraits::state_type;
 
+    InitFrames<TFrameType>();
+
     if constexpr (std::is_same_v<TFrameType, protocols::http2::Stream>) {
       http2_client_streams_.Cleanup(frame_size_limit_bytes, frame_expiry_timestamp);
       http2_server_streams_.Cleanup(frame_size_limit_bytes, frame_expiry_timestamp);
