@@ -63,18 +63,22 @@ export const APIKeyRow = React.memo<{ apiKey: APIKeyDisplay }>(({ apiKey }) => {
     }
   `);
 
-  const [copyKeyToClipboard] = useLazyQuery<{ apiKey: GQLAPIKey }>(gql`
-    query getAPIKey($id:ID!){
-      apiKey(id: $id) {
-        id
-        key
+  const [copyKeyToClipboard] = useLazyQuery<{ apiKey: GQLAPIKey }>(
+    gql`
+      query getAPIKey($id:ID!){
+        apiKey(id: $id) {
+          id
+          key
+        }
       }
-    }`, {
-    fetchPolicy: 'network-only',
-    onCompleted: (data) => {
-      navigator.clipboard.writeText(data?.apiKey?.key).then();
+    `,
+    {
+      fetchPolicy: 'network-only',
+      onCompleted: (data) => {
+        navigator.clipboard.writeText(data?.apiKey?.key).then();
+      },
     },
-  });
+  );
 
   const copyAction = React.useCallback(() => {
     copyKeyToClipboard({ variables: { id: apiKey.id } });

@@ -66,18 +66,22 @@ export const DeploymentKeyRow = React.memo<{
     }
   `);
 
-  const [copyKeyToClipboard] = useLazyQuery<{ deploymentKey: GQLDeploymentKey }>(gql`
-    query getDeploymentKey($id:ID!){
-      deploymentKey(id: $id) {
-        id
-        key
+  const [copyKeyToClipboard] = useLazyQuery<{ deploymentKey: GQLDeploymentKey }>(
+    gql`
+      query getDeploymentKey($id:ID!){
+        deploymentKey(id: $id) {
+          id
+          key
+        }
       }
-    }`, {
-    fetchPolicy: 'network-only',
-    onCompleted: (data) => {
-      navigator.clipboard.writeText(data?.deploymentKey?.key).then();
+    `,
+    {
+      fetchPolicy: 'network-only',
+      onCompleted: (data) => {
+        navigator.clipboard.writeText(data?.deploymentKey?.key).then();
+      },
     },
-  });
+  );
 
   const copyAction = React.useCallback(() => {
     copyKeyToClipboard({ variables: { id: deploymentKey.id } });

@@ -584,14 +584,15 @@ const ClusterDetailsNavigationBreadcrumbs = ({ selectedClusterName }) => {
   const { data, loading, error } = useQuery<{
     clusters: Pick<GQLClusterInfo, 'clusterName' | 'prettyClusterName' | 'status'>[],
   }>(gql`
-        query clusterNavigationData{
-            clusters {
-                clusterName
-                prettyClusterName
-                status
-            }
-        }
-      `, {});
+    query clusterNavigationData{
+      clusters {
+        id
+        clusterName
+        prettyClusterName
+        status
+      }
+    }
+  `, {});
   const clusters = data?.clusters;
 
   if (loading || error || !clusters) {

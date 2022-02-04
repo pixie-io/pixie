@@ -84,20 +84,23 @@ export const InviteUserButton = React.memo<InviteUserButtonProps>(({
   const [open, setOpen] = React.useState(false);
   const [getOrg, { data: orgData, loading: orgLoading }] = useLazyQuery<{
     org: Pick<GQLOrgInfo, 'id'>
-  }>(gql`
+  }>(
+    gql`
       query getOrgInfoOnInviteButton {
         org {
           id
         }
       }
-    `);
+    `,
+  );
 
   const [createInviteToken, { data: inviteTokenData }] = useMutation<{ CreateInviteToken: string }, { id: string }>(
     gql`
-    mutation CreateInviteToken($id: ID!) {
-      CreateInviteToken(orgID: $id)
-    }
-  `);
+      mutation CreateInviteToken($id: ID!) {
+        CreateInviteToken(orgID: $id)
+      }
+    `,
+  );
 
   const { org: { domainName } } = React.useContext(OrgContext);
 

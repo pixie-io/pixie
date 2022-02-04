@@ -138,6 +138,7 @@ const VanityRouter: React.FC<{ outerPath: string }> = React.memo(({ outerPath, c
     gql`
       query listClustersForLiveViewRouting {
         clusters {
+          id
           clusterName
           status
         }

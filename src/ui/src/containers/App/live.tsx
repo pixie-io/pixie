@@ -117,6 +117,7 @@ const ScriptShortcut = ({ match, location }) => {
     gql`
       query listClustersForConvenienceRoutes {
         clusters {
+          id
           clusterName
           status
         }
@@ -196,6 +197,7 @@ export default function PixieWithContext(): React.ReactElement {
   }>(gql`
     query userInfoForContext{
       user {
+        id
         orgName
         email
       }
@@ -212,6 +214,7 @@ export default function PixieWithContext(): React.ReactElement {
     gql`
       query getSettingsForCurrentUser{
         userSettings {
+          id
           analyticsOptout
         }
       }

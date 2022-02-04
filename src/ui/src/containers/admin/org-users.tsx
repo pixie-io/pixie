@@ -95,10 +95,11 @@ const RemoveUserButton = React.memo<UserRowProps>(({ user, numUsers }) => {
 
   const [removeUserMutation] = useMutation<{ RemoveUserFromOrg: boolean }, { userID: string }>(
     gql`
-    mutation RemoveUserFromOrg($userID: ID!) {
-      RemoveUserFromOrg(userID: $userID)
-    }
-  `);
+      mutation RemoveUserFromOrg($userID: ID!) {
+        RemoveUserFromOrg(userID: $userID)
+      }
+    `,
+  );
 
   const showSnackbar = useSnackbar();
   const removeUser = React.useCallback(() => {

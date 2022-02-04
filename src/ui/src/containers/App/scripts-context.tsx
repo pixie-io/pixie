@@ -55,6 +55,7 @@ export const ScriptsContextProvider = React.memo(({ children }) => {
   }>(gql`
     query userOrgInfoForScripts{
       user {
+        id
         orgName
         orgID
       }

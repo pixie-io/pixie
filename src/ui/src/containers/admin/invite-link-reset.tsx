@@ -59,10 +59,11 @@ export const InviteLinkReset = React.memo<{
 }>(({ orgID }) => {
   const [revokeAllInviteTokens] = useMutation<{ RevokeAllInviteTokens: boolean }, { orgID: string }>(
     gql`
-    mutation RevokeAllInviteTokens($orgID: ID!) {
-      RevokeAllInviteTokens(orgID: $orgID)
-    }
-  `);
+      mutation RevokeAllInviteTokens($orgID: ID!) {
+        RevokeAllInviteTokens(orgID: $orgID)
+      }
+    `,
+  );
 
   const classes = useStyles();
 
