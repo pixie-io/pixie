@@ -28,22 +28,6 @@ namespace stirling {
 using ::px::testing::BazelBinTestFilePath;
 using ::testing::HasSubstr;
 
-std::string GetLogin() {
-  constexpr size_t kBufSize = 4096;
-  char login[kBufSize];
-
-  const int err = getlogin_r(login, kBufSize);
-  const uid_t uid = getuid();
-
-  if (err == 0) {
-    return login;
-  }
-  if (uid == 0) {
-    return "root";
-  }
-  return "none";
-}
-
 TEST(JavaAgentTest, ExpectedSymbolsTest) {
   // Reconstruct the symbolization log file name that is specified in the bazel BUILD file
   // for the java test app. In the BUILD file, we use whoami to uniquify the file name.
@@ -52,8 +36,8 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   // TODO(jps): consider building the Java test app "fib" inside of a container (i.e. to explicitly
   // *not* use java_binary() in Bazel). This would allow the agent test (this code) to completely
   // own the symbol file name, i.e. to coordinate between logic in the BUILD file and this code.
-  const std::string symbolFilePath = absl::StrFormat("px-java-symbols-%s.bin", GetLogin());
-  const std::string kJavaAppName = "fib_with_agent";
+  constexpr std::string_view kSymbolFilePath = "px-java-symbols.bin";
+  constexpr std::string_view kJavaAppName = "fib_with_agent";
 
   using fs_path = std::filesystem::path;
   const fs_path kPathToJavaTesting = "src/stirling/source_connectors/perf_profiler/java/testing";
@@ -61,19 +45,19 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   const fs_path kBazelAppPath = BazelBinTestFilePath(kToyAppPath);
   ASSERT_OK(fs::Exists(kBazelAppPath));
 
-  if (fs::Exists(symbolFilePath).ok()) {
+  if (fs::Exists(kSymbolFilePath).ok()) {
     // The symbol file is created by the Java process when the agent is attached.
     // A left over stale symbol file can cause this test to pass when it should fail.
     // Here, we prevent that from happening.
-    LOG(INFO) << "Removing stale file: " << symbolFilePath << ".";
-    ASSERT_OK(fs::Remove(symbolFilePath));
+    LOG(INFO) << "Removing stale file: " << kSymbolFilePath << ".";
+    ASSERT_OK(fs::Remove(kSymbolFilePath));
   }
 
   SubProcess sub_process;
   ASSERT_OK(sub_process.Start({kBazelAppPath})) << "Could not start Java app: " << kJavaAppName;
   std::this_thread::sleep_for(std::chrono::seconds(5));
 
-  const auto r = ReadFileToString(symbolFilePath, std::ios_base::binary);
+  const auto r = ReadFileToString(std::string(kSymbolFilePath), std::ios_base::binary);
   ASSERT_OK(r);
   const auto s = r.ValueOrDie();
 
@@ -92,9 +76,9 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   for (const auto& expected_symbol : expected_symbols) {
     EXPECT_THAT(s, HasSubstr(expected_symbol));
   }
-  if (fs::Exists(symbolFilePath).ok()) {
-    LOG(INFO) << "Removing symbol file: " << symbolFilePath;
-    ASSERT_OK(fs::Remove(symbolFilePath));
+  if (fs::Exists(kSymbolFilePath).ok()) {
+    LOG(INFO) << "Removing symbol file: " << kSymbolFilePath;
+    ASSERT_OK(fs::Remove(kSymbolFilePath));
   }
 }
 

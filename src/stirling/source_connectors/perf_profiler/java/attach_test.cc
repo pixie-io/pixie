@@ -31,22 +31,6 @@ namespace stirling {
 using ::px::testing::BazelBinTestFilePath;
 using ::testing::HasSubstr;
 
-std::string GetLogin() {
-  constexpr size_t kBufSize = 4096;
-  char login[kBufSize];
-
-  const int err = getlogin_r(login, kBufSize);
-  const uid_t uid = getuid();
-
-  if (err == 0) {
-    return login;
-  }
-  if (uid == 0) {
-    return "root";
-  }
-  return "none";
-}
-
 // This test does the following:
 // 1. Starts a target Java process (the fib app).
 // 2. Uses the AgentAttach class to inject a JVMTI agent (our symbolization agent).
@@ -56,13 +40,13 @@ std::string GetLogin() {
 TEST(JavaAgentTest, ExpectedSymbolsTest) {
   // Form the file name w/ user login to make it pedantically unique.
   // Also, this is the same as in agent_test, so we keep the test logic consistent.
-  const std::string symbol_file_path_pfx = absl::StrCat("px-java-symbols-", GetLogin());
-  const std::string symbol_file_path = absl::StrCat(symbol_file_path_pfx, ".bin");
-  const std::string java_app_name = "fib";
+  constexpr std::string_view kSymbolFilePathPfx = "px-java-symbols";
+  constexpr std::string_view kSymbolFilePath = "px-java-symbols.bin";
+  constexpr std::string_view kJavaAppName = "fib";
 
   using fs_path = std::filesystem::path;
   const fs_path java_testing_path = "src/stirling/source_connectors/perf_profiler/java/testing";
-  const fs_path toy_app_path = java_testing_path / java_app_name;
+  const fs_path toy_app_path = java_testing_path / kJavaAppName;
   const fs_path bazel_app_path = BazelBinTestFilePath(toy_app_path);
 
   LOG(INFO) << "bazel_app_path: " << bazel_app_path;
@@ -85,25 +69,25 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
     ASSERT_OK(fs::Exists(lib)) << lib;
   }
 
-  if (fs::Exists(symbol_file_path).ok()) {
+  if (fs::Exists(kSymbolFilePath).ok()) {
     // The symbol file is created by the Java process when the agent is attached.
     // A left over stale symbol file can cause this test to pass when it should fail.
     // Here, we prevent that from happening.
-    LOG(INFO) << absl::StrFormat("Removing stale file: %s.", symbol_file_path);
-    ASSERT_OK(fs::Remove(symbol_file_path));
+    LOG(INFO) << absl::StrFormat("Removing stale file: %s.", kSymbolFilePath);
+    ASSERT_OK(fs::Remove(kSymbolFilePath));
   }
 
   // Start the Java process (and wait for it to enter the "live" phase, because
   // you cannot inject a JVMTI agent during Java startup phase).
   SubProcess sub_process;
   const auto started = sub_process.Start({bazel_app_path});
-  ASSERT_OK(started) << absl::StrFormat("Could not start Java app: %s.", java_app_name);
+  ASSERT_OK(started) << absl::StrFormat("Could not start Java app: %s.", kJavaAppName);
   std::this_thread::sleep_for(std::chrono::milliseconds(250));
   const int child_pid = sub_process.child_pid();
-  LOG(INFO) << absl::StrFormat("Started Java app: %s, pid: %d.", java_app_name, child_pid);
+  LOG(INFO) << absl::StrFormat("Started Java app: %s, pid: %d.", kJavaAppName, child_pid);
 
   // Invoke the attach process by creating an attach object.
-  auto attacher = java::AgentAttacher(child_pid, symbol_file_path_pfx, libs);
+  auto attacher = java::AgentAttacher(child_pid, std::string(kSymbolFilePathPfx), libs);
 
   // The attacher object forks. The parent process, this test, can ask the attacher object about
   // its state. Is the attacher finished (child process terminated)? attached (child process
@@ -123,23 +107,33 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
 
   // After attach is complete, wait a little more for the symbol file to materialize fully.
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  const auto file_contents_or_status = ReadFileToString(symbol_file_path, std::ios_base::binary);
-  ASSERT_OK_AND_ASSIGN(const auto file_contents, file_contents_or_status);
+  auto SymbolFileOrStatus = [&]() {
+    return ReadFileToString(std::string(kSymbolFilePath), std::ios_base::binary);
+  };
+  ASSERT_OK_AND_ASSIGN(const auto file_contents, SymbolFileOrStatus());
 
   // Check to see if the symbol file has some symbols.
   const absl::flat_hash_set<std::string> expected_symbols = {
-      "([B[B)Z",          "main",        "([Ljava/lang/String;)V",
-      "LJavaFib;",        "vtable stub", "(Ljava/lang/Object;)I",
-      "Ljava/lang/Math;", "fib52",       "()J"};
+      "()J",
+      "fib52",
+      "([B[B)Z",
+      "LJavaFib;",
+      "call_stub",
+      "Interpreter",
+      "vtable stub",
+      "Ljava/lang/Math;",
+      "()Ljava/lang/String;",
+      "(Ljava/lang/Object;)I",
+  };
   for (const auto& expected_symbol : expected_symbols) {
     EXPECT_THAT(file_contents, HasSubstr(expected_symbol));
   }
 
   // Cleanup.
   // TODO(jps): use TearDown method in test fixture. Also update agent_test.
-  if (fs::Exists(symbol_file_path).ok()) {
-    LOG(INFO) << "Removing symbol file: " << symbol_file_path;
-    ASSERT_OK(fs::Remove(symbol_file_path));
+  if (fs::Exists(kSymbolFilePath).ok()) {
+    LOG(INFO) << "Removing symbol file: " << kSymbolFilePath;
+    ASSERT_OK(fs::Remove(kSymbolFilePath));
   }
 }
 

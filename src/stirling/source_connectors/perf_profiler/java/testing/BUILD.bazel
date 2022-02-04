@@ -26,9 +26,8 @@ package(default_visibility = ["//src/stirling:__subpackages__"])
 # Construct the agent path portion of the command line arg.
 so_path = "-agentpath:$(location //src/stirling/source_connectors/perf_profiler/java/agent:glibc)"
 
-# Construct a file path prefix for the symbolization log file. Out of an abundance of caution,
-# we inject the user name to uniquify file names.
-log_pfx = "px-java-symbols-$$(whoami)"
+# Construct a file path prefix for the symbolization log file.
+log_pfx = "px-java-symbols"
 
 # Construct the full cmd line args here.
 jvm_flags = [so_path + "=" + log_pfx]
