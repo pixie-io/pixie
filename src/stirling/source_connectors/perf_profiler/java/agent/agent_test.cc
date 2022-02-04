@@ -40,7 +40,7 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   constexpr std::string_view kJavaAppName = "fib_with_agent";
 
   using fs_path = std::filesystem::path;
-  const fs_path kPathToJavaTesting = "src/stirling/source_connectors/perf_profiler/java/testing";
+  const fs_path kPathToJavaTesting = "src/stirling/source_connectors/perf_profiler/testing/java";
   const fs_path kToyAppPath = kPathToJavaTesting / kJavaAppName;
   const fs_path kBazelAppPath = BazelBinTestFilePath(kToyAppPath);
   ASSERT_OK(fs::Exists(kBazelAppPath));

@@ -45,7 +45,7 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   constexpr std::string_view kJavaAppName = "fib";
 
   using fs_path = std::filesystem::path;
-  const fs_path java_testing_path = "src/stirling/source_connectors/perf_profiler/java/testing";
+  const fs_path java_testing_path = "src/stirling/source_connectors/perf_profiler/testing/java";
   const fs_path toy_app_path = java_testing_path / kJavaAppName;
   const fs_path bazel_app_path = BazelBinTestFilePath(toy_app_path);
 
