@@ -1118,7 +1118,13 @@ void SocketTraceConnector::WriteDataEvent(const SocketDataEvent& event) {
 template <typename TProtocolTraits>
 void SocketTraceConnector::TransferStream(ConnectorContext* ctx, ConnTracker* tracker,
                                           DataTable* data_table) {
+  using TFrameType = typename TProtocolTraits::frame_type;
+
   VLOG(3) << absl::StrCat("Connection\n", DebugString<TProtocolTraits>(*tracker, ""));
+
+  // Make sure the tracker's frames containers have been properly initialized.
+  // This is a nop if the containers are already of the right type.
+  tracker->InitFrames<TFrameType>();
 
   if (tracker->state() == ConnTracker::State::kTransferring) {
     // ProcessToRecords() parses raw events and produces messages in format that are expected by

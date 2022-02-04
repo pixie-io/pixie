@@ -561,6 +561,14 @@ class ConnTracker : NotCopyMoveable {
 
   std::string ToString() const;
 
+  template <typename TFrameType>
+  void InitFrames() {
+    if constexpr (!std::is_same_v<TFrameType, protocols::http2::Stream>) {
+      send_data_.InitFrames<TFrameType>();
+      recv_data_.InitFrames<TFrameType>();
+    }
+  }
+
  private:
   /**
    * The iterations given for protocol detection by uprobes. The value is given to the worst

@@ -67,12 +67,10 @@ class DataStream : NotCopyMoveable {
   void ProcessBytesToFrames(message_type_t type, TStateType* state);
 
   /**
-   * Returns the current set of parsed frames.
-   * @tparam TFrameType The parsed frame type within the deque.
-   * @return deque of frames.
+   * Initialize the frames to the requested frame type.
    */
   template <typename TFrameType>
-  std::deque<TFrameType>& Frames() {
+  void InitFrames() {
     DCHECK(std::holds_alternative<std::monostate>(frames_) ||
            std::holds_alternative<std::deque<TFrameType>>(frames_))
         << absl::Substitute(
@@ -86,6 +84,18 @@ class DataStream : NotCopyMoveable {
           << absl::Substitute("valueless_by_exception() triggered by initializing to type: $0",
                               typeid(TFrameType).name());
     }
+  }
+
+  /**
+   * Returns the current set of parsed frames.
+   * @tparam TFrameType The parsed frame type within the deque.
+   * @return deque of frames.
+   */
+  template <typename TFrameType>
+  std::deque<TFrameType>& Frames() {
+    // As a safety net, make sure the frames have been initialized.
+    InitFrames<TFrameType>();
+
     LOG_IF(ERROR, frames_.valueless_by_exception()) << absl::Substitute(
         "valueless_by_exception() triggered by type: $0", typeid(TFrameType).name());
     return std::get<std::deque<TFrameType>>(frames_);
@@ -169,11 +179,6 @@ class DataStream : NotCopyMoveable {
   template <typename TFrameType>
   void CleanupFrames(size_t size_limit_bytes,
                      std::chrono::time_point<std::chrono::steady_clock> expiry_timestamp) {
-    // This call has the side-effect of initializing the frames deque appropriately.
-    // Without this, FramesSize() can error out.
-    // TODO(oazizi): Find a better way to make sure the frames deque is initialized.
-    PL_UNUSED(Frames<TFrameType>());
-
     size_t size = FramesSize<TFrameType>();
     if (size > size_limit_bytes) {
       VLOG(1) << absl::Substitute("Messages cleared due to size limit ($0 > $1).", size,
