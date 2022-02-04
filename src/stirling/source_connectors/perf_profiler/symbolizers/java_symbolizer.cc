@@ -221,7 +221,7 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
   auto symbol_file = std::unique_ptr<std::ifstream>(
       new std::ifstream(symbol_file_path, std::ios::in | std::ios::binary));
 
-  if (!symbol_file) {
+  if (symbol_file->fail()) {
     // Could not open the symbol file from the symbolization agent: fall back to native symbolizer.
     symbolizer_functions_[upid] = native_symbolizer_fn;
     return native_symbolizer_fn;
