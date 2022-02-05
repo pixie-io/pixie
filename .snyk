@@ -5,31 +5,31 @@ ignore:
   'snyk:lic:golang:github.com:hashicorp:hcl:MPL-2.0':
     - '*':
         reason: MPL license exemption from CNCF
-        expires: 2022-01-15T00:00:00.000Z
+        expires: 2023-01-15T00:00:00.000Z
         created: 2021-04-07T03:46:04.307Z
   'snyk:lic:golang:github.com:hashicorp:golang-lru:MPL-2.0':
     - '*':
         reason: MPL license exemption from CNCF
-        expires: 2022-01-15T00:00:00.000Z
+        expires: 2023-01-15T00:00:00.000Z
         created: 2021-04-07T03:46:04.307Z
   'snyk:lic:golang:github.com:hashicorp:go-immutable-radix:MPL-2.0':
     - '*':
         reason: Check with CNCF to get MPL exemption
-        expires: 2022-01-15T00:00:00.000Z
+        expires: 2023-01-15T00:00:00.000Z
         created: 2021-04-07T03:46:04.307Z
   'snyk:lic:golang:github.com:hashicorp:yamux:MPL-2.0':
     - '*':
         reason: Check with CNCF to get MPL exemption
-        expires: 2022-01-15T00:00:00.000Z
+        expires: 2023-01-15T00:00:00.000Z
         created: 2021-04-07T03:46:04.307Z
   'snyk:lic:golang:github.com:hashicorp:raft:MPL-2.0':
     - '*':
         reason: Check with CNCF to get MPL exemption
-        expires: 2022-01-15T00:00:00.000Z
+        expires: 2023-01-15T00:00:00.000Z
         created: 2021-04-07T03:46:04.307Z
   'snyk:lic:golang:github.com:hashicorp:go-plugin:MPL-2.0':
     - '*':
         reason: Check with CNCF to get MPL exemption
-        expires: 2022-01-15T00:00:00.000Z
+        expires: 2023-01-15T00:00:00.000Z
         created: 2021-04-07T03:46:04.307Z
 patch: {}
