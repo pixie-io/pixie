@@ -61,7 +61,7 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   const fs_path musl_lib = "build-musl/lib-px-java-agent-musl.so";
   const fs_path glibc_lib = "build-glibc/lib-px-java-agent-glibc.so";
 
-  const std::vector<std::string> libs = {
+  const std::vector<std::filesystem::path> libs = {
       std::filesystem::absolute(BazelBinTestFilePath(lib_path_pfx / musl_lib)),
       std::filesystem::absolute(BazelBinTestFilePath(lib_path_pfx / glibc_lib)),
   };

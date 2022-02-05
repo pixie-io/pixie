@@ -39,7 +39,7 @@ namespace stirling {
  *   auto symbolize_fn = symbolizer.GetSymbolizerFn(upid);
  *   const std::string symbol = symbolize_fn(addr);
  */
-class Symbolizer {
+class Symbolizer : public NotCopyable {
  public:
   virtual ~Symbolizer() = default;
 

@@ -107,7 +107,7 @@ void AgentAttacher::CopyAgentLibsOrDie() {
   const auto copy_options = std::filesystem::copy_options::overwrite_existing;
 
   // Copy each file and downgrade ownership.
-  for (const std::string& src_path : agent_libs_) {
+  for (const std::filesystem::path& src_path : agent_libs_) {
     const std::string basename = std::filesystem::path(src_path).filename();
     const std::string dst_path = absl::Substitute("/proc/$0/root/tmp/$1", target_pid_, basename);
 
@@ -115,7 +115,7 @@ void AgentAttacher::CopyAgentLibsOrDie() {
     PL_EXIT_IF_ERROR(fs::Chown(dst_path, uid, gid));
   }
 
-  for (std::string& agent_lib : agent_libs_) {
+  for (std::filesystem::path& agent_lib : agent_libs_) {
     // Mutate the values in agent_libs_ so that later, when we enter the namespace
     // of the target process, we use the correctly scoped file path.
     const std::string basename = std::filesystem::path(agent_lib).filename();
@@ -133,7 +133,7 @@ void AgentAttacher::SelectLibWithDLOpenOrDie() {
                system::ScopedNamespace::Create(target_pid_, "mnt"),
                { LOG(FATAL) << "Could not enter mnt namespace."; });
 
-  for (const std::string& lib : agent_libs_) {
+  for (const std::filesystem::path& lib : agent_libs_) {
     // Set the member lib_so_path_, then test it with dlopen().
     lib_so_path_ = lib;
 
@@ -181,7 +181,7 @@ bool AgentAttacher::Finished() {
 }
 
 AgentAttacher::AgentAttacher(const int target_pid, const std::string& agent_args,
-                             const std::vector<std::string>& agent_libs)
+                             const std::vector<std::filesystem::path>& agent_libs)
     : target_pid_(target_pid), agent_args_(agent_args), agent_libs_(agent_libs) {
   child_pid_ = fork();
 

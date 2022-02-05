@@ -20,6 +20,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/symbolizer.h"
 
@@ -63,13 +64,15 @@ class JavaSymbolizer : public Symbolizer {
   void DeleteUPID(const struct upid_t& upid) override;
 
  private:
-  JavaSymbolizer() = default;
+  JavaSymbolizer() = delete;
+  explicit JavaSymbolizer(const std::vector<std::filesystem::path> agent_libs);
   std::string_view Symbolize(JavaSymbolizationContext* ctx, const uintptr_t addr);
 
   std::unique_ptr<Symbolizer> native_symbolizer_;
   absl::flat_hash_map<struct upid_t, profiler::SymbolizerFn> symbolizer_functions_;
   absl::flat_hash_map<struct upid_t, std::unique_ptr<JavaSymbolizationContext>>
       symbolization_contexts_;
+  const std::vector<std::filesystem::path> agent_libs_;
 };
 
 }  // namespace stirling

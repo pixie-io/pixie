@@ -18,8 +18,8 @@
 
 #include <string>
 #include <utility>
-#include <vector>
 
+#include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/proc_parser.h"
 #include "src/stirling/source_connectors/perf_profiler/java/agent/raw_symbol_update.h"
 #include "src/stirling/source_connectors/perf_profiler/java/attach.h"
@@ -138,11 +138,32 @@ std::string_view JavaSymbolizationContext::Symbolize(const uintptr_t addr) {
   return native_symbolizer_fn_(addr);
 }
 
+JavaSymbolizer::JavaSymbolizer(const std::vector<std::filesystem::path> agent_libs)
+    : agent_libs_(std::move(agent_libs)) {}
+
 StatusOr<std::unique_ptr<Symbolizer>> JavaSymbolizer::Create(
     std::unique_ptr<Symbolizer> native_symbolizer) {
-  auto java_symbolizer = std::unique_ptr<JavaSymbolizer>(new JavaSymbolizer);
-  java_symbolizer->native_symbolizer_ = std::move(native_symbolizer);
-  return std::unique_ptr<Symbolizer>(java_symbolizer.release());
+  const std::string& comma_separated_libs = FLAGS_stirling_profiler_java_agent_libs;
+  const std::vector<std::string_view> lib_args = absl::StrSplit(comma_separated_libs, ",");
+  std::vector<std::filesystem::path> abs_path_libs;
+  for (const auto& lib : lib_args) {
+    PL_ASSIGN_OR(const auto abs_path_lib, fs::Absolute(lib), continue);
+    if (!fs::Exists(abs_path_lib).ok()) {
+      LOG(WARNING) << absl::Substitute("Java agent lib path $0 not found.", lib);
+      continue;
+    }
+    LOG(INFO) << absl::Substitute("JavaSymbolizer found agent lib $0.", abs_path_lib.string());
+    abs_path_libs.push_back(abs_path_lib);
+  }
+
+  if (abs_path_libs.size() == 0) {
+    LOG(WARNING) << "Java symbols are disabled; could not find any Java symbolization agent libs.";
+    return native_symbolizer;
+  }
+
+  auto jsymbolizer = std::unique_ptr<JavaSymbolizer>(new JavaSymbolizer(std::move(abs_path_libs)));
+  jsymbolizer->native_symbolizer_ = std::move(native_symbolizer);
+  return std::unique_ptr<Symbolizer>(jsymbolizer.release());
 }
 
 void JavaSymbolizer::IterationPreTick() {
@@ -191,10 +212,9 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
     return native_symbolizer_fn;
   }
 
-  const auto libs = absl::StrSplit(FLAGS_stirling_profiler_java_agent_libs, ",");
   const std::string kSymFilePathPfx = "/tmp/px-java-symbolization-agent";
 
-  auto attacher = java::AgentAttacher(upid.pid, kSymFilePathPfx, libs);
+  auto attacher = java::AgentAttacher(upid.pid, kSymFilePathPfx, agent_libs_);
 
   constexpr auto kTimeOutForAttach = std::chrono::milliseconds{250};
   constexpr auto kAttachRecheckPeriod = std::chrono::milliseconds{10};

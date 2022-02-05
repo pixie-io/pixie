@@ -42,7 +42,7 @@ class AgentAttacher {
   // ... agent_args: passed to the agent (used here to specify a location for the symbol file).
   // ... agent_libs: a list of .so files, so we can find one that links in the target namespace.
   AgentAttacher(const int target_pid, const std::string& agent_args,
-                const std::vector<std::string>& agent_libs);
+                const std::vector<std::filesystem::path>& agent_libs);
 
   // For use by the parent process, this checks if the child has finished & returns "true" if so.
   bool Finished();
@@ -57,7 +57,7 @@ class AgentAttacher {
 
   const int target_pid_;
   const std::string& agent_args_;
-  std::vector<std::string> agent_libs_;
+  std::vector<std::filesystem::path> agent_libs_;
   int child_pid_;
   bool finished_ = false;
   bool attached_ = false;
