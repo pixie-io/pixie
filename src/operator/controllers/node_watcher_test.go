@@ -23,7 +23,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	"px.dev/pixie/src/shared/status"
@@ -32,72 +31,68 @@ import (
 func TestMonitor_nodeWatcherHandleNode(t *testing.T) {
 	tests := []struct {
 		name                string
-		existingState       map[string]bool
-		newNodeName         string
-		newNodeKernel       string
+		initialState        nodeCompatTracker
+		nodeKernel          string
 		expectedReason      status.VizierReason
 		expectedVizierPhase v1alpha1.VizierPhase
 		delete              bool
 	}{
 		{
-			name: "compatible",
-			existingState: map[string]bool{
-				"compatibleNode1":   true,
-				"compatibleNode2":   true,
-				"compatibleNode3":   true,
-				"incompatibleNode1": false,
+			name: "add compatible",
+			initialState: nodeCompatTracker{
+				numNodes:        3.0,
+				numIncompatible: 1.0,
+				kernelVersionDist: map[string]int{
+					"5.0.1":  2,
+					"4.13.0": 1,
+				},
 			},
-			newNodeKernel:       "4.14.0",
-			newNodeName:         "newCompatibleNode",
+			nodeKernel:          "4.14.0",
 			expectedReason:      "",
 			expectedVizierPhase: v1alpha1.VizierPhaseHealthy,
 			delete:              false,
 		},
 		{
-			name: "incompatible",
-			existingState: map[string]bool{
-				"compatibleNode1":   true,
-				"incompatibleNode3": true,
+			name: "add incompatible",
+			initialState: nodeCompatTracker{
+				numNodes:        9.0,
+				numIncompatible: 2.0,
+				kernelVersionDist: map[string]int{
+					"5.0.1":  7,
+					"4.13.0": 2,
+				},
 			},
-			newNodeKernel:       "4.13.0",
-			newNodeName:         "newIncompatibleNode",
+			nodeKernel:          "4.13.0",
 			expectedReason:      status.KernelVersionsIncompatible,
 			expectedVizierPhase: v1alpha1.VizierPhaseDegraded,
 			delete:              false,
 		},
 		{
-			name: "update_incompat",
-			existingState: map[string]bool{
-				"compatibleNode1":   true,
-				"incompatibleNode3": false,
+			name: "remove compatible",
+			initialState: nodeCompatTracker{
+				numNodes:        4.0,
+				numIncompatible: 1.0,
+				kernelVersionDist: map[string]int{
+					"5.0.2":  3,
+					"4.12.3": 1,
+				},
 			},
-			newNodeKernel:       "4.13.0",
-			newNodeName:         "compatibleNode1",
+			nodeKernel:          "5.0.2",
 			expectedReason:      status.KernelVersionsIncompatible,
 			expectedVizierPhase: v1alpha1.VizierPhaseDegraded,
-			delete:              false,
+			delete:              true,
 		},
 		{
-			name: "update_compat",
-			existingState: map[string]bool{
-				"compatibleNode1":   true,
-				"incompatibleNode3": false,
+			name: "remove incompatible",
+			initialState: nodeCompatTracker{
+				numNodes:        10.0,
+				numIncompatible: 3.0,
+				kernelVersionDist: map[string]int{
+					"5.0.1":  7,
+					"4.12.3": 3,
+				},
 			},
-			newNodeKernel:       "4.14.1",
-			newNodeName:         "incompatibleNode3",
-			expectedReason:      "",
-			expectedVizierPhase: v1alpha1.VizierPhaseHealthy,
-			delete:              false,
-		},
-		{
-			name: "dead",
-			existingState: map[string]bool{
-				"compatibleNode1":   true,
-				"incompatibleNode3": true,
-				"incompatibleNode1": false,
-			},
-			newNodeKernel:       "4.13.0",
-			newNodeName:         "incompatibleNode1",
+			nodeKernel:          "4.12.3",
 			expectedReason:      "",
 			expectedVizierPhase: v1alpha1.VizierPhaseHealthy,
 			delete:              true,
@@ -106,31 +101,19 @@ func TestMonitor_nodeWatcherHandleNode(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			n := &nodeCompatTracker{
-				incompatibleCount: 0.0,
-				nodeCompatible:    test.existingState,
-			}
-			for _, c := range test.existingState {
-				if !c {
-					n.incompatibleCount++
-				}
-			}
+			n := test.initialState
+			initialCount := n.kernelVersionDist[test.nodeKernel]
 
 			node := &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: test.newNodeName,
-				},
 				Status: v1.NodeStatus{
 					NodeInfo: v1.NodeSystemInfo{
-						KernelVersion: test.newNodeKernel,
+						KernelVersion: test.nodeKernel,
 					},
 				},
 			}
 
 			if test.delete {
 				n.removeNode(node)
-			} else if _, ok := test.existingState[node.Name]; ok {
-				n.updateNode(node)
 			} else {
 				n.addNode(node)
 			}
@@ -139,6 +122,11 @@ func TestMonitor_nodeWatcherHandleNode(t *testing.T) {
 
 			assert.Equal(t, test.expectedReason, state.Reason)
 			assert.Equal(t, test.expectedVizierPhase, translateReasonToPhase(state.Reason))
+			if test.delete {
+				assert.Equal(t, initialCount-1, n.kernelVersionDist[test.nodeKernel])
+			} else {
+				assert.Equal(t, initialCount+1, n.kernelVersionDist[test.nodeKernel])
+			}
 		})
 	}
 }

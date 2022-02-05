@@ -41,18 +41,23 @@ var (
 	kernelMinVersion = semver.Version{Major: 4, Minor: 14, Patch: 0}
 )
 
-func nodeIsCompatible(node *v1.Node) bool {
+func getNodeKernelVersion(node *v1.Node) string {
 	version := node.Status.NodeInfo.KernelVersion
 	// We don't actually care about pre-release tags, so drop them since they sometimes cause parse error.
 	sp := strings.Split(version, "-")
 	if len(sp) == 0 {
-		return true
+		return ""
 	}
 	version = sp[0]
 	version = strings.TrimPrefix(version, "v")
 	// Minor version can sometime contain a "+", we remove it so it parses properly with semver.
-	version = strings.TrimSuffix(version, "+")
+	return strings.TrimSuffix(version, "+")
+}
 
+func nodeIsCompatible(version string) bool {
+	if version == "" {
+		return true
+	}
 	currentSemVer, err := semver.Make(version)
 	if err != nil {
 		log.WithError(err).Error("Failed to parse current Node Kernel version")
@@ -62,53 +67,31 @@ func nodeIsCompatible(node *v1.Node) bool {
 }
 
 type nodeCompatTracker struct {
-	incompatibleCount float64
-	nodeCompatible    map[string]bool
+	numIncompatible   float64
+	numNodes          float64
+	kernelVersionDist map[string]int
 }
 
 func (n *nodeCompatTracker) addNode(node *v1.Node) {
-	com := nodeIsCompatible(node)
-	if _, ok := n.nodeCompatible[node.Name]; ok {
-		n.updateNode(node)
-		return
-	}
-	n.nodeCompatible[node.Name] = com
-	if !com {
-		n.incompatibleCount++
-	}
-}
-
-func (n *nodeCompatTracker) updateNode(node *v1.Node) {
-	oldCom, ok := n.nodeCompatible[node.Name]
-	if !ok {
-		n.addNode(node)
-		return
-	}
-	com := nodeIsCompatible(node)
-	if com == oldCom {
-		return
-	}
-	n.nodeCompatible[node.Name] = com
-	if com {
-		n.incompatibleCount--
-	} else {
-		n.incompatibleCount++
+	n.numNodes++
+	kVersion := getNodeKernelVersion(node)
+	n.kernelVersionDist[kVersion]++
+	if !nodeIsCompatible(kVersion) {
+		n.numIncompatible++
 	}
 }
 
 func (n *nodeCompatTracker) removeNode(node *v1.Node) {
-	com, ok := n.nodeCompatible[node.Name]
-	if !ok {
-		return
-	}
-	delete(n.nodeCompatible, node.Name)
-	if !com {
-		n.incompatibleCount--
+	n.numNodes--
+	kVersion := getNodeKernelVersion(node)
+	n.kernelVersionDist[kVersion]--
+	if !nodeIsCompatible(kVersion) {
+		n.numIncompatible--
 	}
 }
 
 func (n *nodeCompatTracker) state() *vizierState {
-	if n.incompatibleCount > degradedThreshold*float64(len(n.nodeCompatible)) {
+	if n.numIncompatible > degradedThreshold*n.numNodes {
 		return &vizierState{Reason: status.KernelVersionsIncompatible}
 	}
 	return okState()
@@ -126,8 +109,9 @@ type nodeWatcher struct {
 
 func (nw *nodeWatcher) start(ctx context.Context) {
 	nw.compatTracker = nodeCompatTracker{
-		incompatibleCount: 0.0,
-		nodeCompatible:    make(map[string]bool),
+		numIncompatible:   0.0,
+		numNodes:          0.0,
+		kernelVersionDist: make(map[string]int),
 	}
 
 	informer := nw.factory.Core().V1().Nodes().Informer()
@@ -151,11 +135,14 @@ func (nw *nodeWatcher) onAdd(obj interface{}) {
 }
 
 func (nw *nodeWatcher) onUpdate(oldObj, newObj interface{}) {
-	node, ok := newObj.(*v1.Node)
-	if !ok {
-		return
+	oldNode, ok := oldObj.(*v1.Node)
+	if ok {
+		nw.compatTracker.removeNode(oldNode)
 	}
-	nw.compatTracker.updateNode(node)
+	newNode, ok := newObj.(*v1.Node)
+	if ok {
+		nw.compatTracker.addNode(newNode)
+	}
 	nw.state <- nw.compatTracker.state()
 }
 
