@@ -525,6 +525,7 @@ StatusOr<uint64_t> GetOpenSSLVersionNumUsingDLOpen(const std::filesystem::path& 
     return error::Internal("Failed to dlopen OpenSSL so file: $0, $1", lib_openssl_path.string(),
                            dlerror());
   }
+  DEFER(dlclose(h));
 
   const std::string version_num_symbol = "OpenSSL_version_num";
 
@@ -532,7 +533,6 @@ StatusOr<uint64_t> GetOpenSSLVersionNumUsingDLOpen(const std::filesystem::path& 
   PL_ASSIGN_OR_RETURN(auto version_num_f, DLSymbolToFptr<unsigned long()>(h, version_num_symbol));
 
   const uint64_t version_num = version_num_f();
-  dlclose(h);
   return version_num;
 }
 
