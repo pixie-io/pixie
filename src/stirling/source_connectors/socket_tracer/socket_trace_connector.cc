@@ -18,6 +18,7 @@
 
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
 
+#include <sys/sysinfo.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -102,6 +103,16 @@ DEFINE_uint32(stirling_socket_tracer_target_data_bw_percpu, 100 * 1024 * 1024,
 // Assume a default of 5MiB/s across socket connections for control events.
 DEFINE_uint32(stirling_socket_tracer_target_control_bw_percpu, 5 * 1024 * 1024,
               "Target bytes/sec of control events per CPU");
+
+DEFINE_double(
+    stirling_socket_tracer_percpu_bw_scaling_factor, 8,
+    "Per CPU scaling factor to apply to perf buffers, with the formula "
+    "(1+x)/(ncpus+x), where x is the value of this flag. "
+    "A value of infinity means each CPU's perf buffer is sized to handle the target BW. "
+    "A value of 0 means each CPU's perf buffer is sized to handle a 1/ncpu * target BW. "
+    "Values in between trade-off between these two extremes in a way that prunes back "
+    "memory usage more aggressively for high core counts. "
+    "8 is the default to curb memory use in perf buffers for CPUs with high core counts.");
 
 DEFINE_uint32(messages_expiry_duration_secs, 1 * 60,
               "The duration after which a parsed message is erased.");
@@ -253,12 +264,20 @@ const auto kProbeSpecs = MakeArray<bpf_tools::KProbeSpec>(
       /*is_syscall*/ false}});
 
 auto SocketTraceConnector::InitPerfBufferSpecs() {
+  const size_t ncpus = get_nprocs_conf();
+
+  double cpu_scaling_factor = (1 + FLAGS_stirling_socket_tracer_percpu_bw_scaling_factor) /
+                              (ncpus + FLAGS_stirling_socket_tracer_percpu_bw_scaling_factor);
+  LOG(INFO) << absl::Substitute("Initializing perf buffers with ncpus=$0 and scaling_factor=$1",
+                                ncpus, cpu_scaling_factor);
+
   const double kSecondsPerPeriod =
       std::chrono::duration_cast<std::chrono::milliseconds>(kSamplingPeriod).count() / 1000.0;
-  const int kTargetDataBufferSize =
-      static_cast<int>(FLAGS_stirling_socket_tracer_target_data_bw_percpu * kSecondsPerPeriod);
+  const int kTargetDataBufferSize = static_cast<int>(
+      FLAGS_stirling_socket_tracer_target_data_bw_percpu * kSecondsPerPeriod * cpu_scaling_factor);
   const int kTargetControlBufferSize =
-      static_cast<int>(FLAGS_stirling_socket_tracer_target_control_bw_percpu * kSecondsPerPeriod);
+      static_cast<int>(FLAGS_stirling_socket_tracer_target_control_bw_percpu * kSecondsPerPeriod *
+                       cpu_scaling_factor);
 
   return MakeArray<bpf_tools::PerfBufferSpec>({
       // For data events. The order must be consistent with output tables.
