@@ -166,12 +166,15 @@ StatusOr<std::unique_ptr<Symbolizer>> JavaSymbolizer::Create(
   return std::unique_ptr<Symbolizer>(jsymbolizer.release());
 }
 
-std::filesystem::path JavaSymbolizer::GetAgentSymbolFilePathPfx(const uint32_t pid) const {
-  return absl::Substitute(kSymbolFileAgentTemplate, pid);
+std::filesystem::path JavaSymbolizer::GetAgentSymbolFilePathPfx(const struct upid_t& upid) const {
+  static constexpr char const* const kSymbolFileAgentTemplate = "/tmp/px-java-symbols-$0-$1";
+  return absl::Substitute(kSymbolFileAgentTemplate, upid.pid, upid.start_time_ticks);
 }
 
-std::filesystem::path JavaSymbolizer::GetStirlingSymbolFilePath(const uint32_t pid) const {
-  return absl::Substitute(kSymbolFileStirlingTemplate, pid);
+std::filesystem::path JavaSymbolizer::GetStirlingSymbolFilePath(const struct upid_t& upid) const {
+  static constexpr char const* const kSymbolFileStirlingTemplate =
+      "/proc/$0/root/tmp/px-java-symbols-$0-$1.bin";
+  return absl::Substitute(kSymbolFileStirlingTemplate, upid.pid, upid.start_time_ticks);
 }
 
 void JavaSymbolizer::IterationPreTick() {
@@ -220,35 +223,39 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
     return native_symbolizer_fn;
   }
 
-  auto attacher = java::AgentAttacher(upid.pid, GetAgentSymbolFilePathPfx(upid.pid), agent_libs_);
+  const std::filesystem::path symbol_file_path = GetStirlingSymbolFilePath(upid);
 
-  constexpr auto kTimeOutForAttach = std::chrono::milliseconds{250};
-  constexpr auto kAttachRecheckPeriod = std::chrono::milliseconds{10};
-  auto time_elapsed = std::chrono::milliseconds{0};
+  if (!fs::Exists(symbol_file_path).ok()) {
+    auto attacher = java::AgentAttacher(upid.pid, GetAgentSymbolFilePathPfx(upid), agent_libs_);
 
-  while (!attacher.Finished()) {
-    if (time_elapsed >= kTimeOutForAttach) {
-      // Attacher did not complete. Fall back to native symbolizer.
+    constexpr auto kTimeOutForAttach = std::chrono::milliseconds{250};
+    constexpr auto kAttachRecheckPeriod = std::chrono::milliseconds{10};
+    auto time_elapsed = std::chrono::milliseconds{0};
+
+    while (!attacher.Finished()) {
+      if (time_elapsed >= kTimeOutForAttach) {
+        // Attacher did not complete. Fall back to native symbolizer.
+        symbolizer_functions_[upid] = native_symbolizer_fn;
+        return native_symbolizer_fn;
+      }
+      // Still waiting to finish the attach process.
+      // TODO(jps): Create a temporary symbolization function,
+      // and return that here to unblock Stirling.
+      std::this_thread::sleep_for(kAttachRecheckPeriod);
+      time_elapsed += kAttachRecheckPeriod;
+    }
+
+    if (!attacher.attached()) {
+      // This process *is* Java, but we failed to attach the symbolization agent. Fall back to
+      // symbolizer function from the underlying native symbolizer.
+      // To prevent this from happening again, store that in the map.
       symbolizer_functions_[upid] = native_symbolizer_fn;
       return native_symbolizer_fn;
     }
-    // Still waiting to finish the attach process.
-    // TODO(jps): Create a temporary symbolization function,
-    // and return that here to unblock Stirling.
-    std::this_thread::sleep_for(kAttachRecheckPeriod);
-    time_elapsed += kAttachRecheckPeriod;
-  }
-
-  if (!attacher.attached()) {
-    // This process *is* Java, but we failed to attach the symbolization agent. Fall back to
-    // symbolizer function from the underlying native symbolizer.
-    // To prevent this from happening again, store that in the map.
-    symbolizer_functions_[upid] = native_symbolizer_fn;
-    return native_symbolizer_fn;
   }
 
   auto symbol_file = std::unique_ptr<std::ifstream>(
-      new std::ifstream(GetStirlingSymbolFilePath(upid.pid), std::ios::in | std::ios::binary));
+      new std::ifstream(symbol_file_path, std::ios::in | std::ios::binary));
 
   if (symbol_file->fail()) {
     // Could not open the symbol file from the symbolization agent: fall back to native symbolizer.
