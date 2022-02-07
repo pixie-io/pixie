@@ -356,6 +356,12 @@ class GetUDTFList final : public carnot::udf::UDTF<GetUDTFList> {
       auto* udtf_def =
           static_cast<carnot::udf::UDTFDefinition*>(registry_map_iter_->second->GetDefinition());
 
+      if (absl::StartsWith(udtf_def->name(), "_")) {
+        // Hide "internal" funcs.
+        ++registry_map_iter_;
+        continue;
+      }
+
       rapidjson::Document init_args;
       init_args.SetObject();
       rapidjson::Value init_args_arr(rapidjson::kArrayType);
@@ -440,6 +446,12 @@ class GetUDFList final : public carnot::udf::UDTF<GetUDFList> {
       auto* udf_def = static_cast<carnot::udf::ScalarUDFDefinition*>(
           registry_map_iter_->second->GetDefinition());
 
+      if (absl::StartsWith(udf_def->name(), "_")) {
+        // Hide "internal" funcs.
+        ++registry_map_iter_;
+        continue;
+      }
+
       rapidjson::Document args;
       args.SetObject();
       rapidjson::Value args_arr(rapidjson::kArrayType);
@@ -494,6 +506,12 @@ class GetUDAList final : public carnot::udf::UDTF<GetUDAList> {
       }
       auto* uda_def =
           static_cast<carnot::udf::UDADefinition*>(registry_map_iter_->second->GetDefinition());
+
+      if (absl::StartsWith(uda_def->name(), "_")) {
+        // Hide "internal" funcs.
+        ++registry_map_iter_;
+        continue;
+      }
 
       rapidjson::Document args;
       args.SetObject();
