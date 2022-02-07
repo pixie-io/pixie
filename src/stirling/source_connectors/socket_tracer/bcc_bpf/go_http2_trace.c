@@ -29,8 +29,7 @@
 
 #define MAX_HEADER_COUNT 59
 
-BPF_PERF_OUTPUT(go_grpc_header_events);
-BPF_PERF_OUTPUT(go_grpc_data_events);
+BPF_PERF_OUTPUT(go_grpc_events);
 
 // BPF programs are limited to a 512-byte stack. We store this value per CPU
 // and use it as a heap allocated value.
@@ -60,7 +59,7 @@ BPF_HASH(http2_symaddrs_map, uint32_t, struct go_http2_symaddrs_t);
 //
 // Key: encoder instance pointer
 // Value: Header attributes (e.g. stream_id, fd)
-BPF_HASH(active_write_headers_frame_map, void*, struct header_attr_t);
+BPF_HASH(active_write_headers_frame_map, void*, struct go_grpc_event_attr_t);
 
 // Meaning of flag bits in FrameHeader flags.
 // https://github.com/golang/net/blob/master/http2/frame.go
@@ -192,7 +191,7 @@ static __inline void fill_header_field(struct go_grpc_http2_header_event_t* even
 }
 
 static __inline void submit_headers(struct pt_regs* ctx, enum http2_probe_type_t probe_type,
-                                    enum HeaderEventType type, int32_t fd, uint32_t stream_id,
+                                    enum grpc_event_type_t type, int32_t fd, uint32_t stream_id,
                                     bool end_stream, void* fields_ptr, int64_t fields_len,
                                     const struct go_http2_symaddrs_t* symaddrs) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
@@ -207,7 +206,7 @@ static __inline void submit_headers(struct pt_regs* ctx, enum http2_probe_type_t
   }
 
   event->attr.probe_type = probe_type;
-  event->attr.type = type;
+  event->attr.event_type = type;
   event->attr.timestamp_ns = bpf_ktime_get_ns();
   event->attr.conn_id = conn_info->conn_id;
   event->attr.stream_id = stream_id;
@@ -219,7 +218,7 @@ static __inline void submit_headers(struct pt_regs* ctx, enum http2_probe_type_t
   for (unsigned int i = 0; i < MAX_HEADER_COUNT; ++i) {
     if (i < fields_len) {
       fill_header_field(event, fields_ptr + i * kSizeOfHeaderField, symaddrs);
-      go_grpc_header_events.perf_submit(ctx, event, sizeof(*event));
+      go_grpc_events.perf_submit(ctx, event, sizeof(*event));
     }
   }
 
@@ -228,15 +227,15 @@ static __inline void submit_headers(struct pt_regs* ctx, enum http2_probe_type_t
     event->name.size = 0;
     event->value.size = 0;
     event->attr.end_stream = true;
-    go_grpc_header_events.perf_submit(ctx, event, sizeof(*event));
+    go_grpc_events.perf_submit(ctx, event, sizeof(*event));
   }
 }
 
 static __inline void submit_header(struct pt_regs* ctx, enum http2_probe_type_t probe_type,
-                                   enum HeaderEventType type, void* encoder_ptr,
+                                   enum grpc_event_type_t type, void* encoder_ptr,
                                    struct gostring* name_ptr, struct gostring* value_ptr,
                                    const struct go_http2_symaddrs_t* symaddrs) {
-  struct header_attr_t* attr = active_write_headers_frame_map.lookup(&encoder_ptr);
+  struct go_grpc_event_attr_t* attr = active_write_headers_frame_map.lookup(&encoder_ptr);
   if (attr == NULL) {
     return;
   }
@@ -247,7 +246,7 @@ static __inline void submit_header(struct pt_regs* ctx, enum http2_probe_type_t 
   }
 
   event->attr.probe_type = probe_type;
-  event->attr.type = type;
+  event->attr.event_type = type;
   event->attr.timestamp_ns = bpf_ktime_get_ns();
   event->attr.conn_id = attr->conn_id;
   event->attr.stream_id = attr->stream_id;
@@ -256,7 +255,7 @@ static __inline void submit_header(struct pt_regs* ctx, enum http2_probe_type_t 
   copy_header_field(&event->name, name_ptr);
   copy_header_field(&event->value, value_ptr);
 
-  go_grpc_header_events.perf_submit(ctx, event, sizeof(*event));
+  go_grpc_events.perf_submit(ctx, event, sizeof(*event));
 }
 
 // TODO(oazizi): Remove this struct; Use DWARF instead.
@@ -764,7 +763,7 @@ int probe_http_http2writeResHeaders_write_frame(struct pt_regs* ctx) {
     return 0;
   }
 
-  struct header_attr_t attr = {};
+  struct go_grpc_event_attr_t attr = {};
   attr.conn_id = conn_info->conn_id;
   attr.stream_id = stream_id;
 
@@ -784,7 +783,7 @@ int probe_http_http2writeResHeaders_write_frame(struct pt_regs* ctx) {
     }
 
     event->attr.probe_type = k_probe_http_http2writeResHeaders_write_frame;
-    event->attr.type = kHeaderEventWrite;
+    event->attr.event_type = kHeaderEventWrite;
     event->attr.timestamp_ns = bpf_ktime_get_ns();
     event->attr.conn_id = conn_info->conn_id;
     event->attr.stream_id = stream_id;
@@ -792,7 +791,7 @@ int probe_http_http2writeResHeaders_write_frame(struct pt_regs* ctx) {
     event->value.size = 0;
     event->attr.end_stream = true;
 
-    go_grpc_header_events.perf_submit(ctx, event, sizeof(*event));
+    go_grpc_events.perf_submit(ctx, event, sizeof(*event));
   }
 
   // TODO(oazizi): We are leaking BPF map entries until this line is activated,
@@ -807,7 +806,7 @@ int probe_http_http2writeResHeaders_write_frame(struct pt_regs* ctx) {
 //-----------------------------------------------------------------------------
 
 static __inline void go_http2_submit_data(struct pt_regs* ctx, enum http2_probe_type_t probe_type,
-                                          uint32_t tgid, int32_t fd, enum DataFrameEventType type,
+                                          uint32_t tgid, int32_t fd, enum grpc_event_type_t type,
                                           uint32_t stream_id, bool end_stream, char* data_ptr,
                                           int64_t data_len) {
   struct conn_info_t* conn_info = get_or_create_conn_info(tgid, fd);
@@ -823,22 +822,22 @@ static __inline void go_http2_submit_data(struct pt_regs* ctx, enum http2_probe_
   info->attr.conn_id = conn_info->conn_id;
   info->attr.timestamp_ns = bpf_ktime_get_ns();
   info->attr.probe_type = probe_type;
-  info->attr.type = type;
+  info->attr.event_type = type;
   info->attr.stream_id = stream_id;
   info->attr.end_stream = end_stream;
 
   if (type == kDataFrameEventWrite) {
-    info->attr.pos = conn_info->app_wr_bytes;
+    info->data_attr.pos = conn_info->app_wr_bytes;
     conn_info->app_wr_bytes += data_len;
   } else if (type == kDataFrameEventRead) {
-    info->attr.pos = conn_info->app_rd_bytes;
+    info->data_attr.pos = conn_info->app_rd_bytes;
     conn_info->app_rd_bytes += data_len;
   }
 
-  info->attr.data_size = data_len;
+  info->data_attr.data_size = data_len;
 
   uint32_t data_buf_size = data_len < MAX_DATA_SIZE ? data_len : MAX_DATA_SIZE;
-  info->attr.data_buf_size = data_buf_size;
+  info->data_attr.data_buf_size = data_buf_size;
 
   // Note that we have some black magic below with the string sizes.
   // This is to avoid passing a size of 0 to bpf_probe_read(),
@@ -851,7 +850,8 @@ static __inline void go_http2_submit_data(struct pt_regs* ctx, enum http2_probe_
 
   if (data_buf_size_minus_1 < MAX_DATA_SIZE) {
     bpf_probe_read(info->data, data_buf_size, data_ptr);
-    go_grpc_data_events.perf_submit(ctx, info, sizeof(info->attr) + data_buf_size);
+    go_grpc_events.perf_submit(ctx, info,
+                               sizeof(info->attr) + sizeof(info->data_attr) + data_buf_size);
   }
 }
 

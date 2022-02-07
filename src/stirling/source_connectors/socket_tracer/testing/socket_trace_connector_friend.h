@@ -64,10 +64,10 @@ class SocketTraceConnectorFriend : public SocketTraceConnector {
     SocketTraceConnector::HandleMMapEvent(this, data, data_size);
   }
   void HandleHTTP2HeaderEvent(go_grpc_http2_header_event_t* data, int data_size) {
-    SocketTraceConnector::HandleHTTP2HeaderEvent(this, data, data_size);
+    SocketTraceConnector::HandleHTTP2Event(this, data, data_size);
   }
   void HandleHTTP2Data(go_grpc_data_event_t* data, int data_size) {
-    SocketTraceConnector::HandleHTTP2Data(this, data, data_size);
+    SocketTraceConnector::HandleHTTP2Event(this, data, data_size);
   }
 };
 

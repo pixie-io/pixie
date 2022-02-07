@@ -288,9 +288,7 @@ auto SocketTraceConnector::InitPerfBufferSpecs() {
       {"conn_stats_events", HandleConnStatsEvent, HandleConnStatsEventLoss,
        kTargetControlBufferSize},
       {"mmap_events", HandleMMapEvent, HandleMMapEventLoss, kTargetControlBufferSize / 10},
-      {"go_grpc_header_events", HandleHTTP2HeaderEvent, HandleHTTP2HeaderEventLoss,
-       kTargetDataBufferSize / 10},
-      {"go_grpc_data_events", HandleHTTP2Data, HandleHTTP2DataLoss, kTargetDataBufferSize},
+      {"go_grpc_events", HandleHTTP2Event, HandleHTTP2EventLoss, kTargetDataBufferSize},
   });
 }
 
@@ -445,8 +443,7 @@ std::string BPFMapsInfo(bpf_tools::BCCWrapper* bcc) {
   out += BPFMapInfo<uint64_t, struct data_args_t>(bcc, "active_ssl_write_args_map");
   out += BPFMapInfo<uint32_t, struct go_tls_symaddrs_t>(bcc, "go_tls_symaddrs_map");
   out += BPFMapInfo<uint32_t, struct go_http2_symaddrs_t>(bcc, "http2_symaddrs_map");
-  out += BPFMapInfo<void*, struct go_grpc_http2_header_event_t::header_attr_t>(
-      bcc, "active_write_headers_frame_map");
+  out += BPFMapInfo<void*, struct go_grpc_event_attr_t>(bcc, "active_write_headers_frame_map");
   out += BPFMapInfo<uint64_t, struct conn_info_t>(bcc, "conn_info_map");
   out += BPFMapInfo<uint64_t, uint64_t>(bcc, "conn_disabled_map");
   out += BPFMapInfo<uint64_t, struct accept_args_t>(bcc, "active_accept_args_map");
@@ -652,46 +649,49 @@ void SocketTraceConnector::HandleMMapEventLoss(void* cb_cookie, uint64_t lost) {
   static_cast<SocketTraceConnector*>(cb_cookie)->stats_.Increment(StatKey::kLossMMapEvent, lost);
 }
 
-void SocketTraceConnector::HandleHTTP2HeaderEvent(void* cb_cookie, void* data, int /*data_size*/) {
+void SocketTraceConnector::HandleHTTP2Event(void* cb_cookie, void* data, int /*data_size*/) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
 
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
 
-  auto event = std::make_unique<HTTP2HeaderEvent>(data);
+  // Note: Directly accessing data through the data pointer can result in mis-aligned accesses.
+  // This is because the perf buffer data starts at an offset of 4 bytes.
+  // Accessing the event_type should be safe as long as it is 4-byte data type.
+  auto event_type = reinterpret_cast<go_grpc_event_attr_t*>(data)->event_type;
 
-  VLOG(3) << absl::Substitute(
-      "t=$0 pid=$1 type=$2 fd=$3 tsid=$4 stream_id=$5 end_stream=$6 name=$7 value=$8",
-      event->attr.timestamp_ns, event->attr.conn_id.upid.pid,
-      magic_enum::enum_name(event->attr.type), event->attr.conn_id.fd, event->attr.conn_id.tsid,
-      event->attr.stream_id, event->attr.end_stream, event->name, event->value);
-  connector->AcceptHTTP2Header(std::move(event));
+  switch (event_type) {
+    case kHeaderEventRead:
+    case kHeaderEventWrite: {
+      auto event = std::make_unique<HTTP2HeaderEvent>(data);
+
+      VLOG(3) << absl::Substitute(
+          "t=$0 pid=$1 type=$2 fd=$3 tsid=$4 stream_id=$5 end_stream=$6 name=$7 value=$8",
+          event->attr.timestamp_ns, event->attr.conn_id.upid.pid,
+          magic_enum::enum_name(event->attr.event_type), event->attr.conn_id.fd,
+          event->attr.conn_id.tsid, event->attr.stream_id, event->attr.end_stream, event->name,
+          event->value);
+      connector->AcceptHTTP2Header(std::move(event));
+    } break;
+    case kDataFrameEventRead:
+    case kDataFrameEventWrite: {
+      auto event = std::make_unique<HTTP2DataEvent>(data);
+
+      VLOG(3) << absl::Substitute(
+          "t=$0 pid=$1 type=$2 fd=$3 tsid=$4 stream_id=$5 end_stream=$6 data=$7",
+          event->attr.timestamp_ns, event->attr.conn_id.upid.pid,
+          magic_enum::enum_name(event->attr.event_type), event->attr.conn_id.fd,
+          event->attr.conn_id.tsid, event->attr.stream_id, event->attr.end_stream, event->payload);
+      connector->AcceptHTTP2Data(std::move(event));
+    } break;
+    default:
+      LOG(DFATAL) << absl::Substitute("Unexpected event_type $0",
+                                      magic_enum::enum_name(event_type));
+  }
 }
 
-void SocketTraceConnector::HandleHTTP2HeaderEventLoss(void* cb_cookie, uint64_t lost) {
+void SocketTraceConnector::HandleHTTP2EventLoss(void* cb_cookie, uint64_t lost) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
-  static_cast<SocketTraceConnector*>(cb_cookie)->stats_.Increment(StatKey::kLossGoGRPCHeaderEvent,
-                                                                  lost);
-}
-
-void SocketTraceConnector::HandleHTTP2Data(void* cb_cookie, void* data, int /*data_size*/) {
-  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
-
-  auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
-  // Directly access data through a go_grpc_data_event_t pointer results in mis-aligned access.
-  // go_grpc_data_event_t is 8-bytes aligned, data is 4-bytes.
-  auto event = std::make_unique<HTTP2DataEvent>(data);
-
-  VLOG(3) << absl::Substitute(
-      "t=$0 pid=$1 type=$2 fd=$3 tsid=$4 stream_id=$5 end_stream=$6 data=$7",
-      event->attr.timestamp_ns, event->attr.conn_id.upid.pid,
-      magic_enum::enum_name(event->attr.type), event->attr.conn_id.fd, event->attr.conn_id.tsid,
-      event->attr.stream_id, event->attr.end_stream, event->payload);
-  connector->AcceptHTTP2Data(std::move(event));
-}
-
-void SocketTraceConnector::HandleHTTP2DataLoss(void* cb_cookie, uint64_t lost) {
-  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
-  static_cast<SocketTraceConnector*>(cb_cookie)->stats_.Increment(StatKey::kLossHTTP2Data, lost);
+  static_cast<SocketTraceConnector*>(cb_cookie)->stats_.Increment(StatKey::kLossHTTP2Event, lost);
 }
 
 //-----------------------------------------------------------------------------

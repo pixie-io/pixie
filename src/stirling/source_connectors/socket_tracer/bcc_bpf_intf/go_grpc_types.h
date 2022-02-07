@@ -49,32 +49,37 @@ enum http2_probe_type_t {
   k_probe_http_http2Framer_write_data,
 };
 
-enum HeaderEventType { kHeaderEventUnknown, kHeaderEventRead, kHeaderEventWrite };
+enum grpc_event_type_t {
+  kEventUnknown,
+  kHeaderEventRead,
+  kHeaderEventWrite,
+  kDataFrameEventRead,
+  kDataFrameEventWrite
+};
+
+struct go_grpc_event_attr_t {
+  enum grpc_event_type_t event_type;
+  enum http2_probe_type_t probe_type;
+  uint64_t timestamp_ns;
+  struct conn_id_t conn_id;
+  uint32_t stream_id;
+  bool end_stream;
+};
 
 struct go_grpc_http2_header_event_t {
-  struct header_attr_t {
-    enum http2_probe_type_t probe_type;
-    enum HeaderEventType type;
-    uint64_t timestamp_ns;
-    struct conn_id_t conn_id;
-    uint32_t stream_id;
-    bool end_stream;
-  } attr;
+  // Must be the first member of this struct, to maintain common header with go_grpc_data_event_t.
+  struct go_grpc_event_attr_t attr;
 
   struct header_field_t name;
   struct header_field_t value;
 };
 
-enum DataFrameEventType { kDataFrameEventUnknown, kDataFrameEventRead, kDataFrameEventWrite };
-
 struct go_grpc_data_event_t {
+  // Must be the first member of this struct, to maintain common header with
+  // go_grpc_http2_header_event_t.
+  struct go_grpc_event_attr_t attr;
+
   struct data_attr_t {
-    enum http2_probe_type_t probe_type;
-    enum DataFrameEventType type;
-    uint64_t timestamp_ns;
-    struct conn_id_t conn_id;
-    uint32_t stream_id;
-    bool end_stream;
     // A 0-based position number for this event on the connection, in terms of byte position.
     // The position is for the first byte of this message.
     // Note that write/send have separate sequences than read/recv.
@@ -85,6 +90,7 @@ struct go_grpc_data_event_t {
     // The amount of data actually being sent to user space. This may be less than msg_size if
     // data had to be truncated.
     uint32_t data_buf_size;
-  } attr;
+  } data_attr;
+
   char data[MAX_DATA_SIZE];
 };

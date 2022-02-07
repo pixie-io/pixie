@@ -53,40 +53,33 @@
 namespace px {
 namespace stirling {
 
-inline std::string ToString(const struct go_grpc_http2_header_event_t::header_attr_t& attr) {
+inline std::string ToString(const struct go_grpc_event_attr_t& attr) {
   return absl::Substitute(
-      "[probe_type=$0 type=$1 timestamp_ns=$2 conn_id=$3 stream_id=$4 end_stream=$5] ",
-      magic_enum::enum_name(attr.probe_type), magic_enum::enum_name(attr.type), attr.timestamp_ns,
+      "[event_type=$0 probe_type=$1 timestamp_ns=$2 conn_id=$3 stream_id=$4 end_stream=$5] ",
+      magic_enum::enum_name(attr.event_type), magic_enum::enum_name(attr.probe_type), attr.timestamp_ns,
       ToString(attr.conn_id), attr.stream_id, attr.end_stream);
-}
-
-inline std::string ToString(const struct go_grpc_data_event_t::data_attr_t& attr) {
-  return absl::Substitute(
-      "[probe_type=$0 type=$1 timestamp_ns=$2 conn_id=$3 stream_id=$4 end_stream=$5 pos=$6 "
-      "data_size=$7 data_buf_size=$8]",
-      magic_enum::enum_name(attr.probe_type), magic_enum::enum_name(attr.type), attr.timestamp_ns,
-      ToString(attr.conn_id), attr.stream_id, attr.end_stream, attr.pos, attr.data_size,
-      attr.data_buf_size);
 }
 
 struct HTTP2DataEvent {
   HTTP2DataEvent() : attr{}, payload{} {}
   explicit HTTP2DataEvent(const void* data) {
-    memcpy(&attr, static_cast<const char*>(data) + offsetof(go_grpc_data_event_t, attr),
-           sizeof(go_grpc_data_event_t::data_attr_t));
+    auto data_ptr = static_cast<const char*>(data);
 
-    auto payload_ptr = static_cast<const char*>(data) + offsetof(go_grpc_data_event_t, data);
-    payload.assign(payload_ptr, attr.data_buf_size);
+    memcpy(&attr, data_ptr + offsetof(go_grpc_data_event_t, attr), sizeof(go_grpc_event_attr_t));
+    memcpy(&data_attr, data_ptr + offsetof(go_grpc_data_event_t, data_attr), sizeof(go_grpc_data_event_t::data_attr_t));
+
+    auto payload_ptr = data_ptr + offsetof(go_grpc_data_event_t, data);
+    payload.assign(payload_ptr, data_attr.data_buf_size);
   }
 
   std::string ToString() const {
-    return absl::Substitute("[attr=$0 payload=$1]", ::px::stirling::ToString(attr),
+    return absl::Substitute("[attr=$0 pos=$1 data_size=$2 data_buf_size=$3 payload=$4]", ::px::stirling::ToString(attr),
+                            data_attr.pos, data_attr.data_size, payload.size(),
                             BytesToString<bytes_format::HexAsciiMix>(payload));
   }
 
-  go_grpc_data_event_t::data_attr_t attr;
-  // TODO(oazizi/yzhao): payload will be copied into ConnTracker/DataStream's internal buffer.
-  // It appears we should use string_view here.
+  go_grpc_event_attr_t attr;
+  go_grpc_data_event_t::data_attr_t data_attr;
   std::string payload;
 };
 
@@ -103,7 +96,7 @@ struct HTTP2HeaderEvent {
     auto value_len_ptr = data_ptr + offsetof(go_grpc_http2_header_event_t, value.size);
 
     // Copy attr sub-struct via memcpy as char -- requires 1-byte alignment.
-    memcpy(&attr, attr_ptr, sizeof(go_grpc_http2_header_event_t::header_attr_t));
+    memcpy(&attr, attr_ptr, sizeof(go_grpc_event_attr_t));
 
     // Copy name length (uint32_t) -- requires 4-byte alignment.
     uint32_t name_len = *reinterpret_cast<const uint32_t*>(name_len_ptr);
@@ -125,7 +118,7 @@ struct HTTP2HeaderEvent {
                             value);
   }
 
-  go_grpc_http2_header_event_t::header_attr_t attr;
+  go_grpc_event_attr_t attr;
   std::string name;
   std::string value;
 };

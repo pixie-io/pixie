@@ -239,11 +239,11 @@ void ConnTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
   UpdateTimestamps(hdr->attr.timestamp_ns);
 
   bool write_event = false;
-  switch (hdr->attr.type) {
-    case HeaderEventType::kHeaderEventWrite:
+  switch (hdr->attr.event_type) {
+    case grpc_event_type_t::kHeaderEventWrite:
       write_event = true;
       break;
-    case HeaderEventType::kHeaderEventRead:
+    case grpc_event_type_t::kHeaderEventRead:
       write_event = false;
       break;
     default:
@@ -316,11 +316,11 @@ void ConnTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
   UpdateTimestamps(data->attr.timestamp_ns);
 
   bool write_event = false;
-  switch (data->attr.type) {
-    case DataFrameEventType::kDataFrameEventWrite:
+  switch (data->attr.event_type) {
+    case grpc_event_type_t::kDataFrameEventWrite:
       write_event = true;
       break;
-    case DataFrameEventType::kDataFrameEventRead:
+    case grpc_event_type_t::kDataFrameEventRead:
       write_event = false;
       break;
     default:
