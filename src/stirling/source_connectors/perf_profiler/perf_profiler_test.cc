@@ -198,6 +198,8 @@ class PerfProfileBPFTest : public ::testing::Test {
     // TODO(jps): Increase sampling frequency and then tighten this margin.
     EXPECT_GT(ratio, 2.0 - kRatioMargin);
     EXPECT_LT(ratio, 2.0 + kRatioMargin);
+
+    EXPECT_EQ(source_->stats().Get(PerfProfileConnector::StatKey::kLossHistoEvent), 0);
   }
 
   template <typename T>

@@ -101,7 +101,7 @@ Status PerfProfileConnector::InitImpl() {
   // Compute the size of the perf buffers.
   const double perf_buffer_overprovision_factor = FLAGS_stirling_profiler_perf_buffer_size_factor;
   const int32_t num_perf_buffer_entries =
-      static_cast<int32_t>(perf_buffer_overprovision_factor * expected_stack_traces);
+      static_cast<int32_t>(perf_buffer_overprovision_factor * expected_stack_traces_per_cpu);
   const int32_t perf_buffer_size = sizeof(stack_trace_key_t) * num_perf_buffer_entries;
 
   const std::vector<std::string> defines = {

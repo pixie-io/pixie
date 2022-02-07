@@ -64,6 +64,14 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
     return stack_trace_sampling_period_;
   }
 
+  enum class StatKey {
+    kBPFMapSwitchoverEvent,
+    kCumulativeSumOfAllStackTraces,
+    kLossHistoEvent,
+  };
+
+  utils::StatCounter<StatKey> stats() const { return stats_; }
+
  private:
   // The time interval between stack trace samples, i.e. the sample rate used inside of BPF.
   const std::chrono::milliseconds stack_trace_sampling_period_;
@@ -125,12 +133,6 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   ebpf::BPFPerfBuffer* histogram_a_perf_buffer_;
   ebpf::BPFPerfBuffer* histogram_b_perf_buffer_;
-
-  enum class StatKey {
-    kBPFMapSwitchoverEvent,
-    kCumulativeSumOfAllStackTraces,
-    kLossHistoEvent,
-  };
 
   const uint32_t stats_log_interval_;
   utils::StatCounter<StatKey> stats_;
