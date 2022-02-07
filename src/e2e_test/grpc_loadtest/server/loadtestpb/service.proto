@@ -1,0 +1,88 @@
+/*
+ * Copyright 2018- The Pixie Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+syntax = "proto3";
+
+package px.e2e_test.grpc.server;
+
+option go_package = "loadtestpb";
+
+// The greeting service definition.
+service LoadTester {
+  // Tests a unary GRPC call. Sends and receives a payload.
+  rpc Unary(UnaryRequest) returns (UnaryReply);
+  // Tests a client streaming GRPC call.
+  rpc ClientStreaming(stream ClientStreamingRequest) returns (ClientStreamingReply);
+  // Tests a server streaming GRPC call.
+  rpc ServerStreaming(ServerStreamingRequest) returns (stream ServerStreamingReply);
+  // Tests a bidirectional streaming GRPC call. Each client message gets one reply from the server.
+  rpc BidirectionalStreaming(stream BidirectionalStreamingRequest) returns (stream BidirectionalStreamingReply);
+}
+
+message UnaryRequest {
+  int64 seq_id = 1;
+  string payload = 2;
+  int32 bytes_requested = 3;
+}
+
+message UnaryReply {
+  int64 seq_id = 1;
+  string payload = 2;
+}
+
+message ClientStreamingRequest {
+  int64 seq_id = 1;
+  // Each stream gets a sequence_id. This number corresponds to the message number within a stream.
+  int64 stream_seq_id = 2;
+  string payload = 3;
+  // Bytes requested in the single reply from the server. Read by the server on the
+  // last message.
+  int32 bytes_requested = 4;
+}
+
+message ClientStreamingReply {
+  int64 seq_id = 1;
+  string payload = 2;
+}
+
+message ServerStreamingRequest {
+  int64 seq_id = 1;
+  string payload = 2;
+  int32 messages_requested = 3;
+  int32 bytes_requested_per_message = 4;
+}
+
+message ServerStreamingReply {
+  int64 seq_id = 1;
+  // Each stream gets a sequence_id. This number corresponds to the message number within a stream.
+  int64 stream_seq_id = 2;
+  string payload = 3;
+}
+
+message BidirectionalStreamingRequest {
+  int64 seq_id = 1;
+  int64 stream_seq_id_client = 2;
+  string payload = 3;
+  int32 bytes_requested_next_message = 4;
+}
+
+message BidirectionalStreamingReply {
+  int64 seq_id = 1;
+  int64 stream_seq_id_server = 2;
+  string payload = 3;
+}
