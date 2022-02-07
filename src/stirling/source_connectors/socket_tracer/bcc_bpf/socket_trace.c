@@ -236,6 +236,8 @@ enum target_tgid_match_result_t {
 };
 
 static __inline enum target_tgid_match_result_t match_trace_tgid(const uint32_t tgid) {
+  // TODO(yzhao): Use externally-defined macro to replace BPF_MAP. Since this function is called for
+  // all PIDs, this optimization is useful.
   int idx = kTargetTGIDIndex;
   int64_t* target_tgid = control_values.lookup(&idx);
   if (target_tgid == NULL) {

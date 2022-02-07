@@ -58,7 +58,9 @@ DEFINE_uint32(
 DEFINE_bool(stirling_enable_periodic_bpf_map_cleanup, true,
             "Disable periodic BPF map cleanup (for testing)");
 
-DEFINE_int32(test_only_socket_trace_target_pid, kTraceAllTGIDs, "The process to trace.");
+DEFINE_int32(test_only_socket_trace_target_pid, kTraceAllTGIDs,
+             "The PID of a process to trace. This forces BPF to export events by ignoring event "
+             "filtering. The purpose is to observe the underlying raw events for debugging.");
 // TODO(yzhao): If we ever need to write all events from different perf buffers, then we need either
 // write to different files for individual perf buffers, or create a protobuf message with an oneof
 // field to include all supported message types.
@@ -563,6 +565,12 @@ Status SocketTraceConnector::UpdateBPFProtocolTraceRole(traffic_protocol_t proto
 }
 
 Status SocketTraceConnector::TestOnlySetTargetPID(int64_t pid) {
+  if (pid != kTraceAllTGIDs) {
+    LOG(WARNING) << absl::Substitute(
+        "Target trace PID set to pid=$0, will force BPF to ignore event filtering and "
+        "submit events of this PID to userspace.",
+        pid);
+  }
   auto control_map_handle = GetPerCPUArrayTable<int64_t>(kControlValuesArrayName);
   return UpdatePerCPUArrayValue(kTargetTGIDIndex, pid, &control_map_handle);
 }
