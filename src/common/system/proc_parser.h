@@ -144,6 +144,36 @@ class ProcParser {
   };
 
   /**
+   * ProcessSMaps tracks memory stats from /proc/<pid>/smaps per address.
+   */
+  struct ProcessSMaps {
+    std::string address;
+    std::string offset;
+    std::string pathname;
+
+    int64_t size_bytes = 0;
+    int64_t kernel_page_size_bytes = 0;
+    int64_t mmu_page_size_bytes = 0;
+    int64_t rss_bytes = 0;
+    int64_t pss_bytes = 0;
+    int64_t shared_clean_bytes = 0;
+    int64_t shared_dirty_bytes = 0;
+    int64_t private_clean_bytes = 0;
+    int64_t private_dirty_bytes = 0;
+    int64_t referenced_bytes = 0;
+    int64_t anonymous_bytes = 0;
+    int64_t lazy_free_bytes = 0;
+    int64_t anon_huge_pages_bytes = 0;
+    int64_t shmem_pmd_mapped_bytes = 0;
+    int64_t file_pmd_mapped_bytes = 0;
+    int64_t shared_hugetlb_bytes = 0;
+    int64_t private_hugetlb_bytes = 0;
+    int64_t swap_bytes = 0;
+    int64_t swap_pss_bytes = 0;
+    int64_t locked_bytes = 0;
+  };
+
+  /**
    * Parses /proc/<pid>/stat files
    * @param pid is the pid for which we want stat data..
    * @param out A valid pointer to the output.
@@ -210,6 +240,13 @@ class ProcParser {
    * @return status of parsing
    */
   Status ParseProcPIDStatus(int32_t pid, ProcessStatus* out) const;
+
+  /**
+   * Parses /proc/<pid>/smaps
+   * @param out A valid pointer to a vector that will contain the output structs.
+   * @return status of parsing
+   */
+  Status ParseProcPIDSMaps(int32_t pid, std::vector<ProcessSMaps>* out) const;
 
   /**
    * Reads and returns the /proc/<pid>/fd/<fd> file descriptor link.
@@ -296,6 +333,11 @@ class ProcParser {
  private:
   static Status ParseNetworkStatAccumulateIFaceData(
       const std::vector<std::string_view>& dev_stat_record, NetworkStats* out);
+
+  static Status ParseFromKeyValueLine(
+      const std::string& line,
+      const absl::flat_hash_map<std::string_view, size_t>& field_name_to_value_map,
+      uint8_t* out_base);
 
   static Status ParseFromKeyValueFile(
       const std::string& fpath,
