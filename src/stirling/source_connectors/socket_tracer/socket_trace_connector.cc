@@ -98,7 +98,6 @@ DEFINE_bool(stirling_disable_self_tracing, true,
 // Assume a moderate default network bandwidth peak of 100MiB/s across socket connections for data.
 DEFINE_uint32(stirling_socket_tracer_target_data_bw_percpu, 100 * 1024 * 1024,
               "Target bytes/sec of data per CPU");
-
 // Assume a default of 5MiB/s across socket connections for control events.
 DEFINE_uint32(stirling_socket_tracer_target_control_bw_percpu, 5 * 1024 * 1024,
               "Target bytes/sec of control events per CPU");
@@ -112,6 +111,15 @@ DEFINE_double(
     "Values in between trade-off between these two extremes in a way that prunes back "
     "memory usage more aggressively for high core counts. "
     "8 is the default to curb memory use in perf buffers for CPUs with high core counts.");
+
+DEFINE_uint64(stirling_socket_tracer_max_total_data_bw,
+              static_cast<uint64_t>(10 * 1024 * 1024) * 1024 / 8 /*10Gibit/s*/,
+              "Maximum total bytes/sec of data.");
+DEFINE_uint64(stirling_socket_tracer_max_total_control_bw, 512 * 1024 * 1024 / 8 /*512Mibit/s*/,
+              "Maximum total bytes/sec of control events.");
+DEFINE_double(stirling_socket_tracer_max_total_bw_overprovision_factor, 1,
+              "Factor to overprovision maximum total bandwidth, to account for the fact that "
+              "traffic won't be exactly evenly distributed over all cpus.");
 
 DEFINE_uint32(messages_expiry_duration_secs, 1 * 60,
               "The duration after which a parsed message is erased.");
@@ -262,6 +270,49 @@ const auto kProbeSpecs = MakeArray<bpf_tools::KProbeSpec>(
      {"security_socket_recvmsg", ProbeType::kEntry, "probe_entry_security_socket_recvmsg",
       /*is_syscall*/ false}});
 
+using bpf_tools::PerfBufferSizeCategory;
+
+namespace {
+// Resize each category of perf buffers such that it doesn't exceed a maximum size across all cpus.
+template <size_t N>
+void ResizePerfBufferSpecs(std::array<bpf_tools::PerfBufferSpec, N>* perf_buffer_specs,
+                           const std::map<PerfBufferSizeCategory, size_t>& category_maximums) {
+  std::map<PerfBufferSizeCategory, size_t> category_sizes;
+  for (const auto& spec : *perf_buffer_specs) {
+    category_sizes[spec.size_category] += spec.size_bytes;
+  }
+
+  const int kNCPUs = get_nprocs_conf();
+  // Factor to multiply on both sides of division, to avoid float/double division.
+  const size_t kDivisorFactor = 100;
+  std::map<PerfBufferSizeCategory, size_t> category_divisor;
+  for (const auto& [category, size] : category_sizes) {
+    auto max_it = category_maximums.find(category);
+    DCHECK(max_it != category_maximums.end());
+
+    auto max_per_cpu = max_it->second / kNCPUs;
+
+    if (size < max_per_cpu) {
+      category_divisor[category] = kDivisorFactor;
+    } else {
+      category_divisor[category] = IntRoundUpDivide(size * kDivisorFactor, max_per_cpu);
+    }
+  }
+  // Clear category sizes so we can print out the total buffer sizes at the end.
+  category_sizes.clear();
+  for (auto& spec : *perf_buffer_specs) {
+    auto divisor_it = category_divisor.find(spec.size_category);
+    DCHECK(divisor_it != category_divisor.end());
+    spec.size_bytes = IntRoundUpDivide(spec.size_bytes * kDivisorFactor, divisor_it->second);
+    category_sizes[spec.size_category] += spec.size_bytes;
+  }
+  for (const auto& [category, size] : category_sizes) {
+    LOG(INFO) << absl::Substitute("Total perf buffer usage for $0 buffers across all cpus: $1",
+                                  magic_enum::enum_name(category), size * kNCPUs);
+  }
+}
+}  // namespace
+
 auto SocketTraceConnector::InitPerfBufferSpecs() {
   const size_t ncpus = get_nprocs_conf();
 
@@ -278,17 +329,32 @@ auto SocketTraceConnector::InitPerfBufferSpecs() {
       static_cast<int>(FLAGS_stirling_socket_tracer_target_control_bw_percpu * kSecondsPerPeriod *
                        cpu_scaling_factor);
 
-  return MakeArray<bpf_tools::PerfBufferSpec>({
+  const int kMaxTotalDataSize =
+      static_cast<int64_t>(FLAGS_stirling_socket_tracer_max_total_bw_overprovision_factor *
+                           FLAGS_stirling_socket_tracer_max_total_data_bw * kSecondsPerPeriod);
+  const int kMaxTotalControlSize =
+      static_cast<int64_t>(FLAGS_stirling_socket_tracer_max_total_bw_overprovision_factor *
+                           FLAGS_stirling_socket_tracer_max_total_control_bw * kSecondsPerPeriod);
+  std::map<PerfBufferSizeCategory, size_t> category_maximums(
+      {{PerfBufferSizeCategory::kData, kMaxTotalDataSize},
+       {PerfBufferSizeCategory::kControl, kMaxTotalControlSize}});
+
+  auto specs = MakeArray<bpf_tools::PerfBufferSpec>({
       // For data events. The order must be consistent with output tables.
-      {"socket_data_events", HandleDataEvent, HandleDataEventLoss, kTargetDataBufferSize},
+      {"socket_data_events", HandleDataEvent, HandleDataEventLoss, kTargetDataBufferSize,
+       PerfBufferSizeCategory::kData},
       // For non-data events. Must not mix with the above perf buffers for data events.
       {"socket_control_events", HandleControlEvent, HandleControlEventLoss,
-       kTargetControlBufferSize},
+       kTargetControlBufferSize, PerfBufferSizeCategory::kControl},
       {"conn_stats_events", HandleConnStatsEvent, HandleConnStatsEventLoss,
-       kTargetControlBufferSize},
-      {"mmap_events", HandleMMapEvent, HandleMMapEventLoss, kTargetControlBufferSize / 10},
-      {"go_grpc_events", HandleHTTP2Event, HandleHTTP2EventLoss, kTargetDataBufferSize},
+       kTargetControlBufferSize, PerfBufferSizeCategory::kControl},
+      {"mmap_events", HandleMMapEvent, HandleMMapEventLoss, kTargetControlBufferSize / 10,
+       PerfBufferSizeCategory::kControl},
+      {"go_grpc_events", HandleHTTP2Event, HandleHTTP2EventLoss, kTargetDataBufferSize,
+       PerfBufferSizeCategory::kData},
   });
+  ResizePerfBufferSpecs(&specs, category_maximums);
+  return specs;
 }
 
 Status SocketTraceConnector::InitBPF() {

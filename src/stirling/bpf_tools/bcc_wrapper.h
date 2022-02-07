@@ -151,6 +151,16 @@ struct SamplingProbeSpec {
 };
 
 /**
+ * PerfBufferSizeCategory specifies which category (currently Data or Control) a perf buffer belongs
+ * to. This is used for accounting purposes, so that a maximum total size can be set per category.
+ */
+enum class PerfBufferSizeCategory {
+  kUncategorized,
+  kData,
+  kControl,
+};
+
+/**
  * Describes a BPF perf buffer, through which data is returned to user-space.
  */
 struct PerfBufferSpec {
@@ -167,6 +177,10 @@ struct PerfBufferSpec {
 
   // Size of perf buffer. Will be rounded up to and allocated in a power of 2 number of pages.
   int size_bytes = 1024 * 1024;
+
+  // We specify a maximum total size per PerfBufferSizeCategory, this specifies which size category
+  // to count this buffer's size against.
+  PerfBufferSizeCategory size_category = PerfBufferSizeCategory::kUncategorized;
 };
 
 /**
