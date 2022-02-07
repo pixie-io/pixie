@@ -256,7 +256,7 @@ auto SocketTraceConnector::InitPerfBufferSpecs() {
   const int kTargetDataBufferSize =
       static_cast<int>(FLAGS_stirling_socket_tracer_target_data_bw_percpu * kSecondsPerPeriod);
   const int kTargetControlBufferSize =
-      static_cast<int>(FLAGS_stirling_socket_tracer_target_data_bw_percpu * kSecondsPerPeriod);
+      static_cast<int>(FLAGS_stirling_socket_tracer_target_control_bw_percpu * kSecondsPerPeriod);
 
   return MakeArray<bpf_tools::PerfBufferSpec>({
       // For data events. The order must be consistent with output tables.
