@@ -286,14 +286,13 @@ Status ProcParser::ParseProcPIDStatIO(int32_t pid, ProcessStats* out) const {
   static_assert(std::is_standard_layout<ProcessStats>::value);
 
   static absl::flat_hash_map<std::string_view, size_t> field_name_to_offset_map{
-      {"rchar:", offsetof(ProcessStats, rchar_bytes)},
-      {"wchar:", offsetof(ProcessStats, wchar_bytes)},
-      {"read_bytes:", offsetof(ProcessStats, read_bytes)},
-      {"write_bytes:", offsetof(ProcessStats, write_bytes)},
+      {"rchar", offsetof(ProcessStats, rchar_bytes)},
+      {"wchar", offsetof(ProcessStats, wchar_bytes)},
+      {"read_bytes", offsetof(ProcessStats, read_bytes)},
+      {"write_bytes", offsetof(ProcessStats, write_bytes)},
   };
 
-  return ParseFromKeyValueFile(fpath, field_name_to_offset_map, reinterpret_cast<uint8_t*>(out),
-                               1 /*field_value_multipler*/);
+  return ParseFromKeyValueFile(fpath, field_name_to_offset_map, reinterpret_cast<uint8_t*>(out));
 }
 
 Status ProcParser::ParseProcStat(SystemStats* out) const {
@@ -352,27 +351,71 @@ Status ProcParser::ParseProcMemInfo(SystemStats* out) const {
 
   // clang-format off
   static absl::flat_hash_map<std::string_view, size_t> field_name_to_offset_map {
-      {"MemTotal:", offsetof(SystemStats, mem_total_bytes)},
-      {"MemFree:", offsetof(SystemStats, mem_free_bytes)},
-      {"MemAvailable:", offsetof(SystemStats, mem_available_bytes)},
-      {"Buffers:", offsetof(SystemStats, mem_buffer_bytes)},
-      {"Cached:", offsetof(SystemStats, mem_cached_bytes)},
-      {"SwapCached:", offsetof(SystemStats, mem_swap_cached_bytes)},
-      {"Active:", offsetof(SystemStats, mem_active_bytes)},
-      {"Inactive:", offsetof(SystemStats, mem_inactive_bytes)},
+      {"MemTotal", offsetof(SystemStats, mem_total_bytes)},
+      {"MemFree", offsetof(SystemStats, mem_free_bytes)},
+      {"MemAvailable", offsetof(SystemStats, mem_available_bytes)},
+      {"Buffers", offsetof(SystemStats, mem_buffer_bytes)},
+      {"Cached", offsetof(SystemStats, mem_cached_bytes)},
+      {"SwapCached", offsetof(SystemStats, mem_swap_cached_bytes)},
+      {"Active", offsetof(SystemStats, mem_active_bytes)},
+      {"Inactive", offsetof(SystemStats, mem_inactive_bytes)},
   };
   // clang-format on
 
-  // This is a key value pair with a unit (that is always KB when present).
-  constexpr int kKBToByteMultiplier = 1024;
-  return ParseFromKeyValueFile(fpath, field_name_to_offset_map, reinterpret_cast<uint8_t*>(out),
-                               kKBToByteMultiplier);
+  return ParseFromKeyValueFile(fpath, field_name_to_offset_map, reinterpret_cast<uint8_t*>(out));
+}
+
+Status ProcParser::ParseProcPIDStatus(int32_t pid, ProcessStatus* out) const {
+  /**
+   * Sample file:
+   *   Name:	vim
+   *   Umask:	0002
+   *   State:	S (sleeping)
+   * ...
+   *   TracerPid:	0
+   *   Uid:	1004	1004	1004	1004
+   *   Gid:	1004	1004	1004	1004
+   * ...
+   *   VmPeak:	   24612 kB
+   *   VmSize:	   24612 kB
+   * ...
+   */
+  CHECK(out != nullptr);
+  std::string fpath = absl::Substitute("$0/$1/status", proc_base_path_, pid);
+
+  // Just to be safe when using offsetof, make sure object is standard layout.
+  static_assert(std::is_standard_layout<ProcessStatus>::value);
+
+  // clang-format off
+  static absl::flat_hash_map<std::string_view, size_t> field_name_to_offset_map {
+      {"VmPeak", offsetof(ProcessStatus, vm_peak_bytes)},
+      {"VmSize", offsetof(ProcessStatus, vm_size_bytes)},
+      {"VmLck", offsetof(ProcessStatus, vm_lck_bytes)},
+      {"VmPin", offsetof(ProcessStatus, vm_pin_bytes)},
+      {"VmHWM", offsetof(ProcessStatus, vm_hwm_bytes)},
+      {"VmRSS", offsetof(ProcessStatus, vm_rss_bytes)},
+      {"RssAnon", offsetof(ProcessStatus, rss_anon_bytes)},
+      {"RssFile", offsetof(ProcessStatus, rss_file_bytes)},
+      {"RssShmem", offsetof(ProcessStatus, rss_shmem_bytes)},
+      {"VmData", offsetof(ProcessStatus, vm_data_bytes)},
+      {"VmStk", offsetof(ProcessStatus, vm_stk_bytes)},
+      {"VmExe", offsetof(ProcessStatus, vm_exe_bytes)},
+      {"VmLib", offsetof(ProcessStatus, vm_lib_bytes)},
+      {"VmPTE", offsetof(ProcessStatus, vm_pte_bytes)},
+      {"VmSwap", offsetof(ProcessStatus, vm_swap_bytes)},
+      {"HugetlbPages", offsetof(ProcessStatus, hugetlb_pages_bytes)},
+      {"voluntary_ctxt_switches", offsetof(ProcessStatus, voluntary_ctxt_switches)},
+      {"nonvoluntary_ctxt_switches", offsetof(ProcessStatus, nonvoluntary_ctxt_switches)},
+  };
+  // clang-format on
+
+  return ParseFromKeyValueFile(fpath, field_name_to_offset_map, reinterpret_cast<uint8_t*>(out));
 }
 
 Status ProcParser::ParseFromKeyValueFile(
     const std::string& fpath,
-    const absl::flat_hash_map<std::string_view, size_t>& field_name_to_value_map, uint8_t* out_base,
-    int64_t field_value_multiplier) {
+    const absl::flat_hash_map<std::string_view, size_t>& field_name_to_value_map,
+    uint8_t* out_base) {
   std::ifstream ifs;
   ifs.open(fpath);
   if (!ifs) {
@@ -382,14 +425,8 @@ Status ProcParser::ParseFromKeyValueFile(
   std::string line;
   size_t read_count = 0;
   while (std::getline(ifs, line)) {
-    std::vector<std::string_view> split = absl::StrSplit(line, " ", absl::SkipWhitespace());
-    // This is a key value pair with a unit (that is always KB when present).
-    // If the number is 0 then the units are missing so we either have 2 or 3
-    // for the width of the field.
-    const int kMemInfoMinFields = 2;
-    const int kMemInfoMaxFields = 3;
-
-    if (split.size() >= kMemInfoMinFields && split.size() <= kMemInfoMaxFields) {
+    std::vector<std::string_view> split = absl::StrSplit(line, ':', absl::SkipWhitespace());
+    if (split.size() >= 2) {
       const auto& key = split[0];
       const auto& val = split[1];
 
@@ -401,11 +438,20 @@ Status ProcParser::ParseFromKeyValueFile(
 
       size_t offset = it->second;
       auto val_ptr = reinterpret_cast<int64_t*>(out_base + offset);
-      bool ok = absl::SimpleAtoi(val, val_ptr);
-      *val_ptr *= field_value_multiplier;
+
+      bool ok = false;
+      if (absl::EndsWith(val, " kB")) {
+        // Convert kB to bytes. proc seems to only use kB as the unit if it's present
+        // else there are no units.
+        const std::string_view trimmed_val = absl::StripSuffix(val, " kB");
+        ok = absl::SimpleAtoi(trimmed_val, val_ptr);
+        *val_ptr *= 1024;
+      } else {
+        ok = absl::SimpleAtoi(val, val_ptr);
+      }
 
       if (!ok) {
-        return error::Unknown("Failed to parse proc/meminfo");
+        return error::Internal("Failed to parse file $0", fpath);
       }
 
       // Check to see if we have read all the fields, if so we can skip the

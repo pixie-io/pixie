@@ -119,6 +119,31 @@ class ProcParser {
   };
 
   /**
+   * ProcessStatus tracks /proc/<pid>/status.
+   */
+  struct ProcessStatus {
+    int64_t vm_peak_bytes = 0;
+    int64_t vm_size_bytes = 0;
+    int64_t vm_lck_bytes = 0;
+    int64_t vm_pin_bytes = 0;
+    int64_t vm_hwm_bytes = 0;
+    int64_t vm_rss_bytes = 0;
+    int64_t rss_anon_bytes = 0;
+    int64_t rss_file_bytes = 0;
+    int64_t rss_shmem_bytes = 0;
+    int64_t vm_data_bytes = 0;
+    int64_t vm_stk_bytes = 0;
+    int64_t vm_exe_bytes = 0;
+    int64_t vm_lib_bytes = 0;
+    int64_t vm_pte_bytes = 0;
+    int64_t vm_swap_bytes = 0;
+    int64_t hugetlb_pages_bytes = 0;
+
+    int64_t voluntary_ctxt_switches = 0;
+    int64_t nonvoluntary_ctxt_switches = 0;
+  };
+
+  /**
    * Parses /proc/<pid>/stat files
    * @param pid is the pid for which we want stat data..
    * @param out A valid pointer to the output.
@@ -178,6 +203,13 @@ class ProcParser {
    * @return status of parsing
    */
   Status ParseProcMemInfo(SystemStats* out) const;
+
+  /**
+   * Parses /proc/<pid>/status
+   * @param out A valid pointer to the output struct.
+   * @return status of parsing
+   */
+  Status ParseProcPIDStatus(int32_t pid, ProcessStatus* out) const;
 
   /**
    * Reads and returns the /proc/<pid>/fd/<fd> file descriptor link.
@@ -268,7 +300,7 @@ class ProcParser {
   static Status ParseFromKeyValueFile(
       const std::string& fpath,
       const absl::flat_hash_map<std::string_view, size_t>& field_name_to_value_map,
-      uint8_t* out_base, int64_t field_value_multiplier);
+      uint8_t* out_base);
 
   std::filesystem::path ProcPidPath(pid_t pid) const;
 

@@ -127,7 +127,6 @@ TEST_F(ProcParserTest, ParseStat) {
 
 TEST_F(ProcParserTest, ParseMemInfo) {
   ProcParser::SystemStats stats;
-  auto test_file = GetPathToTestDataFile("testdata/proc/sample_proc_meminfo");
   PL_CHECK_OK(parser_->ParseProcMemInfo(&stats));
 
   // The expected values are from the test file above.
@@ -141,6 +140,31 @@ TEST_F(ProcParserTest, ParseMemInfo) {
 
   EXPECT_EQ(28388524032, stats.mem_active_bytes);
   EXPECT_EQ(15734595584, stats.mem_inactive_bytes);
+}
+
+TEST_F(ProcParserTest, ParsePIDStatus) {
+  ProcParser::ProcessStatus stats;
+  PL_CHECK_OK(parser_->ParseProcPIDStatus(789, &stats));
+
+  EXPECT_EQ(24612 * 1024, stats.vm_peak_bytes);
+  EXPECT_EQ(24612 * 1024, stats.vm_size_bytes);
+  EXPECT_EQ(0 * 1024, stats.vm_lck_bytes);
+  EXPECT_EQ(0 * 1024, stats.vm_pin_bytes);
+  EXPECT_EQ(9936 * 1024, stats.vm_hwm_bytes);
+  EXPECT_EQ(9900 * 1024, stats.vm_rss_bytes);
+  EXPECT_EQ(3520 * 1024, stats.rss_anon_bytes);
+  EXPECT_EQ(6380 * 1024, stats.rss_file_bytes);
+  EXPECT_EQ(0 * 1024, stats.rss_shmem_bytes);
+  EXPECT_EQ(3640 * 1024, stats.vm_data_bytes);
+  EXPECT_EQ(132 * 1024, stats.vm_stk_bytes);
+  EXPECT_EQ(2044 * 1024, stats.vm_exe_bytes);
+  EXPECT_EQ(5868 * 1024, stats.vm_lib_bytes);
+  EXPECT_EQ(76 * 1024, stats.vm_pte_bytes);
+  EXPECT_EQ(0 * 1024, stats.vm_swap_bytes);
+  EXPECT_EQ(0 * 1024, stats.hugetlb_pages_bytes);
+
+  EXPECT_EQ(2, stats.voluntary_ctxt_switches);
+  EXPECT_EQ(2, stats.nonvoluntary_ctxt_switches);
 }
 
 TEST_F(ProcParserTest, read_pid_start_time) {
