@@ -234,7 +234,7 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
 
     while (!attacher.Finished()) {
       if (time_elapsed >= kTimeOutForAttach) {
-        // Attacher did not complete. Fall back to native symbolizer.
+        LOG(WARNING) << absl::Substitute("Java attacher [pid=$0]: Time-out.", upid.pid);
         symbolizer_functions_[upid] = native_symbolizer_fn;
         return native_symbolizer_fn;
       }
@@ -246,19 +246,20 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
     }
 
     if (!attacher.attached()) {
-      // This process *is* Java, but we failed to attach the symbolization agent. Fall back to
-      // symbolizer function from the underlying native symbolizer.
+      LOG(WARNING) << absl::Substitute("Java attacher [pid=$0]: Attach failed.", upid.pid);
+      // This process *is* Java, but we failed to attach the symbolization agent.
       // To prevent this from happening again, store that in the map.
       symbolizer_functions_[upid] = native_symbolizer_fn;
       return native_symbolizer_fn;
     }
   }
 
-  auto symbol_file = std::unique_ptr<std::ifstream>(
-      new std::ifstream(symbol_file_path, std::ios::in | std::ios::binary));
+  auto symbol_file =
+      std::make_unique<std::ifstream>(symbol_file_path, std::ios::in | std::ios::binary);
 
   if (symbol_file->fail()) {
-    // Could not open the symbol file from the symbolization agent: fall back to native symbolizer.
+    LOG(WARNING) << absl::Substitute("Java attacher [pid=$0]: Could not open symbol file.",
+                                     upid.pid);
     symbolizer_functions_[upid] = native_symbolizer_fn;
     return native_symbolizer_fn;
   }
