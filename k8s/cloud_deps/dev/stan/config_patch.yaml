@@ -16,23 +16,28 @@ data:
       timeout: 3
     }
 
-    streaming {
-     id: pl-stan
-     ns: "nats://pl-nats:4222"
-     store: file
-     dir: /data/stan/store
-     store_limits {
-      max_age: "24h"
-      max_channels: 0
-      max_subscriptions: 0
-    }
-     tls: {
+    streaming: {
+      id: pl-stan
+      ns: "nats://pl-nats:4222"
+      store: file
+      dir: /data/stan/store
+      store_limits: {
+        max_age: "24h"
+        max_channels: 0
+        max_subscriptions: 0
+        channels: {
+          "v2c.>": {
+            max_age: "15m"
+          }
+        }
+      }
+      tls: {
         client_ca: "/etc/nats/certs/ca.crt",
         client_cert: "/etc/nats/certs/server.crt",
         client_key: "/etc/nats/certs/server.key",
         timeout: 3
       }
-      cluster {
+      cluster: {
         node_id: $POD_NAME
         log_path: /data/stan/log
         # Explicit names of resulting peers
