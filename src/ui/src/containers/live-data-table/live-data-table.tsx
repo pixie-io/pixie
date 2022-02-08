@@ -117,8 +117,12 @@ function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutte
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [displayMap]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  return React.useMemo(() => ({ columns, data: table.rows }), [columns, table.rows.length]);
+  const oldestRow = table.rows[0]; // Used to force updates when row limit is reached
+  return React.useMemo(
+    () => ({ columns, data: table.rows }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [columns, table.rows.length, oldestRow],
+  );
 }
 
 // This one has a sidebar for the currently-selected row, rather than placing it inline like the main data table does.
