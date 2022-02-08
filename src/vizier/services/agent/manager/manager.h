@@ -71,6 +71,7 @@ struct Info {
   sole::uuid agent_id;
   // Agent short Id.
   uint32_t asid = 0;
+  uint32_t pid = 0;
   std::string hostname;
   std::string address;
   std::string pod_name;

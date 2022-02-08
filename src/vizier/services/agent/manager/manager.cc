@@ -133,6 +133,7 @@ Status Manager::Init() {
   }
 
   info_.hostname = hostname_or_s.ConsumeValueOrDie();
+  info_.pid = getpid();
 
   LOG(INFO) << "Hostname: " << info_.hostname;
 
@@ -279,7 +280,7 @@ Status Manager::PostRegisterHook(uint32_t asid) {
   info_.asid = asid;
 
   mds_manager_ = std::make_unique<px::md::AgentMetadataStateManagerImpl>(
-      info_.hostname, info_.asid, info_.pod_name, info_.agent_id,
+      info_.hostname, info_.asid, info_.pid, info_.pod_name, info_.agent_id,
       info_.capabilities.collects_data(), px::system::Config::GetInstance(),
       agent_metadata_filter_.get());
   // Register the Carnot callback for metadata.

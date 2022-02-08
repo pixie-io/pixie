@@ -48,9 +48,9 @@ class MetadataOpsTest : public ::testing::Test {
  protected:
   void SetUp() override {
     agent_id_ = sole::uuid4();
-    metadata_state_ =
-        std::make_shared<px::md::AgentMetadataState>(/* hostname */ "myhost",
-                                                     /* asid */ 1, agent_id_, "mypod");
+    metadata_state_ = std::make_shared<px::md::AgentMetadataState>(/* hostname */ "myhost",
+                                                                   /* asid */ 1, /* pid */ 123,
+                                                                   agent_id_, "mypod");
     // Apply updates to metadata state.
     updates_ =
         std::make_unique<moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>>>();

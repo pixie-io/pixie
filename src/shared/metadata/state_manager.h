@@ -116,8 +116,8 @@ class AgentMetadataStateManagerImpl : public AgentMetadataStateManager {
  public:
   virtual ~AgentMetadataStateManagerImpl() = default;
 
-  AgentMetadataStateManagerImpl(std::string_view hostname, uint32_t asid, std::string pod_name,
-                                sole::uuid agent_id, bool collects_data,
+  AgentMetadataStateManagerImpl(std::string_view hostname, uint32_t asid, uint32_t pid,
+                                std::string pod_name, sole::uuid agent_id, bool collects_data,
                                 const px::system::Config& config,
                                 AgentMetadataFilter* metadata_filter)
       : pod_name_(pod_name),
@@ -126,7 +126,7 @@ class AgentMetadataStateManagerImpl : public AgentMetadataStateManager {
         metadata_filter_(metadata_filter) {
     md_reader_ = std::make_unique<CGroupMetadataReader>(config);
     agent_metadata_state_ =
-        std::make_shared<AgentMetadataState>(hostname, asid, agent_id, pod_name);
+        std::make_shared<AgentMetadataState>(hostname, asid, pid, agent_id, pod_name);
   }
 
   AgentMetadataFilter* metadata_filter() const override { return metadata_filter_; }

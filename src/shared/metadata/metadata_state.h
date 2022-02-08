@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <utility>
@@ -250,20 +251,22 @@ class K8sMetadataState : NotCopyable {
 class AgentMetadataState : NotCopyable {
  public:
   AgentMetadataState() = delete;
-  explicit AgentMetadataState(uint32_t asid)
-      : AgentMetadataState(/* hostname */ "unknown", asid, sole::uuid(), /* pod_name */ "unknown") {
-  }
+  explicit AgentMetadataState(uint32_t asid, uint32_t pid)
+      : AgentMetadataState(/* hostname */ "unknown", asid, pid, sole::uuid(),
+                           /* pod_name */ "unknown") {}
 
-  AgentMetadataState(std::string_view hostname, uint32_t asid, AgentID agent_id,
+  AgentMetadataState(std::string_view hostname, uint32_t asid, uint32_t pid, AgentID agent_id,
                      std::string_view pod_name)
       : hostname_(std::string(hostname)),
         pod_name_(std::string(pod_name)),
         asid_(asid),
+        pid_(pid),
         agent_id_(agent_id),
         k8s_metadata_state_(new K8sMetadataState()) {}
 
   const std::string& hostname() const { return hostname_; }
   uint32_t asid() const { return asid_; }
+  uint32_t pid() const { return pid_; }
   const std::string& pod_name() const { return pod_name_; }
   const sole::uuid& agent_id() const { return agent_id_; }
 
@@ -328,6 +331,7 @@ class AgentMetadataState : NotCopyable {
   std::string hostname_;
   std::string pod_name_;
   uint32_t asid_;
+  uint32_t pid_;
   AgentID agent_id_;
 
   std::unique_ptr<K8sMetadataState> k8s_metadata_state_;

@@ -179,11 +179,12 @@ void GenerateTestUpdateEventsForNonExistentPod(
 class AgentMetadataStateTest : public ::testing::Test {
  protected:
   static constexpr int kASID = 123;
+  static constexpr int kPID = 654;
   static constexpr char kHostname[] = "myhost";
   static constexpr char kPodName[] = "mypod";
 
   AgentMetadataStateTest()
-      : agent_id_(sole::uuid4()), metadata_state_(kHostname, kASID, agent_id_, kPodName) {}
+      : agent_id_(sole::uuid4()), metadata_state_(kHostname, kASID, kPID, agent_id_, kPodName) {}
 
   sole::uuid agent_id_;
   AgentMetadataState metadata_state_;
@@ -200,6 +201,7 @@ TEST_F(AgentMetadataStateTest, initialize_md_state) {
   EXPECT_EQ("myhost", metadata_state_.hostname());
   EXPECT_EQ("mypod", metadata_state_.pod_name());
   EXPECT_EQ(123, metadata_state_.asid());
+  EXPECT_EQ(654, metadata_state_.pid());
   EXPECT_EQ(agent_id_.str(), metadata_state_.agent_id().str());
 
   K8sMetadataState* state = metadata_state_.k8s_metadata_state();
@@ -298,9 +300,9 @@ TEST_F(AgentMetadataStateTest, insert_into_filter) {
 }
 
 TEST_F(AgentMetadataStateTest, cidr_test) {
-  AgentMetadataStateManagerImpl mgr("test_host", /*asid*/ 0, "test_pod", /*id*/ sole::uuid4(),
-                                    /*collects_data*/ true, px::system::Config::GetInstance(),
-                                    &md_filter_);
+  AgentMetadataStateManagerImpl mgr(
+      "test_host", /*asid*/ 0, /*pid*/ 987, "test_pod", /*id*/ sole::uuid4(),
+      /*collects_data*/ true, px::system::Config::GetInstance(), &md_filter_);
 
   EXPECT_OK(mgr.PerformMetadataStateUpdate());
   // Should not be updated yet.

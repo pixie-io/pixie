@@ -374,10 +374,9 @@ Status K8sMetadataState::CleanupExpiredMetadata(int64_t retention_time_ns) {
 }
 
 std::shared_ptr<AgentMetadataState> AgentMetadataState::CloneToShared() const {
-  auto state = std::make_shared<AgentMetadataState>(hostname_, asid_, agent_id_, pod_name_);
+  auto state = std::make_shared<AgentMetadataState>(hostname_, asid_, pid_, agent_id_, pod_name_);
   state->last_update_ts_ns_ = last_update_ts_ns_;
   state->epoch_id_ = epoch_id_;
-  state->asid_ = asid_;
   state->k8s_metadata_state_ = k8s_metadata_state_->Clone();
   state->pids_by_upid_.reserve(pids_by_upid_.size());
   for (const auto& [k, v] : pids_by_upid_) {
@@ -393,6 +392,7 @@ std::string AgentMetadataState::DebugString(int indent_level) const {
   str += prefix + "--------------------------------------------\n";
   str += prefix + "Agent Metadata State:\n";
   str += prefix + absl::Substitute("ASID: $0\n", asid_);
+  str += prefix + absl::Substitute("PID: $0\n", pid_);
   str += prefix + absl::Substitute("EpochID: $0\n", epoch_id_);
   str += prefix + absl::Substitute("LastUpdateTS: $0\n", last_update_ts_ns_);
   str += prefix + k8s_metadata_state_->DebugString(indent_level);
