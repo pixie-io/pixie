@@ -51,10 +51,11 @@ size_t FindMessageBoundary(std::string_view buf, size_t start_pos) {
   // Based on https://github.com/nats-io/docs/blob/master/nats_protocol/nats-protocol.md.
   const std::vector<std::string_view> kmessage_type_ts = {kInfo, kConnect, kPub,  kSub, kUnsub,
                                                           kMsg,  kPing,    kPong, kOK,  kERR};
-  constexpr size_t kMinMsgSize = 3;
-  for (size_t i = start_pos; i < buf.size() - kMinMsgSize; ++i) {
+  constexpr ssize_t kMinMsgSize = 3;
+  for (ssize_t i = start_pos; i < static_cast<ssize_t>(buf.size()) - kMinMsgSize; ++i) {
+    auto buf_substr = buf.substr(i);
     for (auto msg_type : kmessage_type_ts) {
-      if (absl::StartsWith(buf.substr(i), msg_type)) {
+      if (absl::StartsWith(buf_substr, msg_type)) {
         return i;
       }
     }
