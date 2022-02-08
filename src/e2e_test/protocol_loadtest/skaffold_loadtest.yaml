@@ -1,0 +1,17 @@
+---
+apiVersion: skaffold/v2alpha3
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/pixie-oss/pixie-dev/experimental/protocol_loadtest_server
+    context: .
+    bazel:
+      target: //src/e2e_test/protocol_loadtest/server:protocol_loadtest_server_image.tar
+  tagPolicy:
+    dateTime: {}
+  local:
+    push: true
+deploy:
+  kustomize:
+    paths:
+    - k8s/server

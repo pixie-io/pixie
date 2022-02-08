@@ -14,29 +14,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 package(default_visibility = ["//src/e2e_test:__subpackages__"])
 
-pl_proto_library(
-    name = "service_pl_proto",
-    srcs = ["service.proto"],
-    deps = [
-        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
+go_library(
+    name = "grpc_server",
+    srcs = ["grpc.go"],
+    importpath = "px.dev/pixie/src/e2e_test/protocol_loadtest/grpc",
+    visibility = [
+        "//src/e2e_test:__subpackages__",
     ],
-)
-
-pl_cc_proto_library(
-    name = "service_pl_cc_proto",
-    proto = ":service_pl_proto",
     deps = [
-        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
+        "//src/e2e_test/protocol_loadtest/grpc/loadtestpb:service_pl_go_proto",
+        "@org_golang_google_grpc//:go_default_library",
     ],
-)
-
-pl_go_proto_library(
-    name = "service_pl_go_proto",
-    importpath = "px.dev/pixie/src/e2e_test/grpc_loadtest/server/loadtestpb",
-    proto = ":service_pl_proto",
-    deps = [],
 )

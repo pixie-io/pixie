@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package main
+package http
 
 import (
 	"compress/gzip"
@@ -31,7 +31,6 @@ import (
 	"math/big"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -195,22 +194,15 @@ func setupHTTPServer(ssl bool, port string, numBytesHeaders, numBytesBody int) {
 	}
 }
 
-func main() {
-	numBytesHeaders, err := strconv.Atoi(os.Getenv("NUM_BYTES_HEADERS"))
-	if err != nil {
-		log.Fatalln("Must specify valid integer NUM_BYTES_HEADERS in environment")
-	}
-	numBytesBody, err := strconv.Atoi(os.Getenv("NUM_BYTES_BODY"))
-	if err != nil {
-		log.Fatalln("Must specify valid integer NUM_BYTES_BODY in environment")
-	}
-
+// RunHTTPServers sets up and runs the SSL and non-SSL HTTP server with the provided parameters.
+// TODO(nserrino):  PP-3238  Remove numBytesHeaders/numBytesBody and make it a parameter passed
+// in by the HTTP request so that we don't have to redeploy.
+func RunHTTPServers(port, sslPort string, numBytesHeaders, numBytesBody int) {
 	http.HandleFunc("/", optionallyGzipMiddleware(makeSimpleServeFunc(numBytesHeaders, numBytesBody)))
 	http.HandleFunc("/chunked", makeChunkedServeFunc(numBytesHeaders, numBytesBody, 10))
-
-	sslPort := os.Getenv("SSL_PORT")
-	go setupHTTPServer(true, sslPort, numBytesHeaders, numBytesBody)
-
-	port := os.Getenv("PORT")
+	// SSL port is optional
+	if sslPort != "" {
+		go setupHTTPServer(true, sslPort, numBytesHeaders, numBytesBody)
+	}
 	setupHTTPServer(false, port, numBytesHeaders, numBytesBody)
 }

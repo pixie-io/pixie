@@ -16,19 +16,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package main
+package grpc
 
 import (
 	"context"
 	"fmt"
 	"io"
 	"net"
-	"os"
 	"strings"
 
 	"google.golang.org/grpc"
 
-	loadtestpb "px.dev/pixie/src/e2e_test/grpc_loadtest/server/loadtestpb"
+	loadtestpb "px.dev/pixie/src/e2e_test/protocol_loadtest/grpc/loadtestpb"
 )
 
 type loadTestServer struct {
@@ -109,8 +108,9 @@ func (lt *loadTestServer) BidirectionalStreaming(s loadtestpb.LoadTester_Bidirec
 	}
 }
 
-func main() {
-	port := os.Getenv("PORT")
+// RunGRPCServers sets up and runs the SSL (not yet added) and non-SSL GRPC servers.
+// TODO(nserrino): PP-3238 Add SSL and gzip support.
+func RunGRPCServers(port string) {
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
 	if err != nil {
 		panic(fmt.Sprintf("failed to listen: %v", err))
