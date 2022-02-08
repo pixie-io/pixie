@@ -18,10 +18,13 @@
 
 #pragma once
 #include <string>
+#include <vector>
 
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
 #include "src/common/base/base.h"
+#include "src/common/system/proc_parser.h"
+#include "src/shared/types/typespb/types.pb.h"
 
 #ifdef TCMALLOC
 #include <gperftools/malloc_extension.h>
@@ -113,6 +116,200 @@ class HeapGrowthStacksUDTF final : public carnot::udf::UDTF<HeapGrowthStacksUDTF
 
     return false;
   }
+};
+
+class AgentProcStatusUDTF final : public carnot::udf::UDTF<AgentProcStatusUDTF> {
+ public:
+  using Config = system::Config;
+  using ProcParser = system::ProcParser;
+  static constexpr auto Executor() {
+    // Kelvins don't mount the host filesystem and so cannot access /proc files.
+    // If we change kelvins to allow access to the host filesystem, this UDTF could target
+    // all agents.
+    return carnot::udfspb::UDTFSourceExecutor::UDTF_ALL_PEM;
+  }
+
+  static constexpr auto OutputRelation() {
+    return MakeArray(
+        ColInfo("asid", types::DataType::INT64, types::PatternType::GENERAL,
+                "The short ID of the agent", types::SemanticType::ST_ASID),
+        ColInfo("vm_peak_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "peak virtual memory size", types::SemanticType::ST_BYTES),
+        ColInfo("vm_size_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "total program size", types::SemanticType::ST_BYTES),
+        ColInfo("vm_lck_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "locked memory size", types::SemanticType::ST_BYTES),
+        ColInfo("vm_pin_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "pinned memory size", types::SemanticType::ST_BYTES),
+        ColInfo("vm_hwm_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "peak resident set size (high water mark)", types::SemanticType::ST_BYTES),
+        ColInfo("vm_rss_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "size of memory portions (vm_rss = rss_anon + rss_file + rss_shmem)",
+                types::SemanticType::ST_BYTES),
+        ColInfo("rss_anon_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "size of resident anonymous memory", types::SemanticType::ST_BYTES),
+        ColInfo("rss_file_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "size of resident file mappings", types::SemanticType::ST_BYTES),
+        ColInfo("rss_shmem_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "size of resident shmem memory", types::SemanticType::ST_BYTES),
+        ColInfo("vm_data_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "size of private data segments", types::SemanticType::ST_BYTES),
+        ColInfo("vm_stk_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "size of stack segments", types::SemanticType::ST_BYTES),
+        ColInfo("vm_exe_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "size of text segment", types::SemanticType::ST_BYTES),
+        ColInfo("vm_lib_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "size of shared library code", types::SemanticType::ST_BYTES),
+        ColInfo("vm_pte_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "size of page table entries", types::SemanticType::ST_BYTES),
+        ColInfo("vm_swap_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "amount of swap used by anonymous private data", types::SemanticType::ST_BYTES),
+        ColInfo("hugetlb_pages_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "size of hugetlb memory portions", types::SemanticType::ST_BYTES),
+        ColInfo("voluntary_ctxt_switches", types::DataType::INT64,
+                types::PatternType::METRIC_COUNTER, "number of voluntary context switches"),
+        ColInfo("nonvoluntary_ctxt_switches", types::DataType::INT64,
+                types::PatternType::METRIC_COUNTER, "number of non voluntary context switches"));
+  }
+
+  bool NextRecord(FunctionContext* ctx, RecordWriter* rw) {
+    const auto& sysconfig = Config::GetInstance();
+    const ProcParser proc_parser(sysconfig);
+
+    ProcParser::ProcessStatus stats;
+    auto status = proc_parser.ParseProcPIDStatus(ctx->metadata_state()->pid(), &stats);
+    if (!status.ok()) {
+      LOG(ERROR) << "/proc/<pid>/status collection failed" << std::endl;
+      return false;
+    }
+    rw->Append<IndexOf("asid")>(ctx->metadata_state()->asid());
+    rw->Append<IndexOf("vm_peak_bytes")>(stats.vm_peak_bytes);
+    rw->Append<IndexOf("vm_size_bytes")>(stats.vm_size_bytes);
+    rw->Append<IndexOf("vm_lck_bytes")>(stats.vm_lck_bytes);
+    rw->Append<IndexOf("vm_pin_bytes")>(stats.vm_pin_bytes);
+    rw->Append<IndexOf("vm_hwm_bytes")>(stats.vm_hwm_bytes);
+    rw->Append<IndexOf("vm_rss_bytes")>(stats.vm_rss_bytes);
+    rw->Append<IndexOf("rss_anon_bytes")>(stats.rss_anon_bytes);
+    rw->Append<IndexOf("rss_file_bytes")>(stats.rss_file_bytes);
+    rw->Append<IndexOf("rss_shmem_bytes")>(stats.rss_shmem_bytes);
+    rw->Append<IndexOf("vm_data_bytes")>(stats.vm_data_bytes);
+    rw->Append<IndexOf("vm_stk_bytes")>(stats.vm_stk_bytes);
+    rw->Append<IndexOf("vm_exe_bytes")>(stats.vm_exe_bytes);
+    rw->Append<IndexOf("vm_lib_bytes")>(stats.vm_lib_bytes);
+    rw->Append<IndexOf("vm_pte_bytes")>(stats.vm_pte_bytes);
+    rw->Append<IndexOf("vm_swap_bytes")>(stats.vm_swap_bytes);
+    rw->Append<IndexOf("hugetlb_pages_bytes")>(stats.hugetlb_pages_bytes);
+    rw->Append<IndexOf("voluntary_ctxt_switches")>(stats.voluntary_ctxt_switches);
+    rw->Append<IndexOf("nonvoluntary_ctxt_switches")>(stats.nonvoluntary_ctxt_switches);
+
+    return false;
+  }
+};
+
+class AgentProcSMapsUDTF final : public carnot::udf::UDTF<AgentProcSMapsUDTF> {
+ public:
+  using Config = system::Config;
+  using ProcParser = system::ProcParser;
+  static constexpr auto Executor() {
+    // Kelvins don't mount the host filesystem and so cannot access /proc files.
+    // If we change kelvins to allow access to the host filesystem, this UDTF could target
+    // all agents.
+    return carnot::udfspb::UDTFSourceExecutor::UDTF_ALL_PEM;
+  }
+
+  static constexpr auto OutputRelation() {
+    return MakeArray(
+        ColInfo("asid", types::DataType::INT64, types::PatternType::GENERAL,
+                "The short ID of the agent", types::SemanticType::ST_ASID),
+        ColInfo("address", types::DataType::STRING, types::PatternType::GENERAL, "address space"),
+        ColInfo("offset", types::DataType::STRING, types::PatternType::GENERAL,
+                "offset into the mapping"),
+        ColInfo("pathname", types::DataType::STRING, types::PatternType::GENERAL,
+                "name associated file"),
+        ColInfo("size_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "size of the mapping", types::SemanticType::ST_BYTES),
+        ColInfo("kernel_page_size_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "size of each page allocated when backing a VMA", types::SemanticType::ST_BYTES),
+        ColInfo("mmu_page_size_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "page size used by the MMU when backing a VMA", types::SemanticType::ST_BYTES),
+        ColInfo("rss_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "resident set memory size", types::SemanticType::ST_BYTES),
+        ColInfo("pss_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "proportional set size", types::SemanticType::ST_BYTES),
+        ColInfo("shared_clean_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "clean shared pages in the mapping", types::SemanticType::ST_BYTES),
+        ColInfo("shared_dirty_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "dirty shared pages in the mapping", types::SemanticType::ST_BYTES),
+        ColInfo("private_clean_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "clean private pages in the mapping", types::SemanticType::ST_BYTES),
+        ColInfo("private_dirty_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "dirty private pages in the mapping", types::SemanticType::ST_BYTES),
+        ColInfo("referenced_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "memory currently marked as referenced or accessed", types::SemanticType::ST_BYTES),
+        ColInfo("anonymous_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "memory that does not belong to any file", types::SemanticType::ST_BYTES),
+        ColInfo("lazy_free_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "memory which is marked by madvise", types::SemanticType::ST_BYTES),
+        ColInfo("anon_huge_pages_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "memory backed by transparent hugepage", types::SemanticType::ST_BYTES),
+        ColInfo("shmem_pmd_mapped_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "shared (shmem/tmpfs) memory backed by huge pages", types::SemanticType::ST_BYTES),
+        ColInfo("file_pmd_mapped_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "file_pmd_mapped_bytes", types::SemanticType::ST_BYTES),
+        ColInfo("shared_hugetlb_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "shared memory backed by hugetlbfs page", types::SemanticType::ST_BYTES),
+        ColInfo("private_hugetlb_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "private memory backed by hugetlbfs page", types::SemanticType::ST_BYTES),
+        ColInfo("swap_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "anonymous memory on swap", types::SemanticType::ST_BYTES),
+        ColInfo("swap_pss_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "proportional swap share of the mapping", types::SemanticType::ST_BYTES),
+        ColInfo("locked_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "locked_bytes", types::SemanticType::ST_BYTES));
+  }
+
+  Status Init(FunctionContext* ctx) {
+    const auto& sysconfig = Config::GetInstance();
+    const ProcParser proc_parser(sysconfig);
+    return proc_parser.ParseProcPIDSMaps(ctx->metadata_state()->pid(), &stats_);
+  }
+
+  bool NextRecord(FunctionContext* ctx, RecordWriter* rw) {
+    if (static_cast<size_t>(current_idx_) >= stats_.size()) {
+      return false;
+    }
+    rw->Append<IndexOf("asid")>(ctx->metadata_state()->asid());
+    rw->Append<IndexOf("address")>(stats_[current_idx_].address);
+    rw->Append<IndexOf("offset")>(stats_[current_idx_].offset);
+    rw->Append<IndexOf("pathname")>(stats_[current_idx_].pathname);
+    rw->Append<IndexOf("size_bytes")>(stats_[current_idx_].size_bytes);
+    rw->Append<IndexOf("kernel_page_size_bytes")>(stats_[current_idx_].kernel_page_size_bytes);
+    rw->Append<IndexOf("mmu_page_size_bytes")>(stats_[current_idx_].mmu_page_size_bytes);
+    rw->Append<IndexOf("rss_bytes")>(stats_[current_idx_].rss_bytes);
+    rw->Append<IndexOf("pss_bytes")>(stats_[current_idx_].pss_bytes);
+    rw->Append<IndexOf("shared_clean_bytes")>(stats_[current_idx_].shared_clean_bytes);
+    rw->Append<IndexOf("shared_dirty_bytes")>(stats_[current_idx_].shared_dirty_bytes);
+    rw->Append<IndexOf("private_clean_bytes")>(stats_[current_idx_].private_clean_bytes);
+    rw->Append<IndexOf("private_dirty_bytes")>(stats_[current_idx_].private_dirty_bytes);
+    rw->Append<IndexOf("referenced_bytes")>(stats_[current_idx_].referenced_bytes);
+    rw->Append<IndexOf("anonymous_bytes")>(stats_[current_idx_].anonymous_bytes);
+    rw->Append<IndexOf("lazy_free_bytes")>(stats_[current_idx_].lazy_free_bytes);
+    rw->Append<IndexOf("anon_huge_pages_bytes")>(stats_[current_idx_].anon_huge_pages_bytes);
+    rw->Append<IndexOf("shmem_pmd_mapped_bytes")>(stats_[current_idx_].shmem_pmd_mapped_bytes);
+    rw->Append<IndexOf("file_pmd_mapped_bytes")>(stats_[current_idx_].file_pmd_mapped_bytes);
+    rw->Append<IndexOf("shared_hugetlb_bytes")>(stats_[current_idx_].shared_hugetlb_bytes);
+    rw->Append<IndexOf("private_hugetlb_bytes")>(stats_[current_idx_].private_hugetlb_bytes);
+    rw->Append<IndexOf("swap_bytes")>(stats_[current_idx_].swap_bytes);
+    rw->Append<IndexOf("swap_pss_bytes")>(stats_[current_idx_].swap_pss_bytes);
+    rw->Append<IndexOf("locked_bytes")>(stats_[current_idx_].locked_bytes);
+
+    ++current_idx_;
+    return static_cast<size_t>(current_idx_) < stats_.size();
+  }
+
+ private:
+  std::vector<ProcParser::ProcessSMaps> stats_;
+  int current_idx_ = 0;
 };
 
 }  // namespace funcs
