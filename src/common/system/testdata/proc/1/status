@@ -1,0 +1,7 @@
+Name:	vim
+Umask:	0002
+State:	S (sleeping)
+VmPeak:	   24612 GB
+VmSize:	   24612 MB
+VmPin:	       1 kB
+voluntary_ctxt_switches: 123

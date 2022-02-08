@@ -334,7 +334,7 @@ class ProcParser {
   static Status ParseNetworkStatAccumulateIFaceData(
       const std::vector<std::string_view>& dev_stat_record, NetworkStats* out);
 
-  static Status ParseFromKeyValueLine(
+  static void ParseFromKeyValueLine(
       const std::string& line,
       const absl::flat_hash_map<std::string_view, size_t>& field_name_to_value_map,
       uint8_t* out_base);

@@ -484,14 +484,13 @@ Status ProcParser::ParseProcPIDSMaps(int32_t pid, std::vector<ProcessSMaps>* out
       }
       continue;
     }
-    PL_RETURN_IF_ERROR(ParseFromKeyValueLine(line, field_name_to_offset_map,
-                                             reinterpret_cast<uint8_t*>(&out->back())));
+    ParseFromKeyValueLine(line, field_name_to_offset_map, reinterpret_cast<uint8_t*>(&out->back()));
   }
 
   return Status::OK();
 }
 
-Status ProcParser::ParseFromKeyValueLine(
+void ProcParser::ParseFromKeyValueLine(
     const std::string& line,
     const absl::flat_hash_map<std::string_view, size_t>& field_name_to_value_map,
     uint8_t* out_base) {
@@ -503,7 +502,7 @@ Status ProcParser::ParseFromKeyValueLine(
     const auto& it = field_name_to_value_map.find(key);
     // Key not found in map, we can just go to next iteration of loop.
     if (it == field_name_to_value_map.end()) {
-      return Status::OK();
+      return;
     }
 
     size_t offset = it->second;
@@ -521,10 +520,10 @@ Status ProcParser::ParseFromKeyValueLine(
     }
 
     if (!ok) {
-      return error::Internal("Failed to parse line");
+      *val_ptr = -1;
     }
   }
-  return Status::OK();
+  return;
 }
 
 Status ProcParser::ParseFromKeyValueFile(
@@ -540,10 +539,7 @@ Status ProcParser::ParseFromKeyValueFile(
   std::string line;
   size_t read_count = 0;
   while (std::getline(ifs, line)) {
-    auto status = ParseFromKeyValueLine(line, field_name_to_value_map, out_base);
-    if (!status.ok()) {
-      return error::Internal("Failed to parse file $0", fpath);
-    }
+    ParseFromKeyValueLine(line, field_name_to_value_map, out_base);
 
     // Check to see if we have read all the fields, if so we can skip the
     // rest. We assume no duplicates.

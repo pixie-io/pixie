@@ -167,6 +167,22 @@ TEST_F(ProcParserTest, ParsePIDStatus) {
   EXPECT_EQ(2, stats.nonvoluntary_ctxt_switches);
 }
 
+TEST_F(ProcParserTest, ParsePIDStatusBadUnit) {
+  ProcParser::ProcessStatus stats;
+  PL_CHECK_OK(parser_->ParseProcPIDStatus(1, &stats));
+
+  // Bad units.
+  EXPECT_EQ(-1, stats.vm_peak_bytes);
+  // Bad units.
+  EXPECT_EQ(-1, stats.vm_size_bytes);
+  // Missing key.
+  EXPECT_EQ(0, stats.vm_lck_bytes);
+  // Exists, and units OK.
+  EXPECT_EQ(1 * 1024, stats.vm_pin_bytes);
+  // Exists, and no units.
+  EXPECT_EQ(123, stats.voluntary_ctxt_switches);
+}
+
 TEST_F(ProcParserTest, ParsePIDSMaps) {
   std::vector<ProcParser::ProcessSMaps> stats;
   PL_CHECK_OK(parser_->ParseProcPIDSMaps(789, &stats));
