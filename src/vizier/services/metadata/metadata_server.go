@@ -22,6 +22,8 @@ import (
 	"context"
 	"crypto/tls"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/cockroachdb/pebble"
@@ -54,7 +56,9 @@ const (
 	// pebbledbTTLDuration represents how often we evict from pebble.
 	pebbledbTTLDuration = 1 * time.Minute
 	// pebbleOpenDir is where the files live in the directory.
-	pebbleOpenDir = "/metadata/pebble_20200330"
+	pebbleOpenDir = "/metadata/pebble_20220209"
+	// metadataBaseMount is the base volume mount if we are running a PVC backed metadata.
+	metadataBaseMount = "/metadata"
 )
 
 func init() {
@@ -104,7 +108,28 @@ func mustInitEtcdDatastore() (*etcd.DataStore, func()) {
 	return etcd.New(etcdClient), cleanupFunc
 }
 
+func cleanupOldPebbleData() {
+	files, err := os.ReadDir(metadataBaseMount)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to read the metadata dir. Is the PVC correctly provisioned and running?")
+	}
+
+	for _, file := range files {
+		if file.IsDir() && file.Name() == pebbleOpenDir {
+			// This is the current pebble dir, skip.
+			continue
+		}
+		// Not the current pebble dir, likely an older dir, so just remove it.
+		fullPath := filepath.Join(metadataBaseMount, file.Name())
+		err = os.RemoveAll(fullPath)
+		if err != nil {
+			log.WithError(err).Infof("Failed to cleanup path %s", fullPath)
+		}
+	}
+}
+
 func mustInitPebbleDatastore() *pebbledb.DataStore {
+	cleanupOldPebbleData()
 	log.Infof("Using pebbledb: %s for metadata", pebbleOpenDir)
 	pebbleDb, err := pebble.Open(pebbleOpenDir, &pebble.Options{})
 	if err != nil {
