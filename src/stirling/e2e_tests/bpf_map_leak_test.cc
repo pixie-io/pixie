@@ -55,7 +55,7 @@ TEST_P(BPFMapLeakTest, UnclosedConnection) {
 
   // Create and run the server with a leaky FD.
   std::filesystem::path server_path = BazelBinTestFilePath(server_path_param);
-  ASSERT_OK(fs::Exists(server_path));
+  ASSERT_TRUE(fs::Exists(server_path));
 
   SubProcess server;
   ASSERT_OK(server.Start({server_path}));

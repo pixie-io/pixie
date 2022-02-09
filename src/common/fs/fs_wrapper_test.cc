@@ -103,8 +103,7 @@ TEST_F(FSWrapperTest, JoinPath) {
 }
 
 TEST_F(FSWrapperTest, ExistsReturnsErrorForNonExistentFile) {
-  EXPECT_THAT(Exists(tmp_dir_.path() / "dummy"),
-              StatusIs(statuspb::INVALID_ARGUMENT, HasSubstr("does not exist")));
+  EXPECT_FALSE(Exists(tmp_dir_.path() / "non-existent"));
 }
 
 TEST_F(FSWrapperTest, GetChildRelPath) {

@@ -231,7 +231,9 @@ StatusOr<std::filesystem::path> ResolveUPID(const ir::shared::DeploymentSpec& de
   PL_ASSIGN_OR_RETURN(std::unique_ptr<FilePathResolver> fp_resolver, FilePathResolver::Create(pid));
   PL_ASSIGN_OR_RETURN(std::filesystem::path pid_binary, fp_resolver->ResolvePath(proc_exe));
   pid_binary = sysconfig.ToHostPath(pid_binary);
-  PL_RETURN_IF_ERROR(fs::Exists(pid_binary));
+  if (!fs::Exists(pid_binary)) {
+    return error::Internal("Binary $0 not found.", pid_binary.string());
+  }
   return pid_binary;
 }
 
@@ -259,7 +261,9 @@ StatusOr<std::filesystem::path> ResolveSharedObject(
         absl::StartsWith(lib_path_filename, absl::StrCat(lib_name, "-"))) {
       PL_ASSIGN_OR_RETURN(std::filesystem::path lib_path, fp_resolver->ResolvePath(lib));
       lib_path = sysconfig.ToHostPath(lib_path);
-      PL_RETURN_IF_ERROR(fs::Exists(lib_path));
+      if (!fs::Exists(lib_path)) {
+        return error::Internal("Lib path $0 not found.", lib_path.string());
+      }
       return lib_path;
     }
   }
@@ -469,7 +473,7 @@ Status ResolveTargetObjPath(const md::K8sMetadataState& k8s_mds,
       return error::InvalidArgument("Must specify target.");
   }
 
-  if (!fs::Exists(target_obj_path).ok()) {
+  if (!fs::Exists(target_obj_path)) {
     return error::Internal("Binary $0 not found.", target_obj_path.string());
   }
 

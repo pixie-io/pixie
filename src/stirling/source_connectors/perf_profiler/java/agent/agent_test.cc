@@ -43,9 +43,9 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   const fs_path kPathToJavaTesting = "src/stirling/source_connectors/perf_profiler/testing/java";
   const fs_path kToyAppPath = kPathToJavaTesting / kJavaAppName;
   const fs_path kBazelAppPath = BazelBinTestFilePath(kToyAppPath);
-  ASSERT_OK(fs::Exists(kBazelAppPath));
+  ASSERT_TRUE(fs::Exists(kBazelAppPath));
 
-  if (fs::Exists(kSymbolFilePath).ok()) {
+  if (fs::Exists(kSymbolFilePath)) {
     // The symbol file is created by the Java process when the agent is attached.
     // A left over stale symbol file can cause this test to pass when it should fail.
     // Here, we prevent that from happening.
@@ -76,7 +76,7 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   for (const auto& expected_symbol : expected_symbols) {
     EXPECT_THAT(s, HasSubstr(expected_symbol));
   }
-  if (fs::Exists(kSymbolFilePath).ok()) {
+  if (fs::Exists(kSymbolFilePath)) {
     LOG(INFO) << "Removing symbol file: " << kSymbolFilePath;
     ASSERT_OK(fs::Remove(kSymbolFilePath));
   }

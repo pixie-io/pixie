@@ -295,7 +295,7 @@ StatusOr<std::filesystem::path> FindKernelConfig() {
   for (const auto& path : search_paths) {
     std::filesystem::path config_path = path;
     std::filesystem::path host_path = sysconfig.ToHostPath(config_path);
-    if (fs::Exists(host_path).ok()) {
+    if (fs::Exists(host_path)) {
       LOG(INFO) << absl::Substitute("Found kernel config at $0", host_path.string());
       return host_path;
     }
@@ -402,9 +402,9 @@ std::filesystem::path FindLinuxHeadersDirectory(const std::filesystem::path& lib
   std::filesystem::path lib_modules_build_dir = lib_modules_dir / "build";
 
   std::filesystem::path lib_modules_kdir;
-  if (fs::Exists(lib_modules_source_dir).ok()) {
+  if (fs::Exists(lib_modules_source_dir)) {
     lib_modules_kdir = lib_modules_source_dir;
-  } else if (fs::Exists(lib_modules_build_dir).ok()) {
+  } else if (fs::Exists(lib_modules_build_dir)) {
     lib_modules_kdir = lib_modules_build_dir;
   }
 
@@ -453,14 +453,14 @@ Status LinkHostLinuxHeaders(const std::filesystem::path& lib_modules_dir) {
   VLOG(1) << absl::Substitute("source_dir $0", host_lib_modules_source_dir.string());
   VLOG(1) << absl::Substitute("build_dir $0", host_lib_modules_build_dir.string());
 
-  if (fs::Exists(host_lib_modules_source_dir).ok()) {
+  if (fs::Exists(host_lib_modules_source_dir)) {
     PL_RETURN_IF_ERROR(
         fs::CreateSymlinkIfNotExists(host_lib_modules_source_dir, lib_modules_source_dir));
     LOG(INFO) << absl::Substitute("Linked linux headers found at $0",
                                   host_lib_modules_source_dir.string());
   }
 
-  if (fs::Exists(host_lib_modules_build_dir).ok()) {
+  if (fs::Exists(host_lib_modules_build_dir)) {
     PL_RETURN_IF_ERROR(
         fs::CreateSymlinkIfNotExists(host_lib_modules_build_dir, lib_modules_build_dir));
     LOG(INFO) << absl::Substitute("Linked linux headers found at $0",
@@ -477,7 +477,7 @@ Status ExtractPackagedHeaders(PackagedLinuxHeadersSpec* headers_package) {
 
   // This is a loose check that we don't clobber what we *think* should the output directory.
   // If someone built a tar.gz with an incorrect directory structure, this check wouldn't save us.
-  if (fs::Exists(expected_directory).ok()) {
+  if (fs::Exists(expected_directory)) {
     return error::Internal("Refusing to clobber existing directory");
   }
 
@@ -487,7 +487,7 @@ Status ExtractPackagedHeaders(PackagedLinuxHeadersSpec* headers_package) {
 
   // Update the path to the extracted copy.
   headers_package->path = expected_directory;
-  if (!fs::Exists(headers_package->path).ok()) {
+  if (!fs::Exists(headers_package->path)) {
     return error::Internal("Package extraction did not result in the expected headers directory");
   }
 
@@ -515,7 +515,7 @@ StatusOr<PackagedLinuxHeadersSpec> FindClosestPackagedLinuxHeaders(
 
   PackagedLinuxHeadersSpec selected;
 
-  if (fs::Exists(packaged_headers_root).ok()) {
+  if (fs::Exists(packaged_headers_root)) {
     for (const auto& p : std::filesystem::directory_iterator(packaged_headers_root)) {
       VLOG(1) << absl::Substitute("File: $0", p.path().string());
       std::string path = p.path().string();

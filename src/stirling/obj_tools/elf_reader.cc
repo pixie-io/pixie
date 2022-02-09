@@ -115,7 +115,7 @@ Status ElfReader::LocateDebugSymbols(const std::filesystem::path& debug_file_dir
         absl::Substitute(".build-id/$0/$1.debug", build_id.substr(0, 2), build_id.substr(2));
     symbols_file = debug_file_dir / loc;
     VLOG(1) << absl::Substitute("Checking for debug symbols at $0", symbols_file.string());
-    if (fs::Exists(symbols_file).ok()) {
+    if (fs::Exists(symbols_file)) {
       debug_symbols_path_ = symbols_file;
       return Status::OK();
     }
@@ -129,7 +129,7 @@ Status ElfReader::LocateDebugSymbols(const std::filesystem::path& debug_file_dir
 
     std::filesystem::path candidate1 = fs::JoinPath({&binary_path_parent, &debug_link_path});
     VLOG(1) << absl::Substitute("Checking for debug symbols at $0", candidate1.string());
-    if (fs::Exists(candidate1).ok()) {
+    if (fs::Exists(candidate1)) {
       // Ignore the candidate if it just maps back to the original path.
       bool invalid = fs::Equivalent(candidate1, binary_path).ConsumeValueOr(true);
       if (!invalid) {
@@ -142,14 +142,14 @@ Status ElfReader::LocateDebugSymbols(const std::filesystem::path& debug_file_dir
     std::filesystem::path candidate2 =
         fs::JoinPath({&binary_path_parent, &dot_debug, &debug_link_path});
     VLOG(1) << absl::Substitute("Checking for debug symbols at $0", candidate2.string());
-    if (fs::Exists(candidate2).ok()) {
+    if (fs::Exists(candidate2)) {
       debug_symbols_path_ = candidate2;
       return Status::OK();
     }
 
     std::filesystem::path candidate3 = fs::JoinPath({&debug_file_dir, &binary_path});
     VLOG(1) << absl::Substitute("Checking for debug symbols at $0", candidate3.string());
-    if (fs::Exists(candidate3).ok()) {
+    if (fs::Exists(candidate3)) {
       debug_symbols_path_ = candidate3;
       return Status::OK();
     }

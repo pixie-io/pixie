@@ -123,7 +123,7 @@ TEST_F(ResolveTargetObjPathTest, ResolveUPID) {
 
   ASSERT_OK(ResolveTargetObjPath(k8s_mds_, &deployment_spec));
   EXPECT_THAT(deployment_spec.path(), EndsWith(kServerPath));
-  EXPECT_OK(fs::Exists(deployment_spec.path()));
+  EXPECT_TRUE(fs::Exists(deployment_spec.path()));
 }
 
 TEST_F(ResolveTargetObjPathTest, ResolvePodProcessSuccess) {
@@ -138,7 +138,7 @@ TEST_F(ResolveTargetObjPathTest, ResolvePodProcessSuccess) {
   TextFormat::ParseFromString(kDeploymentSpecTxt, &deployment_spec);
   ASSERT_OK(ResolveTargetObjPath(k8s_mds_, &deployment_spec));
   EXPECT_THAT(deployment_spec.path(), EndsWith(kServerPath));
-  EXPECT_OK(fs::Exists(deployment_spec.path()));
+  EXPECT_TRUE(fs::Exists(deployment_spec.path()));
 }
 
 // Tests that non-matching process regexp returns no UPID.

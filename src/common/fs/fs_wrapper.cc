@@ -101,16 +101,22 @@ Status CreateSymlinkIfNotExists(const std::filesystem::path& target,
   return Status::OK();
 }
 
+bool Exists(const std::filesystem::path& path) {
+  std::error_code ec;
+  bool exists = std::filesystem::exists(path, ec);
+  if (ec) {
+    // This is very unlikely, so we just log an error and return false;
+    LOG(DFATAL) << absl::Substitute("OS API error on path $0 [ec=$1]", path.string(), ec.message());
+    return false;
+  }
+  return exists;
+}
+
 #define WRAP_BOOL_FN(expr) \
   std::error_code ec;      \
   if (expr) {              \
     return Status::OK();   \
   }
-
-Status Exists(const std::filesystem::path& path) {
-  WRAP_BOOL_FN(std::filesystem::exists(path, ec));
-  return error::InvalidArgument("Path $0 does not exist [ec=$1]", path.string(), ec.message());
-}
 
 Status Copy(const std::filesystem::path& from, const std::filesystem::path& to,
             std::filesystem::copy_options options) {

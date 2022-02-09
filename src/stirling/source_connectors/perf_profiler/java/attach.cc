@@ -53,7 +53,9 @@ StatusOr<int> GetNSPid(const int pid) {
 }
 
 bool TestDLOpen(const std::string& so_lib_file_path) {
-  PL_EXIT_IF_ERROR(fs::Exists(so_lib_file_path));
+  if (!fs::Exists(so_lib_file_path)) {
+    LOG(FATAL) << absl::Substitute("Could not find so file: $0", so_lib_file_path);
+  }
 
   // Reset the error message in the dynamic linking library. We do this prior to any call to
   // dlxyz() as general good practice.

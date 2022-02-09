@@ -515,7 +515,7 @@ StatusOr<T*> DLSymbolToFptr(void* handle, const std::string& symbol_name) {
 }
 
 StatusOr<uint64_t> GetOpenSSLVersionNumUsingDLOpen(const std::filesystem::path& lib_openssl_path) {
-  if (!fs::Exists(lib_openssl_path).ok()) {
+  if (!fs::Exists(lib_openssl_path)) {
     return error::Internal("Path to OpenSSL so is not valid: $0", lib_openssl_path.string());
   }
 

@@ -267,8 +267,13 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
   // Convert to host path, in case we're running inside a container ourselves.
   container_libssl = sysconfig.ToHostPath(container_libssl);
   container_libcrypto = sysconfig.ToHostPath(container_libcrypto);
-  PL_RETURN_IF_ERROR(fs::Exists(container_libssl));
-  PL_RETURN_IF_ERROR(fs::Exists(container_libcrypto));
+
+  if (!fs::Exists(container_libssl)) {
+    return error::Internal("libssl not found [path = $0]", container_libssl.string());
+  }
+  if (!fs::Exists(container_libcrypto)) {
+    return error::Internal("libcrypto not found [path = $0]", container_libcrypto.string());
+  }
 
   PL_RETURN_IF_ERROR(UpdateOpenSSLSymAddrs(container_libcrypto, pid));
 
@@ -466,7 +471,7 @@ std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
     PL_ASSIGN_OR(std::filesystem::path exe_path, fp_resolver->ResolvePath(proc_exe), continue);
 
     std::filesystem::path host_exe_path = sysconfig.ToHostPath(exe_path);
-    if (!fs::Exists(host_exe_path).ok()) {
+    if (!fs::Exists(host_exe_path)) {
       continue;
     }
     pids[host_exe_path.string()].push_back(upid.pid());

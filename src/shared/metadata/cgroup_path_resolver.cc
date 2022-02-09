@@ -38,7 +38,7 @@ StatusOr<std::string> CGroupBasePath(std::string_view sysfs_path) {
 
     // Attempt assuming naming scheme #1.
     std::string base_path = absl::StrCat(sysfs_path, "/cgroup/", cgroup_dir);
-    if (fs::Exists(base_path).ok()) {
+    if (fs::Exists(base_path)) {
       return base_path;
     }
   }
@@ -213,7 +213,7 @@ Status LegacyCGroupPathResolver::Init(std::string_view sysfs_path) {
 
   // Attempt assuming naming scheme #1.
   std::string cgroup_kubepods_base_path = absl::Substitute("$0/kubepods", cgroup_dir);
-  if (fs::Exists(cgroup_kubepods_base_path).ok()) {
+  if (fs::Exists(cgroup_kubepods_base_path)) {
     cgroup_kubepod_guaranteed_path_template_ =
         absl::StrCat(cgroup_kubepods_base_path, "/pod$0/$1/cgroup.procs");
     cgroup_kubepod_besteffort_path_template_ =
@@ -228,7 +228,7 @@ Status LegacyCGroupPathResolver::Init(std::string_view sysfs_path) {
   // Must be before the scheme below, since there have been systems that have both paths,
   // but this must take priority.
   cgroup_kubepods_base_path = absl::Substitute("$0/system.slice/containerd.service", cgroup_dir);
-  if (fs::Exists(cgroup_kubepods_base_path).ok()) {
+  if (fs::Exists(cgroup_kubepods_base_path)) {
     cgroup_kubepod_guaranteed_path_template_ =
         absl::StrCat(cgroup_kubepods_base_path, "/kubepods-pod$0.slice:$2:$1/cgroup.procs");
     cgroup_kubepod_besteffort_path_template_ = absl::StrCat(
@@ -241,7 +241,7 @@ Status LegacyCGroupPathResolver::Init(std::string_view sysfs_path) {
 
   // Attempt assuming naming scheme #2.
   cgroup_kubepods_base_path = absl::Substitute("$0/kubepods.slice", cgroup_dir);
-  if (fs::Exists(cgroup_kubepods_base_path).ok()) {
+  if (fs::Exists(cgroup_kubepods_base_path)) {
     cgroup_kubepod_guaranteed_path_template_ =
         absl::StrCat(cgroup_kubepods_base_path, "/kubepods-pod$0.slice/$2-$1.scope/cgroup.procs");
     cgroup_kubepod_besteffort_path_template_ = absl::StrCat(

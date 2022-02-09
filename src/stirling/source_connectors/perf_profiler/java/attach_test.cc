@@ -50,7 +50,7 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   const fs_path bazel_app_path = BazelBinTestFilePath(toy_app_path);
 
   LOG(INFO) << "bazel_app_path: " << bazel_app_path;
-  ASSERT_OK(fs::Exists(bazel_app_path));
+  ASSERT_TRUE(fs::Exists(bazel_app_path));
 
   // Construct the a vector of strings, "libs." It is used to show the attacher where it
   // can find candidate agent.so files. The attacher will test each agent.so vs. the link
@@ -66,10 +66,10 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
       std::filesystem::absolute(BazelBinTestFilePath(lib_path_pfx / glibc_lib)),
   };
   for (const auto& lib : libs) {
-    ASSERT_OK(fs::Exists(lib)) << lib;
+    ASSERT_TRUE(fs::Exists(lib)) << lib;
   }
 
-  if (fs::Exists(kSymbolFilePath).ok()) {
+  if (fs::Exists(kSymbolFilePath)) {
     // The symbol file is created by the Java process when the agent is attached.
     // A left over stale symbol file can cause this test to pass when it should fail.
     // Here, we prevent that from happening.
@@ -131,7 +131,7 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
 
   // Cleanup.
   // TODO(jps): use TearDown method in test fixture. Also update agent_test.
-  if (fs::Exists(kSymbolFilePath).ok()) {
+  if (fs::Exists(kSymbolFilePath)) {
     LOG(INFO) << "Removing symbol file: " << kSymbolFilePath;
     ASSERT_OK(fs::Remove(kSymbolFilePath));
   }

@@ -47,7 +47,7 @@ class BinaryRunner {
  public:
   void Run(const std::string& binary_path) {
     // Run tracing target.
-    ASSERT_OK(fs::Exists(binary_path));
+    ASSERT_TRUE(fs::Exists(binary_path));
     ASSERT_OK(trace_target_.Start({binary_path}));
   }
 

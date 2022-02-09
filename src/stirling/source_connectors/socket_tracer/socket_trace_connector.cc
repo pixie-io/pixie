@@ -1229,7 +1229,7 @@ void SocketTraceConnector::TransferConnStats(ConnectorContext* ctx, DataTable* d
     if (!active_upid && !activity) {
       const auto& sysconfig = system::Config::GetInstance();
       std::filesystem::path pid_file = sysconfig.proc_path() / std::to_string(key.upid.pid);
-      if (!fs::Exists(pid_file).ok()) {
+      if (!fs::Exists(pid_file)) {
         agg_stats.erase(iter++);
         continue;
       }

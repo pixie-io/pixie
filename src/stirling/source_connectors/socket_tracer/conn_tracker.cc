@@ -791,7 +791,7 @@ void ConnTracker::CheckProcForConnClose() {
   std::filesystem::path fd_file = sysconfig.proc_path() / std::to_string(conn_id().upid.pid) /
                                   "fd" / std::to_string(conn_id().fd);
 
-  if (!fs::Exists(fd_file).ok()) {
+  if (!fs::Exists(fd_file)) {
     MarkForDeath("Socket file descriptor of the connection is closed.");
   }
 }

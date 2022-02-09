@@ -60,7 +60,7 @@ Status CreateSymlinkIfNotExists(const std::filesystem::path& target,
  * Returns OK if the path exists. Returns error if does not exist, or failed to detect
  * (for example, because of lack of permission).
  */
-Status Exists(const std::filesystem::path& path);
+bool Exists(const std::filesystem::path& path);
 Status Copy(const std::filesystem::path& from, const std::filesystem::path& to,
             std::filesystem::copy_options options = std::filesystem::copy_options::none);
 Status Remove(const std::filesystem::path& path);

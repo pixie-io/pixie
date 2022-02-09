@@ -280,7 +280,7 @@ Status BCCWrapper::DetachKProbe(const KProbeSpec& probe) {
 Status BCCWrapper::DetachUProbe(const UProbeSpec& probe) {
   VLOG(1) << "Detaching uprobe " << probe.ToString();
 
-  if (fs::Exists(probe.binary_path).ok()) {
+  if (fs::Exists(probe.binary_path)) {
     PL_RETURN_IF_ERROR(bpf_.detach_uprobe(probe.binary_path, probe.symbol, probe.address,
                                           static_cast<bpf_probe_attach_type>(probe.attach_type),
                                           probe.pid));

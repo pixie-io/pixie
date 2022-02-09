@@ -93,7 +93,7 @@ void ConnInfoMapManager::CleanupBPFMapLeaks(ConnTrackersManager* conn_trackers_m
     std::filesystem::path fd_file =
         sysconfig.proc_path() / std::to_string(pid) / "fd" / std::to_string(fd);
 
-    if (fs::Exists(fd_file).ok()) {
+    if (fs::Exists(fd_file)) {
       continue;
     }
 

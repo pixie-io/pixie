@@ -147,7 +147,7 @@ StatusOr<std::unique_ptr<Symbolizer>> JavaSymbolizer::Create(
   std::vector<std::filesystem::path> abs_path_libs;
   for (const auto& lib : lib_args) {
     PL_ASSIGN_OR(const auto abs_path_lib, fs::Absolute(lib), continue);
-    if (!fs::Exists(abs_path_lib).ok()) {
+    if (!fs::Exists(abs_path_lib)) {
       LOG(WARNING) << absl::Substitute("Java agent lib path $0 not found.", lib);
       continue;
     }
@@ -300,7 +300,7 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
 
   const std::filesystem::path symbol_file_path = GetStirlingSymbolFilePath(upid);
 
-  if (fs::Exists(symbol_file_path).ok()) {
+  if (fs::Exists(symbol_file_path)) {
     // Found a pre-existing symbol file. Attempt to use it.
     const Status new_ctx_status = CreateNewJavaSymbolizationContext(upid);
     if (!new_ctx_status.ok()) {

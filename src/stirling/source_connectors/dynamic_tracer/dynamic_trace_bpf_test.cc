@@ -58,8 +58,8 @@ class GoHTTPDynamicTraceTest : public ::testing::Test {
     client_path_ = px::testing::BazelBinTestFilePath(kClientPath).string();
     server_path_ = px::testing::BazelBinTestFilePath(kServerPath).string();
 
-    ASSERT_OK(fs::Exists(server_path_));
-    ASSERT_OK(fs::Exists(client_path_));
+    ASSERT_TRUE(fs::Exists(server_path_));
+    ASSERT_TRUE(fs::Exists(client_path_));
 
     ASSERT_OK(s_.Start({server_path_}));
 

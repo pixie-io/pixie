@@ -79,7 +79,7 @@ class GRPCServer {
   void LaunchServer(std::string go_version, bool use_https) {
     std::string server_path = absl::Substitute(kServerPath, go_version);
     server_path = px::testing::BazelBinTestFilePath(server_path).string();
-    PL_CHECK_OK(fs::Exists(server_path));
+    CHECK(fs::Exists(server_path));
 
     std::string https_flag = use_https ? "--https=true" : "--https=false";
     PL_CHECK_OK(s_.Start({server_path, https_flag}));
@@ -111,7 +111,7 @@ class GRPCClient {
     std::string client_path = absl::Substitute(kClientPath, go_version);
     client_path = px::testing::BazelBinTestFilePath(client_path).string();
 
-    PL_CHECK_OK(fs::Exists(client_path));
+    CHECK(fs::Exists(client_path));
 
     const std::string https_flag = use_https ? "--https=true" : "--https=false";
     PL_CHECK_OK(c_.Start({client_path, https_flag, "-once", "-name=PixieLabs",

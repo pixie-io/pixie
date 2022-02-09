@@ -47,8 +47,8 @@ class CPUPinnedBinaryRunner {
   void Run(const std::string& binary_path, const uint64_t cpu_idx) {
     // Run the sub-process & pin it to a CPU.
     const std::string kTasksetBinPath = "/usr/bin/taskset";
-    ASSERT_OK(fs::Exists(binary_path));
-    ASSERT_OK(fs::Exists(kTasksetBinPath));
+    ASSERT_TRUE(fs::Exists(binary_path));
+    ASSERT_TRUE(fs::Exists(kTasksetBinPath));
     ASSERT_OK(sub_process_.Start({kTasksetBinPath, "-c", std::to_string(cpu_idx), binary_path}));
   }
 
@@ -340,7 +340,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
 TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
   const std::filesystem::path bazel_app_path = BazelJavaTestAppPath("fib");
   LOG(INFO) << "bazel_app_path: " << bazel_app_path;
-  ASSERT_OK(fs::Exists(bazel_app_path));
+  ASSERT_TRUE(fs::Exists(bazel_app_path));
 
   // Start they toy apps as sub-processes, then,
   // for a certain amount of time, collect data using RunTest().
