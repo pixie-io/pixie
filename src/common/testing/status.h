@@ -56,6 +56,11 @@ auto StatusIs(px::statuspb::Code code, const TMessageMatcherType& msg_matcher) {
                           ::testing::Property(&Status::msg, msg_matcher));
 }
 
+template <typename TMessageMatcherType>
+auto StatusMsgIs(const TMessageMatcherType& msg_matcher) {
+  return ::testing::Property(&Status::msg, msg_matcher);
+}
+
 }  // namespace status
 }  // namespace testing
 }  // namespace px
