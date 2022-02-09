@@ -33,7 +33,8 @@ BPF_SRC_STRVIEW(profiler_bcc_script, profiler);
 DEFINE_string(stirling_profiler_symbolizer, "bcc",
               "Choice of which symbolizer to use. Options: bcc, elf");
 DEFINE_bool(stirling_profiler_cache_symbols, true, "Whether to cache symbols");
-DEFINE_bool(stirling_profiler_java_symbols, false, "Java symbols.");
+DEFINE_bool(stirling_profiler_java_symbols, gflags::BoolFromEnv("PL_PROFILER_JAVA_SYMBOLS", false),
+            "Whether to symbolize Java binaries.");
 DEFINE_uint32(stirling_profiler_log_period_minutes, 10,
               "Number of minutes between profiler stats log printouts.");
 DEFINE_uint32(stirling_profiler_table_update_period_seconds,
