@@ -597,6 +597,7 @@ class GetDebugMDWithPrefix final : public carnot::udf::UDTF<GetDebugMDWithPrefix
   Status Init(FunctionContext*, types::StringValue prefix, types::StringValue proto) {
     px::vizier::services::metadata::WithPrefixKeyRequest req;
     resp_ = std::make_unique<px::vizier::services::metadata::WithPrefixKeyResponse>();
+    idx_ = 0;
 
     req.set_prefix(prefix);
     req.set_proto(proto);
@@ -612,17 +613,20 @@ class GetDebugMDWithPrefix final : public carnot::udf::UDTF<GetDebugMDWithPrefix
   }
 
   bool NextRecord(FunctionContext*, RecordWriter* rw) {
-    for (const px::vizier::services::metadata::WithPrefixKeyResponse_KV& kv : resp_->kvs()) {
-      rw->Append<IndexOf("key")>(kv.key());
-      rw->Append<IndexOf("value")>(kv.value());
+    if (idx_ >= resp_->kvs().size()) {
+      return false;
     }
 
-    // no more records.
-    return false;
+    rw->Append<IndexOf("key")>(resp_->kvs().Get(idx_).key());
+    rw->Append<IndexOf("value")>(resp_->kvs().Get(idx_).value());
+    ++idx_;
+
+    return idx_ < resp_->kvs().size();
   }
 
  private:
   std::unique_ptr<px::vizier::services::metadata::WithPrefixKeyResponse> resp_;
+  int idx_;
 
   std::shared_ptr<MDSStub> stub_;
   std::function<void(grpc::ClientContext*)> add_context_authentication_func_;
