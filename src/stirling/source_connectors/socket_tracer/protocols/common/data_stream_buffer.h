@@ -18,14 +18,39 @@
 
 #pragma once
 
+#include <gflags/gflags.h>
+
 #include <map>
+#include <memory>
 #include <string>
 
 #include "src/common/base/base.h"
 
+DECLARE_bool(stirling_data_stream_buffer_always_contiguous_buffer);
+
 namespace px {
 namespace stirling {
 namespace protocols {
+
+// TODO(james): switch back to concrete DataStreamBuffer (or standard abstract class) once we've
+// settled on a DataStreamBuffer implementation.
+class DataStreamBufferImpl {
+ public:
+  virtual ~DataStreamBufferImpl() = default;
+  virtual void Add(size_t pos, std::string_view data, uint64_t timestamp) = 0;
+  virtual std::string_view Get(size_t pos) const = 0;
+  virtual std::string_view Head() const = 0;
+  virtual StatusOr<uint64_t> GetTimestamp(size_t pos) const = 0;
+  virtual void RemovePrefix(ssize_t n) = 0;
+  virtual void Trim() = 0;
+  virtual size_t size() const = 0;
+  virtual size_t capacity() const = 0;
+  virtual bool empty() const = 0;
+  virtual size_t position() const = 0;
+  virtual std::string DebugInfo() const = 0;
+  virtual void Reset() = 0;
+  virtual void ShrinkToFit() = 0;
+};
 
 /**
  * DataStreamBuffer is a buffer for storing traced data events and metadata from BPF.
@@ -45,10 +70,7 @@ namespace protocols {
  */
 class DataStreamBuffer {
  public:
-  DataStreamBuffer(size_t max_capacity, size_t max_gap_size, size_t allow_before_gap_size)
-      : capacity_(max_capacity),
-        max_gap_size_(max_gap_size),
-        allow_before_gap_size_(allow_before_gap_size) {}
+  DataStreamBuffer(size_t max_capacity, size_t max_gap_size, size_t allow_before_gap_size);
 
   /**
    * Adds data to the buffer at the specified logical position.
@@ -59,27 +81,29 @@ class DataStreamBuffer {
    * @param data The data to insert.
    * @param timestamp Timestamp to associate with the data.
    */
-  void Add(size_t pos, std::string_view data, uint64_t timestamp);
+  void Add(size_t pos, std::string_view data, uint64_t timestamp) {
+    impl_->Add(pos, data, timestamp);
+  }
 
   /**
    * Get all the contiguous data at the specified position of the buffer.
    * @param pos The logical position of the requested data.
    * @return A string_view to the data.
    */
-  std::string_view Get(size_t pos) const;
+  std::string_view Get(size_t pos) const { return impl_->Get(pos); }
 
   /**
    * Get all the contiguous data at the head of the buffer.
    * @return A string_view to the data.
    */
-  std::string_view Head() const { return Get(position_); }
+  std::string_view Head() const { return impl_->Head(); }
 
   /**
    * Get timestamp recorded for the data at the specified position.
    * @param pos The logical position of the data.
    * @return The timestamp or error if the position does not contain valid data.
    */
-  StatusOr<uint64_t> GetTimestamp(size_t pos) const;
+  StatusOr<uint64_t> GetTimestamp(size_t pos) const { return impl_->GetTimestamp(pos); }
 
   /**
    * Remove n bytes from the head of the buffer.
@@ -87,84 +111,51 @@ class DataStreamBuffer {
    * Negative values for pos are invalid and will not remove anything.
    * In debug mode, negative values will cause a failure.
    */
-  void RemovePrefix(ssize_t n);
+  void RemovePrefix(ssize_t n) { return impl_->RemovePrefix(n); }
 
   /**
    * If the head of the buffer contains any non-valid data (never populated),
    * then remove it until reaching the first data added.
    */
-  void Trim();
+  void Trim() { impl_->Trim(); }
 
   /**
    * Current size of the internal buffer. Not all bytes may be populated.
    */
-  size_t size() const { return buffer_.size(); }
+  size_t size() const { return impl_->size(); }
 
   /**
    * Current allocated space of the internal buffer.
    */
-  size_t capacity() const { return buffer_.capacity(); }
+  size_t capacity() const { return impl_->capacity(); }
 
   /**
    * Return true if the buffer is empty.
    */
-  bool empty() const { return buffer_.empty(); }
+  bool empty() const { return impl_->empty(); }
 
   /**
    * Logical position of the head of the buffer.
    */
-  size_t position() const { return position_; }
+  size_t position() const { return impl_->position(); }
 
-  std::string DebugInfo() const;
+  std::string DebugInfo() const { return impl_->DebugInfo(); }
 
   /**
    * Resets the entire buffer to an empty state.
    * Intended for hard recovery conditions.
    */
-  void Reset();
+  void Reset() { impl_->Reset(); }
 
   /**
    * Shrink the internal buffer, so that the allocated memory matches its size.
    * Note this has to be an external API, because `RemovePrefix` is called in situations where it
    * doesn't make sense to shrink.
    */
-  void ShrinkToFit() { buffer_.shrink_to_fit(); }
+  void ShrinkToFit() { impl_->ShrinkToFit(); }
 
  private:
-  std::map<size_t, size_t>::const_iterator GetChunkForPos(size_t pos) const;
-  void AddNewChunk(size_t pos, size_t size);
-  void AddNewTimestamp(size_t pos, uint64_t timestamp);
-
-  void CleanupTimestamps();
-  void CleanupChunks();
-
-  // Umbrella that calls CleanupTimestamps and CleanupChunks.
-  void CleanupMetadata();
-
-  // Get the end of valid data in the buffer.
-  size_t EndPosition();
-
-  const size_t capacity_;
-  const size_t max_gap_size_;
-  const size_t allow_before_gap_size_;
-
-  // Logical position of data stream buffer.
-  // In other words, the position of buffer_[0].
-  size_t position_ = 0;
-
-  // Buffer where all data is stored.
-  // TODO(oazizi): Investigate buffer that is better suited to the rolling buffer (slinky) model.
-  std::string buffer_;
-
-  // Map of chunk start positions to chunk sizes.
-  // A chunk is a contiguous sequence of bytes.
-  // Adjacent chunks are always fused, so a chunk either ends at a gap or the end of the buffer.
-  std::map<size_t, size_t> chunks_;
-
-  // Map of positions to timestamps.
-  // Unlike chunks_, which will fuse when adjacent, timestamps never fuse.
-  // Also, we don't track gaps in the buffer with timestamps; must use chunks_ for that.
-  std::map<size_t, uint64_t> timestamps_;
+  std::unique_ptr<DataStreamBufferImpl> impl_;
 };
 
 }  // namespace protocols
