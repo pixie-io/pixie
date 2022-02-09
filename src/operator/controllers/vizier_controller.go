@@ -24,7 +24,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff/v3"
@@ -34,7 +33,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -43,8 +41,6 @@ import (
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/api/proto/vizierconfigpb"
 	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
-	"px.dev/pixie/src/operator/vendored/etcd"
-	"px.dev/pixie/src/operator/vendored/nats"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/utils/shared/certs"
 	"px.dev/pixie/src/utils/shared/k8s"
@@ -235,11 +231,6 @@ func (r *VizierReconciler) deleteVizier(ctx context.Context, req ctrl.Request) e
 
 	keyValueLabel := operatorAnnotation + "=" + req.Name
 	_, _ = od.DeleteByLabel(keyValueLabel)
-	// TODO(vihang): Remove the rest of these since we no longer use operator
-	// managed NATS/etcd. Remove no sooner than 2021-10-15.
-	_, _ = od.DeleteByLabel("app=nats")
-	_, _ = od.DeleteByLabel("etcd_cluster=pl-etcd")
-	_ = od.DeleteCustomObject("NatsCluster", "pl-nats")
 	return nil
 }
 
@@ -357,15 +348,6 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 		if err != nil {
 			return err
 		}
-	} else {
-		err = r.replaceOperatorManagedNATS(ctx, req.Namespace, vz, yamlMap)
-		if err != nil {
-			return err
-		}
-		err = r.replaceOperatorManagedEtcd(ctx, req.Namespace, vz, yamlMap)
-		if err != nil {
-			return err
-		}
 	}
 
 	err = r.deployVizierCore(ctx, req.Namespace, vz, yamlMap, update)
@@ -451,119 +433,6 @@ func (r *VizierReconciler) deployVizierConfigs(ctx context.Context, namespace st
 		}
 	}
 	return k8s.ApplyResources(r.Clientset, r.RestConfig, resources, namespace, nil, false)
-}
-
-func (r *VizierReconciler) replaceOperatorManagedNATS(ctx context.Context, namespace string, vz *v1alpha1.Vizier, yamlMap map[string]string) error {
-	log.Info("Checking for NATS")
-	nc, err := nats.NewForConfig(r.RestConfig)
-	if err != nil {
-		// This probably means there's no NATS CRD installed. noop
-		log.Info("Couldn't create NATS client")
-		return nil
-	}
-	nats, err := nc.NatsV1alpha2().NatsClusters(namespace).Get(ctx, "pl-nats", metav1.GetOptions{})
-	if err != nil {
-		// This means that there's no operator managed NATSCluster. noop
-		return nil
-	}
-	log.WithField("nats", nats).Info("Found natscluster, removing")
-
-	// Watcher to watch for existing services to be cleaned up. We need to ensure that this occurs before
-	// new statefulset is deployed.
-	w, err := r.Clientset.CoreV1().Services(namespace).Watch(ctx, metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		natsSeen := false
-		natsMgmtSeen := false
-		for r := range w.ResultChan() {
-			if r.Type == watch.Deleted {
-				svc, ok := r.Object.(*v1.Service)
-				if !ok {
-					continue
-				}
-				if svc.Name == "pl-nats" {
-					natsSeen = true
-				}
-				if svc.Name == "pl-nats-mgmt" {
-					natsMgmtSeen = true
-				}
-				if natsSeen && natsMgmtSeen {
-					break
-				}
-			}
-		}
-	}()
-
-	err = nc.NatsV1alpha2().NatsClusters(namespace).Delete(ctx, "pl-nats", metav1.DeleteOptions{})
-	if err != nil {
-		return err
-	}
-	// Wait for the existing services to be deleted.
-	wg.Wait()
-	w.Stop()
-	return r.deployNATSStatefulset(ctx, namespace, vz, yamlMap)
-}
-
-func (r *VizierReconciler) replaceOperatorManagedEtcd(ctx context.Context, namespace string, vz *v1alpha1.Vizier, yamlMap map[string]string) error {
-	log.Info("Checking for etcd")
-	ec, err := etcd.NewForConfig(r.RestConfig)
-	if err != nil {
-		// This probably means there's no etcd CRD installed. noop
-		log.Info("Couldn't create etcd client")
-		return nil
-	}
-	etcd, err := ec.EtcdV1beta2().EtcdClusters(namespace).Get(ctx, "pl-etcd", metav1.GetOptions{})
-	if err != nil {
-		// This means that there's no operator managed etcdCluster. noop
-		return nil
-	}
-	log.WithField("etcd", etcd).Info("Found etcdcluster, removing")
-
-	// Watcher to watch for existing services to be cleaned up. We need to ensure that this occurs before
-	// new statefulset is deployed.
-	w, err := r.Clientset.CoreV1().Services(namespace).Watch(ctx, metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		etcdSeen := false
-		etcdClientSeen := false
-		for r := range w.ResultChan() {
-			if r.Type == watch.Deleted {
-				svc, ok := r.Object.(*v1.Service)
-				if !ok {
-					continue
-				}
-				if svc.Name == "pl-etcd" {
-					etcdSeen = true
-				}
-				if svc.Name == "pl-etcd-client" {
-					etcdClientSeen = true
-				}
-				if etcdSeen && etcdClientSeen {
-					break
-				}
-			}
-		}
-	}()
-
-	err = ec.EtcdV1beta2().EtcdClusters(namespace).Delete(ctx, "pl-etcd", metav1.DeleteOptions{})
-	if err != nil {
-		return err
-	}
-	// Wait for the existing services to be deleted.
-	wg.Wait()
-	w.Stop()
-
-	return r.deployEtcdStatefulset(ctx, namespace, vz, yamlMap)
 }
 
 // deployNATSStatefulset deploys nats to the given namespace.
