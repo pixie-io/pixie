@@ -20,12 +20,17 @@ package grpc
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
 	"strings"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+
+	// Need to import this so that GRPC knows to have a gzip decoder around.
+	_ "google.golang.org/grpc/encoding/gzip"
 
 	loadtestpb "px.dev/pixie/src/e2e_test/protocol_loadtest/grpc/loadtestpb"
 )
@@ -108,9 +113,7 @@ func (lt *loadTestServer) BidirectionalStreaming(s loadtestpb.LoadTester_Bidirec
 	}
 }
 
-// RunGRPCServers sets up and runs the SSL (not yet added) and non-SSL GRPC servers.
-// TODO(nserrino): PP-3238 Add SSL and gzip support.
-func RunGRPCServers(port string) {
+func runGRPCServerOrDie(port string) {
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
 	if err != nil {
 		panic(fmt.Sprintf("failed to listen: %v", err))
@@ -122,4 +125,25 @@ func RunGRPCServers(port string) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func runGRPCSSLServerOrDie(tlsConfig *tls.Config, port string) {
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
+	if err != nil {
+		panic(fmt.Sprintf("failed to listen: %v", err))
+	}
+	grpcServer := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
+	loadtestpb.RegisterLoadTesterServer(grpcServer, &loadTestServer{})
+	err = grpcServer.Serve(lis)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// RunGRPCServers sets up and runs the SSL and non-SSL GRPC servers.
+func RunGRPCServers(tlsConfig *tls.Config, port, sslPort string) {
+	if sslPort != "" {
+		go runGRPCSSLServerOrDie(tlsConfig, sslPort)
+	}
+	runGRPCServerOrDie(port)
 }

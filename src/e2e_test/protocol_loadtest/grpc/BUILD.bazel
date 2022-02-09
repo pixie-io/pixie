@@ -28,5 +28,7 @@ go_library(
     deps = [
         "//src/e2e_test/protocol_loadtest/grpc/loadtestpb:service_pl_go_proto",
         "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//credentials",
+        "@org_golang_google_grpc//encoding/gzip",
     ],
 )
