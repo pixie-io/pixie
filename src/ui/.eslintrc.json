@@ -100,6 +100,9 @@
         "./*.js",
         "src/testing/**/*"
       ],
+      "excludedFiles": [
+        "cypress/**/*"
+      ],
       "env": {
         "node": true,
         "jest/globals": true
@@ -107,11 +110,16 @@
     },
     {
       "files": [
-        "cypress/**/*"
+        "cypress/**/*.ts"
       ],
-      "plugins": ["cypress"],
+      "plugins": ["cypress", "@typescript-eslint"],
+      "extends": ["plugin:@typescript-eslint/recommended"],
       "env": {
         "cypress/globals": true
+      },
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "project": ["./cypress/tsconfig.json"]
       }
     },
     {
@@ -124,6 +132,9 @@
       "files": [
         "*.ts",
         "*.tsx"
+      ],
+      "excludedFiles": [
+        "cypress/**/*"
       ],
       "extends": [
         "airbnb-typescript/base",

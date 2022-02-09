@@ -16,6 +16,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace Cypress {
+    interface Chainable {
+      loginGoogle(): Chainable<Element>
+    }
+  }
+}
 
 // Note: this works, but relies on a real user's auth session cookies.
 // For CI, we'll need test users and to be able to log in as them:
@@ -38,11 +46,20 @@ Cypress.Commands.add('loginGoogle', () => {
   });
 });
 
+// Workaround for the override below:
+// Parameters<T> ignores all signatures except the last of overloaded methods.
+// See https://github.com/microsoft/TypeScript/issues/29732 for discussion.
+type RequestArgs =
+  [options: Partial<Cypress.RequestOptions>]
+  | [url: string, body?: Cypress.RequestBody]
+  | [method: Cypress.HttpMethod, url: string, body?: Cypress.RequestBody];
+
+
 // cy.intercept doesn't touch cy.request.
 // We always need the CSRF headers even when unauthenticated,
 // so we override the request method to always inject them.
 // We would do cy.visit as well, but that doesn't need the same headers.
-Cypress.Commands.overwrite('request', (originalFn, ...args) => {
+Cypress.Commands.overwrite('request', (originalFn, ...args: RequestArgs) => {
   const defaults = {
     headers: {
       'x-csrf': 'undefined',
@@ -51,15 +68,17 @@ Cypress.Commands.overwrite('request', (originalFn, ...args) => {
   };
 
   // cy.request has several signatures; have to handle them all.
-  let options = {};
-  if (typeof args[0] === 'object' && args[0] !== null) {
+  let options: Partial<Cypress.RequestOptions> = {};
+  if (args[0] != null && typeof args[0] === 'object') {
     options = args[0];
   } else if (args.length === 1) {
-    [options.url] = args;
+    [options.url] = args as [string];
   } else if (args.length === 2) {
-    [options.method, options.url] = args;
+    // (method, url) signature has overlap with (url, body).
+    // Disambiguation is a pain.
+    [options.method, options.url] = args as [string, string];
   } else if (args.length === 3) {
-    [options.method, options.url, options.body] = args;
+    [options.method, options.url, options.body] = args as [Cypress.HttpMethod, string, Cypress.RequestBody];
   }
 
   return originalFn({
@@ -73,3 +92,8 @@ Cypress.Commands.overwrite('request', (originalFn, ...args) => {
     },
   });
 });
+
+// Required for the namespace augmentation to be valid (TS2669)
+// This module doesn't actually export anything;
+// Importing it augments Cypress as a side effect.
+export default {};
