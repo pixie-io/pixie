@@ -203,7 +203,7 @@ func TestDatastore(t *testing.T) {
 					now := time.Now()
 					ttl := 3 * time.Second
 
-					err := db.SetWithTTL("timed1", "limited1", ttl)
+					err := db.SetWithTTL("/timed1", "limited1", ttl)
 					require.NoError(t, err)
 					// Set and reset TTL
 					err = db.SetWithTTL("timed2", "limited2", ttl)
@@ -223,7 +223,7 @@ func TestDatastore(t *testing.T) {
 							t.Log("WARNING: set with TTL timed out and key still exists")
 							return
 						case <-ticker.C:
-							v, err := db.Get("timed1")
+							v, err := db.Get("/timed1")
 							require.NoError(t, err)
 							if time.Since(now) < ttl {
 								assert.Equal(t, "limited1", string(v))
@@ -231,7 +231,7 @@ func TestDatastore(t *testing.T) {
 								// Key timed1 was deleted some time after TTL passed.
 
 								// Key timed2 should still exist since a longer TTL was set on it.
-								v, err := db.Get("timed2")
+								v, err = db.Get("timed2")
 								require.NoError(t, err)
 								assert.Equal(t, "limited2", string(v))
 

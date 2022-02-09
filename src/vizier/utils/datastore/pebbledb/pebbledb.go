@@ -32,6 +32,29 @@ const (
 	ttlByTimePrefix = "___ttl_time___"
 )
 
+func getKeyForTTLByKey(key string) string {
+	return fmt.Sprintf("%s/%s", ttlByKeyPrefix, key)
+}
+
+func getKeyForTTLByTime(key string, expiresAt time.Time) string {
+	return fmt.Sprintf("%s/%20d/%s", ttlByTimePrefix, expiresAt.Unix(), key)
+}
+
+func getRangeForTTLByTime(now time.Time) (string, string) {
+	return fmt.Sprintf("%s/", ttlByTimePrefix), fmt.Sprintf("%s/%20d/", ttlByTimePrefix, now.Unix()+1)
+}
+
+func getKeyToDeleteFromTTLByTime(ttlByTimeKey string) (string, error) {
+	if !strings.HasPrefix(ttlByTimeKey, ttlByTimePrefix) {
+		return "", fmt.Errorf("input key is not a TTLByTime key")
+	}
+	prefixLen := len(fmt.Sprintf("%s/%20d/", ttlByTimePrefix, 0))
+	if len(ttlByTimeKey) < prefixLen {
+		return "", fmt.Errorf("input key is a badly formatted TTLByTime key")
+	}
+	return ttlByTimeKey[prefixLen:], nil
+}
+
 // DataStore wraps a pebbledb datastore.
 type DataStore struct {
 	db *pebble.DB
@@ -62,9 +85,7 @@ func (w *DataStore) ttlWatcher(ttlReaperDuration time.Duration) {
 		case <-ticker.C:
 			now := time.Now()
 
-			from := fmt.Sprintf("%s/", ttlByTimePrefix)
-			to := fmt.Sprintf("%s/%20d/", ttlByTimePrefix, now.Unix()+1)
-
+			from, to := getRangeForTTLByTime(now)
 			iter := w.db.NewIter(&pebble.IterOptions{
 				LowerBound: []byte(from),
 				UpperBound: []byte(to),
@@ -79,14 +100,15 @@ func (w *DataStore) ttlWatcher(ttlReaperDuration time.Duration) {
 				// Casting to a string causes a implicit copy, making
 				// ensuring that this is valid across iterations.
 				k := string(iter.Key())
-
-				sp := strings.Split(k, "/")
-				if len(sp) < 3 {
+				// Pull out the key for which this TTL was set.
+				// That key might have been updated later and might have
+				// a newer TTL so we still need to check if we should delete
+				// said key.
+				keyToCheck, err := getKeyToDeleteFromTTLByTime(k)
+				if err != nil {
 					continue
 				}
-
-				keyToDelete := sp[2]
-				ttlByKey := fmt.Sprintf("%s/%s", ttlByKeyPrefix, keyToDelete)
+				ttlByKey := getKeyForTTLByKey(keyToCheck)
 
 				v, err := w.Get(ttlByKey)
 				if err != nil {
@@ -98,15 +120,19 @@ func (w *DataStore) ttlWatcher(ttlReaperDuration time.Duration) {
 				if err != nil {
 					continue
 				}
+				// This is to check if the key we were considering deleting
+				// should be deleted. If it doesn't have a newer TTL, we are
+				// safe to remove it (and it's associated ttl key).
 				if expiresAt.Before(now) {
 					deleteKeys = append(deleteKeys, ttlByKey)
-					deleteKeys = append(deleteKeys, keyToDelete)
+					deleteKeys = append(deleteKeys, keyToCheck)
 				}
 			}
 			err := w.DeleteAll(deleteKeys)
 			if err != nil {
 				continue
 			}
+			// Delete the ttlByTime keys that have expired.
 			err = w.db.DeleteRange([]byte(from), []byte(to), pebble.Sync)
 			if err != nil {
 				continue
@@ -137,8 +163,8 @@ func (w *DataStore) SetWithTTL(key string, value string, ttl time.Duration) erro
 		return err
 	}
 
-	ttlByKey := fmt.Sprintf("%s/%s", ttlByKeyPrefix, key)
-	ttlByTime := fmt.Sprintf("%s/%20d/%s", ttlByTimePrefix, expiresAt.Unix(), key)
+	ttlByKey := getKeyForTTLByKey(key)
+	ttlByTime := getKeyForTTLByTime(key, expiresAt)
 
 	err = batch.Set([]byte(ttlByKey), encodedExpiry, pebble.Sync)
 	if err != nil {
