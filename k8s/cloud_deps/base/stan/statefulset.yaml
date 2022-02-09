@@ -42,6 +42,7 @@ data:
       store_limits: {
         max_age: "24h"
         max_channels: 0
+        max_inactivity: "24h"
         max_subscriptions: 0
         channels: {
           "v2c.>": {
@@ -134,6 +135,8 @@ spec:
         # that refers to other environment variables.  This env var
         # is later used as part of the configuration file.
         env:
+        - name: GOGC
+          value: "400"
         - name: POD_NAME
           valueFrom:
             fieldRef:
@@ -160,6 +163,12 @@ spec:
             path: /
             port: 8222
           initialDelaySeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /streaming/serverz
+            port: 8222
+          initialDelaySeconds: 120
           timeoutSeconds: 5
       volumes:
       - name: config-volume

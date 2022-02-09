@@ -24,6 +24,7 @@ data:
       store_limits: {
         max_age: "24h"
         max_channels: 0
+        max_inactivity: "24h"
         max_subscriptions: 0
         channels: {
           "v2c.>": {
