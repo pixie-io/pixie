@@ -21,6 +21,8 @@
 #include <string>
 #include <vector>
 
+#include "src/common/system/clock.h"
+
 namespace px {
 namespace stirling {
 namespace java {
@@ -50,11 +52,15 @@ class AgentAttacher {
   // Only meaningful once finished, this indicates either success or failure to attach.
   inline bool attached() const { return attached_; }
 
+  // Used to kill attachers that have run for too long.
+  const px::chrono::coarse_steady_clock::time_point& start_time() { return start_time_; }
+
  private:
   void CopyAgentLibsOrDie();
   void SelectLibWithDLOpenOrDie();
   void AttachOrDie();
 
+  const px::chrono::coarse_steady_clock::time_point start_time_;
   const int target_pid_;
   const std::string& agent_args_;
   std::vector<std::filesystem::path> agent_libs_;

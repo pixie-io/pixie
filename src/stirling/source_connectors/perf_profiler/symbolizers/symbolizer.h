@@ -58,6 +58,11 @@ class Symbolizer : public NotCopyable {
    * Delete the state associated with a symbolizer created by a previous call to GetSymbolizerFn
    */
   virtual void DeleteUPID(const struct upid_t& upid) = 0;
+
+  /**
+   * Indicates that underlying symbols have changed (so invalidate any caching).
+   */
+  virtual bool SymbolsHaveChanged(const struct upid_t& upid) = 0;
 };
 
 }  // namespace stirling

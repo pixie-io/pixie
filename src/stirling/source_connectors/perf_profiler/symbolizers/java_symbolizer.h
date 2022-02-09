@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 
+#include "src/stirling/source_connectors/perf_profiler/java/attach.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/symbolizer.h"
 
 namespace px {
@@ -62,10 +63,12 @@ class JavaSymbolizer : public Symbolizer {
   profiler::SymbolizerFn GetSymbolizerFn(const struct upid_t& upid) override;
   void IterationPreTick() override;
   void DeleteUPID(const struct upid_t& upid) override;
+  bool SymbolsHaveChanged(const struct upid_t& upid) override;
 
  private:
   JavaSymbolizer() = delete;
   explicit JavaSymbolizer(const std::vector<std::filesystem::path> agent_libs);
+  Status CreateNewJavaSymbolizationContext(const struct upid_t& upid);
   std::string_view Symbolize(JavaSymbolizationContext* ctx, const uintptr_t addr);
 
   std::filesystem::path GetAgentSymbolFilePathPfx(const struct upid_t& pid) const;
@@ -73,6 +76,7 @@ class JavaSymbolizer : public Symbolizer {
 
   std::unique_ptr<Symbolizer> native_symbolizer_;
   absl::flat_hash_map<struct upid_t, profiler::SymbolizerFn> symbolizer_functions_;
+  absl::flat_hash_map<struct upid_t, std::unique_ptr<java::AgentAttacher>> active_attachers_;
   absl::flat_hash_map<struct upid_t, std::unique_ptr<JavaSymbolizationContext>>
       symbolization_contexts_;
   const std::vector<std::filesystem::path> agent_libs_;

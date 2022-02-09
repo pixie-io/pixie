@@ -22,7 +22,6 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/proc_parser.h"
 #include "src/stirling/source_connectors/perf_profiler/java/agent/raw_symbol_update.h"
-#include "src/stirling/source_connectors/perf_profiler/java/attach.h"
 #include "src/stirling/source_connectors/perf_profiler/java/demangle.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/java_symbolizer.h"
 #include "src/stirling/utils/detect_application.h"
@@ -195,6 +194,82 @@ std::string_view JavaSymbolizer::Symbolize(JavaSymbolizationContext* ctx, const 
   return ctx->Symbolize(addr);
 }
 
+Status JavaSymbolizer::CreateNewJavaSymbolizationContext(const struct upid_t& upid) {
+  constexpr auto kIOFlags = std::ios::in | std::ios::binary;
+  const std::filesystem::path symbol_file_path = GetStirlingSymbolFilePath(upid);
+  auto symbol_file = std::make_unique<std::ifstream>(symbol_file_path, kIOFlags);
+
+  if (symbol_file->fail()) {
+    char const* const fmt = "Java attacher [pid=$0]: Could not open symbol file.";
+    return error::Internal(fmt, upid.pid);
+  }
+
+  DCHECK(symbolization_contexts_.find(upid) == symbolization_contexts_.end());
+
+  const auto [iter, inserted] = symbolization_contexts_.try_emplace(upid, nullptr);
+  DCHECK(inserted);
+  if (inserted) {
+    auto native_symbolizer_fn = native_symbolizer_->GetSymbolizerFn(upid);
+    iter->second =
+        std::make_unique<JavaSymbolizationContext>(native_symbolizer_fn, std::move(symbol_file));
+  }
+  auto& ctx = iter->second;
+
+  using std::placeholders::_1;
+  auto fn = std::bind(&JavaSymbolizer::Symbolize, this, ctx.get(), _1);
+
+  symbolizer_functions_[upid] = fn;
+
+  return Status::OK();
+}
+
+bool JavaSymbolizer::SymbolsHaveChanged(const struct upid_t& upid) {
+  if (active_attachers_.empty()) {
+    return false;
+  }
+
+  const auto iter = active_attachers_.find(upid);
+  if (iter == active_attachers_.end()) {
+    return false;
+  }
+
+  auto& attacher = *iter->second;
+
+  if (!attacher.Finished()) {
+    constexpr auto kTimeOutForAttach = std::chrono::seconds{10};
+    const auto now = px::chrono::coarse_steady_clock::now();
+    const auto start_time = attacher.start_time();
+    const auto elapsed_time = now - start_time;
+
+    if (elapsed_time >= kTimeOutForAttach) {
+      LOG(WARNING) << absl::Substitute("Java attacher [pid=$0]: Time-out.", upid.pid);
+      active_attachers_.erase(upid);
+    }
+    return false;
+  }
+
+  if (!attacher.attached()) {
+    // Fail, but still need to clean up the attacher.
+    active_attachers_.erase(upid);
+    LOG(WARNING) << absl::Substitute("Java attacher [pid=$0]: Attach failed.", upid.pid);
+    return false;
+  }
+
+  // Successful attach; delete the attacher.
+  active_attachers_.erase(upid);
+
+  // Attempt to open the symbol file and create a new Java symbolization context.
+  const Status new_ctx_status = CreateNewJavaSymbolizationContext(upid);
+  if (!new_ctx_status.ok()) {
+    LOG(WARNING) << new_ctx_status.msg();
+    return false;
+  }
+
+  // Successful open of the Java symbol file. A new symbolization context has been created,
+  // and the symbol function has been updated. Return true!
+  return true;
+}
+
 profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid) {
   auto fn_it = symbolizer_functions_.find(upid);
   if (fn_it != symbolizer_functions_.end()) {
@@ -225,60 +300,36 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
 
   const std::filesystem::path symbol_file_path = GetStirlingSymbolFilePath(upid);
 
-  if (!fs::Exists(symbol_file_path).ok()) {
-    auto attacher = java::AgentAttacher(upid.pid, GetAgentSymbolFilePathPfx(upid), agent_libs_);
-
-    constexpr auto kTimeOutForAttach = std::chrono::milliseconds{250};
-    constexpr auto kAttachRecheckPeriod = std::chrono::milliseconds{10};
-    auto time_elapsed = std::chrono::milliseconds{0};
-
-    while (!attacher.Finished()) {
-      if (time_elapsed >= kTimeOutForAttach) {
-        LOG(WARNING) << absl::Substitute("Java attacher [pid=$0]: Time-out.", upid.pid);
-        symbolizer_functions_[upid] = native_symbolizer_fn;
-        return native_symbolizer_fn;
-      }
-      // Still waiting to finish the attach process.
-      // TODO(jps): Create a temporary symbolization function,
-      // and return that here to unblock Stirling.
-      std::this_thread::sleep_for(kAttachRecheckPeriod);
-      time_elapsed += kAttachRecheckPeriod;
-    }
-
-    if (!attacher.attached()) {
-      LOG(WARNING) << absl::Substitute("Java attacher [pid=$0]: Attach failed.", upid.pid);
-      // This process *is* Java, but we failed to attach the symbolization agent.
-      // To prevent this from happening again, store that in the map.
+  if (fs::Exists(symbol_file_path).ok()) {
+    // Found a pre-existing symbol file. Attempt to use it.
+    const Status new_ctx_status = CreateNewJavaSymbolizationContext(upid);
+    if (!new_ctx_status.ok()) {
+      // Something went wrong with the pre-existing symbol file. Fall back to native.
+      // TODO(jps): should we delete the pre-existing file and attempt re-attach?
+      LOG(WARNING) << new_ctx_status.msg();
       symbolizer_functions_[upid] = native_symbolizer_fn;
       return native_symbolizer_fn;
     }
+
+    // We successfully opened a pre-existing Java symbol file.
+    // Method CreateNewJavaSymbolizationContext() also updated the symbolizer functions map.
+    // Our work here is done, return the Java symbolization function from the map.
+    DCHECK(symbolizer_functions_.find(upid) != symbolizer_functions_.end());
+    return symbolizer_functions_[upid];
   }
 
-  auto symbol_file =
-      std::make_unique<std::ifstream>(symbol_file_path, std::ios::in | std::ios::binary);
-
-  if (symbol_file->fail()) {
-    LOG(WARNING) << absl::Substitute("Java attacher [pid=$0]: Could not open symbol file.",
-                                     upid.pid);
-    symbolizer_functions_[upid] = native_symbolizer_fn;
-    return native_symbolizer_fn;
-  }
-
-  DCHECK(symbolization_contexts_.find(upid) == symbolization_contexts_.end());
-
-  const auto [iter, inserted] = symbolization_contexts_.try_emplace(upid, nullptr);
+  // Create an agent attacher and put it into the active attachers map.
+  const auto [iter, inserted] = active_attachers_.try_emplace(upid, nullptr);
   DCHECK(inserted);
   if (inserted) {
-    iter->second =
-        std::make_unique<JavaSymbolizationContext>(native_symbolizer_fn, std::move(symbol_file));
+    iter->second = std::make_unique<java::AgentAttacher>(upid.pid, GetAgentSymbolFilePathPfx(upid),
+                                                         agent_libs_);
   }
-  auto& ctx = iter->second;
 
-  using std::placeholders::_1;
-  auto fn = std::bind(&JavaSymbolizer::Symbolize, this, ctx.get(), _1);
-
-  symbolizer_functions_[upid] = fn;
-  return fn;
+  // We need this to be non-blocking; immediately return using the native symbolizer function.
+  // The calling context can determine if the attacher is done using method SymbolsHaveChanged().
+  symbolizer_functions_[upid] = native_symbolizer_fn;
+  return native_symbolizer_fn;
 }
 
 }  // namespace stirling

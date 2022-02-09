@@ -40,7 +40,7 @@ void CachingSymbolizer::IterationPreTick() { symbolizer_->IterationPreTick(); }
 profiler::SymbolizerFn CachingSymbolizer::GetSymbolizerFn(const struct upid_t& upid) {
   using std::placeholders::_1;
   const auto [iter, inserted] = symbol_caches_.try_emplace(upid, nullptr);
-  if (inserted) {
+  if (inserted || symbolizer_->SymbolsHaveChanged(upid)) {
     iter->second = std::make_unique<SymbolCache>(symbolizer_->GetSymbolizerFn(upid));
   }
   auto& cache = iter->second;

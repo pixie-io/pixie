@@ -182,7 +182,10 @@ bool AgentAttacher::Finished() {
 
 AgentAttacher::AgentAttacher(const int target_pid, const std::string& agent_args,
                              const std::vector<std::filesystem::path>& agent_libs)
-    : target_pid_(target_pid), agent_args_(agent_args), agent_libs_(agent_libs) {
+    : start_time_(px::chrono::coarse_steady_clock::now()),
+      target_pid_(target_pid),
+      agent_args_(agent_args),
+      agent_libs_(agent_libs) {
   child_pid_ = fork();
 
   if (child_pid_ != 0) {
