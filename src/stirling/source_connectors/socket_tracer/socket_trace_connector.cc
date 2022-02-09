@@ -287,7 +287,7 @@ auto SocketTraceConnector::InitPerfBufferSpecs() {
        kTargetControlBufferSize},
       {"conn_stats_events", HandleConnStatsEvent, HandleConnStatsEventLoss,
        kTargetControlBufferSize},
-      {"mmap_events", HandleMMapEvent, HandleMMapEventLoss, kTargetControlBufferSize},
+      {"mmap_events", HandleMMapEvent, HandleMMapEventLoss, kTargetControlBufferSize / 10},
       {"go_grpc_header_events", HandleHTTP2HeaderEvent, HandleHTTP2HeaderEventLoss,
        kTargetDataBufferSize / 10},
       {"go_grpc_data_events", HandleHTTP2Data, HandleHTTP2DataLoss, kTargetDataBufferSize},
