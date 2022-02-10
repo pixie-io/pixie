@@ -104,7 +104,8 @@ TEST_F(ConnStatsTest, Basic) {
   conn_stats_event.wr_bytes = 0;
 
   // This is the tracker to which we will be sending ConnStats events.
-  ConnTracker& tracker = conn_trackers_mgr_.GetOrCreateConnTracker(conn_stats_event.conn_id);
+  ConnTracker& tracker =
+      conn_trackers_mgr_.GetOrCreateConnTracker(conn_stats_event.conn_id, "test");
 
   // Event: just a conn_open with no bytes transferred.
   conn_stats_event.timestamp_ns += 1;
@@ -178,7 +179,8 @@ TEST_F(ConnStatsTest, ServerSide) {
   conn0_stats_event.rd_bytes = 0;
   conn0_stats_event.wr_bytes = 0;
 
-  ConnTracker& tracker0 = conn_trackers_mgr_.GetOrCreateConnTracker(conn0_stats_event.conn_id);
+  ConnTracker& tracker0 =
+      conn_trackers_mgr_.GetOrCreateConnTracker(conn0_stats_event.conn_id, "test");
   conn0_stats_event.timestamp_ns += 1;
   conn0_stats_event.conn_events |= CONN_OPEN | CONN_CLOSE;
   conn0_stats_event.rd_bytes = 100;
@@ -206,7 +208,8 @@ TEST_F(ConnStatsTest, ServerSide) {
   conn1_stats_event.rd_bytes = 0;
   conn1_stats_event.wr_bytes = 0;
 
-  ConnTracker& tracker1 = conn_trackers_mgr_.GetOrCreateConnTracker(conn1_stats_event.conn_id);
+  ConnTracker& tracker1 =
+      conn_trackers_mgr_.GetOrCreateConnTracker(conn1_stats_event.conn_id, "test");
   conn1_stats_event.timestamp_ns += 1;
   conn1_stats_event.conn_events |= CONN_OPEN;
   conn1_stats_event.rd_bytes = 200;
@@ -234,7 +237,8 @@ TEST_F(ConnStatsTest, ServerSide) {
   conn2_stats_event.rd_bytes = 0;
   conn2_stats_event.wr_bytes = 0;
 
-  ConnTracker& tracker2 = conn_trackers_mgr_.GetOrCreateConnTracker(conn2_stats_event.conn_id);
+  ConnTracker& tracker2 =
+      conn_trackers_mgr_.GetOrCreateConnTracker(conn2_stats_event.conn_id, "test");
   conn2_stats_event.timestamp_ns += 1;
   conn2_stats_event.conn_events |= CONN_OPEN;
   conn2_stats_event.rd_bytes = 400;
@@ -270,7 +274,8 @@ TEST_F(ConnStatsTest, ClientSide) {
   conn0_stats_event.rd_bytes = 0;
   conn0_stats_event.wr_bytes = 0;
 
-  ConnTracker& tracker0 = conn_trackers_mgr_.GetOrCreateConnTracker(conn0_stats_event.conn_id);
+  ConnTracker& tracker0 =
+      conn_trackers_mgr_.GetOrCreateConnTracker(conn0_stats_event.conn_id, "test");
   conn0_stats_event.timestamp_ns += 1;
   conn0_stats_event.conn_events |= CONN_OPEN | CONN_CLOSE;
   conn0_stats_event.rd_bytes = 100;
@@ -298,7 +303,8 @@ TEST_F(ConnStatsTest, ClientSide) {
   conn1_stats_event.rd_bytes = 0;
   conn1_stats_event.wr_bytes = 0;
 
-  ConnTracker& tracker1 = conn_trackers_mgr_.GetOrCreateConnTracker(conn1_stats_event.conn_id);
+  ConnTracker& tracker1 =
+      conn_trackers_mgr_.GetOrCreateConnTracker(conn1_stats_event.conn_id, "test");
   conn1_stats_event.timestamp_ns += 1;
   conn1_stats_event.conn_events |= CONN_OPEN;
   conn1_stats_event.rd_bytes = 200;
@@ -326,7 +332,8 @@ TEST_F(ConnStatsTest, ClientSide) {
   conn2_stats_event.rd_bytes = 0;
   conn2_stats_event.wr_bytes = 0;
 
-  ConnTracker& tracker2 = conn_trackers_mgr_.GetOrCreateConnTracker(conn2_stats_event.conn_id);
+  ConnTracker& tracker2 =
+      conn_trackers_mgr_.GetOrCreateConnTracker(conn2_stats_event.conn_id, "test");
   conn2_stats_event.timestamp_ns += 1;
   conn2_stats_event.conn_events |= CONN_OPEN;
   conn2_stats_event.rd_bytes = 400;
@@ -355,7 +362,8 @@ TEST_F(ConnStatsTest, NoEventsIfNoRemoteAddr) {
   conn_stats_event.rd_bytes = 0;
   conn_stats_event.wr_bytes = 0;
 
-  ConnTracker& tracker = conn_trackers_mgr_.GetOrCreateConnTracker(conn_stats_event.conn_id);
+  ConnTracker& tracker =
+      conn_trackers_mgr_.GetOrCreateConnTracker(conn_stats_event.conn_id, "test");
   conn_stats_event.timestamp_ns += 1;
   conn_stats_event.conn_events |= CONN_OPEN | CONN_CLOSE;
   conn_stats_event.rd_bytes = 100;
@@ -384,7 +392,8 @@ TEST_F(ConnStatsTest, DisabledConnTracker) {
   conn_stats_event.rd_bytes = 0;
   conn_stats_event.wr_bytes = 0;
 
-  ConnTracker& tracker = conn_trackers_mgr_.GetOrCreateConnTracker(conn_stats_event.conn_id);
+  ConnTracker& tracker =
+      conn_trackers_mgr_.GetOrCreateConnTracker(conn_stats_event.conn_id, "test");
   conn_stats_event.timestamp_ns += 1;
   conn_stats_event.conn_events |= CONN_OPEN | CONN_CLOSE;
   conn_stats_event.rd_bytes = 100;

@@ -40,7 +40,7 @@ using ::testing::UnorderedElementsAre;
 
 class ConnTrackerHTTP2Test : public ::testing::Test {
  protected:
-  void SetUp() override { tracker_.SetConnID(kConnID); }
+  void SetUp() override { tracker_.SetConnID(kConnID, "test"); }
 
   const conn_id_t kConnID = {
       .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 3, .tsid = 21};
@@ -130,7 +130,7 @@ TEST_F(ConnTrackerHTTP2Test, MultipleDataFrames) {
   tracker_.AddHTTP2Data(std::move(data_frame));
 
   // Set death count down to 1 so it is treated as the last iteration.
-  tracker_.MarkForDeath(1);
+  tracker_.MarkForDeath("test");
   std::vector<http2::Record> records = tracker_.ProcessToRecords<http2::ProtocolTraits>();
 
   ASSERT_EQ(records.size(), 1);
@@ -190,7 +190,7 @@ TEST_F(ConnTrackerHTTP2Test, ZeroFD) {
   ConnTracker tracker;
   const conn_id_t kConnID = {
       .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 0, .tsid = 21};
-  tracker.SetConnID(kConnID);
+  tracker.SetConnID(kConnID, "test");
 
   const int kStreamID = 7;
   auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);

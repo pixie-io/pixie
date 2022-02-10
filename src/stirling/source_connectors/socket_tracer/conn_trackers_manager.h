@@ -103,7 +103,7 @@ class ConnTrackersManager {
    * Get a connection tracker for the specified conn_id. If a tracker does not exist,
    * one will be created and returned.
    */
-  ConnTracker& GetOrCreateConnTracker(struct conn_id_t conn_id);
+  ConnTracker& GetOrCreateConnTracker(struct conn_id_t conn_id, std::string_view reason);
 
   const std::list<ConnTracker*>& active_trackers() const { return active_trackers_; }
 
@@ -136,6 +136,8 @@ class ConnTrackersManager {
   std::string StatsString() const;
 
  private:
+  friend class ConnTrackersManagerTest;
+
   // Simple consistency DCHECKs meant for enforcing invariants.
   void DebugChecks() const;
 
