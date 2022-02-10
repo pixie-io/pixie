@@ -84,7 +84,7 @@ TEST_F(EventParserTest, BasicProtocolParsing) {
   std::vector<SocketDataEvent> events = CreateEvents(event_messages);
 
   AddEvents(events);
-  ParseResult res = ParseFrames(message_type_t::kRequest, data_buffer_, &word_frames);
+  ParseResult res = ParseFrames(message_type_t::kRequest, &data_buffer_, &word_frames);
 
   EXPECT_EQ(ParseState::kSuccess, res.state);
   EXPECT_THAT(res.frame_positions,

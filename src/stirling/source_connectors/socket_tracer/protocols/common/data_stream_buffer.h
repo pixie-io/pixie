@@ -38,8 +38,7 @@ class DataStreamBufferImpl {
  public:
   virtual ~DataStreamBufferImpl() = default;
   virtual void Add(size_t pos, std::string_view data, uint64_t timestamp) = 0;
-  virtual std::string_view Get(size_t pos) const = 0;
-  virtual std::string_view Head() const = 0;
+  virtual std::string_view Head() = 0;
   virtual StatusOr<uint64_t> GetTimestamp(size_t pos) const = 0;
   virtual void RemovePrefix(ssize_t n) = 0;
   virtual void Trim() = 0;
@@ -86,17 +85,10 @@ class DataStreamBuffer {
   }
 
   /**
-   * Get all the contiguous data at the specified position of the buffer.
-   * @param pos The logical position of the requested data.
-   * @return A string_view to the data.
-   */
-  std::string_view Get(size_t pos) const { return impl_->Get(pos); }
-
-  /**
    * Get all the contiguous data at the head of the buffer.
    * @return A string_view to the data.
    */
-  std::string_view Head() const { return impl_->Head(); }
+  std::string_view Head() { return impl_->Head(); }
 
   /**
    * Get timestamp recorded for the data at the specified position.

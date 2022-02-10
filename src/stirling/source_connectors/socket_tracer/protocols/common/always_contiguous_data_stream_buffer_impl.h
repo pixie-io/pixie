@@ -37,9 +37,7 @@ class AlwaysContiguousDataStreamBufferImpl : public DataStreamBufferImpl {
 
   void Add(size_t pos, std::string_view data, uint64_t timestamp) override;
 
-  std::string_view Get(size_t pos) const override;
-
-  std::string_view Head() const override { return Get(position_); }
+  std::string_view Head() override { return Get(position_); }
 
   StatusOr<uint64_t> GetTimestamp(size_t pos) const override;
 
@@ -74,6 +72,9 @@ class AlwaysContiguousDataStreamBufferImpl : public DataStreamBufferImpl {
 
   // Get the end of valid data in the buffer.
   size_t EndPosition();
+
+  // Get a string_view for the chunk at pos.
+  std::string_view Get(size_t pos) const;
 
   const size_t capacity_;
   const size_t max_gap_size_;

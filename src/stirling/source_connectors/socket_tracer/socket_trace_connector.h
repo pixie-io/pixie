@@ -256,6 +256,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   utils::StatCounter<StatKey> stats_;
 
   friend class SocketTraceConnectorFriend;
+  friend class SocketTraceBPFTest;
 };
 
 }  // namespace stirling

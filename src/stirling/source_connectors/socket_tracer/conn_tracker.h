@@ -328,6 +328,8 @@ class ConnTracker : NotCopyMoveable {
    * @return Data stream of send data.
    */
   const DataStream& send_data() const { return send_data_; }
+  // Mutable version of the above, for testing purposes.
+  DataStream& send_data() { return send_data_; }
 
   /**
    * Get the DataStream of received frames for this connection.
@@ -335,6 +337,8 @@ class ConnTracker : NotCopyMoveable {
    * @return Data stream of received data.
    */
   const DataStream& recv_data() const { return recv_data_; }
+  // Mutable version of the above, for testing purposes.
+  DataStream& recv_data() { return recv_data_; }
 
   /**
    * Get the DataStream of requests for this connection.

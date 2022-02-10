@@ -20,6 +20,7 @@
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/always_contiguous_data_stream_buffer_impl.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/data_stream_buffer.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/common/lazy_contiguous_data_stream_buffer_impl.h"
 
 #include <algorithm>
 #include <deque>
@@ -44,8 +45,8 @@ DataStreamBuffer::DataStreamBuffer(size_t max_capacity, size_t max_gap_size,
     impl_ = std::unique_ptr<DataStreamBufferImpl>(new AlwaysContiguousDataStreamBufferImpl(
         max_capacity, max_gap_size, allow_before_gap_size));
   } else {
-    // TODO(james): add alternative DataStreamBuffer implementation here.
-    LOG(FATAL) << "No alternative DataStreamBuffer implementation available yet.";
+    impl_ =
+        std::unique_ptr<DataStreamBufferImpl>(new LazyContiguousDataStreamBufferImpl(max_capacity));
   }
 }
 

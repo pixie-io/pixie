@@ -95,10 +95,10 @@ struct ParseResult {
  * @return ParseResult with locations where parseable frames were found in the source buffer.
  */
 template <typename TFrameType, typename TStateType = NoState>
-ParseResult ParseFrames(message_type_t type, const DataStreamBuffer& data_stream_buffer,
+ParseResult ParseFrames(message_type_t type, DataStreamBuffer* data_stream_buffer,
                         std::deque<TFrameType>* frames, bool resync = false,
                         TStateType* state = nullptr) {
-  std::string_view buf = data_stream_buffer.Head();
+  std::string_view buf = data_stream_buffer->Head();
 
   size_t start_pos = 0;
   if (resync) {
@@ -134,7 +134,7 @@ ParseResult ParseFrames(message_type_t type, const DataStreamBuffer& data_stream
 
     auto& msg = (*frames)[prev_size + i];
     StatusOr<uint64_t> timestamp_ns_status =
-        data_stream_buffer.GetTimestamp(data_stream_buffer.position() + f.end);
+        data_stream_buffer->GetTimestamp(data_stream_buffer->position() + f.end);
     LOG_IF(ERROR, !timestamp_ns_status.ok()) << timestamp_ns_status.ToString();
     msg.timestamp_ns = timestamp_ns_status.ValueOr(0);
   }

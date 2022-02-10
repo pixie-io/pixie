@@ -237,6 +237,7 @@ class DataStream : NotCopyMoveable {
   }
 
   const protocols::DataStreamBuffer& data_buffer() const { return data_buffer_; }
+  protocols::DataStreamBuffer& data_buffer() { return data_buffer_; }
 
  private:
   template <typename TFrameType>

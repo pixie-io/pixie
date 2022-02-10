@@ -111,6 +111,24 @@ class SocketTraceBPFTest : public testing::SocketTraceBPFTest</* TClientSideTrac
     }
     return tracker;
   }
+
+  StatusOr<ConnTracker*> GetMutableConnTracker(int pid, int fd) {
+    conn_id_t conn_id;
+    conn_id.tsid = 0;
+    for (const auto* conn_tracker : source_->conn_trackers_mgr_.active_trackers()) {
+      if (conn_tracker->conn_id().upid.pid == static_cast<uint32_t>(pid) &&
+          conn_tracker->conn_id().fd == fd) {
+        conn_id = conn_tracker->conn_id();
+        break;
+      }
+    }
+    // If tsid=0 then the above loop didn't find any conn trackers with the same {pid, fd} pair.
+    if (conn_id.tsid == 0) {
+      return error::Internal("No ConnTracker found for pid=$0 fd=$1", pid, fd);
+    }
+    auto& conn_tracker = source_->GetOrCreateConnTracker(conn_id);
+    return &conn_tracker;
+  }
 };
 
 class NonVecSyscallTests : public SocketTraceBPFTest,
@@ -492,8 +510,8 @@ TEST_F(SocketTraceBPFTest, LargeMessages) {
 
   source_->PollPerfBuffers();
 
-  ASSERT_OK_AND_ASSIGN(const auto* client_tracker,
-                       GetConnTracker(system.ClientPID(), system.ClientFD()));
+  ASSERT_OK_AND_ASSIGN(auto* client_tracker,
+                       GetMutableConnTracker(system.ClientPID(), system.ClientFD()));
   EXPECT_EQ(client_tracker->send_data().data_buffer().Head(), kHTTPReqMsg1);
   std::string client_recv_data(client_tracker->recv_data().data_buffer().Head());
   EXPECT_THAT(client_recv_data.size(), 131153);
@@ -504,8 +522,8 @@ TEST_F(SocketTraceBPFTest, LargeMessages) {
   // This is over the limit that we can transmit through BPF, and so we expect
   // filler bytes on this side of the connection. Note that the client doesn't have the
   // same behavior, because the recv syscall provides the data in chunks.
-  ASSERT_OK_AND_ASSIGN(const auto* server_tracker,
-                       GetConnTracker(system.ServerPID(), system.ServerFD()));
+  ASSERT_OK_AND_ASSIGN(auto* server_tracker,
+                       GetMutableConnTracker(system.ServerPID(), system.ServerFD()));
   EXPECT_EQ(server_tracker->recv_data().data_buffer().Head(), kHTTPReqMsg1);
   std::string server_send_data(server_tracker->send_data().data_buffer().Head());
   EXPECT_THAT(server_send_data.size(), 131153);
@@ -766,11 +784,11 @@ TEST_F(UDPSocketTraceBPFTest, UDPSendToRecvFrom) {
 
   source_->PollPerfBuffers();
 
-  ASSERT_OK_AND_ASSIGN(const auto* tracker, GetConnTracker(pid_, client_.sockfd()));
+  ASSERT_OK_AND_ASSIGN(auto* tracker, GetMutableConnTracker(pid_, client_.sockfd()));
   EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPReqMsg1);
   EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPRespMsg1);
 
-  ASSERT_OK_AND_ASSIGN(tracker, GetConnTracker(pid_, server_.sockfd()));
+  ASSERT_OK_AND_ASSIGN(tracker, GetMutableConnTracker(pid_, server_.sockfd()));
   EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPRespMsg1);
   EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPReqMsg1);
 }
@@ -793,11 +811,11 @@ TEST_F(UDPSocketTraceBPFTest, UDPSendMsgRecvMsg) {
 
   source_->PollPerfBuffers();
 
-  ASSERT_OK_AND_ASSIGN(const auto* tracker, GetConnTracker(pid_, client_.sockfd()));
+  ASSERT_OK_AND_ASSIGN(auto* tracker, GetMutableConnTracker(pid_, client_.sockfd()));
   EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPReqMsg1);
   EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPRespMsg1);
 
-  ASSERT_OK_AND_ASSIGN(tracker, GetConnTracker(pid_, server_.sockfd()));
+  ASSERT_OK_AND_ASSIGN(tracker, GetMutableConnTracker(pid_, server_.sockfd()));
   EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPRespMsg1);
   EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPReqMsg1);
 }
@@ -820,11 +838,11 @@ TEST_F(UDPSocketTraceBPFTest, UDPSendMMsgRecvMMsg) {
 
   source_->PollPerfBuffers();
 
-  ASSERT_OK_AND_ASSIGN(const auto* tracker, GetConnTracker(pid_, client_.sockfd()));
+  ASSERT_OK_AND_ASSIGN(auto* tracker, GetMutableConnTracker(pid_, client_.sockfd()));
   EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPReqMsg1);
   EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPRespMsg1);
 
-  ASSERT_OK_AND_ASSIGN(tracker, GetConnTracker(pid_, server_.sockfd()));
+  ASSERT_OK_AND_ASSIGN(tracker, GetMutableConnTracker(pid_, server_.sockfd()));
   EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPRespMsg1);
   EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPReqMsg1);
 }
@@ -855,13 +873,13 @@ TEST_F(UDPSocketTraceBPFTest, NonBlockingRecv) {
 
   source_->PollPerfBuffers();
 
-  ASSERT_OK_AND_ASSIGN(const auto* tracker, GetConnTracker(pid_, client_.sockfd()));
+  ASSERT_OK_AND_ASSIGN(auto* tracker, GetMutableConnTracker(pid_, client_.sockfd()));
   EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPReqMsg1);
   EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPRespMsg1);
   EXPECT_EQ(tracker->remote_endpoint().port(), ntohs(server_.sockaddr().sin_port));
   EXPECT_EQ(tracker->remote_endpoint().AddrStr(), "127.0.0.1");
 
-  ASSERT_OK_AND_ASSIGN(tracker, GetConnTracker(pid_, server_.sockfd()));
+  ASSERT_OK_AND_ASSIGN(tracker, GetMutableConnTracker(pid_, server_.sockfd()));
   EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPRespMsg1);
   EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPReqMsg1);
   EXPECT_EQ(tracker->remote_endpoint().port(), ntohs(server_remote.sin_port));

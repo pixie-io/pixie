@@ -111,7 +111,7 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
 
     // Now parse the raw data.
     parse_result =
-        protocols::ParseFrames(type, data_buffer_, &typed_messages, IsSyncRequired(), state);
+        protocols::ParseFrames(type, &data_buffer_, &typed_messages, IsSyncRequired(), state);
     if (contiguous_bytes != data_buffer_.size()) {
       // We weren't able to submit all bytes, which means we ran into a missing event.
       // We don't expect missing events to arrive in the future, so just cut our losses.

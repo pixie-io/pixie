@@ -702,7 +702,7 @@ TEST_P(HTTPParserTest, ParseHTTPRequestsRepeatedly) {
     AddEvent(events[2]);
 
     std::deque<Message> parsed_messages;
-    ParseResult result = ParseFrames(message_type_t::kRequest, data_buffer_, &parsed_messages,
+    ParseResult result = ParseFrames(message_type_t::kRequest, &data_buffer_, &parsed_messages,
                                      /* resync */ false, &state);
     data_buffer_.RemovePrefix(result.end_position);
 
@@ -739,7 +739,7 @@ TEST_P(HTTPParserTest, ParseHTTPResponsesRepeatedly) {
     AddEvent(events[2]);
 
     std::deque<Message> parsed_messages;
-    ParseResult result = ParseFrames(message_type_t::kResponse, data_buffer_, &parsed_messages,
+    ParseResult result = ParseFrames(message_type_t::kResponse, &data_buffer_, &parsed_messages,
                                      /* resync */ false, &state);
     data_buffer_.RemovePrefix(result.end_position);
 
@@ -771,7 +771,7 @@ TEST_F(HTTPParserTest, ParseHTTPResponsesWithLeftover) {
   // Don't append last split, yet.
 
   std::deque<Message> parsed_messages;
-  ParseResult result = ParseFrames(message_type_t::kResponse, data_buffer_, &parsed_messages,
+  ParseResult result = ParseFrames(message_type_t::kResponse, &data_buffer_, &parsed_messages,
                                    /* resync */ false, &state);
 
   ASSERT_EQ(ParseState::kNeedsMoreData, result.state);
@@ -782,7 +782,7 @@ TEST_F(HTTPParserTest, ParseHTTPResponsesWithLeftover) {
   // Now add last event.
   AddEvent(events[2]);
 
-  result = ParseFrames(message_type_t::kResponse, data_buffer_, &parsed_messages,
+  result = ParseFrames(message_type_t::kResponse, &data_buffer_, &parsed_messages,
                        /* resync */ false, &state);
 
   ASSERT_EQ(ParseState::kSuccess, result.state);
@@ -818,14 +818,14 @@ TEST_P(HTTPParserTest, ParseHTTPResponsesWithLeftoverRepeatedly) {
     AddEvent(events[1]);
 
     std::deque<Message> parsed_messages;
-    ParseResult result1 = ParseFrames(message_type_t::kResponse, data_buffer_, &parsed_messages,
+    ParseResult result1 = ParseFrames(message_type_t::kResponse, &data_buffer_, &parsed_messages,
                                       /* resync */ false, &state);
 
     data_buffer_.RemovePrefix(result1.end_position);
 
     // Now add msg_splits[2].
     AddEvent(events[2]);
-    ParseResult result2 = ParseFrames(message_type_t::kResponse, data_buffer_, &parsed_messages,
+    ParseResult result2 = ParseFrames(message_type_t::kResponse, &data_buffer_, &parsed_messages,
                                       /* resync */ false, &state);
 
     ASSERT_EQ(ParseState::kSuccess, result2.state);
@@ -962,7 +962,7 @@ TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessage) {
     AddEvents(events);
 
     std::deque<Message> parsed_messages;
-    ParseResult result = ParseFrames(message_type_t::kRequest, data_buffer_, &parsed_messages,
+    ParseResult result = ParseFrames(message_type_t::kRequest, &data_buffer_, &parsed_messages,
                                      /* resync */ true, &state);
 
     EXPECT_EQ(ParseState::kSuccess, result.state);
@@ -981,7 +981,7 @@ TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessage) {
     AddEvents(events);
 
     std::deque<Message> parsed_messages;
-    ParseResult result = ParseFrames(message_type_t::kResponse, data_buffer_, &parsed_messages,
+    ParseResult result = ParseFrames(message_type_t::kResponse, &data_buffer_, &parsed_messages,
                                      /* resync */ true, &state);
 
     EXPECT_EQ(ParseState::kSuccess, result.state);
@@ -1002,7 +1002,7 @@ TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessageNoSync) {
   AddEvents(events);
 
   std::deque<Message> parsed_messages;
-  ParseResult result = ParseFrames(message_type_t::kRequest, data_buffer_, &parsed_messages,
+  ParseResult result = ParseFrames(message_type_t::kRequest, &data_buffer_, &parsed_messages,
                                    /* resync */ false, &state);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
@@ -1019,7 +1019,7 @@ TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessageNoSync) {
   AddEvents(events);
 
   std::deque<Message> parsed_messages;
-  ParseResult result = ParseFrames(message_type_t::kResponse, data_buffer_, &parsed_messages,
+  ParseResult result = ParseFrames(message_type_t::kResponse, &data_buffer_, &parsed_messages,
                                    /* resync */ false, &state);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
@@ -1047,14 +1047,14 @@ TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessageWithSync) {
   std::deque<Message> parsed_messages;
   ParseResult result;
 
-  result = ParseFrames(message_type_t::kRequest, data_buffer_, &parsed_messages, /* resync */ false,
-                       &state);
+  result = ParseFrames(message_type_t::kRequest, &data_buffer_, &parsed_messages,
+                       /* resync */ false, &state);
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
   EXPECT_EQ(0, parsed_messages.size());
 
   data_buffer_.RemovePrefix(result.end_position);
 
-  result = ParseFrames(message_type_t::kRequest, data_buffer_, &parsed_messages, /* resync */ true,
+  result = ParseFrames(message_type_t::kRequest, &data_buffer_, &parsed_messages, /* resync */ true,
                        &state);
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages,
@@ -1077,15 +1077,15 @@ TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessageWithSync) {
   std::deque<Message> parsed_messages;
   ParseResult result;
 
-  result = ParseFrames(message_type_t::kResponse, data_buffer_, &parsed_messages,
+  result = ParseFrames(message_type_t::kResponse, &data_buffer_, &parsed_messages,
                        /* resync */ false, &state);
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
   EXPECT_EQ(0, parsed_messages.size());
 
   data_buffer_.RemovePrefix(result.end_position);
 
-  result = ParseFrames(message_type_t::kResponse, data_buffer_, &parsed_messages, /* resync */ true,
-                       &state);
+  result = ParseFrames(message_type_t::kResponse, &data_buffer_, &parsed_messages,
+                       /* resync */ true, &state);
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(HTTPResp1ExpectedMessage(), HTTPResp2ExpectedMessage()));
 }
