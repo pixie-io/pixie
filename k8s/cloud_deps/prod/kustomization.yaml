@@ -1,7 +1,8 @@
 ---
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: plc
+# We cannot specify a namespace here because the elastic operator and
+# it's other components need to run in it's own namespace.
 commonLabels:
   app: pl-cloud
 resources:
