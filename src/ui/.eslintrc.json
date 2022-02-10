@@ -113,7 +113,10 @@
         "cypress/**/*.ts"
       ],
       "plugins": ["cypress", "@typescript-eslint"],
-      "extends": ["plugin:@typescript-eslint/recommended"],
+      "extends": [
+        "airbnb-typescript/base",
+        "plugin:@typescript-eslint/recommended"
+      ],
       "env": {
         "cypress/globals": true
       },

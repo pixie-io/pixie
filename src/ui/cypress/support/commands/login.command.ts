@@ -32,7 +32,6 @@ declare global {
 Cypress.Commands.add('loginGoogle', () => {
   const GOOGLE_COOKIE_KEY = Cypress.env('GOOGLE_SESSION_COOKIE_KEY');
 
-  cy.setCookie('user-has-accepted-cookies', 'true');
   cy.setCookie(GOOGLE_COOKIE_KEY, Cypress.env('GOOGLE_SESSION_COOKIE'));
 
   // For Google auth, this is the only cookie needed to validate a session.

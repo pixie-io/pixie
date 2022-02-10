@@ -3,8 +3,13 @@
     "target": "es5",
     "lib": ["es5", "dom"],
     "types": ["cypress"],
-    "baseUrl": "."
+    "baseUrl": ".",
+    "paths": {
+      "configurable/*": [
+        "./configurables/private/*",
+        "./configurables/base/*"
+      ]
+    }
   },
-  "include": ["**/*.ts", "**/*.d.ts"],
-  "exclude": ["configurables/**/*.ts"]
+  "include": ["**/*.ts", "**/*.d.ts"]
 }
