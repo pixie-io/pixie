@@ -56,8 +56,8 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
       if (s.code() == px::statuspb::Code::CANCELLED) {
         LOG(WARNING) << absl::Substitute("Cancelled query: $0", query_id_.str());
       } else {
-        LOG(ERROR) << absl::Substitute("Query $0 failed, reason: $1, plan: $2", query_id_.str(),
-                                       s.ToString(), req_.plan().DebugString());
+        LOG(ERROR) << absl::Substitute("Query $0 failed, reason: $1", query_id_.str(),
+                                       s.ToString());
       }
     } else {
       LOG(INFO) << absl::Substitute("Completed query: id=$0", query_id_.str());
