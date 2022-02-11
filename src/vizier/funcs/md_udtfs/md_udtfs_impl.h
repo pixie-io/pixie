@@ -606,9 +606,8 @@ class GetDebugMDWithPrefix final : public carnot::udf::UDTF<GetDebugMDWithPrefix
     add_context_authentication_func_(&ctx);
     auto s = stub_->GetWithPrefixKey(&ctx, req, resp_.get());
     if (!s.ok()) {
-      return error::Internal("Failed to make RPC call to metadata service");
+      return error::Internal(s.error_message());
     }
-
     return Status::OK();
   }
 
