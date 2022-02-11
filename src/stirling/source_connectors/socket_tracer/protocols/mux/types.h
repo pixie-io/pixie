@@ -19,6 +19,7 @@
 #pragma once
 
 #include <string>
+#include <utility>
 
 #include <absl/container/flat_hash_map.h>
 #include <magic_enum.hpp>
@@ -140,9 +141,22 @@ struct Frame : public FrameBase {
   bool consumed = false;
   // Reply status codes. Only present in Rdispatch messages types
   int8_t reply_status = 0;
-  absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, std::string>> context;
 
-  size_t ByteSize() const override { return length; }
+  const auto& context() const { return context_; }
+
+  void InsertContext(std::string_view ctx_key,
+                     absl::flat_hash_map<std::string, std::string> value) {
+    DCHECK(context_.find(ctx_key) == context_.end());
+
+    context_size_ += ctx_key.size();
+    for (const auto& [k, v] : value) {
+      context_size_ += k.size() + v.size();
+    }
+
+    context_[ctx_key] = std::move(value);
+  }
+
+  size_t ByteSize() const override { return sizeof(Frame) + why.size() + context_size_; }
 
   /*
    * Returns the number of bytes remaining in the mux body / payload
@@ -164,6 +178,10 @@ struct Frame : public FrameBase {
     return absl::Substitute("Mux message [len=$0 type=$1 tag=$2 # context: TBD dtabs: TBD]", length,
                             type, uint32_t(tag));
   }
+
+ private:
+  size_t context_size_ = 0;
+  absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, std::string>> context_;
 };
 
 struct Record {

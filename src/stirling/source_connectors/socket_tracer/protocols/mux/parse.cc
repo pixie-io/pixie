@@ -100,10 +100,8 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, Frame* frame) {
       unpacked_value["length"] = std::to_string(ctx_value.length());
     }
 
-    context.insert({std::string(ctx_key), unpacked_value});
+    frame->InsertContext(ctx_key, std::move(unpacked_value));
   }
-
-  frame->context = std::move(context);
 
   // TODO(ddelnano): Add dest and dtab parsing here
   return ParseState::kSuccess;

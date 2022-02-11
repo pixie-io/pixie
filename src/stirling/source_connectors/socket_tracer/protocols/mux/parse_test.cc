@@ -181,6 +181,9 @@ TEST_F(MuxParserTest, ParseFrameRdispatch) {
 }
 
 TEST_F(MuxParserTest, ParseFrameTdispatch) {
+  using ::testing::Pair;
+  using ::testing::UnorderedElementsAre;
+
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(muxTdispatchFrame));
 
   mux::Frame frame;
@@ -191,7 +194,7 @@ TEST_F(MuxParserTest, ParseFrameTdispatch) {
   ASSERT_EQ(frame.type, static_cast<int8_t>(mux::Type::kTdispatch));
   ASSERT_EQ(state, ParseState::kSuccess);
 
-  ASSERT_EQ(frame.context.size(), 3);
+  ASSERT_EQ(frame.context().size(), 3);
   absl::flat_hash_map<std::string, std::string> trace_ctx = {
       {"span id", "4821737427585769174"},
       {"parent id", "4821737427585769174"},
@@ -205,9 +208,12 @@ TEST_F(MuxParserTest, ParseFrameTdispatch) {
   absl::flat_hash_map<std::string, std::string> retries = {
       {"length", "4"},
   };
-  ASSERT_EQ(frame.context["com.twitter.finagle.tracing.TraceContext"], trace_ctx);
-  ASSERT_EQ(frame.context["com.twitter.finagle.Deadline"], deadline);
-  ASSERT_EQ(frame.context["com.twitter.finagle.Retries"], retries);
+
+  const auto& context = frame.context();
+  ASSERT_THAT(context,
+              UnorderedElementsAre(Pair("com.twitter.finagle.tracing.TraceContext", trace_ctx),
+                                   Pair("com.twitter.finagle.Deadline", deadline),
+                                   Pair("com.twitter.finagle.Retries", retries)));
 }
 
 namespace mux {}  // namespace mux

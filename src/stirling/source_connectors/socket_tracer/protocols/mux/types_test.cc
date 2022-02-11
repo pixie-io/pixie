@@ -48,6 +48,22 @@ TEST(GetMatchingRespType, ReturnsCorrespondingResponseTypes) {
   ASSERT_NOT_OK(GetMatchingRespType(static_cast<Type>(0)));
 }
 
+TEST(Frame, BytesSize) {
+  Frame f = {};
+  f.why = "just because";
+  f.InsertContext("usa", {{"ca", "san francisco"}, {"ny", "new york"}});
+  f.InsertContext("canada", {{"qc", "montreal"}, {"on", "toronto"}});
+
+  size_t s = std::string_view("just because").size() + std::string_view("usa").size() +
+             std::string_view("canada").size() + std::string_view("ca").size() +
+             std::string_view("ny").size() + std::string_view("qc").size() +
+             std::string_view("on").size() + std::string_view("san francisco").size() +
+             std::string_view("new york").size() + std::string_view("montreal").size() +
+             std::string_view("toronto").size();
+
+  EXPECT_EQ(f.ByteSize(), sizeof(f) + s);
+}
+
 }  // namespace mux
 }  // namespace protocols
 }  // namespace stirling
