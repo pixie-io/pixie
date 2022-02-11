@@ -365,6 +365,45 @@ TEST_F(ConnTrackerTest, DataEventsChangesCounter) {
   EXPECT_EQ(kHTTPResp0.size(), tracker.GetStat(ConnTracker::StatKey::kBytesSent));
 }
 
+TEST_F(ConnTrackerTest, MemUsage) {
+  testing::MockClock mock_clock;
+  testing::EventGenerator event_gen(&mock_clock);
+  struct socket_control_event_t conn = event_gen.InitConn(kRoleServer);
+  auto frame0 = event_gen.InitRecvEvent<kProtocolHTTP>(kHTTPReq0);
+  auto frame1 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPResp0);
+
+  ConnTracker tracker;
+  tracker.InitFrames<http::Message>();
+
+  // Initial memory use is not 0, because the DataStreamBuffer has a small initial capacity.
+  size_t mem_usage = tracker.MemUsage<http::ProtocolTraits>();
+  EXPECT_GT(mem_usage, 0);
+  EXPECT_LT(mem_usage, 50);
+
+  // After adding events, the size should reflect that.
+  tracker.AddControlEvent(std::move(conn));
+  tracker.AddDataEvent(std::move(frame0));
+  mem_usage = tracker.MemUsage<http::ProtocolTraits>();
+  EXPECT_GE(mem_usage, kHTTPReq0.size());
+
+  // ProcessToRecords should move the data to the parsed messages,
+  // but since the response has not arrived yet, most of the memory should still be used.
+  tracker.ProcessToRecords<http::ProtocolTraits>();
+  mem_usage = tracker.MemUsage<http::ProtocolTraits>();
+  EXPECT_GE(mem_usage, kHTTPReq0.size());
+
+  // Second event should increase the size further.
+  tracker.AddDataEvent(std::move(frame1));
+  mem_usage = tracker.MemUsage<http::ProtocolTraits>();
+  EXPECT_GE(mem_usage, kHTTPReq0.size() + kHTTPResp0.size());
+
+  // This iteration of ProcessToRecords should output a record and the size should go back to zero.
+  tracker.ProcessToRecords<http::ProtocolTraits>();
+  mem_usage = tracker.MemUsage<http::ProtocolTraits>();
+  EXPECT_GT(mem_usage, 0);
+  EXPECT_LT(mem_usage, 50);
+}
+
 TEST_F(ConnTrackerTest, BufferClearedAfterExpiration) {
   // Use incomplete data to make it stuck.
   testing::EventGenerator event_gen(&real_clock_);

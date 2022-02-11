@@ -101,6 +101,11 @@ class DataStreamBuffer {
   size_t size() const { return buffer_.size(); }
 
   /**
+   * Current allocated space of the internal buffer.
+   */
+  size_t capacity() const { return buffer_.capacity(); }
+
+  /**
    * Return true if the buffer is empty.
    */
   bool empty() const { return buffer_.empty(); }

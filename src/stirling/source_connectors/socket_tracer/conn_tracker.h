@@ -258,14 +258,14 @@ class ConnTracker : NotCopyMoveable {
     auto& resp_frames = resp_data()->Frames<TFrameType>();
     auto state_ptr = protocol_state<TStateType>();
 
-    CONN_TRACE(1) << absl::Substitute("req_frames=$0 resp_frames=$1", req_frames.size(),
+    CONN_TRACE(0) << absl::Substitute("req_frames=$0 resp_frames=$1", req_frames.size(),
                                       resp_frames.size());
 
     protocols::RecordsWithErrorCount<TRecordType> result =
         protocols::StitchFrames<TRecordType, TFrameType, TStateType>(&req_frames, &resp_frames,
                                                                      state_ptr);
 
-    CONN_TRACE(1) << absl::Substitute("records=$0", result.records.size());
+    CONN_TRACE(0) << absl::Substitute("records=$0", result.records.size());
 
     UpdateResultStats(result);
 
@@ -581,6 +581,25 @@ class ConnTracker : NotCopyMoveable {
       send_data_.InitFrames<TFrameType>();
       recv_data_.InitFrames<TFrameType>();
     }
+  }
+
+  template <typename TProtocolTraits>
+  size_t MemUsage() const {
+    using TFrameType = typename TProtocolTraits::frame_type;
+
+    size_t data_buffer_total = 0;
+    data_buffer_total += send_data().data_buffer().capacity();
+    data_buffer_total += recv_data().data_buffer().capacity();
+
+    size_t parsed_msg_total = 0;
+    parsed_msg_total += send_data().FramesSize<TFrameType>();
+    parsed_msg_total += recv_data().FramesSize<TFrameType>();
+
+    size_t http2_events_total = 0;
+    http2_events_total += http2_client_streams_.StreamsSize();
+    http2_events_total += http2_server_streams_.StreamsSize();
+
+    return data_buffer_total + http2_events_total + parsed_msg_total;
   }
 
  private:
