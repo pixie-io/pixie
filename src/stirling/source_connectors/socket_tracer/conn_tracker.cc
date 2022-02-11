@@ -117,6 +117,25 @@ void ConnTracker::AddConnCloseEvent(const close_event_t& close_event, uint64_t t
   close_info_.send_bytes = close_event.wr_bytes;
   close_info_.recv_bytes = close_event.rd_bytes;
 
+  // Update the state to indicate ConnClose for HTTP parser.
+  // When an HTTP response has no Content-Length or Transfer-Encoding, the message is
+  // terminated by ConnClose. See Case 3C of ParseBody() in `http/parse.cc`.
+  // TODO(chengruizhe): Add a base class for state in every protocol and move conn_closed to the
+  // base class.
+  if (protocol() == traffic_protocol_t::kProtocolHTTP) {
+    auto state_ptr = protocol_state<protocols::http::StateWrapper>();
+    if (state_ptr == nullptr) {
+      InitProtocolState<protocols::http::StateWrapper>();
+      state_ptr = protocol_state<protocols::http::StateWrapper>();
+    }
+    state_ptr->global.conn_closed = true;
+  }
+
+  send_data_.set_conn_closed();
+  recv_data_.set_conn_closed();
+
+  CONN_TRACE(1) << absl::Substitute("conn_close");
+
   MarkForClose("received conn_close event");
 }
 

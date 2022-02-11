@@ -75,7 +75,6 @@ RecordsWithErrorCount<TRecordType> StitchMessagesWithTimestampOrder(
       // 2) An older request was found: then it is considered a match. Push the record, and reset.
       if (record.req.timestamp_ns != 0) {
         record.resp = std::move(resp);
-
         records.push_back(std::move(record));
 
         // Reset record after pushing.

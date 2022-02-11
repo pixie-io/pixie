@@ -33,11 +33,11 @@ namespace protocols {
  */
 template <>
 ParseState ParseFrame(message_type_t type, std::string_view* buf, http::Message* frame,
-                      NoState* state);
+                      http::StateWrapper* state);
 
 template <>
 size_t FindFrameBoundary<http::Message>(message_type_t type, std::string_view buf, size_t start_pos,
-                                        NoState* state);
+                                        http::StateWrapper* state);
 
 }  // namespace protocols
 }  // namespace stirling

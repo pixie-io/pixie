@@ -100,7 +100,7 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
   // We appear to be stuck with an an unparsable sequence of events blocking the head.
   bool attempt_sync = IsSyncRequired();
 
-  bool keep_processing = has_new_events_ || attempt_sync;
+  bool keep_processing = has_new_events_ || attempt_sync || conn_closed();
 
   protocols::ParseResult parse_result;
   parse_result.state = ParseState::kNeedsMoreData;
@@ -168,8 +168,9 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
 }
 
 // PROTOCOL_LIST: Requires update on new protocols.
-template void DataStream::ProcessBytesToFrames<protocols::http::Message, protocols::NoState>(
-    message_type_t type, protocols::NoState* state);
+template void
+DataStream::ProcessBytesToFrames<protocols::http::Message, protocols::http::StateWrapper>(
+    message_type_t type, protocols::http::StateWrapper* state);
 template void DataStream::ProcessBytesToFrames<protocols::mux::Frame, protocols::NoState>(
     message_type_t type, protocols::NoState* state);
 template void

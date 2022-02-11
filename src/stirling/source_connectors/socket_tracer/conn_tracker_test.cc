@@ -77,6 +77,7 @@ TEST_F(ConnTrackerTest, timestamp_test) {
   struct socket_control_event_t close_event = event_gen.InitClose();
 
   ConnTracker tracker;
+  tracker.InitProtocolState<http::StateWrapper>();
   EXPECT_EQ(0, tracker.last_bpf_timestamp_ns());
   tracker.AddControlEvent(conn);
   EXPECT_EQ(1, tracker.last_bpf_timestamp_ns());
@@ -108,6 +109,7 @@ TEST_F(ConnTrackerTest, ReqRespMatchingSimple) {
   struct socket_control_event_t close_event = event_gen.InitClose();
 
   ConnTracker tracker;
+  tracker.InitProtocolState<http::StateWrapper>();
   tracker.AddControlEvent(conn);
   tracker.AddDataEvent(std::move(req0));
   tracker.AddDataEvent(std::move(resp0));
@@ -143,6 +145,7 @@ TEST_F(ConnTrackerTest, DISABLED_ReqRespMatchingPipelined) {
   struct socket_control_event_t close_event = event_gen.InitClose();
 
   ConnTracker tracker;
+  tracker.InitProtocolState<http::StateWrapper>();
   tracker.AddControlEvent(conn);
   tracker.AddDataEvent(std::move(req0));
   tracker.AddDataEvent(std::move(req1));
@@ -178,6 +181,7 @@ TEST_F(ConnTrackerTest, ReqRespMatchingSerializedMissingRequest) {
   struct socket_control_event_t close_event = event_gen.InitClose();
 
   ConnTracker tracker;
+  tracker.InitProtocolState<http::StateWrapper>();
   tracker.AddControlEvent(conn);
   tracker.AddDataEvent(std::move(req0));
   tracker.AddDataEvent(std::move(resp0));
@@ -210,6 +214,7 @@ TEST_F(ConnTrackerTest, ReqRespMatchingSerializedMissingResponse) {
   struct socket_control_event_t close_event = event_gen.InitClose();
 
   ConnTracker tracker;
+  tracker.InitProtocolState<http::StateWrapper>();
   tracker.AddControlEvent(conn);
   tracker.AddDataEvent(std::move(req0));
   tracker.AddDataEvent(std::move(resp0));
@@ -246,6 +251,7 @@ TEST_F(ConnTrackerTest, TrackerDisable) {
   struct socket_control_event_t close_event = event_gen.InitClose();
 
   ConnTracker tracker;
+  tracker.InitProtocolState<http::StateWrapper>();
   std::vector<http::Record> records;
 
   tracker.AddControlEvent(conn);
@@ -296,6 +302,7 @@ TEST_F(ConnTrackerTest, TrackerHTTP101Disable) {
   struct socket_control_event_t close_event = event_gen.InitClose();
 
   ConnTracker tracker;
+  tracker.InitProtocolState<http::StateWrapper>();
   std::vector<http::Record> records;
 
   tracker.AddControlEvent(conn);

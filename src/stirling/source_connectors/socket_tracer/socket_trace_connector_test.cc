@@ -85,6 +85,9 @@ const std::string_view kReq3 =
     "\r\n"
     "I have a message body";
 
+const std::string_view kReq4 =
+    "GET /test HTTP/1.1\r\nHost: 127.0.0.1:8080\r\nUser-Agent: curl/7.68.0\r\nAccept: */*\r\n\r\n";
+
 const std::string_view kJSONResp =
     "HTTP/1.1 200 OK\r\n"
     "Content-Type: application/json; charset=utf-8\r\n"
@@ -126,6 +129,15 @@ const std::string_view kResp2 =
     "Content-Length: 3\r\n"
     "\r\n"
     "doe";
+
+const std::string_view kResp4Header =
+    "HTTP/1.0 200 OK\r\n"
+    "Server: BaseHTTP/0.6 Python/3.10.1\r\n"
+    "Date: Wed, 12 Jan 2022 17:37:21 GMT\r\n"
+    "Content-type: application/json\r\n"
+    "\r\n";
+
+const std::string_view kResp4Body = "hello world";
 
 std::vector<std::string> PacketsToRaw(const std::deque<mysql::Packet>& packets) {
   std::vector<std::string> res;
@@ -257,6 +269,46 @@ TEST_F(SocketTraceConnectorTest, HTTPBasic) {
   EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
   EXPECT_THAT(ToStringVector(record_batch[kHTTPReqBodyIdx]), ElementsAre("I have a message body"));
   EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]), ElementsAre("foo"));
+}
+
+TEST_F(SocketTraceConnectorTest, HTTPDelayedRespBody) {
+  testing::EventGenerator event_gen(&real_clock_);
+  struct socket_control_event_t conn = event_gen.InitConn();
+  std::unique_ptr<SocketDataEvent> event0_req = event_gen.InitSendEvent<kProtocolHTTP>(kReq4);
+  std::unique_ptr<SocketDataEvent> event0_resp_header =
+      event_gen.InitRecvEvent<kProtocolHTTP>(kResp4Header);
+  std::unique_ptr<SocketDataEvent> event0_resp_body =
+      event_gen.InitRecvEvent<kProtocolHTTP>(kResp4Body);
+
+  struct socket_control_event_t close_event = event_gen.InitClose();
+
+  EXPECT_NE(0, source_->ConvertToRealTime(0));
+
+  // Registers a new connection.
+  source_->AcceptControlEvent(conn);
+  source_->AcceptDataEvent(std::move(event0_req));
+  source_->AcceptDataEvent(std::move(event0_resp_header));
+
+  // Simulate a large delay between the resp header and body.
+  connector_->TransferData(ctx_.get(), data_tables_->tables());
+  sleep(2);
+  connector_->TransferData(ctx_.get(), data_tables_->tables());
+
+  // Resp body.
+  source_->AcceptDataEvent(std::move(event0_resp_body));
+  connector_->TransferData(ctx_.get(), data_tables_->tables());
+
+  // ConnClose.
+  source_->AcceptControlEvent(close_event);
+  connector_->TransferData(ctx_.get(), data_tables_->tables());
+
+  std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
+  ASSERT_FALSE(tablets.empty());
+  RecordBatch record_batch = tablets[0].records;
+
+  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
+  EXPECT_THAT(ToStringVector(record_batch[kHTTPReqBodyIdx]), ElementsAre(""));
+  EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]), ElementsAre("hello world"));
 }
 
 TEST_F(SocketTraceConnectorTest, HTTPContentType) {

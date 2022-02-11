@@ -138,7 +138,7 @@ ParseState ParseRequestBody(std::string_view* buf, Message* result) {
   return ParseState::kSuccess;
 }
 
-ParseState ParseResponseBody(std::string_view* buf, Message* result) {
+ParseState ParseResponseBody(std::string_view* buf, Message* result, State* state) {
   // Case 0: Check for a HEAD response with no body.
   // Responses to HEAD requests are special, because they may include Content-Length
   // or Transfer-Encoding, but the body will still be empty.
@@ -152,10 +152,7 @@ ParseState ParseResponseBody(std::string_view* buf, Message* result) {
     bool adjacent_resp =
         absl::StartsWith(*buf, "HTTP") && (pico_wrapper::ParseResponse(*buf, &r) > 0);
 
-    // TODO(rcheng): Use actual conn_closed information once it's piped in.
-    bool conn_closed = false;
-
-    if (adjacent_resp || (buf->empty() && conn_closed)) {
+    if (adjacent_resp || (buf->empty() && state->conn_closed)) {
       result->body = "";
       return ParseState::kSuccess;
     }
@@ -203,21 +200,17 @@ ParseState ParseResponseBody(std::string_view* buf, Message* result) {
   // such messages are terminated by the close of the connection.
   // TODO(yzhao): For now we just accumulate messages, let probe_close() submit a message to
   // perf buffer, so that we can terminate such messages.
-  if (!buf->empty()) {
-    // Currently, we output the parsed message with a potentially partial body.
-    // Only the body that is present at the time is emitted, since we don't
-    // know if the data is actually complete or not without a length.
-
+  if (state->conn_closed) {
     result->body = *buf;
     buf->remove_prefix(buf->size());
+
     LOG_FIRST_N(WARNING, 10)
         << "HTTP message with no Content-Length or Transfer-Encoding may produce "
            "incomplete message bodies.";
     return ParseState::kSuccess;
   }
 
-  LOG_FIRST_N(WARNING, 10) << "Could not figure out how to extract body" << std::endl;
-  return ParseState::kInvalid;
+  return ParseState::kNeedsMoreData;
 }
 
 ParseState ParseRequest(std::string_view* buf, Message* result) {
@@ -242,7 +235,7 @@ ParseState ParseRequest(std::string_view* buf, Message* result) {
   return ParseState::kInvalid;
 }
 
-ParseState ParseResponse(std::string_view* buf, Message* result) {
+ParseState ParseResponse(std::string_view* buf, Message* result, State* state) {
   pico_wrapper::HTTPResponse resp;
   int retval = pico_wrapper::ParseResponse(*buf, &resp);
 
@@ -256,7 +249,7 @@ ParseState ParseResponse(std::string_view* buf, Message* result) {
     result->resp_message = std::string(resp.msg, resp.msg_len);
     result->headers_byte_size = retval;
 
-    return ParseResponseBody(buf, result);
+    return ParseResponseBody(buf, result, state);
   }
   if (retval == -2) {
     return ParseState::kNeedsMoreData;
@@ -274,12 +267,12 @@ ParseState ParseResponse(std::string_view* buf, Message* result) {
  * @param result: A parsed HTTP message, if parse was successful (must consider return value).
  * @return parse state indicating how the parse progressed.
  */
-ParseState ParseFrame(message_type_t type, std::string_view* buf, Message* result) {
+ParseState ParseFrame(message_type_t type, std::string_view* buf, Message* result, State* state) {
   switch (type) {
     case message_type_t::kRequest:
       return ParseRequest(buf, result);
     case message_type_t::kResponse:
-      return ParseResponse(buf, result);
+      return ParseResponse(buf, result, state);
     default:
       return ParseState::kInvalid;
   }
@@ -366,13 +359,13 @@ size_t FindFrameBoundary(message_type_t type, std::string_view buf, size_t start
 
 template <>
 ParseState ParseFrame(message_type_t type, std::string_view* buf, http::Message* result,
-                      NoState* /*state*/) {
-  return http::ParseFrame(type, buf, result);
+                      http::StateWrapper* state) {
+  return http::ParseFrame(type, buf, result, &state->global);
 }
 
 template <>
 size_t FindFrameBoundary<http::Message>(message_type_t type, std::string_view buf, size_t start_pos,
-                                        NoState* /*state*/) {
+                                        http::StateWrapper* /*state*/) {
   return http::FindFrameBoundary(type, buf, start_pos);
 }
 

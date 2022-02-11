@@ -52,7 +52,7 @@ void PreProcessMessage(Message* message);
 template <>
 inline RecordsWithErrorCount<http::Record> StitchFrames(std::deque<http::Message>* req_messages,
                                                         std::deque<http::Message>* resp_messages,
-                                                        NoState* /* state */) {
+                                                        http::StateWrapper* /* state */) {
   // NOTE: This cannot handle HTTP pipelining if there is any missing message.
   return StitchMessagesWithTimestampOrder<http::Record>(req_messages, resp_messages);
 }

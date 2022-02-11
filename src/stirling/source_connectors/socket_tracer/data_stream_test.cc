@@ -55,7 +55,7 @@ TEST_F(DataStreamTest, LostEvent) {
   std::unique_ptr<SocketDataEvent> req3 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
   std::unique_ptr<SocketDataEvent> req4 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
   std::unique_ptr<SocketDataEvent> req5 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
-  protocols::NoState state{};
+  protocols::http::StateWrapper state{};
 
   DataStream stream;
 
@@ -92,7 +92,7 @@ TEST_F(DataStreamTest, StuckTemporarily) {
       event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(kHTTPReq0.length() - 10, 10));
   std::unique_ptr<SocketDataEvent> req1 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq1);
   std::unique_ptr<SocketDataEvent> req2 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq2);
-  protocols::NoState state{};
+  protocols::http::StateWrapper state{};
 
   DataStream stream;
   stream.AddData(std::move(req0a));
@@ -123,7 +123,7 @@ TEST_F(DataStreamTest, StuckTooLong) {
       event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(kHTTPReq0.length() - 10, 10));
   std::unique_ptr<SocketDataEvent> req1 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq1);
   std::unique_ptr<SocketDataEvent> req2 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq2);
-  protocols::NoState state{};
+  protocols::http::StateWrapper state{};
 
   DataStream stream;
   stream.AddData(std::move(req0a));
@@ -156,7 +156,7 @@ TEST_F(DataStreamTest, PartialMessageRecovery) {
   std::unique_ptr<SocketDataEvent> req1b = event_gen.InitSendEvent<kProtocolHTTP>(
       kHTTPReq1.substr(kHTTPReq1.length() / 2, kHTTPReq1.length()));
   std::unique_ptr<SocketDataEvent> req2 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq2);
-  protocols::NoState state{};
+  protocols::http::StateWrapper state{};
 
   DataStream stream;
   stream.AddData(std::move(req0));
@@ -183,7 +183,7 @@ TEST_F(DataStreamTest, HeadAndMiddleMissing) {
       event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq2.substr(0, kHTTPReq2.length() / 2));
   std::unique_ptr<SocketDataEvent> req2b = event_gen.InitSendEvent<kProtocolHTTP>(
       kHTTPReq2.substr(kHTTPReq2.length() / 2, kHTTPReq2.length()));
-  protocols::NoState state{};
+  protocols::http::StateWrapper state{};
 
   DataStream stream;
   stream.AddData(std::move(req0b));
@@ -222,7 +222,7 @@ TEST_F(DataStreamTest, LateArrivalPlusMissingEvents) {
       event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq1.substr(0, kHTTPReq1.length() / 2));
   std::unique_ptr<SocketDataEvent> req4b = event_gen.InitSendEvent<kProtocolHTTP>(
       kHTTPReq1.substr(kHTTPReq1.length() / 2, kHTTPReq1.length()));
-  protocols::NoState state{};
+  protocols::http::StateWrapper state{};
 
   DataStream stream;
   stream.AddData(std::move(req0a));
@@ -268,7 +268,7 @@ TEST_F(DataStreamTest, Stats) {
   std::unique_ptr<SocketDataEvent> req6bad =
       event_gen.InitSendEvent<kProtocolHTTP>("Another malformed message");
   std::unique_ptr<SocketDataEvent> req7 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq1);
-  protocols::NoState state{};
+  protocols::http::StateWrapper state{};
 
   DataStream stream;
   stream.AddData(std::move(req0));
@@ -309,7 +309,7 @@ TEST_F(DataStreamTest, Stress) {
     data += kHTTPReq0;
   }
 
-  protocols::NoState state{};
+  protocols::http::StateWrapper state{};
   // Repeat this randomized test many times.
   for (int iter = 0; iter < kIters; ++iter) {
     DataStream stream;
@@ -352,7 +352,7 @@ TEST_F(DataStreamTest, Stress) {
 }
 
 TEST_F(DataStreamTest, CannotSwitchType) {
-  protocols::NoState http_state{};
+  protocols::http::StateWrapper http_state{};
   DataStream stream;
 
   stream.ProcessBytesToFrames<http::Message>(message_type_t::kRequest, &http_state);
@@ -384,7 +384,7 @@ TEST_F(DataStreamTest, SpikeCapacityWithLargeDataChunk) {
   stream.AddData(std::move(resp1));
   stream.AddData(std::move(resp2));
 
-  protocols::NoState state{};
+  protocols::http::StateWrapper state{};
   stream.ProcessBytesToFrames<http::Message>(message_type_t::kResponse, &state);
   stream.CleanupEvents(retention_capacity_bytes, buffer_expiry_timestamp);
   EXPECT_THAT(stream.Frames<http::Message>(), SizeIs(2));

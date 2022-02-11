@@ -191,6 +191,14 @@ class DataStream : NotCopyMoveable {
   bool IsEOS() const { return last_parse_state_ == ParseState::kEOS; }
 
   /**
+   * Checks if the connection of the DataStream is closed.
+   * @return true if connection is closed.
+   */
+  bool conn_closed() const { return conn_closed_; }
+
+  void set_conn_closed() { conn_closed_ = true; }
+
+  /**
    * Cleanup frames that are parsed from the BPF events, when the condition is right.
    */
   template <typename TFrameType>
@@ -269,6 +277,9 @@ class DataStream : NotCopyMoveable {
   // The timestamp when progress was last made in the data buffer. It's used in CleanupEvents().
   std::chrono::time_point<std::chrono::steady_clock> last_progress_time_ =
       std::chrono::steady_clock::now();
+
+  // This is set to true when connection is closed.
+  bool conn_closed_ = false;
 
   // Keep some stats on ParseFrames() attempts.
   int stat_valid_frames_ = 0;

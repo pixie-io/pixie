@@ -432,6 +432,11 @@ class ConnTracker : NotCopyMoveable {
   void set_current_time(std::chrono::time_point<std::chrono::steady_clock> time) {
     DCHECK(time >= current_time_);
     current_time_ = time;
+
+    // If there's no previous activity, set to current time.
+    if (last_activity_timestamp_.time_since_epoch().count() == 0) {
+      last_activity_timestamp_ = current_time_;
+    }
   }
 
   /**
