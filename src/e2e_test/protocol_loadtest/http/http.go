@@ -20,12 +20,54 @@ package http
 
 import (
 	"compress/gzip"
+	"crypto/tls"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
-	"strings"
+	"net/url"
+	"strconv"
+
+	"px.dev/pixie/src/e2e_test/protocol_loadtest/util"
 )
+
+const (
+	headerSizeParam      = "header_size"
+	numHeadersParam      = "num_headers"
+	bodySizeParam        = "body_size"
+	chunkSizeParam       = "chunk_size"
+	disableChunkingParam = "disable_chunking"
+
+	defaultNumHeaders  = 8
+	defaultHeadersSize = 128
+	defaultBodySize    = 1024
+	defaultChunkSize   = 128
+)
+
+func getQueryParamAsInt(values url.Values, param string) int {
+	val, err := strconv.Atoi(values.Get(param))
+	if err != nil {
+		switch param {
+		case headerSizeParam:
+			val = defaultHeadersSize
+		case bodySizeParam:
+			val = defaultBodySize
+		case chunkSizeParam:
+			val = defaultChunkSize
+		case numHeadersParam:
+			val = defaultNumHeaders
+		}
+	}
+	return val
+}
+
+func checkExists(haystack []string, needle string) bool {
+	for _, it := range haystack {
+		if needle == it {
+			return true
+		}
+	}
+	return false
+}
 
 // Gzip handling adapted from https://gist.github.com/the42/1956518
 type gzipResponseWriter struct {
@@ -34,96 +76,107 @@ type gzipResponseWriter struct {
 }
 
 func (w gzipResponseWriter) Write(b []byte) (int, error) {
+	// gzipping changes Content-Length.
+	w.ResponseWriter.Header().Del("Content-Length")
 	return w.Writer.Write(b)
 }
 
-func optionallyGzipMiddleware(next http.HandlerFunc) http.HandlerFunc {
+func gzipMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+		if !checkExists(r.Header.Values("Accept-Encoding"), "gzip") {
 			next(w, r)
 			return
 		}
-		w.Header().Set("Content-Encoding", "gzip")
-		w.Header().Set("Content-Type", "text/plain")
+		w.Header().Add("Content-Encoding", "gzip")
 		gz := gzip.NewWriter(w)
 		defer gz.Close()
-		gzr := gzipResponseWriter{Writer: gz, ResponseWriter: w}
-		next(gzr, r)
+		next(gzipResponseWriter{Writer: gz, ResponseWriter: w}, r)
 	}
 }
 
-type httpContent struct {
-	headers map[string]string
-	body    string
+type chunkWriter struct {
+	chunkSize int
+	http.ResponseWriter
 }
 
-func buildHTTPContent(numBytesHeaders int, numBytesBody int, char string) *httpContent {
-	headers := make(map[string]string)
-	// TODO(james): add random headers.
-	return &httpContent{
-		body:    strings.Repeat(char, numBytesBody),
-		headers: headers,
-	}
-}
-
-func makeSimpleServeFunc(numBytesHeaders int, numBytesBody int) http.HandlerFunc {
-	content := buildHTTPContent(numBytesHeaders, numBytesBody, "s")
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Force content to not be chunked.
-		bytesWritten, err := fmt.Fprint(w, content.body)
-		w.Header().Set("Content-Length", fmt.Sprintf("%d", bytesWritten))
+func (w chunkWriter) Write(b []byte) (int, error) {
+	// Setting Content-Length causes the inbuilt server to disable chunking.
+	w.ResponseWriter.Header().Del("Content-Length")
+	total := 0
+	for i := 0; i < len(b); i += w.chunkSize {
+		end := i + w.chunkSize
+		if end > len(b) {
+			end = len(b)
+		}
+		c, err := w.ResponseWriter.Write(b[i:end])
+		total += c
 		if err != nil {
-			log.Println("error")
+			return total, err
 		}
-	}
-}
-
-// Chunked+GZip not currently supported.
-func makeChunkedServeFunc(numBytesHeaders int, numBytesBody int, numChunks int) http.HandlerFunc {
-	content := buildHTTPContent(numBytesHeaders, numBytesBody, "c")
-	chunkedBody := make([]string, numChunks)
-	chunkSize := len(content.body) / numChunks
-	for i := 0; i < numChunks-1; i++ {
-		chunkedBody[i] = content.body[i*chunkSize : (i+1)*chunkSize]
-	}
-	chunkedBody[numChunks-1] = content.body[(numChunks-1)*chunkSize:]
-
-	return func(w http.ResponseWriter, r *http.Request) {
-		flusher, ok := w.(http.Flusher)
+		flusher, ok := w.ResponseWriter.(http.Flusher)
 		if !ok {
-			panic("http.ResponseWriter should be an http.Flusher")
+			return total, fmt.Errorf("response writer is not a flusher")
 		}
-		for _, chunk := range chunkedBody {
-			_, err := fmt.Fprint(w, chunk)
-			if err != nil {
-				log.Println("error")
-			}
-			flusher.Flush()
+		flusher.Flush()
+	}
+	return total, nil
+}
+
+func chunkMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := r.URL.Query()[disableChunkingParam]; ok {
+			next(w, r)
+			return
 		}
+		w.Header().Add("Transfer-Encoding", "chunked")
+		chunkSize := getQueryParamAsInt(r.URL.Query(), chunkSizeParam)
+		next(chunkWriter{chunkSize: chunkSize, ResponseWriter: w}, r)
 	}
 }
 
-func setupHTTPSServer(certFile, keyFile, port string, numBytesHeaders, numBytesBody int) {
-	if err := http.ListenAndServeTLS(fmt.Sprintf(":%s", port), certFile, keyFile, nil); err != nil {
-		panic(fmt.Sprintf("HTTP TLS server failed (cert=%s, key=%s): %s", certFile, keyFile, err.Error()))
+func basicHandler(w http.ResponseWriter, r *http.Request) {
+	headerSize := getQueryParamAsInt(r.URL.Query(), headerSizeParam)
+	bodySize := getQueryParamAsInt(r.URL.Query(), bodySizeParam)
+	numHeaders := getQueryParamAsInt(r.URL.Query(), numHeadersParam)
+
+	w.Header().Set("X-Pixie-Ack-Seq-Id", r.Header.Get("X-Pixie-Req-Seq-Id"))
+	for i := 0; i < numHeaders; i++ {
+		w.Header().Add(fmt.Sprintf("X-Custom-Header-%d", i), string(util.RandPrintable(headerSize)))
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Add("Content-Length", fmt.Sprintf("%d", bodySize))
+
+	_, err := w.Write(util.RandPrintable(bodySize))
+	if err != nil {
+		http.Error(w, "write failed", http.StatusInternalServerError)
 	}
 }
 
-func setupHTTPServer(port string, numBytesHeaders, numBytesBody int) {
+func setupHTTPSServer(tlsConfig *tls.Config, port string) {
+	ln, err := tls.Listen("tcp", fmt.Sprintf(":%s", port), tlsConfig)
+	if err != nil {
+		panic(fmt.Sprintf("HTTP TLS listen failed: %v", err))
+	}
+	fmt.Println("Serving HTTPS")
+	if err = http.Serve(ln, nil); err != nil {
+		panic(fmt.Sprintf("HTTP TLS serve failed: %v", err))
+	}
+}
+
+func setupHTTPServer(port string) {
+	fmt.Println("Serving HTTP")
 	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), nil); err != nil {
-		panic(fmt.Sprintf("HTTP server failed: %s", err.Error()))
+		panic(fmt.Sprintf("HTTP server failed: %v", err))
 	}
 }
 
 // RunHTTPServers sets up and runs the SSL and non-SSL HTTP server with the provided parameters.
-// TODO(nserrino):  PP-3238  Remove numBytesHeaders/numBytesBody and make it a parameter passed
-// in by the HTTP request so that we don't have to redeploy.
-func RunHTTPServers(certFile, keyFile string, port, sslPort string, numBytesHeaders, numBytesBody int) {
-	http.HandleFunc("/", optionallyGzipMiddleware(makeSimpleServeFunc(numBytesHeaders, numBytesBody)))
-	http.HandleFunc("/chunked", makeChunkedServeFunc(numBytesHeaders, numBytesBody, 10))
+func RunHTTPServers(tlsConfig *tls.Config, port, sslPort string) {
+	http.HandleFunc("/", chunkMiddleware(gzipMiddleware(basicHandler)))
 	// SSL port is optional
-	if sslPort != "" {
-		go setupHTTPSServer(certFile, keyFile, sslPort, numBytesHeaders, numBytesBody)
+	if sslPort != "" && tlsConfig != nil {
+		go setupHTTPSServer(tlsConfig, sslPort)
 	}
-	setupHTTPServer(port, numBytesHeaders, numBytesBody)
+	setupHTTPServer(port)
 }

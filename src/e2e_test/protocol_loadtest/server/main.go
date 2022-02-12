@@ -28,7 +28,6 @@ import (
 	"fmt"
 	"math/big"
 	"os"
-	"strconv"
 	"time"
 
 	"px.dev/pixie/src/e2e_test/protocol_loadtest/grpc"
@@ -36,12 +35,7 @@ import (
 )
 
 const (
-	bitsize  = 4096
-	certFile = "server.crt"
-	keyFile  = "server.key"
-
-	defaultHTTPNumBytesHeaders = 1024
-	defaultHTTPNumBytesBody    = 1024
+	bitsize = 2048
 )
 
 var x509Name = pkix.Name{
@@ -51,7 +45,7 @@ var x509Name = pkix.Name{
 	Locality:     []string{"San Francisco"},
 }
 
-func generateCertFilesOrDie(dnsNames []string) (string, string, *tls.Config) {
+func generateCertFilesOrDie(dnsNames []string) *tls.Config {
 	ca := &x509.Certificate{
 		SerialNumber:          big.NewInt(1653),
 		Subject:               x509Name,
@@ -89,38 +83,28 @@ func generateCertFilesOrDie(dnsNames []string) (string, string, *tls.Config) {
 	if err != nil {
 		panic(fmt.Errorf("Error encoding cert data: %v", err))
 	}
-	if err = os.WriteFile(certFile, certData, 0666); err != nil {
-		panic(fmt.Errorf("Error writing cert to %s: %v", certFile, err))
-	}
 
 	keyData := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)})
 	if err != nil {
 		panic(fmt.Errorf("Error encoding key data: %v", err))
 	}
-	if err = os.WriteFile(keyFile, keyData, 0666); err != nil {
-		panic(fmt.Errorf("Error writing key to %s: %v", keyFile, err))
-	}
 
-	pair, err := tls.LoadX509KeyPair(certFile, keyFile)
+	pair, err := tls.X509KeyPair(certData, keyData)
 	if err != nil {
-		panic(fmt.Errorf("Error loading keypair from %s and %s: %v", certFile, keyFile, err))
+		panic(fmt.Errorf("Error loading keypair: %v", err))
 	}
 
 	certPool := x509.NewCertPool()
 	certPool.AddCert(ca)
 
-	tlsConfig := &tls.Config{
+	return &tls.Config{
 		Certificates: []tls.Certificate{pair},
 		ClientAuth:   tls.NoClientCert,
-		NextProtos:   []string{"h2"},
 		RootCAs:      certPool,
 	}
-	return certFile, keyFile, tlsConfig
 }
 
 func main() {
-	var certFile string
-	var keyFile string
 	var tlsConfig *tls.Config
 
 	httpPort := os.Getenv("HTTP_PORT")
@@ -129,18 +113,11 @@ func main() {
 	grpcSSLPort := os.Getenv("GRPC_SSL_PORT")
 
 	if httpSSLPort != "" || grpcSSLPort != "" {
-		certFile, keyFile, tlsConfig = generateCertFilesOrDie([]string{"localhost"})
+		tlsConfig = generateCertFilesOrDie([]string{"localhost"})
+		grpcTLSConfig := tlsConfig.Clone()
+		grpcTLSConfig.NextProtos = []string{"h2"}
 	}
 
-	httpNumBytesHeaders, err := strconv.Atoi(os.Getenv("HTTP_NUM_BYTES_HEADERS"))
-	if err != nil {
-		httpNumBytesHeaders = defaultHTTPNumBytesHeaders
-	}
-	httpNumBytesBody, err := strconv.Atoi(os.Getenv("HTTP_NUM_BYTES_BODY"))
-	if err != nil {
-		httpNumBytesBody = defaultHTTPNumBytesBody
-	}
-
-	go http.RunHTTPServers(certFile, keyFile, httpPort, httpSSLPort, httpNumBytesHeaders, httpNumBytesBody)
+	go http.RunHTTPServers(tlsConfig, httpPort, httpSSLPort)
 	grpc.RunGRPCServers(tlsConfig, grpcPort, grpcSSLPort)
 }

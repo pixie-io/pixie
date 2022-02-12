@@ -17,12 +17,8 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "http_server",
-    srcs = ["http.go"],
-    importpath = "px.dev/pixie/src/e2e_test/protocol_loadtest/http",
-    tags = ["manual"],
-    visibility = [
-        "//src/e2e_test:__subpackages__",
-    ],
-    deps = ["//src/e2e_test/protocol_loadtest/util"],
+    name = "util",
+    srcs = ["random.go"],
+    importpath = "px.dev/pixie/src/e2e_test/protocol_loadtest/util",
+    visibility = ["//visibility:public"],
 )

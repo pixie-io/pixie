@@ -19,5 +19,9 @@ spec:
     protocol: TCP
     targetPort: 9080
     name: tcp-grpc
+  - port: 9081
+    protocol: TCP
+    targetPort: 9081
+    name: tcp-grpc-ssl
   selector:
     name: server

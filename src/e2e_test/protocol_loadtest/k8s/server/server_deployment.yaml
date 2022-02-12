@@ -22,9 +22,7 @@ spec:
           value: "8080"
         - name: HTTP_SSL_PORT
           value: "8081"
-        - name: HTTP_NUM_BYTES_HEADERS
-          value: "8192"
-        - name: HTTP_NUM_BYTES_BODY
-          value: "122880"  # 120kB
         - name: GRPC_PORT
           value: "9080"
+        - name: GRPC_SSL_PORT
+          value: "9081"
