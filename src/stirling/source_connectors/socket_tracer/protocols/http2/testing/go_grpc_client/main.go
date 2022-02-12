@@ -28,29 +28,42 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/encoding/gzip"
 
 	pb "px.dev/pixie/src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto"
 )
 
-func mustCreateGrpcClientConn(address string, https bool) *grpc.ClientConn {
-	// Set up a connection to the server.
-	var conn *grpc.ClientConn
-	var err error
+func getDialOpts(compression, https bool) []grpc.DialOption {
+	dialOpts := make([]grpc.DialOption, 0)
+
+	if compression {
+		dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)))
+	}
+
 	if https {
 		tlsConfig := &tls.Config{InsecureSkipVerify: true}
 		creds := credentials.NewTLS(tlsConfig)
-		conn, err = grpc.Dial(address, grpc.WithTransportCredentials(creds))
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(creds))
 	} else {
-		conn, err = grpc.Dial(address, grpc.WithInsecure())
+		dialOpts = append(dialOpts, grpc.WithInsecure())
 	}
+
+	return dialOpts
+}
+
+func mustCreateGrpcClientConn(address string, compression, https bool) *grpc.ClientConn {
+	// Set up a connection to the server.
+	var conn *grpc.ClientConn
+	var err error
+	conn, err = grpc.Dial(address, getDialOpts(compression, https)...)
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
 	return conn
 }
 
-func streamGreet(address string, https bool, name string) {
-	conn := mustCreateGrpcClientConn(address, https)
+func streamGreet(address string, compression, https bool, name string) {
+	conn := mustCreateGrpcClientConn(address, compression, https)
 
 	defer conn.Close()
 
@@ -75,8 +88,8 @@ func streamGreet(address string, https bool, name string) {
 	}
 }
 
-func clientStreamGreet(address string, https bool, names []string) {
-	conn := mustCreateGrpcClientConn(address, https)
+func clientStreamGreet(address string, compression, https bool, names []string) {
+	conn := mustCreateGrpcClientConn(address, compression, https)
 
 	defer conn.Close()
 
@@ -104,8 +117,8 @@ func clientStreamGreet(address string, https bool, names []string) {
 	log.Println(reply.Message)
 }
 
-func bidirStreamGreet(address string, https bool, names []string) {
-	conn := mustCreateGrpcClientConn(address, https)
+func bidirStreamGreet(address string, compression, https bool, names []string) {
+	conn := mustCreateGrpcClientConn(address, compression, https)
 
 	defer conn.Close()
 
@@ -140,9 +153,9 @@ func bidirStreamGreet(address string, https bool, names []string) {
 	}
 }
 
-func connectAndGreet(address string, https bool, name string) {
+func connectAndGreet(address string, compression, https bool, name string) {
 	// Set up a connection to the server.
-	conn := mustCreateGrpcClientConn(address, https)
+	conn := mustCreateGrpcClientConn(address, compression, https)
 
 	defer conn.Close()
 
@@ -166,6 +179,7 @@ func main() {
 	clientStreaming := flag.Bool("client_streaming", false, "Whether or not to call client streaming RPC")
 	serverStreaming := flag.Bool("server_streaming", false, "Whether or not to call server streaming RPC")
 	bidirStreaming := flag.Bool("bidir_streaming", false, "Whether or not to call server streaming RPC")
+	compression := flag.Bool("compression", false, "Wether or not to use gRPC compression.")
 	count := flag.Int("count", 1, "The count of requests to make.")
 	waitPeriodMills := flag.Int("wait_period_millis", 500, "The waiting period between making successive requests.")
 
@@ -174,13 +188,13 @@ func main() {
 	var fn func()
 	switch {
 	case *clientStreaming:
-		fn = func() { clientStreamGreet(*address, *https, []string{*name, *name, *name}) }
+		fn = func() { clientStreamGreet(*address, *compression, *https, []string{*name, *name, *name}) }
 	case *serverStreaming:
-		fn = func() { streamGreet(*address, *https, *name) }
+		fn = func() { streamGreet(*address, *compression, *https, *name) }
 	case *bidirStreaming:
-		fn = func() { bidirStreamGreet(*address, *https, []string{*name, *name, *name}) }
+		fn = func() { bidirStreamGreet(*address, *compression, *https, []string{*name, *name, *name}) }
 	default:
-		fn = func() { connectAndGreet(*address, *https, *name) }
+		fn = func() { connectAndGreet(*address, *compression, *https, *name) }
 	}
 
 	if *once {

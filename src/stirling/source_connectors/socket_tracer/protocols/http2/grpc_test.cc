@@ -18,6 +18,8 @@
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/grpc.h"
 
+#include <utility>
+
 #include "src/common/base/base.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto/greet.pb.h"
@@ -92,7 +94,7 @@ TEST(ParsePB, LongStringTruncation) {
   std::string_view data = CreateStringView<char>(
       "\x00\x00\x00\x00\x49\x0A\x47This is a long string. It is so long that is expected to get "
       "truncated.");
-  EXPECT_THAT(ParsePB(data, 32),
+  EXPECT_THAT(ParsePB(data, /*is_gzipped*/ false, /*str_field_truncation_len*/ 32),
               StrEq(R"(1: "This is a long string. It is so ...<truncated>...")"));
 }
 
@@ -123,6 +125,28 @@ TEST(ParsePb, ParsingPartialMessage) {
 2: 100
 3: 200
 4: 0x00000419)"));
+}
+
+// Tests that result of parsing when the gunzip fails and other failures.
+TEST(ParsePbTest, ParsingInvalidGZippedData) {
+  std::string_view data = CreateStringView<char>("\x01\x00\x00\x00\x01\x0A");
+  EXPECT_THAT(ParsePB(data, /*is_gzipped*/ false), StrEq("<Non-gzip decompression not supported>"));
+  EXPECT_THAT(ParsePB(data, /*is_gzipped*/ true), StrEq("<GZip decompression is disabled>"));
+  FLAGS_socket_tracer_enable_http2_gzip = true;
+  EXPECT_THAT(ParsePB(data, /*is_gzipped*/ true), StrEq("<Failed to gunzip data>"));
+  FLAGS_socket_tracer_enable_http2_gzip = false;
+}
+
+// Tests that request & response bodies are unchanged if the grpc-encoding has a value that is not
+// gzip.
+TEST(ParseReqRespBodyTest, BodyUnchangedForUnsupportedCompressionAlgo) {
+  protocols::http2::Stream http2_stream;
+  http2_stream.send.mutable_data()->assign("sent message");
+  http2_stream.send.mutable_headers()->insert(std::make_pair("grpc-encoding", "7zip"));
+  http2_stream.recv.mutable_data()->assign("recv message");
+  ParseReqRespBody(&http2_stream);
+  EXPECT_THAT(http2_stream.send.data(), StrEq("sent message"));
+  EXPECT_THAT(http2_stream.recv.data(), StrEq("recv message"));
 }
 
 }  // namespace grpc

@@ -35,38 +35,11 @@
 namespace px {
 namespace stirling {
 
-using ::grpc::Channel;
-using ::px::stirling::grpc::kGRPCMessageHeaderSizeInBytes;
-using ::px::stirling::protocols::http2::testing::HelloReply;
-using ::px::stirling::protocols::http2::testing::HelloRequest;
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
-using ::px::testing::proto::EqualsProto;
 using ::px::types::ColumnWrapperRecordBatch;
 using ::testing::AllOf;
 using ::testing::AnyOf;
-using ::testing::ElementsAre;
 using ::testing::HasSubstr;
-using ::testing::IsEmpty;
-using ::testing::SizeIs;
-using ::testing::StrEq;
-
-HelloReply GetHelloReply(const ColumnWrapperRecordBatch& record_batch, const size_t idx) {
-  HelloReply received_reply;
-  std::string msg = record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(idx);
-  if (!msg.empty()) {
-    received_reply.ParseFromString(msg.substr(kGRPCMessageHeaderSizeInBytes));
-  }
-  return received_reply;
-}
-
-HelloRequest GetHelloRequest(const ColumnWrapperRecordBatch& record_batch, const size_t idx) {
-  HelloRequest received_reply;
-  std::string msg = record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(idx);
-  if (!msg.empty()) {
-    received_reply.ParseFromString(msg.substr(kGRPCMessageHeaderSizeInBytes));
-  }
-  return received_reply;
-}
 
 class GRPCServer {
  public:
@@ -81,8 +54,11 @@ class GRPCServer {
     server_path = px::testing::BazelBinTestFilePath(server_path).string();
     CHECK(fs::Exists(server_path));
 
-    std::string https_flag = use_https ? "--https=true" : "--https=false";
-    PL_CHECK_OK(s_.Start({server_path, https_flag}));
+    const std::string https_flag = use_https ? "--https=true" : "--https=false";
+    // Let server pick random port in order avoid conflicting.
+    const std::string port_flag = "--port=0";
+
+    PL_CHECK_OK(s_.Start({server_path, https_flag, port_flag}));
     LOG(INFO) << "Server PID: " << s_.child_pid();
 
     // Give some time for the server to start up.
@@ -107,14 +83,16 @@ class GRPCClient {
       "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client/"
       "golang_$0_grpc_client";
 
-  void LaunchClient(std::string_view go_version, bool use_https, int port) {
+  void LaunchClient(std::string_view go_version, bool use_compression, bool use_https, int port) {
     std::string client_path = absl::Substitute(kClientPath, go_version);
     client_path = px::testing::BazelBinTestFilePath(client_path).string();
 
     CHECK(fs::Exists(client_path));
 
     const std::string https_flag = use_https ? "--https=true" : "--https=false";
-    PL_CHECK_OK(c_.Start({client_path, https_flag, "-once", "-name=PixieLabs",
+    const std::string compression_flag =
+        use_compression ? "--compression=true" : "--compression=false";
+    PL_CHECK_OK(c_.Start({client_path, https_flag, compression_flag, "-once", "-name=PixieLabs",
                           absl::StrCat("-address=localhost:", port)}));
     LOG(INFO) << "Client PID: " << c_.child_pid();
     CHECK_EQ(0, c_.Wait());
@@ -125,6 +103,7 @@ class GRPCClient {
 
 struct TestParams {
   std::string go_version;
+  bool use_compression;
   bool use_https;
 };
 
@@ -145,6 +124,7 @@ class GRPCTraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing *
 TEST_P(GRPCTraceTest, CaptureRPCTraceRecord) {
   auto params = GetParam();
 
+  PL_SET_FOR_SCOPE(FLAGS_socket_tracer_enable_http2_gzip, params.use_compression);
   server_.LaunchServer(params.go_version, params.use_https);
 
   // Deploy uprobes on the newly launched server.
@@ -152,7 +132,7 @@ TEST_P(GRPCTraceTest, CaptureRPCTraceRecord) {
 
   StartTransferDataThread();
 
-  client_.LaunchClient(params.go_version, params.use_https, server_.port());
+  client_.LaunchClient(params.go_version, params.use_compression, params.use_https, server_.port());
 
   StopTransferDataThread();
 
@@ -196,8 +176,11 @@ TEST_P(GRPCTraceTest, CaptureRPCTraceRecord) {
 }
 
 INSTANTIATE_TEST_SUITE_P(SecurityModeTest, GRPCTraceTest,
-                         ::testing::Values(TestParams{"1_16", true}, TestParams{"1_16", false},
-                                           TestParams{"1_17", true}, TestParams{"1_17", false}));
+                         ::testing::Values(
+                             // Did not enumerate all combinations, as they are independent based on
+                             // our knowledge, and to minimize test size to reduce flakiness.
+                             TestParams{"1_16", true, true}, TestParams{"1_16", true, false},
+                             TestParams{"1_17", false, true}, TestParams{"1_17", false, false}));
 
 }  // namespace stirling
 }  // namespace px

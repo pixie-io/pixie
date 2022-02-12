@@ -24,22 +24,34 @@
 #include <string>
 #include <string_view>
 
+#include "src/stirling/source_connectors/socket_tracer/protocols/http2/types.h"
+
+DECLARE_bool(socket_tracer_enable_http2_gzip);
+
 namespace px {
 namespace stirling {
 namespace grpc {
 
-constexpr size_t kGRPCMessageHeaderSizeInBytes = 5;
+/**
+ * Parses protobuf body of a HTTP2 message.
+ * Exported for testing.
+ */
+std::string ParsePB(std::string_view str, bool is_gzipped = false,
+                    std::optional<int> str_field_truncation_len = std::nullopt);
 
 /**
- * Parses the input str as the provided protobuf message type.
- * Essentially a wrapper around PBWireToText that is easier to use.
+ * Parses the request & response body of the input HTTP2 Stream object.
+ * Applies decompression & protobuf parsing if needed.
  *
- * @param str The raw message as a string.
- * @param str_truncation_len The string length of any string/bytes fields beyond which truncation
- *        applies, if specified.
- * @return The parsed message.
+ * @param http2_stream The input HTTP2 record whose request & response bodies are to be parsed,
+ *        the results are written to the request & response bodies as well.
+ * @param truncation_suffix The string suffix appended to any truncated string/bytes fields.
+ * @param str_field_truncation_len The string length of any string/bytes fields beyond which
+ *        truncation applies, if specified.
  */
-std::string ParsePB(std::string_view str, std::optional<int> str_truncation_len = std::nullopt);
+void ParseReqRespBody(px::stirling::protocols::http2::Stream* http2_stream,
+                      std::string_view truncation_suffix = {},
+                      std::optional<int> str_truncation_len = std::nullopt);
 
 }  // namespace grpc
 }  // namespace stirling

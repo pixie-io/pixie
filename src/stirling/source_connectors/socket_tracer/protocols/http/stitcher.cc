@@ -68,14 +68,7 @@ void PreProcessMessage(Message* message) {
   auto content_encoding_iter = message->headers.find(kContentEncoding);
   // Replace body with decompressed version, if required.
   if (content_encoding_iter != message->headers.end() && content_encoding_iter->second == "gzip") {
-    std::string_view body_strview(message->body);
-    auto bodyOrErr = px::zlib::Inflate(body_strview);
-    if (!bodyOrErr.ok()) {
-      LOG(WARNING) << "Unable to gunzip HTTP body.";
-      message->body = "<Failed to gunzip body>";
-    } else {
-      message->body = bodyOrErr.ValueOrDie();
-    }
+    message->body = px::zlib::Inflate(message->body).ConsumeValueOr("<Failed to gunzip body>");
   }
 }
 

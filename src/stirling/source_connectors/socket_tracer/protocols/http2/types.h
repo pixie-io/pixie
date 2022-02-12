@@ -40,8 +40,10 @@ namespace headers {
 constexpr char kContentType[] = "content-type";
 constexpr char kMethod[] = ":method";
 constexpr char kPath[] = ":path";
+constexpr char kGRPCEncoding[] = "grpc-encoding";
 
 constexpr char kContentTypeGRPC[] = "application/grpc";
+constexpr char kGZip[] = "gzip";
 
 }  // namespace headers
 
@@ -50,6 +52,8 @@ constexpr char kContentTypeGRPC[] = "application/grpc";
 // From https://http2.github.io/http2-spec/#HttpHeaders:
 // ... header field names MUST be converted to lowercase prior to their encoding in HTTP/2.
 // A request or response containing uppercase header field names MUST be treated as malformed.
+//
+// TODO(yzhao): Change to hold a std::map<> object instead of deriving from std::multiplemap<>.
 class NVMap : public std::multimap<std::string, std::string> {
  public:
   std::string ValueByKey(const std::string& key, const std::string& default_value = "") const {
@@ -69,6 +73,8 @@ class NVMap : public std::multimap<std::string, std::string> {
     return byte_size;
   }
 
+  bool HasKey(const std::string& key) const { return find(key) != end(); }
+
   std::string ToString() const { return absl::StrJoin(*this, ", ", absl::PairFormatter(":")); }
 };
 
@@ -79,7 +85,9 @@ class NVMap : public std::multimap<std::string, std::string> {
 struct HalfStream {
  public:
   const std::string& data() const { return data_; }
+  std::string* mutable_data() { return &data_; }
   const NVMap& headers() const { return headers_; }
+  NVMap* mutable_headers() { return &headers_; }
   const NVMap& trailers() const { return trailers_; }
   bool end_stream() const { return end_stream_; }
   bool data_truncated() const { return data_truncated_; }
@@ -133,6 +141,10 @@ struct HalfStream {
     return absl::StrContains(headers_.ValueByKey(headers::kContentType), headers::kContentTypeGRPC);
   }
 
+  bool HasGZipGRPCEncoding() const {
+    return absl::StrContains(headers_.ValueByKey(headers::kGRPCEncoding), headers::kGZip);
+  }
+
   std::string ToString() const {
     return absl::Substitute(
         "[headers=$0 data=$1 trailers=$2 end_stream=$3 byte_size=$4 original_data_size=$5 "
@@ -177,6 +189,13 @@ struct Stream {
   }
 
   bool HasGRPCContentType() const { return send.HasGRPCContentType() || recv.HasGRPCContentType(); }
+  bool HasGRPCEncodingHeader() const {
+    return send.headers().HasKey(headers::kGRPCEncoding) ||
+           recv.headers().HasKey(headers::kGRPCEncoding);
+  }
+  bool HasGZipGRPCEncoding() const {
+    return send.HasGZipGRPCEncoding() || recv.HasGZipGRPCEncoding();
+  }
 
   bool consumed = false;
 

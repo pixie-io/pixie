@@ -806,7 +806,7 @@ template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
                                          protocols::http2::Record record, DataTable* data_table) {
   using ::px::grpc::MethodInputOutput;
-  using ::px::stirling::grpc::ParsePB;
+  using ::px::stirling::grpc::ParseReqRespBody;
 
   protocols::http2::HalfStream* req_stream;
   protocols::http2::HalfStream* resp_stream;
@@ -832,22 +832,11 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   std::string path = req_stream->headers().ValueByKey(protocols::http2::headers::kPath);
 
   HTTPContentType content_type = HTTPContentType::kUnknown;
-
-  std::string req_data = req_stream->ConsumeData();
-  std::string resp_data = resp_stream->ConsumeData();
-  size_t req_data_size = req_stream->original_data_size();
-  size_t resp_data_size = resp_stream->original_data_size();
   if (record.HasGRPCContentType()) {
     content_type = HTTPContentType::kGRPC;
-    req_data = ParsePB(req_data, kMaxPBStringLen);
-    if (req_stream->data_truncated()) {
-      req_data.append(DataTable::kTruncatedMsg);
-    }
-    resp_data = ParsePB(resp_data, kMaxPBStringLen);
-    if (resp_stream->data_truncated()) {
-      resp_data.append(DataTable::kTruncatedMsg);
-    }
   }
+
+  ParseReqRespBody(&record, DataTable::kTruncatedMsg, kMaxPBStringLen);
 
   DataTable::RecordBuilder<&kHTTPTable> r(data_table, resp_stream->timestamp_ns);
   r.Append<r.ColIndex("time_")>(resp_stream->timestamp_ns);
@@ -867,13 +856,13 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("resp_status")>(resp_status);
   // TODO(yzhao): Populate the following field from headers.
   r.Append<r.ColIndex("resp_message")>("OK");
-  r.Append<r.ColIndex("req_body_size")>(req_data_size);
+  r.Append<r.ColIndex("req_body_size")>(req_stream->original_data_size());
   // Do not apply truncation at this point, as the truncation was already done on serialized
   // protobuf message. This might result into longer text format data here, but the increase is
   // minimal.
-  r.Append<r.ColIndex("req_body")>(std::move(req_data));
-  r.Append<r.ColIndex("resp_body_size")>(resp_data_size);
-  r.Append<r.ColIndex("resp_body")>(std::move(resp_data));
+  r.Append<r.ColIndex("req_body")>(req_stream->ConsumeData());
+  r.Append<r.ColIndex("resp_body_size")>(resp_stream->original_data_size());
+  r.Append<r.ColIndex("resp_body")>(resp_stream->ConsumeData());
   int64_t latency_ns = CalculateLatency(req_stream->timestamp_ns, resp_stream->timestamp_ns);
   r.Append<r.ColIndex("latency")>(latency_ns);
   // TODO(yzhao): Remove once http2::Record::bpf_timestamp_ns is removed.
