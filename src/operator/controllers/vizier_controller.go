@@ -239,6 +239,7 @@ func (r *VizierReconciler) createVizier(ctx context.Context, req ctrl.Request, v
 	log.Info("Creating a new vizier instance")
 	cloudClient, err := getCloudClientConnection(vz.Spec.CloudAddr, vz.Spec.DevCloudNamespace)
 	if err != nil {
+		log.WithError(err).Error("Failed to connect to cloud client")
 		return err
 	}
 
@@ -248,11 +249,13 @@ func (r *VizierReconciler) createVizier(ctx context.Context, req ctrl.Request, v
 		atClient := cloudpb.NewArtifactTrackerClient(cloudClient)
 		latest, err := getLatestVizierVersion(ctx, atClient)
 		if err != nil {
+			log.WithError(err).Error("Failed to get latest Vizier version")
 			return err
 		}
 		vz.Spec.Version = latest
 		err = r.Update(ctx, vz)
 		if err != nil {
+			log.WithError(err).Error("Failed to update version in Vizier spec")
 			return err
 		}
 		return nil
@@ -273,6 +276,7 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 	log.Info("Starting a vizier deploy")
 	cloudClient, err := getCloudClientConnection(vz.Spec.CloudAddr, vz.Spec.DevCloudNamespace)
 	if err != nil {
+		log.WithError(err).Error("Failed to connect to cloud client")
 		return err
 	}
 
@@ -280,6 +284,7 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 	vz = setReconciliationPhase(vz, v1alpha1.ReconciliationPhaseUpdating)
 	err = r.Status().Update(ctx, vz)
 	if err != nil {
+		log.WithError(err).Error("Failed to update status in Vizier spec")
 		return err
 	}
 
@@ -320,11 +325,13 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 	// Update the spec in the k8s api as other parts of the code expect this to be true.
 	err = r.Update(ctx, vz)
 	if err != nil {
+		log.WithError(err).Error("Failed to update spec for Vizier CRD")
 		return err
 	}
 
 	configForVizierResp, err := generateVizierYAMLsConfig(ctx, req.Namespace, vz, cloudClient)
 	if err != nil {
+		log.WithError(err).Error("Failed to generate configs for Vizier YAMLs")
 		return err
 	}
 	yamlMap := configForVizierResp.NameToYamlContent
@@ -336,22 +343,26 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 	if !update {
 		err = r.deployVizierConfigs(ctx, req.Namespace, vz, yamlMap)
 		if err != nil {
+			log.WithError(err).Error("Failed to deploy Vizier configs")
 			return err
 		}
 
 		err = r.deployVizierCerts(ctx, req.Namespace, vz)
 		if err != nil {
+			log.WithError(err).Error("Failed to deploy Vizier certs")
 			return err
 		}
 
 		err = r.deployVizierDeps(ctx, req.Namespace, vz, yamlMap)
 		if err != nil {
+			log.WithError(err).Error("Failed to deploy Vizier deps")
 			return err
 		}
 	}
 
 	err = r.deployVizierCore(ctx, req.Namespace, vz, yamlMap, update)
 	if err != nil {
+		log.WithError(err).Error("Failed to deploy Vizier core")
 		return err
 	}
 
