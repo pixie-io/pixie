@@ -64,6 +64,7 @@ type testState struct {
 }
 
 func createTestState(t *testing.T, ctrl *gomock.Controller) (*testState, func(t *testing.T)) {
+	viper.Set("jwt_signing_key", "jwtkey")
 	lis := bufconn.Listen(bufSize)
 	s := grpc.NewServer()
 	mockVZMgr := mock_vzmgrpb.NewMockVZMgrServiceClient(ctrl)

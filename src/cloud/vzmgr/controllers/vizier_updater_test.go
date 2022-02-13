@@ -22,7 +22,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
@@ -39,6 +38,7 @@ import (
 	"px.dev/pixie/src/cloud/vzmgr/controllers"
 	"px.dev/pixie/src/shared/artifacts/versionspb"
 	"px.dev/pixie/src/shared/cvmsgspb"
+	srvutils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils/testingutils"
 )
 
@@ -92,12 +92,9 @@ func TestUpdater_UpdateOrInstallVizier(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, "123", resp.Version)
 			assert.NotNil(t, resp.Token)
-			claims := jwt.MapClaims{}
-			_, err = jwt.ParseWithClaims(resp.Token, claims, func(token *jwt.Token) (interface{}, error) {
-				return []byte("jwtkey"), nil
-			}, jwt.WithAudience("withpixie.ai"))
+			token, err := srvutils.ParseToken(resp.Token, "jwtkey", "withpixie.ai")
 			require.NoError(t, err)
-			assert.Equal(t, "cluster", claims["Scopes"].(string))
+			assert.Equal(t, []string{"cluster"}, srvutils.GetScopes(token))
 			// Send response.
 			updateResp := &cvmsgspb.UpdateOrInstallVizierResponse{
 				UpdateStarted: true,
@@ -214,12 +211,9 @@ func TestUpdater_ProcessUpdateQueue(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, "0.4.1", resp.Version)
 			assert.NotNil(t, resp.Token)
-			claims := jwt.MapClaims{}
-			_, err = jwt.ParseWithClaims(resp.Token, claims, func(token *jwt.Token) (interface{}, error) {
-				return []byte("jwtkey"), nil
-			}, jwt.WithAudience("withpixie.ai"))
+			token, err := srvutils.ParseToken(resp.Token, "jwtkey", "withpixie.ai")
 			require.NoError(t, err)
-			assert.Equal(t, "cluster", claims["Scopes"].(string))
+			assert.Equal(t, []string{"cluster"}, srvutils.GetScopes(token))
 			// Send response.
 			updateResp := &cvmsgspb.UpdateOrInstallVizierResponse{
 				UpdateStarted: true,

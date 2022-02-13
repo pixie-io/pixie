@@ -28,7 +28,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
@@ -55,7 +54,7 @@ import (
 	"px.dev/pixie/src/shared/k8s/metadatapb"
 	"px.dev/pixie/src/shared/services/authcontext"
 	"px.dev/pixie/src/shared/services/pgtest"
-	jwtutils "px.dev/pixie/src/shared/services/utils"
+	srvutils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/testingutils"
 )
@@ -165,7 +164,7 @@ func mustLoadTestData(db *sqlx.DB) {
 
 func CreateTestContext() context.Context {
 	sCtx := authcontext.New()
-	sCtx.Claims = jwtutils.GenerateJWTForUser("abcdef", testAuthOrgID, "test@test.com", time.Now(), "pixie")
+	sCtx.Claims = srvutils.GenerateJWTForUser("abcdef", testAuthOrgID, "test@test.com", time.Now(), "pixie")
 	return authcontext.NewContext(context.Background(), sCtx)
 }
 
@@ -421,12 +420,11 @@ func TestServer_GetVizierConnectionInfo(t *testing.T) {
 
 	assert.Equal(t, resp.IPAddress, "https://addr1")
 	assert.NotNil(t, resp.Token)
-	claims := jwt.MapClaims{}
-	_, err = jwt.ParseWithClaims(resp.Token, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte("key0"), nil
-	}, jwt.WithAudience("vizier"))
+
+	token, err := srvutils.ParseToken(resp.Token, "key0", "vizier")
 	require.NoError(t, err)
-	assert.Equal(t, "cluster", claims["Scopes"].(string))
+
+	assert.Equal(t, []string{"cluster"}, srvutils.GetScopes(token))
 }
 
 func TestServer_VizierConnectedHealthy(t *testing.T) {
@@ -813,8 +811,6 @@ func TestServer_GetSSLCerts(t *testing.T) {
 }
 
 func TestServer_UpdateOrInstallVizier(t *testing.T) {
-	viper.Set("jwt_signing_key", "jwtkey")
-
 	mustLoadTestData(db)
 
 	ctrl := gomock.NewController(t)

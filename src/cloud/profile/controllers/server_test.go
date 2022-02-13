@@ -24,10 +24,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
+	"github.com/lestrrat-go/jwx/jwa"
+	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
@@ -1787,16 +1788,12 @@ func TestServer_CreateInviteToken(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
-	claims := &jwt.StandardClaims{}
-	_, err = parser.ParseWithClaims(resp.SignedClaims, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(inviteSigningKey), nil
-	})
-
-	exp := time.Until(claims.ExpiresAt.Time)
-
+	token, err := jwt.Parse([]byte(resp.SignedClaims), jwt.WithVerify(jwa.HS256, []byte(inviteSigningKey)), jwt.WithValidate(false))
 	require.NoError(t, err)
-	assert.Equal(t, claims.Subject, orgID.String())
+
+	exp := time.Until(token.Expiration())
+
+	assert.Equal(t, token.Subject(), orgID.String())
 	assert.Greater(t, exp.Hours(), 0.0)
 	assert.Less(t, exp.Hours(), 7.0*24.0)
 }
@@ -1829,16 +1826,13 @@ func TestServer_CreateInviteToken_NoSigningKey(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
-	claims := &jwt.StandardClaims{}
-	_, err = parser.ParseWithClaims(resp.SignedClaims, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(inviteSigningKey), nil
-	})
+	token, err := jwt.Parse([]byte(resp.SignedClaims), jwt.WithVerify(jwa.HS256, []byte(inviteSigningKey)), jwt.WithValidate(false))
+	require.NoError(t, err)
 
-	exp := time.Until(claims.ExpiresAt.Time)
+	exp := time.Until(token.Expiration())
 
 	require.NoError(t, err)
-	assert.Equal(t, claims.Subject, orgID.String())
+	assert.Equal(t, token.Subject(), orgID.String())
 	assert.Greater(t, exp.Hours(), 0.0)
 	assert.Less(t, exp.Hours(), 7.0*24.0)
 }
@@ -1913,18 +1907,20 @@ func TestServer_VerifyInvites_Good(t *testing.T) {
 	s := controllers.NewServer(nil, uds, usds, ods, osds)
 
 	inviteSigningKey := "secret_jwt_key"
-	inviteClaims := jwt.MapClaims{}
-	inviteClaims["sub"] = orgID.String()
-	inviteClaims["exp"] = time.Now().Add(7 * 24 * time.Hour).Unix()
+	builder := jwt.NewBuilder().
+		Subject(orgID.String()).
+		Expiration(time.Now().Add(7 * 24 * time.Hour))
+	token, err := builder.Build()
+	require.NoError(t, err)
 
-	signedClaims, err := jwt.NewWithClaims(jwt.SigningMethodHS256, inviteClaims).SignedString([]byte(inviteSigningKey))
+	signedClaims, err := svcutils.SignToken(token, inviteSigningKey)
 	require.NoError(t, err)
 
 	ods.EXPECT().
 		GetInviteSigningKey(orgID).
 		Return(inviteSigningKey, nil)
 
-	resp, err := s.VerifyInviteToken(ctx, &profilepb.InviteToken{SignedClaims: signedClaims})
+	resp, err := s.VerifyInviteToken(ctx, &profilepb.InviteToken{SignedClaims: string(signedClaims)})
 	require.NoError(t, err)
 	assert.Equal(t, &profilepb.VerifyInviteTokenResponse{
 		Valid: true,
@@ -1947,14 +1943,16 @@ func TestServer_VerifyInvites_Expired(t *testing.T) {
 	s := controllers.NewServer(nil, uds, usds, ods, osds)
 
 	inviteSigningKey := "secret_jwt_key"
-	inviteClaims := jwt.MapClaims{}
-	inviteClaims["sub"] = orgID.String()
-	inviteClaims["exp"] = time.Now().Add(-1 * time.Minute).Unix()
-
-	signedClaims, err := jwt.NewWithClaims(jwt.SigningMethodHS256, inviteClaims).SignedString([]byte(inviteSigningKey))
+	builder := jwt.NewBuilder().
+		Subject(orgID.String()).
+		Expiration(time.Now().Add(-1 * time.Minute))
+	token, err := builder.Build()
 	require.NoError(t, err)
 
-	resp, err := s.VerifyInviteToken(ctx, &profilepb.InviteToken{SignedClaims: signedClaims})
+	signedClaims, err := svcutils.SignToken(token, inviteSigningKey)
+	require.NoError(t, err)
+
+	resp, err := s.VerifyInviteToken(ctx, &profilepb.InviteToken{SignedClaims: string(signedClaims)})
 	require.NoError(t, err)
 	assert.Equal(t, &profilepb.VerifyInviteTokenResponse{Valid: false}, resp)
 }
@@ -1974,18 +1972,20 @@ func TestServer_VerifyInvites_BadSigningKey(t *testing.T) {
 	s := controllers.NewServer(nil, uds, usds, ods, osds)
 
 	inviteSigningKey := "secret_jwt_key"
-	inviteClaims := jwt.MapClaims{}
-	inviteClaims["sub"] = orgID.String()
-	inviteClaims["exp"] = time.Now().Add(7 * 24 * time.Hour).Unix()
+	builder := jwt.NewBuilder().
+		Subject(orgID.String()).
+		Expiration(time.Now().Add(7 * 24 * time.Hour))
+	token, err := builder.Build()
+	require.NoError(t, err)
 
-	signedClaims, err := jwt.NewWithClaims(jwt.SigningMethodHS256, inviteClaims).SignedString([]byte("wrong_key"))
+	signedClaims, err := svcutils.SignToken(token, "wrong_key")
 	require.NoError(t, err)
 
 	ods.EXPECT().
 		GetInviteSigningKey(orgID).
 		Return(inviteSigningKey, nil)
 
-	resp, err := s.VerifyInviteToken(ctx, &profilepb.InviteToken{SignedClaims: signedClaims})
+	resp, err := s.VerifyInviteToken(ctx, &profilepb.InviteToken{SignedClaims: string(signedClaims)})
 	require.NoError(t, err)
 	assert.Equal(t, &profilepb.VerifyInviteTokenResponse{Valid: false}, resp)
 }
@@ -2003,13 +2003,15 @@ func TestServer_VerifyInvites_BadOrg(t *testing.T) {
 	s := controllers.NewServer(nil, uds, usds, ods, osds)
 
 	inviteSigningKey := "secret_jwt_key"
-	inviteClaims := jwt.MapClaims{}
-	inviteClaims["sub"] = uuid.Nil.String()
-	inviteClaims["exp"] = time.Now().Add(7 * 24 * time.Hour).Unix()
-
-	signedClaims, err := jwt.NewWithClaims(jwt.SigningMethodHS256, inviteClaims).SignedString([]byte(inviteSigningKey))
+	builder := jwt.NewBuilder().
+		Subject(uuid.Nil.String()).
+		Expiration(time.Now().Add(7 * 24 * time.Hour))
+	token, err := builder.Build()
 	require.NoError(t, err)
 
-	_, err = s.VerifyInviteToken(ctx, &profilepb.InviteToken{SignedClaims: signedClaims})
+	signedClaims, err := svcutils.SignToken(token, inviteSigningKey)
+	require.NoError(t, err)
+
+	_, err = s.VerifyInviteToken(ctx, &profilepb.InviteToken{SignedClaims: string(signedClaims)})
 	require.Error(t, err)
 }

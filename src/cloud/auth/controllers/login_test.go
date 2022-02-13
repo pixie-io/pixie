@@ -24,7 +24,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
@@ -41,7 +40,7 @@ import (
 	"px.dev/pixie/src/cloud/profile/profilepb"
 	mock_profile "px.dev/pixie/src/cloud/profile/profilepb/mock"
 	"px.dev/pixie/src/shared/services/authcontext"
-	claimsutils "px.dev/pixie/src/shared/services/utils"
+	srvutils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/testingutils"
 )
@@ -1037,12 +1036,9 @@ func TestServer_GetAugmentedToken_Service(t *testing.T) {
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt <= maxExpiryTime)
 	assert.True(t, resp.ExpiresAt > 0)
 
-	jwtclaims := jwt.MapClaims{}
-	_, err = jwt.ParseWithClaims(token, jwtclaims, func(token *jwt.Token) (interface{}, error) {
-		return []byte("jwtkey"), nil
-	}, jwt.WithAudience("withpixie.ai"))
+	parsed, err := srvutils.ParseToken(resp.Token, "jwtkey", "withpixie.ai")
 	require.NoError(t, err)
-	assert.Equal(t, "vzmgr", jwtclaims["ServiceID"])
+	assert.Equal(t, "vzmgr", srvutils.GetServiceID(parsed))
 }
 
 func TestServer_GetAugmentedToken_EmptyOrg(t *testing.T) {
@@ -1067,7 +1063,7 @@ func TestServer_GetAugmentedToken_EmptyOrg(t *testing.T) {
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
 
-	claims := claimsutils.GenerateJWTForUser(testingutils.TestUserID, "", "testing@testing.org", time.Now().Add(time.Hour), "withpixie.ai")
+	claims := srvutils.GenerateJWTForUser(testingutils.TestUserID, "", "testing@testing.org", time.Now().Add(time.Hour), "withpixie.ai")
 	token := testingutils.SignPBClaims(t, claims, "jwtkey")
 	req := &authpb.GetAugmentedAuthTokenRequest{
 		Token: token,
@@ -1288,7 +1284,7 @@ func TestServer_GetAugmentedTokenAPIUser(t *testing.T) {
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
 
-	claims := claimsutils.GenerateJWTForAPIUser(testingutils.TestUserID, testingutils.TestOrgID, time.Now().Add(30*time.Minute), "withpixie.ai")
+	claims := srvutils.GenerateJWTForAPIUser(testingutils.TestUserID, testingutils.TestOrgID, time.Now().Add(30*time.Minute), "withpixie.ai")
 	token := testingutils.SignPBClaims(t, claims, "jwtkey")
 	req := &authpb.GetAugmentedAuthTokenRequest{
 		Token: token,
@@ -1306,15 +1302,12 @@ func TestServer_GetAugmentedTokenAPIUser(t *testing.T) {
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt <= maxExpiryTime)
 	assert.True(t, resp.ExpiresAt > 0)
 
-	returnedClaims := jwt.MapClaims{}
-	_, err = jwt.ParseWithClaims(resp.Token, returnedClaims, func(token *jwt.Token) (interface{}, error) {
-		return []byte("jwtkey"), nil
-	}, jwt.WithAudience("withpixie.ai"))
+	parsed, err := srvutils.ParseToken(resp.Token, "jwtkey", "withpixie.ai")
 	require.NoError(t, err)
-	assert.Equal(t, testingutils.TestOrgID, returnedClaims["OrgID"])
-	assert.Equal(t, testingutils.TestUserID, returnedClaims["UserID"])
-	assert.Equal(t, resp.ExpiresAt, int64(returnedClaims["exp"].(float64)))
-	assert.True(t, returnedClaims["IsAPIUser"].(bool))
+	assert.Equal(t, testingutils.TestOrgID, srvutils.GetOrgID(parsed))
+	assert.Equal(t, testingutils.TestUserID, srvutils.GetUserID(parsed))
+	assert.Equal(t, resp.ExpiresAt, parsed.Expiration().Unix())
+	assert.True(t, srvutils.GetIsAPIUser(parsed))
 }
 
 func TestServer_GetAugmentedTokenFromAPIKey(t *testing.T) {
@@ -1354,15 +1347,12 @@ func TestServer_GetAugmentedTokenFromAPIKey(t *testing.T) {
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt <= maxExpiryTime)
 	assert.True(t, resp.ExpiresAt > 0)
 
-	claims := jwt.MapClaims{}
-	_, err = jwt.ParseWithClaims(resp.Token, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte("jwtkey"), nil
-	}, jwt.WithAudience("withpixie.ai"))
+	parsed, err := srvutils.ParseToken(resp.Token, "jwtkey", "withpixie.ai")
 	require.NoError(t, err)
-	assert.Equal(t, testingutils.TestUserID, claims["UserID"])
-	assert.Equal(t, testingutils.TestOrgID, claims["OrgID"])
-	assert.Equal(t, resp.ExpiresAt, int64(claims["exp"].(float64)))
-	assert.True(t, claims["IsAPIUser"].(bool))
+	assert.Equal(t, testingutils.TestUserID, srvutils.GetUserID(parsed))
+	assert.Equal(t, testingutils.TestOrgID, srvutils.GetOrgID(parsed))
+	assert.Equal(t, resp.ExpiresAt, parsed.Expiration().Unix())
+	assert.True(t, srvutils.GetIsAPIUser(parsed))
 }
 
 func TestServer_Signup_LookupHostedDomain(t *testing.T) {
@@ -1936,14 +1926,11 @@ func TestServer_Signup_UserAlreadyExists(t *testing.T) {
 }
 
 func verifyToken(t *testing.T, token, expectedUserID string, expectedOrgID string, expectedExpiry int64, key string) {
-	claims := jwt.MapClaims{}
-	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(key), nil
-	}, jwt.WithAudience("withpixie.ai"))
+	parsed, err := srvutils.ParseToken(token, key, "withpixie.ai")
 	require.NoError(t, err)
-	assert.Equal(t, expectedUserID, claims["UserID"])
-	assert.Equal(t, expectedOrgID, claims["OrgID"])
-	assert.Equal(t, expectedExpiry, int64(claims["exp"].(float64)))
+	assert.Equal(t, expectedUserID, srvutils.GetUserID(parsed))
+	assert.Equal(t, expectedOrgID, srvutils.GetOrgID(parsed))
+	assert.Equal(t, expectedExpiry, parsed.Expiration().Unix())
 }
 
 func doLoginRequest(ctx context.Context, t *testing.T, server *controllers.Server) (*authpb.LoginReply, error) {
@@ -2332,7 +2319,7 @@ func TestServer_GetAuthConnectorToken(t *testing.T) {
 	userPb := utils.ProtoFromUUIDStrOrNil(userID)
 
 	sCtx := authcontext.New()
-	sCtx.Claims = claimsutils.GenerateJWTForUser(userID, orgID, "test@test.com", time.Now(), "pixie")
+	sCtx.Claims = srvutils.GenerateJWTForUser(userID, orgID, "test@test.com", time.Now(), "pixie")
 	ctx := authcontext.NewContext(context.Background(), sCtx)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)

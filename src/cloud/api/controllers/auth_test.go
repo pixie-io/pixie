@@ -28,8 +28,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/golang/mock/gomock"
+	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -40,6 +40,7 @@ import (
 	"px.dev/pixie/src/cloud/api/controllers/testutils"
 	"px.dev/pixie/src/cloud/auth/authpb"
 	"px.dev/pixie/src/shared/services/handler"
+	srvutils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/testingutils"
 )
@@ -48,15 +49,11 @@ func TestGetServiceCredentials(t *testing.T) {
 	viper.Set("domain_name", "withpixie.ai")
 	tokenString, err := controllers.GetServiceCredentials("jwt-key")
 	require.NoError(t, err)
-	token, err := jwt.ParseWithClaims(tokenString, &jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte("jwt-key"), nil
-	}, jwt.WithAudience("withpixie.ai"))
+
+	token, err := srvutils.ParseToken(tokenString, "jwt-key", "withpixie.ai")
 	require.NoError(t, err)
-	claims := token.Claims.(*jwt.MapClaims)
-	assert.Nil(t, claims.Valid(jwt.NewValidationHelper(jwt.WithAudience("withpixie.ai"))))
+	err = jwt.Validate(token, jwt.WithAudience("withpixie.ai"))
+	require.NoError(t, err)
 }
 
 func TestAuthSignupHandler(t *testing.T) {
