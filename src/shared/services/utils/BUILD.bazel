@@ -21,12 +21,16 @@ go_library(
     srcs = [
         "claims.go",
         "error.go",
+        "jwt.go",
     ],
     importpath = "px.dev/pixie/src/shared/services/utils",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/services/jwtpb:jwt_pl_go_proto",
         "@com_github_dgrijalva_jwt_go_v4//:jwt-go",
+        "@com_github_lestrrat_go_jwx//jwa",
+        "@com_github_lestrrat_go_jwx//jwk",
+        "@com_github_lestrrat_go_jwx//jwt",
         "@com_github_sirupsen_logrus//:logrus",
     ],
 )
@@ -36,11 +40,13 @@ go_test(
     srcs = [
         "claims_test.go",
         "error_test.go",
+        "jwt_test.go",
     ],
     deps = [
         ":utils",
         "//src/shared/services/jwtpb:jwt_pl_go_proto",
         "@com_github_dgrijalva_jwt_go_v4//:jwt-go",
+        "@com_github_lestrrat_go_jwx//jwt",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
         "@org_golang_google_grpc//codes",
