@@ -848,12 +848,6 @@ def pl_go_dependencies():
     )
 
     go_repository(
-        name = "com_github_dgrijalva_jwt_go_v4",
-        importpath = "github.com/dgrijalva/jwt-go/v4",
-        sum = "h1:CaO/zOnF8VvUfEbhRatPcwKVWamvbYd8tQGRWacE9kU=",
-        version = "v4.0.0-preview1",
-    )
-    go_repository(
         name = "com_github_dgryski_go_farm",
         importpath = "github.com/dgryski/go-farm",
         sum = "h1:tdlZCpZ/P9DhczCTSixgIKmwPv6+wP5DGjqLYw5SUiA=",

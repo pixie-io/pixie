@@ -19,12 +19,7 @@
 package utils
 
 import (
-	"errors"
-	"strings"
 	"time"
-
-	"github.com/dgrijalva/jwt-go/v4"
-	log "github.com/sirupsen/logrus"
 
 	"px.dev/pixie/src/shared/services/jwtpb"
 )
@@ -43,39 +38,6 @@ const (
 	ClusterClaimType
 )
 
-// PBToMapClaims maps protobuf claims to map claims.
-func PBToMapClaims(pb *jwtpb.JWTClaims) jwt.MapClaims {
-	claims := jwt.MapClaims{}
-
-	// Standard claims.
-	claims["aud"] = pb.Audience
-	claims["exp"] = pb.ExpiresAt
-	claims["jti"] = pb.JTI
-	claims["iat"] = pb.IssuedAt
-	claims["iss"] = pb.Issuer
-	claims["nbf"] = pb.NotBefore
-	claims["sub"] = pb.Subject
-
-	// Custom claims.
-	claims["Scopes"] = strings.Join(pb.Scopes, ",")
-
-	switch m := pb.CustomClaims.(type) {
-	case *jwtpb.JWTClaims_UserClaims:
-		claims["UserID"] = m.UserClaims.UserID
-		claims["OrgID"] = m.UserClaims.OrgID
-		claims["Email"] = m.UserClaims.Email
-		claims["IsAPIUser"] = m.UserClaims.IsAPIUser
-	case *jwtpb.JWTClaims_ServiceClaims:
-		claims["ServiceID"] = m.ServiceClaims.ServiceID
-	case *jwtpb.JWTClaims_ClusterClaims:
-		claims["ClusterID"] = m.ClusterClaims.ClusterID
-	default:
-		log.WithField("type", m).Error("Could not find claims type")
-	}
-
-	return claims
-}
-
 // GetClaimsType gets the type of the given claim.
 func GetClaimsType(c *jwtpb.JWTClaims) ClaimType {
 	switch c.CustomClaims.(type) {
@@ -88,89 +50,6 @@ func GetClaimsType(c *jwtpb.JWTClaims) ClaimType {
 	default:
 		return UnknownClaimType
 	}
-}
-
-// MapClaimsToPB tkes a MapClaims and converts it to a protobuf.
-func MapClaimsToPB(claims jwt.MapClaims) (*jwtpb.JWTClaims, error) {
-	p := &jwtpb.JWTClaims{}
-	var ok bool
-
-	// Standard claims.
-	p.Audience, ok = claims["aud"].(string)
-	if !ok {
-		return nil, errors.New("JWT claim audience is not a string")
-	}
-	expAt, ok := claims["exp"].(float64)
-	if !ok {
-		return nil, errors.New("JWT claim expiresAt is not a float")
-	}
-	p.ExpiresAt = int64(expAt)
-
-	p.JTI, ok = claims["jti"].(string)
-	if !ok {
-		return nil, errors.New("JWT claim JTI is not a string")
-	}
-	isAt, ok := claims["iat"].(float64)
-	if !ok {
-		return nil, errors.New("JWT claim IssuedAt is not a float")
-	}
-	p.IssuedAt = int64(isAt)
-
-	p.Issuer, ok = claims["iss"].(string)
-	if !ok {
-		return nil, errors.New("JWT claim Issuer is not a string")
-	}
-	nbf, ok := claims["nbf"].(float64)
-	if !ok {
-		return nil, errors.New("JWT claim notBefore is not a float")
-	}
-	p.NotBefore = int64(nbf)
-
-	p.Subject, ok = claims["sub"].(string)
-	if !ok {
-		return nil, errors.New("JWT claim subject is not a string")
-	}
-	scopes, ok := claims["Scopes"].(string)
-	if !ok {
-		return nil, errors.New("JWT claim scopes is not a string")
-	}
-
-	p.Scopes = strings.Split(scopes, ",")
-
-	// Custom claims.
-	switch {
-	case claims["UserID"] != nil:
-		isAPIUser := claims["IsAPIUser"]
-		castedIsAPIUser := false
-		if isAPIUser != nil {
-			castedIsAPIUser = isAPIUser.(bool)
-		}
-		userClaims := &jwtpb.UserJWTClaims{
-			UserID:    claims["UserID"].(string),
-			OrgID:     claims["OrgID"].(string),
-			Email:     claims["Email"].(string),
-			IsAPIUser: castedIsAPIUser,
-		}
-		p.CustomClaims = &jwtpb.JWTClaims_UserClaims{
-			UserClaims: userClaims,
-		}
-	case claims["ServiceID"] != nil:
-		serviceClaims := &jwtpb.ServiceJWTClaims{
-			ServiceID: claims["ServiceID"].(string),
-		}
-		p.CustomClaims = &jwtpb.JWTClaims_ServiceClaims{
-			ServiceClaims: serviceClaims,
-		}
-	case claims["ClusterID"] != nil:
-		clusterClaims := &jwtpb.ClusterJWTClaims{
-			ClusterID: claims["ClusterID"].(string),
-		}
-		p.CustomClaims = &jwtpb.JWTClaims_ClusterClaims{
-			ClusterClaims: clusterClaims,
-		}
-	}
-
-	return p, nil
 }
 
 // GenerateJWTForUser creates a protobuf claims for the given user.

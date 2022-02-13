@@ -27,7 +27,6 @@ go_library(
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/services/jwtpb:jwt_pl_go_proto",
-        "@com_github_dgrijalva_jwt_go_v4//:jwt-go",
         "@com_github_lestrrat_go_jwx//jwa",
         "@com_github_lestrrat_go_jwx//jwk",
         "@com_github_lestrrat_go_jwx//jwt",
@@ -45,7 +44,6 @@ go_test(
     deps = [
         ":utils",
         "//src/shared/services/jwtpb:jwt_pl_go_proto",
-        "@com_github_dgrijalva_jwt_go_v4//:jwt-go",
         "@com_github_lestrrat_go_jwx//jwt",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
