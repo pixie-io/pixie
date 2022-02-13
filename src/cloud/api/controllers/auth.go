@@ -26,8 +26,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/gorilla/sessions"
+	"github.com/lestrrat-go/jwx/jwt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
@@ -633,12 +633,10 @@ func loginWithAPIKey(ctx context.Context, env commonenv.Env, r *http.Request, w 
 }
 
 func parseOrgIDFromAPIKey(token string, key string, audience string) (string, error) {
-	claims := jwt.MapClaims{}
-	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(key), nil
-	}, jwt.WithAudience(audience))
+	t, err := jwt.Parse([]byte(token), jwt.WithAudience(audience))
 	if err != nil {
 		return "", err
 	}
-	return claims["OrgID"].(string), nil
+	orgID, _ := t.Get("OrgID")
+	return orgID.(string), nil
 }

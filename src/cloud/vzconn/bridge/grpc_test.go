@@ -29,6 +29,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	"github.com/nats-io/nats.go"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
@@ -68,6 +69,7 @@ func createTestState(t *testing.T, ctrl *gomock.Controller) (*testState, func(t 
 	mockVZMgr := mock_vzmgrpb.NewMockVZMgrServiceClient(ctrl)
 	mockVZDeployment := mock_vzmgrpb.NewMockVZDeploymentServiceClient(ctrl)
 
+	viper.Set("jwt_signing_key", "jwtkey")
 	nc, natsCleanup := testingutils.MustStartTestNATS(t)
 	_, sc, cleanStan := testingutils.MustStartTestStan(t, "test-stan", "test-client")
 	st, err := msgbus.NewSTANStreamer(sc)

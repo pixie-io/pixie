@@ -34,7 +34,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dgrijalva/jwt-go/v4"
+	"github.com/lestrrat-go/jwx/jwt"
 	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open"
 	"golang.org/x/term"
@@ -45,6 +45,7 @@ import (
 	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
 	"px.dev/pixie/src/pixie_cli/pkg/pxconfig"
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
+	srvutils "px.dev/pixie/src/shared/services/utils"
 	apiutils "px.dev/pixie/src/utils"
 )
 
@@ -111,10 +112,9 @@ func LoadDefaultCredentials() (*RefreshToken, error) {
 		return nil, err
 	}
 
-	if token, _ := jwt.Parse(token.Token, nil); token != nil {
-		sc, ok := token.Claims.(jwt.MapClaims)
-		if ok && !sentSegmentAlias {
-			userID, _ := sc["UserID"].(string)
+	if parsed, _ := jwt.Parse([]byte(token.Token), jwt.WithValidate(true)); parsed != nil {
+		userID := srvutils.GetUserID(parsed)
+		if userID != "" && !sentSegmentAlias {
 			// Associate UserID with AnalyticsID.
 			_ = pxanalytics.Client().Enqueue(&analytics.Alias{
 				UserId:     pxconfig.Cfg().UniqueClientID,
@@ -421,11 +421,8 @@ func (p *PixieCloudLogin) getRefreshToken(accessToken string, apiKey string) (*R
 
 	// Get the org name from the cloud.
 	var orgID string
-	if token, _ := jwt.Parse(resp.Token, nil); token != nil {
-		sc, ok := token.Claims.(jwt.MapClaims)
-		if ok {
-			orgID, _ = sc["OrgID"].(string)
-		}
+	if token, _ := jwt.Parse([]byte(resp.Token), jwt.WithValidate(true)); token != nil {
+		orgID = srvutils.GetOrgID(token)
 	}
 
 	orgClient := cloudpb.NewOrganizationServiceClient(conn)

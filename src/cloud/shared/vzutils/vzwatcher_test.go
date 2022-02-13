@@ -25,6 +25,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/golang/mock/gomock"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -54,8 +55,9 @@ func TestVzWatcher(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
+			viper.Set("jwt_signing_key", "jwtkey")
 
+			ctrl := gomock.NewController(t)
 			mockVZMgr := mock_vzmgrpb.NewMockVZMgrServiceClient(ctrl)
 
 			existingVzID := uuid.Must(uuid.NewV4())

@@ -68,6 +68,7 @@ go_test(
         "@com_github_gogo_protobuf//types",
         "@com_github_golang_mock//gomock",
         "@com_github_nats_io_nats_go//:nats_go",
+        "@com_github_spf13_viper//:viper",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
         "@go_googleapis//google/rpc:code_go_proto",

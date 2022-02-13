@@ -104,6 +104,7 @@ func TestMain(m *testing.M) {
 var db *sqlx.DB
 
 func testMain(m *testing.M) error {
+	viper.Set("jwt_signing_key", "key0")
 	s := bindata.Resource(schema.AssetNames(), schema.Asset)
 	testDB, teardown, err := pgtest.SetupTestDB(s)
 	if err != nil {

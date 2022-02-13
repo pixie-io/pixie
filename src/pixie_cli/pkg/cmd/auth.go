@@ -19,7 +19,7 @@
 package cmd
 
 import (
-	"github.com/dgrijalva/jwt-go/v4"
+	"github.com/lestrrat-go/jwx/jwt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -29,6 +29,7 @@ import (
 	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
 	"px.dev/pixie/src/pixie_cli/pkg/pxconfig"
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
+	srvutils "px.dev/pixie/src/shared/services/utils"
 )
 
 func init() {
@@ -76,10 +77,9 @@ var LoginCmd = &cobra.Command{
 			log.WithError(err).Fatal("Failed to persist auth token")
 		}
 
-		if token, _ := jwt.Parse(refreshToken.Token, nil); token != nil {
-			sc, ok := token.Claims.(jwt.MapClaims)
-			if ok {
-				userID, _ := sc["UserID"].(string)
+		if token, _ := jwt.Parse([]byte(refreshToken.Token), jwt.WithValidate(true)); token != nil {
+			userID := srvutils.GetUserID(token)
+			if userID != "" {
 				// Associate UserID with AnalyticsID.
 				_ = pxanalytics.Client().Enqueue(&analytics.Alias{
 					UserId:     pxconfig.Cfg().UniqueClientID,

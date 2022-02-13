@@ -33,7 +33,6 @@ go_library(
         "//src/shared/services/jwtpb:jwt_pl_go_proto",
         "//src/shared/services/utils",
         "@com_github_cenkalti_backoff_v3//:backoff",
-        "@com_github_dgrijalva_jwt_go_v4//:jwt-go",
         "@com_github_googleapis_google_cloud_go_testing//storage/stiface",
         "@com_github_nats_io_nats_go//:nats_go",
         "@com_github_nats_io_nats_server_v2//server",

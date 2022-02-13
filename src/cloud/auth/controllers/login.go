@@ -25,7 +25,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
 	"github.com/spf13/viper"
@@ -287,13 +286,13 @@ func (s *Server) loginUser(ctx context.Context, userInfo *UserInfo, orgInfo *pro
 	}, nil
 }
 
-type token struct {
+type tokenData struct {
 	token     string
 	expiresAt time.Time
 }
 
 // completeUserLogin does the final login steps and generates a token for the user.
-func (s *Server) completeUserLogin(ctx context.Context, userInfo *UserInfo, orgInfo *profilepb.OrgInfo) (*token, error) {
+func (s *Server) completeUserLogin(ctx context.Context, userInfo *UserInfo, orgInfo *profilepb.OrgInfo) (*tokenData, error) {
 	pc := s.env.ProfileClient()
 	var orgID string
 	if orgInfo != nil {
@@ -333,7 +332,7 @@ func (s *Server) completeUserLogin(ctx context.Context, userInfo *UserInfo, orgI
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to generate token")
 	}
-	return &token{
+	return &tokenData{
 		token:     tkn,
 		expiresAt: expiresAt,
 	}, nil
@@ -784,18 +783,24 @@ func (s *Server) GetAuthConnectorToken(ctx context.Context, req *authpb.GetAuthC
 	now := time.Now()
 	expiresAt := now.Add(AuthConnectorTokenValidDuration)
 	claims := srvutils.GenerateJWTForUser(utils.UUIDFromProtoOrNil(userInfo.ID).String(), utils.UUIDFromProtoOrNil(userInfo.OrgID).String(), userInfo.Email, expiresAt, viper.GetString("domain_name"))
-	mc := srvutils.PBToMapClaims(claims)
+	token, err := srvutils.ProtoToToken(claims)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create authConnector token")
+	}
 
 	// Add custom fields for auth connector token.
-	mc["ClusterName"] = req.ClusterName
+	err = token.Set("ClusterName", req.ClusterName)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create authConnector token")
+	}
 
-	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, mc).SignedString([]byte(s.env.JWTSigningKey()))
+	signed, err := srvutils.SignToken(token, s.env.JWTSigningKey())
 	if err != nil {
 		return nil, fmt.Errorf("unable to sign authConnector token")
 	}
 
 	return &authpb.GetAuthConnectorTokenResponse{
-		Token:     token,
+		Token:     string(signed),
 		ExpiresAt: expiresAt.Unix(),
 	}, nil
 }

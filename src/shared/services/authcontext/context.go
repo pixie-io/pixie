@@ -21,11 +21,12 @@ package authcontext
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
-	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/gofrs/uuid"
+	"github.com/lestrrat-go/jwx/jwa"
+	"github.com/lestrrat-go/jwx/jwk"
+	"github.com/lestrrat-go/jwx/jwt"
 
 	"px.dev/pixie/src/shared/services/jwtpb"
 	"px.dev/pixie/src/shared/services/utils"
@@ -47,20 +48,16 @@ func New() *AuthContext {
 
 // UseJWTAuth takes a token and sets claims, etc.
 func (s *AuthContext) UseJWTAuth(signingKey string, tokenString string, audience string) error {
-	secret := signingKey
-	token, err := jwt.ParseWithClaims(tokenString, &jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
-		// validate that the signing method is correct
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(secret), nil
-	}, jwt.WithAudience(audience))
+	key, err := jwk.New([]byte(signingKey))
+	if err != nil {
+		return err
+	}
+	token, err := jwt.Parse([]byte(tokenString), jwt.WithVerify(jwa.HS256, key), jwt.WithAudience(audience), jwt.WithValidate(true))
 	if err != nil {
 		return err
 	}
 
-	claims := token.Claims.(*jwt.MapClaims)
-	s.Claims, err = utils.MapClaimsToPB(*claims)
+	s.Claims, err = utils.TokenToProto(token)
 	if err != nil {
 		return err
 	}

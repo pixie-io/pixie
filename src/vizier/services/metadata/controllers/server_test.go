@@ -735,6 +735,7 @@ func createDialer(lis *bufconn.Listener) func(ctx context.Context, url string) (
 }
 
 func TestGetAgentUpdates(t *testing.T) {
+	viper.Set("jwt_signing_key", "jwtkey")
 	// Set up mock.
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

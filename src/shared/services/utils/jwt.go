@@ -145,6 +145,15 @@ func ParseToken(tokenString string, signingKey string, audience string) (jwt.Tok
 	)
 }
 
+// SignJWTClaims signs the claim using the given signing key.
+func SignJWTClaims(claims *jwtpb.JWTClaims, signingKey string) (string, error) {
+	token, err := ProtoToToken(claims)
+	if err != nil {
+		return "", err
+	}
+	return SignToken(token, signingKey)
+}
+
 // GetScopes fetches the Scopes from the custom claims.
 func GetScopes(t jwt.Token) []string {
 	claims := t.PrivateClaims()

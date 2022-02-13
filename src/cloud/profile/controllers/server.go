@@ -26,9 +26,11 @@ import (
 	"time"
 
 	"github.com/badoux/checkmail"
-	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
+	"github.com/lestrrat-go/jwx/jwa"
+	"github.com/lestrrat-go/jwx/jwk"
+	"github.com/lestrrat-go/jwx/jwt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -653,16 +655,21 @@ func (s *Server) CreateInviteToken(ctx context.Context, req *profilepb.CreateInv
 		}
 	}
 
-	inviteClaims := jwt.MapClaims{}
-	inviteClaims["sub"] = orgID.String()
-	inviteClaims["exp"] = time.Now().Add(7 * 24 * time.Hour).Unix()
-
-	signedClaims, err := jwt.NewWithClaims(jwt.SigningMethodHS256, inviteClaims).SignedString([]byte(inviteSigningKey))
+	builder := jwt.NewBuilder()
+	builder.
+		Expiration(time.Now().Add(7 * 24 * time.Hour)).
+		Subject(orgID.String())
+	token, err := builder.Build()
 	if err != nil {
 		return nil, err
 	}
 
-	return &profilepb.InviteToken{SignedClaims: signedClaims}, nil
+	signed, err := claimsutils.SignToken(token, inviteSigningKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return &profilepb.InviteToken{SignedClaims: string(signed)}, nil
 }
 
 // RevokeAllInviteTokens revokes all pending invited for the given org by rotating the JWT signing key.
@@ -687,20 +694,13 @@ func (s *Server) VerifyInviteToken(ctx context.Context, req *profilepb.InviteTok
 	}
 
 	// Parse without verification to pull out the orgID first.
-	parser := jwt.Parser{}
-	claims := &jwt.StandardClaims{}
-	_, _, err := parser.ParseUnverified(signedClaims, claims)
-	if err != nil {
-		return nil, err
-	}
-	// Check expiration.
-	err = claims.Valid(nil)
+	token, err := jwt.Parse([]byte(signedClaims), jwt.WithValidate(true))
 	if err != nil {
 		return &profilepb.VerifyInviteTokenResponse{Valid: false}, nil
 	}
 
 	// Get the signing key for the orgID.
-	orgID := uuid.FromStringOrNil(claims.Subject)
+	orgID := uuid.FromStringOrNil(token.Subject())
 	if orgID == uuid.Nil {
 		return nil, status.Error(codes.InvalidArgument, "invite token misformatted")
 	}
@@ -709,11 +709,14 @@ func (s *Server) VerifyInviteToken(ctx context.Context, req *profilepb.InviteTok
 		return nil, err
 	}
 
-	_, err = parser.Parse(signedClaims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(inviteSigningKey), nil
-	})
+	key, err := jwk.New([]byte(inviteSigningKey))
+	if err != nil {
+		return nil, err
+	}
+	_, err = jwt.Parse([]byte(signedClaims), jwt.WithVerify(jwa.HS256, key), jwt.WithValidate(true))
 	if err != nil {
 		return &profilepb.VerifyInviteTokenResponse{Valid: false}, nil
 	}
+
 	return &profilepb.VerifyInviteTokenResponse{Valid: true, OrgID: utils.ProtoFromUUID(orgID)}, nil
 }

@@ -24,8 +24,10 @@ go_library(
     deps = [
         "//src/shared/services/jwtpb:jwt_pl_go_proto",
         "//src/shared/services/utils",
-        "@com_github_dgrijalva_jwt_go_v4//:jwt-go",
         "@com_github_gofrs_uuid//:uuid",
+        "@com_github_lestrrat_go_jwx//jwa",
+        "@com_github_lestrrat_go_jwx//jwk",
+        "@com_github_lestrrat_go_jwx//jwt",
     ],
 )
 

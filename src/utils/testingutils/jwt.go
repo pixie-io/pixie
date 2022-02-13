@@ -22,8 +22,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dgrijalva/jwt-go/v4"
-
 	"px.dev/pixie/src/shared/services/jwtpb"
 	"px.dev/pixie/src/shared/services/utils"
 )
@@ -70,10 +68,9 @@ func GenerateTestJWTTokenWithDuration(t *testing.T, signingKey string, timeout t
 
 // SignPBClaims signs our protobuf claims after converting to json.
 func SignPBClaims(t *testing.T, claims *jwtpb.JWTClaims, signingKey string) string {
-	mc := utils.PBToMapClaims(claims)
-	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, mc).SignedString([]byte(signingKey))
+	signed, err := utils.SignJWTClaims(claims, signingKey)
 	if err != nil {
 		t.Fatal("failed to generate token")
 	}
-	return token
+	return signed
 }

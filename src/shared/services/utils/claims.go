@@ -252,9 +252,3 @@ func GenerateJWTForCluster(clusterID string, audience string) *jwtpb.JWTClaims {
 	}
 	return &pbClaims
 }
-
-// SignJWTClaims signs the claim using the given signing key.
-func SignJWTClaims(claims *jwtpb.JWTClaims, signingKey string) (string, error) {
-	mc := PBToMapClaims(claims)
-	return jwt.NewWithClaims(jwt.SigningMethodHS256, mc).SignedString([]byte(signingKey))
-}
