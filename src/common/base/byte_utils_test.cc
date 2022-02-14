@@ -175,6 +175,51 @@ TEST(UtilsTest, TestIntToLEndianBytes) {
   }
 }
 
+TEST(UtilsTest, TestIntToBEndianBytes) {
+  {
+    char result[4];
+    IntToBEndianBytes(0x12345678, result);
+    char expected[] = "\x12\x34\x56\x78";
+    EXPECT_EQ(result[0], expected[0]);
+    EXPECT_EQ(result[1], expected[1]);
+    EXPECT_EQ(result[2], expected[2]);
+    EXPECT_EQ(result[3], expected[3]);
+  }
+
+  {
+    char result[3];
+    IntToBEndianBytes(198, result);
+    char expected[] = "\x00\x00\xc6";
+    EXPECT_EQ(result[0], expected[0]);
+    EXPECT_EQ(result[1], expected[1]);
+    EXPECT_EQ(result[2], expected[2]);
+  }
+
+  {
+    uint8_t result[4];
+    IntToBEndianBytes(0x12345678, result);
+    uint8_t expected[] = "\x12\x34\x56\x78";
+    EXPECT_EQ(result[0], expected[0]);
+    EXPECT_EQ(result[1], expected[1]);
+    EXPECT_EQ(result[2], expected[2]);
+    EXPECT_EQ(result[3], expected[3]);
+  }
+
+  {
+    uint8_t result[8];
+    IntToBEndianBytes(0x123456789abcdef0, result);
+    uint8_t expected[] = "\x12\x34\x56\x78\x9a\xbc\xde\xf0";
+    EXPECT_EQ(result[0], expected[0]);
+    EXPECT_EQ(result[1], expected[1]);
+    EXPECT_EQ(result[2], expected[2]);
+    EXPECT_EQ(result[3], expected[3]);
+    EXPECT_EQ(result[4], expected[4]);
+    EXPECT_EQ(result[5], expected[5]);
+    EXPECT_EQ(result[6], expected[6]);
+    EXPECT_EQ(result[7], expected[7]);
+  }
+}
+
 TEST(UtilsTest, TestBEndianBytesToInt) {
   // uint32_t cases.
   EXPECT_EQ(BEndianBytesToInt<uint32_t>(ConstString("\x12\x34\x56\x78")), 0x12345678);

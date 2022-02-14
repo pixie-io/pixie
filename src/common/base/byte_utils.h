@@ -111,6 +111,21 @@ void IntToLEndianBytes(int64_t num, TCharType (&result)[N]) {
 }
 
 /**
+ * Convert an int to a big-endian string of bytes.
+ *
+ * @tparam TCharType The char type to use in the string (e.g. char vs uint8_t).
+ * @param num The number to convert.
+ * @param result the destination buffer.
+ */
+template <typename TCharType, size_t N>
+void IntToBEndianBytes(int64_t num, TCharType (&result)[N]) {
+  static_assert(N <= sizeof(int64_t));
+  for (size_t i = 0; i < N; i++) {
+    result[i] = (num >> ((N - i - 1) * 8));
+  }
+}
+
+/**
  * Convert a big-endian string of bytes to an integer.
  *
  * @tparam T The receiver int type.
