@@ -65,9 +65,10 @@ pl_cc_test(
 pl_cc_test(
     name = "linux_headers_test",
     srcs = ["linux_headers_test.cc"],
-    data = glob([
+    data = [
         "testdata/config",
         "testdata/config.gz",
+    ] + glob([
         "testdata/test_header_packages/*",
         "testdata/sample_host_ubuntu/**",
         "testdata/sample_host_debian/**",
@@ -150,6 +151,6 @@ pl_cc_test(
     tags = ["requires_bpf"],
     deps = [
         ":cc_library",
-        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing:container_images",
     ],
 )

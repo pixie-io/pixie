@@ -127,6 +127,6 @@ pl_cc_test(
     ],
     deps = [
         ":cc_library",
-        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing:container_images",
     ],
 )
