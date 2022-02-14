@@ -1,3 +1,4 @@
+# Copyright 2018- The Pixie Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,12 +18,10 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
-package(default_visibility = ["//src/e2e_test:__subpackages__"])
-
 go_library(
-    name = "protocol_loadtest_server_lib",
-    srcs = ["main.go"],
-    importpath = "px.dev/pixie/src/e2e_test/protocol_loadtest/server",
+    name = "protocol_loadtest_lib",
+    srcs = ["server.go"],
+    importpath = "px.dev/pixie/src/e2e_test/protocol_loadtest",
     visibility = ["//visibility:private"],
     deps = [
         "//src/e2e_test/protocol_loadtest/grpc:grpc_server",
@@ -31,13 +30,14 @@ go_library(
 )
 
 go_binary(
-    name = "protocol_loadtest_server",
-    embed = [":protocol_loadtest_server_lib"],
+    name = "protocol_loadtest",
+    embed = [":protocol_loadtest_lib"],
+    visibility = ["//visibility:public"],
 )
 
 go_image(
     name = "protocol_loadtest_server_image",
-    binary = ":protocol_loadtest_server",
+    binary = ":protocol_loadtest",
     importpath = "px.dev/pixie",
     visibility = [
         "//src/e2e_test:__subpackages__",
@@ -49,7 +49,7 @@ container_push(
     format = "Docker",
     image = ":protocol_loadtest_server_image",
     registry = "gcr.io",
-    repository = "pixie-oss/pixie-dev/experimental/protocol_loadtest_server",
+    repository = "pixie-oss/pixie-dev/src/e2e_test/protocol_loadtest/protocol_loadtest_server",
     tag = "{STABLE_BUILD_TAG}",
     tags = ["manual"],
 )
