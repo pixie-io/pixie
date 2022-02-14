@@ -27,7 +27,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"px.dev/pixie/src/e2e_test/protocol_loadtest/util"
+	"px.dev/pixie/src/e2e_test/util"
 )
 
 const (

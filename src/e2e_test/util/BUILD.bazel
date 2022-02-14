@@ -19,6 +19,6 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "util",
     srcs = ["random.go"],
-    importpath = "px.dev/pixie/src/e2e_test/protocol_loadtest/util",
+    importpath = "px.dev/pixie/src/e2e_test/util",
     visibility = ["//visibility:public"],
 )

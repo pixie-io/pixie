@@ -32,7 +32,7 @@ import (
 	_ "google.golang.org/grpc/encoding/gzip"
 
 	"px.dev/pixie/src/e2e_test/protocol_loadtest/grpc/loadtestpb"
-	"px.dev/pixie/src/e2e_test/protocol_loadtest/util"
+	"px.dev/pixie/src/e2e_test/util"
 )
 
 type loadTestServer struct {
