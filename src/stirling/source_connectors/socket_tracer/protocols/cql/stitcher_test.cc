@@ -21,6 +21,7 @@
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/cql/parse.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/cql/stitcher.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/cql/test_utils.h"
 
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
@@ -30,6 +31,7 @@ namespace stirling {
 namespace protocols {
 namespace cass {
 
+using testutils::CreateFrame;
 //-----------------------------------------------------------------------------
 // Test Data
 //-----------------------------------------------------------------------------
@@ -166,39 +168,6 @@ constexpr uint8_t kEventResp[] = {0x00, 0x0d, 0x53, 0x43, 0x48, 0x45, 0x4d, 0x41
                                   0x45, 0x44, 0x00, 0x05, 0x54, 0x41, 0x42, 0x4c, 0x45, 0x00, 0x0e,
                                   0x74, 0x75, 0x74, 0x6f, 0x72, 0x69, 0x61, 0x6c, 0x73, 0x70, 0x6f,
                                   0x69, 0x6e, 0x74, 0x00, 0x03, 0x65, 0x6d, 0x70};
-
-//-----------------------------------------------------------------------------
-// Test Utils
-//-----------------------------------------------------------------------------
-
-// Required because zero length C-arrays are not allowed in C++, so can't use the version above.
-Frame CreateFrame(uint16_t stream, Opcode opcode, uint64_t timestamp_ns) {
-  // Should be either a request or response opcode.
-  CHECK(IsReqOpcode(opcode) != IsRespOpcode(opcode));
-
-  Frame f;
-  f.hdr.opcode = opcode;
-  f.hdr.stream = stream;
-  f.hdr.flags = 0;
-  f.hdr.version = 0x04;
-  f.hdr.flags = 0;
-  f.hdr.length = 0;
-  f.msg = "";
-  f.timestamp_ns = timestamp_ns;
-  return f;
-}
-
-// This version populates a body.
-template <size_t N>
-Frame CreateFrame(uint16_t stream, Opcode opcode, const uint8_t (&msg)[N], uint64_t timestamp_ns) {
-  Frame f = CreateFrame(stream, opcode, timestamp_ns);
-
-  std::string_view msg_view = CreateCharArrayView<char>(msg);
-  f.hdr.length = msg_view.length();
-  f.msg = msg_view;
-
-  return f;
-}
 
 //-----------------------------------------------------------------------------
 // Test Cases

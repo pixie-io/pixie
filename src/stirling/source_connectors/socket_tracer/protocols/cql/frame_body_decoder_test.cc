@@ -20,6 +20,7 @@
 #include <gtest/gtest.h>
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/cql/frame_body_decoder.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/cql/test_utils.h"
 
 #include "src/common/testing/testing.h"
 
@@ -32,6 +33,8 @@ using ::testing::ElementsAre;
 using ::testing::IsEmpty;
 using ::testing::Pair;
 using ::testing::UnorderedElementsAre;
+
+using ::px::stirling::protocols::cass::testutils::CreateFrame;
 
 //-----------------------------------------------------------------------------
 // Test Data
@@ -764,6 +767,70 @@ TEST(ExtractSchemaChange, Basic) {
   EXPECT_THAT(sc.keyspace, "tutorialspoint");
   EXPECT_EQ(sc.name, "emp");
   EXPECT_THAT(sc.arg_types, IsEmpty());
+}
+
+TEST(ParseResultResp, RowsResult) {
+  ResultResp expected_resp;
+  expected_resp.kind = ResultRespKind::kRows;
+
+  ResultRowsResp expected_rows_resp;
+  expected_rows_resp.metadata.flags = 0;
+  expected_rows_resp.metadata.columns_count = 2;
+  ColSpec col_spec;
+  col_spec.ks_name = "keyspace";
+  col_spec.table_name = "table";
+  col_spec.name = "col1";
+  col_spec.type = {
+      .type = protocols::cass::DataType::kVarchar,
+      .value = "",
+  };
+  expected_rows_resp.metadata.col_specs.push_back(col_spec);
+  col_spec.name = "col2";
+  expected_rows_resp.metadata.col_specs.push_back(col_spec);
+
+  // Estimate body size (without rows) by settings rows_count to 0.
+  expected_rows_resp.rows_count = 0;
+  expected_resp.resp = expected_rows_resp;
+  auto resp_body = testutils::ResultRespToByteString(expected_resp);
+
+  uint16_t stream = 1;
+  uint64_t ts = 1;
+  auto frame = CreateFrame(stream, Opcode::kResult, resp_body, ts);
+
+  ASSERT_OK_AND_ASSIGN(ResultResp resp, ParseResultResp(&frame));
+
+  EXPECT_EQ(resp, expected_resp);
+}
+
+TEST(ParseResultResp, VoidResult) {
+  ResultResp expected_resp;
+  expected_resp.kind = ResultRespKind::kVoid;
+
+  auto resp_body = testutils::ResultRespToByteString(expected_resp);
+
+  uint16_t stream = 1;
+  uint64_t ts = 1;
+  auto frame = CreateFrame(stream, Opcode::kResult, resp_body, ts);
+
+  ASSERT_OK_AND_ASSIGN(ResultResp resp, ParseResultResp(&frame));
+
+  EXPECT_EQ(resp, expected_resp);
+}
+
+TEST(ParseQueryReq, Basic) {
+  QueryReq expected_req;
+  expected_req.query = "SELECT * FROM table;";
+  expected_req.qp.flags = 0;
+  expected_req.qp.consistency = 1;
+
+  auto body = testutils::QueryReqToByteString(expected_req);
+
+  uint16_t stream = 1;
+  uint64_t ts = 1;
+  auto frame = CreateFrame(stream, Opcode::kResult, body, ts);
+
+  ASSERT_OK_AND_ASSIGN(QueryReq req, ParseQueryReq(&frame));
+  EXPECT_EQ(req, expected_req);
 }
 
 }  // namespace cass
