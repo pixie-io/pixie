@@ -42,7 +42,7 @@ def pl_aux_go_binary(name, files, base, build_flags = ""):
         commands = [
             "go mod init",
             "go get",
-            "go build -v " + build_flags,
+            "CGO_ENABLED=0 go build -a -v " + build_flags,
         ],
         docker_run_flags = ["-w " + container_build_dir],
         image = ":" + name + "_image_with_source.tar",

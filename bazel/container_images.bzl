@@ -71,14 +71,16 @@ def base_images():
 
 def stirling_test_build_images():
     _docker_io_image(
+        # Using golang:1.16-alpine as it is smaller than the ubuntu based image.
         "golang_1_16_image",
-        "sha256:3cd70083126ae2f17c4d79eb4b4717fcef8711c1c25a55944960bf809aea782a",
+        "sha256:c3d78e9d45bc6da38b15485456380d0b669e60d075f0ed69f87ebc14231eed19",
         "library/golang",
     )
 
     _docker_io_image(
+        # Using golang:1.17-alpine as it is smaller than the ubuntu based image.
         "golang_1_17_image",
-        "sha256:d860e175278037ee2429fecb1150bf10635ff4488c5a6faf695b169bf2c0868f",
+        "sha256:1dc6a836407ef26c761af27bd39eb86ec385bab0f89a6c969bb1a04b342f7074",
         "library/golang",
     )
 
