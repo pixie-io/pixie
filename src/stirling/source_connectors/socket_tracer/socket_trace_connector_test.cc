@@ -1370,11 +1370,6 @@ TEST_F(SocketTraceConnectorTest, MySQLMultiResultset) {
 
 TEST_F(SocketTraceConnectorTest, CQLQuery) {
   using cass::testutils::CreateCQLEvent;
-  using cass::testutils::kCQLLatencyIdx;
-  using cass::testutils::kCQLReqBodyIdx;
-  using cass::testutils::kCQLReqOpIdx;
-  using cass::testutils::kCQLRespBodyIdx;
-  using cass::testutils::kCQLRespOpIdx;
 
   // QUERY request from client.
   // Contains: SELECT * FROM system.peers
@@ -1421,22 +1416,21 @@ TEST_F(SocketTraceConnectorTest, CQLQuery) {
   RecordBatch record_batch = tablets[0].records;
   EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
 
-  EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kCQLReqOpIdx]),
+  EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kCQLReqOp]),
               ElementsAre(static_cast<int64_t>(cass::ReqOp::kQuery)));
-  EXPECT_THAT(ToStringVector(record_batch[kCQLReqBodyIdx]),
-              ElementsAre("SELECT * FROM system.peers"));
+  EXPECT_THAT(ToStringVector(record_batch[kCQLReqBody]), ElementsAre("SELECT * FROM system.peers"));
 
-  EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kCQLRespOpIdx]),
+  EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kCQLRespOp]),
               ElementsAre(static_cast<int64_t>(cass::RespOp::kResult)));
-  EXPECT_THAT(ToStringVector(record_batch[kCQLRespBodyIdx]), ElementsAre(
-                                                                 R"(Response type = ROWS
+  EXPECT_THAT(ToStringVector(record_batch[kCQLRespBody]), ElementsAre(
+                                                              R"(Response type = ROWS
 Number of columns = 9
 ["peer","data_center","host_id","preferred_ip","rack","release_version","rpc_address","schema_version","tokens"]
 Number of rows = 0)"));
 
   // In test environment, latencies are simply the number of packets in the response.
   // In this case 7 response packets: 1 header + 1 col defs + 1 EOF + 3 rows + 1 EOF.
-  EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kCQLLatencyIdx]), ElementsAre(1));
+  EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kCQLLatency]), ElementsAre(1));
 }
 
 //-----------------------------------------------------------------------------

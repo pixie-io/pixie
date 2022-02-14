@@ -74,6 +74,7 @@ static constexpr int kCQLReqOp = kCQLTable.ColIndex("req_op");
 static constexpr int kCQLReqBody = kCQLTable.ColIndex("req_body");
 static constexpr int kCQLRespOp = kCQLTable.ColIndex("resp_op");
 static constexpr int kCQLRespBody = kCQLTable.ColIndex("resp_body");
+static constexpr int kCQLLatency = kCQLTable.ColIndex("latency");
 
 }  // namespace stirling
 }  // namespace px

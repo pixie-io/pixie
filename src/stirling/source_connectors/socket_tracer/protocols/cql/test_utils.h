@@ -63,12 +63,6 @@ inline std::string CreateCQLEmptyEvent(TOpType op, uint16_t stream) {
   return absl::StrCat(hdr, body);
 }
 
-static constexpr int kCQLReqOpIdx = kCQLTable.ColIndex("req_op");
-static constexpr int kCQLReqBodyIdx = kCQLTable.ColIndex("req_body");
-static constexpr int kCQLRespOpIdx = kCQLTable.ColIndex("resp_op");
-static constexpr int kCQLRespBodyIdx = kCQLTable.ColIndex("resp_body");
-static constexpr int kCQLLatencyIdx = kCQLTable.ColIndex("latency");
-
 }  // namespace testutils
 }  // namespace cass
 }  // namespace protocols
