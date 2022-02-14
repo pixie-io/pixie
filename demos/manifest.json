@@ -1,5 +1,6 @@
 {
     "px-sock-shop": {
+        "description": "Weaveworks' Sock Shop microservices demo.",
         "instructions": [
             "Load testing has been automatically launched for px-sock-shop. If you want to visit the px-sock-shop site,",
             " run 'kubectl -n px-sock-shop get svc front-end --watch' to get the external IP.",
@@ -8,6 +9,7 @@
         ]
     },
     "px-online-boutique": {
+        "description": "GCP's Online Boutique microservice demo.",
         "instructions": [
             "Load testing has been automatically launched for px-online-boutique. If you want to visit the",
             " px-online-boutique site, run 'kubectl -n px-online-boutique get service frontend-external --watch'",

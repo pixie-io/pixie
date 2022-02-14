@@ -158,11 +158,11 @@ func listCmd(cmd *cobra.Command, args []string) {
 
 	w := components.CreateStreamWriter("table", os.Stdout)
 	defer w.Finish()
-	w.SetHeader("demo_list", []string{"Name"})
+	w.SetHeader("demo_list", []string{"Name", "Description"})
 	for app, appSpec := range manifest {
 		// When a demo app is deprecated, its contents will be set to null in manifest.json.
 		if appSpec != nil {
-			err = w.Write([]interface{}{app})
+			err = w.Write([]interface{}{app, appSpec.Description})
 			if err != nil {
 				log.WithError(err).Error("Failed to write demo app")
 				continue
@@ -289,6 +289,7 @@ func deployCmd(cmd *cobra.Command, args []string) {
 }
 
 type manifestAppSpec struct {
+	Description  string   `json:"description"`
 	Instructions []string `json:"instructions"`
 }
 
