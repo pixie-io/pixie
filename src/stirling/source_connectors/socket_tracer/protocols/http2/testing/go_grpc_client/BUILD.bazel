@@ -44,4 +44,5 @@ container_push(
     registry = "gcr.io",
     repository = "pl-dev-infra/demos/go_grpc_client",
     tag = "{BUILD_USER}",
+    tags = ["manual"],
 )
