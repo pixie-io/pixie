@@ -64,6 +64,7 @@ bool Exists(const std::filesystem::path& path);
 Status Copy(const std::filesystem::path& from, const std::filesystem::path& to,
             std::filesystem::copy_options options = std::filesystem::copy_options::none);
 Status Remove(const std::filesystem::path& path);
+Status RemoveAll(const std::filesystem::path& path);
 Status Chown(const std::filesystem::path& path, const uid_t uid, const gid_t gid);
 StatusOr<struct stat> Stat(const std::filesystem::path& path);
 
