@@ -61,7 +61,6 @@ go_test(
         "@com_github_gogo_protobuf//types",
         "@com_github_golang_mock//gomock",
         "@com_github_lestrrat_go_jwx//jwa",
-        "@com_github_lestrrat_go_jwx//jwk",
         "@com_github_lestrrat_go_jwx//jwt",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
