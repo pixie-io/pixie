@@ -680,9 +680,6 @@ void StirlingImpl::Run() {
 
 namespace {
 
-static constexpr std::chrono::milliseconds kMinSleepDuration{1};
-static constexpr std::chrono::milliseconds kMaxSleepDuration{1000};
-
 // Helper function: Figure out when to wake up next.
 std::chrono::milliseconds TimeUntilNextTick(
     const absl::flat_hash_map<SourceConnector*, SourceOutput> source_output_map) {
@@ -692,6 +689,7 @@ std::chrono::milliseconds TimeUntilNextTick(
 
   // Worst case, wake-up every so often.
   // This is important if there are no subscribed info classes, to avoid sleeping eternally.
+  constexpr std::chrono::milliseconds kMaxSleepDuration{1000};
   auto wakeup_time = now + kMaxSleepDuration;
   for (const auto& [source, output] : source_output_map) {
     wakeup_time = std::min(wakeup_time, source->sampling_freq_mgr().next());
@@ -702,6 +700,7 @@ std::chrono::milliseconds TimeUntilNextTick(
 }
 
 void SleepForDuration(std::chrono::milliseconds sleep_duration) {
+  constexpr std::chrono::milliseconds kMinSleepDuration{1};
   if (sleep_duration > kMinSleepDuration) {
     std::this_thread::sleep_for(sleep_duration);
   }
