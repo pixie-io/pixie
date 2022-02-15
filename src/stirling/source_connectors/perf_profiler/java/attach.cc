@@ -159,9 +159,9 @@ void AgentAttacher::CopyAgentLibsOrDie() {
 
   // Copy each file and downgrade ownership.
   for (const std::filesystem::path& src_path : agent_libs_) {
-    const std::string artifacts_path = AgentArtifactsPath(target_upid_).string();
-    const std::string basename = std::filesystem::path(src_path).filename();
-    const std::string dst_path = absl::Substitute("$0/$1", artifacts_path, basename);
+    const std::filesystem::path artifacts_path = StirlingArtifactsPath(target_upid_);
+    const std::filesystem::path basename = std::filesystem::path(src_path).filename();
+    const std::filesystem::path dst_path = artifacts_path / basename;
 
     PL_EXIT_IF_ERROR(fs::Copy(src_path, dst_path, copy_options));
     PL_EXIT_IF_ERROR(fs::Chown(dst_path, target_uid_, target_gid_));
@@ -170,9 +170,9 @@ void AgentAttacher::CopyAgentLibsOrDie() {
   for (std::filesystem::path& agent_lib : agent_libs_) {
     // Mutate the values in agent_libs_ so that later, when we enter the namespace
     // of the target process, we use the correctly scoped file path.
-    const std::string artifacts_path = AgentArtifactsPath(target_upid_).string();
-    const std::string basename = std::filesystem::path(agent_lib).filename();
-    agent_lib = absl::Substitute("$0/$1", artifacts_path, basename);
+    const std::filesystem::path artifacts_path = AgentArtifactsPath(target_upid_);
+    const std::filesystem::path basename = std::filesystem::path(agent_lib).filename();
+    agent_lib = artifacts_path / basename;
   }
 }
 
