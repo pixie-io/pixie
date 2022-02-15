@@ -33,7 +33,9 @@ import (
 	_ "google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/reflection"
 
-	pb "px.dev/pixie/src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto"
+	// ___module___ will get replaced by the module name for the current binary and
+	// the generated .pb.go is expected to be in a sibling proto/ folder at buildtime.
+	pb "___module___/proto"
 )
 
 // server is used to implement helloworld.GreeterServer.

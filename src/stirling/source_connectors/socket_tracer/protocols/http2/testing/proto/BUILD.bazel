@@ -47,3 +47,11 @@ pl_cc_proto_library(
     name = "multi_fields_pl_cc_proto",
     proto = ":multi_fields_pl_proto",
 )
+
+filegroup(
+    name = "proto_files",
+    srcs = glob([
+        "*.proto",
+        "*.pb.go",
+    ]),
+)

@@ -21,17 +21,28 @@ load("//src/stirling/testing/bazel:containerized_build.bzl", "pl_aux_go_binary")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
-#TODO(oazizi): The px.dev/pixie/src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto
-#              should be made local to the build containers, so that things don't break on proto update.
-
 pl_aux_go_binary(
     name = "golang_1_16_grpc_client",
     base = "@golang_1_16_image//image",
-    files = ["main.go"],
+    extra_layers = {
+        "proto": ["//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto:proto_files"],
+    },
+    files = [
+        "go.mod",
+        "go.sum",
+        "main.go",
+    ],
 )
 
 pl_aux_go_binary(
     name = "golang_1_17_grpc_client",
     base = "@golang_1_17_image//image",
-    files = ["main.go"],
+    extra_layers = {
+        "proto": ["//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto:proto_files"],
+    },
+    files = [
+        "go.mod",
+        "go.sum",
+        "main.go",
+    ],
 )

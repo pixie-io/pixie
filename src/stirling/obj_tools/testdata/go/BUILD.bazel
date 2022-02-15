@@ -25,7 +25,11 @@ pl_aux_go_binary(
     name = "test_go_binary",
     base = "@golang_1_16_image//image",
     build_flags = "-gcflags='-N -l'",
-    files = ["test_go_binary.go"],
+    files = [
+        "go.mod",
+        "go.sum",
+        "test_go_binary.go",
+    ],
 )
 
 filegroup(

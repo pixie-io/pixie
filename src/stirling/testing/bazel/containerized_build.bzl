@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_docker//container:container.bzl", "container_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_layer")
 load("@io_bazel_rules_docker//docker/util:run.bzl", "container_run_and_commit", "container_run_and_extract")
 
 # A rule for building auxiliary go binaries used in tests.
@@ -25,39 +25,51 @@ load("@io_bazel_rules_docker//docker/util:run.bzl", "container_run_and_commit", 
 # Main outputs:
 #  <name>: The stand-alone binary
 #  <name>_image_with_binary_commit.tar: A container with the built binary in the CWD.
-def pl_aux_go_binary(name, files, base, build_flags = ""):
+def pl_aux_go_binary(name, files, base, extra_layers = {}, build_flags = ""):
     # Build path within the binary where the sources will be placed and built.
     container_build_dir = "/go/src/" + name
     outfile = container_build_dir + "/" + name
 
+    layers = []
+    for layer_name, layer_targets in extra_layers.items():
+        target = "{}_{}".format(name, layer_name)
+        container_layer(
+            name = target,
+            directory = container_build_dir + "/" + layer_name,
+            files = layer_targets,
+        )
+        layers.append(target)
+
     container_image(
-        name = name + "_image_with_source",
+        name = "{}_image_with_source".format(name),
         base = base,
         directory = container_build_dir,
         files = files,
+        layers = layers,
     )
 
     container_run_and_commit(
-        name = name + "_image_with_binary",
+        name = "{}_image_with_binary".format(name),
         commands = [
-            "go mod init",
+            "sed -i s/___module___/{}/g *.go".format(name),
+            "go mod edit -module={}".format(name),
             "go get",
-            "CGO_ENABLED=0 go build -a -v " + build_flags,
+            "CGO_ENABLED=0 go build -a -v {}".format(build_flags),
         ],
-        docker_run_flags = ["-w " + container_build_dir],
-        image = ":" + name + "_image_with_source.tar",
+        docker_run_flags = ["-w {}".format(container_build_dir)],
+        image = ":{}_image_with_source.tar".format(name),
     )
 
     container_run_and_extract(
-        name = name + "_extractor",
+        name = "{}_extractor".format(name),
         commands = ["echo"],
         extract_file = outfile,
         image = ":" + name + "_image_with_binary_commit.tar",
     )
 
     native.genrule(
-        name = name + "_gen",
+        name = "{}_gen".format(name),
         outs = [name],
-        srcs = [":" + name + "_extractor" + outfile],
+        srcs = [":{}_extractor{}".format(name, outfile)],
         cmd = "cp $< $@",
     )
