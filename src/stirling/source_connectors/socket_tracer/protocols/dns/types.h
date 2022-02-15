@@ -21,6 +21,7 @@
 #include <chrono>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <magic_enum.hpp>
@@ -94,23 +95,21 @@ struct DNSRecord {
 
 struct Frame : public FrameBase {
   DNSHeader header;
-  std::vector<DNSRecord> records;
+  const std::vector<DNSRecord>& records() const { return records_; }
   bool consumed = false;
 
-  size_t ByteSize() const override {
-    // Optimization: Perform just-in-time computation of ByteSize() the first time its called.
-    if (byte_size == 0) {
-      Frame* self = const_cast<Frame*>(this);
-      self->byte_size = sizeof(Frame);
-      for (const auto& record : records) {
-        self->byte_size += record.name.size() + record.cname.size() + sizeof(record.addr);
-      }
+  void AddRecords(std::vector<DNSRecord>&& records) {
+    for (const auto& r : records) {
+      records_size_ += r.name.size() + r.cname.size() + sizeof(r.addr);
     }
-    return byte_size;
+    records_ = std::move(records);
   }
 
+  size_t ByteSize() const override { return sizeof(Frame) + records_size_; }
+
  private:
-  size_t byte_size = 0;
+  std::vector<DNSRecord> records_;
+  size_t records_size_ = 0;
 };
 
 //-----------------------------------------------------------------------------

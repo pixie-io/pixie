@@ -78,7 +78,7 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* result)
   DCHECK_NE(result->header.num_auth, 0xffff);
   DCHECK_NE(result->header.num_addl, 0xffff);
 
-  result->records = std::move(response_handler.records_);
+  result->AddRecords(std::move(response_handler.records_));
   buf->remove_prefix(buf->length());
 
   return ParseState::kSuccess;

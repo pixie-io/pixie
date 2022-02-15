@@ -47,7 +47,6 @@ Frame CreateReqFrame(uint64_t timestamp_ns, uint16_t txid) {
   f.header.num_answers = 0;
   f.header.num_auth = 0;
   f.header.num_addl = 0;
-  f.records = {};
   f.timestamp_ns = timestamp_ns;
   return f;
 }
@@ -60,7 +59,7 @@ Frame CreateRespFrame(uint64_t timestamp_ns, uint16_t txid, std::vector<DNSRecor
   f.header.num_answers = records.size();
   f.header.num_auth = 0;
   f.header.num_addl = 0;
-  f.records = std::move(records);
+  f.AddRecords(std::move(records));
   f.timestamp_ns = timestamp_ns;
 
   return f;

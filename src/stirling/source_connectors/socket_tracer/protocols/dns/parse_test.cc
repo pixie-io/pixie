@@ -262,10 +262,10 @@ TEST_F(DNSParserTest, BasicReq) {
   EXPECT_EQ(frames[0].header.num_auth, 0);
   EXPECT_EQ(frames[0].header.num_addl, 1);
 
-  ASSERT_EQ(frames[0].records.size(), 1);
-  EXPECT_EQ(frames[0].records[0].name, "intellij-experiments.appspot.com");
-  EXPECT_EQ(frames[0].records[0].addr.family, InetAddrFamily::kIPv4);
-  EXPECT_EQ(frames[0].records[0].addr.AddrStr(), "0.0.0.0");
+  ASSERT_EQ(frames[0].records().size(), 1);
+  EXPECT_EQ(frames[0].records()[0].name, "intellij-experiments.appspot.com");
+  EXPECT_EQ(frames[0].records()[0].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(frames[0].records()[0].addr.AddrStr(), "0.0.0.0");
 }
 
 TEST_F(DNSParserTest, BasicResp) {
@@ -283,10 +283,10 @@ TEST_F(DNSParserTest, BasicResp) {
   EXPECT_EQ(frames[0].header.num_auth, 0);
   EXPECT_EQ(frames[0].header.num_addl, 1);
 
-  ASSERT_EQ(frames[0].records.size(), 1);
-  EXPECT_EQ(frames[0].records[0].name, "intellij-experiments.appspot.com");
-  EXPECT_EQ(frames[0].records[0].addr.family, InetAddrFamily::kIPv4);
-  EXPECT_EQ(frames[0].records[0].addr.AddrStr(), "216.58.194.180");
+  ASSERT_EQ(frames[0].records().size(), 1);
+  EXPECT_EQ(frames[0].records()[0].name, "intellij-experiments.appspot.com");
+  EXPECT_EQ(frames[0].records()[0].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(frames[0].records()[0].addr.AddrStr(), "216.58.194.180");
 }
 
 TEST_F(DNSParserTest, BasicReq2) {
@@ -304,10 +304,10 @@ TEST_F(DNSParserTest, BasicReq2) {
   EXPECT_EQ(frames[0].header.num_auth, 0);
   EXPECT_EQ(frames[0].header.num_addl, 0);
 
-  ASSERT_EQ(frames[0].records.size(), 1);
-  EXPECT_EQ(frames[0].records[0].name, "www.yahoo.com");
-  EXPECT_EQ(frames[0].records[0].addr.family, InetAddrFamily::kIPv4);
-  EXPECT_EQ(frames[0].records[0].addr.AddrStr(), "0.0.0.0");
+  ASSERT_EQ(frames[0].records().size(), 1);
+  EXPECT_EQ(frames[0].records()[0].name, "www.yahoo.com");
+  EXPECT_EQ(frames[0].records()[0].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(frames[0].records()[0].addr.AddrStr(), "0.0.0.0");
 }
 
 TEST_F(DNSParserTest, CNameAndMultipleResponses) {
@@ -325,31 +325,31 @@ TEST_F(DNSParserTest, CNameAndMultipleResponses) {
   EXPECT_EQ(frames[0].header.num_auth, 0);
   EXPECT_EQ(frames[0].header.num_addl, 0);
 
-  ASSERT_EQ(frames[0].records.size(), 5);
+  ASSERT_EQ(frames[0].records().size(), 5);
 
-  EXPECT_EQ(frames[0].records[0].name, "www.yahoo.com");
-  EXPECT_EQ(frames[0].records[0].addr.family, InetAddrFamily::kUnspecified);
-  EXPECT_EQ(frames[0].records[0].cname, "new-fp-shed.wg1.b.yahoo.com");
+  EXPECT_EQ(frames[0].records()[0].name, "www.yahoo.com");
+  EXPECT_EQ(frames[0].records()[0].addr.family, InetAddrFamily::kUnspecified);
+  EXPECT_EQ(frames[0].records()[0].cname, "new-fp-shed.wg1.b.yahoo.com");
 
-  EXPECT_EQ(frames[0].records[1].name, "new-fp-shed.wg1.b.yahoo.com");
-  EXPECT_EQ(frames[0].records[1].addr.family, InetAddrFamily::kIPv4);
-  EXPECT_EQ(frames[0].records[1].addr.AddrStr(), "98.137.11.164");
-  EXPECT_EQ(frames[0].records[1].cname, "");
+  EXPECT_EQ(frames[0].records()[1].name, "new-fp-shed.wg1.b.yahoo.com");
+  EXPECT_EQ(frames[0].records()[1].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(frames[0].records()[1].addr.AddrStr(), "98.137.11.164");
+  EXPECT_EQ(frames[0].records()[1].cname, "");
 
-  EXPECT_EQ(frames[0].records[2].name, "new-fp-shed.wg1.b.yahoo.com");
-  EXPECT_EQ(frames[0].records[2].addr.family, InetAddrFamily::kIPv4);
-  EXPECT_EQ(frames[0].records[2].addr.AddrStr(), "74.6.231.20");
-  EXPECT_EQ(frames[0].records[2].cname, "");
+  EXPECT_EQ(frames[0].records()[2].name, "new-fp-shed.wg1.b.yahoo.com");
+  EXPECT_EQ(frames[0].records()[2].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(frames[0].records()[2].addr.AddrStr(), "74.6.231.20");
+  EXPECT_EQ(frames[0].records()[2].cname, "");
 
-  EXPECT_EQ(frames[0].records[3].name, "new-fp-shed.wg1.b.yahoo.com");
-  EXPECT_EQ(frames[0].records[3].addr.family, InetAddrFamily::kIPv4);
-  EXPECT_EQ(frames[0].records[3].addr.AddrStr(), "74.6.231.21");
-  EXPECT_EQ(frames[0].records[3].cname, "");
+  EXPECT_EQ(frames[0].records()[3].name, "new-fp-shed.wg1.b.yahoo.com");
+  EXPECT_EQ(frames[0].records()[3].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(frames[0].records()[3].addr.AddrStr(), "74.6.231.21");
+  EXPECT_EQ(frames[0].records()[3].cname, "");
 
-  EXPECT_EQ(frames[0].records[4].name, "new-fp-shed.wg1.b.yahoo.com");
-  EXPECT_EQ(frames[0].records[4].addr.family, InetAddrFamily::kIPv4);
-  EXPECT_EQ(frames[0].records[4].addr.AddrStr(), "98.137.11.163");
-  EXPECT_EQ(frames[0].records[4].cname, "");
+  EXPECT_EQ(frames[0].records()[4].name, "new-fp-shed.wg1.b.yahoo.com");
+  EXPECT_EQ(frames[0].records()[4].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(frames[0].records()[4].addr.AddrStr(), "98.137.11.163");
+  EXPECT_EQ(frames[0].records()[4].cname, "");
 }
 
 TEST_F(DNSParserTest, CNameAndMultipleResponses2) {
@@ -366,31 +366,31 @@ TEST_F(DNSParserTest, CNameAndMultipleResponses2) {
   EXPECT_EQ(frames[0].header.num_answers, 5);
   EXPECT_EQ(frames[0].header.num_auth, 0);
   EXPECT_EQ(frames[0].header.num_addl, 1);
-  ASSERT_EQ(frames[0].records.size(), 5);
+  ASSERT_EQ(frames[0].records().size(), 5);
 
-  EXPECT_EQ(frames[0].records[0].name, "www.reddit.com");
-  EXPECT_EQ(frames[0].records[0].addr.family, InetAddrFamily::kUnspecified);
-  EXPECT_EQ(frames[0].records[0].cname, "reddit.map.fastly.net");
+  EXPECT_EQ(frames[0].records()[0].name, "www.reddit.com");
+  EXPECT_EQ(frames[0].records()[0].addr.family, InetAddrFamily::kUnspecified);
+  EXPECT_EQ(frames[0].records()[0].cname, "reddit.map.fastly.net");
 
-  EXPECT_EQ(frames[0].records[1].name, "reddit.map.fastly.net");
-  EXPECT_EQ(frames[0].records[1].addr.family, InetAddrFamily::kIPv4);
-  EXPECT_EQ(frames[0].records[1].addr.AddrStr(), "151.101.1.140");
-  EXPECT_EQ(frames[0].records[1].cname, "");
+  EXPECT_EQ(frames[0].records()[1].name, "reddit.map.fastly.net");
+  EXPECT_EQ(frames[0].records()[1].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(frames[0].records()[1].addr.AddrStr(), "151.101.1.140");
+  EXPECT_EQ(frames[0].records()[1].cname, "");
 
-  EXPECT_EQ(frames[0].records[2].name, "reddit.map.fastly.net");
-  EXPECT_EQ(frames[0].records[2].addr.family, InetAddrFamily::kIPv4);
-  EXPECT_EQ(frames[0].records[2].addr.AddrStr(), "151.101.65.140");
-  EXPECT_EQ(frames[0].records[2].cname, "");
+  EXPECT_EQ(frames[0].records()[2].name, "reddit.map.fastly.net");
+  EXPECT_EQ(frames[0].records()[2].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(frames[0].records()[2].addr.AddrStr(), "151.101.65.140");
+  EXPECT_EQ(frames[0].records()[2].cname, "");
 
-  EXPECT_EQ(frames[0].records[3].name, "reddit.map.fastly.net");
-  EXPECT_EQ(frames[0].records[3].addr.family, InetAddrFamily::kIPv4);
-  EXPECT_EQ(frames[0].records[3].addr.AddrStr(), "151.101.129.140");
-  EXPECT_EQ(frames[0].records[3].cname, "");
+  EXPECT_EQ(frames[0].records()[3].name, "reddit.map.fastly.net");
+  EXPECT_EQ(frames[0].records()[3].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(frames[0].records()[3].addr.AddrStr(), "151.101.129.140");
+  EXPECT_EQ(frames[0].records()[3].cname, "");
 
-  EXPECT_EQ(frames[0].records[4].name, "reddit.map.fastly.net");
-  EXPECT_EQ(frames[0].records[4].addr.family, InetAddrFamily::kIPv4);
-  EXPECT_EQ(frames[0].records[4].addr.AddrStr(), "151.101.193.140");
-  EXPECT_EQ(frames[0].records[4].cname, "");
+  EXPECT_EQ(frames[0].records()[4].name, "reddit.map.fastly.net");
+  EXPECT_EQ(frames[0].records()[4].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(frames[0].records()[4].addr.AddrStr(), "151.101.193.140");
+  EXPECT_EQ(frames[0].records()[4].cname, "");
 }
 
 TEST_F(DNSParserTest, IncompleteHeader) {

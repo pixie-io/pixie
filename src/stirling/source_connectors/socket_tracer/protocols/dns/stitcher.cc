@@ -96,7 +96,7 @@ void ProcessReq(const Frame& req_frame, Request* req) {
   d.SetObject();
 
   rapidjson::Value queries(rapidjson::kArrayType);
-  for (const auto& r : req_frame.records) {
+  for (const auto& r : req_frame.records()) {
     const std::string& name = r.name;
     std::string_view type_name = DNSRecordTypeName(r.addr.family);
 
@@ -128,7 +128,7 @@ void ProcessResp(const Frame& resp_frame, Response* resp) {
   std::vector<std::string> addr_strs;
 
   rapidjson::Value answers(rapidjson::kArrayType);
-  for (const auto& r : resp_frame.records) {
+  for (const auto& r : resp_frame.records()) {
     const std::string& name = r.name;
     std::string_view type_name;
 
