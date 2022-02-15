@@ -161,7 +161,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   auto InitPerfBufferSpecs();
   void InitProtocolTransferSpecs();
 
-  ConnTracker& GetOrCreateConnTracker(struct conn_id_t conn_id, std::string_view reason);
+  ConnTracker& GetOrCreateConnTracker(struct conn_id_t conn_id);
 
   // Events from BPF.
   void AcceptDataEvent(std::unique_ptr<SocketDataEvent> event);

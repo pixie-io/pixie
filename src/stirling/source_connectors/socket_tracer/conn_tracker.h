@@ -49,8 +49,7 @@ DECLARE_int64(stirling_conn_trace_fd);
 DECLARE_bool(stirling_conn_disable_to_bpf);
 DECLARE_int64(stirling_check_proc_for_conn_close);
 
-#define CONN_TRACE(level) \
-  LOG_IF(INFO, level <= debug_trace_level_) << "[CONN_TRACE] " << ToString() << " "
+#define CONN_TRACE(level) LOG_IF(INFO, level <= debug_trace_level_) << ToString() << " "
 
 namespace px {
 namespace stirling {
@@ -168,7 +167,7 @@ class ConnTracker : NotCopyMoveable {
 
   /**
    * Number of TransferData() (i.e. PerfBuffer read) calls during which a ConnTracker
-   * persists after it has been marked for closing. We keep ConnTrackers alive to catch
+   * persists after it has been marked for death. We keep ConnTrackers alive to catch
    * late-arriving events, and for debug purposes.
    *
    * Note that an event may arrive appear to up to 1 iteration late.
@@ -182,7 +181,7 @@ class ConnTracker : NotCopyMoveable {
    *  T4 - read perf buffer of data events <---- DataEvent observed here
    * In such cases, the timestamps still show the DataEvent as occurring first.
    */
-  static constexpr int32_t kDeathCountdownIters = 3;
+  static constexpr int64_t kDeathCountdownIters = 3;
 
   ConnTracker() = default;
 
@@ -398,18 +397,12 @@ class ConnTracker : NotCopyMoveable {
   bool AllEventsReceived() const;
 
   /**
-   * Marks the ConnTracker for closing. After this, the ConnTracker will be kept for a few
-   * iterations before being destroyed. This gives time for waiting for left over data events.
+   * Marks the ConnTracker for death.
    *
    * This indicates that the tracker should not receive any further events,
    * otherwise an warning or error will be produced.
    */
-  void MarkForClose(std::string_view reason);
-
-  /**
-   * Marks the ConnTracker for death. This ConnTracker can be destroyed immediately.
-   */
-  void MarkForDeath(std::string_view reason);
+  void MarkForDeath(int32_t countdown = kDeathCountdownIters);
 
   /**
    * Returns true if this tracker has been marked for death.
@@ -558,7 +551,7 @@ class ConnTracker : NotCopyMoveable {
     conn_info_map_mgr_ = conn_info_map_mgr;
   }
 
-  void SetConnID(struct conn_id_t conn_id, std::string_view reason);
+  void SetConnID(struct conn_id_t conn_id);
 
   void SetRemoteAddr(const union sockaddr_t addr, std::string_view reason);
 
@@ -603,8 +596,6 @@ class ConnTracker : NotCopyMoveable {
   }
 
  private:
-  friend class ConnTrackersManagerTest;
-
   /**
    * The iterations given for protocol detection by uprobes. The value is given to the worst
    * situation when the uprobe events are polled after the kprobe events.
@@ -662,8 +653,6 @@ class ConnTracker : NotCopyMoveable {
     stats_.Increment(StatKey::kInvalidRecords, result.error_count);
     stats_.Increment(StatKey::kValidRecords, result.records.size());
   }
-
-  void SetDeathCountdown(int32_t countdown, std::string_view reason);
 
   int debug_trace_level_ = 0;
 

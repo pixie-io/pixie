@@ -47,13 +47,12 @@ std::pair<ConnTracker*, bool> ConnTrackerGenerations::GetOrCreate(uint64_t tsid,
       // If the inserted conn_tracker is not the last generation, then mark it for death.
       // This can happen because the events draining from the perf buffers are not ordered.
       if (tsid < oldest_generation_->conn_id().tsid) {
-        conn_tracker_ptr->MarkForClose(
-            absl::Substitute("There exists a newer generation tsid=$0, marking for death because "
-                             "not last generation",
-                             oldest_generation_->conn_id().tsid));
+        VLOG(1) << "Marking for death because not last generation.";
+        conn_tracker_ptr->MarkForDeath();
       } else {
-        oldest_generation_->MarkForClose(absl::Substitute(
-            "New tracker for tsid=$0 is created, mark the previous generation for death", tsid));
+        // New tracker was the last, so the previous last should be marked for death.
+        VLOG(1) << "Marking previous generation for death.";
+        oldest_generation_->MarkForDeath();
         oldest_generation_ = conn_tracker_ptr.get();
       }
     } else {
@@ -114,8 +113,7 @@ uint64_t GetConnMapKey(uint32_t pid, int32_t fd) { return (static_cast<uint64_t>
 
 ConnTrackersManager::ConnTrackersManager() : trackers_pool_(kMaxConnTrackerPoolSize) {}
 
-ConnTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t conn_id,
-                                                         std::string_view reason) {
+ConnTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t conn_id) {
   const uint64_t conn_map_key = GetConnMapKey(conn_id.upid.pid, conn_id.fd);
   DCHECK_NE(conn_map_key, 0) << "Connection map key cannot be 0, pid must be wrong";
 
@@ -125,7 +123,7 @@ ConnTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t conn_i
   if (created) {
     active_trackers_.push_back(conn_tracker_ptr);
     conn_tracker_ptr->manager_ = this;
-    conn_tracker_ptr->SetConnID(conn_id, reason);
+    conn_tracker_ptr->SetConnID(conn_id);
 
     stats_.Increment(StatKey::kTotal);
     stats_.Increment(StatKey::kCreated);

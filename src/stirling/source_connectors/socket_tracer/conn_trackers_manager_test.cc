@@ -44,14 +44,14 @@ class ConnTrackersManagerTest : public ::testing::Test {
   void TransferStreamsProxy(double mark_for_death_probability, int death_countdown) {
     for (auto& tracker : trackers_mgr_.active_trackers()) {
       if (probability_dist_(rng_) < mark_for_death_probability) {
-        tracker->SetDeathCountdown(death_countdown, "test");
+        tracker->MarkForDeath(death_countdown);
       }
     }
   }
 
   void TrackerEvent(struct conn_id_t conn_id, traffic_protocol_t protocol) {
     VLOG(1) << "TrackerEvent";
-    ConnTracker& tracker = trackers_mgr_.GetOrCreateConnTracker(conn_id, "test");
+    ConnTracker& tracker = trackers_mgr_.GetOrCreateConnTracker(conn_id);
     tracker.SetProtocol(protocol, "for testing");
   }
 };
@@ -105,7 +105,7 @@ TEST_F(ConnTrackersManagerTest, DebugInfo) {
   conn_id.fd = 1;
   conn_id.tsid = 1;
 
-  trackers_mgr_.GetOrCreateConnTracker(conn_id, "test");
+  trackers_mgr_.GetOrCreateConnTracker(conn_id);
   std::string debug_info = trackers_mgr_.DebugInfo();
   EXPECT_THAT(debug_info, HasSubstr("ConnTracker count statistics: kTotal=1 kReadyForDestruction=0 "
                                     "kCreated=1 kDestroyed=0 kDestroyedGens=0"));
@@ -127,7 +127,7 @@ class ConnTrackerGenerationsTest : public ::testing::Test {
     if (created) {
       struct conn_id_t conn_id = {};
       conn_id.tsid = tsid;
-      tracker->SetConnID(conn_id, "test");
+      tracker->SetConnID(conn_id);
     }
     return {tracker, created};
   }
@@ -213,7 +213,7 @@ TEST_F(ConnTrackerGenerationsTest, Basic) {
   ASSERT_TRUE(tracker_gens_.Contains(3));
   ASSERT_OK_AND_EQ(tracker_gens_.GetActive(), tracker3);
 
-  tracker3->MarkForClose("test");
+  tracker3->MarkForDeath();
   int num_erased3 = CleanupTrackers();
   ASSERT_EQ(num_erased3, 1);
   ASSERT_TRUE(tracker_gens_.empty());

@@ -136,7 +136,7 @@ void ConnTracker::AddConnCloseEvent(const close_event_t& close_event, uint64_t t
 
   CONN_TRACE(1) << absl::Substitute("conn_close");
 
-  MarkForClose("received conn_close event");
+  MarkForDeath();
 }
 
 void ConnTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
@@ -424,7 +424,7 @@ bool ShouldTraceConn(const struct conn_id_t& conn_id) {
 
 }  // namespace
 
-void ConnTracker::SetConnID(struct conn_id_t conn_id, std::string_view reason) {
+void ConnTracker::SetConnID(struct conn_id_t conn_id) {
   DCHECK(conn_id_.upid.pid == 0 || conn_id_.upid.pid == conn_id.upid.pid) << absl::Substitute(
       "Mismatched conn info: tracker=$0 event=$1", ::ToString(conn_id_), ::ToString(conn_id));
   DCHECK(conn_id_.fd == 0 || conn_id_.fd == conn_id.fd) << absl::Substitute(
@@ -443,7 +443,7 @@ void ConnTracker::SetConnID(struct conn_id_t conn_id, std::string_view reason) {
       SetDebugTrace(2);
     }
 
-    CONN_TRACE(1) << absl::Substitute("New connection tracker, reason=$0", reason);
+    CONN_TRACE(1) << "New connection tracker";
   }
 }
 
@@ -569,18 +569,12 @@ DataStream* ConnTracker::resp_data() {
   }
 }
 
-void ConnTracker::MarkForClose(std::string_view reason) {
-  SetDeathCountdown(kDeathCountdownIters, reason);
-}
-
-void ConnTracker::MarkForDeath(std::string_view reason) {
-  SetDeathCountdown(/*countdown*/ 0, reason);
-}
-
-void ConnTracker::SetDeathCountdown(int countdown, std::string_view reason) {
+void ConnTracker::MarkForDeath(int32_t countdown) {
   DCHECK_GE(countdown, 0);
 
-  int32_t orig_death_countdown = death_countdown_;
+  if (death_countdown_ == -1) {
+    CONN_TRACE(2) << absl::Substitute("Marked for death, countdown=$0", countdown);
+  }
 
   // We received the close event.
   // Now give up to some more TransferData calls to receive trailing data events.
@@ -590,16 +584,13 @@ void ConnTracker::SetDeathCountdown(int countdown, std::string_view reason) {
   } else {
     death_countdown_ = countdown;
   }
-  // Log CONN_TRACE even if countdown was not changed. This is to trace important events.
-  CONN_TRACE(1) << absl::Substitute("Changed death countdown before=$0 after=$1 reason=$2",
-                                    orig_death_countdown, death_countdown_, reason);
 }
 
 bool ConnTracker::IsZombie() const { return death_countdown_ >= 0; }
 
 bool ConnTracker::ReadyForDestruction() const {
   // We delay destruction time by a few iterations.
-  // See also MarkForClose().
+  // See also MarkForDeath().
   // Also wait to make sure the final ConnStats event is reported before destroying.
   return (death_countdown_ == 0) && final_conn_stats_reported_;
 }
@@ -811,7 +802,7 @@ void ConnTracker::CheckProcForConnClose() {
                                   "fd" / std::to_string(conn_id().fd);
 
   if (!fs::Exists(fd_file)) {
-    MarkForDeath("Socket file descriptor of the connection is closed.");
+    MarkForDeath(0);
   }
 }
 

@@ -697,9 +697,8 @@ void SocketTraceConnector::HandleHTTP2EventLoss(void* cb_cookie, uint64_t lost) 
 // Connection Tracker Events
 //-----------------------------------------------------------------------------
 
-ConnTracker& SocketTraceConnector::GetOrCreateConnTracker(struct conn_id_t conn_id,
-                                                          std::string_view reason) {
-  ConnTracker& tracker = conn_trackers_mgr_.GetOrCreateConnTracker(conn_id, reason);
+ConnTracker& SocketTraceConnector::GetOrCreateConnTracker(struct conn_id_t conn_id) {
+  ConnTracker& tracker = conn_trackers_mgr_.GetOrCreateConnTracker(conn_id);
   tracker.set_current_time(iteration_time_);
   UpdateTrackerTraceLevel(&tracker);
   return tracker;
@@ -710,30 +709,27 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
     WriteDataEvent(*event);
   }
 
-  ConnTracker& tracker = GetOrCreateConnTracker(
-      event->attr.conn_id, absl::Substitute("Received data event=$0", event->ToString()));
+  ConnTracker& tracker = GetOrCreateConnTracker(event->attr.conn_id);
   tracker.AddDataEvent(std::move(event));
 }
 
 void SocketTraceConnector::AcceptControlEvent(socket_control_event_t event) {
-  ConnTracker& tracker = GetOrCreateConnTracker(
-      event.conn_id, absl::Substitute("Received control event=$0", ToString(event)));
+  ConnTracker& tracker = GetOrCreateConnTracker(event.conn_id);
   tracker.AddControlEvent(event);
 }
 
 void SocketTraceConnector::AcceptConnStatsEvent(conn_stats_event_t event) {
-  ConnTracker& tracker =
-      conn_trackers_mgr_.GetOrCreateConnTracker(event.conn_id, "Received ConnStats event");
+  ConnTracker& tracker = conn_trackers_mgr_.GetOrCreateConnTracker(event.conn_id);
   tracker.AddConnStats(event);
 }
 
 void SocketTraceConnector::AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> event) {
-  ConnTracker& tracker = GetOrCreateConnTracker(event->attr.conn_id, "Received HTTP2 header event");
+  ConnTracker& tracker = GetOrCreateConnTracker(event->attr.conn_id);
   tracker.AddHTTP2Header(std::move(event));
 }
 
 void SocketTraceConnector::AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event) {
-  ConnTracker& tracker = GetOrCreateConnTracker(event->attr.conn_id, "Received HTTP2 data event");
+  ConnTracker& tracker = GetOrCreateConnTracker(event->attr.conn_id);
   tracker.AddHTTP2Data(std::move(event));
 }
 
