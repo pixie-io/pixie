@@ -26,7 +26,7 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/testing/common.h"
 
-constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_binary";
+constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_16_binary";
 
 namespace px {
 namespace stirling {
@@ -389,7 +389,7 @@ TEST(DynamicTracerTest, Compile) {
 
   const auto& spec = bcc_program.uprobe_specs[0];
 
-  EXPECT_THAT(spec, Field(&UProbeSpec::binary_path, ::testing::EndsWith("test_go_binary")));
+  EXPECT_THAT(spec, Field(&UProbeSpec::binary_path, ::testing::EndsWith("test_go_1_16_binary")));
   EXPECT_THAT(spec, Field(&UProbeSpec::symbol, "runtime.casgstatus"));
   EXPECT_THAT(spec, Field(&UProbeSpec::attach_type, bpf_tools::BPFProbeAttachType::kEntry));
   EXPECT_THAT(spec, Field(&UProbeSpec::probe_fn, "probe_entry_runtime_casgstatus"));

@@ -29,7 +29,8 @@ namespace obj_tools {
 using ::testing::Field;
 using ::testing::StrEq;
 
-constexpr std::string_view kTestGoBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_binary";
+constexpr std::string_view kTestGoBinaryPath =
+    "src/stirling/obj_tools/testdata/go/test_go_1_16_binary";
 
 TEST(ReadBuildVersionTest, WorkingOnBasicGoBinary) {
   const std::string kPath = px::testing::BazelBinTestFilePath(kTestGoBinaryPath);

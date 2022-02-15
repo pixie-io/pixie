@@ -22,7 +22,7 @@ load("//src/stirling/testing/bazel:containerized_build.bzl", "pl_aux_go_binary")
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
 pl_aux_go_binary(
-    name = "test_go_binary",
+    name = "test_go_1_16_binary",
     base = "@golang_1_16_image//image",
     build_flags = "-gcflags='-N -l'",
     files = [
@@ -32,11 +32,22 @@ pl_aux_go_binary(
     ],
 )
 
+pl_aux_go_binary(
+    name = "test_go_1_17_binary",
+    base = "@golang_1_17_image//image",
+    build_flags = "-gcflags='-N -l'",
+    files = [
+        "go.mod",
+        "go.sum",
+        "test_go_binary.go",
+    ],
+)
+
 filegroup(
-    name = "precompiled_test_binaries",
+    name = "test_binaries",
     srcs = [
         "sockshop_payments_service",
-        "test_go_1_16_binary",
-        "test_go_1_17_binary",
+        ":test_go_1_16_binary",
+        ":test_go_1_17_binary",
     ],
 )

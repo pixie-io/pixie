@@ -51,7 +51,7 @@ pl_cc_test(
         "//src/stirling/obj_tools/testdata/cc:stripped_exe",
         "//src/stirling/obj_tools/testdata/cc:test_exe_debug_target",
         "//src/stirling/obj_tools/testdata/cc:test_exe_debuglink_target",
-        "//src/stirling/obj_tools/testdata/go:test_go_binary",
+        "//src/stirling/obj_tools/testdata/go:test_go_1_16_binary",
     ],
     deps = [
         ":cc_library",
@@ -73,7 +73,7 @@ pl_cc_test(
     srcs = ["dwarf_reader_test.cc"],
     data = [
         "//src/stirling/obj_tools/testdata/cc:test_exe_fixture",
-        "//src/stirling/obj_tools/testdata/go:precompiled_test_binaries",
+        "//src/stirling/obj_tools/testdata/go:test_binaries",
         "//src/stirling/testing/demo_apps/go_grpc_tls_pl/server:grpc_tls_server",
     ],
     deps = [
@@ -117,7 +117,7 @@ pl_cc_test(
     name = "go_syms_test",
     srcs = ["go_syms_test.cc"],
     data = [
-        "//src/stirling/obj_tools/testdata/go:test_go_binary",
+        "//src/stirling/obj_tools/testdata/go:test_go_1_16_binary",
     ],
     deps = [
         ":cc_library",
