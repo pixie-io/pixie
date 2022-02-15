@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
-load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_push")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image")
 load("@io_bazel_rules_docker//contrib:passwd.bzl", "passwd_entry", "passwd_file")
 load("@io_bazel_rules_docker//java:image.bzl", "java_image")
 load("@rules_java//java:defs.bzl", "java_binary")
@@ -59,13 +59,4 @@ java_image(
     srcs = ["HelloWorld.java"],
     base = ":passwd_image",
     main_class = "HelloWorld",
-)
-
-container_push(
-    name = "push_hello_world_image",
-    format = "Docker",
-    image = ":hello_world_image",
-    registry = "gcr.io",
-    repository = "pl-dev-infra/java_hello_world",
-    tag = "latest",
 )

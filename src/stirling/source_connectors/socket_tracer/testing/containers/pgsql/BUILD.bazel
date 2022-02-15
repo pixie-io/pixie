@@ -14,7 +14,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
@@ -40,12 +39,4 @@ go_image(
     name = "demo_client_image",
     binary = ":demo_client",
     visibility = ["//src/stirling:__subpackages__"],
-)
-
-container_push(
-    name = "push_demo_client_image",
-    format = "Docker",
-    image = ":demo_client_image",
-    registry = "gcr.io",
-    repository = "pl-dev-infra/demos/postgres/demo",
 )

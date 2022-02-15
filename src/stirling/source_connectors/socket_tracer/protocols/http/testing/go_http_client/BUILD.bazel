@@ -14,7 +14,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
@@ -34,13 +33,4 @@ go_binary(
 go_image(
     name = "image",
     binary = ":go_http_client",
-)
-
-container_push(
-    name = "push_image",
-    format = "Docker",
-    image = ":image",
-    registry = "gcr.io",
-    repository = "pl-dev-infra/demos/go_http_client",
-    tag = "{BUILD_USER}",
 )

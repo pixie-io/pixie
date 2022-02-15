@@ -59,6 +59,7 @@ container_push(
     registry = "gcr.io",
     repository = "pl-dev-infra/stirling_wrapper",
     tag = "{BUILD_USER}",
+    tags = ["manual"],
 )
 
 pl_cc_binary(
@@ -82,6 +83,7 @@ container_push(
     registry = "gcr.io",
     repository = "pl-dev-infra/stirling_dt",
     tag = "{BUILD_USER}",
+    tags = ["manual"],
 )
 
 pl_cc_binary(
@@ -105,6 +107,7 @@ container_push(
     registry = "gcr.io",
     repository = "pl-dev-infra/stirling_profiler",
     tag = "{BUILD_USER}",
+    tags = ["manual"],
 )
 
 cc_binary(
