@@ -165,17 +165,6 @@ StatusOr<std::unique_ptr<Symbolizer>> JavaSymbolizer::Create(
   return std::unique_ptr<Symbolizer>(jsymbolizer.release());
 }
 
-std::filesystem::path JavaSymbolizer::GetAgentSymbolFilePathPfx(const struct upid_t& upid) const {
-  static constexpr char const* const kSymbolFileAgentTemplate = "/tmp/px-java-symbols-$0-$1";
-  return absl::Substitute(kSymbolFileAgentTemplate, upid.pid, upid.start_time_ticks);
-}
-
-std::filesystem::path JavaSymbolizer::GetStirlingSymbolFilePath(const struct upid_t& upid) const {
-  static constexpr char const* const kSymbolFileStirlingTemplate =
-      "/proc/$0/root/tmp/px-java-symbols-$0-$1.bin";
-  return absl::Substitute(kSymbolFileStirlingTemplate, upid.pid, upid.start_time_ticks);
-}
-
 void JavaSymbolizer::IterationPreTick() {
   native_symbolizer_->IterationPreTick();
   for (auto& [upid, ctx] : symbolization_contexts_) {
@@ -196,12 +185,12 @@ std::string_view JavaSymbolizer::Symbolize(JavaSymbolizationContext* ctx, const 
 
 Status JavaSymbolizer::CreateNewJavaSymbolizationContext(const struct upid_t& upid) {
   constexpr auto kIOFlags = std::ios::in | std::ios::binary;
-  const std::filesystem::path symbol_file_path = GetStirlingSymbolFilePath(upid);
+  const std::filesystem::path symbol_file_path = java::StirlingSymbolFilePath(upid);
   auto symbol_file = std::make_unique<std::ifstream>(symbol_file_path, kIOFlags);
 
   if (symbol_file->fail()) {
-    char const* const fmt = "Java attacher [pid=$0]: Could not open symbol file.";
-    return error::Internal(fmt, upid.pid);
+    char const* const fmt = "Java attacher [pid=$0]: Could not open symbol file: $1.";
+    return error::Internal(fmt, upid.pid, symbol_file_path.string());
   }
 
   DCHECK(symbolization_contexts_.find(upid) == symbolization_contexts_.end());
@@ -298,7 +287,7 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
     return native_symbolizer_fn;
   }
 
-  const std::filesystem::path symbol_file_path = GetStirlingSymbolFilePath(upid);
+  const std::filesystem::path symbol_file_path = java::StirlingSymbolFilePath(upid);
 
   if (fs::Exists(symbol_file_path)) {
     // Found a pre-existing symbol file. Attempt to use it.
@@ -322,8 +311,7 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
   const auto [iter, inserted] = active_attachers_.try_emplace(upid, nullptr);
   DCHECK(inserted);
   if (inserted) {
-    iter->second = std::make_unique<java::AgentAttacher>(upid.pid, GetAgentSymbolFilePathPfx(upid),
-                                                         agent_libs_);
+    iter->second = std::make_unique<java::AgentAttacher>(upid, agent_libs_);
   }
 
   // We need this to be non-blocking; immediately return using the native symbolizer function.

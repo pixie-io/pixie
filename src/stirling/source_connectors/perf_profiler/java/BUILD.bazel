@@ -29,6 +29,9 @@ pl_cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "//src/common/exec:cc_library",
+        # bcc_bpf_intf is used only to bring in upid.h.
+        # TODO(jps): Find a new upstream location for upid.h.
+        "//src/stirling/bpf_tools/bcc_bpf_intf:cc_library",
         "@com_github_apangin_jattach//:jattach",
     ],
 )

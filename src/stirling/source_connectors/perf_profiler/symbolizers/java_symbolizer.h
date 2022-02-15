@@ -70,10 +70,6 @@ class JavaSymbolizer : public Symbolizer {
   explicit JavaSymbolizer(const std::vector<std::filesystem::path> agent_libs);
   Status CreateNewJavaSymbolizationContext(const struct upid_t& upid);
   std::string_view Symbolize(JavaSymbolizationContext* ctx, const uintptr_t addr);
-
-  std::filesystem::path GetAgentSymbolFilePathPfx(const struct upid_t& pid) const;
-  std::filesystem::path GetStirlingSymbolFilePath(const struct upid_t& pid) const;
-
   std::unique_ptr<Symbolizer> native_symbolizer_;
   absl::flat_hash_map<struct upid_t, profiler::SymbolizerFn> symbolizer_functions_;
   absl::flat_hash_map<struct upid_t, std::unique_ptr<java::AgentAttacher>> active_attachers_;

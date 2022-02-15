@@ -22,10 +22,16 @@
 #include <vector>
 
 #include "src/common/system/clock.h"
+#include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
 
 namespace px {
 namespace stirling {
 namespace java {
+
+std::filesystem::path AgentArtifactsPath(const struct upid_t& upid);
+std::filesystem::path StirlingArtifactsPath(const struct upid_t& upid);
+std::filesystem::path AgentSymbolFilePathPfx(const struct upid_t& upid);
+std::filesystem::path StirlingSymbolFilePath(const struct upid_t& upid);
 
 // AgentAttacher injects a JVMTI agent into a target Java process. The agent itself is a shared
 // library (.so) that will be mapped into the target process by dlopen, and it is responsible
@@ -41,10 +47,8 @@ class AgentAttacher {
   // namespace, find an appropriate lib to inject (based on testing w/ dlopen), and
   // finally, invoke jattach to inject into the target Java process.
   // ... target_pid: the process we will attach to (inject the JVMTI agent into).
-  // ... agent_args: passed to the agent (used here to specify a location for the symbol file).
   // ... agent_libs: a list of .so files, so we can find one that links in the target namespace.
-  AgentAttacher(const int target_pid, const std::string& agent_args,
-                const std::vector<std::filesystem::path>& agent_libs);
+  AgentAttacher(const struct upid_t& upid, const std::vector<std::filesystem::path>& agent_libs);
 
   // For use by the parent process, this checks if the child has finished & returns "true" if so.
   bool Finished();
@@ -56,18 +60,21 @@ class AgentAttacher {
   const px::chrono::coarse_steady_clock::time_point& start_time() { return start_time_; }
 
  private:
+  void SetTargetUIDAndGIDOrDie();
+  void CreateArtifactsPathOrDie();
   void CopyAgentLibsOrDie();
   void SelectLibWithDLOpenOrDie();
   void AttachOrDie();
 
   const px::chrono::coarse_steady_clock::time_point start_time_;
-  const int target_pid_;
-  const std::string& agent_args_;
+  const struct upid_t target_upid_;
   std::vector<std::filesystem::path> agent_libs_;
   int child_pid_;
   bool finished_ = false;
   bool attached_ = false;
   std::string lib_so_path_;
+  uid_t target_uid_;
+  gid_t target_gid_;
 };
 
 }  // namespace java

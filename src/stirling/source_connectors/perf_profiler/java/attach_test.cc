@@ -40,8 +40,6 @@ using ::testing::HasSubstr;
 TEST(JavaAgentTest, ExpectedSymbolsTest) {
   // Form the file name w/ user login to make it pedantically unique.
   // Also, this is the same as in agent_test, so we keep the test logic consistent.
-  constexpr std::string_view kSymbolFilePathPfx = "px-java-symbols";
-  constexpr std::string_view kSymbolFilePath = "px-java-symbols.bin";
   constexpr std::string_view kJavaAppName = "fib";
 
   using fs_path = std::filesystem::path;
@@ -69,25 +67,25 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
     ASSERT_TRUE(fs::Exists(lib)) << lib;
   }
 
-  if (fs::Exists(kSymbolFilePath)) {
-    // The symbol file is created by the Java process when the agent is attached.
-    // A left over stale symbol file can cause this test to pass when it should fail.
-    // Here, we prevent that from happening.
-    LOG(INFO) << absl::StrFormat("Removing stale file: %s.", kSymbolFilePath);
-    ASSERT_OK(fs::Remove(kSymbolFilePath));
-  }
-
   // Start the Java process (and wait for it to enter the "live" phase, because
   // you cannot inject a JVMTI agent during Java startup phase).
   SubProcess sub_process;
   const auto started = sub_process.Start({bazel_app_path});
   ASSERT_OK(started) << absl::StrFormat("Could not start Java app: %s.", kJavaAppName);
   std::this_thread::sleep_for(std::chrono::milliseconds(250));
-  const int child_pid = sub_process.child_pid();
+  const uint32_t child_pid = sub_process.child_pid();
   LOG(INFO) << absl::StrFormat("Started Java app: %s, pid: %d.", kJavaAppName, child_pid);
 
+  // Construct struct upid_t for our child process,
+  // use that to construct the symbol file path.
+  using ::px::system::GetPIDStartTimeTicks;
+  const std::string proc_pid_path = std::string("/proc/") + std::to_string(child_pid);
+  ASSERT_OK_AND_ASSIGN(const uint64_t start_time, GetPIDStartTimeTicks(proc_pid_path));
+  const struct upid_t child_upid = {{child_pid}, start_time};
+  const fs_path symbol_file_path = java::StirlingSymbolFilePath(child_upid);
+
   // Invoke the attach process by creating an attach object.
-  auto attacher = java::AgentAttacher(child_pid, std::string(kSymbolFilePathPfx), libs);
+  auto attacher = java::AgentAttacher(child_upid, libs);
 
   // The attacher object forks. The parent process, this test, can ask the attacher object about
   // its state. Is the attacher finished (child process terminated)? attached (child process
@@ -108,7 +106,7 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   // After attach is complete, wait a little more for the symbol file to materialize fully.
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
   auto SymbolFileOrStatus = [&]() {
-    return ReadFileToString(std::string(kSymbolFilePath), std::ios_base::binary);
+    return ReadFileToString(symbol_file_path.string(), std::ios_base::binary);
   };
   ASSERT_OK_AND_ASSIGN(const auto file_contents, SymbolFileOrStatus());
 
@@ -131,9 +129,10 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
 
   // Cleanup.
   // TODO(jps): use TearDown method in test fixture. Also update agent_test.
-  if (fs::Exists(kSymbolFilePath)) {
-    LOG(INFO) << "Removing symbol file: " << kSymbolFilePath;
-    ASSERT_OK(fs::Remove(kSymbolFilePath));
+  const std::filesystem::path artifacts_path = java::StirlingArtifactsPath(child_upid);
+  if (fs::Exists(artifacts_path)) {
+    LOG(INFO) << absl::Substitute("Removing symbol artifacts path: $0.", artifacts_path.string());
+    ASSERT_OK(fs::RemoveAll(artifacts_path));
   }
 }
 
