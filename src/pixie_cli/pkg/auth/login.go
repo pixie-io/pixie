@@ -112,7 +112,7 @@ func LoadDefaultCredentials() (*RefreshToken, error) {
 		return nil, err
 	}
 
-	if parsed, _ := jwt.Parse([]byte(token.Token), jwt.WithValidate(true)); parsed != nil {
+	if parsed, _ := jwt.Parse([]byte(token.Token)); parsed != nil {
 		userID := srvutils.GetUserID(parsed)
 		if userID != "" && !sentSegmentAlias {
 			// Associate UserID with AnalyticsID.
@@ -421,7 +421,7 @@ func (p *PixieCloudLogin) getRefreshToken(accessToken string, apiKey string) (*R
 
 	// Get the org name from the cloud.
 	var orgID string
-	if token, _ := jwt.Parse([]byte(resp.Token), jwt.WithValidate(true)); token != nil {
+	if token, _ := jwt.Parse([]byte(resp.Token)); token != nil {
 		orgID = srvutils.GetOrgID(token)
 	}
 

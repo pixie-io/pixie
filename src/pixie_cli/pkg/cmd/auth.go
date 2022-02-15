@@ -77,7 +77,7 @@ var LoginCmd = &cobra.Command{
 			log.WithError(err).Fatal("Failed to persist auth token")
 		}
 
-		if token, _ := jwt.Parse([]byte(refreshToken.Token), jwt.WithValidate(true)); token != nil {
+		if token, _ := jwt.Parse([]byte(refreshToken.Token)); token != nil {
 			userID := srvutils.GetUserID(token)
 			if userID != "" {
 				// Associate UserID with AnalyticsID.
