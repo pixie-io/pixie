@@ -30,6 +30,7 @@ To update this README, run `make update_readme` in this directory.
 - px/[ip](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/ip): This view displays a summary of the traffic from the cluster to the input IP address.
 - px/[jvm_data](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/jvm_data): JVM stats for Java processes running on the cluster
 - px/[jvm_stats](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/jvm_stats): Returns the JVM Stats per Pod. You can filter this by node.
+- px/[kafka_consumer_rebalancing](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/kafka_consumer_rebalancing): Visualizes the most recent Kafka consumer rebalancing events, with delay.
 - px/[kafka_data](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/kafka_data): Shows a sample of Kafka messages in the cluster.
 - px/[kafka_flow_graph](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/kafka_flow_graph): Graph of Kafka messages in the cluster, with latency stats.
 - px/[kafka_overview](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/kafka_overview): Overview of the Kafka cluster.
