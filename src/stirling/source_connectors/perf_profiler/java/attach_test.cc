@@ -72,7 +72,6 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   SubProcess sub_process;
   const auto started = sub_process.Start({bazel_app_path});
   ASSERT_OK(started) << absl::StrFormat("Could not start Java app: %s.", kJavaAppName);
-  std::this_thread::sleep_for(std::chrono::milliseconds(250));
   const uint32_t child_pid = sub_process.child_pid();
   LOG(INFO) << absl::StrFormat("Started Java app: %s, pid: %d.", kJavaAppName, child_pid);
 

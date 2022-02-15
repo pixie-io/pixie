@@ -249,6 +249,13 @@ AgentAttacher::AgentAttacher(const struct upid_t& upid,
   // NB: From here on, we are in the child process.
   // It is "ok to die" because that just tells the parent that attach has failed.
 
+  // First, sleep for just a little bit of time. In testing, we observed the Java process get
+  // into a bad state if the attacher tried to attach to soon after the Java process was started.
+  // While this may be unlikely in a prod. scenario, here, we give time for the Java process
+  // to get past its 'primordial' phase and into its 'live' phase.
+  // TODO(jps): Remove once we correctly handle JVM phase inside of the agent.
+  std::this_thread::sleep_for(std::chrono::milliseconds(250));
+
   const uint32_t target_ns_pid = GetNSPid(target_upid_.pid).ConsumeValueOrDie();
   char const* const msg = "AgentAttacher(). target_pid: $0, target_ns_pid: $1.";
   VLOG(1) << absl::Substitute(msg, target_upid_.pid, target_ns_pid);
