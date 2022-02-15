@@ -125,6 +125,10 @@ struct Request {
 
   // Timestamp of the request.
   uint64_t timestamp_ns = 0;
+
+  std::string ToString() const {
+    return absl::Substitute("header=$0 query=$1 timestamp_ns=$2", header, query, timestamp_ns);
+  }
 };
 
 struct Response {
@@ -136,6 +140,10 @@ struct Response {
 
   // Timestamp of the response.
   uint64_t timestamp_ns = 0;
+
+  std::string ToString() const {
+    return absl::Substitute("header=$0 query=$1 timestamp_ns=$2", header, msg, timestamp_ns);
+  }
 };
 
 /**
@@ -144,6 +152,10 @@ struct Response {
 struct Record {
   Request req;
   Response resp;
+
+  std::string ToString() const {
+    return absl::Substitute("req=[$0] resp=[$1]", req.ToString(), resp.ToString());
+  }
 };
 
 struct ProtocolTraits : public BaseProtocolTraits<Record> {

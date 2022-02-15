@@ -54,6 +54,10 @@ struct Record {
   // request. OK responses are only sent by server in the verbose mode.
   // See https://github.com/nats-io/docs/blob/master/nats_protocol/nats-protocol.md#okerr.
   Message resp;
+
+  std::string ToString() const {
+    return absl::Substitute("req=[$0] resp=[$1]", req.ToString(), resp.ToString());
+  }
 };
 
 // Required by event parser interface.

@@ -133,6 +133,11 @@ struct Request {
 
   // Timestamp of the request packet.
   uint64_t timestamp_ns;
+
+  std::string ToString() const {
+    return absl::Substitute("op=$0 msg=$1 timestamp_ns=$2", magic_enum::enum_name(op), msg,
+                            timestamp_ns);
+  }
 };
 
 struct Response {
@@ -143,6 +148,11 @@ struct Response {
 
   // Timestamp of the response packet.
   uint64_t timestamp_ns;
+
+  std::string ToString() const {
+    return absl::Substitute("op=$0 msg=$1 timestamp_ns=$2", magic_enum::enum_name(op), msg,
+                            timestamp_ns);
+  }
 };
 
 /**
@@ -151,6 +161,10 @@ struct Response {
 struct Record {
   Request req;
   Response resp;
+
+  std::string ToString() const {
+    return absl::Substitute("req=[$0] resp=[$1]", req.ToString(), resp.ToString());
+  }
 };
 
 struct ProtocolTraits : public BaseProtocolTraits<Record> {

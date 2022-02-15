@@ -831,6 +831,11 @@ int64_t CalculateLatency(int64_t req_timestamp_ns, int64_t resp_timestamp_ns) {
   return latency_ns;
 }
 
+template <typename TRecordType>
+std::string PXInfoString(const ConnTracker& conn_tracker, const TRecordType& record) {
+  return absl::Substitute("conn_tracker=$0 record=$1", conn_tracker.ToString(), record.ToString());
+}
+
 }  // namespace
 
 template <>
@@ -875,7 +880,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));
 #ifndef NDEBUG
-  r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
+  r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, record));
 #endif
 }
 
@@ -946,7 +951,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   LOG_IF_EVERY_N(WARNING, latency_ns < 0, 100)
       << absl::Substitute("Negative latency found in HTTP2 records, record=$0", record.ToString());
 #ifndef NDEBUG
-  r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
+  r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, record));
 #endif
 }
 
@@ -969,7 +974,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 #ifndef NDEBUG
-  r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
+  r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, entry));
 #endif
 }
 
@@ -992,7 +997,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 #ifndef NDEBUG
-  r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
+  r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, entry));
 #endif
 }
 
@@ -1015,7 +1020,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 #ifndef NDEBUG
-  r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
+  r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, entry));
 #endif
 }
 
@@ -1037,7 +1042,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
   r.Append<r.ColIndex("req_cmd")>(ToString(entry.req.tag, /* is_req */ true));
 #ifndef NDEBUG
-  r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
+  r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, entry));
 #endif
 }
 
@@ -1057,7 +1062,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 #ifndef NDEBUG
-  r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
+  r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, entry));
 #endif
 }
 
@@ -1101,7 +1106,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 #ifndef NDEBUG
-  r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
+  r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, entry));
 #endif
 }
 
@@ -1122,7 +1127,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("body")>(record.req.options);
   r.Append<r.ColIndex("resp")>(record.resp.command);
 #ifndef NDEBUG
-  r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
+  r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, record));
 #endif
 }
 
@@ -1148,7 +1153,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(record.req.timestamp_ns, record.resp.timestamp_ns));
 #ifndef NDEBUG
-  r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
+  r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, record));
 #endif
 }
 

@@ -534,6 +534,10 @@ struct ExecReqResp {
 struct Record {
   RegularMessage req;
   RegularMessage resp;
+
+  std::string ToString() const {
+    return absl::Substitute("req=[$0] resp=[$1]", req.ToString(), resp.ToString());
+  }
 };
 
 struct State {

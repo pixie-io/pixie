@@ -53,6 +53,11 @@ struct Record {
   Message req;
   Message resp;
   bool role_swapped = false;
+
+  std::string ToString() const {
+    return absl::Substitute("req=[$0] resp=[$1] role_swapped=$2", req.ToString(), resp.ToString(),
+                            role_swapped);
+  }
 };
 
 // Required by event parser interface.

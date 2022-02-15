@@ -187,6 +187,10 @@ struct Frame : public FrameBase {
 struct Record {
   Frame req;
   Frame resp;
+
+  std::string ToString() const {
+    return absl::Substitute("req=[$0] resp=[$1]", req.ToString(), resp.ToString());
+  }
 };
 
 struct ProtocolTraits : public BaseProtocolTraits<Record> {
