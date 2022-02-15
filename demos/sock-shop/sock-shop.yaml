@@ -808,7 +808,7 @@ spec:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: sock-shop
+  name: px-sock-shop
 ---
 apiVersion: apps/v1
 kind: Deployment
