@@ -27,11 +27,16 @@ pl_cc_library(
         exclude = [
             "**/*_test.cc",
             "*_benchmark.cc",
+            "test_utils.cc",
         ],
     ),
     hdrs = glob(
         [
             "*.h",
+        ],
+        exclude = [
+            "test_utils.h",
+            "test_data.h",
         ],
     ),
     deps = [
@@ -40,22 +45,35 @@ pl_cc_library(
     ],
 )
 
+pl_cc_library(
+    name = "testing",
+    srcs = [
+        "test_utils.cc",
+        "test_utils.h",
+    ],
+    hdrs = [
+        "test_data.h",
+        "test_utils.h",
+    ],
+    deps = [":cc_library"],
+)
+
 pl_cc_test(
     name = "parse_test",
     srcs = ["parse_test.cc"],
-    deps = [":cc_library"],
+    deps = [":testing"],
 )
 
 pl_cc_test(
     name = "stitcher_test",
     srcs = ["stitcher_test.cc"],
-    deps = [":cc_library"],
+    deps = [":testing"],
 )
 
 pl_cc_test(
     name = "types_test",
     srcs = ["types_test.cc"],
-    deps = [":cc_library"],
+    deps = [":testing"],
 )
 
 pl_cc_binary(

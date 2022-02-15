@@ -22,6 +22,7 @@
 #include <utility>
 
 #include "src/common/testing/testing.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/pgsql/test_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/pgsql/types.h"
 
 namespace px {
@@ -132,6 +133,58 @@ TEST(PGSQLParseTest, RowDesc) {
   EXPECT_THAT(field2.fmt_code, FmtCode::kBinary);
 }
 
+TEST(PGSQLParseTest, RowDescGenerated) {
+  RowDesc expected_row_desc;
+  expected_row_desc.fields.push_back(RowDesc::Field{
+      "first_name",
+      16385,
+      1,
+      25,
+      -1,
+      -1,
+      FmtCode::kText,
+  });
+  expected_row_desc.fields.push_back(RowDesc::Field{
+      "last_name",
+      16385,
+      2,
+      32,
+      -1,
+      -1,
+      FmtCode::kBinary,
+  });
+
+  RegularMessage msg;
+  msg.tag = Tag::kRowDesc;
+  msg.timestamp_ns = 123;
+  msg.payload = testutils::RowDescToPayload(expected_row_desc);
+
+  RowDesc row_desc;
+  ASSERT_OK(ParseRowDesc(msg, &row_desc));
+
+  EXPECT_EQ(123, row_desc.timestamp_ns);
+
+  ASSERT_THAT(row_desc.fields, SizeIs(2));
+
+  const auto& field1 = row_desc.fields.front();
+  EXPECT_EQ(field1.name, "first_name");
+  EXPECT_THAT(field1.table_oid, 16385);
+  EXPECT_THAT(field1.attr_num, 1);
+  EXPECT_THAT(field1.type_oid, 25);
+  EXPECT_THAT(field1.type_size, -1);
+  EXPECT_THAT(field1.type_modifier, -1);
+  EXPECT_THAT(field1.fmt_code, FmtCode::kText);
+
+  const auto& field2 = row_desc.fields[1];
+  EXPECT_EQ(field2.name, "last_name");
+  EXPECT_THAT(field2.table_oid, 16385);
+  EXPECT_THAT(field2.attr_num, 2);
+  EXPECT_THAT(field2.type_oid, 32);
+  EXPECT_THAT(field2.type_size, -1);
+  EXPECT_THAT(field2.type_modifier, -1);
+  EXPECT_THAT(field2.fmt_code, FmtCode::kBinary);
+}
+
 const std::string_view kDataRowTestData = CreateStringView<char>(
     "D"
     "\000\000\000F"
@@ -147,6 +200,28 @@ TEST(PGSQLParseTest, DataRow) {
   std::string_view data = kDataRowTestData;
   RegularMessage msg = {};
   EXPECT_EQ(ParseState::kSuccess, ParseRegularMessage(&data, &msg));
+  EXPECT_EQ(Tag::kDataRow, msg.tag);
+  EXPECT_EQ(70, msg.len);
+
+  DataRow data_row;
+  ASSERT_OK(ParseDataRow(msg, &data_row));
+  EXPECT_THAT(data_row.cols, ElementsAre("postgres", "postgres", "UTF8", "en_US.utf8", "en_US.utf8",
+                                         std::nullopt));
+}
+
+TEST(PGSQLParseTest, DataRowGenerated) {
+  DataRow expected_data_row;
+  expected_data_row.cols.push_back("postgres");
+  expected_data_row.cols.push_back("postgres");
+  expected_data_row.cols.push_back("UTF8");
+  expected_data_row.cols.push_back("en_US.utf8");
+  expected_data_row.cols.push_back("en_US.utf8");
+  expected_data_row.cols.push_back(std::nullopt);
+
+  std::string data = testutils::DataRowToByteString(expected_data_row);
+  std::string_view data_view(data);
+  RegularMessage msg;
+  EXPECT_EQ(ParseState::kSuccess, ParseRegularMessage(&data_view, &msg));
   EXPECT_EQ(Tag::kDataRow, msg.tag);
   EXPECT_EQ(70, msg.len);
 
@@ -291,6 +366,19 @@ TEST(FindFrameBoundaryTest, FindTag) {
   EXPECT_EQ(0, FindFrameBoundary(kDataRowTestData, 0));
   const std::string data = absl::StrCat("aaaaa", kDataRowTestData);
   EXPECT_EQ(5, FindFrameBoundary(data, 0));
+}
+
+TEST(PGSQLParseTest, ParseCmdCmplGenerated) {
+  CmdCmpl expected_cmd_cmpl;
+  expected_cmd_cmpl.cmd_tag = "UPDATE 10";
+  auto data = testutils::CmdCmplToByteString(expected_cmd_cmpl);
+  std::string_view data_view(data);
+  RegularMessage msg = {};
+  EXPECT_EQ(ParseState::kSuccess, ParseRegularMessage(&data_view, &msg));
+
+  CmdCmpl cmd_cmpl;
+  EXPECT_OK(ParseCmdCmpl(msg, &cmd_cmpl));
+  EXPECT_EQ(cmd_cmpl.cmd_tag, "UPDATE 10");
 }
 
 }  // namespace pgsql
