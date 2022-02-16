@@ -38,10 +38,9 @@ Cypress.Commands.add('loginGoogle', () => {
   cy.getCookie(GOOGLE_COOKIE_KEY).should('have.property', 'value');
 
   // Every request from here on out needs CSRF headers.
-  cy.intercept(`${Cypress.config().baseUrl}/api/**`, (req) => {
+  cy.intercept(`${Cypress.config().baseUrl}/api/**`, { middleware: true }, (req) => {
     req.headers['x-csrf'] = 'undefined';
     req.headers.Referer = req.headers.origin;
-    req.continue();
   });
 });
 

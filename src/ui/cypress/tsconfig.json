@@ -5,6 +5,7 @@
     "types": ["cypress"],
     "baseUrl": ".",
     "paths": {
+      "app/*": ["../src/*"],
       "configurable/*": [
         "./configurables/private/*",
         "./configurables/base/*"

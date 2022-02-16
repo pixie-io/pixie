@@ -77,8 +77,6 @@ describe('Live View navbars', () => {
     });
 
     sidebarFooterSpec();
-
-    // TODO(nick,PC-1424): Test that the cluster and namespace buttons trigger PxL scripts
   });
 
   // Note: Other elements in the top/sidebar are complex enough for their own tests; not tested here.
