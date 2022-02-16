@@ -34,12 +34,16 @@ namespace stringifier {
 constexpr std::string_view kSeparator = ";";
 
 // The suffix is attached to each symbol in a folded stack trace string.
-static constexpr std::string_view kUserSuffix = "";
-static constexpr std::string_view kKernSuffix = "_[k]";
+constexpr std::string_view kUserSuffix = "";
+constexpr std::string_view kKernSuffix = "_[k]";
+
+// This is the symbol we see for Java interpreter frames. The stringifier
+// will collapse repeated instances of this into something like "[j] Interpreter [12x]".
+constexpr std::string_view kJavaInterpreter = "[j] Interpreter";
 
 // The drop message indicates that the kernel had a hash table collision
 // and dropped tracking of one stack trace.
-static constexpr std::string_view kDropMessage = "<stack trace lost>";
+constexpr std::string_view kDropMessage = "<stack trace lost>";
 }  // namespace stringifier
 
 // Stringifier serves two purposes:
