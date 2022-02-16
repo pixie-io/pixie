@@ -245,38 +245,6 @@ struct socket_control_event_t {
   };
 };
 
-#ifdef __cplusplus
-
-#include <string>
-
-#include "src/common/base/base.h"
-
-inline std::string ToString(const socket_data_event_t::attr_t& attr) {
-  return absl::Substitute(
-      "[ts=$0 conn_id=$1 protocol=$2 role=$3 dir=$4 ssl=$5 source_fn=$6 pos=$7 size=$8 "
-      "buf_size=$9]",
-      attr.timestamp_ns, ToString(attr.conn_id), magic_enum::enum_name(attr.protocol),
-      magic_enum::enum_name(attr.role), magic_enum::enum_name(attr.direction), attr.ssl,
-      magic_enum::enum_name(attr.source_fn), attr.pos, attr.msg_size, attr.msg_buf_size);
-}
-
-inline std::string ToString(const close_event_t& event) {
-  return absl::Substitute("[wr_bytes=$0 rd_bytes=$1]", event.wr_bytes, event.rd_bytes);
-}
-
-inline std::string ToString(const conn_event_t& event) {
-  return absl::Substitute("[addr=$0]",
-                          ::px::ToString(reinterpret_cast<const struct sockaddr*>(&event.addr)));
-}
-
-inline std::string ToString(const socket_control_event_t& event) {
-  return absl::Substitute("[type=$0 ts=$1 conn_id=$2 $3]", magic_enum::enum_name(event.type),
-                          event.timestamp_ns, ToString(event.conn_id),
-                          event.type == kConnOpen ? ToString(event.open) : ToString(event.close));
-}
-
-#endif
-
 struct connect_args_t {
   const struct sockaddr* addr;
   int32_t fd;

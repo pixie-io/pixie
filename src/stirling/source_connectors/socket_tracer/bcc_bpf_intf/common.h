@@ -18,17 +18,7 @@
 
 #pragma once
 
-#ifdef __cplusplus
-#include <algorithm>
-#include <map>
-#include <string>
-
-#include <absl/strings/substitute.h>
-#include <magic_enum.hpp>
-
-#include "src/common/base/enum_utils.h"
 #include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
-#endif
 
 // This file contains definitions that are shared between various kprobes and uprobes.
 
@@ -68,13 +58,6 @@ enum traffic_protocol_t {
 #endif
 };
 
-#ifdef __cplusplus
-constexpr int kNumProtocols = magic_enum::enum_count<traffic_protocol_t>();
-
-static const std::map<int64_t, std::string_view> kTrafficProtocolDecoder =
-    px::EnumDefToMap<traffic_protocol_t>();
-#endif
-
 struct protocol_message_t {
   enum traffic_protocol_t protocol;
   enum message_type_t type;
@@ -89,11 +72,6 @@ enum endpoint_role_t {
   kRoleUnknown = 1 << 2,
 };
 
-#ifdef __cplusplus
-static const std::map<int64_t, std::string_view> kEndpointRoleDecoder =
-    px::EnumDefToMap<endpoint_role_t>();
-#endif
-
 struct conn_id_t {
   // The unique identifier of the pid/tgid.
   struct upid_t upid;
@@ -102,19 +80,6 @@ struct conn_id_t {
   // Unique id of the conn_id (timestamp).
   uint64_t tsid;
 };
-
-#ifdef __cplusplus
-inline std::string ToString(const conn_id_t& conn_id) {
-  return absl::Substitute("[pid=$0 start_time_ticks=$1 fd=$2 gen=$3]", conn_id.upid.pid,
-                          conn_id.upid.start_time_ticks, conn_id.fd, conn_id.tsid);
-}
-
-inline bool operator==(const struct conn_id_t& a, const struct conn_id_t& b) {
-  return a.upid == b.upid && a.fd == b.fd && a.tsid == b.tsid;
-}
-
-inline bool operator!=(const struct conn_id_t& a, const struct conn_id_t& b) { return !(a == b); }
-#endif
 
 // Specifies the corresponding indexes of the entries of a per-cpu array.
 enum control_value_index_t {

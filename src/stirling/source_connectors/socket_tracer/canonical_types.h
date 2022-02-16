@@ -22,7 +22,7 @@
 #include <string_view>
 
 #include "src/stirling/core/canonical_types.h"
-#include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/common.h"
+#include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/common.hpp"
 
 namespace px {
 namespace stirling {
