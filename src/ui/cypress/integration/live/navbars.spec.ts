@@ -16,16 +16,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { interceptExecuteScript } from 'support/utils/grpc';
+
 import { sidebarFooterSpec } from 'configurable/integration/live/navbars.spec';
 
 describe('Live View navbars', () => {
   before(() => {
     cy.loginGoogle();
+    interceptExecuteScript({ routeHandler: (req) => req.reply(429 /* Too many requests */) });
     cy.visit('/');
   });
 
   beforeEach(() => {
+    // Re-apply one-time intercepts each run.
     cy.loginGoogle();
+    interceptExecuteScript({ routeHandler: (req) => req.reply(429 /* Too many requests */) });
     cy.get('.MuiToolbar-root').as('topbar');
   });
 
@@ -76,6 +81,30 @@ describe('Live View navbars', () => {
       cy.get('header + .MuiDrawer-root').should('exist').should((el) => expect(el.width()).lte(100));
     });
 
+    interface ConfigFlags {
+      DOMAIN_NAME: string;
+      ANNOUNCEMENT_ENABLED: boolean;
+      CONTACT_ENABLED: boolean;
+    }
+    it('Has a filled out footer', () => {
+      cy.window().its('__PIXIE_FLAGS__').then((CONFIG?: ConfigFlags) => {
+        cy.get('@sidebar-footer').within(() => {
+          cy.get('[aria-label="Announcements"]')
+            .should(CONFIG.ANNOUNCEMENT_ENABLED ? 'exist' : 'not.exist');
+          cy.get('[aria-label="Docs"]')
+            .should('exist')
+            .should('have.attr', 'href', `https://docs.${CONFIG.DOMAIN_NAME}`);
+          cy.get('[aria-label="Help"]')
+            .should(CONFIG.CONTACT_ENABLED ? 'exist' : 'not.exist');
+          if (CONFIG.CONTACT_ENABLED) {
+            cy.get('[aria-label="Help"]')
+              .should('have.attr', 'id', 'intercom-trigger');
+          }
+        });
+      });
+    });
+
+    // Any configurable extra items that show up in the footer have their own tests
     sidebarFooterSpec();
   });
 

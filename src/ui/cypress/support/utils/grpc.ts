@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Interception } from 'cypress/types/net-stubbing';
+import { Interception, RouteHandler } from 'cypress/types/net-stubbing';
 
 import { ExecuteScriptRequest, ExecuteScriptResponse } from 'app/types/generated/vizierapi_pb';
 
@@ -100,11 +100,15 @@ export function deserializeExecuteScriptResponse(input: string): ExecuteScriptRe
   return messages;
 }
 
-export function interceptExecuteScript(): Cypress.Chainable<null> {
+export interface InterceptExecuteScriptOptions {
+  /** If provided, becomes the second argument to cy.intercept. Use for stubbing. */
+  routeHandler?: RouteHandler;
+}
+export function interceptExecuteScript(opts: InterceptExecuteScriptOptions = {}): Cypress.Chainable<null> {
   const url = `${Cypress.config().baseUrl}/${SERVICE_ROOT}/ExecuteScript`;
 
   // TODO: Use opts to filter what gets intercepted and what doesn't.
-  return cy.intercept(url);
+  return cy.intercept(url, opts.routeHandler ?? undefined);
 }
 
 export interface DeserialziedIntercept extends Interception {

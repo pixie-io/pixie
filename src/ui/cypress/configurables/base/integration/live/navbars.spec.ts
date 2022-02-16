@@ -17,8 +17,5 @@
  */
 
 export function sidebarFooterSpec() {
-  // TODO(nick,PC-1428): Full footer tests that are config dependent
-  it('Has three footer links', () => {
-    cy.get('@sidebar-footer').find('> *').should('have.length', 3);
-  });
+  // No-op; base configuration doesn't add anything extra to the sidebar.
 }
