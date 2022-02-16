@@ -132,7 +132,21 @@ JavaSymbolizationContext::JavaSymbolizationContext(const struct upid_t& target_u
   host_artifacts_path_resolved_ = true;
 }
 
-JavaSymbolizationContext::~JavaSymbolizationContext() { symbol_file_->close(); }
+JavaSymbolizationContext::~JavaSymbolizationContext() {
+  symbol_file_->close();
+
+  if (host_artifacts_path_resolved_) {
+    // Remove the host artifacts path entirely; this cleans up all the files (and the subdir) we
+    // created inside of the target container mount namespace.
+    const auto& sysconfig = system::Config::GetInstance();
+    const std::filesystem::path host_artifacts_path = sysconfig.ToHostPath(host_artifacts_path_);
+    const Status remove_status = fs::RemoveAll(host_artifacts_path);
+    if (!remove_status.ok()) {
+      char const* const fmt = "Could not remove host artifacts path: $0, $1.";
+      LOG(WARNING) << absl::Substitute(fmt, host_artifacts_path_.string(), remove_status.msg());
+    }
+  }
+}
 
 std::string_view JavaSymbolizationContext::Symbolize(const uintptr_t addr) {
   if (requires_refresh_) {
