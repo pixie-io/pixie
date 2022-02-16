@@ -18,6 +18,13 @@ load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 load("@px//demos:demo_upload.bzl", "demo_upload")
 
 pkg_tar(
+    name = "px-kafka",
+    srcs = glob(["kafka/*"]),
+    extension = "tar.gz",
+    strip_prefix = "kafka",
+)
+
+pkg_tar(
     name = "px-sock-shop",
     srcs = glob(["sock-shop/*"]),
     extension = "tar.gz",
@@ -32,6 +39,7 @@ pkg_tar(
 )
 
 ARCHIVES = [
+    ":px-kafka",
     ":px-sock-shop",
     ":px-online-boutique",
 ]
