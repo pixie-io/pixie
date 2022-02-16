@@ -1,0 +1,17 @@
+---
+apiVersion: skaffold/v2alpha3
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/pixie-oss/pixie-dev/src/e2e_test/profiler_loadtest/profiler_loadtest_golang
+    context: .
+    bazel:
+      target: //src/e2e_test/profiler_loadtest/go:profiler_loadtest_golang_image.tar
+  tagPolicy:
+    dateTime: {}
+  local:
+    push: true
+deploy:
+  kustomize:
+    paths:
+    - k8s/

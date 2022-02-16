@@ -1,0 +1,6 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: px-profiler-loadtest
+resources:
+- go_loadtest_deployment.yaml

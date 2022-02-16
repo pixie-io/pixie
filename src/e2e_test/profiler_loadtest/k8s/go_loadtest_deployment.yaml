@@ -1,0 +1,28 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server
+  namespace: px-profiler-loadtest
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: go-app
+  template:
+    metadata:
+      labels:
+        name: go-app
+    spec:
+      containers:
+      - name: app
+        image: gcr.io/pixie-oss/pixie-dev/src/e2e_test/profiler_loadtest/profiler_loadtest_golang:latest
+        env:
+        - name: NUM_GOROUTINES
+          value: "50"
+        - name: PAUSE_TIME_NS
+          value: "100000"
+        - name: NUM_FUNCTIONS
+          value: "5"
+        - name: CALL_STACK_DEPTH
+          value: "30"

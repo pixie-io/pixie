@@ -46,7 +46,7 @@ container_push(
     format = "Docker",
     image = ":profiler_loadtest_golang_image",
     registry = "gcr.io",
-    repository = "pixie-oss/pixie-dev/experimental/profiler_loadtest_golang",
+    repository = "gcr.io/pixie-oss/pixie-dev/src/e2e_test/profiler_loadtest/profiler_loadtest_golang",
     tag = "{STABLE_BUILD_TAG}",
     tags = ["manual"],
 )
