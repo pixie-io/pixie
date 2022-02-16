@@ -38,7 +38,8 @@ class JavaSymbolizationContext {
   };
   using SymbolMapType = absl::btree_map<uint64_t, SymbolAndCodeSize>;
 
-  JavaSymbolizationContext(profiler::SymbolizerFn native_symbolizer_fn,
+  JavaSymbolizationContext(const struct upid_t& target_upid,
+                           profiler::SymbolizerFn native_symbolizer_fn,
                            std::unique_ptr<std::ifstream> symbol_file);
   ~JavaSymbolizationContext();
 
@@ -53,6 +54,8 @@ class JavaSymbolizationContext {
   SymbolMapType symbol_map_;
   profiler::SymbolizerFn native_symbolizer_fn_;
   std::unique_ptr<std::ifstream> symbol_file_;
+  bool host_artifacts_path_resolved_ = false;
+  std::filesystem::path host_artifacts_path_;
 };
 
 class JavaSymbolizer : public Symbolizer {

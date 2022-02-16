@@ -25,6 +25,7 @@
 #include "src/stirling/source_connectors/perf_profiler/java/demangle.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/java_symbolizer.h"
 #include "src/stirling/utils/detect_application.h"
+#include "src/stirling/utils/proc_path_tools.h"
 
 namespace {
 char const* const kLibsHelpMessage = "Comma separated list of Java symbolization agent lib files.";
@@ -36,6 +37,19 @@ DEFINE_string(stirling_profiler_java_agent_libs, kPEMAgentLibs, kLibsHelpMessage
 
 namespace px {
 namespace stirling {
+
+namespace {
+StatusOr<std::filesystem::path> ResolveHostArtifactsPath(const struct upid_t& target_upid) {
+  const std::filesystem::path artifacts_path = java::AgentArtifactsPath(target_upid);
+
+  // TODO(jps): To avoid repeated accesses to /proc, investigate if we can reuse the
+  // results of this call into ResolvePath. e.g., if we need to resolve the /tmp mount
+  // in some other stirling component.
+  std::unique_ptr<FilePathResolver> fp_resolver;
+  PL_ASSIGN_OR_RETURN(fp_resolver, FilePathResolver::Create(target_upid.pid));
+  return fp_resolver->ResolvePath(artifacts_path);
+}
+}  // namespace
 
 void JavaSymbolizationContext::UpdateSymbolMap() {
   auto reset_symbol_file = [&](const auto pos) {
@@ -100,11 +114,22 @@ void JavaSymbolizationContext::UpdateSymbolMap() {
   DCHECK(symbol_file_->good());
 }
 
-JavaSymbolizationContext::JavaSymbolizationContext(profiler::SymbolizerFn native_symbolizer_fn,
+JavaSymbolizationContext::JavaSymbolizationContext(const struct upid_t& target_upid,
+                                                   profiler::SymbolizerFn native_symbolizer_fn,
                                                    std::unique_ptr<std::ifstream> symbol_file)
     : native_symbolizer_fn_(native_symbolizer_fn), symbol_file_(std::move(symbol_file)) {
   DCHECK(symbol_file_->good());
   UpdateSymbolMap();
+
+  auto status_or_host_artifacts_path = ResolveHostArtifactsPath(target_upid);
+
+  if (!status_or_host_artifacts_path.ok()) {
+    char const* const fmt = "Could not resolve host path for symbolization artifacts. pid: $0. $1.";
+    LOG(WARNING) << absl::Substitute(fmt, target_upid.pid, status_or_host_artifacts_path.msg());
+    return;
+  }
+  host_artifacts_path_ = status_or_host_artifacts_path.ConsumeValueOrDie();
+  host_artifacts_path_resolved_ = true;
 }
 
 JavaSymbolizationContext::~JavaSymbolizationContext() { symbol_file_->close(); }
@@ -199,8 +224,8 @@ Status JavaSymbolizer::CreateNewJavaSymbolizationContext(const struct upid_t& up
   DCHECK(inserted);
   if (inserted) {
     auto native_symbolizer_fn = native_symbolizer_->GetSymbolizerFn(upid);
-    iter->second =
-        std::make_unique<JavaSymbolizationContext>(native_symbolizer_fn, std::move(symbol_file));
+    iter->second = std::make_unique<JavaSymbolizationContext>(upid, native_symbolizer_fn,
+                                                              std::move(symbol_file));
   }
   auto& ctx = iter->second;
 
