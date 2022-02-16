@@ -315,7 +315,7 @@ def RetryOnK8sDownscale(Closure body, int times=5) {
 def WithSourceCodeK8s(String suffix="${UUID.randomUUID()}", Closure body) {
   warnError('Script failed') {
     DefaultBuildPodTemplate(suffix) {
-      timeout(time: 60, unit: 'MINUTES') {
+      timeout(time: 90, unit: 'MINUTES') {
         container('gcloud') {
           unstashFromGCS(SRC_STASH_NAME)
           sh 'cp ci/bes-k8s.bazelrc bes.bazelrc'
@@ -552,7 +552,7 @@ def DefaultBuildPodTemplate(String suffix, Closure body) {
           name: 'pxbuild', image: 'gcr.io/' + devDockerImageWithTag,
           command: 'cat', ttyEnabled: true,
           resourceRequestMemory: '58368Mi',
-          resourceRequestCpu: '14500m',
+          resourceRequestCpu: '30000m',
         ),
         containerTemplate(name: 'gcloud', image: GCLOUD_DOCKER_IMAGE, command: 'cat', ttyEnabled: true),
       ],
