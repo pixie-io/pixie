@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: plugin-service
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - port: 50600
+    protocol: TCP
+    targetPort: 50600
+    name: tcp-http2
+  selector:
+    name: plugin-server

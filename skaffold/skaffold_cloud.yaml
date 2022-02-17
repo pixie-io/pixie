@@ -19,6 +19,10 @@ build:
     context: .
     bazel:
       target: //src/cloud/proxy:proxy_prod_server_image.tar
+  - image: gcr.io/pixie-oss/pixie-dev/cloud/plugin_server_image
+    context: .
+    bazel:
+      target: //src/cloud/plugin:plugin_server_image.tar
   - image: gcr.io/pixie-oss/pixie-dev/cloud/project_manager_server_image
     context: .
     bazel:

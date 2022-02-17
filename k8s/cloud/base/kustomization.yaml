@@ -21,6 +21,8 @@ resources:
 - api_service.yaml
 - dnsmgr_deployment.yaml
 - dnsmgr_service.yaml
+- plugin_deployment.yaml
+- plugin_service.yaml
 - profile_deployment.yaml
 - profile_service.yaml
 - project_manager_deployment.yaml

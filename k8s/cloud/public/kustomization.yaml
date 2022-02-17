@@ -52,6 +52,9 @@ images:
 - name: gcr.io/pixie-oss/pixie-dev/cloud/metrics_server_image
   newName: gcr.io/pixie-oss/pixie-prod/cloud/metrics_server_image
   newTag: latest
+- name: gcr.io/pixie-oss/pixie-dev/cloud/plugin_server_image
+  newName: gcr.io/pixie-oss/pixie-prod/cloud/plugin_server_image
+  newTag: latest
 - name: gcr.io/pixie-oss/pixie-dev/cloud/profile_server_image
   newName: gcr.io/pixie-oss/pixie-prod/cloud/profile_server_image
   newTag: latest

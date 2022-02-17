@@ -29,6 +29,7 @@ CLOUD_IMAGE_MAP = {
     "gcr.io/pixie-oss/pixie-dev/cloud/indexer_server_image": "//src/cloud/indexer:indexer_server_image",
     "gcr.io/pixie-oss/pixie-dev/cloud/job/create_admin_job_image": "//src/cloud/jobs/create_admin_user:create_admin_job_image",
     "gcr.io/pixie-oss/pixie-dev/cloud/metrics_server_image": "//src/cloud/metrics:metrics_server_image",
+    "gcr.io/pixie-oss/pixie-dev/cloud/plugin_server_image": "//src/cloud/plugin:plugin_server_image",
     "gcr.io/pixie-oss/pixie-dev/cloud/profile_server_image": "//src/cloud/profile:profile_server_image",
     "gcr.io/pixie-oss/pixie-dev/cloud/project_manager_server_image": "//src/cloud/project_manager:project_manager_server_image",
     "gcr.io/pixie-oss/pixie-dev/cloud/proxy_server_image": "//src/cloud/proxy:proxy_prod_server_image",

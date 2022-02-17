@@ -7,6 +7,7 @@ metadata:
 data:
   PL_AUTH_SERVICE: kubernetes:///auth-service.plc-testing:50100
   PL_API_SERVICE_HTTP: api-service.plc-testing.svc.cluster.local:51200
+  PL_PLUGIN_SERVICE: kubernetes:///plugin-service.plc-testing:50600
   PL_PROFILE_SERVICE: kubernetes:///profile-service.plc-testing:51500
   PL_PROJECT_MANAGER_SERVICE: kubernetes:///project-manager-service.plc-testing:50300
   PL_VZMGR_SERVICE: kubernetes:///vzmgr-service.plc-testing:51800
