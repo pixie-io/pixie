@@ -23,7 +23,7 @@ go_library(
         "json.go",
         "table.go",
     ],
-    importpath = "px.dev/pixie/src/api/go/pxapi/errdefs/formatters",
+    importpath = "px.dev/pixie/src/api/go/pxapi/formatters",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/go/pxapi/errdefs",

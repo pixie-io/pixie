@@ -24,7 +24,7 @@ go_library(
     deps = [
         "//src/api/go/pxapi",
         "//src/api/go/pxapi/errdefs",
-        "//src/api/go/pxapi/errdefs/formatters",
+        "//src/api/go/pxapi/formatters",
         "//src/api/go/pxapi/muxes",
         "//src/api/go/pxapi/types",
     ],

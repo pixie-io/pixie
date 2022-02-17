@@ -25,7 +25,7 @@ import (
 
 	"px.dev/pixie/src/api/go/pxapi"
 	"px.dev/pixie/src/api/go/pxapi/errdefs"
-	"px.dev/pixie/src/api/go/pxapi/errdefs/formatters"
+	"px.dev/pixie/src/api/go/pxapi/formatters"
 	"px.dev/pixie/src/api/go/pxapi/muxes"
 	"px.dev/pixie/src/api/go/pxapi/types"
 )
