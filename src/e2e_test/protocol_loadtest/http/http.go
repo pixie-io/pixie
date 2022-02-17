@@ -139,7 +139,7 @@ func basicHandler(w http.ResponseWriter, r *http.Request) {
 	bodySize := getQueryParamAsInt(r.URL.Query(), bodySizeParam)
 	numHeaders := getQueryParamAsInt(r.URL.Query(), numHeadersParam)
 
-	w.Header().Set("X-Pixie-Ack-Seq-Id", r.Header.Get("X-Pixie-Req-Seq-Id"))
+	w.Header().Set("x-px-ack-seq-id", r.Header.Get("x-px-seq-id"))
 	for i := 0; i < numHeaders; i++ {
 		w.Header().Add(fmt.Sprintf("X-Custom-Header-%d", i), string(util.RandPrintable(headerSize)))
 	}
