@@ -221,6 +221,12 @@ class AbsUDF : public udf::ScalarUDF {
         .Arg("v", "The value")
         .Returns("The value abs(v)");
   }
+
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::InheritTypeFromArgs<AbsUDF>::Create({types::ST_BYTES, types::ST_THROUGHPUT_PER_NS,
+                                                      types::ST_THROUGHPUT_BYTES_PER_NS,
+                                                      types::ST_DURATION_NS, types::ST_PERCENT})};
+  }
 };
 
 template <typename TArg1>
