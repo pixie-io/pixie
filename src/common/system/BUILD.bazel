@@ -127,7 +127,7 @@ pl_cc_test(
 pl_cc_test(
     name = "scoped_namespace_test",
     srcs = ["scoped_namespace_test.cc"],
-    data = ["//src/common/system/testdata:dummy_container_image.tar"],
+    data = ["//src/common/system/testdata:test_container_image.tar"],
     tags = [
         # This test requires root to call setns().
         # This tag prevents the test from running on local dev machines.

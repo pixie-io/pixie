@@ -26,20 +26,20 @@ filegroup(
 # For scoped_namespace_test: Generate a container with a dummy file inside,
 # so we can check for mount namespaces.
 genrule(
-    name = "dummy_file_rule",
+    name = "empty_file_rule",
     srcs = [],
-    outs = ["dummy_file"],
+    outs = ["empty_file"],
     cmd = "touch $@",
 )
 
 container_layer(
-    name = "dummy_file_layer",
-    directory = "/dummy_dir",
-    files = [":dummy_file_rule"],
+    name = "empty_file_layer",
+    directory = "/files_dir",
+    files = [":empty_file_rule"],
 )
 
 container_image(
-    name = "dummy_container_image",
+    name = "test_container_image",
     base = "//src/common/testing/test_utils:sleep_container_image",
-    layers = [":dummy_file_layer"],
+    layers = [":empty_file_layer"],
 )

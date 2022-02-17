@@ -32,16 +32,16 @@ using ::testing::Not;
 namespace px {
 namespace system {
 
-class DummyContainer : public ContainerRunner {
+class TestContainer : public ContainerRunner {
  public:
-  DummyContainer()
+  TestContainer()
       : ContainerRunner(px::testing::BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix,
                         kReadyMessage) {}
 
  private:
   static constexpr std::string_view kBazelImageTar =
-      "src/common/system/testdata/dummy_container_image.tar";
-  static constexpr std::string_view kInstanceNamePrefix = "dummy_container";
+      "src/common/system/testdata/test_container_image.tar";
+  static constexpr std::string_view kInstanceNamePrefix = "test_container";
   static constexpr std::string_view kReadyMessage = "started";
 };
 
@@ -52,13 +52,13 @@ std::vector<std::filesystem::path> ListDir(const std::filesystem::path& dir) {
 
 // Use mount namespace as a demonstration of ScopedNamespace functionality.
 TEST(ScopedNamespaceTest, MountNamespace) {
-  DummyContainer container;
+  TestContainer container;
   ASSERT_OK(container.Run());
 
-  // This is a path that we can reasonably assume only exists in the DummyContainer.
-  const std::filesystem::path kDummyContainerDir("/dummy_dir");
+  // This is a path that we can reasonably assume only exists in the TestContainer.
+  const std::filesystem::path kTestContainerDir("/files_dir");
 
-  EXPECT_THAT(ListDir("/"), Not(Contains(kDummyContainerDir)));
+  EXPECT_THAT(ListDir("/"), Not(Contains(kTestContainerDir)));
 
   // Create a scope under which we will switch namespaces.
   // The namespace will apply to all code in the scope, but once it exits,
@@ -68,10 +68,10 @@ TEST(ScopedNamespaceTest, MountNamespace) {
                          ScopedNamespace::Create(container.process_pid(), "mnt"));
 
     // Now that we're in the container's mount namespace, we expect to see its filesystem.
-    EXPECT_THAT(ListDir("/"), Contains(kDummyContainerDir));
+    EXPECT_THAT(ListDir("/"), Contains(kTestContainerDir));
   }
 
-  EXPECT_THAT(ListDir("/"), Not(Contains(kDummyContainerDir)));
+  EXPECT_THAT(ListDir("/"), Not(Contains(kTestContainerDir)));
 }
 
 }  // namespace system
