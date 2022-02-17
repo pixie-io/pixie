@@ -57,7 +57,7 @@ Status ScopedNamespace::EnterNamespace(int ns_pid, std::string_view ns_type) {
   // Switch network namespaces, so socket prober connects to the target network namespace.
   setns_retval_ = setns(ns_fd_, 0);
   if (setns_retval_ != 0) {
-    return error::Internal("Could not change to network namespace of PID $0 [err=$1]", ns_pid,
+    return error::Internal("Could not change to $0 namespace of PID $1 [err=$2]", ns_type, ns_pid,
                            std::strerror(errno));
   }
 

@@ -59,7 +59,7 @@ ContainerRunner::~ContainerRunner() {
   LOG(INFO) << docker_rm_cmd;
   StatusOr<std::string> s = px::Exec(docker_rm_cmd);
   LOG_IF(ERROR, !s.ok()) << absl::Substitute(
-      "Failing to remove the container. Container $0 is leaked. Status: $1", container_name_,
+      "Failed to remove the container. Container $0 may have leaked. Status: $1", container_name_,
       s.ToString());
 }
 
