@@ -32,6 +32,8 @@
 #include "src/stirling/proto/stirling.pb.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb/logical.pb.h"
 
+DECLARE_string(stirling_sources);
+
 namespace px {
 namespace stirling {
 
@@ -65,9 +67,9 @@ std::vector<std::string_view> GetSourceNamesForGroup(SourceConnectorGroup group)
 
 /**
  * Returns a source registry registered with the specified sources.
+ * The sources are specified by --sources flag.
  */
-StatusOr<std::unique_ptr<SourceRegistry>> CreateSourceRegistry(
-    const std::vector<std::string_view>& source_names);
+std::unique_ptr<SourceRegistry> CreateSourceRegistryFromFlag();
 
 /**
  * Returns a source registry registered with all prod sources.

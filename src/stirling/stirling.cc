@@ -55,6 +55,11 @@
 
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dynamic_tracer.h"
 
+DEFINE_string(
+    stirling_sources, "kProd",
+    "Choose sources to enable. [kAll|kProd|kMetrics|kTracers|kProfiler] or comma separated list of "
+    "sources (find them the header files of source connector classes).");
+
 namespace px {
 namespace stirling {
 
@@ -119,6 +124,20 @@ std::vector<std::string_view> GetSourceNamesForGroup(SourceConnectorGroup group)
 }
 // clang-format on
 
+std::vector<std::string_view> GetSourceNamesFromFlag() {
+  std::vector<std::string_view> source_names;
+  if (!FLAGS_stirling_sources.empty()) {
+    std::optional<SourceConnectorGroup> group =
+        magic_enum::enum_cast<SourceConnectorGroup>(FLAGS_stirling_sources);
+    if (group.has_value()) {
+      source_names = GetSourceNamesForGroup(group.value());
+    } else {
+      source_names = absl::StrSplit(FLAGS_stirling_sources, ",", absl::SkipWhitespace());
+    }
+  }
+  return source_names;
+}
+
 StatusOr<std::unique_ptr<SourceRegistry>> CreateSourceRegistry(
     const std::vector<std::string_view>& source_names) {
   auto registry = std::make_unique<SourceRegistry>();
@@ -144,6 +163,10 @@ StatusOr<std::unique_ptr<SourceRegistry>> CreateSourceRegistry(
 std::unique_ptr<SourceRegistry> CreateProdSourceRegistry() {
   return CreateSourceRegistry(GetSourceNamesForGroup(SourceConnectorGroup::kProd))
       .ConsumeValueOrDie();
+}
+
+std::unique_ptr<SourceRegistry> CreateSourceRegistryFromFlag() {
+  return CreateSourceRegistry(GetSourceNamesFromFlag()).ConsumeValueOrDie();
 }
 
 // Holds InfoClassManager and DataTable.
