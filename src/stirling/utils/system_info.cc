@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/common/system/system_info.h"
+#include "src/stirling/utils/system_info.h"
 
 #include <sys/sysinfo.h>
 #include <string>

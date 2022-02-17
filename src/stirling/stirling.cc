@@ -32,7 +32,7 @@
 
 #include "src/common/base/base.h"
 #include "src/common/perf/elapsed_timer.h"
-#include "src/common/system/system_info.h"
+#include "src/stirling/utils/system_info.h"
 
 #include "src/stirling/bpf_tools/probe_cleaner.h"
 #include "src/stirling/core/data_table.h"
