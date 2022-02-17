@@ -19,45 +19,41 @@
 package http
 
 import (
+	"bytes"
 	"compress/gzip"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
-	"strconv"
 
 	"px.dev/pixie/src/e2e_test/util"
 )
 
 const (
-	headerSizeParam      = "header_size"
-	numHeadersParam      = "num_headers"
-	bodySizeParam        = "body_size"
-	chunkSizeParam       = "chunk_size"
-	disableChunkingParam = "disable_chunking"
-
-	defaultNumHeaders  = 8
-	defaultHeadersSize = 128
-	defaultBodySize    = 1024
-	defaultChunkSize   = 128
+	defaultNumHeaders = 8
+	defaultHeaderSize = 128
+	defaultBodySize   = 1024
+	defaultChunkSize  = 128
 )
 
-func getQueryParamAsInt(values url.Values, param string) int {
-	val, err := strconv.Atoi(values.Get(param))
-	if err != nil {
-		switch param {
-		case headerSizeParam:
-			val = defaultHeadersSize
-		case bodySizeParam:
-			val = defaultBodySize
-		case chunkSizeParam:
-			val = defaultChunkSize
-		case numHeadersParam:
-			val = defaultNumHeaders
-		}
+// LoadParams defines the post params accepted by the server.
+type LoadParams struct {
+	HeaderSize      int  `json:"header_size,omitempty"`
+	NumHeaders      int  `json:"num_headers,omitempty"`
+	BodySize        int  `json:"body_size,omitempty"`
+	ChunkSize       int  `json:"chunk_size,omitempty"`
+	DisableChunking bool `json:"disable_chunking,omitempty"`
+}
+
+func getDefaultParams() *LoadParams {
+	return &LoadParams{
+		NumHeaders:      defaultNumHeaders,
+		HeaderSize:      defaultHeaderSize,
+		BodySize:        defaultBodySize,
+		ChunkSize:       defaultChunkSize,
+		DisableChunking: false,
 	}
-	return val
 }
 
 func checkExists(haystack []string, needle string) bool {
@@ -67,6 +63,14 @@ func checkExists(haystack []string, needle string) bool {
 		}
 	}
 	return false
+}
+
+func duplicateReadCloser(r io.ReadCloser) (io.ReadCloser, io.ReadCloser, error) {
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return nil, nil, err
+	}
+	return io.NopCloser(bytes.NewReader(data)), io.NopCloser(bytes.NewReader(data)), nil
 }
 
 // Gzip handling adapted from https://gist.github.com/the42/1956518
@@ -124,32 +128,66 @@ func (w chunkWriter) Write(b []byte) (int, error) {
 
 func chunkMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if _, ok := r.URL.Query()[disableChunkingParam]; ok {
+		if r.Body == nil {
+			http.Error(w, "missing form body", http.StatusBadRequest)
+			return
+		}
+		b1, b2, err := duplicateReadCloser(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		r.Body = b1
+		params := getDefaultParams()
+		err = json.NewDecoder(b2).Decode(params)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if params.DisableChunking {
 			next(w, r)
 			return
 		}
 		w.Header().Add("Transfer-Encoding", "chunked")
-		chunkSize := getQueryParamAsInt(r.URL.Query(), chunkSizeParam)
-		next(chunkWriter{chunkSize: chunkSize, ResponseWriter: w}, r)
+		next(chunkWriter{chunkSize: params.ChunkSize, ResponseWriter: w}, r)
 	}
 }
 
 func basicHandler(w http.ResponseWriter, r *http.Request) {
-	headerSize := getQueryParamAsInt(r.URL.Query(), headerSizeParam)
-	bodySize := getQueryParamAsInt(r.URL.Query(), bodySizeParam)
-	numHeaders := getQueryParamAsInt(r.URL.Query(), numHeadersParam)
+	if r.Method != http.MethodPost {
+		http.Error(w, "expected post request", http.StatusMethodNotAllowed)
+		return
+	}
+	if r.Header.Get("Content-Type") != "application/json" {
+		http.Error(w, "only supports json post data", http.StatusUnsupportedMediaType)
+		return
+	}
+	b1, b2, err := duplicateReadCloser(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	r.Body = b1
+	params := getDefaultParams()
+	err = json.NewDecoder(b2).Decode(params)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	w.Header().Set("x-px-ack-seq-id", r.Header.Get("x-px-seq-id"))
-	for i := 0; i < numHeaders; i++ {
-		w.Header().Add(fmt.Sprintf("X-Custom-Header-%d", i), string(util.RandPrintable(headerSize)))
+	w.Header().Set("X-Px-Ack-Seq-Id", r.Header.Get("X-Px-Seq-Id"))
+	for i := 0; i < params.NumHeaders; i++ {
+		w.Header().Add(
+			fmt.Sprintf("X-Custom-Header-%d", i), string(util.RandPrintable(params.HeaderSize)),
+		)
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
-	w.Header().Add("Content-Length", fmt.Sprintf("%d", bodySize))
+	w.Header().Add("Content-Length", fmt.Sprintf("%d", params.BodySize))
 
-	_, err := w.Write(util.RandPrintable(bodySize))
+	_, err = w.Write(util.RandPrintable(params.BodySize))
 	if err != nil {
-		http.Error(w, "write failed", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
