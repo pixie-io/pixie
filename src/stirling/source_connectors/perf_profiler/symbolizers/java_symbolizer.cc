@@ -17,7 +17,6 @@
  */
 
 #include <string>
-#include <utility>
 
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/proc_parser.h"
