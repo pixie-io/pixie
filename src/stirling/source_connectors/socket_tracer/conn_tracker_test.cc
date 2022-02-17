@@ -18,6 +18,7 @@
 
 #include "src/stirling/source_connectors/socket_tracer/conn_tracker.h"
 
+#include <chrono>
 #include <tuple>
 
 #include <gmock/gmock.h>
@@ -26,6 +27,7 @@
 
 #include <magic_enum.hpp>
 
+#include "protocols/http/types.h"
 #include "src/common/base/test_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/conn_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/test_utils.h"
@@ -399,6 +401,10 @@ TEST_F(ConnTrackerTest, MemUsage) {
 
   // This iteration of ProcessToRecords should output a record and the size should go back to zero.
   tracker.ProcessToRecords<http::ProtocolTraits>();
+  // Set expiry_timestamp to 0 to prevent Cleanup from expiring data based on timestamp.
+  std::chrono::time_point<std::chrono::steady_clock> expiry_timestamp;
+  tracker.Cleanup<http::ProtocolTraits>(1024 * 1024, 1024 * 1024, expiry_timestamp,
+                                        expiry_timestamp);
   mem_usage = tracker.MemUsage<http::ProtocolTraits>();
   EXPECT_GT(mem_usage, 0);
   EXPECT_LT(mem_usage, 50);

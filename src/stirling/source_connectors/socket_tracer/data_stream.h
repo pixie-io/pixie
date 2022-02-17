@@ -230,6 +230,9 @@ class DataStream : NotCopyMoveable {
       data_buffer_.RemovePrefix(data_buffer_.size() - size_limit_bytes);
     }
 
+    // Shrink the data buffer's allocated memory to fit just what is retained.
+    data_buffer_.ShrinkToFit();
+
     return false;
   }
 
