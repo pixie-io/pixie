@@ -87,7 +87,7 @@ TEST_F(JVMStatsConnectorTest, CaptureData) {
   std::vector<TaggedRecordBatch> tablets;
   types::ColumnWrapperRecordBatch record_batch;
 
-  ctx = std::make_unique<StandaloneContext>();
+  ctx = std::make_unique<SystemWideStandaloneContext>();
   connector_->TransferData(ctx.get(), data_tables_);
   tablets = data_table_.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
@@ -115,7 +115,7 @@ TEST_F(JVMStatsConnectorTest, CaptureData) {
   ASSERT_OK(hello_world2.Start());
   std::this_thread::sleep_for(std::chrono::seconds(2));
 
-  ctx = std::make_unique<StandaloneContext>();
+  ctx = std::make_unique<SystemWideStandaloneContext>();
   connector_->TransferData(ctx.get(), data_tables_);
   tablets = data_table_.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());

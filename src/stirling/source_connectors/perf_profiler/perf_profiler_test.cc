@@ -29,6 +29,7 @@
 #include "src/stirling/source_connectors/perf_profiler/perf_profile_connector.h"
 #include "src/stirling/source_connectors/perf_profiler/stack_traces_table.h"
 #include "src/stirling/testing/common.h"
+#include "src/stirling/utils/proc_path_tools.h"
 
 DEFINE_uint32(test_run_time, 90, "Number of seconds to run the test.");
 DECLARE_bool(stirling_profiler_java_symbols);
@@ -58,6 +59,20 @@ class CPUPinnedBinaryRunner {
  private:
   SubProcess sub_process_;
 };
+
+absl::flat_hash_set<md::UPID> ToUPIDs(const std::vector<CPUPinnedBinaryRunner>& processes) {
+  absl::flat_hash_set<md::UPID> upids;
+  system::ProcParser proc_parser(system::Config::GetInstance());
+  for (const auto& p : processes) {
+    StatusOr<uint64_t> ts = proc_parser.GetPIDStartTimeTicks(p.pid());
+    if (!ts.ok()) {
+      LOG(ERROR) << absl::Substitute("Could not find start_time of PID=$0", p.pid());
+      continue;
+    }
+    upids.emplace(0, p.pid(), ts.ValueOr(-1));
+  }
+  return upids;
+}
 
 class PerfProfileBPFTest : public ::testing::Test {
  public:
@@ -252,7 +267,7 @@ class PerfProfileBPFTest : public ::testing::Test {
 
   const std::chrono::seconds test_run_time_;
   std::unique_ptr<PerfProfileConnector> source_;
-  std::unique_ptr<StandaloneContext> ctx_;
+  std::unique_ptr<TestContext> ctx_;
   DataTable data_table_;
   const std::vector<DataTable*> data_tables_{&data_table_};
 
@@ -285,7 +300,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
 
   // We wait until here to create the connector context, i.e. so that perf_profile_connector
   // finds the upids that belong to the sub-processes that we have just created.
-  ctx_ = std::make_unique<StandaloneContext>();
+  ctx_ = std::make_unique<TestContext>(ToUPIDs(sub_processes));
 
   const std::chrono::duration<double> elapsed_time = RunTest();
 
@@ -318,7 +333,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
 
   // We wait until here to create the connector context, i.e. so that perf_profile_connector
   // finds the upids that belong to the sub-processes that we have just created.
-  ctx_ = std::make_unique<StandaloneContext>();
+  ctx_ = std::make_unique<TestContext>(ToUPIDs(sub_processes));
 
   const std::chrono::duration<double> elapsed_time = RunTest();
 
@@ -348,7 +363,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
 
   // We wait until here to create the connector context, i.e. so that perf_profile_connector
   // finds the upids that belong to the sub-processes that we have just created.
-  ctx_ = std::make_unique<StandaloneContext>();
+  ctx_ = std::make_unique<TestContext>(ToUPIDs(sub_processes));
 
   RunTest();
 
@@ -400,14 +415,12 @@ TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
 TEST_F(PerfProfileBPFTest, TestOutOfContext) {
   const std::filesystem::path bazel_app_path = BazelCCTestAppPath("profiler_test_app_fib");
 
-  // For this test case, we create the connector context *before*
-  // starting sub-processes. For this reason, the perf_profile_connector
-  // will consider the sub-processes as "out-of-context" and not symbolize them.
-  ctx_ = std::make_unique<StandaloneContext>();
-
   // Start they toy apps as sub-processes, then,
   // for a certain amount of time, collect data using RunTest().
   auto sub_processes = StartSubProcesses<CPUPinnedBinaryRunner>(bazel_app_path);
+
+  // For this test case, we pass in an empty list of PIDs to trace.
+  ctx_ = std::make_unique<TestContext>(absl::flat_hash_set<md::UPID>());
 
   RunTest();
 

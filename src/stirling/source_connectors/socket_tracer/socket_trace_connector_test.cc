@@ -191,7 +191,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
     source_ = dynamic_cast<SocketTraceConnectorFriend*>(connector_.get());
     ASSERT_NE(nullptr, source_);
 
-    ctx_ = std::make_unique<StandaloneContext>();
+    ctx_ = std::make_unique<SystemWideStandaloneContext>();
 
     // Set the CIDR for HTTP2ServerTest, which would otherwise not output any data,
     // because it would think the server is in the cluster.
@@ -218,7 +218,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
 
   std::unique_ptr<SourceConnector> connector_;
   SocketTraceConnectorFriend* source_ = nullptr;
-  std::unique_ptr<StandaloneContext> ctx_;
+  std::unique_ptr<SystemWideStandaloneContext> ctx_;
   testing::MockClock mock_clock_;
   testing::RealClock real_clock_;
 

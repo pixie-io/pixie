@@ -93,9 +93,8 @@ class GoHTTPDynamicTraceTest : public ::testing::Test {
 
   std::vector<TaggedRecordBatch> GetRecords() {
     constexpr int kTableNum = 0;
-    std::unique_ptr<StandaloneContext> ctx = std::make_unique<StandaloneContext>();
-    std::unique_ptr<DataTable> data_table =
-        std::make_unique<DataTable>(/*id*/ 0, connector_->table_schemas()[kTableNum]);
+    auto ctx = std::make_unique<SystemWideStandaloneContext>();
+    auto data_table = std::make_unique<DataTable>(/*id*/ 0, connector_->table_schemas()[kTableNum]);
     connector_->TransferData(ctx.get(), {data_table.get()});
     return data_table->ConsumeRecords();
   }
@@ -233,9 +232,8 @@ class CPPDynamicTraceTest : public ::testing::Test {
 
   std::vector<TaggedRecordBatch> GetRecords() {
     constexpr int kTableNum = 0;
-    std::unique_ptr<StandaloneContext> ctx = std::make_unique<StandaloneContext>();
-    std::unique_ptr<DataTable> data_table =
-        std::make_unique<DataTable>(/*id*/ 0, connector_->table_schemas()[kTableNum]);
+    auto ctx = std::make_unique<SystemWideStandaloneContext>();
+    auto data_table = std::make_unique<DataTable>(/*id*/ 0, connector_->table_schemas()[kTableNum]);
     connector_->TransferData(ctx.get(), {data_table.get()});
     return data_table->ConsumeRecords();
   }

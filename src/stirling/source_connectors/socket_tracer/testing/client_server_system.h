@@ -329,7 +329,7 @@ class ClientServerSystem {
   // Sometimes we want to model longer lived connections; this variable allows the server
   // to add an artificial delay for this purpose.
   // This is particularly important in tests where a new connection needs to be detected
-  // before tracing can begin (see StandaloneContext).
+  // before tracing can begin (see SystemWideStandaloneContext).
   std::chrono::milliseconds server_response_latency_;
 
   TCPSocket client_;

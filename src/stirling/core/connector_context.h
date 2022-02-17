@@ -109,21 +109,11 @@ class AgentContext : public ConnectorContext {
 };
 
 /**
- * This Context is used when Stirling is running stand-alone, not as part of PEM.
+ * This context is used when Stirling is running stand-alone, not as part of PEM.
+ * See specific variants below.
  */
 class StandaloneContext : public ConnectorContext {
  public:
-  StandaloneContext() {
-    // The context consists of all PIDs, but no pods/containers.
-    upids_ = ListUPIDs(system::Config::GetInstance().proc_path(), 0);
-
-    // Cannot be empty, otherwise stirling will wait indefinitely. Since StandaloneContext is used
-    // for local environment, set it such that localhost (127.0.0.1) will be treated as outside of
-    // cluster, and --treat_loopback_as_in_cluster in conn_tracker.cc will take effect.
-    // TODO(yzhao): Might need to include IPv6 version when tests for IPv6 are added.
-    ECHECK_OK(SetClusterCIDR("0.0.0.1/32"));
-  }
-
   uint32_t GetASID() const override { return 0; }
 
   const absl::flat_hash_set<md::UPID>& GetUPIDs() const override { return upids_; }
@@ -142,9 +132,42 @@ class StandaloneContext : public ConnectorContext {
 
   Status SetClusterCIDR(std::string_view cidr_str);
 
+ protected:
+  // Protected constructor prevents this class from being used directly.
+  StandaloneContext() {
+    // Cannot be empty, otherwise stirling will wait indefinitely. Since StandaloneContext is used
+    // for local environment, set it such that localhost (127.0.0.1) will be treated as outside of
+    // cluster, and --treat_loopback_as_in_cluster in conn_tracker.cc will take effect.
+    // TODO(yzhao): Might need to include IPv6 version when tests for IPv6 are added.
+    ECHECK_OK(SetClusterCIDR("0.0.0.1/32"));
+  }
+
+  absl::flat_hash_set<md::UPID> upids_;
+
  private:
   std::vector<CIDRBlock> cidrs_;
-  absl::flat_hash_set<md::UPID> upids_;
+};
+
+/**
+ * This context is used to trace all processes on the system.
+ */
+class SystemWideStandaloneContext : public StandaloneContext {
+ public:
+  SystemWideStandaloneContext() {
+    // The context consists of all PIDs on the system.
+    upids_ = ListUPIDs(system::Config::GetInstance().proc_path(), 0);
+  }
+};
+
+/**
+ * This context is used to focus on certain processes, typically for tests.
+ */
+class TestContext : public StandaloneContext {
+ public:
+  explicit TestContext(const absl::flat_hash_set<md::UPID>& upids) {
+    // The context consists of all PIDs on the system.
+    upids_ = upids;
+  }
 };
 
 }  // namespace stirling

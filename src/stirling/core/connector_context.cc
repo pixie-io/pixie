@@ -40,12 +40,19 @@ std::vector<CIDRBlock> AgentContext::GetClusterCIDRs() {
   return cluster_cidrs;
 }
 
-Status StandaloneContext::SetClusterCIDR(std::string_view cidr_str) {
+namespace {
+StatusOr<CIDRBlock> ParseCIDRString(std::string_view cidr_str) {
   CIDRBlock cidr;
   Status s = ParseCIDRBlock(cidr_str, &cidr);
   if (!s.ok()) {
     return error::Internal("Could not parse $0 as a CIDR.", cidr_str);
   }
+  return cidr;
+}
+}  // namespace
+
+Status StandaloneContext::SetClusterCIDR(std::string_view cidr_str) {
+  PL_ASSIGN_OR_RETURN(CIDRBlock cidr, ParseCIDRString(cidr_str));
   cidrs_ = {std::move(cidr)};
   return Status::OK();
 }

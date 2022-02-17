@@ -126,7 +126,7 @@ class SocketTraceBPFTest : public ::testing::Test {
   absl::base_internal::SpinLock socket_tracer_state_lock_;
 
   std::unique_ptr<SocketTraceConnector> source_;
-  std::unique_ptr<StandaloneContext> ctx_;
+  std::unique_ptr<SystemWideStandaloneContext> ctx_;
   std::atomic<bool> transfer_enable_ = false;
   std::thread transfer_data_thread_;
   std::unique_ptr<DataTables> data_tables_;
@@ -135,7 +135,7 @@ class SocketTraceBPFTest : public ::testing::Test {
 
  private:
   void RefreshContextCore() {
-    ctx_ = std::make_unique<StandaloneContext>();
+    ctx_ = std::make_unique<SystemWideStandaloneContext>();
 
     if (TEnableClientSideTracing) {
       // This makes the Stirling interpret all traffic as leaving the cluster,

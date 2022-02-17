@@ -395,7 +395,7 @@ std::unique_ptr<ConnectorContext> StirlingImpl::GetContext() {
   if (agent_metadata_callback_ != nullptr) {
     return std::unique_ptr<ConnectorContext>(new AgentContext(agent_metadata_callback_()));
   }
-  return std::unique_ptr<ConnectorContext>(new StandaloneContext());
+  return std::unique_ptr<ConnectorContext>(new SystemWideStandaloneContext());
 }
 
 namespace {

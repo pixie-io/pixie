@@ -35,7 +35,7 @@ class BPFTraceConnectorBPFTest : public ::testing::Test {
     source_ = CPUStatBPFTraceConnector::Create("cpu_stats");
     ASSERT_OK(source_->Init());
 
-    ctx_ = std::make_unique<StandaloneContext>();
+    ctx_ = std::make_unique<SystemWideStandaloneContext>();
 
     source_->InitContext(ctx_.get());
 
@@ -51,7 +51,7 @@ class BPFTraceConnectorBPFTest : public ::testing::Test {
   const int kTableNum = 0;
 
   std::unique_ptr<SourceConnector> source_;
-  std::unique_ptr<StandaloneContext> ctx_;
+  std::unique_ptr<SystemWideStandaloneContext> ctx_;
 };
 
 TEST_F(BPFTraceConnectorBPFTest, Basic) {

@@ -41,7 +41,7 @@ using ::px::MemoryStats;
 using ::px::MemoryTracker;
 using ::px::stirling::SocketTraceConnector;
 using ::px::stirling::SocketTraceConnectorFriend;
-using ::px::stirling::StandaloneContext;
+using ::px::stirling::SystemWideStandaloneContext;
 using ::px::stirling::testing::BenchmarkDataGenerationSpec;
 using ::px::stirling::testing::DataTables;
 using ::px::stirling::testing::GapPosGenerator;
@@ -114,7 +114,7 @@ static void BM_SocketTraceConnector(benchmark::State& state, BenchmarkDataGenera
   uint64_t total_output_bytes = 0;
   uint64_t total_output_records = 0;
 
-  StandaloneContext ctx;
+  SystemWideStandaloneContext ctx;
   // Only measure memory on the first iteration. Memory stats shouldn't change too much between
   // benchmark iterations, instead the iterations are helpful to measure variations in CPU.
   bool is_first_iter = true;

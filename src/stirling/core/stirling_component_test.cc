@@ -20,6 +20,7 @@
 
 #include "src/common/testing/testing.h"
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
+#include "src/stirling/core/connector_context.h"
 #include "src/stirling/core/data_table.h"
 #include "src/stirling/core/pub_sub_manager.h"
 #include "src/stirling/core/types.h"
@@ -48,7 +49,7 @@ class SourceToTableTest : public ::testing::Test {
 TEST_F(SourceToTableTest, source_to_table) {
   EXPECT_OK(source_->Init());
   std::vector<DataTable*> data_tables{table_.get(), nullptr};
-  StandaloneContext ctx;
+  SystemWideStandaloneContext ctx;
   source_->TransferData(&ctx, data_tables);
   auto record_batches = table_->ConsumeRecords();
   for (const auto& record_batch : record_batches) {
