@@ -127,6 +127,29 @@ TEST(ContainerInfo, debug_string) {
   EXPECT_EQ("<Container:cid=container1:name=containername:pod_id=:state=S>", cinfo.DebugString());
 }
 
+TEST(ContainerInfo, pids_are_time_sorted) {
+  ContainerInfo orig("container1", "containername", ContainerState::kRunning,
+                     ContainerType::kDocker, "container state message", "container state reason",
+                     128 /*start_time*/);
+  orig.set_pod_id("pod1");
+
+  auto* upids = orig.mutable_active_upids();
+  upids->emplace(UPID(1, 0, 200));
+  upids->emplace(UPID(1, 1, 100));
+  upids->emplace(UPID(1, 15, 400));
+  upids->emplace(UPID(1, 15, 300));
+  upids->emplace(UPID(1, 10, 300));
+  upids->emplace(UPID(0, 1, 500));
+  upids->emplace(UPID(0, 2, 300));
+  upids->emplace(UPID(0, 3, 100));
+
+  // UPIDs should be ordered by time.
+  EXPECT_THAT(
+      orig.active_upids(),
+      testing::ElementsAre(UPID(0, 3, 100), UPID(1, 1, 100), UPID(1, 0, 200), UPID(0, 2, 300),
+                           UPID(1, 10, 300), UPID(1, 15, 300), UPID(1, 15, 400), UPID(0, 1, 500)));
+}
+
 TEST(ContainerInfo, clone) {
   ContainerInfo orig("container1", "containername", ContainerState::kRunning,
                      ContainerType::kDocker, "container state message", "container state reason",
@@ -134,9 +157,9 @@ TEST(ContainerInfo, clone) {
   orig.set_pod_id("pod1");
 
   auto* upids = orig.mutable_active_upids();
-  upids->emplace(UPID(1, 0, 123));
-  upids->emplace(UPID(1, 1, 123));
-  upids->emplace(UPID(1, 15, 123));
+  upids->emplace(UPID(1, 0, 200));
+  upids->emplace(UPID(1, 1, 100));
+  upids->emplace(UPID(1, 15, 300));
 
   auto cloned = orig.Clone();
 

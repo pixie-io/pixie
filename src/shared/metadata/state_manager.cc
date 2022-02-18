@@ -173,7 +173,7 @@ StatusOr<UPID> InitUPID(const system::ProcParser& proc_parser, uint32_t asid, ui
 
 void ProcessContainerPIDUpdates(
     CIDView cid, int64_t ts, const system::ProcParser& proc_parser, AgentMetadataState* md,
-    absl::flat_hash_set<UPID>* upids, absl::flat_hash_set<uint32_t>* cgroups_pids,
+    StartTimeOrderedUPIDSet* upids, absl::flat_hash_set<uint32_t>* cgroups_pids,
     moodycamel::BlockingConcurrentQueue<std::unique_ptr<PIDStatusEvent>>* pid_updates) {
   // Iterate through old list of UPIDs, looking for PIDs which have been deleted.
   auto upids_iter = upids->begin();

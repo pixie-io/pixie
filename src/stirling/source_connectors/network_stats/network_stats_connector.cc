@@ -109,6 +109,15 @@ Status NetworkStatsConnector::GetNetworkStatsForPod(const system::ProcParser& pr
       continue;
     }
 
+    // We expect the UPIDs to be start-time ordered.
+    // This is so we prioritize picking the oldest UPID to get the network
+    // stats. Normally, any PID will do, since they are all in the same network namespace. However,
+    // there can be issues if any of the processes switch namespaces. This happens with Stirling's
+    // own Java Attacher, which can cause network stats to suddenly switch to the stats of a
+    // different namespace, producing incorrect results.
+    CHECK(std::is_sorted(container_info->active_upids().begin(),
+                         container_info->active_upids().end(), md::UPIDStartTSCompare()));
+
     for (const auto& upid : container_info->active_upids()) {
       auto s = proc_parser.ParseProcPIDNetDev(upid.pid(), stats);
       if (s.ok()) {

@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include <absl/container/btree_set.h>
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
 #include "src/common/base/base.h"
@@ -335,6 +336,20 @@ class PodInfo : public K8sMetadataObject {
   std::string pod_ip_;
 };
 
+struct UPIDStartTSCompare {
+  bool operator()(const UPID& a, const UPID& b) const {
+    if (a.start_ts() != b.start_ts()) {
+      return a.start_ts() < b.start_ts();
+    }
+    if (a.asid() != b.asid()) {
+      return a.asid() < b.asid();
+    }
+    return a.pid() < b.pid();
+  }
+};
+
+using StartTimeOrderedUPIDSet = absl::btree_set<UPID, UPIDStartTSCompare>;
+
 /**
  * Store information about containers.
  *
@@ -371,8 +386,8 @@ class ContainerInfo {
   void set_pod_id(std::string_view pod_id) { pod_id_ = pod_id; }
   const UID& pod_id() const { return pod_id_; }
 
-  const absl::flat_hash_set<UPID>& active_upids() const { return active_upids_; }
-  absl::flat_hash_set<UPID>* mutable_active_upids() { return &active_upids_; }
+  const StartTimeOrderedUPIDSet& active_upids() const { return active_upids_; }
+  StartTimeOrderedUPIDSet* mutable_active_upids() { return &active_upids_; }
 
   int64_t start_time_ns() const { return start_time_ns_; }
 
@@ -406,7 +421,7 @@ class ContainerInfo {
   /**
    * The set of UPIDs that are running on this container.
    */
-  absl::flat_hash_set<UPID> active_upids_;
+  StartTimeOrderedUPIDSet active_upids_;
 
   /**
    * Current state of the container, such as RUNNING, WAITING.
