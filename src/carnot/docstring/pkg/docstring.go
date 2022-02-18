@@ -425,8 +425,6 @@ func parseDocstringAndWrite(outDocs *docspb.StructuredDocs, rawDocstring string,
 	}
 	docstring := removeTopic(rawDocstring)
 
-	opname := getTag(docstring, opnameRegex)
-
 	docstring = removeTag(docstring, opnameRegex)
 
 	docstring = strings.TrimSpace(dedent(docstring))
@@ -457,10 +455,6 @@ func parseDocstringAndWrite(outDocs *docspb.StructuredDocs, rawDocstring string,
 		})
 	case DataFrameOps:
 		body := genDocString.body
-		if len(opname) > 0 {
-			body.Name = opname
-		}
-
 		outDocs.DataframeOpDocs = append(outDocs.DataframeOpDocs, &docspb.DataFrameOpDoc{
 			Body:    body,
 			FuncDoc: genDocString.function,
