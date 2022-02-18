@@ -23,7 +23,7 @@
 #include <utility>
 #include <vector>
 
-DEFINE_bool(use_pico_chunked_decoder, true,
+DEFINE_bool(use_pico_chunked_decoder, false,
             "If true, uses picohttpparser's chunked decoder; otherwise uses our custom decoder.");
 
 namespace px {
