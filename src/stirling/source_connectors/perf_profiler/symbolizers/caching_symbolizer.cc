@@ -18,6 +18,8 @@
 
 #include <utility>
 
+#include <absl/functional/bind_front.h>
+
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/caching_symbolizer.h"
 
 DEFINE_uint64(
@@ -38,13 +40,12 @@ StatusOr<std::unique_ptr<Symbolizer>> CachingSymbolizer::Create(
 void CachingSymbolizer::IterationPreTick() { symbolizer_->IterationPreTick(); }
 
 profiler::SymbolizerFn CachingSymbolizer::GetSymbolizerFn(const struct upid_t& upid) {
-  using std::placeholders::_1;
   const auto [iter, inserted] = symbol_caches_.try_emplace(upid, nullptr);
   if (inserted || symbolizer_->SymbolsHaveChanged(upid)) {
     iter->second = std::make_unique<SymbolCache>(symbolizer_->GetSymbolizerFn(upid));
   }
   auto& cache = iter->second;
-  auto fn = std::bind(&CachingSymbolizer::Symbolize, this, cache.get(), _1);
+  auto fn = absl::bind_front(&CachingSymbolizer::Symbolize, this, cache.get());
   return fn;
 }
 

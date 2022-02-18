@@ -18,6 +18,8 @@
 
 #include <string>
 
+#include <absl/functional/bind_front.h>
+
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/proc_parser.h"
 #include "src/stirling/source_connectors/perf_profiler/java/agent/raw_symbol_update.h"
@@ -242,9 +244,7 @@ Status JavaSymbolizer::CreateNewJavaSymbolizationContext(const struct upid_t& up
   }
   auto& ctx = iter->second;
 
-  using std::placeholders::_1;
-  auto fn = std::bind(&JavaSymbolizer::Symbolize, this, ctx.get(), _1);
-
+  auto fn = absl::bind_front(&JavaSymbolizer::Symbolize, this, ctx.get());
   symbolizer_functions_[upid] = fn;
 
   return Status::OK();

@@ -23,6 +23,7 @@
 #include <unordered_map>
 #include <utility>
 
+#include <absl/functional/bind_front.h>
 #include <absl/strings/str_format.h>
 
 #include "src/common/base/base.h"
@@ -149,9 +150,7 @@ class StirlingTest : public ::testing::Test {
     stirling_ = Stirling::Create(std::move(registry));
 
     // Set a callback function that receives the data.
-    stirling_->RegisterDataPushCallback(std::bind(&StirlingTest::AppendData, this,
-                                                  std::placeholders::_1, std::placeholders::_2,
-                                                  std::placeholders::_3));
+    stirling_->RegisterDataPushCallback(absl::bind_front(&StirlingTest::AppendData, this));
 
     stirling_->GetPublishProto(&publish_proto_);
 

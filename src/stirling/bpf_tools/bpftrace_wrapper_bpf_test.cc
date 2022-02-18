@@ -16,9 +16,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/stirling/bpf_tools/bpftrace_wrapper.h"
+#include <absl/functional/bind_front.h>
 
 #include "src/common/testing/testing.h"
+#include "src/stirling/bpf_tools/bpftrace_wrapper.h"
 
 namespace px {
 namespace stirling {
@@ -84,8 +85,7 @@ TEST(BPFTracerWrapperTest, PerfBufferPollWithCallback) {
   CallbackWrapperClass callback_target;
 
   BPFTraceWrapper bpftrace_wrapper;
-  auto callback_fn =
-      std::bind(&CallbackWrapperClass::PrintfCallback, &callback_target, std::placeholders::_1);
+  auto callback_fn = absl::bind_front(&CallbackWrapperClass::PrintfCallback, &callback_target);
   ASSERT_OK(bpftrace_wrapper.CompileForPrintfOutput(script));
   ASSERT_OK(bpftrace_wrapper.Deploy(callback_fn));
   sleep(kProbeDurationSeconds);

@@ -21,6 +21,8 @@
 #include <thread>
 #include <utility>
 
+#include <absl/functional/bind_front.h>
+
 #include "src/common/base/base.h"
 #include "src/common/exec/subprocess.h"
 #include "src/common/testing/test_utils/container_runner.h"
@@ -64,9 +66,8 @@ class StirlingDynamicTraceBPFTest : public ::testing::Test {
     stirling_ = Stirling::Create(std::move(registry));
 
     // Set function to call on data pushes.
-    stirling_->RegisterDataPushCallback(std::bind(&StirlingDynamicTraceBPFTest::AppendData, this,
-                                                  std::placeholders::_1, std::placeholders::_2,
-                                                  std::placeholders::_3));
+    stirling_->RegisterDataPushCallback(
+        absl::bind_front(&StirlingDynamicTraceBPFTest::AppendData, this));
   }
 
   Status AppendData(uint64_t table_id, types::TabletID tablet_id,

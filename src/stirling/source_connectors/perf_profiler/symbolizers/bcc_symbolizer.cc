@@ -19,6 +19,8 @@
 #include <memory>
 #include <string>
 
+#include <absl/functional/bind_front.h>
+
 #include "src/stirling/bpf_tools/bcc_symbolizer.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/bcc_symbolizer.h"
 
@@ -44,8 +46,7 @@ std::string_view BCCSymbolizer::Symbolize(const int pid, const uintptr_t addr) {
 }
 
 profiler::SymbolizerFn BCCSymbolizer::GetSymbolizerFn(const struct upid_t& upid) {
-  using std::placeholders::_1;
-  auto fn = std::bind(&BCCSymbolizer::Symbolize, this, static_cast<int32_t>(upid.pid), _1);
+  auto fn = absl::bind_front(&BCCSymbolizer::Symbolize, this, static_cast<int32_t>(upid.pid));
   return fn;
 }
 

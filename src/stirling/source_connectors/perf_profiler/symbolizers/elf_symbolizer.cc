@@ -18,6 +18,8 @@
 
 #include <memory>
 
+#include <absl/functional/bind_front.h>
+
 #include "src/stirling/obj_tools/elf_reader.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/elf_symbolizer.h"
 #include "src/stirling/utils/proc_path_tools.h"
@@ -76,7 +78,7 @@ profiler::SymbolizerFn ElfSymbolizer::GetSymbolizerFn(const struct upid_t& upid)
     upid_symbolizer = upid_symbolizer_status.ConsumeValueOrDie();
   }
 
-  return std::bind(&ElfReader::Symbolizer::Lookup, upid_symbolizer.get(), std::placeholders::_1);
+  return absl::bind_front(&ElfReader::Symbolizer::Lookup, upid_symbolizer.get());
 }
 
 }  // namespace stirling

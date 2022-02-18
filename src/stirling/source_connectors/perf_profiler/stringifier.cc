@@ -17,10 +17,13 @@
  */
 
 #include "src/stirling/source_connectors/perf_profiler/stringifier.h"
+
 #include <stdint.h>
 
 #include <utility>
 #include <vector>
+
+#include <absl/functional/bind_front.h>
 
 namespace px {
 namespace stirling {
@@ -114,8 +117,8 @@ std::string Stringifier::FoldedStackTraceString(const stack_trace_key_t& key) {
   // Also, it is easier to read, e.g.:
   // stack_trace_str = u_stack_str_fn() + ";" + k_stack_str_fn();
   auto fn_addr = &Stringifier::FindOrBuildStackTraceString;
-  auto u_stack_str_fn = std::bind(fn_addr, this, u_stack_id, u_symbolizer_fn, kUserSuffix);
-  auto k_stack_str_fn = std::bind(fn_addr, this, k_stack_id, k_symbolizer_fn, kKernSuffix);
+  auto u_stack_str_fn = absl::bind_front(fn_addr, this, u_stack_id, u_symbolizer_fn, kUserSuffix);
+  auto k_stack_str_fn = absl::bind_front(fn_addr, this, k_stack_id, k_symbolizer_fn, kKernSuffix);
 
   std::string stack_trace_str;
   stack_trace_str.reserve(128);

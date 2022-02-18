@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include <absl/functional/bind_front.h>
 #include <absl/memory/memory.h>
 #include <absl/strings/ascii.h>
 
@@ -220,7 +221,7 @@ Status DynamicBPFTraceConnector::InitImpl() {
   sampling_freq_mgr_.set_period(kSamplingPeriod);
   push_freq_mgr_.set_period(kPushPeriod);
 
-  auto callback_fn = std::bind(&DynamicBPFTraceConnector::HandleEvent, this, std::placeholders::_1);
+  auto callback_fn = absl::bind_front(&DynamicBPFTraceConnector::HandleEvent, this);
   output_fields_ = bpftrace_->OutputFields();
   PL_RETURN_IF_ERROR(CheckOutputFields(output_fields_, table_schema_->Get().elements()));
   PL_RETURN_IF_ERROR(bpftrace_->Deploy(callback_fn));
