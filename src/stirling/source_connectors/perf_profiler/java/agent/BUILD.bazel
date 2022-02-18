@@ -113,6 +113,7 @@ pl_cc_test(
         "no_asan",
     ],
     deps = [
+        ":cc_headers",
         "//src/common/exec:cc_library",
         "//src/common/fs:cc_library",
         "//src/stirling/testing:cc_library",

@@ -26,11 +26,11 @@ package(default_visibility = ["//src/stirling:__subpackages__"])
 # Construct the agent path portion of the command line arg.
 so_path = "-agentpath:$(location //src/stirling/source_connectors/perf_profiler/java/agent:glibc)"
 
-# Construct a file path prefix for the symbolization log file.
-log_pfx = "px-java-symbols"
+# For this test, the symbol file will be created in the cwd of the test as it runs.
+symbol_file_path = "."
 
 # Construct the full cmd line args here.
-jvm_flags = [so_path + "=" + log_pfx]
+jvm_flags = [so_path + "=" + symbol_file_path]
 
 java_binary(
     name = "fib_with_agent",

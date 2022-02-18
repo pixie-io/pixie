@@ -30,7 +30,6 @@ namespace java {
 
 std::filesystem::path AgentArtifactsPath(const struct upid_t& upid);
 std::filesystem::path StirlingArtifactsPath(const struct upid_t& upid);
-std::filesystem::path AgentSymbolFilePathPfx(const struct upid_t& upid);
 std::filesystem::path StirlingSymbolFilePath(const struct upid_t& upid);
 
 // AgentAttacher injects a JVMTI agent into a target Java process. The agent itself is a shared

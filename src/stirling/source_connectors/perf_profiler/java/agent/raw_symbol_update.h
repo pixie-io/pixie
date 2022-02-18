@@ -24,6 +24,9 @@ namespace px {
 namespace stirling {
 namespace java {
 
+char const* const kBinSymbolFileName = "java-symbols.bin";
+char const* const kTxtSymbolFileName = "java-symbols.txt";
+
 class RawSymbolUpdate {
  public:
   uint64_t addr;

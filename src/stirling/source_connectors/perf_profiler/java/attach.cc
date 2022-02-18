@@ -31,6 +31,7 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/proc_parser.h"
 #include "src/common/system/scoped_namespace.h"
+#include "src/stirling/source_connectors/perf_profiler/java/agent/raw_symbol_update.h"
 #include "src/stirling/source_connectors/perf_profiler/java/attach.h"
 
 extern "C" {
@@ -102,14 +103,8 @@ std::filesystem::path StirlingArtifactsPath(const struct upid_t& upid) {
   return absl::Substitute(kPathTemplate, upid.pid, upid.start_time_ticks);
 }
 
-std::filesystem::path AgentSymbolFilePathPfx(const struct upid_t& upid) {
-  char const* const kAgentTemplate = "$0/java-symbols";
-  return absl::Substitute(kAgentTemplate, AgentArtifactsPath(upid).string());
-}
-
 std::filesystem::path StirlingSymbolFilePath(const struct upid_t& upid) {
-  char const* const kStirlingTemplate = "$0/java-symbols.bin";
-  return absl::Substitute(kStirlingTemplate, StirlingArtifactsPath(upid).string());
+  return StirlingArtifactsPath(upid) / kBinSymbolFileName;
 }
 
 void AgentAttacher::SetTargetUIDAndGIDOrDie() {
@@ -205,7 +200,7 @@ void AgentAttacher::SelectLibWithDLOpenOrDie() {
 }
 
 void AgentAttacher::AttachOrDie() {
-  const std::string argent_args = AgentSymbolFilePathPfx(target_upid_).string();
+  const std::string argent_args = AgentArtifactsPath(target_upid_).string();
   constexpr int argc = 4;
   const char* argv[argc] = {"load", lib_so_path_.c_str(), "true", argent_args.c_str()};
   const int r = jattach(target_upid_.pid, argc, argv);
