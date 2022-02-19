@@ -40,8 +40,14 @@ StatusOr<std::unique_ptr<Symbolizer>> CachingSymbolizer::Create(
 void CachingSymbolizer::IterationPreTick() { symbolizer_->IterationPreTick(); }
 
 profiler::SymbolizerFn CachingSymbolizer::GetSymbolizerFn(const struct upid_t& upid) {
+  if (symbolizer_->Uncacheable(upid)) {
+    // NB: the normal cache eviction process will eventually zero out the memory used
+    // by the cache that was created while the Java symbolizer was in its "attach" phase.
+    return symbolizer_->GetSymbolizerFn(upid);
+  }
+
   const auto [iter, inserted] = symbol_caches_.try_emplace(upid, nullptr);
-  if (inserted || symbolizer_->SymbolsHaveChanged(upid)) {
+  if (inserted) {
     iter->second = std::make_unique<SymbolCache>(symbolizer_->GetSymbolizerFn(upid));
   }
   auto& cache = iter->second;

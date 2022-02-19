@@ -35,7 +35,7 @@ class ElfSymbolizer : public Symbolizer, public NotCopyMoveable {
   profiler::SymbolizerFn GetSymbolizerFn(const struct upid_t& upid) override;
   void IterationPreTick() override {}
   void DeleteUPID(const struct upid_t& upid) override;
-  bool SymbolsHaveChanged(const struct upid_t& /*upid*/) override { return false; }
+  bool Uncacheable(const struct upid_t& /*upid*/) override { return false; }
 
  private:
   ElfSymbolizer() = default;

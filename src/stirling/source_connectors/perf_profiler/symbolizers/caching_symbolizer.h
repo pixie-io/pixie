@@ -44,7 +44,7 @@ class CachingSymbolizer : public Symbolizer {
   int64_t stat_accesses() const { return stat_accesses_; }
   int64_t stat_hits() const { return stat_hits_; }
   uint64_t GetNumberOfSymbolsCached() const;
-  bool SymbolsHaveChanged(const struct upid_t& /*upid*/) override { return false; }
+  bool Uncacheable(const struct upid_t& /*upid*/) override { return false; }
 
  private:
   CachingSymbolizer() = default;

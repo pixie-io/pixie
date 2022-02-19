@@ -66,7 +66,7 @@ class JavaSymbolizer : public Symbolizer {
   profiler::SymbolizerFn GetSymbolizerFn(const struct upid_t& upid) override;
   void IterationPreTick() override;
   void DeleteUPID(const struct upid_t& upid) override;
-  bool SymbolsHaveChanged(const struct upid_t& upid) override;
+  bool Uncacheable(const struct upid_t& upid) override;
 
  private:
   JavaSymbolizer() = delete;

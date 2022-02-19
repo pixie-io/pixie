@@ -26,6 +26,7 @@
 #include "src/common/base/base.h"
 #include "src/common/exec/subprocess.h"
 #include "src/common/fs/fs_wrapper.h"
+#include "src/stirling/source_connectors/perf_profiler/java/attach.h"
 #include "src/stirling/source_connectors/perf_profiler/perf_profile_connector.h"
 #include "src/stirling/source_connectors/perf_profiler/stack_traces_table.h"
 #include "src/stirling/testing/common.h"
@@ -52,9 +53,9 @@ class CPUPinnedBinaryRunner {
     ASSERT_TRUE(fs::Exists(kTasksetBinPath));
     ASSERT_OK(sub_process_.Start({kTasksetBinPath, "-c", std::to_string(cpu_idx), binary_path}));
   }
-
   ~CPUPinnedBinaryRunner() { sub_process_.Kill(); }
   int pid() const { return sub_process_.child_pid(); }
+  void Kill() { sub_process_.Kill(); }
 
  private:
   SubProcess sub_process_;
@@ -218,16 +219,32 @@ class PerfProfileBPFTest : public ::testing::Test {
   }
 
   template <typename T>
-  std::vector<size_t> GetTargetRowIdxs(const std::vector<T>& sub_processes) {
-    auto GetSubProcessPids = [&]() {
-      std::vector<int> pids;
-      for (const auto& sub_process : sub_processes) {
-        pids.push_back(sub_process.pid());
-      }
-      return pids;
-    };
+  std::vector<int> GetSubProcessPids(const std::vector<T>& sub_processes) {
+    std::vector<int> pids;
+    for (const auto& sub_process : sub_processes) {
+      pids.push_back(sub_process.pid());
+    }
+    return pids;
+  }
 
-    const std::vector<int> pids = GetSubProcessPids();
+  template <typename T>
+  std::vector<struct upid_t> GetSubProcessUPIDs(const std::vector<T>& sub_processes) {
+    const std::vector<int> pids_vec = GetSubProcessPids(sub_processes);
+    const std::set<int> pids(pids_vec.begin(), pids_vec.end());
+    const auto& md_upids = ctx_->GetUPIDs();
+    std::vector<struct upid_t> upids;
+
+    for (const auto upid : md_upids) {
+      if (pids.find(upid.pid()) != pids.end()) {
+        upids.push_back({{upid.pid()}, static_cast<uint64_t>(upid.start_ts())});
+      }
+    }
+    return upids;
+  }
+
+  template <typename T>
+  std::vector<size_t> GetTargetRowIdxs(const std::vector<T>& sub_processes) {
+    const std::vector<int> pids = GetSubProcessPids(sub_processes);
     return FindRecordIdxMatchesPIDs(columns_, kStackTraceUPIDIdx, pids);
   }
 
@@ -410,6 +427,38 @@ TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
   // The test itself. We expect, if everything is working, to see twice as much fib52() as fib27().
   EXPECT_GT(ratio, 2.0 - kRatioMargin);
   EXPECT_LT(ratio, 2.0 + kRatioMargin);
+
+  // Now we will test agent cleanup, specifically whether the aritfacts directory is removed.
+  // We will construt a list of artifacts paths that we expect,
+  // then kill all the subprocesses,
+  // and expect that all the artifacts paths are (as a result) removed.
+  std::vector<std::filesystem::path> artifacts_paths;
+
+  // Get the UPIDs of our subprocs.
+  const auto upids = GetSubProcessUPIDs(sub_processes);
+
+  // Consruct the names of the artifacts paths and expect that they exist.
+  for (const auto& upid : upids) {
+    const auto artifacts_path = java::StirlingArtifactsPath(upid);
+    EXPECT_TRUE(fs::Exists(artifacts_path));
+    if (fs::Exists(artifacts_path)) {
+      artifacts_paths.push_back(artifacts_path);
+    }
+  }
+  EXPECT_EQ(artifacts_paths.size(), kNumSubProcesses);
+
+  // Kill the subprocs.
+  for (auto& proc : sub_processes) {
+    proc.Kill();
+  }
+
+  // Run transfer data so that cleanup is kicked off in the perf profile source connector.
+  source_->TransferData(ctx_.get(), data_tables_);
+
+  // Expect that that the artifacts paths have been removed.
+  for (const auto& artifacts_path : artifacts_paths) {
+    EXPECT_FALSE(fs::Exists(artifacts_path)) << artifacts_path;
+  }
 }
 
 TEST_F(PerfProfileBPFTest, TestOutOfContext) {

@@ -60,9 +60,9 @@ class Symbolizer : public NotCopyable {
   virtual void DeleteUPID(const struct upid_t& upid) = 0;
 
   /**
-   * Indicates that underlying symbols have changed (so invalidate any caching).
+   * Indicates that underlying symbols cannot be cached because they are subject to change.
    */
-  virtual bool SymbolsHaveChanged(const struct upid_t& upid) = 0;
+  virtual bool Uncacheable(const struct upid_t& upid) = 0;
 };
 
 }  // namespace stirling

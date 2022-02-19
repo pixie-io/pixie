@@ -250,7 +250,13 @@ Status JavaSymbolizer::CreateNewJavaSymbolizationContext(const struct upid_t& up
   return Status::OK();
 }
 
-bool JavaSymbolizer::SymbolsHaveChanged(const struct upid_t& upid) {
+bool JavaSymbolizer::Uncacheable(const struct upid_t& upid) {
+  if (symbolization_contexts_.find(upid) != symbolization_contexts_.end()) {
+    // A Java symbolization context exists for this UPID.
+    // Java symbols cannot be cached. Return true.
+    return true;
+  }
+
   if (active_attachers_.empty()) {
     return false;
   }
