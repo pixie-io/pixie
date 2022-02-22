@@ -72,7 +72,11 @@ void UProbeManager::Init(bool enable_http2_tracing, bool disable_self_probing) {
       bcc_, "tgid_goid_map");
 }
 
-void UProbeManager::NotifyMMapEvent(upid_t upid) { upids_with_mmap_.insert(upid); }
+void UProbeManager::NotifyMMapEvent(upid_t upid) {
+  if (FLAGS_stirling_rescan_for_dlopen) {
+    upids_with_mmap_.insert(upid);
+  }
+}
 
 StatusOr<int> UProbeManager::AttachUProbeTmpl(const ArrayView<UProbeTmpl>& probe_tmpls,
                                               const std::string& binary,
