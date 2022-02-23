@@ -666,10 +666,11 @@ Status SocketTraceConnector::DisableSelfTracing() {
 // Perf Buffer Polling and Callback functions.
 //-----------------------------------------------------------------------------
 
-void SocketTraceConnector::HandleDataEvent(void* cb_cookie, void* data, int /*data_size*/) {
+void SocketTraceConnector::HandleDataEvent(void* cb_cookie, void* data, int data_size) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
   auto data_event_ptr = std::make_unique<SocketDataEvent>(data);
+  connector->stats_.Increment(StatKey::kPollSocketDataEventSize, data_size);
   connector->AcceptDataEvent(std::move(data_event_ptr));
 }
 
@@ -774,6 +775,10 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
   if (perf_buffer_events_output_stream_ != nullptr) {
     WriteDataEvent(*event);
   }
+
+  stats_.Increment(StatKey::kPollSocketDataEventCount);
+  stats_.Increment(StatKey::kPollSocketDataEventAttrSize, sizeof(event->attr));
+  stats_.Increment(StatKey::kPollSocketDataEventDataSize, event->msg.size());
 
   ConnTracker& tracker = GetOrCreateConnTracker(event->attr.conn_id);
   tracker.AddDataEvent(std::move(event));

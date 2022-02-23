@@ -251,6 +251,11 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
     kLossConnStatsEvent,
     kLossMMapEvent,
     kLossHTTP2Event,
+
+    kPollSocketDataEventCount,
+    kPollSocketDataEventAttrSize,
+    kPollSocketDataEventDataSize,
+    kPollSocketDataEventSize,
   };
 
   utils::StatCounter<StatKey> stats_;
