@@ -188,7 +188,9 @@ void ProcessContainerPIDUpdates(
       // Push deletion events to the queue.
       pid_updates->enqueue(std::make_unique<PIDTerminatedEvent>(prev_upid, ts));
 
-      upids->erase(upids_iter++);
+      // Must use this style instead of `upids->erase(upids_iter++)`,
+      // otherwise the iterator becomes invalid, causing potential seg-faults.
+      upids_iter = upids->erase(upids_iter);
       continue;
     }
 
