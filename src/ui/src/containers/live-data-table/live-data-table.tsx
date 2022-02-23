@@ -18,14 +18,13 @@
 
 import * as React from 'react';
 
-import { Theme, useTheme } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
 import { VizierTable } from 'app/api';
 import { ClusterContext } from 'app/common/cluster-context';
 import { buildClass, CellAlignment } from 'app/components';
 import { ReactTable, DataTable, DataTableProps } from 'app/components/data-table/data-table';
-import { JSONData } from 'app/containers/format-data/json-data';
 import { getLiveCellRenderer } from 'app/containers/live-data-table/renderers';
 import { getSortFunc } from 'app/containers/live-data-table/sort-funcs';
 import { useLatestRowCount } from 'app/context/results-context';
@@ -34,6 +33,7 @@ import { Arguments } from 'app/utils/args-utils';
 import { AutoSizerContext, withAutoSizerContext } from 'app/utils/autosizer';
 
 import { ColumnDisplayInfo, displayInfoFromColumn, titleFromInfo } from './column-display-info';
+import { DetailPane } from './data-table-details';
 
 // Note: if an alignment exists for both a column's semantic type and its data type, the semantic type takes precedence.
 const SemanticAlignmentMap = new Map<SemanticType, CellAlignment>(
@@ -127,7 +127,7 @@ function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutte
 
 // This one has a sidebar for the currently-selected row, rather than placing it inline like the main data table does.
 // It scrolls independently of the table to its left.
-const useLiveDataTableStyles = makeStyles((theme: Theme) => createStyles({
+const useLiveDataTableStyles = makeStyles(createStyles({
   root: {
     display: 'flex',
     flexFlow: 'row nowrap',
@@ -148,19 +148,6 @@ const useLiveDataTableStyles = makeStyles((theme: Theme) => createStyles({
     overflow: 'hidden',
     width: '100%', // It's using an AutoSizer that has a natural width/height of 0. Need to force it to use space.
   },
-  details: {
-    flex: 1,
-    minWidth: '0px',
-    minHeight: '0px',
-    whiteSpace: 'pre-wrap',
-    overflow: 'auto',
-    borderLeft: `1px solid ${theme.palette.background.three}`,
-    padding: theme.spacing(2),
-  },
-  detailsHorizontal: {
-    borderLeft: 0,
-    borderTop: `1px solid ${theme.palette.background.three}`,
-  },
 }), { name: 'LiveDataTable' });
 
 export const MinimalLiveDataTable = React.memo<{ table: VizierTable }>(({ table }) => {
@@ -169,17 +156,25 @@ export const MinimalLiveDataTable = React.memo<{ table: VizierTable }>(({ table 
 
   const [details, setDetails] = React.useState<Record<string, any>>(null);
   const onRowSelected = React.useCallback((row: Record<string, any> | null) => setDetails(row), [setDetails]);
+  const updateSelection = React.useRef<(id: string | null) => void>();
+  const closeDetails = React.useCallback(() => {
+    if (updateSelection.current) {
+      updateSelection.current(null);
+      setDetails(null);
+    }
+  }, [updateSelection]);
 
   return (
     <div className={buildClass(classes.root, classes.minimalRoot)}>
       <div className={classes.table}>
-        <DataTable table={reactTable} enableRowSelect onRowSelected={onRowSelected} />
+        <DataTable
+          table={reactTable}
+          enableRowSelect
+          onRowSelected={onRowSelected}
+          updateSelection={updateSelection}
+        />
       </div>
-      {details && (
-        <div className={classes.details}>
-          <JSONData data={details} multiline />
-        </div>
-      )}
+      <DetailPane details={details} closeDetails={closeDetails} />
     </div>
   );
 });
@@ -198,6 +193,13 @@ const LiveDataTableImpl = React.memo<LiveDataTableProps>(({ table, ...options })
 
   const [details, setDetails] = React.useState<Record<string, any>>(null);
   const onRowSelected = React.useCallback((row: Record<string, any> | null) => setDetails(row), [setDetails]);
+  const updateSelection = React.useRef<(id: string | null) => void>();
+  const closeDetails = React.useCallback(() => {
+    if (updateSelection.current) {
+      updateSelection.current(null);
+      setDetails(null);
+    }
+  }, [updateSelection]);
 
   // Determine if we should render row details in a horizontal split or a vertical one based on available space
   const splitMode: 'horizontal' | 'vertical' = React.useMemo(
@@ -210,13 +212,16 @@ const LiveDataTableImpl = React.memo<LiveDataTableProps>(({ table, ...options })
       style={{ width: containerWidth, height: containerHeight }}
     >
       <div className={classes.table}>
-        <DataTable table={reactTable} enableRowSelect onRowSelected={onRowSelected} enableColumnSelect {...options} />
+        <DataTable
+          table={reactTable}
+          enableRowSelect
+          onRowSelected={onRowSelected}
+          updateSelection={updateSelection}
+          enableColumnSelect
+          {...options}
+        />
       </div>
-      {details && (
-        <div className={buildClass(classes.details, splitMode === 'horizontal' && classes.detailsHorizontal)}>
-          <JSONData data={details} multiline />
-        </div>
-      )}
+      <DetailPane details={details} closeDetails={closeDetails} splitMode={splitMode} />
     </div>
   );
 });

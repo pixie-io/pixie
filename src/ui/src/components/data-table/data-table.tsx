@@ -192,6 +192,7 @@ export interface DataTableProps {
   enableColumnSelect?: boolean;
   enableRowSelect?: boolean;
   onRowSelected?: (row: Record<string, any> | null) => void;
+  updateSelection?: React.MutableRefObject<(id: string | null) => void>;
   onRowsRendered?: (rendered: ListOnItemsRenderedProps) => void;
 }
 
@@ -514,10 +515,15 @@ const DataTableImpl = React.memo<DataTableProps>(({ table, ...options }) => {
   );
 
   const [expanded, setExpanded] = React.useState<string>(null);
-  const toggleRowExpanded = React.useCallback((rowId: string) => {
-    if (expanded === rowId) setExpanded(null);
+  const toggleRowExpanded = React.useCallback((rowId: string | null) => {
+    if (rowId === null || expanded === rowId) setExpanded(null);
     else setExpanded(rowId);
   }, [expanded]);
+  React.useEffect(() => {
+    if (options.updateSelection) {
+      options.updateSelection.current = toggleRowExpanded;
+    }
+  }, [options.updateSelection, toggleRowExpanded]);
 
   // Ensures an update when, for example, a quantiles column changes modes
   const colNames = React.useMemo(
