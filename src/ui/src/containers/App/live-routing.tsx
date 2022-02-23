@@ -46,6 +46,7 @@ LiveRouteContext.displayName = 'LiveRouteContext';
 /** Some scripts have special mnemonic routes. They are vanity URLs for /clusters/:cluster?... and map as such */
 const VANITY_ROUTES = new Map<string, string>([
   /* eslint-disable no-multi-spaces */
+  ['/clusters',                                                  'px/cluster'],
   ['/clusters/:cluster',                                         'px/cluster'],
   ['/clusters/:cluster/nodes',                                   'px/nodes'],
   ['/clusters/:cluster/nodes/:node',                             'px/node'],
@@ -192,7 +193,7 @@ const VanityRouter: React.FC<{ outerPath: string }> = React.memo(({ outerPath, c
 
   // Special handling only if a default cluster is available and path is /live w/o args.
   // Otherwise we want to render the LiveRoute which eventually renders something helpful for new users.
-  if (defaultCluster && nestedPath === '') {
+  if (defaultCluster && ['', '/clusters', '/clusters/'].includes(nestedPath)) {
     return (<Redirect to={`${outerPath}/clusters/${encodeURIComponent(defaultCluster)}`} />);
   }
 
