@@ -170,12 +170,9 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   void AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> event);
   void AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event);
 
-  // Transfer of messages to the data table.
-  void TransferStreams(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table);
-  void TransferConnStats(ConnectorContext* ctx, DataTable* data_table);
-
   template <typename TProtocolTraits>
   void TransferStream(ConnectorContext* ctx, ConnTracker* tracker, DataTable* data_table);
+  void TransferConnStats(ConnectorContext* ctx, DataTable* data_table);
 
   void set_iteration_time(std::chrono::time_point<std::chrono::steady_clock> time) {
     DCHECK(time >= iteration_time_);

@@ -526,8 +526,6 @@ class ConnTracker : NotCopyMoveable {
     using TFrameType = typename TProtocolTraits::frame_type;
     using TStateType = typename TProtocolTraits::state_type;
 
-    InitFrames<TFrameType>();
-
     if constexpr (std::is_same_v<TFrameType, protocols::http2::Stream>) {
       http2_client_streams_.Cleanup(frame_size_limit_bytes, frame_expiry_timestamp);
       http2_server_streams_.Cleanup(frame_size_limit_bytes, frame_expiry_timestamp);
@@ -589,12 +587,14 @@ class ConnTracker : NotCopyMoveable {
     data_buffer_total += recv_data().data_buffer().capacity();
 
     size_t parsed_msg_total = 0;
-    parsed_msg_total += send_data().FramesSize<TFrameType>();
-    parsed_msg_total += recv_data().FramesSize<TFrameType>();
-
     size_t http2_events_total = 0;
-    http2_events_total += http2_client_streams_.StreamsSize();
-    http2_events_total += http2_server_streams_.StreamsSize();
+    if constexpr (std::is_same_v<TFrameType, protocols::http2::Stream>) {
+      http2_events_total += http2_client_streams_.StreamsSize();
+      http2_events_total += http2_server_streams_.StreamsSize();
+    } else {
+      parsed_msg_total += send_data().FramesSize<TFrameType>();
+      parsed_msg_total += recv_data().FramesSize<TFrameType>();
+    }
 
     return data_buffer_total + http2_events_total + parsed_msg_total;
   }
