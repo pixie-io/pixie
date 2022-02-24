@@ -42,7 +42,7 @@ class basic_clock {
 // std::chrono::system_clock is based on CLOCK_REALTIME.
 
 // Clock based on CLOCK_BOOTTIME.
-// Unlike CLOCK_MONOTONIC, this clock accounts for time spend while the machine is suspended.
+// Unlike CLOCK_MONOTONIC, this clock accounts for time spent while the machine is suspended.
 // Note that Linux PID start times are based on this kind of clock.
 using boot_clock = basic_clock<CLOCK_BOOTTIME>;
 

@@ -50,7 +50,7 @@
 DEFINE_uint32(
     stirling_conn_stats_sampling_ratio, 50,
     "Ratio of how frequently conn_stats_table is populated relative to the base sampling period.");
-// The default frequency logs every minute, since each iteration has a cycle period of 200ms.
+
 DEFINE_uint32(stirling_socket_tracer_stats_logging_ratio,
               std::chrono::minutes(10) / px::stirling::SocketTraceConnector::kSamplingPeriod,
               "Ratio of how frequently summary logging information is displayed.");

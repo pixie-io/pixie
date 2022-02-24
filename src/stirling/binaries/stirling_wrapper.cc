@@ -63,8 +63,7 @@ DEFINE_string(trace, "",
               "spec, or (2) <path to object file>:<symbol_name> for full-function tracing.");
 DEFINE_string(print_record_batches,
               "http_events,mysql_events,pgsql_events,redis_events,cql_events,dns_events",
-              "Comma-separated list of tables to print. Defaults to tracers if not specified. Use "
-              "'None' for none.");
+              "Comma-separated list of tables to print.");
 DEFINE_bool(init_only, false, "If true, only runs the init phase and exits. For testing.");
 DEFINE_int32(timeout_secs, -1,
              "If non-negative, only runs for the specified amount of time and exits.");
@@ -280,8 +279,7 @@ int main(int argc, char** argv) {
   }
 
   if (!FLAGS_print_record_batches.empty()) {
-    // controls which tables are dumped to STDOUT
-    // this concept is specific to stirling wrapper (otherwise everything goes to the table store)
+    // Controls which tables are dumped to STDOUT in stirling_wrapper.
     g_table_print_enables = absl::StrSplit(FLAGS_print_record_batches, ",", absl::SkipWhitespace());
   }
 
