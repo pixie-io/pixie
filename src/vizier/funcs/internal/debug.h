@@ -22,7 +22,9 @@
 
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
+#include "src/carnot/udfspb/udfs.pb.h"
 #include "src/common/base/base.h"
+#include "src/common/perf/tcmalloc.h"
 #include "src/common/system/proc_parser.h"
 #include "src/shared/types/typespb/types.pb.h"
 
@@ -310,6 +312,24 @@ class AgentProcSMapsUDTF final : public carnot::udf::UDTF<AgentProcSMapsUDTF> {
  private:
   std::vector<ProcParser::ProcessSMaps> stats_;
   int current_idx_ = 0;
+};
+
+class HeapReleaseFreeMemoryUDTF final : public carnot::udf::UDTF<HeapReleaseFreeMemoryUDTF> {
+ public:
+  static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ALL_AGENTS; }
+
+  static constexpr auto OutputRelation() {
+    return MakeArray(ColInfo("asid", types::DataType::INT64, types::PatternType::GENERAL,
+                             "The short ID of the agent", types::SemanticType::ST_ASID));
+  }
+
+  Status Init(FunctionContext*) { return Status::OK(); }
+
+  bool NextRecord(FunctionContext* ctx, RecordWriter* rw) {
+    px::ReleaseFreeMemory();
+    rw->Append<IndexOf("asid")>(ctx->metadata_state()->asid());
+    return false;
+  }
 };
 
 }  // namespace funcs

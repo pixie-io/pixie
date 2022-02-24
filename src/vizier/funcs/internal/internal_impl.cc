@@ -34,6 +34,8 @@ void RegisterFuncsOrDie(carnot::udf::Registry* registry) {
 
   registry->RegisterOrDie<AgentProcStatusUDTF>("_DebugAgentProcStatus");
   registry->RegisterOrDie<AgentProcSMapsUDTF>("_DebugAgentProcSMaps");
+
+  registry->RegisterOrDie<HeapReleaseFreeMemoryUDTF>("_HeapReleaseFreeMemory");
 }
 
 }  // namespace internal
