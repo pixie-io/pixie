@@ -22,8 +22,12 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
+	bindata "github.com/golang-migrate/migrate/source/go_bindata"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
+	"px.dev/pixie/src/cloud/plugin/schema"
+	"px.dev/pixie/src/cloud/shared/pgmigrate"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/env"
 	"px.dev/pixie/src/shared/services/healthz"
@@ -43,7 +47,11 @@ func main() {
 	healthz.RegisterDefaultChecks(mux)
 
 	db := pg.MustConnectDefaultPostgresDB()
-	_ = db
+	err := pgmigrate.PerformMigrationsUsingBindata(db, "plugin_service_migrations",
+		bindata.Resource(schema.AssetNames(), schema.Asset))
+	if err != nil {
+		log.WithError(err).Fatal("Failed to apply migrations")
+	}
 
 	s := server.NewPLServer(env.New(viper.GetString("domain_name")), mux)
 

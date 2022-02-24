@@ -49,11 +49,15 @@ go_library(
     srcs = ["plugin_server.go"],
     importpath = "px.dev/pixie/src/cloud/plugin",
     deps = [
+        "//src/cloud/plugin/schema",
+        "//src/cloud/shared/pgmigrate",
         "//src/shared/services",
         "//src/shared/services/env",
         "//src/shared/services/healthz",
         "//src/shared/services/pg",
         "//src/shared/services/server",
+        "@com_github_golang_migrate_migrate//source/go_bindata",
+        "@com_github_sirupsen_logrus//:logrus",
         "@com_github_spf13_viper//:viper",
     ],
 )
