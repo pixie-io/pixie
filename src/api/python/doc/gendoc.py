@@ -50,11 +50,9 @@ class FuncDoc:
 
     def to_dict(self):
         return {
-            "def": {
-                "name": "def {}".format(self._name),
-                "declaration": "def {}{}".format(self._name, self._params),
-                "docstring": self.docstring,
-            },
+            "name": "def {}".format(self._name),
+            "declaration": "def {}{}".format(self._name, self._params),
+            "docstring": self.docstring,
         }
 
 
