@@ -122,13 +122,13 @@ class ConnTrackerGenerationsTest : public ::testing::Test {
   }
 
   std::pair<ConnTracker*, bool> GetOrCreateTracker(uint64_t tsid) {
-    auto [tracker, created] = tracker_gens_.GetOrCreate(tsid, &tracker_pool);
-    if (created) {
-      struct conn_id_t conn_id = {};
-      conn_id.tsid = tsid;
-      tracker->SetConnID(conn_id);
-    }
-    return {tracker, created};
+    struct conn_id_t conn_id = {};
+    conn_id.upid.pid = 1;
+    conn_id.upid.start_time_ticks = 1;
+    conn_id.fd = 1;
+    conn_id.tsid = tsid;
+
+    return tracker_gens_.GetOrCreate(conn_id, &tracker_pool);
   }
 
   int CleanupTrackers() {

@@ -50,7 +50,7 @@ class ConnTrackerGenerations {
    *
    * @return The pointer to the conn_tracker and whether the tracker was newly created.
    */
-  std::pair<ConnTracker*, bool> GetOrCreate(uint64_t tsid, ConnTrackerPool* tracker_pool);
+  std::pair<ConnTracker*, bool> GetOrCreate(conn_id_t conn_id, ConnTrackerPool* tracker_pool);
 
   /**
    * Return true if a ConnTracker created at the specified time stamp exists.

@@ -355,13 +355,13 @@ class ConnTracker : NotCopyMoveable {
   DataStream* resp_data();
 
   /**
-   * @return Returns the latest timestamp of all BPF events received by this tracker (using BPF
+   * Returns the latest timestamp of all BPF events received by this tracker (using BPF
    * timestamp).
    */
   uint64_t last_bpf_timestamp_ns() { return last_bpf_timestamp_ns_; }
 
   /**
-   * @return Returns the a timestamp the last time an event was added to this tracker (using
+   * Returns the a timestamp the last time an event was added to this tracker (using
    * steady_clock).
    */
   std::chrono::time_point<std::chrono::steady_clock> last_update_timestamp() {
