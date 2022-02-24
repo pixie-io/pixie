@@ -54,6 +54,9 @@ DEFINE_bool(
 DEFINE_int64(
     stirling_check_proc_for_conn_close, true,
     "If enabled, Stirling will check Linux /proc on idle connections to see if they are closed.");
+DEFINE_int64(stirling_untracked_upid_threshold_seconds, 0,
+             "If non-zero, Stirling will disable data tracking of processes that are outside the "
+             "list of PIDs tracked by the context after the specified time period.");
 
 DECLARE_int32(test_only_socket_trace_target_pid);
 
@@ -437,6 +440,9 @@ void ConnTracker::SetConnID(struct conn_id_t conn_id) {
   if (conn_id_ != conn_id) {
     conn_id_ = conn_id;
 
+    creation_timestamp_ =
+        std::chrono::time_point<std::chrono::steady_clock>(std::chrono::nanoseconds(conn_id.tsid));
+
     if (ShouldTraceConn(conn_id_)) {
       SetDebugTrace(2);
     }
@@ -658,6 +664,16 @@ void ConnTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs) {
       open_info_.remote_addr.family != SockAddrFamily::kUnspecified) {
     Disable("Unhandled socket address family");
     return;
+  }
+
+  if (FLAGS_stirling_untracked_upid_threshold_seconds > 0 && !is_tracked_upid_) {
+    // It takes some time for the ConnectorContext to detect new processes,
+    // so leave some time before making a judgment.
+    auto threshold = std::chrono::seconds(FLAGS_stirling_untracked_upid_threshold_seconds);
+    if (current_time_ > creation_timestamp() + threshold) {
+      Disable("Not a tracked process.");
+      return;
+    }
   }
 
   if (ShouldTraceProtocolRole(protocol(), role())) {

@@ -32,6 +32,7 @@
 #include "src/stirling/source_connectors/socket_tracer/conn_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/test_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/event_generator.h"
+#include "src/stirling/testing/common.h"
 
 namespace px {
 namespace stirling {
@@ -607,6 +608,25 @@ TEST_F(ConnTrackerTest, DisabledAfterMapping) {
     EXPECT_EQ(std::string(tracker.disable_reason()),
               std::string("No client-side tracing: Remote endpoint is inside the cluster."));
   }
+}
+
+// Tests that tracker state is kDisabled if the remote address is kOther (non-IP).
+TEST_F(ConnTrackerTest, DisabledForNonTrackedUPID) {
+  struct socket_control_event_t conn = event_gen_.InitConn();
+
+  CIDRBlock cidr;
+  ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
+
+  PL_SET_FOR_SCOPE(FLAGS_stirling_untracked_upid_threshold_seconds, 1);
+
+  ConnTracker tracker;
+  tracker.AddControlEvent(conn);
+  tracker.SetProtocol(kProtocolHTTP, "testing");
+  tracker.SetRole(kRoleClient, "testing");
+  tracker.IterationPreTick(now() + std::chrono::seconds(30), {cidr}, /*proc_parser*/ nullptr,
+                           /*connections*/ nullptr);
+  EXPECT_EQ(tracker.state(), ConnTracker::State::kDisabled);
+  EXPECT_EQ(std::string(tracker.disable_reason()), std::string("Not a tracked process."));
 }
 
 TEST_F(ConnTrackerTest, DisabledDueToParsingFailureRate) {

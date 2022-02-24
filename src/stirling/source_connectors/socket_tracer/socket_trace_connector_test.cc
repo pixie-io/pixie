@@ -810,9 +810,6 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
     EXPECT_OK(source_->GetConnTracker(real_pid, real_fd));
   }
 
-  ASSERT_OK_AND_ASSIGN(const ConnTracker* tracker, source_->GetConnTracker(real_pid, real_fd));
-  EXPECT_OK(source_->GetConnTracker(real_pid, real_fd));
-
   // Advance the time by the inactivity duration.
   mock_clock_.advance(
       std::chrono::duration_cast<std::chrono::nanoseconds>(kInactivityDuration).count());
@@ -827,8 +824,84 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   ASSERT_TRUE(tablets.empty());
 
   // Events should have been flushed.
+  ASSERT_OK_AND_ASSIGN(const ConnTracker* tracker, source_->GetConnTracker(real_pid, real_fd));
   EXPECT_TRUE(tracker->recv_data().Empty<http::Message>());
   EXPECT_TRUE(tracker->send_data().Empty<http::Message>());
+}
+
+TEST_F(SocketTraceConnectorTest, TrackedUPIDTransfersData) {
+  PL_SET_FOR_SCOPE(FLAGS_stirling_untracked_upid_threshold_seconds, 1);
+
+  // By default, events come from a pid that is in the context.
+  struct socket_control_event_t conn0 = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> conn0_req_event = event_gen_.InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> conn0_resp_event =
+      event_gen_.InitRecvEvent<kProtocolHTTP>(kResp0);
+
+  source_->AcceptControlEvent(conn0);
+  source_->AcceptDataEvent(std::move(conn0_req_event));
+  source_->AcceptDataEvent(std::move(conn0_resp_event));
+
+  connector_->TransferData(ctx_.get(), data_tables_.tables());
+
+  ASSERT_OK_AND_ASSIGN(const ConnTracker* tracker, source_->GetConnTracker(kPID, kFD));
+  EXPECT_TRUE(tracker->is_tracked_upid());
+  EXPECT_EQ(tracker->state(), ConnTracker::State::kTransferring);
+
+  // Should have transferred the data.
+  std::vector<TaggedRecordBatch> tablets;
+  tablets = http_table_->ConsumeRecords();
+
+  ASSERT_FALSE(tablets.empty());
+  RecordBatch& record_batch = tablets[0].records;
+  EXPECT_THAT(record_batch, RecordBatchSizeIs(1));
+}
+
+TEST_F(SocketTraceConnectorTest, UntrackedUPIDDoesNotTransferData) {
+  PL_SET_FOR_SCOPE(FLAGS_stirling_untracked_upid_threshold_seconds, 1);
+
+  // Choose an event generator for a pid that is not in the context.
+  const uint32_t kNonContextPID = 1;
+  const uint32_t kNonContextFD = 37;
+  testing::EventGenerator event_gen(&mock_clock_, kNonContextPID, kNonContextFD);
+
+  // Simulated events.
+  source_->AcceptControlEvent(event_gen.InitConn());
+  source_->AcceptDataEvent(event_gen.InitSendEvent<kProtocolHTTP>(kReq0));
+  source_->AcceptDataEvent(event_gen.InitRecvEvent<kProtocolHTTP>(kResp0));
+
+  connector_->TransferData(ctx_.get(), data_tables_.tables());
+
+  ASSERT_OK_AND_ASSIGN(const ConnTracker* tracker,
+                       source_->GetConnTracker(kNonContextPID, kNonContextFD));
+  EXPECT_FALSE(tracker->is_tracked_upid());
+  EXPECT_EQ(tracker->state(), ConnTracker::State::kTransferring);
+
+  // Record should be transferred.
+  // TODO(oazizi): Change behavior that the tracker stays in the collecting state, and doesn't
+  // transfer data.
+  {
+    std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
+
+    ASSERT_FALSE(tablets.empty());
+    RecordBatch& record_batch = tablets[0].records;
+    EXPECT_THAT(record_batch, RecordBatchSizeIs(1));
+  }
+
+  // After some more time, the tracker should be disabled.
+  mock_clock_.advance(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(2)).count());
+
+  source_->AcceptDataEvent(event_gen.InitSendEvent<kProtocolHTTP>(kReq0));
+  source_->AcceptDataEvent(event_gen.InitRecvEvent<kProtocolHTTP>(kResp0));
+
+  connector_->TransferData(ctx_.get(), data_tables_.tables());
+
+  EXPECT_FALSE(tracker->is_tracked_upid());
+  EXPECT_EQ(tracker->state(), ConnTracker::State::kDisabled);
+
+  // Should not transfer any data anymore.
+  ASSERT_TRUE(http_table_->ConsumeRecords().empty());
 }
 
 }  // namespace stirling

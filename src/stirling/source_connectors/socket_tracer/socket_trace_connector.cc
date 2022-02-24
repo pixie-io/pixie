@@ -619,6 +619,15 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
 
     UpdateTrackerTraceLevel(conn_tracker);
 
+    // Once a known UPID, always a known UPID.
+    if (!conn_tracker->is_tracked_upid()) {
+      md::UPID upid(ctx->GetASID(), conn_tracker->conn_id().upid.pid,
+                    conn_tracker->conn_id().upid.start_time_ticks);
+      if (ctx->GetUPIDs().contains(upid)) {
+        conn_tracker->set_is_tracked_upid();
+      }
+    }
+
     conn_tracker->IterationPreTick(iteration_time_, cluster_cidrs, proc_parser_.get(),
                                    socket_info_mgr_.get());
 
