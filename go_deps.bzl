@@ -1712,6 +1712,7 @@ def pl_go_dependencies():
 
     go_repository(
         name = "com_github_grpc_ecosystem_grpc_gateway",
+        build_naming_convention = "go_default_library",
         importpath = "github.com/grpc-ecosystem/grpc-gateway",
         sum = "h1:gmcG1KaJ57LophUzW0Hy8NmPhnMZb4M0+kPpLofRdBo=",
         version = "v1.16.0",
@@ -2987,6 +2988,14 @@ def pl_go_dependencies():
         importpath = "github.com/prometheus/procfs",
         sum = "h1:4jVXhlkAyzOScmCkXBTOLRLTz8EeU+eyjrwB/EPq0VU=",
         version = "v0.7.3",
+    )
+
+    go_repository(
+        name = "com_github_prometheus_prometheus",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/prometheus/prometheus",
+        sum = "h1:7QPitgO2kOFG8ecuRn9O/4L9+10He72rVRJvMXrE9Hg=",
+        version = "v2.5.0+incompatible",
     )
 
     go_repository(

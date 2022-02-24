@@ -27,6 +27,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
 
 	"px.dev/pixie/src/cloud/metrics/controllers"
@@ -40,6 +41,8 @@ import (
 func init() {
 	pflag.String("bq_project", "", "The BigQuery project to write metrics to.")
 	pflag.String("bq_sa_key_path", "", "The service account for the BigQuery instance that should be used.")
+
+	pflag.String("bq_dataset", "vizier_metrics", "The BigQuery dataset to write metrics to.")
 }
 
 func main() {
@@ -60,13 +63,32 @@ func main() {
 	var client *bigquery.Client
 	var err error
 
-	if viper.GetString("bq_sa_key_path") != "" {
+	if viper.GetString("bq_sa_key_path") != "" && viper.GetString("bq_project") != "" {
 		client, err = bigquery.NewClient(context.Background(), viper.GetString("bq_project"), option.WithCredentialsFile(viper.GetString("bq_sa_key_path")))
 		if err != nil {
 			log.WithError(err).Fatal("Could not start up BigQuery client for metrics server")
 		}
 		defer client.Close()
-		_ = controllers.NewServer(nc, client)
+
+		dsName := viper.GetString("bq_dataset")
+		if dsName == "" {
+			log.WithError(err).Fatal("Missing a BigQuery dataset name.")
+		}
+
+		dataset := client.Dataset(dsName)
+		err = dataset.Create(context.Background(), nil)
+		apiError, ok := err.(*googleapi.Error)
+		if !ok {
+			log.WithError(err).Fatal("Problem with BigQuery dataset")
+		}
+		// StatusConflict indicates that this dataset already exists.
+		// If so, we can carry along. Else we hit something else unexpected.
+		if apiError.Code != http.StatusConflict {
+			log.WithError(err).Fatal("Problem with BigQuery dataset")
+		}
+		mc := controllers.NewServer(nc, dataset)
+		mc.Start()
+		defer mc.Stop()
 	} else {
 		log.Info("No BigQuery instance configured, no metrics will be sent")
 	}
