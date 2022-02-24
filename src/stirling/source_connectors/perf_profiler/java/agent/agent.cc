@@ -123,7 +123,11 @@ void WriteSymbol(const uint64_t addr, const uint32_t code_size, const bool metho
                                                          .method_unload = method_unload};
 
   g_mtx.lock();
-  LogF("WriteSymbol|0x%016llx|%u|%s|%s|%s", addr, code_size, symbol, fn_sig, class_sig);
+  if (method_unload) {
+    LogF("WriteSymbol|0x%016llx|unload", addr);
+  } else {
+    LogF("WriteSymbol|0x%016llx|%u|%s|%s|%s", addr, code_size, symbol, fn_sig, class_sig);
+  }
   if (g_bin_file_ptr != nullptr) {
     FWriteRetryOnErr(g_bin_file_ptr, &symbol_metadata, sizeof(symbol_metadata));
     FWriteRetryOnErr(g_bin_file_ptr, symbol, symbol_metadata.symbol_size);

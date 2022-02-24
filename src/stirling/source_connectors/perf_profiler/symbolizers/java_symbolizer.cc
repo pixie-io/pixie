@@ -59,8 +59,7 @@ void JavaSymbolizationContext::UpdateSymbolMap() {
     DCHECK(symbol_file_->good());
   };
 
-  java::RawSymbolUpdate new_symbol;
-  char* new_symbol_ptr = reinterpret_cast<char*>(&new_symbol);
+  java::RawSymbolUpdate update;
 
   std::string buffer;
   std::string symbol;
@@ -75,7 +74,7 @@ void JavaSymbolizationContext::UpdateSymbolMap() {
   while (true) {
     const auto pos = symbol_file_->tellg();
 
-    symbol_file_->read(new_symbol_ptr, sizeof(java::RawSymbolUpdate));
+    symbol_file_->read(reinterpret_cast<char*>(&update), sizeof(java::RawSymbolUpdate));
     if (!symbol_file_->good()) {
       // No data to be read. Break from the loop. Pedantically reset file pos so that when we
       // return here, we are in the correct state.
@@ -83,7 +82,7 @@ void JavaSymbolizationContext::UpdateSymbolMap() {
       break;
     }
 
-    const uint64_t n = new_symbol.TotalNumSymbolBytes();
+    const uint64_t n = update.TotalNumSymbolBytes();
 
     if (buffer.capacity() < n) {
       buffer.resize(n);
@@ -97,20 +96,31 @@ void JavaSymbolizationContext::UpdateSymbolMap() {
       break;
     }
 
+    // At this point, we have consumed an entire udpate from the symbol file.
+    // We either put a new symbol into the symbol map (common case) or remove a symbol.
+
+    if (update.method_unload) {
+      // Handle remove symbol scenario.
+      // NB: if we go back to caching Java symbols, we will need to invalidate
+      // any cached instances of this symbol.
+      symbol_map_.erase(update.addr);
+      continue;
+    }
+
     // TODO(jps): Make the interface to the demangler consume string_view only, then
     // convert symbol, fn_sig, and class_sig to string_view (reduces copying).
     // TODO(jps): Remove null terminating character from java::RawSymbolUpdate.
-    symbol.assign(buffer.data() + new_symbol.SymbolOffset(), new_symbol.symbol_size - 1);
-    fn_sig.assign(buffer.data() + new_symbol.FnSigOffset(), new_symbol.fn_sig_size - 1);
-    class_sig.assign(buffer.data() + new_symbol.ClassSigOffset(), new_symbol.class_sig_size - 1);
+    symbol.assign(buffer.data() + update.SymbolOffset(), update.symbol_size - 1);
+    fn_sig.assign(buffer.data() + update.FnSigOffset(), update.fn_sig_size - 1);
+    class_sig.assign(buffer.data() + update.ClassSigOffset(), update.class_sig_size - 1);
 
     // TODO(jps): Move the jsym_pfx to a common header. Consider adding it in the demangler.
     constexpr std::string_view jsym_pfx = "[j] ";
     const std::string demangled = absl::StrCat(jsym_pfx, java::Demangle(symbol, class_sig, fn_sig));
 
     // TODO(jps): Change to uint32_t in java::RawSymbolUpdate.
-    const uint32_t code_size = static_cast<uint32_t>(new_symbol.code_size);
-    symbol_map_.try_emplace(new_symbol.addr, demangled, code_size);
+    const uint32_t code_size = static_cast<uint32_t>(update.code_size);
+    symbol_map_.try_emplace(update.addr, demangled, code_size);
   }
   DCHECK(symbol_file_->good());
 }
