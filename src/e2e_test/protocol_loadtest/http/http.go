@@ -185,10 +185,7 @@ func basicHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.Header().Add("Content-Length", fmt.Sprintf("%d", params.BodySize))
 
-	_, err = w.Write(util.RandPrintable(params.BodySize))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	_, _ = w.Write(util.RandPrintable(params.BodySize))
 }
 
 func setupHTTPSServer(tlsConfig *tls.Config, port string) {
