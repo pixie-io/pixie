@@ -8,6 +8,7 @@ import (
 	fmt "fmt"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
+	github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
 	types "github.com/gogo/protobuf/types"
 	io "io"
 	math "math"
@@ -33,19 +34,20 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 type OperatorType int32
 
 const (
-	OPERATOR_TYPE_UNKNOWN  OperatorType = 0
-	MEMORY_SOURCE_OPERATOR OperatorType = 1000
-	GRPC_SOURCE_OPERATOR   OperatorType = 1100
-	UDTF_SOURCE_OPERATOR   OperatorType = 1200
-	EMPTY_SOURCE_OPERATOR  OperatorType = 1300
-	MAP_OPERATOR           OperatorType = 2000
-	AGGREGATE_OPERATOR     OperatorType = 2100
-	FILTER_OPERATOR        OperatorType = 2200
-	LIMIT_OPERATOR         OperatorType = 2300
-	UNION_OPERATOR         OperatorType = 2400
-	JOIN_OPERATOR          OperatorType = 2500
-	MEMORY_SINK_OPERATOR   OperatorType = 9000
-	GRPC_SINK_OPERATOR     OperatorType = 9100
+	OPERATOR_TYPE_UNKNOWN     OperatorType = 0
+	MEMORY_SOURCE_OPERATOR    OperatorType = 1000
+	GRPC_SOURCE_OPERATOR      OperatorType = 1100
+	UDTF_SOURCE_OPERATOR      OperatorType = 1200
+	EMPTY_SOURCE_OPERATOR     OperatorType = 1300
+	MAP_OPERATOR              OperatorType = 2000
+	AGGREGATE_OPERATOR        OperatorType = 2100
+	FILTER_OPERATOR           OperatorType = 2200
+	LIMIT_OPERATOR            OperatorType = 2300
+	UNION_OPERATOR            OperatorType = 2400
+	JOIN_OPERATOR             OperatorType = 2500
+	MEMORY_SINK_OPERATOR      OperatorType = 9000
+	GRPC_SINK_OPERATOR        OperatorType = 9100
+	OTEL_EXPORT_SINK_OPERATOR OperatorType = 9200
 )
 
 var OperatorType_name = map[int32]string{
@@ -62,26 +64,52 @@ var OperatorType_name = map[int32]string{
 	2500: "JOIN_OPERATOR",
 	9000: "MEMORY_SINK_OPERATOR",
 	9100: "GRPC_SINK_OPERATOR",
+	9200: "OTEL_EXPORT_SINK_OPERATOR",
 }
 
 var OperatorType_value = map[string]int32{
-	"OPERATOR_TYPE_UNKNOWN":  0,
-	"MEMORY_SOURCE_OPERATOR": 1000,
-	"GRPC_SOURCE_OPERATOR":   1100,
-	"UDTF_SOURCE_OPERATOR":   1200,
-	"EMPTY_SOURCE_OPERATOR":  1300,
-	"MAP_OPERATOR":           2000,
-	"AGGREGATE_OPERATOR":     2100,
-	"FILTER_OPERATOR":        2200,
-	"LIMIT_OPERATOR":         2300,
-	"UNION_OPERATOR":         2400,
-	"JOIN_OPERATOR":          2500,
-	"MEMORY_SINK_OPERATOR":   9000,
-	"GRPC_SINK_OPERATOR":     9100,
+	"OPERATOR_TYPE_UNKNOWN":     0,
+	"MEMORY_SOURCE_OPERATOR":    1000,
+	"GRPC_SOURCE_OPERATOR":      1100,
+	"UDTF_SOURCE_OPERATOR":      1200,
+	"EMPTY_SOURCE_OPERATOR":     1300,
+	"MAP_OPERATOR":              2000,
+	"AGGREGATE_OPERATOR":        2100,
+	"FILTER_OPERATOR":           2200,
+	"LIMIT_OPERATOR":            2300,
+	"UNION_OPERATOR":            2400,
+	"JOIN_OPERATOR":             2500,
+	"MEMORY_SINK_OPERATOR":      9000,
+	"GRPC_SINK_OPERATOR":        9100,
+	"OTEL_EXPORT_SINK_OPERATOR": 9200,
 }
 
 func (OperatorType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_e5dcfc8666ec3f33, []int{0}
+}
+
+type OTelSpanKind int32
+
+const (
+	SPAN_KIND_UNSPECIFIED OTelSpanKind = 0
+	SPAN_KIND_INTERNAL    OTelSpanKind = 1
+	SPAN_KIND_SERVER      OTelSpanKind = 2
+)
+
+var OTelSpanKind_name = map[int32]string{
+	0: "SPAN_KIND_UNSPECIFIED",
+	1: "SPAN_KIND_INTERNAL",
+	2: "SPAN_KIND_SERVER",
+}
+
+var OTelSpanKind_value = map[string]int32{
+	"SPAN_KIND_UNSPECIFIED": 0,
+	"SPAN_KIND_INTERNAL":    1,
+	"SPAN_KIND_SERVER":      2,
+}
+
+func (OTelSpanKind) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_e5dcfc8666ec3f33, []int{1}
 }
 
 type JoinOperator_JoinType int32
@@ -461,6 +489,7 @@ type Operator struct {
 	//	*Operator_JoinOp
 	//	*Operator_UdtfSourceOp
 	//	*Operator_EmptySourceOp
+	//	*Operator_OTelSinkOp
 	Op isOperator_Op `protobuf_oneof:"op"`
 }
 
@@ -539,6 +568,9 @@ type Operator_UdtfSourceOp struct {
 type Operator_EmptySourceOp struct {
 	EmptySourceOp *EmptySourceOperator `protobuf:"bytes,13,opt,name=empty_source_op,json=emptySourceOp,proto3,oneof" json:"empty_source_op,omitempty"`
 }
+type Operator_OTelSinkOp struct {
+	OTelSinkOp *OTelExportSinkOperator `protobuf:"bytes,14,opt,name=otel_sink_op,json=otelSinkOp,proto3,oneof" json:"otel_sink_op,omitempty"`
+}
 
 func (*Operator_MemSourceOp) isOperator_Op()   {}
 func (*Operator_MapOp) isOperator_Op()         {}
@@ -552,6 +584,7 @@ func (*Operator_GRPCSinkOp) isOperator_Op()    {}
 func (*Operator_JoinOp) isOperator_Op()        {}
 func (*Operator_UdtfSourceOp) isOperator_Op()  {}
 func (*Operator_EmptySourceOp) isOperator_Op() {}
+func (*Operator_OTelSinkOp) isOperator_Op()    {}
 
 func (m *Operator) GetOp() isOperator_Op {
 	if m != nil {
@@ -651,6 +684,13 @@ func (m *Operator) GetEmptySourceOp() *EmptySourceOperator {
 	return nil
 }
 
+func (m *Operator) GetOTelSinkOp() *OTelExportSinkOperator {
+	if x, ok := m.GetOp().(*Operator_OTelSinkOp); ok {
+		return x.OTelSinkOp
+	}
+	return nil
+}
+
 // XXX_OneofWrappers is for the internal use of the proto package.
 func (*Operator) XXX_OneofWrappers() []interface{} {
 	return []interface{}{
@@ -666,6 +706,7 @@ func (*Operator) XXX_OneofWrappers() []interface{} {
 		(*Operator_JoinOp)(nil),
 		(*Operator_UdtfSourceOp)(nil),
 		(*Operator_EmptySourceOp)(nil),
+		(*Operator_OTelSinkOp)(nil),
 	}
 }
 
@@ -1732,6 +1773,586 @@ func (m *EmptySourceOperator) GetColumnTypes() []typespb.DataType {
 	return nil
 }
 
+type OTelSpan struct {
+	Name                    string           `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Attributes              []*OTelAttribute `protobuf:"bytes,2,rep,name=attributes,proto3" json:"attributes,omitempty"`
+	TraceIDColumn           string           `protobuf:"bytes,3,opt,name=trace_id_column,json=traceIdColumn,proto3" json:"trace_id_column,omitempty"`
+	SpanIDColumn            string           `protobuf:"bytes,4,opt,name=span_id_column,json=spanIdColumn,proto3" json:"span_id_column,omitempty"`
+	ParentSpanIDColumn      string           `protobuf:"bytes,5,opt,name=parent_span_id_column,json=parentSpanIdColumn,proto3" json:"parent_span_id_column,omitempty"`
+	StartTimeUnixNanoColumn string           `protobuf:"bytes,6,opt,name=start_time_unix_nano_column,json=startTimeUnixNanoColumn,proto3" json:"start_time_unix_nano_column,omitempty"`
+	EndTimeUnixNanoColumn   string           `protobuf:"bytes,7,opt,name=end_time_unix_nano_column,json=endTimeUnixNanoColumn,proto3" json:"end_time_unix_nano_column,omitempty"`
+	Kind                    OTelSpanKind     `protobuf:"varint,8,opt,name=kind,proto3,enum=px.carnot.planpb.OTelSpanKind" json:"kind,omitempty"`
+	StatusColumn            string           `protobuf:"bytes,9,opt,name=status_column,json=statusColumn,proto3" json:"status_column,omitempty"`
+}
+
+func (m *OTelSpan) Reset()      { *m = OTelSpan{} }
+func (*OTelSpan) ProtoMessage() {}
+func (*OTelSpan) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e5dcfc8666ec3f33, []int{18}
+}
+func (m *OTelSpan) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *OTelSpan) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_OTelSpan.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *OTelSpan) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_OTelSpan.Merge(m, src)
+}
+func (m *OTelSpan) XXX_Size() int {
+	return m.Size()
+}
+func (m *OTelSpan) XXX_DiscardUnknown() {
+	xxx_messageInfo_OTelSpan.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_OTelSpan proto.InternalMessageInfo
+
+func (m *OTelSpan) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *OTelSpan) GetAttributes() []*OTelAttribute {
+	if m != nil {
+		return m.Attributes
+	}
+	return nil
+}
+
+func (m *OTelSpan) GetTraceIDColumn() string {
+	if m != nil {
+		return m.TraceIDColumn
+	}
+	return ""
+}
+
+func (m *OTelSpan) GetSpanIDColumn() string {
+	if m != nil {
+		return m.SpanIDColumn
+	}
+	return ""
+}
+
+func (m *OTelSpan) GetParentSpanIDColumn() string {
+	if m != nil {
+		return m.ParentSpanIDColumn
+	}
+	return ""
+}
+
+func (m *OTelSpan) GetStartTimeUnixNanoColumn() string {
+	if m != nil {
+		return m.StartTimeUnixNanoColumn
+	}
+	return ""
+}
+
+func (m *OTelSpan) GetEndTimeUnixNanoColumn() string {
+	if m != nil {
+		return m.EndTimeUnixNanoColumn
+	}
+	return ""
+}
+
+func (m *OTelSpan) GetKind() OTelSpanKind {
+	if m != nil {
+		return m.Kind
+	}
+	return SPAN_KIND_UNSPECIFIED
+}
+
+func (m *OTelSpan) GetStatusColumn() string {
+	if m != nil {
+		return m.StatusColumn
+	}
+	return ""
+}
+
+type OTelMetricGauge struct {
+	ValueColumn string `protobuf:"bytes,1,opt,name=value_column,json=valueColumn,proto3" json:"value_column,omitempty"`
+}
+
+func (m *OTelMetricGauge) Reset()      { *m = OTelMetricGauge{} }
+func (*OTelMetricGauge) ProtoMessage() {}
+func (*OTelMetricGauge) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e5dcfc8666ec3f33, []int{19}
+}
+func (m *OTelMetricGauge) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *OTelMetricGauge) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_OTelMetricGauge.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *OTelMetricGauge) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_OTelMetricGauge.Merge(m, src)
+}
+func (m *OTelMetricGauge) XXX_Size() int {
+	return m.Size()
+}
+func (m *OTelMetricGauge) XXX_DiscardUnknown() {
+	xxx_messageInfo_OTelMetricGauge.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_OTelMetricGauge proto.InternalMessageInfo
+
+func (m *OTelMetricGauge) GetValueColumn() string {
+	if m != nil {
+		return m.ValueColumn
+	}
+	return ""
+}
+
+type OTelMetricSummary struct {
+	CountColumn    string                               `protobuf:"bytes,1,opt,name=count_column,json=countColumn,proto3" json:"count_column,omitempty"`
+	SumColumn      string                               `protobuf:"bytes,2,opt,name=sum_column,json=sumColumn,proto3" json:"sum_column,omitempty"`
+	QuantileValues []*OTelMetricSummary_ValueAtQuantile `protobuf:"bytes,3,rep,name=quantile_values,json=quantileValues,proto3" json:"quantile_values,omitempty"`
+}
+
+func (m *OTelMetricSummary) Reset()      { *m = OTelMetricSummary{} }
+func (*OTelMetricSummary) ProtoMessage() {}
+func (*OTelMetricSummary) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e5dcfc8666ec3f33, []int{20}
+}
+func (m *OTelMetricSummary) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *OTelMetricSummary) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_OTelMetricSummary.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *OTelMetricSummary) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_OTelMetricSummary.Merge(m, src)
+}
+func (m *OTelMetricSummary) XXX_Size() int {
+	return m.Size()
+}
+func (m *OTelMetricSummary) XXX_DiscardUnknown() {
+	xxx_messageInfo_OTelMetricSummary.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_OTelMetricSummary proto.InternalMessageInfo
+
+func (m *OTelMetricSummary) GetCountColumn() string {
+	if m != nil {
+		return m.CountColumn
+	}
+	return ""
+}
+
+func (m *OTelMetricSummary) GetSumColumn() string {
+	if m != nil {
+		return m.SumColumn
+	}
+	return ""
+}
+
+func (m *OTelMetricSummary) GetQuantileValues() []*OTelMetricSummary_ValueAtQuantile {
+	if m != nil {
+		return m.QuantileValues
+	}
+	return nil
+}
+
+type OTelMetricSummary_ValueAtQuantile struct {
+	Quantile float64 `protobuf:"fixed64,1,opt,name=quantile,proto3" json:"quantile,omitempty"`
+	Value    float64 `protobuf:"fixed64,2,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (m *OTelMetricSummary_ValueAtQuantile) Reset()      { *m = OTelMetricSummary_ValueAtQuantile{} }
+func (*OTelMetricSummary_ValueAtQuantile) ProtoMessage() {}
+func (*OTelMetricSummary_ValueAtQuantile) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e5dcfc8666ec3f33, []int{20, 0}
+}
+func (m *OTelMetricSummary_ValueAtQuantile) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *OTelMetricSummary_ValueAtQuantile) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_OTelMetricSummary_ValueAtQuantile.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *OTelMetricSummary_ValueAtQuantile) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_OTelMetricSummary_ValueAtQuantile.Merge(m, src)
+}
+func (m *OTelMetricSummary_ValueAtQuantile) XXX_Size() int {
+	return m.Size()
+}
+func (m *OTelMetricSummary_ValueAtQuantile) XXX_DiscardUnknown() {
+	xxx_messageInfo_OTelMetricSummary_ValueAtQuantile.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_OTelMetricSummary_ValueAtQuantile proto.InternalMessageInfo
+
+func (m *OTelMetricSummary_ValueAtQuantile) GetQuantile() float64 {
+	if m != nil {
+		return m.Quantile
+	}
+	return 0
+}
+
+func (m *OTelMetricSummary_ValueAtQuantile) GetValue() float64 {
+	if m != nil {
+		return m.Value
+	}
+	return 0
+}
+
+type OTelAttribute struct {
+	Name        string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	ValueColumn string `protobuf:"bytes,2,opt,name=value_column,json=valueColumn,proto3" json:"value_column,omitempty"`
+}
+
+func (m *OTelAttribute) Reset()      { *m = OTelAttribute{} }
+func (*OTelAttribute) ProtoMessage() {}
+func (*OTelAttribute) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e5dcfc8666ec3f33, []int{21}
+}
+func (m *OTelAttribute) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *OTelAttribute) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_OTelAttribute.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *OTelAttribute) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_OTelAttribute.Merge(m, src)
+}
+func (m *OTelAttribute) XXX_Size() int {
+	return m.Size()
+}
+func (m *OTelAttribute) XXX_DiscardUnknown() {
+	xxx_messageInfo_OTelAttribute.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_OTelAttribute proto.InternalMessageInfo
+
+func (m *OTelAttribute) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *OTelAttribute) GetValueColumn() string {
+	if m != nil {
+		return m.ValueColumn
+	}
+	return ""
+}
+
+type OTelMetric struct {
+	Name        string           `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Description string           `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	Attributes  []*OTelAttribute `protobuf:"bytes,3,rep,name=attributes,proto3" json:"attributes,omitempty"`
+	// Types that are valid to be assigned to Data:
+	//	*OTelMetric_Gauge
+	//	*OTelMetric_Summary
+	Data                    isOTelMetric_Data `protobuf_oneof:"data"`
+	StartTimeUnixNanoColumn string            `protobuf:"bytes,6,opt,name=start_time_unix_nano_column,json=startTimeUnixNanoColumn,proto3" json:"start_time_unix_nano_column,omitempty"`
+	TimeUnixNanoColumn      string            `protobuf:"bytes,7,opt,name=time_unix_nano_column,json=timeUnixNanoColumn,proto3" json:"time_unix_nano_column,omitempty"`
+}
+
+func (m *OTelMetric) Reset()      { *m = OTelMetric{} }
+func (*OTelMetric) ProtoMessage() {}
+func (*OTelMetric) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e5dcfc8666ec3f33, []int{22}
+}
+func (m *OTelMetric) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *OTelMetric) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_OTelMetric.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *OTelMetric) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_OTelMetric.Merge(m, src)
+}
+func (m *OTelMetric) XXX_Size() int {
+	return m.Size()
+}
+func (m *OTelMetric) XXX_DiscardUnknown() {
+	xxx_messageInfo_OTelMetric.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_OTelMetric proto.InternalMessageInfo
+
+type isOTelMetric_Data interface {
+	isOTelMetric_Data()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type OTelMetric_Gauge struct {
+	Gauge *OTelMetricGauge `protobuf:"bytes,4,opt,name=gauge,proto3,oneof" json:"gauge,omitempty"`
+}
+type OTelMetric_Summary struct {
+	Summary *OTelMetricSummary `protobuf:"bytes,5,opt,name=summary,proto3,oneof" json:"summary,omitempty"`
+}
+
+func (*OTelMetric_Gauge) isOTelMetric_Data()   {}
+func (*OTelMetric_Summary) isOTelMetric_Data() {}
+
+func (m *OTelMetric) GetData() isOTelMetric_Data {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
+
+func (m *OTelMetric) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *OTelMetric) GetDescription() string {
+	if m != nil {
+		return m.Description
+	}
+	return ""
+}
+
+func (m *OTelMetric) GetAttributes() []*OTelAttribute {
+	if m != nil {
+		return m.Attributes
+	}
+	return nil
+}
+
+func (m *OTelMetric) GetGauge() *OTelMetricGauge {
+	if x, ok := m.GetData().(*OTelMetric_Gauge); ok {
+		return x.Gauge
+	}
+	return nil
+}
+
+func (m *OTelMetric) GetSummary() *OTelMetricSummary {
+	if x, ok := m.GetData().(*OTelMetric_Summary); ok {
+		return x.Summary
+	}
+	return nil
+}
+
+func (m *OTelMetric) GetStartTimeUnixNanoColumn() string {
+	if m != nil {
+		return m.StartTimeUnixNanoColumn
+	}
+	return ""
+}
+
+func (m *OTelMetric) GetTimeUnixNanoColumn() string {
+	if m != nil {
+		return m.TimeUnixNanoColumn
+	}
+	return ""
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*OTelMetric) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*OTelMetric_Gauge)(nil),
+		(*OTelMetric_Summary)(nil),
+	}
+}
+
+type OTelEndpointConfig struct {
+	URL        string            `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+	Attributes map[string]string `protobuf:"bytes,2,rep,name=attributes,proto3" json:"attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+}
+
+func (m *OTelEndpointConfig) Reset()      { *m = OTelEndpointConfig{} }
+func (*OTelEndpointConfig) ProtoMessage() {}
+func (*OTelEndpointConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e5dcfc8666ec3f33, []int{23}
+}
+func (m *OTelEndpointConfig) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *OTelEndpointConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_OTelEndpointConfig.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *OTelEndpointConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_OTelEndpointConfig.Merge(m, src)
+}
+func (m *OTelEndpointConfig) XXX_Size() int {
+	return m.Size()
+}
+func (m *OTelEndpointConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_OTelEndpointConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_OTelEndpointConfig proto.InternalMessageInfo
+
+func (m *OTelEndpointConfig) GetURL() string {
+	if m != nil {
+		return m.URL
+	}
+	return ""
+}
+
+func (m *OTelEndpointConfig) GetAttributes() map[string]string {
+	if m != nil {
+		return m.Attributes
+	}
+	return nil
+}
+
+type OTelExportSinkOperator struct {
+	EndpointConfig *OTelEndpointConfig `protobuf:"bytes,1,opt,name=endpoint_config,json=endpointConfig,proto3" json:"endpoint_config,omitempty"`
+	// Types that are valid to be assigned to DataConfig:
+	//	*OTelExportSinkOperator_Span
+	//	*OTelExportSinkOperator_Metric
+	DataConfig isOTelExportSinkOperator_DataConfig `protobuf_oneof:"data_config"`
+}
+
+func (m *OTelExportSinkOperator) Reset()      { *m = OTelExportSinkOperator{} }
+func (*OTelExportSinkOperator) ProtoMessage() {}
+func (*OTelExportSinkOperator) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e5dcfc8666ec3f33, []int{24}
+}
+func (m *OTelExportSinkOperator) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *OTelExportSinkOperator) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_OTelExportSinkOperator.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *OTelExportSinkOperator) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_OTelExportSinkOperator.Merge(m, src)
+}
+func (m *OTelExportSinkOperator) XXX_Size() int {
+	return m.Size()
+}
+func (m *OTelExportSinkOperator) XXX_DiscardUnknown() {
+	xxx_messageInfo_OTelExportSinkOperator.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_OTelExportSinkOperator proto.InternalMessageInfo
+
+type isOTelExportSinkOperator_DataConfig interface {
+	isOTelExportSinkOperator_DataConfig()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type OTelExportSinkOperator_Span struct {
+	Span *OTelSpan `protobuf:"bytes,2,opt,name=span,proto3,oneof" json:"span,omitempty"`
+}
+type OTelExportSinkOperator_Metric struct {
+	Metric *OTelMetric `protobuf:"bytes,3,opt,name=metric,proto3,oneof" json:"metric,omitempty"`
+}
+
+func (*OTelExportSinkOperator_Span) isOTelExportSinkOperator_DataConfig()   {}
+func (*OTelExportSinkOperator_Metric) isOTelExportSinkOperator_DataConfig() {}
+
+func (m *OTelExportSinkOperator) GetDataConfig() isOTelExportSinkOperator_DataConfig {
+	if m != nil {
+		return m.DataConfig
+	}
+	return nil
+}
+
+func (m *OTelExportSinkOperator) GetEndpointConfig() *OTelEndpointConfig {
+	if m != nil {
+		return m.EndpointConfig
+	}
+	return nil
+}
+
+func (m *OTelExportSinkOperator) GetSpan() *OTelSpan {
+	if x, ok := m.GetDataConfig().(*OTelExportSinkOperator_Span); ok {
+		return x.Span
+	}
+	return nil
+}
+
+func (m *OTelExportSinkOperator) GetMetric() *OTelMetric {
+	if x, ok := m.GetDataConfig().(*OTelExportSinkOperator_Metric); ok {
+		return x.Metric
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*OTelExportSinkOperator) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*OTelExportSinkOperator_Span)(nil),
+		(*OTelExportSinkOperator_Metric)(nil),
+	}
+}
+
 type ScalarExpression struct {
 	// Types that are valid to be assigned to Value:
 	//	*ScalarExpression_Constant
@@ -1743,7 +2364,7 @@ type ScalarExpression struct {
 func (m *ScalarExpression) Reset()      { *m = ScalarExpression{} }
 func (*ScalarExpression) ProtoMessage() {}
 func (*ScalarExpression) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e5dcfc8666ec3f33, []int{18}
+	return fileDescriptor_e5dcfc8666ec3f33, []int{25}
 }
 func (m *ScalarExpression) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1845,7 +2466,7 @@ type ScalarValue struct {
 func (m *ScalarValue) Reset()      { *m = ScalarValue{} }
 func (*ScalarValue) ProtoMessage() {}
 func (*ScalarValue) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e5dcfc8666ec3f33, []int{19}
+	return fileDescriptor_e5dcfc8666ec3f33, []int{26}
 }
 func (m *ScalarValue) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1986,7 +2607,7 @@ type ScalarFunc struct {
 func (m *ScalarFunc) Reset()      { *m = ScalarFunc{} }
 func (*ScalarFunc) ProtoMessage() {}
 func (*ScalarFunc) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e5dcfc8666ec3f33, []int{20}
+	return fileDescriptor_e5dcfc8666ec3f33, []int{27}
 }
 func (m *ScalarFunc) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2061,7 +2682,7 @@ type AggregateExpression struct {
 func (m *AggregateExpression) Reset()      { *m = AggregateExpression{} }
 func (*AggregateExpression) ProtoMessage() {}
 func (*AggregateExpression) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e5dcfc8666ec3f33, []int{21}
+	return fileDescriptor_e5dcfc8666ec3f33, []int{28}
 }
 func (m *AggregateExpression) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2135,7 +2756,7 @@ type AggregateExpression_Arg struct {
 func (m *AggregateExpression_Arg) Reset()      { *m = AggregateExpression_Arg{} }
 func (*AggregateExpression_Arg) ProtoMessage() {}
 func (*AggregateExpression_Arg) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e5dcfc8666ec3f33, []int{21, 0}
+	return fileDescriptor_e5dcfc8666ec3f33, []int{28, 0}
 }
 func (m *AggregateExpression_Arg) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2218,7 +2839,7 @@ type Column struct {
 func (m *Column) Reset()      { *m = Column{} }
 func (*Column) ProtoMessage() {}
 func (*Column) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e5dcfc8666ec3f33, []int{22}
+	return fileDescriptor_e5dcfc8666ec3f33, []int{29}
 }
 func (m *Column) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2263,6 +2884,7 @@ func (m *Column) GetIndex() uint64 {
 
 func init() {
 	proto.RegisterEnum("px.carnot.planpb.OperatorType", OperatorType_name, OperatorType_value)
+	proto.RegisterEnum("px.carnot.planpb.OTelSpanKind", OTelSpanKind_name, OTelSpanKind_value)
 	proto.RegisterEnum("px.carnot.planpb.JoinOperator_JoinType", JoinOperator_JoinType_name, JoinOperator_JoinType_value)
 	proto.RegisterType((*PlanOptions)(nil), "px.carnot.planpb.PlanOptions")
 	proto.RegisterType((*Plan)(nil), "px.carnot.planpb.Plan")
@@ -2288,6 +2910,15 @@ func init() {
 	proto.RegisterType((*JoinOperator_ParentColumn)(nil), "px.carnot.planpb.JoinOperator.ParentColumn")
 	proto.RegisterType((*UDTFSourceOperator)(nil), "px.carnot.planpb.UDTFSourceOperator")
 	proto.RegisterType((*EmptySourceOperator)(nil), "px.carnot.planpb.EmptySourceOperator")
+	proto.RegisterType((*OTelSpan)(nil), "px.carnot.planpb.OTelSpan")
+	proto.RegisterType((*OTelMetricGauge)(nil), "px.carnot.planpb.OTelMetricGauge")
+	proto.RegisterType((*OTelMetricSummary)(nil), "px.carnot.planpb.OTelMetricSummary")
+	proto.RegisterType((*OTelMetricSummary_ValueAtQuantile)(nil), "px.carnot.planpb.OTelMetricSummary.ValueAtQuantile")
+	proto.RegisterType((*OTelAttribute)(nil), "px.carnot.planpb.OTelAttribute")
+	proto.RegisterType((*OTelMetric)(nil), "px.carnot.planpb.OTelMetric")
+	proto.RegisterType((*OTelEndpointConfig)(nil), "px.carnot.planpb.OTelEndpointConfig")
+	proto.RegisterMapType((map[string]string)(nil), "px.carnot.planpb.OTelEndpointConfig.AttributesEntry")
+	proto.RegisterType((*OTelExportSinkOperator)(nil), "px.carnot.planpb.OTelExportSinkOperator")
 	proto.RegisterType((*ScalarExpression)(nil), "px.carnot.planpb.ScalarExpression")
 	proto.RegisterType((*ScalarValue)(nil), "px.carnot.planpb.ScalarValue")
 	proto.RegisterType((*ScalarFunc)(nil), "px.carnot.planpb.ScalarFunc")
@@ -2299,159 +2930,206 @@ func init() {
 func init() { proto.RegisterFile("src/carnot/planpb/plan.proto", fileDescriptor_e5dcfc8666ec3f33) }
 
 var fileDescriptor_e5dcfc8666ec3f33 = []byte{
-	// 2360 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x58, 0xbf, 0x73, 0x1b, 0xc7,
-	0xf5, 0xc7, 0x01, 0x20, 0x78, 0x78, 0xf8, 0x41, 0x70, 0x29, 0xea, 0x4b, 0xd1, 0x12, 0x28, 0x9f,
-	0xa5, 0xaf, 0x68, 0x25, 0x06, 0x15, 0x5a, 0x56, 0x14, 0x59, 0x4e, 0x02, 0x92, 0x20, 0x05, 0x9a,
-	0x04, 0x38, 0x4b, 0xd0, 0x1e, 0xa7, 0xc8, 0xcd, 0x12, 0xb7, 0x3c, 0x9d, 0x7d, 0xb8, 0xbb, 0xdc,
-	0x1d, 0x2c, 0xd2, 0x4d, 0x9c, 0x54, 0x29, 0x52, 0xa4, 0x48, 0x91, 0x7f, 0xc0, 0x33, 0xae, 0x32,
-	0x29, 0xf2, 0x07, 0x24, 0x33, 0x99, 0x49, 0x0a, 0x8f, 0x47, 0x49, 0xe5, 0x4a, 0x23, 0x51, 0x8d,
-	0x4a, 0xa7, 0x4f, 0x91, 0xd9, 0x1f, 0x07, 0x1c, 0x78, 0xa0, 0xc8, 0xa8, 0xc8, 0x4c, 0x0a, 0x12,
-	0xb7, 0x6f, 0x3f, 0xef, 0xed, 0xfb, 0xb5, 0x6f, 0xdf, 0x2e, 0x5c, 0x0e, 0xfc, 0xee, 0x52, 0x97,
-	0xf8, 0x8e, 0x1b, 0x2e, 0x79, 0x36, 0x71, 0xbc, 0x7d, 0xfe, 0x53, 0xf3, 0x7c, 0x37, 0x74, 0x51,
-	0xc5, 0x3b, 0xac, 0x89, 0xc9, 0x9a, 0x98, 0x9c, 0x7f, 0xcb, 0xb4, 0xc2, 0x87, 0xfd, 0xfd, 0x5a,
-	0xd7, 0xed, 0x2d, 0x99, 0xae, 0xe9, 0x2e, 0x71, 0xe0, 0x7e, 0xff, 0x80, 0x8f, 0xf8, 0x80, 0x7f,
-	0x09, 0x01, 0xf3, 0x55, 0xd3, 0x75, 0x4d, 0x9b, 0x0e, 0x51, 0x8f, 0x7c, 0xe2, 0x79, 0xd4, 0x0f,
-	0xe4, 0xfc, 0x02, 0x5b, 0x9e, 0x78, 0x96, 0x00, 0x2c, 0xf5, 0xfb, 0x96, 0xe1, 0xed, 0xf3, 0x1f,
-	0x09, 0xb8, 0xc6, 0x00, 0xc1, 0x43, 0xe2, 0x53, 0x63, 0x29, 0x3c, 0xf2, 0x68, 0x20, 0xfe, 0x7b,
-	0xfb, 0xe2, 0x57, 0xa0, 0xb4, 0x5f, 0x28, 0x50, 0xd8, 0xb1, 0x89, 0xd3, 0xf6, 0x42, 0xcb, 0x75,
-	0x02, 0x34, 0x07, 0x93, 0xf4, 0xd0, 0xb3, 0x89, 0xe5, 0xcc, 0xa5, 0xaf, 0x2a, 0x8b, 0x2a, 0x8e,
-	0x86, 0x6c, 0x86, 0x38, 0xc4, 0x3e, 0xfa, 0x8c, 0xce, 0x65, 0xc4, 0x8c, 0x1c, 0xa2, 0xbb, 0x70,
-	0xa9, 0x47, 0x0e, 0x75, 0xb7, 0x1f, 0x7a, 0xfd, 0x50, 0xf7, 0xdd, 0x47, 0x81, 0xee, 0x51, 0x5f,
-	0x0f, 0xc9, 0xbe, 0x4d, 0xe7, 0xb2, 0x57, 0x95, 0xc5, 0x0c, 0x9e, 0xed, 0x91, 0xc3, 0x36, 0x9f,
-	0xc7, 0xee, 0xa3, 0x60, 0x87, 0xfa, 0x1d, 0x36, 0xb9, 0x99, 0x55, 0x95, 0x4a, 0x5a, 0xfb, 0x65,
-	0x1a, 0xb2, 0x4c, 0x07, 0x74, 0x03, 0x32, 0x06, 0x31, 0xe7, 0x94, 0xab, 0xca, 0x62, 0x61, 0x79,
-	0xb6, 0x76, 0xd2, 0x85, 0xb5, 0xb5, 0xfa, 0x06, 0x66, 0x08, 0x74, 0x1b, 0x26, 0x1c, 0xd7, 0xa0,
-	0xc1, 0x5c, 0xfa, 0x6a, 0x66, 0xb1, 0xb0, 0x5c, 0x4d, 0x42, 0x99, 0xbc, 0x75, 0x9f, 0x98, 0x3d,
-	0xea, 0x84, 0x58, 0x80, 0xd1, 0x8f, 0xa1, 0xc8, 0x66, 0x75, 0x57, 0xd8, 0xca, 0x55, 0x2b, 0x2c,
-	0x5f, 0x19, 0xcf, 0x2c, 0x1d, 0x82, 0x0b, 0x5e, 0xcc, 0x3b, 0xbb, 0x80, 0x2c, 0xa7, 0xeb, 0xf6,
-	0x2c, 0xc7, 0xd4, 0x89, 0x49, 0x9d, 0x50, 0xb7, 0x8c, 0x60, 0x6e, 0x82, 0x2b, 0x31, 0xc5, 0xe4,
-	0x88, 0x30, 0xd4, 0xf6, 0xf6, 0x9a, 0x6b, 0x2b, 0x17, 0x8e, 0x9f, 0x2c, 0x54, 0x9a, 0x12, 0x5e,
-	0x67, 0xe8, 0xe6, 0x5a, 0x80, 0x2b, 0xd6, 0x08, 0xc5, 0x08, 0x36, 0xb3, 0x6a, 0xa6, 0x92, 0xd5,
-	0x8e, 0xa0, 0x18, 0xd7, 0x19, 0x95, 0x21, 0x6d, 0x19, 0xdc, 0x15, 0x59, 0x9c, 0xb6, 0x8c, 0xc8,
-	0x37, 0xe9, 0x33, 0x7d, 0x73, 0x2b, 0xf2, 0x4d, 0x86, 0xab, 0x35, 0x3f, 0xde, 0xbc, 0x96, 0x6b,
-	0x50, 0xe9, 0x17, 0xed, 0x0b, 0x05, 0x32, 0x6b, 0xf5, 0x0d, 0xf4, 0x76, 0xc4, 0xa9, 0x70, 0xce,
-	0x2b, 0x63, 0x17, 0x61, 0x7f, 0x31, 0xe6, 0x79, 0x0b, 0x26, 0x25, 0x25, 0xa1, 0xf2, 0x75, 0x28,
-	0x07, 0xae, 0x1f, 0x52, 0x43, 0xf7, 0x88, 0x4f, 0x9d, 0x90, 0x79, 0x3c, 0xb3, 0x98, 0xc5, 0x25,
-	0x41, 0xdd, 0x11, 0x44, 0x74, 0x03, 0xa6, 0x24, 0xac, 0xfb, 0xd0, 0xb2, 0x0d, 0x9f, 0x3a, 0x5c,
-	0xf5, 0x2c, 0x96, 0xdc, 0xab, 0x92, 0xaa, 0xad, 0x83, 0x1a, 0xa9, 0x9e, 0x58, 0xeb, 0x26, 0xa4,
-	0x5d, 0x4f, 0x7a, 0x67, 0x8c, 0xc9, 0x6d, 0x8f, 0xfa, 0x24, 0x74, 0x7d, 0x9c, 0x76, 0x3d, 0xed,
-	0x8b, 0x49, 0x50, 0x23, 0x02, 0xfa, 0x3e, 0x4c, 0xba, 0x9e, 0xce, 0xb6, 0x04, 0x97, 0x56, 0x1e,
-	0x97, 0x4c, 0x11, 0xb8, 0x73, 0xe4, 0x51, 0x9c, 0x73, 0x3d, 0xf6, 0x8b, 0xb6, 0xa0, 0xd4, 0xa3,
-	0x3d, 0x3d, 0x70, 0xfb, 0x7e, 0x97, 0xea, 0x83, 0xc5, 0xff, 0x3f, 0xc9, 0xbe, 0x4d, 0x7b, 0xae,
-	0x7f, 0xb4, 0xcb, 0x81, 0x91, 0xa8, 0x07, 0x29, 0x5c, 0xe8, 0xd1, 0x5e, 0x44, 0x44, 0x77, 0x20,
-	0xd7, 0x23, 0x1e, 0x13, 0x93, 0x39, 0x2d, 0x2b, 0xb7, 0x89, 0x17, 0xe3, 0x9e, 0xe8, 0xb1, 0x21,
-	0xba, 0x0f, 0x39, 0x62, 0x9a, 0x8c, 0x4f, 0x64, 0xf3, 0x1b, 0x49, 0xbe, 0xba, 0x69, 0xfa, 0xd4,
-	0x24, 0x61, 0x7c, 0xed, 0x09, 0x62, 0x9a, 0x6d, 0x0f, 0xad, 0x43, 0x81, 0xdb, 0x60, 0x39, 0x9f,
-	0x30, 0x11, 0x13, 0x5c, 0xc4, 0xb5, 0x53, 0x2d, 0xb0, 0x9c, 0x4f, 0x62, 0x32, 0xf2, 0x4c, 0x7f,
-	0x4e, 0x42, 0x3f, 0x82, 0xfc, 0x81, 0x65, 0x87, 0xd4, 0x67, 0x52, 0x72, 0x5c, 0xca, 0xd5, 0xa4,
-	0x94, 0x75, 0x0e, 0x89, 0x49, 0x50, 0x0f, 0x24, 0x05, 0xdd, 0x07, 0xd5, 0xb6, 0x7a, 0x56, 0xc8,
-	0xf8, 0x27, 0x39, 0xff, 0x42, 0x92, 0x7f, 0x8b, 0x21, 0x62, 0xec, 0x93, 0xb6, 0x20, 0x30, 0xee,
-	0xbe, 0x63, 0xb9, 0x6c, 0x67, 0xcf, 0xa9, 0xa7, 0x71, 0xef, 0x31, 0x44, 0x9c, 0xbb, 0x2f, 0x08,
-	0xe8, 0xa7, 0x50, 0x36, 0x7d, 0xaf, 0x1b, 0x8b, 0x64, 0xfe, 0x34, 0x3f, 0x6c, 0xe0, 0x9d, 0xd5,
-	0xd1, 0x38, 0xae, 0x54, 0x8e, 0x9f, 0x2c, 0x14, 0xe3, 0xf4, 0x07, 0x29, 0x5c, 0x64, 0xf2, 0x06,
-	0xa1, 0xfd, 0x10, 0x8a, 0x42, 0xbe, 0xf4, 0xf2, 0x0b, 0x61, 0xa0, 0x76, 0x8a, 0xf8, 0x98, 0x93,
-	0x57, 0xca, 0xc7, 0x4f, 0x16, 0x60, 0x48, 0x7d, 0x90, 0xc2, 0xc0, 0x45, 0x0b, 0xaf, 0xff, 0x00,
-	0x26, 0x3f, 0x76, 0x2d, 0x6e, 0x75, 0x81, 0x8b, 0x1c, 0x93, 0xba, 0x9b, 0xae, 0x15, 0x37, 0x3a,
-	0xf7, 0x31, 0x1f, 0xa3, 0x2d, 0x28, 0xf7, 0x8d, 0xf0, 0x20, 0x66, 0x73, 0xf1, 0x34, 0x9b, 0xf7,
-	0xd6, 0x3a, 0xeb, 0x89, 0xdc, 0x2d, 0x32, 0xee, 0x81, 0x85, 0x6d, 0x98, 0xa2, 0x3d, 0x2f, 0x3c,
-	0x8a, 0x89, 0x2b, 0x71, 0x71, 0xd7, 0x93, 0xe2, 0x1a, 0x0c, 0x98, 0x90, 0x57, 0xa2, 0x71, 0xf2,
-	0x4a, 0x96, 0xed, 0x66, 0xed, 0xef, 0x69, 0xb8, 0x30, 0x6e, 0xef, 0x20, 0x04, 0x59, 0x87, 0xf4,
-	0xc4, 0x86, 0xcd, 0x63, 0xfe, 0x8d, 0x16, 0xa0, 0xd0, 0x75, 0xed, 0x7e, 0xcf, 0xd1, 0x2d, 0xe3,
-	0x50, 0x1c, 0x0c, 0x19, 0x0c, 0x82, 0xd4, 0x34, 0x0e, 0x03, 0xf4, 0x3a, 0x14, 0x25, 0x80, 0xe1,
-	0x45, 0x79, 0xcc, 0x63, 0xc9, 0xd4, 0x62, 0x24, 0xf4, 0xce, 0x00, 0xc2, 0x8f, 0x48, 0x5e, 0xae,
-	0xca, 0xcb, 0x88, 0x19, 0x21, 0xce, 0xcc, 0x35, 0x12, 0x12, 0x5e, 0x04, 0x24, 0x1b, 0xfb, 0x0e,
-	0xd0, 0x3d, 0x80, 0x20, 0x24, 0x7e, 0xa8, 0x87, 0x56, 0x8f, 0xca, 0x4d, 0xf4, 0x5a, 0x4d, 0x9c,
-	0xdf, 0xb5, 0xe8, 0xfc, 0xae, 0x35, 0x9d, 0xf0, 0xce, 0xed, 0x0f, 0x88, 0xdd, 0xa7, 0x38, 0xcf,
-	0xe1, 0x1d, 0xab, 0xc7, 0xce, 0xce, 0x7c, 0x10, 0xb2, 0x02, 0xc4, 0x58, 0x73, 0x67, 0xb3, 0xaa,
-	0x0c, 0xcd, 0x39, 0x2f, 0x42, 0x8e, 0x9f, 0xb0, 0x21, 0xdf, 0x30, 0x79, 0x2c, 0x47, 0xe8, 0x32,
-	0x93, 0xe8, 0x53, 0xc2, 0xce, 0x18, 0xbe, 0x1b, 0x54, 0x3c, 0x24, 0x68, 0x5f, 0x2b, 0x80, 0x92,
-	0xbb, 0x79, 0xac, 0x47, 0x4f, 0x7a, 0x23, 0x7d, 0x3e, 0x6f, 0x9c, 0xc3, 0xcf, 0x9b, 0x30, 0x2b,
-	0x21, 0x01, 0xed, 0x11, 0x27, 0xb4, 0xba, 0x23, 0x0e, 0xbf, 0x38, 0x5c, 0x62, 0x57, 0xce, 0xf3,
-	0x65, 0x66, 0x04, 0x53, 0x9c, 0x16, 0x68, 0x0e, 0xa0, 0xe4, 0xae, 0x4c, 0xe8, 0xae, 0xbc, 0x9a,
-	0xee, 0xe9, 0x84, 0xee, 0xda, 0xd7, 0x59, 0xa8, 0x9c, 0xdc, 0xa7, 0xbc, 0x37, 0x32, 0x0c, 0x9f,
-	0x06, 0x81, 0xf4, 0x60, 0x34, 0x44, 0x77, 0x47, 0x8b, 0x8b, 0x65, 0xf0, 0xfa, 0x9e, 0x3d, 0x59,
-	0x36, 0x9a, 0x6b, 0xa3, 0x65, 0xa3, 0x69, 0xa0, 0x5d, 0x28, 0xca, 0x8e, 0x6a, 0xd8, 0x48, 0x15,
-	0x96, 0x6b, 0x67, 0x57, 0x8d, 0x1a, 0xa6, 0x41, 0xdf, 0x0e, 0x79, 0x87, 0xc5, 0x8e, 0x19, 0x21,
-	0x85, 0x0f, 0x91, 0x09, 0xa8, 0xeb, 0x3a, 0x0e, 0xed, 0x86, 0xa2, 0x5c, 0x8a, 0x46, 0x48, 0xa4,
-	0xec, 0xdd, 0x73, 0x88, 0x66, 0x84, 0xd5, 0x81, 0x80, 0xa8, 0x47, 0x9a, 0xee, 0x9e, 0x24, 0xcd,
-	0xff, 0x43, 0x81, 0x42, 0x4c, 0x0f, 0x74, 0x05, 0x80, 0x9b, 0xa1, 0xc7, 0xd2, 0x2c, 0xcf, 0x29,
-	0xad, 0xff, 0x99, 0x5c, 0x9b, 0xff, 0x21, 0xcc, 0x8e, 0x75, 0x00, 0xef, 0x74, 0x02, 0x5b, 0x0f,
-	0x89, 0x6f, 0xd2, 0x30, 0x66, 0x61, 0x29, 0x08, 0xec, 0xce, 0x80, 0xb8, 0x52, 0x82, 0x82, 0x41,
-	0x83, 0xd0, 0x72, 0x08, 0x63, 0xdb, 0xcc, 0xaa, 0xe9, 0x4a, 0x46, 0xfb, 0x14, 0x0a, 0xb1, 0x93,
-	0x1d, 0xad, 0x41, 0x81, 0x1e, 0x7a, 0x2c, 0x77, 0x78, 0x68, 0x44, 0x2b, 0x36, 0xe6, 0xac, 0xd8,
-	0xed, 0x12, 0x9b, 0xf8, 0x8d, 0x01, 0x14, 0xc7, 0xd9, 0xce, 0x93, 0xc8, 0xbf, 0x4f, 0xc3, 0x74,
-	0xa2, 0x35, 0x40, 0xef, 0x41, 0xee, 0x53, 0x56, 0x68, 0xa2, 0x95, 0xaf, 0xbf, 0xa4, 0x9f, 0x88,
-	0x2d, 0x2e, 0x99, 0xd0, 0x2d, 0xc8, 0x99, 0xbe, 0xdb, 0xf7, 0xa2, 0xce, 0x7c, 0x2e, 0xc9, 0xbe,
-	0xca, 0x75, 0xc0, 0x12, 0xc7, 0xea, 0x36, 0xff, 0x1a, 0x89, 0x20, 0x70, 0x92, 0x08, 0xe0, 0x02,
-	0x14, 0xb8, 0x70, 0x09, 0xc8, 0x0a, 0x00, 0x27, 0x09, 0xc0, 0x3c, 0xa8, 0x8f, 0x2c, 0xc7, 0x70,
-	0x1f, 0x51, 0x83, 0x67, 0xb2, 0x8a, 0x07, 0x63, 0xc6, 0xec, 0x11, 0x3f, 0xb4, 0x88, 0xad, 0x13,
-	0xd3, 0xe4, 0x05, 0x56, 0xc5, 0x20, 0x49, 0x75, 0xd3, 0x44, 0x6f, 0x42, 0xe5, 0xc0, 0x72, 0x88,
-	0x6d, 0x7d, 0x46, 0x75, 0x9f, 0xe7, 0x6b, 0xc0, 0xeb, 0xa9, 0x8a, 0xa7, 0x22, 0xba, 0x48, 0xe3,
-	0x40, 0xfb, 0x95, 0x02, 0xe5, 0xd1, 0x16, 0x06, 0xad, 0x00, 0x0c, 0xbd, 0x2e, 0xef, 0x2d, 0xe7,
-	0x89, 0x55, 0x8c, 0x0b, 0x2d, 0xc3, 0xa4, 0x08, 0xcb, 0xd9, 0x3e, 0x8b, 0x80, 0xda, 0xe7, 0x0a,
-	0x94, 0x46, 0xba, 0x21, 0x74, 0x01, 0x26, 0x78, 0x37, 0xc4, 0x95, 0xc8, 0x60, 0x31, 0x78, 0x15,
-	0xd9, 0x2c, 0x97, 0xc9, 0xbe, 0xeb, 0x8b, 0xdd, 0x1a, 0xf8, 0xdd, 0x40, 0x76, 0xe3, 0xa5, 0x01,
-	0x75, 0xd7, 0xef, 0x06, 0xda, 0x0b, 0x05, 0x4a, 0x23, 0x2d, 0x55, 0x22, 0xe7, 0x94, 0xe4, 0x66,
-	0xfc, 0x00, 0xa6, 0x24, 0xa4, 0x47, 0x3c, 0xcf, 0x72, 0xcc, 0x48, 0xaf, 0xb7, 0xce, 0xe8, 0xd7,
-	0xa4, 0x96, 0xdb, 0x82, 0x0b, 0x97, 0xbb, 0xf1, 0x61, 0x80, 0xae, 0x41, 0x79, 0x70, 0xed, 0xdc,
-	0x27, 0x61, 0xf7, 0xa1, 0xa8, 0xb2, 0xb8, 0xe8, 0x8b, 0xdb, 0xe6, 0x0a, 0xa3, 0xcd, 0xdf, 0x81,
-	0xd2, 0x88, 0x18, 0x66, 0x6a, 0xd4, 0x33, 0x38, 0x06, 0x3d, 0x94, 0x3a, 0x67, 0x70, 0x49, 0xb6,
-	0x0d, 0x82, 0xa8, 0xfd, 0x35, 0x0b, 0xc5, 0x78, 0x1f, 0x85, 0xde, 0x85, 0x6c, 0xec, 0xc2, 0x70,
-	0xe3, 0xe5, 0x5d, 0x17, 0x1f, 0xf0, 0x9a, 0xc2, 0x99, 0x10, 0x81, 0x19, 0xfa, 0xb3, 0x3e, 0xb1,
-	0xad, 0xf0, 0x48, 0xef, 0xba, 0x8e, 0x61, 0x89, 0x1a, 0x2c, 0xfc, 0x70, 0xeb, 0x0c, 0x59, 0x0d,
-	0xc9, 0xb9, 0x1a, 0x31, 0x62, 0x44, 0x4f, 0x92, 0x02, 0x84, 0xa1, 0x2c, 0x8f, 0x8e, 0x28, 0xfa,
-	0xe2, 0x2e, 0xf8, 0x9d, 0x33, 0xa4, 0x8b, 0x1b, 0x99, 0x4c, 0x88, 0x92, 0x10, 0xb1, 0x2a, 0xd3,
-	0xe2, 0x64, 0x74, 0xb3, 0xc9, 0xe8, 0x26, 0xa3, 0x30, 0x31, 0x26, 0x0a, 0x3d, 0x98, 0x4e, 0x58,
-	0x81, 0x6e, 0xc2, 0xb4, 0x4d, 0x0f, 0x22, 0x7d, 0x45, 0x38, 0xe4, 0xed, 0x6e, 0x8a, 0x4d, 0xac,
-	0x0e, 0x03, 0x82, 0xbe, 0x0b, 0xc8, 0xb7, 0xcc, 0x87, 0x27, 0xc0, 0x69, 0x0e, 0xae, 0xf0, 0x99,
-	0x18, 0x7a, 0xbe, 0x03, 0xc5, 0xb8, 0x59, 0xcc, 0x0e, 0x71, 0x1b, 0x1d, 0x59, 0xa4, 0x20, 0x68,
-	0x62, 0x81, 0xa1, 0xa9, 0x71, 0xd1, 0x85, 0x58, 0x52, 0x68, 0xef, 0x80, 0x1a, 0x85, 0x15, 0xe5,
-	0x61, 0xa2, 0xd9, 0x6a, 0x35, 0x70, 0x25, 0x85, 0xca, 0x00, 0x5b, 0x8d, 0xf5, 0x8e, 0xde, 0xde,
-	0xeb, 0x34, 0x70, 0x45, 0x61, 0xe3, 0xf5, 0xbd, 0xad, 0x2d, 0x39, 0xce, 0x68, 0x07, 0x80, 0x92,
-	0xed, 0xf4, 0xd8, 0xe6, 0xeb, 0x3e, 0x00, 0xf1, 0x4d, 0x5d, 0xd6, 0xe2, 0xf4, 0x69, 0x17, 0x72,
-	0x51, 0x59, 0x64, 0x57, 0x49, 0x7c, 0x93, 0x7f, 0x05, 0x9a, 0x0b, 0x33, 0x63, 0xfa, 0xec, 0xf3,
-	0xec, 0xd0, 0x57, 0x3b, 0x88, 0xb5, 0x3f, 0x29, 0x50, 0x39, 0x59, 0xe5, 0xd0, 0xbb, 0xa0, 0x76,
-	0x5d, 0x27, 0x08, 0x89, 0x13, 0xca, 0xda, 0xf8, 0x72, 0x0b, 0xd8, 0x8d, 0x30, 0x62, 0x40, 0xcb,
-	0x90, 0x13, 0x0b, 0xc8, 0x7b, 0xf5, 0xa9, 0x95, 0x8b, 0xdd, 0x6a, 0x04, 0x12, 0x2d, 0x43, 0xf6,
-	0xa0, 0xef, 0x74, 0xe5, 0x15, 0xfa, 0xf2, 0x69, 0x8b, 0xad, 0xf7, 0x9d, 0xee, 0x83, 0x14, 0xe6,
-	0xd8, 0x95, 0x49, 0x98, 0xe0, 0x4e, 0xd6, 0xfe, 0x9c, 0x86, 0x42, 0x4c, 0x19, 0xb4, 0x04, 0x79,
-	0x83, 0x84, 0x24, 0xfe, 0x34, 0x30, 0xce, 0x0d, 0xaa, 0x21, 0xbf, 0xd0, 0x02, 0xc0, 0xbe, 0xeb,
-	0xda, 0x22, 0x66, 0xe2, 0xf5, 0x8c, 0xdd, 0x92, 0x19, 0x4d, 0x48, 0x7c, 0x1d, 0x0a, 0x16, 0xeb,
-	0xe4, 0x25, 0x82, 0x69, 0x99, 0x61, 0x57, 0x3a, 0x6b, 0xd0, 0xde, 0xa3, 0xeb, 0x50, 0x3a, 0xb0,
-	0x5d, 0x32, 0x04, 0xb1, 0xae, 0x4f, 0x61, 0xbd, 0xa1, 0x24, 0x0b, 0xd8, 0x1b, 0x50, 0x0c, 0x42,
-	0xdf, 0x72, 0x64, 0x82, 0xf0, 0x7d, 0x96, 0x67, 0xbd, 0x9e, 0xa0, 0x0a, 0xd0, 0x22, 0x4c, 0xb1,
-	0x5b, 0xc5, 0x9d, 0xdb, 0xba, 0x13, 0x48, 0x5c, 0x4e, 0x2e, 0x59, 0x12, 0x13, 0xad, 0x40, 0x20,
-	0xef, 0x42, 0xa9, 0x6f, 0x39, 0xe1, 0xf7, 0x96, 0xef, 0x4a, 0x9c, 0xb8, 0xa1, 0x4e, 0x0f, 0xcd,
-	0xdd, 0x6b, 0xf2, 0x69, 0x7e, 0xf3, 0x13, 0x48, 0xce, 0x39, 0xf0, 0xde, 0x66, 0x56, 0x55, 0x2b,
-	0x79, 0xed, 0xa9, 0x02, 0x30, 0xf4, 0xf1, 0xd8, 0xc4, 0xbe, 0x07, 0x79, 0xcb, 0xb1, 0x42, 0x9d,
-	0xf8, 0xe6, 0x39, 0xf3, 0x5a, 0x65, 0xf8, 0xba, 0x6f, 0x06, 0xe8, 0x0e, 0x64, 0x39, 0x5b, 0xe6,
-	0xdc, 0x4d, 0x11, 0xc7, 0xcb, 0xc7, 0x22, 0xf1, 0x12, 0x99, 0xb6, 0x0c, 0x74, 0x0f, 0xa6, 0x18,
-	0x5d, 0x1f, 0xc4, 0x57, 0xbc, 0xe1, 0x8d, 0x0f, 0x70, 0x89, 0x41, 0xa3, 0x51, 0xa0, 0xfd, 0x33,
-	0x0d, 0x33, 0x63, 0x3a, 0xa0, 0x81, 0xad, 0x99, 0xd3, 0x6c, 0xcd, 0xfe, 0x67, 0xb6, 0xbe, 0x27,
-	0x6d, 0x15, 0x8f, 0x8b, 0x6f, 0x9e, 0xab, 0x0d, 0xab, 0xd5, 0x7d, 0x73, 0xc4, 0xe4, 0xdc, 0xcb,
-	0x4c, 0x9e, 0x3c, 0xa7, 0xc9, 0xf3, 0x3f, 0x87, 0x4c, 0xdd, 0x37, 0xff, 0xeb, 0xdb, 0x79, 0xb8,
-	0x35, 0x97, 0x21, 0x27, 0xab, 0x37, 0xf3, 0xb2, 0x6b, 0x50, 0x59, 0xb5, 0xf9, 0x37, 0x6b, 0x7d,
-	0xe2, 0x75, 0x5a, 0x0c, 0x6e, 0x7e, 0x95, 0x86, 0x62, 0xfc, 0xdd, 0x0e, 0x5d, 0x82, 0xd9, 0xf6,
-	0x4e, 0x03, 0xd7, 0x3b, 0x6d, 0xac, 0x77, 0x3e, 0xda, 0x69, 0xe8, 0x7b, 0xad, 0xf7, 0x5b, 0xed,
-	0x0f, 0x5b, 0x95, 0x14, 0x7a, 0x0d, 0x2e, 0x6e, 0x37, 0xb6, 0xdb, 0xf8, 0x23, 0x7d, 0xb7, 0xbd,
-	0x87, 0x57, 0x1b, 0x7a, 0x04, 0xac, 0xbc, 0x98, 0x44, 0x97, 0xe0, 0x02, 0x6b, 0xfa, 0x13, 0x53,
-	0x5f, 0xa9, 0x6c, 0x8a, 0x95, 0xf3, 0xc4, 0xd4, 0x1f, 0xf2, 0x68, 0x1e, 0x66, 0x1b, 0xdb, 0x3b,
-	0x9d, 0xa4, 0xc4, 0xdf, 0x02, 0x9a, 0x86, 0xe2, 0x76, 0x7d, 0x67, 0x48, 0x7a, 0x3c, 0x85, 0xfe,
-	0x0f, 0x50, 0x7d, 0x63, 0x03, 0x37, 0x36, 0xea, 0x9d, 0x18, 0xf6, 0x8f, 0x15, 0x74, 0x01, 0xa6,
-	0xd6, 0x9b, 0x5b, 0x9d, 0x06, 0x1e, 0x52, 0x7f, 0x37, 0x8d, 0x66, 0xa0, 0xbc, 0xd5, 0xdc, 0x6e,
-	0x76, 0x86, 0xc4, 0x7f, 0x71, 0xe2, 0x5e, 0xab, 0xd9, 0x6e, 0x0d, 0x89, 0x4f, 0x11, 0x42, 0x50,
-	0xda, 0x6c, 0x37, 0x63, 0xb4, 0xbf, 0xcc, 0x30, 0xb5, 0x23, 0x73, 0x9b, 0xad, 0xf7, 0x87, 0x53,
-	0x5f, 0xae, 0x33, 0x3d, 0x84, 0xb1, 0x23, 0x13, 0xbf, 0xde, 0x58, 0xb9, 0xff, 0xf8, 0x59, 0x35,
-	0xf5, 0xcd, 0xb3, 0x6a, 0xea, 0xdb, 0x67, 0x55, 0xe5, 0xf3, 0xe3, 0xaa, 0xf2, 0xe5, 0x71, 0x55,
-	0xf9, 0xdb, 0x71, 0x55, 0x79, 0x7c, 0x5c, 0x55, 0x9e, 0x1e, 0x57, 0x95, 0x17, 0xc7, 0xd5, 0xd4,
-	0xb7, 0xc7, 0x55, 0xe5, 0x37, 0xcf, 0xab, 0xa9, 0xc7, 0xcf, 0xab, 0xa9, 0x6f, 0x9e, 0x57, 0x53,
-	0x3f, 0xc9, 0x89, 0xd0, 0xee, 0xe7, 0xf8, 0x53, 0xc6, 0xdb, 0xff, 0x0e, 0x00, 0x00, 0xff, 0xff,
-	0x0e, 0x4d, 0xa7, 0x47, 0x34, 0x19, 0x00, 0x00,
+	// 3004 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x59, 0xcd, 0x6f, 0x1b, 0xc7,
+	0xd9, 0xe7, 0x92, 0x14, 0x45, 0x3e, 0xfc, 0xd4, 0xd8, 0x72, 0x64, 0x25, 0xa6, 0x1c, 0xda, 0x7e,
+	0xe3, 0xf8, 0x7d, 0x43, 0x39, 0x8a, 0xa3, 0x57, 0x71, 0x9c, 0xa6, 0x94, 0x44, 0x49, 0x94, 0x25,
+	0x52, 0x1d, 0x51, 0x49, 0x53, 0x04, 0x5d, 0x8c, 0xb8, 0xab, 0xf5, 0xc6, 0xe4, 0xee, 0x66, 0x77,
+	0x36, 0x96, 0x72, 0x69, 0xda, 0x5e, 0x7a, 0xe8, 0xa1, 0x87, 0x1e, 0xfa, 0x0f, 0x14, 0xc8, 0xa9,
+	0xe8, 0xa1, 0x7f, 0x40, 0x0b, 0x04, 0x68, 0x0f, 0x45, 0xe0, 0xf6, 0x94, 0x93, 0x91, 0x28, 0x17,
+	0x1f, 0x8a, 0x22, 0xbd, 0xf5, 0xd0, 0x43, 0x31, 0x1f, 0x4b, 0x2e, 0xc9, 0xd5, 0x47, 0x5d, 0xa0,
+	0x40, 0x0f, 0xb6, 0x76, 0x9e, 0xf9, 0x3d, 0xcf, 0x3c, 0x5f, 0xf3, 0xcc, 0x33, 0x43, 0x78, 0xc1,
+	0x73, 0x3b, 0xf3, 0x1d, 0xe2, 0x5a, 0x36, 0x9d, 0x77, 0xba, 0xc4, 0x72, 0xf6, 0xf9, 0x9f, 0xaa,
+	0xe3, 0xda, 0xd4, 0x46, 0x25, 0xe7, 0xb0, 0x2a, 0x26, 0xab, 0x62, 0x72, 0xf6, 0x15, 0xc3, 0xa4,
+	0x0f, 0xfc, 0xfd, 0x6a, 0xc7, 0xee, 0xcd, 0x1b, 0xb6, 0x61, 0xcf, 0x73, 0xe0, 0xbe, 0x7f, 0xc0,
+	0x47, 0x7c, 0xc0, 0xbf, 0x84, 0x80, 0xd9, 0xb2, 0x61, 0xdb, 0x46, 0x57, 0x1f, 0xa0, 0x1e, 0xb9,
+	0xc4, 0x71, 0x74, 0xd7, 0x93, 0xf3, 0x73, 0x6c, 0x79, 0xe2, 0x98, 0x02, 0x30, 0xef, 0xfb, 0xa6,
+	0xe6, 0xec, 0xf3, 0x3f, 0x12, 0x70, 0x9d, 0x01, 0xbc, 0x07, 0xc4, 0xd5, 0xb5, 0x79, 0x7a, 0xe4,
+	0xe8, 0x9e, 0xf8, 0xdf, 0xd9, 0x17, 0x7f, 0x05, 0xaa, 0xf2, 0x43, 0x05, 0xb2, 0x3b, 0x5d, 0x62,
+	0xb5, 0x1c, 0x6a, 0xda, 0x96, 0x87, 0x66, 0x60, 0x52, 0x3f, 0x74, 0xba, 0xc4, 0xb4, 0x66, 0xe2,
+	0x57, 0x95, 0x9b, 0x69, 0x1c, 0x0c, 0xd9, 0x0c, 0xb1, 0x48, 0xf7, 0xe8, 0x63, 0x7d, 0x26, 0x21,
+	0x66, 0xe4, 0x10, 0x2d, 0xc1, 0xe5, 0x1e, 0x39, 0x54, 0x6d, 0x9f, 0x3a, 0x3e, 0x55, 0x5d, 0xfb,
+	0x91, 0xa7, 0x3a, 0xba, 0xab, 0x52, 0xb2, 0xdf, 0xd5, 0x67, 0x92, 0x57, 0x95, 0x9b, 0x09, 0x3c,
+	0xdd, 0x23, 0x87, 0x2d, 0x3e, 0x8f, 0xed, 0x47, 0xde, 0x8e, 0xee, 0xb6, 0xd9, 0xe4, 0x66, 0x32,
+	0xad, 0x94, 0xe2, 0x95, 0x1f, 0xc5, 0x21, 0xc9, 0x74, 0x40, 0x2f, 0x41, 0x42, 0x23, 0xc6, 0x8c,
+	0x72, 0x55, 0xb9, 0x99, 0x5d, 0x98, 0xae, 0x8e, 0xba, 0xb0, 0xba, 0x5a, 0x5b, 0xc7, 0x0c, 0x81,
+	0xee, 0xc0, 0x84, 0x65, 0x6b, 0xba, 0x37, 0x13, 0xbf, 0x9a, 0xb8, 0x99, 0x5d, 0x28, 0x8f, 0x43,
+	0x99, 0xbc, 0x35, 0x97, 0x18, 0x3d, 0xdd, 0xa2, 0x58, 0x80, 0xd1, 0xb7, 0x21, 0xc7, 0x66, 0x55,
+	0x5b, 0xd8, 0xca, 0x55, 0xcb, 0x2e, 0x5c, 0x89, 0x66, 0x96, 0x0e, 0xc1, 0x59, 0x27, 0xe4, 0x9d,
+	0x5d, 0x40, 0xa6, 0xd5, 0xb1, 0x7b, 0xa6, 0x65, 0xa8, 0xc4, 0xd0, 0x2d, 0xaa, 0x9a, 0x9a, 0x37,
+	0x33, 0xc1, 0x95, 0x28, 0x32, 0x39, 0x22, 0x0c, 0xd5, 0xbd, 0xbd, 0xc6, 0xea, 0xf2, 0xc5, 0xe3,
+	0x27, 0x73, 0xa5, 0x86, 0x84, 0xd7, 0x18, 0xba, 0xb1, 0xea, 0xe1, 0x92, 0x39, 0x44, 0xd1, 0xbc,
+	0xcd, 0x64, 0x3a, 0x51, 0x4a, 0x56, 0x8e, 0x20, 0x17, 0xd6, 0x19, 0x15, 0x20, 0x6e, 0x6a, 0xdc,
+	0x15, 0x49, 0x1c, 0x37, 0xb5, 0xc0, 0x37, 0xf1, 0x33, 0x7d, 0x73, 0x3b, 0xf0, 0x4d, 0x82, 0xab,
+	0x35, 0x1b, 0x6d, 0x5e, 0xd3, 0xd6, 0x74, 0xe9, 0x97, 0xca, 0x2f, 0x15, 0x48, 0xac, 0xd6, 0xd6,
+	0xd1, 0x6b, 0x01, 0xa7, 0xc2, 0x39, 0xaf, 0x44, 0x2e, 0xc2, 0xfe, 0x85, 0x98, 0x67, 0x4d, 0x98,
+	0x94, 0x94, 0x31, 0x95, 0x6f, 0x40, 0xc1, 0xb3, 0x5d, 0xaa, 0x6b, 0xaa, 0x43, 0x5c, 0xdd, 0xa2,
+	0xcc, 0xe3, 0x89, 0x9b, 0x49, 0x9c, 0x17, 0xd4, 0x1d, 0x41, 0x44, 0x2f, 0x41, 0x51, 0xc2, 0x3a,
+	0x0f, 0xcc, 0xae, 0xe6, 0xea, 0x16, 0x57, 0x3d, 0x89, 0x25, 0xf7, 0x8a, 0xa4, 0x56, 0xd6, 0x20,
+	0x1d, 0xa8, 0x3e, 0xb6, 0xd6, 0x2d, 0x88, 0xdb, 0x8e, 0xf4, 0x4e, 0x84, 0xc9, 0x2d, 0x47, 0x77,
+	0x09, 0xb5, 0x5d, 0x1c, 0xb7, 0x9d, 0xca, 0x8f, 0xd3, 0x90, 0x0e, 0x08, 0xe8, 0xff, 0x61, 0xd2,
+	0x76, 0x54, 0xb6, 0x25, 0xb8, 0xb4, 0x42, 0x54, 0x32, 0x05, 0xe0, 0xf6, 0x91, 0xa3, 0xe3, 0x94,
+	0xed, 0xb0, 0xbf, 0x68, 0x0b, 0xf2, 0x3d, 0xbd, 0xa7, 0x7a, 0xb6, 0xef, 0x76, 0x74, 0xb5, 0xbf,
+	0xf8, 0xff, 0x8c, 0xb3, 0x6f, 0xeb, 0x3d, 0xdb, 0x3d, 0xda, 0xe5, 0xc0, 0x40, 0xd4, 0x46, 0x0c,
+	0x67, 0x7b, 0x7a, 0x2f, 0x20, 0xa2, 0x45, 0x48, 0xf5, 0x88, 0xc3, 0xc4, 0x24, 0x4e, 0xca, 0xca,
+	0x6d, 0xe2, 0x84, 0xb8, 0x27, 0x7a, 0x6c, 0x88, 0xee, 0x41, 0x8a, 0x18, 0x06, 0xe3, 0x13, 0xd9,
+	0x7c, 0x6d, 0x9c, 0xaf, 0x66, 0x18, 0xae, 0x6e, 0x10, 0x1a, 0x5e, 0x7b, 0x82, 0x18, 0x46, 0xcb,
+	0x41, 0x6b, 0x90, 0xe5, 0x36, 0x98, 0xd6, 0x43, 0x26, 0x62, 0x82, 0x8b, 0xb8, 0x7e, 0xa2, 0x05,
+	0xa6, 0xf5, 0x30, 0x24, 0x23, 0xc3, 0xf4, 0xe7, 0x24, 0xf4, 0x36, 0x64, 0x0e, 0xcc, 0x2e, 0xd5,
+	0x5d, 0x26, 0x25, 0xc5, 0xa5, 0x5c, 0x1d, 0x97, 0xb2, 0xc6, 0x21, 0x21, 0x09, 0xe9, 0x03, 0x49,
+	0x41, 0xf7, 0x20, 0xdd, 0x35, 0x7b, 0x26, 0x65, 0xfc, 0x93, 0x9c, 0x7f, 0x6e, 0x9c, 0x7f, 0x8b,
+	0x21, 0x42, 0xec, 0x93, 0x5d, 0x41, 0x60, 0xdc, 0xbe, 0x65, 0xda, 0x6c, 0x67, 0xcf, 0xa4, 0x4f,
+	0xe2, 0xde, 0x63, 0x88, 0x30, 0xb7, 0x2f, 0x08, 0xe8, 0xfb, 0x50, 0x30, 0x5c, 0xa7, 0x13, 0x8a,
+	0x64, 0xe6, 0x24, 0x3f, 0xac, 0xe3, 0x9d, 0x95, 0xe1, 0x38, 0x2e, 0x97, 0x8e, 0x9f, 0xcc, 0xe5,
+	0xc2, 0xf4, 0x8d, 0x18, 0xce, 0x31, 0x79, 0xfd, 0xd0, 0xbe, 0x0b, 0x39, 0x21, 0x5f, 0x7a, 0xf9,
+	0xa9, 0x30, 0xb0, 0x72, 0x82, 0xf8, 0x90, 0x93, 0x97, 0x0b, 0xc7, 0x4f, 0xe6, 0x60, 0x40, 0xdd,
+	0x88, 0x61, 0xe0, 0xa2, 0x85, 0xd7, 0xdf, 0x80, 0xc9, 0x0f, 0x6c, 0x93, 0x5b, 0x9d, 0xe5, 0x22,
+	0x23, 0x52, 0x77, 0xd3, 0x36, 0xc3, 0x46, 0xa7, 0x3e, 0xe0, 0x63, 0xb4, 0x05, 0x05, 0x5f, 0xa3,
+	0x07, 0x21, 0x9b, 0x73, 0x27, 0xd9, 0xbc, 0xb7, 0xda, 0x5e, 0x1b, 0xcb, 0xdd, 0x1c, 0xe3, 0xee,
+	0x5b, 0xd8, 0x82, 0xa2, 0xde, 0x73, 0xe8, 0x51, 0x48, 0x5c, 0x9e, 0x8b, 0xbb, 0x31, 0x2e, 0xae,
+	0xce, 0x80, 0x63, 0xf2, 0xf2, 0x7a, 0x98, 0x8c, 0xde, 0x87, 0x9c, 0x4d, 0xf5, 0x6e, 0xdf, 0x65,
+	0x05, 0x2e, 0xed, 0x66, 0xc4, 0xce, 0x6c, 0xeb, 0xdd, 0xfa, 0xa1, 0x63, 0xbb, 0x74, 0xdc, 0x6f,
+	0x6c, 0x6e, 0xe0, 0x37, 0x26, 0x4f, 0x8c, 0x96, 0x93, 0xac, 0x56, 0x54, 0xfe, 0x14, 0x87, 0x8b,
+	0x51, 0x3b, 0x13, 0x21, 0x48, 0x5a, 0xa4, 0x27, 0xca, 0x41, 0x06, 0xf3, 0x6f, 0x34, 0x07, 0xd9,
+	0x8e, 0xdd, 0xf5, 0x7b, 0x96, 0x6a, 0x6a, 0x87, 0xe2, 0xd8, 0x49, 0x60, 0x10, 0xa4, 0x86, 0x76,
+	0xe8, 0xa1, 0x17, 0x21, 0x27, 0x01, 0x0c, 0x2f, 0x8a, 0x6f, 0x06, 0x4b, 0xa6, 0x26, 0x23, 0xa1,
+	0xd7, 0xfb, 0x10, 0x7e, 0x00, 0xf3, 0x62, 0x58, 0x58, 0x40, 0xcc, 0x28, 0x71, 0x22, 0xaf, 0x12,
+	0x4a, 0x78, 0x89, 0x91, 0x6c, 0xec, 0xdb, 0x43, 0x77, 0x01, 0x3c, 0x4a, 0x5c, 0xaa, 0x52, 0xb3,
+	0xa7, 0xcb, 0x2d, 0xfa, 0x7c, 0x55, 0x74, 0x07, 0xd5, 0xa0, 0x3b, 0xa8, 0x36, 0x2c, 0xba, 0x78,
+	0xe7, 0x1d, 0xd2, 0xf5, 0x75, 0x9c, 0xe1, 0xf0, 0xb6, 0xd9, 0x63, 0x27, 0x73, 0xc6, 0xa3, 0xac,
+	0xbc, 0x31, 0xd6, 0xd4, 0xd9, 0xac, 0x69, 0x86, 0xe6, 0x9c, 0x97, 0x20, 0xc5, 0xcf, 0x6f, 0xca,
+	0xb7, 0x63, 0x06, 0xcb, 0x11, 0x7a, 0x81, 0x49, 0x74, 0x75, 0xc2, 0x4e, 0x30, 0xbe, 0xd7, 0xd2,
+	0x78, 0x40, 0xa8, 0x7c, 0xae, 0x00, 0x1a, 0xaf, 0x15, 0x91, 0x1e, 0x1d, 0xf5, 0x46, 0xfc, 0x7c,
+	0xde, 0x38, 0x87, 0x9f, 0x37, 0x61, 0x5a, 0x42, 0x3c, 0xbd, 0x47, 0x2c, 0x6a, 0x76, 0x86, 0x1c,
+	0x7e, 0x69, 0xb0, 0xc4, 0xae, 0x9c, 0xe7, 0xcb, 0x5c, 0x10, 0x4c, 0x61, 0x9a, 0x57, 0xb1, 0x00,
+	0x8d, 0xef, 0xf9, 0x31, 0xdd, 0x95, 0x67, 0xd3, 0x3d, 0x3e, 0xa6, 0x7b, 0xe5, 0xf3, 0x24, 0x94,
+	0x46, 0xab, 0x00, 0xef, 0xbc, 0x34, 0xcd, 0xd5, 0x3d, 0x4f, 0x7a, 0x30, 0x18, 0xa2, 0xa5, 0xe1,
+	0xd2, 0x65, 0x6a, 0xfc, 0xf4, 0x48, 0x8e, 0x16, 0xa5, 0xc6, 0xea, 0x70, 0x51, 0x6a, 0x68, 0x68,
+	0x17, 0x72, 0xb2, 0x5f, 0x1b, 0xb4, 0x69, 0xd9, 0x85, 0xea, 0xd9, 0x35, 0xa9, 0x8a, 0x75, 0xcf,
+	0xef, 0x52, 0xde, 0xbf, 0xb1, 0x43, 0x4c, 0x48, 0xe1, 0x43, 0x64, 0x00, 0xea, 0xd8, 0x96, 0xa5,
+	0x77, 0xa8, 0x28, 0xc6, 0xa2, 0xcd, 0x12, 0x29, 0xbb, 0x74, 0x0e, 0xd1, 0x8c, 0xb0, 0xd2, 0x17,
+	0x10, 0x74, 0x60, 0x53, 0x9d, 0x51, 0xd2, 0xec, 0x9f, 0x15, 0xc8, 0x86, 0xf4, 0x40, 0x57, 0x00,
+	0xb8, 0x19, 0x6a, 0x28, 0xcd, 0x32, 0x9c, 0xd2, 0xfc, 0xaf, 0xc9, 0xb5, 0xd9, 0x6f, 0xc1, 0x74,
+	0xa4, 0x03, 0x78, 0x1f, 0xe5, 0x75, 0x55, 0x4a, 0x5c, 0x43, 0xa7, 0x21, 0x0b, 0xf3, 0x9e, 0xd7,
+	0x6d, 0xf7, 0x89, 0xcb, 0x79, 0xc8, 0x6a, 0xba, 0x47, 0x4d, 0x8b, 0x30, 0xb6, 0xcd, 0x64, 0x3a,
+	0x5e, 0x4a, 0x54, 0x3e, 0x82, 0x6c, 0xa8, 0x6f, 0x40, 0xab, 0x90, 0xd5, 0x0f, 0x1d, 0x96, 0x3b,
+	0x3c, 0x34, 0xa2, 0xd1, 0x8b, 0x38, 0x89, 0x76, 0x3b, 0xa4, 0x4b, 0xdc, 0x7a, 0x1f, 0x8a, 0xc3,
+	0x6c, 0xe7, 0x49, 0xe4, 0x5f, 0xc5, 0x61, 0x6a, 0xac, 0xf1, 0x40, 0x6f, 0x41, 0xea, 0x23, 0x56,
+	0x68, 0x82, 0x95, 0x6f, 0x9c, 0xd2, 0xad, 0x84, 0x16, 0x97, 0x4c, 0xe8, 0x36, 0xa4, 0x0c, 0xd7,
+	0xf6, 0x9d, 0xa0, 0xef, 0x9f, 0x19, 0x67, 0x5f, 0xe1, 0x3a, 0x60, 0x89, 0x63, 0x75, 0x9b, 0x7f,
+	0x0d, 0x45, 0x10, 0x38, 0x49, 0x04, 0x70, 0x0e, 0xb2, 0x5c, 0xb8, 0x04, 0x24, 0x05, 0x80, 0x93,
+	0x04, 0x60, 0x16, 0xd2, 0x8f, 0x4c, 0x4b, 0xb3, 0x1f, 0xe9, 0x1a, 0xcf, 0xe4, 0x34, 0xee, 0x8f,
+	0x19, 0xb3, 0x43, 0x5c, 0x6a, 0x92, 0xae, 0x4a, 0x0c, 0x83, 0x17, 0xd8, 0x34, 0x06, 0x49, 0xaa,
+	0x19, 0x06, 0x7a, 0x19, 0x4a, 0x07, 0xa6, 0x45, 0xba, 0xe6, 0xc7, 0xba, 0xea, 0xf2, 0x7c, 0xf5,
+	0x78, 0x3d, 0x4d, 0xe3, 0x62, 0x40, 0x17, 0x69, 0xec, 0x55, 0x7e, 0xa2, 0x40, 0x61, 0xb8, 0x41,
+	0x42, 0xcb, 0x00, 0x03, 0xaf, 0xcb, 0x5b, 0xd1, 0x79, 0x62, 0x15, 0xe2, 0x42, 0x0b, 0x30, 0x29,
+	0xc2, 0x72, 0xb6, 0xcf, 0x02, 0x60, 0xe5, 0x13, 0x05, 0xf2, 0x43, 0xbd, 0x16, 0xba, 0x08, 0x13,
+	0xbc, 0xd7, 0xe2, 0x4a, 0x24, 0xb0, 0x18, 0x3c, 0x8b, 0x6c, 0x96, 0xcb, 0x64, 0xdf, 0x76, 0xc5,
+	0x6e, 0xf5, 0xdc, 0x8e, 0x27, 0x7b, 0xfd, 0x7c, 0x9f, 0xba, 0xeb, 0x76, 0xbc, 0xca, 0x53, 0x05,
+	0xf2, 0x43, 0x0d, 0xdb, 0x58, 0xce, 0x29, 0xe3, 0x9b, 0xf1, 0x1d, 0x28, 0x4a, 0x48, 0x8f, 0x38,
+	0x8e, 0x69, 0x19, 0x81, 0x5e, 0xaf, 0x9c, 0xd1, 0x0d, 0x4a, 0x2d, 0xb7, 0x05, 0x17, 0x2e, 0x74,
+	0xc2, 0x43, 0x0f, 0x5d, 0x87, 0x42, 0xff, 0x52, 0xbb, 0x4f, 0x68, 0xe7, 0x81, 0xa8, 0xb2, 0x38,
+	0xe7, 0x8a, 0xbb, 0xec, 0x32, 0xa3, 0xcd, 0x2e, 0x42, 0x7e, 0x48, 0x0c, 0x33, 0x35, 0xe8, 0x19,
+	0x2c, 0x4d, 0x3f, 0x94, 0x3a, 0x27, 0x70, 0x5e, 0xb6, 0x0d, 0x82, 0x58, 0xf9, 0x7d, 0x12, 0x72,
+	0xe1, 0x2e, 0x0d, 0xbd, 0x09, 0xc9, 0xd0, 0x75, 0xe4, 0xa5, 0xd3, 0x7b, 0x3a, 0x3e, 0xe0, 0x35,
+	0x85, 0x33, 0x21, 0x02, 0x17, 0xf4, 0x0f, 0x7d, 0xd2, 0x35, 0xe9, 0x91, 0xda, 0xb1, 0x2d, 0xcd,
+	0x14, 0x35, 0x58, 0xf8, 0xe1, 0xf6, 0x19, 0xb2, 0xea, 0x92, 0x73, 0x25, 0x60, 0xc4, 0x48, 0x1f,
+	0x25, 0x79, 0x08, 0x43, 0x41, 0x1e, 0x1d, 0x41, 0xf4, 0xc5, 0x4d, 0xf3, 0x7f, 0xcf, 0x90, 0x2e,
+	0xee, 0x7b, 0x32, 0x21, 0xf2, 0x42, 0xc4, 0x8a, 0x4c, 0x8b, 0xd1, 0xe8, 0x26, 0xc7, 0xa3, 0x3b,
+	0x1e, 0x85, 0x89, 0x88, 0x28, 0xf4, 0x60, 0x6a, 0xcc, 0x0a, 0x74, 0x0b, 0xa6, 0xba, 0xfa, 0x41,
+	0xa0, 0xaf, 0x08, 0x87, 0xbc, 0x3b, 0x16, 0xd9, 0xc4, 0xca, 0x20, 0x20, 0xe8, 0xff, 0x00, 0xb9,
+	0xa6, 0xf1, 0x60, 0x04, 0x1c, 0xe7, 0xe0, 0x12, 0x9f, 0x09, 0xa1, 0x67, 0xdb, 0x90, 0x0b, 0x9b,
+	0xc5, 0xec, 0x10, 0x77, 0xdd, 0xa1, 0x45, 0xb2, 0x82, 0x26, 0x16, 0x18, 0x98, 0x1a, 0x16, 0x9d,
+	0x0d, 0x25, 0x45, 0xe5, 0x75, 0x48, 0x07, 0x61, 0x45, 0x19, 0x98, 0x68, 0x34, 0x9b, 0x75, 0x5c,
+	0x8a, 0xa1, 0x02, 0xc0, 0x56, 0x7d, 0xad, 0xad, 0xb6, 0xf6, 0xda, 0x75, 0x5c, 0x52, 0xd8, 0x78,
+	0x6d, 0x6f, 0x6b, 0x4b, 0x8e, 0x13, 0x95, 0x03, 0x40, 0xe3, 0xcd, 0x7a, 0x64, 0xf3, 0x75, 0x0f,
+	0x80, 0xb8, 0x86, 0x2a, 0x6b, 0x71, 0xfc, 0xa4, 0xeb, 0xbe, 0xa8, 0x2c, 0xb2, 0xab, 0x24, 0xae,
+	0xc1, 0xbf, 0xbc, 0x8a, 0x0d, 0x17, 0x22, 0xba, 0xf8, 0xf3, 0xec, 0xd0, 0x67, 0x3b, 0x88, 0x2b,
+	0x7f, 0x4d, 0x40, 0x9a, 0x77, 0xf3, 0x0e, 0xb1, 0x22, 0xed, 0x79, 0x1b, 0x80, 0x50, 0xea, 0x9a,
+	0xfb, 0x3e, 0xed, 0xdb, 0x33, 0x17, 0x7d, 0x5b, 0xa8, 0x05, 0x38, 0x1c, 0x62, 0x41, 0x6f, 0x40,
+	0x91, 0xba, 0x84, 0xb7, 0x50, 0x32, 0xf0, 0x7c, 0x8f, 0x67, 0x96, 0xa7, 0x8e, 0x9f, 0xcc, 0xe5,
+	0xdb, 0x6c, 0xaa, 0xb1, 0x1a, 0xa4, 0x2e, 0x47, 0x36, 0x34, 0x19, 0xf2, 0x45, 0x28, 0x78, 0x0e,
+	0xb1, 0x42, 0x9c, 0x49, 0xce, 0xc9, 0x7b, 0x30, 0xa6, 0x71, 0x9f, 0x31, 0xc7, 0x70, 0x7d, 0xbe,
+	0x06, 0x4c, 0xcb, 0x54, 0x19, 0x61, 0x9f, 0xe0, 0xec, 0x97, 0x8e, 0x9f, 0xcc, 0x21, 0x91, 0x5b,
+	0x43, 0x42, 0x90, 0x33, 0xa0, 0x05, 0xa2, 0xee, 0xc1, 0xf3, 0x83, 0x2b, 0x82, 0xea, 0x5b, 0xe6,
+	0xa1, 0x6a, 0x11, 0xcb, 0x0e, 0x04, 0xa6, 0xb8, 0xa7, 0x9e, 0xeb, 0x5f, 0x0b, 0xf6, 0x2c, 0xf3,
+	0xb0, 0x49, 0x2c, 0x5b, 0x72, 0x2f, 0xc1, 0x65, 0xdd, 0xd2, 0x4e, 0xe0, 0x15, 0xdd, 0xff, 0xb4,
+	0x6e, 0x69, 0x11, 0x9c, 0x0b, 0x90, 0x7c, 0x68, 0x5a, 0x1a, 0xbf, 0x07, 0x44, 0x3f, 0x9c, 0xc8,
+	0xa0, 0xdd, 0x37, 0x2d, 0x0d, 0x73, 0x2c, 0xba, 0x06, 0x79, 0x8f, 0x12, 0xea, 0x7b, 0xc1, 0x0a,
+	0x19, 0xbe, 0x42, 0x4e, 0x10, 0x85, 0xe0, 0xca, 0x1d, 0x28, 0x32, 0xd6, 0x6d, 0x9d, 0xba, 0x66,
+	0x67, 0x9d, 0xf8, 0x86, 0xce, 0xb2, 0x4b, 0x1c, 0xd4, 0x92, 0x4d, 0x84, 0x5f, 0x1c, 0xde, 0x92,
+	0xeb, 0xef, 0x0a, 0x4c, 0x0d, 0xd8, 0x76, 0xfd, 0x5e, 0x8f, 0xb8, 0x47, 0x22, 0x2d, 0x7d, 0x8b,
+	0x8e, 0x30, 0x72, 0x9a, 0xb4, 0xe3, 0x0a, 0x80, 0xe7, 0xf7, 0x02, 0x40, 0x5c, 0xb4, 0x8f, 0x9e,
+	0xdf, 0x93, 0xd3, 0xef, 0x43, 0xf1, 0x43, 0x9f, 0x35, 0x6a, 0x5d, 0x3d, 0xd8, 0x32, 0xa2, 0xe2,
+	0xbd, 0x16, 0x6d, 0xf1, 0xd0, 0xfa, 0x55, 0xbe, 0x69, 0x6a, 0xf4, 0x3b, 0x52, 0x02, 0x2e, 0x04,
+	0xb2, 0xc4, 0x6e, 0x9a, 0x5d, 0x81, 0xe2, 0x08, 0x84, 0xf5, 0x1c, 0x01, 0x88, 0xab, 0xab, 0xe0,
+	0xfe, 0x98, 0x1d, 0xc5, 0x5c, 0x07, 0xae, 0xa6, 0x82, 0xc5, 0xa0, 0xb2, 0x06, 0xf9, 0xa1, 0xe4,
+	0x8e, 0xdc, 0x25, 0xa3, 0x2e, 0x8c, 0x47, 0xb8, 0x30, 0x0e, 0x30, 0x30, 0x21, 0x52, 0xca, 0x55,
+	0xde, 0x66, 0x76, 0x5c, 0x93, 0x77, 0xa7, 0x81, 0x90, 0x10, 0x69, 0x64, 0x37, 0x26, 0x9e, 0x65,
+	0x37, 0x4e, 0x18, 0x2c, 0xe8, 0xf2, 0x56, 0xf2, 0xe2, 0x69, 0x6e, 0xe6, 0xd9, 0xb1, 0x11, 0xc3,
+	0x82, 0x03, 0xbd, 0x0d, 0x93, 0x9e, 0x70, 0xbc, 0xbc, 0x77, 0x5c, 0x3b, 0x47, 0x8c, 0x36, 0x62,
+	0x38, 0xe0, 0xfa, 0x37, 0xf7, 0xd2, 0xab, 0x30, 0x7d, 0xda, 0x3e, 0x42, 0x74, 0x8c, 0x65, 0x39,
+	0x05, 0x49, 0x8d, 0x50, 0x52, 0xf9, 0x4c, 0x01, 0xc4, 0x9f, 0x33, 0x2c, 0xcd, 0xb1, 0x4d, 0x96,
+	0x9b, 0xd6, 0x81, 0x69, 0xa0, 0xcb, 0x90, 0xf0, 0xdd, 0xae, 0x88, 0xc0, 0xf2, 0xe4, 0xf1, 0x93,
+	0xb9, 0xc4, 0x1e, 0xde, 0xc2, 0x8c, 0x86, 0xda, 0x11, 0x55, 0xef, 0xce, 0x09, 0x6f, 0x24, 0x43,
+	0x42, 0xab, 0x7d, 0xb7, 0x7b, 0x75, 0x8b, 0xba, 0x47, 0x61, 0xe7, 0xcf, 0xbe, 0x05, 0xc5, 0x91,
+	0x69, 0x54, 0x82, 0xc4, 0x43, 0xfd, 0x48, 0x66, 0x01, 0xfb, 0x1c, 0xce, 0xc2, 0x8c, 0xcc, 0xc2,
+	0xbb, 0xf1, 0x25, 0xa5, 0xf2, 0xa5, 0x02, 0x97, 0xa2, 0x5f, 0x65, 0xd0, 0x36, 0x14, 0x75, 0xa9,
+	0x07, 0xeb, 0x4d, 0x0e, 0xcc, 0xe0, 0xa9, 0xff, 0xfa, 0x79, 0x94, 0xc6, 0x05, 0x7d, 0xd8, 0x33,
+	0xb7, 0x21, 0xc9, 0x2a, 0xe7, 0x29, 0x8f, 0xbe, 0xb2, 0xfa, 0x6c, 0xc4, 0x30, 0x47, 0xf2, 0x47,
+	0x56, 0x1e, 0x77, 0xf9, 0xc8, 0xfa, 0xc2, 0x69, 0xb9, 0xb1, 0x11, 0xc3, 0x12, 0xcd, 0x6f, 0x56,
+	0x84, 0x12, 0xa9, 0x74, 0xe5, 0xb7, 0x0a, 0x94, 0x46, 0x9b, 0x6e, 0xf4, 0x26, 0xa4, 0x3b, 0xb6,
+	0xe5, 0x51, 0x62, 0x51, 0x69, 0xd5, 0xe9, 0x07, 0xea, 0x46, 0x0c, 0xf7, 0x19, 0xd0, 0x02, 0xa4,
+	0x42, 0x7b, 0xf2, 0x94, 0x46, 0x9a, 0x29, 0xd5, 0xe9, 0x17, 0xdf, 0x03, 0xdf, 0x3a, 0xc5, 0x14,
+	0xb1, 0xd8, 0x9a, 0x6f, 0x31, 0x53, 0x38, 0x76, 0x79, 0x52, 0x86, 0xad, 0xf2, 0xbb, 0x38, 0x64,
+	0x43, 0xca, 0xa0, 0x79, 0xc8, 0x70, 0x0b, 0x43, 0x8d, 0x67, 0xd4, 0xa9, 0x9c, 0xd6, 0xe4, 0x17,
+	0x9a, 0x03, 0xd8, 0xb7, 0xed, 0xae, 0x3a, 0xc8, 0x82, 0xf4, 0x46, 0x0c, 0x67, 0x18, 0x4d, 0x48,
+	0x7c, 0x11, 0xb2, 0xa6, 0x45, 0x17, 0xef, 0x48, 0x04, 0xd3, 0x32, 0xb1, 0x11, 0xc3, 0x60, 0xf6,
+	0x5f, 0x9b, 0xd0, 0x0d, 0xc8, 0x1f, 0x74, 0x6d, 0x32, 0x00, 0xb1, 0xed, 0xae, 0x6c, 0xc4, 0x70,
+	0x4e, 0x92, 0x05, 0xec, 0x1a, 0xe4, 0x3c, 0xea, 0x9a, 0x96, 0xec, 0x57, 0xc4, 0xf9, 0xb8, 0x11,
+	0xc3, 0x59, 0x41, 0x15, 0xa0, 0x9b, 0x50, 0x64, 0x7b, 0x6b, 0xf1, 0x8e, 0x6a, 0x79, 0x12, 0x97,
+	0x92, 0x4b, 0xe6, 0xc5, 0x44, 0xd3, 0x13, 0xc8, 0x25, 0xc8, 0xfb, 0xa6, 0x45, 0x5f, 0x5d, 0x58,
+	0x92, 0x38, 0xf1, 0x1c, 0x3b, 0x35, 0x30, 0x77, 0xaf, 0xc1, 0xa7, 0xf9, 0x33, 0xa7, 0x40, 0x72,
+	0xce, 0xbe, 0xf7, 0x36, 0x93, 0xe9, 0x74, 0x29, 0xc3, 0x32, 0x1d, 0x06, 0x3e, 0x8e, 0xac, 0x95,
+	0x77, 0x21, 0x63, 0x5a, 0x26, 0x55, 0x89, 0x6b, 0x9c, 0xb3, 0xcd, 0x4a, 0x33, 0x7c, 0xcd, 0x35,
+	0x3c, 0xb4, 0x08, 0x49, 0xce, 0x96, 0x38, 0xf7, 0x1d, 0x9d, 0xe3, 0xe5, 0x2f, 0x23, 0xe2, 0x67,
+	0xb7, 0xb8, 0xa9, 0xa1, 0xbb, 0x50, 0x64, 0x74, 0xb5, 0x1f, 0x5f, 0xf1, 0x83, 0x55, 0x74, 0x80,
+	0xf3, 0x0c, 0x1a, 0x8c, 0xbc, 0xca, 0xdf, 0xe2, 0x70, 0x21, 0xe2, 0x42, 0xde, 0xb7, 0x35, 0x71,
+	0x92, 0xad, 0xc9, 0x7f, 0xcd, 0xd6, 0xb7, 0xa4, 0xad, 0xe2, 0x97, 0xb4, 0x97, 0xcf, 0xf5, 0x2a,
+	0x50, 0xad, 0xb9, 0xc6, 0x90, 0xc9, 0xa9, 0xd3, 0x4c, 0x9e, 0x3c, 0xa7, 0xc9, 0xb3, 0x3f, 0x80,
+	0x44, 0xcd, 0x35, 0xfe, 0xe3, 0xdb, 0x79, 0xb0, 0x35, 0x17, 0x20, 0x25, 0x0f, 0x13, 0xe6, 0x65,
+	0x5b, 0xd3, 0xe5, 0x25, 0x82, 0x7f, 0xb3, 0xc2, 0x1b, 0xbe, 0x36, 0x88, 0xc1, 0xad, 0xbf, 0xc4,
+	0x21, 0x17, 0xfe, 0x91, 0x0a, 0x5d, 0x86, 0xe9, 0xd6, 0x4e, 0x1d, 0xd7, 0xda, 0x2d, 0xac, 0xb6,
+	0xdf, 0xdb, 0xa9, 0xab, 0x7b, 0xcd, 0xfb, 0xcd, 0xd6, 0xbb, 0xcd, 0x52, 0x0c, 0x3d, 0x0f, 0x97,
+	0xb6, 0xeb, 0xdb, 0x2d, 0xfc, 0x9e, 0xba, 0xdb, 0xda, 0xc3, 0x2b, 0x75, 0x35, 0x00, 0x96, 0x9e,
+	0x4e, 0xa2, 0xcb, 0x70, 0x71, 0x1d, 0xef, 0xac, 0x8c, 0x4d, 0xfd, 0x31, 0xcd, 0xa6, 0xd8, 0xed,
+	0x62, 0x6c, 0xea, 0xd7, 0x19, 0x34, 0x0b, 0xd3, 0xf5, 0xed, 0x9d, 0xf6, 0xb8, 0xc4, 0x9f, 0x03,
+	0x9a, 0x82, 0xdc, 0x76, 0x6d, 0x67, 0x40, 0x7a, 0x5c, 0x44, 0xcf, 0x01, 0xaa, 0xad, 0xaf, 0xe3,
+	0xfa, 0x7a, 0xad, 0x1d, 0xc2, 0xfe, 0xa6, 0x84, 0x2e, 0x42, 0x71, 0xad, 0xb1, 0xd5, 0xae, 0xe3,
+	0x01, 0xf5, 0x17, 0x53, 0xe8, 0x02, 0x14, 0xb6, 0x1a, 0xdb, 0x8d, 0xf6, 0x80, 0xf8, 0x0f, 0x4e,
+	0xdc, 0x6b, 0x36, 0x5a, 0xcd, 0x01, 0xf1, 0x4b, 0x84, 0x10, 0xe4, 0x37, 0x5b, 0x8d, 0x10, 0xed,
+	0xb3, 0x0b, 0x4c, 0xed, 0xc0, 0xdc, 0x46, 0xf3, 0xfe, 0x60, 0xea, 0xd3, 0x35, 0xa6, 0x87, 0x30,
+	0x76, 0x68, 0xe2, 0xa7, 0xeb, 0xa8, 0x0c, 0x97, 0x5b, 0xed, 0xfa, 0x96, 0x5a, 0xff, 0xee, 0x4e,
+	0x0b, 0xb7, 0x47, 0xe6, 0xbf, 0x59, 0xbf, 0xf5, 0x2e, 0xe4, 0xc2, 0x9d, 0x2d, 0xf3, 0xf6, 0xee,
+	0x4e, 0xad, 0xa9, 0xde, 0x6f, 0x34, 0x57, 0xd5, 0xbd, 0xe6, 0xee, 0x4e, 0x7d, 0xa5, 0xb1, 0xd6,
+	0xa8, 0xaf, 0x96, 0x62, 0xe8, 0x12, 0xa0, 0xc1, 0x54, 0xa3, 0xd9, 0xae, 0xe3, 0x66, 0x6d, 0xab,
+	0xa4, 0xa0, 0x8b, 0x50, 0x1a, 0xd0, 0x77, 0xeb, 0xf8, 0x9d, 0x3a, 0x2e, 0xc5, 0x97, 0xef, 0x3d,
+	0xfe, 0xaa, 0x1c, 0xfb, 0xe2, 0xab, 0x72, 0xec, 0x9b, 0xaf, 0xca, 0xca, 0x27, 0xc7, 0x65, 0xe5,
+	0xd3, 0xe3, 0xb2, 0xf2, 0x87, 0xe3, 0xb2, 0xf2, 0xf8, 0xb8, 0xac, 0x7c, 0x79, 0x5c, 0x56, 0x9e,
+	0x1e, 0x97, 0x63, 0xdf, 0x1c, 0x97, 0x95, 0x9f, 0x7d, 0x5d, 0x8e, 0x3d, 0xfe, 0xba, 0x1c, 0xfb,
+	0xe2, 0xeb, 0x72, 0xec, 0x7b, 0x29, 0x91, 0x53, 0xfb, 0x29, 0xfe, 0xa4, 0xff, 0xda, 0x3f, 0x03,
+	0x00, 0x00, 0xff, 0xff, 0x6c, 0x29, 0x2b, 0xe0, 0x9a, 0x20, 0x00, 0x00,
 }
 
 func (x OperatorType) String() string {
 	s, ok := OperatorType_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (x OTelSpanKind) String() string {
+	s, ok := OTelSpanKind_name[int32(x)]
 	if ok {
 		return s
 	}
@@ -2985,6 +3663,30 @@ func (this *Operator_EmptySourceOp) Equal(that interface{}) bool {
 		return false
 	}
 	if !this.EmptySourceOp.Equal(that1.EmptySourceOp) {
+		return false
+	}
+	return true
+}
+func (this *Operator_OTelSinkOp) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Operator_OTelSinkOp)
+	if !ok {
+		that2, ok := that.(Operator_OTelSinkOp)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.OTelSinkOp.Equal(that1.OTelSinkOp) {
 		return false
 	}
 	return true
@@ -3704,6 +4406,383 @@ func (this *EmptySourceOperator) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *OTelSpan) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*OTelSpan)
+	if !ok {
+		that2, ok := that.(OTelSpan)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if len(this.Attributes) != len(that1.Attributes) {
+		return false
+	}
+	for i := range this.Attributes {
+		if !this.Attributes[i].Equal(that1.Attributes[i]) {
+			return false
+		}
+	}
+	if this.TraceIDColumn != that1.TraceIDColumn {
+		return false
+	}
+	if this.SpanIDColumn != that1.SpanIDColumn {
+		return false
+	}
+	if this.ParentSpanIDColumn != that1.ParentSpanIDColumn {
+		return false
+	}
+	if this.StartTimeUnixNanoColumn != that1.StartTimeUnixNanoColumn {
+		return false
+	}
+	if this.EndTimeUnixNanoColumn != that1.EndTimeUnixNanoColumn {
+		return false
+	}
+	if this.Kind != that1.Kind {
+		return false
+	}
+	if this.StatusColumn != that1.StatusColumn {
+		return false
+	}
+	return true
+}
+func (this *OTelMetricGauge) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*OTelMetricGauge)
+	if !ok {
+		that2, ok := that.(OTelMetricGauge)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.ValueColumn != that1.ValueColumn {
+		return false
+	}
+	return true
+}
+func (this *OTelMetricSummary) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*OTelMetricSummary)
+	if !ok {
+		that2, ok := that.(OTelMetricSummary)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.CountColumn != that1.CountColumn {
+		return false
+	}
+	if this.SumColumn != that1.SumColumn {
+		return false
+	}
+	if len(this.QuantileValues) != len(that1.QuantileValues) {
+		return false
+	}
+	for i := range this.QuantileValues {
+		if !this.QuantileValues[i].Equal(that1.QuantileValues[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *OTelMetricSummary_ValueAtQuantile) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*OTelMetricSummary_ValueAtQuantile)
+	if !ok {
+		that2, ok := that.(OTelMetricSummary_ValueAtQuantile)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Quantile != that1.Quantile {
+		return false
+	}
+	if this.Value != that1.Value {
+		return false
+	}
+	return true
+}
+func (this *OTelAttribute) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*OTelAttribute)
+	if !ok {
+		that2, ok := that.(OTelAttribute)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if this.ValueColumn != that1.ValueColumn {
+		return false
+	}
+	return true
+}
+func (this *OTelMetric) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*OTelMetric)
+	if !ok {
+		that2, ok := that.(OTelMetric)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if this.Description != that1.Description {
+		return false
+	}
+	if len(this.Attributes) != len(that1.Attributes) {
+		return false
+	}
+	for i := range this.Attributes {
+		if !this.Attributes[i].Equal(that1.Attributes[i]) {
+			return false
+		}
+	}
+	if that1.Data == nil {
+		if this.Data != nil {
+			return false
+		}
+	} else if this.Data == nil {
+		return false
+	} else if !this.Data.Equal(that1.Data) {
+		return false
+	}
+	if this.StartTimeUnixNanoColumn != that1.StartTimeUnixNanoColumn {
+		return false
+	}
+	if this.TimeUnixNanoColumn != that1.TimeUnixNanoColumn {
+		return false
+	}
+	return true
+}
+func (this *OTelMetric_Gauge) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*OTelMetric_Gauge)
+	if !ok {
+		that2, ok := that.(OTelMetric_Gauge)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Gauge.Equal(that1.Gauge) {
+		return false
+	}
+	return true
+}
+func (this *OTelMetric_Summary) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*OTelMetric_Summary)
+	if !ok {
+		that2, ok := that.(OTelMetric_Summary)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Summary.Equal(that1.Summary) {
+		return false
+	}
+	return true
+}
+func (this *OTelEndpointConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*OTelEndpointConfig)
+	if !ok {
+		that2, ok := that.(OTelEndpointConfig)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.URL != that1.URL {
+		return false
+	}
+	if len(this.Attributes) != len(that1.Attributes) {
+		return false
+	}
+	for i := range this.Attributes {
+		if this.Attributes[i] != that1.Attributes[i] {
+			return false
+		}
+	}
+	return true
+}
+func (this *OTelExportSinkOperator) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*OTelExportSinkOperator)
+	if !ok {
+		that2, ok := that.(OTelExportSinkOperator)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.EndpointConfig.Equal(that1.EndpointConfig) {
+		return false
+	}
+	if that1.DataConfig == nil {
+		if this.DataConfig != nil {
+			return false
+		}
+	} else if this.DataConfig == nil {
+		return false
+	} else if !this.DataConfig.Equal(that1.DataConfig) {
+		return false
+	}
+	return true
+}
+func (this *OTelExportSinkOperator_Span) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*OTelExportSinkOperator_Span)
+	if !ok {
+		that2, ok := that.(OTelExportSinkOperator_Span)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Span.Equal(that1.Span) {
+		return false
+	}
+	return true
+}
+func (this *OTelExportSinkOperator_Metric) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*OTelExportSinkOperator_Metric)
+	if !ok {
+		that2, ok := that.(OTelExportSinkOperator_Metric)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Metric.Equal(that1.Metric) {
+		return false
+	}
+	return true
+}
 func (this *ScalarExpression) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -4280,7 +5359,7 @@ func (this *Operator) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 17)
+	s := make([]string, 0, 18)
 	s = append(s, "&planpb.Operator{")
 	s = append(s, "OpType: "+fmt.Sprintf("%#v", this.OpType)+",\n")
 	if this.Op != nil {
@@ -4383,6 +5462,14 @@ func (this *Operator_EmptySourceOp) GoString() string {
 	}
 	s := strings.Join([]string{`&planpb.Operator_EmptySourceOp{` +
 		`EmptySourceOp:` + fmt.Sprintf("%#v", this.EmptySourceOp) + `}`}, ", ")
+	return s
+}
+func (this *Operator_OTelSinkOp) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&planpb.Operator_OTelSinkOp{` +
+		`OTelSinkOp:` + fmt.Sprintf("%#v", this.OTelSinkOp) + `}`}, ", ")
 	return s
 }
 func (this *MemorySourceOperator) GoString() string {
@@ -4634,6 +5721,161 @@ func (this *EmptySourceOperator) GoString() string {
 	s = append(s, "ColumnTypes: "+fmt.Sprintf("%#v", this.ColumnTypes)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
+}
+func (this *OTelSpan) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 13)
+	s = append(s, "&planpb.OTelSpan{")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	if this.Attributes != nil {
+		s = append(s, "Attributes: "+fmt.Sprintf("%#v", this.Attributes)+",\n")
+	}
+	s = append(s, "TraceIDColumn: "+fmt.Sprintf("%#v", this.TraceIDColumn)+",\n")
+	s = append(s, "SpanIDColumn: "+fmt.Sprintf("%#v", this.SpanIDColumn)+",\n")
+	s = append(s, "ParentSpanIDColumn: "+fmt.Sprintf("%#v", this.ParentSpanIDColumn)+",\n")
+	s = append(s, "StartTimeUnixNanoColumn: "+fmt.Sprintf("%#v", this.StartTimeUnixNanoColumn)+",\n")
+	s = append(s, "EndTimeUnixNanoColumn: "+fmt.Sprintf("%#v", this.EndTimeUnixNanoColumn)+",\n")
+	s = append(s, "Kind: "+fmt.Sprintf("%#v", this.Kind)+",\n")
+	s = append(s, "StatusColumn: "+fmt.Sprintf("%#v", this.StatusColumn)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *OTelMetricGauge) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&planpb.OTelMetricGauge{")
+	s = append(s, "ValueColumn: "+fmt.Sprintf("%#v", this.ValueColumn)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *OTelMetricSummary) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&planpb.OTelMetricSummary{")
+	s = append(s, "CountColumn: "+fmt.Sprintf("%#v", this.CountColumn)+",\n")
+	s = append(s, "SumColumn: "+fmt.Sprintf("%#v", this.SumColumn)+",\n")
+	if this.QuantileValues != nil {
+		s = append(s, "QuantileValues: "+fmt.Sprintf("%#v", this.QuantileValues)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *OTelMetricSummary_ValueAtQuantile) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&planpb.OTelMetricSummary_ValueAtQuantile{")
+	s = append(s, "Quantile: "+fmt.Sprintf("%#v", this.Quantile)+",\n")
+	s = append(s, "Value: "+fmt.Sprintf("%#v", this.Value)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *OTelAttribute) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&planpb.OTelAttribute{")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	s = append(s, "ValueColumn: "+fmt.Sprintf("%#v", this.ValueColumn)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *OTelMetric) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 11)
+	s = append(s, "&planpb.OTelMetric{")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	s = append(s, "Description: "+fmt.Sprintf("%#v", this.Description)+",\n")
+	if this.Attributes != nil {
+		s = append(s, "Attributes: "+fmt.Sprintf("%#v", this.Attributes)+",\n")
+	}
+	if this.Data != nil {
+		s = append(s, "Data: "+fmt.Sprintf("%#v", this.Data)+",\n")
+	}
+	s = append(s, "StartTimeUnixNanoColumn: "+fmt.Sprintf("%#v", this.StartTimeUnixNanoColumn)+",\n")
+	s = append(s, "TimeUnixNanoColumn: "+fmt.Sprintf("%#v", this.TimeUnixNanoColumn)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *OTelMetric_Gauge) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&planpb.OTelMetric_Gauge{` +
+		`Gauge:` + fmt.Sprintf("%#v", this.Gauge) + `}`}, ", ")
+	return s
+}
+func (this *OTelMetric_Summary) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&planpb.OTelMetric_Summary{` +
+		`Summary:` + fmt.Sprintf("%#v", this.Summary) + `}`}, ", ")
+	return s
+}
+func (this *OTelEndpointConfig) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&planpb.OTelEndpointConfig{")
+	s = append(s, "URL: "+fmt.Sprintf("%#v", this.URL)+",\n")
+	keysForAttributes := make([]string, 0, len(this.Attributes))
+	for k, _ := range this.Attributes {
+		keysForAttributes = append(keysForAttributes, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForAttributes)
+	mapStringForAttributes := "map[string]string{"
+	for _, k := range keysForAttributes {
+		mapStringForAttributes += fmt.Sprintf("%#v: %#v,", k, this.Attributes[k])
+	}
+	mapStringForAttributes += "}"
+	if this.Attributes != nil {
+		s = append(s, "Attributes: "+mapStringForAttributes+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *OTelExportSinkOperator) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&planpb.OTelExportSinkOperator{")
+	if this.EndpointConfig != nil {
+		s = append(s, "EndpointConfig: "+fmt.Sprintf("%#v", this.EndpointConfig)+",\n")
+	}
+	if this.DataConfig != nil {
+		s = append(s, "DataConfig: "+fmt.Sprintf("%#v", this.DataConfig)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *OTelExportSinkOperator_Span) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&planpb.OTelExportSinkOperator_Span{` +
+		`Span:` + fmt.Sprintf("%#v", this.Span) + `}`}, ", ")
+	return s
+}
+func (this *OTelExportSinkOperator_Metric) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&planpb.OTelExportSinkOperator_Metric{` +
+		`Metric:` + fmt.Sprintf("%#v", this.Metric) + `}`}, ", ")
+	return s
 }
 func (this *ScalarExpression) GoString() string {
 	if this == nil {
@@ -5401,6 +6643,27 @@ func (m *Operator_EmptySourceOp) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 	}
 	return len(dAtA) - i, nil
 }
+func (m *Operator_OTelSinkOp) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Operator_OTelSinkOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.OTelSinkOp != nil {
+		{
+			size, err := m.OTelSinkOp.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x72
+	}
+	return len(dAtA) - i, nil
+}
 func (m *Operator_GRPCSinkOp) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
@@ -5486,20 +6749,20 @@ func (m *MemorySourceOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		dAtA[i] = 0x2a
 	}
 	if len(m.ColumnTypes) > 0 {
-		dAtA24 := make([]byte, len(m.ColumnTypes)*10)
-		var j23 int
+		dAtA25 := make([]byte, len(m.ColumnTypes)*10)
+		var j24 int
 		for _, num := range m.ColumnTypes {
 			for num >= 1<<7 {
-				dAtA24[j23] = uint8(uint64(num)&0x7f | 0x80)
+				dAtA25[j24] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
-				j23++
+				j24++
 			}
-			dAtA24[j23] = uint8(num)
-			j23++
+			dAtA25[j24] = uint8(num)
+			j24++
 		}
-		i -= j23
-		copy(dAtA[i:], dAtA24[:j23])
-		i = encodeVarintPlan(dAtA, i, uint64(j23))
+		i -= j24
+		copy(dAtA[i:], dAtA25[:j24])
+		i = encodeVarintPlan(dAtA, i, uint64(j24))
 		i--
 		dAtA[i] = 0x22
 	}
@@ -5513,21 +6776,21 @@ func (m *MemorySourceOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		}
 	}
 	if len(m.ColumnIdxs) > 0 {
-		dAtA26 := make([]byte, len(m.ColumnIdxs)*10)
-		var j25 int
+		dAtA27 := make([]byte, len(m.ColumnIdxs)*10)
+		var j26 int
 		for _, num1 := range m.ColumnIdxs {
 			num := uint64(num1)
 			for num >= 1<<7 {
-				dAtA26[j25] = uint8(uint64(num)&0x7f | 0x80)
+				dAtA27[j26] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
-				j25++
+				j26++
 			}
-			dAtA26[j25] = uint8(num)
-			j25++
+			dAtA27[j26] = uint8(num)
+			j26++
 		}
-		i -= j25
-		copy(dAtA[i:], dAtA26[:j25])
-		i = encodeVarintPlan(dAtA, i, uint64(j25))
+		i -= j26
+		copy(dAtA[i:], dAtA27[:j26])
+		i = encodeVarintPlan(dAtA, i, uint64(j26))
 		i--
 		dAtA[i] = 0x12
 	}
@@ -5562,20 +6825,20 @@ func (m *MemorySinkOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	if len(m.ColumnSemanticTypes) > 0 {
-		dAtA28 := make([]byte, len(m.ColumnSemanticTypes)*10)
-		var j27 int
+		dAtA29 := make([]byte, len(m.ColumnSemanticTypes)*10)
+		var j28 int
 		for _, num := range m.ColumnSemanticTypes {
 			for num >= 1<<7 {
-				dAtA28[j27] = uint8(uint64(num)&0x7f | 0x80)
+				dAtA29[j28] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
-				j27++
+				j28++
 			}
-			dAtA28[j27] = uint8(num)
-			j27++
+			dAtA29[j28] = uint8(num)
+			j28++
 		}
-		i -= j27
-		copy(dAtA[i:], dAtA28[:j27])
-		i = encodeVarintPlan(dAtA, i, uint64(j27))
+		i -= j28
+		copy(dAtA[i:], dAtA29[:j28])
+		i = encodeVarintPlan(dAtA, i, uint64(j28))
 		i--
 		dAtA[i] = 0x22
 	}
@@ -5589,20 +6852,20 @@ func (m *MemorySinkOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		}
 	}
 	if len(m.ColumnTypes) > 0 {
-		dAtA30 := make([]byte, len(m.ColumnTypes)*10)
-		var j29 int
+		dAtA31 := make([]byte, len(m.ColumnTypes)*10)
+		var j30 int
 		for _, num := range m.ColumnTypes {
 			for num >= 1<<7 {
-				dAtA30[j29] = uint8(uint64(num)&0x7f | 0x80)
+				dAtA31[j30] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
-				j29++
+				j30++
 			}
-			dAtA30[j29] = uint8(num)
-			j29++
+			dAtA31[j30] = uint8(num)
+			j30++
 		}
-		i -= j29
-		copy(dAtA[i:], dAtA30[:j29])
-		i = encodeVarintPlan(dAtA, i, uint64(j29))
+		i -= j30
+		copy(dAtA[i:], dAtA31[:j30])
+		i = encodeVarintPlan(dAtA, i, uint64(j30))
 		i--
 		dAtA[i] = 0x12
 	}
@@ -5646,20 +6909,20 @@ func (m *GRPCSourceOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		}
 	}
 	if len(m.ColumnTypes) > 0 {
-		dAtA32 := make([]byte, len(m.ColumnTypes)*10)
-		var j31 int
+		dAtA33 := make([]byte, len(m.ColumnTypes)*10)
+		var j32 int
 		for _, num := range m.ColumnTypes {
 			for num >= 1<<7 {
-				dAtA32[j31] = uint8(uint64(num)&0x7f | 0x80)
+				dAtA33[j32] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
-				j31++
+				j32++
 			}
-			dAtA32[j31] = uint8(num)
-			j31++
+			dAtA33[j32] = uint8(num)
+			j32++
 		}
-		i -= j31
-		copy(dAtA[i:], dAtA32[:j31])
-		i = encodeVarintPlan(dAtA, i, uint64(j31))
+		i -= j32
+		copy(dAtA[i:], dAtA33[:j32])
+		i = encodeVarintPlan(dAtA, i, uint64(j32))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -5771,20 +7034,20 @@ func (m *GRPCSinkOperator_ResultTable) MarshalToSizedBuffer(dAtA []byte) (int, e
 	var l int
 	_ = l
 	if len(m.ColumnSemanticTypes) > 0 {
-		dAtA36 := make([]byte, len(m.ColumnSemanticTypes)*10)
-		var j35 int
+		dAtA37 := make([]byte, len(m.ColumnSemanticTypes)*10)
+		var j36 int
 		for _, num := range m.ColumnSemanticTypes {
 			for num >= 1<<7 {
-				dAtA36[j35] = uint8(uint64(num)&0x7f | 0x80)
+				dAtA37[j36] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
-				j35++
+				j36++
 			}
-			dAtA36[j35] = uint8(num)
-			j35++
+			dAtA37[j36] = uint8(num)
+			j36++
 		}
-		i -= j35
-		copy(dAtA[i:], dAtA36[:j35])
-		i = encodeVarintPlan(dAtA, i, uint64(j35))
+		i -= j36
+		copy(dAtA[i:], dAtA37[:j36])
+		i = encodeVarintPlan(dAtA, i, uint64(j36))
 		i--
 		dAtA[i] = 0x22
 	}
@@ -5798,20 +7061,20 @@ func (m *GRPCSinkOperator_ResultTable) MarshalToSizedBuffer(dAtA []byte) (int, e
 		}
 	}
 	if len(m.ColumnTypes) > 0 {
-		dAtA38 := make([]byte, len(m.ColumnTypes)*10)
-		var j37 int
+		dAtA39 := make([]byte, len(m.ColumnTypes)*10)
+		var j38 int
 		for _, num := range m.ColumnTypes {
 			for num >= 1<<7 {
-				dAtA38[j37] = uint8(uint64(num)&0x7f | 0x80)
+				dAtA39[j38] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
-				j37++
+				j38++
 			}
-			dAtA38[j37] = uint8(num)
-			j37++
+			dAtA39[j38] = uint8(num)
+			j38++
 		}
-		i -= j37
-		copy(dAtA[i:], dAtA38[:j37])
-		i = encodeVarintPlan(dAtA, i, uint64(j37))
+		i -= j38
+		copy(dAtA[i:], dAtA39[:j38])
+		i = encodeVarintPlan(dAtA, i, uint64(j38))
 		i--
 		dAtA[i] = 0x12
 	}
@@ -6070,20 +7333,20 @@ func (m *LimitOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	if len(m.AbortableSrcs) > 0 {
-		dAtA41 := make([]byte, len(m.AbortableSrcs)*10)
-		var j40 int
+		dAtA42 := make([]byte, len(m.AbortableSrcs)*10)
+		var j41 int
 		for _, num := range m.AbortableSrcs {
 			for num >= 1<<7 {
-				dAtA41[j40] = uint8(uint64(num)&0x7f | 0x80)
+				dAtA42[j41] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
-				j40++
+				j41++
 			}
-			dAtA41[j40] = uint8(num)
-			j40++
+			dAtA42[j41] = uint8(num)
+			j41++
 		}
-		i -= j40
-		copy(dAtA[i:], dAtA41[:j40])
-		i = encodeVarintPlan(dAtA, i, uint64(j40))
+		i -= j41
+		copy(dAtA[i:], dAtA42[:j41])
+		i = encodeVarintPlan(dAtA, i, uint64(j41))
 		i--
 		dAtA[i] = 0x1a
 	}
@@ -6181,21 +7444,21 @@ func (m *UnionOperator_ColumnMapping) MarshalToSizedBuffer(dAtA []byte) (int, er
 	var l int
 	_ = l
 	if len(m.ColumnIndexes) > 0 {
-		dAtA43 := make([]byte, len(m.ColumnIndexes)*10)
-		var j42 int
+		dAtA44 := make([]byte, len(m.ColumnIndexes)*10)
+		var j43 int
 		for _, num1 := range m.ColumnIndexes {
 			num := uint64(num1)
 			for num >= 1<<7 {
-				dAtA43[j42] = uint8(uint64(num)&0x7f | 0x80)
+				dAtA44[j43] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
-				j42++
+				j43++
 			}
-			dAtA43[j42] = uint8(num)
-			j42++
+			dAtA44[j43] = uint8(num)
+			j43++
 		}
-		i -= j42
-		copy(dAtA[i:], dAtA43[:j42])
-		i = encodeVarintPlan(dAtA, i, uint64(j42))
+		i -= j43
+		copy(dAtA[i:], dAtA44[:j43])
+		i = encodeVarintPlan(dAtA, i, uint64(j43))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -6403,20 +7666,20 @@ func (m *EmptySourceOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	if len(m.ColumnTypes) > 0 {
-		dAtA45 := make([]byte, len(m.ColumnTypes)*10)
-		var j44 int
+		dAtA46 := make([]byte, len(m.ColumnTypes)*10)
+		var j45 int
 		for _, num := range m.ColumnTypes {
 			for num >= 1<<7 {
-				dAtA45[j44] = uint8(uint64(num)&0x7f | 0x80)
+				dAtA46[j45] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
-				j44++
+				j45++
 			}
-			dAtA45[j44] = uint8(num)
-			j44++
+			dAtA46[j45] = uint8(num)
+			j45++
 		}
-		i -= j44
-		copy(dAtA[i:], dAtA45[:j44])
-		i = encodeVarintPlan(dAtA, i, uint64(j44))
+		i -= j45
+		copy(dAtA[i:], dAtA46[:j45])
+		i = encodeVarintPlan(dAtA, i, uint64(j45))
 		i--
 		dAtA[i] = 0x12
 	}
@@ -6432,6 +7695,501 @@ func (m *EmptySourceOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *OTelSpan) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *OTelSpan) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *OTelSpan) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.StatusColumn) > 0 {
+		i -= len(m.StatusColumn)
+		copy(dAtA[i:], m.StatusColumn)
+		i = encodeVarintPlan(dAtA, i, uint64(len(m.StatusColumn)))
+		i--
+		dAtA[i] = 0x4a
+	}
+	if m.Kind != 0 {
+		i = encodeVarintPlan(dAtA, i, uint64(m.Kind))
+		i--
+		dAtA[i] = 0x40
+	}
+	if len(m.EndTimeUnixNanoColumn) > 0 {
+		i -= len(m.EndTimeUnixNanoColumn)
+		copy(dAtA[i:], m.EndTimeUnixNanoColumn)
+		i = encodeVarintPlan(dAtA, i, uint64(len(m.EndTimeUnixNanoColumn)))
+		i--
+		dAtA[i] = 0x3a
+	}
+	if len(m.StartTimeUnixNanoColumn) > 0 {
+		i -= len(m.StartTimeUnixNanoColumn)
+		copy(dAtA[i:], m.StartTimeUnixNanoColumn)
+		i = encodeVarintPlan(dAtA, i, uint64(len(m.StartTimeUnixNanoColumn)))
+		i--
+		dAtA[i] = 0x32
+	}
+	if len(m.ParentSpanIDColumn) > 0 {
+		i -= len(m.ParentSpanIDColumn)
+		copy(dAtA[i:], m.ParentSpanIDColumn)
+		i = encodeVarintPlan(dAtA, i, uint64(len(m.ParentSpanIDColumn)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.SpanIDColumn) > 0 {
+		i -= len(m.SpanIDColumn)
+		copy(dAtA[i:], m.SpanIDColumn)
+		i = encodeVarintPlan(dAtA, i, uint64(len(m.SpanIDColumn)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.TraceIDColumn) > 0 {
+		i -= len(m.TraceIDColumn)
+		copy(dAtA[i:], m.TraceIDColumn)
+		i = encodeVarintPlan(dAtA, i, uint64(len(m.TraceIDColumn)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Attributes) > 0 {
+		for iNdEx := len(m.Attributes) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Attributes[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintPlan(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintPlan(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *OTelMetricGauge) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *OTelMetricGauge) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *OTelMetricGauge) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ValueColumn) > 0 {
+		i -= len(m.ValueColumn)
+		copy(dAtA[i:], m.ValueColumn)
+		i = encodeVarintPlan(dAtA, i, uint64(len(m.ValueColumn)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *OTelMetricSummary) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *OTelMetricSummary) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *OTelMetricSummary) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.QuantileValues) > 0 {
+		for iNdEx := len(m.QuantileValues) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.QuantileValues[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintPlan(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.SumColumn) > 0 {
+		i -= len(m.SumColumn)
+		copy(dAtA[i:], m.SumColumn)
+		i = encodeVarintPlan(dAtA, i, uint64(len(m.SumColumn)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.CountColumn) > 0 {
+		i -= len(m.CountColumn)
+		copy(dAtA[i:], m.CountColumn)
+		i = encodeVarintPlan(dAtA, i, uint64(len(m.CountColumn)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *OTelMetricSummary_ValueAtQuantile) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *OTelMetricSummary_ValueAtQuantile) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *OTelMetricSummary_ValueAtQuantile) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Value != 0 {
+		i -= 8
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.Value))))
+		i--
+		dAtA[i] = 0x11
+	}
+	if m.Quantile != 0 {
+		i -= 8
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.Quantile))))
+		i--
+		dAtA[i] = 0x9
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *OTelAttribute) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *OTelAttribute) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *OTelAttribute) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ValueColumn) > 0 {
+		i -= len(m.ValueColumn)
+		copy(dAtA[i:], m.ValueColumn)
+		i = encodeVarintPlan(dAtA, i, uint64(len(m.ValueColumn)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintPlan(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *OTelMetric) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *OTelMetric) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *OTelMetric) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.TimeUnixNanoColumn) > 0 {
+		i -= len(m.TimeUnixNanoColumn)
+		copy(dAtA[i:], m.TimeUnixNanoColumn)
+		i = encodeVarintPlan(dAtA, i, uint64(len(m.TimeUnixNanoColumn)))
+		i--
+		dAtA[i] = 0x3a
+	}
+	if len(m.StartTimeUnixNanoColumn) > 0 {
+		i -= len(m.StartTimeUnixNanoColumn)
+		copy(dAtA[i:], m.StartTimeUnixNanoColumn)
+		i = encodeVarintPlan(dAtA, i, uint64(len(m.StartTimeUnixNanoColumn)))
+		i--
+		dAtA[i] = 0x32
+	}
+	if m.Data != nil {
+		{
+			size := m.Data.Size()
+			i -= size
+			if _, err := m.Data.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
+	if len(m.Attributes) > 0 {
+		for iNdEx := len(m.Attributes) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Attributes[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintPlan(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.Description) > 0 {
+		i -= len(m.Description)
+		copy(dAtA[i:], m.Description)
+		i = encodeVarintPlan(dAtA, i, uint64(len(m.Description)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintPlan(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *OTelMetric_Gauge) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *OTelMetric_Gauge) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Gauge != nil {
+		{
+			size, err := m.Gauge.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x22
+	}
+	return len(dAtA) - i, nil
+}
+func (m *OTelMetric_Summary) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *OTelMetric_Summary) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Summary != nil {
+		{
+			size, err := m.Summary.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x2a
+	}
+	return len(dAtA) - i, nil
+}
+func (m *OTelEndpointConfig) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *OTelEndpointConfig) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *OTelEndpointConfig) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Attributes) > 0 {
+		for k := range m.Attributes {
+			v := m.Attributes[k]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
+			i = encodeVarintPlan(dAtA, i, uint64(len(v)))
+			i--
+			dAtA[i] = 0x12
+			i -= len(k)
+			copy(dAtA[i:], k)
+			i = encodeVarintPlan(dAtA, i, uint64(len(k)))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintPlan(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.URL) > 0 {
+		i -= len(m.URL)
+		copy(dAtA[i:], m.URL)
+		i = encodeVarintPlan(dAtA, i, uint64(len(m.URL)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *OTelExportSinkOperator) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *OTelExportSinkOperator) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *OTelExportSinkOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.DataConfig != nil {
+		{
+			size := m.DataConfig.Size()
+			i -= size
+			if _, err := m.DataConfig.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
+	if m.EndpointConfig != nil {
+		{
+			size, err := m.EndpointConfig.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *OTelExportSinkOperator_Span) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *OTelExportSinkOperator_Span) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Span != nil {
+		{
+			size, err := m.Span.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	return len(dAtA) - i, nil
+}
+func (m *OTelExportSinkOperator_Metric) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *OTelExportSinkOperator_Metric) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Metric != nil {
+		{
+			size, err := m.Metric.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	return len(dAtA) - i, nil
+}
 func (m *ScalarExpression) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -6674,20 +8432,20 @@ func (m *ScalarFunc) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	if len(m.ArgsDataTypes) > 0 {
-		dAtA51 := make([]byte, len(m.ArgsDataTypes)*10)
-		var j50 int
+		dAtA57 := make([]byte, len(m.ArgsDataTypes)*10)
+		var j56 int
 		for _, num := range m.ArgsDataTypes {
 			for num >= 1<<7 {
-				dAtA51[j50] = uint8(uint64(num)&0x7f | 0x80)
+				dAtA57[j56] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
-				j50++
+				j56++
 			}
-			dAtA51[j50] = uint8(num)
-			j50++
+			dAtA57[j56] = uint8(num)
+			j56++
 		}
-		i -= j50
-		copy(dAtA[i:], dAtA51[:j50])
-		i = encodeVarintPlan(dAtA, i, uint64(j50))
+		i -= j56
+		copy(dAtA[i:], dAtA57[:j56])
+		i = encodeVarintPlan(dAtA, i, uint64(j56))
 		i--
 		dAtA[i] = 0x2a
 	}
@@ -6755,20 +8513,20 @@ func (m *AggregateExpression) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	if len(m.ArgsDataTypes) > 0 {
-		dAtA53 := make([]byte, len(m.ArgsDataTypes)*10)
-		var j52 int
+		dAtA59 := make([]byte, len(m.ArgsDataTypes)*10)
+		var j58 int
 		for _, num := range m.ArgsDataTypes {
 			for num >= 1<<7 {
-				dAtA53[j52] = uint8(uint64(num)&0x7f | 0x80)
+				dAtA59[j58] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
-				j52++
+				j58++
 			}
-			dAtA53[j52] = uint8(num)
-			j52++
+			dAtA59[j58] = uint8(num)
+			j58++
 		}
-		i -= j52
-		copy(dAtA[i:], dAtA53[:j52])
-		i = encodeVarintPlan(dAtA, i, uint64(j52))
+		i -= j58
+		copy(dAtA[i:], dAtA59[:j58])
+		i = encodeVarintPlan(dAtA, i, uint64(j58))
 		i--
 		dAtA[i] = 0x3a
 	}
@@ -7202,6 +8960,18 @@ func (m *Operator_EmptySourceOp) Size() (n int) {
 	_ = l
 	if m.EmptySourceOp != nil {
 		l = m.EmptySourceOp.Size()
+		n += 1 + l + sovPlan(uint64(l))
+	}
+	return n
+}
+func (m *Operator_OTelSinkOp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.OTelSinkOp != nil {
+		l = m.OTelSinkOp.Size()
 		n += 1 + l + sovPlan(uint64(l))
 	}
 	return n
@@ -7659,6 +9429,239 @@ func (m *EmptySourceOperator) Size() (n int) {
 	return n
 }
 
+func (m *OTelSpan) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovPlan(uint64(l))
+	}
+	if len(m.Attributes) > 0 {
+		for _, e := range m.Attributes {
+			l = e.Size()
+			n += 1 + l + sovPlan(uint64(l))
+		}
+	}
+	l = len(m.TraceIDColumn)
+	if l > 0 {
+		n += 1 + l + sovPlan(uint64(l))
+	}
+	l = len(m.SpanIDColumn)
+	if l > 0 {
+		n += 1 + l + sovPlan(uint64(l))
+	}
+	l = len(m.ParentSpanIDColumn)
+	if l > 0 {
+		n += 1 + l + sovPlan(uint64(l))
+	}
+	l = len(m.StartTimeUnixNanoColumn)
+	if l > 0 {
+		n += 1 + l + sovPlan(uint64(l))
+	}
+	l = len(m.EndTimeUnixNanoColumn)
+	if l > 0 {
+		n += 1 + l + sovPlan(uint64(l))
+	}
+	if m.Kind != 0 {
+		n += 1 + sovPlan(uint64(m.Kind))
+	}
+	l = len(m.StatusColumn)
+	if l > 0 {
+		n += 1 + l + sovPlan(uint64(l))
+	}
+	return n
+}
+
+func (m *OTelMetricGauge) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ValueColumn)
+	if l > 0 {
+		n += 1 + l + sovPlan(uint64(l))
+	}
+	return n
+}
+
+func (m *OTelMetricSummary) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.CountColumn)
+	if l > 0 {
+		n += 1 + l + sovPlan(uint64(l))
+	}
+	l = len(m.SumColumn)
+	if l > 0 {
+		n += 1 + l + sovPlan(uint64(l))
+	}
+	if len(m.QuantileValues) > 0 {
+		for _, e := range m.QuantileValues {
+			l = e.Size()
+			n += 1 + l + sovPlan(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *OTelMetricSummary_ValueAtQuantile) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Quantile != 0 {
+		n += 9
+	}
+	if m.Value != 0 {
+		n += 9
+	}
+	return n
+}
+
+func (m *OTelAttribute) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovPlan(uint64(l))
+	}
+	l = len(m.ValueColumn)
+	if l > 0 {
+		n += 1 + l + sovPlan(uint64(l))
+	}
+	return n
+}
+
+func (m *OTelMetric) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovPlan(uint64(l))
+	}
+	l = len(m.Description)
+	if l > 0 {
+		n += 1 + l + sovPlan(uint64(l))
+	}
+	if len(m.Attributes) > 0 {
+		for _, e := range m.Attributes {
+			l = e.Size()
+			n += 1 + l + sovPlan(uint64(l))
+		}
+	}
+	if m.Data != nil {
+		n += m.Data.Size()
+	}
+	l = len(m.StartTimeUnixNanoColumn)
+	if l > 0 {
+		n += 1 + l + sovPlan(uint64(l))
+	}
+	l = len(m.TimeUnixNanoColumn)
+	if l > 0 {
+		n += 1 + l + sovPlan(uint64(l))
+	}
+	return n
+}
+
+func (m *OTelMetric_Gauge) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Gauge != nil {
+		l = m.Gauge.Size()
+		n += 1 + l + sovPlan(uint64(l))
+	}
+	return n
+}
+func (m *OTelMetric_Summary) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Summary != nil {
+		l = m.Summary.Size()
+		n += 1 + l + sovPlan(uint64(l))
+	}
+	return n
+}
+func (m *OTelEndpointConfig) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.URL)
+	if l > 0 {
+		n += 1 + l + sovPlan(uint64(l))
+	}
+	if len(m.Attributes) > 0 {
+		for k, v := range m.Attributes {
+			_ = k
+			_ = v
+			mapEntrySize := 1 + len(k) + sovPlan(uint64(len(k))) + 1 + len(v) + sovPlan(uint64(len(v)))
+			n += mapEntrySize + 1 + sovPlan(uint64(mapEntrySize))
+		}
+	}
+	return n
+}
+
+func (m *OTelExportSinkOperator) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.EndpointConfig != nil {
+		l = m.EndpointConfig.Size()
+		n += 1 + l + sovPlan(uint64(l))
+	}
+	if m.DataConfig != nil {
+		n += m.DataConfig.Size()
+	}
+	return n
+}
+
+func (m *OTelExportSinkOperator_Span) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Span != nil {
+		l = m.Span.Size()
+		n += 1 + l + sovPlan(uint64(l))
+	}
+	return n
+}
+func (m *OTelExportSinkOperator_Metric) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Metric != nil {
+		l = m.Metric.Size()
+		n += 1 + l + sovPlan(uint64(l))
+	}
+	return n
+}
 func (m *ScalarExpression) Size() (n int) {
 	if m == nil {
 		return 0
@@ -8118,6 +10121,16 @@ func (this *Operator_EmptySourceOp) String() string {
 	}, "")
 	return s
 }
+func (this *Operator_OTelSinkOp) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Operator_OTelSinkOp{`,
+		`OTelSinkOp:` + strings.Replace(fmt.Sprintf("%v", this.OTelSinkOp), "OTelExportSinkOperator", "OTelExportSinkOperator", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *Operator_GRPCSinkOp) String() string {
 	if this == nil {
 		return "nil"
@@ -8395,6 +10408,170 @@ func (this *EmptySourceOperator) String() string {
 	s := strings.Join([]string{`&EmptySourceOperator{`,
 		`ColumnNames:` + fmt.Sprintf("%v", this.ColumnNames) + `,`,
 		`ColumnTypes:` + fmt.Sprintf("%v", this.ColumnTypes) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *OTelSpan) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForAttributes := "[]*OTelAttribute{"
+	for _, f := range this.Attributes {
+		repeatedStringForAttributes += strings.Replace(f.String(), "OTelAttribute", "OTelAttribute", 1) + ","
+	}
+	repeatedStringForAttributes += "}"
+	s := strings.Join([]string{`&OTelSpan{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Attributes:` + repeatedStringForAttributes + `,`,
+		`TraceIDColumn:` + fmt.Sprintf("%v", this.TraceIDColumn) + `,`,
+		`SpanIDColumn:` + fmt.Sprintf("%v", this.SpanIDColumn) + `,`,
+		`ParentSpanIDColumn:` + fmt.Sprintf("%v", this.ParentSpanIDColumn) + `,`,
+		`StartTimeUnixNanoColumn:` + fmt.Sprintf("%v", this.StartTimeUnixNanoColumn) + `,`,
+		`EndTimeUnixNanoColumn:` + fmt.Sprintf("%v", this.EndTimeUnixNanoColumn) + `,`,
+		`Kind:` + fmt.Sprintf("%v", this.Kind) + `,`,
+		`StatusColumn:` + fmt.Sprintf("%v", this.StatusColumn) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *OTelMetricGauge) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&OTelMetricGauge{`,
+		`ValueColumn:` + fmt.Sprintf("%v", this.ValueColumn) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *OTelMetricSummary) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForQuantileValues := "[]*OTelMetricSummary_ValueAtQuantile{"
+	for _, f := range this.QuantileValues {
+		repeatedStringForQuantileValues += strings.Replace(fmt.Sprintf("%v", f), "OTelMetricSummary_ValueAtQuantile", "OTelMetricSummary_ValueAtQuantile", 1) + ","
+	}
+	repeatedStringForQuantileValues += "}"
+	s := strings.Join([]string{`&OTelMetricSummary{`,
+		`CountColumn:` + fmt.Sprintf("%v", this.CountColumn) + `,`,
+		`SumColumn:` + fmt.Sprintf("%v", this.SumColumn) + `,`,
+		`QuantileValues:` + repeatedStringForQuantileValues + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *OTelMetricSummary_ValueAtQuantile) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&OTelMetricSummary_ValueAtQuantile{`,
+		`Quantile:` + fmt.Sprintf("%v", this.Quantile) + `,`,
+		`Value:` + fmt.Sprintf("%v", this.Value) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *OTelAttribute) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&OTelAttribute{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`ValueColumn:` + fmt.Sprintf("%v", this.ValueColumn) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *OTelMetric) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForAttributes := "[]*OTelAttribute{"
+	for _, f := range this.Attributes {
+		repeatedStringForAttributes += strings.Replace(f.String(), "OTelAttribute", "OTelAttribute", 1) + ","
+	}
+	repeatedStringForAttributes += "}"
+	s := strings.Join([]string{`&OTelMetric{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Description:` + fmt.Sprintf("%v", this.Description) + `,`,
+		`Attributes:` + repeatedStringForAttributes + `,`,
+		`Data:` + fmt.Sprintf("%v", this.Data) + `,`,
+		`StartTimeUnixNanoColumn:` + fmt.Sprintf("%v", this.StartTimeUnixNanoColumn) + `,`,
+		`TimeUnixNanoColumn:` + fmt.Sprintf("%v", this.TimeUnixNanoColumn) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *OTelMetric_Gauge) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&OTelMetric_Gauge{`,
+		`Gauge:` + strings.Replace(fmt.Sprintf("%v", this.Gauge), "OTelMetricGauge", "OTelMetricGauge", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *OTelMetric_Summary) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&OTelMetric_Summary{`,
+		`Summary:` + strings.Replace(fmt.Sprintf("%v", this.Summary), "OTelMetricSummary", "OTelMetricSummary", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *OTelEndpointConfig) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForAttributes := make([]string, 0, len(this.Attributes))
+	for k, _ := range this.Attributes {
+		keysForAttributes = append(keysForAttributes, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForAttributes)
+	mapStringForAttributes := "map[string]string{"
+	for _, k := range keysForAttributes {
+		mapStringForAttributes += fmt.Sprintf("%v: %v,", k, this.Attributes[k])
+	}
+	mapStringForAttributes += "}"
+	s := strings.Join([]string{`&OTelEndpointConfig{`,
+		`URL:` + fmt.Sprintf("%v", this.URL) + `,`,
+		`Attributes:` + mapStringForAttributes + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *OTelExportSinkOperator) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&OTelExportSinkOperator{`,
+		`EndpointConfig:` + strings.Replace(this.EndpointConfig.String(), "OTelEndpointConfig", "OTelEndpointConfig", 1) + `,`,
+		`DataConfig:` + fmt.Sprintf("%v", this.DataConfig) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *OTelExportSinkOperator_Span) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&OTelExportSinkOperator_Span{`,
+		`Span:` + strings.Replace(fmt.Sprintf("%v", this.Span), "OTelSpan", "OTelSpan", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *OTelExportSinkOperator_Metric) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&OTelExportSinkOperator_Metric{`,
+		`Metric:` + strings.Replace(fmt.Sprintf("%v", this.Metric), "OTelMetric", "OTelMetric", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -9887,6 +12064,41 @@ func (m *Operator) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			m.Op = &Operator_EmptySourceOp{v}
+			iNdEx = postIndex
+		case 14:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OTelSinkOp", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &OTelExportSinkOperator{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Op = &Operator_OTelSinkOp{v}
 			iNdEx = postIndex
 		case 1000:
 			if wireType != 2 {
@@ -12765,6 +14977,1396 @@ func (m *EmptySourceOperator) Unmarshal(dAtA []byte) error {
 			} else {
 				return fmt.Errorf("proto: wrong wireType = %d for field ColumnTypes", wireType)
 			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPlan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *OTelSpan) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPlan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: OTelSpan: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: OTelSpan: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Attributes", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Attributes = append(m.Attributes, &OTelAttribute{})
+			if err := m.Attributes[len(m.Attributes)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TraceIDColumn", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TraceIDColumn = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SpanIDColumn", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SpanIDColumn = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ParentSpanIDColumn", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ParentSpanIDColumn = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StartTimeUnixNanoColumn", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.StartTimeUnixNanoColumn = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EndTimeUnixNanoColumn", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EndTimeUnixNanoColumn = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 8:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Kind", wireType)
+			}
+			m.Kind = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Kind |= OTelSpanKind(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StatusColumn", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.StatusColumn = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPlan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *OTelMetricGauge) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPlan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: OTelMetricGauge: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: OTelMetricGauge: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValueColumn", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ValueColumn = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPlan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *OTelMetricSummary) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPlan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: OTelMetricSummary: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: OTelMetricSummary: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CountColumn", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CountColumn = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SumColumn", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SumColumn = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field QuantileValues", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.QuantileValues = append(m.QuantileValues, &OTelMetricSummary_ValueAtQuantile{})
+			if err := m.QuantileValues[len(m.QuantileValues)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPlan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *OTelMetricSummary_ValueAtQuantile) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPlan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ValueAtQuantile: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ValueAtQuantile: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 1 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Quantile", wireType)
+			}
+			var v uint64
+			if (iNdEx + 8) > l {
+				return io.ErrUnexpectedEOF
+			}
+			v = uint64(encoding_binary.LittleEndian.Uint64(dAtA[iNdEx:]))
+			iNdEx += 8
+			m.Quantile = float64(math.Float64frombits(v))
+		case 2:
+			if wireType != 1 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
+			}
+			var v uint64
+			if (iNdEx + 8) > l {
+				return io.ErrUnexpectedEOF
+			}
+			v = uint64(encoding_binary.LittleEndian.Uint64(dAtA[iNdEx:]))
+			iNdEx += 8
+			m.Value = float64(math.Float64frombits(v))
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPlan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *OTelAttribute) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPlan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: OTelAttribute: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: OTelAttribute: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValueColumn", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ValueColumn = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPlan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *OTelMetric) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPlan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: OTelMetric: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: OTelMetric: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Description", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Description = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Attributes", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Attributes = append(m.Attributes, &OTelAttribute{})
+			if err := m.Attributes[len(m.Attributes)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Gauge", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &OTelMetricGauge{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Data = &OTelMetric_Gauge{v}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Summary", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &OTelMetricSummary{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Data = &OTelMetric_Summary{v}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StartTimeUnixNanoColumn", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.StartTimeUnixNanoColumn = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TimeUnixNanoColumn", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TimeUnixNanoColumn = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPlan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *OTelEndpointConfig) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPlan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: OTelEndpointConfig: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: OTelEndpointConfig: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field URL", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.URL = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Attributes", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Attributes == nil {
+				m.Attributes = make(map[string]string)
+			}
+			var mapkey string
+			var mapvalue string
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowPlan
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					wire |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					var stringLenmapkey uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowPlan
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapkey |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapkey := int(stringLenmapkey)
+					if intStringLenmapkey < 0 {
+						return ErrInvalidLengthPlan
+					}
+					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey < 0 {
+						return ErrInvalidLengthPlan
+					}
+					if postStringIndexmapkey > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
+					iNdEx = postStringIndexmapkey
+				} else if fieldNum == 2 {
+					var stringLenmapvalue uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowPlan
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapvalue |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapvalue := int(stringLenmapvalue)
+					if intStringLenmapvalue < 0 {
+						return ErrInvalidLengthPlan
+					}
+					postStringIndexmapvalue := iNdEx + intStringLenmapvalue
+					if postStringIndexmapvalue < 0 {
+						return ErrInvalidLengthPlan
+					}
+					if postStringIndexmapvalue > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapvalue = string(dAtA[iNdEx:postStringIndexmapvalue])
+					iNdEx = postStringIndexmapvalue
+				} else {
+					iNdEx = entryPreIndex
+					skippy, err := skipPlan(dAtA[iNdEx:])
+					if err != nil {
+						return err
+					}
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
+						return ErrInvalidLengthPlan
+					}
+					if (iNdEx + skippy) > postIndex {
+						return io.ErrUnexpectedEOF
+					}
+					iNdEx += skippy
+				}
+			}
+			m.Attributes[mapkey] = mapvalue
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPlan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *OTelExportSinkOperator) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPlan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: OTelExportSinkOperator: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: OTelExportSinkOperator: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EndpointConfig", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.EndpointConfig == nil {
+				m.EndpointConfig = &OTelEndpointConfig{}
+			}
+			if err := m.EndpointConfig.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Span", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &OTelSpan{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.DataConfig = &OTelExportSinkOperator_Span{v}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Metric", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &OTelMetric{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.DataConfig = &OTelExportSinkOperator_Metric{v}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipPlan(dAtA[iNdEx:])
