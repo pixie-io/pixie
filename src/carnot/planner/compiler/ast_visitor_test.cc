@@ -1389,36 +1389,19 @@ constexpr char kFuncDocStringQuery[] = R"pxl(
 import px
 def f():
   """This is a function doc string."""
-  return 1
-df = px.DataFrame(table='cpu', select=['cpu0'])
-px.display(df, f.__doc__)
+  return px.DataFrame(table='cpu', select=['cpu0'])
+px.display(f())
 )pxl";
 
 TEST_F(ASTVisitorTest, func_doc_string) {
+  // Make sure that a function documentation string still allows a function to be called.
   auto graph_or_s = CompileGraph(kFuncDocStringQuery);
   ASSERT_OK(graph_or_s);
   auto graph = graph_or_s.ConsumeValueOrDie();
-  std::vector<IRNode*> sink_nodes = graph->FindNodesThatMatch(ExternalGRPCSink());
-  ASSERT_EQ(sink_nodes.size(), 1);
-  GRPCSinkIR* sink = static_cast<GRPCSinkIR*>(sink_nodes[0]);
-  EXPECT_EQ("This is a function doc string.", sink->name());
-}
-
-constexpr char kNoDocStringQuery[] = R"pxl(
-import px
-df = px.DataFrame(table='cpu', select=['cpu0'])
-a = __doc__
-px.display(df, a)
-)pxl";
-
-TEST_F(ASTVisitorTest, no_doc_string) {
-  auto graph_or_s = CompileGraph(kNoDocStringQuery);
-  ASSERT_OK(graph_or_s);
-  auto graph = graph_or_s.ConsumeValueOrDie();
-  std::vector<IRNode*> sink_nodes = graph->FindNodesThatMatch(ExternalGRPCSink());
-  ASSERT_EQ(sink_nodes.size(), 1);
-  GRPCSinkIR* sink = static_cast<GRPCSinkIR*>(sink_nodes[0]);
-  EXPECT_EQ("", sink->name());
+  std::vector<IRNode*> source_nodes = graph->FindNodesOfType(IRNodeType::kMemorySource);
+  ASSERT_EQ(source_nodes.size(), 1);
+  MemorySourceIR* src = static_cast<MemorySourceIR*>(source_nodes[0]);
+  EXPECT_EQ("cpu", src->table_name());
 }
 
 constexpr char kArgAnnotationsQuery[] = R"pxl(

@@ -202,14 +202,6 @@ class QLObject {
   }
 
   /**
-   * @brief Sets the doc string of this object.
-   *
-   * @param doc_string
-   * @return Status
-   */
-  Status SetDocString(QLObjectPtr doc_string);
-
-  /**
    * @brief Sets the docstring of this object, but doesn't add the property.
    *
    * PP-2142 needed to get around the fact that IR nodes are necessary to

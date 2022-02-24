@@ -729,7 +729,9 @@ Status ASTVisitorImpl::ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& nod
   }
 
   PL_ASSIGN_OR_RETURN(auto doc_string, ProcessFuncDefDocString(body));
-  PL_RETURN_IF_ERROR(defined_func->SetDocString(doc_string));
+  DCHECK(doc_string->HasNode());
+  DCHECK_EQ(doc_string->node()->type(), IRNodeType::kString);
+  PL_RETURN_IF_ERROR(defined_func->SetDocString(static_cast<StringIR*>(doc_string->node())->str()));
 
   PL_RETURN_IF_ERROR(defined_func->ResolveArgAnnotationsToTypes(arg_annotations_objs));
 
