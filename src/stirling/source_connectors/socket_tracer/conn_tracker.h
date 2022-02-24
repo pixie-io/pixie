@@ -103,7 +103,16 @@ class ConnTracker : NotCopyMoveable {
     kInvalidRecords,
   };
 
-  // State values change monotonically from lower to higher values; and cannot change reversely.
+  // State values change monotonically from lower to higher values.
+  //
+  //                           |                 State
+  //                           | Collecting | Transferring | Disabled
+  // --------------------------|------------|--------------|-------------
+  // Accepts data events       | Yes        | Yes          | No (dropped)
+  // Accepts metadata events   | Yes        | Yes          | Yes
+  // Accepts conn stats events | Yes        | Yes          | Yes
+  // Pushes data records       | No         | Yes          | No
+  // Pushes conn stats records | Yes        | Yes          | Yes
   enum class State {
     // When collecting, the tracker collects data from BPF, but does not push them to table store.
     kCollecting,
