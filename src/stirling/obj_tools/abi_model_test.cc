@@ -25,7 +25,7 @@ namespace px {
 namespace stirling {
 namespace obj_tools {
 
-using px::operator<<;
+using ::px::operator<<;
 
 TEST(GolangStackABIModel, FunctionParameters) {
   std::unique_ptr<ABICallingConventionModel> abi_model =

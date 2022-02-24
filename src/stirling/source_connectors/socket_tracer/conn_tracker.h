@@ -436,8 +436,10 @@ class ConnTracker : NotCopyMoveable {
   bool ReadyForDestruction() const;
 
   void set_current_time(std::chrono::time_point<std::chrono::steady_clock> time) {
-    DCHECK(time >= current_time_);
+    ECHECK(time >= current_time_);
     current_time_ = time;
+    recv_data_.set_current_time(time);
+    send_data_.set_current_time(time);
 
     // If there's no previous activity, set to current time.
     if (last_activity_timestamp_.time_since_epoch().count() == 0) {
@@ -700,6 +702,10 @@ class ConnTracker : NotCopyMoveable {
   // Recorded as the latest timestamp on a BPF event.
   uint64_t last_bpf_timestamp_ns_ = 0;
 
+  // The current_time_ is the time the tracker should assume to be "now" during its processing.
+  // The value is set by set_current_time().
+  // This approach helps to avoid repeated calls to get the clock, and improves testability.
+  // In the context of the SocketTracer, the current time is set at beginning of each iteration.
   std::chrono::time_point<std::chrono::steady_clock> current_time_;
 
   // The timestamp of the last update on this connection which alters the states.

@@ -140,7 +140,7 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
   // Note that missing events is handled separately (not considered stuck).
   bool made_progress = data_buffer_.empty() || (data_buffer_.position() != orig_pos);
   if (made_progress) {
-    ResetLastProgressTimeToNow();
+    UpdateLastProgressTime();
   }
 
   if (parse_result.state == ParseState::kEOS) {
@@ -155,7 +155,7 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
 
     // TODO(oazizi): A dedicated data_buffer_.Flush() implementation would be more efficient.
     data_buffer_.RemovePrefix(data_buffer_.size());
-    ResetLastProgressTimeToNow();
+    UpdateLastProgressTime();
   }
 
   last_parse_state_ = parse_result.state;
@@ -191,7 +191,7 @@ template void DataStream::ProcessBytesToFrames<protocols::nats::Message, protoco
 void DataStream::Reset() {
   data_buffer_.Reset();
   has_new_events_ = false;
-  ResetLastProgressTimeToNow();
+  UpdateLastProgressTime();
 
   frames_ = std::monostate();
 }

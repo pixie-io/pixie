@@ -151,14 +151,14 @@ class DataStream : NotCopyMoveable {
   bool IsSyncRequired() const {
     const auto kSyncTimeout = std::chrono::seconds(FLAGS_buffer_resync_duration_secs);
 
-    return (std::chrono::steady_clock::now() - last_progress_time_) >= kSyncTimeout;
+    return (current_time_ - last_progress_time_) >= kSyncTimeout;
   }
 
   int stat_invalid_frames() const { return stat_invalid_frames_; }
   int stat_valid_frames() const { return stat_valid_frames_; }
   int stat_raw_data_gaps() const { return stat_raw_data_gaps_; }
 
-  void ResetLastProgressTimeToNow() { last_progress_time_ = std::chrono::steady_clock::now(); }
+  void UpdateLastProgressTime() { last_progress_time_ = current_time_; }
 
   /**
    * Fraction of frame parsing attempts that resulted in an invalid frame.
@@ -198,6 +198,16 @@ class DataStream : NotCopyMoveable {
 
   void set_conn_closed() { conn_closed_ = true; }
 
+  void set_current_time(std::chrono::time_point<std::chrono::steady_clock> time) {
+    ECHECK(time >= current_time_);
+    current_time_ = time;
+
+    // If there's no previous activity, set to current time.
+    if (last_progress_time_.time_since_epoch().count() == 0) {
+      UpdateLastProgressTime();
+    }
+  }
+
   /**
    * Cleanup frames that are parsed from the BPF events, when the condition is right.
    */
@@ -222,7 +232,7 @@ class DataStream : NotCopyMoveable {
     if (last_progress_time_ < expiry_timestamp) {
       data_buffer_.Reset();
       has_new_events_ = false;
-      ResetLastProgressTimeToNow();
+      UpdateLastProgressTime();
       return true;
     }
 
@@ -278,9 +288,14 @@ class DataStream : NotCopyMoveable {
   // changed.
   bool has_new_events_ = false;
 
+  // The current_time_ is the time the tracker should assume to be "now" during its processing.
+  // The value is set by set_current_time().
+  // This approach helps to avoid repeated calls to get the clock, and improves testability.
+  // In the context of the SocketTracer, the current time is set at beginning of each iteration.
+  std::chrono::time_point<std::chrono::steady_clock> current_time_;
+
   // The timestamp when progress was last made in the data buffer. It's used in CleanupEvents().
-  std::chrono::time_point<std::chrono::steady_clock> last_progress_time_ =
-      std::chrono::steady_clock::now();
+  std::chrono::time_point<std::chrono::steady_clock> last_progress_time_;
 
   // This is set to true when connection is closed.
   bool conn_closed_ = false;
