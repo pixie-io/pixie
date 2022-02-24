@@ -1,4 +1,16 @@
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wrk-config
+  namespace: px-protocol-loadtest
+data:
+  wrk.lua: |
+    wrk.method = "POST"
+    wrk.body   = "{\"body_size\":12288, \"header_size\":1024, \"chunk_size\":12288}"
+    wrk.headers["Content-Type"] = "application/json"
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -20,13 +32,13 @@ spec:
         # yamllint disable
         command: ['sh', '-c', 'set -xe;
           URL="${PROTOCOL}://${SERVICE_NAME}:${SERVICE_PORT}${HEALTH_PATH}";
-          until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
+          until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" --data {} ${URL}) -eq 200 ]; do
             echo "waiting for ${URL}";
             sleep 2;
           done;']
         env:
         - name: SERVICE_NAME
-          value: "http-server"
+          value: "server"
         - name: SERVICE_PORT
           value: "8080"
         - name: HEALTH_PATH
@@ -35,15 +47,15 @@ spec:
           value: "http"
       containers:
       - name: app
-        image: gcr.io/pixie-oss/pixie-dev/experimental/wrk:latest
+        image: gcr.io/pixie-oss/pixie-dev/src/e2e_test/protocol_loadtest/http/wrk:latest
         # yamllint disable
         command: ['sh', '-c', 'set -xe;
           while true; do
-            wrk -t${NUM_THREADS} -c${NUM_CONNECTIONS} -d${DURATION} http://${SERVICE_NAME}:${SERVICE_PORT};
+            wrk -t${NUM_THREADS} -c${NUM_CONNECTIONS} -d${DURATION} -s/config/wrk.lua http://${SERVICE_NAME}:${SERVICE_PORT};
           done;']
         env:
         - name: SERVICE_NAME
-          value: "http-server"
+          value: "server"
         - name: SERVICE_PORT
           value: "8080"
         - name: NUM_CONNECTIONS
@@ -53,3 +65,10 @@ spec:
         # duration doesn't really matter because the load generator is called in a loop.
         - name: DURATION
           value: "1m"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /config
+      volumes:
+      - name: config-volume
+        configMap:
+          name: wrk-config

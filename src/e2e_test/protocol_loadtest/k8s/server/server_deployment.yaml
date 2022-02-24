@@ -26,3 +26,12 @@ spec:
           value: "9080"
         - name: GRPC_SSL_PORT
           value: "9081"
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 8081
+          name: https
+        - containerPort: 9080
+          name: grpc
+        - containerPort: 9081
+          name: grpcs
