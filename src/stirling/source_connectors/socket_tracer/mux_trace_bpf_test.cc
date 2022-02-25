@@ -42,7 +42,6 @@ namespace stirling {
 
 namespace mux = protocols::mux;
 
-using ::px::stirling::testing::ColWrapperSizeIs;
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
 using ::px::stirling::testing::FindRecordsMatchingPID;
 using ::px::stirling::testing::SocketTraceBPFTest;

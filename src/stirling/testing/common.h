@@ -57,6 +57,15 @@ MATCHER_P(ColWrapperSizeIs, size, absl::Substitute("is a ColumnWrapper having $0
   return arg->Size() == static_cast<size_t>(size);
 }
 
+MATCHER_P(RecordBatchSizeIs, size, absl::Substitute("is a RecordBatch having $0 elements", size)) {
+  // Check consistency of record back. All columns should have the same size.
+  for (const auto& col : arg) {
+    CHECK_EQ(col->Size(), arg[0]->Size());
+  }
+
+  return !arg.empty() && arg[0]->Size() == static_cast<size_t>(size);
+}
+
 MATCHER(ColWrapperIsEmpty, "is an empty ColumnWrapper") { return arg->Empty(); }
 
 // Useful to prepare data tables for use with TransferData().

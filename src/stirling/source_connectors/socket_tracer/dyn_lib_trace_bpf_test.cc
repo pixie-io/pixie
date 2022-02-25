@@ -42,7 +42,6 @@ namespace http = protocols::http;
 using ::px::operator<<;
 
 using ::px::stirling::testing::EqHTTPRecord;
-using ::px::stirling::testing::FindRecordIdxMatchesPID;
 using ::px::stirling::testing::GetTargetRecords;
 using ::px::stirling::testing::SocketTraceBPFTest;
 using ::px::stirling::testing::ToRecordVector;

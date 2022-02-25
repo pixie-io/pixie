@@ -26,7 +26,7 @@
 namespace px {
 namespace stirling {
 
-using ::px::stirling::testing::ColWrapperSizeIs;
+using ::px::stirling::testing::RecordBatchSizeIs;
 using ::testing::Each;
 using ::testing::ElementsAre;
 using ::testing::EndsWith;
@@ -58,7 +58,7 @@ TEST(RecordBuilder, StringMaxSize) {
   ASSERT_EQ(tablets.size(), 1);
   types::ColumnWrapperRecordBatch& record_batch = tablets[0].records;
 
-  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
+  ASSERT_THAT(record_batch, RecordBatchSizeIs(1));
 
   EXPECT_THAT(record_batch[2]->Get<types::StringValue>(0), StartsWith(kExpectedString));
   EXPECT_THAT(record_batch[2]->Get<types::StringValue>(0), EndsWith("[TRUNCATED]"));
@@ -120,7 +120,7 @@ TEST(DynamicRecordBuilder, StringMaxSize) {
   ASSERT_EQ(tablets.size(), 1);
   types::ColumnWrapperRecordBatch& record_batch = tablets[0].records;
 
-  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
+  ASSERT_THAT(record_batch, RecordBatchSizeIs(1));
 
   EXPECT_THAT(record_batch[2]->Get<types::StringValue>(0), StartsWith(kExpectedString));
   EXPECT_THAT(record_batch[2]->Get<types::StringValue>(0), EndsWith("[TRUNCATED]"));

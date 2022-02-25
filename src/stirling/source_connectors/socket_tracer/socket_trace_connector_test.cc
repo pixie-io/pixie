@@ -47,7 +47,7 @@ namespace cass = protocols::cass;
 using ::testing::Each;
 using ::testing::ElementsAre;
 
-using ::px::stirling::testing::ColWrapperSizeIs;
+using ::px::stirling::testing::RecordBatchSizeIs;
 
 using ::px::stirling::testing::kFD;
 using ::px::stirling::testing::kPID;
@@ -266,7 +266,7 @@ TEST_F(SocketTraceConnectorTest, HTTPBasic) {
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
 
-  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
+  EXPECT_THAT(record_batch, RecordBatchSizeIs(1));
   EXPECT_THAT(ToStringVector(record_batch[kHTTPReqBodyIdx]), ElementsAre("I have a message body"));
   EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]), ElementsAre("foo"));
 }
@@ -306,7 +306,7 @@ TEST_F(SocketTraceConnectorTest, HTTPDelayedRespBody) {
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
 
-  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
+  EXPECT_THAT(record_batch, RecordBatchSizeIs(1));
   EXPECT_THAT(ToStringVector(record_batch[kHTTPReqBodyIdx]), ElementsAre(""));
   EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]), ElementsAre("hello world"));
 }
@@ -348,7 +348,7 @@ TEST_F(SocketTraceConnectorTest, HTTPContentType) {
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
 
-  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(4)))
+  EXPECT_THAT(record_batch, RecordBatchSizeIs(4))
       << "The filter is changed to require 'application/json' in Content-Type header, "
          "and event_json Content-Type matches, and is selected";
   EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]),
@@ -399,7 +399,7 @@ TEST_F(SocketTraceConnectorTest, SortedByResponseTime) {
   std::vector<TaggedRecordBatch> tablets = cql_table_->ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
-  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
+  EXPECT_THAT(record_batch, RecordBatchSizeIs(2));
 
   // Note that results are sorted by response time, not request time.
   EXPECT_THAT(ToStringVector(record_batch[kCQLReqBody]),
@@ -948,7 +948,7 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
   tablets = mysql_table_->ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   record_batch = tablets[0].records;
-  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
+  EXPECT_THAT(record_batch, RecordBatchSizeIs(2));
 
   std::string expected_entry0 =
       "SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock "
@@ -990,7 +990,7 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
   tablets = mysql_table_->ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   record_batch = tablets[0].records;
-  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
+  EXPECT_THAT(record_batch, RecordBatchSizeIs(2));
   EXPECT_THAT(ToStringVector(record_batch[kMySQLReqBodyIdx]),
               ElementsAre("", "Execute stmt_id=2."));
   EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]),
@@ -1023,7 +1023,7 @@ TEST_F(SocketTraceConnectorTest, MySQLQuery) {
   std::vector<TaggedRecordBatch> tablets = mysql_table_->ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
-  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
+  EXPECT_THAT(record_batch, RecordBatchSizeIs(1));
 
   EXPECT_THAT(ToStringVector(record_batch[kMySQLReqBodyIdx]), ElementsAre("SELECT name FROM tag;"));
   EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]), ElementsAre("Resultset rows = 3"));
@@ -1134,7 +1134,7 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
   std::vector<TaggedRecordBatch> tablets = mysql_table_->ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
-  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(9)));
+  EXPECT_THAT(record_batch, RecordBatchSizeIs(9));
 
   // In this test environment, latencies are the number of events.
 
@@ -1265,7 +1265,7 @@ TEST_F(SocketTraceConnectorTest, MySQLQueryWithLargeResultset) {
   std::vector<TaggedRecordBatch> tablets = mysql_table_->ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
-  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
+  ASSERT_THAT(record_batch, RecordBatchSizeIs(1));
   int idx = 0;
   EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx),
             "SELECT emp_no FROM employees WHERE emp_no < 15000;");
@@ -1354,7 +1354,7 @@ TEST_F(SocketTraceConnectorTest, MySQLMultiResultset) {
   std::vector<TaggedRecordBatch> tablets = mysql_table_->ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
-  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
+  ASSERT_THAT(record_batch, RecordBatchSizeIs(1));
   int idx = 0;
   EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx), "CALL multi()");
   EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx),
@@ -1414,7 +1414,7 @@ TEST_F(SocketTraceConnectorTest, CQLQuery) {
   std::vector<TaggedRecordBatch> tablets = cql_table_->ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
-  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
+  EXPECT_THAT(record_batch, RecordBatchSizeIs(1));
 
   EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kCQLReqOp]),
               ElementsAre(static_cast<int64_t>(cass::ReqOp::kQuery)));
@@ -1467,7 +1467,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ClientTest) {
   std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
-  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
+  ASSERT_THAT(record_batch, RecordBatchSizeIs(1));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
   EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 0);
@@ -1509,7 +1509,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ServerTest) {
   std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
-  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
+  ASSERT_THAT(record_batch, RecordBatchSizeIs(1));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
   EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 0);
@@ -1585,7 +1585,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2SpanAcrossTransferData) {
   tablets = http_table_->ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   record_batch = tablets[0].records;
-  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
+  ASSERT_THAT(record_batch, RecordBatchSizeIs(1));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
   EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 0);
@@ -1624,7 +1624,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2SequentialStreams) {
   std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
-  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
+  ASSERT_THAT(record_batch, RecordBatchSizeIs(4));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request7");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response7");
   EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 0);
@@ -1690,7 +1690,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ParallelStreams) {
   std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
-  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
+  ASSERT_THAT(record_batch, RecordBatchSizeIs(4));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request7");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response7");
   EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 0);
@@ -1759,7 +1759,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2StreamSandwich) {
   std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
-  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
+  ASSERT_THAT(record_batch, RecordBatchSizeIs(2));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request9");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response9");
   EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 0);
@@ -1802,7 +1802,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2StreamIDRace) {
   std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
-  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
+  ASSERT_THAT(record_batch, RecordBatchSizeIs(4));
 
   // Note that results are sorted by time of request/response pair. See stream_ids vector above.
 
@@ -1857,7 +1857,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2OldStream) {
   std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
-  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
+  ASSERT_THAT(record_batch, RecordBatchSizeIs(4));
 
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request117");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response117");

@@ -41,8 +41,9 @@ namespace px {
 namespace stirling {
 
 using ::google::protobuf::TextFormat;
-using ::px::stirling::testing::ColWrapperSizeIs;
+
 using ::px::stirling::testing::FindRecordsMatchingPID;
+using ::px::stirling::testing::RecordBatchSizeIs;
 using ::testing::Each;
 using ::testing::Ge;
 using ::testing::Gt;
@@ -183,7 +184,7 @@ TEST_F(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
     types::ColumnWrapperRecordBatch records =
         FindRecordsMatchingPID(tablets[0].records, /*index*/ 0, s_.child_pid());
 
-    ASSERT_THAT(records, Each(ColWrapperSizeIs(10)));
+    ASSERT_THAT(records, RecordBatchSizeIs(10));
 
     constexpr size_t kStreamIDIdx = 3;
     constexpr size_t kEndStreamIdx = 4;
@@ -207,7 +208,7 @@ TEST_F(GoHTTPDynamicTraceTest, TraceReturnValue) {
     types::ColumnWrapperRecordBatch records =
         FindRecordsMatchingPID(tablets[0].records, /*index*/ 0, s_.child_pid());
 
-    ASSERT_THAT(records, Each(ColWrapperSizeIs(80)));
+    ASSERT_THAT(records, RecordBatchSizeIs(80));
 
     constexpr size_t kFrameHeaderValidIdx = 3;
 

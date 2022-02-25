@@ -31,8 +31,8 @@
 namespace px {
 namespace stirling {
 
-using ::px::stirling::testing::ColWrapperSizeIs;
 using ::px::stirling::testing::FindRecordsMatchingPID;
+using ::px::stirling::testing::RecordBatchSizeIs;
 using ::px::stirling::testing::SocketTraceBPFTest;
 
 using ::testing::Each;
@@ -82,7 +82,7 @@ TEST_F(DNSTraceTest, Capture) {
     types::ColumnWrapperRecordBatch records =
         FindRecordsMatchingPID(tablets[0].records, kDNSUPIDIdx, container_.process_pid());
 
-    ASSERT_THAT(records, Each(ColWrapperSizeIs(1)));
+    ASSERT_THAT(records, RecordBatchSizeIs(1));
 
     const std::string& req_hdr = records[kDNSReqHdrIdx]->Get<types::StringValue>(0);
     const std::string& req_body = records[kDNSReqBodyIdx]->Get<types::StringValue>(0);

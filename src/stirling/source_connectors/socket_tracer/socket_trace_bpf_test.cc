@@ -44,19 +44,13 @@
 namespace px {
 namespace stirling {
 
-using ::px::stirling::testing::ColWrapperIsEmpty;
-using ::px::stirling::testing::ColWrapperSizeIs;
 using ::px::stirling::testing::FindRecordsMatchingPID;
+using ::px::stirling::testing::RecordBatchSizeIs;
 using ::px::system::TCPSocket;
 using ::px::system::UDPSocket;
 using ::px::system::UnixSocket;
 using ::px::types::ColumnWrapperRecordBatch;
-using ::testing::Each;
-using ::testing::ElementsAre;
-using ::testing::Gt;
 using ::testing::HasSubstr;
-using ::testing::IsEmpty;
-using ::testing::SizeIs;
 using ::testing::StrEq;
 
 constexpr std::string_view kHTTPReqMsg1 =
@@ -172,7 +166,7 @@ TEST_P(NonVecSyscallTests, NonVecSyscalls) {
     ColumnWrapperRecordBatch records =
         FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, system.ClientPID());
 
-    ASSERT_THAT(records, Each(ColWrapperSizeIs(2)));
+    ASSERT_THAT(records, RecordBatchSizeIs(2));
 
     EXPECT_THAT(records[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
     EXPECT_THAT(records[kHTTPRespHeadersIdx]->Get<types::StringValue>(1), HasSubstr("msg2"));
@@ -191,7 +185,7 @@ TEST_P(NonVecSyscallTests, NonVecSyscalls) {
     ColumnWrapperRecordBatch records =
         FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, system.ServerPID());
 
-    ASSERT_THAT(records, Each(ColWrapperSizeIs(2)));
+    ASSERT_THAT(records, RecordBatchSizeIs(2));
 
     EXPECT_THAT(records[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
     EXPECT_THAT(records[kHTTPRespHeadersIdx]->Get<types::StringValue>(1), HasSubstr("msg2"));
@@ -253,7 +247,7 @@ TEST_P(IOVecSyscallTests, IOVecSyscalls) {
     ColumnWrapperRecordBatch records =
         FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, system.ServerPID());
 
-    ASSERT_THAT(records, Each(ColWrapperSizeIs(2)));
+    ASSERT_THAT(records, RecordBatchSizeIs(2));
 
     EXPECT_EQ(200, records[kHTTPRespStatusIdx]->Get<types::Int64Value>(0).val);
     EXPECT_THAT(std::string(records[kHTTPRespBodyIdx]->Get<types::StringValue>(0)), StrEq("a"));
@@ -269,7 +263,7 @@ TEST_P(IOVecSyscallTests, IOVecSyscalls) {
     ColumnWrapperRecordBatch records =
         FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, system.ClientPID());
 
-    ASSERT_THAT(records, Each(ColWrapperSizeIs(2)));
+    ASSERT_THAT(records, RecordBatchSizeIs(2));
 
     EXPECT_EQ(200, records[kHTTPRespStatusIdx]->Get<types::Int64Value>(0).val);
     EXPECT_THAT(std::string(records[kHTTPRespBodyIdx]->Get<types::StringValue>(0)), StrEq("a"));
@@ -428,7 +422,7 @@ TEST_F(SocketTraceBPFTest, MultipleConnections) {
     ColumnWrapperRecordBatch records =
         FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, system1.ClientPID());
 
-    ASSERT_THAT(records, Each(ColWrapperSizeIs(1)));
+    ASSERT_THAT(records, RecordBatchSizeIs(1));
     EXPECT_THAT(records[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
   }
 
@@ -436,7 +430,7 @@ TEST_F(SocketTraceBPFTest, MultipleConnections) {
     ColumnWrapperRecordBatch records =
         FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, system2.ClientPID());
 
-    ASSERT_THAT(records, Each(ColWrapperSizeIs(1)));
+    ASSERT_THAT(records, RecordBatchSizeIs(1));
     EXPECT_THAT(records[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg2"));
   }
 }
@@ -478,7 +472,7 @@ TEST_F(SocketTraceBPFTest, StartTime) {
   ColumnWrapperRecordBatch records =
       FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, system.ClientPID());
 
-  ASSERT_THAT(records, Each(ColWrapperSizeIs(2)));
+  ASSERT_THAT(records, RecordBatchSizeIs(2));
 
   md::UPID upid0(records[kHTTPUPIDIdx]->Get<types::UInt128Value>(0).val);
   EXPECT_EQ(system.ClientPID(), upid0.pid());
@@ -595,7 +589,7 @@ TEST_F(SocketTraceBPFTest, SendFile) {
   ColumnWrapperRecordBatch records =
       FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, getpid());
 
-  ASSERT_THAT(records, Each(ColWrapperSizeIs(2)));
+  ASSERT_THAT(records, RecordBatchSizeIs(2));
 
   // Time ordering by response means that we should get server entry first, then client entry.
   std::string server_body = records[kHTTPRespBodyIdx]->Get<types::StringValue>(0);
@@ -662,7 +656,7 @@ TEST_F(NullRemoteAddrTest, Accept4WithNullRemoteAddr) {
   ColumnWrapperRecordBatch records =
       FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, getpid());
 
-  ASSERT_THAT(records, Each(ColWrapperSizeIs(1)));
+  ASSERT_THAT(records, RecordBatchSizeIs(1));
 
   EXPECT_THAT(std::string(records[kHTTPRespHeadersIdx]->Get<types::StringValue>(0)),
               HasSubstr(R"(Content-Type":"application/json; msg1)"));
@@ -728,7 +722,7 @@ TEST_F(NullRemoteAddrTest, IPv6Accept4WithNullRemoteAddr) {
 
   ColumnWrapperRecordBatch records =
       FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, getpid());
-  ASSERT_THAT(records, Each(ColWrapperSizeIs(1)));
+  ASSERT_THAT(records, RecordBatchSizeIs(1));
 
   EXPECT_THAT(std::string(records[kHTTPRespHeadersIdx]->Get<types::StringValue>(0)),
               HasSubstr(R"(Content-Type":"application/json; msg1)"));
