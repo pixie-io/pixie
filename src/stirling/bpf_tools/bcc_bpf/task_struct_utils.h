@@ -63,9 +63,7 @@ static __inline uint64_t task_struct_start_boottime_offset() {
 // Effectively returns:
 //   task->group_leader->start_boottime;  // Linux 5.5+
 //   task->group_leader->real_start_time; // Linux 5.4 and earlier
-static __inline uint64_t get_tgid_start_time() {
-  struct task_struct* task = (struct task_struct*)bpf_get_current_task();
-
+static __inline uint64_t read_start_boottime(const struct task_struct* task) {
   uint64_t group_leader_offset = task_struct_group_leader_offset();
   struct task_struct* group_leader_ptr;
   bpf_probe_read(&group_leader_ptr, sizeof(struct task_struct*),
@@ -77,4 +75,9 @@ static __inline uint64_t get_tgid_start_time() {
                  (uint8_t*)group_leader_ptr + start_boottime_offset);
 
   return pl_nsec_to_clock_t(start_boottime);
+}
+
+static __inline uint64_t get_tgid_start_time() {
+  struct task_struct* task = (struct task_struct*)bpf_get_current_task();
+  return read_start_boottime(task);
 }
