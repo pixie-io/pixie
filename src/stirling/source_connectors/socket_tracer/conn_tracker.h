@@ -266,14 +266,14 @@ class ConnTracker : NotCopyMoveable {
     auto& resp_frames = resp_data()->Frames<TFrameType>();
     auto state_ptr = protocol_state<TStateType>();
 
-    CONN_TRACE(1) << absl::Substitute("req_frames=$0 resp_frames=$1", req_frames.size(),
+    CONN_TRACE(2) << absl::Substitute("req_frames=$0 resp_frames=$1", req_frames.size(),
                                       resp_frames.size());
 
     protocols::RecordsWithErrorCount<TRecordType> result =
         protocols::StitchFrames<TRecordType, TFrameType, TStateType>(&req_frames, &resp_frames,
                                                                      state_ptr);
 
-    CONN_TRACE(1) << absl::Substitute("records=$0", result.records.size());
+    CONN_TRACE(2) << absl::Substitute("records=$0", result.records.size());
 
     UpdateResultStats(result);
 

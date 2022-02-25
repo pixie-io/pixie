@@ -53,8 +53,9 @@ inline std::string ToString(const conn_event_t& event) {
 }
 
 inline std::string ToString(const socket_control_event_t& event) {
-  return absl::Substitute("[type=$0 ts=$1 conn_id=$2 $3]", magic_enum::enum_name(event.type),
+  return absl::Substitute("[type=$0 ts=$1 conn_id=$2 source_fn=$3 $4]", magic_enum::enum_name(event.type),
                           event.timestamp_ns, ToString(event.conn_id),
+                          magic_enum::enum_name(event.source_fn),
                           event.type == kConnOpen ? ToString(event.open) : ToString(event.close));
 }
 

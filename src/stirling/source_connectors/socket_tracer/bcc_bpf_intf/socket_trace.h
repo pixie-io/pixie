@@ -129,11 +129,14 @@ struct close_event_t {
 #define CHUNK_LIMIT 4
 
 // Unique ID to all syscalls and a few other notable functions.
-// This applies to all data events sent to socket_data_events perf buffer.
+// This applies to events sent to user-space.
 enum source_function_t {
   kSourceFunctionUnknown,
 
   // For syscalls.
+  kSyscallAccept,
+  kSyscallConnect,
+  kSyscallClose,
   kSyscallWrite,
   kSyscallRead,
   kSyscallSend,
@@ -239,6 +242,10 @@ struct socket_control_event_t {
   enum control_event_type_t type;
   uint64_t timestamp_ns;
   struct conn_id_t conn_id;
+
+  // Represents the syscall or function that produces this event.
+  enum source_function_t source_fn;
+
   union {
     struct conn_event_t open;
     struct close_event_t close;

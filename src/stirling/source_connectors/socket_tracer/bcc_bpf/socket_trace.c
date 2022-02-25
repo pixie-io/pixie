@@ -326,7 +326,7 @@ static __inline void read_sockaddr_kernel(struct conn_info_t* conn_info,
 
 static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, int32_t fd,
                                      const struct sockaddr* addr, const struct socket* socket,
-                                     enum endpoint_role_t role) {
+                                     enum endpoint_role_t role, enum source_function_t source_fn) {
   struct conn_info_t conn_info = {};
   init_conn_info(tgid, fd, &conn_info);
   if (addr != NULL) {
@@ -350,17 +350,20 @@ static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, int32_t
   control_event.type = kConnOpen;
   control_event.timestamp_ns = bpf_ktime_get_ns();
   control_event.conn_id = conn_info.conn_id;
+  control_event.source_fn = source_fn;
   control_event.open.addr = conn_info.addr;
   control_event.open.role = conn_info.role;
 
   socket_control_events.perf_submit(ctx, &control_event, sizeof(struct socket_control_event_t));
 }
 
-static __inline void submit_close_event(struct pt_regs* ctx, struct conn_info_t* conn_info) {
+static __inline void submit_close_event(struct pt_regs* ctx, struct conn_info_t* conn_info,
+                                        enum source_function_t source_fn) {
   struct socket_control_event_t control_event = {};
   control_event.type = kConnClose;
   control_event.timestamp_ns = bpf_ktime_get_ns();
   control_event.conn_id = conn_info->conn_id;
+  control_event.source_fn = source_fn;
   control_event.close.rd_bytes = conn_info->rd_bytes;
   control_event.close.wr_bytes = conn_info->wr_bytes;
 
@@ -573,7 +576,7 @@ static __inline void process_syscall_connect(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  submit_new_conn(ctx, tgid, args->fd, args->addr, /*socket*/ NULL, kRoleClient);
+  submit_new_conn(ctx, tgid, args->fd, args->addr, /*socket*/ NULL, kRoleClient, kSyscallConnect);
 }
 
 static __inline void process_syscall_accept(struct pt_regs* ctx, uint64_t id,
@@ -589,7 +592,8 @@ static __inline void process_syscall_accept(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  submit_new_conn(ctx, tgid, ret_fd, args->addr, args->sock_alloc_socket, kRoleServer);
+  submit_new_conn(ctx, tgid, ret_fd, args->addr, args->sock_alloc_socket, kRoleServer,
+                  kSyscallAccept);
 }
 
 // TODO(oazizi): This is badly broken (but better than before).
@@ -614,7 +618,8 @@ static __inline void process_syscall_accept(struct pt_regs* ctx, uint64_t id,
 // In this example, process_implicit_conn() will get triggered on the first recvmsg, and then
 // everything on sockfd=5 will assume to be on that address...which is clearly wrong.
 static __inline void process_implicit_conn(struct pt_regs* ctx, uint64_t id,
-                                           const struct connect_args_t* args) {
+                                           const struct connect_args_t* args,
+                                           enum source_function_t source_fn) {
   uint32_t tgid = id >> 32;
 
   if (match_trace_tgid(tgid) == TARGET_TGID_UNMATCHED) {
@@ -632,7 +637,7 @@ static __inline void process_implicit_conn(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  submit_new_conn(ctx, tgid, args->fd, args->addr, /*socket*/ NULL, kRoleUnknown);
+  submit_new_conn(ctx, tgid, args->fd, args->addr, /*socket*/ NULL, kRoleUnknown, source_fn);
 }
 
 static __inline bool should_send_data(uint32_t tgid, uint64_t conn_disabled_tsid,
@@ -868,7 +873,7 @@ static __inline void process_syscall_close(struct pt_regs* ctx, uint64_t id,
   // This is to avoid polluting the perf buffer.
   if (should_trace_sockaddr_family(conn_info->addr.sa.sa_family) || conn_info->wr_bytes != 0 ||
       conn_info->rd_bytes != 0) {
-    submit_close_event(ctx, conn_info);
+    submit_close_event(ctx, conn_info, kSyscallClose);
 
     // Report final conn stats event for this connection.
     struct conn_stats_event_t* event = fill_conn_stats_event(conn_info);
@@ -1133,7 +1138,7 @@ int syscall__probe_ret_sendto(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   const struct connect_args_t* connect_args = active_connect_args_map.lookup(&id);
   if (connect_args != NULL && bytes_count > 0) {
-    process_implicit_conn(ctx, id, connect_args);
+    process_implicit_conn(ctx, id, connect_args, kSyscallSendTo);
   }
   active_connect_args_map.delete(&id);
 
@@ -1179,7 +1184,7 @@ int syscall__probe_ret_recvfrom(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   const struct connect_args_t* connect_args = active_connect_args_map.lookup(&id);
   if (connect_args != NULL && bytes_count > 0) {
-    process_implicit_conn(ctx, id, connect_args);
+    process_implicit_conn(ctx, id, connect_args, kSyscallRecvFrom);
   }
   active_connect_args_map.delete(&id);
 
@@ -1226,7 +1231,7 @@ int syscall__probe_ret_sendmsg(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   const struct connect_args_t* connect_args = active_connect_args_map.lookup(&id);
   if (connect_args != NULL && bytes_count > 0) {
-    process_implicit_conn(ctx, id, connect_args);
+    process_implicit_conn(ctx, id, connect_args, kSyscallSendMsg);
   }
   active_connect_args_map.delete(&id);
 
@@ -1274,7 +1279,7 @@ int syscall__probe_ret_sendmmsg(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   const struct connect_args_t* connect_args = active_connect_args_map.lookup(&id);
   if (connect_args != NULL && num_msgs > 0) {
-    process_implicit_conn(ctx, id, connect_args);
+    process_implicit_conn(ctx, id, connect_args, kSyscallSendMMsg);
   }
   active_connect_args_map.delete(&id);
 
@@ -1324,7 +1329,7 @@ int syscall__probe_ret_recvmsg(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   const struct connect_args_t* connect_args = active_connect_args_map.lookup(&id);
   if (connect_args != NULL && bytes_count > 0) {
-    process_implicit_conn(ctx, id, connect_args);
+    process_implicit_conn(ctx, id, connect_args, kSyscallRecvMsg);
   }
   active_connect_args_map.delete(&id);
 
@@ -1374,7 +1379,7 @@ int syscall__probe_ret_recvmmsg(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   const struct connect_args_t* connect_args = active_connect_args_map.lookup(&id);
   if (connect_args != NULL && num_msgs > 0) {
-    process_implicit_conn(ctx, id, connect_args);
+    process_implicit_conn(ctx, id, connect_args, kSyscallRecvMMsg);
   }
   active_connect_args_map.delete(&id);
 

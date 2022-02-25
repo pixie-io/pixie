@@ -103,7 +103,7 @@ void ConnTracker::AddConnOpenEvent(const conn_event_t& conn_event, uint64_t time
 
   SetRole(conn_event.role, "Inferred from conn_open.");
 
-  CONN_TRACE(1) << absl::Substitute("conn_open af=$0 addr=$1",
+  CONN_TRACE(1) << absl::Substitute("conn_open ts=$0 af=$1 addr=$2", open_info_.timestamp_ns,
                                     magic_enum::enum_name(open_info_.remote_addr.family),
                                     open_info_.remote_addr.AddrStr());
 }
@@ -134,7 +134,7 @@ void ConnTracker::AddConnCloseEvent(const close_event_t& close_event, uint64_t t
   send_data_.set_conn_closed();
   recv_data_.set_conn_closed();
 
-  CONN_TRACE(1) << absl::Substitute("conn_close");
+  CONN_TRACE(1) << absl::Substitute("conn_close ts=$0", close_info_.timestamp_ns);
 
   MarkForDeath();
 }
@@ -232,7 +232,7 @@ void ConnTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
     return;
   }
 
-  CONN_TRACE(2) << absl::Substitute("HTTP2 header event received: $0", hdr->ToString());
+  CONN_TRACE(1) << absl::Substitute("HTTP2 header event received: $0", hdr->ToString());
 
   if (conn_id_.fd == 0) {
     Disable(
@@ -369,13 +369,13 @@ std::vector<protocols::http2::Record>
 ConnTracker::ProcessToRecords<protocols::http2::ProtocolTraits>() {
   protocols::RecordsWithErrorCount<protocols::http2::Record> result;
 
-  CONN_TRACE(1) << absl::Substitute("HTTP2 client_streams=$0 server_streams=$1",
+  CONN_TRACE(2) << absl::Substitute("HTTP2 client_streams=$0 server_streams=$1",
                                     http2_client_streams_size(), http2_server_streams_size());
 
   protocols::http2::ProcessHTTP2Streams(&http2_client_streams_, &result);
   protocols::http2::ProcessHTTP2Streams(&http2_server_streams_, &result);
 
-  CONN_TRACE(1) << absl::Substitute("Processed records, count=$0", result.records.size());
+  CONN_TRACE(2) << absl::Substitute("Processed records, count=$0", result.records.size());
 
   UpdateResultStats(result);
 
@@ -443,7 +443,7 @@ void ConnTracker::SetConnID(struct conn_id_t conn_id) {
       SetDebugTrace(2);
     }
 
-    CONN_TRACE(1) << "New connection tracker";
+    CONN_TRACE(2) << "New connection tracker";
   }
 }
 
@@ -473,7 +473,7 @@ bool ConnTracker::SetRole(endpoint_role_t role, std::string_view reason) {
   }
 
   if (role != kRoleUnknown) {
-    CONN_TRACE(1) << absl::Substitute("Role updated $0 -> $1, reason=[$2]]",
+    CONN_TRACE(2) << absl::Substitute("Role updated $0 -> $1, reason=[$2]]",
                                       magic_enum::enum_name(role_), magic_enum::enum_name(role),
                                       reason);
     role_ = role;
@@ -501,7 +501,7 @@ bool ConnTracker::SetProtocol(traffic_protocol_t protocol, std::string_view reas
 
   traffic_protocol_t old_protocol = protocol_;
   protocol_ = protocol;
-  CONN_TRACE(1) << absl::Substitute("Protocol changed: $0->$1, reason=[$2]",
+  CONN_TRACE(2) << absl::Substitute("Protocol changed: $0->$1, reason=[$2]",
                                     magic_enum::enum_name(old_protocol),
                                     magic_enum::enum_name(protocol), reason);
   return true;
