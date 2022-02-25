@@ -232,6 +232,13 @@ Status BCCWrapper::AttachKProbes(const ArrayView<KProbeSpec>& probes) {
   return Status::OK();
 }
 
+Status BCCWrapper::AttachTracepoints(const ArrayView<TracepointSpec>& probes) {
+  for (const TracepointSpec& spec : probes) {
+    PL_RETURN_IF_ERROR(AttachTracepoint(spec));
+  }
+  return Status::OK();
+}
+
 Status BCCWrapper::AttachUProbes(const ArrayView<UProbeSpec>& probes) {
   for (const UProbeSpec& p : probes) {
     PL_RETURN_IF_ERROR(AttachUProbe(p));

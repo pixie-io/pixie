@@ -283,6 +283,13 @@ class BCCWrapper {
   Status AttachKProbes(const ArrayView<KProbeSpec>& probes);
 
   /**
+   * Convenience function that attaches multiple tracepoints.
+   * @param probes Vector of TracepointSpec.
+   * @return Error of first probe to fail to attach (remaining probe attachments are not attempted).
+   */
+  Status AttachTracepoints(const ArrayView<TracepointSpec>& probes);
+
+  /**
    * Convenience function that attaches multiple uprobes.
    * @param probes Vector of probes.
    * @return Error of first probe to fail to attach (remaining probe attachments are not attempted).
