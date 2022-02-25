@@ -33,8 +33,10 @@
 namespace px {
 namespace stirling {
 
-using ::px::stirling::testing::ColWrapperSizeIs;
-using ::px::stirling::testing::FindRecordIdxMatchesPID;
+using ::px::stirling::testing::AccessRecordBatch;
+using ::px::stirling::testing::FindRecordsMatchingPID;
+using ::px::stirling::testing::PIDToUPID;
+using ::px::stirling::testing::RecordBatchSizeIs;
 using ::px::testing::TestFilePath;
 using ::testing::Each;
 using ::testing::SizeIs;
@@ -80,49 +82,48 @@ class JVMStatsConnectorTest : public ::testing::Test {
 //
 // Tests that java processes are detected and data is collected.
 TEST_F(JVMStatsConnectorTest, CaptureData) {
-  std::unique_ptr<StandaloneContext> ctx;
+  absl::flat_hash_set<md::UPID> upids;
+
   JavaHelloWorld hello_world1;
   ASSERT_OK(hello_world1.Start());
+  upids.insert(PIDToUPID(hello_world1.child_pid()));
 
-  std::vector<TaggedRecordBatch> tablets;
-  types::ColumnWrapperRecordBatch record_batch;
+  {
+    absl::flat_hash_set<md::UPID> upids = {PIDToUPID(hello_world1.child_pid())};
+    auto ctx = std::make_unique<TestContext>(upids);
+    connector_->TransferData(ctx.get(), data_tables_);
+    std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
 
-  ctx = std::make_unique<SystemWideStandaloneContext>();
-  connector_->TransferData(ctx.get(), data_tables_);
-  tablets = data_table_.ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  record_batch = tablets[0].records;
-  auto idxes = FindRecordIdxMatchesPID(record_batch, kUPIDIdx, hello_world1.child_pid());
-  ASSERT_THAT(idxes, SizeIs(1));
+    ASSERT_FALSE(tablets.empty());
+    const auto& records = tablets[0].records;
 
-  auto idx = idxes[0];
-
-  md::UPID upid(record_batch[kUPIDIdx]->Get<types::UInt128Value>(idx).val);
-  std::filesystem::path proc_pid_path =
-      system::Config::GetInstance().proc_path() / std::to_string(hello_world1.child_pid());
-  ASSERT_OK_AND_ASSIGN(int64_t pid_start_time, system::GetPIDStartTimeTicks(proc_pid_path));
-  md::UPID expected_upid(/* asid */ 0, hello_world1.child_pid(), pid_start_time);
-  EXPECT_EQ(upid, expected_upid);
-
-  EXPECT_GE(record_batch[kYoungGCTimeIdx]->Get<types::Int64Value>(idx), 0);
-  EXPECT_GE(record_batch[kFullGCTimeIdx]->Get<types::Int64Value>(idx), 0);
-  EXPECT_GE(record_batch[kUsedHeapSizeIdx]->Get<types::Int64Value>(idx).val, 0);
-  EXPECT_GE(record_batch[kTotalHeapSizeIdx]->Get<types::Int64Value>(idx).val, 0);
-  // This is derived from -Xmx4m. But we don't know how to control total_heap_size.
-  EXPECT_GE(record_batch[kMaxHeapSizeIdx]->Get<types::Int64Value>(idx).val, 4 * 1024 * 1024);
+    ASSERT_THAT(records, RecordBatchSizeIs(1));
+    EXPECT_GE(AccessRecordBatch<types::Int64Value>(records, kYoungGCTimeIdx, 0), 0);
+    EXPECT_GE(AccessRecordBatch<types::Int64Value>(records, kFullGCTimeIdx, 0), 0);
+    EXPECT_GE(AccessRecordBatch<types::Int64Value>(records, kUsedHeapSizeIdx, 0), 0);
+    EXPECT_GE(AccessRecordBatch<types::Int64Value>(records, kTotalHeapSizeIdx, 0), 0);
+    // This is derived from -Xmx4m. But we don't know how to control total_heap_size.
+    EXPECT_GE(AccessRecordBatch<types::Int64Value>(records, kMaxHeapSizeIdx, 0), 4 * 1024 * 1024);
+  }
 
   JavaHelloWorld hello_world2;
   ASSERT_OK(hello_world2.Start());
-  std::this_thread::sleep_for(std::chrono::seconds(2));
+  upids.insert(PIDToUPID(hello_world2.child_pid()));
 
-  ctx = std::make_unique<SystemWideStandaloneContext>();
-  connector_->TransferData(ctx.get(), data_tables_);
-  tablets = data_table_.ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  record_batch = tablets[0].records;
-  EXPECT_THAT(FindRecordIdxMatchesPID(record_batch, kUPIDIdx, hello_world2.child_pid()), SizeIs(1));
-  // Make sure the previous processes were scanned as well.
-  EXPECT_THAT(FindRecordIdxMatchesPID(record_batch, kUPIDIdx, hello_world1.child_pid()), SizeIs(1));
+  {
+    auto ctx = std::make_unique<TestContext>(upids);
+    connector_->TransferData(ctx.get(), data_tables_);
+    std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
+
+    ASSERT_FALSE(tablets.empty());
+    const auto& records1 =
+        FindRecordsMatchingPID(tablets[0].records, kUPIDIdx, hello_world1.child_pid());
+    const auto& records2 =
+        FindRecordsMatchingPID(tablets[0].records, kUPIDIdx, hello_world2.child_pid());
+
+    EXPECT_THAT(records1, RecordBatchSizeIs(1));
+    EXPECT_THAT(records2, RecordBatchSizeIs(1));
+  }
 }
 
 }  // namespace stirling
