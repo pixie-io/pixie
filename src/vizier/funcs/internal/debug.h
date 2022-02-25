@@ -332,6 +332,61 @@ class HeapReleaseFreeMemoryUDTF final : public carnot::udf::UDTF<HeapReleaseFree
   }
 };
 
+class HeapRangesUDTF final : public carnot::udf::UDTF<HeapRangesUDTF> {
+ public:
+  static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ALL_AGENTS; }
+  static constexpr auto OutputRelation() {
+    return MakeArray(
+        ColInfo("asid", types::DataType::INT64, types::PatternType::GENERAL,
+                "The short ID of the agent.", types::SemanticType::ST_ASID),
+        ColInfo("address", types::DataType::INT64, types::PatternType::GENERAL,
+                "The address of the memory region.", types::SemanticType::ST_NONE),
+        ColInfo("type", types::DataType::STRING, types::PatternType::GENERAL_ENUM,
+                "The type of memory range (INUSE, FREE, UNMAPPED, or UNKNOWN).",
+                types::SemanticType::ST_NONE),
+        ColInfo("length", types::DataType::INT64, types::PatternType::GENERAL,
+                "The size of the range in bytes.", types::SemanticType::ST_BYTES),
+        ColInfo("inuse_fraction", types::DataType::FLOAT64, types::PatternType::GENERAL,
+                "The fraction of the range that is in use, if the type is not INUSE then this "
+                "value is 0.",
+                types::SemanticType::ST_NONE));
+  }
+
+  Status Init(FunctionContext*) {
+#ifdef TCMALLOC
+    auto range_func = [](void* udtf, const ::base::MallocRange* range) {
+      static_cast<HeapRangesUDTF*>(udtf)->ranges_.push_back(*range);
+    };
+    MallocExtension::instance()->Ranges(this, range_func);
+#endif
+    return Status::OK();
+  }
+  bool NextRecord(FunctionContext* ctx, RecordWriter* rw) {
+#ifdef TCMALLOC
+    if (idx_ >= ranges_.size()) {
+      return false;
+    }
+    rw->Append<IndexOf("asid")>(ctx->metadata_state()->asid());
+    rw->Append<IndexOf("address")>(static_cast<int64_t>(ranges_[idx_].address));
+    rw->Append<IndexOf("type")>(std::string(magic_enum::enum_name(ranges_[idx_].type)));
+    rw->Append<IndexOf("length")>(ranges_[idx_].length);
+    rw->Append<IndexOf("inuse_fraction")>(ranges_[idx_].fraction);
+    idx_++;
+    return idx_ < ranges_.size();
+#else
+    PL_UNUSED(ctx);
+    PL_UNUSED(rw);
+    return false;
+#endif
+  }
+
+ private:
+#ifdef TCMALLOC
+  size_t idx_ = 0;
+  std::vector<::base::MallocRange> ranges_;
+#endif
+};
+
 }  // namespace funcs
 }  // namespace vizier
 }  // namespace px

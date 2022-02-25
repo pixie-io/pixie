@@ -31,6 +31,7 @@ void RegisterFuncsOrDie(carnot::udf::Registry* registry) {
   registry->RegisterOrDie<HeapStatsUDTF>("_HeapStats");
   registry->RegisterOrDie<HeapSampleUDTF>("_HeapSample");
   registry->RegisterOrDie<HeapGrowthStacksUDTF>("_HeapGrowthStacks");
+  registry->RegisterOrDie<HeapRangesUDTF>("_HeapRanges");
 
   registry->RegisterOrDie<AgentProcStatusUDTF>("_DebugAgentProcStatus");
   registry->RegisterOrDie<AgentProcSMapsUDTF>("_DebugAgentProcSMaps");
