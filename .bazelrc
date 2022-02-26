@@ -32,7 +32,6 @@ build --apple_platform_type=macos
 # TODO(oazizi): Remove after upgrading io_bazel_rules_go.
 build --strip=never
 
-
 # Give each sandbox its own tmp directory.
 # This is important for //src/stirling/utils:java_test, which otherwise creates conflicting writes
 # when multiple instances are running simultaneously.
@@ -50,8 +49,8 @@ build:clang --host_action_env=BAZEL_LINKOPTS=-lm:-static-libgcc
 # We need this to ensure that external projects are built with
 # C++17 support. This is needed in some libraries like absl which
 # have different behavior with C++17.
-build:clang --action_env=BAZEL_CXXOPTS=-std=c++17
-build:clang --host_action_env=BAZEL_CXXOPTS=-std=c++17
+build:clang --action_env=BAZEL_CXXOPTS=-std=c++17:-fPIC
+build:clang --host_action_env=BAZEL_CXXOPTS=-std=c++17:-fPIC
 build:clang --action_env=BAZEL_COMPILER=clang
 build:clang --host_action_env=BAZEL_COMPILER=clang
 build:clang --action_env=CC=clang
@@ -62,7 +61,7 @@ build:clang --host_action_env=CXX=clang++
 # Build for Clang using Libc++.
 build:libc++ --action_env=CXXFLAGS=-stdlib=libc++
 build:libc++ --action_env=LDFLAGS=-stdlib=libc++
-build:libc++ --action_env=BAZEL_CXXOPTS=-std=c++17:-stdlib=libc++
+build:libc++ --action_env=BAZEL_CXXOPTS=-std=c++17:-stdlib=libc++:-fPIC
 build:libc++ --action_env=BAZEL_LINKLIBS=-l%:libc++.a:-l%:libc++abi.a:-lm
 build:libc++ --action_env=CC=/opt/clang-13.0-libc++/bin/clang
 build:libc++ --action_env=CXX=/opt/clang-13.0-libc++/bin/clang++
@@ -78,7 +77,7 @@ build:gcc --action_env=BAZEL_LINKOPTS=-lm:-static-libgcc
 # We need this to ensure that external projects are built with
 # C++17 support. This is needed in some libraries like absl which
 # have different behavior with C++17.
-build:gcc --action_env=BAZEL_CXXOPTS=-std=c++17
+build:gcc --action_env=BAZEL_CXXOPTS=-std=c++17:-fPIC
 build:gcc --action_env=BAZEL_COMPILER=gcc
 build:gcc --action_env=CC=/usr/bin/gcc-10
 build:gcc --action_env=CXX=/usr/bin/g++-10
