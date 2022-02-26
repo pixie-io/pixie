@@ -72,13 +72,12 @@ export function deserializeExecuteScriptResponse(input: string): ExecuteScriptRe
   while (offset < allBytes.length) {
     const compression = allBytes[offset];
     if (compression === 1) {
-      throw new Error('Compression is enabled, parsing is likely wrong');
+      throw new Error(`Compression enabled at offset 0x${offset.toString(16)}, parsing likely wrong`);
     } else if (compression === 128) {
       // We're in the message trailer now, no more messages to parse.
-      offset = allBytes.length;
-      continue;
+      break;
     } else if (compression !== 0) {
-      throw new Error(`Compression byte was 0x${compression.toString(16)}, something is wrong`);
+      throw new Error(`Nonsense compression byte 0x${compression.toString(16)} at offset 0x${offset.toString(16)}!`);
     }
 
     const length = allBytes.subarray(offset + 1, offset + 5).reduce((a, c, i) => (
@@ -111,12 +110,12 @@ export function interceptExecuteScript(opts: InterceptExecuteScriptOptions = {})
   return cy.intercept(url, opts.routeHandler ?? undefined);
 }
 
-export interface DeserialziedIntercept extends Interception {
+export interface DeserializedIntercept extends Interception {
   reqJson: ExecuteScriptRequest.AsObject;
   resJson: ExecuteScriptResponse.AsObject[];
 }
 
-export function waitExecuteScript(alias: string): Cypress.Chainable<DeserialziedIntercept> {
+export function waitExecuteScript(alias: string): Cypress.Chainable<DeserializedIntercept> {
   return cy.wait(alias).then(({ request, response, ...rest }: Interception) => {
     const reqJson = deserializeExecuteScriptRequest(request.body).toObject();
     const resJson = deserializeExecuteScriptResponse(response.body).map((m) => m.toObject());
