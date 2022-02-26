@@ -46,12 +46,12 @@ require (
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/lestrrat-go/jwx v1.2.17
-	github.com/lib/pq v1.10.0
+	github.com/lib/pq v1.10.4
 	github.com/mattn/go-runewidth v0.0.9
-	github.com/nats-io/nats-server/v2 v2.2.0
-	github.com/nats-io/nats-streaming-server v0.21.1
-	github.com/nats-io/nats.go v1.10.1-0.20210228004050-ed743748acac
-	github.com/nats-io/stan.go v0.8.3
+	github.com/nats-io/nats-server/v2 v2.7.3
+	github.com/nats-io/nats-streaming-server v0.24.2
+	github.com/nats-io/nats.go v1.13.1-0.20220121202836-972a071d373d
+	github.com/nats-io/stan.go v0.10.2
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/olivere/elastic/v7 v7.0.12
 	github.com/ory/dockertest/v3 v3.8.1
@@ -82,7 +82,7 @@ require (
 	golang.org/x/net v0.0.0-20210330230544-e57232859fb2
 	golang.org/x/oauth2 v0.0.0-20210313182246-cd4f82c27b84
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210611083646-a4fc73990273
+	golang.org/x/sys v0.0.0-20220224120231-95c6836cb0e7
 	golang.org/x/term v0.0.0-20210317153231-de623e64d2a6
 	google.golang.org/api v0.46.0
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
@@ -113,8 +113,6 @@ replace (
 	github.com/go-openapi/strfmt => github.com/go-openapi/strfmt v0.20.0
 	github.com/golang/protobuf => github.com/golang/protobuf v1.5.2
 	github.com/google/go-cmp => github.com/google/go-cmp v0.5.5
-	github.com/nats-io/nats-server/v2 => github.com/nats-io/nats-server/v2 v2.2.0
-	github.com/nats-io/nats.go => github.com/nats-io/nats.go v1.10.0
 	github.com/spf13/cobra => github.com/spf13/cobra v1.2.1
 	github.com/spf13/viper => github.com/spf13/viper v1.8.1
 	go.mongodb.org/mongo-driver => go.mongodb.org/mongo-driver v1.5.1
@@ -127,7 +125,7 @@ replace (
 	golang.org/x/net => github.com/golang/net v0.0.0-20210330142815-c8897c278d10
 	golang.org/x/oauth2 => github.com/golang/oauth2 v0.0.0-20210323180902-22b0adad7558
 	golang.org/x/sync => github.com/golang/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys => github.com/golang/sys v0.0.0-20210326220804-49726bf1d181
+	golang.org/x/sys => github.com/golang/sys v0.0.0-20220224120231-95c6836cb0e7
 	golang.org/x/term => github.com/golang/term v0.0.0-20210317153231-de623e64d2a6
 	golang.org/x/text => github.com/golang/text v0.3.5
 	golang.org/x/time => github.com/golang/time v0.0.0-20210220033141-f8bda1e9f3ba

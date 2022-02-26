@@ -321,12 +321,6 @@ def pl_go_dependencies():
     )
 
     go_repository(
-        name = "com_github_boltdb_bolt",
-        importpath = "github.com/boltdb/bolt",
-        sum = "h1:JQmyP4ZBrce+ZQu0dY660FMfatumYDLun9hBCUVIkF4=",
-        version = "v1.3.1",
-    )
-    go_repository(
         name = "com_github_bshuster_repo_logrus_logstash_hook",
         importpath = "github.com/bshuster-repo/logrus-logstash-hook",
         sum = "h1:pgAtgj+A31JBVtEHu2uHuEx0n+2ukqUJnS2vVe5pQNA=",
@@ -1324,8 +1318,8 @@ def pl_go_dependencies():
     go_repository(
         name = "com_github_go_sql_driver_mysql",
         importpath = "github.com/go-sql-driver/mysql",
-        sum = "h1:ozyZYNQW3x3HtqT1jira07DN2PArx2v7/mN66gGcHOs=",
-        version = "v1.5.0",
+        sum = "h1:BCTh4TKNUYmOmMUcQ3IipzF5prigylS7XXjEkfCHuOE=",
+        version = "v1.6.0",
     )
 
     go_repository(
@@ -1753,8 +1747,8 @@ def pl_go_dependencies():
     go_repository(
         name = "com_github_hashicorp_go_hclog",
         importpath = "github.com/hashicorp/go-hclog",
-        sum = "h1:nQcJDQwIAGnmoUWp8ubocEX40cCml/17YkF6csQLReU=",
-        version = "v0.14.1",
+        sum = "h1:QsGcniKx5/LuX2eYoeL+Np3UKYPNaN7YKpTh29h8rbw=",
+        version = "v1.1.0",
     )
 
     go_repository(
@@ -1861,15 +1855,8 @@ def pl_go_dependencies():
     go_repository(
         name = "com_github_hashicorp_raft",
         importpath = "github.com/hashicorp/raft",
-        sum = "h1:mHzHIrF0S91d3A7RPBvuqkgB4d/7oFJZyvf1Q4m7GA0=",
-        version = "v1.2.0",
-    )
-
-    go_repository(
-        name = "com_github_hashicorp_raft_boltdb",
-        importpath = "github.com/hashicorp/raft-boltdb",
-        sum = "h1:xykPFhrBAS2J0VBzVa5e80b5ZtYuNQtgXjN40qBZlD4=",
-        version = "v0.0.0-20171010151810-6e5ba93211ea",
+        sum = "h1:93YBXmHWW2MuyMZfMxN1PsAnPXAt+hBfG0S0ZrZxRrY=",
+        version = "v1.3.5",
     )
 
     go_repository(
@@ -2194,8 +2181,8 @@ def pl_go_dependencies():
     go_repository(
         name = "com_github_klauspost_compress",
         importpath = "github.com/klauspost/compress",
-        sum = "h1:eSvu8Tmq6j2psUJqJrLcWH6K3w5Dwc+qipbaA6eVEN4=",
-        version = "v1.11.13",
+        sum = "h1:eijASRJcobkVtSt81Olfh7JX43osYLwy5krOJo6YEu4=",
+        version = "v1.14.4",
     )
 
     go_repository(
@@ -2306,8 +2293,8 @@ def pl_go_dependencies():
     go_repository(
         name = "com_github_lib_pq",
         importpath = "github.com/lib/pq",
-        sum = "h1:Zx5DJFEYQXio93kgXnQ09fXNiUKsqv4OUEu2UtGcB1E=",
-        version = "v1.10.0",
+        sum = "h1:SO9z7FRPzA03QhHKJrH5BXA6HU1rS4V2nIVrrNC1iYk=",
+        version = "v1.10.4",
     )
 
     go_repository(
@@ -2494,8 +2481,8 @@ def pl_go_dependencies():
     go_repository(
         name = "com_github_minio_highwayhash",
         importpath = "github.com/minio/highwayhash",
-        sum = "h1:dZ6IIu8Z14VlC0VpfKofAhCy74wu/Qb5gcn52yWoz/0=",
-        version = "v1.0.1",
+        sum = "h1:Aak5U0nElisjDCfPSG79Tgzkn2gl66NxOMspRrKnA/g=",
+        version = "v1.0.2",
     )
     go_repository(
         name = "com_github_mistifyio_go_zfs",
@@ -2657,30 +2644,28 @@ def pl_go_dependencies():
     go_repository(
         name = "com_github_nats_io_jwt",
         importpath = "github.com/nats-io/jwt",
-        sum = "h1:w3GMTO969dFg+UOKTmmyuu7IGdusK+7Ytlt//OYH/uU=",
-        version = "v1.2.2",
+        sum = "h1:xdnzwFETV++jNc4W1mw//qFyJGb2ABOombmZJQS4+Qo=",
+        version = "v0.3.0",
     )
 
     go_repository(
         name = "com_github_nats_io_jwt_v2",
         importpath = "github.com/nats-io/jwt/v2",
-        sum = "h1:SycklijeduR742i/1Y3nRhURYM7imDzZZ3+tuAQqhQA=",
-        version = "v2.0.1",
+        sum = "h1:vU9tpM3apjYlLLeY23zRWJ9Zktr5jp+mloR942LEOpY=",
+        version = "v2.2.1-0.20220113022732-58e87895b296",
     )
     go_repository(
         name = "com_github_nats_io_nats_go",
         importpath = "github.com/nats-io/nats.go",
-        replace = "github.com/nats-io/nats.go",
-        sum = "h1:L8qnKaofSfNFbXg0C5F71LdjPRnmQwSsA4ukmkt1TvY=",
-        version = "v1.10.0",
+        sum = "h1:GRSmEJutHkdoxKsRypP575IIdoXe7Bm6yHQF6GcDBnA=",
+        version = "v1.13.1-0.20220121202836-972a071d373d",
     )
 
     go_repository(
         name = "com_github_nats_io_nats_server_v2",
         importpath = "github.com/nats-io/nats-server/v2",
-        replace = "github.com/nats-io/nats-server/v2",
-        sum = "h1:QNeFmJRBq+O2zF8EmsR/JSvtL2zXb3GwICloHgskYBU=",
-        version = "v2.2.0",
+        sum = "h1:P0NgsnbTxrPMMPZ1/rLXWjS5bbPpRMCcPwlMd4nBDK4=",
+        version = "v2.7.3",
     )
 
     go_repository(
@@ -2688,8 +2673,8 @@ def pl_go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/nats-io/nats-streaming-server",
-        sum = "h1:jb/osnXmFJtKDS9DFghDjX82v1NT9IhaoR/r6s6toNg=",
-        version = "v0.21.1",
+        sum = "h1:beQTSDcAm2Pe1uUZm2P3gVo/xbcgeZmnb5x3x/bMXRk=",
+        version = "v0.24.2",
     )
     go_repository(
         name = "com_github_nats_io_nkeys",
@@ -2710,8 +2695,8 @@ def pl_go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/nats-io/stan.go",
-        sum = "h1:XyemjL9vAeGHooHn5RQy+ngljd8AVSM2l65Jdnpv4rI=",
-        version = "v0.8.3",
+        sum = "h1:gQLd05LhzmhFkHm3/qP/klYHfM/hys45GyHa1Uly/kI=",
+        version = "v0.10.2",
     )
     go_repository(
         name = "com_github_ncw_swift",
@@ -2951,8 +2936,8 @@ def pl_go_dependencies():
     go_repository(
         name = "com_github_prometheus_procfs",
         importpath = "github.com/prometheus/procfs",
-        sum = "h1:mxy4L2jP6qMonqmq+aTtOx1ifVWUgG/TAmntgbh3xv4=",
-        version = "v0.6.0",
+        sum = "h1:4jVXhlkAyzOScmCkXBTOLRLTz8EeU+eyjrwB/EPq0VU=",
+        version = "v0.7.3",
     )
 
     go_repository(
@@ -3782,8 +3767,8 @@ def pl_go_dependencies():
     go_repository(
         name = "io_etcd_go_bbolt",
         importpath = "go.etcd.io/bbolt",
-        sum = "h1:XAzx9gjCb0Rxj7EoqcClPD1d5ZBxZJk0jbuoPHenBt0=",
-        version = "v1.3.5",
+        sum = "h1:/ecaJf0sk1l4l6V4awd65v2C3ILy7MSj+s/x1ADCIMU=",
+        version = "v1.3.6",
     )
     go_repository(
         name = "io_etcd_go_etcd",
@@ -4117,8 +4102,8 @@ def pl_go_dependencies():
         name = "org_golang_x_sys",
         importpath = "golang.org/x/sys",
         replace = "github.com/golang/sys",
-        sum = "h1:lYOSQzf0I48VjRWUcpmAx0uYpuOQKKW7jwuyKDxh7eo=",
-        version = "v0.0.0-20210326220804-49726bf1d181",
+        sum = "h1:qM7Fl9K0feCy8KNBLmQcP/dMCH7q9nRiUTiC7rA4fDE=",
+        version = "v0.0.0-20220224120231-95c6836cb0e7",
     )
 
     go_repository(
