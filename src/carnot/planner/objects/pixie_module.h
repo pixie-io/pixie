@@ -62,6 +62,22 @@ class PixieModule : public QLObject {
       suffix with `_1`, incrementing for every duplicate.
   )doc";
 
+  inline static constexpr char kExportOpID[] = "export";
+  inline static constexpr char kExportOpDocstring[] = R"doc(
+  Outputs the data from Pixie to the specific destination.
+
+  Writes the data to the specified output destination. For example, can be
+  used to specify an export to OpenTelemetry using the methods available in
+  `px.otel.trace` or `px.otel.metrics`.
+
+  :topic: dataframe_ops
+
+  Args:
+    out (px.DataFrame): The DataFrame to write out to the output stream.
+    export_spec (Exporter): The destination specification for the DataFrame data.
+
+  )doc";
+
   inline static constexpr char kDebugTablePrefix[] = "_";
   inline static constexpr char kDebugOpID[] = "debug";
   inline static constexpr char kDebugOpDocstring[] = R"doc(

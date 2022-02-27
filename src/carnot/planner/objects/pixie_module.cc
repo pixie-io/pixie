@@ -18,11 +18,13 @@
 
 #include "src/carnot/planner/objects/pixie_module.h"
 
+#include <memory>
 #include <vector>
 
 #include "src/carnot/planner/ir/time.h"
 #include "src/carnot/planner/objects/dataframe.h"
 #include "src/carnot/planner/objects/dict_object.h"
+#include "src/carnot/planner/objects/exporter.h"
 #include "src/carnot/planner/objects/expr_object.h"
 #include "src/carnot/planner/objects/none_object.h"
 #include "src/carnot/planner/objects/viz_object.h"
@@ -332,7 +334,7 @@ StatusOr<QLObjectPtr> ScriptReference(IR* graph, const pypa::AstPtr& ast, const 
   QLObjectPtr script_args = args.GetArg("args");
   if (!DictObject::IsDict(script_args)) {
     return script_args->CreateError(
-        "Expected third arguemnt 'args' of function 'script_reference' to be a dictionary, "
+        "Expected third argument 'args' of function 'script_reference' to be a dictionary, "
         "received "
         "$0",
         script_args->name());
@@ -372,6 +374,23 @@ StatusOr<QLObjectPtr> ParseDuration(IR* graph, const pypa::AstPtr& ast, const Pa
 
   PL_ASSIGN_OR_RETURN(IntIR * node, graph->CreateNode<IntIR>(ast, int_or_s.ConsumeValueOrDie()));
   return ExprObject::Create(node, visitor);
+}
+
+StatusOr<QLObjectPtr> Export(const pypa::AstPtr& ast, const ParsedArgs& args, ASTVisitor* visitor) {
+  auto out_df = args.GetArg("out");
+  if (!Dataframe::IsDataframe(out_df)) {
+    return out_df->CreateError("Expected DataFrame, received $0", out_df->name());
+  }
+
+  QLObjectPtr spec = args.GetArg("export_spec");
+  if (!Exporter::IsExporter(spec)) {
+    return spec->CreateError("Expected 'spec' to be an export config. Received a $0", spec->name());
+  }
+
+  auto exporter = std::static_pointer_cast<Exporter>(spec);
+  PL_RETURN_IF_ERROR(exporter->Export(ast, static_cast<Dataframe*>(out_df.get())));
+
+  return StatusOr(std::make_shared<NoneObject>(visitor));
 }
 
 Status PixieModule::RegisterCompileTimeFuncs() {
@@ -575,6 +594,16 @@ Status PixieModule::Init() {
                          ast_visitor()));
 
   AddMethod(kDisplayOpID, display_fn);
+
+  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> export_fn,
+                      FuncObject::Create(kExportOpID, {"out", "export_spec"}, {},
+                                         /* has_variable_len_args */ false,
+                                         /* has_variable_len_kwargs */ false,
+                                         std::bind(&Export, std::placeholders::_1,
+                                                   std::placeholders::_2, std::placeholders::_3),
+                                         ast_visitor()));
+
+  AddMethod(kExportOpID, export_fn);
 
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> debug_fn,

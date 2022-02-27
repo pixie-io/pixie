@@ -71,6 +71,15 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "exporter_test",
+    srcs = ["exporter_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+    ],
+)
+
+pl_cc_test(
     name = "dataframe_test",
     srcs = ["dataframe_test.cc"],
     deps = [

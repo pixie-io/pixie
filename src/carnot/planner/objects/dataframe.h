@@ -45,6 +45,9 @@ class Dataframe : public QLObject {
   };
   static StatusOr<std::shared_ptr<Dataframe>> Create(OperatorIR* op, ASTVisitor* visitor);
   static StatusOr<std::shared_ptr<Dataframe>> Create(IR* graph, ASTVisitor* visitor);
+  static bool IsDataframe(const QLObjectPtr& object) {
+    return object->type() == DataframeType.type();
+  }
 
   /**
    * @brief Get the operator that this dataframe represents.

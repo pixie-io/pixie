@@ -60,6 +60,7 @@ enum class QLObjectType {
   kSharedObjectTraceTarget,
   kKProbeTraceTarget,
   kProcessTarget,
+  kExporter,
 };
 
 std::string QLObjectTypeString(QLObjectType type);
