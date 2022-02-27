@@ -83,39 +83,37 @@ void ConnTracker::AddControlEvent(const socket_control_event_t& event) {
 
   switch (event.type) {
     case kConnOpen:
-      AddConnOpenEvent(event.open, event.timestamp_ns);
+      AddConnOpenEvent(event);
       break;
     case kConnClose:
-      AddConnCloseEvent(event.close, event.timestamp_ns);
+      AddConnCloseEvent(event);
       break;
     default:
       LOG(DFATAL) << "Unknown control event type: " << event.type;
   }
 }
 
-void ConnTracker::AddConnOpenEvent(const conn_event_t& conn_event, uint64_t timestamp_ns) {
+void ConnTracker::AddConnOpenEvent(const socket_control_event_t& event) {
   if (open_info_.timestamp_ns != 0) {
     CONN_TRACE(1) << absl::Substitute("Clobbering existing ConnOpenEvent.");
   }
-  open_info_.timestamp_ns = timestamp_ns;
+  open_info_.timestamp_ns = event.timestamp_ns;
 
-  SetRemoteAddr(conn_event.addr, "Inferred from conn_open.");
+  SetRemoteAddr(event.open.addr, "Inferred from conn_open.");
 
-  SetRole(conn_event.role, "Inferred from conn_open.");
+  SetRole(event.open.role, "Inferred from conn_open.");
 
-  CONN_TRACE(1) << absl::Substitute("conn_open ts=$0 af=$1 addr=$2", open_info_.timestamp_ns,
-                                    magic_enum::enum_name(open_info_.remote_addr.family),
-                                    open_info_.remote_addr.AddrStr());
+  CONN_TRACE(1) << absl::Substitute("conn_open: $0", ::ToString(event));
 }
 
-void ConnTracker::AddConnCloseEvent(const close_event_t& close_event, uint64_t timestamp_ns) {
+void ConnTracker::AddConnCloseEvent(const socket_control_event_t& event) {
   if (close_info_.timestamp_ns != 0) {
     CONN_TRACE(1) << absl::Substitute("Clobbering existing ConnCloseEvent.");
   }
-  close_info_.timestamp_ns = timestamp_ns;
+  close_info_.timestamp_ns = event.timestamp_ns;
 
-  close_info_.send_bytes = close_event.wr_bytes;
-  close_info_.recv_bytes = close_event.rd_bytes;
+  close_info_.send_bytes = event.close.wr_bytes;
+  close_info_.recv_bytes = event.close.rd_bytes;
 
   // Update the state to indicate ConnClose for HTTP parser.
   // When an HTTP response has no Content-Length or Transfer-Encoding, the message is
@@ -134,7 +132,7 @@ void ConnTracker::AddConnCloseEvent(const close_event_t& close_event, uint64_t t
   send_data_.set_conn_closed();
   recv_data_.set_conn_closed();
 
-  CONN_TRACE(1) << absl::Substitute("conn_close ts=$0", close_info_.timestamp_ns);
+  CONN_TRACE(1) << absl::Substitute("conn_close: $0", ::ToString(event));
 
   MarkForDeath();
 }
@@ -148,7 +146,7 @@ void ConnTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   UpdateTimestamps(event->attr.timestamp_ns);
   UpdateDataStats(*event);
 
-  CONN_TRACE(1) << absl::Substitute("Data event received: $0", event->ToString());
+  CONN_TRACE(1) << absl::Substitute("Data event: $0", event->ToString());
 
   // TODO(yzhao): Change to let userspace resolve the connection type and signal back to BPF.
   // Then we need at least one data event to let ConnTracker know the field descriptor.
@@ -232,7 +230,7 @@ void ConnTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
     return;
   }
 
-  CONN_TRACE(1) << absl::Substitute("HTTP2 header event received: $0", hdr->ToString());
+  CONN_TRACE(1) << absl::Substitute("HTTP2 header event: $0", hdr->ToString());
 
   if (conn_id_.fd == 0) {
     Disable(
@@ -309,7 +307,7 @@ void ConnTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
     return;
   }
 
-  CONN_TRACE(1) << absl::Substitute("HTTP2 data event received: $0", data->ToString());
+  CONN_TRACE(1) << absl::Substitute("HTTP2 data event: $0", data->ToString());
 
   if (conn_id_.fd == 0) {
     Disable(

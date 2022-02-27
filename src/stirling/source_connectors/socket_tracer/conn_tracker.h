@@ -633,8 +633,8 @@ class ConnTracker : NotCopyMoveable {
   // made. Note that since there is only one global BPF map, this is a static/global structure.
   inline static std::shared_ptr<ConnInfoMapManager> conn_info_map_mgr_;
 
-  void AddConnOpenEvent(const conn_event_t& conn_info, uint64_t timestamp_ns);
-  void AddConnCloseEvent(const close_event_t& close_event, uint64_t timestamp_ns);
+  void AddConnOpenEvent(const socket_control_event_t& conn_info);
+  void AddConnCloseEvent(const socket_control_event_t& close_event);
 
   void UpdateTimestamps(uint64_t bpf_timestamp);
 
