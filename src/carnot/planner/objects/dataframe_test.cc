@@ -25,6 +25,7 @@
 #include "src/carnot/planner/objects/expr_object.h"
 #include "src/carnot/planner/objects/metadata_object.h"
 #include "src/carnot/planner/objects/none_object.h"
+#include "src/carnot/planner/objects/pixie_module.h"
 #include "src/carnot/planner/objects/test_utils.h"
 
 namespace px {
@@ -35,14 +36,33 @@ namespace compiler {
 using ::testing::ElementsAre;
 using ::testing::UnorderedElementsAre;
 
+StatusOr<QLObjectPtr> UDFHandler(IR* graph, const std::string& name, const pypa::AstPtr& ast,
+                                 const ParsedArgs&, ASTVisitor* visitor) {
+  PL_ASSIGN_OR_RETURN(FuncIR * node,
+                      graph->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", name},
+                                                std::vector<ExpressionIR*>{}));
+  return ExprObject::Create(node, visitor);
+}
+
 class DataframeTest : public QLObjectTest {
  protected:
   void SetUp() override {
     QLObjectTest::SetUp();
     src = MakeMemSource();
     ASSERT_OK_AND_ASSIGN(df, Dataframe::Create(src, ast_visitor.get()));
+    var_table = VarTable::Create();
+    var_table->Add("df", df);
+    var_table->Add("mean", FuncObject::Create(
+                               "mean", {}, {},
+                               /* has_variable_len_args */ true,
+                               /* has_variable_len_kwargs */ false,
+                               std::bind(&UDFHandler, graph.get(), "mean", std::placeholders::_1,
+                                         std::placeholders::_2, std::placeholders::_3),
+                               ast_visitor.get())
+                               .ConsumeValueOrDie());
   }
 
+  std::shared_ptr<VarTable> var_table;
   std::shared_ptr<Dataframe> df;
   MemorySourceIR* src;
 };
@@ -50,15 +70,19 @@ class DataframeTest : public QLObjectTest {
 TEST_F(DataframeTest, Merge_ListKeys) {
   MemorySourceIR* src2 = MakeMemSource();
   ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> df2, Dataframe::Create(src2, ast_visitor.get()));
+  var_table->Add("df2", df2);
 
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> func_obj, df->GetMethod(Dataframe::kMergeOpID));
-  ArgMap args{{},
-              {df2, ToQLObject(MakeString("inner")), MakeListObj(MakeString("a"), MakeString("b")),
-               MakeListObj(MakeString("b"), MakeString("c")),
-               MakeListObj(MakeString("_x"), MakeString("_y"))}};
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> obj, func_obj->Call(args, ast));
-  ASSERT_EQ(obj->type_descriptor().type(), QLObjectType::kDataframe);
-  auto join_df = static_cast<Dataframe*>(obj.get());
+  std::string script = R"pxl(join = df.merge(
+    df2,
+    how='inner',
+    left_on=['a','b'],
+    right_on=['b','c'],
+    suffixes=['_x', '_y'],
+  ))pxl";
+  ASSERT_OK(ParseScript(var_table, script));
+  auto var = var_table->Lookup("join");
+  ASSERT_EQ(var->type_descriptor().type(), QLObjectType::kDataframe);
+  auto join_df = static_cast<Dataframe*>(var.get());
 
   // Check to make sure that the operator is a join.
   OperatorIR* op = join_df->op();
@@ -83,14 +107,19 @@ TEST_F(DataframeTest, Merge_ListKeys) {
 TEST_F(DataframeTest, Merge_NonListKeys) {
   MemorySourceIR* src2 = MakeMemSource();
   ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> df2, Dataframe::Create(src2, ast_visitor.get()));
+  var_table->Add("df2", df2);
 
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> func_obj, df->GetMethod(Dataframe::kMergeOpID));
-  ArgMap args{{},
-              {df2, ToQLObject(MakeString("inner")), ToQLObject(MakeString("a")),
-               ToQLObject(MakeString("b")), MakeListObj(MakeString("_x"), MakeString("_y"))}};
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> obj, func_obj->Call(args, ast));
-  ASSERT_EQ(obj->type_descriptor().type(), QLObjectType::kDataframe);
-  auto join_df = static_cast<Dataframe*>(obj.get());
+  std::string script = R"pxl(join = df.merge(
+    df2,
+    how='inner',
+    left_on='a',
+    right_on='b',
+    suffixes=['_x', '_y'],
+  ))pxl";
+  ASSERT_OK(ParseScript(var_table, script));
+  auto var = var_table->Lookup("join");
+  ASSERT_EQ(var->type_descriptor().type(), QLObjectType::kDataframe);
+  auto join_df = static_cast<Dataframe*>(var.get());
 
   // Check to make sure that the operator is a join.
   OperatorIR* op = join_df->op();
@@ -110,11 +139,10 @@ TEST_F(DataframeTest, Merge_NonListKeys) {
 }
 
 TEST_F(DataframeTest, Drop_WithList) {
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> func_obj, df->GetMethod(Dataframe::kDropOpID));
-  ArgMap args{{}, {MakeListObj(MakeString("foo"), MakeString("bar"))}};
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> obj, func_obj->Call(args, ast));
-  ASSERT_EQ(obj->type_descriptor().type(), QLObjectType::kDataframe);
-  auto df_obj = std::static_pointer_cast<Dataframe>(obj);
+  ASSERT_OK(ParseScript(var_table, "drop = df.drop(['foo', 'bar'])"));
+  auto var = var_table->Lookup("drop");
+  ASSERT_EQ(var->type_descriptor().type(), QLObjectType::kDataframe);
+  auto df_obj = std::static_pointer_cast<Dataframe>(var);
 
   ASSERT_MATCH(df_obj->op(), Drop());
   DropIR* drop = static_cast<DropIR*>(df_obj->op());
@@ -122,11 +150,10 @@ TEST_F(DataframeTest, Drop_WithList) {
 }
 
 TEST_F(DataframeTest, Drop_WithoutList) {
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> func_obj, df->GetMethod(Dataframe::kDropOpID));
-  ArgMap args{{}, {ToQLObject(MakeString("foo"))}};
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> obj, func_obj->Call(args, ast));
-  ASSERT_EQ(obj->type_descriptor().type(), QLObjectType::kDataframe);
-  auto df_obj = std::static_pointer_cast<Dataframe>(obj);
+  ASSERT_OK(ParseScript(var_table, "drop = df.drop('foo')"));
+  auto var = var_table->Lookup("drop");
+  ASSERT_EQ(var->type_descriptor().type(), QLObjectType::kDataframe);
+  auto df_obj = std::static_pointer_cast<Dataframe>(var);
 
   ASSERT_MATCH(df_obj->op(), Drop());
   DropIR* drop = static_cast<DropIR*>(df_obj->op());
@@ -134,48 +161,19 @@ TEST_F(DataframeTest, Drop_WithoutList) {
 }
 
 TEST_F(DataframeTest, Drop_ErrorIfNotString) {
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> func_obj, df->GetMethod(Dataframe::kDropOpID));
-  ArgMap args{{}, {MakeListObj(MakeInt(1))}};
-  EXPECT_THAT(
-      func_obj->Call(args, ast).status(),
-      HasCompilerError("Expected arg 'columns \\(index 0\\)' as type 'String', received 'Int"));
-}
-
-StatusOr<QLObjectPtr> UDFHandler(IR* graph, const std::string& name, const pypa::AstPtr& ast,
-                                 const ParsedArgs&, ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(FuncIR * node,
-                      graph->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", name},
-                                                std::vector<ExpressionIR*>{}));
-  return ExprObject::Create(node, visitor);
-}
-
-std::shared_ptr<FuncObject> MakeUDFFunc(ASTVisitor* visitor, IR* graph,
-                                        std::string_view func_name) {
-  return FuncObject::Create(
-             func_name, {}, {},
-             /* has_variable_len_args */ true,
-             /* has_variable_len_kwargs */ false,
-             std::bind(&UDFHandler, graph, std::string(func_name), std::placeholders::_1,
-                       std::placeholders::_2, std::placeholders::_3),
-             visitor)
-      .ConsumeValueOrDie();
+  EXPECT_THAT(ParseScript(var_table, "df.drop(1)"),
+              HasCompilerError("Expected arg.*as type 'String', received 'Int"));
 }
 
 TEST_F(DataframeTest, Agg) {
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> func_obj,
-                       df->GetMethod(Dataframe::kBlockingAggOpID));
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> tuple1,
-                       TupleObject::Create({ToQLObject(MakeString("col1")),
-                                            MakeUDFFunc(ast_visitor.get(), src->graph(), "mean")},
-                                           ast_visitor.get()));
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> tuple2,
-                       TupleObject::Create({ToQLObject(MakeString("col2")),
-                                            MakeUDFFunc(ast_visitor.get(), src->graph(), "mean")},
-                                           ast_visitor.get()));
-  ArgMap args{{{"outcol1", tuple1}, {"outcol2", tuple2}}, {}};
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> obj, func_obj->Call(args, ast));
-  ASSERT_EQ(obj->type_descriptor().type(), QLObjectType::kDataframe);
-  OperatorIR* op = static_cast<Dataframe*>(obj.get())->op();
+  std::string script = R"pxl(agg = df.agg(
+  outcol1=('col1', mean),
+  outcol2=('col2', mean),
+))pxl";
+  ASSERT_OK(ParseScript(var_table, script));
+  auto var = var_table->Lookup("agg");
+  ASSERT_EQ(var->type_descriptor().type(), QLObjectType::kDataframe);
+  OperatorIR* op = static_cast<Dataframe*>(var.get())->op();
   ASSERT_MATCH(op, BlockingAgg());
   BlockingAggIR* agg = static_cast<BlockingAggIR*>(op);
   EXPECT_THAT(agg->parents(), ElementsAre(src));
@@ -198,44 +196,31 @@ TEST_F(DataframeTest, Agg) {
 }
 
 TEST_F(DataframeTest, Agg_FailsWithPositionalArgs) {
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> func_obj,
-                       df->GetMethod(Dataframe::kBlockingAggOpID));
-  ArgMap args{{}, {ToQLObject(MakeMeanFunc())}};
-  EXPECT_THAT(func_obj->Call(args, ast).status(),
+  EXPECT_THAT(ParseScript(var_table, "df.agg(mean)"),
               HasCompilerError("agg.* takes 0 arguments but 1 .* given"));
 }
 
 TEST_F(DataframeTest, Agg_OnlyAllowTupleArgs) {
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> func_obj,
-                       df->GetMethod(Dataframe::kBlockingAggOpID));
-  ArgMap args{{{"outcol1", ToQLObject(MakeMeanFunc())}}, {}};
-  EXPECT_THAT(func_obj->Call(args, ast).status(),
-              HasCompilerError("Expected tuple for value at kwarg outcol1 but received .*"));
+  EXPECT_THAT(ParseScript(var_table, "df.agg(outcol1=1)"),
+              HasCompilerError("Expected tuple for value at kwarg outcol1 but received.*"));
 }
 
 TEST_F(DataframeTest, Agg_BadFirstTupleArg) {
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> func_obj,
-                       df->GetMethod(Dataframe::kBlockingAggOpID));
-  ArgMap args{{{"outcol1", MakeTupleObj(MakeInt(1), MakeMeanFunc())}}, {}};
-  EXPECT_THAT(func_obj->Call(args, ast).status(),
+  EXPECT_THAT(ParseScript(var_table, "df.agg(outcol1=(1, mean))"),
               HasCompilerError("All elements of the agg tuple must be column names, except the "
                                "last which should be a function"));
 }
 
 TEST_F(DataframeTest, Agg_BadSecondTupleArg) {
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> func_obj,
-                       df->GetMethod(Dataframe::kBlockingAggOpID));
-  ArgMap args{{{"outcol1", MakeTupleObj(MakeString("ll"), MakeString("dd"))}}, {}};
-  EXPECT_THAT(func_obj->Call(args, ast).status(),
+  EXPECT_THAT(ParseScript(var_table, "df.agg(outcol1=('ll', 'dd'))"),
               HasCompilerError("Expected second tuple argument to be type Func, received String"));
 }
 
 TEST_F(DataframeTest, CreateLimit) {
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> func_obj, df->GetMethod(Dataframe::kLimitOpID));
-  ArgMap args{{}, {ToQLObject(MakeInt(1234))}};
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> obj, func_obj->Call(args, ast));
-  ASSERT_EQ(obj->type_descriptor().type(), QLObjectType::kDataframe);
-  auto limit_obj = std::static_pointer_cast<Dataframe>(obj);
+  ASSERT_OK(ParseScript(var_table, "limit = df.head(1234)"));
+  auto var = var_table->Lookup("limit");
+  ASSERT_EQ(var->type_descriptor().type(), QLObjectType::kDataframe);
+  auto limit_obj = std::static_pointer_cast<Dataframe>(var);
 
   ASSERT_MATCH(limit_obj->op(), Limit());
   LimitIR* limit = static_cast<LimitIR*>(limit_obj->op());
@@ -243,72 +228,58 @@ TEST_F(DataframeTest, CreateLimit) {
 }
 
 TEST_F(DataframeTest, LimitNonIntArgument) {
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> func_obj, df->GetMethod(Dataframe::kLimitOpID));
-  ArgMap args{{}, {ToQLObject(MakeString("1234"))}};
-  EXPECT_THAT(func_obj->Call(args, ast).status(),
+  EXPECT_THAT(ParseScript(var_table, "df.head('foo')"),
               HasCompilerError("Expected arg 'n' as type 'Int', received 'String'"));
 }
 
 TEST_F(DataframeTest, SubscriptFilterRows) {
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> func_obj, df->GetSubscriptMethod());
-  auto eq_func = MakeEqualsFunc(MakeColumn("service", 0), MakeString("blah"));
-  ArgMap args{{}, {ToQLObject(eq_func)}};
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> obj, func_obj->Call(args, ast));
-  ASSERT_EQ(obj->type_descriptor().type(), QLObjectType::kDataframe);
-  auto filter_obj = std::static_pointer_cast<Dataframe>(obj);
+  ASSERT_OK(ParseScript(var_table, "filter = df[df.service == 'blah']"));
+  auto var = var_table->Lookup("filter");
+  ASSERT_EQ(var->type_descriptor().type(), QLObjectType::kDataframe);
+  auto filter_obj = std::static_pointer_cast<Dataframe>(var);
   FilterIR* filt_ir = static_cast<FilterIR*>(filter_obj->op());
-  EXPECT_EQ(filt_ir->filter_expr(), eq_func);
+  EXPECT_MATCH(filt_ir->filter_expr(), Equals(ColumnNode(), String()));
 }
 
 TEST_F(DataframeTest, SubscriptKeepColumns) {
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> func_obj, df->GetSubscriptMethod());
-  ArgMap args{{}, {MakeListObj(MakeString("foo"), MakeString("bar"))}};
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> obj, func_obj->Call(args, ast));
-  ASSERT_EQ(obj->type_descriptor().type(), QLObjectType::kDataframe);
-  auto map_obj = std::static_pointer_cast<Dataframe>(obj);
+  ASSERT_OK(ParseScript(var_table, "keep = df[['foo', 'baz']]"));
+  auto var = var_table->Lookup("keep");
+  ASSERT_EQ(var->type_descriptor().type(), QLObjectType::kDataframe);
+  auto map_obj = std::static_pointer_cast<Dataframe>(var);
   MapIR* map_ir = static_cast<MapIR*>(map_obj->op());
   EXPECT_EQ(map_ir->col_exprs().size(), 2);
   EXPECT_EQ(map_ir->col_exprs()[0].name, "foo");
-  EXPECT_EQ(map_ir->col_exprs()[1].name, "bar");
+  EXPECT_EQ(map_ir->col_exprs()[1].name, "baz");
 }
 
-TEST_F(DataframeTest, SbuscriptKeepMultipleOccurrences) {
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> func_obj, df->GetSubscriptMethod());
-  ArgMap args{{}, {MakeListObj(MakeString("foo"), MakeString("foo"))}};
-  EXPECT_THAT(func_obj->Call(args, ast).status(),
+TEST_F(DataframeTest, SubscriptKeepMultipleOccurrences) {
+  EXPECT_THAT(ParseScript(var_table, "df[['foo', 'foo']]"),
               HasCompilerError("cannot specify the same column name more than once when filtering "
                                "by cols. 'foo' specified more than once"));
 }
 
 TEST_F(DataframeTest, SubscriptCanHandleErrorInput) {
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> func_obj, df->GetSubscriptMethod());
   // Call with an operator argument which is not allowed.
   EXPECT_THAT(
-      func_obj->Call({{}, {ToQLObject(MakeMemSource())}}, ast).status(),
+      ParseScript(var_table, "df[df]"),
       HasCompilerError(
           "subscript argument must have a list of strings or expression. '.*' not allowed"));
 }
 
 TEST_F(DataframeTest, SubscriptCreateColumn) {
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> func_obj, df->GetSubscriptMethod());
-  ArgMap args{{}, {ToQLObject(MakeString("col1"))}};
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> obj, func_obj->Call(args, ast));
-  ASSERT_EQ(obj->type_descriptor().type(), QLObjectType::kExpr);
-  auto maybe_col_node = obj->node();
+  ASSERT_OK(ParseScript(var_table, "col = df['col1']"));
+  auto var = var_table->Lookup("col");
+  ASSERT_EQ(var->type_descriptor().type(), QLObjectType::kExpr);
+  auto maybe_col_node = var->node();
   ASSERT_MATCH(maybe_col_node, ColumnNode());
   EXPECT_EQ(static_cast<ColumnIR*>(maybe_col_node)->col_name(), "col1");
 }
 
 TEST_F(DataframeTest, GroupByList) {
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> func_obj,
-                       df->GetMethod(Dataframe::kGroupByOpID));
-  ASSERT_OK_AND_ASSIGN(
-      std::shared_ptr<QLObject> list,
-      ListObject::Create({ToQLObject(MakeString("col1")), ToQLObject(MakeString("col2"))},
-                         ast_visitor.get()));
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> obj, func_obj->Call({{}, {list}}, ast));
-  ASSERT_EQ(obj->type_descriptor().type(), QLObjectType::kDataframe);
-  auto groupby_df = std::static_pointer_cast<Dataframe>(obj);
+  ASSERT_OK(ParseScript(var_table, "group = df.groupby(['col1', 'col2'])"));
+  auto var = var_table->Lookup("group");
+  ASSERT_EQ(var->type_descriptor().type(), QLObjectType::kDataframe);
+  auto groupby_df = std::static_pointer_cast<Dataframe>(var);
   GroupByIR* group_by = static_cast<GroupByIR*>(groupby_df->op());
   EXPECT_EQ(group_by->groups().size(), 2);
   EXPECT_MATCH(group_by->groups()[0], ColumnNode("col1", 0));
@@ -316,38 +287,25 @@ TEST_F(DataframeTest, GroupByList) {
 }
 
 TEST_F(DataframeTest, GroupByString) {
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> func_obj,
-                       df->GetMethod(Dataframe::kGroupByOpID));
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> obj,
-                       func_obj->Call(MakeArgMap({}, {MakeString("col1")}), ast));
-  ASSERT_EQ(obj->type_descriptor().type(), QLObjectType::kDataframe);
-  auto groupby_df = std::static_pointer_cast<Dataframe>(obj);
+  ASSERT_OK(ParseScript(var_table, "group = df.groupby('col1')"));
+  auto var = var_table->Lookup("group");
+  ASSERT_EQ(var->type_descriptor().type(), QLObjectType::kDataframe);
+  auto groupby_df = std::static_pointer_cast<Dataframe>(var);
   GroupByIR* group_by = static_cast<GroupByIR*>(groupby_df->op());
   EXPECT_EQ(group_by->groups().size(), 1);
   EXPECT_MATCH(group_by->groups()[0], ColumnNode("col1", 0));
 }
 
 TEST_F(DataframeTest, GroupByMixedListElementTypesCausesError) {
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> func_obj,
-                       df->GetMethod(Dataframe::kGroupByOpID));
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> list,
-                       ListObject::Create({ToQLObject(MakeString("col1")), ToQLObject(MakeInt(2))},
-                                          ast_visitor.get()));
-  EXPECT_THAT(func_obj->Call({{}, {list}}, ast).status(),
+  EXPECT_THAT(ParseScript(var_table, "svc = df.groupby(['col1', 2])"),
               HasCompilerError("Expected arg 'by \\(index 1\\)' as type 'String', received 'Int'"));
 }
 
 TEST_F(DataframeTest, AttributeMetadataSubscriptTest) {
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> md_obj,
-                       df->GetAttribute(ast, Dataframe::kMetadataAttrName));
-  ASSERT_EQ(md_obj->type_descriptor().type(), QLObjectType::kMetadata);
-
-  auto metadata = static_cast<MetadataObject*>(md_obj.get());
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> subscript_fn, metadata->GetSubscriptMethod());
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> subscript_obj,
-                       subscript_fn->Call(MakeArgMap({}, {MakeString("service")}), ast));
-  ASSERT_EQ(subscript_obj->type_descriptor().type(), QLObjectType::kExpr);
-  auto metadata_expr = static_cast<ExprObject*>(subscript_obj.get());
+  ASSERT_OK(ParseScript(var_table, "svc = df.ctx['service']"));
+  auto var = var_table->Lookup("svc");
+  ASSERT_EQ(var->type_descriptor().type(), QLObjectType::kExpr);
+  auto metadata_expr = static_cast<ExprObject*>(var.get());
   ASSERT_TRUE(metadata_expr->HasNode());
   ASSERT_MATCH(metadata_expr->node(), Metadata());
   auto metadata_node = static_cast<MetadataIR*>(metadata_expr->node());
@@ -359,48 +317,45 @@ TEST_F(DataframeTest, UnionTest_array) {
   MemorySourceIR* src3 = MakeMemSource();
   ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> df2, Dataframe::Create(src2, ast_visitor.get()));
   ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> df3, Dataframe::Create(src3, ast_visitor.get()));
+  var_table->Add("df2", df2);
+  var_table->Add("df3", df3);
+  ASSERT_OK(ParseScript(var_table, "union = df.append([df2, df3])"));
+  auto var = var_table->Lookup("union");
 
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> union_fn, df->GetMethod(Dataframe::kUnionOpID));
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> df_list,
-                       ListObject::Create({df2, df3}, ast_visitor.get()));
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> obj, union_fn->Call({{}, {df_list}}, ast));
-  ASSERT_EQ(obj->type_descriptor().type(), QLObjectType::kDataframe);
-  auto union_df = static_cast<Dataframe*>(obj.get());
+  ASSERT_EQ(var->type_descriptor().type(), QLObjectType::kDataframe);
+  auto union_df = static_cast<Dataframe*>(var.get());
 
-  // Check to make sure that the operator is a Union.
+  // Check to make sure that the output is a Union operator.
   OperatorIR* op = union_df->op();
   ASSERT_MATCH(op, Union());
   EXPECT_THAT(op->parents(), ElementsAre(src, src2, src3));
 }
 
 TEST_F(DataframeTest, UnionTest_single) {
-  MemorySourceIR* src1 = MakeMemSource();
   MemorySourceIR* src2 = MakeMemSource();
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> df1, Dataframe::Create(src1, ast_visitor.get()));
   ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> df2, Dataframe::Create(src2, ast_visitor.get()));
+  var_table->Add("df2", df2);
+  ASSERT_OK(ParseScript(var_table, "union = df.append(df2)"));
+  auto var = var_table->Lookup("union");
 
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> union_fn, df1->GetMethod(Dataframe::kUnionOpID));
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> obj, union_fn->Call({{}, {df2}}, ast));
-  ASSERT_EQ(obj->type_descriptor().type(), QLObjectType::kDataframe);
-  auto union_df = static_cast<Dataframe*>(obj.get());
+  ASSERT_EQ(var->type_descriptor().type(), QLObjectType::kDataframe);
+  auto union_df = static_cast<Dataframe*>(var.get());
 
   // Check to make sure that the output is a Union operator.
   OperatorIR* op = union_df->op();
   ASSERT_MATCH(op, Union());
-  EXPECT_THAT(op->parents(), ElementsAre(src1, src2));
+  EXPECT_THAT(op->parents(), ElementsAre(src, src2));
 }
 
 TEST_F(DataframeTest, ConstructorTest) {
   ASSERT_OK_AND_ASSIGN(std::shared_ptr<Dataframe> df,
                        Dataframe::Create(graph.get(), ast_visitor.get()));
+  var_table->Add("DataFrame", df);
+  ASSERT_OK(ParseScript(var_table, "http = DataFrame('http_events')"));
+  auto var = var_table->Lookup("http");
 
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> func_obj, df->GetCallMethod());
-
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> obj,
-                       func_obj->Call(MakeArgMap({}, {MakeString("http_events")}), ast));
-  // Add compartor for type() and Dataframe.
-  ASSERT_EQ(obj->type_descriptor().type(), QLObjectType::kDataframe);
-  auto df_obj = static_cast<Dataframe*>(obj.get());
+  ASSERT_EQ(var->type_descriptor().type(), QLObjectType::kDataframe);
+  auto df_obj = static_cast<Dataframe*>(var.get());
 
   // Check to make sure that the operator is a MemorySource.
   ASSERT_MATCH(df_obj->op(), MemorySource());
@@ -409,13 +364,10 @@ TEST_F(DataframeTest, ConstructorTest) {
 }
 
 TEST_F(DataframeTest, StreamTest) {
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<FuncObject> streamfn, df->GetMethod(Dataframe::kStreamOpId));
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> obj, streamfn->Call({{}, {}}, ast));
-
-  ASSERT_EQ(obj->type_descriptor().type(), QLObjectType::kDataframe);
-  auto streamdf = static_cast<Dataframe*>(obj.get());
-
-  // Check to make sure that the operator is a Stream.
+  ASSERT_OK(ParseScript(var_table, "s = df.stream()"));
+  auto var = var_table->Lookup("s");
+  ASSERT_EQ(var->type_descriptor().type(), QLObjectType::kDataframe);
+  auto streamdf = static_cast<Dataframe*>(var.get());
   ASSERT_MATCH(streamdf->op(), Stream());
   EXPECT_THAT(streamdf->op()->parents(), ElementsAre(src));
 }

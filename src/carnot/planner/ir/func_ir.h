@@ -81,7 +81,7 @@ class FuncIR : public ExpressionIR {
 
   std::string DebugString() const override {
     return absl::Substitute("$0(id=$1, $2)", func_name(), id(),
-                            absl::StrJoin(args_, ",", [](std::string* out, IRNode* in) {
+                            absl::StrJoin(all_args_, ",", [](std::string* out, IRNode* in) {
                               absl::StrAppend(out, in->DebugString());
                             }));
   }

@@ -79,13 +79,36 @@ class ASTVisitorImpl : public ASTVisitor {
    * Variable table and the pixie module are created with this call.
    *
    * @param graph
+   * @param var_table
+   * @param module_handler
    * @param compiler_state
-   * @param arg_values
+   * @param module_handler
+   * @param reserved_names
+   * @param module_map
    * @return StatusOr<std::shared_ptr<ASTVisitorImpl>>
    */
   static StatusOr<std::shared_ptr<ASTVisitorImpl>> Create(
       IR* graph, MutationsIR* mutations, CompilerState* compiler_state,
       ModuleHandler* module_handler, bool func_based_exec = false,
+      const absl::flat_hash_set<std::string>& reserved_names = {},
+      const absl::flat_hash_map<std::string, std::string>& module_map = {});
+
+  /**
+   * @brief Creates a top-level AST Visitor with the given graph and compiler state.
+   *
+   *
+   * @param graph
+   * @param var_table
+   * @param module_handler
+   * @param compiler_state
+   * @param module_handler
+   * @param reserved_names
+   * @param module_map
+   * @return StatusOr<std::shared_ptr<ASTVisitorImpl>>
+   */
+  static StatusOr<std::shared_ptr<ASTVisitorImpl>> Create(
+      IR* graph, std::shared_ptr<VarTable> var_table, MutationsIR* mutations,
+      CompilerState* compiler_state, ModuleHandler* module_handler, bool func_based_exec = false,
       const absl::flat_hash_set<std::string>& reserved_names = {},
       const absl::flat_hash_map<std::string, std::string>& module_map = {});
 

@@ -89,10 +89,11 @@ StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
   for (const auto& func : exec_funcs) {
     reserved_names.insert(func.output_table_prefix());
   }
-  MutationsIR dynamic_trace;
+  MutationsIR mutations_ir;
   ModuleHandler module_handler;
+  auto var_table = VarTable::Create();
   PL_ASSIGN_OR_RETURN(auto ast_walker,
-                      ASTVisitorImpl::Create(ir.get(), &dynamic_trace, compiler_state,
+                      ASTVisitorImpl::Create(ir.get(), var_table, &mutations_ir, compiler_state,
                                              &module_handler, func_based_exec, reserved_names));
 
   PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));

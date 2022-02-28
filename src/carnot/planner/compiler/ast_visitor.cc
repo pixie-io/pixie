@@ -54,17 +54,26 @@ StatusOr<FuncIR::Op> ASTVisitorImpl::GetUnaryOp(const std::string& python_op,
 }
 
 StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(
-    IR* graph, MutationsIR* mutations, CompilerState* compiler_state, ModuleHandler* module_handler,
-    bool func_based_exec, const absl::flat_hash_set<std::string>& reserved_names,
+    IR* graph, std::shared_ptr<VarTable> var_table, MutationsIR* mutations,
+    CompilerState* compiler_state, ModuleHandler* module_handler, bool func_based_exec,
+    const absl::flat_hash_set<std::string>& reserved_names,
     const absl::flat_hash_map<std::string, std::string>& module_map) {
   std::shared_ptr<ASTVisitorImpl> ast_visitor = std::shared_ptr<ASTVisitorImpl>(
-      new ASTVisitorImpl(graph, mutations, compiler_state, VarTable::Create(), func_based_exec,
+      new ASTVisitorImpl(graph, mutations, compiler_state, var_table, func_based_exec,
                          reserved_names, module_handler, std::make_shared<udf::Registry>("udcf")));
 
   PL_RETURN_IF_ERROR(ast_visitor->InitGlobals());
   PL_RETURN_IF_ERROR(ast_visitor->SetupModules(module_map));
   builtins::RegisterMathOpsOrDie(ast_visitor->udf_registry_.get());
   return ast_visitor;
+}
+
+StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(
+    IR* graph, MutationsIR* mutations, CompilerState* compiler_state, ModuleHandler* module_handler,
+    bool func_based_exec, const absl::flat_hash_set<std::string>& reserved_names,
+    const absl::flat_hash_map<std::string, std::string>& module_map) {
+  return Create(graph, VarTable::Create(), mutations, compiler_state, module_handler,
+                func_based_exec, reserved_names, module_map);
 }
 
 std::shared_ptr<ASTVisitorImpl> ASTVisitorImpl::CreateChild() {
