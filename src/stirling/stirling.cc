@@ -376,7 +376,8 @@ Status StirlingImpl::Init() {
   // deployed along side PEM will always crash as the probes owned by PEM cannot be modified by
   // stirling_wrapper. Figure out a way to detect active probes owned by other processes,
   // in order to skip cleaning up those probes.
-  LOG_IF(WARNING, !s.ok()) << absl::Substitute("Kprobe Cleaner failed. Message $0", s.msg());
+  LOG_IF(WARNING, !s.ok()) << absl::Substitute("Stirling probe cleanup failed, message: $0",
+                                               s.msg());
 
   if (!registry_) {
     return error::NotFound("Source registry doesn't exist");

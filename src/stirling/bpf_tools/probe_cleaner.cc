@@ -109,10 +109,12 @@ Status CleanProbesFromSysFile(const char* file_path, std::string_view marker) {
   std::vector<std::string> leaked_probes_after;
   PL_RETURN_IF_ERROR(SearchForAttachedProbes(file_path, marker, &leaked_probes_after));
   if (!leaked_probes_after.empty()) {
-    return error::Internal("Wasn't able to remove all probes. Initial count=$0, final count=$1",
-                           leaked_probes.size(), leaked_probes_after.size());
+    return error::Internal(
+        "Wasn't able to remove all Stirling probes: "
+        "initial_count=$0, final_count=$1",
+        leaked_probes.size(), leaked_probes_after.size());
   }
-  LOG(INFO) << absl::Substitute("Cleaned up $0 probes", leaked_probes.size());
+  LOG(INFO) << absl::Substitute("All Stirling probes removed (count=$0)", leaked_probes.size());
 
   return Status::OK();
 }
