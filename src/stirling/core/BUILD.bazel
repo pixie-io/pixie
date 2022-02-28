@@ -37,6 +37,7 @@ pl_cc_library(
         "//src/stirling/source_connectors/perf_profiler:__pkg__",
         "//src/stirling/source_connectors/pid_runtime:__pkg__",
         "//src/stirling/source_connectors/pid_runtime_bpftrace:__pkg__",
+        "//src/stirling/source_connectors/proc_exit:__pkg__",
         "//src/stirling/source_connectors/proc_stat:__pkg__",
         "//src/stirling/source_connectors/process_stats:__pkg__",
         "//src/stirling/source_connectors/seq_gen:__pkg__",
