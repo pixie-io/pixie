@@ -203,7 +203,7 @@ spec:
       - env:
         - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
           value: kafka-service:9092
-        image: gcr.io/pixie-prod/demos/kafka/invoicing:1.0
+        image: gcr.io/pixie-prod/demos/kafka/invoicing:2.0
         imagePullPolicy: Always
         name: invoicing
         resources: {}
@@ -287,6 +287,7 @@ spec:
         - "1"
         - -r
         - "1"
+        - --headless
         - -f
         - /config/locustfile.py
         - --host
@@ -327,7 +328,7 @@ spec:
       - env:
         - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
           value: kafka-service:9092
-        image: gcr.io/pixie-prod/demos/kafka/order:1.0
+        image: gcr.io/pixie-prod/demos/kafka/order:2.0
         name: order
         resources: {}
       initContainers:
@@ -408,7 +409,7 @@ spec:
       - env:
         - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
           value: kafka-service:9092
-        image: gcr.io/pixie-prod/demos/kafka/shipping:1.0
+        image: gcr.io/pixie-prod/demos/kafka/shipping:2.0
         name: shipping
         resources: {}
       initContainers:

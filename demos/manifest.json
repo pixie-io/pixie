@@ -20,11 +20,19 @@
     "px-kafka": {
         "description": "Microservice demo that uses Kafka to communicate between 3 services.",
         "instructions": [
-            " px-kafka may take a few more minutes to fully finish starting up.",
-            " Run `kubectl -n px-kafka get svc` to get the external IPs.",
-            " When using minikube, run 'minikube tunnel' in order to ensure the external IP is accessible.",
-            " To see the demo's front end, visit the `apache` external IP (with port).",
-            " To start a load test, visit the `load-test` external IP (with port) and press the `Start Swarming` button`."
+            "px-kafka may take a few more minutes to fully finish starting up.",
+            "",
+            "To see the demo's front end: visit the `apache` external IP (with port).",
+            "   Run `kubectl -n px-kafka get svc` to get the external IPs.",
+            "   When using minikube, run 'minikube tunnel' in order to ensure the external IP is accessible.",
+            "",
+            "To turn on the invoicing delay, run the following commands:",
+            "   export INVC_POD=$(kubectl get pod -n px-kafka -l io.kompose.service=invoicing -o jsonpath='{.items[0].metadata.name}')",
+            "   export INVC_PID=$(kubectl exec -n px-kafka $INVC_POD -c invoicing -- pgrep java)",
+            "   kubectl exec -n px-kafka $INVC_POD -c invoicing -- kill -USR1 $INVC_PID",
+            "",
+            "To turn off the invoicing delay, run:",
+            "   kubectl exec -n px-kafka $INVC_POD -c invoicing -- kill -USR2 $INVC_PID"
         ]
     }
 }
