@@ -2117,6 +2117,12 @@ def pl_go_dependencies():
         sum = "h1:iQTw/8FWTuc7uiaSepXwyf3o52HaUYcV+Tu66S3F5GA=",
         version = "v0.0.0-20190222173326-2bc1f35cddc0",
     )
+    go_repository(
+        name = "com_github_karlseguin_expect",
+        importpath = "github.com/karlseguin/expect",
+        sum = "h1:vJ0Snvo+SLMY72r5J4sEfkuE7AFbixEP2qRbEcum/wA=",
+        version = "v1.0.2-0.20190806010014-778a5f0c6003",
+    )
 
     go_repository(
         name = "com_github_karrick_godirwalk",
@@ -2252,6 +2258,43 @@ def pl_go_dependencies():
         sum = "h1:JEeO0bvc78PKdyHxloTKiF8BD5iGrH8T6MSeGvSgob0=",
         version = "v0.3.0",
     )
+    go_repository(
+        name = "com_github_launchdarkly_ccache",
+        importpath = "github.com/launchdarkly/ccache",
+        sum = "h1:voD1M+ZJXR3MREOKtBwgTF9hYHl1jg+vFKS/+VAkR2k=",
+        version = "v1.1.0",
+    )
+    go_repository(
+        name = "com_github_launchdarkly_eventsource",
+        importpath = "github.com/launchdarkly/eventsource",
+        sum = "h1:5SbcIqzUomn+/zmJDrkb4LYw7ryoKFzH/0TbR0/3Bdg=",
+        version = "v1.6.2",
+    )
+    go_repository(
+        name = "com_github_launchdarkly_go_ntlm_proxy_auth",
+        importpath = "github.com/launchdarkly/go-ntlm-proxy-auth",
+        sum = "h1:Iz5cg9mB/0vt5llZE+J0iGQ5+O/U8CWuRUUR7Ou8eNM=",
+        version = "v1.0.1",
+    )
+    go_repository(
+        name = "com_github_launchdarkly_go_ntlmssp",
+        importpath = "github.com/launchdarkly/go-ntlmssp",
+        sum = "h1:snB77118TQvf9tfHrkSyrIop/UX5e5VD2D2mv7Kh3wE=",
+        version = "v1.0.1",
+    )
+    go_repository(
+        name = "com_github_launchdarkly_go_semver",
+        importpath = "github.com/launchdarkly/go-semver",
+        sum = "h1:sYVRnuKyvxlmQCnCUyDkAhtmzSFRoX6rG2Xa21Mhg+w=",
+        version = "v1.0.2",
+    )
+    go_repository(
+        name = "com_github_launchdarkly_go_test_helpers_v2",
+        importpath = "github.com/launchdarkly/go-test-helpers/v2",
+        sum = "h1:L3kGILP/6ewikhzhdNkHy1b5y4zs50LueWenVF0sBbs=",
+        version = "v2.2.0",
+    )
+
     go_repository(
         name = "com_github_lestrrat_go_backoff_v2",
         importpath = "github.com/lestrrat-go/backoff/v2",
@@ -2837,6 +2880,12 @@ def pl_go_dependencies():
         importpath = "github.com/pascaldekloe/goe",
         sum = "h1:cBOtyMzM9HTpWjXfbbunk26uA6nG3a8n06Wieeh0MwY=",
         version = "v0.1.0",
+    )
+    go_repository(
+        name = "com_github_patrickmn_go_cache",
+        importpath = "github.com/patrickmn/go-cache",
+        sum = "h1:HRMgzkcYKYpi3C8ajMPV8OFXaaRUnok+kx1WdO15EQc=",
+        version = "v2.1.0+incompatible",
     )
 
     go_repository(
@@ -3435,6 +3484,12 @@ def pl_go_dependencies():
         sum = "h1:N7Z7E9UvjW+sGsEl7k/SJrvY2reP1A07MrGuCjIOjRE=",
         version = "v1.1.11",
     )
+    go_repository(
+        name = "com_github_wsxiaoys_terminal",
+        importpath = "github.com/wsxiaoys/terminal",
+        sum = "h1:3UeQBvD0TFrlVjOeLOBz+CPAI8dnbqNSVwUwRrkp7vQ=",
+        version = "v0.0.0-20160513160801-0940f3fc43a0",
+    )
 
     go_repository(
         name = "com_github_xanzy_ssh_agent",
@@ -3656,6 +3711,12 @@ def pl_go_dependencies():
         sum = "h1:OAj3g0cR6Dx/R07QgQe8wkA9RNjB2u4i700xBkIT4e0=",
         version = "v2.1.2",
     )
+    go_repository(
+        name = "in_gopkg_ghodss_yaml_v1",
+        importpath = "gopkg.in/ghodss/yaml.v1",
+        sum = "h1:JlY4R6oVz+ZSvcDhVfNQ/k/8Xo6yb2s1PBhslPZPX4c=",
+        version = "v1.0.0",
+    )
 
     go_repository(
         name = "in_gopkg_go_playground_assert_v1",
@@ -3683,6 +3744,37 @@ def pl_go_dependencies():
         sum = "h1:duBzk771uxoUuOlyRLkHsygud9+5lrlGjdFBb4mSKDU=",
         version = "v1.62.0",
     )
+    go_repository(
+        name = "in_gopkg_launchdarkly_go_jsonstream_v1",
+        importpath = "gopkg.in/launchdarkly/go-jsonstream.v1",
+        sum = "h1:aZHvMDAS+M6/0sRMkDBQ8MyLGsTQrNgN5evu5e8UYpQ=",
+        version = "v1.0.1",
+    )
+    go_repository(
+        name = "in_gopkg_launchdarkly_go_sdk_common_v2",
+        importpath = "gopkg.in/launchdarkly/go-sdk-common.v2",
+        sum = "h1:1LnhgO4O7tUkwtoKni0cm9dPrI1fUIgCJuPluJ05fr8=",
+        version = "v2.5.0",
+    )
+    go_repository(
+        name = "in_gopkg_launchdarkly_go_sdk_events_v1",
+        importpath = "gopkg.in/launchdarkly/go-sdk-events.v1",
+        sum = "h1:LfbZsHTPwjzhDbJ/IjYs0oc8rWcbyJM7nN+Ce4ZdUVM=",
+        version = "v1.1.1",
+    )
+    go_repository(
+        name = "in_gopkg_launchdarkly_go_server_sdk_evaluation_v1",
+        importpath = "gopkg.in/launchdarkly/go-server-sdk-evaluation.v1",
+        sum = "h1:gA0F8n0sJ0K6LOLuyC28+O4garjdaU2T3m5mk1Fki8g=",
+        version = "v1.5.0",
+    )
+    go_repository(
+        name = "in_gopkg_launchdarkly_go_server_sdk_v5",
+        importpath = "gopkg.in/launchdarkly/go-server-sdk.v5",
+        sum = "h1:FTKVBrFIRvB4Q8vir1CYMyz+Ch3u9ewfqJis22WiRr4=",
+        version = "v5.8.1",
+    )
+
     go_repository(
         name = "in_gopkg_mgo_v2",
         importpath = "gopkg.in/mgo.v2",

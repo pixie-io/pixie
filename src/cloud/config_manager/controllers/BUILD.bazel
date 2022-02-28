@@ -14,11 +14,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "controllers",
-    srcs = ["server.go"],
+    srcs = [
+        "server.go",
+        "vizier_feature_flags.go",
+    ],
     importpath = "px.dev/pixie/src/cloud/config_manager/controllers",
     visibility = ["//visibility:public"],
     deps = [
@@ -28,9 +31,23 @@ go_library(
         "//src/utils/shared/tar",
         "//src/utils/shared/yamls",
         "//src/utils/template_generator/vizier_yamls",
+        "@com_github_gofrs_uuid//:uuid",
         "@com_github_sirupsen_logrus//:logrus",
         "@com_github_spf13_viper//:viper",
+        "@in_gopkg_launchdarkly_go_sdk_common_v2//lduser",
+        "@in_gopkg_launchdarkly_go_server_sdk_v5//:go-server-sdk_v5",
         "@io_k8s_apimachinery//pkg/api/meta",
         "@io_k8s_client_go//kubernetes",
+    ],
+)
+
+go_test(
+    name = "controllers_test",
+    srcs = ["vizier_feature_flags_test.go"],
+    deps = [
+        ":controllers",
+        "//src/utils/template_generator/vizier_yamls",
+        "@com_github_gofrs_uuid//:uuid",
+        "@com_github_stretchr_testify//assert",
     ],
 )
