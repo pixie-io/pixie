@@ -1,0 +1,157 @@
+/*
+ * Copyright 2018- The Pixie Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+syntax = "proto3";
+
+package px.services.internal;
+
+option go_package = "pluginpb";
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/protobuf/wrappers.proto";
+import "src/api/proto/uuidpb/uuid.proto";
+
+// This is a service for fetching available plugins and their configurations.
+service PluginService {
+    // GetPlugins fetches all available plugins.
+    rpc GetPlugins(GetPluginsRequest) returns (GetPluginsResponse);
+    // Gets configuration info for a plugin release.
+    rpc GetRetentionPluginConfig(GetRetentionPluginConfigRequest) returns (GetRetentionPluginConfigResponse);
+}
+
+// This is a service for managing an org's data retention plugin(s), such as fetching/updating configurations,
+// and registered scripts.
+service DataRetentionPluginService {
+    // Gets all data retention plugins enabled by the org.
+    rpc GetRetentionPluginsForOrg(GetRetentionPluginsForOrgRequest) returns (GetRetentionPluginsForOrgResponse);
+    // Gets the org's configuration for a plugin.
+    rpc GetOrgRetentionPluginConfig(GetOrgRetentionPluginConfigRequest) returns (GetOrgRetentionPluginConfigResponse);
+    // Update an org's configuration for a plugin.
+    rpc UpdateOrgRetentionPluginConfig(UpdateOrgRetentionPluginConfigRequest) returns (UpdateOrgRetentionPluginConfigResponse);
+}
+
+enum PluginKind {
+    PLUGIN_KIND_UNKNOWN = 0;
+    PLUGIN_KIND_RETENTION = 1;
+}
+
+// GetPluginsRequest is a request to fetch all available plugins.
+message GetPluginsRequest {
+    // If not specified, returns all available plugins. Otherwise, only filters to plugins who support the specified kind.
+    PluginKind kind = 1;
+}
+
+// GetPluginsResponse is the response to the request to fetch available plugins.
+message GetPluginsResponse {
+    repeated Plugin plugins = 1;
+}
+
+// GetRetentionPluginsForOrgRequest is a request to fetch available and configured plugins for an org.
+message GetRetentionPluginsForOrgRequest {
+    // The org ID to get plugins for.
+    uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
+}
+
+// GetRetentionPluginsForOrgResponse contains info about which plugins an org has available.
+message GetRetentionPluginsForOrgResponse {
+    message PluginState {
+        Plugin plugin = 1;
+        // If enabled, the actual version of the plugin the org is running.
+        string enabled_version = 2;
+    }
+    repeated PluginState plugins = 1;
+}
+
+// Plugin contains metadata about a plugin, and also includes information about whether the org has the plugin configured.
+message Plugin {
+    // Name is the human-readable name for the plugin.
+    string name = 1;
+    // A unique identifier for the plugin. This is specified by the plugin writer.
+    string id = 2 [(gogoproto.customname) = "ID"];
+    // A description about the plugin.
+    string description = 3;
+    // The logo for the plugin, in SVG format.
+    string logo = 4;
+    // The semVer version of the latest plugin release.
+    string latest_version = 5;
+    // Whether this plugin supports data retention.
+    bool retention_enabled = 6;
+}
+
+// GetRetentionPluginConfigRequest is a request to get the configuration settings for a specific plugin release.
+message GetRetentionPluginConfigRequest {
+    // The ID of the plugin to fetch the settings for.
+    string id = 1 [(gogoproto.customname) = "ID"];
+    // The release version to fetch the settings for.
+    string version = 2;
+}
+
+// GetRetentionPluginConfigResponse is the response to a request for configuration settings for a specific plugin release.
+message GetRetentionPluginConfigResponse {
+    // The set of configurations, specified by the plugin provider, which should be filled in by the user to
+    // configure the plugin. Keys represent the name of the field, and the value is a description of the field.
+    map<string, string> configurations = 1;
+
+    // PresetScript represents a script written by the plugin provider, which they want to provide by default.
+    message PresetScript {
+        // The name of the script, to display to the user.
+        string name = 1;
+        // The description of what the script does.
+        string description = 2;
+        // The default frequency at which the script should be run.
+        int64 default_frequency_s = 3;
+        // The script to run.
+        string script = 4;
+    }
+
+    // A set of preset scripts written by the plugin provider.
+    repeated PresetScript preset_scripts = 2;
+    // A URL which points to a page providing documentation about the plugin provider's data retention plugin.
+    string documentation_url = 3 [(gogoproto.customname) = "DocumentationURL"];
+    // The default export endpoint which data should be sent to.
+    string default_export_url = 4 [(gogoproto.customname) = "DefaultExportURL"];
+    // Whether users can specify a custom URL to which to send their scripts.
+    bool allow_custom_export_url = 5 [(gogoproto.customname) = "AllowCustomExportURL"];
+}
+
+// GetOrgRetentionPluginConfigRequest is a request to get an org's configuration for a plugin.
+message GetOrgRetentionPluginConfigRequest {
+    string plugin_id = 1 [(gogoproto.customname) = "PluginID"];
+    uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
+}
+
+// GetOrgRetentionPluginConfigResponse gets the org's configuration for a given plugin.
+message GetOrgRetentionPluginConfigResponse {
+    // The set of configurations specified by the org. They key is the name of the configuration,
+    // and the value represents the configuration value.
+    map<string, string> configurations = 1;
+}
+
+// UpdateOrgRetentionPluginConfigRequest is a request to update a plugin's configuration.
+message UpdateOrgRetentionPluginConfigRequest {
+    // The org ID to update the plugin configuration for.
+    uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
+    string plugin_id = 2 [(gogoproto.customname) = "PluginID"];
+    // The configuration settings to update.
+    map<string, string> configurations = 3;
+    // Whether to disable/enable the plugin.
+    google.protobuf.BoolValue enabled = 4;
+}
+
+// UpdateOrgRetentionPluginConfigResponse is a response to update a plugin's configuration.
+message UpdateOrgRetentionPluginConfigResponse {}
