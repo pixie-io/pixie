@@ -114,7 +114,12 @@ func generateAndWriteCertPair(ca *x509.Certificate, caKey *rsa.PrivateKey, certP
 	if err != nil {
 		panic(err)
 	}
-	err = pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)})
+	// TODO(ddelnano): Add flag for configuring which private key type to use (PKCS1 vs PKCS8).
+	b, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	if err != nil {
+		panic(err)
+	}
+	err = pem.Encode(keyOut, &pem.Block{Type: "PRIVATE KEY", Bytes: b})
 	if err != nil {
 		panic(err)
 	}

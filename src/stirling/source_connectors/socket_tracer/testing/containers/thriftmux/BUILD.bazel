@@ -14,12 +14,58 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@io_bazel_rules_docker//java:image.bzl", "DEFAULT_JAVA_BASE", "jar_app_layer")
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+load("@io_bazel_rules_docker//container:container.bzl", "container_layer", "container_image")
+
 load("@io_bazel_rules_docker//scala:image.bzl", "scala_image")
 load("@io_bazel_rules_scala//scala:scala.bzl", "scala_binary", "scala_library")
 load("@io_bazel_rules_scala//thrift:thrift.bzl", "thrift_library")
 load("@io_bazel_rules_scala//twitter_scrooge:twitter_scrooge.bzl", "scrooge_scala_library")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
+
+genrule(
+    name = "certs",
+    outs = [
+        "ca.crt",
+        "client.crt",
+        "client.key",
+        "server.crt",
+        "server.key",
+    ],
+    cmd = """
+        $(location //src/common/testing/test_utils/cert_generator:cert_generator) \
+        --ca_crt $(location ca.crt) \
+        --client_crt $(location client.crt) \
+        --client_key $(location client.key) \
+        --server_crt $(location server.crt) \
+        --server_key $(location server.key)
+    """,
+    tools = [
+        "//src/common/testing/test_utils/cert_generator",
+    ],
+)
+
+pkg_tar(
+    name = "ssl_keys",
+    srcs = [
+        "ca.crt",
+        "client.crt",
+        "client.key",
+        "server.crt",
+        "server.key",
+    ],
+    package_dir = "/etc/ssl",
+    mode = "0755",
+    strip_prefix = "/src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux",
+)
+
+# container_layer(
+#     name = "ssl_keys_layer",
+#     directory = "/etc/ssl",
+#     tars = [":ssl_keys"],
+# )
 
 thrift_library(
     name = "thrift_library",
@@ -72,8 +118,15 @@ scala_binary(
     ],
 )
 
+container_image(
+    name = "thriftmux_base",
+    base = DEFAULT_JAVA_BASE,
+    tars = [":ssl_keys"],
+)
+
 scala_image(
     name = "server_image",
+    base = ":thriftmux_base",
     srcs = glob(["**/*.scala"]),
     main_class = "Server",
     deps = [
