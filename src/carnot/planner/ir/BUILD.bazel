@@ -24,15 +24,16 @@ pl_cc_library(
         [
             "*.cc",
             "*.h",
-            "ir_nodes.inl",
-            "expressions.inl",
-            "operators.inl",
         ],
         exclude = [
             "**/*_test.cc",
             "**/*_test_utils.h",
         ],
-    ),
+    ) + [
+        "ir_nodes.inl",
+        "expressions.inl",
+        "operators.inl",
+    ],
     hdrs = glob(
         ["*.h"],
     ),
@@ -53,6 +54,14 @@ pl_cc_library(
 pl_cc_test(
     name = "ir_nodes_test",
     srcs = ["ir_nodes_test.cc"],
+    deps = [
+        "//src/carnot/planner/compiler:test_utils",
+    ],
+)
+
+pl_cc_test(
+    name = "otel_export_sink_ir_test",
+    srcs = ["otel_export_sink_ir_test.cc"],
     deps = [
         "//src/carnot/planner/compiler:test_utils",
     ],
