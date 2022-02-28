@@ -31,6 +31,7 @@ import (
 	atpb "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
 	"px.dev/pixie/src/cloud/config_manager/configmanagerpb"
 	"px.dev/pixie/src/cloud/config_manager/controllers"
+	"px.dev/pixie/src/cloud/vzmgr/vzmgrpb"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/env"
 	"px.dev/pixie/src/shared/services/healthz"
@@ -40,8 +41,10 @@ import (
 
 func init() {
 	pflag.String("artifact_tracker_service", "kubernetes:///artifact-tracker-service.plc:50750", "The artifact tracker service url (load balancer/list is ok)")
+	pflag.String("vzmgr_service", "vzmgr-service.plc.svc.cluster.local:51800", "The vzmgr service url (load balancer/list is ok)")
 	pflag.String("prod_sentry", "", "Key for prod Viziers that is used to send errors and stacktraces to Sentry.")
 	pflag.String("dev_sentry", "", "Key for dev Viziers that is used to send errors and stacktraces to Sentry.")
+	pflag.String("ld_sdk_key", "", "LaunchDarkly SDK key for feature flags.")
 }
 
 func newArtifactTrackerClient() (atpb.ArtifactTrackerClient, error) {
@@ -56,6 +59,20 @@ func newArtifactTrackerClient() (atpb.ArtifactTrackerClient, error) {
 	}
 
 	return atpb.NewArtifactTrackerClient(artifactTrackerChannel), nil
+}
+
+func newDeploymentKeyClient() (vzmgrpb.VZDeploymentKeyServiceClient, error) {
+	dialOpts, err := services.GetGRPCClientDialOpts()
+	if err != nil {
+		return nil, err
+	}
+
+	deployKeyChannel, err := grpc.Dial(viper.GetString("vzmgr_service"), dialOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return vzmgrpb.NewVZDeploymentKeyServiceClient(deployKeyChannel), nil
 }
 
 func main() {
@@ -82,11 +99,16 @@ func main() {
 	}
 	rm := restmapper.NewDiscoveryRESTMapper(apiGroupResources)
 
+	deployKeyClient, err := newDeploymentKeyClient()
+	if err != nil {
+		log.WithError(err).Fatal("Could not connect with DeploymentKey Service.")
+	}
+
 	atClient, err := newArtifactTrackerClient()
 	if err != nil {
 		log.WithError(err).Fatal("Could not connect with Artifact Service.")
 	}
-	svr := controllers.NewServer(atClient, clientset, rm)
+	svr := controllers.NewServer(atClient, deployKeyClient, viper.GetString("ld_sdk_key"), clientset, rm)
 	serverOpts := &server.GRPCServerOptions{
 		DisableAuth: map[string]bool{
 			"/px.services.ConfigManagerService/GetConfigForVizier": true,

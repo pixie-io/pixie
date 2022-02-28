@@ -52,6 +52,7 @@ go_library(
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
         "//src/cloud/config_manager/configmanagerpb:service_pl_go_proto",
         "//src/cloud/config_manager/controllers",
+        "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
         "//src/shared/services",
         "//src/shared/services/env",
         "//src/shared/services/healthz",

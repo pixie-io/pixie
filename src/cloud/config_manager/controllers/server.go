@@ -27,14 +27,19 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/gofrs/uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc/metadata"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/client-go/kubernetes"
 
 	atpb "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
 	cpb "px.dev/pixie/src/cloud/config_manager/configmanagerpb"
+	"px.dev/pixie/src/cloud/vzmgr/vzmgrpb"
 	versionspb "px.dev/pixie/src/shared/artifacts/versionspb"
+	srvutils "px.dev/pixie/src/shared/services/utils"
+	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/shared/tar"
 	yamls "px.dev/pixie/src/utils/shared/yamls"
 	vizieryamls "px.dev/pixie/src/utils/template_generator/vizier_yamls"
@@ -42,17 +47,21 @@ import (
 
 // Server defines an gRPC server type.
 type Server struct {
-	atClient  atpb.ArtifactTrackerClient
-	clientset *kubernetes.Clientset
-	rm        meta.RESTMapper
+	atClient            atpb.ArtifactTrackerClient
+	deployKeyClient     vzmgrpb.VZDeploymentKeyServiceClient
+	vzFeatureFlagClient VizierFeatureFlagClient
+	clientset           *kubernetes.Clientset
+	rm                  meta.RESTMapper
 }
 
 // NewServer creates GRPC handlers.
-func NewServer(atClient atpb.ArtifactTrackerClient, clientset *kubernetes.Clientset, rm meta.RESTMapper) *Server {
+func NewServer(atClient atpb.ArtifactTrackerClient, deployKeyClient vzmgrpb.VZDeploymentKeyServiceClient, ldSDKKey string, clientset *kubernetes.Clientset, rm meta.RESTMapper) *Server {
 	return &Server{
-		atClient:  atClient,
-		clientset: clientset,
-		rm:        rm,
+		atClient:            atClient,
+		deployKeyClient:     deployKeyClient,
+		vzFeatureFlagClient: NewVizierFeatureFlagClient(ldSDKKey),
+		clientset:           clientset,
+		rm:                  rm,
 	}
 }
 
@@ -65,9 +74,37 @@ func downloadFile(url string) (io.ReadCloser, error) {
 	return resp.Body, nil
 }
 
+func getServiceCredentials(signingKey string) (string, error) {
+	claims := srvutils.GenerateJWTForService("ConfigManager Service", viper.GetString("domain_name"))
+	return srvutils.SignJWTClaims(claims, signingKey)
+}
+
+// Helper function that looks up the org ID based on the deploy key so we can use it to set feature flags.
+func (s *Server) getOrgIDForDeployKey(deployKey string) (uuid.UUID, error) {
+	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
+	if err != nil {
+		return uuid.Nil, err
+	}
+	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
+		fmt.Sprintf("bearer %s", serviceAuthToken))
+	resp, err := s.deployKeyClient.LookupDeploymentKey(ctx, &vzmgrpb.LookupDeploymentKeyRequest{
+		Key: deployKey,
+	})
+	if err != nil || resp == nil || resp.Key == nil {
+		return uuid.Nil, fmt.Errorf("Error fetching deployment key org ID: %s", err.Error())
+	}
+	orgID, err := utils.UUIDFromProto(resp.Key.OrgID)
+	if err != nil || orgID == uuid.Nil {
+		return uuid.Nil, fmt.Errorf("Error parsing org ID as proto: %s", err.Error())
+	}
+	return orgID, err
+}
+
 // GetConfigForVizier provides yaml names and content that can be used to deploy Vizier
 func (s *Server) GetConfigForVizier(ctx context.Context,
 	in *cpb.ConfigForVizierRequest) (*cpb.ConfigForVizierResponse, error) {
+	log.Info("Fetching config for Vizier")
+
 	templatedYAMLs, err := fetchVizierTemplates(ctx, "", in.VzSpec.Version, s.atClient)
 	if err != nil {
 		log.WithError(err).Error("Failed to fetch Vizier templates")
@@ -110,9 +147,16 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 	if in.VzSpec.DataCollectorParams != nil && in.VzSpec.DataCollectorParams.CustomPEMFlags != nil {
 		tmplValues.CustomPEMFlags = in.VzSpec.DataCollectorParams.CustomPEMFlags
 	}
-
 	if in.VzSpec.LeadershipElectionParams != nil {
 		tmplValues.ElectionPeriodMs = in.VzSpec.LeadershipElectionParams.ElectionPeriodMs
+	}
+
+	// Next we inject any feature flags that we want to set for this org.
+	orgID, err := s.getOrgIDForDeployKey(tmplValues.DeployKey)
+	if err != nil || orgID == uuid.Nil {
+		log.WithError(err).Error("Error getting org ID from deploy key, skipping feature flag logic")
+	} else {
+		AddFeatureFlagsToTemplate(s.vzFeatureFlagClient, orgID, tmplValues)
 	}
 
 	vzYamls, err := yamls.ExecuteTemplatedYAMLs(templatedYAMLs, vizieryamls.VizierTmplValuesToArgs(tmplValues))
