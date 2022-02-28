@@ -54,6 +54,17 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "socket_trace_protocols_test",
+    srcs = ["socket_trace_protocols_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/source_connectors/socket_tracer/protocols/cql:testing",
+        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "uprobe_symaddrs_test",
     srcs = ["uprobe_symaddrs_test.cc"],
     data = [
