@@ -16,39 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-  ExecuteScriptRequestJson,
-  ExecuteScriptRequestString,
-  ExecuteScriptResponseJson,
-  ExecuteScriptResponseString,
-} from 'fixtures/script-execution/cluster.fixture';
-import {
-  interceptExecuteScript,
-  atou,
-  waitExecuteScript,
-  deserializeExecuteScriptRequest,
-  deserializeExecuteScriptResponse,
-} from 'support/utils/grpc';
-
-describe('Script execution helpers', () => {
-  it('Can parse base64 correctly', () => {
-    const arr = atou('AAAAR/AK');
-    expect([].slice.call(arr)).deep.equal([0, 0, 0, 0x47, 0xF0, 0x0A]);
-  });
-
-  it('Deserializes a request correctly', () => {
-    const json = deserializeExecuteScriptRequest(ExecuteScriptRequestString).toObject();
-    expect(json).deep.equal(ExecuteScriptRequestJson);
-  });
-
-  it('Deserializes a response correctly', () => {
-    const messages = deserializeExecuteScriptResponse(ExecuteScriptResponseString).map((m) => m.toObject());
-    expect(messages.length).equal(ExecuteScriptResponseJson.length);
-    for (let i = 0; i < ExecuteScriptResponseJson.length; i++) {
-      expect(messages[i]).deep.equal(ExecuteScriptResponseJson[i]);
-    }
-  });
-});
+import { interceptExecuteScript, waitExecuteScript } from 'support/utils/grpc';
 
 describe('Sidebar script shortcuts', () => {
   before(() => {
