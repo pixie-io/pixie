@@ -571,7 +571,7 @@ void SocketTraceConnector::UpdateTrackerTraceLevel(ConnTracker* tracker) {
 
 void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
                                             const std::vector<DataTable*>& data_tables) {
-  set_iteration_time(std::chrono::steady_clock::now());
+  set_iteration_time(now_fn_());
 
   UpdateCommonState(ctx);
 

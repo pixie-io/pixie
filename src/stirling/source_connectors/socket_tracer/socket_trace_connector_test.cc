@@ -142,6 +142,8 @@ class SocketTraceConnectorTest : public ::testing::Test {
  protected:
   static constexpr uint32_t kASID = 0;
 
+  SocketTraceConnectorTest() : event_gen_(&mock_clock_) {}
+
   void SetUp() override {
     // Create and configure the connector.
     connector_ = SocketTraceConnectorFriend::Create("socket_trace_connector");
@@ -149,6 +151,10 @@ class SocketTraceConnectorTest : public ::testing::Test {
     ASSERT_NE(nullptr, source_);
 
     ctx_ = std::make_unique<SystemWideStandaloneContext>();
+
+    // Tell the source to use our injected clock for getting the current time.
+    source_->test_only_set_now_fn(
+        [this]() { return testing::NanosToTimePoint(mock_clock_.now()); });
 
     // Set the CIDR for HTTP2ServerTest, which would otherwise not output any data,
     // because it would think the server is in the cluster.
@@ -175,7 +181,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
   SocketTraceConnectorFriend* source_ = nullptr;
   std::unique_ptr<SystemWideStandaloneContext> ctx_;
   testing::MockClock mock_clock_;
-  testing::RealClock real_clock_;
+  testing::EventGenerator event_gen_;
 
   static constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
   static constexpr int kCQLTableNum = SocketTraceConnector::kCQLTableNum;
@@ -199,14 +205,11 @@ auto ToIntVector(const types::SharedColumnWrapper& col) {
 }
 
 TEST_F(SocketTraceConnectorTest, Basic) {
-  testing::EventGenerator event_gen(&mock_clock_);
-  struct socket_control_event_t conn = event_gen.InitConn();
-  std::unique_ptr<SocketDataEvent> event0_req = event_gen.InitSendEvent<kProtocolHTTP>(kReq3);
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> event0_req = event_gen_.InitSendEvent<kProtocolHTTP>(kReq3);
   std::unique_ptr<SocketDataEvent> event0_resp_json =
-      event_gen.InitRecvEvent<kProtocolHTTP>(kJSONResp);
-  struct socket_control_event_t close_event = event_gen.InitClose();
-
-  EXPECT_NE(0, source_->ConvertToRealTime(0));
+      event_gen_.InitRecvEvent<kProtocolHTTP>(kJSONResp);
+  struct socket_control_event_t close_event = event_gen_.InitClose();
 
   source_->AcceptControlEvent(conn);
   source_->AcceptDataEvent(std::move(event0_req));
@@ -225,15 +228,13 @@ TEST_F(SocketTraceConnectorTest, Basic) {
 }
 
 TEST_F(SocketTraceConnectorTest, HTTPDelayedRespBody) {
-  testing::EventGenerator event_gen(&real_clock_);
-
-  struct socket_control_event_t conn = event_gen.InitConn();
-  std::unique_ptr<SocketDataEvent> event0_req = event_gen.InitSendEvent<kProtocolHTTP>(kReq4);
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> event0_req = event_gen_.InitSendEvent<kProtocolHTTP>(kReq4);
   std::unique_ptr<SocketDataEvent> event0_resp_header =
-      event_gen.InitRecvEvent<kProtocolHTTP>(kResp4Header);
+      event_gen_.InitRecvEvent<kProtocolHTTP>(kResp4Header);
   std::unique_ptr<SocketDataEvent> event0_resp_body =
-      event_gen.InitRecvEvent<kProtocolHTTP>(kResp4Body);
-  struct socket_control_event_t close_event = event_gen.InitClose();
+      event_gen_.InitRecvEvent<kProtocolHTTP>(kResp4Body);
+  struct socket_control_event_t close_event = event_gen_.InitClose();
 
   connector_->TransferData(ctx_.get(), data_tables_->tables());
 
@@ -243,7 +244,7 @@ TEST_F(SocketTraceConnectorTest, HTTPDelayedRespBody) {
   connector_->TransferData(ctx_.get(), data_tables_->tables());
 
   // Simulate a large delay between the resp header and body.
-  sleep(2);
+  mock_clock_.advance(2000000000);
   connector_->TransferData(ctx_.get(), data_tables_->tables());
 
   // Resp body.
@@ -264,23 +265,20 @@ TEST_F(SocketTraceConnectorTest, HTTPDelayedRespBody) {
 }
 
 TEST_F(SocketTraceConnectorTest, HTTPContentType) {
-  testing::EventGenerator event_gen(&mock_clock_);
-  struct socket_control_event_t conn = event_gen.InitConn();
-  std::unique_ptr<SocketDataEvent> event0_req = event_gen.InitSendEvent<kProtocolHTTP>(kReq0);
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> event0_req = event_gen_.InitSendEvent<kProtocolHTTP>(kReq0);
   std::unique_ptr<SocketDataEvent> event0_resp_json =
-      event_gen.InitRecvEvent<kProtocolHTTP>(kJSONResp);
-  std::unique_ptr<SocketDataEvent> event1_req = event_gen.InitSendEvent<kProtocolHTTP>(kReq1);
+      event_gen_.InitRecvEvent<kProtocolHTTP>(kJSONResp);
+  std::unique_ptr<SocketDataEvent> event1_req = event_gen_.InitSendEvent<kProtocolHTTP>(kReq1);
   std::unique_ptr<SocketDataEvent> event1_resp_text =
-      event_gen.InitRecvEvent<kProtocolHTTP>(kTextResp);
-  std::unique_ptr<SocketDataEvent> event2_req = event_gen.InitSendEvent<kProtocolHTTP>(kReq1);
+      event_gen_.InitRecvEvent<kProtocolHTTP>(kTextResp);
+  std::unique_ptr<SocketDataEvent> event2_req = event_gen_.InitSendEvent<kProtocolHTTP>(kReq1);
   std::unique_ptr<SocketDataEvent> event2_resp_bin =
-      event_gen.InitRecvEvent<kProtocolHTTP>(kAppOctetResp);
-  std::unique_ptr<SocketDataEvent> event3_req = event_gen.InitSendEvent<kProtocolHTTP>(kReq0);
+      event_gen_.InitRecvEvent<kProtocolHTTP>(kAppOctetResp);
+  std::unique_ptr<SocketDataEvent> event3_req = event_gen_.InitSendEvent<kProtocolHTTP>(kReq0);
   std::unique_ptr<SocketDataEvent> event3_resp_json =
-      event_gen.InitRecvEvent<kProtocolHTTP>(kJSONResp);
-  struct socket_control_event_t close_event = event_gen.InitClose();
-
-  EXPECT_NE(0, source_->ConvertToRealTime(0));
+      event_gen_.InitRecvEvent<kProtocolHTTP>(kJSONResp);
+  struct socket_control_event_t close_event = event_gen_.InitClose();
 
   // Registers a new connection.
   source_->AcceptControlEvent(conn);
@@ -315,8 +313,6 @@ TEST_F(SocketTraceConnectorTest, SortedByResponseTime) {
   using cass::testutils::CreateCQLEmptyEvent;
   using cass::testutils::CreateCQLEvent;
 
-  testing::EventGenerator event_gen(&mock_clock_);
-
   // A CQL request with CQL_VERSION=3.0.0.
   constexpr uint8_t kStartupReq1[] = {0x00, 0x01, 0x00, 0x0b, 0x43, 0x51, 0x4c, 0x5f,
                                       0x56, 0x45, 0x52, 0x53, 0x49, 0x4f, 0x4e, 0x00,
@@ -328,16 +324,16 @@ TEST_F(SocketTraceConnectorTest, SortedByResponseTime) {
                                       0x56, 0x45, 0x52, 0x53, 0x49, 0x4f, 0x4e, 0x00,
                                       0x05, 0x33, 0x2e, 0x30, 0x2e, 0x31};
 
-  struct socket_control_event_t conn = event_gen.InitConn();
-  std::unique_ptr<SocketDataEvent> req1 =
-      event_gen.InitSendEvent<kProtocolCQL>(CreateCQLEvent(cass::ReqOp::kStartup, kStartupReq1, 1));
-  std::unique_ptr<SocketDataEvent> req2 =
-      event_gen.InitSendEvent<kProtocolCQL>(CreateCQLEvent(cass::ReqOp::kStartup, kStartupReq2, 2));
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> req1 = event_gen_.InitSendEvent<kProtocolCQL>(
+      CreateCQLEvent(cass::ReqOp::kStartup, kStartupReq1, 1));
+  std::unique_ptr<SocketDataEvent> req2 = event_gen_.InitSendEvent<kProtocolCQL>(
+      CreateCQLEvent(cass::ReqOp::kStartup, kStartupReq2, 2));
   std::unique_ptr<SocketDataEvent> resp2 =
-      event_gen.InitRecvEvent<kProtocolCQL>(CreateCQLEmptyEvent(cass::RespOp::kReady, 2));
+      event_gen_.InitRecvEvent<kProtocolCQL>(CreateCQLEmptyEvent(cass::RespOp::kReady, 2));
   std::unique_ptr<SocketDataEvent> resp1 =
-      event_gen.InitRecvEvent<kProtocolCQL>(CreateCQLEmptyEvent(cass::RespOp::kReady, 1));
-  struct socket_control_event_t close_event = event_gen.InitClose();
+      event_gen_.InitRecvEvent<kProtocolCQL>(CreateCQLEmptyEvent(cass::RespOp::kReady, 1));
+  struct socket_control_event_t close_event = event_gen_.InitClose();
 
   source_->AcceptControlEvent(conn);
   source_->AcceptDataEvent(std::move(req1));
@@ -359,13 +355,12 @@ TEST_F(SocketTraceConnectorTest, SortedByResponseTime) {
 }
 
 TEST_F(SocketTraceConnectorTest, UPIDCheck) {
-  testing::EventGenerator event_gen(&mock_clock_);
-  struct socket_control_event_t conn = event_gen.InitConn();
-  std::unique_ptr<SocketDataEvent> event0_req = event_gen.InitSendEvent<kProtocolHTTP>(kReq0);
-  std::unique_ptr<SocketDataEvent> event0_resp = event_gen.InitRecvEvent<kProtocolHTTP>(kJSONResp);
-  std::unique_ptr<SocketDataEvent> event1_req = event_gen.InitSendEvent<kProtocolHTTP>(kReq0);
-  std::unique_ptr<SocketDataEvent> event1_resp = event_gen.InitRecvEvent<kProtocolHTTP>(kJSONResp);
-  struct socket_control_event_t close_event = event_gen.InitClose();
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> event0_req = event_gen_.InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> event0_resp = event_gen_.InitRecvEvent<kProtocolHTTP>(kJSONResp);
+  std::unique_ptr<SocketDataEvent> event1_req = event_gen_.InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> event1_resp = event_gen_.InitRecvEvent<kProtocolHTTP>(kJSONResp);
+  struct socket_control_event_t close_event = event_gen_.InitClose();
 
   // Registers a new connection.
   source_->AcceptControlEvent(conn);
@@ -394,18 +389,17 @@ TEST_F(SocketTraceConnectorTest, UPIDCheck) {
 }
 
 TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
-  testing::EventGenerator event_gen(&mock_clock_);
-  struct socket_control_event_t conn = event_gen.InitConn();
-  std::unique_ptr<SocketDataEvent> event0 = event_gen.InitSendEvent<kProtocolHTTP>(kReq0);
-  std::unique_ptr<SocketDataEvent> event1 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp0);
-  std::unique_ptr<SocketDataEvent> event2 = event_gen.InitSendEvent<kProtocolHTTP>(kReq1);
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> event0 = event_gen_.InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> event1 = event_gen_.InitRecvEvent<kProtocolHTTP>(kResp0);
+  std::unique_ptr<SocketDataEvent> event2 = event_gen_.InitSendEvent<kProtocolHTTP>(kReq1);
   std::unique_ptr<SocketDataEvent> event3 =
-      event_gen.InitRecvEvent<kProtocolHTTP>(kResp1.substr(0, kResp1.length() / 2));
+      event_gen_.InitRecvEvent<kProtocolHTTP>(kResp1.substr(0, kResp1.length() / 2));
   std::unique_ptr<SocketDataEvent> event4 =
-      event_gen.InitRecvEvent<kProtocolHTTP>(kResp1.substr(kResp1.length() / 2));
-  std::unique_ptr<SocketDataEvent> event5 = event_gen.InitSendEvent<kProtocolHTTP>(kReq2);
-  std::unique_ptr<SocketDataEvent> event6 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp2);
-  struct socket_control_event_t close_event = event_gen.InitClose();
+      event_gen_.InitRecvEvent<kProtocolHTTP>(kResp1.substr(kResp1.length() / 2));
+  std::unique_ptr<SocketDataEvent> event5 = event_gen_.InitSendEvent<kProtocolHTTP>(kReq2);
+  std::unique_ptr<SocketDataEvent> event6 = event_gen_.InitRecvEvent<kProtocolHTTP>(kResp2);
+  struct socket_control_event_t close_event = event_gen_.InitClose();
 
   std::vector<TaggedRecordBatch> tablets;
   RecordBatch record_batch;
@@ -435,11 +429,10 @@ TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
 }
 
 TEST_F(SocketTraceConnectorTest, NoEvents) {
-  testing::EventGenerator event_gen(&mock_clock_);
-  struct socket_control_event_t conn = event_gen.InitConn();
-  std::unique_ptr<SocketDataEvent> event0 = event_gen.InitSendEvent<kProtocolHTTP>(kReq0);
-  std::unique_ptr<SocketDataEvent> event1 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp0);
-  struct socket_control_event_t close_event = event_gen.InitClose();
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> event0 = event_gen_.InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> event1 = event_gen_.InitRecvEvent<kProtocolHTTP>(kResp0);
+  struct socket_control_event_t close_event = event_gen_.InitClose();
 
   std::vector<TaggedRecordBatch> tablets;
   RecordBatch record_batch;
@@ -473,15 +466,14 @@ TEST_F(SocketTraceConnectorTest, NoEvents) {
 }
 
 TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
-  testing::EventGenerator event_gen(&mock_clock_);
-  struct socket_control_event_t conn = event_gen.InitConn();
-  std::unique_ptr<SocketDataEvent> req_event0 = event_gen.InitSendEvent<kProtocolHTTP>(kReq0);
-  std::unique_ptr<SocketDataEvent> resp_event0 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp0);
-  std::unique_ptr<SocketDataEvent> req_event1 = event_gen.InitSendEvent<kProtocolHTTP>(kReq1);
-  std::unique_ptr<SocketDataEvent> resp_event1 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp1);
-  std::unique_ptr<SocketDataEvent> req_event2 = event_gen.InitSendEvent<kProtocolHTTP>(kReq2);
-  std::unique_ptr<SocketDataEvent> resp_event2 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp2);
-  struct socket_control_event_t close_event = event_gen.InitClose();
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> req_event0 = event_gen_.InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> resp_event0 = event_gen_.InitRecvEvent<kProtocolHTTP>(kResp0);
+  std::unique_ptr<SocketDataEvent> req_event1 = event_gen_.InitSendEvent<kProtocolHTTP>(kReq1);
+  std::unique_ptr<SocketDataEvent> resp_event1 = event_gen_.InitRecvEvent<kProtocolHTTP>(kResp1);
+  std::unique_ptr<SocketDataEvent> req_event2 = event_gen_.InitSendEvent<kProtocolHTTP>(kReq2);
+  std::unique_ptr<SocketDataEvent> resp_event2 = event_gen_.InitRecvEvent<kProtocolHTTP>(kResp2);
+  struct socket_control_event_t close_event = event_gen_.InitClose();
 
   source_->AcceptControlEvent(conn);
   source_->AcceptDataEvent(std::move(req_event0));
@@ -505,16 +497,15 @@ TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
 }
 
 TEST_F(SocketTraceConnectorTest, MissingEventInStream) {
-  testing::EventGenerator event_gen(&mock_clock_);
-  struct socket_control_event_t conn = event_gen.InitConn();
-  std::unique_ptr<SocketDataEvent> req_event0 = event_gen.InitSendEvent<kProtocolHTTP>(kReq0);
-  std::unique_ptr<SocketDataEvent> resp_event0 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp0);
-  std::unique_ptr<SocketDataEvent> req_event1 = event_gen.InitSendEvent<kProtocolHTTP>(kReq1);
-  std::unique_ptr<SocketDataEvent> resp_event1 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp1);
-  std::unique_ptr<SocketDataEvent> req_event2 = event_gen.InitSendEvent<kProtocolHTTP>(kReq2);
-  std::unique_ptr<SocketDataEvent> resp_event2 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp2);
-  std::unique_ptr<SocketDataEvent> req_event3 = event_gen.InitSendEvent<kProtocolHTTP>(kReq0);
-  std::unique_ptr<SocketDataEvent> resp_event3 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp0);
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> req_event0 = event_gen_.InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> resp_event0 = event_gen_.InitRecvEvent<kProtocolHTTP>(kResp0);
+  std::unique_ptr<SocketDataEvent> req_event1 = event_gen_.InitSendEvent<kProtocolHTTP>(kReq1);
+  std::unique_ptr<SocketDataEvent> resp_event1 = event_gen_.InitRecvEvent<kProtocolHTTP>(kResp1);
+  std::unique_ptr<SocketDataEvent> req_event2 = event_gen_.InitSendEvent<kProtocolHTTP>(kReq2);
+  std::unique_ptr<SocketDataEvent> resp_event2 = event_gen_.InitRecvEvent<kProtocolHTTP>(kResp2);
+  std::unique_ptr<SocketDataEvent> req_event3 = event_gen_.InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> resp_event3 = event_gen_.InitRecvEvent<kProtocolHTTP>(kResp0);
   // No Close event (connection still active).
 
   std::vector<TaggedRecordBatch> tablets;
@@ -548,15 +539,14 @@ TEST_F(SocketTraceConnectorTest, MissingEventInStream) {
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
-  testing::EventGenerator event_gen(&mock_clock_);
-  struct socket_control_event_t conn = event_gen.InitConn();
-  std::unique_ptr<SocketDataEvent> req_event0 = event_gen.InitSendEvent<kProtocolHTTP>(kReq0);
-  std::unique_ptr<SocketDataEvent> req_event1 = event_gen.InitSendEvent<kProtocolHTTP>(kReq1);
-  std::unique_ptr<SocketDataEvent> req_event2 = event_gen.InitSendEvent<kProtocolHTTP>(kReq2);
-  std::unique_ptr<SocketDataEvent> resp_event0 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp0);
-  std::unique_ptr<SocketDataEvent> resp_event1 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp1);
-  std::unique_ptr<SocketDataEvent> resp_event2 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp2);
-  struct socket_control_event_t close_event = event_gen.InitClose();
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> req_event0 = event_gen_.InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> req_event1 = event_gen_.InitSendEvent<kProtocolHTTP>(kReq1);
+  std::unique_ptr<SocketDataEvent> req_event2 = event_gen_.InitSendEvent<kProtocolHTTP>(kReq2);
+  std::unique_ptr<SocketDataEvent> resp_event0 = event_gen_.InitRecvEvent<kProtocolHTTP>(kResp0);
+  std::unique_ptr<SocketDataEvent> resp_event1 = event_gen_.InitRecvEvent<kProtocolHTTP>(kResp1);
+  std::unique_ptr<SocketDataEvent> resp_event2 = event_gen_.InitRecvEvent<kProtocolHTTP>(kResp2);
+  struct socket_control_event_t close_event = event_gen_.InitClose();
 
   EXPECT_NOT_OK(source_->GetConnTracker(kPID, kFD));
 
@@ -592,15 +582,14 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupOutOfOrder) {
-  testing::EventGenerator event_gen(&mock_clock_);
-  struct socket_control_event_t conn = event_gen.InitConn();
-  std::unique_ptr<SocketDataEvent> req_event0 = event_gen.InitSendEvent<kProtocolHTTP>(kReq0);
-  std::unique_ptr<SocketDataEvent> req_event1 = event_gen.InitSendEvent<kProtocolHTTP>(kReq1);
-  std::unique_ptr<SocketDataEvent> req_event2 = event_gen.InitSendEvent<kProtocolHTTP>(kReq2);
-  std::unique_ptr<SocketDataEvent> resp_event0 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp0);
-  std::unique_ptr<SocketDataEvent> resp_event1 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp1);
-  std::unique_ptr<SocketDataEvent> resp_event2 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp2);
-  struct socket_control_event_t close_event = event_gen.InitClose();
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> req_event0 = event_gen_.InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> req_event1 = event_gen_.InitSendEvent<kProtocolHTTP>(kReq1);
+  std::unique_ptr<SocketDataEvent> req_event2 = event_gen_.InitSendEvent<kProtocolHTTP>(kReq2);
+  std::unique_ptr<SocketDataEvent> resp_event0 = event_gen_.InitRecvEvent<kProtocolHTTP>(kResp0);
+  std::unique_ptr<SocketDataEvent> resp_event1 = event_gen_.InitRecvEvent<kProtocolHTTP>(kResp1);
+  std::unique_ptr<SocketDataEvent> resp_event2 = event_gen_.InitRecvEvent<kProtocolHTTP>(kResp2);
+  struct socket_control_event_t close_event = event_gen_.InitClose();
 
   source_->AcceptDataEvent(std::move(req_event1));
   source_->AcceptControlEvent(conn);
@@ -628,17 +617,16 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupOutOfOrder) {
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupMissingDataEvent) {
-  testing::EventGenerator event_gen(&mock_clock_);
-  struct socket_control_event_t conn = event_gen.InitConn();
-  std::unique_ptr<SocketDataEvent> req_event0 = event_gen.InitSendEvent<kProtocolHTTP>(kReq0);
-  std::unique_ptr<SocketDataEvent> req_event1 = event_gen.InitSendEvent<kProtocolHTTP>(kReq1);
-  std::unique_ptr<SocketDataEvent> req_event2 = event_gen.InitSendEvent<kProtocolHTTP>(kReq2);
-  std::unique_ptr<SocketDataEvent> req_event3 = event_gen.InitSendEvent<kProtocolHTTP>(kReq0);
-  std::unique_ptr<SocketDataEvent> resp_event0 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp0);
-  std::unique_ptr<SocketDataEvent> resp_event1 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp1);
-  std::unique_ptr<SocketDataEvent> resp_event2 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp2);
-  std::unique_ptr<SocketDataEvent> resp_event3 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp2);
-  struct socket_control_event_t close_event = event_gen.InitClose();
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> req_event0 = event_gen_.InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> req_event1 = event_gen_.InitSendEvent<kProtocolHTTP>(kReq1);
+  std::unique_ptr<SocketDataEvent> req_event2 = event_gen_.InitSendEvent<kProtocolHTTP>(kReq2);
+  std::unique_ptr<SocketDataEvent> req_event3 = event_gen_.InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> resp_event0 = event_gen_.InitRecvEvent<kProtocolHTTP>(kResp0);
+  std::unique_ptr<SocketDataEvent> resp_event1 = event_gen_.InitRecvEvent<kProtocolHTTP>(kResp1);
+  std::unique_ptr<SocketDataEvent> resp_event2 = event_gen_.InitRecvEvent<kProtocolHTTP>(kResp2);
+  std::unique_ptr<SocketDataEvent> resp_event3 = event_gen_.InitRecvEvent<kProtocolHTTP>(kResp2);
+  struct socket_control_event_t close_event = event_gen_.InitClose();
 
   source_->AcceptControlEvent(conn);
   source_->AcceptDataEvent(std::move(req_event0));
@@ -662,25 +650,23 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupMissingDataEvent) {
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupOldGenerations) {
-  testing::EventGenerator event_gen(&mock_clock_);
-
-  struct socket_control_event_t conn0 = event_gen.InitConn();
-  std::unique_ptr<SocketDataEvent> conn0_req_event = event_gen.InitSendEvent<kProtocolHTTP>(kReq0);
+  struct socket_control_event_t conn0 = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> conn0_req_event = event_gen_.InitSendEvent<kProtocolHTTP>(kReq0);
   std::unique_ptr<SocketDataEvent> conn0_resp_event =
-      event_gen.InitRecvEvent<kProtocolHTTP>(kResp0);
-  struct socket_control_event_t conn0_close = event_gen.InitClose();
+      event_gen_.InitRecvEvent<kProtocolHTTP>(kResp0);
+  struct socket_control_event_t conn0_close = event_gen_.InitClose();
 
-  struct socket_control_event_t conn1 = event_gen.InitConn();
-  std::unique_ptr<SocketDataEvent> conn1_req_event = event_gen.InitSendEvent<kProtocolHTTP>(kReq1);
+  struct socket_control_event_t conn1 = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> conn1_req_event = event_gen_.InitSendEvent<kProtocolHTTP>(kReq1);
   std::unique_ptr<SocketDataEvent> conn1_resp_event =
-      event_gen.InitRecvEvent<kProtocolHTTP>(kResp1);
-  struct socket_control_event_t conn1_close = event_gen.InitClose();
+      event_gen_.InitRecvEvent<kProtocolHTTP>(kResp1);
+  struct socket_control_event_t conn1_close = event_gen_.InitClose();
 
-  struct socket_control_event_t conn2 = event_gen.InitConn();
-  std::unique_ptr<SocketDataEvent> conn2_req_event = event_gen.InitSendEvent<kProtocolHTTP>(kReq2);
+  struct socket_control_event_t conn2 = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> conn2_req_event = event_gen_.InitSendEvent<kProtocolHTTP>(kReq2);
   std::unique_ptr<SocketDataEvent> conn2_resp_event =
-      event_gen.InitRecvEvent<kProtocolHTTP>(kResp2);
-  struct socket_control_event_t conn2_close = event_gen.InitClose();
+      event_gen_.InitRecvEvent<kProtocolHTTP>(kResp2);
+  struct socket_control_event_t conn2_close = event_gen_.InitClose();
 
   // Simulating scrambled order due to perf buffer, with a couple missing events.
   source_->AcceptDataEvent(std::move(conn0_req_event));
@@ -711,9 +697,8 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupOldGenerations) {
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupNoProtocol) {
-  testing::EventGenerator event_gen(&mock_clock_);
-  struct socket_control_event_t conn0 = event_gen.InitConn();
-  struct socket_control_event_t conn0_close = event_gen.InitClose();
+  struct socket_control_event_t conn0 = event_gen_.InitConn();
+  struct socket_control_event_t conn0_close = event_gen_.InitClose();
 
   source_->AcceptControlEvent(conn0);
   source_->AcceptControlEvent(conn0_close);
@@ -731,14 +716,12 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupNoProtocol) {
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupCollecting) {
-  testing::EventGenerator event_gen(&mock_clock_);
-
   // Create an event with family PX_AF_UNKNOWN so that tracker goes into collecting state.
-  struct socket_control_event_t conn0 = event_gen.InitConn();
+  struct socket_control_event_t conn0 = event_gen_.InitConn();
   conn0.open.addr.sa.sa_family = PX_AF_UNKNOWN;
 
   std::unique_ptr<SocketDataEvent> conn0_req_event =
-      event_gen.InitSendEvent<kProtocolHTTP>(kReq0.substr(0, 10));
+      event_gen_.InitSendEvent<kProtocolHTTP>(kReq0.substr(0, 10));
 
   // Need an initial TransferData() to initialize the times.
   connector_->TransferData(ctx_.get(), data_tables_->tables());
@@ -812,7 +795,8 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   PL_SET_FOR_SCOPE(FLAGS_stirling_check_proc_for_conn_close, true);
-  ConnTracker::set_inactivity_duration(std::chrono::seconds(1));
+  std::chrono::seconds kInactivityDuration(1);
+  ConnTracker::set_inactivity_duration(kInactivityDuration);
 
   // Inactive alive connections are determined by checking the /proc filesystem.
   // Here we create a PID that is a real PID, by using the test process itself.
@@ -841,13 +825,14 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   }
 
   ASSERT_OK_AND_ASSIGN(const ConnTracker* tracker, source_->GetConnTracker(real_pid, real_fd));
+  EXPECT_OK(source_->GetConnTracker(real_pid, real_fd));
 
-  sleep(2);
+  // Advance the time by the inactivity duration.
+  mock_clock_.advance(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(kInactivityDuration).count());
 
   // Connection should be timed out by next TransferData,
   // which should also cause events to be flushed, but the connection is still alive.
-
-  EXPECT_OK(source_->GetConnTracker(real_pid, real_fd));
   connector_->TransferData(ctx_.get(), data_tables_->tables());
   EXPECT_OK(source_->GetConnTracker(real_pid, real_fd));
 

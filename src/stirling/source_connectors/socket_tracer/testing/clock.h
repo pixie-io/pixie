@@ -32,16 +32,21 @@ class Clock {
 
 class RealClock : public Clock {
  public:
-  uint64_t now() { return std::chrono::steady_clock::now().time_since_epoch().count(); }
+  uint64_t now() override { return std::chrono::steady_clock::now().time_since_epoch().count(); }
 };
 
 class MockClock : public Clock {
  public:
-  uint64_t now() { return ++t_; }
+  uint64_t now() override { return ++t_; }
+  void advance(uint64_t t) { t_ += t; }
 
  private:
   uint64_t t_ = 0;
 };
+
+std::chrono::steady_clock::time_point NanosToTimePoint(uint64_t t) {
+  return std::chrono::steady_clock::time_point(std::chrono::nanoseconds(t));
+}
 
 }  // namespace testing
 }  // namespace stirling

@@ -60,7 +60,7 @@ class ConnTrackerTest : public ::testing::Test {
   ConnTrackerTest() : event_gen_(&mock_clock_) {}
 
   std::chrono::steady_clock::time_point now() {
-    return std::chrono::steady_clock::time_point(std::chrono::nanoseconds(mock_clock_.now()));
+    return testing::NanosToTimePoint(mock_clock_.now());
   }
 
   testing::MockClock mock_clock_;
