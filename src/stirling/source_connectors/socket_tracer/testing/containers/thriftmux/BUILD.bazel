@@ -14,12 +14,66 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image")
+load("@io_bazel_rules_docker//java:image.bzl", "DEFAULT_JAVA_BASE")
 load("@io_bazel_rules_docker//scala:image.bzl", "scala_image")
 load("@io_bazel_rules_scala//scala:scala.bzl", "scala_binary", "scala_library")
 load("@io_bazel_rules_scala//thrift:thrift.bzl", "thrift_library")
 load("@io_bazel_rules_scala//twitter_scrooge:twitter_scrooge.bzl", "scrooge_scala_library")
+load("@package_bundle//file:packages.bzl", "packages")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
+
+genrule(
+    name = "certs",
+    outs = [
+        "ca.crt",
+        "client.crt",
+        "client.key",
+        "server.crt",
+        "server.key",
+    ],
+    cmd = """
+        $(location //src/common/testing/test_utils/cert_generator:cert_generator) \
+        --ca_crt $(location ca.crt) \
+        --client_crt $(location client.crt) \
+        --client_key $(location client.key) \
+        --server_crt $(location server.crt) \
+        --server_key $(location server.key) \
+        --secret_key_type pkcs8
+    """,
+    tools = [
+        "//src/common/testing/test_utils/cert_generator",
+    ],
+)
+
+pkg_tar(
+    name = "ssl_keys",
+    srcs = [
+        "ca.crt",
+        "client.crt",
+        "client.key",
+        "server.crt",
+        "server.key",
+    ],
+    mode = "0755",
+    package_dir = "/etc/ssl",
+    strip_prefix = "/src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux",
+)
+
+# TODO(ddelnano): byteman is required until dealing with
+# netty's libnetty_tcnative.so's random file name is solved for.
+# See #407 for more details.
+pkg_tar(
+    name = "byteman_rule",
+    srcs = [
+        "byteman_rule.txt",
+    ],
+    mode = "0755",
+    package_dir = "/etc/byteman",
+    strip_prefix = "/src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux",
+)
 
 thrift_library(
     name = "thrift_library",
@@ -54,6 +108,15 @@ scrooge_scala_library(
     ],
 )
 
+scala_library(
+    name = "logging",
+    deps = [
+        "@maven//:ch_qos_logback_logback_classic",
+        "@maven//:ch_qos_logback_logback_core",
+        "@maven//:org_slf4j_slf4j_api",
+    ],
+)
+
 scala_binary(
     name = "server_bin",
     srcs = glob(["**/*.scala"]),
@@ -72,11 +135,31 @@ scala_binary(
     ],
 )
 
+container_image(
+    name = "thriftmux_base",
+    base = DEFAULT_JAVA_BASE,
+    debs = [
+        packages["libbyteman-java"],
+        packages["libcrypt1"],
+    ],
+    tars = [
+        ":ssl_keys",
+        ":byteman_rule",
+    ],
+)
+
 scala_image(
     name = "server_image",
     srcs = glob(["**/*.scala"]),
+    base = ":thriftmux_base",
+    jvm_flags = [
+        "-javaagent:/usr/share/java/byteman-4.0.11.jar=script:/etc/byteman/byteman_rule.txt,boot:/usr/share/java/byteman-4.0.11.jar",
+        "-Dorg.jboss.byteman.transform.all",
+        "-Dio.netty.native.deleteLibAfterLoading=false",
+    ],
     main_class = "Server",
     deps = [
+        ":logging",
         ":thriftmux_scrooge",
     ],
 )

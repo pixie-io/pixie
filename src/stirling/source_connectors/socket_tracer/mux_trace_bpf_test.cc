@@ -101,10 +101,10 @@ class MuxTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {
 
     LOG(INFO) << absl::StrFormat("Client PID: %d", client_pid);
 
-    if (tokens[1] != thriftmux_client_output) {
+    if (!absl::StrContains(out, thriftmux_client_output)) {
       return error::Internal(
-          absl::StrFormat("Expected output from thriftmux to be '%s', received '%s' instead",
-                          thriftmux_client_output, tokens[1]));
+          absl::StrFormat("Expected output from thriftmux to include '%s', received '%s' instead",
+                          thriftmux_client_output, out));
     }
     return client_pid;
   }

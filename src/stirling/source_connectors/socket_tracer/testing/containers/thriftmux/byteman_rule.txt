@@ -1,0 +1,9 @@
+RULE Create predictable dynamic library path for tcnative
+CLASS io.netty.util.internal.PlatformDependent
+METHOD createTempFile
+AT ENTRY
+BIND filePath:String = $1;
+     isTcNativeLib:boolean = filePath.contains("tcnative");
+IF isTcNativeLib
+DO return new File("/tmp/libnetty_tcnative_linux_x86.so")
+ENDRULE

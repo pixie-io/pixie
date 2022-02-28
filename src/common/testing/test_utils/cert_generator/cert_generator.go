@@ -24,6 +24,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"fmt"
 	"math/big"
 	"os"
 	"time"
@@ -114,9 +115,25 @@ func generateAndWriteCertPair(ca *x509.Certificate, caKey *rsa.PrivateKey, certP
 	if err != nil {
 		panic(err)
 	}
-	err = pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)})
-	if err != nil {
-		panic(err)
+
+	keyType := viper.GetString("secret_key_type")
+	if keyType == "pkcs1" {
+		err = pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)})
+		if err != nil {
+			panic(err)
+		}
+	} else if keyType == "pkcs8" {
+		b, err := x509.MarshalPKCS8PrivateKey(privateKey)
+		if err != nil {
+			panic(err)
+		}
+
+		err = pem.Encode(keyOut, &pem.Block{Type: "PRIVATE KEY", Bytes: b})
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		panic(fmt.Sprintf("Unsupported private key type: %s", keyType))
 	}
 	err = keyOut.Close()
 	if err != nil {
@@ -130,6 +147,7 @@ func main() {
 	pflag.String("client_key", "", "Path where to write client.key")
 	pflag.String("server_crt", "", "Path where to write server.crt")
 	pflag.String("server_key", "", "Path where to write server.key")
+	pflag.String("secret_key_type", "pkcs1", "Which private key type to use. Possible options include pkcs1, pkcs8")
 
 	pflag.Parse()
 	viper.BindPFlags(pflag.CommandLine)

@@ -52,6 +52,11 @@ def _package_manager_setup():
             "libsasl2-2",
             "libssl1.1",
             "libgcc1",
+            "libcrypt1",
+            # TODO(ddelnano): byteman is required until dealing with
+            # netty's libnetty_tcnative.so's random file name is solved for.
+            # See #407 for more details.
+            "libbyteman-java",
         ],
         sources = ["@debian_sid//file:Packages.json"],
     )
