@@ -401,7 +401,7 @@ message OTelMetricSummary {
   // For example, p50 would have a quantile value of 0.5
   message ValueAtQuantile {
     double quantile = 1;
-    double value = 2;
+    string value_column = 2;
   }
   repeated ValueAtQuantile quantile_values = 3;
 }
