@@ -104,6 +104,7 @@ StatusOr<std::string> InferHTTP2SymAddrVendorPrefix(ElfReader* elf_reader) {
   // help infer. The iteration will stop after the first inference.
   const std::vector<std::string_view> kSampleSymbols = {
       "google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders",
+      "golang.org/x/net/http2/hpack.HeaderField.String",
       "golang.org/x/net/http2.(*Framer).WriteHeaders"};
 
   std::string vendor_prefix;

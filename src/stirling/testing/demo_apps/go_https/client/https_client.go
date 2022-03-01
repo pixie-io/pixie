@@ -29,6 +29,7 @@ import (
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"golang.org/x/net/http2"
 )
 
 const (
@@ -41,17 +42,24 @@ func main() {
 	pflag.Int("max_procs", 1, "The maximum number of OS threads created by the golang runtime.")
 	pflag.Int("iters", 1000, "Number of iterations.")
 	pflag.Int("sub_iters", 1000, "Number of sub-iterations with same TLS config.")
+	pflag.Bool("http2", true, "Use HTTP/2, instead of HTTP/1.1.")
 	pflag.Parse()
 
 	viper.BindPFlags(pflag.CommandLine)
+	useHTTP2 := viper.GetBool("http2")
+	log.Printf("Starting HTTPS client. HTTP/2 enabled: %t", useHTTP2)
 
 	runtime.GOMAXPROCS(viper.GetInt("max_procs"))
 
 	for i := 0; i < viper.GetInt("iters"); i++ {
-		tr := &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		client := &http.Client{}
+		tlsConfig := &tls.Config{InsecureSkipVerify: true}
+
+		if useHTTP2 {
+			client.Transport = &http2.Transport{TLSClientConfig: tlsConfig}
+		} else {
+			client.Transport = &http.Transport{TLSClientConfig: tlsConfig}
 		}
-		client := &http.Client{Transport: tr}
 
 		for j := 0; j < viper.GetInt("sub_iters"); j++ {
 			resp, err := client.Get(address)
