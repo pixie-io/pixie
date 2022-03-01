@@ -32,6 +32,9 @@ if [ -z "$heap_profile" ] || [ -z "$node_name" ]; then
   usage
 fi
 
+# Create the output directory at the beginning of the script.
+mkdir -p "$output_dir"
+
 # Get the list of mappings in the heap profile. Pprof formatted profiles have a section at the bottom that looks like:
 #  MAPPED_LIBRARIES:
 #  00200000-01626000 r--p 00000000 00:00 6709979     /app/src/vizier/services/agent/pem/pem.runfiles/px/src/vizier/services/agent/pem/pem
@@ -84,7 +87,6 @@ output_on_err gcloud compute scp "${@:3}" "$USER@$node_name:~/$tar_file" "/tmp/$
 # Cleanup tar archive on node.
 output_on_err gcloud compute ssh --command="rm ~/$tar_file" "$node_name" "${@:3}"
 
-mkdir -p "$output_dir"
 tar --strip-components=1 -C "$output_dir" -xzf "/tmp/$tar_file"
 
 echo "Dumped mapped binaries to $output_dir"
