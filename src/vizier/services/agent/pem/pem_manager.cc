@@ -73,6 +73,7 @@ Status PEMManager::PostRegisterHookImpl() {
 
 Status PEMManager::StopImpl(std::chrono::milliseconds) {
   stirling_->Stop();
+  stirling_.reset();
   return Status::OK();
 }
 
