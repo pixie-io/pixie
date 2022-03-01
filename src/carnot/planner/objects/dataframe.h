@@ -85,15 +85,21 @@ class Dataframe : public QLObject {
   Examples:
     # Absolute time specification.
     df = px.DataFrame('http_events', start_time='2020-07-13 18:02:5.00 -0700')
+  Examples:
+    # Absolute time sepecification (nanoseconds). Note this format only works for PxL scripts;
+    # The Live UI's `start_time` argument does not support this format.
+    df = px.DataFrame('http_events', start_time=1646157769000000000)
 
   Args:
     table (string): The table name to load.
     select (List[str]]): The columns of the table to load. Leave empty if you
       want to select all.
-    start_time (px.Time): The earliest timestamp of data to load. Can be a relative time
-      ie "-5m" or an absolute time in the following format "2020-07-13 18:02:5.00 +0000".
-    end_time (px.Time): The last timestamp of data to load. Can be a relative time
-      ie "-5m" or an absolute time in the following format "2020-07-13 18:02:5.00 +0000".
+    start_time (px.Time): The earliest timestamp of data to load. The format can be one of the following:
+      (1) relative time with format "-5m" or "-3h", (2) absolute time with format "2020-07-13 18:02:5.00 +0000",
+      or (3) absolute time in nanoseconds.
+    end_time (px.Time): The last timestamp of data to load. The format can be one of the following:
+      (1) relative time with format "-5m" or "-3h", (2) absolute time with format "2020-07-13 18:02:5.00 +0000",
+      or (3) absolute time in nanoseconds.
 
   Returns:
     px.DataFrame: DataFrame loaded from the table with the specified columns and time period.
