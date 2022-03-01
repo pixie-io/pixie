@@ -23,6 +23,7 @@
 
 #include "src/stirling/core/canonical_types.h"
 #include "src/stirling/core/data_table.h"
+#include "src/stirling/core/output.h"
 #include "src/stirling/core/types.h"
 
 namespace px {

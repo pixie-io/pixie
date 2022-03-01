@@ -76,14 +76,5 @@ void BackedDataElements::emplace_back(std::string name, std::string description,
   ++pos_;
 }
 
-std::string PrintRecords(const DataTableSchema& data_table_schema,
-                         const types::ColumnWrapperRecordBatch& record_batch) {
-  std::string out;
-  for (auto& record : ToString(data_table_schema.ToProto(), record_batch)) {
-    absl::StrAppend(&out, std::move(record), "\n");
-  }
-  return out;
-}
-
 }  // namespace stirling
 }  // namespace px

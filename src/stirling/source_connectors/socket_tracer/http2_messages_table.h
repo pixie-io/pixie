@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "src/stirling/core/output.h"
+
 namespace px {
 namespace stirling {
 

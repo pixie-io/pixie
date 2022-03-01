@@ -28,7 +28,6 @@
 #include "src/shared/metadata/metadata_state.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/type_utils.h"
-#include "src/stirling/core/output.h"
 #include "src/stirling/proto/stirling.pb.h"
 
 namespace px {
@@ -243,15 +242,6 @@ class DynamicDataTableSchema {
   // output_struct_.
   DataTableSchema table_schema_;
 };
-
-std::string PrintRecords(const DataTableSchema& data_table_schema,
-                         const types::ColumnWrapperRecordBatch& record_batch);
-
-#define DEFINE_PRINT_TABLE(protocol_name)                       \
-  inline std::string Print##protocol_name##Table(               \
-      const types::ColumnWrapperRecordBatch& record_batch) {    \
-    return PrintRecords(k##protocol_name##Table, record_batch); \
-  }
 
 }  // namespace stirling
 }  // namespace px

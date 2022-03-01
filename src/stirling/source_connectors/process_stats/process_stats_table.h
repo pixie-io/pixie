@@ -28,6 +28,7 @@
 #include "src/common/system/system.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/stirling/core/canonical_types.h"
+#include "src/stirling/core/output.h"
 #include "src/stirling/core/source_connector.h"
 
 namespace px {

@@ -40,5 +40,14 @@ std::vector<std::string> ToString(const stirlingpb::TableSchema& schema,
 std::string ToString(std::string_view prefix, const stirlingpb::TableSchema& schema,
                      const types::ColumnWrapperRecordBatch& record_batch);
 
+std::string PrintRecords(const DataTableSchema& data_table_schema,
+                         const types::ColumnWrapperRecordBatch& record_batch);
+
+#define DEFINE_PRINT_TABLE(protocol_name)                       \
+  inline std::string Print##protocol_name##Table(               \
+      const types::ColumnWrapperRecordBatch& record_batch) {    \
+    return PrintRecords(k##protocol_name##Table, record_batch); \
+  }
+
 }  // namespace stirling
 }  // namespace px

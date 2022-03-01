@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "src/stirling/core/output.h"
 #include "src/stirling/core/types.h"
 #include "src/stirling/source_connectors/socket_tracer/canonical_types.h"
 

@@ -19,6 +19,7 @@
 #pragma once
 
 #include "src/stirling/core/canonical_types.h"
+#include "src/stirling/core/output.h"
 
 namespace px {
 namespace stirling {
