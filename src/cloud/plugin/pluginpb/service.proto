@@ -43,6 +43,15 @@ service DataRetentionPluginService {
     rpc GetOrgRetentionPluginConfig(GetOrgRetentionPluginConfigRequest) returns (GetOrgRetentionPluginConfigResponse);
     // Update an org's configuration for a plugin.
     rpc UpdateOrgRetentionPluginConfig(UpdateOrgRetentionPluginConfigRequest) returns (UpdateOrgRetentionPluginConfigResponse);
+
+    // Gets all retention scripts the org has configured.
+    rpc GetRetentionScripts(GetRetentionScriptsRequest) returns (GetRetentionScriptsResponse);
+    // Gets the details for a script an org is using for long-term data retention.
+    rpc GetRetentionScript(GetRetentionScriptRequest) returns (GetRetentionScriptResponse);
+    // Creates a script that is used for long-term data retention.
+    rpc CreateRetentionScript(CreateRetentionScriptRequest) returns (CreateRetentionScriptResponse);
+    // Updates a script used for long-term data retention.
+    rpc UpdateRetentionScript(UpdateRetentionScriptRequest) returns (UpdateRetentionScriptResponse);
 }
 
 enum PluginKind {
@@ -155,3 +164,94 @@ message UpdateOrgRetentionPluginConfigRequest {
 
 // UpdateOrgRetentionPluginConfigResponse is a response to update a plugin's configuration.
 message UpdateOrgRetentionPluginConfigResponse {}
+
+// GetRetentionScriptsRequest is a request to get all scripts configured by an org.
+message GetRetentionScriptsRequest {
+    // The org ID for the org to fetch the scripts for.
+    uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
+}
+
+// RetentionScript represents a script being used for long-term data retention.
+message RetentionScript {
+    // The ID for the script.
+    uuidpb.UUID script_id = 1 [(gogoproto.customname) = "ScriptID"];
+    // The name of the script.
+    string script_name = 2;
+    // A description for the script.
+    string description = 3;
+    // How often the script should be run, in seconds.
+    int64 frequency_s = 4;
+    // The clusters the script should be run on. If empty, signifies all clusters.
+    repeated uuidpb.UUID cluster_ids = 5 [(gogoproto.customname) = "ClusterIDs"];
+    // The plugin which the script is sending data to.
+    string plugin_id = 6;
+    // Whether the script is enabled.
+    bool enabled = 7;
+    // Whether the script is originally a preset script.
+    bool is_preset = 8;
+}
+
+// DetailedRetentionScript represents a script used for long-term data retention, with more information
+// such as script/URL configuration.
+message DetailedRetentionScript {
+    // The script used for long-term data retention.
+    RetentionScript script = 1;
+    // The actual PxL script that should be run.
+    string contents = 2;
+    // The URL which the script is configured to export to.
+    string export_url = 3 [(gogoproto.customname) = "ExportURL"];
+}
+
+// GetRetentionScriptsResponse is a response containing all scripts configured by an org.
+message GetRetentionScriptsResponse {
+    // The scripts configured by the org.
+    repeated RetentionScript scripts = 1;
+}
+
+// GetRetentionScriptRequest is a request to get a script used for long-term data retention.
+message GetRetentionScriptRequest {
+    // The org ID for the org running the script.
+    uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
+    // The ID for the script.
+    uuidpb.UUID script_id = 2 [(gogoproto.customname) = "ScriptID"];
+}
+
+// GetRetentionScriptResponse is the response for getting a script used for long-term data retention.
+message GetRetentionScriptResponse {
+    // The script that is used for long-term data retention.
+    DetailedRetentionScript script = 1;
+}
+
+// CreateRetentionScriptRequest is the request to configure a new retention script.
+message CreateRetentionScriptRequest {
+    // The script to create.
+    DetailedRetentionScript script = 1;
+    // The org ID for the org running the script.
+    uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
+}
+
+// CreateRetentionScriptResponse is the response to creating a new retention script.
+message CreateRetentionScriptResponse {}
+
+// UpdateRetentionScriptRequest is a request to update an existing retention script.
+message UpdateRetentionScriptRequest {
+    // The ID for the script.
+    uuidpb.UUID script_id = 1 [(gogoproto.customname) = "ScriptID"];
+    // The name of the script.
+    google.protobuf.StringValue script_name = 2;
+    // The description for the script.
+    google.protobuf.StringValue description = 3;
+    // Whether to disable/enable the script.
+    google.protobuf.BoolValue enabled = 4;
+    // The frequency that the script should be run.
+    google.protobuf.Int64Value frequency_s = 5;
+    // The contents of the script.
+    google.protobuf.StringValue contents = 6;
+    // The export URL for the script.
+    google.protobuf.StringValue export_url = 7;
+    // The clusters the script should be run on. If empty, signifies all clusters.
+    repeated uuidpb.UUID cluster_ids = 8 [(gogoproto.customname) = "ClusterIDs"];
+}
+
+// UpdateRetentionScriptResponse is the response to updating an existing retention script.
+message UpdateRetentionScriptResponse {}

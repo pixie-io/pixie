@@ -755,6 +755,564 @@ func (m *UpdateOrgRetentionPluginConfigResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_UpdateOrgRetentionPluginConfigResponse proto.InternalMessageInfo
 
+type GetRetentionScriptsRequest struct {
+	OrgID *uuidpb.UUID `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+}
+
+func (m *GetRetentionScriptsRequest) Reset()      { *m = GetRetentionScriptsRequest{} }
+func (*GetRetentionScriptsRequest) ProtoMessage() {}
+func (*GetRetentionScriptsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b1ae703d1aa3a9a, []int{11}
+}
+func (m *GetRetentionScriptsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetRetentionScriptsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetRetentionScriptsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetRetentionScriptsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetRetentionScriptsRequest.Merge(m, src)
+}
+func (m *GetRetentionScriptsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetRetentionScriptsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetRetentionScriptsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetRetentionScriptsRequest proto.InternalMessageInfo
+
+func (m *GetRetentionScriptsRequest) GetOrgID() *uuidpb.UUID {
+	if m != nil {
+		return m.OrgID
+	}
+	return nil
+}
+
+type RetentionScript struct {
+	ScriptID    *uuidpb.UUID   `protobuf:"bytes,1,opt,name=script_id,json=scriptId,proto3" json:"script_id,omitempty"`
+	ScriptName  string         `protobuf:"bytes,2,opt,name=script_name,json=scriptName,proto3" json:"script_name,omitempty"`
+	Description string         `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	FrequencyS  int64          `protobuf:"varint,4,opt,name=frequency_s,json=frequencyS,proto3" json:"frequency_s,omitempty"`
+	ClusterIDs  []*uuidpb.UUID `protobuf:"bytes,5,rep,name=cluster_ids,json=clusterIds,proto3" json:"cluster_ids,omitempty"`
+	PluginId    string         `protobuf:"bytes,6,opt,name=plugin_id,json=pluginId,proto3" json:"plugin_id,omitempty"`
+	Enabled     bool           `protobuf:"varint,7,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	IsPreset    bool           `protobuf:"varint,8,opt,name=is_preset,json=isPreset,proto3" json:"is_preset,omitempty"`
+}
+
+func (m *RetentionScript) Reset()      { *m = RetentionScript{} }
+func (*RetentionScript) ProtoMessage() {}
+func (*RetentionScript) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b1ae703d1aa3a9a, []int{12}
+}
+func (m *RetentionScript) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RetentionScript) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RetentionScript.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RetentionScript) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RetentionScript.Merge(m, src)
+}
+func (m *RetentionScript) XXX_Size() int {
+	return m.Size()
+}
+func (m *RetentionScript) XXX_DiscardUnknown() {
+	xxx_messageInfo_RetentionScript.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RetentionScript proto.InternalMessageInfo
+
+func (m *RetentionScript) GetScriptID() *uuidpb.UUID {
+	if m != nil {
+		return m.ScriptID
+	}
+	return nil
+}
+
+func (m *RetentionScript) GetScriptName() string {
+	if m != nil {
+		return m.ScriptName
+	}
+	return ""
+}
+
+func (m *RetentionScript) GetDescription() string {
+	if m != nil {
+		return m.Description
+	}
+	return ""
+}
+
+func (m *RetentionScript) GetFrequencyS() int64 {
+	if m != nil {
+		return m.FrequencyS
+	}
+	return 0
+}
+
+func (m *RetentionScript) GetClusterIDs() []*uuidpb.UUID {
+	if m != nil {
+		return m.ClusterIDs
+	}
+	return nil
+}
+
+func (m *RetentionScript) GetPluginId() string {
+	if m != nil {
+		return m.PluginId
+	}
+	return ""
+}
+
+func (m *RetentionScript) GetEnabled() bool {
+	if m != nil {
+		return m.Enabled
+	}
+	return false
+}
+
+func (m *RetentionScript) GetIsPreset() bool {
+	if m != nil {
+		return m.IsPreset
+	}
+	return false
+}
+
+type DetailedRetentionScript struct {
+	Script    *RetentionScript `protobuf:"bytes,1,opt,name=script,proto3" json:"script,omitempty"`
+	Contents  string           `protobuf:"bytes,2,opt,name=contents,proto3" json:"contents,omitempty"`
+	ExportURL string           `protobuf:"bytes,3,opt,name=export_url,json=exportUrl,proto3" json:"export_url,omitempty"`
+}
+
+func (m *DetailedRetentionScript) Reset()      { *m = DetailedRetentionScript{} }
+func (*DetailedRetentionScript) ProtoMessage() {}
+func (*DetailedRetentionScript) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b1ae703d1aa3a9a, []int{13}
+}
+func (m *DetailedRetentionScript) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *DetailedRetentionScript) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_DetailedRetentionScript.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *DetailedRetentionScript) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DetailedRetentionScript.Merge(m, src)
+}
+func (m *DetailedRetentionScript) XXX_Size() int {
+	return m.Size()
+}
+func (m *DetailedRetentionScript) XXX_DiscardUnknown() {
+	xxx_messageInfo_DetailedRetentionScript.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DetailedRetentionScript proto.InternalMessageInfo
+
+func (m *DetailedRetentionScript) GetScript() *RetentionScript {
+	if m != nil {
+		return m.Script
+	}
+	return nil
+}
+
+func (m *DetailedRetentionScript) GetContents() string {
+	if m != nil {
+		return m.Contents
+	}
+	return ""
+}
+
+func (m *DetailedRetentionScript) GetExportURL() string {
+	if m != nil {
+		return m.ExportURL
+	}
+	return ""
+}
+
+type GetRetentionScriptsResponse struct {
+	Scripts []*RetentionScript `protobuf:"bytes,1,rep,name=scripts,proto3" json:"scripts,omitempty"`
+}
+
+func (m *GetRetentionScriptsResponse) Reset()      { *m = GetRetentionScriptsResponse{} }
+func (*GetRetentionScriptsResponse) ProtoMessage() {}
+func (*GetRetentionScriptsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b1ae703d1aa3a9a, []int{14}
+}
+func (m *GetRetentionScriptsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetRetentionScriptsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetRetentionScriptsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetRetentionScriptsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetRetentionScriptsResponse.Merge(m, src)
+}
+func (m *GetRetentionScriptsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetRetentionScriptsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetRetentionScriptsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetRetentionScriptsResponse proto.InternalMessageInfo
+
+func (m *GetRetentionScriptsResponse) GetScripts() []*RetentionScript {
+	if m != nil {
+		return m.Scripts
+	}
+	return nil
+}
+
+type GetRetentionScriptRequest struct {
+	OrgID    *uuidpb.UUID `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	ScriptID *uuidpb.UUID `protobuf:"bytes,2,opt,name=script_id,json=scriptId,proto3" json:"script_id,omitempty"`
+}
+
+func (m *GetRetentionScriptRequest) Reset()      { *m = GetRetentionScriptRequest{} }
+func (*GetRetentionScriptRequest) ProtoMessage() {}
+func (*GetRetentionScriptRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b1ae703d1aa3a9a, []int{15}
+}
+func (m *GetRetentionScriptRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetRetentionScriptRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetRetentionScriptRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetRetentionScriptRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetRetentionScriptRequest.Merge(m, src)
+}
+func (m *GetRetentionScriptRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetRetentionScriptRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetRetentionScriptRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetRetentionScriptRequest proto.InternalMessageInfo
+
+func (m *GetRetentionScriptRequest) GetOrgID() *uuidpb.UUID {
+	if m != nil {
+		return m.OrgID
+	}
+	return nil
+}
+
+func (m *GetRetentionScriptRequest) GetScriptID() *uuidpb.UUID {
+	if m != nil {
+		return m.ScriptID
+	}
+	return nil
+}
+
+type GetRetentionScriptResponse struct {
+	Script *DetailedRetentionScript `protobuf:"bytes,1,opt,name=script,proto3" json:"script,omitempty"`
+}
+
+func (m *GetRetentionScriptResponse) Reset()      { *m = GetRetentionScriptResponse{} }
+func (*GetRetentionScriptResponse) ProtoMessage() {}
+func (*GetRetentionScriptResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b1ae703d1aa3a9a, []int{16}
+}
+func (m *GetRetentionScriptResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetRetentionScriptResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetRetentionScriptResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetRetentionScriptResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetRetentionScriptResponse.Merge(m, src)
+}
+func (m *GetRetentionScriptResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetRetentionScriptResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetRetentionScriptResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetRetentionScriptResponse proto.InternalMessageInfo
+
+func (m *GetRetentionScriptResponse) GetScript() *DetailedRetentionScript {
+	if m != nil {
+		return m.Script
+	}
+	return nil
+}
+
+type CreateRetentionScriptRequest struct {
+	Script *DetailedRetentionScript `protobuf:"bytes,1,opt,name=script,proto3" json:"script,omitempty"`
+	OrgID  *uuidpb.UUID             `protobuf:"bytes,2,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+}
+
+func (m *CreateRetentionScriptRequest) Reset()      { *m = CreateRetentionScriptRequest{} }
+func (*CreateRetentionScriptRequest) ProtoMessage() {}
+func (*CreateRetentionScriptRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b1ae703d1aa3a9a, []int{17}
+}
+func (m *CreateRetentionScriptRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *CreateRetentionScriptRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_CreateRetentionScriptRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *CreateRetentionScriptRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateRetentionScriptRequest.Merge(m, src)
+}
+func (m *CreateRetentionScriptRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *CreateRetentionScriptRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateRetentionScriptRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateRetentionScriptRequest proto.InternalMessageInfo
+
+func (m *CreateRetentionScriptRequest) GetScript() *DetailedRetentionScript {
+	if m != nil {
+		return m.Script
+	}
+	return nil
+}
+
+func (m *CreateRetentionScriptRequest) GetOrgID() *uuidpb.UUID {
+	if m != nil {
+		return m.OrgID
+	}
+	return nil
+}
+
+type CreateRetentionScriptResponse struct {
+}
+
+func (m *CreateRetentionScriptResponse) Reset()      { *m = CreateRetentionScriptResponse{} }
+func (*CreateRetentionScriptResponse) ProtoMessage() {}
+func (*CreateRetentionScriptResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b1ae703d1aa3a9a, []int{18}
+}
+func (m *CreateRetentionScriptResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *CreateRetentionScriptResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_CreateRetentionScriptResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *CreateRetentionScriptResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateRetentionScriptResponse.Merge(m, src)
+}
+func (m *CreateRetentionScriptResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *CreateRetentionScriptResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateRetentionScriptResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateRetentionScriptResponse proto.InternalMessageInfo
+
+type UpdateRetentionScriptRequest struct {
+	ScriptID    *uuidpb.UUID       `protobuf:"bytes,1,opt,name=script_id,json=scriptId,proto3" json:"script_id,omitempty"`
+	ScriptName  *types.StringValue `protobuf:"bytes,2,opt,name=script_name,json=scriptName,proto3" json:"script_name,omitempty"`
+	Description *types.StringValue `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	Enabled     *types.BoolValue   `protobuf:"bytes,4,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	FrequencyS  *types.Int64Value  `protobuf:"bytes,5,opt,name=frequency_s,json=frequencyS,proto3" json:"frequency_s,omitempty"`
+	Contents    *types.StringValue `protobuf:"bytes,6,opt,name=contents,proto3" json:"contents,omitempty"`
+	ExportUrl   *types.StringValue `protobuf:"bytes,7,opt,name=export_url,json=exportUrl,proto3" json:"export_url,omitempty"`
+	ClusterIDs  []*uuidpb.UUID     `protobuf:"bytes,8,rep,name=cluster_ids,json=clusterIds,proto3" json:"cluster_ids,omitempty"`
+}
+
+func (m *UpdateRetentionScriptRequest) Reset()      { *m = UpdateRetentionScriptRequest{} }
+func (*UpdateRetentionScriptRequest) ProtoMessage() {}
+func (*UpdateRetentionScriptRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b1ae703d1aa3a9a, []int{19}
+}
+func (m *UpdateRetentionScriptRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *UpdateRetentionScriptRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_UpdateRetentionScriptRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *UpdateRetentionScriptRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpdateRetentionScriptRequest.Merge(m, src)
+}
+func (m *UpdateRetentionScriptRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *UpdateRetentionScriptRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_UpdateRetentionScriptRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UpdateRetentionScriptRequest proto.InternalMessageInfo
+
+func (m *UpdateRetentionScriptRequest) GetScriptID() *uuidpb.UUID {
+	if m != nil {
+		return m.ScriptID
+	}
+	return nil
+}
+
+func (m *UpdateRetentionScriptRequest) GetScriptName() *types.StringValue {
+	if m != nil {
+		return m.ScriptName
+	}
+	return nil
+}
+
+func (m *UpdateRetentionScriptRequest) GetDescription() *types.StringValue {
+	if m != nil {
+		return m.Description
+	}
+	return nil
+}
+
+func (m *UpdateRetentionScriptRequest) GetEnabled() *types.BoolValue {
+	if m != nil {
+		return m.Enabled
+	}
+	return nil
+}
+
+func (m *UpdateRetentionScriptRequest) GetFrequencyS() *types.Int64Value {
+	if m != nil {
+		return m.FrequencyS
+	}
+	return nil
+}
+
+func (m *UpdateRetentionScriptRequest) GetContents() *types.StringValue {
+	if m != nil {
+		return m.Contents
+	}
+	return nil
+}
+
+func (m *UpdateRetentionScriptRequest) GetExportUrl() *types.StringValue {
+	if m != nil {
+		return m.ExportUrl
+	}
+	return nil
+}
+
+func (m *UpdateRetentionScriptRequest) GetClusterIDs() []*uuidpb.UUID {
+	if m != nil {
+		return m.ClusterIDs
+	}
+	return nil
+}
+
+type UpdateRetentionScriptResponse struct {
+}
+
+func (m *UpdateRetentionScriptResponse) Reset()      { *m = UpdateRetentionScriptResponse{} }
+func (*UpdateRetentionScriptResponse) ProtoMessage() {}
+func (*UpdateRetentionScriptResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b1ae703d1aa3a9a, []int{20}
+}
+func (m *UpdateRetentionScriptResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *UpdateRetentionScriptResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_UpdateRetentionScriptResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *UpdateRetentionScriptResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpdateRetentionScriptResponse.Merge(m, src)
+}
+func (m *UpdateRetentionScriptResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *UpdateRetentionScriptResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_UpdateRetentionScriptResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UpdateRetentionScriptResponse proto.InternalMessageInfo
+
 func init() {
 	proto.RegisterEnum("px.services.internal.PluginKind", PluginKind_name, PluginKind_value)
 	proto.RegisterType((*GetPluginsRequest)(nil), "px.services.internal.GetPluginsRequest")
@@ -773,6 +1331,16 @@ func init() {
 	proto.RegisterType((*UpdateOrgRetentionPluginConfigRequest)(nil), "px.services.internal.UpdateOrgRetentionPluginConfigRequest")
 	proto.RegisterMapType((map[string]string)(nil), "px.services.internal.UpdateOrgRetentionPluginConfigRequest.ConfigurationsEntry")
 	proto.RegisterType((*UpdateOrgRetentionPluginConfigResponse)(nil), "px.services.internal.UpdateOrgRetentionPluginConfigResponse")
+	proto.RegisterType((*GetRetentionScriptsRequest)(nil), "px.services.internal.GetRetentionScriptsRequest")
+	proto.RegisterType((*RetentionScript)(nil), "px.services.internal.RetentionScript")
+	proto.RegisterType((*DetailedRetentionScript)(nil), "px.services.internal.DetailedRetentionScript")
+	proto.RegisterType((*GetRetentionScriptsResponse)(nil), "px.services.internal.GetRetentionScriptsResponse")
+	proto.RegisterType((*GetRetentionScriptRequest)(nil), "px.services.internal.GetRetentionScriptRequest")
+	proto.RegisterType((*GetRetentionScriptResponse)(nil), "px.services.internal.GetRetentionScriptResponse")
+	proto.RegisterType((*CreateRetentionScriptRequest)(nil), "px.services.internal.CreateRetentionScriptRequest")
+	proto.RegisterType((*CreateRetentionScriptResponse)(nil), "px.services.internal.CreateRetentionScriptResponse")
+	proto.RegisterType((*UpdateRetentionScriptRequest)(nil), "px.services.internal.UpdateRetentionScriptRequest")
+	proto.RegisterType((*UpdateRetentionScriptResponse)(nil), "px.services.internal.UpdateRetentionScriptResponse")
 }
 
 func init() {
@@ -780,76 +1348,104 @@ func init() {
 }
 
 var fileDescriptor_0b1ae703d1aa3a9a = []byte{
-	// 1102 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x57, 0xcf, 0x53, 0x23, 0x45,
-	0x14, 0x4e, 0x27, 0x10, 0xe0, 0xb1, 0xb0, 0xa1, 0xc1, 0xdd, 0x6c, 0xb4, 0x26, 0x31, 0xd6, 0x4a,
-	0xd4, 0x72, 0x52, 0x22, 0xe2, 0xfa, 0xa3, 0x2c, 0x09, 0x61, 0xa9, 0x08, 0x26, 0xd4, 0xb0, 0x59,
-	0xab, 0xac, 0xb2, 0xa6, 0x26, 0x99, 0x26, 0x8e, 0x3b, 0x4c, 0x8f, 0x3d, 0x3d, 0xb0, 0xdc, 0x2c,
-	0x6f, 0x56, 0xed, 0xc1, 0xf2, 0xea, 0x3f, 0xe0, 0xc1, 0xbf, 0xc1, 0xb3, 0x47, 0x8e, 0x7b, 0x8a,
-	0x32, 0x5c, 0x3c, 0x72, 0xf3, 0xe2, 0xc1, 0x9a, 0xee, 0x19, 0x48, 0x20, 0x84, 0x1f, 0xbb, 0xa7,
-	0x4c, 0xbf, 0xf7, 0xfa, 0xeb, 0xef, 0x7d, 0xf3, 0xde, 0x9b, 0x0e, 0xcc, 0x7b, 0xac, 0x5d, 0x6e,
-	0xdb, 0xd4, 0x37, 0xcb, 0xae, 0xed, 0x77, 0x2c, 0x27, 0xfa, 0x71, 0x5b, 0x65, 0x8f, 0xb0, 0x5d,
-	0xab, 0x4d, 0x54, 0x97, 0x51, 0x4e, 0xf1, 0x9c, 0xfb, 0x54, 0x8d, 0x2c, 0x9e, 0x6a, 0x39, 0x9c,
-	0x30, 0xc7, 0xb0, 0x73, 0xef, 0x76, 0x2c, 0xfe, 0xad, 0xdf, 0x52, 0xdb, 0x74, 0xa7, 0xdc, 0xa1,
-	0x1d, 0x5a, 0x16, 0xc1, 0x2d, 0x7f, 0x5b, 0xac, 0xc4, 0x42, 0x3c, 0x49, 0x90, 0x9c, 0xd2, 0xa1,
-	0xb4, 0x63, 0x93, 0xd3, 0xa8, 0x3d, 0x66, 0xb8, 0x2e, 0x61, 0x5e, 0xe4, 0xcf, 0x87, 0x6c, 0x0c,
-	0xd7, 0x92, 0x01, 0x65, 0xdf, 0xb7, 0x4c, 0xb7, 0x25, 0x7e, 0x64, 0x40, 0xb1, 0x06, 0x33, 0x6b,
-	0x84, 0x6f, 0x0a, 0x8a, 0x9e, 0x46, 0xbe, 0xf7, 0x89, 0xc7, 0xf1, 0x22, 0x8c, 0x3c, 0xb1, 0x1c,
-	0x33, 0x8b, 0x0a, 0xa8, 0x34, 0xbd, 0x50, 0x50, 0x07, 0x31, 0x55, 0xe5, 0x9e, 0x75, 0xcb, 0x31,
-	0x35, 0x11, 0x5d, 0xdc, 0x00, 0xdc, 0x0b, 0xe5, 0xb9, 0xd4, 0xf1, 0x08, 0x5e, 0x82, 0x31, 0x29,
-	0x80, 0x97, 0x45, 0x85, 0x54, 0x69, 0x72, 0xe1, 0xb5, 0x61, 0x70, 0x5a, 0x1c, 0x5c, 0x6c, 0x42,
-	0x61, 0x8d, 0x70, 0x8d, 0x70, 0xe2, 0x70, 0x8b, 0x3a, 0x11, 0xec, 0x43, 0xca, 0x1a, 0xac, 0x13,
-	0xf3, 0x7c, 0x0f, 0xd2, 0x94, 0x75, 0x74, 0x4b, 0x32, 0x9d, 0x5c, 0xb8, 0x1d, 0x42, 0xcb, 0x1c,
-	0xd5, 0x66, 0xb3, 0x56, 0xad, 0x4c, 0x04, 0xdd, 0xfc, 0x68, 0x83, 0x75, 0x6a, 0x55, 0x6d, 0x94,
-	0xb2, 0x4e, 0xcd, 0x2c, 0x1e, 0x23, 0x78, 0x7d, 0x08, 0x6e, 0x44, 0xfa, 0x9b, 0xb3, 0xa4, 0x57,
-	0x06, 0x93, 0xbe, 0x14, 0x29, 0x4a, 0x6b, 0x8b, 0x1b, 0x9c, 0x9c, 0xe4, 0x96, 0xb3, 0x61, 0xb2,
-	0xc7, 0x8e, 0x17, 0x21, 0x2d, 0x3d, 0x51, 0x1a, 0xc3, 0x15, 0x8a, 0x62, 0xf1, 0x3c, 0xdc, 0x26,
-	0x8e, 0xd1, 0xb2, 0x89, 0xa9, 0xef, 0x12, 0xe6, 0x59, 0xd4, 0xc9, 0x26, 0x0b, 0xa8, 0x34, 0xa1,
-	0x4d, 0x47, 0xe6, 0xc7, 0xd2, 0x5a, 0xfc, 0x03, 0x41, 0x5a, 0xee, 0xc5, 0x18, 0x46, 0x1c, 0x63,
-	0x87, 0x88, 0x73, 0x26, 0x34, 0xf1, 0x8c, 0xef, 0x40, 0xd2, 0x32, 0xe5, 0xd6, 0x4a, 0x3a, 0xe8,
-	0xe6, 0x93, 0xb5, 0xaa, 0x96, 0xb4, 0x4c, 0x5c, 0x80, 0x49, 0x93, 0x78, 0x6d, 0x66, 0xb9, 0x61,
-	0x76, 0xd9, 0x94, 0xd8, 0xd2, 0x6b, 0x0a, 0xd1, 0x6c, 0xda, 0xa1, 0xd9, 0x11, 0x89, 0x16, 0x3e,
-	0xe3, 0xfb, 0x30, 0x6d, 0x1b, 0x9c, 0x78, 0xfc, 0x84, 0xd4, 0xa8, 0xf0, 0x4e, 0x49, 0x6b, 0xc4,
-	0x09, 0xbf, 0x03, 0x33, 0x2c, 0x16, 0x4e, 0x8f, 0xf8, 0x66, 0xd3, 0x05, 0x54, 0x1a, 0xd7, 0x32,
-	0x27, 0x8e, 0x55, 0x69, 0x2f, 0x6e, 0x41, 0xfe, 0xbc, 0xd0, 0x2b, 0xd4, 0xd9, 0xb6, 0x4e, 0x2a,
-	0x41, 0x26, 0x81, 0xce, 0x25, 0x91, 0x85, 0xb1, 0x7e, 0x71, 0xe2, 0x65, 0xf1, 0xf7, 0xd1, 0x41,
-	0x05, 0x16, 0xa3, 0x46, 0x75, 0xc0, 0x60, 0xba, 0x2d, 0x2c, 0x3e, 0x33, 0xc2, 0xa0, 0xb8, 0x1c,
-	0xbe, 0xb8, 0x6a, 0x39, 0xf4, 0xe3, 0xa9, 0x2b, 0x7d, 0x60, 0xab, 0x0e, 0x67, 0xfb, 0xda, 0x99,
-	0x13, 0xf0, 0x77, 0x30, 0xed, 0x32, 0xe2, 0x11, 0xae, 0x4b, 0xa5, 0xbd, 0x6c, 0xf2, 0x7a, 0x25,
-	0x78, 0xe6, 0xcc, 0x4d, 0x01, 0xb6, 0x25, 0xb0, 0xb4, 0x29, 0xb7, 0x67, 0xe5, 0xe1, 0x65, 0x98,
-	0x31, 0x69, 0xdb, 0xdf, 0x21, 0x0e, 0x17, 0xa7, 0xeb, 0x3e, 0xb3, 0xe5, 0x9b, 0xae, 0xcc, 0x05,
-	0xdd, 0x7c, 0xa6, 0xda, 0xeb, 0x6c, 0x6a, 0x1b, 0x5a, 0xa6, 0x2f, 0xbc, 0xc9, 0x6c, 0x5c, 0x01,
-	0x6c, 0x92, 0x6d, 0xc3, 0xb7, 0xb9, 0x4e, 0x9e, 0xba, 0x94, 0x71, 0x81, 0x31, 0xd2, 0x83, 0x21,
-	0xbd, 0xab, 0xc2, 0x29, 0x31, 0xfa, 0x2c, 0xcc, 0xc6, 0x0d, 0xb8, 0x6b, 0xd8, 0x36, 0xdd, 0xd3,
-	0xdb, 0xbe, 0xc7, 0xe9, 0x4e, 0x2f, 0x50, 0x58, 0x3d, 0xe3, 0x95, 0x6c, 0xd0, 0xcd, 0xcf, 0x2d,
-	0x87, 0x21, 0x2b, 0x22, 0xe2, 0x14, 0x6c, 0xce, 0x38, 0x67, 0x65, 0x76, 0x6e, 0x19, 0x66, 0x07,
-	0x48, 0x8d, 0x33, 0x90, 0x7a, 0x42, 0xf6, 0xa3, 0xea, 0x0f, 0x1f, 0xf1, 0x1c, 0x8c, 0xee, 0x1a,
-	0xb6, 0x4f, 0xa2, 0xea, 0x90, 0x8b, 0x8f, 0x93, 0x0f, 0x50, 0xee, 0x19, 0x82, 0x5b, 0xbd, 0xd2,
-	0x0d, 0xec, 0x9d, 0x33, 0x3d, 0x92, 0x3c, 0xdf, 0x23, 0x2a, 0xcc, 0xc6, 0xf2, 0x6c, 0xb3, 0xb0,
-	0x58, 0x9d, 0xf6, 0xbe, 0xee, 0x09, 0x8d, 0x53, 0xda, 0x4c, 0xe4, 0x7a, 0x18, 0x7b, 0xb6, 0xf0,
-	0x1d, 0x48, 0xcb, 0xcd, 0x51, 0x57, 0x45, 0xab, 0xe2, 0x8f, 0x08, 0x8a, 0x6b, 0x84, 0x8b, 0xd1,
-	0x32, 0xa4, 0x0f, 0xde, 0x82, 0x09, 0x39, 0x1e, 0xf4, 0x93, 0x76, 0xb8, 0x15, 0x74, 0xf3, 0xe3,
-	0x32, 0xb6, 0x56, 0xd5, 0xc6, 0xa5, 0xbb, 0x66, 0xf6, 0x0c, 0xcf, 0xe4, 0x55, 0x87, 0xe7, 0x5f,
-	0x08, 0xde, 0x18, 0x4a, 0x22, 0x6a, 0x1b, 0xff, 0x82, 0xb6, 0xf9, 0xf2, 0xc2, 0x12, 0xbe, 0x0c,
-	0xf2, 0x2a, 0x9d, 0xf3, 0x12, 0xde, 0x7a, 0xf1, 0xdf, 0x24, 0xdc, 0x6f, 0xba, 0xa6, 0xc1, 0xc9,
-	0x65, 0x4a, 0x5f, 0xff, 0xdb, 0xd3, 0xff, 0x72, 0x92, 0x43, 0x5f, 0xce, 0xde, 0x39, 0x05, 0x53,
-	0x42, 0xc1, 0xc6, 0x60, 0x05, 0xaf, 0x44, 0xf9, 0x4a, 0xd3, 0x67, 0x11, 0xc6, 0xe2, 0x71, 0x3c,
-	0x22, 0xf2, 0xca, 0xa9, 0xf2, 0x8a, 0xa1, 0xc6, 0x57, 0x0c, 0xb5, 0x42, 0xa9, 0xfd, 0x38, 0x54,
-	0x4c, 0x8b, 0x43, 0x5f, 0x86, 0xf2, 0x25, 0x78, 0xf3, 0xb2, 0x2c, 0x64, 0x29, 0xbc, 0xfd, 0x39,
-	0xc0, 0xe9, 0xdd, 0x03, 0xdf, 0x85, 0xd9, 0xcd, 0x8d, 0xe6, 0x5a, 0xad, 0xae, 0xaf, 0xd7, 0xea,
-	0x55, 0xbd, 0x59, 0x5f, 0xaf, 0x37, 0xbe, 0xaa, 0x67, 0x12, 0xf8, 0x1e, 0xbc, 0xd2, 0xeb, 0xd0,
-	0x56, 0x1f, 0xad, 0xd6, 0x1f, 0xd5, 0x1a, 0xf5, 0x0c, 0x5a, 0xf8, 0x0f, 0xc1, 0x54, 0xf4, 0x01,
-	0x96, 0x52, 0x62, 0x1d, 0xe0, 0xf4, 0xee, 0x82, 0xe7, 0x2f, 0xac, 0xd3, 0xfe, 0x8b, 0x52, 0xae,
-	0x74, 0x79, 0x60, 0xd4, 0x12, 0x3f, 0x21, 0xc8, 0x5e, 0x34, 0xaa, 0xf1, 0x07, 0xd7, 0x1d, 0xed,
-	0xf2, 0xf4, 0xa5, 0x9b, 0x7d, 0x11, 0x16, 0xba, 0x29, 0xc8, 0x55, 0x0d, 0x6e, 0x9c, 0x89, 0x8a,
-	0xb5, 0x78, 0x86, 0xe0, 0xde, 0x85, 0x17, 0x1b, 0xbc, 0x74, 0xed, 0x9b, 0x90, 0x24, 0xfb, 0xe1,
-	0x0d, 0x6f, 0x50, 0xf8, 0x17, 0x04, 0xaf, 0x0e, 0x99, 0x10, 0xf8, 0xc1, 0x0d, 0x86, 0x8a, 0xa4,
-	0xf4, 0xd1, 0x8d, 0xc7, 0x11, 0xfe, 0x15, 0x81, 0x32, 0xbc, 0x5c, 0xf1, 0x27, 0x2f, 0xd0, 0xaa,
-	0xb9, 0x4f, 0x6f, 0xb6, 0x59, 0xb2, 0xab, 0x7c, 0x76, 0x70, 0xa8, 0x24, 0x9e, 0x1f, 0x2a, 0x89,
-	0xe3, 0x43, 0x05, 0xfd, 0x10, 0x28, 0xe8, 0xb7, 0x40, 0x41, 0x7f, 0x06, 0x0a, 0x3a, 0x08, 0x14,
-	0xf4, 0x77, 0xa0, 0xa0, 0x7f, 0x02, 0x25, 0x71, 0x1c, 0x28, 0xe8, 0xe7, 0x23, 0x25, 0x71, 0x70,
-	0xa4, 0x24, 0x9e, 0x1f, 0x29, 0x89, 0xaf, 0xc7, 0xe3, 0x3f, 0x2a, 0xad, 0xb4, 0xe8, 0xf5, 0xf7,
-	0xff, 0x0f, 0x00, 0x00, 0xff, 0xff, 0x9a, 0x80, 0x0e, 0x7b, 0xcc, 0x0c, 0x00, 0x00,
+	// 1539 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x58, 0xcd, 0x73, 0x1b, 0xc5,
+	0x12, 0xf7, 0xc8, 0xb6, 0x2c, 0xb7, 0x63, 0xc7, 0x1e, 0x3b, 0x89, 0xa2, 0xe4, 0xad, 0xfc, 0xf6,
+	0x55, 0x5e, 0xfc, 0x1e, 0x44, 0x4e, 0x1c, 0x63, 0x42, 0xbe, 0x48, 0x6c, 0x39, 0xae, 0x25, 0x41,
+	0x4e, 0xad, 0xa3, 0x50, 0x45, 0x15, 0x6c, 0xad, 0xb5, 0x63, 0xb1, 0x64, 0xbd, 0xbb, 0xec, 0x47,
+	0x9c, 0x70, 0x4a, 0x71, 0xa0, 0x0a, 0x2a, 0x07, 0x8a, 0x13, 0x55, 0xdc, 0x38, 0x71, 0xe0, 0x6f,
+	0xe0, 0x0a, 0xc7, 0x1c, 0xc3, 0x45, 0x90, 0xcd, 0x85, 0x63, 0x6e, 0x5c, 0x38, 0x50, 0x3b, 0x33,
+	0x2b, 0xad, 0xa4, 0xd5, 0xa7, 0x73, 0xd2, 0xce, 0x4c, 0x77, 0xcf, 0x6f, 0x7a, 0xba, 0x7f, 0xdd,
+	0x23, 0x38, 0xeb, 0x3a, 0x95, 0xe5, 0x8a, 0x61, 0xf9, 0xda, 0xb2, 0x6d, 0xf8, 0x55, 0xdd, 0xe4,
+	0x3f, 0xf6, 0xee, 0xb2, 0x4b, 0x9c, 0x87, 0x7a, 0x85, 0x14, 0x6c, 0xc7, 0xf2, 0x2c, 0xbc, 0x60,
+	0x3f, 0x2a, 0xf0, 0x19, 0xb7, 0xa0, 0x9b, 0x1e, 0x71, 0x4c, 0xd5, 0xc8, 0x9d, 0xab, 0xea, 0xde,
+	0x27, 0xfe, 0x6e, 0xa1, 0x62, 0xed, 0x2f, 0x57, 0xad, 0xaa, 0xb5, 0x4c, 0x85, 0x77, 0xfd, 0x3d,
+	0x3a, 0xa2, 0x03, 0xfa, 0xc5, 0x8c, 0xe4, 0x84, 0xaa, 0x65, 0x55, 0x0d, 0xd2, 0x90, 0x3a, 0x70,
+	0x54, 0xdb, 0x26, 0x8e, 0xcb, 0xd7, 0xf3, 0x21, 0x1a, 0xd5, 0xd6, 0x99, 0xc0, 0xb2, 0xef, 0xeb,
+	0x9a, 0xbd, 0x4b, 0x7f, 0x98, 0x80, 0x28, 0xc1, 0xdc, 0x16, 0xf1, 0xee, 0x52, 0x88, 0xae, 0x4c,
+	0x3e, 0xf3, 0x89, 0xeb, 0xe1, 0x55, 0x18, 0x7b, 0xa0, 0x9b, 0x5a, 0x16, 0x2d, 0xa2, 0xa5, 0x99,
+	0x95, 0xc5, 0x42, 0x12, 0xd2, 0x02, 0xd3, 0xb9, 0xad, 0x9b, 0x9a, 0x4c, 0xa5, 0xc5, 0x3b, 0x80,
+	0xe3, 0xa6, 0x5c, 0xdb, 0x32, 0x5d, 0x82, 0xd7, 0x60, 0x82, 0x39, 0xc0, 0xcd, 0xa2, 0xc5, 0xd1,
+	0xa5, 0xa9, 0x95, 0xd3, 0xdd, 0xcc, 0xc9, 0x91, 0xb0, 0x58, 0x86, 0xc5, 0x2d, 0xe2, 0xc9, 0xc4,
+	0x23, 0xa6, 0xa7, 0x5b, 0x26, 0x37, 0x7b, 0xcb, 0x72, 0xb6, 0x9d, 0x6a, 0x84, 0xf3, 0x02, 0xa4,
+	0x2d, 0xa7, 0xaa, 0xe8, 0x0c, 0xe9, 0xd4, 0xca, 0xd1, 0xd0, 0x34, 0x3b, 0x63, 0xa1, 0x5c, 0x96,
+	0x8a, 0xeb, 0x93, 0x41, 0x2d, 0x3f, 0xbe, 0xed, 0x54, 0xa5, 0xa2, 0x3c, 0x6e, 0x39, 0x55, 0x49,
+	0x13, 0x5f, 0x21, 0xf8, 0x77, 0x17, 0xbb, 0x1c, 0xf4, 0x47, 0xad, 0xa0, 0x37, 0x92, 0x41, 0xf7,
+	0xb4, 0xc4, 0x8f, 0xb5, 0xe3, 0xa9, 0x1e, 0xa9, 0x9f, 0x2d, 0x67, 0xc0, 0x54, 0x6c, 0x1e, 0xaf,
+	0x42, 0x9a, 0xad, 0xf0, 0x63, 0x74, 0xf7, 0x10, 0x97, 0xc5, 0x67, 0xe1, 0x28, 0x31, 0xd5, 0x5d,
+	0x83, 0x68, 0xca, 0x43, 0xe2, 0xb8, 0xba, 0x65, 0x66, 0x53, 0x8b, 0x68, 0x69, 0x52, 0x9e, 0xe1,
+	0xd3, 0xf7, 0xd9, 0xac, 0xf8, 0x33, 0x82, 0x34, 0xd3, 0xc5, 0x18, 0xc6, 0x4c, 0x75, 0x9f, 0xd0,
+	0x7d, 0x26, 0x65, 0xfa, 0x8d, 0x8f, 0x43, 0x4a, 0xd7, 0x98, 0xea, 0x7a, 0x3a, 0xa8, 0xe5, 0x53,
+	0x52, 0x51, 0x4e, 0xe9, 0x1a, 0x5e, 0x84, 0x29, 0x8d, 0xb8, 0x15, 0x47, 0xb7, 0xc3, 0xd3, 0x65,
+	0x47, 0xa9, 0x4a, 0x7c, 0x2a, 0xb4, 0x66, 0x58, 0x55, 0x2b, 0x3b, 0xc6, 0xac, 0x85, 0xdf, 0xf8,
+	0x0c, 0xcc, 0x18, 0xaa, 0x47, 0x5c, 0xaf, 0x0e, 0x6a, 0x9c, 0xae, 0x4e, 0xb3, 0x59, 0x8e, 0x09,
+	0xbf, 0x01, 0x73, 0x4e, 0xe4, 0x38, 0x85, 0xe3, 0xcd, 0xa6, 0x17, 0xd1, 0x52, 0x46, 0x9e, 0xad,
+	0x2f, 0x6c, 0xb2, 0x79, 0x71, 0x07, 0xf2, 0xed, 0x8e, 0xde, 0xb0, 0xcc, 0x3d, 0xbd, 0x1e, 0x09,
+	0xec, 0x10, 0xa8, 0xed, 0x10, 0x59, 0x98, 0x68, 0x76, 0x4e, 0x34, 0x14, 0x7f, 0x1a, 0x4f, 0x0a,
+	0xb0, 0xc8, 0x2a, 0x8f, 0x03, 0x07, 0x66, 0x2a, 0x74, 0xc6, 0x77, 0xd4, 0x50, 0x28, 0x0a, 0x87,
+	0xf7, 0xfa, 0x0d, 0x87, 0x66, 0x7b, 0x85, 0x8d, 0x26, 0x63, 0x9b, 0xa6, 0xe7, 0x3c, 0x96, 0x5b,
+	0x76, 0xc0, 0x9f, 0xc2, 0x8c, 0xed, 0x10, 0x97, 0x78, 0x0a, 0xf3, 0xb4, 0x9b, 0x4d, 0x0d, 0x16,
+	0x82, 0x2d, 0x7b, 0xde, 0xa5, 0xc6, 0x76, 0xa8, 0x2d, 0x79, 0xda, 0x8e, 0x8d, 0x5c, 0x7c, 0x13,
+	0xe6, 0x34, 0xab, 0xe2, 0xef, 0x13, 0xd3, 0xa3, 0xbb, 0x2b, 0xbe, 0x63, 0xb0, 0x9b, 0x5e, 0x5f,
+	0x08, 0x6a, 0xf9, 0xd9, 0x62, 0x7c, 0xb1, 0x2c, 0xdf, 0x91, 0x67, 0x9b, 0xc4, 0xcb, 0x8e, 0x81,
+	0xd7, 0x01, 0x6b, 0x64, 0x4f, 0xf5, 0x0d, 0x4f, 0x21, 0x8f, 0x6c, 0xcb, 0xf1, 0xa8, 0x8d, 0xb1,
+	0x98, 0x0d, 0xb6, 0xba, 0x49, 0x17, 0x99, 0x8d, 0xa6, 0x19, 0xc7, 0xc0, 0xdb, 0x70, 0x42, 0x35,
+	0x0c, 0xeb, 0x40, 0xa9, 0xf8, 0xae, 0x67, 0xed, 0xc7, 0x0d, 0x85, 0xd1, 0x93, 0x59, 0xcf, 0x06,
+	0xb5, 0xfc, 0xc2, 0xcd, 0x50, 0x64, 0x83, 0x4a, 0x34, 0x8c, 0x2d, 0xa8, 0x6d, 0xb3, 0x8e, 0x91,
+	0xbb, 0x09, 0xf3, 0x09, 0xae, 0xc6, 0xb3, 0x30, 0xfa, 0x80, 0x3c, 0xe6, 0xd1, 0x1f, 0x7e, 0xe2,
+	0x05, 0x18, 0x7f, 0xa8, 0x1a, 0x3e, 0xe1, 0xd1, 0xc1, 0x06, 0x97, 0x53, 0x97, 0x50, 0xee, 0x29,
+	0x82, 0x23, 0x71, 0xd7, 0x25, 0xe6, 0x4e, 0x4b, 0x8e, 0xa4, 0xda, 0x73, 0xa4, 0x00, 0xf3, 0x91,
+	0x7b, 0xf6, 0x9c, 0x30, 0x58, 0xcd, 0xca, 0x63, 0xc5, 0xa5, 0x3e, 0x1e, 0x95, 0xe7, 0xf8, 0xd2,
+	0xad, 0x68, 0x65, 0x07, 0x1f, 0x87, 0x34, 0x53, 0xe6, 0x59, 0xc5, 0x47, 0xe2, 0x17, 0x08, 0xc4,
+	0x2d, 0xe2, 0x51, 0x6a, 0xe9, 0x92, 0x07, 0xff, 0x83, 0x49, 0x46, 0x0f, 0x4a, 0x3d, 0x1d, 0x8e,
+	0x04, 0xb5, 0x7c, 0x86, 0xc9, 0x4a, 0x45, 0x39, 0xc3, 0x96, 0x25, 0x2d, 0x46, 0x9e, 0xa9, 0x7e,
+	0xc9, 0xf3, 0x77, 0x04, 0xff, 0xe9, 0x0a, 0x82, 0xa7, 0x8d, 0xdf, 0x21, 0x6d, 0xde, 0xef, 0x18,
+	0xc2, 0xbd, 0x4c, 0xf6, 0x93, 0x39, 0xaf, 0xe1, 0xd6, 0xc5, 0xbf, 0x52, 0x70, 0xa6, 0x6c, 0x6b,
+	0xaa, 0x47, 0x7a, 0x79, 0x7a, 0xf0, 0xda, 0xd3, 0x7c, 0x39, 0xa9, 0xae, 0x97, 0x73, 0xd0, 0xe6,
+	0xc1, 0x51, 0xea, 0xc1, 0xed, 0x64, 0x0f, 0xf6, 0x05, 0xb9, 0x2f, 0xf6, 0x59, 0x85, 0x89, 0x88,
+	0x8e, 0xc7, 0xe8, 0xb9, 0x72, 0x05, 0xd6, 0x62, 0x14, 0xa2, 0x16, 0xa3, 0xb0, 0x6e, 0x59, 0xc6,
+	0xfd, 0xd0, 0x63, 0x72, 0x24, 0xfa, 0x3a, 0x3c, 0xbf, 0x04, 0xff, 0xed, 0x75, 0x0a, 0x16, 0x0a,
+	0xe2, 0x36, 0xe4, 0xe2, 0xa4, 0xc7, 0xb9, 0xec, 0x10, 0x3d, 0xc1, 0x2f, 0x29, 0x38, 0xda, 0x62,
+	0x0e, 0x5f, 0x86, 0x49, 0x96, 0x79, 0x5d, 0x2c, 0xd1, 0xcb, 0x63, 0xf2, 0xe1, 0xe5, 0x31, 0x79,
+	0x49, 0xc3, 0x79, 0x98, 0xe2, 0xba, 0x94, 0x30, 0xd8, 0x51, 0x81, 0x4d, 0x95, 0x12, 0x68, 0x23,
+	0xa1, 0xb4, 0xe6, 0x61, 0x2a, 0x4e, 0x17, 0x63, 0x94, 0x2e, 0x60, 0xaf, 0xc1, 0x13, 0x37, 0x60,
+	0xaa, 0x62, 0xf8, 0xae, 0x47, 0x1c, 0x45, 0xd7, 0xdc, 0xec, 0x38, 0x8d, 0x8e, 0x36, 0x84, 0x33,
+	0x41, 0x2d, 0x0f, 0x1b, 0x4c, 0x4e, 0x2a, 0xba, 0x32, 0x70, 0x1d, 0x49, 0x73, 0xf1, 0xa9, 0x78,
+	0x34, 0xa6, 0x29, 0x84, 0x46, 0xfc, 0x65, 0x1b, 0x61, 0x30, 0x41, 0xab, 0x72, 0x34, 0x0c, 0xd5,
+	0x74, 0x57, 0x61, 0x65, 0x24, 0x9b, 0xa1, 0x6b, 0x19, 0xdd, 0x65, 0x4c, 0x29, 0xfe, 0x80, 0xe0,
+	0x44, 0x91, 0x78, 0xaa, 0x6e, 0x10, 0xad, 0xd5, 0xa3, 0xd7, 0xea, 0xcc, 0xc6, 0xdc, 0x79, 0x26,
+	0x39, 0x94, 0x5b, 0xd4, 0x22, 0x02, 0xc4, 0x39, 0xc8, 0x54, 0x2c, 0x33, 0x5c, 0x73, 0xb9, 0x47,
+	0xeb, 0x63, 0xfc, 0x26, 0x40, 0xac, 0x64, 0xb0, 0xfa, 0x35, 0x1d, 0xd4, 0xf2, 0x93, 0x8d, 0x3a,
+	0x31, 0x49, 0xa2, 0xe2, 0x20, 0x7e, 0x0c, 0xa7, 0x12, 0xe3, 0x87, 0x93, 0xd7, 0xbb, 0x30, 0x11,
+	0x15, 0x5e, 0xc6, 0x5a, 0x7d, 0x02, 0x8d, 0xb4, 0xc4, 0xaf, 0x11, 0x9c, 0x6c, 0xdf, 0xe0, 0x10,
+	0xbc, 0xd1, 0x14, 0x8b, 0xa9, 0x81, 0x62, 0x51, 0xac, 0x24, 0x25, 0x4b, 0xfd, 0xac, 0x9b, 0x2d,
+	0x77, 0x72, 0x2e, 0xf9, 0xa8, 0x1d, 0xae, 0xb4, 0x5e, 0x9c, 0xbe, 0x43, 0x70, 0x7a, 0xc3, 0x21,
+	0x61, 0x8f, 0x9b, 0x7c, 0xe8, 0xd7, 0xb3, 0xcf, 0x30, 0x25, 0x2b, 0x0f, 0xff, 0xea, 0x80, 0x8c,
+	0xb3, 0xc9, 0x97, 0x63, 0x70, 0x9a, 0x11, 0x4f, 0x07, 0xec, 0x87, 0x61, 0x82, 0x6b, 0xed, 0x4c,
+	0x10, 0xb6, 0xf7, 0xad, 0x8c, 0xba, 0xe3, 0x39, 0xba, 0x59, 0x65, 0x9c, 0x1a, 0xe7, 0x89, 0xeb,
+	0xed, 0x3c, 0xd1, 0x4b, 0xbd, 0x89, 0x45, 0x86, 0x22, 0x73, 0x7c, 0xb5, 0x99, 0x7b, 0xc6, 0xa9,
+	0xe6, 0xa9, 0x36, 0x4d, 0xc9, 0xf4, 0xd6, 0x56, 0x39, 0xe6, 0x18, 0x31, 0x5d, 0x8a, 0xe5, 0x69,
+	0xba, 0x0f, 0xc0, 0x8d, 0x2c, 0xbe, 0xd2, 0x94, 0xc5, 0x13, 0x7d, 0xe8, 0x36, 0x92, 0xba, 0x95,
+	0x0f, 0x33, 0x03, 0xf3, 0x61, 0x18, 0x29, 0x1d, 0xe2, 0x80, 0x45, 0xca, 0xff, 0x6f, 0x00, 0x34,
+	0xde, 0xbc, 0xf8, 0x04, 0xcc, 0xdf, 0xbd, 0x53, 0xde, 0x92, 0x4a, 0xca, 0x6d, 0xa9, 0x54, 0x54,
+	0xca, 0xa5, 0xdb, 0xa5, 0xed, 0x0f, 0x4a, 0xb3, 0x23, 0xf8, 0x24, 0x1c, 0x8b, 0x2f, 0xc8, 0x9b,
+	0xf7, 0x36, 0x4b, 0xf7, 0xa4, 0xed, 0xd2, 0x2c, 0x5a, 0xf9, 0x1b, 0xc1, 0x34, 0x7f, 0xf8, 0xb1,
+	0xd8, 0xc7, 0x0a, 0x40, 0xe3, 0xcd, 0x8c, 0xcf, 0x76, 0xec, 0x8f, 0x9a, 0x1f, 0xe8, 0xb9, 0xa5,
+	0xde, 0x82, 0x3c, 0xc3, 0xbf, 0x42, 0x90, 0xed, 0xf4, 0x44, 0xc0, 0x6f, 0x0d, 0xfa, 0xa4, 0x60,
+	0xbb, 0xaf, 0x0d, 0xf7, 0x12, 0x59, 0xf9, 0x6d, 0x02, 0x72, 0x45, 0xd5, 0x53, 0x5b, 0xa4, 0x22,
+	0x5f, 0x3c, 0x6d, 0xe1, 0xcd, 0xa6, 0x07, 0x35, 0x5e, 0x1b, 0xf8, 0x05, 0xce, 0xc0, 0xbe, 0x3d,
+	0xe4, 0xcb, 0x1d, 0x7f, 0x8b, 0x68, 0x9d, 0xe8, 0xd4, 0x8e, 0xe0, 0x4b, 0x43, 0x34, 0xb3, 0x0c,
+	0xd2, 0x3b, 0x43, 0xb7, 0xc1, 0xf8, 0x7b, 0x04, 0x42, 0xf7, 0x36, 0x09, 0x5f, 0x39, 0x44, 0x8b,
+	0x98, 0xbb, 0x3a, 0x9c, 0x32, 0x47, 0xf7, 0x39, 0xcc, 0x27, 0x54, 0x56, 0x7c, 0xbe, 0xf7, 0x15,
+	0x34, 0x37, 0x71, 0xb9, 0x0b, 0x03, 0x68, 0xf0, 0xbd, 0x0f, 0xe8, 0xbf, 0x4f, 0xad, 0x4d, 0xc7,
+	0x72, 0xbf, 0x86, 0xa2, 0x9d, 0xcf, 0xf7, 0xaf, 0xc0, 0x37, 0x7e, 0x82, 0xe0, 0x58, 0x62, 0x89,
+	0xc1, 0x2b, 0xc9, 0xb6, 0xba, 0x55, 0xca, 0xdc, 0xc5, 0x81, 0x74, 0x62, 0x10, 0x12, 0xb9, 0xab,
+	0x13, 0x84, 0x6e, 0x05, 0xaf, 0x13, 0x84, 0xae, 0xe4, 0xb8, 0x7e, 0xfd, 0xd9, 0x0b, 0x61, 0xe4,
+	0xf9, 0x0b, 0x61, 0xe4, 0xd5, 0x0b, 0x01, 0x3d, 0x09, 0x04, 0xf4, 0x63, 0x20, 0xa0, 0x5f, 0x03,
+	0x01, 0x3d, 0x0b, 0x04, 0xf4, 0x47, 0x20, 0xa0, 0x3f, 0x03, 0x61, 0xe4, 0x55, 0x20, 0xa0, 0x6f,
+	0x5e, 0x0a, 0x23, 0xcf, 0x5e, 0x0a, 0x23, 0xcf, 0x5f, 0x0a, 0x23, 0x1f, 0x66, 0xa2, 0xff, 0x46,
+	0x77, 0xd3, 0x94, 0xe0, 0x2f, 0xfe, 0x13, 0x00, 0x00, 0xff, 0xff, 0xfe, 0xd0, 0x12, 0x2b, 0x3f,
+	0x15, 0x00, 0x00,
 }
 
 func (x PluginKind) String() string {
@@ -1252,6 +1848,309 @@ func (this *UpdateOrgRetentionPluginConfigResponse) Equal(that interface{}) bool
 	}
 	return true
 }
+func (this *GetRetentionScriptsRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetRetentionScriptsRequest)
+	if !ok {
+		that2, ok := that.(GetRetentionScriptsRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.OrgID.Equal(that1.OrgID) {
+		return false
+	}
+	return true
+}
+func (this *RetentionScript) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*RetentionScript)
+	if !ok {
+		that2, ok := that.(RetentionScript)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.ScriptID.Equal(that1.ScriptID) {
+		return false
+	}
+	if this.ScriptName != that1.ScriptName {
+		return false
+	}
+	if this.Description != that1.Description {
+		return false
+	}
+	if this.FrequencyS != that1.FrequencyS {
+		return false
+	}
+	if len(this.ClusterIDs) != len(that1.ClusterIDs) {
+		return false
+	}
+	for i := range this.ClusterIDs {
+		if !this.ClusterIDs[i].Equal(that1.ClusterIDs[i]) {
+			return false
+		}
+	}
+	if this.PluginId != that1.PluginId {
+		return false
+	}
+	if this.Enabled != that1.Enabled {
+		return false
+	}
+	if this.IsPreset != that1.IsPreset {
+		return false
+	}
+	return true
+}
+func (this *DetailedRetentionScript) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*DetailedRetentionScript)
+	if !ok {
+		that2, ok := that.(DetailedRetentionScript)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Script.Equal(that1.Script) {
+		return false
+	}
+	if this.Contents != that1.Contents {
+		return false
+	}
+	if this.ExportURL != that1.ExportURL {
+		return false
+	}
+	return true
+}
+func (this *GetRetentionScriptsResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetRetentionScriptsResponse)
+	if !ok {
+		that2, ok := that.(GetRetentionScriptsResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Scripts) != len(that1.Scripts) {
+		return false
+	}
+	for i := range this.Scripts {
+		if !this.Scripts[i].Equal(that1.Scripts[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *GetRetentionScriptRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetRetentionScriptRequest)
+	if !ok {
+		that2, ok := that.(GetRetentionScriptRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.OrgID.Equal(that1.OrgID) {
+		return false
+	}
+	if !this.ScriptID.Equal(that1.ScriptID) {
+		return false
+	}
+	return true
+}
+func (this *GetRetentionScriptResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetRetentionScriptResponse)
+	if !ok {
+		that2, ok := that.(GetRetentionScriptResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Script.Equal(that1.Script) {
+		return false
+	}
+	return true
+}
+func (this *CreateRetentionScriptRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*CreateRetentionScriptRequest)
+	if !ok {
+		that2, ok := that.(CreateRetentionScriptRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Script.Equal(that1.Script) {
+		return false
+	}
+	if !this.OrgID.Equal(that1.OrgID) {
+		return false
+	}
+	return true
+}
+func (this *CreateRetentionScriptResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*CreateRetentionScriptResponse)
+	if !ok {
+		that2, ok := that.(CreateRetentionScriptResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	return true
+}
+func (this *UpdateRetentionScriptRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*UpdateRetentionScriptRequest)
+	if !ok {
+		that2, ok := that.(UpdateRetentionScriptRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.ScriptID.Equal(that1.ScriptID) {
+		return false
+	}
+	if !this.ScriptName.Equal(that1.ScriptName) {
+		return false
+	}
+	if !this.Description.Equal(that1.Description) {
+		return false
+	}
+	if !this.Enabled.Equal(that1.Enabled) {
+		return false
+	}
+	if !this.FrequencyS.Equal(that1.FrequencyS) {
+		return false
+	}
+	if !this.Contents.Equal(that1.Contents) {
+		return false
+	}
+	if !this.ExportUrl.Equal(that1.ExportUrl) {
+		return false
+	}
+	if len(this.ClusterIDs) != len(that1.ClusterIDs) {
+		return false
+	}
+	for i := range this.ClusterIDs {
+		if !this.ClusterIDs[i].Equal(that1.ClusterIDs[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *UpdateRetentionScriptResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*UpdateRetentionScriptResponse)
+	if !ok {
+		that2, ok := that.(UpdateRetentionScriptResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	return true
+}
 func (this *GetPluginsRequest) GoString() string {
 	if this == nil {
 		return "nil"
@@ -1451,6 +2350,158 @@ func (this *UpdateOrgRetentionPluginConfigResponse) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *GetRetentionScriptsRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&pluginpb.GetRetentionScriptsRequest{")
+	if this.OrgID != nil {
+		s = append(s, "OrgID: "+fmt.Sprintf("%#v", this.OrgID)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *RetentionScript) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 12)
+	s = append(s, "&pluginpb.RetentionScript{")
+	if this.ScriptID != nil {
+		s = append(s, "ScriptID: "+fmt.Sprintf("%#v", this.ScriptID)+",\n")
+	}
+	s = append(s, "ScriptName: "+fmt.Sprintf("%#v", this.ScriptName)+",\n")
+	s = append(s, "Description: "+fmt.Sprintf("%#v", this.Description)+",\n")
+	s = append(s, "FrequencyS: "+fmt.Sprintf("%#v", this.FrequencyS)+",\n")
+	if this.ClusterIDs != nil {
+		s = append(s, "ClusterIDs: "+fmt.Sprintf("%#v", this.ClusterIDs)+",\n")
+	}
+	s = append(s, "PluginId: "+fmt.Sprintf("%#v", this.PluginId)+",\n")
+	s = append(s, "Enabled: "+fmt.Sprintf("%#v", this.Enabled)+",\n")
+	s = append(s, "IsPreset: "+fmt.Sprintf("%#v", this.IsPreset)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *DetailedRetentionScript) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&pluginpb.DetailedRetentionScript{")
+	if this.Script != nil {
+		s = append(s, "Script: "+fmt.Sprintf("%#v", this.Script)+",\n")
+	}
+	s = append(s, "Contents: "+fmt.Sprintf("%#v", this.Contents)+",\n")
+	s = append(s, "ExportURL: "+fmt.Sprintf("%#v", this.ExportURL)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetRetentionScriptsResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&pluginpb.GetRetentionScriptsResponse{")
+	if this.Scripts != nil {
+		s = append(s, "Scripts: "+fmt.Sprintf("%#v", this.Scripts)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetRetentionScriptRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&pluginpb.GetRetentionScriptRequest{")
+	if this.OrgID != nil {
+		s = append(s, "OrgID: "+fmt.Sprintf("%#v", this.OrgID)+",\n")
+	}
+	if this.ScriptID != nil {
+		s = append(s, "ScriptID: "+fmt.Sprintf("%#v", this.ScriptID)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetRetentionScriptResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&pluginpb.GetRetentionScriptResponse{")
+	if this.Script != nil {
+		s = append(s, "Script: "+fmt.Sprintf("%#v", this.Script)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CreateRetentionScriptRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&pluginpb.CreateRetentionScriptRequest{")
+	if this.Script != nil {
+		s = append(s, "Script: "+fmt.Sprintf("%#v", this.Script)+",\n")
+	}
+	if this.OrgID != nil {
+		s = append(s, "OrgID: "+fmt.Sprintf("%#v", this.OrgID)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CreateRetentionScriptResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&pluginpb.CreateRetentionScriptResponse{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *UpdateRetentionScriptRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 12)
+	s = append(s, "&pluginpb.UpdateRetentionScriptRequest{")
+	if this.ScriptID != nil {
+		s = append(s, "ScriptID: "+fmt.Sprintf("%#v", this.ScriptID)+",\n")
+	}
+	if this.ScriptName != nil {
+		s = append(s, "ScriptName: "+fmt.Sprintf("%#v", this.ScriptName)+",\n")
+	}
+	if this.Description != nil {
+		s = append(s, "Description: "+fmt.Sprintf("%#v", this.Description)+",\n")
+	}
+	if this.Enabled != nil {
+		s = append(s, "Enabled: "+fmt.Sprintf("%#v", this.Enabled)+",\n")
+	}
+	if this.FrequencyS != nil {
+		s = append(s, "FrequencyS: "+fmt.Sprintf("%#v", this.FrequencyS)+",\n")
+	}
+	if this.Contents != nil {
+		s = append(s, "Contents: "+fmt.Sprintf("%#v", this.Contents)+",\n")
+	}
+	if this.ExportUrl != nil {
+		s = append(s, "ExportUrl: "+fmt.Sprintf("%#v", this.ExportUrl)+",\n")
+	}
+	if this.ClusterIDs != nil {
+		s = append(s, "ClusterIDs: "+fmt.Sprintf("%#v", this.ClusterIDs)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *UpdateRetentionScriptResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&pluginpb.UpdateRetentionScriptResponse{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func valueToGoStringService(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -1583,6 +2634,10 @@ type DataRetentionPluginServiceClient interface {
 	GetRetentionPluginsForOrg(ctx context.Context, in *GetRetentionPluginsForOrgRequest, opts ...grpc.CallOption) (*GetRetentionPluginsForOrgResponse, error)
 	GetOrgRetentionPluginConfig(ctx context.Context, in *GetOrgRetentionPluginConfigRequest, opts ...grpc.CallOption) (*GetOrgRetentionPluginConfigResponse, error)
 	UpdateOrgRetentionPluginConfig(ctx context.Context, in *UpdateOrgRetentionPluginConfigRequest, opts ...grpc.CallOption) (*UpdateOrgRetentionPluginConfigResponse, error)
+	GetRetentionScripts(ctx context.Context, in *GetRetentionScriptsRequest, opts ...grpc.CallOption) (*GetRetentionScriptsResponse, error)
+	GetRetentionScript(ctx context.Context, in *GetRetentionScriptRequest, opts ...grpc.CallOption) (*GetRetentionScriptResponse, error)
+	CreateRetentionScript(ctx context.Context, in *CreateRetentionScriptRequest, opts ...grpc.CallOption) (*CreateRetentionScriptResponse, error)
+	UpdateRetentionScript(ctx context.Context, in *UpdateRetentionScriptRequest, opts ...grpc.CallOption) (*UpdateRetentionScriptResponse, error)
 }
 
 type dataRetentionPluginServiceClient struct {
@@ -1620,11 +2675,51 @@ func (c *dataRetentionPluginServiceClient) UpdateOrgRetentionPluginConfig(ctx co
 	return out, nil
 }
 
+func (c *dataRetentionPluginServiceClient) GetRetentionScripts(ctx context.Context, in *GetRetentionScriptsRequest, opts ...grpc.CallOption) (*GetRetentionScriptsResponse, error) {
+	out := new(GetRetentionScriptsResponse)
+	err := c.cc.Invoke(ctx, "/px.services.internal.DataRetentionPluginService/GetRetentionScripts", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataRetentionPluginServiceClient) GetRetentionScript(ctx context.Context, in *GetRetentionScriptRequest, opts ...grpc.CallOption) (*GetRetentionScriptResponse, error) {
+	out := new(GetRetentionScriptResponse)
+	err := c.cc.Invoke(ctx, "/px.services.internal.DataRetentionPluginService/GetRetentionScript", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataRetentionPluginServiceClient) CreateRetentionScript(ctx context.Context, in *CreateRetentionScriptRequest, opts ...grpc.CallOption) (*CreateRetentionScriptResponse, error) {
+	out := new(CreateRetentionScriptResponse)
+	err := c.cc.Invoke(ctx, "/px.services.internal.DataRetentionPluginService/CreateRetentionScript", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataRetentionPluginServiceClient) UpdateRetentionScript(ctx context.Context, in *UpdateRetentionScriptRequest, opts ...grpc.CallOption) (*UpdateRetentionScriptResponse, error) {
+	out := new(UpdateRetentionScriptResponse)
+	err := c.cc.Invoke(ctx, "/px.services.internal.DataRetentionPluginService/UpdateRetentionScript", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DataRetentionPluginServiceServer is the server API for DataRetentionPluginService service.
 type DataRetentionPluginServiceServer interface {
 	GetRetentionPluginsForOrg(context.Context, *GetRetentionPluginsForOrgRequest) (*GetRetentionPluginsForOrgResponse, error)
 	GetOrgRetentionPluginConfig(context.Context, *GetOrgRetentionPluginConfigRequest) (*GetOrgRetentionPluginConfigResponse, error)
 	UpdateOrgRetentionPluginConfig(context.Context, *UpdateOrgRetentionPluginConfigRequest) (*UpdateOrgRetentionPluginConfigResponse, error)
+	GetRetentionScripts(context.Context, *GetRetentionScriptsRequest) (*GetRetentionScriptsResponse, error)
+	GetRetentionScript(context.Context, *GetRetentionScriptRequest) (*GetRetentionScriptResponse, error)
+	CreateRetentionScript(context.Context, *CreateRetentionScriptRequest) (*CreateRetentionScriptResponse, error)
+	UpdateRetentionScript(context.Context, *UpdateRetentionScriptRequest) (*UpdateRetentionScriptResponse, error)
 }
 
 // UnimplementedDataRetentionPluginServiceServer can be embedded to have forward compatible implementations.
@@ -1639,6 +2734,18 @@ func (*UnimplementedDataRetentionPluginServiceServer) GetOrgRetentionPluginConfi
 }
 func (*UnimplementedDataRetentionPluginServiceServer) UpdateOrgRetentionPluginConfig(ctx context.Context, req *UpdateOrgRetentionPluginConfigRequest) (*UpdateOrgRetentionPluginConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateOrgRetentionPluginConfig not implemented")
+}
+func (*UnimplementedDataRetentionPluginServiceServer) GetRetentionScripts(ctx context.Context, req *GetRetentionScriptsRequest) (*GetRetentionScriptsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRetentionScripts not implemented")
+}
+func (*UnimplementedDataRetentionPluginServiceServer) GetRetentionScript(ctx context.Context, req *GetRetentionScriptRequest) (*GetRetentionScriptResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRetentionScript not implemented")
+}
+func (*UnimplementedDataRetentionPluginServiceServer) CreateRetentionScript(ctx context.Context, req *CreateRetentionScriptRequest) (*CreateRetentionScriptResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateRetentionScript not implemented")
+}
+func (*UnimplementedDataRetentionPluginServiceServer) UpdateRetentionScript(ctx context.Context, req *UpdateRetentionScriptRequest) (*UpdateRetentionScriptResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateRetentionScript not implemented")
 }
 
 func RegisterDataRetentionPluginServiceServer(s *grpc.Server, srv DataRetentionPluginServiceServer) {
@@ -1699,6 +2806,78 @@ func _DataRetentionPluginService_UpdateOrgRetentionPluginConfig_Handler(srv inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DataRetentionPluginService_GetRetentionScripts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRetentionScriptsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataRetentionPluginServiceServer).GetRetentionScripts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/px.services.internal.DataRetentionPluginService/GetRetentionScripts",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataRetentionPluginServiceServer).GetRetentionScripts(ctx, req.(*GetRetentionScriptsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DataRetentionPluginService_GetRetentionScript_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRetentionScriptRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataRetentionPluginServiceServer).GetRetentionScript(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/px.services.internal.DataRetentionPluginService/GetRetentionScript",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataRetentionPluginServiceServer).GetRetentionScript(ctx, req.(*GetRetentionScriptRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DataRetentionPluginService_CreateRetentionScript_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateRetentionScriptRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataRetentionPluginServiceServer).CreateRetentionScript(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/px.services.internal.DataRetentionPluginService/CreateRetentionScript",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataRetentionPluginServiceServer).CreateRetentionScript(ctx, req.(*CreateRetentionScriptRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DataRetentionPluginService_UpdateRetentionScript_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateRetentionScriptRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataRetentionPluginServiceServer).UpdateRetentionScript(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/px.services.internal.DataRetentionPluginService/UpdateRetentionScript",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataRetentionPluginServiceServer).UpdateRetentionScript(ctx, req.(*UpdateRetentionScriptRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _DataRetentionPluginService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "px.services.internal.DataRetentionPluginService",
 	HandlerType: (*DataRetentionPluginServiceServer)(nil),
@@ -1714,6 +2893,22 @@ var _DataRetentionPluginService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateOrgRetentionPluginConfig",
 			Handler:    _DataRetentionPluginService_UpdateOrgRetentionPluginConfig_Handler,
+		},
+		{
+			MethodName: "GetRetentionScripts",
+			Handler:    _DataRetentionPluginService_GetRetentionScripts_Handler,
+		},
+		{
+			MethodName: "GetRetentionScript",
+			Handler:    _DataRetentionPluginService_GetRetentionScript_Handler,
+		},
+		{
+			MethodName: "CreateRetentionScript",
+			Handler:    _DataRetentionPluginService_CreateRetentionScript_Handler,
+		},
+		{
+			MethodName: "UpdateRetentionScript",
+			Handler:    _DataRetentionPluginService_UpdateRetentionScript_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -2313,6 +3508,518 @@ func (m *UpdateOrgRetentionPluginConfigResponse) MarshalToSizedBuffer(dAtA []byt
 	return len(dAtA) - i, nil
 }
 
+func (m *GetRetentionScriptsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetRetentionScriptsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetRetentionScriptsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.OrgID != nil {
+		{
+			size, err := m.OrgID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RetentionScript) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RetentionScript) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RetentionScript) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.IsPreset {
+		i--
+		if m.IsPreset {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x40
+	}
+	if m.Enabled {
+		i--
+		if m.Enabled {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x38
+	}
+	if len(m.PluginId) > 0 {
+		i -= len(m.PluginId)
+		copy(dAtA[i:], m.PluginId)
+		i = encodeVarintService(dAtA, i, uint64(len(m.PluginId)))
+		i--
+		dAtA[i] = 0x32
+	}
+	if len(m.ClusterIDs) > 0 {
+		for iNdEx := len(m.ClusterIDs) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ClusterIDs[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintService(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x2a
+		}
+	}
+	if m.FrequencyS != 0 {
+		i = encodeVarintService(dAtA, i, uint64(m.FrequencyS))
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.Description) > 0 {
+		i -= len(m.Description)
+		copy(dAtA[i:], m.Description)
+		i = encodeVarintService(dAtA, i, uint64(len(m.Description)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.ScriptName) > 0 {
+		i -= len(m.ScriptName)
+		copy(dAtA[i:], m.ScriptName)
+		i = encodeVarintService(dAtA, i, uint64(len(m.ScriptName)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.ScriptID != nil {
+		{
+			size, err := m.ScriptID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *DetailedRetentionScript) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DetailedRetentionScript) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DetailedRetentionScript) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ExportURL) > 0 {
+		i -= len(m.ExportURL)
+		copy(dAtA[i:], m.ExportURL)
+		i = encodeVarintService(dAtA, i, uint64(len(m.ExportURL)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Contents) > 0 {
+		i -= len(m.Contents)
+		copy(dAtA[i:], m.Contents)
+		i = encodeVarintService(dAtA, i, uint64(len(m.Contents)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Script != nil {
+		{
+			size, err := m.Script.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetRetentionScriptsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetRetentionScriptsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetRetentionScriptsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Scripts) > 0 {
+		for iNdEx := len(m.Scripts) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Scripts[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintService(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetRetentionScriptRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetRetentionScriptRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetRetentionScriptRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.ScriptID != nil {
+		{
+			size, err := m.ScriptID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.OrgID != nil {
+		{
+			size, err := m.OrgID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetRetentionScriptResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetRetentionScriptResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetRetentionScriptResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Script != nil {
+		{
+			size, err := m.Script.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *CreateRetentionScriptRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *CreateRetentionScriptRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CreateRetentionScriptRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.OrgID != nil {
+		{
+			size, err := m.OrgID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Script != nil {
+		{
+			size, err := m.Script.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *CreateRetentionScriptResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *CreateRetentionScriptResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CreateRetentionScriptResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *UpdateRetentionScriptRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UpdateRetentionScriptRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UpdateRetentionScriptRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ClusterIDs) > 0 {
+		for iNdEx := len(m.ClusterIDs) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ClusterIDs[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintService(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x42
+		}
+	}
+	if m.ExportUrl != nil {
+		{
+			size, err := m.ExportUrl.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x3a
+	}
+	if m.Contents != nil {
+		{
+			size, err := m.Contents.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x32
+	}
+	if m.FrequencyS != nil {
+		{
+			size, err := m.FrequencyS.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x2a
+	}
+	if m.Enabled != nil {
+		{
+			size, err := m.Enabled.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.Description != nil {
+		{
+			size, err := m.Description.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.ScriptName != nil {
+		{
+			size, err := m.ScriptName.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.ScriptID != nil {
+		{
+			size, err := m.ScriptID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *UpdateRetentionScriptResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UpdateRetentionScriptResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UpdateRetentionScriptResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintService(dAtA []byte, offset int, v uint64) int {
 	offset -= sovService(v)
 	base := offset
@@ -2575,6 +4282,203 @@ func (m *UpdateOrgRetentionPluginConfigResponse) Size() (n int) {
 	return n
 }
 
+func (m *GetRetentionScriptsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.OrgID != nil {
+		l = m.OrgID.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+
+func (m *RetentionScript) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ScriptID != nil {
+		l = m.ScriptID.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	l = len(m.ScriptName)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
+	l = len(m.Description)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
+	if m.FrequencyS != 0 {
+		n += 1 + sovService(uint64(m.FrequencyS))
+	}
+	if len(m.ClusterIDs) > 0 {
+		for _, e := range m.ClusterIDs {
+			l = e.Size()
+			n += 1 + l + sovService(uint64(l))
+		}
+	}
+	l = len(m.PluginId)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
+	if m.Enabled {
+		n += 2
+	}
+	if m.IsPreset {
+		n += 2
+	}
+	return n
+}
+
+func (m *DetailedRetentionScript) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Script != nil {
+		l = m.Script.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	l = len(m.Contents)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
+	l = len(m.ExportURL)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+
+func (m *GetRetentionScriptsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Scripts) > 0 {
+		for _, e := range m.Scripts {
+			l = e.Size()
+			n += 1 + l + sovService(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *GetRetentionScriptRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.OrgID != nil {
+		l = m.OrgID.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	if m.ScriptID != nil {
+		l = m.ScriptID.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+
+func (m *GetRetentionScriptResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Script != nil {
+		l = m.Script.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+
+func (m *CreateRetentionScriptRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Script != nil {
+		l = m.Script.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	if m.OrgID != nil {
+		l = m.OrgID.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+
+func (m *CreateRetentionScriptResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *UpdateRetentionScriptRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ScriptID != nil {
+		l = m.ScriptID.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	if m.ScriptName != nil {
+		l = m.ScriptName.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	if m.Description != nil {
+		l = m.Description.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	if m.Enabled != nil {
+		l = m.Enabled.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	if m.FrequencyS != nil {
+		l = m.FrequencyS.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	if m.Contents != nil {
+		l = m.Contents.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	if m.ExportUrl != nil {
+		l = m.ExportUrl.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	if len(m.ClusterIDs) > 0 {
+		for _, e := range m.ClusterIDs {
+			l = e.Size()
+			n += 1 + l + sovService(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *UpdateRetentionScriptResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
 func sovService(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
@@ -2769,6 +4673,137 @@ func (this *UpdateOrgRetentionPluginConfigResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&UpdateOrgRetentionPluginConfigResponse{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetRetentionScriptsRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetRetentionScriptsRequest{`,
+		`OrgID:` + strings.Replace(fmt.Sprintf("%v", this.OrgID), "UUID", "uuidpb.UUID", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *RetentionScript) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForClusterIDs := "[]*UUID{"
+	for _, f := range this.ClusterIDs {
+		repeatedStringForClusterIDs += strings.Replace(fmt.Sprintf("%v", f), "UUID", "uuidpb.UUID", 1) + ","
+	}
+	repeatedStringForClusterIDs += "}"
+	s := strings.Join([]string{`&RetentionScript{`,
+		`ScriptID:` + strings.Replace(fmt.Sprintf("%v", this.ScriptID), "UUID", "uuidpb.UUID", 1) + `,`,
+		`ScriptName:` + fmt.Sprintf("%v", this.ScriptName) + `,`,
+		`Description:` + fmt.Sprintf("%v", this.Description) + `,`,
+		`FrequencyS:` + fmt.Sprintf("%v", this.FrequencyS) + `,`,
+		`ClusterIDs:` + repeatedStringForClusterIDs + `,`,
+		`PluginId:` + fmt.Sprintf("%v", this.PluginId) + `,`,
+		`Enabled:` + fmt.Sprintf("%v", this.Enabled) + `,`,
+		`IsPreset:` + fmt.Sprintf("%v", this.IsPreset) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DetailedRetentionScript) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DetailedRetentionScript{`,
+		`Script:` + strings.Replace(this.Script.String(), "RetentionScript", "RetentionScript", 1) + `,`,
+		`Contents:` + fmt.Sprintf("%v", this.Contents) + `,`,
+		`ExportURL:` + fmt.Sprintf("%v", this.ExportURL) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetRetentionScriptsResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForScripts := "[]*RetentionScript{"
+	for _, f := range this.Scripts {
+		repeatedStringForScripts += strings.Replace(f.String(), "RetentionScript", "RetentionScript", 1) + ","
+	}
+	repeatedStringForScripts += "}"
+	s := strings.Join([]string{`&GetRetentionScriptsResponse{`,
+		`Scripts:` + repeatedStringForScripts + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetRetentionScriptRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetRetentionScriptRequest{`,
+		`OrgID:` + strings.Replace(fmt.Sprintf("%v", this.OrgID), "UUID", "uuidpb.UUID", 1) + `,`,
+		`ScriptID:` + strings.Replace(fmt.Sprintf("%v", this.ScriptID), "UUID", "uuidpb.UUID", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetRetentionScriptResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetRetentionScriptResponse{`,
+		`Script:` + strings.Replace(this.Script.String(), "DetailedRetentionScript", "DetailedRetentionScript", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreateRetentionScriptRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateRetentionScriptRequest{`,
+		`Script:` + strings.Replace(this.Script.String(), "DetailedRetentionScript", "DetailedRetentionScript", 1) + `,`,
+		`OrgID:` + strings.Replace(fmt.Sprintf("%v", this.OrgID), "UUID", "uuidpb.UUID", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreateRetentionScriptResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateRetentionScriptResponse{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *UpdateRetentionScriptRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForClusterIDs := "[]*UUID{"
+	for _, f := range this.ClusterIDs {
+		repeatedStringForClusterIDs += strings.Replace(fmt.Sprintf("%v", f), "UUID", "uuidpb.UUID", 1) + ","
+	}
+	repeatedStringForClusterIDs += "}"
+	s := strings.Join([]string{`&UpdateRetentionScriptRequest{`,
+		`ScriptID:` + strings.Replace(fmt.Sprintf("%v", this.ScriptID), "UUID", "uuidpb.UUID", 1) + `,`,
+		`ScriptName:` + strings.Replace(fmt.Sprintf("%v", this.ScriptName), "StringValue", "types.StringValue", 1) + `,`,
+		`Description:` + strings.Replace(fmt.Sprintf("%v", this.Description), "StringValue", "types.StringValue", 1) + `,`,
+		`Enabled:` + strings.Replace(fmt.Sprintf("%v", this.Enabled), "BoolValue", "types.BoolValue", 1) + `,`,
+		`FrequencyS:` + strings.Replace(fmt.Sprintf("%v", this.FrequencyS), "Int64Value", "types.Int64Value", 1) + `,`,
+		`Contents:` + strings.Replace(fmt.Sprintf("%v", this.Contents), "StringValue", "types.StringValue", 1) + `,`,
+		`ExportUrl:` + strings.Replace(fmt.Sprintf("%v", this.ExportUrl), "StringValue", "types.StringValue", 1) + `,`,
+		`ClusterIDs:` + repeatedStringForClusterIDs + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *UpdateRetentionScriptResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&UpdateRetentionScriptResponse{`,
 		`}`,
 	}, "")
 	return s
@@ -4629,6 +6664,1367 @@ func (m *UpdateOrgRetentionPluginConfigResponse) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: UpdateOrgRetentionPluginConfigResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetRetentionScriptsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetRetentionScriptsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetRetentionScriptsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OrgID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.OrgID == nil {
+				m.OrgID = &uuidpb.UUID{}
+			}
+			if err := m.OrgID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RetentionScript) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RetentionScript: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RetentionScript: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ScriptID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ScriptID == nil {
+				m.ScriptID = &uuidpb.UUID{}
+			}
+			if err := m.ScriptID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ScriptName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ScriptName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Description", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Description = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FrequencyS", wireType)
+			}
+			m.FrequencyS = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.FrequencyS |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ClusterIDs", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ClusterIDs = append(m.ClusterIDs, &uuidpb.UUID{})
+			if err := m.ClusterIDs[len(m.ClusterIDs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PluginId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PluginId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Enabled", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Enabled = bool(v != 0)
+		case 8:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IsPreset", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.IsPreset = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DetailedRetentionScript) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DetailedRetentionScript: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DetailedRetentionScript: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Script", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Script == nil {
+				m.Script = &RetentionScript{}
+			}
+			if err := m.Script.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Contents", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Contents = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExportURL", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ExportURL = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetRetentionScriptsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetRetentionScriptsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetRetentionScriptsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Scripts", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Scripts = append(m.Scripts, &RetentionScript{})
+			if err := m.Scripts[len(m.Scripts)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetRetentionScriptRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetRetentionScriptRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetRetentionScriptRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OrgID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.OrgID == nil {
+				m.OrgID = &uuidpb.UUID{}
+			}
+			if err := m.OrgID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ScriptID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ScriptID == nil {
+				m.ScriptID = &uuidpb.UUID{}
+			}
+			if err := m.ScriptID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetRetentionScriptResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetRetentionScriptResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetRetentionScriptResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Script", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Script == nil {
+				m.Script = &DetailedRetentionScript{}
+			}
+			if err := m.Script.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateRetentionScriptRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateRetentionScriptRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateRetentionScriptRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Script", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Script == nil {
+				m.Script = &DetailedRetentionScript{}
+			}
+			if err := m.Script.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OrgID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.OrgID == nil {
+				m.OrgID = &uuidpb.UUID{}
+			}
+			if err := m.OrgID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateRetentionScriptResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateRetentionScriptResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateRetentionScriptResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UpdateRetentionScriptRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UpdateRetentionScriptRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UpdateRetentionScriptRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ScriptID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ScriptID == nil {
+				m.ScriptID = &uuidpb.UUID{}
+			}
+			if err := m.ScriptID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ScriptName", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ScriptName == nil {
+				m.ScriptName = &types.StringValue{}
+			}
+			if err := m.ScriptName.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Description", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Description == nil {
+				m.Description = &types.StringValue{}
+			}
+			if err := m.Description.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Enabled", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Enabled == nil {
+				m.Enabled = &types.BoolValue{}
+			}
+			if err := m.Enabled.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FrequencyS", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.FrequencyS == nil {
+				m.FrequencyS = &types.Int64Value{}
+			}
+			if err := m.FrequencyS.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Contents", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Contents == nil {
+				m.Contents = &types.StringValue{}
+			}
+			if err := m.Contents.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExportUrl", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ExportUrl == nil {
+				m.ExportUrl = &types.StringValue{}
+			}
+			if err := m.ExportUrl.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ClusterIDs", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ClusterIDs = append(m.ClusterIDs, &uuidpb.UUID{})
+			if err := m.ClusterIDs[len(m.ClusterIDs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UpdateRetentionScriptResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UpdateRetentionScriptResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UpdateRetentionScriptResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:
