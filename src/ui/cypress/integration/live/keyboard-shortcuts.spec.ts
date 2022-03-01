@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { stubExecuteScript } from 'support/utils/grpc';
+
 describe('Live view keyboard shortcuts', () => {
   const os = Cypress.platform; // One of aix, darwin, freebsd, linux, openbsd, sunos, win32
   const useCmdKey = os === 'darwin';
@@ -31,7 +33,10 @@ describe('Live view keyboard shortcuts', () => {
     cy.url().should('contain', '/live/clusters/');
   });
 
-  beforeEach(() => cy.loginGoogle());
+  beforeEach(() => {
+    cy.loginGoogle();
+    stubExecuteScript();
+  });
 
   it('Opens shortcut help from profile menu', () => {
     cy.get('header.MuiPaper-root > .MuiToolbar-root > *:last-child').as('profile-menu-trigger');

@@ -34,6 +34,11 @@ export function interceptExecuteScript(opts: InterceptExecuteScriptOptions = {})
   return cy.intercept(url, opts.routeHandler ?? undefined);
 }
 
+/** Skip the network call for ExecuteScript. Default response code is HTTP 429 Too Many Requests. */
+export function stubExecuteScript(responseCode = 429): Cypress.Chainable<null> {
+  return interceptExecuteScript({ routeHandler: (req) => req.reply(responseCode) });
+}
+
 export interface DeserializedIntercept extends Interception {
   reqJson: ExecuteScriptRequest.AsObject;
   resJson: ExecuteScriptResponse.AsObject[];
@@ -42,7 +47,9 @@ export interface DeserializedIntercept extends Interception {
 export function waitExecuteScript(alias: string): Cypress.Chainable<DeserializedIntercept> {
   return cy.wait(alias).then(({ request, response, ...rest }: Interception) => {
     const reqJson = deserializeExecuteScriptRequest(request.body).toObject();
-    const resJson = deserializeExecuteScriptResponse(response.body).map((m) => m.toObject());
+    const resJson = response?.body.length > 0
+      ? deserializeExecuteScriptResponse(response.body).map((m) => m.toObject())
+      : [];
     return {
       ...rest,
       request,

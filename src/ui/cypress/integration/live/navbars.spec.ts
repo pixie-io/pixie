@@ -16,21 +16,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { interceptExecuteScript } from 'support/utils/grpc';
+import { stubExecuteScript } from 'support/utils/grpc';
 
 import { sidebarFooterSpec } from 'configurable/integration/live/navbars.spec';
 
 describe('Live View navbars', () => {
   before(() => {
     cy.loginGoogle();
-    interceptExecuteScript({ routeHandler: (req) => req.reply(429 /* Too many requests */) });
+    stubExecuteScript();
     cy.visit('/');
   });
 
   beforeEach(() => {
     // Re-apply one-time intercepts each run.
     cy.loginGoogle();
-    interceptExecuteScript({ routeHandler: (req) => req.reply(429 /* Too many requests */) });
+    stubExecuteScript();
     cy.get('.MuiToolbar-root').as('topbar');
   });
 

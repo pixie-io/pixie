@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { stubExecuteScript } from 'support/utils/grpc';
+
 // Tests that authentication is enforced for routes that should do so.
 // For example, most pages should redirect to `/login` if the user isn't authorized.
 // However, some routes are accessible regardless, such as the auth routes themselves.
@@ -47,6 +49,7 @@ describe('Authentication guards', () => {
     // Otherwise, the intercept isn't wired until all commands have queued.
     before(() => {
       cy.loginGoogle();
+      stubExecuteScript();
     });
 
     it('Sees us as authenticated', () => {

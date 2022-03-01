@@ -16,12 +16,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { interceptExecuteScript, waitExecuteScript } from 'support/utils/grpc';
+import { stubExecuteScript, waitExecuteScript } from 'support/utils/grpc';
 
 describe('Sidebar script shortcuts', () => {
   before(() => {
     cy.loginGoogle();
-    interceptExecuteScript().as('exec-auto');
+    stubExecuteScript().as('exec-auto');
     cy.visit('/');
   });
 
@@ -33,26 +33,23 @@ describe('Sidebar script shortcuts', () => {
   });
 
   it('Auto-runs cluster script before anything is pressed', () => {
-    waitExecuteScript('@exec-auto').then(({ response, reqJson }) => {
-      expect(response.statusCode).equal(200);
+    waitExecuteScript('@exec-auto').then(({ reqJson }) => {
       expect(reqJson.queryStr).contains("''' Cluster Overview");
     });
   });
 
   it('Executes namespace script when clicked', () => {
-    interceptExecuteScript().as('exec-namespace');
+    stubExecuteScript().as('exec-namespace');
     cy.get('header + .MuiDrawer-root a[aria-label="Namespaces"]').click();
-    waitExecuteScript('@exec-namespace').then(({ response, reqJson }) => {
-      expect(response.statusCode).equal(200);
+    waitExecuteScript('@exec-namespace').then(({ reqJson }) => {
       expect(reqJson.queryStr).contains("''' Namespaces Overview");
     });
   });
 
   it('Executes cluster script again when clicked', () => {
-    interceptExecuteScript().as('exec-cluster');
+    stubExecuteScript().as('exec-cluster');
     cy.get('header + .MuiDrawer-root a[aria-label="Cluster"]').click();
-    waitExecuteScript('@exec-cluster').then(({ response, reqJson }) => {
-      expect(response.statusCode).equal(200);
+    waitExecuteScript('@exec-cluster').then(({ reqJson }) => {
       expect(reqJson.queryStr).contains("''' Cluster Overview");
     });
   });
