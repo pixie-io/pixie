@@ -63,6 +63,25 @@ var DemoCmd = &cobra.Command{
 	},
 }
 
+var interactDemoCmd = &cobra.Command{
+	Use:   "interact",
+	Short: "Print instructions for interacting with demo post-deploy",
+	Args:  cobra.ExactArgs(1),
+	Run:   interactCmd,
+	PreRun: func(cmd *cobra.Command, args []string) {
+		pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Demo Print Interact Instructions",
+		})
+	},
+	PostRun: func(cmd *cobra.Command, args []string) {
+		pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Demo Print Interact Instructions Complete",
+		})
+	},
+}
+
 var listDemoCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List available demo apps",
@@ -131,9 +150,45 @@ func init() {
 	DemoCmd.PersistentFlags().String("artifacts", "https://storage.googleapis.com/pixie-prod-artifacts/prod-demo-apps", "The path to the demo apps")
 	viper.BindPFlag("artifacts", DemoCmd.PersistentFlags().Lookup("artifacts"))
 
+	DemoCmd.AddCommand(interactDemoCmd)
 	DemoCmd.AddCommand(listDemoCmd)
 	DemoCmd.AddCommand(deployDemoCmd)
 	DemoCmd.AddCommand(deleteDemoCmd)
+}
+
+func interactCmd(cmd *cobra.Command, args []string) {
+	appName := args[0]
+
+	var err error
+	defer func() {
+		if err == nil {
+			return
+		}
+		pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Demo Print Interact Instructions Error",
+			Properties: analytics.NewProperties().
+				Set("error", err.Error()),
+		})
+	}()
+
+	manifest, err := downloadManifest(viper.GetString("artifacts"))
+	if err != nil {
+		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
+		log.WithError(err).Fatal("Could not download manifest file")
+	}
+	appSpec, ok := manifest[appName]
+	// When a demo app is deprecated, its contents will be set to null in manifest.json.
+	if !ok || appSpec == nil {
+		utils.Fatalf("%s is not a supported demo app", appName)
+	}
+	instructions := strings.Join(appSpec.Instructions, "\n")
+
+	p := func(s string, a ...interface{}) {
+		fmt.Fprintf(os.Stderr, s, a...)
+	}
+	p(color.CyanString("Post-deploy instructions for %s demo app:\n\n", args[0]))
+	p(instructions + "\n\n")
 }
 
 func listCmd(cmd *cobra.Command, args []string) {
