@@ -32,10 +32,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/cloud/vzmgr/vzerrors"
 	"px.dev/pixie/src/cloud/vzmgr/vzmgrpb"
-	"px.dev/pixie/src/shared/services/authcontext"
 	"px.dev/pixie/src/utils"
 )
 
@@ -60,9 +58,14 @@ func New(db *sqlx.DB, dbKey string) *Service {
 
 // Create a key with the org/user as an owner.
 func (s *Service) Create(ctx context.Context, req *vzmgrpb.CreateDeploymentKeyRequest) (*vzmgrpb.DeploymentKey, error) {
-	sCtx, err := authcontext.FromContext(ctx)
+	orgID, err := utils.UUIDFromProto(req.OrgID)
 	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, err.Error())
+		return nil, status.Error(codes.InvalidArgument, "invalid org id format")
+	}
+
+	userID, err := utils.UUIDFromProto(req.UserID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid user id format")
 	}
 
 	var id uuid.UUID
@@ -75,8 +78,7 @@ func (s *Service) Create(ctx context.Context, req *vzmgrpb.CreateDeploymentKeyRe
 		return nil, err
 	}
 	key := deployKeyPrefix + keyID.String()
-	err = s.db.QueryRowxContext(ctx, query,
-		sCtx.Claims.GetUserClaims().OrgID, sCtx.Claims.GetUserClaims().UserID, key, s.dbKey, req.Desc).
+	err = s.db.QueryRowxContext(ctx, query, orgID, userID, key, s.dbKey, req.Desc).
 		Scan(&id, &ts)
 	if err != nil {
 		log.WithError(err).Error("Failed to insert deployment keys")
@@ -93,9 +95,9 @@ func (s *Service) Create(ctx context.Context, req *vzmgrpb.CreateDeploymentKeyRe
 
 // List returns all the keys belonging to an org.
 func (s *Service) List(ctx context.Context, req *vzmgrpb.ListDeploymentKeyRequest) (*vzmgrpb.ListDeploymentKeyResponse, error) {
-	sCtx, err := authcontext.FromContext(ctx)
+	orgID, err := utils.UUIDFromProto(req.OrgID)
 	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, err.Error())
+		return nil, status.Error(codes.InvalidArgument, "invalid org id format")
 	}
 
 	// Return all clusters when the OrgID matches.
@@ -103,7 +105,7 @@ func (s *Service) List(ctx context.Context, req *vzmgrpb.ListDeploymentKeyReques
                 FROM vizier_deployment_keys
                 WHERE org_id=$1
                 ORDER BY created_at`
-	rows, err := s.db.QueryxContext(ctx, query, sCtx.Claims.GetUserClaims().OrgID)
+	rows, err := s.db.QueryxContext(ctx, query, orgID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return &vzmgrpb.ListDeploymentKeyResponse{}, nil
@@ -141,25 +143,24 @@ func (s *Service) List(ctx context.Context, req *vzmgrpb.ListDeploymentKeyReques
 
 // Get returns a specific key if it's owned by the org.
 func (s *Service) Get(ctx context.Context, req *vzmgrpb.GetDeploymentKeyRequest) (*vzmgrpb.GetDeploymentKeyResponse, error) {
-	sCtx, err := authcontext.FromContext(ctx)
+	orgID, err := utils.UUIDFromProto(req.OrgID)
 	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, err.Error())
+		return nil, status.Error(codes.InvalidArgument, "invalid org id format")
 	}
 	tokenID, err := utils.UUIDFromProto(req.ID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid id format")
 	}
 
-	var orgID uuid.UUID
 	var userID uuid.UUID
 	var key string
 	var createdAt time.Time
 	var desc string
-	query := `SELECT CONVERT_FROM(PGP_SYM_DECRYPT(encrypted_key, $3::text)::bytea, 'UTF8'), org_id, user_id, created_at, description
+	query := `SELECT CONVERT_FROM(PGP_SYM_DECRYPT(encrypted_key, $3::text)::bytea, 'UTF8'), user_id, created_at, description
                 FROM vizier_deployment_keys
                 WHERE org_id=$1 AND id=$2`
-	err = s.db.QueryRowxContext(ctx, query, sCtx.Claims.GetUserClaims().OrgID, tokenID, s.dbKey).
-		Scan(&key, &orgID, &userID, &createdAt, &desc)
+	err = s.db.QueryRowxContext(ctx, query, orgID, tokenID, s.dbKey).
+		Scan(&key, &userID, &createdAt, &desc)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "No such deployment key")
 	}
@@ -176,20 +177,19 @@ func (s *Service) Get(ctx context.Context, req *vzmgrpb.GetDeploymentKeyRequest)
 }
 
 // Delete will remove the key.
-func (s *Service) Delete(ctx context.Context, req *uuidpb.UUID) (*types.Empty, error) {
-	sCtx, err := authcontext.FromContext(ctx)
+func (s *Service) Delete(ctx context.Context, req *vzmgrpb.DeleteDeploymentKeyRequest) (*types.Empty, error) {
+	tokenID, err := utils.UUIDFromProto(req.ID)
 	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, err.Error())
+		return nil, status.Error(codes.InvalidArgument, "invalid deploy key id format")
 	}
-
-	tokenID, err := utils.UUIDFromProto(req)
+	orgID, err := utils.UUIDFromProto(req.OrgID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "invalid id format")
+		return nil, status.Error(codes.InvalidArgument, "invalid org id format")
 	}
 
 	query := `DELETE FROM vizier_deployment_keys
                 WHERE org_id=$1 AND id=$2`
-	res, err := s.db.ExecContext(ctx, query, sCtx.Claims.GetUserClaims().OrgID, tokenID)
+	res, err := s.db.ExecContext(ctx, query, orgID, tokenID)
 	if err != nil {
 		log.WithError(err).Error("Failed to delete deployment token")
 		return nil, status.Error(codes.Internal, "failed to delete deployment token")
@@ -227,20 +227,12 @@ func (s *Service) FetchOrgUserIDUsingDeploymentKey(ctx context.Context, key stri
 
 // LookupDeploymentKey gets the complete Deployment key information using just the Key.
 func (s *Service) LookupDeploymentKey(ctx context.Context, req *vzmgrpb.LookupDeploymentKeyRequest) (*vzmgrpb.LookupDeploymentKeyResponse, error) {
-	aCtx, err := authcontext.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	orgID := aCtx.Claims.GetUserClaims().OrgID
 	resp, err := s.fetchDeploymentKeyUsingKeyFromDB(ctx, req.Key)
 	if err != nil {
 		if err == vzerrors.ErrDeploymentKeyNotFound {
-			return nil, status.Error(codes.NotFound, err.Error())
+			return nil, status.Error(codes.NotFound, "deployment key not found")
 		}
 		return nil, status.Error(codes.Internal, err.Error())
-	}
-	if utils.UUIDFromProtoOrNil(resp.OrgID).String() != orgID {
-		return nil, status.Error(codes.PermissionDenied, "permission denied deleting API key")
 	}
 	return &vzmgrpb.LookupDeploymentKeyResponse{Key: resp}, nil
 }

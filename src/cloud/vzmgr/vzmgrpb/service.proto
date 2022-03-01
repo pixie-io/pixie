@@ -97,7 +97,7 @@ service VZDeploymentKeyService {
   // Get the key specified by ID.
   rpc Get(GetDeploymentKeyRequest) returns (GetDeploymentKeyResponse);
   // Delete the Key specified by ID.
-  rpc Delete(uuidpb.UUID) returns (google.protobuf.Empty);
+  rpc Delete(DeleteDeploymentKeyRequest) returns (google.protobuf.Empty);
   // Lookup the Deployment key information by the key value.
   rpc LookupDeploymentKey(LookupDeploymentKeyRequest) returns (LookupDeploymentKeyResponse);
 }
@@ -134,11 +134,12 @@ message DeploymentKey {
 message CreateDeploymentKeyRequest {
   // Description for the key.
   string desc = 1;
+  uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
+  uuidpb.UUID user_id = 3 [(gogoproto.customname) = "UserID"];
 }
 
 message ListDeploymentKeyRequest {
-  // Empty message on purpose so we can extend with attributes easily if needed.
-
+  uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
 }
 
 message ListDeploymentKeyResponse {
@@ -147,10 +148,16 @@ message ListDeploymentKeyResponse {
 
 message GetDeploymentKeyRequest {
   uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
 }
 
 message GetDeploymentKeyResponse {
   DeploymentKey key = 1;
+}
+
+message DeleteDeploymentKeyRequest {
+  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
 }
 
 message LookupDeploymentKeyRequest {

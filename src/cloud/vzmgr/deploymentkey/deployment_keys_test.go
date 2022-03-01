@@ -127,7 +127,11 @@ func TestDeploymentKeyService_CreateDeploymentKey(t *testing.T) {
 
 			ctx := test.ctx
 			svc := New(db, testDBKey)
-			resp, err := svc.Create(ctx, &vzmgrpb.CreateDeploymentKeyRequest{Desc: "this is a key"})
+			resp, err := svc.Create(ctx, &vzmgrpb.CreateDeploymentKeyRequest{
+				OrgID:  utils.ProtoFromUUID(testAuthOrgID),
+				UserID: utils.ProtoFromUUID(testAuthUserID),
+				Desc:   "this is a key",
+			})
 			require.NoError(t, err)
 			assert.NotNil(t, resp)
 
@@ -168,7 +172,9 @@ func TestDeploymentKeyService_ListDeploymentKeys(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := test.ctx
 			svc := New(db, testDBKey)
-			resp, err := svc.List(ctx, &vzmgrpb.ListDeploymentKeyRequest{})
+			resp, err := svc.List(ctx, &vzmgrpb.ListDeploymentKeyRequest{
+				OrgID: utils.ProtoFromUUID(testAuthOrgID),
+			})
 			require.NoError(t, err)
 			assert.NotNil(t, resp)
 			assert.Equal(t, 2, len(resp.Keys))
@@ -197,18 +203,6 @@ func TestDeploymentKeyService_ListDeploymentKeys(t *testing.T) {
 	}
 }
 
-func TestDeploymentKeyService_ListDeploymentKeys_MissingAuth(t *testing.T) {
-	mustLoadTestData(db)
-
-	ctx := context.Background()
-	svc := New(db, testDBKey)
-	resp, err := svc.List(ctx, &vzmgrpb.ListDeploymentKeyRequest{})
-	assert.Nil(t, resp)
-	assert.NotNil(t, err)
-
-	assert.Equal(t, codes.Unauthenticated, status.Code(err))
-}
-
 func TestDeploymentKeyService_Get(t *testing.T) {
 	mustLoadTestData(db)
 	tests := []struct {
@@ -231,7 +225,8 @@ func TestDeploymentKeyService_Get(t *testing.T) {
 			svc := New(db, testDBKey)
 
 			resp, err := svc.Get(ctx, &vzmgrpb.GetDeploymentKeyRequest{
-				ID: utils.ProtoFromUUID(testKey1ID),
+				ID:    utils.ProtoFromUUID(testKey1ID),
+				OrgID: utils.ProtoFromUUID(testAuthOrgID),
 			})
 
 			require.NoError(t, err)
@@ -277,7 +272,8 @@ func TestDeploymentKeyService_Get_UnownedID(t *testing.T) {
 			svc := New(db, testDBKey)
 
 			resp, err := svc.Get(ctx, &vzmgrpb.GetDeploymentKeyRequest{
-				ID: utils.ProtoFromUUID(testKey3ID),
+				ID:    utils.ProtoFromUUID(testKey3ID),
+				OrgID: utils.ProtoFromUUID(testAuthOrgID),
 			})
 			assert.Nil(t, resp)
 			assert.NotNil(t, err)
@@ -310,7 +306,8 @@ func TestDeploymentKeyService_Get_NonExistentID(t *testing.T) {
 
 			u := uuid.Must(uuid.NewV4())
 			resp, err := svc.Get(ctx, &vzmgrpb.GetDeploymentKeyRequest{
-				ID: utils.ProtoFromUUID(u),
+				ID:    utils.ProtoFromUUID(u),
+				OrgID: utils.ProtoFromUUID(testAuthOrgID),
 			})
 			assert.Nil(t, resp)
 			assert.NotNil(t, err)
@@ -343,12 +340,16 @@ func TestDeploymentKeyService_Delete(t *testing.T) {
 			svc := New(db, testDBKey)
 
 			u := utils.ProtoFromUUID(testKey1ID)
-			resp, err := svc.Delete(ctx, u)
+			resp, err := svc.Delete(ctx, &vzmgrpb.DeleteDeploymentKeyRequest{
+				OrgID: utils.ProtoFromUUID(testAuthOrgID),
+				ID:    u,
+			})
 			require.NoError(t, err)
 			assert.NotNil(t, resp)
 
 			_, err = svc.Get(ctx, &vzmgrpb.GetDeploymentKeyRequest{
-				ID: u,
+				OrgID: utils.ProtoFromUUID(testAuthOrgID),
+				ID:    u,
 			})
 			assert.Equal(t, codes.NotFound, status.Code(err))
 		})
@@ -378,7 +379,10 @@ func TestDeploymentKeyService_Delete_UnownedKey(t *testing.T) {
 			svc := New(db, testDBKey)
 
 			u := utils.ProtoFromUUID(testKey3ID)
-			resp, err := svc.Delete(ctx, u)
+			resp, err := svc.Delete(ctx, &vzmgrpb.DeleteDeploymentKeyRequest{
+				OrgID: utils.ProtoFromUUID(testAuthOrgID),
+				ID:    u,
+			})
 			assert.NotNil(t, err)
 			assert.Nil(t, resp)
 			assert.Equal(t, codes.NotFound, status.Code(err))
@@ -418,7 +422,10 @@ func TestDeploymentKeyService_Delete_NonExistentKey(t *testing.T) {
 			svc := New(db, testDBKey)
 
 			u := uuid.Must(uuid.NewV4())
-			resp, err := svc.Delete(ctx, utils.ProtoFromUUID(u))
+			resp, err := svc.Delete(ctx, &vzmgrpb.DeleteDeploymentKeyRequest{
+				OrgID: utils.ProtoFromUUID(testAuthOrgID),
+				ID:    utils.ProtoFromUUID(u),
+			})
 			assert.NotNil(t, err)
 			assert.Nil(t, resp)
 			assert.Equal(t, codes.NotFound, status.Code(err))
@@ -540,34 +547,6 @@ func TestService_LookupDeploymentKey(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, testAuthOrgID, utils.UUIDFromProtoOrNil(resp.Key.OrgID))
 			assert.Equal(t, testAuthUserID, utils.UUIDFromProtoOrNil(resp.Key.UserID))
-		})
-	}
-}
-
-func TestService_LookupDeploymentKey_NonAuth(t *testing.T) {
-	mustLoadTestData(db)
-	tests := []struct {
-		name string
-		ctx  context.Context
-	}{
-		{
-			name: "regular user",
-			ctx:  createTestContext(),
-		},
-		{
-			name: "api user",
-			ctx:  createTestAPIUserContext(),
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			ctx := test.ctx
-			svc := New(db, testDBKey)
-
-			resp, err := svc.LookupDeploymentKey(ctx, &vzmgrpb.LookupDeploymentKeyRequest{Key: "px-dep-key3"})
-			require.Error(t, err)
-			assert.Nil(t, resp)
 		})
 	}
 }

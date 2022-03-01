@@ -22,10 +22,15 @@ import (
 	"context"
 
 	"github.com/gogo/protobuf/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
+	apiUtils "px.dev/pixie/src/api/go/pxapi/utils"
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/cloud/vzmgr/vzmgrpb"
+	"px.dev/pixie/src/shared/services/authcontext"
+	"px.dev/pixie/src/utils"
 )
 
 // VizierDeploymentKeyServer is the server that implements the VizierDeploymentKeyManager gRPC service.
@@ -60,8 +65,23 @@ func (v *VizierDeploymentKeyServer) Create(ctx context.Context, req *cloudpb.Cre
 	if err != nil {
 		return nil, err
 	}
-
-	resp, err := v.VzDeploymentKey.Create(ctx, &vzmgrpb.CreateDeploymentKeyRequest{Desc: req.Desc})
+	aCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+	orgID := apiUtils.ProtoFromUUIDStrOrNil(aCtx.Claims.GetUserClaims().OrgID)
+	if orgID == nil {
+		return nil, status.Error(codes.Internal, "error parsing org ID as UUID")
+	}
+	userID := apiUtils.ProtoFromUUIDStrOrNil(aCtx.Claims.GetUserClaims().UserID)
+	if userID == nil {
+		return nil, status.Error(codes.Internal, "error parsing user ID as UUID")
+	}
+	resp, err := v.VzDeploymentKey.Create(ctx, &vzmgrpb.CreateDeploymentKeyRequest{
+		Desc:   req.Desc,
+		OrgID:  orgID,
+		UserID: userID,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -74,8 +94,18 @@ func (v *VizierDeploymentKeyServer) List(ctx context.Context, req *cloudpb.ListD
 	if err != nil {
 		return nil, err
 	}
+	aCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+	orgID := apiUtils.ProtoFromUUIDStrOrNil(aCtx.Claims.GetUserClaims().OrgID)
+	if orgID == nil {
+		return nil, status.Error(codes.Internal, "error parsing org ID as UUID")
+	}
 
-	resp, err := v.VzDeploymentKey.List(ctx, &vzmgrpb.ListDeploymentKeyRequest{})
+	resp, err := v.VzDeploymentKey.List(ctx, &vzmgrpb.ListDeploymentKeyRequest{
+		OrgID: orgID,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -94,9 +124,18 @@ func (v *VizierDeploymentKeyServer) Get(ctx context.Context, req *cloudpb.GetDep
 	if err != nil {
 		return nil, err
 	}
+	aCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	orgID := apiUtils.ProtoFromUUIDStrOrNil(aCtx.Claims.GetUserClaims().OrgID)
+	if orgID == nil {
+		return nil, status.Error(codes.Internal, "error parsing org ID as UUID")
+	}
 
 	resp, err := v.VzDeploymentKey.Get(ctx, &vzmgrpb.GetDeploymentKeyRequest{
-		ID: req.ID,
+		ID:    req.ID,
+		OrgID: orgID,
 	})
 	if err != nil {
 		return nil, err
@@ -112,7 +151,21 @@ func (v *VizierDeploymentKeyServer) Delete(ctx context.Context, uuid *uuidpb.UUI
 	if err != nil {
 		return nil, err
 	}
-	return v.VzDeploymentKey.Delete(ctx, uuid)
+	aCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	orgID := apiUtils.ProtoFromUUIDStrOrNil(aCtx.Claims.GetUserClaims().OrgID)
+	if orgID == nil {
+		return nil, status.Error(codes.Internal, "error parsing org ID as UUID")
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	return v.VzDeploymentKey.Delete(ctx, &vzmgrpb.DeleteDeploymentKeyRequest{
+		OrgID: orgID,
+	})
 }
 
 // LookupDeploymentKey gets the complete API key information using just the Key.
@@ -121,9 +174,18 @@ func (v *VizierDeploymentKeyServer) LookupDeploymentKey(ctx context.Context, req
 	if err != nil {
 		return nil, err
 	}
+	aCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	resp, err := v.VzDeploymentKey.LookupDeploymentKey(ctx, &vzmgrpb.LookupDeploymentKeyRequest{Key: req.Key})
 	if err != nil {
 		return nil, err
 	}
+	if utils.UUIDFromProtoOrNil(resp.Key.OrgID).String() != aCtx.Claims.GetUserClaims().OrgID {
+		return nil, status.Error(codes.NotFound, "deployment key not found")
+	}
+
 	return &cloudpb.LookupDeploymentKeyResponse{Key: deployKeyToCloudAPI(resp.Key)}, nil
 }
