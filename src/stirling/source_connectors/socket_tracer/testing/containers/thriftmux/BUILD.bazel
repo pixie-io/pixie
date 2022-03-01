@@ -14,6 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@package_bundle//file:packages.bzl", "packages")
 load("@io_bazel_rules_docker//java:image.bzl", "DEFAULT_JAVA_BASE", "jar_app_layer")
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 load("@io_bazel_rules_docker//container:container.bzl", "container_layer", "container_image")
@@ -100,6 +101,15 @@ scrooge_scala_library(
     ],
 )
 
+scala_library(
+    name = "logging",
+    deps = [
+        "@maven//:org_slf4j_slf4j_api",
+        "@maven//:ch_qos_logback_logback_core",
+        "@maven//:ch_qos_logback_logback_classic",
+    ],
+)
+
 scala_binary(
     name = "server_bin",
     srcs = glob(["**/*.scala"]),
@@ -122,6 +132,9 @@ container_image(
     name = "thriftmux_base",
     base = DEFAULT_JAVA_BASE,
     tars = [":ssl_keys"],
+    debs = [
+        packages["libcrypt1"],
+    ]
 )
 
 scala_image(
@@ -131,5 +144,6 @@ scala_image(
     main_class = "Server",
     deps = [
         ":thriftmux_scrooge",
+        ":logging",
     ],
 )

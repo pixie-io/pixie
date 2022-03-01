@@ -31,6 +31,9 @@ def thrift_deps(scala_version):
             "com.twitter:scrooge-core_%s:%s" % (scala_minor_version, finagle_version),
             "com.twitter:finagle-http_%s:%s" % (scala_minor_version, finagle_version),
             "org.apache.thrift:libthrift:0.10.0",
+            "org.slf4j:slf4j-api:1.7.36",
+            "ch.qos.logback:logback-core:1.2.10",
+            "ch.qos.logback:logback-classic:1.2.10",
         ],
         repositories = ["https://repo1.maven.org/maven2"],
     )

@@ -52,6 +52,7 @@ def _package_manager_setup():
             "libsasl2-2",
             "libssl1.1",
             "libgcc1",
+            "libcrypt1",
         ],
         sources = ["@debian_sid//file:Packages.json"],
     )
