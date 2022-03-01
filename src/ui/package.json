@@ -77,8 +77,8 @@
     "url-loader": "^4.1.1",
     "webpack": "^5.51.2",
     "webpack-bundle-analyzer": "^4.4.2",
-    "webpack-cli": "^4.2.0",
-    "webpack-dev-server": "^3.11.0",
+    "webpack-cli": "^4.9.2",
+    "webpack-dev-server": "^4.7.4",
     "webpack-plugin-replace": "^1.2.0"
   },
   "license": "SEE LICENSE IN LICENSE.txt",
@@ -191,7 +191,6 @@
   "resolutions": {
     "@types/react": "^17.0.2",
     "axios": "^0.21.4",
-    "http-proxy-middleware": "0.19.2",
     "jimp": "^0.16.1",
     "multicast-dns": "7.2.3",
     "resize-img": "^2.0.0",

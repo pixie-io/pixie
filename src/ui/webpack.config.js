@@ -87,12 +87,24 @@ const webpackConfig = {
   context: resolve(__dirname, 'src'),
   devtool: false, // We use the SourceMapDevToolPlugin to generate source-maps.
   devServer: {
-    contentBase: resolve(__dirname, 'dist'),
-    https: true,
-    disableHostCheck: true,
+    static: {
+      directory: resolve(__dirname, 'dist'),
+    },
+    server: {
+      type: 'https',
+    },
+    client: {
+      overlay: {
+        errors: true,
+        warnings: false,
+      },
+    },
+    allowedHosts: 'all',
     hot: true,
-    writeToDisk: true,
-    publicPath: '/static',
+    devMiddleware: {
+      publicPath: '/static',
+      writeToDisk: true,
+    },
     historyApiFallback: {
       disableDotRule: true,
     },
@@ -309,12 +321,12 @@ module.exports = (env, argv) => {
   if (process.env.SELFSIGN_CERT_FILE && process.env.SELFSIGN_CERT_KEY) {
     const cert = fs.readFileSync(process.env.SELFSIGN_CERT_FILE);
     const key = fs.readFileSync(process.env.SELFSIGN_CERT_KEY);
-    webpackConfig.devServer.https = { key, cert };
+    webpackConfig.devServer.server.options = { key, cert };
   } else {
     const credsEnv = environment === 'base' ? 'dev' : environment;
     const credsYAML = utils.readYAMLFile(join(topLevelDir,
       'credentials', 'k8s', credsEnv, 'cloud_proxy_tls_certs.yaml'), true);
-    webpackConfig.devServer.https = {
+    webpackConfig.devServer.server.options = {
       key: credsYAML.stringData['tls.key'],
       cert: credsYAML.stringData['tls.crt'],
     };
