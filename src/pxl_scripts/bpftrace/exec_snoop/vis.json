@@ -1,0 +1,39 @@
+ {
+    "variables": [
+        {
+            "name": "command_filter",
+            "type": "PX_STRING",
+            "description": "The full/partial name of the command on which to filter.",
+            "defaultValue": ""
+        }
+    ],
+    "globalFuncs": [
+        {
+            "outputName": "results",
+            "func": {
+                "name": "exec_snoop_func",
+                "args": [
+                    {
+                        "name": "command_substr",
+                        "variable": "command_filter"
+                    }
+                ]
+            }
+        }
+    ],
+    "widgets": [
+        {
+            "name": "Results",
+            "position": {
+                "x": 0,
+                "y": 0,
+                "w": 12,
+                "h": 5
+            },
+            "globalFuncOutputName": "results",
+            "displaySpec": {
+                "@type": "types.px.dev/px.vispb.Table"
+            }
+        }
+    ]
+}

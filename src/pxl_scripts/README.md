@@ -5,9 +5,9 @@ Pixie open sources all of its scripts, which serve as examples of scripting in t
 To learn more about PxL, take a look at the [reference documentation](https://docs.px.dev/reference/pxl) or [tutorials](https://docs.px.dev/tutorials/pxl-scripts/write-pxl-scripts/).
 
 To update this README, run `make update_readme` in this directory.
-
 - bpftrace/[capable](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/bpftrace/capable): Traces calls to the kernel cap_capable() function, which does security capability checks.
 - bpftrace/[dc_snoop](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/bpftrace/dc_snoop): Traces directory entry cache (dcache) lookups.
+- bpftrace/[exec_snoop](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/bpftrace/exec_snoop): Tracing file system sync events.
 - bpftrace/[md_flush](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/bpftrace/md_flush): Traces flushes at the md driver level, and prints details.
 - bpftrace/[nap_time](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/bpftrace/nap_time): Tracing application sleeps via the nanosleep(2) syscall.
 - bpftrace/[oom_kill](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/bpftrace/oom_kill): Traces the Linux out-of-memory (OOM) killer and shows basic details on one line per OOM kill.

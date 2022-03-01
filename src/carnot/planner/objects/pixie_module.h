@@ -152,8 +152,8 @@ class PixieModule : public QLObject {
   unique PID and is a Pixie concept to ensure tracked processes are unique in time and across
   nodes.
 
-  Note: Creating this value from scratch might be very difficult, espeically given the nanosecond timestamp.
-  It's probably only useful if you find the UPID printed out as it's consitituent components.
+  Note: Creating this value from scratch might be very difficult, especially given the nanosecond timestamp.
+  It's probably only useful if you find the UPID printed out as it's constituent components.
 
   In most situations, you might find that `px.uint128` is a better option as we often render UPID as uuid.
 
