@@ -23,10 +23,14 @@ REPOSITORY_LOCATIONS = dict(
         ],
     ),
     io_bazel_rules_go = dict(
-        sha256 = "d6b2513456fe2229811da7eb67a444be7785f5323c6708b38d851d2b51e54d83",
+        # Upgrading this dep causes gcc build to break.
+        # This seems to be a misconfiguration on our side combined with the following change.
+        # https://github.com/bazelbuild/rules_go/commit/1f156d822e5e05d8fb0f1a4f9be2653166487eab
+        # TODO(zasgar): Fix our config and then upgrade rules_go.
+        sha256 = "8e968b5fcea1d2d64071872b12737bbb5514524ee5f0a4f54f5920266c261acb",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.30.0/rules_go-v0.30.0.zip",
-            "https://github.com/bazelbuild/rules_go/releases/download/v0.30.0/rules_go-v0.30.0.zip",
+            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.28.0/rules_go-v0.28.0.zip",
+            "https://github.com/bazelbuild/rules_go/releases/download/v0.28.0/rules_go-v0.28.0.zip",
         ],
     ),
     io_bazel_rules_scala = dict(
