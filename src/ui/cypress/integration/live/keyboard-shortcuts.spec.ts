@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { stubExecuteScript } from 'support/utils/grpc';
+import { stubExecuteScript, waitExecuteScript } from 'support/utils/grpc';
 
 describe('Live view keyboard shortcuts', () => {
   const os = Cypress.platform; // One of aix, darwin, freebsd, linux, openbsd, sunos, win32
@@ -29,13 +29,15 @@ describe('Live view keyboard shortcuts', () => {
   before(() => {
     cy.loginGoogle();
     cy.visit('/');
-    // Wait for live view to load
+
+    // Wait for live view to load, and stub the automatic script run
+    stubExecuteScript().as('exec-auto');
     cy.url().should('contain', '/live/clusters/');
+    cy.wait('@exec-auto');
   });
 
   beforeEach(() => {
     cy.loginGoogle();
-    stubExecuteScript();
   });
 
   it('Opens shortcut help from profile menu', () => {
@@ -90,6 +92,12 @@ describe('Live view keyboard shortcuts', () => {
     cy.get(selector).should('not.be.visible');
   });
 
-  // TODO(nick,PC-1424): Check that Ctrl/Cmd+Enter executes the same script script that's already chosen
-  it('Re-runs the current script');
+  it('Re-runs the current script', () => {
+    stubExecuteScript().as('repeat-exec'); // Not the original run (already waited on)
+    const hotkey = `${useCmdKey ? '{cmd}' : '{ctrl}'}{enter}`;
+    cy.get('body').type(hotkey);
+    waitExecuteScript('@repeat-exec').then(({ reqJson }) => {
+      expect(reqJson.queryStr).contains("''' Cluster Overview");
+    });
+  });
 });
