@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <absl/strings/ascii.h>
 #include <gtest/gtest.h>
 #include <memory>
 
@@ -34,23 +35,207 @@ namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
-class OTelExportTest : public QLObjectTest {
+struct TestColumnConfig {
+  std::string column_name;
+  // Types that work for the column.
+  std::vector<types::DataType> working_types;
+  // Types that don't work.
+  types::DataType bad_type;
+};
+struct TestCase {
+  std::string name;
+  std::string otel_export_expression;
+  std::string otel_export_pb;
+  std::vector<TestColumnConfig> allowed_column_types;
+};
+
+class OTelExportTest : public QLObjectTest, public ::testing::WithParamInterface<TestCase> {
  protected:
   void SetUp() override {
     QLObjectTest::SetUp();
     var_table = VarTable::Create();
 
     ASSERT_OK_AND_ASSIGN(auto oteltrace, OTelTraceModule::Create(ast_visitor.get()));
+    ASSERT_OK_AND_ASSIGN(auto otelmetric, OTelMetricsModule::Create(ast_visitor.get()));
     ASSERT_OK_AND_ASSIGN(auto endpoint, EndpointConfig::Create(ast_visitor.get(), "", {}));
     var_table->Add("oteltrace", oteltrace);
+    var_table->Add("otelmetric", otelmetric);
     var_table->Add("Endpoint", endpoint);
+  }
+
+  StatusOr<QLObjectPtr> ParseExpression(const std::string& expr) {
+    std::string var = "sp";
+    std::string script =
+        absl::Substitute("$0 = $1", var, std::string(absl::StripLeadingAsciiWhitespace(expr)));
+    PL_RETURN_IF_ERROR(ParseScript(var_table, script));
+    return var_table->Lookup(var);
+  }
+
+  StatusOr<OTelExportSinkIR*> ParseOutOTelExportIR(const std::string& otel_export_expression,
+                                                   table_store::schema::Relation relation) {
+    (*compiler_state->relation_map())["table"] = std::move(relation);
+    PL_ASSIGN_OR_RETURN(auto sp, ParseExpression(otel_export_expression));
+    auto exporter = static_cast<Exporter*>(sp.get());
+    auto src = MakeMemSource("table");
+    auto df = Dataframe::Create(src, ast_visitor.get()).ConsumeValueOrDie();
+    PL_RETURN_IF_ERROR(exporter->Export(ast, df.get()));
+    auto child = src->Children();
+    auto otel_sink = static_cast<OTelExportSinkIR*>(child[0]);
+    PL_RETURN_IF_ERROR(src->ResolveType(compiler_state.get()));
+    otel_sink->PullParentTypes();
+    return otel_sink;
   }
 
   std::shared_ptr<VarTable> var_table;
 };
 
-TEST_F(OTelExportTest, create_and_export_span) {
-  std::string outpb = R"pb(
+TEST_P(OTelExportTest, parse_expression_and_output_protobuf) {
+  auto tc = GetParam();
+  ASSERT_OK_AND_ASSIGN(auto sp, ParseExpression(tc.otel_export_expression));
+  ASSERT_TRUE(Exporter::IsExporter(sp));
+  auto exporter = static_cast<Exporter*>(sp.get());
+  auto src = MakeMemSource("table");
+  auto df = Dataframe::Create(src, ast_visitor.get()).ConsumeValueOrDie();
+  ASSERT_OK(exporter->Export(ast, df.get()));
+  auto otel_sink = static_cast<OTelExportSinkIR*>(src->Children()[0]);
+
+  planpb::Operator op;
+  ASSERT_OK(otel_sink->ToProto(&op));
+  EXPECT_THAT(op, testing::proto::EqualsProto(tc.otel_export_pb));
+}
+
+TEST_P(OTelExportTest, succeed_on_correct_columns) {
+  auto tc = GetParam();
+  for (size_t i = 0; i < tc.allowed_column_types.size(); ++i) {
+    // Skip those columns where there are no alternative types. Those are tested by other tests.
+    for (size_t k = 0; k < tc.allowed_column_types[i].working_types.size(); ++k) {
+      // Create a relation where the ith column
+      auto relation = table_store::schema::Relation();
+      for (const auto& [j, type] : Enumerate(tc.allowed_column_types)) {
+        if (j == i) {
+          relation.AddColumn(type.working_types[k], type.column_name);
+          continue;
+        }
+        relation.AddColumn(type.working_types[0], type.column_name);
+      }
+      ASSERT_OK_AND_ASSIGN(auto otel_sink,
+                           ParseOutOTelExportIR(tc.otel_export_expression, std::move(relation)));
+
+      EXPECT_OK(otel_sink->UpdateOpAfterParentTypesResolved());
+    }
+  }
+}
+
+TEST_P(OTelExportTest, error_on_missing_columns) {
+  auto tc = GetParam();
+  for (size_t i = 0; i < tc.allowed_column_types.size(); ++i) {
+    // Create a relation where the ith column is not included.
+    auto relation = table_store::schema::Relation();
+    for (const auto& [j, type] : Enumerate(tc.allowed_column_types)) {
+      if (j == i) {
+        continue;
+      }
+      relation.AddColumn(type.working_types[0], type.column_name);
+    }
+    ASSERT_OK_AND_ASSIGN(auto otel_sink,
+                         ParseOutOTelExportIR(tc.otel_export_expression, std::move(relation)));
+
+    EXPECT_COMPILER_ERROR(
+        otel_sink->UpdateOpAfterParentTypesResolved(),
+        absl::Substitute("Column '$0' not found.*", tc.allowed_column_types[i].column_name));
+  }
+}
+
+TEST_P(OTelExportTest, error_on_wrong_column_types) {
+  auto tc = GetParam();
+  // Remove one column at a time to make sure all checks work.
+  for (size_t i = 0; i < tc.allowed_column_types.size(); ++i) {
+    // Create a relation where the ith column has a type that won't work.
+    auto relation = table_store::schema::Relation();
+    for (const auto& [j, type] : Enumerate(tc.allowed_column_types)) {
+      if (j == i) {
+        relation.AddColumn(type.bad_type, type.column_name);
+        continue;
+      }
+      relation.AddColumn(type.working_types[0], type.column_name);
+    }
+    ASSERT_OK_AND_ASSIGN(auto otel_sink,
+                         ParseOutOTelExportIR(tc.otel_export_expression, std::move(relation)));
+
+    EXPECT_COMPILER_ERROR(otel_sink->UpdateOpAfterParentTypesResolved(),
+                          absl::Substitute("Expected .* to be.*, '$0' is of type.*",
+                                           tc.allowed_column_types[i].column_name));
+  }
+}
+
+constexpr char kOTelSpanExpression[] = R"pxl(
+oteltrace.Span(
+  name='spans',
+  endpoint=Endpoint(
+    url='0.0.0.0:55690',
+    attributes={
+      'apikey': '12345',
+    }
+  ),
+  attributes={
+      'http.method' : 'req_method',
+  },
+  trace_id='trace_id',
+  span_id='span_id',
+  parent_span_id='parent_span_id',
+  start_time_unix_nano='time_',
+  end_time_unix_nano='end_time',
+  kind=1,
+  status='status',
+))pxl";
+
+constexpr char kOTelSpanProto[] = R"pb(
+op_type: OTEL_EXPORT_SINK_OPERATOR
+otel_sink_op {
+  endpoint_config{
+    url:'0.0.0.0:55690',
+    attributes{
+      key: 'apikey'
+      value: '12345'
+    }
+  }
+  span {
+    name: "spans"
+    attributes {
+      name: "http.method"
+      value_column: "req_method"
+    }
+    trace_id_column: "trace_id"
+    span_id_column: "span_id"
+    parent_span_id_column: "parent_span_id"
+    start_time_unix_nano_column: "time_"
+    end_time_unix_nano_column: "end_time"
+    kind: SPAN_KIND_INTERNAL
+    status_column: "status"
+  }
+})pb";
+
+constexpr char kOTelMetricGaugeExpression[] = R"pxl(
+otelmetric.Metric(
+  name='gc_value',
+  description='The amount of program time spent in the GC',
+  endpoint=Endpoint(
+    url='0.0.0.0:55690',
+    attributes={
+      'apikey': '12345',
+    }
+  ),
+  attributes={
+      'gc' : 'gc_type',
+  },
+  data=otelmetric.Gauge(
+    start_time_unix_nano='time_',
+    time_unix_nano='end_time',
+    value='gc_time'
+  ),
+))pxl";
+
+constexpr char kOTelMetricGaugeProto[] = R"pb(
   op_type: OTEL_EXPORT_SINK_OPERATOR
   otel_sink_op {
     endpoint_config{
@@ -60,25 +245,25 @@ TEST_F(OTelExportTest, create_and_export_span) {
         value: '12345'
       }
     }
-    span {
-      name: "spans"
+    metric {
+      name: "gc_value"
+      description:"The amount of program time spent in the GC"
       attributes {
-        name: "http.method"
-        value_column: "req_method"
+        name: "gc"
+        value_column: "gc_type"
       }
-      trace_id_column: "trace_id"
-      span_id_column: "span_id"
-      parent_span_id_column: "parent_span_id"
       start_time_unix_nano_column: "time_"
-      end_time_unix_nano_column: "end_time"
-      kind: SPAN_KIND_INTERNAL
-      status_column: "status"
+      time_unix_nano_column: "end_time"
+      gauge {
+        value_column: "gc_time"
+      }
     }
   })pb";
 
-  std::string script = R"(
-sp = oteltrace.Span(
-  name='spans',
+constexpr char kOTelMetricSummaryExpression[] = R"pxl(
+otelmetric.Metric(
+  name='latency',
+  description='The latency distribution for each time window',
   endpoint=Endpoint(
     url='0.0.0.0:55690',
     attributes={
@@ -86,157 +271,93 @@ sp = oteltrace.Span(
     }
   ),
   attributes={
-      'http.method' : 'req_method',
+      'k8s.service' : 'service',
   },
-  trace_id='trace_id',
-  span_id='span_id',
-  parent_span_id='parent_span_id',
-  start_time_unix_nano='time_',
-  end_time_unix_nano='end_time',
-  kind=1,
-  status='status',
-))";
-  ASSERT_OK(ParseScript(var_table, script));
-  auto sp = var_table->Lookup("sp");
-  ASSERT_TRUE(Exporter::IsExporter(sp));
-  auto exporter = static_cast<Exporter*>(sp.get());
-  auto src = MakeMemSource();
-  ASSERT_OK_AND_ASSIGN(auto df, Dataframe::Create(src, ast_visitor.get()));
-  ASSERT_OK(exporter->Export(ast, df.get()));
-  auto child = src->Children();
-  ASSERT_EQ(child.size(), 1);
-  ASSERT_MATCH(child[0], OTelExportSink());
-
-  planpb::Operator op;
-  auto otel_sink = static_cast<OTelExportSinkIR*>(child[0]);
-  ASSERT_OK(otel_sink->ToProto(&op));
-  EXPECT_THAT(op, testing::proto::EqualsProto(outpb));
-}
-
-TEST_F(OTelExportTest, test_verify_columns_missing_columns) {
-  std::string script = R"(
-sp = oteltrace.Span(
-  name='spans',
-  endpoint=Endpoint(
-    url='0.0.0.0:55690',
-    attributes={
-      'apikey': '12345',
+  data=otelmetric.Summary(
+    start_time_unix_nano='time_',
+    time_unix_nano='end_time',
+    count='count',
+    sum='sum',
+    quantile_values={
+      0.5: 'p50',
+      0.99: 'p99',
     }
   ),
-  attributes={
-      'http.method' : 'req_method',
-  },
-  trace_id='trace_id',
-  span_id='span_id',
-  parent_span_id='parent_span_id',
-  start_time_unix_nano='time_',
-  end_time_unix_nano='end_time',
-  kind=1,
-  status='status',
-))";
-  std::vector<std::pair<types::DataType, std::string>> coltypes = {
-      {types::STRING, "req_method"},     {types::STRING, "trace_id"}, {types::STRING, "span_id"},
-      {types::STRING, "parent_span_id"}, {types::TIME64NS, "time_"},  {types::TIME64NS, "end_time"},
-      {types::INT64, "status"},
-  };
+))pxl";
 
-  // Remove one column at a time to make sure all checks work.
-  for (size_t i = 0; i < coltypes.size() + 1; ++i) {
-    ASSERT_OK(ParseScript(var_table, script));
-    auto sp = var_table->Lookup("sp");
-    ASSERT_TRUE(Exporter::IsExporter(sp));
-    auto exporter = static_cast<Exporter*>(sp.get());
-    auto src = MakeMemSource("table");
-    ASSERT_OK_AND_ASSIGN(auto df, Dataframe::Create(src, ast_visitor.get()));
-    ASSERT_OK(exporter->Export(ast, df.get()));
-    auto child = src->Children();
-    ASSERT_EQ(child.size(), 1);
-    auto otel_sink = static_cast<OTelExportSinkIR*>(child[0]);
-    ASSERT_MATCH(child[0], OTelExportSink());
-    auto relation = table_store::schema::Relation();
-    for (const auto& [j, type] : Enumerate(coltypes)) {
-      if (j == i) {
-        continue;
-      }
-      relation.AddColumn(type.first, type.second);
+constexpr char kOTelMetricSummaryProto[] = R"pb(
+  op_type: OTEL_EXPORT_SINK_OPERATOR
+  otel_sink_op {
+  endpoint_config {
+    url: "0.0.0.0:55690"
+    attributes {
+      key: "apikey"
+      value: "12345"
     }
-    (*compiler_state->relation_map())["table"] = relation;
-    EXPECT_OK(src->ResolveType(compiler_state.get()));
-    otel_sink->PullParentTypes();
-    // The last iteration of the loop will have no missing columns and should be successful.
-    if (i == coltypes.size()) {
-      EXPECT_OK(otel_sink->UpdateOpAfterParentTypesResolved());
-      continue;
-    }
-    EXPECT_COMPILER_ERROR(otel_sink->UpdateOpAfterParentTypesResolved(),
-                          absl::Substitute("Column '$0' not found.*", coltypes[i].second));
   }
-}
-
-TEST_F(OTelExportTest, test_verify_columns_wrong_columns_type) {
-  std::string script = R"(
-sp = oteltrace.Span(
-  name='spans',
-  endpoint=Endpoint(
-    url='0.0.0.0:55690',
-    attributes={
-      'apikey': '12345',
+  metric {
+    name: "latency"
+    description: "The latency distribution for each time window"
+    attributes {
+      name: "k8s.service"
+      value_column: "service"
     }
-  ),
-  attributes={
-      'http.method' : 'req_method',
-  },
-  trace_id='trace_id',
-  span_id='span_id',
-  parent_span_id='parent_span_id',
-  start_time_unix_nano='time_',
-  end_time_unix_nano='end_time',
-  kind=1,
-  status='status',
-))";
-
-  std::vector<std::pair<types::DataType, std::string>> coltypes = {
-      {types::STRING, "req_method"},     {types::STRING, "trace_id"}, {types::STRING, "span_id"},
-      {types::STRING, "parent_span_id"}, {types::TIME64NS, "time_"},  {types::TIME64NS, "end_time"},
-      {types::INT64, "status"},
-  };
-
-  // Remove one column at a time to make sure all checks work.
-  for (size_t i = 0; i < coltypes.size() + 1; ++i) {
-    ASSERT_OK(ParseScript(var_table, script));
-    auto sp = var_table->Lookup("sp");
-    ASSERT_TRUE(Exporter::IsExporter(sp));
-    auto exporter = static_cast<Exporter*>(sp.get());
-    auto src = MakeMemSource("table");
-    ASSERT_OK_AND_ASSIGN(auto df, Dataframe::Create(src, ast_visitor.get()));
-    ASSERT_OK(exporter->Export(ast, df.get()));
-    auto child = src->Children();
-    ASSERT_EQ(child.size(), 1);
-    auto otel_sink = static_cast<OTelExportSinkIR*>(child[0]);
-    ASSERT_MATCH(child[0], OTelExportSink());
-    auto relation = table_store::schema::Relation();
-    for (const auto& [j, type] : Enumerate(coltypes)) {
-      if (j == i) {
-        // We switch to a type that no column uses. If a future version of
-        // this test uses a FLOAT64 legitimately, the test must change.
-        relation.AddColumn(types::FLOAT64, type.second);
-        continue;
+    start_time_unix_nano_column: "time_"
+    time_unix_nano_column: "end_time"
+    summary {
+      count_column: "count"
+      sum_column: "sum"
+      quantile_values {
+        quantile: 0.5
+        value_column: "p50"
       }
-      relation.AddColumn(type.first, type.second);
+      quantile_values {
+        quantile: 0.99
+        value_column: "p99"
+      }
     }
-    (*compiler_state->relation_map())["table"] = relation;
-    EXPECT_OK(src->ResolveType(compiler_state.get()));
-    otel_sink->PullParentTypes();
-    // The last iteration of the loop will have no missing columns and should be successful.
-    if (i == coltypes.size()) {
-      EXPECT_OK(otel_sink->UpdateOpAfterParentTypesResolved());
-      continue;
-    }
-    EXPECT_COMPILER_ERROR(otel_sink->UpdateOpAfterParentTypesResolved(),
-                          absl::Substitute("Expected .* to be a $1, '$0' is of type.*",
-                                           coltypes[i].second, types::ToString(coltypes[i].first)));
   }
-}
+})pb";
+
+INSTANTIATE_TEST_SUITE_P(ParseAndCompareProtoTestSuites, OTelExportTest,
+                         ::testing::ValuesIn(std::vector<TestCase>{
+                             {"Span",
+                              kOTelSpanExpression,
+                              kOTelSpanProto,
+                              {
+                                  {"req_method", {types::STRING}, types::FLOAT64},
+                                  {"trace_id", {types::STRING}, types::FLOAT64},
+                                  {"span_id", {types::STRING}, types::FLOAT64},
+                                  {"parent_span_id", {types::STRING}, types::FLOAT64},
+                                  {"time_", {types::TIME64NS}, types::FLOAT64},
+                                  {"end_time", {types::TIME64NS}, types::FLOAT64},
+                                  {"status", {types::INT64}, types::FLOAT64},
+                              }},
+                             {"Gauge",
+                              kOTelMetricGaugeExpression,
+                              kOTelMetricGaugeProto,
+                              {
+                                  {"gc_type", {types::STRING}, types::FLOAT64},
+                                  {"time_", {types::TIME64NS}, types::FLOAT64},
+                                  {"end_time", {types::TIME64NS}, types::FLOAT64},
+                                  {"gc_time", {types::FLOAT64, types::INT64}, types::STRING},
+                              }},
+                             {"Summary",
+                              kOTelMetricSummaryExpression,
+                              kOTelMetricSummaryProto,
+                              {
+                                  {"service", {types::STRING}, types::FLOAT64},
+                                  {"time_", {types::TIME64NS}, types::FLOAT64},
+                                  {"end_time", {types::TIME64NS}, types::STRING},
+                                  {"count", {types::FLOAT64}, types::STRING},
+                                  {"sum", {types::FLOAT64}, types::STRING},
+                                  {"p50", {types::FLOAT64}, types::STRING},
+                                  {"p99", {types::FLOAT64}, types::STRING},
+                              }},
+                         }),
+                         [](const ::testing::TestParamInfo<TestCase>& info) {
+                           return info.param.name;
+                         });
 
 }  // namespace compiler
 }  // namespace planner

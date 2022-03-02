@@ -17,6 +17,7 @@
  */
 
 #include "src/carnot/planner/objects/otel.h"
+#include <absl/container/flat_hash_set.h>
 
 #include <functional>
 #include <utility>
@@ -26,6 +27,7 @@
 #include "src/carnot/planner/objects/dataframe.h"
 #include "src/carnot/planner/objects/dict_object.h"
 #include "src/carnot/planner/objects/exporter.h"
+#include "src/carnot/planner/objects/expr_object.h"
 #include "src/carnot/planner/objects/funcobject.h"
 #include "src/carnot/planner/objects/none_object.h"
 #include "src/carnot/planpb/plan.pb.h"
@@ -40,6 +42,12 @@ StatusOr<std::shared_ptr<OTelTraceModule>> OTelTraceModule::Create(ASTVisitor* a
   auto trace_module = std::shared_ptr<OTelTraceModule>(new OTelTraceModule(ast_visitor));
   PL_RETURN_IF_ERROR(trace_module->Init());
   return trace_module;
+}
+
+StatusOr<std::shared_ptr<OTelMetricsModule>> OTelMetricsModule::Create(ASTVisitor* ast_visitor) {
+  auto metrics_module = std::shared_ptr<OTelMetricsModule>(new OTelMetricsModule(ast_visitor));
+  PL_RETURN_IF_ERROR(metrics_module->Init());
+  return metrics_module;
 }
 
 StatusOr<std::shared_ptr<EndpointConfig>> EndpointConfig::Create(
@@ -176,6 +184,167 @@ StatusOr<QLObjectPtr> OTelSpanDefinition(const pypa::AstPtr& ast, const ParsedAr
   });
 }
 
+StatusOr<QLObjectPtr> OTelMetricDefinition(const pypa::AstPtr& ast, const ParsedArgs& args,
+                                           ASTVisitor* visitor) {
+  auto data = args.GetArg("data");
+  if (!OTelMetricData::IsType(data)) {
+    return data->CreateError("Expected an OTelMetricData type. Received $0", data->name());
+  }
+
+  auto summary = static_cast<OTelMetricData*>(data.get());
+
+  planpb::OTelExportSinkOperator pb;
+  auto metric = pb.mutable_metric();
+  *metric = summary->ToProto();
+  auto columns = summary->columns();
+  PL_RETURN_IF_ERROR(ParseEndpointConfig(args.GetArg("endpoint"), pb.mutable_endpoint_config()));
+  PL_ASSIGN_OR_RETURN(auto name, GetArgAsString(ast, args, "name"));
+  metric->set_name(name);
+  PL_ASSIGN_OR_RETURN(auto description, GetArgAsString(ast, args, "description"));
+  metric->set_description(description);
+
+  // Process attributes.
+  QLObjectPtr attributes = args.GetArg("attributes");
+  if (!DictObject::IsDict(attributes)) {
+    return attributes->CreateError("Expected attributes to be a dictionary, received $0",
+                                   attributes->name());
+  }
+  auto dict = static_cast<DictObject*>(attributes.get());
+  auto values = dict->values();
+  auto keys = dict->keys();
+  CHECK_EQ(values.size(), keys.size());
+  for (const auto& [idx, keyobj] : Enumerate(keys)) {
+    auto attr = metric->add_attributes();
+    PL_ASSIGN_OR_RETURN(auto key, AsNodeType<StringIR>(keyobj->node(), "attribute"));
+    attr->set_name(key->str());
+    PL_ASSIGN_OR_RETURN(auto val,
+                        AsNodeType<StringIR>(values[idx]->node(), "attribute value column"));
+    attr->set_value_column(val->str());
+    columns.push_back(ExpectedColumn{
+        val,
+        "attribute",
+        val->str(),
+        {types::STRING},
+    });
+  }
+
+  return Exporter::Create(visitor, [pb, columns](auto&& ast, auto&& df) -> Status {
+    return ExportToOTel(pb, columns, std::forward<decltype(ast)>(ast),
+                        std::forward<decltype(df)>(df));
+  });
+}
+
+StatusOr<QLObjectPtr> OTelGaugeDefinition(const pypa::AstPtr& ast, const ParsedArgs& args,
+                                          ASTVisitor* visitor) {
+  planpb::OTelMetric metric;
+  std::vector<ExpectedColumn> columns;
+  PL_ASSIGN_OR_RETURN(auto value_column, GetArgAs<StringIR>(ast, args, "value"));
+  metric.mutable_gauge()->set_value_column(value_column->str());
+  columns.push_back(ExpectedColumn{
+      value_column,
+      "value",
+      value_column->str(),
+      {types::INT64, types::FLOAT64},
+  });
+
+  // Time columns.
+  PL_ASSIGN_OR_RETURN(auto start_time_unix_nano_column,
+                      GetArgAs<StringIR>(ast, args, "start_time_unix_nano"));
+  metric.set_start_time_unix_nano_column(start_time_unix_nano_column->str());
+  columns.push_back(ExpectedColumn{
+      start_time_unix_nano_column,
+      "start_time_unix_nano",
+      start_time_unix_nano_column->str(),
+      {types::TIME64NS},
+  });
+
+  PL_ASSIGN_OR_RETURN(auto time_unix_nano_column, GetArgAs<StringIR>(ast, args, "time_unix_nano"));
+  columns.push_back(ExpectedColumn{
+      time_unix_nano_column,
+      "time_unix_nano",
+      time_unix_nano_column->str(),
+      {types::TIME64NS},
+  });
+  metric.set_time_unix_nano_column(time_unix_nano_column->str());
+  return OTelMetricData::Create(visitor, metric, columns);
+}
+
+StatusOr<QLObjectPtr> OTelSummaryDefinition(const pypa::AstPtr& ast, const ParsedArgs& args,
+                                            ASTVisitor* visitor) {
+  planpb::OTelMetric metric;
+  auto summary = metric.mutable_summary();
+
+  std::vector<ExpectedColumn> columns;
+  PL_ASSIGN_OR_RETURN(auto count_column, GetArgAs<StringIR>(ast, args, "count"));
+  summary->set_count_column(count_column->str());
+  columns.push_back(ExpectedColumn{
+      count_column,
+      "count",
+      count_column->str(),
+      {types::FLOAT64},
+  });
+
+  PL_ASSIGN_OR_RETURN(auto sum_column, GetArgAs<StringIR>(ast, args, "sum"));
+  summary->set_sum_column(sum_column->str());
+  columns.push_back(ExpectedColumn{
+      sum_column,
+      "sum",
+      sum_column->str(),
+      {types::FLOAT64},
+  });
+
+  auto qvs = args.GetArg("quantile_values");
+  if (!DictObject::IsDict(qvs)) {
+    return qvs->CreateError("Expected quantile_values to be a dictionary, received $0",
+                            qvs->name());
+  }
+  auto dict = static_cast<DictObject*>(qvs.get());
+  auto values = dict->values();
+  auto keys = dict->keys();
+  CHECK_EQ(values.size(), keys.size());
+  for (const auto& [idx, keyobj] : Enumerate(keys)) {
+    auto qv = summary->add_quantile_values();
+    PL_ASSIGN_OR_RETURN(auto key, AsNodeType<FloatIR>(keyobj->node(), "quantile"));
+    qv->set_quantile(key->val());
+    PL_ASSIGN_OR_RETURN(auto val,
+                        AsNodeType<StringIR>(values[idx]->node(), "quantile value column"));
+    qv->set_value_column(val->str());
+    columns.push_back(ExpectedColumn{
+        val,
+        absl::Substitute("$0", key->val()),
+        val->str(),
+        {types::FLOAT64},
+    });
+  }
+
+  // Time columns.
+  PL_ASSIGN_OR_RETURN(auto start_time_unix_nano_column,
+                      GetArgAs<StringIR>(ast, args, "start_time_unix_nano"));
+  metric.set_start_time_unix_nano_column(start_time_unix_nano_column->str());
+  columns.push_back(ExpectedColumn{
+      start_time_unix_nano_column,
+      "start_time_unix_nano",
+      start_time_unix_nano_column->str(),
+      {types::TIME64NS},
+  });
+
+  PL_ASSIGN_OR_RETURN(auto time_unix_nano_column, GetArgAs<StringIR>(ast, args, "time_unix_nano"));
+  columns.push_back(ExpectedColumn{
+      time_unix_nano_column,
+      "time_unix_nano",
+      time_unix_nano_column->str(),
+      {types::TIME64NS},
+  });
+  metric.set_time_unix_nano_column(time_unix_nano_column->str());
+  return OTelMetricData::Create(visitor, metric, columns);
+}
+
+StatusOr<std::shared_ptr<OTelMetricData>> OTelMetricData::Create(
+    ASTVisitor* ast_visitor, planpb::OTelMetric pb, std::vector<ExpectedColumn> columns) {
+  return std::shared_ptr<OTelMetricData>(
+      new OTelMetricData(ast_visitor, std::move(pb), std::move(columns)));
+}
+
 Status OTelTraceModule::Init() {
   // Setup methods.
   PL_ASSIGN_OR_RETURN(
@@ -198,6 +367,58 @@ Status OTelTraceModule::Init() {
 
   PL_RETURN_IF_ERROR(span_fn->SetDocString(kSpanOpDocstring));
   AddMethod(kSpanOpID, span_fn);
+  return Status::OK();
+}
+
+Status OTelMetricsModule::Init() {
+  // Setup methods.
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> metric_fn,
+      FuncObject::Create(kMetricOpID, {"name", "description", "data", "attributes", "endpoint"},
+                         {{"attributes", "{}"}, {"endpoint", "None"}},
+                         /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(&OTelMetricDefinition, std::placeholders::_1,
+                                   std::placeholders::_2, std::placeholders::_3),
+                         ast_visitor()));
+  PL_RETURN_IF_ERROR(metric_fn->SetDocString(kMetricOpDocstring));
+  AddMethod(kMetricOpID, metric_fn);
+
+  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> gauge_fn,
+                      FuncObject::Create(kGaugeOpID,
+                                         {
+                                             "start_time_unix_nano",
+                                             "time_unix_nano",
+                                             "value",
+                                         },
+                                         {},
+                                         /* has_variable_len_args */ false,
+                                         /* has_variable_len_kwargs */ false,
+                                         std::bind(&OTelGaugeDefinition, std::placeholders::_1,
+                                                   std::placeholders::_2, std::placeholders::_3),
+                                         ast_visitor()));
+
+  PL_RETURN_IF_ERROR(gauge_fn->SetDocString(kGaugeOpDocstring));
+  AddMethod(kGaugeOpID, gauge_fn);
+
+  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> summary_fn,
+                      FuncObject::Create(kSummaryOpID,
+                                         {
+                                             "start_time_unix_nano",
+                                             "time_unix_nano",
+                                             "count",
+                                             "sum",
+                                             "quantile_values",
+                                         },
+                                         {},
+                                         /* has_variable_len_args */ false,
+                                         /* has_variable_len_kwargs */ false,
+                                         std::bind(&OTelSummaryDefinition, std::placeholders::_1,
+                                                   std::placeholders::_2, std::placeholders::_3),
+                                         ast_visitor()));
+
+  PL_RETURN_IF_ERROR(summary_fn->SetDocString(kSummaryOpDocstring));
+  AddMethod(kSummaryOpID, summary_fn);
   return Status::OK();
 }
 
