@@ -308,8 +308,8 @@ TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
 
   // The toy test app. should be written such that we can expect one stack trace
   // twice as often as another.
-  std::string key2x = "runtime.goexit;runtime.main;main.main;main.sqrtOf1e39;main.sqrt";
-  std::string key1x = "runtime.goexit;runtime.main;main.main;main.sqrtOf1e18;main.sqrt";
+  std::string key2x = "runtime.goexit.abi0;runtime.main;main.main;main.sqrtOf1e39;main.sqrt";
+  std::string key1x = "runtime.goexit.abi0;runtime.main;main.main;main.sqrtOf1e18;main.sqrt";
 
   // Start they toy apps as sub-processes, then,
   // for a certain amount of time (kTestRunTime), collect data using RunTest().
