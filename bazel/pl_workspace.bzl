@@ -53,6 +53,7 @@ def _package_manager_setup():
             "libssl1.1",
             "libgcc1",
             "libcrypt1",
+            "libbyteman-java",
         ],
         sources = ["@debian_sid//file:Packages.json"],
     )
