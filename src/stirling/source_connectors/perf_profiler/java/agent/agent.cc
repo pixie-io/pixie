@@ -250,6 +250,7 @@ jint AddJVMTICapabilities(jvmtiEnv* jvmti) {
 jint SetCallbackFunctions(jvmtiEnv* jvmti) {
   jvmtiError error;
   jvmtiEventCallbacks callbacks;
+
   memset(&callbacks, 0, sizeof(jvmtiEventCallbacks));
 
   callbacks.CompiledMethodLoad = &CompiledMethodLoad;
@@ -270,6 +271,11 @@ jint ReplayCallbacks(jvmtiEnv* jvmti) {
   jvmtiPhase phase;
 
   error = jvmti->GetPhase(&phase);
+  if (error != JVMTI_ERROR_NONE) {
+    LogJvmtiError(jvmti, error, "ReplayCallbacks(): GetPhase() error.");
+    return JNI_ERR;
+  }
+
   if (phase != JVMTI_PHASE_LIVE) {
     LogF("Skipping ReplayCallbacks(), not in live phase.");
     return JNI_OK;
@@ -288,6 +294,36 @@ jint ReplayCallbacks(jvmtiEnv* jvmti) {
     LogJvmtiError(jvmti, error, "GenerateEvents(JVMTI_EVENT_DYNAMIC_CODE_GENERATED).");
     return JNI_ERR;
   }
+  return JNI_OK;
+}
+
+jint CheckForOnLoadOrLivePhase(jvmtiEnv* jvmti) {
+  jvmtiError error;
+  jvmtiPhase phase;
+
+  error = jvmti->GetPhase(&phase);
+  if (error != JVMTI_ERROR_NONE) {
+    LogJvmtiError(jvmti, error, "CheckForOnLoadOrLivePhase(): GetPhase() error.");
+    return JNI_ERR;
+  }
+
+  // We need to be in either the "live" or "on load" phase because all of
+  // our JVMTI methods (except GenerateEvents) require one of these two phases.
+  // If in the "on load" phase, we will later skip GenerateEvents.
+  // https://docs.oracle.com/en/java/javase/17/docs/specs/jvmti.html#GetPhase
+  // TODO(jps): is it possible to trigger Agent_OnLoad or Agent_OnAttach *not* in live or on load?
+  const bool in_live_phase = phase == JVMTI_PHASE_LIVE;
+  const bool in_load_phase = phase == JVMTI_PHASE_ONLOAD;
+  const bool phase_ok = in_live_phase || in_load_phase;
+
+  if (!phase_ok) {
+    // Not in live or on load phase. Bail now. Returning JNI_ERR causes the startup sequence
+    // to fall through, i.e. skips the remaining steps in the agent startup sequence.
+    LogF("CheckForOnLoadOrLivePhase(): Not in live or on load phase.");
+    return JNI_ERR;
+  }
+
+  // We are either in "live" or "on load" phase. Keep calm and carry on.
   return JNI_OK;
 }
 
@@ -333,9 +369,9 @@ jint GetJVMTIEnv(JavaVM* jvm, jvmtiEnv** jvmti) {
   jint error = jvm->GetEnv(reinterpret_cast<void**>(jvmti), JVMTI_VERSION_1_0);
   if (error != JNI_OK || *jvmti == nullptr) {
     LogF("[error] Unable to access JVMTI.");
-    error = JNI_ERR;
+    return JNI_ERR;
   }
-  return error;
+  return JNI_OK;
 }
 
 extern "C" {
@@ -348,9 +384,7 @@ JNIEXPORT uint64_t PixieJavaAgentTestFn() {
 
 JNIEXPORT jint JNICALL Agent_OnAttach(JavaVM* jvm, char* options, void* /*reserved*/) {
   if (g_callbacks_attached) {
-    LogF("Agent_OnAttach().");
-    LogF("pem restart detected, skipping callback attach.");
-    LogF("return JNI_OK.");
+    LogF("Agent_OnAttach(). g_callbacks_attached=true, skipping agent startup sequence.");
     return JNI_OK;
   }
 
