@@ -26,6 +26,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
+	"px.dev/pixie/src/cloud/plugin/controllers"
+	"px.dev/pixie/src/cloud/plugin/pluginpb"
 	"px.dev/pixie/src/cloud/plugin/schema"
 	"px.dev/pixie/src/cloud/shared/pgmigrate"
 	"px.dev/pixie/src/shared/services"
@@ -53,7 +55,16 @@ func main() {
 		log.WithError(err).Fatal("Failed to apply migrations")
 	}
 
+	dbKey := viper.GetString("database_key")
+	if dbKey == "" {
+		log.Fatal("Database encryption key is required")
+	}
+
 	s := server.NewPLServer(env.New(viper.GetString("domain_name")), mux)
+
+	c := controllers.New(db, dbKey)
+
+	pluginpb.RegisterPluginServiceServer(s.GRPCServer(), c)
 
 	s.Start()
 	s.StopOnInterrupt()

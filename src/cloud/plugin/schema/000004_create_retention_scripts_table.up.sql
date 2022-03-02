@@ -4,7 +4,7 @@ CREATE TABLE plugin_retention_scripts (
   -- plugin_id is the ID of the plugin that the script is enabled for.
   plugin_id varchar(1024) NOT NULL,
   -- version is the version of the plugin that the script is enabled for.
-  version varchar(1024) NOT NULL,
+  plugin_version varchar(1024) NOT NULL,
   -- script_id is the ID of the script object.
   script_id UUID NOT NULL,
   -- script_name is the name of the script.

@@ -49,6 +49,8 @@ go_library(
     srcs = ["plugin_server.go"],
     importpath = "px.dev/pixie/src/cloud/plugin",
     deps = [
+        "//src/cloud/plugin/controllers",
+        "//src/cloud/plugin/pluginpb:service_pl_go_proto",
         "//src/cloud/plugin/schema",
         "//src/cloud/shared/pgmigrate",
         "//src/shared/services",
