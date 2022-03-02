@@ -426,16 +426,6 @@ class ASTVisitorImpl : public ASTVisitor {
   StatusOr<QLObjectPtr> ProcessStr(const pypa::AstStrPtr& ast);
 
   /**
-   * @brief Gets the name string contained within the Name ast node and returns the IRNode
-   * referenced by that name, or errors out with an undefined variable.
-   *
-   * @param name
-   * @return StatusOr<OperatorIR*> - The operator referenced by the name, or an error if not
-   * found.
-   */
-  StatusOr<OperatorIR*> LookupName(const pypa::AstNamePtr& name);
-
-  /**
    * @brief Returns the FuncIR::Op struct that corresponds to a python_op
    * representation. This includes the operator code and the full carnot-udf name.
    *

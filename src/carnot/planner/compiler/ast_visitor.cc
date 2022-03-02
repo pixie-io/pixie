@@ -850,19 +850,6 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::LookupVariable(const pypa::AstPtr& ast,
   return var;
 }
 
-StatusOr<OperatorIR*> ASTVisitorImpl::LookupName(const pypa::AstNamePtr& name_node) {
-  PL_ASSIGN_OR_RETURN(QLObjectPtr pyobject, LookupVariable(name_node));
-  if (!pyobject->HasNode()) {
-    return CreateAstError(name_node, "'$0' not accessible", name_node->id);
-  }
-  IRNode* node = pyobject->node();
-  if (!node->IsOperator()) {
-    return node->CreateIRNodeError("Only dataframes may be assigned variables, $0 not allowed",
-                                   node->type_string());
-  }
-  return static_cast<OperatorIR*>(node);
-}
-
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessAttribute(const pypa::AstAttributePtr& node,
                                                        const OperatorContext& op_context) {
   PL_ASSIGN_OR_RETURN(std::string attr_name, GetAttributeStr(node));
