@@ -362,6 +362,31 @@ class UProbeManager {
           .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
           .probe_fn = "probe_ret_SSL_new",
       },
+      // netty-tcnative statically linked boringssl
+      bpf_tools::UProbeSpec{
+          .binary_path = "/tmp/libnetty_tcnative_linux_x86.so",
+          .symbol = "SSL_write",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+          .probe_fn = "probe_entry_SSL_write",
+      },
+      bpf_tools::UProbeSpec{
+          .binary_path = "/tmp/libnetty_tcnative_linux_x86.so",
+          .symbol = "SSL_write",
+          .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
+          .probe_fn = "probe_ret_SSL_write",
+      },
+      bpf_tools::UProbeSpec{
+          .binary_path = "/tmp/libnetty_tcnative_linux_x86.so",
+          .symbol = "SSL_read",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+          .probe_fn = "probe_entry_SSL_read",
+      },
+      bpf_tools::UProbeSpec{
+          .binary_path = "/tmp/libnetty_tcnative_linux_x86.so",
+          .symbol = "SSL_read",
+          .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
+          .probe_fn = "probe_ret_SSL_read",
+      },
   });
 
   /**

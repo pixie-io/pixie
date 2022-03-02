@@ -26,7 +26,9 @@
 
 #include "src/shared/types/column_wrapper.h"
 #include "src/stirling/source_connectors/socket_tracer/http_table.h"
+#include "src/stirling/source_connectors/socket_tracer/mux_table.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/types.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/mux/types.h"
 
 namespace px {
 namespace stirling {
@@ -84,6 +86,9 @@ inline std::vector<int64_t> GetRemotePorts(const types::ColumnWrapperRecordBatch
   }
   return addrs;
 }
+
+std::vector<protocols::mux::Record> ToMuxRecordVector(const types::ColumnWrapperRecordBatch& rb,
+                                                    const std::vector<size_t>& indices);
 
 }  // namespace testing
 }  // namespace stirling

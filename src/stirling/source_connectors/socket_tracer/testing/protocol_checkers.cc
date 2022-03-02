@@ -26,6 +26,7 @@ namespace stirling {
 namespace testing {
 
 namespace http = protocols::http;
+namespace mux = protocols::mux;
 
 //-----------------------------------------------------------------------------
 // HTTP Checkers
@@ -55,6 +56,18 @@ std::vector<http::Record> GetTargetRecords(const types::ColumnWrapperRecordBatch
   std::vector<size_t> target_record_indices =
       FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, pid);
   return ToRecordVector(record_batch, target_record_indices);
+}
+
+std::vector<mux::Record> ToMuxRecordVector(const types::ColumnWrapperRecordBatch& rb,
+                                        const std::vector<size_t>& indices) {
+  std::vector<mux::Record> result;
+
+  for (const auto& idx : indices) {
+    mux::Record r;
+    r.req.type = static_cast<int8_t>(rb[kMuxReqTypeIdx]->Get<types::Int64Value>(idx).val);
+    result.push_back(r);
+  }
+  return result;
 }
 
 }  // namespace testing
