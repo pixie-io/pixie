@@ -18,20 +18,71 @@
 
 #include "src/stirling/source_connectors/proc_exit/proc_exit_connector.h"
 
+#include <utility>
+
 #include "src/common/base/base.h"
+#include "src/stirling/bpf_tools/bcc_wrapper.h"
+#include "src/stirling/bpf_tools/macros.h"
+#include "src/stirling/source_connectors/proc_exit/bcc_bpf_intf/proc_exit.h"
+
+BPF_SRC_STRVIEW(proc_exit_trace_bcc_script, proc_exit_trace);
 
 namespace px {
 namespace stirling {
 
+constexpr uint32_t kPerfBufferPerCPUSizeBytes = 5 * 1024 * 1024;
+
+const auto kTracepointSpecs =
+    MakeArray<bpf_tools::TracepointSpec>({{std::string("sched:sched_process_exit"),
+                                           std::string("tracepoint__sched__sched_process_exit")}});
+
+void HandleProcExitEvent(void* cb_cookie, void* data, int /*data_size*/) {
+  auto* connector = reinterpret_cast<ProcExitConnector*>(cb_cookie);
+  auto* event = reinterpret_cast<struct proc_exit_event_t*>(data);
+  connector->AcceptProcExitEvent(*event);
+}
+
+void HandleProcExitEventLoss(void* /*cb_cookie*/, uint64_t /*lost*/) {
+  // TODO(yzhao): Add stats counter.
+}
+
+const auto kPerfBufferSpecs = MakeArray<bpf_tools::PerfBufferSpec>({
+    {"proc_exit_events", HandleProcExitEvent, HandleProcExitEventLoss, kPerfBufferPerCPUSizeBytes,
+     bpf_tools::PerfBufferSizeCategory::kControl},
+});
+
+void ProcExitConnector::AcceptProcExitEvent(const struct proc_exit_event_t& event) {
+  events_.push_back(event);
+}
+
 Status ProcExitConnector::InitImpl() {
   sampling_freq_mgr_.set_period(kSamplingPeriod);
   push_freq_mgr_.set_period(kPushPeriod);
+
+  PL_RETURN_IF_ERROR(InitBPFProgram(proc_exit_trace_bcc_script));
+  PL_RETURN_IF_ERROR(AttachTracepoints(kTracepointSpecs));
+  PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
+
   return Status::OK();
 }
 
-void ProcExitConnector::TransferDataImpl(ConnectorContext* /*ctx*/,
-                                         const std::vector<DataTable*>& /*data_tables*/) {
-  LOG(DFATAL) << "Not implemented yet";
+void ProcExitConnector::TransferDataImpl(ConnectorContext* ctx,
+                                         const std::vector<DataTable*>& data_tables) {
+  DCHECK(data_tables.size() == 1) << "Expect only one data table for proc_exits";
+
+  PollPerfBuffers();
+
+  DataTable* data_table = data_tables[0];
+  for (auto& event : events_) {
+    DataTable::RecordBuilder<&kTable> r(data_table, event.timestamp_ns);
+    r.Append<r.ColIndex("time_")>(event.timestamp_ns);
+    md::UPID upid(ctx->GetASID(), event.upid.pid, event.upid.start_time_ticks);
+    r.Append<r.ColIndex("upid")>(upid.value());
+    r.Append<r.ColIndex("exit_code")>(event.exit_code >> 8);
+    r.Append<r.ColIndex("signal")>(event.exit_code & 0x7F);
+    r.Append<r.ColIndex("comm")>(std::move(event.comm));
+  }
+  events_.clear();
 }
 
 }  // namespace stirling

@@ -28,12 +28,19 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     deps = [
+        "//src/stirling/bpf_tools:cc_library",
         "//src/stirling/core:cc_library",
+        "//src/stirling/source_connectors/proc_exit/bcc_bpf:proc_exit_trace",
+        "//src/stirling/source_connectors/proc_exit/bcc_bpf_intf:cc_library",
     ],
 )
 
 pl_cc_test(
-    name = "proc_exit_connector_test",
-    srcs = ["proc_exit_connector_test.cc"],
-    deps = [":cc_library"],
+    name = "proc_exit_trace_bpf_test",
+    srcs = ["proc_exit_trace_bpf_test.cc"],
+    tags = ["requires_bpf"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
 )

@@ -30,6 +30,7 @@
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/upid/upid.h"
 #include "src/stirling/core/data_table.h"
+#include "src/stirling/core/output.h"
 
 // A macro that sets a variable, but then restores it to its original value after the scope exits.
 // Useful for setting a flag for the duration of a test.
@@ -160,6 +161,21 @@ inline md::UPID PIDToUPID(pid_t pid) {
   system::ProcParser proc_parser(system::Config::GetInstance());
   return md::UPID{/*asid*/ 0, static_cast<uint32_t>(pid),
                   proc_parser.GetPIDStartTimeTicks(pid).ValueOrDie()};
+}
+
+// Returns a list of string representation of the records in the input data table.
+// The records in the data table is removed afterwards.
+inline std::string ExtractToString(const DataTableSchema& data_table_schema,
+                                   DataTable* data_table) {
+  std::vector<std::string> res;
+  std::vector<TaggedRecordBatch> tagged_record_batches = data_table->ConsumeRecords();
+  for (auto& tagged_record_batch : tagged_record_batches) {
+    types::ColumnWrapperRecordBatch batches{std::move(tagged_record_batch.records)};
+    auto lines = ToString(data_table_schema.ToProto(), batches);
+    res.insert(res.end(), std::make_move_iterator(lines.begin()),
+               std::make_move_iterator(lines.end()));
+  }
+  return absl::StrJoin(res, "\n");
 }
 
 }  // namespace testing
