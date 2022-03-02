@@ -47,6 +47,12 @@ func (c disabledAnalyticsClient) Close() error {
 	return nil
 }
 
+// A noop logger that statisfies the analytics.Logger interface.
+type nullLogger struct{}
+
+func (l nullLogger) Logf(format string, args ...interface{})   {}
+func (l nullLogger) Errorf(format string, args ...interface{}) {}
+
 // Client returns the default analytics client.
 func Client() analytics.Client {
 	once.Do(func() {
@@ -87,6 +93,7 @@ func Client() analytics.Client {
 					"sessionID": uuid.Must(uuid.NewV4()).String(),
 				},
 			},
+			Logger: nullLogger{},
 		})
 	})
 	return client
