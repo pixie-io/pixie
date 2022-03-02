@@ -1,0 +1,3 @@
+---
+short: VFS Write/Delete Snoop
+long: Traces file writeis and deletions.
