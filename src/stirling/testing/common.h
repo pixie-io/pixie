@@ -68,14 +68,15 @@ MATCHER_P(RecordBatchSizeIs, size, absl::Substitute("is a RecordBatch having $0 
 
 MATCHER(ColWrapperIsEmpty, "is an empty ColumnWrapper") { return arg->Empty(); }
 
-// Useful to prepare data tables for use with TransferData().
+// Create DataTable objects used by SocketConnector::TransferData() to write records to.
 class DataTables {
  public:
-  template <typename TArrayType>
-  explicit DataTables(const TArrayType& tables) {
+  template <size_t NumTableSchemas>
+  explicit DataTables(
+      const std::array<px::stirling::DataTableSchema, NumTableSchemas>& table_schemas) {
     uint64_t id = 0;
-    for (const DataTableSchema& table : tables) {
-      auto data_table = std::make_unique<DataTable>(id++, table);
+    for (const DataTableSchema& table_schema : table_schemas) {
+      auto data_table = std::make_unique<DataTable>(id++, table_schema);
       data_table_ptrs_.push_back(data_table.get());
       data_table_uptrs_.push_back(std::move(data_table));
     }

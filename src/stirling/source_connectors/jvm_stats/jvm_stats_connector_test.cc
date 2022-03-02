@@ -34,6 +34,7 @@ namespace px {
 namespace stirling {
 
 using ::px::stirling::testing::AccessRecordBatch;
+using ::px::stirling::testing::DataTables;
 using ::px::stirling::testing::FindRecordsMatchingPID;
 using ::px::stirling::testing::PIDToUPID;
 using ::px::stirling::testing::RecordBatchSizeIs;
@@ -68,8 +69,8 @@ class JVMStatsConnectorTest : public ::testing::Test {
   void TearDown() override { EXPECT_OK(connector_->Stop()); }
 
   std::unique_ptr<SourceConnector> connector_;
-  DataTable data_table_{/*id*/ 0, kJVMStatsTable};
-  const std::vector<DataTable*> data_tables_{&data_table_};
+  DataTables data_tables_{JVMStatsConnector::kTables};
+  DataTable* data_table_{data_tables_.tables().front()};
 };
 
 // NOTE: This test will likely break under --runs_per_tests=100 or higher because of limitations of
@@ -91,8 +92,8 @@ TEST_F(JVMStatsConnectorTest, CaptureData) {
   {
     absl::flat_hash_set<md::UPID> upids = {PIDToUPID(hello_world1.child_pid())};
     auto ctx = std::make_unique<TestContext>(upids);
-    connector_->TransferData(ctx.get(), data_tables_);
-    std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
+    connector_->TransferData(ctx.get(), data_tables_.tables());
+    std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords();
 
     ASSERT_FALSE(tablets.empty());
     const auto& records = tablets[0].records;
@@ -112,8 +113,8 @@ TEST_F(JVMStatsConnectorTest, CaptureData) {
 
   {
     auto ctx = std::make_unique<TestContext>(upids);
-    connector_->TransferData(ctx.get(), data_tables_);
-    std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
+    connector_->TransferData(ctx.get(), data_tables_.tables());
+    std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords();
 
     ASSERT_FALSE(tablets.empty());
     const auto& records1 =

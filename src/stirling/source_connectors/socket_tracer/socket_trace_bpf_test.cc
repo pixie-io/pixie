@@ -625,6 +625,10 @@ TEST_F(NullRemoteAddrTest, Accept4WithNullRemoteAddr) {
   // Wait for server thread to start listening.
   while (!server_ready) {
   }
+  // After server_ready, server.Accept() needs to enter the accepting state, before the client
+  // connection can succeed below. We don't have a simple and robust way to signal that from inside
+  // the server thread, so we just use sleep to avoid the race condition.
+  std::this_thread::sleep_for(std::chrono::seconds(1));
 
   std::thread client_thread([&client, &server]() {
     client.Connect(server);
@@ -893,14 +897,6 @@ TEST_F(SocketTraceServerSideBPFTest, StatsDisabledTracker) {
 
   ConfigureBPFCapture(kProtocolHTTP, kRoleClient | kRoleServer);
 
-  std::vector<std::unique_ptr<DataTable>> data_tables;
-  std::vector<DataTable*> data_table_ptrs;
-  uint64_t id = 0;
-  for (const auto& table_schema : SocketTraceConnector::kTables) {
-    data_tables.emplace_back(std::make_unique<DataTable>(id++, table_schema));
-    data_table_ptrs.push_back(data_tables.back().get());
-  }
-
   TCPSocket client;
   TCPSocket server;
 
@@ -920,7 +916,7 @@ TEST_F(SocketTraceServerSideBPFTest, StatsDisabledTracker) {
   ASSERT_TRUE(client.Recv(&msg));
 
   sleep(1);
-  source_->TransferData(ctx_.get(), data_table_ptrs);
+  source_->TransferData(ctx_.get(), data_tables_.tables());
 
   ASSERT_OK_AND_ASSIGN(const ConnTracker* client_side_tracker,
                        socket_trace_connector->GetConnTracker(getpid(), client.sockfd()));
@@ -951,7 +947,7 @@ TEST_F(SocketTraceServerSideBPFTest, StatsDisabledTracker) {
   ASSERT_TRUE(client.Recv(&msg));
   sleep(1);
 
-  source_->TransferData(ctx_.get(), data_table_ptrs);
+  source_->TransferData(ctx_.get(), data_tables_.tables());
 
   EXPECT_EQ(client_side_tracker->GetStat(Stat::kBytesSent), kHTTPReqMsg1.size());
   EXPECT_EQ(client_side_tracker->GetStat(Stat::kBytesSentTransferred), kHTTPReqMsg1.size())
