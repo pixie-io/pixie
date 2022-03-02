@@ -45,6 +45,8 @@ class JavaSymbolizationContext {
 
   std::string_view Symbolize(const uintptr_t addr);
 
+  void RemoveArtifacts() const;
+
   void set_requires_refresh() { requires_refresh_ = true; }
 
  private:

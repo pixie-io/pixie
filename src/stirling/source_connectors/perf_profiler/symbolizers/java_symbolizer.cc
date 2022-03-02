@@ -52,6 +52,20 @@ StatusOr<std::filesystem::path> ResolveHostArtifactsPath(const struct upid_t& ta
 }
 }  // namespace
 
+void JavaSymbolizationContext::RemoveArtifacts() const {
+  if (host_artifacts_path_resolved_) {
+    // Remove the host artifacts path entirely; this cleans up all the files (and the subdir) we
+    // created inside of the target container mount namespace.
+    const auto& sysconfig = system::Config::GetInstance();
+    const std::filesystem::path host_artifacts_path = sysconfig.ToHostPath(host_artifacts_path_);
+    const Status remove_status = fs::RemoveAll(host_artifacts_path);
+    if (!remove_status.ok()) {
+      char const* const fmt = "Could not remove host artifacts path: $0, $1.";
+      LOG(WARNING) << absl::Substitute(fmt, host_artifacts_path_.string(), remove_status.msg());
+    }
+  }
+}
+
 void JavaSymbolizationContext::UpdateSymbolMap() {
   auto reset_symbol_file = [&](const auto pos) {
     symbol_file_->seekg(pos);
@@ -143,21 +157,7 @@ JavaSymbolizationContext::JavaSymbolizationContext(const struct upid_t& target_u
   host_artifacts_path_resolved_ = true;
 }
 
-JavaSymbolizationContext::~JavaSymbolizationContext() {
-  symbol_file_->close();
-
-  if (host_artifacts_path_resolved_) {
-    // Remove the host artifacts path entirely; this cleans up all the files (and the subdir) we
-    // created inside of the target container mount namespace.
-    const auto& sysconfig = system::Config::GetInstance();
-    const std::filesystem::path host_artifacts_path = sysconfig.ToHostPath(host_artifacts_path_);
-    const Status remove_status = fs::RemoveAll(host_artifacts_path);
-    if (!remove_status.ok()) {
-      char const* const fmt = "Could not remove host artifacts path: $0, $1.";
-      LOG(WARNING) << absl::Substitute(fmt, host_artifacts_path_.string(), remove_status.msg());
-    }
-  }
-}
+JavaSymbolizationContext::~JavaSymbolizationContext() { symbol_file_->close(); }
 
 std::string_view JavaSymbolizationContext::Symbolize(const uintptr_t addr) {
   if (requires_refresh_) {
@@ -223,9 +223,17 @@ void JavaSymbolizer::IterationPreTick() {
 }
 
 void JavaSymbolizer::DeleteUPID(const struct upid_t& upid) {
-  // The inner map is owned by a unique_ptr; this will free the memory.
+  auto iter = symbolization_contexts_.find(upid);
+  if (iter != symbolization_contexts_.end()) {
+    // Remove the symbolization artifacts to clean up any persistent mounts that may
+    // re-appear if the container for the target Java process is restarted.
+    iter->second->RemoveArtifacts();
+
+    // Release memory used for the Java symbol index.
+    symbolization_contexts_.erase(iter);
+  }
+
   symbolizer_functions_.erase(upid);
-  symbolization_contexts_.erase(upid);
   native_symbolizer_->DeleteUPID(upid);
 }
 
@@ -344,6 +352,7 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
   const std::filesystem::path symbol_file_path = java::StirlingSymbolFilePath(upid);
 
   if (fs::Exists(symbol_file_path)) {
+    LOG(INFO) << absl::Substitute("Found a pre-existing symbol file for pid: $0", upid.pid);
     // Found a pre-existing symbol file. Attempt to use it.
     const Status new_ctx_status = CreateNewJavaSymbolizationContext(upid);
     if (!new_ctx_status.ok()) {
