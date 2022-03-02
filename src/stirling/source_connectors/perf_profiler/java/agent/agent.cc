@@ -34,6 +34,12 @@
 // NOLINTNEXTLINE: build/include_subdir
 #include "raw_symbol_update.h"
 
+#define PX_JVMTI_AGENT_RETURN_IF_ERROR(err)                                                    \
+  if (err != JNI_OK) {                                                                         \
+    LogF("Pixie symbolization agent startup sequence failed, %s, error code: %d.", #err, err); \
+    return err;                                                                                \
+  }
+
 namespace {
 constexpr bool kUsingTxtLogFile = false;
 constexpr bool kUsingBinLogFile = true;
@@ -348,19 +354,17 @@ JNIEXPORT jint JNICALL Agent_OnAttach(JavaVM* jvm, char* options, void* /*reserv
     return JNI_OK;
   }
 
-  jint error = JNI_OK;
   static jvmtiEnv* jvmti = nullptr;
 
-  error = error == JNI_OK ? OpenLogFiles(options) : error;
-  error = error == JNI_OK ? GetJVMTIEnv(jvm, &jvmti) : error;
-  error = error == JNI_OK ? AddJVMTICapabilities(jvmti) : error;
-  error = error == JNI_OK ? SetNotificationModes(jvmti) : error;
-  error = error == JNI_OK ? SetCallbackFunctions(jvmti) : error;
-  error = error == JNI_OK ? ReplayCallbacks(jvmti) : error;
+  PX_JVMTI_AGENT_RETURN_IF_ERROR(OpenLogFiles(options));
+  PX_JVMTI_AGENT_RETURN_IF_ERROR(GetJVMTIEnv(jvm, &jvmti));
+  PX_JVMTI_AGENT_RETURN_IF_ERROR(AddJVMTICapabilities(jvmti));
+  PX_JVMTI_AGENT_RETURN_IF_ERROR(SetNotificationModes(jvmti));
+  PX_JVMTI_AGENT_RETURN_IF_ERROR(SetCallbackFunctions(jvmti));
+  PX_JVMTI_AGENT_RETURN_IF_ERROR(ReplayCallbacks(jvmti));
 
-  const char* const return_msg = error == JNI_OK ? "return JNI_OK." : "return JNI_ERR.";
-  LogF(return_msg);
-  return error;
+  LogF("Pixie JVMTI symbolization agent startup sequence complete.");
+  return JNI_OK;
 }
 
 JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM* jvm, char* options, void* /*reserved*/) {
