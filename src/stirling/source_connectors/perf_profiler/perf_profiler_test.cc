@@ -44,6 +44,15 @@ using ::testing::Gt;
 using ::testing::Pair;
 using ::testing::UnorderedElementsAre;
 
+namespace {
+StatusOr<std::filesystem::path> ResolveHostArtifactsPath(const struct upid_t& target_upid) {
+  const std::filesystem::path artifacts_path = java::AgentArtifactsPath(target_upid);
+  std::unique_ptr<FilePathResolver> fp_resolver;
+  PL_ASSIGN_OR_RETURN(fp_resolver, FilePathResolver::Create(target_upid.pid));
+  return fp_resolver->ResolvePath(artifacts_path);
+}
+}  // namespace
+
 class CPUPinnedBinaryRunner {
  public:
   void Run(const std::string& binary_path, const uint64_t cpu_idx) {
@@ -439,7 +448,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
 
   // Consruct the names of the artifacts paths and expect that they exist.
   for (const auto& upid : upids) {
-    const auto artifacts_path = java::StirlingArtifactsPath(upid);
+    ASSERT_OK_AND_ASSIGN(const auto artifacts_path, ResolveHostArtifactsPath(upid));
     EXPECT_TRUE(fs::Exists(artifacts_path));
     if (fs::Exists(artifacts_path)) {
       artifacts_paths.push_back(artifacts_path);
@@ -452,7 +461,17 @@ TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
     proc.Kill();
   }
 
+  // Inside of PerfProfileConnector, we need the list of deleted upids to match our original
+  // list of upids based on our subprocs.
+  // For that to happen, here, we reset the context so that it has no UPIDs.
+  // The ProcTracker (inside of PerfProfileConnector) will take the difference
+  // between the previous list of upids (our subprocs) and the current list of upids (empty)
+  // to find a list of deleted upids.
+  const absl::flat_hash_set<md::UPID> empty_upid_set;
+  ctx_ = std::make_unique<TestContext>(empty_upid_set);
+
   // Run transfer data so that cleanup is kicked off in the perf profile source connector.
+  // The deleted upids list that is inferred will match our original upid list.
   source_->TransferData(ctx_.get(), data_tables_);
 
   // Expect that that the artifacts paths have been removed.
