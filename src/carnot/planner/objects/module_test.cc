@@ -21,6 +21,8 @@
 
 #include <absl/container/flat_hash_map.h>
 
+#include "src/carnot/planner/objects/dataframe.h"
+#include "src/carnot/planner/objects/expr_object.h"
 #include "src/carnot/planner/objects/module.h"
 #include "src/carnot/planner/objects/test_utils.h"
 
@@ -56,30 +58,17 @@ free_var = "imfree"
 )pxl";
 
 TEST_F(ModuleTest, load_and_use_modules) {
-  auto module_or_s = Module::Create(kModulePxl, ast_visitor.get());
-  ASSERT_OK(module_or_s);
-  std::shared_ptr<Module> module = module_or_s.ConsumeValueOrDie();
+  ASSERT_OK_AND_ASSIGN(auto module_obj, Module::Create(kModulePxl, ast_visitor.get()));
+  var_table->Add("testmodule", module_obj);
+  ASSERT_OK_AND_ASSIGN(auto funcresult, ParseExpression("testmodule.funcs()"));
+  auto union_obj = static_cast<Dataframe*>(funcresult.get());
 
-  // Get "funcs" as an attribute.
-  auto get_funcs_attr_status = module->GetAttribute(ast, "funcs");
-  ASSERT_OK(get_funcs_attr_status);
-  // Make sure it can be returned as a function.
-  EXPECT_OK(GetCallMethod(ast, get_funcs_attr_status.ConsumeValueOrDie()));
-
-  // Make sure "funcs" is accessible as a method.
-  auto get_funcs_method_or_s = module->GetMethod("funcs");
-  ASSERT_OK(get_funcs_method_or_s);
-  auto funcs = get_funcs_method_or_s.ConsumeValueOrDie();
-  auto funcs_result_or_s = funcs->Call({}, ast);
-  ASSERT_OK(funcs_result_or_s);
-  auto union_obj = funcs_result_or_s.ConsumeValueOrDie();
-  EXPECT_MATCH(union_obj->node(), Union());
+  EXPECT_MATCH(union_obj->op(), Union());
 
   // Make sure "free_var" is accessible as an attribute.
-  auto get_free_var_attr_or_s = module->GetAttribute(ast, "free_var");
-  ASSERT_OK(get_free_var_attr_or_s);
-  auto free_var_obj = get_free_var_attr_or_s.ConsumeValueOrDie();
-  EXPECT_MATCH(free_var_obj->node(), String("imfree"));
+  ASSERT_OK_AND_ASSIGN(auto free_var, ParseExpression("testmodule.free_var"));
+  ASSERT_TRUE(ExprObject::IsExprObject(free_var));
+  EXPECT_MATCH(static_cast<ExprObject*>(free_var.get())->expr(), String("imfree"));
 }
 
 }  // namespace compiler

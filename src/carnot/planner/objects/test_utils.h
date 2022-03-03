@@ -125,6 +125,7 @@ class QLObjectTest : public OperatorTests {
     ast_visitor =
         ASTVisitorImpl::Create(graph.get(), &dynamic_trace_, compiler_state.get(), &module_handler)
             .ConsumeValueOrDie();
+    var_table = VarTable::Create();
   }
   /**
    * @brief ParseScript takes a script and an initial variable state then parses
@@ -151,6 +152,14 @@ class QLObjectTest : public OperatorTests {
                                &module_handler, func_based_exec, reserved_names));
 
     return ast_walker->ProcessModuleNode(ast);
+  }
+
+  StatusOr<QLObjectPtr> ParseExpression(const std::string& expr) {
+    std::string var = "sp";
+    std::string script =
+        absl::Substitute("$0 = $1", var, std::string(absl::StripLeadingAsciiWhitespace(expr)));
+    PL_RETURN_IF_ERROR(ParseScript(var_table, script));
+    return var_table->Lookup(var);
   }
 
   ArgMap MakeArgMap(const std::vector<std::pair<std::string, IRNode*>>& kwargs,
@@ -194,6 +203,7 @@ class QLObjectTest : public OperatorTests {
   std::shared_ptr<ASTVisitor> ast_visitor = nullptr;
   ModuleHandler module_handler;
   MutationsIR dynamic_trace_;
+  std::shared_ptr<VarTable> var_table;
 };
 
 StatusOr<QLObjectPtr> NoneObjectFunc(const pypa::AstPtr&, const ParsedArgs&, ASTVisitor* visitor) {

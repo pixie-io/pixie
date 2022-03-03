@@ -64,6 +64,8 @@ class ExprObject : public QLObject {
   ExpressionIR* expr_;
 };
 
+StatusOr<std::string> GetAsString(const QLObjectPtr& obj);
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
