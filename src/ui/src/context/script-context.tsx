@@ -122,6 +122,7 @@ export const ScriptContextProvider: React.FC = React.memo(({ children }) => {
   const [cancelExecution, setCancelExecution] = React.useState<() => void | null>(null);
   const [numExecutionTries, setNumExecutionTries] = React.useState(0);
   const [hasMutation, setHasMutation] = React.useState(false);
+  const [probeDeployed, setProbeDeployed] = React.useState(false);
 
   // Timing: execute can be called before the API has finished returning all needed data, because VizierRoutingContext
   // does not depend on the API and can update (triggering ScriptLoader) before required data has loaded for execution.
@@ -174,6 +175,7 @@ export const ScriptContextProvider: React.FC = React.memo(({ children }) => {
     resultsContext.setLoading(true);
     resultsContext.setStreaming(isStreaming(script.code));
     setHasMutation(containsMutation(script.code));
+    setProbeDeployed(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiClient, script, embedState.widget, clusterConfig, serializedArgs, cancelExecution, manual]);
 
@@ -185,17 +187,29 @@ export const ScriptContextProvider: React.FC = React.memo(({ children }) => {
     }
   }, [readyToExecute, awaitingExecution, execute]);
 
+  // Retry timer, which only applies to mutation scripts.
+  // If a mutation script is running for more than MUTATION_RETRY_MS and still
+  // waiting for probes to deploy, the execution will stop and retry.
+  React.useEffect(() => {
+    if (!hasMutation || probeDeployed || !runningExecution || numExecutionTries <= 0) {
+      return () => {};
+    }
+
+    const timeout = setTimeout(() => {
+      setNumExecutionTries(numExecutionTries - 1);
+    }, MUTATION_RETRY_MS);
+
+    // If the script restarts for any reason or its probe finishes deploying, clear the timer.
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [hasMutation, probeDeployed, runningExecution, numExecutionTries]);
+
   React.useEffect(() => {
     if (numExecutionTries <= 0) {
       resultsContext.setLoading(false);
       return () => {};
     }
-
-    const timeout = setTimeout(() => {
-      if (hasMutation) {
-        setNumExecutionTries(numExecutionTries - 1);
-      }
-    }, MUTATION_RETRY_MS);
 
     let cleanup = () => {};
 
@@ -240,9 +254,18 @@ export const ScriptContextProvider: React.FC = React.memo(({ children }) => {
         case 'status':
         case 'stats':
           // Mutation schema not ready yet.
-          if (hasMutation && update.results.mutationInfo?.getStatus().getCode() === GRPCStatusCode.Unavailable) {
-            resultsContext.setResults({ tables: new Map(), mutationInfo: update.results.mutationInfo });
-            break;
+          if (hasMutation && update.results.mutationInfo) {
+            const mutationStatusCode = update.results.mutationInfo.getStatus().getCode();
+            if (mutationStatusCode === GRPCStatusCode.Unavailable) {
+              resultsContext.setResults({ tables: new Map(), mutationInfo: update.results.mutationInfo });
+              setProbeDeployed(false);
+            } else if (mutationStatusCode === GRPCStatusCode.OK) {
+              resultsContext.setResults((prev) => ({
+                ...prev,
+                mutationInfo: update.results.mutationInfo,
+              }));
+              setProbeDeployed(true);
+            }
           }
 
           if (update.results && (resultsContext.streaming || update.results.executionStats)) {
@@ -310,7 +333,6 @@ export const ScriptContextProvider: React.FC = React.memo(({ children }) => {
       }
     });
     return () => {
-      clearTimeout(timeout);
       cleanup();
       subscription?.unsubscribe();
     };
