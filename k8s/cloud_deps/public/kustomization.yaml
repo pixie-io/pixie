@@ -1,13 +1,11 @@
 ---
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-# We cannot specify a namespace here because the elastic operator and
-# it's other components need to run in it's own namespace.
+namespace: plc
 commonLabels:
   app: pl-cloud
 resources:
 - configs.yaml
-- ../base/elastic/operator
 - elastic
 - nats
 - stan
