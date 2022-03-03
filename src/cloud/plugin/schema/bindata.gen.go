@@ -10,6 +10,8 @@
 // 000004_create_retention_scripts_table.up.sql
 // 000005_fix_preset_scripts_type.down.sql
 // 000005_fix_preset_scripts_type.up.sql
+// 000006_add_pgcrypto.down.sql
+// 000006_add_pgcrypto.up.sql
 package schema
 
 import (
@@ -286,6 +288,46 @@ func _000005_fix_preset_scripts_typeUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000006_add_pgcryptoDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x09\xf2\x0f\x50\x70\x8d\x08\x71\xf5\x0b\xf6\xf4\xf7\x53\xf0\x74\x53\x70\x8d\xf0\x0c\x0e\x09\x56\x50\x2a\x48\x4f\x2e\xaa\x2c\x28\xc9\x57\xb2\xe6\x02\x04\x00\x00\xff\xff\x57\x85\x06\xc2\x25\x00\x00\x00")
+
+func _000006_add_pgcryptoDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000006_add_pgcryptoDownSql,
+		"000006_add_pgcrypto.down.sql",
+	)
+}
+
+func _000006_add_pgcryptoDownSql() (*asset, error) {
+	bytes, err := _000006_add_pgcryptoDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000006_add_pgcrypto.down.sql", size: 37, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000006_add_pgcryptoUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x0e\x72\x75\x0c\x71\x55\x70\x8d\x08\x71\xf5\x0b\xf6\xf4\xf7\x53\xf0\x74\x53\xf0\xf3\x0f\x51\x70\x8d\xf0\x0c\x0e\x09\x56\x50\x2a\x48\x4f\x2e\xaa\x2c\x28\xc9\x57\xb2\x06\x04\x00\x00\xff\xff\x99\x5a\x72\xd2\x2a\x00\x00\x00")
+
+func _000006_add_pgcryptoUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000006_add_pgcryptoUpSql,
+		"000006_add_pgcrypto.up.sql",
+	)
+}
+
+func _000006_add_pgcryptoUpSql() (*asset, error) {
+	bytes, err := _000006_add_pgcryptoUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000006_add_pgcrypto.up.sql", size: 42, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -348,6 +390,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000004_create_retention_scripts_table.up.sql":    _000004_create_retention_scripts_tableUpSql,
 	"000005_fix_preset_scripts_type.down.sql":         _000005_fix_preset_scripts_typeDownSql,
 	"000005_fix_preset_scripts_type.up.sql":           _000005_fix_preset_scripts_typeUpSql,
+	"000006_add_pgcrypto.down.sql":                    _000006_add_pgcryptoDownSql,
+	"000006_add_pgcrypto.up.sql":                      _000006_add_pgcryptoUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -401,6 +445,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000004_create_retention_scripts_table.up.sql":    &bintree{_000004_create_retention_scripts_tableUpSql, map[string]*bintree{}},
 	"000005_fix_preset_scripts_type.down.sql":         &bintree{_000005_fix_preset_scripts_typeDownSql, map[string]*bintree{}},
 	"000005_fix_preset_scripts_type.up.sql":           &bintree{_000005_fix_preset_scripts_typeUpSql, map[string]*bintree{}},
+	"000006_add_pgcrypto.down.sql":                    &bintree{_000006_add_pgcryptoDownSql, map[string]*bintree{}},
+	"000006_add_pgcrypto.up.sql":                      &bintree{_000006_add_pgcryptoUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory

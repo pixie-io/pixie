@@ -160,6 +160,8 @@ message UpdateOrgRetentionPluginConfigRequest {
     map<string, string> configurations = 3;
     // Whether to disable/enable the plugin.
     google.protobuf.BoolValue enabled = 4;
+    // The version to enable.
+    google.protobuf.StringValue version = 5;
 }
 
 // UpdateOrgRetentionPluginConfigResponse is a response to update a plugin's configuration.

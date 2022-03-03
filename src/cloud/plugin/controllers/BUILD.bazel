@@ -26,6 +26,8 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//src/cloud/plugin/pluginpb:service_pl_go_proto",
+        "//src/utils",
+        "@com_github_gofrs_uuid//:uuid",
         "@com_github_jmoiron_sqlx//:sqlx",
         "@org_golang_google_grpc//codes",
         "@org_golang_google_grpc//status",
@@ -40,6 +42,8 @@ go_test(
         "//src/cloud/plugin/pluginpb:service_pl_go_proto",
         "//src/cloud/plugin/schema",
         "//src/shared/services/pgtest",
+        "//src/utils",
+        "@com_github_gogo_protobuf//types",
         "@com_github_golang_migrate_migrate//source/go_bindata",
         "@com_github_jmoiron_sqlx//:sqlx",
         "@com_github_spf13_viper//:viper",

@@ -21,14 +21,18 @@ package controllers
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 
+	"github.com/gofrs/uuid"
 	"github.com/jmoiron/sqlx"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"px.dev/pixie/src/cloud/plugin/pluginpb"
+	"px.dev/pixie/src/utils"
 )
 
 // Server is a bridge implementation of the pluginService.
@@ -161,4 +165,175 @@ func (s *Server) GetRetentionPluginConfig(ctx context.Context, req *pluginpb.Get
 		return ppb, nil
 	}
 	return nil, status.Error(codes.NotFound, "plugin not found")
+}
+
+// GetRetentionPluginsForOrg gets all data retention plugins enabled by the org.
+func (s *Server) GetRetentionPluginsForOrg(ctx context.Context, req *pluginpb.GetRetentionPluginsForOrgRequest) (*pluginpb.GetRetentionPluginsForOrgResponse, error) {
+	query := `SELECT r.name, r.id, r.description, r.logo, r.version, r.data_retention_enabled from plugin_releases as r, org_data_retention_plugins as o WHERE r.id = o.plugin_id AND r.version = o.version AND org_id=$1`
+	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
+	rows, err := s.db.Queryx(query, orgID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to fetch plugin")
+	}
+
+	defer rows.Close()
+
+	plugins := []*pluginpb.GetRetentionPluginsForOrgResponse_PluginState{}
+	for rows.Next() {
+		var p Plugin
+		err = rows.StructScan(&p)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "failed to read plugins")
+		}
+		ppb := &pluginpb.GetRetentionPluginsForOrgResponse_PluginState{
+			Plugin: &pluginpb.Plugin{
+				Name:             p.Name,
+				ID:               p.ID,
+				RetentionEnabled: p.DataRetentionEnabled,
+			},
+			EnabledVersion: p.Version,
+		}
+		plugins = append(plugins, ppb)
+	}
+	return &pluginpb.GetRetentionPluginsForOrgResponse{Plugins: plugins}, nil
+}
+
+// GetOrgRetentionPluginConfig gets the org's configuration for a plugin.
+func (s *Server) GetOrgRetentionPluginConfig(ctx context.Context, req *pluginpb.GetOrgRetentionPluginConfigRequest) (*pluginpb.GetOrgRetentionPluginConfigResponse, error) {
+	query := `SELECT PGP_SYM_DECRYPT(configurations, $1::text) FROM org_data_retention_plugins WHERE org_id=$2 AND plugin_id=$3`
+
+	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
+	rows, err := s.db.Queryx(query, s.dbKey, orgID, req.PluginID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to fetch plugin")
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		var configurationJSON []byte
+		var configMap map[string]string
+
+		err := rows.Scan(&configurationJSON)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "failed to read configs")
+		}
+
+		err = json.Unmarshal(configurationJSON, &configMap)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "failed to read configs")
+		}
+
+		return &pluginpb.GetOrgRetentionPluginConfigResponse{
+			Configurations: configMap,
+		}, nil
+	}
+	return nil, status.Error(codes.NotFound, "plugin is not enabled")
+}
+
+func (s *Server) enableOrgRetention(orgID uuid.UUID, pluginID string, version string, configurations []byte) error {
+	query := `INSERT INTO org_data_retention_plugins (org_id, plugin_id, version, configurations) VALUES ($1, $2, $3, PGP_SYM_ENCRYPT($4, $5))`
+
+	_, err := s.db.Exec(query, orgID, pluginID, version, configurations, s.dbKey)
+	return err
+}
+
+func (s *Server) disableOrgRetention(orgID uuid.UUID, pluginID string) error {
+	query := `DELETE FROM org_data_retention_plugins WHERE org_id=$1 AND plugin_id=$2`
+
+	_, err := s.db.Exec(query, orgID, pluginID)
+	return err
+}
+
+func (s *Server) updateOrgRetentionConfigs(orgID uuid.UUID, pluginID string, version string, configurations []byte) error {
+	query := `UPDATE org_data_retention_plugins SET version = $1, configurations = PGP_SYM_ENCRYPT($2, $3) WHERE org_id = $4 AND plugin_id = $5`
+
+	_, err := s.db.Exec(query, version, configurations, s.dbKey, orgID, pluginID)
+	return err
+}
+
+// UpdateOrgRetentionPluginConfig updates an org's configuration for a plugin.
+func (s *Server) UpdateOrgRetentionPluginConfig(ctx context.Context, req *pluginpb.UpdateOrgRetentionPluginConfigRequest) (*pluginpb.UpdateOrgRetentionPluginConfigResponse, error) {
+	if utils.IsNilUUIDProto(req.OrgID) {
+		return nil, status.Error(codes.InvalidArgument, "Must specify OrgID")
+	}
+
+	if req.PluginID == "" {
+		return nil, status.Error(codes.InvalidArgument, "Must specify plugin ID")
+	}
+
+	if req.Enabled != nil && req.Enabled.Value && req.Version == nil {
+		return nil, status.Error(codes.InvalidArgument, "Must specify plugin version when enabling")
+	}
+
+	var configurations []byte
+	var version string
+
+	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
+	if req.Version != nil {
+		version = req.Version.Value
+	}
+	if req.Configurations != nil && len(req.Configurations) > 0 {
+		configurations, _ = json.Marshal(req.Configurations)
+	}
+
+	if req.Enabled != nil && req.Enabled.Value { // Plugin was just enabled, we should create it.
+		return &pluginpb.UpdateOrgRetentionPluginConfigResponse{}, s.enableOrgRetention(orgID, req.PluginID, version, configurations)
+	} else if req.Enabled != nil && !req.Enabled.Value { // Plugin was disabled, we should delete it.
+		return &pluginpb.UpdateOrgRetentionPluginConfigResponse{}, s.disableOrgRetention(orgID, req.PluginID)
+	}
+
+	// Fetch current configs.
+	query := `SELECT version, PGP_SYM_DECRYPT(configurations, $1::text) FROM org_data_retention_plugins WHERE org_id=$2 AND plugin_id=$3`
+	rows, err := s.db.Queryx(query, s.dbKey, orgID, req.PluginID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to fetch plugin")
+	}
+	defer rows.Close()
+
+	var origConfig []byte
+	var origVersion string
+	if rows.Next() {
+		err := rows.Scan(&origVersion, &origConfig)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "failed to read configs")
+		}
+	}
+
+	if configurations == nil {
+		configurations = origConfig
+	}
+	if version == "" {
+		version = origVersion
+	}
+
+	err = s.updateOrgRetentionConfigs(orgID, req.PluginID, version, configurations)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to update configs")
+	}
+
+	// if origVersion != version { // The user is updating the plugin.
+	// 	// TODO(michelle): If the user is updating the plugin, we may need to update some of the presetScripts users have configured.
+	// }
+
+	return &pluginpb.UpdateOrgRetentionPluginConfigResponse{}, nil
+}
+
+// GetRetentionScripts gets all retention scripts the org has configured.
+func (s *Server) GetRetentionScripts(ctx context.Context, req *pluginpb.GetRetentionScriptsRequest) (*pluginpb.GetRetentionScriptsResponse, error) {
+	return nil, errors.New("Not yet implemented")
+}
+
+// GetRetentionScript gets the details for a script an org is using for long-term data retention.
+func (s *Server) GetRetentionScript(ctx context.Context, req *pluginpb.GetRetentionScriptRequest) (*pluginpb.GetRetentionScriptResponse, error) {
+	return nil, errors.New("Not yet implemented")
+}
+
+// CreateRetentionScript creates a script that is used for long-term data retention.
+func (s *Server) CreateRetentionScript(ctx context.Context, req *pluginpb.CreateRetentionScriptRequest) (*pluginpb.CreateRetentionScriptResponse, error) {
+	return nil, errors.New("Not yet implemented")
+}
+
+// UpdateRetentionScript updates a script used for long-term data retention.
+func (s *Server) UpdateRetentionScript(ctx context.Context, req *pluginpb.UpdateRetentionScriptRequest) (*pluginpb.UpdateRetentionScriptResponse, error) {
+	return nil, errors.New("Not yet implemented")
 }
