@@ -26,7 +26,6 @@
 #include "src/stirling/source_connectors/perf_profiler/java/demangle.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/java_symbolizer.h"
 #include "src/stirling/utils/detect_application.h"
-#include "src/stirling/utils/proc_path_tools.h"
 
 namespace {
 char const* const kLibsHelpMessage = "Comma separated list of Java symbolization agent lib files.";
@@ -38,19 +37,6 @@ DEFINE_string(stirling_profiler_java_agent_libs, kPEMAgentLibs, kLibsHelpMessage
 
 namespace px {
 namespace stirling {
-
-namespace {
-StatusOr<std::filesystem::path> ResolveHostArtifactsPath(const struct upid_t& target_upid) {
-  const std::filesystem::path artifacts_path = java::AgentArtifactsPath(target_upid);
-
-  // TODO(jps): To avoid repeated accesses to /proc, investigate if we can reuse the
-  // results of this call into ResolvePath. e.g., if we need to resolve the /tmp mount
-  // in some other stirling component.
-  std::unique_ptr<FilePathResolver> fp_resolver;
-  PL_ASSIGN_OR_RETURN(fp_resolver, FilePathResolver::Create(target_upid.pid));
-  return fp_resolver->ResolvePath(artifacts_path);
-}
-}  // namespace
 
 void JavaSymbolizationContext::RemoveArtifacts() const {
   if (host_artifacts_path_resolved_) {
@@ -146,7 +132,7 @@ JavaSymbolizationContext::JavaSymbolizationContext(const struct upid_t& target_u
   DCHECK(symbol_file_->good());
   UpdateSymbolMap();
 
-  auto status_or_host_artifacts_path = ResolveHostArtifactsPath(target_upid);
+  auto status_or_host_artifacts_path = java::ResolveHostArtifactsPath(target_upid);
 
   if (!status_or_host_artifacts_path.ok()) {
     char const* const fmt = "Could not resolve host path for symbolization artifacts. pid: $0. $1.";

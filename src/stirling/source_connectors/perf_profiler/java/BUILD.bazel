@@ -30,6 +30,7 @@ pl_cc_library(
     deps = [
         "//src/common/exec:cc_library",
         "//src/stirling/source_connectors/perf_profiler/java/agent:cc_headers",
+        "//src/stirling/utils:cc_library",
         # bcc_bpf_intf is used only to bring in upid.h.
         # TODO(jps): Find a new upstream location for upid.h.
         "//src/stirling/bpf_tools/bcc_bpf_intf:cc_library",

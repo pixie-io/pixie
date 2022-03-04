@@ -30,7 +30,6 @@
 #include "src/stirling/source_connectors/perf_profiler/perf_profile_connector.h"
 #include "src/stirling/source_connectors/perf_profiler/stack_traces_table.h"
 #include "src/stirling/testing/common.h"
-#include "src/stirling/utils/proc_path_tools.h"
 
 DEFINE_uint32(test_run_time, 90, "Number of seconds to run the test.");
 DECLARE_bool(stirling_profiler_java_symbols);
@@ -43,15 +42,6 @@ using ::px::testing::BazelBinTestFilePath;
 using ::testing::Gt;
 using ::testing::Pair;
 using ::testing::UnorderedElementsAre;
-
-namespace {
-StatusOr<std::filesystem::path> ResolveHostArtifactsPath(const struct upid_t& target_upid) {
-  const std::filesystem::path artifacts_path = java::AgentArtifactsPath(target_upid);
-  std::unique_ptr<FilePathResolver> fp_resolver;
-  PL_ASSIGN_OR_RETURN(fp_resolver, FilePathResolver::Create(target_upid.pid));
-  return fp_resolver->ResolvePath(artifacts_path);
-}
-}  // namespace
 
 class CPUPinnedBinaryRunner {
  public:
@@ -448,7 +438,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
 
   // Consruct the names of the artifacts paths and expect that they exist.
   for (const auto& upid : upids) {
-    ASSERT_OK_AND_ASSIGN(const auto artifacts_path, ResolveHostArtifactsPath(upid));
+    ASSERT_OK_AND_ASSIGN(const auto artifacts_path, java::ResolveHostArtifactsPath(upid));
     EXPECT_TRUE(fs::Exists(artifacts_path));
     if (fs::Exists(artifacts_path)) {
       artifacts_paths.push_back(artifacts_path);

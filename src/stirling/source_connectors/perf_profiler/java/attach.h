@@ -31,6 +31,7 @@ namespace java {
 std::filesystem::path AgentArtifactsPath(const struct upid_t& upid);
 std::filesystem::path StirlingArtifactsPath(const struct upid_t& upid);
 std::filesystem::path StirlingSymbolFilePath(const struct upid_t& upid);
+StatusOr<std::filesystem::path> ResolveHostArtifactsPath(const struct upid_t& upid);
 
 // AgentAttacher injects a JVMTI agent into a target Java process. The agent itself is a shared
 // library (.so) that will be mapped into the target process by dlopen, and it is responsible

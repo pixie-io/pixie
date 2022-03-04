@@ -33,7 +33,6 @@ pl_cc_library(
         "//src/stirling/source_connectors/perf_profiler/java/agent:cc_headers",
         "//src/stirling/source_connectors/perf_profiler/shared:cc_library",
         "//src/stirling/source_connectors/perf_profiler/symbol_cache:cc_library",
-        "//src/stirling/utils:cc_library",
     ],
 )
 

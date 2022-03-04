@@ -33,6 +33,7 @@
 #include "src/common/system/scoped_namespace.h"
 #include "src/stirling/source_connectors/perf_profiler/java/agent/raw_symbol_update.h"
 #include "src/stirling/source_connectors/perf_profiler/java/attach.h"
+#include "src/stirling/utils/proc_path_tools.h"
 
 extern "C" {
 // NOLINTNEXTLINE: build/include_subdir
@@ -105,6 +106,15 @@ std::filesystem::path StirlingArtifactsPath(const struct upid_t& upid) {
 
 std::filesystem::path StirlingSymbolFilePath(const struct upid_t& upid) {
   return StirlingArtifactsPath(upid) / kBinSymbolFileName;
+}
+
+StatusOr<std::filesystem::path> ResolveHostArtifactsPath(const struct upid_t& upid) {
+  // TODO(jps): To avoid repeated accesses to /proc, investigate if we can reuse the
+  // results of this call into ResolvePath. e.g., if we need to resolve the /tmp mount
+  // in some other stirling component.
+  const std::filesystem::path artifacts_path = java::AgentArtifactsPath(upid);
+  PL_ASSIGN_OR_RETURN(auto fp_resolver, FilePathResolver::Create(upid.pid));
+  return fp_resolver->ResolvePath(artifacts_path);
 }
 
 void AgentAttacher::SetTargetUIDAndGIDOrDie() {
