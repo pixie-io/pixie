@@ -179,7 +179,6 @@ class SocketTraceConnectorTest : public ::testing::Test {
   std::unique_ptr<SourceConnector> connector_;
   SocketTraceConnectorFriend* source_ = nullptr;
   std::unique_ptr<SystemWideStandaloneContext> ctx_;
-  testing::RealClock real_clock_;
   testing::MockClock mock_clock_;
   testing::EventGenerator event_gen_;
 };

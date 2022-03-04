@@ -109,6 +109,10 @@ class SocketTraceConnectorTest : public ::testing::Test {
 
     ctx_ = std::make_unique<SystemWideStandaloneContext>();
 
+    // Tell the source to use our injected clock for getting the current time.
+    source_->test_only_set_now_fn(
+        [this]() { return testing::NanosToTimePoint(mock_clock_.now()); });
+
     // Set the CIDR for HTTP2ServerTest, which would otherwise not output any data,
     // because it would think the server is in the cluster.
     PL_CHECK_OK(ctx_->SetClusterCIDR("1.2.3.4/32"));
@@ -136,7 +140,6 @@ class SocketTraceConnectorTest : public ::testing::Test {
   SocketTraceConnectorFriend* source_ = nullptr;
   std::unique_ptr<SystemWideStandaloneContext> ctx_;
   testing::MockClock mock_clock_;
-  testing::RealClock real_clock_;
 
   static constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
   static constexpr int kMySQLTableNum = SocketTraceConnector::kMySQLTableNum;
@@ -694,11 +697,11 @@ Number of rows = 0)"));
 // and removes all events. For this reason we use RealClock for these tests.
 
 TEST_F(SocketTraceConnectorTest, HTTP2ClientTest) {
-  testing::EventGenerator event_gen(&real_clock_);
+  testing::EventGenerator event_gen(&mock_clock_);
 
   auto conn = event_gen.InitConn();
 
-  testing::StreamEventGenerator frame_generator(&real_clock_, conn.conn_id, 7);
+  testing::StreamEventGenerator frame_generator(&mock_clock_, conn.conn_id, 7);
 
   source_->AcceptControlEvent(conn);
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "post"));
@@ -736,11 +739,11 @@ TEST_F(SocketTraceConnectorTest, HTTP2ClientTest) {
 // This test is like the previous one, but the read-write roles are reversed.
 // It represents the other end of the connection.
 TEST_F(SocketTraceConnectorTest, HTTP2ServerTest) {
-  testing::EventGenerator event_gen(&real_clock_);
+  testing::EventGenerator event_gen(&mock_clock_);
 
   auto conn = event_gen.InitConn();
 
-  testing::StreamEventGenerator frame_generator(&real_clock_, conn.conn_id, 8);
+  testing::StreamEventGenerator frame_generator(&mock_clock_, conn.conn_id, 8);
 
   source_->AcceptControlEvent(conn);
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":method", "post"));
@@ -777,11 +780,11 @@ TEST_F(SocketTraceConnectorTest, HTTP2ServerTest) {
 
 // This test models capturing data mid-stream, where we may have missed the request entirely.
 TEST_F(SocketTraceConnectorTest, HTTP2ResponseOnly) {
-  testing::EventGenerator event_gen(&real_clock_);
+  testing::EventGenerator event_gen(&mock_clock_);
 
   auto conn = event_gen.InitConn();
 
-  testing::StreamEventGenerator frame_generator(&real_clock_, conn.conn_id, 7);
+  testing::StreamEventGenerator frame_generator(&mock_clock_, conn.conn_id, 7);
 
   source_->AcceptControlEvent(conn);
   // Request missing to model mid-stream capture.
@@ -804,11 +807,11 @@ TEST_F(SocketTraceConnectorTest, HTTP2SpanAcrossTransferData) {
   std::vector<TaggedRecordBatch> tablets;
   RecordBatch record_batch;
 
-  testing::EventGenerator event_gen(&real_clock_);
+  testing::EventGenerator event_gen(&mock_clock_);
 
   auto conn = event_gen.InitConn();
 
-  testing::StreamEventGenerator frame_generator(&real_clock_, conn.conn_id, 7);
+  testing::StreamEventGenerator frame_generator(&mock_clock_, conn.conn_id, 7);
 
   source_->AcceptControlEvent(conn);
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "post"));
@@ -844,7 +847,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2SpanAcrossTransferData) {
 
 // This test models multiple streams back-to-back.
 TEST_F(SocketTraceConnectorTest, HTTP2SequentialStreams) {
-  testing::EventGenerator event_gen(&real_clock_);
+  testing::EventGenerator event_gen(&mock_clock_);
 
   std::vector<int> stream_ids = {7, 9, 11, 13};
 
@@ -852,7 +855,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2SequentialStreams) {
   source_->AcceptControlEvent(conn);
 
   for (auto stream_id : stream_ids) {
-    testing::StreamEventGenerator frame_generator(&real_clock_, conn.conn_id, stream_id);
+    testing::StreamEventGenerator frame_generator(&mock_clock_, conn.conn_id, stream_id);
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "post"));
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai"));
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic"));
@@ -887,7 +890,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2SequentialStreams) {
 
 // This test models multiple streams running in parallel.
 TEST_F(SocketTraceConnectorTest, HTTP2ParallelStreams) {
-  testing::EventGenerator event_gen(&real_clock_);
+  testing::EventGenerator event_gen(&mock_clock_);
 
   std::vector<uint32_t> stream_ids = {7, 9, 11, 13};
   std::map<uint32_t, testing::StreamEventGenerator> frame_generators;
@@ -897,7 +900,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ParallelStreams) {
 
   for (auto stream_id : stream_ids) {
     frame_generators.insert(
-        {stream_id, testing::StreamEventGenerator(&real_clock_, conn.conn_id, stream_id)});
+        {stream_id, testing::StreamEventGenerator(&mock_clock_, conn.conn_id, stream_id)});
   }
 
   for (auto stream_id : stream_ids) {
@@ -954,14 +957,14 @@ TEST_F(SocketTraceConnectorTest, HTTP2ParallelStreams) {
 // This test models one stream start and ending within the span of a larger stream.
 // Random TransferData calls are interspersed just to make things more fun :)
 TEST_F(SocketTraceConnectorTest, HTTP2StreamSandwich) {
-  testing::EventGenerator event_gen(&real_clock_);
+  testing::EventGenerator event_gen(&mock_clock_);
 
   auto conn = event_gen.InitConn();
   source_->AcceptControlEvent(conn);
 
   uint32_t stream_id = 7;
 
-  testing::StreamEventGenerator frame_generator(&real_clock_, conn.conn_id, stream_id);
+  testing::StreamEventGenerator frame_generator(&mock_clock_, conn.conn_id, stream_id);
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "post"));
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai"));
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic"));
@@ -973,7 +976,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2StreamSandwich) {
 
   {
     uint32_t stream_id2 = 9;
-    testing::StreamEventGenerator frame_generator2(&real_clock_, conn.conn_id, stream_id2);
+    testing::StreamEventGenerator frame_generator2(&mock_clock_, conn.conn_id, stream_id2);
     source_->AcceptHTTP2Header(frame_generator2.GenHeader<kHeaderEventWrite>(":method", "post"));
     source_->AcceptHTTP2Header(frame_generator2.GenHeader<kHeaderEventWrite>(":host", "pixie.ai"));
     source_->AcceptHTTP2Header(frame_generator2.GenHeader<kHeaderEventWrite>(":path", "/magic"));
@@ -1022,7 +1025,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2StreamSandwich) {
 
 // This test models an old stream appearing slightly late.
 TEST_F(SocketTraceConnectorTest, HTTP2StreamIDRace) {
-  testing::EventGenerator event_gen(&real_clock_);
+  testing::EventGenerator event_gen(&mock_clock_);
 
   std::vector<int> stream_ids = {7, 9, 5, 11};
 
@@ -1030,7 +1033,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2StreamIDRace) {
   source_->AcceptControlEvent(conn);
 
   for (auto stream_id : stream_ids) {
-    testing::StreamEventGenerator frame_generator(&real_clock_, conn.conn_id, stream_id);
+    testing::StreamEventGenerator frame_generator(&mock_clock_, conn.conn_id, stream_id);
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "post"));
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai"));
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic"));
@@ -1077,7 +1080,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2StreamIDRace) {
 // This test models an old stream appearing out-of-nowhere.
 // Expectation is that we should be robust in such cases.
 TEST_F(SocketTraceConnectorTest, HTTP2OldStream) {
-  testing::EventGenerator event_gen(&real_clock_);
+  testing::EventGenerator event_gen(&mock_clock_);
 
   std::vector<int> stream_ids = {117, 119, 3, 121};
 
@@ -1085,7 +1088,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2OldStream) {
   source_->AcceptControlEvent(conn);
 
   for (auto stream_id : stream_ids) {
-    testing::StreamEventGenerator frame_generator(&real_clock_, conn.conn_id, stream_id);
+    testing::StreamEventGenerator frame_generator(&mock_clock_, conn.conn_id, stream_id);
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "post"));
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai"));
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic"));
