@@ -30,6 +30,13 @@ namespace carnot {
 namespace planner {
 namespace compiler {
 
+StatusOr<std::shared_ptr<Dataframe>> GetAsDataFrame(QLObjectPtr obj) {
+  if (!Dataframe::IsDataframe(obj)) {
+    return obj->CreateError("Expected DataFrame, received $0", obj->name());
+  }
+  return std::static_pointer_cast<Dataframe>(obj);
+}
+
 StatusOr<std::shared_ptr<Dataframe>> Dataframe::Create(OperatorIR* op, ASTVisitor* visitor) {
   std::shared_ptr<Dataframe> df(new Dataframe(op, op->graph(), visitor));
   PL_RETURN_IF_ERROR(df->Init());
@@ -55,6 +62,22 @@ StatusOr<std::vector<TIRNodeType*>> ParseAsListOf(QLObjectPtr obj, std::string_v
       name = absl::Substitute("$0 (index $1)", arg_name, idx);
     }
     PL_ASSIGN_OR_RETURN(auto casted, GetArgAs<TIRNodeType>(item, name));
+    result.push_back(casted);
+  }
+  return result;
+}
+
+StatusOr<OperatorIR*> GetOperator(const QLObjectPtr& obj) {
+  if (!Dataframe::IsDataframe(obj)) {
+    return obj->CreateError("Expected 'DataFrame', got $0", obj->name());
+  }
+  return static_cast<Dataframe*>(obj.get())->op();
+}
+
+StatusOr<std::vector<OperatorIR*>> ParseAsListOfOperators(QLObjectPtr obj) {
+  std::vector<OperatorIR*> result;
+  for (const auto& [idx, item] : Enumerate(ObjectAsCollection(obj))) {
+    PL_ASSIGN_OR_RETURN(auto casted, GetOperator(item));
     result.push_back(casted);
   }
   return result;
@@ -112,7 +135,7 @@ StatusOr<QLObjectPtr> JoinHandler(IR* graph, OperatorIR* op, const pypa::AstPtr&
                                   const ParsedArgs& args, ASTVisitor* visitor) {
   // GetArg returns non-nullptr or errors out in Debug mode. No need
   // to check again.
-  PL_ASSIGN_OR_RETURN(OperatorIR * right, GetArgAs<OperatorIR>(ast, args, "right"));
+  PL_ASSIGN_OR_RETURN(OperatorIR * right, GetOperator(args.GetArg("right")));
   PL_ASSIGN_OR_RETURN(StringIR * how, GetArgAs<StringIR>(ast, args, "how"));
   QLObjectPtr suffixes_node = args.GetArg("suffixes");
   std::string how_type = how->str();
@@ -188,8 +211,7 @@ StatusOr<QLObjectPtr> AggHandler(IR* graph, OperatorIR* op, const pypa::AstPtr& 
   ColExpressionVector aggregate_expressions;
   for (const auto& [name, expr_obj] : args.kwargs()) {
     if (expr_obj->type() != QLObjectType::kTuple) {
-      return expr_obj->CreateError("Expected tuple for value at kwarg $0 but received $1", name,
-                                   expr_obj->name());
+      return expr_obj->CreateError("Expected tuple for $0 but received $1", name, expr_obj->name());
     }
     PL_ASSIGN_OR_RETURN(
         FuncIR * parsed_expr,
@@ -252,19 +274,21 @@ class SubscriptHandler {
 StatusOr<QLObjectPtr> SubscriptHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
                                              const ParsedArgs& args, ASTVisitor* visitor) {
   QLObjectPtr key = args.GetArg("key");
-  if (key->HasNode() && Match(key->node(), String())) {
-    return EvalColumn(graph, op, ast, static_cast<StringIR*>(key->node()), visitor);
-  }
   if (CollectionObject::IsCollection(key)) {
     PL_ASSIGN_OR_RETURN(std::vector<StringIR*> keep_cols, ParseAsListOf<StringIR>(key, "key"));
     return EvalKeep(graph, op, ast, keep_cols, visitor);
   }
-  if (key->HasNode() && key->node()->IsExpression()) {
-    return EvalFilter(graph, op, ast, static_cast<ExpressionIR*>(key->node()), visitor);
+  if (!ExprObject::IsExprObject(key)) {
+    return key->CreateError(
+        "subscript argument must have a list of strings or expression. '$0' not allowed",
+        key->name());
   }
-  return key->CreateError(
-      "subscript argument must have a list of strings or expression. '$0' not allowed",
-      key->name());
+
+  auto expr = static_cast<ExprObject*>(key.get());
+  if (Match(expr->expr(), String())) {
+    return EvalColumn(graph, op, ast, static_cast<StringIR*>(expr->expr()), visitor);
+  }
+  return EvalFilter(graph, op, ast, static_cast<ExpressionIR*>(expr->expr()), visitor);
 }
 
 StatusOr<QLObjectPtr> SubscriptHandler::EvalFilter(IR* graph, OperatorIR* op,
@@ -328,9 +352,10 @@ StatusOr<QLObjectPtr> GroupByHandler(IR* graph, OperatorIR* op, const pypa::AstP
 StatusOr<QLObjectPtr> UnionHandler(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
                                    const ParsedArgs& args, ASTVisitor* visitor) {
   std::vector<OperatorIR*> parents{op};
-  PL_ASSIGN_OR_RETURN(std::vector<OperatorIR*> list_of_ops,
-                      ParseAsListOf<OperatorIR>(args.GetArg("objs"), "objs"));
-  parents.insert(parents.end(), list_of_ops.begin(), list_of_ops.end());
+  for (const auto& [idx, item] : Enumerate(ObjectAsCollection(args.GetArg("objs")))) {
+    PL_ASSIGN_OR_RETURN(auto casted, GetOperator(item));
+    parents.push_back(casted);
+  }
   PL_ASSIGN_OR_RETURN(UnionIR * union_op, graph->CreateNode<UnionIR>(ast, parents));
   return Dataframe::Create(union_op, visitor);
 }

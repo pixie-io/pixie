@@ -225,19 +225,12 @@ StatusOr<QLObjectPtr> ProbeHandler::Decorator(MutationsIR* mutations_ir,
       visitor);
 }
 
-std::string ObjectName(const QLObjectPtr& ptr) {
-  if (ptr->HasNode()) {
-    return ptr->node()->type_string();
-  }
-  return std::string(absl::StripPrefix(magic_enum::enum_name(ptr->type()), "k"));
-}
-
 Status ParseColumns(TracepointIR* probe, CollectionObject* column_object) {
   std::vector<std::string> col_names;
   std::vector<std::string> var_names;
   for (const auto& item : column_object->items()) {
     if (!DictObject::IsDict(item)) {
-      return item->CreateError("Expected Dict, got $0", ObjectName(item));
+      return item->CreateError("Expected Dict, got $0", item->name());
     }
     auto dict = static_cast<DictObject*>(item.get());
     auto values = dict->values();
@@ -249,7 +242,7 @@ Status ParseColumns(TracepointIR* probe, CollectionObject* column_object) {
 
       auto value = values[idx];
       if (!TracingVariableObject::IsTracingVariable(value)) {
-        return value->CreateError("Expected tracing variable, got $0", ObjectName(value));
+        return value->CreateError("Expected TracingVariable, got $0", value->name());
       }
       auto probe = static_cast<TracingVariableObject*>(value.get());
       col_names.push_back(key_str_ir->str());
@@ -269,7 +262,7 @@ Status ParseOutput(TracepointIR* probe, const QLObjectPtr& probe_output) {
   if (!CollectionObject::IsCollection(probe_output)) {
     return probe_output->CreateError(
         "Unable to parse probe output definition. Expected Collection, received $0",
-        ObjectName(probe_output));
+        probe_output->name());
   }
   auto columns = static_cast<CollectionObject*>(probe_output.get());
 
@@ -367,7 +360,7 @@ StatusOr<QLObjectPtr> UpsertHandler::Eval(MutationsIR* mutations_ir, const pypa:
     trace_program = trace_program_or_s.ConsumeValueOrDie();
   } else if (ExprObject::IsExprObject(target)) {
     auto expr_object = std::static_pointer_cast<ExprObject>(target);
-    if (Match(expr_object->node(), UInt128Value())) {
+    if (Match(expr_object->expr(), UInt128Value())) {
       PL_ASSIGN_OR_RETURN(UInt128IR * upid_ir, GetArgAs<UInt128IR>(ast, args, "target"));
       md::UPID upid(upid_ir->val());
 
@@ -377,7 +370,7 @@ StatusOr<QLObjectPtr> UpsertHandler::Eval(MutationsIR* mutations_ir, const pypa:
       trace_program = trace_program_or_s.ConsumeValueOrDie();
     } else {
       return CreateAstError(ast, "Unexpected type '$0' for arg '$1'",
-                            expr_object->node()->type_string(), "target");
+                            expr_object->expr()->type_string(), "target");
     }
   } else {
     return CreateAstError(ast, "Unexpected type '$0' for arg '$1'",

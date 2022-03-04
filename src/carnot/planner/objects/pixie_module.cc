@@ -49,15 +49,11 @@ StatusOr<QLObjectPtr> UDFHandler(IR* graph, std::string name, const pypa::AstPtr
                                  const ParsedArgs& args, ASTVisitor* visitor) {
   std::vector<ExpressionIR*> expr_args;
   for (const auto& arg : args.variable_args()) {
-    if (!arg->HasNode()) {
-      return CreateAstError(ast, "Argument to udf '$0' must be an expression", name);
+    if (!ExprObject::IsExprObject(arg)) {
+      return arg->CreateError("Argument to '$0' must be an expression, received $1", name,
+                              arg->name());
     }
-    auto ir_node = arg->node();
-    if (!Match(ir_node, Expression())) {
-      return ir_node->CreateIRNodeError("Argument must be an expression, got a $0",
-                                        ir_node->type_string());
-    }
-    expr_args.push_back(static_cast<ExpressionIR*>(ir_node));
+    expr_args.push_back(static_cast<ExprObject*>(arg.get())->expr());
   }
   FuncIR::Op op{FuncIR::Opcode::non_op, "", name};
   PL_ASSIGN_OR_RETURN(FuncIR * node, graph->CreateNode<FuncIR>(ast, op, expr_args));
@@ -282,12 +278,11 @@ StatusOr<QLObjectPtr> EqualsAny(IR* graph, const pypa::AstPtr& ast, const Parsed
   ExpressionIR* or_expr = nullptr;
 
   for (const auto& [idx, value] : Enumerate(comparison_values->items())) {
-    if (!value->HasNode()) {
-      return value->CreateError("Could not get IRNode from index '$0'", idx);
+    if (!ExprObject::IsExprObject(value)) {
+      return value->CreateError("Expected item in index $0 be an expression, received $1", idx,
+                                value->name());
     }
-    PL_ASSIGN_OR_RETURN(auto comparison_expr,
-                        AsNodeType<ExpressionIR>(value->node(), absl::Substitute("$0", idx)));
-
+    auto comparison_expr = static_cast<ExprObject*>(value.get())->expr();
     FuncIR::Op equal{FuncIR::eq, "equal", "equal"};
     PL_ASSIGN_OR_RETURN(auto new_equals, graph->CreateNode<FuncIR>(comparison_expr->ast(), equal,
                                                                    std::vector<ExpressionIR*>{
@@ -377,10 +372,7 @@ StatusOr<QLObjectPtr> ParseDuration(IR* graph, const pypa::AstPtr& ast, const Pa
 }
 
 StatusOr<QLObjectPtr> Export(const pypa::AstPtr& ast, const ParsedArgs& args, ASTVisitor* visitor) {
-  auto out_df = args.GetArg("out");
-  if (!Dataframe::IsDataframe(out_df)) {
-    return out_df->CreateError("Expected DataFrame, received $0", out_df->name());
-  }
+  PL_ASSIGN_OR_RETURN(auto df, GetAsDataFrame(args.GetArg("out")));
 
   QLObjectPtr spec = args.GetArg("export_spec");
   if (!Exporter::IsExporter(spec)) {
@@ -388,7 +380,7 @@ StatusOr<QLObjectPtr> Export(const pypa::AstPtr& ast, const ParsedArgs& args, AS
   }
 
   auto exporter = std::static_pointer_cast<Exporter>(spec);
-  PL_RETURN_IF_ERROR(exporter->Export(ast, static_cast<Dataframe*>(out_df.get())));
+  PL_RETURN_IF_ERROR(exporter->Export(ast, df.get()));
 
   return StatusOr(std::make_shared<NoneObject>(visitor));
 }
@@ -545,10 +537,10 @@ StatusOr<QLObjectPtr> NoopDisplayHandler(IR*, CompilerState*, const pypa::AstPtr
 StatusOr<QLObjectPtr> DisplayHandler(IR* graph, CompilerState* compiler_state,
                                      const pypa::AstPtr& ast, const ParsedArgs& args,
                                      ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(OperatorIR * out_op, GetArgAs<OperatorIR>(ast, args, "out"));
+  PL_ASSIGN_OR_RETURN(auto df, GetAsDataFrame(args.GetArg("out")));
   PL_ASSIGN_OR_RETURN(StringIR * name, GetArgAs<StringIR>(ast, args, "name"));
 
-  PL_RETURN_IF_ERROR(AddResultSink(graph, ast, name->str(), out_op,
+  PL_RETURN_IF_ERROR(AddResultSink(graph, ast, name->str(), df->op(),
                                    compiler_state->result_address(),
                                    compiler_state->result_ssl_targetname()));
   return StatusOr(std::make_shared<NoneObject>(visitor));
@@ -558,7 +550,7 @@ StatusOr<QLObjectPtr> DebugDisplayHandler(IR* graph, CompilerState* compiler_sta
                                           const absl::flat_hash_set<std::string>& reserved_names,
                                           const pypa::AstPtr& ast, const ParsedArgs& args,
                                           ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(OperatorIR * out_op, GetArgAs<OperatorIR>(ast, args, "out"));
+  PL_ASSIGN_OR_RETURN(auto df, GetAsDataFrame(args.GetArg("out")));
   PL_ASSIGN_OR_RETURN(StringIR * name, GetArgAs<StringIR>(ast, args, "name"));
 
   std::string out_name = PixieModule::kDebugTablePrefix + name->str();
@@ -570,7 +562,7 @@ StatusOr<QLObjectPtr> DebugDisplayHandler(IR* graph, CompilerState* compiler_sta
     ++i;
   }
 
-  PL_RETURN_IF_ERROR(AddResultSink(graph, ast, out_name, out_op, compiler_state->result_address(),
+  PL_RETURN_IF_ERROR(AddResultSink(graph, ast, out_name, df->op(), compiler_state->result_address(),
                                    compiler_state->result_ssl_targetname()));
   return StatusOr(std::make_shared<NoneObject>(visitor));
 }

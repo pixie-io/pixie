@@ -65,7 +65,6 @@ TEST_F(QLObjectTest, GetMethod) {
   ASSERT_OK(attr_or_s);
   auto func_attr = attr_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(func_attr->type_descriptor().type() == QLObjectType::kFunction);
-  EXPECT_FALSE(func_attr->HasNode());
 
   auto out_object = func_attr->Call(ArgMap{}, ast).ConsumeValueOrDie();
   // Just validate that the correct thing happened.
@@ -82,7 +81,6 @@ TEST_F(QLObjectTest, GetMethodAsAttribute) {
   ASSERT_OK(attr_or_s);
   auto func_attr = attr_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(func_attr->type_descriptor().type() == QLObjectType::kFunction);
-  EXPECT_FALSE(func_attr->HasNode());
 
   auto func = static_cast<FuncObject*>(func_attr.get());
   auto out_object = func->Call(ArgMap{}, ast).ConsumeValueOrDie();
@@ -186,7 +184,6 @@ TEST_F(QLObjectTest, GetSubscriptMethod) {
   ASSERT_OK(attr_or_s);
   auto func_attr = attr_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(func_attr->type_descriptor().type() == QLObjectType::kFunction);
-  EXPECT_FALSE(func_attr->HasNode());
 
   auto out_object = func_attr->Call(MakeArgMap({}, {MakeInt(10)}), ast).ConsumeValueOrDie();
   // just validate that the correct thing happened.
@@ -202,7 +199,6 @@ TEST_F(QLObjectTest, GetCallMethod) {
   ASSERT_OK(attr_or_s);
   auto func_attr = attr_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(func_attr->type_descriptor().type() == QLObjectType::kFunction);
-  EXPECT_FALSE(func_attr->HasNode());
 
   auto out_object = func_attr->Call(MakeArgMap({}, {MakeInt(10)}), ast).ConsumeValueOrDie();
   // just validate that the correct thing happened.

@@ -513,7 +513,7 @@ TEST_F(ProbeCompilerTest, probe_definition_wrong_return_values) {
 
   probe_ir_or_s = CompileProbeScript(absl::Substitute(kProbeTemplate, kBadOutputColumnValue));
   ASSERT_NOT_OK(probe_ir_or_s);
-  EXPECT_THAT(probe_ir_or_s.status(), HasCompilerError("Expected tracing variable, got String"));
+  EXPECT_THAT(probe_ir_or_s.status(), HasCompilerError("Expected TracingVariable, got String"));
 }
 
 TEST_F(ProbeCompilerTest, delete_tracepoint) {

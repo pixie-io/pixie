@@ -92,9 +92,11 @@ TEST_F(ASTExpressionTest, String) {
   ASSERT_OK(visitor_result);
 
   auto obj = visitor_result.ConsumeValueOrDie();
-  ASSERT_TRUE(obj->HasNode());
-  ASSERT_MATCH(obj->node(), String());
-  EXPECT_EQ(static_cast<StringIR*>(obj->node())->str(), "value");
+  ASSERT_TRUE(ExprObject::IsExprObject(obj));
+  auto expr = static_cast<ExprObject*>(obj.get())->expr();
+
+  ASSERT_MATCH(expr, String());
+  EXPECT_EQ(static_cast<StringIR*>(expr)->str(), "value");
 }
 
 TEST_F(ASTExpressionTest, Integer) {
@@ -105,9 +107,11 @@ TEST_F(ASTExpressionTest, Integer) {
   ASSERT_OK(visitor_result);
 
   auto obj = visitor_result.ConsumeValueOrDie();
-  ASSERT_TRUE(obj->HasNode());
-  ASSERT_MATCH(obj->node(), Int());
-  EXPECT_EQ(static_cast<IntIR*>(obj->node())->val(), 1);
+  ASSERT_TRUE(ExprObject::IsExprObject(obj));
+  auto expr = static_cast<ExprObject*>(obj.get())->expr();
+
+  ASSERT_MATCH(expr, Int());
+  EXPECT_EQ(static_cast<IntIR*>(expr)->val(), 1);
 }
 
 TEST_F(ASTExpressionTest, PLModule) {
@@ -118,7 +122,6 @@ TEST_F(ASTExpressionTest, PLModule) {
   ASSERT_OK(visitor_result);
 
   auto obj = visitor_result.ConsumeValueOrDie();
-  ASSERT_FALSE(obj->HasNode());
   EXPECT_EQ(QLObjectType::kFunction, obj->type());
   EXPECT_EQ(std::static_pointer_cast<FuncObject>(obj)->name(), "mean");
 }

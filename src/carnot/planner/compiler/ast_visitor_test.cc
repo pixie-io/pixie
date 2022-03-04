@@ -26,6 +26,7 @@
 #include "src/carnot/planner/compilerpb/compiler_status.pb.h"
 #include "src/carnot/planner/ir/pattern_match.h"
 #include "src/carnot/planner/objects/dict_object.h"
+#include "src/carnot/planner/objects/expr_object.h"
 #include "src/common/base/base.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/scriptspb/scripts.pb.h"
@@ -1254,14 +1255,12 @@ TEST_F(ASTVisitorTest, func_def_doesnt_make_new_globals) {
   // then the return value of the function will be the Int TypeObject
   // and thus won't have a node
   auto func_return_obj = var_table->Lookup("foo");
-  ASSERT_TRUE(func_return_obj->HasNode());
-  ASSERT_MATCH(func_return_obj->node(), String());
-  ASSERT_EQ(static_cast<StringIR*>(func_return_obj->node())->str(), "123");
+  ASSERT_OK_AND_ASSIGN(auto return1, GetAsString(func_return_obj));
+  ASSERT_EQ(return1, "123");
 
   auto func2_return_obj = var_table->Lookup("string");
-  ASSERT_TRUE(func2_return_obj->HasNode());
-  ASSERT_MATCH(func2_return_obj->node(), String());
-  ASSERT_EQ(static_cast<StringIR*>(func2_return_obj->node())->str(), "abc");
+  ASSERT_OK_AND_ASSIGN(auto return2, GetAsString(func2_return_obj));
+  ASSERT_EQ(return2, "abc");
 }
 
 constexpr char kReassignPixieMethodsQuery[] = R"pxl(

@@ -165,10 +165,9 @@ StatusOr<QLObjectPtr> OTelSpanDefinition(const pypa::AstPtr& ast, const ParsedAr
   CHECK_EQ(values.size(), keys.size());
   for (const auto& [idx, keyobj] : Enumerate(keys)) {
     auto attr = span->add_attributes();
-    PL_ASSIGN_OR_RETURN(auto key, AsNodeType<StringIR>(keyobj->node(), "attribute"));
+    PL_ASSIGN_OR_RETURN(auto key, GetArgAs<StringIR>(keyobj, "attribute"));
     attr->set_name(key->str());
-    PL_ASSIGN_OR_RETURN(auto val,
-                        AsNodeType<StringIR>(values[idx]->node(), "attribute value column"));
+    PL_ASSIGN_OR_RETURN(auto val, GetArgAs<StringIR>(values[idx], "attribute value column"));
     attr->set_value_column(val->str());
     columns.push_back(ExpectedColumn{
         val,
@@ -215,10 +214,9 @@ StatusOr<QLObjectPtr> OTelMetricDefinition(const pypa::AstPtr& ast, const Parsed
   CHECK_EQ(values.size(), keys.size());
   for (const auto& [idx, keyobj] : Enumerate(keys)) {
     auto attr = metric->add_attributes();
-    PL_ASSIGN_OR_RETURN(auto key, AsNodeType<StringIR>(keyobj->node(), "attribute"));
+    PL_ASSIGN_OR_RETURN(auto key, GetArgAs<StringIR>(keyobj, "attribute"));
     attr->set_name(key->str());
-    PL_ASSIGN_OR_RETURN(auto val,
-                        AsNodeType<StringIR>(values[idx]->node(), "attribute value column"));
+    PL_ASSIGN_OR_RETURN(auto val, GetArgAs<StringIR>(values[idx], "attribute value column"));
     attr->set_value_column(val->str());
     columns.push_back(ExpectedColumn{
         val,
@@ -304,10 +302,9 @@ StatusOr<QLObjectPtr> OTelSummaryDefinition(const pypa::AstPtr& ast, const Parse
   CHECK_EQ(values.size(), keys.size());
   for (const auto& [idx, keyobj] : Enumerate(keys)) {
     auto qv = summary->add_quantile_values();
-    PL_ASSIGN_OR_RETURN(auto key, AsNodeType<FloatIR>(keyobj->node(), "quantile"));
+    PL_ASSIGN_OR_RETURN(auto key, GetArgAs<FloatIR>(keyobj, "quantile"));
     qv->set_quantile(key->val());
-    PL_ASSIGN_OR_RETURN(auto val,
-                        AsNodeType<StringIR>(values[idx]->node(), "quantile value column"));
+    PL_ASSIGN_OR_RETURN(auto val, GetArgAs<StringIR>(values[idx], "quantile value column"));
     qv->set_value_column(val->str());
     columns.push_back(ExpectedColumn{
         val,

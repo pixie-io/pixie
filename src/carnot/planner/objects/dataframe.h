@@ -420,7 +420,7 @@ class Dataframe : public QLObject {
 
  protected:
   explicit Dataframe(OperatorIR* op, IR* graph, ASTVisitor* visitor)
-      : QLObject(DataframeType, op, visitor), op_(op), graph_(graph) {}
+      : QLObject(DataframeType, op ? op->ast() : nullptr, visitor), op_(op), graph_(graph) {}
   StatusOr<std::shared_ptr<QLObject>> GetAttributeImpl(const pypa::AstPtr& ast,
                                                        std::string_view name) const override;
 
@@ -431,6 +431,8 @@ class Dataframe : public QLObject {
   OperatorIR* op_ = nullptr;
   IR* graph_ = nullptr;
 };
+
+StatusOr<std::shared_ptr<Dataframe>> GetAsDataFrame(QLObjectPtr obj);
 
 }  // namespace compiler
 }  // namespace planner

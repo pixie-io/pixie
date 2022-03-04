@@ -28,6 +28,7 @@
 #include "src/carnot/planner/ast/ast_visitor.h"
 #include "src/carnot/planner/ir/ir.h"
 #include "src/carnot/planner/ir/ir_node_type_conversion.h"
+#include "src/carnot/planner/objects/expr_object.h"
 #include "src/carnot/planner/objects/qlobject.h"
 #include "src/carnot/planner/objects/type_object.h"
 
@@ -224,11 +225,11 @@ class FuncObject : public QLObject {
 
 template <typename TIRNode>
 StatusOr<TIRNode*> GetArgAs(QLObjectPtr arg, std::string_view arg_name) {
-  if (!arg->HasNode()) {
+  if (!ExprObject::IsExprObject(arg)) {
     return arg->CreateError("Expected '$0' in arg '$1', got '$2'", IRNodeTraits<TIRNode>::name,
                             arg_name, QLObjectTypeString(arg->type()));
   }
-  return AsNodeType<TIRNode>(arg->node(), arg_name);
+  return AsNodeType<TIRNode>(static_cast<ExprObject*>(arg.get())->expr(), arg_name);
 }
 
 template <typename TIRNode>

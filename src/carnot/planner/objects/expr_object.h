@@ -58,7 +58,7 @@ class ExprObject : public QLObject {
 
  protected:
   ExprObject(ExpressionIR* expr, ASTVisitor* visitor)
-      : QLObject(ExprType, expr, visitor), expr_(expr) {}
+      : QLObject(ExprType, expr->ast(), visitor), expr_(expr) {}
 
  private:
   ExpressionIR* expr_;

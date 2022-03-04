@@ -97,7 +97,7 @@ class TypeObject : public QLObject {
       return true;
     }
     auto expr_object = static_cast<ExprObject*>(ql_object.get());
-    auto expr_ir = static_cast<ExpressionIR*>(expr_object->node());
+    auto expr_ir = expr_object->expr();
 
     if (expr_ir->EvaluatedDataType() != data_type_) {
       return false;

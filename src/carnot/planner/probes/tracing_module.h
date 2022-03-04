@@ -38,7 +38,7 @@ namespace compiler {
 class TracingVariableObject : public QLObject {
  public:
   static constexpr TypeDescriptor TracingVariableObjectType = {
-      /* name */ "Tracing Variable",
+      /* name */ "TracingVariable",
       /* type */ QLObjectType::kTracingVariable,
   };
 

@@ -202,7 +202,7 @@ TEST_F(DataframeTest, Agg_FailsWithPositionalArgs) {
 
 TEST_F(DataframeTest, Agg_OnlyAllowTupleArgs) {
   EXPECT_THAT(ParseScript(var_table, "df.agg(outcol1=1)"),
-              HasCompilerError("Expected tuple for value at kwarg outcol1 but received.*"));
+              HasCompilerError("Expected tuple for outcol1 but received.*"));
 }
 
 TEST_F(DataframeTest, Agg_BadFirstTupleArg) {
@@ -269,8 +269,8 @@ TEST_F(DataframeTest, SubscriptCanHandleErrorInput) {
 TEST_F(DataframeTest, SubscriptCreateColumn) {
   ASSERT_OK(ParseScript(var_table, "col = df['col1']"));
   auto var = var_table->Lookup("col");
-  ASSERT_EQ(var->type_descriptor().type(), QLObjectType::kExpr);
-  auto maybe_col_node = var->node();
+  ASSERT_TRUE(ExprObject::IsExprObject(var));
+  auto maybe_col_node = static_cast<ExprObject*>(var.get())->expr();
   ASSERT_MATCH(maybe_col_node, ColumnNode());
   EXPECT_EQ(static_cast<ColumnIR*>(maybe_col_node)->col_name(), "col1");
 }
@@ -306,9 +306,8 @@ TEST_F(DataframeTest, AttributeMetadataSubscriptTest) {
   auto var = var_table->Lookup("svc");
   ASSERT_EQ(var->type_descriptor().type(), QLObjectType::kExpr);
   auto metadata_expr = static_cast<ExprObject*>(var.get());
-  ASSERT_TRUE(metadata_expr->HasNode());
-  ASSERT_MATCH(metadata_expr->node(), Metadata());
-  auto metadata_node = static_cast<MetadataIR*>(metadata_expr->node());
+  ASSERT_MATCH(metadata_expr->expr(), Metadata());
+  auto metadata_node = static_cast<MetadataIR*>(metadata_expr->expr());
   EXPECT_EQ(metadata_node->name(), "service");
 }
 

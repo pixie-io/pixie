@@ -40,16 +40,20 @@ StatusOr<QLObjectPtr> CollectionObject::SubscriptHandler(
     const pypa::AstPtr& ast, const ParsedArgs& args, ASTVisitor*) {
   QLObjectPtr key = args.GetArg("key");
 
-  if (!key->HasNode() || !Match(key->node(), Int())) {
-    return CreateAstError(ast, "$0 indices must be integers, not $1", name, key->name());
+  if (!ExprObject::IsExprObject(key)) {
+    return key->CreateError("$0 indices must be integers, not $1", name, key->name());
+  }
+  auto expr = static_cast<ExprObject*>(key.get())->expr();
+  if (!IntIR::NodeMatches(expr)) {
+    return key->CreateError("$0 indices must be integers, not $1", name, expr->type_string());
   }
 
-  PL_ASSIGN_OR_RETURN(IntIR * index_node, GetArgAs<IntIR>(ast, args, "key"));
-  if (index_node->val() >= static_cast<int64_t>(items->size())) {
+  auto idx = static_cast<IntIR*>(expr)->val();
+  if (idx >= static_cast<int64_t>(items->size())) {
     return CreateAstError(ast, "$0 index out of range", name);
   }
 
-  return (*items)[index_node->val()];
+  return (*items)[idx];
 }
 
 std::vector<QLObjectPtr> ObjectAsCollection(QLObjectPtr obj) {

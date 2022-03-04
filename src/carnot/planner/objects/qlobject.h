@@ -176,14 +176,11 @@ class QLObject {
   virtual std::string name() const { return std::string(type_descriptor_.name()); }
   QLObjectType type() const { return type_descriptor_.type(); }
 
-  IRNode* node() const { return node_; }
-
   /**
    * @brief Returns whether this Object contains a valid node.
    *
    * @return the Node is not null.
    */
-  bool HasNode() const { return node_ != nullptr; }
 
   bool HasAstPtr() const { return ast_ != nullptr; }
 
@@ -195,9 +192,6 @@ class QLObject {
    */
   template <typename... Args>
   Status CreateError(Args... args) const {
-    if (HasNode()) {
-      return node_->CreateIRNodeError(args...);
-    }
     if (HasAstPtr()) {
       return CreateAstError(ast_, args...);
     }
@@ -233,9 +227,9 @@ class QLObject {
    * @param node the node to store in the QLObject. Can be null if not necessary for the
    * implementation of the QLObject.
    */
-  QLObject(const TypeDescriptor& type_descriptor, IRNode* node, pypa::AstPtr ast,
+  QLObject(const TypeDescriptor& type_descriptor, IRNode*, pypa::AstPtr ast,
            ASTVisitor* ast_visitor)
-      : type_descriptor_(type_descriptor), node_(node), ast_(ast), ast_visitor_(ast_visitor) {}
+      : type_descriptor_(type_descriptor), ast_(ast), ast_visitor_(ast_visitor) {}
 
   QLObject(const TypeDescriptor& type_descriptor, ASTVisitor* ast_visitor)
       : QLObject(type_descriptor, nullptr, nullptr, ast_visitor) {}
@@ -307,7 +301,6 @@ class QLObject {
   absl::flat_hash_map<std::string, QLObjectPtr> attributes_;
 
   TypeDescriptor type_descriptor_;
-  IRNode* node_ = nullptr;
   pypa::AstPtr ast_ = nullptr;
   ASTVisitor* ast_visitor_ = nullptr;
 };
