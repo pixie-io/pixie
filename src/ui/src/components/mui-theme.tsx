@@ -54,6 +54,7 @@ declare module '@mui/material/styles/createPalette' {
       primary: string;
       flamegraph: {
         kernel: string,
+        java: string,
         app: string,
         k8s: string,
       };
@@ -89,6 +90,7 @@ declare module '@mui/material/styles/createPalette' {
       heatmap: string[];
       flamegraph: {
         kernel: string,
+        java: string,
         app: string,
         k8s: string,
       };
@@ -389,6 +391,7 @@ export const DARK_THEME: Theme = createTheme({
         ...COMMON_THEME.palette.graph,
         flamegraph: {
           kernel: '#98df8a',
+          java: '#31d0f3',
           app: '#31d0f3',
           k8s: '#4796c1',
         },
@@ -464,6 +467,7 @@ export const LIGHT_THEME: Theme = createTheme({
         ...COMMON_THEME.palette.graph,
         flamegraph: {
           kernel: '#90cb84',
+          java: '#00b1d8',
           app: '#00b1d8',
           k8s: '#4796c1',
         },

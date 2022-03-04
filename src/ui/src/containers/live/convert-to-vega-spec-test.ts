@@ -1003,7 +1003,7 @@ describe('simple stacktraceFlameGraph', () => {
       namespace: 'namespace',
     },
     {
-      stacktraces: 'st6_[k]',
+      stacktraces: '[k] st6',
       counts: 1,
       percent: 0,
       container: 'container',
@@ -1175,8 +1175,8 @@ describe('simple stacktraceFlameGraph', () => {
         color: 'k8s',
       },
       {
-        fullPath: 'all;node: node;namespace: namespace;pod: pod;container: container;pid: UNKNOWN;st6_[k]',
-        name: 'st6_[k]',
+        fullPath: 'all;node: node;namespace: namespace;pod: pod;container: container;pid: UNKNOWN;[k] st6',
+        name: '[k] st6',
         count: 1,
         parent: 'all;node: node;namespace: namespace;pod: pod;container: container;pid: UNKNOWN',
         percentage: 0,

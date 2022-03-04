@@ -24,6 +24,7 @@
 #include "src/common/system/proc_parser.h"
 #include "src/stirling/source_connectors/perf_profiler/java/agent/raw_symbol_update.h"
 #include "src/stirling/source_connectors/perf_profiler/java/demangle.h"
+#include "src/stirling/source_connectors/perf_profiler/shared/symbolization.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/java_symbolizer.h"
 #include "src/stirling/utils/detect_application.h"
 
@@ -114,9 +115,8 @@ void JavaSymbolizationContext::UpdateSymbolMap() {
     fn_sig.assign(buffer.data() + update.FnSigOffset(), update.fn_sig_size - 1);
     class_sig.assign(buffer.data() + update.ClassSigOffset(), update.class_sig_size - 1);
 
-    // TODO(jps): Move the jsym_pfx to a common header. Consider adding it in the demangler.
-    constexpr std::string_view jsym_pfx = "[j] ";
-    const std::string demangled = absl::StrCat(jsym_pfx, java::Demangle(symbol, class_sig, fn_sig));
+    using symbolization::kJavaPrefix;
+    const auto demangled = absl::StrCat(kJavaPrefix, java::Demangle(symbol, class_sig, fn_sig));
 
     // TODO(jps): Change to uint32_t in java::RawSymbolUpdate.
     const uint32_t code_size = static_cast<uint32_t>(update.code_size);

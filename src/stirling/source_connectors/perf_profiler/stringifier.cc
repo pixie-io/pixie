@@ -17,6 +17,7 @@
  */
 
 #include "src/stirling/source_connectors/perf_profiler/stringifier.h"
+#include "src/stirling/source_connectors/perf_profiler/shared/symbolization.h"
 
 #include <stdint.h>
 
@@ -34,9 +35,9 @@ Stringifier::Stringifier(Symbolizer* u_symbolizer, Symbolizer* k_symbolizer,
 
 std::string Stringifier::BuildStackTraceString(const std::vector<uintptr_t>& addrs,
                                                profiler::SymbolizerFn symbolize_fn,
-                                               const std::string_view& suffix) {
-  using stringifier::kJavaInterpreter;
-  using stringifier::kSeparator;
+                                               const std::string_view& prefix) {
+  using symbolization::kJavaInterpreter;
+  using symbolization::kSeparator;
 
   // TODO(jps): re-evaluate the correct amount to reserve here.
   std::string stack_trace_str;
@@ -61,15 +62,15 @@ std::string Stringifier::BuildStackTraceString(const std::vector<uintptr_t>& add
       ++num_collapsed;
       continue;
     } else if (num_collapsed > 0) {
-      stack_trace_str = absl::StrCat(stack_trace_str, kJavaInterpreter, " [", num_collapsed, "x]",
-                                     suffix, kSeparator);
+      stack_trace_str =
+          absl::StrCat(stack_trace_str, kJavaInterpreter, " [", num_collapsed, "x]", kSeparator);
       num_collapsed = 0;
     }
-    stack_trace_str = absl::StrCat(stack_trace_str, symbol, suffix, kSeparator);
+    stack_trace_str = absl::StrCat(stack_trace_str, prefix, symbol, kSeparator);
   }
   if (num_collapsed) {
-    stack_trace_str = absl::StrCat(stack_trace_str, kJavaInterpreter, " [", num_collapsed, "x]",
-                                   suffix, kSeparator);
+    stack_trace_str =
+        absl::StrCat(stack_trace_str, kJavaInterpreter, " [", num_collapsed, "x]", kSeparator);
   }
 
   if (!stack_trace_str.empty()) {
@@ -82,7 +83,7 @@ std::string Stringifier::BuildStackTraceString(const std::vector<uintptr_t>& add
 
 std::string Stringifier::FindOrBuildStackTraceString(const int stack_id,
                                                      profiler::SymbolizerFn symbolize_fn,
-                                                     const std::string_view& suffix) {
+                                                     const std::string_view& prefix) {
   // First try to find the memoized result in the stack_trace_strs_ map,
   // if no memoized result is available, build the folded stack trace string.
   auto [iter, inserted] = stack_trace_strs_.try_emplace(stack_id, "");
@@ -95,14 +96,14 @@ std::string Stringifier::FindOrBuildStackTraceString(const int stack_id,
     const std::vector<uintptr_t> addrs = stack_traces_->get_stack_addr(stack_id, kClearStackId);
     VLOG_IF(1, addrs.empty()) << absl::Substitute("[empty_stack_trace] stack_id: $0", stack_id);
 
-    iter->second = BuildStackTraceString(addrs, symbolize_fn, suffix);
+    iter->second = BuildStackTraceString(addrs, symbolize_fn, prefix);
   }
   return iter->second;
 }
 
 std::string Stringifier::FoldedStackTraceString(const stack_trace_key_t& key) {
-  using stringifier::kKernSuffix;
-  using stringifier::kUserSuffix;
+  using symbolization::kKernelPrefix;
+  using symbolization::kUserPrefix;
 
   const int u_stack_id = key.user_stack_id;
   const int k_stack_id = key.kernel_stack_id;
@@ -117,8 +118,8 @@ std::string Stringifier::FoldedStackTraceString(const stack_trace_key_t& key) {
   // Also, it is easier to read, e.g.:
   // stack_trace_str = u_stack_str_fn() + ";" + k_stack_str_fn();
   auto fn_addr = &Stringifier::FindOrBuildStackTraceString;
-  auto u_stack_str_fn = absl::bind_front(fn_addr, this, u_stack_id, u_symbolizer_fn, kUserSuffix);
-  auto k_stack_str_fn = absl::bind_front(fn_addr, this, k_stack_id, k_symbolizer_fn, kKernSuffix);
+  auto u_stack_str_fn = absl::bind_front(fn_addr, this, u_stack_id, u_symbolizer_fn, kUserPrefix);
+  auto k_stack_str_fn = absl::bind_front(fn_addr, this, k_stack_id, k_symbolizer_fn, kKernelPrefix);
 
   std::string stack_trace_str;
   stack_trace_str.reserve(128);
@@ -129,7 +130,7 @@ std::string Stringifier::FoldedStackTraceString(const stack_trace_key_t& key) {
 
   if (u_stack_id >= 0 && k_stack_id >= 0) {
     stack_trace_str = u_stack_str_fn();
-    stack_trace_str += stringifier::kSeparator;
+    stack_trace_str += symbolization::kSeparator;
     stack_trace_str += k_stack_str_fn();
   } else if (u_stack_id >= 0) {
     stack_trace_str = u_stack_str_fn();
@@ -144,7 +145,7 @@ std::string Stringifier::FoldedStackTraceString(const stack_trace_key_t& key) {
     // 2. -EEXIST: hash bucket collision in the stack traces table
     // We can reach this branch if one, or both, of the stack-ids had a hash table collision,
     // but we should not get here with both stack-ids set to "invalid" i.e. -EFAULT.
-    stack_trace_str = stringifier::kDropMessage;
+    stack_trace_str = symbolization::kDropMessage;
     DCHECK(u_stack_id == -EEXIST || u_stack_id == -EFAULT) << "u_stack_id: " << u_stack_id;
     DCHECK(k_stack_id == -EEXIST || k_stack_id == -EFAULT) << "k_stack_id: " << k_stack_id;
     DCHECK(!(k_stack_id == -EFAULT && u_stack_id == -EFAULT)) << "both invalid.";

@@ -28,24 +28,6 @@
 namespace px {
 namespace stirling {
 
-namespace stringifier {
-// The separator between symbols in the folded stack trace string.
-// e.g. main;foo;bar;printf
-constexpr std::string_view kSeparator = ";";
-
-// The suffix is attached to each symbol in a folded stack trace string.
-constexpr std::string_view kUserSuffix = "";
-constexpr std::string_view kKernSuffix = "_[k]";
-
-// This is the symbol we see for Java interpreter frames. The stringifier
-// will collapse repeated instances of this into something like "[j] Interpreter [12x]".
-constexpr std::string_view kJavaInterpreter = "[j] Interpreter";
-
-// The drop message indicates that the kernel had a hash table collision
-// and dropped tracking of one stack trace.
-constexpr std::string_view kDropMessage = "<stack trace lost>";
-}  // namespace stringifier
-
 // Stringifier serves two purposes:
 // 1. constructs a "folded stack trace string" based on the stack frame addresses.
 // 2. memoizes previous results of (1) above in case a "stack-id" is reused
@@ -87,9 +69,9 @@ class Stringifier {
  private:
   std::string BuildStackTraceString(const std::vector<uintptr_t>& addrs,
                                     profiler::SymbolizerFn symbolize_fn,
-                                    const std::string_view& suffix);
+                                    const std::string_view& prefix);
   std::string FindOrBuildStackTraceString(const int stack_id, profiler::SymbolizerFn symbolize_fn,
-                                          const std::string_view& suffix);
+                                          const std::string_view& prefix);
 
   // Memoized results of previous calls to FindOrBuildStackTraceString():
   // a map from stack-trace-id to folded stack trace string.

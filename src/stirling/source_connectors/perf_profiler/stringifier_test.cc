@@ -28,6 +28,7 @@
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/bpf_tools/macros.h"
 #include "src/stirling/source_connectors/perf_profiler/bcc_bpf_intf/stack_event.h"
+#include "src/stirling/source_connectors/perf_profiler/shared/symbolization.h"
 #include "src/stirling/source_connectors/perf_profiler/stringifier.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/bcc_symbolizer.h"
 #include "src/stirling/utils/proc_path_tools.h"
@@ -39,7 +40,7 @@
 BPF_SRC_STRVIEW(stringifer_test_bcc_script, stringifier_test_bpf_text);
 
 using ::testing::AnyOfArray;
-using ::testing::EndsWith;
+using ::testing::StartsWith;
 
 namespace test {
 
@@ -87,8 +88,8 @@ stack_trace_key_t MakeUserKernStackTraceKey(const uint32_t pid, const int u_stac
 
 // These are the expected leaf symbols in our user space folded stack trace strings.
 const std::set<std::string> kPossibleUSyms = {"test::Bar()", "test::Foo()", "__getpid"};
-const std::set<std::string> kPossibleKSyms = {"__x64_sys_getpid_[k]", "__ia32_sys_getpid_[k]",
-                                              "sys_getpid_[k]", "__do_sys_getpid_[k]"};
+const std::set<std::string> kPossibleKSyms = {"[k] __x64_sys_getpid", "[k] __ia32_sys_getpid",
+                                              "[k] sys_getpid", "[k] __do_sys_getpid"};
 
 }  // namespace
 
@@ -131,14 +132,14 @@ class StringifierTest : public ::testing::Test {
       VLOG(1) << absl::Substitute("stack_id: $0, stack_trace_str: $1", stack_id, stack_trace_str);
 
       // Tokenize the folded stack trace string.
-      const StringVec symbols = absl::StrSplit(stack_trace_str, stringifier::kSeparator);
+      const StringVec symbols = absl::StrSplit(stack_trace_str, symbolization::kSeparator);
 
       const auto expected_symbols = is_kernel ? kPossibleKSyms : kPossibleUSyms;
-      const auto suffix = is_kernel ? stringifier::kKernSuffix : stringifier::kUserSuffix;
+      const auto prefix = is_kernel ? symbolization::kKernelPrefix : symbolization::kUserPrefix;
 
-      // Check that each token ends with the appropriate suffix.
+      // Check that each token begins with the appropriate prefix.
       for (const auto& symbol : symbols) {
-        ASSERT_THAT(symbol, EndsWith(std::string(suffix)));
+        ASSERT_THAT(symbol, StartsWith(std::string(prefix)));
       }
 
       // Check that the leaf symbol in the stack trace string is in our expected set.
@@ -225,7 +226,7 @@ TEST_F(StringifierTest, MemoizationTest) {
 
   // Use the stringifier to populate folded_strings_map_ (used for memoization check, later).
   // Inside of PopulatedFoldedStringsMap(), we check the following invariants:
-  // ... that each symbolized token ends with the proper [u|k] suffix.
+  // ... that each symbolized token begins with the proper [u|k] prefix.
   // ... that the leaf symbolized token is in the expected set based on our test call stack.
   for (const auto& [key, count] : histo) {
     if (key.upid.pid == pid) {
@@ -281,7 +282,7 @@ TEST_F(StringifierTest, MemoizationTest) {
   for (const int k_stack_id : k_stack_ids_) {
     for (const int u_stack_id : u_stack_ids_) {
       const stack_trace_key_t key = MakeUserKernStackTraceKey(pid, u_stack_id, k_stack_id);
-      const std::string kSep = std::string(stringifier::kSeparator);
+      const std::string kSep = std::string(symbolization::kSeparator);
       const std::string k_gold = folded_strings_map_[k_stack_id];
       const std::string u_gold = folded_strings_map_[u_stack_id];
       const std::string gold = u_gold + kSep + k_gold;
@@ -299,7 +300,7 @@ TEST_F(StringifierTest, KernelDropMessageTest) {
   const Key dropped_key = MakeUserKernStackTraceKey(pid, -EEXIST, -EEXIST);
   const std::string dropped = stringifier_->FoldedStackTraceString(dropped_key);
   VLOG(1) << "kernel drop message: " << dropped;
-  EXPECT_EQ(dropped, stringifier::kDropMessage);
+  EXPECT_EQ(dropped, symbolization::kDropMessage);
 }
 
 }  // namespace stirling

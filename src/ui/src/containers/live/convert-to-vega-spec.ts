@@ -1931,6 +1931,7 @@ function convertToStacktraceFlameGraph(
 
   // Colors for the stacktrace rectangles, depending on category of the trace.
   const KERNEL_FILL_COLOR = theme.palette.graph.flamegraph.kernel;
+  const JAVA_FILL_COLOR = theme.palette.graph.flamegraph.java;
   const APP_FILL_COLOR = theme.palette.graph.flamegraph.app;
   const K8S_FILL_COLOR = theme.palette.graph.flamegraph.k8s;
 
@@ -2714,6 +2715,12 @@ function convertToStacktraceFlameGraph(
     range: generateColorScale(KERNEL_FILL_COLOR, OVERLAY_COLOR, OVERLAY_ALPHA, OVERLAY_LEVELS),
   });
   addScale(spec, {
+    name: 'java',
+    type: 'ordinal',
+    domain: { data: TRANSFORMED_DATA_SOURCE_NAME, field: 'name' },
+    range: generateColorScale(JAVA_FILL_COLOR, OVERLAY_COLOR, OVERLAY_ALPHA, OVERLAY_LEVELS),
+  });
+  addScale(spec, {
     name: 'c',
     type: 'ordinal',
     domain: { data: TRANSFORMED_DATA_SOURCE_NAME, field: 'name' },
@@ -2786,7 +2793,11 @@ function convertToStacktraceFlameGraph(
         if (!nodeMap[path]) {
           // Set the color based on the language type.
           let lType = 'other';
-          if (s.indexOf('(k8s)') !== -1) {
+          if (s.startsWith('[k] ')) {
+            lType = 'kernel';
+          } else if (s.startsWith('[j] ')) {
+            lType = 'java';
+          } else if (s.indexOf('(k8s)') !== -1) {
             lType = 'k8s';
           } else if (s.indexOf('.(*') !== -1 || s.indexOf('/') !== -1) {
             lType = 'go';
