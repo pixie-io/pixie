@@ -178,6 +178,21 @@ inline std::string ExtractToString(const DataTableSchema& data_table_schema,
   return absl::StrJoin(res, "\n");
 }
 
+// Returns a list of string representation of the records in the input data table.
+// The records in the data table is removed afterwards.
+inline types::ColumnWrapperRecordBatch ExtractRecordsMatchingPID(DataTable* data_table,
+                                                                 int upid_column_idx, int pid) {
+  types::ColumnWrapperRecordBatch res;
+  std::vector<TaggedRecordBatch> tagged_record_batches = data_table->ConsumeRecords();
+  for (auto& tagged_record_batch : tagged_record_batches) {
+    types::ColumnWrapperRecordBatch batches{std::move(tagged_record_batch.records)};
+    for (auto& record : FindRecordsMatchingPID(batches, upid_column_idx, pid)) {
+      res.push_back(std::move(record));
+    }
+  }
+  return res;
+}
+
 }  // namespace testing
 }  // namespace stirling
 }  // namespace px

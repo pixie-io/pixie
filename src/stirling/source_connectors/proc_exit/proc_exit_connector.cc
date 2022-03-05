@@ -68,19 +68,22 @@ Status ProcExitConnector::InitImpl() {
 
 void ProcExitConnector::TransferDataImpl(ConnectorContext* ctx,
                                          const std::vector<DataTable*>& data_tables) {
-  DCHECK(data_tables.size() == 1) << "Expect only one data table for proc_exits";
+  DCHECK(data_tables.size() == 1) << "Expect only one data table for proc_exit tracer";
 
   PollPerfBuffers();
 
   DataTable* data_table = data_tables[0];
   for (auto& event : events_) {
-    DataTable::RecordBuilder<&kTable> r(data_table, event.timestamp_ns);
-    r.Append<r.ColIndex("time_")>(event.timestamp_ns);
+    DataTable::RecordBuilder<&kProcExitEventsTable> r(data_table, event.timestamp_ns);
+    r.Append<proc_exits::kTimeIdx>(event.timestamp_ns);
     md::UPID upid(ctx->GetASID(), event.upid.pid, event.upid.start_time_ticks);
-    r.Append<r.ColIndex("upid")>(upid.value());
-    r.Append<r.ColIndex("exit_code")>(event.exit_code >> 8);
-    r.Append<r.ColIndex("signal")>(event.exit_code & 0x7F);
-    r.Append<r.ColIndex("comm")>(std::move(event.comm));
+    r.Append<proc_exits::kUPIDIdx>(upid.value());
+    // Exit code and signals are encoded in the exit_code field of the task_struct of the process.
+    // See the description below:
+    // https://unix.stackexchange.com/questions/99112/default-exit-code-when-process-is-terminated
+    r.Append<proc_exits::kExitCodeIdx>(event.exit_code >> 8);
+    r.Append<proc_exits::kSignalIdx>(event.exit_code & 0x7F);
+    r.Append<proc_exits::kCommIdx>(std::move(event.comm));
   }
   events_.clear();
 }

@@ -18,12 +18,16 @@
 
 #include "src/stirling/source_connectors/proc_exit/proc_exit_connector.h"
 
+#include "src/common/exec/subprocess.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/testing/common.h"
 
 namespace px {
 namespace stirling {
 
+using ::px::SubProcess;
+using ::px::stirling::testing::RecordBatchSizeIs;
+using ::px::testing::BazelBinTestFilePath;
 using ::testing::SizeIs;
 
 // Tests that ProcExitConnector::TransferData() does not throw any failures.
@@ -36,9 +40,24 @@ TEST(ProcExitConnectorTest, TransferData) {
   testing::DataTables data_tables{ProcExitConnector::kTables};
   DataTable* data_table = data_tables.tables().front();
 
-  // TODO(yzhao): Add a test program and kill it, and verify the record.
+  const std::filesystem::path sleep_path =
+      BazelBinTestFilePath("src/stirling/source_connectors/proc_exit/testing/sleep");
+  SubProcess proc;
+  ASSERT_OK(proc.Start({sleep_path.string()}));
+  ASSERT_TRUE(proc.IsRunning());
+  proc.Kill();
+  int retval = proc.Wait();
+  EXPECT_EQ(retval, 9) << "Exit should not be 0 when killed";
   connector->TransferData(&context, data_tables.tables());
-  PL_LOG_VAR(testing::ExtractToString(ProcExitConnector::kTable, data_table));
+
+  types::ColumnWrapperRecordBatch result = testing::ExtractRecordsMatchingPID(
+      data_table, kProcExitEventsTable.ColIndex("upid"), proc.child_pid());
+  ASSERT_THAT(result, RecordBatchSizeIs(1));
+  EXPECT_EQ(result[proc_exits::kSignalIdx]->Get<types::Int64Value>(0), 9);
+  // Process abnormally terminated will not have a meaningful exit code.
+  // So here 0 means it's not set, instead of that it succeeded.
+  EXPECT_EQ(result[proc_exits::kExitCodeIdx]->Get<types::Int64Value>(0), 0);
+  EXPECT_EQ(result[proc_exits::kCommIdx]->Get<types::StringValue>(0), "sleep");
 }
 
 }  // namespace stirling

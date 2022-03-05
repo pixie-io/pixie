@@ -33,6 +33,8 @@ struct proc_exit_event_t {
   // The exit_code from the task_struct object.
   uint32_t exit_code;
 
-  // The command line of this process.
+  // The process name of this process. It usually is different from the process' command line.
+  // See https://unix.stackexchange.com/questions/655950/command-args-and-process-name
+  // It's assigned by bpf_get_current_comm() hence the name comm.
   char comm[MAX_CMD_SIZE];
 };

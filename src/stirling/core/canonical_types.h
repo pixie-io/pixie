@@ -29,15 +29,17 @@ namespace canonical_data_elements {
 
 // clang-format off
 
+constexpr std::string_view kTimeColName = "time_";
 constexpr DataElement kTime = {
-    "time_",
+    kTimeColName,
     "Timestamp when the data record was collected.",
     types::DataType::TIME64NS,
     types::SemanticType::ST_NONE,
     types::PatternType::METRIC_COUNTER};
 
+constexpr std::string_view kUPIDColName = "upid";
 constexpr DataElement kUPID = {
-    "upid",
+    kUPIDColName,
     "An opaque numeric ID that globally identify a running process inside the cluster.",
     types::DataType::UINT128,
     types::SemanticType::ST_UPID,
