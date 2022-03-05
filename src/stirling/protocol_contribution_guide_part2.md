@@ -1,8 +1,8 @@
-#How to hook up a new protocol parser?
+# How to hook up a new protocol parser?
 
 In [How to contribute a protocol parser in Pixie](protocol_contribution_guide.md), we walked through the overall parsing pipeline and the 5 core functions that need to be implemented. We are now ready to integrate the parser with the rest of Stirling.
 
-##Protocol Inference
+## Protocol Inference
 Before we can parse anything, we need to first recognize what type of traffic it is. Currently, when a connection opens, Stirling runs a rule-based model to predict what protocol the connection is. The model takes in a buffer of bytes (payload of TCP/UDP) and returns the type (request or response) of a specific protocol. Each protocol has its own inference rules, and are all implemented in `src/stirling/source_connectors/socket_tracer/bcc_bpf/protocol_inference.h`. For example, the HTTP inference rules look like the following.
 
 ```cpp
