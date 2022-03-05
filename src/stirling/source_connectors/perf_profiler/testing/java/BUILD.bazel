@@ -15,6 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@rules_java//java:defs.bzl", "java_binary")
+load("//bazel:pl_build_system.bzl", "pl_cc_binary")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -44,4 +45,15 @@ java_binary(
     name = "fib",
     srcs = ["Fib.java"],
     main_class = "JavaFib",
+)
+
+pl_cc_binary(
+    name = "java",
+    srcs = ["fake_java.cc"],
+    deps = [
+        "//src/common/fs:cc_library",
+        "//src/stirling/bpf_tools/bcc_bpf_intf:cc_library",
+        "//src/stirling/source_connectors/perf_profiler/java:cc_library",
+        "//src/stirling/source_connectors/perf_profiler/java/agent:cc_headers",
+    ],
 )

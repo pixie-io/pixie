@@ -20,11 +20,15 @@
 
 #include <set>
 
+#include "src/common/exec/subprocess.h"
+#include "src/common/fs/fs_wrapper.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
+#include "src/stirling/source_connectors/perf_profiler/java/attach.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/bcc_symbolizer.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/caching_symbolizer.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/elf_symbolizer.h"
+#include "src/stirling/source_connectors/perf_profiler/symbolizers/java_symbolizer.h"
 #include "src/stirling/testing/symbolization.h"
 
 namespace test {
@@ -39,6 +43,8 @@ const uintptr_t kBarAddr = reinterpret_cast<uintptr_t>(&test::bar);
 
 namespace px {
 namespace stirling {
+
+using ::px::testing::BazelBinTestFilePath;
 
 template <typename TSymbolizer>
 class SymbolizerTest : public ::testing::Test {
@@ -75,6 +81,56 @@ TEST_F(BCCSymbolizerTest, KernelSymbols) {
 
   auto symbolize = symbolizer_->GetSymbolizerFn(profiler::kKernelUPID);
   EXPECT_EQ(std::string(symbolize(kaddr)), kSymbolName);
+}
+
+TEST_F(BCCSymbolizerTest, JavaSymbols) {
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<Symbolizer> symbolizer,
+                       JavaSymbolizer::Create(std::move(symbolizer_)));
+
+  SubProcess fake_java_proc;
+  const std::filesystem::path fake_java_bin_path =
+      BazelBinTestFilePath("src/stirling/source_connectors/perf_profiler/testing/java/java");
+  ASSERT_TRUE(fs::Exists(fake_java_bin_path)) << fake_java_bin_path;
+  ASSERT_OK(fake_java_proc.Start({fake_java_bin_path}));
+  const uint32_t child_pid = fake_java_proc.child_pid();
+  const uint64_t start_time_ns = 0;
+  const struct upid_t child_upid = {{child_pid}, start_time_ns};
+
+  symbolizer->GetSymbolizerFn(child_upid);
+  std::this_thread::sleep_for(std::chrono::milliseconds{100});
+
+  ASSERT_TRUE(symbolizer->Uncacheable(child_upid)) << "Should have found symbol file by now.";
+  auto symbolize = symbolizer->GetSymbolizerFn(child_upid);
+
+  // The address ranges (100 to 199, 200 to 299, etc.) and the expected symbols are expected
+  // based on the symbol file written by our fake "java" process; i.e. the fake "java" process
+  // serves two purposes: 1. To trigger the java symbolization logic by being named "java" and
+  // 2. To write a symbol file with known symbols and address ranges.
+  for (uint32_t i = 100; i < 200; ++i) {
+    constexpr std::string_view kExpected = "[j] int qux.foo::doStuff(foo.bar.TheStuff, boolean)";
+    EXPECT_EQ(std::string(kExpected), std::string(symbolize(i)));
+  }
+  for (uint32_t i = 200; i < 300; ++i) {
+    constexpr std::string_view kExpected =
+        "[j] void foo.bar.baz.qux::doNothing(byte, boolean, int, long, float, double)";
+    EXPECT_EQ(kExpected, symbolize(i));
+  }
+  for (uint32_t i = 300; i < 400; ++i) {
+    constexpr std::string_view kExpected = "[j] byte foo.qux::compute(boolean)";
+    EXPECT_EQ(kExpected, symbolize(i));
+  }
+  for (uint32_t i = 400; i < 500; ++i) {
+    const auto expected = absl::StrFormat("0x%016llx", i);
+    EXPECT_EQ(expected, symbolize(i));
+  }
+  for (uint32_t i = 500; i < 600; ++i) {
+    constexpr std::string_view kExpected = "[j] long qux.foo::compute(double)";
+    EXPECT_EQ(kExpected, symbolize(i));
+  }
+  ASSERT_OK_AND_ASSIGN(const auto artifacts_path, java::ResolveHostArtifactsPath(child_upid));
+  EXPECT_TRUE(fs::Exists(artifacts_path));
+  symbolizer->DeleteUPID(child_upid);
+  EXPECT_FALSE(fs::Exists(artifacts_path));
 }
 
 // Test the symbolizer with caching enabled and disabled.
