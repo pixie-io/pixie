@@ -60,26 +60,26 @@ const useStyles = makeStyles(({ palette, spacing, typography }: Theme) => create
     paddingRight: spacing(1),
   },
   jsonKey: {
-    color: palette.text.secondary,
+    color: palette.syntax.normal,
   },
   number: {
-    color: palette.secondary.main,
+    color: palette.syntax.number,
   },
   null: {
-    color: palette.foreground.three,
+    color: palette.syntax.nullish,
   },
   undefined: {
-    color: palette.foreground.three,
+    color: palette.syntax.nullish,
   },
   string: {
-    color: palette.mode === 'dark' ? palette.graph.ramp[0] : palette.graph.ramp[2],
+    color: palette.syntax.string,
     wordBreak: 'break-all',
   },
   boolean: {
-    color: palette.success.main,
+    color: palette.syntax.boolean,
   },
   error: {
-    color: palette.error.main,
+    color: palette.syntax.error,
     fontWeight: 'bold',
   },
 }), { name: 'JSONData' });

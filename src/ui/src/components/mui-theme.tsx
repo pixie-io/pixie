@@ -16,8 +16,29 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+
 import { PaletteMode } from '@mui/material';
 import { createTheme, Theme } from '@mui/material/styles';
+import type {
+  PaletteOptions as AugmentedPaletteOptions,
+  SimplePaletteColorOptions,
+} from '@mui/material/styles/createPalette';
+
+interface SyntaxPalette {
+  /** Default color for tokens that don't match any other rules */
+  normal: string;
+  /** Scoping tokens, such as (parens), [brackets], and {braces} */
+  scope: string;
+  /** Tokens that separate others, such as =,.:; */
+  divider: string;
+  /** Tokens that have something wrong (semantic or syntax errors, etc) */
+  error: string;
+  // Primitives...
+  boolean: string;
+  number: string;
+  string: string;
+  nullish: string;
+}
 
 declare module '@mui/material/styles/createPalette' {
   interface TypeBackground {
@@ -63,6 +84,7 @@ declare module '@mui/material/styles/createPalette' {
       focused: string;
       unFocused: string;
     };
+    syntax: SyntaxPalette;
   }
 
   interface PaletteOptions {
@@ -99,6 +121,7 @@ declare module '@mui/material/styles/createPalette' {
       focused: string;
       unFocused: string;
     };
+    syntax: SyntaxPalette;
   }
 }
 
@@ -159,6 +182,22 @@ export const scrollbarStyles = (theme: Theme) => {
     },
   };
 };
+
+function addSyntaxToPalette(base: Omit<AugmentedPaletteOptions, 'syntax'>): AugmentedPaletteOptions {
+  return {
+    ...base,
+    syntax: {
+      normal: base.text.secondary,
+      scope: base.text.secondary,
+      divider: base.foreground.three,
+      error: (base.error as Required<SimplePaletteColorOptions>).main,
+      boolean: (base.success as Required<SimplePaletteColorOptions>).main,
+      number: (base.secondary as Required<SimplePaletteColorOptions>).main,
+      string: base.mode === 'dark' ? base.graph.ramp[0] : base.graph.ramp[2],
+      nullish: base.foreground.three,
+    },
+  };
+}
 
 export const EDITOR_THEME_MAP: Record<PaletteMode, string> = {
   dark: 'vs-dark',
@@ -334,12 +373,12 @@ export const COMMON_THEME = {
   },
 };
 
-export const DARK_THEME: Theme = createTheme({
+const DARK_BASE = {
   ...COMMON_THEME,
   ...{
     palette: {
       ...COMMON_THEME.palette,
-      mode: 'dark',
+      mode: 'dark' as const,
       divider: '#272822',
       foreground: {
         one: '#b2b5bb',
@@ -408,14 +447,19 @@ export const DARK_THEME: Theme = createTheme({
       },
     },
   },
+};
+
+export const DARK_THEME = createTheme({
+  ...DARK_BASE,
+  palette: addSyntaxToPalette(DARK_BASE.palette),
 });
 
-export const LIGHT_THEME: Theme = createTheme({
+const LIGHT_BASE = {
   ...COMMON_THEME,
   ...{
     palette: {
       ...COMMON_THEME.palette,
-      mode: 'light',
+      mode: 'light' as const,
       divider: '#dbdde0',
       foreground: {
         one: '#4f4f4f',
@@ -484,4 +528,9 @@ export const LIGHT_THEME: Theme = createTheme({
       },
     },
   },
+};
+
+export const LIGHT_THEME = createTheme({
+  ...LIGHT_BASE,
+  palette: addSyntaxToPalette(LIGHT_BASE.palette),
 });
