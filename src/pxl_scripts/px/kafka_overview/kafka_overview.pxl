@@ -21,7 +21,222 @@ Shows a graph of Kafka topic-based data flow in the cluster.
 
 import px
 
+ns_per_s = 1000 * 1000 * 1000
+# Window size to use on time_ column for bucketing.
+window_ns = px.DurationNanos(10 * ns_per_s)
 
+
+# ----------------------------------------------------------------
+# Visualization functions:
+# ----------------------------------------------------------------
+def kafka_flow_graph(start_time: str, ns: px.Namespace, topic: str):
+    df = px.DataFrame(table='kafka_events.beta', start_time=start_time)
+    df.namespace = df.ctx['namespace']
+
+    # Filter on namespace, if specified.
+    df = filter_if_not_empty(df, 'namespace', ns)
+
+    # Get produce and fetch records, filtered by topic.
+    producer_df = get_produce_records(df, topic)
+    consumer_df = get_fetch_records(df, topic)
+
+    # Setting src and dest for each edge.
+    producer_df.src = producer_df.client_id
+    producer_df.dest = "topic" + "/" + producer_df.topic_name
+
+    consumer_df.src = "topic" + "/" + consumer_df.topic_name
+    consumer_df.dest = consumer_df.client_id
+
+    df = producer_df.append(consumer_df)
+
+    # Get throughput by adding size of message_sets. Note that this is the total size of the
+    # message batches, not the total number of bytes sent or received.
+    df = df.groupby(['src', 'dest']).agg(record_bytes_total=('message_size', px.sum))
+    df.record_bytes_total = px.Bytes(df.record_bytes_total)
+
+    # Compute time window for the query and add it as a column.
+    df = add_time_window_column(df, start_time)
+
+    df.record_throughput = df.record_bytes_total / df.window
+    return df
+
+
+def kafka_topics_overview(start_time: str, ns: px.Namespace, topic: str):
+    df = px.DataFrame(table='kafka_events.beta', start_time=start_time)
+    df.namespace = df.ctx['namespace']
+
+    # Filter on namespace, if specified.
+    df = filter_if_not_empty(df, 'namespace', ns)
+
+    # Get produce and fetch records, filtered by topic.
+    producer_df = get_produce_records(df, topic)
+    consumer_df = get_fetch_records(df, topic)
+
+    df = producer_df.append(consumer_df)
+
+    # Count the number of unique partitions, producers, and consumers for each topic.
+    num_partitions_df = count_unique(df, 'partition_idx', 'num_partitions')
+    num_producers_df = count_unique(producer_df, 'client_id', 'num_producers')
+    num_consumers_df = count_unique(consumer_df, 'client_id', 'num_consumers')
+
+    # Get total bytes in/out through a topic
+    df_bytes_in = producer_df.groupby('topic_name').agg(bytes_produced_total=('message_size', px.sum))
+    df_bytes_in.bytes_produced_total = px.Bytes(df_bytes_in.bytes_produced_total)
+    df_bytes_out = consumer_df.groupby('topic_name').agg(bytes_consumed_total=('message_size', px.sum))
+    df_bytes_out.bytes_consumed_total = px.Bytes(df_bytes_out.bytes_consumed_total)
+
+    # Join the 5 tables together.
+    df = num_partitions_df.merge(num_producers_df, how='inner', left_on='topic_name', right_on='topic_name',
+                                 suffixes=['', '_a'])
+    df = df.merge(num_consumers_df, how='inner', left_on='topic_name', right_on='topic_name',
+                  suffixes=['', '_b'])
+    df = df.merge(df_bytes_in, how='inner', left_on='topic_name', right_on='topic_name',
+                  suffixes=['', '_c'])
+    df = df.merge(df_bytes_out, how='inner', left_on='topic_name', right_on='topic_name',
+                  suffixes=['', '_d'])
+    df = df[['topic_name', 'num_partitions', 'num_producers', 'num_consumers',
+             'bytes_produced_total', 'bytes_consumed_total']]
+    return df
+
+
+def kafka_brokers(start_time: str, ns: px.Namespace, topic: str):
+    df = px.DataFrame(table='kafka_events.beta', start_time=start_time)
+    df.namespace = df.ctx['namespace']
+
+    # Filter on namespace, if specified.
+    df = filter_if_not_empty(df, 'namespace', ns)
+
+    df = add_source_dest_columns(df)
+    df = add_source_dest_links(df, start_time)
+
+    # Get produce and fetch records, filtered by topic.
+    producer_df = get_produce_records(df, topic)
+    consumer_df = get_fetch_records(df, topic)
+
+    # Get total number of bytes produced and consumed to and from brokers.
+    df_bytes_in = producer_df.groupby('destination').agg(bytes_produced_total=('message_size', px.sum))
+    df_bytes_in.bytes_produced_total = px.Bytes(df_bytes_in.bytes_produced_total)
+    df_bytes_out = consumer_df.groupby('destination').agg(bytes_consumed_total=('message_size', px.sum))
+    df_bytes_out.bytes_consumed_total = px.Bytes(df_bytes_out.bytes_consumed_total)
+
+    # Get throughput of records produced and consumed, grouped by broker pods.
+    producer_df = compute_throughput(producer_df, start_time, "destination")
+    consumer_df = compute_throughput(consumer_df, start_time, "destination")
+
+    df = producer_df.merge(consumer_df, how="inner", left_on="pod", right_on="pod", suffixes=["_produced", "_consumed"])
+
+    # Rename columns.
+    df.pod = df.pod_produced
+    df.produce_rate = df.throughput_produced
+    df.consume_rate = df.throughput_consumed
+    df.produce_requests = df.throughput_total_produced
+    df.fetch_requests = df.throughput_total_consumed
+
+    df = df.merge(df_bytes_in, how="inner", left_on="pod", right_on="destination")
+    df = df.merge(df_bytes_out, how="inner", left_on="pod", right_on="destination")
+
+    df = df[["pod", "produce_rate", "produce_requests", "bytes_produced_total", "consume_rate",
+             "fetch_requests", "bytes_consumed_total"]]
+    return df
+
+
+def kafka_producers(start_time: str, ns: px.Namespace, topic: str):
+    df = px.DataFrame(table='kafka_events.beta', start_time=start_time)
+    df.namespace = df.ctx['namespace']
+
+    # Filter on namespace, if specified.
+    df = filter_if_not_empty(df, 'namespace', ns)
+
+    df = add_source_dest_columns(df)
+    df = add_source_dest_links(df, start_time)
+
+    # Get produce records, filtered by topic.
+    producer_df = get_produce_records(df, topic)
+
+    df_bytes_in = producer_df.groupby('source').agg(bytes_produced_total=('message_size', px.sum))
+    df_bytes_in.bytes_produced_total = px.Bytes(df_bytes_in.bytes_produced_total)
+
+    df = compute_throughput(producer_df, start_time, "source")
+    df.produce_rate = df.throughput
+    df.produce_requests = df.throughput_total
+    df = df.merge(df_bytes_in, how="inner", left_on="pod", right_on="source")
+
+    df = df[["pod", "produce_rate", "produce_requests", "bytes_produced_total"]]
+    return df
+
+
+def kafka_consumers(start_time: str, ns: px.Namespace, topic: str):
+    df = px.DataFrame(table='kafka_events.beta', start_time=start_time)
+    df.namespace = df.ctx['namespace']
+
+    # Filter on namespace, if specified.
+    df = filter_if_not_empty(df, 'namespace', ns)
+
+    df = add_source_dest_columns(df)
+    df = add_source_dest_links(df, start_time)
+
+    # Get produce and fetch records, filtered by topic.
+    consumer_df = get_fetch_records(df, topic)
+
+    df_bytes_out = consumer_df.groupby('source').agg(bytes_consumed_total=('message_size', px.sum))
+    df_bytes_out.bytes_consumed_total = px.Bytes(df_bytes_out.bytes_consumed_total)
+
+    df = compute_throughput(consumer_df, start_time, "source")
+    df.consume_rate = df.throughput
+    df.fetch_requests = df.throughput_total
+    df = df.merge(df_bytes_out, how="inner", left_on="pod", right_on="source")
+
+    df = df[["pod", "consume_rate", "fetch_requests", "bytes_consumed_total"]]
+    return df
+
+
+def kafka_pods_flow_graph(start_time: str, ns: px.Namespace, topic: str):
+
+    df = px.DataFrame('kafka_events.beta', start_time=start_time)
+    df = add_source_dest_columns(df)
+
+    # Filter on namespace, if specified.
+    df = filter_if_not_empty(df, 'namespace', ns)
+
+    # Get produce and fetch records, filtered by topic.
+    producer_df = get_produce_records(df, topic)
+    consumer_df = get_fetch_records(df, topic)
+
+    df = producer_df.append(consumer_df)
+
+    # Filter out records with unresolved entities.
+    # Some records have unresolved entities due to an initial delay in resolving endpoints.
+    df = df[df.source != "-" and df.destination != "-"]
+
+    # Create 10 ns bin for time_ column
+    df.timestamp = px.bin(df.time_, window_ns)
+
+    df = df.groupby(['timestamp', 'source', 'destination', 'is_source_pod_type',
+                     'is_dest_pod_type', 'namespace']).agg(
+        latency_quantiles=('latency', px.quantiles),
+        throughput_total=('latency', px.count),
+    )
+
+    df.latency_p50 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p50')))
+    df.latency_p90 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p90')))
+    df.latency_p99 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p99')))
+    df.request_throughput = df.throughput_total / window_ns
+
+    df = df.groupby(['source', 'destination', 'is_source_pod_type', 'is_dest_pod_type',
+                     'namespace']).agg(
+        latency_p50=('latency_p50', px.mean),
+        latency_p90=('latency_p90', px.mean),
+        latency_p99=('latency_p99', px.mean),
+        request_throughput=('request_throughput', px.mean),
+        throughput_total=('throughput_total', px.sum)
+    )
+
+    return df
+
+
+# ----------------------------------------------------------------
+# Utility functions:
+# ----------------------------------------------------------------
 # Hack to get the time window for the script.
 # TODO(philkuz): Replace this with a built-in.
 def get_time_window(start_time: str):
@@ -47,74 +262,6 @@ def add_time_window_column(df, start_time):
     return df
 
 
-def kafka_flow_graph(start_time: str):
-    df = px.DataFrame(table='kafka_events.beta', start_time=start_time)
-    df.namespace = df.ctx['namespace']
-
-    # Produce requests have command 0 and fetch requests have command 1.
-    producer_df = df[df.req_cmd == 0]
-    consumer_df = df[df.req_cmd == 1]
-
-    producer_df = unnest_topics_and_partitions(producer_df, 'req_body')
-    consumer_df = unnest_topics_and_partitions(consumer_df, 'resp')
-
-    # Setting src and dest for each edge.
-    producer_df.src = producer_df.client_id
-    producer_df.dest = "topic" + "/" + producer_df.topic_name
-
-    consumer_df.src = "topic" + "/" + consumer_df.topic_name
-    consumer_df.dest = consumer_df.client_id
-
-    df = producer_df.append(consumer_df)
-
-    # Get throughput by adding size of message_sets. Note that this is the total size of the
-    # message batches, not the total number of bytes sent or received.
-    df = df.groupby(['src', 'dest']).agg(record_bytes_total=('message_size', px.sum))
-    df.record_bytes_total = px.Bytes(df.record_bytes_total)
-
-    # Compute time window for the query and add it as a column.
-    df = add_time_window_column(df, start_time)
-
-    df.record_throughput = df.record_bytes_total / df.window
-    return df
-
-
-def kafka_topics_overview(start_time: str):
-    df = px.DataFrame(table='kafka_events.beta', start_time=start_time)
-    producer_df = df[df.req_cmd == 0]
-    consumer_df = df[df.req_cmd == 1]
-
-    # Expand the topics and partitions.
-    producer_df = unnest_topics_and_partitions(producer_df, 'req_body')
-    consumer_df = unnest_topics_and_partitions(consumer_df, 'resp')
-
-    df = producer_df.append(consumer_df)
-
-    # Count the number of unique partitions, producers, and consumers for each topic.
-    num_partitions_df = count_unique(df, 'partition_idx', 'num_partitions')
-    num_producers_df = count_unique(producer_df, 'client_id', 'num_producers')
-    num_consumers_df = count_unique(consumer_df, 'client_id', 'num_consumers')
-
-    # Get total bytes in/out through a topic
-    df_bytes_in = producer_df.groupby('topic_name').agg(produced_bytes_total=('message_size', px.sum))
-    df_bytes_in.produced_bytes_total = px.Bytes(df_bytes_in.produced_bytes_total)
-    df_bytes_out = consumer_df.groupby('topic_name').agg(consumed_bytes_total=('message_size', px.sum))
-    df_bytes_out.consumed_bytes_total = px.Bytes(df_bytes_out.consumed_bytes_total)
-
-    # Join the 5 tables together.
-    df = num_partitions_df.merge(num_producers_df, how='inner', left_on='topic_name', right_on='topic_name',
-                                 suffixes=['', '_a'])
-    df = df.merge(num_consumers_df, how='inner', left_on='topic_name', right_on='topic_name',
-                  suffixes=['', '_b'])
-    df = df.merge(df_bytes_in, how='inner', left_on='topic_name', right_on='topic_name',
-                  suffixes=['', '_c'])
-    df = df.merge(df_bytes_out, how='inner', left_on='topic_name', right_on='topic_name',
-                  suffixes=['', '_d'])
-    df = df[['topic_name', 'num_partitions', 'num_producers', 'num_consumers',
-             'produced_bytes_total', 'consumed_bytes_total']]
-    return df
-
-
 def count_unique(df, src_col, dest_col):
     '''
     Count the unique number of values in src_col and put the result in dest_col.
@@ -126,16 +273,30 @@ def count_unique(df, src_col, dest_col):
     return df
 
 
-def unnest_topics_and_partitions(df, body_field):
+def filter_if_not_empty(df, column: str, val: str):
+    '''
+    Filters for rows where column is equal to val. If val is "", all rows are retained.
+    '''
+    df.criterion = px.select(df[column] == val, True, val == "")
+    df = df[df.criterion]
+    df = df.drop('criterion')
+    return df
+
+
+def unnest_topics_and_partitions(df, body_field: str):
+    '''
+    Unnest the topics and partitions from a data frame. body_field is the target column to unnest,
+    usually 'req_body' or 'resp'.
+    '''
     # Get topic_name
     df.topics = px.pluck(df[body_field], 'topics')
-    df = json_unnest_first5(df, 'topic', 'topics', ['client_id', 'topic', 'time_'])
+    df = json_unnest_first5(df, 'topic', 'topics')
     df = df[df.topic != '']
     df.topic_name = px.pluck(df.topic, 'name')
 
     # Get partition_idx
     df.partitions = px.pluck(df.topic, 'partitions')
-    df = json_unnest_first5(df, 'partition', 'partitions', ['client_id', 'topic_name', 'partition', 'time_'])
+    df = json_unnest_first5(df, 'partition', 'partitions')
     df = df[df.partition != '']
     df.partition_idx = px.pluck(df.partition, 'index')
 
@@ -146,20 +307,143 @@ def unnest_topics_and_partitions(df, body_field):
     return df
 
 
-def json_unnest_first5(df, dest_col, src_col, fields):
+def json_unnest_first5(df, dest_col, src_col):
     ''' Unnest the first 5 values in a JSON array in the src_col, and put it in the
-    dest_col. Fields are the columns to keep in the resulting table.
+    dest_col.
     '''
-    df0 = json_array_index(df, dest_col, src_col, fields, 0)
-    df1 = json_array_index(df, dest_col, src_col, fields, 1)
-    df2 = json_array_index(df, dest_col, src_col, fields, 2)
-    df3 = json_array_index(df, dest_col, src_col, fields, 3)
-    df4 = json_array_index(df, dest_col, src_col, fields, 4)
+    df0 = json_array_index(df, dest_col, src_col, 0)
+    df1 = json_array_index(df, dest_col, src_col, 1)
+    df2 = json_array_index(df, dest_col, src_col, 2)
+    df3 = json_array_index(df, dest_col, src_col, 3)
+    df4 = json_array_index(df, dest_col, src_col, 4)
     df = df0.append(df1).append(df2).append(df3).append(df4)
     return df
 
 
-def json_array_index(df, dest_col, src_col, fields, idx):
+def json_array_index(df, dest_col, src_col, idx):
     df[dest_col] = px.pluck_array(df[src_col], idx)
-    df = df[fields]
+    return df
+
+
+def compute_throughput(df, start_time: str, group_column: str):
+    '''
+    Computes the throughput (number of requests) per second and throughput total after grouping by
+    the group_column.
+    '''
+    df = df.groupby([group_column]).agg(
+        throughput_total=('latency', px.count)
+    )
+    df = add_time_window_column(df, start_time)
+    df.throughput = df.throughput_total / df.window
+
+    df.pod = df[group_column]
+    df = df[["pod", "throughput", "throughput_total"]]
+
+    return df
+
+
+def get_produce_records(df, topic: str):
+    '''
+    Get all the produce records and filter by a specified topic. If topic is empty, all
+    produce records are retained.
+    '''
+    # Produce requests have command 0.
+    producer_df = df[df.req_cmd == 0]
+
+    producer_df = unnest_topics_and_partitions(producer_df, 'req_body')
+
+    # Filter on topic, if specified.
+    producer_df = filter_if_not_empty(producer_df, 'topic_name', topic)
+
+    return producer_df
+
+
+def get_fetch_records(df, topic: str):
+    '''
+    Get all the fetch records and filter by a specified topic. If topic is empty, all
+    fetch records are retained.
+    '''
+    # Fetch requests have command 1.
+    consumer_df = df[df.req_cmd == 1]
+
+    consumer_df = unnest_topics_and_partitions(consumer_df, 'resp')
+
+    # Filter on topic, if specified.
+    consumer_df = filter_if_not_empty(consumer_df, 'topic_name', topic)
+
+    return consumer_df
+
+
+def add_source_dest_columns(df):
+    ''' Add source and destination columns for the Kafka request.
+
+    Kafka requests are traced server-side (trace_role==2), unless the server is
+    outside of the cluster in which case the request is traced client-side (trace_role==1).
+
+    When trace_role==2, the Kafka request source is the remote_addr column
+    and destination is the pod column. When trace_role==1, the Kafka request
+    source is the pod column and the destination is the remote_addr column.
+
+    Input DataFrame must contain trace_role, upid, remote_addr columns.
+    '''
+    df.pod = df.ctx['pod']
+    df.namespace = df.ctx['namespace']
+
+    # If remote_addr is a pod, get its name. If not, use IP address.
+    df.ra_pod = px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_addr))
+    df.is_ra_pod = df.ra_pod != ''
+    df.ra_name = px.select(df.is_ra_pod, df.ra_pod, df.remote_addr)
+
+    df.is_server_tracing = df.trace_role == 2
+    df.is_source_pod_type = px.select(df.is_server_tracing, df.is_ra_pod, True)
+    df.is_dest_pod_type = px.select(df.is_server_tracing, True, df.is_ra_pod)
+
+    # Set source and destination based on trace_role.
+    df.source = px.select(df.is_server_tracing, df.ra_name, df.pod)
+    df.destination = px.select(df.is_server_tracing, df.pod, df.ra_name)
+
+    # Filter out messages with empty source / destination.
+    df = df[df.source != '']
+    df = df[df.destination != '']
+
+    df = df.drop(['ra_pod', 'is_ra_pod', 'ra_name', 'is_server_tracing'])
+
+    return df
+
+
+def add_source_dest_links(df, start_time: str):
+    ''' Modifies the source and destination columns to display deeplinks in the UI.
+    Clicking on a pod name in either column will run the px/pod script for that pod.
+    Clicking on an IP address, will run the px/ip script showing all network connections
+    to/from that IP address.
+
+    Input DataFrame must contain source, destination, is_source_pod_type,
+    is_dest_pod_type, and namespace columns.
+    '''
+
+    # Source linking. If source is a pod, link to px/pod. If an IP addr, link to px/net_flow_graph.
+    df.src_pod_link = px.script_reference(df.source, 'px/pod', {
+        'start_time': start_time,
+        'pod': df.source
+    })
+    df.src_link = px.script_reference(df.source, 'px/ip', {
+        'start_time': start_time,
+        'ip': df.source,
+    })
+    df.source = px.select(df.is_source_pod_type, df.src_pod_link, df.src_link)
+
+    # If destination is a pod, link to px/pod. If an IP addr, link to px/net_flow_graph.
+    df.dest_pod_link = px.script_reference(df.destination, 'px/pod', {
+        'start_time': start_time,
+        'pod': df.destination
+    })
+    df.dest_link = px.script_reference(df.destination, 'px/ip', {
+        'start_time': start_time,
+        'ip': df.destination,
+    })
+    df.destination = px.select(df.is_dest_pod_type, df.dest_pod_link, df.dest_link)
+
+    df = df.drop(['src_pod_link', 'src_link', 'is_source_pod_type', 'dest_pod_link',
+                  'dest_link', 'is_dest_pod_type'])
+
     return df
