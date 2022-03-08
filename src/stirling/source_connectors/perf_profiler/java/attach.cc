@@ -31,6 +31,7 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/proc_parser.h"
 #include "src/common/system/scoped_namespace.h"
+#include "src/stirling/source_connectors/perf_profiler/java/agent/agent_hash.h"
 #include "src/stirling/source_connectors/perf_profiler/java/agent/raw_symbol_update.h"
 #include "src/stirling/source_connectors/perf_profiler/java/attach.h"
 #include "src/stirling/utils/proc_path_tools.h"
@@ -94,14 +95,24 @@ bool TestDLOpen(const std::string& so_lib_file_path) {
 }
 }  // namespace
 
-std::filesystem::path AgentArtifactsPath(const struct upid_t& upid) {
+std::filesystem::path AgentArtifactsPathArg(const struct upid_t& upid) {
+  // This is used as the argument passed into the Pixie JVMTI symbolization agent.
+  // The agent itself is responsible for adding the suffix "-(PX_JVMTI_AGENT_HASH)" to the path.
   char const* const kPathTemplate = "/tmp/px-java-symbolization-artifacts-$0-$1";
   return absl::Substitute(kPathTemplate, upid.pid, upid.start_time_ticks);
 }
 
+std::filesystem::path AgentArtifactsPath(const struct upid_t& upid) {
+  // This is the full agent artifacts path. Stirling needs to know this to:
+  // 1. Resolve the agent artifacts path for cleanup.
+  // 2. Test libs using dlopen inside of the target process mount namespace.
+  char const* const kPathTemplate = "/tmp/px-java-symbolization-artifacts-$0-$1-$2";
+  return absl::Substitute(kPathTemplate, upid.pid, upid.start_time_ticks, PX_JVMTI_AGENT_HASH);
+}
+
 std::filesystem::path StirlingArtifactsPath(const struct upid_t& upid) {
-  char const* const kPathTemplate = "/proc/$0/root/tmp/px-java-symbolization-artifacts-$0-$1";
-  return absl::Substitute(kPathTemplate, upid.pid, upid.start_time_ticks);
+  char const* const kPathTemplate = "/proc/$0/root/tmp/px-java-symbolization-artifacts-$0-$1-$2";
+  return absl::Substitute(kPathTemplate, upid.pid, upid.start_time_ticks, PX_JVMTI_AGENT_HASH);
 }
 
 std::filesystem::path StirlingSymbolFilePath(const struct upid_t& upid) {
@@ -210,7 +221,7 @@ void AgentAttacher::SelectLibWithDLOpenOrDie() {
 }
 
 void AgentAttacher::AttachOrDie() {
-  const std::string argent_args = AgentArtifactsPath(target_upid_).string();
+  const std::string argent_args = AgentArtifactsPathArg(target_upid_).string();
   constexpr int argc = 4;
   const char* argv[argc] = {"load", lib_so_path_.c_str(), "true", argent_args.c_str()};
   const int r = jattach(target_upid_.pid, argc, argv);

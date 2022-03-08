@@ -34,6 +34,9 @@
 // NOLINTNEXTLINE: build/include_subdir
 #include "raw_symbol_update.h"
 
+// NOLINTNEXTLINE: build/include_subdir
+#include "agent_hash.h"
+
 #define PX_JVMTI_AGENT_RETURN_IF_ERROR(err)                                                    \
   if (err != JNI_OK) {                                                                         \
     LogF("Pixie symbolization agent startup sequence failed, %s, error code: %d.", #err, err); \
@@ -341,6 +344,8 @@ jint OpenLogFiles(const char* options) {
   }
 
   std::string artifacts_path(options);
+  artifacts_path += std::string("-") + std::string(PX_JVMTI_AGENT_HASH);
+
   g_log_file_ptr = nullptr;
   g_bin_file_ptr = nullptr;
 

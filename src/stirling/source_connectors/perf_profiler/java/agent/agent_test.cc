@@ -20,6 +20,7 @@
 
 #include "src/common/exec/subprocess.h"
 #include "src/common/fs/fs_wrapper.h"
+#include "src/stirling/source_connectors/perf_profiler/java/agent/agent_hash.h"
 #include "src/stirling/source_connectors/perf_profiler/java/agent/raw_symbol_update.h"
 #include "src/stirling/testing/common.h"
 
@@ -38,19 +39,25 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   const fs_path kBazelAppPath = BazelBinTestFilePath(kToyAppPath);
   ASSERT_TRUE(fs::Exists(kBazelAppPath));
 
-  if (fs::Exists(java::kBinSymbolFileName)) {
+  const fs_path artifacts_path = absl::Substitute("java-agent-test-$0", PX_JVMTI_AGENT_HASH);
+  const fs_path symbol_file_path = artifacts_path / java::kBinSymbolFileName;
+
+  if (fs::Exists(artifacts_path)) {
     // The symbol file is created by the Java process when the agent is attached.
     // A left over stale symbol file can cause this test to pass when it should fail.
     // Here, we prevent that from happening.
-    LOG(INFO) << "Removing stale file: " << java::kBinSymbolFileName << ".";
-    ASSERT_OK(fs::Remove(java::kBinSymbolFileName));
+    char const* const stale_path_msg = "Removing stale symbolization artifacts path: $0.";
+    LOG(WARNING) << absl::Substitute(stale_path_msg, artifacts_path.string());
+    ASSERT_OK(fs::RemoveAll(artifacts_path));
   }
+  ASSERT_FALSE(fs::Exists(artifacts_path));
+  ASSERT_OK(fs::CreateDirectories(artifacts_path));
 
   SubProcess sub_process;
   ASSERT_OK(sub_process.Start({kBazelAppPath})) << "Could not start Java app: " << kJavaAppName;
   std::this_thread::sleep_for(std::chrono::seconds(5));
 
-  const auto r = ReadFileToString(std::string(java::kBinSymbolFileName), std::ios_base::binary);
+  const auto r = ReadFileToString(std::string(symbol_file_path), std::ios_base::binary);
   ASSERT_OK(r);
   const auto s = r.ValueOrDie();
 
@@ -69,9 +76,10 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   for (const auto& expected_symbol : expected_symbols) {
     EXPECT_THAT(s, HasSubstr(expected_symbol));
   }
-  if (fs::Exists(java::kBinSymbolFileName)) {
-    LOG(INFO) << "Removing symbol file: " << java::kBinSymbolFileName;
-    ASSERT_OK(fs::Remove(java::kBinSymbolFileName));
+  if (fs::Exists(artifacts_path)) {
+    char const* const remove_msg = "Removing symbolization artifacts path: $0.";
+    LOG(INFO) << absl::Substitute(remove_msg, artifacts_path.string());
+    ASSERT_OK(fs::RemoveAll(artifacts_path));
   }
 }
 

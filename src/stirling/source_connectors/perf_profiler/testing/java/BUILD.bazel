@@ -19,16 +19,17 @@ load("//bazel:pl_build_system.bzl", "pl_cc_binary")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
-# We need somethting like:
+# When invoking "fib_with_agent", to inject the JVMTI agent,
+# we need a command line arg. that looks like this:
 # -agentpath:/path/to/libagent.so=<symbolization-file-path-prefix>
-# on the java cmd line so that 1. the symbolization agent is injected and 2. it has a path
-# for the symbolization log file.
+# We build this up using so_path, symbol_file_path, and jvm_flags, below.
 
 # Construct the agent path portion of the command line arg.
 so_path = "-agentpath:$(location //src/stirling/source_connectors/perf_profiler/java/agent:glibc)"
 
-# For this test, the symbol file will be created in the cwd of the test as it runs.
-symbol_file_path = "."
+# The agent_test will be create the symbol in directory "java-agent-test-<PX_JVMTI_AGENT_HASH>"
+# in the test cwd. The suffix "-<PX_JVMTI_AGENT_HASH>" is added by the agent itself.
+symbol_file_path = "./java-agent-test"
 
 # Construct the full cmd line args here.
 jvm_flags = [so_path + "=" + symbol_file_path]

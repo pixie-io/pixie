@@ -20,33 +20,61 @@ load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
+agent_files = [
+    "Makefile.inner",
+    "agent.cc",
+    "raw_symbol_update.h",
+]
+
+# This is the header file where we will put the version hash
+# of the Pixie Java symbolization JVMTI source files.
+# The hash itself will replace the "{}" below.
+_hash_dot_h_fmt = [
+    "#pragma once",
+    "#define PX_JVMTI_AGENT_HASH \"{}\"",
+]
+
+hash_dot_h_fmt = "\n".join(_hash_dot_h_fmt)
+
+# These are the commands we use inside of the genrule to write agent_hash.h.
+# $(SRCS) is the list of JVMTI source files, which the genrule picks up from agent_files.
+# xargs is used to write the hash value in place of the "{}" inside hash_dot_h_fmt.
+hash_cmds = [
+    "cat $(SRCS)",
+    "sha256sum",
+    "head -c 32",
+    "xargs -I{} echo '" + hash_dot_h_fmt + "'",
+]
+
+hash_cmd = " | ".join(hash_cmds)
+
+# This writes the file "agent_hash.h".
+genrule(
+    name = "agent_hash",
+    srcs = agent_files,
+    outs = ["agent_hash.h"],
+    cmd = hash_cmd + " > $@",
+)
+
 pl_cc_library(
     # This is a "header only" pl_cc_library: agent.cc is used to create a .so that will be injected
     # to a target Java process.
     name = "cc_headers",
-    hdrs = glob(["*.h"]),
+    hdrs = glob(["*.h"]) + ["agent_hash.h"],
 )
 
 container_image(
     name = "image-glibc",
     base = "@openjdk-base-glibc//image",
     directory = "/build",
-    files = [
-        "Makefile.inner",
-        "agent.cc",
-        "raw_symbol_update.h",
-    ],
+    files = agent_files + ["agent_hash.h"],
 )
 
 container_image(
     name = "image-musl",
     base = "@openjdk-base-musl//image",
     directory = "/build",
-    files = [
-        "Makefile.inner",
-        "agent.cc",
-        "raw_symbol_update.h",
-    ],
+    files = agent_files + ["agent_hash.h"],
 )
 
 container_run_and_extract(
@@ -103,7 +131,10 @@ filegroup(
 
 pl_cc_test(
     name = "agent_test",
-    srcs = ["agent_test.cc"],
+    srcs = [
+        "agent_hash.h",
+        "agent_test.cc",
+    ],
     data = [
         "//src/stirling/source_connectors/perf_profiler/java/agent:glibc",
         "//src/stirling/source_connectors/perf_profiler/testing/java:fib_with_agent",
