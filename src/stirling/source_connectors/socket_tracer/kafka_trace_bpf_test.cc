@@ -271,8 +271,7 @@ TEST_F(KafkaTraceTest, kafka_capture) {
 
   // Grab the data from Stirling.
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kKafkaTableNum);
-  ASSERT_FALSE(tablets.empty());
-  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
   // TODO(chengruizhe): Some of the records are missing. Fix and add tests for all records.
   {

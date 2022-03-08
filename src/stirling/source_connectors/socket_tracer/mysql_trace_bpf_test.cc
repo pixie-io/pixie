@@ -413,8 +413,7 @@ TEST_F(MySQLTraceTest, mysql_capture) {
 
     // Grab the data from Stirling.
     std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kMySQLTableNum);
-    ASSERT_FALSE(tablets.empty());
-    types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+    ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
     if (!FLAGS_tracing_mode) {
       // Check client-side tracing results.
@@ -453,8 +452,7 @@ TEST_F(MySQLTraceTest, mysql_capture) {
 
     // Grab the data from Stirling.
     std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kMySQLTableNum);
-    ASSERT_FALSE(tablets.empty());
-    types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+    ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
     if (!FLAGS_tracing_mode) {
       // Check client-side tracing results.
@@ -496,8 +494,7 @@ TEST_F(MySQLTraceTest, mysql_capture) {
 
     // Grab the data from Stirling.
     std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kMySQLTableNum);
-    ASSERT_FALSE(tablets.empty());
-    types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+    ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
     // Check client-side tracing results.
     if (!FLAGS_tracing_mode) {

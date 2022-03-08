@@ -23,6 +23,7 @@
 
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/dynamic_bpftrace/dynamic_bpftrace_connector.h"
+#include "src/stirling/testing/common.h"
 
 namespace px {
 namespace stirling {
@@ -169,13 +170,11 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceBuiltins) {
   std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
 
   // Should've gotten something in the records.
-  ASSERT_FALSE(tablets.empty());
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& records, tablets);
 
   // TODO(oazizi): Use /proc/sys/kernel/pid_max to make more robust.
   const uint64_t kMaxPIDValue = 1ULL << 22;
   const uint64_t kMaxUIDValue = 1ULL << 32;
-
-  types::ColumnWrapperRecordBatch& records = tablets[0].records;
 
   // Check the first record for reasonable values.
   {
@@ -281,9 +280,7 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceBuiltins2) {
   std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
 
   // Should've gotten something in the records.
-  ASSERT_FALSE(tablets.empty());
-
-  types::ColumnWrapperRecordBatch& records = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& records, tablets);
 
   std::string username = records[kUsernameIdx]->Get<types::StringValue>(0);
   LOG(INFO) << absl::Substitute("username: $0", username);
@@ -352,9 +349,7 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceUnlabeledColumn) {
   std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
 
   // Should've gotten something in the records.
-  ASSERT_FALSE(tablets.empty());
-
-  types::ColumnWrapperRecordBatch& records = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& records, tablets);
 
   std::string username = records[kUsernameIdx]->Get<types::StringValue>(0);
   LOG(INFO) << absl::Substitute("username: $0", username);

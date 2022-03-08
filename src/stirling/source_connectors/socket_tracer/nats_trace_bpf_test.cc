@@ -105,10 +105,10 @@ TEST_P(NATSTraceBPFTest, VerifyBatchedCommands) {
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kNATSTableNum);
 
-  ASSERT_FALSE(tablets.empty());
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& records, tablets);
 
   EXPECT_THAT(
-      GetNATSTraceRecords(tablets[0].records, server_pid),
+      GetNATSTraceRecords(records, server_pid),
       UnorderedElementsAre(
           EqualsNATSTraceRecord("CONNECT", absl::Substitute(R"("tls_required":$0)", GetParam()),
                                 ""),

@@ -119,9 +119,7 @@ TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kRedisTableNum);
 
-  ASSERT_FALSE(tablets.empty());
-
-  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
   std::vector<RedisTraceRecord> redis_trace_records =
       GetRedisTraceRecords(record_batch, container_.process_pid());
@@ -186,9 +184,7 @@ TEST_F(RedisTraceBPFTest, VerifyPubSubCommands) {
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kRedisTableNum);
 
-  ASSERT_FALSE(tablets.empty());
-
-  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
   std::vector<RedisTraceRecord> redis_trace_records =
       GetRedisTraceRecords(record_batch, container_.process_pid());
 
@@ -223,9 +219,7 @@ TEST_F(RedisTraceBPFTest, ScriptLoadAndEvalSHA) {
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kRedisTableNum);
 
-  ASSERT_FALSE(tablets.empty());
-
-  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
   std::vector<RedisTraceRecord> redis_trace_records =
       GetRedisTraceRecords(record_batch, container_.process_pid());
 
@@ -255,9 +249,7 @@ TEST_P(RedisTraceBPFTest, VerifyCommand) {
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kRedisTableNum);
 
-  ASSERT_FALSE(tablets.empty());
-
-  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
   EXPECT_THAT(
       GetRedisTraceRecords(record_batch, container_.process_pid()),

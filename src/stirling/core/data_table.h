@@ -63,7 +63,6 @@ class DataTable : public NotCopyable {
    * that would cause the appearance of records going backwards in time are dropped.
    * A warning message is printed in such cases.
    *
-   * @param end_time Threshold time up until which records are pushed out.
    * @return vector of Tablets (without tabletization, vector size is <=1).
    *         Empty record batches are not pushed into the vector, so all
    *         TaggedRecordBatch objects will have at least one record.

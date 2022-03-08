@@ -90,8 +90,7 @@ TYPED_TEST(HTTP2TraceTest, Basic) {
     // Grab the data from Stirling.
     std::vector<TaggedRecordBatch> tablets =
         this->ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
-    ASSERT_FALSE(tablets.empty());
-    types::ColumnWrapperRecordBatch rb = tablets[0].records;
+    ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& rb, tablets);
 
     const std::vector<size_t> target_record_indices =
         FindRecordIdxMatchesPID(rb, kHTTPUPIDIdx, this->server_.process_pid());
@@ -158,8 +157,7 @@ TEST_F(ProductCatalogServiceTraceTest, Basic) {
 
   // Grab the data from Stirling.
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
-  ASSERT_FALSE(tablets.empty());
-  const types::ColumnWrapperRecordBatch& rb = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& rb, tablets);
 
   const std::vector<size_t> target_record_indices =
       FindRecordIdxMatchesPID(rb, kHTTPUPIDIdx, server_.process_pid());

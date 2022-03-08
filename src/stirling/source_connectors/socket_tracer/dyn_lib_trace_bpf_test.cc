@@ -153,8 +153,7 @@ TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
     StopTransferDataThread();
 
     std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
-    ASSERT_FALSE(tablets.empty());
-    types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+    ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
     // Inspect records for Debug.
     for (size_t i = 0; i < record_batch[0]->Size(); ++i) {

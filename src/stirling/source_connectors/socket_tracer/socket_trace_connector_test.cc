@@ -38,7 +38,6 @@ namespace px {
 namespace stirling {
 
 namespace http = protocols::http;
-namespace cass = protocols::cass;
 
 using ::testing::ElementsAre;
 
@@ -143,7 +142,6 @@ class SocketTraceConnectorTest : public ::testing::Test {
   static constexpr uint32_t kASID = 0;
 
   static constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
-  static constexpr int kMySQLTableNum = SocketTraceConnector::kMySQLTableNum;
   static constexpr int kCQLTableNum = SocketTraceConnector::kCQLTableNum;
 
   SocketTraceConnectorTest() : event_gen_(&mock_clock_) {}
@@ -154,7 +152,8 @@ class SocketTraceConnectorTest : public ::testing::Test {
     source_ = dynamic_cast<SocketTraceConnectorFriend*>(connector_.get());
     ASSERT_NE(nullptr, source_);
 
-    ctx_ = std::make_unique<SystemWideStandaloneContext>();
+    absl::flat_hash_set<md::UPID> upids = {md::UPID(kASID, kPID, kPIDStartTimeTicks)};
+    ctx_ = std::make_unique<TestContext>(upids);
 
     // Tell the source to use our injected clock for getting the current time.
     source_->test_only_set_now_fn(
@@ -178,7 +177,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
 
   std::unique_ptr<SourceConnector> connector_;
   SocketTraceConnectorFriend* source_ = nullptr;
-  std::unique_ptr<SystemWideStandaloneContext> ctx_;
+  std::unique_ptr<TestContext> ctx_;
   testing::MockClock mock_clock_;
   testing::EventGenerator event_gen_;
 };
@@ -215,12 +214,11 @@ TEST_F(SocketTraceConnectorTest, Basic) {
   connector_->TransferData(ctx_.get(), data_tables_.tables());
 
   std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  RecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(RecordBatch & records, tablets);
 
-  ASSERT_THAT(record_batch, RecordBatchSizeIs(1));
-  EXPECT_THAT(ToStringVector(record_batch[kHTTPReqBodyIdx]), ElementsAre("I have a message body"));
-  EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]), ElementsAre("foo"));
+  ASSERT_THAT(records, RecordBatchSizeIs(1));
+  EXPECT_THAT(ToStringVector(records[kHTTPReqBodyIdx]), ElementsAre("I have a message body"));
+  EXPECT_THAT(ToStringVector(records[kHTTPRespBodyIdx]), ElementsAre("foo"));
 }
 
 TEST_F(SocketTraceConnectorTest, HTTPDelayedRespBody) {
@@ -252,12 +250,11 @@ TEST_F(SocketTraceConnectorTest, HTTPDelayedRespBody) {
   connector_->TransferData(ctx_.get(), data_tables_.tables());
 
   std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  RecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(RecordBatch & records, tablets);
 
-  EXPECT_THAT(record_batch, RecordBatchSizeIs(1));
-  EXPECT_THAT(ToStringVector(record_batch[kHTTPReqBodyIdx]), ElementsAre(""));
-  EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]), ElementsAre("hello world"));
+  EXPECT_THAT(records, RecordBatchSizeIs(1));
+  EXPECT_THAT(ToStringVector(records[kHTTPReqBodyIdx]), ElementsAre(""));
+  EXPECT_THAT(ToStringVector(records[kHTTPRespBodyIdx]), ElementsAre("hello world"));
 }
 
 TEST_F(SocketTraceConnectorTest, HTTPContentType) {
@@ -291,23 +288,24 @@ TEST_F(SocketTraceConnectorTest, HTTPContentType) {
   connector_->TransferData(ctx_.get(), data_tables_.tables());
 
   std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  RecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(RecordBatch & records, tablets);
 
-  EXPECT_THAT(record_batch, RecordBatchSizeIs(4))
+  EXPECT_THAT(records, RecordBatchSizeIs(4))
       << "The filter is changed to require 'application/json' in Content-Type header, "
          "and event_json Content-Type matches, and is selected";
-  EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]),
+  EXPECT_THAT(ToStringVector(records[kHTTPRespBodyIdx]),
               ElementsAre("foo", "bar", "<removed: non-text content-type>", "foo"));
-  EXPECT_THAT(ToIntVector<types::Time64NSValue>(record_batch[kHTTPTimeIdx]),
+  EXPECT_THAT(ToIntVector<types::Time64NSValue>(records[kHTTPTimeIdx]),
               ElementsAre(source_->ConvertToRealTime(3), source_->ConvertToRealTime(5),
                           source_->ConvertToRealTime(7), source_->ConvertToRealTime(9)));
 }
 
 // Use CQL protocol to check sorting, because it supports parallel request-response streams.
 TEST_F(SocketTraceConnectorTest, SortedByResponseTime) {
-  using cass::testutils::CreateCQLEmptyEvent;
-  using cass::testutils::CreateCQLEvent;
+  using protocols::cass::ReqOp;
+  using protocols::cass::RespOp;
+  using protocols::cass::testutils::CreateCQLEmptyEvent;
+  using protocols::cass::testutils::CreateCQLEvent;
 
   // A CQL request with CQL_VERSION=3.0.0.
   constexpr uint8_t kStartupReq1[] = {0x00, 0x01, 0x00, 0x0b, 0x43, 0x51, 0x4c, 0x5f,
@@ -321,14 +319,14 @@ TEST_F(SocketTraceConnectorTest, SortedByResponseTime) {
                                       0x05, 0x33, 0x2e, 0x30, 0x2e, 0x31};
 
   struct socket_control_event_t conn = event_gen_.InitConn();
-  std::unique_ptr<SocketDataEvent> req1 = event_gen_.InitSendEvent<kProtocolCQL>(
-      CreateCQLEvent(cass::ReqOp::kStartup, kStartupReq1, 1));
-  std::unique_ptr<SocketDataEvent> req2 = event_gen_.InitSendEvent<kProtocolCQL>(
-      CreateCQLEvent(cass::ReqOp::kStartup, kStartupReq2, 2));
+  std::unique_ptr<SocketDataEvent> req1 =
+      event_gen_.InitSendEvent<kProtocolCQL>(CreateCQLEvent(ReqOp::kStartup, kStartupReq1, 1));
+  std::unique_ptr<SocketDataEvent> req2 =
+      event_gen_.InitSendEvent<kProtocolCQL>(CreateCQLEvent(ReqOp::kStartup, kStartupReq2, 2));
   std::unique_ptr<SocketDataEvent> resp2 =
-      event_gen_.InitRecvEvent<kProtocolCQL>(CreateCQLEmptyEvent(cass::RespOp::kReady, 2));
+      event_gen_.InitRecvEvent<kProtocolCQL>(CreateCQLEmptyEvent(RespOp::kReady, 2));
   std::unique_ptr<SocketDataEvent> resp1 =
-      event_gen_.InitRecvEvent<kProtocolCQL>(CreateCQLEmptyEvent(cass::RespOp::kReady, 1));
+      event_gen_.InitRecvEvent<kProtocolCQL>(CreateCQLEmptyEvent(RespOp::kReady, 1));
   struct socket_control_event_t close_event = event_gen_.InitClose();
 
   source_->AcceptControlEvent(conn);
@@ -341,12 +339,11 @@ TEST_F(SocketTraceConnectorTest, SortedByResponseTime) {
   connector_->TransferData(ctx_.get(), data_tables_.tables());
 
   std::vector<TaggedRecordBatch> tablets = cql_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  RecordBatch record_batch = tablets[0].records;
-  EXPECT_THAT(record_batch, RecordBatchSizeIs(2));
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(RecordBatch & records, tablets);
+  EXPECT_THAT(records, RecordBatchSizeIs(2));
 
   // Note that results are sorted by response time, not request time.
-  EXPECT_THAT(ToStringVector(record_batch[kCQLReqBody]),
+  EXPECT_THAT(ToStringVector(records[kCQLReqBody]),
               ElementsAre(R"({"CQL_VERSION":"3.0.1"})", R"({"CQL_VERSION":"3.0.0"})"));
 }
 
@@ -369,13 +366,12 @@ TEST_F(SocketTraceConnectorTest, UPIDCheck) {
   connector_->TransferData(ctx_.get(), data_tables_.tables());
 
   std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  RecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(RecordBatch & records, tablets);
 
-  ASSERT_THAT(record_batch, RecordBatchSizeIs(2));
+  ASSERT_THAT(records, RecordBatchSizeIs(2));
 
   for (int i = 0; i < 2; ++i) {
-    auto val = record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(i);
+    auto val = records[kHTTPUPIDIdx]->Get<types::UInt128Value>(i);
     md::UPID upid(val.val);
 
     EXPECT_EQ(upid.pid(), kPID);
@@ -398,7 +394,6 @@ TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
   struct socket_control_event_t close_event = event_gen_.InitClose();
 
   std::vector<TaggedRecordBatch> tablets;
-  RecordBatch record_batch;
 
   source_->AcceptControlEvent(conn);
   source_->AcceptDataEvent(std::move(event0));
@@ -411,10 +406,9 @@ TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
   connector_->TransferData(ctx_.get(), data_tables_.tables());
 
   tablets = http_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(RecordBatch & records, tablets);
 
-  EXPECT_THAT(record_batch, RecordBatchSizeIs(2));
+  EXPECT_THAT(records, RecordBatchSizeIs(2));
 
   source_->AcceptDataEvent(std::move(event3));
   source_->AcceptControlEvent(close_event);
@@ -431,30 +425,29 @@ TEST_F(SocketTraceConnectorTest, NoEvents) {
   struct socket_control_event_t close_event = event_gen_.InitClose();
 
   std::vector<TaggedRecordBatch> tablets;
-  RecordBatch record_batch;
-
-  source_->AcceptControlEvent(conn);
 
   // Check empty transfer.
+  source_->AcceptControlEvent(conn);
   connector_->TransferData(ctx_.get(), data_tables_.tables());
+
   tablets = http_table_->ConsumeRecords();
   ASSERT_TRUE(tablets.empty());
 
   // Check empty transfer following a successful transfer.
   source_->AcceptDataEvent(std::move(event0));
   source_->AcceptDataEvent(std::move(event1));
-
   connector_->TransferData(ctx_.get(), data_tables_.tables());
-  tablets = http_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  record_batch = tablets[0].records;
-  EXPECT_THAT(record_batch, RecordBatchSizeIs(1));
 
+  tablets = http_table_->ConsumeRecords();
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(RecordBatch & records, tablets);
+  EXPECT_THAT(records, RecordBatchSizeIs(1));
+
+  // No new events, so expect no data.
   connector_->TransferData(ctx_.get(), data_tables_.tables());
   tablets = http_table_->ConsumeRecords();
   ASSERT_TRUE(tablets.empty());
-  EXPECT_OK(source_->GetConnTracker(kPID, kFD));
 
+  // Close event shouldn't cause any new data either.
   source_->AcceptControlEvent(close_event);
   connector_->TransferData(ctx_.get(), data_tables_.tables());
   tablets = http_table_->ConsumeRecords();
@@ -482,13 +475,12 @@ TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
   connector_->TransferData(ctx_.get(), data_tables_.tables());
 
   std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  RecordBatch record_batch = tablets[0].records;
-  EXPECT_THAT(record_batch, RecordBatchSizeIs(3));
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(RecordBatch & records, tablets);
+  EXPECT_THAT(records, RecordBatchSizeIs(3));
 
-  EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]), ElementsAre("foo", "bar", "doe"));
-  EXPECT_THAT(ToStringVector(record_batch[kHTTPReqMethodIdx]), ElementsAre("GET", "GET", "GET"));
-  EXPECT_THAT(ToStringVector(record_batch[kHTTPReqPathIdx]),
+  EXPECT_THAT(ToStringVector(records[kHTTPRespBodyIdx]), ElementsAre("foo", "bar", "doe"));
+  EXPECT_THAT(ToStringVector(records[kHTTPReqMethodIdx]), ElementsAre("GET", "GET", "GET"));
+  EXPECT_THAT(ToStringVector(records[kHTTPReqPathIdx]),
               ElementsAre("/index.html", "/data.html", "/logs.html"));
 }
 
@@ -504,9 +496,6 @@ TEST_F(SocketTraceConnectorTest, MissingEventInStream) {
   std::unique_ptr<SocketDataEvent> resp_event3 = event_gen_.InitRecvEvent<kProtocolHTTP>(kResp0);
   // No Close event (connection still active).
 
-  std::vector<TaggedRecordBatch> tablets;
-  RecordBatch record_batch;
-
   source_->AcceptControlEvent(conn);
   source_->AcceptDataEvent(std::move(req_event0));
   source_->AcceptDataEvent(std::move(req_event1));
@@ -514,24 +503,26 @@ TEST_F(SocketTraceConnectorTest, MissingEventInStream) {
   source_->AcceptDataEvent(std::move(resp_event0));
   PL_UNUSED(resp_event1);  // Missing event.
   source_->AcceptDataEvent(std::move(resp_event2));
-
   connector_->TransferData(ctx_.get(), data_tables_.tables());
-  tablets = http_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  record_batch = tablets[0].records;
-  EXPECT_THAT(record_batch, RecordBatchSizeIs(2));
-  EXPECT_OK(source_->GetConnTracker(kPID, kFD));
 
-  source_->AcceptDataEvent(std::move(req_event3));
-  source_->AcceptDataEvent(std::move(resp_event3));
+  {
+    std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
+    ASSERT_NOT_EMPTY_AND_GET_RECORDS(RecordBatch & records, tablets);
+    EXPECT_THAT(records, RecordBatchSizeIs(2));
+    EXPECT_OK(source_->GetConnTracker(kPID, kFD));
+  }
 
   // Processing of resp_event3 will result in one more record.
+  source_->AcceptDataEvent(std::move(req_event3));
+  source_->AcceptDataEvent(std::move(resp_event3));
   connector_->TransferData(ctx_.get(), data_tables_.tables());
-  tablets = http_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  record_batch = tablets[0].records;
-  EXPECT_THAT(record_batch, RecordBatchSizeIs(1));
-  EXPECT_OK(source_->GetConnTracker(kPID, kFD));
+
+  {
+    std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
+    ASSERT_NOT_EMPTY_AND_GET_RECORDS(RecordBatch & records, tablets);
+    EXPECT_THAT(records, RecordBatchSizeIs(1));
+    EXPECT_OK(source_->GetConnTracker(kPID, kFD));
+  }
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
@@ -809,7 +800,6 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
       event_gen.InitSendEvent<kProtocolHTTP>("GET /index.html HTTP/1.1\r\n");
 
   std::vector<TaggedRecordBatch> tablets;
-  RecordBatch record_batch;
 
   // Simulating events being emitted from BPF perf buffer.
   source_->AcceptControlEvent(conn0);

@@ -95,8 +95,7 @@ TEST_F(JVMStatsConnectorTest, CaptureData) {
     connector_->TransferData(ctx.get(), data_tables_.tables());
     std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords();
 
-    ASSERT_FALSE(tablets.empty());
-    const auto& records = tablets[0].records;
+    ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& records, tablets);
 
     ASSERT_THAT(records, RecordBatchSizeIs(1));
     EXPECT_GE(AccessRecordBatch<types::Int64Value>(records, kYoungGCTimeIdx, 0), 0);
@@ -116,11 +115,9 @@ TEST_F(JVMStatsConnectorTest, CaptureData) {
     connector_->TransferData(ctx.get(), data_tables_.tables());
     std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords();
 
-    ASSERT_FALSE(tablets.empty());
-    const auto& records1 =
-        FindRecordsMatchingPID(tablets[0].records, kUPIDIdx, hello_world1.child_pid());
-    const auto& records2 =
-        FindRecordsMatchingPID(tablets[0].records, kUPIDIdx, hello_world2.child_pid());
+    ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+    const auto& records1 = FindRecordsMatchingPID(record_batch, kUPIDIdx, hello_world1.child_pid());
+    const auto& records2 = FindRecordsMatchingPID(record_batch, kUPIDIdx, hello_world2.child_pid());
 
     EXPECT_THAT(records1, RecordBatchSizeIs(1));
     EXPECT_THAT(records2, RecordBatchSizeIs(1));

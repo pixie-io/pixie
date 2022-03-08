@@ -137,8 +137,7 @@ TEST_P(GRPCTraceTest, CaptureRPCTraceRecord) {
   StopTransferDataThread();
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
-  ASSERT_FALSE(tablets.empty());
-  const types::ColumnWrapperRecordBatch& rb = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& rb, tablets);
   const std::vector<size_t> target_record_indices =
       FindRecordIdxMatchesPID(rb, kHTTPUPIDIdx, server_.pid());
   ASSERT_GE(target_record_indices.size(), 1);

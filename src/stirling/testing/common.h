@@ -39,6 +39,10 @@
   DEFER(var = var##__orig);        \
   var = val;
 
+#define ASSERT_NOT_EMPTY_AND_GET_RECORDS(lhs, tablets) \
+  ASSERT_EQ(tablets.size(), 1);                        \
+  lhs = tablets[0].records;
+
 namespace px {
 
 namespace types {

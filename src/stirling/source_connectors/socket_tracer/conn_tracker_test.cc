@@ -489,7 +489,7 @@ TEST_F(ConnTrackerTest, MessagesErasedAfterExpiration) {
 }
 
 // Tests that tracker state is kDisabled if the remote address is in the cluster's CIDR range.
-TEST_F(ConnTrackerTest, TrackerDisabledForIntraClusterRemoteEndpoint) {
+TEST_F(ConnTrackerTest, DisabledForIntraClusterRemoteEndpoint) {
   struct socket_control_event_t conn = event_gen_.InitConn();
 
   // Set an address that falls in the intra-cluster address range.
@@ -497,33 +497,31 @@ TEST_F(ConnTrackerTest, TrackerDisabledForIntraClusterRemoteEndpoint) {
 
   CIDRBlock cidr;
   ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
-  std::vector cidrs = {cidr};
 
   ConnTracker tracker;
   tracker.AddControlEvent(conn);
   tracker.SetProtocol(kProtocolHTTP, "testing");
   tracker.SetRole(kRoleClient, "testing");
-  tracker.IterationPreTick(now(), cidrs, /*proc_parser*/ nullptr, /*connections*/ nullptr);
+  tracker.IterationPreTick(now(), {cidr}, /*proc_parser*/ nullptr, /*connections*/ nullptr);
   EXPECT_EQ(tracker.state(), ConnTracker::State::kDisabled);
   EXPECT_EQ(std::string(tracker.disable_reason()),
             std::string("No client-side tracing: Remote endpoint is inside the cluster."));
 }
 
 // Tests that tracker state is kDisabled if the remote address is localhost.
-TEST_F(ConnTrackerTest, TrackerDisabledForLocalhostRemoteEndpoint) {
+TEST_F(ConnTrackerTest, DisabledForLocalhostRemoteEndpoint) {
   struct socket_control_event_t conn = event_gen_.InitConn();
   conn.open.addr.in6.sin6_addr = IN6ADDR_LOOPBACK_INIT;
   conn.open.addr.in6.sin6_family = AF_INET6;
 
   CIDRBlock cidr;
   ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
-  std::vector cidrs = {cidr};
 
   ConnTracker tracker;
   tracker.AddControlEvent(conn);
   tracker.SetProtocol(kProtocolHTTP, "testing");
   tracker.SetRole(kRoleClient, "testing");
-  tracker.IterationPreTick(now(), cidrs, /*proc_parser*/ nullptr, /*connections*/ nullptr);
+  tracker.IterationPreTick(now(), {cidr}, /*proc_parser*/ nullptr, /*connections*/ nullptr);
   EXPECT_EQ(tracker.state(), ConnTracker::State::kDisabled);
   EXPECT_EQ(std::string(tracker.disable_reason()),
             std::string("No client-side tracing: Remote endpoint is inside the cluster."));
@@ -544,41 +542,39 @@ TEST_F(ConnTrackerTest, TrackerCollectingForClientSideTracingWithNoCIDR) {
 }
 
 // Tests that tracker state is kDisabled if the remote address is Unix domain socket.
-TEST_F(ConnTrackerTest, TrackerDisabledForUnixDomainSocket) {
+TEST_F(ConnTrackerTest, DisabledForUnixDomainSockets) {
   struct socket_control_event_t conn = event_gen_.InitConn();
   conn.open.addr.in6.sin6_family = AF_UNIX;
 
   CIDRBlock cidr;
   ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
-  std::vector cidrs = {cidr};
 
   ConnTracker tracker;
   tracker.AddControlEvent(conn);
-  tracker.IterationPreTick(now(), cidrs, /*proc_parser*/ nullptr, /*connections*/ nullptr);
+  tracker.IterationPreTick(now(), {cidr}, /*proc_parser*/ nullptr, /*connections*/ nullptr);
   EXPECT_EQ(tracker.state(), ConnTracker::State::kDisabled);
   EXPECT_EQ(std::string(tracker.disable_reason()), "Unhandled socket address family");
 }
 
 // Tests that tracker state is kDisabled if the remote address is kOther (non-IP).
-TEST_F(ConnTrackerTest, TrackerDisabledForOtherSockAddrFamily) {
+TEST_F(ConnTrackerTest, DisabledForOtherSockAddrFamily) {
   struct socket_control_event_t conn = event_gen_.InitConn();
   // Any non-IP family works for testing purposes.
   conn.open.addr.in6.sin6_family = AF_NETLINK;
 
   CIDRBlock cidr;
   ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
-  std::vector cidrs = {cidr};
 
   ConnTracker tracker;
   tracker.AddControlEvent(conn);
-  tracker.IterationPreTick(now(), cidrs, /*proc_parser*/ nullptr, /*connections*/ nullptr);
+  tracker.IterationPreTick(now(), {cidr}, /*proc_parser*/ nullptr, /*connections*/ nullptr);
   EXPECT_EQ(tracker.state(), ConnTracker::State::kDisabled);
   EXPECT_EQ(std::string(tracker.disable_reason()), "Unhandled socket address family");
 }
 
 // Tests that tracker is disabled after mapping the addresses from IPv4 to IPv6.
 // NOTE: This test has a lot of overlap with other tests. Consider removing it.
-TEST_F(ConnTrackerTest, TrackerDisabledAfterMapping) {
+TEST_F(ConnTrackerTest, DisabledAfterMapping) {
   {
     struct socket_control_event_t conn = event_gen_.InitConn();
     testing::SetIPv6RemoteAddr(&conn, "::ffff:1.2.3.4");

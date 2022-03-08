@@ -92,8 +92,7 @@ TYPED_TEST(GoTLSTraceTest, BasicHTTP) {
   // Grab the data from Stirling.
   std::vector<TaggedRecordBatch> tablets =
       this->ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
-  ASSERT_FALSE(tablets.empty());
-  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
   {
     const std::vector<size_t> target_record_indices =
@@ -129,8 +128,7 @@ TYPED_TEST(GoTLSTraceTest, BasicHTTP2) {
   // Grab the data from Stirling.
   std::vector<TaggedRecordBatch> tablets =
       this->ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
-  ASSERT_FALSE(tablets.empty());
-  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
   {
     const std::vector<size_t> target_record_indices =

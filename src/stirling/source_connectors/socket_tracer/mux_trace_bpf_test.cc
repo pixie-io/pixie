@@ -159,8 +159,7 @@ TEST_F(MuxTraceTest, DISABLED_Capture) {
 
   // Grab the data from Stirling.
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kMuxTableNum);
-  ASSERT_FALSE(tablets.empty());
-  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
   std::vector<mux::Record> server_records = GetTargetRecords(record_batch, server_.process_pid());
 

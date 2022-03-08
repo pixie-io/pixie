@@ -109,8 +109,7 @@ TEST_F(PostgreSQLTraceTest, SelectQuery) {
   StopTransferDataThread();
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kPGSQLTableNum);
-  ASSERT_FALSE(tablets.empty());
-  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
   auto indices = FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, client_pid);
   ASSERT_THAT(indices, SizeIs(1));
 
@@ -138,8 +137,7 @@ TEST_F(PostgreSQLTraceTest, GolangSqlxDemo) {
   StopTransferDataThread();
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kPGSQLTableNum);
-  ASSERT_FALSE(tablets.empty());
-  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
   // Select only the records from the client side. Stirling captures both client and server side
   // traffic because of the remote address is outside of the cluster.
@@ -207,8 +205,7 @@ TEST_F(PostgreSQLTraceTest, FunctionCall) {
     StopTransferDataThread();
 
     std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kPGSQLTableNum);
-    ASSERT_FALSE(tablets.empty());
-    types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+    ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
     auto indices = FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, client_pid);
     ASSERT_THAT(indices, SizeIs(1));
@@ -238,8 +235,7 @@ TEST_F(PostgreSQLTraceTest, FunctionCall) {
     StopTransferDataThread();
 
     std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kPGSQLTableNum);
-    ASSERT_FALSE(tablets.empty());
-    types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+    ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
     auto indices = FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, client_pid);
     ASSERT_THAT(indices, SizeIs(1));

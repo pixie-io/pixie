@@ -196,36 +196,37 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
   }
 
   std::vector<TaggedRecordBatch> tablets;
-  RecordBatch record_batch;
 
   connector_->TransferData(ctx_.get(), data_tables_->tables());
   tablets = mysql_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  record_batch = tablets[0].records;
-  EXPECT_THAT(record_batch, RecordBatchSizeIs(2));
 
-  std::string expected_entry0 =
-      "SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock "
-      "JOIN sock_tag ON "
-      "sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE tag.name=? "
-      "GROUP "
-      "BY id ORDER BY ?";
+  {
+    ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+    EXPECT_THAT(record_batch, RecordBatchSizeIs(2));
 
-  std::string expected_entry1 =
-      "query=[SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock "
-      "JOIN sock_tag ON "
-      "sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE tag.name=? "
-      "GROUP "
-      "BY id ORDER BY ?] params=[brown, id]";
+    std::string expected_entry0 =
+        "SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock "
+        "JOIN sock_tag ON "
+        "sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE tag.name=? "
+        "GROUP "
+        "BY id ORDER BY ?";
 
-  EXPECT_THAT(ToStringVector(record_batch[kMySQLReqBodyIdx]),
-              ElementsAre(expected_entry0, expected_entry1));
-  EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]),
-              ElementsAre("", "Resultset rows = 2"));
-  // In test environment, latencies are simply the number of packets in the response.
-  // StmtPrepare resp has 7 response packets: 1 header + 2 col defs + 1 EOF + 2 param defs + 1 EOF.
-  // StmtExecute resp has 7 response packets: 1 header + 2 col defs + 1 EOF + 2 rows + 1 EOF.
-  EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kMySQLLatencyIdx]), ElementsAre(7, 7));
+    std::string expected_entry1 =
+        "query=[SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock "
+        "JOIN sock_tag ON "
+        "sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE tag.name=? "
+        "GROUP "
+        "BY id ORDER BY ?] params=[brown, id]";
+
+    EXPECT_THAT(ToStringVector(record_batch[kMySQLReqBodyIdx]),
+                ElementsAre(expected_entry0, expected_entry1));
+    EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]),
+                ElementsAre("", "Resultset rows = 2"));
+    // In test environment, latencies are simply the number of packets in the response.
+    // StmtPrepare resp has 7 response packets: 1 header + 2 col defs + 1 EOF + 2 param defs + 1
+    // EOF. StmtExecute resp has 7 response packets: 1 header + 2 col defs + 1 EOF + 2 rows + 1 EOF.
+    EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kMySQLLatencyIdx]), ElementsAre(7, 7));
+  }
 
   // Test execute fail after close. It should create an entry with the Error.
   std::unique_ptr<SocketDataEvent> close_req_event =
@@ -240,19 +241,20 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
   source_->AcceptDataEvent(std::move(execute_resp_event2));
 
   connector_->TransferData(ctx_.get(), data_tables_->tables());
-
   tablets = mysql_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  record_batch = tablets[0].records;
-  EXPECT_THAT(record_batch, RecordBatchSizeIs(2));
-  EXPECT_THAT(ToStringVector(record_batch[kMySQLReqBodyIdx]),
-              ElementsAre("", "Execute stmt_id=2."));
-  EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]),
-              ElementsAre("", "This is an error."));
-  // In test environment, latencies are simply the number of packets in the response.
-  // StmtClose resp has 0 response packets.
-  // StmtExecute resp has 1 response packet: 1 error.
-  EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kMySQLLatencyIdx]), ElementsAre(0, 1));
+
+  {
+    ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+    EXPECT_THAT(record_batch, RecordBatchSizeIs(2));
+    EXPECT_THAT(ToStringVector(record_batch[kMySQLReqBodyIdx]),
+                ElementsAre("", "Execute stmt_id=2."));
+    EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]),
+                ElementsAre("", "This is an error."));
+    // In test environment, latencies are simply the number of packets in the response.
+    // StmtClose resp has 0 response packets.
+    // StmtExecute resp has 1 response packet: 1 error.
+    EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kMySQLLatencyIdx]), ElementsAre(0, 1));
+  }
 }
 
 TEST_F(SocketTraceConnectorTest, MySQLQuery) {
@@ -275,8 +277,7 @@ TEST_F(SocketTraceConnectorTest, MySQLQuery) {
   connector_->TransferData(ctx_.get(), data_tables_->tables());
 
   std::vector<TaggedRecordBatch> tablets = mysql_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  RecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
   EXPECT_THAT(record_batch, RecordBatchSizeIs(1));
 
   EXPECT_THAT(ToStringVector(record_batch[kMySQLReqBodyIdx]), ElementsAre("SELECT name FROM tag;"));
@@ -386,8 +387,7 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
   connector_->TransferData(ctx_.get(), data_tables_->tables());
 
   std::vector<TaggedRecordBatch> tablets = mysql_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  RecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
   EXPECT_THAT(record_batch, RecordBatchSizeIs(9));
 
   // In this test environment, latencies are the number of events.
@@ -517,8 +517,7 @@ TEST_F(SocketTraceConnectorTest, MySQLQueryWithLargeResultset) {
   connector_->TransferData(ctx_.get(), data_tables_->tables());
 
   std::vector<TaggedRecordBatch> tablets = mysql_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  RecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
   ASSERT_THAT(record_batch, RecordBatchSizeIs(1));
   int idx = 0;
   EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx),
@@ -606,8 +605,7 @@ TEST_F(SocketTraceConnectorTest, MySQLMultiResultset) {
   connector_->TransferData(ctx_.get(), data_tables_->tables());
 
   std::vector<TaggedRecordBatch> tablets = mysql_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  RecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
   ASSERT_THAT(record_batch, RecordBatchSizeIs(1));
   int idx = 0;
   EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx), "CALL multi()");
@@ -666,8 +664,7 @@ TEST_F(SocketTraceConnectorTest, CQLQuery) {
   connector_->TransferData(ctx_.get(), data_tables_->tables());
 
   std::vector<TaggedRecordBatch> tablets = cql_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  RecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
   EXPECT_THAT(record_batch, RecordBatchSizeIs(1));
 
   EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kCQLReqOp]),
@@ -719,8 +716,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ClientTest) {
   connector_->TransferData(ctx_.get(), data_tables_->tables());
 
   std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  RecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
   ASSERT_THAT(record_batch, RecordBatchSizeIs(1));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
@@ -761,8 +757,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ServerTest) {
   connector_->TransferData(ctx_.get(), data_tables_->tables());
 
   std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  RecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
   ASSERT_THAT(record_batch, RecordBatchSizeIs(1));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
@@ -805,7 +800,6 @@ TEST_F(SocketTraceConnectorTest, HTTP2ResponseOnly) {
 // This test models capturing data mid-stream, where we may have missed the request entirely.
 TEST_F(SocketTraceConnectorTest, HTTP2SpanAcrossTransferData) {
   std::vector<TaggedRecordBatch> tablets;
-  RecordBatch record_batch;
 
   testing::EventGenerator event_gen(&mock_clock_);
 
@@ -837,8 +831,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2SpanAcrossTransferData) {
 
   // TransferData should now have pushed data to the tables, because HTTP2 stream has ended.
   tablets = http_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
   ASSERT_THAT(record_batch, RecordBatchSizeIs(1));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
@@ -876,8 +869,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2SequentialStreams) {
   connector_->TransferData(ctx_.get(), data_tables_->tables());
 
   std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  RecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
   ASSERT_THAT(record_batch, RecordBatchSizeIs(4));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request7");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response7");
@@ -942,8 +934,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ParallelStreams) {
   connector_->TransferData(ctx_.get(), data_tables_->tables());
 
   std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  RecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
   ASSERT_THAT(record_batch, RecordBatchSizeIs(4));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request7");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response7");
@@ -1011,8 +1002,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2StreamSandwich) {
   // Notice, however, that this causes stream_id 9 to appear before stream_id 7.
 
   std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  RecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
   ASSERT_THAT(record_batch, RecordBatchSizeIs(2));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request9");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response9");
@@ -1054,8 +1044,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2StreamIDRace) {
   connector_->TransferData(ctx_.get(), data_tables_->tables());
 
   std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  RecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
   ASSERT_THAT(record_batch, RecordBatchSizeIs(4));
 
   // Note that results are sorted by time of request/response pair. See stream_ids vector above.
@@ -1109,8 +1098,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2OldStream) {
   source_->AcceptControlEvent(event_gen.InitClose());
 
   std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  RecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
   ASSERT_THAT(record_batch, RecordBatchSizeIs(4));
 
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request117");

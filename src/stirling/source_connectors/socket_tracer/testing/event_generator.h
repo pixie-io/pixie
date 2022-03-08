@@ -37,8 +37,13 @@ constexpr uint64_t kPIDStartTimeTicks = 112358;
 // Convenience functions and predefined data for generating events expected from BPF socket probes.
 class EventGenerator {
  public:
-  explicit EventGenerator(Clock* clock, uint32_t pid = kPID, int32_t fd = kFD)
-      : clock_(clock), pid_(pid), fd_(fd) {}
+  explicit EventGenerator(Clock* clock, uint32_t pid = kPID, int32_t fd = kFD,
+                          uint64_t pid_start_time_ticks = kPIDStartTimeTicks)
+      : clock_(clock), pid_(pid), fd_(fd), pid_start_time_ticks_(pid_start_time_ticks) {}
+
+  uint32_t pid() const { return pid_; }
+  uint32_t fd() const { return fd_; }
+  uint32_t pid_start_time_ticks() const { return pid_start_time_ticks_; }
 
   struct socket_control_event_t InitConn(endpoint_role_t role = kRoleUnknown) {
     struct socket_control_event_t conn_event {};
@@ -47,7 +52,7 @@ class EventGenerator {
     conn_event.conn_id.upid.pid = pid_;
     conn_event.conn_id.fd = fd_;
     conn_event.conn_id.tsid = ++tsid_;
-    conn_event.conn_id.upid.start_time_ticks = kPIDStartTimeTicks;
+    conn_event.conn_id.upid.start_time_ticks = pid_start_time_ticks_;
     conn_event.open.addr.sa.sa_family = AF_INET;
     conn_event.open.role = role;
     return conn_event;
@@ -120,6 +125,7 @@ class EventGenerator {
   Clock* clock_;
   uint32_t pid_ = 0;
   int32_t fd_ = 0;
+  uint64_t pid_start_time_ticks_ = 0;
   uint64_t tsid_ = 0;
   uint64_t send_pos_ = 0;
   uint64_t recv_pos_ = 0;

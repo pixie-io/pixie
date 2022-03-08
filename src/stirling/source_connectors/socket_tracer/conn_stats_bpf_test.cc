@@ -67,8 +67,7 @@ TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
   StopTransferDataThread();
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kConnStatsTableNum);
-  ASSERT_FALSE(tablets.empty());
-  const types::ColumnWrapperRecordBatch& rb = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& rb, tablets);
   // PL_LOG_VAR(PrintConnStatsTable(rb));
 
   // Check server-side stats.
@@ -145,8 +144,7 @@ TEST_F(ConnStatsBPFTest, RoleFromConnectAccept) {
   StopTransferDataThread();
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kConnStatsTableNum);
-  ASSERT_FALSE(tablets.empty());
-  const types::ColumnWrapperRecordBatch& rb = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& rb, tablets);
 
   // Check client-side.
   {
@@ -302,9 +300,7 @@ TEST_F(ConnStatsMidConnBPFTest, InferRemoteEndpointAndReport) {
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kConnStatsTableNum);
 
-  ASSERT_FALSE(tablets.empty());
-
-  const types::ColumnWrapperRecordBatch& rb = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& rb, tablets);
   // PL_LOG_VAR(PrintConnStatsTable(rb));
 
   // Check client-side.
@@ -377,14 +373,12 @@ TEST_F(ConnStatsBPFTest, SSLConnections) {
   int server_pid = server.NginxWorkerPID();
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kConnStatsTableNum);
-  ASSERT_FALSE(tablets.empty());
-  types::ColumnWrapperRecordBatch records =
-      FindRecordsMatchingPID(tablets[0].records, kUPIDIdx, server_pid);
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& rb, tablets);
+  types::ColumnWrapperRecordBatch records = FindRecordsMatchingPID(rb, kUPIDIdx, server_pid);
   // PL_LOG_VAR(PrintConnStatsTable(records));
 
   // Check server-side stats.
   {
-    const auto& rb = tablets[0].records;
     auto indices = FindRecordIdxMatchesPID(tablets[0].records, kUPIDIdx, server_pid);
     ASSERT_FALSE(indices.empty());
 

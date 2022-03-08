@@ -160,11 +160,11 @@ TEST_P(NonVecSyscallTests, NonVecSyscalls) {
   StopTransferDataThread();
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
-  ASSERT_FALSE(tablets.empty());
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
   if (p.trace_role & kRoleClient) {
     ColumnWrapperRecordBatch records =
-        FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, system.ClientPID());
+        FindRecordsMatchingPID(record_batch, kHTTPUPIDIdx, system.ClientPID());
 
     ASSERT_THAT(records, RecordBatchSizeIs(2));
 
@@ -183,7 +183,7 @@ TEST_P(NonVecSyscallTests, NonVecSyscalls) {
 
   if (p.trace_role & kRoleServer) {
     ColumnWrapperRecordBatch records =
-        FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, system.ServerPID());
+        FindRecordsMatchingPID(record_batch, kHTTPUPIDIdx, system.ServerPID());
 
     ASSERT_THAT(records, RecordBatchSizeIs(2));
 
@@ -241,11 +241,11 @@ TEST_P(IOVecSyscallTests, IOVecSyscalls) {
   StopTransferDataThread();
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
-  ASSERT_FALSE(tablets.empty());
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
   if (p.trace_role & kRoleServer) {
     ColumnWrapperRecordBatch records =
-        FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, system.ServerPID());
+        FindRecordsMatchingPID(record_batch, kHTTPUPIDIdx, system.ServerPID());
 
     ASSERT_THAT(records, RecordBatchSizeIs(2));
 
@@ -261,7 +261,7 @@ TEST_P(IOVecSyscallTests, IOVecSyscalls) {
 
   if (p.trace_role & kRoleClient) {
     ColumnWrapperRecordBatch records =
-        FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, system.ClientPID());
+        FindRecordsMatchingPID(record_batch, kHTTPUPIDIdx, system.ClientPID());
 
     ASSERT_THAT(records, RecordBatchSizeIs(2));
 
@@ -416,11 +416,11 @@ TEST_F(SocketTraceBPFTest, MultipleConnections) {
   StopTransferDataThread();
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
-  ASSERT_FALSE(tablets.empty());
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
   {
     ColumnWrapperRecordBatch records =
-        FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, system1.ClientPID());
+        FindRecordsMatchingPID(record_batch, kHTTPUPIDIdx, system1.ClientPID());
 
     ASSERT_THAT(records, RecordBatchSizeIs(1));
     EXPECT_THAT(records[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
@@ -428,7 +428,7 @@ TEST_F(SocketTraceBPFTest, MultipleConnections) {
 
   {
     ColumnWrapperRecordBatch records =
-        FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, system2.ClientPID());
+        FindRecordsMatchingPID(record_batch, kHTTPUPIDIdx, system2.ClientPID());
 
     ASSERT_THAT(records, RecordBatchSizeIs(1));
     EXPECT_THAT(records[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg2"));
@@ -468,9 +468,9 @@ TEST_F(SocketTraceBPFTest, StartTime) {
   StopTransferDataThread();
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
-  ASSERT_FALSE(tablets.empty());
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
   ColumnWrapperRecordBatch records =
-      FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, system.ClientPID());
+      FindRecordsMatchingPID(record_batch, kHTTPUPIDIdx, system.ClientPID());
 
   ASSERT_THAT(records, RecordBatchSizeIs(2));
 
@@ -584,10 +584,9 @@ TEST_F(SocketTraceBPFTest, SendFile) {
   StopTransferDataThread();
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
-  ASSERT_FALSE(tablets.empty());
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
-  ColumnWrapperRecordBatch records =
-      FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, getpid());
+  ColumnWrapperRecordBatch records = FindRecordsMatchingPID(record_batch, kHTTPUPIDIdx, getpid());
 
   ASSERT_THAT(records, RecordBatchSizeIs(2));
 
@@ -655,10 +654,9 @@ TEST_F(NullRemoteAddrTest, Accept4WithNullRemoteAddr) {
   StopTransferDataThread();
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
-  ASSERT_FALSE(tablets.empty());
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
-  ColumnWrapperRecordBatch records =
-      FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, getpid());
+  ColumnWrapperRecordBatch records = FindRecordsMatchingPID(record_batch, kHTTPUPIDIdx, getpid());
 
   ASSERT_THAT(records, RecordBatchSizeIs(1));
 
@@ -722,10 +720,9 @@ TEST_F(NullRemoteAddrTest, IPv6Accept4WithNullRemoteAddr) {
   StopTransferDataThread();
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
-  ASSERT_FALSE(tablets.empty());
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
-  ColumnWrapperRecordBatch records =
-      FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, getpid());
+  ColumnWrapperRecordBatch records = FindRecordsMatchingPID(record_batch, kHTTPUPIDIdx, getpid());
   ASSERT_THAT(records, RecordBatchSizeIs(1));
 
   EXPECT_THAT(std::string(records[kHTTPRespHeadersIdx]->Get<types::StringValue>(0)),

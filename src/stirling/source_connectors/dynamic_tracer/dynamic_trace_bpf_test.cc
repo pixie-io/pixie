@@ -178,11 +178,11 @@ TEST_F(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
   ASSERT_NO_FATAL_FAILURE(InitTestFixturesAndRunTestProgram(kGRPCTraceProgram));
   std::vector<TaggedRecordBatch> tablets = GetRecords();
 
-  ASSERT_FALSE(tablets.empty());
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
   {
     types::ColumnWrapperRecordBatch records =
-        FindRecordsMatchingPID(tablets[0].records, /*index*/ 0, s_.child_pid());
+        FindRecordsMatchingPID(record_batch, /*index*/ 0, s_.child_pid());
 
     ASSERT_THAT(records, RecordBatchSizeIs(10));
 
@@ -202,11 +202,11 @@ TEST_F(GoHTTPDynamicTraceTest, TraceReturnValue) {
   ASSERT_NO_FATAL_FAILURE(InitTestFixturesAndRunTestProgram(kReturnValueTraceProgram));
   std::vector<TaggedRecordBatch> tablets = GetRecords();
 
-  ASSERT_FALSE(tablets.empty());
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
   {
     types::ColumnWrapperRecordBatch records =
-        FindRecordsMatchingPID(tablets[0].records, /*index*/ 0, s_.child_pid());
+        FindRecordsMatchingPID(record_batch, /*index*/ 0, s_.child_pid());
 
     ASSERT_THAT(records, RecordBatchSizeIs(80));
 

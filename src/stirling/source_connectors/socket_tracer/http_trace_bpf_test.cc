@@ -67,8 +67,7 @@ TEST_F(GoHTTPTraceTest, RequestAndResponse) {
   StopTransferDataThread();
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
-  ASSERT_FALSE(tablets.empty());
-  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
   // By default, we do not trace the client.
   EXPECT_THAT(
@@ -114,8 +113,7 @@ TEST_F(GoHTTPTraceTest, LargePostMessage) {
   StopTransferDataThread();
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
-  ASSERT_FALSE(tablets.empty());
-  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
   // By default, we do not trace the client.
   EXPECT_THAT(
