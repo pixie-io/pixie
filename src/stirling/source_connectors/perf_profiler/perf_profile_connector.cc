@@ -146,7 +146,10 @@ Status PerfProfileConnector::InitImpl() {
   PL_ASSIGN_OR_RETURN(k_symbolizer_, BCCSymbolizer::Create());
 
   if (FLAGS_stirling_profiler_java_symbols) {
+    LOG(INFO) << "PerfProfiler: Java symbolization enabled.";
     PL_ASSIGN_OR_RETURN(u_symbolizer_, JavaSymbolizer::Create(std::move(u_symbolizer_)));
+  } else {
+    LOG(INFO) << "PerfProfiler: Java symbolization disabled.";
   }
 
   if (FLAGS_stirling_profiler_cache_symbols) {
