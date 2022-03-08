@@ -165,6 +165,7 @@ func (v *VizierDeploymentKeyServer) Delete(ctx context.Context, uuid *uuidpb.UUI
 	}
 	return v.VzDeploymentKey.Delete(ctx, &vzmgrpb.DeleteDeploymentKeyRequest{
 		OrgID: orgID,
+		ID:    uuid,
 	})
 }
 

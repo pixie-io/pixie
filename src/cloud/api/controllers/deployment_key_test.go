@@ -228,6 +228,7 @@ func TestVizierDeploymentKeyServer_Delete(t *testing.T) {
 			vzresp := &types.Empty{}
 			mockClients.MockVzDeployKey.EXPECT().
 				Delete(gomock.Any(), &vzmgrpb.DeleteDeploymentKeyRequest{
+					ID:    id,
 					OrgID: utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
 				}).Return(vzresp, nil)
 
