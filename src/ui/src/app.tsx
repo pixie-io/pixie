@@ -25,6 +25,7 @@ import {
   StyledEngineProvider,
   createTheme,
 } from '@mui/material/styles';
+import { deepmerge } from '@mui/utils';
 import Axios from 'axios';
 import { withLDProvider } from 'launchdarkly-react-client-sdk';
 import * as QueryString from 'query-string';
@@ -38,7 +39,7 @@ import { PixieAPIContext, PixieAPIContextProvider } from 'app/api';
 import { AuthContextProvider, AuthContext } from 'app/common/auth-context';
 import { EmbedContext, EmbedContextProvider } from 'app/common/embed-context';
 import {
-  COMMON_THEME, DARK_THEME, LIGHT_THEME, SnackbarProvider, VersionInfo,
+  DARK_THEME, LIGHT_THEME, SnackbarProvider, VersionInfo,
 } from 'app/components';
 import Live from 'app/containers/App/live';
 import { LD_CLIENT_ID } from 'app/containers/constants';
@@ -183,18 +184,12 @@ const ThemedApp: React.FC = () => {
     try {
       const parsedTheme = JSON.parse(customTheme);
       // Only use the `palette` field from the theme, as we know these
-      // values are safe to apply.
+      // values are safe to apply. Base atop the dark theme.
       setTheme(createTheme({
-        ...COMMON_THEME,
+        ...DARK_THEME,
         ...{
-          palette: {
-            ...COMMON_THEME.palette,
-            ...parsedTheme.palette,
-          },
-          shadows: {
-            ...COMMON_THEME,
-            ...parsedTheme.shadows,
-          },
+          palette: deepmerge(DARK_THEME.palette, parsedTheme.palette, { clone: true }),
+          shadows: deepmerge(DARK_THEME.shadows, parsedTheme.shadows, { clone: true }),
         },
       }));
     } catch (e) {

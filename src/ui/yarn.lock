@@ -2145,6 +2145,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@babel/runtime@npm:^7.17.2":
+  version: 7.17.2
+  resolution: "@babel/runtime@npm:7.17.2"
+  dependencies:
+    regenerator-runtime: ^0.13.4
+  checksum: a48702d271ecc59c09c397856407afa29ff980ab537b3da58eeee1aeaa0f545402d340a1680c9af58aec94dfdcbccfb6abb211991b74686a86d03d3f6956cacd
+  languageName: node
+  linkType: hard
+
 "@babel/runtime@npm:^7.3.1, @babel/runtime@npm:^7.8.3":
   version: 7.16.0
   resolution: "@babel/runtime@npm:7.16.0"
@@ -3597,6 +3606,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@mui/utils@npm:^5.4.4":
+  version: 5.4.4
+  resolution: "@mui/utils@npm:5.4.4"
+  dependencies:
+    "@babel/runtime": ^7.17.2
+    "@types/prop-types": ^15.7.4
+    "@types/react-is": ^16.7.1 || ^17.0.0
+    prop-types: ^15.7.2
+    react-is: ^17.0.2
+  peerDependencies:
+    react: ^17.0.0
+  checksum: 7f5cbf71f01750e6449769e3a6878c05e5488d85dcdacf14362ac1f5047ae1dc061416de740075482764602a029a313a1c6378297d89ec2091ef86d00d6b4e55
+  languageName: node
+  linkType: hard
+
 "@nodelib/fs.scandir@npm:2.1.4":
   version: 2.1.4
   resolution: "@nodelib/fs.scandir@npm:2.1.4"
@@ -3666,6 +3690,7 @@ __metadata:
     "@mui/material": ^5.1.0
     "@mui/styles": ^5.1.0
     "@mui/system": ^5.1.0
+    "@mui/utils": ^5.4.4
     "@ory/kratos-client": ^v0.5.5-alpha.4
     "@testing-library/react": ^12.1.2
     "@testing-library/react-hooks": ^7.0.2
