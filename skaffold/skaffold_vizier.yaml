@@ -77,6 +77,12 @@ profiles:
     path: /build/artifacts/context=./bazel/args
     value:
     - --compilation_mode=opt
+- name: jsyms
+  patches:
+  - op: add
+    path: /deploy/kustomize/paths
+    value:
+    - k8s/vizier/jsyms
 - name: asan
   patches:
   - op: add
