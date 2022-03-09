@@ -60,11 +60,11 @@ final class ArcanistProtoGenCheckerTestEngine extends ArcanistBaseGenCheckerTest
         // Check generated files exist. We assume they are all in src/ui/src/types/generated for now.
         $fname = substr($file, strrpos($file, '/') + 1, -6);
 
-        // TODO(nick): Not all of these are in use in the main UI code anymore. Only check for the ones we need.
-        // Check $fname_pb.d.ts.
-        $test_results[] = $this->checkFile($file, 'src/ui/src/types/generated/'.$fname.'_pb.d.ts', 'To regenerate, build the grpc_web target and move the files to the correct directory');
-        // Check $fname_pb.js.
-        $test_results[] = $this->checkFile($file, 'src/ui/src/types/generated/'.$fname.'_pb.js', 'To regenerate, build the grpc_web target and move the files to the correct directory');
+        // Check $fname_pb.{d.ts,js}
+        $regen_message = 'To regenerate, run: scripts/update_ts_protos.sh';
+        $test_results[] = $this->checkFile($file, 'src/ui/src/types/generated/'.$fname.'_pb.d.ts', $regen_message);
+        $test_results[] = $this->checkFile($file, 'src/ui/src/types/generated/'.$fname.'_pb.js', $regen_message);
+
         // Check $fnameServiceClientPb.ts.
         // TODO(michelle): Figure out a way to make this check smarter for non-grpc protos.
         // $test_results = $this->checkFile($file, 'src/ui/src/types/generated/' . ucfirst($fname) . 'ServiceClientPb.ts', 'To regenerate, build the grpc_web  target and move the files to the correct directory');
