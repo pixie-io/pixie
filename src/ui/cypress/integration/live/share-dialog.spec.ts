@@ -27,7 +27,7 @@ describe('Share dialog', () => {
   it('Opens a share dialog and can copy from it', () => {
     cy.visit('/', {
       onBeforeLoad(win: Window): void {
-        cy.spy(win.navigator.clipboard, 'writeText').as('copy-to-clipboard');
+        cy.stub(win.navigator.clipboard, 'writeText').as('copy-to-clipboard').resolves();
       },
     });
 
