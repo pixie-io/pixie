@@ -83,6 +83,12 @@ profiles:
     path: /deploy/kustomize/paths
     value:
     - k8s/vizier/jsyms
+- name: heap
+  patches:
+  - op: add
+    path: /deploy/kustomize/paths
+    value:
+    - k8s/vizier/heap_profile
 - name: asan
   patches:
   - op: add

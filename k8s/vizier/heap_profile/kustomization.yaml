@@ -1,0 +1,45 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: pl
+resources:
+- ../base
+patches:
+# yamllint disable
+- patch: |-
+    - op: add
+      path: "/spec/template/spec/containers/0/env/-"
+      value:
+        name: HEAPPROFILE
+        value: "/tmp_host/heap_profile"
+    - op: add
+      path: "/spec/template/spec/containers/0/env/-"
+      value:
+        name: HEAP_PROFILE_ALLOCATION_INTERVAL
+        value: "0"
+    - op: add
+      path: "/spec/template/spec/containers/0/env/-"
+      value:
+        name: HEAP_PROFILE_INUSE_INTERVAL
+        value: "0"
+    - op: add
+      path: "/spec/template/spec/containers/0/env/-"
+      value:
+        name: HEAP_PROFILE_TIME_INTERVAL
+        value: "60"
+    - op: add
+      path: "/spec/template/spec/containers/0/volumeMounts/-"
+      value:
+        name: host-profiles
+        mountPath: /tmp_host
+    - op: add
+      path: "/spec/template/spec/volumes/-"
+      value:
+        name: host-profiles
+        hostPath:
+          path: /profiles
+          type: DirectoryOrCreate
+  target:
+    kind: DaemonSet
+    namespace: pl
+    name: vizier-pem
