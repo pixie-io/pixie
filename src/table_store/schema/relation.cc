@@ -48,14 +48,22 @@ Relation::Relation(ColTypeArray col_types, ColNameArray col_names,
 
 Relation::Relation(ColTypeArray col_types, ColNameArray col_names, ColDescArray col_desc,
                    ColSemanticTypeArray col_semantic_types)
+    : Relation(col_types, col_names, col_desc, col_semantic_types,
+               ColPatternTypeArray(col_types.size(), types::UNSPECIFIED)) {}
+
+Relation::Relation(ColTypeArray col_types, ColNameArray col_names, ColDescArray col_desc,
+                   ColSemanticTypeArray col_semantic_types, ColPatternTypeArray col_pattern_types)
     : col_types_(std::move(col_types)),
       col_names_(std::move(col_names)),
       col_desc_(std::move(col_desc)),
-      col_semantic_types_(std::move(col_semantic_types)) {
+      col_semantic_types_(std::move(col_semantic_types)),
+      col_pattern_types_(std::move(col_pattern_types)) {
   CHECK(col_types_.size() == col_names_.size()) << "Initialized with mismatched col names/sizes";
   CHECK(col_names_.size() == col_desc_.size()) << "Initialized with mismatched col names/desc";
   CHECK(col_desc_.size() == col_semantic_types_.size())
       << "Initialized with mismatches col semantic types sizes";
+  CHECK(col_desc_.size() == col_pattern_types_.size())
+      << "Initialized with mismatches col pattern types sizes";
   absl::flat_hash_set<std::string> unique_names;
   for (const auto& col_name : col_names_) {
     DCHECK(!unique_names.contains(col_name))
@@ -73,12 +81,19 @@ void Relation::AddColumn(const types::DataType& col_type, const std::string& col
 
 void Relation::AddColumn(const types::DataType& col_type, const std::string& col_name,
                          const types::SemanticType& col_semantic_type, std::string_view col_desc) {
+  AddColumn(col_type, col_name, col_semantic_type, types::PatternType::UNSPECIFIED, col_desc);
+}
+
+void Relation::AddColumn(const types::DataType& col_type, const std::string& col_name,
+                         const types::SemanticType& col_semantic_type,
+                         const types::PatternType& col_pattern_type, std::string_view col_desc) {
   DCHECK(std::find(col_names_.begin(), col_names_.end(), col_name) == col_names_.end())
       << absl::Substitute("Column '$0' already exists", col_name);
   col_types_.push_back(col_type);
   col_names_.push_back(col_name);
   col_desc_.push_back(std::string(col_desc));
   col_semantic_types_.push_back(col_semantic_type);
+  col_pattern_types_.push_back(col_pattern_type);
 }
 
 bool Relation::HasColumn(size_t idx) const { return idx < col_types_.size(); }
@@ -128,6 +143,16 @@ types::SemanticType Relation::GetColumnSemanticType(size_t idx) const {
 
 types::SemanticType Relation::GetColumnSemanticType(const std::string& col_name) const {
   return GetColumnSemanticType(GetColumnIndex(col_name));
+}
+
+types::PatternType Relation::GetColumnPatternType(size_t idx) const {
+  CHECK(HasColumn(idx)) << absl::Substitute("Column $0 does not exist. Only $1 columns available.",
+                                            idx, NumColumns());
+  return col_pattern_types_[idx];
+}
+
+types::PatternType Relation::GetColumnPatternType(const std::string& col_name) const {
+  return GetColumnPatternType(GetColumnIndex(col_name));
 }
 
 std::string Relation::DebugString() const {

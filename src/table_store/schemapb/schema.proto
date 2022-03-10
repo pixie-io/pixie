@@ -84,6 +84,7 @@ message Relation {
     px.types.DataType column_type = 2;
     string column_desc = 3;
     px.types.SemanticType column_semantic_type = 4;
+    px.types.PatternType pattern_type = 5;
   }
   repeated ColumnInfo columns = 1;
   // Description of the table.

@@ -86,6 +86,7 @@ func convertToRelationMap(computedSchema *storepb.ComputedSchema) (*schemapb.Sch
 				ColumnName:         column.Name,
 				ColumnType:         column.DataType,
 				ColumnDesc:         column.Desc,
+				PatternType:        column.PatternType,
 				ColumnSemanticType: column.SemanticType,
 			}
 		}
@@ -109,6 +110,7 @@ func convertToSchemaInfo(computedSchema *storepb.ComputedSchema) ([]*distributed
 				ColumnName:         column.Name,
 				ColumnType:         column.DataType,
 				ColumnDesc:         column.Desc,
+				PatternType:        column.PatternType,
 				ColumnSemanticType: column.SemanticType,
 			}
 		}

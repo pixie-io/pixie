@@ -59,8 +59,7 @@ void RelationInfoManager::AddSchemaToUpdateInfo(messages::AgentUpdateInfo* updat
       column->set_data_type(relation.GetColumnType(i));
       column->set_desc(relation.GetColumnDesc(i));
       column->set_semantic_type(relation.GetColumnSemanticType(i));
-      // TODO(philkuz) (PL-850) add pattern_type to the relation somehow.
-      // column->set_pattern_type(relation.GetColumnPatternType(i));
+      column->set_pattern_type(relation.GetColumnPatternType(i));
     }
   }
   has_updates_ = false;

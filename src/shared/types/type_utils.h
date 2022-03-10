@@ -32,6 +32,7 @@ namespace types {
 
 inline std::string_view ToString(DataType type) { return magic_enum::enum_name(type); }
 inline std::string_view ToString(types::SemanticType type) { return SemanticType_Name(type); }
+inline std::string_view ToString(types::PatternType type) { return PatternType_Name(type); }
 
 inline std::shared_ptr<arrow::DataType> DataTypeToArrowType(DataType type) {
   switch (type) {

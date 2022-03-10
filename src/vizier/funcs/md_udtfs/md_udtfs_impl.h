@@ -184,6 +184,8 @@ class GetTableSchemas final : public carnot::udf::UDTF<GetTableSchemas> {
                              "The name of the column"),
                      ColInfo("column_type", types::DataType::STRING, types::PatternType::GENERAL,
                              "The type of the column"),
+                     ColInfo("pattern_type", types::DataType::STRING, types::PatternType::GENERAL,
+                             "The pattern type of the metric"),
                      ColInfo("column_desc", types::DataType::STRING, types::PatternType::GENERAL,
                              "Description of the column"));
   }
@@ -204,9 +206,9 @@ class GetTableSchemas final : public carnot::udf::UDTF<GetTableSchemas> {
     // a single invocation.
     for (const auto& [table_name, rel] : resp.schema().relation_map()) {
       for (const auto& col : rel.columns()) {
-        relation_info_.emplace_back(table_name, col.column_name(),
-                                    std::string(magic_enum::enum_name(col.column_type())),
-                                    col.column_desc());
+        relation_info_.emplace_back(
+            table_name, col.column_name(), std::string(magic_enum::enum_name(col.column_type())),
+            std::string(types::ToString(col.pattern_type())), col.column_desc());
       }
     }
     return Status::OK();
@@ -220,6 +222,7 @@ class GetTableSchemas final : public carnot::udf::UDTF<GetTableSchemas> {
     rw->Append<IndexOf("table_name")>(r.table_name);
     rw->Append<IndexOf("column_name")>(r.column_name);
     rw->Append<IndexOf("column_type")>(r.column_type);
+    rw->Append<IndexOf("pattern_type")>(r.pattern_type);
     rw->Append<IndexOf("column_desc")>(r.column_desc);
 
     idx_++;
@@ -229,14 +232,17 @@ class GetTableSchemas final : public carnot::udf::UDTF<GetTableSchemas> {
  private:
   struct RelationInfo {
     RelationInfo(const std::string& table_name, const std::string& column_name,
-                 const std::string& column_type, const std::string& column_desc)
+                 const std::string& column_type, const std::string& pattern_type,
+                 const std::string& column_desc)
         : table_name(table_name),
           column_name(column_name),
           column_type(column_type),
+          pattern_type(pattern_type),
           column_desc(column_desc) {}
     std::string table_name;
     std::string column_name;
     std::string column_type;
+    std::string pattern_type;
     std::string column_desc;
   };
 
