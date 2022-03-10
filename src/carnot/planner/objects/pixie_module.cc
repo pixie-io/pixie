@@ -585,6 +585,7 @@ Status PixieModule::Init() {
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
 
+  PL_RETURN_IF_ERROR(display_fn->SetDocString(kDisplayOpDocstring));
   AddMethod(kDisplayOpID, display_fn);
 
   PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> export_fn,
@@ -607,6 +608,7 @@ Status PixieModule::Init() {
                     std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
           ast_visitor()));
 
+  PL_RETURN_IF_ERROR(debug_fn->SetDocString(kDebugOpDocstring));
   AddMethod(kDebugOpID, debug_fn);
 
   PL_ASSIGN_OR_RETURN(auto base_df, Dataframe::Create(graph_, ast_visitor()));

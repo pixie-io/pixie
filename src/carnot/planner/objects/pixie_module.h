@@ -53,6 +53,9 @@ class PixieModule : public QLObject {
   Writes the data to the output stream. Disabled if executing using Vis functions.
   If you want to still see data when using vis fucntions, use `px.debug`.
 
+  Examples:
+    px.display(df, 'http_data')
+
   :topic: dataframe_ops
 
   Args:
@@ -85,6 +88,11 @@ class PixieModule : public QLObject {
 
   Writes the data to the output stream, prefixing the name with `_`. Unlike `px.display`
   if executing the script with Vis functions, this will still write to the output table.
+  Debug tables are displayed in the data drawer in the Live UI. To show / hide the data
+  drawer use cmd+d (Mac) or ctrl+d (Windows, Linux).
+
+  Examples:
+    px.debug(df, 'test_data')
 
   :topic: dataframe_ops
 
@@ -218,10 +226,9 @@ class PixieModule : public QLObject {
   These values are displayed in the UI as a clickable link to execute that PxL script.
 
   Examples:
-    df.script = px.script_reference(df.namespace, 'px/namespace', {
-      'namespace': df.namespace,
-      'start_time': '-5m'
-    })
+    df.script = px.script_reference(df.namespace, 'px/namespace', {'namespace': df.namespace, 'start_time': '-5m'})
+
+  :topic: compile_time_fn
 
   Args:
     label (string): A value containing the label text for the output deep link.
