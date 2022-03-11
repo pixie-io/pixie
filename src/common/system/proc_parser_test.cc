@@ -34,6 +34,7 @@ namespace px {
 namespace system {
 
 using ::testing::_;
+using ::testing::Contains;
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
 using ::testing::MatchesRegex;
@@ -338,6 +339,20 @@ TEST_F(ProcParserTest, GetMapPaths) {
             "/lib/x86_64-linux-gnu/libdl-2.28.so", "/usr/lib/x86_64-linux-gnu/libcrypto.so.1.1",
             "/usr/lib/x86_64-linux-gnu/libssl.so.1.1", "/usr/sbin/nginx", "/[aio] (deleted)",
             "[heap]", "[stack]", "[uprobes]", "[vdso]", "[vsyscall]", "[vvar]"));
+  }
+}
+
+TEST_F(ProcParserTest, GetMapEntries) {
+  {
+    ProcParser::ProcessMap m{
+        .vmem_start = 0x565078f64000,
+        .vmem_end   = 0x565078f8c000,
+        .permissions = "r-xp",
+        .inode = 0x27147818,
+        .map_path = "/usr/sbin/nginx",
+    };
+    auto entries = parser_->GetMapEntries(123, "/usr/sbin/nginx");
+    EXPECT_OK_AND_THAT(entries, Contains(m));
   }
 }
 

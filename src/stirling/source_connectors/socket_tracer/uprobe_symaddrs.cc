@@ -570,8 +570,21 @@ StatusOr<uint64_t> GetOpenSSLVersionNumUsingDLOpen(const std::filesystem::path& 
   return version_num;
 }
 
+StatusOr<uint64_t> GetOpenSSLVersionNumUsingObjFile(const std::filesystem::path& /*lib_openssl_path*/, uint32_t /*pid*/, ProcParser::ProcessMap map_entry) {
+  // TODO(ddelnano): Read the lib_openssl_path ELF file to determine
+  // OpenSSL_version_num location
+  auto version_num_sym_addr = 0xf6320;
+  typedef uint64_t (func_ptr_t)(void);
+  uint64_t offset = version_num_sym_addr + map_entry.vmem_start;
+
+  func_ptr_t* f = (func_ptr_t*)(offset);
+  uint64_t version = f();
+  LOG(INFO) << absl::StrFormat("Found OpenSSL_version_num %llx", version);
+  return version;
+};
+
 // Returns the "fix" version number for OpenSSL.
-StatusOr<uint32_t> OpenSSLFixSubversionNum(const std::filesystem::path& lib_openssl_path) {
+StatusOr<uint32_t> OpenSSLFixSubversionNum(const std::filesystem::path& lib_openssl_path, uint32_t pid, std::optional<ProcParser::ProcessMap> map_entry) {
   // Current use case:
   // switch for the correct number of bytes offset for the socket fd.
   //
@@ -592,7 +605,15 @@ StatusOr<uint32_t> OpenSSLFixSubversionNum(const std::filesystem::path& lib_open
   };
   open_ssl_version_num_t version_num;
 
-  PL_ASSIGN_OR_RETURN(version_num.packed, GetOpenSSLVersionNumUsingDLOpen(lib_openssl_path));
+  StatusOr<uint64_t> openssl_version_packed = GetOpenSSLVersionNumUsingDLOpen(lib_openssl_path);
+  if (!openssl_version_packed.ok()) {
+
+    if (map_entry) {
+      LOG(WARNING) << absl::Substitute("Unable to find openssl symbol 'OpenSSL_version_num' using dlopen/dlsym. Attempting to find address manually");
+      openssl_version_packed = GetOpenSSLVersionNumUsingObjFile(lib_openssl_path, pid, map_entry.value());
+    }
+  }
+  PL_ASSIGN_OR_RETURN(version_num.packed, openssl_version_packed);
 
   const uint32_t major = version_num.major;
   const uint32_t minor = version_num.minor;
@@ -619,7 +640,7 @@ StatusOr<uint32_t> OpenSSLFixSubversionNum(const std::filesystem::path& lib_open
 
 }  // namespace
 
-StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(const std::filesystem::path& openssl_lib) {
+StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(const std::filesystem::path& openssl_lib, uint32_t pid, std::optional<ProcParser::ProcessMap> map_entry) {
   // Some useful links, for different OpenSSL versions:
   // 1.1.0a:
   // https://github.com/openssl/openssl/blob/ac2c44c6289f9716de4c4beeb284a818eacde517/<filename>
@@ -647,18 +668,22 @@ StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(const std::filesystem::path&
   struct openssl_symaddrs_t symaddrs;
   symaddrs.SSL_rbio_offset = kSSL_RBIO_offset;
 
-  PL_ASSIGN_OR_RETURN(uint32_t openssl_fix_sub_version, OpenSSLFixSubversionNum(openssl_lib));
+  PL_ASSIGN_OR_RETURN(uint32_t openssl_fix_sub_version, OpenSSLFixSubversionNum(openssl_lib, pid, map_entry));
+
   switch (openssl_fix_sub_version) {
     case 0:
       symaddrs.RBIO_num_offset = kOpenSSL_1_1_0_RBIO_num_offset;
+      LOG(INFO) << absl::Substitute("Supported openssl_fix_sub_version: $0", openssl_fix_sub_version);
       break;
     case 1:
       symaddrs.RBIO_num_offset = kOpenSSL_1_1_1_RBIO_num_offset;
+      LOG(INFO) << absl::Substitute("Supported openssl_fix_sub_version: $0", openssl_fix_sub_version);
       break;
     default:
       // Supported versions are checked in function OpenSSLFixSubversionNum(),
       // should not fall through to here, ever.
       DCHECK(false);
+      LOG(INFO) << absl::Substitute("Unsupported openssl_fix_sub_version: $0", openssl_fix_sub_version);
       return error::Internal("Unsupported openssl_fix_sub_version: $0", openssl_fix_sub_version);
   }
 

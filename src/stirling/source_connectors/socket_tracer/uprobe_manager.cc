@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <map>
+#include <dlfcn.h>
 
 #include "src/common/base/base.h"
 #include "src/common/base/utils.h"
@@ -135,8 +136,9 @@ StatusOr<int> UProbeManager::AttachUProbeTmpl(const ArrayView<UProbeTmpl>& probe
   return uprobe_count;
 }
 
-Status UProbeManager::UpdateOpenSSLSymAddrs(std::filesystem::path libcrypto_path, uint32_t pid) {
-  PL_ASSIGN_OR_RETURN(struct openssl_symaddrs_t symaddrs, OpenSSLSymAddrs(libcrypto_path));
+Status UProbeManager::UpdateOpenSSLSymAddrs(std::filesystem::path libcrypto_path, uint32_t pid, std::optional<ProcParser::ProcessMap> map_entry) {
+ LOG(INFO) << absl::Substitute("OpenSSLSymAddrs: $0", OpenSSLSymAddrs(libcrypto_path, pid, map_entry).ToString());
+  PL_ASSIGN_OR_RETURN(struct openssl_symaddrs_t symaddrs, OpenSSLSymAddrs(libcrypto_path, pid, map_entry));
 
   openssl_symaddrs_map_->UpdateValue(pid, symaddrs);
 
@@ -248,9 +250,8 @@ StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDPath(
 // Return error if something unexpected occurs.
 // Return 0 if nothing unexpected, but there is nothing to deploy (e.g. no OpenSSL detected).
 StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
-  constexpr std::string_view kLibSSL = "libssl.so.1.1";
-  constexpr std::string_view kLibCrypto = "libcrypto.so.1.1";
-  const std::vector<std::string_view> lib_names = {kLibSSL, kLibCrypto};
+  constexpr std::string_view kLibSSL = "libnetty_tcnative_linux_x86.so";
+  const std::vector<std::string_view> lib_names = {kLibSSL};
 
   const system::Config& sysconfig = system::Config::GetInstance();
 
@@ -259,7 +260,7 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
                       FindHostPathForPIDPath(lib_names, pid, proc_parser_.get(), &fp_resolver_));
 
   std::filesystem::path container_libssl = container_lib_paths[0];
-  std::filesystem::path container_libcrypto = container_lib_paths[1];
+  std::filesystem::path container_libcrypto = container_lib_paths[0];
 
   if (container_libssl.empty() || container_libcrypto.empty()) {
     // Looks like this process doesn't have dynamic OpenSSL library installed, because it did not
@@ -279,7 +280,29 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
     return error::Internal("libcrypto not found [path = $0]", container_libcrypto.string());
   }
 
-  PL_RETURN_IF_ERROR(UpdateOpenSSLSymAddrs(container_libcrypto, pid));
+  void* h = dlopen(container_libssl.c_str(), RTLD_LAZY);
+
+  if (h == nullptr) {
+    return error::Internal("Failed to dlopen OpenSSL so file: $0, $1", container_libssl.string(),
+                           dlerror());
+  }
+
+  auto stirling_map_entries = proc_parser_->GetMapEntries(getpid(), container_libcrypto)
+      .ValueOrDie();
+  auto traced_pid_map_entries = proc_parser_->GetMapEntries(getpid(), container_libcrypto)
+      .ValueOrDie();
+  std::optional<ProcParser::ProcessMap> map_entry;
+  for (const auto& entry : traced_pid_map_entries) {
+      if (entry.permissions.compare("r-xp") != 0) continue;
+
+      for (const auto& stirling_entry: stirling_map_entries) {
+        if (stirling_entry.permissions.compare("r-xp") != 0) continue;
+
+        map_entry = std::make_optional(entry);
+      }
+      /* LOG(INFO) << absl::Substitute("Found ProcessMap = $0", map_entry); */
+  }
+  PL_RETURN_IF_ERROR(UpdateOpenSSLSymAddrs(container_libcrypto, pid, map_entry));
 
   // Only try probing .so files that we haven't already set probes on.
   auto result = openssl_probed_binaries_.insert(container_libssl);
@@ -289,8 +312,11 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
 
   for (auto spec : kOpenSSLUProbes) {
     spec.binary_path = container_libssl.string();
-    PL_RETURN_IF_ERROR(bcc_->AttachUProbe(spec));
+    auto p = bcc_->AttachUProbe(spec);
+    LOG(INFO) << absl::Substitute("AttachUProbe returned: $0", p.ToString());
+    PL_RETURN_IF_ERROR(p);
   }
+LOG(INFO) << absl::Substitute("kOpenSSLUProbes size: $0", kOpenSSLUProbes.size());
   return kOpenSSLUProbes.size();
 }
 
@@ -522,7 +548,7 @@ int UProbeManager::DeployOpenSSLUProbes(const absl::flat_hash_set<md::UPID>& pid
     auto count_or = AttachOpenSSLUProbesOnDynamicLib(pid.pid());
     if (count_or.ok()) {
       uprobe_count += count_or.ValueOrDie();
-      VLOG(1) << absl::Substitute(
+      LOG(INFO) << absl::Substitute(
           "Attaching OpenSSL uprobes on dynamic library succeeded for PID $0: $1 probes", pid.pid(),
           count_or.ValueOrDie());
     } else {

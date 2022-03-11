@@ -330,6 +330,33 @@ class ProcParser {
    */
   StatusOr<absl::flat_hash_set<std::string>> GetMapPaths(pid_t pid) const;
 
+  /**
+   * ProcessMaps tracks details from /proc/<pid>/maps
+   */
+  struct ProcessMap {
+      uint64_t vmem_start = 0;
+      uint64_t vmem_end = 0;
+      // TODO(ddelnano): Change this to an octal like number like chmod
+      /* uint8_t permissions = 0; */
+      std::string permissions = "";
+      uint64_t file_offset = 0;
+      uint64_t inode = 0;
+      std::string map_path = "";
+
+      template <typename H>
+      friend H AbslHashValue(H h, const ProcessMap& e) {
+        return H::combine(std::move(h), e.vmem_start, e.vmem_end, e.file_offset);
+      }
+
+      bool operator==(const ProcParser::ProcessMap& rhs) const {
+        /* return this->vmem_start == rhs.vmem_start && this->vmem_end == rhs.vmem_end && this->permissions == rhs.permissions && this->inode == rhs.inode && this->file_offset == rhs.file_offset && this->map_path == rhs.map_path; */
+        return this->vmem_start == rhs.vmem_start && this->vmem_end == rhs.vmem_end && this->permissions.compare(permissions) == 0 && this->inode == rhs.inode && this->file_offset == rhs.file_offset && this->map_path == rhs.map_path;
+      }
+  };
+
+  StatusOr<absl::flat_hash_set<ProcessMap>> GetMapEntries(pid_t pid, std::string libpath) const;
+
+
  private:
   static Status ParseNetworkStatAccumulateIFaceData(
       const std::vector<std::string_view>& dev_stat_record, NetworkStats* out);

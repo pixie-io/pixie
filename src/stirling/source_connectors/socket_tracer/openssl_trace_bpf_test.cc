@@ -55,28 +55,6 @@ using ::px::stirling::testing::ColWrapperSizeIs;
 using ::testing::AllOf;
 using ::testing::UnorderedElementsAreArray;
 
-class NginxOpenSSL_1_1_0_ContainerWrapper
-    : public ::px::stirling::testing::NginxOpenSSL_1_1_0_Container {
- public:
-  int32_t PID() const { return NginxWorkerPID(); }
-};
-
-class NginxOpenSSL_1_1_1_ContainerWrapper
-    : public ::px::stirling::testing::NginxOpenSSL_1_1_1_Container {
- public:
-  int32_t PID() const { return NginxWorkerPID(); }
-};
-
-class Node12_3_1ContainerWrapper : public ::px::stirling::testing::Node12_3_1Container {
- public:
-  int32_t PID() const { return process_pid(); }
-};
-
-class Node14_18_1AlpineContainerWrapper
-    : public ::px::stirling::testing::Node14_18_1AlpineContainer {
- public:
-  int32_t PID() const { return process_pid(); }
-};
 
 class ThriftmuxContainerWrapper
     : public ::px::stirling::testing::ThriftMuxServerContainer {
@@ -177,8 +155,7 @@ StatusOr<int32_t> RunThriftMuxClient(std::string container_name) {
       "@/app/px/src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux/"
       "server_image.classpath";
   std::string cmd =
-      absl::StrFormat("docker exec %s /usr/bin/java -cp %s Client & echo $! && wait",
-                      container_name, classpath);
+      absl::StrFormat("docker exec %s /usr/bin/java -cp %s Client & echo $! && wait", container_name, classpath);
   PL_ASSIGN_OR_RETURN(std::string out2, px::Exec(cmd));
 
   LOG(INFO) << absl::StrFormat("thriftmux client command output: '%s'", out2);

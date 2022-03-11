@@ -26,6 +26,7 @@
 
 #include <absl/synchronization/mutex.h>
 
+#include "src/common/system/proc_parser.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/obj_tools/dwarf_reader.h"
 #include "src/stirling/obj_tools/elf_reader.h"
@@ -42,6 +43,8 @@ DECLARE_double(stirling_rescan_exp_backoff_factor);
 
 namespace px {
 namespace stirling {
+
+using system::ProcParser;
 
 /**
  * Describes a UProbe template.
@@ -330,38 +333,6 @@ class UProbeManager {
 
   // Probes for OpenSSL tracing.
   inline static const auto kOpenSSLUProbes = MakeArray<bpf_tools::UProbeSpec>({
-      bpf_tools::UProbeSpec{
-          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
-          .symbol = "SSL_write",
-          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
-          .probe_fn = "probe_entry_SSL_write",
-      },
-      bpf_tools::UProbeSpec{
-          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
-          .symbol = "SSL_write",
-          .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
-          .probe_fn = "probe_ret_SSL_write",
-      },
-      bpf_tools::UProbeSpec{
-          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
-          .symbol = "SSL_read",
-          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
-          .probe_fn = "probe_entry_SSL_read",
-      },
-      bpf_tools::UProbeSpec{
-          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
-          .symbol = "SSL_read",
-          .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
-          .probe_fn = "probe_ret_SSL_read",
-      },
-      // Used by node tracing to record the mapping from SSL object to TLSWrap object.
-      // TODO(yzhao): Move this to a separate list for node application only.
-      bpf_tools::UProbeSpec{
-          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
-          .symbol = "SSL_new",
-          .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
-          .probe_fn = "probe_ret_SSL_new",
-      },
       // netty-tcnative statically linked boringssl
       bpf_tools::UProbeSpec{
           .binary_path = "/tmp/libnetty_tcnative_linux_x86.so",
@@ -503,7 +474,7 @@ class UProbeManager {
   // Returns set of PIDs that have had mmap called on them since the last call.
   absl::flat_hash_set<md::UPID> PIDsToRescanForUProbes();
 
-  Status UpdateOpenSSLSymAddrs(std::filesystem::path container_lib, uint32_t pid);
+  Status UpdateOpenSSLSymAddrs(std::filesystem::path container_lib, uint32_t pid, std::optional<ProcParser::ProcessMap> map_entry);
   Status UpdateGoCommonSymAddrs(obj_tools::ElfReader* elf_reader,
                                 obj_tools::DwarfReader* dwarf_reader,
                                 const std::vector<int32_t>& pids);

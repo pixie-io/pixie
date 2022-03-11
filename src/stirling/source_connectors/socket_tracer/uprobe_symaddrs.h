@@ -19,6 +19,7 @@
 #pragma once
 
 #include "src/common/base/base.h"
+#include "src/common/system/proc_parser.h"
 #include "src/stirling/obj_tools/dwarf_reader.h"
 #include "src/stirling/obj_tools/elf_reader.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
@@ -26,6 +27,8 @@
 
 namespace px {
 namespace stirling {
+
+using system::ProcParser;
 
 /**
  * Uses ELF and DWARF information to return the locations of all relevant symbols for general Go
@@ -52,7 +55,7 @@ StatusOr<struct go_tls_symaddrs_t> GoTLSSymAddrs(obj_tools::ElfReader* elf_reade
  * Detects the version of OpenSSL to return the locations of all relevant symbols for OpenSSL uprobe
  * deployment.
  */
-StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(const std::filesystem::path& openssl_lib);
+StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(const std::filesystem::path& openssl_lib, uint32_t pid, std::optional<ProcParser::ProcessMap> map_entry);
 
 /**
  * Returns the corresponding symbol offsets of the input Nodejs executable.

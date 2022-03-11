@@ -776,5 +776,62 @@ StatusOr<absl::flat_hash_set<std::string>> ProcParser::GetMapPaths(pid_t pid) co
   return map_paths;
 }
 
+StatusOr<absl::flat_hash_set<ProcParser::ProcessMap>> ProcParser::GetMapEntries(pid_t pid, std::string libpath) const {
+  absl::flat_hash_set<ProcParser::ProcessMap> map_entries;
+
+  static constexpr int kProcMapNumFields = 6;
+
+  const std::filesystem::path proc_pid_maps_path = ProcPidPath(pid) / "maps";
+  PL_ASSIGN_OR_RETURN(std::string content, px::ReadFileToString(proc_pid_maps_path));
+  std::ifstream ifs;
+  ifs.open(proc_pid_maps_path);
+  if (!ifs) {
+    return error::Internal("Failed to open file $0", proc_pid_maps_path.string());
+  }
+
+  std::string line;
+  while (std::getline(ifs, line)) {
+    // We need to match the header lines which are of the following form:
+    // address                   perms offset   dev    inode             pathname
+    // For example:
+    // 55e816b37000-55e816b65000 r--p  00000000 103:02 55579316          /usr/bin/vim.basic
+    // We differentiate these headers from the subsequent key-value pairs that include
+    // data about the memory usage for each of the process mappings.
+    auto idx = line.find(':');
+    if (idx == std::string::npos) {
+      continue;
+    }
+    // If the character after the colon is whitespace, this is a key-value line.
+    // Else the colon is part of the device (major:minor) and this is a header.
+    // Perhaps we should look for other indicators?
+    std::vector<std::string_view> split =
+        absl::StrSplit(line, absl::MaxSplits(' ', kProcMapNumFields), absl::SkipWhitespace());
+    // We might end up with 5 or 6 fields based on whether we have a pathname or not.
+    if (split.size() < kProcMapNumFields - 1) {
+      return error::Internal("Failed to parse file $0", proc_pid_maps_path.string());
+    }
+    std::vector<std::string_view> vmem = absl::StrSplit(split[0], absl::MaxSplits("-", 2), absl::SkipWhitespace());
+
+    ProcParser::ProcessMap m{
+        .vmem_start = std::strtoull(vmem[0].data(), NULL, 16),
+        .vmem_end   = std::strtoull(vmem[1].data(), NULL, 16),
+        .permissions = std::string(split[1]),
+        .file_offset = std::strtoull(split[2].data(), NULL, 16),
+        .inode = std::strtoull(split[4].data(), NULL, 16),
+    };
+    if (split.size() == kProcMapNumFields) {
+      m.map_path = absl::StripAsciiWhitespace(split[kProcMapNumFields - 1]);
+    }
+
+    if (m.map_path.compare(libpath) != 0) {
+      continue;
+    }
+
+    map_entries.insert(std::move(m));
+  }
+
+  return map_entries;
+}
+
 }  // namespace system
 }  // namespace px
