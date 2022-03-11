@@ -37,7 +37,9 @@ spec:
           requests:
             storage: 0Gi  # this is replaced by version specific patches
   - name: data
-    count: 4
+    # We need atleast 1 more than the number of index replicas we desire so that
+    # pods can be disrupted for nodepool upgrades.
+    count: 5
     config:
       node.master: false
       node.data: true
