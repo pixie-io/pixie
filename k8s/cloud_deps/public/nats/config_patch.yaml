@@ -20,6 +20,7 @@ data:
       routes [
         nats://pl-nats-0.pl-nats:6222
         nats://pl-nats-1.pl-nats:6222
+        nats://pl-nats-2.pl-nats:6222
       ]
 
       tls {

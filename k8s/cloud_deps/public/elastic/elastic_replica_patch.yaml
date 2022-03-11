@@ -2,10 +2,14 @@
 # Master node
 - op: replace
   path: /spec/nodeSets/0/count
-  value: 1
+  value: 2
 
 - op: replace
   path: /spec/nodeSets/0/config/node.data
+  value: true
+
+- op: replace
+  path: /spec/nodeSets/0/config/node.ingest
   value: true
 
 # Data node.
