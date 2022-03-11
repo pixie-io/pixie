@@ -42,7 +42,7 @@ data:
         node_id: $POD_NAME
         log_path: /data/stan/log
         # Explicit names of resulting peers
-        peers: ["pl-stan-0", "pl-stan-1"]
+        peers: ["pl-stan-0", "pl-stan-1", "pl-stan-2"]
       }
     }
 # yamllint enable

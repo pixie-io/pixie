@@ -79,6 +79,16 @@ spec:
   - name: metrics
     port: 7777
 ---
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: pl-stan-pdb
+spec:
+  minAvailable: 51%
+  selector:
+    matchLabels:
+      name: pl-stan
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:

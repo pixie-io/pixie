@@ -4,7 +4,7 @@ kind: StatefulSet
 metadata:
   name: pl-stan
 spec:
-  replicas: 2
+  replicas: 3
   volumeClaimTemplates:
   - metadata:
       name: stan-sts-vol
