@@ -36,6 +36,5 @@ PL_IR_NODE(UDTFSource)
 PL_IR_NODE(Rolling)
 PL_IR_NODE(Stream)
 PL_IR_NODE(EmptySource)
-PL_IR_NODE(OTelExportSink)
 
 #endif

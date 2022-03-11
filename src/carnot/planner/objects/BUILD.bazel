@@ -80,15 +80,6 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "otel_test",
-    srcs = ["otel_test.cc"],
-    deps = [
-        ":cc_library",
-        ":test_utils",
-    ],
-)
-
-pl_cc_test(
     name = "dataframe_test",
     srcs = ["dataframe_test.cc"],
     deps = [
