@@ -69,7 +69,7 @@ Status MountDebugFS() {
   return Status::OK();
 }
 
-StatusOr<utils::TaskStructOffsets> ResolveTaskStructOffsets() {
+StatusOr<utils::TaskStructOffsets> ResolveTaskStructOffsetsWithRetry() {
   constexpr int kNumAttempts = 3;
 
   StatusOr<utils::TaskStructOffsets> offsets_status;
@@ -84,7 +84,7 @@ StatusOr<utils::TaskStructOffsets> ResolveTaskStructOffsets() {
 
 StatusOr<utils::TaskStructOffsets> GetTaskStructOffsets(bool always_infer_task_struct_offsets) {
   // Defaults to zero offsets, which tells BPF not to use the offset overrides.
-  // If the values are changed (as they are if ResolveTaskStructOffsets() is run),
+  // If the values are changed (as they are if ResolveTaskStructOffsetsWithRetry() is run),
   // then the non-zero values will be used in BPF.
   utils::TaskStructOffsets offsets;
 
@@ -100,7 +100,7 @@ StatusOr<utils::TaskStructOffsets> GetTaskStructOffsets(bool always_infer_task_s
   if (potentially_mismatched_headers || always_infer_task_struct_offsets) {
     LOG(INFO) << "Resolving task_struct offsets.";
 
-    PL_ASSIGN_OR_RETURN(offsets, ResolveTaskStructOffsets());
+    PL_ASSIGN_OR_RETURN(offsets, ResolveTaskStructOffsetsWithRetry());
 
     LOG(INFO) << absl::Substitute("Task struct offsets: group_leader=$0 real_start_time=$1",
                                   offsets.group_leader_offset, offsets.real_start_time_offset);
