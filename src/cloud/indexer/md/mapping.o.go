@@ -20,6 +20,7 @@ package md
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/olivere/elastic/v7"
 )
@@ -92,7 +93,7 @@ const IndexMapping = `
     },
     "max_ngram_diff": 10,
     "number_of_shards": 4,
-    "number_of_replicas": 4,
+    "number_of_replicas": 1,
     "analysis": {
       "filter": {
         "dont_split_on_numerics": {
@@ -121,8 +122,8 @@ const IndexMapping = `
             "\n",
 	          "/",
 	          "_"
-    	  ]
-	}
+    	    ]
+        }
       },
       "analyzer": {
         "autocomplete": {
@@ -202,20 +203,19 @@ const IndexMapping = `
 }
 `
 
-// IndexName is the name of the ES index.
-// This can be incremented when we have breaking changes,
-// and are willing to lose data in the old index.
-const IndexName = "md_entities_8"
-
 // InitializeMapping creates the index in elastic.
-func InitializeMapping(es *elastic.Client) error {
-	exists, err := es.IndexExists(IndexName).Do(context.Background())
+func InitializeMapping(es *elastic.Client, indexName string, replicas int) error {
+	exists, err := es.IndexExists(indexName).Do(context.Background())
 	if err != nil {
 		return err
 	}
-	if exists {
-		return nil
+	if !exists {
+		_, err = es.CreateIndex(indexName).Body(IndexMapping).Do(context.Background())
+		if err != nil {
+			return err
+		}
 	}
-	_, err = es.CreateIndex(IndexName).Body(IndexMapping).Do(context.Background())
+	replicaSetting := fmt.Sprintf("{\"index\": {\"number_of_replicas\": %d}}", replicas)
+	_, err = es.IndexPutSettings(indexName).BodyString(replicaSetting).Do(context.Background())
 	return err
 }

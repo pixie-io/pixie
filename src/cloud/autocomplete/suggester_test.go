@@ -35,6 +35,8 @@ import (
 	"px.dev/pixie/src/utils/testingutils"
 )
 
+const indexName = "test_suggester_index"
+
 var org1 = uuid.Must(uuid.NewV4())
 
 var mdEntities = []md.EsMDEntity{
@@ -164,14 +166,14 @@ func TestMain(m *testing.M) {
 	elasticClient = es
 
 	// Set up elastic indexes.
-	_, err = es.CreateIndex(md.IndexName).Body(md.IndexMapping).Do(context.Background())
+	err = md.InitializeMapping(es, indexName, 1)
 	if err != nil {
 		cleanup()
 		log.Fatal(err)
 	}
 
 	for _, e := range mdEntities {
-		err = insertIntoIndex(md.IndexName, e.UID, e)
+		err = insertIntoIndex(indexName, e.UID, e)
 		if err != nil {
 			cleanup()
 			log.Fatal(err)
@@ -578,7 +580,7 @@ func TestGetSuggestions(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			es, _ := autocomplete.NewElasticSuggester(elasticClient, "scripts", nil)
+			es, _ := autocomplete.NewElasticSuggester(elasticClient, indexName, "scripts", nil)
 			results, err := es.GetSuggestions(test.reqs)
 			require.NoError(t, err)
 			assert.NotNil(t, results)

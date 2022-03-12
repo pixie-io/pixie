@@ -41,6 +41,8 @@ spec:
             port: 51800
         envFrom:
         - configMapRef:
+            name: pl-indexer-config
+        - configMapRef:
             name: pl-tls-config
         - configMapRef:
             name: pl-domain-config

@@ -49,6 +49,9 @@ func init() {
 	pflag.String("es_passwd", "elastic", "The password for elastic")
 	pflag.String("vzmgr_service", "kubernetes:///vzmgr-service.plc:51800", "The profile service url (load balancer/list is ok)")
 	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
+
+	pflag.String("md_index_name", "", "The elastic index name for metadata.")
+	pflag.Int("md_index_replicas", 4, "The number of replicas to setup for the metadata index.")
 }
 
 func newVZMgrClient() (vzmgrpb.VZMgrServiceClient, error) {
@@ -112,7 +115,14 @@ func main() {
 	})
 
 	es := mustConnectElastic()
-	err = md.InitializeMapping(es)
+
+	indexName := viper.GetString("md_index_name")
+	if indexName == "" {
+		log.Fatal("Must specify a name for the elastic index.")
+	}
+	replicas := viper.GetInt("md_index_replicas")
+
+	err = md.InitializeMapping(es, indexName, replicas)
 	if err != nil {
 		log.WithError(err).Fatal("Could not initialize elastic mapping")
 	}
@@ -122,7 +132,7 @@ func main() {
 		log.WithError(err).Fatal("Could not connect to vzmgr")
 	}
 
-	indexer, err := controllers.NewIndexer(nc, vzmgrClient, strmr, es, "00", "ff")
+	indexer, err := controllers.NewIndexer(nc, vzmgrClient, strmr, es, indexName, "00", "ff")
 	if err != nil {
 		log.WithError(err).Fatal("Could not start indexer")
 	}
