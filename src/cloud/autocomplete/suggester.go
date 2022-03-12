@@ -37,6 +37,7 @@ import (
 // ElasticSuggester provides suggestions based on the given index in Elastic.
 type ElasticSuggester struct {
 	client          *elastic.Client
+	mdIndexName     string
 	scriptIndexName string
 	pc              profilepb.ProfileServiceClient
 	// This is temporary, and will be removed once we start indexing scripts.
@@ -76,9 +77,10 @@ var elasticStateToProtoMap = map[md.ESMDEntityState]cloudpb.AutocompleteEntitySt
 }
 
 // NewElasticSuggester creates a suggester based on an elastic index.
-func NewElasticSuggester(client *elastic.Client, scriptIndex string, pc profilepb.ProfileServiceClient) (*ElasticSuggester, error) {
+func NewElasticSuggester(client *elastic.Client, mdIndex, scriptIndex string, pc profilepb.ProfileServiceClient) (*ElasticSuggester, error) {
 	return &ElasticSuggester{
 		client:          client,
+		mdIndexName:     mdIndex,
 		scriptIndexName: scriptIndex,
 		pc:              pc,
 	}, nil
@@ -321,7 +323,7 @@ func (e *ElasticSuggester) getQueryForRequest(orgID uuid.UUID, clusterUID string
 
 func (e *ElasticSuggester) getMDEntityQuery(orgID uuid.UUID, clusterUID string, input string, allowedKinds []cloudpb.AutocompleteEntityKind) *elastic.BoolQuery {
 	entityQuery := elastic.NewBoolQuery()
-	entityQuery.Must(elastic.NewTermQuery("_index", md.IndexName))
+	entityQuery.Must(elastic.NewTermQuery("_index", e.mdIndexName))
 
 	// Use a boosting query to rank running resources higher than terminated resources.
 	negativeQuery := elastic.NewBoolQuery()

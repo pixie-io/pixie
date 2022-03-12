@@ -88,6 +88,11 @@ spec:
             configMapKeyRef:
               name: pl-service-config
               key: PL_ELASTIC_SERVICE
+        - name: PL_MD_INDEX_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: pl-indexer-config
+              key: PL_MD_INDEX_NAME
         - name: PL_CONFIG_MANAGER_SERVICE
           valueFrom:
             configMapKeyRef:

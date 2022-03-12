@@ -52,12 +52,13 @@ func init() {
 
 // VizierIndexer run the indexer for a single vizier index.
 type VizierIndexer struct {
-	st       msgbus.Streamer
-	es       *elastic.Client
-	bulk     *elastic.BulkService
-	vizierID uuid.UUID
-	orgID    uuid.UUID
-	k8sUID   string
+	st        msgbus.Streamer
+	es        *elastic.Client
+	bulk      *elastic.BulkService
+	vizierID  uuid.UUID
+	orgID     uuid.UUID
+	k8sUID    string
+	indexName string
 
 	sub    msgbus.PersistentSub
 	quitCh chan bool
@@ -70,16 +71,17 @@ type VizierIndexer struct {
 }
 
 // NewVizierIndexerWithBulkSettings creates a new Vizier indexer with bulk settings.
-func NewVizierIndexerWithBulkSettings(vizierID uuid.UUID, orgID uuid.UUID, k8sUID string, st msgbus.Streamer,
+func NewVizierIndexerWithBulkSettings(vizierID uuid.UUID, orgID uuid.UUID, k8sUID, indexName string, st msgbus.Streamer,
 	es *elastic.Client, actionsPerBatch int, batchFlushInterval time.Duration) *VizierIndexer {
 	return &VizierIndexer{
 		st: st,
 		es: es,
 		// This will get automatically reset for reuse after every call to `bulk.Do`.
-		bulk:                        es.Bulk().Index(IndexName),
+		bulk:                        es.Bulk().Index(indexName),
 		vizierID:                    vizierID,
 		orgID:                       orgID,
 		k8sUID:                      k8sUID,
+		indexName:                   indexName,
 		quitCh:                      make(chan bool),
 		errCh:                       make(chan error),
 		maxActionsPerBatch:          actionsPerBatch,
@@ -89,8 +91,8 @@ func NewVizierIndexerWithBulkSettings(vizierID uuid.UUID, orgID uuid.UUID, k8sUI
 }
 
 // NewVizierIndexer creates a new Vizier indexer.
-func NewVizierIndexer(vizierID uuid.UUID, orgID uuid.UUID, k8sUID string, st msgbus.Streamer, es *elastic.Client) *VizierIndexer {
-	return NewVizierIndexerWithBulkSettings(vizierID, orgID, k8sUID, st, es, maxActionsPerBatch, maxActionBatchFlushInterval)
+func NewVizierIndexer(vizierID uuid.UUID, orgID uuid.UUID, k8sUID, indexName string, st msgbus.Streamer, es *elastic.Client) *VizierIndexer {
+	return NewVizierIndexerWithBulkSettings(vizierID, orgID, k8sUID, indexName, st, es, maxActionsPerBatch, maxActionBatchFlushInterval)
 }
 
 // Start starts the indexer.
@@ -100,7 +102,7 @@ func (v *VizierIndexer) Start(topic string) error {
 		WithField("ClusterUID", v.k8sUID).
 		Info("Starting Indexer")
 
-	sub, err := v.st.PersistentSubscribe(topic, "indexer"+IndexName, v.streamHandler)
+	sub, err := v.st.PersistentSubscribe(topic, "indexer"+v.indexName, v.streamHandler)
 	if err != nil {
 		return fmt.Errorf("Failed to subscribe to topic %s: %s", topic, err.Error())
 	}

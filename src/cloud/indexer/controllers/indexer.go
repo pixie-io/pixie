@@ -69,25 +69,27 @@ func (c *concurrentIndexersMap) values() []*md.VizierIndexer {
 type Indexer struct {
 	clusters *concurrentIndexersMap // Map from cluster UID->indexer.
 
-	st msgbus.Streamer
-	es *elastic.Client
+	st        msgbus.Streamer
+	es        *elastic.Client
+	indexName string
 
 	watcher *vzutils.Watcher
 }
 
 // NewIndexer creates a new Vizier indexer. This is a wrapper around the Vizier Watcher, which starts the indexer
 // for any active viziers.
-func NewIndexer(nc *nats.Conn, vzmgrClient vzmgrpb.VZMgrServiceClient, st msgbus.Streamer, es *elastic.Client, fromShardID string, toShardID string) (*Indexer, error) {
+func NewIndexer(nc *nats.Conn, vzmgrClient vzmgrpb.VZMgrServiceClient, st msgbus.Streamer, es *elastic.Client, indexName, fromShardID, toShardID string) (*Indexer, error) {
 	watcher, err := vzutils.NewWatcher(nc, vzmgrClient, fromShardID, toShardID)
 	if err != nil {
 		return nil, err
 	}
 
 	i := &Indexer{
-		clusters: &concurrentIndexersMap{unsafeMap: make(map[string]*md.VizierIndexer)},
-		watcher:  watcher,
-		st:       st,
-		es:       es,
+		clusters:  &concurrentIndexersMap{unsafeMap: make(map[string]*md.VizierIndexer)},
+		watcher:   watcher,
+		st:        st,
+		es:        es,
+		indexName: indexName,
 	}
 
 	err = watcher.RegisterVizierHandler(i.handleVizier)
@@ -115,7 +117,7 @@ func (i *Indexer) handleVizier(id uuid.UUID, orgID uuid.UUID, uid string) error 
 	}
 
 	// Start indexer.
-	vzIndexer := md.NewVizierIndexer(id, orgID, uid, i.st, i.es)
+	vzIndexer := md.NewVizierIndexer(id, orgID, uid, i.indexName, i.st, i.es)
 	err := vzIndexer.Start(fmt.Sprintf("%s.%s", indexerMetadataTopic, uid))
 	if err != nil {
 		log.WithField("UID", uid).WithError(err).Error("Could not set up Vizier watcher for metadata updates")

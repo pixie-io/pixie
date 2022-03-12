@@ -36,6 +36,8 @@ import (
 	"px.dev/pixie/src/utils/testingutils"
 )
 
+const indexName = "test_md_index"
+
 var elasticClient *elastic.Client
 var vzID uuid.UUID
 var orgID uuid.UUID
@@ -50,7 +52,7 @@ func TestMain(m *testing.M) {
 	vzID = uuid.Must(uuid.NewV4())
 	orgID = uuid.Must(uuid.NewV4())
 
-	err = md.InitializeMapping(es)
+	err = md.InitializeMapping(es, indexName, 1)
 	if err != nil {
 		cleanup()
 		log.WithError(err).Fatal("Could not initialize indexes in elastic")
@@ -370,7 +372,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			indexer := md.NewVizierIndexerWithBulkSettings(vzID, orgID, "test", nil, elasticClient, 1, time.Second*1)
+			indexer := md.NewVizierIndexerWithBulkSettings(vzID, orgID, "test", indexName, nil, elasticClient, 1, time.Second*1)
 
 			for _, u := range test.updates {
 				err := indexer.HandleResourceUpdate(u)
@@ -380,7 +382,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 			// Refresh the data since we are using "wait_for" on the indexer.
 			elasticClient.Refresh()
 			resp, err := elasticClient.Search().
-				Index(md.IndexName).
+				Index(indexName).
 				Query(elastic.NewTermQuery("kind", test.updateKind)).
 				Do(context.Background())
 			require.NoError(t, err)
