@@ -38,3 +38,11 @@ struct proc_exit_event_t {
   // It's assigned by bpf_get_current_comm() hence the name comm.
   char comm[MAX_CMD_SIZE];
 };
+
+// Specifies the corresponding indexes of the entries of a per-cpu array.
+enum control_value_index_t {
+  TASK_STRUCT_EXIT_CODE_OFFSET_INDEX,
+  NUM_CONTROL_VALUES,
+};
+
+const char kControlValuesArrayName[] = "control_values";

@@ -27,6 +27,24 @@
 
 BPF_PERF_OUTPUT(proc_exit_events);
 
+// This array records singular values that are used by probes. We group them together to reduce the
+// number of arrays with only 1 element. Use of per-cpu array shall be the most efficient way,
+// compared to using hash table.
+BPF_PERCPU_ARRAY(control_values, uint64_t, NUM_CONTROL_VALUES);
+
+static __inline uint64_t read_exit_code(const struct task_struct* task) {
+  int idx = TASK_STRUCT_EXIT_CODE_OFFSET_INDEX;
+  int64_t* exit_code_offset = control_values.lookup(&idx);
+  // If the offset were not set (uninitialized value is 0), just use the value obtained from system
+  // headers.
+  if (exit_code_offset == NULL || *exit_code_offset == 0) {
+    return task->exit_code;
+  }
+  uint32_t exit_code = 0;
+  bpf_probe_read(&exit_code, sizeof(exit_code), (uint8_t*)task + *exit_code_offset);
+  return exit_code;
+}
+
 // A probe for the sched:sched_process_exit tracepoint.
 // This probe is primarily intended for performing BPF map clean-up after a process terminates.
 TRACEPOINT_PROBE(sched, sched_process_exit) {
@@ -42,7 +60,7 @@ TRACEPOINT_PROBE(sched, sched_process_exit) {
     event.timestamp_ns = bpf_ktime_get_ns();
     event.upid.tgid = tgid;
     event.upid.start_time_ticks = read_start_boottime(task);
-    event.exit_code = task->exit_code;
+    event.exit_code = read_exit_code(task);
     bpf_get_current_comm(&event.comm, sizeof(event.comm));
 
     proc_exit_events.perf_submit(args, &event, sizeof(event));

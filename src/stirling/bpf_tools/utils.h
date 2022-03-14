@@ -44,6 +44,21 @@ StatusOr<std::vector<UProbeSpec>> TransformGolangReturnProbe(
 StatusOr<std::vector<UProbeSpec>> TransformGolangReturnProbe(const UProbeSpec& spec,
                                                              obj_tools::ElfReader* elf_reader);
 
+/**
+ * Update BPF per-cpu array value at the specified index.
+ * Note that the value is actually written onto all CPUs by BCC.
+ */
+template <typename TValueType>
+Status UpdatePerCPUArrayValue(int idx, TValueType val, ebpf::BPFPercpuArrayTable<TValueType>* arr) {
+  std::vector<TValueType> values(bpf_tools::BCCWrapper::kCPUCount, val);
+  auto update_res = arr->update_value(idx, values);
+  if (!update_res.ok()) {
+    return error::Internal(absl::Substitute("Failed to set value on index: $0, error message: $1",
+                                            idx, update_res.msg()));
+  }
+  return Status::OK();
+}
+
 }  // namespace bpf_tools
 }  // namespace stirling
 }  // namespace px

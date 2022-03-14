@@ -37,6 +37,7 @@
 #include "src/common/system/socket_info.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/stirling/bpf_tools/macros.h"
+#include "src/stirling/bpf_tools/utils.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/go_grpc_types.hpp"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/source_connectors/socket_tracer/conn_stats.h"
@@ -638,21 +639,11 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
   pids_to_trace_disable_.clear();
 }
 
-template <typename TValueType>
-Status UpdatePerCPUArrayValue(int idx, TValueType val, ebpf::BPFPercpuArrayTable<TValueType>* arr) {
-  std::vector<TValueType> values(bpf_tools::BCCWrapper::kCPUCount, val);
-  auto update_res = arr->update_value(idx, values);
-  if (!update_res.ok()) {
-    return error::Internal(absl::Substitute("Failed to set value on index: $0, error message: $1",
-                                            idx, update_res.msg()));
-  }
-  return Status::OK();
-}
-
 Status SocketTraceConnector::UpdateBPFProtocolTraceRole(traffic_protocol_t protocol,
                                                         uint64_t role_mask) {
   auto control_map_handle = GetPerCPUArrayTable<uint64_t>(kControlMapName);
-  return UpdatePerCPUArrayValue(static_cast<int>(protocol), role_mask, &control_map_handle);
+  return bpf_tools::UpdatePerCPUArrayValue(static_cast<int>(protocol), role_mask,
+                                           &control_map_handle);
 }
 
 Status SocketTraceConnector::TestOnlySetTargetPID(int64_t pid) {
@@ -663,13 +654,13 @@ Status SocketTraceConnector::TestOnlySetTargetPID(int64_t pid) {
         pid);
   }
   auto control_map_handle = GetPerCPUArrayTable<int64_t>(kControlValuesArrayName);
-  return UpdatePerCPUArrayValue(kTargetTGIDIndex, pid, &control_map_handle);
+  return bpf_tools::UpdatePerCPUArrayValue(kTargetTGIDIndex, pid, &control_map_handle);
 }
 
 Status SocketTraceConnector::DisableSelfTracing() {
   auto control_map_handle = GetPerCPUArrayTable<int64_t>(kControlValuesArrayName);
   int64_t self_pid = getpid();
-  return UpdatePerCPUArrayValue(kStirlingTGIDIndex, self_pid, &control_map_handle);
+  return bpf_tools::UpdatePerCPUArrayValue(kStirlingTGIDIndex, self_pid, &control_map_handle);
 }
 
 //-----------------------------------------------------------------------------
