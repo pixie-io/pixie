@@ -187,9 +187,6 @@ func init() {
 	DeployCmd.Flags().Uint32("datastream_buffer_spike_size", 500*1024*1024, "Internal data collector parameters: the maximum temporary size of a data stream buffer before processing.")
 	viper.BindPFlag("datastream_buffer_spike_size", DeployCmd.Flags().Lookup("datastream_buffer_spike_size"))
 
-	DeployCmd.Flags().Int32("table_store_table_size", 64*1024*1024, "TableStoreTableSizeLimit is the maximum allowed size for a table in the table store. When the size grows beyond this limit, old data will be discarded.")
-	viper.BindPFlag("table_store_table_size", DeployCmd.Flags().Lookup("table_store_table_size"))
-
 	// Super secret flags for Pixies.
 	DeployCmd.Flags().MarkHidden("namespace")
 }
@@ -260,7 +257,6 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	dataAccess, _ := cmd.Flags().GetString("data_access")
 	datastreamBufferSize, _ := cmd.Flags().GetUint32("datastream_buffer_size")
 	datastreamBufferSpikeSize, _ := cmd.Flags().GetUint32("datastream_buffer_spike_size")
-	tableStoreTableSize, _ := cmd.Flags().GetInt32("table_store_table_size")
 
 	labelMap := make(map[string]string)
 	if customLabels != "" {
@@ -445,7 +441,6 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 			"dataCollectorParams": &map[string]interface{}{
 				"datastreamBufferSize":      datastreamBufferSize,
 				"datastreamBufferSpikeSize": datastreamBufferSpikeSize,
-				"tableStoreTableSize":       tableStoreTableSize,
 				"customPEMFlags":            pemFlagsMap,
 			},
 		},
