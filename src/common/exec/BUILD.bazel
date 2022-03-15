@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library_internal")
+load("//bazel:pl_build_system.bzl", "pl_cc_library_internal", "pl_cc_test")
 
 package(default_visibility = ["//src:__subpackages__"])
 
@@ -29,4 +29,10 @@ pl_cc_library_internal(
         "//src/common/base:cc_library",
         "//src/common/system:cc_library",
     ],
+)
+
+pl_cc_test(
+    name = "subprocess_test",
+    srcs = ["subprocess_test.cc"],
+    deps = [":cc_library"],
 )

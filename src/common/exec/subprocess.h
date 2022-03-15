@@ -19,7 +19,7 @@
 #pragma once
 
 #include <csignal>
-
+#include <functional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -50,6 +50,21 @@ class SubProcess : public NotCopyMoveable {
    * @return OK if succeed, otherwise an error status.
    */
   Status Start(const std::vector<std::string>& args, bool stderr_to_stdout = false);
+
+  struct StartOptions {
+    // If true, redirect the subprocess' stderr to stdout.
+    bool stderr_to_stdout = false;
+
+    // If true, raise a SIGSTOP signal immediately after forking, and before executing the command.
+    // The parent needs to send a SIGCONT signal to resume the child process.
+    bool stop_before_exec = false;
+  };
+
+  /**
+   * Start a child process to execute a function. The function's return code will be used as the
+   * exit code of the subprocess.
+   */
+  Status Start(const std::function<int()>& fn, StartOptions options);
 
   /**
    * Returns true if the forked subprocess is still running.
@@ -86,6 +101,9 @@ class SubProcess : public NotCopyMoveable {
   int child_pid() const { return child_pid_; }
 
  private:
+  // Setup the child runtime environment. This can only be called inside the child process.
+  void SetupChild(StartOptions options);
+
   // Handy constants to access the pipe's two file descriptor array.
   const int kRead = 0;
   const int kWrite = 1;
@@ -94,7 +112,10 @@ class SubProcess : public NotCopyMoveable {
   // If set, the subprocess is executed inside the mount namespace of this process.
   int mnt_ns_pid_ = -1;
 
-  int child_pid_ = -1;
+  // -1 indicates a unstarted subprocess. A positive value indicates a started process with that
+  // PID, and 0 means it's the child process itself.
+  static constexpr int kUnstartedPID = -1;
+  int child_pid_ = kUnstartedPID;
   bool started_ = false;
 
   // This is a pipe used to fetch the child process' STDOUT.
