@@ -920,3 +920,66 @@ message ConfigForVizierResponse {
   // sentry_dsn contains the key for viziers to send errors and traces.
   string sentry_dsn = 2 [(gogoproto.customname) = "SentryDSN"];
 }
+
+// PluginService helps manage and configure plugins.
+service PluginService {
+  // Fetches all of the available plugins and whether the org has the plugin enabled.
+  rpc GetPlugins(GetPluginsRequest) returns (GetPluginsResponse);
+  // Gets the retention plugin config for a plugin.
+  rpc GetRetentionPluginConfig(GetRetentionPluginConfigRequest) returns (GetRetentionPluginConfigResponse);
+  // Updates the retention plugin config for a plugin.
+  rpc UpdateRetentionPluginConfig(UpdateRetentionPluginConfigRequest) returns (UpdateRetentionPluginConfigResponse);
+}
+
+// PluginKind describes the type of the plugin.
+enum PluginKind {
+  // The plugin kind is unknown or unspecified.
+  PK_UNKNOWN = 0;
+  // The plugin offers longterm data export.
+  PK_RETENTION = 1;
+}
+
+// GetPluginsRequest is a request to get all plugins. These plugins may be filtered by type.
+message GetPluginsRequest {
+  // The kind of plugins to fetch. May be empty to fetch all available plugins.
+  PluginKind kind = 1;
+}
+
+// GetPluginsResponse is the response to a GetPluginsRequest.
+message GetPluginsResponse {
+  // The requested plugins.
+  repeated Plugin plugins = 1;
+}
+
+// Plugin represents plugin, its associated metadata, and whether the org has the plugin enabled.
+message Plugin {
+  string name = 1;
+  string id = 2;
+  string description = 3;
+  string logo = 4;
+  string latest_version = 5;
+  string retention_enabled = 6;
+  bool enabled = 7;
+  string enabled_version = 8;
+}
+
+// GetRetentionPluginConfigRequest is a request to get the retention configuration for a plugin that
+// supports longterm data retention.
+message GetRetentionPluginConfigRequest {
+  // The ID of the plugin to fetch configs for.
+  string plugin_id = 1;
+}
+
+// GetRetentionPluginConfigResponse is the response to a GetRetentionPluginConfigRequest.
+message GetRetentionPluginConfigResponse {
+  map<string, string> configs = 1;
+}
+
+// UpdateRetentionPluginConfigRequest is a request to update the retention config for a plugin.
+message UpdateRetentionPluginConfigRequest {
+  map<string, string> configs = 1;
+  google.protobuf.BoolValue enabled = 2;
+}
+
+// UpdateRetentionPluginConfigResponse is the response to a UpdateRetentionPluginConfigRequest.
+message UpdateRetentionPluginConfigResponse {}

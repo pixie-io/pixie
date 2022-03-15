@@ -348,4 +348,5 @@ input EditablePluginConfig {
 
 input EditablePluginConfigs {
   configs: [EditablePluginConfig!]!
+  enabled: Boolean
 }

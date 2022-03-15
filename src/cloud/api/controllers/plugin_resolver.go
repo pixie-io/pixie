@@ -67,6 +67,7 @@ type editablePluginConfig struct {
 
 type editablePluginConfigs struct {
 	Configs []*editablePluginConfig
+	Enabled *bool
 }
 
 type updateRetentionPluginConfigArgs struct {

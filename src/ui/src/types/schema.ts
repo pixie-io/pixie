@@ -339,6 +339,7 @@ export interface GQLEditablePluginConfig {
 
 export interface GQLEditablePluginConfigs {
   configs: Array<GQLEditablePluginConfig>;
+  enabled?: boolean;
 }
 
 /*********************************
