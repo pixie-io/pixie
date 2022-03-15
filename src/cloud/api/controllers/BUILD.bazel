@@ -36,6 +36,7 @@ go_library(
         "gql.go",
         "org_grpc.go",
         "org_resolver.go",
+        "plugin_resolver.go",
         "script_grpc.go",
         "scriptmgr_resolver.go",
         "session.go",

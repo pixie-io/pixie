@@ -26,6 +26,10 @@ extend type Query {
   # API keys
   apiKeys: [APIKeyMetadata!]!
   apiKey(id: ID!): APIKey!
+
+  # Plugin
+  plugins(kind: PluginKind): [Plugin!]!
+  retentionPluginConfig(id: String!): [PluginConfig!]!
 }
 
 extend type Mutation {
@@ -44,6 +48,9 @@ extend type Mutation {
   CreateInviteToken(orgID: ID!): String!
   RevokeAllInviteTokens(orgID: ID!): Boolean!
   RemoveUserFromOrg(userID: ID!): Boolean!
+
+  # Plugin
+  UpdateRetentionPluginConfig(id: String!, enabled: Boolean!, configs: EditablePluginConfigs!): Boolean!
 }
 
 type UserInfo {
@@ -308,4 +315,37 @@ input EditableUserPermissions {
 
 input EditableOrgSettings {
   enableApprovals: Boolean
+}
+
+# Plugin-related types.
+
+type Plugin {
+  name: String!
+  id: String!
+  description: String!
+  logo: String
+  latestVersion: String!
+  retentionEnabled: Boolean!
+  enabled: Boolean!
+  enabledVersion: String
+}
+
+enum PluginKind {
+  PK_UNKNOWN
+  PK_RETENTION
+}
+
+type PluginConfig {
+  name: String!
+  value: String!
+  description: String!
+}
+
+input EditablePluginConfig {
+  name: String!
+  value: String!
+}
+
+input EditablePluginConfigs {
+  configs: [EditablePluginConfig!]!
 }
