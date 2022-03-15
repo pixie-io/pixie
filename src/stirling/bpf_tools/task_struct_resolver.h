@@ -29,15 +29,17 @@ namespace utils {
 struct TaskStructOffsets {
   uint64_t real_start_time_offset = 0;
   uint64_t group_leader_offset = 0;
+  uint64_t exit_code_offset = 0;
 
   std::string ToString() {
-    return absl::Substitute("{real_start_time=$0, group_leader=$1}", real_start_time_offset,
-                            group_leader_offset);
+    return absl::Substitute("{real_start_time=$0, group_leader=$1, exit_code=$2}",
+                            real_start_time_offset, group_leader_offset, exit_code_offset);
   }
 
   bool operator==(const TaskStructOffsets& other) const {
     return real_start_time_offset == other.real_start_time_offset &&
-           group_leader_offset == other.group_leader_offset;
+           group_leader_offset == other.group_leader_offset &&
+           exit_code_offset == other.exit_code_offset;
   }
 };
 

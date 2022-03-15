@@ -60,6 +60,7 @@ TEST(ResolveTaskStructOffsets, AsSubProcess) {
 
   EXPECT_NE(offsets.real_start_time_offset, 0);
   EXPECT_NE(offsets.group_leader_offset, 0);
+  EXPECT_NE(offsets.exit_code_offset, 0);
 }
 
 }  // namespace utils

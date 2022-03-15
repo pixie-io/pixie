@@ -18,13 +18,16 @@
 
 #include "src/stirling/bpf_tools/task_struct_resolver.h"
 
+#include <linux/sched.h>
 #include <poll.h>
+#include <sys/wait.h>
 
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "src/common/base/base.h"
+#include "src/common/exec/subprocess.h"
 #include "src/common/system/proc_parser.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/bpf_tools/macros.h"
@@ -241,7 +244,7 @@ Status WriteToParent(int fd, const TaskStructOffsets& result) {
 }
 }  // namespace
 
-StatusOr<TaskStructOffsets> ResolveTaskStructOffsets() {
+StatusOr<TaskStructOffsets> ResolveTaskStructStartTimeOffsets() {
   const TaskStructOffsets kSentinelValue;
 
   // Create pipe descriptors.
@@ -291,6 +294,79 @@ StatusOr<TaskStructOffsets> ResolveTaskStructOffsets() {
 
     exit(0);
   }
+}
+
+namespace {
+
+// Returns the offset of task_struct::offset.
+StatusOr<uint64_t> ResolveTaskStructExitCodeOffset() {
+  // 171 is 0b10101011, which is somewhat a rare pattern.
+  constexpr uint8_t exit_code = 171;
+
+  SubProcess proc;
+  PL_RETURN_IF_ERROR(proc.Start([]() -> int { return exit_code; }, {.stop_before_exec = true}));
+
+  auto bcc = std::make_unique<px::stirling::bpf_tools::BCCWrapper>();
+  PL_RETURN_IF_ERROR(
+      bcc->InitBPFProgram(bcc_script, /*cflags*/ {}, /*requires_linux_headers*/ false));
+  PL_RETURN_IF_ERROR(bcc->AttachTracepoint({std::string("sched:sched_process_exit"),
+                                            std::string("tracepoint__sched__sched_process_exit")}));
+
+  const std::string kProcExitTargetPIDTableName = "proc_exit_target_pid";
+  ebpf::BPFArrayTable proc_exit_target_pid_table =
+      bcc->GetArrayTable<uint32_t>(kProcExitTargetPIDTableName);
+  // Set target PID in BPF map, which only report event triggered by the launched subprocess.
+  ebpf::StatusTuple ebpf_st =
+      proc_exit_target_pid_table.update_value(/*index*/ 0, proc.child_pid());
+  if (!ebpf_st.ok()) {
+    return error::Internal("Failed to update target PID map, message: $0", ebpf_st.msg());
+  }
+
+  // Resume the child process, allow it to exit and trigger the tracepoint probe.
+  proc.Signal(SIGCONT);
+
+  // Wait until the child process exits. The probe on sched:sched_process_exit will be executed
+  // fully before the process actually exits. This ensures the data is written to the BPF
+  // map after this waiting.
+  int status = proc.Wait();
+
+  if (!WIFEXITED(status)) {
+    return error::Internal("Child process exited abnormally");
+  }
+
+  int actual_exit_code WEXITSTATUS(status);
+  if (actual_exit_code != exit_code) {
+    return error::Internal(
+        "Child process exit code differs form expectation, actual=$0 expected=$1", actual_exit_code,
+        exit_code);
+  }
+
+  // Retrieve the raw memory buffer of the task struct.
+  struct buf buf;
+  ebpf_st = bcc->GetArrayTable<struct buf>("task_struct_buf").get_value(/*index*/ 0, buf);
+  if (!ebpf_st.ok()) {
+    return error::Internal("Failed to read task_struct_buf, message: $0", ebpf_st.msg());
+  }
+
+  for (const auto& [idx, val] : Enumerate(buf.u32words)) {
+    int current_offset = idx * sizeof(uint32_t);
+    // Exit code is assigned to the 2nd byte according to
+    // https://unix.stackexchange.com/questions/99112/default-exit-code-when-process-is-terminated
+    uint32_t expected_task_struct_exit_code = exit_code << 8;
+    if (val == expected_task_struct_exit_code) {
+      return current_offset;
+    }
+  }
+  return error::Internal("Could not find the requested exit code in the task_struct buffer");
+}
+
+}  // namespace
+
+StatusOr<TaskStructOffsets> ResolveTaskStructOffsets() {
+  PL_ASSIGN_OR_RETURN(TaskStructOffsets res, ResolveTaskStructStartTimeOffsets());
+  PL_ASSIGN_OR_RETURN(uint64_t exit_code_offset, ResolveTaskStructExitCodeOffset());
+  res.exit_code_offset = exit_code_offset;
+  return res;
 }
 
 }  // namespace utils

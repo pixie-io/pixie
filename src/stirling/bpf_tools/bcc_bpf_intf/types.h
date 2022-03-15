@@ -19,5 +19,10 @@
 #pragma once
 
 struct buf {
-  uint64_t u64words[4096 / sizeof(uint64_t)];
+#define BUF_SIZE 4096
+  union {
+    uint64_t u64words[BUF_SIZE / sizeof(uint64_t)];
+    uint32_t u32words[BUF_SIZE / sizeof(uint32_t)];
+  };
+#undef BUF_SIZE
 };
