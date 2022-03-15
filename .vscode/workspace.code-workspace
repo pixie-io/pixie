@@ -11,6 +11,9 @@
 	],
 	"settings": {
 		"clang-tidy.checks": [],
+		"clangd.arguments": [
+			"--header-insertion=never"
+		],
 		"bazel.buildifierFixOnFormat": true,
 		"bazel.enableCodeLens": true,
 		"bazel.queriesShareServer": true,
@@ -57,6 +60,6 @@
 			"**/.pnp.*": true,
 		},
 		"typescript.tsdk": "src/ui/.yarn/sdks/typescript/lib",
-  	"typescript.enablePromptUseWorkspaceTsdk": true
+		"typescript.enablePromptUseWorkspaceTsdk": true
 	}
 }
