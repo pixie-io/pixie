@@ -667,7 +667,10 @@ class GetDebugTableInfo final : public carnot::udf::UDTF<GetDebugTableInfo> {
         ColInfo("cold_size", types::DataType::INT64, types::PatternType::GENERAL,
                 "The number of bytes in cold storage"),
         ColInfo("max_table_size", types::DataType::INT64, types::PatternType::GENERAL,
-                "The maximum size of this table"));
+                "The maximum size of this table"),
+        ColInfo("min_time", types::DataType::TIME64NS, types::PatternType::GENERAL,
+                "The minimum timestamp currently present in this table. -1 if there is no time_ "
+                "column on the table."));
   }
   Status Init(FunctionContext*) {
     table_ids_ = table_store_->GetTableIDs();
@@ -693,6 +696,7 @@ class GetDebugTableInfo final : public carnot::udf::UDTF<GetDebugTableInfo> {
     rw->Append<IndexOf("size")>(info.bytes);
     rw->Append<IndexOf("cold_size")>(info.cold_bytes);
     rw->Append<IndexOf("max_table_size")>(info.max_table_size);
+    rw->Append<IndexOf("min_time")>(info.min_time);
 
     ++current_idx_;
     return static_cast<size_t>(current_idx_) < table_ids_.size();

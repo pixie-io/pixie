@@ -57,6 +57,7 @@ struct TableStats {
   int64_t batches_expired;
   int64_t compacted_batches;
   int64_t max_table_size;
+  int64_t min_time;
 };
 
 struct BatchSlice {
