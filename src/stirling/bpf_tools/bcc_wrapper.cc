@@ -82,31 +82,18 @@ StatusOr<utils::TaskStructOffsets> ResolveTaskStructOffsetsWithRetry() {
   return offsets_status;
 }
 
-StatusOr<utils::TaskStructOffsets> GetTaskStructOffsets(bool always_infer_task_struct_offsets) {
-  // Defaults to zero offsets, which tells BPF not to use the offset overrides.
-  // If the values are changed (as they are if ResolveTaskStructOffsetsWithRetry() is run),
-  // then the non-zero values will be used in BPF.
-  utils::TaskStructOffsets offsets;
-
-  // When using packaged Linux headers, there is a good chance that the `struct task_struct`
-  // is not a perfect match with the version on the host OS (despite our best efforts to account
-  // for the kernel config). In such cases, try to resolve the location of the fields we care
-  // about, and send them in as an override to the BPF code.
-  // Note that if we found local host headers, then we do not typically do this step, because
-  // we trust the locally installed headers to be a perfect match.
-  // There is a flag to force the task struct fields resolution, in case we don't trust the
-  // local headers, and for testing purposes.
-  bool potentially_mismatched_headers = utils::g_packaged_headers_installed;
-  if (potentially_mismatched_headers || always_infer_task_struct_offsets) {
-    LOG(INFO) << "Resolving task_struct offsets.";
-
-    PL_ASSIGN_OR_RETURN(offsets, ResolveTaskStructOffsetsWithRetry());
-
-    LOG(INFO) << absl::Substitute("Task struct offsets: group_leader=$0 real_start_time=$1",
-                                  offsets.group_leader_offset, offsets.real_start_time_offset);
+StatusOr<utils::TaskStructOffsets> BCCWrapper::GetTaskStructOffsets() {
+  if (task_struct_offsets_opt_.has_value()) {
+    LOG(INFO) << "Returning the previously resolved TaskStructOffsets object";
+    return task_struct_offsets_opt_.value();
   }
 
-  return offsets;
+  LOG(INFO) << "Resolving task_struct offsets.";
+  PL_ASSIGN_OR_RETURN(task_struct_offsets_opt_, ResolveTaskStructOffsetsWithRetry());
+
+  LOG(INFO) << absl::Substitute("Successfully resolved task_struct offsets: $0",
+                                task_struct_offsets_opt_.value().ToString());
+  return task_struct_offsets_opt_.value();
 }
 
 Status BCCWrapper::InitBPFProgram(std::string_view bpf_program, std::vector<std::string> cflags,
@@ -146,9 +133,28 @@ Status BCCWrapper::InitBPFProgram(std::string_view bpf_program, std::vector<std:
     std::string_view boottime_varname =
         kernel_version.code() >= kLinux5p5VersionCode ? "start_boottime" : "real_start_time";
 
-    // When there are mismatched headers, this determines offsets for required task_struct members.
-    PL_ASSIGN_OR_RETURN(TaskStructOffsets offsets,
-                        GetTaskStructOffsets(always_infer_task_struct_offsets));
+    // Defaults to zero offsets, which tells BPF not to use the offset overrides, and instead to use
+    // the offset implied in the included Linux headers.
+    utils::TaskStructOffsets offsets = {};
+    // When using packaged Linux headers, there is a good chance that the `struct task_struct`
+    // is not a perfect match with the version on the host OS (despite our best efforts to account
+    // for the kernel config). In such cases, try to resolve the location of the fields we care
+    // about, and send them in as an override to the BPF code.
+    // Note that if we found local host headers, then we do not typically do this step, because
+    // we trust the locally installed headers to be a perfect match.
+    // There is a flag to force the task struct fields resolution, in case we don't trust the
+    // local headers, and for testing purposes.
+    if (utils::g_packaged_headers_installed || always_infer_task_struct_offsets) {
+      auto offsets_or = GetTaskStructOffsets();
+      if (offsets_or.ok()) {
+        offsets = offsets_or.ConsumeValueOrDie();
+      } else {
+        LOG(WARNING) << absl::Substitute(
+            "Failed to obtain task_struct offsets, will not override the task_struct offsets, "
+            "error: $0",
+            offsets_or.ToString());
+      }
+    }
 
     cflags.push_back(absl::Substitute("-DSTART_BOOTTIME_VARNAME=$0", boottime_varname));
     cflags.push_back(

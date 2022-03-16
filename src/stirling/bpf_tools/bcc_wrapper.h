@@ -43,6 +43,7 @@
 #include <vector>
 
 #include "src/common/base/base.h"
+#include "src/stirling/bpf_tools/task_struct_resolver.h"
 #include "src/stirling/obj_tools/elf_reader.h"
 
 namespace px {
@@ -208,6 +209,13 @@ struct PerfEventSpec {
 class BCCWrapper {
  public:
   inline static const size_t kCPUCount = ebpf::BPFTable::get_possible_cpu_count();
+
+  /**
+   * Returns the globally-shared TaskStructOffsets object.
+   * The task_struct offset resolution has to be performed the first time, and if successful,
+   * the obtained result will be cached and reused afterwards.
+   */
+  static StatusOr<utils::TaskStructOffsets> GetTaskStructOffsets();
 
   ~BCCWrapper() {
     // Not really required, because BPF destructor handles these.
@@ -439,6 +447,10 @@ class BCCWrapper {
   inline static size_t num_attached_tracepoints_;
   inline static size_t num_open_perf_buffers_;
   inline static size_t num_attached_perf_events_;
+
+ private:
+  // This is shared by all source connectors that uses BCCWrapper.
+  inline static std::optional<utils::TaskStructOffsets> task_struct_offsets_opt_;
 };
 
 }  // namespace bpf_tools
