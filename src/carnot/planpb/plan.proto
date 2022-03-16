@@ -295,33 +295,43 @@ message UnionOperator {
 }
 
 // Join performs an equijoin join across two input tables.
+// The first table is the left table, the second table is the right table.
 // It specifies the output columns as well as the join type.
 // It preserves order across the output time_ column, if there is one.
 message JoinOperator {
+  // The Join method for this operator.
+  // INNER: only return rows that join both left and right.
+  // LEFT_OUTER: return all left rows and those right rows that join to a left row.
+  // FULL_OUTER: return all left rows and right rows, joining those that match
+  // the equality condition.
   enum JoinType {
     INNER = 0;
     // Right outer joins should be mapped into left outer joins by the compiler.
     LEFT_OUTER = 1;
     FULL_OUTER = 3;
   }
-  // Equality condition represents one particular condition in an equijoin.
+  // Equality condition references two columns that are compared for equality
+  // during the Join process. Left and right are joined when these column
+  // values are equal.
   message EqualityCondition {
     uint64 left_column_index = 1;
     uint64 right_column_index = 2;
   }
-  // This message represents a column from the parent table.
+
   message ParentColumn {
     // parent_index indicates which parent table this column comes from.
     // So 0 means it comes from the left table, 1 means it comes from the right table.
     uint64 parent_index = 1;
     uint64 column_index = 2;
   }
+
   JoinType type = 1;
-  // These are the conditions for the equijoin, which are ANDed together.
+  // The conditions for the equijoin, which are ANDed together.
   repeated EqualityCondition equality_conditions = 2;
   repeated ParentColumn output_columns = 3;
-  // These are the names are the output columns.
+  // Names of the output columns.
   repeated string column_names = 4;
+  // Number of rows we send over per output batch.
   uint64 rows_per_batch = 5;
 }
 
