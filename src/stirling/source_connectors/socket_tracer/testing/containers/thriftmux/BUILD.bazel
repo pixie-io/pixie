@@ -41,7 +41,8 @@ genrule(
         --client_crt $(location client.crt) \
         --client_key $(location client.key) \
         --server_crt $(location server.crt) \
-        --server_key $(location server.key)
+        --server_key $(location server.key) \
+        --secret_key_type pkcs8
     """,
     tools = [
         "//src/common/testing/test_utils/cert_generator",
@@ -62,6 +63,8 @@ pkg_tar(
     strip_prefix = "/src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux",
 )
 
+# TODO(ddelnano): byteman is required until dealing with
+# netty's libnetty_tcnative.so's random file name is solved for.
 pkg_tar(
     name = "byteman_rule",
     srcs = [

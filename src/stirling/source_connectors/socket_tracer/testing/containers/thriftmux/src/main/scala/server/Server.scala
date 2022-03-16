@@ -11,8 +11,10 @@ import java.io.File;
 
 object Server {
   def main(args: Array[String]): Unit = {
-    // TODO(ddelnano): Add flag that determines if TLS should be used rather than
-    // hardcoding TLS being enabled
+    var useTls = false
+    args.grouped(2).toList.collect {
+      case Array("--use-tls", tls: String) => useTls = tls.toBoolean
+    }
     val keyCredentials = KeyCredentials.CertAndKey(
       new File("/etc/ssl/server.crt"),
       new File("/etc/ssl/server.key"),
@@ -20,17 +22,21 @@ object Server {
     val sslConfig = SslServerConfiguration(
       keyCredentials,
     )
-    val server = ThriftMux.server
-      .withTransport
-      .tls(sslConfig)
-      .serveIface(
-        new InetSocketAddress(InetAddress.getLoopbackAddress, 8080),
-        new TestService.MethodPerEndpoint {
-          def query(x: String): Future[String] = Future.value(x + x)
-          def question(y: String): Future[String] = Future.value(y + y)
-          def inquiry(z: String): Future[String] = Future.value(z + z)
-        },
-      )
+    val addr = new InetSocketAddress(InetAddress.getLoopbackAddress, 8080)
+    val testSvc = new TestService.MethodPerEndpoint {
+      def query(x: String): Future[String] = Future.value(x + x)
+      def question(y: String): Future[String] = Future.value(y + y)
+      def inquiry(z: String): Future[String] = Future.value(z + z)
+    }
+    var server = if (useTls) {
+      ThriftMux.server
+        .withTransport
+        .tls(sslConfig)
+        .serveIface(addr, testSvc)
+    } else {
+      ThriftMux.server
+        .serveIface(addr, testSvc)
+    }
     Await.ready(server)
   }
 }
