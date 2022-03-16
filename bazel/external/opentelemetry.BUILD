@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
+load("@com_github_grpc_grpc//bazel:cc_grpc_library.bzl", "cc_grpc_library")
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 
@@ -76,6 +77,14 @@ cc_proto_library(
     deps = [":trace_service_proto"],
 )
 
+cc_grpc_library(
+    name = "trace_service_grpc_cc",
+    srcs = [":trace_service_proto"],
+    generate_mocks = True,
+    grpc_only = True,
+    deps = [":trace_service_proto_cc"],
+)
+
 proto_library(
     name = "metrics_proto",
     srcs = [
@@ -90,4 +99,27 @@ proto_library(
 cc_proto_library(
     name = "metrics_proto_cc",
     deps = [":metrics_proto"],
+)
+
+proto_library(
+    name = "metrics_service_proto",
+    srcs = [
+        "opentelemetry/proto/collector/metrics/v1/metrics_service.proto",
+    ],
+    deps = [
+        ":metrics_proto",
+    ],
+)
+
+cc_proto_library(
+    name = "metrics_service_proto_cc",
+    deps = [":metrics_service_proto"],
+)
+
+cc_grpc_library(
+    name = "metrics_service_grpc_cc",
+    srcs = [":metrics_service_proto"],
+    generate_mocks = True,
+    grpc_only = True,
+    deps = [":metrics_service_proto_cc"],
 )
