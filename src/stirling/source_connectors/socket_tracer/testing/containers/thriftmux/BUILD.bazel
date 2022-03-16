@@ -65,6 +65,7 @@ pkg_tar(
 
 # TODO(ddelnano): byteman is required until dealing with
 # netty's libnetty_tcnative.so's random file name is solved for.
+# See #407 for more details.
 pkg_tar(
     name = "byteman_rule",
     srcs = [
