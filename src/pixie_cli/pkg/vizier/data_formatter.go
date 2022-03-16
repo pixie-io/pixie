@@ -26,6 +26,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/fatih/color"
 
@@ -67,9 +68,33 @@ func iBytes(s uint64) (string, string) {
 	return humanate(s, 1024, sizes, "B")
 }
 
-func humanizeDuration(t uint64) (string, string) {
+func humanizeDuration(t uint64) ([]string, []string) {
+	dur := time.Duration(t)
+	// greater than 1 day
+	hours := int(math.Round(dur.Hours()))
+	if hours > 24 {
+		d := fmt.Sprint(hours / 24)
+		h := fmt.Sprint(hours % 24)
+		return []string{d, h}, []string{"days", "hours"}
+	}
+	// less than 1 day
+	minutes := int(math.Round(dur.Minutes()))
+	if minutes > 60 {
+		h := fmt.Sprint(minutes / 60)
+		m := fmt.Sprint(minutes % 60)
+		return []string{h, m}, []string{"hours", "min"}
+	}
+	// less than 1 hour
+	seconds := int(math.Round(dur.Seconds()))
+	if seconds > 60 {
+		m := fmt.Sprint(seconds / 60)
+		s := fmt.Sprint(seconds % 60)
+		return []string{m, s}, []string{"min", "s"}
+	}
+	// less than 1 minute
 	sizes := []string{"ns", "µs", "ms", "s"}
-	return humanate(t, 1000, sizes, "s")
+	val, unit := humanate(t, 1000, sizes, "s")
+	return []string{val}, []string{unit}
 }
 
 // DataFormatter formats data for a given Relation.
@@ -232,8 +257,15 @@ func formatDurationInt(val int64) string {
 		v = uint64(-1 * val)
 	}
 
-	s, units := humanizeDuration(v)
-	return withSign(val < 0, fmt.Sprintf("%s %s", s, formatUnits(units)))
+	values, units := humanizeDuration(v)
+	var s string
+	for i := 0; i < len(values); i++ {
+		if i > 0 {
+			s += " "
+		}
+		s += fmt.Sprintf("%s %s", values[i], formatUnits(units[i]))
+	}
+	return withSign(val < 0, s)
 }
 
 func formatUnits(unit string) string {

@@ -106,9 +106,9 @@ func TestDuration(t *testing.T) {
 	assert.Equal(t, "5.1 µs", formatter.FormatValue(1, int64(5144)))
 	assert.Equal(t, "5.0 ms", formatter.FormatValue(1, int64(5*1000*1000)))
 	assert.Equal(t, "13.0 s", formatter.FormatValue(1, int64(13*1000*1000*1000+1242)))
-	assert.Equal(t, "300 s", formatter.FormatValue(1, int64(5*60*1000*1000*1000+1334)))
-	assert.Equal(t, "43200 s", formatter.FormatValue(1, int64(12*60*60*1000*1000*1000+1335144)))
-	assert.Equal(t, "2160000 s", formatter.FormatValue(1, int64(25*24*60*60*1000*1000*1000+133514124)))
+	assert.Equal(t, "5 min 0 s", formatter.FormatValue(1, int64(5*60*1000*1000*1000+1334)))
+	assert.Equal(t, "12 hours 0 min", formatter.FormatValue(1, int64(12*60*60*1000*1000*1000+1335144)))
+	assert.Equal(t, "25 days 0 hours", formatter.FormatValue(1, int64(25*24*60*60*1000*1000*1000+133514124)))
 }
 
 func TestScriptReferences(t *testing.T) {
@@ -233,5 +233,5 @@ func TestQuantiles(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "p50: -12.3 µs, p99: 0 s", formatter.FormatValue(1, string(duration1)))
-	assert.Equal(t, "p50: 23.4 ms, p99: 234 s", formatter.FormatValue(1, string(duration2)))
+	assert.Equal(t, "p50: 23.4 ms, p99: 3 min 54 s", formatter.FormatValue(1, string(duration2)))
 }
