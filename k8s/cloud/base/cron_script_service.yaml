@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cron-script-service
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - port: 50700
+    protocol: TCP
+    targetPort: 50700
+    name: tcp-http2
+  selector:
+    name: cron-script-server

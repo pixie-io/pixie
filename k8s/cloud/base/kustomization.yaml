@@ -42,4 +42,6 @@ resources:
 - scriptmgr_deployment.yaml
 - scriptmgr_service.yaml
 - scriptmgr_config.yaml
+- cron_script_deployment.yaml
+- cron_script_service.yaml
 - support_access_config.yaml

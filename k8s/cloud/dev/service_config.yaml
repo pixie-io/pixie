@@ -15,4 +15,5 @@ data:
   PL_ARTIFACT_TRACKER_SERVICE: kubernetes:///artifact-tracker-service.plc-dev:50750
   PL_ELASTIC_SERVICE: https://pl-elastic-es-http.plc-dev:9200
   PL_SCRIPTMGR_SERVICE: kubernetes:///scriptmgr-service.plc-dev:52000
+  PL_CRON_SCRIPT_SERVICE: kubernetes:///cron-script-service.plc-dev:50700
   PL_CONFIG_MANAGER_SERVICE: kubernetes:///config-manager-service.plc-dev:50500

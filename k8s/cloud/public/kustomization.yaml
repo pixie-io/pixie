@@ -64,6 +64,9 @@ images:
 - name: gcr.io/pixie-oss/pixie-dev/cloud/scriptmgr_server_image
   newName: gcr.io/pixie-oss/pixie-prod/cloud/scriptmgr_server_image
   newTag: latest
+- name: gcr.io/pixie-oss/pixie-dev/cloud/cron_script_server_image
+  newName: gcr.io/pixie-oss/pixie-prod/cloud/cron_script_server_image
+  newTag: latest
 - name: gcr.io/pixie-oss/pixie-dev/cloud/vzconn_server_image
   newName: gcr.io/pixie-oss/pixie-prod/cloud/vzconn_server_image
   newTag: latest

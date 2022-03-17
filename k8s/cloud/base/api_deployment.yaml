@@ -98,6 +98,11 @@ spec:
             configMapKeyRef:
               name: segment-config
               key: write-key
+        - name: PL_CRON_SCRIPT_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_CRON_SCRIPT_SERVICE
         - name: PL_VIZIER_IMAGE_SECRET_PATH
           value: /vizier-image-secret
         - name: PL_VIZIER_IMAGE_SECRET_FILE
