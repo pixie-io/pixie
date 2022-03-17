@@ -325,8 +325,8 @@ type Plugin {
   description: String!
   logo: String
   latestVersion: String!
+  supportsRetention: Boolean!
   retentionEnabled: Boolean!
-  enabled: Boolean!
   enabledVersion: String
 }
 

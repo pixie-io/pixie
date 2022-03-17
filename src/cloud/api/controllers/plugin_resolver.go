@@ -25,14 +25,14 @@ import (
 
 // PluginResolver is the resolver responsible for resolving plugins.
 type PluginResolver struct {
-	ID               string
-	Name             string
-	Description      string
-	Logo             *string
-	LatestVersion    string
-	RetentionEnabled bool
-	Enabled          bool
-	EnabledVersion   *string
+	ID                string
+	Name              string
+	Description       string
+	Logo              *string
+	LatestVersion     string
+	SupportsRetention bool
+	RetentionEnabled  bool
+	EnabledVersion    *string
 }
 
 type pluginsArgs struct {

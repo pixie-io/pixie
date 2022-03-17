@@ -958,8 +958,8 @@ message Plugin {
   string description = 3;
   string logo = 4;
   string latest_version = 5;
-  string retention_enabled = 6;
-  bool enabled = 7;
+  bool retention_supported = 6;
+  bool retention_enabled = 7;
   string enabled_version = 8;
 }
 

@@ -316,8 +316,8 @@ export interface GQLPlugin {
   description: string;
   logo?: string;
   latestVersion: string;
+  supportsRetention: boolean;
   retentionEnabled: boolean;
-  enabled: boolean;
   enabledVersion?: string;
 }
 
@@ -1287,8 +1287,8 @@ export interface GQLPluginTypeResolver<TParent = any> {
   description?: PluginToDescriptionResolver<TParent>;
   logo?: PluginToLogoResolver<TParent>;
   latestVersion?: PluginToLatestVersionResolver<TParent>;
+  supportsRetention?: PluginToSupportsRetentionResolver<TParent>;
   retentionEnabled?: PluginToRetentionEnabledResolver<TParent>;
-  enabled?: PluginToEnabledResolver<TParent>;
   enabledVersion?: PluginToEnabledVersionResolver<TParent>;
 }
 
@@ -1312,11 +1312,11 @@ export interface PluginToLatestVersionResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
-export interface PluginToRetentionEnabledResolver<TParent = any, TResult = any> {
+export interface PluginToSupportsRetentionResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
-export interface PluginToEnabledResolver<TParent = any, TResult = any> {
+export interface PluginToRetentionEnabledResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
