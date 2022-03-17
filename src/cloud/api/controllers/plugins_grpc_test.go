@@ -1,0 +1,274 @@
+/*
+ * Copyright 2018- The Pixie Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+package controllers_test
+
+import (
+	"context"
+	"testing"
+
+	"github.com/gogo/protobuf/types"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"px.dev/pixie/src/api/proto/cloudpb"
+	"px.dev/pixie/src/cloud/api/controllers"
+	"px.dev/pixie/src/cloud/api/controllers/testutils"
+	"px.dev/pixie/src/cloud/plugin/pluginpb"
+	"px.dev/pixie/src/utils"
+)
+
+func TestGetPlugins(t *testing.T) {
+	tests := []struct {
+		name                string
+		ctx                 context.Context
+		allPlugins          []*pluginpb.Plugin
+		orgRetentionPlugins []*pluginpb.GetRetentionPluginsForOrgResponse_PluginState
+		expectedPlugins     []*cloudpb.Plugin
+	}{
+		{
+			name: "regular user",
+			ctx:  CreateTestContext(),
+			allPlugins: []*pluginpb.Plugin{
+				&pluginpb.Plugin{
+					Name:             "Test Plugin",
+					ID:               "test-plugin",
+					Description:      "Here is a plugin that is used for this test",
+					Logo:             "",
+					LatestVersion:    "2.0.0",
+					RetentionEnabled: true,
+				},
+				&pluginpb.Plugin{
+					Name:             "Another Plugin",
+					ID:               "another-plugin",
+					Description:      "Here is a another plugin that is used for this test",
+					Logo:             "",
+					LatestVersion:    "3.0.0",
+					RetentionEnabled: true,
+				},
+			},
+			orgRetentionPlugins: []*pluginpb.GetRetentionPluginsForOrgResponse_PluginState{
+				&pluginpb.GetRetentionPluginsForOrgResponse_PluginState{
+					Plugin: &pluginpb.Plugin{
+						Name:             "Another Plugin",
+						ID:               "another-plugin",
+						Description:      "Here is a another plugin that is used for this test",
+						Logo:             "",
+						LatestVersion:    "3.0.0",
+						RetentionEnabled: true,
+					},
+					EnabledVersion: "2.0.0",
+				},
+			},
+			expectedPlugins: []*cloudpb.Plugin{
+				&cloudpb.Plugin{
+					Name:               "Test Plugin",
+					Id:                 "test-plugin",
+					Description:        "Here is a plugin that is used for this test",
+					Logo:               "",
+					LatestVersion:      "2.0.0",
+					RetentionSupported: true,
+					RetentionEnabled:   false,
+					EnabledVersion:     "",
+				},
+				&cloudpb.Plugin{
+					Name:               "Another Plugin",
+					Id:                 "another-plugin",
+					Description:        "Here is a another plugin that is used for this test",
+					Logo:               "",
+					LatestVersion:      "3.0.0",
+					RetentionSupported: true,
+					RetentionEnabled:   true,
+					EnabledVersion:     "2.0.0",
+				},
+			},
+		},
+		{
+			name: "API user",
+			ctx:  CreateAPIUserTestContext(),
+			allPlugins: []*pluginpb.Plugin{
+				&pluginpb.Plugin{
+					Name:             "Test Plugin",
+					ID:               "test-plugin",
+					Description:      "Here is a plugin that is used for this test",
+					Logo:             "",
+					LatestVersion:    "2.0.0",
+					RetentionEnabled: true,
+				},
+				&pluginpb.Plugin{
+					Name:             "Another Plugin",
+					ID:               "another-plugin",
+					Description:      "Here is a another plugin that is used for this test",
+					Logo:             "",
+					LatestVersion:    "3.0.0",
+					RetentionEnabled: true,
+				},
+			},
+			orgRetentionPlugins: []*pluginpb.GetRetentionPluginsForOrgResponse_PluginState{
+				&pluginpb.GetRetentionPluginsForOrgResponse_PluginState{
+					Plugin: &pluginpb.Plugin{
+						Name:             "Another Plugin",
+						ID:               "another-plugin",
+						Description:      "Here is a another plugin that is used for this test",
+						Logo:             "",
+						LatestVersion:    "3.0.0",
+						RetentionEnabled: true,
+					},
+					EnabledVersion: "2.0.0",
+				},
+			},
+			expectedPlugins: []*cloudpb.Plugin{
+				&cloudpb.Plugin{
+					Name:               "Test Plugin",
+					Id:                 "test-plugin",
+					Description:        "Here is a plugin that is used for this test",
+					Logo:               "",
+					LatestVersion:      "2.0.0",
+					RetentionSupported: true,
+					RetentionEnabled:   false,
+					EnabledVersion:     "",
+				},
+				&cloudpb.Plugin{
+					Name:               "Another Plugin",
+					Id:                 "another-plugin",
+					Description:        "Here is a another plugin that is used for this test",
+					Logo:               "",
+					LatestVersion:      "3.0.0",
+					RetentionSupported: true,
+					RetentionEnabled:   true,
+					EnabledVersion:     "2.0.0",
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+			defer cleanup()
+			ctx := test.ctx
+
+			orgID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+			mockReq1 := &pluginpb.GetPluginsRequest{
+				Kind: pluginpb.PLUGIN_KIND_RETENTION,
+			}
+
+			mockClients.MockPlugin.EXPECT().GetPlugins(gomock.Any(), mockReq1).
+				Return(&pluginpb.GetPluginsResponse{
+					Plugins: test.allPlugins,
+				}, nil)
+
+			mockReq2 := &pluginpb.GetRetentionPluginsForOrgRequest{
+				OrgID: orgID,
+			}
+
+			mockClients.MockDataRetentionPlugin.EXPECT().GetRetentionPluginsForOrg(gomock.Any(), mockReq2).
+				Return(&pluginpb.GetRetentionPluginsForOrgResponse{
+					Plugins: test.orgRetentionPlugins,
+				}, nil)
+
+			pServer := &controllers.PluginServiceServer{mockClients.MockPlugin, mockClients.MockDataRetentionPlugin}
+
+			resp, err := pServer.GetPlugins(ctx, &cloudpb.GetPluginsRequest{
+				Kind: cloudpb.PK_RETENTION,
+			})
+
+			require.NoError(t, err)
+			assert.Equal(t, test.expectedPlugins, resp.Plugins)
+		})
+	}
+}
+
+func TestGetRetentionPluginConfig(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	orgID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	mockReq := &pluginpb.GetOrgRetentionPluginConfigRequest{
+		OrgID:    orgID,
+		PluginID: "test-plugin",
+	}
+
+	mockClients.MockDataRetentionPlugin.EXPECT().GetOrgRetentionPluginConfig(gomock.Any(), mockReq).
+		Return(&pluginpb.GetOrgRetentionPluginConfigResponse{
+			Configurations: map[string]string{
+				"API_KEY": "test-api-key",
+			},
+		}, nil)
+
+	pServer := &controllers.PluginServiceServer{mockClients.MockPlugin, mockClients.MockDataRetentionPlugin}
+
+	resp, err := pServer.GetRetentionPluginConfig(ctx, &cloudpb.GetRetentionPluginConfigRequest{
+		PluginId: "test-plugin",
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, &cloudpb.GetRetentionPluginConfigResponse{
+		Configs: map[string]string{
+			"API_KEY": "test-api-key",
+		},
+	}, resp)
+}
+
+func TestUpdateRetentionPluginConfig(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	orgID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	mockReq := &pluginpb.UpdateOrgRetentionPluginConfigRequest{
+		OrgID:    orgID,
+		PluginID: "test-plugin",
+		Configurations: map[string]string{
+			"API_KEY": "test-api-key",
+		},
+		Enabled: &types.BoolValue{Value: true},
+		Version: &types.StringValue{Value: "2.0.0"},
+	}
+
+	mockClients.MockDataRetentionPlugin.EXPECT().UpdateOrgRetentionPluginConfig(gomock.Any(), mockReq).
+		Return(&pluginpb.UpdateOrgRetentionPluginConfigResponse{}, nil)
+
+	pServer := &controllers.PluginServiceServer{mockClients.MockPlugin, mockClients.MockDataRetentionPlugin}
+
+	resp, err := pServer.UpdateRetentionPluginConfig(ctx, &cloudpb.UpdateRetentionPluginConfigRequest{
+		PluginId: "test-plugin",
+		Configs: map[string]string{
+			"API_KEY": "test-api-key",
+		},
+		Enabled: &types.BoolValue{Value: true},
+		Version: &types.StringValue{Value: "2.0.0"},
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, &cloudpb.UpdateRetentionPluginConfigResponse{}, resp)
+}

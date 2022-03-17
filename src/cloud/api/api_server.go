@@ -119,7 +119,12 @@ func main() {
 		log.WithError(err).Fatal("Failed to init Hydra + Kratos idprovider client")
 	}
 
-	env, err := apienv.New(ac, pc, oc, vk, ak, vc, at, oa, cm)
+	ps, drps, err := apienv.NewPluginServiceClients()
+	if err != nil {
+		log.WithError(err).Fatal("Failed to connect to plugin service")
+	}
+
+	env, err := apienv.New(ac, pc, oc, vk, ak, vc, at, oa, cm, ps, drps)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create api environment")
 	}

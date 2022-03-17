@@ -29,6 +29,7 @@ import (
 	"px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
 	"px.dev/pixie/src/cloud/auth/authpb"
 	"px.dev/pixie/src/cloud/config_manager/configmanagerpb"
+	"px.dev/pixie/src/cloud/plugin/pluginpb"
 	"px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/cloud/vzmgr/vzmgrpb"
 	"px.dev/pixie/src/shared/services/env"
@@ -73,20 +74,22 @@ type Impl struct {
 	artifactTrackerClient  artifacttrackerpb.ArtifactTrackerClient
 	identityProviderClient IdentityProviderClient
 	configClient           configmanagerpb.ConfigManagerServiceClient
+	pluginClient           pluginpb.PluginServiceClient
+	retentionClient        pluginpb.DataRetentionPluginServiceClient
 }
 
 // New creates a new api env.
 func New(ac authpb.AuthServiceClient, pc profilepb.ProfileServiceClient, oc profilepb.OrgServiceClient,
 	vk vzmgrpb.VZDeploymentKeyServiceClient, ak authpb.APIKeyServiceClient, vc vzmgrpb.VZMgrServiceClient,
 	at artifacttrackerpb.ArtifactTrackerClient, oa IdentityProviderClient,
-	cm configmanagerpb.ConfigManagerServiceClient) (APIEnv, error) {
+	cm configmanagerpb.ConfigManagerServiceClient, pm pluginpb.PluginServiceClient, rm pluginpb.DataRetentionPluginServiceClient) (APIEnv, error) {
 	sessionKey := viper.GetString("session_key")
 	if len(sessionKey) == 0 {
 		return nil, errors.New("session_key is required for cookie store")
 	}
 
 	sessionStore := sessions.NewCookieStore([]byte(sessionKey))
-	return &Impl{env.New(viper.GetString("domain_name")), sessionStore, ac, pc, oc, vk, ak, vc, at, oa, cm}, nil
+	return &Impl{env.New(viper.GetString("domain_name")), sessionStore, ac, pc, oc, vk, ak, vc, at, oa, cm, pm, rm}, nil
 }
 
 // CookieStore returns the CookieStore from the environment.

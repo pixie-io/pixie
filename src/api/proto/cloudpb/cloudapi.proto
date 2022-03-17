@@ -977,8 +977,10 @@ message GetRetentionPluginConfigResponse {
 
 // UpdateRetentionPluginConfigRequest is a request to update the retention config for a plugin.
 message UpdateRetentionPluginConfigRequest {
-  map<string, string> configs = 1;
-  google.protobuf.BoolValue enabled = 2;
+  string plugin_id = 1;
+  map<string, string> configs = 2;
+  google.protobuf.BoolValue enabled = 3;
+  google.protobuf.StringValue version = 4;
 }
 
 // UpdateRetentionPluginConfigResponse is the response to a UpdateRetentionPluginConfigRequest.

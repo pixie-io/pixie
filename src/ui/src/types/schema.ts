@@ -339,7 +339,6 @@ export interface GQLEditablePluginConfig {
 
 export interface GQLEditablePluginConfigs {
   configs: Array<GQLEditablePluginConfig>;
-  enabled?: boolean;
 }
 
 /*********************************
@@ -689,6 +688,7 @@ export interface MutationToRemoveUserFromOrgResolver<TParent = any, TResult = an
 export interface MutationToUpdateRetentionPluginConfigArgs {
   id: string;
   enabled: boolean;
+  enabledVersion?: string;
   configs: GQLEditablePluginConfigs;
 }
 export interface MutationToUpdateRetentionPluginConfigResolver<TParent = any, TResult = any> {

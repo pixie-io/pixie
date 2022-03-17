@@ -17,21 +17,13 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "testutils",
-    srcs = ["testutils.go"],
-    importpath = "px.dev/pixie/src/cloud/api/controllers/testutils",
-    visibility = ["//src/cloud:__subpackages__"],
+    name = "mock",
+    srcs = ["service_mock.gen.go"],
+    importpath = "px.dev/pixie/src/cloud/plugin/pluginpb/mock",
+    visibility = ["//visibility:public"],
     deps = [
-        "//src/api/proto/cloudpb/mock",
-        "//src/cloud/api/apienv",
-        "//src/cloud/api/controllers",
-        "//src/cloud/artifact_tracker/artifacttrackerpb/mock",
-        "//src/cloud/auth/authpb/mock",
-        "//src/cloud/config_manager/configmanagerpb/mock",
-        "//src/cloud/plugin/pluginpb/mock",
-        "//src/cloud/profile/profilepb/mock",
-        "//src/cloud/vzmgr/vzmgrpb/mock",
+        "//src/cloud/plugin/pluginpb:service_pl_go_proto",
         "@com_github_golang_mock//gomock",
-        "@com_github_spf13_viper//:viper",
+        "@org_golang_google_grpc//:go_default_library",
     ],
 )

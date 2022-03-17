@@ -71,9 +71,10 @@ type editablePluginConfigs struct {
 }
 
 type updateRetentionPluginConfigArgs struct {
-	ID      string
-	Enabled bool
-	Configs editablePluginConfigs
+	ID             string
+	Enabled        bool
+	Configs        editablePluginConfigs
+	EnabledVersion *string
 }
 
 // UpdateRetentionPluginConfig updates the configs for a retention plugin, including enabling/disabling the plugin.

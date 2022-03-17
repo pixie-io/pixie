@@ -16,29 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package apienv_test
+package pluginpb
 
-import (
-	"testing"
-
-	"github.com/spf13/viper"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
-	"px.dev/pixie/src/cloud/api/apienv"
-)
-
-func TestNew(t *testing.T) {
-	viper.Set("session_key", "a-key")
-	env, err := apienv.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	require.NoError(t, err)
-	assert.NotNil(t, env)
-	assert.NotNil(t, env.CookieStore())
-}
-
-func TestNew_MissingSessionKey(t *testing.T) {
-	viper.Set("session_key", "")
-	env, err := apienv.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	assert.NotNil(t, err)
-	assert.Nil(t, env)
-}
+//go:generate mockgen -source=service.pb.go -destination=mock/service_mock.gen.go PluginServiceClient DataRetentionPluginServiceClient

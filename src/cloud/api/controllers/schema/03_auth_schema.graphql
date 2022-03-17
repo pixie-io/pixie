@@ -50,7 +50,7 @@ extend type Mutation {
   RemoveUserFromOrg(userID: ID!): Boolean!
 
   # Plugin
-  UpdateRetentionPluginConfig(id: String!, enabled: Boolean!, configs: EditablePluginConfigs!): Boolean!
+  UpdateRetentionPluginConfig(id: String!, enabled: Boolean!, enabledVersion: String, configs: EditablePluginConfigs!): Boolean!
 }
 
 type UserInfo {
@@ -348,5 +348,4 @@ input EditablePluginConfig {
 
 input EditablePluginConfigs {
   configs: [EditablePluginConfig!]!
-  enabled: Boolean
 }
