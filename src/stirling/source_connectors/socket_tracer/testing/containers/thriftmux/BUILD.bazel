@@ -17,8 +17,7 @@
 load("@package_bundle//file:packages.bzl", "packages")
 load("@io_bazel_rules_docker//java:image.bzl", "DEFAULT_JAVA_BASE", "jar_app_layer")
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
-load("@io_bazel_rules_docker//container:container.bzl", "container_layer", "container_image")
-
+load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_layer")
 load("@io_bazel_rules_docker//scala:image.bzl", "scala_image")
 load("@io_bazel_rules_scala//scala:scala.bzl", "scala_binary", "scala_library")
 load("@io_bazel_rules_scala//thrift:thrift.bzl", "thrift_library")
@@ -58,8 +57,8 @@ pkg_tar(
         "server.crt",
         "server.key",
     ],
-    package_dir = "/etc/ssl",
     mode = "0755",
+    package_dir = "/etc/ssl",
     strip_prefix = "/src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux",
 )
 
@@ -71,8 +70,8 @@ pkg_tar(
     srcs = [
         "byteman_rule.txt",
     ],
-    package_dir = "/etc/byteman",
     mode = "0755",
+    package_dir = "/etc/byteman",
     strip_prefix = "/src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux",
 )
 
@@ -112,9 +111,9 @@ scrooge_scala_library(
 scala_library(
     name = "logging",
     deps = [
-        "@maven//:org_slf4j_slf4j_api",
-        "@maven//:ch_qos_logback_logback_core",
         "@maven//:ch_qos_logback_logback_classic",
+        "@maven//:ch_qos_logback_logback_core",
+        "@maven//:org_slf4j_slf4j_api",
     ],
 )
 
@@ -139,20 +138,20 @@ scala_binary(
 container_image(
     name = "thriftmux_base",
     base = DEFAULT_JAVA_BASE,
+    debs = [
+        packages["libbyteman-java"],
+        packages["libcrypt1"],
+    ],
     tars = [
         ":ssl_keys",
         ":byteman_rule",
     ],
-    debs = [
-        packages["libbyteman-java"],
-        packages["libcrypt1"],
-    ]
 )
 
 scala_image(
     name = "server_image",
-    base = ":thriftmux_base",
     srcs = glob(["**/*.scala"]),
+    base = ":thriftmux_base",
     jvm_flags = [
         "-javaagent:/usr/share/java/byteman-4.0.11.jar=script:/etc/byteman/byteman_rule.txt,boot:/usr/share/java/byteman-4.0.11.jar",
         "-Dorg.jboss.byteman.transform.all",
@@ -160,7 +159,7 @@ scala_image(
     ],
     main_class = "Server",
     deps = [
-        ":thriftmux_scrooge",
         ":logging",
+        ":thriftmux_scrooge",
     ],
 )
