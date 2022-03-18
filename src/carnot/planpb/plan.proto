@@ -351,106 +351,130 @@ message EmptySourceOperator {
   repeated px.types.DataType column_types = 2;
 }
 
-enum OTelSpanKind {
-  SPAN_KIND_UNSPECIFIED = 0;
-  // Indicates that the span represents an internal operation within an application,
-  // as opposed to an operation happening at the boundaries. Default value.
-  SPAN_KIND_INTERNAL = 1;
-  // Indicates that the span covers server-side handling of an RPC or other
-  // remote network request.
-  SPAN_KIND_SERVER = 2;
-}
-
-// OTelSpan contains the column mapping to each field in the OTel Span configuration.
+// OTelSpan maps operator columns to each field in the OpenTelemetry Span configuration.
 // The mapping ensures that each row of the table will be a separate span.
 // Maps to the config described here:
 // https://github.com/open-telemetry/opentelemetry-proto/blob/0e254b5c04614244edb35a9d4bf73ca26b44438a/opentelemetry/proto/trace/v1/trace.proto#L84
 message OTelSpan {
-  string name = 1;
-  // A mapping of the OTel attribute name to the column name that populates
-  // each Span.
-  repeated OTelAttribute attributes = 2;
+  // A name can either be shared across all Spans or be set by a value in a column.
+  // name_string sets for all, name_column sets the Span name based on the column value.
+  oneof name {
+    string name_string = 1;
+    int64 name_column = 2;
+  }
+  // A mapping of the OpenTelemetry attribute name to the data that populates that attribute.
+  repeated OTelAttribute attributes = 3;
 
-  // The ID of the entire trace that contains this span.
-  string trace_id_column = 3 [(gogoproto.customname) = "TraceIDColumn"];
-  // The ID of this specific span.
-  string span_id_column = 4 [(gogoproto.customname) = "SpanIDColumn"];
-  // The ID of the parent span id, if it exists.
-  string parent_span_id_column = 5 [(gogoproto.customname) = "ParentSpanIDColumn"];
-  // start_time_unix_nano_column points to the column that contains the start
-  // time of the aggregation. Optional. Column must be of type TIME64NS.
-  string start_time_unix_nano_column = 6;
-  // end_time_unix_nano_column points to the column that contains the end time of the
+  // (Optional) The column index containing trace id.
+  // Data must be exactly 16 bytes in length.
+  // If the index < 0, the operator will auto-generate values for this field. If the index > 0 and the value
+  // is empty, the operator will auto-generate the value for this field.
+  int64 trace_id_column_index = 4 [(gogoproto.customname) = "TraceIDColumn"];
+  // (Optional) The column containing the span id.
+  // Data must be exactly 8 bytes in length.
+  // If the index < 0, the operator will auto-generate values for this field. If the index > 0 and the value
+  // is empty, the operator will auto-generate the value for this field.
+  int64 span_id_column_index = 5 [(gogoproto.customname) = "SpanIDColumn"];
+  // (Optional) The column of the parent span id.
+  // Data must be exactly 8 bytes in length.
+  // If the index < 0, the operator will keep the field as empty. If the index > 0 and the value
+  // is empty, the operator will not specify the OpenTelemetry field.
+  int64 parent_span_id_column_index = 6 [(gogoproto.customname) = "ParentSpanIDColumn"];
+  //  start_time_column points to the column that contains the start
+  // time of the aggregation. Column must be of type TIME64NS.
+  int64 start_time_column_index = 7;
+  // end_time_column points to the column that contains the end time of the
   // aggregation. Column must be of type TIME64NS.
-  string end_time_unix_nano_column = 7;
-
-  // The kind of span, distinguishing the Span based on where the data is collected.
-  OTelSpanKind kind = 8;
-  // The column where status information is stored. If empty, will leave the
-  // Span status value as `Unset`.
-  string status_column = 9;
+  int64 end_time_column_index = 8;
 }
 
-// OTelMetricGauge maps the table columns to OpenTelemetry Gauge metric
+// OTelMetricGauge maps operator columns to the fields of the OpenTelemetry Gauge metric.
 // configurations.
 message OTelMetricGauge {
-  // value_column points to the column that contains the Gauge value in each row.
-  string value_column = 1;
+  // The column that contains the Gauge value in each row.
+  // Must be either a FLOAT64 or an INT64
+  oneof value_column {
+    int64 float_column_index = 1;
+    int64 int_column_index = 2;
+  }
 }
 
-// OTelMetricSummary describes the mapping for a distribution summary metric.
+// OTelMetricSummary maps operator columns to the fields of OpenTelemetry summary metric.
 // Allows users to specify statistics about the distribution, including the quantile
 // values.
 message OTelMetricSummary {
-  // The number of values in the population.
-  string count_column = 1;
-  // The sum of values in the population.
-  string sum_column = 2;
+  // The column that contains the number of values in the population. The values in the column
+  // must be non-negative.
+  int64 count_column_index = 1;
+  // (Optional) The column that contains the sum of values in the population. If the index is < 0, the
+  // column will be considered unspecified.
+  int64 sum_column_index = 2;
 
-  // The mapping of a [0-1] quantile value to the column name that represents.
-  // For example, p50 would have a quantile value of 0.5
+  // The mapping of a quantile value to column that contains the value.
+  // Some examples:
+  // p50 would have a quantile value of 0.5
+  // p99 would have a quantile value of 0.99
+  // max value (p100) would be quantile 1.0
+  // min value (p0) would be quantile 0.0
   message ValueAtQuantile {
+    // The quantile of the distirbution, must be [0.0, 1.0].
     double quantile = 1;
-    string value_column = 2;
+    // The column containing quantile info. The value column must be a FLOAT64
+    // and values may not be negative.
+    int64 value_column_index = 2;
   }
   repeated ValueAtQuantile quantile_values = 3;
 }
 
 message OTelAttribute {
+  // The name of the attribute.
   string name = 1;
-  string value_column = 2;
+  message Column {
+    // The type of the attribute column.
+    px.types.DataType column_type = 1;
+    // The index of the atribute column.
+    int64 column_index = 2;
+  }
+  // The column that contains the attribute info.
+  Column column = 2;
 }
 
 // OTelMetric describes the column mapping to each field of an OpenTelemetry Metric.
-// Maps to the config described here:
+// Maps to the OpenTelemetry config described here:
 // https://github.com/open-telemetry/opentelemetry-proto/blob/0e254b5c04614244edb35a9d4bf73ca26b44438a/opentelemetry/proto/metrics/v1/metrics.proto#L160
 message OTelMetric {
   string name = 1;
   string description = 2;
-  // A mapping of the OTel attribute name to the column name that populates
-  // each datapoint in the Metric.
-  repeated OTelAttribute attributes = 3;
-  // Data is the type of data stored within this metric.
+  // unit which the metric value is reported. Follows the format described by
+  // http://unitsofmeasure.org/ucum.html.
+  string unit = 3;
+  // A mapping of the OpenTelemetry attribute name to the data that populates that attribute.
+  repeated OTelAttribute attributes = 4;
+
+  // The column that contains the end time of the aggregation.
+  // Must be TIME64NS.
+  int64 time_column_index = 5;
+
   oneof data {
-    OTelMetricGauge gauge = 4;
-    OTelMetricSummary summary = 5;
+    OTelMetricGauge gauge = 101;
+    OTelMetricSummary summary = 102;
   }
-  // start_time_unix_nano_column points to the column that contains the start
-  // time of the aggregation. Optional. Column must be of type TIME64NS.
-  string start_time_unix_nano_column = 6;
-  // time_unix_nano_column points to the column that contains the end time of the
-  // aggregation. Column must be of type TIME64NS.
-  string time_unix_nano_column = 7;
 }
 
 // OTelEndpointConfig contains the connection parameters for an OpenTelemetry
 // Exporter.
 message OTelEndpointConfig {
-  // url is the address of the OpenTelemetry receiver.
+  // url is the address of the OpenTelemetry collector.
   string url = 1 [(gogoproto.customname) = "URL"];
-  // The attributes that should be attached to the GRPC metadata context, such as
+  // The headers that should be attached to the connection context, such as
   // authentication credentials or api keys.
-  map<string, string> attributes = 2;
+  map<string, string> headers = 2;
+}
+
+// Defines a resource. Discussed in depth in the OpenTelemetry spec.
+// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/sdk.md
+message OTelResource {
+  repeated OTelAttribute attributes = 1;
 }
 
 // OTelExportSinkOperator defines an operator that exports the given table to OpenTelemetry.
@@ -460,12 +484,12 @@ message OTelEndpointConfig {
 message OTelExportSinkOperator {
   // EndpointConfig is the connection parameters to the OpenTelemetry collector.
   OTelEndpointConfig endpoint_config = 1;
-  // DataConfig describes the type of OpenTelemetry data to collect and where
-  // the data is stored in the table.
-  oneof data_config {
-    OTelSpan span = 2;
-    OTelMetric metric = 3;
-  }
+  // Resource describes where the telemetry data comes from.
+  OTelResource resource = 2;
+  // Metrics describest the exported metrics for this resource.
+  repeated OTelMetric metrics = 3;
+  // Metrics describes the exported spans for this resource.
+  repeated OTelSpan spans = 4;
 }
 
 // Scalar expression is any single valued expression.
