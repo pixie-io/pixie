@@ -70,6 +70,8 @@ DECLARE_uint32(messages_size_limit_bytes);
 DECLARE_uint32(datastream_buffer_expiry_duration_secs);
 DECLARE_uint32(datastream_buffer_retention_size);
 
+DECLARE_uint64(max_body_bytes);
+
 namespace px {
 namespace stirling {
 
@@ -151,13 +153,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static void HandleMMapEventLoss(void* cb_cookie, uint64_t lost);
   static void HandleHTTP2Event(void* cb_cookie, void* data, int data_size);
   static void HandleHTTP2EventLoss(void* cb_cookie, uint64_t lost);
-
-  // Most HTTP servers support 8K headers, so we truncate after that.
-  // https://stackoverflow.com/questions/686217/maximum-on-http-header-values
-  inline static constexpr size_t kMaxHTTPHeadersBytes = 8192;
-
-  // Protobuf printer will limit strings to this length.
-  inline static constexpr size_t kMaxPBStringLen = 64;
 
   explicit SocketTraceConnector(std::string_view source_name);
 

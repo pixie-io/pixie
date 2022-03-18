@@ -136,13 +136,22 @@ DEFINE_uint32(datastream_buffer_retention_size,
               gflags::Uint32FromEnv("PL_DATASTREAM_BUFFER_SIZE", 1024 * 1024),
               "The maximum size of a data stream buffer retained between cycles.");
 
+DEFINE_uint64(max_body_bytes, gflags::Uint64FromEnv("PL_STIRLING_MAX_BODY_BYTES", 512),
+              "The maximum number of bytes in the body of protocols like HTTP");
+
 BPF_SRC_STRVIEW(socket_trace_bcc_script, socket_trace);
 
 namespace px {
 namespace stirling {
 
-using ::px::stirling::protocols::kMaxBodyBytes;
 using ::px::utils::ToJSONString;
+
+// Most HTTP servers support 8K headers, so we truncate after that.
+// https://stackoverflow.com/questions/686217/maximum-on-http-header-values
+constexpr size_t kMaxHTTPHeadersBytes = 8192;
+
+// Protobuf printer will limit strings to this length.
+constexpr size_t kMaxPBStringLen = 64;
 
 SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
     : SourceConnector(source_name, kTables), conn_stats_(&conn_trackers_mgr_), uprobe_mgr_(this) {
@@ -889,16 +898,16 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("major_version")>(1);
   r.Append<r.ColIndex("minor_version")>(resp_message.minor_version);
   r.Append<r.ColIndex("content_type")>(static_cast<uint64_t>(content_type));
-  r.Append<r.ColIndex("req_headers"), kMaxHTTPHeadersBytes>(ToJSONString(req_message.headers));
+  r.Append<r.ColIndex("req_headers")>(ToJSONString(req_message.headers), kMaxHTTPHeadersBytes);
   r.Append<r.ColIndex("req_method")>(std::move(req_message.req_method));
   r.Append<r.ColIndex("req_path")>(std::move(req_message.req_path));
   r.Append<r.ColIndex("req_body_size")>(req_message.body_size);
-  r.Append<r.ColIndex("req_body"), kMaxBodyBytes>(std::move(req_message.body));
-  r.Append<r.ColIndex("resp_headers"), kMaxHTTPHeadersBytes>(ToJSONString(resp_message.headers));
+  r.Append<r.ColIndex("req_body")>(std::move(req_message.body), FLAGS_max_body_bytes);
+  r.Append<r.ColIndex("resp_headers")>(ToJSONString(resp_message.headers), kMaxHTTPHeadersBytes);
   r.Append<r.ColIndex("resp_status")>(resp_message.resp_status);
   r.Append<r.ColIndex("resp_message")>(std::move(resp_message.resp_message));
   r.Append<r.ColIndex("resp_body_size")>(resp_message.body_size);
-  r.Append<r.ColIndex("resp_body"), kMaxBodyBytes>(std::move(resp_message.body));
+  r.Append<r.ColIndex("resp_body")>(std::move(resp_message.body), FLAGS_max_body_bytes);
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));
 #ifndef NDEBUG
@@ -951,9 +960,9 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("major_version")>(2);
   // HTTP2 does not define minor version.
   r.Append<r.ColIndex("minor_version")>(0);
-  r.Append<r.ColIndex("req_headers"), kMaxHTTPHeadersBytes>(ToJSONString(req_stream->headers()));
+  r.Append<r.ColIndex("req_headers")>(ToJSONString(req_stream->headers()), kMaxHTTPHeadersBytes);
   r.Append<r.ColIndex("content_type")>(static_cast<uint64_t>(content_type));
-  r.Append<r.ColIndex("resp_headers"), kMaxHTTPHeadersBytes>(ToJSONString(resp_stream->headers()));
+  r.Append<r.ColIndex("resp_headers")>(ToJSONString(resp_stream->headers()), kMaxHTTPHeadersBytes);
   r.Append<r.ColIndex("req_method")>(
       req_stream->headers().ValueByKey(protocols::http2::headers::kMethod));
   r.Append<r.ColIndex("req_path")>(req_stream->headers().ValueByKey(":path"));
@@ -990,9 +999,9 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
   r.Append<r.ColIndex("trace_role")>(conn_tracker.role());
   r.Append<r.ColIndex("req_cmd")>(static_cast<uint64_t>(entry.req.cmd));
-  r.Append<r.ColIndex("req_body"), kMaxBodyBytes>(std::move(entry.req.msg));
+  r.Append<r.ColIndex("req_body")>(std::move(entry.req.msg), FLAGS_max_body_bytes);
   r.Append<r.ColIndex("resp_status")>(static_cast<uint64_t>(entry.resp.status));
-  r.Append<r.ColIndex("resp_body"), kMaxBodyBytes>(std::move(entry.resp.msg));
+  r.Append<r.ColIndex("resp_body")>(std::move(entry.resp.msg), FLAGS_max_body_bytes);
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 #ifndef NDEBUG
@@ -1013,9 +1022,9 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
   r.Append<r.ColIndex("trace_role")>(conn_tracker.role());
   r.Append<r.ColIndex("req_op")>(static_cast<uint64_t>(entry.req.op));
-  r.Append<r.ColIndex("req_body"), kMaxBodyBytes>(std::move(entry.req.msg));
+  r.Append<r.ColIndex("req_body")>(std::move(entry.req.msg), FLAGS_max_body_bytes);
   r.Append<r.ColIndex("resp_op")>(static_cast<uint64_t>(entry.resp.op));
-  r.Append<r.ColIndex("resp_body"), kMaxBodyBytes>(std::move(entry.resp.msg));
+  r.Append<r.ColIndex("resp_body")>(std::move(entry.resp.msg), FLAGS_max_body_bytes);
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 #ifndef NDEBUG
@@ -1169,9 +1178,9 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
   r.Append<r.ColIndex("trace_role")>(role);
   r.Append<r.ColIndex("req_cmd")>(static_cast<int64_t>(record.req.api_key));
-  r.Append<r.ColIndex("client_id"), kMaxBodyBytes>(std::move(record.req.client_id));
-  r.Append<r.ColIndex("req_body"), kMaxKafkaBodyBytes>(std::move(record.req.msg));
-  r.Append<r.ColIndex("resp"), kMaxKafkaBodyBytes>(std::move(record.resp.msg));
+  r.Append<r.ColIndex("client_id")>(std::move(record.req.client_id), FLAGS_max_body_bytes);
+  r.Append<r.ColIndex("req_body")>(std::move(record.req.msg), kMaxKafkaBodyBytes);
+  r.Append<r.ColIndex("resp")>(std::move(record.resp.msg), kMaxKafkaBodyBytes);
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(record.req.timestamp_ns, record.resp.timestamp_ns));
 #ifndef NDEBUG

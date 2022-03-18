@@ -118,6 +118,9 @@ struct HalfStream {
   }
 
   void AddData(std::string_view val) {
+    // Only sample the head of the body, to save space.
+    constexpr size_t kMaxBodyBytes = 512;
+
     original_data_size_ += val.size();
 
     size_t size_to_add = val.size();

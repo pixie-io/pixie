@@ -312,7 +312,7 @@ void PerfProfileConnector::CreateRecords(ebpf::BPFStackTable* stack_traces, Conn
     r.Append<r.ColIndex("time_")>(timestamp_ns);
     r.Append<r.ColIndex("upid")>(key.upid.value());
     r.Append<r.ColIndex("stack_trace_id")>(stack_trace_ids_.Lookup(key));
-    r.Append<r.ColIndex("stack_trace"), kMaxStackTraceSize>(key.stack_trace_str);
+    r.Append<r.ColIndex("stack_trace")>(key.stack_trace_str, kMaxStackTraceSize);
     r.Append<r.ColIndex("count")>(count);
   }
 }

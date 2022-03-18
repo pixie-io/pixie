@@ -300,6 +300,35 @@ TEST_F(SocketTraceConnectorTest, HTTPContentType) {
                           source_->ConvertToRealTime(7), source_->ConvertToRealTime(9)));
 }
 
+TEST_F(SocketTraceConnectorTest, Truncation) {
+  const std::string_view kResp0 =
+      "HTTP/1.1 200 OK\r\n"
+      "Content-Type: json\r\n"
+      "Content-Length: 26\r\n"
+      "\r\n"
+      "abcdefghijklmnopqrstuvwxyz";
+
+  PL_SET_FOR_SCOPE(FLAGS_max_body_bytes, 5);
+
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> req_event0 = event_gen_.InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> resp_event0 = event_gen_.InitRecvEvent<kProtocolHTTP>(kResp0);
+  struct socket_control_event_t close_event = event_gen_.InitClose();
+
+  source_->AcceptControlEvent(conn);
+  source_->AcceptDataEvent(std::move(req_event0));
+  source_->AcceptDataEvent(std::move(resp_event0));
+  source_->AcceptControlEvent(close_event);
+
+  connector_->TransferData(ctx_.get(), data_tables_.tables());
+
+  std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(RecordBatch & records, tablets);
+
+  EXPECT_THAT(records, RecordBatchSizeIs(1));
+  EXPECT_THAT(ToStringVector(records[kHTTPRespBodyIdx]), ElementsAre("abcde... [TRUNCATED]"));
+}
+
 // Use CQL protocol to check sorting, because it supports parallel request-response streams.
 TEST_F(SocketTraceConnectorTest, SortedByResponseTime) {
   using protocols::cass::ReqOp;

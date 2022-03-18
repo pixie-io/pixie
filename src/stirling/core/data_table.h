@@ -145,21 +145,21 @@ class DataTable : public NotCopyable {
     constexpr uint32_t ColIndex(std::string_view name) { return schema->ColIndex(name); }
 
     // The argument type is inferred by the table schema and the column index.
-    // Any string larger than TMaxStringBytes size will be truncated before being placed in the
-    // record.
-    template <const size_t TIndex, const size_t TMaxStringBytes = 1024>
-    inline void Append(
-        typename types::DataTypeTraits<schema->elements()[TIndex].type()>::value_type val) {
+    // Strings larger than max_string_bytes size will be truncated before being appended.
+    template <const size_t TIndex>
+    void Append(typename types::DataTypeTraits<schema->elements()[TIndex].type()>::value_type val,
+                const size_t max_string_bytes = 1024) {
+      using TDataType =
+          typename types::DataTypeTraits<schema->elements()[TIndex].type()>::value_type;
+
       if constexpr (TIndex == schema->tabletization_key()) {
-        // TODO(oazizi): This will probably break if val is ever StringValue.
+        // This will break if val is ever StringValue (string tabletization keys are not supported).
         DCHECK(std::to_string(val.val) == tablet_id_);
       }
 
-      if constexpr (std::is_same_v<typename types::DataTypeTraits<
-                                       schema->elements()[TIndex].type()>::value_type,
-                                   types::StringValue>) {
-        if (val.size() > TMaxStringBytes) {
-          val.resize(TMaxStringBytes);
+      if constexpr (std::is_same_v<TDataType, types::StringValue>) {
+        if (val.size() > max_string_bytes) {
+          val.resize(max_string_bytes);
           val.append(kTruncatedMsg);
         }
         val.shrink_to_fit();
@@ -220,12 +220,12 @@ class DataTable : public NotCopyable {
       Init(time);
     }
 
-    // Any string larger than TMaxStringBytes size will be truncated.
-    template <typename TValueType, const size_t TMaxStringBytes = 1024>
-    inline void Append(size_t col_index, TValueType val) {
+    // Any string larger than max_string_bytes size will be truncated.
+    template <typename TValueType>
+    void Append(size_t col_index, TValueType val, size_t max_string_bytes = 1024) {
       if constexpr (std::is_same_v<TValueType, types::StringValue>) {
-        if (val.size() > TMaxStringBytes) {
-          val.resize(TMaxStringBytes);
+        if (val.size() > max_string_bytes) {
+          val.resize(max_string_bytes);
           val.append(kTruncatedMsg);
         }
       }
