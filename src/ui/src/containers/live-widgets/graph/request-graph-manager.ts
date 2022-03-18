@@ -18,7 +18,7 @@
 
 import { data as visData } from 'vis-network/standalone';
 
-import { formatBySemType } from 'app/containers/format-data/format-data';
+import { dataWithUnitsToString, formatBySemType } from 'app/containers/format-data/format-data';
 import { deepLinkURLFromSemanticType, EmbedState } from 'app/containers/live-widgets/utils/live-view-params';
 import { WidgetDisplay } from 'app/containers/live/vis';
 import { Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
@@ -129,7 +129,7 @@ const humanReadableMetric = (value: any, semType: SemanticType, defaultUnits: st
     return `${formatFloat64Data(value)}${defaultUnits}`;
   }
   const valWithUnits = formatBySemType(semType, value);
-  return `${valWithUnits.val} ${valWithUnits.units}`;
+  return dataWithUnitsToString(valWithUnits);
 };
 
 const getEdgeText = (edge: EdgeStats, display: RequestGraphDisplay,

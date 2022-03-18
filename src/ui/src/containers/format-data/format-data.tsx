@@ -91,9 +91,13 @@ export const PortRenderer: React.FC<{ data: any }> = React.memo(
 PortRenderer.displayName = 'PortRenderer';
 
 export interface DataWithUnits {
-  val: string;
-  units: string;
+  val: string[];
+  units: string[];
 }
+
+export const dataWithUnitsToString = (dataWithUnits: DataWithUnits): string => (
+  dataWithUnits?.val.map((v, i) => `${v} ${dataWithUnits.units[i]}`).join(' ')
+);
 
 export const formatScaled = (data: number, scale: number, suffixes: string[], decimals = 2): DataWithUnits => {
   const dm = decimals < 0 ? 0 : decimals;
@@ -104,28 +108,61 @@ export const formatScaled = (data: number, scale: number, suffixes: string[], de
   const units = suffixes[i];
 
   return {
-    val,
-    units,
+    val: [ val ],
+    units: [ units ],
   };
 };
 
 export const formatBytes = (data: number): DataWithUnits => (
   formatScaled(data,
     1024,
+    // \u00a0 is a space, written in order to prevent it from being stripped by React.
     ['\u00a0B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'],
     1)
 );
 
-export const formatDuration = (data: number): DataWithUnits => (
-  formatScaled(data,
+const nanosPerS = 1000 * 1000 * 1000;
+const nanosPerMin = 60 * nanosPerS;
+const nanosPerH = 60 * nanosPerMin;
+const nanosPerD = 24 * nanosPerH;
+
+export const formatDuration = (data: number): DataWithUnits => {
+  const absRounded = Math.abs(Math.round(data));
+  const days = Math.floor(absRounded / nanosPerD);
+  const hours = Math.floor((absRounded % nanosPerD) / nanosPerH);
+  const min = Math.floor((absRounded % nanosPerH) / nanosPerMin);
+  const seconds = Math.floor((absRounded % nanosPerMin) / nanosPerS);
+
+  if (days > 0) {
+    return {
+      val: [`${days * Math.sign(data)}`, `${hours}`],
+      units: ['days', 'hours'],
+    };
+  }
+  if (hours > 0) {
+    return {
+      val: [`${hours * Math.sign(data)}`, `${min}`],
+      units: ['hours', 'min'],
+    };
+  }
+  if (min > 0) {
+    return {
+      val: [`${min * Math.sign(data)}`, `${seconds}`],
+      units: ['min', 's'],
+    };
+  }
+  return formatScaled(data,
     1000,
+    // \u00a0 is a space, which can sometimes be stripped by React if written as ' '.
+    // \u00b5 is μ.
     ['ns', '\u00b5s', 'ms', '\u00a0s'],
-    1)
-);
+    1);
+};
 
 export const formatThroughput = (data: number): DataWithUnits => (
   formatScaled(data * 1E9,
     1000,
+    // \u00a0 is a space, which can sometimes be stripped by React if written as ' '.
     ['\u00a0/s', 'K/s', 'M/s', 'B/s'],
     1)
 );
@@ -133,6 +170,7 @@ export const formatThroughput = (data: number): DataWithUnits => (
 export const formatThroughputBytes = (data: number): DataWithUnits => (
   formatScaled(data * 1E9,
     1024,
+    // \u00a0 is a space, which can sometimes be stripped by React if written as ' '.
     ['\u00a0B/s', 'KB/s', 'MB/s', 'GB/s'],
     1)
 );
@@ -152,10 +190,18 @@ const useRenderValueWithUnitsStyles = makeStyles(({ typography }: Theme) => crea
 const RenderValueWithUnits: React.FC<{ data: DataWithUnits }> = React.memo(({ data }) => {
   const classes = useRenderValueWithUnitsStyles();
   return (
-    <>
-      <span className={classes.value}>{`${data.val}\u00A0`}</span>
-      <span className={classes.units}>{data.units}</span>
-    </>
+    <React.Fragment>
+      {
+        // \u00a0 is a space, written in order to prevent it from being stripped by React.
+        data.val.map((val, i) => (
+          <React.Fragment key={i}>
+            {i > 0 && <span key={'space' + i} className={classes.value}>{'\u00a0'}</span>}
+            <span key={'val' + i} className={classes.value}>{`${val}\u00A0`}</span>
+            <span key={'unit' + i} className={classes.units}>{data.units[i]}</span>
+          </React.Fragment>
+        ))
+      }
+    </React.Fragment>
   );
 });
 RenderValueWithUnits.displayName = 'RenderValueWithUnits';
@@ -230,8 +276,8 @@ export const formatPercent = (data: number): DataWithUnits => {
   const units = '%';
 
   return {
-    val,
-    units,
+    val: [val],
+    units: [units],
   };
 };
 
@@ -286,8 +332,8 @@ export const formatBySemType = (semType: SemanticType, val: any): DataWithUnits 
     return formatFnMd.formatFn(val);
   }
   return {
-    val,
-    units: '',
+    val: [ val ],
+    units: [''],
   };
 };
 

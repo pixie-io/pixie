@@ -27,6 +27,7 @@ import {
   AlertData,
   BytesRenderer,
   CPUData,
+  dataWithUnitsToString,
   DataWithUnits,
   BasicDurationRenderer,
   formatDuration,
@@ -59,12 +60,6 @@ import { getColor, getLatencyNSLevel } from 'app/utils/metric-thresholds';
 import { ColumnDisplayInfo, QuantilesDisplayState } from './column-display-info';
 
 interface Quant { p50: number; p90: number; p99: number; }
-
-// Helper to durationQuantilesRenderer since it takes in a string, rather than a span
-// for p50Display et al.
-function dataWithUnitsToString(dataWithUnits: DataWithUnits): string {
-  return `${dataWithUnits.val} ${dataWithUnits.units}`;
-}
 
 interface LiveCellProps {
   data: any;
