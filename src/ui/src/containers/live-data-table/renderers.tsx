@@ -28,9 +28,10 @@ import {
   BytesRenderer,
   CPUData,
   DataWithUnits,
-  DurationRenderer,
+  BasicDurationRenderer,
   formatDuration,
   HTTPStatusCodeRenderer,
+  LatencyDurationRenderer,
   PercentRenderer,
   PortRenderer,
   ThroughputBytesRenderer,
@@ -221,6 +222,14 @@ function getDataCell(formatter: (data: any) => string) {
   return Renderer;
 }
 
+function getDurationRenderer(
+  columnName: string, st: SemanticType, dt: DataType,
+): React.ComponentType<LiveCellProps> {
+  const isLatency = looksLikeLatencyCol(columnName, st, dt);
+  if (isLatency) return LatencyDurationRenderer;
+  return BasicDurationRenderer;
+}
+
 export function getLiveCellRenderer(
   table: VizierTable,
   display: ColumnDisplayInfo,
@@ -243,7 +252,7 @@ export function getLiveCellRenderer(
     case SemanticType.ST_PORT:
       return PortRenderer;
     case SemanticType.ST_DURATION_NS:
-      return DurationRenderer;
+      return getDurationRenderer(columnName, st, dt);
     case SemanticType.ST_BYTES:
       return BytesRenderer;
     case SemanticType.ST_HTTP_RESP_STATUS:

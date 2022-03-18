@@ -165,16 +165,23 @@ export const BytesRenderer: React.FC<{ data: number }> = React.memo(
 );
 BytesRenderer.displayName = 'BytesRenderer';
 
-export const DurationRenderer: React.FC<{ data: number }> = React.memo(({ data }) => {
-  const value = React.useMemo(() => <RenderValueWithUnits data={formatDuration(data)} />, [data]);
+export const BasicDurationRenderer = React.memo<{ data: number }>(({ data }) => (
+  <RenderValueWithUnits data={formatDuration(data)} />
+));
+BasicDurationRenderer.displayName = 'BasicDurationRenderer';
+
+// Same as BasicDurationRenderer, with context-specific formatting (red=slow, etc).
+export const LatencyDurationRenderer = React.memo<{ data: number }>(({ data }) => {
+  const rendered = React.useMemo(() => <RenderValueWithUnits data={formatDuration(data)} />, [data]);
   return (
     <GaugeData
-      data={value}
+      data={rendered}
       level={getLatencyNSLevel(data)}
     />
   );
 });
-DurationRenderer.displayName = 'DurationRenderer';
+
+LatencyDurationRenderer.displayName = 'LatencyDurationRenderer';
 
 const useHttpStatusCodeRendererStyles = makeStyles((theme: Theme) => createStyles({
   root: {},

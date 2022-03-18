@@ -3,7 +3,7 @@
 exports[`<AlertData/> test should render correctly for false alert 1`] = `
 <div>
   <div
-    class="AlertData-false-19"
+    class="AlertData-false-21"
   >
     false
   </div>
@@ -13,14 +13,29 @@ exports[`<AlertData/> test should render correctly for false alert 1`] = `
 exports[`<AlertData/> test should render correctly for true alert 1`] = `
 <div>
   <div
-    class="AlertData-true-16"
+    class="AlertData-true-18"
   >
     true
   </div>
 </div>
 `;
 
-exports[`DurationRenderer test should render correctly for high latency 1`] = `
+exports[`BasicDurationRenderer test should render correctly for non latency duration 1`] = `
+<div>
+  <span
+    class="RenderValueWithUnits-value-17"
+  >
+    400 
+  </span>
+  <span
+    class="RenderValueWithUnits-units-16"
+  >
+    ms
+  </span>
+</div>
+`;
+
+exports[`LatencyDurationRenderer test should render correctly for high latency 1`] = `
 <div>
   <div
     class="GaugeData-high-13"
@@ -39,7 +54,7 @@ exports[`DurationRenderer test should render correctly for high latency 1`] = `
 </div>
 `;
 
-exports[`DurationRenderer test should render correctly for low latency 1`] = `
+exports[`LatencyDurationRenderer test should render correctly for low latency 1`] = `
 <div>
   <div
     class="GaugeData-low-1"
@@ -58,7 +73,7 @@ exports[`DurationRenderer test should render correctly for low latency 1`] = `
 </div>
 `;
 
-exports[`DurationRenderer test should render correctly for medium latency 1`] = `
+exports[`LatencyDurationRenderer test should render correctly for medium latency 1`] = `
 <div>
   <div
     class="GaugeData-med-7"

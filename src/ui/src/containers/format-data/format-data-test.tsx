@@ -24,7 +24,11 @@ import { render } from '@testing-library/react';
 import { DARK_THEME } from 'app/components';
 
 import {
-  AlertData, DurationRenderer, formatBytes, formatDuration,
+  AlertData,
+  BasicDurationRenderer,
+  LatencyDurationRenderer,
+  formatBytes,
+  formatDuration,
 } from './format-data';
 
 /* eslint-disable react-memo/require-usememo */
@@ -57,11 +61,11 @@ describe('formatters Test', () => {
   });
 });
 
-describe('DurationRenderer test', () => {
+describe('LatencyDurationRenderer test', () => {
   it('should render correctly for low latency', () => {
     const { container } = render(
       <ThemeProvider theme={DARK_THEME}>
-        <DurationRenderer data={20 * 1000 * 1000} />
+        <LatencyDurationRenderer data={20 * 1000 * 1000} />
       </ThemeProvider>,
     );
 
@@ -71,7 +75,7 @@ describe('DurationRenderer test', () => {
   it('should render correctly for medium latency', () => {
     const { container } = render(
       <ThemeProvider theme={DARK_THEME}>
-        <DurationRenderer data={250 * 1000 * 1000} />
+        <LatencyDurationRenderer data={250 * 1000 * 1000} />
       </ThemeProvider>,
     );
 
@@ -81,7 +85,19 @@ describe('DurationRenderer test', () => {
   it('should render correctly for high latency', () => {
     const { container } = render(
       <ThemeProvider theme={DARK_THEME}>
-        <DurationRenderer data={400 * 1000 * 1000} />
+        <LatencyDurationRenderer data={400 * 1000 * 1000} />
+      </ThemeProvider>,
+    );
+
+    expect(container).toMatchSnapshot();
+  });
+});
+
+describe('BasicDurationRenderer test', () => {
+  it('should render correctly for non latency duration', () => {
+    const { container } = render(
+      <ThemeProvider theme={DARK_THEME}>
+        <BasicDurationRenderer data={400 * 1000 * 1000} />
       </ThemeProvider>,
     );
 

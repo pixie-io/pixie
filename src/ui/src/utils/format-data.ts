@@ -43,7 +43,7 @@ export function formatFloat64Data(val: number, formatStr = '0[.]00'): string {
 }
 
 export function looksLikeLatencyCol(colName: string, semType: SemanticType, colType: DataType): boolean {
-  if (colType !== DataType.FLOAT64) {
+  if (colType !== DataType.FLOAT64 && colType !== DataType.INT64) {
     return false;
   }
   if (semType !== SemanticType.ST_DURATION_NS) {
