@@ -35,8 +35,10 @@ type VizierSpec struct {
 	// Version is the desired version of the Vizier instance.
 	Version string `json:"version,omitempty"`
 	// DeployKey is the deploy key associated with the Vizier instance. This is used to link the Vizier to a
-	// specific user/org.
-	DeployKey string `json:"deployKey"`
+	// specific user/org. This is required unless specifying a CustomDeployKeySecret.
+	DeployKey string `json:"deployKey,omitempty"`
+	// CustomDeployKeySecret is the name of the secret where the deploy key is stored.
+	CustomDeployKeySecret string `json:"customDeployKeySecret,omitempty"`
 	// DisableAutoUpdate specifies whether auto update should be enabled for the Vizier instance.
 	DisableAutoUpdate bool `json:"disableAutoUpdate,omitempty"`
 	// UseEtcdOperator specifies whether the metadata service should use etcd for storage.

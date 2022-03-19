@@ -52,6 +52,10 @@ spec:
                   specifying which cluster the Vizier is deployed to. If not specified,
                   a random name will be generated.
                 type: string
+              customDeployKeySecret:
+                description: CustomDeployKeySecret is the name of the secret where
+                  the deploy key is stored.
+                type: string
               dataAccess:
                 description: DataAccess defines the level of data that may be accesssed
                   when executing a script on the cluster. If none specified, assumes
@@ -91,6 +95,7 @@ spec:
               deployKey:
                 description: DeployKey is the deploy key associated with the Vizier
                   instance. This is used to link the Vizier to a specific user/org.
+                  This is required unless specifying a CustomDeployKeySecret.
                 type: string
               devCloudNamespace:
                 description: 'DevCloudNamespace should be specified only for dev versions
@@ -212,8 +217,6 @@ spec:
               version:
                 description: Version is the desired version of the Vizier instance.
                 type: string
-            required:
-            - deployKey
             type: object
           status:
             description: VizierStatus defines the observed state of Vizier
