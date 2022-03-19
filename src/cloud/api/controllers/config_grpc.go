@@ -45,6 +45,7 @@ func (c *ConfigServiceServer) GetConfigForVizier(ctx context.Context,
 		VzSpec: &vizierconfigpb.VizierSpec{
 			Version:                  vizSpecReq.Version,
 			DeployKey:                vizSpecReq.DeployKey,
+			CustomDeployKeySecret:    vizSpecReq.CustomDeployKeySecret,
 			DisableAutoUpdate:        vizSpecReq.DisableAutoUpdate,
 			UseEtcdOperator:          vizSpecReq.UseEtcdOperator,
 			ClusterName:              vizSpecReq.ClusterName,

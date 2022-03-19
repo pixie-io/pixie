@@ -122,17 +122,18 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 	// We should eventually clean up the templating code, since our Helm charts and extracted YAMLs will now just
 	// be simple CRDs.
 	tmplValues := &vizieryamls.VizierTmplValues{
-		DeployKey:         in.VzSpec.DeployKey,
-		UseEtcdOperator:   in.VzSpec.UseEtcdOperator,
-		PEMMemoryLimit:    in.VzSpec.PemMemoryLimit,
-		Namespace:         in.Namespace,
-		CloudAddr:         cloudAddr,
-		CloudUpdateAddr:   updateCloudAddr,
-		ClusterName:       in.VzSpec.ClusterName,
-		DisableAutoUpdate: in.VzSpec.DisableAutoUpdate,
-		SentryDSN:         getSentryDSN(in.VzSpec.Version),
-		ClockConverter:    in.VzSpec.ClockConverter,
-		DataAccess:        in.VzSpec.DataAccess,
+		DeployKey:             in.VzSpec.DeployKey,
+		CustomDeployKeySecret: in.VzSpec.CustomDeployKeySecret,
+		UseEtcdOperator:       in.VzSpec.UseEtcdOperator,
+		PEMMemoryLimit:        in.VzSpec.PemMemoryLimit,
+		Namespace:             in.Namespace,
+		CloudAddr:             cloudAddr,
+		CloudUpdateAddr:       updateCloudAddr,
+		ClusterName:           in.VzSpec.ClusterName,
+		DisableAutoUpdate:     in.VzSpec.DisableAutoUpdate,
+		SentryDSN:             getSentryDSN(in.VzSpec.Version),
+		ClockConverter:        in.VzSpec.ClockConverter,
+		DataAccess:            in.VzSpec.DataAccess,
 	}
 
 	if in.VzSpec.DataCollectorParams != nil && in.VzSpec.DataCollectorParams.DatastreamBufferSize != 0 {

@@ -44,6 +44,7 @@ const (
 // VizierTmplValues are the template values that can be used to fill out templated Vizier YAMLs.
 type VizierTmplValues struct {
 	DeployKey                 string
+	CustomDeployKeySecret     string
 	CustomAnnotations         string
 	CustomLabels              string
 	CloudAddr                 string
@@ -68,6 +69,7 @@ func VizierTmplValuesToArgs(tmplValues *VizierTmplValues) *yamls.YAMLTmplArgumen
 	return &yamls.YAMLTmplArguments{
 		Values: &map[string]interface{}{
 			"deployKey":                 tmplValues.DeployKey,
+			"customDeployKeySecret":     tmplValues.CustomDeployKeySecret,
 			"customAnnotations":         tmplValues.CustomAnnotations,
 			"customLabels":              tmplValues.CustomLabels,
 			"cloudAddr":                 tmplValues.CloudAddr,
@@ -438,6 +440,12 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
         - name: {{$key}}
           value: "{{$value}}"
         {{- end}}`,
+		},
+		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("vizier-cloud-connector"),
+			Patch:           `{"spec": {"template": {"spec": {"containers": [{"name": "app", "env": [{"name": "PL_DEPLOY_KEY", "valueFrom": { "secretKeyRef": { "key": "deploy-key", "name": "__PX_DEPLOY_KEY_SECRET_NAME__", "optional": true} } }]}] }  } } }`,
+			Placeholder:     "__PX_DEPLOY_KEY_SECRET_NAME__",
+			TemplateValue:   `{{ if .Values.customDeployKeySecret }}"{{ .Values.customDeployKeySecret }}"{{else}}"pl-deploy-secrets"{{end}}`,
 		},
 	}...)
 

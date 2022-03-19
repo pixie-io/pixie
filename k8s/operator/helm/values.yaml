@@ -24,8 +24,11 @@ clusterName: ""
 # the operator will automatically deploy the latest version.
 version: ""
 # The deploy key is used to link the deployed Vizier to a specific user/project.
-# This is required, and can be generated through the UI or CLI.
+# This is required if not specifying a customDeployKeySecret, and can be generated through the UI or CLI.
 deployKey: ""
+# The deploy key may be read from a custom secret in the Pixie namespace. This secret should be formatted where the
+# key of the deploy key is "deploy-key".
+customDeployKeySecret: ""
 # Whether auto-update should be disabled.
 disableAutoUpdate: false
 # Whether the metadata service should use etcd for in-memory storage. Recommended
