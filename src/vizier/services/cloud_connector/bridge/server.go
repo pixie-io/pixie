@@ -140,7 +140,6 @@ const upgradeJobName = "vizier-upgrade-job"
 
 // VizierInfo fetches information about Vizier.
 type VizierInfo interface {
-	GetAddress() (string, int32, error)
 	GetVizierClusterInfo() (*cvmsgspb.VizierClusterInfo, error)
 	GetK8sState() *K8sState
 	ParseJobYAML(yamlStr string, imageTag map[string]string, envSubtitutions map[string]string) (*batchv1.Job, error)
@@ -638,11 +637,6 @@ func (s *Bridge) handleMetricsMessage(msg *messagespb.MetricsMessage) error {
 }
 
 func (s *Bridge) doRegistrationHandshake(stream vzconnpb.VZConnService_NATSBridgeClient) error {
-	addr, _, err := s.vzInfo.GetAddress()
-	if err != nil {
-		log.WithError(err).Error("Unable to get vizier proxy address")
-	}
-
 	clusterInfo, err := s.vzInfo.GetVizierClusterInfo()
 	if err != nil {
 		log.WithError(err).Error("Unable to get k8s cluster info")
@@ -651,7 +645,6 @@ func (s *Bridge) doRegistrationHandshake(stream vzconnpb.VZConnService_NATSBridg
 	regReq := &cvmsgspb.RegisterVizierRequest{
 		VizierID:    utils.ProtoFromUUID(s.vizierID),
 		JwtKey:      s.jwtSigningKey,
-		Address:     addr,
 		ClusterInfo: clusterInfo,
 	}
 
@@ -1125,10 +1118,6 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) chan *cvmsgspb.VizierHeart
 	crdSeen := false
 
 	sendHeartbeat := func() {
-		addr, port, err := s.vzInfo.GetAddress()
-		if err != nil {
-			log.WithError(err).Info("Failed to get vizier address")
-		}
 		state := s.vzInfo.GetK8sState()
 
 		// Try to get the status from the Vizier CRD.
@@ -1161,8 +1150,6 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) chan *cvmsgspb.VizierHeart
 			VizierID:                      utils.ProtoFromUUID(s.vizierID),
 			Time:                          time.Now().UnixNano(),
 			SequenceNumber:                atomic.LoadInt64(&s.hbSeqNum),
-			Address:                       addr,
-			Port:                          port,
 			NumNodes:                      state.NumNodes,
 			NumInstrumentedNodes:          state.NumInstrumentedNodes,
 			UnhealthyDataPlanePodStatuses: state.UnhealthyDataPlanePodStatuses,
