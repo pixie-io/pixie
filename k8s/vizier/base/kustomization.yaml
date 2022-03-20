@@ -13,9 +13,6 @@ patches:
 resources:
 - ../bootstrap
 - proxy_envoy.yaml
-- certmgr_role.yaml
-- certmgr_deployment.yaml
-- certmgr_service.yaml
 - kelvin_deployment.yaml
 - kelvin_service.yaml
 - metadata_role.yaml
