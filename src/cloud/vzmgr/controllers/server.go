@@ -619,12 +619,12 @@ func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizi
 	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
 	query := `
     UPDATE vizier_cluster_info
-    SET (last_heartbeat, address, jwt_signing_key, status, vizier_version)  = (
-    	NOW(), $2, PGP_SYM_ENCRYPT($3, $4), $5, $6)
+    SET (last_heartbeat, jwt_signing_key, status, vizier_version)  = (
+    	NOW(), PGP_SYM_ENCRYPT($2, $3), $4, $5)
     WHERE vizier_cluster_id = $1`
 
 	vzStatus := vizierStatus(cvmsgspb.VZ_ST_CONNECTED)
-	res, err := s.db.Exec(query, vizierID, req.Address, signingKey, s.dbKey, vzStatus, vzVersion)
+	res, err := s.db.Exec(query, vizierID, signingKey, s.dbKey, vzStatus, vzVersion)
 	if err != nil {
 		return nil, err
 	}

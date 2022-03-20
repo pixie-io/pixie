@@ -160,7 +160,6 @@ func TestNATSGRPCBridgeHandshakeTest_CorrectRegistration(t *testing.T) {
 	regReq := &cvmsgspb.RegisterVizierRequest{
 		VizierID: utils.ProtoFromUUIDStrOrNil(vizierID.String()),
 		JwtKey:   "123",
-		Address:  "123:123",
 	}
 
 	ts.mockVZMgr.EXPECT().
@@ -285,7 +284,6 @@ func registerVizier(ts *testState, vizierID uuid.UUID, stream vzconnpb.VZConnSer
 	regReq := &cvmsgspb.RegisterVizierRequest{
 		VizierID: utils.ProtoFromUUIDStrOrNil(vizierID.String()),
 		JwtKey:   "123",
-		Address:  "123:123",
 	}
 
 	ts.mockVZMgr.EXPECT().
