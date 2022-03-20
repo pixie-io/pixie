@@ -102,7 +102,6 @@ func New(db *sqlx.DB, dbKey string, dnsMgrClient dnsmgrpb.DNSMgrServiceClient, n
 
 	for _, shard := range vzshard.GenerateShardRange() {
 		s.startShardedHandler(shard, "heartbeat", s.HandleVizierHeartbeat)
-		s.startShardedHandler(shard, "ssl", s.HandleSSLRequest)
 	}
 
 	return s
@@ -141,26 +140,6 @@ func (s *Server) startShardedHandler(shard string, topic string, handler HandleN
 			}
 		}
 	}()
-}
-
-func (s *Server) sendNATSMessage(topic string, msg *types.Any, vizierID uuid.UUID) {
-	wrappedMsg := &cvmsgspb.C2VMessage{
-		VizierID: vizierID.String(),
-		Msg:      msg,
-	}
-
-	b, err := wrappedMsg.Marshal()
-	if err != nil {
-		log.WithError(err).Error("Could not marshal message to bytes")
-		return
-	}
-	topic = vzshard.C2VTopic(topic, vizierID)
-	log.WithField("topic", topic).Info("Sending message")
-	err = s.nc.Publish(topic, b)
-
-	if err != nil {
-		log.WithError(err).Error("Could not publish message to nats")
-	}
 }
 
 type vizierStatus cvmsgspb.VizierStatus
@@ -519,18 +498,6 @@ func (s *Server) UpdateVizierConfig(ctx context.Context, req *cvmsgspb.UpdateViz
 		return nil, status.Error(codes.NotFound, "no such cluster")
 	}
 
-	if req.ConfigUpdate.PassthroughEnabled != nil {
-		passthroughEnabled := req.ConfigUpdate.PassthroughEnabled.Value
-		anyMsg, err := types.MarshalAny(&cvmsgspb.VizierConfig{
-			PassthroughEnabled: passthroughEnabled,
-		})
-		if err != nil {
-			log.WithError(err).Error("Could not marshal proto to any")
-		}
-		// Tell certmgr about the vizier config
-		s.sendNATSMessage("sslVizierConfigResp", anyMsg, vizierID)
-	}
-
 	return &cvmsgspb.UpdateVizierConfigResponse{}, nil
 }
 
@@ -819,67 +786,6 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	if !req.DisableAutoUpdate && !s.updater.VersionUpToDate(info.Version) {
 		s.updater.AddToUpdateQueue(vizierID)
 	}
-}
-
-// HandleSSLRequest registers certs for the vizier cluster.
-func (s *Server) HandleSSLRequest(v2cMsg *cvmsgspb.V2CMessage) {
-	anyMsg := v2cMsg.Msg
-
-	req := &cvmsgspb.VizierSSLCertRequest{}
-	err := types.UnmarshalAny(anyMsg, req)
-	if err != nil {
-		log.WithError(err).Error("Could not unmarshal NATS message")
-		return
-	}
-
-	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
-	if err != nil {
-		log.WithError(err).Error("Could not get creds from jwt")
-		return
-	}
-
-	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
-		fmt.Sprintf("bearer %s", serviceAuthToken))
-
-	vizierConf, err := s.getVizierConfig(ctx, req.VizierID)
-	if err != nil {
-		log.WithError(err).Error("Could not get vizier config")
-		return
-	}
-	respAnyMsg, err := types.MarshalAny(vizierConf)
-	if err != nil {
-		log.WithError(err).Error("Could not marshal proto to any")
-		return
-	}
-
-	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
-	// Tell certmgr about the vizier config
-	s.sendNATSMessage("sslVizierConfigResp", respAnyMsg, vizierID)
-
-	if vizierConf.GetPassthroughEnabled() {
-		// We don't need SSL certs for the cluster if it is running in passthrough mode.
-		return
-	}
-
-	dnsMgrReq := &dnsmgrpb.GetSSLCertsRequest{ClusterID: req.VizierID}
-	resp, err := s.dnsMgrClient.GetSSLCerts(ctx, dnsMgrReq)
-	if err != nil {
-		log.WithError(err).Error("Could not get SSL certs")
-		return
-	}
-	natsResp := &cvmsgspb.VizierSSLCertResponse{
-		Key:  resp.Key,
-		Cert: resp.Cert,
-	}
-
-	respAnyMsg, err = types.MarshalAny(natsResp)
-	if err != nil {
-		log.WithError(err).Error("Could not marshal proto to any")
-		return
-	}
-
-	log.WithField("vizierID", req.VizierID).Info("sending SSL response")
-	s.sendNATSMessage("sslResp", respAnyMsg, vizierID)
 }
 
 // getServiceCredentials returns JWT credentials for inter-service requests.

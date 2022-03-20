@@ -386,18 +386,6 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
 			TemplateValue:   nsTmpl,
 		},
 		{
-			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-vizier-certmgr-cluster-binding"),
-			Patch:           `{ "subjects": [{ "name": "certmgr-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
-			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
-			TemplateValue:   nsTmpl,
-		},
-		{
-			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-vizier-crd-certmgr-binding"),
-			Patch:           `{ "subjects": [{ "name": "certmgr-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
-			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
-			TemplateValue:   nsTmpl,
-		},
-		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-vizier-metadata-node-view-cluster-binding"),
 			Patch:           `{ "subjects": [{ "name": "metadata-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
 			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
