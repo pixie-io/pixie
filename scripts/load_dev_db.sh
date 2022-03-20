@@ -82,12 +82,6 @@ bazel run -c opt //src/utils/artifacts/artifact_db_updater:artifact_db_updater -
 
 git checkout main "$versions_file"
 
-# Update database with SSL certs.
-sops --config="${repo_path}"/credentials/.sops.yaml --decrypt "${certs_path}" > "${certs_decoded_path}"
-bazel run -c opt //src/cloud/dnsmgr/load_certs:load_certs -- \
-    --certs_path "${certs_decoded_path}" --postgres_db "pl" --postgres_port "${postgres_port}"
-rm "${certs_decoded_path}"
-
 # Kill kubectl port-forward.
 kill -15 "$!"
 sleep 2

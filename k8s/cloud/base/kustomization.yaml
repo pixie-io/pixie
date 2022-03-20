@@ -10,7 +10,6 @@ resources:
 - contact_config.yaml
 - proxy_envoy.yaml
 - kuberesolver_role.yaml
-- dns_config.yaml
 - db_config.yaml
 - tls_config.yaml
 - service_config.yaml
@@ -19,8 +18,6 @@ resources:
 - auth_service.yaml
 - api_deployment.yaml
 - api_service.yaml
-- dnsmgr_deployment.yaml
-- dnsmgr_service.yaml
 - plugin_deployment.yaml
 - plugin_service.yaml
 - profile_deployment.yaml

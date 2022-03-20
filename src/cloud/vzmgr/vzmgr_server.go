@@ -35,7 +35,6 @@ import (
 	"google.golang.org/grpc"
 
 	"px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
-	"px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
 	"px.dev/pixie/src/cloud/shared/pgmigrate"
 	"px.dev/pixie/src/cloud/shared/vzshard"
 	"px.dev/pixie/src/cloud/vzmgr/controllers"
@@ -61,25 +60,9 @@ var (
 
 func init() {
 	pflag.String("database_key", "", "The encryption key to use for the database")
-	pflag.String("dnsmgr_service", "dnsmgr-service.plc.svc.cluster.local:51900", "The dns manager service url (load balancer/list is ok)")
 	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
 
 	prometheus.MustRegister(natsErrorCount)
-}
-
-// NewDNSMgrServiceClient creates a new profile RPC client stub.
-func NewDNSMgrServiceClient() (dnsmgrpb.DNSMgrServiceClient, error) {
-	dialOpts, err := services.GetGRPCClientDialOpts()
-	if err != nil {
-		return nil, err
-	}
-
-	dnsMgrChannel, err := grpc.Dial(viper.GetString("dnsmgr_service"), dialOpts...)
-	if err != nil {
-		return nil, err
-	}
-
-	return dnsmgrpb.NewDNSMgrServiceClient(dnsMgrChannel), nil
 }
 
 // NewArtifactTrackerServiceClient creates a new artifact tracker RPC client stub.
@@ -168,18 +151,12 @@ func main() {
 
 	s := server.NewPLServer(env.New(viper.GetString("domain_name")), mux)
 
-	dnsMgrClient, err := NewDNSMgrServiceClient()
-	if err != nil {
-		log.WithError(err).Fatal("failed to initialize DNS manager RPC client")
-		panic(err)
-	}
-
 	db := pg.MustConnectDefaultPostgresDB()
 	// We have 256 * 2 different sharded goroutines running to handle requests.
 	// Match the same number of allowed db connections.
 	db.SetMaxOpenConns(512)
 	db.SetMaxIdleConns(128)
-	err = pgmigrate.PerformMigrationsUsingBindata(db, "vzmgr_service_migrations",
+	err := pgmigrate.PerformMigrationsUsingBindata(db, "vzmgr_service_migrations",
 		bindata.Resource(schema.AssetNames(), schema.Asset))
 	if err != nil {
 		log.WithError(err).Fatal("Failed to apply migrations")
@@ -207,7 +184,7 @@ func main() {
 	go updater.ProcessUpdateQueue()
 	defer updater.Stop()
 
-	c := controllers.New(db, dbKey, dnsMgrClient, nc, updater)
+	c := controllers.New(db, dbKey, nc, updater)
 	dks := deploymentkey.New(db, dbKey)
 	ds := deployment.New(dks, c)
 

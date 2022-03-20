@@ -11,7 +11,6 @@ data:
   PL_PROFILE_SERVICE: kubernetes:///profile-service.plc-testing:51500
   PL_PROJECT_MANAGER_SERVICE: kubernetes:///project-manager-service.plc-testing:50300
   PL_VZMGR_SERVICE: kubernetes:///vzmgr-service.plc-testing:51800
-  PL_DNSMGR_SERVICE: kubernetes:///dnsmgr-service.plc-testing:51900
   PL_ARTIFACT_TRACKER_SERVICE: kubernetes:///artifact-tracker-service.plc-testing:50750
   PL_ELASTIC_SERVICE: https://pl-elastic-es-http.plc-testing:9200
   PL_SCRIPTMGR_SERVICE: kubernetes:///scriptmgr-service.plc-testing:52000

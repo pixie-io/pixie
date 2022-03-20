@@ -39,12 +39,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"gopkg.in/segmentio/analytics-go.v3"
 
 	"px.dev/pixie/src/api/proto/uuidpb"
-	"px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
 	"px.dev/pixie/src/cloud/shared/messages"
 	"px.dev/pixie/src/cloud/shared/messagespb"
 	"px.dev/pixie/src/cloud/shared/vzshard"
@@ -69,11 +67,10 @@ type HandleNATSMessageFunc func(*cvmsgspb.V2CMessage)
 
 // Server is a bridge implementation of evzmgr.
 type Server struct {
-	db           *sqlx.DB
-	dbKey        string
-	dnsMgrClient dnsmgrpb.DNSMgrServiceClient
-	nc           *nats.Conn
-	updater      VzUpdater
+	db      *sqlx.DB
+	dbKey   string
+	nc      *nats.Conn
+	updater VzUpdater
 
 	done chan struct{}
 	once sync.Once
@@ -88,14 +85,13 @@ type VzUpdater interface {
 }
 
 // New creates a new server.
-func New(db *sqlx.DB, dbKey string, dnsMgrClient dnsmgrpb.DNSMgrServiceClient, nc *nats.Conn, updater VzUpdater) *Server {
+func New(db *sqlx.DB, dbKey string, nc *nats.Conn, updater VzUpdater) *Server {
 	s := &Server{
-		db:           db,
-		dbKey:        dbKey,
-		dnsMgrClient: dnsMgrClient,
-		nc:           nc,
-		updater:      updater,
-		done:         make(chan struct{}),
+		db:      db,
+		dbKey:   dbKey,
+		nc:      nc,
+		updater: updater,
+		done:    make(chan struct{}),
 	}
 
 	_ = prometheus.Register(NewStatusMetricsCollector(db))
@@ -694,27 +690,7 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	}
 	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
 
-	// Send DNS address.
-	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
-	if err != nil {
-		log.WithError(err).Error("Could not get service creds from jwt")
-		return
-	}
-
-	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
-		fmt.Sprintf("bearer %s", serviceAuthToken))
-
 	addr := req.Address
-	if req.Address != "" {
-		dnsMgrReq := &dnsmgrpb.GetDNSAddressRequest{
-			ClusterID: req.VizierID,
-			IPAddress: req.Address,
-		}
-		resp, err := s.dnsMgrClient.GetDNSAddress(ctx, dnsMgrReq)
-		if err == nil {
-			addr = resp.DNSAddress
-		}
-	}
 	if req.Port != int32(0) {
 		addr = fmt.Sprintf("%s:%d", addr, req.Port)
 	}

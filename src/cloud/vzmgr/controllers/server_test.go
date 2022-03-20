@@ -20,7 +20,6 @@ package controllers_test
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"sort"
@@ -42,8 +41,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"px.dev/pixie/src/api/proto/uuidpb"
-	"px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
-	mock_dnsmgrpb "px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb/mock"
 	"px.dev/pixie/src/cloud/shared/messagespb"
 	"px.dev/pixie/src/cloud/vzmgr/controllers"
 	mock_controllers "px.dev/pixie/src/cloud/vzmgr/controllers/mock"
@@ -173,9 +170,8 @@ func TestServer_GetViziersByOrg(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	s := controllers.New(db, "test", mockDNSClient, nil, nil)
+	s := controllers.New(db, "test", nil, nil)
 
 	t.Run("valid", func(t *testing.T) {
 		// Fetch the test data that was inserted earlier.
@@ -237,9 +233,8 @@ func TestServer_GetVizierInfo(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	s := controllers.New(db, "test", mockDNSClient, nil, nil)
+	s := controllers.New(db, "test", nil, nil)
 	resp, err := s.GetVizierInfo(CreateTestContext(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -274,7 +269,6 @@ func TestServer_GetVizierInfos(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
 	requestedIDs := []*uuidpb.UUID{
 		utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"), // Vizier from current org.
@@ -283,7 +277,7 @@ func TestServer_GetVizierInfos(t *testing.T) {
 		utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"), // Vizier from current org.
 	}
 
-	s := controllers.New(db, "test", mockDNSClient, nil, nil)
+	s := controllers.New(db, "test", nil, nil)
 	resp, err := s.GetVizierInfos(CreateTestContext(), &vzmgrpb.GetVizierInfosRequest{
 		VizierIDs: requestedIDs,
 	})
@@ -305,9 +299,8 @@ func TestServer_UpdateVizierConfig(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	s := controllers.New(db, "test", mockDNSClient, nil, nil)
+	s := controllers.New(db, "test", nil, nil)
 	vzIDpb := utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001")
 	resp, err := s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
 		VizierID: vzIDpb,
@@ -330,9 +323,8 @@ func TestServer_UpdateVizierConfig_PassthroughDisable(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	s := controllers.New(db, "test", mockDNSClient, nil, nil)
+	s := controllers.New(db, "test", nil, nil)
 	vzIDpb := utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001")
 
 	_, err := s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
@@ -350,9 +342,8 @@ func TestServer_UpdateVizierConfig_PassthroughEnable(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	s := controllers.New(db, "test", mockDNSClient, nil, nil)
+	s := controllers.New(db, "test", nil, nil)
 	vzIDpb := utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001")
 
 	_, err := s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
@@ -369,9 +360,8 @@ func TestServer_UpdateVizierConfig_WrongOrg(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	s := controllers.New(db, "test", mockDNSClient, nil, nil)
+	s := controllers.New(db, "test", nil, nil)
 	resp, err := s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
 		VizierID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
 		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
@@ -388,9 +378,8 @@ func TestServer_UpdateVizierConfig_NoUpdates(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	s := controllers.New(db, "test", mockDNSClient, nil, nil)
+	s := controllers.New(db, "test", nil, nil)
 	resp, err := s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
 		VizierID:     utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{},
@@ -411,9 +400,8 @@ func TestServer_GetVizierConnectionInfo(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	s := controllers.New(db, "test", mockDNSClient, nil, nil)
+	s := controllers.New(db, "test", nil, nil)
 	resp, err := s.GetVizierConnectionInfo(CreateTestContext(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -443,9 +431,8 @@ func TestServer_VizierConnectedHealthy(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	s := controllers.New(db, "test", mockDNSClient, nc, nil)
+	s := controllers.New(db, "test", nc, nil)
 	req := &cvmsgspb.RegisterVizierRequest{
 		VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 		JwtKey:   "the-token",
@@ -499,19 +486,15 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
 	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 
 	updater := mock_controllers.NewMockVzUpdater(ctrl)
-	s := controllers.New(db, "test", mockDNSClient, nc, updater)
+	s := controllers.New(db, "test", nc, updater)
 
 	tests := []struct {
 		name                          string
-		expectGetDNSAddressCalled     bool
-		dnsAddressResponse            *dnsmgrpb.GetDNSAddressResponse
-		dnsAddressError               error
 		vizierID                      string
 		hbAddress                     string
 		hbPort                        int
@@ -533,18 +516,13 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 		statusMessage                 string
 	}{
 		{
-			name:                      "valid vizier",
-			status:                    cvmsgspb.VZ_ST_HEALTHY,
-			expectGetDNSAddressCalled: true,
-			dnsAddressResponse: &dnsmgrpb.GetDNSAddressResponse{
-				DNSAddress: "abc.clusters.dev.withpixie.dev",
-			},
-			dnsAddressError:               nil,
+			name:                          "valid vizier",
+			status:                        cvmsgspb.VZ_ST_HEALTHY,
 			vizierID:                      "123e4567-e89b-12d3-a456-426655440001",
 			hbAddress:                     "127.0.0.1",
 			hbPort:                        123,
 			updatedClusterStatus:          "HEALTHY",
-			expectedClusterAddress:        "abc.clusters.dev.withpixie.dev:123",
+			expectedClusterAddress:        "127.0.0.1:123",
 			controlPlanePodStatuses:       testPodStatuses,
 			unhealthyDataPlanePodStatuses: testDataPlanePodStatuses,
 			clusterVersion:                "v1.20.1",
@@ -555,19 +533,14 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			statusMessage:                 "test",
 		},
 		{
-			name:                      "valid vizier status updated",
-			status:                    cvmsgspb.VZ_ST_UNHEALTHY,
-			expectGetDNSAddressCalled: true,
-			dnsAddressResponse: &dnsmgrpb.GetDNSAddressResponse{
-				DNSAddress: "abc.clusters.dev.withpixie.dev",
-			},
-			dnsAddressError:               nil,
+			name:                          "valid vizier status updated",
+			status:                        cvmsgspb.VZ_ST_UNHEALTHY,
 			vizierID:                      "223e4567-e89b-12d3-a456-426655440003",
 			hbAddress:                     "127.0.0.1",
 			hbPort:                        123,
 			updatedClusterStatus:          "UNHEALTHY",
 			expectedPrevStatus:            "HEALTHY",
-			expectedClusterAddress:        "abc.clusters.dev.withpixie.dev:123",
+			expectedClusterAddress:        "127.0.0.1:123",
 			controlPlanePodStatuses:       testPodStatuses,
 			unhealthyDataPlanePodStatuses: testDataPlanePodStatuses,
 			clusterVersion:                "v1.20.1",
@@ -577,18 +550,13 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			checkDB:                       true,
 		},
 		{
-			name:                      "valid vizier, no autoupdate",
-			status:                    cvmsgspb.VZ_ST_HEALTHY,
-			expectGetDNSAddressCalled: true,
-			dnsAddressResponse: &dnsmgrpb.GetDNSAddressResponse{
-				DNSAddress: "abc.clusters.dev.withpixie.dev",
-			},
-			dnsAddressError:         nil,
+			name:                    "valid vizier, no autoupdate",
+			status:                  cvmsgspb.VZ_ST_HEALTHY,
 			vizierID:                "123e4567-e89b-12d3-a456-426655440001",
 			hbAddress:               "127.0.0.1",
 			hbPort:                  123,
 			updatedClusterStatus:    "HEALTHY",
-			expectedClusterAddress:  "abc.clusters.dev.withpixie.dev:123",
+			expectedClusterAddress:  "127.0.0.1:123",
 			controlPlanePodStatuses: testPodStatuses,
 			clusterVersion:          "v1.20.1",
 			numNodes:                4,
@@ -598,66 +566,50 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			disableAutoUpdate:       true,
 		},
 		{
-			name:                      "valid vizier dns failed",
-			status:                    cvmsgspb.VZ_ST_HEALTHY,
-			expectGetDNSAddressCalled: true,
-			dnsAddressResponse:        nil,
-			dnsAddressError:           errors.New("Could not get DNS address"),
-			vizierID:                  "123e4567-e89b-12d3-a456-426655440001",
-			hbAddress:                 "127.0.0.1",
-			hbPort:                    123,
-			updatedClusterStatus:      "HEALTHY",
-			expectedClusterAddress:    "127.0.0.1:123",
-			clusterVersion:            "v1.20.1",
-			numNodes:                  4,
-			numInstrumentedNodes:      3,
-			checkVersion:              true,
-			checkDB:                   true,
-			versionUpdated:            true,
+			name:                   "valid vizier dns failed",
+			status:                 cvmsgspb.VZ_ST_HEALTHY,
+			vizierID:               "123e4567-e89b-12d3-a456-426655440001",
+			hbAddress:              "127.0.0.1",
+			hbPort:                 123,
+			updatedClusterStatus:   "HEALTHY",
+			expectedClusterAddress: "127.0.0.1:123",
+			clusterVersion:         "v1.20.1",
+			numNodes:               4,
+			numInstrumentedNodes:   3,
+			checkVersion:           true,
+			checkDB:                true,
+			versionUpdated:         true,
 		},
 		{
-			name:                      "valid vizier no address",
-			status:                    cvmsgspb.VZ_ST_HEALTHY,
-			expectGetDNSAddressCalled: false,
-			vizierID:                  "123e4567-e89b-12d3-a456-426655440001",
-			hbAddress:                 "",
-			hbPort:                    0,
-			updatedClusterStatus:      "HEALTHY",
-			expectedClusterAddress:    "",
-			clusterVersion:            "",
-			numNodes:                  4,
-			numInstrumentedNodes:      3,
-			checkVersion:              true,
-			checkDB:                   true,
+			name:                   "valid vizier no address",
+			status:                 cvmsgspb.VZ_ST_HEALTHY,
+			vizierID:               "123e4567-e89b-12d3-a456-426655440001",
+			hbAddress:              "",
+			hbPort:                 0,
+			updatedClusterStatus:   "HEALTHY",
+			expectedClusterAddress: "",
+			clusterVersion:         "",
+			numNodes:               4,
+			numInstrumentedNodes:   3,
+			checkVersion:           true,
+			checkDB:                true,
 		},
 		{
-			name:                      "unknown vizier",
-			status:                    cvmsgspb.VZ_ST_UPDATING,
-			expectGetDNSAddressCalled: false,
-			vizierID:                  "223e4567-e89b-12d3-a456-426655440001",
-			hbAddress:                 "",
-			updatedClusterStatus:      "",
-			expectedClusterAddress:    "",
-			clusterVersion:            "",
-			checkVersion:              false,
-			checkDB:                   false,
-			disableAutoUpdate:         true,
+			name:                   "unknown vizier",
+			status:                 cvmsgspb.VZ_ST_UPDATING,
+			vizierID:               "223e4567-e89b-12d3-a456-426655440001",
+			hbAddress:              "",
+			updatedClusterStatus:   "",
+			expectedClusterAddress: "",
+			clusterVersion:         "",
+			checkVersion:           false,
+			checkDB:                false,
+			disableAutoUpdate:      true,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			dnsMgrReq := &dnsmgrpb.GetDNSAddressRequest{
-				ClusterID: utils.ProtoFromUUIDStrOrNil(tc.vizierID),
-				IPAddress: tc.hbAddress,
-			}
-
-			if tc.expectGetDNSAddressCalled {
-				mockDNSClient.EXPECT().
-					GetDNSAddress(gomock.Any(), dnsMgrReq).
-					Return(tc.dnsAddressResponse, tc.dnsAddressError)
-			}
-
 			if tc.checkVersion {
 				updater.
 					EXPECT().
@@ -745,7 +697,6 @@ func TestServer_UpdateOrInstallVizier(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
 	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
@@ -767,7 +718,7 @@ func TestServer_UpdateOrInstallVizier(t *testing.T) {
 		UpdateOrInstallVizier(vizierID, "1.3.0", false).
 		Return(wrappedMsg, nil)
 
-	s := controllers.New(db, "test", mockDNSClient, nc, updater)
+	s := controllers.New(db, "test", nc, updater)
 
 	req := &cvmsgspb.UpdateOrInstallVizierRequest{
 		VizierID: utils.ProtoFromUUIDStrOrNil(vizierID.String()),
@@ -782,7 +733,7 @@ func TestServer_UpdateOrInstallVizier(t *testing.T) {
 func TestServer_GetViziersByShard(t *testing.T) {
 	mustLoadTestData(db)
 
-	s := controllers.New(db, "test", nil, nil, nil)
+	s := controllers.New(db, "test", nil, nil)
 
 	tests := []struct {
 		name string
@@ -908,7 +859,7 @@ func TestServer_GetViziersByShard(t *testing.T) {
 func TestServer_ProvisionOrClaimVizier(t *testing.T) {
 	mustLoadTestData(db)
 
-	s := controllers.New(db, "test", nil, nil, nil)
+	s := controllers.New(db, "test", nil, nil)
 	// TODO(zasgar): We need to make user IDS make sense.
 	userID := uuid.Must(uuid.NewV4())
 
@@ -958,7 +909,7 @@ func TestServer_ProvisionOrClaimVizierWIthExistingUID(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mustLoadTestData(db)
 
-			s := controllers.New(db, "test", nil, nil, nil)
+			s := controllers.New(db, "test", nil, nil)
 			userID := uuid.Must(uuid.NewV4())
 
 			// This should select the existing cluster with the same UID.
@@ -974,7 +925,7 @@ func TestServer_ProvisionOrClaimVizierWIthExistingUID(t *testing.T) {
 func TestServer_ProvisionOrClaimVizier_WithExistingActiveUID(t *testing.T) {
 	mustLoadTestData(db)
 
-	s := controllers.New(db, "test", nil, nil, nil)
+	s := controllers.New(db, "test", nil, nil)
 	userID := uuid.Must(uuid.NewV4())
 	// This should select cause an error b/c we are trying to provision a cluster that is not disconnected.
 	clusterID, clusterName, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "my_other_cluster", "")
@@ -987,7 +938,7 @@ func TestServer_ProvisionOrClaimVizier_WithExistingActiveUID(t *testing.T) {
 func TestServer_ProvisionOrClaimVizier_WithNewCluster(t *testing.T) {
 	mustLoadTestData(db)
 
-	s := controllers.New(db, "test", nil, nil, nil)
+	s := controllers.New(db, "test", nil, nil)
 	userID := uuid.Must(uuid.NewV4())
 	// This should select cause an error b/c we are trying to provision a cluster that is not disconnected.
 	clusterID, clusterName, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testNonAuthOrgID), userID, "my_other_cluster", "")
@@ -1000,7 +951,7 @@ func TestServer_ProvisionOrClaimVizier_WithNewCluster(t *testing.T) {
 func TestServer_ProvisionOrClaimVizier_WithExistingName(t *testing.T) {
 	mustLoadTestData(db)
 
-	s := controllers.New(db, "test", nil, nil, nil)
+	s := controllers.New(db, "test", nil, nil)
 	userID := uuid.Must(uuid.NewV4())
 
 	// This should select the existing cluster with the same UID.
@@ -1014,7 +965,7 @@ func TestServer_ProvisionOrClaimVizier_WithExistingName(t *testing.T) {
 func TestServer_GetOrgFromVizier(t *testing.T) {
 	mustLoadTestData(db)
 
-	s := controllers.New(db, "test", nil, nil, nil)
+	s := controllers.New(db, "test", nil, nil)
 	resp, err := s.GetOrgFromVizier(CreateTestContext(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"))
 	require.NoError(t, err)
 	require.NotNil(t, resp)
