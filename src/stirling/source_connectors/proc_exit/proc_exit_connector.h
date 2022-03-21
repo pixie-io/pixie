@@ -29,10 +29,13 @@
 
 namespace px {
 namespace stirling {
+namespace proc_exit_tracer {
 
 // This connector is not registered yet, so it has no effect.
 class ProcExitConnector : public SourceConnector, public bpf_tools::BCCWrapper {
  public:
+  static constexpr std::string_view kName = "proc_exit_tracer";
+
   static constexpr auto kSamplingPeriod = std::chrono::milliseconds{100};
   static constexpr auto kPushPeriod = std::chrono::milliseconds{1000};
 
@@ -58,5 +61,6 @@ class ProcExitConnector : public SourceConnector, public bpf_tools::BCCWrapper {
   std::vector<struct proc_exit_event_t> events_;
 };
 
+}  // namespace proc_exit_tracer
 }  // namespace stirling
 }  // namespace px

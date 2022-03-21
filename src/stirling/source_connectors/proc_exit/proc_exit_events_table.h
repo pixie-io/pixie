@@ -25,6 +25,7 @@
 
 namespace px {
 namespace stirling {
+namespace proc_exit_tracer {
 
 constexpr std::string_view kProcExitsName = "proc_exit_events";
 constexpr std::string_view kExitCodeColName = "exit_code";
@@ -56,15 +57,12 @@ constexpr DataElement kElements[] = {
 constexpr auto kProcExitEventsTable =
     DataTableSchema(kProcExitsName, "Traces all abnormal process exits", kElements);
 
-namespace proc_exits {
-
 constexpr int kTimeIdx = kProcExitEventsTable.ColIndex(canonical_data_elements::kTimeColName);
 constexpr int kUPIDIdx = kProcExitEventsTable.ColIndex(canonical_data_elements::kUPIDColName);
 constexpr int kExitCodeIdx = kProcExitEventsTable.ColIndex(kExitCodeColName);
 constexpr int kSignalIdx = kProcExitEventsTable.ColIndex(kSignalColName);
 constexpr int kCommIdx = kProcExitEventsTable.ColIndex(kCommColName);
 
-}  // namespace proc_exits
-
+}  // namespace proc_exit_tracer
 }  // namespace stirling
 }  // namespace px

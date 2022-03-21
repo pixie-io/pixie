@@ -48,6 +48,7 @@
 #include "src/stirling/source_connectors/perf_profiler/perf_profile_connector.h"
 #include "src/stirling/source_connectors/pid_runtime/pid_runtime_connector.h"
 #include "src/stirling/source_connectors/pid_runtime_bpftrace/pid_runtime_bpftrace_connector.h"
+#include "src/stirling/source_connectors/proc_exit/proc_exit_connector.h"
 #include "src/stirling/source_connectors/proc_stat/proc_stat_connector.h"
 #include "src/stirling/source_connectors/process_stats/process_stats_connector.h"
 #include "src/stirling/source_connectors/seq_gen/seq_gen_connector.h"
@@ -72,7 +73,7 @@ const std::vector<SourceRegistry::RegistryElement> kAllSources = {
     REGISTRY_PAIR(ProcStatConnector),          REGISTRY_PAIR(SeqGenConnector),
     REGISTRY_PAIR(SocketTraceConnector),       REGISTRY_PAIR(ProcessStatsConnector),
     REGISTRY_PAIR(NetworkStatsConnector),      REGISTRY_PAIR(PerfProfileConnector),
-    REGISTRY_PAIR(PIDCPUUseBPFTraceConnector),
+    REGISTRY_PAIR(PIDCPUUseBPFTraceConnector), REGISTRY_PAIR(proc_exit_tracer::ProcExitConnector),
 };
 #undef REGISTRY_PAIR
 
@@ -89,7 +90,8 @@ std::vector<std::string_view> GetSourceNamesForGroup(SourceConnectorGroup group)
         NetworkStatsConnector::kName,
         JVMStatsConnector::kName,
         SocketTraceConnector::kName,
-        PerfProfileConnector::kName
+        PerfProfileConnector::kName,
+        proc_exit_tracer::ProcExitConnector::kName
       };
     case SourceConnectorGroup::kAll:
       return {

@@ -215,7 +215,15 @@ class BCCWrapper {
    * The task_struct offset resolution has to be performed the first time, and if successful,
    * the obtained result will be cached and reused afterwards.
    */
-  static StatusOr<utils::TaskStructOffsets> GetTaskStructOffsets();
+  static StatusOr<utils::TaskStructOffsets> ComputeTaskStructOffsets();
+
+  /**
+   * Returns the stored offset object.
+   * This is used by ProcExitConnector to write the exit_code offset value to BPF array.
+   */
+  static const std::optional<utils::TaskStructOffsets>& task_struct_offsets_opt() {
+    return task_struct_offsets_opt_;
+  }
 
   ~BCCWrapper() {
     // Not really required, because BPF destructor handles these.

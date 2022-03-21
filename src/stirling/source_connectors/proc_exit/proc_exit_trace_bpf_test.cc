@@ -24,6 +24,7 @@
 
 namespace px {
 namespace stirling {
+namespace proc_exit_tracer {
 
 using ::px::SubProcess;
 using ::px::stirling::testing::RecordBatchSizeIs;
@@ -53,12 +54,13 @@ TEST(ProcExitConnectorTest, TransferData) {
   types::ColumnWrapperRecordBatch result = testing::ExtractRecordsMatchingPID(
       data_table, kProcExitEventsTable.ColIndex("upid"), proc.child_pid());
   ASSERT_THAT(result, RecordBatchSizeIs(1));
-  EXPECT_EQ(result[proc_exits::kSignalIdx]->Get<types::Int64Value>(0), 9);
+  EXPECT_EQ(result[proc_exit_tracer::kSignalIdx]->Get<types::Int64Value>(0), 9);
   // Process abnormally terminated will not have a meaningful exit code.
   // So here 0 means it's not set, instead of that it succeeded.
-  EXPECT_EQ(result[proc_exits::kExitCodeIdx]->Get<types::Int64Value>(0), 0);
-  EXPECT_EQ(result[proc_exits::kCommIdx]->Get<types::StringValue>(0), "sleep");
+  EXPECT_EQ(result[proc_exit_tracer::kExitCodeIdx]->Get<types::Int64Value>(0), 0);
+  EXPECT_EQ(result[proc_exit_tracer::kCommIdx]->Get<types::StringValue>(0), "sleep");
 }
 
+}  // namespace proc_exit_tracer
 }  // namespace stirling
 }  // namespace px

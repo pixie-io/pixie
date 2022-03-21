@@ -82,7 +82,7 @@ StatusOr<utils::TaskStructOffsets> ResolveTaskStructOffsetsWithRetry() {
   return offsets_status;
 }
 
-StatusOr<utils::TaskStructOffsets> BCCWrapper::GetTaskStructOffsets() {
+StatusOr<utils::TaskStructOffsets> BCCWrapper::ComputeTaskStructOffsets() {
   if (task_struct_offsets_opt_.has_value()) {
     LOG(INFO) << "Returning the previously resolved TaskStructOffsets object";
     return task_struct_offsets_opt_.value();
@@ -145,7 +145,7 @@ Status BCCWrapper::InitBPFProgram(std::string_view bpf_program, std::vector<std:
     // There is a flag to force the task struct fields resolution, in case we don't trust the
     // local headers, and for testing purposes.
     if (utils::g_packaged_headers_installed || always_infer_task_struct_offsets) {
-      auto offsets_or = GetTaskStructOffsets();
+      auto offsets_or = ComputeTaskStructOffsets();
       if (offsets_or.ok()) {
         offsets = offsets_or.ConsumeValueOrDie();
       } else {

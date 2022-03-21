@@ -40,9 +40,9 @@ struct proc_exit_event_t {
 };
 
 // Specifies the corresponding indexes of the entries of a per-cpu array.
-enum control_value_index_t {
+enum proc_exit_trace_control_value_index_t {
   TASK_STRUCT_EXIT_CODE_OFFSET_INDEX,
   NUM_CONTROL_VALUES,
 };
 
-const char kControlValuesArrayName[] = "control_values";
+const char kProcExitControlValuesArrayName[] = "control_values";
