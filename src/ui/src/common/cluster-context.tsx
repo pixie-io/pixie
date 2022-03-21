@@ -133,8 +133,7 @@ export function useClusterConfig(): ClusterConfig | null {
     if (loading || !selectedClusterID) return null;
     // If cloud is running in dev mode, automatically direct to Envoy's port, since there is
     // no GCLB to redirect for us in dev.
-    const passthroughClusterAddress = selectedClusterVizierConfig.passthroughEnabled
-      ? window.location.origin + (isDev() ? ':4444' : '') : undefined;
+    const passthroughClusterAddress = window.location.origin + (isDev() ? ':4444' : '');
     return {
       id: selectedClusterID,
       attachCredentials: true,
