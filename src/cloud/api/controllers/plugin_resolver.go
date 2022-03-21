@@ -20,8 +20,11 @@ package controllers
 
 import (
 	"context"
+	"errors"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
+	"github.com/graph-gophers/graphql-go"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 )
@@ -202,4 +205,66 @@ func (q *QueryResolver) UpdateRetentionPluginConfig(ctx context.Context, args up
 	}
 
 	return true, nil
+}
+
+// RetentionScriptResolver is responsible for resolving retention plugin scripts.
+type RetentionScriptResolver struct {
+	scriptID        uuid.UUID
+	Name            string
+	Description     string
+	FrequencyS      int32
+	Enabled         bool
+	clusterIDs      []uuid.UUID
+	Contents        string
+	PluginID        string
+	CustomExportURL *string
+}
+
+type editableRetentionScript struct {
+	Name            *string
+	Description     *string
+	FrequencyS      *int32
+	Enabled         *bool
+	Contents        *string
+	PluginID        *string
+	CustomExportURL *string
+	Clusters        *[]string
+}
+
+type updateRetentionScriptArgs struct {
+	ID     graphql.ID
+	Script *editableRetentionScript
+}
+
+type retentionScriptArgs struct {
+	ID string
+}
+
+// ID returns cluster ID.
+func (c *RetentionScriptResolver) ID() graphql.ID {
+	return graphql.ID(c.scriptID.String())
+}
+
+// Clusters returns the IDs of the clusters with the script enabled.
+func (c *RetentionScriptResolver) Clusters() []graphql.ID {
+	ids := make([]graphql.ID, len(c.clusterIDs))
+	for i, c := range c.clusterIDs {
+		ids[i] = graphql.ID(c.String())
+	}
+	return ids
+}
+
+// RetentionScripts fetches all retention scripts belonging to the org.
+func (q *QueryResolver) RetentionScripts(ctx context.Context) ([]*RetentionScriptResolver, error) {
+	return make([]*RetentionScriptResolver, 0), errors.New("Not yet implemented")
+}
+
+// RetentionScript fetches a single retention script, given an ID.
+func (q *QueryResolver) RetentionScript(ctx context.Context, args retentionScriptArgs) (*RetentionScriptResolver, error) {
+	return nil, errors.New("Not yet implemented")
+}
+
+// UpdateRetentionScript updates the details for a single retention script.
+func (q *QueryResolver) UpdateRetentionScript(ctx context.Context, args updateRetentionScriptArgs) (bool, error) {
+	return false, errors.New("Not yet implemented")
 }
