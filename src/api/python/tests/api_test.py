@@ -119,31 +119,6 @@ class CloudServiceFake(cloudapi_pb2_grpc.VizierClusterInfoServicer):
                 status=cpb.CS_UNHEALTHY,
             ),
         ]
-        self.direct_conn_info: Dict[str,
-                                    cpb.GetClusterConnectionInfoResponse] = {}
-
-    def add_direct_conn_cluster(
-        self,
-        cluster_id: str,
-        name: str,
-        url: str,
-        token: str,
-    ) -> None:
-        for c in self.clusters:
-            if cluster_id == c.id:
-                raise ValueError(
-                    f"Cluster id {cluster_id} already exists in cloud.")
-
-        self.clusters.append(create_cluster_info(
-            cluster_id,
-            name,
-            passthrough_enabled=False,
-        ))
-
-        self.direct_conn_info[cluster_id] = cpb.GetClusterConnectionInfoResponse(
-            ipAddress=url,
-            token=token,
-        )
 
     def GetClusterInfo(
         self,
@@ -157,17 +132,6 @@ class CloudServiceFake(cloudapi_pb2_grpc.VizierClusterInfoServicer):
             return cpb.GetClusterInfoResponse(clusters=[])
 
         return cpb.GetClusterInfoResponse(clusters=self.clusters)
-
-    def GetClusterConnectionInfo(
-        self,
-        request: cpb.GetClusterConnectionInfoRequest,
-        context: Any,
-    ) -> cpb.GetClusterConnectionInfoResponse:
-        cluster_id = utils.uuid_pb_to_string(request.id)
-        if cluster_id not in self.direct_conn_info:
-            raise KeyError(
-                f"Cluster ID {cluster_id} not in conn_info. Must add first.")
-        return self.direct_conn_info[cluster_id]
 
 
 class TestClient(unittest.TestCase):
@@ -756,58 +720,6 @@ class TestClient(unittest.TestCase):
             loop.run_until_complete(
                 run_script_and_tasks(script_executor, [test_utils.iterate_and_pass(http_tb)]))
 
-    def test_direct_conns(self) -> None:
-        # Test the direct connections.
-
-        # Create the direct conn server.
-        dc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
-        fake_dc_service = VizierServiceFake()
-        # Create one http table.
-        http_table1 = self.http_table_factory.create_table(test_utils.table_id1)
-        cluster_id = "10000000-0000-0000-0000-000000000004"
-        fake_dc_service.add_fake_data(cluster_id, [
-            # Init "http".
-            http_table1.metadata_response(),
-            # Send data for "http".
-            http_table1.row_batch_response([["foo"], [200]]),
-            # End "http".
-            http_table1.end(),
-        ])
-
-        vizierapi_pb2_grpc.add_VizierServiceServicer_to_server(
-            fake_dc_service, dc_server)
-        port = dc_server.add_insecure_port("[::]:0")
-        dc_server.start()
-
-        url = f"http://localhost:{port}"
-        token = cluster_id
-        self.fake_cloud_service.add_direct_conn_cluster(
-            cluster_id, "dc_cluster", url, token)
-
-        clusters = self.px_client.list_healthy_clusters()
-        self.assertSetEqual(
-            set([c.name() for c in clusters]),
-            {"cluster1", "cluster2", "dc_cluster"}
-        )
-
-        conns = [
-            self.px_client.connect_to_cluster(c) for c in clusters if c.name() == 'dc_cluster'
-        ]
-
-        self.assertEqual(len(conns), 1)
-
-        script_executor = conns[0].prepare_script(pxl_script)
-
-        # Define callback function for "http" table.
-        def http_fn(row: pxapi.Row) -> None:
-            self.assertEqual(row["resp_body"], "foo")
-            self.assertEqual(row["resp_status"], 200)
-
-        script_executor.add_callback("http", http_fn)
-
-        # Run the script_executor synchronously.
-        script_executor.run()
-
     def test_ergo_api(self) -> None:
         # Create a new API where we can run and get results for a table simultaneously.
         # Connect to a cluster.
@@ -834,21 +746,6 @@ class TestClient(unittest.TestCase):
             self.assertEqual(row["resp_status"], 200)
 
     def test_shared_grpc_channel_for_cloud(self) -> None:
-        # Setup a direct connect cluster.
-        # Create the direct conn server.
-        dc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
-        cluster_id = "10000000-0000-0000-0000-000000000004"
-        fake_dc_service = VizierServiceFake()
-        vizierapi_pb2_grpc.add_VizierServiceServicer_to_server(
-            fake_dc_service, dc_server)
-        port = dc_server.add_insecure_port("[::]:0")
-        dc_server.start()
-
-        url = f"http://localhost:{port}"
-        token = cluster_id
-        self.fake_cloud_service.add_direct_conn_cluster(
-            cluster_id, "dc_cluster", url, token)
-
         # Make sure the shraed grpc channel are actually shared.
         num_create_channel_calls = 0
 
@@ -872,11 +769,6 @@ class TestClient(unittest.TestCase):
 
         # No new channels made on later calls to cloud
         px_client.connect_to_cluster(healthy_clusters[0])
-        self.assertEqual(num_create_channel_calls, 1)
-
-        # We need to make more cloud calls for direct connect clusters. Do not need new channels.
-        dc_cluster = [c for c in healthy_clusters if not c.passthrough()][0]
-        px_client.connect_to_cluster(dc_cluster)
         self.assertEqual(num_create_channel_calls, 1)
 
         # Reset cache, so now must create a new channel.
