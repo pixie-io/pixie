@@ -32,8 +32,8 @@ namespace planner {
 namespace compiler {
 
 StatusOr<std::shared_ptr<ProbeObject>> ProbeObject::Create(
-    ASTVisitor* visitor, const std::shared_ptr<TracepointIR>& probe) {
-  return std::shared_ptr<ProbeObject>(new ProbeObject(visitor, probe));
+    const pypa::AstPtr& ast, ASTVisitor* visitor, const std::shared_ptr<TracepointIR>& probe) {
+  return std::shared_ptr<ProbeObject>(new ProbeObject(ast, visitor, probe));
 }
 
 class LatencyHandler {
@@ -79,7 +79,8 @@ StatusOr<QLObjectPtr> LatencyHandler::Eval(MutationsIR* mutations_ir, const pypa
   PL_ASSIGN_OR_RETURN(auto current_probe, mutations_ir->GetCurrentProbeOrError(ast));
   std::string id = current_probe->NextLatencyName();
   current_probe->SetFunctionLatencyID(id);
-  return std::static_pointer_cast<QLObject>(std::make_shared<TracingVariableObject>(visitor, id));
+  return std::static_pointer_cast<QLObject>(
+      std::make_shared<TracingVariableObject>(ast, visitor, id));
 }
 
 StatusOr<std::shared_ptr<TraceModule>> TraceModule::Create(MutationsIR* mutations_ir,
@@ -292,7 +293,7 @@ StatusOr<QLObjectPtr> ProbeHandler::Wrapper(MutationsIR* mutations_ir,
   }
 
   mutations_ir->EndProbe();
-  PL_ASSIGN_OR_RETURN(auto probe_obj, ProbeObject::Create(visitor, probe));
+  PL_ASSIGN_OR_RETURN(auto probe_obj, ProbeObject::Create(ast, visitor, probe));
   return std::static_pointer_cast<QLObject>(probe_obj);
 }
 
@@ -305,7 +306,8 @@ StatusOr<QLObjectPtr> ArgumentHandler::Eval(MutationsIR* mutations_ir, const pyp
   std::string id = current_probe->NextArgName();
   current_probe->AddArgument(id, expr_ir->str());
 
-  return std::static_pointer_cast<QLObject>(std::make_shared<TracingVariableObject>(visitor, id));
+  return std::static_pointer_cast<QLObject>(
+      std::make_shared<TracingVariableObject>(ast, visitor, id));
 }
 
 StatusOr<QLObjectPtr> ReturnHandler::Eval(MutationsIR* mutations_ir, const pypa::AstPtr& ast,
@@ -317,7 +319,8 @@ StatusOr<QLObjectPtr> ReturnHandler::Eval(MutationsIR* mutations_ir, const pypa:
   std::string id = current_probe->NextReturnName();
   current_probe->AddReturnValue(id, expr_ir->str());
 
-  return std::static_pointer_cast<QLObject>(std::make_shared<TracingVariableObject>(visitor, id));
+  return std::static_pointer_cast<QLObject>(
+      std::make_shared<TracingVariableObject>(ast, visitor, id));
 }
 
 StatusOr<QLObjectPtr> UpsertHandler::Eval(MutationsIR* mutations_ir, const pypa::AstPtr& ast,
@@ -401,12 +404,12 @@ StatusOr<QLObjectPtr> SharedObjectHandler::Eval(const pypa::AstPtr& ast, const P
   std::string shared_object_name = shared_object_name_ir->str();
   md::UPID shared_object_upid(upid_ir->val());
 
-  return SharedObjectTarget::Create(visitor, shared_object_name, shared_object_upid);
+  return SharedObjectTarget::Create(ast, visitor, shared_object_name, shared_object_upid);
 }
 
-StatusOr<QLObjectPtr> KProbeTargetHandler::Eval(const pypa::AstPtr&, const ParsedArgs&,
+StatusOr<QLObjectPtr> KProbeTargetHandler::Eval(const pypa::AstPtr& ast, const ParsedArgs&,
                                                 ASTVisitor* visitor) {
-  return KProbeTarget::Create(visitor);
+  return KProbeTarget::Create(ast, visitor);
 }
 
 StatusOr<QLObjectPtr> DeleteTracepointHandler::Eval(MutationsIR* mutations_ir,
@@ -423,7 +426,7 @@ StatusOr<QLObjectPtr> ProcessTargetHandler(const pypa::AstPtr& ast, const Parsed
   PL_ASSIGN_OR_RETURN(auto pod_name_ir, GetArgAs<StringIR>(ast, args, "pod_name"));
   PL_ASSIGN_OR_RETURN(auto container_name_ir, GetArgAs<StringIR>(ast, args, "container_name"));
   PL_ASSIGN_OR_RETURN(auto process_path_ir, GetArgAs<StringIR>(ast, args, "process_name"));
-  return ProcessTarget::Create(visitor, pod_name_ir->str(), container_name_ir->str(),
+  return ProcessTarget::Create(ast, visitor, pod_name_ir->str(), container_name_ir->str(),
                                process_path_ir->str());
 }
 

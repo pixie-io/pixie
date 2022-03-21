@@ -40,8 +40,9 @@ class KProbeTarget : public QLObject {
       /* type */ QLObjectType::kKProbeTraceTarget,
   };
 
-  static StatusOr<std::shared_ptr<KProbeTarget>> Create(ASTVisitor* visitor) {
-    return std::shared_ptr<KProbeTarget>(new KProbeTarget(visitor));
+  static StatusOr<std::shared_ptr<KProbeTarget>> Create(const pypa::AstPtr& ast,
+                                                        ASTVisitor* visitor) {
+    return std::shared_ptr<KProbeTarget>(new KProbeTarget(ast, visitor));
   }
 
   static bool IsKProbeTarget(const QLObjectPtr& ptr) {
@@ -49,7 +50,8 @@ class KProbeTarget : public QLObject {
   }
 
  private:
-  explicit KProbeTarget(ASTVisitor* visitor) : QLObject(KProbeTargetType, visitor) {}
+  explicit KProbeTarget(const pypa::AstPtr& ast, ASTVisitor* visitor)
+      : QLObject(KProbeTargetType, ast, visitor) {}
 };
 
 }  // namespace compiler

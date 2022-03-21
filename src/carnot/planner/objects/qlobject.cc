@@ -41,6 +41,13 @@ void QLObject::AddSubscriptMethod(std::shared_ptr<FuncObject> func_object) {
 
 StatusOr<std::shared_ptr<QLObject>> QLObject::GetAttribute(const pypa::AstPtr& ast,
                                                            std::string_view attr) const {
+  PL_ASSIGN_OR_RETURN(auto object, GetAttributeInternal(ast, attr));
+  object->SetAst(ast);
+  return object;
+}
+
+StatusOr<std::shared_ptr<QLObject>> QLObject::GetAttributeInternal(const pypa::AstPtr& ast,
+                                                                   std::string_view attr) const {
   if (HasMethod(attr)) {
     return GetMethod(attr);
   }
@@ -54,7 +61,7 @@ Status QLObject::AssignAttribute(std::string_view attr_name, QLObjectPtr object)
   if (!CanAssignAttribute(attr_name)) {
     return CreateError("Cannot assign attribute $0 to object of type $1", attr_name, name());
   }
-  attributes_[attr_name] = object;
+  attributes_[attr_name] = std::move(object);
   return Status::OK();
 }
 

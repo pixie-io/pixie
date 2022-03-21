@@ -72,12 +72,13 @@ class ProcessTarget : public QLObject {
       /* type */ QLObjectType::kProcessTarget,
   };
 
-  static StatusOr<std::shared_ptr<ProcessTarget>> Create(ASTVisitor* visitor,
+  static StatusOr<std::shared_ptr<ProcessTarget>> Create(const pypa::AstPtr& ast,
+                                                         ASTVisitor* visitor,
                                                          const std::string& pod_name,
                                                          const std::string& container_name,
                                                          const std::string& cmdline) {
     return std::shared_ptr<ProcessTarget>(
-        new ProcessTarget(visitor, pod_name, container_name, cmdline));
+        new ProcessTarget(ast, visitor, pod_name, container_name, cmdline));
   }
 
   static bool IsProcessTarget(const QLObjectPtr& ptr) {
@@ -87,9 +88,9 @@ class ProcessTarget : public QLObject {
   ProcessSpec target() const { return {pod_name_, container_name_, process_}; }
 
  private:
-  ProcessTarget(ASTVisitor* visitor, const std::string& pod_name, const std::string& container_name,
-                const std::string& cmdline)
-      : QLObject(ProcessTracepointType, visitor),
+  ProcessTarget(const pypa::AstPtr& ast, ASTVisitor* visitor, const std::string& pod_name,
+                const std::string& container_name, const std::string& cmdline)
+      : QLObject(ProcessTracepointType, ast, visitor),
         pod_name_(pod_name),
         container_name_(container_name),
         process_(cmdline) {}

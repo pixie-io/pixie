@@ -1129,6 +1129,35 @@ class ASTVisitorTest : public OperatorTests {
     return CompileGraph(query, /* exec_funcs */ {}, /* module_name_to_pxl */ {});
   }
 
+  /**
+   * @brief ParseScript takes a script and an initial variable state then parses
+   * and walks through the AST given this initial variable state, updating the state
+   * with whatever was walked through.
+   *
+   * If you're testing Objects, create a var_table, fill it with the object(s) you want
+   * to test, then write a script interacting with those objects and store the result
+   * into a variable.
+   *
+   * Then you can check if the ParseScript actually succeeds and what data is stored
+   * in the var table.
+   */
+  Status ParseScript(const std::shared_ptr<compiler::VarTable>& var_table,
+                     const std::string& script) {
+    Parser parser;
+    PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(script));
+
+    bool func_based_exec = false;
+    absl::flat_hash_set<std::string> reserved_names;
+    compiler::ModuleHandler module_handler;
+    compiler::MutationsIR mutations_ir;
+    PL_ASSIGN_OR_RETURN(auto ast_walker,
+                        compiler::ASTVisitorImpl::Create(graph.get(), var_table, &mutations_ir,
+                                                         compiler_state_.get(), &module_handler,
+                                                         func_based_exec, reserved_names));
+
+    return ast_walker->ProcessModuleNode(ast);
+  }
+
   StatusOr<std::shared_ptr<IR>> CompileGraph(
       const std::string& query, const std::vector<plannerpb::FuncToExecute>& exec_funcs,
       const absl::flat_hash_map<std::string, std::string>& module_name_to_pxl = {}) {

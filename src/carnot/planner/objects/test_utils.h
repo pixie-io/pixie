@@ -122,10 +122,10 @@ class QLObjectTest : public OperatorTests {
                                                      "result_addr");
     // Graph is set in OperatorTests.
 
-    ast_visitor =
-        ASTVisitorImpl::Create(graph.get(), &dynamic_trace_, compiler_state.get(), &module_handler)
-            .ConsumeValueOrDie();
     var_table = VarTable::Create();
+    ast_visitor = ASTVisitorImpl::Create(graph.get(), var_table, &mutations_ir_,
+                                         compiler_state.get(), &module_handler)
+                      .ConsumeValueOrDie();
   }
   /**
    * @brief ParseScript takes a script and an initial variable state then parses
@@ -139,13 +139,14 @@ class QLObjectTest : public OperatorTests {
    * Then you can check if the ParseScript actually succeeds and what data is stored
    * in the var table.
    */
-  Status ParseScript(std::shared_ptr<VarTable> var_table, const std::string& script) {
+  Status ParseScript(const std::shared_ptr<VarTable>& var_table, const std::string& script) {
     Parser parser;
     PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(script));
 
     bool func_based_exec = false;
     absl::flat_hash_set<std::string> reserved_names;
     MutationsIR mutations_ir;
+    ModuleHandler module_handler;
     PL_ASSIGN_OR_RETURN(
         auto ast_walker,
         ASTVisitorImpl::Create(graph.get(), var_table, &mutations_ir, compiler_state.get(),
@@ -180,29 +181,11 @@ class QLObjectTest : public OperatorTests {
     return QLObject::FromIRNode(node, ast_visitor.get()).ConsumeValueOrDie();
   }
 
-  template <typename... Args>
-  std::shared_ptr<ListObject> MakeListObj(Args... nodes) {
-    std::vector<QLObjectPtr> objs;
-    for (const auto node : std::vector<IRNode*>{nodes...}) {
-      objs.push_back(ToQLObject(node));
-    }
-    return ListObject::Create(objs, ast_visitor.get()).ConsumeValueOrDie();
-  }
-
-  template <typename... Args>
-  std::shared_ptr<TupleObject> MakeTupleObj(Args... nodes) {
-    std::vector<QLObjectPtr> objs;
-    for (const auto node : std::vector<IRNode*>{nodes...}) {
-      objs.push_back(ToQLObject(node));
-    }
-    return TupleObject::Create(objs, ast_visitor.get()).ConsumeValueOrDie();
-  }
-
   std::shared_ptr<CompilerState> compiler_state = nullptr;
   std::shared_ptr<RegistryInfo> info = nullptr;
   std::shared_ptr<ASTVisitor> ast_visitor = nullptr;
   ModuleHandler module_handler;
-  MutationsIR dynamic_trace_;
+  MutationsIR mutations_ir_;
   std::shared_ptr<VarTable> var_table;
 };
 

@@ -19,6 +19,7 @@
 #pragma once
 #include <memory>
 #include <string>
+#include <utility>
 
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
@@ -153,7 +154,6 @@ class QLObject {
 
   StatusOr<std::shared_ptr<QLObject>> GetAttribute(const pypa::AstPtr& ast,
                                                    std::string_view attr_name) const;
-
   bool HasAttribute(std::string_view name) const {
     return HasNonMethodAttribute(name) || HasMethod(name);
   }
@@ -192,6 +192,7 @@ class QLObject {
    */
   template <typename... Args>
   Status CreateError(Args... args) const {
+    DCHECK(HasAstPtr());
     if (HasAstPtr()) {
       return CreateAstError(ast_, args...);
     }
@@ -218,6 +219,8 @@ class QLObject {
 
   const absl::flat_hash_map<std::string, QLObjectPtr>& attributes() const { return attributes_; }
 
+  void SetAst(pypa::AstPtr ast) { ast_ = std::move(ast); }
+
  protected:
   /**
    * @brief Construct a new QLObject. The type_descriptor must be a static member of the class.
@@ -227,18 +230,11 @@ class QLObject {
    * @param node the node to store in the QLObject. Can be null if not necessary for the
    * implementation of the QLObject.
    */
-  QLObject(const TypeDescriptor& type_descriptor, IRNode*, pypa::AstPtr ast,
-           ASTVisitor* ast_visitor)
-      : type_descriptor_(type_descriptor), ast_(ast), ast_visitor_(ast_visitor) {}
+  QLObject(const TypeDescriptor& type_descriptor, pypa::AstPtr ast, ASTVisitor* ast_visitor)
+      : type_descriptor_(type_descriptor), ast_(std::move(ast)), ast_visitor_(ast_visitor) {}
 
   QLObject(const TypeDescriptor& type_descriptor, ASTVisitor* ast_visitor)
-      : QLObject(type_descriptor, nullptr, nullptr, ast_visitor) {}
-
-  QLObject(const TypeDescriptor& type_descriptor, IRNode* node, ASTVisitor* ast_visitor)
-      : QLObject(type_descriptor, node, nullptr, ast_visitor) {}
-
-  QLObject(const TypeDescriptor& type_descriptor, pypa::AstPtr ast, ASTVisitor* ast_visitor)
-      : QLObject(type_descriptor, nullptr, ast, ast_visitor) {}
+      : QLObject(type_descriptor, nullptr, ast_visitor) {}
 
   /**
    * @brief Adds a method to the object. Used by QLObject derived classes to define methods.
@@ -297,6 +293,9 @@ class QLObject {
   std::string doc_string_;
 
  private:
+  StatusOr<std::shared_ptr<QLObject>> GetAttributeInternal(const pypa::AstPtr& ast,
+                                                           std::string_view attr_name) const;
+
   absl::flat_hash_map<std::string, std::shared_ptr<FuncObject>> methods_;
   absl::flat_hash_map<std::string, QLObjectPtr> attributes_;
 

@@ -840,6 +840,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::LookupVariable(const pypa::AstPtr& ast,
   if (var == nullptr) {
     return CreateAstError(ast, "name '$0' is not defined", name);
   }
+  var->SetAst(ast);
   return var;
 }
 
@@ -901,14 +902,14 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessList(const pypa::AstListPtr& ast,
                                                   const OperatorContext& op_context) {
   PL_ASSIGN_OR_RETURN(std::vector<QLObjectPtr> expr_vec,
                       ProcessCollectionChildren(ast->elements, op_context));
-  return ListObject::Create(expr_vec, this);
+  return ListObject::Create(ast, expr_vec, this);
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessTuple(const pypa::AstTuplePtr& ast,
                                                    const OperatorContext& op_context) {
   PL_ASSIGN_OR_RETURN(std::vector<QLObjectPtr> expr_vec,
                       ProcessCollectionChildren(ast->elements, op_context));
-  return TupleObject::Create(expr_vec, this);
+  return TupleObject::Create(ast, expr_vec, this);
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessNumber(const pypa::AstNumberPtr& node) {
@@ -1094,7 +1095,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDict(const pypa::AstDictPtr& node,
     PL_ASSIGN_OR_RETURN(auto value_obj, Process(value, op_context));
     values.push_back(value_obj);
   }
-  return DictObject::Create(keys, values, this);
+  return DictObject::Create(node, keys, values, this);
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataUnaryOp(const pypa::AstUnaryOpPtr& node,

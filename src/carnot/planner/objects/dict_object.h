@@ -39,19 +39,20 @@ class DictObject : public QLObject {
 
   static bool IsDict(const QLObjectPtr& object) { return object->type() == DictType.type(); }
 
-  static StatusOr<std::shared_ptr<DictObject>> Create(const std::vector<QLObjectPtr>& keys,
+  static StatusOr<std::shared_ptr<DictObject>> Create(const pypa::AstPtr& ast,
+                                                      const std::vector<QLObjectPtr>& keys,
                                                       const std::vector<QLObjectPtr>& values,
                                                       ASTVisitor* visitor) {
-    return std::shared_ptr<DictObject>(new DictObject(keys, values, visitor));
+    return std::shared_ptr<DictObject>(new DictObject(ast, keys, values, visitor));
   }
 
   const std::vector<QLObjectPtr>& keys() const { return *keys_; }
   const std::vector<QLObjectPtr>& values() const { return *values_; }
 
  protected:
-  DictObject(const std::vector<QLObjectPtr>& keys, const std::vector<QLObjectPtr>& values,
-             ASTVisitor* visitor)
-      : QLObject(DictType, visitor) {
+  DictObject(const pypa::AstPtr& ast, const std::vector<QLObjectPtr>& keys,
+             const std::vector<QLObjectPtr>& values, ASTVisitor* visitor)
+      : QLObject(DictType, ast, visitor) {
     keys_ = std::make_shared<std::vector<QLObjectPtr>>(keys);
     values_ = std::make_shared<std::vector<QLObjectPtr>>(values);
   }
