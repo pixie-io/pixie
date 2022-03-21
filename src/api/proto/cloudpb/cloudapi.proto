@@ -410,8 +410,8 @@ message GetClusterInfoResponse { repeated ClusterInfo clusters = 1; }
 message GetClusterConnectionInfoRequest { px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ]; }
 
 message GetClusterConnectionInfoResponse {
-  string ipAddress = 1 [ (gogoproto.customname) = "IPAddress" ];
   string token = 2;
+  reserved 1;
 }
 
 message UpdateClusterVizierConfigRequest {

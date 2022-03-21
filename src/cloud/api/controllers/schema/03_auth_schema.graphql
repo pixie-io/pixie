@@ -262,7 +262,6 @@ type ClusterInfo {
 }
 
 type ClusterConnectionInfo {
-  ipAddress: String!
   token: String!
 }
 

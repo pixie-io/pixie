@@ -324,8 +324,7 @@ func (q *QueryResolver) UpdateVizierConfig(ctx context.Context, args *updateVizi
 
 // ClusterConnectionInfoResolver is the resolver responsible for cluster connection info.
 type ClusterConnectionInfoResolver struct {
-	IPAddress string
-	Token     string
+	Token string
 }
 
 // ClusterConnection resolves cluster connection information..
@@ -340,7 +339,6 @@ func (q *QueryResolver) ClusterConnection(ctx context.Context, args *clusterArgs
 		return nil, rpcErrorHelper(err)
 	}
 	return &ClusterConnectionInfoResolver{
-		info.IPAddress,
 		info.Token,
 	}, nil
 }

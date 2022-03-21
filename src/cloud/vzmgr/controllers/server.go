@@ -508,9 +508,8 @@ func (s *Server) GetVizierConnectionInfo(ctx context.Context, req *uuidpb.UUID) 
 		return nil, status.Error(codes.InvalidArgument, "failed to parse cluster id")
 	}
 
-	query := `SELECT address, PGP_SYM_DECRYPT(jwt_signing_key::bytea, $2) as jwt_signing_key from vizier_cluster_info WHERE vizier_cluster_id=$1`
+	query := `SELECT PGP_SYM_DECRYPT(jwt_signing_key::bytea, $2) as jwt_signing_key from vizier_cluster_info WHERE vizier_cluster_id=$1`
 	var info struct {
-		Address       string `db:"address"`
 		JWTSigningKey string `db:"jwt_signing_key"`
 	}
 
@@ -530,14 +529,8 @@ func (s *Server) GetVizierConnectionInfo(ctx context.Context, req *uuidpb.UUID) 
 		return nil, status.Errorf(codes.Internal, "failed to sign token: %s", err.Error())
 	}
 
-	addr := info.Address
-	if addr != "" {
-		addr = "https://" + addr
-	}
-
 	return &cvmsgspb.VizierConnectionInfo{
-		IPAddress: addr,
-		Token:     tokenString,
+		Token: tokenString,
 	}, nil
 }
 
@@ -690,23 +683,17 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	}
 	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
 
-	addr := req.Address
-	if req.Port != int32(0) {
-		addr = fmt.Sprintf("%s:%d", addr, req.Port)
-	}
-
 	// We want to detect when the record changes, so we need to exhaustively list all the columns except the
 	// heartbeat time and status.
 	// Note: We don't compare the json fields because they just contain details of the status fields.
 	query := `
 		UPDATE vizier_cluster_info x
-		SET last_heartbeat = $1, status = $2, address = $3, control_plane_pod_statuses = CASE WHEN $12 THEN $4::json ELSE y.control_plane_pod_statuses END,
-			num_nodes = $5, num_instrumented_nodes = $6, auto_update_enabled = $7,
-			unhealthy_data_plane_pod_statuses = $8, cluster_version = $9, status_message = $10
-		FROM (SELECT * FROM vizier_cluster_info WHERE vizier_cluster_id = $11) y
+		SET last_heartbeat = $1, status = $2, control_plane_pod_statuses = CASE WHEN $11 THEN $3::json ELSE y.control_plane_pod_statuses END,
+			num_nodes = $4, num_instrumented_nodes = $5, auto_update_enabled = $6,
+			unhealthy_data_plane_pod_statuses = $7, cluster_version = $8, status_message = $9
+		FROM (SELECT * FROM vizier_cluster_info WHERE vizier_cluster_id = $10) y
 		WHERE x.vizier_cluster_id = y.vizier_cluster_id
 		RETURNING (x.status != y.status
-		  OR ((x.address is not NULL) AND (x.address != y.address))
 		  OR ((x.num_nodes is not NULL) AND (x.num_nodes != y.num_nodes))
 		  OR ((x.num_instrumented_nodes is not NULL) AND (x.num_instrumented_nodes != y.num_instrumented_nodes))
 		  OR ((x.auto_update_enabled IS NOT NULL) AND (x.auto_update_enabled != y.auto_update_enabled))
@@ -718,7 +705,7 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 		Version string `db:"vizier_version"`
 	}
 
-	rows, err := s.db.Queryx(query, time.Now(), vizierStatus(req.Status), addr, PodStatuses(req.PodStatuses), req.NumNodes,
+	rows, err := s.db.Queryx(query, time.Now(), vizierStatus(req.Status), PodStatuses(req.PodStatuses), req.NumNodes,
 		req.NumInstrumentedNodes, !req.DisableAutoUpdate, PodStatuses(req.UnhealthyDataPlanePodStatuses),
 		req.K8sClusterVersion, req.StatusMessage, vizierID, req.PodStatuses != nil)
 	if err != nil {
