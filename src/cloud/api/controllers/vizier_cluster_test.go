@@ -66,8 +66,7 @@ func TestVizierClusterInfo_GetClusterConnectionInfo(t *testing.T) {
 			ctx := test.ctx
 
 			mockClients.MockVzMgr.EXPECT().GetVizierConnectionInfo(gomock.Any(), clusterID).Return(&cvmsgspb.VizierConnectionInfo{
-				IPAddress: "127.0.0.1",
-				Token:     "hello",
+				Token: "hello",
 			}, nil)
 
 			vzClusterInfoServer := &controllers.VizierClusterInfo{
@@ -76,7 +75,6 @@ func TestVizierClusterInfo_GetClusterConnectionInfo(t *testing.T) {
 
 			resp, err := vzClusterInfoServer.GetClusterConnectionInfo(ctx, &cloudpb.GetClusterConnectionInfoRequest{ID: clusterID})
 			require.NoError(t, err)
-			assert.Equal(t, "127.0.0.1", resp.IPAddress)
 			assert.Equal(t, "hello", resp.Token)
 		})
 	}

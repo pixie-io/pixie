@@ -271,11 +271,8 @@ message UpdateOrInstallVizierResponse {
 
 // Information require to connect to a vizier cluster.
 message VizierConnectionInfo {
-  string ip_address = 1 [
-    (gogoproto.customname) = "IPAddress",
-    (gogoproto.moretags) = "db:ip_address"
-  ];
   string token = 2;
+  reserved 1;
 }
 
 // LogMessage carries log messages from Vizier to the cloud.

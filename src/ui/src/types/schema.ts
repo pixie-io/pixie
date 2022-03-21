@@ -258,7 +258,6 @@ export interface GQLClusterInfo {
 }
 
 export interface GQLClusterConnectionInfo {
-  ipAddress: string;
   token: string;
 }
 
@@ -1292,12 +1291,7 @@ export interface ClusterInfoToPreviousStatusTimeMsResolver<TParent = any, TResul
 }
 
 export interface GQLClusterConnectionInfoTypeResolver<TParent = any> {
-  ipAddress?: ClusterConnectionInfoToIpAddressResolver<TParent>;
   token?: ClusterConnectionInfoToTokenResolver<TParent>;
-}
-
-export interface ClusterConnectionInfoToIpAddressResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface ClusterConnectionInfoToTokenResolver<TParent = any, TResult = any> {
