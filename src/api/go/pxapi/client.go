@@ -22,7 +22,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"net/url"
 	"strings"
 
 	"google.golang.org/grpc"
@@ -122,33 +121,8 @@ func (c *Client) cloudCtxWithMD(ctx context.Context) context.Context {
 
 // NewVizierClient creates a new vizier client, for the passed in vizierID.
 func (c *Client) NewVizierClient(ctx context.Context, vizierID string) (*VizierClient, error) {
-	vizier, err := c.GetVizierInfo(ctx, vizierID)
-	if err != nil {
-		return nil, err
-	}
-
+	var err error
 	vzConn := c.grpcConn
-	if vizier.DirectAccess {
-		connInfo, err := c.getConnectionInfo(ctx, vizierID)
-		if err != nil {
-			return nil, err
-		}
-
-		c.bearerAuth = connInfo.Token
-		parsedURL, err := url.Parse(connInfo.IPAddress)
-		if err != nil {
-			return nil, err
-		}
-
-		tlsConfig := &tls.Config{InsecureSkipVerify: false}
-		creds := credentials.NewTLS(tlsConfig)
-
-		conn, err := grpc.Dial(parsedURL.Host, grpc.WithTransportCredentials(creds))
-		if err != nil {
-			return nil, err
-		}
-		vzConn = conn
-	}
 
 	var encOpts, decOpts *vizierpb.ExecuteScriptRequest_EncryptionOptions
 	if c.useEncryption {
