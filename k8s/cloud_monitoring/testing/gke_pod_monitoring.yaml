@@ -1,6 +1,6 @@
 ---
-apiVersion: monitoring.gke.io/v1alpha1
-kind: PodMonitor
+apiVersion: monitoring.googleapis.com/v1alpha1
+kind: PodMonitoring
 metadata:
   name: gke-metrics-monitoring
   namespace: plc-testing
@@ -9,7 +9,9 @@ spec:
     matchLabels:
       app: pl-cloud
       monitoring.gke.io/scrape: 'true'
-  podMetricsEndpoints:
+  endpoints:
   - port: metrics-http
     path: /metrics
     scheme: http
+    timeout: 10s
+    interval: 30s
