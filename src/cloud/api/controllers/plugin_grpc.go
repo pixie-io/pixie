@@ -93,7 +93,7 @@ func (p *PluginServiceServer) GetPlugins(ctx context.Context, req *cloudpb.GetPl
 }
 
 // GetRetentionPluginConfig gets the retention plugin config for a plugin.
-func (p *PluginServiceServer) GetRetentionPluginConfig(ctx context.Context, req *cloudpb.GetRetentionPluginConfigRequest) (*cloudpb.GetRetentionPluginConfigResponse, error) {
+func (p *PluginServiceServer) GetOrgRetentionPluginConfig(ctx context.Context, req *cloudpb.GetOrgRetentionPluginConfigRequest) (*cloudpb.GetOrgRetentionPluginConfigResponse, error) {
 	sCtx, err := authcontext.FromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -109,8 +109,23 @@ func (p *PluginServiceServer) GetRetentionPluginConfig(ctx context.Context, req 
 		return nil, err
 	}
 
-	return &cloudpb.GetRetentionPluginConfigResponse{
+	return &cloudpb.GetOrgRetentionPluginConfigResponse{
 		Configs: pluginsResp.Configurations,
+	}, nil
+}
+
+// GetRetentionPluginInfo gets the retention plugin info for a particular plugin release.
+func (p *PluginServiceServer) GetRetentionPluginInfo(ctx context.Context, req *cloudpb.GetRetentionPluginInfoRequest) (*cloudpb.GetRetentionPluginInfoResponse, error) {
+	configResp, err := p.PluginServiceClient.GetRetentionPluginConfig(ctx, &pluginpb.GetRetentionPluginConfigRequest{
+		ID:      req.PluginId,
+		Version: req.Version,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &cloudpb.GetRetentionPluginInfoResponse{
+		Configs: configResp.Configurations,
 	}, nil
 }
 

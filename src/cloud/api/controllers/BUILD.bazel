@@ -112,6 +112,7 @@ go_test(
         "deployment_key_test.go",
         "org_resolver_test.go",
         "org_test.go",
+        "plugin_resolver_test.go",
         "plugins_grpc_test.go",
         "script_test.go",
         "scriptmgr_resolver_test.go",

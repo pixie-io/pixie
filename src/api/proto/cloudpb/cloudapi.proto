@@ -925,9 +925,11 @@ message ConfigForVizierResponse {
 service PluginService {
   // Fetches all of the available plugins and whether the org has the plugin enabled.
   rpc GetPlugins(GetPluginsRequest) returns (GetPluginsResponse);
-  // Gets the retention plugin config for a plugin.
-  rpc GetRetentionPluginConfig(GetRetentionPluginConfigRequest) returns (GetRetentionPluginConfigResponse);
-  // Updates the retention plugin config for a plugin.
+  // Fetches metadata and configuration info about a specific retention plugin version.
+  rpc GetRetentionPluginInfo(GetRetentionPluginInfoRequest) returns (GetRetentionPluginInfoResponse);
+  // Gets the org's configuration for a retention plugin, such as API keys.
+  rpc GetOrgRetentionPluginConfig(GetOrgRetentionPluginConfigRequest) returns (GetOrgRetentionPluginConfigResponse);
+  // Updates the org's configuration for a retention plugin.
   rpc UpdateRetentionPluginConfig(UpdateRetentionPluginConfigRequest) returns (UpdateRetentionPluginConfigResponse);
 }
 
@@ -963,15 +965,16 @@ message Plugin {
   string enabled_version = 8;
 }
 
-// GetRetentionPluginConfigRequest is a request to get the retention configuration for a plugin that
+// GetOrgRetentionPluginConfigRequest is a request to get the retention configuration for a plugin that
 // supports longterm data retention.
-message GetRetentionPluginConfigRequest {
+message GetOrgRetentionPluginConfigRequest {
   // The ID of the plugin to fetch configs for.
   string plugin_id = 1;
 }
 
-// GetRetentionPluginConfigResponse is the response to a GetRetentionPluginConfigRequest.
-message GetRetentionPluginConfigResponse {
+// GetOrgRetentionPluginConfigResponse is the response to a GetRetentionPluginConfigRequest.
+message GetOrgRetentionPluginConfigResponse {
+  // Map of configs user has specified for the plugin with the key being the name of the field, and value as user-specified value for the field.
   map<string, string> configs = 1;
 }
 
@@ -985,3 +988,19 @@ message UpdateRetentionPluginConfigRequest {
 
 // UpdateRetentionPluginConfigResponse is the response to a UpdateRetentionPluginConfigRequest.
 message UpdateRetentionPluginConfigResponse {}
+
+// GetRetentionPluginInfoRequest is a request to get info about a specific retention plugin version, such as which
+// fields are configurable.
+message GetRetentionPluginInfoRequest {
+  // The ID of the plugin to fetch configs for.
+  string plugin_id = 1;
+  // The version of the plugin.
+  string version = 2;
+}
+
+// GetRetentionPluginInfoResponse is the response toa GetRetentionPluginInfoRequest. It contains information about
+// what configurations are available for a retention plugin.
+message GetRetentionPluginInfoResponse {
+  // Map of configs required for the plugin, with the key being the name of the field, and value as the description of the field.
+  map<string, string> configs = 1;
+}

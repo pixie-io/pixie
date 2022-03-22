@@ -29,7 +29,8 @@ extend type Query {
 
   # Plugin
   plugins(kind: PluginKind): [Plugin!]!
-  retentionPluginConfig(id: String!): [PluginConfig!]!
+  retentionPluginInfo(id: String!, pluginVersion: String!): PluginInfo!
+  orgRetentionPluginConfig(id: String!): [PluginConfig!]!
 }
 
 extend type Mutation {
@@ -50,7 +51,7 @@ extend type Mutation {
   RemoveUserFromOrg(userID: ID!): Boolean!
 
   # Plugin
-  UpdateRetentionPluginConfig(id: String!, enabled: Boolean!, enabledVersion: String, configs: EditablePluginConfigs!): Boolean!
+  UpdateRetentionPluginConfig(id: String!, enabled: Boolean, enabledVersion: String, configs: EditablePluginConfigs!): Boolean!
 }
 
 type UserInfo {
@@ -338,6 +339,14 @@ enum PluginKind {
 type PluginConfig {
   name: String!
   value: String!
+}
+
+type PluginInfo {
+  configs: [PluginConfigSchema!]!
+}
+
+type PluginConfigSchema {
+  name: String!
   description: String!
 }
 

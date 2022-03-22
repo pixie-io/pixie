@@ -268,6 +268,9 @@ func main() {
 	cs := &controllers.ConfigServiceServer{ConfigServiceClient: cm}
 	cloudpb.RegisterConfigServiceServer(s.GRPCServer(), cs)
 
+	pss := &controllers.PluginServiceServer{PluginServiceClient: ps, DataRetentionPluginServiceClient: drps}
+	cloudpb.RegisterPluginServiceServer(s.GRPCServer(), pss)
+
 	gqlEnv := controllers.GraphQLEnv{
 		ArtifactTrackerServer: artifactTrackerServer,
 		VizierClusterInfo:     cis,
@@ -277,6 +280,7 @@ func main() {
 		AutocompleteServer:    as,
 		OrgServer:             os,
 		UserServer:            us,
+		PluginServer:          pss,
 	}
 
 	mux.Handle("/api/graphql", controllers.WithAugmentedAuthMiddleware(env, controllers.NewGraphQLHandler(gqlEnv)))

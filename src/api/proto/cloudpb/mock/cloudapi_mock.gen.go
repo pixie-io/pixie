@@ -2060,3 +2060,189 @@ func (mr *MockConfigServiceServerMockRecorder) GetConfigForVizier(arg0, arg1 int
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigForVizier", reflect.TypeOf((*MockConfigServiceServer)(nil).GetConfigForVizier), arg0, arg1)
 }
+
+// MockPluginServiceClient is a mock of PluginServiceClient interface.
+type MockPluginServiceClient struct {
+	ctrl     *gomock.Controller
+	recorder *MockPluginServiceClientMockRecorder
+}
+
+// MockPluginServiceClientMockRecorder is the mock recorder for MockPluginServiceClient.
+type MockPluginServiceClientMockRecorder struct {
+	mock *MockPluginServiceClient
+}
+
+// NewMockPluginServiceClient creates a new mock instance.
+func NewMockPluginServiceClient(ctrl *gomock.Controller) *MockPluginServiceClient {
+	mock := &MockPluginServiceClient{ctrl: ctrl}
+	mock.recorder = &MockPluginServiceClientMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockPluginServiceClient) EXPECT() *MockPluginServiceClientMockRecorder {
+	return m.recorder
+}
+
+// GetOrgRetentionPluginConfig mocks base method.
+func (m *MockPluginServiceClient) GetOrgRetentionPluginConfig(ctx context.Context, in *cloudpb.GetOrgRetentionPluginConfigRequest, opts ...grpc.CallOption) (*cloudpb.GetOrgRetentionPluginConfigResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetOrgRetentionPluginConfig", varargs...)
+	ret0, _ := ret[0].(*cloudpb.GetOrgRetentionPluginConfigResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrgRetentionPluginConfig indicates an expected call of GetOrgRetentionPluginConfig.
+func (mr *MockPluginServiceClientMockRecorder) GetOrgRetentionPluginConfig(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgRetentionPluginConfig", reflect.TypeOf((*MockPluginServiceClient)(nil).GetOrgRetentionPluginConfig), varargs...)
+}
+
+// GetPlugins mocks base method.
+func (m *MockPluginServiceClient) GetPlugins(ctx context.Context, in *cloudpb.GetPluginsRequest, opts ...grpc.CallOption) (*cloudpb.GetPluginsResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetPlugins", varargs...)
+	ret0, _ := ret[0].(*cloudpb.GetPluginsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPlugins indicates an expected call of GetPlugins.
+func (mr *MockPluginServiceClientMockRecorder) GetPlugins(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPlugins", reflect.TypeOf((*MockPluginServiceClient)(nil).GetPlugins), varargs...)
+}
+
+// GetRetentionPluginInfo mocks base method.
+func (m *MockPluginServiceClient) GetRetentionPluginInfo(ctx context.Context, in *cloudpb.GetRetentionPluginInfoRequest, opts ...grpc.CallOption) (*cloudpb.GetRetentionPluginInfoResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetRetentionPluginInfo", varargs...)
+	ret0, _ := ret[0].(*cloudpb.GetRetentionPluginInfoResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRetentionPluginInfo indicates an expected call of GetRetentionPluginInfo.
+func (mr *MockPluginServiceClientMockRecorder) GetRetentionPluginInfo(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRetentionPluginInfo", reflect.TypeOf((*MockPluginServiceClient)(nil).GetRetentionPluginInfo), varargs...)
+}
+
+// UpdateRetentionPluginConfig mocks base method.
+func (m *MockPluginServiceClient) UpdateRetentionPluginConfig(ctx context.Context, in *cloudpb.UpdateRetentionPluginConfigRequest, opts ...grpc.CallOption) (*cloudpb.UpdateRetentionPluginConfigResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateRetentionPluginConfig", varargs...)
+	ret0, _ := ret[0].(*cloudpb.UpdateRetentionPluginConfigResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateRetentionPluginConfig indicates an expected call of UpdateRetentionPluginConfig.
+func (mr *MockPluginServiceClientMockRecorder) UpdateRetentionPluginConfig(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRetentionPluginConfig", reflect.TypeOf((*MockPluginServiceClient)(nil).UpdateRetentionPluginConfig), varargs...)
+}
+
+// MockPluginServiceServer is a mock of PluginServiceServer interface.
+type MockPluginServiceServer struct {
+	ctrl     *gomock.Controller
+	recorder *MockPluginServiceServerMockRecorder
+}
+
+// MockPluginServiceServerMockRecorder is the mock recorder for MockPluginServiceServer.
+type MockPluginServiceServerMockRecorder struct {
+	mock *MockPluginServiceServer
+}
+
+// NewMockPluginServiceServer creates a new mock instance.
+func NewMockPluginServiceServer(ctrl *gomock.Controller) *MockPluginServiceServer {
+	mock := &MockPluginServiceServer{ctrl: ctrl}
+	mock.recorder = &MockPluginServiceServerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockPluginServiceServer) EXPECT() *MockPluginServiceServerMockRecorder {
+	return m.recorder
+}
+
+// GetOrgRetentionPluginConfig mocks base method.
+func (m *MockPluginServiceServer) GetOrgRetentionPluginConfig(arg0 context.Context, arg1 *cloudpb.GetOrgRetentionPluginConfigRequest) (*cloudpb.GetOrgRetentionPluginConfigResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrgRetentionPluginConfig", arg0, arg1)
+	ret0, _ := ret[0].(*cloudpb.GetOrgRetentionPluginConfigResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrgRetentionPluginConfig indicates an expected call of GetOrgRetentionPluginConfig.
+func (mr *MockPluginServiceServerMockRecorder) GetOrgRetentionPluginConfig(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgRetentionPluginConfig", reflect.TypeOf((*MockPluginServiceServer)(nil).GetOrgRetentionPluginConfig), arg0, arg1)
+}
+
+// GetPlugins mocks base method.
+func (m *MockPluginServiceServer) GetPlugins(arg0 context.Context, arg1 *cloudpb.GetPluginsRequest) (*cloudpb.GetPluginsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPlugins", arg0, arg1)
+	ret0, _ := ret[0].(*cloudpb.GetPluginsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPlugins indicates an expected call of GetPlugins.
+func (mr *MockPluginServiceServerMockRecorder) GetPlugins(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPlugins", reflect.TypeOf((*MockPluginServiceServer)(nil).GetPlugins), arg0, arg1)
+}
+
+// GetRetentionPluginInfo mocks base method.
+func (m *MockPluginServiceServer) GetRetentionPluginInfo(arg0 context.Context, arg1 *cloudpb.GetRetentionPluginInfoRequest) (*cloudpb.GetRetentionPluginInfoResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRetentionPluginInfo", arg0, arg1)
+	ret0, _ := ret[0].(*cloudpb.GetRetentionPluginInfoResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRetentionPluginInfo indicates an expected call of GetRetentionPluginInfo.
+func (mr *MockPluginServiceServerMockRecorder) GetRetentionPluginInfo(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRetentionPluginInfo", reflect.TypeOf((*MockPluginServiceServer)(nil).GetRetentionPluginInfo), arg0, arg1)
+}
+
+// UpdateRetentionPluginConfig mocks base method.
+func (m *MockPluginServiceServer) UpdateRetentionPluginConfig(arg0 context.Context, arg1 *cloudpb.UpdateRetentionPluginConfigRequest) (*cloudpb.UpdateRetentionPluginConfigResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateRetentionPluginConfig", arg0, arg1)
+	ret0, _ := ret[0].(*cloudpb.UpdateRetentionPluginConfigResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateRetentionPluginConfig indicates an expected call of UpdateRetentionPluginConfig.
+func (mr *MockPluginServiceServerMockRecorder) UpdateRetentionPluginConfig(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRetentionPluginConfig", reflect.TypeOf((*MockPluginServiceServer)(nil).UpdateRetentionPluginConfig), arg0, arg1)
+}

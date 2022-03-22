@@ -199,7 +199,7 @@ func TestGetPlugins(t *testing.T) {
 	}
 }
 
-func TestGetRetentionPluginConfig(t *testing.T) {
+func TestGetOrgRetentionPluginConfig(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -223,14 +223,49 @@ func TestGetRetentionPluginConfig(t *testing.T) {
 
 	pServer := &controllers.PluginServiceServer{mockClients.MockPlugin, mockClients.MockDataRetentionPlugin}
 
-	resp, err := pServer.GetRetentionPluginConfig(ctx, &cloudpb.GetRetentionPluginConfigRequest{
+	resp, err := pServer.GetOrgRetentionPluginConfig(ctx, &cloudpb.GetOrgRetentionPluginConfigRequest{
 		PluginId: "test-plugin",
 	})
 
 	require.NoError(t, err)
-	assert.Equal(t, &cloudpb.GetRetentionPluginConfigResponse{
+	assert.Equal(t, &cloudpb.GetOrgRetentionPluginConfigResponse{
 		Configs: map[string]string{
 			"API_KEY": "test-api-key",
+		},
+	}, resp)
+}
+
+func TestGetRetentionPluginInfo(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	mockReq := &pluginpb.GetRetentionPluginConfigRequest{
+		Version: "2.0.0",
+		ID:      "test-plugin",
+	}
+
+	mockClients.MockPlugin.EXPECT().GetRetentionPluginConfig(gomock.Any(), mockReq).
+		Return(&pluginpb.GetRetentionPluginConfigResponse{
+			Configurations: map[string]string{
+				"API_KEY": "This is the API key used in the product.",
+			},
+		}, nil)
+
+	pServer := &controllers.PluginServiceServer{mockClients.MockPlugin, mockClients.MockDataRetentionPlugin}
+
+	resp, err := pServer.GetRetentionPluginInfo(ctx, &cloudpb.GetRetentionPluginInfoRequest{
+		PluginId: "test-plugin",
+		Version:  "2.0.0",
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, &cloudpb.GetRetentionPluginInfoResponse{
+		Configs: map[string]string{
+			"API_KEY": "This is the API key used in the product.",
 		},
 	}, resp)
 }
