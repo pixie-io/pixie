@@ -36,6 +36,7 @@
 #include "src/shared/types/types.h"
 #include "src/shared/types/typespb/types.pb.h"
 
+using px::carnot::exec::MockMetricsStubGenerator;
 using px::carnotpb::MockResultSinkServiceStub;
 using px::carnotpb::ResultSinkService;
 using px::carnotpb::TransferResultChunkRequest;
@@ -59,7 +60,7 @@ void BM_GRPCSinkNodeSplitting(benchmark::State& state) {
       func_registry.get(), table_store,
       [&](const std::string&, const std::string&)
           -> std::unique_ptr<ResultSinkService::StubInterface> { return std::move(mock_unique); },
-      sole::uuid4(), nullptr, nullptr, [&](grpc::ClientContext*) {});
+      MockMetricsStubGenerator, sole::uuid4(), nullptr, nullptr, [&](grpc::ClientContext*) {});
   TransferResultChunkResponse resp;
   resp.set_success(true);
   auto writer =

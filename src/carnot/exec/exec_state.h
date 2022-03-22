@@ -74,18 +74,6 @@ class ExecState {
         model_pool_(model_pool),
         grpc_router_(grpc_router),
         add_auth_to_grpc_client_context_func_(add_auth_func) {}
-  explicit ExecState(
-      udf::Registry* func_registry, std::shared_ptr<table_store::TableStore> table_store,
-      const ResultSinkStubGenerator& stub_generator, const sole::uuid& query_id,
-      ml::ModelPool* model_pool, GRPCRouter* grpc_router = nullptr,
-      std::function<void(grpc::ClientContext*)> add_auth_func = [](grpc::ClientContext*) {})
-      : func_registry_(func_registry),
-        table_store_(std::move(table_store)),
-        stub_generator_(stub_generator),
-        query_id_(query_id),
-        model_pool_(model_pool),
-        grpc_router_(grpc_router),
-        add_auth_to_grpc_client_context_func_(add_auth_func) {}
 
   ~ExecState() {
     if (grpc_router_ != nullptr) {

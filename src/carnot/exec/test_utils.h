@@ -25,8 +25,10 @@
 #include <utility>
 #include <vector>
 
+#include "opentelemetry/proto/collector/metrics/v1/metrics_service_mock.grpc.pb.h"
 #include "src/carnot/carnotpb/carnot.grpc.pb.h"
 #include "src/carnot/carnotpb/carnot.pb.h"
+#include "src/carnot/carnotpb/carnot_mock.grpc.pb.h"
 #include "src/carnot/exec/exec_node_mock.h"
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/exec/row_tuple.h"
@@ -36,8 +38,6 @@
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/typespb/types.pb.h"
 #include "src/table_store/table_store.h"
-
-#include "src/carnot/carnotpb/carnot_mock.grpc.pb.h"
 
 namespace px {
 namespace carnot {
@@ -51,6 +51,12 @@ const ResultSinkStubGenerator MockResultSinkStubGenerator =
     [](const std::string&,
        const std::string&) -> std::unique_ptr<carnotpb::ResultSinkService::StubInterface> {
   return std::make_unique<carnotpb::MockResultSinkServiceStub>();
+};
+
+const MetricsStubGenerator MockMetricsStubGenerator = [](const std::string&)
+    -> std::unique_ptr<
+        opentelemetry::proto::collector::metrics::v1::MetricsService::StubInterface> {
+  return std::make_unique<opentelemetry::proto::collector::metrics::v1::MockMetricsServiceStub>();
 };
 
 table_store::schema::RowBatch ConcatRowBatches(

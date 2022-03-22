@@ -20,6 +20,7 @@
 
 #include <arrow/memory_pool.h>
 #include <memory>
+#include <string>
 #include <utility>
 
 #include "src/carnot/exec/exec_state.h"
@@ -75,9 +76,25 @@ class EngineState : public NotCopyable {
 
   table_store::TableStore* table_store() { return table_store_.get(); }
   std::unique_ptr<exec::ExecState> CreateExecState(const sole::uuid& query_id) {
-    return std::make_unique<exec::ExecState>(func_registry_.get(), table_store_, stub_generator_,
-                                             query_id, model_pool_.get(), grpc_router_,
-                                             add_auth_to_grpc_context_func_);
+    return std::make_unique<exec::ExecState>(
+        func_registry_.get(), table_store_, stub_generator_,
+        [this](const std::string& remote_addr) { return MetricsStubGenerator(remote_addr); },
+        query_id, model_pool_.get(), grpc_router_, add_auth_to_grpc_context_func_);
+  }
+
+  std::unique_ptr<opentelemetry::proto::collector::metrics::v1::MetricsService::StubInterface>
+  MetricsStubGenerator(const std::string& remote_addr) {
+    grpc::ChannelArguments args;
+    args.SetInt(GRPC_ARG_KEEPALIVE_TIME_MS, 100000);
+    args.SetInt(GRPC_ARG_KEEPALIVE_TIMEOUT_MS, 100000);
+    args.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);
+    args.SetInt(GRPC_ARG_HTTP2_BDP_PROBE, 1);
+    args.SetInt(GRPC_ARG_HTTP2_MIN_RECV_PING_INTERVAL_WITHOUT_DATA_MS, 50000);
+    args.SetInt(GRPC_ARG_HTTP2_MIN_SENT_PING_INTERVAL_WITHOUT_DATA_MS, 100000);
+
+    auto channel_creds = grpc::SslCredentials(grpc::SslCredentialsOptions());
+    auto chan = grpc::CreateCustomChannel(remote_addr, channel_creds, args);
+    return opentelemetry::proto::collector::metrics::v1::MetricsService::NewStub(chan);
   }
 
   std::unique_ptr<plan::PlanState> CreatePlanState() {
