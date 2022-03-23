@@ -68,4 +68,6 @@ message RegisterVizierDeploymentRequest {
 message RegisterVizierDeploymentResponse {
   // The ID for this Vizier.
   uuidpb.UUID vizier_id = 1 [(gogoproto.customname) = "VizierID"];
+  // The name for this Vizier.
+  string vizier_name = 2;
 }

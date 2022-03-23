@@ -373,7 +373,7 @@ func TestNATSGRPCBridge_RegisterVizierDeployment(t *testing.T) {
 			DeploymentKey:  "deploy-key",
 			K8sClusterName: "some name",
 		}).
-		Return(&vzmgrpb.RegisterVizierDeploymentResponse{VizierID: utils.ProtoFromUUID(vizierID)}, nil)
+		Return(&vzmgrpb.RegisterVizierDeploymentResponse{VizierID: utils.ProtoFromUUID(vizierID), VizierName: "some_name"}, nil)
 
 	// Make some GRPC Requests.
 	ctx := context.Background()

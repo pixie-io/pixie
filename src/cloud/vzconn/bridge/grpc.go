@@ -91,7 +91,8 @@ func (s *GRPCServer) RegisterVizierDeployment(ctx context.Context, req *vzconnpb
 	}
 
 	return &vzconnpb.RegisterVizierDeploymentResponse{
-		VizierID: vzmgrResp.VizierID,
+		VizierID:   vzmgrResp.VizierID,
+		VizierName: vzmgrResp.VizierName,
 	}, nil
 }
 

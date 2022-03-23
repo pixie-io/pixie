@@ -40,7 +40,7 @@ type VizierProvisioner interface {
 	// ProvisionVizier creates the vizier, with specified org_id, user_id, cluster_uid. Returns
 	// Cluster ID or error. If it already exists it will return the current cluster ID. Will return an error if the cluster is
 	// currently active (ie. Not disconnected).
-	ProvisionOrClaimVizier(context.Context, uuid.UUID, uuid.UUID, string, string) (uuid.UUID, error)
+	ProvisionOrClaimVizier(context.Context, uuid.UUID, uuid.UUID, string, string) (uuid.UUID, string, error)
 }
 
 // Service is the deployment service.
@@ -69,9 +69,12 @@ func (s *Service) RegisterVizierDeployment(ctx context.Context, req *vzmgrpb.Reg
 	// 2. If the UID matches then return that cluster.
 	// 3. Otherwise, pick a cluster with no UID specified and claim it.
 	// 4. If no empty clusters exist then we create a new cluster.
-	clusterID, err := s.vp.ProvisionOrClaimVizier(ctx, orgID, userID, req.K8sClusterUID, req.K8sClusterName)
+	clusterID, clusterName, err := s.vp.ProvisionOrClaimVizier(ctx, orgID, userID, req.K8sClusterUID, req.K8sClusterName)
 	if err != nil {
 		return nil, vzerrors.ToGRPCError(err)
 	}
-	return &vzmgrpb.RegisterVizierDeploymentResponse{VizierID: utils.ProtoFromUUID(clusterID)}, nil
+	return &vzmgrpb.RegisterVizierDeploymentResponse{
+		VizierID:   utils.ProtoFromUUID(clusterID),
+		VizierName: clusterName,
+	}, nil
 }

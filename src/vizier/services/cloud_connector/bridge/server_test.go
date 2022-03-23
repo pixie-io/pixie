@@ -94,7 +94,8 @@ func (fs *FakeVZConnServer) RegisterVizierDeployment(ctx context.Context, req *v
 	assert.Equal(fs.t, "084cb5f0-ff69-11e9-a63e-42010a8a0193", req.K8sClusterUID)
 	newID := uuid.Must(uuid.NewV4())
 	return &vzconnpb.RegisterVizierDeploymentResponse{
-		VizierID: utils.ProtoFromUUID(newID),
+		VizierID:   utils.ProtoFromUUID(newID),
+		VizierName: "fakeName",
 	}, nil
 }
 
