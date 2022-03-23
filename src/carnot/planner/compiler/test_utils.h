@@ -42,6 +42,7 @@
 #include "src/carnot/planner/rules/rules.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/testing/testing.h"
+#include "src/shared/types/typespb/types.pb.h"
 
 namespace px {
 namespace carnot {
@@ -585,7 +586,8 @@ class OperatorTests : public ::testing::Test {
   ColumnIR* MakeColumn(const std::string& name, int64_t parent_op_idx,
                        const table_store::schema::Relation& relation) {
     ColumnIR* column = MakeColumn(name, parent_op_idx);
-    auto type = ValueType::Create(relation.GetColumnType(name), types::ST_NONE);
+    auto type =
+        ValueType::Create(relation.GetColumnType(name), relation.GetColumnSemanticType(name));
     EXPECT_OK(column->SetResolvedType(type));
     return column;
   }

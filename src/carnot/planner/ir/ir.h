@@ -90,9 +90,9 @@ class IR {
   StatusOr<IRNode*> MakeNodeWithType(IRNodeType node_type, int64_t new_node_id);
 
   template <typename TOperator, typename... Args>
-  StatusOr<TOperator*> CreateNode(const pypa::AstPtr& ast, Args... args) {
+  StatusOr<TOperator*> CreateNode(const pypa::AstPtr& ast, Args&&... args) {
     PL_ASSIGN_OR_RETURN(TOperator * op, MakeNode<TOperator>(ast));
-    PL_RETURN_IF_ERROR(op->Init(args...));
+    PL_RETURN_IF_ERROR(op->Init(std::forward<Args>(args)...));
     return op;
   }
 
