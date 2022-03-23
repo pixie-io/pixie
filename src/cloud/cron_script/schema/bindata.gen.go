@@ -2,6 +2,8 @@
 // sources:
 // 000001_create_cron_scripts_table.down.sql
 // 000001_create_cron_scripts_table.up.sql
+// 000002_add_frequency_cron_scripts_table.down.sql
+// 000002_add_frequency_cron_scripts_table.up.sql
 package schema
 
 import (
@@ -118,6 +120,46 @@ func _000001_create_cron_scripts_tableUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000002_add_frequency_cron_scripts_tableDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x48\x2e\xca\xcf\x8b\x2f\x4e\x2e\xca\x2c\x28\x29\xe6\x52\x50\x70\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x53\x48\x2b\x4a\x2d\x2c\x4d\xcd\x4b\xae\x8c\x2f\xb6\x06\x04\x00\x00\xff\xff\x07\xd8\x60\x78\x33\x00\x00\x00")
+
+func _000002_add_frequency_cron_scripts_tableDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000002_add_frequency_cron_scripts_tableDownSql,
+		"000002_add_frequency_cron_scripts_table.down.sql",
+	)
+}
+
+func _000002_add_frequency_cron_scripts_tableDownSql() (*asset, error) {
+	bytes, err := _000002_add_frequency_cron_scripts_tableDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000002_add_frequency_cron_scripts_table.down.sql", size: 51, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000002_add_frequency_cron_scripts_tableUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x48\x2e\xca\xcf\x8b\x2f\x4e\x2e\xca\x2c\x28\x29\xe6\x52\x50\x70\x74\x71\x51\x70\xf6\xf7\x09\xf5\xf5\x53\x48\x2b\x4a\x2d\x2c\x4d\xcd\x4b\xae\x8c\x2f\x56\xc8\xcc\x2b\x49\x4d\x4f\x2d\xb2\x06\x04\x00\x00\xff\xff\x1d\x24\xc4\xf2\x3a\x00\x00\x00")
+
+func _000002_add_frequency_cron_scripts_tableUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000002_add_frequency_cron_scripts_tableUpSql,
+		"000002_add_frequency_cron_scripts_table.up.sql",
+	)
+}
+
+func _000002_add_frequency_cron_scripts_tableUpSql() (*asset, error) {
+	bytes, err := _000002_add_frequency_cron_scripts_tableUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000002_add_frequency_cron_scripts_table.up.sql", size: 58, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -170,8 +212,10 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"000001_create_cron_scripts_table.down.sql": _000001_create_cron_scripts_tableDownSql,
-	"000001_create_cron_scripts_table.up.sql":   _000001_create_cron_scripts_tableUpSql,
+	"000001_create_cron_scripts_table.down.sql":        _000001_create_cron_scripts_tableDownSql,
+	"000001_create_cron_scripts_table.up.sql":          _000001_create_cron_scripts_tableUpSql,
+	"000002_add_frequency_cron_scripts_table.down.sql": _000002_add_frequency_cron_scripts_tableDownSql,
+	"000002_add_frequency_cron_scripts_table.up.sql":   _000002_add_frequency_cron_scripts_tableUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -215,8 +259,10 @@ type bintree struct {
 }
 
 var _bintree = &bintree{nil, map[string]*bintree{
-	"000001_create_cron_scripts_table.down.sql": &bintree{_000001_create_cron_scripts_tableDownSql, map[string]*bintree{}},
-	"000001_create_cron_scripts_table.up.sql":   &bintree{_000001_create_cron_scripts_tableUpSql, map[string]*bintree{}},
+	"000001_create_cron_scripts_table.down.sql":        &bintree{_000001_create_cron_scripts_tableDownSql, map[string]*bintree{}},
+	"000001_create_cron_scripts_table.up.sql":          &bintree{_000001_create_cron_scripts_tableUpSql, map[string]*bintree{}},
+	"000002_add_frequency_cron_scripts_table.down.sql": &bintree{_000002_add_frequency_cron_scripts_tableDownSql, map[string]*bintree{}},
+	"000002_add_frequency_cron_scripts_table.up.sql":   &bintree{_000002_add_frequency_cron_scripts_tableUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory

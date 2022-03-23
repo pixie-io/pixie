@@ -349,6 +349,7 @@ message CronScript {
   string script = 2;
   string cron_expression = 3;
   string configs = 4;
+  int64 frequency_s = 5;
 }
 
 // GetCronScriptsChecksumRequest is a request to get the hash of the set of cronScripts for a particular Vizier.

@@ -58,6 +58,8 @@ message CronScript {
     string token = 7;
     // Whether the cron script is enabled.
     bool enabled = 8;
+    // How frequently a script should be run, if not specified via cron.
+    int64 frequency_s = 9;
 }
 
 // GetScriptRequest is a request to fetch information about a script in the cron script service.
@@ -96,6 +98,8 @@ message CreateScriptRequest {
     string configs = 4;
     // Token for the user/org for which this script is run on behalf of.
     string token = 5;
+    // How frequently a script should be run, if not specified via cron.
+    int64 frequency_s = 6;
 }
 
 // CreateScriptResponse is a response to a CreateScriptRequest.
@@ -113,6 +117,8 @@ message UpdateScriptRequest {
     google.protobuf.StringValue configs = 4;
     // Whether the cron script should be enabled.
     google.protobuf.BoolValue enabled = 5;
+    // How frequently a script should be run, if not specified via cron.
+    google.protobuf.Int64Value frequency_s = 6;
 }
 
 // UpdateScriptResponse is a response to an UpdateScriptRequest.
