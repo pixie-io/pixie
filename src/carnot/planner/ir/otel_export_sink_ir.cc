@@ -99,7 +99,7 @@ Status OTelExportSinkIR::ProcessConfig(
     }
 
     PL_RETURN_IF_ERROR(std::visit(
-        overload{
+        overloaded{
             [&new_metric, this](const OTelMetricGauge& gauge) {
               PL_ASSIGN_OR_RETURN(auto val, AddColumn(gauge.value_column));
               new_metric.metric = OTelMetricGauge{val};
@@ -157,7 +157,7 @@ Status OTelExportSinkIR::ToProto(planpb::Operator* op) const {
     }
 
     PL_RETURN_IF_ERROR(std::visit(
-        overload{
+        overloaded{
             [&metric_pb](const OTelMetricGauge& gauge) {
               auto gauge_pb = metric_pb->mutable_gauge();
               PL_ASSIGN_OR_RETURN(auto gauge_index, gauge.value_column->GetColumnIndex());

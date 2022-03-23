@@ -196,7 +196,7 @@ StatusOr<QLObjectPtr> OTelDataDefinition(CompilerState* compiler_state, const py
     }
     auto container = static_cast<OTelDataContainer*>(data.get());
 
-    std::visit(overload{
+    std::visit(overloaded{
                    [&otel_data](const OTelMetric& metric) { otel_data.metrics.push_back(metric); },
                    [&otel_data](const OTelSpan& span) { otel_data.spans.push_back(span); },
                },

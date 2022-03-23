@@ -94,12 +94,6 @@ struct OTelMetric {
   std::variant<OTelMetricGauge, OTelMetricSummary> metric;
 };
 
-template <class... Ts>
-struct overload : Ts... {
-  using Ts::operator()...;
-};
-template <class... Ts>
-overload(Ts...) -> overload<Ts...>;  // line not needed in C++20...
 struct OTelSpan {};
 
 struct OTelData {
