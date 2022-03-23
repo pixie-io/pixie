@@ -701,7 +701,7 @@ void SocketTraceConnector::HandleDataEvent(void* cb_cookie, void* data, int data
   // In some scenarios when we are unable to trace the data (notably including sendfile syscalls),
   // we create a filler event instead. This is important to Kafka, for example,
   // where the sendfile data is in the payload and the protocol parser can still succeed
-  // as lonog as it is properly accounted for.
+  // as long as it is properly accounted for.
   std::unique_ptr<SocketDataEvent> filler_event_ptr = data_event_ptr->ExtractFillerEvent();
 
   if (header_event_ptr) {

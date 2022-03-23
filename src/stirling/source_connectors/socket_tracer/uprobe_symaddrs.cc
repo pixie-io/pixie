@@ -29,6 +29,7 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/stirling/obj_tools/dwarf_reader.h"
 #include "src/stirling/obj_tools/elf_reader.h"
+#include "src/stirling/obj_tools/go_syms.h"
 #include "src/stirling/utils/detect_application.h"
 
 using ::px::stirling::obj_tools::DwarfReader;
@@ -165,6 +166,17 @@ Status PopulateCommonDebugSymbols(DwarfReader* dwarf_reader, std::string_view ve
       symaddrs->syscallConn_conn_offset,
       dwarf_reader->GetStructMemberOffset(
           VENDOR_SYMBOL("google.golang.org/grpc/credentials/internal.syscallConn"), "conn"));
+  LOG_ASSIGN_STATUSOR(symaddrs->g_goid_offset,
+                      dwarf_reader->GetStructMemberOffset("runtime.g", "goid"));
+
+  // Arguments of runtime.casgstatus.
+  {
+    const std::map<std::string, obj_tools::ArgInfo> kEmptyMap;
+    std::string_view fn = "runtime.casgstatus";
+    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
+    LOG_ASSIGN(symaddrs->casgstatus_gp_loc, GetArgOffset(args_map, "gp"));
+    LOG_ASSIGN(symaddrs->casgstatus_newval_loc, GetArgOffset(args_map, "newval"));
+  }
 
 #undef VENDOR_SYMBOL
 
@@ -172,6 +184,16 @@ Status PopulateCommonDebugSymbols(DwarfReader* dwarf_reader, std::string_view ve
   // Returning an error will prevent the probes from deploying.
   if (symaddrs->FD_Sysfd_offset == -1) {
     return error::Internal("FD_Sysfd_offset not found");
+  }
+
+  if (symaddrs->casgstatus_gp_loc.type == kLocationTypeInvalid ||
+      symaddrs->casgstatus_gp_loc.offset < 0) {
+    return error::Internal("Invalid go_ptr location.");
+  }
+
+  if (symaddrs->casgstatus_newval_loc.type == kLocationTypeInvalid ||
+      symaddrs->casgstatus_newval_loc.offset < 0) {
+    return error::Internal("Invalid newval location.");
   }
 
   return Status::OK();

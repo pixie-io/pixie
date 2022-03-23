@@ -21,6 +21,8 @@
 
 // LINT_C_FILE: Do not remove this line. It ensures cpplint treats this as a C file.
 
+#include "src/stirling/source_connectors/socket_tracer/bcc_bpf/go_trace_common.h"
+
 struct tgid_goid_t {
   uint32_t tgid;
   int64_t goid;
@@ -59,43 +61,36 @@ static __inline void set_goid(uint32_t tgid, uint32_t pid, int64_t goid) {
 //               `src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/goid.cc`.
 int probe_runtime_casgstatus(struct pt_regs* ctx) {
   const void* sp = (const void*)ctx->sp;
-  if (sp == NULL) {
+  uint64_t* regs = go_regabi_regs(ctx);
+  if (sp == NULL || regs == NULL) {
     return 0;
   }
 
-  // This is the offset of 'goid' in golang's 'struct g'.
-  // This value is set manually for now, but would eventually be set programatically via dwarf info.
-  //
-  //  $ llvm-dwarfdump -x -n goid https_client
-  // https_client:  file format ELF64-x86-64
-  //
-  // 0x0003c2a3: DW_TAG_member
-  //              DW_AT_name  ("goid")
-  //              DW_AT_data_member_location  (152)
-  //              DW_AT_type  (0x000000000003c7e6 "int64")
-  //              DW_AT_unknown_2903  (0x00)
-  const int kGoIDOffset = 152;
+  uint64_t id = bpf_get_current_pid_tgid();
+  uint32_t tgid = id >> 32;
+  uint32_t pid = id;
+
+  struct go_common_symaddrs_t* common_symaddrs = go_common_symaddrs_map.lookup(&tgid);
+  if (common_symaddrs == NULL) {
+    return 0;
+  }
 
   // Get pointer to the 'struct g'.
-  void* g_ptr_ptr = (void*)(sp + 8);
-  void* g_ptr;
-  bpf_probe_read(&g_ptr, sizeof(void*), g_ptr_ptr);
+  void* g_ptr = NULL;
+  assign_arg(&g_ptr, sizeof(void*), common_symaddrs->casgstatus_gp_loc, sp, regs);
   if (g_ptr == NULL) {
     return 0;
   }
 
   // Get the goID.
   int64_t goid;
-  bpf_probe_read(&goid, sizeof(int64_t), g_ptr + kGoIDOffset);
+  bpf_probe_read(&goid, sizeof(int64_t), g_ptr + common_symaddrs->g_goid_offset);
 
-  int32_t newval = *(int32_t*)(sp + 20);
+  uint32_t newval;
+  assign_arg(&newval, sizeof(uint32_t), common_symaddrs->casgstatus_newval_loc, sp, regs);
 
   const int kGRunningState = 2;
   if (newval == kGRunningState) {
-    uint64_t id = bpf_get_current_pid_tgid();
-    uint32_t tgid = id >> 32;
-    uint32_t pid = id;
-
     set_goid(tgid, pid, goid);
   }
 
