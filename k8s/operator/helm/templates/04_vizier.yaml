@@ -8,7 +8,9 @@ spec:
   version: {{ .Values.version }}
   {{- end }}
   deployKey: {{ .Values.deployKey }}
+  {{- if .Values.customDeployKeySecret }}
   customDeployKeySecret: {{ .Values.customDeployKeySecret }}
+  {{- end }}
   cloudAddr: {{ .Values.cloudAddr }}
   disableAutoUpdate: {{ .Values.disableAutoUpdate }}
   useEtcdOperator: {{ .Values.useEtcdOperator }}
