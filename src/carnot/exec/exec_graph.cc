@@ -35,6 +35,7 @@
 #include "src/carnot/exec/map_node.h"
 #include "src/carnot/exec/memory_sink_node.h"
 #include "src/carnot/exec/memory_source_node.h"
+#include "src/carnot/exec/otel_export_sink_node.h"
 #include "src/carnot/exec/udtf_source_node.h"
 #include "src/carnot/exec/union_node.h"
 #include "src/carnot/plan/operators.h"
@@ -104,6 +105,9 @@ Status ExecutionGraph::Init(table_store::schema::Schema* schema, plan::PlanState
       })
       .OnEmptySource([&](auto& node) {
         return OnOperatorImpl<plan::EmptySourceOperator, EmptySourceNode>(node, &descriptors);
+      })
+      .OnOTelSink([&](auto& node) {
+        return OnOperatorImpl<plan::OTelExportSinkOperator, OTelExportSinkNode>(node, &descriptors);
       })
       .Walk(pf_);
 }

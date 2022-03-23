@@ -75,6 +75,7 @@ class PlanFragmentWalker {
   using GRPCSourceWalkFn = std::function<Status(const GRPCSourceOperator&)>;
   using UDTFSourceWalkFn = std::function<Status(const UDTFSourceOperator&)>;
   using EmptySourceWalkFn = std::function<Status(const EmptySourceOperator&)>;
+  using OTelSinkWalkFn = std::function<Status(const OTelExportSinkOperator&)>;
 
   /**
    * Register callback for when a memory source operator is encountered.
@@ -176,6 +177,10 @@ class PlanFragmentWalker {
     return *this;
   }
 
+  PlanFragmentWalker& OnOTelSink(const OTelSinkWalkFn& fn) {
+    on_otel_sink_walk_fn_ = fn;
+    return *this;
+  }
   /**
    * Perform a walk of the plan fragment operators in a topologically-sorted order.
    * @param plan_fragment The plan fragment to walk.
@@ -200,6 +205,7 @@ class PlanFragmentWalker {
   GRPCSourceWalkFn on_grpc_source_walk_fn_;
   UDTFSourceWalkFn on_udtf_source_walk_fn_;
   EmptySourceWalkFn on_empty_source_walk_fn_;
+  OTelSinkWalkFn on_otel_sink_walk_fn_;
 };
 
 }  // namespace plan

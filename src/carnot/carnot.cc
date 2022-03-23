@@ -180,6 +180,7 @@ Status CarnotImpl::RegisterUDFsInPlanFragment(exec::ExecState* exec_state, plan:
       .OnGRPCSink(no_op)
       .OnUDTFSource(no_op)
       .OnEmptySource(no_op)
+      .OnOTelSink(no_op)
       .Walk(pf);
 }
 

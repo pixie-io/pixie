@@ -49,7 +49,7 @@ std::unique_ptr<PlanFragment> PlanFragment::FromProto(const planpb::PlanFragment
 
 template <typename T, typename TWalkFunc>
 Status PlanFragmentWalker::CallAs(const TWalkFunc& fn, const Operator& op) {
-  DCHECK(fn) << "fn does not exist for op: " << op.DebugString();
+  DCHECK(fn) << "does not exist for op: " << op.DebugString();
   if (fn == nullptr) {
     return error::InvalidArgument("fn does not exist for op: $0", op.DebugString());
   }
@@ -94,6 +94,9 @@ Status PlanFragmentWalker::CallWalkFn(const Operator& op) {
       break;
     case planpb::OperatorType::EMPTY_SOURCE_OPERATOR:
       PL_RETURN_IF_ERROR(CallAs<EmptySourceOperator>(on_empty_source_walk_fn_, op));
+      break;
+    case planpb::OperatorType::OTEL_EXPORT_SINK_OPERATOR:
+      PL_RETURN_IF_ERROR(CallAs<OTelExportSinkOperator>(on_otel_sink_walk_fn_, op));
       break;
     default:
       LOG(FATAL) << absl::Substitute("Operator does not exist: $0", magic_enum::enum_name(op_type));
