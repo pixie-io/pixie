@@ -51,6 +51,8 @@ class NoneObject : public QLObject {
   NoneObject(pypa::AstPtr ast, ASTVisitor* ast_visitor) : QLObject(NoneType, ast, ast_visitor) {}
   explicit NoneObject(ASTVisitor* ast_visitor) : QLObject(NoneType, ast_visitor) {}
   bool CanAssignAttribute(std::string_view /*attr_name*/) const override { return false; }
+
+  static bool IsNoneObject(const QLObjectPtr& obj) { return obj->type() == NoneType.type(); }
 };
 
 }  // namespace compiler

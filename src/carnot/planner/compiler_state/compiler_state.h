@@ -158,6 +158,8 @@ class CompilerState : public NotCopyable {
   const RedactionOptions& redaction_options() { return redaction_options_; }
   void set_redaction_options(const RedactionOptions& options) { redaction_options_ = options; }
 
+  planpb::OTelEndpointConfig* endpoint_config() { return endpoint_config_.get(); }
+
  private:
   std::unique_ptr<RelationMap> relation_map_;
   SensitiveColumnMap table_names_to_sensitive_columns_;
@@ -170,6 +172,7 @@ class CompilerState : public NotCopyable {
   const std::string result_address_;
   const std::string result_ssl_targetname_;
   RedactionOptions redaction_options_;
+  std::unique_ptr<planpb::OTelEndpointConfig> endpoint_config_ = nullptr;
 };
 
 }  // namespace planner

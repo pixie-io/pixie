@@ -63,7 +63,7 @@ enum class QLObjectType {
   kProcessTarget,
   kExporter,
   kOTelEndpoint,
-  kOTelMetricData,
+  kOTelDataContainer,
 };
 
 std::string QLObjectTypeString(QLObjectType type);
