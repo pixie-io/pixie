@@ -340,3 +340,48 @@ message C2VMessage {
   string vizier_id = 1 [(gogoproto.customname) = "VizierID"];
   google.protobuf.Any msg = 2;
 }
+
+// CronScript messages. These messages are used for syncing the cron scripts between cloud and vizier.
+
+// CronScript represents a script that should be run on a schedule.
+message CronScript {
+  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  string script = 2;
+  string cron_expression = 3;
+  string configs = 4;
+}
+
+// GetCronScriptsChecksumRequest is a request to get the hash of the set of cronScripts for a particular Vizier.
+// This is used to determine whether or not a Vizier should refetch all scripts from the Cloud.
+message GetCronScriptsChecksumRequest {}
+
+// GetCronScriptsChecksumResponse is a response to a GetCronScriptsChecksumRequest. This contains a hash of the set
+// of cronScripts registered to a particular Vizier.
+message GetCronScriptsChecksumResponse {
+  string checksum = 1;
+}
+
+// GetCronScriptsRequest is a request to get all cronScripts that are registered for a particular Vizier.
+message GetCronScriptsRequest {}
+
+// GetCronScriptsResponse is a response to a GetCronScriptsRequest. It contains the set of all cronScripts that
+// are registered to a Vizier.
+message GetCronScriptsResponse {
+  map<string, CronScript> scripts = 1;
+}
+
+// RegisterOrUpdateCronScriptRequest is a request to register or update a new cron script for a Vizier.
+message RegisterOrUpdateCronScriptRequest {
+  CronScript script = 1;
+}
+
+// RegisterOrUpdateCronScriptResponse is a response to a RegisterOrUpdateCronScriptRequest.
+message RegisterOrUpdateCronScriptResponse {}
+
+// DeleteCronScriptRequest is a request to a Vizier to delete a cron script.
+message DeleteCronScriptRequest {
+  uuidpb.UUID script_id = 1 [(gogoproto.customname) = "ScriptID"];
+}
+
+// DeleteCronScriptResponse is a response to a DeleteCronScriptRequest.
+message DeleteCronScriptResponse {}
