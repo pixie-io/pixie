@@ -74,7 +74,7 @@ StatusOr<std::string> ContainerStatus(std::string_view container_name) {
 
 StatusOr<int> ContainerPID(std::string_view container_name) {
   PL_ASSIGN_OR_RETURN(
-      std::string pid_str,
+      const std::string pid_str,
       px::Exec(absl::Substitute("docker inspect -f '{{.State.Pid}}' $0", container_name)));
 
   int pid;
@@ -137,7 +137,15 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
   for (; attempts_remaining > 0; --attempts_remaining) {
     // We check if the container process is running before running docker inspect
     // to avoid races where the container stops running after the docker inspect.
-    bool docker_is_running = docker_.IsRunning();
+    const bool docker_is_running = docker_.IsRunning();
+
+    if (!docker_is_running) {
+      // If docker is not running, fail early to save time.
+      std::string container_out;
+      PL_RETURN_IF_ERROR(docker_.Stdout(&container_out));
+      return error::Internal("Container $0 docker run failed. Output:\n$1", container_name_,
+                             container_out);
+    }
 
     PL_ASSIGN_OR_RETURN(container_status, ContainerStatus(container_name_));
     LOG(INFO) << absl::Substitute("Container $0 status: $1", container_name_, container_status);
@@ -152,14 +160,6 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
     LOG(INFO) << absl::Substitute(
         "Container $0 not yet running, will try again ($1 attempts remaining).", container_name_,
         attempts_remaining);
-
-    if (!docker_is_running) {
-      // If docker is not running, fail early to save time.
-      std::string container_out;
-      PL_RETURN_IF_ERROR(docker_.Stdout(&container_out));
-      return error::Internal("Container $0 docker run failed. Output:\n$1", container_name_,
-                             container_out);
-    }
 
     sleep(kSleepSeconds);
   }
