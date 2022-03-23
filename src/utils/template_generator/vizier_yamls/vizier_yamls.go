@@ -441,12 +441,6 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
           value: "{{$value}}"
         {{- end}}`,
 		},
-		{
-			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("vizier-cloud-connector"),
-			Patch:           `{"spec": {"template": {"spec": {"containers": [{"name": "app", "env": [{"name": "PL_DEPLOY_KEY", "valueFrom": { "secretKeyRef": { "key": "deploy-key", "name": "__PX_DEPLOY_KEY_SECRET_NAME__", "optional": true} } }]}] }  } } }`,
-			Placeholder:     "__PX_DEPLOY_KEY_SECRET_NAME__",
-			TemplateValue:   `{{ if .Values.customDeployKeySecret }}"{{ .Values.customDeployKeySecret }}"{{else}}"pl-deploy-secrets"{{end}}`,
-		},
 	}...)
 
 	persistentYAML, err := yamls.TemplatizeK8sYAML(clientset, yamlMap[vizierMetadataPersistYAMLPath], tmplOptions)
