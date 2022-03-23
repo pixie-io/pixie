@@ -33,6 +33,7 @@ pl_cc_library(
         "//src/shared/types:cc_library",
         "//src/table_store/schema:cc_library",
         "//src/table_store/schemapb:schema_pl_cc_proto",
+        "//src/table_store/table/internal:cc_library",
         "@com_github_apache_arrow//:arrow",
     ],
 )

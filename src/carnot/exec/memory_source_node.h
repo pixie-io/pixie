@@ -29,12 +29,14 @@
 #include "src/common/base/base.h"
 #include "src/common/base/status.h"
 #include "src/table_store/schema/row_batch.h"
+#include "src/table_store/table/table.h"
 #include "src/table_store/table_store.h"
 
 namespace px {
 namespace carnot {
 namespace exec {
 
+using table_store::Table;
 using table_store::schema::RowBatch;
 
 class MemorySourceNode : public SourceNode {
@@ -58,11 +60,8 @@ class MemorySourceNode : public SourceNode {
   // Whether this memory source will stream infinitely. Can be stopped by the
   // exec_state_->keep_running() call in exec_graph.
   bool infinite_stream_ = false;
-  // An infinite stream will set this to true once its exceeded the current data in the table, and
-  // then will keep checking for new data.
-  bool wait_for_valid_next_ = false;
-  table_store::BatchSlice current_batch_;
-  table_store::Table::StopPosition stop_;
+
+  std::unique_ptr<Table::Cursor> cursor_;
 
   std::unique_ptr<plan::MemorySourceOperator> plan_node_;
   table_store::Table* table_ = nullptr;

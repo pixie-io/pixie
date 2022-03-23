@@ -37,9 +37,15 @@ static inline std::unique_ptr<Table> MakeTable(int64_t max_size, int64_t compact
   return std::make_unique<Table>("test_table", rel, max_size, compaction_size);
 }
 
-static inline std::unique_ptr<types::ColumnWrapperRecordBatch> MakeHotBatch(int64_t batch_size) {
+static inline std::unique_ptr<types::ColumnWrapperRecordBatch> MakeHotBatch(int64_t batch_size,
+                                                                            int64_t* time_counter) {
   std::vector<types::Time64NSValue> col1_vals(batch_size, 0);
   std::vector<types::Float64Value> col2_vals(batch_size, 1.234);
+
+  for (size_t i = 0; i < col1_vals.size(); ++i) {
+    col1_vals[i] = *time_counter;
+    (*time_counter)++;
+  }
 
   auto wrapper_batch = std::make_unique<types::ColumnWrapperRecordBatch>();
   auto col_wrapper1 = std::make_shared<types::Time64NSValueColumnWrapper>(batch_size);
@@ -54,27 +60,31 @@ static inline std::unique_ptr<types::ColumnWrapperRecordBatch> MakeHotBatch(int6
   return wrapper_batch;
 }
 
-static inline void FillTableHot(Table* table, int64_t table_size, int64_t batch_length) {
+static inline int64_t FillTableHot(Table* table, int64_t table_size, int64_t batch_length) {
   int64_t batch_size = batch_length * sizeof(int64_t) + batch_length * sizeof(double);
+  int64_t time_counter = 0;
   for (int64_t i = 0; i < (table_size / batch_size); ++i) {
-    auto batch = MakeHotBatch(batch_length);
+    auto batch = MakeHotBatch(batch_length, &time_counter);
     PL_CHECK_OK(table->TransferRecordBatch(std::move(batch)));
   }
+  return time_counter;
 }
 
-static inline void FillTableCold(Table* table, int64_t table_size, int64_t batch_length) {
+static inline int64_t FillTableCold(Table* table, int64_t table_size, int64_t batch_length) {
   int64_t batch_size = batch_length * sizeof(int64_t) + batch_length * sizeof(double);
+  int64_t time_counter = 0;
   for (int64_t i = 0; i < (table_size / batch_size); ++i) {
-    auto batch = MakeHotBatch(batch_length);
+    auto batch = MakeHotBatch(batch_length, &time_counter);
     PL_CHECK_OK(table->TransferRecordBatch(std::move(batch)));
     // Run compaction every time to ensure that all batches get put into cold.
     PL_CHECK_OK(table->CompactHotToCold(arrow::default_memory_pool()));
   }
+  return time_counter;
 }
 
-static inline void ReadFullTable(Table* table) {
-  for (auto slice = table->FirstBatch(); slice.IsValid(); slice = table->NextBatch(slice)) {
-    benchmark::DoNotOptimize(table->GetRowBatchSlice(slice, {0, 1}, arrow::default_memory_pool()));
+static inline void ReadFullTable(Table::Cursor* cursor) {
+  while (!cursor->Done()) {
+    benchmark::DoNotOptimize(cursor->GetNextRowBatch({0, 1}));
   }
 }
 
@@ -88,11 +98,14 @@ static void BM_TableReadAllHot(benchmark::State& state) {
 
   CHECK_EQ(table->GetTableStats().bytes, table_size);
 
+  Table::Cursor cursor(table.get());
+
   for (auto _ : state) {
-    ReadFullTable(table.get());
+    ReadFullTable(&cursor);
     state.PauseTiming();
     table = MakeTable(table_size, compaction_size);
     FillTableHot(table.get(), table_size, batch_length);
+    cursor = Table::Cursor(table.get());
     state.ResumeTiming();
   }
 
@@ -107,12 +120,28 @@ static void BM_TableReadAllCold(benchmark::State& state) {
   auto table = MakeTable(table_size, compaction_size);
   FillTableCold(table.get(), table_size, batch_length);
   CHECK_EQ(table->GetTableStats().bytes, table_size);
+  Table::Cursor cursor(table.get());
 
   for (auto _ : state) {
-    ReadFullTable(table.get());
+    ReadFullTable(&cursor);
+
+    state.PauseTiming();
+    cursor = Table::Cursor(table.get());
+    state.ResumeTiming();
   }
 
   state.SetBytesProcessed(state.iterations() * table_size);
+}
+
+Table::Cursor GetLastBatchCursor(Table* table, int64_t last_time, int64_t batch_length,
+                                 const std::vector<int64_t>& cols) {
+  Table::Cursor cursor(table,
+                       Table::Cursor::StartSpec{Table::Cursor::StartSpec::StartType::StartAtTime,
+                                                last_time - 2 * batch_length},
+                       Table::Cursor::StopSpec{});
+  // Advance the cursor so that it points to the last batch and has BatchHints set.
+  cursor.GetNextRowBatch(cols);
+  return cursor;
 }
 
 // NOLINTNEXTLINE : runtime/references.
@@ -121,21 +150,18 @@ static void BM_TableReadLastBatchAllHot(benchmark::State& state) {
   int64_t compaction_size = 64 * 1024;
   int64_t batch_length = 256;
   auto table = MakeTable(table_size, compaction_size);
-  FillTableHot(table.get(), table_size, batch_length);
+  auto last_time = FillTableHot(table.get(), table_size, batch_length);
 
   CHECK_EQ(table->GetTableStats().bytes, table_size);
 
-  auto last_slice = table->FirstBatch();
-  while (table->NextBatch(last_slice).IsValid()) {
-    last_slice = table->NextBatch(last_slice);
-  }
+  auto last_batch_cursor = GetLastBatchCursor(table.get(), last_time, batch_length, {0, 1});
 
   for (auto _ : state) {
-    benchmark::DoNotOptimize(
-        table->GetRowBatchSlice(last_slice, {0, 1}, arrow::default_memory_pool()));
+    benchmark::DoNotOptimize(last_batch_cursor.GetNextRowBatch({0, 1}));
     state.PauseTiming();
     table = MakeTable(table_size, compaction_size);
-    FillTableHot(table.get(), table_size, batch_length);
+    last_time = FillTableHot(table.get(), table_size, batch_length);
+    last_batch_cursor = GetLastBatchCursor(table.get(), last_time, batch_length, {0, 1});
     state.ResumeTiming();
   }
 
@@ -149,17 +175,16 @@ static void BM_TableReadLastBatchAllCold(benchmark::State& state) {
   int64_t compaction_size = 64 * 1024;
   int64_t batch_length = 256;
   auto table = MakeTable(table_size, compaction_size);
-  FillTableCold(table.get(), table_size, batch_length);
+  auto last_time = FillTableCold(table.get(), table_size, batch_length);
   CHECK_EQ(table->GetTableStats().bytes, table_size);
 
-  auto last_slice = table->FirstBatch();
-  while (table->NextBatch(last_slice).IsValid()) {
-    last_slice = table->NextBatch(last_slice);
-  }
+  auto last_batch_cursor = GetLastBatchCursor(table.get(), last_time, batch_length, {0, 1});
 
   for (auto _ : state) {
-    benchmark::DoNotOptimize(
-        table->GetRowBatchSlice(last_slice, {0, 1}, arrow::default_memory_pool()));
+    benchmark::DoNotOptimize(last_batch_cursor.GetNextRowBatch({0, 1}));
+    state.PauseTiming();
+    last_batch_cursor = GetLastBatchCursor(table.get(), last_time, batch_length, {0, 1});
+    state.ResumeTiming();
   }
 
   int64_t batch_size = batch_length * sizeof(int64_t) + batch_length * sizeof(double);
@@ -175,7 +200,8 @@ static void BM_TableWriteEmpty(benchmark::State& state) {
 
   for (auto _ : state) {
     state.PauseTiming();
-    auto batch = MakeHotBatch(batch_length);
+    int64_t time_counter = 0;
+    auto batch = MakeHotBatch(batch_length, &time_counter);
     state.ResumeTiming();
     PL_CHECK_OK(table->TransferRecordBatch(std::move(batch)));
     state.PauseTiming();
@@ -199,7 +225,8 @@ static void BM_TableWriteFull(benchmark::State& state) {
 
   for (auto _ : state) {
     state.PauseTiming();
-    auto batch = MakeHotBatch(batch_length);
+    int64_t time_counter = 0;
+    auto batch = MakeHotBatch(batch_length, &time_counter);
     state.ResumeTiming();
     PL_CHECK_OK(table->TransferRecordBatch(std::move(batch)));
   }
@@ -282,12 +309,9 @@ static void BM_TableThreaded(benchmark::State& state) {
 
     int64_t batch_counter = 0;
     while (batch_counter < (num_batches / num_read_threads)) {
-      auto slice = table_ptr->FirstBatch();
-      if (!slice.IsValid()) {
-        continue;
-      }
+      Table::Cursor cursor(table_ptr.get());
       auto start = std::chrono::high_resolution_clock::now();
-      auto batch_or_s = table_ptr->GetRowBatchSlice(slice, {0}, arrow::default_memory_pool());
+      auto batch_or_s = cursor.GetNextRowBatch({0});
       auto end = std::chrono::high_resolution_clock::now();
       if (!batch_or_s.ok()) {
         continue;
