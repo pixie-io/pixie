@@ -24,6 +24,7 @@
 
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/objects/funcobject.h"
+#include "src/carnot/planner/objects/otel.h"
 
 namespace px {
 namespace carnot {

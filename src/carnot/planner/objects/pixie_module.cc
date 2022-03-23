@@ -27,6 +27,7 @@
 #include "src/carnot/planner/objects/exporter.h"
 #include "src/carnot/planner/objects/expr_object.h"
 #include "src/carnot/planner/objects/none_object.h"
+#include "src/carnot/planner/objects/otel.h"
 #include "src/carnot/planner/objects/viz_object.h"
 #include "src/shared/upid/upid.h"
 
@@ -614,7 +615,11 @@ Status PixieModule::Init() {
   PL_ASSIGN_OR_RETURN(auto base_df, Dataframe::Create(graph_, ast_visitor()));
   PL_RETURN_IF_ERROR(AssignAttribute(kDataframeOpID, base_df));
   PL_ASSIGN_OR_RETURN(auto viz, VisualizationObject::Create(ast_visitor()));
-  return AssignAttribute(kVisAttrID, viz);
+  PL_RETURN_IF_ERROR(AssignAttribute(kVisAttrID, viz));
+
+  PL_ASSIGN_OR_RETURN(auto otel, OTelModule::Create(compiler_state_, ast_visitor(), graph_));
+  PL_RETURN_IF_ERROR(AssignAttribute("otel", otel));
+  return Status::OK();
 }
 
 }  // namespace compiler
