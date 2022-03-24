@@ -22,9 +22,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/gofrs/uuid"
@@ -32,6 +34,7 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/metadata"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
 
 	atpb "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
@@ -100,6 +103,28 @@ func (s *Server) getOrgIDForDeployKey(deployKey string) (uuid.UUID, error) {
 	return orgID, err
 }
 
+const (
+	bytesPerMiB                 = 1024 * 1024
+	defaultTableStorePercentage = 0.6
+	tableStoreSizePEMFlag       = "PL_TABLE_STORE_DATA_LIMIT_MB"
+)
+
+// AddDefaultTableStoreSize computes and (if not already provided) adds the PEM flag for table store size.
+func AddDefaultTableStoreSize(pemMemoryLimit string, customPEMFlags map[string]string) {
+	// If the table store PEM flag is already set, we don't need to do anything.
+	if _, ok := customPEMFlags[tableStoreSizePEMFlag]; ok {
+		return
+	}
+	pemMemorySizeBytes := resource.MustParse(pemMemoryLimit)
+	defaultTableStoreSizeBytes := defaultTableStorePercentage * float64(pemMemorySizeBytes.Value())
+	defaultTableStoreSizeMB := int(math.Floor(defaultTableStoreSizeBytes / bytesPerMiB))
+	if defaultTableStoreSizeMB == 0 {
+		log.Errorf("Default table store size must be nonzero, received total memory of %s", pemMemoryLimit)
+		return
+	}
+	customPEMFlags[tableStoreSizePEMFlag] = strconv.Itoa(defaultTableStoreSizeMB)
+}
+
 // GetConfigForVizier provides yaml names and content that can be used to deploy Vizier
 func (s *Server) GetConfigForVizier(ctx context.Context,
 	in *cpb.ConfigForVizierRequest) (*cpb.ConfigForVizierResponse, error) {
@@ -148,6 +173,13 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 	if in.VzSpec.LeadershipElectionParams != nil {
 		tmplValues.ElectionPeriodMs = in.VzSpec.LeadershipElectionParams.ElectionPeriodMs
 	}
+
+	// If the table store data limit is not specified, then we should add in the default
+	// table store size. Default will be 60% of the total requested PEM memory.
+	if tmplValues.CustomPEMFlags == nil {
+		tmplValues.CustomPEMFlags = make(map[string]string)
+	}
+	AddDefaultTableStoreSize(tmplValues.PEMMemoryLimit, tmplValues.CustomPEMFlags)
 
 	// Next we inject any feature flags that we want to set for this org.
 	orgID, err := s.getOrgIDForDeployKey(tmplValues.DeployKey)
