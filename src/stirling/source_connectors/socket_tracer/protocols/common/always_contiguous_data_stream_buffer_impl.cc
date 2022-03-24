@@ -110,7 +110,9 @@ void AlwaysContiguousDataStreamBufferImpl::Add(size_t pos, std::string_view data
   ssize_t ppos_front = pos - position_;
   ssize_t ppos_back = pos + data.size() - position_;
 
-  if (ppos_back < 0) {
+  bool run_metadata_cleanup = false;
+
+  if (ppos_back <= 0) {
     // Case 1: Data being added is too far back. Just ignore it.
 
     // This has been observed to happen a lot on initial deployment,
@@ -142,7 +144,9 @@ void AlwaysContiguousDataStreamBufferImpl::Add(size_t pos, std::string_view data
       position_ = pos - allow_before_gap_size_;
       ppos_front = allow_before_gap_size_;
       ppos_back = allow_before_gap_size_ + data.size();
-      CleanupMetadata();
+      // Delay cleaning up metadata until after adding the new chunk, so that `CleanupMetadata`'s
+      // view of buffer_ and chunks_ is not in an intermediate state.
+      run_metadata_cleanup = true;
     }
 
     if (pos > position_ + capacity_) {
@@ -192,6 +196,10 @@ void AlwaysContiguousDataStreamBufferImpl::Add(size_t pos, std::string_view data
   // Update the metadata.
   AddNewChunk(pos, data.size());
   AddNewTimestamp(pos, timestamp);
+
+  if (run_metadata_cleanup) {
+    CleanupMetadata();
+  }
 }
 
 std::map<size_t, size_t>::const_iterator AlwaysContiguousDataStreamBufferImpl::GetChunkForPos(
@@ -286,6 +294,12 @@ void AlwaysContiguousDataStreamBufferImpl::CleanupChunks() {
     node.key() = position_;
     node.mapped() = available;
     chunks_.insert(std::move(node));
+  }
+
+  if (chunks_.empty()) {
+    ECHECK(buffer_.empty()) << "Invalid state in AlwaysContiguousDataStreamBufferImpl. "
+                               "buffer_ is non-empty, but chunks_ is empty.";
+    buffer_.clear();
   }
 }
 
