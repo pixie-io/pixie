@@ -41,6 +41,9 @@ namespace exec {
 using table_store::schema::RowBatch;
 using table_store::schema::RowDescriptor;
 
+const int64_t kOTelSpanIDLength = 8;
+const int64_t kOTelTraceIDLength = 16;
+
 std::string OTelExportSinkNode::DebugStringImpl() {
   return absl::Substitute("Exec::OTelExportSinkNode: $0", plan_node_->DebugString());
 }
@@ -62,6 +65,7 @@ Status OTelExportSinkNode::PrepareImpl(ExecState*) { return Status::OK(); }
 
 Status OTelExportSinkNode::OpenImpl(ExecState* exec_state) {
   metrics_service_stub_ = exec_state->MetricsServiceStub(plan_node_->url());
+  trace_service_stub_ = exec_state->TraceServiceStub(plan_node_->url());
   return Status::OK();
 }
 
@@ -89,7 +93,7 @@ void AddAttributes(google::protobuf::RepeatedPtrField<
   }
 }
 
-Status OTelExportSinkNode::ConsumeMetric(const RowBatch& rb) {
+Status OTelExportSinkNode::ConsumeMetrics(const RowBatch& rb) {
   grpc::ClientContext context;
   for (const auto& header : plan_node_->endpoint_headers()) {
     context.AddMetadata(header.first, header.second);
@@ -164,18 +168,123 @@ Status OTelExportSinkNode::ConsumeMetric(const RowBatch& rb) {
         "OTelExportSinkNode $0 encountered error code $1 exporting data, message: $2 $3",
         plan_node_->id(), status.error_code(), status.error_message(), status.error_details()));
   }
-  if (rb.eos()) {
-    sent_eos_ = true;
+  return Status::OK();
+}
+
+std::string ParseID(const RowBatch& rb, int64_t column_idx, int64_t row_idx) {
+  auto column = rb.ColumnAt(column_idx).get();
+  auto value = types::GetValueFromArrowArray<types::STRING>(column, row_idx);
+  auto bytes_or_s = AsciiHexToBytes<std::string>(value);
+  if (!bytes_or_s.status().ok()) {
+    return "";
+  }
+  return bytes_or_s.ConsumeValueOrDie();
+}
+
+std::string GenerateID(uint64_t num_bytes) {
+  std::random_device random_device;
+  std::mt19937 generator(random_device());
+  std::uniform_int_distribution<unsigned char> dist(0, 0xFFu);
+
+  std::string random_string;
+  random_string.reserve(num_bytes);
+  for (std::size_t i = 0; i < num_bytes; ++i) {
+    auto rv = dist(generator);
+    random_string.push_back(static_cast<char>(rv));
+  }
+  return random_string;
+}
+
+Status OTelExportSinkNode::ConsumeSpans(const RowBatch& rb) {
+  grpc::ClientContext context;
+  for (const auto& header : plan_node_->endpoint_headers()) {
+    context.AddMetadata(header.first, header.second);
+  }
+  context.set_compression_algorithm(GRPC_COMPRESS_GZIP);
+
+  metrics_response_.Clear();
+  opentelemetry::proto::collector::trace::v1::ExportTraceServiceRequest request;
+
+  const auto& resource_pb = plan_node_->resource();
+  for (int64_t row_idx = 0; row_idx < rb.ColumnAt(0)->length(); ++row_idx) {
+    // TODO(philkuz) aggregate spans by resource.
+    auto resource_spans = request.add_resource_spans();
+    auto resource = resource_spans->mutable_resource();
+    AddAttributes(resource->mutable_attributes(), resource_pb.attributes(), rb, row_idx);
+    auto library_spans = resource_spans->add_instrumentation_library_spans();
+    for (const auto& span_pb : plan_node_->spans()) {
+      auto span = library_spans->add_spans();
+      if (span_pb.has_name_string()) {
+        span->set_name(span_pb.name_string());
+      } else {
+        auto name_col = rb.ColumnAt(span_pb.name_column_index()).get();
+        span->set_name(types::GetValueFromArrowArray<types::STRING>(name_col, row_idx));
+      }
+
+      AddAttributes(span->mutable_attributes(), span_pb.attributes(), rb, row_idx);
+
+      auto start_time_col = rb.ColumnAt(span_pb.start_time_column_index()).get();
+      span->set_start_time_unix_nano(
+          types::GetValueFromArrowArray<types::TIME64NS>(start_time_col, row_idx));
+
+      auto end_time_col = rb.ColumnAt(span_pb.end_time_column_index()).get();
+      span->set_end_time_unix_nano(
+          types::GetValueFromArrowArray<types::TIME64NS>(end_time_col, row_idx));
+
+      // We generate the trace_id and span_id values if they don't exist.
+      // IDs are generated if
+      // 1. The plan node doesn't specify a column for the trace / span ID.
+      // 2. The ID value in the column is not valid hex or not valid length.
+      if (span_pb.trace_id_column_index() >= 0) {
+        auto id = ParseID(rb, span_pb.trace_id_column_index(), row_idx);
+        if (id.length() != kOTelTraceIDLength) {
+          id = GenerateID(kOTelTraceIDLength);
+        }
+        span->set_trace_id(id);
+      } else {
+        span->set_trace_id(GenerateID(kOTelTraceIDLength));
+      }
+
+      if (span_pb.span_id_column_index() >= 0) {
+        auto id = ParseID(rb, span_pb.span_id_column_index(), row_idx);
+        if (id.length() != kOTelSpanIDLength) {
+          id = GenerateID(kOTelSpanIDLength);
+        }
+        span->set_span_id(id);
+      } else {
+        span->set_span_id(GenerateID(kOTelSpanIDLength));
+      }
+
+      // We don't generate the parent_span_id if it doesn't exist. An empty parent_span_id means
+      // the span is a root. We also don't generate a parent ID if the ID is formatted incorrectly.
+      if (span_pb.parent_span_id_column_index() >= 0) {
+        auto id = ParseID(rb, span_pb.parent_span_id_column_index(), row_idx);
+        // We leave the span empty if its invalid.
+        if (id.length() == kOTelSpanIDLength) {
+          span->set_parent_span_id(id);
+        }
+      }
+    }
+  }
+
+  grpc::Status status = trace_service_stub_->Export(&context, request, &trace_response_);
+  if (!status.ok()) {
+    return error::Internal(absl::Substitute(
+        "OTelExportSinkNode $0 encountered error code $1 exporting data, message: $2 $3",
+        plan_node_->id(), status.error_code(), status.error_message(), status.error_details()));
   }
   return Status::OK();
 }
 
 Status OTelExportSinkNode::ConsumeNextImpl(ExecState*, const RowBatch& rb, size_t) {
   if (plan_node_->metrics().size()) {
-    PL_RETURN_IF_ERROR(ConsumeMetric(rb));
+    PL_RETURN_IF_ERROR(ConsumeMetrics(rb));
   }
   if (plan_node_->spans().size()) {
-    return error::Unimplemented("OTelExportSink only works for Metrics");
+    PL_RETURN_IF_ERROR(ConsumeSpans(rb));
+  }
+  if (rb.eos()) {
+    sent_eos_ = true;
   }
   return Status::OK();
 }

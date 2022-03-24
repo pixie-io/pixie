@@ -28,6 +28,9 @@
 #include "opentelemetry/proto/collector/metrics/v1/metrics_service.grpc.pb.h"
 #include "opentelemetry/proto/collector/metrics/v1/metrics_service.pb.h"
 #include "opentelemetry/proto/collector/metrics/v1/metrics_service_mock.grpc.pb.h"
+#include "opentelemetry/proto/collector/trace/v1/trace_service.grpc.pb.h"
+#include "opentelemetry/proto/collector/trace/v1/trace_service.pb.h"
+#include "opentelemetry/proto/collector/trace/v1/trace_service_mock.grpc.pb.h"
 
 #include "src/carnot/carnotpb/carnot.pb.h"
 #include "src/carnot/carnotpb/carnot_mock.grpc.pb.h"
@@ -58,6 +61,7 @@ using ::testing::SaveArg;
 using ::testing::SetArgPointee;
 using testing::proto::EqualsProto;
 namespace otelmetricscollector = opentelemetry::proto::collector::metrics::v1;
+namespace oteltracecollector = opentelemetry::proto::collector::trace::v1;
 
 class OTelExportSinkNodeTest : public ::testing::Test {
  public:
@@ -65,31 +69,39 @@ class OTelExportSinkNodeTest : public ::testing::Test {
     func_registry_ = std::make_unique<udf::Registry>("test_registry");
     auto table_store = std::make_shared<table_store::TableStore>();
 
-    mock_unique_ = std::make_unique<otelmetricscollector::MockMetricsServiceStub>();
-    mock_ = mock_unique_.get();
+    metrics_mock_unique_ = std::make_unique<otelmetricscollector::MockMetricsServiceStub>();
+    metrics_mock_ = metrics_mock_unique_.get();
+
+    trace_mock_unique_ = std::make_unique<oteltracecollector::MockTraceServiceStub>();
+    trace_mock_ = trace_mock_unique_.get();
 
     exec_state_ = std::make_unique<ExecState>(
         func_registry_.get(), table_store, MockResultSinkStubGenerator,
         [this](const std::string& url)
             -> std::unique_ptr<otelmetricscollector::MetricsService::StubInterface> {
           url_ = url;
-          return std::move(mock_unique_);
+          return std::move(metrics_mock_unique_);
+        },
+        [this](const std::string& url)
+            -> std::unique_ptr<oteltracecollector::TraceService::StubInterface> {
+          url_ = url;
+          return std::move(trace_mock_unique_);
         },
         sole::uuid4(), nullptr, nullptr, [](grpc::ClientContext*) {});
-
-    table_store::schema::Relation rel({types::DataType::BOOLEAN, types::DataType::TIME64NS},
-                                      {"col1", "time_"});
   }
 
  protected:
   std::string url_;
   std::unique_ptr<ExecState> exec_state_;
   std::unique_ptr<udf::Registry> func_registry_;
-  otelmetricscollector::MockMetricsServiceStub* mock_;
+  otelmetricscollector::MockMetricsServiceStub* metrics_mock_;
+  oteltracecollector::MockTraceServiceStub* trace_mock_;
 
  private:
-  // Ownership will be transferred to the GRPC node, so access this ptr via `mock_` in the tests.
-  std::unique_ptr<otelmetricscollector::MockMetricsServiceStub> mock_unique_;
+  // Ownership will be transferred to the GRPC node, so access this ptr via `metrics_mock_` in the
+  // tests.
+  std::unique_ptr<otelmetricscollector::MockMetricsServiceStub> metrics_mock_unique_;
+  std::unique_ptr<oteltracecollector::MockTraceServiceStub> trace_mock_unique_;
 };
 
 TEST_F(OTelExportSinkNodeTest, endpoint_config) {
@@ -106,19 +118,17 @@ metrics {
   time_column_index: 0
   gauge { int_column_index: 1 }
 })";
-  planpb::Operator op;
-  op.set_op_type(planpb::OTEL_EXPORT_SINK_OPERATOR);
+  planpb::OTelExportSinkOperator otel_sink_op;
 
-  EXPECT_TRUE(
-      google::protobuf::TextFormat::ParseFromString(operator_pb_txt, op.mutable_otel_sink_op()));
+  EXPECT_TRUE(google::protobuf::TextFormat::ParseFromString(operator_pb_txt, &otel_sink_op));
   auto plan_node = std::make_unique<plan::OTelExportSinkOperator>(1);
-  auto s = plan_node->Init(op.otel_sink_op());
+  auto s = plan_node->Init(otel_sink_op);
   RowDescriptor input_rd({types::TIME64NS, types::FLOAT64});
   RowDescriptor output_rd({});
 
   std::shared_ptr<const grpc::AuthContext> auth_context;
 
-  EXPECT_CALL(*mock_, Export(_, _, _))
+  EXPECT_CALL(*metrics_mock_, Export(_, _, _))
       .Times(1)
       .WillRepeatedly(Invoke([&auth_context](const auto& ctx, const auto&, const auto&) {
         auth_context = ctx->auth_context();
@@ -151,7 +161,7 @@ TEST_P(OTelMetricsTest, process_data) {
   std::vector<otelmetricscollector::ExportMetricsServiceRequest> actual_protos(
       tc.expected_otel_protos.size());
   size_t i = 0;
-  EXPECT_CALL(*mock_, Export(_, _, _))
+  EXPECT_CALL(*metrics_mock_, Export(_, _, _))
       .Times(tc.expected_otel_protos.size())
       .WillRepeatedly(Invoke([&i, &actual_protos](const auto&, const auto& proto, const auto&) {
         actual_protos[i] = proto;
@@ -159,13 +169,11 @@ TEST_P(OTelMetricsTest, process_data) {
         return grpc::Status::OK;
       }));
 
-  planpb::Operator op;
-  op.set_op_type(planpb::OTEL_EXPORT_SINK_OPERATOR);
+  planpb::OTelExportSinkOperator otel_sink_op;
 
-  EXPECT_TRUE(
-      google::protobuf::TextFormat::ParseFromString(tc.operator_proto, op.mutable_otel_sink_op()));
+  EXPECT_TRUE(google::protobuf::TextFormat::ParseFromString(tc.operator_proto, &otel_sink_op));
   auto plan_node = std::make_unique<plan::OTelExportSinkOperator>(1);
-  auto s = plan_node->Init(op.otel_sink_op());
+  auto s = plan_node->Init(otel_sink_op);
 
   // Load a RowBatch to get the Input RowDescriptor.
   table_store::schemapb::RowBatchData row_batch_proto;
@@ -576,7 +584,6 @@ resource_metrics {
     }
   }
 })pb"}},
-
                              {"many_metrics",
                               R"pb(
 metrics {
@@ -624,6 +631,342 @@ resource_metrics {
                          [](const ::testing::TestParamInfo<TestCase>& info) {
                            return info.param.name;
                          });
+class OTelSpanTest : public OTelExportSinkNodeTest,
+                     public ::testing::WithParamInterface<TestCase> {};
+
+TEST_P(OTelSpanTest, process_data) {
+  auto tc = GetParam();
+  std::vector<oteltracecollector::ExportTraceServiceRequest> actual_protos(
+      tc.expected_otel_protos.size());
+  size_t i = 0;
+  EXPECT_CALL(*trace_mock_, Export(_, _, _))
+      .Times(tc.expected_otel_protos.size())
+      .WillRepeatedly(Invoke([&i, &actual_protos](const auto&, const auto& proto, const auto&) {
+        actual_protos[i] = proto;
+        ++i;
+        return grpc::Status::OK;
+      }));
+
+  planpb::OTelExportSinkOperator otel_sink_op;
+
+  EXPECT_TRUE(google::protobuf::TextFormat::ParseFromString(tc.operator_proto, &otel_sink_op));
+  auto plan_node = std::make_unique<plan::OTelExportSinkOperator>(1);
+  auto s = plan_node->Init(otel_sink_op);
+
+  // Load a RowBatch to get the Input RowDescriptor.
+  table_store::schemapb::RowBatchData row_batch_proto;
+  EXPECT_TRUE(
+      google::protobuf::TextFormat::ParseFromString(tc.incoming_rowbatches[0], &row_batch_proto));
+  RowDescriptor input_rd = RowBatch::FromProto(row_batch_proto).ConsumeValueOrDie()->desc();
+  RowDescriptor output_rd({});
+
+  auto tester = exec::ExecNodeTester<OTelExportSinkNode, plan::OTelExportSinkOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+  for (const auto& rb_pb_txt : tc.incoming_rowbatches) {
+    table_store::schemapb::RowBatchData row_batch_proto;
+    EXPECT_TRUE(google::protobuf::TextFormat::ParseFromString(rb_pb_txt, &row_batch_proto));
+    auto rb = RowBatch::FromProto(row_batch_proto).ConsumeValueOrDie();
+    tester.ConsumeNext(*rb.get(), 1, 0);
+  }
+
+  for (size_t i = 0; i < tc.expected_otel_protos.size(); ++i) {
+    EXPECT_THAT(actual_protos[i], EqualsProto(tc.expected_otel_protos[i]));
+  }
+}
+INSTANTIATE_TEST_SUITE_P(OTelSpan, OTelSpanTest,
+                         ::testing::ValuesIn(std::vector<TestCase>{
+                             {"name_as_a_string",
+                              R"pb(
+resource {
+  attributes {
+    name: "service.name"
+    column {
+      column_type: STRING
+      column_index: 2
+    }
+  }
+}
+spans {
+  name_string: "span"
+  start_time_column_index: 0
+  end_time_column_index: 1
+  attributes {
+   column {
+      column_type: STRING
+      column_index: 2
+    }
+  }
+  trace_id_column_index: 3
+  span_id_column_index: 4
+  parent_span_id_column_index: 5
+})pb",
+
+                              {R"pb(
+cols { time64ns_data { data: 10 } }
+cols { time64ns_data { data: 12 } }
+cols { string_data { data: "aaaa" } }
+cols { string_data { data: "00112233445566778899aabbccddeeff" } }
+cols { string_data { data: "1a2b3c4d5e6f7890" } }
+cols { string_data { data: "0987f6e5d4c3b2a1" } }
+num_rows: 1
+eow: true
+eos: true)pb"},
+                              {R"pb(
+resource_spans {
+  resource {
+    attributes {
+      key: "service.name"
+      value {
+        string_value: "aaaa"
+      }
+    }
+  }
+  instrumentation_library_spans {
+    spans {
+      name: "span"
+      start_time_unix_nano: 10
+      end_time_unix_nano: 12
+      trace_id: "\000\021\"3DUfw\210\231\252\273\314\335\356\377"
+      span_id: "\032+<M^ox\220"
+      parent_span_id: "\t\207\366\345\324\303\262\241"
+      attributes {
+        value {
+          string_value: "aaaa"
+        }
+      }
+    }
+  }
+})pb"}},
+                             {"name_as_a_column",
+                              R"pb(
+spans {
+  name_column_index: 2
+  start_time_column_index: 0
+  end_time_column_index: 1
+  trace_id_column_index: 3
+  span_id_column_index: 4
+  parent_span_id_column_index: 5
+})pb",
+
+                              {R"pb(
+cols { time64ns_data { data: 10 data: 20 } }
+cols { time64ns_data { data: 12 data: 22 } }
+cols { string_data { data: "span1" data: "span2" } }
+cols { string_data { data: "00112233445566778899aabbccddeeff" data: "ffeeddccbbaa99887766554433221100" } }
+cols { string_data { data: "1a2b3c4d5e6f7890" data: "0987f6e5d4c3b2a1" } }
+cols { string_data { data: "0987f6e5d4c3b2a1" data: "1a2b3c4d5e6f7890" } }
+num_rows: 2
+eow: true
+eos: true)pb"},
+                              {R"pb(
+resource_spans {
+  resource {}
+  instrumentation_library_spans {
+    spans {
+      name: "span1"
+      start_time_unix_nano: 10
+      end_time_unix_nano: 12
+      trace_id: "\000\021\"3DUfw\210\231\252\273\314\335\356\377"
+      span_id: "\032+<M^ox\220"
+      parent_span_id: "\t\207\366\345\324\303\262\241"
+    }
+  }
+}
+resource_spans {
+  resource {}
+  instrumentation_library_spans {
+    spans {
+      name: "span2"
+      start_time_unix_nano: 20
+      end_time_unix_nano: 22
+      trace_id: "\377\356\335\314\273\252\231\210wfUD3\"\021\000"
+      span_id: "\t\207\366\345\324\303\262\241"
+      parent_span_id: "\032+<M^ox\220"
+    }
+  }
+})pb"}},
+                         }),
+                         [](const ::testing::TestParamInfo<TestCase>& info) {
+                           return info.param.name;
+                         });
+struct IDCompare {
+  bool generated;
+  size_t size;
+  std::string value;
+
+  void Compare(const std::string& actual) {
+    if (generated) {
+      EXPECT_EQ(actual.size(), size);
+      return;
+    }
+    EXPECT_EQ(value, actual);
+  }
+};
+const auto GeneratedID = [](size_t size) { return IDCompare{true, size, ""}; };
+
+const auto SpecificID = [](std::string value, size_t size) {
+  return IDCompare{false, size, std::move(value)};
+};
+
+struct SpanIDTestCase {
+  std::string name;
+  std::string operator_proto;
+  std::string row_batch;
+  std::vector<IDCompare> expected_trace_ids;
+  std::vector<IDCompare> expected_span_ids;
+  std::vector<IDCompare> expected_parent_span_ids;
+};
+class SpanIDTests : public OTelExportSinkNodeTest,
+                    public ::testing::WithParamInterface<SpanIDTestCase> {};
+
+TEST_P(SpanIDTests, generate_ids) {
+  auto tc = GetParam();
+  oteltracecollector::ExportTraceServiceRequest actual_proto;
+  EXPECT_CALL(*trace_mock_, Export(_, _, _))
+      .Times(1)
+      .WillRepeatedly(Invoke([&actual_proto](const auto&, const auto& proto, const auto&) {
+        actual_proto = proto;
+        return grpc::Status::OK;
+      }));
+
+  planpb::OTelExportSinkOperator otel_sink_op;
+
+  EXPECT_TRUE(google::protobuf::TextFormat::ParseFromString(tc.operator_proto, &otel_sink_op));
+  auto plan_node = std::make_unique<plan::OTelExportSinkOperator>(1);
+  auto s = plan_node->Init(otel_sink_op);
+
+  // Load a RowBatch to get the Input RowDescriptor.
+  table_store::schemapb::RowBatchData row_batch_proto;
+  EXPECT_TRUE(google::protobuf::TextFormat::ParseFromString(tc.row_batch, &row_batch_proto));
+  RowDescriptor input_rd = RowBatch::FromProto(row_batch_proto).ConsumeValueOrDie()->desc();
+  RowDescriptor output_rd({});
+
+  auto tester = exec::ExecNodeTester<OTelExportSinkNode, plan::OTelExportSinkOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+  auto rb = RowBatch::FromProto(row_batch_proto).ConsumeValueOrDie();
+  tester.ConsumeNext(*rb.get(), 1, 0);
+
+  for (const auto& [s_idx, span] : Enumerate(actual_proto.resource_spans())) {
+    for (const auto& ilm : span.instrumentation_library_spans()) {
+      for (const auto& span : ilm.spans()) {
+        SCOPED_TRACE(absl::Substitute("span $0", s_idx));
+        {
+          SCOPED_TRACE("trace_id");
+          tc.expected_trace_ids[s_idx].Compare(span.trace_id());
+        }
+        {
+          SCOPED_TRACE("span_id");
+          tc.expected_span_ids[s_idx].Compare(span.span_id());
+        }
+        {
+          SCOPED_TRACE("parent_span_id");
+          tc.expected_parent_span_ids[s_idx].Compare(span.parent_span_id());
+        }
+      }
+    }
+  }
+}
+INSTANTIATE_TEST_SUITE_P(
+    SpanIDGenerateTests, SpanIDTests,
+    ::testing::ValuesIn(std::vector<SpanIDTestCase>{
+        {
+            "generate_all_columns",
+            R"pb(
+spans {
+  name_string: "span"
+  start_time_column_index: 0
+  end_time_column_index: 1
+  trace_id_column_index: -1
+  span_id_column_index: -1
+  parent_span_id_column_index: -1
+})pb",
+            R"pb(
+cols { time64ns_data { data: 10 data: 20 } }
+cols { time64ns_data { data: 12 data: 22 } }
+num_rows: 2
+eow: true
+eos: true)pb",
+            {GeneratedID(16), GeneratedID(16)},
+            {GeneratedID(8), GeneratedID(8)},
+            {SpecificID("", 8), SpecificID("", 8)},
+        },
+        {
+            "generate_some_values",
+            R"pb(
+spans {
+  name_string: "span"
+  start_time_column_index: 0
+  end_time_column_index: 1
+  trace_id_column_index: 2
+  span_id_column_index: 3
+  parent_span_id_column_index: -1
+})pb",
+            R"pb(
+cols { time64ns_data { data: 10 data: 20 } }
+cols { time64ns_data { data: 12 data: 22 } }
+cols { string_data { data: "00112233445566778899aabbccddeeff" data: "invalid_hex" } }
+cols { string_data { data: "invalid_hex" data: "0123456789abcdef" } }
+num_rows: 2
+eow: true
+eos: true)pb",
+            {SpecificID({'\x00', '\x11', '\x22', '\x33', '\x44', '\x55', '\x66', '\x77', '\x88',
+                         '\x99', '\xaa', '\xbb', '\xcc', '\xdd', '\xee', '\xff'},
+                        16),
+             GeneratedID(16)},
+            {GeneratedID(8),
+             SpecificID({'\x01', '\x23', '\x45', '\x67', '\x89', '\xab', '\xcd', '\xef'}, 8)},
+            {SpecificID("", 8), SpecificID("", 8)},
+        },
+        {
+            "parent_span_id_only_set_when_exact",
+            R"pb(
+spans {
+  name_string: "span"
+  start_time_column_index: 0
+  end_time_column_index: 1
+  trace_id_column_index: -1
+  span_id_column_index: -1
+  parent_span_id_column_index: 2
+})pb",
+            R"pb(
+cols { time64ns_data { data: 10 data: 20 } }
+cols { time64ns_data { data: 12 data: 22 } }
+cols { string_data { data: "invalid_hex" data: "0123456789abcdef" } }
+num_rows: 2
+eow: true
+eos: true)pb",
+            {GeneratedID(16), GeneratedID(16)},
+            {GeneratedID(8), GeneratedID(8)},
+            {SpecificID("", 8),
+             SpecificID({'\x01', '\x23', '\x45', '\x67', '\x89', '\xab', '\xcd', '\xef'}, 8)},
+        },
+
+        {
+            "wrong_lengths_same_as_no_columns",
+            R"pb(
+spans {
+  name_string: "span"
+  start_time_column_index: 0
+  end_time_column_index: 1
+  trace_id_column_index: 2
+  span_id_column_index: 3
+  parent_span_id_column_index: 4
+})pb",
+            R"pb(
+cols { time64ns_data { data: 10  } }
+cols { time64ns_data { data: 12  } }
+cols { string_data { data: "a1b2"  } }
+cols { string_data { data: "c3d4"  } }
+cols { string_data { data: "e5f6"  } }
+num_rows: 1
+eow: true
+eos: true)pb",
+            {GeneratedID(16), GeneratedID(16)},
+            {GeneratedID(8), GeneratedID(8)},
+            {SpecificID("", 8), SpecificID("", 8)},
+        },
+    }),
+    [](const ::testing::TestParamInfo<SpanIDTestCase>& info) { return info.param.name; });
 
 }  // namespace exec
 }  // namespace carnot

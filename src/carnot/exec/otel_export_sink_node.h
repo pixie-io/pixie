@@ -51,12 +51,15 @@ class OTelExportSinkNode : public SinkNode {
                          size_t parent_index) override;
 
  private:
-  Status ConsumeMetric(const table_store::schema::RowBatch& rb);
+  Status ConsumeMetrics(const table_store::schema::RowBatch& rb);
+  Status ConsumeSpans(const table_store::schema::RowBatch& rb);
 
   std::unique_ptr<table_store::schema::RowDescriptor> input_descriptor_;
   opentelemetry::proto::collector::metrics::v1::ExportMetricsServiceResponse metrics_response_;
   opentelemetry::proto::collector::metrics::v1::MetricsService::StubInterface*
       metrics_service_stub_;
+  opentelemetry::proto::collector::trace::v1::ExportTraceServiceResponse trace_response_;
+  opentelemetry::proto::collector::trace::v1::TraceService::StubInterface* trace_service_stub_;
   std::unique_ptr<plan::OTelExportSinkOperator> plan_node_;
 
   std::unique_ptr<SpanConfig> span_config_;

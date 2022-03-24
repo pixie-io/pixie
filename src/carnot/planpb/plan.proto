@@ -360,7 +360,7 @@ message OTelSpan {
   // name_string sets for all, name_column sets the Span name based on the column value.
   oneof name {
     string name_string = 1;
-    int64 name_column = 2;
+    int64 name_column_index = 2;
   }
   // A mapping of the OpenTelemetry attribute name to the data that populates that attribute.
   repeated OTelAttribute attributes = 3;

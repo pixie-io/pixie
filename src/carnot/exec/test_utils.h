@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "opentelemetry/proto/collector/metrics/v1/metrics_service_mock.grpc.pb.h"
+#include "opentelemetry/proto/collector/trace/v1/trace_service_mock.grpc.pb.h"
 #include "src/carnot/carnotpb/carnot.grpc.pb.h"
 #include "src/carnot/carnotpb/carnot.pb.h"
 #include "src/carnot/carnotpb/carnot_mock.grpc.pb.h"
@@ -57,6 +58,11 @@ const MetricsStubGenerator MockMetricsStubGenerator = [](const std::string&)
     -> std::unique_ptr<
         opentelemetry::proto::collector::metrics::v1::MetricsService::StubInterface> {
   return std::make_unique<opentelemetry::proto::collector::metrics::v1::MockMetricsServiceStub>();
+};
+
+const TraceStubGenerator MockTraceStubGenerator = [](const std::string&)
+    -> std::unique_ptr<opentelemetry::proto::collector::trace::v1::TraceService::StubInterface> {
+  return std::make_unique<opentelemetry::proto::collector::trace::v1::MockTraceServiceStub>();
 };
 
 table_store::schema::RowBatch ConcatRowBatches(

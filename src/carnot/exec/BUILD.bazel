@@ -48,6 +48,7 @@ pl_cc_library(
         "@com_github_apache_arrow//:arrow",
         "@com_github_grpc_grpc//:grpc++",
         "@com_github_opentelemetry_proto//:metrics_service_grpc_cc",
+        "@com_github_opentelemetry_proto//:trace_service_grpc_cc",
         "@com_github_rlyeh_sole//:sole",
         "@com_google_absl//absl/container:node_hash_map",
     ],
