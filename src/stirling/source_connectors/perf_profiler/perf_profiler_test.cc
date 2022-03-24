@@ -249,10 +249,7 @@ class PerfProfileBPFTest : public ::testing::Test {
 
   void ConsumeRecords() {
     const std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
-    ASSERT_EQ(tablets.size(), 1);
-
-    columns_ = tablets[0].records;
-
+    ASSERT_NOT_EMPTY_AND_GET_RECORDS(columns_, tablets);
     PopulateColumnPtrs(columns_);
   }
 
