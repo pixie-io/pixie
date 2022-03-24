@@ -100,116 +100,122 @@ export const AdminOverview = React.memo(() => {
     }
   `);
 
-  // Path can be just /, or can be /trailing/slash. Thus variable length logic.
-  const [tab, setTab] = React.useState(location.pathname.slice(path.length > 1 ? path.length + 1 : 0));
-
-  function navTab(newTab: string) {
-    setTab(newTab);
-    history.push(newTab);
-  }
-
-  // In case one tab has a <Link> to another, update the tab bar.
-  React.useEffect(() => {
-    const pathTab = location.pathname.slice(path.length > 1 ? path.length + 1 : 0);
-    if (['clusters', 'deployment-keys', 'api-keys', 'users', 'org', 'user'].includes(pathTab) && tab !== pathTab) {
-      setTab(pathTab);
-    }
-  }, [tab, path, location.pathname]);
-
   const authClient = React.useMemo(() => GetOAuthProvider(), []);
-  const InvitationTab = React.useMemo(
+  const showInvitationsTab = authClient.isInvitationEnabled();
+  const InvitationTab: React.ComponentType = React.useMemo(
     // eslint-disable-next-line react-memo/require-memo
     () => (authClient.getInvitationComponent() ?? (() => (<>This tab should not have been reachable.</>))),
     [authClient]);
+
+  const tabList: Array<{
+    slug: string, label: string, component: React.ComponentType, enabled: boolean,
+  }> = React.useMemo(() => [
+    { slug: 'clusters',        label: 'Clusters',        component: ClustersTable,       enabled: true },
+    { slug: 'deployment-keys', label: 'Deployment Keys', component: DeploymentKeysTable, enabled: true },
+    { slug: 'api-keys',        label: 'API Keys',        component: APIKeysTable,        enabled: true },
+    { slug: 'users',           label: 'Users',           component: UsersTable,          enabled: true },
+    { slug: 'org',             label: 'Org Settings',    component: OrgSettings,         enabled: true },
+    { slug: 'user',            label: 'User Settings',   component: UserSettings,        enabled: true },
+    { slug: 'invite',          label: 'Invitations',     component: InvitationTab,       enabled: showInvitationsTab },
+  ], [InvitationTab, showInvitationsTab]);
+
+  // Example: extracts 'tabName' from '/admin/tabName/foo/bar' when 'path' is '/admin' or '/admin/'
+  const pathTab: string = React.useMemo(() => {
+    const fromPath = location.pathname.slice(path.length).split('/').filter((s: string) => s)[0].trim().toLowerCase();
+    return tabList.find(t => t.enabled && t.slug === fromPath)?.slug ?? '';
+  }, [tabList, location.pathname, path]);
+
+  const [tab, setTab] = React.useState<string>(pathTab || 'clusters');
+
+  const navTab = React.useCallback((newTab: string) => {
+    setTab(newTab);
+    history.push(`${path}/${newTab}`);
+  }, [history, path]);
+
+  React.useEffect(() => {
+    if (pathTab === '') navTab('clusters');
+    else if (tab !== pathTab) setTab(pathTab);
+  }, [navTab, tab, pathTab]);
 
   const classes = useStyles();
 
   return (
     <div className={classes.tabRoot}>
       <div className={classes.tabBar}>
-        <StyledTabs
-          value={tab}
-          // eslint-disable-next-line react-memo/require-usememo
-          onChange={(event, newTab) => navTab(newTab)}
-        >
-          <StyledTab value='clusters' label='Clusters' />
-          <StyledTab value='deployment-keys' label='Deployment Keys' />
-          <StyledTab value='api-keys' label='API Keys' />
-          <StyledTab value='users' label='Users' />
-          <StyledTab value='org' label='Org Settings' />
-          <StyledTab value='user' label='User Settings' />
-          {authClient.isInvitationEnabled() && <StyledTab value='invite' label='Invitations' />}
+        {/* eslint-disable-next-line react-memo/require-usememo */}
+        <StyledTabs value={tab} onChange={(_, newTab) => navTab(newTab)}>
+          {tabList.filter(t => t.enabled).map(({ slug, label }) => (
+            <StyledTab key={slug} value={slug} label={label} />
+          ))}
         </StyledTabs>
-        {tab.endsWith('deployment-keys')
-          && (
-            <Button
-              // eslint-disable-next-line react-memo/require-usememo
-              onClick={() => createDeploymentKey({
-                // This immediately adds a row to the table, so gives the user
-                // an indication that clicking "Add" did something but the data
-                // added is "wrong" and flashes with the correct data once the
-                // actual response comes in.
-                // TODO: Maybe we should assign client side IDs here.
-                // The key is hidden by default so that value changing on
-                // server response isn't that bad.
-                optimisticResponse: {
-                  CreateDeploymentKey: {
-                    id: '00000000-0000-0000-0000-000000000000',
-                    desc: '',
-                    createdAtMs: Date.now(),
+        {tab.endsWith('deployment-keys') && (
+          <Button
+            // eslint-disable-next-line react-memo/require-usememo
+            onClick={() => createDeploymentKey({
+              // This immediately adds a row to the table, so gives the user
+              // an indication that clicking "Add" did something but the data
+              // added is "wrong" and flashes with the correct data once the
+              // actual response comes in.
+              // TODO: Maybe we should assign client side IDs here.
+              // The key is hidden by default so that value changing on
+              // server response isn't that bad.
+              optimisticResponse: {
+                CreateDeploymentKey: {
+                  id: '00000000-0000-0000-0000-000000000000',
+                  desc: '',
+                  createdAtMs: Date.now(),
+                },
+              },
+              update: (cache, { data }) => {
+                cache.modify({
+                  fields: {
+                    deploymentKeys: (existingKeys) => ([data.CreateDeploymentKey].concat(existingKeys)),
                   },
+                });
+              },
+            })}
+            className={classes.createButton}
+            variant='outlined'
+            // eslint-disable-next-line react-memo/require-usememo
+            startIcon={<Add />}
+          >
+            New key
+          </Button>
+        )}
+        {tab.endsWith('api-keys') && (
+          <Button
+            // eslint-disable-next-line react-memo/require-usememo
+            onClick={() => createAPIKey({
+              // This immediately adds a row to the table, so gives the user
+              // an indication that clicking "Add" did something but the data
+              // added is "wrong" and flashes with the correct data once the
+              // actual response comes in.
+              // TODO: Maybe we should assign client side IDs here.
+              // The key is hidden by default so that value changing on
+              // server response isn't that bad.
+              optimisticResponse: {
+                CreateAPIKey: {
+                  id: '00000000-0000-0000-0000-000000000000',
+                  desc: '',
+                  createdAtMs: Date.now(),
                 },
-                update: (cache, { data }) => {
-                  cache.modify({
-                    fields: {
-                      deploymentKeys: (existingKeys) => ([data.CreateDeploymentKey].concat(existingKeys)),
-                    },
-                  });
-                },
-              })}
-              className={classes.createButton}
-              variant='outlined'
-              // eslint-disable-next-line react-memo/require-usememo
-              startIcon={<Add />}
-            >
-              New key
-            </Button>
-          )}
-        {tab.endsWith('api-keys')
-          && (
-            <Button
-              // eslint-disable-next-line react-memo/require-usememo
-              onClick={() => createAPIKey({
-                // This immediately adds a row to the table, so gives the user
-                // an indication that clicking "Add" did something but the data
-                // added is "wrong" and flashes with the correct data once the
-                // actual response comes in.
-                // TODO: Maybe we should assign client side IDs here.
-                // The key is hidden by default so that value changing on
-                // server response isn't that bad.
-                optimisticResponse: {
-                  CreateAPIKey: {
-                    id: '00000000-0000-0000-0000-000000000000',
-                    desc: '',
-                    createdAtMs: Date.now(),
+              },
+              update: (cache, { data }) => {
+                cache.modify({
+                  fields: {
+                    apiKeys: (existingKeys) => ([data.CreateAPIKey].concat(existingKeys)),
                   },
-                },
-                update: (cache, { data }) => {
-                  cache.modify({
-                    fields: {
-                      apiKeys: (existingKeys) => ([data.CreateAPIKey].concat(existingKeys)),
-                    },
-                  });
-                },
-              })}
-              className={classes.createButton}
-              variant='outlined'
-              // eslint-disable-next-line react-memo/require-usememo
-              startIcon={<Add />}
-            >
-              New key
-            </Button>
-          )}
+                });
+              },
+            })}
+            className={classes.createButton}
+            variant='outlined'
+            // eslint-disable-next-line react-memo/require-usememo
+            startIcon={<Add />}
+          >
+            New key
+          </Button>
+        )}
         {tab.endsWith('users') && (
           <InviteUserButton
             className={classes.createButton}
@@ -221,13 +227,9 @@ export const AdminOverview = React.memo(() => {
       <div className={classes.tabContents}>
         <TableContainer className={classes.table}>
           <Switch>
-            <Route exact path={`${path}/clusters`} component={ClustersTable} />
-            <Route exact path={`${path}/deployment-keys`} component={DeploymentKeysTable} />
-            <Route exact path={`${path}/api-keys`} component={APIKeysTable} />
-            <Route exact path={`${path}/invite`} component={InvitationTab} />
-            <Route exact path={`${path}/users`} component={UsersTable} />
-            <Route exact path={`${path}/org`} component={OrgSettings} />
-            <Route exact path={`${path}/user`} component={UserSettings} />
+            {tabList.filter(t => t.enabled).map(({ slug, component }) => (
+              <Route key={slug} path={`${path}/${slug}`} component={component} />
+            ))}
           </Switch>
         </TableContainer>
       </div>
