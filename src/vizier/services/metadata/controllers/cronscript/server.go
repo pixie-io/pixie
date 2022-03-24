@@ -20,22 +20,33 @@ package cronscript
 
 import (
 	"context"
-	"errors"
 	"sync"
 
+	"github.com/gofrs/uuid"
+
+	"px.dev/pixie/src/shared/cvmsgspb"
+	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
 )
 
+// Store is a datastore which can store, update, and retrieve information about cron scripts.
+type Store interface {
+	GetCronScripts() ([]*cvmsgspb.CronScript, error)
+	UpsertCronScript(script *cvmsgspb.CronScript) error
+	DeleteCronScript(id uuid.UUID) error
+	SetCronScripts(scripts []*cvmsgspb.CronScript) error
+}
+
 // Server is an implementation of the cronscriptstore service.
 type Server struct {
-	ds *Datastore
+	ds Store
 
 	done chan struct{}
 	once sync.Once
 }
 
 // New creates a new server.
-func New(ds *Datastore) *Server {
+func New(ds Store) *Server {
 	return &Server{
 		ds:   ds,
 		done: make(chan struct{}),
@@ -51,20 +62,46 @@ func (s *Server) Stop() {
 
 // GetScripts fetches all scripts in the cron script store.
 func (s *Server) GetScripts(ctx context.Context, req *metadatapb.GetScriptsRequest) (*metadatapb.GetScriptsResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	scripts, err := s.ds.GetCronScripts()
+	if err != nil {
+		return nil, err
+	}
+
+	scMap := make(map[string]*cvmsgspb.CronScript)
+	for _, s := range scripts {
+		id := utils.UUIDFromProtoOrNil(s.ID)
+		scMap[id.String()] = s
+	}
+
+	return &metadatapb.GetScriptsResponse{
+		Scripts: scMap,
+	}, nil
 }
 
 // AddOrUpdateScript updates or adds a cron script to the store, based on ID.
 func (s *Server) AddOrUpdateScript(ctx context.Context, req *metadatapb.AddOrUpdateScriptRequest) (*metadatapb.AddOrUpdateScriptResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	err := s.ds.UpsertCronScript(req.Script)
+	if err != nil {
+		return nil, err
+	}
+	return &metadatapb.AddOrUpdateScriptResponse{}, nil
 }
 
 // DeleteScript deletes a cron script from the store by ID.
 func (s *Server) DeleteScript(ctx context.Context, req *metadatapb.DeleteScriptRequest) (*metadatapb.DeleteScriptResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	err := s.ds.DeleteCronScript(utils.UUIDFromProtoOrNil(req.ScriptID))
+	if err != nil {
+		return nil, err
+	}
+	return &metadatapb.DeleteScriptResponse{}, nil
 }
 
 // SetScripts sets the list of all cron scripts to match the given set of scripts.
 func (s *Server) SetScripts(ctx context.Context, req *metadatapb.SetScriptsRequest) (*metadatapb.SetScriptsResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	scripts := make([]*cvmsgspb.CronScript, 0)
+	for _, v := range req.Scripts {
+		scripts = append(scripts, v)
+	}
+
+	return &metadatapb.SetScriptsResponse{}, s.ds.SetCronScripts(scripts)
 }

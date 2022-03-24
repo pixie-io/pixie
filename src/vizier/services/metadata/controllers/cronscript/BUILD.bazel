@@ -37,16 +37,22 @@ go_library(
 
 go_test(
     name = "cronscript_test",
-    srcs = ["store_test.go"],
+    srcs = [
+        "server_test.go",
+        "store_test.go",
+    ],
     embed = [":cronscript"],
     deps = [
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/utils",
+        "//src/vizier/services/metadata/controllers/cronscript/mock",
+        "//src/vizier/services/metadata/metadatapb:service_pl_go_proto",
         "//src/vizier/utils/datastore/pebbledb",
         "@com_github_cockroachdb_pebble//:pebble",
         "@com_github_cockroachdb_pebble//vfs",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_gogo_protobuf//proto",
+        "@com_github_golang_mock//gomock",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],
