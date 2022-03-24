@@ -196,9 +196,6 @@ type DataCollectorParams struct {
 	DatastreamBufferSize uint32 `json:"datastreamBufferSize,omitempty"`
 	// DatastreamBufferSpikeSize is the maximum temporary size of a data stream buffer before processing.
 	DatastreamBufferSpikeSize uint32 `json:"datastreamBufferSpikeSize,omitempty"`
-	// TableStoreTableSizeLimit is the maximum allowed size for a table in the table store. When the size grows beyond this limit,
-	// old data will be discarded.
-	TableStoreTableSizeLimit int32 `json:"tableStoreTableSizeLimit,omitempty"`
 	// This contains custom flags that should be passed to the PEM via environment variables.
 	CustomPEMFlags map[string]string `json:"customPEMFlags,omitempty"`
 }

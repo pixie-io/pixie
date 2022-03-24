@@ -142,9 +142,6 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 	if in.VzSpec.DataCollectorParams != nil && in.VzSpec.DataCollectorParams.DatastreamBufferSpikeSize != 0 {
 		tmplValues.DatastreamBufferSpikeSize = in.VzSpec.DataCollectorParams.DatastreamBufferSpikeSize
 	}
-	if in.VzSpec.DataCollectorParams != nil && in.VzSpec.DataCollectorParams.TableStoreTableSizeLimit != 0 {
-		tmplValues.TableStoreTableSizeLimit = in.VzSpec.DataCollectorParams.TableStoreTableSizeLimit
-	}
 	if in.VzSpec.DataCollectorParams != nil && in.VzSpec.DataCollectorParams.CustomPEMFlags != nil {
 		tmplValues.CustomPEMFlags = in.VzSpec.DataCollectorParams.CustomPEMFlags
 	}
