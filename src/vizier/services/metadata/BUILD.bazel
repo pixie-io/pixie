@@ -32,6 +32,7 @@ go_library(
         "//src/shared/services/server",
         "//src/vizier/services/metadata/controllers",
         "//src/vizier/services/metadata/controllers/agent",
+        "//src/vizier/services/metadata/controllers/cronscript",
         "//src/vizier/services/metadata/controllers/k8smeta",
         "//src/vizier/services/metadata/controllers/tracepoint",
         "//src/vizier/services/metadata/metadataenv",

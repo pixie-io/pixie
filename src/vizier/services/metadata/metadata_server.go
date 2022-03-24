@@ -43,6 +43,7 @@ import (
 	"px.dev/pixie/src/shared/services/server"
 	"px.dev/pixie/src/vizier/services/metadata/controllers"
 	"px.dev/pixie/src/vizier/services/metadata/controllers/agent"
+	"px.dev/pixie/src/vizier/services/metadata/controllers/cronscript"
 	"px.dev/pixie/src/vizier/services/metadata/controllers/k8smeta"
 	"px.dev/pixie/src/vizier/services/metadata/controllers/tracepoint"
 	"px.dev/pixie/src/vizier/services/metadata/metadataenv"
@@ -276,6 +277,10 @@ func main() {
 	healthz.RegisterDefaultChecks(mux)
 
 	svr := controllers.NewServer(env, dataStore, agtMgr, tracepointMgr)
+
+	csDs := cronscript.NewDatastore(dataStore)
+	cronScriptSvr := cronscript.New(csDs)
+
 	log.Infof("Metadata Server: %s", version.GetVersion().ToString())
 
 	// We bump up the max message size because agent metadata may be larger than 4MB. This is a
@@ -287,6 +292,7 @@ func main() {
 	metadatapb.RegisterMetadataServiceServer(s.GRPCServer(), svr)
 	metadatapb.RegisterMetadataTracepointServiceServer(s.GRPCServer(), svr)
 	metadatapb.RegisterMetadataConfigServiceServer(s.GRPCServer(), svr)
+	metadatapb.RegisterCronScriptStoreServiceServer(s.GRPCServer(), cronScriptSvr)
 
 	s.Start()
 	s.StopOnInterrupt()
