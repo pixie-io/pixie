@@ -28,6 +28,7 @@
 #include "src/carnot/funcs/builtins/request_path_ops.h"
 #include "src/carnot/funcs/builtins/sql_ops.h"
 #include "src/carnot/funcs/builtins/string_ops.h"
+#include "src/carnot/funcs/builtins/uri_ops.h"
 
 #include "src/carnot/udf/registry.h"
 
@@ -47,6 +48,7 @@ void RegisterBuiltinsOrDie(udf::Registry* registry) {
   RegisterSQLOpsOrDie(registry);
   RegisterRegexOpsOrDie(registry);
   RegisterPIIOpsOrDie(registry);
+  RegisterURIOpsOrDie(registry);
 }
 
 }  // namespace builtins

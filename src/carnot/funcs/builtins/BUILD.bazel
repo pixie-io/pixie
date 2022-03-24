@@ -38,7 +38,7 @@ pl_cc_library(
         "@com_github_derrickburns_tdigest//:tdigest",
         "@com_github_google_re2//:re2",
         "@com_github_google_sentencepiece//:libsentencepiece",
-        "@com_github_tencent_rapidjson//:rapidjson",
+        "@com_github_uriparser_uriparser//:uriparser",
     ],
 )
 
@@ -184,5 +184,14 @@ pl_cc_binary(
     deps = [
         ":cc_library",
         "//src/common/benchmark:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "uri_ops_test",
+    srcs = ["uri_ops_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/udf:udf_testutils",
     ],
 )

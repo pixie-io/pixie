@@ -160,6 +160,7 @@ def _cc_deps():
     _bazel_repo("com_google_farmhash", build_file = "//bazel/external:farmhash.BUILD")
     _bazel_repo("com_github_h2o_picohttpparser", build_file = "//bazel/external:picohttpparser.BUILD")
     _bazel_repo("com_github_opentelemetry_proto", build_file = "//bazel/external:opentelemetry.BUILD")
+    _bazel_repo("com_github_uriparser_uriparser", build_file = "//bazel/external:uriparser.BUILD")
 
     # Uncomment these to develop bcc and/or bpftrace locally. Should also comment out the corresponding _git_repo lines.
     # _local_repo("com_github_iovisor_bcc", build_file = "//bazel/external/local_dev:bcc.BUILD")
