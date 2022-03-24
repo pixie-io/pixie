@@ -931,6 +931,14 @@ service PluginService {
   rpc GetOrgRetentionPluginConfig(GetOrgRetentionPluginConfigRequest) returns (GetOrgRetentionPluginConfigResponse);
   // Updates the org's configuration for a retention plugin.
   rpc UpdateRetentionPluginConfig(UpdateRetentionPluginConfigRequest) returns (UpdateRetentionPluginConfigResponse);
+  // GetRetentionScripts gets the retention scripts configured for the org.
+  rpc GetRetentionScripts(GetRetentionScriptsRequest) returns (GetRetentionScriptsResponse);
+  // GetRetentionScript gets detailed information about a specific retention script.
+  rpc GetRetentionScript(GetRetentionScriptRequest) returns (GetRetentionScriptResponse);
+  // UpdateRetentionScript updates a specific retention script.
+  rpc UpdateRetentionScript(UpdateRetentionScriptRequest) returns (UpdateRetentionScriptResponse);
+  // CreateRetentionScript creates a retention script.
+  rpc CreateRetentionScript(CreateRetentionScriptRequest) returns (CreateRetentionScriptResponse);
 }
 
 // PluginKind describes the type of the plugin.
@@ -998,9 +1006,96 @@ message GetRetentionPluginInfoRequest {
   string version = 2;
 }
 
+// RetentionScript represents a script being used for long-term data retention.
+message RetentionScript {
+  // The ID for the script.
+  uuidpb.UUID script_id = 1 [(gogoproto.customname) = "ScriptID"];
+  // The name of the script.
+  string script_name = 2;
+  // A description for the script.
+  string description = 3;
+  // How often the script should be run, in seconds.
+  int64 frequency_s = 4;
+  // The clusters the script should be run on. If empty, signifies all clusters.
+  repeated uuidpb.UUID cluster_ids = 5 [(gogoproto.customname) = "ClusterIDs"];
+  // The plugin which the script is sending data to.
+  string plugin_id = 6;
+  // Whether the script is enabled.
+  bool enabled = 7;
+  // Whether the script is originally a preset script.
+  bool is_preset = 8;
+}
+
 // GetRetentionPluginInfoResponse is the response toa GetRetentionPluginInfoRequest. It contains information about
 // what configurations are available for a retention plugin.
 message GetRetentionPluginInfoResponse {
   // Map of configs required for the plugin, with the key being the name of the field, and value as the description of the field.
   map<string, string> configs = 1;
+}
+
+// GetRetentionScriptsRequest gets all retention scripts belonging to the org.
+message GetRetentionScriptsRequest {}
+
+// GetRetentionScriptResponse is a response to a GetRetentionScriptsRequest.
+message GetRetentionScriptsResponse {
+  repeated RetentionScript scripts = 1;
+}
+
+// GetRetentionScriptRequest gets detailed information about a specific retention script.
+message GetRetentionScriptRequest {
+  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+}
+
+// GetRetentionScriptResponse is a response to a GetRetentionScriptRequest.
+message GetRetentionScriptResponse {
+  RetentionScript script = 1;
+  // The actual PxL script that should be run.
+  string contents = 2;
+  // The URL which the script is configured to export to.
+  string export_url = 3 [(gogoproto.customname) = "ExportURL"];
+}
+
+// UpdateRetentionScriptRequest updates a specific retention script.
+message UpdateRetentionScriptRequest {
+  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  // The name of the script.
+  google.protobuf.StringValue script_name = 2;
+  // The description for the script.
+  google.protobuf.StringValue description = 3;
+  // Whether to disable/enable the script.
+  google.protobuf.BoolValue enabled = 4;
+  // The frequency that the script should be run.
+  google.protobuf.Int64Value frequency_s = 5;
+  // The contents of the script.
+  google.protobuf.StringValue contents = 6;
+  // The export URL for the script.
+  google.protobuf.StringValue export_url = 7;
+  // The clusters the script should be run on. If empty, signifies all clusters.
+  repeated uuidpb.UUID cluster_ids = 8 [(gogoproto.customname) = "ClusterIDs"];
+}
+
+// UpdateRetentionScriptResponse is a response to a UpdateRetentionScriptRequest.
+message UpdateRetentionScriptResponse {}
+
+// CreateRetentionScriptRequest creates a retention script.
+message CreateRetentionScriptRequest {
+  // The name of the script.
+  string script_name = 2;
+  // The description for the script.
+  string description = 3;
+  // The frequency that the script should be run.
+  int64 frequency_s = 5;
+  // The contents of the script.
+  string contents = 6;
+  // The export URL for the script.
+  string export_url = 7;
+  // The clusters the script should be run on. If empty, signifies all clusters.
+  repeated uuidpb.UUID cluster_ids = 8 [(gogoproto.customname) = "ClusterIDs"];
+  // The plugin to use for the script.
+  string plugin_id = 9;
+}
+
+// CreateRetentionScriptResponse is a response to a CreateRetentionScriptRequest.
+message CreateRetentionScriptResponse {
+  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
 }

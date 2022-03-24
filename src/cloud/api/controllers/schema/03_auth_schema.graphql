@@ -32,7 +32,7 @@ extend type Query {
   retentionPluginInfo(id: String!, pluginVersion: String!): PluginInfo!
   orgRetentionPluginConfig(id: String!): [PluginConfig!]!
   retentionScripts: [RetentionScript!]!
-  retentionScript(id: String!): RetentionScript!
+  retentionScript(id: String!): DetailedRetentionScript!
 }
 
 extend type Mutation {
@@ -55,6 +55,7 @@ extend type Mutation {
   # Plugin
   UpdateRetentionPluginConfig(id: String!, enabled: Boolean, enabledVersion: String, configs: EditablePluginConfigs!): Boolean!
   UpdateRetentionScript(id: ID!, script: EditableRetentionScript): Boolean!
+  CreateRetentionScript(script: EditableRetentionScript): ID!
 }
 
 type UserInfo {
@@ -365,6 +366,16 @@ input EditablePluginConfigs {
 # Data retention types.
 
 type RetentionScript {
+  id: ID!
+  name: String!
+  description: String!
+  frequencyS: Int!
+  enabled: Boolean!
+  clusters: [ID!]!
+  pluginID: String!
+}
+
+type DetailedRetentionScript {
   id: ID!
   name: String!
   description: String!

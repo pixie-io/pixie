@@ -20,6 +20,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/cloud/plugin/pluginpb"
@@ -150,4 +151,24 @@ func (p *PluginServiceServer) UpdateRetentionPluginConfig(ctx context.Context, r
 	}
 
 	return &cloudpb.UpdateRetentionPluginConfigResponse{}, nil
+}
+
+// GetRetentionScripts gets the retention scripts configured for the org.
+func (p *PluginServiceServer) GetRetentionScripts(ctx context.Context, req *cloudpb.GetRetentionScriptsRequest) (*cloudpb.GetRetentionScriptsResponse, error) {
+	return nil, errors.New("Not yet implemented")
+}
+
+// GetRetentionScript gets detailed information about a specific retention script.
+func (p *PluginServiceServer) GetRetentionScript(ctx context.Context, req *cloudpb.GetRetentionScriptRequest) (*cloudpb.GetRetentionScriptResponse, error) {
+	return nil, errors.New("Not yet implemented")
+}
+
+// UpdateRetentionScript updates a specific retention script.
+func (p *PluginServiceServer) UpdateRetentionScript(ctx context.Context, req *cloudpb.UpdateRetentionScriptRequest) (*cloudpb.UpdateRetentionScriptResponse, error) {
+	return nil, errors.New("Not yet implemented")
+}
+
+// CreateRetentionScript creates a retention script.
+func (p *PluginServiceServer) CreateRetentionScript(ctx context.Context, req *cloudpb.CreateRetentionScriptRequest) (*cloudpb.CreateRetentionScriptResponse, error) {
+	return nil, errors.New("Not yet implemented")
 }

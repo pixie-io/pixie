@@ -240,6 +240,10 @@ type retentionScriptArgs struct {
 	ID string
 }
 
+type createRetentionScriptArgs struct {
+	Script *editableRetentionScript
+}
+
 // ID returns cluster ID.
 func (c *RetentionScriptResolver) ID() graphql.ID {
 	return graphql.ID(c.scriptID.String())
@@ -267,4 +271,9 @@ func (q *QueryResolver) RetentionScript(ctx context.Context, args retentionScrip
 // UpdateRetentionScript updates the details for a single retention script.
 func (q *QueryResolver) UpdateRetentionScript(ctx context.Context, args updateRetentionScriptArgs) (bool, error) {
 	return false, errors.New("Not yet implemented")
+}
+
+// CreateRetentionScript creates a new retention script.
+func (q *QueryResolver) CreateRetentionScript(ctx context.Context, args createRetentionScriptArgs) (graphql.ID, error) {
+	return graphql.ID(""), errors.New("Not yet implemented")
 }

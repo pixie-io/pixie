@@ -2084,6 +2084,26 @@ func (m *MockPluginServiceClient) EXPECT() *MockPluginServiceClientMockRecorder 
 	return m.recorder
 }
 
+// CreateRetentionScript mocks base method.
+func (m *MockPluginServiceClient) CreateRetentionScript(ctx context.Context, in *cloudpb.CreateRetentionScriptRequest, opts ...grpc.CallOption) (*cloudpb.CreateRetentionScriptResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CreateRetentionScript", varargs...)
+	ret0, _ := ret[0].(*cloudpb.CreateRetentionScriptResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateRetentionScript indicates an expected call of CreateRetentionScript.
+func (mr *MockPluginServiceClientMockRecorder) CreateRetentionScript(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRetentionScript", reflect.TypeOf((*MockPluginServiceClient)(nil).CreateRetentionScript), varargs...)
+}
+
 // GetOrgRetentionPluginConfig mocks base method.
 func (m *MockPluginServiceClient) GetOrgRetentionPluginConfig(ctx context.Context, in *cloudpb.GetOrgRetentionPluginConfigRequest, opts ...grpc.CallOption) (*cloudpb.GetOrgRetentionPluginConfigResponse, error) {
 	m.ctrl.T.Helper()
@@ -2144,6 +2164,46 @@ func (mr *MockPluginServiceClientMockRecorder) GetRetentionPluginInfo(ctx, in in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRetentionPluginInfo", reflect.TypeOf((*MockPluginServiceClient)(nil).GetRetentionPluginInfo), varargs...)
 }
 
+// GetRetentionScript mocks base method.
+func (m *MockPluginServiceClient) GetRetentionScript(ctx context.Context, in *cloudpb.GetRetentionScriptRequest, opts ...grpc.CallOption) (*cloudpb.GetRetentionScriptResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetRetentionScript", varargs...)
+	ret0, _ := ret[0].(*cloudpb.GetRetentionScriptResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRetentionScript indicates an expected call of GetRetentionScript.
+func (mr *MockPluginServiceClientMockRecorder) GetRetentionScript(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRetentionScript", reflect.TypeOf((*MockPluginServiceClient)(nil).GetRetentionScript), varargs...)
+}
+
+// GetRetentionScripts mocks base method.
+func (m *MockPluginServiceClient) GetRetentionScripts(ctx context.Context, in *cloudpb.GetRetentionScriptsRequest, opts ...grpc.CallOption) (*cloudpb.GetRetentionScriptsResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetRetentionScripts", varargs...)
+	ret0, _ := ret[0].(*cloudpb.GetRetentionScriptsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRetentionScripts indicates an expected call of GetRetentionScripts.
+func (mr *MockPluginServiceClientMockRecorder) GetRetentionScripts(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRetentionScripts", reflect.TypeOf((*MockPluginServiceClient)(nil).GetRetentionScripts), varargs...)
+}
+
 // UpdateRetentionPluginConfig mocks base method.
 func (m *MockPluginServiceClient) UpdateRetentionPluginConfig(ctx context.Context, in *cloudpb.UpdateRetentionPluginConfigRequest, opts ...grpc.CallOption) (*cloudpb.UpdateRetentionPluginConfigResponse, error) {
 	m.ctrl.T.Helper()
@@ -2162,6 +2222,26 @@ func (mr *MockPluginServiceClientMockRecorder) UpdateRetentionPluginConfig(ctx, 
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRetentionPluginConfig", reflect.TypeOf((*MockPluginServiceClient)(nil).UpdateRetentionPluginConfig), varargs...)
+}
+
+// UpdateRetentionScript mocks base method.
+func (m *MockPluginServiceClient) UpdateRetentionScript(ctx context.Context, in *cloudpb.UpdateRetentionScriptRequest, opts ...grpc.CallOption) (*cloudpb.UpdateRetentionScriptResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateRetentionScript", varargs...)
+	ret0, _ := ret[0].(*cloudpb.UpdateRetentionScriptResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateRetentionScript indicates an expected call of UpdateRetentionScript.
+func (mr *MockPluginServiceClientMockRecorder) UpdateRetentionScript(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRetentionScript", reflect.TypeOf((*MockPluginServiceClient)(nil).UpdateRetentionScript), varargs...)
 }
 
 // MockPluginServiceServer is a mock of PluginServiceServer interface.
@@ -2185,6 +2265,21 @@ func NewMockPluginServiceServer(ctrl *gomock.Controller) *MockPluginServiceServe
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockPluginServiceServer) EXPECT() *MockPluginServiceServerMockRecorder {
 	return m.recorder
+}
+
+// CreateRetentionScript mocks base method.
+func (m *MockPluginServiceServer) CreateRetentionScript(arg0 context.Context, arg1 *cloudpb.CreateRetentionScriptRequest) (*cloudpb.CreateRetentionScriptResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateRetentionScript", arg0, arg1)
+	ret0, _ := ret[0].(*cloudpb.CreateRetentionScriptResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateRetentionScript indicates an expected call of CreateRetentionScript.
+func (mr *MockPluginServiceServerMockRecorder) CreateRetentionScript(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRetentionScript", reflect.TypeOf((*MockPluginServiceServer)(nil).CreateRetentionScript), arg0, arg1)
 }
 
 // GetOrgRetentionPluginConfig mocks base method.
@@ -2232,6 +2327,36 @@ func (mr *MockPluginServiceServerMockRecorder) GetRetentionPluginInfo(arg0, arg1
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRetentionPluginInfo", reflect.TypeOf((*MockPluginServiceServer)(nil).GetRetentionPluginInfo), arg0, arg1)
 }
 
+// GetRetentionScript mocks base method.
+func (m *MockPluginServiceServer) GetRetentionScript(arg0 context.Context, arg1 *cloudpb.GetRetentionScriptRequest) (*cloudpb.GetRetentionScriptResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRetentionScript", arg0, arg1)
+	ret0, _ := ret[0].(*cloudpb.GetRetentionScriptResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRetentionScript indicates an expected call of GetRetentionScript.
+func (mr *MockPluginServiceServerMockRecorder) GetRetentionScript(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRetentionScript", reflect.TypeOf((*MockPluginServiceServer)(nil).GetRetentionScript), arg0, arg1)
+}
+
+// GetRetentionScripts mocks base method.
+func (m *MockPluginServiceServer) GetRetentionScripts(arg0 context.Context, arg1 *cloudpb.GetRetentionScriptsRequest) (*cloudpb.GetRetentionScriptsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRetentionScripts", arg0, arg1)
+	ret0, _ := ret[0].(*cloudpb.GetRetentionScriptsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRetentionScripts indicates an expected call of GetRetentionScripts.
+func (mr *MockPluginServiceServerMockRecorder) GetRetentionScripts(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRetentionScripts", reflect.TypeOf((*MockPluginServiceServer)(nil).GetRetentionScripts), arg0, arg1)
+}
+
 // UpdateRetentionPluginConfig mocks base method.
 func (m *MockPluginServiceServer) UpdateRetentionPluginConfig(arg0 context.Context, arg1 *cloudpb.UpdateRetentionPluginConfigRequest) (*cloudpb.UpdateRetentionPluginConfigResponse, error) {
 	m.ctrl.T.Helper()
@@ -2245,4 +2370,19 @@ func (m *MockPluginServiceServer) UpdateRetentionPluginConfig(arg0 context.Conte
 func (mr *MockPluginServiceServerMockRecorder) UpdateRetentionPluginConfig(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRetentionPluginConfig", reflect.TypeOf((*MockPluginServiceServer)(nil).UpdateRetentionPluginConfig), arg0, arg1)
+}
+
+// UpdateRetentionScript mocks base method.
+func (m *MockPluginServiceServer) UpdateRetentionScript(arg0 context.Context, arg1 *cloudpb.UpdateRetentionScriptRequest) (*cloudpb.UpdateRetentionScriptResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateRetentionScript", arg0, arg1)
+	ret0, _ := ret[0].(*cloudpb.UpdateRetentionScriptResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateRetentionScript indicates an expected call of UpdateRetentionScript.
+func (mr *MockPluginServiceServerMockRecorder) UpdateRetentionScript(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRetentionScript", reflect.TypeOf((*MockPluginServiceServer)(nil).UpdateRetentionScript), arg0, arg1)
 }
