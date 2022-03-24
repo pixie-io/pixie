@@ -456,15 +456,17 @@ Status LinkHostLinuxHeaders(const std::filesystem::path& lib_modules_dir) {
   if (fs::Exists(host_lib_modules_source_dir)) {
     PL_RETURN_IF_ERROR(
         fs::CreateSymlinkIfNotExists(host_lib_modules_source_dir, lib_modules_source_dir));
-    LOG(INFO) << absl::Substitute("Linked linux headers found at $0",
-                                  host_lib_modules_source_dir.string());
+    LOG(INFO) << absl::Substitute("Linked linux headers found at $0 to symlink at $1",
+                                  host_lib_modules_source_dir.string(),
+                                  lib_modules_source_dir.string());
   }
 
   if (fs::Exists(host_lib_modules_build_dir)) {
     PL_RETURN_IF_ERROR(
         fs::CreateSymlinkIfNotExists(host_lib_modules_build_dir, lib_modules_build_dir));
-    LOG(INFO) << absl::Substitute("Linked linux headers found at $0",
-                                  host_lib_modules_build_dir.string());
+    LOG(INFO) << absl::Substitute("Linked linux headers found at $0 to symlink at $1",
+                                  host_lib_modules_build_dir.string(),
+                                  lib_modules_build_dir.string());
   }
 
   return Status::OK();
