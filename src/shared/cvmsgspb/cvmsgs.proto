@@ -354,7 +354,10 @@ message CronScript {
 
 // GetCronScriptsChecksumRequest is a request to get the hash of the set of cronScripts for a particular Vizier.
 // This is used to determine whether or not a Vizier should refetch all scripts from the Cloud.
-message GetCronScriptsChecksumRequest {}
+message GetCronScriptsChecksumRequest {
+  // The topic that the response should be returned on.
+  string topic = 1;
+}
 
 // GetCronScriptsChecksumResponse is a response to a GetCronScriptsChecksumRequest. This contains a hash of the set
 // of cronScripts registered to a particular Vizier.
@@ -363,7 +366,10 @@ message GetCronScriptsChecksumResponse {
 }
 
 // GetCronScriptsRequest is a request to get all cronScripts that are registered for a particular Vizier.
-message GetCronScriptsRequest {}
+message GetCronScriptsRequest {
+  // The topic that the response should be returned on.
+  string topic = 1;
+}
 
 // GetCronScriptsResponse is a response to a GetCronScriptsRequest. It contains the set of all cronScripts that
 // are registered to a Vizier.
