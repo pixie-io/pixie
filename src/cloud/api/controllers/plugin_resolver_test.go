@@ -26,7 +26,9 @@ import (
 	"github.com/graph-gophers/graphql-go/gqltesting"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
+	"px.dev/pixie/src/api/proto/uuidpb"
 	gqltestutils "px.dev/pixie/src/cloud/api/controllers/testutils"
+	"px.dev/pixie/src/utils"
 )
 
 func TestPluginResolver_Plugins(t *testing.T) {
@@ -236,6 +238,259 @@ func TestPluginResolver_UpdateRetentionPluginConfig(t *testing.T) {
 			ExpectedResult: `
 				{
 					"UpdateRetentionPluginConfig": true
+				}
+			`,
+		},
+	})
+}
+
+func TestPluginResolver_RetentionScripts(t *testing.T) {
+	gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	mockClients.MockPlugin.EXPECT().GetRetentionScripts(gomock.Any(), &cloudpb.GetRetentionScriptsRequest{}).Return(&cloudpb.GetRetentionScriptsResponse{
+		Scripts: []*cloudpb.RetentionScript{
+			&cloudpb.RetentionScript{
+				ScriptID:    utils.ProtoFromUUIDStrOrNil("1ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+				ScriptName:  "Test Script",
+				Description: "This is a script",
+				FrequencyS:  5,
+				ClusterIDs: []*uuidpb.UUID{
+					utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+					utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c1"),
+				},
+				PluginId: "test-plugin",
+				Enabled:  true,
+				IsPreset: false,
+			},
+			&cloudpb.RetentionScript{
+				ScriptID:    utils.ProtoFromUUIDStrOrNil("1ba7b810-9dad-11d1-80b4-00c04fd430c1"),
+				ScriptName:  "Another Script",
+				Description: "This is another script",
+				FrequencyS:  20,
+				ClusterIDs: []*uuidpb.UUID{
+					utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+				},
+				PluginId: "test-plugin-2",
+				Enabled:  false,
+				IsPreset: true,
+			},
+		},
+	}, nil)
+
+	gqlSchema := LoadSchema(gqlEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				query {
+					retentionScripts {
+						id
+						name
+						description
+						frequencyS
+						enabled
+						clusters
+						pluginID
+						isPreset
+					}
+				}
+			`,
+			ExpectedResult: `
+				{
+					"retentionScripts": [
+						{
+							"id": "1ba7b810-9dad-11d1-80b4-00c04fd430c8",
+							"name": "Test Script",
+							"description": "This is a script",
+							"frequencyS": 5,
+							"enabled": true,
+							"clusters": [
+								"2ba7b810-9dad-11d1-80b4-00c04fd430c8",
+								"2ba7b810-9dad-11d1-80b4-00c04fd430c1"
+							],
+							"pluginID": "test-plugin",
+							"isPreset": false
+						},
+						{
+							"id": "1ba7b810-9dad-11d1-80b4-00c04fd430c1",
+							"name": "Another Script",
+							"description": "This is another script",
+							"frequencyS": 20,
+							"enabled": false,
+							"clusters": [
+								"2ba7b810-9dad-11d1-80b4-00c04fd430c8"
+							],
+							"pluginID": "test-plugin-2",
+							"isPreset": true
+						}
+					]
+				}
+			`,
+		},
+	})
+}
+
+func TestPluginResolver_RetentionScript(t *testing.T) {
+	gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	mockClients.MockPlugin.EXPECT().GetRetentionScript(gomock.Any(), &cloudpb.GetRetentionScriptRequest{ID: utils.ProtoFromUUIDStrOrNil("1ba7b810-9dad-11d1-80b4-00c04fd430c8")}).Return(&cloudpb.GetRetentionScriptResponse{
+		Script: &cloudpb.RetentionScript{
+			ScriptID:    utils.ProtoFromUUIDStrOrNil("1ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+			ScriptName:  "Test Script",
+			Description: "This is a script",
+			FrequencyS:  5,
+			ClusterIDs: []*uuidpb.UUID{
+				utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+				utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c1"),
+			},
+			PluginId: "test-plugin",
+			Enabled:  true,
+			IsPreset: false,
+		},
+		Contents:  "px.display()",
+		ExportURL: "https://localhost:8080",
+	}, nil)
+
+	gqlSchema := LoadSchema(gqlEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				query {
+					retentionScript(id: "1ba7b810-9dad-11d1-80b4-00c04fd430c8") {
+						id
+						name
+						description
+						frequencyS
+						enabled
+						clusters
+						pluginID
+						isPreset
+						contents
+						customExportURL
+					}
+				}
+			`,
+			ExpectedResult: `
+				{
+					"retentionScript":
+						{
+							"id": "1ba7b810-9dad-11d1-80b4-00c04fd430c8",
+							"name": "Test Script",
+							"description": "This is a script",
+							"frequencyS": 5,
+							"enabled": true,
+							"clusters": [
+								"2ba7b810-9dad-11d1-80b4-00c04fd430c8",
+								"2ba7b810-9dad-11d1-80b4-00c04fd430c1"
+							],
+							"pluginID": "test-plugin",
+							"isPreset": false,
+							"contents": "px.display()",
+							"customExportURL": "https://localhost:8080"
+						}
+
+				}
+			`,
+		},
+	})
+}
+
+func TestPluginResolver_UpdateRetentionScript(t *testing.T) {
+	gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	mockClients.MockPlugin.EXPECT().UpdateRetentionScript(gomock.Any(), &cloudpb.UpdateRetentionScriptRequest{
+		ID:          utils.ProtoFromUUIDStrOrNil("1ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+		ScriptName:  &types.StringValue{Value: "Test script"},
+		Description: &types.StringValue{Value: "This is a script"},
+		FrequencyS:  &types.Int64Value{Value: 5},
+		ExportUrl:   &types.StringValue{Value: "https://localhost:8080"},
+		ClusterIDs: []*uuidpb.UUID{
+			utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+			utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c1"),
+		},
+	}).Return(&cloudpb.UpdateRetentionScriptResponse{}, nil)
+
+	gqlSchema := LoadSchema(gqlEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				mutation {
+					UpdateRetentionScript(id: "1ba7b810-9dad-11d1-80b4-00c04fd430c8", script: {
+						name: "Test script",
+						description: "This is a script",
+						frequencyS: 5,
+						clusters: [
+							"2ba7b810-9dad-11d1-80b4-00c04fd430c8",
+							"2ba7b810-9dad-11d1-80b4-00c04fd430c1"
+						],
+						customExportURL: "https://localhost:8080"
+					}) {}
+				}
+			`,
+			ExpectedResult: `
+				{
+					"UpdateRetentionScript": true
+				}
+			`,
+		},
+	})
+}
+
+func TestPluginResolver_CreateRetentionScript(t *testing.T) {
+	gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	mockClients.MockPlugin.EXPECT().CreateRetentionScript(gomock.Any(), &cloudpb.CreateRetentionScriptRequest{
+		ScriptName:  "Test script",
+		Description: "This is a script",
+		FrequencyS:  5,
+		Contents:    "px.display()",
+		ExportUrl:   "localhost:8080",
+		ClusterIDs: []*uuidpb.UUID{
+			utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+			utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c1"),
+		},
+		PluginId: "test-plugin",
+	}).Return(&cloudpb.CreateRetentionScriptResponse{
+		ID: utils.ProtoFromUUIDStrOrNil("1ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+	}, nil)
+
+	gqlSchema := LoadSchema(gqlEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				mutation {
+					CreateRetentionScript(script: {
+						name: "Test script",
+						description: "This is a script",
+						frequencyS: 5,
+						contents: "px.display()",
+						customExportURL: "localhost:8080",
+						pluginID: "test-plugin"
+						clusters: [
+							"2ba7b810-9dad-11d1-80b4-00c04fd430c8",
+							"2ba7b810-9dad-11d1-80b4-00c04fd430c1"
+						]
+					}) {}
+				}
+			`,
+			ExpectedResult: `
+				{
+					"CreateRetentionScript": "1ba7b810-9dad-11d1-80b4-00c04fd430c8"
 				}
 			`,
 		},

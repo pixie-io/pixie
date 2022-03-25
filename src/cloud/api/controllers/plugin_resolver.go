@@ -27,6 +27,8 @@ import (
 	"github.com/graph-gophers/graphql-go"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
+	"px.dev/pixie/src/api/proto/uuidpb"
+	"px.dev/pixie/src/utils"
 )
 
 // PluginResolver is the resolver responsible for resolving plugins.
@@ -218,6 +220,7 @@ type RetentionScriptResolver struct {
 	Contents        string
 	PluginID        string
 	CustomExportURL *string
+	IsPreset        bool
 }
 
 type editableRetentionScript struct {
@@ -260,20 +263,168 @@ func (c *RetentionScriptResolver) Clusters() []graphql.ID {
 
 // RetentionScripts fetches all retention scripts belonging to the org.
 func (q *QueryResolver) RetentionScripts(ctx context.Context) ([]*RetentionScriptResolver, error) {
-	return make([]*RetentionScriptResolver, 0), errors.New("Not yet implemented")
+	resp, err := q.Env.PluginServer.GetRetentionScripts(ctx, &cloudpb.GetRetentionScriptsRequest{})
+	if err != nil {
+		return make([]*RetentionScriptResolver, 0), err
+	}
+
+	scripts := make([]*RetentionScriptResolver, len(resp.Scripts))
+
+	for i, s := range resp.Scripts {
+		clusterIDs := make([]uuid.UUID, len(s.ClusterIDs))
+		for j, c := range s.ClusterIDs {
+			clusterIDs[j] = utils.UUIDFromProtoOrNil(c)
+		}
+
+		scripts[i] = &RetentionScriptResolver{
+			scriptID:    utils.UUIDFromProtoOrNil(s.ScriptID),
+			Name:        s.ScriptName,
+			Description: s.Description,
+			FrequencyS:  int32(s.FrequencyS),
+			clusterIDs:  clusterIDs,
+			PluginID:    s.PluginId,
+			Enabled:     s.Enabled,
+			IsPreset:    s.IsPreset,
+		}
+	}
+
+	return scripts, nil
 }
 
 // RetentionScript fetches a single retention script, given an ID.
 func (q *QueryResolver) RetentionScript(ctx context.Context, args retentionScriptArgs) (*RetentionScriptResolver, error) {
-	return nil, errors.New("Not yet implemented")
+	resp, err := q.Env.PluginServer.GetRetentionScript(ctx, &cloudpb.GetRetentionScriptRequest{
+		ID: utils.ProtoFromUUIDStrOrNil(args.ID),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	s := resp.Script
+	clusterIDs := make([]uuid.UUID, len(s.ClusterIDs))
+	for j, c := range s.ClusterIDs {
+		clusterIDs[j] = utils.UUIDFromProtoOrNil(c)
+	}
+	script := &RetentionScriptResolver{
+		scriptID:        uuid.FromStringOrNil(args.ID),
+		Name:            s.ScriptName,
+		Description:     s.Description,
+		FrequencyS:      int32(s.FrequencyS),
+		Enabled:         s.Enabled,
+		Contents:        resp.Contents,
+		PluginID:        s.PluginId,
+		CustomExportURL: &resp.ExportURL,
+		clusterIDs:      clusterIDs,
+		IsPreset:        s.IsPreset,
+	}
+
+	return script, nil
 }
 
 // UpdateRetentionScript updates the details for a single retention script.
 func (q *QueryResolver) UpdateRetentionScript(ctx context.Context, args updateRetentionScriptArgs) (bool, error) {
-	return false, errors.New("Not yet implemented")
+	req := &cloudpb.UpdateRetentionScriptRequest{
+		ID: utils.ProtoFromUUIDStrOrNil(string(args.ID)),
+	}
+
+	if args.Script == nil {
+		return false, errors.New("Nothing to update")
+	}
+	script := args.Script
+
+	clusterIDs := make([]*uuidpb.UUID, 0)
+
+	if script.Clusters != nil {
+		for _, c := range *script.Clusters {
+			clusterIDs = append(clusterIDs, utils.ProtoFromUUIDStrOrNil(c))
+		}
+	}
+	req.ClusterIDs = clusterIDs
+
+	if script.PluginID != nil {
+		return false, errors.New("Updating plugins for a script is currently unsupported")
+	}
+
+	if script.Name != nil {
+		req.ScriptName = &types.StringValue{Value: *script.Name}
+	}
+
+	if script.Description != nil {
+		req.Description = &types.StringValue{Value: *script.Description}
+	}
+
+	if script.FrequencyS != nil {
+		req.FrequencyS = &types.Int64Value{Value: int64(*script.FrequencyS)}
+	}
+
+	if script.Enabled != nil {
+		req.Enabled = &types.BoolValue{Value: *script.Enabled}
+	}
+
+	if script.Contents != nil {
+		req.Contents = &types.StringValue{Value: *script.Contents}
+	}
+
+	if script.CustomExportURL != nil {
+		req.ExportUrl = &types.StringValue{Value: *script.CustomExportURL}
+	}
+
+	_, err := q.Env.PluginServer.UpdateRetentionScript(ctx, req)
+	if err != nil {
+		return false, err
+	}
+
+	return true, err
 }
 
 // CreateRetentionScript creates a new retention script.
 func (q *QueryResolver) CreateRetentionScript(ctx context.Context, args createRetentionScriptArgs) (graphql.ID, error) {
-	return graphql.ID(""), errors.New("Not yet implemented")
+	req := &cloudpb.CreateRetentionScriptRequest{}
+
+	if args.Script == nil {
+		return graphql.ID(""), errors.New("Nothing to create")
+	}
+	script := args.Script
+
+	clusterIDs := make([]*uuidpb.UUID, 0)
+
+	if script.Clusters != nil {
+		for _, c := range *script.Clusters {
+			clusterIDs = append(clusterIDs, utils.ProtoFromUUIDStrOrNil(c))
+		}
+	}
+	req.ClusterIDs = clusterIDs
+
+	if script.PluginID == nil {
+		return graphql.ID(""), errors.New("Cannot create a retention script without a plugin")
+	}
+
+	req.PluginId = *script.PluginID
+
+	if script.Name != nil {
+		req.ScriptName = *script.Name
+	}
+
+	if script.Description != nil {
+		req.Description = *script.Description
+	}
+
+	if script.FrequencyS != nil {
+		req.FrequencyS = int64(*script.FrequencyS)
+	}
+
+	if script.Contents != nil {
+		req.Contents = *script.Contents
+	}
+
+	if script.CustomExportURL != nil {
+		req.ExportUrl = *script.CustomExportURL
+	}
+
+	resp, err := q.Env.PluginServer.CreateRetentionScript(ctx, req)
+	if err != nil {
+		return graphql.ID(""), err
+	}
+
+	return graphql.ID(utils.UUIDFromProtoOrNil(resp.ID).String()), nil
 }

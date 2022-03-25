@@ -373,6 +373,7 @@ type RetentionScript {
   enabled: Boolean!
   clusters: [ID!]!
   pluginID: String!
+  isPreset: Boolean!
 }
 
 type DetailedRetentionScript {
@@ -385,6 +386,7 @@ type DetailedRetentionScript {
   contents: String!
   pluginID: String!
   customExportURL: String
+  isPreset: Boolean!
 }
 
 input EditableRetentionScript {
