@@ -51,6 +51,12 @@ StatusOr<std::shared_ptr<OTelMetrics>> OTelMetrics::Create(ASTVisitor* ast_visit
   return otel_metrics;
 }
 
+StatusOr<std::shared_ptr<OTelTrace>> OTelTrace::Create(ASTVisitor* ast_visitor) {
+  auto otel_trace = std::shared_ptr<OTelTrace>(new OTelTrace(ast_visitor));
+  PL_RETURN_IF_ERROR(otel_trace->Init());
+  return otel_trace;
+}
+
 StatusOr<std::shared_ptr<EndpointConfig>> EndpointConfig::Create(
     ASTVisitor* ast_visitor, std::string url,
     std::vector<EndpointConfig::ConnAttribute> attributes) {
@@ -263,6 +269,9 @@ Status OTelModule::Init(CompilerState* compiler_state, IR* ir) {
   PL_ASSIGN_OR_RETURN(auto metric, OTelMetrics::Create(ast_visitor(), ir));
   PL_RETURN_IF_ERROR(AssignAttribute("metric", metric));
 
+  PL_ASSIGN_OR_RETURN(auto trace, OTelTrace::Create(ast_visitor()));
+  PL_RETURN_IF_ERROR(AssignAttribute("trace", trace));
+
   PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> endpoint_fn,
                       FuncObject::Create(kEndpointOpID, {"url", "headers"}, {{"headers", "{}"}},
                                          /* has_variable_len_args */ false,
@@ -303,6 +312,72 @@ Status OTelMetrics::Init() {
                          ast_visitor()));
   PL_RETURN_IF_ERROR(summary_fn->SetDocString(kSummaryOpDocstring));
   AddMethod(kSummaryOpID, summary_fn);
+
+  return Status::OK();
+}
+
+StatusOr<QLObjectPtr> SpanDefinition(const pypa::AstPtr& ast, const ParsedArgs& args,
+                                     ASTVisitor* visitor) {
+  OTelSpan span;
+  auto name = args.GetArg("name");
+  if (!ExprObject::IsExprObject(name)) {
+    return name->CreateError("Expected string or column for 'name' '$0'",
+                             QLObjectTypeString(name->type()));
+  }
+  auto name_expr = static_cast<ExprObject*>(name.get())->expr();
+  if (StringIR::NodeMatches(name_expr)) {
+    span.name = static_cast<StringIR*>(name_expr)->str();
+  } else if (ColumnIR::NodeMatches(name_expr)) {
+    span.name = static_cast<ColumnIR*>(name_expr);
+  } else {
+    return name->CreateError("Expected string or column for 'name' '$0'",
+                             IRNode::TypeString(name_expr->type()));
+  }
+
+  PL_ASSIGN_OR_RETURN(span.start_time_column, GetArgAs<ColumnIR>(ast, args, "start_time"));
+  PL_ASSIGN_OR_RETURN(span.end_time_column, GetArgAs<ColumnIR>(ast, args, "end_time"));
+  auto span_id = args.GetArg("span_id");
+  if (!NoneObject::IsNoneObject(span_id)) {
+    PL_ASSIGN_OR_RETURN(span.span_id_column, GetArgAs<ColumnIR>(ast, args, "span_id"));
+  }
+  auto trace_id = args.GetArg("trace_id");
+  if (!NoneObject::IsNoneObject(trace_id)) {
+    PL_ASSIGN_OR_RETURN(span.trace_id_column, GetArgAs<ColumnIR>(ast, args, "trace_id"));
+  }
+  auto parent_span_id = args.GetArg("parent_span_id");
+  if (!NoneObject::IsNoneObject(parent_span_id)) {
+    PL_ASSIGN_OR_RETURN(span.parent_span_id_column,
+                        GetArgAs<ColumnIR>(ast, args, "parent_span_id"));
+  }
+
+  QLObjectPtr attributes = args.GetArg("attributes");
+  if (!DictObject::IsDict(attributes)) {
+    return attributes->CreateError("Expected attributes to be a dictionary, received $0",
+                                   attributes->name());
+  }
+
+  PL_ASSIGN_OR_RETURN(span.attributes, ParseAttributes(static_cast<DictObject*>(attributes.get())));
+
+  return OTelDataContainer::Create(visitor, std::move(span));
+}
+
+Status OTelTrace::Init() {
+  // Setup methods.
+  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> span_fn,
+                      FuncObject::Create(kSpanOpID,
+                                         {"name", "start_time", "end_time", "trace_id", "span_id",
+                                          "parent_span_id", "attributes"},
+                                         {{"trace_id", "None"},
+                                          {"parent_span_id", "None"},
+                                          {"span_id", "None"},
+                                          {"attributes", "{}"}},
+                                         /* has_variable_len_args */ false,
+                                         /* has_variable_len_kwargs */ false,
+                                         std::bind(&SpanDefinition, std::placeholders::_1,
+                                                   std::placeholders::_2, std::placeholders::_3),
+                                         ast_visitor()));
+  PL_RETURN_IF_ERROR(span_fn->SetDocString(kSpanOpDocstring));
+  AddMethod(kSpanOpID, span_fn);
 
   return Status::OK();
 }

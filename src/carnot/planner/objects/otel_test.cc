@@ -44,8 +44,10 @@ class OTelExportTest : public QLObjectTest {
     ASSERT_OK_AND_ASSIGN(auto otel,
                          OTelModule::Create(compiler_state.get(), ast_visitor.get(), graph.get()));
     ASSERT_OK_AND_ASSIGN(auto otelmetric, OTelMetrics::Create(ast_visitor.get(), graph.get()));
+    ASSERT_OK_AND_ASSIGN(auto oteltrace, OTelTrace::Create(ast_visitor.get()));
     var_table->Add("otel", otel);
     var_table->Add("otelmetric", otelmetric);
+    var_table->Add("oteltrace", oteltrace);
   }
 
   StatusOr<OTelExportSinkIR*> ParseOutOTelExportIR(const std::string& otel_export_expression,
@@ -342,7 +344,113 @@ otel_sink_op {
     }
   }
 })pb"},
-    }),
+        {"Span_name_string",
+         R"pxl(
+otel.Data(
+  endpoint=otel.Endpoint(
+    url='0.0.0.0:55690',
+  ),
+  resource={
+      'service.name' : df.service,
+  },
+  data=[
+    oteltrace.Span(
+      name='svc',
+      start_time=df.start_time,
+      end_time=df.end_time,
+      attributes={'gc': df.young}
+    ),
+  ]
+))pxl",
+         table_store::schema::Relation{
+             {types::TIME64NS, types::TIME64NS, types::STRING, types::STRING},
+             {"start_time", "end_time", "service", "young"},
+             {types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE},
+         },
+         R"pb(
+op_type: OTEL_EXPORT_SINK_OPERATOR
+otel_sink_op {
+  endpoint_config {
+    url: "0.0.0.0:55690"
+  }
+  resource {
+    attributes {
+      name: "service.name"
+      column {
+        column_type: STRING
+        column_index: 2
+      }
+    }
+  }
+  spans {
+    name_string: "svc"
+    attributes {
+      name: "gc"
+      column {
+        column_type: STRING
+        column_index: 3
+      }
+    }
+    start_time_column_index: 0
+    end_time_column_index: 1
+    trace_id_column_index: -1
+    span_id_column_index: -1
+    parent_span_id_column_index: -1
+  }
+})pb"},
+
+        {"Span_name_column",
+         R"pxl(
+otel.Data(
+  endpoint=otel.Endpoint(
+    url='0.0.0.0:55690',
+  ),
+  resource={
+      'service.name' : df.service,
+  },
+  data=[
+    oteltrace.Span(
+      name=df.span_name,
+      start_time=df.start_time,
+      end_time=df.end_time,
+      trace_id=df.trace_id,
+      parent_span_id=df.parent_span_id,
+      span_id=df.span_id,
+    ),
+  ]
+))pxl",
+         table_store::schema::Relation{
+             {types::TIME64NS, types::TIME64NS, types::STRING, types::STRING, types::STRING,
+              types::STRING, types::STRING, types::STRING},
+             {"start_time", "end_time", "service", "young", "span_name", "trace_id", "span_id",
+              "parent_span_id"},
+             {types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE,
+              types::ST_NONE, types::ST_NONE, types::ST_NONE},
+         },
+         R"pb(
+op_type: OTEL_EXPORT_SINK_OPERATOR
+otel_sink_op {
+  endpoint_config {
+    url: "0.0.0.0:55690"
+  }
+  resource {
+    attributes {
+      name: "service.name"
+      column {
+        column_type: STRING
+        column_index: 2
+      }
+    }
+  }
+  spans {
+    name_column_index: 4
+    start_time_column_index: 0
+    end_time_column_index: 1
+    trace_id_column_index: 5
+    span_id_column_index: 6
+    parent_span_id_column_index: 7
+  }
+})pb"}}),
     [](const ::testing::TestParamInfo<SuccessTestCase>& info) { return info.param.name; });
 
 struct ErrorTestCase {

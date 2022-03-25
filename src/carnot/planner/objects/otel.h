@@ -81,7 +81,7 @@ class OTelModule : public QLObject {
 
 class OTelMetrics : public QLObject {
  public:
-  inline static constexpr char kOTelMetricsModule[] = "otelmetrics";
+  inline static constexpr char kOTelMetricsModule[] = "metric";
   static constexpr TypeDescriptor OTelMetricsModuleType = {
       /* name */ kOTelMetricsModule,
       /* type */ QLObjectType::kModule,
@@ -128,12 +128,53 @@ class OTelMetrics : public QLObject {
   )doc";
 
  protected:
-  explicit OTelMetrics(ASTVisitor* ast_visitor, IR* graph)
+  OTelMetrics(ASTVisitor* ast_visitor, IR* graph)
       : QLObject(OTelMetricsModuleType, ast_visitor), graph_(graph) {}
   Status Init();
 
  private:
   IR* graph_;
+};
+
+class OTelTrace : public QLObject {
+ public:
+  inline static constexpr char kOTelTraceModule[] = "trace";
+  static constexpr TypeDescriptor OTelTraceModuleType = {
+      /* name */ kOTelTraceModule,
+      /* type */ QLObjectType::kModule,
+  };
+  static StatusOr<std::shared_ptr<OTelTrace>> Create(ASTVisitor* ast_visitor);
+
+  inline static constexpr char kSpanOpID[] = "Span";
+  inline static constexpr char kSpanOpDocstring[] = R"doc(
+  Defines the OpenTelemetry Trace Span type.
+
+  Span describes how to transform a pixie DataFrame into the OpenTelemetry
+  Span type.
+
+  Args:
+    name (string,Column): The name of the span. Can be a stirng or a STRING column.
+    start_time (Column): The column that marks the beginning of the span, must be TIME64NS.
+    end_time (Column): The column that marks the end of the span, must be TIME64NS.
+    trace_id (Column, optional): The column containing trace_ids, must be formatted as a lower-case hex
+      with 32 hex characters (aka 16 bytes), or the engine will auto-generate a new ID. If not specified,
+      the OpenTelemetry exporter will auto-generate a valid ID.
+    span_id (Column, optional): The column containing trace_ids, must be formatted as a lower-case hex
+      with 16 hex characters (aka 8 bytes), or the engine will auto-generate a new ID. If not specified,
+      the OpenTelemetry exporter will auto-generate a valid ID.
+    parent_span_id (Column, optional): The column containing parent_span_ids, must be formatted as a lower-case hex
+      with 16 hex characters (aka 8 bytes), or the engine will write the data as empty. If not specified,
+      will leave the parent_span_id field empty.
+    attributes (Dict[string, string], optional): A mapping of attribute name to the column
+      name that stores data about the attribute.
+  Returns:
+    OTelDataContainer: the description of how to map a DataFrame to OpenTelemetry Data. Can be passed
+      into into px.otel.Data() as data.
+  )doc";
+
+ protected:
+  explicit OTelTrace(ASTVisitor* ast_visitor) : QLObject(OTelTraceModuleType, ast_visitor) {}
+  Status Init();
 };
 
 class EndpointConfig : public QLObject {
