@@ -31,7 +31,7 @@ service CronScriptService {
     // GetScript gets a script stored in the cron script service.
     rpc GetScript(GetScriptRequest) returns (GetScriptResponse);
     // GetScripts gets scripts stored in the cron script service, given a set of IDs.
-    rpc GetScripts(GetScriptsRequest) returns (GetScriptResponse);
+    rpc GetScripts(GetScriptsRequest) returns (GetScriptsResponse);
     // CreateScript creates a cron script.
     rpc CreateScript(CreateScriptRequest) returns (CreateScriptResponse);
     // UpdateScript updates an existing cron script.
@@ -103,7 +103,9 @@ message CreateScriptRequest {
 }
 
 // CreateScriptResponse is a response to a CreateScriptRequest.
-message CreateScriptResponse {}
+message CreateScriptResponse {
+    uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+}
 
 // UpdateScriptRequest is a request to update an existing cron script.
 message UpdateScriptRequest {
@@ -119,6 +121,7 @@ message UpdateScriptRequest {
     google.protobuf.BoolValue enabled = 5;
     // How frequently a script should be run, if not specified via cron.
     google.protobuf.Int64Value frequency_s = 6;
+    uuidpb.UUID script_id = 7;
 }
 
 // UpdateScriptResponse is a response to an UpdateScriptRequest.

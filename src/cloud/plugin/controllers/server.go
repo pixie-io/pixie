@@ -22,16 +22,21 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sync"
 
 	"github.com/gofrs/uuid"
 	"github.com/jmoiron/sqlx"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"gopkg.in/yaml.v2"
 
+	"px.dev/pixie/src/api/proto/uuidpb"
+	"px.dev/pixie/src/cloud/cron_script/cronscriptpb"
 	"px.dev/pixie/src/cloud/plugin/pluginpb"
+	"px.dev/pixie/src/shared/scripts"
+	"px.dev/pixie/src/shared/services/authcontext"
 	"px.dev/pixie/src/utils"
 )
 
@@ -40,16 +45,19 @@ type Server struct {
 	db    *sqlx.DB
 	dbKey string
 
+	cronScriptClient cronscriptpb.CronScriptServiceClient
+
 	done chan struct{}
 	once sync.Once
 }
 
 // New creates a new server.
-func New(db *sqlx.DB, dbKey string) *Server {
+func New(db *sqlx.DB, dbKey string, cronScriptClient cronscriptpb.CronScriptServiceClient) *Server {
 	return &Server{
-		db:    db,
-		dbKey: dbKey,
-		done:  make(chan struct{}),
+		db:               db,
+		dbKey:            dbKey,
+		cronScriptClient: cronScriptClient,
+		done:             make(chan struct{}),
 	}
 }
 
@@ -233,6 +241,8 @@ func (s *Server) GetOrgRetentionPluginConfig(ctx context.Context, req *pluginpb.
 func (s *Server) enableOrgRetention(orgID uuid.UUID, pluginID string, version string, configurations []byte) error {
 	query := `INSERT INTO org_data_retention_plugins (org_id, plugin_id, version, configurations) VALUES ($1, $2, $3, PGP_SYM_ENCRYPT($4, $5))`
 
+	// TODO(michelle): Enabling org retention should enable any preset scripts.
+
 	_, err := s.db.Exec(query, orgID, pluginID, version, configurations, s.dbKey)
 	return err
 }
@@ -240,12 +250,16 @@ func (s *Server) enableOrgRetention(orgID uuid.UUID, pluginID string, version st
 func (s *Server) disableOrgRetention(orgID uuid.UUID, pluginID string) error {
 	query := `DELETE FROM org_data_retention_plugins WHERE org_id=$1 AND plugin_id=$2`
 
+	// TODO(michelle): Disabling org retention should disable/delete any retention scripts.
+
 	_, err := s.db.Exec(query, orgID, pluginID)
 	return err
 }
 
 func (s *Server) updateOrgRetentionConfigs(orgID uuid.UUID, pluginID string, version string, configurations []byte) error {
 	query := `UPDATE org_data_retention_plugins SET version = $1, configurations = PGP_SYM_ENCRYPT($2, $3) WHERE org_id = $4 AND plugin_id = $5`
+
+	// TODO(michelle): Updating configs should update any retention script YAMLs.
 
 	_, err := s.db.Exec(query, version, configurations, s.dbKey, orgID, pluginID)
 	return err
@@ -318,22 +332,246 @@ func (s *Server) UpdateOrgRetentionPluginConfig(ctx context.Context, req *plugin
 	return &pluginpb.UpdateOrgRetentionPluginConfigResponse{}, nil
 }
 
+// RetentionScript represents a retention script in the plugin system.
+type RetentionScript struct {
+	OrgID       uuid.UUID `db:"org_id"`
+	ScriptID    uuid.UUID `db:"script_id"`
+	ScriptName  string    `db:"script_name"`
+	Description string    `db:"description"`
+	IsPreset    bool      `db:"is_preset"`
+	PluginID    string    `db:"plugin_id"`
+	ExportURL   string    `db:"export_url"`
+}
+
 // GetRetentionScripts gets all retention scripts the org has configured.
 func (s *Server) GetRetentionScripts(ctx context.Context, req *pluginpb.GetRetentionScriptsRequest) (*pluginpb.GetRetentionScriptsResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	query := `SELECT script_id, script_name, description, is_preset, plugin_id from plugin_retention_scripts WHERE org_id=$1`
+	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
+	rows, err := s.db.Queryx(query, orgID)
+	if err != nil {
+		log.WithError(err).Error("Failed to fetch scripts")
+		return nil, status.Errorf(codes.Internal, "Failed to fetch scripts")
+	}
+
+	defer rows.Close()
+
+	scriptMap := map[uuid.UUID]*pluginpb.RetentionScript{}
+	scriptIDs := make([]*uuidpb.UUID, 0)
+	for rows.Next() {
+		var rs RetentionScript
+		err = rows.StructScan(&rs)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "failed to read script")
+		}
+		id := utils.ProtoFromUUID(rs.ScriptID)
+		scriptMap[rs.ScriptID] = &pluginpb.RetentionScript{
+			ScriptID:    id,
+			ScriptName:  rs.ScriptName,
+			Description: rs.Description,
+			PluginId:    rs.PluginID,
+			IsPreset:    rs.IsPreset,
+		}
+		scriptIDs = append(scriptIDs, id)
+	}
+	cronScriptsResp, err := s.cronScriptClient.GetScripts(ctx, &cronscriptpb.GetScriptsRequest{IDs: scriptIDs})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to fetch cron scripts")
+	}
+
+	for _, c := range cronScriptsResp.Scripts {
+		if v, ok := scriptMap[utils.UUIDFromProtoOrNil(c.ID)]; ok {
+			v.FrequencyS = c.FrequencyS
+			v.Enabled = c.Enabled
+			v.ClusterIDs = c.ClusterIDs
+		}
+	}
+
+	scripts := make([]*pluginpb.RetentionScript, 0)
+	for _, v := range scriptMap {
+		scripts = append(scripts, v)
+	}
+	return &pluginpb.GetRetentionScriptsResponse{Scripts: scripts}, nil
 }
 
 // GetRetentionScript gets the details for a script an org is using for long-term data retention.
 func (s *Server) GetRetentionScript(ctx context.Context, req *pluginpb.GetRetentionScriptRequest) (*pluginpb.GetRetentionScriptResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	query := `SELECT script_name, description, is_preset, plugin_id, PGP_SYM_DECRYPT(export_url, $1::text) as export_url from plugin_retention_scripts WHERE org_id=$2 AND script_id=$3`
+	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
+	scriptID := utils.UUIDFromProtoOrNil(req.ScriptID)
+	rows, err := s.db.Queryx(query, s.dbKey, orgID, scriptID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to fetch script")
+	}
+
+	defer rows.Close()
+
+	if !rows.Next() {
+		return nil, status.Error(codes.NotFound, "script not found")
+	}
+
+	var script RetentionScript
+	err = rows.StructScan(&script)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to read script")
+	}
+
+	cronScriptResp, err := s.cronScriptClient.GetScript(ctx, &cronscriptpb.GetScriptRequest{ID: req.ScriptID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to fetch cron script")
+	}
+	cronScript := cronScriptResp.Script
+
+	return &pluginpb.GetRetentionScriptResponse{
+		Script: &pluginpb.DetailedRetentionScript{
+			Script: &pluginpb.RetentionScript{
+				ScriptID:    req.ScriptID,
+				ScriptName:  script.ScriptName,
+				Description: script.Description,
+				FrequencyS:  cronScript.FrequencyS,
+				ClusterIDs:  cronScript.ClusterIDs,
+				PluginId:    script.PluginID,
+				Enabled:     cronScript.Enabled,
+				IsPreset:    script.IsPreset,
+			},
+			Contents:  cronScript.Script,
+			ExportURL: script.ExportURL,
+		},
+	}, nil
 }
 
 // CreateRetentionScript creates a script that is used for long-term data retention.
 func (s *Server) CreateRetentionScript(ctx context.Context, req *pluginpb.CreateRetentionScriptRequest) (*pluginpb.CreateRetentionScriptResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	// Fetch config + headers from plugin info.
+	query := `SELECT PGP_SYM_DECRYPT(o.configurations, $1::text), r.default_export_url, r.version FROM org_data_retention_plugins o, data_retention_plugin_releases r WHERE org_id=$2 AND r.plugin_id=$3 AND o.plugin_id=r.plugin_id AND r.version = o.version`
+	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
+	rows, err := s.db.Queryx(query, s.dbKey, orgID, req.Script.Script.PluginId)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to fetch plugin")
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return nil, status.Error(codes.NotFound, "plugin is not enabled")
+	}
+
+	var configurationJSON []byte
+	var configMap map[string]string
+	var defaultExportURL string
+	var pluginVersion string
+	err = rows.Scan(&configurationJSON, &defaultExportURL, &pluginVersion)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to read configs")
+	}
+
+	err = json.Unmarshal(configurationJSON, &configMap)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to read configs")
+	}
+
+	exportURL := defaultExportURL
+	if req.Script.ExportURL != "" {
+		exportURL = req.Script.ExportURL
+	}
+
+	// Convert endpoint info to string YAML.
+	config := &scripts.Config{
+		OtelEndpointConfig: &scripts.OtelEndpointConfig{
+			URL:     exportURL,
+			Headers: configMap,
+		},
+	}
+
+	mConfig, err := yaml.Marshal(&config)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to marshal configs")
+	}
+
+	cronScriptResp, err := s.cronScriptClient.CreateScript(ctx, &cronscriptpb.CreateScriptRequest{
+		Script:     req.Script.Contents,
+		ClusterIDs: req.Script.Script.ClusterIDs,
+		Configs:    string(mConfig),
+		FrequencyS: req.Script.Script.FrequencyS,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to create cron script")
+	}
+
+	scriptID := cronScriptResp.ID
+
+	query = `INSERT INTO plugin_retention_scripts (org_id, plugin_id, plugin_version, script_id, script_name, description, export_url, is_preset) VALUES ($1, $2, $3, $4, $5, $6, PGP_SYM_ENCRYPT($7, $8), $9)`
+	_, err = s.db.Exec(query, orgID, req.Script.Script.PluginId, pluginVersion, utils.UUIDFromProtoOrNil(scriptID), req.Script.Script.ScriptName, req.Script.Script.Description, exportURL, s.dbKey, req.Script.Script.IsPreset)
+	if err != nil {
+		log.WithError(err).Error("Failed")
+
+		return nil, status.Errorf(codes.Internal, "Failed to create retention script")
+	}
+
+	return &pluginpb.CreateRetentionScriptResponse{}, nil
 }
 
 // UpdateRetentionScript updates a script used for long-term data retention.
 func (s *Server) UpdateRetentionScript(ctx context.Context, req *pluginpb.UpdateRetentionScriptRequest) (*pluginpb.UpdateRetentionScriptResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	// Fetch existing script.
+	query := `SELECT org_id, script_name, description, PGP_SYM_DECRYPT(export_url, $1::text) as export_url from plugin_retention_scripts WHERE script_id=$2`
+	scriptID := utils.UUIDFromProtoOrNil(req.ScriptID)
+	rows, err := s.db.Queryx(query, s.dbKey, scriptID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to fetch script")
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return nil, status.Error(codes.NotFound, "script not found")
+	}
+
+	var script RetentionScript
+	err = rows.StructScan(&script)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to read script")
+	}
+
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Unauthenticated, "Unauthenticated")
+	}
+	claimsOrgIDstr := sCtx.Claims.GetUserClaims().OrgID
+	if script.OrgID.String() != claimsOrgIDstr {
+		return nil, status.Errorf(codes.Unauthenticated, "Unauthorized")
+	}
+
+	scriptName := script.ScriptName
+	description := script.Description
+	exportURL := script.ExportURL
+
+	if req.ScriptName != nil {
+		scriptName = req.ScriptName.Value
+	}
+	if req.Description != nil {
+		description = req.Description.Value
+	}
+	if req.ExportUrl != nil {
+		exportURL = req.ExportUrl.Value
+	}
+
+	query = `UPDATE plugin_retention_scripts SET script_name = $1, export_url = PGP_SYM_ENCRYPT($2, $3), description = $4 WHERE script_id = $5`
+
+	_, err = s.db.Exec(query, scriptName, exportURL, s.dbKey, description, scriptID)
+
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to update retention script")
+	}
+
+	// Update cron script.
+	_, err = s.cronScriptClient.UpdateScript(ctx, &cronscriptpb.UpdateScriptRequest{
+		Script:     req.Contents,
+		ClusterIDs: req.ClusterIDs,
+		Enabled:    req.Enabled,
+		FrequencyS: req.FrequencyS,
+		ScriptId:   req.ScriptID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to update cron script")
+	}
+
+	return &pluginpb.UpdateRetentionScriptResponse{}, nil
 }

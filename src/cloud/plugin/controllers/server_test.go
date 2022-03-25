@@ -24,18 +24,28 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
+	"github.com/golang/mock/gomock"
 	"github.com/jmoiron/sqlx"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 
+	"px.dev/pixie/src/api/proto/uuidpb"
+	"px.dev/pixie/src/cloud/cron_script/cronscriptpb"
+	mock_cronscriptpb "px.dev/pixie/src/cloud/cron_script/cronscriptpb/mock"
 	"px.dev/pixie/src/cloud/plugin/controllers"
 	"px.dev/pixie/src/cloud/plugin/pluginpb"
 	"px.dev/pixie/src/cloud/plugin/schema"
+	"px.dev/pixie/src/shared/scripts"
+	"px.dev/pixie/src/shared/services/authcontext"
 	"px.dev/pixie/src/shared/services/pgtest"
+	srvutils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils"
 )
 
@@ -67,7 +77,14 @@ func testMain(m *testing.M) error {
 	return nil
 }
 
+func createTestContext() context.Context {
+	sCtx := authcontext.New()
+	sCtx.Claims = srvutils.GenerateJWTForUser("abcdef", "223e4567-e89b-12d3-a456-426655440000", "test@test.com", time.Now(), "pixie")
+	return authcontext.NewContext(context.Background(), sCtx)
+}
+
 func mustLoadTestData(db *sqlx.DB) {
+	db.MustExec(`DELETE FROM plugin_retention_scripts`)
 	db.MustExec(`DELETE FROM org_data_retention_plugins`)
 	db.MustExec(`DELETE FROM data_retention_plugin_releases`)
 	db.MustExec(`DELETE FROM plugin_releases`)
@@ -123,12 +140,20 @@ func mustLoadTestData(db *sqlx.DB) {
 	insertOrgRelease := `INSERT INTO org_data_retention_plugins(org_id, plugin_id, version, configurations) VALUES ($1, $2, $3, PGP_SYM_ENCRYPT($4, $5))`
 	db.MustExec(insertOrgRelease, "223e4567-e89b-12d3-a456-426655440000", "test-plugin", "0.0.3", configJSON1, "test")
 	db.MustExec(insertOrgRelease, "223e4567-e89b-12d3-a456-426655440001", "test-plugin", "0.0.2", configJSON2, "test")
+
+	insertRetentionScript := `INSERT INTO plugin_retention_scripts (org_id, plugin_id, plugin_version, script_id, script_name, description, is_preset,  export_url) VALUES ($1, $2, $3, $4, $5, $6, $7, PGP_SYM_ENCRYPT($8, $9))`
+	db.MustExec(insertRetentionScript, "223e4567-e89b-12d3-a456-426655440000", "test-plugin", "0.0.3", "123e4567-e89b-12d3-a456-426655440000", "testScript", "This is a script", false, "https://localhost:8080", "test")
+	db.MustExec(insertRetentionScript, "223e4567-e89b-12d3-a456-426655440000", "test-plugin", "0.0.3", "123e4567-e89b-12d3-a456-426655440001", "testScript2", "This is another script", true, "https://url", "test")
 }
 
 func TestServer_GetPlugins(t *testing.T) {
 	mustLoadTestData(db)
 
-	s := controllers.New(db, "test")
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+	s := controllers.New(db, "test", mockCSClient)
 	resp, err := s.GetPlugins(context.Background(), &pluginpb.GetPluginsRequest{})
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -157,7 +182,11 @@ func TestServer_GetPlugins(t *testing.T) {
 func TestServer_GetPluginsWithKind(t *testing.T) {
 	mustLoadTestData(db)
 
-	s := controllers.New(db, "test")
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+	s := controllers.New(db, "test", mockCSClient)
 	resp, err := s.GetPlugins(context.Background(), &pluginpb.GetPluginsRequest{Kind: pluginpb.PLUGIN_KIND_RETENTION})
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -178,7 +207,11 @@ func TestServer_GetPluginsWithKind(t *testing.T) {
 func TestServer_GetRetentionPluginConfig(t *testing.T) {
 	mustLoadTestData(db)
 
-	s := controllers.New(db, "test")
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+	s := controllers.New(db, "test", mockCSClient)
 	resp, err := s.GetRetentionPluginConfig(context.Background(), &pluginpb.GetRetentionPluginConfigRequest{
 		ID:      "test-plugin",
 		Version: "0.0.2",
@@ -213,7 +246,11 @@ func TestServer_GetRetentionPluginConfig(t *testing.T) {
 func TestServer_GetRetentionPluginsForOrg(t *testing.T) {
 	mustLoadTestData(db)
 
-	s := controllers.New(db, "test")
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+	s := controllers.New(db, "test", mockCSClient)
 	resp, err := s.GetRetentionPluginsForOrg(context.Background(), &pluginpb.GetRetentionPluginsForOrgRequest{
 		OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 	})
@@ -237,7 +274,11 @@ func TestServer_GetRetentionPluginsForOrg(t *testing.T) {
 func TestServer_GetOrgRetentionPluginConfig(t *testing.T) {
 	mustLoadTestData(db)
 
-	s := controllers.New(db, "test")
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+	s := controllers.New(db, "test", mockCSClient)
 	resp, err := s.GetOrgRetentionPluginConfig(context.Background(), &pluginpb.GetOrgRetentionPluginConfigRequest{
 		PluginID: "test-plugin",
 		OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
@@ -412,7 +453,11 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mustLoadTestData(db)
 
-			s := controllers.New(db, "test")
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+			s := controllers.New(db, "test", mockCSClient)
 			resp, err := s.UpdateOrgRetentionPluginConfig(context.Background(), test.request)
 
 			require.NoError(t, err)
@@ -443,4 +488,247 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 			assert.ElementsMatch(t, test.expectedOrgConfigs, plugins)
 		})
 	}
+}
+
+func TestServer_GetRetentionScripts(t *testing.T) {
+	mustLoadTestData(db)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+	mockCSClient.EXPECT().GetScripts(gomock.Any(), &cronscriptpb.GetScriptsRequest{
+		IDs: []*uuidpb.UUID{
+			utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+			utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+		},
+	}).Return(&cronscriptpb.GetScriptsResponse{
+		Scripts: []*cronscriptpb.CronScript{
+			&cronscriptpb.CronScript{
+				ID:     utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+				OrgID:  utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+				Script: "px.display()",
+				ClusterIDs: []*uuidpb.UUID{
+					utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+				},
+				Enabled:    true,
+				FrequencyS: 5,
+			},
+			&cronscriptpb.CronScript{
+				ID:     utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+				OrgID:  utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+				Script: "df.stream()",
+				ClusterIDs: []*uuidpb.UUID{
+					utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+				},
+				Enabled:    false,
+				FrequencyS: 10,
+			},
+		},
+	}, nil)
+
+	s := controllers.New(db, "test", mockCSClient)
+	resp, err := s.GetRetentionScripts(context.Background(), &pluginpb.GetRetentionScriptsRequest{
+		OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+
+	assert.ElementsMatch(t, []*pluginpb.RetentionScript{
+		&pluginpb.RetentionScript{
+			ScriptID:    utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+			ScriptName:  "testScript",
+			Description: "This is a script",
+			FrequencyS:  5,
+			ClusterIDs: []*uuidpb.UUID{
+				utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+			},
+			PluginId: "test-plugin",
+			Enabled:  true,
+			IsPreset: false,
+		},
+		&pluginpb.RetentionScript{
+			ScriptID:    utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+			ScriptName:  "testScript2",
+			Description: "This is another script",
+			FrequencyS:  10,
+			ClusterIDs: []*uuidpb.UUID{
+				utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+			},
+			PluginId: "test-plugin",
+			Enabled:  false,
+			IsPreset: true,
+		},
+	}, resp.Scripts)
+}
+
+func TestServer_GetRetentionScript(t *testing.T) {
+	mustLoadTestData(db)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+	mockCSClient.EXPECT().GetScript(gomock.Any(), &cronscriptpb.GetScriptRequest{
+		ID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+	}).Return(&cronscriptpb.GetScriptResponse{
+		Script: &cronscriptpb.CronScript{
+			ID:     utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+			OrgID:  utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+			Script: "px.display()",
+			ClusterIDs: []*uuidpb.UUID{
+				utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+			},
+			Enabled:    true,
+			FrequencyS: 5,
+		},
+	}, nil)
+
+	s := controllers.New(db, "test", mockCSClient)
+	resp, err := s.GetRetentionScript(context.Background(), &pluginpb.GetRetentionScriptRequest{
+		OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+		ScriptID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+
+	assert.Equal(t,
+		&pluginpb.DetailedRetentionScript{
+			Script: &pluginpb.RetentionScript{
+				ScriptID:    utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+				ScriptName:  "testScript",
+				Description: "This is a script",
+				FrequencyS:  5,
+				ClusterIDs: []*uuidpb.UUID{
+					utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+				},
+				PluginId: "test-plugin",
+				Enabled:  true,
+				IsPreset: false,
+			},
+			Contents:  "px.display()",
+			ExportURL: "https://localhost:8080",
+		}, resp.Script)
+}
+
+func TestServer_CreateRetentionScript(t *testing.T) {
+	mustLoadTestData(db)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+	orgConfig := map[string]string{
+		"license_key2": "12345",
+	}
+
+	config := &scripts.Config{
+		OtelEndpointConfig: &scripts.OtelEndpointConfig{
+			URL:     "http://test-export-url3",
+			Headers: orgConfig,
+		},
+	}
+
+	mConfig, err := yaml.Marshal(&config)
+	require.Nil(t, err)
+
+	mockCSClient.EXPECT().CreateScript(gomock.Any(), &cronscriptpb.CreateScriptRequest{
+		Script: "px.display()",
+		ClusterIDs: []*uuidpb.UUID{
+			utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+		},
+		Configs:    string(mConfig),
+		FrequencyS: 20,
+	}).Return(&cronscriptpb.CreateScriptResponse{
+		ID: utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+	}, nil)
+
+	s := controllers.New(db, "test", mockCSClient)
+	resp, err := s.CreateRetentionScript(context.Background(), &pluginpb.CreateRetentionScriptRequest{
+		Script: &pluginpb.DetailedRetentionScript{
+			Script: &pluginpb.RetentionScript{
+				ScriptName:  "New Script",
+				Description: "This is a new script!",
+				FrequencyS:  20,
+				ClusterIDs: []*uuidpb.UUID{
+					utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+				},
+				PluginId: "test-plugin",
+				Enabled:  true,
+				IsPreset: false,
+			},
+			Contents:  "px.display()",
+			ExportURL: "",
+		},
+		OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+
+	query := `SELECT script_name, description, is_preset, plugin_id, PGP_SYM_DECRYPT(export_url, $1::text) as export_url from plugin_retention_scripts WHERE org_id=$2 AND script_id=$3`
+	rows, err := db.Queryx(query, "test", uuid.FromStringOrNil("223e4567-e89b-12d3-a456-426655440000"), uuid.FromStringOrNil("323e4567-e89b-12d3-a456-426655440000"))
+	require.Nil(t, err)
+	require.True(t, rows.Next())
+
+	var script controllers.RetentionScript
+	err = rows.StructScan(&script)
+	require.Nil(t, err)
+
+	assert.Equal(t, "New Script", script.ScriptName)
+	assert.Equal(t, "This is a new script!", script.Description)
+	assert.Equal(t, false, script.IsPreset)
+	assert.Equal(t, "test-plugin", script.PluginID)
+	assert.Equal(t, "http://test-export-url3", script.ExportURL)
+}
+
+func TestServer_UpdateRetentionScript(t *testing.T) {
+	mustLoadTestData(db)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+	mockCSClient.EXPECT().UpdateScript(gomock.Any(), &cronscriptpb.UpdateScriptRequest{
+		Script: &types.StringValue{Value: "updated script"},
+		ClusterIDs: []*uuidpb.UUID{
+			utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+		},
+		Enabled:    &types.BoolValue{Value: true},
+		FrequencyS: &types.Int64Value{Value: 2},
+		ScriptId:   utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+	})
+
+	s := controllers.New(db, "test", mockCSClient)
+	resp, err := s.UpdateRetentionScript(createTestContext(), &pluginpb.UpdateRetentionScriptRequest{
+		ScriptID:   utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+		ScriptName: &types.StringValue{Value: "Updated Script"},
+		Enabled:    &types.BoolValue{Value: true},
+		FrequencyS: &types.Int64Value{Value: 2},
+		Contents:   &types.StringValue{Value: "updated script"},
+		ExportUrl:  &types.StringValue{Value: "https://test"},
+		ClusterIDs: []*uuidpb.UUID{
+			utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+		},
+	})
+
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+
+	query := `SELECT script_name, description, is_preset, plugin_id, PGP_SYM_DECRYPT(export_url, $1::text) as export_url from plugin_retention_scripts WHERE org_id=$2 AND script_id=$3`
+	rows, err := db.Queryx(query, "test", uuid.FromStringOrNil("223e4567-e89b-12d3-a456-426655440000"), uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"))
+	require.Nil(t, err)
+	require.True(t, rows.Next())
+
+	var script controllers.RetentionScript
+	err = rows.StructScan(&script)
+	require.Nil(t, err)
+
+	assert.Equal(t, "Updated Script", script.ScriptName)
+	assert.Equal(t, "This is a script", script.Description)
+	assert.Equal(t, false, script.IsPreset)
+	assert.Equal(t, "test-plugin", script.PluginID)
+	assert.Equal(t, "https://test", script.ExportURL)
 }
