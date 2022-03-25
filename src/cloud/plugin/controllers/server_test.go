@@ -141,9 +141,9 @@ func mustLoadTestData(db *sqlx.DB) {
 	db.MustExec(insertOrgRelease, "223e4567-e89b-12d3-a456-426655440000", "test-plugin", "0.0.3", configJSON1, "test")
 	db.MustExec(insertOrgRelease, "223e4567-e89b-12d3-a456-426655440001", "test-plugin", "0.0.2", configJSON2, "test")
 
-	insertRetentionScript := `INSERT INTO plugin_retention_scripts (org_id, plugin_id, plugin_version, script_id, script_name, description, is_preset,  export_url) VALUES ($1, $2, $3, $4, $5, $6, $7, PGP_SYM_ENCRYPT($8, $9))`
-	db.MustExec(insertRetentionScript, "223e4567-e89b-12d3-a456-426655440000", "test-plugin", "0.0.3", "123e4567-e89b-12d3-a456-426655440000", "testScript", "This is a script", false, "https://localhost:8080", "test")
-	db.MustExec(insertRetentionScript, "223e4567-e89b-12d3-a456-426655440000", "test-plugin", "0.0.3", "123e4567-e89b-12d3-a456-426655440001", "testScript2", "This is another script", true, "https://url", "test")
+	insertRetentionScript := `INSERT INTO plugin_retention_scripts (org_id, plugin_id, script_id, script_name, description, is_preset,  export_url) VALUES ($1, $2, $3, $4, $5, $6, PGP_SYM_ENCRYPT($7, $8))`
+	db.MustExec(insertRetentionScript, "223e4567-e89b-12d3-a456-426655440000", "test-plugin", "123e4567-e89b-12d3-a456-426655440000", "testScript", "This is a script", false, "https://localhost:8080", "test")
+	db.MustExec(insertRetentionScript, "223e4567-e89b-12d3-a456-426655440000", "test-plugin", "123e4567-e89b-12d3-a456-426655440001", "testScript2", "This is another script", true, "https://url", "test")
 }
 
 func TestServer_GetPlugins(t *testing.T) {
@@ -303,10 +303,30 @@ type orgConfig struct {
 }
 
 func TestServer_UpdateRetentionConfigs(t *testing.T) {
+	config1 := &scripts.Config{
+		OtelEndpointConfig: &scripts.OtelEndpointConfig{
+			URL: "https://localhost:8080",
+			Headers: map[string]string{
+				"abcd": "hello",
+			},
+		},
+	}
+	mConfig1, _ := yaml.Marshal(&config1)
+	config2 := &scripts.Config{
+		OtelEndpointConfig: &scripts.OtelEndpointConfig{
+			URL: "https://url",
+			Headers: map[string]string{
+				"abcd": "hello",
+			},
+		},
+	}
+	mConfig2, _ := yaml.Marshal(&config2)
+
 	tests := []struct {
 		name               string
 		request            *pluginpb.UpdateOrgRetentionPluginConfigRequest
 		expectedOrgConfigs []orgConfig
+		expectedCSRequests []*cronscriptpb.UpdateScriptRequest
 	}{
 		{
 			name: "enabling new config",
@@ -391,6 +411,20 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					},
 				},
 			},
+			expectedCSRequests: []*cronscriptpb.UpdateScriptRequest{
+				&cronscriptpb.UpdateScriptRequest{
+					ScriptId: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+					Configs: &types.StringValue{
+						Value: string(mConfig1),
+					},
+				},
+				&cronscriptpb.UpdateScriptRequest{
+					ScriptId: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+					Configs: &types.StringValue{
+						Value: string(mConfig2),
+					},
+				},
+			},
 		},
 		{
 			name: "updating version",
@@ -457,6 +491,12 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 			defer ctrl.Finish()
 			mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
 
+			updateReqs := make([]*cronscriptpb.UpdateScriptRequest, 0)
+			mockCSClient.EXPECT().UpdateScript(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, req *cronscriptpb.UpdateScriptRequest) (*cronscriptpb.UpdateScriptResponse, error) {
+				updateReqs = append(updateReqs, req)
+				return &cronscriptpb.UpdateScriptResponse{}, nil
+			}).AnyTimes()
+
 			s := controllers.New(db, "test", mockCSClient)
 			resp, err := s.UpdateOrgRetentionPluginConfig(context.Background(), test.request)
 
@@ -486,6 +526,9 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 			}
 
 			assert.ElementsMatch(t, test.expectedOrgConfigs, plugins)
+			if test.expectedCSRequests != nil {
+				assert.ElementsMatch(t, test.expectedCSRequests, updateReqs)
+			}
 		})
 	}
 }
@@ -682,7 +725,7 @@ func TestServer_CreateRetentionScript(t *testing.T) {
 	assert.Equal(t, "This is a new script!", script.Description)
 	assert.Equal(t, false, script.IsPreset)
 	assert.Equal(t, "test-plugin", script.PluginID)
-	assert.Equal(t, "http://test-export-url3", script.ExportURL)
+	assert.Equal(t, "", script.ExportURL)
 }
 
 func TestServer_UpdateRetentionScript(t *testing.T) {
@@ -692,14 +735,30 @@ func TestServer_UpdateRetentionScript(t *testing.T) {
 	defer ctrl.Finish()
 	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
 
+	orgConfig := map[string]string{
+		"license_key2": "12345",
+	}
+
+	config := &scripts.Config{
+		OtelEndpointConfig: &scripts.OtelEndpointConfig{
+			URL:     "https://test",
+			Headers: orgConfig,
+		},
+	}
+	mConfig, err := yaml.Marshal(&config)
+	require.Nil(t, err)
+
 	mockCSClient.EXPECT().UpdateScript(gomock.Any(), &cronscriptpb.UpdateScriptRequest{
 		Script: &types.StringValue{Value: "updated script"},
-		ClusterIDs: []*uuidpb.UUID{
-			utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+		ClusterIDs: &cronscriptpb.ClusterIDs{
+			Value: []*uuidpb.UUID{
+				utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+			},
 		},
 		Enabled:    &types.BoolValue{Value: true},
 		FrequencyS: &types.Int64Value{Value: 2},
 		ScriptId:   utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+		Configs:    &types.StringValue{Value: string(mConfig)},
 	})
 
 	s := controllers.New(db, "test", mockCSClient)

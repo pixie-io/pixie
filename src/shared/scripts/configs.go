@@ -20,7 +20,7 @@ package scripts
 
 // Config represents the configuration for a script. For example: which variables should be pulled in and how.
 type Config struct {
-	OtelEndpointConfig *OtelEndpointConfig `yaml:"otelEndpointConifg"`
+	OtelEndpointConfig *OtelEndpointConfig `yaml:"otelEndpointConfig"`
 }
 
 // OtelEndpointConfig specifies values that should be filled in for all OTel endpoints in the script.

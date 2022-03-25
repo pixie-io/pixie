@@ -26,6 +26,7 @@ import (
 	"sync"
 
 	"github.com/gofrs/uuid"
+	"github.com/gogo/protobuf/types"
 	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -240,10 +241,10 @@ func (s *Server) GetOrgRetentionPluginConfig(ctx context.Context, req *pluginpb.
 
 func (s *Server) enableOrgRetention(orgID uuid.UUID, pluginID string, version string, configurations []byte) error {
 	query := `INSERT INTO org_data_retention_plugins (org_id, plugin_id, version, configurations) VALUES ($1, $2, $3, PGP_SYM_ENCRYPT($4, $5))`
+	_, err := s.db.Exec(query, orgID, pluginID, version, configurations, s.dbKey)
 
 	// TODO(michelle): Enabling org retention should enable any preset scripts.
 
-	_, err := s.db.Exec(query, orgID, pluginID, version, configurations, s.dbKey)
 	return err
 }
 
@@ -256,13 +257,77 @@ func (s *Server) disableOrgRetention(orgID uuid.UUID, pluginID string) error {
 	return err
 }
 
-func (s *Server) updateOrgRetentionConfigs(orgID uuid.UUID, pluginID string, version string, configurations []byte) error {
+func (s *Server) updateOrgRetentionConfigs(ctx context.Context, orgID uuid.UUID, pluginID string, version string, configurations []byte) error {
 	query := `UPDATE org_data_retention_plugins SET version = $1, configurations = PGP_SYM_ENCRYPT($2, $3) WHERE org_id = $4 AND plugin_id = $5`
 
-	// TODO(michelle): Updating configs should update any retention script YAMLs.
+	err := s.propagateConfigChangesToScripts(ctx, orgID, pluginID, version, configurations)
+	if err != nil {
+		return err
+	}
 
-	_, err := s.db.Exec(query, version, configurations, s.dbKey, orgID, pluginID)
+	_, err = s.db.Exec(query, version, configurations, s.dbKey, orgID, pluginID)
 	return err
+}
+
+func (s *Server) propagateConfigChangesToScripts(ctx context.Context, orgID uuid.UUID, pluginID string, version string, configurations []byte) error {
+	// Fetch default export URL for plugin.
+	defaultExportURL, _, err := s.getPluginConfigs(orgID, pluginID)
+	if err != nil {
+		return err
+	}
+
+	// Fetch all scripts belonging to this plugin.
+	query := `SELECT script_id, PGP_SYM_DECRYPT(export_url, $1::text) as export_url from plugin_retention_scripts WHERE org_id=$2 AND plugin_id=$3`
+	rows, err := s.db.Queryx(query, s.dbKey, orgID, pluginID)
+	if err != nil {
+		return status.Errorf(codes.Internal, "Failed to fetch scripts")
+	}
+
+	rScripts := make([]*RetentionScript, 0)
+	for rows.Next() {
+		var rs RetentionScript
+		err = rows.StructScan(&rs)
+		if err != nil {
+			continue
+		}
+		rScripts = append(rScripts, &rs)
+	}
+
+	// For each script, update with the new config.
+	// TODO(michelle): This is a bit inefficient because we issue a call per script. We should consider adding an RPC method for updating multiple scripts.
+	for _, sc := range rScripts {
+		var configMap map[string]string
+		err = json.Unmarshal(configurations, &configMap)
+		if err != nil {
+			return status.Error(codes.Internal, "failed to read configs")
+		}
+		exportURL := sc.ExportURL
+		if exportURL == "" {
+			exportURL = defaultExportURL
+		}
+		config := &scripts.Config{
+			OtelEndpointConfig: &scripts.OtelEndpointConfig{
+				URL:     exportURL,
+				Headers: configMap,
+			},
+		}
+
+		mConfig, err := yaml.Marshal(&config)
+		if err != nil {
+			return status.Error(codes.Internal, "failed to marshal configs")
+		}
+
+		_, err = s.cronScriptClient.UpdateScript(ctx, &cronscriptpb.UpdateScriptRequest{
+			ScriptId: utils.ProtoFromUUID(sc.ScriptID),
+			Configs:  &types.StringValue{Value: string(mConfig)},
+		})
+		if err != nil {
+			log.WithError(err).Error("Failed to update cron script")
+			continue
+		}
+	}
+
+	return nil
 }
 
 // UpdateOrgRetentionPluginConfig updates an org's configuration for a plugin.
@@ -320,7 +385,7 @@ func (s *Server) UpdateOrgRetentionPluginConfig(ctx context.Context, req *plugin
 		version = origVersion
 	}
 
-	err = s.updateOrgRetentionConfigs(orgID, req.PluginID, version, configurations)
+	err = s.updateOrgRetentionConfigs(ctx, orgID, req.PluginID, version, configurations)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to update configs")
 	}
@@ -441,31 +506,10 @@ func (s *Server) GetRetentionScript(ctx context.Context, req *pluginpb.GetRetent
 
 // CreateRetentionScript creates a script that is used for long-term data retention.
 func (s *Server) CreateRetentionScript(ctx context.Context, req *pluginpb.CreateRetentionScriptRequest) (*pluginpb.CreateRetentionScriptResponse, error) {
-	// Fetch config + headers from plugin info.
-	query := `SELECT PGP_SYM_DECRYPT(o.configurations, $1::text), r.default_export_url, r.version FROM org_data_retention_plugins o, data_retention_plugin_releases r WHERE org_id=$2 AND r.plugin_id=$3 AND o.plugin_id=r.plugin_id AND r.version = o.version`
 	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
-	rows, err := s.db.Queryx(query, s.dbKey, orgID, req.Script.Script.PluginId)
+	defaultExportURL, configMap, err := s.getPluginConfigs(orgID, req.Script.Script.PluginId)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to fetch plugin")
-	}
-	defer rows.Close()
-
-	if !rows.Next() {
-		return nil, status.Error(codes.NotFound, "plugin is not enabled")
-	}
-
-	var configurationJSON []byte
-	var configMap map[string]string
-	var defaultExportURL string
-	var pluginVersion string
-	err = rows.Scan(&configurationJSON, &defaultExportURL, &pluginVersion)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to read configs")
-	}
-
-	err = json.Unmarshal(configurationJSON, &configMap)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to read configs")
+		return nil, err
 	}
 
 	exportURL := defaultExportURL
@@ -473,23 +517,15 @@ func (s *Server) CreateRetentionScript(ctx context.Context, req *pluginpb.Create
 		exportURL = req.Script.ExportURL
 	}
 
-	// Convert endpoint info to string YAML.
-	config := &scripts.Config{
-		OtelEndpointConfig: &scripts.OtelEndpointConfig{
-			URL:     exportURL,
-			Headers: configMap,
-		},
-	}
-
-	mConfig, err := yaml.Marshal(&config)
+	configYAML, err := scriptConfigToYAML(configMap, exportURL)
 	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to marshal configs")
+		return nil, err
 	}
 
 	cronScriptResp, err := s.cronScriptClient.CreateScript(ctx, &cronscriptpb.CreateScriptRequest{
 		Script:     req.Script.Contents,
 		ClusterIDs: req.Script.Script.ClusterIDs,
-		Configs:    string(mConfig),
+		Configs:    configYAML,
 		FrequencyS: req.Script.Script.FrequencyS,
 	})
 	if err != nil {
@@ -498,8 +534,8 @@ func (s *Server) CreateRetentionScript(ctx context.Context, req *pluginpb.Create
 
 	scriptID := cronScriptResp.ID
 
-	query = `INSERT INTO plugin_retention_scripts (org_id, plugin_id, plugin_version, script_id, script_name, description, export_url, is_preset) VALUES ($1, $2, $3, $4, $5, $6, PGP_SYM_ENCRYPT($7, $8), $9)`
-	_, err = s.db.Exec(query, orgID, req.Script.Script.PluginId, pluginVersion, utils.UUIDFromProtoOrNil(scriptID), req.Script.Script.ScriptName, req.Script.Script.Description, exportURL, s.dbKey, req.Script.Script.IsPreset)
+	query := `INSERT INTO plugin_retention_scripts (org_id, plugin_id, script_id, script_name, description, export_url, is_preset) VALUES ($1, $2, $3, $4, $5, PGP_SYM_ENCRYPT($6, $7), $8)`
+	_, err = s.db.Exec(query, orgID, req.Script.Script.PluginId, utils.UUIDFromProtoOrNil(scriptID), req.Script.Script.ScriptName, req.Script.Script.Description, req.Script.ExportURL, s.dbKey, req.Script.Script.IsPreset)
 	if err != nil {
 		log.WithError(err).Error("Failed")
 
@@ -511,10 +547,51 @@ func (s *Server) CreateRetentionScript(ctx context.Context, req *pluginpb.Create
 	}, nil
 }
 
+func (s *Server) getPluginConfigs(orgID uuid.UUID, pluginID string) (string, map[string]string, error) {
+	query := `SELECT PGP_SYM_DECRYPT(o.configurations, $1::text), r.default_export_url FROM org_data_retention_plugins o, data_retention_plugin_releases r WHERE org_id=$2 AND r.plugin_id=$3 AND o.plugin_id=r.plugin_id AND r.version = o.version`
+	rows, err := s.db.Queryx(query, s.dbKey, orgID, pluginID)
+	if err != nil {
+		return "", nil, status.Errorf(codes.Internal, "failed to fetch plugin")
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return "", nil, status.Error(codes.NotFound, "plugin is not enabled")
+	}
+
+	var configurationJSON []byte
+	var configMap map[string]string
+	var defaultExportURL string
+	err = rows.Scan(&configurationJSON, &defaultExportURL)
+	if err != nil {
+		return "", nil, status.Error(codes.Internal, "failed to read configs")
+	}
+	err = json.Unmarshal(configurationJSON, &configMap)
+	if err != nil {
+		return "", nil, status.Error(codes.Internal, "failed to read configs")
+	}
+	return defaultExportURL, configMap, nil
+}
+
+func scriptConfigToYAML(configMap map[string]string, exportURL string) (string, error) {
+	config := &scripts.Config{
+		OtelEndpointConfig: &scripts.OtelEndpointConfig{
+			URL:     exportURL,
+			Headers: configMap,
+		},
+	}
+
+	mConfig, err := yaml.Marshal(&config)
+	if err != nil {
+		return "", status.Error(codes.Internal, "failed to marshal configs")
+	}
+	return string(mConfig), nil
+}
+
 // UpdateRetentionScript updates a script used for long-term data retention.
 func (s *Server) UpdateRetentionScript(ctx context.Context, req *pluginpb.UpdateRetentionScriptRequest) (*pluginpb.UpdateRetentionScriptResponse, error) {
 	// Fetch existing script.
-	query := `SELECT org_id, script_name, description, PGP_SYM_DECRYPT(export_url, $1::text) as export_url from plugin_retention_scripts WHERE script_id=$2`
+	query := `SELECT org_id, script_name, description, PGP_SYM_DECRYPT(export_url, $1::text) as export_url, plugin_id from plugin_retention_scripts WHERE script_id=$2`
 	scriptID := utils.UUIDFromProtoOrNil(req.ScriptID)
 	rows, err := s.db.Queryx(query, s.dbKey, scriptID)
 	if err != nil {
@@ -541,6 +618,12 @@ func (s *Server) UpdateRetentionScript(ctx context.Context, req *pluginpb.Update
 		return nil, status.Errorf(codes.Unauthenticated, "Unauthorized")
 	}
 
+	// Fetch config + headers from plugin info.
+	defaultExportURL, configMap, err := s.getPluginConfigs(script.OrgID, script.PluginID)
+	if err != nil {
+		return nil, err
+	}
+
 	scriptName := script.ScriptName
 	description := script.Description
 	exportURL := script.ExportURL
@@ -555,21 +638,32 @@ func (s *Server) UpdateRetentionScript(ctx context.Context, req *pluginpb.Update
 		exportURL = req.ExportUrl.Value
 	}
 
+	// Update retention scripts with new info.
 	query = `UPDATE plugin_retention_scripts SET script_name = $1, export_url = PGP_SYM_ENCRYPT($2, $3), description = $4 WHERE script_id = $5`
-
 	_, err = s.db.Exec(query, scriptName, exportURL, s.dbKey, description, scriptID)
 
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to update retention script")
 	}
 
+	// Create updated config with new export URL.
+	configExportURL := exportURL
+	if exportURL == "" {
+		configExportURL = defaultExportURL
+	}
+	configYAML, err := scriptConfigToYAML(configMap, configExportURL)
+	if err != nil {
+		return nil, err
+	}
+
 	// Update cron script.
 	_, err = s.cronScriptClient.UpdateScript(ctx, &cronscriptpb.UpdateScriptRequest{
 		Script:     req.Contents,
-		ClusterIDs: req.ClusterIDs,
+		ClusterIDs: &cronscriptpb.ClusterIDs{Value: req.ClusterIDs},
 		Enabled:    req.Enabled,
 		FrequencyS: req.FrequencyS,
 		ScriptId:   req.ScriptID,
+		Configs:    &types.StringValue{Value: configYAML},
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to update cron script")

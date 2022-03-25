@@ -245,9 +245,12 @@ func (s *Server) UpdateScript(ctx context.Context, req *cronscriptpb.UpdateScrip
 		freq = req.FrequencyS.Value
 	}
 
-	clusterIDs := make([]uuid.UUID, len(req.ClusterIDs))
-	for i, c := range req.ClusterIDs {
-		clusterIDs[i] = utils.UUIDFromProtoOrNil(c)
+	clusterIDs := script.ClusterIDs
+	if req.ClusterIDs != nil {
+		clusterIDs = make([]uuid.UUID, len(req.ClusterIDs.Value))
+		for i, c := range req.ClusterIDs.Value {
+			clusterIDs[i] = utils.UUIDFromProtoOrNil(c)
+		}
 	}
 
 	query = `UPDATE cron_scripts SET script = $1, configs = PGP_SYM_ENCRYPT($2, $3), enabled = $4, frequency_s = $5, cluster_ids=$6 WHERE id = $7`

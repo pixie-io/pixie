@@ -114,7 +114,7 @@ message UpdateScriptRequest {
     // How often the script should be run.
     google.protobuf.StringValue cron_expression = 2;
     // The IDs of the clusters this script must be run for in this org. If none specified, indicates all clusters.
-    repeated uuidpb.UUID cluster_ids = 3 [(gogoproto.customname) = "ClusterIDs"];
+    ClusterIDs cluster_ids = 3 [(gogoproto.customname) = "ClusterIDs"];
     // Environment variables that should be used to fill in this script, in a YAML format.
     google.protobuf.StringValue configs = 4;
     // Whether the cron script should be enabled.
@@ -122,6 +122,12 @@ message UpdateScriptRequest {
     // How frequently a script should be run, if not specified via cron.
     google.protobuf.Int64Value frequency_s = 6;
     uuidpb.UUID script_id = 7;
+}
+
+// ClusterIDs is a wrapper around cluster IDs.
+message ClusterIDs {
+    // The IDs of the clusters this script must be run for in this org. If none specified, indicates all clusters.
+    repeated uuidpb.UUID value = 1;
 }
 
 // UpdateScriptResponse is a response to an UpdateScriptRequest.

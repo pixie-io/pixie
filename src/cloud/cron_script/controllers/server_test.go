@@ -220,7 +220,7 @@ func TestServer_UpdateScript(t *testing.T) {
 	resp, err := s.UpdateScript(createTestContext(), &cronscriptpb.UpdateScriptRequest{
 		Script:     &types.StringValue{Value: "px.updatedScript()"},
 		Configs:    &types.StringValue{Value: "updatedYAML"},
-		ClusterIDs: clusterIDs,
+		ClusterIDs: &cronscriptpb.ClusterIDs{Value: clusterIDs},
 		ScriptId:   utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440002"),
 	})
 	require.NoError(t, err)
