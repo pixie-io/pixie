@@ -117,14 +117,14 @@ func (mr *MockCronScriptServiceClientMockRecorder) GetScripts(ctx, in interface{
 }
 
 // UpdateScript mocks base method.
-func (m *MockCronScriptServiceClient) UpdateScript(ctx context.Context, in *cronscriptpb.UpdateScriptRequest, opts ...grpc.CallOption) (*cronscriptpb.UpdateScriptRequest, error) {
+func (m *MockCronScriptServiceClient) UpdateScript(ctx context.Context, in *cronscriptpb.UpdateScriptRequest, opts ...grpc.CallOption) (*cronscriptpb.UpdateScriptResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "UpdateScript", varargs...)
-	ret0, _ := ret[0].(*cronscriptpb.UpdateScriptRequest)
+	ret0, _ := ret[0].(*cronscriptpb.UpdateScriptResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -220,10 +220,10 @@ func (mr *MockCronScriptServiceServerMockRecorder) GetScripts(arg0, arg1 interfa
 }
 
 // UpdateScript mocks base method.
-func (m *MockCronScriptServiceServer) UpdateScript(arg0 context.Context, arg1 *cronscriptpb.UpdateScriptRequest) (*cronscriptpb.UpdateScriptRequest, error) {
+func (m *MockCronScriptServiceServer) UpdateScript(arg0 context.Context, arg1 *cronscriptpb.UpdateScriptRequest) (*cronscriptpb.UpdateScriptResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateScript", arg0, arg1)
-	ret0, _ := ret[0].(*cronscriptpb.UpdateScriptRequest)
+	ret0, _ := ret[0].(*cronscriptpb.UpdateScriptResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

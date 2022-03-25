@@ -26,6 +26,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
+	"px.dev/pixie/src/cloud/cron_script/controllers"
+	"px.dev/pixie/src/cloud/cron_script/cronscriptpb"
 	"px.dev/pixie/src/cloud/cron_script/schema"
 	"px.dev/pixie/src/cloud/shared/pgmigrate"
 	"px.dev/pixie/src/shared/services"
@@ -60,6 +62,10 @@ func main() {
 	_ = dbKey
 
 	s := server.NewPLServer(env.New(viper.GetString("domain_name")), mux)
+
+	c := controllers.New(db, dbKey)
+
+	cronscriptpb.RegisterCronScriptServiceServer(s.GRPCServer(), c)
 
 	s.Start()
 	s.StopOnInterrupt()

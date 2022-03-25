@@ -49,6 +49,8 @@ go_library(
     srcs = ["cron_script_server.go"],
     importpath = "px.dev/pixie/src/cloud/cron_script",
     deps = [
+        "//src/cloud/cron_script/controllers",
+        "//src/cloud/cron_script/cronscriptpb:service_pl_go_proto",
         "//src/cloud/cron_script/schema",
         "//src/cloud/shared/pgmigrate",
         "//src/shared/services",

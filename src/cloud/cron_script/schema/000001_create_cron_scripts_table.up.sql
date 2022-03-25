@@ -1,3 +1,6 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 CREATE TABLE cron_scripts (
   -- The ID of the cron script.
   id UUID UNIQUE DEFAULT uuid_generate_v4(),

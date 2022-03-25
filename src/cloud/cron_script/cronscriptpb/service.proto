@@ -35,7 +35,7 @@ service CronScriptService {
     // CreateScript creates a cron script.
     rpc CreateScript(CreateScriptRequest) returns (CreateScriptResponse);
     // UpdateScript updates an existing cron script.
-    rpc UpdateScript(UpdateScriptRequest) returns (UpdateScriptRequest);
+    rpc UpdateScript(UpdateScriptRequest) returns (UpdateScriptResponse);
     // DeleteScript deletes a cron script.
     rpc DeleteScript(DeleteScriptRequest) returns (DeleteScriptResponse);
 }
