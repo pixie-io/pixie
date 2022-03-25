@@ -147,8 +147,12 @@ class PerfProfileBPFTest : public ::testing::Test {
       // Build the histogram of observed stack traces here:
       // Also, track the cumulative sum (or total number of samples).
       const std::string stack_trace_str = stack_traces_column_->Get<types::StringValue>(row_idx);
+      const std::vector<std::string_view> symbols = absl::StrSplit(stack_trace_str, ";");
+      const std::string_view leaf_symbol = symbols.back();
+
       const int64_t count = counts_column_->Get<types::Int64Value>(row_idx).val;
       observed_stack_traces_[stack_trace_str] += count;
+      observed_leaf_symbols_[leaf_symbol] += count;
     }
 
     // TODO(jps): bring in a 3rd party library for colorization. e.g., one of the following:
@@ -174,9 +178,10 @@ class PerfProfileBPFTest : public ::testing::Test {
     }
   }
 
-  void CheckExpectedStackTraceCounts(const ssize_t num_subprocesses,
-                                     const std::chrono::duration<double> elapsed_time,
-                                     const std::string& key1x, const std::string& key2x) {
+  void CheckExpectedCounts(const absl::flat_hash_map<std::string, uint64_t>& counts,
+                           const ssize_t num_subprocesses,
+                           const std::chrono::duration<double> elapsed_time,
+                           const std::string_view key1x, const std::string_view key2x) {
     const uint64_t table_period_ms = source_->SamplingPeriod().count();
     const uint64_t bpf_period_ms = source_->StackTraceSamplingPeriod().count();
     const double expected_rate = 1000.0 / static_cast<double>(bpf_period_ms);
@@ -186,14 +191,14 @@ class PerfProfileBPFTest : public ::testing::Test {
     const double observedNumSamples = static_cast<double>(cumulative_sum_);
     const double observed_rate = observedNumSamples / elapsed_time.count() / num_subprocesses;
 
-    LOG(INFO) << absl::StrFormat("Table sampling period: %d [ms]", table_period_ms);
-    LOG(INFO) << absl::StrFormat("BPF sampling period: %d [ms]", bpf_period_ms);
-    LOG(INFO) << absl::StrFormat("Number of processes: %d", num_subprocesses);
-    LOG(INFO) << absl::StrFormat("expected num samples: %d", uint64_t(expected_num_samples));
-    LOG(INFO) << absl::StrFormat("total samples: %d", cumulative_sum_);
-    LOG(INFO) << absl::StrFormat("elapsed time: %.1f [sec]", elapsed_time.count());
-    LOG(INFO) << absl::StrFormat("expected sample rate: %.2f [Hz]", expected_rate);
-    LOG(INFO) << absl::StrFormat("observed sample rate: %.2f [Hz]", observed_rate);
+    LOG(INFO) << absl::StrFormat("Table sampling period: %d [ms].", table_period_ms);
+    LOG(INFO) << absl::StrFormat("BPF sampling period: %d [ms].", bpf_period_ms);
+    LOG(INFO) << absl::StrFormat("Number of processes: %d.", num_subprocesses);
+    LOG(INFO) << absl::StrFormat("expected num samples: %d.", uint64_t(expected_num_samples));
+    LOG(INFO) << absl::StrFormat("total samples: %d.", cumulative_sum_);
+    LOG(INFO) << absl::StrFormat("elapsed time: %.1f [sec].", elapsed_time.count());
+    LOG(INFO) << absl::StrFormat("expected sample rate: %.2f [Hz].", expected_rate);
+    LOG(INFO) << absl::StrFormat("observed sample rate: %.2f [Hz].", observed_rate);
 
     // We expect to see a certain number of samples, but in practice
     // see fewer (maybe the CPU and Linux scheduler have other things to do!).
@@ -204,13 +209,21 @@ class PerfProfileBPFTest : public ::testing::Test {
     EXPECT_GT(cumulative_sum_, expected_num_sample_lower) << err_msg;
     EXPECT_LT(cumulative_sum_, expected_num_sample_upper) << err_msg;
 
-    const double num_1x_samples = observed_stack_traces_[key1x];
-    const double num_2x_samples = observed_stack_traces_[key2x];
-    const double ratio = num_2x_samples / num_1x_samples;
+    char const* const missing_key_msg = "Could not find required symbol or stack trace: $0.";
+    ASSERT_TRUE(counts.find(key1x) != counts.end()) << absl::Substitute(missing_key_msg, key1x);
+    ASSERT_TRUE(counts.find(key2x) != counts.end()) << absl::Substitute(missing_key_msg, key2x);
 
-    // We expect the ratio of fib52:fib27 to be approx. 2:1;
-    // or sqrt, or something else that was in the toy test app.
-    // TODO(jps): Increase sampling frequency and then tighten this margin.
+    const double key1x_count = counts.at(key1x);
+    const double key2x_count = counts.at(key2x);
+    const double ratio = key2x_count / key1x_count;
+
+    // We expect the ratio of key2x:key1x to be approx. 2:1.
+    // TODO(jps): Can we tighten the margin? e.g. by increasing sampling frequency.
+    LOG(INFO) << absl::StrFormat("key2x: %s.", key2x);
+    LOG(INFO) << absl::StrFormat("key1x: %s.", key1x);
+    LOG(INFO) << absl::StrFormat("key2x count: %d.", static_cast<uint64_t>(key2x_count));
+    LOG(INFO) << absl::StrFormat("key1x count: %d.", static_cast<uint64_t>(key1x_count));
+    LOG(INFO) << absl::StrFormat("ratio: %.2fx.", ratio);
     EXPECT_GT(ratio, 2.0 - kRatioMargin);
     EXPECT_LT(ratio, 2.0 + kRatioMargin);
 
@@ -291,6 +304,7 @@ class PerfProfileBPFTest : public ::testing::Test {
 
   uint64_t cumulative_sum_ = 0;
   absl::flat_hash_map<std::string, uint64_t> observed_stack_traces_;
+  absl::flat_hash_map<std::string, uint64_t> observed_leaf_symbols_;
 
   types::ColumnWrapperRecordBatch columns_;
 
@@ -304,8 +318,10 @@ TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
 
   // The toy test app. should be written such that we can expect one stack trace
   // twice as often as another.
-  std::string key2x = "runtime.goexit.abi0;runtime.main;main.main;main.sqrtOf1e39;main.sqrt";
-  std::string key1x = "runtime.goexit.abi0;runtime.main;main.main;main.sqrtOf1e18;main.sqrt";
+  // clang-format off
+  constexpr std::string_view key2x = "runtime.goexit.abi0;runtime.main;main.main;main.sqrtOf1e39;main.sqrt";  // NOLINT(whitespace/line_length)
+  constexpr std::string_view key1x = "runtime.goexit.abi0;runtime.main;main.main;main.sqrtOf1e18;main.sqrt";  // NOLINT(whitespace/line_length)
+  // clang-format on
 
   // Start they toy apps as sub-processes, then,
   // for a certain amount of time (kTestRunTime), collect data using RunTest().
@@ -329,7 +345,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
   EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key1x, Gt(0))));
   EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key2x, Gt(0))));
   ASSERT_NO_FATAL_FAILURE(
-      CheckExpectedStackTraceCounts(kNumSubProcesses, elapsed_time, key1x, key2x));
+      CheckExpectedCounts(observed_stack_traces_, kNumSubProcesses, elapsed_time, key1x, key2x));
 }
 
 TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
@@ -337,8 +353,8 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
 
   // The toy test app. should be written such that we can expect one stack trace
   // twice as often as another.
-  std::string key2x = "__libc_start_main;main;fib52();fib(unsigned long)";
-  std::string key1x = "__libc_start_main;main;fib27();fib(unsigned long)";
+  constexpr std::string_view key2x = "__libc_start_main;main;fib52();fib(unsigned long)";
+  constexpr std::string_view key1x = "__libc_start_main;main;fib27();fib(unsigned long)";
 
   // Start they toy apps as sub-processes, then,
   // for a certain amount of time, collect data using RunTest().
@@ -362,12 +378,12 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
   EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key1x, Gt(0))));
   EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key2x, Gt(0))));
   ASSERT_NO_FATAL_FAILURE(
-      CheckExpectedStackTraceCounts(kNumSubProcesses, elapsed_time, key1x, key2x));
+      CheckExpectedCounts(observed_stack_traces_, kNumSubProcesses, elapsed_time, key1x, key2x));
 }
 
 TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
   const std::filesystem::path bazel_app_path = BazelJavaTestAppPath("fib");
-  LOG(INFO) << "bazel_app_path: " << bazel_app_path;
+  LOG(INFO) << absl::StrFormat("bazel_app_path: %s.", bazel_app_path);
   ASSERT_TRUE(fs::Exists(bazel_app_path));
 
   // Start they toy apps as sub-processes, then,
@@ -378,7 +394,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
   // finds the upids that belong to the sub-processes that we have just created.
   ctx_ = std::make_unique<TestContext>(ToUPIDs(sub_processes));
 
-  RunTest();
+  const std::chrono::duration<double> elapsed_time = RunTest();
 
   // Pull the data into this test (as columns_) using ConsumeRecords(), and
   // find the row indices that belong to our sub-processes using GetTargetRowIdxs().
@@ -393,36 +409,16 @@ TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
   // remain unpredictable, but we can predict the leaf symbols.
   // Here, we find stack traces with the expected leaf symbols,
   // and expect that fib52() occurs with 2x the frequency of fib27().
-  constexpr std::string_view fib52_symbol = "[j] long JavaFib::fib52()";
-  constexpr std::string_view fib27_symbol = "[j] long JavaFib::fib27()";
-  double fib27_count = 0;
-  double fib52_count = 0;
+  constexpr std::string_view key2x = "[j] long JavaFib::fib52()";
+  constexpr std::string_view key1x = "[j] long JavaFib::fib27()";
 
   std::multimap<uint64_t, std::string> traces;
 
-  for (const auto& [stack_trace, count] : observed_stack_traces_) {
-    // Extract the leaf symbol.
-    const std::vector<std::string> symbols = absl::StrSplit(stack_trace, ";");
-    const std::string_view leaf_symbol = symbols.back();
-
-    // Increment the count for fib52 & fib27, based on the leaf symbol.
-    if (leaf_symbol == fib52_symbol) {
-      fib52_count += count;
-    }
-    if (leaf_symbol == fib27_symbol) {
-      fib27_count += count;
-    }
-  }
-  const double ratio = fib52_count / fib27_count;
-
-  // This is useful info, log it.
-  LOG(INFO) << absl::StrFormat("fib52_count: %d.", static_cast<uint64_t>(fib52_count));
-  LOG(INFO) << absl::StrFormat("fib27_count: %d.", static_cast<uint64_t>(fib27_count));
-  LOG(INFO) << absl::StrFormat("ratio: %.2fx.", ratio);
-
-  // The test itself. We expect, if everything is working, to see twice as much fib52() as fib27().
-  EXPECT_GT(ratio, 2.0 - kRatioMargin);
-  EXPECT_LT(ratio, 2.0 + kRatioMargin);
+  PopulateObservedStackTraces(target_row_idxs);
+  EXPECT_THAT(observed_leaf_symbols_, ::testing::Contains(Pair(key1x, Gt(0))));
+  EXPECT_THAT(observed_leaf_symbols_, ::testing::Contains(Pair(key2x, Gt(0))));
+  ASSERT_NO_FATAL_FAILURE(
+      CheckExpectedCounts(observed_leaf_symbols_, kNumSubProcesses, elapsed_time, key1x, key2x));
 
   // Now we will test agent cleanup, specifically whether the aritfacts directory is removed.
   // We will construt a list of artifacts paths that we expect,
