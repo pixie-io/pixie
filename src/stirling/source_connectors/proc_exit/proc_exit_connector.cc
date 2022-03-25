@@ -21,7 +21,6 @@
 #include <utility>
 
 #include "src/common/base/base.h"
-#include "src/common/metrics/metrics.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/bpf_tools/macros.h"
 #include "src/stirling/bpf_tools/utils.h"
@@ -53,16 +52,6 @@ const auto kPerfBufferSpecs = MakeArray<bpf_tools::PerfBufferSpec>({
     {"proc_exit_events", HandleProcExitEvent, HandleProcExitEventLoss, kPerfBufferPerCPUSizeBytes,
      bpf_tools::PerfBufferSizeCategory::kControl},
 });
-
-// Use char array to meet the user's interface, which expects std::string.
-constexpr char kAbnormalJavaExitCounterName[] = "abnormal_java_exit_counter";
-ProcExitConnector::ProcExitConnector(std::string_view name)
-    : SourceConnector(name, kTables),
-      abnormal_java_exit_counter_(prometheus::BuildCounter()
-                                      .Name(kAbnormalJavaExitCounterName)
-                                      .Help("Count of the Java processes that exit abnormally")
-                                      .Register(GetMetricsRegistry())
-                                      .Add({{"name", kAbnormalJavaExitCounterName}})) {}
 
 void ProcExitConnector::AcceptProcExitEvent(const struct proc_exit_event_t& event) {
   events_.push_back(event);
