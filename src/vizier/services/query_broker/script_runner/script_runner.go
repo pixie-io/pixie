@@ -32,8 +32,11 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/shared/cvmsgspb"
+	svcutils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
 	"px.dev/pixie/src/vizier/utils/messagebus"
@@ -57,8 +60,11 @@ var (
 
 // ScriptRunner tracks registered cron scripts and runs them according to schedule.
 type ScriptRunner struct {
-	nc          *nats.Conn
-	csClient    metadatapb.CronScriptStoreServiceClient
+	nc         *nats.Conn
+	csClient   metadatapb.CronScriptStoreServiceClient
+	vzClient   vizierpb.VizierServiceClient
+	signingKey string
+
 	runnerMap   map[uuid.UUID]*runner
 	runnerMapMu sync.Mutex
 
@@ -70,7 +76,7 @@ type ScriptRunner struct {
 }
 
 // New creates a new script runner.
-func New(nc *nats.Conn, csClient metadatapb.CronScriptStoreServiceClient) (*ScriptRunner, error) {
+func New(nc *nats.Conn, csClient metadatapb.CronScriptStoreServiceClient, vzClient vizierpb.VizierServiceClient, signingKey string) (*ScriptRunner, error) {
 	updatesCh := make(chan *nats.Msg, 4096)
 	sub, err := nc.ChanSubscribe(CronScriptUpdatesChannel, updatesCh)
 	if err != nil {
@@ -78,7 +84,7 @@ func New(nc *nats.Conn, csClient metadatapb.CronScriptStoreServiceClient) (*Scri
 		return nil, err
 	}
 
-	sr := &ScriptRunner{nc: nc, csClient: csClient, done: make(chan struct{}), updatesCh: updatesCh, updatesSub: sub, runnerMap: make(map[uuid.UUID]*runner)}
+	sr := &ScriptRunner{nc: nc, csClient: csClient, done: make(chan struct{}), updatesCh: updatesCh, updatesSub: sub, runnerMap: make(map[uuid.UUID]*runner), vzClient: vzClient, signingKey: signingKey}
 	return sr, nil
 }
 
@@ -221,7 +227,7 @@ func (s *ScriptRunner) upsertScript(id uuid.UUID, script *cvmsgspb.CronScript) e
 		v.stop()
 		delete(s.runnerMap, id)
 	}
-	r := newRunner(script)
+	r := newRunner(script, s.vzClient, s.signingKey)
 	s.runnerMap[id] = r
 	go r.start()
 	_, err := s.csClient.AddOrUpdateScript(context.Background(), &metadatapb.AddOrUpdateScriptRequest{Script: script})
@@ -364,17 +370,46 @@ func checksumFromScriptMap(scripts map[string]*cvmsgspb.CronScript) (string, err
 type runner struct {
 	cronScript *cvmsgspb.CronScript
 
+	vzClient   vizierpb.VizierServiceClient
+	signingKey string
+
 	done chan struct{}
 	once sync.Once
 }
 
-func newRunner(script *cvmsgspb.CronScript) *runner {
+func newRunner(script *cvmsgspb.CronScript, vzClient vizierpb.VizierServiceClient, signingKey string) *runner {
 	return &runner{
-		cronScript: script, done: make(chan struct{}),
+		cronScript: script, done: make(chan struct{}), vzClient: vzClient, signingKey: signingKey,
 	}
 }
 
 func (r *runner) start() {
+	ticker := time.NewTicker(time.Duration(r.cronScript.FrequencyS) * time.Second)
+
+	go func() {
+		defer ticker.Stop()
+		for {
+			select {
+			case <-r.done:
+				return
+			case <-ticker.C:
+				claims := svcutils.GenerateJWTForService("query_broker", "vizier")
+				token, _ := svcutils.SignJWTClaims(claims, r.signingKey)
+
+				ctx := context.Background()
+				ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
+					fmt.Sprintf("bearer %s", token))
+
+				// TODO(michelle): We may want to monitor the stream to ensure the script runs successfully.
+				_, err := r.vzClient.ExecuteScript(ctx, &vizierpb.ExecuteScriptRequest{
+					QueryStr: r.cronScript.Script,
+				})
+				if err != nil {
+					log.WithError(err).Error("Failed to execute cronscript")
+				}
+			}
+		}
+	}()
 }
 
 func (r *runner) stop() {

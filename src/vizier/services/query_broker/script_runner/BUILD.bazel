@@ -22,7 +22,9 @@ go_library(
     importpath = "px.dev/pixie/src/vizier/services/query_broker/script_runner",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/api/proto/vizierpb:vizier_pl_go_proto",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
+        "//src/shared/services/utils",
         "//src/utils",
         "//src/vizier/services/metadata/metadatapb:service_pl_go_proto",
         "//src/vizier/utils/messagebus",
@@ -31,6 +33,7 @@ go_library(
         "@com_github_gogo_protobuf//types",
         "@com_github_nats_io_nats_go//:nats_go",
         "@com_github_sirupsen_logrus//:logrus",
+        "@org_golang_google_grpc//metadata",
     ],
 )
 

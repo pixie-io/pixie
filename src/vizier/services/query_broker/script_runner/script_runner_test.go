@@ -148,7 +148,7 @@ func TestScriptRunner_CompareScriptState(t *testing.T) {
 			nc, natsCleanup := testingutils.MustStartTestNATS(t)
 			defer natsCleanup()
 
-			sr, err := New(nc, &fakeCronStore{scripts: map[uuid.UUID]*cvmsgspb.CronScript{}})
+			sr, err := New(nc, &fakeCronStore{scripts: map[uuid.UUID]*cvmsgspb.CronScript{}}, nil, "test")
 			require.NoError(t, err)
 
 			// Subscribe to request channel.
@@ -193,7 +193,7 @@ func TestScriptRunner_GetCloudScripts(t *testing.T) {
 	nc, natsCleanup := testingutils.MustStartTestNATS(t)
 	defer natsCleanup()
 
-	sr, err := New(nc, nil)
+	sr, err := New(nc, nil, nil, "test")
 	require.NoError(t, err)
 
 	scripts := map[string]*cvmsgspb.CronScript{
@@ -551,7 +551,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 			}
 
 			fcs := &fakeCronStore{scripts: initialScripts}
-			sr, err := New(nc, fcs)
+			sr, err := New(nc, fcs, nil, "test")
 			require.NoError(t, err)
 
 			var wg sync.WaitGroup
