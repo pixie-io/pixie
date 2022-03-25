@@ -20,7 +20,6 @@ package controllers
 
 import (
 	"context"
-	"errors"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/cloud/plugin/pluginpb"
@@ -155,20 +154,119 @@ func (p *PluginServiceServer) UpdateRetentionPluginConfig(ctx context.Context, r
 
 // GetRetentionScripts gets the retention scripts configured for the org.
 func (p *PluginServiceServer) GetRetentionScripts(ctx context.Context, req *cloudpb.GetRetentionScriptsRequest) (*cloudpb.GetRetentionScriptsResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
+	orgID := utils.ProtoFromUUIDStrOrNil(orgIDstr)
+
+	resp, err := p.DataRetentionPluginServiceClient.GetRetentionScripts(ctx, &pluginpb.GetRetentionScriptsRequest{
+		OrgID: orgID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	scripts := make([]*cloudpb.RetentionScript, len(resp.Scripts))
+	for i, s := range resp.Scripts {
+		scripts[i] = &cloudpb.RetentionScript{
+			ScriptID:    s.ScriptID,
+			ScriptName:  s.ScriptName,
+			Description: s.Description,
+			FrequencyS:  s.FrequencyS,
+			ClusterIDs:  s.ClusterIDs,
+			PluginId:    s.PluginId,
+			Enabled:     s.Enabled,
+			IsPreset:    s.IsPreset,
+		}
+	}
+	return &cloudpb.GetRetentionScriptsResponse{
+		Scripts: scripts,
+	}, nil
 }
 
 // GetRetentionScript gets detailed information about a specific retention script.
 func (p *PluginServiceServer) GetRetentionScript(ctx context.Context, req *cloudpb.GetRetentionScriptRequest) (*cloudpb.GetRetentionScriptResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
+	orgID := utils.ProtoFromUUIDStrOrNil(orgIDstr)
+
+	resp, err := p.DataRetentionPluginServiceClient.GetRetentionScript(ctx, &pluginpb.GetRetentionScriptRequest{
+		OrgID:    orgID,
+		ScriptID: req.ID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	scriptDetails := resp.Script.Script
+	return &cloudpb.GetRetentionScriptResponse{
+		Script: &cloudpb.RetentionScript{
+			ScriptID:    scriptDetails.ScriptID,
+			ScriptName:  scriptDetails.ScriptName,
+			Description: scriptDetails.Description,
+			FrequencyS:  scriptDetails.FrequencyS,
+			ClusterIDs:  scriptDetails.ClusterIDs,
+			PluginId:    scriptDetails.PluginId,
+			Enabled:     scriptDetails.Enabled,
+			IsPreset:    scriptDetails.IsPreset,
+		},
+		Contents:  resp.Script.Contents,
+		ExportURL: resp.Script.ExportURL,
+	}, nil
 }
 
 // UpdateRetentionScript updates a specific retention script.
 func (p *PluginServiceServer) UpdateRetentionScript(ctx context.Context, req *cloudpb.UpdateRetentionScriptRequest) (*cloudpb.UpdateRetentionScriptResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	_, err := p.DataRetentionPluginServiceClient.UpdateRetentionScript(ctx, &pluginpb.UpdateRetentionScriptRequest{
+		ScriptID:    req.ID,
+		ScriptName:  req.ScriptName,
+		Description: req.Description,
+		Enabled:     req.Enabled,
+		FrequencyS:  req.FrequencyS,
+		Contents:    req.Contents,
+		ExportUrl:   req.ExportUrl,
+		ClusterIDs:  req.ClusterIDs,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &cloudpb.UpdateRetentionScriptResponse{}, nil
 }
 
 // CreateRetentionScript creates a retention script.
 func (p *PluginServiceServer) CreateRetentionScript(ctx context.Context, req *cloudpb.CreateRetentionScriptRequest) (*cloudpb.CreateRetentionScriptResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
+	orgID := utils.ProtoFromUUIDStrOrNil(orgIDstr)
+
+	resp, err := p.DataRetentionPluginServiceClient.CreateRetentionScript(ctx, &pluginpb.CreateRetentionScriptRequest{
+		Script: &pluginpb.DetailedRetentionScript{
+			Script: &pluginpb.RetentionScript{
+				ScriptName:  req.ScriptName,
+				Description: req.Description,
+				FrequencyS:  req.FrequencyS,
+				ClusterIDs:  req.ClusterIDs,
+				PluginId:    req.PluginId,
+				Enabled:     true,
+				IsPreset:    false,
+			},
+			Contents:  req.Contents,
+			ExportURL: req.ExportUrl,
+		},
+		OrgID: orgID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &cloudpb.CreateRetentionScriptResponse{ID: resp.ID}, nil
 }

@@ -506,7 +506,9 @@ func (s *Server) CreateRetentionScript(ctx context.Context, req *pluginpb.Create
 		return nil, status.Errorf(codes.Internal, "Failed to create retention script")
 	}
 
-	return &pluginpb.CreateRetentionScriptResponse{}, nil
+	return &pluginpb.CreateRetentionScriptResponse{
+		ID: scriptID,
+	}, nil
 }
 
 // UpdateRetentionScript updates a script used for long-term data retention.

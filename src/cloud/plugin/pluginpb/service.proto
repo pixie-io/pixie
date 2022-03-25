@@ -233,7 +233,9 @@ message CreateRetentionScriptRequest {
 }
 
 // CreateRetentionScriptResponse is the response to creating a new retention script.
-message CreateRetentionScriptResponse {}
+message CreateRetentionScriptResponse {
+    uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+}
 
 // UpdateRetentionScriptRequest is a request to update an existing retention script.
 message UpdateRetentionScriptRequest {

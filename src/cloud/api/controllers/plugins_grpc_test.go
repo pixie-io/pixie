@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
+	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/cloud/api/controllers"
 	"px.dev/pixie/src/cloud/api/controllers/testutils"
 	"px.dev/pixie/src/cloud/plugin/pluginpb"
@@ -306,4 +307,258 @@ func TestUpdateRetentionPluginConfig(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, &cloudpb.UpdateRetentionPluginConfigResponse{}, resp)
+}
+
+func TestGetRetentionScripts(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	orgID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	mockReq := &pluginpb.GetRetentionScriptsRequest{
+		OrgID: orgID,
+	}
+
+	mockClients.MockDataRetentionPlugin.EXPECT().GetRetentionScripts(gomock.Any(), mockReq).
+		Return(&pluginpb.GetRetentionScriptsResponse{
+			Scripts: []*pluginpb.RetentionScript{
+				&pluginpb.RetentionScript{
+					ScriptID:    utils.ProtoFromUUIDStrOrNil("1ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+					ScriptName:  "Test Script",
+					Description: "This is a script",
+					FrequencyS:  5,
+					ClusterIDs: []*uuidpb.UUID{
+						utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+						utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c1"),
+					},
+					PluginId: "test-plugin",
+					Enabled:  true,
+					IsPreset: false,
+				},
+				&pluginpb.RetentionScript{
+					ScriptID:    utils.ProtoFromUUIDStrOrNil("1ba7b810-9dad-11d1-80b4-00c04fd430c1"),
+					ScriptName:  "Another Script",
+					Description: "This is another script",
+					FrequencyS:  20,
+					ClusterIDs: []*uuidpb.UUID{
+						utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+					},
+					PluginId: "test-plugin-2",
+					Enabled:  false,
+					IsPreset: true,
+				},
+			},
+		}, nil)
+
+	pServer := &controllers.PluginServiceServer{mockClients.MockPlugin, mockClients.MockDataRetentionPlugin}
+
+	resp, err := pServer.GetRetentionScripts(ctx, &cloudpb.GetRetentionScriptsRequest{})
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+
+	assert.Equal(t, &cloudpb.GetRetentionScriptsResponse{
+		Scripts: []*cloudpb.RetentionScript{
+			&cloudpb.RetentionScript{
+				ScriptID:    utils.ProtoFromUUIDStrOrNil("1ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+				ScriptName:  "Test Script",
+				Description: "This is a script",
+				FrequencyS:  5,
+				ClusterIDs: []*uuidpb.UUID{
+					utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+					utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c1"),
+				},
+				PluginId: "test-plugin",
+				Enabled:  true,
+				IsPreset: false,
+			},
+			&cloudpb.RetentionScript{
+				ScriptID:    utils.ProtoFromUUIDStrOrNil("1ba7b810-9dad-11d1-80b4-00c04fd430c1"),
+				ScriptName:  "Another Script",
+				Description: "This is another script",
+				FrequencyS:  20,
+				ClusterIDs: []*uuidpb.UUID{
+					utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+				},
+				PluginId: "test-plugin-2",
+				Enabled:  false,
+				IsPreset: true,
+			},
+		},
+	}, resp)
+}
+
+func TestGetRetentionScript(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	orgID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	scriptID := utils.ProtoFromUUIDStrOrNil("1ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	mockReq := &pluginpb.GetRetentionScriptRequest{
+		OrgID:    orgID,
+		ScriptID: scriptID,
+	}
+
+	mockClients.MockDataRetentionPlugin.EXPECT().GetRetentionScript(gomock.Any(), mockReq).
+		Return(&pluginpb.GetRetentionScriptResponse{
+			Script: &pluginpb.DetailedRetentionScript{
+				Script: &pluginpb.RetentionScript{
+					ScriptID:    utils.ProtoFromUUIDStrOrNil("1ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+					ScriptName:  "Test Script",
+					Description: "This is a script",
+					FrequencyS:  5,
+					ClusterIDs: []*uuidpb.UUID{
+						utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+						utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c1"),
+					},
+					PluginId: "test-plugin",
+					Enabled:  true,
+					IsPreset: false,
+				},
+				Contents:  "px.display()",
+				ExportURL: "https://localhost:8001",
+			},
+		}, nil)
+
+	pServer := &controllers.PluginServiceServer{mockClients.MockPlugin, mockClients.MockDataRetentionPlugin}
+
+	resp, err := pServer.GetRetentionScript(ctx, &cloudpb.GetRetentionScriptRequest{
+		ID: scriptID,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+
+	assert.Equal(t, &cloudpb.GetRetentionScriptResponse{
+		Script: &cloudpb.RetentionScript{
+			ScriptID:    utils.ProtoFromUUIDStrOrNil("1ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+			ScriptName:  "Test Script",
+			Description: "This is a script",
+			FrequencyS:  5,
+			ClusterIDs: []*uuidpb.UUID{
+				utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+				utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c1"),
+			},
+			PluginId: "test-plugin",
+			Enabled:  true,
+			IsPreset: false,
+		},
+		Contents:  "px.display()",
+		ExportURL: "https://localhost:8001",
+	}, resp)
+}
+
+func TestUpdateRetentionScript(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	scriptID := utils.ProtoFromUUIDStrOrNil("1ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	mockReq := &pluginpb.UpdateRetentionScriptRequest{
+		ScriptID:    scriptID,
+		ScriptName:  &types.StringValue{Value: "abcd"},
+		Description: &types.StringValue{Value: "desc"},
+		FrequencyS:  &types.Int64Value{Value: 10},
+		ClusterIDs: []*uuidpb.UUID{
+			utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+			utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c1"),
+		},
+		ExportUrl: &types.StringValue{Value: "newurl"},
+		Contents:  &types.StringValue{Value: "new contents"},
+		Enabled:   &types.BoolValue{Value: false},
+	}
+
+	mockClients.MockDataRetentionPlugin.EXPECT().UpdateRetentionScript(gomock.Any(), mockReq).
+		Return(&pluginpb.UpdateRetentionScriptResponse{}, nil)
+
+	pServer := &controllers.PluginServiceServer{mockClients.MockPlugin, mockClients.MockDataRetentionPlugin}
+
+	resp, err := pServer.UpdateRetentionScript(ctx, &cloudpb.UpdateRetentionScriptRequest{
+		ID:          scriptID,
+		ScriptName:  &types.StringValue{Value: "abcd"},
+		Description: &types.StringValue{Value: "desc"},
+		FrequencyS:  &types.Int64Value{Value: 10},
+		ClusterIDs: []*uuidpb.UUID{
+			utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+			utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c1"),
+		},
+		ExportUrl: &types.StringValue{Value: "newurl"},
+		Contents:  &types.StringValue{Value: "new contents"},
+		Enabled:   &types.BoolValue{Value: false},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+
+	assert.Equal(t, &cloudpb.UpdateRetentionScriptResponse{}, resp)
+}
+
+func TestCreateRetentionScript(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	orgID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	scriptID := utils.ProtoFromUUIDStrOrNil("1ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	mockReq := &pluginpb.CreateRetentionScriptRequest{
+		OrgID: orgID,
+		Script: &pluginpb.DetailedRetentionScript{
+			Script: &pluginpb.RetentionScript{
+				ScriptName:  "Test Script",
+				Description: "This is a script",
+				FrequencyS:  5,
+				ClusterIDs: []*uuidpb.UUID{
+					utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+					utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c1"),
+				},
+				PluginId: "test-plugin",
+				Enabled:  true,
+				IsPreset: false,
+			},
+			Contents:  "px.display()",
+			ExportURL: "https://localhost:8001",
+		},
+	}
+
+	mockClients.MockDataRetentionPlugin.EXPECT().CreateRetentionScript(gomock.Any(), mockReq).
+		Return(&pluginpb.CreateRetentionScriptResponse{ID: scriptID}, nil)
+
+	pServer := &controllers.PluginServiceServer{mockClients.MockPlugin, mockClients.MockDataRetentionPlugin}
+
+	resp, err := pServer.CreateRetentionScript(ctx, &cloudpb.CreateRetentionScriptRequest{
+		ScriptName:  "Test Script",
+		Description: "This is a script",
+		FrequencyS:  5,
+		ClusterIDs: []*uuidpb.UUID{
+			utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+			utils.ProtoFromUUIDStrOrNil("2ba7b810-9dad-11d1-80b4-00c04fd430c1"),
+		},
+		PluginId:  "test-plugin",
+		Contents:  "px.display()",
+		ExportUrl: "https://localhost:8001",
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+
+	assert.Equal(t, &cloudpb.CreateRetentionScriptResponse{
+		ID: scriptID,
+	}, resp)
 }

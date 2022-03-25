@@ -667,6 +667,7 @@ func TestServer_CreateRetentionScript(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, resp)
+	assert.Equal(t, utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"), resp.ID)
 
 	query := `SELECT script_name, description, is_preset, plugin_id, PGP_SYM_DECRYPT(export_url, $1::text) as export_url from plugin_retention_scripts WHERE org_id=$2 AND script_id=$3`
 	rows, err := db.Queryx(query, "test", uuid.FromStringOrNil("223e4567-e89b-12d3-a456-426655440000"), uuid.FromStringOrNil("323e4567-e89b-12d3-a456-426655440000"))
