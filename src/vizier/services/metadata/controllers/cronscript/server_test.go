@@ -118,7 +118,11 @@ func TestSetScripts(t *testing.T) {
 		ID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 	}
 
-	mockStore.EXPECT().SetCronScripts([]*cvmsgspb.CronScript{s1, s2}).Return(nil)
+	mockStore.EXPECT().SetCronScripts(gomock.Any()).
+		DoAndReturn(func(scripts []*cvmsgspb.CronScript) error {
+			assert.ElementsMatch(t, []*cvmsgspb.CronScript{s1, s2}, scripts)
+			return nil
+		})
 
 	s := cronscript.New(mockStore)
 
