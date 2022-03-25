@@ -77,9 +77,7 @@ StatusOr<std::vector<absl::flat_hash_set<std::string>>> OTelExportSinkIR::Requir
   return std::vector<absl::flat_hash_set<std::string>>{required_column_names_};
 }
 
-Status OTelExportSinkIR::ProcessConfig(
-
-    const OTelData& data) {
+Status OTelExportSinkIR::ProcessConfig(const OTelData& data) {
   data_.endpoint_config = data.endpoint_config;
   for (const auto& attr : data.resource_attributes) {
     PL_ASSIGN_OR_RETURN(auto column, AddColumn(attr.column_reference));
@@ -123,8 +121,34 @@ Status OTelExportSinkIR::ProcessConfig(
     data_.metrics.push_back(std::move(new_metric));
   }
   for (const auto& span : data.spans) {
-    // TODO(philkuz, PP3275) implement SPANS.
-    PL_UNUSED(span);
+    OTelSpan new_span;
+    PL_RETURN_IF_ERROR(std::visit(overloaded{
+                                      [&new_span](const std::string& name) {
+                                        new_span.name = name;
+                                        return Status::OK();
+                                      },
+                                      [&new_span, this](ColumnIR* name_column) {
+                                        PL_ASSIGN_OR_RETURN(new_span.name, AddColumn(name_column));
+                                        return Status::OK();
+                                      },
+                                  },
+                                  span.name));
+    PL_ASSIGN_OR_RETURN(new_span.start_time_column, AddColumn(span.start_time_column));
+    PL_ASSIGN_OR_RETURN(new_span.end_time_column, AddColumn(span.end_time_column));
+    if (span.trace_id_column) {
+      PL_ASSIGN_OR_RETURN(new_span.trace_id_column, AddColumn(span.trace_id_column));
+    }
+    if (span.span_id_column) {
+      PL_ASSIGN_OR_RETURN(new_span.span_id_column, AddColumn(span.span_id_column));
+    }
+    if (span.parent_span_id_column) {
+      PL_ASSIGN_OR_RETURN(new_span.parent_span_id_column, AddColumn(span.parent_span_id_column));
+    }
+    for (const auto& attr : span.attributes) {
+      PL_ASSIGN_OR_RETURN(auto column, AddColumn(attr.column_reference));
+      new_span.attributes.push_back({attr.name, column});
+    }
+    data_.spans.push_back(std::move(new_span));
   }
   return Status::OK();
 }
@@ -216,8 +240,81 @@ Status OTelExportSinkIR::ToProto(planpb::Operator* op) const {
         metric.metric));
   }
   for (const auto& span : data_.spans) {
-    // TODO(philkuz, PP3275) implement spans.
-    PL_UNUSED(span);
+    auto span_pb = otel_op->add_spans();
+    PL_RETURN_IF_ERROR(std::visit(
+        overloaded{
+            [&span_pb](const std::string& name) {
+              span_pb->set_name_string(name);
+              return Status::OK();
+            },
+            [&span_pb](ColumnIR* name_column) {
+              if (name_column->EvaluatedDataType() != types::STRING) {
+                return name_column->CreateIRNodeError(
+                    "Expected name column '$0' to be STRING, received $1", name_column->col_name(),
+                    types::ToString(name_column->EvaluatedDataType()));
+              }
+              PL_ASSIGN_OR_RETURN(auto name_column_index, name_column->GetColumnIndex());
+              span_pb->set_name_column_index(name_column_index);
+              return Status::OK();
+            },
+        },
+        span.name));
+    if (span.start_time_column->EvaluatedDataType() != types::TIME64NS) {
+      return span.start_time_column->CreateIRNodeError(
+          "Expected time column '$0' to be TIME64NS, received $1",
+          span.start_time_column->col_name(),
+          types::ToString(span.start_time_column->EvaluatedDataType()));
+    }
+    PL_ASSIGN_OR_RETURN(auto start_time_column_index, span.start_time_column->GetColumnIndex());
+    span_pb->set_start_time_column_index(start_time_column_index);
+    if (span.end_time_column->EvaluatedDataType() != types::TIME64NS) {
+      return span.end_time_column->CreateIRNodeError(
+          "Expected time column '$0' to be TIME64NS, received $1", span.end_time_column->col_name(),
+          types::ToString(span.end_time_column->EvaluatedDataType()));
+    }
+    PL_ASSIGN_OR_RETURN(auto end_time_column_index, span.end_time_column->GetColumnIndex());
+    span_pb->set_end_time_column_index(end_time_column_index);
+
+    if (span.trace_id_column) {
+      if (span.trace_id_column->EvaluatedDataType() != types::STRING) {
+        return span.trace_id_column->CreateIRNodeError(
+            "Expected trace_id column '$0' to be STRING, received $1",
+            span.trace_id_column->col_name(),
+            types::ToString(span.trace_id_column->EvaluatedDataType()));
+      }
+      PL_ASSIGN_OR_RETURN(auto trace_id_column_index, span.trace_id_column->GetColumnIndex());
+      span_pb->set_trace_id_column_index(trace_id_column_index);
+    } else {
+      span_pb->set_trace_id_column_index(-1);
+    }
+    if (span.span_id_column) {
+      if (span.span_id_column->EvaluatedDataType() != types::STRING) {
+        return span.span_id_column->CreateIRNodeError(
+            "Expected span_id column '$0' to be STRING, received $1",
+            span.span_id_column->col_name(),
+            types::ToString(span.span_id_column->EvaluatedDataType()));
+      }
+      PL_ASSIGN_OR_RETURN(auto span_id_column_index, span.span_id_column->GetColumnIndex());
+      span_pb->set_span_id_column_index(span_id_column_index);
+    } else {
+      span_pb->set_span_id_column_index(-1);
+    }
+    if (span.parent_span_id_column) {
+      if (span.parent_span_id_column->EvaluatedDataType() != types::STRING) {
+        return span.parent_span_id_column->CreateIRNodeError(
+            "Expected parent_span_id column '$0' to be STRING, received $1",
+            span.parent_span_id_column->col_name(),
+            types::ToString(span.parent_span_id_column->EvaluatedDataType()));
+      }
+      PL_ASSIGN_OR_RETURN(auto parent_span_id_column_index,
+                          span.parent_span_id_column->GetColumnIndex());
+      span_pb->set_parent_span_id_column_index(parent_span_id_column_index);
+    } else {
+      span_pb->set_parent_span_id_column_index(-1);
+    }
+    for (const auto& attribute : span.attributes) {
+      PL_RETURN_IF_ERROR(attribute.ToProto(span_pb->add_attributes()));
+    }
   }
   return Status::OK();
 }

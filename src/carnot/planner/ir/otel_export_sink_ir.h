@@ -94,7 +94,17 @@ struct OTelMetric {
   std::variant<OTelMetricGauge, OTelMetricSummary> metric;
 };
 
-struct OTelSpan {};
+struct OTelSpan {
+  std::variant<std::string, ColumnIR*> name;
+  std::vector<OTelAttribute> attributes;
+
+  ColumnIR* trace_id_column = nullptr;
+  ColumnIR* span_id_column = nullptr;
+  ColumnIR* parent_span_id_column = nullptr;
+
+  ColumnIR* start_time_column;
+  ColumnIR* end_time_column;
+};
 
 struct OTelData {
   planpb::OTelEndpointConfig endpoint_config;

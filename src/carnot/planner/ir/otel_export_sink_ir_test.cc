@@ -363,6 +363,80 @@ INSTANTIATE_TEST_SUITE_P(
               return graph->CreateNode<OTelExportSinkIR>(parent->ast(), parent, data)
                   .ConsumeValueOrDie();
             },
+        },
+        {
+            "span_all_ids_specified",
+            table_store::schema::Relation{
+                {types::TIME64NS, types::TIME64NS, types::STRING, types::STRING, types::STRING,
+                 types::STRING},
+                {"start_time", "end_time", "trace_id", "span_id", "parent_span_id", "req_method"},
+                {types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE,
+                 types::ST_NONE}},
+            R"pb(
+            endpoint_config {}
+            resource {}
+            spans {
+              name_string: "span"
+              start_time_column_index: 0
+              end_time_column_index: 1
+              attributes {
+                name: "req_method"
+                column {
+                  column_type: STRING
+                  column_index: 5
+                }
+              }
+              trace_id_column_index: 2
+              span_id_column_index: 3
+              parent_span_id_column_index: 4
+            }
+            )pb",
+            [](IR* graph, OperatorIR* parent, table_store::schema::Relation* relation) {
+              OTelData data;
+
+              auto& span = data.spans.emplace_back();
+              span.name = "span";
+              span.start_time_column = CreateTypedColumn(graph, "start_time", relation);
+              span.end_time_column = CreateTypedColumn(graph, "end_time", relation);
+              span.trace_id_column = CreateTypedColumn(graph, "trace_id", relation);
+              span.span_id_column = CreateTypedColumn(graph, "span_id", relation);
+              span.parent_span_id_column = CreateTypedColumn(graph, "parent_span_id", relation);
+              span.attributes.push_back(
+                  {"req_method", CreateTypedColumn(graph, "req_method", relation)});
+
+              return graph->CreateNode<OTelExportSinkIR>(parent->ast(), parent, data)
+                  .ConsumeValueOrDie();
+            },
+        },
+        {
+            "span_not_specified_and_name_col",
+            table_store::schema::Relation{{types::TIME64NS, types::TIME64NS, types::STRING},
+                                          {"start_time", "end_time", "name_column"},
+                                          {types::ST_NONE, types::ST_NONE, types::ST_NONE}},
+            R"pb(
+            endpoint_config {}
+            resource {}
+            spans {
+              name_column_index: 2
+              start_time_column_index: 0
+              end_time_column_index: 1
+              trace_id_column_index: -1
+              span_id_column_index: -1
+              parent_span_id_column_index: -1
+            }
+            )pb",
+            [](IR* graph, OperatorIR* parent, table_store::schema::Relation* relation) {
+              OTelData data;
+
+              auto& span = data.spans.emplace_back();
+              span.name = "span";
+              span.start_time_column = CreateTypedColumn(graph, "start_time", relation);
+              span.end_time_column = CreateTypedColumn(graph, "end_time", relation);
+              span.name = CreateTypedColumn(graph, "name_column", relation);
+
+              return graph->CreateNode<OTelExportSinkIR>(parent->ast(), parent, data)
+                  .ConsumeValueOrDie();
+            },
         }}),
     [](const ::testing::TestParamInfo<MetricTestCase>& info) { return info.param.name; });
 
@@ -420,6 +494,21 @@ OTelExportSinkIR* CreateSummary(IR* graph, OperatorIR* parent,
   metric.metric = OTelMetricSummary{CreateTypedColumn(graph, "count", relation),
                                     CreateTypedColumn(graph, "sum", relation),
                                     {{0.5, p50_col}, {0.99, p99_col}}};
+  return graph->CreateNode<OTelExportSinkIR>(parent->ast(), parent, data).ConsumeValueOrDie();
+}
+
+OTelExportSinkIR* CreateSpanWithNameString(IR* graph, OperatorIR* parent,
+                                           table_store::schema::Relation* relation) {
+  OTelData data;
+
+  auto& span = data.spans.emplace_back();
+  span.name = "http.name";
+  span.start_time_column = CreateTypedColumn(graph, "start_time", relation);
+  span.end_time_column = CreateTypedColumn(graph, "end_time", relation);
+  span.trace_id_column = CreateTypedColumn(graph, "trace_id", relation);
+  span.span_id_column = CreateTypedColumn(graph, "span_id", relation);
+  span.parent_span_id_column = CreateTypedColumn(graph, "parent_span_id", relation);
+
   return graph->CreateNode<OTelExportSinkIR>(parent->ast(), parent, data).ConsumeValueOrDie();
 }
 
@@ -523,6 +612,68 @@ INSTANTIATE_TEST_SUITE_P(
               auto latency_col = CreateTypedColumn(graph, "latency_ns", relation);
               metric.unit_column = latency_col;
               metric.metric = OTelMetricGauge{latency_col};
+              return graph->CreateNode<OTelExportSinkIR>(parent->ast(), parent, data)
+                  .ConsumeValueOrDie();
+            },
+        },
+        {
+            "span_start_time_wrong",
+            table_store::schema::Relation{
+                {types::INT64, types::TIME64NS, types::STRING, types::STRING, types::STRING},
+                {"start_time", "end_time", "trace_id", "span_id", "parent_span_id"},
+                {types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE}},
+            "Expected time column 'start_time' to be TIME64NS, received INT64",
+            &CreateSpanWithNameString,
+        },
+        {
+            "span_end_time_wrong",
+            table_store::schema::Relation{
+                {types::TIME64NS, types::INT64, types::STRING, types::STRING, types::STRING},
+                {"start_time", "end_time", "trace_id", "span_id", "parent_span_id"},
+                {types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE}},
+            "Expected time column 'end_time' to be TIME64NS, received INT64",
+            &CreateSpanWithNameString,
+        },
+        {
+            "span_id_column_wrong",
+            table_store::schema::Relation{
+                {types::TIME64NS, types::TIME64NS, types::STRING, types::INT64, types::STRING},
+                {"start_time", "end_time", "trace_id", "span_id", "parent_span_id"},
+                {types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE}},
+            "Expected span_id column 'span_id' to be STRING, received INT64",
+            &CreateSpanWithNameString,
+        },
+        {
+            "trace_id_column_wrong",
+            table_store::schema::Relation{
+                {types::TIME64NS, types::TIME64NS, types::INT64, types::STRING, types::STRING},
+                {"start_time", "end_time", "trace_id", "span_id", "parent_span_id"},
+                {types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE}},
+            "Expected trace_id column 'trace_id' to be STRING, received INT64",
+            &CreateSpanWithNameString,
+        },
+        {
+            "parent_span_id_column_wrong",
+            table_store::schema::Relation{
+                {types::TIME64NS, types::TIME64NS, types::STRING, types::STRING, types::INT64},
+                {"start_time", "end_time", "trace_id", "span_id", "parent_span_id"},
+                {types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE}},
+            "Expected parent_span_id column 'parent_span_id' to be STRING, received INT64",
+            &CreateSpanWithNameString,
+        },
+        {
+            "span_name_column_wrong",
+            table_store::schema::Relation{{types::TIME64NS, types::TIME64NS, types::INT64},
+                                          {"start_time", "end_time", "req_path"},
+                                          {types::ST_NONE, types::ST_NONE, types::ST_NONE}},
+            "Expected name column 'req_path' to be STRING, received INT64",
+            [](IR* graph, OperatorIR* parent, table_store::schema::Relation* relation) {
+              OTelData data;
+
+              auto& span = data.spans.emplace_back();
+              span.name = CreateTypedColumn(graph, "req_path", relation);
+              span.start_time_column = CreateTypedColumn(graph, "start_time", relation);
+              span.end_time_column = CreateTypedColumn(graph, "end_time", relation);
               return graph->CreateNode<OTelExportSinkIR>(parent->ast(), parent, data)
                   .ConsumeValueOrDie();
             },
