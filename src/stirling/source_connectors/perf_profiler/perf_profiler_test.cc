@@ -135,6 +135,10 @@ class PerfProfileBPFTest : public ::testing::Test {
     // Give test apps a little time to start running (necessary for Java, at least).
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
+    // Create a connector context that has only the UPIDs of interest, for this test.
+    ctx_ = std::make_unique<TestContext>(ToUPIDs(sub_processes));
+    target_pids_ = GetSubProcessPids(sub_processes);
+
     return sub_processes;
   }
 
@@ -254,16 +258,14 @@ class PerfProfileBPFTest : public ::testing::Test {
     return upids;
   }
 
-  template <typename T>
-  std::vector<size_t> GetTargetRowIdxs(const std::vector<T>& sub_processes) {
-    const std::vector<int> pids = GetSubProcessPids(sub_processes);
-    return FindRecordIdxMatchesPIDs(columns_, kStackTraceUPIDIdx, pids);
-  }
-
   void ConsumeRecords() {
     const std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
     ASSERT_NOT_EMPTY_AND_GET_RECORDS(columns_, tablets);
     PopulateColumnPtrs(columns_);
+    auto target_row_idxs = FindRecordIdxMatchesPIDs(columns_, kStackTraceUPIDIdx, target_pids_);
+
+    PopulateCumulativeSum(target_row_idxs);
+    PopulateObservedStackTraces(target_row_idxs);
   }
 
   void PopulateColumnPtrs(const types::ColumnWrapperRecordBatch& columns) {
@@ -294,6 +296,7 @@ class PerfProfileBPFTest : public ::testing::Test {
   const std::chrono::seconds test_run_time_;
   std::unique_ptr<PerfProfileConnector> source_;
   std::unique_ptr<TestContext> ctx_;
+  std::vector<int> target_pids_;
   DataTable data_table_;
   const std::vector<DataTable*> data_tables_{&data_table_};
 
@@ -315,108 +318,66 @@ class PerfProfileBPFTest : public ::testing::Test {
 
 TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
   const std::filesystem::path bazel_app_path = BazelGoTestAppPath("profiler_test_app_sqrt_go");
+  ASSERT_TRUE(fs::Exists(bazel_app_path)) << absl::StrFormat("Missing: %s.", bazel_app_path);
 
-  // The toy test app. should be written such that we can expect one stack trace
-  // twice as often as another.
   // clang-format off
+  // The target app is written such that key2x uses twice the CPU time as key1x.
   constexpr std::string_view key2x = "runtime.goexit.abi0;runtime.main;main.main;main.sqrtOf1e39;main.sqrt";  // NOLINT(whitespace/line_length)
   constexpr std::string_view key1x = "runtime.goexit.abi0;runtime.main;main.main;main.sqrtOf1e18;main.sqrt";  // NOLINT(whitespace/line_length)
   // clang-format on
 
-  // Start they toy apps as sub-processes, then,
-  // for a certain amount of time (kTestRunTime), collect data using RunTest().
+  // Start target apps & create the connector context using the sub-process upids.
   auto sub_processes = StartSubProcesses<CPUPinnedBinaryRunner>(bazel_app_path);
 
-  // We wait until here to create the connector context, i.e. so that perf_profile_connector
-  // finds the upids that belong to the sub-processes that we have just created.
-  ctx_ = std::make_unique<TestContext>(ToUPIDs(sub_processes));
-
+  // Allow target apps to run, and periodically call transfer data on perf profile connector.
   const std::chrono::duration<double> elapsed_time = RunTest();
 
-  // Pull the data into this test (as columns_) using ConsumeRecords(), and
-  // find the row indices that belong to our sub-processes using GetTargetRowIdxs().
+  // Pull the data from the perf profile connector into this test case.
   ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
-  const std::vector<size_t> target_row_idxs = GetTargetRowIdxs(sub_processes);
 
-  // Populate the cumulative sum & the observed stack traces histo,
-  // then check observed vs. expected stack traces key set:
-  ASSERT_NO_FATAL_FAILURE(PopulateCumulativeSum(target_row_idxs));
-  ASSERT_NO_FATAL_FAILURE(PopulateObservedStackTraces(target_row_idxs));
-  EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key1x, Gt(0))));
-  EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key2x, Gt(0))));
   ASSERT_NO_FATAL_FAILURE(
       CheckExpectedCounts(observed_stack_traces_, kNumSubProcesses, elapsed_time, key1x, key2x));
 }
 
 TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
   const std::filesystem::path bazel_app_path = BazelCCTestAppPath("profiler_test_app_fib");
+  ASSERT_TRUE(fs::Exists(bazel_app_path)) << absl::StrFormat("Missing: %s.", bazel_app_path);
 
-  // The toy test app. should be written such that we can expect one stack trace
-  // twice as often as another.
+  // The target app is written such that key2x uses twice the CPU time as key1x.
   constexpr std::string_view key2x = "__libc_start_main;main;fib52();fib(unsigned long)";
   constexpr std::string_view key1x = "__libc_start_main;main;fib27();fib(unsigned long)";
 
-  // Start they toy apps as sub-processes, then,
-  // for a certain amount of time, collect data using RunTest().
+  // Start target apps & create the connector context using the sub-process upids.
   auto sub_processes = StartSubProcesses<CPUPinnedBinaryRunner>(bazel_app_path);
 
-  // We wait until here to create the connector context, i.e. so that perf_profile_connector
-  // finds the upids that belong to the sub-processes that we have just created.
-  ctx_ = std::make_unique<TestContext>(ToUPIDs(sub_processes));
-
+  // Allow target apps to run, and periodically call transfer data on perf profile connector.
   const std::chrono::duration<double> elapsed_time = RunTest();
 
-  // Pull the data into this test (as columns_) using ConsumeRecords(), and
-  // find the row indices that belong to our sub-processes using GetTargetRowIdxs().
+  // Pull the data from the perf profile connector into this test case.
   ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
-  const std::vector<size_t> target_row_idxs = GetTargetRowIdxs(sub_processes);
 
-  // Populate the cumulative sum & the observed stack traces histo,
-  // then check observed vs. expected stack traces key set:
-  ASSERT_NO_FATAL_FAILURE(PopulateCumulativeSum(target_row_idxs));
-  ASSERT_NO_FATAL_FAILURE(PopulateObservedStackTraces(target_row_idxs));
-  EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key1x, Gt(0))));
-  EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key2x, Gt(0))));
   ASSERT_NO_FATAL_FAILURE(
       CheckExpectedCounts(observed_stack_traces_, kNumSubProcesses, elapsed_time, key1x, key2x));
 }
 
 TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
   const std::filesystem::path bazel_app_path = BazelJavaTestAppPath("fib");
-  LOG(INFO) << absl::StrFormat("bazel_app_path: %s.", bazel_app_path);
-  ASSERT_TRUE(fs::Exists(bazel_app_path));
+  ASSERT_TRUE(fs::Exists(bazel_app_path)) << absl::StrFormat("Missing: %s.", bazel_app_path);
 
-  // Start they toy apps as sub-processes, then,
-  // for a certain amount of time, collect data using RunTest().
-  auto sub_processes = StartSubProcesses<CPUPinnedBinaryRunner>(bazel_app_path);
-
-  // We wait until here to create the connector context, i.e. so that perf_profile_connector
-  // finds the upids that belong to the sub-processes that we have just created.
-  ctx_ = std::make_unique<TestContext>(ToUPIDs(sub_processes));
-
-  const std::chrono::duration<double> elapsed_time = RunTest();
-
-  // Pull the data into this test (as columns_) using ConsumeRecords(), and
-  // find the row indices that belong to our sub-processes using GetTargetRowIdxs().
-  ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
-  const std::vector<size_t> target_row_idxs = GetTargetRowIdxs(sub_processes);
-
-  // Populate the cumulative sum & the observed stack traces histo.
-  ASSERT_NO_FATAL_FAILURE(PopulateCumulativeSum(target_row_idxs));
-  ASSERT_NO_FATAL_FAILURE(PopulateObservedStackTraces(target_row_idxs));
-
-  // Previous test cases matched entire stack traces. For Java, parts of the stack trace
-  // remain unpredictable, but we can predict the leaf symbols.
-  // Here, we find stack traces with the expected leaf symbols,
-  // and expect that fib52() occurs with 2x the frequency of fib27().
+  // The target app is written such that key2x uses twice the CPU time as key1x.
+  // For Java, we will match only the leaf symbol because we cannot predict the full stack trace.
   constexpr std::string_view key2x = "[j] long JavaFib::fib52()";
   constexpr std::string_view key1x = "[j] long JavaFib::fib27()";
 
-  std::multimap<uint64_t, std::string> traces;
+  // Start target apps & create the connector context using the sub-process upids.
+  auto sub_processes = StartSubProcesses<CPUPinnedBinaryRunner>(bazel_app_path);
 
-  PopulateObservedStackTraces(target_row_idxs);
-  EXPECT_THAT(observed_leaf_symbols_, ::testing::Contains(Pair(key1x, Gt(0))));
-  EXPECT_THAT(observed_leaf_symbols_, ::testing::Contains(Pair(key2x, Gt(0))));
+  // Allow target apps to run, and periodically call transfer data on perf profile connector.
+  const std::chrono::duration<double> elapsed_time = RunTest();
+
+  // Pull the data from the perf profile connector into this test case.
+  ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
+
   ASSERT_NO_FATAL_FAILURE(
       CheckExpectedCounts(observed_leaf_symbols_, kNumSubProcesses, elapsed_time, key1x, key2x));
 
@@ -465,25 +426,19 @@ TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
 
 TEST_F(PerfProfileBPFTest, TestOutOfContext) {
   const std::filesystem::path bazel_app_path = BazelCCTestAppPath("profiler_test_app_fib");
+  ASSERT_TRUE(fs::Exists(bazel_app_path)) << absl::StrFormat("Missing: %s.", bazel_app_path);
 
-  // Start they toy apps as sub-processes, then,
-  // for a certain amount of time, collect data using RunTest().
+  // Start target apps & create the connector context using the sub-process upids.
   auto sub_processes = StartSubProcesses<CPUPinnedBinaryRunner>(bazel_app_path);
 
-  // For this test case, we pass in an empty list of PIDs to trace.
+  // Replace the populated connector context with one that is empty.
   ctx_ = std::make_unique<TestContext>(absl::flat_hash_set<md::UPID>());
 
+  // Allow target apps to run, and periodically call transfer data on perf profile connector.
   RunTest();
 
-  // Pull the data into this test (as columns_) using ConsumeRecords(), and
-  // find the row indices that belong to our sub-processes using GetTargetRowIdxs().
+  // Pull the data from the perf profile connector into this test case.
   ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
-  const std::vector<size_t> target_row_idxs = GetTargetRowIdxs(sub_processes);
-
-  // Populate the cumulative sum & the observed stack traces histo,
-  // then check observed vs. expected stack traces key set:
-  ASSERT_NO_FATAL_FAILURE(PopulateCumulativeSum(target_row_idxs));
-  ASSERT_NO_FATAL_FAILURE(PopulateObservedStackTraces(target_row_idxs));
 }
 
 }  // namespace stirling
