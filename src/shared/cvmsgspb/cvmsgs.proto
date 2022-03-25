@@ -392,3 +392,12 @@ message DeleteCronScriptRequest {
 
 // DeleteCronScriptResponse is a response to a DeleteCronScriptRequest.
 message DeleteCronScriptResponse {}
+
+// CronScriptUpdate is an update to the set of cronscripts, such as creations/deletions.
+message CronScriptUpdate {
+  oneof msg {
+    RegisterOrUpdateCronScriptRequest upsert_req = 1;
+    DeleteCronScriptRequest delete_req = 2;
+  }
+  string request_id = 3 [(gogoproto.customname) = "RequestID"];
+}
