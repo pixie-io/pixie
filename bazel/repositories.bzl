@@ -176,7 +176,7 @@ def _cc_deps():
     _include_all_repo("com_github_libuv_libuv", patches = ["//bazel/external:libuv.patch"], patch_args = ["-p1"])
     _include_all_repo("com_github_libarchive_libarchive")
 
-def list_pl_deps(name):
+def _list_pl_deps(name):
     repo_urls = list()
     for repo_name, repo_config in REPOSITORY_LOCATIONS.items():
         urls = repo_config["urls"]
@@ -199,7 +199,7 @@ def list_pl_deps(name):
         visibility = ["//visibility:public"],
     )
 
-def pl_deps():
+def _pl_deps():
     _bazel_repo("bazel_skylib")
     _bazel_repo("bazel_gazelle")
     _bazel_repo("distroless")
@@ -215,3 +215,6 @@ def pl_deps():
 
     _com_llvm_lib()
     _cc_deps()
+
+list_pl_deps = _list_pl_deps
+pl_deps = _pl_deps
