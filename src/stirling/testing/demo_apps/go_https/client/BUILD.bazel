@@ -73,3 +73,29 @@ container_image(
         "./https_client",
     ],
 )
+
+container_image(
+    name = "golang_1_18_https_client_source",
+    base = "@golang_1_18_image//image",
+    directory = "/go/src/https_client",
+    files = ["https_client.go"],
+)
+
+container_run_and_commit(
+    name = "golang_1_18_https_client_build",
+    commands = [
+        "go mod init",
+        "go get",
+        "go build -v",
+    ],
+    docker_run_flags = ["-w /go/src/https_client"],
+    image = ":golang_1_18_https_client_source.tar",
+)
+
+container_image(
+    name = "golang_1_18_https_client",
+    base = ":golang_1_18_https_client_build_commit.tar",
+    entrypoint = [
+        "./https_client",
+    ],
+)

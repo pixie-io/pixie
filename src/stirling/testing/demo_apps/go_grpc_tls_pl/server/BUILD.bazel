@@ -106,3 +106,40 @@ container_image(
     ],
     layers = [":certs_layer"],
 )
+
+container_image(
+    name = "golang_1_18_grpc_tls_server_source",
+    base = "@golang_1_18_image//image",
+    directory = "/go/src/grpc_tls_server",
+    files = ["server.go"],
+)
+
+container_run_and_commit(
+    name = "golang_1_18_grpc_tls_server_build",
+    commands = [
+        "go mod init",
+        "go get",
+        "go build -v",
+    ],
+    docker_run_flags = ["-w /go/src/grpc_tls_server"],
+    image = ":golang_1_18_grpc_tls_server_source.tar",
+)
+
+container_run_and_extract(
+    name = "golang_1_18_grpc_tls_server_binary",
+    commands = ["echo"],
+    extract_file = "/go/src/grpc_tls_server/grpc_tls_server",
+    image = ":golang_1_18_grpc_tls_server_build_commit.tar",
+)
+
+container_image(
+    name = "golang_1_18_grpc_tls_server",
+    base = ":golang_1_18_grpc_tls_server_build_commit.tar",
+    entrypoint = [
+        "./grpc_tls_server",
+        "--server_tls_cert=/certs/server.crt",
+        "--server_tls_key=/certs/server.key",
+        "--tls_ca_cert=/certs/ca.crt",
+    ],
+    layers = [":certs_layer"],
+)

@@ -18,6 +18,7 @@
 
 #include "src/stirling/obj_tools/dwarf_reader.h"
 
+#include <absl/container/flat_hash_set.h>
 #include <algorithm>
 
 #include <llvm/DebugInfo/DIContext.h>
@@ -934,9 +935,18 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
     PL_UNUSED(loc);
   }
 
+  absl::flat_hash_set<std::string> arg_names;
   for (const auto& die : GetParamDIEs(function_die)) {
-    VLOG(1) << die.getShortName();
-    auto& arg = arg_info[die.getShortName()];
+    std::string arg_name = die.getShortName();
+    VLOG(1) << arg_name;
+
+    // TODO(chengruizhe): This is a hack that deals with duplicate DWARF entries in Go 1.18
+    //  binaries. Remove once this issue is resolved. https://github.com/golang/go/issues/51725
+    if (arg_names.contains(arg_name)) {
+      continue;
+    }
+    auto& arg = arg_info[arg_name];
+    arg_names.insert(std::move(arg_name));
 
     PL_ASSIGN_OR_RETURN(const DWARFDie type_die, GetTypeDie(die));
     PL_ASSIGN_OR_RETURN(arg.type_info, GetTypeInfo(die, type_die));

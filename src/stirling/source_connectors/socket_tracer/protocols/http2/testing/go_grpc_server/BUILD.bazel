@@ -66,3 +66,26 @@ filegroup(
     ],
     visibility = ["//src/stirling:__subpackages__"],
 )
+
+pl_aux_go_binary(
+    name = "golang_1_18_grpc_server",
+    base = "@golang_1_18_image//image",
+    extra_layers = {
+        "proto": ["//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto:proto_files"],
+    },
+    files = [
+        "go.mod",
+        "go.sum",
+        "main.go",
+    ],
+)
+
+filegroup(
+    name = "golang_1_18_grpc_server_with_certs",
+    srcs = [":golang_1_18_grpc_server"],
+    data = [
+        "https-server.crt",
+        "https-server.key",
+    ],
+    visibility = ["//src/stirling:__subpackages__"],
+)
