@@ -614,6 +614,31 @@ TEST_F(LogicalPlannerTest, limit_pushdown_failing) {
   ASSERT_OK(proto_or_s.status());
 }
 
+TEST_F(LogicalPlannerTest, create_compiler_state_has_endpoint_config) {
+  auto state = testutils::CreateTwoPEMsOneKelvinPlannerState(kCheckoutProbeTableSchema);
+  auto endpoint_config = state.mutable_otel_endpoint_config();
+  endpoint_config->set_url("px.dev:55555");
+  (*endpoint_config->mutable_headers())["key1"] = "value1";
+  (*endpoint_config->mutable_headers())["key2"] = "value2";
+  planner::RegistryInfo registry_info;
+  ASSERT_OK(registry_info.Init(info_));
+  ASSERT_OK_AND_ASSIGN(auto compiler_state, CreateCompilerState(state, &registry_info,
+                                                                /* max_output_rows_per_table*/ 0));
+  EXPECT_EQ(compiler_state->endpoint_config()->url(), "px.dev:55555");
+  EXPECT_EQ(compiler_state->endpoint_config()->headers().size(), 2);
+  EXPECT_EQ(compiler_state->endpoint_config()->headers().at("key1"), "value1");
+  EXPECT_EQ(compiler_state->endpoint_config()->headers().at("key2"), "value2");
+}
+
+TEST_F(LogicalPlannerTest, default_compiler_state_has_nullptr) {
+  auto state = testutils::CreateTwoPEMsOneKelvinPlannerState(kCheckoutProbeTableSchema);
+  planner::RegistryInfo registry_info;
+  ASSERT_OK(registry_info.Init(info_));
+  ASSERT_OK_AND_ASSIGN(auto compiler_state, CreateCompilerState(state, &registry_info,
+                                                                /* max_output_rows_per_table*/ 0));
+  EXPECT_EQ(compiler_state->endpoint_config(), nullptr);
+}
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace px

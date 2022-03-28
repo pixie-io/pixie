@@ -126,6 +126,16 @@ message RedactionOptions {
   bool use_px_redact_pii_best_effort = 2;
 }
 
+// OTelEndpointConfig contains the connection parameters for an OpenTelemetry
+// Exporter.
+message OTelEndpointConfig {
+  // url is the address of the OpenTelemetry collector.
+  string url = 1 [(gogoproto.customname) = "URL"];
+  // The headers that should be attached to the connection context, such as
+  // authentication credentials or api keys.
+  map<string, string> headers = 2;
+}
+
 // LogicalPlannerState contains the information necessary to create the Logical
 // Plan. This message is used by the query broker to send to the logical
 // planner.
@@ -142,6 +152,12 @@ message LogicalPlannerState {
   // RedactionOptions specifies whether redaction should be done, and how to do it.
   // If redaction_options is nil, then no redaction is done.
   RedactionOptions redaction_options = 7;
+
+  // OTelEndpointconfig configures the default endpoint config for all plans compiled
+  // with this logical planner state. Any plans that don't manually specify a config will
+  // use this one. If this config is not specified and the plan fails to specify an endpoint
+  // config for otel configurations, that plan compilation will fail.
+  OTelEndpointConfig otel_endpoint_config = 8 [(gogoproto.customname) = "OTelEndpointConfig"];
 }
 
 // The result for the planner. Contains a status to track any errors
