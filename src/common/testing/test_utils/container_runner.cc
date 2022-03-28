@@ -92,7 +92,8 @@ StatusOr<int> ContainerPID(std::string_view container_name) {
 
 StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
                                            const std::vector<std::string>& options,
-                                           const std::vector<std::string>& args) {
+                                           const std::vector<std::string>& args,
+                                           const bool use_host_pid_namespace) {
   // Now run the container.
   // Run with timeout, as a backup in case we don't clean things up properly.
   container_name_ = absl::StrCat(instance_name_prefix_, "_",
@@ -104,7 +105,9 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
   std::vector<std::string> docker_run_cmd;
   docker_run_cmd.push_back("docker");
   docker_run_cmd.push_back("run");
-  docker_run_cmd.push_back("--pid=host");
+  if (use_host_pid_namespace) {
+    docker_run_cmd.push_back("--pid=host");
+  }
   for (const auto& flag : options) {
     docker_run_cmd.push_back(flag);
   }
