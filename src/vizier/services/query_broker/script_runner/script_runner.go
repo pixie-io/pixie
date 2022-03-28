@@ -20,8 +20,6 @@ package scriptrunner
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -35,7 +33,9 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"px.dev/pixie/src/api/proto/vizierpb"
+	"px.dev/pixie/src/shared/cvmsgs"
 	"px.dev/pixie/src/shared/cvmsgspb"
+	"px.dev/pixie/src/shared/scripts"
 	svcutils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
@@ -44,17 +44,17 @@ import (
 
 var (
 	// CronScriptChecksumRequestChannel is the NATS channel to make checksum requests to.
-	CronScriptChecksumRequestChannel = messagebus.V2CTopic("GetCronScriptsCheckSumRequest")
+	CronScriptChecksumRequestChannel = messagebus.V2CTopic(cvmsgs.CronScriptChecksumRequestChannel)
 	// CronScriptChecksumResponseChannel is the NATS channel that checksum responses are published to.
-	CronScriptChecksumResponseChannel = messagebus.C2VTopic("GetCronScriptsCheckSumResponse")
+	CronScriptChecksumResponseChannel = messagebus.C2VTopic(cvmsgs.CronScriptChecksumResponseChannel)
 	// GetCronScriptsRequestChannel is the NATS channel script requests are sent to.
-	GetCronScriptsRequestChannel = messagebus.V2CTopic("GetCronScriptsRequest")
+	GetCronScriptsRequestChannel = messagebus.V2CTopic(cvmsgs.GetCronScriptsRequestChannel)
 	// GetCronScriptsResponseChannel is the NATS channel that script responses are published to.
-	GetCronScriptsResponseChannel = messagebus.C2VTopic("GetCronScriptsResponse")
+	GetCronScriptsResponseChannel = messagebus.C2VTopic(cvmsgs.GetCronScriptsResponseChannel)
 	// CronScriptUpdatesChannel is the NATS channel that any cron script updates are published to.
-	CronScriptUpdatesChannel = messagebus.C2VTopic("CronScriptsUpdates")
+	CronScriptUpdatesChannel = messagebus.C2VTopic(cvmsgs.CronScriptUpdatesChannel)
 	// CronScriptUpdatesResponseChannel is the NATS channel that script updates are published to.
-	CronScriptUpdatesResponseChannel = messagebus.V2CTopic("CronScriptsUpdatesResponse")
+	CronScriptUpdatesResponseChannel = messagebus.V2CTopic(cvmsgs.CronScriptUpdatesResponseChannel)
 	natsWaitTimeout                  = 2 * time.Minute
 )
 
@@ -100,7 +100,13 @@ func (s *ScriptRunner) Stop() {
 // SyncScripts syncs the known set of scripts in Vizier with scripts in Cloud.
 func (s *ScriptRunner) SyncScripts() error {
 	// Fetch persisted scripts.
-	resp, err := s.csClient.GetScripts(context.Background(), &metadatapb.GetScriptsRequest{})
+	claims := svcutils.GenerateJWTForService("cron_script_store", "vizier")
+	token, _ := svcutils.SignJWTClaims(claims, s.signingKey)
+
+	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
+		fmt.Sprintf("bearer %s", token))
+
+	resp, err := s.csClient.GetScripts(ctx, &metadatapb.GetScriptsRequest{})
 	if err != nil {
 		log.WithError(err).Error("Failed to fetch scripts from store")
 		return err
@@ -257,7 +263,7 @@ func (s *ScriptRunner) deleteScript(id uuid.UUID) error {
 
 func (s *ScriptRunner) compareScriptState(existingScripts map[string]*cvmsgspb.CronScript) (bool, error) {
 	// Get hash of map.
-	existingChecksum, err := checksumFromScriptMap(existingScripts)
+	existingChecksum, err := scripts.ChecksumFromScriptMap(existingScripts)
 	if err != nil {
 		return false, err
 	}
@@ -352,18 +358,6 @@ func (s *ScriptRunner) natsReplyAndResponse(req *cvmsgspb.V2CMessage, requestTop
 			return nil, errors.New("Failed to get response")
 		}
 	}
-}
-
-func checksumFromScriptMap(scripts map[string]*cvmsgspb.CronScript) (string, error) {
-	scriptStr, err := json.Marshal(scripts)
-	if err != nil {
-		log.WithError(err).Error("Failed to get checksum")
-		return "", err
-	}
-	h := sha256.New()
-	h.Write([]byte(scriptStr))
-
-	return string(h.Sum(nil)), nil
 }
 
 // Logic for "runners" which handle the script execution.

@@ -14,30 +14,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "scripts",
-    srcs = [
-        "configs.go",
-        "cron_script.go",
-    ],
-    importpath = "px.dev/pixie/src/shared/scripts",
+    name = "cvmsgs",
+    srcs = ["cvmsgs.go"],
+    importpath = "px.dev/pixie/src/shared/cvmsgs",
     visibility = ["//visibility:public"],
-    deps = [
-        "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
-        "@com_github_sirupsen_logrus//:logrus",
-    ],
-)
-
-go_test(
-    name = "scripts_test",
-    srcs = ["cron_script_test.go"],
-    deps = [
-        ":scripts",
-        "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
-        "//src/utils",
-        "@com_github_stretchr_testify//assert",
-        "@com_github_stretchr_testify//require",
-    ],
 )

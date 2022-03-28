@@ -22,13 +22,17 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/gofrs/uuid"
+	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
+	"github.com/golang/mock/gomock"
 	"github.com/jmoiron/sqlx"
+	"github.com/nats-io/nats.go"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -37,10 +41,17 @@ import (
 	"px.dev/pixie/src/cloud/cron_script/controllers"
 	"px.dev/pixie/src/cloud/cron_script/cronscriptpb"
 	"px.dev/pixie/src/cloud/cron_script/schema"
+	"px.dev/pixie/src/cloud/shared/vzshard"
+	"px.dev/pixie/src/cloud/vzmgr/vzmgrpb"
+	mock_vzmgrpb "px.dev/pixie/src/cloud/vzmgr/vzmgrpb/mock"
+	"px.dev/pixie/src/shared/cvmsgs"
+	"px.dev/pixie/src/shared/cvmsgspb"
+	"px.dev/pixie/src/shared/scripts"
 	"px.dev/pixie/src/shared/services/authcontext"
 	"px.dev/pixie/src/shared/services/pgtest"
 	srvutils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils/testingutils"
 )
 
 var db *sqlx.DB
@@ -101,7 +112,7 @@ func mustLoadTestData(db *sqlx.DB) {
 func TestServer_GetScript(t *testing.T) {
 	mustLoadTestData(db)
 
-	s := controllers.New(db, "test")
+	s := controllers.New(db, "test", nil, nil)
 	resp, err := s.GetScript(createTestContext(), &cronscriptpb.GetScriptRequest{
 		ID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
 	})
@@ -126,7 +137,7 @@ func TestServer_GetScript(t *testing.T) {
 func TestServer_GetScripts(t *testing.T) {
 	mustLoadTestData(db)
 
-	s := controllers.New(db, "test")
+	s := controllers.New(db, "test", nil, nil)
 	resp, err := s.GetScripts(createTestContext(), &cronscriptpb.GetScriptsRequest{
 		IDs: []*uuidpb.UUID{
 			utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
@@ -166,7 +177,7 @@ func TestServer_GetScripts(t *testing.T) {
 func TestServer_CreateScript(t *testing.T) {
 	mustLoadTestData(db)
 
-	s := controllers.New(db, "test")
+	s := controllers.New(db, "test", nil, nil)
 
 	clusterIDs := []*uuidpb.UUID{
 		utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440003"),
@@ -211,7 +222,7 @@ func TestServer_CreateScript(t *testing.T) {
 func TestServer_UpdateScript(t *testing.T) {
 	mustLoadTestData(db)
 
-	s := controllers.New(db, "test")
+	s := controllers.New(db, "test", nil, nil)
 
 	clusterIDs := []*uuidpb.UUID{
 		utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440003"),
@@ -254,7 +265,7 @@ func TestServer_UpdateScript(t *testing.T) {
 func TestServer_DeleteScript(t *testing.T) {
 	mustLoadTestData(db)
 
-	s := controllers.New(db, "test")
+	s := controllers.New(db, "test", nil, nil)
 
 	resp, err := s.DeleteScript(createTestContext(), &cronscriptpb.DeleteScriptRequest{
 		ID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440002"),
@@ -270,4 +281,63 @@ func TestServer_DeleteScript(t *testing.T) {
 
 	defer rows.Close()
 	require.False(t, rows.Next())
+}
+
+func TestServer_HandleChecksumRequest(t *testing.T) {
+	mustLoadTestData(db)
+
+	ctrl := gomock.NewController(t)
+	mockVZMgr := mock_vzmgrpb.NewMockVZMgrServiceClient(ctrl)
+
+	vzID := "423e4567-e89b-12d3-a456-426655440001"
+	orgID := "223e4567-e89b-12d3-a456-426655440001"
+
+	mockVZMgr.EXPECT().GetOrgFromVizier(gomock.Any(), utils.ProtoFromUUIDStrOrNil(vzID)).Return(&vzmgrpb.GetOrgFromVizierResponse{
+		OrgID: utils.ProtoFromUUIDStrOrNil(orgID)}, nil)
+
+	nc, natsCleanup := testingutils.MustStartTestNATS(t)
+	defer natsCleanup()
+
+	s := controllers.New(db, "test", nc, mockVZMgr)
+
+	req := &cvmsgspb.GetCronScriptsChecksumRequest{
+		Topic: "test",
+	}
+	anyMsg, err := types.MarshalAny(req)
+	require.NoError(t, err)
+	v2cMsg := &cvmsgspb.V2CMessage{
+		Msg:      anyMsg,
+		VizierID: vzID,
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	csMap := map[string]*cvmsgspb.CronScript{
+		"123e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+			ID:         utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+			Script:     "px.stream()",
+			FrequencyS: 10,
+			Configs:    "testConfigYaml2: efgh",
+		},
+	}
+	mdSub, err := nc.Subscribe(vzshard.C2VTopic(fmt.Sprintf("%s:%s", cvmsgs.CronScriptChecksumResponseChannel, "test"), uuid.FromStringOrNil(vzID)), func(msg *nats.Msg) {
+		c2vMsg := &cvmsgspb.C2VMessage{}
+		err := proto.Unmarshal(msg.Data, c2vMsg)
+		require.NoError(t, err)
+		req := &cvmsgspb.GetCronScriptsChecksumResponse{}
+		err = types.UnmarshalAny(c2vMsg.Msg, req)
+		require.NoError(t, err)
+		expectedChecksum, err := scripts.ChecksumFromScriptMap(csMap)
+		require.NoError(t, err)
+		assert.Equal(t, expectedChecksum, req.Checksum)
+		wg.Done()
+	})
+	defer func() {
+		err = mdSub.Unsubscribe()
+		require.NoError(t, err)
+	}()
+
+	s.HandleChecksumRequest(v2cMsg)
+	wg.Wait()
 }

@@ -23,7 +23,9 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//src/api/proto/vizierpb:vizier_pl_go_proto",
+        "//src/shared/cvmsgs",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
+        "//src/shared/scripts",
         "//src/shared/services/utils",
         "//src/utils",
         "//src/vizier/services/metadata/metadatapb:service_pl_go_proto",
@@ -43,6 +45,7 @@ go_test(
     embed = [":script_runner"],
     deps = [
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
+        "//src/shared/scripts",
         "//src/utils",
         "//src/utils/testingutils",
         "//src/vizier/services/metadata/metadatapb:service_pl_go_proto",

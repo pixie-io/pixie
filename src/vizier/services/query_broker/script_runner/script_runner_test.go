@@ -33,6 +33,7 @@ import (
 	"google.golang.org/grpc"
 
 	"px.dev/pixie/src/shared/cvmsgspb"
+	"px.dev/pixie/src/shared/scripts"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/testingutils"
 	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
@@ -161,7 +162,7 @@ func TestScriptRunner_CompareScriptState(t *testing.T) {
 				require.NoError(t, err)
 				topic := req.Topic
 
-				checksum, err := checksumFromScriptMap(test.cloudScripts)
+				checksum, err := scripts.ChecksumFromScriptMap(test.cloudScripts)
 				require.NoError(t, err)
 				resp := &cvmsgspb.GetCronScriptsChecksumResponse{
 					Checksum: checksum,
@@ -566,7 +567,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 				err = types.UnmarshalAny(v2cMsg.Msg, req)
 				require.NoError(t, err)
 				topic := req.Topic
-				checksum, err := checksumFromScriptMap(test.cloudScripts)
+				checksum, err := scripts.ChecksumFromScriptMap(test.cloudScripts)
 				require.NoError(t, err)
 				resp := &cvmsgspb.GetCronScriptsChecksumResponse{
 					Checksum: checksum,
