@@ -400,4 +400,6 @@ message CronScriptUpdate {
     DeleteCronScriptRequest delete_req = 2;
   }
   string request_id = 3 [(gogoproto.customname) = "RequestID"];
+  // Timestamp indicates when this update event occurred, and can be used to filter out-of-order messages.
+  int64 timestamp = 4;
 }

@@ -20,9 +20,12 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
+	"time"
 
+	"github.com/cenkalti/backoff/v3"
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
@@ -44,6 +47,13 @@ import (
 	"px.dev/pixie/src/shared/services/authcontext"
 	jwtutils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils"
+)
+
+const (
+	msgBackoffInitialInterval = 5 * time.Second
+	msgBackoffMultiplier      = 2
+	msgBackoffMaxElapsedTime  = 3 * time.Minute
+	natsWaitTimeout           = 2 * time.Minute
 )
 
 // HandleNATSMessageFunc is the signature for a NATS message handler.
@@ -474,11 +484,139 @@ func (s *Server) DeleteScript(ctx context.Context, req *cronscriptpb.DeleteScrip
 	claimsOrgID := uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID)
 	scriptID := utils.UUIDFromProtoOrNil(req.ID)
 
-	query := `DELETE FROM cron_scripts WHERE id=$1 AND org_id=$2`
+	query := `SELECT cluster_ids FROM cron_scripts WHERE org_id=$1 AND id=$2`
+	rows, err := s.db.Queryx(query, claimsOrgID, scriptID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to fetch cron script")
+	}
+	defer rows.Close()
+	if !rows.Next() {
+		return nil, status.Error(codes.NotFound, "cron script not found")
+	}
+	var clusterIDs ClusterIDs
+	err = rows.Scan(&clusterIDs)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Failed to read cron script")
+	}
+	clusterIDProtos := make([]*uuidpb.UUID, len(clusterIDs))
+	for i, c := range clusterIDs {
+		clusterIDProtos[i] = utils.ProtoFromUUID(c)
+	}
+
+	query = `DELETE FROM cron_scripts WHERE id=$1 AND org_id=$2`
 	_, err = s.db.Exec(query, scriptID, claimsOrgID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to delete")
 	}
 
+	go s.sendCronScriptUpdateToViziers(&cvmsgspb.CronScriptUpdate{
+		Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
+			DeleteReq: &cvmsgspb.DeleteCronScriptRequest{
+				ScriptID: req.ID,
+			},
+		},
+	}, claimsOrgID, clusterIDProtos)
+
 	return &cronscriptpb.DeleteScriptResponse{}, nil
+}
+
+func (s *Server) sendCronScriptUpdateToViziers(msg *cvmsgspb.CronScriptUpdate, orgID uuid.UUID, clusterIDs []*uuidpb.UUID) {
+	msg.RequestID = uuid.Must(uuid.NewV4()).String()
+	msg.Timestamp = time.Now().UnixNano()
+
+	c2vAnyMsg, err := types.MarshalAny(msg)
+	if err != nil {
+		log.WithError(err).Error("Failed to marshal update script msg")
+		return
+	}
+	c2vMsg := &cvmsgspb.C2VMessage{
+		Msg: c2vAnyMsg,
+	}
+
+	// Get healthy viziers for org.
+	claims := jwtutils.GenerateJWTForService("vzmgr Service", viper.GetString("domain_name"))
+	token, err := jwtutils.SignJWTClaims(claims, viper.GetString("jwt_signing_key"))
+	if err != nil {
+		return
+	}
+
+	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
+		fmt.Sprintf("bearer %s", token))
+
+	if len(clusterIDs) == 0 { // If no clusterIDs specified, this message should be sent to all Viziers in the org.
+		viziers, err := s.vzmgrClient.GetViziersByOrg(ctx, utils.ProtoFromUUID(orgID))
+		if err != nil {
+			log.WithError(err).Error("Could not get viziers for org")
+			return
+		}
+		clusterIDs = viziers.VizierIDs
+	}
+
+	vzInfoResp, err := s.vzmgrClient.GetVizierInfos(ctx, &vzmgrpb.GetVizierInfosRequest{
+		VizierIDs: clusterIDs,
+	})
+	if err != nil {
+		log.WithError(err).Error("Error fetching info for viziers")
+		return
+	}
+
+	for _, v := range vzInfoResp.VizierInfos {
+		vzUUID := utils.UUIDFromProtoOrNil(v.VizierID)
+		if v.Status != cvmsgspb.VZ_ST_DISCONNECTED && v.Status != cvmsgspb.VZ_ST_UNKNOWN {
+			s.retryMessageUntilResponse(c2vMsg, vzshard.C2VTopic(cvmsgs.CronScriptUpdatesChannel, vzUUID), vzshard.V2CTopic(fmt.Sprintf("%s:%s", cvmsgs.CronScriptUpdatesResponseChannel, msg.RequestID), vzUUID))
+		}
+	}
+}
+
+func (s *Server) retryMessageUntilResponse(msg *cvmsgspb.C2VMessage, publishTopic string, respTopic string) {
+	sendMsg := func() error {
+		return s.natsReplyAndResponse(msg, publishTopic, respTopic)
+	}
+
+	backOffOpts := backoff.NewExponentialBackOff()
+	backOffOpts.InitialInterval = msgBackoffInitialInterval
+	backOffOpts.Multiplier = msgBackoffMultiplier
+	backOffOpts.MaxElapsedTime = msgBackoffMaxElapsedTime
+	err := backoff.Retry(sendMsg, backOffOpts)
+	if err != nil {
+		log.WithError(err).Info("Failed to get response from Vizier. Assuming disconnected")
+	}
+}
+
+func (s *Server) natsReplyAndResponse(req *cvmsgspb.C2VMessage, publishTopic string, responseTopic string) error {
+	// Subscribe to topic that the response will be sent on.
+	subCh := make(chan *nats.Msg, 4096)
+	sub, err := s.nc.ChanSubscribe(responseTopic, subCh)
+	if err != nil {
+		return err
+	}
+	defer sub.Unsubscribe()
+
+	// Publish request.
+	b, err := req.Marshal()
+	if err != nil {
+		return err
+	}
+
+	err = s.nc.Publish(publishTopic, b)
+	if err != nil {
+		return err
+	}
+
+	// Wait for response.
+	t := time.NewTimer(natsWaitTimeout)
+	for {
+		select {
+		case msg := <-subCh:
+			v2cMsg := &cvmsgspb.V2CMessage{}
+			err := proto.Unmarshal(msg.Data, v2cMsg)
+			if err != nil {
+				log.WithError(err).Error("Failed to unmarshal v2c message")
+				return err
+			}
+			return nil
+		case <-t.C:
+			return errors.New("Failed to get response")
+		}
+	}
 }

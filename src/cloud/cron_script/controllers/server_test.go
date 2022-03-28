@@ -265,15 +265,55 @@ func TestServer_UpdateScript(t *testing.T) {
 func TestServer_DeleteScript(t *testing.T) {
 	mustLoadTestData(db)
 
-	s := controllers.New(db, "test", nil, nil)
+	ctrl := gomock.NewController(t)
+	mockVZMgr := mock_vzmgrpb.NewMockVZMgrServiceClient(ctrl)
+
+	vzIDpb := utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000")
+	scriptIDpb := utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440002")
+	mockVZMgr.EXPECT().GetVizierInfos(gomock.Any(), &vzmgrpb.GetVizierInfosRequest{
+		VizierIDs: []*uuidpb.UUID{
+			vzIDpb,
+		},
+	}).Return(&vzmgrpb.GetVizierInfosResponse{
+		VizierInfos: []*cvmsgspb.VizierInfo{
+			&cvmsgspb.VizierInfo{
+				VizierID: vzIDpb,
+				Status:   cvmsgspb.VZ_ST_HEALTHY,
+			},
+		},
+	}, nil)
+
+	nc, natsCleanup := testingutils.MustStartTestNATS(t)
+	defer natsCleanup()
+
+	s := controllers.New(db, "test", nc, mockVZMgr)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	mdSub, err := nc.Subscribe(vzshard.C2VTopic(cvmsgs.CronScriptUpdatesChannel, uuid.FromStringOrNil("323e4567-e89b-12d3-a456-426655440000")), func(msg *nats.Msg) {
+		c2vMsg := &cvmsgspb.C2VMessage{}
+		err := proto.Unmarshal(msg.Data, c2vMsg)
+		require.NoError(t, err)
+		req := &cvmsgspb.CronScriptUpdate{}
+		err = types.UnmarshalAny(c2vMsg.Msg, req)
+		require.NoError(t, err)
+		assert.Equal(t, req.GetDeleteReq().ScriptID, scriptIDpb)
+		wg.Done()
+	})
+	defer func() {
+		err = mdSub.Unsubscribe()
+		require.NoError(t, err)
+	}()
 
 	resp, err := s.DeleteScript(createTestContext(), &cronscriptpb.DeleteScriptRequest{
-		ID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440002"),
+		ID: scriptIDpb,
 	})
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 
 	assert.Equal(t, &cronscriptpb.DeleteScriptResponse{}, resp)
+	wg.Wait()
 
 	query := `SELECT id, org_id, script, cluster_ids, PGP_SYM_DECRYPT(configs, $1::text) as configs, enabled, frequency_s FROM cron_scripts WHERE org_id=$2 AND id=$3`
 	rows, err := db.Queryx(query, "test", "223e4567-e89b-12d3-a456-426655440000", "123e4567-e89b-12d3-a456-426655440002")
