@@ -275,8 +275,8 @@ TEST_F(AgentMetadataStateTest, pid_created) {
     }
   }
 
-  PIDInfo pid1(UPID(kASID, 100 /*pid*/, 1000 /*ts*/), "cmdline100", "container_id1");
-  PIDInfo pid2(UPID(kASID /*asid*/, 200 /*pid*/, 2000 /*ts*/), "cmdline200", "container_id1");
+  PIDInfo pid1(UPID(kASID, 100 /*pid*/, 1000 /*ts*/), "", "cmdline100", "container_id1");
+  PIDInfo pid2(UPID(kASID /*asid*/, 200 /*pid*/, 2000 /*ts*/), "", "cmdline200", "container_id1");
 
   EXPECT_EQ(2, pids_started.size());
   EXPECT_THAT(pids_started, UnorderedElementsAre(PIDStartedEvent{pid1}, PIDStartedEvent{pid2}));

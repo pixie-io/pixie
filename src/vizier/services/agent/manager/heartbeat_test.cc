@@ -172,7 +172,7 @@ class HeartbeatMessageHandlerTest : public ::testing::Test {
 TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeat) {
   auto start_time_nanos = time_to_nanos(start_monotonic_time_);
   md::UPID upid(1, 2, start_time_nanos);
-  md::PIDInfo pid_info(upid, "./a_command", "example_container");
+  md::PIDInfo pid_info(upid, "", "./a_command", "example_container");
   mds_manager_->AddPIDStatusEvent(std::make_unique<md::PIDStartedEvent>(pid_info));
 
   // Publish pid updates.

@@ -67,10 +67,10 @@ class MetadataOpsTest : public ::testing::Test {
 
     // Apply PID updates to metadata state.
     auto upid1 = md::UPID(123, 567, 89101);
-    auto pid1 = std::make_unique<md::PIDInfo>(upid1, "test", "pod1_container_1");
+    auto pid1 = std::make_unique<md::PIDInfo>(upid1, "exe", "test", "pod1_container_1");
     metadata_state_->AddUPID(upid1, std::move(pid1));
     auto upid2 = md::UPID(123, 567, 468);
-    auto pid2 = std::make_unique<md::PIDInfo>(upid2, "cmdline", "pod2_container_1");
+    auto pid2 = std::make_unique<md::PIDInfo>(upid2, "exe", "cmdline", "pod2_container_1");
     metadata_state_->AddUPID(upid2, std::move(pid2));
 
     ASSERT_OK(s);
