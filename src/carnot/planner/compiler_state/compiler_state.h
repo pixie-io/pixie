@@ -101,7 +101,8 @@ class CompilerState : public NotCopyable {
                 const SensitiveColumnMap& table_names_to_sensitive_columns,
                 RegistryInfo* registry_info, types::Time64NSValue time_now,
                 int64_t max_output_rows_per_table, std::string_view result_address,
-                std::string_view result_ssl_targetname, const RedactionOptions& redaction_options)
+                std::string_view result_ssl_targetname, const RedactionOptions& redaction_options,
+                std::unique_ptr<planpb::OTelEndpointConfig> endpoint_config)
       : relation_map_(std::move(relation_map)),
         table_names_to_sensitive_columns_(table_names_to_sensitive_columns),
         registry_info_(registry_info),
@@ -109,7 +110,8 @@ class CompilerState : public NotCopyable {
         max_output_rows_per_table_(max_output_rows_per_table),
         result_address_(std::string(result_address)),
         result_ssl_targetname_(std::string(result_ssl_targetname)),
-        redaction_options_(redaction_options) {}
+        redaction_options_(redaction_options),
+        endpoint_config_(std::move(endpoint_config)) {}
 
   CompilerState() = delete;
 

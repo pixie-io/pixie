@@ -122,7 +122,7 @@ class QLObjectTest : public OperatorTests {
         std::make_unique<RelationMap>(), /* sensitive_columns */ SensitiveColumnMap{}, info.get(),
         /* time_now */ 0,
         /* max_output_rows_per_table */ 0, "result_addr", "result_ssl_targetname",
-        /* redaction_options */ RedactionOptions{});
+        /* redaction_options */ RedactionOptions{}, nullptr);
 
     var_table = VarTable::Create();
     ast_visitor = ASTVisitorImpl::Create(graph.get(), var_table, &mutations_ir_,

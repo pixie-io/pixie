@@ -537,8 +537,7 @@ otel.Data(
                            return info.param.name;
                          });
 
-TEST_F(OTelExportTest, DISABLED_endpoint_from_compiler_context) {
-  // TODO(philkuz) support endpoint from compiler context.
+TEST_F(OTelExportTest, endpoint_from_compiler_context) {
   std::string otel_export_expression = R"pxl(
 otel.Data(
   resource={
@@ -555,7 +554,7 @@ otel.Data(
 op_type: OTEL_EXPORT_SINK_OPERATOR
 otel_sink_op {
   endpoint_config {
-    url: "0.0.0.0:55690"
+    url: "px.dev:55690"
     headers {
       key: "apikey"
       value: "12345"
@@ -584,6 +583,19 @@ otel_sink_op {
       {"time_", "service", "young", "young_gc_time"},
       {types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_DURATION_NS},
   };
+  auto endpoint_config = std::make_unique<planpb::OTelEndpointConfig>();
+  endpoint_config->set_url(("px.dev:55690"));
+  (*endpoint_config->mutable_headers())["apikey"] = "12345";
+  CompilerState compiler_state(
+      std::make_unique<RelationMap>(), /* sensitive_columns */ SensitiveColumnMap{}, info.get(),
+      /* time_now */ 0,
+      /* max_output_rows_per_table */ 0, "addrr", "result_ssl_targetname",
+      /* redaction_options */ RedactionOptions{}, std::move(endpoint_config));
+
+  // Create the OTel Module with a compiler_state that has an endpoint config.
+  ASSERT_OK_AND_ASSIGN(auto otel,
+                       OTelModule::Create(&compiler_state, ast_visitor.get(), graph.get()));
+  var_table->Add("otel", otel);
   ASSERT_OK_AND_ASSIGN(auto otel_export_sink,
                        ParseOutOTelExportIR(otel_export_expression, relation));
   planpb::Operator op;

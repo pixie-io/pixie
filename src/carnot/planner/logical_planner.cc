@@ -77,7 +77,8 @@ StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
       std::move(rel_map), sensitive_columns, registry_info, px::CurrentTimeNS(),
       max_output_rows_per_table, logical_state.result_address(),
       logical_state.result_ssl_targetname(),
-      RedactionOptionsFromPb(logical_state.redaction_options()));
+      // TODO(philkuz) add an endpoint config to logical_state and pass that in here.
+      RedactionOptionsFromPb(logical_state.redaction_options()), nullptr);
 }
 
 StatusOr<std::unique_ptr<LogicalPlanner>> LogicalPlanner::Create(const udfspb::UDFInfo& udf_info) {

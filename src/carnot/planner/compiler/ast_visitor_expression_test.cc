@@ -68,7 +68,7 @@ class ASTExpressionTest : public ::testing::Test {
         std::make_unique<RelationMap>(), /* sensitive_columns */ SensitiveColumnMap{}, info_.get(),
         /* time_now */ time_now_,
         /* max_output_rows_per_table */ 0, "result_addr", "result_ssl_targetname",
-        /* redaction_options */ RedactionOptions{});
+        /* redaction_options */ RedactionOptions{}, nullptr);
     graph = std::make_shared<IR>();
 
     auto ast_visitor_impl = ASTVisitorImpl::Create(graph.get(), &dynamic_trace_,

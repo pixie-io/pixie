@@ -1082,11 +1082,11 @@ TEST_F(CarnotTest, pass_logical_plan) {
   ASSERT_OK(registry_info_or_s);
   std::unique_ptr<planner::RegistryInfo> registry_info = registry_info_or_s.ConsumeValueOrDie();
 
-  planner::CompilerState compiler_state(table_store_->GetRelationMap(),
-                                        planner::SensitiveColumnMap{}, registry_info.get(),
-                                        current_time,
-                                        /* max_output_rows_per_table */ 0, "result_addr",
-                                        "result_ssl_targetname", planner::RedactionOptions{});
+  planner::CompilerState compiler_state(
+      table_store_->GetRelationMap(), planner::SensitiveColumnMap{}, registry_info.get(),
+      current_time,
+      /* max_output_rows_per_table */ 0, "result_addr", "result_ssl_targetname",
+      planner::RedactionOptions{}, nullptr);
   StatusOr<planpb::Plan> logical_plan_status =
       compiler.Compile(absl::Substitute(query, logical_plan_table_name), &compiler_state);
   ASSERT_OK(logical_plan_status);
