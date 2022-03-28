@@ -99,6 +99,7 @@ export { buildClass } from 'app/utils/build-class';
 export { ClusterIcon } from './icons/cluster';
 export { CodeIcon } from './icons/code';
 export { CopyIcon } from './icons/copy';
+export { DataDisksIcon } from './icons/data-disks';
 export { DocsIcon } from './icons/docs';
 export { EditIcon } from './icons/edit';
 export { GoogleIcon } from './icons/google';
