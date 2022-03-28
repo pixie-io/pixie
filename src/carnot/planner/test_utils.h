@@ -1730,9 +1730,12 @@ class DistributedRulesTest : public OperatorTests {
     logical_state_ = CreateTwoPEMsOneKelvinPlannerState(kHttpEventsSchema);
 
     ASSERT_OK(registry_info_->Init(UDFInfoWithTestUDTF()));
-    compiler_state_ =
-        std::make_unique<planner::CompilerState>(MakeRelationMap(LoadSchemaPb(kHttpEventsSchema)),
-                                                 registry_info_.get(), 1234, "result_addr");
+    compiler_state_ = std::make_unique<planner::CompilerState>(
+        MakeRelationMap(LoadSchemaPb(kHttpEventsSchema)), planner::SensitiveColumnMap{},
+        registry_info_.get(), /* time_now */ 1234,
+
+        /* max_output_rows_per_table */ 0, "result_addr", "result_ssl_targetname",
+        planner::RedactionOptions{});
 
     for (const auto& [plan_id, carnot_info] :
          Enumerate(logical_state_.distributed_state().carnot_info())) {

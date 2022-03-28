@@ -310,8 +310,11 @@ StatusOr<std::shared_ptr<IR>> ParseQuery(const std::string& query) {
   udfspb::UDFInfo info_pb;
   google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
   PL_RETURN_IF_ERROR(info->Init(info_pb));
-  auto compiler_state = std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info.get(),
-                                                        0, "result_addr", "result_hostname");
+  auto compiler_state = std::make_unique<CompilerState>(
+      std::make_unique<RelationMap>(), /* sensitive_columns */ SensitiveColumnMap{}, info.get(),
+      /* time_now */ types::Time64NSValue(0),
+      /* max_output_rows_per_table */ 0, "result_addr", "result_ssl_targetname",
+      /* redaction_options */ RedactionOptions{});
   compiler::ModuleHandler module_handler;
   compiler::MutationsIR dynamic_trace;
   PL_ASSIGN_OR_RETURN(auto ast_walker,
@@ -864,8 +867,11 @@ class RulesTest : public OperatorTests {
     rel_map->emplace("cpu", cpu_relation);
     rel_map->emplace("semantic_table", semantic_rel);
 
-    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now,
-                                                      "result_addr", "result_ssl_targetname");
+    compiler_state_ = std::make_unique<CompilerState>(
+        std::move(rel_map), /* sensitive_columns */ SensitiveColumnMap{}, info_.get(),
+        /* time_now */ time_now,
+        /* max_output_rows_per_table */ 0, "result_addr", "result_ssl_targetname",
+        /* redaction_options */ RedactionOptions{});
     md_handler = MetadataHandler::Create();
   }
 

@@ -118,9 +118,11 @@ class QLObjectTest : public OperatorTests {
     udfspb::UDFInfo info_pb;
     CHECK(google::protobuf::TextFormat::MergeFromString(kRegistryInfoProto, &info_pb));
     PL_CHECK_OK(info->Init(info_pb));
-    compiler_state = std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info.get(), 0,
-                                                     "result_addr");
-    // Graph is set in OperatorTests.
+    compiler_state = std::make_unique<CompilerState>(
+        std::make_unique<RelationMap>(), /* sensitive_columns */ SensitiveColumnMap{}, info.get(),
+        /* time_now */ 0,
+        /* max_output_rows_per_table */ 0, "result_addr", "result_ssl_targetname",
+        /* redaction_options */ RedactionOptions{});
 
     var_table = VarTable::Create();
     ast_visitor = ASTVisitorImpl::Create(graph.get(), var_table, &mutations_ir_,
@@ -181,7 +183,7 @@ class QLObjectTest : public OperatorTests {
     return QLObject::FromIRNode(node, ast_visitor.get()).ConsumeValueOrDie();
   }
 
-  std::shared_ptr<CompilerState> compiler_state = nullptr;
+  std::unique_ptr<CompilerState> compiler_state = nullptr;
   std::shared_ptr<RegistryInfo> info = nullptr;
   std::shared_ptr<ASTVisitor> ast_visitor = nullptr;
   ModuleHandler module_handler;

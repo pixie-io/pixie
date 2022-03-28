@@ -122,9 +122,11 @@ class EngineState : public NotCopyable {
     auto rel_map = table_store_->GetRelationMap();
     // Use an empty string for query result address, because the local execution mode should use
     // the Local GRPC result server to send results to.
-    return std::make_unique<planner::CompilerState>(std::move(rel_map), registry_info_.get(),
-                                                    time_now, /* result address */ "",
-                                                    /* ssl target name override*/ "");
+    return std::make_unique<planner::CompilerState>(
+        std::move(rel_map), planner::SensitiveColumnMap{}, registry_info_.get(), time_now,
+        /* max_output_rows_per_table */ 0,
+        /* result address */ "",
+        /* ssl target name override*/ "", planner::RedactionOptions{});
   }
 
   const udf::Registry* func_registry() const { return func_registry_.get(); }

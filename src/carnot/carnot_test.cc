@@ -1082,10 +1082,13 @@ TEST_F(CarnotTest, pass_logical_plan) {
   ASSERT_OK(registry_info_or_s);
   std::unique_ptr<planner::RegistryInfo> registry_info = registry_info_or_s.ConsumeValueOrDie();
 
-  std::unique_ptr<planner::CompilerState> compiler_state = std::make_unique<planner::CompilerState>(
-      table_store_->GetRelationMap(), registry_info.get(), current_time, "result_addr");
+  planner::CompilerState compiler_state(table_store_->GetRelationMap(),
+                                        planner::SensitiveColumnMap{}, registry_info.get(),
+                                        current_time,
+                                        /* max_output_rows_per_table */ 0, "result_addr",
+                                        "result_ssl_targetname", planner::RedactionOptions{});
   StatusOr<planpb::Plan> logical_plan_status =
-      compiler.Compile(absl::Substitute(query, logical_plan_table_name), compiler_state.get());
+      compiler.Compile(absl::Substitute(query, logical_plan_table_name), &compiler_state);
   ASSERT_OK(logical_plan_status);
   planpb::Plan plan = logical_plan_status.ConsumeValueOrDie();
   auto plan_uuid = sole::uuid4();

@@ -123,8 +123,11 @@ class CompilerTest : public ::testing::Test {
     http_events_relation.AddColumn(types::INT64, "resp_latency_ns");
     rel_map->emplace("http_events", http_events_relation);
 
-    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now,
-                                                      "result_addr", "result_ssltarget");
+    compiler_state_ = std::make_unique<CompilerState>(
+        std::move(rel_map), /* sensitive_columns */ SensitiveColumnMap{}, info_.get(),
+        /* time_now */ time_now,
+        /* max_output_rows_per_table */ 0, "result_addr", "result_ssltarget",
+        /* redaction_options */ RedactionOptions{});
 
     compiler_ = Compiler();
   }

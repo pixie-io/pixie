@@ -97,13 +97,6 @@ class CompilerState : public NotCopyable {
    * CompilerState manages the state needed to compile a single query. A new one will
    * be constructed for every query compiled in Carnot and it will not be reused.
    */
-  CompilerState(std::unique_ptr<RelationMap> relation_map, RegistryInfo* registry_info,
-                types::Time64NSValue time_now, std::string_view result_address,
-                std::string_view result_ssl_targetname = "")
-      : CompilerState(std::move(relation_map), {}, registry_info, time_now,
-                      /* max_output_rows_per_table */ 0, result_address, result_ssl_targetname,
-                      RedactionOptions{}) {}
-
   CompilerState(std::unique_ptr<RelationMap> relation_map,
                 const SensitiveColumnMap& table_names_to_sensitive_columns,
                 RegistryInfo* registry_info, types::Time64NSValue time_now,

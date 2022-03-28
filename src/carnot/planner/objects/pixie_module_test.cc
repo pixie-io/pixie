@@ -126,8 +126,11 @@ class PixieModuleTest : public QLObjectTest {
     google::protobuf::TextFormat::MergeFromString(kUDTFDefaultValueTestPb, &spec2);
     info_->AddUDTF(spec2);
 
-    compiler_state_ =
-        std::make_unique<CompilerState>(SetUpRelMap(), info_.get(), time_now_, "result_addr");
+    compiler_state_ = std::make_unique<CompilerState>(
+        SetUpRelMap(), /* sensitive_columns */ SensitiveColumnMap{}, info_.get(),
+        /* time_now */ time_now_,
+        /* max_output_rows_per_table */ 0, "result_addr", "result_ssl_targetname",
+        /* redaction_options */ RedactionOptions{});
 
     module_ = PixieModule::Create(graph.get(), compiler_state_.get(), ast_visitor.get())
                   .ConsumeValueOrDie();

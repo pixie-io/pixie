@@ -68,8 +68,11 @@ class DefaultArgumentsTest : public OperatorTests {
   void SetUp() override {
     OperatorTests::SetUp();
     info_ = SetUpRegistryInfo();
-    compiler_state_ =
-        std::make_unique<CompilerState>(SetUpRelMap(), info_.get(), time_now_, "result_addr");
+    compiler_state_ = std::make_unique<CompilerState>(
+        SetUpRelMap(), /* sensitive_columns */ SensitiveColumnMap{}, info_.get(),
+        /* time_now */ time_now_,
+        /* max_output_rows_per_table */ 0, "result_addr", "result_ssl_targetname",
+        /* redaction_options */ RedactionOptions{});
 
     ast_visitor_ = ASTVisitorImpl::Create(graph.get(), &dynamic_trace_, compiler_state_.get(),
                                           &module_handler_)
