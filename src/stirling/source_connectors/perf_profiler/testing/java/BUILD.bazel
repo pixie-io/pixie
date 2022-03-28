@@ -14,6 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@io_bazel_rules_docker//java:image.bzl", "java_image")
 load("@rules_java//java:defs.bzl", "java_binary")
 load("//bazel:pl_build_system.bzl", "pl_cc_binary")
 
@@ -59,4 +60,11 @@ pl_cc_binary(
         "//src/stirling/source_connectors/perf_profiler/java:cc_library",
         "//src/stirling/source_connectors/perf_profiler/java/agent:cc_headers",
     ],
+)
+
+java_image(
+    name = "image",
+    srcs = ["Fib.java"],
+    args = ["-XX:+PreserveFramePointer"],
+    main_class = "JavaFib",
 )
