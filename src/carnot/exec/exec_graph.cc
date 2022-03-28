@@ -67,7 +67,6 @@ Status ExecutionGraph::Init(table_store::schema::Schema* schema, plan::PlanState
         return OnOperatorImpl<plan::MapOperator, MapNode>(node, &descriptors);
       })
       .OnMemorySink([&](auto& node) {
-        sinks_.push_back(node.id());
         return OnOperatorImpl<plan::MemorySinkOperator, MemorySinkNode>(node, &descriptors);
       })
       .OnAggregate([&](auto& node) {
@@ -329,22 +328,6 @@ Status ExecutionGraph::Execute() {
     return source_status;
   }
   return close_status;
-}
-
-std::vector<std::string> ExecutionGraph::OutputTables() const {
-  std::vector<std::string> output_tables;
-  // Go through the sinks.
-  for (int64_t sink_id : sinks_) {
-    // Grab the nodes.
-    auto res = nodes_.find(sink_id);
-    CHECK(res != nodes_.end()) << absl::Substitute("sink_id not found $0", sink_id);
-    ExecNode* node = res->second;
-    CHECK(node->type() == ExecNodeType::kSinkNode);
-    // Grab the names.
-    auto sink_node = static_cast<MemorySinkNode*>(node);
-    output_tables.push_back(sink_node->TableName());
-  }
-  return output_tables;
 }
 
 ExecutionStats ExecutionGraph::GetStats() const {
