@@ -341,3 +341,61 @@ func TestServer_HandleChecksumRequest(t *testing.T) {
 	s.HandleChecksumRequest(v2cMsg)
 	wg.Wait()
 }
+
+func TestServer_HandleGetScriptsRequest(t *testing.T) {
+	mustLoadTestData(db)
+
+	ctrl := gomock.NewController(t)
+	mockVZMgr := mock_vzmgrpb.NewMockVZMgrServiceClient(ctrl)
+
+	vzID := "423e4567-e89b-12d3-a456-426655440001"
+	orgID := "223e4567-e89b-12d3-a456-426655440001"
+
+	mockVZMgr.EXPECT().GetOrgFromVizier(gomock.Any(), utils.ProtoFromUUIDStrOrNil(vzID)).Return(&vzmgrpb.GetOrgFromVizierResponse{
+		OrgID: utils.ProtoFromUUIDStrOrNil(orgID)}, nil)
+
+	nc, natsCleanup := testingutils.MustStartTestNATS(t)
+	defer natsCleanup()
+
+	s := controllers.New(db, "test", nc, mockVZMgr)
+
+	req := &cvmsgspb.GetCronScriptsRequest{
+		Topic: "test",
+	}
+	anyMsg, err := types.MarshalAny(req)
+	require.NoError(t, err)
+	v2cMsg := &cvmsgspb.V2CMessage{
+		Msg:      anyMsg,
+		VizierID: vzID,
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	csMap := map[string]*cvmsgspb.CronScript{
+		"123e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+			ID:         utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+			Script:     "px.stream()",
+			FrequencyS: 10,
+			Configs:    "testConfigYaml2: efgh",
+		},
+	}
+	mdSub, err := nc.Subscribe(vzshard.C2VTopic(fmt.Sprintf("%s:%s", cvmsgs.GetCronScriptsResponseChannel, "test"), uuid.FromStringOrNil(vzID)), func(msg *nats.Msg) {
+		c2vMsg := &cvmsgspb.C2VMessage{}
+		err := proto.Unmarshal(msg.Data, c2vMsg)
+		require.NoError(t, err)
+		req := &cvmsgspb.GetCronScriptsResponse{}
+		err = types.UnmarshalAny(c2vMsg.Msg, req)
+		require.NoError(t, err)
+		require.NotNil(t, req.Scripts)
+		assert.Equal(t, csMap, req.Scripts)
+		wg.Done()
+	})
+	defer func() {
+		err = mdSub.Unsubscribe()
+		require.NoError(t, err)
+	}()
+
+	s.HandleScriptsRequest(v2cMsg)
+	wg.Wait()
+}

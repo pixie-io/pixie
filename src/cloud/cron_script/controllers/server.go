@@ -234,6 +234,43 @@ func (s *Server) fetchScriptsForVizier(vizierID *uuidpb.UUID) (map[string]*cvmsg
 
 // HandleScriptsRequest handles incoming requests for cron scripts registered to the given vizier.
 func (s *Server) HandleScriptsRequest(msg *cvmsgspb.V2CMessage) {
+	anyMsg := msg.Msg
+	req := &cvmsgspb.GetCronScriptsRequest{}
+	err := types.UnmarshalAny(anyMsg, req)
+	if err != nil {
+		log.WithError(err).Error("Could not unmarshal NATS message")
+		return
+	}
+
+	var scriptMap map[string]*cvmsgspb.CronScript
+	scriptMap, err = s.fetchScriptsForVizier(utils.ProtoFromUUIDStrOrNil(msg.VizierID))
+	if err != nil {
+		log.WithError(err).Error("Failed to fetch scripts for Vizier")
+		return
+	}
+
+	resp := &cvmsgspb.GetCronScriptsResponse{Scripts: scriptMap}
+	c2vAnyMsg, err := types.MarshalAny(resp)
+	if err != nil {
+		log.WithError(err).Error("Failed to marshal update script response")
+		return
+	}
+	c2vMsg := &cvmsgspb.C2VMessage{
+		Msg: c2vAnyMsg,
+	}
+
+	vizierUUID := uuid.FromStringOrNil(msg.VizierID)
+
+	b, err := c2vMsg.Marshal()
+	if err != nil {
+		log.WithError(err).Error("Failed to marshal c2v message")
+		return
+	}
+	err = s.nc.Publish(vzshard.C2VTopic(fmt.Sprintf("%s:%s", cvmsgs.GetCronScriptsResponseChannel, req.Topic), vizierUUID), b)
+	if err != nil {
+		log.WithError(err).Error("Failed to publish script response")
+		return
+	}
 }
 
 // GetScript gets a script stored in the cron script service.
