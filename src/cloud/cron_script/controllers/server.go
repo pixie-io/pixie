@@ -409,8 +409,22 @@ func (s *Server) CreateScript(ctx context.Context, req *cronscriptpb.CreateScrip
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "Failed to create cron script")
 	}
+	idPb := utils.ProtoFromUUID(id)
 
-	return &cronscriptpb.CreateScriptResponse{ID: utils.ProtoFromUUID(id)}, nil
+	go s.sendCronScriptUpdateToViziers(&cvmsgspb.CronScriptUpdate{
+		Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
+			UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
+				Script: &cvmsgspb.CronScript{
+					ID:         idPb,
+					Script:     req.Script,
+					FrequencyS: req.FrequencyS,
+					Configs:    req.Configs,
+				},
+			},
+		},
+	}, claimsOrgID, req.ClusterIDs)
+
+	return &cronscriptpb.CreateScriptResponse{ID: idPb}, nil
 }
 
 // UpdateScript updates an existing cron script.

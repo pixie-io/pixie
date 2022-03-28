@@ -177,18 +177,108 @@ func TestServer_GetScripts(t *testing.T) {
 func TestServer_CreateScript(t *testing.T) {
 	mustLoadTestData(db)
 
-	s := controllers.New(db, "test", nil, nil)
+	ctrl := gomock.NewController(t)
+	mockVZMgr := mock_vzmgrpb.NewMockVZMgrServiceClient(ctrl)
+	nc, natsCleanup := testingutils.MustStartTestNATS(t)
+	defer natsCleanup()
 
+	s := controllers.New(db, "test", nc, mockVZMgr)
+
+	vz1ID := "323e4567-e89b-12d3-a456-426655440003"
+	vz2ID := "323e4567-e89b-12d3-a456-426655440002"
 	clusterIDs := []*uuidpb.UUID{
-		utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440003"),
-		utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440002"),
+		utils.ProtoFromUUIDStrOrNil(vz1ID),
+		utils.ProtoFromUUIDStrOrNil(vz2ID),
 	}
+
+	mockVZMgr.EXPECT().GetVizierInfos(gomock.Any(), &vzmgrpb.GetVizierInfosRequest{
+		VizierIDs: clusterIDs,
+	}).Return(&vzmgrpb.GetVizierInfosResponse{
+		VizierInfos: []*cvmsgspb.VizierInfo{
+			&cvmsgspb.VizierInfo{
+				VizierID: utils.ProtoFromUUIDStrOrNil(vz1ID),
+				Status:   cvmsgspb.VZ_ST_HEALTHY,
+			},
+			&cvmsgspb.VizierInfo{
+				VizierID: utils.ProtoFromUUIDStrOrNil(vz2ID),
+				Status:   cvmsgspb.VZ_ST_HEALTHY,
+			},
+		},
+	}, nil)
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	expectedCronScript := &cvmsgspb.CronScript{
+		Script:     "px.display()",
+		Configs:    "testYAML",
+		FrequencyS: 11,
+	}
+
+	mdSub1, err := nc.Subscribe(vzshard.C2VTopic(cvmsgs.CronScriptUpdatesChannel, uuid.FromStringOrNil(vz1ID)), func(msg *nats.Msg) {
+		c2vMsg := &cvmsgspb.C2VMessage{}
+		err := proto.Unmarshal(msg.Data, c2vMsg)
+		require.NoError(t, err)
+		req := &cvmsgspb.CronScriptUpdate{}
+		err = types.UnmarshalAny(c2vMsg.Msg, req)
+		require.NoError(t, err)
+		assert.Equal(t, expectedCronScript.Script, req.GetUpsertReq().Script.Script)
+		assert.Equal(t, expectedCronScript.Configs, req.GetUpsertReq().Script.Configs)
+		assert.Equal(t, expectedCronScript.FrequencyS, req.GetUpsertReq().Script.FrequencyS)
+		wg.Done()
+
+		// Send response.
+		resp := &cvmsgspb.RegisterOrUpdateCronScriptResponse{}
+		v2cAnyMsg, err := types.MarshalAny(resp)
+		require.NoError(t, err)
+		v2cMsg := &cvmsgspb.V2CMessage{
+			Msg: v2cAnyMsg,
+		}
+		b, err := v2cMsg.Marshal()
+		require.NoError(t, err)
+
+		err = nc.Publish(vzshard.V2CTopic(fmt.Sprintf("%s:%s", cvmsgs.CronScriptUpdatesResponseChannel, req.RequestID), uuid.FromStringOrNil(vz1ID)), b)
+		require.NoError(t, err)
+	})
+	defer func() {
+		err = mdSub1.Unsubscribe()
+		require.NoError(t, err)
+	}()
+
+	mdSub2, err := nc.Subscribe(vzshard.C2VTopic(cvmsgs.CronScriptUpdatesChannel, uuid.FromStringOrNil(vz2ID)), func(msg *nats.Msg) {
+		c2vMsg := &cvmsgspb.C2VMessage{}
+		err := proto.Unmarshal(msg.Data, c2vMsg)
+		require.NoError(t, err)
+		req := &cvmsgspb.CronScriptUpdate{}
+		err = types.UnmarshalAny(c2vMsg.Msg, req)
+		require.NoError(t, err)
+		wg.Done()
+
+		// Send response.
+		resp := &cvmsgspb.RegisterOrUpdateCronScriptResponse{}
+		v2cAnyMsg, err := types.MarshalAny(resp)
+		require.NoError(t, err)
+		v2cMsg := &cvmsgspb.V2CMessage{
+			Msg: v2cAnyMsg,
+		}
+		b, err := v2cMsg.Marshal()
+		require.NoError(t, err)
+
+		err = nc.Publish(vzshard.V2CTopic(fmt.Sprintf("%s:%s", cvmsgs.CronScriptUpdatesResponseChannel, req.RequestID), uuid.FromStringOrNil(vz2ID)), b)
+		require.NoError(t, err)
+	})
+	defer func() {
+		err = mdSub2.Unsubscribe()
+		require.NoError(t, err)
+	}()
+
 	resp, err := s.CreateScript(createTestContext(), &cronscriptpb.CreateScriptRequest{
 		Script:     "px.display()",
 		Configs:    "testYAML",
 		FrequencyS: 11,
 		ClusterIDs: clusterIDs,
 	})
+	wg.Wait()
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 
