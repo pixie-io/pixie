@@ -37,6 +37,7 @@ jvm_flags = [so_path + "=" + symbol_file_path]
 java_binary(
     name = "fib_with_agent",
     srcs = ["Fib.java"],
+    args = ["-XX:+PreserveFramePointer"],
     data = ["//src/stirling/source_connectors/perf_profiler/java/agent:glibc"],
     jvm_flags = jvm_flags,
     main_class = "JavaFib",
@@ -45,6 +46,7 @@ java_binary(
 java_binary(
     name = "fib",
     srcs = ["Fib.java"],
+    args = ["-XX:+PreserveFramePointer"],
     main_class = "JavaFib",
 )
 
