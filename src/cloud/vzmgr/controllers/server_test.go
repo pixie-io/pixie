@@ -1155,3 +1155,13 @@ func TestServer_ProvisionOrClaimVizier_WithExistingName(t *testing.T) {
 	assert.Equal(t, testDisconnectedClusterEmptyUID, clusterID.String())
 	assert.True(t, strings.HasPrefix(clusterName, "test_cluster_1234_"))
 }
+
+func TestServer_GetOrgFromVizier(t *testing.T) {
+	mustLoadTestData(db)
+
+	s := controllers.New(db, "test", nil, nil, nil)
+	resp, err := s.GetOrgFromVizier(CreateTestContext(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"))
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, &vzmgrpb.GetOrgFromVizierResponse{OrgID: utils.ProtoFromUUIDStrOrNil(testAuthOrgID)}, resp)
+}

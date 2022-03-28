@@ -60,6 +60,11 @@ spec:
             secretKeyRef:
               name: pl-db-secrets
               key: database-key
+        - name: PL_VZMGR_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_VZMGR_SERVICE
         volumeMounts:
         - name: certs
           mountPath: /certs

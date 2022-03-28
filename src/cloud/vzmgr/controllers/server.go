@@ -1105,3 +1105,16 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 	}
 	return assignNameAndCommit()
 }
+
+// GetOrgFromVizier fetches the org to which a Vizier belongs. This is intended to be for internal use only.
+func (s *Server) GetOrgFromVizier(ctx context.Context, id *uuidpb.UUID) (*vzmgrpb.GetOrgFromVizierResponse, error) {
+	query := `SELECT org_id FROM vizier_cluster where id=$1`
+
+	vzID := utils.UUIDFromProtoOrNil(id)
+	var orgID uuid.UUID
+	err := s.db.QueryRowxContext(ctx, query, vzID).Scan(&orgID)
+	if err != nil {
+		return nil, err
+	}
+	return &vzmgrpb.GetOrgFromVizierResponse{OrgID: utils.ProtoFromUUID(orgID)}, nil
+}
