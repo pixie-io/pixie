@@ -385,8 +385,9 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
 }
 
 TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
-  const std::filesystem::path bazel_app_path = BazelJavaTestAppPath("fib");
-  ASSERT_TRUE(fs::Exists(bazel_app_path)) << absl::StrFormat("Missing: %s.", bazel_app_path);
+  constexpr std::string_view kContainerNamePfx = "java";
+  const std::filesystem::path image_tar_path = BazelJavaTestAppPath("image.tar");
+  ASSERT_TRUE(fs::Exists(image_tar_path)) << absl::StrFormat("Missing: %s.", image_tar_path);
 
   // The target app is written such that key2x uses twice the CPU time as key1x.
   // For Java, we will match only the leaf symbol because we cannot predict the full stack trace.
@@ -394,7 +395,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
   constexpr std::string_view key1x = "[j] long JavaFib::fib27()";
 
   // Start target apps & create the connector context using the sub-process upids.
-  sub_processes_ = std::make_unique<CPUPinnedSubProcesses>(bazel_app_path);
+  sub_processes_ = std::make_unique<ContainerSubProcesses>(image_tar_path, kContainerNamePfx);
   ASSERT_NO_FATAL_FAILURE(sub_processes_->StartAll());
   ctx_ = std::make_unique<TestContext>(sub_processes_->upids());
 
