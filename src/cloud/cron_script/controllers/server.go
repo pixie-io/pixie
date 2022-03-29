@@ -486,6 +486,38 @@ func (s *Server) UpdateScript(ctx context.Context, req *cronscriptpb.UpdateScrip
 		return nil, status.Errorf(codes.Internal, "Failed to update cron script")
 	}
 
+	prevClusterIDs := make([]*uuidpb.UUID, len(script.ClusterIDs))
+	for i, c := range script.ClusterIDs {
+		prevClusterIDs[i] = utils.ProtoFromUUID(c)
+	}
+
+	newClusterIDs := make([]*uuidpb.UUID, len(clusterIDs))
+	for i, c := range clusterIDs {
+		newClusterIDs[i] = utils.ProtoFromUUID(c)
+	}
+
+	// Delete from previous viziers.
+	go s.sendCronScriptUpdateToViziers(&cvmsgspb.CronScriptUpdate{
+		Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
+			DeleteReq: &cvmsgspb.DeleteCronScriptRequest{
+				ScriptID: req.ScriptId,
+			},
+		},
+	}, claimsOrgID, prevClusterIDs)
+
+	go s.sendCronScriptUpdateToViziers(&cvmsgspb.CronScriptUpdate{
+		Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
+			UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
+				Script: &cvmsgspb.CronScript{
+					ID:         req.ScriptId,
+					Script:     contents,
+					FrequencyS: freq,
+					Configs:    configs,
+				},
+			},
+		},
+	}, claimsOrgID, newClusterIDs)
+
 	return &cronscriptpb.UpdateScriptResponse{}, nil
 }
 

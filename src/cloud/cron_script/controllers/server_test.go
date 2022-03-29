@@ -309,21 +309,107 @@ func TestServer_CreateScript(t *testing.T) {
 	}, script)
 }
 
+func sendUpdateAndWaitForResponse(t *testing.T, nc *nats.Conn, vzID string, wg *sync.WaitGroup, isUpdate bool) func() {
+	mdSub, err := nc.Subscribe(vzshard.C2VTopic(cvmsgs.CronScriptUpdatesChannel, uuid.FromStringOrNil(vzID)), func(msg *nats.Msg) {
+		c2vMsg := &cvmsgspb.C2VMessage{}
+		err := proto.Unmarshal(msg.Data, c2vMsg)
+		require.NoError(t, err)
+		req := &cvmsgspb.CronScriptUpdate{}
+		err = types.UnmarshalAny(c2vMsg.Msg, req)
+		require.NoError(t, err)
+		wg.Done()
+		// Send response.
+		var v2cMsg *cvmsgspb.V2CMessage
+		if isUpdate {
+			resp := &cvmsgspb.RegisterOrUpdateCronScriptResponse{}
+			v2cAnyMsg, err := types.MarshalAny(resp)
+			require.NoError(t, err)
+			v2cMsg = &cvmsgspb.V2CMessage{
+				Msg: v2cAnyMsg,
+			}
+			assert.NotNil(t, req.GetUpsertReq())
+		} else {
+			resp2 := &cvmsgspb.DeleteCronScriptResponse{}
+			v2cAnyMsg, err := types.MarshalAny(resp2)
+			require.NoError(t, err)
+			v2cMsg = &cvmsgspb.V2CMessage{
+				Msg: v2cAnyMsg,
+			}
+			assert.NotNil(t, req.GetDeleteReq())
+		}
+		b, err := v2cMsg.Marshal()
+		require.NoError(t, err)
+
+		err = nc.Publish(vzshard.V2CTopic(fmt.Sprintf("%s:%s", cvmsgs.CronScriptUpdatesResponseChannel, req.RequestID), uuid.FromStringOrNil(vzID)), b)
+		require.NoError(t, err)
+	})
+	require.NoError(t, err)
+	return func() {
+		err = mdSub.Unsubscribe()
+		require.NoError(t, err)
+	}
+}
+
 func TestServer_UpdateScript(t *testing.T) {
 	mustLoadTestData(db)
 
-	s := controllers.New(db, "test", nil, nil)
+	ctrl := gomock.NewController(t)
+	mockVZMgr := mock_vzmgrpb.NewMockVZMgrServiceClient(ctrl)
+	nc, natsCleanup := testingutils.MustStartTestNATS(t)
+	defer natsCleanup()
+
+	s := controllers.New(db, "test", nc, mockVZMgr)
 
 	clusterIDs := []*uuidpb.UUID{
 		utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440003"),
 		utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440002"),
 	}
+
+	mockVZMgr.EXPECT().GetVizierInfos(gomock.Any(), &vzmgrpb.GetVizierInfosRequest{
+		VizierIDs: clusterIDs,
+	}).Return(&vzmgrpb.GetVizierInfosResponse{
+		VizierInfos: []*cvmsgspb.VizierInfo{
+			&cvmsgspb.VizierInfo{
+				VizierID: utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440003"),
+				Status:   cvmsgspb.VZ_ST_HEALTHY,
+			},
+			&cvmsgspb.VizierInfo{
+				VizierID: utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440002"),
+				Status:   cvmsgspb.VZ_ST_HEALTHY,
+			},
+		},
+	}, nil)
+
+	mockVZMgr.EXPECT().GetVizierInfos(gomock.Any(), &vzmgrpb.GetVizierInfosRequest{
+		VizierIDs: []*uuidpb.UUID{
+			utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+		},
+	}).Return(&vzmgrpb.GetVizierInfosResponse{
+		VizierInfos: []*cvmsgspb.VizierInfo{
+			&cvmsgspb.VizierInfo{
+				VizierID: utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+				Status:   cvmsgspb.VZ_ST_HEALTHY,
+			},
+		},
+	}, nil)
+
+	var wg sync.WaitGroup
+	wg.Add(3)
+
+	cleanup1 := sendUpdateAndWaitForResponse(t, nc, "323e4567-e89b-12d3-a456-426655440003", &wg, true)
+	defer cleanup1()
+	cleanup2 := sendUpdateAndWaitForResponse(t, nc, "323e4567-e89b-12d3-a456-426655440002", &wg, true)
+	defer cleanup2()
+	cleanup3 := sendUpdateAndWaitForResponse(t, nc, "323e4567-e89b-12d3-a456-426655440000", &wg, false)
+	defer cleanup3()
+
 	resp, err := s.UpdateScript(createTestContext(), &cronscriptpb.UpdateScriptRequest{
 		Script:     &types.StringValue{Value: "px.updatedScript()"},
 		Configs:    &types.StringValue{Value: "updatedYAML"},
 		ClusterIDs: &cronscriptpb.ClusterIDs{Value: clusterIDs},
 		ScriptId:   utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440002"),
 	})
+	wg.Wait()
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 
