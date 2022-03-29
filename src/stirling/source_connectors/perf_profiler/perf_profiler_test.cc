@@ -26,6 +26,7 @@
 #include "src/common/base/base.h"
 #include "src/common/exec/subprocess.h"
 #include "src/common/fs/fs_wrapper.h"
+#include "src/common/testing/test_utils/container_runner.h"
 #include "src/stirling/source_connectors/perf_profiler/java/attach.h"
 #include "src/stirling/source_connectors/perf_profiler/perf_profile_connector.h"
 #include "src/stirling/source_connectors/perf_profiler/stack_traces_table.h"
@@ -99,6 +100,47 @@ class CPUPinnedSubProcesses final : public PerfProfilerTestSubProcesses {
   static constexpr std::string_view kTasksetBinPath = "/usr/bin/taskset";
   std::vector<std::unique_ptr<SubProcess>> sub_processes_;
   const std::string binary_path_;
+};
+
+class ContainerSubProcesses final : public PerfProfilerTestSubProcesses {
+ public:
+  ContainerSubProcesses(const std::filesystem::path image_tar_path,
+                        const std::string_view container_name_pfx) {
+    for (size_t i = 0; i < kNumSubProcesses; ++i) {
+      sub_processes_.push_back(
+          std::make_unique<ContainerRunner>(image_tar_path, container_name_pfx, kReadyMsg));
+    }
+  }
+
+  ~ContainerSubProcesses() { KillAll(); }
+
+  void StartAll() override {
+    system::ProcParser proc_parser(system::Config::GetInstance());
+    const auto timeout = std::chrono::seconds{2 * FLAGS_test_run_time};
+    const std::vector<std::string> options;
+    const std::vector<std::string> args;
+    static constexpr bool kUseHostPidNamespace = false;
+
+    for (size_t i = 0; i < kNumSubProcesses; ++i) {
+      sub_processes_[i]->Run(timeout, options, args, kUseHostPidNamespace);
+
+      // Grab the PID and generate a UPID.
+      const int pid = sub_processes_[i]->process_pid();
+      ASSERT_OK_AND_ASSIGN(const uint64_t ts, proc_parser.GetPIDStartTimeTicks(pid));
+      pids_.push_back(pid);
+      struct_upids_.push_back({{static_cast<uint32_t>(pid)}, ts});
+      upids_.emplace(0, pid, ts);
+    }
+  }
+
+  void KillAll() override {
+    // This kills the containerized processes (by running the dtors).
+    sub_processes_.clear();
+  }
+
+ private:
+  static constexpr std::string_view kReadyMsg = "";
+  std::vector<std::unique_ptr<ContainerRunner>> sub_processes_;
 };
 
 class PerfProfileBPFTest : public ::testing::Test {
