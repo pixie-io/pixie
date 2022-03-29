@@ -382,8 +382,17 @@ class OTelExportSinkOperator : public Operator {
 
   const std::vector<std::pair<std::string, std::string>>& endpoint_headers() { return headers_; }
 
+  const std::vector<planpb::OTelAttribute>& resource_attributes_optional_json_encoded() {
+    return resource_attributes_optional_json_encoded_;
+  }
+  const std::vector<planpb::OTelAttribute>& resource_attributes_normal_encoding() {
+    return resource_attributes_normal_encoding_;
+  }
+
  private:
   std::vector<std::pair<std::string, std::string>> headers_;
+  std::vector<planpb::OTelAttribute> resource_attributes_optional_json_encoded_;
+  std::vector<planpb::OTelAttribute> resource_attributes_normal_encoding_;
   planpb::OTelExportSinkOperator pb_;
 };
 

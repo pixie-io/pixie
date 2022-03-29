@@ -301,6 +301,7 @@ resource {
     column {
       column_type: STRING
       column_index: 1
+      can_be_json_encoded_array: true
     }
   }
 }
@@ -627,6 +628,148 @@ resource_metrics {
     }
   }
 })pb"}},
+                             {"gauge_json_encoded_array",
+                              R"pb(
+resource {
+  attributes {
+    name: "service.name"
+    column {
+      column_type: STRING
+      column_index: 1
+      can_be_json_encoded_array: true
+    }
+  }
+  attributes {
+    name: "pod.name"
+    column {
+      column_type: STRING
+      column_index: 2
+      can_be_json_encoded_array: true
+    }
+  }
+}
+metrics {
+  name: "http.resp.latency"
+  time_column_index: 0
+  gauge { float_column_index: 3 }
+})pb",
+                              {R"pb(
+cols { time64ns_data { data: 10  } }
+cols { string_data { data: "[\"pl/querybroker\", \"pl/metadata\"]"  } }
+cols { string_data { data: "[\"1111\", \"2222\"]"  } }
+cols { float64_data { data: 15  } }
+num_rows: 1
+eow: true
+eos: true)pb"},
+                              {R"pb(
+resource_metrics {
+  resource {
+    attributes {
+      key: "service.name"
+      value {
+        string_value: "pl/querybroker"
+      }
+    }
+    attributes {
+      key: "pod.name"
+      value {
+        string_value: "1111"
+      }
+    }
+  }
+  instrumentation_library_metrics {
+    metrics {
+      name: "http.resp.latency"
+      gauge {
+        data_points {
+          time_unix_nano: 10
+          as_double: 15
+        }
+      }
+    }
+  }
+}
+resource_metrics {
+  resource {
+    attributes {
+      key: "service.name"
+      value {
+        string_value: "pl/metadata"
+      }
+    }
+    attributes {
+      key: "pod.name"
+      value {
+        string_value: "1111"
+      }
+    }
+  }
+  instrumentation_library_metrics {
+    metrics {
+      name: "http.resp.latency"
+      gauge {
+        data_points {
+          time_unix_nano: 10
+          as_double: 15
+        }
+      }
+    }
+  }
+}
+resource_metrics {
+  resource {
+    attributes {
+      key: "service.name"
+      value {
+        string_value: "pl/querybroker"
+      }
+    }
+    attributes {
+      key: "pod.name"
+      value {
+        string_value: "2222"
+      }
+    }
+  }
+  instrumentation_library_metrics {
+    metrics {
+      name: "http.resp.latency"
+      gauge {
+        data_points {
+          time_unix_nano: 10
+          as_double: 15
+        }
+      }
+    }
+  }
+}
+resource_metrics {
+  resource {
+    attributes {
+      key: "service.name"
+      value {
+        string_value: "pl/metadata"
+      }
+    }
+    attributes {
+      key: "pod.name"
+      value {
+        string_value: "2222"
+      }
+    }
+  }
+  instrumentation_library_metrics {
+    metrics {
+      name: "http.resp.latency"
+      gauge {
+        data_points {
+          time_unix_nano: 10
+          as_double: 15
+        }
+      }
+    }
+  }
+})pb"}},
                          }),
                          [](const ::testing::TestParamInfo<TestCase>& info) {
                            return info.param.name;
@@ -683,6 +826,7 @@ resource {
     column {
       column_type: STRING
       column_index: 2
+      can_be_json_encoded_array: true
     }
   }
 }
@@ -782,6 +926,171 @@ resource_spans {
       trace_id: "\377\356\335\314\273\252\231\210wfUD3\"\021\000"
       span_id: "\t\207\366\345\324\303\262\241"
       parent_span_id: "\032+<M^ox\220"
+    }
+  }
+})pb"}},
+                             {"resource_json_encoded_array",
+                              R"pb(
+resource {
+  attributes {
+    name: "service.name"
+    column {
+      column_type: STRING
+      column_index: 2
+      can_be_json_encoded_array: true
+    }
+  }
+  attributes {
+    name: "pod.name"
+    column {
+      column_type: STRING
+      column_index: 3
+      can_be_json_encoded_array: true
+    }
+  }
+}
+spans {
+  name_string: "span"
+  start_time_column_index: 0
+  end_time_column_index: 1
+  trace_id_column_index: 4
+  span_id_column_index: 5
+  parent_span_id_column_index: -1
+})pb",
+
+                              {R"pb(
+cols { time64ns_data { data: 10 data: 20 } }
+cols { time64ns_data { data: 12 data: 22 } }
+cols { string_data { data: "[\"aaaa\", \"bbbb\"]" data: "cccc" } }
+cols { string_data { data: "[\"1111\", \"2222\"]" data: "3333" } }
+cols { string_data { data: "00112233445566778899aabbccddeeff" data: "00112233445566778899aabbccddeeff" } }
+cols { string_data { data: "1a2b3c4d5e6f7890" data: "1a2b3c4d5e6f7890" } }
+num_rows: 2
+eow: true
+eos: true)pb"},
+                              {R"pb(
+resource_spans {
+  resource {
+    attributes {
+      key: "service.name"
+      value {
+        string_value: "aaaa"
+      }
+    }
+    attributes {
+      key: "pod.name"
+      value {
+        string_value: "1111"
+      }
+    }
+  }
+  instrumentation_library_spans {
+    spans {
+      name: "span"
+      start_time_unix_nano: 10
+      end_time_unix_nano: 12
+      trace_id: "\000\021\"3DUfw\210\231\252\273\314\335\356\377"
+      span_id: "\032+<M^ox\220"
+    }
+  }
+}
+resource_spans {
+  resource {
+    attributes {
+      key: "service.name"
+      value {
+        string_value: "bbbb"
+      }
+    }
+    attributes {
+      key: "pod.name"
+      value {
+        string_value: "1111"
+      }
+    }
+  }
+  instrumentation_library_spans {
+    spans {
+      name: "span"
+      start_time_unix_nano: 10
+      end_time_unix_nano: 12
+      trace_id: "\000\021\"3DUfw\210\231\252\273\314\335\356\377"
+      span_id: "\032+<M^ox\220"
+    }
+  }
+}
+resource_spans {
+  resource {
+    attributes {
+      key: "service.name"
+      value {
+        string_value: "aaaa"
+      }
+    }
+    attributes {
+      key: "pod.name"
+      value {
+        string_value: "2222"
+      }
+    }
+  }
+  instrumentation_library_spans {
+    spans {
+      name: "span"
+      start_time_unix_nano: 10
+      end_time_unix_nano: 12
+      trace_id: "\000\021\"3DUfw\210\231\252\273\314\335\356\377"
+      span_id: "\032+<M^ox\220"
+    }
+  }
+}
+resource_spans {
+  resource {
+    attributes {
+      key: "service.name"
+      value {
+        string_value: "bbbb"
+      }
+    }
+    attributes {
+      key: "pod.name"
+      value {
+        string_value: "2222"
+      }
+    }
+  }
+  instrumentation_library_spans {
+    spans {
+      name: "span"
+      start_time_unix_nano: 10
+      end_time_unix_nano: 12
+      trace_id: "\000\021\"3DUfw\210\231\252\273\314\335\356\377"
+      span_id: "\032+<M^ox\220"
+    }
+  }
+}
+resource_spans {
+  resource {
+    attributes {
+      key: "service.name"
+      value {
+        string_value: "cccc"
+      }
+    }
+    attributes {
+      key: "pod.name"
+      value {
+        string_value: "3333"
+      }
+    }
+  }
+  instrumentation_library_spans {
+    spans {
+      name: "span"
+      start_time_unix_nano: 20
+      end_time_unix_nano: 22
+      trace_id: "\000\021\"3DUfw\210\231\252\273\314\335\356\377"
+      span_id: "\032+<M^ox\220"
     }
   }
 })pb"}},

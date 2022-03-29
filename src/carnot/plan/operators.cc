@@ -717,6 +717,14 @@ Status OTelExportSinkOperator::Init(const planpb::OTelExportSinkOperator& pb) {
   for (const auto& [key, value] : pb_.endpoint_config().headers()) {
     headers_.push_back({key, value});
   }
+
+  for (const auto& attr : pb_.resource().attributes()) {
+    if (attr.column().can_be_json_encoded_array()) {
+      resource_attributes_optional_json_encoded_.push_back(attr);
+      continue;
+    }
+    resource_attributes_normal_encoding_.push_back(attr);
+  }
   return Status::OK();
 }
 

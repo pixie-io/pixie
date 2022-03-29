@@ -434,6 +434,10 @@ message OTelAttribute {
     px.types.DataType column_type = 1;
     // The index of the atribute column.
     int64 column_index = 2;
+    // Whether the column is optionally JSON encoded.
+    // That means the column might be an element not encoded as json
+    // or a json array of multiple values.
+    bool can_be_json_encoded_array = 3;
   }
   // The column that contains the attribute info.
   Column column = 2;

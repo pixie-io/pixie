@@ -18,10 +18,13 @@
 
 #include "src/carnot/exec/otel_export_sink_node.h"
 
+#include <rapidjson/document.h>
 #include <chrono>
 #include <memory>
+#include <queue>
 #include <random>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <absl/strings/substitute.h>
@@ -80,11 +83,11 @@ Status OTelExportSinkNode::CloseImpl(ExecState* exec_state) {
   return Status::OK();
 }
 
-void AddAttributes(google::protobuf::RepeatedPtrField<
-                       ::opentelemetry::proto::common::v1::KeyValue>* mutable_attributes,
-                   const google::protobuf::RepeatedPtrField<planpb::OTelAttribute>& px_attributes,
-                   const RowBatch& rb, int64_t row_idx) {
-  for (const auto& px_attr : px_attributes) {
+template <typename C>
+void AddAttributes(google::protobuf::RepeatedPtrField<::opentelemetry::proto::common::v1::KeyValue>*
+                       mutable_attributes,
+                   const C& px_attributes, const RowBatch& rb, int64_t row_idx) {
+  for (const planpb::OTelAttribute& px_attr : px_attributes) {
     auto otel_attr = mutable_attributes->Add();
     otel_attr->set_key(px_attr.name());
     auto attribute_col = rb.ColumnAt(px_attr.column().column_index()).get();
@@ -93,6 +96,77 @@ void AddAttributes(google::protobuf::RepeatedPtrField<
   }
 }
 
+inline std::vector<std::string> ParseStringOrArray(const std::string& input) {
+  rapidjson::Document doc;
+  doc.Parse(input.c_str());
+  if (!doc.IsArray()) {
+    return std::vector{input};
+  }
+  std::vector<std::string> out;
+  for (rapidjson::SizeType i = 0; i < doc.Size(); ++i) {
+    if (!doc[i].IsString()) {
+      continue;
+    }
+    out.emplace_back(doc[i].GetString());
+  }
+  return out;
+}
+
+template <typename ResourceData>
+void ReplicateData(const std::vector<planpb::OTelAttribute>& attributes_spec,
+                   std::function<void(ResourceData)> add_data, ResourceData resource_data,
+                   const RowBatch& rb, int64_t row_idx) {
+  if (attributes_spec.empty()) {
+    add_data(std::move(resource_data));
+    return;
+  }
+  // We need to calculate the cross-product of all the attribute values across each other.
+  // We first create a vector of all permutations then we set the ResourceData attributes to
+  // point to those permutations.
+  std::vector<std::vector<std::string>> values;
+  std::vector<std::vector<size_t>> permutation_sets;
+  for (const auto& attribute : attributes_spec) {
+    auto attribute_col = rb.ColumnAt(attribute.column().column_index()).get();
+    std::vector<std::string> column_values =
+        ParseStringOrArray(types::GetValueFromArrowArray<types::STRING>(attribute_col, row_idx));
+    auto attribute_cardinality = column_values.size();
+    values.push_back(std::move(column_values));
+    // Initialize the set with a permutation across all the first sets.
+    if (permutation_sets.empty()) {
+      for (size_t i = 0; i < attribute_cardinality; ++i) {
+        permutation_sets.push_back({i});
+      }
+      continue;
+    }
+
+    std::vector<std::vector<size_t>> new_permutation_sets;
+    for (auto& permutation : permutation_sets) {
+      // Create new permutations from the permutation
+      for (size_t i = 1; i < attribute_cardinality; ++i) {
+        std::vector<size_t> new_permutation(permutation);
+        new_permutation.push_back(i);
+        new_permutation_sets.push_back(new_permutation);
+      }
+      // Update the existing permutation.
+      permutation.push_back(0);
+    }
+    for (auto& new_permutation : new_permutation_sets) {
+      permutation_sets.push_back(std::move(new_permutation));
+    }
+  }
+
+  for (const auto& permutation : permutation_sets) {
+    ResourceData data = resource_data;
+    for (const auto& [attribute_idx, value_idx] : Enumerate(permutation)) {
+      auto attribute = data.mutable_resource()->add_attributes();
+      attribute->set_key(attributes_spec[attribute_idx].name());
+      attribute->mutable_value()->set_string_value(values[attribute_idx][value_idx]);
+    }
+    add_data(std::move(data));
+  }
+}
+
+using ::opentelemetry::proto::metrics::v1::ResourceMetrics;
 Status OTelExportSinkNode::ConsumeMetrics(const RowBatch& rb) {
   grpc::ClientContext context;
   for (const auto& header : plan_node_->endpoint_headers()) {
@@ -103,15 +177,15 @@ Status OTelExportSinkNode::ConsumeMetrics(const RowBatch& rb) {
   metrics_response_.Clear();
   opentelemetry::proto::collector::metrics::v1::ExportMetricsServiceRequest request;
 
-  const auto& resource_pb = plan_node_->resource();
   for (int64_t row_idx = 0; row_idx < rb.ColumnAt(0)->length(); ++row_idx) {
-    auto resource_metrics = request.add_resource_metrics();
-    auto resource = resource_metrics->mutable_resource();
-    AddAttributes(resource->mutable_attributes(), resource_pb.attributes(), rb, row_idx);
+    ::opentelemetry::proto::metrics::v1::ResourceMetrics resource_metrics;
+    auto resource = resource_metrics.mutable_resource();
+    AddAttributes(resource->mutable_attributes(), plan_node_->resource_attributes_normal_encoding(),
+                  rb, row_idx);
     // TODO(philkuz) optimize by pooling metrics by resource within a batch.
     // TODO(philkuz) optimize by pooling data per metric per resource.
 
-    auto library_metrics = resource_metrics->add_instrumentation_library_metrics();
+    auto library_metrics = resource_metrics.add_instrumentation_library_metrics();
     for (const auto& metric_pb : plan_node_->metrics()) {
       auto metric = library_metrics->add_metrics();
       metric->set_name(metric_pb.name());
@@ -160,12 +234,19 @@ Status OTelExportSinkNode::ConsumeMetrics(const RowBatch& rb) {
         }
       }
     }
+    ReplicateData<ResourceMetrics>(
+        plan_node_->resource_attributes_optional_json_encoded(),
+        [&request](ResourceMetrics metrics) {
+          *request.add_resource_metrics() = std::move(metrics);
+        },
+        std::move(resource_metrics), rb, row_idx);
   }
 
   grpc::Status status = metrics_service_stub_->Export(&context, request, &metrics_response_);
   if (!status.ok()) {
     return error::Internal(absl::Substitute(
-        "OTelExportSinkNode $0 encountered error code $1 exporting data, message: $2 $3",
+        "OTelExportSinkNode $0 encountered error code $1 "
+        "exporting data, message: $2 $3",
         plan_node_->id(), status.error_code(), status.error_message(), status.error_details()));
   }
   return Status::OK();
@@ -195,6 +276,7 @@ std::string GenerateID(uint64_t num_bytes) {
   return random_string;
 }
 
+using ::opentelemetry::proto::trace::v1::ResourceSpans;
 Status OTelExportSinkNode::ConsumeSpans(const RowBatch& rb) {
   grpc::ClientContext context;
   for (const auto& header : plan_node_->endpoint_headers()) {
@@ -205,13 +287,13 @@ Status OTelExportSinkNode::ConsumeSpans(const RowBatch& rb) {
   metrics_response_.Clear();
   opentelemetry::proto::collector::trace::v1::ExportTraceServiceRequest request;
 
-  const auto& resource_pb = plan_node_->resource();
   for (int64_t row_idx = 0; row_idx < rb.ColumnAt(0)->length(); ++row_idx) {
     // TODO(philkuz) aggregate spans by resource.
-    auto resource_spans = request.add_resource_spans();
-    auto resource = resource_spans->mutable_resource();
-    AddAttributes(resource->mutable_attributes(), resource_pb.attributes(), rb, row_idx);
-    auto library_spans = resource_spans->add_instrumentation_library_spans();
+    ::opentelemetry::proto::trace::v1::ResourceSpans resource_spans;
+    auto resource = resource_spans.mutable_resource();
+    AddAttributes(resource->mutable_attributes(), plan_node_->resource_attributes_normal_encoding(),
+                  rb, row_idx);
+    auto library_spans = resource_spans.add_instrumentation_library_spans();
     for (const auto& span_pb : plan_node_->spans()) {
       auto span = library_spans->add_spans();
       if (span_pb.has_name_string()) {
@@ -256,7 +338,8 @@ Status OTelExportSinkNode::ConsumeSpans(const RowBatch& rb) {
       }
 
       // We don't generate the parent_span_id if it doesn't exist. An empty parent_span_id means
-      // the span is a root. We also don't generate a parent ID if the ID is formatted incorrectly.
+      // the span is a root. We also don't generate a parent ID if the ID is formatted
+      // incorrectly.
       if (span_pb.parent_span_id_column_index() >= 0) {
         auto id = ParseID(rb, span_pb.parent_span_id_column_index(), row_idx);
         // We leave the span empty if its invalid.
@@ -265,12 +348,18 @@ Status OTelExportSinkNode::ConsumeSpans(const RowBatch& rb) {
         }
       }
     }
+
+    ReplicateData<ResourceSpans>(
+        plan_node_->resource_attributes_optional_json_encoded(),
+        [&request](ResourceSpans span) { *request.add_resource_spans() = std::move(span); },
+        std::move(resource_spans), rb, row_idx);
   }
 
   grpc::Status status = trace_service_stub_->Export(&context, request, &trace_response_);
   if (!status.ok()) {
     return error::Internal(absl::Substitute(
-        "OTelExportSinkNode $0 encountered error code $1 exporting data, message: $2 $3",
+        "OTelExportSinkNode $0 encountered error code $1 "
+        "exporting data, message: $2 $3",
         plan_node_->id(), status.error_code(), status.error_message(), status.error_details()));
   }
   return Status::OK();
