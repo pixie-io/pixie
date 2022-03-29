@@ -67,6 +67,10 @@ type ScriptRunner struct {
 
 	runnerMap   map[uuid.UUID]*runner
 	runnerMapMu sync.Mutex
+	// scriptLastUpdateTime tracks the last time we latest update we processed for a script.
+	// As we may receive updates out-of-order, this prevents us from processing a change out-of-order.
+	scriptLastUpdateTime map[uuid.UUID]int64
+	updateTimeMu         sync.Mutex
 
 	done chan struct{}
 	once sync.Once
@@ -84,7 +88,7 @@ func New(nc *nats.Conn, csClient metadatapb.CronScriptStoreServiceClient, vzClie
 		return nil, err
 	}
 
-	sr := &ScriptRunner{nc: nc, csClient: csClient, done: make(chan struct{}), updatesCh: updatesCh, updatesSub: sub, runnerMap: make(map[uuid.UUID]*runner), vzClient: vzClient, signingKey: signingKey}
+	sr := &ScriptRunner{nc: nc, csClient: csClient, done: make(chan struct{}), updatesCh: updatesCh, updatesSub: sub, scriptLastUpdateTime: make(map[uuid.UUID]int64), runnerMap: make(map[uuid.UUID]*runner), vzClient: vzClient, signingKey: signingKey}
 	return sr, nil
 }
 
@@ -165,10 +169,25 @@ func (s *ScriptRunner) processUpdates() {
 				log.WithError(err).Error("Failed to unmarshal c2v message")
 				continue
 			}
+
 			switch resp.Msg.(type) {
 			case *cvmsgspb.CronScriptUpdate_UpsertReq:
 				uResp := resp.GetUpsertReq()
-				err := s.upsertScript(utils.UUIDFromProtoOrNil(uResp.Script.ID), uResp.Script)
+
+				// Filter out out-of-order updates.
+				sID := utils.UUIDFromProtoOrNil(uResp.Script.ID)
+				time := int64(0)
+				s.updateTimeMu.Lock()
+				if v, ok := s.scriptLastUpdateTime[sID]; ok {
+					time = v
+				}
+				if time >= resp.Timestamp { // Update is older than last processed update.
+					continue
+				}
+				s.scriptLastUpdateTime[sID] = resp.Timestamp
+				s.updateTimeMu.Unlock()
+
+				err := s.upsertScript(sID, uResp.Script)
 				if err != nil {
 					log.WithError(err).Error("Failed to upsert script")
 				}
@@ -194,7 +213,21 @@ func (s *ScriptRunner) processUpdates() {
 				}
 			case *cvmsgspb.CronScriptUpdate_DeleteReq:
 				dResp := resp.GetDeleteReq()
-				err := s.deleteScript(utils.UUIDFromProtoOrNil(dResp.ScriptID))
+
+				// Filter out out-of-order updates.
+				sID := utils.UUIDFromProtoOrNil(dResp.ScriptID)
+				time := int64(0)
+				s.updateTimeMu.Lock()
+				if v, ok := s.scriptLastUpdateTime[sID]; ok {
+					time = v
+				}
+				if time >= resp.Timestamp { // Update is older than last processed update.
+					continue
+				}
+				s.scriptLastUpdateTime[sID] = resp.Timestamp
+				s.updateTimeMu.Unlock()
+
+				err := s.deleteScript(sID)
 				if err != nil {
 					log.WithError(err).Error("Failed to delete script")
 				}

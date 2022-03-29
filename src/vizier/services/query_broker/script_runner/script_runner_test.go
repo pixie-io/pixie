@@ -341,6 +341,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 						},
 					},
 					RequestID: "1",
+					Timestamp: 1,
 				},
 				&cvmsgspb.CronScriptUpdate{
 					Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
@@ -349,6 +350,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 						},
 					},
 					RequestID: "2",
+					Timestamp: 2,
 				},
 			},
 			expectedScripts: map[string]*cvmsgspb.CronScript{
@@ -403,6 +405,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 						},
 					},
 					RequestID: "1",
+					Timestamp: 1,
 				},
 				&cvmsgspb.CronScriptUpdate{
 					Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
@@ -411,6 +414,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 						},
 					},
 					RequestID: "2",
+					Timestamp: 2,
 				},
 			},
 			expectedScripts: map[string]*cvmsgspb.CronScript{
@@ -446,6 +450,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 						},
 					},
 					RequestID: "1",
+					Timestamp: 1,
 				},
 				&cvmsgspb.CronScriptUpdate{
 					Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
@@ -454,6 +459,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 						},
 					},
 					RequestID: "2",
+					Timestamp: 2,
 				},
 			},
 			expectedScripts: map[string]*cvmsgspb.CronScript{
@@ -488,6 +494,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 						},
 					},
 					RequestID: "1",
+					Timestamp: 1,
 				},
 				&cvmsgspb.CronScriptUpdate{
 					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
@@ -501,6 +508,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 						},
 					},
 					RequestID: "2",
+					Timestamp: 2,
 				},
 				&cvmsgspb.CronScriptUpdate{
 					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
@@ -514,6 +522,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 						},
 					},
 					RequestID: "3",
+					Timestamp: 3,
 				},
 				&cvmsgspb.CronScriptUpdate{
 					Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
@@ -522,6 +531,93 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 						},
 					},
 					RequestID: "4",
+					Timestamp: 4,
+				},
+			},
+			expectedScripts: map[string]*cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440002": &cvmsgspb.CronScript{
+					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440002"),
+					Script:     "test script 2",
+					Configs:    "config3",
+					FrequencyS: 123,
+				},
+				"223e4567-e89b-12d3-a456-426655440004": &cvmsgspb.CronScript{
+					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440004"),
+					Script:     "test script 2",
+					Configs:    "config3",
+					FrequencyS: 123,
+				},
+			},
+		},
+		{
+			name:             "out-of-order update",
+			persistedScripts: map[string]*cvmsgspb.CronScript{},
+			cloudScripts:     map[string]*cvmsgspb.CronScript{},
+			updates: []*cvmsgspb.CronScriptUpdate{
+				&cvmsgspb.CronScriptUpdate{
+					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
+						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
+							Script: &cvmsgspb.CronScript{
+								ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440002"),
+								Script:     "test script 2",
+								Configs:    "config3",
+								FrequencyS: 123,
+							},
+						},
+					},
+					RequestID: "1",
+					Timestamp: 1,
+				},
+				&cvmsgspb.CronScriptUpdate{
+					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
+						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
+							Script: &cvmsgspb.CronScript{
+								ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
+								Script:     "test script 2",
+								Configs:    "config3",
+								FrequencyS: 123,
+							},
+						},
+					},
+					RequestID: "2",
+					Timestamp: 2,
+				},
+				&cvmsgspb.CronScriptUpdate{
+					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
+						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
+							Script: &cvmsgspb.CronScript{
+								ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440004"),
+								Script:     "test script 2",
+								Configs:    "config3",
+								FrequencyS: 123,
+							},
+						},
+					},
+					RequestID: "3",
+					Timestamp: 3,
+				},
+				&cvmsgspb.CronScriptUpdate{
+					Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
+						DeleteReq: &cvmsgspb.DeleteCronScriptRequest{
+							ScriptID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
+						},
+					},
+					RequestID: "4",
+					Timestamp: 4,
+				},
+				&cvmsgspb.CronScriptUpdate{
+					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
+						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
+							Script: &cvmsgspb.CronScript{
+								ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
+								Script:     "test script 2",
+								Configs:    "config3",
+								FrequencyS: 123,
+							},
+						},
+					},
+					RequestID: "2",
+					Timestamp: 2,
 				},
 			},
 			expectedScripts: map[string]*cvmsgspb.CronScript{
