@@ -28,6 +28,8 @@ import { SidebarContext } from 'app/context/sidebar-context';
 import * as pixienautCarryingBoxes from 'assets/images/pixienaut-carrying-boxes.svg';
 import { Copyright } from 'configurable/copyright';
 
+import { ConfigureDataExportBody } from './data-export-tables';
+
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
     width: '100%',
@@ -85,7 +87,7 @@ const ConfigureDataExportPage = React.memo(({ children }) => {
   const classes = useStyles();
   return (
     <div className={classes.root}>
-      <SidebarContext.Provider value={{ showLiveOptions: false, showAdmin: false }}>
+      <SidebarContext.Provider value={{ showLiveOptions: false, showAdmin: true }}>
         <NavBars>
           <div className={classes.title}>
             <div className={classes.titleText}>Long-term Data Export</div>
@@ -123,11 +125,6 @@ const NoPluginsEnabledSplash = React.memo(() => {
 });
 NoPluginsEnabledSplash.displayName = 'NoPluginsEnabledSplash';
 
-const ConfigureDataExportBody = React.memo(() => {
-  return <>Body for config</>;
-});
-ConfigureDataExportBody.displayName = 'ConfigureDataExportBody';
-
 // TODO(nick,PC-1440): Instead of this, check the API (once implemented).
 const SplashToggle = React.memo<{
   isSplash: boolean,
@@ -148,7 +145,7 @@ const SplashToggle = React.memo<{
 SplashToggle.displayName = 'SplashToggle';
 
 export const ConfigureDataExportView = React.memo(() => {
-  const [isSplash, setIsSplash] = React.useState(true);
+  const [isSplash, setIsSplash] = React.useState(false);
   return (
     <ConfigureDataExportPage>
       <SplashToggle isSplash={isSplash} setIsSplash={setIsSplash} />
