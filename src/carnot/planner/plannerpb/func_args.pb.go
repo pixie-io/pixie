@@ -5,7 +5,9 @@ package plannerpb
 
 import (
 	fmt "fmt"
+	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
+	github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -136,15 +138,110 @@ func (m *FuncToExecute_ArgValue) GetValue() string {
 	return ""
 }
 
+type Configs struct {
+	OTelEndpointConfig *Configs_OTelEndpointConfig `protobuf:"bytes,1,opt,name=otel_endpoint_config,json=otelEndpointConfig,proto3" json:"otel_endpoint_config,omitempty"`
+}
+
+func (m *Configs) Reset()      { *m = Configs{} }
+func (*Configs) ProtoMessage() {}
+func (*Configs) Descriptor() ([]byte, []int) {
+	return fileDescriptor_382d495688ef31c6, []int{1}
+}
+func (m *Configs) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Configs) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Configs.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Configs) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Configs.Merge(m, src)
+}
+func (m *Configs) XXX_Size() int {
+	return m.Size()
+}
+func (m *Configs) XXX_DiscardUnknown() {
+	xxx_messageInfo_Configs.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Configs proto.InternalMessageInfo
+
+func (m *Configs) GetOTelEndpointConfig() *Configs_OTelEndpointConfig {
+	if m != nil {
+		return m.OTelEndpointConfig
+	}
+	return nil
+}
+
+type Configs_OTelEndpointConfig struct {
+	URL     string            `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+	Headers map[string]string `protobuf:"bytes,2,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+}
+
+func (m *Configs_OTelEndpointConfig) Reset()      { *m = Configs_OTelEndpointConfig{} }
+func (*Configs_OTelEndpointConfig) ProtoMessage() {}
+func (*Configs_OTelEndpointConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_382d495688ef31c6, []int{1, 0}
+}
+func (m *Configs_OTelEndpointConfig) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Configs_OTelEndpointConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Configs_OTelEndpointConfig.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Configs_OTelEndpointConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Configs_OTelEndpointConfig.Merge(m, src)
+}
+func (m *Configs_OTelEndpointConfig) XXX_Size() int {
+	return m.Size()
+}
+func (m *Configs_OTelEndpointConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_Configs_OTelEndpointConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Configs_OTelEndpointConfig proto.InternalMessageInfo
+
+func (m *Configs_OTelEndpointConfig) GetURL() string {
+	if m != nil {
+		return m.URL
+	}
+	return ""
+}
+
+func (m *Configs_OTelEndpointConfig) GetHeaders() map[string]string {
+	if m != nil {
+		return m.Headers
+	}
+	return nil
+}
+
 type QueryRequest struct {
 	QueryStr  string           `protobuf:"bytes,1,opt,name=query_str,json=queryStr,proto3" json:"query_str,omitempty"`
 	ExecFuncs []*FuncToExecute `protobuf:"bytes,3,rep,name=exec_funcs,json=execFuncs,proto3" json:"exec_funcs,omitempty"`
+	Configs   *Configs         `protobuf:"bytes,4,opt,name=configs,proto3" json:"configs,omitempty"`
 }
 
 func (m *QueryRequest) Reset()      { *m = QueryRequest{} }
 func (*QueryRequest) ProtoMessage() {}
 func (*QueryRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_382d495688ef31c6, []int{1}
+	return fileDescriptor_382d495688ef31c6, []int{2}
 }
 func (m *QueryRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -187,15 +284,23 @@ func (m *QueryRequest) GetExecFuncs() []*FuncToExecute {
 	return nil
 }
 
+func (m *QueryRequest) GetConfigs() *Configs {
+	if m != nil {
+		return m.Configs
+	}
+	return nil
+}
+
 type CompileMutationsRequest struct {
 	QueryStr  string           `protobuf:"bytes,1,opt,name=query_str,json=queryStr,proto3" json:"query_str,omitempty"`
 	ExecFuncs []*FuncToExecute `protobuf:"bytes,3,rep,name=exec_funcs,json=execFuncs,proto3" json:"exec_funcs,omitempty"`
+	Configs   *Configs         `protobuf:"bytes,4,opt,name=configs,proto3" json:"configs,omitempty"`
 }
 
 func (m *CompileMutationsRequest) Reset()      { *m = CompileMutationsRequest{} }
 func (*CompileMutationsRequest) ProtoMessage() {}
 func (*CompileMutationsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_382d495688ef31c6, []int{2}
+	return fileDescriptor_382d495688ef31c6, []int{3}
 }
 func (m *CompileMutationsRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -238,6 +343,13 @@ func (m *CompileMutationsRequest) GetExecFuncs() []*FuncToExecute {
 	return nil
 }
 
+func (m *CompileMutationsRequest) GetConfigs() *Configs {
+	if m != nil {
+		return m.Configs
+	}
+	return nil
+}
+
 type DeleteTracepoint struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 }
@@ -245,7 +357,7 @@ type DeleteTracepoint struct {
 func (m *DeleteTracepoint) Reset()      { *m = DeleteTracepoint{} }
 func (*DeleteTracepoint) ProtoMessage() {}
 func (*DeleteTracepoint) Descriptor() ([]byte, []int) {
-	return fileDescriptor_382d495688ef31c6, []int{3}
+	return fileDescriptor_382d495688ef31c6, []int{4}
 }
 func (m *DeleteTracepoint) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -290,7 +402,7 @@ type ConfigUpdate struct {
 func (m *ConfigUpdate) Reset()      { *m = ConfigUpdate{} }
 func (*ConfigUpdate) ProtoMessage() {}
 func (*ConfigUpdate) Descriptor() ([]byte, []int) {
-	return fileDescriptor_382d495688ef31c6, []int{4}
+	return fileDescriptor_382d495688ef31c6, []int{5}
 }
 func (m *ConfigUpdate) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -351,7 +463,7 @@ type CompileMutation struct {
 func (m *CompileMutation) Reset()      { *m = CompileMutation{} }
 func (*CompileMutation) ProtoMessage() {}
 func (*CompileMutation) Descriptor() ([]byte, []int) {
-	return fileDescriptor_382d495688ef31c6, []int{5}
+	return fileDescriptor_382d495688ef31c6, []int{6}
 }
 func (m *CompileMutation) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -446,7 +558,7 @@ type CompileMutationsResponse struct {
 func (m *CompileMutationsResponse) Reset()      { *m = CompileMutationsResponse{} }
 func (*CompileMutationsResponse) ProtoMessage() {}
 func (*CompileMutationsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_382d495688ef31c6, []int{6}
+	return fileDescriptor_382d495688ef31c6, []int{7}
 }
 func (m *CompileMutationsResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -492,6 +604,9 @@ func (m *CompileMutationsResponse) GetMutations() []*CompileMutation {
 func init() {
 	proto.RegisterType((*FuncToExecute)(nil), "px.carnot.planner.plannerpb.FuncToExecute")
 	proto.RegisterType((*FuncToExecute_ArgValue)(nil), "px.carnot.planner.plannerpb.FuncToExecute.ArgValue")
+	proto.RegisterType((*Configs)(nil), "px.carnot.planner.plannerpb.Configs")
+	proto.RegisterType((*Configs_OTelEndpointConfig)(nil), "px.carnot.planner.plannerpb.Configs.OTelEndpointConfig")
+	proto.RegisterMapType((map[string]string)(nil), "px.carnot.planner.plannerpb.Configs.OTelEndpointConfig.HeadersEntry")
 	proto.RegisterType((*QueryRequest)(nil), "px.carnot.planner.plannerpb.QueryRequest")
 	proto.RegisterType((*CompileMutationsRequest)(nil), "px.carnot.planner.plannerpb.CompileMutationsRequest")
 	proto.RegisterType((*DeleteTracepoint)(nil), "px.carnot.planner.plannerpb.DeleteTracepoint")
@@ -505,47 +620,58 @@ func init() {
 }
 
 var fileDescriptor_382d495688ef31c6 = []byte{
-	// 640 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x54, 0xdf, 0x6a, 0xd4, 0x4e,
-	0x14, 0x4e, 0x76, 0xdb, 0xb2, 0x7b, 0x76, 0xfb, 0xfb, 0x6d, 0xa7, 0x82, 0xa1, 0x85, 0x50, 0x82,
-	0x4a, 0xd5, 0x9a, 0xc0, 0xd6, 0x5b, 0x11, 0xdb, 0x2a, 0xb5, 0xa0, 0xd4, 0xb4, 0x7a, 0x51, 0x0a,
-	0x61, 0x36, 0x3b, 0x0d, 0xc1, 0x64, 0x66, 0x3a, 0x33, 0x91, 0x5d, 0xf0, 0x42, 0xdf, 0x40, 0xf0,
-	0x25, 0xf4, 0x4d, 0xbc, 0xec, 0x65, 0x2f, 0x6d, 0x0a, 0xe2, 0x65, 0x1f, 0x41, 0x32, 0xd9, 0xf4,
-	0xcf, 0xba, 0x54, 0xaf, 0xbc, 0xca, 0x99, 0x33, 0xdf, 0xf9, 0xe6, 0x7c, 0xdf, 0x9c, 0x09, 0xac,
-	0x48, 0x11, 0x7a, 0x21, 0x16, 0x94, 0x29, 0x8f, 0x27, 0x98, 0x52, 0x22, 0xaa, 0x2f, 0xef, 0x79,
-	0x07, 0x19, 0x0d, 0x03, 0x2c, 0x22, 0xe9, 0x72, 0xc1, 0x14, 0x43, 0x8b, 0x7c, 0xe0, 0x96, 0x60,
-	0x77, 0x04, 0x72, 0xcf, 0xc1, 0x0b, 0x8f, 0x26, 0x50, 0xf5, 0x87, 0x14, 0xa7, 0x71, 0x18, 0x28,
-	0x81, 0xc3, 0x98, 0x46, 0x5e, 0x2c, 0xbc, 0x84, 0x45, 0x71, 0x88, 0x13, 0xde, 0xab, 0xa2, 0x92,
-	0x7b, 0xe1, 0xb6, 0x2e, 0x67, 0x69, 0xca, 0xa8, 0xd7, 0xc3, 0x92, 0x78, 0x52, 0x61, 0x95, 0x49,
-	0xde, 0x1b, 0x05, 0x25, 0xcc, 0xf9, 0x61, 0xc2, 0xec, 0xb3, 0x8c, 0x86, 0xbb, 0xec, 0xe9, 0x80,
-	0x84, 0x99, 0x22, 0x68, 0x11, 0x9a, 0xba, 0x4f, 0x8a, 0x53, 0x62, 0x99, 0x4b, 0xe6, 0x72, 0xd3,
-	0x6f, 0x14, 0x89, 0x97, 0x38, 0x25, 0xc8, 0x07, 0xc0, 0x22, 0x0a, 0xde, 0xe1, 0x24, 0x23, 0xd2,
-	0xaa, 0x2d, 0xd5, 0x97, 0x5b, 0xdd, 0x55, 0xf7, 0x1a, 0x19, 0xee, 0x15, 0x72, 0xf7, 0x89, 0x88,
-	0xde, 0x14, 0xb5, 0x7e, 0x13, 0x8f, 0x22, 0x89, 0x5c, 0x98, 0x67, 0x99, 0xe2, 0x99, 0x0a, 0x14,
-	0xee, 0x25, 0x24, 0xe0, 0x82, 0x1c, 0xc4, 0x03, 0xab, 0xae, 0x8f, 0x9e, 0x2b, 0xb7, 0x76, 0x8b,
-	0x9d, 0x6d, 0xbd, 0xb1, 0xf0, 0x10, 0x1a, 0x15, 0x0d, 0x42, 0x30, 0x75, 0xa9, 0x4f, 0x1d, 0xa3,
-	0x1b, 0x30, 0xad, 0xfb, 0xb3, 0x6a, 0x3a, 0x59, 0x2e, 0x9c, 0xf7, 0xd0, 0x7e, 0x95, 0x11, 0x31,
-	0xf4, 0xc9, 0x61, 0x46, 0xa4, 0x2a, 0x64, 0x1e, 0x16, 0xeb, 0x40, 0x2a, 0x51, 0xc9, 0xd4, 0x89,
-	0x1d, 0x25, 0xd0, 0x73, 0x00, 0x32, 0x20, 0x61, 0x50, 0xe8, 0x96, 0x56, 0x5d, 0xcb, 0xbc, 0xf7,
-	0xf7, 0x32, 0xfd, 0x66, 0x51, 0x5d, 0xa4, 0xe4, 0xd6, 0x54, 0xa3, 0xd6, 0xa9, 0x3b, 0x1f, 0x4d,
-	0xb8, 0xb9, 0xce, 0x52, 0x1e, 0x27, 0xe4, 0x45, 0xa6, 0xb0, 0x8a, 0x19, 0x95, 0xff, 0xb8, 0x13,
-	0xe7, 0x0e, 0x74, 0x36, 0x48, 0x42, 0x14, 0xd9, 0x15, 0x38, 0x24, 0x9c, 0xc5, 0x54, 0x4d, 0xf2,
-	0xcf, 0xd9, 0x87, 0xf6, 0x3a, 0xa3, 0x07, 0x71, 0xf4, 0x9a, 0xf7, 0xb1, 0x22, 0xa8, 0x03, 0xf5,
-	0xb7, 0x64, 0x38, 0x82, 0x14, 0xe1, 0x64, 0x87, 0xd1, 0x2d, 0xf8, 0x0f, 0x47, 0x84, 0xaa, 0x80,
-	0xb3, 0x7e, 0x39, 0x3d, 0xe5, 0x15, 0xb6, 0x75, 0x76, 0x9b, 0xf5, 0x8b, 0x09, 0x72, 0xbe, 0xd6,
-	0xe0, 0xff, 0x31, 0x27, 0xd0, 0x1e, 0x4c, 0x17, 0x13, 0x5d, 0xf2, 0xb5, 0xba, 0x6b, 0x13, 0xf4,
-	0x8d, 0x4d, 0xbe, 0x1b, 0x0b, 0xb7, 0x9a, 0xf7, 0x0b, 0x39, 0x1b, 0x84, 0x27, 0x6c, 0x98, 0x12,
-	0xaa, 0x36, 0x0d, 0xbf, 0xa4, 0x44, 0xfb, 0x30, 0xd7, 0xd7, 0xaa, 0x75, 0x69, 0x89, 0xd3, 0x8d,
-	0xb5, 0xba, 0x0f, 0xae, 0xf5, 0x71, 0xdc, 0xab, 0x4d, 0xc3, 0xef, 0xf4, 0xc7, 0xfd, 0xdb, 0x86,
-	0xd9, 0x50, 0x7b, 0x15, 0x64, 0xda, 0x2c, 0x6b, 0x4a, 0x33, 0xdf, 0xbd, 0x96, 0xf9, 0xb2, 0xbb,
-	0x9b, 0x86, 0xdf, 0x0e, 0x2f, 0xad, 0xd7, 0x00, 0x1a, 0xe9, 0xc8, 0x17, 0xe7, 0xb3, 0x09, 0xd6,
-	0xef, 0x53, 0x23, 0x39, 0xa3, 0x92, 0xa0, 0xfb, 0x30, 0x53, 0xbe, 0x64, 0x7d, 0x33, 0xad, 0xee,
-	0x7c, 0x71, 0x66, 0xf5, 0xc8, 0xdd, 0x1d, 0x1d, 0xf8, 0x23, 0x08, 0xda, 0x82, 0x66, 0xc5, 0x5a,
-	0x3d, 0xdb, 0x95, 0x3f, 0xf4, 0x78, 0xe5, 0x58, 0xff, 0xa2, 0x7c, 0xed, 0xf1, 0xd1, 0x89, 0x6d,
-	0x1c, 0x9f, 0xd8, 0xc6, 0xd9, 0x89, 0x6d, 0x7e, 0xc8, 0x6d, 0xf3, 0x4b, 0x6e, 0x9b, 0xdf, 0x72,
-	0xdb, 0x3c, 0xca, 0x6d, 0xf3, 0x7b, 0x6e, 0x9b, 0x3f, 0x73, 0xdb, 0x38, 0xcb, 0x6d, 0xf3, 0xd3,
-	0xa9, 0x6d, 0x1c, 0x9d, 0xda, 0xc6, 0xf1, 0xa9, 0x6d, 0xec, 0x35, 0xcf, 0xb9, 0x7b, 0x33, 0xfa,
-	0xd7, 0xb3, 0xfa, 0x2b, 0x00, 0x00, 0xff, 0xff, 0x48, 0x08, 0x05, 0x0d, 0x2d, 0x05, 0x00, 0x00,
+	// 807 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x55, 0x4f, 0x8f, 0xdb, 0x44,
+	0x14, 0xf7, 0x24, 0xdb, 0xee, 0xe6, 0x6d, 0x0a, 0xdb, 0x69, 0x05, 0x21, 0x95, 0xdc, 0xca, 0x2a,
+	0xa8, 0x40, 0x6b, 0x4b, 0x29, 0x12, 0xa8, 0x12, 0x20, 0xd2, 0x5d, 0x14, 0x2a, 0xfe, 0x2c, 0x6e,
+	0xca, 0xa1, 0xaa, 0xb0, 0xc6, 0xf6, 0xc4, 0xb5, 0xb0, 0x67, 0xdc, 0x99, 0x31, 0x4a, 0x6e, 0xf0,
+	0x0d, 0x90, 0xf8, 0x12, 0xf0, 0x1d, 0xb8, 0x70, 0x43, 0xe2, 0xb2, 0xc7, 0x4a, 0x48, 0x15, 0xeb,
+	0x95, 0x10, 0xc7, 0x7e, 0x04, 0xe4, 0x19, 0xbb, 0xdd, 0x4d, 0xa3, 0x25, 0xe2, 0xc6, 0x29, 0x6f,
+	0x7e, 0xf3, 0xde, 0x6f, 0xde, 0xfb, 0xbd, 0xe7, 0x17, 0xb8, 0x2e, 0x45, 0xe4, 0x45, 0x44, 0x30,
+	0xae, 0xbc, 0x22, 0x23, 0x8c, 0x51, 0xd1, 0xfe, 0x16, 0xa1, 0x37, 0x2b, 0x59, 0x14, 0x10, 0x91,
+	0x48, 0xb7, 0x10, 0x5c, 0x71, 0x7c, 0xa9, 0x98, 0xbb, 0xc6, 0xd9, 0x6d, 0x9c, 0xdc, 0x67, 0xce,
+	0xc3, 0xf7, 0x57, 0x50, 0xc5, 0x0b, 0x46, 0xf2, 0x34, 0x0a, 0x94, 0x20, 0x51, 0xca, 0x12, 0x2f,
+	0x15, 0x5e, 0xc6, 0x93, 0x34, 0x22, 0x59, 0x11, 0xb6, 0x96, 0xe1, 0x1e, 0xbe, 0xae, 0xc3, 0x79,
+	0x9e, 0x73, 0xe6, 0x85, 0x44, 0x52, 0x4f, 0x2a, 0xa2, 0x4a, 0x59, 0x84, 0x8d, 0xd1, 0xb8, 0xdd,
+	0x48, 0x52, 0xf5, 0xb0, 0x0c, 0xdd, 0x88, 0xe7, 0x5e, 0xc2, 0x13, 0xee, 0x69, 0x38, 0x2c, 0x67,
+	0xfa, 0xa4, 0x0f, 0xda, 0x32, 0xee, 0xce, 0x5f, 0x08, 0xce, 0x7d, 0x5c, 0xb2, 0x68, 0xca, 0xf7,
+	0xe6, 0x34, 0x2a, 0x15, 0xc5, 0x97, 0xa0, 0xa7, 0xcb, 0x62, 0x24, 0xa7, 0x03, 0x74, 0x05, 0x5d,
+	0xeb, 0xf9, 0x5b, 0x35, 0xf0, 0x39, 0xc9, 0x29, 0xf6, 0x01, 0x88, 0x48, 0x82, 0x6f, 0x49, 0x56,
+	0x52, 0x39, 0xe8, 0x5c, 0xe9, 0x5e, 0xdb, 0x1e, 0xdd, 0x74, 0x4f, 0xa9, 0xda, 0x3d, 0x41, 0xee,
+	0x7e, 0x24, 0x92, 0xaf, 0xea, 0x58, 0xbf, 0x47, 0x1a, 0x4b, 0x62, 0x17, 0x2e, 0xf0, 0x52, 0x15,
+	0xa5, 0x0a, 0x14, 0x09, 0x33, 0x1a, 0x14, 0x82, 0xce, 0xd2, 0xf9, 0xa0, 0xab, 0x9f, 0x3e, 0x6f,
+	0xae, 0xa6, 0xf5, 0xcd, 0xbe, 0xbe, 0x18, 0xbe, 0x03, 0x5b, 0x2d, 0x0d, 0xc6, 0xb0, 0x71, 0x2c,
+	0x4f, 0x6d, 0xe3, 0x8b, 0x70, 0x46, 0xe7, 0x37, 0xe8, 0x68, 0xd0, 0x1c, 0x9c, 0x3f, 0x3a, 0xb0,
+	0x79, 0x9b, 0xb3, 0x59, 0x9a, 0x48, 0xfc, 0x3d, 0x82, 0x8b, 0x5c, 0xd1, 0x2c, 0xa0, 0x2c, 0x2e,
+	0x78, 0xca, 0x54, 0x10, 0xe9, 0x1b, 0x4d, 0xb3, 0x3d, 0x7a, 0xf7, 0xd4, 0x82, 0x1a, 0x12, 0xf7,
+	0x8b, 0x29, 0xcd, 0xf6, 0x9a, 0x78, 0x83, 0x8d, 0x5f, 0xa9, 0x9e, 0x5c, 0xc6, 0x2f, 0xe2, 0x3e,
+	0xae, 0x1f, 0x3b, 0x89, 0x0d, 0x7f, 0x47, 0xb0, 0xc2, 0x15, 0xbf, 0x06, 0xdd, 0x52, 0x64, 0xa6,
+	0x9e, 0xf1, 0x66, 0xf5, 0xe4, 0x72, 0xf7, 0x9e, 0xff, 0xa9, 0x5f, 0x63, 0xf8, 0x6b, 0xd8, 0x7c,
+	0x48, 0x49, 0x4c, 0x45, 0x2b, 0xfc, 0xee, 0x7f, 0xcc, 0xd3, 0x9d, 0x18, 0x9a, 0x3d, 0xa6, 0xc4,
+	0xc2, 0x6f, 0x49, 0x87, 0xb7, 0xa0, 0x7f, 0xfc, 0x02, 0xef, 0x40, 0xf7, 0x1b, 0xba, 0x68, 0xa4,
+	0xad, 0xcd, 0xd5, 0xca, 0xde, 0xea, 0xbc, 0x87, 0x9c, 0x5f, 0x10, 0xf4, 0xbf, 0x2c, 0xa9, 0x58,
+	0xf8, 0xf4, 0x51, 0x49, 0xa5, 0xaa, 0xa7, 0xe8, 0x51, 0x7d, 0x0e, 0xa4, 0x12, 0xed, 0x14, 0x69,
+	0xe0, 0xae, 0x12, 0xf8, 0x13, 0x00, 0x3a, 0xa7, 0x51, 0x50, 0x8f, 0x95, 0x1c, 0x74, 0x75, 0x31,
+	0x6f, 0xad, 0x3f, 0x45, 0x7e, 0xaf, 0x8e, 0xae, 0x21, 0x89, 0x3f, 0x80, 0x4d, 0xd3, 0x3b, 0x39,
+	0xd8, 0xd0, 0xcd, 0xbb, 0xba, 0x8e, 0x28, 0x7e, 0x1b, 0x74, 0x67, 0x63, 0xab, 0xb3, 0xd3, 0x75,
+	0x7e, 0x45, 0xf0, 0xea, 0x6d, 0x9e, 0x17, 0x69, 0x46, 0x3f, 0x2b, 0x15, 0x51, 0x29, 0x67, 0xf2,
+	0x7f, 0x56, 0x89, 0xf3, 0x06, 0xec, 0xec, 0xd2, 0x8c, 0x2a, 0x3a, 0x15, 0x24, 0xa2, 0xba, 0xdd,
+	0xab, 0x3e, 0x0f, 0xe7, 0x01, 0xf4, 0x4d, 0xec, 0xbd, 0x22, 0x26, 0x8a, 0xae, 0xdb, 0x66, 0x7c,
+	0x15, 0x5e, 0x22, 0x09, 0x65, 0x2a, 0x28, 0x78, 0x6c, 0x96, 0x83, 0xf9, 0x42, 0xfb, 0x1a, 0xdd,
+	0xe7, 0x71, 0xbd, 0x20, 0x9c, 0x9f, 0x3b, 0xf0, 0xf2, 0x92, 0x92, 0xf8, 0x3e, 0x9c, 0xa9, 0xf7,
+	0x9b, 0xe1, 0xdb, 0x1e, 0x8d, 0x57, 0xd4, 0xb5, 0xb4, 0x07, 0xdd, 0x54, 0xb8, 0xed, 0xf6, 0x7b,
+	0x5e, 0xce, 0x2e, 0x2d, 0x32, 0xbe, 0xc8, 0x29, 0x53, 0x13, 0xcb, 0x37, 0x94, 0xf8, 0x01, 0x9c,
+	0x8f, 0x75, 0xd5, 0x3a, 0xd4, 0xf8, 0xe9, 0xc4, 0xb6, 0x47, 0x37, 0x4e, 0xd5, 0x6f, 0x59, 0xab,
+	0x89, 0xe5, 0xef, 0xc4, 0xcb, 0xfa, 0xed, 0xc3, 0x39, 0x23, 0x6f, 0x50, 0x6a, 0xb1, 0x9a, 0xce,
+	0xbc, 0xb9, 0x46, 0x67, 0x8c, 0xba, 0x13, 0xcb, 0xef, 0x47, 0xc7, 0xce, 0x63, 0x80, 0xad, 0xbc,
+	0xd1, 0xc5, 0xf9, 0x11, 0xc1, 0xe0, 0xc5, 0xa9, 0x93, 0x05, 0x67, 0x92, 0xe2, 0xb7, 0xe1, 0xac,
+	0xd9, 0xeb, 0xcd, 0x52, 0xba, 0x50, 0xbf, 0xd9, 0xae, 0x7c, 0xf7, 0xae, 0x36, 0xfc, 0xc6, 0x05,
+	0xdf, 0x81, 0x5e, 0xcb, 0xda, 0x2e, 0x87, 0xeb, 0xff, 0x92, 0xe3, 0x89, 0x67, 0xfd, 0xe7, 0xe1,
+	0xe3, 0x0f, 0x0f, 0x0e, 0x6d, 0xeb, 0xf1, 0xa1, 0x6d, 0x3d, 0x3d, 0xb4, 0xd1, 0x77, 0x95, 0x8d,
+	0x7e, 0xaa, 0x6c, 0xf4, 0x5b, 0x65, 0xa3, 0x83, 0xca, 0x46, 0x7f, 0x56, 0x36, 0xfa, 0xbb, 0xb2,
+	0xad, 0xa7, 0x95, 0x8d, 0x7e, 0x38, 0xb2, 0xad, 0x83, 0x23, 0xdb, 0x7a, 0x7c, 0x64, 0x5b, 0xf7,
+	0x7b, 0xcf, 0xb8, 0xc3, 0xb3, 0xfa, 0x9f, 0xe5, 0xe6, 0x3f, 0x01, 0x00, 0x00, 0xff, 0xff, 0x57,
+	0x8b, 0xc4, 0x2e, 0x3b, 0x07, 0x00, 0x00,
 }
 
 func (this *FuncToExecute) Equal(that interface{}) bool {
@@ -610,6 +736,62 @@ func (this *FuncToExecute_ArgValue) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *Configs) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Configs)
+	if !ok {
+		that2, ok := that.(Configs)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.OTelEndpointConfig.Equal(that1.OTelEndpointConfig) {
+		return false
+	}
+	return true
+}
+func (this *Configs_OTelEndpointConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Configs_OTelEndpointConfig)
+	if !ok {
+		that2, ok := that.(Configs_OTelEndpointConfig)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.URL != that1.URL {
+		return false
+	}
+	if len(this.Headers) != len(that1.Headers) {
+		return false
+	}
+	for i := range this.Headers {
+		if this.Headers[i] != that1.Headers[i] {
+			return false
+		}
+	}
+	return true
+}
 func (this *QueryRequest) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -639,6 +821,9 @@ func (this *QueryRequest) Equal(that interface{}) bool {
 		if !this.ExecFuncs[i].Equal(that1.ExecFuncs[i]) {
 			return false
 		}
+	}
+	if !this.Configs.Equal(that1.Configs) {
+		return false
 	}
 	return true
 }
@@ -671,6 +856,9 @@ func (this *CompileMutationsRequest) Equal(that interface{}) bool {
 		if !this.ExecFuncs[i].Equal(that1.ExecFuncs[i]) {
 			return false
 		}
+	}
+	if !this.Configs.Equal(that1.Configs) {
+		return false
 	}
 	return true
 }
@@ -887,15 +1075,53 @@ func (this *FuncToExecute_ArgValue) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *QueryRequest) GoString() string {
+func (this *Configs) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&plannerpb.Configs{")
+	if this.OTelEndpointConfig != nil {
+		s = append(s, "OTelEndpointConfig: "+fmt.Sprintf("%#v", this.OTelEndpointConfig)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *Configs_OTelEndpointConfig) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 6)
+	s = append(s, "&plannerpb.Configs_OTelEndpointConfig{")
+	s = append(s, "URL: "+fmt.Sprintf("%#v", this.URL)+",\n")
+	keysForHeaders := make([]string, 0, len(this.Headers))
+	for k, _ := range this.Headers {
+		keysForHeaders = append(keysForHeaders, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForHeaders)
+	mapStringForHeaders := "map[string]string{"
+	for _, k := range keysForHeaders {
+		mapStringForHeaders += fmt.Sprintf("%#v: %#v,", k, this.Headers[k])
+	}
+	mapStringForHeaders += "}"
+	if this.Headers != nil {
+		s = append(s, "Headers: "+mapStringForHeaders+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *QueryRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
 	s = append(s, "&plannerpb.QueryRequest{")
 	s = append(s, "QueryStr: "+fmt.Sprintf("%#v", this.QueryStr)+",\n")
 	if this.ExecFuncs != nil {
 		s = append(s, "ExecFuncs: "+fmt.Sprintf("%#v", this.ExecFuncs)+",\n")
+	}
+	if this.Configs != nil {
+		s = append(s, "Configs: "+fmt.Sprintf("%#v", this.Configs)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -904,11 +1130,14 @@ func (this *CompileMutationsRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 6)
+	s := make([]string, 0, 7)
 	s = append(s, "&plannerpb.CompileMutationsRequest{")
 	s = append(s, "QueryStr: "+fmt.Sprintf("%#v", this.QueryStr)+",\n")
 	if this.ExecFuncs != nil {
 		s = append(s, "ExecFuncs: "+fmt.Sprintf("%#v", this.ExecFuncs)+",\n")
+	}
+	if this.Configs != nil {
+		s = append(s, "Configs: "+fmt.Sprintf("%#v", this.Configs)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -1082,6 +1311,90 @@ func (m *FuncToExecute_ArgValue) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 	return len(dAtA) - i, nil
 }
 
+func (m *Configs) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Configs) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Configs) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.OTelEndpointConfig != nil {
+		{
+			size, err := m.OTelEndpointConfig.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintFuncArgs(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *Configs_OTelEndpointConfig) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Configs_OTelEndpointConfig) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Configs_OTelEndpointConfig) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Headers) > 0 {
+		for k := range m.Headers {
+			v := m.Headers[k]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
+			i = encodeVarintFuncArgs(dAtA, i, uint64(len(v)))
+			i--
+			dAtA[i] = 0x12
+			i -= len(k)
+			copy(dAtA[i:], k)
+			i = encodeVarintFuncArgs(dAtA, i, uint64(len(k)))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintFuncArgs(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.URL) > 0 {
+		i -= len(m.URL)
+		copy(dAtA[i:], m.URL)
+		i = encodeVarintFuncArgs(dAtA, i, uint64(len(m.URL)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *QueryRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1102,6 +1415,18 @@ func (m *QueryRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.Configs != nil {
+		{
+			size, err := m.Configs.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintFuncArgs(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x22
+	}
 	if len(m.ExecFuncs) > 0 {
 		for iNdEx := len(m.ExecFuncs) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -1146,6 +1471,18 @@ func (m *CompileMutationsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	_ = i
 	var l int
 	_ = l
+	if m.Configs != nil {
+		{
+			size, err := m.Configs.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintFuncArgs(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x22
+	}
 	if len(m.ExecFuncs) > 0 {
 		for iNdEx := len(m.ExecFuncs) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -1439,6 +1776,40 @@ func (m *FuncToExecute_ArgValue) Size() (n int) {
 	return n
 }
 
+func (m *Configs) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.OTelEndpointConfig != nil {
+		l = m.OTelEndpointConfig.Size()
+		n += 1 + l + sovFuncArgs(uint64(l))
+	}
+	return n
+}
+
+func (m *Configs_OTelEndpointConfig) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.URL)
+	if l > 0 {
+		n += 1 + l + sovFuncArgs(uint64(l))
+	}
+	if len(m.Headers) > 0 {
+		for k, v := range m.Headers {
+			_ = k
+			_ = v
+			mapEntrySize := 1 + len(k) + sovFuncArgs(uint64(len(k))) + 1 + len(v) + sovFuncArgs(uint64(len(v)))
+			n += mapEntrySize + 1 + sovFuncArgs(uint64(mapEntrySize))
+		}
+	}
+	return n
+}
+
 func (m *QueryRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -1454,6 +1825,10 @@ func (m *QueryRequest) Size() (n int) {
 			l = e.Size()
 			n += 1 + l + sovFuncArgs(uint64(l))
 		}
+	}
+	if m.Configs != nil {
+		l = m.Configs.Size()
+		n += 1 + l + sovFuncArgs(uint64(l))
 	}
 	return n
 }
@@ -1473,6 +1848,10 @@ func (m *CompileMutationsRequest) Size() (n int) {
 			l = e.Size()
 			n += 1 + l + sovFuncArgs(uint64(l))
 		}
+	}
+	if m.Configs != nil {
+		l = m.Configs.Size()
+		n += 1 + l + sovFuncArgs(uint64(l))
 	}
 	return n
 }
@@ -1612,6 +1991,37 @@ func (this *FuncToExecute_ArgValue) String() string {
 	}, "")
 	return s
 }
+func (this *Configs) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Configs{`,
+		`OTelEndpointConfig:` + strings.Replace(fmt.Sprintf("%v", this.OTelEndpointConfig), "Configs_OTelEndpointConfig", "Configs_OTelEndpointConfig", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Configs_OTelEndpointConfig) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForHeaders := make([]string, 0, len(this.Headers))
+	for k, _ := range this.Headers {
+		keysForHeaders = append(keysForHeaders, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForHeaders)
+	mapStringForHeaders := "map[string]string{"
+	for _, k := range keysForHeaders {
+		mapStringForHeaders += fmt.Sprintf("%v: %v,", k, this.Headers[k])
+	}
+	mapStringForHeaders += "}"
+	s := strings.Join([]string{`&Configs_OTelEndpointConfig{`,
+		`URL:` + fmt.Sprintf("%v", this.URL) + `,`,
+		`Headers:` + mapStringForHeaders + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *QueryRequest) String() string {
 	if this == nil {
 		return "nil"
@@ -1624,6 +2034,7 @@ func (this *QueryRequest) String() string {
 	s := strings.Join([]string{`&QueryRequest{`,
 		`QueryStr:` + fmt.Sprintf("%v", this.QueryStr) + `,`,
 		`ExecFuncs:` + repeatedStringForExecFuncs + `,`,
+		`Configs:` + strings.Replace(this.Configs.String(), "Configs", "Configs", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1640,6 +2051,7 @@ func (this *CompileMutationsRequest) String() string {
 	s := strings.Join([]string{`&CompileMutationsRequest{`,
 		`QueryStr:` + fmt.Sprintf("%v", this.QueryStr) + `,`,
 		`ExecFuncs:` + repeatedStringForExecFuncs + `,`,
+		`Configs:` + strings.Replace(this.Configs.String(), "Configs", "Configs", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1992,6 +2404,301 @@ func (m *FuncToExecute_ArgValue) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+func (m *Configs) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowFuncArgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Configs: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Configs: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OTelEndpointConfig", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowFuncArgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthFuncArgs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthFuncArgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.OTelEndpointConfig == nil {
+				m.OTelEndpointConfig = &Configs_OTelEndpointConfig{}
+			}
+			if err := m.OTelEndpointConfig.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipFuncArgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthFuncArgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Configs_OTelEndpointConfig) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowFuncArgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: OTelEndpointConfig: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: OTelEndpointConfig: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field URL", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowFuncArgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthFuncArgs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthFuncArgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.URL = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Headers", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowFuncArgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthFuncArgs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthFuncArgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Headers == nil {
+				m.Headers = make(map[string]string)
+			}
+			var mapkey string
+			var mapvalue string
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowFuncArgs
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					wire |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					var stringLenmapkey uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowFuncArgs
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapkey |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapkey := int(stringLenmapkey)
+					if intStringLenmapkey < 0 {
+						return ErrInvalidLengthFuncArgs
+					}
+					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey < 0 {
+						return ErrInvalidLengthFuncArgs
+					}
+					if postStringIndexmapkey > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
+					iNdEx = postStringIndexmapkey
+				} else if fieldNum == 2 {
+					var stringLenmapvalue uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowFuncArgs
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapvalue |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapvalue := int(stringLenmapvalue)
+					if intStringLenmapvalue < 0 {
+						return ErrInvalidLengthFuncArgs
+					}
+					postStringIndexmapvalue := iNdEx + intStringLenmapvalue
+					if postStringIndexmapvalue < 0 {
+						return ErrInvalidLengthFuncArgs
+					}
+					if postStringIndexmapvalue > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapvalue = string(dAtA[iNdEx:postStringIndexmapvalue])
+					iNdEx = postStringIndexmapvalue
+				} else {
+					iNdEx = entryPreIndex
+					skippy, err := skipFuncArgs(dAtA[iNdEx:])
+					if err != nil {
+						return err
+					}
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
+						return ErrInvalidLengthFuncArgs
+					}
+					if (iNdEx + skippy) > postIndex {
+						return io.ErrUnexpectedEOF
+					}
+					iNdEx += skippy
+				}
+			}
+			m.Headers[mapkey] = mapvalue
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipFuncArgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthFuncArgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *QueryRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -2084,6 +2791,42 @@ func (m *QueryRequest) Unmarshal(dAtA []byte) error {
 			}
 			m.ExecFuncs = append(m.ExecFuncs, &FuncToExecute{})
 			if err := m.ExecFuncs[len(m.ExecFuncs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Configs", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowFuncArgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthFuncArgs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthFuncArgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Configs == nil {
+				m.Configs = &Configs{}
+			}
+			if err := m.Configs.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -2200,6 +2943,42 @@ func (m *CompileMutationsRequest) Unmarshal(dAtA []byte) error {
 			}
 			m.ExecFuncs = append(m.ExecFuncs, &FuncToExecute{})
 			if err := m.ExecFuncs[len(m.ExecFuncs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Configs", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowFuncArgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthFuncArgs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthFuncArgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Configs == nil {
+				m.Configs = &Configs{}
+			}
+			if err := m.Configs.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

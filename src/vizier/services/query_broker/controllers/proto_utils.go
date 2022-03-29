@@ -132,11 +132,29 @@ func convertExecFuncs(inputFuncs []*vizierpb.ExecuteScriptRequest_FuncToExecute)
 	return funcs
 }
 
+func convertConfigs(config *vizierpb.Configs) *plannerpb.Configs {
+	if config == nil {
+		return nil
+	}
+
+	c := &plannerpb.Configs{}
+
+	if config.OTelEndpointConfig != nil {
+		c.OTelEndpointConfig = &plannerpb.Configs_OTelEndpointConfig{
+			URL:     config.OTelEndpointConfig.URL,
+			Headers: config.OTelEndpointConfig.Headers,
+		}
+	}
+
+	return c
+}
+
 // VizierQueryRequestToPlannerMutationRequest maps request to mutation.
 func VizierQueryRequestToPlannerMutationRequest(vpb *vizierpb.ExecuteScriptRequest) (*plannerpb.CompileMutationsRequest, error) {
 	return &plannerpb.CompileMutationsRequest{
 		QueryStr:  vpb.QueryStr,
 		ExecFuncs: convertExecFuncs(vpb.ExecFuncs),
+		Configs:   convertConfigs(vpb.Configs),
 	}, nil
 }
 
@@ -145,6 +163,7 @@ func VizierQueryRequestToPlannerQueryRequest(vpb *vizierpb.ExecuteScriptRequest)
 	return &plannerpb.QueryRequest{
 		QueryStr:  vpb.QueryStr,
 		ExecFuncs: convertExecFuncs(vpb.ExecFuncs),
+		Configs:   convertConfigs(vpb.Configs),
 	}, nil
 }
 

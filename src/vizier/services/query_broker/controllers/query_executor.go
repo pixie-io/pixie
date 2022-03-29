@@ -274,12 +274,22 @@ func (q *QueryExecutorImpl) compilePlan(ctx context.Context, resultCh chan<- *vi
 		log.WithError(err).Errorf("Failed to get the redaction options")
 		return nil, status.Errorf(codes.Internal, "error setting up the compiler")
 	}
+
+	var otelConfig *distributedpb.OTelEndpointConfig
+	if req.Configs != nil && req.Configs.OTelEndpointConfig != nil {
+		otelConfig = &distributedpb.OTelEndpointConfig{
+			URL:     req.Configs.OTelEndpointConfig.URL,
+			Headers: req.Configs.OTelEndpointConfig.Headers,
+		}
+	}
+
 	plannerState := &distributedpb.LogicalPlannerState{
 		DistributedState:    distributedState,
 		PlanOptions:         planOpts,
 		ResultAddress:       q.resultAddress,
 		ResultSSLTargetName: q.resultSSLTargetName,
 		RedactionOptions:    redactOptions,
+		OTelEndpointConfig:  otelConfig,
 	}
 
 	// Compile the query plan.

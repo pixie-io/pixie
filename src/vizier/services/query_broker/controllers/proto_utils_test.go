@@ -63,6 +63,11 @@ exec_funcs {
 	}
 	output_table_prefix: "table2"
 }
+configs {
+	otel_endpoint_config {
+		url: "https://localhost:8080"
+	}
+}
 `
 
 var executeScriptReqPb = `
@@ -86,6 +91,11 @@ exec_funcs {
 		value: "4"
 	}
 	output_table_prefix: "table2"
+}
+configs {
+	otel_endpoint_config {
+		url: "https://localhost:8080"
+	}
 }
 `
 
