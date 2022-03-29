@@ -75,8 +75,9 @@ void RegisterMathOpsOrDie(udf::Registry* registry) {
       "subtract");
   registry->RegisterOrDie<SubtractUDF<types::Float64Value, types::Int64Value, types::Float64Value>>(
       "subtract");
-  registry->RegisterOrDie<SubtractUDF<types::Int64Value, types::Time64NSValue, types::Int64Value>>(
-      "subtract");
+  registry
+      ->RegisterOrDie<SubtractUDF<types::Time64NSValue, types::Time64NSValue, types::Int64Value>>(
+          "subtract");
   registry
       ->RegisterOrDie<SubtractUDF<types::Int64Value, types::Time64NSValue, types::Time64NSValue>>(
           "subtract");
