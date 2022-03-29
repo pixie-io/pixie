@@ -126,6 +126,20 @@ func mustLoadTestData(db *sqlx.DB) {
 		},
 	}), "http://test-doc-url2", "http://test-export-url2", true)
 	db.MustExec(insertRetentionRelease, "test-plugin", "0.0.3", controllers.Configurations(map[string]string{"license_key3": "This is what we use to authenticate 3"}), nil, "http://test-doc-url3", "http://test-export-url3", true)
+	db.MustExec(insertRetentionRelease, "another-plugin", "0.0.1", controllers.Configurations(map[string]string{"abcd": "Some field"}), controllers.PresetScripts([]*controllers.PresetScript{
+		&controllers.PresetScript{
+			Name:              "dns data",
+			Description:       "This is a script to get dns data",
+			DefaultFrequencyS: 10,
+			Script:            "dns script",
+		},
+		&controllers.PresetScript{
+			Name:              "dns data 2",
+			Description:       "This is a script to get dns data 2",
+			DefaultFrequencyS: 20,
+			Script:            "dns script 2",
+		},
+	}), "http://test-doc-url3", "http://test-export-url3", true)
 
 	orgConfig1 := map[string]string{
 		"license_key2": "12345",
@@ -144,6 +158,7 @@ func mustLoadTestData(db *sqlx.DB) {
 	insertRetentionScript := `INSERT INTO plugin_retention_scripts (org_id, plugin_id, script_id, script_name, description, is_preset,  export_url) VALUES ($1, $2, $3, $4, $5, $6, PGP_SYM_ENCRYPT($7, $8))`
 	db.MustExec(insertRetentionScript, "223e4567-e89b-12d3-a456-426655440000", "test-plugin", "123e4567-e89b-12d3-a456-426655440000", "testScript", "This is a script", false, "https://localhost:8080", "test")
 	db.MustExec(insertRetentionScript, "223e4567-e89b-12d3-a456-426655440000", "test-plugin", "123e4567-e89b-12d3-a456-426655440001", "testScript2", "This is another script", true, "https://url", "test")
+	db.MustExec(insertRetentionScript, "223e4567-e89b-12d3-a456-426655440000", "another-plugin", "123e4567-e89b-12d3-a456-426655440002", "testScript3", "This is another script", true, "https://url", "test")
 }
 
 func TestServer_GetPlugins(t *testing.T) {
@@ -321,12 +336,24 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 		},
 	}
 	mConfig2, _ := yaml.Marshal(&config2)
+	config3 := &scripts.Config{
+		OtelEndpointConfig: &scripts.OtelEndpointConfig{
+			URL: "http://test-export-url3",
+			Headers: map[string]string{
+				"abcd": "hello",
+			},
+		},
+	}
+	mConfig3, _ := yaml.Marshal(&config3)
 
 	tests := []struct {
-		name               string
-		request            *pluginpb.UpdateOrgRetentionPluginConfigRequest
-		expectedOrgConfigs []orgConfig
-		expectedCSRequests []*cronscriptpb.UpdateScriptRequest
+		name                     string
+		request                  *pluginpb.UpdateOrgRetentionPluginConfigRequest
+		expectedOrgConfigs       []orgConfig
+		expectedCSUpdateRequests []*cronscriptpb.UpdateScriptRequest
+		expectedCSCreateRequests []*cronscriptpb.CreateScriptRequest
+		expectedCSDeleteRequests []*cronscriptpb.DeleteScriptRequest
+		expectedPluginScripts    []*controllers.RetentionScript
 	}{
 		{
 			name: "enabling new config",
@@ -365,6 +392,36 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					},
 				},
 			},
+			expectedCSCreateRequests: []*cronscriptpb.CreateScriptRequest{
+				&cronscriptpb.CreateScriptRequest{
+					Script:     "dns script",
+					ClusterIDs: make([]*uuidpb.UUID, 0),
+					Configs:    string(mConfig3),
+					FrequencyS: 10,
+				},
+				&cronscriptpb.CreateScriptRequest{
+					Script:     "dns script 2",
+					ClusterIDs: make([]*uuidpb.UUID, 0),
+					Configs:    string(mConfig3),
+					FrequencyS: 20,
+				},
+			},
+			expectedPluginScripts: []*controllers.RetentionScript{
+				&controllers.RetentionScript{
+					ScriptName:  "dns data",
+					Description: "This is a script to get dns data",
+					IsPreset:    true,
+					PluginID:    "another-plugin",
+					ExportURL:   "",
+				},
+				&controllers.RetentionScript{
+					ScriptName:  "dns data 2",
+					Description: "This is a script to get dns data 2",
+					IsPreset:    true,
+					PluginID:    "another-plugin",
+					ExportURL:   "",
+				},
+			},
 		},
 		{
 			name: "deleting config",
@@ -381,6 +438,14 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					Configurations: map[string]string{
 						"license_key3": "hello",
 					},
+				},
+			},
+			expectedCSDeleteRequests: []*cronscriptpb.DeleteScriptRequest{
+				&cronscriptpb.DeleteScriptRequest{
+					ID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+				},
+				&cronscriptpb.DeleteScriptRequest{
+					ID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 				},
 			},
 		},
@@ -411,7 +476,7 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					},
 				},
 			},
-			expectedCSRequests: []*cronscriptpb.UpdateScriptRequest{
+			expectedCSUpdateRequests: []*cronscriptpb.UpdateScriptRequest{
 				&cronscriptpb.UpdateScriptRequest{
 					ScriptId: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
 					Configs: &types.StringValue{
@@ -497,6 +562,18 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 				return &cronscriptpb.UpdateScriptResponse{}, nil
 			}).AnyTimes()
 
+			createReqs := make([]*cronscriptpb.CreateScriptRequest, 0)
+			mockCSClient.EXPECT().CreateScript(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, req *cronscriptpb.CreateScriptRequest) (*cronscriptpb.CreateScriptResponse, error) {
+				createReqs = append(createReqs, req)
+				return &cronscriptpb.CreateScriptResponse{ID: utils.ProtoFromUUID(uuid.Must(uuid.NewV4()))}, nil
+			}).AnyTimes()
+
+			delReqs := make([]*cronscriptpb.DeleteScriptRequest, 0)
+			mockCSClient.EXPECT().DeleteScript(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, req *cronscriptpb.DeleteScriptRequest) (*cronscriptpb.DeleteScriptResponse, error) {
+				delReqs = append(delReqs, req)
+				return &cronscriptpb.DeleteScriptResponse{}, nil
+			}).AnyTimes()
+
 			s := controllers.New(db, "test", mockCSClient)
 			resp, err := s.UpdateOrgRetentionPluginConfig(context.Background(), test.request)
 
@@ -526,8 +603,33 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 			}
 
 			assert.ElementsMatch(t, test.expectedOrgConfigs, plugins)
-			if test.expectedCSRequests != nil {
-				assert.ElementsMatch(t, test.expectedCSRequests, updateReqs)
+			if test.expectedCSUpdateRequests != nil {
+				assert.ElementsMatch(t, test.expectedCSUpdateRequests, updateReqs)
+			}
+			if test.expectedCSCreateRequests != nil {
+				assert.ElementsMatch(t, test.expectedCSCreateRequests, createReqs)
+			}
+			if test.expectedCSDeleteRequests != nil {
+				assert.ElementsMatch(t, test.expectedCSDeleteRequests, delReqs)
+			}
+
+			if test.expectedPluginScripts != nil {
+				query = `SELECT script_name, description, is_preset, plugin_id, PGP_SYM_DECRYPT(export_url, $1::text) as export_url from plugin_retention_scripts WHERE org_id=$2 AND plugin_id=$3`
+				rows, err := db.Queryx(query, "test", utils.UUIDFromProtoOrNil(test.request.OrgID), test.request.PluginID)
+				require.Nil(t, err)
+				defer rows.Close()
+
+				rs := make([]*controllers.RetentionScript, 0)
+				for rows.Next() {
+					var script controllers.RetentionScript
+					err = rows.StructScan(&script)
+					require.Nil(t, err)
+					script.ScriptID = utils.UUIDFromProtoOrNil(nil)
+
+					rs = append(rs, &script)
+				}
+
+				assert.ElementsMatch(t, test.expectedPluginScripts, rs)
 			}
 		})
 	}
