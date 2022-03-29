@@ -29,7 +29,9 @@
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/caching_symbolizer.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/elf_symbolizer.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/java_symbolizer.h"
+#include "src/stirling/testing/common.h"
 #include "src/stirling/testing/symbolization.h"
+#include "src/stirling/utils/proc_tracker.h"
 
 namespace test {
 // foo() & bar() are not used directly, but in this test,
@@ -45,6 +47,17 @@ namespace px {
 namespace stirling {
 
 using ::px::testing::BazelBinTestFilePath;
+
+// Returns a string as the flag value for the --stirling_profiler_java_agent_libs.
+std::string GetAgentLibsFlagValue() {
+  using fs_path = std::filesystem::path;
+  const fs_path agent_path_pfx = "src/stirling/source_connectors/perf_profiler/java/agent";
+  const fs_path glibc_lib_sfx = "build-glibc/lib-px-java-agent-glibc.so";
+  const fs_path musl_lib_sfx = "build-musl/lib-px-java-agent-musl.so";
+  const std::string glibc_agent = BazelBinTestFilePath(agent_path_pfx / glibc_lib_sfx).string();
+  const std::string musl_agent = BazelBinTestFilePath(agent_path_pfx / musl_lib_sfx).string();
+  return absl::StrJoin({glibc_agent, musl_agent}, ",");
+}
 
 template <typename TSymbolizer>
 class SymbolizerTest : public ::testing::Test {
@@ -84,6 +97,7 @@ TEST_F(BCCSymbolizerTest, KernelSymbols) {
 }
 
 TEST_F(BCCSymbolizerTest, JavaSymbols) {
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValue());
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<Symbolizer> symbolizer,
                        JavaSymbolizer::Create(std::move(symbolizer_)));
 
@@ -264,6 +278,28 @@ TEST_F(BCCSymbolizerTest, Caching) {
     EXPECT_EQ(symbolizer.stat_hits(), 7);
     EXPECT_EQ(symbolizer.GetNumberOfSymbolsCached(), 4);
   }
+}
+
+// Test requesting symbolizer function for Java process results into the upid being put into a
+// global set.
+TEST_F(BCCSymbolizerTest, JavaProcessBeingTracked) {
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValue());
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<Symbolizer> symbolizer,
+                       JavaSymbolizer::Create(std::move(symbolizer_)));
+
+  SubProcess fake_java_proc;
+  const std::filesystem::path fake_java_bin_path =
+      BazelBinTestFilePath("src/stirling/source_connectors/perf_profiler/testing/java/java");
+  ASSERT_TRUE(fs::Exists(fake_java_bin_path));
+  ASSERT_OK(fake_java_proc.Start({fake_java_bin_path}));
+  const uint32_t child_pid = fake_java_proc.child_pid();
+
+  system::ProcParser parser(system::Config::GetInstance());
+  ASSERT_OK_AND_ASSIGN(const uint64_t start_time_ns, parser.GetPIDStartTimeTicks(child_pid));
+
+  const struct upid_t child_upid = {{child_pid}, start_time_ns};
+  symbolizer->GetSymbolizerFn(child_upid);
+  EXPECT_TRUE(JavaProfilingProcTracker::GetSingleton()->upids().contains(child_upid));
 }
 
 }  // namespace stirling

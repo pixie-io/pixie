@@ -27,6 +27,7 @@
 #include "src/stirling/source_connectors/perf_profiler/shared/symbolization.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/java_symbolizer.h"
 #include "src/stirling/utils/detect_application.h"
+#include "src/stirling/utils/proc_tracker.h"
 
 namespace {
 char const* const kLibsHelpMessage = "Comma separated list of Java symbolization agent lib files.";
@@ -360,6 +361,7 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
   const auto [iter, inserted] = active_attachers_.try_emplace(upid, nullptr);
   DCHECK(inserted);
   if (inserted) {
+    JavaProfilingProcTracker::GetSingleton()->Add(upid);
     iter->second = std::make_unique<java::AgentAttacher>(upid, agent_libs_);
   }
 

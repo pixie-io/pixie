@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
-load("//src/stirling/source_connectors/perf_profiler/java/agent:agent_libs.bzl", "agent_libs", "agent_libs_arg")
+load("//src/stirling/source_connectors/perf_profiler/java/agent:agent_libs.bzl", "agent_libs")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -34,15 +34,13 @@ pl_cc_library(
         "//src/stirling/source_connectors/perf_profiler/java/agent:cc_headers",
         "//src/stirling/source_connectors/perf_profiler/shared:cc_library",
         "//src/stirling/source_connectors/perf_profiler/symbol_cache:cc_library",
+        "//src/stirling/utils:cc_library",
     ],
 )
 
 pl_cc_test(
     name = "symbolizer_test",
     srcs = ["symbolizer_test.cc"],
-    args = [
-        "-stirling_profiler_java_agent_libs %s" % agent_libs_arg,
-    ],
     data = ["//src/stirling/source_connectors/perf_profiler/testing/java:java"] + agent_libs,
     tags = [
         "requires_root",
