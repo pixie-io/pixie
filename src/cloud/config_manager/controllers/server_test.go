@@ -35,6 +35,15 @@ func TestAddDefaultTableStoreSizeMB_Basic(t *testing.T) {
 	assert.Equal(t, "1228", pemFlags["PL_TABLE_STORE_DATA_LIMIT_MB"])
 }
 
+func TestAddDefaultTableStoreSizeMB_Empty(t *testing.T) {
+	memory := ""
+	pemFlags := make(map[string]string)
+
+	controllers.AddDefaultTableStoreSize(memory, pemFlags)
+	assert.Equal(t, 1, len(pemFlags))
+	assert.Equal(t, "1228", pemFlags["PL_TABLE_STORE_DATA_LIMIT_MB"])
+}
+
 func TestAddDefaultTableStoreSize_AlreadyPresent(t *testing.T) {
 	memory := "2Gi"
 	pemFlags := map[string]string{

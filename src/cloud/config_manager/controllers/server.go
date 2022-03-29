@@ -104,9 +104,10 @@ func (s *Server) getOrgIDForDeployKey(deployKey string) (uuid.UUID, error) {
 }
 
 const (
-	bytesPerMiB                 = 1024 * 1024
-	defaultTableStorePercentage = 0.6
-	tableStoreSizePEMFlag       = "PL_TABLE_STORE_DATA_LIMIT_MB"
+	bytesPerMiB                     = 1024 * 1024
+	defaultTableStorePercentage     = 0.6
+	defaultUncappedTableStoreSizeMB = 1228
+	tableStoreSizePEMFlag           = "PL_TABLE_STORE_DATA_LIMIT_MB"
 )
 
 // AddDefaultTableStoreSize computes and (if not already provided) adds the PEM flag for table store size.
@@ -115,12 +116,17 @@ func AddDefaultTableStoreSize(pemMemoryLimit string, customPEMFlags map[string]s
 	if _, ok := customPEMFlags[tableStoreSizePEMFlag]; ok {
 		return
 	}
-	pemMemorySizeBytes := resource.MustParse(pemMemoryLimit)
-	defaultTableStoreSizeBytes := defaultTableStorePercentage * float64(pemMemorySizeBytes.Value())
-	defaultTableStoreSizeMB := int(math.Floor(defaultTableStoreSizeBytes / bytesPerMiB))
-	if defaultTableStoreSizeMB == 0 {
-		log.Errorf("Default table store size must be nonzero, received total memory of %s", pemMemoryLimit)
-		return
+	var defaultTableStoreSizeMB int
+	if pemMemoryLimit == "" {
+		defaultTableStoreSizeMB = defaultUncappedTableStoreSizeMB
+	} else {
+		pemMemorySizeBytes := resource.MustParse(pemMemoryLimit)
+		defaultTableStoreSizeBytes := defaultTableStorePercentage * float64(pemMemorySizeBytes.Value())
+		defaultTableStoreSizeMB = int(math.Floor(defaultTableStoreSizeBytes / bytesPerMiB))
+		if defaultTableStoreSizeMB == 0 {
+			log.Errorf("Default table store size must be nonzero, received total memory of %s", pemMemoryLimit)
+			return
+		}
 	}
 	customPEMFlags[tableStoreSizePEMFlag] = strconv.Itoa(defaultTableStoreSizeMB)
 }
