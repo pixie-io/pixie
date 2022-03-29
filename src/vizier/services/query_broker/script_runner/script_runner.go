@@ -31,6 +31,7 @@ import (
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
+	"gopkg.in/yaml.v2"
 
 	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/shared/cvmsgs"
@@ -396,6 +397,7 @@ func (s *ScriptRunner) natsReplyAndResponse(req *cvmsgspb.V2CMessage, requestTop
 // Logic for "runners" which handle the script execution.
 type runner struct {
 	cronScript *cvmsgspb.CronScript
+	config     *scripts.Config
 
 	vzClient   vizierpb.VizierServiceClient
 	signingKey string
@@ -405,8 +407,15 @@ type runner struct {
 }
 
 func newRunner(script *cvmsgspb.CronScript, vzClient vizierpb.VizierServiceClient, signingKey string) *runner {
+	// Parse config YAML into struct.
+	var config scripts.Config
+	err := yaml.Unmarshal([]byte(script.Configs), &config)
+	if err != nil {
+		log.WithError(err).Error("Failed to parse config YAML")
+	}
+
 	return &runner{
-		cronScript: script, done: make(chan struct{}), vzClient: vzClient, signingKey: signingKey,
+		cronScript: script, done: make(chan struct{}), vzClient: vzClient, signingKey: signingKey, config: &config,
 	}
 }
 
@@ -427,9 +436,20 @@ func (r *runner) start() {
 				ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
 					fmt.Sprintf("bearer %s", token))
 
+				var otelEndpoint *vizierpb.Configs_OTelEndpointConfig
+				if r.config != nil && r.config.OtelEndpointConfig != nil {
+					otelEndpoint = &vizierpb.Configs_OTelEndpointConfig{
+						URL:     r.config.OtelEndpointConfig.URL,
+						Headers: r.config.OtelEndpointConfig.Headers,
+					}
+				}
+
 				// TODO(michelle): We may want to monitor the stream to ensure the script runs successfully.
 				_, err := r.vzClient.ExecuteScript(ctx, &vizierpb.ExecuteScriptRequest{
 					QueryStr: r.cronScript.Script,
+					Configs: &vizierpb.Configs{
+						OTelEndpointConfig: otelEndpoint,
+					},
 				})
 				if err != nil {
 					log.WithError(err).Error("Failed to execute cronscript")

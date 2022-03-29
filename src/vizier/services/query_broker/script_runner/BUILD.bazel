@@ -35,6 +35,7 @@ go_library(
         "@com_github_gogo_protobuf//types",
         "@com_github_nats_io_nats_go//:nats_go",
         "@com_github_sirupsen_logrus//:logrus",
+        "@in_gopkg_yaml_v2//:yaml_v2",
         "@org_golang_google_grpc//metadata",
     ],
 )

@@ -318,6 +318,20 @@ message ExecuteScriptRequest {
   // a resume request for an already existing query.
   string query_id = 7 [(gogoproto.customname) = "QueryID"];
   reserved 2;
+  // Configs specifies extra configuration to be given to the compiler.
+  Configs configs = 9;
+}
+
+// Configs specifies extra configuration to be given to the compiler. For example,
+// endpoint information that should be used across all OTel exports.
+message Configs {
+  // OTelEndpointConfig contains information about which OTelEndpoint + headers should be attached
+  // to all OTel export calls in the script.
+  message OTelEndpointConfig {
+    string url = 1 [(gogoproto.customname) = "URL"];
+    map<string, string> headers = 2;
+  }
+  OTelEndpointConfig otel_endpoint_config = 1 [(gogoproto.customname) = "OTelEndpointConfig"];
 }
 
 // Tracks information about query execution time.

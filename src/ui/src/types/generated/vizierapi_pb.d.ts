@@ -454,6 +454,11 @@ export class ExecuteScriptRequest extends jspb.Message {
   getQueryId(): string;
   setQueryId(value: string): ExecuteScriptRequest;
 
+  getConfigs(): Configs | undefined;
+  setConfigs(value?: Configs): ExecuteScriptRequest;
+  hasConfigs(): boolean;
+  clearConfigs(): ExecuteScriptRequest;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): ExecuteScriptRequest.AsObject;
   static toObject(includeInstance: boolean, msg: ExecuteScriptRequest): ExecuteScriptRequest.AsObject;
@@ -470,6 +475,7 @@ export namespace ExecuteScriptRequest {
     mutation: boolean,
     encryptionOptions?: ExecuteScriptRequest.EncryptionOptions.AsObject,
     queryId: string,
+    configs?: Configs.AsObject,
   }
 
   export class FuncToExecute extends jspb.Message {
@@ -551,6 +557,49 @@ export namespace ExecuteScriptRequest {
       keyAlg: string,
       contentAlg: string,
       compressionAlg: string,
+    }
+  }
+
+}
+
+export class Configs extends jspb.Message {
+  getOtelEndpointConfig(): Configs.OTelEndpointConfig | undefined;
+  setOtelEndpointConfig(value?: Configs.OTelEndpointConfig): Configs;
+  hasOtelEndpointConfig(): boolean;
+  clearOtelEndpointConfig(): Configs;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): Configs.AsObject;
+  static toObject(includeInstance: boolean, msg: Configs): Configs.AsObject;
+  static serializeBinaryToWriter(message: Configs, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): Configs;
+  static deserializeBinaryFromReader(message: Configs, reader: jspb.BinaryReader): Configs;
+}
+
+export namespace Configs {
+  export type AsObject = {
+    otelEndpointConfig?: Configs.OTelEndpointConfig.AsObject,
+  }
+
+  export class OTelEndpointConfig extends jspb.Message {
+    getUrl(): string;
+    setUrl(value: string): OTelEndpointConfig;
+
+    getHeadersMap(): jspb.Map<string, string>;
+    clearHeadersMap(): OTelEndpointConfig;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): OTelEndpointConfig.AsObject;
+    static toObject(includeInstance: boolean, msg: OTelEndpointConfig): OTelEndpointConfig.AsObject;
+    static serializeBinaryToWriter(message: OTelEndpointConfig, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): OTelEndpointConfig;
+    static deserializeBinaryFromReader(message: OTelEndpointConfig, reader: jspb.BinaryReader): OTelEndpointConfig;
+  }
+
+  export namespace OTelEndpointConfig {
+    export type AsObject = {
+      url: string,
+      headersMap: Array<[string, string]>,
     }
   }
 
