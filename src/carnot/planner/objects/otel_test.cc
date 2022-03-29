@@ -114,7 +114,7 @@ otel.Data(
          table_store::schema::Relation{
              {types::TIME64NS, types::STRING, types::STRING, types::INT64},
              {"time_", "service", "young", "young_gc_time"},
-             {types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_DURATION_NS},
+             {types::ST_NONE, types::ST_SERVICE_NAME, types::ST_NONE, types::ST_DURATION_NS},
          },
          R"pb(
 op_type: OTEL_EXPORT_SINK_OPERATOR
@@ -132,6 +132,7 @@ otel_sink_op {
       column {
         column_type: STRING
         column_index: 1
+        can_be_json_encoded_array: true
       }
     }
   }
@@ -172,7 +173,7 @@ otel.Data(
          table_store::schema::Relation{
              {types::STRING, types::TIME64NS, types::INT64},
              {"service", "time_", "young_gc_time"},
-             {types::ST_NONE, types::ST_NONE, types::ST_DURATION_NS},
+             {types::ST_SERVICE_NAME, types::ST_NONE, types::ST_DURATION_NS},
          },
          R"pb(
 op_type: OTEL_EXPORT_SINK_OPERATOR
@@ -186,6 +187,7 @@ otel_sink_op {
       column {
         column_type: STRING
         column_index: 0
+        can_be_json_encoded_array: true
       }
     }
   }
@@ -226,8 +228,8 @@ otel.Data(
              {types::TIME64NS, types::STRING, types::STRING, types::INT64, types::FLOAT64,
               types::FLOAT64, types::FLOAT64},
              {"time_", "service", "status", "count", "sum", "p50", "p99"},
-             {types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE,
-              types::ST_DURATION_NS, types::ST_DURATION_NS}},
+             {types::ST_NONE, types::ST_SERVICE_NAME, types::ST_NONE, types::ST_NONE,
+              types::ST_NONE, types::ST_DURATION_NS, types::ST_DURATION_NS}},
          R"pb(
 op_type: OTEL_EXPORT_SINK_OPERATOR
 otel_sink_op {
@@ -240,6 +242,7 @@ otel_sink_op {
       column {
         column_type: STRING
         column_index: 1
+        can_be_json_encoded_array: true
       }
     }
   }
@@ -295,8 +298,8 @@ otel.Data(
              {types::TIME64NS, types::STRING, types::STRING, types::STRING, types::INT64,
               types::INT64},
              {"time_", "service", "young", "full", "young_gc_time", "full_gc_time"},
-             {types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_DURATION_NS,
-              types::ST_DURATION_NS},
+             {types::ST_NONE, types::ST_SERVICE_NAME, types::ST_NONE, types::ST_NONE,
+              types::ST_DURATION_NS, types::ST_DURATION_NS},
          },
          R"pb(
 op_type: OTEL_EXPORT_SINK_OPERATOR
@@ -310,6 +313,7 @@ otel_sink_op {
       column {
         column_type: STRING
         column_index: 1
+        can_be_json_encoded_array: true
       }
     }
   }
@@ -365,7 +369,7 @@ otel.Data(
          table_store::schema::Relation{
              {types::TIME64NS, types::TIME64NS, types::STRING, types::STRING},
              {"start_time", "end_time", "service", "young"},
-             {types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE},
+             {types::ST_NONE, types::ST_NONE, types::ST_SERVICE_NAME, types::ST_NONE},
          },
          R"pb(
 op_type: OTEL_EXPORT_SINK_OPERATOR
@@ -379,6 +383,7 @@ otel_sink_op {
       column {
         column_type: STRING
         column_index: 2
+        can_be_json_encoded_array: true
       }
     }
   }
@@ -399,7 +404,7 @@ otel_sink_op {
   }
 })pb"},
 
-        {"Span_name_column",
+        {"span_name_column",
          R"pxl(
 otel.Data(
   endpoint=otel.Endpoint(
@@ -424,8 +429,8 @@ otel.Data(
               types::STRING, types::STRING, types::STRING},
              {"start_time", "end_time", "service", "young", "span_name", "trace_id", "span_id",
               "parent_span_id"},
-             {types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE,
-              types::ST_NONE, types::ST_NONE, types::ST_NONE},
+             {types::ST_NONE, types::ST_NONE, types::ST_SERVICE_NAME, types::ST_NONE,
+              types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE},
          },
          R"pb(
 op_type: OTEL_EXPORT_SINK_OPERATOR
@@ -439,6 +444,7 @@ otel_sink_op {
       column {
         column_type: STRING
         column_index: 2
+        can_be_json_encoded_array: true
       }
     }
   }

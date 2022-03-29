@@ -53,14 +53,19 @@ struct OTelAttribute {
     attribute->set_name(name);
     auto column_pb = attribute->mutable_column();
 
-    auto column_type = column_reference->EvaluatedDataType();
-    if (column_type != types::STRING) {
+    auto column_type = column_reference->resolved_value_type();
+    DCHECK(column_type);
+    if (column_type->data_type() != types::STRING) {
       return column_reference->CreateIRNodeError(
           "Expected attribute column '$0' to be STRING, received $1", column_reference->col_name(),
-          types::ToString(column_type));
+          types::ToString(column_type->data_type()));
     }
 
-    column_pb->set_column_type(column_type);
+    if (column_type->semantic_type() == types::ST_SERVICE_NAME) {
+      column_pb->set_can_be_json_encoded_array(true);
+    }
+
+    column_pb->set_column_type(column_type->data_type());
     PL_ASSIGN_OR_RETURN(auto index, column_reference->GetColumnIndex());
     column_pb->set_column_index(index);
     return Status::OK();

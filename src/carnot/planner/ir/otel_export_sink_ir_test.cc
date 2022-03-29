@@ -128,7 +128,7 @@ INSTANTIATE_TEST_SUITE_P(
             table_store::schema::Relation{
                 {types::TIME64NS, types::STRING, types::STRING, types::FLOAT64},
                 {"time_", "service", "req_method", "latency_ns"},
-                {types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_DURATION_NS}},
+                {types::ST_NONE, types::ST_SERVICE_NAME, types::ST_NONE, types::ST_DURATION_NS}},
             R"pb(
             endpoint_config {
               url: "otlp.px.dev",
@@ -143,6 +143,7 @@ INSTANTIATE_TEST_SUITE_P(
                 column {
                   column_type: STRING
                   column_index: 1
+                  can_be_json_encoded_array: true
                 }
               }
             }
