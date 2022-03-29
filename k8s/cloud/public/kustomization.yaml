@@ -23,6 +23,7 @@ resources:
 - ../base
 - ../base/ory_auth
 - ../overlays/exposed_services_ilb
+- plugin_db_updater_job.yaml
 patchesStrategicMerge:
 - artifact_tracker_versions.yaml
 - domain_config.yaml

@@ -60,7 +60,7 @@ type PresetScripts []*PresetScript
 type PresetScript struct {
 	Name              string `json:"name"`
 	Description       string `json:"description"`
-	DefaultFrequencyS int64  `json:"default_frequency_s"`
+	DefaultFrequencyS int64  `json:"default_frequency_s" yaml:"defaultFrequencyS"`
 	Script            string `json:"script"`
 }
 

@@ -88,7 +88,7 @@ type Plugin struct {
 	Description          *string `db:"description"`
 	Logo                 *string `db:"logo"`
 	Version              string  `db:"version"`
-	DataRetentionEnabled bool    `db:"data_retention_enabled"`
+	DataRetentionEnabled bool    `db:"data_retention_enabled" yaml:"dataRetentionEnabled"`
 }
 
 // GetPlugins fetches all of the available, latest plugins.
@@ -139,10 +139,10 @@ type RetentionPlugin struct {
 	ID                   string         `db:"plugin_id"`
 	Version              string         `db:"version"`
 	Configurations       Configurations `db:"configurations"`
-	DocumentationURL     *string        `db:"documentation_url"`
-	DefaultExportURL     *string        `db:"default_export_url"`
-	AllowCustomExportURL bool           `db:"allow_custom_export_url"`
-	PresetScripts        PresetScripts  `db:"preset_scripts"`
+	DocumentationURL     *string        `db:"documentation_url" yaml:"documentationURL"`
+	DefaultExportURL     *string        `db:"default_export_url" yaml:"defaultExportURL"`
+	AllowCustomExportURL bool           `db:"allow_custom_export_url" yaml:"allowCustomExportURL"`
+	PresetScripts        PresetScripts  `db:"preset_scripts" yaml:"presetScripts"`
 }
 
 // GetRetentionPluginConfig gets the config for a specific plugin release.
