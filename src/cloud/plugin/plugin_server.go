@@ -91,6 +91,7 @@ func main() {
 	c := controllers.New(db, dbKey, csClient)
 
 	pluginpb.RegisterPluginServiceServer(s.GRPCServer(), c)
+	pluginpb.RegisterDataRetentionPluginServiceServer(s.GRPCServer(), c)
 
 	s.Start()
 	s.StopOnInterrupt()

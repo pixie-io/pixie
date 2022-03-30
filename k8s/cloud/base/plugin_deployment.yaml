@@ -60,7 +60,7 @@ spec:
             secretKeyRef:
               name: pl-db-secrets
               key: database-key
-        - name: PL_PLUGIN_SERVICE
+        - name: PL_CRON_SCRIPT_SERVICE
           valueFrom:
             configMapKeyRef:
               name: pl-service-config
