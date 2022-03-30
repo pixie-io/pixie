@@ -131,8 +131,19 @@ Status Remove(const std::filesystem::path& path) {
 }
 
 Status RemoveAll(const std::filesystem::path& path) {
-  WRAP_BOOL_FN(std::filesystem::remove_all(path, ec));
-  return error::InvalidArgument("Could not delete $0 [ec=$1]", path.string(), ec.message());
+  std::error_code ec;
+  // Apparently, remove_all() uses -1 but in an unsigned type to indicate an error.
+  // https://en.cppreference.com/w/cpp/filesystem/remove
+  constexpr std::uintmax_t kErrorCode = static_cast<std::uintmax_t>(-1);
+  constexpr std::uintmax_t kNothingRemoved = static_cast<std::uintmax_t>(0);
+  const std::uintmax_t r = std::filesystem::remove_all(path, ec);
+  if (r == kErrorCode) {
+    return error::InvalidArgument("Could not delete $0 [ec=$1]", path.string(), ec.message());
+  }
+  if (r == kNothingRemoved) {
+    return error::InvalidArgument("No such path $0 [ec=$1]", path.string(), ec.message());
+  }
+  return Status::OK();
 }
 
 Status Chown(const std::filesystem::path& path, const uid_t uid, const gid_t gid) {

@@ -46,10 +46,10 @@ void JavaSymbolizationContext::RemoveArtifacts() const {
     // created inside of the target container mount namespace.
     const auto& sysconfig = system::Config::GetInstance();
     const std::filesystem::path host_artifacts_path = sysconfig.ToHostPath(host_artifacts_path_);
-    const Status remove_status = fs::RemoveAll(host_artifacts_path);
-    if (!remove_status.ok()) {
-      char const* const fmt = "Could not remove host artifacts path: $0, $1.";
-      LOG(WARNING) << absl::Substitute(fmt, host_artifacts_path_.string(), remove_status.msg());
+    if (fs::Exists(host_artifacts_path)) {
+      const Status s = fs::RemoveAll(host_artifacts_path);
+      char const* const warn = "Could not remove host artifacts path: $0, $1.";
+      LOG_IF(WARNING, !s.ok()) << absl::Substitute(warn, host_artifacts_path_.string(), s.msg());
     }
   }
 }
