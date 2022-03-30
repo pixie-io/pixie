@@ -53,7 +53,7 @@ const (
 	msgBackoffInitialInterval = 5 * time.Second
 	msgBackoffMultiplier      = 2
 	msgBackoffMaxElapsedTime  = 3 * time.Minute
-	natsWaitTimeout           = 2 * time.Minute
+	natsWaitTimeout           = 10 * time.Second
 )
 
 // HandleNATSMessageFunc is the signature for a NATS message handler.
