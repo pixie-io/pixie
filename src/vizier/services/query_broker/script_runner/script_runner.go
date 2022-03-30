@@ -130,15 +130,15 @@ func (s *ScriptRunner) SyncScripts() error {
 		cloudScripts, err := s.getCloudScripts()
 		if err != nil {
 			log.WithError(err).Error("Failed to fetch scripts from cloud")
-			return err
+		} else {
+			// Clear out persisted scripts.
+			_, err = s.csClient.SetScripts(ctx, &metadatapb.SetScriptsRequest{Scripts: make(map[string]*cvmsgspb.CronScript)})
+			if err != nil {
+				log.WithError(err).Error("Failed to delete scripts from store")
+				return err
+			}
+			scripts = cloudScripts
 		}
-		// Clear out persisted scripts.
-		_, err = s.csClient.SetScripts(ctx, &metadatapb.SetScriptsRequest{Scripts: make(map[string]*cvmsgspb.CronScript)})
-		if err != nil {
-			log.WithError(err).Error("Failed to delete scripts from store")
-			return err
-		}
-		scripts = cloudScripts
 	}
 
 	// Add runners.
