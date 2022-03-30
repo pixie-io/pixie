@@ -182,16 +182,16 @@ func (s *ScriptRunner) processUpdates() {
 				if v, ok := s.scriptLastUpdateTime[sID]; ok {
 					time = v
 				}
-				if time >= resp.Timestamp { // Update is older than last processed update.
-					continue
+
+				if time < resp.Timestamp {
+					err := s.upsertScript(sID, uResp.Script)
+					if err != nil {
+						log.WithError(err).Error("Failed to upsert script")
+					}
+					s.scriptLastUpdateTime[sID] = resp.Timestamp
 				}
-				s.scriptLastUpdateTime[sID] = resp.Timestamp
 				s.updateTimeMu.Unlock()
 
-				err := s.upsertScript(sID, uResp.Script)
-				if err != nil {
-					log.WithError(err).Error("Failed to upsert script")
-				}
 				// Send response.
 				r := &cvmsgspb.RegisterOrUpdateCronScriptResponse{}
 				reqAnyMsg, err := types.MarshalAny(r)
@@ -222,16 +222,16 @@ func (s *ScriptRunner) processUpdates() {
 				if v, ok := s.scriptLastUpdateTime[sID]; ok {
 					time = v
 				}
-				if time >= resp.Timestamp { // Update is older than last processed update.
-					continue
+
+				if time < resp.Timestamp { // Update is newer than last processed update.
+					err := s.deleteScript(sID)
+					if err != nil {
+						log.WithError(err).Error("Failed to delete script")
+					}
+					s.scriptLastUpdateTime[sID] = resp.Timestamp
 				}
-				s.scriptLastUpdateTime[sID] = resp.Timestamp
 				s.updateTimeMu.Unlock()
 
-				err := s.deleteScript(sID)
-				if err != nil {
-					log.WithError(err).Error("Failed to delete script")
-				}
 				// Send response.
 				r := &cvmsgspb.DeleteCronScriptResponse{}
 				reqAnyMsg, err := types.MarshalAny(r)

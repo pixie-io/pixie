@@ -616,7 +616,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 							},
 						},
 					},
-					RequestID: "2",
+					RequestID: "5",
 					Timestamp: 2,
 				},
 			},
