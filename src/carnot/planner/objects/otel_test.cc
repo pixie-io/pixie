@@ -57,6 +57,9 @@ class OTelExportTest : public QLObjectTest {
     auto df = Dataframe::Create(src, ast_visitor.get()).ConsumeValueOrDie();
     var_table->Add("df", df);
     PL_ASSIGN_OR_RETURN(auto sp, ParseExpression(otel_export_expression));
+    if (!Exporter::IsExporter(sp)) {
+      return error::InvalidArgument("Expected exporter, received $0", sp->name());
+    }
     auto exporter = static_cast<Exporter*>(sp.get());
     PL_RETURN_IF_ERROR(exporter->Export(ast, df.get()));
     auto child = src->Children();
@@ -482,10 +485,11 @@ TEST_P(OTelErrorTests, parse_expression_for_error) {
               HasCompilerError(tc.regex_error));
 }
 
-INSTANTIATE_TEST_SUITE_P(OTelErrorSuite, OTelErrorTests,
-                         ::testing::ValuesIn(std::vector<ErrorTestCase>{
-                             {"endpoint_not_specified",
-                              R"pxl(
+INSTANTIATE_TEST_SUITE_P(
+    OTelErrorSuite, OTelErrorTests,
+    ::testing::ValuesIn(std::vector<ErrorTestCase>{
+        {"endpoint_not_specified",
+         R"pxl(
 otel.Data(
   resource={
       'service.name' : df.service,
@@ -497,26 +501,26 @@ otel.Data(
     )
   ]
 ))pxl",
-                              "no default config found for endpoint, please specify one"},
-                             // TODO(philkuz) address the issue where column references can be
-                             // interchangably used despite the different parents they reference.
-                             //                              {"wrong_parent_column",
-                             //                               R"pxl(
-                             // otel.Data(
-                             //   endpoint=otel.Endpoint(url='0.0.0.0:55690'),
-                             //   resource={
-                             //       'service.name' : df.service,
-                             //   },
-                             //   data=[
-                             //     otelmetric.Gauge(
-                             //       name='gc',
-                             //       value=df2.young_gc_time,
-                             //     )
-                             //   ]
-                             // ))pxl",
-                             //                               "Wrong parent column"},
-                             {"test_missing_service_name_resource",
-                              R"pxl(
+         "no default config found for endpoint, please specify one"},
+        // TODO(philkuz) address the issue where column references can be
+        // interchangably used despite the different parents they reference.
+        //                              {"wrong_parent_column",
+        //                               R"pxl(
+        // otel.Data(
+        //   endpoint=otel.Endpoint(url='0.0.0.0:55690'),
+        //   resource={
+        //       'service.name' : df.service,
+        //   },
+        //   data=[
+        //     otelmetric.Gauge(
+        //       name='gc',
+        //       value=df2.young_gc_time,
+        //     )
+        //   ]
+        // ))pxl",
+        //                               "Wrong parent column"},
+        {"test_missing_service_name_resource",
+         R"pxl(
 otel.Data(
   endpoint=otel.Endpoint(url='0.0.0.0:55690'),
   resource={ },
@@ -527,9 +531,9 @@ otel.Data(
     )
   ]
 ))pxl",
-                              "'service.name' must be specified in resource"},
-                             {"must_specify_1_data",
-                              R"pxl(
+         "'service.name' must be specified in resource"},
+        {"must_specify_1_data",
+         R"pxl(
 otel.Data(
   endpoint=otel.Endpoint(url='0.0.0.0:55690'),
   resource={
@@ -537,11 +541,49 @@ otel.Data(
   },
   data=[]
 ))pxl",
-                              "Must specify at least 1 data configuration"},
-                         }),
-                         [](const ::testing::TestParamInfo<ErrorTestCase>& info) {
-                           return info.param.name;
-                         });
+         "Must specify at least 1 data configuration"},
+        {"gauge_name_must_follow_format1", "otelmetric.Gauge(name='0gc', value=df.young_gc_time)",
+         "Metric name is invalid"},
+        {"gauge_name_must_follow_format2", "otelmetric.Gauge(name='g]/[c', value=df.young_gc_time)",
+         "Metric name is invalid"},
+        {"summary_name_must_follow_format",
+         R"pxl(
+otelmetric.Summary(
+  name='0gc',
+  count=df.count,
+  sum=df.sum,
+  quantile_values={
+    0.99: df.p99,
+  },
+))pxl",
+         "Metric name is invalid"},
+        {"resource_attribute_key_is_empty",
+         R"pxl(
+otel.Data(
+  endpoint=otel.Endpoint(url='0.0.0.0:55690'),
+  resource={
+    'service.name': df.service,
+    '': df.young,
+  },
+  data=[otelmetric.Gauge(name='gc', value=df.young_gc_time)],
+))pxl",
+         "Attribute key must be a non-empty string"},
+        {"metric_attribute_key_is_empty",
+         R"pxl(
+otel.Data(
+  endpoint=otel.Endpoint(url='0.0.0.0:55690'),
+  resource={
+    'service.name': df.young,
+  },
+  data=[otelmetric.Gauge(
+    name='gc',
+    value=df.young_gc_time,
+    attributes={'': df.young},
+  )],
+))pxl",
+         "Attribute key must be a non-empty string"},
+    }),
+    [](const ::testing::TestParamInfo<ErrorTestCase>& info) { return info.param.name; });
 
 TEST_F(OTelExportTest, endpoint_from_compiler_context) {
   std::string otel_export_expression = R"pxl(
@@ -607,6 +649,15 @@ otel_sink_op {
   planpb::Operator op;
   ASSERT_OK(otel_export_sink->ToProto(&op));
   EXPECT_THAT(op, testing::proto::EqualsProto(expected_proto));
+}
+TEST_F(OTelExportTest, valid_metric_names) {
+  auto df = Dataframe::Create(MakeMemSource(), ast_visitor.get()).ConsumeValueOrDie();
+  var_table->Add("df", df);
+  ASSERT_OK(
+      ParseExpression(
+          R"pxl(otelmetric.Gauge(name='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_.-0123456789', value=df.gc))pxl")
+          .status());
+  ASSERT_OK(ParseExpression(R"pxl(otelmetric.Gauge(name='one.two-3_', value=df.gc))pxl").status());
 }
 
 }  // namespace compiler

@@ -20,6 +20,7 @@
 #include <absl/container/flat_hash_set.h>
 
 #include <functional>
+#include <regex>
 #include <utility>
 #include <vector>
 
@@ -107,15 +108,38 @@ StatusOr<std::vector<OTelAttribute>> ParseAttributes(DictObject* attributes) {
   for (const auto& [idx, keyobj] : Enumerate(keys)) {
     PL_ASSIGN_OR_RETURN(auto key, GetArgAs<StringIR>(keyobj, "attribute"));
     PL_ASSIGN_OR_RETURN(auto val, GetArgAs<ColumnIR>(values[idx], "attribute value column"));
+    if (key->str().empty()) {
+      return keyobj->CreateError("Attribute key must be a non-empty string");
+    }
     otel_attributes.push_back({key->str(), val});
   }
   return otel_attributes;
 }
 
+bool IsValidName(const std::string& name) {
+  // Valid instrumentation name according to the OTel spec.
+  // https://opentelemetry.io/docs/reference/specification/metrics/api/#instrument
+  if (name.empty()) {
+    return false;
+  }
+  static const std::regex rgx("[A-Za-z][A-Za-z0-9_.-]*");
+  return std::regex_match(name, rgx);
+}
+
+StatusOr<std::string> ParseName(const QLObjectPtr& name) {
+  PL_ASSIGN_OR_RETURN(auto name_ir, GetArgAs<StringIR>(name, "name"));
+  if (!IsValidName(name_ir->str())) {
+    return name->CreateError(
+        "Metric name is invalid. Please follow the naming conventions here: "
+        "https://opentelemetry.io/docs/reference/specification/metrics/api/#instrument");
+  }
+  return name_ir->str();
+}
+
 StatusOr<QLObjectPtr> GaugeDefinition(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
                                       ASTVisitor* visitor) {
   OTelMetric metric;
-  PL_ASSIGN_OR_RETURN(metric.name, GetArgAsString(ast, args, "name"));
+  PL_ASSIGN_OR_RETURN(metric.name, ParseName(args.GetArg("name")));
   PL_ASSIGN_OR_RETURN(metric.description, GetArgAsString(ast, args, "description"));
   // We add the time_ column  automatically.
   PL_ASSIGN_OR_RETURN(metric.time_column,
@@ -140,7 +164,7 @@ StatusOr<QLObjectPtr> GaugeDefinition(IR* graph, const pypa::AstPtr& ast, const 
 StatusOr<QLObjectPtr> SummaryDefinition(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
                                         ASTVisitor* visitor) {
   OTelMetric metric;
-  PL_ASSIGN_OR_RETURN(metric.name, GetArgAsString(ast, args, "name"));
+  PL_ASSIGN_OR_RETURN(metric.name, ParseName(args.GetArg("name")));
   PL_ASSIGN_OR_RETURN(metric.description, GetArgAsString(ast, args, "description"));
   // We add the time_ column  automatically.
   PL_ASSIGN_OR_RETURN(metric.time_column,
