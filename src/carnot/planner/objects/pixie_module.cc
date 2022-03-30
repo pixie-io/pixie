@@ -26,6 +26,7 @@
 #include "src/carnot/planner/objects/dict_object.h"
 #include "src/carnot/planner/objects/exporter.h"
 #include "src/carnot/planner/objects/expr_object.h"
+#include "src/carnot/planner/objects/funcobject.h"
 #include "src/carnot/planner/objects/none_object.h"
 #include "src/carnot/planner/objects/otel.h"
 #include "src/carnot/planner/objects/viz_object.h"
