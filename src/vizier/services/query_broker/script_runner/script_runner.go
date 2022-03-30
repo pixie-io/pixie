@@ -133,7 +133,7 @@ func (s *ScriptRunner) SyncScripts() error {
 			return err
 		}
 		// Clear out persisted scripts.
-		_, err = s.csClient.SetScripts(context.Background(), &metadatapb.SetScriptsRequest{Scripts: make(map[string]*cvmsgspb.CronScript)})
+		_, err = s.csClient.SetScripts(ctx, &metadatapb.SetScriptsRequest{Scripts: make(map[string]*cvmsgspb.CronScript)})
 		if err != nil {
 			log.WithError(err).Error("Failed to delete scripts from store")
 			return err
@@ -270,7 +270,13 @@ func (s *ScriptRunner) upsertScript(id uuid.UUID, script *cvmsgspb.CronScript) e
 	r := newRunner(script, s.vzClient, s.signingKey)
 	s.runnerMap[id] = r
 	go r.start()
-	_, err := s.csClient.AddOrUpdateScript(context.Background(), &metadatapb.AddOrUpdateScriptRequest{Script: script})
+	claims := svcutils.GenerateJWTForService("cron_script_store", "vizier")
+	token, _ := svcutils.SignJWTClaims(claims, s.signingKey)
+
+	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
+		fmt.Sprintf("bearer %s", token))
+
+	_, err := s.csClient.AddOrUpdateScript(ctx, &metadatapb.AddOrUpdateScriptRequest{Script: script})
 	if err != nil {
 		log.WithError(err).Error("Failed to upsert script in metadata")
 	}
@@ -281,13 +287,20 @@ func (s *ScriptRunner) upsertScript(id uuid.UUID, script *cvmsgspb.CronScript) e
 func (s *ScriptRunner) deleteScript(id uuid.UUID) error {
 	s.runnerMapMu.Lock()
 	defer s.runnerMapMu.Unlock()
+
 	v, ok := s.runnerMap[id]
 	if !ok {
 		return nil
 	}
 	v.stop()
 	delete(s.runnerMap, id)
-	_, err := s.csClient.DeleteScript(context.Background(), &metadatapb.DeleteScriptRequest{ScriptID: utils.ProtoFromUUID(id)})
+	claims := svcutils.GenerateJWTForService("cron_script_store", "vizier")
+	token, _ := svcutils.SignJWTClaims(claims, s.signingKey)
+
+	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
+		fmt.Sprintf("bearer %s", token))
+
+	_, err := s.csClient.DeleteScript(ctx, &metadatapb.DeleteScriptRequest{ScriptID: utils.ProtoFromUUID(id)})
 	if err != nil {
 		log.WithError(err).Error("Failed to delete script from metadata")
 	}
