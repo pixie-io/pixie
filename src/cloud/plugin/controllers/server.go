@@ -429,25 +429,6 @@ func (s *Server) UpdateOrgRetentionPluginConfig(ctx context.Context, req *plugin
 	}
 	defer txn.Rollback()
 
-	ctx, err = contextWithAuthToken(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if req.Enabled != nil && req.Enabled.Value { // Plugin was just enabled, we should create it.
-		err = s.enableOrgRetention(ctx, txn, orgID, req.PluginID, version, configurations)
-		if err != nil {
-			return nil, err
-		}
-		return &pluginpb.UpdateOrgRetentionPluginConfigResponse{}, txn.Commit()
-	} else if req.Enabled != nil && !req.Enabled.Value { // Plugin was disabled, we should delete it.
-		err = s.disableOrgRetention(ctx, txn, orgID, req.PluginID)
-		if err != nil {
-			return nil, err
-		}
-		return &pluginpb.UpdateOrgRetentionPluginConfigResponse{}, txn.Commit()
-	}
-
 	// Fetch current configs.
 	query := `SELECT version, PGP_SYM_DECRYPT(configurations, $1::text) FROM org_data_retention_plugins WHERE org_id=$2 AND plugin_id=$3`
 	rows, err := txn.Queryx(query, s.dbKey, orgID, req.PluginID)
@@ -457,13 +438,32 @@ func (s *Server) UpdateOrgRetentionPluginConfig(ctx context.Context, req *plugin
 
 	var origConfig []byte
 	var origVersion string
+	enabled := false
 	if rows.Next() {
+		enabled = true
 		err := rows.Scan(&origVersion, &origConfig)
 		if err != nil {
 			return nil, status.Error(codes.Internal, "failed to read configs")
 		}
 	}
 	rows.Close()
+
+	if !enabled && req.Enabled != nil && req.Enabled.Value { // Plugin was just enabled, we should create it.
+		err = s.enableOrgRetention(ctx, txn, orgID, req.PluginID, version, configurations)
+		if err != nil {
+			return nil, err
+		}
+		return &pluginpb.UpdateOrgRetentionPluginConfigResponse{}, txn.Commit()
+	} else if enabled && req.Enabled != nil && !req.Enabled.Value { // Plugin was disabled, we should delete it.
+		err = s.disableOrgRetention(ctx, txn, orgID, req.PluginID)
+		if err != nil {
+			return nil, err
+		}
+		return &pluginpb.UpdateOrgRetentionPluginConfigResponse{}, txn.Commit()
+	} else if !enabled && req.Enabled != nil && !req.Enabled.Value {
+		// This is already disabled.
+		return &pluginpb.UpdateOrgRetentionPluginConfigResponse{}, nil
+	}
 
 	if configurations == nil {
 		configurations = origConfig
