@@ -18,15 +18,19 @@
 
 import * as React from 'react';
 
-import { Box, Button, FormControlLabel, Link, Switch, Typography } from '@mui/material';
+import { Button, Typography } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+import { Link } from 'react-router-dom';
 
 import { Footer, scrollbarStyles } from 'app/components';
+import { usePluginList } from 'app/containers/admin/plugins/plugin-gql';
 import NavBars from 'app/containers/App/nav-bars';
 import { SidebarContext } from 'app/context/sidebar-context';
+import { GQLPluginKind } from 'app/types/schema';
 import * as pixienautCarryingBoxes from 'assets/images/pixienaut-carrying-boxes.svg';
 import { Copyright } from 'configurable/copyright';
+
 
 import { ConfigureDataExportBody } from './data-export-tables';
 
@@ -81,6 +85,15 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
       margin: `${theme.spacing(4)} 0`,
     },
   },
+  link: {
+    textDecoration: 'none',
+    '&, &:visited': {
+      color: theme.palette.primary.main,
+    },
+    '&:hover': {
+      textDecoration: 'underline',
+    },
+  },
 }), { name: 'ConfigureDataExportView' });
 
 const ConfigureDataExportPage = React.memo(({ children }) => {
@@ -115,40 +128,27 @@ const NoPluginsEnabledSplash = React.memo(() => {
       <Typography variant='body2'>
         Pixie only guarantees data retention for 24 hours.
         <br />
-        Configure a <Link href='/admin/plugins'>plugin</Link> to export and store Pixie data for longer term retention.
+        {'Configure a '}
+        <Link to='/admin/plugins' className={classes.link}>plugin</Link>
+        {' to export and store Pixie data for longer term retention.'}
         <br />
         This data will be accessible and queryable through the plugin provider.
       </Typography>
-      <Button variant='contained'>Configure Plugins</Button>
+      <Button component={Link} to='/admin/plugins' variant='contained'>Configure Plugins</Button>
     </div>
   );
 });
 NoPluginsEnabledSplash.displayName = 'NoPluginsEnabledSplash';
 
-// TODO(nick,PC-1440): Instead of this, check the API (once implemented).
-const SplashToggle = React.memo<{
-  isSplash: boolean,
-  setIsSplash: React.Dispatch<React.SetStateAction<boolean>>,
-}>(({
-  isSplash, setIsSplash,
-}) => {
-  return (
-    /* eslint-disable react-memo/require-usememo */
-    <Box sx={{ position: 'absolute', top: 0, right: 0 }}>
-      <FormControlLabel label='DEBUG: Have Plugins' control={
-        <Switch checked={!isSplash} onChange={(_, checked) => setIsSplash(!checked)} />
-      } />
-    </Box>
-    /* eslint-enable react-memo/require-usememo */
-  );
-});
-SplashToggle.displayName = 'SplashToggle';
-
 export const ConfigureDataExportView = React.memo(() => {
-  const [isSplash, setIsSplash] = React.useState(false);
+  const { plugins } = usePluginList(GQLPluginKind.PK_RETENTION);
+
+  const isSplash = React.useMemo(() => (
+    !plugins.some(p => p.supportsRetention && p.retentionEnabled)
+  ), [plugins]);
+
   return (
     <ConfigureDataExportPage>
-      <SplashToggle isSplash={isSplash} setIsSplash={setIsSplash} />
       {isSplash && <NoPluginsEnabledSplash /> }
       {!isSplash && <ConfigureDataExportBody /> }
     </ConfigureDataExportPage>

@@ -18,7 +18,6 @@
 
 import * as React from 'react';
 
-import { useQuery } from '@apollo/client';
 import {
   ExpandMore as ExpandMoreIcon,
   Extension as ExtensionIcon,
@@ -40,9 +39,8 @@ import {
 
 import { GQLPlugin, GQLPluginKind } from 'app/types/schema';
 
-import { getMockRetentionPlugins, useApolloCacheForMock } from './mock-data';
 import { PluginConfig } from './plugin-config';
-import { GQL_GET_RETENTION_PLUGINS, usePluginToggleEnabled } from './plugin-gql';
+import { usePluginList, usePluginToggleEnabled } from './plugin-gql';
 
 const useStyles = makeStyles(({ palette, spacing, typography }: Theme) => createStyles({
   iconContainer: {
@@ -148,34 +146,6 @@ const PluginHeader = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
 });
 PluginHeader.displayName = 'PluginHeader';
 
-function usePluginList(kind: GQLPluginKind): { loading: boolean, plugins: GQLPlugin[] } {
-  if (kind !== GQLPluginKind.PK_RETENTION) {
-    throw new Error(`Plugins of kind "${GQLPluginKind[kind]}" aren't supported yet`);
-  }
-
-  const apolloCache = useApolloCacheForMock();
-  const { data, loading, error } = useQuery<{ plugins: GQLPlugin[] }>(
-    GQL_GET_RETENTION_PLUGINS,
-    {
-      // TODO(nick,PC-1436): Drop this cache manipulation once mocks are no longer needed
-      //  Also, this is (correctly) being refetched after saving configs, but mock data clobbers the change.
-      onError(err) {
-        if (err?.message?.includes('Unimplemented')) {
-          console.warn('MOCK DATA! Plugins list is NYI upstream; directly writing to cache with mock data instead.');
-          apolloCache.writeQuery({
-            query: GQL_GET_RETENTION_PLUGINS,
-            data: { plugins: getMockRetentionPlugins().map(p => ({ logo: null, enabledVersion: null, ...p })) },
-          });
-        }
-      },
-    },
-  );
-
-  // Memo so that the empty array retains its identity until there is an actual change
-  const plugins = React.useMemo(() => data?.plugins ?? [], [data?.plugins]);
-  return { loading: loading || (!data && !error), plugins };
-}
-
 const PluginList = React.memo<RouteComponentProps<{ expandId?: string }>>(({ match, history }) => {
   const classes = useStyles();
 
@@ -188,18 +158,20 @@ const PluginList = React.memo<RouteComponentProps<{ expandId?: string }>>(({ mat
       history.push(`${base}/configure/${id}`);
     } else if (!isExpanded && id === expandId) {
       history.push(base);
-    } else {
-      throw new Error(`Broken accordion state? ${JSON.stringify({ expandId, id, isExpanded })}`);
     }
   }, [expandId, history, match]);
 
-  if (loading) return <>Loading...</>;
+  if (loading && !plugins.length) return <>Loading...</>;
   if (!plugins.length) return <h3>No retention plugins available. This is probably an error.</h3>;
   /* eslint-disable react-memo/require-usememo */
   return (
     <div>
       {plugins.filter(p => p.supportsRetention).map((p) => (
-        <Accordion key={p.id} expanded={expandId === p.id} onChange={getAccordionToggle(p.id)}>
+        <Accordion
+          key={p.id}
+          expanded={expandId === p.id && p.retentionEnabled}
+          onChange={getAccordionToggle(p.id)}
+        >
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
             id={`plugin-accordion-${p.id}-header`}

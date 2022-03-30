@@ -26,9 +26,8 @@ import {
   GQLPlugin,
   GQLPluginConfig,
   GQLPluginInfo,
+  GQLPluginKind,
 } from 'app/types/schema';
-
-import { getMockSchemaFor, getMockDefaultConfigFor, useApolloCacheForMock } from './mock-data';
 
 /** The list of available plugins, their metadata, their versions, and their enablement states. */
 export const GQL_GET_RETENTION_PLUGINS = gql`
@@ -76,13 +75,26 @@ export const GQL_UPDATE_RETENTION_PLUGIN_CONFIG = gql`
   }
 `;
 
+export function usePluginList(kind: GQLPluginKind): { loading: boolean, plugins: GQLPlugin[] } {
+  if (kind !== GQLPluginKind.PK_RETENTION) {
+    throw new Error(`Plugins of kind "${GQLPluginKind[kind]}" aren't supported yet`);
+  }
+
+  const { data, loading, error } = useQuery<{ plugins: GQLPlugin[] }>(
+    GQL_GET_RETENTION_PLUGINS,
+    { fetchPolicy: 'cache-and-network' },
+  );
+
+  // Memo so that the empty array retains its identity until there is an actual change
+  const plugins = React.useMemo(() => data?.plugins ?? [], [data?.plugins]);
+  return { loading: loading || (!data && !error), plugins };
+}
+
 export function usePluginConfig(plugin: GQLPlugin): {
   loading: boolean,
   schema: GQLPluginInfo,
   values: GQLPluginConfig[]
 } {
-  const apolloCache = useApolloCacheForMock();
-
   const { loading: loadingSchema, data: schemaData, error: schemaError } = useQuery<{
     retentionPluginInfo: GQLPluginInfo,
   }, {
@@ -91,22 +103,7 @@ export function usePluginConfig(plugin: GQLPlugin): {
     GQL_GET_RETENTION_PLUGIN_INFO,
     {
       variables: { id: plugin.id, pluginVersion: plugin.enabledVersion ?? plugin.latestVersion },
-      errorPolicy: 'all',
-      onError(err) {
-        if (err?.message.includes('NotFound')) {
-          // TODO(nick,PC-1436): Instead of using mock data, tell the user that the plugin's schema is missing.
-          const mock = getMockSchemaFor(plugin.id);
-          if (mock) {
-            // TODO(nick,PC-1436): Drop debugging console
-            console.warn(`MOCK DATA! "${plugin.id}", is NotFound upstream but is mocked.`);
-            apolloCache.writeQuery({
-              query: GQL_GET_RETENTION_PLUGIN_INFO,
-              variables: { id: plugin.id, pluginVersion: plugin.enabledVersion ?? plugin.latestVersion },
-              data: { retentionPluginInfo: mock },
-            });
-          }
-        }
-      },
+      fetchPolicy: 'cache-and-network',
     },
   );
 
@@ -118,42 +115,21 @@ export function usePluginConfig(plugin: GQLPlugin): {
     GQL_GET_RETENTION_PLUGIN_CONFIG,
     {
       variables: { id: plugin.id },
-      onError(err) {
-        if (err?.message.includes('Unimplemented')) {
-          // TODO(nick,PC-1436): Instead of using mock data, tell the user that plugin config couldn't be fetched.
-          const mock = getMockDefaultConfigFor(plugin.id);
-          if (mock) {
-            // TODO(nick,PC-1436): Drop debugging console
-            console.warn(`MOCK DATA! "${plugin.id}", GetRetentionPluginConfig Unimplemented, but is mocked.`);
-            apolloCache.writeQuery({
-              query: GQL_GET_RETENTION_PLUGIN_CONFIG,
-              variables: { id: plugin.id },
-              data: { orgRetentionPluginConfig: mock },
-            });
-          }
-        }
-      },
+      fetchPolicy: 'cache-and-network',
     },
   );
 
-  // TODO(nick,PC-1436): Mock data, breaks mutations (since the cache gets clobbered repeatedly)
-  const schema: GQLPluginInfo = React.useMemo(() => (
-    schemaError?.message.includes('NotFound') ?
-      getMockSchemaFor(plugin.id) : schemaData?.retentionPluginInfo
-  ), [plugin.id, schemaData?.retentionPluginInfo, schemaError?.message]);
-  const values: GQLPluginConfig[] = React.useMemo(() => (
-    valuesError?.message.includes('Unimplemented') ?
-      getMockDefaultConfigFor(plugin.id) : valuesData?.orgRetentionPluginConfig
-  ), [plugin.id, valuesData?.orgRetentionPluginConfig, valuesError?.message]);
-
   return React.useMemo(() => ({
     loading: (loadingSchema || loadingValues) && !(schemaError || valuesError),
-    schema: schemaData?.retentionPluginInfo ?? schema ?? null,
-    values: valuesData?.orgRetentionPluginConfig ?? values ?? null,
-  }), [loadingSchema, loadingValues, schemaError, valuesError, schemaData, valuesData, schema, values]);
+    schema: schemaData?.retentionPluginInfo ?? null,
+    values: valuesData?.orgRetentionPluginConfig ?? null,
+  }), [loadingSchema, loadingValues, schemaError, valuesError, schemaData, valuesData]);
 }
 
-export function usePluginConfigMutation(plugin: GQLPlugin): (configs: GQLEditablePluginConfig[]) => Promise<boolean> {
+export function usePluginConfigMutation(plugin: GQLPlugin): (
+  configs: GQLEditablePluginConfig[],
+  enabled?: boolean,
+) => Promise<boolean> {
   const { loading, schema, values: oldConfigs } = usePluginConfig(plugin);
 
   const [mutate] = useMutation<{
@@ -162,11 +138,8 @@ export function usePluginConfigMutation(plugin: GQLPlugin): (configs: GQLEditabl
     id: string, enabled: boolean, enabledVersion: string, configs: GQLEditablePluginConfigs,
   }>(GQL_UPDATE_RETENTION_PLUGIN_CONFIG);
 
-  return React.useCallback((newConfigs: GQLEditablePluginConfig[]) => {
+  return React.useCallback((newConfigs: GQLEditablePluginConfig[], enabled) => {
     if (loading) return Promise.reject('Tried to update a plugin config before its previous config was known');
-
-    // TODO(nick,PC-1436): Drop debugging console
-    console.info(`usePluginConfigMutation(${plugin.id}) -> save(${JSON.stringify(newConfigs)})`);
 
     const allowed = schema.configs.map(s => s.name);
     const merged = oldConfigs.map(c => ({ ...c }));
@@ -180,61 +153,23 @@ export function usePluginConfigMutation(plugin: GQLPlugin): (configs: GQLEditabl
       }
     }
 
+    const canEnable = plugin.supportsRetention && (plugin.enabledVersion ?? plugin.latestVersion);
+    const shouldEnable = canEnable && (enabled == null ? plugin.retentionEnabled : enabled);
+
     return mutate({
       variables: {
         id: plugin.id,
-        enabled: plugin.supportsRetention && plugin.enabledVersion && plugin.retentionEnabled,
-        enabledVersion: plugin.enabledVersion,
+        enabled: shouldEnable,
+        enabledVersion: shouldEnable ? (plugin.enabledVersion ?? plugin.latestVersion) : plugin.enabledVersion,
         configs: { configs: merged },
       },
+      refetchQueries: [GQL_GET_RETENTION_PLUGINS, GQL_GET_RETENTION_PLUGIN_CONFIG],
     }).then(() => true, () => false);
-  }, [
-    loading, schema?.configs, oldConfigs, mutate,
-    plugin.id, plugin.supportsRetention, plugin.enabledVersion, plugin.retentionEnabled,
-  ]);
+  }, [schema?.configs, oldConfigs, plugin, loading, mutate]);
 }
 
 export function usePluginToggleEnabled(plugin: GQLPlugin): (enable: boolean) => Promise<boolean> {
-  const [mutate] = useMutation<{
-    UpdateRetentionPluginConfig: boolean
-  }, {
-    id: string, enabled: boolean, enabledVersion: string, configs: GQLEditablePluginConfigs,
-  }>(GQL_UPDATE_RETENTION_PLUGIN_CONFIG);
+  const mutate = usePluginConfigMutation(plugin);
 
-  const apolloCache = useApolloCacheForMock();
-  return React.useCallback((enable: boolean) => {
-
-    // TODO(nick,PC-1436): Drop debugging console
-    console.info(`usePluginToggleEnabled(${plugin.id}) -> toggle(enable=${enable})`);
-
-    return mutate({
-      variables: {
-        id: plugin.id,
-        enabled: enable,
-        enabledVersion: plugin.enabledVersion ?? plugin.latestVersion,
-        configs: { configs: [] },
-      },
-      refetchQueries: [GQL_GET_RETENTION_PLUGINS],
-      onError(err) {
-        if (err?.message?.includes('Unimplemented')) {
-          // TODO(nick,PC-1436): Make this an `update` function instead once mock data is removed.
-          // TODO(nick,PC-1436): Drop debugging console
-          console.warn('MOCK DATA! Toggling cached enable state of plugin directly because mutation is NYI upstream.');
-          apolloCache.modify({
-            fields: {
-              plugins(existingPlugins) {
-                return existingPlugins.map((p) => {
-                  return {
-                    ...p,
-                    retentionEnabled: (p.id === plugin.id ? !plugin.retentionEnabled : p.retentionEnabled),
-                  };
-                });
-              },
-            },
-          });
-        }
-      },
-      optimisticResponse: { UpdateRetentionPluginConfig: true },
-    }).then(({ data: { UpdateRetentionPluginConfig } }) => UpdateRetentionPluginConfig);
-  }, [apolloCache, mutate, plugin.enabledVersion, plugin.id, plugin.latestVersion, plugin.retentionEnabled]);
+  return (enable: boolean) => mutate([], enable);
 }

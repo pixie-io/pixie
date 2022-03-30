@@ -30,6 +30,9 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
   const [pendingValues, setPendingValues] = React.useState<Record<string, string>>({});
 
   const [saving, setSaving] = React.useState(false);
+  const setDone = React.useCallback(() => {
+    setSaving(false);
+  }, []);
   const pushPluginConfig = usePluginConfigMutation(plugin);
   const pushEnableState = usePluginToggleEnabled(plugin);
 
@@ -40,18 +43,13 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
     setSaving(true);
     pushPluginConfig(
       Object.entries(pendingValues).map(([name, value]) => ({ name, value })),
-    ).then(() => setSaving(false)).catch(() => setSaving(false));
-  }, [pendingValues, pushPluginConfig]);
+    ).then(setDone).catch(setDone);
+  }, [pendingValues, pushPluginConfig, setDone]);
 
   const toggleEnabled = React.useCallback(() => {
     setSaving(true);
-    pushEnableState(!plugin.retentionEnabled)
-      .then(() => {
-        setSaving(false);
-      }).catch(() => {
-        setSaving(false);
-      });
-  }, [plugin.retentionEnabled, pushEnableState]);
+    pushEnableState(!plugin.retentionEnabled).then(setDone).catch(setDone);
+  }, [plugin.retentionEnabled, pushEnableState, setDone]);
 
   React.useEffect(() => {
     if (!values) return;
@@ -61,7 +59,7 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
     }));
   }, [values]);
 
-  if (loading || !schema) {
+  if (loading && (!schema || !values)) {
     return (
       /* eslint-disable react-memo/require-usememo */
       <Stack spacing={1}>

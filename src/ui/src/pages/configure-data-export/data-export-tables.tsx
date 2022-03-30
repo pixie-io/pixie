@@ -18,7 +18,6 @@
 
 import * as React from 'react';
 
-import { gql, useMutation, useQuery } from '@apollo/client';
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
@@ -45,73 +44,15 @@ import { distanceInWordsStrict } from 'date-fns';
 
 import { Spinner } from 'app/components';
 import {
-  GQLDetailedRetentionScript,
-  GQLEditableRetentionScript,
-  GQLPlugin,
   GQLRetentionScript,
 } from 'app/types/schema';
 
-import { GQL_GET_RETENTION_SCRIPT, GQL_GET_RETENTION_SCRIPTS, GQL_UPDATE_RETENTION_SCRIPT } from './data-export-gql';
-import { getMockPluginsForRetentionScripts, getMockRetentionScripts, getMockRetentionScriptDetails } from './mock-data';
-
-
-function useRetentionScripts(): { loading: boolean, scripts: GQLRetentionScript[] } {
-  const { data, loading, error } = useQuery<GQLRetentionScript[]>(
-    GQL_GET_RETENTION_SCRIPTS,
-    {
-      onError(err) {
-        // TODO(nick,PC-1440): Snackbar error here?
-        console.info('Could not fetch list of retention scripts:', err?.message);
-      },
-    },
-  );
-
-  // TODO(nick,PC-1440): Drop mock data
-  const [scripts, setScripts] = React.useState<GQLRetentionScript[]>([]);
-  React.useEffect(() => {
-    if (data?.length) setScripts(data);
-    else if (error?.message) setScripts(getMockRetentionScripts());
-  }, [data, error]);
-
-  return React.useMemo(() => ({
-    loading: loading && !error,
-    scripts,
-  }), [scripts, error, loading]);
-}
-
-type PartialPlugin = Pick<GQLPlugin, 'id' | 'name' | 'description' | 'logo'>;
-function useRetentionPlugins(): { loading: boolean, plugins: PartialPlugin[] } {
-  const { data, loading, error } = useQuery<PartialPlugin[]>(
-    gql`
-      query GetRetentionPlugins {
-        plugins(kind: PK_RETENTION) {
-          id
-          name
-          description
-          logo
-        }
-      }
-    `,
-    {
-      onError(err) {
-        // TODO(nick,PC-1440): Snackbar error here?
-        console.info('Could not fetch list of plugins:', err?.message);
-      },
-    },
-  );
-
-  // TODO(nick,PC-1440): Drop mock data
-  const [plugins, setPlugins] = React.useState<PartialPlugin[]>([]);
-  React.useEffect(() => {
-    if (data?.length) setPlugins(data);
-    else if (error?.message) setPlugins(getMockPluginsForRetentionScripts());
-  }, [data, error]);
-
-  return React.useMemo(() => ({
-    loading: loading && !error,
-    plugins,
-  }), [plugins, error, loading]);
-}
+import {
+  useRetentionPlugins,
+  useRetentionScript,
+  useRetentionScripts,
+  useToggleRetentionScript,
+} from './data-export-gql';
 
 // TODO(nick,PC-1440): Dedup <PluginIcon /> with Plugins page in Admin that already has a similar component
 const PluginIcon = React.memo<{ iconString: string }>(({ iconString }) => {
@@ -145,46 +86,17 @@ const RetentionScriptRow = React.memo<{ script: GQLRetentionScript, canDelete?: 
   const { id, name, description, clusters, frequencyS, pluginID } = script;
   const plugin = plugins.find(p => p.id === pluginID);
 
-  const { data: detailedData } = useQuery<GQLDetailedRetentionScript, { id: string }>(GQL_GET_RETENTION_SCRIPT, {
-    variables: { id },
-  });
-  // TODO(nick,PC-1440): Drop mock data
-  const detailedScript = React.useMemo(
-    () => detailedData ?? getMockRetentionScriptDetails(script.id),
-    [detailedData, script.id]);
-
-  const [updateScript] = useMutation<{
-    UpdateRetentionScript: boolean,
-  }, {
-    id: string,
-    script: GQLEditableRetentionScript,
-  }>(GQL_UPDATE_RETENTION_SCRIPT);
+  const { script: detailedScript } = useRetentionScript(pluginID);
 
   const [saving, setSaving] = React.useState(false);
+  const toggleMutation = useToggleRetentionScript(id);
   const toggleScriptEnabled = React.useCallback((event: React.MouseEvent<HTMLLabelElement>) => {
     event.preventDefault();
     event.stopPropagation();
 
     if (!detailedScript) return;
-
-    const edited: GQLEditableRetentionScript = {
-      ...detailedScript,
-      enabled: !detailedScript.enabled,
-    };
-
-    setSaving(true);
-    updateScript({
-      variables: {
-        id: detailedScript.id,
-        script: edited,
-      },
-      refetchQueries: [GQL_GET_RETENTION_SCRIPTS, GQL_GET_RETENTION_SCRIPT],
-      onError(err) {
-        // TODO(nick,PC-1440): Snackbar error here?
-        console.info(`Could not toggle script ${detailedScript.id}:`, err?.message);
-      },
-    }).then(() => setSaving(false)).catch(() => setSaving(false));
-  }, [detailedScript, updateScript]);
+    toggleMutation(!detailedScript.enabled).then(() => setSaving(false)).catch(() => setSaving(false));
+  }, [detailedScript, toggleMutation]);
 
   return (
     /* eslint-disable react-memo/require-usememo */
@@ -327,7 +239,7 @@ export const ConfigureDataExportBody = React.memo(() => {
   return (
     /* eslint-disable react-memo/require-usememo */
     <Box m={2} mt={4} mb={4}>
-      {plugins.map(({ id, name, description }, i) => (
+      {plugins?.map(({ id, name, description }, i) => (
         <React.Fragment key={id}>
           {i > 0 && <Divider variant='middle' sx={{ mt: 4, mb: 4 }} />}
           <RetentionScriptTable
