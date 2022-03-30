@@ -448,6 +448,11 @@ func (s *Server) UpdateOrgRetentionPluginConfig(ctx context.Context, req *plugin
 	}
 	rows.Close()
 
+	ctx, err = contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	if !enabled && req.Enabled != nil && req.Enabled.Value { // Plugin was just enabled, we should create it.
 		err = s.enableOrgRetention(ctx, txn, orgID, req.PluginID, version, configurations)
 		if err != nil {
