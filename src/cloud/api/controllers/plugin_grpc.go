@@ -51,6 +51,11 @@ func (p *PluginServiceServer) GetPlugins(ctx context.Context, req *cloudpb.GetPl
 	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
 	orgID := utils.ProtoFromUUIDStrOrNil(orgIDstr)
 
+	ctx, err = contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	pluginsResp, err := p.PluginServiceClient.GetPlugins(ctx, &pluginpb.GetPluginsRequest{
 		Kind: kindCloudProtoToPluginProto(req.Kind),
 	})
@@ -101,6 +106,11 @@ func (p *PluginServiceServer) GetOrgRetentionPluginConfig(ctx context.Context, r
 	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
 	orgID := utils.ProtoFromUUIDStrOrNil(orgIDstr)
 
+	ctx, err = contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	pluginsResp, err := p.DataRetentionPluginServiceClient.GetOrgRetentionPluginConfig(ctx, &pluginpb.GetOrgRetentionPluginConfigRequest{
 		PluginID: req.PluginId,
 		OrgID:    orgID,
@@ -116,6 +126,12 @@ func (p *PluginServiceServer) GetOrgRetentionPluginConfig(ctx context.Context, r
 
 // GetRetentionPluginInfo gets the retention plugin info for a particular plugin release.
 func (p *PluginServiceServer) GetRetentionPluginInfo(ctx context.Context, req *cloudpb.GetRetentionPluginInfoRequest) (*cloudpb.GetRetentionPluginInfoResponse, error) {
+	var err error
+	ctx, err = contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	configResp, err := p.PluginServiceClient.GetRetentionPluginConfig(ctx, &pluginpb.GetRetentionPluginConfigRequest{
 		ID:      req.PluginId,
 		Version: req.Version,
@@ -137,6 +153,11 @@ func (p *PluginServiceServer) UpdateRetentionPluginConfig(ctx context.Context, r
 	}
 	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
 	orgID := utils.ProtoFromUUIDStrOrNil(orgIDstr)
+
+	ctx, err = contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	_, err = p.DataRetentionPluginServiceClient.UpdateOrgRetentionPluginConfig(ctx, &pluginpb.UpdateOrgRetentionPluginConfigRequest{
 		PluginID:       req.PluginId,
@@ -160,6 +181,11 @@ func (p *PluginServiceServer) GetRetentionScripts(ctx context.Context, req *clou
 	}
 	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
 	orgID := utils.ProtoFromUUIDStrOrNil(orgIDstr)
+
+	ctx, err = contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	resp, err := p.DataRetentionPluginServiceClient.GetRetentionScripts(ctx, &pluginpb.GetRetentionScriptsRequest{
 		OrgID: orgID,
@@ -195,6 +221,11 @@ func (p *PluginServiceServer) GetRetentionScript(ctx context.Context, req *cloud
 	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
 	orgID := utils.ProtoFromUUIDStrOrNil(orgIDstr)
 
+	ctx, err = contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	resp, err := p.DataRetentionPluginServiceClient.GetRetentionScript(ctx, &pluginpb.GetRetentionScriptRequest{
 		OrgID:    orgID,
 		ScriptID: req.ID,
@@ -222,7 +253,13 @@ func (p *PluginServiceServer) GetRetentionScript(ctx context.Context, req *cloud
 
 // UpdateRetentionScript updates a specific retention script.
 func (p *PluginServiceServer) UpdateRetentionScript(ctx context.Context, req *cloudpb.UpdateRetentionScriptRequest) (*cloudpb.UpdateRetentionScriptResponse, error) {
-	_, err := p.DataRetentionPluginServiceClient.UpdateRetentionScript(ctx, &pluginpb.UpdateRetentionScriptRequest{
+	var err error
+	ctx, err = contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = p.DataRetentionPluginServiceClient.UpdateRetentionScript(ctx, &pluginpb.UpdateRetentionScriptRequest{
 		ScriptID:    req.ID,
 		ScriptName:  req.ScriptName,
 		Description: req.Description,
@@ -247,6 +284,11 @@ func (p *PluginServiceServer) CreateRetentionScript(ctx context.Context, req *cl
 	}
 	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
 	orgID := utils.ProtoFromUUIDStrOrNil(orgIDstr)
+
+	ctx, err = contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	resp, err := p.DataRetentionPluginServiceClient.CreateRetentionScript(ctx, &pluginpb.CreateRetentionScriptRequest{
 		Script: &pluginpb.DetailedRetentionScript{

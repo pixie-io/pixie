@@ -30,6 +30,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"gopkg.in/yaml.v2"
 
@@ -67,6 +68,15 @@ func (s *Server) Stop() {
 	s.once.Do(func() {
 		close(s.done)
 	})
+}
+
+func contextWithAuthToken(ctx context.Context) (context.Context, error) {
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return metadata.AppendToOutgoingContext(ctx, "authorization",
+		fmt.Sprintf("bearer %s", sCtx.AuthToken)), nil
 }
 
 // PluginService implementation.
@@ -227,9 +237,11 @@ func (s *Server) GetOrgRetentionPluginConfig(ctx context.Context, req *pluginpb.
 			return nil, status.Error(codes.Internal, "failed to read configs")
 		}
 
-		err = json.Unmarshal(configurationJSON, &configMap)
-		if err != nil {
-			return nil, status.Error(codes.Internal, "failed to read configs")
+		if len(configurationJSON) > 0 {
+			err = json.Unmarshal(configurationJSON, &configMap)
+			if err != nil {
+				return nil, status.Error(codes.Internal, "failed to read configs")
+			}
 		}
 
 		return &pluginpb.GetOrgRetentionPluginConfigResponse{
@@ -350,10 +362,13 @@ func (s *Server) propagateConfigChangesToScripts(ctx context.Context, txn *sqlx.
 	// TODO(michelle): This is a bit inefficient because we issue a call per script. We should consider adding an RPC method for updating multiple scripts.
 	for _, sc := range rScripts {
 		var configMap map[string]string
-		err = json.Unmarshal(configurations, &configMap)
-		if err != nil {
-			return status.Error(codes.Internal, "failed to read configs")
+		if len(configurations) != 0 {
+			err = json.Unmarshal(configurations, &configMap)
+			if err != nil {
+				return status.Error(codes.Internal, "failed to read configs")
+			}
 		}
+
 		exportURL := sc.ExportURL
 		if exportURL == "" {
 			exportURL = defaultExportURL
@@ -413,6 +428,11 @@ func (s *Server) UpdateOrgRetentionPluginConfig(ctx context.Context, req *plugin
 		return nil, err
 	}
 	defer txn.Rollback()
+
+	ctx, err = contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	if req.Enabled != nil && req.Enabled.Value { // Plugin was just enabled, we should create it.
 		err = s.enableOrgRetention(ctx, txn, orgID, req.PluginID, version, configurations)
@@ -510,6 +530,15 @@ func (s *Server) GetRetentionScripts(ctx context.Context, req *pluginpb.GetReten
 		}
 		scriptIDs = append(scriptIDs, id)
 	}
+
+	if len(scriptIDs) == 0 {
+		return &pluginpb.GetRetentionScriptsResponse{Scripts: make([]*pluginpb.RetentionScript, 0)}, nil
+	}
+
+	ctx, err = contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
 	cronScriptsResp, err := s.cronScriptClient.GetScripts(ctx, &cronscriptpb.GetScriptsRequest{IDs: scriptIDs})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to fetch cron scripts")
@@ -550,6 +579,11 @@ func (s *Server) GetRetentionScript(ctx context.Context, req *pluginpb.GetRetent
 	err = rows.StructScan(&script)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to read script")
+	}
+
+	ctx, err = contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	cronScriptResp, err := s.cronScriptClient.GetScript(ctx, &cronscriptpb.GetScriptRequest{ID: req.ScriptID})
@@ -621,6 +655,11 @@ func (s *Server) CreateRetentionScript(ctx context.Context, req *pluginpb.Create
 	}
 	defer txn.Rollback()
 
+	ctx, err = contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	id, err := s.createRetentionScript(ctx, txn, orgID, req.Script.Script.PluginId, &RetentionScript{
 		ScriptName:  req.Script.Script.ScriptName,
 		Description: req.Script.Script.Description,
@@ -660,10 +699,13 @@ func (s *Server) getPluginConfigs(txn *sqlx.Tx, orgID uuid.UUID, pluginID string
 	if err != nil {
 		return "", nil, status.Error(codes.Internal, "failed to read configs")
 	}
-	err = json.Unmarshal(configurationJSON, &configMap)
-	if err != nil {
-		return "", nil, status.Error(codes.Internal, "failed to read configs")
+	if len(configurationJSON) > 0 {
+		err = json.Unmarshal(configurationJSON, &configMap)
+		if err != nil {
+			return "", nil, status.Error(codes.Internal, "failed to read configs")
+		}
 	}
+
 	return defaultExportURL, configMap, nil
 }
 
@@ -689,6 +731,11 @@ func (s *Server) UpdateRetentionScript(ctx context.Context, req *pluginpb.Update
 		return nil, err
 	}
 	defer txn.Rollback()
+
+	ctx, err = contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	// Fetch existing script.
 	query := `SELECT org_id, script_name, description, PGP_SYM_DECRYPT(export_url, $1::text) as export_url, plugin_id from plugin_retention_scripts WHERE script_id=$2`

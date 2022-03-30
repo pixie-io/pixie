@@ -169,7 +169,7 @@ func TestServer_GetPlugins(t *testing.T) {
 	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
 
 	s := controllers.New(db, "test", mockCSClient)
-	resp, err := s.GetPlugins(context.Background(), &pluginpb.GetPluginsRequest{})
+	resp, err := s.GetPlugins(createTestContext(), &pluginpb.GetPluginsRequest{})
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 
@@ -202,7 +202,7 @@ func TestServer_GetPluginsWithKind(t *testing.T) {
 	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
 
 	s := controllers.New(db, "test", mockCSClient)
-	resp, err := s.GetPlugins(context.Background(), &pluginpb.GetPluginsRequest{Kind: pluginpb.PLUGIN_KIND_RETENTION})
+	resp, err := s.GetPlugins(createTestContext(), &pluginpb.GetPluginsRequest{Kind: pluginpb.PLUGIN_KIND_RETENTION})
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 
@@ -227,7 +227,7 @@ func TestServer_GetRetentionPluginConfig(t *testing.T) {
 	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
 
 	s := controllers.New(db, "test", mockCSClient)
-	resp, err := s.GetRetentionPluginConfig(context.Background(), &pluginpb.GetRetentionPluginConfigRequest{
+	resp, err := s.GetRetentionPluginConfig(createTestContext(), &pluginpb.GetRetentionPluginConfigRequest{
 		ID:      "test-plugin",
 		Version: "0.0.2",
 	})
@@ -266,7 +266,7 @@ func TestServer_GetRetentionPluginsForOrg(t *testing.T) {
 	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
 
 	s := controllers.New(db, "test", mockCSClient)
-	resp, err := s.GetRetentionPluginsForOrg(context.Background(), &pluginpb.GetRetentionPluginsForOrgRequest{
+	resp, err := s.GetRetentionPluginsForOrg(createTestContext(), &pluginpb.GetRetentionPluginsForOrgRequest{
 		OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 	})
 	require.NoError(t, err)
@@ -294,7 +294,7 @@ func TestServer_GetOrgRetentionPluginConfig(t *testing.T) {
 	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
 
 	s := controllers.New(db, "test", mockCSClient)
-	resp, err := s.GetOrgRetentionPluginConfig(context.Background(), &pluginpb.GetOrgRetentionPluginConfigRequest{
+	resp, err := s.GetOrgRetentionPluginConfig(createTestContext(), &pluginpb.GetOrgRetentionPluginConfigRequest{
 		PluginID: "test-plugin",
 		OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 	})
@@ -575,7 +575,8 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 			}).AnyTimes()
 
 			s := controllers.New(db, "test", mockCSClient)
-			resp, err := s.UpdateOrgRetentionPluginConfig(context.Background(), test.request)
+
+			resp, err := s.UpdateOrgRetentionPluginConfig(createTestContext(), test.request)
 
 			require.NoError(t, err)
 			require.NotNil(t, resp)
@@ -673,7 +674,7 @@ func TestServer_GetRetentionScripts(t *testing.T) {
 	}, nil)
 
 	s := controllers.New(db, "test", mockCSClient)
-	resp, err := s.GetRetentionScripts(context.Background(), &pluginpb.GetRetentionScriptsRequest{
+	resp, err := s.GetRetentionScripts(createTestContext(), &pluginpb.GetRetentionScriptsRequest{
 		OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 	})
 
@@ -731,7 +732,7 @@ func TestServer_GetRetentionScript(t *testing.T) {
 	}, nil)
 
 	s := controllers.New(db, "test", mockCSClient)
-	resp, err := s.GetRetentionScript(context.Background(), &pluginpb.GetRetentionScriptRequest{
+	resp, err := s.GetRetentionScript(createTestContext(), &pluginpb.GetRetentionScriptRequest{
 		OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 		ScriptID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
 	})
@@ -791,7 +792,7 @@ func TestServer_CreateRetentionScript(t *testing.T) {
 	}, nil)
 
 	s := controllers.New(db, "test", mockCSClient)
-	resp, err := s.CreateRetentionScript(context.Background(), &pluginpb.CreateRetentionScriptRequest{
+	resp, err := s.CreateRetentionScript(createTestContext(), &pluginpb.CreateRetentionScriptRequest{
 		Script: &pluginpb.DetailedRetentionScript{
 			Script: &pluginpb.RetentionScript{
 				ScriptName:  "New Script",

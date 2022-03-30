@@ -580,14 +580,14 @@ func (s *Server) sendCronScriptUpdateToViziers(msg *cvmsgspb.CronScriptUpdate, o
 	}
 
 	// Get healthy viziers for org.
-	claims := jwtutils.GenerateJWTForService("vzmgr Service", viper.GetString("domain_name"))
-	token, err := jwtutils.SignJWTClaims(claims, viper.GetString("jwt_signing_key"))
+	svcJWT := jwtutils.GenerateJWTForAPIUser("", orgID.String(), time.Now().Add(time.Minute*10), viper.GetString("domain_name"))
+	svcClaims, err := jwtutils.SignJWTClaims(svcJWT, viper.GetString("jwt_signing_key"))
 	if err != nil {
+		log.WithError(err).Error("Failed to sign claims")
 		return
 	}
-
 	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
-		fmt.Sprintf("bearer %s", token))
+		fmt.Sprintf("bearer %s", svcClaims))
 
 	if len(clusterIDs) == 0 { // If no clusterIDs specified, this message should be sent to all Viziers in the org.
 		viziers, err := s.vzmgrClient.GetViziersByOrg(ctx, utils.ProtoFromUUID(orgID))
