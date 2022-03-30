@@ -1052,6 +1052,11 @@ TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessage) {
     ParseResult result = ParseFrames(message_type_t::kRequest, &data_buffer_, &parsed_messages,
                                      /* resync */ true, &state);
 
+    // CreateEvents creates chunks starting at 0.
+    // When the test loops, we end up with overlapping chunks.
+    // So reset the buffer between test loops.
+    data_buffer_.Reset();
+
     EXPECT_EQ(ParseState::kSuccess, result.state);
     ASSERT_THAT(parsed_messages,
                 ElementsAre(HTTPPostReq0ExpectedMessage(), HTTPGetReq1ExpectedMessage()));
@@ -1070,6 +1075,11 @@ TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessage) {
     std::deque<Message> parsed_messages;
     ParseResult result = ParseFrames(message_type_t::kResponse, &data_buffer_, &parsed_messages,
                                      /* resync */ true, &state);
+
+    // CreateEvents creates chunks starting at 0.
+    // When the test loops, we end up with overlapping chunks.
+    // So reset the buffer between test loops.
+    data_buffer_.Reset();
 
     EXPECT_EQ(ParseState::kSuccess, result.state);
     EXPECT_THAT(parsed_messages,
