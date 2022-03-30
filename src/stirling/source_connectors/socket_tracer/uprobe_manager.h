@@ -37,6 +37,7 @@
 #include "src/stirling/utils/detect_application.h"
 #include "src/stirling/utils/proc_path_tools.h"
 #include "src/stirling/utils/proc_tracker.h"
+#include "src/stirling/source_connectors/socket_tracer/uprobe_symaddrs.h"
 
 DECLARE_bool(stirling_rescan_for_dlopen);
 DECLARE_double(stirling_rescan_exp_backoff_factor);
@@ -45,6 +46,7 @@ namespace px {
 namespace stirling {
 
 using system::ProcParser;
+using px::stirling::RawFptrManager;
 
 /**
  * Describes a UProbe template.
@@ -333,30 +335,37 @@ class UProbeManager {
 
   // Probes for OpenSSL tracing.
   inline static const auto kOpenSSLUProbes = MakeArray<bpf_tools::UProbeSpec>({
-      // netty-tcnative statically linked boringssl
       bpf_tools::UProbeSpec{
-          .binary_path = "/tmp/libnetty_tcnative_linux_x86.so",
+          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
           .symbol = "SSL_write",
           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
           .probe_fn = "probe_entry_SSL_write",
       },
       bpf_tools::UProbeSpec{
-          .binary_path = "/tmp/libnetty_tcnative_linux_x86.so",
+          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
           .symbol = "SSL_write",
           .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
           .probe_fn = "probe_ret_SSL_write",
       },
       bpf_tools::UProbeSpec{
-          .binary_path = "/tmp/libnetty_tcnative_linux_x86.so",
+          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
           .symbol = "SSL_read",
           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
           .probe_fn = "probe_entry_SSL_read",
       },
       bpf_tools::UProbeSpec{
-          .binary_path = "/tmp/libnetty_tcnative_linux_x86.so",
+          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
           .symbol = "SSL_read",
           .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
           .probe_fn = "probe_ret_SSL_read",
+      },
+      // Used by node tracing to record the mapping from SSL object to TLSWrap object.
+      // TODO(yzhao): Move this to a separate list for node application only.
+      bpf_tools::UProbeSpec{
+          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
+          .symbol = "SSL_new",
+          .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
+          .probe_fn = "probe_ret_SSL_new",
       },
   });
 
@@ -474,7 +483,7 @@ class UProbeManager {
   // Returns set of PIDs that have had mmap called on them since the last call.
   absl::flat_hash_set<md::UPID> PIDsToRescanForUProbes();
 
-  Status UpdateOpenSSLSymAddrs(std::filesystem::path container_lib, uint32_t pid, std::optional<ProcParser::ProcessMap> map_entry);
+  Status UpdateOpenSSLSymAddrs(RawFptrManager* fptrManager, std::filesystem::path container_lib, uint32_t pid);
   Status UpdateGoCommonSymAddrs(obj_tools::ElfReader* elf_reader,
                                 obj_tools::DwarfReader* dwarf_reader,
                                 const std::vector<int32_t>& pids);

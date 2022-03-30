@@ -167,7 +167,7 @@ StatusOr<std::unique_ptr<ElfReader>> ElfReader::Create(
 
   elf_reader->binary_path_ = binary_path;
 
-  if (!elf_reader->elf_reader_.load(binary_path, /* skip_segments */ true)) {
+  if (!elf_reader->elf_reader_.load(binary_path, /* skip_segments */ false)) {
     return error::Internal("Can't find or process ELF file $0", binary_path);
   }
 
@@ -213,6 +213,22 @@ StatusOr<ELFIO::section*> ElfReader::SymtabSection() {
 
   return symtab_section;
 }
+
+StatusOr<int32_t> ElfReader::FindSegmentOffsetOfSection(std::string section_name) {
+
+  PL_ASSIGN_OR_RETURN(ELFIO::section* text_section, SectionWithName(section_name));
+  uint64_t desired_offset = 0;
+  auto section_offset = text_section->get_offset();
+
+  for (int i = 0; i < elf_reader_.segments.size(); ++i) {
+    ELFIO::segment* segment = elf_reader_.segments[i];
+    auto segment_offset = segment->get_offset();
+    if (segment_offset < section_offset && segment_offset > desired_offset) {
+        desired_offset = segment->get_offset();
+    }
+  }
+  return desired_offset;
+};
 
 StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::SearchSymbols(
     std::string_view search_symbol, SymbolMatchType match_type, std::optional<int> symbol_type,
@@ -493,19 +509,19 @@ StatusOr<std::vector<uint64_t>> ElfReader::FuncRetInstAddrs(const SymbolInfo& fu
   return addrs;
 }
 
-StatusOr<utils::u8string> ElfReader::SymbolByteCode(std::string_view section,
-                                                    const SymbolInfo& symbol) {
-  ELFIO::section* text_section = nullptr;
+StatusOr<ELFIO::section*> ElfReader::SectionWithName(std::string_view section_name) {
   for (int i = 0; i < elf_reader_.sections.size(); ++i) {
     ELFIO::section* psec = elf_reader_.sections[i];
-    if (psec->get_name() == section) {
-      text_section = psec;
-      break;
+    if (psec->get_name() == section_name) {
+      return psec;
     }
   }
-  if (text_section == nullptr) {
-    return error::NotFound("Could not find section=$0 in binary=$1", section, binary_path_);
-  }
+  return error::NotFound("Could not find section=$0 in binary=$1", section_name, binary_path_);
+}
+
+StatusOr<utils::u8string> ElfReader::SymbolByteCode(std::string_view section,
+                                                    const SymbolInfo& symbol) {
+  PL_ASSIGN_OR_RETURN(ELFIO::section* text_section, SectionWithName(section));
   int offset = symbol.address - text_section->get_address() + text_section->get_offset();
 
   std::ifstream ifs(binary_path_, std::ios::binary);

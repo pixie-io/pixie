@@ -356,6 +356,7 @@ class ProcParser {
 
   StatusOr<absl::flat_hash_set<ProcessMap>> GetMapEntries(pid_t pid, std::string libpath) const;
 
+  StatusOr<ProcessMap> GetExecutableMapEntry(pid_t pid, std::string libpath);
 
  private:
   static Status ParseNetworkStatAccumulateIFaceData(

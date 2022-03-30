@@ -62,6 +62,8 @@ class ElfReader {
     }
   };
 
+  StatusOr<int32_t> FindSegmentOffsetOfSection(std::string section_name);
+
   /**
    * Returns a list of symbol names that meets the search criteria.
    *
@@ -145,6 +147,11 @@ class ElfReader {
    * Returns the address of the return instructions of the function.
    */
   StatusOr<std::vector<uint64_t>> FuncRetInstAddrs(const SymbolInfo& func_symbol);
+
+  /**
+   * Returns the ELF section with the corresponding name
+   */
+  StatusOr<ELFIO::section*>SectionWithName(std::string_view section_name);
 
   /**
    * Returns the byte code for the symbol at the specified section.

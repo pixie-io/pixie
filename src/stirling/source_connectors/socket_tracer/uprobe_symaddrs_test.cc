@@ -49,6 +49,10 @@ class UprobeSymaddrsTest : public ::testing::Test {
   std::unique_ptr<ElfReader> elf_reader_;
 };
 
+/* TEST(UprobeSymaddrsTest, RawFptrManager) { */
+/*   RawFptrManager manager = RawFptrManager(elf_reader_.get(), ); */
+/* } */
+
 TEST_F(UprobeSymaddrsTest, GoCommonSymAddrs) {
   ASSERT_OK_AND_ASSIGN(struct go_common_symaddrs_t symaddrs,
                        GoCommonSymAddrs(elf_reader_.get(), dwarf_reader_.get()));

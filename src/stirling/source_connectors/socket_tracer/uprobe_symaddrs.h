@@ -25,10 +25,30 @@
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
 #include "src/stirling/utils/detect_application.h"
 
+DECLARE_bool(openssl_force_raw_fn_ptrs);
+
 namespace px {
 namespace stirling {
 
 using system::ProcParser;
+
+class RawFptrManager : NotCopyMoveable {
+
+  public:
+    explicit RawFptrManager(obj_tools::ElfReader* elf_reader, system::ProcParser* proc_parser, std::string lib_path);
+    ~RawFptrManager();
+
+    template <class T>
+    StatusOr<T*> RawSymbolToFptr(const std::string& symbol_name);
+    StatusOr<bool> Init();
+
+  private:
+    obj_tools::ElfReader* elf_reader_;
+    ProcParser* proc_parser_;
+    void* dlopen_handle_;
+    std::string lib_path_;
+    ProcParser::ProcessMap map_entry_;
+};
 
 /**
  * Uses ELF and DWARF information to return the locations of all relevant symbols for general Go
@@ -55,7 +75,7 @@ StatusOr<struct go_tls_symaddrs_t> GoTLSSymAddrs(obj_tools::ElfReader* elf_reade
  * Detects the version of OpenSSL to return the locations of all relevant symbols for OpenSSL uprobe
  * deployment.
  */
-StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(const std::filesystem::path& openssl_lib, uint32_t pid, std::optional<ProcParser::ProcessMap> map_entry);
+StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(RawFptrManager* fptrManager, const std::filesystem::path& openssl_lib, uint32_t pid);
 
 /**
  * Returns the corresponding symbol offsets of the input Nodejs executable.

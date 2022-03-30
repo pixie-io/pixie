@@ -31,33 +31,48 @@
 #include "src/stirling/source_connectors/socket_tracer/testing/protocol_checkers.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
+#include "src/stirling/source_connectors/socket_tracer/uprobe_symaddrs.h"
 
 namespace px {
 namespace stirling {
 
 namespace http = protocols::http;
-namespace mux = protocols::mux;
+
+bool Init() {
+  FLAGS_openssl_force_raw_fn_ptrs = true;
+  return true;
+}
+
+bool kInit = Init();
 
 using ::px::stirling::testing::EqHTTPRecord;
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
 using ::px::stirling::testing::GetTargetRecords;
 using ::px::stirling::testing::SocketTraceBPFTest;
 using ::px::stirling::testing::ToRecordVector;
-using ::px::stirling::testing::ToMuxRecordVector;
 
-using ::testing::Each;
-using ::testing::Field;
-using ::testing::MatchesRegex;
 using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
 
-using ::px::stirling::testing::ColWrapperSizeIs;
-using ::testing::AllOf;
-using ::testing::UnorderedElementsAreArray;
+class NginxOpenSSL_1_1_0_ContainerWrapper
+    : public ::px::stirling::testing::NginxOpenSSL_1_1_0_Container {
+ public:
+  int32_t PID() const { return NginxWorkerPID(); }
+};
 
+class NginxOpenSSL_1_1_1_ContainerWrapper
+    : public ::px::stirling::testing::NginxOpenSSL_1_1_1_Container {
+ public:
+  int32_t PID() const { return NginxWorkerPID(); }
+};
 
-class ThriftmuxContainerWrapper
-    : public ::px::stirling::testing::ThriftMuxServerContainer {
+class Node12_3_1ContainerWrapper : public ::px::stirling::testing::Node12_3_1Container {
+ public:
+  int32_t PID() const { return process_pid(); }
+};
+
+class Node14_18_1AlpineContainerWrapper
+    : public ::px::stirling::testing::Node14_18_1AlpineContainer {
  public:
   int32_t PID() const { return process_pid(); }
 };
@@ -66,11 +81,6 @@ class ThriftmuxContainerWrapper
 // against the expected results.
 struct TraceRecords {
   std::vector<http::Record> http_records;
-  std::vector<std::string> remote_address;
-};
-
-struct MuxTraceRecords {
-  std::vector<mux::Record> mux_records;
   std::vector<std::string> remote_address;
 };
 
@@ -86,22 +96,6 @@ class OpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ fals
 
     // Sleep an additional second, just to be safe.
     sleep(1);
-  }
-
-  // Returns the trace records of the process specified by the input pid.
-  MuxTraceRecords GetMuxTraceRecords(int pid) {
-    std::vector<TaggedRecordBatch> tablets =
-        this->ConsumeRecords(SocketTraceConnector::kMuxTableNum);
-    if (tablets.empty()) {
-      return {};
-    }
-    types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
-    std::vector<size_t> server_record_indices =
-        FindRecordIdxMatchesPID(record_batch, kMuxUPIDIdx, pid);
-    std::vector<mux::Record> mux_records = ToMuxRecordVector(record_batch, server_record_indices);
-    std::vector<std::string> remote_addresses =
-        testing::GetRemoteAddrs(record_batch, server_record_indices);
-    return {std::move(mux_records), std::move(remote_addresses)};
   }
 
   // Returns the trace records of the process specified by the input pid.
@@ -127,83 +121,132 @@ class OpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ fals
 // Test Scenarios
 //-----------------------------------------------------------------------------
 
-typedef ::testing::Types<ThriftmuxContainerWrapper>
+// The is the response to `GET /index.html`.
+std::string_view kNginxRespBody = R"(<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+    body {
+        width: 35em;
+        margin: 0 auto;
+        font-family: Tahoma, Verdana, Arial, sans-serif;
+    }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href... [TRUNCATED])";
+
+http::Record GetExpectedHTTPRecord() {
+  http::Record expected_record;
+  expected_record.req.minor_version = 1;
+  expected_record.req.req_method = "GET";
+  expected_record.req.req_path = "/index.html";
+  expected_record.req.body = "";
+  expected_record.resp.resp_status = 200;
+  expected_record.resp.resp_message = "OK";
+  expected_record.resp.body = kNginxRespBody;
+  return expected_record;
+}
+
+typedef ::testing::Types<NginxOpenSSL_1_1_1_ContainerWrapper>
     OpenSSLServerImplementations;
 TYPED_TEST_SUITE(OpenSSLTraceTest, OpenSSLServerImplementations);
 
-inline auto EqMux(const mux::Frame& x) { return Field(&mux::Frame::type, ::testing::Eq(x.type)); }
-
-inline auto EqMuxRecord(const mux::Record& x) {
-  return AllOf(Field(&mux::Record::req, EqMux(x.req)), Field(&mux::Record::resp, EqMux(x.resp)));
-}
-
-mux::Record RecordWithType(mux::Type req_type) {
-  mux::Record r = {};
-  r.req.type = static_cast<int8_t>(req_type);
-
-  return r;
-}
-
-StatusOr<int32_t> RunThriftMuxClient(std::string container_name) {
-
-  std::string ca_setup_cmd = absl::StrFormat("docker exec %s /usr/lib/jvm/java-11-openjdk-amd64/bin/keytool -importcert -keystore /etc/ssl/certs/java/cacerts -file /etc/ssl/ca.crt -noprompt -storepass changeit", container_name);
-
-  PL_ASSIGN_OR_RETURN(std::string out, px::Exec(ca_setup_cmd));
-  LOG(INFO) << absl::StrFormat("thriftmux java keystore CA setup command output: '%s'", out);
-
-  std::string classpath =
-      "@/app/px/src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux/"
-      "server_image.classpath";
-  std::string cmd =
-      absl::StrFormat("docker exec %s /usr/bin/java -cp %s Client & echo $! && wait", container_name, classpath);
-  PL_ASSIGN_OR_RETURN(std::string out2, px::Exec(cmd));
-
-  LOG(INFO) << absl::StrFormat("thriftmux client command output: '%s'", out2);
-
-  std::vector<std::string> tokens = absl::StrSplit(out2, "\n");
-
-  int32_t client_pid;
-  if (!absl::SimpleAtoi(tokens[0], &client_pid)) {
-    return error::Internal("Could not extract PID.");
-  }
-
-  LOG(INFO) << absl::StrFormat("Client PID: %d", client_pid);
-
-  std::string thriftmux_client_output = "StringString";
-  if (tokens[1] != thriftmux_client_output) {
-    return error::Internal(
-        absl::StrFormat("Expected output from thriftmux to be '%s', received '%s' instead",
-                        thriftmux_client_output, tokens[1]));
-  }
-  return client_pid;
-}
-
-TYPED_TEST(OpenSSLTraceTest, mtls_thriftmux) {
-
-  // The first run of the java client will cause /tmp/libnetty_tcnative_linux_x86.so
-  // to be loaded. Not sure if striling can handle this, but let's make sure it's memory
-  // mapped before we start the data thread transfer.
-  RunThriftMuxClient(std::string(this->server_.container_name()));
-
+TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
   this->StartTransferDataThread();
 
-  RunThriftMuxClient(std::string(this->server_.container_name()));
+  // Make an SSL request with curl.
+  // Because the server uses a self-signed certificate, curl will normally refuse to connect.
+  // This is similar to the warning pages that Firefox/Chrome would display.
+  // To take an exception and make the SSL connection anyways, we use the --insecure flag.
 
+  // Run the client in the network of the server, so they can connect to each other.
+  ::px::stirling::testing::CurlContainer client;
+  PL_CHECK_OK(
+      client.Run(std::chrono::seconds{60},
+                 {absl::Substitute("--network=container:$0", this->server_.container_name())},
+                 {"--insecure", "-s", "-S", "https://localhost:443/index.html"}));
+  client.Wait();
   this->StopTransferDataThread();
 
-  MuxTraceRecords records = this->GetMuxTraceRecords(this->server_.PID());
+  TraceRecords records = this->GetTraceRecords(this->server_.PID());
+  http::Record expected_record = GetExpectedHTTPRecord();
 
-  mux::Record tinitCheck = RecordWithType(mux::Type::kRerrOld);
-  mux::Record tinit = RecordWithType(mux::Type::kTinit);
-  mux::Record pingRecord = RecordWithType(mux::Type::kTping);
-  mux::Record dispatchRecord = RecordWithType(mux::Type::kTdispatch);
-
-  EXPECT_THAT(records.mux_records, Contains(EqMuxRecord(tinitCheck)));
-  EXPECT_THAT(records.mux_records, Contains(EqMuxRecord(tinit)));
-  EXPECT_THAT(records.mux_records, Contains(EqMuxRecord(pingRecord)));
-  EXPECT_THAT(records.mux_records, Contains(EqMuxRecord(dispatchRecord)));
+  EXPECT_THAT(records.http_records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
+  EXPECT_THAT(records.remote_address, UnorderedElementsAre(StrEq("127.0.0.1")));
 }
 
+/* TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) { */
+/*   this->StartTransferDataThread(); */
+
+/*   // Make multiple requests and make sure we capture all of them. */
+/*   std::string rb_script = R"( */
+/*         require 'net/http' */
+/*         require 'uri' */
+
+/*         $i = 0 */
+/*         while $i < 3 do */
+/*           uri = URI.parse('https://localhost:443/index.html') */
+/*           http = Net::HTTP.new(uri.host, uri.port) */
+/*           http.use_ssl = true */
+/*           http.verify_mode = OpenSSL::SSL::VERIFY_NONE */
+/*           request = Net::HTTP::Get.new(uri.request_uri) */
+/*           response = http.request(request) */
+/*           p response.body */
+
+/*           sleep(1) */
+
+/*           $i += 1 */
+/*         end */
+/*   )"; */
+
+/*   // Make an SSL request with the client. */
+/*   // Run the client in the network of the server, so they can connect to each other. */
+/*   ::px::stirling::testing::RubyContainer client; */
+/*   PL_CHECK_OK( */
+/*       client.Run(std::chrono::seconds{60}, */
+/*                  {absl::Substitute("--network=container:$0", this->server_.container_name())}, */
+/*                  {"ruby", "-e", rb_script})); */
+/*   client.Wait(); */
+/*   this->StopTransferDataThread(); */
+
+/*   TraceRecords records = this->GetTraceRecords(this->server_.PID()); */
+/*   http::Record expected_record = GetExpectedHTTPRecord(); */
+
+/*   EXPECT_THAT(records.http_records, */
+/*               UnorderedElementsAre(EqHTTPRecord(expected_record), EqHTTPRecord(expected_record), */
+/*                                    EqHTTPRecord(expected_record))); */
+/*   EXPECT_THAT(records.remote_address, */
+/*               UnorderedElementsAre(StrEq("127.0.0.1"), StrEq("127.0.0.1"), StrEq("127.0.0.1"))); */
+/* } */
+
+/* TYPED_TEST(OpenSSLTraceTest, ssl_capture_node_client) { */
+/*   this->StartTransferDataThread(); */
+
+/*   // Make an SSL request with the client. */
+/*   // Run the client in the network of the server, so they can connect to each other. */
+/*   ::px::stirling::testing::NodeClientContainer client; */
+/*   PL_CHECK_OK( */
+/*       client.Run(std::chrono::seconds{60}, */
+/*                  {absl::Substitute("--network=container:$0", this->server_.container_name())}, */
+/*                  {"node", "/etc/node/https_client.js"})); */
+/*   client.Wait(); */
+/*   this->StopTransferDataThread(); */
+
+/*   TraceRecords records = this->GetTraceRecords(this->server_.PID()); */
+/*   http::Record expected_record = GetExpectedHTTPRecord(); */
+
+/*   EXPECT_THAT(records.http_records, UnorderedElementsAre(EqHTTPRecord(expected_record))); */
+/*   EXPECT_THAT(records.remote_address, UnorderedElementsAre(StrEq("127.0.0.1"))); */
+/* } */
 
 }  // namespace stirling
 }  // namespace px

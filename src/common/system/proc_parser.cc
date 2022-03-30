@@ -833,5 +833,16 @@ StatusOr<absl::flat_hash_set<ProcParser::ProcessMap>> ProcParser::GetMapEntries(
   return map_entries;
 }
 
+StatusOr<ProcParser::ProcessMap> ProcParser::GetExecutableMapEntry(pid_t pid, std::string libpath) {
+  PL_ASSIGN_OR_RETURN(auto map_entries, GetMapEntries(pid, libpath));
+  for (const auto& entry: map_entries) {
+    if (entry.permissions.compare("r-xp") != 0) continue;
+     LOG(INFO) << absl::Substitute("Found ProcessMap for $3: vmem_start $0 map_path $1 permission $2", absl::Hex(entry.vmem_start), entry.map_path, entry.permissions, libpath);
+     return entry;
+  }
+
+  return error::NotFound(absl::Substitute("Could not find maps entry for $0", libpath));
+}
+
 }  // namespace system
 }  // namespace px
