@@ -20,7 +20,6 @@ import * as React from 'react';
 
 import {
   Add as AddIcon,
-  Delete as DeleteIcon,
   Extension as ExtensionIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material';
@@ -41,6 +40,7 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { distanceInWordsStrict } from 'date-fns';
+import { Link, useRouteMatch } from 'react-router-dom';
 
 import { Spinner } from 'app/components';
 import {
@@ -78,24 +78,28 @@ const PluginIcon = React.memo<{ iconString: string }>(({ iconString }) => {
 });
 PluginIcon.displayName = 'PluginIcon';
 
-const RetentionScriptRow = React.memo<{ script: GQLRetentionScript, canDelete?: boolean }>(({
-  script,
-  canDelete = false,
-}) => {
+const RetentionScriptRow = React.memo<{ script: GQLRetentionScript }>(({ script }) => {
+  const { path } = useRouteMatch();
   const { plugins } = useRetentionPlugins();
   const { id, name, description, clusters, frequencyS, pluginID } = script;
   const plugin = plugins.find(p => p.id === pluginID);
 
-  const { script: detailedScript } = useRetentionScript(pluginID);
+  const { script: detailedScript } = useRetentionScript(id);
 
   const [saving, setSaving] = React.useState(false);
   const toggleMutation = useToggleRetentionScript(id);
-  const toggleScriptEnabled = React.useCallback((event: React.MouseEvent<HTMLLabelElement>) => {
+  const toggleScriptEnabled = React.useCallback((event: React.SyntheticEvent) => {
     event.preventDefault();
     event.stopPropagation();
 
-    if (!detailedScript) return;
-    toggleMutation(!detailedScript.enabled).then(() => setSaving(false)).catch(() => setSaving(false));
+    if (!detailedScript) {
+      console.info('Detailed script not set?');
+      return;
+    }
+    setSaving(true);
+    toggleMutation(!detailedScript.enabled)
+      .then(() => setSaving(false))
+      .catch(() => setSaving(false));
   }, [detailedScript, toggleMutation]);
 
   return (
@@ -127,7 +131,7 @@ const RetentionScriptRow = React.memo<{ script: GQLRetentionScript, canDelete?: 
           sx={{ mr: 1 }}
           label={script.enabled ? 'Enabled' : 'Disabled'}
           labelPlacement='start'
-          onClick={toggleScriptEnabled}
+          onClick={(e) => toggleScriptEnabled(e)}
           control={
             <Switch
               disabled={saving}
@@ -135,8 +139,14 @@ const RetentionScriptRow = React.memo<{ script: GQLRetentionScript, canDelete?: 
             />
           }
         />
-        <IconButton><SettingsIcon /></IconButton>
-        {canDelete && <IconButton><DeleteIcon /></IconButton>}
+        <Tooltip title='Configure this script'>
+          <IconButton
+            component={Link}
+            to={`${path}/update/${script.id}`}
+          >
+            <SettingsIcon />
+          </IconButton>
+        </Tooltip>
       </TableCell>
     </TableRow>
     /* eslint-enable react-memo/require-usememo */
@@ -158,6 +168,8 @@ const RetentionScriptTable = React.memo<{
 }) => {
   const canAddNewRow = isCustom;
 
+  const { path } = useRouteMatch();
+
   return (
     /* eslint-disable react-memo/require-usememo */
     <Box position='relative'>
@@ -167,6 +179,8 @@ const RetentionScriptTable = React.memo<{
           variant='outlined'
           sx={({ spacing }) => ({ position: 'absolute', top: 0, right: spacing(2) })}
           startIcon={<AddIcon />}
+          component={Link}
+          to={`${path}/create`}
         >
           Create Table
         </Button>
@@ -185,7 +199,7 @@ const RetentionScriptTable = React.memo<{
             </TableRow>
           </TableHead>
           <TableBody>
-            {scripts.map(s => <RetentionScriptRow key={s.id} script={s} canDelete={isCustom} />)}
+            {scripts.map(s => <RetentionScriptRow key={s.id} script={s} />)}
           </TableBody>
         </Table>
       ) : (
@@ -201,33 +215,16 @@ RetentionScriptTable.displayName = 'RetentionScriptTable';
 /*/
 TODO(nick,PC-1440):
 - Typography styles
-  - Subtitle looks bad
-  - Max width
-  - Font size/weight/color overall
   - Ellipsis + tooltip on all columns
 - Clusters column:
   - 'X more...' or '(+X)' badge that shows the whole list in line-break separated tooltip
-  - Links? What would they go to though? /live/:clusterId ? Or just hover tooltips with the full ID or something.
-- Summary Window column: reuse code from elsewhere to make the duration human-readable (300 seconds -> 5 minutes)
-- Functionality for Create Table button
-- Controls column:
-  - Enable/disable switch
-  - Configure button
-  - "View in <Plugin Provider>" -- what is that?
-- Configure page itself
-  - Needs a back button to return to /configure-data-export
-  - Needs a subroute - would `/configure-data-export/:scriptId` be unique? If not, /.../:pluginId/:scriptId maybe.
-  - That needs a Monaco instance and some other stuff
-  - Needs mutations of its own
-  - Needs to change what it offers to set based on whether isPreset=true
-  - Is a form below the script, has a save button like Plugins dropdown does
 /*/
 
 export const ConfigureDataExportBody = React.memo(() => {
   const { loading: loadingScripts, scripts } = useRetentionScripts();
   const { loading: loadingPlugins, plugins } = useRetentionPlugins();
 
-  if (loadingScripts || loadingPlugins) {
+  if ((loadingScripts || loadingPlugins) && (!plugins || !scripts)) {
     return (
       // eslint-disable-next-line react-memo/require-usememo
       <Box sx={{ height: 1, width: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -245,7 +242,7 @@ export const ConfigureDataExportBody = React.memo(() => {
           <RetentionScriptTable
             title={name}
             description={description}
-            scripts={scripts.filter(s => s.pluginID === id && s.isPreset)}
+            scripts={scripts.filter(s => s.pluginID === id && s.isPreset).sort((a, b) => a.name.localeCompare(b.name))}
           />
         </React.Fragment>
       ))}
@@ -253,7 +250,7 @@ export const ConfigureDataExportBody = React.memo(() => {
       <RetentionScriptTable
         title='Custom'
         description='Pixie can send results from custom scripts to long-term data stores at any desired frequency.'
-        scripts={scripts.filter(s => !s.isPreset)}
+        scripts={scripts.filter(s => !s.isPreset).sort((a, b) => a.name.localeCompare(b.name))}
         isCustom={true}
       />
     </Box>

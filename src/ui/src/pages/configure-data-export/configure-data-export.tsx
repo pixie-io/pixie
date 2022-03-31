@@ -21,7 +21,7 @@ import * as React from 'react';
 import { Button, Typography } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-import { Link } from 'react-router-dom';
+import { Link, useRouteMatch, Route, Switch } from 'react-router-dom';
 
 import { Footer, scrollbarStyles } from 'app/components';
 import { usePluginList } from 'app/containers/admin/plugins/plugin-gql';
@@ -31,7 +31,7 @@ import { GQLPluginKind } from 'app/types/schema';
 import * as pixienautCarryingBoxes from 'assets/images/pixienaut-carrying-boxes.svg';
 import { Copyright } from 'configurable/copyright';
 
-
+import { EditDataExportScript } from './data-export-detail';
 import { ConfigureDataExportBody } from './data-export-tables';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
@@ -142,6 +142,7 @@ NoPluginsEnabledSplash.displayName = 'NoPluginsEnabledSplash';
 
 export const ConfigureDataExportView = React.memo(() => {
   const { plugins } = usePluginList(GQLPluginKind.PK_RETENTION);
+  const { path } = useRouteMatch();
 
   const isSplash = React.useMemo(() => (
     !plugins.some(p => p.supportsRetention && p.retentionEnabled)
@@ -149,8 +150,17 @@ export const ConfigureDataExportView = React.memo(() => {
 
   return (
     <ConfigureDataExportPage>
-      {isSplash && <NoPluginsEnabledSplash /> }
-      {!isSplash && <ConfigureDataExportBody /> }
+      <Switch>
+        <Route exact path={path}>
+          {isSplash ? <NoPluginsEnabledSplash /> : <ConfigureDataExportBody /> }
+        </Route>
+        <Route exact path={`${path}/create`}>
+          <EditDataExportScript scriptId='' isCreate={true} />
+        </Route>
+        <Route exact path={`${path}/update/:scriptId`}>
+          {({ match: { params } }) => <EditDataExportScript scriptId={params.scriptId} isCreate={false} />}
+        </Route>
+      </Switch>
     </ConfigureDataExportPage>
   );
 });

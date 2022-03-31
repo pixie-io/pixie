@@ -21,11 +21,50 @@ import * as React from 'react';
 import { gql, useMutation, useQuery } from '@apollo/client';
 
 import {
+  GQLClusterStatus,
   GQLDetailedRetentionScript,
   GQLEditableRetentionScript,
   GQLPlugin,
   GQLRetentionScript,
 } from 'app/types/schema';
+
+export const DEFAULT_RETENTION_PXL = `import px
+
+# Export your scripts to a long-term data store using OTLP.
+# Query your dataframe as normal, but export to OTLP using \`px.export\`:
+# px.export(
+#   df, px.otel.Data(
+#     resource={
+#       # Service name is required.
+#       'service.name': df.service,
+#       # Optional specifications.
+#       'k8s.container.name': df.container,
+#       'service.instance.id': df.pod,
+#       'k8s.pod.name': df.pod,
+#       'k8s.namespace.name': df.namespace,
+#       # We auto-include this value if it's not set.
+#       # 'instrumentation.provider': df.pixie,
+#     },
+#     data=[
+#       px.otel.metric.Gauge(
+#         name='metric_name',
+#         description=''
+#         value=df.metric,
+#         attributes={'attr': df.attr},
+#       ),
+#       px.otel.metric.Summary(
+#         name='http.server.duration',
+#         count=df.latency_count,
+#         sum=df.latency_sum,
+#         quantile_values={
+#           0.0: df.latency_min,
+#           1.0: df.latency_max,
+#         },
+#     )],
+#   ),
+# )
+# Read more in https://docs.px.dev/tutorials/otel-export/.
+`;
 
 export const GQL_GET_PLUGINS_FOR_RETENTION_SCRIPTS = gql`
   query GetRetentionPlugins {
@@ -82,6 +121,31 @@ export const GQL_CREATE_RETENTION_SCRIPT = gql`
   }
 `;
 
+export interface ClusterInfoForRetentionScripts {
+  clusterUID: string;
+  prettyClusterName: string;
+  status?: GQLClusterStatus;
+}
+
+export function useClustersForRetentionScripts(): { loading: boolean, clusters: ClusterInfoForRetentionScripts[] } {
+  const { data, loading, error } = useQuery<{ clusters: ClusterInfoForRetentionScripts[] }>(
+    gql`
+      query listClustersForRetentionScript {
+        clusters {
+          clusterUID
+          prettyClusterName
+          status
+        }
+      }
+    `,
+  );
+
+  return React.useMemo(() => ({
+    loading: loading && !error,
+    clusters: data.clusters ?? [],
+  }), [data, loading, error]);
+}
+
 export type PartialPlugin = Pick<GQLPlugin, 'id' | 'name' | 'description' | 'logo'>;
 export function useRetentionPlugins(): { loading: boolean, plugins: PartialPlugin[] } {
   const { data, loading, error } = useQuery<{ plugins: PartialPlugin[] }>(
@@ -96,19 +160,21 @@ export function useRetentionPlugins(): { loading: boolean, plugins: PartialPlugi
 }
 
 export function useRetentionScripts(): { loading: boolean, scripts: GQLRetentionScript[] } {
-  const { data, loading, error } = useQuery<{ scripts: GQLRetentionScript[] }>(
+  const { data, loading, error } = useQuery<{ retentionScripts: GQLRetentionScript[] }>(
     GQL_GET_RETENTION_SCRIPTS,
     { fetchPolicy: 'cache-and-network' },
   );
 
   return React.useMemo(() => ({
     loading: loading && !error,
-    scripts: data?.scripts ?? [],
+    scripts: data?.retentionScripts ?? [],
   }), [data, loading, error]);
 }
 
 export function useRetentionScript(id: string): { loading: boolean, script: GQLDetailedRetentionScript } {
-  const { data, loading, error } = useQuery<GQLDetailedRetentionScript, { id: string }>(
+  const { data, loading, error } = useQuery<{
+    retentionScript: GQLDetailedRetentionScript,
+  }, { id: string }>(
     GQL_GET_RETENTION_SCRIPT,
     {
       variables: { id },
@@ -118,11 +184,11 @@ export function useRetentionScript(id: string): { loading: boolean, script: GQLD
 
   return React.useMemo(() => ({
     loading: loading && !error,
-    script: data ?? null,
+    script: data?.retentionScript ?? null,
   }), [data, loading, error]);
 }
 
-export function useToggleRetentionScript(id: string): (enabled?: boolean) => Promise<boolean> {
+export function useMutateRetentionScript(id: string): (newScript: GQLEditableRetentionScript) => Promise<boolean> {
   const { script } = useRetentionScript(id);
 
   const [updateScript] = useMutation<{
@@ -132,24 +198,58 @@ export function useToggleRetentionScript(id: string): (enabled?: boolean) => Pro
     script: GQLEditableRetentionScript,
   }>(GQL_UPDATE_RETENTION_SCRIPT);
 
-  return React.useCallback((enabled?: boolean) => {
+  return React.useCallback((newScript: GQLEditableRetentionScript) => {
     if (!script) return Promise.reject('Not Ready');
-
-    const edited: GQLEditableRetentionScript = {
-      ...script,
-      enabled: enabled == null ? !script.enabled : enabled,
-    };
 
     return updateScript({
       variables: {
         id: script.id,
-        script: edited,
+        // TODO(michelle): When plugins can be changed on existing scripts, remove the `pluginID: undefined` part.
+        script: {
+          ...script,
+          ...newScript,
+          contents: script.isPreset ? undefined : newScript.contents,
+          pluginID: undefined,
+        },
       },
       refetchQueries: [GQL_GET_RETENTION_SCRIPTS, GQL_GET_RETENTION_SCRIPT],
       onError(err) {
         // TODO(nick,PC-1440): Snackbar error here?
-        console.error(`Could not toggle script ${script.id}:`, err?.message);
+        console.error(`Could not update script ${script.id}:`, err?.message);
       },
     }).then(({ data: { UpdateRetentionScript: success } }) => success);
   }, [script, updateScript]);
+}
+
+export function useToggleRetentionScript(id: string): (enabled?: boolean) => Promise<boolean> {
+  const { script } = useRetentionScript(id);
+  const mutate = useMutateRetentionScript(id);
+
+  return React.useCallback((enabled?: boolean) => {
+    return mutate({
+      ...script,
+      enabled: enabled == null ? !script.enabled : enabled,
+    });
+  }, [mutate, script]);
+}
+
+export function useCreateRetentionScript(): (newScript: GQLEditableRetentionScript) => Promise<string> {
+  const [createScript] = useMutation<{
+    CreateRetentionScript: string,
+  }, {
+    script: GQLEditableRetentionScript,
+  }>(GQL_CREATE_RETENTION_SCRIPT);
+
+  return React.useCallback((newScript: GQLEditableRetentionScript) => {
+    return createScript({
+      variables: {
+        script: newScript,
+      },
+      refetchQueries: [GQL_GET_RETENTION_SCRIPTS, GQL_GET_RETENTION_SCRIPT],
+      onError(err) {
+        // TODO(nick,PC-1440): Snackbar error here?
+        console.error(`Could not create script named "${newScript.name}":`, err?.message);
+      },
+    }).then(({ data: { CreateRetentionScript: id } }) => id);
+  }, [createScript]);
 }
