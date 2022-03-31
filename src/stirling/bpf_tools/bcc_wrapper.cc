@@ -202,7 +202,7 @@ Status BCCWrapper::AttachTracepoint(const TracepointSpec& probe) {
 }
 
 Status BCCWrapper::AttachUProbe(const UProbeSpec& probe) {
-  LOG(INFO) << "Deploying uprobe: " << probe.ToString();
+  VLOG(1) << "Deploying uprobe: " << probe.ToString();
   // TODO(oazizi): Natively support this attach type in BCCWrapper.
   DCHECK(probe.attach_type != BPFProbeAttachType::kReturnInsts);
   DCHECK((probe.symbol.empty() && probe.address != 0) ||
