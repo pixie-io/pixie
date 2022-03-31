@@ -119,7 +119,10 @@ export { PixieLogo } from './icons/pixie-logo';
 export {
   scrollbarStyles,
   COMMON_THEME,
+  DARK_BASE,
   DARK_THEME,
+  LIGHT_BASE,
   LIGHT_THEME,
   EDITOR_THEME_MAP,
+  addSyntaxToPalette,
 } from './mui-theme';
