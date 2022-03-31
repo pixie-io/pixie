@@ -433,6 +433,9 @@ func newRunner(script *cvmsgspb.CronScript, vzClient vizierpb.VizierServiceClien
 }
 
 func (r *runner) start() {
+	if r.cronScript.FrequencyS <= 0 {
+		return
+	}
 	ticker := time.NewTicker(time.Duration(r.cronScript.FrequencyS) * time.Second)
 
 	go func() {
