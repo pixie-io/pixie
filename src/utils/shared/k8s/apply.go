@@ -24,8 +24,10 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"regexp"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -81,10 +83,30 @@ func ApplyYAML(clientset kubernetes.Interface, config *rest.Config, namespace st
 }
 
 // KeyValueStringToMap converts a user-inputted label string (label1=value,label2=value2) into a string map.
+// Supports values that contain commas, as long as they are surrounded by quotes.
+// eg. (label1="valuea,valueb",label2=value2)
 func KeyValueStringToMap(labels string) (map[string]string, error) {
 	labelMap := make(map[string]string)
 	if labels == "" {
 		return labelMap, nil
+	}
+
+	// Support values that contain commas by replacing all values that are in quotes with a placeholder, and then replacing the placeholder after splitting on commas.
+	quotedReplMap := make(map[string]string)
+
+	pattern, err := regexp.Compile(`"([^"]+)"`)
+	if err != nil {
+		return labelMap, err
+	}
+	quotedMatches := pattern.FindAllStringSubmatch(labels, -1)
+	for i, quotedMatch := range quotedMatches {
+		if len(quotedMatch) < 2 {
+			continue
+		}
+		match := quotedMatch[1]
+		repl := fmt.Sprintf("__val%d__", i)
+		quotedReplMap[repl] = match
+		labels = strings.Replace(labels, fmt.Sprintf(`"%s"`, match), repl, 1)
 	}
 
 	splitString := strings.Split(labels, ",")
@@ -93,7 +115,14 @@ func KeyValueStringToMap(labels string) (map[string]string, error) {
 		if len(splitLabel) != 2 || splitLabel[0] == "" || splitLabel[1] == "" {
 			return nil, errors.New("Label string is malformed")
 		}
-		labelMap[splitLabel[0]] = splitLabel[1]
+		if _, ok := quotedReplMap[splitLabel[0]]; ok {
+			return nil, errors.New("Can not have quoted key, only quoted values")
+		}
+		val := splitLabel[1]
+		if origVal, ok := quotedReplMap[splitLabel[1]]; ok {
+			val = origVal
+		}
+		labelMap[splitLabel[0]] = val
 	}
 	return labelMap, nil
 }
