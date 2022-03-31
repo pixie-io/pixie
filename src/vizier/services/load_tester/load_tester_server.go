@@ -109,6 +109,10 @@ func (f *fakeVZInfo) UpdateClusterID(vzID string) error {
 	return nil
 }
 
+func (f *fakeVZInfo) UpdateClusterName(string) error {
+	return nil
+}
+
 func (f *fakeVZInfo) GetVizierPodLogs(string, bool, string) (string, error) {
 	return "fake log", nil
 }
@@ -225,6 +229,7 @@ func main() {
 			clusterUID, _ := uuid.NewV4()
 			svr := controllers.New(
 				uuid.Nil,
+				"",
 				viper.GetString("jwt_signing_key"),
 				deployKey,
 				sessionID,
