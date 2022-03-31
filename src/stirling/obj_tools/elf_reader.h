@@ -149,11 +149,6 @@ class ElfReader {
   StatusOr<std::vector<uint64_t>> FuncRetInstAddrs(const SymbolInfo& func_symbol);
 
   /**
-   * Returns the ELF section with the corresponding name
-   */
-  StatusOr<ELFIO::section*>SectionWithName(std::string_view section_name);
-
-  /**
    * Returns the byte code for the symbol at the specified section.
    */
   StatusOr<px::utils::u8string> SymbolByteCode(std::string_view section, const SymbolInfo& symbol);
@@ -162,6 +157,11 @@ class ElfReader {
   ElfReader() = default;
 
   StatusOr<ELFIO::section*> SymtabSection();
+
+  /**
+   * Returns the ELF section with the corresponding name
+   */
+  StatusOr<ELFIO::section*>SectionWithName(std::string_view section_name);
 
   /**
    * Locates the debug symbols for the currently loaded ELF object.
