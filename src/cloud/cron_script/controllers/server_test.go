@@ -158,8 +158,9 @@ func TestServer_GetScripts(t *testing.T) {
 					utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
 					utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440001"),
 				},
-				Configs: "testConfigYaml: abcd",
-				Enabled: true,
+				Configs:    "testConfigYaml: abcd",
+				Enabled:    true,
+				FrequencyS: 5,
 			},
 			&cronscriptpb.CronScript{
 				ID:     utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440002"),
@@ -168,8 +169,9 @@ func TestServer_GetScripts(t *testing.T) {
 				ClusterIDs: []*uuidpb.UUID{
 					utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
 				},
-				Configs: "testConfigYaml: 1234",
-				Enabled: false,
+				Configs:    "testConfigYaml: 1234",
+				Enabled:    false,
+				FrequencyS: 10,
 			},
 		},
 	}, resp)

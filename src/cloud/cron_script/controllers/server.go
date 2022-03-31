@@ -373,6 +373,7 @@ func (s *Server) GetScripts(ctx context.Context, req *cronscriptpb.GetScriptsReq
 			ClusterIDs: clusterIDs,
 			Configs:    p.ConfigStr,
 			Enabled:    p.Enabled,
+			FrequencyS: p.FrequencyS,
 		}
 		scripts = append(scripts, cpb)
 	}
