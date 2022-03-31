@@ -36,7 +36,6 @@
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/protocol_checkers.h"
 
 namespace px {
 namespace stirling {
@@ -113,6 +112,18 @@ class MuxTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {
   ::px::stirling::testing::ThriftMuxServerContainer server_;
 };
 
+std::vector<mux::Record> ToRecordVector(const types::ColumnWrapperRecordBatch& rb,
+                                        const std::vector<size_t>& indices) {
+  std::vector<mux::Record> result;
+
+  for (const auto& idx : indices) {
+    mux::Record r;
+    r.req.type = static_cast<int8_t>(rb[kMuxReqTypeIdx]->Get<types::Int64Value>(idx).val);
+    result.push_back(r);
+  }
+  return result;
+}
+
 mux::Record RecordWithType(mux::Type req_type) {
   mux::Record r = {};
   r.req.type = static_cast<int8_t>(req_type);
@@ -124,7 +135,7 @@ std::vector<mux::Record> GetTargetRecords(const types::ColumnWrapperRecordBatch&
                                           int32_t pid) {
   std::vector<size_t> target_record_indices =
       FindRecordIdxMatchesPID(record_batch, kMuxUPIDIdx, pid);
-  return ToMuxRecordVector(record_batch, target_record_indices);
+  return ToRecordVector(record_batch, target_record_indices);
 }
 
 inline auto EqMux(const mux::Frame& x) { return Field(&mux::Frame::type, ::testing::Eq(x.type)); }

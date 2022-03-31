@@ -25,7 +25,7 @@
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
 #include "src/stirling/utils/detect_application.h"
 
-DECLARE_bool(openssl_force_raw_fn_ptrs);
+DECLARE_bool(openssl_force_raw_fptrs);
 
 namespace px {
 namespace stirling {

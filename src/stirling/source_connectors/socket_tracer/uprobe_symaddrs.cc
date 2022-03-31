@@ -35,7 +35,7 @@
 using ::px::stirling::obj_tools::DwarfReader;
 using ::px::stirling::obj_tools::ElfReader;
 
-DEFINE_bool(openssl_force_raw_fn_ptrs, false,
+DEFINE_bool(openssl_force_raw_fptrs, false,
             "If true, forces the openssl tracing to determine the openssl version without dlopen/dlsym");
 
 namespace px {
@@ -644,8 +644,7 @@ StatusOr<uint32_t> OpenSSLFixSubversionNum(RawFptrManager* fptrManager, const st
   open_ssl_version_num_t version_num;
 
   StatusOr<uint64_t> openssl_version_packed = GetOpenSSLVersionNumUsingDLOpen(lib_openssl_path);
-  LOG(INFO) << absl::Substitute("What is this flag's value: $0", FLAGS_openssl_force_raw_fn_ptrs);
-  if (FLAGS_openssl_force_raw_fn_ptrs || (!openssl_version_packed.ok())) {
+  if (FLAGS_openssl_force_raw_fptrs || (!openssl_version_packed.ok())) {
     LOG(WARNING) << absl::Substitute("Unable to find openssl symbol 'OpenSSL_version_num' using dlopen/dlsym. Attempting to find address manually for pid $0", pid);
     openssl_version_packed = GetOpenSSLVersionNumUsingFptr(fptrManager);
   }
@@ -709,17 +708,14 @@ StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(RawFptrManager* fptrManager,
   switch (openssl_fix_sub_version) {
     case 0:
       symaddrs.RBIO_num_offset = kOpenSSL_1_1_0_RBIO_num_offset;
-      LOG(INFO) << absl::Substitute("Supported openssl_fix_sub_version: $0", openssl_fix_sub_version);
       break;
     case 1:
       symaddrs.RBIO_num_offset = kOpenSSL_1_1_1_RBIO_num_offset;
-      LOG(INFO) << absl::Substitute("Supported openssl_fix_sub_version: $0", openssl_fix_sub_version);
       break;
     default:
       // Supported versions are checked in function OpenSSLFixSubversionNum(),
       // should not fall through to here, ever.
       DCHECK(false);
-      LOG(INFO) << absl::Substitute("Unsupported openssl_fix_sub_version: $0", openssl_fix_sub_version);
       return error::Internal("Unsupported openssl_fix_sub_version: $0", openssl_fix_sub_version);
   }
 

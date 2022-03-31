@@ -39,7 +39,7 @@ namespace stirling {
 namespace http = protocols::http;
 
 bool Init() {
-  FLAGS_openssl_force_raw_fn_ptrs = true;
+  FLAGS_openssl_force_raw_fptrs = true;
   return true;
 }
 
