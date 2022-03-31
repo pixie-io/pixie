@@ -321,6 +321,7 @@ func (s *Server) GetScript(ctx context.Context, req *cronscriptpb.GetScriptReque
 			ClusterIDs: clusterIDs,
 			Configs:    script.ConfigStr,
 			Enabled:    script.Enabled,
+			FrequencyS: script.FrequencyS,
 		},
 	}, nil
 }

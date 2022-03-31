@@ -128,8 +128,9 @@ func TestServer_GetScript(t *testing.T) {
 				utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
 				utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440001"),
 			},
-			Configs: "testConfigYaml: abcd",
-			Enabled: true,
+			Configs:    "testConfigYaml: abcd",
+			Enabled:    true,
+			FrequencyS: 5,
 		},
 	}, resp)
 }
