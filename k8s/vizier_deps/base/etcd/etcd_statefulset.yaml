@@ -69,7 +69,7 @@ spec:
           name: client
         - containerPort: 2380
           name: server
-        # yamllint disable
+        # yamllint disable rule:indentation rule:line-length
         command:
         - /bin/sh
         - -ec
@@ -205,7 +205,7 @@ spec:
               --max-snapshots 1 \
               --quota-backend-bytes 8589934592 \
               --snapshot-count 5000
-        # yamllint enable
+        # yamllint enable rule:indentation rule:line-length
         env:
         - name: INITIAL_CLUSTER_SIZE
           value: '3'
@@ -249,7 +249,7 @@ spec:
         lifecycle:
           preStop:
             exec:
-              # yamllint disable
+              # yamllint disable rule:indentation
               command:
               - /bin/sh
               - -ec
@@ -289,7 +289,7 @@ spec:
                     rm -rf /var/run/etcd/*
                   fi
                 fi
-              # yamllint enable
+              # yamllint enable rule:indentation
       volumes:
       - name: member-peer-tls
         secret:
