@@ -213,7 +213,7 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
     setFullPendingValues({
       name: script?.name ?? '',
       description: script?.description ?? '',
-      clusters: script?.clusters?.map(uid => validClusters.find(c => c.clusterUID === uid)).filter(c => c) ?? [],
+      clusters: script?.clusters?.map(id => validClusters.find(c => c.id === id)).filter(c => c) ?? [],
       contents: script?.contents ?? (isCreate ? DEFAULT_RETENTION_PXL : ''),
       frequencyS: script?.frequencyS ?? 10,
       pluginID: script?.pluginID ?? '',
@@ -229,7 +229,7 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
 
     const nowValid = pendingValues.name.trim().length
       && pendingValues.clusters != null
-      && pendingValues.clusters.every(c => validClusters.some(v => v.clusterUID === c.clusterUID))
+      && pendingValues.clusters.every(c => validClusters.some(v => v.id === c.id))
       && pendingValues.contents != null
       && pendingValues.frequencyS > 0
       && pendingValues.pluginID
@@ -244,7 +244,7 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
       description: pendingValues.description,
       frequencyS: pendingValues.frequencyS,
       enabled: script?.enabled ?? true,
-      clusters: pendingValues.clusters.map(c => c.clusterUID),
+      clusters: pendingValues.clusters.map(c => c.id),
       contents: pendingValues.contents,
       pluginID: pendingValues.pluginID,
       customExportURL: pendingValues.exportPath,

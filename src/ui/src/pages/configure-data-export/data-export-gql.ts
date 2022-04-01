@@ -122,7 +122,7 @@ export const GQL_CREATE_RETENTION_SCRIPT = gql`
 `;
 
 export interface ClusterInfoForRetentionScripts {
-  clusterUID: string;
+  id: string;
   prettyClusterName: string;
   status?: GQLClusterStatus;
 }
@@ -132,7 +132,7 @@ export function useClustersForRetentionScripts(): { loading: boolean, clusters: 
     gql`
       query listClustersForRetentionScript {
         clusters {
-          clusterUID
+          id
           prettyClusterName
           status
         }
