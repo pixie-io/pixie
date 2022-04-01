@@ -62,7 +62,7 @@ class GoHTTPDynamicTraceTest : public ::testing::Test {
     ASSERT_TRUE(fs::Exists(server_path_));
     ASSERT_TRUE(fs::Exists(client_path_));
 
-    ASSERT_OK(s_.Start({server_path_}));
+    ASSERT_OK(s_.Start({server_path_, "--port=0"}));
 
     // Give some time for the server to start up.
     sleep(2);
