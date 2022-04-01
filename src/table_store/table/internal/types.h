@@ -50,6 +50,31 @@ struct RecordBatchWithCache {
   mutable std::vector<bool> cache_validity;
 };
 
+enum StoreType {
+  Hot,
+  Cold,
+};
+
+struct BatchHints {
+  StoreType hint_type;
+  BatchID batch_id;
+};
+
+class RecordOrRowBatch;
+
+using ColdBatch = std::vector<ArrowArrayPtr>;
+
+template <StoreType type>
+struct StoreTypeTraits {};
+template <>
+struct StoreTypeTraits<StoreType::Hot> {
+  using batch_type = RecordOrRowBatch;
+};
+template <>
+struct StoreTypeTraits<StoreType::Cold> {
+  using batch_type = ColdBatch;
+};
+
 }  // namespace internal
 }  // namespace table_store
 }  // namespace px

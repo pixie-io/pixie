@@ -68,3 +68,11 @@ pl_cc_test(
         ":test_library",
     ],
 )
+
+pl_cc_test(
+    name = "store_with_row_accounting_test",
+    srcs = ["store_with_row_accounting_test.cc"],
+    deps = [
+        ":test_library",
+    ],
+)
