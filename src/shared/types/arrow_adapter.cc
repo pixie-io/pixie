@@ -20,15 +20,16 @@
 #include <arrow/builder.h>
 
 #include <algorithm>
-#include <numeric>
-
 #include <memory>
+#include <numeric>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <absl/numeric/int128.h>
 #include "src/common/base/base.h"
 #include "src/shared/types/arrow_adapter.h"
+#include "src/shared/types/type_utils.h"
 #include "src/shared/types/types.h"
 
 namespace px {
@@ -117,6 +118,16 @@ std::unique_ptr<arrow::ArrayBuilder> MakeArrowBuilder(const DataType& data_type,
 }
 
 #undef BUILDER_CASE
+
+std::unique_ptr<TypeErasedArrowBuilder> MakeTypeErasedArrowBuilder(const DataType& data_type,
+                                                                   arrow::MemoryPool* mem_pool) {
+#define TYPE_CASE(_dt_)                                                                      \
+  auto arrow_builder = std::make_unique<DataTypeTraits<_dt_>::arrow_builder_type>(mem_pool); \
+  return std::unique_ptr<TypeErasedArrowBuilder>(                                            \
+      new TypeErasedArrowBuilderImpl<_dt_>(std::move(arrow_builder)));
+  PL_SWITCH_FOREACH_DATATYPE(data_type, TYPE_CASE);
+#undef TYPE_CASE
+}
 
 }  // namespace types
 }  // namespace px
