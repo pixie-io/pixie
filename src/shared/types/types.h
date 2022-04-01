@@ -322,7 +322,7 @@ struct ValueTypeTraits<UInt128Value> {
   using arrow_type = arrow::UInt128Type;
   using arrow_builder_type = arrow::UInt128Builder;
   using arrow_array_type = arrow::UInt128Type;
-  using native_type = int64_t;
+  using native_type = absl::uint128;
 };
 
 template <>
