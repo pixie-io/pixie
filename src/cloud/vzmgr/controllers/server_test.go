@@ -461,6 +461,7 @@ func TestServer_VizierConnectedHealthy(t *testing.T) {
 	require.NotNil(t, resp)
 
 	assert.Equal(t, resp.Status, cvmsgspb.ST_OK)
+	assert.Equal(t, resp.VizierName, "healthy_cluster")
 
 	// Check to make sure DB insert for JWT signing key is correct.
 	clusterQuery := `SELECT PGP_SYM_DECRYPT(jwt_signing_key::bytea, 'test') as jwt_signing_key, status, vizier_version from vizier_cluster_info WHERE vizier_cluster_id=$1`

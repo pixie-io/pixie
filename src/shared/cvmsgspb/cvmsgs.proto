@@ -74,6 +74,9 @@ message RegisterVizierAck {
     ST_FAILED_NOT_FOUND = 2;
   }
   RegistrationStatus status = 1;
+
+  // VizierName is the unique name according to cloud.
+  string vizier_name = 2;
 }
 
 enum VizierStatus {

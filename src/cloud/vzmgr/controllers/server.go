@@ -679,9 +679,10 @@ func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizi
 	}
 
 	// Send a message over NATS to signal that a Vizier has connected.
-	query = `SELECT org_id from vizier_cluster WHERE id=$1`
+	query = `SELECT org_id, cluster_name from vizier_cluster WHERE id=$1`
 	var val struct {
-		OrgID uuid.UUID `db:"org_id"`
+		OrgID      uuid.UUID `db:"org_id"`
+		VizierName string    `db:"cluster_name"`
 	}
 
 	rows, err := s.db.Queryx(query, vizierID)
@@ -709,7 +710,10 @@ func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizi
 	if err != nil {
 		return nil, err
 	}
-	return &cvmsgspb.RegisterVizierAck{Status: cvmsgspb.ST_OK}, nil
+	return &cvmsgspb.RegisterVizierAck{
+		Status:     cvmsgspb.ST_OK,
+		VizierName: val.VizierName,
+	}, nil
 }
 
 // HandleVizierHeartbeat handles the heartbeat from connected viziers.
