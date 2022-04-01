@@ -35,7 +35,10 @@ char const* const kPEMAgentLibs =
     "/pl/lib-px-java-agent-musl.so,"
     "/pl/lib-px-java-agent-glibc.so";
 }  // namespace
+
 DEFINE_string(stirling_profiler_java_agent_libs, kPEMAgentLibs, kLibsHelpMessage);
+DEFINE_bool(stirling_profiler_java_symbols, gflags::BoolFromEnv("PL_PROFILER_JAVA_SYMBOLS", false),
+            "Whether to symbolize Java binaries.");
 
 namespace px {
 namespace stirling {
@@ -355,6 +358,18 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
     // Our work here is done, return the Java symbolization function from the map.
     DCHECK(symbolizer_functions_.find(upid) != symbolizer_functions_.end());
     return symbolizer_functions_[upid];
+  }
+
+  // When we get here, we know that it is a Java process, and if we want symbols,
+  // we need to inject the JVMTI symbolization agent.
+
+  if (!FLAGS_stirling_profiler_java_symbols) {
+    // The perf profile source connector was instantiated with Java symbolization enabled,
+    // but now it is disabled. The contract in this scenario is that we do not
+    // attempt to attach any more JVMTI agents.
+    LOG_FIRST_N(INFO, 1) << "New Java process detected, but Java symbols disabled.";
+    symbolizer_functions_[upid] = native_symbolizer_fn;
+    return native_symbolizer_fn;
   }
 
   // Create an agent attacher and put it into the active attachers map.

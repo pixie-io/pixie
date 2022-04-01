@@ -26,6 +26,7 @@
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/symbolizer.h"
 
 DECLARE_string(stirling_profiler_java_agent_libs);
+DECLARE_bool(stirling_profiler_java_symbols);
 
 namespace px {
 namespace stirling {

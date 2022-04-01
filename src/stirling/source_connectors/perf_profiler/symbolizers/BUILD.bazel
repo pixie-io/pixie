@@ -41,7 +41,10 @@ pl_cc_library(
 pl_cc_test(
     name = "symbolizer_test",
     srcs = ["symbolizer_test.cc"],
-    data = ["//src/stirling/source_connectors/perf_profiler/testing/java:java"] + agent_libs,
+    data = [
+        "//src/stirling/source_connectors/perf_profiler/testing/java:fib",
+        "//src/stirling/source_connectors/perf_profiler/testing/java:java",
+    ] + agent_libs,
     tags = [
         "requires_root",
     ],
