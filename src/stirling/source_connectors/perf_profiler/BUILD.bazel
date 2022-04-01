@@ -57,6 +57,7 @@ pl_cc_test(
         ":cc_library",
         "//src/common/exec:cc_library",
         "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/source_connectors/perf_profiler/testing:cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )

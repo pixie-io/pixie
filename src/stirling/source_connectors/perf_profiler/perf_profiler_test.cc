@@ -30,14 +30,17 @@
 #include "src/stirling/source_connectors/perf_profiler/java/attach.h"
 #include "src/stirling/source_connectors/perf_profiler/perf_profile_connector.h"
 #include "src/stirling/source_connectors/perf_profiler/stack_traces_table.h"
+#include "src/stirling/source_connectors/perf_profiler/testing/testing.h"
 #include "src/stirling/testing/common.h"
 
 DEFINE_uint32(test_run_time, 90, "Number of seconds to run the test.");
 DECLARE_bool(stirling_profiler_java_symbols);
+DECLARE_string(stirling_profiler_java_agent_libs);
 
 namespace px {
 namespace stirling {
 
+using ::px::stirling::profiler::testing::GetAgentLibsFlagValueForTesting;
 using ::px::stirling::testing::FindRecordIdxMatchesPIDs;
 using ::px::testing::BazelBinTestFilePath;
 using ::testing::Gt;
@@ -151,6 +154,8 @@ class PerfProfileBPFTest : public ::testing::Test {
  protected:
   void SetUp() override {
     FLAGS_stirling_profiler_java_symbols = true;
+    FLAGS_stirling_profiler_java_agent_libs = GetAgentLibsFlagValueForTesting();
+
     source_ = PerfProfileConnector::Create("perf_profile_connector");
     ASSERT_OK(source_->Init());
     ASSERT_LT(source_->SamplingPeriod(), test_run_time_);

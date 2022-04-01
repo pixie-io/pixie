@@ -29,6 +29,7 @@
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/caching_symbolizer.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/elf_symbolizer.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/java_symbolizer.h"
+#include "src/stirling/source_connectors/perf_profiler/testing/testing.h"
 #include "src/stirling/testing/common.h"
 #include "src/stirling/testing/symbolization.h"
 #include "src/stirling/utils/proc_tracker.h"
@@ -46,18 +47,8 @@ const uintptr_t kBarAddr = reinterpret_cast<uintptr_t>(&test::bar);
 namespace px {
 namespace stirling {
 
+using ::px::stirling::profiler::testing::GetAgentLibsFlagValueForTesting;
 using ::px::testing::BazelBinTestFilePath;
-
-// Returns a string as the flag value for the --stirling_profiler_java_agent_libs.
-std::string GetAgentLibsFlagValue() {
-  using fs_path = std::filesystem::path;
-  const fs_path agent_path_pfx = "src/stirling/source_connectors/perf_profiler/java/agent";
-  const fs_path glibc_lib_sfx = "build-glibc/lib-px-java-agent-glibc.so";
-  const fs_path musl_lib_sfx = "build-musl/lib-px-java-agent-musl.so";
-  const std::string glibc_agent = BazelBinTestFilePath(agent_path_pfx / glibc_lib_sfx).string();
-  const std::string musl_agent = BazelBinTestFilePath(agent_path_pfx / musl_lib_sfx).string();
-  return absl::StrJoin({glibc_agent, musl_agent}, ",");
-}
 
 template <typename TSymbolizer>
 class SymbolizerTest : public ::testing::Test {
@@ -97,7 +88,7 @@ TEST_F(BCCSymbolizerTest, KernelSymbols) {
 }
 
 TEST_F(BCCSymbolizerTest, JavaSymbols) {
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValue());
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<Symbolizer> symbolizer,
                        JavaSymbolizer::Create(std::move(symbolizer_)));
 
@@ -283,7 +274,7 @@ TEST_F(BCCSymbolizerTest, Caching) {
 // Test requesting symbolizer function for Java process results into the upid being put into a
 // global set.
 TEST_F(BCCSymbolizerTest, JavaProcessBeingTracked) {
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValue());
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<Symbolizer> symbolizer,
                        JavaSymbolizer::Create(std::move(symbolizer_)));
 

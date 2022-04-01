@@ -50,6 +50,7 @@ pl_cc_test(
         "//src/common/exec:cc_library",
         "//src/common/fs:cc_library",
         "//src/stirling/source_connectors/perf_profiler/java:cc_library",
+        "//src/stirling/source_connectors/perf_profiler/testing:cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )
