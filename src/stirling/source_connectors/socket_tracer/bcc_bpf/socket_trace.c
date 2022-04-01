@@ -480,7 +480,7 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx,
     bpf_probe_read(&iov_cpy, sizeof(struct iovec), &iov[i]);
 
     const int bytes_remaining = total_size - bytes_sent;
-    const size_t iov_size = iov_cpy.iov_len < bytes_remaining ? iov_cpy.iov_len : bytes_remaining;
+    const size_t iov_size = min_size_t(iov_cpy.iov_len, bytes_remaining);
 
     // TODO(oazizi/yzhao): Should switch this to go through perf_submit_wrapper.
     //                     We don't have the BPF instruction count to do so right now.
@@ -735,7 +735,7 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
       struct iovec iov_cpy;
       bpf_probe_read(&iov_cpy, sizeof(struct iovec), &args->iov[0]);
       // Ensure we are not reading beyond the available data.
-      const size_t buf_size = iov_cpy.iov_len < bytes_count ? iov_cpy.iov_len : bytes_count;
+      const size_t buf_size = min_size_t(iov_cpy.iov_len, bytes_count);
       update_traffic_class(conn_info, direction, iov_cpy.iov_base, buf_size);
     }
 

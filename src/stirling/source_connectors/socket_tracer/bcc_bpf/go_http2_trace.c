@@ -171,7 +171,7 @@ static __inline void copy_header_field(struct header_field_t* dst, struct gostri
     dst->size = 0;
     return;
   }
-  dst->size = min_int64(src->len, (int64_t)HEADER_FIELD_STR_SIZE);
+  dst->size = min_int64_t(src->len, (int64_t)HEADER_FIELD_STR_SIZE);
   bpf_probe_read(dst->msg, dst->size, src->ptr);
 }
 
@@ -836,7 +836,7 @@ static __inline void go_http2_submit_data(struct pt_regs* ctx, enum http2_probe_
 
   info->data_attr.data_size = data_len;
 
-  uint32_t data_buf_size = data_len < MAX_DATA_SIZE ? data_len : MAX_DATA_SIZE;
+  uint32_t data_buf_size = min_uint32_t(data_len, MAX_DATA_SIZE);
   info->data_attr.data_buf_size = data_buf_size;
 
   // Note that we have some black magic below with the string sizes.

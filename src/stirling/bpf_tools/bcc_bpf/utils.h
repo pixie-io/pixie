@@ -77,4 +77,11 @@ static __inline int bpf_strncmp(const char* lhs, const char* rhs, size_t n) {
 
 // There is a macro min() defined by a kernel header.
 // We prefer being more self-contained, so define this with a different name.
-static __inline int64_t min_int64(int64_t l, int64_t r) { return l < r ? l : r; }
+#define DEFINE_MIN_FN_FOR_TYPE(type) \
+  static __inline type min_##type(type l, type r) { return l < r ? l : r; }
+// Define the function for new types if needed
+DEFINE_MIN_FN_FOR_TYPE(uint32_t)
+DEFINE_MIN_FN_FOR_TYPE(int64_t)
+DEFINE_MIN_FN_FOR_TYPE(uint64_t)
+DEFINE_MIN_FN_FOR_TYPE(size_t)
+#undef DEFINE_MIN_FN_FOR_TYPE
