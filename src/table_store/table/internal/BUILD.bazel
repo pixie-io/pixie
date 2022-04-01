@@ -52,3 +52,11 @@ pl_cc_test(
         ":test_library",
     ],
 )
+
+pl_cc_test(
+    name = "arrow_array_compactor_test",
+    srcs = ["arrow_array_compactor_test.cc"],
+    deps = [
+        ":test_library",
+    ],
+)
