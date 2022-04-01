@@ -38,6 +38,7 @@ import {
 } from 'react-router-dom';
 
 import { GQLPlugin, GQLPluginKind } from 'app/types/schema';
+import pixieAnalytics from 'app/utils/analytics';
 
 import { PluginConfig } from './plugin-config';
 import { usePluginList, usePluginToggleEnabled } from './plugin-gql';
@@ -113,12 +114,16 @@ const PluginHeader = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
     event.preventDefault();
     event.stopPropagation();
     setPendingToggle(true);
+    pixieAnalytics.track('Retention plugin toggled', {
+      enabled: !plugin.retentionEnabled,
+      plugin: plugin.id,
+    });
     pushEnableState(!plugin.retentionEnabled).then(() => {
       setPendingToggle(false);
     }).catch(() => {
       setPendingToggle(false);
     });
-  }, [pushEnableState, plugin.retentionEnabled]);
+  }, [pushEnableState, plugin.retentionEnabled, plugin.id]);
 
   return (
     <>

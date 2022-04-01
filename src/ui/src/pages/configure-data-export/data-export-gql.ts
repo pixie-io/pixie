@@ -27,6 +27,7 @@ import {
   GQLPlugin,
   GQLRetentionScript,
 } from 'app/types/schema';
+import pixieAnalytics from 'app/utils/analytics';
 
 export const DEFAULT_RETENTION_PXL = `import px
 
@@ -201,6 +202,15 @@ export function useMutateRetentionScript(id: string): (newScript: GQLEditableRet
   return React.useCallback((newScript: GQLEditableRetentionScript) => {
     if (!script) return Promise.reject('Not Ready');
 
+    pixieAnalytics.track('Retention script modified', {
+      name: newScript.name,
+      frequencyS: newScript.frequencyS,
+      clusters: newScript.clusters,
+      plugin: newScript.pluginID,
+      isPreset: script.isPreset,
+      enabled: newScript.enabled,
+    });
+
     return updateScript({
       variables: {
         id: script.id,
@@ -241,6 +251,13 @@ export function useCreateRetentionScript(): (newScript: GQLEditableRetentionScri
   }>(GQL_CREATE_RETENTION_SCRIPT);
 
   return React.useCallback((newScript: GQLEditableRetentionScript) => {
+    pixieAnalytics.track('Retention script created', {
+      name: newScript.name,
+      frequencyS: newScript.frequencyS,
+      clusters: newScript.clusters,
+      plugin: newScript.pluginID,
+    });
+
     return createScript({
       variables: {
         script: newScript,
