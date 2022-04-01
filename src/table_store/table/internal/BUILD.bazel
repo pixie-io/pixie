@@ -60,3 +60,11 @@ pl_cc_test(
         ":test_library",
     ],
 )
+
+pl_cc_test(
+    name = "batch_size_accountant_test",
+    srcs = ["batch_size_accountant_test.cc"],
+    deps = [
+        ":test_library",
+    ],
+)
