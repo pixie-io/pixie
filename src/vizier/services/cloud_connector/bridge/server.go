@@ -649,11 +649,21 @@ func (s *Bridge) doRegistrationHandshake(stream vzconnpb.VZConnService_NATSBridg
 			case cvmsgspb.ST_FAILED_NOT_FOUND:
 				return errors.New("registration not found, cluster unknown in pixie-cloud")
 			case cvmsgspb.ST_OK:
-				return nil
+				break
 			default:
-
 				return errors.New("registration unsuccessful: " + err.Error())
 			}
+
+			if s.assignedClusterName == "" {
+				// Deliberately not returning the error. We don't want to kill a cluster
+				// in case something goes wrong in the update process.
+				err = s.vzInfo.UpdateClusterName(registerAck.VizierName)
+				if err != nil {
+					log.WithError(err).Error("Failed to set the UpdateClusterName")
+				}
+				s.assignedClusterName = registerAck.VizierName
+			}
+			return nil
 		}
 	}
 }
