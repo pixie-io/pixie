@@ -52,10 +52,12 @@
  *              versions map. This module is version-dependent, and can only trace the library
  *              of known versions.
  *          -   Before using the module, initialize its percpu variables (used as "heap").
- *              1.  grpc_c_event_data_local
- *              2.  grpc_c_header_event_data_local
- *              2.  grpc_c_metadata_local
+ *              1.  grpc_c_event_buffer_heap
+ *              2.  grpc_c_header_event_buffer_heap
+ *              3.  grpc_c_metadata_buffer_heap
  */
+
+// LINT_C_FILE: Do not remove this line. It ensures cpplint treats this as a C file.
 
 #include <linux/sched.h>
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/grpc_c.h"
@@ -71,18 +73,23 @@ struct list_pop_writable_stream_arguments
     void ** stream;
 };
 
-BPF_PERCPU_ARRAY(list_pop_writable_stream_arguments_local, struct list_pop_writable_stream_arguments, 1);
-BPF_PERCPU_ARRAY(grpc_c_metadata_local, struct grpc_c_metadata_t, 1);
-BPF_PERCPU_ARRAY(grpc_c_header_event_data_local, struct grpc_c_header_event_data_t, 1);
-BPF_PERCPU_ARRAY(grpc_c_event_data_local, struct grpc_c_event_data_t, 1);
+BPF_PERCPU_ARRAY(active_list_pop_writable_stream_args_map, struct list_pop_writable_stream_arguments, 1);
+BPF_PERCPU_ARRAY(grpc_c_metadata_buffer_heap, struct grpc_c_metadata_t, 1);
+BPF_PERCPU_ARRAY(grpc_c_header_event_buffer_heap, struct grpc_c_header_event_data_t, 1);
+BPF_PERCPU_ARRAY(grpc_c_event_buffer_heap, struct grpc_c_event_data_t, 1);
 
-// Maps process id to version (@see grpc_c_version_e).
+// Maps process id to version (@see grpc_c_version_t).
 BPF_HASH(grpc_c_versions, uint32_t, uint64_t, GRPC_C_DEFAULT_MAP_SIZE);
 
-// Size of a single slice is 0x20.
+// Size of a single slice is 0x20. It's start with a refcount pointer, then the slice,
+// in one of two ways - referenced or inlined.
 // The refcount pointer is 0x8 bytes, then the union takes the amount of bytes needed for the larger option.
 // The larger option is the inlined slice, for which 0x18 bytes are needed.
+// https://github.com/grpc/grpc/blob/v1.33.2/include/grpc/impl/codegen/slice.h#L60
 #define GRPC_SLICE_SIZE (0x20)
+
+#define GRPC_C_ENDPOINT_OFFSET_IN_TRANSPORT (0x10)
+#define GRPC_C_FD_OFFSET_IN_TCP_ENDPOINT (0x10)
 
 // Types of structs in the grpc-c library.
 typedef void grpc_slice_buffer;
@@ -106,7 +113,7 @@ static inline struct grpc_c_metadata_t * initiate_empty_grpc_metadata()
 {
     u32 zero = 0;
 
-    struct grpc_c_metadata_t * metadata = grpc_c_metadata_local.lookup(&zero);
+    struct grpc_c_metadata_t * metadata = grpc_c_metadata_buffer_heap.lookup(&zero);
     if (NULL == metadata)
     {
         // User mode did not initiate the percpu buffer.
@@ -143,7 +150,7 @@ static inline struct grpc_c_event_data_t * initiate_empty_grpc_event_data()
 {
     u32 zero = 0;
 
-    struct grpc_c_event_data_t * data = grpc_c_event_data_local.lookup(&zero);
+    struct grpc_c_event_data_t * data = grpc_c_event_buffer_heap.lookup(&zero);
     if (NULL == data)
     {
         // User mode did not initiate the percpu buffer.
@@ -152,7 +159,6 @@ static inline struct grpc_c_event_data_t * initiate_empty_grpc_event_data()
 
     data->stream_id = 0;
     data->timestamp = 0;
-    data->stack_id = 0;
     data->direction = GRPC_C_EVENT_DIRECTION_UNKNOWN;
     data->position_in_stream = 0;
     data->slice.slice_len = 0;
@@ -179,7 +185,7 @@ static inline struct grpc_c_header_event_data_t * initiate_empty_grpc_header_eve
 {
     u32 zero = 0;
 
-    struct grpc_c_header_event_data_t * data = grpc_c_header_event_data_local.lookup(&zero);
+    struct grpc_c_header_event_data_t * data = grpc_c_header_event_buffer_heap.lookup(&zero);
     if (NULL == data)
     {
         // User mode did not initiate the percpu buffer.
@@ -188,7 +194,6 @@ static inline struct grpc_c_header_event_data_t * initiate_empty_grpc_header_eve
 
     data->stream_id = 0;
     data->timestamp = 0;
-    data->stack_id = 0;
     data->direction = GRPC_C_EVENT_DIRECTION_UNKNOWN;
 
     struct grpc_c_metadata_item_t * metadata_item = &(data->header);
@@ -265,6 +270,7 @@ static inline u32 dereference_at(void * src, const u32 offset, /* OUT */ void **
  * @brief   Read a stream id.
  * @detailed
  *          The stream id is stored as a single integer inside the stream struct.
+ *          https://github.com/grpc/grpc/blob/v1.33.2/src/core/ext/transport/chttp2/transport/internal.h#L530
  *
  * @param   stream          The pointer to the stream object in the tracee's memory.
  * @param   stream_id       Where the stream id will be stored.
@@ -317,8 +323,10 @@ static inline u32 get_stream_id(
  *          The transport struct has an endpoint member, which is used to communicate
  *          (send and receive data to and from the endpoint). This endpoint is in
  *          transport+0x10.
+ *          https://github.com/grpc/grpc/blob/v1.33.2/src/core/ext/transport/chttp2/transport/internal.h#L297
  *          When the endpoint is a TCP endpoint, the file descriptor is stored at
  *          endpoint+0x10.
+ *          https://github.com/grpc/grpc/blob/v1.33.2/src/core/lib/iomgr/tcp_posix.cc#L359
  *
  * @param   transport   The pointer to the transport object in the tracee's memory.
  * @param   fd          Where the file descriptor will be stored.
@@ -343,7 +351,7 @@ static inline u32 get_fd_from_transport(
     if (0 != bpf_probe_read(
             &endpoint,
             sizeof(endpoint),
-            (void *)(transport + 0x10)))
+            (void *)(transport + GRPC_C_ENDPOINT_OFFSET_IN_TRANSPORT)))
     {
         return -1;
     }
@@ -356,7 +364,7 @@ static inline u32 get_fd_from_transport(
     if (0 != bpf_probe_read(
             fd,
             sizeof(*fd),
-            (void *)(endpoint + 0x10)))
+            (void *)(endpoint + GRPC_C_FD_OFFSET_IN_TCP_ENDPOINT)))
     {
         return -1;
     }
@@ -583,7 +591,6 @@ static inline u32 fire_metadata_events(
     struct conn_id_t conn_id,
     uint32_t stream_id,
     uint64_t timestamp,
-    int32_t stack_id,
     uint32_t direction,
     struct pt_regs * ctx)
 {
@@ -595,7 +602,6 @@ static inline u32 fire_metadata_events(
     header_event->conn_id = conn_id;
     header_event->stream_id = stream_id;
     header_event->timestamp = timestamp;
-    header_event->stack_id = stack_id;
     header_event->direction = direction;
 
 #pragma unroll
@@ -631,6 +637,7 @@ static inline u32 fire_metadata_events(
  * @brief   Get the pointer to the flow controlled buffer of the stream.
  *          This buffer is a grpc_slice_buffer and contains data that is
  *          to be sent.
+ *          https://github.com/grpc/grpc/blob/v1.33.2/src/core/ext/transport/chttp2/transport/internal.h#L633
  *
  * @param   stream          The stream of which the buffer should be found.
  * @param   flow_controlled_buffer
@@ -653,7 +660,9 @@ static inline u32 get_flow_controlled_buffer_from_stream(
     switch (version)
     {
         case GRPC_C_V1_19_0:
-            *flow_controlled_buffer = stream + 0x6e8; // Found with IDA, after "sending trailing_metadata" string.
+            // Found the offset with IDA, after "sending trailing_metadata" string.
+            // https://hex-rays.com/ida-pro/
+            *flow_controlled_buffer = stream + 0x6e8;
             break;
         case GRPC_C_V1_24_1:
             *flow_controlled_buffer = stream + 0x980;
@@ -693,10 +702,10 @@ static inline u32 get_flow_controlled_buffer_from_stream(
  *          0 on success.
  */
 static inline u32 get_slices_from_grpc_slice_buffer_and_fire_perf_event_per_slice(
+    struct pt_regs * ctx,
     grpc_slice_buffer * slice_buffer,
     struct grpc_c_event_data_t * write_event_data,
-    struct conn_info_t * connection_info,
-    struct pt_regs * ctx)
+    struct conn_info_t * connection_info)
 {
     struct grpc_c_data_slice_t * data_slice = NULL;
     grpc_slice * slice = NULL;
@@ -731,13 +740,8 @@ static inline u32 get_slices_from_grpc_slice_buffer_and_fire_perf_event_per_slic
 
     // If there are too many slices, only read the amount we're allowed to.
 #pragma unroll
-    for (u32 i = 0 ; i < SIZE_OF_DATA_SLICE_ARRAY ; i++)
+    for (u32 i = 0 ; i < SIZE_OF_DATA_SLICE_ARRAY && i < amount_of_slices ; i++)
     {
-        if (i >= amount_of_slices)
-        {
-            break;
-        }
-
         if (0 != get_data_ptr_from_slice(slice, &slice_length, &slice_bytes))
         {
             return -1;
@@ -801,14 +805,18 @@ static inline u32 get_slices_from_grpc_slice_buffer_and_fire_perf_event_per_slic
  *          The list is a linked-list, and has a count of members in offset +0x00.
  *          The "head" is in offset +0x10 and the "tail" is in offset +0x18.
  *          We only use the head and read the list until its end.
+ *          https://github.com/grpc/grpc/blob/v1.33.2/src/core/lib/transport/metadata_batch.h#L42
  *          Each element is of type grpc_linked_mdelem which has an inlined
  *          grpc_mdelem object at its beginning, and then a pointer to the next
  *          grpc_linked_mdelem at offset +0x08.
+ *          https://github.com/grpc/grpc/blob/v1.33.2/src/core/lib/transport/metadata_batch.h#L33
  *          The grpc_mdelem is a single pointer which has its 2 least significant bits
  *          used for some storage thing which we don't care about.
+ *          https://github.com/grpc/grpc/blob/v1.33.2/src/core/lib/transport/metadata.h#L98
  *          Once we ignore these bits, we are left with a pointer to a mdelem_data
  *          struct, which is simply 2 inlined grpc_slices one by one (the first is
  *          the key of the header, and the second is the value).
+ *          https://github.com/grpc/grpc/blob/v1.33.2/src/core/lib/transport/metadata.h#L70
  *
  * @param   mdelem_list     The metadata element list to read.
  * @param   metadata        The metadata struct to be filled.
@@ -858,12 +866,8 @@ static inline int fill_metadata_from_mdelem_list(
         return -1;
     }
 
-    for (u32 i = 0 ; i < MAXIMUM_AMOUNT_OF_ITEMS_IN_METADATA ; i++)
+    for (u32 i = 0 ; i < MAXIMUM_AMOUNT_OF_ITEMS_IN_METADATA && i < metadata->count ; i++)
     {
-        if (i >= metadata->count)
-        {
-            break;
-        }
         if (NULL == current_linked_mdelem)
         {
             return -1;
@@ -988,8 +992,6 @@ static inline int handle_maybe_complete_recv_metadata(struct pt_regs * ctx, cons
     read_data->timestamp = bpf_ktime_get_ns();
     transport_ptr = (grpc_chttp2_transport *)PT_REGS_PARM1(ctx);
     stream_ptr = (grpc_chttp2_stream *)PT_REGS_PARM2(ctx);
-    read_data->stack_id = socket_stack_traces.get_stackid(
-        ctx, BPF_F_USER_STACK | BPF_F_REUSE_STACKID);
 
     if (NULL == transport_ptr || NULL == stream_ptr)
     {
@@ -1070,7 +1072,6 @@ static inline int handle_maybe_complete_recv_metadata(struct pt_regs * ctx, cons
         read_data->conn_id,
         read_data->stream_id,
         read_data->timestamp,
-        read_data->stack_id,
         read_data->direction,
         ctx))
     {
@@ -1123,8 +1124,6 @@ int probe_grpc_chttp2_data_parser_parse(struct pt_regs *ctx)
     read_data->timestamp = bpf_ktime_get_ns();
     transport_ptr = (grpc_chttp2_transport *)PT_REGS_PARM2(ctx);
     stream_ptr = (grpc_chttp2_stream *)PT_REGS_PARM3(ctx);
-    read_data->stack_id = socket_stack_traces.get_stackid(
-        ctx, BPF_F_USER_STACK | BPF_F_REUSE_STACKID);
 
     if (NULL == transport_ptr || NULL == stream_ptr)
     {
@@ -1195,7 +1194,6 @@ int probe_grpc_chttp2_data_parser_parse(struct pt_regs *ctx)
             read_data->conn_id,
             read_data->stream_id,
             read_data->timestamp,
-            read_data->stack_id,
             read_data->direction,
             ctx))
         {
@@ -1229,7 +1227,6 @@ int probe_grpc_chttp2_data_parser_parse(struct pt_regs *ctx)
             read_data->conn_id,
             read_data->stream_id,
             read_data->timestamp,
-            read_data->stack_id,
             read_data->direction,
             ctx))
         {
@@ -1289,7 +1286,7 @@ int probe_entry_grpc_chttp2_list_pop_writable_stream(struct pt_regs *ctx)
     args.transport = (void*) PT_REGS_PARM1(ctx);
     args.stream = (void**) PT_REGS_PARM2(ctx);
     u32 zero = 0;
-    list_pop_writable_stream_arguments_local.update(&zero, &args);
+    active_list_pop_writable_stream_args_map.update(&zero, &args);
     return 0;
 }
 
@@ -1336,8 +1333,6 @@ int probe_ret_grpc_chttp2_list_pop_writable_stream(struct pt_regs *ctx)
     grpc_metadata_batch * trailing_metadata = NULL;
     struct grpc_c_metadata_t * metadata = NULL;
     write_data->timestamp = bpf_ktime_get_ns();
-    write_data->stack_id = socket_stack_traces.get_stackid(
-        ctx, BPF_F_USER_STACK | BPF_F_REUSE_STACKID);
     grpc_chttp2_stream * stream_ptr = NULL;
     grpc_chttp2_transport * transport_ptr = NULL;
 
@@ -1355,7 +1350,7 @@ int probe_ret_grpc_chttp2_list_pop_writable_stream(struct pt_regs *ctx)
     }
 
     struct list_pop_writable_stream_arguments * args =
-            list_pop_writable_stream_arguments_local.lookup(&key);
+            active_list_pop_writable_stream_args_map.lookup(&key);
     if (NULL == args)
     {
         // Arguments were not captured in function entry.
@@ -1420,7 +1415,6 @@ int probe_ret_grpc_chttp2_list_pop_writable_stream(struct pt_regs *ctx)
             write_data->conn_id,
             write_data->stream_id,
             write_data->timestamp,
-            write_data->stack_id,
             write_data->direction,
             ctx))
         {
@@ -1454,7 +1448,6 @@ int probe_ret_grpc_chttp2_list_pop_writable_stream(struct pt_regs *ctx)
             write_data->conn_id,
             write_data->stream_id,
             write_data->timestamp,
-            write_data->stack_id,
             write_data->direction,
             ctx))
         {
@@ -1476,10 +1469,10 @@ int probe_ret_grpc_chttp2_list_pop_writable_stream(struct pt_regs *ctx)
 
     u32 total_write_data_length = 0;
     if (0 != get_slices_from_grpc_slice_buffer_and_fire_perf_event_per_slice(
+        ctx,
         flow_controlled_buffer,
         write_data,
-        conn_info,
-        ctx))
+        conn_info))
     {
         return -1;
     }
@@ -1494,8 +1487,6 @@ int probe_grpc_chttp2_mark_stream_closed(struct pt_regs *ctx)
     u32 pid = bpf_get_current_pid_tgid() >> 32;
     u32 fd = 0;
     data.timestamp = bpf_ktime_get_ns();
-    data.stack_id = socket_stack_traces.get_stackid(
-        ctx, BPF_F_USER_STACK | BPF_F_REUSE_STACKID);
     grpc_chttp2_stream * stream_ptr = NULL;
     grpc_chttp2_transport * transport_ptr = NULL;
 
