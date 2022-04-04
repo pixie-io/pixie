@@ -27,6 +27,7 @@
 
 DECLARE_string(stirling_profiler_java_agent_libs);
 DECLARE_bool(stirling_profiler_java_symbols);
+DECLARE_uint32(number_attach_attempts_per_iteration);
 
 namespace px {
 namespace stirling {
@@ -84,6 +85,7 @@ class JavaSymbolizer : public Symbolizer {
   absl::flat_hash_map<struct upid_t, std::unique_ptr<JavaSymbolizationContext>>
       symbolization_contexts_;
   const std::vector<std::filesystem::path> agent_libs_;
+  uint32_t num_attaches_remaining_this_iteration_ = 0;
 };
 
 }  // namespace stirling

@@ -30,6 +30,7 @@
 #include "src/stirling/source_connectors/perf_profiler/java/attach.h"
 #include "src/stirling/source_connectors/perf_profiler/perf_profile_connector.h"
 #include "src/stirling/source_connectors/perf_profiler/stack_traces_table.h"
+#include "src/stirling/source_connectors/perf_profiler/symbolizers/java_symbolizer.h"
 #include "src/stirling/source_connectors/perf_profiler/testing/testing.h"
 #include "src/stirling/testing/common.h"
 
@@ -154,6 +155,7 @@ class PerfProfileBPFTest : public ::testing::Test {
  protected:
   void SetUp() override {
     FLAGS_stirling_profiler_java_symbols = true;
+    FLAGS_number_attach_attempts_per_iteration = kNumSubProcesses;
     FLAGS_stirling_profiler_java_agent_libs = GetAgentLibsFlagValueForTesting();
 
     source_ = PerfProfileConnector::Create("perf_profile_connector");

@@ -39,6 +39,8 @@ char const* const kPEMAgentLibs =
 DEFINE_string(stirling_profiler_java_agent_libs, kPEMAgentLibs, kLibsHelpMessage);
 DEFINE_bool(stirling_profiler_java_symbols, gflags::BoolFromEnv("PL_PROFILER_JAVA_SYMBOLS", false),
             "Whether to symbolize Java binaries.");
+DEFINE_uint32(number_attach_attempts_per_iteration, 1,
+              "Number of JVMTI agents that can be attached in a single perf profiler iteration.");
 
 namespace px {
 namespace stirling {
@@ -210,6 +212,7 @@ void JavaSymbolizer::IterationPreTick() {
   for (auto& [upid, ctx] : symbolization_contexts_) {
     ctx->set_requires_refresh();
   }
+  num_attaches_remaining_this_iteration_ = FLAGS_number_attach_attempts_per_iteration;
 }
 
 void JavaSymbolizer::DeleteUPID(const struct upid_t& upid) {
@@ -372,12 +375,22 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
     return native_symbolizer_fn;
   }
 
+  if (num_attaches_remaining_this_iteration_ == 0) {
+    // We have reached our limit of JVMTI agent attaches for this iteration.
+    // Early out w/ native symbolizer, but *do not* store this in the symbolizer functions
+    // map (we want to try to inject an agent on the next iteration).
+    return native_symbolizer_fn;
+  }
+
   // Create an agent attacher and put it into the active attachers map.
   const auto [iter, inserted] = active_attachers_.try_emplace(upid, nullptr);
   DCHECK(inserted);
   if (inserted) {
     JavaProfilingProcTracker::GetSingleton()->Add(upid);
     iter->second = std::make_unique<java::AgentAttacher>(upid, agent_libs_);
+
+    // Deduct one from our quota of attach attempts per iteration.
+    --num_attaches_remaining_this_iteration_;
   }
 
   // We need this to be non-blocking; immediately return using the native symbolizer function.
