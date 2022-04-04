@@ -39,8 +39,9 @@ struct grpc_c_data_slice_t
 // This must be aligned to 8-bytes.
 // Because of this, the length of the bytes array
 // must be (length % 8) == 4 to accommodate for the uint32_t.
-// UPDATE: assert has been commented out, doesn't work on kernels 4*
-// static_assert( (sizeof(struct grpc_c_data_slice_t) % 8) == 0, "gRPC-C data slice is not aligned to 8-bytes." );
+#ifdef __cplusplus
+static_assert( (sizeof(struct grpc_c_data_slice_t) % 8) == 0, "gRPC-C data slice is not aligned to 8-bytes." );
+#endif
 
 struct grpc_c_metadata_item_t
 {
