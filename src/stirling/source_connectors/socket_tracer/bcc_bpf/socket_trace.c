@@ -1573,5 +1573,8 @@ int probe_entry_security_socket_recvmsg(struct pt_regs* ctx) {
 // Go HTTP2 tracing probes.
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf/go_http2_trace.c"
 
+// gRPC-C tracing probes.
+#include "src/stirling/source_connectors/socket_tracer/bcc_bpf/grpc_c_trace.c"
+
 // GoTLS tracing probes.
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf/go_tls_trace.c"
