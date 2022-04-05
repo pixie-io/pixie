@@ -51,6 +51,9 @@ version: ${VERSION}" > "${helm_path}/Chart.yaml"
 # Add crds. Helm ensures that these crds are deployed before the templated YAMLs.
 cp "${repo_path}/k8s/operator/crd/base/px.dev_viziers.yaml" "${helm_path}/crds/vizier_crd.yaml"
 
+# Updates templates with Helm-specific template functions.
+sed -i '1c{{ if (or (eq (.Values.deployOLM | toString) "true") (and (not (eq (.Values.deployOLM | toString) "false")) (eq (len (lookup "operators.coreos.com/v1" "OperatorGroup" "" "").items) 0))) }}' "${repo_path}/k8s/operator/helm/templates/00_olm.yaml"
+
 # Fetch all of the current charts in GCS, because generating the index needs all pre-existing tar versions present.
 mkdir -p "${tmp_dir}/${helm_gcs_bucket}"
 gsutil rsync "gs://${helm_gcs_bucket}" "${tmp_dir}/${helm_gcs_bucket}"
