@@ -48,15 +48,19 @@
   {}
 #endif
 
+// _VAR suffix indicates that the count of bytes being read is equal to the variable's byte size.
+#define BPF_PROBE_READ_VAR(value, ptr) bpf_probe_read(&value, sizeof(value), ptr)
+#define BPF_PROBE_READ_KERNEL_VAR(value, ptr) bpf_probe_read_kernel(&value, sizeof(value), ptr)
+
 static __inline int32_t read_big_endian_int32(const char* buf) {
   int32_t length;
-  bpf_probe_read(&length, 4, buf);
+  BPF_PROBE_READ_VAR(length, buf);
   return bpf_ntohl(length);
 }
 
 static __inline int32_t read_big_endian_int16(const char* buf) {
   int16_t val;
-  bpf_probe_read(&val, 2, buf);
+  BPF_PROBE_READ_VAR(val, buf);
   return bpf_ntohl(val);
 }
 
