@@ -21,6 +21,7 @@ package docstring
 import (
 	"fmt"
 	re "regexp"
+	"sort"
 	"strings"
 
 	"px.dev/pixie/src/carnot/docspb"
@@ -550,6 +551,29 @@ func ParseAllDocStrings(iDoc *docspb.InternalPXLDocs) (*docspb.StructuredDocs, e
 		err := parseDocstringTree(d, newDoc, "")
 		ea.AddError(err)
 	}
+
+	// sort the slices.
+	sort.SliceStable(newDoc.MutationDocs, func(i, j int) bool {
+		return newDoc.MutationDocs[i].Body.Name < newDoc.MutationDocs[j].Body.Name
+	})
+	sort.SliceStable(newDoc.TracepointDecoratorDocs, func(i, j int) bool {
+		return newDoc.TracepointDecoratorDocs[i].Body.Name < newDoc.TracepointDecoratorDocs[j].Body.Name
+	})
+	sort.SliceStable(newDoc.TracepointFieldDocs, func(i, j int) bool {
+		return newDoc.TracepointFieldDocs[i].Body.Name < newDoc.TracepointFieldDocs[j].Body.Name
+	})
+	sort.SliceStable(newDoc.DataframeOpDocs, func(i, j int) bool {
+		return newDoc.DataframeOpDocs[i].Body.Name < newDoc.DataframeOpDocs[j].Body.Name
+	})
+	sort.SliceStable(newDoc.CompileFnDocs, func(i, j int) bool {
+		return newDoc.CompileFnDocs[i].Body.Name < newDoc.CompileFnDocs[j].Body.Name
+	})
+	sort.SliceStable(newDoc.OTelDocs, func(i, j int) bool {
+		return newDoc.OTelDocs[i].Body.Name < newDoc.OTelDocs[j].Body.Name
+	})
+	sort.SliceStable(newDoc.UdfDocs.Udf, func(i, j int) bool {
+		return newDoc.UdfDocs.Udf[i].Name < newDoc.UdfDocs.Udf[j].Name
+	})
 
 	errMerged := ea.Merge()
 	if errMerged != nil {

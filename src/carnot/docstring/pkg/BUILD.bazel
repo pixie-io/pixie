@@ -35,6 +35,7 @@ go_test(
     embed = [":pkg"],
     deps = [
         "//src/carnot/docspb:docs_pl_go_proto",
+        "//src/carnot/udfspb:udfs_pl_go_proto",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],
