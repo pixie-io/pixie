@@ -257,7 +257,7 @@ func combineLines(lines *[]string, lineNs []int, highlightLine int) string {
 			// Insert a carrot if this is the higlight line.
 			firstChar = "> "
 		}
-		out[i] = fmt.Sprintf("%s%d %s", firstChar, l, (*lines)[l])
+		out[i] = fmt.Sprintf("%s%3d %s", firstChar, l, (*lines)[l])
 	}
 	return strings.Join(out, "\n")
 }
@@ -417,6 +417,9 @@ const CompileTimeFns = "compile_time_fn"
 // DataFrameOps topic is for dataframe operations.
 const DataFrameOps = "dataframe_ops"
 
+// OTelFunctions is the topic for PxL OpenTelemetry exporter functions.
+const OTelFunctions = "otel"
+
 // Parses the docstring and writes the result to the structured docs.
 func parseDocstringAndWrite(outDocs *docspb.StructuredDocs, rawDocstring string, name string) error {
 	topic := getTopic(rawDocstring)
@@ -464,6 +467,13 @@ func parseDocstringAndWrite(outDocs *docspb.StructuredDocs, rawDocstring string,
 			Body:    genDocString.body,
 			FuncDoc: genDocString.function,
 		})
+	case OTelFunctions:
+		body := genDocString.body
+		outDocs.OTelDocs = append(outDocs.OTelDocs, &docspb.OTelDoc{
+			Body:    body,
+			FuncDoc: genDocString.function,
+		})
+
 	default:
 		return fmt.Errorf("topic not found %s", topic)
 	}
@@ -482,15 +492,15 @@ func indent(i string) string {
 	return "\t" + strings.Join(strings.Split(i, "\n"), "\n\t")
 }
 
-func onDenyList(n string) bool {
-	return n == "px.DataFrame.DataFrame"
+func isAllowed(n string) bool {
+	return n != "px.DataFrame.DataFrame"
 }
 
 // parseDocstringTree traverses the DocstringNode tree and parses docstrings into the StructuredDocs.
 func parseDocstringTree(node *docspb.DocstringNode, outDocs *docspb.StructuredDocs, currentName string) error {
 	ea := utils.MakeErrorAccumulator()
 	name := makeName(currentName, node.Name)
-	if !onDenyList(name) {
+	if isAllowed(name) {
 		err := parseDocstringAndWrite(outDocs, node.Docstring, name)
 		if err != nil {
 			// We don't early exit because we want to surface all the errors rather than having to restart.

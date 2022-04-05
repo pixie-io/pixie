@@ -48,6 +48,8 @@ class OTelModule : public QLObject {
   Use this function to define which columns in a DataFrame should be tracked as
   OpenTelemetry data and which ones define the resources, attributes, metrics, et.c
 
+  :topic: otel
+
   Args:
     data (px.otel.Data): The configuration for the data, describing how the
       data is created in the DataFrame and what kind of metric to populate in OTel.
@@ -67,6 +69,8 @@ class OTelModule : public QLObject {
   Describes the endpoint and any connection arguments necessary to talk to
   an OpenTelemetry collector. Passed as an argument to the different OTel data
   type configurations in PxL.
+
+  :topic: otel
 
   Args:
     url (string): The URL of the OTel collector.
@@ -95,6 +99,8 @@ class OTelMetrics : public QLObject {
   Gauge describes how to transform a pixie DataFrame into the OpenTelemetry
   Metric Gauge type.
 
+  :topic: otel
+
   Args:
     name (string): The name of the metric.
     value (Column): The column that contains the data. Must be either an INT64 or a FLOAT64.
@@ -113,11 +119,13 @@ class OTelMetrics : public QLObject {
   Summary describes how to transform a pixie DataFrame into the OpenTelemetry
   Metric Summary type.
 
+  :topic: otel
+
   Args:
     name (string): The name of the metric.
     count (Column): The column of the count of elements to use for the Summary.
-    sum (Column): The column of the sum of elements in the particular distirbution to use for the Summary.
-    quantile_values(Dict[float, Column]): The mapping of the quantile value to the DataFrame column
+    sum (Column): The column of the sum of elements in the particular distribution to use for the Summary.
+    quantile_values (Dict[float, Column]): The mapping of the quantile value to the DataFrame column
       containing the quantile value information.
     description (string, optional): A description of what the metric tracks.
     attributes (Dict[double, Column], optional): A mapping of attribute name to the column
@@ -151,6 +159,8 @@ class OTelTrace : public QLObject {
 
   Span describes how to transform a pixie DataFrame into the OpenTelemetry
   Span type.
+
+  :topic: otel
 
   Args:
     name (string,Column): The name of the span. Can be a stirng or a STRING column.
