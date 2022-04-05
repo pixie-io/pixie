@@ -43,10 +43,14 @@ class OTelModule : public QLObject {
 
   inline static constexpr char kDataOpID[] = "Data";
   inline static constexpr char kDataOpDocstring[] = R"doc(
-  Defines the transformation and destination of a DataFrame into OpenTelemetry data.
+  Specifies the transformation of a DataFrame into OpenTelemetry data.
 
-  Use this function to define which columns in a DataFrame should be tracked as
-  OpenTelemetry data and which ones define the resources, attributes, metrics, et.c
+  This function makes it easy to transform columnar DataFrame data into
+  single element OpenTelemetry data. User must pass in data configuration(s)
+  (ie `px.otel.metric.Gauge`) and a resource config where `service.name` is
+  one of the attributes.
+
+  Optionally, users can specify an endpoint using `px.otel.Endpoint`
 
   :topic: otel
 
@@ -94,45 +98,49 @@ class OTelMetrics : public QLObject {
 
   inline static constexpr char kGaugeOpID[] = "Gauge";
   inline static constexpr char kGaugeOpDocstring[] = R"doc(
-  Defines the OpenTelemetry Metric Gauge type.
+  Defines the DataFrame mapping to an OpenTelemetry Metric Gauge
 
+  [Gauges](https://opentelemetry.io/docs/reference/specification/metrics/datamodel/#gauge)
+  specify the "current value" of a metric at a given time. PxL writers must specify the name
+  foll
   Gauge describes how to transform a pixie DataFrame into the OpenTelemetry
   Metric Gauge type.
 
   :topic: otel
 
   Args:
-    name (string): The name of the metric.
+    name (string): The name of the metric. Must adhere to [OpenTelemetry's naming conventions](https://opentelemetry.io/docs/reference/specification/metrics/api/#instrument)
     value (Column): The column that contains the data. Must be either an INT64 or a FLOAT64.
     description (string, optional): A description of what the metric tracks.
     attributes (Dict[string, string], optional): A mapping of attribute name to the column
       name that stores data about the attribute.
   Returns:
-    OTelDataContainer: the description of how to map a DataFrame to OpenTelemetry Data. Can be passed
-      into into px.otel.Data() as data.
+    OTelDataContainer: the mapping of DataFrame columns to OpenTelemetry Gauge fields. Can be passed
+      into `px.otel.Data()` as the data argument.
   )doc";
 
   inline static constexpr char kSummaryOpID[] = "Summary";
   inline static constexpr char kSummaryOpDocstring[] = R"doc(
-  Defines the OpenTelemetry Metric Summary type.
+  Defines the DataFrame mapping to an OpenTelemetry Metric Summary
 
-  Summary describes how to transform a pixie DataFrame into the OpenTelemetry
-  Metric Summary type.
+  Summaries describe quantile summaries of distributions, such as p90 and p99.
+  The unit of this metric will be inferred from the [SemanticType](https://github.com/pixie-io/pixie/blob/main/src/api/proto/vizierpb/vizierapi.proto#L51)
+  of the column `value`.
 
   :topic: otel
 
   Args:
     name (string): The name of the metric.
-    count (Column): The column of the count of elements to use for the Summary.
-    sum (Column): The column of the sum of elements in the particular distribution to use for the Summary.
+    count (Column): The column of the count of elements inside each summary. Must be INT64
+    sum (Column): The column of the sum of elements in inside each summary to use for the Summary. Must be FLOAT64
     quantile_values (Dict[float, Column]): The mapping of the quantile value to the DataFrame column
-      containing the quantile value information.
+      containing the quantile value information. Must be FLOAT64.
     description (string, optional): A description of what the metric tracks.
     attributes (Dict[double, Column], optional): A mapping of attribute name to the column
       name that stores data about the attribute.
   Returns:
-    OTelDataContainer: the description of how to map a DataFrame to OpenTelemetry Data. Can be passed
-      into into px.otel.Data() as data.
+    OTelDataContainer: the mapping of DataFrame columns to OpenTelemetry Summary fields. Can be passed
+      into `px.otel.Data()` as the data argument.
   )doc";
 
  protected:
@@ -163,7 +171,7 @@ class OTelTrace : public QLObject {
   :topic: otel
 
   Args:
-    name (string,Column): The name of the span. Can be a stirng or a STRING column.
+    name (string,Column): The name of the span. Can be a string or a STRING column.
     start_time (Column): The column that marks the beginning of the span, must be TIME64NS.
     end_time (Column): The column that marks the end of the span, must be TIME64NS.
     trace_id (Column, optional): The column containing trace_ids, must be formatted as a lower-case hex
@@ -178,8 +186,8 @@ class OTelTrace : public QLObject {
     attributes (Dict[string, string], optional): A mapping of attribute name to the column
       name that stores data about the attribute.
   Returns:
-    OTelDataContainer: the description of how to map a DataFrame to OpenTelemetry Data. Can be passed
-      into into px.otel.Data() as data.
+    OTelDataContainer: the mapping of DataFrame columns to OpenTelemetry Span fields. Can be passed
+      into `px.otel.Data()` as the data argument.
   )doc";
 
  protected:
