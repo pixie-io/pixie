@@ -338,10 +338,10 @@ class ProcParser {
       uint64_t vmem_end = 0;
       // TODO(ddelnano): Change this to an octal like number like chmod
       /* uint8_t permissions = 0; */
-      std::string permissions = "";
+      std::string permissions;
       uint64_t file_offset = 0;
       uint64_t inode = 0;
-      std::string map_path = "";
+      std::string map_path;
 
       template <typename H>
       friend H AbslHashValue(H h, const ProcessMap& e) {
@@ -349,7 +349,6 @@ class ProcParser {
       }
 
       bool operator==(const ProcParser::ProcessMap& rhs) const {
-        /* return this->vmem_start == rhs.vmem_start && this->vmem_end == rhs.vmem_end && this->permissions == rhs.permissions && this->inode == rhs.inode && this->file_offset == rhs.file_offset && this->map_path == rhs.map_path; */
         return this->vmem_start == rhs.vmem_start && this->vmem_end == rhs.vmem_end && this->permissions.compare(permissions) == 0 && this->inode == rhs.inode && this->file_offset == rhs.file_offset && this->map_path == rhs.map_path;
       }
   };
