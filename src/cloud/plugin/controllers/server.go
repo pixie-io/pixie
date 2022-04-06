@@ -838,10 +838,18 @@ func (s *Server) DeleteRetentionScript(ctx context.Context, req *pluginpb.Delete
 	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
 	scriptID := utils.UUIDFromProtoOrNil(req.ID)
 
-	query := `DELETE FROM plugin_retention_scripts WHERE org_id=$1 AND script_id=$2 AND is_preset=false`
-	_, err = txn.Exec(query, orgID, scriptID)
+	query := `DELETE FROM plugin_retention_scripts WHERE org_id=$1 AND script_id=$2 AND NOT is_preset`
+	resp, err := txn.Exec(query, orgID, scriptID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to delete scripts")
+	}
+
+	rowsDel, err := resp.RowsAffected()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to delete scripts")
+	}
+	if rowsDel == 0 {
+		return nil, status.Errorf(codes.Internal, "No script to delete")
 	}
 
 	ctx, err = contextWithAuthToken(ctx)

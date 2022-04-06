@@ -921,3 +921,24 @@ func TestServer_DeleteRetentionScript(t *testing.T) {
 	require.Nil(t, err)
 	require.False(t, rows.Next())
 }
+
+func TestServer_DeletePresetRetentionScript(t *testing.T) {
+	mustLoadTestData(db)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+	s := controllers.New(db, "test", mockCSClient)
+	_, err := s.DeleteRetentionScript(createTestContext(), &pluginpb.DeleteRetentionScriptRequest{
+		ID:    utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+		OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+	})
+
+	require.NotNil(t, err)
+
+	query := `SELECT script_name from plugin_retention_scripts WHERE org_id=$1 AND script_id=$2`
+	rows, err := db.Queryx(query, uuid.FromStringOrNil("223e4567-e89b-12d3-a456-426655440000"), uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440001"))
+	require.Nil(t, err)
+	require.True(t, rows.Next())
+}
