@@ -18,7 +18,19 @@
 
 #pragma once
 
+#include <string>
+
+#include <prometheus/counter.h>
 #include <prometheus/registry.h>
 
 // Returns the global metrics registry;
 prometheus::Registry& GetMetricsRegistry();
+
+// A convenience wrapper to return a counter with the specified name and help message.
+inline auto& BuildCounter(const std::string& name, const std::string& help_message) {
+  return prometheus::BuildCounter()
+      .Name(name)
+      .Help(help_message)
+      .Register(GetMetricsRegistry())
+      .Add({{"name", name}});
+}

@@ -26,6 +26,8 @@
 #include "src/stirling/bpf_tools/macros.h"
 #include "src/stirling/bpf_tools/utils.h"
 #include "src/stirling/source_connectors/proc_exit/bcc_bpf_intf/proc_exit.h"
+#include "src/stirling/utils/detect_application.h"
+#include "src/stirling/utils/proc_tracker.h"
 
 BPF_SRC_STRVIEW(proc_exit_trace_bcc_script, proc_exit_trace);
 
@@ -55,14 +57,20 @@ const auto kPerfBufferSpecs = MakeArray<bpf_tools::PerfBufferSpec>({
 });
 
 // Use char array to meet the user's interface, which expects std::string.
-constexpr char kAbnormalJavaExitCounterName[] = "abnormal_java_exit_counter";
+constexpr char kJavaProcCrashedCounter[] = "java_proc_crashed";
+constexpr char kJavaProcCrashedWithProfilerCounter[] = "java_proc_crashed_with_profiler";
+constexpr char kJavaProcCrashedWithoutProfilerCounter[] = "java_proc_crashed_without_profiler";
+
 ProcExitConnector::ProcExitConnector(std::string_view name)
     : SourceConnector(name, kTables),
-      abnormal_java_exit_counter_(prometheus::BuildCounter()
-                                      .Name(kAbnormalJavaExitCounterName)
-                                      .Help("Count of the Java processes that exit abnormally")
-                                      .Register(GetMetricsRegistry())
-                                      .Add({{"name", kAbnormalJavaExitCounterName}})) {}
+      java_proc_crashed_counter_(
+          BuildCounter(kJavaProcCrashedCounter, "Count of the crashed Java processes")),
+      java_proc_crashed_with_profiler_counter_(BuildCounter(
+          kJavaProcCrashedWithProfilerCounter,
+          "Count of the crashed Java processes that also had profiler agent attached")),
+      java_proc_crashed_without_profiler_counter_(BuildCounter(
+          kJavaProcCrashedWithoutProfilerCounter,
+          "Count of the crashed Java processes that hadn't attached profiler agent")) {}
 
 void ProcExitConnector::AcceptProcExitEvent(const struct proc_exit_event_t& event) {
   events_.push_back(event);
@@ -95,6 +103,12 @@ Status ProcExitConnector::InitImpl() {
   return Status::OK();
 }
 
+namespace {
+
+uint8_t GetExitSignal(uint32_t exit_code) { return exit_code & 0x7F; }
+
+}  // namespace
+
 void ProcExitConnector::TransferDataImpl(ConnectorContext* ctx,
                                          const std::vector<DataTable*>& data_tables) {
   DCHECK(data_tables.size() == 1) << "Expect only one data table for proc_exit tracer";
@@ -112,10 +126,43 @@ void ProcExitConnector::TransferDataImpl(ConnectorContext* ctx,
     // See the description below:
     // https://unix.stackexchange.com/questions/99112/default-exit-code-when-process-is-terminated
     r.Append<proc_exit_tracer::kExitCodeIdx>(event.exit_code >> 8);
-    r.Append<proc_exit_tracer::kSignalIdx>(event.exit_code & 0x7F);
+    r.Append<proc_exit_tracer::kSignalIdx>(GetExitSignal(event.exit_code));
     r.Append<proc_exit_tracer::kCommIdx>(std::move(event.comm));
+
+    UpdateCrashedJavaProcCounters(ctx->GetASID(), event, ctx->GetPIDInfoMap());
   }
   events_.clear();
+}
+
+void ProcExitConnector::UpdateCrashedJavaProcCounters(
+    uint32_t asid, const proc_exit_event_t& event,
+    const absl::flat_hash_map<md::UPID, md::PIDInfoUPtr>& upid_pid_info_map) {
+  if (GetExitSignal(event.exit_code) == 0) {
+    // Normal exits are ignored.
+    return;
+  }
+
+  md::UPID md_upid = event.upid.ToMetadataUPID(asid);
+  auto iter = upid_pid_info_map.find(md_upid);
+  if (
+      // Don't track any non-K8s process. upid_pid_info_map was obtained from K8s metadata, which
+      // indicates whether or not a process is managed by K8s.
+      iter == upid_pid_info_map.end() ||
+      // Missing PIDInfo
+      iter->second == nullptr) {
+    return;
+  }
+  const md::PIDInfo& pid_info = *iter->second;
+  if (DetectApplication(pid_info.exe_path()) != Application::kJava) {
+    return;
+  }
+
+  java_proc_crashed_counter_.Increment();
+  if (JavaProfilingProcTracker::GetSingleton()->upids().contains(event.upid)) {
+    java_proc_crashed_with_profiler_counter_.Increment();
+  } else {
+    java_proc_crashed_without_profiler_counter_.Increment();
+  }
 }
 
 }  // namespace proc_exit_tracer

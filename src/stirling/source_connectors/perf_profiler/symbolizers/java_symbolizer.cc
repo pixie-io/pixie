@@ -19,8 +19,10 @@
 #include <string>
 
 #include <absl/functional/bind_front.h>
+#include <prometheus/counter.h>
 
 #include "src/common/fs/fs_wrapper.h"
+#include "src/common/metrics/metrics.h"
 #include "src/common/system/proc_parser.h"
 #include "src/stirling/source_connectors/perf_profiler/java/agent/raw_symbol_update.h"
 #include "src/stirling/source_connectors/perf_profiler/java/demangle.h"
@@ -44,6 +46,22 @@ DEFINE_uint32(number_attach_attempts_per_iteration, 1,
 
 namespace px {
 namespace stirling {
+
+namespace {
+
+constexpr char kJavaProcCounter[] = "java_proc";
+constexpr char kJavaProcAttachedCounter[] = "java_proc_attached";
+
+prometheus::Counter& g_java_proc_counter{
+    BuildCounter(kJavaProcCounter, "Count of the Java processes")};
+
+prometheus::Counter& g_java_proc_attach_attempted_counter{BuildCounter(
+    kJavaProcAttachedCounter, "Count of the Java processes that has profiling agent attached")};
+
+prometheus::Counter& g_java_proc_attached_counter{BuildCounter(
+    kJavaProcAttachedCounter, "Count of the Java processes that has profiling agent attached")};
+
+}  // namespace
 
 void JavaSymbolizationContext::RemoveArtifacts() const {
   if (host_artifacts_path_resolved_) {
@@ -301,6 +319,7 @@ bool JavaSymbolizer::Uncacheable(const struct upid_t& upid) {
 
   // Successful attach; delete the attacher.
   active_attachers_.erase(upid);
+  g_java_proc_attached_counter.Increment();
 
   // Attempt to open the symbol file and create a new Java symbolization context.
   const Status new_ctx_status = CreateNewJavaSymbolizationContext(upid);
@@ -342,6 +361,9 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
     return native_symbolizer_fn;
   }
 
+  // This process is a java process, increment the counter.
+  g_java_proc_counter.Increment();
+
   const std::filesystem::path symbol_file_path = java::StirlingSymbolFilePath(upid);
 
   if (fs::Exists(symbol_file_path)) {
@@ -381,6 +403,9 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
     // map (we want to try to inject an agent on the next iteration).
     return native_symbolizer_fn;
   }
+
+  // Increment attempt counter before trying to attach.
+  g_java_proc_attach_attempted_counter.Increment();
 
   // Create an agent attacher and put it into the active attachers map.
   const auto [iter, inserted] = active_attachers_.try_emplace(upid, nullptr);

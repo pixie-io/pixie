@@ -29,6 +29,7 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     deps = [
+        "//src/common/metrics:cc_library",
         "//src/stirling/bpf_tools:cc_library",
         "//src/stirling/source_connectors/perf_profiler/java:cc_library",
         "//src/stirling/source_connectors/perf_profiler/java/agent:cc_headers",
