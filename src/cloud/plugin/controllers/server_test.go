@@ -895,3 +895,29 @@ func TestServer_UpdateRetentionScript(t *testing.T) {
 	assert.Equal(t, "test-plugin", script.PluginID)
 	assert.Equal(t, "https://test", script.ExportURL)
 }
+
+func TestServer_DeleteRetentionScript(t *testing.T) {
+	mustLoadTestData(db)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+	mockCSClient.EXPECT().DeleteScript(gomock.Any(), &cronscriptpb.DeleteScriptRequest{
+		ID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+	}).Return(&cronscriptpb.DeleteScriptResponse{}, nil)
+
+	s := controllers.New(db, "test", mockCSClient)
+	resp, err := s.DeleteRetentionScript(createTestContext(), &pluginpb.DeleteRetentionScriptRequest{
+		ID:    utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+		OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+	})
+
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+
+	query := `SELECT script_name from plugin_retention_scripts WHERE org_id=$1 AND script_id=$2`
+	rows, err := db.Queryx(query, uuid.FromStringOrNil("223e4567-e89b-12d3-a456-426655440000"), uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"))
+	require.Nil(t, err)
+	require.False(t, rows.Next())
+}

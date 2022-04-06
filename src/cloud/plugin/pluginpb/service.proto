@@ -52,6 +52,8 @@ service DataRetentionPluginService {
     rpc CreateRetentionScript(CreateRetentionScriptRequest) returns (CreateRetentionScriptResponse);
     // Updates a script used for long-term data retention.
     rpc UpdateRetentionScript(UpdateRetentionScriptRequest) returns (UpdateRetentionScriptResponse);
+    // DeleteRetentionScript is a request to delete a long-term data retention script.
+    rpc DeleteRetentionScript(DeleteRetentionScriptRequest) returns (DeleteRetentionScriptResponse);
 }
 
 enum PluginKind {
@@ -259,3 +261,12 @@ message UpdateRetentionScriptRequest {
 
 // UpdateRetentionScriptResponse is the response to updating an existing retention script.
 message UpdateRetentionScriptResponse {}
+
+// DeleteRetentionScriptRequest is a request to delete a retention script.
+message DeleteRetentionScriptRequest {
+    uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+    uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
+}
+
+// DeleteRetentionScriptResponse is the response to deleting a retention script.
+message DeleteRetentionScriptResponse {}

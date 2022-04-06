@@ -826,3 +826,40 @@ func (s *Server) UpdateRetentionScript(ctx context.Context, req *pluginpb.Update
 
 	return &pluginpb.UpdateRetentionScriptResponse{}, nil
 }
+
+// DeleteRetentionScript creates a script that is used for long-term data retention.
+func (s *Server) DeleteRetentionScript(ctx context.Context, req *pluginpb.DeleteRetentionScriptRequest) (*pluginpb.DeleteRetentionScriptResponse, error) {
+	txn, err := s.db.Beginx()
+	if err != nil {
+		return nil, err
+	}
+	defer txn.Rollback()
+
+	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
+	scriptID := utils.UUIDFromProtoOrNil(req.ID)
+
+	query := `DELETE FROM plugin_retention_scripts WHERE org_id=$1 AND script_id=$2 AND is_preset=false`
+	_, err = txn.Exec(query, orgID, scriptID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to delete scripts")
+	}
+
+	ctx, err = contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = s.cronScriptClient.DeleteScript(ctx, &cronscriptpb.DeleteScriptRequest{
+		ID: req.ID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to delete cron script")
+	}
+
+	err = txn.Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	return &pluginpb.DeleteRetentionScriptResponse{}, nil
+}

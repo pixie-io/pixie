@@ -172,6 +172,26 @@ func (mr *MockDataRetentionPluginServiceClientMockRecorder) CreateRetentionScrip
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRetentionScript", reflect.TypeOf((*MockDataRetentionPluginServiceClient)(nil).CreateRetentionScript), varargs...)
 }
 
+// DeleteRetentionScript mocks base method.
+func (m *MockDataRetentionPluginServiceClient) DeleteRetentionScript(ctx context.Context, in *pluginpb.DeleteRetentionScriptRequest, opts ...grpc.CallOption) (*pluginpb.DeleteRetentionScriptResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteRetentionScript", varargs...)
+	ret0, _ := ret[0].(*pluginpb.DeleteRetentionScriptResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteRetentionScript indicates an expected call of DeleteRetentionScript.
+func (mr *MockDataRetentionPluginServiceClientMockRecorder) DeleteRetentionScript(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRetentionScript", reflect.TypeOf((*MockDataRetentionPluginServiceClient)(nil).DeleteRetentionScript), varargs...)
+}
+
 // GetOrgRetentionPluginConfig mocks base method.
 func (m *MockDataRetentionPluginServiceClient) GetOrgRetentionPluginConfig(ctx context.Context, in *pluginpb.GetOrgRetentionPluginConfigRequest, opts ...grpc.CallOption) (*pluginpb.GetOrgRetentionPluginConfigResponse, error) {
 	m.ctrl.T.Helper()
@@ -328,6 +348,21 @@ func (m *MockDataRetentionPluginServiceServer) CreateRetentionScript(arg0 contex
 func (mr *MockDataRetentionPluginServiceServerMockRecorder) CreateRetentionScript(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRetentionScript", reflect.TypeOf((*MockDataRetentionPluginServiceServer)(nil).CreateRetentionScript), arg0, arg1)
+}
+
+// DeleteRetentionScript mocks base method.
+func (m *MockDataRetentionPluginServiceServer) DeleteRetentionScript(arg0 context.Context, arg1 *pluginpb.DeleteRetentionScriptRequest) (*pluginpb.DeleteRetentionScriptResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteRetentionScript", arg0, arg1)
+	ret0, _ := ret[0].(*pluginpb.DeleteRetentionScriptResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteRetentionScript indicates an expected call of DeleteRetentionScript.
+func (mr *MockDataRetentionPluginServiceServerMockRecorder) DeleteRetentionScript(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRetentionScript", reflect.TypeOf((*MockDataRetentionPluginServiceServer)(nil).DeleteRetentionScript), arg0, arg1)
 }
 
 // GetOrgRetentionPluginConfig mocks base method.
