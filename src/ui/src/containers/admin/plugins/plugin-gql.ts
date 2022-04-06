@@ -141,8 +141,8 @@ export function usePluginConfigMutation(plugin: GQLPlugin): (
   return React.useCallback((newConfigs: GQLEditablePluginConfig[], enabled) => {
     if (loading) return Promise.reject('Tried to update a plugin config before its previous config was known');
 
-    const allowed = schema.configs.map(s => s.name);
-    const merged = oldConfigs.map(c => ({ ...c }));
+    const allowed = schema?.configs.map(s => s.name) ?? [];
+    const merged = oldConfigs?.map(c => ({ ...c })) ?? [];
     for (const nc of newConfigs) {
       if (!allowed.includes(nc.name)) continue;
       const existing = merged.findIndex(oc => oc.name === nc.name);
