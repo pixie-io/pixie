@@ -939,6 +939,8 @@ service PluginService {
   rpc UpdateRetentionScript(UpdateRetentionScriptRequest) returns (UpdateRetentionScriptResponse);
   // CreateRetentionScript creates a retention script.
   rpc CreateRetentionScript(CreateRetentionScriptRequest) returns (CreateRetentionScriptResponse);
+  // DeleteRetentionScript deletes a retention script.
+  rpc DeleteRetentionScript(DeleteRetentionScriptRequest) returns (DeleteRetentionScriptResponse);
 }
 
 // PluginKind describes the type of the plugin.
@@ -1099,3 +1101,11 @@ message CreateRetentionScriptRequest {
 message CreateRetentionScriptResponse {
   uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
 }
+
+// DeleteRetentionScriptRequest is a request to delete a retention script.
+message DeleteRetentionScriptRequest {
+  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+}
+
+// DeleteRetentionScriptResponse is a response to a DeleteRetentionScriptRequest.
+message DeleteRetentionScriptResponse {}

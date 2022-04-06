@@ -312,3 +312,28 @@ func (p *PluginServiceServer) CreateRetentionScript(ctx context.Context, req *cl
 
 	return &cloudpb.CreateRetentionScriptResponse{ID: resp.ID}, nil
 }
+
+// DeleteRetentionScript deletes a specific retention script.
+func (p *PluginServiceServer) DeleteRetentionScript(ctx context.Context, req *cloudpb.DeleteRetentionScriptRequest) (*cloudpb.DeleteRetentionScriptResponse, error) {
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
+	orgID := utils.ProtoFromUUIDStrOrNil(orgIDstr)
+
+	ctx, err = contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = p.DataRetentionPluginServiceClient.DeleteRetentionScript(ctx, &pluginpb.DeleteRetentionScriptRequest{
+		ID:    req.ID,
+		OrgID: orgID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &cloudpb.DeleteRetentionScriptResponse{}, nil
+}

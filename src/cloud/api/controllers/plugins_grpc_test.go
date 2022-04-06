@@ -562,3 +562,33 @@ func TestCreateRetentionScript(t *testing.T) {
 		ID: scriptID,
 	}, resp)
 }
+
+func TestDeleteRetentionScript(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	scriptID := utils.ProtoFromUUIDStrOrNil("1ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	mockReq := &pluginpb.DeleteRetentionScriptRequest{
+		ID:    scriptID,
+		OrgID: utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+	}
+
+	mockClients.MockDataRetentionPlugin.EXPECT().DeleteRetentionScript(gomock.Any(), mockReq).
+		Return(&pluginpb.DeleteRetentionScriptResponse{}, nil)
+
+	pServer := &controllers.PluginServiceServer{mockClients.MockPlugin, mockClients.MockDataRetentionPlugin}
+
+	resp, err := pServer.DeleteRetentionScript(ctx, &cloudpb.DeleteRetentionScriptRequest{
+		ID: scriptID,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+
+	assert.Equal(t, &cloudpb.DeleteRetentionScriptResponse{}, resp)
+}
