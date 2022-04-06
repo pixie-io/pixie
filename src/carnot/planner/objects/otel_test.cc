@@ -638,7 +638,7 @@ otel_sink_op {
       std::make_unique<RelationMap>(), /* sensitive_columns */ SensitiveColumnMap{}, info.get(),
       /* time_now */ 0,
       /* max_output_rows_per_table */ 0, "addrr", "result_ssl_targetname",
-      /* redaction_options */ RedactionOptions{}, std::move(endpoint_config));
+      /* redaction_options */ RedactionOptions{}, std::move(endpoint_config), nullptr);
 
   // Create the OTel Module with a compiler_state that has an endpoint config.
   ASSERT_OK_AND_ASSIGN(auto otel,

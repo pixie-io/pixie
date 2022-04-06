@@ -89,6 +89,11 @@ struct RedactionOptions {
   bool use_px_redact_pii_best_effort = false;
 };
 
+struct PluginConfig {
+  // The start time in UNIX Nanoseconds.
+  int64_t start_time_ns;
+};
+
 using RelationMap = std::unordered_map<std::string, table_store::schema::Relation>;
 using SensitiveColumnMap = absl::flat_hash_map<std::string, absl::flat_hash_set<std::string>>;
 class CompilerState : public NotCopyable {
@@ -102,7 +107,8 @@ class CompilerState : public NotCopyable {
                 RegistryInfo* registry_info, types::Time64NSValue time_now,
                 int64_t max_output_rows_per_table, std::string_view result_address,
                 std::string_view result_ssl_targetname, const RedactionOptions& redaction_options,
-                std::unique_ptr<planpb::OTelEndpointConfig> endpoint_config)
+                std::unique_ptr<planpb::OTelEndpointConfig> endpoint_config,
+                std::unique_ptr<PluginConfig> plugin_config)
       : relation_map_(std::move(relation_map)),
         table_names_to_sensitive_columns_(table_names_to_sensitive_columns),
         registry_info_(registry_info),
@@ -111,7 +117,8 @@ class CompilerState : public NotCopyable {
         result_address_(std::string(result_address)),
         result_ssl_targetname_(std::string(result_ssl_targetname)),
         redaction_options_(redaction_options),
-        endpoint_config_(std::move(endpoint_config)) {}
+        endpoint_config_(std::move(endpoint_config)),
+        plugin_config_(std::move(plugin_config)) {}
 
   CompilerState() = delete;
 
@@ -154,6 +161,7 @@ class CompilerState : public NotCopyable {
   void set_redaction_options(const RedactionOptions& options) { redaction_options_ = options; }
 
   planpb::OTelEndpointConfig* endpoint_config() { return endpoint_config_.get(); }
+  PluginConfig* plugin_config() { return plugin_config_.get(); }
 
  private:
   std::unique_ptr<RelationMap> relation_map_;
@@ -168,6 +176,7 @@ class CompilerState : public NotCopyable {
   const std::string result_ssl_targetname_;
   RedactionOptions redaction_options_;
   std::unique_ptr<planpb::OTelEndpointConfig> endpoint_config_ = nullptr;
+  std::unique_ptr<PluginConfig> plugin_config_ = nullptr;
 };
 
 }  // namespace planner

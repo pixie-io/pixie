@@ -50,7 +50,7 @@ class RuleExecutorTest : public OperatorTests {
 
     compiler_state_ = std::make_unique<CompilerState>(
         std::move(rel_map), SensitiveColumnMap{}, info_.get(), time_now, 0, "result_addr",
-        "result_ssl_targetname", RedactionOptions{}, nullptr);
+        "result_ssl_targetname", RedactionOptions{}, nullptr, nullptr);
 
     ast = MakeTestAstPtr();
     graph = std::make_shared<IR>();

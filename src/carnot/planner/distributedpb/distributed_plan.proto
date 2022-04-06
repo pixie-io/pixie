@@ -136,6 +136,11 @@ message OTelEndpointConfig {
   map<string, string> headers = 2;
 }
 
+message PluginConfig {
+  // The start_time of the script in nanoseconds.
+  int64 start_time_ns = 1;
+}
+
 // LogicalPlannerState contains the information necessary to create the Logical
 // Plan. This message is used by the query broker to send to the logical
 // planner.
@@ -158,6 +163,8 @@ message LogicalPlannerState {
   // use this one. If this config is not specified and the plan fails to specify an endpoint
   // config for otel configurations, that plan compilation will fail.
   OTelEndpointConfig otel_endpoint_config = 8 [(gogoproto.customname) = "OTelEndpointConfig"];
+
+  PluginConfig plugin_config = 9;
 }
 
 // The result for the planner. Contains a status to track any errors

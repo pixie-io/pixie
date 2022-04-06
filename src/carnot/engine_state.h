@@ -126,7 +126,7 @@ class EngineState : public NotCopyable {
         std::move(rel_map), planner::SensitiveColumnMap{}, registry_info_.get(), time_now,
         /* max_output_rows_per_table */ 0,
         /* result address */ "",
-        /* ssl target name override*/ "", planner::RedactionOptions{}, nullptr);
+        /* ssl target name override*/ "", planner::RedactionOptions{}, nullptr, nullptr);
   }
 
   const udf::Registry* func_registry() const { return func_registry_.get(); }

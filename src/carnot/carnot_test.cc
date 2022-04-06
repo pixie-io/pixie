@@ -1086,7 +1086,7 @@ TEST_F(CarnotTest, pass_logical_plan) {
       table_store_->GetRelationMap(), planner::SensitiveColumnMap{}, registry_info.get(),
       current_time,
       /* max_output_rows_per_table */ 0, "result_addr", "result_ssl_targetname",
-      planner::RedactionOptions{}, nullptr);
+      planner::RedactionOptions{}, nullptr, nullptr);
   StatusOr<planpb::Plan> logical_plan_status =
       compiler.Compile(absl::Substitute(query, logical_plan_table_name), &compiler_state);
   ASSERT_OK(logical_plan_status);
