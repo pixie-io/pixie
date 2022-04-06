@@ -163,10 +163,9 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
 
   // Run the client in the network of the server, so they can connect to each other.
   ::px::stirling::testing::CurlContainer client;
-  PL_CHECK_OK(
-      client.Run(std::chrono::seconds{60},
-                 {absl::Substitute("--network=container:$0", this->server_.container_name())},
-                 {"--insecure", "-s", "-S", "https://localhost:443/index.html"}));
+  ASSERT_OK(client.Run(std::chrono::seconds{60},
+                       {absl::Substitute("--network=container:$0", this->server_.container_name())},
+                       {"--insecure", "-s", "-S", "https://localhost:443/index.html"}));
   client.Wait();
   this->StopTransferDataThread();
 
@@ -204,10 +203,9 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
   // Make an SSL request with the client.
   // Run the client in the network of the server, so they can connect to each other.
   ::px::stirling::testing::RubyContainer client;
-  PL_CHECK_OK(
-      client.Run(std::chrono::seconds{60},
-                 {absl::Substitute("--network=container:$0", this->server_.container_name())},
-                 {"ruby", "-e", rb_script}));
+  ASSERT_OK(client.Run(std::chrono::seconds{60},
+                       {absl::Substitute("--network=container:$0", this->server_.container_name())},
+                       {"ruby", "-e", rb_script}));
   client.Wait();
   this->StopTransferDataThread();
 
@@ -227,10 +225,9 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_node_client) {
   // Make an SSL request with the client.
   // Run the client in the network of the server, so they can connect to each other.
   ::px::stirling::testing::NodeClientContainer client;
-  PL_CHECK_OK(
-      client.Run(std::chrono::seconds{60},
-                 {absl::Substitute("--network=container:$0", this->server_.container_name())},
-                 {"node", "/etc/node/https_client.js"}));
+  ASSERT_OK(client.Run(std::chrono::seconds{60},
+                       {absl::Substitute("--network=container:$0", this->server_.container_name())},
+                       {"node", "/etc/node/https_client.js"}));
   client.Wait();
   this->StopTransferDataThread();
 
