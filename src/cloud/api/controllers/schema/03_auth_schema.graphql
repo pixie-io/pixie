@@ -56,6 +56,7 @@ extend type Mutation {
   UpdateRetentionPluginConfig(id: String!, enabled: Boolean, enabledVersion: String, configs: EditablePluginConfigs!): Boolean!
   UpdateRetentionScript(id: ID!, script: EditableRetentionScript): Boolean!
   CreateRetentionScript(script: EditableRetentionScript): ID!
+  DeleteRetentionScript(id: ID!): Boolean!
 }
 
 type UserInfo {

@@ -68,6 +68,7 @@ export interface GQLMutation {
   UpdateRetentionPluginConfig: boolean;
   UpdateRetentionScript: boolean;
   CreateRetentionScript: string;
+  DeleteRetentionScript: boolean;
 }
 
 export interface GQLArtifactsInfo {
@@ -654,6 +655,7 @@ export interface GQLMutationTypeResolver<TParent = any> {
   UpdateRetentionPluginConfig?: MutationToUpdateRetentionPluginConfigResolver<TParent>;
   UpdateRetentionScript?: MutationToUpdateRetentionScriptResolver<TParent>;
   CreateRetentionScript?: MutationToCreateRetentionScriptResolver<TParent>;
+  DeleteRetentionScript?: MutationToDeleteRetentionScriptResolver<TParent>;
 }
 
 export interface MutationToNoopResolver<TParent = any, TResult = any> {
@@ -784,6 +786,13 @@ export interface MutationToCreateRetentionScriptArgs {
 }
 export interface MutationToCreateRetentionScriptResolver<TParent = any, TResult = any> {
   (parent: TParent, args: MutationToCreateRetentionScriptArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface MutationToDeleteRetentionScriptArgs {
+  id: string;
+}
+export interface MutationToDeleteRetentionScriptResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: MutationToDeleteRetentionScriptArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface GQLArtifactsInfoTypeResolver<TParent = any> {

@@ -239,6 +239,10 @@ type updateRetentionScriptArgs struct {
 	Script *editableRetentionScript
 }
 
+type deleteRetentionScriptArgs struct {
+	ID graphql.ID
+}
+
 type retentionScriptArgs struct {
 	ID string
 }
@@ -375,6 +379,20 @@ func (q *QueryResolver) UpdateRetentionScript(ctx context.Context, args updateRe
 	}
 
 	return true, err
+}
+
+// DeleteRetentionScript deletes a retention script.
+func (q *QueryResolver) DeleteRetentionScript(ctx context.Context, args deleteRetentionScriptArgs) (bool, error) {
+	req := &cloudpb.DeleteRetentionScriptRequest{
+		ID: utils.ProtoFromUUIDStrOrNil(string(args.ID)),
+	}
+
+	_, err := q.Env.PluginServer.DeleteRetentionScript(ctx, req)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 // CreateRetentionScript creates a new retention script.
