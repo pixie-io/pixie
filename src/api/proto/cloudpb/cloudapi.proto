@@ -980,6 +980,7 @@ message Plugin {
 message GetOrgRetentionPluginConfigRequest {
   // The ID of the plugin to fetch configs for.
   string plugin_id = 1;
+  string custom_export_url = 2;
 }
 
 // GetOrgRetentionPluginConfigResponse is the response to a GetRetentionPluginConfigRequest.
@@ -994,6 +995,8 @@ message UpdateRetentionPluginConfigRequest {
   map<string, string> configs = 2;
   google.protobuf.BoolValue enabled = 3;
   google.protobuf.StringValue version = 4;
+  // The custom export URL that should be applied to all plugin scripts.
+  google.protobuf.StringValue custom_export_url = 5;
 }
 
 // UpdateRetentionPluginConfigResponse is the response to a UpdateRetentionPluginConfigRequest.

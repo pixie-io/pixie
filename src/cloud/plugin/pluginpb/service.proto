@@ -151,6 +151,7 @@ message GetOrgRetentionPluginConfigResponse {
     // The set of configurations specified by the org. They key is the name of the configuration,
     // and the value represents the configuration value.
     map<string, string> configurations = 1;
+    string custom_export_url = 2;
 }
 
 // UpdateOrgRetentionPluginConfigRequest is a request to update a plugin's configuration.
@@ -164,6 +165,8 @@ message UpdateOrgRetentionPluginConfigRequest {
     google.protobuf.BoolValue enabled = 4;
     // The version to enable.
     google.protobuf.StringValue version = 5;
+    // The custom export URL that should be applied to all plugin scripts.
+    google.protobuf.StringValue custom_export_url = 6;
 }
 
 // UpdateOrgRetentionPluginConfigResponse is a response to update a plugin's configuration.
