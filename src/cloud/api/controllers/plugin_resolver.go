@@ -63,9 +63,16 @@ type PluginConfigResolver struct {
 	Description string
 }
 
+// RetentionPluginConfigResolver is the resolver responsible for resolving the full config for a plugin.
+type RetentionPluginConfigResolver struct {
+	Configs         []*PluginConfigResolver
+	CustomExportURL *string
+}
+
 // PluginInfoResolver is the resolver responsible for resolving plugin info.
 type PluginInfoResolver struct {
-	Configs []PluginConfigResolver
+	Configs              []PluginConfigResolver
+	AllowCustomExportURL bool
 }
 
 func kindGQLToCloudProto(kind string) cloudpb.PluginKind {
@@ -161,13 +168,37 @@ func (q *QueryResolver) OrgRetentionPluginConfig(ctx context.Context, args reten
 	return configs, nil
 }
 
+// RetentionPluginConfig lists the configured values for the given retention plugin.
+func (q *QueryResolver) RetentionPluginConfig(ctx context.Context, args retentionPluginConfigArgs) (*RetentionPluginConfigResolver, error) {
+	configs := make([]*PluginConfigResolver, 0)
+	resp, err := q.Env.PluginServer.GetOrgRetentionPluginConfig(ctx, &cloudpb.GetOrgRetentionPluginConfigRequest{
+		PluginId: args.ID,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range resp.Configs {
+		configs = append(configs, &PluginConfigResolver{
+			Name:  k,
+			Value: v,
+		})
+	}
+
+	return &RetentionPluginConfigResolver{
+		Configs: configs,
+	}, nil
+}
+
 type editablePluginConfig struct {
 	Name  string
 	Value string
 }
 
 type editablePluginConfigs struct {
-	Configs []editablePluginConfig
+	Configs         []editablePluginConfig
+	CustomExportURL *string
 }
 
 type updateRetentionPluginConfigArgs struct {

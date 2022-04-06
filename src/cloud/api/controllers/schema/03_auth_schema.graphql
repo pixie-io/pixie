@@ -30,7 +30,9 @@ extend type Query {
   # Plugin
   plugins(kind: PluginKind): [Plugin!]!
   retentionPluginInfo(id: String!, pluginVersion: String!): PluginInfo!
+  # This will be replaced by retentionPluginConfig once all consumers have been updated.
   orgRetentionPluginConfig(id: String!): [PluginConfig!]!
+  retentionPluginConfig(id: String!): RetentionPluginConfig!
   retentionScripts: [RetentionScript!]!
   retentionScript(id: String!): DetailedRetentionScript!
 }
@@ -348,6 +350,7 @@ type PluginConfig {
 
 type PluginInfo {
   configs: [PluginConfigSchema!]!
+  allowCustomExportURL: Boolean!
 }
 
 type PluginConfigSchema {
@@ -362,6 +365,12 @@ input EditablePluginConfig {
 
 input EditablePluginConfigs {
   configs: [EditablePluginConfig!]!
+  customExportURL: String
+}
+
+type RetentionPluginConfig {
+  configs: [PluginConfig!]!
+  customExportURL: String
 }
 
 # Data retention types.

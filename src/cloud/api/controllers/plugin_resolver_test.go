@@ -155,6 +155,53 @@ func TestPluginResolver_OrgRetentionPluginConfig(t *testing.T) {
 	})
 }
 
+func TestPluginResolver_RetentionPluginConfig(t *testing.T) {
+	gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	mockClients.MockPlugin.EXPECT().GetOrgRetentionPluginConfig(gomock.Any(), &cloudpb.GetOrgRetentionPluginConfigRequest{
+		PluginId: "test-plugin",
+	}).Return(&cloudpb.GetOrgRetentionPluginConfigResponse{
+		Configs: map[string]string{
+			"API_KEY": "test-api-key",
+		},
+	}, nil)
+
+	gqlSchema := LoadSchema(gqlEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				query {
+					retentionPluginConfig(id: "test-plugin") {
+						configs {
+							name
+							value
+						}
+						customExportURL
+					}
+				}
+			`,
+			ExpectedResult: `
+				{
+					"retentionPluginConfig": {
+						"configs": [
+							{
+
+								"name": "API_KEY",
+								"value": "test-api-key"
+							}
+						],
+						"customExportURL": null
+					}
+				}
+			`,
+		},
+	})
+}
+
 func TestPluginResolver_RetentionPluginInfo(t *testing.T) {
 	gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
