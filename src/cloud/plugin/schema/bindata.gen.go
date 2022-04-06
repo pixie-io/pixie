@@ -16,6 +16,8 @@
 // 000007_update_retention_scripts_table.up.sql
 // 000008_drop_plugin_version_retention_scripts.down.sql
 // 000008_drop_plugin_version_retention_scripts.up.sql
+// 000009_add_plugin_custom_export_url.down.sql
+// 000009_add_plugin_custom_export_url.up.sql
 package schema
 
 import (
@@ -412,6 +414,46 @@ func _000008_drop_plugin_version_retention_scriptsUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000009_add_plugin_custom_export_urlDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\xc8\x2f\x4a\x8f\x4f\x49\x2c\x49\x8c\x2f\x4a\x2d\x49\xcd\x2b\xc9\xcc\xcf\x8b\x2f\xc8\x29\x4d\xcf\xcc\x2b\x56\x70\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x53\x48\x2e\x2d\x2e\xc9\xcf\x8d\x4f\xad\x28\xc8\x2f\x2a\x89\x2f\x2d\xca\xb1\xe6\x02\x04\x00\x00\xff\xff\x0d\x59\xfa\x58\x46\x00\x00\x00")
+
+func _000009_add_plugin_custom_export_urlDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000009_add_plugin_custom_export_urlDownSql,
+		"000009_add_plugin_custom_export_url.down.sql",
+	)
+}
+
+func _000009_add_plugin_custom_export_urlDownSql() (*asset, error) {
+	bytes, err := _000009_add_plugin_custom_export_urlDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000009_add_plugin_custom_export_url.down.sql", size: 70, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000009_add_plugin_custom_export_urlUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\xc8\x2f\x4a\x8f\x4f\x49\x2c\x49\x8c\x2f\x4a\x2d\x49\xcd\x2b\xc9\xcc\xcf\x8b\x2f\xc8\x29\x4d\xcf\xcc\x2b\x56\x70\x74\x71\x51\x48\x2e\x2d\x2e\xc9\xcf\x8d\x4f\xad\x28\xc8\x2f\x2a\x89\x2f\x2d\xca\x51\x48\xaa\x2c\x49\x4d\xb4\xe6\x02\x04\x00\x00\xff\xff\x53\xf3\x1b\x24\x44\x00\x00\x00")
+
+func _000009_add_plugin_custom_export_urlUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000009_add_plugin_custom_export_urlUpSql,
+		"000009_add_plugin_custom_export_url.up.sql",
+	)
+}
+
+func _000009_add_plugin_custom_export_urlUpSql() (*asset, error) {
+	bytes, err := _000009_add_plugin_custom_export_urlUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000009_add_plugin_custom_export_url.up.sql", size: 68, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -480,6 +522,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000007_update_retention_scripts_table.up.sql":          _000007_update_retention_scripts_tableUpSql,
 	"000008_drop_plugin_version_retention_scripts.down.sql": _000008_drop_plugin_version_retention_scriptsDownSql,
 	"000008_drop_plugin_version_retention_scripts.up.sql":   _000008_drop_plugin_version_retention_scriptsUpSql,
+	"000009_add_plugin_custom_export_url.down.sql":          _000009_add_plugin_custom_export_urlDownSql,
+	"000009_add_plugin_custom_export_url.up.sql":            _000009_add_plugin_custom_export_urlUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -539,6 +583,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000007_update_retention_scripts_table.up.sql":          &bintree{_000007_update_retention_scripts_tableUpSql, map[string]*bintree{}},
 	"000008_drop_plugin_version_retention_scripts.down.sql": &bintree{_000008_drop_plugin_version_retention_scriptsDownSql, map[string]*bintree{}},
 	"000008_drop_plugin_version_retention_scripts.up.sql":   &bintree{_000008_drop_plugin_version_retention_scriptsUpSql, map[string]*bintree{}},
+	"000009_add_plugin_custom_export_url.down.sql":          &bintree{_000009_add_plugin_custom_export_urlDownSql, map[string]*bintree{}},
+	"000009_add_plugin_custom_export_url.up.sql":            &bintree{_000009_add_plugin_custom_export_urlUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
