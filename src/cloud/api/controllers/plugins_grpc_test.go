@@ -220,6 +220,7 @@ func TestGetOrgRetentionPluginConfig(t *testing.T) {
 			Configurations: map[string]string{
 				"API_KEY": "test-api-key",
 			},
+			CustomExportUrl: "https://localhost:8080",
 		}, nil)
 
 	pServer := &controllers.PluginServiceServer{mockClients.MockPlugin, mockClients.MockDataRetentionPlugin}
@@ -233,6 +234,7 @@ func TestGetOrgRetentionPluginConfig(t *testing.T) {
 		Configs: map[string]string{
 			"API_KEY": "test-api-key",
 		},
+		CustomExportUrl: "https://localhost:8080",
 	}, resp)
 }
 
@@ -254,6 +256,7 @@ func TestGetRetentionPluginInfo(t *testing.T) {
 			Configurations: map[string]string{
 				"API_KEY": "This is the API key used in the product.",
 			},
+			AllowCustomExportURL: true,
 		}, nil)
 
 	pServer := &controllers.PluginServiceServer{mockClients.MockPlugin, mockClients.MockDataRetentionPlugin}
@@ -268,6 +271,7 @@ func TestGetRetentionPluginInfo(t *testing.T) {
 		Configs: map[string]string{
 			"API_KEY": "This is the API key used in the product.",
 		},
+		AllowCustomExportURL: true,
 	}, resp)
 }
 
@@ -287,8 +291,9 @@ func TestUpdateRetentionPluginConfig(t *testing.T) {
 		Configurations: map[string]string{
 			"API_KEY": "test-api-key",
 		},
-		Enabled: &types.BoolValue{Value: true},
-		Version: &types.StringValue{Value: "2.0.0"},
+		Enabled:         &types.BoolValue{Value: true},
+		Version:         &types.StringValue{Value: "2.0.0"},
+		CustomExportUrl: &types.StringValue{Value: "https://localhost:8080"},
 	}
 
 	mockClients.MockDataRetentionPlugin.EXPECT().UpdateOrgRetentionPluginConfig(gomock.Any(), mockReq).
@@ -301,8 +306,9 @@ func TestUpdateRetentionPluginConfig(t *testing.T) {
 		Configs: map[string]string{
 			"API_KEY": "test-api-key",
 		},
-		Enabled: &types.BoolValue{Value: true},
-		Version: &types.StringValue{Value: "2.0.0"},
+		Enabled:         &types.BoolValue{Value: true},
+		Version:         &types.StringValue{Value: "2.0.0"},
+		CustomExportUrl: &types.StringValue{Value: "https://localhost:8080"},
 	})
 
 	require.NoError(t, err)

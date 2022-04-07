@@ -120,7 +120,8 @@ func (p *PluginServiceServer) GetOrgRetentionPluginConfig(ctx context.Context, r
 	}
 
 	return &cloudpb.GetOrgRetentionPluginConfigResponse{
-		Configs: pluginsResp.Configurations,
+		Configs:         pluginsResp.Configurations,
+		CustomExportUrl: pluginsResp.CustomExportUrl,
 	}, nil
 }
 
@@ -141,7 +142,8 @@ func (p *PluginServiceServer) GetRetentionPluginInfo(ctx context.Context, req *c
 	}
 
 	return &cloudpb.GetRetentionPluginInfoResponse{
-		Configs: configResp.Configurations,
+		Configs:              configResp.Configurations,
+		AllowCustomExportURL: configResp.AllowCustomExportURL,
 	}, nil
 }
 
@@ -160,11 +162,12 @@ func (p *PluginServiceServer) UpdateRetentionPluginConfig(ctx context.Context, r
 	}
 
 	_, err = p.DataRetentionPluginServiceClient.UpdateOrgRetentionPluginConfig(ctx, &pluginpb.UpdateOrgRetentionPluginConfigRequest{
-		PluginID:       req.PluginId,
-		OrgID:          orgID,
-		Configurations: req.Configs,
-		Enabled:        req.Enabled,
-		Version:        req.Version,
+		PluginID:        req.PluginId,
+		OrgID:           orgID,
+		Configurations:  req.Configs,
+		Enabled:         req.Enabled,
+		Version:         req.Version,
+		CustomExportUrl: req.CustomExportUrl,
 	})
 	if err != nil {
 		return nil, err
