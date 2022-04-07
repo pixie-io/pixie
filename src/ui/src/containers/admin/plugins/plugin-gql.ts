@@ -115,7 +115,7 @@ export function usePluginConfig(plugin: GQLPlugin): {
     GQL_GET_RETENTION_PLUGIN_CONFIG,
     {
       variables: { id: plugin.id },
-      fetchPolicy: 'cache-and-network',
+      fetchPolicy: 'no-cache', // Configuration values likely include secrets, so don't cache them.
     },
   );
 

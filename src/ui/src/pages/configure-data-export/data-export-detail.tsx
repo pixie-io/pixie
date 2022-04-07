@@ -181,6 +181,8 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
   const { plugins } = useRetentionPlugins();
   const { script } = useRetentionScript(scriptId);
 
+  const enabledPlugins = React.useMemo(() => (plugins?.filter(p => p.retentionEnabled) ?? []), [plugins]);
+
   const createOrUpdate = useCreateOrUpdateScript(scriptId, isCreate);
 
   const validClusters = React.useMemo(() => {
@@ -233,15 +235,15 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
       && pendingValues.contents != null
       && pendingValues.frequencyS > 0
       && pendingValues.pluginID
-      && plugins.some(p => p.id === pendingValues.pluginID)
+      && enabledPlugins.some(p => p.id === pendingValues.pluginID)
       && pendingValues.exportPath != null;
     setValid(nowValid);
 
     if (saving || !nowValid) return;
     setSaving(true);
     const newScript: GQLEditableRetentionScript = {
-      name: pendingValues.name,
-      description: pendingValues.description,
+      name: pendingValues.name.trim(),
+      description: pendingValues.description.trim(),
       frequencyS: pendingValues.frequencyS,
       enabled: script?.enabled ?? true,
       clusters: pendingValues.clusters.map(c => c.id),
@@ -260,15 +262,15 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
         }
         showSnackbar({
           message,
-          actionTitle: typeof res === 'string' ? 'Back to Scripts' : undefined,
-          action: typeof res === 'string' ? backToTop : undefined,
+          actionTitle: 'Back to Scripts',
+          action: backToTop,
         });
       })
       .catch(() => setSaving(false));
   }, [
     pendingValues.name, pendingValues.description, pendingValues.clusters, pendingValues.contents,
     pendingValues.frequencyS, pendingValues.pluginID, pendingValues.exportPath,
-    plugins, saving, createOrUpdate, validClusters, script?.enabled, showSnackbar, backToTop,
+    enabledPlugins, saving, createOrUpdate, validClusters, script?.enabled, showSnackbar, backToTop,
   ]);
 
   return (
@@ -282,7 +284,7 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
           disabled={script?.isPreset}
           label='Script Name'
           value={pendingValues.name}
-          onChange={(e) => setPendingField('name', e.target.value.trim())}
+          onChange={(e) => setPendingField('name', e.target.value)}
           InputLabelProps={{ shrink: true }}
         />
         <Box sx={{ flex: 1 }} />
@@ -313,7 +315,7 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
       <Paper className={classes.descriptionContainer}>
         <TextField
           multiline
-          minRows={2}
+          minRows={1}
           maxRows={10}
           variant='standard'
           disabled={script?.isPreset}
@@ -359,7 +361,7 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
             variant='standard'
             disabled={!isCreate}
             required={isCreate}
-            error={!isCreate && !valid && !plugins?.some(p => p.id === pendingValues.pluginID)}
+            error={!isCreate && !valid && !enabledPlugins.some(p => p.id === pendingValues.pluginID)}
           >
             <InputLabel htmlFor='script-plugin-input'>Plugin</InputLabel>
             <Select
@@ -368,7 +370,7 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
               label='Plugin'
               onChange={(e) => setPendingField('pluginID', e.target.value)}
             >
-              {plugins?.map((plugin) => (
+              {enabledPlugins.map((plugin) => (
                 <MenuItem key={plugin.id} value={plugin.id}>{plugin.name}</MenuItem>
               ))}
             </Select>
@@ -385,6 +387,9 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
         </Stack>
       </Paper>
       <Box width={1} textAlign='right'>
+        <Button variant='outlined' type='button' color='primary' onClick={backToTop} sx={{ mr: 1 }}>
+          Cancel
+        </Button>
         <Button variant='contained' type='submit' disabled={saving || !valid} color={valid ? 'primary' : 'error'}>
           {isCreate ? 'Create' : 'Save'}
         </Button>

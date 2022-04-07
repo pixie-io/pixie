@@ -26,6 +26,7 @@ import {
 import {
   Box,
   Button,
+  Chip,
   Divider,
   FormControlLabel,
   IconButton,
@@ -44,10 +45,12 @@ import { Link, useRouteMatch } from 'react-router-dom';
 
 import { Spinner } from 'app/components';
 import {
+  GQLClusterStatus,
   GQLRetentionScript,
 } from 'app/types/schema';
 
 import {
+  useClustersForRetentionScripts,
   useRetentionPlugins,
   useRetentionScript,
   useRetentionScripts,
@@ -81,8 +84,18 @@ PluginIcon.displayName = 'PluginIcon';
 const RetentionScriptRow = React.memo<{ script: GQLRetentionScript }>(({ script }) => {
   const { path } = useRouteMatch();
   const { plugins } = useRetentionPlugins();
-  const { id, name, description, clusters, frequencyS, pluginID } = script;
+  const { id, name, description, clusters: selectedClusterIds, frequencyS, pluginID } = script;
   const plugin = plugins.find(p => p.id === pluginID);
+
+  const { clusters: allClusters } = useClustersForRetentionScripts();
+  const selectedClusterNames = React.useMemo(() => {
+    return allClusters
+      .filter(
+        c => c.status !== GQLClusterStatus.CS_DISCONNECTED && selectedClusterIds?.includes(c.id),
+      ).map(
+        c => c.prettyClusterName,
+      ) ?? [];
+  }, [allClusters, selectedClusterIds]);
 
   const { script: detailedScript } = useRetentionScript(id);
 
@@ -111,7 +124,9 @@ const RetentionScriptRow = React.memo<{ script: GQLRetentionScript }>(({ script 
         </Tooltip>
       </TableCell>
       <TableCell>
-        {clusters.join(', ') || (
+        {selectedClusterNames.length > 0 ? (
+          selectedClusterNames.map(n => <Chip key={n} label={n} variant='outlined' size='small' />)
+        ) : (
           <Typography variant='caption' sx={{ color: 'text.disabled' }}>All Clusters (Default)</Typography>
         )}
       </TableCell>
@@ -182,16 +197,16 @@ const RetentionScriptTable = React.memo<{
           component={Link}
           to={`${path}/create`}
         >
-          Create Table
+          Create Script
         </Button>
       )}
-      <Typography variant='h2' ml={2} mb={2}>{title} Tables</Typography>
+      <Typography variant='h2' ml={2} mb={2}>{title} Scripts</Typography>
       {description.length > 0 && <Typography variant='subtitle2' ml={2} mb={4}>{description}</Typography>}
       {scripts.length > 0 ? (
         <Table>
           <TableHead>
             <TableRow>
-              <StyledTableHeaderCell>Table Name</StyledTableHeaderCell>
+              <StyledTableHeaderCell>Script Name</StyledTableHeaderCell>
               <StyledTableHeaderCell>Clusters</StyledTableHeaderCell>
               <StyledTableHeaderCell>Summary Window</StyledTableHeaderCell>
               <StyledTableHeaderCell>Export Location</StyledTableHeaderCell>
@@ -203,7 +218,7 @@ const RetentionScriptTable = React.memo<{
           </TableBody>
         </Table>
       ) : (
-        <Typography variant='body1' ml={2}>No tables configured.</Typography>
+        <Typography variant='body1' ml={2}>No scripts configured.</Typography>
       )}
     </Box>
     /* eslint-disable react-memo/require-usememo */
@@ -224,6 +239,8 @@ export const ConfigureDataExportBody = React.memo(() => {
   const { loading: loadingScripts, scripts } = useRetentionScripts();
   const { loading: loadingPlugins, plugins } = useRetentionPlugins();
 
+  const enabledPlugins = React.useMemo(() => (plugins?.filter(p => p.retentionEnabled) ?? []), [plugins]);
+
   if ((loadingScripts || loadingPlugins) && (!plugins || !scripts)) {
     return (
       // eslint-disable-next-line react-memo/require-usememo
@@ -236,7 +253,7 @@ export const ConfigureDataExportBody = React.memo(() => {
   return (
     /* eslint-disable react-memo/require-usememo */
     <Box m={2} mt={4} mb={4}>
-      {plugins?.map(({ id, name, description }, i) => (
+      {enabledPlugins.map(({ id, name, description }, i) => (
         <React.Fragment key={id}>
           {i > 0 && <Divider variant='middle' sx={{ mt: 4, mb: 4 }} />}
           <RetentionScriptTable
@@ -246,7 +263,7 @@ export const ConfigureDataExportBody = React.memo(() => {
           />
         </React.Fragment>
       ))}
-      {plugins.length > 0 && <Divider variant='middle' sx={{ mt: 4, mb: 4 }} />}
+      {enabledPlugins.length > 0 && <Divider variant='middle' sx={{ mt: 4, mb: 4 }} />}
       <RetentionScriptTable
         title='Custom'
         description='Pixie can send results from custom scripts to long-term data stores at any desired frequency.'

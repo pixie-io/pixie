@@ -22,7 +22,7 @@ import { Box, Button, Divider, Skeleton, Stack, TextField } from '@mui/material'
 
 import { GQLPlugin } from 'app/types/schema';
 
-import { usePluginConfig, usePluginConfigMutation, usePluginToggleEnabled } from './plugin-gql';
+import { usePluginConfig, usePluginConfigMutation } from './plugin-gql';
 
 export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
   const { loading, schema, values } = usePluginConfig(plugin);
@@ -34,9 +34,8 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
     setSaving(false);
   }, []);
   const pushPluginConfig = usePluginConfigMutation(plugin);
-  const pushEnableState = usePluginToggleEnabled(plugin);
 
-  // TODO(nick,PC-1436): Race condition technically possible in both of these effects; make them cancellable
+  // TODO(nick,PC-1436): Race condition technically possible in save effect; make them cancellable
   const save = React.useCallback((e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -45,11 +44,6 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
       Object.entries(pendingValues).map(([name, value]) => ({ name, value })),
     ).then(setDone).catch(setDone);
   }, [pendingValues, pushPluginConfig, setDone]);
-
-  const toggleEnabled = React.useCallback(() => {
-    setSaving(true);
-    pushEnableState(!plugin.retentionEnabled).then(setDone).catch(setDone);
-  }, [plugin.retentionEnabled, pushEnableState, setDone]);
 
   React.useEffect(() => {
     if (!values) return;
@@ -91,15 +85,6 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
       <Divider variant='middle' sx={{ mt: 2, mb: 2 }} />
       {/* TODO(nick,PC-1436): Dedup code in the header's <MaterialSwitch />, maybe wrap form higher up */}
       <Box sx={{ display: 'flex', flexFlow: 'row nowrap', justifyContent: 'flex-end', alignItems: 'baseline' }}>
-        <Button
-          variant='outlined'
-          color={plugin.retentionEnabled ? 'error' : 'primary'}
-          sx={{ ml: 1 }}
-          onClick={toggleEnabled}
-          disabled={saving}
-        >
-          {plugin.retentionEnabled ? 'Disable' : 'Enable'}
-        </Button>
         <Button
           variant='contained'
           color='primary'

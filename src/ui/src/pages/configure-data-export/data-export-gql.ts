@@ -74,6 +74,7 @@ export const GQL_GET_PLUGINS_FOR_RETENTION_SCRIPTS = gql`
       name
       description
       logo
+      retentionEnabled
     }
   }
 `;
@@ -147,7 +148,7 @@ export function useClustersForRetentionScripts(): { loading: boolean, clusters: 
   }), [data, loading, error]);
 }
 
-export type PartialPlugin = Pick<GQLPlugin, 'id' | 'name' | 'description' | 'logo'>;
+export type PartialPlugin = Pick<GQLPlugin, 'id' | 'name' | 'description' | 'logo' | 'retentionEnabled'>;
 export function useRetentionPlugins(): { loading: boolean, plugins: PartialPlugin[] } {
   const { data, loading, error } = useQuery<{ plugins: PartialPlugin[] }>(
     GQL_GET_PLUGINS_FOR_RETENTION_SCRIPTS,
