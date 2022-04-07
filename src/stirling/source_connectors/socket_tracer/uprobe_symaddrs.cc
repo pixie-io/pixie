@@ -509,7 +509,7 @@ RawFptrManager::RawFptrManager(ElfReader* elf_reader, system::ProcParser* proc_p
 {}
 
 StatusOr<bool> RawFptrManager::Init() {
-  void* dlopen_handle_ = dlopen(lib_path_.c_str(), RTLD_LAZY);
+  dlopen_handle_ = dlopen(lib_path_.c_str(), RTLD_LAZY);
   if (dlopen_handle_ == nullptr) {
     return error::Internal("Failed to dlopen OpenSSL so file: $0, $1", lib_path_,
                            dlerror());
@@ -529,14 +529,14 @@ StatusOr<T*> RawFptrManager::RawSymbolToFptr(const std::string& symbol_name) {
 
   PL_ASSIGN_OR_RETURN(auto segment_offset, elf_reader_->FindSegmentOffsetOfSection(".text"));
 
-  VLOG(1) << absl::Substitute("OpenSSL_version_num sym addr: $0 segment offset: $1 and mmap vmem start: $2", sym_addr, segment_offset, map_entry_.vmem_start);
-
-  uint64_t fptr_addr = sym_addr - segment_offset + map_entry_.vmem_start;
+  uint64_t fptr_addr = sym_addr.value() - segment_offset + map_entry_.vmem_start;
+  LOG(INFO) << absl::StrFormat("OpenSSL_version_num sym addr: %lx segment offset: %lx symbol offset in segment: %lx and mmap vmem range: %lx-%lx and fptr: %lx", sym_addr, segment_offset, (sym_addr - segment_offset), map_entry_.vmem_start, map_entry_.vmem_end, fptr_addr);
 
   return reinterpret_cast<T*>(fptr_addr);
 }
 
 RawFptrManager::~RawFptrManager() {
+  LOG(INFO) << "Calling RawFptrManager destructor";
   if (dlopen_handle_ != nullptr) {
     LOG(INFO) << absl::Substitute("Closing dlopen handle for $0", lib_path_);
     dlclose(dlopen_handle_);
