@@ -980,13 +980,13 @@ message Plugin {
 message GetOrgRetentionPluginConfigRequest {
   // The ID of the plugin to fetch configs for.
   string plugin_id = 1;
-  string custom_export_url = 2;
 }
 
 // GetOrgRetentionPluginConfigResponse is the response to a GetRetentionPluginConfigRequest.
 message GetOrgRetentionPluginConfigResponse {
   // Map of configs user has specified for the plugin with the key being the name of the field, and value as user-specified value for the field.
   map<string, string> configs = 1;
+  string custom_export_url = 2;
 }
 
 // UpdateRetentionPluginConfigRequest is a request to update the retention config for a plugin.
@@ -1036,6 +1036,7 @@ message RetentionScript {
 message GetRetentionPluginInfoResponse {
   // Map of configs required for the plugin, with the key being the name of the field, and value as the description of the field.
   map<string, string> configs = 1;
+  bool allow_custom_export_url = 2 [(gogoproto.customname) = "AllowCustomExportURL"];
 }
 
 // GetRetentionScriptsRequest gets all retention scripts belonging to the org.

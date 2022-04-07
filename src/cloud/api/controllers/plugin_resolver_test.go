@@ -166,6 +166,7 @@ func TestPluginResolver_RetentionPluginConfig(t *testing.T) {
 		Configs: map[string]string{
 			"API_KEY": "test-api-key",
 		},
+		CustomExportUrl: "https://localhost:8080",
 	}, nil)
 
 	gqlSchema := LoadSchema(gqlEnv)
@@ -194,7 +195,7 @@ func TestPluginResolver_RetentionPluginConfig(t *testing.T) {
 								"value": "test-api-key"
 							}
 						],
-						"customExportURL": null
+						"customExportURL": "https://localhost:8080"
 					}
 				}
 			`,
@@ -214,6 +215,7 @@ func TestPluginResolver_RetentionPluginInfo(t *testing.T) {
 		Configs: map[string]string{
 			"API_KEY": "This is an API key used in the product.",
 		},
+		AllowCustomExportURL: true,
 	}, nil)
 
 	gqlSchema := LoadSchema(gqlEnv)
@@ -228,6 +230,7 @@ func TestPluginResolver_RetentionPluginInfo(t *testing.T) {
 							name
 							description
 						}
+						allowCustomExportURL
 					}
 				}
 			`,
@@ -239,7 +242,8 @@ func TestPluginResolver_RetentionPluginInfo(t *testing.T) {
 								"name": "API_KEY",
 								"description": "This is an API key used in the product."
 							}
-						]
+						],
+						"allowCustomExportURL": true
 					}
 				}
 			`,
@@ -263,6 +267,9 @@ func TestPluginResolver_UpdateRetentionPluginConfig(t *testing.T) {
 		Version: &types.StringValue{
 			Value: "2.0.0",
 		},
+		CustomExportUrl: &types.StringValue{
+			Value: "https://localhost:8080",
+		},
 	}).Return(&cloudpb.UpdateRetentionPluginConfigResponse{}, nil)
 
 	gqlSchema := LoadSchema(gqlEnv)
@@ -278,7 +285,8 @@ func TestPluginResolver_UpdateRetentionPluginConfig(t *testing.T) {
 								name: "API_KEY",
 								value: "test-api-key"
 							}
-						]
+						],
+						customExportURL: "https://localhost:8080"
 					})
 				}
 			`,

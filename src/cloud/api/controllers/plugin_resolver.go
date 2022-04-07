@@ -143,7 +143,8 @@ func (q *QueryResolver) RetentionPluginInfo(ctx context.Context, args retentionP
 	}
 
 	return &PluginInfoResolver{
-		Configs: configs,
+		Configs:              configs,
+		AllowCustomExportURL: resp.AllowCustomExportURL,
 	}, nil
 }
 
@@ -186,9 +187,15 @@ func (q *QueryResolver) RetentionPluginConfig(ctx context.Context, args retentio
 		})
 	}
 
-	return &RetentionPluginConfigResolver{
+	r := &RetentionPluginConfigResolver{
 		Configs: configs,
-	}, nil
+	}
+
+	if resp.CustomExportUrl != "" {
+		r.CustomExportURL = &resp.CustomExportUrl
+	}
+
+	return r, nil
 }
 
 type editablePluginConfig struct {
@@ -231,6 +238,13 @@ func (q *QueryResolver) UpdateRetentionPluginConfig(ctx context.Context, args up
 			Value: *args.EnabledVersion,
 		}
 	}
+
+	if args.Configs.CustomExportURL != nil {
+		req.CustomExportUrl = &types.StringValue{
+			Value: *args.Configs.CustomExportURL,
+		}
+	}
+
 	_, err := q.Env.PluginServer.UpdateRetentionPluginConfig(ctx, req)
 
 	if err != nil {
