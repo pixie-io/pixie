@@ -70,7 +70,7 @@ arrow::Type::type ToArrowType(const DataType& udf_type) {
     case DataType::STRING:
       return Type::STRING;
     case DataType::TIME64NS:
-      return Type::INT64;
+      return Type::TIME64;
     default:
       CHECK(0) << "Unknown udf data type: " << udf_type;
   }
@@ -88,8 +88,6 @@ int64_t ArrowTypeToBytes(const arrow::Type::type& arrow_type) {
       return sizeof(float);
     case Type::TIME64:
       return sizeof(int64_t);
-    case Type::DURATION:
-      return sizeof(int64_t);
     case Type::DOUBLE:
       return sizeof(double);
     default:
@@ -103,27 +101,18 @@ int64_t ArrowTypeToBytes(const arrow::Type::type& arrow_type) {
 
 std::unique_ptr<arrow::ArrayBuilder> MakeArrowBuilder(const DataType& data_type,
                                                       arrow::MemoryPool* mem_pool) {
-  switch (data_type) {
-    // PL_CARNOT_UPDATE_FOR_NEW_TYPES
-    BUILDER_CASE(DataType::BOOLEAN, mem_pool);
-    BUILDER_CASE(DataType::INT64, mem_pool);
-    BUILDER_CASE(DataType::UINT128, mem_pool);
-    BUILDER_CASE(DataType::FLOAT64, mem_pool);
-    BUILDER_CASE(DataType::STRING, mem_pool);
-    BUILDER_CASE(DataType::TIME64NS, mem_pool);
-    default:
-      CHECK(0) << "Unknown data type: " << static_cast<int>(data_type);
-  }
-  return std::unique_ptr<arrow::ArrayBuilder>();
+#define TYPE_CASE(_dt_) return GetArrowBuilder<_dt_>(mem_pool);
+  PL_SWITCH_FOREACH_DATATYPE(data_type, TYPE_CASE);
+#undef TYPE_CASE
 }
 
 #undef BUILDER_CASE
 
 std::unique_ptr<TypeErasedArrowBuilder> MakeTypeErasedArrowBuilder(const DataType& data_type,
                                                                    arrow::MemoryPool* mem_pool) {
-#define TYPE_CASE(_dt_)                                                                      \
-  auto arrow_builder = std::make_unique<DataTypeTraits<_dt_>::arrow_builder_type>(mem_pool); \
-  return std::unique_ptr<TypeErasedArrowBuilder>(                                            \
+#define TYPE_CASE(_dt_)                                 \
+  auto arrow_builder = GetArrowBuilder<_dt_>(mem_pool); \
+  return std::unique_ptr<TypeErasedArrowBuilder>(       \
       new TypeErasedArrowBuilderImpl<_dt_>(std::move(arrow_builder)));
   PL_SWITCH_FOREACH_DATATYPE(data_type, TYPE_CASE);
 #undef TYPE_CASE

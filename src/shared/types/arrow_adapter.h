@@ -61,6 +61,22 @@ inline std::shared_ptr<arrow::Array> ToArrow(const std::vector<TUDFValue>& data,
   return arr;
 }
 
+// Specialization of the above for time64
+template <>
+inline std::shared_ptr<arrow::Array> ToArrow<Time64NSValue>(const std::vector<Time64NSValue>& data,
+                                                            arrow::MemoryPool* mem_pool) {
+  DCHECK(mem_pool != nullptr);
+
+  arrow::Time64Builder builder(arrow::time64(arrow::TimeUnit::NANO), mem_pool);
+  PL_CHECK_OK(builder.Reserve(data.size()));
+  for (const auto& v : data) {
+    builder.UnsafeAppend(v.val);
+  }
+  std::shared_ptr<arrow::Array> arr;
+  PL_CHECK_OK(builder.Finish(&arr));
+  return arr;
+}
+
 // Specialization of the above for strings.
 template <>
 inline std::shared_ptr<arrow::Array> ToArrow<StringValue>(const std::vector<StringValue>& data,
@@ -325,6 +341,23 @@ class TypeErasedArrowBuilderImpl : public TypeErasedArrowBuilder {
   std::unique_ptr<arrow::ArrayBuilder> builder_;
   BuilderType* typed_builder_;
 };
+
+template <types::DataType T>
+typename std::enable_if<
+    arrow::TypeTraits<typename DataTypeTraits<T>::arrow_type>::is_parameter_free,
+    std::unique_ptr<arrow::ArrayBuilder>>::type
+GetArrowBuilder(arrow::MemoryPool* mem_pool) {
+  return std::make_unique<typename DataTypeTraits<T>::arrow_builder_type>(mem_pool);
+}
+
+template <types::DataType T>
+typename std::enable_if<
+    !arrow::TypeTraits<typename DataTypeTraits<T>::arrow_type>::is_parameter_free,
+    std::unique_ptr<arrow::ArrayBuilder>>::type
+GetArrowBuilder(arrow::MemoryPool* mem_pool) {
+  return std::make_unique<typename DataTypeTraits<T>::arrow_builder_type>(
+      DataTypeTraits<T>::default_value(), mem_pool);
+}
 
 template <types::DataType TDataType>
 TypeErasedArrowBuilderImpl<TDataType>* GetTypedArrowBuilder(TypeErasedArrowBuilder* builder) {

@@ -269,8 +269,6 @@ inline SharedColumnWrapper ColumnWrapper::FromArrow(const std::shared_ptr<arrow:
       return FromArrowImpl<StringValueColumnWrapper, DataType::STRING>(arr);
     case arrow::Type::TIME64:
       return FromArrowImpl<Time64NSValueColumnWrapper, DataType::TIME64NS>(arr);
-    case arrow::Type::DURATION:
-      return FromArrowImpl<Time64NSValueColumnWrapper, DataType::TIME64NS>(arr);
     default:
       CHECK(0) << "Unknown arrow type: " << type_id;
   }

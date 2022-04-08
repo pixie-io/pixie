@@ -34,26 +34,6 @@ inline std::string_view ToString(DataType type) { return magic_enum::enum_name(t
 inline std::string_view ToString(types::SemanticType type) { return SemanticType_Name(type); }
 inline std::string_view ToString(types::PatternType type) { return PatternType_Name(type); }
 
-inline std::shared_ptr<arrow::DataType> DataTypeToArrowType(DataType type) {
-  switch (type) {
-    case DataType::INT64:
-      return arrow::int64();
-    case DataType::UINT128:
-      return arrow::uint128();
-    case DataType::FLOAT64:
-      return arrow::float64();
-    case DataType::TIME64NS:
-      return arrow::time64(arrow::TimeUnit::NANO);
-    case DataType::STRING:
-      return arrow::utf8();
-    case DataType::BOOLEAN:
-      return arrow::boolean();
-    default:
-      DCHECK(false) << absl::StrFormat("Unknown data type %s", ToString(type));
-      return nullptr;
-  }
-}
-
 }  // namespace types
 }  // namespace px
 

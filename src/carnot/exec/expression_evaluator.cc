@@ -51,6 +51,7 @@ using types::ColumnWrapper;
 using types::DataType;
 using types::DataTypeTraits;
 using types::Float64ValueColumnWrapper;
+using types::GetArrowBuilder;
 using types::Int64ValueColumnWrapper;
 using types::MakeArrowBuilder;
 using types::SharedColumnWrapper;
@@ -76,11 +77,11 @@ template <types::DataType T>
 std::shared_ptr<arrow::Array> EvalScalar(
     arrow::MemoryPool* mem_pool, const typename px::types::DataTypeTraits<T>::native_type& val,
     size_t count) {
-  typename types::DataTypeTraits<T>::arrow_builder_type builder(mem_pool);
-  PL_CHECK_OK(builder.Reserve(count));
-  PL_CHECK_OK(CopyValueRepeated<T>(&builder, val, count));
+  auto builder = GetArrowBuilder<T>(mem_pool);
+  PL_CHECK_OK(builder->Reserve(count));
+  PL_CHECK_OK(CopyValueRepeated<T>(builder.get(), val, count));
   std::shared_ptr<arrow::Array> arr;
-  PL_CHECK_OK(builder.Finish(&arr));
+  PL_CHECK_OK(builder->Finish(&arr));
   return arr;
 }
 

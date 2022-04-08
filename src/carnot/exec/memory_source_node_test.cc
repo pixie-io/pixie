@@ -143,14 +143,14 @@ TEST_F(MemorySourceNodeTest, added_batch) {
   EXPECT_FALSE(tester.node()->HasBatchesRemaining());
   auto rb1 = RowBatch(RowDescriptor(cpu_table_->GetRelation().col_types()), 3);
   std::vector<types::BoolValue> col1_in1 = {true, false, true};
-  std::vector<types::Int64Value> col2_in1 = {1, 2, 3};
+  std::vector<types::Time64NSValue> col2_in1 = {1, 2, 3};
   EXPECT_OK(rb1.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
   EXPECT_OK(rb1.AddColumn(types::ToArrow(col2_in1, arrow::default_memory_pool())));
   EXPECT_OK(cpu_table_->WriteRowBatch(rb1));
 
   auto rb2 = RowBatch(RowDescriptor(cpu_table_->GetRelation().col_types()), 2);
   std::vector<types::BoolValue> col1_in2 = {false, false};
-  std::vector<types::Int64Value> col2_in2 = {5, 6};
+  std::vector<types::Time64NSValue> col2_in2 = {5, 6};
   EXPECT_OK(rb2.AddColumn(types::ToArrow(col1_in2, arrow::default_memory_pool())));
   EXPECT_OK(rb2.AddColumn(types::ToArrow(col2_in2, arrow::default_memory_pool())));
   EXPECT_OK(cpu_table_->WriteRowBatch(rb2));
@@ -368,7 +368,7 @@ TEST_F(MemorySourceNodeTest, infinite_stream) {
   // Simulate stirling still writing to the table.
   auto rb1 = RowBatch(RowDescriptor(cpu_table_->GetRelation().col_types()), 4);
   std::vector<types::BoolValue> col1_in1 = {true, false, true, true};
-  std::vector<types::Int64Value> col2_in1 = {7, 8, 9, 10};
+  std::vector<types::Time64NSValue> col2_in1 = {7, 8, 9, 10};
   EXPECT_OK(rb1.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
   EXPECT_OK(rb1.AddColumn(types::ToArrow(col2_in1, arrow::default_memory_pool())));
   EXPECT_OK(cpu_table_->WriteRowBatch(rb1));
