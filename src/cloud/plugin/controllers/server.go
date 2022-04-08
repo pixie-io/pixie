@@ -328,6 +328,33 @@ func (s *Server) disableOrgRetention(ctx context.Context, txn *sqlx.Tx, orgID uu
 	return err
 }
 
+func (s *Server) deletePresetScripts(ctx context.Context, txn *sqlx.Tx, orgID uuid.UUID, pluginID string) error {
+	// Disabling org retention should delete any retention scripts.
+	// Fetch all scripts belonging to this plugin.
+	query := `DELETE from plugin_retention_scripts WHERE org_id=$1 AND plugin_id=$2 AND is_preset=true RETURNING script_id`
+	rows, err := txn.Queryx(query, orgID, pluginID)
+	if err != nil {
+		return status.Errorf(codes.Internal, "Failed to fetch scripts")
+	}
+
+	for rows.Next() {
+		var id uuid.UUID
+		err = rows.Scan(&id)
+		if err != nil {
+			continue
+		}
+		_, err = s.cronScriptClient.DeleteScript(ctx, &cronscriptpb.DeleteScriptRequest{
+			ID: utils.ProtoFromUUID(id),
+		})
+		if err != nil {
+			return status.Errorf(codes.Internal, "Failed to disable script")
+		}
+	}
+	rows.Close()
+
+	return nil
+}
+
 func (s *Server) updateOrgRetentionConfigs(ctx context.Context, txn *sqlx.Tx, orgID uuid.UUID, pluginID string, version string, configurations []byte, customExportURL *string) error {
 	query := `UPDATE org_data_retention_plugins SET version = $1, configurations = PGP_SYM_ENCRYPT($2, $3), custom_export_url = PGP_SYM_ENCRYPT($6, $3) WHERE org_id = $4 AND plugin_id = $5`
 
@@ -498,9 +525,18 @@ func (s *Server) UpdateOrgRetentionPluginConfig(ctx context.Context, req *plugin
 		return nil, status.Error(codes.Internal, "failed to update configs")
 	}
 
-	// if origVersion != version { // The user is updating the plugin.
-	// 	// TODO(michelle): If the user is updating the plugin, we may need to update some of the presetScripts users have configured.
-	// }
+	if origVersion != version { // The user is updating the plugin, and some of the preset scripts have likely changed.
+		// Delete the existing preset scripts and create new ones. However, this means prexisting configurations on scripts will be deleted.
+		err := s.deletePresetScripts(ctx, txn, orgID, req.PluginID)
+		if err != nil {
+			return nil, err
+		}
+
+		err = s.createPresetScripts(ctx, txn, orgID, req.PluginID, version, configurations, customExportURL)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	err = txn.Commit()
 	if err != nil {

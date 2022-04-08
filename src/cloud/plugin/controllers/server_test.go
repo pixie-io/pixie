@@ -357,6 +357,15 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 		},
 	}
 	mConfig4, _ := yaml.Marshal(&config4)
+	config5 := &scripts.Config{
+		OtelEndpointConfig: &scripts.OtelEndpointConfig{
+			URL: "https://localhost1:8080",
+			Headers: map[string]string{
+				"abcd": "hello",
+			},
+		},
+	}
+	mConfig5, _ := yaml.Marshal(&config5)
 	exportURLv3 := "https://localhost1:8080"
 	exportURLv2 := "https://localhost:8080"
 	newExportURL := "https://test:443"
@@ -683,6 +692,39 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 						"license_key3": "hello",
 					},
 					CustomExportURL: &exportURLv2,
+				},
+			},
+			expectedCSUpdateRequests: []*cronscriptpb.UpdateScriptRequest{
+				&cronscriptpb.UpdateScriptRequest{
+					ScriptId: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+					Configs: &types.StringValue{
+						Value: string(mConfig1),
+					},
+				},
+				&cronscriptpb.UpdateScriptRequest{
+					ScriptId: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+					Configs: &types.StringValue{
+						Value: string(mConfig2),
+					},
+				},
+			},
+			expectedCSDeleteRequests: []*cronscriptpb.DeleteScriptRequest{
+				&cronscriptpb.DeleteScriptRequest{
+					ID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+				},
+			},
+			expectedCSCreateRequests: []*cronscriptpb.CreateScriptRequest{
+				&cronscriptpb.CreateScriptRequest{
+					Script:     "dns script",
+					ClusterIDs: make([]*uuidpb.UUID, 0),
+					Configs:    string(mConfig5),
+					FrequencyS: 10,
+				},
+				&cronscriptpb.CreateScriptRequest{
+					Script:     "dns script 2",
+					ClusterIDs: make([]*uuidpb.UUID, 0),
+					Configs:    string(mConfig5),
+					FrequencyS: 20,
 				},
 			},
 		},
