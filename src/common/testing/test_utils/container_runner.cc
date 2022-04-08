@@ -111,8 +111,7 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
   for (const auto& flag : options) {
     docker_run_cmd.push_back(flag);
   }
-  docker_run_cmd.push_back("--name");
-  docker_run_cmd.push_back(container_name_);
+  docker_run_cmd.push_back(absl::Substitute("--name=$0", container_name_));
   docker_run_cmd.push_back(image_);
   for (const auto& arg : args) {
     docker_run_cmd.push_back(arg);
