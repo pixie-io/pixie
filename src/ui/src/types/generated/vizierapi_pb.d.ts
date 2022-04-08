@@ -568,6 +568,11 @@ export class Configs extends jspb.Message {
   hasOtelEndpointConfig(): boolean;
   clearOtelEndpointConfig(): Configs;
 
+  getPluginConfig(): Configs.PluginConfig | undefined;
+  setPluginConfig(value?: Configs.PluginConfig): Configs;
+  hasPluginConfig(): boolean;
+  clearPluginConfig(): Configs;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): Configs.AsObject;
   static toObject(includeInstance: boolean, msg: Configs): Configs.AsObject;
@@ -579,6 +584,7 @@ export class Configs extends jspb.Message {
 export namespace Configs {
   export type AsObject = {
     otelEndpointConfig?: Configs.OTelEndpointConfig.AsObject,
+    pluginConfig?: Configs.PluginConfig.AsObject,
   }
 
   export class OTelEndpointConfig extends jspb.Message {
@@ -600,6 +606,25 @@ export namespace Configs {
     export type AsObject = {
       url: string,
       headersMap: Array<[string, string]>,
+    }
+  }
+
+
+  export class PluginConfig extends jspb.Message {
+    getStartTimeNs(): number;
+    setStartTimeNs(value: number): PluginConfig;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): PluginConfig.AsObject;
+    static toObject(includeInstance: boolean, msg: PluginConfig): PluginConfig.AsObject;
+    static serializeBinaryToWriter(message: PluginConfig, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): PluginConfig;
+    static deserializeBinaryFromReader(message: PluginConfig, reader: jspb.BinaryReader): PluginConfig;
+  }
+
+  export namespace PluginConfig {
+    export type AsObject = {
+      startTimeNs: number,
     }
   }
 

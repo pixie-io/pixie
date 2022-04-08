@@ -332,6 +332,11 @@ message Configs {
     map<string, string> headers = 2;
   }
   OTelEndpointConfig otel_endpoint_config = 1 [(gogoproto.customname) = "OTelEndpointConfig"];
+  message PluginConfig {
+    // The start_time of the script in nanoseconds.
+    int64 start_time_ns = 1;
+  }
+  PluginConfig plugin_config = 2;
 }
 
 // Tracks information about query execution time.
