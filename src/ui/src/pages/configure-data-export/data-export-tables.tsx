@@ -20,6 +20,7 @@ import * as React from 'react';
 
 import {
   Add as AddIcon,
+  Delete as DeleteIcon,
   Extension as ExtensionIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material';
@@ -27,6 +28,10 @@ import {
   Box,
   Button,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
   FormControlLabel,
   IconButton,
@@ -43,7 +48,7 @@ import { styled } from '@mui/material/styles';
 import { distanceInWordsStrict } from 'date-fns';
 import { Link, useRouteMatch } from 'react-router-dom';
 
-import { Spinner } from 'app/components';
+import { Spinner, useSnackbar } from 'app/components';
 import {
   GQLClusterStatus,
   GQLRetentionScript,
@@ -51,6 +56,7 @@ import {
 
 import {
   useClustersForRetentionScripts,
+  useDeleteRetentionScript,
   useRetentionPlugins,
   useRetentionScript,
   useRetentionScripts,
@@ -115,6 +121,33 @@ const RetentionScriptRow = React.memo<{ script: GQLRetentionScript }>(({ script 
       .catch(() => setSaving(false));
   }, [detailedScript, toggleMutation]);
 
+  const showSnackbar = useSnackbar();
+  const [promptingDelete, setPromptingDelete] = React.useState(false);
+  const deleteMutation = useDeleteRetentionScript(id);
+  const confirmDelete = React.useCallback(() => {
+    setSaving(true);
+    deleteMutation().then(
+      (success) => {
+        setSaving(false);
+        if (success) {
+          setPromptingDelete(false);
+        } else {
+          showSnackbar({
+            message: `Failed to delete script "${name}", unknown reason`,
+          });
+        }
+      },
+      (err) => {
+        setSaving(false);
+        console.error(err);
+        showSnackbar({
+          message: `Failed to delete script "${name}", see console for details`,
+        });
+      },
+    );
+    setSaving(false);
+  }, [deleteMutation, name, showSnackbar]);
+
   return (
     /* eslint-disable react-memo/require-usememo */
     <TableRow key={id}>
@@ -162,6 +195,23 @@ const RetentionScriptRow = React.memo<{ script: GQLRetentionScript }>(({ script 
             <SettingsIcon />
           </IconButton>
         </Tooltip>
+        {!script.isPreset && (
+          <>
+            <Tooltip title='Delete this script'>
+              <IconButton onClick={() => setPromptingDelete(true)} disabled={saving}>
+                <DeleteIcon />
+              </IconButton>
+            </Tooltip>
+            <Dialog open={promptingDelete} onClose={() => setPromptingDelete(false)}>
+              <DialogTitle>Delete Script</DialogTitle>
+              <DialogContent>{`Delete script "${name}"? This cannot be undone.`}</DialogContent>
+              <DialogActions>
+                <Button onClick={() => setPromptingDelete(false)} variant='outlined' color='primary'>Cancel</Button>
+                <Button onClick={confirmDelete} variant='contained' color='error'>Delete Script</Button>
+              </DialogActions>
+            </Dialog>
+          </>
+        )}
       </TableCell>
     </TableRow>
     /* eslint-enable react-memo/require-usememo */
