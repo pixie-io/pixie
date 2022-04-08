@@ -37,62 +37,25 @@ namespace types {
 
 using arrow::Type;
 DataType ArrowToDataType(const arrow::Type::type& arrow_type) {
-  // PL_CARNOT_UPDATE_FOR_NEW_TYPES
-  switch (arrow_type) {
-    case Type::BOOL:
-      return DataType::BOOLEAN;
-    case Type::INT64:
-      return DataType::INT64;
-    case Type::UINT128:
-      return DataType::UINT128;
-    case Type::DOUBLE:
-      return DataType::FLOAT64;
-    case Type::STRING:
-      return DataType::STRING;
-    case Type::TIME64:
-      return DataType::TIME64NS;
-    default:
-      CHECK(0) << "Unknown arrow data type: " << arrow_type;
-  }
+#define EXPR_CASE(_dt_) DataTypeTraits<_dt_>::arrow_type_id
+#define TYPE_CASE(_dt_) return _dt_;
+  PL_SWITCH_FOREACH_DATATYPE_WITHEXPR(arrow_type, EXPR_CASE, TYPE_CASE);
+#undef EXPR_CASE
+#undef TYPE_CASE
 }
 
 arrow::Type::type ToArrowType(const DataType& udf_type) {
-  // PL_CARNOT_UPDATE_FOR_NEW_TYPES
-  switch (udf_type) {
-    case DataType::BOOLEAN:
-      return Type::BOOL;
-    case DataType::INT64:
-      return Type::INT64;
-    case DataType::UINT128:
-      return Type::UINT128;
-    case DataType::FLOAT64:
-      return Type::DOUBLE;
-    case DataType::STRING:
-      return Type::STRING;
-    case DataType::TIME64NS:
-      return Type::TIME64;
-    default:
-      CHECK(0) << "Unknown udf data type: " << udf_type;
-  }
+#define TYPE_CASE(_dt_) return DataTypeTraits<_dt_>::arrow_type_id;
+  PL_SWITCH_FOREACH_DATATYPE(udf_type, TYPE_CASE);
+#undef TYPE_CASE
 }
 
 int64_t ArrowTypeToBytes(const arrow::Type::type& arrow_type) {
-  switch (arrow_type) {
-    case Type::BOOL:
-      return sizeof(bool);
-    case Type::INT64:
-      return sizeof(int64_t);
-    case Type::UINT128:
-      return sizeof(absl::uint128);
-    case Type::FLOAT:
-      return sizeof(float);
-    case Type::TIME64:
-      return sizeof(int64_t);
-    case Type::DOUBLE:
-      return sizeof(double);
-    default:
-      CHECK(0) << "Unknown arrow data type: " << arrow_type;
-  }
+#define EXPR_CASE(_dt_) DataTypeTraits<_dt_>::arrow_type_id
+#define TYPE_CASE(_dt_) return sizeof(DataTypeTraits<_dt_>::native_type);
+  PL_SWITCH_FOREACH_DATATYPE_WITHEXPR(arrow_type, EXPR_CASE, TYPE_CASE);
+#undef EXPR_CASE
+#undef TYPE_CASE
 }
 
 #define BUILDER_CASE(__data_type__, __pool__) \
