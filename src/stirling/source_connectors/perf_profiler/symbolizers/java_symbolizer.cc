@@ -39,8 +39,7 @@ char const* const kPEMAgentLibs =
 }  // namespace
 
 DEFINE_string(stirling_profiler_java_agent_libs, kPEMAgentLibs, kLibsHelpMessage);
-DEFINE_bool(stirling_profiler_java_symbols, gflags::BoolFromEnv("PL_PROFILER_JAVA_SYMBOLS", false),
-            "Whether to symbolize Java binaries.");
+DECLARE_bool(stirling_profiler_java_symbols);
 DEFINE_uint32(number_attach_attempts_per_iteration, 1,
               "Number of JVMTI agents that can be attached in a single perf profiler iteration.");
 
@@ -231,6 +230,7 @@ void JavaSymbolizer::IterationPreTick() {
     ctx->set_requires_refresh();
   }
   num_attaches_remaining_this_iteration_ = FLAGS_number_attach_attempts_per_iteration;
+  monitor_.ResetJavaProcessAttachTrackers();
 }
 
 void JavaSymbolizer::DeleteUPID(const struct upid_t& upid) {
@@ -404,8 +404,9 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
     return native_symbolizer_fn;
   }
 
-  // Increment attempt counter before trying to attach.
+  // Increment attempt counter, and notify the Stirling monitor, before trying to attach.
   g_java_proc_attach_attempted_counter.Increment();
+  monitor_.NotifyJavaProcessAttach(upid);
 
   // Create an agent attacher and put it into the active attachers map.
   const auto [iter, inserted] = active_attachers_.try_emplace(upid, nullptr);

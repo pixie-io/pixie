@@ -158,6 +158,8 @@ void ProcExitConnector::UpdateCrashedJavaProcCounters(
   }
 
   java_proc_crashed_counter_.Increment();
+  monitor_.NotifyJavaProcessCrashed(event.upid);
+
   if (JavaProfilingProcTracker::GetSingleton()->upids().contains(event.upid)) {
     java_proc_crashed_with_profiler_counter_.Increment();
   } else {

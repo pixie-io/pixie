@@ -28,6 +28,7 @@
 #include "src/stirling/core/source_connector.h"
 #include "src/stirling/source_connectors/proc_exit/bcc_bpf_intf/proc_exit.h"
 #include "src/stirling/source_connectors/proc_exit/proc_exit_events_table.h"
+#include "src/stirling/utils/monitor.h"
 
 namespace px {
 namespace stirling {
@@ -71,6 +72,7 @@ class ProcExitConnector : public SourceConnector, public bpf_tools::BCCWrapper {
   prometheus::Counter& java_proc_crashed_counter_;
   prometheus::Counter& java_proc_crashed_with_profiler_counter_;
   prometheus::Counter& java_proc_crashed_without_profiler_counter_;
+  StirlingMonitor& monitor_ = *StirlingMonitor::GetInstance();
 };
 
 }  // namespace proc_exit_tracer
