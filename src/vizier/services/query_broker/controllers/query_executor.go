@@ -282,6 +282,12 @@ func (q *QueryExecutorImpl) compilePlan(ctx context.Context, resultCh chan<- *vi
 			Headers: req.Configs.OTelEndpointConfig.Headers,
 		}
 	}
+	var pluginConfig *distributedpb.PluginConfig
+	if req.Configs != nil && req.Configs.PluginConfig != nil {
+		pluginConfig = &distributedpb.PluginConfig{
+			StartTimeNs: req.Configs.PluginConfig.StartTimeNs,
+		}
+	}
 
 	plannerState := &distributedpb.LogicalPlannerState{
 		DistributedState:    distributedState,
@@ -290,6 +296,7 @@ func (q *QueryExecutorImpl) compilePlan(ctx context.Context, resultCh chan<- *vi
 		ResultSSLTargetName: q.resultSSLTargetName,
 		RedactionOptions:    redactOptions,
 		OTelEndpointConfig:  otelConfig,
+		PluginConfig:        pluginConfig,
 	}
 
 	// Compile the query plan.
