@@ -45,7 +45,12 @@ prod="False"
 parse_args "$@"
 
 repo_path=$(pwd)
-image_tag=$(date +%s)
+
+if [[ -z "${TAG_NAME}" ]]; then
+  image_tag=$(date +%s)
+else
+  image_tag=$(echo "${TAG_NAME}" | awk -F/ '{print $NF}'.)
+fi
 
 echo "The image tag is: ${image_tag}"
 
@@ -55,6 +60,11 @@ echo "The image tag is: ${image_tag}"
 if [[ "$PUBLIC" == "true" ]]; then
   bazel run -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --define BUNDLE_VERSION="${image_tag}" \
       --define public=True //k8s/cloud:cloud_images_push
+
+  bazel run -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --define BUNDLE_VERSION="${image_tag}" \
+      //src/cloud/plugin/load_db:push_plugin_db_updater_image
+  bazel run -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --define BUNDLE_VERSION="latest" \
+      //src/cloud/plugin/load_db:push_plugin_db_updater_image
   exit 0
 fi
 

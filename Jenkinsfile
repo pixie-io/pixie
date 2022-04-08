@@ -119,16 +119,21 @@ stashList = []
 
 // Flag controlling if coverage job is enabled.
 isMainCodeReviewRun =  (env.JOB_NAME == 'pixie-dev/main-phab-test' || env.JOB_NAME == 'pixie-oss/build-and-test-pr')
+
 isMainRun =  (env.JOB_NAME == 'pixie-main/build-and-test-all')
-isOSSMainRun =  (env.JOB_NAME == 'pixie-oss/build-and-test-all')
 isNightlyTestRegressionRun = (env.JOB_NAME == 'pixie-main/nightly-test-regression')
+
+isCopybaraPublic = env.JOB_NAME.startsWith('pixie-main/copybara-public')
+isCopybaraPxAPI = env.JOB_NAME.startsWith('pixie-main/copybara-pxapi-go')
+
+isOSSMainRun = (env.JOB_NAME == 'pixie-oss/build-and-test-all')
+isOSSCloudBuildRun = env.JOB_NAME.startsWith('pixie-oss/cloud/')
+
 isCLIBuildRun =  env.JOB_NAME.startsWith('pixie-release/cli/')
 isOperatorBuildRun = env.JOB_NAME.startsWith('pixie-release/operator/')
 isVizierBuildRun = env.JOB_NAME.startsWith('pixie-release/vizier/')
-isCloudStagingBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud-staging/')
 isCloudProdBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud/')
-isCopybaraPublic = env.JOB_NAME.startsWith('pixie-main/copybara-public')
-isCopybaraPxAPI = env.JOB_NAME.startsWith('pixie-main/copybara-pxapi-go')
+isCloudStagingBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud-staging/')
 
 // Disable BPF runs on main because the flakiness makes it noisy.
 // Stirling team still gets coverage via dev runs for now.
@@ -796,7 +801,7 @@ if (isMainRun || isOSSMainRun) {
   }
 }
 
-if (isOSSMainRun) {
+if (isOSSCloudBuildRun) {
   builders['Build Cloud Images'] = {
     WithSourceCodeK8s {
       container('pxbuild') {
