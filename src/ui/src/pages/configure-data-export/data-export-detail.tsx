@@ -38,12 +38,14 @@ import { createStyles, makeStyles } from '@mui/styles';
 import { useHistory } from 'react-router';
 
 import { CodeEditor, EDITOR_THEME_MAP, useSnackbar } from 'app/components';
+import { usePluginConfig } from 'app/containers/admin/plugins/plugin-gql';
 import { GQLClusterStatus, GQLEditableRetentionScript } from 'app/types/schema';
 import { AutoSizerContext, withAutoSizerContext } from 'app/utils/autosizer';
 
 import {
   ClusterInfoForRetentionScripts,
   DEFAULT_RETENTION_PXL,
+  PartialPlugin,
   useClustersForRetentionScripts,
   useCreateRetentionScript,
   useMutateRetentionScript,
@@ -168,6 +170,11 @@ function useCreateOrUpdateScript(scriptId: string, isCreate: boolean) {
   ), [scriptId, isCreate, create, update]);
 }
 
+function useAllowCustomExportURL(plugin: PartialPlugin | null) {
+  const { loading, schema } = usePluginConfig(plugin ?? { id: '', latestVersion: '' });
+  return !loading && schema?.allowCustomExportURL === true;
+}
+
 export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boolean }>(({ scriptId, isCreate }) => {
   const classes = useStyles();
   const showSnackbar = useSnackbar();
@@ -200,6 +207,10 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
     pluginID: '',
     exportPath: '',
   });
+
+  const allowCustomExportURL = useAllowCustomExportURL(
+    enabledPlugins.find(p => p.id === pendingValues.pluginID),
+  );
 
   const setPendingField = React.useCallback(<K extends keyof RetentionScriptForm>(
     field: K,
@@ -273,6 +284,8 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
     enabledPlugins, saving, createOrUpdate, validClusters, script?.enabled, showSnackbar, backToTop,
   ]);
 
+  const labelProps = React.useMemo(() => ({ shrink: true }), []);
+
   return (
     /* eslint-disable react-memo/require-usememo */
     <form className={classes.root} onSubmit={save}>
@@ -285,7 +298,7 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
           label='Script Name'
           value={pendingValues.name}
           onChange={(e) => setPendingField('name', e.target.value)}
-          InputLabelProps={{ shrink: true }}
+          InputLabelProps={labelProps}
         />
         <Box sx={{ flex: 1 }} />
         <Autocomplete
@@ -295,19 +308,16 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
           options={validClusters}
           getOptionLabel={(c) => c.prettyClusterName}
           value={pendingValues.clusters}
-          onChange={(_, newVal) => {
-            if (typeof newVal === 'string' || typeof newVal?.[0] === 'string') {
-              throw new Error(`That does not make sense: ${JSON.stringify(newVal)}`);
-            }
-            setPendingField('clusters', newVal as ClusterInfoForRetentionScripts[]);
-          }}
+          onChange={(_, newVal) => (
+            setPendingField('clusters', newVal as ClusterInfoForRetentionScripts[])
+          )}
           renderInput={params => (
             <TextField
               {...params}
               variant='standard'
               label='Clusters'
               placeholder={pendingValues.clusters.length ? '' : 'All Clusters (Default)'}
-              InputLabelProps={{ shrink: true }}
+              InputLabelProps={labelProps}
             />
           )}
         />
@@ -322,7 +332,7 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
           label='Description'
           value={pendingValues.description}
           onChange={(e) => setPendingField('description', e.target.value)}
-          InputLabelProps={{ shrink: true }}
+          InputLabelProps={labelProps}
         />
       </Paper>
       <Paper className={classes.scriptContainer}>
@@ -338,6 +348,7 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
       <Paper>
         <Stack gap={2}>
           <FormControl
+            // eslint-disable-next-line react-memo/require-usememo
             sx={{ width: '25ch' }}
             variant='standard'
             required
@@ -376,13 +387,17 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
             </Select>
           </FormControl>
           <TextField
+            disabled={!allowCustomExportURL}
             sx={{ width: '25ch' }}
             variant='standard'
             label='Export Path'
-            placeholder='Optional. Plugin-dependent.'
+            placeholder={allowCustomExportURL
+              ? 'Optional. Plugin-dependent.'
+              : 'Not available with this plugin.'
+            }
             value={pendingValues.exportPath}
             onChange={(e) => setPendingField('exportPath', e.target.value)}
-            InputLabelProps={{ shrink: true }}
+            InputLabelProps={labelProps}
           />
         </Stack>
       </Paper>

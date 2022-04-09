@@ -40,16 +40,20 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
     e.preventDefault();
     e.stopPropagation();
     setSaving(true);
-    pushPluginConfig(
-      Object.entries(pendingValues).map(([name, value]) => ({ name, value })),
-    ).then(setDone).catch(setDone);
-  }, [pendingValues, pushPluginConfig, setDone]);
+    pushPluginConfig({
+      configs: Object.entries(pendingValues)
+        .filter((([n]) => n !== 'customExportURL'))
+        .map(([name, value]) => ({ name, value })),
+      customExportURL: schema?.allowCustomExportURL ? pendingValues.customExportURL : undefined,
+    }).then(setDone).catch(setDone);
+  }, [pendingValues, pushPluginConfig, schema?.allowCustomExportURL, setDone]);
 
   React.useEffect(() => {
     if (!values) return;
     setPendingValues((prev) => ({
       ...prev,
-      ...values.reduce((accum, { name, value }) => ({ ...accum, [name]: value }), {}),
+      ...values.configs.reduce((accum, { name, value }) => ({ ...accum, [name]: value }), {}),
+      customExportURL: values.customExportURL,
     }));
   }, [values]);
 
@@ -81,6 +85,17 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
             InputLabelProps={{ shrink: true }} // Always put the label up top for consistency
           />
         ))}
+        {schema?.allowCustomExportURL && (
+          <TextField
+            variant='outlined'
+            label='Custom export path'
+            placeholder='Default path for retention scripts'
+            helperText={pendingValues.customExportURL ? 'Default path for retention scripts' : ''}
+            value={pendingValues.customExportURL}
+            onChange={(e) => setPendingValues((prev) => ({ ...prev, customExportURL: e.target.value }))}
+            InputLabelProps={{ shrink: true }}
+          />
+        )}
       </Stack>
       <Divider variant='middle' sx={{ mt: 2, mb: 2 }} />
       {/* TODO(nick,PC-1436): Dedup code in the header's <MaterialSwitch />, maybe wrap form higher up */}
