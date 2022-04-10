@@ -806,8 +806,12 @@ static inline int fill_metadata_from_mdelem_list(grpc_mdelem_list* mdelem_list,
  *          This is the immediate handler to the
  *          "grpc_chttp2_maybe_complete_recv_initial_metadata" and
  *          "grpc_chttp2_maybe_complete_recv_trailing_metadata" functions.
+ *          https://github.com/grpc/grpc/blob/v1.33.2/src/core/ext/transport/chttp2/transport/chttp2_transport.cc#L1828
+ *          https://github.com/grpc/grpc/blob/v1.33.2/src/core/ext/transport/chttp2/transport/chttp2_transport.cc#L1930
  *          This fires a perf buffer event for data being read, without actual data
  *          (only headers).
+ *          Some of the headers can be seen on the send/recv function probes.
+ *          However, not all of the headers are seen there (not sure why), which is why these probes are needed.
  *
  * @param   ctx             The context of the probe.
  * @param   is_initial      Whether handling initial metadata being received or trailing
@@ -917,6 +921,7 @@ static inline int handle_maybe_complete_recv_metadata(struct pt_regs* ctx, const
  * @detailed
  *          This is the immediate handler to the
  *          "grpc_chttp2_data_parser_parse".
+ *          https://github.com/grpc/grpc/blob/v1.33.2/src/core/ext/transport/chttp2/transport/frame_data.cc#L278
  *          It is called once for every slice being received.
  *          This function fires a perf buffer event for data being read.
  *          The event also contains optional headers.
@@ -1062,6 +1067,7 @@ int probe_grpc_chttp2_data_parser_parse(struct pt_regs* ctx) {
  * @detailed
  *          This is the immediate handler to the
  *          "grpc_chttp2_list_pop_writable_stream" function.
+ *          https://github.com/grpc/grpc/blob/v1.33.2/src/core/ext/transport/chttp2/transport/stream_lists.cc#L147
  *          It is called once per stream when the library checks if the stream
  *          has data to be sent. The handling of this function is at its return,
  *          and this entry probe only stores data for the return probe to use.
@@ -1085,7 +1091,9 @@ int probe_entry_grpc_chttp2_list_pop_writable_stream(struct pt_regs* ctx) {
  * @detailed
  *          This is the immediate handler to the
  *          "grpc_chttp2_list_pop_writable_stream" function finishing.
+ *          (See the original function link in the entry probe comment).
  *          The library uses this function to iterate its list of writable streams.
+ *          https://github.com/grpc/grpc/blob/v1.33.2/src/core/ext/transport/chttp2/transport/writing.cc#L649
  *          One of the arguments to this function is an out parameter - the stream.
  *          At the end on the function (which is why we use a return probe), we can
  *          see the stream being returned (if the function succeeded).
@@ -1226,6 +1234,24 @@ int probe_ret_grpc_chttp2_list_pop_writable_stream(struct pt_regs* ctx) {
   return 0;
 }
 
+/*
+ * @brief   Handle a stream being closed.
+ * @detailed
+ *          This is the immediate handler to the "grpc_chttp2_mark_stream_closed" function.
+ *          https://github.com/grpc/grpc/blob/v1.33.2/src/core/ext/transport/chttp2/transport/chttp2_transport.cc#L2164
+ *          The function receives the stream being closed, and two booleans - whether it's being closed for read and/or write.
+ *          Only when a stream has been closed for both read and write it is fully closed.
+ *          This fires a similar perf event - with the stream, and whether it's being closed for read and/or write.
+ *
+ * @param   ctx             The context of the probe.
+ *
+ * @remark  This function appears to usually be called multiple times per stream.
+ *          It's not uncommon that there are 10 function calls for a single stream being closed.
+ *          This function is context-less, and in this case, fires 10 perf events, which the user-mode must handle.
+ *
+ * @return  0 on success.
+ *          Otherwise on failure.
+ */
 int probe_grpc_chttp2_mark_stream_closed(struct pt_regs* ctx) {
   struct grpc_c_stream_closed_data data = {0};
 
