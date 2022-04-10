@@ -513,8 +513,8 @@ static inline u32 get_data_ptr_from_slice(grpc_slice* slice,
  *          0 on success.
  */
 static inline u32 fire_metadata_events(struct grpc_c_metadata_t* metadata, struct conn_id_t conn_id,
-                                       uint32_t stream_id, uint64_t timestamp, enum traffic_direction_t direction,
-                                       struct pt_regs* ctx) {
+                                       uint32_t stream_id, uint64_t timestamp,
+                                       enum traffic_direction_t direction, struct pt_regs* ctx) {
   struct grpc_c_header_event_data_t* header_event = initiate_empty_grpc_header_event_data();
   if (NULL == header_event) {
     return -1;
@@ -1253,7 +1253,7 @@ int probe_ret_grpc_chttp2_list_pop_writable_stream(struct pt_regs* ctx) {
  *          Otherwise on failure.
  */
 int probe_grpc_chttp2_mark_stream_closed(struct pt_regs* ctx) {
-  struct grpc_c_stream_closed_data data = {}; // This initializes the struct to zero.
+  struct grpc_c_stream_closed_data data = {};  // This initializes the struct to zero.
 
   u32 pid = bpf_get_current_pid_tgid() >> 32;
   u32 fd = 0;
