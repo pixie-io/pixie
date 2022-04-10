@@ -139,18 +139,12 @@ static inline struct grpc_c_metadata_t* initiate_empty_grpc_metadata() {
     return NULL;
   }
 
+  volatile u8 * metadata_bytes = (u8*)metadata;
 #pragma unroll
-  for (u16 i = 0; i < MAXIMUM_AMOUNT_OF_ITEMS_IN_METADATA; i++) {
-#pragma unroll
-    for (u16 j = 0; j < MAXIMUM_LENGTH_OF_VALUE_IN_METADATA; j++) {
-      ((volatile struct grpc_c_metadata_t*)metadata)->items[i].value[j] = 0;
-    }
-#pragma unroll
-    for (u16 j = 0; j < MAXIMUM_LENGTH_OF_KEY_IN_METADATA; j++) {
-      ((volatile struct grpc_c_metadata_t*)metadata)->items[i].key[j] = 0;
-    }
+  for (u16 i = 0 ; i < sizeof(*metadata) ; i++)
+  {
+      metadata_bytes[i] = 0;
   }
-  metadata->count = 0;
 
   return metadata;
 }
@@ -171,17 +165,11 @@ static inline struct grpc_c_event_data_t* initiate_empty_grpc_event_data() {
     return NULL;
   }
 
-  data->stream_id = 0;
-  data->timestamp = 0;
-  data->direction = GRPC_C_EVENT_DIRECTION_UNKNOWN;
-  data->position_in_stream = 0;
-  data->slice.slice_len = 0;
-
-  // Use the struct as volatile so that the compiler doesn't optimize this loop
-  // to a memset, which isn't supported in eBPF.
+  volatile u8 * data_bytes = (u8 *)data;
 #pragma unroll
-  for (u16 i = 0; i < GRPC_C_SLICE_SIZE; i++) {
-    ((volatile struct grpc_c_event_data_t*)(data))->slice.bytes[i] = 0;
+  for (u16 i = 0 ; i < sizeof(*data) ; i++)
+  {
+      data_bytes[i] = 0;
   }
 
   return data;
@@ -203,18 +191,11 @@ static inline struct grpc_c_header_event_data_t* initiate_empty_grpc_header_even
     return NULL;
   }
 
-  data->stream_id = 0;
-  data->timestamp = 0;
-  data->direction = GRPC_C_EVENT_DIRECTION_UNKNOWN;
-
-  struct grpc_c_metadata_item_t* metadata_item = &(data->header);
+  volatile u8 * data_bytes = (u8 *)data;
 #pragma unroll
-  for (u16 i = 0; i < MAXIMUM_LENGTH_OF_VALUE_IN_METADATA; i++) {
-    ((volatile struct grpc_c_metadata_item_t*)metadata_item)->value[i] = 0;
-  }
-#pragma unroll
-  for (u16 i = 0; i < MAXIMUM_LENGTH_OF_KEY_IN_METADATA; i++) {
-    ((volatile struct grpc_c_metadata_item_t*)metadata_item)->key[i] = 0;
+  for (u16 i = 0 ; i < sizeof(*data) ; i++)
+  {
+      data_bytes[i] = 0;
   }
 
   return data;
