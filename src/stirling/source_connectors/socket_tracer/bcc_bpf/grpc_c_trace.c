@@ -1253,7 +1253,7 @@ int probe_ret_grpc_chttp2_list_pop_writable_stream(struct pt_regs* ctx) {
  *          Otherwise on failure.
  */
 int probe_grpc_chttp2_mark_stream_closed(struct pt_regs* ctx) {
-  struct grpc_c_stream_closed_data data = {0};
+  struct grpc_c_stream_closed_data data = {}; // This initializes the struct to zero.
 
   u32 pid = bpf_get_current_pid_tgid() >> 32;
   u32 fd = 0;
