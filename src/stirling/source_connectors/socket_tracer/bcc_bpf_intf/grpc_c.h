@@ -35,10 +35,6 @@
 #define MAXIMUM_LENGTH_OF_KEY_IN_METADATA (44)
 #define MAXIMUM_LENGTH_OF_VALUE_IN_METADATA (100)
 
-#define GRPC_C_EVENT_DIRECTION_UNKNOWN (0)
-#define GRPC_C_EVENT_DIRECTION_OUTGOING (1)
-#define GRPC_C_EVENT_DIRECTION_INCOMING (2)
-
 enum grpc_c_version_t {
   GRPC_C_VERSION_UNSUPPORTED = 0,
   GRPC_C_V1_19_0,
@@ -74,7 +70,7 @@ struct grpc_c_header_event_data_t {
   struct conn_id_t conn_id;
   uint32_t stream_id;
   uint64_t timestamp;
-  uint32_t direction;
+  enum traffic_direction_t direction;
   struct grpc_c_metadata_item_t header;
 };
 
@@ -82,7 +78,7 @@ struct grpc_c_event_data_t {
   struct conn_id_t conn_id;
   uint32_t stream_id;
   uint64_t timestamp;
-  uint32_t direction;
+  enum traffic_direction_t direction;
   uint64_t position_in_stream;
   struct grpc_c_data_slice_t slice;
 };
@@ -91,7 +87,7 @@ struct grpc_c_stream_closed_data {
   struct conn_id_t conn_id;
   uint32_t stream_id;
   uint64_t timestamp;
-  uint32_t direction;
+  enum traffic_direction_t direction;
   uint32_t read_closed;
   uint32_t write_closed;
 };

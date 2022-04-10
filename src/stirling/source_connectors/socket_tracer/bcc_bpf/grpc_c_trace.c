@@ -513,7 +513,7 @@ static inline u32 get_data_ptr_from_slice(grpc_slice* slice,
  *          0 on success.
  */
 static inline u32 fire_metadata_events(struct grpc_c_metadata_t* metadata, struct conn_id_t conn_id,
-                                       uint32_t stream_id, uint64_t timestamp, uint32_t direction,
+                                       uint32_t stream_id, uint64_t timestamp, enum traffic_direction_t direction,
                                        struct pt_regs* ctx) {
   struct grpc_c_header_event_data_t* header_event = initiate_empty_grpc_header_event_data();
   if (NULL == header_event) {
@@ -824,7 +824,7 @@ static inline int handle_maybe_complete_recv_metadata(struct pt_regs* ctx, const
     return -1;
   }
 
-  read_data->direction = GRPC_C_EVENT_DIRECTION_INCOMING;
+  read_data->direction = kIngress;
   grpc_metadata_batch* metadata_batch = NULL;
   struct grpc_c_metadata_t* metadata = NULL;
   u32 key = 0;
@@ -935,7 +935,7 @@ int probe_grpc_chttp2_data_parser_parse(struct pt_regs* ctx) {
     return -1;
   }
 
-  read_data->direction = GRPC_C_EVENT_DIRECTION_INCOMING;
+  read_data->direction = kIngress;
   grpc_slice* slice = NULL;
   u32 slice_length = 0;
   void* slice_bytes = NULL;
@@ -1118,7 +1118,7 @@ int probe_ret_grpc_chttp2_list_pop_writable_stream(struct pt_regs* ctx) {
     return -1;
   }
 
-  write_data->direction = GRPC_C_EVENT_DIRECTION_OUTGOING;
+  write_data->direction = kEgress;
   int return_value = 0;
   u32 key = 0;
   u32 pid = bpf_get_current_pid_tgid() >> 32;
