@@ -139,11 +139,10 @@ static inline struct grpc_c_metadata_t* initiate_empty_grpc_metadata() {
     return NULL;
   }
 
-  volatile u8 * metadata_bytes = (u8*)metadata;
+  volatile u8* metadata_bytes = (u8*)metadata;
 #pragma unroll
-  for (u16 i = 0 ; i < sizeof(*metadata) ; i++)
-  {
-      metadata_bytes[i] = 0;
+  for (u16 i = 0; i < sizeof(*metadata); i++) {
+    metadata_bytes[i] = 0;
   }
 
   return metadata;
@@ -165,11 +164,10 @@ static inline struct grpc_c_event_data_t* initiate_empty_grpc_event_data() {
     return NULL;
   }
 
-  volatile u8 * data_bytes = (u8 *)data;
+  volatile u8* data_bytes = (u8*)data;
 #pragma unroll
-  for (u16 i = 0 ; i < sizeof(*data) ; i++)
-  {
-      data_bytes[i] = 0;
+  for (u16 i = 0; i < sizeof(*data); i++) {
+    data_bytes[i] = 0;
   }
 
   return data;
@@ -191,11 +189,10 @@ static inline struct grpc_c_header_event_data_t* initiate_empty_grpc_header_even
     return NULL;
   }
 
-  volatile u8 * data_bytes = (u8 *)data;
+  volatile u8* data_bytes = (u8*)data;
 #pragma unroll
-  for (u16 i = 0 ; i < sizeof(*data) ; i++)
-  {
-      data_bytes[i] = 0;
+  for (u16 i = 0; i < sizeof(*data); i++) {
+    data_bytes[i] = 0;
   }
 
   return data;
@@ -811,7 +808,8 @@ static inline int fill_metadata_from_mdelem_list(grpc_mdelem_list* mdelem_list,
  *          This fires a perf buffer event for data being read, without actual data
  *          (only headers).
  *          Some of the headers can be seen on the send/recv function probes.
- *          However, not all of the headers are seen there (not sure why), which is why these probes are needed.
+ *          However, not all of the headers are seen there (not sure why), which is why these probes
+ *          are needed.
  *
  * @param   ctx             The context of the probe.
  * @param   is_initial      Whether handling initial metadata being received or trailing
@@ -1239,15 +1237,17 @@ int probe_ret_grpc_chttp2_list_pop_writable_stream(struct pt_regs* ctx) {
  * @detailed
  *          This is the immediate handler to the "grpc_chttp2_mark_stream_closed" function.
  *          https://github.com/grpc/grpc/blob/v1.33.2/src/core/ext/transport/chttp2/transport/chttp2_transport.cc#L2164
- *          The function receives the stream being closed, and two booleans - whether it's being closed for read and/or write.
- *          Only when a stream has been closed for both read and write it is fully closed.
- *          This fires a similar perf event - with the stream, and whether it's being closed for read and/or write.
+ *          The function receives the stream being closed, and two booleans - whether it's being
+ *          closed for read and/or write. Only when a stream has been closed for both read and write
+ *          it is fully closed. This fires a similar perf event - with the stream, and whether it's
+ *          being closed for read and/or write.
  *
  * @param   ctx             The context of the probe.
  *
  * @remark  This function appears to usually be called multiple times per stream.
  *          It's not uncommon that there are 10 function calls for a single stream being closed.
- *          This function is context-less, and in this case, fires 10 perf events, which the user-mode must handle.
+ *          This function is context-less, and in this case, fires 10 perf events, which the
+ *          user-mode must handle.
  *
  * @return  0 on success.
  *          Otherwise on failure.
