@@ -36,12 +36,6 @@ build:
       target: //src/vizier/services/cloud_connector:cloud_connector_server_image.tar
       args:
       - --compilation_mode=dbg
-  - image: gcr.io/pixie-oss/pixie-dev/vizier/certmgr_server_image
-    context: .
-    bazel:
-      target: //src/vizier/services/certmgr:certmgr_server_image.tar
-      args:
-      - --compilation_mode=dbg
   - image: gcr.io/pixie-oss/pixie-dev/vizier/cert_provisioner_image
     context: .
     bazel:

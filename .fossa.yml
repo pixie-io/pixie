@@ -812,26 +812,6 @@ analyze:
     type: go
     target: px.dev/pixie/src/vizier/messages/messagespb
     path: src/vizier/messages/messagespb
-  - name: px.dev/pixie/src/vizier/services/certmgr
-    type: go
-    target: px.dev/pixie/src/vizier/services/certmgr
-    path: src/vizier/services/certmgr
-  - name: px.dev/pixie/src/vizier/services/certmgr/certmgrenv
-    type: go
-    target: px.dev/pixie/src/vizier/services/certmgr/certmgrenv
-    path: src/vizier/services/certmgr/certmgrenv
-  - name: px.dev/pixie/src/vizier/services/certmgr/certmgrpb
-    type: go
-    target: px.dev/pixie/src/vizier/services/certmgr/certmgrpb
-    path: src/vizier/services/certmgr/certmgrpb
-  - name: px.dev/pixie/src/vizier/services/certmgr/controller
-    type: go
-    target: px.dev/pixie/src/vizier/services/certmgr/controller
-    path: src/vizier/services/certmgr/controller
-  - name: px.dev/pixie/src/vizier/services/certmgr/controllers/mock
-    type: go
-    target: px.dev/pixie/src/vizier/services/certmgr/controllers/mock
-    path: src/vizier/services/certmgr/controllers/mock
   - name: px.dev/pixie/src/vizier/services/cloud_connector
     type: go
     target: px.dev/pixie/src/vizier/services/cloud_connector
