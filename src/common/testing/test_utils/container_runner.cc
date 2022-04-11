@@ -105,6 +105,7 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
   std::vector<std::string> docker_run_cmd;
   docker_run_cmd.push_back("docker");
   docker_run_cmd.push_back("run");
+  docker_run_cmd.push_back("--rm");
   if (use_host_pid_namespace) {
     docker_run_cmd.push_back("--pid=host");
   }
