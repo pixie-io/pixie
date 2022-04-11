@@ -198,6 +198,8 @@ void RegisterMathOpsOrDie(udf::Registry* registry) {
   registry->RegisterOrDie<ApproxEqualUDF<types::Float64Value, types::Float64Value>>("approxEqual");
   // >
   registry->RegisterOrDie<GreaterThanUDF<types::Int64Value, types::Int64Value>>("greaterThan");
+  registry->RegisterOrDie<GreaterThanUDF<types::Time64NSValue, types::Time64NSValue>>(
+      "greaterThan");
   registry->RegisterOrDie<GreaterThanUDF<types::Float64Value, types::Float64Value>>("greaterThan");
   registry->RegisterOrDie<GreaterThanUDF<types::StringValue, types::StringValue>>("greaterThan");
   // >=
@@ -211,6 +213,7 @@ void RegisterMathOpsOrDie(udf::Registry* registry) {
       "greaterThanEqual");
   // <
   registry->RegisterOrDie<LessThanUDF<types::Int64Value, types::Int64Value>>("lessThan");
+  registry->RegisterOrDie<LessThanUDF<types::Time64NSValue, types::Time64NSValue>>("lessThan");
   registry->RegisterOrDie<LessThanUDF<types::Float64Value, types::Float64Value>>("lessThan");
   registry->RegisterOrDie<LessThanUDF<types::StringValue, types::StringValue>>("lessThan");
   // <=
@@ -234,6 +237,10 @@ void RegisterMathOpsOrDie(udf::Registry* registry) {
 
   // Round
   registry->RegisterOrDie<RoundUDF>("round");
+
+  // Time64 <-> Int64
+  registry->RegisterOrDie<TimeToInt64UDF>("time_to_int64");
+  registry->RegisterOrDie<Int64ToTimeUDF>("int64_to_time");
 
   /*****************************************
    * Aggregate UDFs.
