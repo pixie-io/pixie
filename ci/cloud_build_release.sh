@@ -49,7 +49,7 @@ repo_path=$(pwd)
 if [[ -z "${TAG_NAME}" ]]; then
   image_tag=$(date +%s)
 else
-  image_tag=$(echo "${TAG_NAME}" | awk -F/ '{print $NF}'.)
+  image_tag=$(echo "${TAG_NAME}" | awk -F/ '{print $NF}')
 fi
 
 echo "The image tag is: ${image_tag}"
