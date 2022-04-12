@@ -801,14 +801,26 @@ if (isMainRun || isOSSMainRun) {
   }
 }
 
-if (isOSSCloudBuildRun) {
-  builders['Build Cloud Images'] = {
-    WithSourceCodeK8s {
-      container('pxbuild') {
-        sh './ci/cloud_build_release.sh -p'
+def buildScriptForOSSCloudRelease = {
+  try {
+    stage('Checkout code') {
+      checkoutAndInitialize()
+    }
+    stage('Build & Push Artifacts') {
+      WithSourceCodeK8s {
+        container('pxbuild') {
+          sh './ci/cloud_build_release.sh -p'
+        }
       }
     }
   }
+  catch (err) {
+    currentBuild.result = 'FAILURE'
+    echo "Exception thrown:\n ${err}"
+    echo 'Stacktrace:'
+    err.printStackTrace()
+  }
+  postBuildActions()
 }
 
 if (isMainRun) {
@@ -1394,6 +1406,8 @@ if (isNightlyTestRegressionRun) {
   buildScriptForCloudStagingRelease()
 } else if (isCloudProdBuildRun) {
   buildScriptForCloudProdRelease()
+} else if (isOSSCloudBuildRun) {
+  buildScriptForOSSCloudRelease()
 } else if (isCopybaraPublic) {
   buildScriptForCopybaraPublic()
 } else if (isCopybaraPxAPI) {
