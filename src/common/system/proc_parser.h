@@ -355,7 +355,19 @@ class ProcParser {
 
   StatusOr<absl::flat_hash_set<ProcessMap>> GetMapEntries(pid_t pid, std::string libpath) const;
 
-  StatusOr<ProcessMap> GetExecutableMapEntry(pid_t pid, std::string libpath);
+  /**
+   * Returns the matching executable memory mapped entry in /prod/<pid>/maps.
+   * Since it is possible for multiple entries to exist for the same library,
+   * the vmem_start parameter is used to identify a unique entry.
+   *
+   * For example, given /proc/<pid>/maps:
+   * 7f1a50b24000-7f1a50c9c000 r-xp 00022000 fd:00 525817  /usr/lib/x86_64-linux-gnu/libc-2.31.so
+   * 7ffff7def000-7ffff7f67000 r-xp 00022000 fd:00 525817  /usr/lib/x86_64-linux-gnu/libc-2.31.so
+   *
+   * The following function call would return the first entry listed above:
+   * GetExecutableMapEntry(<pid>, "/usr/lib/x86_64-linux-gnu/libc-2.31.so", 0x7f1a50b24000)
+   **/
+  StatusOr<ProcessMap> GetExecutableMapEntry(pid_t pid, std::string libpath, uint64_t vmem_start);
 
  private:
   static Status ParseNetworkStatAccumulateIFaceData(

@@ -45,6 +45,7 @@ class RawFptrManager : NotCopyMoveable {
   private:
     obj_tools::ElfReader* elf_reader_;
     ProcParser* proc_parser_;
+    uint64_t text_segment_offset_;
     void* dlopen_handle_;
     std::string lib_path_;
     ProcParser::ProcessMap map_entry_;

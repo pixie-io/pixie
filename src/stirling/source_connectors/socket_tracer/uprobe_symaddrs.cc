@@ -514,10 +514,14 @@ StatusOr<bool> RawFptrManager::Init() {
     return error::Internal("Failed to dlopen OpenSSL so file: $0, $1", lib_path_,
                            dlerror());
   }
+
+  PL_ASSIGN_OR_RETURN(text_segment_offset_, elf_reader_->FindSegmentOffsetOfSection(".text"));
   auto pid = getpid();
-  auto entry = proc_parser_->GetExecutableMapEntry(pid, lib_path_);
+  auto vmem_start = text_segment_offset_ + (uint64_t)*(size_t const*)dlopen_handle_;
+  auto entry = proc_parser_->GetExecutableMapEntry(pid, lib_path_, vmem_start);
   if (!entry.ok())
     return error::NotFound("Failed to find map entry for pid: $0 and path: $1", pid, lib_path_);
+
   map_entry_ = entry.ValueOrDie();
   return true;
 }
@@ -527,18 +531,13 @@ StatusOr<T*> RawFptrManager::RawSymbolToFptr(const std::string& symbol_name) {
   auto sym_addr = elf_reader_->SymbolAddress(symbol_name).value();
   if (!sym_addr) return error::NotFound("Could not find symbol '$0'", symbol_name);
 
-  PL_ASSIGN_OR_RETURN(auto segment_offset, elf_reader_->FindSegmentOffsetOfSection(".text"));
-
-  uint64_t fptr_addr = sym_addr.value() - segment_offset + map_entry_.vmem_start;
-  LOG(INFO) << absl::StrFormat("OpenSSL_version_num sym addr: %lx segment offset: %lx symbol offset in segment: %lx and mmap vmem range: %lx-%lx and fptr: %lx", sym_addr, segment_offset, (sym_addr - segment_offset), map_entry_.vmem_start, map_entry_.vmem_end, fptr_addr);
-
+  uint64_t fptr_addr = sym_addr - text_segment_offset_ + map_entry_.vmem_start;
   return reinterpret_cast<T*>(fptr_addr);
 }
 
 RawFptrManager::~RawFptrManager() {
-  LOG(INFO) << "Calling RawFptrManager destructor";
   if (dlopen_handle_ != nullptr) {
-    LOG(INFO) << absl::Substitute("Closing dlopen handle for $0", lib_path_);
+    VLOG(1) << absl::Substitute("Closing dlopen handle for $0", lib_path_);
     dlclose(dlopen_handle_);
   }
 }
@@ -647,6 +646,8 @@ StatusOr<uint32_t> OpenSSLFixSubversionNum(RawFptrManager* fptrManager, const st
   if (FLAGS_openssl_force_raw_fptrs || (!openssl_version_packed.ok())) {
     LOG(WARNING) << absl::Substitute("Unable to find openssl symbol 'OpenSSL_version_num' using dlopen/dlsym. Attempting to find address manually for pid $0", pid);
     openssl_version_packed = GetOpenSSLVersionNumUsingFptr(fptrManager);
+
+    if (!openssl_version_packed.ok()) LOG(WARNING) << "Unable to find openssl symbol 'OpenSSL_version_num' with raw function pointer";
   }
   PL_ASSIGN_OR_RETURN(version_num.packed, openssl_version_packed);
 
