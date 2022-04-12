@@ -20,6 +20,7 @@ import * as React from 'react';
 
 import { gql, useMutation, useQuery } from '@apollo/client';
 
+import { GQL_GET_RETENTION_SCRIPTS } from 'app/pages/configure-data-export/data-export-gql';
 import {
   GQLEditablePluginConfigs,
   GQLPlugin,
@@ -182,7 +183,7 @@ export function usePluginConfigMutation(plugin: GQLPlugin): (
           customExportURL,
         },
       },
-      refetchQueries: [GQL_GET_RETENTION_PLUGINS, GQL_GET_RETENTION_PLUGIN_CONFIG],
+      refetchQueries: [GQL_GET_RETENTION_PLUGINS, GQL_GET_RETENTION_PLUGIN_CONFIG, GQL_GET_RETENTION_SCRIPTS],
     }).then(() => true, () => false);
   }, [schema?.configs, schema?.allowCustomExportURL, oldConfigs, plugin, loading, mutate]);
 }

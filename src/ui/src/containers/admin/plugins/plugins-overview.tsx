@@ -29,14 +29,16 @@ import {
   Box,
   FormControlLabel,
   Switch as MaterialSwitch,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 import {
-  Route, Switch, useRouteMatch, RouteComponentProps,
+  Link, Route, Switch, useRouteMatch, RouteComponentProps,
 } from 'react-router-dom';
 
+import { useRetentionScripts } from 'app/pages/configure-data-export/data-export-gql';
 import { GQLPlugin, GQLPluginKind } from 'app/types/schema';
 import pixieAnalytics from 'app/utils/analytics';
 
@@ -81,6 +83,18 @@ const useStyles = makeStyles(({ palette, spacing, typography }: Theme) => create
     maxWidth: '100%',
     overflowX: 'auto',
   },
+  disableWarningTooltip: {
+    '& ul': { paddingLeft: spacing(1) },
+  },
+  link: {
+    textDecoration: 'none',
+    '&, &:visited': {
+      color: palette.primary.main,
+    },
+    '&:hover': {
+      textDecoration: 'underline',
+    },
+  },
 }), { name: 'PluginList' });
 
 const PluginLogo = React.memo<{ logo?: string }>(({ logo }) => {
@@ -104,7 +118,11 @@ const PluginLogo = React.memo<{ logo?: string }>(({ logo }) => {
 });
 PluginLogo.displayName = 'PluginLogo';
 
-const PluginHeader = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
+const PluginHeader = React.memo<{
+  plugin: GQLPlugin,
+  numPreset: number,
+  numCustom: number
+}>(({ plugin, numPreset, numCustom }) => {
   const classes = useStyles();
 
   const [pendingToggle, setPendingToggle] = React.useState(false);
@@ -125,6 +143,33 @@ const PluginHeader = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
     });
   }, [pushEnableState, plugin.retentionEnabled, plugin.id]);
 
+  const disableWarning = React.useMemo(() => (
+    <div className={classes.disableWarningTooltip}>
+      <p><strong>Disabling</strong> this plugin will:</p>
+      <ul>
+        <li>Clear this plugin&apos;s configuration</li>
+        {numPreset > 0 && (
+          <li>
+            Disable&nbsp;
+            {/* eslint-disable-next-line react-memo/require-usememo */}
+            <Link to='/configure-data-export' className={classes.link} onClick={(e) => e.stopPropagation()}>
+              {numPreset} <strong>preset</strong> retention script{numPreset > 1 ? 's' : ''}
+            </Link>
+          </li>
+        )}
+        {numCustom > 0 && (
+          <li>
+            Delete&nbsp;
+            {/* eslint-disable-next-line react-memo/require-usememo */}
+            <Link to='/configure-data-export' className={classes.link} onClick={(e) => e.stopPropagation()}>
+              {numCustom} <strong>custom</strong> retention script{numCustom > 1 ? 's' : ''}
+            </Link>
+          </li>
+        )}
+      </ul>
+    </div>
+  ), [classes.disableWarningTooltip, classes.link, numCustom, numPreset]);
+
   return (
     <>
       <PluginLogo logo={plugin.logo} />
@@ -135,16 +180,18 @@ const PluginHeader = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
         {plugin.description}
       </span>
       <span className={classes.accordionSummaryStatus}>
-        <FormControlLabel
-          // TODO(nick,PC-1436): Make the label the same width for both states so things line up; place on right.
-          label={`${plugin.retentionEnabled ? 'Enabled' : 'Disabled'}`}
-          labelPlacement='start'
-          onClick={toggleEnabled}
-          // eslint-disable-next-line react-memo/require-usememo
-          control={
-            <MaterialSwitch size='small' disabled={pendingToggle} checked={plugin.retentionEnabled} />
-          }
-        />
+        <Tooltip arrow title={plugin.retentionEnabled ? disableWarning : ''}>
+          <FormControlLabel
+            // TODO(nick,PC-1436): Make the label the same width for both states so things line up; place on right.
+            label={`${plugin.retentionEnabled ? 'Enabled' : 'Disabled'}`}
+            labelPlacement='start'
+            onClick={toggleEnabled}
+            // eslint-disable-next-line react-memo/require-usememo
+            control={
+              <MaterialSwitch size='small' disabled={pendingToggle} checked={plugin.retentionEnabled} />
+            }
+          />
+        </Tooltip>
       </span>
     </>
   );
@@ -154,6 +201,7 @@ PluginHeader.displayName = 'PluginHeader';
 const PluginList = React.memo<RouteComponentProps<{ expandId?: string }>>(({ match, history }) => {
   const classes = useStyles();
 
+  const { scripts } = useRetentionScripts();
   const { loading, plugins } = usePluginList(GQLPluginKind.PK_RETENTION);
   const { expandId } = match.params; // TODO(nick,PC-1436): Scroll to it on page load if feasible?
 
@@ -183,7 +231,11 @@ const PluginList = React.memo<RouteComponentProps<{ expandId?: string }>>(({ mat
             aria-controls={`plugin-accordion-${p.id}-content`}
             classes={{ content: classes.accordionSummaryContent }}
           >
-            <PluginHeader plugin={p} />
+            <PluginHeader
+              plugin={p}
+              numPreset={scripts?.filter(s => s.pluginID === p.id && s.isPreset).length ?? 0}
+              numCustom={scripts?.filter(s => s.pluginID === p.id && !s.isPreset).length ?? 0}
+            />
           </AccordionSummary>
           {/* eslint-disable-next-line react-memo/require-usememo */}
           <AccordionDetails classes={{ root: classes.accordionDetailsRoot }}>
