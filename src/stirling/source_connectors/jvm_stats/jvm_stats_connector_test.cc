@@ -24,9 +24,9 @@
 #include <string>
 #include <vector>
 
-#include "src/common/base/test_utils.h"
 #include "src/common/exec/subprocess.h"
 #include "src/common/testing/test_environment.h"
+#include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/jvm_stats/jvm_stats_table.h"
 #include "src/stirling/testing/common.h"
 

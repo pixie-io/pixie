@@ -34,7 +34,7 @@
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/planpb/test_proto.h"
 #include "src/carnot/udf/registry.h"
-#include "src/common/base/test_utils.h"
+#include "src/common/testing/testing.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/types.h"
 

@@ -26,8 +26,8 @@
 #include <utility>
 
 #include "src/common/base/base.h"
-#include "src/common/base/test_utils.h"
 #include "src/common/testing/test_environment.h"
+#include "src/common/testing/testing.h"
 
 namespace px {
 namespace stirling {

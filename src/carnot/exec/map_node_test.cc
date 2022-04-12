@@ -30,7 +30,7 @@
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
 #include "src/common/base/base.h"
-#include "src/common/base/test_utils.h"
+#include "src/common/testing/testing.h"
 #include "src/shared/types/types.h"
 
 namespace px {

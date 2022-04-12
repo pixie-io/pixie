@@ -16,8 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <gmock/gmock-matchers.h>
-#include <gtest/gtest.h>
 #include <ostream>
 
 #include "mysql_parser/MySQLLexer.h"
@@ -26,7 +24,7 @@
 #include "pgsql_parser/PostgresSQLParser.h"
 #include "src/carnot/funcs/builtins/sql_parsing/antlr_parse.h"
 #include "src/common/base/logging.h"
-#include "src/common/base/test_utils.h"
+#include "src/common/testing/testing.h"
 
 namespace px {
 namespace carnot {
@@ -41,8 +39,8 @@ class NopListener : public antlr4::tree::ParseTreeListener {
   void exitEveryRule(antlr4::ParserRuleContext*) {}
 };
 
-class PgFastPathTest : public testing::TestWithParam<std::string> {};
-class MySQLFastPathTest : public testing::TestWithParam<std::string> {};
+class PgFastPathTest : public ::testing::TestWithParam<std::string> {};
+class MySQLFastPathTest : public ::testing::TestWithParam<std::string> {};
 
 // Test that all of the SQL queries specified don't error in SLL mode.
 TEST_P(PgFastPathTest, postgres) {
@@ -71,7 +69,7 @@ TEST_P(MySQLFastPathTest, mysql) {
 
 INSTANTIATE_TEST_SUITE_P(
     PgFastPathVariants, PgFastPathTest,
-    testing::Values(
+    ::testing::Values(
         // Trivial test case.
         "SELECT 1", "BEGIN;",
         // SELECT test case.
@@ -91,7 +89,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 INSTANTIATE_TEST_SUITE_P(
     MySQLFastPathVariants, MySQLFastPathTest,
-    testing::Values(
+    ::testing::Values(
         // Trivial test case.
         "SELECT 1", "BEGIN;",
         // SELECT

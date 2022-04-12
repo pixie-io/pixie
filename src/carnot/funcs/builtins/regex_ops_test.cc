@@ -24,7 +24,7 @@
 #include "src/carnot/funcs/builtins/regex_ops.h"
 #include "src/carnot/udf/test_utils.h"
 #include "src/common/base/base.h"
-#include "src/common/base/test_utils.h"
+#include "src/common/testing/testing.h"
 
 namespace px {
 namespace carnot {

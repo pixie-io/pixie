@@ -19,7 +19,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "src/common/base/test_utils.h"
+#include "src/common/testing/testing.h"
 #include "src/shared/metadata/metadata_filter.h"
 
 namespace px {

@@ -22,7 +22,6 @@
 #include <string>
 
 #include "src/common/base/base.h"
-#include "src/common/base/test_utils.h"
 #include "src/common/exec/exec.h"
 #include "src/common/testing/test_utils/container_runner.h"
 #include "src/common/testing/testing.h"
