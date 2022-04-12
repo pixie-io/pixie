@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "src/common/base/base.h"
 #include "src/common/system/proc_parser.h"
 #include "src/stirling/obj_tools/dwarf_reader.h"
@@ -33,22 +35,22 @@ namespace stirling {
 using system::ProcParser;
 
 class RawFptrManager : NotCopyMoveable {
+ public:
+  explicit RawFptrManager(obj_tools::ElfReader* elf_reader, system::ProcParser* proc_parser,
+                          std::string lib_path);
+  ~RawFptrManager();
 
-  public:
-    explicit RawFptrManager(obj_tools::ElfReader* elf_reader, system::ProcParser* proc_parser, std::string lib_path);
-    ~RawFptrManager();
+  template <class T>
+  StatusOr<T*> RawSymbolToFptr(const std::string& symbol_name);
+  StatusOr<bool> Init();
 
-    template <class T>
-    StatusOr<T*> RawSymbolToFptr(const std::string& symbol_name);
-    StatusOr<bool> Init();
-
-  private:
-    obj_tools::ElfReader* elf_reader_;
-    ProcParser* proc_parser_;
-    uint64_t text_segment_offset_;
-    void* dlopen_handle_;
-    std::string lib_path_;
-    ProcParser::ProcessMap map_entry_;
+ private:
+  obj_tools::ElfReader* elf_reader_;
+  ProcParser* proc_parser_;
+  uint64_t text_segment_offset_;
+  void* dlopen_handle_;
+  std::string lib_path_;
+  ProcParser::ProcessMap map_entry_;
 };
 
 /**
@@ -76,7 +78,9 @@ StatusOr<struct go_tls_symaddrs_t> GoTLSSymAddrs(obj_tools::ElfReader* elf_reade
  * Detects the version of OpenSSL to return the locations of all relevant symbols for OpenSSL uprobe
  * deployment.
  */
-StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(RawFptrManager* fptrManager, const std::filesystem::path& openssl_lib, uint32_t pid);
+StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(RawFptrManager* fptrManager,
+                                                    const std::filesystem::path& openssl_lib,
+                                                    uint32_t pid);
 
 /**
  * Returns the corresponding symbol offsets of the input Nodejs executable.

@@ -35,8 +35,9 @@
 using ::px::stirling::obj_tools::DwarfReader;
 using ::px::stirling::obj_tools::ElfReader;
 
-DEFINE_bool(openssl_force_raw_fptrs, false,
-            "If true, forces the openssl tracing to determine the openssl version without dlopen/dlsym");
+DEFINE_bool(
+    openssl_force_raw_fptrs, false,
+    "If true, forces the openssl tracing to determine the openssl version without dlopen/dlsym");
 
 namespace px {
 namespace stirling {
@@ -501,23 +502,22 @@ Status PopulateGoTLSDebugSymbols(ElfReader* elf_reader, DwarfReader* dwarf_reade
 
 }  // namespace
 
-RawFptrManager::RawFptrManager(ElfReader* elf_reader, system::ProcParser* proc_parser, std::string lib_path) :
-  elf_reader_(elf_reader),
-  proc_parser_(proc_parser),
-  dlopen_handle_(nullptr),
-  lib_path_(lib_path)
-{}
+RawFptrManager::RawFptrManager(ElfReader* elf_reader, system::ProcParser* proc_parser,
+                               std::string lib_path)
+    : elf_reader_(elf_reader),
+      proc_parser_(proc_parser),
+      dlopen_handle_(nullptr),
+      lib_path_(lib_path) {}
 
 StatusOr<bool> RawFptrManager::Init() {
   dlopen_handle_ = dlopen(lib_path_.c_str(), RTLD_LAZY);
   if (dlopen_handle_ == nullptr) {
-    return error::Internal("Failed to dlopen OpenSSL so file: $0, $1", lib_path_,
-                           dlerror());
+    return error::Internal("Failed to dlopen OpenSSL so file: $0, $1", lib_path_, dlerror());
   }
 
   PL_ASSIGN_OR_RETURN(text_segment_offset_, elf_reader_->FindSegmentOffsetOfSection(".text"));
   auto pid = getpid();
-  auto vmem_start = text_segment_offset_ + (uint64_t)*(size_t const*)dlopen_handle_;
+  auto vmem_start = text_segment_offset_ + (uint64_t) * (size_t const*)dlopen_handle_;
   auto entry = proc_parser_->GetExecutableMapEntry(pid, lib_path_, vmem_start);
   if (!entry.ok())
     return error::NotFound("Failed to find map entry for pid: $0 and path: $1", pid, lib_path_);
@@ -616,12 +616,16 @@ StatusOr<uint64_t> GetOpenSSLVersionNumUsingDLOpen(const std::filesystem::path& 
 
 StatusOr<uint64_t> GetOpenSSLVersionNumUsingFptr(RawFptrManager* fptr_manager) {
   PL_RETURN_IF_ERROR(fptr_manager->Init());
-  PL_ASSIGN_OR_RETURN(auto version_num_f, fptr_manager->RawSymbolToFptr<unsigned long()>("OpenSSL_version_num"));
+  const std::string symbol = "OpenSSL_version_num";
+  // NOLINTNEXTLINE(runtime/int): 'unsigned long' is from upstream, match that here (vs. uint64_t)
+  PL_ASSIGN_OR_RETURN(auto version_num_f, fptr_manager->RawSymbolToFptr<unsigned long()>(symbol));
   return version_num_f();
-};
+}
 
 // Returns the "fix" version number for OpenSSL.
-StatusOr<uint32_t> OpenSSLFixSubversionNum(RawFptrManager* fptrManager, const std::filesystem::path& lib_openssl_path, uint32_t pid) {
+StatusOr<uint32_t> OpenSSLFixSubversionNum(RawFptrManager* fptrManager,
+                                           const std::filesystem::path& lib_openssl_path,
+                                           uint32_t pid) {
   // Current use case:
   // switch for the correct number of bytes offset for the socket fd.
   //
@@ -644,10 +648,15 @@ StatusOr<uint32_t> OpenSSLFixSubversionNum(RawFptrManager* fptrManager, const st
 
   StatusOr<uint64_t> openssl_version_packed = GetOpenSSLVersionNumUsingDLOpen(lib_openssl_path);
   if (FLAGS_openssl_force_raw_fptrs || (!openssl_version_packed.ok())) {
-    LOG(WARNING) << absl::Substitute("Unable to find openssl symbol 'OpenSSL_version_num' using dlopen/dlsym. Attempting to find address manually for pid $0", pid);
+    LOG(WARNING) << absl::Substitute(
+        "Unable to find openssl symbol 'OpenSSL_version_num' using dlopen/dlsym. Attempting to "
+        "find address manually for pid $0",
+        pid);
     openssl_version_packed = GetOpenSSLVersionNumUsingFptr(fptrManager);
 
-    if (!openssl_version_packed.ok()) LOG(WARNING) << "Unable to find openssl symbol 'OpenSSL_version_num' with raw function pointer";
+    if (!openssl_version_packed.ok())
+      LOG(WARNING)
+          << "Unable to find openssl symbol 'OpenSSL_version_num' with raw function pointer";
   }
   PL_ASSIGN_OR_RETURN(version_num.packed, openssl_version_packed);
 
@@ -676,7 +685,9 @@ StatusOr<uint32_t> OpenSSLFixSubversionNum(RawFptrManager* fptrManager, const st
 
 }  // namespace
 
-StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(RawFptrManager* fptrManager, const std::filesystem::path& openssl_lib, uint32_t pid) {
+StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(RawFptrManager* fptrManager,
+                                                    const std::filesystem::path& openssl_lib,
+                                                    uint32_t pid) {
   // Some useful links, for different OpenSSL versions:
   // 1.1.0a:
   // https://github.com/openssl/openssl/blob/ac2c44c6289f9716de4c4beeb284a818eacde517/<filename>
@@ -704,7 +715,8 @@ StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(RawFptrManager* fptrManager,
   struct openssl_symaddrs_t symaddrs;
   symaddrs.SSL_rbio_offset = kSSL_RBIO_offset;
 
-  PL_ASSIGN_OR_RETURN(uint32_t openssl_fix_sub_version, OpenSSLFixSubversionNum(fptrManager, openssl_lib, pid));
+  PL_ASSIGN_OR_RETURN(uint32_t openssl_fix_sub_version,
+                      OpenSSLFixSubversionNum(fptrManager, openssl_lib, pid));
 
   switch (openssl_fix_sub_version) {
     case 0:

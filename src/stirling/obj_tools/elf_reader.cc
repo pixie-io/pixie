@@ -215,8 +215,7 @@ StatusOr<ELFIO::section*> ElfReader::SymtabSection() {
 }
 
 StatusOr<int32_t> ElfReader::FindSegmentOffsetOfSection(std::string section_name) {
-
-  PL_ASSIGN_OR_RETURN(ELFIO::section* text_section, SectionWithName(section_name));
+  PL_ASSIGN_OR_RETURN(ELFIO::section * text_section, SectionWithName(section_name));
   uint64_t desired_offset = 0;
   auto section_offset = text_section->get_offset();
 
@@ -224,11 +223,11 @@ StatusOr<int32_t> ElfReader::FindSegmentOffsetOfSection(std::string section_name
     ELFIO::segment* segment = elf_reader_.segments[i];
     auto segment_offset = segment->get_offset();
     if (segment_offset < section_offset && segment_offset > desired_offset) {
-        desired_offset = segment->get_offset();
+      desired_offset = segment->get_offset();
     }
   }
   return desired_offset;
-};
+}
 
 StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::SearchSymbols(
     std::string_view search_symbol, SymbolMatchType match_type, std::optional<int> symbol_type,
@@ -521,7 +520,7 @@ StatusOr<ELFIO::section*> ElfReader::SectionWithName(std::string_view section_na
 
 StatusOr<utils::u8string> ElfReader::SymbolByteCode(std::string_view section,
                                                     const SymbolInfo& symbol) {
-  PL_ASSIGN_OR_RETURN(ELFIO::section* text_section, SectionWithName(section));
+  PL_ASSIGN_OR_RETURN(ELFIO::section * text_section, SectionWithName(section));
   int offset = symbol.address - text_section->get_address() + text_section->get_offset();
 
   std::ifstream ifs(binary_path_, std::ios::binary);

@@ -161,7 +161,7 @@ class ElfReader {
   /**
    * Returns the ELF section with the corresponding name
    */
-  StatusOr<ELFIO::section*>SectionWithName(std::string_view section_name);
+  StatusOr<ELFIO::section*> SectionWithName(std::string_view section_name);
 
   /**
    * Locates the debug symbols for the currently loaded ELF object.

@@ -30,8 +30,8 @@
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/protocol_checkers.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
-#include "src/stirling/testing/common.h"
 #include "src/stirling/source_connectors/socket_tracer/uprobe_symaddrs.h"
+#include "src/stirling/testing/common.h"
 
 namespace px {
 namespace stirling {
@@ -156,8 +156,7 @@ http::Record GetExpectedHTTPRecord() {
   return expected_record;
 }
 
-typedef ::testing::Types<NginxOpenSSL_1_1_1_ContainerWrapper>
-    OpenSSLServerImplementations;
+typedef ::testing::Types<NginxOpenSSL_1_1_1_ContainerWrapper> OpenSSLServerImplementations;
 TYPED_TEST_SUITE(OpenSSLTraceTest, OpenSSLServerImplementations);
 
 TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {

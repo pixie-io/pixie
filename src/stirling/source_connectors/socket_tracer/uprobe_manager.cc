@@ -134,8 +134,10 @@ StatusOr<int> UProbeManager::AttachUProbeTmpl(const ArrayView<UProbeTmpl>& probe
   return uprobe_count;
 }
 
-Status UProbeManager::UpdateOpenSSLSymAddrs(RawFptrManager* fptr_manager, std::filesystem::path libcrypto_path, uint32_t pid) {
-  PL_ASSIGN_OR_RETURN(struct openssl_symaddrs_t symaddrs, OpenSSLSymAddrs(fptr_manager, libcrypto_path, pid));
+Status UProbeManager::UpdateOpenSSLSymAddrs(RawFptrManager* fptr_manager,
+                                            std::filesystem::path libcrypto_path, uint32_t pid) {
+  PL_ASSIGN_OR_RETURN(struct openssl_symaddrs_t symaddrs,
+                      OpenSSLSymAddrs(fptr_manager, libcrypto_path, pid));
 
   openssl_symaddrs_map_->UpdateValue(pid, symaddrs);
 
@@ -266,9 +268,10 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
     // Return "0" to indicate zero probes were attached. This is not an error.
     return 0;
   }
- 
+
   auto reader = ElfReader::Create(container_libcrypto).ConsumeValueOrDie();
-  auto fptr_manager = std::unique_ptr<RawFptrManager>(new RawFptrManager(reader.get(), proc_parser_.get(), container_libcrypto));
+  auto fptr_manager = std::unique_ptr<RawFptrManager>(
+      new RawFptrManager(reader.get(), proc_parser_.get(), container_libcrypto));
 
   // Convert to host path, in case we're running inside a container ourselves.
   container_libssl = sysconfig.ToHostPath(container_libssl);

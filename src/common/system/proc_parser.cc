@@ -776,7 +776,8 @@ StatusOr<absl::flat_hash_set<std::string>> ProcParser::GetMapPaths(pid_t pid) co
   return map_paths;
 }
 
-StatusOr<absl::flat_hash_set<ProcParser::ProcessMap>> ProcParser::GetMapEntries(pid_t pid, std::string libpath) const {
+StatusOr<absl::flat_hash_set<ProcParser::ProcessMap>> ProcParser::GetMapEntries(
+    pid_t pid, std::string libpath) const {
   absl::flat_hash_set<ProcParser::ProcessMap> map_entries;
 
   static constexpr int kProcMapNumFields = 6;
@@ -810,11 +811,12 @@ StatusOr<absl::flat_hash_set<ProcParser::ProcessMap>> ProcParser::GetMapEntries(
     if (split.size() < kProcMapNumFields - 1) {
       return error::Internal("Failed to parse file $0", proc_pid_maps_path.string());
     }
-    std::vector<std::string_view> vmem = absl::StrSplit(split[0], absl::MaxSplits("-", 2), absl::SkipWhitespace());
+    std::vector<std::string_view> vmem =
+        absl::StrSplit(split[0], absl::MaxSplits("-", 2), absl::SkipWhitespace());
 
     ProcParser::ProcessMap m{
         .vmem_start = std::strtoull(vmem[0].data(), NULL, 16),
-        .vmem_end   = std::strtoull(vmem[1].data(), NULL, 16),
+        .vmem_end = std::strtoull(vmem[1].data(), NULL, 16),
         .permissions = std::string(split[1]),
         .file_offset = std::strtoull(split[2].data(), NULL, 16),
         .inode = std::strtoull(split[4].data(), NULL, 16),
@@ -833,15 +835,14 @@ StatusOr<absl::flat_hash_set<ProcParser::ProcessMap>> ProcParser::GetMapEntries(
   return map_entries;
 }
 
-StatusOr<ProcParser::ProcessMap> ProcParser::GetExecutableMapEntry(pid_t pid, std::string libpath, uint64_t vmem_start) {
+StatusOr<ProcParser::ProcessMap> ProcParser::GetExecutableMapEntry(pid_t pid, std::string libpath,
+                                                                   uint64_t vmem_start) {
   PL_ASSIGN_OR_RETURN(auto map_entries, GetMapEntries(pid, libpath));
-  for (const auto& entry: map_entries) {
-    if (
-        entry.permissions.compare("r-xp") != 0 ||
-        entry.vmem_start != vmem_start
-    ) continue;
-     VLOG(1) << absl::Substitute("Found ProcessMap for $0: vmem_start $1 permission $2", entry.map_path, absl::Hex(entry.vmem_start), entry.permissions);
-     return entry;
+  for (const auto& entry : map_entries) {
+    if (entry.permissions.compare("r-xp") != 0 || entry.vmem_start != vmem_start) continue;
+    VLOG(1) << absl::Substitute("Found ProcessMap for $0: vmem_start $1 permission $2",
+                                entry.map_path, absl::Hex(entry.vmem_start), entry.permissions);
+    return entry;
   }
 
   return error::NotFound(absl::Substitute("Could not find maps entry for $0", libpath));

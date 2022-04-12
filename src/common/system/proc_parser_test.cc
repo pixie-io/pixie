@@ -346,7 +346,7 @@ TEST_F(ProcParserTest, GetMapEntries) {
   {
     ProcParser::ProcessMap m{
         .vmem_start = 0x565078f64000,
-        .vmem_end   = 0x565078f8c000,
+        .vmem_end = 0x565078f8c000,
         .permissions = "r-xp",
         .inode = 0x27147818,
         .map_path = "/usr/sbin/nginx",

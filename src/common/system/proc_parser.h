@@ -23,6 +23,7 @@
 #include <map>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <absl/container/flat_hash_map.h>
@@ -334,27 +335,31 @@ class ProcParser {
    * ProcessMaps tracks details from /proc/<pid>/maps
    */
   struct ProcessMap {
-      uint64_t vmem_start = 0;
-      uint64_t vmem_end = 0;
-      std::string permissions;
-      uint64_t file_offset = 0;
-      uint64_t inode = 0;
-      std::string map_path;
+    uint64_t vmem_start = 0;
+    uint64_t vmem_end = 0;
+    std::string permissions;
+    uint64_t file_offset = 0;
+    uint64_t inode = 0;
+    std::string map_path;
 
-      template <typename H>
-      friend H AbslHashValue(H h, const ProcessMap& e) {
-        return H::combine(std::move(h), e.vmem_start, e.vmem_end, e.file_offset);
-      }
+    template <typename H>
+    friend H AbslHashValue(H h, const ProcessMap& e) {
+      return H::combine(std::move(h), e.vmem_start, e.vmem_end, e.file_offset);
+    }
 
-      bool operator==(const ProcParser::ProcessMap& rhs) const {
-        return this->vmem_start == rhs.vmem_start && this->vmem_end == rhs.vmem_end && this->permissions.compare(permissions) == 0 && this->inode == rhs.inode && this->file_offset == rhs.file_offset && this->map_path == rhs.map_path;
-      }
+    bool operator==(const ProcParser::ProcessMap& rhs) const {
+      return this->vmem_start == rhs.vmem_start && this->vmem_end == rhs.vmem_end &&
+             this->permissions.compare(permissions) == 0 && this->inode == rhs.inode &&
+             this->file_offset == rhs.file_offset && this->map_path == rhs.map_path;
+    }
   };
 
   /**
    * @param pid process id for which to search /proc/<pid>/maps
-   * @param libpath a string containing the shared object file path to search for in /proc/<pid>/maps
-   * @return Status containing a hash set of ProcessMap objects representing all the content in /proc/<pid>/maps
+   * @param libpath a string containing the shared object file path to search for in
+   * /proc/<pid>/maps
+   * @return Status containing a hash set of ProcessMap objects representing all the content in
+   * /proc/<pid>/maps
    **/
   StatusOr<absl::flat_hash_set<ProcessMap>> GetMapEntries(pid_t pid, std::string libpath) const;
 
