@@ -840,7 +840,7 @@ StatusOr<ProcParser::ProcessMap> ProcParser::GetExecutableMapEntry(pid_t pid, st
         entry.permissions.compare("r-xp") != 0 ||
         entry.vmem_start != vmem_start
     ) continue;
-     VLOG(1) << absl::Substitute("Found ProcessMap for $0: vmem_start $1 permission $2", entry.map_path, absl::Hex(entry.vmem_start), entry.map_path, entry.permissions);
+     VLOG(1) << absl::Substitute("Found ProcessMap for $0: vmem_start $1 permission $2", entry.map_path, absl::Hex(entry.vmem_start), entry.permissions);
      return entry;
   }
 

@@ -184,69 +184,69 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
   EXPECT_THAT(records.remote_address, UnorderedElementsAre(StrEq("127.0.0.1")));
 }
 
-/* TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) { */
-/*   this->StartTransferDataThread(); */
+TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
+  this->StartTransferDataThread();
 
-/*   // Make multiple requests and make sure we capture all of them. */
-/*   std::string rb_script = R"( */
-/*         require 'net/http' */
-/*         require 'uri' */
+  // Make multiple requests and make sure we capture all of them.
+  std::string rb_script = R"(
+        require 'net/http'
+        require 'uri'
 
-/*         $i = 0 */
-/*         while $i < 3 do */
-/*           uri = URI.parse('https://localhost:443/index.html') */
-/*           http = Net::HTTP.new(uri.host, uri.port) */
-/*           http.use_ssl = true */
-/*           http.verify_mode = OpenSSL::SSL::VERIFY_NONE */
-/*           request = Net::HTTP::Get.new(uri.request_uri) */
-/*           response = http.request(request) */
-/*           p response.body */
+        $i = 0
+        while $i < 3 do
+          uri = URI.parse('https://localhost:443/index.html')
+          http = Net::HTTP.new(uri.host, uri.port)
+          http.use_ssl = true
+          http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+          request = Net::HTTP::Get.new(uri.request_uri)
+          response = http.request(request)
+          p response.body
 
-/*           sleep(1) */
+          sleep(1)
 
-/*           $i += 1 */
-/*         end */
-/*   )"; */
+          $i += 1
+        end
+  )";
 
-/*   // Make an SSL request with the client. */
-/*   // Run the client in the network of the server, so they can connect to each other. */
-/*   ::px::stirling::testing::RubyContainer client; */
-/*   PL_CHECK_OK( */
-/*       client.Run(std::chrono::seconds{60}, */
-/*                  {absl::Substitute("--network=container:$0", this->server_.container_name())}, */
-/*                  {"ruby", "-e", rb_script})); */
-/*   client.Wait(); */
-/*   this->StopTransferDataThread(); */
+  // Make an SSL request with the client.
+  // Run the client in the network of the server, so they can connect to each other.
+  ::px::stirling::testing::RubyContainer client;
+  PL_CHECK_OK(
+      client.Run(std::chrono::seconds{60},
+                 {absl::Substitute("--network=container:$0", this->server_.container_name())},
+                 {"ruby", "-e", rb_script}));
+  client.Wait();
+  this->StopTransferDataThread();
 
-/*   TraceRecords records = this->GetTraceRecords(this->server_.PID()); */
-/*   http::Record expected_record = GetExpectedHTTPRecord(); */
+  TraceRecords records = this->GetTraceRecords(this->server_.PID());
+  http::Record expected_record = GetExpectedHTTPRecord();
 
-/*   EXPECT_THAT(records.http_records, */
-/*               UnorderedElementsAre(EqHTTPRecord(expected_record), EqHTTPRecord(expected_record), */
-/*                                    EqHTTPRecord(expected_record))); */
-/*   EXPECT_THAT(records.remote_address, */
-/*               UnorderedElementsAre(StrEq("127.0.0.1"), StrEq("127.0.0.1"), StrEq("127.0.0.1"))); */
-/* } */
+  EXPECT_THAT(records.http_records,
+              UnorderedElementsAre(EqHTTPRecord(expected_record), EqHTTPRecord(expected_record),
+                                   EqHTTPRecord(expected_record)));
+  EXPECT_THAT(records.remote_address,
+              UnorderedElementsAre(StrEq("127.0.0.1"), StrEq("127.0.0.1"), StrEq("127.0.0.1")));
+}
 
-/* TYPED_TEST(OpenSSLTraceTest, ssl_capture_node_client) { */
-/*   this->StartTransferDataThread(); */
+TYPED_TEST(OpenSSLTraceTest, ssl_capture_node_client) {
+  this->StartTransferDataThread();
 
-/*   // Make an SSL request with the client. */
-/*   // Run the client in the network of the server, so they can connect to each other. */
-/*   ::px::stirling::testing::NodeClientContainer client; */
-/*   PL_CHECK_OK( */
-/*       client.Run(std::chrono::seconds{60}, */
-/*                  {absl::Substitute("--network=container:$0", this->server_.container_name())}, */
-/*                  {"node", "/etc/node/https_client.js"})); */
-/*   client.Wait(); */
-/*   this->StopTransferDataThread(); */
+  // Make an SSL request with the client.
+  // Run the client in the network of the server, so they can connect to each other.
+  ::px::stirling::testing::NodeClientContainer client;
+  PL_CHECK_OK(
+      client.Run(std::chrono::seconds{60},
+                 {absl::Substitute("--network=container:$0", this->server_.container_name())},
+                 {"node", "/etc/node/https_client.js"}));
+  client.Wait();
+  this->StopTransferDataThread();
 
-/*   TraceRecords records = this->GetTraceRecords(this->server_.PID()); */
-/*   http::Record expected_record = GetExpectedHTTPRecord(); */
+  TraceRecords records = this->GetTraceRecords(this->server_.PID());
+  http::Record expected_record = GetExpectedHTTPRecord();
 
-/*   EXPECT_THAT(records.http_records, UnorderedElementsAre(EqHTTPRecord(expected_record))); */
-/*   EXPECT_THAT(records.remote_address, UnorderedElementsAre(StrEq("127.0.0.1"))); */
-/* } */
+  EXPECT_THAT(records.http_records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
+  EXPECT_THAT(records.remote_address, UnorderedElementsAre(StrEq("127.0.0.1")));
+}
 
 }  // namespace stirling
 }  // namespace px
