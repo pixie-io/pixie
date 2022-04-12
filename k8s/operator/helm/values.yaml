@@ -45,6 +45,8 @@ cloudAddr: "withpixie.ai:443"
 devCloudNamespace: ""
 # A memory limit applied specifically to PEM pods. If none is specified, a default limit of 2Gi is set.
 pemMemoryLimit: ""
+# A memory request applied specifically to PEM pods. If none is specified, it will default to pemMemoryLimit.
+pemMemoryRequest: ""
 # DataAccess defines the level of data that may be accesssed when executing a script on the cluster.
 dataAccess: "Full"
 pod:

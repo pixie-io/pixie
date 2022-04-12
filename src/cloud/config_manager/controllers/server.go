@@ -104,27 +104,30 @@ func (s *Server) getOrgIDForDeployKey(deployKey string) (uuid.UUID, error) {
 }
 
 const (
-	bytesPerMiB                     = 1024 * 1024
-	defaultTableStorePercentage     = 0.6
+	bytesPerMiB                 = 1024 * 1024
+	defaultTableStorePercentage = 0.6
+	// Note: if you update this value, make sure you also update defaultMemoryLimit in
+	// src/utils/template_generator/vizier_yamls/vizier_yamls.go, because we want to make
+	// sure that the table store size is about 60% of the total requested memory.
 	defaultUncappedTableStoreSizeMB = 1228
 	tableStoreSizePEMFlag           = "PL_TABLE_STORE_DATA_LIMIT_MB"
 )
 
 // AddDefaultTableStoreSize computes and (if not already provided) adds the PEM flag for table store size.
-func AddDefaultTableStoreSize(pemMemoryLimit string, customPEMFlags map[string]string) {
+func AddDefaultTableStoreSize(pemMemoryRequest string, customPEMFlags map[string]string) {
 	// If the table store PEM flag is already set, we don't need to do anything.
 	if _, ok := customPEMFlags[tableStoreSizePEMFlag]; ok {
 		return
 	}
 	var defaultTableStoreSizeMB int
-	if pemMemoryLimit == "" {
+	if pemMemoryRequest == "" {
 		defaultTableStoreSizeMB = defaultUncappedTableStoreSizeMB
 	} else {
-		pemMemorySizeBytes := resource.MustParse(pemMemoryLimit)
+		pemMemorySizeBytes := resource.MustParse(pemMemoryRequest)
 		defaultTableStoreSizeBytes := defaultTableStorePercentage * float64(pemMemorySizeBytes.Value())
 		defaultTableStoreSizeMB = int(math.Floor(defaultTableStoreSizeBytes / bytesPerMiB))
 		if defaultTableStoreSizeMB == 0 {
-			log.Errorf("Default table store size must be nonzero, received total memory of %s", pemMemoryLimit)
+			log.Errorf("Default table store size must be nonzero, received total memory of %s", pemMemoryRequest)
 			return
 		}
 	}
@@ -150,13 +153,25 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 		updateCloudAddr = fmt.Sprintf("api-service.%s.svc.cluster.local:51200", in.VzSpec.DevCloudNamespace)
 	}
 
+	// If either PEM memory request or PEM memory limit is missing, make them equal.
+	// However, it is still possible for both to be empty.
+	pemMemoryRequest := in.VzSpec.PemMemoryRequest
+	pemMemoryLimit := in.VzSpec.PemMemoryLimit
+
+	if pemMemoryRequest == "" {
+		pemMemoryRequest = pemMemoryLimit
+	}
+	if pemMemoryLimit == "" {
+		pemMemoryLimit = pemMemoryRequest
+	}
 	// We should eventually clean up the templating code, since our Helm charts and extracted YAMLs will now just
 	// be simple CRDs.
 	tmplValues := &vizieryamls.VizierTmplValues{
 		DeployKey:             in.VzSpec.DeployKey,
 		CustomDeployKeySecret: in.VzSpec.CustomDeployKeySecret,
 		UseEtcdOperator:       in.VzSpec.UseEtcdOperator,
-		PEMMemoryLimit:        in.VzSpec.PemMemoryLimit,
+		PEMMemoryLimit:        pemMemoryLimit,
+		PEMMemoryRequest:      pemMemoryRequest,
 		Namespace:             in.Namespace,
 		CloudAddr:             cloudAddr,
 		CloudUpdateAddr:       updateCloudAddr,
@@ -185,7 +200,7 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 	if tmplValues.CustomPEMFlags == nil {
 		tmplValues.CustomPEMFlags = make(map[string]string)
 	}
-	AddDefaultTableStoreSize(tmplValues.PEMMemoryLimit, tmplValues.CustomPEMFlags)
+	AddDefaultTableStoreSize(tmplValues.PEMMemoryRequest, tmplValues.CustomPEMFlags)
 
 	// Next we inject any feature flags that we want to set for this org.
 	orgID, err := s.getOrgIDForDeployKey(tmplValues.DeployKey)

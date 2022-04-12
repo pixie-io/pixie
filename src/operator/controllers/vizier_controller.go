@@ -628,6 +628,7 @@ func generateVizierYAMLsConfig(ctx context.Context, ns string, vz *v1alpha1.Vizi
 			CloudAddr:             vz.Spec.CloudAddr,
 			DevCloudNamespace:     vz.Spec.DevCloudNamespace,
 			PemMemoryLimit:        vz.Spec.PemMemoryLimit,
+			PemMemoryRequest:      vz.Spec.PemMemoryRequest,
 			ClockConverter:        string(vz.Spec.ClockConverter),
 			DataAccess:            string(vz.Spec.DataAccess),
 			Pod_Policy: &vizierconfigpb.PodPolicyReq{
