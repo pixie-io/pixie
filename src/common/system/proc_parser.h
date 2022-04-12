@@ -353,10 +353,16 @@ class ProcParser {
       }
   };
 
+  /**
+   * @param pid process id for which to search /proc/<pid>/maps
+   * @param libpath a string containing the shared object file path to search for in /proc/<pid>/maps
+   * @return Status containing a hash set of ProcessMap objects representing all the content in /proc/<pid>/maps
+   **/
   StatusOr<absl::flat_hash_set<ProcessMap>> GetMapEntries(pid_t pid, std::string libpath) const;
 
   /**
    * Returns the matching executable memory mapped entry in /prod/<pid>/maps.
+   *
    * Since it is possible for multiple entries to exist for the same library,
    * the vmem_start parameter is used to identify a unique entry.
    *
