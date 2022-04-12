@@ -73,7 +73,7 @@ Status SetMountNS(int pid) {
 }  // namespace
 
 void SubProcess::SetupChild(StartOptions options) {
-  DCHECK_EQ(child_pid_, 0);
+  DCHECK_EQ(child_pid_, 0) << "SetupChild() can only be called inside child process";
 
   // Redirect STDOUT to pipe
   if (dup2(pipefd_[kWrite], STDOUT_FILENO) == -1) {
@@ -224,19 +224,24 @@ void SubProcess::Signal(int signal) {
 // TODO(yzhao): Consider change SubProcess to be immutable. So that we can rely on SubProcess
 // destructor to close the pipe to child process.
 int SubProcess::Wait(bool close_pipe) {
-  if (child_pid_ != kUnstartedPID) {
-    int status = -1;
-    // WUNTRACED is used such that a stopped process allows this call to return immediately.
-    // See: https://stackoverflow.com/a/34845669
-    waitpid(child_pid_, &status, WUNTRACED);
-    if (close_pipe) {
-      // Close the read endpoint of the pipe. This must happen after waitpid(), otherwise the
-      // process will exits abnormally because it's STDOUT cannot be written.
-      close(pipefd_[kRead]);
-    }
-    return status;
+  DCHECK_NE(child_pid_, kUnstartedPID) << "Child process has not been started";
+  int status = -1;
+  // WUNTRACED is used such that a stopped process allows this call to return immediately.
+  // See: https://stackoverflow.com/a/34845669
+  waitpid(child_pid_, &status, WUNTRACED);
+  if (close_pipe) {
+    // Close the read endpoint of the pipe. This must happen after waitpid(), otherwise the
+    // process will exits abnormally because it's STDOUT cannot be written.
+    close(pipefd_[kRead]);
   }
-  return 0;
+  return status;
+}
+
+int SubProcess::GetStatus() const {
+  DCHECK_NE(child_pid_, kUnstartedPID) << "Child process has not been started";
+  int status = -1;
+  waitpid(child_pid_, &status, WNOHANG);
+  return status;
 }
 
 Status SubProcess::Stdout(std::string* out) {

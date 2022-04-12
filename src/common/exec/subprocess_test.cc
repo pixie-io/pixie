@@ -66,11 +66,13 @@ TEST(SubProcessTest, KillMultipleTimes) {
   EXPECT_EQ(status, -1) << "Wait returns an invalid status code, as the process already exited";
 }
 
-// Tests that kill a unstarted subprocess has no effect.
+// Tests that kill a unstarted subprocess causes crash.
 TEST(SubProcessTest, KillUnstartedProcess) {
   SubProcess subprocess;
   subprocess.Kill();
-  EXPECT_EQ(subprocess.Wait(), 0) << "Wait returns 0, indicating the child process hasn't started";
+#ifndef NDEBUG
+  EXPECT_DEATH(subprocess.Wait(), "Child process has not been started");
+#endif
 }
 
 }  // namespace px

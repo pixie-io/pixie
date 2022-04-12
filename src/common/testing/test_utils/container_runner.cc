@@ -138,6 +138,12 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
 
   // Wait for container's server to be running.
   for (; attempts_remaining > 0; --attempts_remaining) {
+    const int status = docker_.GetStatus();
+    if (WIFEXITED(status) || WIFSIGNALED(status)) {
+      container_status = "exited";
+      LOG(INFO) << absl::Substitute("The container already exited or terminated by a signal");
+      break;
+    }
     // We check if the container process is running before running docker inspect
     // to avoid races where the container stops running after the docker inspect.
     const bool docker_is_running = docker_.IsRunning();
