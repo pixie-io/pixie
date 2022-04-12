@@ -336,8 +336,6 @@ class ProcParser {
   struct ProcessMap {
       uint64_t vmem_start = 0;
       uint64_t vmem_end = 0;
-      // TODO(ddelnano): Change this to an octal like number like chmod
-      /* uint8_t permissions = 0; */
       std::string permissions;
       uint64_t file_offset = 0;
       uint64_t inode = 0;
