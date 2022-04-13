@@ -594,6 +594,9 @@ export namespace Configs {
     getHeadersMap(): jspb.Map<string, string>;
     clearHeadersMap(): OTelEndpointConfig;
 
+    getInsecure(): boolean;
+    setInsecure(value: boolean): OTelEndpointConfig;
+
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): OTelEndpointConfig.AsObject;
     static toObject(includeInstance: boolean, msg: OTelEndpointConfig): OTelEndpointConfig.AsObject;
@@ -606,6 +609,7 @@ export namespace Configs {
     export type AsObject = {
       url: string,
       headersMap: Array<[string, string]>,
+      insecure: boolean,
     }
   }
 

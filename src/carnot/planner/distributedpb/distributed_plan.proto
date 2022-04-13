@@ -134,6 +134,8 @@ message OTelEndpointConfig {
   // The headers that should be attached to the connection context, such as
   // authentication credentials or api keys.
   map<string, string> headers = 2;
+  // True if the OpenTelemetry collector is not protected with SSL.
+  bool insecure = 3;
 }
 
 message PluginConfig {

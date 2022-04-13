@@ -5222,7 +5222,8 @@ proto.px.api.vizierpb.Configs.OTelEndpointConfig.prototype.toObject = function(o
 proto.px.api.vizierpb.Configs.OTelEndpointConfig.toObject = function(includeInstance, msg) {
   var f, obj = {
     url: jspb.Message.getFieldWithDefault(msg, 1, ""),
-    headersMap: (f = msg.getHeadersMap()) ? f.toObject(includeInstance, undefined) : []
+    headersMap: (f = msg.getHeadersMap()) ? f.toObject(includeInstance, undefined) : [],
+    insecure: jspb.Message.getBooleanFieldWithDefault(msg, 3, false)
   };
 
   if (includeInstance) {
@@ -5269,6 +5270,10 @@ proto.px.api.vizierpb.Configs.OTelEndpointConfig.deserializeBinaryFromReader = f
         jspb.Map.deserializeBinary(message, reader, jspb.BinaryReader.prototype.readString, jspb.BinaryReader.prototype.readString, null, "", "");
          });
       break;
+    case 3:
+      var value = /** @type {boolean} */ (reader.readBool());
+      msg.setInsecure(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -5308,6 +5313,13 @@ proto.px.api.vizierpb.Configs.OTelEndpointConfig.serializeBinaryToWriter = funct
   f = message.getHeadersMap(true);
   if (f && f.getLength() > 0) {
     f.serializeBinary(2, writer, jspb.BinaryWriter.prototype.writeString, jspb.BinaryWriter.prototype.writeString);
+  }
+  f = message.getInsecure();
+  if (f) {
+    writer.writeBool(
+      3,
+      f
+    );
   }
 };
 
@@ -5350,6 +5362,24 @@ proto.px.api.vizierpb.Configs.OTelEndpointConfig.prototype.getHeadersMap = funct
 proto.px.api.vizierpb.Configs.OTelEndpointConfig.prototype.clearHeadersMap = function() {
   this.getHeadersMap().clear();
   return this;};
+
+
+/**
+ * optional bool insecure = 3;
+ * @return {boolean}
+ */
+proto.px.api.vizierpb.Configs.OTelEndpointConfig.prototype.getInsecure = function() {
+  return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 3, false));
+};
+
+
+/**
+ * @param {boolean} value
+ * @return {!proto.px.api.vizierpb.Configs.OTelEndpointConfig} returns this
+ */
+proto.px.api.vizierpb.Configs.OTelEndpointConfig.prototype.setInsecure = function(value) {
+  return jspb.Message.setProto3BooleanField(this, 3, value);
+};
 
 
 

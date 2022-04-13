@@ -59,10 +59,10 @@ StatusOr<std::shared_ptr<OTelTrace>> OTelTrace::Create(ASTVisitor* ast_visitor) 
 }
 
 StatusOr<std::shared_ptr<EndpointConfig>> EndpointConfig::Create(
-    ASTVisitor* ast_visitor, std::string url,
-    std::vector<EndpointConfig::ConnAttribute> attributes) {
+    ASTVisitor* ast_visitor, std::string url, std::vector<EndpointConfig::ConnAttribute> attributes,
+    bool insecure) {
   return std::shared_ptr<EndpointConfig>(
-      new EndpointConfig(ast_visitor, std::move(url), std::move(attributes)));
+      new EndpointConfig(ast_visitor, std::move(url), std::move(attributes), insecure));
 }
 
 Status ExportToOTel(const OTelData& data, const pypa::AstPtr& ast, Dataframe* df) {
@@ -274,7 +274,10 @@ StatusOr<QLObjectPtr> EndpointConfigDefinition(const pypa::AstPtr& ast, const Pa
                         GetArgAs<StringIR>(ast, headers_dict->values()[i], "header value"));
     attributes.push_back(EndpointConfig::ConnAttribute{key_ir->str(), val_ir->str()});
   }
-  return EndpointConfig::Create(visitor, url, attributes);
+
+  PL_ASSIGN_OR_RETURN(BoolIR * insecure_ir, GetArgAs<BoolIR>(ast, args, "insecure"));
+
+  return EndpointConfig::Create(visitor, url, attributes, insecure_ir->val());
 }
 
 Status OTelModule::Init(CompilerState* compiler_state, IR* ir) {
@@ -297,7 +300,8 @@ Status OTelModule::Init(CompilerState* compiler_state, IR* ir) {
   PL_RETURN_IF_ERROR(AssignAttribute("trace", trace));
 
   PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> endpoint_fn,
-                      FuncObject::Create(kEndpointOpID, {"url", "headers"}, {{"headers", "{}"}},
+                      FuncObject::Create(kEndpointOpID, {"url", "headers", "insecure"},
+                                         {{"headers", "{}"}, {"insecure", "False"}},
                                          /* has_variable_len_args */ false,
                                          /* has_variable_len_kwargs */ false,
                                          std::bind(&EndpointConfigDefinition, std::placeholders::_1,
@@ -411,6 +415,7 @@ Status EndpointConfig::ToProto(planpb::OTelEndpointConfig* pb) {
   for (const auto& attr : attributes_) {
     (*pb->mutable_headers())[attr.name] = attr.value;
   }
+  pb->set_insecure(insecure_);
   return Status::OK();
 }
 

@@ -80,6 +80,8 @@ class OTelModule : public QLObject {
     url (string): The URL of the OTel collector.
     headers (Dict[string,string], optional): The connection metadata to add to the
       header of the request.
+    insecure (bool, optional): Whether to allow insecure connections to the OpenTelemetry
+      collector. False by default.
   )doc";
 
  protected:
@@ -207,20 +209,22 @@ class EndpointConfig : public QLObject {
   };
   static StatusOr<std::shared_ptr<EndpointConfig>> Create(
       ASTVisitor* ast_visitor, std::string url,
-      std::vector<EndpointConfig::ConnAttribute> attributes);
+      std::vector<EndpointConfig::ConnAttribute> attributes, bool insecure);
 
   Status ToProto(planpb::OTelEndpointConfig* endpoint_config);
 
  protected:
   EndpointConfig(ASTVisitor* ast_visitor, std::string url,
-                 std::vector<EndpointConfig::ConnAttribute> attributes)
+                 std::vector<EndpointConfig::ConnAttribute> attributes, bool insecure)
       : QLObject(EndpointType, ast_visitor),
         url_(std::move(url)),
-        attributes_(std::move(attributes)) {}
+        attributes_(std::move(attributes)),
+        insecure_(insecure) {}
 
  private:
   std::string url_;
   std::vector<EndpointConfig::ConnAttribute> attributes_;
+  bool insecure_;
 };
 
 class OTelDataContainer : public QLObject {

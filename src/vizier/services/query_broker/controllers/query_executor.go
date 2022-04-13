@@ -278,8 +278,9 @@ func (q *QueryExecutorImpl) compilePlan(ctx context.Context, resultCh chan<- *vi
 	var otelConfig *distributedpb.OTelEndpointConfig
 	if req.Configs != nil && req.Configs.OTelEndpointConfig != nil {
 		otelConfig = &distributedpb.OTelEndpointConfig{
-			URL:     req.Configs.OTelEndpointConfig.URL,
-			Headers: req.Configs.OTelEndpointConfig.Headers,
+			URL:      req.Configs.OTelEndpointConfig.URL,
+			Headers:  req.Configs.OTelEndpointConfig.Headers,
+			Insecure: req.Configs.OTelEndpointConfig.Insecure,
 		}
 	}
 	var pluginConfig *distributedpb.PluginConfig
