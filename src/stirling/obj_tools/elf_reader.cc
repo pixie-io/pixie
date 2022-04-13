@@ -214,19 +214,31 @@ StatusOr<ELFIO::section*> ElfReader::SymtabSection() {
   return symtab_section;
 }
 
+// TODO(ddelnano): This function only works with sections that exist in LOAD segments.
+// This function should be able to handle any section, but for the time being its is limited
+// in scope.
 StatusOr<int32_t> ElfReader::FindSegmentOffsetOfSection(std::string section_name) {
   PL_ASSIGN_OR_RETURN(ELFIO::section * text_section, SectionWithName(section_name));
-  uint64_t desired_offset = 0;
   auto section_offset = text_section->get_offset();
 
-  for (int i = 0; i < elf_reader_.segments.size(); ++i) {
-    ELFIO::segment* segment = elf_reader_.segments[i];
-    auto segment_offset = segment->get_offset();
-    if (segment_offset < section_offset && segment_offset > desired_offset) {
-      desired_offset = segment->get_offset();
+  for (int i = 0; i < elf_reader_.segments.size() - 1; ++i) {
+    ELFIO::segment* current_segment = elf_reader_.segments[i];
+    ELFIO::segment* next_segment = elf_reader_.segments[i + 1];
+
+    auto expected_type = ELFIO::PT_LOAD;
+    if (current_segment->get_type() != expected_type || next_segment->get_type() != expected_type)
+      continue;
+
+    auto current_segment_offset = current_segment->get_offset();
+    auto next_segment_offset = next_segment->get_offset();
+
+    // Check to see if the section we are searching for exists
+    // between the two contiguous segments we are looping through.
+    if (next_segment_offset >= section_offset && section_offset >= current_segment_offset) {
+      return current_segment_offset;
     }
   }
-  return desired_offset;
+  return error::NotFound("Could not find segment offset of section '$0'", section_name);
 }
 
 StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::SearchSymbols(

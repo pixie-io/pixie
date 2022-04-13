@@ -156,7 +156,9 @@ http::Record GetExpectedHTTPRecord() {
   return expected_record;
 }
 
-typedef ::testing::Types<NginxOpenSSL_1_1_1_ContainerWrapper> OpenSSLServerImplementations;
+typedef ::testing::Types<NginxOpenSSL_1_1_0_ContainerWrapper, NginxOpenSSL_1_1_1_ContainerWrapper,
+                         Node12_3_1ContainerWrapper, Node14_18_1AlpineContainerWrapper>
+    OpenSSLServerImplementations;
 TYPED_TEST_SUITE(OpenSSLTraceTest, OpenSSLServerImplementations);
 
 TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {

@@ -520,7 +520,9 @@ StatusOr<bool> RawFptrManager::Init() {
   auto vmem_start = text_segment_offset_ + (uint64_t) * (size_t const*)dlopen_handle_;
   auto entry = proc_parser_->GetExecutableMapEntry(pid, lib_path_, vmem_start);
   if (!entry.ok())
-    return error::NotFound("Failed to find map entry for pid: $0 and path: $1", pid, lib_path_);
+    return error::NotFound(
+        "Failed to find map entry for pid: $0 and path: $1 vmem start: $2 and segment offset: $3",
+        pid, lib_path_, absl::Hex(vmem_start), absl::Hex(text_segment_offset_));
 
   map_entry_ = entry.ValueOrDie();
   return true;
@@ -655,8 +657,9 @@ StatusOr<uint32_t> OpenSSLFixSubversionNum(RawFptrManager* fptrManager,
     openssl_version_packed = GetOpenSSLVersionNumUsingFptr(fptrManager);
 
     if (!openssl_version_packed.ok())
-      LOG(WARNING)
-          << "Unable to find openssl symbol 'OpenSSL_version_num' with raw function pointer";
+      LOG(WARNING) << absl::StrFormat(
+          "Unable to find openssl symbol 'OpenSSL_version_num' with raw function pointer: %s",
+          openssl_version_packed.ToString());
   }
   PL_ASSIGN_OR_RETURN(version_num.packed, openssl_version_packed);
 
