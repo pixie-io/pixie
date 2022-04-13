@@ -67,12 +67,14 @@ type PluginConfigResolver struct {
 type RetentionPluginConfigResolver struct {
 	Configs         []*PluginConfigResolver
 	CustomExportURL *string
+	InsecureTLS     *bool
 }
 
 // PluginInfoResolver is the resolver responsible for resolving plugin info.
 type PluginInfoResolver struct {
 	Configs              []PluginConfigResolver
 	AllowCustomExportURL bool
+	AllowInsecureTLS     bool
 }
 
 func kindGQLToCloudProto(kind string) cloudpb.PluginKind {
@@ -206,6 +208,7 @@ type editablePluginConfig struct {
 type editablePluginConfigs struct {
 	Configs         []editablePluginConfig
 	CustomExportURL *string
+	InsecureTLS     *bool
 }
 
 type updateRetentionPluginConfigArgs struct {

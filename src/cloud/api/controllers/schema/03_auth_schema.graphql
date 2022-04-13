@@ -351,6 +351,7 @@ type PluginConfig {
 type PluginInfo {
   configs: [PluginConfigSchema!]!
   allowCustomExportURL: Boolean!
+  allowInsecureTLS: Boolean!
 }
 
 type PluginConfigSchema {
@@ -366,11 +367,13 @@ input EditablePluginConfig {
 input EditablePluginConfigs {
   configs: [EditablePluginConfig!]!
   customExportURL: String
+  insecureTLS: Boolean
 }
 
 type RetentionPluginConfig {
   configs: [PluginConfig!]!
   customExportURL: String
+  insecureTLS: Boolean
 }
 
 # Data retention types.

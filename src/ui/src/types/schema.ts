@@ -341,6 +341,7 @@ export interface GQLPluginConfig {
 export interface GQLPluginInfo {
   configs: Array<GQLPluginConfigSchema>;
   allowCustomExportURL: boolean;
+  allowInsecureTLS: boolean;
 }
 
 export interface GQLPluginConfigSchema {
@@ -356,11 +357,13 @@ export interface GQLEditablePluginConfig {
 export interface GQLEditablePluginConfigs {
   configs: Array<GQLEditablePluginConfig>;
   customExportURL?: string;
+  insecureTLS?: boolean;
 }
 
 export interface GQLRetentionPluginConfig {
   configs: Array<GQLPluginConfig>;
   customExportURL?: string;
+  insecureTLS?: boolean;
 }
 
 export interface GQLRetentionScript {
@@ -1457,6 +1460,7 @@ export interface PluginConfigToValueResolver<TParent = any, TResult = any> {
 export interface GQLPluginInfoTypeResolver<TParent = any> {
   configs?: PluginInfoToConfigsResolver<TParent>;
   allowCustomExportURL?: PluginInfoToAllowCustomExportURLResolver<TParent>;
+  allowInsecureTLS?: PluginInfoToAllowInsecureTLSResolver<TParent>;
 }
 
 export interface PluginInfoToConfigsResolver<TParent = any, TResult = any> {
@@ -1464,6 +1468,10 @@ export interface PluginInfoToConfigsResolver<TParent = any, TResult = any> {
 }
 
 export interface PluginInfoToAllowCustomExportURLResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface PluginInfoToAllowInsecureTLSResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
@@ -1483,6 +1491,7 @@ export interface PluginConfigSchemaToDescriptionResolver<TParent = any, TResult 
 export interface GQLRetentionPluginConfigTypeResolver<TParent = any> {
   configs?: RetentionPluginConfigToConfigsResolver<TParent>;
   customExportURL?: RetentionPluginConfigToCustomExportURLResolver<TParent>;
+  insecureTLS?: RetentionPluginConfigToInsecureTLSResolver<TParent>;
 }
 
 export interface RetentionPluginConfigToConfigsResolver<TParent = any, TResult = any> {
@@ -1490,6 +1499,10 @@ export interface RetentionPluginConfigToConfigsResolver<TParent = any, TResult =
 }
 
 export interface RetentionPluginConfigToCustomExportURLResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface RetentionPluginConfigToInsecureTLSResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
