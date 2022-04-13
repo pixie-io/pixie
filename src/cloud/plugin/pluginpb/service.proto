@@ -138,6 +138,7 @@ message GetRetentionPluginConfigResponse {
     string default_export_url = 4 [(gogoproto.customname) = "DefaultExportURL"];
     // Whether users can specify a custom URL to which to send their scripts.
     bool allow_custom_export_url = 5 [(gogoproto.customname) = "AllowCustomExportURL"];
+    bool allow_insecure_tls = 6 [(gogoproto.customname) = "AllowInsecureTLS"];
 }
 
 // GetOrgRetentionPluginConfigRequest is a request to get an org's configuration for a plugin.
@@ -152,6 +153,7 @@ message GetOrgRetentionPluginConfigResponse {
     // and the value represents the configuration value.
     map<string, string> configurations = 1;
     string custom_export_url = 2;
+    bool insecure_tls = 3 [(gogoproto.customname) = "InsecureTLS"];
 }
 
 // UpdateOrgRetentionPluginConfigRequest is a request to update a plugin's configuration.
@@ -167,6 +169,7 @@ message UpdateOrgRetentionPluginConfigRequest {
     google.protobuf.StringValue version = 5;
     // The custom export URL that should be applied to all plugin scripts.
     google.protobuf.StringValue custom_export_url = 6;
+    google.protobuf.BoolValue insecure_tls = 7 [(gogoproto.customname) = "InsecureTLS"];
 }
 
 // UpdateOrgRetentionPluginConfigResponse is a response to update a plugin's configuration.
