@@ -77,13 +77,13 @@ class OTelExportSinkNodeTest : public ::testing::Test {
 
     exec_state_ = std::make_unique<ExecState>(
         func_registry_.get(), table_store, MockResultSinkStubGenerator,
-        [this](const std::string& url)
-            -> std::unique_ptr<otelmetricscollector::MetricsService::StubInterface> {
+        [this](const std::string& url,
+               bool) -> std::unique_ptr<otelmetricscollector::MetricsService::StubInterface> {
           url_ = url;
           return std::move(metrics_mock_unique_);
         },
-        [this](const std::string& url)
-            -> std::unique_ptr<oteltracecollector::TraceService::StubInterface> {
+        [this](const std::string& url,
+               bool) -> std::unique_ptr<oteltracecollector::TraceService::StubInterface> {
           url_ = url;
           return std::move(trace_mock_unique_);
         },

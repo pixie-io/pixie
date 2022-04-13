@@ -78,39 +78,38 @@ class EngineState : public NotCopyable {
   std::unique_ptr<exec::ExecState> CreateExecState(const sole::uuid& query_id) {
     return std::make_unique<exec::ExecState>(
         func_registry_.get(), table_store_, stub_generator_,
-        [this](const std::string& remote_addr) { return MetricsStubGenerator(remote_addr); },
-        [this](const std::string& remote_addr) { return TraceStubGenerator(remote_addr); },
+        [this](const std::string& remote_addr, bool insecure) {
+          return MetricsStubGenerator(remote_addr, insecure);
+        },
+        [this](const std::string& remote_addr, bool insecure) {
+          return TraceStubGenerator(remote_addr, insecure);
+        },
         query_id, model_pool_.get(), grpc_router_, add_auth_to_grpc_context_func_);
+  }
+  std::shared_ptr<grpc::Channel> CreateChannel(const std::string& remote_addr, bool insecure) {
+    grpc::ChannelArguments args;
+    args.SetInt(GRPC_ARG_KEEPALIVE_TIME_MS, 100000);
+    args.SetInt(GRPC_ARG_KEEPALIVE_TIMEOUT_MS, 100000);
+    args.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);
+    args.SetInt(GRPC_ARG_HTTP2_BDP_PROBE, 1);
+    args.SetInt(GRPC_ARG_HTTP2_MIN_RECV_PING_INTERVAL_WITHOUT_DATA_MS, 50000);
+    args.SetInt(GRPC_ARG_HTTP2_MIN_SENT_PING_INTERVAL_WITHOUT_DATA_MS, 100000);
+
+    auto channel_creds = insecure ? grpc::InsecureChannelCredentials()
+                                  : grpc::SslCredentials(grpc::SslCredentialsOptions());
+    return grpc::CreateCustomChannel(remote_addr, channel_creds, args);
   }
 
   std::unique_ptr<opentelemetry::proto::collector::metrics::v1::MetricsService::StubInterface>
-  MetricsStubGenerator(const std::string& remote_addr) {
-    grpc::ChannelArguments args;
-    args.SetInt(GRPC_ARG_KEEPALIVE_TIME_MS, 100000);
-    args.SetInt(GRPC_ARG_KEEPALIVE_TIMEOUT_MS, 100000);
-    args.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);
-    args.SetInt(GRPC_ARG_HTTP2_BDP_PROBE, 1);
-    args.SetInt(GRPC_ARG_HTTP2_MIN_RECV_PING_INTERVAL_WITHOUT_DATA_MS, 50000);
-    args.SetInt(GRPC_ARG_HTTP2_MIN_SENT_PING_INTERVAL_WITHOUT_DATA_MS, 100000);
-
-    auto channel_creds = grpc::SslCredentials(grpc::SslCredentialsOptions());
-    auto chan = grpc::CreateCustomChannel(remote_addr, channel_creds, args);
-    return opentelemetry::proto::collector::metrics::v1::MetricsService::NewStub(chan);
+  MetricsStubGenerator(const std::string& remote_addr, bool insecure) {
+    return opentelemetry::proto::collector::metrics::v1::MetricsService::NewStub(
+        CreateChannel(remote_addr, insecure));
   }
 
   std::unique_ptr<opentelemetry::proto::collector::trace::v1::TraceService::StubInterface>
-  TraceStubGenerator(const std::string& remote_addr) {
-    grpc::ChannelArguments args;
-    args.SetInt(GRPC_ARG_KEEPALIVE_TIME_MS, 100000);
-    args.SetInt(GRPC_ARG_KEEPALIVE_TIMEOUT_MS, 100000);
-    args.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);
-    args.SetInt(GRPC_ARG_HTTP2_BDP_PROBE, 1);
-    args.SetInt(GRPC_ARG_HTTP2_MIN_RECV_PING_INTERVAL_WITHOUT_DATA_MS, 50000);
-    args.SetInt(GRPC_ARG_HTTP2_MIN_SENT_PING_INTERVAL_WITHOUT_DATA_MS, 100000);
-
-    auto channel_creds = grpc::SslCredentials(grpc::SslCredentialsOptions());
-    auto chan = grpc::CreateCustomChannel(remote_addr, channel_creds, args);
-    return opentelemetry::proto::collector::trace::v1::TraceService::NewStub(chan);
+  TraceStubGenerator(const std::string& remote_addr, bool insecure) {
+    return opentelemetry::proto::collector::trace::v1::TraceService::NewStub(
+        CreateChannel(remote_addr, insecure));
   }
 
   std::unique_ptr<plan::PlanState> CreatePlanState() {

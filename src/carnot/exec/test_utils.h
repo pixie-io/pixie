@@ -54,13 +54,13 @@ const ResultSinkStubGenerator MockResultSinkStubGenerator =
   return std::make_unique<carnotpb::MockResultSinkServiceStub>();
 };
 
-const MetricsStubGenerator MockMetricsStubGenerator = [](const std::string&)
+const MetricsStubGenerator MockMetricsStubGenerator = [](const std::string&, bool)
     -> std::unique_ptr<
         opentelemetry::proto::collector::metrics::v1::MetricsService::StubInterface> {
   return std::make_unique<opentelemetry::proto::collector::metrics::v1::MockMetricsServiceStub>();
 };
 
-const TraceStubGenerator MockTraceStubGenerator = [](const std::string&)
+const TraceStubGenerator MockTraceStubGenerator = [](const std::string&, bool)
     -> std::unique_ptr<opentelemetry::proto::collector::trace::v1::TraceService::StubInterface> {
   return std::make_unique<opentelemetry::proto::collector::trace::v1::MockTraceServiceStub>();
 };

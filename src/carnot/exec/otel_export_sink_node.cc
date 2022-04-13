@@ -68,10 +68,11 @@ Status OTelExportSinkNode::PrepareImpl(ExecState*) { return Status::OK(); }
 
 Status OTelExportSinkNode::OpenImpl(ExecState* exec_state) {
   if (plan_node_->metrics().size()) {
-    metrics_service_stub_ = exec_state->MetricsServiceStub(plan_node_->url());
+    metrics_service_stub_ =
+        exec_state->MetricsServiceStub(plan_node_->url(), plan_node_->insecure());
   }
   if (plan_node_->spans().size()) {
-    trace_service_stub_ = exec_state->TraceServiceStub(plan_node_->url());
+    trace_service_stub_ = exec_state->TraceServiceStub(plan_node_->url(), plan_node_->insecure());
   }
   return Status::OK();
 }
