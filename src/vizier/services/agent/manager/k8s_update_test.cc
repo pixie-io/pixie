@@ -23,7 +23,6 @@
 
 #include "src/common/event/api_impl.h"
 #include "src/common/event/nats.h"
-#include "src/common/system/config_mock.h"
 #include "src/common/testing/event/simulated_time_system.h"
 #include "src/common/testing/testing.h"
 #include "src/vizier/services/agent/manager/k8s_update.h"
@@ -81,11 +80,6 @@ class K8sUpdateHandlerTest : public ::testing::Test {
     api_ = std::make_unique<px::event::APIImpl>(time_system_.get());
     dispatcher_ = api_->AllocateDispatcher("manager");
     nats_conn_ = std::make_unique<FakeNATSConnector<px::vizier::messages::VizierMessage>>();
-    auto sys_config = system::MockConfig();
-    EXPECT_CALL(sys_config, KernelTicksPerSecond()).WillRepeatedly(::testing::Return(10000000));
-    EXPECT_CALL(sys_config, HasConfig()).WillRepeatedly(::testing::Return(true));
-    EXPECT_CALL(sys_config, proc_path()).WillRepeatedly(::testing::ReturnRef(proc_path_));
-    EXPECT_CALL(sys_config, sysfs_path()).WillRepeatedly(::testing::ReturnRef(sysfs_path_));
 
     fake_mds_manager_ = std::make_unique<FakeAgentMetadataStateManager>();
     k8s_update_handler_ = std::make_unique<K8sUpdateHandler>(

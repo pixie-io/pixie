@@ -20,7 +20,6 @@
 #include <string>
 #include <vector>
 
-#include "src/common/system/config_mock.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/k8s/metadatapb/metadata.pb.h"
 #include "src/shared/metadata/cgroup_metadata_reader_mock.h"
@@ -260,14 +259,7 @@ TEST_F(AgentMetadataStateTest, pid_created) {
   LOG(INFO) << metadata_state_.DebugString();
 
   std::filesystem::path proc_path = testing::TestFilePath("src/shared/metadata/testdata/proc");
-
-  system::MockConfig sysconfig;
-  EXPECT_CALL(sysconfig, ConvertToRealTime(_)).WillRepeatedly(ReturnArg<0>());
-  EXPECT_CALL(sysconfig, HasConfig()).WillRepeatedly(Return(true));
-  EXPECT_CALL(sysconfig, PageSize()).WillRepeatedly(Return(4096));
-  EXPECT_CALL(sysconfig, KernelTicksPerSecond()).WillRepeatedly(Return(10000000));
-  EXPECT_CALL(sysconfig, proc_path()).WillRepeatedly(ReturnRef(proc_path));
-  system::ProcParser proc_parser(sysconfig);
+  system::ProcParser proc_parser(proc_path.string());
   EXPECT_OK(ProcessPIDUpdates(1000, proc_parser, &metadata_state_, &md_reader, &events));
 
   std::unique_ptr<PIDStatusEvent> event;

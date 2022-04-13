@@ -48,9 +48,13 @@ class ConfigImpl final : public Config {
 
   bool HasConfig() const override { return true; }
 
-  int64_t PageSize() const override { return sysconf(_SC_PAGESIZE); }
+  int64_t PageSizeBytes() const override { return sysconf(_SC_PAGESIZE); }
 
   int64_t KernelTicksPerSecond() const override { return sysconf(_SC_CLK_TCK); }
+
+  int64_t KernelTickTimeNS() const override {
+    return static_cast<int64_t>(1E9 / KernelTicksPerSecond());
+  }
 
   uint64_t ConvertToRealTime(uint64_t monotonic_time) const override {
     return clock_converter_->Convert(monotonic_time);
