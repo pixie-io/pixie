@@ -49,13 +49,15 @@ namespace stirling {
 namespace {
 
 constexpr char kJavaProcCounter[] = "java_proc";
+constexpr char kJavaProcAttachAttemptedCounter[] = "java_proc_attach_attempted";
 constexpr char kJavaProcAttachedCounter[] = "java_proc_attached";
 
 prometheus::Counter& g_java_proc_counter{
     BuildCounter(kJavaProcCounter, "Count of the Java processes")};
 
-prometheus::Counter& g_java_proc_attach_attempted_counter{BuildCounter(
-    kJavaProcAttachedCounter, "Count of the Java processes that has profiling agent attached")};
+prometheus::Counter& g_java_proc_attach_attempted_counter{
+    BuildCounter(kJavaProcAttachAttemptedCounter,
+                 "Count of the Java processes that had been attempted to attach profiling agent")};
 
 prometheus::Counter& g_java_proc_attached_counter{BuildCounter(
     kJavaProcAttachedCounter, "Count of the Java processes that has profiling agent attached")};
