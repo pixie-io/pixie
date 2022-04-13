@@ -459,6 +459,97 @@ otel_sink_op {
     span_id_column_index: 6
     parent_span_id_column_index: 7
   }
+})pb"},
+        {"all_attribute_types",
+         R"pxl(
+otel.Data(
+  endpoint=otel.Endpoint(
+    url='0.0.0.0:55690',
+    headers={
+      'apikey': '12345',
+    }
+  ),
+  resource={
+      'service.name' : df.service,
+  },
+  data=[
+    otelmetric.Gauge(
+      name='http.resp.data',
+      value=df.young_gc_time,
+      attributes={
+        'http.status_code': df.status_code,
+        'http.method': df.req_method,
+        'http.proportion': df.proportion,
+        'http.success': df.success,
+      }
+    )
+  ]
+))pxl",
+         table_store::schema::Relation{
+             {types::TIME64NS, types::STRING, types::STRING, types::INT64, types::INT64,
+              types::FLOAT64, types::BOOLEAN},
+             {"time_", "service", "req_method", "young_gc_time", "status_code", "proportion",
+              "success"},
+             {types::ST_NONE, types::ST_SERVICE_NAME, types::ST_NONE, types::ST_DURATION_NS,
+              types::ST_NONE, types::ST_NONE, types::ST_NONE},
+         },
+         R"pb(
+op_type: OTEL_EXPORT_SINK_OPERATOR
+otel_sink_op {
+  endpoint_config {
+    url: "0.0.0.0:55690"
+    headers {
+      key: "apikey"
+      value: "12345"
+    }
+  }
+  resource {
+    attributes {
+      name: "service.name"
+      column {
+        column_type: STRING
+        column_index: 1
+        can_be_json_encoded_array: true
+      }
+    }
+  }
+  metrics {
+    name: "http.resp.data"
+    description: ""
+    attributes {
+      name: "http.status_code"
+      column {
+        column_type: INT64
+        column_index: 4
+      }
+    }
+    attributes {
+      name: "http.method"
+      column {
+        column_type: STRING
+        column_index: 2
+      }
+    }
+    attributes {
+      name: "http.proportion"
+      column {
+        column_type: FLOAT64
+        column_index: 5
+      }
+    }
+    attributes {
+      name: "http.success"
+      column {
+        column_type: BOOLEAN
+        column_index: 6
+      }
+    }
+    time_column_index: 0
+    unit: "ns"
+    gauge {
+      int_column_index: 3
+    }
+  }
 })pb"}}),
     [](const ::testing::TestParamInfo<SuccessTestCase>& info) { return info.param.name; });
 
