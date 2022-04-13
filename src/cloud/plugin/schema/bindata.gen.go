@@ -18,6 +18,8 @@
 // 000008_drop_plugin_version_retention_scripts.up.sql
 // 000009_add_plugin_custom_export_url.down.sql
 // 000009_add_plugin_custom_export_url.up.sql
+// 000010_add_retention_plugin_insecure.down.sql
+// 000010_add_retention_plugin_insecure.up.sql
 package schema
 
 import (
@@ -454,6 +456,46 @@ func _000009_add_plugin_custom_export_urlUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000010_add_retention_plugin_insecureDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\xc8\x2f\x4a\x8f\x4f\x49\x2c\x49\x8c\x2f\x4a\x2d\x49\xcd\x2b\xc9\xcc\xcf\x8b\x2f\xc8\x29\x4d\xcf\xcc\x2b\x56\x70\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x53\xc8\xcc\x2b\x4e\x4d\x2e\x2d\x4a\x8d\x2f\xc9\x29\xb6\xe6\x42\x36\x00\xab\xe6\xf8\xa2\xd4\x9c\xd4\xc4\xe2\x54\x54\x43\x12\x73\x72\xf2\xcb\xe3\x51\x8d\x02\x04\x00\x00\xff\xff\x7e\x73\xac\xa5\x8c\x00\x00\x00")
+
+func _000010_add_retention_plugin_insecureDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000010_add_retention_plugin_insecureDownSql,
+		"000010_add_retention_plugin_insecure.down.sql",
+	)
+}
+
+func _000010_add_retention_plugin_insecureDownSql() (*asset, error) {
+	bytes, err := _000010_add_retention_plugin_insecureDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000010_add_retention_plugin_insecure.down.sql", size: 140, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000010_add_retention_plugin_insecureUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x6c\xcc\x31\x0a\x02\x41\x0c\x05\xd0\xde\x53\xe4\x1e\x56\x23\xbb\xdd\x56\xb2\x7d\x88\xfa\x19\x06\x42\x22\x49\x06\xaf\x6f\x61\x63\x31\x07\x78\xaf\x1d\xe7\x7e\xa7\xb3\xdd\x8e\x9d\x3c\x3a\xbf\xa4\x84\x03\x05\xab\xe1\xc6\x6f\x9d\x7d\x58\x52\xdb\x36\x1a\x96\x78\xce\x00\x97\x26\x3d\xdc\x15\x62\xd7\xcb\x7f\xb0\xc4\x1c\x50\x48\xe2\x97\x88\xaa\x7f\x78\x5d\x7d\x03\x00\x00\xff\xff\xa7\x17\x29\x54\x8c\x00\x00\x00")
+
+func _000010_add_retention_plugin_insecureUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000010_add_retention_plugin_insecureUpSql,
+		"000010_add_retention_plugin_insecure.up.sql",
+	)
+}
+
+func _000010_add_retention_plugin_insecureUpSql() (*asset, error) {
+	bytes, err := _000010_add_retention_plugin_insecureUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000010_add_retention_plugin_insecure.up.sql", size: 140, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -524,6 +566,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000008_drop_plugin_version_retention_scripts.up.sql":   _000008_drop_plugin_version_retention_scriptsUpSql,
 	"000009_add_plugin_custom_export_url.down.sql":          _000009_add_plugin_custom_export_urlDownSql,
 	"000009_add_plugin_custom_export_url.up.sql":            _000009_add_plugin_custom_export_urlUpSql,
+	"000010_add_retention_plugin_insecure.down.sql":         _000010_add_retention_plugin_insecureDownSql,
+	"000010_add_retention_plugin_insecure.up.sql":           _000010_add_retention_plugin_insecureUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -585,6 +629,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000008_drop_plugin_version_retention_scripts.up.sql":   &bintree{_000008_drop_plugin_version_retention_scriptsUpSql, map[string]*bintree{}},
 	"000009_add_plugin_custom_export_url.down.sql":          &bintree{_000009_add_plugin_custom_export_urlDownSql, map[string]*bintree{}},
 	"000009_add_plugin_custom_export_url.up.sql":            &bintree{_000009_add_plugin_custom_export_urlUpSql, map[string]*bintree{}},
+	"000010_add_retention_plugin_insecure.down.sql":         &bintree{_000010_add_retention_plugin_insecureDownSql, map[string]*bintree{}},
+	"000010_add_retention_plugin_insecure.up.sql":           &bintree{_000010_add_retention_plugin_insecureUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
