@@ -962,6 +962,8 @@ resource_spans {
           string_value: "aaaa"
         }
       }
+      kind: SPAN_KIND_SERVER
+      status {}
     }
   }
 })pb"}},
@@ -997,6 +999,8 @@ resource_spans {
       trace_id: "\000\021\"3DUfw\210\231\252\273\314\335\356\377"
       span_id: "\032+<M^ox\220"
       parent_span_id: "\t\207\366\345\324\303\262\241"
+      kind: SPAN_KIND_SERVER
+      status {}
     }
   }
 }
@@ -1010,6 +1014,8 @@ resource_spans {
       trace_id: "\377\356\335\314\273\252\231\210wfUD3\"\021\000"
       span_id: "\t\207\366\345\324\303\262\241"
       parent_span_id: "\032+<M^ox\220"
+      kind: SPAN_KIND_SERVER
+      status {}
     }
   }
 })pb"}},
@@ -1075,6 +1081,8 @@ resource_spans {
       end_time_unix_nano: 12
       trace_id: "\000\021\"3DUfw\210\231\252\273\314\335\356\377"
       span_id: "\032+<M^ox\220"
+      kind: SPAN_KIND_SERVER
+      status {}
     }
   }
 }
@@ -1100,6 +1108,8 @@ resource_spans {
       end_time_unix_nano: 12
       trace_id: "\000\021\"3DUfw\210\231\252\273\314\335\356\377"
       span_id: "\032+<M^ox\220"
+      kind: SPAN_KIND_SERVER
+      status {}
     }
   }
 }
@@ -1125,6 +1135,8 @@ resource_spans {
       end_time_unix_nano: 12
       trace_id: "\000\021\"3DUfw\210\231\252\273\314\335\356\377"
       span_id: "\032+<M^ox\220"
+      kind: SPAN_KIND_SERVER
+      status {}
     }
   }
 }
@@ -1150,6 +1162,8 @@ resource_spans {
       end_time_unix_nano: 12
       trace_id: "\000\021\"3DUfw\210\231\252\273\314\335\356\377"
       span_id: "\032+<M^ox\220"
+      kind: SPAN_KIND_SERVER
+      status {}
     }
   }
 }
@@ -1175,6 +1189,8 @@ resource_spans {
       end_time_unix_nano: 22
       trace_id: "\000\021\"3DUfw\210\231\252\273\314\335\356\377"
       span_id: "\032+<M^ox\220"
+      kind: SPAN_KIND_SERVER
+      status {}
     }
   }
 })pb"}},
@@ -1263,6 +1279,8 @@ resource_spans {
           double_value: 0.5
         }
       }
+      kind: SPAN_KIND_SERVER
+      status {}
     }
   }
 })pb"}},

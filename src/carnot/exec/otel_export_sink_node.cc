@@ -329,6 +329,10 @@ Status OTelExportSinkNode::ConsumeSpans(const RowBatch& rb) {
         span->set_name(types::GetValueFromArrowArray<types::STRING>(name_col, row_idx));
       }
 
+      span->set_kind(::opentelemetry::proto::trace::v1::Span::SPAN_KIND_SERVER);
+      span->mutable_status()->set_code(
+          ::opentelemetry::proto::trace::v1::Status::STATUS_CODE_UNSET);
+
       AddAttributes(span->mutable_attributes(), span_pb.attributes(), rb, row_idx);
 
       auto start_time_col = rb.ColumnAt(span_pb.start_time_column_index()).get();
