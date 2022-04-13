@@ -44,8 +44,12 @@ namespace stirling {
 using ::px::stirling::profiler::testing::GetAgentLibsFlagValueForTesting;
 using ::px::stirling::testing::FindRecordIdxMatchesPIDs;
 using ::px::testing::BazelBinTestFilePath;
+using ::px::testing::PathExists;
+using ::testing::Each;
 using ::testing::Gt;
+using ::testing::Not;
 using ::testing::Pair;
+using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
 
 class PerfProfilerTestSubProcesses {
@@ -429,7 +433,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
       artifacts_paths.push_back(artifacts_path);
     }
   }
-  EXPECT_EQ(artifacts_paths.size(), kNumSubProcesses);
+  EXPECT_THAT(artifacts_paths, SizeIs(kNumSubProcesses));
 
   // Kill the subprocs.
   sub_processes_->KillAll();
@@ -448,9 +452,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
   source_->TransferData(ctx_.get(), data_tables_);
 
   // Expect that that the artifacts paths have been removed.
-  for (const auto& artifacts_path : artifacts_paths) {
-    EXPECT_FALSE(fs::Exists(artifacts_path)) << artifacts_path;
-  }
+  EXPECT_THAT(artifacts_paths, Each(Not(PathExists())));
 }
 
 TEST_F(PerfProfileBPFTest, TestOutOfContext) {

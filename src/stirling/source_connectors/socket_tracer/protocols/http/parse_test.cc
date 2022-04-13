@@ -184,7 +184,10 @@ Message EmptyChunkedHTTPResp() {
   return result;
 }
 
-MATCHER_P(HasBody, body, "") { return arg.body == body; }
+MATCHER_P(HasBody, body, "") {
+  *result_listener << "where the body is " << arg.body;
+  return arg.body == body;
+}
 
 std::string HTTPRespWithSizedBody(std::string_view body) {
   return absl::Substitute(
