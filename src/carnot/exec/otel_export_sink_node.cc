@@ -95,8 +95,30 @@ void AddAttributes(google::protobuf::RepeatedPtrField<::opentelemetry::proto::co
     auto otel_attr = mutable_attributes->Add();
     otel_attr->set_key(px_attr.name());
     auto attribute_col = rb.ColumnAt(px_attr.column().column_index()).get();
-    otel_attr->mutable_value()->set_string_value(
-        types::GetValueFromArrowArray<types::STRING>(attribute_col, row_idx));
+    switch (px_attr.column().column_type()) {
+      case types::STRING: {
+        otel_attr->mutable_value()->set_string_value(
+            types::GetValueFromArrowArray<types::STRING>(attribute_col, row_idx));
+        break;
+      }
+      case types::INT64: {
+        otel_attr->mutable_value()->set_int_value(
+            types::GetValueFromArrowArray<types::INT64>(attribute_col, row_idx));
+        break;
+      }
+      case types::FLOAT64: {
+        otel_attr->mutable_value()->set_double_value(
+            types::GetValueFromArrowArray<types::FLOAT64>(attribute_col, row_idx));
+        break;
+      }
+      case types::BOOLEAN: {
+        otel_attr->mutable_value()->set_bool_value(
+            types::GetValueFromArrowArray<types::BOOLEAN>(attribute_col, row_idx));
+        break;
+      }
+      default:
+        LOG(ERROR) << "Unexpected type: " << types::ToString(px_attr.column().column_type());
+    }
   }
 }
 

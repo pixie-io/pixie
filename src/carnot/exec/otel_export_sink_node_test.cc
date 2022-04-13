@@ -770,6 +770,90 @@ resource_metrics {
     }
   }
 })pb"}},
+                             {"all_attribute_types",
+                              R"pb(
+metrics {
+  name: "http.resp.latency"
+  attributes {
+    name: "http.status.code"
+    column {
+      column_type: INT64
+      column_index: 2
+    }
+  }
+  attributes {
+    name: "http.status.method"
+    column {
+      column_type: STRING
+      column_index: 3
+    }
+  }
+  attributes {
+    name: "http.status.did_error"
+    column {
+      column_type: BOOLEAN
+      column_index: 4
+    }
+  }
+  attributes {
+    name: "http.status.proportion"
+    column {
+      column_type: FLOAT64
+      column_index: 5
+    }
+  }
+  time_column_index: 0
+  gauge { float_column_index: 1 }
+})pb",
+                              {R"pb(
+cols { time64ns_data { data: 10 } }
+cols { float64_data { data: 100 } }
+cols { int64_data { data: 200 } }
+cols { string_data { data: "GET" } }
+cols { boolean_data { data: false  } }
+cols { float64_data { data: 0.5 } }
+num_rows: 1
+eow: true
+eos: true)pb"},
+                              {R"pb(
+resource_metrics {
+  resource {}
+  instrumentation_library_metrics {
+    metrics {
+      name: "http.resp.latency"
+      gauge {
+        data_points {
+          time_unix_nano: 10
+          as_double: 100
+          attributes {
+            key: "http.status.code"
+            value {
+              int_value: 200
+            }
+          }
+          attributes {
+            key: "http.status.method"
+            value {
+              string_value: "GET"
+            }
+          }
+          attributes {
+            key: "http.status.did_error"
+            value {
+              bool_value: false
+            }
+          }
+          attributes {
+            key: "http.status.proportion"
+            value {
+              double_value: 0.5
+            }
+          }
+        }
+      }
+    }
+  }
+})pb"}},
                          }),
                          [](const ::testing::TestParamInfo<TestCase>& info) {
                            return info.param.name;
@@ -1091,6 +1175,94 @@ resource_spans {
       end_time_unix_nano: 22
       trace_id: "\000\021\"3DUfw\210\231\252\273\314\335\356\377"
       span_id: "\032+<M^ox\220"
+    }
+  }
+})pb"}},
+                             {"all_attribute_types",
+                              R"pb(
+spans {
+  name_string: "span"
+  start_time_column_index: 0
+  end_time_column_index: 1
+  trace_id_column_index: 6
+  span_id_column_index: 7
+  parent_span_id_column_index: -1
+  attributes {
+    name: "http.status.code"
+    column {
+      column_type: INT64
+      column_index: 2
+    }
+  }
+  attributes {
+    name: "http.status.method"
+    column {
+      column_type: STRING
+      column_index: 3
+    }
+  }
+  attributes {
+    name: "http.status.did_error"
+    column {
+      column_type: BOOLEAN
+      column_index: 4
+    }
+  }
+  attributes {
+    name: "http.status.proportion"
+    column {
+      column_type: FLOAT64
+      column_index: 5
+    }
+  }
+})pb",
+
+                              {R"pb(
+cols { time64ns_data { data: 10  } }
+cols { time64ns_data { data: 12  } }
+cols { int64_data { data: 200 } }
+cols { string_data { data: "GET" } }
+cols { boolean_data { data: false  } }
+cols { float64_data { data: 0.5 } }
+cols { string_data { data: "00112233445566778899aabbccddeeff" } }
+cols { string_data { data: "1a2b3c4d5e6f7890" } }
+num_rows: 1
+eow: true
+eos: true)pb"},
+                              {R"pb(
+resource_spans {
+  resource {}
+  instrumentation_library_spans {
+    spans {
+      name: "span"
+      start_time_unix_nano: 10
+      end_time_unix_nano: 12
+      trace_id: "\000\021\"3DUfw\210\231\252\273\314\335\356\377"
+      span_id: "\032+<M^ox\220"
+      attributes {
+        key: "http.status.code"
+        value {
+          int_value: 200
+        }
+      }
+      attributes {
+        key: "http.status.method"
+        value {
+          string_value: "GET"
+        }
+      }
+      attributes {
+        key: "http.status.did_error"
+        value {
+          bool_value: false
+        }
+      }
+      attributes {
+        key: "http.status.proportion"
+        value {
+          double_value: 0.5
+        }
+      }
     }
   }
 })pb"}},
