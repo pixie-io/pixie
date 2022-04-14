@@ -314,6 +314,10 @@ TEST_F(PixieModuleTest, parse_duration) {
   }
 }
 
+TEST_F(PixieModuleTest, plugin_module) {
+  EXPECT_COMPILER_ERROR(ParseExpression("px.plugin.start_time"), "No plugin config found");
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

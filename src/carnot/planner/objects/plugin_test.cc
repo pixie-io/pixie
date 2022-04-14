@@ -23,11 +23,7 @@
 #include <absl/container/flat_hash_map.h>
 
 #include "src/carnot/planner/objects/plugin.h"
-// #include "src/carnot/planner/objects/dataframe.h"
-// #include "src/carnot/planner/objects/exporter.h"
-// #include "src/carnot/planner/objects/otel.h"
 #include "src/carnot/planner/objects/test_utils.h"
-// #include "src/carnot/planner/objects/var_table.h"
 
 namespace px {
 namespace carnot {
