@@ -147,6 +147,7 @@ func (q *QueryResolver) RetentionPluginInfo(ctx context.Context, args retentionP
 	return &PluginInfoResolver{
 		Configs:              configs,
 		AllowCustomExportURL: resp.AllowCustomExportURL,
+		AllowInsecureTLS:     resp.AllowInsecureTLS,
 	}, nil
 }
 
@@ -190,7 +191,8 @@ func (q *QueryResolver) RetentionPluginConfig(ctx context.Context, args retentio
 	}
 
 	r := &RetentionPluginConfigResolver{
-		Configs: configs,
+		Configs:     configs,
+		InsecureTLS: &resp.InsecureTLS,
 	}
 
 	if resp.CustomExportUrl != "" {
@@ -245,6 +247,12 @@ func (q *QueryResolver) UpdateRetentionPluginConfig(ctx context.Context, args up
 	if args.Configs.CustomExportURL != nil {
 		req.CustomExportUrl = &types.StringValue{
 			Value: *args.Configs.CustomExportURL,
+		}
+	}
+
+	if args.Configs.InsecureTLS != nil {
+		req.InsecureTLS = &types.BoolValue{
+			Value: *args.Configs.InsecureTLS,
 		}
 	}
 

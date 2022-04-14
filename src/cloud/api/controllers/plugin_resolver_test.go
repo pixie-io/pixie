@@ -167,6 +167,7 @@ func TestPluginResolver_RetentionPluginConfig(t *testing.T) {
 			"API_KEY": "test-api-key",
 		},
 		CustomExportUrl: "https://localhost:8080",
+		InsecureTLS:     true,
 	}, nil)
 
 	gqlSchema := LoadSchema(gqlEnv)
@@ -182,6 +183,7 @@ func TestPluginResolver_RetentionPluginConfig(t *testing.T) {
 							value
 						}
 						customExportURL
+						insecureTLS
 					}
 				}
 			`,
@@ -195,7 +197,8 @@ func TestPluginResolver_RetentionPluginConfig(t *testing.T) {
 								"value": "test-api-key"
 							}
 						],
-						"customExportURL": "https://localhost:8080"
+						"customExportURL": "https://localhost:8080",
+						"insecureTLS": true
 					}
 				}
 			`,
@@ -216,6 +219,7 @@ func TestPluginResolver_RetentionPluginInfo(t *testing.T) {
 			"API_KEY": "This is an API key used in the product.",
 		},
 		AllowCustomExportURL: true,
+		AllowInsecureTLS:     true,
 	}, nil)
 
 	gqlSchema := LoadSchema(gqlEnv)
@@ -231,6 +235,7 @@ func TestPluginResolver_RetentionPluginInfo(t *testing.T) {
 							description
 						}
 						allowCustomExportURL
+						allowInsecureTLS
 					}
 				}
 			`,
@@ -243,7 +248,8 @@ func TestPluginResolver_RetentionPluginInfo(t *testing.T) {
 								"description": "This is an API key used in the product."
 							}
 						],
-						"allowCustomExportURL": true
+						"allowCustomExportURL": true,
+						"allowInsecureTLS": true
 					}
 				}
 			`,
@@ -270,6 +276,9 @@ func TestPluginResolver_UpdateRetentionPluginConfig(t *testing.T) {
 		CustomExportUrl: &types.StringValue{
 			Value: "https://localhost:8080",
 		},
+		InsecureTLS: &types.BoolValue{
+			Value: false,
+		},
 	}).Return(&cloudpb.UpdateRetentionPluginConfigResponse{}, nil)
 
 	gqlSchema := LoadSchema(gqlEnv)
@@ -286,7 +295,8 @@ func TestPluginResolver_UpdateRetentionPluginConfig(t *testing.T) {
 								value: "test-api-key"
 							}
 						],
-						customExportURL: "https://localhost:8080"
+						customExportURL: "https://localhost:8080",
+						insecureTLS: false
 					})
 				}
 			`,
