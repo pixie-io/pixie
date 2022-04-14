@@ -30,6 +30,7 @@
 #include <jwt/jwt.hpp>
 
 #include "src/common/base/base.h"
+#include "src/common/metrics/metrics.h"
 #include "src/common/perf/perf.h"
 #include "src/vizier/funcs/context/vizier_context.h"
 #include "src/vizier/funcs/funcs.h"
@@ -103,7 +104,8 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
       relation_info_manager_(std::make_unique<RelationInfoManager>()),
       func_context_(this, CreateMDSStub(mds_url, grpc_channel_creds_),
                     CreateMDTPStub(mds_url, grpc_channel_creds_), table_store_,
-                    [](grpc::ClientContext* ctx) { AddServiceTokenToClientContext(ctx); }) {
+                    [](grpc::ClientContext* ctx) { AddServiceTokenToClientContext(ctx); }),
+      memory_metrics_(&GetMetricsRegistry(), "agent_id", agent_id.str()) {
   if (!has_nats_connection()) {
     LOG(WARNING) << "--nats_url is empty, skip connecting to NATS.";
   }
@@ -327,6 +329,14 @@ Status Manager::PostRegisterHook(uint32_t asid) {
     }
   });
   tablestore_compaction_timer_->EnableTimer(kTableStoreCompactionPeriod);
+
+  memory_metrics_timer_ = dispatcher()->CreateTimer([this]() {
+    memory_metrics_.MeasureMemory();
+    if (memory_metrics_timer_) {
+      memory_metrics_timer_->EnableTimer(kMemoryMetricsCollectPeriod);
+    }
+  });
+  memory_metrics_timer_->EnableTimer(kMemoryMetricsCollectPeriod);
 
   return Status::OK();
 }

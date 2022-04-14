@@ -31,6 +31,7 @@ pl_cc_library(
     deps = [
         "//src/carnot",
         "//src/common/event:cc_library",
+        "//src/common/metrics:cc_library",
         "//src/common/uuid:cc_library",
         "//src/shared/metadata:cc_library",
         "//src/shared/schema:cc_library",
