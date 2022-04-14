@@ -458,8 +458,9 @@ func (r *runner) start() {
 				var otelEndpoint *vizierpb.Configs_OTelEndpointConfig
 				if r.config != nil && r.config.OtelEndpointConfig != nil {
 					otelEndpoint = &vizierpb.Configs_OTelEndpointConfig{
-						URL:     r.config.OtelEndpointConfig.URL,
-						Headers: r.config.OtelEndpointConfig.Headers,
+						URL:      r.config.OtelEndpointConfig.URL,
+						Headers:  r.config.OtelEndpointConfig.Headers,
+						Insecure: r.config.OtelEndpointConfig.Insecure,
 					}
 				}
 
