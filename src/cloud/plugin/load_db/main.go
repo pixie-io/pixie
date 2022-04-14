@@ -171,7 +171,7 @@ func addConfigs(plugin *controllers.Plugin, retention *controllers.RetentionPlug
 		insertRetention := `INSERT INTO data_retention_plugin_releases
 			(plugin_id, version, configurations, documentation_url,
 			default_export_url, allow_custom_export_url, preset_scripts, allow_insecure_tls)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)`
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 		_, err = db.Exec(insertRetention,
 			plugin.ID, plugin.Version, retention.Configurations, retention.DocumentationURL,
 			retention.DefaultExportURL, retention.AllowCustomExportURL, retention.PresetScripts, retention.AllowInsecureTLS,
