@@ -96,7 +96,7 @@ func mustLoadTestData(db *sqlx.DB) {
 	db.MustExec(insertRelease, "another_plugin", "another-plugin", "This is another plugin", "anotherLogo", "0.0.1", "false")
 	db.MustExec(insertRelease, "another_plugin", "another-plugin", "This is another new plugin", "anotherLogo2", "0.0.2", "false")
 
-	insertRetentionRelease := `INSERT INTO data_retention_plugin_releases(plugin_id, version, configurations, preset_scripts, documentation_url, default_export_url, allow_custom_export_url) VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	insertRetentionRelease := `INSERT INTO data_retention_plugin_releases(plugin_id, version, configurations, preset_scripts, documentation_url, default_export_url, allow_custom_export_url, allow_insecure_tls) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 	db.MustExec(insertRetentionRelease, "test-plugin", "0.0.1", controllers.Configurations(map[string]string{"license_key": "This is what we use to authenticate"}), controllers.PresetScripts([]*controllers.PresetScript{
 		&controllers.PresetScript{
 			Name:              "http data",
@@ -110,7 +110,7 @@ func mustLoadTestData(db *sqlx.DB) {
 			DefaultFrequencyS: 20,
 			Script:            "script 2",
 		},
-	}), "http://test-doc-url", "http://test-export-url", true)
+	}), "http://test-doc-url", "http://test-export-url", true, false)
 	db.MustExec(insertRetentionRelease, "test-plugin", "0.0.2", controllers.Configurations(map[string]string{"license_key2": "This is what we use to authenticate 2"}), controllers.PresetScripts([]*controllers.PresetScript{
 		&controllers.PresetScript{
 			Name:              "dns data",
@@ -124,8 +124,8 @@ func mustLoadTestData(db *sqlx.DB) {
 			DefaultFrequencyS: 20,
 			Script:            "dns script 2",
 		},
-	}), "http://test-doc-url2", "http://test-export-url2", true)
-	db.MustExec(insertRetentionRelease, "test-plugin", "0.0.3", controllers.Configurations(map[string]string{"license_key3": "This is what we use to authenticate 3"}), nil, "http://test-doc-url3", "http://test-export-url3", true)
+	}), "http://test-doc-url2", "http://test-export-url2", true, true)
+	db.MustExec(insertRetentionRelease, "test-plugin", "0.0.3", controllers.Configurations(map[string]string{"license_key3": "This is what we use to authenticate 3"}), nil, "http://test-doc-url3", "http://test-export-url3", true, true)
 	db.MustExec(insertRetentionRelease, "another-plugin", "0.0.1", controllers.Configurations(map[string]string{"abcd": "Some field"}), controllers.PresetScripts([]*controllers.PresetScript{
 		&controllers.PresetScript{
 			Name:              "dns data",
@@ -139,7 +139,7 @@ func mustLoadTestData(db *sqlx.DB) {
 			DefaultFrequencyS: 20,
 			Script:            "dns script 2",
 		},
-	}), "http://test-doc-url3", "http://test-export-url3", true)
+	}), "http://test-doc-url3", "http://test-export-url3", true, true)
 
 	orgConfig1 := map[string]string{
 		"license_key2": "12345",
@@ -151,9 +151,9 @@ func mustLoadTestData(db *sqlx.DB) {
 	}
 	configJSON2, _ := json.Marshal(orgConfig2)
 
-	insertOrgRelease := `INSERT INTO org_data_retention_plugins(org_id, plugin_id, version, configurations, custom_export_url) VALUES ($1, $2, $3, PGP_SYM_ENCRYPT($4, $5), PGP_SYM_ENCRYPT($6, $5))`
-	db.MustExec(insertOrgRelease, "223e4567-e89b-12d3-a456-426655440000", "test-plugin", "0.0.3", configJSON1, "test", "https://localhost1:8080")
-	db.MustExec(insertOrgRelease, "223e4567-e89b-12d3-a456-426655440001", "test-plugin", "0.0.2", configJSON2, "test", "https://localhost:8080")
+	insertOrgRelease := `INSERT INTO org_data_retention_plugins(org_id, plugin_id, version, configurations, custom_export_url, insecure_tls) VALUES ($1, $2, $3, PGP_SYM_ENCRYPT($4, $5), PGP_SYM_ENCRYPT($6, $5), $7)`
+	db.MustExec(insertOrgRelease, "223e4567-e89b-12d3-a456-426655440000", "test-plugin", "0.0.3", configJSON1, "test", "https://localhost1:8080", true)
+	db.MustExec(insertOrgRelease, "223e4567-e89b-12d3-a456-426655440001", "test-plugin", "0.0.2", configJSON2, "test", "https://localhost:8080", false)
 
 	insertRetentionScript := `INSERT INTO plugin_retention_scripts (org_id, plugin_id, script_id, script_name, description, is_preset,  export_url) VALUES ($1, $2, $3, $4, $5, $6, PGP_SYM_ENCRYPT($7, $8))`
 	db.MustExec(insertRetentionScript, "223e4567-e89b-12d3-a456-426655440000", "test-plugin", "123e4567-e89b-12d3-a456-426655440000", "testScript", "This is a script", false, "https://localhost:8080", "test")
@@ -256,6 +256,7 @@ func TestServer_GetRetentionPluginConfig(t *testing.T) {
 				Script:            "dns script 2",
 			},
 		},
+		AllowInsecureTLS: true,
 	}, resp)
 }
 
@@ -318,6 +319,7 @@ type orgConfig struct {
 	Configurations     map[string]string
 	ConfigurationBytes []byte  `db:"configurations"`
 	CustomExportURL    *string `db:"custom_export_url"`
+	InsecureTLS        bool    `db:"insecure_tls"`
 }
 
 func TestServer_UpdateRetentionConfigs(t *testing.T) {
@@ -327,6 +329,7 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 			Headers: map[string]string{
 				"abcd": "hello",
 			},
+			Insecure: true,
 		},
 	}
 	mConfig1, _ := yaml.Marshal(&config1)
@@ -336,6 +339,7 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 			Headers: map[string]string{
 				"abcd": "hello",
 			},
+			Insecure: true,
 		},
 	}
 	mConfig2, _ := yaml.Marshal(&config2)
@@ -345,6 +349,7 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 			Headers: map[string]string{
 				"abcd": "hello",
 			},
+			Insecure: false,
 		},
 	}
 	mConfig3, _ := yaml.Marshal(&config3)
@@ -354,6 +359,7 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 			Headers: map[string]string{
 				"abcd": "hello",
 			},
+			Insecure: false,
 		},
 	}
 	mConfig4, _ := yaml.Marshal(&config4)
@@ -363,6 +369,7 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 			Headers: map[string]string{
 				"abcd": "hello",
 			},
+			Insecure: true,
 		},
 	}
 	mConfig5, _ := yaml.Marshal(&config5)
@@ -398,6 +405,7 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 						"license_key2": "12345",
 					},
 					CustomExportURL: &exportURLv3,
+					InsecureTLS:     true,
 				},
 				orgConfig{
 					OrgID:    "223e4567-e89b-12d3-a456-426655440001",
@@ -469,6 +477,7 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 						"license_key2": "12345",
 					},
 					CustomExportURL: &exportURLv3,
+					InsecureTLS:     true,
 				},
 				orgConfig{
 					OrgID:    "223e4567-e89b-12d3-a456-426655440001",
@@ -487,6 +496,7 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 						"abcd": "hello",
 					},
 					CustomExportURL: &exportURLv2,
+					InsecureTLS:     false,
 				},
 			},
 			expectedCSCreateRequests: []*cronscriptpb.CreateScriptRequest{
@@ -565,6 +575,7 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 						"abcd": "hello",
 					},
 					CustomExportURL: &exportURLv3,
+					InsecureTLS:     true,
 				},
 				orgConfig{
 					OrgID:    "223e4567-e89b-12d3-a456-426655440001",
@@ -592,6 +603,39 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 			},
 		},
 		{
+			name: "update existing config with TLS false",
+			request: &pluginpb.UpdateOrgRetentionPluginConfigRequest{
+				OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+				PluginID: "test-plugin",
+				Configurations: map[string]string{
+					"abcd": "hello",
+				},
+				Version:     &types.StringValue{Value: "0.0.1"},
+				InsecureTLS: &types.BoolValue{Value: true},
+			},
+			expectedOrgConfigs: []orgConfig{
+				orgConfig{
+					OrgID:    "223e4567-e89b-12d3-a456-426655440000",
+					PluginID: "test-plugin",
+					Version:  "0.0.1",
+					Configurations: map[string]string{
+						"abcd": "hello",
+					},
+					CustomExportURL: &exportURLv3,
+					InsecureTLS:     false,
+				},
+				orgConfig{
+					OrgID:    "223e4567-e89b-12d3-a456-426655440001",
+					PluginID: "test-plugin",
+					Version:  "0.0.2",
+					Configurations: map[string]string{
+						"license_key3": "hello",
+					},
+					CustomExportURL: &exportURLv2,
+				},
+			},
+		},
+		{
 			name: "updating existing config with custom export URL and custom script URLs",
 			request: &pluginpb.UpdateOrgRetentionPluginConfigRequest{
 				OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
@@ -610,6 +654,7 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 						"abcd": "hello",
 					},
 					CustomExportURL: &newExportURL,
+					InsecureTLS:     true,
 				},
 				orgConfig{
 					OrgID:    "223e4567-e89b-12d3-a456-426655440001",
@@ -652,6 +697,7 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 						"license_key2": "12345",
 					},
 					CustomExportURL: &exportURLv3,
+					InsecureTLS:     true,
 				},
 				orgConfig{
 					OrgID:    "223e4567-e89b-12d3-a456-426655440001",
@@ -683,6 +729,7 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 						"abcd": "hello",
 					},
 					CustomExportURL: &exportURLv3,
+					InsecureTLS:     true,
 				},
 				orgConfig{
 					OrgID:    "223e4567-e89b-12d3-a456-426655440001",
@@ -765,7 +812,7 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 
 			assert.Equal(t, &pluginpb.UpdateOrgRetentionPluginConfigResponse{}, resp)
 
-			query := `SELECT org_id, plugin_id, version, PGP_SYM_DECRYPT(configurations, $1::text) as configurations, PGP_SYM_DECRYPT(custom_export_url, $1::text) as custom_export_url FROM org_data_retention_plugins`
+			query := `SELECT org_id, plugin_id, version, PGP_SYM_DECRYPT(configurations, $1::text) as configurations, insecure_tls, PGP_SYM_DECRYPT(custom_export_url, $1::text) as custom_export_url FROM org_data_retention_plugins`
 			rows, err := db.Queryx(query, "test")
 			require.Nil(t, err)
 
@@ -954,8 +1001,9 @@ func TestServer_CreateRetentionScript(t *testing.T) {
 
 	config := &scripts.Config{
 		OtelEndpointConfig: &scripts.OtelEndpointConfig{
-			URL:     "https://localhost1:8080",
-			Headers: orgConfig,
+			URL:      "https://localhost1:8080",
+			Headers:  orgConfig,
+			Insecure: true,
 		},
 	}
 
@@ -1026,8 +1074,9 @@ func TestServer_UpdateRetentionScript(t *testing.T) {
 
 	config := &scripts.Config{
 		OtelEndpointConfig: &scripts.OtelEndpointConfig{
-			URL:     "https://test",
-			Headers: orgConfig,
+			URL:      "https://test",
+			Headers:  orgConfig,
+			Insecure: true,
 		},
 	}
 	mConfig, err := yaml.Marshal(&config)
