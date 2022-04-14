@@ -204,7 +204,7 @@ func (s *Server) fetchScriptsForVizier(vizierID *uuidpb.UUID) (map[string]*cvmsg
 	}
 
 	// Fetch all scripts registered to this Vizier.
-	query := `SELECT id, script, cluster_ids, PGP_SYM_DECRYPT(configs, $1::text) as configs, frequency_s FROM cron_scripts WHERE org_id=$2`
+	query := `SELECT id, script, cluster_ids, PGP_SYM_DECRYPT(configs, $1::text) as configs, frequency_s FROM cron_scripts WHERE org_id=$2 AND enabled=true`
 	rows, err := s.db.Queryx(query, s.dbKey, utils.UUIDFromProtoOrNil(resp.OrgID))
 	if err != nil {
 		log.WithError(err).Error("Could not fetch scripts for org")
@@ -507,18 +507,20 @@ func (s *Server) UpdateScript(ctx context.Context, req *cronscriptpb.UpdateScrip
 		},
 	}, claimsOrgID, prevClusterIDs)
 
-	s.sendCronScriptUpdateToViziers(&cvmsgspb.CronScriptUpdate{
-		Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
-			UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
-				Script: &cvmsgspb.CronScript{
-					ID:         req.ScriptId,
-					Script:     contents,
-					FrequencyS: freq,
-					Configs:    configs,
+	if enabled {
+		s.sendCronScriptUpdateToViziers(&cvmsgspb.CronScriptUpdate{
+			Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
+				UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
+					Script: &cvmsgspb.CronScript{
+						ID:         req.ScriptId,
+						Script:     contents,
+						FrequencyS: freq,
+						Configs:    configs,
+					},
 				},
 			},
-		},
-	}, claimsOrgID, newClusterIDs)
+		}, claimsOrgID, newClusterIDs)
+	}
 
 	return &cronscriptpb.UpdateScriptResponse{}, nil
 }
