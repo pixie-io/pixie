@@ -54,6 +54,7 @@ export const GQL_GET_RETENTION_PLUGIN_INFO = gql`
         description
       }
       allowCustomExportURL
+      allowInsecureTLS
     }
   }
 `;
@@ -67,6 +68,7 @@ export const GQL_GET_RETENTION_PLUGIN_CONFIG = gql`
         value
       }
       customExportURL
+      insecureTLS
     }
   }
 `;
@@ -166,7 +168,12 @@ export function usePluginConfigMutation(plugin: GQLPlugin): (
     }
 
     const customExportURL = (schema?.allowCustomExportURL
-      ? (newConfigs?.customExportURL ?? oldConfigs?.customExportURL)
+      ? (newConfigs.customExportURL ?? oldConfigs?.customExportURL)
+      : null
+    ) ?? undefined;
+
+    const insecureTLS = (schema?.allowInsecureTLS
+      ? (newConfigs.insecureTLS ?? oldConfigs?.insecureTLS)
       : null
     ) ?? undefined;
 
@@ -181,11 +188,12 @@ export function usePluginConfigMutation(plugin: GQLPlugin): (
         configs: {
           configs: merged,
           customExportURL,
+          insecureTLS,
         },
       },
       refetchQueries: [GQL_GET_RETENTION_PLUGINS, GQL_GET_RETENTION_PLUGIN_CONFIG, GQL_GET_RETENTION_SCRIPTS],
     }).then(() => true, () => false);
-  }, [schema?.configs, schema?.allowCustomExportURL, oldConfigs, plugin, loading, mutate]);
+  }, [schema?.configs, schema?.allowCustomExportURL, schema?.allowInsecureTLS, oldConfigs, plugin, loading, mutate]);
 }
 
 export function usePluginToggleEnabled(plugin: GQLPlugin): (enable: boolean) => Promise<boolean> {

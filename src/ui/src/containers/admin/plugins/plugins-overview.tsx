@@ -208,7 +208,7 @@ const PluginList = React.memo<RouteComponentProps<{ expandId?: string }>>(({ mat
   const getAccordionToggle = React.useCallback((id: string) => (_: unknown, isExpanded: boolean) => {
     const base = match.url.split('/configure')[0];
     if (isExpanded && (!expandId || expandId !== id)) {
-      history.push(`${base}/configure/${id}`);
+      history.push(`${base}/configure/${id}`.replace('//', '/'));
     } else if (!isExpanded && id === expandId) {
       history.push(base);
     }
