@@ -336,7 +336,7 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
         />
       </Paper>
       <Paper className={classes.scriptContainer}>
-        <span className={classes.scriptHeading}>PxL</span>
+        <span className={classes.scriptHeading}>PxL Script</span>
         <div className={classes.editorOuter}>
           <RetentionScriptEditor
             initialValue={pendingValues.contents}

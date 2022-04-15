@@ -316,7 +316,7 @@ export const ConfigureDataExportBody = React.memo(() => {
           enabled plugins
         </Link>.
         They&apos;re enabled by default.<br/>
-        Their PxL can&apos;t be changed, but other options can.<br/>
+        Their PxL script can&apos;t be changed, but other options can.<br/>
         Custom scripts can be created at the bottom of this page.
       </Typography>
       <Divider variant='middle' sx={{ mt: 4, mb: 4 }} />
