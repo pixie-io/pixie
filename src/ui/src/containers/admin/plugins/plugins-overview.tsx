@@ -27,6 +27,7 @@ import {
   AccordionDetails,
   AccordionSummary,
   Box,
+  Divider,
   FormControlLabel,
   Switch as MaterialSwitch,
   Tooltip,
@@ -280,6 +281,7 @@ const PluginList = React.memo<RouteComponentProps<{ expandId?: string }>>(({ mat
 PluginList.displayName = 'PluginConfig';
 
 export const PluginsOverview = React.memo(() => {
+  const classes = useStyles();
   const { path } = useRouteMatch();
 
   /* eslint-disable react-memo/require-usememo */
@@ -289,11 +291,22 @@ export const PluginsOverview = React.memo(() => {
       <Typography variant='body1' sx={{ mt: 1, mb: 4 }}>
         Pixie only retains up to 24 hours of data.
         To process longer time spans, plugins can integrate Pixie with long-term data solutions.
+        <br/>
+        {'Go to '}
+        <Link to='/configure-data-export' className={classes.link} onClick={(e) => e.stopPropagation()}>
+          Long-term Data Export
+        </Link>
+        {' to configure what data is exported.'}
       </Typography>
       <Switch>
         <Route exact path={`${path}`} component={PluginList} />
         <Route path={`${path}/configure/:expandId`} component={PluginList} />
       </Switch>
+      <Divider variant='middle' sx={{ mt: 4, mb: 4 }} />
+      <Typography variant='h3'>Alerting</Typography>
+      <Typography variant='body1' sx={{ mt: 1, mb: 4 }}>
+        Coming soon: configure alerts using Pixie data to monitor your cluster and applications.
+      </Typography>
     </Box>
   );
   /* eslint-enable react-memo/require-usememo */
