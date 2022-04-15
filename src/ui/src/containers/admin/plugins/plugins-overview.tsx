@@ -97,6 +97,34 @@ const useStyles = makeStyles(({ palette, spacing, typography }: Theme) => create
   },
 }), { name: 'PluginList' });
 
+// Not viable as a general solution, but works for this specific layout where the parent element controls the ellipsis
+// and is a flex item. If we want this elsewhere in the app we'll need a more general approach for flex items.
+const OverflowTooltip: React.FC<{ title: string }> = React.memo(({ title, children }) => {
+  const [overflow, setOverflow] = React.useState(false);
+  const [span, setSpan] = React.useState<HTMLSpanElement>(null);
+  const spanRef = React.useCallback((el) => setSpan(el), []);
+
+  const updateOverflow = React.useCallback(() => {
+    setOverflow(span?.scrollWidth > span?.parentElement.clientWidth);
+  }, [span]);
+
+  return (
+    <Tooltip
+      placement='bottom-start'
+      enterDelay={200}
+      title={overflow ? (<div style={{ whiteSpace: 'pre-wrap' }}>{title}</div>) : ''}
+      onMouseEnter={updateOverflow}
+      onFocus={updateOverflow}
+      onTouchStart={updateOverflow}
+    >
+      <span ref={spanRef}>
+        {children}
+      </span>
+    </Tooltip>
+  );
+});
+OverflowTooltip.displayName = 'OverflowTooltip';
+
 const PluginLogo = React.memo<{ logo?: string }>(({ logo }) => {
   const classes = useStyles();
 
@@ -177,7 +205,9 @@ const PluginHeader = React.memo<{
         {plugin.name}
       </span>
       <span className={classes.accordionSummaryDescription}>
-        {plugin.description}
+        <OverflowTooltip title={plugin.description}>
+          <>{plugin.description}</>
+        </OverflowTooltip>
       </span>
       <span className={classes.accordionSummaryStatus}>
         <Tooltip arrow title={plugin.retentionEnabled ? disableWarning : ''}>
@@ -188,7 +218,7 @@ const PluginHeader = React.memo<{
             onClick={toggleEnabled}
             // eslint-disable-next-line react-memo/require-usememo
             control={
-              <MaterialSwitch size='small' disabled={pendingToggle} checked={plugin.retentionEnabled} />
+              <MaterialSwitch size='small' disabled={pendingToggle} checked={!!plugin.retentionEnabled} />
             }
           />
         </Tooltip>

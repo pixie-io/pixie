@@ -23,7 +23,6 @@ import { Add } from '@mui/icons-material';
 import { Button, TableContainer } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import * as QueryString from 'query-string';
 import {
   Route, Switch, useHistory, useLocation, useRouteMatch,
