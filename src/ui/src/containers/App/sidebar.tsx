@@ -34,7 +34,6 @@ import {
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 import AnnounceKit from 'announcekit-react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import { Link } from 'react-router-dom';
 
 import { ClusterContext } from 'app/common/cluster-context';

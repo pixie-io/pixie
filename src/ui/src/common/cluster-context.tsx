@@ -139,5 +139,6 @@ export function useClusterConfig(): ClusterConfig | null {
       attachCredentials: true,
       passthroughClusterAddress,
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClusterID, selectedClusterVizierConfig, loading]);
 }

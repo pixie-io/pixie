@@ -21,7 +21,7 @@ import * as React from 'react';
 import { useQuery, gql } from '@apollo/client';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-import { useLDClient, useFlags } from 'launchdarkly-react-client-sdk';
+import { useLDClient } from 'launchdarkly-react-client-sdk';
 import * as QueryString from 'query-string';
 import { generatePath } from 'react-router';
 import { Redirect, Route, Switch } from 'react-router-dom';
