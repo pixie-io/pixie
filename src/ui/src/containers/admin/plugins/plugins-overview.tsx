@@ -106,7 +106,7 @@ const OverflowTooltip: React.FC<{ title: string }> = React.memo(({ title, childr
   const spanRef = React.useCallback((el) => setSpan(el), []);
 
   const updateOverflow = React.useCallback(() => {
-    setOverflow(span?.scrollWidth > span?.parentElement.clientWidth);
+    setOverflow(span?.parentElement.scrollWidth > span?.parentElement.clientWidth);
   }, [span]);
 
   return (
