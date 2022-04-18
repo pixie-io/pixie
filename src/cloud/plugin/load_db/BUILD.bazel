@@ -57,6 +57,10 @@ container_image(
     layers = [
         ":plugin_db_updater_go_layer",
     ],
+    visibility = [
+        "//k8s:__subpackages__",
+        "//src/cloud:__subpackages__",
+    ],
 )
 
 container_push(
