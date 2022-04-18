@@ -38,13 +38,6 @@ namespace stirling {
 
 namespace http = protocols::http;
 
-bool Init() {
-  FLAGS_openssl_force_raw_fptrs = true;
-  return true;
-}
-
-bool kInit = Init();
-
 using ::px::stirling::testing::EqHTTPRecord;
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
 using ::px::stirling::testing::GetTargetRecords;
@@ -84,10 +77,10 @@ struct TraceRecords {
   std::vector<std::string> remote_address;
 };
 
-template <typename TServerContainer>
-class OpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ false> {
+template <typename TServerContainer, bool TForceFptrs>
+class BaseOpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ false> {
  protected:
-  OpenSSLTraceTest() {
+  BaseOpenSSLTraceTest() {
     // Run the nginx HTTPS server.
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
@@ -96,6 +89,19 @@ class OpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ fals
 
     // Sleep an additional second, just to be safe.
     sleep(1);
+  }
+
+  void SetUp() override {
+    original_openssl_force_raw_fptrs_ = FLAGS_openssl_force_raw_fptrs;
+    FLAGS_openssl_force_raw_fptrs = force_fptr_;
+
+    SocketTraceBPFTest::SetUp();
+  }
+
+  void TearDown() override {
+    SocketTraceBPFTest::TearDown();
+
+    FLAGS_openssl_force_raw_fptrs = original_openssl_force_raw_fptrs_;
   }
 
   // Returns the trace records of the process specified by the input pid.
@@ -115,6 +121,8 @@ class OpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ fals
   }
 
   TServerContainer server_;
+  bool force_fptr_ = TForceFptrs;
+  bool original_openssl_force_raw_fptrs_;
 };
 
 //-----------------------------------------------------------------------------
@@ -159,9 +167,24 @@ http::Record GetExpectedHTTPRecord() {
 typedef ::testing::Types<NginxOpenSSL_1_1_0_ContainerWrapper, NginxOpenSSL_1_1_1_ContainerWrapper,
                          Node12_3_1ContainerWrapper, Node14_18_1AlpineContainerWrapper>
     OpenSSLServerImplementations;
-TYPED_TEST_SUITE(OpenSSLTraceTest, OpenSSLServerImplementations);
 
-TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
+template <typename T>
+using OpenSSLTraceDlsymTest = BaseOpenSSLTraceTest<T, false>;
+
+template <typename T>
+using OpenSSLTraceRawFptrsTest = BaseOpenSSLTraceTest<T, true>;
+
+#define OPENSSL_TYPED_TEST(TestCase, CodeBlock) \
+TYPED_TEST(OpenSSLTraceDlsymTest, TestCase) CodeBlock \
+TYPED_TEST(OpenSSLTraceRawFptrsTest, TestCase) CodeBlock
+
+TYPED_TEST_SUITE(OpenSSLTraceDlsymTest, OpenSSLServerImplementations);
+TYPED_TEST_SUITE(OpenSSLTraceRawFptrsTest, OpenSSLServerImplementations);
+
+OPENSSL_TYPED_TEST(ssl_capture_curl_client, {
+  PL_SET_FOR_SCOPE(FLAGS_openssl_force_raw_fptrs, this->force_fptr_);
+  LOG(INFO) << absl::Substitute("Running with FLAGS_openssl_force_raw_fptrs: $0", this->force_fptr_);
+
   this->StartTransferDataThread();
 
   // Make an SSL request with curl.
@@ -183,9 +206,12 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
 
   EXPECT_THAT(records.http_records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
   EXPECT_THAT(records.remote_address, UnorderedElementsAre(StrEq("127.0.0.1")));
-}
+})
 
-TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
+OPENSSL_TYPED_TEST(ssl_capture_ruby_client, {
+  PL_SET_FOR_SCOPE(FLAGS_openssl_force_raw_fptrs, this->force_fptr_);
+  LOG(INFO) << absl::Substitute("Running with FLAGS_openssl_force_raw_fptrs: $0", this->force_fptr_);
+
   this->StartTransferDataThread();
 
   // Make multiple requests and make sure we capture all of them.
@@ -227,9 +253,12 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
                                    EqHTTPRecord(expected_record)));
   EXPECT_THAT(records.remote_address,
               UnorderedElementsAre(StrEq("127.0.0.1"), StrEq("127.0.0.1"), StrEq("127.0.0.1")));
-}
+})
 
-TYPED_TEST(OpenSSLTraceTest, ssl_capture_node_client) {
+OPENSSL_TYPED_TEST(ssl_capture_node_client, {
+  PL_SET_FOR_SCOPE(FLAGS_openssl_force_raw_fptrs, this->force_fptr_);
+  LOG(INFO) << absl::Substitute("Running with FLAGS_openssl_force_raw_fptrs: $0", this->force_fptr_);
+
   this->StartTransferDataThread();
 
   // Make an SSL request with the client.
@@ -247,7 +276,7 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_node_client) {
 
   EXPECT_THAT(records.http_records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
   EXPECT_THAT(records.remote_address, UnorderedElementsAre(StrEq("127.0.0.1")));
-}
+})
 
 }  // namespace stirling
 }  // namespace px
