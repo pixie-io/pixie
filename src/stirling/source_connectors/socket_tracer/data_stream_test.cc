@@ -385,5 +385,45 @@ TEST_F(DataStreamTest, SpikeCapacityWithLargeDataChunk) {
   EXPECT_EQ(stream.data_buffer().size(), 16);
 }
 
+TEST_F(DataStreamTest, ResyncCausesDuplicateEventBug) {
+  // Test to catch regression on a bug. The bug occured when a resync occurs in ParseFrames, leading
+  // to an invalid state where the data stream buffer still had data that had already been
+  // processed.
+  std::unique_ptr<SocketDataEvent> req0a =
+      event_gen_.InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(0, kHTTPReq0.length() - 10));
+  std::unique_ptr<SocketDataEvent> req0b =
+      event_gen_.InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(kHTTPReq0.length() - 10, 10));
+  std::unique_ptr<SocketDataEvent> req1 = event_gen_.InitSendEvent<kProtocolHTTP>(kHTTPReq1);
+  std::unique_ptr<SocketDataEvent> req2 = event_gen_.InitSendEvent<kProtocolHTTP>(kHTTPReq2);
+  std::unique_ptr<SocketDataEvent> req3 = event_gen_.InitSendEvent<kProtocolHTTP>(kHTTPReq2);
+  protocols::http::StateWrapper state{};
+
+  DataStream stream;
+  stream.set_current_time(now());
+  stream.AddData(std::move(req0a));
+
+  stream.ProcessBytesToFrames<http::Message>(message_type_t::kRequest, &state);
+  EXPECT_THAT(stream.Frames<http::Message>(), IsEmpty());
+
+  stream.set_current_time(now() + std::chrono::seconds(FLAGS_buffer_expiration_duration_secs));
+
+  // Remaining data does not arrive in time, so stuck recovery will kick in to remove req0a.
+  // Then req0b will be noticed as invalid and cleared out as well.
+  stream.AddData(std::move(req0b));
+  stream.AddData(std::move(req1));
+  stream.AddData(std::move(req2));
+
+  stream.ProcessBytesToFrames<http::Message>(message_type_t::kRequest, &state);
+
+  stream.AddData(std::move(req3));
+  stream.ProcessBytesToFrames<http::Message>(message_type_t::kRequest, &state);
+
+  const auto& requests = stream.Frames<http::Message>();
+  ASSERT_THAT(requests, SizeIs(3));
+  EXPECT_EQ(requests[0].req_path, "/foo.html");
+  EXPECT_EQ(requests[1].req_path, "/bar.html");
+  EXPECT_EQ(requests[2].req_path, "/bar.html");
+}
+
 }  // namespace stirling
 }  // namespace px

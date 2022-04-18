@@ -138,6 +138,7 @@ ParseResult ParseFrames(message_type_t type, DataStreamBuffer* data_stream_buffe
     LOG_IF(ERROR, !timestamp_ns_status.ok()) << timestamp_ns_status.ToString();
     msg.timestamp_ns = timestamp_ns_status.ValueOr(0);
   }
+  result.end_position += start_pos;
 
   return result;
 }
