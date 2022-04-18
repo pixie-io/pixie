@@ -23,6 +23,7 @@ resources:
 - vzconn_backend_config.yaml
 - ../base
 - ../overlays/exposed_services_gclb
+- ../overlays/plugin_job
 patchesStrategicMerge:
 - support_access_config.yaml
 - analytics_config.yaml
