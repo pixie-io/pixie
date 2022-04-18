@@ -494,117 +494,142 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 	s := controllers.New(db, "test", nc, updater)
 
 	tests := []struct {
-		name                          string
-		vizierID                      string
-		hbAddress                     string
-		hbPort                        int
-		updatedClusterStatus          string
-		expectedClusterAddress        string
-		expectedPrevStatus            string
-		expectDeploy                  bool
-		expectedFetchVizierVersion    bool
-		controlPlanePodStatuses       controllers.PodStatuses
-		unhealthyDataPlanePodStatuses controllers.PodStatuses
-		clusterVersion                string
-		numNodes                      int32
-		numInstrumentedNodes          int32
-		checkVersion                  bool
-		checkDB                       bool
-		versionUpdated                bool
-		disableAutoUpdate             bool
-		status                        cvmsgspb.VizierStatus
-		statusMessage                 string
+		name                            string
+		vizierID                        string
+		hbAddress                       string
+		hbPort                          int
+		updatedClusterStatus            string
+		expectedClusterAddress          string
+		expectedPrevStatus              string
+		expectDeploy                    bool
+		expectedFetchVizierVersion      bool
+		controlPlanePodStatuses         controllers.PodStatuses
+		expectedControlPlanePodStatuses controllers.PodStatuses
+		unhealthyDataPlanePodStatuses   controllers.PodStatuses
+		clusterVersion                  string
+		numNodes                        int32
+		numInstrumentedNodes            int32
+		checkVersion                    bool
+		checkDB                         bool
+		versionUpdated                  bool
+		disableAutoUpdate               bool
+		status                          cvmsgspb.VizierStatus
+		statusMessage                   string
 	}{
 		{
-			name:                          "valid vizier",
-			status:                        cvmsgspb.VZ_ST_HEALTHY,
-			vizierID:                      "123e4567-e89b-12d3-a456-426655440001",
-			hbAddress:                     "127.0.0.1",
-			hbPort:                        123,
-			updatedClusterStatus:          "HEALTHY",
-			expectedClusterAddress:        "127.0.0.1:123",
-			controlPlanePodStatuses:       testPodStatuses,
-			unhealthyDataPlanePodStatuses: testDataPlanePodStatuses,
-			clusterVersion:                "v1.20.1",
-			numNodes:                      4,
-			numInstrumentedNodes:          3,
-			checkVersion:                  true,
-			checkDB:                       true,
-			statusMessage:                 "test",
+			name:                            "valid vizier",
+			status:                          cvmsgspb.VZ_ST_HEALTHY,
+			vizierID:                        "123e4567-e89b-12d3-a456-426655440001",
+			hbAddress:                       "127.0.0.1",
+			hbPort:                          123,
+			updatedClusterStatus:            "HEALTHY",
+			expectedClusterAddress:          "127.0.0.1:123",
+			controlPlanePodStatuses:         testPodStatuses,
+			unhealthyDataPlanePodStatuses:   testDataPlanePodStatuses,
+			clusterVersion:                  "v1.20.1",
+			numNodes:                        4,
+			numInstrumentedNodes:            3,
+			checkVersion:                    true,
+			checkDB:                         true,
+			statusMessage:                   "test",
+			expectedControlPlanePodStatuses: testPodStatuses,
 		},
 		{
-			name:                          "valid vizier status updated",
-			status:                        cvmsgspb.VZ_ST_UNHEALTHY,
-			vizierID:                      "223e4567-e89b-12d3-a456-426655440003",
-			hbAddress:                     "127.0.0.1",
-			hbPort:                        123,
-			updatedClusterStatus:          "UNHEALTHY",
-			expectedPrevStatus:            "HEALTHY",
-			expectedClusterAddress:        "127.0.0.1:123",
-			controlPlanePodStatuses:       testPodStatuses,
-			unhealthyDataPlanePodStatuses: testDataPlanePodStatuses,
-			clusterVersion:                "v1.20.1",
-			numNodes:                      4,
-			numInstrumentedNodes:          3,
-			checkVersion:                  true,
-			checkDB:                       true,
+			name:                            "valid vizier with no controlplane pod statuses",
+			status:                          cvmsgspb.VZ_ST_HEALTHY,
+			vizierID:                        "123e4567-e89b-12d3-a456-426655440001",
+			hbAddress:                       "127.0.0.1",
+			hbPort:                          123,
+			updatedClusterStatus:            "HEALTHY",
+			expectedClusterAddress:          "127.0.0.1:123",
+			controlPlanePodStatuses:         nil,
+			unhealthyDataPlanePodStatuses:   testDataPlanePodStatuses,
+			clusterVersion:                  "v1.20.1",
+			numNodes:                        4,
+			numInstrumentedNodes:            3,
+			checkVersion:                    true,
+			checkDB:                         true,
+			statusMessage:                   "test",
+			expectedControlPlanePodStatuses: testPodStatuses,
 		},
 		{
-			name:                    "valid vizier, no autoupdate",
-			status:                  cvmsgspb.VZ_ST_HEALTHY,
-			vizierID:                "123e4567-e89b-12d3-a456-426655440001",
-			hbAddress:               "127.0.0.1",
-			hbPort:                  123,
-			updatedClusterStatus:    "HEALTHY",
-			expectedClusterAddress:  "127.0.0.1:123",
-			controlPlanePodStatuses: testPodStatuses,
-			clusterVersion:          "v1.20.1",
-			numNodes:                4,
-			numInstrumentedNodes:    3,
-			checkVersion:            false,
-			checkDB:                 true,
-			disableAutoUpdate:       true,
+			name:                            "valid vizier status updated",
+			status:                          cvmsgspb.VZ_ST_UNHEALTHY,
+			vizierID:                        "223e4567-e89b-12d3-a456-426655440003",
+			hbAddress:                       "127.0.0.1",
+			hbPort:                          123,
+			updatedClusterStatus:            "UNHEALTHY",
+			expectedPrevStatus:              "HEALTHY",
+			expectedClusterAddress:          "127.0.0.1:123",
+			controlPlanePodStatuses:         testPodStatuses,
+			unhealthyDataPlanePodStatuses:   testDataPlanePodStatuses,
+			clusterVersion:                  "v1.20.1",
+			numNodes:                        4,
+			numInstrumentedNodes:            3,
+			checkVersion:                    true,
+			checkDB:                         true,
+			expectedControlPlanePodStatuses: testPodStatuses,
 		},
 		{
-			name:                   "valid vizier dns failed",
-			status:                 cvmsgspb.VZ_ST_HEALTHY,
-			vizierID:               "123e4567-e89b-12d3-a456-426655440001",
-			hbAddress:              "127.0.0.1",
-			hbPort:                 123,
-			updatedClusterStatus:   "HEALTHY",
-			expectedClusterAddress: "127.0.0.1:123",
-			clusterVersion:         "v1.20.1",
-			numNodes:               4,
-			numInstrumentedNodes:   3,
-			checkVersion:           true,
-			checkDB:                true,
-			versionUpdated:         true,
+			name:                            "valid vizier, no autoupdate",
+			status:                          cvmsgspb.VZ_ST_HEALTHY,
+			vizierID:                        "123e4567-e89b-12d3-a456-426655440001",
+			hbAddress:                       "127.0.0.1",
+			hbPort:                          123,
+			updatedClusterStatus:            "HEALTHY",
+			expectedClusterAddress:          "127.0.0.1:123",
+			controlPlanePodStatuses:         testPodStatuses,
+			clusterVersion:                  "v1.20.1",
+			numNodes:                        4,
+			numInstrumentedNodes:            3,
+			checkVersion:                    false,
+			checkDB:                         true,
+			disableAutoUpdate:               true,
+			expectedControlPlanePodStatuses: testPodStatuses,
 		},
 		{
-			name:                   "valid vizier no address",
-			status:                 cvmsgspb.VZ_ST_HEALTHY,
-			vizierID:               "123e4567-e89b-12d3-a456-426655440001",
-			hbAddress:              "",
-			hbPort:                 0,
-			updatedClusterStatus:   "HEALTHY",
-			expectedClusterAddress: "",
-			clusterVersion:         "",
-			numNodes:               4,
-			numInstrumentedNodes:   3,
-			checkVersion:           true,
-			checkDB:                true,
+			name:                            "valid vizier dns failed",
+			status:                          cvmsgspb.VZ_ST_HEALTHY,
+			vizierID:                        "123e4567-e89b-12d3-a456-426655440001",
+			hbAddress:                       "127.0.0.1",
+			hbPort:                          123,
+			updatedClusterStatus:            "HEALTHY",
+			expectedClusterAddress:          "127.0.0.1:123",
+			clusterVersion:                  "v1.20.1",
+			numNodes:                        4,
+			numInstrumentedNodes:            3,
+			checkVersion:                    true,
+			checkDB:                         true,
+			versionUpdated:                  true,
+			expectedControlPlanePodStatuses: testPodStatuses,
 		},
 		{
-			name:                   "unknown vizier",
-			status:                 cvmsgspb.VZ_ST_UPDATING,
-			vizierID:               "223e4567-e89b-12d3-a456-426655440001",
-			hbAddress:              "",
-			updatedClusterStatus:   "",
-			expectedClusterAddress: "",
-			clusterVersion:         "",
-			checkVersion:           false,
-			checkDB:                false,
-			disableAutoUpdate:      true,
+			name:                            "valid vizier no address",
+			status:                          cvmsgspb.VZ_ST_HEALTHY,
+			vizierID:                        "123e4567-e89b-12d3-a456-426655440001",
+			hbAddress:                       "",
+			hbPort:                          0,
+			updatedClusterStatus:            "HEALTHY",
+			expectedClusterAddress:          "",
+			clusterVersion:                  "",
+			numNodes:                        4,
+			numInstrumentedNodes:            3,
+			checkVersion:                    true,
+			checkDB:                         true,
+			expectedControlPlanePodStatuses: testPodStatuses,
+		},
+		{
+			name:                            "unknown vizier",
+			status:                          cvmsgspb.VZ_ST_UPDATING,
+			vizierID:                        "223e4567-e89b-12d3-a456-426655440001",
+			hbAddress:                       "",
+			updatedClusterStatus:            "",
+			expectedClusterAddress:          "",
+			clusterVersion:                  "",
+			checkVersion:                    false,
+			checkDB:                         false,
+			disableAutoUpdate:               true,
+			expectedControlPlanePodStatuses: map[string]*cvmsgspb.PodStatus{},
 		},
 	}
 
@@ -688,6 +713,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			assert.Equal(t, tc.numInstrumentedNodes, clusterInfo.NumInstrumentedNodes)
 			assert.Equal(t, !tc.disableAutoUpdate, clusterInfo.AutoUpdateEnabled)
 			assert.Equal(t, tc.statusMessage, clusterInfo.StatusMessage)
+			assert.Equal(t, tc.expectedControlPlanePodStatuses, clusterInfo.ControlPlanePodStatuses)
 		})
 	}
 }
