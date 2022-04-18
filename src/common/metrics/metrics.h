@@ -26,6 +26,10 @@
 // Returns the global metrics registry;
 prometheus::Registry& GetMetricsRegistry();
 
+// Resets the Metrics registry, removing all of its contained metrics.
+// This function should only be called by testing code.
+void TestOnlyResetMetricsRegistry();
+
 // A convenience wrapper to return a counter with the specified name and help message.
 inline auto& BuildCounter(const std::string& name, const std::string& help_message) {
   return prometheus::BuildCounter()

@@ -77,6 +77,8 @@ struct ParseResult {
   ParseState state = ParseState::kInvalid;
   // Number of invalid frames that were discarded.
   int invalid_frames;
+  // Total number of bytes parsed into valid frames.
+  size_t frame_bytes;
 };
 
 /**
@@ -164,6 +166,7 @@ ParseResult ParseFramesLoop(message_type_t type, std::string_view buf,
   const size_t buf_size = buf.size();
   ParseState s = ParseState::kSuccess;
   size_t bytes_processed = 0;
+  size_t frame_bytes = 0;
   int invalid_count = 0;
 
   while (!buf.empty() && s != ParseState::kEOS) {
@@ -218,10 +221,11 @@ ParseResult ParseFramesLoop(message_type_t type, std::string_view buf,
 
     if (push) {
       frame_positions.push_back({start_position, end_position});
+      frame_bytes += (end_position - start_position) + 1;
       frames->push_back(std::move(frame));
     }
   }
-  return ParseResult{std::move(frame_positions), bytes_processed, s, invalid_count};
+  return ParseResult{std::move(frame_positions), bytes_processed, s, invalid_count, frame_bytes};
 }
 
 }  // namespace protocols

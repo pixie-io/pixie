@@ -15,23 +15,26 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#include <memory>
 
+#pragma once
+
+#include <prometheus/counter.h>
 #include <prometheus/registry.h>
 
 #include "src/common/metrics/metrics.h"
+#include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/common.h"
 
-namespace {
-std::unique_ptr<prometheus::Registry> g_registry_instance;
+namespace px {
+namespace stirling {
 
-void ResetMetricsRegistry() { g_registry_instance = std::make_unique<prometheus::Registry>(); }
-}  // namespace
+struct SocketTracerMetrics {
+  SocketTracerMetrics(prometheus::Registry* registry, traffic_protocol_t protocol);
+  prometheus::Counter& data_loss_bytes;
 
-prometheus::Registry& GetMetricsRegistry() {
-  if (g_registry_instance == nullptr) {
-    ResetMetricsRegistry();
-  }
-  return *g_registry_instance;
-}
+  static SocketTracerMetrics& GetProtocolMetrics(traffic_protocol_t protocol);
 
-void TestOnlyResetMetricsRegistry() { ResetMetricsRegistry(); }
+  static void TestOnlyResetProtocolMetrics(traffic_protocol_t protocol);
+};
+
+}  // namespace stirling
+}  // namespace px
