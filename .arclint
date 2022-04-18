@@ -66,7 +66,7 @@
         "--filter=-build/c++11",
         "--filter=-build/c++14",
         "--filter=-legal/copyright",
-        "--linelength=100"
+        "--filter=-whitespace/line_length"
       ]
     },
     "eslint-ui": {

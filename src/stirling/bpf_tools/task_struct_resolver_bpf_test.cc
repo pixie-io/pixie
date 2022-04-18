@@ -21,7 +21,7 @@
 #include <future>
 #include <thread>
 
-#include "src/common/base/test_utils.h"
+#include "src/common/testing/testing.h"
 #include "src/stirling/bpf_tools/task_struct_resolver.h"
 
 namespace px {

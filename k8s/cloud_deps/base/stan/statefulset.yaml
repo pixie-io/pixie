@@ -22,7 +22,7 @@ kind: ConfigMap
 metadata:
   name: stan-config
 data:
-# yamllint disable
+  # yamllint disable rule:indentation
   stan.conf: |
     port: 4222
     http: 8222
@@ -63,7 +63,7 @@ data:
         peers: ["pl-stan-0", "pl-stan-1", "pl-stan-2", "pl-stan-3", "pl-stan-4"]
       }
     }
-# yamllint enable
+  # yamllint enable rule:indentation
 ---
 apiVersion: v1
 kind: Service

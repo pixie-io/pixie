@@ -214,9 +214,6 @@ class StirlingImpl final : public Stirling {
   void DisablePIDTrace(int pid);
 
  private:
-  // Create data source connectors from the registered sources.
-  Status CreateSourceConnectors();
-
   // Adds a source to Stirling, and updates all state accordingly.
   Status AddSource(std::unique_ptr<SourceConnector> source);
 

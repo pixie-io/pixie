@@ -31,7 +31,9 @@ pl_cc_library(
     srcs = [],
     hdrs = [
         ":headers",
-        "//src/stirling/bpf_tools/bcc_bpf_intf:headers",
+    ],
+    deps = [
+        "//src/stirling/bpf_tools/bcc_bpf_intf:cc_library",
     ],
 )
 

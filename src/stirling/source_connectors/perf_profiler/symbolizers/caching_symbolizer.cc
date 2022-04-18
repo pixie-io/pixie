@@ -47,10 +47,19 @@ profiler::SymbolizerFn CachingSymbolizer::GetSymbolizerFn(const struct upid_t& u
   }
 
   const auto [iter, inserted] = symbol_caches_.try_emplace(upid, nullptr);
+
+  // Here, we trigger the get symbolizer logic in the underlying symbolizer to ensure that
+  // we catch any Java processes that may have had their agent delayed by attach rate limiting.
+  auto symbolizer_fn = symbolizer_->GetSymbolizerFn(upid);
+
   if (inserted) {
-    iter->second = std::make_unique<SymbolCache>(symbolizer_->GetSymbolizerFn(upid));
+    iter->second = std::make_unique<SymbolCache>(symbolizer_fn);
   }
   auto& cache = iter->second;
+
+  // TODO(jps): Remove this extra 'set_symbolizer_fn()' when we deprecate agent rate limiting.
+  cache->set_symbolizer_fn(symbolizer_fn);
+
   auto fn = absl::bind_front(&CachingSymbolizer::Symbolize, this, cache.get());
   return fn;
 }

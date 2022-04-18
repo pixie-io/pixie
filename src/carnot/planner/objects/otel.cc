@@ -20,6 +20,7 @@
 #include <absl/container/flat_hash_set.h>
 
 #include <functional>
+#include <regex>
 #include <utility>
 #include <vector>
 
@@ -58,10 +59,10 @@ StatusOr<std::shared_ptr<OTelTrace>> OTelTrace::Create(ASTVisitor* ast_visitor) 
 }
 
 StatusOr<std::shared_ptr<EndpointConfig>> EndpointConfig::Create(
-    ASTVisitor* ast_visitor, std::string url,
-    std::vector<EndpointConfig::ConnAttribute> attributes) {
+    ASTVisitor* ast_visitor, std::string url, std::vector<EndpointConfig::ConnAttribute> attributes,
+    bool insecure) {
   return std::shared_ptr<EndpointConfig>(
-      new EndpointConfig(ast_visitor, std::move(url), std::move(attributes)));
+      new EndpointConfig(ast_visitor, std::move(url), std::move(attributes), insecure));
 }
 
 Status ExportToOTel(const OTelData& data, const pypa::AstPtr& ast, Dataframe* df) {
@@ -107,15 +108,38 @@ StatusOr<std::vector<OTelAttribute>> ParseAttributes(DictObject* attributes) {
   for (const auto& [idx, keyobj] : Enumerate(keys)) {
     PL_ASSIGN_OR_RETURN(auto key, GetArgAs<StringIR>(keyobj, "attribute"));
     PL_ASSIGN_OR_RETURN(auto val, GetArgAs<ColumnIR>(values[idx], "attribute value column"));
+    if (key->str().empty()) {
+      return keyobj->CreateError("Attribute key must be a non-empty string");
+    }
     otel_attributes.push_back({key->str(), val});
   }
   return otel_attributes;
 }
 
+bool IsValidName(const std::string& name) {
+  // Valid instrumentation name according to the OTel spec.
+  // https://opentelemetry.io/docs/reference/specification/metrics/api/#instrument
+  if (name.empty()) {
+    return false;
+  }
+  static const std::regex rgx("[A-Za-z][A-Za-z0-9_.-]*");
+  return std::regex_match(name, rgx);
+}
+
+StatusOr<std::string> ParseName(const QLObjectPtr& name) {
+  PL_ASSIGN_OR_RETURN(auto name_ir, GetArgAs<StringIR>(name, "name"));
+  if (!IsValidName(name_ir->str())) {
+    return name->CreateError(
+        "Metric name is invalid. Please follow the naming conventions here: "
+        "https://opentelemetry.io/docs/reference/specification/metrics/api/#instrument");
+  }
+  return name_ir->str();
+}
+
 StatusOr<QLObjectPtr> GaugeDefinition(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
                                       ASTVisitor* visitor) {
   OTelMetric metric;
-  PL_ASSIGN_OR_RETURN(metric.name, GetArgAsString(ast, args, "name"));
+  PL_ASSIGN_OR_RETURN(metric.name, ParseName(args.GetArg("name")));
   PL_ASSIGN_OR_RETURN(metric.description, GetArgAsString(ast, args, "description"));
   // We add the time_ column  automatically.
   PL_ASSIGN_OR_RETURN(metric.time_column,
@@ -140,7 +164,7 @@ StatusOr<QLObjectPtr> GaugeDefinition(IR* graph, const pypa::AstPtr& ast, const 
 StatusOr<QLObjectPtr> SummaryDefinition(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
                                         ASTVisitor* visitor) {
   OTelMetric metric;
-  PL_ASSIGN_OR_RETURN(metric.name, GetArgAsString(ast, args, "name"));
+  PL_ASSIGN_OR_RETURN(metric.name, ParseName(args.GetArg("name")));
   PL_ASSIGN_OR_RETURN(metric.description, GetArgAsString(ast, args, "description"));
   // We add the time_ column  automatically.
   PL_ASSIGN_OR_RETURN(metric.time_column,
@@ -250,7 +274,10 @@ StatusOr<QLObjectPtr> EndpointConfigDefinition(const pypa::AstPtr& ast, const Pa
                         GetArgAs<StringIR>(ast, headers_dict->values()[i], "header value"));
     attributes.push_back(EndpointConfig::ConnAttribute{key_ir->str(), val_ir->str()});
   }
-  return EndpointConfig::Create(visitor, url, attributes);
+
+  PL_ASSIGN_OR_RETURN(BoolIR * insecure_ir, GetArgAs<BoolIR>(ast, args, "insecure"));
+
+  return EndpointConfig::Create(visitor, url, attributes, insecure_ir->val());
 }
 
 Status OTelModule::Init(CompilerState* compiler_state, IR* ir) {
@@ -273,7 +300,8 @@ Status OTelModule::Init(CompilerState* compiler_state, IR* ir) {
   PL_RETURN_IF_ERROR(AssignAttribute("trace", trace));
 
   PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> endpoint_fn,
-                      FuncObject::Create(kEndpointOpID, {"url", "headers"}, {{"headers", "{}"}},
+                      FuncObject::Create(kEndpointOpID, {"url", "headers", "insecure"},
+                                         {{"headers", "{}"}, {"insecure", "False"}},
                                          /* has_variable_len_args */ false,
                                          /* has_variable_len_kwargs */ false,
                                          std::bind(&EndpointConfigDefinition, std::placeholders::_1,
@@ -387,6 +415,7 @@ Status EndpointConfig::ToProto(planpb::OTelEndpointConfig* pb) {
   for (const auto& attr : attributes_) {
     (*pb->mutable_headers())[attr.name] = attr.value;
   }
+  pb->set_insecure(insecure_);
   return Status::OK();
 }
 

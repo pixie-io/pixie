@@ -14,6 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@io_bazel_rules_docker//java:image.bzl", "java_image")
 load("@rules_java//java:defs.bzl", "java_binary")
 load("//bazel:pl_build_system.bzl", "pl_cc_binary")
 
@@ -37,6 +38,7 @@ jvm_flags = [so_path + "=" + symbol_file_path]
 java_binary(
     name = "fib_with_agent",
     srcs = ["Fib.java"],
+    args = ["-XX:+PreserveFramePointer"],
     data = ["//src/stirling/source_connectors/perf_profiler/java/agent:glibc"],
     jvm_flags = jvm_flags,
     main_class = "JavaFib",
@@ -45,6 +47,7 @@ java_binary(
 java_binary(
     name = "fib",
     srcs = ["Fib.java"],
+    args = ["-XX:+PreserveFramePointer"],
     main_class = "JavaFib",
 )
 
@@ -57,4 +60,11 @@ pl_cc_binary(
         "//src/stirling/source_connectors/perf_profiler/java:cc_library",
         "//src/stirling/source_connectors/perf_profiler/java/agent:cc_headers",
     ],
+)
+
+java_image(
+    name = "image",
+    srcs = ["Fib.java"],
+    args = ["-XX:+PreserveFramePointer"],
+    main_class = "JavaFib",
 )

@@ -63,9 +63,18 @@ type PluginConfigResolver struct {
 	Description string
 }
 
+// RetentionPluginConfigResolver is the resolver responsible for resolving the full config for a plugin.
+type RetentionPluginConfigResolver struct {
+	Configs         []*PluginConfigResolver
+	CustomExportURL *string
+	InsecureTLS     *bool
+}
+
 // PluginInfoResolver is the resolver responsible for resolving plugin info.
 type PluginInfoResolver struct {
-	Configs []PluginConfigResolver
+	Configs              []PluginConfigResolver
+	AllowCustomExportURL bool
+	AllowInsecureTLS     bool
 }
 
 func kindGQLToCloudProto(kind string) cloudpb.PluginKind {
@@ -136,7 +145,9 @@ func (q *QueryResolver) RetentionPluginInfo(ctx context.Context, args retentionP
 	}
 
 	return &PluginInfoResolver{
-		Configs: configs,
+		Configs:              configs,
+		AllowCustomExportURL: resp.AllowCustomExportURL,
+		AllowInsecureTLS:     resp.AllowInsecureTLS,
 	}, nil
 }
 
@@ -161,13 +172,45 @@ func (q *QueryResolver) OrgRetentionPluginConfig(ctx context.Context, args reten
 	return configs, nil
 }
 
+// RetentionPluginConfig lists the configured values for the given retention plugin.
+func (q *QueryResolver) RetentionPluginConfig(ctx context.Context, args retentionPluginConfigArgs) (*RetentionPluginConfigResolver, error) {
+	configs := make([]*PluginConfigResolver, 0)
+	resp, err := q.Env.PluginServer.GetOrgRetentionPluginConfig(ctx, &cloudpb.GetOrgRetentionPluginConfigRequest{
+		PluginId: args.ID,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range resp.Configs {
+		configs = append(configs, &PluginConfigResolver{
+			Name:  k,
+			Value: v,
+		})
+	}
+
+	r := &RetentionPluginConfigResolver{
+		Configs:     configs,
+		InsecureTLS: &resp.InsecureTLS,
+	}
+
+	if resp.CustomExportUrl != "" {
+		r.CustomExportURL = &resp.CustomExportUrl
+	}
+
+	return r, nil
+}
+
 type editablePluginConfig struct {
 	Name  string
 	Value string
 }
 
 type editablePluginConfigs struct {
-	Configs []editablePluginConfig
+	Configs         []editablePluginConfig
+	CustomExportURL *string
+	InsecureTLS     *bool
 }
 
 type updateRetentionPluginConfigArgs struct {
@@ -200,6 +243,19 @@ func (q *QueryResolver) UpdateRetentionPluginConfig(ctx context.Context, args up
 			Value: *args.EnabledVersion,
 		}
 	}
+
+	if args.Configs.CustomExportURL != nil {
+		req.CustomExportUrl = &types.StringValue{
+			Value: *args.Configs.CustomExportURL,
+		}
+	}
+
+	if args.Configs.InsecureTLS != nil {
+		req.InsecureTLS = &types.BoolValue{
+			Value: *args.Configs.InsecureTLS,
+		}
+	}
+
 	_, err := q.Env.PluginServer.UpdateRetentionPluginConfig(ctx, req)
 
 	if err != nil {
@@ -237,6 +293,10 @@ type editableRetentionScript struct {
 type updateRetentionScriptArgs struct {
 	ID     graphql.ID
 	Script *editableRetentionScript
+}
+
+type deleteRetentionScriptArgs struct {
+	ID graphql.ID
 }
 
 type retentionScriptArgs struct {
@@ -375,6 +435,20 @@ func (q *QueryResolver) UpdateRetentionScript(ctx context.Context, args updateRe
 	}
 
 	return true, err
+}
+
+// DeleteRetentionScript deletes a retention script.
+func (q *QueryResolver) DeleteRetentionScript(ctx context.Context, args deleteRetentionScriptArgs) (bool, error) {
+	req := &cloudpb.DeleteRetentionScriptRequest{
+		ID: utils.ProtoFromUUIDStrOrNil(string(args.ID)),
+	}
+
+	_, err := q.Env.PluginServer.DeleteRetentionScript(ctx, req)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 // CreateRetentionScript creates a new retention script.

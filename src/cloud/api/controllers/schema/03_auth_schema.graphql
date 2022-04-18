@@ -30,7 +30,9 @@ extend type Query {
   # Plugin
   plugins(kind: PluginKind): [Plugin!]!
   retentionPluginInfo(id: String!, pluginVersion: String!): PluginInfo!
+  # This will be replaced by retentionPluginConfig once all consumers have been updated.
   orgRetentionPluginConfig(id: String!): [PluginConfig!]!
+  retentionPluginConfig(id: String!): RetentionPluginConfig!
   retentionScripts: [RetentionScript!]!
   retentionScript(id: String!): DetailedRetentionScript!
 }
@@ -56,6 +58,7 @@ extend type Mutation {
   UpdateRetentionPluginConfig(id: String!, enabled: Boolean, enabledVersion: String, configs: EditablePluginConfigs!): Boolean!
   UpdateRetentionScript(id: ID!, script: EditableRetentionScript): Boolean!
   CreateRetentionScript(script: EditableRetentionScript): ID!
+  DeleteRetentionScript(id: ID!): Boolean!
 }
 
 type UserInfo {
@@ -347,6 +350,8 @@ type PluginConfig {
 
 type PluginInfo {
   configs: [PluginConfigSchema!]!
+  allowCustomExportURL: Boolean!
+  allowInsecureTLS: Boolean!
 }
 
 type PluginConfigSchema {
@@ -361,6 +366,14 @@ input EditablePluginConfig {
 
 input EditablePluginConfigs {
   configs: [EditablePluginConfig!]!
+  customExportURL: String
+  insecureTLS: Boolean
+}
+
+type RetentionPluginConfig {
+  configs: [PluginConfig!]!
+  customExportURL: String
+  insecureTLS: Boolean
 }
 
 # Data retention types.

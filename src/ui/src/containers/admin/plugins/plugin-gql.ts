@@ -20,13 +20,13 @@ import * as React from 'react';
 
 import { gql, useMutation, useQuery } from '@apollo/client';
 
+import { GQL_GET_RETENTION_SCRIPTS } from 'app/pages/configure-data-export/data-export-gql';
 import {
-  GQLEditablePluginConfig,
   GQLEditablePluginConfigs,
   GQLPlugin,
-  GQLPluginConfig,
   GQLPluginInfo,
   GQLPluginKind,
+  GQLRetentionPluginConfig,
 } from 'app/types/schema';
 
 /** The list of available plugins, their metadata, their versions, and their enablement states. */
@@ -50,9 +50,11 @@ export const GQL_GET_RETENTION_PLUGIN_INFO = gql`
   query GetRetentionPluginInfo($id: String!, $pluginVersion: String!) {
     retentionPluginInfo (id: $id, pluginVersion: $pluginVersion) {
       configs {
-        name,
-        description,
-      },
+        name
+        description
+      }
+      allowCustomExportURL
+      allowInsecureTLS
     }
   }
 `;
@@ -60,18 +62,30 @@ export const GQL_GET_RETENTION_PLUGIN_INFO = gql`
 /** The configuration values for a given plugin (see retentionPluginInfo for corresponding schema) */
 export const GQL_GET_RETENTION_PLUGIN_CONFIG = gql`
   query GetRetentionPluginConfig($id: String!) {
-    orgRetentionPluginConfig(id: $id) {
-      name,
-      value,
+    retentionPluginConfig(id: $id) {
+      configs {
+        name
+        value
+      }
+      customExportURL
+      insecureTLS
     }
   }
 `;
 
 export const GQL_UPDATE_RETENTION_PLUGIN_CONFIG = gql`
   mutation UpdateRetentionPluginConfig(
-    $id: String!, $enabled: Boolean, $enabledVersion: String, $configs: EditablePluginConfigs!
+    $id: String!,
+    $enabled: Boolean,
+    $enabledVersion: String,
+    $configs: EditablePluginConfigs!,
   ) {
-    UpdateRetentionPluginConfig(id: $id, enabled: $enabled, enabledVersion: $enabledVersion, configs: $configs)
+    UpdateRetentionPluginConfig(
+      id: $id,
+      enabled: $enabled,
+      enabledVersion: $enabledVersion,
+      configs: $configs,
+    )
   }
 `;
 
@@ -90,10 +104,10 @@ export function usePluginList(kind: GQLPluginKind): { loading: boolean, plugins:
   return { loading: loading || (!data && !error), plugins };
 }
 
-export function usePluginConfig(plugin: GQLPlugin): {
+export function usePluginConfig(plugin: Pick<GQLPlugin, 'id' | 'enabledVersion' | 'latestVersion'>): {
   loading: boolean,
   schema: GQLPluginInfo,
-  values: GQLPluginConfig[]
+  values: GQLRetentionPluginConfig,
 } {
   const { loading: loadingSchema, data: schemaData, error: schemaError } = useQuery<{
     retentionPluginInfo: GQLPluginInfo,
@@ -108,26 +122,26 @@ export function usePluginConfig(plugin: GQLPlugin): {
   );
 
   const { loading: loadingValues, data: valuesData, error: valuesError } = useQuery<{
-    orgRetentionPluginConfig: GQLPluginConfig[],
+    retentionPluginConfig: GQLRetentionPluginConfig,
   }, {
     id: string,
   }>(
     GQL_GET_RETENTION_PLUGIN_CONFIG,
     {
       variables: { id: plugin.id },
-      fetchPolicy: 'cache-and-network',
+      fetchPolicy: 'no-cache', // Configuration values likely include secrets, so don't cache them.
     },
   );
 
   return React.useMemo(() => ({
     loading: (loadingSchema || loadingValues) && !(schemaError || valuesError),
     schema: schemaData?.retentionPluginInfo ?? null,
-    values: valuesData?.orgRetentionPluginConfig ?? null,
+    values: valuesData?.retentionPluginConfig ?? null,
   }), [loadingSchema, loadingValues, schemaError, valuesError, schemaData, valuesData]);
 }
 
 export function usePluginConfigMutation(plugin: GQLPlugin): (
-  configs: GQLEditablePluginConfig[],
+  configs: GQLEditablePluginConfigs,
   enabled?: boolean,
 ) => Promise<boolean> {
   const { loading, schema, values: oldConfigs } = usePluginConfig(plugin);
@@ -138,12 +152,12 @@ export function usePluginConfigMutation(plugin: GQLPlugin): (
     id: string, enabled: boolean, enabledVersion: string, configs: GQLEditablePluginConfigs,
   }>(GQL_UPDATE_RETENTION_PLUGIN_CONFIG);
 
-  return React.useCallback((newConfigs: GQLEditablePluginConfig[], enabled) => {
+  return React.useCallback((newConfigs: GQLEditablePluginConfigs, enabled) => {
     if (loading) return Promise.reject('Tried to update a plugin config before its previous config was known');
 
-    const allowed = schema.configs.map(s => s.name);
-    const merged = oldConfigs.map(c => ({ ...c }));
-    for (const nc of newConfigs) {
+    const allowed = schema?.configs.map(s => s.name) ?? [];
+    const merged = oldConfigs?.configs.map(c => ({ ...c })) ?? [];
+    for (const nc of newConfigs.configs) {
       if (!allowed.includes(nc.name)) continue;
       const existing = merged.findIndex(oc => oc.name === nc.name);
       if (existing >= 0) {
@@ -153,6 +167,16 @@ export function usePluginConfigMutation(plugin: GQLPlugin): (
       }
     }
 
+    const customExportURL = (schema?.allowCustomExportURL
+      ? (newConfigs.customExportURL ?? oldConfigs?.customExportURL)
+      : null
+    ) ?? undefined;
+
+    const insecureTLS = (schema?.allowInsecureTLS
+      ? (newConfigs.insecureTLS ?? oldConfigs?.insecureTLS)
+      : null
+    ) ?? undefined;
+
     const canEnable = plugin.supportsRetention && (plugin.enabledVersion ?? plugin.latestVersion);
     const shouldEnable = canEnable && (enabled == null ? plugin.retentionEnabled : enabled);
 
@@ -161,15 +185,19 @@ export function usePluginConfigMutation(plugin: GQLPlugin): (
         id: plugin.id,
         enabled: shouldEnable,
         enabledVersion: shouldEnable ? (plugin.enabledVersion ?? plugin.latestVersion) : plugin.enabledVersion,
-        configs: { configs: merged },
+        configs: {
+          configs: merged,
+          customExportURL,
+          insecureTLS,
+        },
       },
-      refetchQueries: [GQL_GET_RETENTION_PLUGINS, GQL_GET_RETENTION_PLUGIN_CONFIG],
+      refetchQueries: [GQL_GET_RETENTION_PLUGINS, GQL_GET_RETENTION_PLUGIN_CONFIG, GQL_GET_RETENTION_SCRIPTS],
     }).then(() => true, () => false);
-  }, [schema?.configs, oldConfigs, plugin, loading, mutate]);
+  }, [schema?.configs, schema?.allowCustomExportURL, schema?.allowInsecureTLS, oldConfigs, plugin, loading, mutate]);
 }
 
 export function usePluginToggleEnabled(plugin: GQLPlugin): (enable: boolean) => Promise<boolean> {
   const mutate = usePluginConfigMutation(plugin);
 
-  return (enable: boolean) => mutate([], enable);
+  return (enable: boolean) => mutate({ configs: [] }, enable);
 }

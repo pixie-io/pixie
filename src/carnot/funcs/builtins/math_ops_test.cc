@@ -24,7 +24,7 @@
 #include "src/carnot/funcs/builtins/math_ops.h"
 #include "src/carnot/udf/test_utils.h"
 #include "src/common/base/base.h"
-#include "src/common/base/test_utils.h"
+#include "src/common/testing/testing.h"
 
 namespace px {
 namespace carnot {
@@ -468,6 +468,16 @@ TEST(MathOps, round_test) {
   udf_tester.ForInput(0.0, 5).Expect("0.00000");
   udf_tester.ForInput(20.29438, 0).Expect("20");
   udf_tester.ForInput(1234, 3).Expect("1234.000");
+}
+
+TEST(MathOps, time_to_int64_test) {
+  auto udf_tester = udf::UDFTester<TimeToInt64UDF>();
+  udf_tester.ForInput(0).Expect(0);
+}
+
+TEST(MathOps, int64_to_time_test) {
+  auto udf_tester = udf::UDFTester<Int64ToTimeUDF>();
+  udf_tester.ForInput(0).Expect(0);
 }
 
 TEST(MathOps, basic_float64_mean_uda_test) {

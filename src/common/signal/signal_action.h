@@ -34,7 +34,7 @@ namespace px {
 class SignalAction : public NotCopyable {
  public:
   SignalAction()
-      : guard_size_(px::system::Config::GetInstance().PageSize()),
+      : guard_size_(px::system::Config::GetInstance().PageSizeBytes()),
         altstack_size_(std::max(guard_size_ * 4, static_cast<size_t>(MINSIGSTKSZ))) {
     MapAndProtectStackMemory();
     InstallSigHandlers();

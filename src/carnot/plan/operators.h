@@ -369,6 +369,7 @@ class OTelExportSinkOperator : public Operator {
   std::string DebugString() const override;
 
   const std::string& url() const { return pb_.endpoint_config().url(); }
+  bool insecure() const { return pb_.endpoint_config().insecure(); }
   // TODO(philkuz) temporary measure.
   const planpb::OTelExportSinkOperator& pb() const { return pb_; }
 

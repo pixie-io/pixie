@@ -142,12 +142,13 @@ type RetentionPlugin struct {
 	DocumentationURL     *string        `db:"documentation_url" yaml:"documentationURL"`
 	DefaultExportURL     *string        `db:"default_export_url" yaml:"defaultExportURL"`
 	AllowCustomExportURL bool           `db:"allow_custom_export_url" yaml:"allowCustomExportURL"`
+	AllowInsecureTLS     bool           `db:"allow_insecure_tls" yaml:"allowInsecureTLS"`
 	PresetScripts        PresetScripts  `db:"preset_scripts" yaml:"presetScripts"`
 }
 
 // GetRetentionPluginConfig gets the config for a specific plugin release.
 func (s *Server) GetRetentionPluginConfig(ctx context.Context, req *pluginpb.GetRetentionPluginConfigRequest) (*pluginpb.GetRetentionPluginConfigResponse, error) {
-	query := `SELECT plugin_id, version, configurations, preset_scripts, documentation_url, default_export_url, allow_custom_export_url FROM data_retention_plugin_releases WHERE plugin_id=$1 AND version=$2`
+	query := `SELECT plugin_id, version, configurations, preset_scripts, documentation_url, default_export_url, allow_custom_export_url, allow_insecure_tls FROM data_retention_plugin_releases WHERE plugin_id=$1 AND version=$2`
 	rows, err := s.db.Queryx(query, req.ID, req.Version)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to fetch plugin")
@@ -163,6 +164,7 @@ func (s *Server) GetRetentionPluginConfig(ctx context.Context, req *pluginpb.Get
 		ppb := &pluginpb.GetRetentionPluginConfigResponse{
 			Configurations:       plugin.Configurations,
 			AllowCustomExportURL: plugin.AllowCustomExportURL,
+			AllowInsecureTLS:     plugin.AllowInsecureTLS,
 			PresetScripts:        []*pluginpb.GetRetentionPluginConfigResponse_PresetScript{},
 		}
 		if plugin.DocumentationURL != nil {
@@ -219,7 +221,7 @@ func (s *Server) GetRetentionPluginsForOrg(ctx context.Context, req *pluginpb.Ge
 
 // GetOrgRetentionPluginConfig gets the org's configuration for a plugin.
 func (s *Server) GetOrgRetentionPluginConfig(ctx context.Context, req *pluginpb.GetOrgRetentionPluginConfigRequest) (*pluginpb.GetOrgRetentionPluginConfigResponse, error) {
-	query := `SELECT PGP_SYM_DECRYPT(configurations, $1::text) FROM org_data_retention_plugins WHERE org_id=$2 AND plugin_id=$3`
+	query := `SELECT PGP_SYM_DECRYPT(configurations, $1::text), PGP_SYM_DECRYPT(custom_export_url, $1::text), insecure_tls FROM org_data_retention_plugins WHERE org_id=$2 AND plugin_id=$3`
 
 	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
 	rows, err := s.db.Queryx(query, s.dbKey, orgID, req.PluginID)
@@ -230,9 +232,11 @@ func (s *Server) GetOrgRetentionPluginConfig(ctx context.Context, req *pluginpb.
 
 	if rows.Next() {
 		var configurationJSON []byte
+		var exportURL *string
+		var insecureTLS bool
 		var configMap map[string]string
 
-		err := rows.Scan(&configurationJSON)
+		err := rows.Scan(&configurationJSON, &exportURL, &insecureTLS)
 		if err != nil {
 			return nil, status.Error(codes.Internal, "failed to read configs")
 		}
@@ -244,24 +248,31 @@ func (s *Server) GetOrgRetentionPluginConfig(ctx context.Context, req *pluginpb.
 			}
 		}
 
-		return &pluginpb.GetOrgRetentionPluginConfigResponse{
+		resp := &pluginpb.GetOrgRetentionPluginConfigResponse{
 			Configurations: configMap,
-		}, nil
+			InsecureTLS:    insecureTLS,
+		}
+
+		if exportURL != nil {
+			resp.CustomExportUrl = *exportURL
+		}
+
+		return resp, nil
 	}
 	return nil, status.Error(codes.NotFound, "plugin is not enabled")
 }
 
-func (s *Server) enableOrgRetention(ctx context.Context, txn *sqlx.Tx, orgID uuid.UUID, pluginID string, version string, configurations []byte) error {
-	query := `INSERT INTO org_data_retention_plugins (org_id, plugin_id, version, configurations) VALUES ($1, $2, $3, PGP_SYM_ENCRYPT($4, $5))`
-	_, err := txn.Exec(query, orgID, pluginID, version, configurations, s.dbKey)
+func (s *Server) enableOrgRetention(ctx context.Context, txn *sqlx.Tx, orgID uuid.UUID, pluginID string, version string, configurations []byte, customExportURL *string, insecureTLS bool) error {
+	query := `INSERT INTO org_data_retention_plugins (org_id, plugin_id, version, configurations, custom_export_url, insecure_tls) VALUES ($1, $2, $3, PGP_SYM_ENCRYPT($4, $5), PGP_SYM_ENCRYPT($6, $5), $7)`
+	_, err := txn.Exec(query, orgID, pluginID, version, configurations, s.dbKey, customExportURL, insecureTLS)
 	if err != nil {
 		return status.Errorf(codes.Internal, "Failed to create plugin for org")
 	}
 
-	return s.createPresetScripts(ctx, txn, orgID, pluginID, version, configurations)
+	return s.createPresetScripts(ctx, txn, orgID, pluginID, version, configurations, customExportURL)
 }
 
-func (s *Server) createPresetScripts(ctx context.Context, txn *sqlx.Tx, orgID uuid.UUID, pluginID string, version string, configurations []byte) error {
+func (s *Server) createPresetScripts(ctx context.Context, txn *sqlx.Tx, orgID uuid.UUID, pluginID string, version string, configurations []byte, customExportURL *string) error {
 	// Enabling org retention should enable any preset scripts.
 	query := `SELECT preset_scripts FROM data_retention_plugin_releases WHERE plugin_id=$1 AND version=$2`
 	rows, err := txn.Queryx(query, pluginID, version)
@@ -321,23 +332,54 @@ func (s *Server) disableOrgRetention(ctx context.Context, txn *sqlx.Tx, orgID uu
 	return err
 }
 
-func (s *Server) updateOrgRetentionConfigs(ctx context.Context, txn *sqlx.Tx, orgID uuid.UUID, pluginID string, version string, configurations []byte) error {
-	query := `UPDATE org_data_retention_plugins SET version = $1, configurations = PGP_SYM_ENCRYPT($2, $3) WHERE org_id = $4 AND plugin_id = $5`
+func (s *Server) deletePresetScripts(ctx context.Context, txn *sqlx.Tx, orgID uuid.UUID, pluginID string) error {
+	// Disabling org retention should delete any retention scripts.
+	// Fetch all scripts belonging to this plugin.
+	query := `DELETE from plugin_retention_scripts WHERE org_id=$1 AND plugin_id=$2 AND is_preset=true RETURNING script_id`
+	rows, err := txn.Queryx(query, orgID, pluginID)
+	if err != nil {
+		return status.Errorf(codes.Internal, "Failed to fetch scripts")
+	}
 
-	err := s.propagateConfigChangesToScripts(ctx, txn, orgID, pluginID, version, configurations)
+	for rows.Next() {
+		var id uuid.UUID
+		err = rows.Scan(&id)
+		if err != nil {
+			continue
+		}
+		_, err = s.cronScriptClient.DeleteScript(ctx, &cronscriptpb.DeleteScriptRequest{
+			ID: utils.ProtoFromUUID(id),
+		})
+		if err != nil {
+			return status.Errorf(codes.Internal, "Failed to disable script")
+		}
+	}
+	rows.Close()
+
+	return nil
+}
+
+func (s *Server) updateOrgRetentionConfigs(ctx context.Context, txn *sqlx.Tx, orgID uuid.UUID, pluginID string, version string, configurations []byte, customExportURL *string, insecureTLS bool) error {
+	query := `UPDATE org_data_retention_plugins SET version = $1, configurations = PGP_SYM_ENCRYPT($2, $3), custom_export_url = PGP_SYM_ENCRYPT($6, $3), insecure_tls=$7 WHERE org_id = $4 AND plugin_id = $5`
+
+	err := s.propagateConfigChangesToScripts(ctx, txn, orgID, pluginID, version, configurations, customExportURL, insecureTLS)
 	if err != nil {
 		return err
 	}
 
-	_, err = txn.Exec(query, version, configurations, s.dbKey, orgID, pluginID)
+	_, err = txn.Exec(query, version, configurations, s.dbKey, orgID, pluginID, customExportURL, insecureTLS)
 	return err
 }
 
-func (s *Server) propagateConfigChangesToScripts(ctx context.Context, txn *sqlx.Tx, orgID uuid.UUID, pluginID string, version string, configurations []byte) error {
+func (s *Server) propagateConfigChangesToScripts(ctx context.Context, txn *sqlx.Tx, orgID uuid.UUID, pluginID string, version string, configurations []byte, customExportURL *string, insecureTLS bool) error {
 	// Fetch default export URL for plugin.
-	defaultExportURL, _, err := s.getPluginConfigs(txn, orgID, pluginID)
+	pluginExportURL, _, _, err := s.getPluginConfigs(txn, orgID, pluginID)
 	if err != nil {
 		return err
+	}
+
+	if customExportURL != nil {
+		pluginExportURL = *customExportURL
 	}
 
 	// Fetch all scripts belonging to this plugin.
@@ -371,12 +413,13 @@ func (s *Server) propagateConfigChangesToScripts(ctx context.Context, txn *sqlx.
 
 		exportURL := sc.ExportURL
 		if exportURL == "" {
-			exportURL = defaultExportURL
+			exportURL = pluginExportURL
 		}
 		config := &scripts.Config{
 			OtelEndpointConfig: &scripts.OtelEndpointConfig{
-				URL:     exportURL,
-				Headers: configMap,
+				URL:      exportURL,
+				Headers:  configMap,
+				Insecure: insecureTLS,
 			},
 		}
 
@@ -430,7 +473,7 @@ func (s *Server) UpdateOrgRetentionPluginConfig(ctx context.Context, req *plugin
 	defer txn.Rollback()
 
 	// Fetch current configs.
-	query := `SELECT version, PGP_SYM_DECRYPT(configurations, $1::text) FROM org_data_retention_plugins WHERE org_id=$2 AND plugin_id=$3`
+	query := `SELECT version, PGP_SYM_DECRYPT(configurations, $1::text), PGP_SYM_DECRYPT(custom_export_url, $1::text), insecure_tls FROM org_data_retention_plugins WHERE org_id=$2 AND plugin_id=$3`
 	rows, err := txn.Queryx(query, s.dbKey, orgID, req.PluginID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to fetch plugin")
@@ -438,15 +481,48 @@ func (s *Server) UpdateOrgRetentionPluginConfig(ctx context.Context, req *plugin
 
 	var origConfig []byte
 	var origVersion string
+	var customExportURL *string
+	var insecureTLS bool
 	enabled := false
 	if rows.Next() {
 		enabled = true
-		err := rows.Scan(&origVersion, &origConfig)
+		err := rows.Scan(&origVersion, &origConfig, &customExportURL, &insecureTLS)
 		if err != nil {
 			return nil, status.Error(codes.Internal, "failed to read configs")
 		}
 	}
 	rows.Close()
+
+	if version == "" {
+		version = origVersion
+	}
+
+	query = `SELECT allow_custom_export_url, allow_insecure_tls FROM data_retention_plugin_releases WHERE plugin_id=$1 AND version=$2`
+	rows, err = txn.Queryx(query, req.PluginID, version)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to fetch plugin")
+	}
+	var allowCustomExportURL bool
+	var allowInsecureTLS bool
+	if rows.Next() {
+		err := rows.Scan(&allowCustomExportURL, &allowInsecureTLS)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "failed to read plugin")
+		}
+	}
+	rows.Close()
+
+	if req.CustomExportUrl != nil && allowCustomExportURL {
+		customExportURL = &req.CustomExportUrl.Value
+	} else if !allowCustomExportURL {
+		customExportURL = nil
+	}
+
+	if req.InsecureTLS != nil && allowInsecureTLS {
+		insecureTLS = req.InsecureTLS.Value
+	} else if !allowInsecureTLS {
+		insecureTLS = false
+	}
 
 	ctx, err = contextWithAuthToken(ctx)
 	if err != nil {
@@ -454,7 +530,7 @@ func (s *Server) UpdateOrgRetentionPluginConfig(ctx context.Context, req *plugin
 	}
 
 	if !enabled && req.Enabled != nil && req.Enabled.Value { // Plugin was just enabled, we should create it.
-		err = s.enableOrgRetention(ctx, txn, orgID, req.PluginID, version, configurations)
+		err = s.enableOrgRetention(ctx, txn, orgID, req.PluginID, version, configurations, customExportURL, insecureTLS)
 		if err != nil {
 			return nil, err
 		}
@@ -473,18 +549,24 @@ func (s *Server) UpdateOrgRetentionPluginConfig(ctx context.Context, req *plugin
 	if configurations == nil {
 		configurations = origConfig
 	}
-	if version == "" {
-		version = origVersion
-	}
 
-	err = s.updateOrgRetentionConfigs(ctx, txn, orgID, req.PluginID, version, configurations)
+	err = s.updateOrgRetentionConfigs(ctx, txn, orgID, req.PluginID, version, configurations, customExportURL, insecureTLS)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to update configs")
 	}
 
-	// if origVersion != version { // The user is updating the plugin.
-	// 	// TODO(michelle): If the user is updating the plugin, we may need to update some of the presetScripts users have configured.
-	// }
+	if origVersion != version { // The user is updating the plugin, and some of the preset scripts have likely changed.
+		// Delete the existing preset scripts and create new ones. However, this means prexisting configurations on scripts will be deleted.
+		err := s.deletePresetScripts(ctx, txn, orgID, req.PluginID)
+		if err != nil {
+			return nil, err
+		}
+
+		err = s.createPresetScripts(ctx, txn, orgID, req.PluginID, version, configurations, customExportURL)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	err = txn.Commit()
 	if err != nil {
@@ -616,17 +698,17 @@ func (s *Server) GetRetentionScript(ctx context.Context, req *pluginpb.GetRetent
 }
 
 func (s *Server) createRetentionScript(ctx context.Context, txn *sqlx.Tx, orgID uuid.UUID, pluginID string, rs *RetentionScript, contents string, clusterIDs []*uuidpb.UUID, frequencyS int64) (*uuidpb.UUID, error) {
-	defaultExportURL, configMap, err := s.getPluginConfigs(txn, orgID, pluginID)
+	pluginExportURL, configMap, insecureTLS, err := s.getPluginConfigs(txn, orgID, pluginID)
 	if err != nil {
 		return nil, err
 	}
 
-	exportURL := defaultExportURL
+	exportURL := pluginExportURL
 	if rs.ExportURL != "" {
 		exportURL = rs.ExportURL
 	}
 
-	configYAML, err := scriptConfigToYAML(configMap, exportURL)
+	configYAML, err := scriptConfigToYAML(configMap, exportURL, insecureTLS)
 	if err != nil {
 		return nil, err
 	}
@@ -685,40 +767,47 @@ func (s *Server) CreateRetentionScript(ctx context.Context, req *pluginpb.Create
 	}, nil
 }
 
-func (s *Server) getPluginConfigs(txn *sqlx.Tx, orgID uuid.UUID, pluginID string) (string, map[string]string, error) {
-	query := `SELECT PGP_SYM_DECRYPT(o.configurations, $1::text), r.default_export_url FROM org_data_retention_plugins o, data_retention_plugin_releases r WHERE org_id=$2 AND r.plugin_id=$3 AND o.plugin_id=r.plugin_id AND r.version = o.version`
+func (s *Server) getPluginConfigs(txn *sqlx.Tx, orgID uuid.UUID, pluginID string) (string, map[string]string, bool, error) {
+	query := `SELECT PGP_SYM_DECRYPT(o.configurations, $1::text), r.default_export_url, PGP_SYM_DECRYPT(o.custom_export_url, $1::text), insecure_tls FROM org_data_retention_plugins o, data_retention_plugin_releases r WHERE org_id=$2 AND r.plugin_id=$3 AND o.plugin_id=r.plugin_id AND r.version = o.version`
 	rows, err := txn.Queryx(query, s.dbKey, orgID, pluginID)
 	if err != nil {
-		return "", nil, status.Errorf(codes.Internal, "failed to fetch plugin")
+		return "", nil, false, status.Errorf(codes.Internal, "failed to fetch plugin")
 	}
 	defer rows.Close()
 
 	if !rows.Next() {
-		return "", nil, status.Error(codes.NotFound, "plugin is not enabled")
+		return "", nil, false, status.Error(codes.NotFound, "plugin is not enabled")
 	}
 
 	var configurationJSON []byte
 	var configMap map[string]string
-	var defaultExportURL string
-	err = rows.Scan(&configurationJSON, &defaultExportURL)
+	var pluginExportURL string
+	var customExportURL *string
+	var insecureTLS bool
+	err = rows.Scan(&configurationJSON, &pluginExportURL, &customExportURL, &insecureTLS)
 	if err != nil {
-		return "", nil, status.Error(codes.Internal, "failed to read configs")
+		return "", nil, false, status.Error(codes.Internal, "failed to read configs")
 	}
 	if len(configurationJSON) > 0 {
 		err = json.Unmarshal(configurationJSON, &configMap)
 		if err != nil {
-			return "", nil, status.Error(codes.Internal, "failed to read configs")
+			return "", nil, false, status.Error(codes.Internal, "failed to read configs")
 		}
 	}
 
-	return defaultExportURL, configMap, nil
+	if customExportURL != nil {
+		pluginExportURL = *customExportURL
+	}
+
+	return pluginExportURL, configMap, insecureTLS, nil
 }
 
-func scriptConfigToYAML(configMap map[string]string, exportURL string) (string, error) {
+func scriptConfigToYAML(configMap map[string]string, exportURL string, insecureTLS bool) (string, error) {
 	config := &scripts.Config{
 		OtelEndpointConfig: &scripts.OtelEndpointConfig{
-			URL:     exportURL,
-			Headers: configMap,
+			URL:      exportURL,
+			Headers:  configMap,
+			Insecure: insecureTLS,
 		},
 	}
 
@@ -771,7 +860,7 @@ func (s *Server) UpdateRetentionScript(ctx context.Context, req *pluginpb.Update
 	}
 
 	// Fetch config + headers from plugin info.
-	defaultExportURL, configMap, err := s.getPluginConfigs(txn, script.OrgID, script.PluginID)
+	pluginExportURL, configMap, insecureTLS, err := s.getPluginConfigs(txn, script.OrgID, script.PluginID)
 	if err != nil {
 		return nil, err
 	}
@@ -804,9 +893,9 @@ func (s *Server) UpdateRetentionScript(ctx context.Context, req *pluginpb.Update
 	// Create updated config with new export URL.
 	configExportURL := exportURL
 	if exportURL == "" {
-		configExportURL = defaultExportURL
+		configExportURL = pluginExportURL
 	}
-	configYAML, err := scriptConfigToYAML(configMap, configExportURL)
+	configYAML, err := scriptConfigToYAML(configMap, configExportURL, insecureTLS)
 	if err != nil {
 		return nil, err
 	}
@@ -825,4 +914,49 @@ func (s *Server) UpdateRetentionScript(ctx context.Context, req *pluginpb.Update
 	}
 
 	return &pluginpb.UpdateRetentionScriptResponse{}, nil
+}
+
+// DeleteRetentionScript creates a script that is used for long-term data retention.
+func (s *Server) DeleteRetentionScript(ctx context.Context, req *pluginpb.DeleteRetentionScriptRequest) (*pluginpb.DeleteRetentionScriptResponse, error) {
+	txn, err := s.db.Beginx()
+	if err != nil {
+		return nil, err
+	}
+	defer txn.Rollback()
+
+	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
+	scriptID := utils.UUIDFromProtoOrNil(req.ID)
+
+	query := `DELETE FROM plugin_retention_scripts WHERE org_id=$1 AND script_id=$2 AND NOT is_preset`
+	resp, err := txn.Exec(query, orgID, scriptID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to delete scripts")
+	}
+
+	rowsDel, err := resp.RowsAffected()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to delete scripts")
+	}
+	if rowsDel == 0 {
+		return nil, status.Errorf(codes.Internal, "No script to delete")
+	}
+
+	ctx, err = contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = s.cronScriptClient.DeleteScript(ctx, &cronscriptpb.DeleteScriptRequest{
+		ID: req.ID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to delete cron script")
+	}
+
+	err = txn.Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	return &pluginpb.DeleteRetentionScriptResponse{}, nil
 }

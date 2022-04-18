@@ -52,6 +52,8 @@ service DataRetentionPluginService {
     rpc CreateRetentionScript(CreateRetentionScriptRequest) returns (CreateRetentionScriptResponse);
     // Updates a script used for long-term data retention.
     rpc UpdateRetentionScript(UpdateRetentionScriptRequest) returns (UpdateRetentionScriptResponse);
+    // DeleteRetentionScript is a request to delete a long-term data retention script.
+    rpc DeleteRetentionScript(DeleteRetentionScriptRequest) returns (DeleteRetentionScriptResponse);
 }
 
 enum PluginKind {
@@ -136,6 +138,7 @@ message GetRetentionPluginConfigResponse {
     string default_export_url = 4 [(gogoproto.customname) = "DefaultExportURL"];
     // Whether users can specify a custom URL to which to send their scripts.
     bool allow_custom_export_url = 5 [(gogoproto.customname) = "AllowCustomExportURL"];
+    bool allow_insecure_tls = 6 [(gogoproto.customname) = "AllowInsecureTLS"];
 }
 
 // GetOrgRetentionPluginConfigRequest is a request to get an org's configuration for a plugin.
@@ -149,6 +152,8 @@ message GetOrgRetentionPluginConfigResponse {
     // The set of configurations specified by the org. They key is the name of the configuration,
     // and the value represents the configuration value.
     map<string, string> configurations = 1;
+    string custom_export_url = 2;
+    bool insecure_tls = 3 [(gogoproto.customname) = "InsecureTLS"];
 }
 
 // UpdateOrgRetentionPluginConfigRequest is a request to update a plugin's configuration.
@@ -162,6 +167,9 @@ message UpdateOrgRetentionPluginConfigRequest {
     google.protobuf.BoolValue enabled = 4;
     // The version to enable.
     google.protobuf.StringValue version = 5;
+    // The custom export URL that should be applied to all plugin scripts.
+    google.protobuf.StringValue custom_export_url = 6;
+    google.protobuf.BoolValue insecure_tls = 7 [(gogoproto.customname) = "InsecureTLS"];
 }
 
 // UpdateOrgRetentionPluginConfigResponse is a response to update a plugin's configuration.
@@ -259,3 +267,12 @@ message UpdateRetentionScriptRequest {
 
 // UpdateRetentionScriptResponse is the response to updating an existing retention script.
 message UpdateRetentionScriptResponse {}
+
+// DeleteRetentionScriptRequest is a request to delete a retention script.
+message DeleteRetentionScriptRequest {
+    uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+    uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
+}
+
+// DeleteRetentionScriptResponse is the response to deleting a retention script.
+message DeleteRetentionScriptResponse {}

@@ -25,6 +25,7 @@ type Config struct {
 
 // OtelEndpointConfig specifies values that should be filled in for all OTel endpoints in the script.
 type OtelEndpointConfig struct {
-	URL     string            `yaml:"url"`
-	Headers map[string]string `yaml:"headers"`
+	URL      string            `yaml:"url"`
+	Headers  map[string]string `yaml:"headers"`
+	Insecure bool              `yaml:"insecure"`
 }

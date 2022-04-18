@@ -5,13 +5,14 @@ namespace: pl
 resources:
 - ../base
 patches:
-# yamllint disable
+# yamllint disable rule:indentation
 - patch: |-
     - op: add
       path: "/spec/template/spec/containers/0/env/-"
       value:
         name: PL_PROFILER_JAVA_SYMBOLS
         value: "1"
+# yamllint enable rule:indentation
   target:
     kind: DaemonSet
     namespace: pl

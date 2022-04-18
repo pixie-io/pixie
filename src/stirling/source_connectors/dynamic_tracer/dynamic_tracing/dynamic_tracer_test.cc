@@ -87,7 +87,7 @@ class ResolveTargetObjPathTest : public ::testing::Test {
  protected:
   void SetUp() override {
     auto server_path = px::testing::BazelBinTestFilePath(kServerPath).string();
-    ASSERT_OK(s_.Start({server_path}));
+    ASSERT_OK(s_.Start({server_path, "--port=0"}));
 
     md::K8sMetadataState::PodUpdate pod0_update;
     md::K8sMetadataState::PodUpdate pod1_update;

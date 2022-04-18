@@ -20,7 +20,7 @@
 #include <gtest/gtest.h>
 #include <set>
 
-#include "src/common/base/test_utils.h"
+#include "src/common/testing/testing.h"
 #include "src/shared/upid/upid.h"
 
 namespace px {

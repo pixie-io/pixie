@@ -145,11 +145,12 @@ func (f *FakeVZChecker) GetStatus() (time.Time, error) {
 }
 
 type FakeVZInfo struct {
-	externalAddr string
-	port         int32
+	externalAddr    string
+	port            int32
+	lastClusterName string
 }
 
-func makeFakeVZInfo(externalAddr string, port int32) bridge.VizierInfo {
+func makeFakeVZInfo(externalAddr string, port int32) *FakeVZInfo {
 	return &FakeVZInfo{
 		externalAddr: externalAddr,
 		port:         port,
@@ -216,6 +217,11 @@ func (f *FakeVZInfo) GetClusterUID() (string, error) {
 }
 
 func (f *FakeVZInfo) UpdateClusterID(string) error {
+	return nil
+}
+
+func (f *FakeVZInfo) UpdateClusterName(clusterName string) error {
+	f.lastClusterName = clusterName
 	return nil
 }
 
@@ -314,7 +320,7 @@ func TestNATSGRPCBridgeTest_CorrectRegistrationFlow(t *testing.T) {
 	ts.wg.Add(1)
 
 	sessionID := time.Now().UnixNano()
-	b := bridge.New(ts.vzID, ts.jwt, "", sessionID, ts.vzClient, makeFakeVZInfo("foobar", 123), &FakeVZOperatorInfo{}, ts.nats, &FakeVZChecker{})
+	b := bridge.New(ts.vzID, "", ts.jwt, "", sessionID, ts.vzClient, makeFakeVZInfo("foobar", 123), &FakeVZOperatorInfo{}, ts.nats, &FakeVZChecker{})
 	defer b.Stop()
 	go b.RunStream()
 
@@ -349,7 +355,7 @@ func TestNATSGRPCBridgeTest_TestOutboundNATSMessage(t *testing.T) {
 	ts.wg.Add(1)
 
 	sessionID := time.Now().UnixNano()
-	b := bridge.New(ts.vzID, ts.jwt, "", sessionID, ts.vzClient, makeFakeVZInfo("foobar", 123), &FakeVZOperatorInfo{}, ts.nats, &FakeVZChecker{})
+	b := bridge.New(ts.vzID, "", ts.jwt, "", sessionID, ts.vzClient, makeFakeVZInfo("foobar", 123), &FakeVZOperatorInfo{}, ts.nats, &FakeVZChecker{})
 	defer func() {
 		b.Stop()
 	}()
@@ -407,7 +413,7 @@ func TestNATSGRPCBridgeTest_TestInboundNATSMessage(t *testing.T) {
 	ts.wg.Add(1)
 
 	sessionID := time.Now().UnixNano()
-	b := bridge.New(ts.vzID, ts.jwt, "", sessionID, ts.vzClient, makeFakeVZInfo("foobar", 123), &FakeVZOperatorInfo{}, ts.nats, &FakeVZChecker{})
+	b := bridge.New(ts.vzID, "", ts.jwt, "", sessionID, ts.vzClient, makeFakeVZInfo("foobar", 123), &FakeVZOperatorInfo{}, ts.nats, &FakeVZChecker{})
 	defer b.Stop()
 
 	go b.RunStream()
@@ -479,8 +485,9 @@ func TestNATSGRPCBridgeTest_TestRegisterDeployment(t *testing.T) {
 
 	vzID := uuid.FromStringOrNil("")
 
+	vzInfo := makeFakeVZInfo("foo", 123)
 	sessionID := time.Now().UnixNano()
-	b := bridge.New(vzID, ts.jwt, "", sessionID, ts.vzClient, makeFakeVZInfo("foobar", 123), &FakeVZOperatorInfo{}, ts.nats, &FakeVZChecker{})
+	b := bridge.New(vzID, "", ts.jwt, "", sessionID, ts.vzClient, vzInfo, &FakeVZOperatorInfo{}, ts.nats, &FakeVZChecker{})
 	defer b.Stop()
 
 	go b.RunStream()
@@ -497,5 +504,6 @@ func TestNATSGRPCBridgeTest_TestRegisterDeployment(t *testing.T) {
 		err := natsSub.Unsubscribe()
 		require.NoError(t, err)
 		ts.wg.Done()
+		assert.Equal(t, "fakeName", vzInfo.lastClusterName)
 	}()
 }

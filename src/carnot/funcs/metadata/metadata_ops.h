@@ -1587,6 +1587,36 @@ class HasServiceIDUDF : public ScalarUDF {
   }
 };
 
+class VizierIDUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx) {
+    auto md = GetMetadataState(ctx);
+    return md->vizier_id().str();
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the ID of the cluster.")
+        .Details("Get the ID of the Vizier.")
+        .Example("df.vizier_id = px.vizier_id()")
+        .Returns("The vizier ID of the cluster.");
+  }
+};
+
+class VizierNameUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx) {
+    auto md = GetMetadataState(ctx);
+    return md->vizier_name();
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the name of the cluster.")
+        .Details("Get the name of the Vizier.")
+        .Example("df.vizier_name = px.vizier_name()")
+        .Returns("The name of the cluster according to vizier.");
+  }
+};
+
 void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry);
 
 }  // namespace metadata

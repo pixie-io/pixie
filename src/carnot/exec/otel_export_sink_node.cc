@@ -67,8 +67,13 @@ Status OTelExportSinkNode::InitImpl(const plan::Operator& plan_node) {
 Status OTelExportSinkNode::PrepareImpl(ExecState*) { return Status::OK(); }
 
 Status OTelExportSinkNode::OpenImpl(ExecState* exec_state) {
-  metrics_service_stub_ = exec_state->MetricsServiceStub(plan_node_->url());
-  trace_service_stub_ = exec_state->TraceServiceStub(plan_node_->url());
+  if (plan_node_->metrics().size()) {
+    metrics_service_stub_ =
+        exec_state->MetricsServiceStub(plan_node_->url(), plan_node_->insecure());
+  }
+  if (plan_node_->spans().size()) {
+    trace_service_stub_ = exec_state->TraceServiceStub(plan_node_->url(), plan_node_->insecure());
+  }
   return Status::OK();
 }
 
@@ -91,8 +96,30 @@ void AddAttributes(google::protobuf::RepeatedPtrField<::opentelemetry::proto::co
     auto otel_attr = mutable_attributes->Add();
     otel_attr->set_key(px_attr.name());
     auto attribute_col = rb.ColumnAt(px_attr.column().column_index()).get();
-    otel_attr->mutable_value()->set_string_value(
-        types::GetValueFromArrowArray<types::STRING>(attribute_col, row_idx));
+    switch (px_attr.column().column_type()) {
+      case types::STRING: {
+        otel_attr->mutable_value()->set_string_value(
+            types::GetValueFromArrowArray<types::STRING>(attribute_col, row_idx));
+        break;
+      }
+      case types::INT64: {
+        otel_attr->mutable_value()->set_int_value(
+            types::GetValueFromArrowArray<types::INT64>(attribute_col, row_idx));
+        break;
+      }
+      case types::FLOAT64: {
+        otel_attr->mutable_value()->set_double_value(
+            types::GetValueFromArrowArray<types::FLOAT64>(attribute_col, row_idx));
+        break;
+      }
+      case types::BOOLEAN: {
+        otel_attr->mutable_value()->set_bool_value(
+            types::GetValueFromArrowArray<types::BOOLEAN>(attribute_col, row_idx));
+        break;
+      }
+      default:
+        LOG(ERROR) << "Unexpected type: " << types::ToString(px_attr.column().column_type());
+    }
   }
 }
 
@@ -302,6 +329,10 @@ Status OTelExportSinkNode::ConsumeSpans(const RowBatch& rb) {
         auto name_col = rb.ColumnAt(span_pb.name_column_index()).get();
         span->set_name(types::GetValueFromArrowArray<types::STRING>(name_col, row_idx));
       }
+
+      span->set_kind(::opentelemetry::proto::trace::v1::Span::SPAN_KIND_SERVER);
+      span->mutable_status()->set_code(
+          ::opentelemetry::proto::trace::v1::Status::STATUS_CODE_UNSET);
 
       AddAttributes(span->mutable_attributes(), span_pb.attributes(), rb, row_idx);
 

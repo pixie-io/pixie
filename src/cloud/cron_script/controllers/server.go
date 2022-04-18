@@ -204,7 +204,7 @@ func (s *Server) fetchScriptsForVizier(vizierID *uuidpb.UUID) (map[string]*cvmsg
 	}
 
 	// Fetch all scripts registered to this Vizier.
-	query := `SELECT id, script, cluster_ids, PGP_SYM_DECRYPT(configs, $1::text) as configs, frequency_s FROM cron_scripts WHERE org_id=$2`
+	query := `SELECT id, script, cluster_ids, PGP_SYM_DECRYPT(configs, $1::text) as configs, frequency_s FROM cron_scripts WHERE org_id=$2 AND enabled=true`
 	rows, err := s.db.Queryx(query, s.dbKey, utils.UUIDFromProtoOrNil(resp.OrgID))
 	if err != nil {
 		log.WithError(err).Error("Could not fetch scripts for org")
@@ -373,6 +373,7 @@ func (s *Server) GetScripts(ctx context.Context, req *cronscriptpb.GetScriptsReq
 			ClusterIDs: clusterIDs,
 			Configs:    p.ConfigStr,
 			Enabled:    p.Enabled,
+			FrequencyS: p.FrequencyS,
 		}
 		scripts = append(scripts, cpb)
 	}
@@ -412,7 +413,7 @@ func (s *Server) CreateScript(ctx context.Context, req *cronscriptpb.CreateScrip
 	}
 	idPb := utils.ProtoFromUUID(id)
 
-	go s.sendCronScriptUpdateToViziers(&cvmsgspb.CronScriptUpdate{
+	s.sendCronScriptUpdateToViziers(&cvmsgspb.CronScriptUpdate{
 		Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
 			UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
 				Script: &cvmsgspb.CronScript{
@@ -498,7 +499,7 @@ func (s *Server) UpdateScript(ctx context.Context, req *cronscriptpb.UpdateScrip
 	}
 
 	// Delete from previous viziers.
-	go s.sendCronScriptUpdateToViziers(&cvmsgspb.CronScriptUpdate{
+	s.sendCronScriptUpdateToViziers(&cvmsgspb.CronScriptUpdate{
 		Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
 			DeleteReq: &cvmsgspb.DeleteCronScriptRequest{
 				ScriptID: req.ScriptId,
@@ -506,18 +507,20 @@ func (s *Server) UpdateScript(ctx context.Context, req *cronscriptpb.UpdateScrip
 		},
 	}, claimsOrgID, prevClusterIDs)
 
-	go s.sendCronScriptUpdateToViziers(&cvmsgspb.CronScriptUpdate{
-		Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
-			UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
-				Script: &cvmsgspb.CronScript{
-					ID:         req.ScriptId,
-					Script:     contents,
-					FrequencyS: freq,
-					Configs:    configs,
+	if enabled {
+		s.sendCronScriptUpdateToViziers(&cvmsgspb.CronScriptUpdate{
+			Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
+				UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
+					Script: &cvmsgspb.CronScript{
+						ID:         req.ScriptId,
+						Script:     contents,
+						FrequencyS: freq,
+						Configs:    configs,
+					},
 				},
 			},
-		},
-	}, claimsOrgID, newClusterIDs)
+		}, claimsOrgID, newClusterIDs)
+	}
 
 	return &cronscriptpb.UpdateScriptResponse{}, nil
 }
@@ -556,7 +559,7 @@ func (s *Server) DeleteScript(ctx context.Context, req *cronscriptpb.DeleteScrip
 		return nil, status.Errorf(codes.Internal, "Failed to delete")
 	}
 
-	go s.sendCronScriptUpdateToViziers(&cvmsgspb.CronScriptUpdate{
+	s.sendCronScriptUpdateToViziers(&cvmsgspb.CronScriptUpdate{
 		Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
 			DeleteReq: &cvmsgspb.DeleteCronScriptRequest{
 				ScriptID: req.ID,
@@ -610,7 +613,7 @@ func (s *Server) sendCronScriptUpdateToViziers(msg *cvmsgspb.CronScriptUpdate, o
 	for _, v := range vzInfoResp.VizierInfos {
 		vzUUID := utils.UUIDFromProtoOrNil(v.VizierID)
 		if v.Status != cvmsgspb.VZ_ST_DISCONNECTED && v.Status != cvmsgspb.VZ_ST_UNKNOWN {
-			s.retryMessageUntilResponse(c2vMsg, vzshard.C2VTopic(cvmsgs.CronScriptUpdatesChannel, vzUUID), vzshard.V2CTopic(fmt.Sprintf("%s:%s", cvmsgs.CronScriptUpdatesResponseChannel, msg.RequestID), vzUUID))
+			go s.retryMessageUntilResponse(c2vMsg, vzshard.C2VTopic(cvmsgs.CronScriptUpdatesChannel, vzUUID), vzshard.V2CTopic(fmt.Sprintf("%s:%s", cvmsgs.CronScriptUpdatesResponseChannel, msg.RequestID), vzUUID))
 		}
 	}
 }

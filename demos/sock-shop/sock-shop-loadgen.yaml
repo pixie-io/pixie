@@ -29,12 +29,13 @@ spec:
       initContainers:
       - name: wait-sock-shop
         image: alpine:3.6
-        # yamllint disable
+        # yamllint disable rule:indentation
         command: ['sh', '-c', 'set -x;  apk add --no-cache curl;
           until timeout -t 2 curl -f "${SOCK_SHOP_HEALTH_ADDR}"; do
             echo "waiting for ${SOCK_SHOP_HEALTH_ADDR}";
             sleep 2;
           done;']
+        # yamllint enable rule:indentation
         env:
         - name: SOCK_SHOP_HEALTH_ADDR
           value: "http://orders.px-sock-shop.svc.cluster.local/health"

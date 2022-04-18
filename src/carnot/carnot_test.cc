@@ -808,7 +808,7 @@ TEST_P(CarnotFilterTest, int_filter) {
     const auto& cur_split = CarnotTestUtils::split_idx[i];
     int64_t left = cur_split.first;
     int64_t right = cur_split.second;
-    std::vector<types::Int64Value> time_out;
+    std::vector<types::Time64NSValue> time_out;
     std::vector<types::Float64Value> col2_out;
     std::vector<types::Int64Value> col3_out;
     std::vector<types::Int64Value> groups_out;
@@ -871,7 +871,7 @@ TEST_F(CarnotTest, string_filter) {
     const auto& cur_split = CarnotTestUtils::split_idx[i];
     int64_t left = cur_split.first;
     int64_t right = cur_split.second;
-    std::vector<types::Int64Value> time_out;
+    std::vector<types::Time64NSValue> time_out;
     std::vector<types::Float64Value> col2_out;
     std::vector<types::Int64Value> col3_out;
     std::vector<types::Int64Value> groups_out;
@@ -926,7 +926,7 @@ TEST_P(CarnotLimitTest, limit) {
     const auto& cur_split = CarnotTestUtils::split_idx[i];
     int64_t left = cur_split.first;
     int64_t right = cur_split.second;
-    std::vector<types::Int64Value> time_out;
+    std::vector<types::Time64NSValue> time_out;
     std::vector<types::Float64Value> col2_out;
     for (int64_t j = left; j < right; j++) {
       if (j >= num_rows) {
@@ -1039,7 +1039,7 @@ TEST_F(CarnotTest, multiple_result_calls) {
     const auto& cur_split = CarnotTestUtils::split_idx[i];
     int64_t left = cur_split.first;
     int64_t right = cur_split.second;
-    std::vector<types::Int64Value> time_out;
+    std::vector<types::Time64NSValue> time_out;
     std::vector<types::StringValue> strings_out;
     std::vector<types::Int64Value> col3_out;
     std::vector<types::Int64Value> groups_out;
@@ -1086,7 +1086,7 @@ TEST_F(CarnotTest, pass_logical_plan) {
       table_store_->GetRelationMap(), planner::SensitiveColumnMap{}, registry_info.get(),
       current_time,
       /* max_output_rows_per_table */ 0, "result_addr", "result_ssl_targetname",
-      planner::RedactionOptions{}, nullptr);
+      planner::RedactionOptions{}, nullptr, nullptr);
   StatusOr<planpb::Plan> logical_plan_status =
       compiler.Compile(absl::Substitute(query, logical_plan_table_name), &compiler_state);
   ASSERT_OK(logical_plan_status);

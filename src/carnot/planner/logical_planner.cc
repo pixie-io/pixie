@@ -80,6 +80,12 @@ StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
     for (const auto& [key, value] : logical_state.otel_endpoint_config().headers()) {
       (*otel_endpoint_config->mutable_headers())[key] = value;
     }
+    otel_endpoint_config->set_insecure(logical_state.otel_endpoint_config().insecure());
+  }
+  std::unique_ptr<planner::PluginConfig> plugin_config = nullptr;
+  if (logical_state.has_plugin_config()) {
+    plugin_config = std::unique_ptr<planner::PluginConfig>(
+        new planner::PluginConfig{logical_state.plugin_config().start_time_ns()});
   }
   // Create a CompilerState obj using the relation map and grabbing the current time.
   return std::make_unique<planner::CompilerState>(
@@ -87,7 +93,8 @@ StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
       max_output_rows_per_table, logical_state.result_address(),
       logical_state.result_ssl_targetname(),
       // TODO(philkuz) add an endpoint config to logical_state and pass that in here.
-      RedactionOptionsFromPb(logical_state.redaction_options()), std::move(otel_endpoint_config));
+      RedactionOptionsFromPb(logical_state.redaction_options()), std::move(otel_endpoint_config),
+      std::move(plugin_config));
 }
 
 StatusOr<std::unique_ptr<LogicalPlanner>> LogicalPlanner::Create(const udfspb::UDFInfo& udf_info) {

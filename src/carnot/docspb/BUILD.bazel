@@ -23,6 +23,7 @@ pl_proto_library(
     srcs = ["docs.proto"],
     deps = [
         "//src/carnot/udfspb:udfs_pl_proto",
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
     ],
 )
 
@@ -31,6 +32,7 @@ pl_cc_proto_library(
     proto = ":docs_pl_proto",
     deps = [
         "//src/carnot/udfspb:udfs_pl_cc_proto",
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
     ],
 )
 

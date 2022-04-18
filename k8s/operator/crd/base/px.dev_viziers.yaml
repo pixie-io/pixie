@@ -126,6 +126,11 @@ spec:
                 description: PemMemoryLimit is a memory limit applied specifically
                   to PEM pods.
                 type: string
+              pemMemoryRequest:
+                description: PemMemoryRequest is a memory request applied specifically
+                  to PEM pods. It will automatically use the value of pemMemoryLimit
+                  if not specified.
+                type: string                
               pod:
                 description: Pod defines the policy for creating Vizier pods.
                 properties:

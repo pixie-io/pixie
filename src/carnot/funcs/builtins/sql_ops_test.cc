@@ -16,8 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <gmock/gmock-matchers.h>
-#include <gtest/gtest.h>
 #include <ostream>
 
 #include "sql_parsing/normalization.h"
@@ -42,7 +40,7 @@ std::ostream& operator<<(std::ostream& os, const NormPgSQLTestCase& test_case) {
             << test_case.expected_result;
 }
 
-class NormPGSQLTest : public testing::TestWithParam<NormPgSQLTestCase> {};
+class NormPGSQLTest : public ::testing::TestWithParam<NormPgSQLTestCase> {};
 
 TEST_P(NormPGSQLTest, postgres_basic) {
   auto udf_tester = udf::UDFTester<NormalizePostgresSQLUDF>();
@@ -53,7 +51,7 @@ TEST_P(NormPGSQLTest, postgres_basic) {
 
 INSTANTIATE_TEST_SUITE_P(
     NormPGSQLVariants, NormPGSQLTest,
-    testing::Values(
+    ::testing::Values(
         // Trivial test case.
         NormPgSQLTestCase{"SELECT 1", kPgQueryCmdCode,
                           NormalizeResult{
@@ -102,7 +100,7 @@ std::ostream& operator<<(std::ostream& os, const NormMySQLTestCase& test_case) {
             << "expected:" << std::endl
             << test_case.expected_result;
 }
-class NormMySQLTest : public testing::TestWithParam<NormMySQLTestCase> {};
+class NormMySQLTest : public ::testing::TestWithParam<NormMySQLTestCase> {};
 
 TEST_P(NormMySQLTest, mysql_basic) {
   auto udf_tester = udf::UDFTester<NormalizeMySQLUDF>();
@@ -113,7 +111,7 @@ TEST_P(NormMySQLTest, mysql_basic) {
 
 INSTANTIATE_TEST_SUITE_P(
     NormMySQLTestVariants, NormMySQLTest,
-    testing::Values(
+    ::testing::Values(
         NormMySQLTestCase{
             "SELECT 1",
             kMySQLQueryCmdCode,

@@ -167,7 +167,7 @@ static __inline struct socket_data_event_t* fill_socket_data_event(
   event->attr.role = conn_info->role;
   event->attr.pos = (direction == kEgress) ? conn_info->wr_bytes : conn_info->rd_bytes;
   event->attr.prepend_length_header = conn_info->prepend_length_header;
-  bpf_probe_read(&event->attr.length_header, 4, conn_info->prev_buf);
+  BPF_PROBE_READ_VAR(event->attr.length_header, conn_info->prev_buf);
   return event;
 }
 
@@ -298,29 +298,25 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info,
 
 static __inline void read_sockaddr_kernel(struct conn_info_t* conn_info,
                                           const struct socket* socket) {
-  // The use of bpf_probe_read_kernel() is required since BCC cannot insert them as expected.
+  // Use BPF_PROBE_READ_KERNEL_VAR since BCC cannot insert them as expected.
   struct sock* sk = NULL;
-  bpf_probe_read_kernel(&sk, sizeof(sk), &socket->sk);
+  BPF_PROBE_READ_KERNEL_VAR(sk, &socket->sk);
 
   struct sock_common* sk_common = &sk->__sk_common;
   uint16_t family = -1;
   uint16_t port = -1;
 
-  bpf_probe_read_kernel(&family, sizeof(family), &sk_common->skc_family);
-  bpf_probe_read_kernel(&port, sizeof(port), &sk_common->skc_dport);
+  BPF_PROBE_READ_KERNEL_VAR(family, &sk_common->skc_family);
+  BPF_PROBE_READ_KERNEL_VAR(port, &sk_common->skc_dport);
 
   conn_info->addr.sa.sa_family = family;
 
   if (family == AF_INET) {
     conn_info->addr.in4.sin_port = port;
-
-    uint32_t* addr = &conn_info->addr.in4.sin_addr.s_addr;
-    bpf_probe_read_kernel(addr, sizeof(*addr), &sk_common->skc_daddr);
+    BPF_PROBE_READ_KERNEL_VAR(conn_info->addr.in4.sin_addr.s_addr, &sk_common->skc_daddr);
   } else if (family == AF_INET6) {
     conn_info->addr.in6.sin6_port = port;
-
-    struct in6_addr* addr = &conn_info->addr.in6.sin6_addr;
-    bpf_probe_read_kernel(addr, sizeof(*addr), &sk_common->skc_v6_daddr);
+    BPF_PROBE_READ_KERNEL_VAR(conn_info->addr.in6.sin6_addr, &sk_common->skc_v6_daddr);
   }
 }
 
@@ -477,10 +473,10 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx,
 #pragma unroll
   for (int i = 0; i < LOOP_LIMIT && i < iovlen && bytes_sent < total_size; ++i) {
     struct iovec iov_cpy;
-    bpf_probe_read(&iov_cpy, sizeof(struct iovec), &iov[i]);
+    BPF_PROBE_READ_VAR(iov_cpy, &iov[i]);
 
     const int bytes_remaining = total_size - bytes_sent;
-    const size_t iov_size = iov_cpy.iov_len < bytes_remaining ? iov_cpy.iov_len : bytes_remaining;
+    const size_t iov_size = min_size_t(iov_cpy.iov_len, bytes_remaining);
 
     // TODO(oazizi/yzhao): Should switch this to go through perf_submit_wrapper.
     //                     We don't have the BPF instruction count to do so right now.
@@ -733,9 +729,9 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
       update_traffic_class(conn_info, direction, args->buf, bytes_count);
     } else {
       struct iovec iov_cpy;
-      bpf_probe_read(&iov_cpy, sizeof(struct iovec), &args->iov[0]);
+      BPF_PROBE_READ_VAR(iov_cpy, &args->iov[0]);
       // Ensure we are not reading beyond the available data.
-      const size_t buf_size = iov_cpy.iov_len < bytes_count ? iov_cpy.iov_len : bytes_count;
+      const size_t buf_size = min_size_t(iov_cpy.iov_len, bytes_count);
       update_traffic_class(conn_info, direction, iov_cpy.iov_base, buf_size);
     }
 
@@ -1289,7 +1285,7 @@ int syscall__probe_ret_sendmmsg(struct pt_regs* ctx) {
     // msg_len is defined as unsigned int, so we have to use the same here.
     // This is different than most other syscalls that use ssize_t.
     unsigned int bytes_count = 0;
-    bpf_probe_read(&bytes_count, sizeof(unsigned int), write_args->msg_len);
+    BPF_PROBE_READ_VAR(bytes_count, write_args->msg_len);
     process_syscall_data_vecs(ctx, id, kEgress, write_args, bytes_count);
   }
   active_write_args_map.delete(&id);
@@ -1389,7 +1385,7 @@ int syscall__probe_ret_recvmmsg(struct pt_regs* ctx) {
     // msg_len is defined as unsigned int, so we have to use the same here.
     // This is different than most other syscalls that use ssize_t.
     unsigned int bytes_count = 0;
-    bpf_probe_read(&bytes_count, sizeof(unsigned int), read_args->msg_len);
+    BPF_PROBE_READ_VAR(bytes_count, read_args->msg_len);
     process_syscall_data_vecs(ctx, id, kIngress, read_args, bytes_count);
   }
   active_read_args_map.delete(&id);

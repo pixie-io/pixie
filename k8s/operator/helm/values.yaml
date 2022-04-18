@@ -2,7 +2,9 @@
 # OLM is used for deploying and ensuring the operator is up-to-date.
 # deployOLM indicates whether OLM should be deployed. This should only be
 # disabled if an instance of OLM is already configured on the cluster.
-deployOLM: true
+# Should be string "true" if true, but "false" otherwise. If empty, defaults
+# to whether OLM is present in the cluster.
+deployOLM: ""
 # The namespace that olm should run in. If olm has already been deployed
 # to the cluster, this should be the namespace that olm is already running in.
 olmNamespace: "olm"
@@ -43,6 +45,8 @@ cloudAddr: "withpixie.ai:443"
 devCloudNamespace: ""
 # A memory limit applied specifically to PEM pods. If none is specified, a default limit of 2Gi is set.
 pemMemoryLimit: ""
+# A memory request applied specifically to PEM pods. If none is specified, it will default to pemMemoryLimit.
+pemMemoryRequest: ""
 # DataAccess defines the level of data that may be accesssed when executing a script on the cluster.
 dataAccess: "Full"
 pod:

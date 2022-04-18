@@ -16,8 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <gmock/gmock-matchers.h>
-#include <gtest/gtest.h>
 #include <ostream>
 
 #include "mysql_parser/MySQLLexer.h"
@@ -27,7 +25,7 @@
 #include "src/carnot/funcs/builtins/sql_parsing/antlr_parse.h"
 #include "src/carnot/funcs/builtins/sql_parsing/normalization.h"
 #include "src/common/base/logging.h"
-#include "src/common/base/test_utils.h"
+#include "src/common/testing/testing.h"
 
 namespace px {
 namespace carnot {
@@ -40,7 +38,7 @@ struct NormSQLTestCase {
   NormalizeResult expected_result;
 };
 
-class NormPGSQLTest : public testing::TestWithParam<NormSQLTestCase> {};
+class NormPGSQLTest : public ::testing::TestWithParam<NormSQLTestCase> {};
 
 TEST_P(NormPGSQLTest, basic) {
   auto test_case = GetParam();
@@ -58,7 +56,7 @@ TEST_P(NormPGSQLTest, basic) {
 
 INSTANTIATE_TEST_SUITE_P(
     NormPGSQLVariants, NormPGSQLTest,
-    testing::Values(
+    ::testing::Values(
         // Trivial test case.
         NormSQLTestCase{"SELECT 1", {}, NormalizeResult{"SELECT $1", {"1"}, {}}},
         // SELECT test case.
@@ -143,7 +141,7 @@ INSTANTIATE_TEST_SUITE_P(
             },
         }));
 
-class NormMySQLTest : public testing::TestWithParam<NormSQLTestCase> {};
+class NormMySQLTest : public ::testing::TestWithParam<NormSQLTestCase> {};
 
 TEST_P(NormMySQLTest, basic) {
   auto test_case = GetParam();
@@ -162,7 +160,7 @@ TEST_P(NormMySQLTest, basic) {
 
 INSTANTIATE_TEST_SUITE_P(
     NormMySQLVariants, NormMySQLTest,
-    testing::Values(
+    ::testing::Values(
         // Trivial test case.
         NormSQLTestCase{"SELECT 1", {}, NormalizeResult{"SELECT ?", {"1"}, {}}},
         // SELECT

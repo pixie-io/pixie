@@ -39,24 +39,12 @@ pl_cc_library(
     ],
 )
 
-pl_cc_library(
-    name = "cc_library_mock",
-    testonly = 1,
-    srcs = glob([
-        "*_mock.h",
-    ]),
-    deps = [
-        ":cc_library",
-    ],
-)
-
 pl_cc_test(
     name = "proc_parser_test",
     srcs = ["proc_parser_test.cc"],
     data = ["//src/common/system/testdata:proc_fs"],
     deps = [
         ":cc_library",
-        ":cc_library_mock",
     ],
 )
 

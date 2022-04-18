@@ -22,6 +22,7 @@ package px.carnot.docspb;
 
 option go_package = "docspb";
 
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/carnot/udfspb/udfs.proto";
 
 message IdentDoc {
@@ -130,9 +131,17 @@ message DataFrameOpDoc {
   FuncDoc func_doc = 2;
 }
 
-// CompileFnDoc contains information about functions that run at compile time rather than in the execution engine.
+// CompileFnDoc contains information about functions that run at compile time.
 message CompileFnDoc {
   // The description of the documented compile time function.
+  DocBody body = 1;
+  // The documentation of the function to call for this field.
+  FuncDoc func_doc = 2;
+}
+
+// OTelDoc holds info about the OpenTelemetry exporter integraiotn.
+message OTelDoc {
+  // The description of the documented OTel function.
   DocBody body = 1;
   // The documentation of the function to call for this field.
   FuncDoc func_doc = 2;
@@ -153,4 +162,7 @@ message StructuredDocs {
   repeated CompileFnDoc compile_fn_docs = 6;
   // Information about udf docs.
   px.carnot.udfspb.Docs udf_docs = 4;
+
+  // Docs for the OpenTelemetry exporter.
+  repeated OTelDoc otel_docs = 7 [(gogoproto.customname) = "OTelDocs"];
 }

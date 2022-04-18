@@ -27,9 +27,9 @@
 
 #include <absl/strings/match.h>
 
-#include "src/common/base/test_utils.h"
 #include "src/common/exec/subprocess.h"
 #include "src/common/testing/test_environment.h"
+#include "src/common/testing/testing.h"
 
 namespace px {
 namespace stirling {

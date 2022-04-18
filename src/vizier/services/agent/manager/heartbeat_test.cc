@@ -25,7 +25,6 @@
 #include "src/common/event/api_impl.h"
 #include "src/common/event/libuv.h"
 #include "src/common/event/nats.h"
-#include "src/common/system/config_mock.h"
 #include "src/common/testing/event/simulated_time_system.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/metadatapb/metadata.pb.h"
@@ -110,11 +109,6 @@ class HeartbeatMessageHandlerTest : public ::testing::Test {
     api_ = std::make_unique<px::event::APIImpl>(time_system_.get());
     dispatcher_ = api_->AllocateDispatcher("manager");
     nats_conn_ = std::make_unique<FakeNATSConnector<px::vizier::messages::VizierMessage>>();
-    auto sys_config = system::MockConfig();
-    EXPECT_CALL(sys_config, KernelTicksPerSecond()).WillRepeatedly(::testing::Return(10000000));
-    EXPECT_CALL(sys_config, HasConfig()).WillRepeatedly(Return(true));
-    EXPECT_CALL(sys_config, proc_path()).WillRepeatedly(ReturnRef(proc_path_));
-    EXPECT_CALL(sys_config, sysfs_path()).WillRepeatedly(ReturnRef(sysfs_path_));
 
     md_filter_ = md::AgentMetadataFilter::Create(10, 0.1, {md::MetadataType::SERVICE_NAME})
                      .ConsumeValueOrDie();

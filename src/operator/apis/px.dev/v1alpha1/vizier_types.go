@@ -54,6 +54,8 @@ type VizierSpec struct {
 	DevCloudNamespace string `json:"devCloudNamespace,omitempty"`
 	// PemMemoryLimit is a memory limit applied specifically to PEM pods.
 	PemMemoryLimit string `json:"pemMemoryLimit,omitempty"`
+	// PemMemoryLimit is a memory request applied specifically to PEM pods.
+	PemMemoryRequest string `json:"pemMemoryRequest,omitempty"`
 	// ClockConverter specifies which routine to use for converting timestamps to a synced reference time.
 	ClockConverter ClockConverterType `json:"clockConverter,omitempty"`
 	// Pod defines the policy for creating Vizier pods.

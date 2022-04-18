@@ -48,15 +48,19 @@
   {}
 #endif
 
+// _VAR suffix indicates that the count of bytes being read is equal to the variable's byte size.
+#define BPF_PROBE_READ_VAR(value, ptr) bpf_probe_read(&value, sizeof(value), ptr)
+#define BPF_PROBE_READ_KERNEL_VAR(value, ptr) bpf_probe_read_kernel(&value, sizeof(value), ptr)
+
 static __inline int32_t read_big_endian_int32(const char* buf) {
   int32_t length;
-  bpf_probe_read(&length, 4, buf);
+  BPF_PROBE_READ_VAR(length, buf);
   return bpf_ntohl(length);
 }
 
 static __inline int32_t read_big_endian_int16(const char* buf) {
   int16_t val;
-  bpf_probe_read(&val, 2, buf);
+  BPF_PROBE_READ_VAR(val, buf);
   return bpf_ntohl(val);
 }
 
@@ -77,4 +81,11 @@ static __inline int bpf_strncmp(const char* lhs, const char* rhs, size_t n) {
 
 // There is a macro min() defined by a kernel header.
 // We prefer being more self-contained, so define this with a different name.
-static __inline int64_t min_int64(int64_t l, int64_t r) { return l < r ? l : r; }
+#define DEFINE_MIN_FN_FOR_TYPE(type) \
+  static __inline type min_##type(type l, type r) { return l < r ? l : r; }
+// Define the function for new types if needed
+DEFINE_MIN_FN_FOR_TYPE(uint32_t)
+DEFINE_MIN_FN_FOR_TYPE(int64_t)
+DEFINE_MIN_FN_FOR_TYPE(uint64_t)
+DEFINE_MIN_FN_FOR_TYPE(size_t)
+#undef DEFINE_MIN_FN_FOR_TYPE

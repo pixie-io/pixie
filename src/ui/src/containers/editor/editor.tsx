@@ -76,6 +76,8 @@ const shortcutKeys = Object.values(getKeyMap()).map((keyBinding) => keyBinding.s
 
 const VisEditor = React.memo<{ visible: boolean }>(({ visible }) => {
   const classes = useStyles();
+  const theme = useTheme();
+
   const { script } = React.useContext(ScriptContext);
   const { setVisEditorText } = React.useContext(EditorContext);
 
@@ -102,6 +104,7 @@ const VisEditor = React.memo<{ visible: boolean }>(({ visible }) => {
       spinnerClass={classes.spinner}
       shortcutKeys={shortcutKeys}
       language='json'
+      theme={EDITOR_THEME_MAP[theme.palette.mode]}
     />
   );
 });
@@ -109,10 +112,11 @@ VisEditor.displayName = 'VisEditor';
 
 const PxLEditor = React.memo<{ visible: boolean }>(({ visible }) => {
   const classes = useStyles();
+  const theme = useTheme();
+
   const { script } = React.useContext(ScriptContext);
   const { setPxlEditorText } = React.useContext(EditorContext);
   const editorRef = React.createRef<CodeEditor>();
-  const theme = useTheme();
 
   // We useEffect instead of relying on the prop because of an issue where a cursor
   // in the field causes onChange to be triggered partway through, leading to a

@@ -130,7 +130,7 @@ class PixieModuleTest : public QLObjectTest {
         SetUpRelMap(), /* sensitive_columns */ SensitiveColumnMap{}, info_.get(),
         /* time_now */ time_now_,
         /* max_output_rows_per_table */ 0, "result_addr", "result_ssl_targetname",
-        /* redaction_options */ RedactionOptions{}, nullptr);
+        /* redaction_options */ RedactionOptions{}, nullptr, nullptr);
 
     module_ = PixieModule::Create(graph.get(), compiler_state_.get(), ast_visitor.get())
                   .ConsumeValueOrDie();
@@ -312,6 +312,10 @@ TEST_F(PixieModuleTest, parse_duration) {
     EXPECT_COMPILER_ERROR(ParseExpression("px.parse_duration('randomstring')"),
                           "Time string is in wrong format.");
   }
+}
+
+TEST_F(PixieModuleTest, plugin_module) {
+  EXPECT_COMPILER_ERROR(ParseExpression("px.plugin.start_time"), "No plugin config found");
 }
 
 }  // namespace compiler

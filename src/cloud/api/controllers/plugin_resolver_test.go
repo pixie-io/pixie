@@ -155,6 +155,57 @@ func TestPluginResolver_OrgRetentionPluginConfig(t *testing.T) {
 	})
 }
 
+func TestPluginResolver_RetentionPluginConfig(t *testing.T) {
+	gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	mockClients.MockPlugin.EXPECT().GetOrgRetentionPluginConfig(gomock.Any(), &cloudpb.GetOrgRetentionPluginConfigRequest{
+		PluginId: "test-plugin",
+	}).Return(&cloudpb.GetOrgRetentionPluginConfigResponse{
+		Configs: map[string]string{
+			"API_KEY": "test-api-key",
+		},
+		CustomExportUrl: "https://localhost:8080",
+		InsecureTLS:     true,
+	}, nil)
+
+	gqlSchema := LoadSchema(gqlEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				query {
+					retentionPluginConfig(id: "test-plugin") {
+						configs {
+							name
+							value
+						}
+						customExportURL
+						insecureTLS
+					}
+				}
+			`,
+			ExpectedResult: `
+				{
+					"retentionPluginConfig": {
+						"configs": [
+							{
+
+								"name": "API_KEY",
+								"value": "test-api-key"
+							}
+						],
+						"customExportURL": "https://localhost:8080",
+						"insecureTLS": true
+					}
+				}
+			`,
+		},
+	})
+}
+
 func TestPluginResolver_RetentionPluginInfo(t *testing.T) {
 	gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
@@ -167,6 +218,8 @@ func TestPluginResolver_RetentionPluginInfo(t *testing.T) {
 		Configs: map[string]string{
 			"API_KEY": "This is an API key used in the product.",
 		},
+		AllowCustomExportURL: true,
+		AllowInsecureTLS:     true,
 	}, nil)
 
 	gqlSchema := LoadSchema(gqlEnv)
@@ -181,6 +234,8 @@ func TestPluginResolver_RetentionPluginInfo(t *testing.T) {
 							name
 							description
 						}
+						allowCustomExportURL
+						allowInsecureTLS
 					}
 				}
 			`,
@@ -192,7 +247,9 @@ func TestPluginResolver_RetentionPluginInfo(t *testing.T) {
 								"name": "API_KEY",
 								"description": "This is an API key used in the product."
 							}
-						]
+						],
+						"allowCustomExportURL": true,
+						"allowInsecureTLS": true
 					}
 				}
 			`,
@@ -216,6 +273,12 @@ func TestPluginResolver_UpdateRetentionPluginConfig(t *testing.T) {
 		Version: &types.StringValue{
 			Value: "2.0.0",
 		},
+		CustomExportUrl: &types.StringValue{
+			Value: "https://localhost:8080",
+		},
+		InsecureTLS: &types.BoolValue{
+			Value: false,
+		},
 	}).Return(&cloudpb.UpdateRetentionPluginConfigResponse{}, nil)
 
 	gqlSchema := LoadSchema(gqlEnv)
@@ -231,7 +294,9 @@ func TestPluginResolver_UpdateRetentionPluginConfig(t *testing.T) {
 								name: "API_KEY",
 								value: "test-api-key"
 							}
-						]
+						],
+						customExportURL: "https://localhost:8080",
+						insecureTLS: false
 					})
 				}
 			`,
@@ -491,6 +556,34 @@ func TestPluginResolver_CreateRetentionScript(t *testing.T) {
 			ExpectedResult: `
 				{
 					"CreateRetentionScript": "1ba7b810-9dad-11d1-80b4-00c04fd430c8"
+				}
+			`,
+		},
+	})
+}
+
+func TestPluginResolver_DeleteRetentionScript(t *testing.T) {
+	gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	mockClients.MockPlugin.EXPECT().DeleteRetentionScript(gomock.Any(), &cloudpb.DeleteRetentionScriptRequest{
+		ID: utils.ProtoFromUUIDStrOrNil("1ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+	}).Return(&cloudpb.DeleteRetentionScriptResponse{}, nil)
+
+	gqlSchema := LoadSchema(gqlEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				mutation {
+					DeleteRetentionScript(id: "1ba7b810-9dad-11d1-80b4-00c04fd430c8") {}
+				}
+			`,
+			ExpectedResult: `
+				{
+					"DeleteRetentionScript": true
 				}
 			`,
 		},

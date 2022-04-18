@@ -574,10 +574,10 @@ INSTANTIATE_TEST_SUITE_P(
         },
         {
             "unsupported_metric_attribute_type",
-            table_store::schema::Relation{{types::TIME64NS, types::INT64, types::INT64},
+            table_store::schema::Relation{{types::TIME64NS, types::TIME64NS, types::INT64},
                                           {"time_", "req_method", "latency_ns"},
                                           {types::ST_NONE, types::ST_NONE, types::ST_DURATION_NS}},
-            "Expected attribute column 'req_method' to be STRING, received INT64",
+            "Expected attribute column 'req_method' to be .* received TIME64NS",
             [](IR* graph, OperatorIR* parent, table_store::schema::Relation* relation) {
               OTelData data;
 
@@ -597,10 +597,10 @@ INSTANTIATE_TEST_SUITE_P(
 
         {
             "unsupported_resource_attribute_type",
-            table_store::schema::Relation{{types::TIME64NS, types::INT64, types::INT64},
+            table_store::schema::Relation{{types::TIME64NS, types::TIME64NS, types::INT64},
                                           {"time_", "service", "latency_ns"},
                                           {types::ST_NONE, types::ST_NONE, types::ST_DURATION_NS}},
-            "Expected attribute column 'service' to be STRING, received INT64",
+            "Expected attribute column 'service' to be .* received TIME64NS",
             [](IR* graph, OperatorIR* parent, table_store::schema::Relation* relation) {
               OTelData data;
 

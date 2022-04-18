@@ -60,13 +60,19 @@ class Config : public NotCopyable {
    * Get the page size in the kernel.
    * @return page size in bytes.
    */
-  virtual int64_t PageSize() const = 0;
+  virtual int64_t PageSizeBytes() const = 0;
 
   /**
    * Get the Kernel ticks per second.
    * @return int kernel ticks per second.
    */
   virtual int64_t KernelTicksPerSecond() const = 0;
+
+  /**
+   * Get the Kernel tick time in nanoseconds.
+   * @return int kernel ticks time.
+   */
+  virtual int64_t KernelTickTimeNS() const = 0;
 
   /**
    * If recording `nsecs` from bpf, this function can be used to

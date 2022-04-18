@@ -112,6 +112,12 @@ TEST(StringOps, StringToInt) {
   udf_tester.ForInput("+1111111", -1).Expect(1111111);
 }
 
+TEST(StringOps, IntToString) {
+  auto udf_tester = udf::UDFTester<IntToStringUDF>();
+  udf_tester.ForInput(1234).Expect("1234");
+  udf_tester.ForInput(-1234).Expect("-1234");
+}
+
 }  // namespace builtins
 }  // namespace carnot
 }  // namespace px

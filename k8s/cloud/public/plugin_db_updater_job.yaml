@@ -45,6 +45,8 @@ spec:
             secretKeyRef:
               name: pl-db-secrets
               key: PL_POSTGRES_PASSWORD
+        - name: PL_PLUGIN_REPO
+          value: "pixie-io/pixie-plugin"
       restartPolicy: Never
       volumes:
       - name: pl-db-secrets

@@ -54,13 +54,13 @@ const ResultSinkStubGenerator MockResultSinkStubGenerator =
   return std::make_unique<carnotpb::MockResultSinkServiceStub>();
 };
 
-const MetricsStubGenerator MockMetricsStubGenerator = [](const std::string&)
+const MetricsStubGenerator MockMetricsStubGenerator = [](const std::string&, bool)
     -> std::unique_ptr<
         opentelemetry::proto::collector::metrics::v1::MetricsService::StubInterface> {
   return std::make_unique<opentelemetry::proto::collector::metrics::v1::MockMetricsServiceStub>();
 };
 
-const TraceStubGenerator MockTraceStubGenerator = [](const std::string&)
+const TraceStubGenerator MockTraceStubGenerator = [](const std::string&, bool)
     -> std::unique_ptr<opentelemetry::proto::collector::trace::v1::TraceService::StubInterface> {
   return std::make_unique<opentelemetry::proto::collector::trace::v1::MockTraceServiceStub>();
 };
@@ -147,7 +147,7 @@ class CarnotTestUtils {
     return table;
   }
 
-  static const std::vector<types::Int64Value> big_test_col1;
+  static const std::vector<types::Time64NSValue> big_test_col1;
   static const std::vector<types::Float64Value> big_test_col2;
   static const std::vector<types::Int64Value> big_test_col3;
   static const std::vector<types::Int64Value> big_test_groups;
@@ -164,8 +164,8 @@ class CarnotTestUtils {
 
     for (const auto& pair : split_idx) {
       auto rb = RowBatch(RowDescriptor(rel.col_types()), pair.second - pair.first);
-      std::vector<types::Int64Value> col1_batch(big_test_col1.begin() + pair.first,
-                                                big_test_col1.begin() + pair.second);
+      std::vector<types::Time64NSValue> col1_batch(big_test_col1.begin() + pair.first,
+                                                   big_test_col1.begin() + pair.second);
       EXPECT_OK(rb.AddColumn(types::ToArrow(col1_batch, arrow::default_memory_pool())));
 
       std::vector<types::Float64Value> col2_batch(big_test_col2.begin() + pair.first,
@@ -247,7 +247,7 @@ class CarnotTestUtils {
   }
 };
 
-const std::vector<types::Int64Value> CarnotTestUtils::big_test_col1({1, 2, 3, 5, 6, 8, 9, 11});
+const std::vector<types::Time64NSValue> CarnotTestUtils::big_test_col1({1, 2, 3, 5, 6, 8, 9, 11});
 const std::vector<types::Float64Value> CarnotTestUtils::big_test_col2({0.5, 1.2, 5.3, 0.1, 5.1, 5.2,
                                                                        0.1, 7.3});
 const std::vector<types::Int64Value> CarnotTestUtils::big_test_col3({6, 2, 12, 5, 60, 56, 12, 13});

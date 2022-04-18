@@ -148,6 +148,7 @@ type VizierInfo interface {
 	GetJob(string) (*batchv1.Job, error)
 	GetClusterUID() (string, error)
 	UpdateClusterID(string) error
+	UpdateClusterName(string) error
 	UpdateClusterIDAnnotation(string) error
 	GetVizierPodLogs(string, bool, string) (string, error)
 	GetVizierPods() ([]*vizierpb.VizierPodStatus, []*vizierpb.VizierPodStatus, error)
@@ -166,10 +167,11 @@ type VizierHealthChecker interface {
 
 // Bridge is the NATS<->GRPC bridge.
 type Bridge struct {
-	vizierID      uuid.UUID
-	jwtSigningKey string
-	sessionID     int64
-	deployKey     string
+	vizierID            uuid.UUID
+	assignedClusterName string
+	jwtSigningKey       string
+	sessionID           int64
+	deployKey           string
 
 	vzConnClient vzconnpb.VZConnServiceClient
 	vzInfo       VizierInfo
@@ -208,18 +210,19 @@ type Bridge struct {
 }
 
 // New creates a cloud connector to cloud bridge.
-func New(vizierID uuid.UUID, jwtSigningKey string, deployKey string, sessionID int64, vzClient vzconnpb.VZConnServiceClient, vzInfo VizierInfo, vzOperator VizierOperatorInfo, nc *nats.Conn, checker VizierHealthChecker) *Bridge {
+func New(vizierID uuid.UUID, assignedClusterName string, jwtSigningKey string, deployKey string, sessionID int64, vzClient vzconnpb.VZConnServiceClient, vzInfo VizierInfo, vzOperator VizierOperatorInfo, nc *nats.Conn, checker VizierHealthChecker) *Bridge {
 	return &Bridge{
-		vizierID:      vizierID,
-		jwtSigningKey: jwtSigningKey,
-		deployKey:     deployKey,
-		sessionID:     sessionID,
-		vzConnClient:  vzClient,
-		vizChecker:    checker,
-		vzInfo:        vzInfo,
-		vzOperator:    vzOperator,
-		hbSeqNum:      0,
-		nc:            nc,
+		vizierID:            vizierID,
+		assignedClusterName: assignedClusterName,
+		jwtSigningKey:       jwtSigningKey,
+		deployKey:           deployKey,
+		sessionID:           sessionID,
+		vzConnClient:        vzClient,
+		vizChecker:          checker,
+		vzInfo:              vzInfo,
+		vzOperator:          vzOperator,
+		hbSeqNum:            0,
+		nc:                  nc,
 		// Buffer NATS channels to make sure we don't back-pressure NATS
 		natsCh:            make(chan *nats.Msg, 5000),
 		ptOutCh:           make(chan *vzconnpb.V2CBridgeMessage, 5000),
@@ -287,8 +290,13 @@ func (s *Bridge) RegisterDeployment() error {
 
 	// Get cluster ID and assign to secrets.
 	s.vizierID = utils.UUIDFromProtoOrNil(resp.VizierID)
+	s.assignedClusterName = resp.VizierName
 
-	return s.vzInfo.UpdateClusterID(s.vizierID.String())
+	err = s.vzInfo.UpdateClusterID(s.vizierID.String())
+	if err != nil {
+		return err
+	}
+	return s.vzInfo.UpdateClusterName(resp.VizierName)
 }
 
 // RunStream manages starting and restarting the stream to VZConn.
@@ -641,11 +649,21 @@ func (s *Bridge) doRegistrationHandshake(stream vzconnpb.VZConnService_NATSBridg
 			case cvmsgspb.ST_FAILED_NOT_FOUND:
 				return errors.New("registration not found, cluster unknown in pixie-cloud")
 			case cvmsgspb.ST_OK:
-				return nil
+				break
 			default:
-
 				return errors.New("registration unsuccessful: " + err.Error())
 			}
+
+			if s.assignedClusterName == "" {
+				// Deliberately not returning the error. We don't want to kill a cluster
+				// in case something goes wrong in the update process.
+				err = s.vzInfo.UpdateClusterName(registerAck.VizierName)
+				if err != nil {
+					log.WithError(err).Error("Failed to set the UpdateClusterName")
+				}
+				s.assignedClusterName = registerAck.VizierName
+			}
+			return nil
 		}
 	}
 }

@@ -53,6 +53,11 @@ class ColumnWrapper {
 
   static SharedColumnWrapper Make(DataType data_type, size_t size);
   static SharedColumnWrapper FromArrow(const std::shared_ptr<arrow::Array>& arr);
+  // Force data type of resultant wrapper, regardless of the type of the underlying arrow::Array.
+  // This is needed in order to create a Time64NS ColumnWrapper from an arrow Array, since the
+  // underlying arrow::Array is always of type INT64.
+  static SharedColumnWrapper FromArrow(DataType data_type,
+                                       const std::shared_ptr<arrow::Array>& arr);
 
   virtual BaseValueType* UnsafeRawData() = 0;
   virtual const BaseValueType* UnsafeRawData() const = 0;
@@ -65,6 +70,8 @@ class ColumnWrapper {
   virtual void Clear() = 0;
   virtual void ShrinkToFit() = 0;
   virtual std::shared_ptr<arrow::Array> ConvertToArrow(arrow::MemoryPool* mem_pool) = 0;
+  // GetView returns an empty string view for all non-string columns.
+  virtual std::string_view GetView(size_t idx) const = 0;
 
   template <class TValueType>
   void Append(TValueType val);
@@ -134,6 +141,13 @@ class ColumnWrapperTmpl : public ColumnWrapper {
 
   int64_t Bytes() const override;
 
+  std::string_view GetView(size_t idx) const override {
+    if constexpr (std::is_same_v<T, StringValue>) {
+      return std::string_view(data_[idx]);
+    }
+    return {};
+  }
+
   void AppendFromVector(const std::vector<T>& value_vector) {
     for (const auto& value : value_vector) {
       Append(value);
@@ -200,22 +214,6 @@ inline SharedColumnWrapper FromArrowImpl(const std::shared_ptr<arrow::Array>& ar
       static_cast<TColumnWrapper*>(wrapper.get())->UnsafeRawData();
   for (size_t i = 0; i < size; ++i) {
     out_data[i] = arr_casted->Value(i);
-    // <Time64NSValue> = <int64_t>
-  }
-  return wrapper;
-}
-
-template <>
-inline SharedColumnWrapper FromArrowImpl<Time64NSValueColumnWrapper, DataType::TIME64NS>(
-    const std::shared_ptr<arrow::Array>& arr) {
-  CHECK_EQ(arr->type_id(), DataTypeTraits<types::TIME64NS>::arrow_type_id);
-  size_t size = arr->length();
-  auto wrapper = StringValueColumnWrapper::Make(types::TIME64NS, size);
-  auto arr_casted = static_cast<arrow::Int64Array*>(arr.get());
-  Time64NSValue* out_data =
-      static_cast<Time64NSValueColumnWrapper*>(wrapper.get())->UnsafeRawData();
-  for (size_t i = 0; i < size; ++i) {
-    out_data[i] = Time64NSValue(arr_casted->Value(i));
   }
   return wrapper;
 }
@@ -242,24 +240,20 @@ inline SharedColumnWrapper FromArrowImpl<StringValueColumnWrapper, DataType::STR
  */
 inline SharedColumnWrapper ColumnWrapper::FromArrow(const std::shared_ptr<arrow::Array>& arr) {
   auto type_id = arr->type_id();
-  switch (type_id) {
-    case arrow::Type::BOOL:
-      return FromArrowImpl<BoolValueColumnWrapper, DataType::BOOLEAN>(arr);
-    case arrow::Type::INT64:
-      return FromArrowImpl<Int64ValueColumnWrapper, DataType::INT64>(arr);
-    case arrow::Type::UINT128:
-      return FromArrowImpl<UInt128ValueColumnWrapper, DataType::UINT128>(arr);
-    case arrow::Type::DOUBLE:
-      return FromArrowImpl<Float64ValueColumnWrapper, DataType::FLOAT64>(arr);
-    case arrow::Type::STRING:
-      return FromArrowImpl<StringValueColumnWrapper, DataType::STRING>(arr);
-    case arrow::Type::TIME64:
-      return FromArrowImpl<Time64NSValueColumnWrapper, DataType::TIME64NS>(arr);
-    case arrow::Type::DURATION:
-      return FromArrowImpl<Time64NSValueColumnWrapper, DataType::TIME64NS>(arr);
-    default:
-      CHECK(0) << "Unknown arrow type: " << type_id;
-  }
+#define EXPR_CASE(_dt_) DataTypeTraits<_dt_>::arrow_type_id
+#define TYPE_CASE(_dt_) \
+  return FromArrowImpl<ColumnWrapperTmpl<DataTypeTraits<_dt_>::value_type>, _dt_>(arr);
+  PL_SWITCH_FOREACH_DATATYPE_WITHEXPR(type_id, EXPR_CASE, TYPE_CASE);
+#undef EXPR_CASE
+#undef TYPE_CASE
+}
+
+inline SharedColumnWrapper ColumnWrapper::FromArrow(DataType data_type,
+                                                    const std::shared_ptr<arrow::Array>& arr) {
+#define TYPE_CASE(_dt_) \
+  return FromArrowImpl<ColumnWrapperTmpl<DataTypeTraits<_dt_>::value_type>, _dt_>(arr);
+  PL_SWITCH_FOREACH_DATATYPE(data_type, TYPE_CASE);
+#undef TYPE_CASE
 }
 
 /**
@@ -270,22 +264,10 @@ inline SharedColumnWrapper ColumnWrapper::FromArrow(const std::shared_ptr<arrow:
  * PL_CARNOT_UPDATE_FOR_NEW_TYPES.
  */
 inline SharedColumnWrapper ColumnWrapper::Make(DataType data_type, size_t size) {
-  switch (data_type) {
-    case DataType::BOOLEAN:
-      return std::make_shared<BoolValueColumnWrapper>(size);
-    case DataType::INT64:
-      return std::make_shared<Int64ValueColumnWrapper>(size);
-    case DataType::UINT128:
-      return std::make_shared<UInt128ValueColumnWrapper>(size);
-    case DataType::FLOAT64:
-      return std::make_shared<Float64ValueColumnWrapper>(size);
-    case DataType::STRING:
-      return std::make_shared<StringValueColumnWrapper>(size);
-    case DataType::TIME64NS:
-      return std::make_shared<Time64NSValueColumnWrapper>(size);
-    default:
-      CHECK(0) << "Unknown data type";
-  }
+#define TYPE_CASE(_dt_) \
+  return std::make_shared<ColumnWrapperTmpl<DataTypeTraits<_dt_>::value_type>>(size);
+  PL_SWITCH_FOREACH_DATATYPE(data_type, TYPE_CASE);
+#undef TYPE_CASE
 }
 
 template <class TValueType>
@@ -373,5 +355,75 @@ void ExtractValueToColumnWrapper(ColumnWrapper* wrapper, arrow::Array* arr, int6
       types::GetValueFromArrowArray<DT>(arr, row_idx));
 }
 
+template <types::DataType T>
+class ColumnWrapperIterator : public std::iterator<std::bidirectional_iterator_tag,
+                                                   typename types::DataTypeTraits<T>::native_type> {
+  using ReturnType = typename types::DataTypeTraits<T>::native_type;
+  using ValueType = typename types::DataTypeTraits<T>::value_type;
+
+ public:
+  ColumnWrapperIterator(ColumnWrapper* column, int64_t idx) : column_(column), curr_idx_(idx) {}
+  explicit ColumnWrapperIterator(ColumnWrapper* column) : ColumnWrapperIterator(column, 0) {}
+
+  bool operator==(const ColumnWrapperIterator<T>& iterator) const {
+    return this->column_ == iterator.column_ && this->curr_idx_ == iterator.curr_idx_;
+  }
+
+  bool operator!=(const ColumnWrapperIterator<T>& iterator) const {
+    return this->column_ != iterator.column_ || this->curr_idx_ != iterator.curr_idx_;
+  }
+
+  ReturnType operator*() const {
+    if constexpr (std::is_same_v<ValueType, StringValue>) {
+      return column_->Get<ValueType>(curr_idx_);
+    } else {
+      return column_->Get<ValueType>(curr_idx_).val;
+    }
+  }
+
+  ReturnType* operator->() const {
+    if constexpr (std::is_same_v<ValueType, StringValue>) {
+      return &column_->Get<ValueType>(curr_idx_);
+    } else {
+      return &column_->Get<ValueType>(curr_idx_).val;
+    }
+  }
+
+  ColumnWrapperIterator<T>& operator++() {
+    curr_idx_++;
+    return *this;
+  }
+  ColumnWrapperIterator<T>& operator--() {
+    curr_idx_--;
+    return *this;
+  }
+
+  ColumnWrapperIterator<T> begin() { return ColumnWrapperIterator<T>(column_, 0); }
+
+  ColumnWrapperIterator<T> end() { return ColumnWrapperIterator<T>(column_, column_->Size()); }
+
+  ColumnWrapperIterator<T> operator++(int) {
+    auto ret = *this;
+    ++*this;
+    return ret;
+  }
+  ColumnWrapperIterator<T> operator+(int i) const {
+    auto ret = ColumnWrapperIterator<T>(column_, curr_idx_ + i);
+    return ret;
+  }
+  ColumnWrapperIterator<T> operator--(int) {
+    auto ret = *this;
+    --*this;
+    return ret;
+  }
+  ColumnWrapperIterator<T> operator-(int i) const {
+    auto ret = ColumnWrapperIterator<T>(column_, curr_idx_ - i);
+    return ret;
+  }
+
+ private:
+  ColumnWrapper* column_;
+  int64_t curr_idx_ = 0;
+};
 }  // namespace types
 }  // namespace px

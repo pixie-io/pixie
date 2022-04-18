@@ -552,6 +552,38 @@ class RoundUDF : public udf::ScalarUDF {
   }
 };
 
+class TimeToInt64UDF : public udf::ScalarUDF {
+ public:
+  Int64Value Exec(FunctionContext*, Time64NSValue value) { return value.val; }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Converts a time value to an int64 value")
+        .Details(
+            "Converts a time value to an int64 value. Used when type-specific UDFs are needed for "
+            "int64 on a time value.")
+        .Example(R"doc(
+        | df = df[px.time_to_int64(df.time_) != 0]
+        )doc")
+        .Arg("value", "The value to convert.")
+        .Returns("The time (in nanoseconds) as an int64.");
+  }
+};
+
+class Int64ToTimeUDF : public udf::ScalarUDF {
+ public:
+  Time64NSValue Exec(FunctionContext*, Int64Value value) { return value.val; }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Converts a int64 value to a time")
+        .Details(
+            "Converts an int64 value to a time value. Used when type-specific UDFs are needed for "
+            "time on a int64 value.")
+        .Example(R"doc(
+        | df = df[px.time_to_int64(0) != df.time_]
+        )doc")
+        .Arg("value", "The int64 value to convert (in nanoseconds).")
+        .Returns("A time value");
+  }
+};
+
 template <typename TArg>
 class MeanUDA : public udf::UDA {
  public:

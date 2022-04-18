@@ -16,7 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <gtest/gtest.h>
 #include <numeric>
 #include <type_traits>
 #include <utility>
@@ -25,6 +24,7 @@
 #include "src/carnot/funcs/builtins/pii_ops.h"
 #include "src/carnot/udf/test_utils.h"
 #include "src/common/base/base.h"
+#include "src/common/testing/testing.h"
 
 namespace px {
 namespace carnot {
@@ -210,7 +210,7 @@ std::vector<TestCase> TestCaseGen(std::vector<PIITypeGen> pii_types) {
   return test_cases;
 }
 
-class RedactionTest : public testing::TestWithParam<TestCase> {};
+class RedactionTest : public ::testing::TestWithParam<TestCase> {};
 
 TEST_P(RedactionTest, basic) {
   auto test_case = GetParam();
@@ -218,8 +218,8 @@ TEST_P(RedactionTest, basic) {
 }
 
 INSTANTIATE_TEST_SUITE_P(TemplatedRedactionTest, RedactionTest,
-                         testing::ValuesIn(TestCaseGen({IPv4Gen(), IPv6Gen(), EmailGen(), CCGen(),
-                                                        IMEIGen(), NegativeExampleGen()})));
+                         ::testing::ValuesIn(TestCaseGen({IPv4Gen(), IPv6Gen(), EmailGen(), CCGen(),
+                                                          IMEIGen(), NegativeExampleGen()})));
 
 }  // namespace builtins
 }  // namespace carnot

@@ -48,9 +48,10 @@ class MetadataOpsTest : public ::testing::Test {
  protected:
   void SetUp() override {
     agent_id_ = sole::uuid4();
-    metadata_state_ = std::make_shared<px::md::AgentMetadataState>(/* hostname */ "myhost",
-                                                                   /* asid */ 1, /* pid */ 123,
-                                                                   agent_id_, "mypod");
+    vizier_id_ = sole::uuid4();
+    metadata_state_ = std::make_shared<px::md::AgentMetadataState>(
+        /* hostname */ "myhost",
+        /* asid */ 1, /* pid */ 123, agent_id_, "mypod", vizier_id_, "myvizier");
     // Apply updates to metadata state.
     updates_ =
         std::make_unique<moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>>>();
@@ -76,6 +77,7 @@ class MetadataOpsTest : public ::testing::Test {
     ASSERT_OK(s);
   }
   sole::uuid agent_id_;
+  sole::uuid vizier_id_;
   std::shared_ptr<px::md::AgentMetadataState> metadata_state_;
   std::unique_ptr<moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>>> updates_;
   md::TestAgentMetadataFilter md_filter_;
@@ -647,6 +649,33 @@ TEST_F(MetadataOpsTest, has_service_name_test) {
   udf_tester.ForInput("[\"3\", \"4\"]", "4").Expect(true);
   udf_tester.ForInput("[\"3\", \"4\"]", "5").Expect(false);
   udf_tester.ForInput("[]", "4").Expect(false);
+}
+
+TEST_F(MetadataOpsTest, vizier_id_test) {
+  auto metadata_state = std::make_shared<px::md::AgentMetadataState>(
+      /* hostname */ "myhost",
+      /* asid */ 1, /* pid */ 123, agent_id_, "mypod", vizier_id_, "myvizier");
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<VizierIDUDF>(std::move(function_ctx));
+  udf_tester.ForInput().Expect(vizier_id_.str());
+}
+
+TEST_F(MetadataOpsTest, empty_vizier_id_test) {
+  auto metadata_state = std::make_shared<px::md::AgentMetadataState>(
+      /* hostname */ "myhost",
+      /* asid */ 1, /* pid */ 123, agent_id_, "mypod", sole::uuid(), "myvizier");
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<VizierIDUDF>(std::move(function_ctx));
+  udf_tester.ForInput().Expect("00000000-0000-0000-0000-000000000000");
+}
+
+TEST_F(MetadataOpsTest, vizier_name_test) {
+  auto metadata_state = std::make_shared<px::md::AgentMetadataState>(
+      /* hostname */ "myhost",
+      /* asid */ 1, /* pid */ 123, agent_id_, "mypod", vizier_id_, "myvizier");
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<VizierNameUDF>(std::move(function_ctx));
+  udf_tester.ForInput().Expect("myvizier");
 }
 
 }  // namespace metadata

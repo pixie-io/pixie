@@ -300,6 +300,11 @@ REPOSITORY_LOCATIONS = dict(
         sha256 = "2cd77de091e5376afaf9cc391c15f093ebd0105192373b334f0a855d89092ad5",
         strip_prefix = "rules_jvm_external-4.2",
     ),
+    com_github_uriparser_uriparser = dict(
+        urls = ["https://github.com/uriparser/uriparser/releases/download/uriparser-0.9.6/uriparser-0.9.6.tar.gz"],
+        sha256 = "10e6f90d359c1087c45f907f95e527a8aca84422251081d1533231e031a084ff",
+        strip_prefix = "uriparser-0.9.6",
+    ),
 )
 
 # To modify one of the forked repos below:

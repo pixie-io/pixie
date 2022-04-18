@@ -43,6 +43,7 @@ class CGroupMetadataReader : public NotCopyable {
   virtual ~CGroupMetadataReader() = default;
 
   explicit CGroupMetadataReader(const system::Config& cfg);
+  explicit CGroupMetadataReader(std::string sysfs_path);
 
   /**
    * ReadPIDList reads pids for a container running as part of a given pod.

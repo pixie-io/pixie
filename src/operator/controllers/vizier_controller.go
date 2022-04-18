@@ -358,6 +358,15 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 			log.WithError(err).Error("Failed to deploy Vizier deps")
 			return err
 		}
+	} else {
+		err = r.deleteDeprecatedCertmanager(ctx, req.Namespace, vz, yamlMap)
+		if err != nil {
+			log.WithError(err).Warning("Failed to delete deprecated certmanager resources")
+		}
+		err = r.deleteDeprecatedVizierProxy(ctx, req.Namespace, vz, yamlMap)
+		if err != nil {
+			log.WithError(err).Warning("Failed to delete deprecated proxy resources")
+		}
 	}
 
 	err = r.deployVizierCore(ctx, req.Namespace, vz, yamlMap, update)
@@ -385,6 +394,55 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 		return err
 	}
 
+	return nil
+}
+
+func (r *VizierReconciler) deleteDeprecatedCertmanager(ctx context.Context, namespace string, vz *v1alpha1.Vizier, yamlMap map[string]string) error {
+	vzYaml := "vizier_persistent"
+	if vz.Spec.UseEtcdOperator {
+		vzYaml = "vizier_etcd"
+	}
+
+	resources, err := k8s.GetResourcesFromYAML(strings.NewReader(yamlMap[vzYaml]))
+	if err != nil {
+		return err
+	}
+	for _, r := range resources {
+		if strings.Contains(r.Object.GetName(), "certmgr") {
+			// Don't delete anything.
+			return nil
+		}
+	}
+
+	_ = r.Clientset.AppsV1().Deployments(namespace).Delete(ctx, "vizier-certmgr", metav1.DeleteOptions{})
+	_ = r.Clientset.CoreV1().Services(namespace).Delete(ctx, "vizier-certmgr-svc", metav1.DeleteOptions{})
+	_ = r.Clientset.CoreV1().ServiceAccounts(namespace).Delete(ctx, "certmgr-service-account", metav1.DeleteOptions{})
+	_ = r.Clientset.RbacV1().ClusterRoles().Delete(ctx, "pl-vizier-certmgr", metav1.DeleteOptions{})
+	_ = r.Clientset.RbacV1().ClusterRoleBindings().Delete(ctx, "pl-vizier-certmgr-cluster-binding", metav1.DeleteOptions{})
+	_ = r.Clientset.RbacV1().RoleBindings(namespace).Delete(ctx, "pl-vizier-crd-certmgr-binding", metav1.DeleteOptions{})
+	return nil
+}
+
+func (r *VizierReconciler) deleteDeprecatedVizierProxy(ctx context.Context, namespace string, vz *v1alpha1.Vizier, yamlMap map[string]string) error {
+	vzYaml := "vizier_persistent"
+	if vz.Spec.UseEtcdOperator {
+		vzYaml = "vizier_etcd"
+	}
+
+	resources, err := k8s.GetResourcesFromYAML(strings.NewReader(yamlMap[vzYaml]))
+	if err != nil {
+		return err
+	}
+	for _, r := range resources {
+		if strings.Contains(r.Object.GetName(), "proxy") {
+			// Don't delete anything.
+			return nil
+		}
+	}
+
+	_ = r.Clientset.AppsV1().Deployments(namespace).Delete(ctx, "vizier-proxy", metav1.DeleteOptions{})
+	_ = r.Clientset.CoreV1().Services(namespace).Delete(ctx, "vizier-proxy-service", metav1.DeleteOptions{})
+	_ = r.Clientset.CoreV1().ConfigMaps(namespace).Delete(ctx, "proxy-envoy-config", metav1.DeleteOptions{})
 	return nil
 }
 
@@ -570,6 +628,7 @@ func generateVizierYAMLsConfig(ctx context.Context, ns string, vz *v1alpha1.Vizi
 			CloudAddr:             vz.Spec.CloudAddr,
 			DevCloudNamespace:     vz.Spec.DevCloudNamespace,
 			PemMemoryLimit:        vz.Spec.PemMemoryLimit,
+			PemMemoryRequest:      vz.Spec.PemMemoryRequest,
 			ClockConverter:        string(vz.Spec.ClockConverter),
 			DataAccess:            string(vz.Spec.DataAccess),
 			Pod_Policy: &vizierconfigpb.PodPolicyReq{

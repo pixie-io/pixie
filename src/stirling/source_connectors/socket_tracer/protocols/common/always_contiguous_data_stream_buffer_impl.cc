@@ -46,8 +46,45 @@ void AlwaysContiguousDataStreamBufferImpl::Reset() {
   ShrinkToFit();
 }
 
-// TODO(oazizi): Add checking that the new chunk doesn't overlap with any existing chunk.
-//               Return error in such cases.
+bool AlwaysContiguousDataStreamBufferImpl::CheckOverlap(size_t pos, size_t size) {
+  bool left_overlap = false;
+  bool right_overlap = false;
+
+  // Look for the first chunk whose start position is to the right
+  // of start position of this new chunk.
+  auto r_iter = chunks_.lower_bound(pos);
+
+  if (r_iter != chunks_.end()) {
+    // There is a chunk to the right. Check for overlap.
+    size_t r_pos = r_iter->first;
+    size_t r_size = r_iter->second;
+
+    right_overlap = (pos + size > r_pos);
+    ECHECK(!right_overlap) << absl::Substitute(
+        "New chunk overlaps with right chunk. "
+        "Existing right chunk: [p=$0,s=$1] New Chunk: [p=$2,s=$3]",
+        r_pos, r_size, pos, size);
+  }
+
+  // Find the chunk right before the right chunk. If it exists, this should
+  // be our left chunk.
+  auto l_iter = r_iter;
+  if (l_iter != chunks_.begin()) {
+    --l_iter;
+    // There is a chunk to the left. Check for overlap.
+    size_t l_pos = l_iter->first;
+    size_t l_size = l_iter->second;
+
+    left_overlap = (pos < l_pos + l_size);
+    ECHECK(!left_overlap) << absl::Substitute(
+        "New chunk overlaps with left chunk. "
+        "Existing left chunk: [p=$0,s=$1] New Chunk: [p=$2,s=$3]",
+        l_pos, l_size, pos, size);
+  }
+
+  return left_overlap || right_overlap;
+}
+
 void AlwaysContiguousDataStreamBufferImpl::AddNewChunk(size_t pos, size_t size) {
   // Look for the chunks to the left and right of this new chunk.
   auto r_iter = chunks_.lower_bound(pos);
@@ -188,6 +225,11 @@ void AlwaysContiguousDataStreamBufferImpl::Add(size_t pos, std::string_view data
     // Case 4: Data being added is completely within the buffer. Write it directly.
 
     // No adjustments required.
+  }
+
+  if (CheckOverlap(pos, data.size())) {
+    // This chunk overlaps with an existing chunk. Don't add the new chunk.
+    return;
   }
 
   // Now copy the data into the buffer.

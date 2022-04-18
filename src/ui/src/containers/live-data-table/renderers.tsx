@@ -28,7 +28,6 @@ import {
   BytesRenderer,
   CPUData,
   dataWithUnitsToString,
-  DataWithUnits,
   BasicDurationRenderer,
   formatDuration,
   HTTPStatusCodeRenderer,

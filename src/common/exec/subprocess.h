@@ -93,6 +93,11 @@ class SubProcess : public NotCopyMoveable {
   int Wait(bool close_pipe = true);
 
   /**
+   * Essentially calls waitpid(child_pid, status, WNOHANG), and returns status.
+   */
+  int GetStatus() const;
+
+  /**
    * Read the child process' stdout, and append to provided string pointer.
    * Returns whatever data is available, and does not block if there is no data.
    */

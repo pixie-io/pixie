@@ -34,7 +34,6 @@ import {
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 import AnnounceKit from 'announcekit-react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import { Link } from 'react-router-dom';
 
 import { ClusterContext } from 'app/common/cluster-context';
@@ -171,9 +170,6 @@ export const SideBar: React.FC<{ open: boolean }> = React.memo(({ open }) => {
   const classes = useStyles();
   const selectedClusterName = React.useContext(ClusterContext)?.selectedClusterName ?? '';
 
-  // TODO(nick,PC-1440): Remove flag when this becomes enabled by default
-  const { plugin: enablePluginRoutes } = (useFlags() as { plugin: boolean });
-
   // If we're not in the live view, LiveViewContext is null.
   const embedState = React.useContext(LiveRouteContext)?.embedState ?? null;
 
@@ -197,13 +193,12 @@ export const SideBar: React.FC<{ open: boolean }> = React.memo(({ open }) => {
   }, [selectedClusterName, embedState]);
 
   const pluginItems = React.useMemo(() => {
-    if (!enablePluginRoutes) return [];
     return [{
       icon: <DataDisksIcon />,
       link: '/configure-data-export',
       text: 'Data Retention',
     }];
-  }, [enablePluginRoutes]);
+  }, []);
 
   const drawerClasses = React.useMemo(
     () => ({ paper: open ? classes.drawerOpen : classes.drawerClose }),
@@ -232,14 +227,12 @@ export const SideBar: React.FC<{ open: boolean }> = React.memo(({ open }) => {
             ))}
           </List>
         )}
-        {enablePluginRoutes && navItems.length > 0 && <Divider variant='middle' />}
-        {enablePluginRoutes && (
-          <List>
-            {pluginItems.map(({ icon, link, text }) => (
-              <SideBarInternalLinkItem key={text} icon={icon} link={link} text={text} />
-            ))}
-          </List>
-        )}
+        { navItems.length > 0 && <Divider variant='middle' />}
+        <List>
+          {pluginItems.map(({ icon, link, text }) => (
+            <SideBarInternalLinkItem key={text} icon={icon} link={link} text={text} />
+          ))}
+        </List>
         <div className={classes.spacer} />
         <List>
           <Tooltip title='Announcements' disableInteractive>

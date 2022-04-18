@@ -23,7 +23,6 @@ import { Add } from '@mui/icons-material';
 import { Button, TableContainer } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import * as QueryString from 'query-string';
 import {
   Route, Switch, useHistory, useLocation, useRouteMatch,
@@ -73,8 +72,6 @@ export const AdminOverview = React.memo(() => {
   const location = useLocation();
   const { path } = useRouteMatch();
 
-  const { plugin: showPluginsTab } = (useFlags() as { plugin: boolean });
-
   const showInviteDialog = QueryString.parse(location.search).invite === 'true';
   const onCloseInviteDialog = React.useCallback(() => {
     if (showInviteDialog) {
@@ -117,12 +114,12 @@ export const AdminOverview = React.memo(() => {
     { slug: 'clusters',        label: 'Clusters',        component: ClustersTable,       enabled: true },
     { slug: 'deployment-keys', label: 'Deployment Keys', component: DeploymentKeysTable, enabled: true },
     { slug: 'api-keys',        label: 'API Keys',        component: APIKeysTable,        enabled: true },
-    { slug: 'plugins',         label: 'Plugins',         component: PluginsOverview,     enabled: showPluginsTab },
+    { slug: 'plugins',         label: 'Plugins',         component: PluginsOverview,     enabled: true },
     { slug: 'users',           label: 'Users',           component: UsersTable,          enabled: true },
     { slug: 'org',             label: 'Org Settings',    component: OrgSettings,         enabled: true },
     { slug: 'user',            label: 'User Settings',   component: UserSettings,        enabled: true },
     { slug: 'invite',          label: 'Invitations',     component: InvitationTab,       enabled: showInvitationsTab },
-  ], [InvitationTab, showPluginsTab, showInvitationsTab]);
+  ], [InvitationTab, showInvitationsTab]);
 
   // Example: extracts 'tabName' from '/admin/tabName/foo/bar' when 'path' is '/admin' or '/admin/'
   const pathTab: string = React.useMemo(() => {

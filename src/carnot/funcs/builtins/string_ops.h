@@ -235,6 +235,18 @@ class StringToIntUDF : public udf::ScalarUDF {
   }
 };
 
+class IntToStringUDF : public udf::ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext*, Int64Value input) { return std::to_string(input.val); }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Convert an integer into a string.")
+        .Details("This function converts an integer into a string.")
+        .Example("df.val = px.itoa(df.int_col)")
+        .Arg("arg1", "The integer to convert.")
+        .Returns("The input converted to a string.");
+  }
+};
+
 void RegisterStringOpsOrDie(udf::Registry* registry);
 
 }  // namespace builtins

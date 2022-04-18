@@ -24,7 +24,6 @@
 #include <absl/strings/str_replace.h>
 
 #include "src/common/base/base.h"
-#include "src/common/base/test_utils.h"
 #include "src/common/exec/exec.h"
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/testing/testing.h"

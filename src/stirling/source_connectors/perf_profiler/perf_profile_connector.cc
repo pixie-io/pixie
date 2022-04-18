@@ -33,8 +33,6 @@ BPF_SRC_STRVIEW(profiler_bcc_script, profiler);
 DEFINE_string(stirling_profiler_symbolizer, "bcc",
               "Choice of which symbolizer to use. Options: bcc, elf");
 DEFINE_bool(stirling_profiler_cache_symbols, true, "Whether to cache symbols");
-DEFINE_bool(stirling_profiler_java_symbols, gflags::BoolFromEnv("PL_PROFILER_JAVA_SYMBOLS", false),
-            "Whether to symbolize Java binaries.");
 DEFINE_uint32(stirling_profiler_log_period_minutes, 10,
               "Number of minutes between profiler stats log printouts.");
 DEFINE_uint32(stirling_profiler_table_update_period_seconds,
@@ -50,8 +48,8 @@ DEFINE_double(stirling_profiler_stack_trace_size_factor, 3.0,
 // Scaling factor for perf buffer to account for timing variations.
 // This factor is smaller than the stack trace scaling factor because there is no need to account
 // for hash table collisions.
-DEFINE_double(stirling_profiler_perf_buffer_size_factor, 1.5,
-              "Scaling factor to apply to Profiler's eBPF perf buffer map sizes");
+DEFINE_double(stirling_profiler_perf_buffer_size_factor, 1.2,
+              "Scaling factor to apply to Profiler's eBPF perf buffer sizes");
 
 namespace px {
 namespace stirling {
@@ -103,7 +101,21 @@ Status PerfProfileConnector::InitImpl() {
   const double perf_buffer_overprovision_factor = FLAGS_stirling_profiler_perf_buffer_size_factor;
   const int32_t num_perf_buffer_entries =
       static_cast<int32_t>(perf_buffer_overprovision_factor * expected_stack_traces_per_cpu);
-  const int32_t perf_buffer_size = sizeof(stack_trace_key_t) * num_perf_buffer_entries;
+
+  // Perf buffer entries use the following struct:
+  //      struct {
+  //        struct perf_event_header {
+  //          __u32   type;
+  //          __u16   misc;
+  //          __u16   size;
+  //        } header;
+  //        u32    size;        /* if PERF_SAMPLE_RAW */
+  //        char  data[size];   /* if PERF_SAMPLE_RAW */
+  //      };
+  // The entire struct as a whole is 12-bytes + data[size].
+  const int32_t perf_buffer_entry_size =
+      sizeof(struct perf_event_header) + sizeof(uint32_t) + sizeof(stack_trace_key_t);
+  const int32_t perf_buffer_size = perf_buffer_entry_size * num_perf_buffer_entries;
 
   const std::vector<std::string> defines = {
       absl::Substitute("-DCFG_STACK_TRACE_ENTRIES=$0", provisioned_stack_traces),

@@ -120,7 +120,9 @@ func (p *PluginServiceServer) GetOrgRetentionPluginConfig(ctx context.Context, r
 	}
 
 	return &cloudpb.GetOrgRetentionPluginConfigResponse{
-		Configs: pluginsResp.Configurations,
+		Configs:         pluginsResp.Configurations,
+		CustomExportUrl: pluginsResp.CustomExportUrl,
+		InsecureTLS:     pluginsResp.InsecureTLS,
 	}, nil
 }
 
@@ -141,7 +143,9 @@ func (p *PluginServiceServer) GetRetentionPluginInfo(ctx context.Context, req *c
 	}
 
 	return &cloudpb.GetRetentionPluginInfoResponse{
-		Configs: configResp.Configurations,
+		Configs:              configResp.Configurations,
+		AllowCustomExportURL: configResp.AllowCustomExportURL,
+		AllowInsecureTLS:     configResp.AllowInsecureTLS,
 	}, nil
 }
 
@@ -160,11 +164,13 @@ func (p *PluginServiceServer) UpdateRetentionPluginConfig(ctx context.Context, r
 	}
 
 	_, err = p.DataRetentionPluginServiceClient.UpdateOrgRetentionPluginConfig(ctx, &pluginpb.UpdateOrgRetentionPluginConfigRequest{
-		PluginID:       req.PluginId,
-		OrgID:          orgID,
-		Configurations: req.Configs,
-		Enabled:        req.Enabled,
-		Version:        req.Version,
+		PluginID:        req.PluginId,
+		OrgID:           orgID,
+		Configurations:  req.Configs,
+		Enabled:         req.Enabled,
+		Version:         req.Version,
+		CustomExportUrl: req.CustomExportUrl,
+		InsecureTLS:     req.InsecureTLS,
 	})
 	if err != nil {
 		return nil, err
@@ -311,4 +317,29 @@ func (p *PluginServiceServer) CreateRetentionScript(ctx context.Context, req *cl
 	}
 
 	return &cloudpb.CreateRetentionScriptResponse{ID: resp.ID}, nil
+}
+
+// DeleteRetentionScript deletes a specific retention script.
+func (p *PluginServiceServer) DeleteRetentionScript(ctx context.Context, req *cloudpb.DeleteRetentionScriptRequest) (*cloudpb.DeleteRetentionScriptResponse, error) {
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
+	orgID := utils.ProtoFromUUIDStrOrNil(orgIDstr)
+
+	ctx, err = contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = p.DataRetentionPluginServiceClient.DeleteRetentionScript(ctx, &pluginpb.DeleteRetentionScriptRequest{
+		ID:    req.ID,
+		OrgID: orgID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &cloudpb.DeleteRetentionScriptResponse{}, nil
 }

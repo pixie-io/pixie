@@ -100,12 +100,9 @@ std::filesystem::path ProcParser::ProcPidPath(pid_t pid) const {
   return std::filesystem::path(proc_base_path_) / std::to_string(pid);
 }
 
-ProcParser::ProcParser(const system::Config& cfg) {
-  CHECK(cfg.HasConfig()) << "System config is required for the ProcParser";
-  ns_per_kernel_tick_ = static_cast<int64_t>(1E9 / cfg.KernelTicksPerSecond());
-  bytes_per_page_ = cfg.PageSize();
-  proc_base_path_ = cfg.proc_path();
-}
+ProcParser::ProcParser(const system::Config& cfg) : ProcParser(cfg.proc_path()) {}
+
+ProcParser::ProcParser(std::string proc_path) : proc_base_path_(std::move(proc_path)) {}
 
 Status ProcParser::ParseNetworkStatAccumulateIFaceData(
     const std::vector<std::string_view>& dev_stat_record, NetworkStats* out) {
@@ -207,7 +204,8 @@ Status ProcParser::ParseProcPIDNetDev(int32_t pid, NetworkStats* out) const {
   return Status::OK();
 }
 
-Status ProcParser::ParseProcPIDStat(int32_t pid, ProcessStats* out) const {
+Status ProcParser::ParseProcPIDStat(int32_t pid, int32_t page_size_bytes,
+                                    int32_t kernel_tick_time_ns, ProcessStats* out) const {
   /**
    * Sample file:
    * 4602 (ibazel) S 3260 4602 3260 34818 4602 1077936128 1799 174589 \
@@ -247,15 +245,15 @@ Status ProcParser::ParseProcPIDStat(int32_t pid, ProcessStats* out) const {
     ok &= absl::SimpleAtoi(split[kProcStatUTimeField], &out->utime_ns);
     ok &= absl::SimpleAtoi(split[kProcStatKTimeField], &out->ktime_ns);
     // The kernel tracks utime and ktime in kernel ticks.
-    out->utime_ns *= ns_per_kernel_tick_;
-    out->ktime_ns *= ns_per_kernel_tick_;
+    out->utime_ns *= kernel_tick_time_ns;
+    out->ktime_ns *= kernel_tick_time_ns;
 
     ok &= absl::SimpleAtoi(split[kProcStatNumThreadsField], &out->num_threads);
     ok &= absl::SimpleAtoi(split[kProcStatVSizeField], &out->vsize_bytes);
     ok &= absl::SimpleAtoi(std::string(split[kProcStatRSSField]), &out->rss_bytes);
 
     // RSS is in pages.
-    out->rss_bytes *= bytes_per_page_;
+    out->rss_bytes *= page_size_bytes;
 
   } else {
     return error::Internal("Failed to read proc stat file: $0", fpath);

@@ -21,7 +21,7 @@ import * as React from 'react';
 import { useQuery, gql } from '@apollo/client';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-import { useLDClient, useFlags } from 'launchdarkly-react-client-sdk';
+import { useLDClient } from 'launchdarkly-react-client-sdk';
 import * as QueryString from 'query-string';
 import { generatePath } from 'react-router';
 import { Redirect, Route, Switch } from 'react-router-dom';
@@ -210,9 +210,6 @@ export default function PixieWithContext(): React.ReactElement {
   const userOrg = user?.orgName;
   const ldClient = useLDClient();
 
-  // TODO(nick,PC-1440): Remove flag when this becomes enabled by default
-  const { plugin: enablePluginRoutes } = (useFlags() as { plugin: boolean });
-
   // Load analytics for the user (if they haven't disabled analytics).
   const { data: userSettingsData } = useQuery<{ userSettings: GQLUserSettings }>(
     gql`
@@ -334,7 +331,7 @@ export default function PixieWithContext(): React.ReactElement {
               <Route path='/embed/live' component={LiveWithProvider} />
               <Route path={scriptPaths} component={ScriptShortcut} />
               <Route path='/setup' component={SetupRedirect} />
-              {enablePluginRoutes && <Route path='/configure-data-export' component={ConfigureDataExportView} />}
+              <Route path='/configure-data-export' component={ConfigureDataExportView} />
               <Redirect exact from='/' to='/live' />
               <Route path='/*' component={RouteNotFound} />
             </Switch>

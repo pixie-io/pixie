@@ -146,6 +146,15 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "monitor_test",
+    srcs = ["monitor_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "detect_application_bpf_test",
     timeout = "moderate",
     srcs = ["detect_application_bpf_test.cc"],

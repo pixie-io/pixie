@@ -105,14 +105,14 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
   std::vector<std::string> docker_run_cmd;
   docker_run_cmd.push_back("docker");
   docker_run_cmd.push_back("run");
+  docker_run_cmd.push_back("--rm");
   if (use_host_pid_namespace) {
     docker_run_cmd.push_back("--pid=host");
   }
   for (const auto& flag : options) {
     docker_run_cmd.push_back(flag);
   }
-  docker_run_cmd.push_back("--name");
-  docker_run_cmd.push_back(container_name_);
+  docker_run_cmd.push_back(absl::Substitute("--name=$0", container_name_));
   docker_run_cmd.push_back(image_);
   for (const auto& arg : args) {
     docker_run_cmd.push_back(arg);
@@ -138,6 +138,12 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
 
   // Wait for container's server to be running.
   for (; attempts_remaining > 0; --attempts_remaining) {
+    const int status = docker_.GetStatus();
+    if (WIFEXITED(status) || WIFSIGNALED(status)) {
+      container_status = "exited";
+      LOG(INFO) << absl::Substitute("The container already exited or terminated by a signal");
+      break;
+    }
     // We check if the container process is running before running docker inspect
     // to avoid races where the container stops running after the docker inspect.
     const bool docker_is_running = docker_.IsRunning();

@@ -39,6 +39,7 @@ export interface GQLQuery {
   plugins: Array<GQLPlugin>;
   retentionPluginInfo: GQLPluginInfo;
   orgRetentionPluginConfig: Array<GQLPluginConfig>;
+  retentionPluginConfig: GQLRetentionPluginConfig;
   retentionScripts: Array<GQLRetentionScript>;
   retentionScript: GQLDetailedRetentionScript;
 }
@@ -68,6 +69,7 @@ export interface GQLMutation {
   UpdateRetentionPluginConfig: boolean;
   UpdateRetentionScript: boolean;
   CreateRetentionScript: string;
+  DeleteRetentionScript: boolean;
 }
 
 export interface GQLArtifactsInfo {
@@ -338,6 +340,8 @@ export interface GQLPluginConfig {
 
 export interface GQLPluginInfo {
   configs: Array<GQLPluginConfigSchema>;
+  allowCustomExportURL: boolean;
+  allowInsecureTLS: boolean;
 }
 
 export interface GQLPluginConfigSchema {
@@ -352,6 +356,14 @@ export interface GQLEditablePluginConfig {
 
 export interface GQLEditablePluginConfigs {
   configs: Array<GQLEditablePluginConfig>;
+  customExportURL?: string;
+  insecureTLS?: boolean;
+}
+
+export interface GQLRetentionPluginConfig {
+  configs: Array<GQLPluginConfig>;
+  customExportURL?: string;
+  insecureTLS?: boolean;
 }
 
 export interface GQLRetentionScript {
@@ -433,6 +445,7 @@ export interface GQLResolver {
   PluginConfig?: GQLPluginConfigTypeResolver;
   PluginInfo?: GQLPluginInfoTypeResolver;
   PluginConfigSchema?: GQLPluginConfigSchemaTypeResolver;
+  RetentionPluginConfig?: GQLRetentionPluginConfigTypeResolver;
   RetentionScript?: GQLRetentionScriptTypeResolver;
   DetailedRetentionScript?: GQLDetailedRetentionScriptTypeResolver;
 }
@@ -463,6 +476,7 @@ export interface GQLQueryTypeResolver<TParent = any> {
   plugins?: QueryToPluginsResolver<TParent>;
   retentionPluginInfo?: QueryToRetentionPluginInfoResolver<TParent>;
   orgRetentionPluginConfig?: QueryToOrgRetentionPluginConfigResolver<TParent>;
+  retentionPluginConfig?: QueryToRetentionPluginConfigResolver<TParent>;
   retentionScripts?: QueryToRetentionScriptsResolver<TParent>;
   retentionScript?: QueryToRetentionScriptResolver<TParent>;
 }
@@ -623,6 +637,13 @@ export interface QueryToOrgRetentionPluginConfigResolver<TParent = any, TResult 
   (parent: TParent, args: QueryToOrgRetentionPluginConfigArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
+export interface QueryToRetentionPluginConfigArgs {
+  id: string;
+}
+export interface QueryToRetentionPluginConfigResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: QueryToRetentionPluginConfigArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
 export interface QueryToRetentionScriptsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
@@ -654,6 +675,7 @@ export interface GQLMutationTypeResolver<TParent = any> {
   UpdateRetentionPluginConfig?: MutationToUpdateRetentionPluginConfigResolver<TParent>;
   UpdateRetentionScript?: MutationToUpdateRetentionScriptResolver<TParent>;
   CreateRetentionScript?: MutationToCreateRetentionScriptResolver<TParent>;
+  DeleteRetentionScript?: MutationToDeleteRetentionScriptResolver<TParent>;
 }
 
 export interface MutationToNoopResolver<TParent = any, TResult = any> {
@@ -784,6 +806,13 @@ export interface MutationToCreateRetentionScriptArgs {
 }
 export interface MutationToCreateRetentionScriptResolver<TParent = any, TResult = any> {
   (parent: TParent, args: MutationToCreateRetentionScriptArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface MutationToDeleteRetentionScriptArgs {
+  id: string;
+}
+export interface MutationToDeleteRetentionScriptResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: MutationToDeleteRetentionScriptArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface GQLArtifactsInfoTypeResolver<TParent = any> {
@@ -1430,9 +1459,19 @@ export interface PluginConfigToValueResolver<TParent = any, TResult = any> {
 
 export interface GQLPluginInfoTypeResolver<TParent = any> {
   configs?: PluginInfoToConfigsResolver<TParent>;
+  allowCustomExportURL?: PluginInfoToAllowCustomExportURLResolver<TParent>;
+  allowInsecureTLS?: PluginInfoToAllowInsecureTLSResolver<TParent>;
 }
 
 export interface PluginInfoToConfigsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface PluginInfoToAllowCustomExportURLResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface PluginInfoToAllowInsecureTLSResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
@@ -1446,6 +1485,24 @@ export interface PluginConfigSchemaToNameResolver<TParent = any, TResult = any> 
 }
 
 export interface PluginConfigSchemaToDescriptionResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLRetentionPluginConfigTypeResolver<TParent = any> {
+  configs?: RetentionPluginConfigToConfigsResolver<TParent>;
+  customExportURL?: RetentionPluginConfigToCustomExportURLResolver<TParent>;
+  insecureTLS?: RetentionPluginConfigToInsecureTLSResolver<TParent>;
+}
+
+export interface RetentionPluginConfigToConfigsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface RetentionPluginConfigToCustomExportURLResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface RetentionPluginConfigToInsecureTLSResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 

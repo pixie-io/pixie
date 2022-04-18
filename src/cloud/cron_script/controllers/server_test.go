@@ -107,6 +107,7 @@ func mustLoadTestData(db *sqlx.DB) {
 	db.MustExec(insertScript, "123e4567-e89b-12d3-a456-426655440000", "223e4567-e89b-12d3-a456-426655440000", "px.display()", controllers.ClusterIDs(clusterIDs1), "testConfigYaml: abcd", "test", true, 5)
 	db.MustExec(insertScript, "123e4567-e89b-12d3-a456-426655440002", "223e4567-e89b-12d3-a456-426655440000", "px()", controllers.ClusterIDs(clusterIDs3), "testConfigYaml: 1234", "test", false, 10)
 	db.MustExec(insertScript, "123e4567-e89b-12d3-a456-426655440001", "223e4567-e89b-12d3-a456-426655440001", "px.stream()", controllers.ClusterIDs(clusterIDs2), "testConfigYaml2: efgh", "test", true, 10)
+	db.MustExec(insertScript, "123e4567-e89b-12d3-a456-426655440003", "223e4567-e89b-12d3-a456-426655440001", "px.stream2()", controllers.ClusterIDs(clusterIDs2), "testConfigYaml2: efgh", "test", false, 10)
 }
 
 func TestServer_GetScript(t *testing.T) {
@@ -158,8 +159,9 @@ func TestServer_GetScripts(t *testing.T) {
 					utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
 					utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440001"),
 				},
-				Configs: "testConfigYaml: abcd",
-				Enabled: true,
+				Configs:    "testConfigYaml: abcd",
+				Enabled:    true,
+				FrequencyS: 5,
 			},
 			&cronscriptpb.CronScript{
 				ID:     utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440002"),
@@ -168,8 +170,9 @@ func TestServer_GetScripts(t *testing.T) {
 				ClusterIDs: []*uuidpb.UUID{
 					utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
 				},
-				Configs: "testConfigYaml: 1234",
-				Enabled: false,
+				Configs:    "testConfigYaml: 1234",
+				Enabled:    false,
+				FrequencyS: 10,
 			},
 		},
 	}, resp)
@@ -409,6 +412,7 @@ func TestServer_UpdateScript(t *testing.T) {
 		Configs:    &types.StringValue{Value: "updatedYAML"},
 		ClusterIDs: &cronscriptpb.ClusterIDs{Value: clusterIDs},
 		ScriptId:   utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440002"),
+		Enabled:    &types.BoolValue{Value: true},
 	})
 	wg.Wait()
 	require.NoError(t, err)
@@ -430,7 +434,7 @@ func TestServer_UpdateScript(t *testing.T) {
 		OrgID:     uuid.FromStringOrNil("223e4567-e89b-12d3-a456-426655440000"),
 		Script:    "px.updatedScript()",
 		ConfigStr: "updatedYAML",
-		Enabled:   false,
+		Enabled:   true,
 		ClusterIDs: []uuid.UUID{
 			uuid.FromStringOrNil("323e4567-e89b-12d3-a456-426655440003"),
 			uuid.FromStringOrNil("323e4567-e89b-12d3-a456-426655440002"),

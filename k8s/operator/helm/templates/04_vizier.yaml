@@ -23,6 +23,9 @@ spec:
   {{- if .Values.pemMemoryLimit }}
   pemMemoryLimit: {{ .Values.pemMemoryLimit }}
   {{- end }}
+  {{- if .Values.pemMemoryRequest }}
+  pemMemoryRequest: {{ .Values.pemMemoryRequest }}
+  {{- end }}
   {{- if .Values.dataAccess }}
   dataAccess: {{ .Values.dataAccess }}
   {{- end }}

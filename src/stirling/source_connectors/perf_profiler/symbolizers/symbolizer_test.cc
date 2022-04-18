@@ -29,6 +29,7 @@
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/caching_symbolizer.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/elf_symbolizer.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/java_symbolizer.h"
+#include "src/stirling/source_connectors/perf_profiler/testing/testing.h"
 #include "src/stirling/testing/common.h"
 #include "src/stirling/testing/symbolization.h"
 #include "src/stirling/utils/proc_tracker.h"
@@ -46,18 +47,8 @@ const uintptr_t kBarAddr = reinterpret_cast<uintptr_t>(&test::bar);
 namespace px {
 namespace stirling {
 
+using ::px::stirling::profiler::testing::GetAgentLibsFlagValueForTesting;
 using ::px::testing::BazelBinTestFilePath;
-
-// Returns a string as the flag value for the --stirling_profiler_java_agent_libs.
-std::string GetAgentLibsFlagValue() {
-  using fs_path = std::filesystem::path;
-  const fs_path agent_path_pfx = "src/stirling/source_connectors/perf_profiler/java/agent";
-  const fs_path glibc_lib_sfx = "build-glibc/lib-px-java-agent-glibc.so";
-  const fs_path musl_lib_sfx = "build-musl/lib-px-java-agent-musl.so";
-  const std::string glibc_agent = BazelBinTestFilePath(agent_path_pfx / glibc_lib_sfx).string();
-  const std::string musl_agent = BazelBinTestFilePath(agent_path_pfx / musl_lib_sfx).string();
-  return absl::StrJoin({glibc_agent, musl_agent}, ",");
-}
 
 template <typename TSymbolizer>
 class SymbolizerTest : public ::testing::Test {
@@ -97,14 +88,15 @@ TEST_F(BCCSymbolizerTest, KernelSymbols) {
 }
 
 TEST_F(BCCSymbolizerTest, JavaSymbols) {
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValue());
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<Symbolizer> symbolizer,
                        JavaSymbolizer::Create(std::move(symbolizer_)));
 
   SubProcess fake_java_proc;
   const std::filesystem::path fake_java_bin_path =
       BazelBinTestFilePath("src/stirling/source_connectors/perf_profiler/testing/java/java");
-  ASSERT_TRUE(fs::Exists(fake_java_bin_path)) << fake_java_bin_path;
+  ASSERT_TRUE(fs::Exists(fake_java_bin_path)) << fake_java_bin_path.string();
   ASSERT_OK(fake_java_proc.Start({fake_java_bin_path}));
   const uint32_t child_pid = fake_java_proc.child_pid();
   const uint64_t start_time_ns = 0;
@@ -145,6 +137,57 @@ TEST_F(BCCSymbolizerTest, JavaSymbols) {
   EXPECT_TRUE(fs::Exists(artifacts_path));
   symbolizer->DeleteUPID(child_upid);
   EXPECT_FALSE(fs::Exists(artifacts_path));
+}
+
+// Expect that Java symbolization agents will not be injected after disabling.
+TEST_F(BCCSymbolizerTest, DisableJavaSymbols) {
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<Symbolizer> symbolizer,
+                       JavaSymbolizer::Create(std::move(symbolizer_)));
+
+  const std::filesystem::path java_app_path =
+      BazelBinTestFilePath("src/stirling/source_connectors/perf_profiler/testing/java/fib");
+  ASSERT_TRUE(fs::Exists(java_app_path)) << java_app_path.string();
+  SubProcess java_proc_0;
+  ASSERT_OK(java_proc_0.Start({java_app_path}));
+  constexpr uint64_t start_time_ns = 0;
+  const uint32_t child_pid_0 = java_proc_0.child_pid();
+  const struct upid_t child_upid_0 = {{child_pid_0}, start_time_ns};
+
+  symbolizer->GetSymbolizerFn(child_upid_0);
+  std::this_thread::sleep_for(std::chrono::milliseconds{500});
+
+  ASSERT_TRUE(symbolizer->Uncacheable(child_upid_0)) << "Should have found symbol file by now.";
+  ASSERT_OK_AND_ASSIGN(const auto artifacts_path_0, java::ResolveHostArtifactsPath(child_upid_0));
+  EXPECT_TRUE(fs::Exists(artifacts_path_0));
+
+  // Disable java symbolization.
+  FLAGS_stirling_profiler_java_symbols = false;
+
+  // Disabling Java symbolization should not affect Java processes that we previously symbolized.
+  EXPECT_TRUE(symbolizer->Uncacheable(child_upid_0)) << "Should have found symbol file by now.";
+  EXPECT_TRUE(fs::Exists(artifacts_path_0));
+
+  // Start a new Java sub-process.
+  // We expect that it will not have a JVMTI symbolization agent injected.
+  SubProcess java_proc_1;
+  ASSERT_OK(java_proc_1.Start({java_app_path}));
+  const uint32_t child_pid_1 = java_proc_1.child_pid();
+  const struct upid_t child_upid_1 = {{child_pid_1}, start_time_ns};
+
+  symbolizer->GetSymbolizerFn(child_upid_1);
+  std::this_thread::sleep_for(std::chrono::milliseconds{100});
+
+  // Expect the symbols remain cacheable (non-Java).
+  // Expect to *not* find the Java symbolization artifacts.
+  EXPECT_FALSE(symbolizer->Uncacheable(child_upid_1));
+  ASSERT_OK_AND_ASSIGN(const auto artifacts_path_1, java::ResolveHostArtifactsPath(child_upid_1));
+  EXPECT_FALSE(fs::Exists(artifacts_path_1));
+
+  // Expect that JVMTI agent injection tracking includes sub-proc-0 but not sub-proc-1.
+  EXPECT_TRUE(JavaProfilingProcTracker::GetSingleton()->upids().contains(child_upid_0));
+  EXPECT_FALSE(JavaProfilingProcTracker::GetSingleton()->upids().contains(child_upid_1));
 }
 
 // Test the symbolizer with caching enabled and disabled.
@@ -280,10 +323,10 @@ TEST_F(BCCSymbolizerTest, Caching) {
   }
 }
 
-// Test requesting symbolizer function for Java process results into the upid being put into a
-// global set.
+// Expect that upids for Java processes (that we attempt to symbolize) are inserted to global set.
 TEST_F(BCCSymbolizerTest, JavaProcessBeingTracked) {
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValue());
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<Symbolizer> symbolizer,
                        JavaSymbolizer::Create(std::move(symbolizer_)));
 

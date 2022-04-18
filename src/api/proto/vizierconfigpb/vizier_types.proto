@@ -48,6 +48,8 @@ message VizierSpec {
     string dev_cloud_namespace = 7;
     // PemMemoryLimit is a memory limit applied specifically to PEM pods.
     string pem_memory_limit = 8;
+    // PemMemoryRequest is a memory request applied specifically to PEM pods.
+    string pem_memory_request = 17;
     // Pod defines the policy for creating Vizier pods.
     PodPolicyReq Pod_Policy = 9;
     // Patches defines patches that should be applied to Vizier resources.

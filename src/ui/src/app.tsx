@@ -39,7 +39,12 @@ import { PixieAPIContext, PixieAPIContextProvider } from 'app/api';
 import { AuthContextProvider, AuthContext } from 'app/common/auth-context';
 import { EmbedContext, EmbedContextProvider } from 'app/common/embed-context';
 import {
-  DARK_THEME, LIGHT_THEME, SnackbarProvider, VersionInfo,
+  DARK_BASE,
+  DARK_THEME,
+  LIGHT_THEME,
+  addSyntaxToPalette,
+  SnackbarProvider,
+  VersionInfo,
 } from 'app/components';
 import Live from 'app/containers/App/live';
 import { LD_CLIENT_ID } from 'app/containers/constants';
@@ -186,9 +191,9 @@ const ThemedApp: React.FC = () => {
       // Only use the `palette` field from the theme, as we know these
       // values are safe to apply. Base atop the dark theme.
       setTheme(createTheme({
-        ...DARK_THEME,
+        ...DARK_BASE,
         ...{
-          palette: deepmerge(DARK_THEME.palette, parsedTheme.palette, { clone: true }),
+          palette: addSyntaxToPalette(deepmerge(DARK_THEME.palette, parsedTheme.palette, { clone: true })),
           shadows: deepmerge(DARK_THEME.shadows, parsedTheme.shadows, { clone: true }),
         },
       }));

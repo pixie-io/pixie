@@ -45,6 +45,8 @@ class SymbolCache {
   size_t active_entries() const { return cache_.size(); }
   size_t total_entries() const { return cache_.size() + prev_cache_.size(); }
 
+  void set_symbolizer_fn(profiler::SymbolizerFn symbolizer_fn) { symbolizer_fn_ = symbolizer_fn; }
+
  private:
   /**
    * Symbol wraps a std::string for the sole and express purpose of

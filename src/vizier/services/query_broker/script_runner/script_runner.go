@@ -412,6 +412,8 @@ type runner struct {
 	cronScript *cvmsgspb.CronScript
 	config     *scripts.Config
 
+	lastRun time.Time
+
 	vzClient   vizierpb.VizierServiceClient
 	signingKey string
 
@@ -437,6 +439,7 @@ func (r *runner) start() {
 		return
 	}
 	ticker := time.NewTicker(time.Duration(r.cronScript.FrequencyS) * time.Second)
+	r.lastRun = time.Now().Add(time.Second * time.Duration(-1*r.cronScript.FrequencyS))
 
 	go func() {
 		defer ticker.Stop()
@@ -455,8 +458,9 @@ func (r *runner) start() {
 				var otelEndpoint *vizierpb.Configs_OTelEndpointConfig
 				if r.config != nil && r.config.OtelEndpointConfig != nil {
 					otelEndpoint = &vizierpb.Configs_OTelEndpointConfig{
-						URL:     r.config.OtelEndpointConfig.URL,
-						Headers: r.config.OtelEndpointConfig.Headers,
+						URL:      r.config.OtelEndpointConfig.URL,
+						Headers:  r.config.OtelEndpointConfig.Headers,
+						Insecure: r.config.OtelEndpointConfig.Insecure,
 					}
 				}
 
@@ -465,8 +469,12 @@ func (r *runner) start() {
 					QueryStr: r.cronScript.Script,
 					Configs: &vizierpb.Configs{
 						OTelEndpointConfig: otelEndpoint,
+						PluginConfig: &vizierpb.Configs_PluginConfig{
+							StartTimeNs: r.lastRun.UnixNano(),
+						},
 					},
 				})
+				r.lastRun = r.lastRun.Add(time.Second * time.Duration(r.cronScript.FrequencyS))
 				if err != nil {
 					log.WithError(err).Error("Failed to execute cronscript")
 				}

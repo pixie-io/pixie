@@ -27,6 +27,7 @@ import {
   GQLPlugin,
   GQLRetentionScript,
 } from 'app/types/schema';
+import pixieAnalytics from 'app/utils/analytics';
 
 export const DEFAULT_RETENTION_PXL = `import px
 
@@ -73,6 +74,9 @@ export const GQL_GET_PLUGINS_FOR_RETENTION_SCRIPTS = gql`
       name
       description
       logo
+      retentionEnabled
+      enabledVersion
+      latestVersion
     }
   }
 `;
@@ -121,8 +125,14 @@ export const GQL_CREATE_RETENTION_SCRIPT = gql`
   }
 `;
 
+export const GQL_DELETE_RETENTION_SCRIPT = gql`
+  mutation DeleteRetentionScript($id: ID!) {
+    DeleteRetentionScript(id: $id)
+  }
+`;
+
 export interface ClusterInfoForRetentionScripts {
-  clusterUID: string;
+  id: string;
   prettyClusterName: string;
   status?: GQLClusterStatus;
 }
@@ -132,7 +142,7 @@ export function useClustersForRetentionScripts(): { loading: boolean, clusters: 
     gql`
       query listClustersForRetentionScript {
         clusters {
-          clusterUID
+          id
           prettyClusterName
           status
         }
@@ -146,7 +156,11 @@ export function useClustersForRetentionScripts(): { loading: boolean, clusters: 
   }), [data, loading, error]);
 }
 
-export type PartialPlugin = Pick<GQLPlugin, 'id' | 'name' | 'description' | 'logo'>;
+export type PartialPlugin = Pick<
+GQLPlugin,
+'id' | 'name' | 'description' | 'logo' | 'retentionEnabled' | 'latestVersion' | 'enabledVersion'
+>;
+
 export function useRetentionPlugins(): { loading: boolean, plugins: PartialPlugin[] } {
   const { data, loading, error } = useQuery<{ plugins: PartialPlugin[] }>(
     GQL_GET_PLUGINS_FOR_RETENTION_SCRIPTS,
@@ -201,6 +215,15 @@ export function useMutateRetentionScript(id: string): (newScript: GQLEditableRet
   return React.useCallback((newScript: GQLEditableRetentionScript) => {
     if (!script) return Promise.reject('Not Ready');
 
+    pixieAnalytics.track('Retention script modified', {
+      name: newScript.name,
+      frequencyS: newScript.frequencyS,
+      clusters: newScript.clusters,
+      plugin: newScript.pluginID,
+      isPreset: script.isPreset,
+      enabled: newScript.enabled,
+    });
+
     return updateScript({
       variables: {
         id: script.id,
@@ -241,6 +264,13 @@ export function useCreateRetentionScript(): (newScript: GQLEditableRetentionScri
   }>(GQL_CREATE_RETENTION_SCRIPT);
 
   return React.useCallback((newScript: GQLEditableRetentionScript) => {
+    pixieAnalytics.track('Retention script created', {
+      name: newScript.name,
+      frequencyS: newScript.frequencyS,
+      clusters: newScript.clusters,
+      plugin: newScript.pluginID,
+    });
+
     return createScript({
       variables: {
         script: newScript,
@@ -252,4 +282,16 @@ export function useCreateRetentionScript(): (newScript: GQLEditableRetentionScri
       },
     }).then(({ data: { CreateRetentionScript: id } }) => id);
   }, [createScript]);
+}
+
+export function useDeleteRetentionScript(id: string): () => Promise<boolean> {
+  const [deleteScript] = useMutation<{ DeleteRetentionScript: boolean }, { id: string }>(GQL_DELETE_RETENTION_SCRIPT);
+  return React.useCallback(() => {
+    pixieAnalytics.track('Retention script deleted', { id });
+
+    return deleteScript({
+      variables: { id },
+      refetchQueries: [GQL_GET_RETENTION_SCRIPTS],
+    }).then(({ data: { DeleteRetentionScript: success } }) => success);
+  }, [id, deleteScript]);
 }

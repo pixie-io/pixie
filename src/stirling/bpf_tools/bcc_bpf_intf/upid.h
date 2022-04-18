@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <utility>
 #include "src/common/base/hash_utils.h"
+#include "src/shared/upid/upid.h"
 #endif
 
 // UPID stands for unique pid.
@@ -50,6 +51,10 @@ struct upid_t {
   template <typename H>
   friend H AbslHashValue(H h, const upid_t& upid) {
     return H::combine(std::move(h), upid.tgid, upid.start_time_ticks);
+  }
+
+  px::md::UPID ToMetadataUPID(uint32_t asid) const {
+    return px::md::UPID{asid, pid, static_cast<int64_t>(start_time_ticks)};
   }
 #endif
 };

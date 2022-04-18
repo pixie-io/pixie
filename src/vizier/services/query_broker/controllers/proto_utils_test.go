@@ -67,6 +67,9 @@ configs {
 	otel_endpoint_config {
 		url: "https://localhost:8080"
 	}
+	plugin_config {
+		start_time_ns: 10
+	}
 }
 `
 
@@ -95,6 +98,9 @@ exec_funcs {
 configs {
 	otel_endpoint_config {
 		url: "https://localhost:8080"
+	}
+	plugin_config {
+		start_time_ns: 10
 	}
 }
 `

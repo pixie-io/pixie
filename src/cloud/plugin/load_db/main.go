@@ -170,11 +170,11 @@ func addConfigs(plugin *controllers.Plugin, retention *controllers.RetentionPlug
 	if err == sql.ErrNoRows || !exists {
 		insertRetention := `INSERT INTO data_retention_plugin_releases
 			(plugin_id, version, configurations, documentation_url,
-			default_export_url, allow_custom_export_url, preset_scripts)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)`
+			default_export_url, allow_custom_export_url, preset_scripts, allow_insecure_tls)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 		_, err = db.Exec(insertRetention,
 			plugin.ID, plugin.Version, retention.Configurations, retention.DocumentationURL,
-			retention.DefaultExportURL, retention.AllowCustomExportURL, retention.PresetScripts,
+			retention.DefaultExportURL, retention.AllowCustomExportURL, retention.PresetScripts, retention.AllowInsecureTLS,
 		)
 		if err != nil {
 			log.WithError(err).Errorf("Failed to insert data retention plugin release for Plugin ID %s", plugin.ID)

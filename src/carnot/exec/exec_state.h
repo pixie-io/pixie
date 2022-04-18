@@ -49,10 +49,10 @@ using ResultSinkStubGenerator =
         const std::string& address, const std::string& ssl_targetname)>;
 using MetricsStubGenerator = std::function<
     std::unique_ptr<opentelemetry::proto::collector::metrics::v1::MetricsService::StubInterface>(
-        const std::string& address)>;
+        const std::string& address, bool insecure)>;
 using TraceStubGenerator = std::function<
     std::unique_ptr<opentelemetry::proto::collector::trace::v1::TraceService::StubInterface>(
-        const std::string& address)>;
+        const std::string& address, bool insecure)>;
 
 /**
  * ExecState manages the execution state for a single query. A new one will
@@ -129,12 +129,12 @@ class ExecState {
   }
 
   opentelemetry::proto::collector::metrics::v1::MetricsService::StubInterface* MetricsServiceStub(
-      const std::string& remote_address) {
+      const std::string& remote_address, bool insecure) {
     if (metrics_service_stub_map_.contains(remote_address)) {
       return metrics_service_stub_map_[remote_address];
     }
     std::unique_ptr<opentelemetry::proto::collector::metrics::v1::MetricsService::StubInterface>
-        stub_ = metrics_stub_generator_(remote_address);
+        stub_ = metrics_stub_generator_(remote_address, insecure);
     opentelemetry::proto::collector::metrics::v1::MetricsService::StubInterface* raw = stub_.get();
     metrics_service_stub_map_[remote_address] = raw;
     // Push to the pool.
@@ -142,12 +142,12 @@ class ExecState {
     return raw;
   }
   opentelemetry::proto::collector::trace::v1::TraceService::StubInterface* TraceServiceStub(
-      const std::string& remote_address) {
+      const std::string& remote_address, bool insecure) {
     if (trace_service_stub_map_.contains(remote_address)) {
       return trace_service_stub_map_[remote_address];
     }
     std::unique_ptr<opentelemetry::proto::collector::trace::v1::TraceService::StubInterface> stub_ =
-        trace_stub_generator_(remote_address);
+        trace_stub_generator_(remote_address, insecure);
     opentelemetry::proto::collector::trace::v1::TraceService::StubInterface* raw = stub_.get();
     trace_service_stub_map_[remote_address] = raw;
     // Push to the pool.
