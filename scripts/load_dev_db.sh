@@ -37,8 +37,6 @@ fi
 namespace=""
 repo_path=$(bazel info workspace)
 versions_file="${repo_path}/src/utils/artifacts/artifact_db_updater/VERSIONS.json"
-certs_path="${repo_path}/credentials/certs/dev/certs.yaml"
-certs_decoded_path="${repo_path}/credentials/certs/dev/certs_dec.yaml"
 while true; do
     if [[ "$1" == "--help" ]]; then
         usage
