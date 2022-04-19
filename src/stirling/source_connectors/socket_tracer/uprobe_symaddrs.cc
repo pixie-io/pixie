@@ -37,13 +37,14 @@ using ::px::stirling::obj_tools::ElfReader;
 
 DEFINE_bool(
     openssl_force_raw_fptrs, false,
-    "Forces the openssl tracing to determine the openssl version without dlopen/dlsym. Used in the openssl_trace_bpf_test code for integration testing raw function pointers");
+    "Forces the openssl tracing to determine the openssl version without dlopen/dlsym. Used in the "
+    "openssl_trace_bpf_test code for integration testing raw function pointers");
 
 // TODO(ddelnano): Set this to disabled by default since using function pointers can cause
 // segmentation faults. The default can be changed once this feature has been battle tested.
-DEFINE_bool(
-    openssl_raw_fptrs_enabled, false,
-    "If true, allows the openssl tracing implementation to fall back to function pointers if dlopen/dlsym is unable to find symbols");
+DEFINE_bool(openssl_raw_fptrs_enabled, false,
+            "If true, allows the openssl tracing implementation to fall back to function pointers "
+            "if dlopen/dlsym is unable to find symbols");
 
 namespace px {
 namespace stirling {
@@ -524,9 +525,10 @@ StatusOr<bool> RawFptrManager::Init() {
   PL_ASSIGN_OR_RETURN(text_segment_offset_, elf_reader_->FindSegmentOffsetOfSection(".text"));
   auto pid = getpid();
 
-  // The dlopen pointer will store the address of the virtual memory location. This is dependent
-  // on the implementation details of the dl library and was discovered from the following
-  // forum post https://www.linuxquestions.org/questions/programming-9/getting-base-address-of-dynamic-library-256670/#post4189790
+  // The dlopen pointer will store the address of the shared library's virtual memory location.
+  // This is dependent on the implementation details of the dl library and was discovered
+  // from the following forum post
+  // https://www.linuxquestions.org/questions/programming-9/getting-base-address-of-dynamic-library-256670/#post4189790
   // It's crucial to find the correct /prod/<pid>/maps entry otherwise we cannot guarantee that
   // it will still be mapped when the function is later invoked. In practice, this appears to happen
   // because the openssl_trace_bpf_tests segfault without this additional verification.
@@ -662,7 +664,8 @@ StatusOr<uint32_t> OpenSSLFixSubversionNum(RawFptrManager* fptrManager,
   open_ssl_version_num_t version_num;
 
   StatusOr<uint64_t> openssl_version_packed = GetOpenSSLVersionNumUsingDLOpen(lib_openssl_path);
-  if (FLAGS_openssl_force_raw_fptrs || (FLAGS_openssl_raw_fptrs_enabled && !openssl_version_packed.ok())) {
+  if (FLAGS_openssl_force_raw_fptrs ||
+      (FLAGS_openssl_raw_fptrs_enabled && !openssl_version_packed.ok())) {
     LOG(WARNING) << absl::Substitute(
         "Unable to find openssl symbol 'OpenSSL_version_num' using dlopen/dlsym. Attempting to "
         "find address manually for pid $0",

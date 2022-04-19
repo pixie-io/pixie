@@ -174,9 +174,10 @@ using OpenSSLTraceDlsymTest = BaseOpenSSLTraceTest<T, false>;
 template <typename T>
 using OpenSSLTraceRawFptrsTest = BaseOpenSSLTraceTest<T, true>;
 
-#define OPENSSL_TYPED_TEST(TestCase, CodeBlock) \
-TYPED_TEST(OpenSSLTraceDlsymTest, TestCase) CodeBlock \
-TYPED_TEST(OpenSSLTraceRawFptrsTest, TestCase) CodeBlock
+#define OPENSSL_TYPED_TEST(TestCase, CodeBlock)            \
+  TYPED_TEST(OpenSSLTraceDlsymTest, TestCase)              \
+  CodeBlock TYPED_TEST(OpenSSLTraceRawFptrsTest, TestCase) \
+  CodeBlock
 
 TYPED_TEST_SUITE(OpenSSLTraceDlsymTest, OpenSSLServerImplementations);
 TYPED_TEST_SUITE(OpenSSLTraceRawFptrsTest, OpenSSLServerImplementations);
