@@ -600,6 +600,110 @@ otel_sink_op {
     }
   }
 })pb"},
+        {"manually_specify_gauge_unit",
+         R"pxl(
+otel.Data(
+  endpoint=otel.Endpoint(
+    url='0.0.0.0:55690',
+  ),
+  resource={
+      'service.name' : df.service,
+  },
+  data=[
+    otelmetric.Gauge(
+      name='runtime.jvm.gc.collection',
+      unit='special_unit',
+      value=df.young_gc_time,
+    )
+  ]
+))pxl",
+         table_store::schema::Relation{
+             {types::TIME64NS, types::STRING, types::STRING, types::INT64},
+             {"time_", "service", "young", "young_gc_time"},
+             {types::ST_NONE, types::ST_SERVICE_NAME, types::ST_NONE, types::ST_DURATION_NS},
+         },
+         R"pb(
+op_type: OTEL_EXPORT_SINK_OPERATOR
+otel_sink_op {
+  endpoint_config {
+    url: "0.0.0.0:55690"
+  }
+  resource {
+    attributes {
+      name: "service.name"
+      column {
+        column_type: STRING
+        column_index: 1
+        can_be_json_encoded_array: true
+      }
+    }
+  }
+  metrics {
+    name: "runtime.jvm.gc.collection"
+    time_column_index: 0
+    unit: "special_unit"
+    gauge {
+      int_column_index: 3
+    }
+  }
+})pb"},
+        {"manually_specify_summary_unit",
+         R"pxl(
+otel.Data(
+  endpoint=otel.Endpoint(
+    url='0.0.0.0:55690',
+  ),
+  resource={
+      'service.name' : df.service,
+  },
+  data=[
+    otelmetric.Summary(
+      name='http.resp.latency',
+      count=df.count,
+      sum=df.sum,
+      unit ='special_unit'
+      quantile_values={
+        0.5: df.p50,
+      },
+    )
+  ]
+))pxl",
+         table_store::schema::Relation{
+             {types::TIME64NS, types::STRING, types::STRING, types::INT64, types::FLOAT64,
+              types::FLOAT64, types::FLOAT64},
+             {"time_", "service", "status", "count", "sum", "p50", "p99"},
+             {types::ST_NONE, types::ST_SERVICE_NAME, types::ST_NONE, types::ST_NONE,
+              types::ST_NONE, types::ST_DURATION_NS, types::ST_DURATION_NS}},
+         R"pb(
+op_type: OTEL_EXPORT_SINK_OPERATOR
+otel_sink_op {
+  endpoint_config {
+    url: "0.0.0.0:55690"
+  }
+  resource {
+    attributes {
+      name: "service.name"
+      column {
+        column_type: STRING
+        column_index: 1
+        can_be_json_encoded_array: true
+      }
+    }
+  }
+  metrics {
+    name: "http.resp.latency"
+    time_column_index: 0
+    unit: "special_unit"
+    summary {
+      count_column_index: 3
+      sum_column_index: 4
+      quantile_values {
+        quantile: 0.5
+        value_column_index: 5
+      }
+    }
+  }
+})pb"},
     }),
     [](const ::testing::TestParamInfo<SuccessTestCase>& info) { return info.param.name; });
 

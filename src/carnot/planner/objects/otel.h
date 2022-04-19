@@ -116,6 +116,8 @@ class OTelMetrics : public QLObject {
     description (string, optional): A description of what the metric tracks.
     attributes (Dict[string, string], optional): A mapping of attribute name to the column
       name that stores data about the attribute.
+    unit (string, optional): The unit string to use for the metric. If not specified, will attempt
+      to use the Semantic Type of the `value` to infer the unit string.
   Returns:
     OTelDataContainer: the mapping of DataFrame columns to OpenTelemetry Gauge fields. Can be passed
       into `px.otel.Data()` as the data argument.
@@ -140,6 +142,8 @@ class OTelMetrics : public QLObject {
     description (string, optional): A description of what the metric tracks.
     attributes (Dict[double, Column], optional): A mapping of attribute name to the column
       name that stores data about the attribute.
+    unit (string, optional): The unit string to use for the metric. If not specified, will attempt
+      to use the Semantic Type of the quantile values to infer the unit string.
   Returns:
     OTelDataContainer: the mapping of DataFrame columns to OpenTelemetry Summary fields. Can be passed
       into `px.otel.Data()` as the data argument.

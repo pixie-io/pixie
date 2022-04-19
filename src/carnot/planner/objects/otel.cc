@@ -147,6 +147,10 @@ StatusOr<QLObjectPtr> GaugeDefinition(IR* graph, const pypa::AstPtr& ast, const 
 
   PL_ASSIGN_OR_RETURN(auto val, GetArgAs<ColumnIR>(ast, args, "value"));
   metric.unit_column = val;
+  if (!NoneObject::IsNoneObject(args.GetArg("unit"))) {
+    PL_ASSIGN_OR_RETURN(auto unit, GetArgAsString(ast, args, "unit"));
+    metric.unit_str = unit;
+  }
   metric.metric = OTelMetricGauge{val};
 
   QLObjectPtr attributes = args.GetArg("attributes");
@@ -192,6 +196,10 @@ StatusOr<QLObjectPtr> SummaryDefinition(IR* graph, const pypa::AstPtr& ast, cons
     summary.quantiles.push_back({quantile->val(), val});
   }
   metric.unit_column = summary.quantiles[0].value_column;
+  if (!NoneObject::IsNoneObject(args.GetArg("unit"))) {
+    PL_ASSIGN_OR_RETURN(auto unit, GetArgAsString(ast, args, "unit"));
+    metric.unit_str = unit;
+  }
   metric.metric = summary;
 
   QLObjectPtr attributes = args.GetArg("attributes");
@@ -317,27 +325,29 @@ Status OTelModule::Init(CompilerState* compiler_state, IR* ir) {
 
 Status OTelMetrics::Init() {
   // Setup methods.
-  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> gauge_fn,
-                      FuncObject::Create(kGaugeOpID, {"name", "value", "description", "attributes"},
-                                         {{"description", "\"\""}, {"attributes", "{}"}},
-                                         /* has_variable_len_args */ false,
-                                         /* has_variable_len_kwargs */ false,
-                                         std::bind(&GaugeDefinition, graph_, std::placeholders::_1,
-                                                   std::placeholders::_2, std::placeholders::_3),
-                                         ast_visitor()));
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> gauge_fn,
+      FuncObject::Create(kGaugeOpID, {"name", "value", "description", "attributes", "unit"},
+                         {{"description", "\"\""}, {"attributes", "{}"}, {"unit", "None"}},
+                         /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(&GaugeDefinition, graph_, std::placeholders::_1,
+                                   std::placeholders::_2, std::placeholders::_3),
+                         ast_visitor()));
   PL_RETURN_IF_ERROR(gauge_fn->SetDocString(kGaugeOpDocstring));
   AddMethod(kGaugeOpID, gauge_fn);
 
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> summary_fn,
-      FuncObject::Create(kSummaryOpID,
-                         {"name", "count", "sum", "quantile_values", "description", "attributes"},
-                         {{"description", "\"\""}, {"attributes", "{}"}},
-                         /* has_variable_len_args */ false,
-                         /* has_variable_len_kwargs */ false,
-                         std::bind(&SummaryDefinition, graph_, std::placeholders::_1,
-                                   std::placeholders::_2, std::placeholders::_3),
-                         ast_visitor()));
+      FuncObject::Create(
+          kSummaryOpID,
+          {"name", "count", "sum", "quantile_values", "description", "attributes", "unit"},
+          {{"description", "\"\""}, {"attributes", "{}"}, {"unit", "None"}},
+          /* has_variable_len_args */ false,
+          /* has_variable_len_kwargs */ false,
+          std::bind(&SummaryDefinition, graph_, std::placeholders::_1, std::placeholders::_2,
+                    std::placeholders::_3),
+          ast_visitor()));
   PL_RETURN_IF_ERROR(summary_fn->SetDocString(kSummaryOpDocstring));
   AddMethod(kSummaryOpID, summary_fn);
 

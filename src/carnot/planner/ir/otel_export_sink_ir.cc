@@ -89,6 +89,7 @@ Status OTelExportSinkIR::ProcessConfig(const OTelData& data) {
     new_metric.name = metric.name;
     new_metric.description = metric.description;
 
+    new_metric.unit_str = metric.unit_str;
     PL_ASSIGN_OR_RETURN(new_metric.unit_column, AddColumn(metric.unit_column));
     PL_ASSIGN_OR_RETURN(new_metric.time_column, AddColumn(metric.time_column));
     for (const auto& attr : metric.attributes) {
@@ -167,8 +168,11 @@ Status OTelExportSinkIR::ToProto(planpb::Operator* op) const {
     metric_pb->set_name(metric.name);
     metric_pb->set_description(metric.description);
 
-    auto unit_type = static_cast<ValueType*>(metric.unit_column->resolved_type().get());
-    metric_pb->set_unit(ConvertSemanticTypeToOtel(unit_type->semantic_type()));
+    metric_pb->set_unit(metric.unit_str);
+    if (metric.unit_str.empty()) {
+      auto unit_type = static_cast<ValueType*>(metric.unit_column->resolved_type().get());
+      metric_pb->set_unit(ConvertSemanticTypeToOtel(unit_type->semantic_type()));
+    }
     if (metric.time_column->EvaluatedDataType() != types::TIME64NS) {
       return metric.time_column->CreateIRNodeError(
           "Expected time column '$0' to be TIME64NS, received $1", metric.time_column->col_name(),
