@@ -89,16 +89,6 @@ class GRPCRouter final : public carnotpb::ResultSinkService::Service {
       const sole::uuid& query_id, const std::vector<uuidpb::UUID>& expected_agent_ids);
 
   /**
-   * @brief Records the execution statistics from the passed in request.
-   *
-   * @param query_id the query_id which to record the statistics.
-   * @param stats the protobuf of the exec stats received by the agent.
-   * @return Status
-   */
-  Status RecordStats(const sole::uuid& query_id,
-                     const std::vector<queryresultspb::AgentExecutionStats>& stats);
-
-  /**
    * @brief Number of queries currently being tracked.
    * @return size_t number of queries being tracked.
    */
@@ -112,6 +102,9 @@ class GRPCRouter final : public carnotpb::ResultSinkService::Service {
   struct SourceNodeTracker {
     SourceNodeTracker() = default;
     GRPCSourceNode* source_node GUARDED_BY(node_lock) = nullptr;
+    // connection_initiated_by_sink and connection_closed_by_sink are true when the
+    // grpc sink (aka the client) initiates the query result stream or closes a query result stream,
+    // respectively.
     bool connection_initiated_by_sink GUARDED_BY(node_lock) = false;
     bool connection_closed_by_sink GUARDED_BY(node_lock) = false;
     std::vector<std::unique_ptr<::px::carnotpb::TransferResultChunkRequest>> response_backlog
@@ -154,16 +147,28 @@ class GRPCRouter final : public carnotpb::ResultSinkService::Service {
   Status EnqueueRowBatch(QueryTracker* query_tracker,
                          std::unique_ptr<carnotpb::TransferResultChunkRequest> req);
 
+  struct TransferResultChunkState {
+    int64_t source_node_id = 0;
+    bool registered_server_context = false;
+    // stream_has_query_results informs downstream source nodes about the health of the stream.
+    // When true, the particular TransferResultChunk call has initiated the query stream.
+    bool stream_has_query_results = false;
+    std::shared_ptr<QueryTracker> query_tracker = nullptr;
+  };
+  ::grpc::Status HandleTransferResultChunkMessage(
+      std::unique_ptr<::px::carnotpb::TransferResultChunkRequest> req,
+      ::grpc::ServerContext* context, TransferResultChunkState* state);
+
   Status MarkResultStreamInitiated(QueryTracker* query_tracker, int64_t source_id);
-  Status MarkResultStreamClosed(QueryTracker* query_tracker, int64_t source_id);
+  void MarkResultStreamClosed(QueryTracker* query_tracker, int64_t source_id);
   void RegisterResultStreamContext(QueryTracker* query_tracker, ::grpc::ServerContext* context);
   void MarkResultStreamContextAsComplete(QueryTracker* query_tracker,
                                          ::grpc::ServerContext* context);
   SourceNodeTracker* GetSourceNodeTracker(QueryTracker* query_tracker, int64_t source_id);
 
-  absl::node_hash_map<sole::uuid, std::shared_ptr<QueryTracker>> query_node_map_
-      GUARDED_BY(query_node_map_lock_);
-  mutable absl::base_internal::SpinLock query_node_map_lock_;
+  absl::node_hash_map<sole::uuid, std::shared_ptr<QueryTracker>> id_to_query_tracker_map_
+      GUARDED_BY(id_to_query_tracker_map_lock_);
+  mutable absl::base_internal::SpinLock id_to_query_tracker_map_lock_;
 };
 
 }  // namespace exec
