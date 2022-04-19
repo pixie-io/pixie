@@ -523,6 +523,13 @@ StatusOr<bool> RawFptrManager::Init() {
 
   PL_ASSIGN_OR_RETURN(text_segment_offset_, elf_reader_->FindSegmentOffsetOfSection(".text"));
   auto pid = getpid();
+
+  // The dlopen pointer will store the address of the virtual memory location. This is dependent
+  // on the implementation details of the dl library and was discovered from the following
+  // forum post https://www.linuxquestions.org/questions/programming-9/getting-base-address-of-dynamic-library-256670/#post4189790
+  // It's crucial to find the correct /prod/<pid>/maps entry otherwise we cannot guarantee that
+  // it will still be mapped when the function is later invoked. In practice, this appears to happen
+  // because the openssl_trace_bpf_tests segfault without this additional verification.
   auto vmem_start = text_segment_offset_ + (uint64_t) * (size_t const*)dlopen_handle_;
   auto entry = proc_parser_->GetExecutableMapEntry(pid, lib_path_, vmem_start);
   if (!entry.ok())
