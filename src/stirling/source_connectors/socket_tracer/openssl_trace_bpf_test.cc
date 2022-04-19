@@ -182,9 +182,6 @@ TYPED_TEST_SUITE(OpenSSLTraceDlsymTest, OpenSSLServerImplementations);
 TYPED_TEST_SUITE(OpenSSLTraceRawFptrsTest, OpenSSLServerImplementations);
 
 OPENSSL_TYPED_TEST(ssl_capture_curl_client, {
-  PL_SET_FOR_SCOPE(FLAGS_openssl_force_raw_fptrs, this->force_fptr_);
-  LOG(INFO) << absl::Substitute("Running with FLAGS_openssl_force_raw_fptrs: $0", this->force_fptr_);
-
   this->StartTransferDataThread();
 
   // Make an SSL request with curl.
@@ -208,9 +205,6 @@ OPENSSL_TYPED_TEST(ssl_capture_curl_client, {
 })
 
 OPENSSL_TYPED_TEST(ssl_capture_ruby_client, {
-  PL_SET_FOR_SCOPE(FLAGS_openssl_force_raw_fptrs, this->force_fptr_);
-  LOG(INFO) << absl::Substitute("Running with FLAGS_openssl_force_raw_fptrs: $0", this->force_fptr_);
-
   this->StartTransferDataThread();
 
   // Make multiple requests and make sure we capture all of them.
@@ -254,9 +248,6 @@ OPENSSL_TYPED_TEST(ssl_capture_ruby_client, {
 })
 
 OPENSSL_TYPED_TEST(ssl_capture_node_client, {
-  PL_SET_FOR_SCOPE(FLAGS_openssl_force_raw_fptrs, this->force_fptr_);
-  LOG(INFO) << absl::Substitute("Running with FLAGS_openssl_force_raw_fptrs: $0", this->force_fptr_);
-
   this->StartTransferDataThread();
 
   // Make an SSL request with the client.

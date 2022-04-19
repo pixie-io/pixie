@@ -37,7 +37,13 @@ using ::px::stirling::obj_tools::ElfReader;
 
 DEFINE_bool(
     openssl_force_raw_fptrs, false,
-    "If true, forces the openssl tracing to determine the openssl version without dlopen/dlsym");
+    "Forces the openssl tracing to determine the openssl version without dlopen/dlsym. Used in the openssl_trace_bpf_test code for integration testing raw function pointers");
+
+// TODO(ddelnano): Set this to disabled by default since using function pointers can cause
+// segmentation faults. The default can be changed once this feature has been battle tested.
+DEFINE_bool(
+    openssl_raw_fptrs_enabled, false,
+    "If true, allows the openssl tracing implementation to fall back to function pointers if dlopen/dlsym is unable to find symbols");
 
 namespace px {
 namespace stirling {
@@ -649,7 +655,7 @@ StatusOr<uint32_t> OpenSSLFixSubversionNum(RawFptrManager* fptrManager,
   open_ssl_version_num_t version_num;
 
   StatusOr<uint64_t> openssl_version_packed = GetOpenSSLVersionNumUsingDLOpen(lib_openssl_path);
-  if (FLAGS_openssl_force_raw_fptrs || (!openssl_version_packed.ok())) {
+  if (FLAGS_openssl_force_raw_fptrs || (FLAGS_openssl_raw_fptrs_enabled && !openssl_version_packed.ok())) {
     LOG(WARNING) << absl::Substitute(
         "Unable to find openssl symbol 'OpenSSL_version_num' using dlopen/dlsym. Attempting to "
         "find address manually for pid $0",

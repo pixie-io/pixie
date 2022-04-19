@@ -28,6 +28,7 @@
 #include "src/stirling/utils/detect_application.h"
 
 DECLARE_bool(openssl_force_raw_fptrs);
+DECLARE_bool(openssl_raw_fptrs_enabled);
 
 namespace px {
 namespace stirling {
