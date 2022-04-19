@@ -1112,7 +1112,6 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) chan *cvmsgspb.VizierHeart
 			Port:                          port,
 			NumNodes:                      state.NumNodes,
 			NumInstrumentedNodes:          state.NumInstrumentedNodes,
-			PodStatuses:                   state.ControlPlanePodStatuses,
 			UnhealthyDataPlanePodStatuses: state.UnhealthyDataPlanePodStatuses,
 			K8sClusterVersion:             state.K8sClusterVersion,
 			PodStatusesLastUpdated:        state.LastUpdated.UnixNano(),
@@ -1120,6 +1119,12 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) chan *cvmsgspb.VizierHeart
 			StatusMessage:                 msg,
 			DisableAutoUpdate:             viper.GetBool("disable_auto_update"),
 		}
+
+		// Only send the control plane pod statuses every 1 min.
+		if atomic.LoadInt64(&s.hbSeqNum)%12 == 0 {
+			hbMsg.PodStatuses = state.ControlPlanePodStatuses
+		}
+
 		select {
 		case <-s.quitCh:
 			return
