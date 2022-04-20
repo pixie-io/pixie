@@ -411,6 +411,40 @@ Status ProcParser::ParseProcPIDStatus(int32_t pid, ProcessStatus* out) const {
   return ParseFromKeyValueFile(fpath, field_name_to_offset_map, reinterpret_cast<uint8_t*>(out));
 }
 
+StatusOr<size_t> ProcParser::ParseProcPIDPss(const int32_t pid) const {
+  // We will parse a line that looks like this:
+  // Pss:                 807 kB
+  // And return the value 807*1024 (or an error status).
+  constexpr uint32_t kPssKeyIdx = 0;
+  constexpr uint32_t kPssValIdx = 1;
+  constexpr uint32_t kUnitsIdx = 2;
+
+  const std::string fpath = absl::Substitute("$0/$1/smaps_rollup", proc_base_path_, pid);
+
+  std::ifstream ifs;
+  ifs.open(fpath);
+  if (!ifs) {
+    return error::Internal("Failed to open file $0", fpath);
+  }
+
+  std::string line;
+  while (std::getline(ifs, line)) {
+    if (absl::StartsWith(line, "Pss:")) {
+      const std::vector<std::string_view> toks = absl::StrSplit(line, ' ', absl::SkipWhitespace());
+      DCHECK_EQ(toks.size(), 3);
+      DCHECK_EQ(toks[kPssKeyIdx], "Pss:");
+      DCHECK_EQ(toks[kUnitsIdx], "kB");
+      size_t pss_kb;
+      if (absl::SimpleAtoi(toks[kPssValIdx], &pss_kb)) {
+        return 1024 * pss_kb;
+      } else {
+        return error::Internal(R"(SimpleAtoi error for "$0", pid=$1.)", toks[kPssValIdx], pid);
+      }
+    }
+  }
+  return error::Internal("Could not find pss for pid $0.", pid);
+}
+
 Status ProcParser::ParseProcPIDSMaps(int32_t pid, std::vector<ProcessSMaps>* out) const {
   CHECK(out != nullptr);
   std::string fpath = absl::Substitute("$0/$1/smaps", proc_base_path_, pid);
