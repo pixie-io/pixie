@@ -20,6 +20,7 @@
 
 #include "src/common/exec/subprocess.h"
 #include "src/common/testing/testing.h"
+#include "src/stirling/core/connector_context.h"
 #include "src/stirling/testing/common.h"
 
 namespace px {
@@ -36,7 +37,7 @@ TEST(ProcExitConnectorTest, TransferData) {
   auto connector = ProcExitConnector::Create("test_proc_exit_connector");
   ASSERT_TRUE(connector != nullptr);
   EXPECT_OK(connector->Init());
-  TestContext context({md::UPID{0, 1, 1}});
+  StandaloneContext context({md::UPID{0, 1, 1}});
 
   testing::DataTables data_tables{ProcExitConnector::kTables};
   DataTable* data_table = data_tables.tables().front();

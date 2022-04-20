@@ -28,6 +28,7 @@
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 
 #include "src/common/testing/testing.h"
+#include "src/stirling/core/connector_context.h"
 #include "src/stirling/core/data_table.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/cql/test_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/event_generator.h"
@@ -153,7 +154,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
     ASSERT_NE(nullptr, source_);
 
     absl::flat_hash_set<md::UPID> upids = {md::UPID(kASID, kPID, kPIDStartTimeTicks)};
-    ctx_ = std::make_unique<TestContext>(upids);
+    ctx_ = std::make_unique<StandaloneContext>(upids);
 
     // Tell the source to use our injected clock for getting the current time.
     source_->test_only_set_now_fn(
@@ -177,7 +178,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
 
   std::unique_ptr<SourceConnector> connector_;
   SocketTraceConnectorFriend* source_ = nullptr;
-  std::unique_ptr<TestContext> ctx_;
+  std::unique_ptr<StandaloneContext> ctx_;
   testing::MockClock mock_clock_;
   testing::EventGenerator event_gen_;
 };

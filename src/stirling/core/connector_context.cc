@@ -57,6 +57,26 @@ Status StandaloneContext::SetClusterCIDR(std::string_view cidr_str) {
   return Status::OK();
 }
 
+StandaloneContext::StandaloneContext(absl::flat_hash_set<md::UPID> upids,
+                                     const std::filesystem::path& proc_path)
+    : upids_(std::move(upids)) {
+  // Cannot be empty, otherwise stirling will wait indefinitely. Since StandaloneContext is used
+  // for local environment, set it such that localhost (127.0.0.1) will be treated as outside of
+  // cluster, and --treat_loopback_as_in_cluster in conn_tracker.cc will take effect.
+  // TODO(yzhao): Might need to include IPv6 version when tests for IPv6 are added.
+  PL_CHECK_OK(SetClusterCIDR("0.0.0.1/32"));
+
+  system::ProcParser proc_parser(proc_path);
+  for (auto upid : upids_) {
+    std::string exe_path = proc_parser.GetExePath(upid.pid()).ValueOr("");
+    std::string cmdline = proc_parser.GetPIDCmdline(upid.pid());
+    auto pid_info = std::make_unique<md::PIDInfo>(upid, std::move(exe_path), std::move(cmdline),
+                                                  /*cid*/ md::CID{});
+    upid_pidinfo_map_[upid] = std::move(pid_info);
+  }
+}
+
+// Returns the list of processes from the proc filesystem. Used by StandaloneContext.
 absl::flat_hash_set<md::UPID> ListUPIDs(const std::filesystem::path& proc_path, uint32_t asid) {
   absl::flat_hash_set<md::UPID> pids;
   for (const auto& p : std::filesystem::directory_iterator(proc_path)) {
@@ -74,6 +94,9 @@ absl::flat_hash_set<md::UPID> ListUPIDs(const std::filesystem::path& proc_path, 
   }
   return pids;
 }
+
+SystemWideStandaloneContext::SystemWideStandaloneContext(const std::filesystem::path& proc_path)
+    : StandaloneContext(ListUPIDs(proc_path, /*asid*/ 0), proc_path) {}
 
 }  // namespace stirling
 }  // namespace px
