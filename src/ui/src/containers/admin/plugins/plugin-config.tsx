@@ -61,9 +61,7 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
     if (!values) return;
     setPendingValues((prev) => ({
       ...prev,
-      ...values.configs.reduce((accum, { name, value }) => ({ ...accum, [name]: value }), {}),
-      customExportURL: values.customExportURL,
-      insecureTLS: values.insecureTLS,
+      configs: values.configs.map(({ name, value }) => ({ name, value })),
     }));
   }, [values]);
 
@@ -97,8 +95,8 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
             variant='outlined'
             label={name}
             placeholder={description}
-            helperText={pendingValues.configs[name] ? description : ''}
-            value={pendingValues.configs[name] ?? ''}
+            helperText={pendingValues.configs.find(c => c.name === name)?.value ? description : ''}
+            value={pendingValues.configs.find(c => c.name === name)?.value ?? ''}
             onChange={(e) => setPendingValues((prev) => ({
               ...prev,
               configs: [
