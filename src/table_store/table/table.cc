@@ -218,6 +218,7 @@ Status Table::ExpireRowBatches(int64_t row_batch_size) {
     {
       absl::base_internal::SpinLockHolder lock(&stats_lock_);
       batches_expired_++;
+      metrics_.batches_expired_counter.Increment();
     }
   }
   return Status::OK();
@@ -261,14 +262,24 @@ Status Table::WriteHot(internal::RecordOrRowBatch&& record_or_row_batch) {
 
   PL_RETURN_IF_ERROR(ExpireRowBatches(batch_stats.bytes));
 
-  absl::base_internal::SpinLockHolder hot_lock(&hot_lock_);
-  auto batch_length = record_or_row_batch.Length();
-  batch_size_accountant_->NewHotBatch(std::move(batch_stats));
-  hot_store_->EmplaceBack(next_row_id_, std::move(record_or_row_batch));
-  next_row_id_ += batch_length;
+  {
+    absl::base_internal::SpinLockHolder hot_lock(&hot_lock_);
+    auto batch_length = record_or_row_batch.Length();
+    batch_size_accountant_->NewHotBatch(std::move(batch_stats));
+    hot_store_->EmplaceBack(next_row_id_, std::move(record_or_row_batch));
+    next_row_id_ += batch_length;
+  }
 
-  absl::base_internal::SpinLockHolder lock(&stats_lock_);
-  ++batches_added_;
+  {
+    absl::base_internal::SpinLockHolder lock(&stats_lock_);
+    ++batches_added_;
+    metrics_.batches_added_counter.Increment();
+    bytes_added_ += batch_stats.bytes;
+    metrics_.bytes_added_counter.Increment(batch_stats.bytes);
+  }
+
+  // Make sure locks are released for this call, since they are reacquired inside.
+  PL_RETURN_IF_ERROR(UpdateTableMetricGauges());
   return Status::OK();
 }
 
@@ -348,8 +359,10 @@ TableStats Table::GetTableStats() const {
 
   info.batches_added = batches_added_;
   info.batches_expired = batches_expired_;
+  info.bytes_added = bytes_added_;
   info.num_batches = num_batches;
   info.bytes = hot_bytes + cold_bytes;
+  info.hot_bytes = hot_bytes;
   info.cold_bytes = cold_bytes;
   info.compacted_batches = compacted_batches_;
   info.max_table_size = max_table_size_;
@@ -388,6 +401,7 @@ Status Table::CompactSingleBatchUnlocked(arrow::MemoryPool*) {
   {
     absl::base_internal::SpinLockHolder stat_lock(&stats_lock_);
     compacted_batches_++;
+    metrics_.compacted_batches_counter.Increment();
   }
   return Status::OK();
 }
@@ -442,5 +456,27 @@ Status Table::ExpireBatch() {
   // batch.
   return ExpireHot();
 }
+
+Status Table::UpdateTableMetricGauges() {
+  // Update table-level gauge values.
+  auto stats = GetTableStats();
+  // Set gauge values
+  metrics_.cold_bytes_gauge.Set(stats.cold_bytes);
+  metrics_.hot_bytes_gauge.Set(stats.hot_bytes);
+  metrics_.num_batches_gauge.Set(stats.num_batches);
+  metrics_.max_table_size_gauge.Set(stats.max_table_size);
+  // Compute retention gauge
+  int64_t current_retention_ns = 0;
+  // If min_time is 0, there is no data in the table.
+  if (stats.min_time > 0) {
+    int64_t current_time_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                  std::chrono::system_clock::now().time_since_epoch())
+                                  .count();
+    current_retention_ns = current_time_ns - stats.min_time;
+  }
+  metrics_.retention_ns_gauge.Set(current_retention_ns);
+  return Status::OK();
+}
+
 }  // namespace table_store
 }  // namespace px

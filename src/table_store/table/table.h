@@ -57,10 +57,12 @@ using RecordBatchSPtr = std::shared_ptr<arrow::RecordBatch>;
 
 struct TableStats {
   int64_t bytes;
+  int64_t hot_bytes;
   int64_t cold_bytes;
   int64_t num_batches;
   int64_t batches_added;
   int64_t batches_expired;
+  int64_t bytes_added;
   int64_t compacted_batches;
   int64_t max_table_size;
   int64_t min_time;
@@ -291,9 +293,8 @@ class Table : public NotCopyable {
 
   mutable absl::base_internal::SpinLock stats_lock_;
   int64_t batches_expired_ ABSL_GUARDED_BY(stats_lock_) = 0;
-  int64_t cold_bytes_ ABSL_GUARDED_BY(stats_lock_) = 0;
-  int64_t hot_bytes_ ABSL_GUARDED_BY(stats_lock_) = 0;
   int64_t batches_added_ ABSL_GUARDED_BY(stats_lock_) = 0;
+  int64_t bytes_added_ ABSL_GUARDED_BY(stats_lock_) = 0;
   int64_t compacted_batches_ ABSL_GUARDED_BY(stats_lock_) = 0;
   int64_t max_table_size_ = 0;
   const int64_t compacted_batch_size_;
@@ -319,6 +320,7 @@ class Table : public NotCopyable {
   Status ExpireRowBatches(int64_t row_batch_size);
   Status CompactSingleBatchUnlocked(arrow::MemoryPool* mem_pool)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(cold_lock_) ABSL_EXCLUSIVE_LOCKS_REQUIRED(hot_lock_);
+  Status UpdateTableMetricGauges();
 
   std::unique_ptr<internal::BatchSizeAccountant> batch_size_accountant_ ABSL_GUARDED_BY(hot_lock_);
 

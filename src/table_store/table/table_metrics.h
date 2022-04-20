@@ -33,5 +33,5 @@ struct TableMetrics {
   prometheus::Counter& batches_expired_counter;
   prometheus::Counter& compacted_batches_counter;
   prometheus::Gauge& max_table_size_gauge;
-  prometheus::Gauge& retention_gauge;
+  prometheus::Gauge& retention_ns_gauge;
 };

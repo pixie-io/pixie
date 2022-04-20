@@ -63,8 +63,8 @@ TableMetrics::TableMetrics(prometheus::Registry* registry, std::string table_nam
                                .Help("The cap on the table size")
                                .Register(*registry)
                                .Add({{"name", table_name}})),
-      retention_gauge(prometheus::BuildGauge()
-                          .Name("min_time")
-                          .Help("The current retention window for data in this table")
-                          .Register(*registry)
-                          .Add({{"name", table_name}})) {}
+      retention_ns_gauge(prometheus::BuildGauge()
+                             .Name("min_time")
+                             .Help("The current retention window for data in this table")
+                             .Register(*registry)
+                             .Add({{"name", table_name}})) {}
