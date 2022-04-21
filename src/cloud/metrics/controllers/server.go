@@ -31,6 +31,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/pkg/timestamp"
 	"github.com/prometheus/prometheus/prompb"
 	log "github.com/sirupsen/logrus"
 
@@ -171,7 +172,7 @@ func bqWrite(table *bigquery.Table, timeseries *prompb.TimeSeries) {
 			Metric:    metricName,
 			Labels:    string(labelsJSON),
 			Value:     v,
-			Timestamp: time.Unix(s.Timestamp, 0),
+			Timestamp: timestamp.Time(s.Timestamp),
 		})
 	}
 

@@ -31,6 +31,7 @@ import (
 	"google.golang.org/api/option"
 
 	"px.dev/pixie/src/cloud/metrics/controllers"
+	"px.dev/pixie/src/cloud/shared/vzshard"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/env"
 	"px.dev/pixie/src/shared/services/healthz"
@@ -46,6 +47,7 @@ func init() {
 }
 
 func main() {
+	vzshard.SetupFlags()
 	services.SetupService("metrics-service", 50800)
 	services.PostFlagSetupAndParse()
 	services.CheckServiceFlags()

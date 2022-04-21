@@ -28,6 +28,7 @@ go_library(
         "@com_github_gogo_protobuf//types",
         "@com_github_nats_io_nats_go//:nats_go",
         "@com_github_prometheus_common//model",
+        "@com_github_prometheus_prometheus//pkg/timestamp",
         "@com_github_prometheus_prometheus//prompb",
         "@com_github_sirupsen_logrus//:logrus",
         "@com_google_cloud_go_bigquery//:bigquery",
