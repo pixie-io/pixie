@@ -36,11 +36,9 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"px.dev/pixie/src/cloud/shared/vzshard"
+	"px.dev/pixie/src/shared/cvmsgs"
 	"px.dev/pixie/src/shared/cvmsgspb"
 )
-
-// The topic on which to listen to metrics sent by viziers.
-const vzMetricsTopic = "VZMetrics"
 
 // The table where these metrics are written.
 const bqMetricsTable = "vizier_metrics"
@@ -113,7 +111,7 @@ func (s *Server) startShardedHandler(shard string, table *bigquery.Table) {
 		return
 	}
 	natsCh := make(chan *nats.Msg, 8192)
-	sub, err := s.nc.ChanSubscribe(fmt.Sprintf("v2c.%s.*.%s", shard, vzMetricsTopic), natsCh)
+	sub, err := s.nc.ChanSubscribe(fmt.Sprintf("v2c.%s.*.%s", shard, cvmsgs.VizierMetricsChannel), natsCh)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to subscribe to NATS channel")
 	}

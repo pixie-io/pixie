@@ -32,6 +32,8 @@ const (
 	c2vTopicPrefix = "c2v"
 	// v2cTopicPrefix is the prefix for all message topics sent from local NATS to cloud domain.
 	v2cTopicPrefix = "v2c"
+	// MetricsTopic is the topic name for prometheus metrics being sent from an agent to cloud connector.
+	MetricsTopic = "Metrics"
 )
 
 // V2CTopic returns the topic used in the Vizier NATS domain to send messages from Vizier to Cloud.
