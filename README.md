@@ -189,6 +189,10 @@ git for-each-ref refs/tags/release/cli/$tagname --format='%(tag) %(contents)'
 
 These are also published on the [releases](https://github.com/pixie-io/pixie/releases) page.
 
+## Adopters
+
+The known adopters and users of Pixie are listed [here](ADOPTERS.md).
+
 ## About Pixie
 
 Pixie was contributed by [New Relic, Inc.](https://newrelic.com/) to the [Cloud Native Computing Foundation](https://www.cncf.io/) as a Sandbox project in June 2021.
