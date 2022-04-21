@@ -672,7 +672,9 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 				Msg: nestedAny,
 			}
 
-			heartbeatTime := time.Now()
+			var heartbeatTime time.Time
+			err = db.Get(&heartbeatTime, `SELECT NOW()`)
+			require.NoError(t, err)
 
 			s.HandleVizierHeartbeat(req)
 
