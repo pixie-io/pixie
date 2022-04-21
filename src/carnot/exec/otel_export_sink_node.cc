@@ -330,7 +330,8 @@ Status OTelExportSinkNode::ConsumeSpans(const RowBatch& rb) {
         span->set_name(types::GetValueFromArrowArray<types::STRING>(name_col, row_idx));
       }
 
-      span->set_kind(::opentelemetry::proto::trace::v1::Span::SPAN_KIND_SERVER);
+      span->set_kind(
+          static_cast<::opentelemetry::proto::trace::v1::Span::SpanKind>(span_pb.kind_value()));
       span->mutable_status()->set_code(
           ::opentelemetry::proto::trace::v1::Status::STATUS_CODE_UNSET);
 

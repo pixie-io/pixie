@@ -351,7 +351,7 @@ otel_sink_op {
     }
   }
 })pb"},
-        {"Span_name_string",
+        {"span_name_string",
          R"pxl(
 otel.Data(
   endpoint=otel.Endpoint(
@@ -404,6 +404,7 @@ otel_sink_op {
     trace_id_column_index: -1
     span_id_column_index: -1
     parent_span_id_column_index: -1
+    kind_value: 2
   }
 })pb"},
 
@@ -458,6 +459,7 @@ otel_sink_op {
     trace_id_column_index: 5
     span_id_column_index: 6
     parent_span_id_column_index: 7
+    kind_value: 2
   }
 })pb"},
         {"all_attribute_types",

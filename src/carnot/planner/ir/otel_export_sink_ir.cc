@@ -319,6 +319,8 @@ Status OTelExportSinkIR::ToProto(planpb::Operator* op) const {
     for (const auto& attribute : span.attributes) {
       PL_RETURN_IF_ERROR(attribute.ToProto(span_pb->add_attributes()));
     }
+    // Set to previous default value.
+    span_pb->set_kind_value(/* SPAN_KIND_SERVER */ 2);
   }
   return Status::OK();
 }

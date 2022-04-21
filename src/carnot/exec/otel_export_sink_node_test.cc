@@ -927,6 +927,7 @@ spans {
   trace_id_column_index: 3
   span_id_column_index: 4
   parent_span_id_column_index: 5
+  kind_value: 3
 })pb",
 
                               {R"pb(
@@ -962,7 +963,45 @@ resource_spans {
           string_value: "aaaa"
         }
       }
-      kind: SPAN_KIND_SERVER
+      kind: SPAN_KIND_CLIENT
+      status {}
+    }
+  }
+})pb"}},
+                             {"span_kind_out_of_max",
+                              R"pb(
+resource { }
+spans {
+  name_string: "span"
+  start_time_column_index: 0
+  end_time_column_index: 1
+  trace_id_column_index: 2
+  span_id_column_index: 3
+  parent_span_id_column_index: 4
+  kind_value: 35
+})pb",
+
+                              {R"pb(
+cols { time64ns_data { data: 10 } }
+cols { time64ns_data { data: 12 } }
+cols { string_data { data: "00112233445566778899aabbccddeeff" } }
+cols { string_data { data: "1a2b3c4d5e6f7890" } }
+cols { string_data { data: "0987f6e5d4c3b2a1" } }
+num_rows: 1
+eow: true
+eos: true)pb"},
+                              {R"pb(
+resource_spans {
+  resource { }
+  instrumentation_library_spans {
+    spans {
+      name: "span"
+      start_time_unix_nano: 10
+      end_time_unix_nano: 12
+      trace_id: "\000\021\"3DUfw\210\231\252\273\314\335\356\377"
+      span_id: "\032+<M^ox\220"
+      parent_span_id: "\t\207\366\345\324\303\262\241"
+      kind: 35
       status {}
     }
   }
@@ -976,6 +1015,7 @@ spans {
   trace_id_column_index: 3
   span_id_column_index: 4
   parent_span_id_column_index: 5
+  kind_value: 2
 })pb",
 
                               {R"pb(
@@ -1046,6 +1086,7 @@ spans {
   trace_id_column_index: 4
   span_id_column_index: 5
   parent_span_id_column_index: -1
+  kind_value: 2
 })pb",
 
                               {R"pb(
@@ -1203,6 +1244,7 @@ spans {
   trace_id_column_index: 6
   span_id_column_index: 7
   parent_span_id_column_index: -1
+  kind_value: 2
   attributes {
     name: "http.status.code"
     column {

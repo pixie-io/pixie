@@ -390,6 +390,7 @@ INSTANTIATE_TEST_SUITE_P(
               trace_id_column_index: 2
               span_id_column_index: 3
               parent_span_id_column_index: 4
+              kind_value: 2
             }
             )pb",
             [](IR* graph, OperatorIR* parent, table_store::schema::Relation* relation) {
@@ -424,6 +425,7 @@ INSTANTIATE_TEST_SUITE_P(
               trace_id_column_index: -1
               span_id_column_index: -1
               parent_span_id_column_index: -1
+              kind_value: 2
             }
             )pb",
             [](IR* graph, OperatorIR* parent, table_store::schema::Relation* relation) {
