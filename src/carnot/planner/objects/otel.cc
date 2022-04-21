@@ -52,8 +52,8 @@ StatusOr<std::shared_ptr<OTelMetrics>> OTelMetrics::Create(ASTVisitor* ast_visit
   return otel_metrics;
 }
 
-StatusOr<std::shared_ptr<OTelTrace>> OTelTrace::Create(ASTVisitor* ast_visitor) {
-  auto otel_trace = std::shared_ptr<OTelTrace>(new OTelTrace(ast_visitor));
+StatusOr<std::shared_ptr<OTelTrace>> OTelTrace::Create(ASTVisitor* ast_visitor, IR* graph) {
+  auto otel_trace = std::shared_ptr<OTelTrace>(new OTelTrace(ast_visitor, graph));
   PL_RETURN_IF_ERROR(otel_trace->Init());
   return otel_trace;
 }
@@ -304,7 +304,7 @@ Status OTelModule::Init(CompilerState* compiler_state, IR* ir) {
   PL_ASSIGN_OR_RETURN(auto metric, OTelMetrics::Create(ast_visitor(), ir));
   PL_RETURN_IF_ERROR(AssignAttribute("metric", metric));
 
-  PL_ASSIGN_OR_RETURN(auto trace, OTelTrace::Create(ast_visitor()));
+  PL_ASSIGN_OR_RETURN(auto trace, OTelTrace::Create(ast_visitor(), ir));
   PL_RETURN_IF_ERROR(AssignAttribute("trace", trace));
 
   PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> endpoint_fn,
@@ -387,6 +387,8 @@ StatusOr<QLObjectPtr> SpanDefinition(const pypa::AstPtr& ast, const ParsedArgs& 
     PL_ASSIGN_OR_RETURN(span.parent_span_id_column,
                         GetArgAs<ColumnIR>(ast, args, "parent_span_id"));
   }
+  PL_ASSIGN_OR_RETURN(auto span_kind, GetArgAs<IntIR>(ast, args, "kind"));
+  span.span_kind = span_kind->val();
 
   QLObjectPtr attributes = args.GetArg("attributes");
   if (!DictObject::IsDict(attributes)) {
@@ -399,16 +401,28 @@ StatusOr<QLObjectPtr> SpanDefinition(const pypa::AstPtr& ast, const ParsedArgs& 
   return OTelDataContainer::Create(visitor, std::move(span));
 }
 
+// Parse the kind name and assign it the integer value.
+Status OTelTrace::AddSpanKindAttribute(::opentelemetry::proto::trace::v1::Span::SpanKind kind) {
+  auto ast = std::make_shared<pypa::Ast>(pypa::AstType::Number);
+  PL_ASSIGN_OR_RETURN(IntIR * span_kind,
+                      graph_->CreateNode<IntIR>(ast, static_cast<int64_t>(kind)));
+  PL_ASSIGN_OR_RETURN(auto value, ExprObject::Create(span_kind, ast_visitor()));
+  PL_RETURN_IF_ERROR(
+      AssignAttribute(::opentelemetry::proto::trace::v1::Span::SpanKind_Name(kind), value));
+  return Status::OK();
+}
+
 Status OTelTrace::Init() {
   // Setup methods.
   PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> span_fn,
                       FuncObject::Create(kSpanOpID,
                                          {"name", "start_time", "end_time", "trace_id", "span_id",
-                                          "parent_span_id", "attributes"},
+                                          "parent_span_id", "attributes", "kind"},
                                          {{"trace_id", "None"},
                                           {"parent_span_id", "None"},
                                           {"span_id", "None"},
-                                          {"attributes", "{}"}},
+                                          {"attributes", "{}"},
+                                          {"kind", "px.otel.trace.SPAN_KIND_SERVER"}},
                                          /* has_variable_len_args */ false,
                                          /* has_variable_len_kwargs */ false,
                                          std::bind(&SpanDefinition, std::placeholders::_1,
@@ -416,6 +430,19 @@ Status OTelTrace::Init() {
                                          ast_visitor()));
   PL_RETURN_IF_ERROR(span_fn->SetDocString(kSpanOpDocstring));
   AddMethod(kSpanOpID, span_fn);
+
+  PL_RETURN_IF_ERROR(
+      AddSpanKindAttribute(::opentelemetry::proto::trace::v1::Span::SPAN_KIND_UNSPECIFIED));
+  PL_RETURN_IF_ERROR(
+      AddSpanKindAttribute(::opentelemetry::proto::trace::v1::Span::SPAN_KIND_INTERNAL));
+  PL_RETURN_IF_ERROR(
+      AddSpanKindAttribute(::opentelemetry::proto::trace::v1::Span::SPAN_KIND_SERVER));
+  PL_RETURN_IF_ERROR(
+      AddSpanKindAttribute(::opentelemetry::proto::trace::v1::Span::SPAN_KIND_CLIENT));
+  PL_RETURN_IF_ERROR(
+      AddSpanKindAttribute(::opentelemetry::proto::trace::v1::Span::SPAN_KIND_PRODUCER));
+  PL_RETURN_IF_ERROR(
+      AddSpanKindAttribute(::opentelemetry::proto::trace::v1::Span::SPAN_KIND_CONSUMER));
 
   return Status::OK();
 }

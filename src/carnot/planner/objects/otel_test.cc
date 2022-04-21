@@ -44,7 +44,7 @@ class OTelExportTest : public QLObjectTest {
     ASSERT_OK_AND_ASSIGN(auto otel,
                          OTelModule::Create(compiler_state.get(), ast_visitor.get(), graph.get()));
     ASSERT_OK_AND_ASSIGN(auto otelmetric, OTelMetrics::Create(ast_visitor.get(), graph.get()));
-    ASSERT_OK_AND_ASSIGN(auto oteltrace, OTelTrace::Create(ast_visitor.get()));
+    ASSERT_OK_AND_ASSIGN(auto oteltrace, OTelTrace::Create(ast_visitor.get(), graph.get()));
     var_table->Add("otel", otel);
     var_table->Add("otelmetric", otelmetric);
     var_table->Add("oteltrace", oteltrace);
@@ -365,7 +365,8 @@ otel.Data(
       name='svc',
       start_time=df.start_time,
       end_time=df.end_time,
-      attributes={'gc': df.young}
+      attributes={'gc': df.young},
+      kind=oteltrace.SPAN_KIND_CLIENT,
     ),
   ]
 ))pxl",
@@ -404,7 +405,7 @@ otel_sink_op {
     trace_id_column_index: -1
     span_id_column_index: -1
     parent_span_id_column_index: -1
-    kind_value: 2
+    kind_value: 3
   }
 })pb"},
 

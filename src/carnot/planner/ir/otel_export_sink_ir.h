@@ -116,6 +116,8 @@ struct OTelSpan {
 
   ColumnIR* start_time_column;
   ColumnIR* end_time_column;
+
+  int64_t span_kind;
 };
 
 struct OTelData {

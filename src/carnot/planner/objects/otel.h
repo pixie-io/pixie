@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "opentelemetry/proto/trace/v1/trace.pb.h"
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/objects/funcobject.h"
 #include "src/carnot/planpb/plan.pb.h"
@@ -165,7 +166,7 @@ class OTelTrace : public QLObject {
       /* name */ kOTelTraceModule,
       /* type */ QLObjectType::kModule,
   };
-  static StatusOr<std::shared_ptr<OTelTrace>> Create(ASTVisitor* ast_visitor);
+  static StatusOr<std::shared_ptr<OTelTrace>> Create(ASTVisitor* ast_visitor, IR* graph);
 
   inline static constexpr char kSpanOpID[] = "Span";
   inline static constexpr char kSpanOpDocstring[] = R"doc(
@@ -191,14 +192,21 @@ class OTelTrace : public QLObject {
       will leave the parent_span_id field empty.
     attributes (Dict[string, string], optional): A mapping of attribute name to the column
       name that stores data about the attribute.
+    kind (int, optional): The OpenTelemetry SpanKind enum value to assign for all the spans. Defaults to SPAN_KIND_SERVER
+      if not set.
   Returns:
     OTelDataContainer: the mapping of DataFrame columns to OpenTelemetry Span fields. Can be passed
       into `px.otel.Data()` as the data argument.
   )doc";
 
  protected:
-  explicit OTelTrace(ASTVisitor* ast_visitor) : QLObject(OTelTraceModuleType, ast_visitor) {}
+  OTelTrace(ASTVisitor* ast_visitor, IR* graph)
+      : QLObject(OTelTraceModuleType, ast_visitor), graph_(graph) {}
   Status Init();
+  Status AddSpanKindAttribute(::opentelemetry::proto::trace::v1::Span::SpanKind kind);
+
+ private:
+  IR* graph_;
 };
 
 class EndpointConfig : public QLObject {

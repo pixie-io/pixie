@@ -149,6 +149,7 @@ Status OTelExportSinkIR::ProcessConfig(const OTelData& data) {
       PL_ASSIGN_OR_RETURN(auto column, AddColumn(attr.column_reference));
       new_span.attributes.push_back({attr.name, column});
     }
+    new_span.span_kind = span.span_kind;
     data_.spans.push_back(std::move(new_span));
   }
   return Status::OK();
@@ -319,8 +320,7 @@ Status OTelExportSinkIR::ToProto(planpb::Operator* op) const {
     for (const auto& attribute : span.attributes) {
       PL_RETURN_IF_ERROR(attribute.ToProto(span_pb->add_attributes()));
     }
-    // Set to previous default value.
-    span_pb->set_kind_value(/* SPAN_KIND_SERVER */ 2);
+    span_pb->set_kind_value(span.span_kind);
   }
   return Status::OK();
 }

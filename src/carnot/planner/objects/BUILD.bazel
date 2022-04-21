@@ -38,6 +38,7 @@ pl_cc_library(
         "//src/carnot/planner/plannerpb:func_args_pl_cc_proto",
         "//src/shared/scriptspb:scripts_pl_cc_proto",
         "//src/shared/types/typespb/wrapper:cc_library",
+        "@com_github_opentelemetry_proto//:trace_proto_cc",
         "@com_github_vinzenz_libpypa//:libpypa",
     ],
 )
