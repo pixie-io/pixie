@@ -73,8 +73,6 @@ void ProcessStatsConnector::TransferProcessStatsTable(ConnectorContext* ctx,
       continue;
     }
 
-    const size_t pss_bytes = proc_parser_->ParseProcPIDPss(pid).ConsumeValueOr(0);
-
     DataTable::RecordBuilder<&kProcessStatsTable> r(data_table, timestamp);
     // TODO(oazizi): Enable version below, once rest of the agent supports tabletization.
     //  DataTable::RecordBuilder<&kProcessStatsTable> r(data_table, upid.value(), timestamp);
@@ -89,7 +87,6 @@ void ProcessStatsConnector::TransferProcessStatsTable(ConnectorContext* ctx,
     r.Append<r.ColIndex("num_threads")>(stats.num_threads);
     r.Append<r.ColIndex("vsize_bytes")>(stats.vsize_bytes);
     r.Append<r.ColIndex("rss_bytes")>(stats.rss_bytes);
-    r.Append<r.ColIndex("pss_bytes")>(pss_bytes);
     r.Append<r.ColIndex("rchar_bytes")>(stats.rchar_bytes);
     r.Append<r.ColIndex("wchar_bytes")>(stats.wchar_bytes);
     r.Append<r.ColIndex("read_bytes")>(stats.read_bytes);
