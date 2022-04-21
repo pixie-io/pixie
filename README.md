@@ -10,9 +10,8 @@
 [![Build Status](https://jenkins.corp.pixielabs.ai/buildStatus/icon?job=pixie-oss%2Fbuild-and-test-all)](https://jenkins.corp.pixielabs.ai/job/pixie-oss/job/build-and-test-all/)
 [![codecov](https://codecov.io/gh/pixie-io/pixie/branch/main/graph/badge.svg?token=UG7P3QE5PQ)](https://codecov.io/gh/pixie-io/pixie)
 [![FOSSA Status](https://app.fossa.com/api/projects/custom%2B26327%2Fgithub.com%2Fpixie-io%2Fpixie.svg?type=shield)](https://app.fossa.com/projects/custom%2B26327%2Fgithub.com%2Fpixie-io%2Fpixie?ref=badge_shield)
-[![Artifact HUB](https://img.shields.io/endpoint?url=https://artifacthub.io/packages/olm/community-operators/pixie-operator)](https://artifacthub.io/packages/olm/community-operators/pixie-operator)
+[![Artifact HUB](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/pixie-operator)](https://artifacthub.io/packages/olm/community-operators/pixie-operator)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5027/badge)](https://bestpractices.coreinfrastructure.org/projects/5027)
-
 
 <br>
 
@@ -177,11 +176,13 @@ Pixie is a community driven project; we welcome your contribution! For code cont
 The changelog is stored in annotated git tags.
 
 For vizier:
+
 ```
 git for-each-ref refs/tags/release/vizier/$tagname --format='%(tag) %(contents)'
 ```
 
 For the CLI:
+
 ```
 git for-each-ref refs/tags/release/cli/$tagname --format='%(tag) %(contents)'
 ```
