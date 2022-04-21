@@ -131,13 +131,15 @@ func (s *Server) startShardedHandler(shard string, table *bigquery.Table) {
 					continue
 				}
 				anyMsg := pb.Msg
-				ts := &prompb.TimeSeries{}
-				err = types.UnmarshalAny(anyMsg, ts)
+				wr := &prompb.WriteRequest{}
+				err = types.UnmarshalAny(anyMsg, wr)
 				if err != nil {
 					log.WithError(err).Error("Could not nested message")
 					continue
 				}
-				bqWrite(table, ts)
+				for _, ts := range wr.Timeseries {
+					bqWrite(table, ts)
+				}
 			}
 		}
 	}()
