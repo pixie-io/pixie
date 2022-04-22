@@ -27,11 +27,15 @@ namespace profiler {
 namespace testing {
 
 using ::px::testing::BazelBinTestFilePath;
+using fs_path = std::filesystem::path;
+
+namespace {
+const fs_path profiler_path_pfx = "src/stirling/source_connectors/perf_profiler";
+}
 
 // Returns a string as the flag value for the --stirling_profiler_java_agent_libs.
 std::string GetAgentLibsFlagValueForTesting() {
-  using fs_path = std::filesystem::path;
-  const fs_path agent_path_pfx = "src/stirling/source_connectors/perf_profiler/java/agent";
+  const fs_path agent_path_pfx = profiler_path_pfx / "java/agent";
   const fs_path glibc_lib_sfx = "build-glibc/lib-px-java-agent-glibc.so";
   const fs_path musl_lib_sfx = "build-musl/lib-px-java-agent-musl.so";
   const std::string glibc_agent = BazelBinTestFilePath(agent_path_pfx / glibc_lib_sfx).string();
@@ -40,9 +44,8 @@ std::string GetAgentLibsFlagValueForTesting() {
 }
 
 std::string GetPxJattachFlagValueForTesting() {
-  const std::string px_jattach_path =
-      BazelBinTestFilePath("src/stirling/source_connectors/perf_profiler/java/px_jattach");
-  return px_jattach_path;
+  const fs_path px_jattach_path = profiler_path_pfx / "java/px_jattach/px_jattach";
+  return BazelBinTestFilePath(px_jattach_path);
 }
 
 }  // namespace testing

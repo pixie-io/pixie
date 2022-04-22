@@ -14,12 +14,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-agent_libs = [
-    "//src/stirling/source_connectors/perf_profiler/java/agent:musl",
-    "//src/stirling/source_connectors/perf_profiler/java/agent:glibc",
-]
+load("//bazel:pl_build_system.bzl", "pl_cc_binary")
 
-px_jattach = "//src/stirling/source_connectors/perf_profiler/java/px_jattach:px_jattach"
+package(default_visibility = ["//src/stirling:__subpackages__"])
 
-agent_libs_arg = ",".join(["$(location %s)" % lib for lib in agent_libs])
-px_jattach_arg = "$(location %s)" % px_jattach
+pl_cc_binary(
+    name = "px_jattach",
+    srcs = [
+        "px_jattach.cc",
+        "px_jattach.h",
+    ],
+    visibility = [
+        "//:__pkg__",
+        "//src/stirling:__subpackages__",
+    ],
+    deps = ["//src/stirling/source_connectors/perf_profiler/java:cc_library"],
+)
