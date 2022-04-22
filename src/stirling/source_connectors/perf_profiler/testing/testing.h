@@ -28,6 +28,9 @@ namespace testing {
 // Returns a string as the flag value for the --stirling_profiler_java_agent_libs.
 std::string GetAgentLibsFlagValueForTesting();
 
+// Returns a string as the flag value for the --stirling_profiler_px_jattach_path.
+std::string GetPxJattachFlagValueForTesting();
+
 }  // namespace testing
 }  // namespace profiler
 }  // namespace stirling

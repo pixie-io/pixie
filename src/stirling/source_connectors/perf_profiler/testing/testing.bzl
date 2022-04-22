@@ -19,4 +19,7 @@ agent_libs = [
     "//src/stirling/source_connectors/perf_profiler/java/agent:glibc",
 ]
 
+px_jattach = "//src/stirling/source_connectors/perf_profiler/java:px_jattach"
+
 agent_libs_arg = ",".join(["$(location %s)" % lib for lib in agent_libs])
+px_jattach_arg = "$(location %s)" % px_jattach

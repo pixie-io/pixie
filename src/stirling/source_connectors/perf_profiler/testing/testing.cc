@@ -39,6 +39,12 @@ std::string GetAgentLibsFlagValueForTesting() {
   return absl::StrJoin({glibc_agent, musl_agent}, ",");
 }
 
+std::string GetPxJattachFlagValueForTesting() {
+  const std::string px_jattach_path =
+      BazelBinTestFilePath("src/stirling/source_connectors/perf_profiler/java/px_jattach");
+  return px_jattach_path;
+}
+
 }  // namespace testing
 }  // namespace profiler
 }  // namespace stirling

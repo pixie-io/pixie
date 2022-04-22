@@ -43,6 +43,7 @@ namespace px {
 namespace stirling {
 
 using ::px::stirling::profiler::testing::GetAgentLibsFlagValueForTesting;
+using ::px::stirling::profiler::testing::GetPxJattachFlagValueForTesting;
 using ::px::stirling::testing::FindRecordIdxMatchesPIDs;
 using ::px::testing::BazelBinTestFilePath;
 using ::px::testing::PathExists;
@@ -162,6 +163,7 @@ class PerfProfileBPFTest : public ::testing::Test {
     FLAGS_stirling_profiler_java_symbols = true;
     FLAGS_number_attach_attempts_per_iteration = kNumSubProcesses;
     FLAGS_stirling_profiler_java_agent_libs = GetAgentLibsFlagValueForTesting();
+    FLAGS_stirling_profiler_px_jattach_path = GetPxJattachFlagValueForTesting();
 
     source_ = PerfProfileConnector::Create("perf_profile_connector");
     ASSERT_OK(source_->Init());
