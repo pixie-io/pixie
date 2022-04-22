@@ -170,6 +170,10 @@ void GRPCRouter::MarkResultStreamContextAsComplete(QueryTracker* query_tracker,
     }
     return ::grpc::Status::OK;
   }
+  if (req->has_execution_error()) {
+    // TODO(philkuz) accumulate these errors.
+    return ::grpc::Status::OK;
+  }
   return ::grpc::Status(grpc::StatusCode::INTERNAL,
                         "expected TransferResultChunkRequest to have either query_result "
                         "or execution_and_timing_info set, received neither");

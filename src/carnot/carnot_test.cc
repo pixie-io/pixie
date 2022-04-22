@@ -1477,5 +1477,90 @@ px.display(df)
 
 TEST_F(CarnotTest, init_args) { ASSERT_OK(carnot_->ExecuteQuery(kInitArgQuery, sole::uuid4(), 0)); }
 
+constexpr char kErrorNodePlan[] = R"proto(
+dag {
+  nodes {
+    id: 1
+  }
+}
+nodes {
+  id: 1
+  dag {
+    nodes {
+      id: 1
+      sorted_children: 2
+    }
+    nodes {
+      id: 2
+      sorted_parents: 1
+      sorted_children: 3
+    }
+    nodes {
+      id: 3
+      sorted_parents: 2
+    }
+  }
+  nodes {
+    id: 1
+    op {
+      op_type: EMPTY_SOURCE_OPERATOR
+      empty_source_op {
+        column_names: "cpu0"
+        column_types: INT64
+      }
+    }
+  }
+  nodes {
+    id: 2
+    op {
+      op_type: MAP_OPERATOR
+      map_op {
+        expressions {
+          func {
+            name: "upid_to_service_name"
+            args {
+              column {
+                node: 1
+                index: 0
+              }
+            }
+            args_data_types: UINT128
+          }
+        }
+        column_names: "service"
+      }
+    }
+  }
+  nodes {
+    id: 3
+    op {
+      op_type: GRPC_SINK_OPERATOR
+      grpc_sink_op {
+        address: "error_address"
+        output_table {
+          table_name: "out_table"
+          column_names: "cpu0"
+          column_types: INT64
+        }
+        connection_options {
+          ssl_targetname: "result_ssltarget"
+        }
+      }
+    }
+  }
+}
+)proto";
+TEST_F(CarnotTest, error_node_test) {
+  planpb::Plan plan;
+  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kErrorNodePlan, &plan));
+
+  ASSERT_NOT_OK(carnot_->ExecutePlan(plan, sole::uuid4()));
+
+  auto errors = result_server_->exec_errors();
+  EXPECT_EQ(errors.size(), 1);
+  EXPECT_THAT(errors[0].DebugString(),
+              ::testing::MatchesRegex(".*No UDF matching upid_to_service_name.*"));
+}
+
 }  // namespace carnot
 }  // namespace px
