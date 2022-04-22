@@ -3,6 +3,10 @@
 These demo applications are packaged to allow `px deploy` to access them. The `manifest.json`
 file describes the demo scenarios.
 
+# General Notes
+
+- For best results when running the continuous profiler, all Java applications should be run with `-XX:+PreserveFramePointer`.
+
 # Instructions for adding a new demo
 
 1. Add a folder containing the demo yaml and license file.
