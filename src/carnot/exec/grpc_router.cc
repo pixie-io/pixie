@@ -171,12 +171,25 @@ void GRPCRouter::MarkResultStreamContextAsComplete(QueryTracker* query_tracker,
     return ::grpc::Status::OK;
   }
   if (req->has_execution_error()) {
-    // TODO(philkuz) accumulate these errors.
+    absl::base_internal::SpinLockHolder query_lock(&state->query_tracker->query_lock);
+    state->query_tracker->upstream_exec_errors.push_back(req->execution_error());
     return ::grpc::Status::OK;
   }
   return ::grpc::Status(grpc::StatusCode::INTERNAL,
                         "expected TransferResultChunkRequest to have either query_result "
                         "or execution_and_timing_info set, received neither");
+}
+std::vector<statuspb::Status> GRPCRouter::GetIncomingWorkerErrors(const sole::uuid& query_id) {
+  std::shared_ptr<QueryTracker> query_tracker;
+  {
+    absl::base_internal::SpinLockHolder lock(&id_to_query_tracker_map_lock_);
+    if (!id_to_query_tracker_map_.contains(query_id)) {
+      return {};
+    }
+    query_tracker = id_to_query_tracker_map_[query_id];
+  }
+  absl::base_internal::SpinLockHolder lock(&query_tracker->query_lock);
+  return query_tracker->upstream_exec_errors;
 }
 
 ::grpc::Status GRPCRouter::TransferResultChunk(

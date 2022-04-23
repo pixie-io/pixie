@@ -48,16 +48,11 @@ class CarnotImpl final : public Carnot {
    * grpc_server_port of 0 disables the GRPC server.
    * @return a status of whether initialization was successful.
    */
-  Status Init(const sole::uuid& agent_id, std::shared_ptr<table_store::TableStore> table_store,
-              const exec::ResultSinkStubGenerator& stub_generator, int grpc_server_port = 0,
-              std::shared_ptr<grpc::ServerCredentials> grpc_server_creds = nullptr);
-
   Status Init(const sole::uuid& agent_id, std::unique_ptr<udf::Registry> func_registry,
               std::shared_ptr<table_store::TableStore> table_store,
               const exec::ResultSinkStubGenerator& stub_generator,
               std::function<void(grpc::ClientContext*)> add_auth_to_grpc_context_func,
-              int grpc_server_port = 0,
-              std::shared_ptr<grpc::ServerCredentials> grpc_server_creds = nullptr);
+              int grpc_server_port, std::shared_ptr<grpc::ServerCredentials> grpc_server_creds);
 
   Status ExecuteQuery(const std::string& query, const sole::uuid& query_id,
                       types::Time64NSValue time_now, bool analyze) override;
@@ -375,6 +370,7 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
   // Unclear how we'll use plan fragments in the future (they're currently unused). For now, we will
   // share the schema between plan fragments.
   auto schema = std::make_unique<table_store::schema::Schema>();
+  std::vector<statuspb::Status> incoming_errors;
   auto s =
       plan::PlanWalker()
           .OnPlanFragment([&](auto* pf) {
@@ -382,6 +378,11 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
             PL_RETURN_IF_ERROR(exec_graph.Init(schema.get(), plan_state.get(), exec_state.get(), pf,
                                                /* collect_exec_node_stats */ analyze));
             PL_RETURN_IF_ERROR(exec_graph.Execute());
+
+            // We must get this while exec_graph is alive. ExecutionGraph destructor calls
+            // GRPCRouter::DeleteQuery() which would delete this data.
+            auto errors = exec_state->grpc_router()->GetIncomingWorkerErrors(query_id);
+            incoming_errors.insert(incoming_errors.end(), errors.begin(), errors.end());
             auto exec_stats = exec_graph.GetStats();
             bytes_processed += exec_stats.bytes_processed;
             rows_processed += exec_stats.rows_processed;
@@ -425,6 +426,19 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
     PL_RETURN_IF_ERROR(SendErrorToOutgoingConns(query_id, outgoing_conns,
                                                 engine_state_->add_auth_to_grpc_context_func(), s));
     return s;
+  }
+
+  if (!incoming_errors.empty()) {
+    std::vector<std::string> messages;
+    for (const auto& e : incoming_errors) {
+      messages.push_back(e.msg());
+    }
+
+    auto combined_status = Status(incoming_errors[0].err_code(), absl::StrJoin(messages, "\n"));
+
+    PL_RETURN_IF_ERROR(SendErrorToOutgoingConns(
+        query_id, outgoing_conns, engine_state_->add_auth_to_grpc_context_func(), combined_status));
+    return combined_status;
   }
 
   std::vector<uuidpb::UUID> incoming_agents;

@@ -317,7 +317,6 @@ TEST_F(GRPCRouterTest, router_and_stats_test) {
 
   auto exec_stats = exec_stats_or_s.ConsumeValueOrDie();
   EXPECT_EQ(exec_stats.size(), 1);
-  LOG(INFO) << exec_stats[0].DebugString();
 }
 
 TEST_F(GRPCRouterTest, delete_node_router_test) {
@@ -799,6 +798,71 @@ TEST_F(GRPCRouterTest, continue_func_segfault) {
   // TSAN occassionally doesn't like the source_node destructor being called before the server is
   // shutdown.
   server_->Shutdown();
+}
+
+TEST_F(GRPCRouterTest, receive_execution_error) {
+  int64_t grpc_source_node_id = 1;
+  uint64_t ab = 0xea8aa095697f49f1, cd = 0xb127d50e5b6e2645;
+
+  RowDescriptor input_rd({types::DataType::INT64});
+  auto query_uuid = sole::rebuild(ab, cd);
+
+  // Add source node to GRPC router.
+  auto op_proto = planpb::testutils::CreateTestGRPCSource1PB();
+  std::unique_ptr<px::carnot::plan::Operator> plan_node =
+      plan::GRPCSourceOperator::FromProto(op_proto, grpc_source_node_id);
+  auto source_node = FakeGRPCSourceNode();
+  ASSERT_OK(source_node.Init(*plan_node, input_rd, {}));
+
+  ASSERT_OK(service_->AddGRPCSourceNode(query_uuid, grpc_source_node_id, &source_node, [] {}));
+
+  carnotpb::TransferResultChunkRequest initiate_stream_req0;
+  auto query_id = initiate_stream_req0.mutable_query_id();
+  query_id->set_high_bits(ab);
+  query_id->set_low_bits(cd);
+  initiate_stream_req0.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
+  initiate_stream_req0.mutable_query_result()->set_initiate_result_stream(true);
+
+  // Create row batches.
+  auto rb1 = RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
+                 .AddColumn<types::Int64Value>({1, 2})
+                 .get();
+  carnotpb::TransferResultChunkRequest rb_req1;
+  EXPECT_OK(rb1.ToProto(rb_req1.mutable_query_result()->mutable_row_batch()));
+  rb_req1.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
+  query_id = rb_req1.mutable_query_id();
+  query_id->set_high_bits(ab);
+  query_id->set_low_bits(cd);
+
+  auto rb2 = RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
+                 .AddColumn<types::Int64Value>({4, 6})
+                 .get();
+  carnotpb::TransferResultChunkRequest error_req;
+  query_id = error_req.mutable_query_id();
+  query_id->set_high_bits(ab);
+  query_id->set_low_bits(cd);
+  Status(statuspb::Code::INTERNAL, "failed upstream execution")
+      .ToProto(error_req.mutable_execution_error());
+
+  // Send row batches to GRPC router.
+  px::carnotpb::TransferResultChunkResponse response;
+  grpc::ClientContext context;
+  auto writer = stub_->TransferResultChunk(&context, &response);
+  writer->Write(initiate_stream_req0);
+  writer->Write(rb_req1);
+  writer->Write(error_req);
+  writer->WritesDone();
+  writer->Finish();
+
+  EXPECT_TRUE(source_node.upstream_initiated_connection());
+  EXPECT_EQ(1, source_node.row_batches.size());
+  EXPECT_TRUE(source_node.upstream_closed_connection());
+
+  auto errors = service_->GetIncomingWorkerErrors(query_uuid);
+
+  EXPECT_EQ(errors.size(), 1);
+  EXPECT_THAT(Status(errors[0]).ToString(),
+              ::testing::MatchesRegex(".*failed upstream execution.*"));
 }
 
 }  // namespace exec

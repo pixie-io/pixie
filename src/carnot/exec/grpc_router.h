@@ -36,6 +36,7 @@
 #include "src/carnot/carnotpb/carnot.grpc.pb.h"
 #include "src/carnot/carnotpb/carnot.pb.h"
 #include "src/common/base/base.h"
+#include "src/common/base/statuspb/status.pb.h"
 #include "src/common/uuid/uuid.h"
 
 namespace px {
@@ -78,6 +79,14 @@ class GRPCRouter final : public carnotpb::ResultSinkService::Service {
    * @param query_id
    */
   Status DeleteGRPCSourceNode(sole::uuid query_id, int64_t source_id);
+
+  /**
+   * @brief Get any errors that may have occured in the incoming worker nodes.
+   *
+   * @param query_id
+   * @return StatusOr<std::vector<statuspb::Status>>
+   */
+  std::vector<statuspb::Status> GetIncomingWorkerErrors(const sole::uuid& query_id);
 
   /**
    * @brief Get the Exec stats from the agents that are clients to this GRPC and the query_id.
@@ -125,6 +134,9 @@ class GRPCRouter final : public carnotpb::ResultSinkService::Service {
     absl::flat_hash_set<::grpc::ServerContext*> active_agent_contexts GUARDED_BY(query_lock);
     // The execution stats for agents that are clients to this service.
     std::vector<queryresultspb::AgentExecutionStats> agent_exec_stats GUARDED_BY(query_lock);
+
+    // Errors that occur during execution from parent_agents.
+    std::vector<statuspb::Status> upstream_exec_errors GUARDED_BY(query_lock);
     absl::base_internal::SpinLock query_lock;
 
     void ResetRestartExecutionFunc() ABSL_EXCLUSIVE_LOCKS_REQUIRED(query_lock) {
