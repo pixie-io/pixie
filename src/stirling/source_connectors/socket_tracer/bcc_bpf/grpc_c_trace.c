@@ -648,7 +648,7 @@ static inline u32 get_slices_from_grpc_slice_buffer_and_fire_perf_event_per_slic
     }
 
     // Set the bytes and length to the slice.
-    write_event_data->slice.slice_len = slice_length;
+    write_event_data->slice.length = slice_length;
     length_to_read = slice_length;
     if (length_to_read > GRPC_C_SLICE_SIZE) {
       length_to_read = GRPC_C_SLICE_SIZE;
@@ -661,7 +661,7 @@ static inline u32 get_slices_from_grpc_slice_buffer_and_fire_perf_event_per_slic
     // We fill the absolute position, even if we did not copy all the data because the data
     // was too long.
     write_event_data->position_in_stream = connection_info->app_wr_bytes;
-    connection_info->app_wr_bytes += write_event_data->slice.slice_len;
+    connection_info->app_wr_bytes += write_event_data->slice.length;
 
     // Submit the current event.
     event_data_length = sizeof(struct grpc_c_event_data_t) - GRPC_C_SLICE_SIZE + length_to_read;
@@ -676,7 +676,7 @@ static inline u32 get_slices_from_grpc_slice_buffer_and_fire_perf_event_per_slic
 
     // Reset the data that is specific per slice.
     write_event_data->position_in_stream = 0;
-    write_event_data->slice.slice_len = 0;
+    write_event_data->slice.length = 0;
 
     // Advance the slice pointer for the next iteration.
     slice += GRPC_SLICE_SIZE;
@@ -1034,7 +1034,7 @@ int probe_grpc_chttp2_data_parser_parse(struct pt_regs* ctx) {
   }
 
   // Get the data.
-  read_data->slice.slice_len = slice_length;
+  read_data->slice.length = slice_length;
   u32 length_to_read = slice_length;
   if (length_to_read > GRPC_C_SLICE_SIZE) {
     length_to_read = GRPC_C_SLICE_SIZE;
@@ -1047,7 +1047,7 @@ int probe_grpc_chttp2_data_parser_parse(struct pt_regs* ctx) {
   // We fill the absolute position, even if we did not copy all the data because the data
   // was too long.
   read_data->position_in_stream = conn_info->app_rd_bytes;
-  conn_info->app_rd_bytes += read_data->slice.slice_len;
+  conn_info->app_rd_bytes += read_data->slice.length;
 
   // Submit the event.
   // Trim the unneeded bytes from the tail, so that the perf ring buffer isn't filled up.

@@ -45,7 +45,7 @@ enum grpc_c_version_t {
 };
 
 struct grpc_c_data_slice_t {
-  uint32_t slice_len;
+  uint32_t length;
   char bytes[GRPC_C_SLICE_SIZE];
 };
 // This must be aligned to 8-bytes.
