@@ -31,10 +31,9 @@ namespace compiler {
 using ::testing::ElementsAre;
 class NoneObjectTest : public QLObjectTest {};
 TEST_F(NoneObjectTest, TestNoMethodsWork) {
-  std::shared_ptr<NoneObject> none = std::make_shared<NoneObject>(ast_visitor.get());
-  auto status = none->GetMethod("agg");
-  ASSERT_NOT_OK(status);
-  EXPECT_EQ("'None' object has no attribute 'agg'", status.status().msg());
+  std::shared_ptr<NoneObject> none = std::make_shared<NoneObject>(ast, ast_visitor.get());
+  EXPECT_THAT(none->GetMethod("agg").status(),
+              HasCompilerError("'None' object has no attribute 'agg'"));
 }
 
 }  // namespace compiler

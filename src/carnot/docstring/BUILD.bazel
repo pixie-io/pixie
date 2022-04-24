@@ -31,30 +31,21 @@ go_library(
         "@com_github_sirupsen_logrus//:logrus",
         "@com_github_spf13_pflag//:pflag",
         "@com_github_spf13_viper//:viper",
+        "@io_bazel_rules_go//go/tools/bazel:go_default_library",
     ],
 )
 
 go_binary(
     name = "docstring",
-    embed = [":docstring_lib"],
-)
-
-# Binary that combines the entire docstring extraction and parsing pipeline.
-# Takes 1 argument -> the output file to write the docs JSON.
-sh_binary(
-    name = "docstring_integration",
-    srcs = ["docstring_integration.sh"],
     data = [
-        ":docstring",
         "//src/api/python/doc:generate",
         "//src/carnot/planner/docs:doc_extractor",
     ],
-    deps = ["@bazel_tools//tools/bash/runfiles"],
+    embed = [":docstring_lib"],
 )
 
-# Test to make sure extraction pipeline works. Should be run to verify that docs are formatted correctly.
+# Test to make sure extraction pipeline works. Test will fail if the docs are not correctly formatted.
 sh_test(
     name = "docstring_integration_test",
-    srcs = ["docstring_integration_test.sh"],
-    data = [":docstring_integration"],
+    srcs = [":docstring"],
 )

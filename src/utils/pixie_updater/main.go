@@ -123,6 +123,7 @@ func main() {
 		CustomLabels:      viper.GetString("custom_labels"),
 		UseEtcdOperator:   etcdOperatorEnabled,
 		PEMMemoryLimit:    viper.GetString("pem_memory_limit"),
+		PEMMemoryRequest:  viper.GetString("pem_memory_request"),
 		Namespace:         ns,
 	}
 	yamls, err := yamlsutils.ExecuteTemplatedYAMLs(templatedYAMLs, vizieryamls.VizierTmplValuesToArgs(tmplValues))

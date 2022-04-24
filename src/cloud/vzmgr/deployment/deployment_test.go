@@ -56,14 +56,14 @@ func (f *fakeDF) FetchOrgUserIDUsingDeploymentKey(ctx context.Context, key strin
 type fakeProvisioner struct {
 }
 
-func (f *fakeProvisioner) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, userID uuid.UUID, clusterUID string, clusterName string) (uuid.UUID, error) {
+func (f *fakeProvisioner) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, userID uuid.UUID, clusterUID string, clusterName string) (uuid.UUID, string, error) {
 	if testOrgID == orgID && testUserID == userID && clusterUID == "cluster1" && clusterName == "test" {
-		return testValidClusterID, nil
+		return testValidClusterID, clusterName, nil
 	}
 	if testOrgID == orgID && testUserID == userID && clusterUID == "cluster2" {
-		return uuid.Nil, vzerrors.ErrProvisionFailedVizierIsActive
+		return uuid.Nil, "", vzerrors.ErrProvisionFailedVizierIsActive
 	}
-	return uuid.Nil, errors.New("bad request")
+	return uuid.Nil, "", errors.New("bad request")
 }
 
 func TestService_RegisterVizierDeployment(t *testing.T) {

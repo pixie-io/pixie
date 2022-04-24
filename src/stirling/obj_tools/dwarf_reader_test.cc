@@ -25,6 +25,8 @@ constexpr std::string_view kTestGo1_16Binary =
     "src/stirling/obj_tools/testdata/go/test_go_1_16_binary";
 constexpr std::string_view kTestGo1_17Binary =
     "src/stirling/obj_tools/testdata/go/test_go_1_17_binary";
+constexpr std::string_view kTestGo1_18Binary =
+    "src/stirling/obj_tools/testdata/go/test_go_1_18_binary";
 constexpr std::string_view kGoGRPCServer =
     "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/golang_1_16_grpc_tls_server_binary/go/"
     "src/grpc_tls_server/grpc_tls_server";
@@ -58,18 +60,21 @@ auto CreateDwarfReader(const std::filesystem::path& path, bool indexing) {
   return DwarfReader::CreateWithoutIndexing(path);
 }
 
+// TODO(chengruizhe): Make binary path a parameter in the TEST_P for go 1.16, 1.17, and 1.18.
 class DwarfReaderTest : public ::testing::TestWithParam<DwarfReaderTestParam> {
  protected:
   DwarfReaderTest()
       : kCppBinaryPath(px::testing::BazelBinTestFilePath(kCppBinary)),
         kGo1_16BinaryPath(px::testing::TestFilePath(kTestGo1_16Binary)),
         kGo1_17BinaryPath(px::testing::TestFilePath(kTestGo1_17Binary)),
+        kGo1_18BinaryPath(px::testing::TestFilePath(kTestGo1_18Binary)),
         kGoServerBinaryPath(px::testing::BazelBinTestFilePath(kGoGRPCServer)),
         kGoBinaryUnconventionalPath(px::testing::TestFilePath(kGoBinaryUnconventional)) {}
 
   const std::string kCppBinaryPath;
   const std::string kGo1_16BinaryPath;
   const std::string kGo1_17BinaryPath;
+  const std::string kGo1_18BinaryPath;
   const std::string kGoServerBinaryPath;
   const std::string kGoBinaryUnconventionalPath;
 };
@@ -99,6 +104,14 @@ TEST_F(DwarfReaderTest, SourceLanguage) {
   {
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
                          DwarfReader::CreateWithoutIndexing(kGo1_17BinaryPath));
+    EXPECT_EQ(dwarf_reader->source_language(), llvm::dwarf::DW_LANG_Go);
+    EXPECT_THAT(dwarf_reader->compiler(), ::testing::HasSubstr("go"));
+    EXPECT_THAT(dwarf_reader->compiler(), ::testing::HasSubstr("regabi"));
+  }
+
+  {
+    ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                         DwarfReader::CreateWithoutIndexing(kGo1_18BinaryPath));
     EXPECT_EQ(dwarf_reader->source_language(), llvm::dwarf::DW_LANG_Go);
     EXPECT_THAT(dwarf_reader->compiler(), ::testing::HasSubstr("go"));
     EXPECT_THAT(dwarf_reader->compiler(), ::testing::HasSubstr("regabi"));
@@ -136,6 +149,14 @@ TEST_P(DwarfReaderTest, Go1_17GetStructByteSize) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
                        CreateDwarfReader(kGo1_17BinaryPath, p.index));
+
+  EXPECT_OK_AND_EQ(dwarf_reader->GetStructByteSize("main.Vertex"), 16);
+}
+
+TEST_P(DwarfReaderTest, Go1_18GetStructByteSize) {
+  DwarfReaderTestParam p = GetParam();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       CreateDwarfReader(kGo1_18BinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetStructByteSize("main.Vertex"), 16);
 }
@@ -179,6 +200,19 @@ TEST_P(DwarfReaderTest, Go1_17GetStructMemberInfo) {
                                                   "bogus", llvm::dwarf::DW_TAG_member));
 }
 
+TEST_P(DwarfReaderTest, Go1_18GetStructMemberInfo) {
+  DwarfReaderTestParam p = GetParam();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       CreateDwarfReader(kGo1_18BinaryPath, p.index));
+
+  EXPECT_OK_AND_EQ(
+      dwarf_reader->GetStructMemberInfo("main.Vertex", llvm::dwarf::DW_TAG_structure_type, "Y",
+                                        llvm::dwarf::DW_TAG_member),
+      (StructMemberInfo{8, TypeInfo{VarType::kBaseType, "float64"}}));
+  EXPECT_NOT_OK(dwarf_reader->GetStructMemberInfo("main.Vertex", llvm::dwarf::DW_TAG_structure_type,
+                                                  "bogus", llvm::dwarf::DW_TAG_member));
+}
+
 TEST_P(DwarfReaderTest, CppGetStructMemberOffset) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
@@ -202,6 +236,15 @@ TEST_P(DwarfReaderTest, Go1_17GetStructMemberOffset) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
                        CreateDwarfReader(kGo1_17BinaryPath, p.index));
+
+  EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("main.Vertex", "Y"), 8);
+  EXPECT_NOT_OK(dwarf_reader->GetStructMemberOffset("main.Vertex", "bogus"));
+}
+
+TEST_P(DwarfReaderTest, Go1_18GetStructMemberOffset) {
+  DwarfReaderTestParam p = GetParam();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       CreateDwarfReader(kGo1_18BinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("main.Vertex", "Y"), 8);
   EXPECT_NOT_OK(dwarf_reader->GetStructMemberOffset("main.Vertex", "bogus"));
@@ -343,6 +386,19 @@ TEST_P(DwarfReaderTest, Golang1_17ArgumentTypeByteSize) {
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("main.Vertex.Abs", "v"), 16);
 }
 
+TEST_P(DwarfReaderTest, Golang1_18ArgumentTypeByteSize) {
+  DwarfReaderTestParam p = GetParam();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       CreateDwarfReader(kGo1_18BinaryPath, p.index));
+
+  // v is of type *Vertex.
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("main.(*Vertex).Scale", "v"), 8);
+  // f is of type float64.
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("main.(*Vertex).Scale", "f"), 8);
+  // v is of type Vertex.
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("main.Vertex.Abs", "v"), 16);
+}
+
 TEST_P(DwarfReaderTest, CppArgumentLocation) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
@@ -385,6 +441,28 @@ TEST_P(DwarfReaderTest, Golang1_17ArgumentLocation) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
                        CreateDwarfReader(kGo1_17BinaryPath, p.index));
+
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).Scale", "v"),
+                   (VarLocation{.loc_type = LocationType::kRegister, .offset = 0}));
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).Scale", "f"),
+                   (VarLocation{.loc_type = LocationType::kRegister, .offset = 17}));
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).CrossScale", "v"),
+                   (VarLocation{.loc_type = LocationType::kRegister, .offset = 0}));
+
+  // TODO(oazizi): Support multi-piece arguments that span multiple registers.
+  EXPECT_NOT_OK(dwarf_reader->GetArgumentLocation("main.(*Vertex).CrossScale", "v2"));
+
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).CrossScale", "f"),
+                   (VarLocation{.loc_type = LocationType::kRegister, .offset = 19}));
+
+  // TODO(oazizi): Support multi-piece arguments that span multiple registers.
+  EXPECT_NOT_OK(dwarf_reader->GetArgumentLocation("main.Vertex.Abs", "v"));
+}
+
+TEST_P(DwarfReaderTest, Golang1_18ArgumentLocation) {
+  DwarfReaderTestParam p = GetParam();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       CreateDwarfReader(kGo1_18BinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).Scale", "v"),
                    (VarLocation{.loc_type = LocationType::kRegister, .offset = 0}));
@@ -581,6 +659,79 @@ TEST_P(DwarfReaderTest, Go1_17FunctionArgInfo) {
                                                {LocationType::kRegister, 0, {RegisterName::kRAX}},
                                                true}),
                            Pair("~r7", ArgInfo{TypeInfo{VarType::kStruct, "main.BoolWrapper"},
+                                               {LocationType::kRegister,
+                                                8,
+                                                {RegisterName::kRBX, RegisterName::kRCX,
+                                                 RegisterName::kRDI, RegisterName::kRSI}},
+                                               true})));
+    EXPECT_OK_AND_THAT(
+        dwarf_reader->GetFunctionArgInfo("main.GoHasNamedReturns"),
+        UnorderedElementsAre(
+            Pair("retfoo", ArgInfo{TypeInfo{VarType::kBaseType, "int"},
+                                   {LocationType::kRegister, 0, {RegisterName::kRAX}},
+                                   true}),
+            Pair("retbar", ArgInfo{TypeInfo{VarType::kBaseType, "bool"},
+                                   {LocationType::kRegister, 8, {RegisterName::kRBX}},
+                                   true})));
+  }
+}
+
+TEST_P(DwarfReaderTest, Go1_18FunctionArgInfo) {
+  DwarfReaderTestParam p = GetParam();
+
+  {
+    ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                         CreateDwarfReader(kGo1_18BinaryPath, p.index));
+
+    EXPECT_OK_AND_THAT(
+        dwarf_reader->GetFunctionArgInfo("main.(*Vertex).Scale"),
+        UnorderedElementsAre(
+            Pair("v", ArgInfo{TypeInfo{VarType::kPointer, "*main.Vertex"},
+                              {LocationType::kRegister, 0, {RegisterName::kRAX}}}),
+            Pair("f", ArgInfo{TypeInfo{VarType::kBaseType, "float64"},
+                              {LocationType::kRegisterFP, 0, {RegisterName::kXMM0}}})));
+    EXPECT_OK_AND_THAT(
+        dwarf_reader->GetFunctionArgInfo("main.(*Vertex).CrossScale"),
+        UnorderedElementsAre(
+            Pair("v", ArgInfo{TypeInfo{VarType::kPointer, "*main.Vertex"},
+                              {LocationType::kRegister, 0, {RegisterName::kRAX}}}),
+            Pair("v2",
+                 ArgInfo{
+                     TypeInfo{VarType::kStruct, "main.Vertex"},
+                     {LocationType::kRegisterFP, 0, {RegisterName::kXMM0, RegisterName::kXMM1}}}),
+            Pair("f", ArgInfo{TypeInfo{VarType::kBaseType, "float64"},
+                              {LocationType::kRegisterFP, 16, {RegisterName::kXMM2}}})));
+    EXPECT_OK_AND_THAT(
+        dwarf_reader->GetFunctionArgInfo("main.Vertex.Abs"),
+        UnorderedElementsAre(
+            Pair("v",
+                 ArgInfo{
+                     TypeInfo{VarType::kStruct, "main.Vertex"},
+                     {LocationType::kRegisterFP, 0, {RegisterName::kXMM0, RegisterName::kXMM1}}}),
+            Pair("~r0", ArgInfo{TypeInfo{VarType::kBaseType, "float64"},
+                                {LocationType::kRegisterFP, 0, {RegisterName::kXMM0}},
+                                true})));
+    EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("main.MixedArgTypes"),
+                       UnorderedElementsAre(
+                           Pair("i1", ArgInfo{TypeInfo{VarType::kBaseType, "int"},
+                                              {LocationType::kRegister, 0, {RegisterName::kRAX}}}),
+                           Pair("b1", ArgInfo{TypeInfo{VarType::kBaseType, "bool"},
+                                              {LocationType::kRegister, 8, {RegisterName::kRBX}}}),
+                           Pair("b2", ArgInfo{TypeInfo{VarType::kStruct, "main.BoolWrapper"},
+                                              {LocationType::kRegister,
+                                               16,
+                                               {RegisterName::kRCX, RegisterName::kRDI,
+                                                RegisterName::kRSI, RegisterName::kR8}}}),
+                           Pair("i2", ArgInfo{TypeInfo{VarType::kBaseType, "int"},
+                                              {LocationType::kRegister, 48, {RegisterName::kR9}}}),
+                           Pair("i3", ArgInfo{TypeInfo{VarType::kBaseType, "int"},
+                                              {LocationType::kRegister, 56, {RegisterName::kR10}}}),
+                           Pair("b3", ArgInfo{TypeInfo{VarType::kBaseType, "bool"},
+                                              {LocationType::kRegister, 64, {RegisterName::kR11}}}),
+                           Pair("~r0", ArgInfo{TypeInfo{VarType::kBaseType, "int"},
+                                               {LocationType::kRegister, 0, {RegisterName::kRAX}},
+                                               true}),
+                           Pair("~r1", ArgInfo{TypeInfo{VarType::kStruct, "main.BoolWrapper"},
                                                {LocationType::kRegister,
                                                 8,
                                                 {RegisterName::kRBX, RegisterName::kRCX,

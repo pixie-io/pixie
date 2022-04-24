@@ -84,6 +84,13 @@ def stirling_test_build_images():
         "library/golang",
     )
 
+    _docker_io_image(
+        # Using golang:1.18-alpine as it is smaller than the ubuntu based image.
+        "golang_1_18_image",
+        "sha256:e444a82360d0e4cecc2e352829e400c240b4566a5855daa6e9bd18ef6e7c50da",
+        "library/golang",
+    )
+
 def stirling_test_images():
     # NGINX with OpenSSL 1.1.0, for OpenSSL tracing tests.
     _docker_io_image(

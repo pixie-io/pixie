@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"px.dev/pixie/src/carnot/docspb"
+	"px.dev/pixie/src/carnot/udfspb"
 )
 
 // Valid doc strings
@@ -310,6 +311,7 @@ func TestFailures(t *testing.T) {
 
 func TestParseAllDocStrings(t *testing.T) {
 	internalDoc := &docspb.InternalPXLDocs{}
+	internalDoc.UdfDocs = &udfspb.Docs{}
 	internalDoc.DocstringNodes = []*docspb.DocstringNode{
 		{
 			Name:      "px",

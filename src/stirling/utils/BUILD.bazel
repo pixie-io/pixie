@@ -34,6 +34,7 @@ pl_cc_library(
         "//src/common/system:cc_library",
         "//src/common/zlib:cc_library",
         "//src/shared/upid:cc_library",
+        "//src/stirling/bpf_tools/bcc_bpf_intf:cc_library",
         "@com_github_tencent_rapidjson//:rapidjson",
     ],
 )
@@ -141,6 +142,15 @@ pl_cc_test(
     srcs = ["detect_application_test.cc"],
     deps = [
         ":cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "monitor_test",
+    srcs = ["monitor_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/testing:cc_library",
     ],
 )
 

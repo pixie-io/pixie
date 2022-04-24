@@ -42,6 +42,7 @@
 #include "src/carnot/planner/rules/rules.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/testing/testing.h"
+#include "src/shared/types/typespb/types.pb.h"
 
 namespace px {
 namespace carnot {
@@ -309,8 +310,11 @@ StatusOr<std::shared_ptr<IR>> ParseQuery(const std::string& query) {
   udfspb::UDFInfo info_pb;
   google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
   PL_RETURN_IF_ERROR(info->Init(info_pb));
-  auto compiler_state = std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info.get(),
-                                                        0, "result_addr", "result_hostname");
+  auto compiler_state = std::make_unique<CompilerState>(
+      std::make_unique<RelationMap>(), /* sensitive_columns */ SensitiveColumnMap{}, info.get(),
+      /* time_now */ types::Time64NSValue(0),
+      /* max_output_rows_per_table */ 0, "result_addr", "result_ssl_targetname",
+      /* redaction_options */ RedactionOptions{}, nullptr, nullptr);
   compiler::ModuleHandler module_handler;
   compiler::MutationsIR dynamic_trace;
   PL_ASSIGN_OR_RETURN(auto ast_walker,
@@ -585,7 +589,8 @@ class OperatorTests : public ::testing::Test {
   ColumnIR* MakeColumn(const std::string& name, int64_t parent_op_idx,
                        const table_store::schema::Relation& relation) {
     ColumnIR* column = MakeColumn(name, parent_op_idx);
-    auto type = ValueType::Create(relation.GetColumnType(name), types::ST_NONE);
+    auto type =
+        ValueType::Create(relation.GetColumnType(name), relation.GetColumnSemanticType(name));
     EXPECT_OK(column->SetResolvedType(type));
     return column;
   }
@@ -862,8 +867,11 @@ class RulesTest : public OperatorTests {
     rel_map->emplace("cpu", cpu_relation);
     rel_map->emplace("semantic_table", semantic_rel);
 
-    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now,
-                                                      "result_addr", "result_ssl_targetname");
+    compiler_state_ = std::make_unique<CompilerState>(
+        std::move(rel_map), /* sensitive_columns */ SensitiveColumnMap{}, info_.get(),
+        /* time_now */ time_now,
+        /* max_output_rows_per_table */ 0, "result_addr", "result_ssl_targetname",
+        /* redaction_options */ RedactionOptions{}, nullptr, nullptr);
     md_handler = MetadataHandler::Create();
   }
 
@@ -1122,11 +1130,41 @@ class ASTVisitorTest : public OperatorTests {
     auto max_output_rows_per_table = 10000;
     compiler_state_ = std::make_unique<CompilerState>(
         std::move(relation_map_), SensitiveColumnMap{}, registry_info_.get(), time_now,
-        max_output_rows_per_table, "result_addr", "result_ssl_targetname", RedactionOptions{});
+        max_output_rows_per_table, "result_addr", "result_ssl_targetname", RedactionOptions{},
+        nullptr, nullptr);
   }
 
   StatusOr<std::shared_ptr<IR>> CompileGraph(const std::string& query) {
     return CompileGraph(query, /* exec_funcs */ {}, /* module_name_to_pxl */ {});
+  }
+
+  /**
+   * @brief ParseScript takes a script and an initial variable state then parses
+   * and walks through the AST given this initial variable state, updating the state
+   * with whatever was walked through.
+   *
+   * If you're testing Objects, create a var_table, fill it with the object(s) you want
+   * to test, then write a script interacting with those objects and store the result
+   * into a variable.
+   *
+   * Then you can check if the ParseScript actually succeeds and what data is stored
+   * in the var table.
+   */
+  Status ParseScript(const std::shared_ptr<compiler::VarTable>& var_table,
+                     const std::string& script) {
+    Parser parser;
+    PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(script));
+
+    bool func_based_exec = false;
+    absl::flat_hash_set<std::string> reserved_names;
+    compiler::ModuleHandler module_handler;
+    compiler::MutationsIR mutations_ir;
+    PL_ASSIGN_OR_RETURN(auto ast_walker,
+                        compiler::ASTVisitorImpl::Create(graph.get(), var_table, &mutations_ir,
+                                                         compiler_state_.get(), &module_handler,
+                                                         func_based_exec, reserved_names));
+
+    return ast_walker->ProcessModuleNode(ast);
   }
 
   StatusOr<std::shared_ptr<IR>> CompileGraph(

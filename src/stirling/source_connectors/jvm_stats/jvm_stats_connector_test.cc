@@ -24,9 +24,10 @@
 #include <string>
 #include <vector>
 
-#include "src/common/base/test_utils.h"
 #include "src/common/exec/subprocess.h"
 #include "src/common/testing/test_environment.h"
+#include "src/common/testing/testing.h"
+#include "src/stirling/core/connector_context.h"
 #include "src/stirling/source_connectors/jvm_stats/jvm_stats_table.h"
 #include "src/stirling/testing/common.h"
 
@@ -91,7 +92,7 @@ TEST_F(JVMStatsConnectorTest, CaptureData) {
 
   {
     absl::flat_hash_set<md::UPID> upids = {PIDToUPID(hello_world1.child_pid())};
-    auto ctx = std::make_unique<TestContext>(upids);
+    auto ctx = std::make_unique<StandaloneContext>(upids);
     connector_->TransferData(ctx.get(), data_tables_.tables());
     std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords();
 
@@ -111,7 +112,7 @@ TEST_F(JVMStatsConnectorTest, CaptureData) {
   upids.insert(PIDToUPID(hello_world2.child_pid()));
 
   {
-    auto ctx = std::make_unique<TestContext>(upids);
+    auto ctx = std::make_unique<StandaloneContext>(upids);
     connector_->TransferData(ctx.get(), data_tables_.tables());
     std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords();
 

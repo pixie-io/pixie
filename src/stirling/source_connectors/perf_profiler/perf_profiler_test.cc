@@ -26,53 +26,132 @@
 #include "src/common/base/base.h"
 #include "src/common/exec/subprocess.h"
 #include "src/common/fs/fs_wrapper.h"
+#include "src/common/testing/test_utils/container_runner.h"
+#include "src/stirling/core/connector_context.h"
 #include "src/stirling/source_connectors/perf_profiler/java/attach.h"
 #include "src/stirling/source_connectors/perf_profiler/perf_profile_connector.h"
 #include "src/stirling/source_connectors/perf_profiler/stack_traces_table.h"
+#include "src/stirling/source_connectors/perf_profiler/symbolizers/java_symbolizer.h"
+#include "src/stirling/source_connectors/perf_profiler/testing/testing.h"
 #include "src/stirling/testing/common.h"
 
 DEFINE_uint32(test_run_time, 90, "Number of seconds to run the test.");
 DECLARE_bool(stirling_profiler_java_symbols);
+DECLARE_string(stirling_profiler_java_agent_libs);
 
 namespace px {
 namespace stirling {
 
+using ::px::stirling::profiler::testing::GetAgentLibsFlagValueForTesting;
+using ::px::stirling::profiler::testing::GetPxJattachFlagValueForTesting;
 using ::px::stirling::testing::FindRecordIdxMatchesPIDs;
 using ::px::testing::BazelBinTestFilePath;
+using ::px::testing::PathExists;
+using ::testing::Each;
 using ::testing::Gt;
+using ::testing::Not;
 using ::testing::Pair;
+using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
 
-class CPUPinnedBinaryRunner {
+class PerfProfilerTestSubProcesses {
  public:
-  void Run(const std::string& binary_path, const uint64_t cpu_idx) {
-    // Run the sub-process & pin it to a CPU.
-    const std::string kTasksetBinPath = "/usr/bin/taskset";
-    ASSERT_TRUE(fs::Exists(binary_path));
-    ASSERT_TRUE(fs::Exists(kTasksetBinPath));
-    ASSERT_OK(sub_process_.Start({kTasksetBinPath, "-c", std::to_string(cpu_idx), binary_path}));
-  }
-  ~CPUPinnedBinaryRunner() { sub_process_.Kill(); }
-  int pid() const { return sub_process_.child_pid(); }
-  void Kill() { sub_process_.Kill(); }
+  virtual void StartAll() = 0;
+  virtual void KillAll() = 0;
+  const std::vector<int>& pids() const { return pids_; }
+  const std::vector<struct upid_t>& struct_upids() const { return struct_upids_; }
+  const absl::flat_hash_set<md::UPID>& upids() const { return upids_; }
+  static constexpr size_t kNumSubProcesses = 4;
+  virtual ~PerfProfilerTestSubProcesses() = default;
 
- private:
-  SubProcess sub_process_;
+ protected:
+  std::vector<int> pids_;
+  std::vector<struct upid_t> struct_upids_;
+  absl::flat_hash_set<md::UPID> upids_;
 };
 
-absl::flat_hash_set<md::UPID> ToUPIDs(const std::vector<CPUPinnedBinaryRunner>& processes) {
-  absl::flat_hash_set<md::UPID> upids;
-  system::ProcParser proc_parser(system::Config::GetInstance());
-  for (const auto& p : processes) {
-    StatusOr<uint64_t> ts = proc_parser.GetPIDStartTimeTicks(p.pid());
-    if (!ts.ok()) {
-      LOG(ERROR) << absl::Substitute("Could not find start_time of PID=$0", p.pid());
-      continue;
+class CPUPinnedSubProcesses final : public PerfProfilerTestSubProcesses {
+ public:
+  CPUPinnedSubProcesses(const std::string& binary_path) : binary_path_(binary_path) {}
+
+  ~CPUPinnedSubProcesses() { KillAll(); }
+
+  void StartAll() override {
+    ASSERT_TRUE(fs::Exists(binary_path_));
+    ASSERT_TRUE(fs::Exists(kTasksetBinPath));
+    system::ProcParser proc_parser(system::Config::GetInstance());
+
+    for (size_t i = 0; i < kNumSubProcesses; ++i) {
+      sub_processes_.push_back(std::make_unique<SubProcess>());
+
+      // Run the sub-process & pin it to a CPU.
+      const std::string kTasksetBinPath = "/usr/bin/taskset";
+      ASSERT_OK(sub_processes_[i]->Start({kTasksetBinPath, "-c", std::to_string(i), binary_path_}));
+
+      // Grab the PID and generate a UPID.
+      const int pid = sub_processes_[i]->child_pid();
+      ASSERT_OK_AND_ASSIGN(const uint64_t ts, proc_parser.GetPIDStartTimeTicks(pid));
+      pids_.push_back(pid);
+      struct_upids_.push_back({{static_cast<uint32_t>(pid)}, ts});
+      upids_.emplace(0, pid, ts);
     }
-    upids.emplace(0, p.pid(), ts.ValueOr(-1));
   }
-  return upids;
-}
+
+  void KillAll() override {
+    for (auto& sub_process : sub_processes_) {
+      sub_process->Kill();
+    }
+
+    // This will release all the managed pointers and run the dtors.
+    sub_processes_.clear();
+  }
+
+ private:
+  static constexpr std::string_view kTasksetBinPath = "/usr/bin/taskset";
+  std::vector<std::unique_ptr<SubProcess>> sub_processes_;
+  const std::string binary_path_;
+};
+
+class ContainerSubProcesses final : public PerfProfilerTestSubProcesses {
+ public:
+  ContainerSubProcesses(const std::filesystem::path image_tar_path,
+                        const std::string_view container_name_pfx) {
+    for (size_t i = 0; i < kNumSubProcesses; ++i) {
+      sub_processes_.push_back(
+          std::make_unique<ContainerRunner>(image_tar_path, container_name_pfx, kReadyMsg));
+    }
+  }
+
+  ~ContainerSubProcesses() { KillAll(); }
+
+  void StartAll() override {
+    system::ProcParser proc_parser(system::Config::GetInstance());
+    const auto timeout = std::chrono::seconds{2 * FLAGS_test_run_time};
+    const std::vector<std::string> options;
+    const std::vector<std::string> args;
+    static constexpr bool kUseHostPidNamespace = false;
+
+    for (size_t i = 0; i < kNumSubProcesses; ++i) {
+      sub_processes_[i]->Run(timeout, options, args, kUseHostPidNamespace);
+
+      // Grab the PID and generate a UPID.
+      const int pid = sub_processes_[i]->process_pid();
+      ASSERT_OK_AND_ASSIGN(const uint64_t ts, proc_parser.GetPIDStartTimeTicks(pid));
+      pids_.push_back(pid);
+      struct_upids_.push_back({{static_cast<uint32_t>(pid)}, ts});
+      upids_.emplace(0, pid, ts);
+    }
+  }
+
+  void KillAll() override {
+    // This kills the containerized processes (by running the dtors).
+    sub_processes_.clear();
+  }
+
+ private:
+  static constexpr std::string_view kReadyMsg = "";
+  std::vector<std::unique_ptr<ContainerRunner>> sub_processes_;
+};
 
 class PerfProfileBPFTest : public ::testing::Test {
  public:
@@ -82,6 +161,10 @@ class PerfProfileBPFTest : public ::testing::Test {
  protected:
   void SetUp() override {
     FLAGS_stirling_profiler_java_symbols = true;
+    FLAGS_number_attach_attempts_per_iteration = kNumSubProcesses;
+    FLAGS_stirling_profiler_java_agent_libs = GetAgentLibsFlagValueForTesting();
+    FLAGS_stirling_profiler_px_jattach_path = GetPxJattachFlagValueForTesting();
+
     source_ = PerfProfileConnector::Create("perf_profile_connector");
     ASSERT_OK(source_->Init());
     ASSERT_LT(source_->SamplingPeriod(), test_run_time_);
@@ -116,28 +199,6 @@ class PerfProfileBPFTest : public ::testing::Test {
     return bazel_app_path;
   }
 
-  // This is templatized because we anticipate having more than one kind of binary runner,
-  // i.e. because future test applications will be threaded, so the CPU pinning will be
-  // done "inside" of the test app.
-  template <typename T>
-  std::vector<T> StartSubProcesses(const std::filesystem::path& app_path) {
-    // Before poking the subProcess.Run() method, we need the vector to be
-    // fully populated (or else vector re-sizing will want to make copies).
-    // Copying an already running sub-process kills the sub-process.
-    // Using kNumSubProcesses as a constructor arg. pre-populates the vector
-    // with default constructor initialized values.
-    std::vector<T> sub_processes(kNumSubProcesses);
-
-    for (uint32_t cpu_idx = 0; cpu_idx < kNumSubProcesses; ++cpu_idx) {
-      sub_processes[cpu_idx].Run(app_path, cpu_idx);
-    }
-
-    // Give test apps a little time to start running (necessary for Java, at least).
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-
-    return sub_processes;
-  }
-
   void PopulateObservedStackTraces(const std::vector<size_t>& target_row_idxs) {
     // Just check that the test author populated the necessary,
     // and did not corrupt the cumulative sum already.
@@ -147,8 +208,12 @@ class PerfProfileBPFTest : public ::testing::Test {
       // Build the histogram of observed stack traces here:
       // Also, track the cumulative sum (or total number of samples).
       const std::string stack_trace_str = stack_traces_column_->Get<types::StringValue>(row_idx);
+      const std::vector<std::string_view> symbols = absl::StrSplit(stack_trace_str, ";");
+      const std::string_view leaf_symbol = symbols.back();
+
       const int64_t count = counts_column_->Get<types::Int64Value>(row_idx).val;
       observed_stack_traces_[stack_trace_str] += count;
+      observed_leaf_symbols_[leaf_symbol] += count;
     }
 
     // TODO(jps): bring in a 3rd party library for colorization. e.g., one of the following:
@@ -174,9 +239,10 @@ class PerfProfileBPFTest : public ::testing::Test {
     }
   }
 
-  void CheckExpectedStackTraceCounts(const ssize_t num_subprocesses,
-                                     const std::chrono::duration<double> elapsed_time,
-                                     const std::string& key1x, const std::string& key2x) {
+  void CheckExpectedCounts(const absl::flat_hash_map<std::string, uint64_t>& counts,
+                           const ssize_t num_subprocesses,
+                           const std::chrono::duration<double> elapsed_time,
+                           const std::string_view key1x, const std::string_view key2x) {
     const uint64_t table_period_ms = source_->SamplingPeriod().count();
     const uint64_t bpf_period_ms = source_->StackTraceSamplingPeriod().count();
     const double expected_rate = 1000.0 / static_cast<double>(bpf_period_ms);
@@ -186,14 +252,14 @@ class PerfProfileBPFTest : public ::testing::Test {
     const double observedNumSamples = static_cast<double>(cumulative_sum_);
     const double observed_rate = observedNumSamples / elapsed_time.count() / num_subprocesses;
 
-    LOG(INFO) << absl::StrFormat("Table sampling period: %d [ms]", table_period_ms);
-    LOG(INFO) << absl::StrFormat("BPF sampling period: %d [ms]", bpf_period_ms);
-    LOG(INFO) << absl::StrFormat("Number of processes: %d", num_subprocesses);
-    LOG(INFO) << absl::StrFormat("expected num samples: %d", uint64_t(expected_num_samples));
-    LOG(INFO) << absl::StrFormat("total samples: %d", cumulative_sum_);
-    LOG(INFO) << absl::StrFormat("elapsed time: %.1f [sec]", elapsed_time.count());
-    LOG(INFO) << absl::StrFormat("expected sample rate: %.2f [Hz]", expected_rate);
-    LOG(INFO) << absl::StrFormat("observed sample rate: %.2f [Hz]", observed_rate);
+    LOG(INFO) << absl::StrFormat("Table sampling period: %d [ms].", table_period_ms);
+    LOG(INFO) << absl::StrFormat("BPF sampling period: %d [ms].", bpf_period_ms);
+    LOG(INFO) << absl::StrFormat("Number of processes: %d.", num_subprocesses);
+    LOG(INFO) << absl::StrFormat("expected num samples: %d.", uint64_t(expected_num_samples));
+    LOG(INFO) << absl::StrFormat("total samples: %d.", cumulative_sum_);
+    LOG(INFO) << absl::StrFormat("elapsed time: %.1f [sec].", elapsed_time.count());
+    LOG(INFO) << absl::StrFormat("expected sample rate: %.2f [Hz].", expected_rate);
+    LOG(INFO) << absl::StrFormat("observed sample rate: %.2f [Hz].", observed_rate);
 
     // We expect to see a certain number of samples, but in practice
     // see fewer (maybe the CPU and Linux scheduler have other things to do!).
@@ -204,56 +270,36 @@ class PerfProfileBPFTest : public ::testing::Test {
     EXPECT_GT(cumulative_sum_, expected_num_sample_lower) << err_msg;
     EXPECT_LT(cumulative_sum_, expected_num_sample_upper) << err_msg;
 
-    const double num_1x_samples = observed_stack_traces_[key1x];
-    const double num_2x_samples = observed_stack_traces_[key2x];
-    const double ratio = num_2x_samples / num_1x_samples;
+    char const* const missing_key_msg = "Could not find required symbol or stack trace: $0.";
+    ASSERT_TRUE(counts.find(key1x) != counts.end()) << absl::Substitute(missing_key_msg, key1x);
+    ASSERT_TRUE(counts.find(key2x) != counts.end()) << absl::Substitute(missing_key_msg, key2x);
 
-    // We expect the ratio of fib52:fib27 to be approx. 2:1;
-    // or sqrt, or something else that was in the toy test app.
-    // TODO(jps): Increase sampling frequency and then tighten this margin.
+    const double key1x_count = counts.at(key1x);
+    const double key2x_count = counts.at(key2x);
+    const double ratio = key2x_count / key1x_count;
+
+    // We expect the ratio of key2x:key1x to be approx. 2:1.
+    // TODO(jps): Can we tighten the margin? e.g. by increasing sampling frequency.
+    LOG(INFO) << absl::StrFormat("key2x: %s.", key2x);
+    LOG(INFO) << absl::StrFormat("key1x: %s.", key1x);
+    LOG(INFO) << absl::StrFormat("key2x count: %d.", static_cast<uint64_t>(key2x_count));
+    LOG(INFO) << absl::StrFormat("key1x count: %d.", static_cast<uint64_t>(key1x_count));
+    LOG(INFO) << absl::StrFormat("ratio: %.2fx.", ratio);
     EXPECT_GT(ratio, 2.0 - kRatioMargin);
     EXPECT_LT(ratio, 2.0 + kRatioMargin);
 
     EXPECT_EQ(source_->stats().Get(PerfProfileConnector::StatKey::kLossHistoEvent), 0);
   }
 
-  template <typename T>
-  std::vector<int> GetSubProcessPids(const std::vector<T>& sub_processes) {
-    std::vector<int> pids;
-    for (const auto& sub_process : sub_processes) {
-      pids.push_back(sub_process.pid());
-    }
-    return pids;
-  }
-
-  template <typename T>
-  std::vector<struct upid_t> GetSubProcessUPIDs(const std::vector<T>& sub_processes) {
-    const std::vector<int> pids_vec = GetSubProcessPids(sub_processes);
-    const std::set<int> pids(pids_vec.begin(), pids_vec.end());
-    const auto& md_upids = ctx_->GetUPIDs();
-    std::vector<struct upid_t> upids;
-
-    for (const auto upid : md_upids) {
-      if (pids.find(upid.pid()) != pids.end()) {
-        upids.push_back({{upid.pid()}, static_cast<uint64_t>(upid.start_ts())});
-      }
-    }
-    return upids;
-  }
-
-  template <typename T>
-  std::vector<size_t> GetTargetRowIdxs(const std::vector<T>& sub_processes) {
-    const std::vector<int> pids = GetSubProcessPids(sub_processes);
-    return FindRecordIdxMatchesPIDs(columns_, kStackTraceUPIDIdx, pids);
-  }
-
   void ConsumeRecords() {
     const std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
-    ASSERT_EQ(tablets.size(), 1);
-
-    columns_ = tablets[0].records;
-
+    ASSERT_NOT_EMPTY_AND_GET_RECORDS(columns_, tablets);
     PopulateColumnPtrs(columns_);
+    auto target_row_idxs =
+        FindRecordIdxMatchesPIDs(columns_, kStackTraceUPIDIdx, sub_processes_->pids());
+
+    PopulateCumulativeSum(target_row_idxs);
+    PopulateObservedStackTraces(target_row_idxs);
   }
 
   void PopulateColumnPtrs(const types::ColumnWrapperRecordBatch& columns) {
@@ -283,7 +329,8 @@ class PerfProfileBPFTest : public ::testing::Test {
 
   const std::chrono::seconds test_run_time_;
   std::unique_ptr<PerfProfileConnector> source_;
-  std::unique_ptr<TestContext> ctx_;
+  std::unique_ptr<PerfProfilerTestSubProcesses> sub_processes_;
+  std::unique_ptr<StandaloneContext> ctx_;
   DataTable data_table_;
   const std::vector<DataTable*> data_tables_{&data_table_};
 
@@ -294,6 +341,7 @@ class PerfProfileBPFTest : public ::testing::Test {
 
   uint64_t cumulative_sum_ = 0;
   absl::flat_hash_map<std::string, uint64_t> observed_stack_traces_;
+  absl::flat_hash_map<std::string, uint64_t> observed_leaf_symbols_;
 
   types::ColumnWrapperRecordBatch columns_;
 
@@ -304,128 +352,75 @@ class PerfProfileBPFTest : public ::testing::Test {
 
 TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
   const std::filesystem::path bazel_app_path = BazelGoTestAppPath("profiler_test_app_sqrt_go");
+  ASSERT_TRUE(fs::Exists(bazel_app_path)) << absl::StrFormat("Missing: %s.", bazel_app_path);
 
-  // The toy test app. should be written such that we can expect one stack trace
-  // twice as often as another.
-  std::string key2x = "runtime.goexit.abi0;runtime.main;main.main;main.sqrtOf1e39;main.sqrt";
-  std::string key1x = "runtime.goexit.abi0;runtime.main;main.main;main.sqrtOf1e18;main.sqrt";
+  // clang-format off
+  // The target app is written such that key2x uses twice the CPU time as key1x.
+  constexpr std::string_view key2x = "runtime.goexit.abi0;runtime.main;main.main;main.sqrtOf1e39;main.sqrt";  // NOLINT(whitespace/line_length)
+  constexpr std::string_view key1x = "runtime.goexit.abi0;runtime.main;main.main;main.sqrtOf1e18;main.sqrt";  // NOLINT(whitespace/line_length)
+  // clang-format on
 
-  // Start they toy apps as sub-processes, then,
-  // for a certain amount of time (kTestRunTime), collect data using RunTest().
-  auto sub_processes = StartSubProcesses<CPUPinnedBinaryRunner>(bazel_app_path);
+  // Start target apps & create the connector context using the sub-process upids.
+  sub_processes_ = std::make_unique<CPUPinnedSubProcesses>(bazel_app_path);
+  ASSERT_NO_FATAL_FAILURE(sub_processes_->StartAll());
+  ctx_ = std::make_unique<StandaloneContext>(sub_processes_->upids());
 
-  // We wait until here to create the connector context, i.e. so that perf_profile_connector
-  // finds the upids that belong to the sub-processes that we have just created.
-  ctx_ = std::make_unique<TestContext>(ToUPIDs(sub_processes));
-
+  // Allow target apps to run, and periodically call transfer data on perf profile connector.
   const std::chrono::duration<double> elapsed_time = RunTest();
 
-  // Pull the data into this test (as columns_) using ConsumeRecords(), and
-  // find the row indices that belong to our sub-processes using GetTargetRowIdxs().
+  // Pull the data from the perf profile connector into this test case.
   ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
-  const std::vector<size_t> target_row_idxs = GetTargetRowIdxs(sub_processes);
 
-  // Populate the cumulative sum & the observed stack traces histo,
-  // then check observed vs. expected stack traces key set:
-  ASSERT_NO_FATAL_FAILURE(PopulateCumulativeSum(target_row_idxs));
-  ASSERT_NO_FATAL_FAILURE(PopulateObservedStackTraces(target_row_idxs));
-  EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key1x, Gt(0))));
-  EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key2x, Gt(0))));
   ASSERT_NO_FATAL_FAILURE(
-      CheckExpectedStackTraceCounts(kNumSubProcesses, elapsed_time, key1x, key2x));
+      CheckExpectedCounts(observed_stack_traces_, kNumSubProcesses, elapsed_time, key1x, key2x));
 }
 
 TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
   const std::filesystem::path bazel_app_path = BazelCCTestAppPath("profiler_test_app_fib");
+  ASSERT_TRUE(fs::Exists(bazel_app_path)) << absl::StrFormat("Missing: %s.", bazel_app_path);
 
-  // The toy test app. should be written such that we can expect one stack trace
-  // twice as often as another.
-  std::string key2x = "__libc_start_main;main;fib52();fib(unsigned long)";
-  std::string key1x = "__libc_start_main;main;fib27();fib(unsigned long)";
+  // The target app is written such that key2x uses twice the CPU time as key1x.
+  constexpr std::string_view key2x = "__libc_start_main;main;fib52();fib(unsigned long)";
+  constexpr std::string_view key1x = "__libc_start_main;main;fib27();fib(unsigned long)";
 
-  // Start they toy apps as sub-processes, then,
-  // for a certain amount of time, collect data using RunTest().
-  auto sub_processes = StartSubProcesses<CPUPinnedBinaryRunner>(bazel_app_path);
+  // Start target apps & create the connector context using the sub-process upids.
+  sub_processes_ = std::make_unique<CPUPinnedSubProcesses>(bazel_app_path);
+  ASSERT_NO_FATAL_FAILURE(sub_processes_->StartAll());
+  ctx_ = std::make_unique<StandaloneContext>(sub_processes_->upids());
 
-  // We wait until here to create the connector context, i.e. so that perf_profile_connector
-  // finds the upids that belong to the sub-processes that we have just created.
-  ctx_ = std::make_unique<TestContext>(ToUPIDs(sub_processes));
-
+  // Allow target apps to run, and periodically call transfer data on perf profile connector.
   const std::chrono::duration<double> elapsed_time = RunTest();
 
-  // Pull the data into this test (as columns_) using ConsumeRecords(), and
-  // find the row indices that belong to our sub-processes using GetTargetRowIdxs().
+  // Pull the data from the perf profile connector into this test case.
   ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
-  const std::vector<size_t> target_row_idxs = GetTargetRowIdxs(sub_processes);
 
-  // Populate the cumulative sum & the observed stack traces histo,
-  // then check observed vs. expected stack traces key set:
-  ASSERT_NO_FATAL_FAILURE(PopulateCumulativeSum(target_row_idxs));
-  ASSERT_NO_FATAL_FAILURE(PopulateObservedStackTraces(target_row_idxs));
-  EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key1x, Gt(0))));
-  EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key2x, Gt(0))));
   ASSERT_NO_FATAL_FAILURE(
-      CheckExpectedStackTraceCounts(kNumSubProcesses, elapsed_time, key1x, key2x));
+      CheckExpectedCounts(observed_stack_traces_, kNumSubProcesses, elapsed_time, key1x, key2x));
 }
 
 TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
-  const std::filesystem::path bazel_app_path = BazelJavaTestAppPath("fib");
-  LOG(INFO) << "bazel_app_path: " << bazel_app_path;
-  ASSERT_TRUE(fs::Exists(bazel_app_path));
+  constexpr std::string_view kContainerNamePfx = "java";
+  const std::filesystem::path image_tar_path = BazelJavaTestAppPath("image.tar");
+  ASSERT_TRUE(fs::Exists(image_tar_path)) << absl::StrFormat("Missing: %s.", image_tar_path);
 
-  // Start they toy apps as sub-processes, then,
-  // for a certain amount of time, collect data using RunTest().
-  auto sub_processes = StartSubProcesses<CPUPinnedBinaryRunner>(bazel_app_path);
+  // The target app is written such that key2x uses twice the CPU time as key1x.
+  // For Java, we will match only the leaf symbol because we cannot predict the full stack trace.
+  constexpr std::string_view key2x = "[j] long JavaFib::fib52()";
+  constexpr std::string_view key1x = "[j] long JavaFib::fib27()";
 
-  // We wait until here to create the connector context, i.e. so that perf_profile_connector
-  // finds the upids that belong to the sub-processes that we have just created.
-  ctx_ = std::make_unique<TestContext>(ToUPIDs(sub_processes));
+  // Start target apps & create the connector context using the sub-process upids.
+  sub_processes_ = std::make_unique<ContainerSubProcesses>(image_tar_path, kContainerNamePfx);
+  ASSERT_NO_FATAL_FAILURE(sub_processes_->StartAll());
+  ctx_ = std::make_unique<StandaloneContext>(sub_processes_->upids());
 
-  RunTest();
+  // Allow target apps to run, and periodically call transfer data on perf profile connector.
+  const std::chrono::duration<double> elapsed_time = RunTest();
 
-  // Pull the data into this test (as columns_) using ConsumeRecords(), and
-  // find the row indices that belong to our sub-processes using GetTargetRowIdxs().
+  // Pull the data from the perf profile connector into this test case.
   ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
-  const std::vector<size_t> target_row_idxs = GetTargetRowIdxs(sub_processes);
 
-  // Populate the cumulative sum & the observed stack traces histo.
-  ASSERT_NO_FATAL_FAILURE(PopulateCumulativeSum(target_row_idxs));
-  ASSERT_NO_FATAL_FAILURE(PopulateObservedStackTraces(target_row_idxs));
-
-  // Previous test cases matched entire stack traces. For Java, parts of the stack trace
-  // remain unpredictable, but we can predict the leaf symbols.
-  // Here, we find stack traces with the expected leaf symbols,
-  // and expect that fib52() occurs with 2x the frequency of fib27().
-  constexpr std::string_view fib52_symbol = "[j] long JavaFib::fib52()";
-  constexpr std::string_view fib27_symbol = "[j] long JavaFib::fib27()";
-  double fib27_count = 0;
-  double fib52_count = 0;
-
-  std::multimap<uint64_t, std::string> traces;
-
-  for (const auto& [stack_trace, count] : observed_stack_traces_) {
-    // Extract the leaf symbol.
-    const std::vector<std::string> symbols = absl::StrSplit(stack_trace, ";");
-    const std::string_view leaf_symbol = symbols.back();
-
-    // Increment the count for fib52 & fib27, based on the leaf symbol.
-    if (leaf_symbol == fib52_symbol) {
-      fib52_count += count;
-    }
-    if (leaf_symbol == fib27_symbol) {
-      fib27_count += count;
-    }
-  }
-  const double ratio = fib52_count / fib27_count;
-
-  // This is useful info, log it.
-  LOG(INFO) << absl::StrFormat("fib52_count: %d.", static_cast<uint64_t>(fib52_count));
-  LOG(INFO) << absl::StrFormat("fib27_count: %d.", static_cast<uint64_t>(fib27_count));
-  LOG(INFO) << absl::StrFormat("ratio: %.2fx.", ratio);
-
-  // The test itself. We expect, if everything is working, to see twice as much fib52() as fib27().
-  EXPECT_GT(ratio, 2.0 - kRatioMargin);
-  EXPECT_LT(ratio, 2.0 + kRatioMargin);
+  ASSERT_NO_FATAL_FAILURE(
+      CheckExpectedCounts(observed_leaf_symbols_, kNumSubProcesses, elapsed_time, key1x, key2x));
 
   // Now we will test agent cleanup, specifically whether the aritfacts directory is removed.
   // We will construt a list of artifacts paths that we expect,
@@ -433,23 +428,18 @@ TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
   // and expect that all the artifacts paths are (as a result) removed.
   std::vector<std::filesystem::path> artifacts_paths;
 
-  // Get the UPIDs of our subprocs.
-  const auto upids = GetSubProcessUPIDs(sub_processes);
-
   // Consruct the names of the artifacts paths and expect that they exist.
-  for (const auto& upid : upids) {
+  for (const auto& upid : sub_processes_->struct_upids()) {
     ASSERT_OK_AND_ASSIGN(const auto artifacts_path, java::ResolveHostArtifactsPath(upid));
     EXPECT_TRUE(fs::Exists(artifacts_path));
     if (fs::Exists(artifacts_path)) {
       artifacts_paths.push_back(artifacts_path);
     }
   }
-  EXPECT_EQ(artifacts_paths.size(), kNumSubProcesses);
+  EXPECT_THAT(artifacts_paths, SizeIs(kNumSubProcesses));
 
   // Kill the subprocs.
-  for (auto& proc : sub_processes) {
-    proc.Kill();
-  }
+  sub_processes_->KillAll();
 
   // Inside of PerfProfileConnector, we need the list of deleted upids to match our original
   // list of upids based on our subprocs.
@@ -458,39 +448,32 @@ TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
   // between the previous list of upids (our subprocs) and the current list of upids (empty)
   // to find a list of deleted upids.
   const absl::flat_hash_set<md::UPID> empty_upid_set;
-  ctx_ = std::make_unique<TestContext>(empty_upid_set);
+  ctx_ = std::make_unique<StandaloneContext>(empty_upid_set);
 
   // Run transfer data so that cleanup is kicked off in the perf profile source connector.
   // The deleted upids list that is inferred will match our original upid list.
   source_->TransferData(ctx_.get(), data_tables_);
 
   // Expect that that the artifacts paths have been removed.
-  for (const auto& artifacts_path : artifacts_paths) {
-    EXPECT_FALSE(fs::Exists(artifacts_path)) << artifacts_path;
-  }
+  EXPECT_THAT(artifacts_paths, Each(Not(PathExists())));
 }
 
 TEST_F(PerfProfileBPFTest, TestOutOfContext) {
   const std::filesystem::path bazel_app_path = BazelCCTestAppPath("profiler_test_app_fib");
+  ASSERT_TRUE(fs::Exists(bazel_app_path)) << absl::StrFormat("Missing: %s.", bazel_app_path);
 
-  // Start they toy apps as sub-processes, then,
-  // for a certain amount of time, collect data using RunTest().
-  auto sub_processes = StartSubProcesses<CPUPinnedBinaryRunner>(bazel_app_path);
+  // Start target apps & create the connector context using the sub-process upids.
+  sub_processes_ = std::make_unique<CPUPinnedSubProcesses>(bazel_app_path);
+  ASSERT_NO_FATAL_FAILURE(sub_processes_->StartAll());
 
-  // For this test case, we pass in an empty list of PIDs to trace.
-  ctx_ = std::make_unique<TestContext>(absl::flat_hash_set<md::UPID>());
+  // Use an empty connector context.
+  ctx_ = std::make_unique<StandaloneContext>(absl::flat_hash_set<md::UPID>());
 
+  // Allow target apps to run, and periodically call transfer data on perf profile connector.
   RunTest();
 
-  // Pull the data into this test (as columns_) using ConsumeRecords(), and
-  // find the row indices that belong to our sub-processes using GetTargetRowIdxs().
+  // Pull the data from the perf profile connector into this test case.
   ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
-  const std::vector<size_t> target_row_idxs = GetTargetRowIdxs(sub_processes);
-
-  // Populate the cumulative sum & the observed stack traces histo,
-  // then check observed vs. expected stack traces key set:
-  ASSERT_NO_FATAL_FAILURE(PopulateCumulativeSum(target_row_idxs));
-  ASSERT_NO_FATAL_FAILURE(PopulateObservedStackTraces(target_row_idxs));
 }
 
 }  // namespace stirling

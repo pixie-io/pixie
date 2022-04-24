@@ -51,6 +51,8 @@ type APIEnv interface {
 	APIKeyClient() authpb.APIKeyServiceClient
 	ArtifactTrackerClient() artifacttrackerpb.ArtifactTrackerClient
 	IdentityProviderClient() IdentityProviderClient
+	PluginClient() pluginpb.PluginServiceClient
+	DataRetentionPluginClient() pluginpb.DataRetentionPluginServiceClient
 }
 
 // IdentityProviderClient is the interface for IdentityProvider clients that require endpoints.
@@ -135,4 +137,14 @@ func (e *Impl) ArtifactTrackerClient() artifacttrackerpb.ArtifactTrackerClient {
 // IdentityProviderClient returns a client that interfaces with an identity provider.
 func (e *Impl) IdentityProviderClient() IdentityProviderClient {
 	return e.identityProviderClient
+}
+
+// PluginClient returns a plugin client.
+func (e *Impl) PluginClient() pluginpb.PluginServiceClient {
+	return e.pluginClient
+}
+
+// DataRetentionPluginClient returns a data retention plugin client.
+func (e *Impl) DataRetentionPluginClient() pluginpb.DataRetentionPluginServiceClient {
+	return e.retentionClient
 }

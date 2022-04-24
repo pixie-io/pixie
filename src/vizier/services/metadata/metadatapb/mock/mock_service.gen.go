@@ -750,3 +750,189 @@ func (mr *MockMetadataConfigServiceServerMockRecorder) UpdateConfig(arg0, arg1 i
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateConfig", reflect.TypeOf((*MockMetadataConfigServiceServer)(nil).UpdateConfig), arg0, arg1)
 }
+
+// MockCronScriptStoreServiceClient is a mock of CronScriptStoreServiceClient interface.
+type MockCronScriptStoreServiceClient struct {
+	ctrl     *gomock.Controller
+	recorder *MockCronScriptStoreServiceClientMockRecorder
+}
+
+// MockCronScriptStoreServiceClientMockRecorder is the mock recorder for MockCronScriptStoreServiceClient.
+type MockCronScriptStoreServiceClientMockRecorder struct {
+	mock *MockCronScriptStoreServiceClient
+}
+
+// NewMockCronScriptStoreServiceClient creates a new mock instance.
+func NewMockCronScriptStoreServiceClient(ctrl *gomock.Controller) *MockCronScriptStoreServiceClient {
+	mock := &MockCronScriptStoreServiceClient{ctrl: ctrl}
+	mock.recorder = &MockCronScriptStoreServiceClientMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockCronScriptStoreServiceClient) EXPECT() *MockCronScriptStoreServiceClientMockRecorder {
+	return m.recorder
+}
+
+// AddOrUpdateScript mocks base method.
+func (m *MockCronScriptStoreServiceClient) AddOrUpdateScript(ctx context.Context, in *metadatapb.AddOrUpdateScriptRequest, opts ...grpc.CallOption) (*metadatapb.AddOrUpdateScriptResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "AddOrUpdateScript", varargs...)
+	ret0, _ := ret[0].(*metadatapb.AddOrUpdateScriptResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AddOrUpdateScript indicates an expected call of AddOrUpdateScript.
+func (mr *MockCronScriptStoreServiceClientMockRecorder) AddOrUpdateScript(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddOrUpdateScript", reflect.TypeOf((*MockCronScriptStoreServiceClient)(nil).AddOrUpdateScript), varargs...)
+}
+
+// DeleteScript mocks base method.
+func (m *MockCronScriptStoreServiceClient) DeleteScript(ctx context.Context, in *metadatapb.DeleteScriptRequest, opts ...grpc.CallOption) (*metadatapb.DeleteScriptResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteScript", varargs...)
+	ret0, _ := ret[0].(*metadatapb.DeleteScriptResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteScript indicates an expected call of DeleteScript.
+func (mr *MockCronScriptStoreServiceClientMockRecorder) DeleteScript(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteScript", reflect.TypeOf((*MockCronScriptStoreServiceClient)(nil).DeleteScript), varargs...)
+}
+
+// GetScripts mocks base method.
+func (m *MockCronScriptStoreServiceClient) GetScripts(ctx context.Context, in *metadatapb.GetScriptsRequest, opts ...grpc.CallOption) (*metadatapb.GetScriptsResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetScripts", varargs...)
+	ret0, _ := ret[0].(*metadatapb.GetScriptsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetScripts indicates an expected call of GetScripts.
+func (mr *MockCronScriptStoreServiceClientMockRecorder) GetScripts(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScripts", reflect.TypeOf((*MockCronScriptStoreServiceClient)(nil).GetScripts), varargs...)
+}
+
+// SetScripts mocks base method.
+func (m *MockCronScriptStoreServiceClient) SetScripts(ctx context.Context, in *metadatapb.SetScriptsRequest, opts ...grpc.CallOption) (*metadatapb.SetScriptsResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "SetScripts", varargs...)
+	ret0, _ := ret[0].(*metadatapb.SetScriptsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SetScripts indicates an expected call of SetScripts.
+func (mr *MockCronScriptStoreServiceClientMockRecorder) SetScripts(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetScripts", reflect.TypeOf((*MockCronScriptStoreServiceClient)(nil).SetScripts), varargs...)
+}
+
+// MockCronScriptStoreServiceServer is a mock of CronScriptStoreServiceServer interface.
+type MockCronScriptStoreServiceServer struct {
+	ctrl     *gomock.Controller
+	recorder *MockCronScriptStoreServiceServerMockRecorder
+}
+
+// MockCronScriptStoreServiceServerMockRecorder is the mock recorder for MockCronScriptStoreServiceServer.
+type MockCronScriptStoreServiceServerMockRecorder struct {
+	mock *MockCronScriptStoreServiceServer
+}
+
+// NewMockCronScriptStoreServiceServer creates a new mock instance.
+func NewMockCronScriptStoreServiceServer(ctrl *gomock.Controller) *MockCronScriptStoreServiceServer {
+	mock := &MockCronScriptStoreServiceServer{ctrl: ctrl}
+	mock.recorder = &MockCronScriptStoreServiceServerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockCronScriptStoreServiceServer) EXPECT() *MockCronScriptStoreServiceServerMockRecorder {
+	return m.recorder
+}
+
+// AddOrUpdateScript mocks base method.
+func (m *MockCronScriptStoreServiceServer) AddOrUpdateScript(arg0 context.Context, arg1 *metadatapb.AddOrUpdateScriptRequest) (*metadatapb.AddOrUpdateScriptResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddOrUpdateScript", arg0, arg1)
+	ret0, _ := ret[0].(*metadatapb.AddOrUpdateScriptResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AddOrUpdateScript indicates an expected call of AddOrUpdateScript.
+func (mr *MockCronScriptStoreServiceServerMockRecorder) AddOrUpdateScript(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddOrUpdateScript", reflect.TypeOf((*MockCronScriptStoreServiceServer)(nil).AddOrUpdateScript), arg0, arg1)
+}
+
+// DeleteScript mocks base method.
+func (m *MockCronScriptStoreServiceServer) DeleteScript(arg0 context.Context, arg1 *metadatapb.DeleteScriptRequest) (*metadatapb.DeleteScriptResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteScript", arg0, arg1)
+	ret0, _ := ret[0].(*metadatapb.DeleteScriptResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteScript indicates an expected call of DeleteScript.
+func (mr *MockCronScriptStoreServiceServerMockRecorder) DeleteScript(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteScript", reflect.TypeOf((*MockCronScriptStoreServiceServer)(nil).DeleteScript), arg0, arg1)
+}
+
+// GetScripts mocks base method.
+func (m *MockCronScriptStoreServiceServer) GetScripts(arg0 context.Context, arg1 *metadatapb.GetScriptsRequest) (*metadatapb.GetScriptsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetScripts", arg0, arg1)
+	ret0, _ := ret[0].(*metadatapb.GetScriptsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetScripts indicates an expected call of GetScripts.
+func (mr *MockCronScriptStoreServiceServerMockRecorder) GetScripts(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScripts", reflect.TypeOf((*MockCronScriptStoreServiceServer)(nil).GetScripts), arg0, arg1)
+}
+
+// SetScripts mocks base method.
+func (m *MockCronScriptStoreServiceServer) SetScripts(arg0 context.Context, arg1 *metadatapb.SetScriptsRequest) (*metadatapb.SetScriptsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetScripts", arg0, arg1)
+	ret0, _ := ret[0].(*metadatapb.SetScriptsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SetScripts indicates an expected call of SetScripts.
+func (mr *MockCronScriptStoreServiceServerMockRecorder) SetScripts(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetScripts", reflect.TypeOf((*MockCronScriptStoreServiceServer)(nil).SetScripts), arg0, arg1)
+}

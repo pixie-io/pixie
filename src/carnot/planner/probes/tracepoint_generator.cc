@@ -44,7 +44,7 @@ StatusOr<carnot::planner::dynamic_tracing::ir::logical::TracepointDeployment> Co
       // Time now isn't used to generate probes, but we still need to pass one in.
       /*time_now*/ 1552607213931245000,
       /*max_output_rows_per_table*/ 10000, "result_addr", /* SSL target name override */ "",
-      RedactionOptions{});
+      RedactionOptions{}, nullptr, nullptr);
 
   Parser parser;
   PL_ASSIGN_OR_RETURN(auto ast, parser.Parse(query));

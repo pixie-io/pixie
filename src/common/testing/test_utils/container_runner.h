@@ -67,7 +67,8 @@ class ContainerRunner {
    */
   StatusOr<std::string> Run(const std::chrono::seconds& timeout = std::chrono::seconds{60},
                             const std::vector<std::string>& options = {},
-                            const std::vector<std::string>& args = {});
+                            const std::vector<std::string>& args = {},
+                            const bool use_host_pid_namespace = true);
 
   /**
    * Wait for container to terminate.
@@ -109,7 +110,7 @@ class ContainerRunner {
   const std::string ready_message_;
 
   // The subprocess running the container.
-  SubProcess container_;
+  SubProcess docker_;
 
   // The instance name of the container.
   std::string container_name_;

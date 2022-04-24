@@ -8,7 +8,9 @@ spec:
   version: {{ .Values.version }}
   {{- end }}
   deployKey: {{ .Values.deployKey }}
+  {{- if .Values.customDeployKeySecret }}
   customDeployKeySecret: {{ .Values.customDeployKeySecret }}
+  {{- end }}
   cloudAddr: {{ .Values.cloudAddr }}
   disableAutoUpdate: {{ .Values.disableAutoUpdate }}
   useEtcdOperator: {{ .Values.useEtcdOperator }}
@@ -20,6 +22,9 @@ spec:
   {{- end }}
   {{- if .Values.pemMemoryLimit }}
   pemMemoryLimit: {{ .Values.pemMemoryLimit }}
+  {{- end }}
+  {{- if .Values.pemMemoryRequest }}
+  pemMemoryRequest: {{ .Values.pemMemoryRequest }}
   {{- end }}
   {{- if .Values.dataAccess }}
   dataAccess: {{ .Values.dataAccess }}
@@ -34,9 +39,6 @@ spec:
     {{- end }}
     {{- if .Values.dataCollectorParams.datastreamBufferSpikeSize }}
     datastreamBufferSpikeSize: {{ .Values.dataCollectorParams.datastreamBufferSpikeSize }}
-    {{- end }}
-    {{- if .Values.dataCollectorParams.tableStoreTableSizeLimit }}
-    tableStoreTableSizeLimit: {{ .Values.dataCollectorParams.tableStoreTableSizeLimit }}
     {{- end }}
     {{- if .Values.dataCollectorParams.customPEMFlags }}
     customPEMFlags:

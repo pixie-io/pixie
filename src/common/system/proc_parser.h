@@ -48,6 +48,7 @@ class ProcParser {
    * @param proc_base_path The base path to the proc files.
    */
   explicit ProcParser(const system::Config& cfg);
+  explicit ProcParser(std::string proc_path);
 
   /**
    * NetworkStats is a struct used to store aggregated network statistics.
@@ -175,11 +176,14 @@ class ProcParser {
 
   /**
    * Parses /proc/<pid>/stat files
-   * @param pid is the pid for which we want stat data..
+   * @param pid is the pid for which we want stat data.
+   * @param page_size_bytes The size of memory page in bytes.
+   * @param kernel_tick_time_ns The time of each kernel tick in nanoseconds.
    * @param out A valid pointer to the output.
    * @return Status of parsing.
    */
-  Status ParseProcPIDStat(int32_t pid, ProcessStats* out) const;
+  Status ParseProcPIDStat(int32_t pid, int32_t page_size_bytes, int32_t kernel_tick_time_ns,
+                          ProcessStats* out) const;
 
   /**
    * Specialization of ParseProcPIDStat to just extract the start time.
@@ -247,6 +251,12 @@ class ProcParser {
    * @return status of parsing
    */
   Status ParseProcPIDSMaps(int32_t pid, std::vector<ProcessSMaps>* out) const;
+
+  /**
+   * Parses /proc/<pid>/smaps_rollup for "PSS" the proportional set size memory usage.
+   * @return status of parsing or the value of PSS.
+   */
+  StatusOr<size_t> ParseProcPIDPss(const int32_t pid) const;
 
   /**
    * Reads and returns the /proc/<pid>/fd/<fd> file descriptor link.
@@ -345,9 +355,6 @@ class ProcParser {
       uint8_t* out_base);
 
   std::filesystem::path ProcPidPath(pid_t pid) const;
-
-  int64_t ns_per_kernel_tick_;
-  int32_t bytes_per_page_;
 
   std::string proc_base_path_;
 };

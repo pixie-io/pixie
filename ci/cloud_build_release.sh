@@ -45,31 +45,40 @@ prod="False"
 parse_args "$@"
 
 repo_path=$(pwd)
-image_tag=$(date +%s)
+
+if [[ -z "${TAG_NAME}" ]]; then
+  image_tag=$(date +%s)
+else
+  image_tag=$(echo "${TAG_NAME}" | awk -F/ '{print $NF}')
+fi
 
 echo "The image tag is: ${image_tag}"
 
 # We are building the OSS images/YAMLs. In this case, we only want to push the images but not deploy the YAMLs.
-# TODO(vihang): Generating the licenses requires Github credentials which are not included in the OSS repo. Re-enable
-# stamping once this is resolved.
 if [[ "$PUBLIC" == "true" ]]; then
-  bazel run -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --define BUNDLE_VERSION="${image_tag}" \
+  bazel run --stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --define BUNDLE_VERSION="${image_tag}" \
       --define public=True //k8s/cloud:cloud_images_push
+
+  gsutil cp "${repo_path}/bazel-bin/tools/licenses/all_licenses.json" "gs://pixie-dev-public/oss-licenses/${image_tag}.json"
+  gsutil cp "${repo_path}/bazel-bin/tools/licenses/all_licenses.json" "gs://pixie-dev-public/oss-licenses/latest.json"
+
+  bazel run --stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --define BUNDLE_VERSION="${image_tag}" \
+      //src/cloud/plugin/load_db:push_plugin_db_updater_image
+  bazel run --stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --define BUNDLE_VERSION="latest" \
+      //src/cloud/plugin/load_db:push_plugin_db_updater_image
   exit 0
 fi
 
 bazel run --stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --define BUNDLE_VERSION="${image_tag}" \
-    --stamp --define prod="${prod}" //k8s/cloud:cloud_images_push
+    --define prod="${prod}" //k8s/cloud:cloud_images_push
 
 yaml_path="${repo_path}/bazel-bin/k8s/cloud/pixie_staging_cloud.yaml"
 # Build prod YAMLs.
 if [[ "$RELEASE" == "true" ]]; then
   yaml_path="${repo_path}/bazel-bin/k8s/cloud/pixie_prod_cloud.yaml"
-  bazel build --stamp -c opt --define BUNDLE_VERSION="${image_tag}" \
-    --stamp //k8s/cloud:prod_cloud_yamls
+  bazel build --stamp -c opt --define BUNDLE_VERSION="${image_tag}" //k8s/cloud:prod_cloud_yamls
 else # Build staging YAMLs.
-  bazel build --stamp -c opt --define BUNDLE_VERSION="${image_tag}" \
-    --stamp //k8s/cloud:staging_cloud_yamls
+  bazel build --stamp -c opt --define BUNDLE_VERSION="${image_tag}" //k8s/cloud:staging_cloud_yamls
 fi
 
 kubectl apply -f "$yaml_path"

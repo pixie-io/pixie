@@ -38,7 +38,7 @@
 #include "src/carnot/udf/base.h"
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
-#include "src/common/base/test_utils.h"
+#include "src/common/testing/testing.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/types.h"
 #include "src/table_store/table_store.h"
@@ -75,7 +75,8 @@ class BaseExecGraphTest : public ::testing::Test {
 
     auto table_store = std::make_shared<table_store::TableStore>();
     exec_state_ = std::make_unique<ExecState>(func_registry_.get(), table_store,
-                                              MockResultSinkStubGenerator, sole::uuid4(), nullptr);
+                                              MockResultSinkStubGenerator, MockMetricsStubGenerator,
+                                              MockTraceStubGenerator, sole::uuid4(), nullptr);
   }
 
   std::unique_ptr<udf::Registry> func_registry_;
@@ -172,7 +173,8 @@ TEST_P(ExecGraphExecuteTest, execute) {
   auto table_store = std::make_shared<table_store::TableStore>();
   table_store->AddTable("numbers", table);
   auto exec_state_ = std::make_unique<ExecState>(
-      func_registry_.get(), table_store, MockResultSinkStubGenerator, sole::uuid4(), nullptr);
+      func_registry_.get(), table_store, MockResultSinkStubGenerator, MockMetricsStubGenerator,
+      MockTraceStubGenerator, sole::uuid4(), nullptr);
 
   EXPECT_OK(exec_state_->AddScalarUDF(
       0, "add", std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64})));
@@ -189,18 +191,11 @@ TEST_P(ExecGraphExecuteTest, execute) {
   auto output_table = exec_state_->table_store()->GetTable("output");
   std::vector<types::Float64Value> out_in1 = {4.8, 16.4, 26.4};
   std::vector<types::Float64Value> out_in2 = {14.8, 12.4};
-  auto slice = output_table->FirstBatch();
-  EXPECT_TRUE(
-      output_table->GetRowBatchSlice(slice, std::vector<int64_t>({0}), arrow::default_memory_pool())
-          .ConsumeValueOrDie()
-          ->ColumnAt(0)
-          ->Equals(types::ToArrow(out_in1, arrow::default_memory_pool())));
-  slice = output_table->NextBatch(slice);
-  EXPECT_TRUE(
-      output_table->GetRowBatchSlice(slice, std::vector<int64_t>({0}), arrow::default_memory_pool())
-          .ConsumeValueOrDie()
-          ->ColumnAt(0)
-          ->Equals(types::ToArrow(out_in2, arrow::default_memory_pool())));
+  table_store::Table::Cursor cursor(output_table);
+  EXPECT_TRUE(cursor.GetNextRowBatch({0}).ConsumeValueOrDie()->ColumnAt(0)->Equals(
+      types::ToArrow(out_in1, arrow::default_memory_pool())));
+  EXPECT_TRUE(cursor.GetNextRowBatch({0}).ConsumeValueOrDie()->ColumnAt(0)->Equals(
+      types::ToArrow(out_in2, arrow::default_memory_pool())));
 }
 
 std::vector<std::tuple<int32_t>> calls_to_execute = {
@@ -259,7 +254,8 @@ TEST_F(ExecGraphTest, execute_time) {
   table_store->AddTable("numbers", table);
 
   auto exec_state_ = std::make_unique<ExecState>(
-      func_registry.get(), table_store, MockResultSinkStubGenerator, sole::uuid4(), nullptr);
+      func_registry.get(), table_store, MockResultSinkStubGenerator, MockMetricsStubGenerator,
+      MockTraceStubGenerator, sole::uuid4(), nullptr);
 
   EXPECT_OK(exec_state_->AddScalarUDF(
       0, "add", std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64})));
@@ -276,18 +272,11 @@ TEST_F(ExecGraphTest, execute_time) {
   auto output_table = exec_state_->table_store()->GetTable("output");
   std::vector<types::Float64Value> out_in1 = {4.8, 16.4, 26.4};
   std::vector<types::Float64Value> out_in2 = {14.8, 12.4};
-  auto slice = output_table->FirstBatch();
-  EXPECT_TRUE(
-      output_table->GetRowBatchSlice(slice, std::vector<int64_t>({0}), arrow::default_memory_pool())
-          .ConsumeValueOrDie()
-          ->ColumnAt(0)
-          ->Equals(types::ToArrow(out_in1, arrow::default_memory_pool())));
-  slice = output_table->NextBatch(slice);
-  EXPECT_TRUE(
-      output_table->GetRowBatchSlice(slice, std::vector<int64_t>({0}), arrow::default_memory_pool())
-          .ConsumeValueOrDie()
-          ->ColumnAt(0)
-          ->Equals(types::ToArrow(out_in2, arrow::default_memory_pool())));
+  table_store::Table::Cursor cursor(output_table);
+  EXPECT_TRUE(cursor.GetNextRowBatch({0}).ConsumeValueOrDie()->ColumnAt(0)->Equals(
+      types::ToArrow(out_in1, arrow::default_memory_pool())));
+  EXPECT_TRUE(cursor.GetNextRowBatch({0}).ConsumeValueOrDie()->ColumnAt(0)->Equals(
+      types::ToArrow(out_in2, arrow::default_memory_pool())));
 }
 
 TEST_F(ExecGraphTest, two_limits_dont_interfere) {
@@ -332,7 +321,8 @@ TEST_F(ExecGraphTest, two_limits_dont_interfere) {
   auto table_store = std::make_shared<table_store::TableStore>();
   table_store->AddTable("numbers", table);
   auto exec_state_ = std::make_unique<ExecState>(
-      func_registry_.get(), table_store, MockResultSinkStubGenerator, sole::uuid4(), nullptr);
+      func_registry_.get(), table_store, MockResultSinkStubGenerator, MockMetricsStubGenerator,
+      MockTraceStubGenerator, sole::uuid4(), nullptr);
 
   ExecutionGraph e;
   auto s = e.Init(schema.get(), plan_state.get(), exec_state_.get(), plan_fragment_.get(),
@@ -345,16 +335,11 @@ TEST_F(ExecGraphTest, two_limits_dont_interfere) {
   std::vector<types::Int64Value> out_col1 = {1, 2};
   std::vector<types::BoolValue> out_col2 = {true, false};
   std::vector<types::Float64Value> out_col3 = {1.4, 6.2};
-  auto out_rb1 =
-      output_table1
-          ->GetRowBatchSlice(output_table1->FirstBatch(), std::vector<int64_t>({0, 1, 2}),
-                             arrow::default_memory_pool())
-          .ConsumeValueOrDie();
-  auto out_rb2 =
-      output_table2
-          ->GetRowBatchSlice(output_table2->FirstBatch(), std::vector<int64_t>({0, 1, 2}),
-                             arrow::default_memory_pool())
-          .ConsumeValueOrDie();
+  table_store::Table::Cursor cursor1(output_table1);
+  table_store::Table::Cursor cursor2(output_table2);
+
+  auto out_rb1 = cursor1.GetNextRowBatch(std::vector<int64_t>({0, 1, 2})).ConsumeValueOrDie();
+  auto out_rb2 = cursor2.GetNextRowBatch(std::vector<int64_t>({0, 1, 2})).ConsumeValueOrDie();
   EXPECT_TRUE(out_rb1->ColumnAt(0)->Equals(types::ToArrow(out_col1, arrow::default_memory_pool())));
   EXPECT_TRUE(out_rb1->ColumnAt(1)->Equals(types::ToArrow(out_col2, arrow::default_memory_pool())));
   EXPECT_TRUE(out_rb1->ColumnAt(2)->Equals(types::ToArrow(out_col3, arrow::default_memory_pool())));
@@ -404,7 +389,8 @@ TEST_F(ExecGraphTest, limit_w_multiple_srcs) {
   auto table_store = std::make_shared<table_store::TableStore>();
   table_store->AddTable("numbers", table);
   auto exec_state_ = std::make_unique<ExecState>(
-      func_registry_.get(), table_store, MockResultSinkStubGenerator, sole::uuid4(), nullptr);
+      func_registry_.get(), table_store, MockResultSinkStubGenerator, MockMetricsStubGenerator,
+      MockTraceStubGenerator, sole::uuid4(), nullptr);
 
   ExecutionGraph e;
   auto s = e.Init(schema.get(), plan_state.get(), exec_state_.get(), plan_fragment_.get(),
@@ -416,10 +402,8 @@ TEST_F(ExecGraphTest, limit_w_multiple_srcs) {
   std::vector<types::Int64Value> out_col1 = {1, 2};
   std::vector<types::BoolValue> out_col2 = {true, false};
   std::vector<types::Float64Value> out_col3 = {1.4, 6.2};
-  auto out_rb = output_table
-                    ->GetRowBatchSlice(output_table->FirstBatch(), std::vector<int64_t>({0, 1, 2}),
-                                       arrow::default_memory_pool())
-                    .ConsumeValueOrDie();
+  table_store::Table::Cursor cursor(output_table);
+  auto out_rb = cursor.GetNextRowBatch(std::vector<int64_t>({0, 1, 2})).ConsumeValueOrDie();
   EXPECT_TRUE(out_rb->ColumnAt(0)->Equals(types::ToArrow(out_col1, arrow::default_memory_pool())));
   EXPECT_TRUE(out_rb->ColumnAt(1)->Equals(types::ToArrow(out_col2, arrow::default_memory_pool())));
   EXPECT_TRUE(out_rb->ColumnAt(2)->Equals(types::ToArrow(out_col3, arrow::default_memory_pool())));
@@ -467,7 +451,8 @@ TEST_F(ExecGraphTest, two_sequential_limits) {
   auto table_store = std::make_shared<table_store::TableStore>();
   table_store->AddTable("numbers", table);
   auto exec_state_ = std::make_unique<ExecState>(
-      func_registry_.get(), table_store, MockResultSinkStubGenerator, sole::uuid4(), nullptr);
+      func_registry_.get(), table_store, MockResultSinkStubGenerator, MockMetricsStubGenerator,
+      MockTraceStubGenerator, sole::uuid4(), nullptr);
 
   ExecutionGraph e;
   auto s = e.Init(schema.get(), plan_state.get(), exec_state_.get(), plan_fragment_.get(),
@@ -479,10 +464,8 @@ TEST_F(ExecGraphTest, two_sequential_limits) {
   std::vector<types::Int64Value> out_col1 = {1, 2};
   std::vector<types::BoolValue> out_col2 = {true, false};
   std::vector<types::Float64Value> out_col3 = {1.4, 6.2};
-  auto out_rb = output_table
-                    ->GetRowBatchSlice(output_table->FirstBatch(), std::vector<int64_t>({0, 1, 2}),
-                                       arrow::default_memory_pool())
-                    .ConsumeValueOrDie();
+  table_store::Table::Cursor cursor(output_table);
+  auto out_rb = cursor.GetNextRowBatch({0, 1, 2}).ConsumeValueOrDie();
   EXPECT_TRUE(out_rb->ColumnAt(0)->Equals(types::ToArrow(out_col1, arrow::default_memory_pool())));
   EXPECT_TRUE(out_rb->ColumnAt(1)->Equals(types::ToArrow(out_col2, arrow::default_memory_pool())));
   EXPECT_TRUE(out_rb->ColumnAt(2)->Equals(types::ToArrow(out_col3, arrow::default_memory_pool())));
@@ -531,7 +514,8 @@ TEST_F(ExecGraphTest, execute_with_two_limits) {
   auto table_store = std::make_shared<table_store::TableStore>();
   table_store->AddTable("numbers", table);
   auto exec_state_ = std::make_unique<ExecState>(
-      func_registry_.get(), table_store, MockResultSinkStubGenerator, sole::uuid4(), nullptr);
+      func_registry_.get(), table_store, MockResultSinkStubGenerator, MockMetricsStubGenerator,
+      MockTraceStubGenerator, sole::uuid4(), nullptr);
 
   ExecutionGraph e;
   auto s = e.Init(schema.get(), plan_state.get(), exec_state_.get(), plan_fragment_.get(),
@@ -542,18 +526,12 @@ TEST_F(ExecGraphTest, execute_with_two_limits) {
   auto output_table_1 = exec_state_->table_store()->GetTable("output1");
   auto output_table_2 = exec_state_->table_store()->GetTable("output2");
   std::vector<types::Float64Value> out_in1 = {1.4, 6.2};
-  EXPECT_TRUE(output_table_1
-                  ->GetRowBatchSlice(output_table_1->FirstBatch(), std::vector<int64_t>({2}),
-                                     arrow::default_memory_pool())
-                  .ConsumeValueOrDie()
-                  ->ColumnAt(0)
-                  ->Equals(types::ToArrow(out_in1, arrow::default_memory_pool())));
-  EXPECT_TRUE(output_table_2
-                  ->GetRowBatchSlice(output_table_2->FirstBatch(), std::vector<int64_t>({2}),
-                                     arrow::default_memory_pool())
-                  .ConsumeValueOrDie()
-                  ->ColumnAt(0)
-                  ->Equals(types::ToArrow(out_in1, arrow::default_memory_pool())));
+  table_store::Table::Cursor cursor1(output_table_1);
+  EXPECT_TRUE(cursor1.GetNextRowBatch({2}).ConsumeValueOrDie()->ColumnAt(0)->Equals(
+      types::ToArrow(out_in1, arrow::default_memory_pool())));
+  table_store::Table::Cursor cursor2(output_table_2);
+  EXPECT_TRUE(cursor2.GetNextRowBatch({2}).ConsumeValueOrDie()->ColumnAt(0)->Equals(
+      types::ToArrow(out_in1, arrow::default_memory_pool())));
 }
 
 class YieldingExecGraphTest : public BaseExecGraphTest {
@@ -722,9 +700,9 @@ class GRPCExecGraphTest : public ::testing::Test {
     func_registry_->RegisterOrDie<MultiplyUDF>("multiply");
 
     auto table_store = std::make_shared<table_store::TableStore>();
-    exec_state_ =
-        std::make_unique<ExecState>(func_registry_.get(), table_store, MockResultSinkStubGenerator,
-                                    sole::uuid4(), nullptr, grpc_router_.get());
+    exec_state_ = std::make_unique<ExecState>(
+        func_registry_.get(), table_store, MockResultSinkStubGenerator, MockMetricsStubGenerator,
+        MockTraceStubGenerator, sole::uuid4(), nullptr, grpc_router_.get());
   }
 
   void SetUpPlanFragment() {

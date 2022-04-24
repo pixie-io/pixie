@@ -31,6 +31,8 @@ import { onError } from '@apollo/client/link/error';
 import { CachePersistor } from 'apollo3-cache-persist';
 import fetch from 'cross-fetch';
 
+import { GQLClusterConnectionInfo } from 'app/types/schema';
+
 import { GetCSRFCookie } from '../pages/auth/utils';
 import { PixieAPIClientOptions } from './api-options';
 
@@ -61,14 +63,7 @@ const loginRedirectLink = (on401: (errorMessage?: string) => void) => onError(({
   }
 });
 
-export interface ClusterConnection {
-  ipAddress: string;
-  token: string;
-}
-
-export interface GetClusterConnResults {
-  clusterConnection: ClusterConnection;
-}
+export type ClusterConnectionInfo = Pick<GQLClusterConnectionInfo, 'token'>;
 
 /**
  * Uses localStorage if it's available; uses an in-memory Map otherwise.
@@ -230,18 +225,17 @@ export class CloudClient {
   /**
    * Implementation detail for forming a connection to a cluster for health check and script execution requests.
    */
-  async getClusterConnection(id: string, noCache = false): Promise<ClusterConnection> {
-    const { data } = await this.graphQL.query<GetClusterConnResults>({
+  async getClusterConnection(id: string): Promise<ClusterConnectionInfo> {
+    const { data } = await this.graphQL.query<{ clusterConnection: ClusterConnectionInfo }>({
       query: gql`
         query GetClusterConnection($id: ID!) {
           clusterConnection(id: $id) {
-            ipAddress
             token
           }
         }
       `,
       variables: { id },
-      fetchPolicy: noCache ? 'network-only' : 'cache-first',
+      fetchPolicy: 'network-only',
     });
     return data.clusterConnection;
   }

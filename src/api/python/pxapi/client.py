@@ -20,7 +20,6 @@ import grpc.aio
 import warnings
 from typing import AsyncGenerator, Awaitable, Callable, cast, \
     Dict, Generator, List, Literal, Union, Set
-from urllib.parse import urlparse
 
 from src.api.proto.vizierpb import vizierapi_pb2 as vpb
 from src.api.proto.vizierpb import vizierapi_pb2_grpc
@@ -114,7 +113,6 @@ class Conn:
             use_encryption: bool = True,
             cluster_info: cpb.ClusterInfo = None,
             channel_fn: Callable[[str], grpc.aio.Channel] = None,
-            direct: bool = False,
     ):
         self.token = token
         self.url = pixie_url
@@ -124,9 +122,6 @@ class Conn:
         self._channel_fn = channel_fn
 
         self._channel_cache: grpc.aio.Channel = None
-
-        # Whether the connection is direct connection or not.
-        self._direct = direct
 
         self._use_encryption = use_encryption
 
@@ -147,9 +142,6 @@ class Conn:
         if self._channel_fn:
             return self._channel_fn(self.url)
         creds = grpc.ssl_channel_credentials()
-        if self._direct:
-            tok = grpc.access_token_call_credentials(self.token)
-            creds = grpc.composite_channel_credentials(creds, tok)
         return grpc.aio.secure_channel(self.url, creds)
 
     def name(self) -> str:
@@ -592,23 +584,6 @@ class Client:
             channel_fn=self._conn_channel_fn,
         )
 
-    def _create_direct_connection(
-        self,
-        cluster_id: ClusterID,
-        cluster_info: cpb.ClusterInfo,
-    ) -> Conn:
-        resp = self._get_cluster_connection_info(cluster_id)
-        token, cluster_url = resp.token, urlparse(resp.ipAddress).netloc
-        return Conn(
-            token,
-            cluster_url,
-            cluster_id,
-            self._use_encryption,
-            cluster_info=cluster_info,
-            channel_fn=self._conn_channel_fn,
-            direct=True,
-        )
-
     def connect_to_cluster(self,
                            cluster: Union[ClusterID, Cluster]
                            ) -> Conn:
@@ -627,7 +602,4 @@ class Client:
             raise ValueError("Unexpected type for 'cluster': ", type(cluster))
 
         cluster_info = self._get_cluster_info(cluster_id)
-        if cluster_info.config.passthrough_enabled:
-            return self._create_passthrough_conn(cluster_id, cluster_info)
-        else:
-            return self._create_direct_connection(cluster_id, cluster_info)
+        return self._create_passthrough_conn(cluster_id, cluster_info)

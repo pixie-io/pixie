@@ -26,7 +26,6 @@
 #include <sstream>
 
 #include "src/common/fs/fs_wrapper.h"
-#include "src/common/system/config_mock.h"
 #include "src/common/testing/test_environment.h"
 #include "src/common/testing/testing.h"
 
@@ -52,23 +51,15 @@ std::string GetPathToTestDataFile(std::string_view fname) {
 
 class ProcParserTest : public ::testing::Test {
  protected:
-  ProcParserTest() : proc_path_(GetPathToTestDataFile("testdata/proc")) {}
-
   void SetUp() override {
-    system::MockConfig sysconfig;
-
-    EXPECT_CALL(sysconfig, HasConfig()).WillRepeatedly(Return(true));
-    EXPECT_CALL(sysconfig, PageSize()).WillRepeatedly(Return(4096));
-    EXPECT_CALL(sysconfig, KernelTicksPerSecond()).WillRepeatedly(Return(10000000));
-    EXPECT_CALL(sysconfig, ConvertToRealTime(_)).WillRepeatedly(ReturnArg<0>());
-    EXPECT_CALL(sysconfig, proc_path()).WillRepeatedly(ReturnRef(proc_path_));
-    parser_ = std::make_unique<ProcParser>(sysconfig);
-    bytes_per_page_ = sysconfig.PageSize();
+    parser_ = std::make_unique<ProcParser>(GetPathToTestDataFile("testdata/proc"));
+    bytes_per_page_ = 4096;
+    kernel_tick_time_ns_ = 100;
   }
 
-  std::filesystem::path proc_path_;
   std::unique_ptr<ProcParser> parser_;
   int bytes_per_page_ = 0;
+  int kernel_tick_time_ns_ = 0;
 };
 
 TEST_F(ProcParserTest, ParseNetworkStat) {
@@ -100,7 +91,7 @@ TEST_F(ProcParserTest, ParseStatIO) {
 
 TEST_F(ProcParserTest, ParsePidStat) {
   ProcParser::ProcessStats stats;
-  PL_CHECK_OK(parser_->ParseProcPIDStat(123, &stats));
+  PL_CHECK_OK(parser_->ParseProcPIDStat(123, bytes_per_page_, kernel_tick_time_ns_, &stats));
 
   // The expeted values are from the test file above.
   EXPECT_EQ("ibazel", stats.process_name);
@@ -114,6 +105,11 @@ TEST_F(ProcParserTest, ParsePidStat) {
 
   EXPECT_EQ(114384896, stats.vsize_bytes);
   EXPECT_EQ(2577 * bytes_per_page_, stats.rss_bytes);
+}
+
+TEST_F(ProcParserTest, ParsePSS) {
+  const size_t pss_bytes = parser_->ParseProcPIDPss(123).ConsumeValueOrDie();
+  EXPECT_EQ(pss_bytes, 5936128);
 }
 
 TEST_F(ProcParserTest, ParseStat) {

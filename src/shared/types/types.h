@@ -24,6 +24,7 @@
 #include <array>
 #include <cstdint>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -322,7 +323,7 @@ struct ValueTypeTraits<UInt128Value> {
   using arrow_type = arrow::UInt128Type;
   using arrow_builder_type = arrow::UInt128Builder;
   using arrow_array_type = arrow::UInt128Type;
-  using native_type = int64_t;
+  using native_type = absl::uint128;
 };
 
 template <>
@@ -415,11 +416,14 @@ struct DataTypeTraits<DataType::STRING> {
 template <>
 struct DataTypeTraits<DataType::TIME64NS> {
   using value_type = Time64NSValue;
-  using arrow_type = arrow::Int64Type;
-  using arrow_builder_type = arrow::Int64Builder;
-  using arrow_array_type = arrow::Int64Array;
+  using arrow_type = arrow::Time64Type;
+  using arrow_builder_type = arrow::Time64Builder;
+  using arrow_array_type = arrow::Time64Array;
   using native_type = int64_t;
-  static constexpr arrow::Type::type arrow_type_id = arrow::Type::INT64;
+  static inline std::shared_ptr<arrow::DataType> default_value() {
+    return arrow::time64(arrow::TimeUnit::NANO);
+  }
+  static constexpr arrow::Type::type arrow_type_id = arrow::Type::TIME64;
 };
 
 }  // namespace types

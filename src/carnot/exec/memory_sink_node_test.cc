@@ -51,7 +51,8 @@ class MemorySinkNodeTest : public ::testing::Test {
 
     auto table_store = std::make_shared<table_store::TableStore>();
     exec_state_ = std::make_unique<ExecState>(func_registry_.get(), table_store,
-                                              MockResultSinkStubGenerator, sole::uuid4(), nullptr);
+                                              MockResultSinkStubGenerator, MockMetricsStubGenerator,
+                                              MockTraceStubGenerator, sole::uuid4(), nullptr);
   }
 
  protected:
@@ -84,8 +85,8 @@ TEST_F(MemorySinkNodeTest, basic) {
                      false, 0);
 
   auto table = exec_state_->table_store()->GetTable("cpu_15s");
-  auto slice = table->FirstBatch();
-  auto batch_or_s = table->GetRowBatchSlice(slice, {0, 1}, arrow::default_memory_pool());
+  table_store::Table::Cursor cursor(table);
+  auto batch_or_s = cursor.GetNextRowBatch({0, 1});
   EXPECT_OK(batch_or_s);
   auto batch = batch_or_s.ConsumeValueOrDie();
   EXPECT_EQ(types::DataType::INT64, batch->desc().type(0));
@@ -102,8 +103,9 @@ TEST_F(MemorySinkNodeTest, basic) {
                    false, 0)
       .Close();
 
-  slice = table->NextBatch(slice);
-  batch_or_s = table->GetRowBatchSlice(slice, {0, 1}, arrow::default_memory_pool());
+  // Update stop spec of the cursor to include the new row batch.
+  cursor.UpdateStopSpec(table_store::Table::Cursor::StopSpec{});
+  batch_or_s = cursor.GetNextRowBatch({0, 1});
   EXPECT_OK(batch_or_s);
   batch = batch_or_s.ConsumeValueOrDie();
   EXPECT_TRUE(batch->ColumnAt(0)->Equals(col1_rb2_arrow));
@@ -145,8 +147,8 @@ TEST_F(MemorySinkNodeTest, zero_row_row_batch_not_eos) {
       .Close();
 
   auto table = exec_state_->table_store()->GetTable("cpu_15s");
-  auto slice = table->FirstBatch();
-  auto batch_or_s = table->GetRowBatchSlice(slice, {0, 1}, arrow::default_memory_pool());
+  table_store::Table::Cursor cursor(table);
+  auto batch_or_s = cursor.GetNextRowBatch({0, 1});
   EXPECT_OK(batch_or_s);
   auto batch = batch_or_s.ConsumeValueOrDie();
   EXPECT_TRUE(batch->ColumnAt(0)->Equals(col1_rb2_arrow));

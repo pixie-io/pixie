@@ -246,7 +246,8 @@ func (m *VizierClusterInfo) GetVizierVersion() string {
 }
 
 type RegisterVizierAck struct {
-	Status RegisterVizierAck_RegistrationStatus `protobuf:"varint,1,opt,name=status,proto3,enum=px.cvmsgspb.RegisterVizierAck_RegistrationStatus" json:"status,omitempty"`
+	Status     RegisterVizierAck_RegistrationStatus `protobuf:"varint,1,opt,name=status,proto3,enum=px.cvmsgspb.RegisterVizierAck_RegistrationStatus" json:"status,omitempty"`
+	VizierName string                               `protobuf:"bytes,2,opt,name=vizier_name,json=vizierName,proto3" json:"vizier_name,omitempty"`
 }
 
 func (m *RegisterVizierAck) Reset()      { *m = RegisterVizierAck{} }
@@ -286,6 +287,13 @@ func (m *RegisterVizierAck) GetStatus() RegisterVizierAck_RegistrationStatus {
 		return m.Status
 	}
 	return ST_UNKNOWN
+}
+
+func (m *RegisterVizierAck) GetVizierName() string {
+	if m != nil {
+		return m.VizierName
+	}
+	return ""
 }
 
 type VizierHeartbeat struct {
@@ -1239,100 +1247,6 @@ func (m *VizierConnectionInfo) GetToken() string {
 	return ""
 }
 
-type VizierSSLCertRequest struct {
-	VizierID *uuidpb.UUID `protobuf:"bytes,1,opt,name=vizier_id,json=vizierId,proto3" json:"vizier_id,omitempty"`
-}
-
-func (m *VizierSSLCertRequest) Reset()      { *m = VizierSSLCertRequest{} }
-func (*VizierSSLCertRequest) ProtoMessage() {}
-func (*VizierSSLCertRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5a48c2306678667b, []int{16}
-}
-func (m *VizierSSLCertRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *VizierSSLCertRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_VizierSSLCertRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *VizierSSLCertRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_VizierSSLCertRequest.Merge(m, src)
-}
-func (m *VizierSSLCertRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *VizierSSLCertRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_VizierSSLCertRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_VizierSSLCertRequest proto.InternalMessageInfo
-
-func (m *VizierSSLCertRequest) GetVizierID() *uuidpb.UUID {
-	if m != nil {
-		return m.VizierID
-	}
-	return nil
-}
-
-type VizierSSLCertResponse struct {
-	Key  string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	Cert string `protobuf:"bytes,2,opt,name=cert,proto3" json:"cert,omitempty"`
-}
-
-func (m *VizierSSLCertResponse) Reset()      { *m = VizierSSLCertResponse{} }
-func (*VizierSSLCertResponse) ProtoMessage() {}
-func (*VizierSSLCertResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5a48c2306678667b, []int{17}
-}
-func (m *VizierSSLCertResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *VizierSSLCertResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_VizierSSLCertResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *VizierSSLCertResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_VizierSSLCertResponse.Merge(m, src)
-}
-func (m *VizierSSLCertResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *VizierSSLCertResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_VizierSSLCertResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_VizierSSLCertResponse proto.InternalMessageInfo
-
-func (m *VizierSSLCertResponse) GetKey() string {
-	if m != nil {
-		return m.Key
-	}
-	return ""
-}
-
-func (m *VizierSSLCertResponse) GetCert() string {
-	if m != nil {
-		return m.Cert
-	}
-	return ""
-}
-
 type VLogMessage struct {
 	Data []byte `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
 }
@@ -1340,7 +1254,7 @@ type VLogMessage struct {
 func (m *VLogMessage) Reset()      { *m = VLogMessage{} }
 func (*VLogMessage) ProtoMessage() {}
 func (*VLogMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5a48c2306678667b, []int{18}
+	return fileDescriptor_5a48c2306678667b, []int{16}
 }
 func (m *VLogMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1391,7 +1305,7 @@ type C2VAPIStreamRequest struct {
 func (m *C2VAPIStreamRequest) Reset()      { *m = C2VAPIStreamRequest{} }
 func (*C2VAPIStreamRequest) ProtoMessage() {}
 func (*C2VAPIStreamRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5a48c2306678667b, []int{19}
+	return fileDescriptor_5a48c2306678667b, []int{17}
 }
 func (m *C2VAPIStreamRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1522,7 +1436,7 @@ type C2VAPIStreamCancel struct {
 func (m *C2VAPIStreamCancel) Reset()      { *m = C2VAPIStreamCancel{} }
 func (*C2VAPIStreamCancel) ProtoMessage() {}
 func (*C2VAPIStreamCancel) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5a48c2306678667b, []int{20}
+	return fileDescriptor_5a48c2306678667b, []int{18}
 }
 func (m *C2VAPIStreamCancel) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1565,7 +1479,7 @@ type V2CAPIStreamResponse struct {
 func (m *V2CAPIStreamResponse) Reset()      { *m = V2CAPIStreamResponse{} }
 func (*V2CAPIStreamResponse) ProtoMessage() {}
 func (*V2CAPIStreamResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5a48c2306678667b, []int{21}
+	return fileDescriptor_5a48c2306678667b, []int{19}
 }
 func (m *V2CAPIStreamResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1693,7 +1607,7 @@ type V2CMessage struct {
 func (m *V2CMessage) Reset()      { *m = V2CMessage{} }
 func (*V2CMessage) ProtoMessage() {}
 func (*V2CMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5a48c2306678667b, []int{22}
+	return fileDescriptor_5a48c2306678667b, []int{20}
 }
 func (m *V2CMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1758,7 +1672,7 @@ type C2VMessage struct {
 func (m *C2VMessage) Reset()      { *m = C2VMessage{} }
 func (*C2VMessage) ProtoMessage() {}
 func (*C2VMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5a48c2306678667b, []int{23}
+	return fileDescriptor_5a48c2306678667b, []int{21}
 }
 func (m *C2VMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1801,6 +1715,510 @@ func (m *C2VMessage) GetMsg() *types.Any {
 	return nil
 }
 
+type CronScript struct {
+	ID             *uuidpb.UUID `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Script         string       `protobuf:"bytes,2,opt,name=script,proto3" json:"script,omitempty"`
+	CronExpression string       `protobuf:"bytes,3,opt,name=cron_expression,json=cronExpression,proto3" json:"cron_expression,omitempty"`
+	Configs        string       `protobuf:"bytes,4,opt,name=configs,proto3" json:"configs,omitempty"`
+	FrequencyS     int64        `protobuf:"varint,5,opt,name=frequency_s,json=frequencyS,proto3" json:"frequency_s,omitempty"`
+}
+
+func (m *CronScript) Reset()      { *m = CronScript{} }
+func (*CronScript) ProtoMessage() {}
+func (*CronScript) Descriptor() ([]byte, []int) {
+	return fileDescriptor_5a48c2306678667b, []int{22}
+}
+func (m *CronScript) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *CronScript) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_CronScript.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *CronScript) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CronScript.Merge(m, src)
+}
+func (m *CronScript) XXX_Size() int {
+	return m.Size()
+}
+func (m *CronScript) XXX_DiscardUnknown() {
+	xxx_messageInfo_CronScript.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CronScript proto.InternalMessageInfo
+
+func (m *CronScript) GetID() *uuidpb.UUID {
+	if m != nil {
+		return m.ID
+	}
+	return nil
+}
+
+func (m *CronScript) GetScript() string {
+	if m != nil {
+		return m.Script
+	}
+	return ""
+}
+
+func (m *CronScript) GetCronExpression() string {
+	if m != nil {
+		return m.CronExpression
+	}
+	return ""
+}
+
+func (m *CronScript) GetConfigs() string {
+	if m != nil {
+		return m.Configs
+	}
+	return ""
+}
+
+func (m *CronScript) GetFrequencyS() int64 {
+	if m != nil {
+		return m.FrequencyS
+	}
+	return 0
+}
+
+type GetCronScriptsChecksumRequest struct {
+	Topic string `protobuf:"bytes,1,opt,name=topic,proto3" json:"topic,omitempty"`
+}
+
+func (m *GetCronScriptsChecksumRequest) Reset()      { *m = GetCronScriptsChecksumRequest{} }
+func (*GetCronScriptsChecksumRequest) ProtoMessage() {}
+func (*GetCronScriptsChecksumRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_5a48c2306678667b, []int{23}
+}
+func (m *GetCronScriptsChecksumRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetCronScriptsChecksumRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetCronScriptsChecksumRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetCronScriptsChecksumRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetCronScriptsChecksumRequest.Merge(m, src)
+}
+func (m *GetCronScriptsChecksumRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetCronScriptsChecksumRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetCronScriptsChecksumRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetCronScriptsChecksumRequest proto.InternalMessageInfo
+
+func (m *GetCronScriptsChecksumRequest) GetTopic() string {
+	if m != nil {
+		return m.Topic
+	}
+	return ""
+}
+
+type GetCronScriptsChecksumResponse struct {
+	Checksum string `protobuf:"bytes,1,opt,name=checksum,proto3" json:"checksum,omitempty"`
+}
+
+func (m *GetCronScriptsChecksumResponse) Reset()      { *m = GetCronScriptsChecksumResponse{} }
+func (*GetCronScriptsChecksumResponse) ProtoMessage() {}
+func (*GetCronScriptsChecksumResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_5a48c2306678667b, []int{24}
+}
+func (m *GetCronScriptsChecksumResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetCronScriptsChecksumResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetCronScriptsChecksumResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetCronScriptsChecksumResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetCronScriptsChecksumResponse.Merge(m, src)
+}
+func (m *GetCronScriptsChecksumResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetCronScriptsChecksumResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetCronScriptsChecksumResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetCronScriptsChecksumResponse proto.InternalMessageInfo
+
+func (m *GetCronScriptsChecksumResponse) GetChecksum() string {
+	if m != nil {
+		return m.Checksum
+	}
+	return ""
+}
+
+type GetCronScriptsRequest struct {
+	Topic string `protobuf:"bytes,1,opt,name=topic,proto3" json:"topic,omitempty"`
+}
+
+func (m *GetCronScriptsRequest) Reset()      { *m = GetCronScriptsRequest{} }
+func (*GetCronScriptsRequest) ProtoMessage() {}
+func (*GetCronScriptsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_5a48c2306678667b, []int{25}
+}
+func (m *GetCronScriptsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetCronScriptsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetCronScriptsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetCronScriptsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetCronScriptsRequest.Merge(m, src)
+}
+func (m *GetCronScriptsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetCronScriptsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetCronScriptsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetCronScriptsRequest proto.InternalMessageInfo
+
+func (m *GetCronScriptsRequest) GetTopic() string {
+	if m != nil {
+		return m.Topic
+	}
+	return ""
+}
+
+type GetCronScriptsResponse struct {
+	Scripts map[string]*CronScript `protobuf:"bytes,1,rep,name=scripts,proto3" json:"scripts,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+}
+
+func (m *GetCronScriptsResponse) Reset()      { *m = GetCronScriptsResponse{} }
+func (*GetCronScriptsResponse) ProtoMessage() {}
+func (*GetCronScriptsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_5a48c2306678667b, []int{26}
+}
+func (m *GetCronScriptsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetCronScriptsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetCronScriptsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetCronScriptsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetCronScriptsResponse.Merge(m, src)
+}
+func (m *GetCronScriptsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetCronScriptsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetCronScriptsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetCronScriptsResponse proto.InternalMessageInfo
+
+func (m *GetCronScriptsResponse) GetScripts() map[string]*CronScript {
+	if m != nil {
+		return m.Scripts
+	}
+	return nil
+}
+
+type RegisterOrUpdateCronScriptRequest struct {
+	Script *CronScript `protobuf:"bytes,1,opt,name=script,proto3" json:"script,omitempty"`
+}
+
+func (m *RegisterOrUpdateCronScriptRequest) Reset()      { *m = RegisterOrUpdateCronScriptRequest{} }
+func (*RegisterOrUpdateCronScriptRequest) ProtoMessage() {}
+func (*RegisterOrUpdateCronScriptRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_5a48c2306678667b, []int{27}
+}
+func (m *RegisterOrUpdateCronScriptRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RegisterOrUpdateCronScriptRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RegisterOrUpdateCronScriptRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RegisterOrUpdateCronScriptRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RegisterOrUpdateCronScriptRequest.Merge(m, src)
+}
+func (m *RegisterOrUpdateCronScriptRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *RegisterOrUpdateCronScriptRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_RegisterOrUpdateCronScriptRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RegisterOrUpdateCronScriptRequest proto.InternalMessageInfo
+
+func (m *RegisterOrUpdateCronScriptRequest) GetScript() *CronScript {
+	if m != nil {
+		return m.Script
+	}
+	return nil
+}
+
+type RegisterOrUpdateCronScriptResponse struct {
+}
+
+func (m *RegisterOrUpdateCronScriptResponse) Reset()      { *m = RegisterOrUpdateCronScriptResponse{} }
+func (*RegisterOrUpdateCronScriptResponse) ProtoMessage() {}
+func (*RegisterOrUpdateCronScriptResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_5a48c2306678667b, []int{28}
+}
+func (m *RegisterOrUpdateCronScriptResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RegisterOrUpdateCronScriptResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RegisterOrUpdateCronScriptResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RegisterOrUpdateCronScriptResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RegisterOrUpdateCronScriptResponse.Merge(m, src)
+}
+func (m *RegisterOrUpdateCronScriptResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *RegisterOrUpdateCronScriptResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_RegisterOrUpdateCronScriptResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RegisterOrUpdateCronScriptResponse proto.InternalMessageInfo
+
+type DeleteCronScriptRequest struct {
+	ScriptID *uuidpb.UUID `protobuf:"bytes,1,opt,name=script_id,json=scriptId,proto3" json:"script_id,omitempty"`
+}
+
+func (m *DeleteCronScriptRequest) Reset()      { *m = DeleteCronScriptRequest{} }
+func (*DeleteCronScriptRequest) ProtoMessage() {}
+func (*DeleteCronScriptRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_5a48c2306678667b, []int{29}
+}
+func (m *DeleteCronScriptRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *DeleteCronScriptRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_DeleteCronScriptRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *DeleteCronScriptRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteCronScriptRequest.Merge(m, src)
+}
+func (m *DeleteCronScriptRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *DeleteCronScriptRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeleteCronScriptRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeleteCronScriptRequest proto.InternalMessageInfo
+
+func (m *DeleteCronScriptRequest) GetScriptID() *uuidpb.UUID {
+	if m != nil {
+		return m.ScriptID
+	}
+	return nil
+}
+
+type DeleteCronScriptResponse struct {
+}
+
+func (m *DeleteCronScriptResponse) Reset()      { *m = DeleteCronScriptResponse{} }
+func (*DeleteCronScriptResponse) ProtoMessage() {}
+func (*DeleteCronScriptResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_5a48c2306678667b, []int{30}
+}
+func (m *DeleteCronScriptResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *DeleteCronScriptResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_DeleteCronScriptResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *DeleteCronScriptResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteCronScriptResponse.Merge(m, src)
+}
+func (m *DeleteCronScriptResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *DeleteCronScriptResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeleteCronScriptResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeleteCronScriptResponse proto.InternalMessageInfo
+
+type CronScriptUpdate struct {
+	// Types that are valid to be assigned to Msg:
+	//	*CronScriptUpdate_UpsertReq
+	//	*CronScriptUpdate_DeleteReq
+	Msg       isCronScriptUpdate_Msg `protobuf_oneof:"msg"`
+	RequestID string                 `protobuf:"bytes,3,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	Timestamp int64                  `protobuf:"varint,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+}
+
+func (m *CronScriptUpdate) Reset()      { *m = CronScriptUpdate{} }
+func (*CronScriptUpdate) ProtoMessage() {}
+func (*CronScriptUpdate) Descriptor() ([]byte, []int) {
+	return fileDescriptor_5a48c2306678667b, []int{31}
+}
+func (m *CronScriptUpdate) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *CronScriptUpdate) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_CronScriptUpdate.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *CronScriptUpdate) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CronScriptUpdate.Merge(m, src)
+}
+func (m *CronScriptUpdate) XXX_Size() int {
+	return m.Size()
+}
+func (m *CronScriptUpdate) XXX_DiscardUnknown() {
+	xxx_messageInfo_CronScriptUpdate.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CronScriptUpdate proto.InternalMessageInfo
+
+type isCronScriptUpdate_Msg interface {
+	isCronScriptUpdate_Msg()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type CronScriptUpdate_UpsertReq struct {
+	UpsertReq *RegisterOrUpdateCronScriptRequest `protobuf:"bytes,1,opt,name=upsert_req,json=upsertReq,proto3,oneof" json:"upsert_req,omitempty"`
+}
+type CronScriptUpdate_DeleteReq struct {
+	DeleteReq *DeleteCronScriptRequest `protobuf:"bytes,2,opt,name=delete_req,json=deleteReq,proto3,oneof" json:"delete_req,omitempty"`
+}
+
+func (*CronScriptUpdate_UpsertReq) isCronScriptUpdate_Msg() {}
+func (*CronScriptUpdate_DeleteReq) isCronScriptUpdate_Msg() {}
+
+func (m *CronScriptUpdate) GetMsg() isCronScriptUpdate_Msg {
+	if m != nil {
+		return m.Msg
+	}
+	return nil
+}
+
+func (m *CronScriptUpdate) GetUpsertReq() *RegisterOrUpdateCronScriptRequest {
+	if x, ok := m.GetMsg().(*CronScriptUpdate_UpsertReq); ok {
+		return x.UpsertReq
+	}
+	return nil
+}
+
+func (m *CronScriptUpdate) GetDeleteReq() *DeleteCronScriptRequest {
+	if x, ok := m.GetMsg().(*CronScriptUpdate_DeleteReq); ok {
+		return x.DeleteReq
+	}
+	return nil
+}
+
+func (m *CronScriptUpdate) GetRequestID() string {
+	if m != nil {
+		return m.RequestID
+	}
+	return ""
+}
+
+func (m *CronScriptUpdate) GetTimestamp() int64 {
+	if m != nil {
+		return m.Timestamp
+	}
+	return 0
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*CronScriptUpdate) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*CronScriptUpdate_UpsertReq)(nil),
+		(*CronScriptUpdate_DeleteReq)(nil),
+	}
+}
+
 func init() {
 	proto.RegisterEnum("px.cvmsgspb.VizierStatus", VizierStatus_name, VizierStatus_value)
 	proto.RegisterEnum("px.cvmsgspb.RegisterVizierAck_RegistrationStatus", RegisterVizierAck_RegistrationStatus_name, RegisterVizierAck_RegistrationStatus_value)
@@ -1825,161 +2243,188 @@ func init() {
 	proto.RegisterType((*UpdateOrInstallVizierRequest)(nil), "px.cvmsgspb.UpdateOrInstallVizierRequest")
 	proto.RegisterType((*UpdateOrInstallVizierResponse)(nil), "px.cvmsgspb.UpdateOrInstallVizierResponse")
 	proto.RegisterType((*VizierConnectionInfo)(nil), "px.cvmsgspb.VizierConnectionInfo")
-	proto.RegisterType((*VizierSSLCertRequest)(nil), "px.cvmsgspb.VizierSSLCertRequest")
-	proto.RegisterType((*VizierSSLCertResponse)(nil), "px.cvmsgspb.VizierSSLCertResponse")
 	proto.RegisterType((*VLogMessage)(nil), "px.cvmsgspb.VLogMessage")
 	proto.RegisterType((*C2VAPIStreamRequest)(nil), "px.cvmsgspb.C2VAPIStreamRequest")
 	proto.RegisterType((*C2VAPIStreamCancel)(nil), "px.cvmsgspb.C2VAPIStreamCancel")
 	proto.RegisterType((*V2CAPIStreamResponse)(nil), "px.cvmsgspb.V2CAPIStreamResponse")
 	proto.RegisterType((*V2CMessage)(nil), "px.cvmsgspb.V2CMessage")
 	proto.RegisterType((*C2VMessage)(nil), "px.cvmsgspb.C2VMessage")
+	proto.RegisterType((*CronScript)(nil), "px.cvmsgspb.CronScript")
+	proto.RegisterType((*GetCronScriptsChecksumRequest)(nil), "px.cvmsgspb.GetCronScriptsChecksumRequest")
+	proto.RegisterType((*GetCronScriptsChecksumResponse)(nil), "px.cvmsgspb.GetCronScriptsChecksumResponse")
+	proto.RegisterType((*GetCronScriptsRequest)(nil), "px.cvmsgspb.GetCronScriptsRequest")
+	proto.RegisterType((*GetCronScriptsResponse)(nil), "px.cvmsgspb.GetCronScriptsResponse")
+	proto.RegisterMapType((map[string]*CronScript)(nil), "px.cvmsgspb.GetCronScriptsResponse.ScriptsEntry")
+	proto.RegisterType((*RegisterOrUpdateCronScriptRequest)(nil), "px.cvmsgspb.RegisterOrUpdateCronScriptRequest")
+	proto.RegisterType((*RegisterOrUpdateCronScriptResponse)(nil), "px.cvmsgspb.RegisterOrUpdateCronScriptResponse")
+	proto.RegisterType((*DeleteCronScriptRequest)(nil), "px.cvmsgspb.DeleteCronScriptRequest")
+	proto.RegisterType((*DeleteCronScriptResponse)(nil), "px.cvmsgspb.DeleteCronScriptResponse")
+	proto.RegisterType((*CronScriptUpdate)(nil), "px.cvmsgspb.CronScriptUpdate")
 }
 
 func init() { proto.RegisterFile("src/shared/cvmsgspb/cvmsgs.proto", fileDescriptor_5a48c2306678667b) }
 
 var fileDescriptor_5a48c2306678667b = []byte{
-	// 2253 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x58, 0x4b, 0x6f, 0xdb, 0xd8,
-	0xf5, 0x37, 0xf5, 0xa4, 0x8e, 0x25, 0x4b, 0xbe, 0x76, 0x12, 0xc5, 0xff, 0x8c, 0xec, 0x70, 0xfe,
-	0x33, 0xe3, 0x16, 0x33, 0x32, 0xe2, 0x0e, 0x50, 0x8f, 0x31, 0x8f, 0xea, 0x95, 0x48, 0xb6, 0x2b,
-	0x1b, 0xf4, 0xa3, 0xe8, 0x6c, 0x08, 0x8a, 0xbc, 0x91, 0x38, 0x96, 0x48, 0x86, 0x97, 0x74, 0xe2,
-	0xae, 0xba, 0x28, 0x0a, 0x74, 0xd7, 0x45, 0x17, 0xfd, 0x08, 0x03, 0x14, 0x45, 0x97, 0xfd, 0x00,
-	0xb3, 0x69, 0x77, 0x59, 0xce, 0xca, 0x68, 0x9c, 0x4d, 0x97, 0x83, 0x2c, 0x0a, 0x14, 0xdd, 0x14,
-	0xf7, 0x41, 0xea, 0x69, 0x3b, 0xd3, 0xa4, 0x8b, 0xae, 0x74, 0xef, 0xb9, 0xbf, 0x7b, 0xce, 0xb9,
-	0xe7, 0x2d, 0xc2, 0x1a, 0xf1, 0x8c, 0x0d, 0xd2, 0xd3, 0x3d, 0x6c, 0x6e, 0x18, 0x67, 0x03, 0xd2,
-	0x25, 0x6e, 0x47, 0x2c, 0xca, 0xae, 0xe7, 0xf8, 0x0e, 0x9a, 0x77, 0x9f, 0x95, 0xc3, 0x93, 0x95,
-	0x8f, 0xba, 0x96, 0xdf, 0x0b, 0x3a, 0x65, 0xc3, 0x19, 0x6c, 0x74, 0x9d, 0xae, 0xb3, 0xc1, 0x30,
-	0x9d, 0xe0, 0x31, 0xdb, 0xb1, 0x0d, 0x5b, 0xf1, 0xbb, 0x2b, 0x77, 0xbb, 0x8e, 0xd3, 0xed, 0xe3,
-	0x21, 0x4a, 0xb7, 0xcf, 0xc5, 0xd1, 0xea, 0xe4, 0x91, 0x6f, 0x0d, 0x30, 0xf1, 0xf5, 0x81, 0x2b,
-	0x00, 0xa5, 0x49, 0xc0, 0x53, 0x4f, 0x77, 0x5d, 0xec, 0x91, 0x90, 0x01, 0xd5, 0x5c, 0x77, 0x2d,
-	0x0e, 0xd8, 0x08, 0x02, 0xcb, 0x74, 0x3b, 0xec, 0x47, 0x00, 0xde, 0x1f, 0x07, 0x9c, 0x59, 0xbf,
-	0xb0, 0xb0, 0xe7, 0x76, 0xc4, 0x42, 0x77, 0x2d, 0x81, 0x5b, 0x1f, 0x31, 0xc1, 0xe9, 0x16, 0xd9,
-	0x18, 0x60, 0x5f, 0x37, 0x75, 0x5f, 0x77, 0x3b, 0xd1, 0x92, 0x23, 0x95, 0xbf, 0x4a, 0x70, 0x4b,
-	0xc5, 0x5d, 0x8b, 0xf8, 0xd8, 0x3b, 0x61, 0x5c, 0x54, 0xfc, 0x24, 0xc0, 0xc4, 0x47, 0xdb, 0x90,
-	0xe1, 0x6c, 0x35, 0xcb, 0x2c, 0x4a, 0x6b, 0xd2, 0xfa, 0xfc, 0x66, 0xbe, 0xec, 0x3e, 0x2b, 0x73,
-	0xad, 0xca, 0xc7, 0xc7, 0xad, 0x7a, 0x35, 0x7b, 0x79, 0xb1, 0x2a, 0xf3, 0x6b, 0xad, 0xba, 0x2a,
-	0x73, 0x7c, 0xcb, 0x44, 0x77, 0x20, 0xfd, 0xd5, 0x53, 0x5f, 0x3b, 0xc5, 0xe7, 0xc5, 0xd8, 0x9a,
-	0xb4, 0x9e, 0x51, 0x53, 0x5f, 0x3d, 0xf5, 0x77, 0xf1, 0x39, 0x2a, 0x42, 0x5a, 0x37, 0x4d, 0x0f,
-	0x13, 0x52, 0x8c, 0xb3, 0x83, 0x70, 0x8b, 0x2a, 0x90, 0x35, 0xfa, 0x01, 0x55, 0x43, 0xb3, 0xec,
-	0xc7, 0x4e, 0x31, 0xc1, 0x24, 0x96, 0xca, 0x23, 0xae, 0x2a, 0x73, 0x49, 0x35, 0x0e, 0x6b, 0xd9,
-	0x8f, 0x1d, 0x75, 0xde, 0x18, 0x6e, 0x94, 0xdf, 0x49, 0xb0, 0x38, 0x05, 0x41, 0x1b, 0x10, 0x82,
-	0xb4, 0x40, 0xbc, 0x24, 0x53, 0x5d, 0xb8, 0xbc, 0x58, 0x05, 0x81, 0x3a, 0x6e, 0xd5, 0x55, 0x10,
-	0x90, 0x63, 0xcb, 0x44, 0xf7, 0x87, 0x9a, 0xd8, 0xfa, 0x00, 0x8b, 0x17, 0x84, 0x4c, 0xda, 0xfa,
-	0x00, 0xa3, 0xf7, 0x60, 0x41, 0xd8, 0xe6, 0x0c, 0x7b, 0xc4, 0x72, 0x6c, 0xa6, 0x6e, 0x46, 0xcd,
-	0x71, 0xea, 0x09, 0x27, 0xee, 0x24, 0xe4, 0x78, 0x21, 0xa1, 0x7c, 0x2d, 0xc1, 0xe2, 0xb8, 0x89,
-	0x2b, 0xc6, 0x29, 0x6a, 0x41, 0x8a, 0xf8, 0xba, 0x1f, 0x10, 0xa6, 0xd1, 0xc2, 0xe6, 0x83, 0xb1,
-	0x97, 0x4e, 0xe1, 0x05, 0xc5, 0xd3, 0x7d, 0xcb, 0xb1, 0x0f, 0xd9, 0x45, 0x55, 0x30, 0x50, 0x9a,
-	0x80, 0xa6, 0x4f, 0xd1, 0x02, 0xc0, 0xe1, 0x91, 0x76, 0xdc, 0xde, 0x6d, 0xef, 0xff, 0xac, 0x5d,
-	0x98, 0x43, 0x19, 0x48, 0x1e, 0x1e, 0x69, 0xfb, 0xbb, 0x05, 0x09, 0xdd, 0x81, 0xa5, 0xc3, 0x23,
-	0xed, 0x61, 0xa5, 0xb5, 0xd7, 0xa8, 0x6b, 0xed, 0xfd, 0x23, 0xed, 0xe1, 0xfe, 0x71, 0xbb, 0x5e,
-	0x88, 0x29, 0xdf, 0xa4, 0x21, 0xcf, 0x45, 0x36, 0xb1, 0xee, 0xf9, 0x1d, 0xac, 0xbf, 0x59, 0x1c,
-	0x20, 0x48, 0xd0, 0x1c, 0x60, 0x26, 0x8c, 0xab, 0x6c, 0x8d, 0x3e, 0x80, 0x3c, 0xa1, 0x21, 0x66,
-	0x1b, 0x58, 0xb3, 0x83, 0x41, 0x07, 0x7b, 0x2c, 0x14, 0xe2, 0xea, 0x42, 0x48, 0x6e, 0x33, 0xea,
-	0x68, 0xac, 0x24, 0xc6, 0x63, 0x05, 0x41, 0xc2, 0x75, 0x3c, 0xbf, 0x98, 0x5c, 0x93, 0xd6, 0x93,
-	0x2a, 0x5b, 0xa3, 0x03, 0xc8, 0xba, 0x8e, 0xa9, 0x71, 0x93, 0x60, 0x52, 0x4c, 0xad, 0xc5, 0xd7,
-	0xe7, 0x37, 0x3f, 0x9a, 0x11, 0x3f, 0xd1, 0xd3, 0xca, 0x07, 0x8e, 0x79, 0x28, 0xf0, 0x0d, 0xdb,
-	0xf7, 0xce, 0xd5, 0x79, 0x77, 0x48, 0x41, 0xbf, 0x91, 0xe0, 0x7e, 0x60, 0xf7, 0xb0, 0xde, 0xf7,
-	0x7b, 0xe7, 0x1a, 0xcd, 0x19, 0xcd, 0xed, 0xeb, 0x36, 0xd6, 0xc6, 0xe4, 0xe4, 0x99, 0x9c, 0x2f,
-	0xae, 0x95, 0x73, 0x1c, 0x72, 0xa9, 0xeb, 0xbe, 0x7e, 0x40, 0x79, 0x4c, 0x49, 0x7e, 0x27, 0xb8,
-	0x0e, 0x83, 0x3e, 0x81, 0xbb, 0xa3, 0x52, 0xb5, 0xbe, 0x4e, 0x7c, 0x2d, 0x70, 0x4d, 0xdd, 0xc7,
-	0x66, 0x31, 0xcd, 0xcc, 0x77, 0x7b, 0x44, 0xf7, 0x3d, 0x9d, 0xf8, 0xc7, 0xfc, 0x14, 0x3d, 0x88,
-	0x02, 0x4d, 0x66, 0x81, 0x76, 0x77, 0x86, 0xaa, 0xe3, 0x01, 0x85, 0xfe, 0x0f, 0x32, 0x76, 0x30,
-	0xd0, 0x6c, 0xc7, 0xc4, 0xa4, 0x38, 0xcf, 0x8c, 0x2c, 0xdb, 0xc1, 0xa0, 0x4d, 0xf7, 0xe8, 0x63,
-	0xb8, 0x4d, 0x0f, 0x2d, 0x9b, 0xf8, 0x5e, 0x30, 0xc0, 0xb6, 0x8f, 0x4d, 0x81, 0xcc, 0x32, 0xe4,
-	0xb2, 0x1d, 0x0c, 0x5a, 0x23, 0x87, 0xfc, 0x56, 0x19, 0x96, 0x4c, 0x8b, 0xe8, 0x9d, 0x3e, 0xd6,
-	0xf4, 0xc0, 0x77, 0x84, 0xee, 0xc5, 0xdc, 0x9a, 0xb4, 0x2e, 0xab, 0x8b, 0xe2, 0xa8, 0x12, 0xf8,
-	0x0e, 0x57, 0x9b, 0x66, 0x18, 0x57, 0x46, 0x1b, 0x60, 0x42, 0xf4, 0x2e, 0x2e, 0x2e, 0xf0, 0x0c,
-	0xe3, 0xd4, 0x9f, 0x72, 0x22, 0x6a, 0xc0, 0xd2, 0xe9, 0x16, 0xd1, 0xc2, 0x7c, 0x0d, 0xb3, 0xb1,
-	0xc0, 0x92, 0xfc, 0xd6, 0xe5, 0xc5, 0xea, 0xe2, 0xee, 0x16, 0x11, 0x79, 0x2e, 0xb2, 0x52, 0x5d,
-	0x3c, 0x9d, 0x24, 0xad, 0x9c, 0x40, 0x61, 0xd2, 0x23, 0xa8, 0x00, 0x71, 0x5a, 0xbf, 0x58, 0xbd,
-	0x50, 0xe9, 0x12, 0x7d, 0x08, 0xc9, 0x33, 0xbd, 0x1f, 0xf0, 0x70, 0x9e, 0xdf, 0xbc, 0x3d, 0x66,
-	0xc8, 0xe8, 0xbe, 0xca, 0x41, 0xdb, 0xb1, 0x2d, 0x69, 0xa5, 0x07, 0xca, 0xcd, 0xbe, 0x7f, 0x1b,
-	0x92, 0x76, 0x12, 0x72, 0xa6, 0x00, 0x3b, 0x09, 0x19, 0x0a, 0xf3, 0xca, 0x3f, 0x62, 0x90, 0x89,
-	0x40, 0x34, 0x59, 0x58, 0x19, 0xe3, 0xec, 0xd9, 0x1a, 0x6d, 0x47, 0x31, 0x11, 0x63, 0x31, 0xa1,
-	0x50, 0x01, 0xbc, 0x5f, 0x94, 0x4f, 0xb7, 0x48, 0x79, 0xd8, 0x2f, 0xa8, 0xb4, 0x83, 0x9e, 0x4e,
-	0x70, 0x14, 0x1c, 0xd3, 0x9e, 0x89, 0xcf, 0xf2, 0xcc, 0x6d, 0x48, 0x79, 0x58, 0x27, 0x51, 0x69,
-	0x14, 0x3b, 0xf4, 0x29, 0x80, 0xe1, 0xd8, 0xbe, 0x6e, 0xd9, 0xd8, 0x23, 0xc5, 0x24, 0xcb, 0x9e,
-	0x7b, 0x63, 0xef, 0xab, 0x85, 0xc7, 0xe2, 0x95, 0x23, 0x78, 0xd4, 0x04, 0x30, 0x3c, 0x4c, 0xe3,
-	0x5a, 0xd3, 0xfd, 0x62, 0x8a, 0x59, 0x67, 0xa5, 0xcc, 0xdb, 0x6a, 0x39, 0x6c, 0xab, 0xe5, 0xa3,
-	0xb0, 0xef, 0x56, 0x73, 0x97, 0x17, 0xab, 0x99, 0x1a, 0xbf, 0x51, 0xf1, 0xd5, 0x8c, 0x11, 0x2e,
-	0xd1, 0x47, 0x90, 0xc2, 0x67, 0xd8, 0xf6, 0x49, 0x31, 0xcd, 0x74, 0xb8, 0x35, 0xa6, 0xc3, 0xee,
-	0x16, 0x69, 0xd0, 0x53, 0x55, 0x80, 0xd0, 0xbb, 0x90, 0xf3, 0x28, 0x4f, 0xcf, 0xd7, 0x0c, 0x27,
-	0xb0, 0x7d, 0x96, 0x4c, 0x71, 0x35, 0x2b, 0x88, 0x35, 0x4a, 0x53, 0x7e, 0x2f, 0x81, 0x1c, 0xde,
-	0xa4, 0xe5, 0x2b, 0x34, 0x10, 0x37, 0x7d, 0xb8, 0x45, 0x9f, 0x00, 0x3c, 0xb6, 0x3c, 0xe2, 0x6b,
-	0x51, 0x6d, 0xbc, 0xf6, 0x11, 0x6a, 0x86, 0xa1, 0xe9, 0x1e, 0xfd, 0x18, 0x32, 0x2c, 0xf5, 0xd9,
-	0xcd, 0xf8, 0x8d, 0x37, 0x65, 0x0a, 0xa6, 0x5b, 0xe5, 0xd7, 0x31, 0xc8, 0x4f, 0x18, 0x76, 0x66,
-	0x64, 0x7c, 0x0e, 0x49, 0xea, 0x47, 0x2c, 0x02, 0x63, 0xfd, 0xea, 0xc0, 0x18, 0xe3, 0x86, 0x55,
-	0x7e, 0x6d, 0xf4, 0xd5, 0xf1, 0xf1, 0x57, 0x5f, 0x15, 0x10, 0x6f, 0xcf, 0xa5, 0x53, 0x3e, 0x4a,
-	0xcf, 0xf0, 0xd1, 0xbf, 0x24, 0x40, 0x13, 0xf5, 0x99, 0xb6, 0xe3, 0x47, 0x13, 0xed, 0x78, 0xe3,
-	0xba, 0x82, 0x4e, 0xfb, 0x71, 0xb4, 0x99, 0xa8, 0x9d, 0x6f, 0xd4, 0xf2, 0xde, 0x85, 0x1c, 0xf6,
-	0x3c, 0xc7, 0x8b, 0x52, 0x8b, 0x9b, 0x2a, 0xcb, 0x88, 0x22, 0xb3, 0x94, 0x6d, 0xc8, 0x4f, 0x08,
-	0xa7, 0xbd, 0xbe, 0x59, 0x1d, 0xef, 0xf5, 0xcd, 0x2a, 0xef, 0xf5, 0x59, 0x90, 0x9b, 0x55, 0xad,
-	0xa1, 0xaa, 0xfb, 0x6a, 0x21, 0xa6, 0x38, 0x90, 0x15, 0x13, 0x92, 0x63, 0x3f, 0xb6, 0xba, 0x68,
-	0x03, 0x96, 0x5c, 0x9d, 0x10, 0xbf, 0xe7, 0x39, 0x41, 0xb7, 0xa7, 0x61, 0x9b, 0x96, 0x61, 0xde,
-	0xe6, 0x65, 0x15, 0x8d, 0x1c, 0x35, 0xf8, 0x09, 0xad, 0xe3, 0x23, 0xf5, 0x3b, 0xba, 0x10, 0xe3,
-	0x75, 0x5c, 0x8f, 0x0a, 0xb8, 0xc0, 0x2b, 0xdd, 0xd0, 0xda, 0x5c, 0xa0, 0xa8, 0xee, 0xbb, 0x57,
-	0x8b, 0x9d, 0xe5, 0xfc, 0xaa, 0xe3, 0xf4, 0x4f, 0x68, 0xa9, 0x9b, 0xa5, 0xd2, 0x4e, 0x42, 0x8e,
-	0x15, 0xe2, 0xca, 0x3f, 0x65, 0x00, 0x31, 0x81, 0xd0, 0xa9, 0x6f, 0xe7, 0x35, 0xa6, 0x96, 0x7b,
-	0xa3, 0x53, 0xcb, 0xab, 0x8b, 0xd5, 0xac, 0xd9, 0xd9, 0x8e, 0x2e, 0x8d, 0x4c, 0x31, 0x0f, 0x26,
-	0xaa, 0xe5, 0x6b, 0x74, 0xd0, 0x0a, 0x2c, 0xb2, 0x3c, 0xed, 0x85, 0x8e, 0xd2, 0x6c, 0x3e, 0xf1,
-	0xc6, 0xab, 0xb7, 0x5e, 0x5d, 0xac, 0x2e, 0x9a, 0x9d, 0xed, 0xf1, 0x73, 0x35, 0x4f, 0xf7, 0x91,
-	0x5f, 0xdb, 0x84, 0x4a, 0x35, 0x98, 0xcd, 0xc4, 0x28, 0x3c, 0x4b, 0x2a, 0x37, 0xaa, 0x2a, 0x80,
-	0x93, 0xa3, 0x6e, 0xf2, 0x7b, 0x8f, 0xba, 0xa9, 0xe9, 0x51, 0xf7, 0x03, 0xc8, 0x4f, 0x76, 0xd7,
-	0x34, 0x43, 0x2d, 0x18, 0x63, 0x3d, 0x74, 0xc6, 0x4c, 0x2c, 0xcf, 0x98, 0x89, 0xd1, 0x13, 0x58,
-	0xa1, 0xf5, 0xdc, 0x73, 0xfa, 0xb3, 0xa6, 0xa9, 0x0c, 0xab, 0xc5, 0x1f, 0xcf, 0x78, 0x2a, 0xf5,
-	0x2a, 0xab, 0x39, 0x9e, 0xd3, 0x9f, 0x3d, 0x42, 0xdd, 0x31, 0x66, 0x9f, 0xa2, 0x5f, 0xbd, 0xd6,
-	0x20, 0xb7, 0xc0, 0x44, 0x6f, 0x5f, 0x25, 0xfa, 0xcd, 0x67, 0xb8, 0xff, 0xc2, 0x54, 0x35, 0xdd,
-	0x8b, 0x73, 0xb3, 0x7a, 0x71, 0x15, 0xf2, 0xae, 0x87, 0xcf, 0x2c, 0x27, 0x20, 0xe2, 0xbd, 0xc5,
-	0xfc, 0x4d, 0x91, 0xbc, 0x10, 0xde, 0x10, 0x25, 0x66, 0x0f, 0x96, 0x27, 0x78, 0xf0, 0x26, 0x54,
-	0xb8, 0xb1, 0x09, 0xa1, 0x71, 0x4e, 0xf4, 0x60, 0xa5, 0x03, 0xf7, 0xae, 0xf3, 0xe5, 0xff, 0xd6,
-	0xf0, 0xa5, 0xfc, 0x51, 0x82, 0xbb, 0xbc, 0xb2, 0x8d, 0xa5, 0xa5, 0xf8, 0x23, 0xfd, 0x36, 0x4b,
-	0x51, 0x1d, 0x72, 0x3c, 0xd7, 0xc3, 0x01, 0x9a, 0xeb, 0xb8, 0x7a, 0x65, 0x6d, 0xe0, 0x6a, 0xa9,
-	0x59, 0x63, 0x64, 0xa7, 0xdc, 0x83, 0x95, 0x59, 0xea, 0x12, 0xd7, 0xb1, 0x09, 0x56, 0xfe, 0x24,
-	0xc1, 0x3d, 0x7e, 0xbc, 0xef, 0xd1, 0x90, 0xd3, 0xfb, 0xfd, 0xb7, 0xf7, 0x65, 0xa0, 0x08, 0xe9,
-	0xb0, 0x3c, 0xf0, 0xff, 0xd5, 0xe1, 0x16, 0x2d, 0x43, 0xd2, 0x77, 0x4e, 0xb1, 0x2d, 0xe6, 0x06,
-	0xbe, 0xe1, 0x3d, 0xdd, 0xc4, 0x6e, 0xdf, 0x39, 0xd7, 0xb0, 0x6f, 0x98, 0xac, 0x18, 0xca, 0xb4,
-	0xa7, 0x73, 0x62, 0xc3, 0x37, 0x4c, 0xe5, 0x21, 0xbc, 0x73, 0x85, 0xc2, 0xfc, 0x49, 0x34, 0x4f,
-	0x44, 0xc3, 0x62, 0x93, 0x40, 0xd4, 0xe1, 0x72, 0x9c, 0x7a, 0xc8, 0x89, 0xca, 0x29, 0x2c, 0x47,
-	0x16, 0xb1, 0xb1, 0x41, 0xff, 0x4c, 0xb3, 0x66, 0xf2, 0x19, 0x80, 0xe5, 0x6a, 0xe1, 0x9f, 0x51,
-	0xfe, 0x05, 0xa1, 0x44, 0xc7, 0x90, 0xd6, 0x41, 0x85, 0x13, 0x5f, 0x5d, 0xac, 0xe6, 0xcc, 0xce,
-	0xf6, 0x10, 0xa5, 0x66, 0x2c, 0x57, 0x9c, 0x0d, 0x5f, 0x16, 0x1b, 0x79, 0x99, 0xa2, 0x86, 0xc2,
-	0x0e, 0x0f, 0xf7, 0x6a, 0xd8, 0xf3, 0xdf, 0x82, 0x75, 0x95, 0xcf, 0xe0, 0xd6, 0x04, 0x4f, 0x61,
-	0x80, 0xe9, 0x28, 0x47, 0x90, 0x30, 0xb0, 0xe7, 0x0b, 0x9d, 0xd8, 0x5a, 0xb9, 0x0f, 0xf3, 0x27,
-	0x7b, 0x4e, 0x37, 0x2c, 0x1b, 0x08, 0x12, 0xb4, 0x58, 0xb2, 0x5b, 0x59, 0x95, 0xad, 0x95, 0x6f,
-	0xe2, 0xb0, 0x54, 0xdb, 0x3c, 0xa9, 0x1c, 0xb4, 0x0e, 0x7d, 0x0f, 0xeb, 0x83, 0x50, 0xeb, 0x0f,
-	0x01, 0x3c, 0xbe, 0xd4, 0xa2, 0x8f, 0x2c, 0x6c, 0x52, 0x13, 0x80, 0x56, 0x5d, 0xcd, 0x08, 0x40,
-	0xcb, 0x9c, 0x6d, 0x11, 0x54, 0x05, 0x19, 0x3f, 0xc3, 0x86, 0xe6, 0xe1, 0x27, 0x62, 0xb6, 0x7d,
-	0x8f, 0x3e, 0x5c, 0x77, 0xad, 0x72, 0xf8, 0xa5, 0xab, 0xdc, 0x78, 0x86, 0x8d, 0xc0, 0xc7, 0x87,
-	0x86, 0x67, 0xb9, 0xa1, 0xc9, 0x9a, 0x73, 0x6a, 0x9a, 0x5e, 0x54, 0xf1, 0x13, 0xf4, 0x29, 0xa4,
-	0x7a, 0x9c, 0x03, 0xef, 0x9a, 0xef, 0x4e, 0x71, 0x68, 0xb2, 0x8a, 0x50, 0xeb, 0x61, 0xe3, 0x74,
-	0x78, 0x3f, 0xd9, 0x63, 0xb7, 0x7f, 0x02, 0x60, 0xe8, 0xb6, 0x81, 0xfb, 0x8c, 0x43, 0x72, 0x46,
-	0x6e, 0x8d, 0xbe, 0xbd, 0xc6, 0xa0, 0xcd, 0x39, 0x35, 0xc3, 0x2f, 0x51, 0x0e, 0x0f, 0x21, 0x67,
-	0xe2, 0x4e, 0xd0, 0xd5, 0xfa, 0x4e, 0x97, 0x31, 0x91, 0x19, 0x93, 0xb5, 0x29, 0x35, 0xea, 0x14,
-	0xb5, 0xe7, 0x74, 0x87, 0x3a, 0xcc, 0x9b, 0x43, 0x12, 0x6a, 0xc1, 0x02, 0xe7, 0xe3, 0x3a, 0x26,
-	0x61, 0x8c, 0x32, 0x8c, 0xd1, 0xfd, 0xd9, 0x8c, 0x0e, 0x1c, 0x93, 0x0c, 0x39, 0x65, 0xcd, 0x11,
-	0x5a, 0x35, 0x09, 0xf1, 0x01, 0xe9, 0xee, 0x24, 0xe4, 0x54, 0x21, 0xbd, 0x93, 0x90, 0xd3, 0x05,
-	0x59, 0x59, 0x06, 0x34, 0xfd, 0x10, 0xe5, 0x0f, 0x71, 0x58, 0x3e, 0xd9, 0xac, 0x8d, 0xf8, 0x56,
-	0x44, 0xcf, 0xf7, 0x73, 0x6e, 0x03, 0x32, 0xc2, 0x8d, 0xc4, 0x15, 0xf5, 0xe9, 0xfd, 0x9b, 0xfc,
-	0xc8, 0x05, 0x35, 0xe7, 0x54, 0x99, 0x3b, 0x92, 0xb8, 0xe8, 0x0b, 0x48, 0xf7, 0x04, 0x13, 0x1e,
-	0x0c, 0xff, 0x7f, 0xbd, 0x2b, 0x23, 0x16, 0xa9, 0x1e, 0x67, 0x30, 0x1c, 0xdb, 0x78, 0x28, 0xdc,
-	0x99, 0xba, 0xcf, 0x2b, 0x39, 0xbd, 0x22, 0xc6, 0xb6, 0xc8, 0xea, 0xdc, 0x7b, 0xc4, 0x65, 0xb3,
-	0xce, 0x95, 0x56, 0x67, 0xbe, 0x8a, 0xe4, 0x66, 0xcd, 0x11, 0x1a, 0xda, 0x83, 0xfc, 0x98, 0x03,
-	0x89, 0x2b, 0x42, 0x41, 0xb9, 0xce, 0x83, 0x11, 0xb3, 0x9c, 0x39, 0x4a, 0x1c, 0xfa, 0x30, 0x59,
-	0x48, 0x71, 0x4f, 0xd2, 0x32, 0x0d, 0x27, 0x9b, 0xb5, 0x30, 0x59, 0x7f, 0x30, 0x59, 0x36, 0x32,
-	0x57, 0xd6, 0xe0, 0x89, 0x31, 0x31, 0x76, 0xe3, 0x98, 0xf8, 0x0e, 0x00, 0xc1, 0x84, 0x56, 0x69,
-	0xca, 0x9c, 0xff, 0x75, 0xc9, 0x08, 0x4a, 0xcb, 0x44, 0xef, 0x33, 0xe5, 0x84, 0x95, 0x97, 0xa7,
-	0x26, 0x81, 0x8a, 0x7d, 0xae, 0x52, 0x80, 0xa2, 0x01, 0xd4, 0x36, 0x4f, 0xfe, 0x03, 0x85, 0x85,
-	0x80, 0xd8, 0x0d, 0x02, 0x7e, 0xf8, 0x67, 0x29, 0xfc, 0x7b, 0x23, 0x86, 0x96, 0x45, 0xc8, 0x9d,
-	0x7c, 0xa9, 0x8d, 0x7d, 0x06, 0x8d, 0x48, 0xcd, 0x46, 0x65, 0xef, 0xa8, 0xf9, 0xf3, 0x82, 0x84,
-	0x96, 0x20, 0x1f, 0xa2, 0x42, 0x62, 0x0c, 0xdd, 0x06, 0xc4, 0x89, 0xf5, 0xd6, 0x61, 0x6d, 0xbf,
-	0xdd, 0x6e, 0xd4, 0x8e, 0x1a, 0xf5, 0x42, 0x1c, 0x21, 0x58, 0x10, 0xe0, 0x83, 0x7a, 0xe5, 0xa8,
-	0xd5, 0x7e, 0x54, 0x48, 0x0c, 0x19, 0x0c, 0x81, 0x49, 0x74, 0x07, 0x96, 0x46, 0x80, 0x0d, 0xf1,
-	0xb9, 0xb5, 0x90, 0x1a, 0x72, 0xa8, 0x37, 0x1e, 0xa9, 0x95, 0x7a, 0xa3, 0x5e, 0x48, 0x57, 0x3f,
-	0x7f, 0xfe, 0xa2, 0x34, 0xf7, 0xed, 0x8b, 0xd2, 0xdc, 0x77, 0x2f, 0x4a, 0xd2, 0x2f, 0x2f, 0x4b,
-	0xd2, 0xd7, 0x97, 0x25, 0xe9, 0x2f, 0x97, 0x25, 0xe9, 0xf9, 0x65, 0x49, 0xfa, 0xdb, 0x65, 0x49,
-	0xfa, 0xfb, 0x65, 0x69, 0xee, 0xbb, 0xcb, 0x92, 0xf4, 0xdb, 0x97, 0xa5, 0xb9, 0xe7, 0x2f, 0x4b,
-	0x73, 0xdf, 0xbe, 0x2c, 0xcd, 0x7d, 0x29, 0x87, 0x65, 0xa9, 0x93, 0x62, 0xc6, 0xf8, 0xd1, 0xbf,
-	0x03, 0x00, 0x00, 0xff, 0xff, 0xf9, 0x1b, 0xc1, 0x3b, 0xfc, 0x18, 0x00, 0x00,
+	// 2539 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x59, 0xcb, 0x6f, 0xe3, 0xd6,
+	0xd5, 0x37, 0xf5, 0xa4, 0x8e, 0x65, 0x4b, 0xbe, 0xf6, 0x8c, 0x35, 0xfe, 0x66, 0x64, 0x0f, 0xf3,
+	0xf2, 0x57, 0x64, 0xe4, 0xc6, 0x4d, 0xd1, 0x89, 0x91, 0x26, 0xb5, 0x1e, 0x33, 0x92, 0xc7, 0x95,
+	0x0d, 0xfa, 0x51, 0x34, 0x1b, 0x82, 0x22, 0xef, 0x48, 0x8c, 0x25, 0x92, 0xc3, 0x4b, 0x4e, 0xc6,
+	0x5d, 0x75, 0x51, 0x14, 0xe8, 0xae, 0x8b, 0x2e, 0xfa, 0x27, 0x14, 0x28, 0x8a, 0xa2, 0xab, 0xa2,
+	0xeb, 0x6c, 0xda, 0x5d, 0x96, 0x59, 0x19, 0x8d, 0xb2, 0xe9, 0x32, 0xc8, 0xa2, 0x40, 0x51, 0x14,
+	0x28, 0xee, 0x83, 0x14, 0xf5, 0xb2, 0x93, 0x66, 0xba, 0xe8, 0x4a, 0xbc, 0xe7, 0x9e, 0xd7, 0xbd,
+	0xe7, 0x9c, 0xdf, 0x39, 0xa4, 0x60, 0x8b, 0x78, 0xc6, 0x0e, 0xe9, 0xe9, 0x1e, 0x36, 0x77, 0x8c,
+	0xe7, 0x03, 0xd2, 0x25, 0x6e, 0x47, 0x3c, 0x54, 0x5c, 0xcf, 0xf1, 0x1d, 0xb4, 0xe8, 0xbe, 0xa8,
+	0x84, 0x3b, 0x1b, 0x0f, 0xba, 0x96, 0xdf, 0x0b, 0x3a, 0x15, 0xc3, 0x19, 0xec, 0x74, 0x9d, 0xae,
+	0xb3, 0xc3, 0x78, 0x3a, 0xc1, 0x53, 0xb6, 0x62, 0x0b, 0xf6, 0xc4, 0x65, 0x37, 0xee, 0x74, 0x1d,
+	0xa7, 0xdb, 0xc7, 0x23, 0x2e, 0xdd, 0xbe, 0x14, 0x5b, 0x9b, 0x93, 0x5b, 0xbe, 0x35, 0xc0, 0xc4,
+	0xd7, 0x07, 0xae, 0x60, 0x28, 0x4f, 0x32, 0x7c, 0xe4, 0xe9, 0xae, 0x8b, 0x3d, 0x12, 0x2a, 0xa0,
+	0x9e, 0xeb, 0xae, 0xc5, 0x19, 0x76, 0x82, 0xc0, 0x32, 0xdd, 0x0e, 0xfb, 0x11, 0x0c, 0xaf, 0x8f,
+	0x33, 0x3c, 0xb7, 0x7e, 0x62, 0x61, 0xcf, 0xed, 0x88, 0x07, 0xdd, 0xb5, 0x04, 0xdf, 0x76, 0xec,
+	0x0a, 0x2e, 0x1e, 0x92, 0x9d, 0x01, 0xf6, 0x75, 0x53, 0xf7, 0x75, 0xb7, 0x13, 0x3d, 0x72, 0x4e,
+	0xe5, 0x2f, 0x12, 0xdc, 0x52, 0x71, 0xd7, 0x22, 0x3e, 0xf6, 0xce, 0x99, 0x16, 0x15, 0x3f, 0x0b,
+	0x30, 0xf1, 0xd1, 0x1e, 0xe4, 0xb8, 0x5a, 0xcd, 0x32, 0x4b, 0xd2, 0x96, 0xb4, 0xbd, 0xb8, 0x5b,
+	0xa8, 0xb8, 0x2f, 0x2a, 0xdc, 0xab, 0xca, 0xd9, 0x59, 0xab, 0x5e, 0xcd, 0x0f, 0xaf, 0x36, 0x65,
+	0x2e, 0xd6, 0xaa, 0xab, 0x32, 0xe7, 0x6f, 0x99, 0x68, 0x1d, 0xb2, 0x1f, 0x7e, 0xe4, 0x6b, 0x17,
+	0xf8, 0xb2, 0x94, 0xd8, 0x92, 0xb6, 0x73, 0x6a, 0xe6, 0xc3, 0x8f, 0xfc, 0x27, 0xf8, 0x12, 0x95,
+	0x20, 0xab, 0x9b, 0xa6, 0x87, 0x09, 0x29, 0x25, 0xd9, 0x46, 0xb8, 0x44, 0xfb, 0x90, 0x37, 0xfa,
+	0x01, 0x75, 0x43, 0xb3, 0xec, 0xa7, 0x4e, 0x29, 0xc5, 0x2c, 0x96, 0x2b, 0xb1, 0x50, 0x55, 0xb8,
+	0xa5, 0x1a, 0x67, 0x6b, 0xd9, 0x4f, 0x1d, 0x75, 0xd1, 0x18, 0x2d, 0x94, 0x5f, 0x49, 0xb0, 0x32,
+	0xc5, 0x82, 0x76, 0x20, 0x64, 0xd2, 0x02, 0x71, 0x92, 0x5c, 0x75, 0x79, 0x78, 0xb5, 0x09, 0x82,
+	0xeb, 0xac, 0x55, 0x57, 0x41, 0xb0, 0x9c, 0x59, 0x26, 0xba, 0x3f, 0xf2, 0xc4, 0xd6, 0x07, 0x58,
+	0x9c, 0x20, 0x54, 0xd2, 0xd6, 0x07, 0x18, 0xbd, 0x06, 0xcb, 0xe2, 0x6e, 0x9e, 0x63, 0x8f, 0x58,
+	0x8e, 0xcd, 0xdc, 0xcd, 0xa9, 0x4b, 0x9c, 0x7a, 0xce, 0x89, 0x07, 0x29, 0x39, 0x59, 0x4c, 0xd1,
+	0x2b, 0x5e, 0x19, 0xbf, 0xe2, 0x7d, 0xe3, 0x02, 0xb5, 0x20, 0x43, 0x7c, 0xdd, 0x0f, 0x08, 0xf3,
+	0x68, 0x79, 0xf7, 0xad, 0xb1, 0x93, 0x4e, 0xf1, 0x0b, 0x8a, 0xa7, 0xfb, 0x96, 0x63, 0x9f, 0x30,
+	0x41, 0x55, 0x28, 0x40, 0x9b, 0xb0, 0x28, 0xbc, 0x89, 0xf9, 0x0b, 0x9c, 0x44, 0xdd, 0x55, 0x9a,
+	0x80, 0xa6, 0xc5, 0xd1, 0x32, 0xc0, 0xc9, 0xa9, 0x76, 0xd6, 0x7e, 0xd2, 0x3e, 0xfa, 0x51, 0xbb,
+	0xb8, 0x80, 0x72, 0x90, 0x3e, 0x39, 0xd5, 0x8e, 0x9e, 0x14, 0x25, 0xb4, 0x0e, 0xab, 0x27, 0xa7,
+	0xda, 0xa3, 0xfd, 0xd6, 0x61, 0xa3, 0xae, 0xb5, 0x8f, 0x4e, 0xb5, 0x47, 0x47, 0x67, 0xed, 0x7a,
+	0x31, 0xa1, 0x7c, 0x9c, 0x85, 0x02, 0xf7, 0xa9, 0x89, 0x75, 0xcf, 0xef, 0x60, 0xfd, 0x9b, 0x25,
+	0x0a, 0x82, 0x14, 0x2d, 0x12, 0xe6, 0x73, 0x52, 0x65, 0xcf, 0xe8, 0x0d, 0x28, 0x10, 0x9a, 0x83,
+	0xb6, 0x81, 0x35, 0x3b, 0x18, 0x74, 0xb0, 0xc7, 0x72, 0x25, 0xa9, 0x2e, 0x87, 0xe4, 0x36, 0xa3,
+	0xc6, 0x93, 0x29, 0x35, 0x9e, 0x4c, 0x08, 0x52, 0xae, 0xe3, 0xf9, 0xa5, 0xf4, 0x96, 0xb4, 0x9d,
+	0x56, 0xd9, 0x33, 0x3a, 0x86, 0xbc, 0xeb, 0x98, 0x1a, 0xbf, 0x33, 0x4c, 0x4a, 0x99, 0xad, 0xe4,
+	0xf6, 0xe2, 0xee, 0x83, 0x19, 0x09, 0x16, 0x1d, 0xad, 0x72, 0xec, 0x98, 0x27, 0x82, 0xbf, 0x61,
+	0xfb, 0xde, 0xa5, 0xba, 0xe8, 0x8e, 0x28, 0xe8, 0x17, 0x12, 0xdc, 0x0f, 0xec, 0x1e, 0xd6, 0xfb,
+	0x7e, 0xef, 0x52, 0xa3, 0x45, 0xa5, 0xb9, 0x7d, 0xdd, 0xc6, 0xda, 0x98, 0x9d, 0x02, 0xb3, 0xf3,
+	0xfe, 0xb5, 0x76, 0xce, 0x42, 0x2d, 0x75, 0xdd, 0xd7, 0x8f, 0xa9, 0x8e, 0x29, 0xcb, 0xf7, 0x82,
+	0xeb, 0x78, 0xd0, 0x3b, 0x70, 0x27, 0x6e, 0x55, 0xeb, 0xeb, 0xc4, 0xd7, 0x02, 0xd7, 0xd4, 0x7d,
+	0x6c, 0x96, 0xb2, 0xec, 0xfa, 0x6e, 0xc7, 0x7c, 0x3f, 0xd4, 0x89, 0x7f, 0xc6, 0x77, 0xd1, 0x5b,
+	0x51, 0x26, 0xca, 0x2c, 0x13, 0xef, 0xcc, 0x70, 0x75, 0x22, 0xe3, 0xfe, 0x0f, 0x72, 0x76, 0x30,
+	0xd0, 0x6c, 0xc7, 0xc4, 0xa4, 0xb4, 0xc8, 0x2e, 0x59, 0xb6, 0x83, 0x41, 0x9b, 0xae, 0xd1, 0xdb,
+	0x70, 0x9b, 0x6e, 0x5a, 0x36, 0xf1, 0xbd, 0x60, 0x80, 0x6d, 0x1f, 0x9b, 0x82, 0x33, 0xcf, 0x38,
+	0xd7, 0xec, 0x60, 0xd0, 0x8a, 0x6d, 0x72, 0xa9, 0x0a, 0xac, 0x9a, 0x16, 0xd1, 0x3b, 0x7d, 0xac,
+	0xe9, 0x81, 0xef, 0x08, 0xdf, 0x4b, 0x4b, 0x5b, 0xd2, 0xb6, 0xac, 0xae, 0x88, 0xad, 0xfd, 0xc0,
+	0x77, 0xb8, 0xdb, 0xb4, 0x04, 0xb9, 0x33, 0xda, 0x00, 0x13, 0xa2, 0x77, 0x71, 0x69, 0x99, 0x97,
+	0x20, 0xa7, 0xfe, 0x90, 0x13, 0x51, 0x03, 0x56, 0x2f, 0x1e, 0x12, 0x2d, 0x2c, 0xe8, 0xb0, 0x5c,
+	0x8b, 0x0c, 0x05, 0x6e, 0x0d, 0xaf, 0x36, 0x57, 0x9e, 0x3c, 0x24, 0x02, 0x08, 0x44, 0xd9, 0xaa,
+	0x2b, 0x17, 0x93, 0xa4, 0x8d, 0x73, 0x28, 0x4e, 0x46, 0x04, 0x15, 0x21, 0x49, 0x01, 0x8e, 0x01,
+	0x8a, 0x4a, 0x1f, 0xd1, 0x9b, 0x90, 0x7e, 0xae, 0xf7, 0x03, 0x9e, 0xce, 0x8b, 0xbb, 0xb7, 0xc7,
+	0x2e, 0x32, 0x92, 0x57, 0x39, 0xd3, 0x5e, 0xe2, 0xa1, 0xb4, 0xd1, 0x03, 0xe5, 0xe6, 0xd8, 0xbf,
+	0x0c, 0x4b, 0x07, 0x29, 0x39, 0x57, 0x84, 0x83, 0x94, 0x0c, 0xc5, 0x45, 0xe5, 0xef, 0x09, 0xc8,
+	0x45, 0x4c, 0xb4, 0x58, 0x18, 0x6e, 0x70, 0xf5, 0xec, 0x19, 0xed, 0x45, 0x39, 0x91, 0x60, 0x39,
+	0xa1, 0x50, 0x03, 0xbc, 0xa1, 0x54, 0x2e, 0x1e, 0x92, 0xca, 0xa8, 0xa1, 0x50, 0x6b, 0xc7, 0x3d,
+	0x9d, 0xe0, 0x28, 0x39, 0xa6, 0x23, 0x93, 0x9c, 0x15, 0x99, 0xdb, 0x90, 0xf1, 0xb0, 0x4e, 0x22,
+	0xec, 0x14, 0x2b, 0xf4, 0x2e, 0x80, 0xe1, 0xd8, 0xbe, 0x6e, 0xd9, 0xd8, 0x23, 0xa5, 0x34, 0xab,
+	0x9e, 0xbb, 0x63, 0xe7, 0xab, 0x85, 0xdb, 0xe2, 0x94, 0x31, 0x7e, 0xd4, 0x04, 0x30, 0x3c, 0x4c,
+	0xf3, 0x5a, 0xd3, 0xfd, 0x52, 0x86, 0xdd, 0xce, 0x46, 0x85, 0xf7, 0xdd, 0x4a, 0xd8, 0x77, 0x2b,
+	0xa7, 0x61, 0x63, 0xae, 0x2e, 0x0d, 0xaf, 0x36, 0x73, 0x35, 0x2e, 0xb1, 0xef, 0xab, 0x39, 0x23,
+	0x7c, 0x44, 0x0f, 0x20, 0x83, 0x9f, 0x63, 0xdb, 0x27, 0xa5, 0x2c, 0xf3, 0xe1, 0xd6, 0x98, 0x0f,
+	0x4f, 0x1e, 0x92, 0x06, 0xdd, 0x55, 0x05, 0x13, 0x7a, 0x05, 0x96, 0x3c, 0xaa, 0xd3, 0xf3, 0x35,
+	0xc3, 0x09, 0x6c, 0x9f, 0x15, 0x53, 0x52, 0xcd, 0x0b, 0x62, 0x8d, 0xd2, 0x94, 0x5f, 0x4b, 0x20,
+	0x87, 0x92, 0x14, 0xbe, 0xc2, 0x0b, 0xe2, 0x57, 0x1f, 0x2e, 0xd1, 0x3b, 0x00, 0x4f, 0x2d, 0x8f,
+	0xf8, 0x5a, 0x84, 0x8d, 0xd7, 0x1e, 0x42, 0xcd, 0x31, 0x6e, 0xba, 0x46, 0xdf, 0x83, 0x1c, 0x2b,
+	0x7d, 0x26, 0x99, 0xbc, 0x51, 0x52, 0xa6, 0xcc, 0x74, 0xa9, 0xfc, 0x3c, 0x01, 0x85, 0x89, 0x8b,
+	0x9d, 0x99, 0x19, 0xef, 0x41, 0x9a, 0xc6, 0x11, 0x8b, 0xc4, 0xd8, 0x9e, 0x9f, 0x18, 0x63, 0xda,
+	0xb0, 0xca, 0xc5, 0xe2, 0xa7, 0x4e, 0x8e, 0x9f, 0x7a, 0x5e, 0x42, 0xbc, 0xbc, 0x90, 0x4e, 0xc5,
+	0x28, 0x3b, 0x23, 0x46, 0xff, 0x94, 0x00, 0x4d, 0xe0, 0x33, 0xed, 0xd7, 0x8f, 0x27, 0xfa, 0xf5,
+	0xce, 0x75, 0x80, 0x4e, 0x1b, 0x76, 0xb4, 0x98, 0xc0, 0xce, 0x6f, 0xd4, 0xf2, 0x5e, 0x81, 0x25,
+	0xec, 0x79, 0x8e, 0x17, 0x95, 0x16, 0xbf, 0xaa, 0x3c, 0x23, 0x8a, 0xca, 0x52, 0xf6, 0xa0, 0x30,
+	0x61, 0x9c, 0xf6, 0xfa, 0x66, 0x75, 0xbc, 0xd7, 0x37, 0xab, 0xbc, 0xd7, 0xe7, 0x41, 0x6e, 0x56,
+	0xb5, 0x86, 0xaa, 0x1e, 0xa9, 0xc5, 0x84, 0xe2, 0x40, 0x5e, 0x8c, 0x50, 0x8e, 0xfd, 0xd4, 0xea,
+	0xa2, 0x1d, 0x58, 0x75, 0x75, 0x42, 0xfc, 0x9e, 0xe7, 0x04, 0xdd, 0x9e, 0x86, 0x6d, 0x0a, 0xc3,
+	0xbc, 0xcd, 0xcb, 0x2a, 0x8a, 0x6d, 0x35, 0xf8, 0x0e, 0xc5, 0xf1, 0x18, 0x7e, 0x47, 0x02, 0x09,
+	0x8e, 0xe3, 0x7a, 0x04, 0xe0, 0x82, 0x5f, 0xe9, 0x86, 0xb7, 0xcd, 0x0d, 0x0a, 0x74, 0x7f, 0x32,
+	0xdf, 0xec, 0xac, 0xe0, 0x57, 0x1d, 0xa7, 0x7f, 0x4e, 0xa1, 0x6e, 0x96, 0x4b, 0x07, 0x29, 0x39,
+	0x51, 0x4c, 0x2a, 0xff, 0x90, 0x01, 0xc4, 0x04, 0x42, 0xc7, 0xc2, 0x83, 0xaf, 0x30, 0xb5, 0xdc,
+	0x8d, 0x4f, 0x2d, 0x5f, 0x5e, 0x6d, 0xe6, 0xcd, 0xce, 0x5e, 0x24, 0x14, 0x9b, 0x62, 0xde, 0x9a,
+	0x40, 0xcb, 0xaf, 0xd0, 0x41, 0xf7, 0x61, 0x85, 0xd5, 0x69, 0x2f, 0x0c, 0x94, 0x66, 0xf3, 0x91,
+	0x38, 0x59, 0xbd, 0xf5, 0xe5, 0xd5, 0xe6, 0x8a, 0xd9, 0xd9, 0x1b, 0xdf, 0x57, 0x0b, 0x74, 0x1d,
+	0xc5, 0xb5, 0x4d, 0xa8, 0x55, 0x83, 0xdd, 0x99, 0x98, 0x95, 0x67, 0x59, 0xe5, 0x97, 0xaa, 0x0a,
+	0xc6, 0xc9, 0x59, 0x38, 0xfd, 0xb5, 0x67, 0xe1, 0xcc, 0xf4, 0x2c, 0xfc, 0x06, 0x14, 0x26, 0xbb,
+	0x6b, 0x96, 0x71, 0x2d, 0x1b, 0x63, 0x3d, 0x74, 0xc6, 0xd0, 0x2c, 0xcf, 0x18, 0x9a, 0xd1, 0x33,
+	0xd8, 0xa0, 0x78, 0xee, 0x39, 0xfd, 0x59, 0xd3, 0x54, 0x8e, 0x61, 0xf1, 0xdb, 0x33, 0x8e, 0x4a,
+	0xa3, 0xca, 0x30, 0xc7, 0x73, 0xfa, 0xb3, 0x47, 0xa8, 0x75, 0x63, 0xf6, 0x2e, 0xfa, 0xd9, 0x57,
+	0x1a, 0xe4, 0x96, 0x99, 0xe9, 0xbd, 0x79, 0xa6, 0xbf, 0xf9, 0x0c, 0xf7, 0x5f, 0x98, 0xaa, 0xa6,
+	0x7b, 0xf1, 0xd2, 0xac, 0x5e, 0x5c, 0x85, 0x82, 0xeb, 0xe1, 0xe7, 0x96, 0x13, 0x10, 0x71, 0xde,
+	0x52, 0xe1, 0xa6, 0x4c, 0x5e, 0x0e, 0x25, 0x04, 0xc4, 0x1c, 0xc2, 0xda, 0x84, 0x0e, 0xde, 0x84,
+	0x8a, 0x37, 0x36, 0x21, 0x34, 0xae, 0x89, 0x6e, 0x6c, 0x74, 0xe0, 0xee, 0x75, 0xb1, 0xfc, 0xdf,
+	0x1a, 0xbe, 0x94, 0xdf, 0x49, 0x70, 0x87, 0x23, 0xdb, 0x58, 0x59, 0x8a, 0x37, 0xed, 0x97, 0x09,
+	0x45, 0x75, 0x58, 0xe2, 0xb5, 0x1e, 0x0e, 0xd0, 0xdc, 0xc7, 0xcd, 0xb9, 0xd8, 0xc0, 0xdd, 0x52,
+	0xf3, 0x46, 0x6c, 0xa5, 0xdc, 0x85, 0x8d, 0x59, 0xee, 0x12, 0xd7, 0xb1, 0x09, 0x56, 0x7e, 0x2f,
+	0xc1, 0x5d, 0xbe, 0x7d, 0xe4, 0xd1, 0x94, 0xd3, 0xfb, 0xfd, 0x97, 0xf7, 0xe9, 0xa0, 0x04, 0xd9,
+	0x10, 0x1e, 0xf8, 0x8b, 0x6c, 0xb8, 0x44, 0x6b, 0x90, 0xf6, 0x9d, 0x0b, 0x6c, 0x8b, 0xb9, 0x81,
+	0x2f, 0x78, 0x4f, 0x37, 0xb1, 0xdb, 0x77, 0x2e, 0x35, 0xec, 0x1b, 0x26, 0x03, 0x43, 0x99, 0xf6,
+	0x74, 0x4e, 0x6c, 0xf8, 0x86, 0xa9, 0x3c, 0x82, 0x7b, 0x73, 0x1c, 0xe6, 0x47, 0xa2, 0x75, 0x22,
+	0x1a, 0x16, 0x9b, 0x04, 0xa2, 0x0e, 0xb7, 0xc4, 0xa9, 0x27, 0x9c, 0xa8, 0x5c, 0xc0, 0x5a, 0x74,
+	0x23, 0x36, 0x36, 0xe8, 0xcb, 0x34, 0x6b, 0x26, 0xdf, 0x07, 0xb0, 0x5c, 0x2d, 0x7c, 0x19, 0xe5,
+	0x9f, 0x18, 0xca, 0x74, 0x0c, 0x69, 0x1d, 0xef, 0x73, 0xe2, 0x97, 0x57, 0x9b, 0x4b, 0x66, 0x67,
+	0x6f, 0xc4, 0xa5, 0xe6, 0x2c, 0x57, 0xec, 0x8d, 0x4e, 0x96, 0x88, 0x9d, 0x4c, 0xb9, 0x0f, 0x8b,
+	0xe7, 0x87, 0x4e, 0x37, 0xac, 0x51, 0x04, 0x29, 0x8a, 0x4c, 0x4c, 0x7b, 0x5e, 0x65, 0xcf, 0xca,
+	0xc7, 0x49, 0x58, 0xad, 0xed, 0x9e, 0xef, 0x1f, 0xb7, 0x4e, 0x7c, 0x0f, 0xeb, 0x83, 0x30, 0x00,
+	0x6f, 0x02, 0x78, 0xfc, 0x51, 0x8b, 0x3e, 0x79, 0xb0, 0xb1, 0x48, 0x30, 0xb4, 0xea, 0x6a, 0x4e,
+	0x30, 0xb4, 0xcc, 0xd9, 0xe6, 0x51, 0x15, 0x64, 0xfc, 0x02, 0x1b, 0x9a, 0x87, 0x9f, 0x89, 0x41,
+	0xf2, 0x35, 0x1a, 0x43, 0xdd, 0xb5, 0x2a, 0xe1, 0x77, 0xa7, 0x4a, 0xe3, 0x05, 0x36, 0x02, 0x1f,
+	0x9f, 0x18, 0x9e, 0xe5, 0xfa, 0x42, 0x77, 0x73, 0x41, 0xcd, 0x52, 0x41, 0x15, 0x3f, 0x43, 0xef,
+	0x42, 0xa6, 0xc7, 0x35, 0xf0, 0x16, 0xf5, 0xca, 0x94, 0x86, 0x26, 0x2b, 0xbf, 0x5a, 0x0f, 0x1b,
+	0x17, 0x23, 0xf9, 0x74, 0x8f, 0x49, 0xff, 0x00, 0xc0, 0xd0, 0x6d, 0x03, 0xf7, 0x99, 0x86, 0xf4,
+	0x8c, 0x44, 0x8e, 0x9f, 0xbd, 0xc6, 0x58, 0x9b, 0x0b, 0x6a, 0x8e, 0x0b, 0x51, 0x0d, 0x8f, 0x60,
+	0xc9, 0xc4, 0x9d, 0xa0, 0xab, 0xf5, 0x9d, 0x2e, 0x53, 0x22, 0x33, 0x25, 0x5b, 0x53, 0x6e, 0xd4,
+	0x29, 0xd7, 0xa1, 0xd3, 0x1d, 0xf9, 0xb0, 0x68, 0x8e, 0x48, 0xa8, 0x05, 0xcb, 0x5c, 0x8f, 0xeb,
+	0x98, 0x84, 0x29, 0xca, 0x31, 0x45, 0xf7, 0x67, 0x2b, 0x3a, 0x76, 0x4c, 0x32, 0xd2, 0x94, 0x37,
+	0x63, 0xb4, 0x6a, 0x1a, 0x92, 0x03, 0xd2, 0x3d, 0x48, 0xc9, 0x99, 0x62, 0xf6, 0x20, 0x25, 0x67,
+	0x8b, 0xb2, 0xb2, 0x06, 0x68, 0xfa, 0x20, 0xca, 0x6f, 0x93, 0xb0, 0x76, 0xbe, 0x5b, 0x8b, 0xc5,
+	0x56, 0xe4, 0xea, 0xd7, 0x0b, 0x6e, 0x03, 0x72, 0x22, 0x8c, 0xc4, 0x15, 0x60, 0xf0, 0xfa, 0x4d,
+	0x71, 0xe4, 0x86, 0x9a, 0x0b, 0xaa, 0xcc, 0x03, 0x49, 0x5c, 0xf4, 0x3e, 0x64, 0x7b, 0x42, 0x09,
+	0x4f, 0x86, 0x57, 0xaf, 0x0f, 0x65, 0xa4, 0x22, 0xd3, 0xe3, 0x0a, 0x46, 0x33, 0x12, 0x4f, 0x85,
+	0xf5, 0x29, 0x79, 0x0e, 0x9b, 0x54, 0x44, 0xcc, 0x48, 0xd1, 0xad, 0xf3, 0xe8, 0x11, 0x97, 0x0d,
+	0x16, 0x73, 0x6f, 0x9d, 0xc5, 0x2a, 0xb2, 0x9b, 0x37, 0x63, 0x34, 0x74, 0x08, 0x85, 0xb1, 0x00,
+	0x12, 0x57, 0xa4, 0x82, 0x72, 0x5d, 0x04, 0x23, 0x65, 0x4b, 0x66, 0x9c, 0x38, 0x8a, 0x61, 0xba,
+	0x98, 0xe1, 0x91, 0xa4, 0x98, 0x08, 0xe7, 0xbb, 0xb5, 0xb0, 0x58, 0xff, 0x7f, 0x12, 0x01, 0x73,
+	0x73, 0x01, 0x6f, 0x62, 0x26, 0x4b, 0xdc, 0x38, 0x93, 0xdd, 0x03, 0x20, 0x98, 0x50, 0x48, 0xa4,
+	0xca, 0xf9, 0x7b, 0x42, 0x4e, 0x50, 0x5a, 0x26, 0x7a, 0x9d, 0x39, 0x27, 0x6e, 0x79, 0x6d, 0xaa,
+	0xed, 0xee, 0xdb, 0x97, 0x2a, 0x65, 0x50, 0x34, 0x80, 0xda, 0xee, 0xf9, 0x7f, 0xe0, 0xb0, 0x30,
+	0x90, 0xb8, 0xc9, 0xc0, 0x1f, 0x24, 0x80, 0x9a, 0xe7, 0xd8, 0x3c, 0xab, 0xd0, 0x1b, 0x90, 0x98,
+	0xdf, 0x0d, 0x32, 0xc3, 0xab, 0xcd, 0x44, 0xab, 0xae, 0x26, 0x2c, 0x93, 0xbe, 0x07, 0x12, 0x26,
+	0x12, 0x7e, 0x3b, 0x26, 0xa1, 0x82, 0x82, 0xe1, 0x39, 0xb6, 0x86, 0x5f, 0xb8, 0x1e, 0x3f, 0xad,
+	0xe8, 0x04, 0xcb, 0x94, 0xdc, 0x88, 0xa8, 0xb4, 0x85, 0xf0, 0x6e, 0x16, 0x7d, 0x17, 0x14, 0x4b,
+	0xb4, 0x09, 0x8b, 0x4f, 0x3d, 0xfe, 0x46, 0x75, 0xa9, 0x11, 0x06, 0x29, 0x49, 0x15, 0x22, 0xd2,
+	0x89, 0xf2, 0x5d, 0xb8, 0xf7, 0x18, 0xfb, 0x23, 0xaf, 0x09, 0x4b, 0x67, 0x12, 0x44, 0xc8, 0xca,
+	0xb0, 0xd2, 0xb5, 0x0c, 0x31, 0x0f, 0xf0, 0x85, 0xf2, 0x2e, 0x94, 0xe7, 0x89, 0x89, 0xa2, 0xdd,
+	0x00, 0xd9, 0x10, 0x34, 0x21, 0x1a, 0xad, 0x95, 0x07, 0x70, 0x6b, 0x5c, 0xfa, 0x7a, 0x63, 0x7f,
+	0x92, 0xe0, 0xf6, 0x24, 0xbf, 0xb0, 0x72, 0x00, 0x59, 0x7e, 0x59, 0xb4, 0x09, 0xd1, 0x69, 0xf5,
+	0xdb, 0x63, 0x70, 0x39, 0x5b, 0xaa, 0x22, 0xd6, 0x7c, 0x46, 0x0d, 0x15, 0x6c, 0x9c, 0x40, 0x3e,
+	0xbe, 0x31, 0x63, 0x0e, 0x7a, 0x30, 0x3e, 0x07, 0xad, 0x8f, 0x43, 0x73, 0x64, 0x28, 0x3e, 0x08,
+	0x9d, 0xc2, 0xfd, 0xf0, 0xd3, 0xf6, 0x91, 0xc7, 0x5b, 0x72, 0x8c, 0x51, 0x1c, 0x7b, 0x27, 0x4a,
+	0x00, 0xe9, 0x7a, 0xc5, 0x82, 0x4d, 0x79, 0x15, 0x94, 0xeb, 0xb4, 0x8a, 0xb1, 0xe5, 0x0c, 0xd6,
+	0xeb, 0xb8, 0x8f, 0x67, 0x59, 0xdc, 0x83, 0x1c, 0x57, 0x75, 0xd3, 0xc0, 0xc2, 0xc5, 0x68, 0x39,
+	0x70, 0xfe, 0x96, 0xa9, 0x6c, 0x40, 0x69, 0x5a, 0xad, 0x30, 0xf9, 0x2f, 0x09, 0x8a, 0x23, 0xb2,
+	0x78, 0xb7, 0x3d, 0x02, 0x08, 0x5c, 0x82, 0x3d, 0x9f, 0x35, 0x12, 0x6e, 0xad, 0x32, 0xf3, 0xeb,
+	0xff, 0xdc, 0x2b, 0xa2, 0x5d, 0x8e, 0xeb, 0xa0, 0xdd, 0xa9, 0x01, 0x60, 0x32, 0x0f, 0x98, 0xc2,
+	0xc4, 0x08, 0x9e, 0x23, 0x85, 0x73, 0xce, 0x4d, 0xd5, 0x70, 0x49, 0xaa, 0x66, 0xbc, 0xaf, 0x24,
+	0x6f, 0xe8, 0x2b, 0x77, 0x21, 0x17, 0xfd, 0xbd, 0xc5, 0xca, 0x2c, 0xa9, 0x8e, 0x08, 0x02, 0x21,
+	0xbf, 0xf5, 0x47, 0x29, 0xfc, 0x9c, 0x20, 0x5e, 0x12, 0x56, 0x60, 0xe9, 0xfc, 0x03, 0x6d, 0xec,
+	0x6f, 0x87, 0x88, 0xd4, 0x6c, 0xec, 0x1f, 0x9e, 0x36, 0x7f, 0x5c, 0x94, 0xd0, 0x2a, 0x14, 0x42,
+	0xae, 0x90, 0x98, 0x40, 0xb7, 0x01, 0x71, 0x62, 0xbd, 0x75, 0x52, 0x3b, 0x6a, 0xb7, 0x1b, 0xb5,
+	0xd3, 0x46, 0xbd, 0x98, 0x44, 0x08, 0x96, 0x05, 0xf3, 0x71, 0x7d, 0xff, 0xb4, 0xd5, 0x7e, 0x5c,
+	0x4c, 0x8d, 0x14, 0x8c, 0x18, 0xd3, 0x68, 0x1d, 0x56, 0x63, 0x8c, 0x0d, 0xf1, 0xf7, 0x46, 0x31,
+	0x33, 0xd2, 0x50, 0x6f, 0x3c, 0x56, 0xf7, 0xeb, 0x8d, 0x7a, 0x31, 0x5b, 0x7d, 0xef, 0x93, 0xcf,
+	0xca, 0x0b, 0x9f, 0x7e, 0x56, 0x5e, 0xf8, 0xe2, 0xb3, 0xb2, 0xf4, 0xd3, 0x61, 0x59, 0xfa, 0xcd,
+	0xb0, 0x2c, 0xfd, 0x79, 0x58, 0x96, 0x3e, 0x19, 0x96, 0xa5, 0xbf, 0x0e, 0xcb, 0xd2, 0xdf, 0x86,
+	0xe5, 0x85, 0x2f, 0x86, 0x65, 0xe9, 0x97, 0x9f, 0x97, 0x17, 0x3e, 0xf9, 0xbc, 0xbc, 0xf0, 0xe9,
+	0xe7, 0xe5, 0x85, 0x0f, 0xe4, 0xf0, 0xc6, 0x3b, 0x19, 0x86, 0x87, 0xdf, 0xf9, 0x77, 0x00, 0x00,
+	0x00, 0xff, 0xff, 0x2c, 0xbd, 0x26, 0x50, 0x8d, 0x1c, 0x00, 0x00,
 }
 
 func (x VizierStatus) String() string {
@@ -2086,6 +2531,9 @@ func (this *RegisterVizierAck) Equal(that interface{}) bool {
 		return false
 	}
 	if this.Status != that1.Status {
+		return false
+	}
+	if this.VizierName != that1.VizierName {
 		return false
 	}
 	return true
@@ -2579,57 +3027,6 @@ func (this *VizierConnectionInfo) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *VizierSSLCertRequest) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*VizierSSLCertRequest)
-	if !ok {
-		that2, ok := that.(VizierSSLCertRequest)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.VizierID.Equal(that1.VizierID) {
-		return false
-	}
-	return true
-}
-func (this *VizierSSLCertResponse) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*VizierSSLCertResponse)
-	if !ok {
-		that2, ok := that.(VizierSSLCertResponse)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Key != that1.Key {
-		return false
-	}
-	if this.Cert != that1.Cert {
-		return false
-	}
-	return true
-}
 func (this *VLogMessage) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -3044,6 +3441,317 @@ func (this *C2VMessage) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *CronScript) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*CronScript)
+	if !ok {
+		that2, ok := that.(CronScript)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.ID.Equal(that1.ID) {
+		return false
+	}
+	if this.Script != that1.Script {
+		return false
+	}
+	if this.CronExpression != that1.CronExpression {
+		return false
+	}
+	if this.Configs != that1.Configs {
+		return false
+	}
+	if this.FrequencyS != that1.FrequencyS {
+		return false
+	}
+	return true
+}
+func (this *GetCronScriptsChecksumRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetCronScriptsChecksumRequest)
+	if !ok {
+		that2, ok := that.(GetCronScriptsChecksumRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Topic != that1.Topic {
+		return false
+	}
+	return true
+}
+func (this *GetCronScriptsChecksumResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetCronScriptsChecksumResponse)
+	if !ok {
+		that2, ok := that.(GetCronScriptsChecksumResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Checksum != that1.Checksum {
+		return false
+	}
+	return true
+}
+func (this *GetCronScriptsRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetCronScriptsRequest)
+	if !ok {
+		that2, ok := that.(GetCronScriptsRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Topic != that1.Topic {
+		return false
+	}
+	return true
+}
+func (this *GetCronScriptsResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetCronScriptsResponse)
+	if !ok {
+		that2, ok := that.(GetCronScriptsResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Scripts) != len(that1.Scripts) {
+		return false
+	}
+	for i := range this.Scripts {
+		if !this.Scripts[i].Equal(that1.Scripts[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *RegisterOrUpdateCronScriptRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*RegisterOrUpdateCronScriptRequest)
+	if !ok {
+		that2, ok := that.(RegisterOrUpdateCronScriptRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Script.Equal(that1.Script) {
+		return false
+	}
+	return true
+}
+func (this *RegisterOrUpdateCronScriptResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*RegisterOrUpdateCronScriptResponse)
+	if !ok {
+		that2, ok := that.(RegisterOrUpdateCronScriptResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	return true
+}
+func (this *DeleteCronScriptRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*DeleteCronScriptRequest)
+	if !ok {
+		that2, ok := that.(DeleteCronScriptRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.ScriptID.Equal(that1.ScriptID) {
+		return false
+	}
+	return true
+}
+func (this *DeleteCronScriptResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*DeleteCronScriptResponse)
+	if !ok {
+		that2, ok := that.(DeleteCronScriptResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	return true
+}
+func (this *CronScriptUpdate) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*CronScriptUpdate)
+	if !ok {
+		that2, ok := that.(CronScriptUpdate)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if that1.Msg == nil {
+		if this.Msg != nil {
+			return false
+		}
+	} else if this.Msg == nil {
+		return false
+	} else if !this.Msg.Equal(that1.Msg) {
+		return false
+	}
+	if this.RequestID != that1.RequestID {
+		return false
+	}
+	if this.Timestamp != that1.Timestamp {
+		return false
+	}
+	return true
+}
+func (this *CronScriptUpdate_UpsertReq) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*CronScriptUpdate_UpsertReq)
+	if !ok {
+		that2, ok := that.(CronScriptUpdate_UpsertReq)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.UpsertReq.Equal(that1.UpsertReq) {
+		return false
+	}
+	return true
+}
+func (this *CronScriptUpdate_DeleteReq) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*CronScriptUpdate_DeleteReq)
+	if !ok {
+		that2, ok := that.(CronScriptUpdate_DeleteReq)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.DeleteReq.Equal(that1.DeleteReq) {
+		return false
+	}
+	return true
+}
 func (this *RegisterVizierRequest) GoString() string {
 	if this == nil {
 		return "nil"
@@ -3077,9 +3785,10 @@ func (this *RegisterVizierAck) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 5)
+	s := make([]string, 0, 6)
 	s = append(s, "&cvmsgspb.RegisterVizierAck{")
 	s = append(s, "Status: "+fmt.Sprintf("%#v", this.Status)+",\n")
+	s = append(s, "VizierName: "+fmt.Sprintf("%#v", this.VizierName)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -3338,29 +4047,6 @@ func (this *VizierConnectionInfo) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *VizierSSLCertRequest) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 5)
-	s = append(s, "&cvmsgspb.VizierSSLCertRequest{")
-	if this.VizierID != nil {
-		s = append(s, "VizierID: "+fmt.Sprintf("%#v", this.VizierID)+",\n")
-	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *VizierSSLCertResponse) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&cvmsgspb.VizierSSLCertResponse{")
-	s = append(s, "Key: "+fmt.Sprintf("%#v", this.Key)+",\n")
-	s = append(s, "Cert: "+fmt.Sprintf("%#v", this.Cert)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
 func (this *VLogMessage) GoString() string {
 	if this == nil {
 		return "nil"
@@ -3515,6 +4201,146 @@ func (this *C2VMessage) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *CronScript) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 9)
+	s = append(s, "&cvmsgspb.CronScript{")
+	if this.ID != nil {
+		s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
+	}
+	s = append(s, "Script: "+fmt.Sprintf("%#v", this.Script)+",\n")
+	s = append(s, "CronExpression: "+fmt.Sprintf("%#v", this.CronExpression)+",\n")
+	s = append(s, "Configs: "+fmt.Sprintf("%#v", this.Configs)+",\n")
+	s = append(s, "FrequencyS: "+fmt.Sprintf("%#v", this.FrequencyS)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetCronScriptsChecksumRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&cvmsgspb.GetCronScriptsChecksumRequest{")
+	s = append(s, "Topic: "+fmt.Sprintf("%#v", this.Topic)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetCronScriptsChecksumResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&cvmsgspb.GetCronScriptsChecksumResponse{")
+	s = append(s, "Checksum: "+fmt.Sprintf("%#v", this.Checksum)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetCronScriptsRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&cvmsgspb.GetCronScriptsRequest{")
+	s = append(s, "Topic: "+fmt.Sprintf("%#v", this.Topic)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetCronScriptsResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&cvmsgspb.GetCronScriptsResponse{")
+	keysForScripts := make([]string, 0, len(this.Scripts))
+	for k, _ := range this.Scripts {
+		keysForScripts = append(keysForScripts, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForScripts)
+	mapStringForScripts := "map[string]*CronScript{"
+	for _, k := range keysForScripts {
+		mapStringForScripts += fmt.Sprintf("%#v: %#v,", k, this.Scripts[k])
+	}
+	mapStringForScripts += "}"
+	if this.Scripts != nil {
+		s = append(s, "Scripts: "+mapStringForScripts+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *RegisterOrUpdateCronScriptRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&cvmsgspb.RegisterOrUpdateCronScriptRequest{")
+	if this.Script != nil {
+		s = append(s, "Script: "+fmt.Sprintf("%#v", this.Script)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *RegisterOrUpdateCronScriptResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&cvmsgspb.RegisterOrUpdateCronScriptResponse{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *DeleteCronScriptRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&cvmsgspb.DeleteCronScriptRequest{")
+	if this.ScriptID != nil {
+		s = append(s, "ScriptID: "+fmt.Sprintf("%#v", this.ScriptID)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *DeleteCronScriptResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&cvmsgspb.DeleteCronScriptResponse{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CronScriptUpdate) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 8)
+	s = append(s, "&cvmsgspb.CronScriptUpdate{")
+	if this.Msg != nil {
+		s = append(s, "Msg: "+fmt.Sprintf("%#v", this.Msg)+",\n")
+	}
+	s = append(s, "RequestID: "+fmt.Sprintf("%#v", this.RequestID)+",\n")
+	s = append(s, "Timestamp: "+fmt.Sprintf("%#v", this.Timestamp)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CronScriptUpdate_UpsertReq) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&cvmsgspb.CronScriptUpdate_UpsertReq{` +
+		`UpsertReq:` + fmt.Sprintf("%#v", this.UpsertReq) + `}`}, ", ")
+	return s
+}
+func (this *CronScriptUpdate_DeleteReq) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&cvmsgspb.CronScriptUpdate_DeleteReq{` +
+		`DeleteReq:` + fmt.Sprintf("%#v", this.DeleteReq) + `}`}, ", ")
+	return s
+}
 func valueToGoStringCvmsgs(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -3648,6 +4474,13 @@ func (m *RegisterVizierAck) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.VizierName) > 0 {
+		i -= len(m.VizierName)
+		copy(dAtA[i:], m.VizierName)
+		i = encodeVarintCvmsgs(dAtA, i, uint64(len(m.VizierName)))
+		i--
+		dAtA[i] = 0x12
+	}
 	if m.Status != 0 {
 		i = encodeVarintCvmsgs(dAtA, i, uint64(m.Status))
 		i--
@@ -4520,78 +5353,6 @@ func (m *VizierConnectionInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *VizierSSLCertRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *VizierSSLCertRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *VizierSSLCertRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.VizierID != nil {
-		{
-			size, err := m.VizierID.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintCvmsgs(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *VizierSSLCertResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *VizierSSLCertResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *VizierSSLCertResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Cert) > 0 {
-		i -= len(m.Cert)
-		copy(dAtA[i:], m.Cert)
-		i = encodeVarintCvmsgs(dAtA, i, uint64(len(m.Cert)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Key) > 0 {
-		i -= len(m.Key)
-		copy(dAtA[i:], m.Key)
-		i = encodeVarintCvmsgs(dAtA, i, uint64(len(m.Key)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
 func (m *VLogMessage) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -5036,6 +5797,408 @@ func (m *C2VMessage) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *CronScript) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *CronScript) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CronScript) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.FrequencyS != 0 {
+		i = encodeVarintCvmsgs(dAtA, i, uint64(m.FrequencyS))
+		i--
+		dAtA[i] = 0x28
+	}
+	if len(m.Configs) > 0 {
+		i -= len(m.Configs)
+		copy(dAtA[i:], m.Configs)
+		i = encodeVarintCvmsgs(dAtA, i, uint64(len(m.Configs)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.CronExpression) > 0 {
+		i -= len(m.CronExpression)
+		copy(dAtA[i:], m.CronExpression)
+		i = encodeVarintCvmsgs(dAtA, i, uint64(len(m.CronExpression)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Script) > 0 {
+		i -= len(m.Script)
+		copy(dAtA[i:], m.Script)
+		i = encodeVarintCvmsgs(dAtA, i, uint64(len(m.Script)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.ID != nil {
+		{
+			size, err := m.ID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCvmsgs(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetCronScriptsChecksumRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetCronScriptsChecksumRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetCronScriptsChecksumRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Topic) > 0 {
+		i -= len(m.Topic)
+		copy(dAtA[i:], m.Topic)
+		i = encodeVarintCvmsgs(dAtA, i, uint64(len(m.Topic)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetCronScriptsChecksumResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetCronScriptsChecksumResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetCronScriptsChecksumResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Checksum) > 0 {
+		i -= len(m.Checksum)
+		copy(dAtA[i:], m.Checksum)
+		i = encodeVarintCvmsgs(dAtA, i, uint64(len(m.Checksum)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetCronScriptsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetCronScriptsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetCronScriptsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Topic) > 0 {
+		i -= len(m.Topic)
+		copy(dAtA[i:], m.Topic)
+		i = encodeVarintCvmsgs(dAtA, i, uint64(len(m.Topic)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetCronScriptsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetCronScriptsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetCronScriptsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Scripts) > 0 {
+		for k := range m.Scripts {
+			v := m.Scripts[k]
+			baseI := i
+			if v != nil {
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintCvmsgs(dAtA, i, uint64(size))
+				}
+				i--
+				dAtA[i] = 0x12
+			}
+			i -= len(k)
+			copy(dAtA[i:], k)
+			i = encodeVarintCvmsgs(dAtA, i, uint64(len(k)))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintCvmsgs(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RegisterOrUpdateCronScriptRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RegisterOrUpdateCronScriptRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RegisterOrUpdateCronScriptRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Script != nil {
+		{
+			size, err := m.Script.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCvmsgs(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RegisterOrUpdateCronScriptResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RegisterOrUpdateCronScriptResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RegisterOrUpdateCronScriptResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *DeleteCronScriptRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DeleteCronScriptRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DeleteCronScriptRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.ScriptID != nil {
+		{
+			size, err := m.ScriptID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCvmsgs(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *DeleteCronScriptResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DeleteCronScriptResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DeleteCronScriptResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *CronScriptUpdate) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *CronScriptUpdate) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CronScriptUpdate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Timestamp != 0 {
+		i = encodeVarintCvmsgs(dAtA, i, uint64(m.Timestamp))
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.RequestID) > 0 {
+		i -= len(m.RequestID)
+		copy(dAtA[i:], m.RequestID)
+		i = encodeVarintCvmsgs(dAtA, i, uint64(len(m.RequestID)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.Msg != nil {
+		{
+			size := m.Msg.Size()
+			i -= size
+			if _, err := m.Msg.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *CronScriptUpdate_UpsertReq) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CronScriptUpdate_UpsertReq) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.UpsertReq != nil {
+		{
+			size, err := m.UpsertReq.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCvmsgs(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+func (m *CronScriptUpdate_DeleteReq) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CronScriptUpdate_DeleteReq) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.DeleteReq != nil {
+		{
+			size, err := m.DeleteReq.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCvmsgs(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	return len(dAtA) - i, nil
+}
 func encodeVarintCvmsgs(dAtA []byte, offset int, v uint64) int {
 	offset -= sovCvmsgs(v)
 	base := offset
@@ -5101,6 +6264,10 @@ func (m *RegisterVizierAck) Size() (n int) {
 	_ = l
 	if m.Status != 0 {
 		n += 1 + sovCvmsgs(uint64(m.Status))
+	}
+	l = len(m.VizierName)
+	if l > 0 {
+		n += 1 + l + sovCvmsgs(uint64(l))
 	}
 	return n
 }
@@ -5486,36 +6653,6 @@ func (m *VizierConnectionInfo) Size() (n int) {
 	return n
 }
 
-func (m *VizierSSLCertRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.VizierID != nil {
-		l = m.VizierID.Size()
-		n += 1 + l + sovCvmsgs(uint64(l))
-	}
-	return n
-}
-
-func (m *VizierSSLCertResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Key)
-	if l > 0 {
-		n += 1 + l + sovCvmsgs(uint64(l))
-	}
-	l = len(m.Cert)
-	if l > 0 {
-		n += 1 + l + sovCvmsgs(uint64(l))
-	}
-	return n
-}
-
 func (m *VLogMessage) Size() (n int) {
 	if m == nil {
 		return 0
@@ -5735,6 +6872,183 @@ func (m *C2VMessage) Size() (n int) {
 	return n
 }
 
+func (m *CronScript) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ID != nil {
+		l = m.ID.Size()
+		n += 1 + l + sovCvmsgs(uint64(l))
+	}
+	l = len(m.Script)
+	if l > 0 {
+		n += 1 + l + sovCvmsgs(uint64(l))
+	}
+	l = len(m.CronExpression)
+	if l > 0 {
+		n += 1 + l + sovCvmsgs(uint64(l))
+	}
+	l = len(m.Configs)
+	if l > 0 {
+		n += 1 + l + sovCvmsgs(uint64(l))
+	}
+	if m.FrequencyS != 0 {
+		n += 1 + sovCvmsgs(uint64(m.FrequencyS))
+	}
+	return n
+}
+
+func (m *GetCronScriptsChecksumRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Topic)
+	if l > 0 {
+		n += 1 + l + sovCvmsgs(uint64(l))
+	}
+	return n
+}
+
+func (m *GetCronScriptsChecksumResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Checksum)
+	if l > 0 {
+		n += 1 + l + sovCvmsgs(uint64(l))
+	}
+	return n
+}
+
+func (m *GetCronScriptsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Topic)
+	if l > 0 {
+		n += 1 + l + sovCvmsgs(uint64(l))
+	}
+	return n
+}
+
+func (m *GetCronScriptsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Scripts) > 0 {
+		for k, v := range m.Scripts {
+			_ = k
+			_ = v
+			l = 0
+			if v != nil {
+				l = v.Size()
+				l += 1 + sovCvmsgs(uint64(l))
+			}
+			mapEntrySize := 1 + len(k) + sovCvmsgs(uint64(len(k))) + l
+			n += mapEntrySize + 1 + sovCvmsgs(uint64(mapEntrySize))
+		}
+	}
+	return n
+}
+
+func (m *RegisterOrUpdateCronScriptRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Script != nil {
+		l = m.Script.Size()
+		n += 1 + l + sovCvmsgs(uint64(l))
+	}
+	return n
+}
+
+func (m *RegisterOrUpdateCronScriptResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *DeleteCronScriptRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ScriptID != nil {
+		l = m.ScriptID.Size()
+		n += 1 + l + sovCvmsgs(uint64(l))
+	}
+	return n
+}
+
+func (m *DeleteCronScriptResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *CronScriptUpdate) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Msg != nil {
+		n += m.Msg.Size()
+	}
+	l = len(m.RequestID)
+	if l > 0 {
+		n += 1 + l + sovCvmsgs(uint64(l))
+	}
+	if m.Timestamp != 0 {
+		n += 1 + sovCvmsgs(uint64(m.Timestamp))
+	}
+	return n
+}
+
+func (m *CronScriptUpdate_UpsertReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.UpsertReq != nil {
+		l = m.UpsertReq.Size()
+		n += 1 + l + sovCvmsgs(uint64(l))
+	}
+	return n
+}
+func (m *CronScriptUpdate_DeleteReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.DeleteReq != nil {
+		l = m.DeleteReq.Size()
+		n += 1 + l + sovCvmsgs(uint64(l))
+	}
+	return n
+}
+
 func sovCvmsgs(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
@@ -5772,6 +7086,7 @@ func (this *RegisterVizierAck) String() string {
 	}
 	s := strings.Join([]string{`&RegisterVizierAck{`,
 		`Status:` + fmt.Sprintf("%v", this.Status) + `,`,
+		`VizierName:` + fmt.Sprintf("%v", this.VizierName) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -6005,27 +7320,6 @@ func (this *VizierConnectionInfo) String() string {
 	}, "")
 	return s
 }
-func (this *VizierSSLCertRequest) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&VizierSSLCertRequest{`,
-		`VizierID:` + strings.Replace(fmt.Sprintf("%v", this.VizierID), "UUID", "uuidpb.UUID", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *VizierSSLCertResponse) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&VizierSSLCertResponse{`,
-		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
-		`Cert:` + fmt.Sprintf("%v", this.Cert) + `,`,
-		`}`,
-	}, "")
-	return s
-}
 func (this *VLogMessage) String() string {
 	if this == nil {
 		return "nil"
@@ -6188,6 +7482,140 @@ func (this *C2VMessage) String() string {
 	s := strings.Join([]string{`&C2VMessage{`,
 		`VizierID:` + fmt.Sprintf("%v", this.VizierID) + `,`,
 		`Msg:` + strings.Replace(fmt.Sprintf("%v", this.Msg), "Any", "types.Any", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CronScript) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CronScript{`,
+		`ID:` + strings.Replace(fmt.Sprintf("%v", this.ID), "UUID", "uuidpb.UUID", 1) + `,`,
+		`Script:` + fmt.Sprintf("%v", this.Script) + `,`,
+		`CronExpression:` + fmt.Sprintf("%v", this.CronExpression) + `,`,
+		`Configs:` + fmt.Sprintf("%v", this.Configs) + `,`,
+		`FrequencyS:` + fmt.Sprintf("%v", this.FrequencyS) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetCronScriptsChecksumRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetCronScriptsChecksumRequest{`,
+		`Topic:` + fmt.Sprintf("%v", this.Topic) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetCronScriptsChecksumResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetCronScriptsChecksumResponse{`,
+		`Checksum:` + fmt.Sprintf("%v", this.Checksum) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetCronScriptsRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetCronScriptsRequest{`,
+		`Topic:` + fmt.Sprintf("%v", this.Topic) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetCronScriptsResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForScripts := make([]string, 0, len(this.Scripts))
+	for k, _ := range this.Scripts {
+		keysForScripts = append(keysForScripts, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForScripts)
+	mapStringForScripts := "map[string]*CronScript{"
+	for _, k := range keysForScripts {
+		mapStringForScripts += fmt.Sprintf("%v: %v,", k, this.Scripts[k])
+	}
+	mapStringForScripts += "}"
+	s := strings.Join([]string{`&GetCronScriptsResponse{`,
+		`Scripts:` + mapStringForScripts + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *RegisterOrUpdateCronScriptRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&RegisterOrUpdateCronScriptRequest{`,
+		`Script:` + strings.Replace(this.Script.String(), "CronScript", "CronScript", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *RegisterOrUpdateCronScriptResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&RegisterOrUpdateCronScriptResponse{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DeleteCronScriptRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DeleteCronScriptRequest{`,
+		`ScriptID:` + strings.Replace(fmt.Sprintf("%v", this.ScriptID), "UUID", "uuidpb.UUID", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DeleteCronScriptResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DeleteCronScriptResponse{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CronScriptUpdate) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CronScriptUpdate{`,
+		`Msg:` + fmt.Sprintf("%v", this.Msg) + `,`,
+		`RequestID:` + fmt.Sprintf("%v", this.RequestID) + `,`,
+		`Timestamp:` + fmt.Sprintf("%v", this.Timestamp) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CronScriptUpdate_UpsertReq) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CronScriptUpdate_UpsertReq{`,
+		`UpsertReq:` + strings.Replace(fmt.Sprintf("%v", this.UpsertReq), "RegisterOrUpdateCronScriptRequest", "RegisterOrUpdateCronScriptRequest", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CronScriptUpdate_DeleteReq) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CronScriptUpdate_DeleteReq{`,
+		`DeleteReq:` + strings.Replace(fmt.Sprintf("%v", this.DeleteReq), "DeleteCronScriptRequest", "DeleteCronScriptRequest", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -6580,6 +8008,38 @@ func (m *RegisterVizierAck) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VizierName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VizierName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipCvmsgs(dAtA[iNdEx:])
@@ -9368,206 +10828,6 @@ func (m *VizierConnectionInfo) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *VizierSSLCertRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowCvmsgs
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: VizierSSLCertRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: VizierSSLCertRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field VizierID", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCvmsgs
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.VizierID == nil {
-				m.VizierID = &uuidpb.UUID{}
-			}
-			if err := m.VizierID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipCvmsgs(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *VizierSSLCertResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowCvmsgs
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: VizierSSLCertResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: VizierSSLCertResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCvmsgs
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Key = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Cert", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCvmsgs
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Cert = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipCvmsgs(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
 func (m *VLogMessage) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -10514,6 +11774,1075 @@ func (m *C2VMessage) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCvmsgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CronScript) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCvmsgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CronScript: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CronScript: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ID == nil {
+				m.ID = &uuidpb.UUID{}
+			}
+			if err := m.ID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Script", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Script = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CronExpression", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CronExpression = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Configs", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Configs = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FrequencyS", wireType)
+			}
+			m.FrequencyS = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.FrequencyS |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCvmsgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetCronScriptsChecksumRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCvmsgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetCronScriptsChecksumRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetCronScriptsChecksumRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Topic", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Topic = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCvmsgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetCronScriptsChecksumResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCvmsgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetCronScriptsChecksumResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetCronScriptsChecksumResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Checksum", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Checksum = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCvmsgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetCronScriptsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCvmsgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetCronScriptsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetCronScriptsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Topic", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Topic = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCvmsgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetCronScriptsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCvmsgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetCronScriptsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetCronScriptsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Scripts", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Scripts == nil {
+				m.Scripts = make(map[string]*CronScript)
+			}
+			var mapkey string
+			var mapvalue *CronScript
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowCvmsgs
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					wire |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					var stringLenmapkey uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowCvmsgs
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapkey |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapkey := int(stringLenmapkey)
+					if intStringLenmapkey < 0 {
+						return ErrInvalidLengthCvmsgs
+					}
+					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey < 0 {
+						return ErrInvalidLengthCvmsgs
+					}
+					if postStringIndexmapkey > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
+					iNdEx = postStringIndexmapkey
+				} else if fieldNum == 2 {
+					var mapmsglen int
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowCvmsgs
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						mapmsglen |= int(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					if mapmsglen < 0 {
+						return ErrInvalidLengthCvmsgs
+					}
+					postmsgIndex := iNdEx + mapmsglen
+					if postmsgIndex < 0 {
+						return ErrInvalidLengthCvmsgs
+					}
+					if postmsgIndex > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapvalue = &CronScript{}
+					if err := mapvalue.Unmarshal(dAtA[iNdEx:postmsgIndex]); err != nil {
+						return err
+					}
+					iNdEx = postmsgIndex
+				} else {
+					iNdEx = entryPreIndex
+					skippy, err := skipCvmsgs(dAtA[iNdEx:])
+					if err != nil {
+						return err
+					}
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
+						return ErrInvalidLengthCvmsgs
+					}
+					if (iNdEx + skippy) > postIndex {
+						return io.ErrUnexpectedEOF
+					}
+					iNdEx += skippy
+				}
+			}
+			m.Scripts[mapkey] = mapvalue
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCvmsgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RegisterOrUpdateCronScriptRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCvmsgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RegisterOrUpdateCronScriptRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RegisterOrUpdateCronScriptRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Script", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Script == nil {
+				m.Script = &CronScript{}
+			}
+			if err := m.Script.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCvmsgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RegisterOrUpdateCronScriptResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCvmsgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RegisterOrUpdateCronScriptResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RegisterOrUpdateCronScriptResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCvmsgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DeleteCronScriptRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCvmsgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeleteCronScriptRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeleteCronScriptRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ScriptID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ScriptID == nil {
+				m.ScriptID = &uuidpb.UUID{}
+			}
+			if err := m.ScriptID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCvmsgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DeleteCronScriptResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCvmsgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeleteCronScriptResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeleteCronScriptResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCvmsgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CronScriptUpdate) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCvmsgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CronScriptUpdate: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CronScriptUpdate: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UpsertReq", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &RegisterOrUpdateCronScriptRequest{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Msg = &CronScriptUpdate_UpsertReq{v}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DeleteReq", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &DeleteCronScriptRequest{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Msg = &CronScriptUpdate_DeleteReq{v}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RequestID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RequestID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Timestamp", wireType)
+			}
+			m.Timestamp = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Timestamp |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipCvmsgs(dAtA[iNdEx:])

@@ -30,15 +30,18 @@ const useDetailPaneClasses = makeStyles((theme: Theme) => createStyles({
   details: {
     position: 'relative',
     flex: 1,
-    minWidth: 0,
-    minHeight: 0,
     whiteSpace: 'pre-wrap',
     overflow: 'auto',
-    borderLeft: `1px solid ${theme.palette.background.three}`,
   },
   horizontal: {
-    borderLeft: 0,
     borderTop: `1px solid ${theme.palette.background.three}`,
+    minWidth: 0,
+    minHeight: theme.spacing(30),
+  },
+  vertical: {
+    borderLeft: `1px solid ${theme.palette.background.three}`,
+    minWidth: theme.spacing(30),
+    minHeight: 0,
   },
   header: {
     display: 'flex',
@@ -119,7 +122,7 @@ export const DetailPane = React.memo<DetailPaneProps>(({ details, closeDetails, 
   if (!details) return null;
   return (
     <div
-      className={buildClass(classes.details, splitMode === 'horizontal' && classes.horizontal)}
+      className={buildClass(classes.details, classes[splitMode])}
       ref={root}
     >
       <div className={classes.pinDetect} ref={detector}></div>

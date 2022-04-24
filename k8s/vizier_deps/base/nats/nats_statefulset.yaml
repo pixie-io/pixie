@@ -22,7 +22,7 @@ kind: ConfigMap
 metadata:
   name: nats-config
 data:
-# yamllint disable
+  # yamllint disable rule:indentation
   nats.conf: |
     pid_file: "/var/run/nats/nats.pid"
     http: 8222
@@ -33,7 +33,7 @@ data:
       key_file: "/etc/nats-server-tls-certs/server.key",
       timeout: 3
     }
-# yamllint enable
+  # yamllint enable rule:indentation
 ---
 apiVersion: v1
 kind: Service

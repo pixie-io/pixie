@@ -41,6 +41,7 @@ type GraphQLEnv struct {
 	AutocompleteServer    cloudpb.AutocompleteServiceServer
 	OrgServer             cloudpb.OrganizationServiceServer
 	UserServer            cloudpb.UserServiceServer
+	PluginServer          cloudpb.PluginServiceServer
 }
 
 // QueryResolver resolves queries for GQL.

@@ -29,15 +29,17 @@ import (
 )
 
 const (
-	vizierEtcdYAMLPath               = "./yamls/vizier/vizier_etcd_metadata_prod.yaml"
-	vizierMetadataPersistYAMLPath    = "./yamls/vizier/vizier_metadata_persist_prod.yaml"
-	etcdYAMLPath                     = "./yamls/vizier_deps/etcd_prod.yaml"
-	natsYAMLPath                     = "./yamls/vizier_deps/nats_prod.yaml"
+	vizierEtcdYAMLPath            = "./yamls/vizier/vizier_etcd_metadata_prod.yaml"
+	vizierMetadataPersistYAMLPath = "./yamls/vizier/vizier_metadata_persist_prod.yaml"
+	etcdYAMLPath                  = "./yamls/vizier_deps/etcd_prod.yaml"
+	natsYAMLPath                  = "./yamls/vizier_deps/nats_prod.yaml"
+	// Note: if you update this value, make sure you also update defaultUncappedTableStoreSizeMB in
+	// src/cloud/config_manager/controllers/server.go, because we want to make
+	// sure that the table store size is about 60% of the total requested memory.
 	defaultMemoryLimit               = "2Gi"
 	defaultDataAccess                = "Full"
 	defaultDatastreamBufferSize      = 1024 * 1024
 	defaultDatastreamBufferSpikeSize = 1024 * 1024 * 500
-	defaultTableStoreTableSizeLimit  = 1024 * 1024 * 64
 	defaultElectionPeriodMs          = 7500
 )
 
@@ -52,6 +54,7 @@ type VizierTmplValues struct {
 	CloudUpdateAddr           string
 	UseEtcdOperator           bool
 	PEMMemoryLimit            string
+	PEMMemoryRequest          string
 	Namespace                 string
 	DisableAutoUpdate         bool
 	SentryDSN                 string
@@ -59,7 +62,6 @@ type VizierTmplValues struct {
 	DataAccess                string
 	DatastreamBufferSize      uint32
 	DatastreamBufferSpikeSize uint32
-	TableStoreTableSizeLimit  int32
 	ElectionPeriodMs          int64
 	CustomPEMFlags            map[string]string
 }
@@ -77,13 +79,13 @@ func VizierTmplValuesToArgs(tmplValues *VizierTmplValues) *yamls.YAMLTmplArgumen
 			"cloudUpdateAddr":           tmplValues.CloudUpdateAddr,
 			"useEtcdOperator":           tmplValues.UseEtcdOperator,
 			"pemMemoryLimit":            tmplValues.PEMMemoryLimit,
+			"pemMemoryRequest":          tmplValues.PEMMemoryRequest,
 			"disableAutoUpdate":         tmplValues.DisableAutoUpdate,
 			"sentryDSN":                 tmplValues.SentryDSN,
 			"clockConverter":            tmplValues.ClockConverter,
 			"dataAccess":                tmplValues.DataAccess,
 			"datastreamBufferSize":      tmplValues.DatastreamBufferSize,
 			"datastreamBufferSpikeSize": tmplValues.DatastreamBufferSpikeSize,
-			"tableStoreTableSizeLimit":  tmplValues.TableStoreTableSizeLimit,
 			"electionPeriodMs":          tmplValues.ElectionPeriodMs,
 			"customPEMFlags":            tmplValues.CustomPEMFlags,
 		},
@@ -248,6 +250,12 @@ func GenerateSecretsYAML(clientset *kubernetes.Clientset, versionStr string) (st
 		},
 		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cluster-config"),
+			Patch:           `{"data": { "PX_MEMORY_REQUEST": "__PX_MEMORY_REQUEST__"} }`,
+			Placeholder:     "__PX_MEMORY_REQUEST__",
+			TemplateValue:   `"{{ .Values.pemMemoryRequest }}"`,
+		},
+		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cluster-config"),
 			Patch:           `{"data": { "PL_DISABLE_AUTO_UPDATE": "__PL_DISABLE_AUTO_UPDATE__"} }`,
 			Placeholder:     "__PL_DISABLE_AUTO_UPDATE__",
 			TemplateValue:   `{{ if .Values.disableAutoUpdate }}"{{ .Values.disableAutoUpdate }}"{{ else }}"false"{{ end }}`,
@@ -330,6 +338,12 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
 			TemplateValue:   fmt.Sprintf(`{{ if .Values.pemMemoryLimit }}"{{ .Values.pemMemoryLimit }}"{{else}}"%s"{{end}}`, defaultMemoryLimit),
 		},
 		{
+			TemplateMatcher: yamls.GenerateContainerNameMatcherFn("pem"),
+			Patch:           `{"spec": { "template": { "spec": { "containers": [{ "name": "pem", "resources": { "requests": { "memory": "__PX_MEMORY_REQUEST__"} } }] } } } }`,
+			Placeholder:     "__PX_MEMORY_REQUEST__",
+			TemplateValue:   fmt.Sprintf(`{{ if .Values.pemMemoryRequest }}"{{ .Values.pemMemoryRequest }}"{{else}}"%s"{{end}}`, defaultMemoryLimit),
+		},
+		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("proxy-envoy-config"),
 			Patch:           `{}`,
 			Placeholder:     ".pl.svc",
@@ -372,18 +386,6 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
 			TemplateValue:   nsTmpl,
 		},
 		{
-			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-vizier-certmgr-cluster-binding"),
-			Patch:           `{ "subjects": [{ "name": "certmgr-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
-			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
-			TemplateValue:   nsTmpl,
-		},
-		{
-			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-vizier-crd-certmgr-binding"),
-			Patch:           `{ "subjects": [{ "name": "certmgr-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
-			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
-			TemplateValue:   nsTmpl,
-		},
-		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-vizier-metadata-node-view-cluster-binding"),
 			Patch:           `{ "subjects": [{ "name": "metadata-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
 			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
@@ -412,12 +414,6 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
 			Patch:           `{"spec": {"template": { "spec": { "containers": [{"name": "pem", "env": [{"name": "PL_DATASTREAM_BUFFER_SPIKE_SIZE", "value": "__PX_DATASTREAM_BUFFER_SPIKE_SIZE__"}]}] } } } }`,
 			Placeholder:     "__PX_DATASTREAM_BUFFER_SPIKE_SIZE__",
 			TemplateValue:   fmt.Sprintf(`{{ if .Values.datastreamBufferSpikeSize }}"{{.Values.datastreamBufferSpikeSize}}"{{else}}"%d"{{end}}`, defaultDatastreamBufferSpikeSize),
-		},
-		{
-			TemplateMatcher: yamls.GenerateContainerNameMatcherFn("pem"),
-			Patch:           `{"spec": {"template": { "spec": { "containers": [{"name": "pem", "env": [{"name": "PL_TABLE_STORE_TABLE_SIZE_LIMIT", "value": "__PX_TABLE_STORE_TABLE_SIZE_LIMIT__"}]}] } } } }`,
-			Placeholder:     "__PX_TABLE_STORE_TABLE_SIZE_LIMIT__",
-			TemplateValue:   fmt.Sprintf(`{{ if .Values.tableStoreTableSizeLimit }}"{{.Values.tableStoreTableSizeLimit}}"{{else}}"%d"{{end}}`, defaultTableStoreTableSizeLimit),
 		},
 		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("vizier-metadata"),

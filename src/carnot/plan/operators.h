@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <google/protobuf/wrappers.pb.h>
@@ -354,6 +355,46 @@ class EmptySourceOperator : public Operator {
  private:
   planpb::EmptySourceOperator pb_;
   std::vector<int64_t> column_idxs_;
+};
+
+class OTelExportSinkOperator : public Operator {
+ public:
+  explicit OTelExportSinkOperator(int64_t id) : Operator(id, planpb::OTEL_EXPORT_SINK_OPERATOR) {}
+  ~OTelExportSinkOperator() override = default;
+
+  StatusOr<table_store::schema::Relation> OutputRelation(
+      const table_store::schema::Schema& schema, const PlanState& state,
+      const std::vector<int64_t>& input_ids) const override;
+  Status Init(const planpb::OTelExportSinkOperator& pb);
+  std::string DebugString() const override;
+
+  const std::string& url() const { return pb_.endpoint_config().url(); }
+  bool insecure() const { return pb_.endpoint_config().insecure(); }
+  // TODO(philkuz) temporary measure.
+  const planpb::OTelExportSinkOperator& pb() const { return pb_; }
+
+  const ::google::protobuf::RepeatedPtrField<planpb::OTelMetric>& metrics() const {
+    return pb_.metrics();
+  }
+  const ::google::protobuf::RepeatedPtrField<planpb::OTelSpan>& spans() const {
+    return pb_.spans();
+  }
+  const planpb::OTelResource& resource() const { return pb_.resource(); }
+
+  const std::vector<std::pair<std::string, std::string>>& endpoint_headers() { return headers_; }
+
+  const std::vector<planpb::OTelAttribute>& resource_attributes_optional_json_encoded() {
+    return resource_attributes_optional_json_encoded_;
+  }
+  const std::vector<planpb::OTelAttribute>& resource_attributes_normal_encoding() {
+    return resource_attributes_normal_encoding_;
+  }
+
+ private:
+  std::vector<std::pair<std::string, std::string>> headers_;
+  std::vector<planpb::OTelAttribute> resource_attributes_optional_json_encoded_;
+  std::vector<planpb::OTelAttribute> resource_attributes_normal_encoding_;
+  planpb::OTelExportSinkOperator pb_;
 };
 
 }  // namespace plan

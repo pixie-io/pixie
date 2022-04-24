@@ -137,7 +137,6 @@ class ExecutionGraph {
    */
   bool YieldWithTimeout();
 
-  std::vector<std::string> OutputTables() const;
   ExecutionStats GetStats() const;
 
   void AddNode(int64_t id, ExecNode* node) {
@@ -216,7 +215,6 @@ class ExecutionGraph {
   plan::PlanState* plan_state_;
   plan::PlanFragment* pf_;
   std::vector<int64_t> sources_;
-  std::vector<int64_t> sinks_;
   absl::flat_hash_set<int64_t> grpc_sources_;
   absl::flat_hash_set<int64_t> grpc_sinks_;
   std::unordered_map<int64_t, ExecNode*> nodes_;

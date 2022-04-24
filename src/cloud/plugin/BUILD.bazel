@@ -49,6 +49,7 @@ go_library(
     srcs = ["plugin_server.go"],
     importpath = "px.dev/pixie/src/cloud/plugin",
     deps = [
+        "//src/cloud/cron_script/cronscriptpb:service_pl_go_proto",
         "//src/cloud/plugin/controllers",
         "//src/cloud/plugin/pluginpb:service_pl_go_proto",
         "//src/cloud/plugin/schema",
@@ -60,6 +61,8 @@ go_library(
         "//src/shared/services/server",
         "@com_github_golang_migrate_migrate//source/go_bindata",
         "@com_github_sirupsen_logrus//:logrus",
+        "@com_github_spf13_pflag//:pflag",
         "@com_github_spf13_viper//:viper",
+        "@org_golang_google_grpc//:go_default_library",
     ],
 )

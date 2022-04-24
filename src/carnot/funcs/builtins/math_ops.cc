@@ -55,57 +55,46 @@ void RegisterMathOpsOrDie(udf::Registry* registry) {
    * Scalar UDFs.
    *****************************************/
   // Addition
-  registry->RegisterOrDie<AddUDF<types::Int64Value, types::Int64Value, types::Int64Value>>("add");
+  registry->RegisterOrDie<AddUDF<types::Int64Value>>("add");
+  registry->RegisterOrDie<AddUDF<types::Float64Value>>("add");
+  registry->RegisterOrDie<AddUDF<types::StringValue>>("add");
   registry->RegisterOrDie<AddUDF<types::Float64Value, types::Float64Value, types::Int64Value>>(
       "add");
   registry->RegisterOrDie<AddUDF<types::Float64Value, types::Int64Value, types::Float64Value>>(
-      "add");
-  registry->RegisterOrDie<AddUDF<types::Float64Value, types::Float64Value, types::Float64Value>>(
       "add");
   registry->RegisterOrDie<AddUDF<types::Time64NSValue, types::Time64NSValue, types::Int64Value>>(
       "add");
   registry->RegisterOrDie<AddUDF<types::Time64NSValue, types::Int64Value, types::Time64NSValue>>(
       "add");
-  registry->RegisterOrDie<AddUDF<types::StringValue, types::StringValue, types::StringValue>>(
-      "add");
   // Subtraction
-  registry->RegisterOrDie<SubtractUDF<types::Int64Value, types::Int64Value, types::Int64Value>>(
-      "subtract");
+  registry->RegisterOrDie<SubtractUDF<types::Int64Value>>("subtract");
+  registry->RegisterOrDie<SubtractUDF<types::Float64Value>>("subtract");
   registry->RegisterOrDie<SubtractUDF<types::Float64Value, types::Float64Value, types::Int64Value>>(
       "subtract");
   registry->RegisterOrDie<SubtractUDF<types::Float64Value, types::Int64Value, types::Float64Value>>(
       "subtract");
-  registry->RegisterOrDie<SubtractUDF<types::Int64Value, types::Time64NSValue, types::Int64Value>>(
-      "subtract");
+  registry
+      ->RegisterOrDie<SubtractUDF<types::Time64NSValue, types::Time64NSValue, types::Int64Value>>(
+          "subtract");
   registry
       ->RegisterOrDie<SubtractUDF<types::Int64Value, types::Time64NSValue, types::Time64NSValue>>(
           "subtract");
   registry->RegisterOrDie<SubtractUDF<types::Int64Value, types::Int64Value, types::Time64NSValue>>(
       "subtract");
-  registry
-      ->RegisterOrDie<SubtractUDF<types::Float64Value, types::Float64Value, types::Float64Value>>(
-          "subtract");
 
   // Division
-  registry->RegisterOrDie<DivideUDF<types::Float64Value, types::Int64Value, types::Int64Value>>(
-      "divide");
-  registry->RegisterOrDie<DivideUDF<types::Float64Value, types::Float64Value, types::Int64Value>>(
-      "divide");
-  registry->RegisterOrDie<DivideUDF<types::Float64Value, types::Int64Value, types::Float64Value>>(
-      "divide");
-  registry->RegisterOrDie<DivideUDF<types::Float64Value, types::Float64Value, types::Float64Value>>(
-      "divide");
+  registry->RegisterOrDie<DivideUDF<types::Int64Value, types::Int64Value>>("divide");
+  registry->RegisterOrDie<DivideUDF<types::Float64Value, types::Int64Value>>("divide");
+  registry->RegisterOrDie<DivideUDF<types::Int64Value, types::Float64Value>>("divide");
+  registry->RegisterOrDie<DivideUDF<types::Float64Value, types::Float64Value>>("divide");
 
   // Multiplication
-  registry->RegisterOrDie<MultiplyUDF<types::Int64Value, types::Int64Value, types::Int64Value>>(
-      "multiply");
+  registry->RegisterOrDie<MultiplyUDF<types::Int64Value>>("multiply");
+  registry->RegisterOrDie<MultiplyUDF<types::Float64Value>>("multiply");
   registry->RegisterOrDie<MultiplyUDF<types::Float64Value, types::Float64Value, types::Int64Value>>(
       "multiply");
   registry->RegisterOrDie<MultiplyUDF<types::Float64Value, types::Int64Value, types::Float64Value>>(
       "multiply");
-  registry
-      ->RegisterOrDie<MultiplyUDF<types::Float64Value, types::Float64Value, types::Float64Value>>(
-          "multiply");
 
   // Log.
   registry->RegisterOrDie<LogUDF<types::Float64Value, types::Float64Value>>("log");
@@ -158,11 +147,11 @@ void RegisterMathOpsOrDie(udf::Registry* registry) {
   registry->RegisterOrDie<FloorUDF>("floor");
 
   // Or (||)
-  registry->RegisterOrDie<LogicalOrUDF<types::Int64Value, types::Int64Value>>("logicalOr");
-  registry->RegisterOrDie<LogicalOrUDF<types::BoolValue, types::BoolValue>>("logicalOr");
+  registry->RegisterOrDie<LogicalOrUDF<types::Int64Value>>("logicalOr");
+  registry->RegisterOrDie<LogicalOrUDF<types::BoolValue>>("logicalOr");
   // And (&&)
-  registry->RegisterOrDie<LogicalAndUDF<types::Int64Value, types::Int64Value>>("logicalAnd");
-  registry->RegisterOrDie<LogicalAndUDF<types::BoolValue, types::BoolValue>>("logicalAnd");
+  registry->RegisterOrDie<LogicalAndUDF<types::Int64Value>>("logicalAnd");
+  registry->RegisterOrDie<LogicalAndUDF<types::BoolValue>>("logicalAnd");
   // Not (!)
   registry->RegisterOrDie<LogicalNotUDF<types::Int64Value>>("logicalNot");
   registry->RegisterOrDie<LogicalNotUDF<types::BoolValue>>("logicalNot");
@@ -172,67 +161,66 @@ void RegisterMathOpsOrDie(udf::Registry* registry) {
   // Invert (~)
   registry->RegisterOrDie<InvertUDF<types::Int64Value>>("invert");
   // ==
-  registry->RegisterOrDie<EqualUDF<types::Int64Value, types::Int64Value>>("equal");
-  registry->RegisterOrDie<EqualUDF<types::StringValue, types::StringValue>>("equal");
-  registry->RegisterOrDie<EqualUDF<types::BoolValue, types::BoolValue>>("equal");
+  registry->RegisterOrDie<EqualUDF<types::Int64Value>>("equal");
+  registry->RegisterOrDie<EqualUDF<types::StringValue>>("equal");
+  registry->RegisterOrDie<EqualUDF<types::BoolValue>>("equal");
+  registry->RegisterOrDie<EqualUDF<types::Time64NSValue>>("equal");
+  registry->RegisterOrDie<EqualUDF<types::UInt128Value>>("equal");
   registry->RegisterOrDie<EqualUDF<types::BoolValue, types::Int64Value>>("equal");
   registry->RegisterOrDie<EqualUDF<types::Int64Value, types::BoolValue>>("equal");
   registry->RegisterOrDie<EqualUDF<types::Int64Value, types::Float64Value>>("equal");
   registry->RegisterOrDie<EqualUDF<types::Float64Value, types::Int64Value>>("equal");
-  registry->RegisterOrDie<EqualUDF<types::UInt128Value, types::UInt128Value>>("equal");
-  registry->RegisterOrDie<EqualUDF<types::Time64NSValue, types::Time64NSValue>>("equal");
-  registry->RegisterOrDie<ApproxEqualUDF<types::Float64Value, types::Float64Value>>("equal");
+  registry->RegisterOrDie<ApproxEqualUDF>("equal");
 
   // !=
-  registry->RegisterOrDie<NotEqualUDF<types::Int64Value, types::Int64Value>>("notEqual");
-  registry->RegisterOrDie<NotEqualUDF<types::StringValue, types::StringValue>>("notEqual");
-  registry->RegisterOrDie<NotEqualUDF<types::BoolValue, types::BoolValue>>("notEqual");
+  registry->RegisterOrDie<NotEqualUDF<types::Int64Value>>("notEqual");
+  registry->RegisterOrDie<NotEqualUDF<types::StringValue>>("notEqual");
+  registry->RegisterOrDie<NotEqualUDF<types::BoolValue>>("notEqual");
+  registry->RegisterOrDie<NotEqualUDF<types::Time64NSValue>>("notEqual");
+  registry->RegisterOrDie<NotEqualUDF<types::UInt128Value>>("notEqual");
   registry->RegisterOrDie<NotEqualUDF<types::BoolValue, types::Int64Value>>("notEqual");
   registry->RegisterOrDie<NotEqualUDF<types::Int64Value, types::BoolValue>>("notEqual");
   registry->RegisterOrDie<NotEqualUDF<types::Int64Value, types::Float64Value>>("notEqual");
   registry->RegisterOrDie<NotEqualUDF<types::Float64Value, types::Int64Value>>("notEqual");
-  registry->RegisterOrDie<ApproxNotEqualUDF<types::Float64Value, types::Float64Value>>("notEqual");
-  registry->RegisterOrDie<NotEqualUDF<types::Time64NSValue, types::Time64NSValue>>("notEqual");
+  registry->RegisterOrDie<ApproxNotEqualUDF>("notEqual");
   // ~=
-  registry->RegisterOrDie<ApproxEqualUDF<types::Float64Value, types::Float64Value>>("approxEqual");
+  registry->RegisterOrDie<ApproxEqualUDF>("approxEqual");
   // >
-  registry->RegisterOrDie<GreaterThanUDF<types::Int64Value, types::Int64Value>>("greaterThan");
-  registry->RegisterOrDie<GreaterThanUDF<types::Float64Value, types::Float64Value>>("greaterThan");
-  registry->RegisterOrDie<GreaterThanUDF<types::StringValue, types::StringValue>>("greaterThan");
+  registry->RegisterOrDie<GreaterThanUDF<types::Int64Value>>("greaterThan");
+  registry->RegisterOrDie<GreaterThanUDF<types::Time64NSValue>>("greaterThan");
+  registry->RegisterOrDie<GreaterThanUDF<types::Float64Value>>("greaterThan");
+  registry->RegisterOrDie<GreaterThanUDF<types::StringValue>>("greaterThan");
   // >=
-  registry->RegisterOrDie<GreaterThanEqualUDF<types::Int64Value, types::Int64Value>>(
-      "greaterThanEqual");
-  registry->RegisterOrDie<GreaterThanEqualUDF<types::Float64Value, types::Float64Value>>(
-      "greaterThanEqual");
-  registry->RegisterOrDie<GreaterThanUDF<types::StringValue, types::StringValue>>(
-      "greaterThanEqual");
-
-  registry->RegisterOrDie<GreaterThanUDF<types::Time64NSValue, types::Time64NSValue>>(
-      "greaterThanEqual");
+  registry->RegisterOrDie<GreaterThanEqualUDF<types::Int64Value>>("greaterThanEqual");
+  registry->RegisterOrDie<GreaterThanEqualUDF<types::Float64Value>>("greaterThanEqual");
+  registry->RegisterOrDie<GreaterThanEqualUDF<types::StringValue>>("greaterThanEqual");
+  registry->RegisterOrDie<GreaterThanEqualUDF<types::Time64NSValue>>("greaterThanEqual");
   // <
-  registry->RegisterOrDie<LessThanUDF<types::Int64Value, types::Int64Value>>("lessThan");
-  registry->RegisterOrDie<LessThanUDF<types::Float64Value, types::Float64Value>>("lessThan");
-  registry->RegisterOrDie<LessThanUDF<types::StringValue, types::StringValue>>("lessThan");
+  registry->RegisterOrDie<LessThanUDF<types::Int64Value>>("lessThan");
+  registry->RegisterOrDie<LessThanUDF<types::Time64NSValue>>("lessThan");
+  registry->RegisterOrDie<LessThanUDF<types::Float64Value>>("lessThan");
+  registry->RegisterOrDie<LessThanUDF<types::StringValue>>("lessThan");
   // <=
-  registry->RegisterOrDie<LessThanEqualUDF<types::Int64Value, types::Int64Value>>("lessThanEqual");
-  registry->RegisterOrDie<LessThanEqualUDF<types::Float64Value, types::Float64Value>>(
-      "lessThanEqual");
-  registry->RegisterOrDie<LessThanEqualUDF<types::Time64NSValue, types::Time64NSValue>>(
-      "lessThanEqual");
-  registry->RegisterOrDie<LessThanUDF<types::StringValue, types::StringValue>>("lessThanEqual");
+  registry->RegisterOrDie<LessThanEqualUDF<types::Int64Value>>("lessThanEqual");
+  registry->RegisterOrDie<LessThanEqualUDF<types::Float64Value>>("lessThanEqual");
+  registry->RegisterOrDie<LessThanEqualUDF<types::Time64NSValue>>("lessThanEqual");
+  registry->RegisterOrDie<LessThanEqualUDF<types::StringValue>>("lessThanEqual");
 
   // Bin
-  registry->RegisterOrDie<BinUDF<types::Int64Value, types::Int64Value, types::Int64Value>>("bin");
+  registry->RegisterOrDie<BinUDF<types::Int64Value>>("bin");
+  registry->RegisterOrDie<BinUDF<types::Time64NSValue>>("bin");
   registry->RegisterOrDie<BinUDF<types::Int64Value, types::Int64Value, types::Time64NSValue>>(
       "bin");
   registry->RegisterOrDie<BinUDF<types::Time64NSValue, types::Time64NSValue, types::Int64Value>>(
-      "bin");
-  registry->RegisterOrDie<BinUDF<types::Time64NSValue, types::Time64NSValue, types::Time64NSValue>>(
       "bin");
   registry->RegisterOrDie<BinUDF<types::Int64Value, types::Float64Value, types::Int64Value>>("bin");
 
   // Round
   registry->RegisterOrDie<RoundUDF>("round");
+
+  // Time64 <-> Int64
+  registry->RegisterOrDie<TimeToInt64UDF>("time_to_int64");
+  registry->RegisterOrDie<Int64ToTimeUDF>("int64_to_time");
 
   /*****************************************
    * Aggregate UDFs.

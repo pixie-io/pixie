@@ -64,7 +64,6 @@ pl_cc_test(
     deps = [
         ":cc_library",
         ":test_utils",
-        "//src/common/system:cc_library_mock",
     ],
 )
 
@@ -92,7 +91,6 @@ pl_cc_test(
     data = glob(["testdata/**/*"]),
     deps = [
         ":cc_library",
-        "//src/common/system:cc_library_mock",
     ],
 )
 

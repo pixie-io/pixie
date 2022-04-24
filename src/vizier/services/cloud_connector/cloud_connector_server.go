@@ -54,6 +54,7 @@ func init() {
 	pflag.String("qb_service", "vizier-query-broker-svc", "The querybroker service url (load balancer/list is ok)")
 	pflag.String("qb_port", "50300", "The querybroker service port")
 	pflag.String("cluster_name", "", "The name of the user's K8s cluster")
+	pflag.String("vizier_name", "", "The name of the user's K8s cluster, assigned by Pixie cloud")
 	pflag.String("deploy_key", "", "The deploy key for the cluster")
 	pflag.Bool("disable_auto_update", false, "Whether auto-update should be disabled")
 }
@@ -104,6 +105,8 @@ func main() {
 
 	clusterID := viper.GetString("cluster_id")
 	vizierID := uuid.FromStringOrNil(clusterID)
+
+	assignedClusterName := viper.GetString("vizier_name")
 
 	deployKey := viper.GetString("deploy_key")
 
@@ -160,7 +163,7 @@ func main() {
 	// We just use the current time in nanoseconds to mark the session ID. This will let the cloud side know that
 	// the cloud connector restarted. Clock skew might make this incorrect, but we mostly want this for debugging.
 	sessionID := time.Now().UnixNano()
-	svr := controllers.New(vizierID, viper.GetString("jwt_signing_key"), deployKey, sessionID, nil, vzInfo, vzInfo, nil, checker)
+	svr := controllers.New(vizierID, assignedClusterName, viper.GetString("jwt_signing_key"), deployKey, sessionID, nil, vzInfo, vzInfo, nil, checker)
 	go svr.RunStream()
 	defer svr.Stop()
 

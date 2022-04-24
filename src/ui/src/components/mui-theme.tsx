@@ -183,7 +183,7 @@ export const scrollbarStyles = (theme: Theme) => {
   };
 };
 
-function addSyntaxToPalette(base: Omit<AugmentedPaletteOptions, 'syntax'>): AugmentedPaletteOptions {
+export function addSyntaxToPalette(base: Omit<AugmentedPaletteOptions, 'syntax'>): AugmentedPaletteOptions {
   return {
     ...base,
     syntax: {
@@ -373,7 +373,7 @@ export const COMMON_THEME = {
   },
 };
 
-const DARK_BASE = {
+export const DARK_BASE = {
   ...COMMON_THEME,
   ...{
     palette: {
@@ -454,7 +454,7 @@ export const DARK_THEME = createTheme({
   palette: addSyntaxToPalette(DARK_BASE.palette),
 });
 
-const LIGHT_BASE = {
+export const LIGHT_BASE = {
   ...COMMON_THEME,
   ...{
     palette: {

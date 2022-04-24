@@ -723,6 +723,7 @@ C_STANDARD_HEADER_FOLDERS = frozenset([
 _CPP_HEADER_DIRS = tuple([
     'experimental/',
     'absl/',
+    'prometheus/',
     'benchmark/',
     'gmock/',
     'gtest/',

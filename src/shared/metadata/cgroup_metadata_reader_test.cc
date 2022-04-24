@@ -15,17 +15,11 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
-
-#include <string>
-#include <vector>
+#include "src/shared/metadata/cgroup_metadata_reader.h"
 
 #include <absl/container/flat_hash_set.h>
-#include "src/common/system/config_mock.h"
+
 #include "src/common/testing/testing.h"
-#include "src/shared/metadata/cgroup_metadata_reader.h"
 
 namespace px {
 namespace md {
@@ -33,42 +27,13 @@ namespace md {
 using ::testing::_;
 using ::testing::ReturnArg;
 
-namespace {
-constexpr char kTestDataBasePath[] = "src/shared/metadata";
-
-std::string GetPathToTestDataFile(const std::string& fname) {
-  return testing::TestFilePath(std::string(kTestDataBasePath) + "/" + fname);
-}
-}  // namespace
-
 class CGroupMetadataReaderTest : public ::testing::Test {
  protected:
-  void SetupMockConfig(system::MockConfig* sysconfig, const std::string& proc_path,
-                       const std::string& sysfs_path) {
-    using ::testing::Return;
-    using ::testing::ReturnRef;
-
-    proc_path_ = GetPathToTestDataFile(proc_path);
-    sysfs_path_ = GetPathToTestDataFile(sysfs_path);
-
-    EXPECT_CALL(*sysconfig, HasConfig()).WillRepeatedly(Return(true));
-    EXPECT_CALL(*sysconfig, PageSize()).WillRepeatedly(Return(4096));
-    EXPECT_CALL(*sysconfig, KernelTicksPerSecond()).WillRepeatedly(Return(10000000));
-    EXPECT_CALL(*sysconfig, ConvertToRealTime(_)).WillRepeatedly(ReturnArg<0>());
-
-    EXPECT_CALL(*sysconfig, proc_path()).WillRepeatedly(ReturnRef(proc_path_));
-    EXPECT_CALL(*sysconfig, sysfs_path()).WillRepeatedly(ReturnRef(sysfs_path_));
-  }
-
   void SetUp() override {
-    system::MockConfig sysconfig;
-    SetupMockConfig(&sysconfig, "testdata/proc1", "testdata/sysfs1");
-    md_reader_ = std::make_unique<CGroupMetadataReader>(sysconfig);
+    md_reader_ = std::make_unique<CGroupMetadataReader>("src/shared/metadata/testdata/sysfs1");
   }
 
   std::unique_ptr<CGroupMetadataReader> md_reader_;
-  std::filesystem::path proc_path_;
-  std::filesystem::path sysfs_path_;
 };
 
 TEST_F(CGroupMetadataReaderTest, read_pid_list) {

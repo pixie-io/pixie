@@ -19,6 +19,7 @@
 #pragma once
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "src/carnot/planner/compiler_state/compiler_state.h"
@@ -49,8 +50,8 @@ class TracingVariableObject : public QLObject {
   // The reference for this tracing variable.
   const std::string& id() const { return id_; }
 
-  explicit TracingVariableObject(ASTVisitor* visitor, const std::string& id)
-      : QLObject(TracingVariableObjectType, visitor), id_(id) {}
+  TracingVariableObject(const pypa::AstPtr& ast, ASTVisitor* visitor, std::string id)
+      : QLObject(TracingVariableObjectType, ast, visitor), id_(std::move(id)) {}
 
  private:
   std::string id_;
@@ -67,15 +68,15 @@ class ProbeObject : public QLObject {
       /* type */ QLObjectType::kProbe,
   };
 
-  static StatusOr<std::shared_ptr<ProbeObject>> Create(ASTVisitor* visitor,
+  static StatusOr<std::shared_ptr<ProbeObject>> Create(const pypa::AstPtr& ast, ASTVisitor* visitor,
                                                        const std::shared_ptr<TracepointIR>& probe);
 
   static bool IsProbe(const QLObjectPtr& ptr) { return ptr->type() == ProbeObjectType.type(); }
   std::shared_ptr<TracepointIR> probe() const { return probe_; }
 
  private:
-  ProbeObject(ASTVisitor* visitor, const std::shared_ptr<TracepointIR>& probe)
-      : QLObject(ProbeObjectType, visitor), probe_(probe) {}
+  ProbeObject(const pypa::AstPtr& ast, ASTVisitor* visitor, std::shared_ptr<TracepointIR> probe)
+      : QLObject(ProbeObjectType, ast, visitor), probe_(std::move(probe)) {}
 
   std::shared_ptr<TracepointIR> probe_;
 };

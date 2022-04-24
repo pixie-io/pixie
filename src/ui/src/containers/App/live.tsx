@@ -32,6 +32,7 @@ import UserContext from 'app/common/user-context';
 import { useSnackbar } from 'app/components';
 import { SCRATCH_SCRIPT, ScriptsContextProvider } from 'app/containers/App/scripts-context';
 import AdminView from 'app/pages/admin/admin';
+import { ConfigureDataExportView } from 'app/pages/configure-data-export/configure-data-export';
 import LiveView from 'app/pages/live/live';
 import { SetupRedirect, SetupView } from 'app/pages/setup/setup';
 import {
@@ -330,6 +331,7 @@ export default function PixieWithContext(): React.ReactElement {
               <Route path='/embed/live' component={LiveWithProvider} />
               <Route path={scriptPaths} component={ScriptShortcut} />
               <Route path='/setup' component={SetupRedirect} />
+              <Route path='/configure-data-export' component={ConfigureDataExportView} />
               <Redirect exact from='/' to='/live' />
               <Route path='/*' component={RouteNotFound} />
             </Switch>

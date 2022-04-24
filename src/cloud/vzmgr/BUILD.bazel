@@ -27,7 +27,6 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
-        "//src/cloud/dnsmgr/dnsmgrpb:service_pl_go_proto",
         "//src/cloud/shared/pgmigrate",
         "//src/cloud/shared/vzshard",
         "//src/cloud/vzmgr/controllers",

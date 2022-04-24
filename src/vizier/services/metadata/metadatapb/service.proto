@@ -31,6 +31,7 @@ import "src/common/base/statuspb/status.proto";
 import "src/table_store/schemapb/schema.proto";
 import "src/vizier/messages/messagespb/messages.proto";
 import "src/vizier/services/shared/agentpb/agent.proto";
+import "src/shared/cvmsgspb/cvmsgs.proto";
 
 service MetadataService {
   // An endpoint used by the query broker which is responsible for streaming the state of the agents.
@@ -52,6 +53,20 @@ service MetadataTracepointService {
 service MetadataConfigService {
   // UpdateConfig updates the PEM config for the given key/value setting.
   rpc UpdateConfig(UpdateConfigRequest) returns (UpdateConfigResponse);
+}
+
+// CronScriptStoreService is responsible for storing the cron scripts that should be run in this
+// Vizier. It is the responsibility of the queryBroker to keep the store up-to-date. These are
+// backed by the CronScript service in Pixie Cloud.
+service CronScriptStoreService {
+  // GetScripts fetches all scripts in the cron script store.
+  rpc GetScripts(GetScriptsRequest) returns (GetScriptsResponse);
+  // AddOrUpdateScript updates or adds a cron script to the store, based on ID.
+  rpc AddOrUpdateScript(AddOrUpdateScriptRequest) returns (AddOrUpdateScriptResponse);
+  // DeleteScript deletes a cron script from the store by ID.
+  rpc DeleteScript(DeleteScriptRequest) returns (DeleteScriptResponse);
+  // SetScripts sets the list of all cron scripts to match the given set of scripts.
+  rpc SetScripts(SetScriptsRequest) returns (SetScriptsResponse);
 }
 
 message SchemaRequest {}
@@ -216,3 +231,37 @@ message UpdateConfigResponse {
   // Overall status of whether the config update was initiated with/without errors.
   px.statuspb.Status status = 1;
 }
+
+// GetScriptsRequest is a request to fetch all scripts in the cron script store.
+message GetScriptsRequest {}
+
+// GetScriptsResponse returns all scripts in the cron script store.
+message GetScriptsResponse {
+  // Map from script ID to cronScript.
+  map<string, cvmsgspb.CronScript> scripts = 1;
+}
+
+// AddOrUpdateScriptRequest is a request to add or update a script in the cron script store.
+message AddOrUpdateScriptRequest {
+  cvmsgspb.CronScript script = 1;
+}
+
+// AddOrUpdateScriptResponse is a response to a AddOrUpdateScriptRequest.
+message AddOrUpdateScriptResponse{}
+
+// DeleteScriptRequest is a request to delete a script from the cron script store.
+message DeleteScriptRequest {
+  uuidpb.UUID script_id = 1 [(gogoproto.customname) = "ScriptID"];
+}
+
+// DeleteScriptResponse is a response to a DeleteScriptRequest.
+message DeleteScriptResponse {}
+
+// SetScriptsRequest is a request to set all scripts in the cron script store to the set of given scripts.
+message SetScriptsRequest {
+  // Map from script ID to cronScript.
+  map<string, cvmsgspb.CronScript> scripts = 1;
+}
+
+// SetScriptsResponse is a response to a SetScriptsRequest.
+message SetScriptsResponse {}

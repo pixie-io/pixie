@@ -54,7 +54,9 @@ bool operator<(const SemVer& lhs, const SemVer& rhs);
 // semantic version numbers. For example, v1.1.0 returns SemVer{1, 1, 0}.
 // Note: the argument is chosen because the implementation uses std::regex_search which does not
 // accept std::string_view.
-StatusOr<SemVer> GetSemVer(const std::string& version);
+// If not strict, then patch is not mandatory and patch parsing failure is tolerated.
+// e.g. go1.18rc1 -> SemVer{1, 18, 0}.
+StatusOr<SemVer> GetSemVer(const std::string& version, const bool strict = true);
 
 }  // namespace stirling
 }  // namespace px

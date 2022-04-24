@@ -23,6 +23,7 @@ import {
   Campaign as CampaignIcon,
 } from '@mui/icons-material';
 import {
+  Divider,
   Drawer,
   List,
   ListItem,
@@ -38,7 +39,7 @@ import { Link } from 'react-router-dom';
 import { ClusterContext } from 'app/common/cluster-context';
 import UserContext from 'app/common/user-context';
 import {
-  ClusterIcon, DocsIcon, NamespaceIcon,
+  ClusterIcon, DataDisksIcon, DocsIcon, NamespaceIcon,
 } from 'app/components';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
 import {
@@ -106,6 +107,11 @@ const useStyles = makeStyles(({
     paddingBottom: spacing(1),
     '& > div': {
       color: palette.text.primary,
+    },
+    '& .MuiListItemText-root > span': {
+      whiteSpace: 'nowrap',
+      textOverflow: 'ellipsis',
+      overflow: 'hidden',
     },
   },
   clippedItem: {
@@ -186,6 +192,14 @@ export const SideBar: React.FC<{ open: boolean }> = React.memo(({ open }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClusterName, embedState]);
 
+  const pluginItems = React.useMemo(() => {
+    return [{
+      icon: <DataDisksIcon />,
+      link: '/configure-data-export',
+      text: 'Data Retention',
+    }];
+  }, []);
+
   const drawerClasses = React.useMemo(
     () => ({ paper: open ? classes.drawerOpen : classes.drawerClose }),
     [classes.drawerClose, classes.drawerOpen, open]);
@@ -206,8 +220,16 @@ export const SideBar: React.FC<{ open: boolean }> = React.memo(({ open }) => {
         <List>
           <ListItem button className={classes.clippedItem} />
         </List>
+        {navItems.length > 0 && (
+          <List>
+            {navItems.map(({ icon, link, text }) => (
+              <SideBarInternalLinkItem key={text} icon={icon} link={link} text={text} />
+            ))}
+          </List>
+        )}
+        { navItems.length > 0 && <Divider variant='middle' />}
         <List>
-          {navItems.map(({ icon, link, text }) => (
+          {pluginItems.map(({ icon, link, text }) => (
             <SideBarInternalLinkItem key={text} icon={icon} link={link} text={text} />
           ))}
         </List>

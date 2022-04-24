@@ -71,6 +71,7 @@
 #include "src/carnot/planner/ir/join_ir.h"
 #include "src/carnot/planner/ir/limit_ir.h"
 #include "src/carnot/planner/ir/memory_source_ir.h"
+#include "src/carnot/planner/ir/otel_export_sink_ir.h"
 #include "src/carnot/planner/ir/string_ir.h"
 
 namespace px {
@@ -147,6 +148,10 @@ inline ClassMatch<IRNodeType::kMemorySource> MemorySource() {
 }
 inline ClassMatch<IRNodeType::kMemorySink> MemorySink() {
   return ClassMatch<IRNodeType::kMemorySink>();
+}
+
+inline ClassMatch<IRNodeType::kOTelExportSink> OTelExportSink() {
+  return ClassMatch<IRNodeType::kOTelExportSink>();
 }
 
 inline ClassMatch<IRNodeType::kEmptySource> EmptySource() {
@@ -254,7 +259,8 @@ struct ResultSink : public ParentMatch {
   ResultSink() : ParentMatch(IRNodeType::kAny) {}
 
   bool Match(const IRNode* node) const override {
-    return ExternalGRPCSink().Match(node) || MemorySink().Match(node);
+    return ExternalGRPCSink().Match(node) || MemorySink().Match(node) ||
+           OTelExportSink().Match(node);
   }
 };
 

@@ -37,7 +37,7 @@ enum class ABI {
   kGolangRegister,
 };
 
-// Identifies where an variable is located.
+// Identifies where a variable is located.
 // TODO(oazizi): Consider consolidating with location_t in symaddrs.h.
 enum class LocationType {
   kUnknown,

@@ -18,4 +18,4 @@
 
 package cloudpb
 
-//go:generate mockgen -source=cloudapi.pb.go -destination=mock/cloudapi_mock.gen.go UserServiceServer,OrganizationServiceServer,ArtifactTrackerServer,VizierClusterInfoServer,VizierDeploymentKeyManagerServer,ScriptMgrServer,AutocompleteServiceServer,APIKeyManagerServer,ConfigServiceServer
+//go:generate mockgen -source=cloudapi.pb.go -destination=mock/cloudapi_mock.gen.go UserServiceServer,OrganizationServiceServer,ArtifactTrackerServer,VizierClusterInfoServer,VizierDeploymentKeyManagerServer,ScriptMgrServer,AutocompleteServiceServer,APIKeyManagerServer,ConfigServiceServer,PluginServiceServer

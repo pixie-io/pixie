@@ -360,7 +360,7 @@ message OTelSpan {
   // name_string sets for all, name_column sets the Span name based on the column value.
   oneof name {
     string name_string = 1;
-    int64 name_column = 2;
+    int64 name_column_index = 2;
   }
   // A mapping of the OpenTelemetry attribute name to the data that populates that attribute.
   repeated OTelAttribute attributes = 3;
@@ -386,6 +386,11 @@ message OTelSpan {
   // end_time_column points to the column that contains the end time of the
   // aggregation. Column must be of type TIME64NS.
   int64 end_time_column_index = 8;
+
+  // kind_value is the raw integer value for the
+  // ::opentelemetry::proto::trace::v1::Span::SpanKind. If you use a kind_value that's not a
+  // valid enum value, the value will be considered undefined.
+  int64 kind_value = 9;
 }
 
 // OTelMetricGauge maps operator columns to the fields of the OpenTelemetry Gauge metric.
@@ -434,6 +439,10 @@ message OTelAttribute {
     px.types.DataType column_type = 1;
     // The index of the atribute column.
     int64 column_index = 2;
+    // Whether the column is optionally JSON encoded.
+    // That means the column might be an element not encoded as json
+    // or a json array of multiple values.
+    bool can_be_json_encoded_array = 3;
   }
   // The column that contains the attribute info.
   Column column = 2;
@@ -469,6 +478,8 @@ message OTelEndpointConfig {
   // The headers that should be attached to the connection context, such as
   // authentication credentials or api keys.
   map<string, string> headers = 2;
+  // True if the OpenTelemetry collector is not protected with SSL.
+  bool insecure = 3;
 }
 
 // Defines a resource. Discussed in depth in the OpenTelemetry spec.

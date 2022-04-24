@@ -66,6 +66,7 @@ func TestConfigForVizier(t *testing.T) {
 				CloudAddr:         "",
 				DevCloudNamespace: "plc-dev",
 				PemMemoryLimit:    "10Mi",
+				PemMemoryRequest:  "6Mi",
 				Pod_Policy:        nil,
 				Patches: map[string]string{
 					"vizier-pem": `{ "spec": { "template": {"spec": { "tolerations": [{"key": "test", "operator": "Equals", "effect": "NoExecute" }]} }}  }`,

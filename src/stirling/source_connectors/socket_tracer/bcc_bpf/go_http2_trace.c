@@ -110,7 +110,7 @@ static __inline int32_t get_fd_from_io_writer_intf(void* io_writer_intf_ptr) {
   REQUIRE_SYMADDR(symaddrs->tlsConn_conn_offset, kInvalidFD);
 
   struct go_interface conn_intf;
-  bpf_probe_read(&conn_intf, sizeof(conn_intf), io_writer_intf_ptr + symaddrs->tlsConn_conn_offset);
+  BPF_PROBE_READ_VAR(conn_intf, io_writer_intf_ptr + symaddrs->tlsConn_conn_offset);
 
   return get_fd_from_conn_intf_core(conn_intf, symaddrs);
 }
@@ -122,8 +122,7 @@ static __inline int32_t get_fd_from_http2_Framer(const void* framer_ptr,
   REQUIRE_SYMADDR(symaddrs->bufWriter_conn_offset, kInvalidFD);
 
   struct go_interface io_writer_interface;
-  bpf_probe_read(&io_writer_interface, sizeof(io_writer_interface),
-                 framer_ptr + symaddrs->Framer_w_offset);
+  BPF_PROBE_READ_VAR(io_writer_interface, framer_ptr + symaddrs->Framer_w_offset);
 
   // At this point, we have the following struct:
   // go.itab.*google.golang.org/grpc/internal/transport.bufWriter,io.Writer
@@ -132,8 +131,7 @@ static __inline int32_t get_fd_from_http2_Framer(const void* framer_ptr,
   }
 
   struct go_interface conn_intf;
-  bpf_probe_read(&conn_intf, sizeof(conn_intf),
-                 io_writer_interface.ptr + symaddrs->bufWriter_conn_offset);
+  BPF_PROBE_READ_VAR(conn_intf, io_writer_interface.ptr + symaddrs->bufWriter_conn_offset);
 
   return get_fd_from_conn_intf(conn_intf);
 }
@@ -146,8 +144,7 @@ static __inline int32_t get_fd_from_http_http2Framer(const void* framer_ptr,
   REQUIRE_SYMADDR(symaddrs->http2bufferedWriter_w_offset, kInvalidFD);
 
   struct go_interface io_writer_interface;
-  bpf_probe_read(&io_writer_interface, sizeof(io_writer_interface),
-                 framer_ptr + symaddrs->http2Framer_w_offset);
+  BPF_PROBE_READ_VAR(io_writer_interface, framer_ptr + symaddrs->http2Framer_w_offset);
 
   // At this point, we have the following struct:
   // go.itab.*net/http.http2bufferedWriter,io.Writer
@@ -156,8 +153,8 @@ static __inline int32_t get_fd_from_http_http2Framer(const void* framer_ptr,
   }
 
   struct go_interface inner_io_writer_interface;
-  bpf_probe_read(&inner_io_writer_interface, sizeof(inner_io_writer_interface),
-                 io_writer_interface.ptr + symaddrs->http2bufferedWriter_w_offset);
+  BPF_PROBE_READ_VAR(inner_io_writer_interface,
+                     io_writer_interface.ptr + symaddrs->http2bufferedWriter_w_offset);
 
   return get_fd_from_io_writer_intf(inner_io_writer_interface.ptr);
 }
@@ -171,7 +168,7 @@ static __inline void copy_header_field(struct header_field_t* dst, struct gostri
     dst->size = 0;
     return;
   }
-  dst->size = min_int64(src->len, (int64_t)HEADER_FIELD_STR_SIZE);
+  dst->size = min_int64_t(src->len, (int64_t)HEADER_FIELD_STR_SIZE);
   bpf_probe_read(dst->msg, dst->size, src->ptr);
 }
 
@@ -179,12 +176,10 @@ static __inline void fill_header_field(struct go_grpc_http2_header_event_t* even
                                        const void* header_field_ptr,
                                        const struct go_http2_symaddrs_t* symaddrs) {
   struct gostring name;
-  bpf_probe_read(&name, sizeof(struct gostring),
-                 header_field_ptr + symaddrs->HeaderField_Name_offset);
+  BPF_PROBE_READ_VAR(name, header_field_ptr + symaddrs->HeaderField_Name_offset);
 
   struct gostring value;
-  bpf_probe_read(&value, sizeof(struct gostring),
-                 header_field_ptr + symaddrs->HeaderField_Value_offset);
+  BPF_PROBE_READ_VAR(value, header_field_ptr + symaddrs->HeaderField_Value_offset);
 
   copy_header_field(&event->name, &name);
   copy_header_field(&event->value, &value);
@@ -319,12 +314,11 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
   // ---------------------------------------------
 
   void* framer_ptr;
-  bpf_probe_read(&framer_ptr, sizeof(void*),
-                 loopy_writer_ptr + symaddrs->loopyWriter_framer_offset);
+  BPF_PROBE_READ_VAR(framer_ptr, loopy_writer_ptr + symaddrs->loopyWriter_framer_offset);
 
   // TODO(oazizi): Stop using mirrored go structs, and use DWARF info instead.
   struct go_grpc_framer_t go_grpc_framer;
-  bpf_probe_read(&go_grpc_framer, sizeof(go_grpc_framer), framer_ptr);
+  BPF_PROBE_READ_VAR(go_grpc_framer, framer_ptr);
 
   const int32_t fd = get_fd_from_http2_Framer(go_grpc_framer.http2_framer, symaddrs);
   if (fd == kInvalidFD) {
@@ -358,23 +352,20 @@ static __inline void probe_http2_operate_headers(struct pt_regs* ctx,
   // ------------------------------------------------------
 
   void* HeadersFrame_ptr;
-  bpf_probe_read(&HeadersFrame_ptr, sizeof(void*),
-                 MetaHeadersFrame_ptr + symaddrs->MetaHeadersFrame_HeadersFrame_offset);
+  BPF_PROBE_READ_VAR(HeadersFrame_ptr,
+                     MetaHeadersFrame_ptr + symaddrs->MetaHeadersFrame_HeadersFrame_offset);
 
   void* fields_ptr;
-  bpf_probe_read(
-      &fields_ptr, sizeof(void*),
-      MetaHeadersFrame_ptr + symaddrs->MetaHeadersFrame_Fields_offset + kGoArrayPtrOffset);
+  BPF_PROBE_READ_VAR(fields_ptr, MetaHeadersFrame_ptr + symaddrs->MetaHeadersFrame_Fields_offset +
+                                     kGoArrayPtrOffset);
 
   int64_t fields_len;
-  bpf_probe_read(
-      &fields_len, sizeof(int64_t),
-      MetaHeadersFrame_ptr + symaddrs->MetaHeadersFrame_Fields_offset + kGoArrayLenOffset);
+  BPF_PROBE_READ_VAR(fields_len, MetaHeadersFrame_ptr + symaddrs->MetaHeadersFrame_Fields_offset +
+                                     kGoArrayLenOffset);
 
   int64_t fields_cap;
-  bpf_probe_read(
-      &fields_cap, sizeof(int64_t),
-      MetaHeadersFrame_ptr + symaddrs->MetaHeadersFrame_Fields_offset + kGoArrayCapOffset);
+  BPF_PROBE_READ_VAR(fields_cap, MetaHeadersFrame_ptr + symaddrs->MetaHeadersFrame_Fields_offset +
+                                     kGoArrayCapOffset);
 
   // ------------------------------------------------------
   // Extract members of HeadersFrame_ptr (HeadersFrame)
@@ -836,7 +827,7 @@ static __inline void go_http2_submit_data(struct pt_regs* ctx, enum http2_probe_
 
   info->data_attr.data_size = data_len;
 
-  uint32_t data_buf_size = data_len < MAX_DATA_SIZE ? data_len : MAX_DATA_SIZE;
+  uint32_t data_buf_size = min_uint32_t(data_len, MAX_DATA_SIZE);
   info->data_attr.data_buf_size = data_buf_size;
 
   // Note that we have some black magic below with the string sizes.

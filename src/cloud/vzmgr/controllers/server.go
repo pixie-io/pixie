@@ -39,12 +39,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"gopkg.in/segmentio/analytics-go.v3"
 
 	"px.dev/pixie/src/api/proto/uuidpb"
-	"px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
 	"px.dev/pixie/src/cloud/shared/messages"
 	"px.dev/pixie/src/cloud/shared/messagespb"
 	"px.dev/pixie/src/cloud/shared/vzshard"
@@ -69,11 +67,10 @@ type HandleNATSMessageFunc func(*cvmsgspb.V2CMessage)
 
 // Server is a bridge implementation of evzmgr.
 type Server struct {
-	db           *sqlx.DB
-	dbKey        string
-	dnsMgrClient dnsmgrpb.DNSMgrServiceClient
-	nc           *nats.Conn
-	updater      VzUpdater
+	db      *sqlx.DB
+	dbKey   string
+	nc      *nats.Conn
+	updater VzUpdater
 
 	done chan struct{}
 	once sync.Once
@@ -88,21 +85,19 @@ type VzUpdater interface {
 }
 
 // New creates a new server.
-func New(db *sqlx.DB, dbKey string, dnsMgrClient dnsmgrpb.DNSMgrServiceClient, nc *nats.Conn, updater VzUpdater) *Server {
+func New(db *sqlx.DB, dbKey string, nc *nats.Conn, updater VzUpdater) *Server {
 	s := &Server{
-		db:           db,
-		dbKey:        dbKey,
-		dnsMgrClient: dnsMgrClient,
-		nc:           nc,
-		updater:      updater,
-		done:         make(chan struct{}),
+		db:      db,
+		dbKey:   dbKey,
+		nc:      nc,
+		updater: updater,
+		done:    make(chan struct{}),
 	}
 
 	_ = prometheus.Register(NewStatusMetricsCollector(db))
 
 	for _, shard := range vzshard.GenerateShardRange() {
 		s.startShardedHandler(shard, "heartbeat", s.HandleVizierHeartbeat)
-		s.startShardedHandler(shard, "ssl", s.HandleSSLRequest)
 	}
 
 	return s
@@ -141,26 +136,6 @@ func (s *Server) startShardedHandler(shard string, topic string, handler HandleN
 			}
 		}
 	}()
-}
-
-func (s *Server) sendNATSMessage(topic string, msg *types.Any, vizierID uuid.UUID) {
-	wrappedMsg := &cvmsgspb.C2VMessage{
-		VizierID: vizierID.String(),
-		Msg:      msg,
-	}
-
-	b, err := wrappedMsg.Marshal()
-	if err != nil {
-		log.WithError(err).Error("Could not marshal message to bytes")
-		return
-	}
-	topic = vzshard.C2VTopic(topic, vizierID)
-	log.WithField("topic", topic).Info("Sending message")
-	err = s.nc.Publish(topic, b)
-
-	if err != nil {
-		log.WithError(err).Error("Could not publish message to nats")
-	}
 }
 
 type vizierStatus cvmsgspb.VizierStatus
@@ -519,18 +494,6 @@ func (s *Server) UpdateVizierConfig(ctx context.Context, req *cvmsgspb.UpdateViz
 		return nil, status.Error(codes.NotFound, "no such cluster")
 	}
 
-	if req.ConfigUpdate.PassthroughEnabled != nil {
-		passthroughEnabled := req.ConfigUpdate.PassthroughEnabled.Value
-		anyMsg, err := types.MarshalAny(&cvmsgspb.VizierConfig{
-			PassthroughEnabled: passthroughEnabled,
-		})
-		if err != nil {
-			log.WithError(err).Error("Could not marshal proto to any")
-		}
-		// Tell certmgr about the vizier config
-		s.sendNATSMessage("sslVizierConfigResp", anyMsg, vizierID)
-	}
-
 	return &cvmsgspb.UpdateVizierConfigResponse{}, nil
 }
 
@@ -679,9 +642,10 @@ func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizi
 	}
 
 	// Send a message over NATS to signal that a Vizier has connected.
-	query = `SELECT org_id from vizier_cluster WHERE id=$1`
+	query = `SELECT org_id, cluster_name from vizier_cluster WHERE id=$1`
 	var val struct {
-		OrgID uuid.UUID `db:"org_id"`
+		OrgID      uuid.UUID `db:"org_id"`
+		VizierName string    `db:"cluster_name"`
 	}
 
 	rows, err := s.db.Queryx(query, vizierID)
@@ -709,7 +673,10 @@ func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizi
 	if err != nil {
 		return nil, err
 	}
-	return &cvmsgspb.RegisterVizierAck{Status: cvmsgspb.ST_OK}, nil
+	return &cvmsgspb.RegisterVizierAck{
+		Status:     cvmsgspb.ST_OK,
+		VizierName: val.VizierName,
+	}, nil
 }
 
 // HandleVizierHeartbeat handles the heartbeat from connected viziers.
@@ -723,27 +690,7 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	}
 	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
 
-	// Send DNS address.
-	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
-	if err != nil {
-		log.WithError(err).Error("Could not get service creds from jwt")
-		return
-	}
-
-	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
-		fmt.Sprintf("bearer %s", serviceAuthToken))
-
 	addr := req.Address
-	if req.Address != "" {
-		dnsMgrReq := &dnsmgrpb.GetDNSAddressRequest{
-			ClusterID: req.VizierID,
-			IPAddress: req.Address,
-		}
-		resp, err := s.dnsMgrClient.GetDNSAddress(ctx, dnsMgrReq)
-		if err == nil {
-			addr = resp.DNSAddress
-		}
-	}
 	if req.Port != int32(0) {
 		addr = fmt.Sprintf("%s:%d", addr, req.Port)
 	}
@@ -753,7 +700,7 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	// Note: We don't compare the json fields because they just contain details of the status fields.
 	query := `
 		UPDATE vizier_cluster_info x
-		SET last_heartbeat = $1, status = $2, address = $3, control_plane_pod_statuses = $4,
+		SET last_heartbeat = $1, status = $2, address = $3, control_plane_pod_statuses = CASE WHEN $12 THEN $4::json ELSE y.control_plane_pod_statuses END,
 			num_nodes = $5, num_instrumented_nodes = $6, auto_update_enabled = $7,
 			unhealthy_data_plane_pod_statuses = $8, cluster_version = $9, status_message = $10
 		FROM (SELECT * FROM vizier_cluster_info WHERE vizier_cluster_id = $11) y
@@ -773,7 +720,7 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 
 	rows, err := s.db.Queryx(query, time.Now(), vizierStatus(req.Status), addr, PodStatuses(req.PodStatuses), req.NumNodes,
 		req.NumInstrumentedNodes, !req.DisableAutoUpdate, PodStatuses(req.UnhealthyDataPlanePodStatuses),
-		req.K8sClusterVersion, req.StatusMessage, vizierID)
+		req.K8sClusterVersion, req.StatusMessage, vizierID, req.PodStatuses != nil)
 	if err != nil {
 		log.WithError(err).Error("Could not update vizier heartbeat")
 	}
@@ -815,67 +762,6 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	if !req.DisableAutoUpdate && !s.updater.VersionUpToDate(info.Version) {
 		s.updater.AddToUpdateQueue(vizierID)
 	}
-}
-
-// HandleSSLRequest registers certs for the vizier cluster.
-func (s *Server) HandleSSLRequest(v2cMsg *cvmsgspb.V2CMessage) {
-	anyMsg := v2cMsg.Msg
-
-	req := &cvmsgspb.VizierSSLCertRequest{}
-	err := types.UnmarshalAny(anyMsg, req)
-	if err != nil {
-		log.WithError(err).Error("Could not unmarshal NATS message")
-		return
-	}
-
-	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
-	if err != nil {
-		log.WithError(err).Error("Could not get creds from jwt")
-		return
-	}
-
-	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
-		fmt.Sprintf("bearer %s", serviceAuthToken))
-
-	vizierConf, err := s.getVizierConfig(ctx, req.VizierID)
-	if err != nil {
-		log.WithError(err).Error("Could not get vizier config")
-		return
-	}
-	respAnyMsg, err := types.MarshalAny(vizierConf)
-	if err != nil {
-		log.WithError(err).Error("Could not marshal proto to any")
-		return
-	}
-
-	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
-	// Tell certmgr about the vizier config
-	s.sendNATSMessage("sslVizierConfigResp", respAnyMsg, vizierID)
-
-	if vizierConf.GetPassthroughEnabled() {
-		// We don't need SSL certs for the cluster if it is running in passthrough mode.
-		return
-	}
-
-	dnsMgrReq := &dnsmgrpb.GetSSLCertsRequest{ClusterID: req.VizierID}
-	resp, err := s.dnsMgrClient.GetSSLCerts(ctx, dnsMgrReq)
-	if err != nil {
-		log.WithError(err).Error("Could not get SSL certs")
-		return
-	}
-	natsResp := &cvmsgspb.VizierSSLCertResponse{
-		Key:  resp.Key,
-		Cert: resp.Cert,
-	}
-
-	respAnyMsg, err = types.MarshalAny(natsResp)
-	if err != nil {
-		log.WithError(err).Error("Could not marshal proto to any")
-		return
-	}
-
-	log.WithField("vizierID", req.VizierID).Info("sending SSL response")
-	s.sendNATSMessage("sslResp", respAnyMsg, vizierID)
 }
 
 // getServiceCredentials returns JWT credentials for inter-service requests.
@@ -957,7 +843,7 @@ func findVizierWithEmptyUID(ctx context.Context, tx *sqlx.Tx, orgID uuid.UUID) (
 	return uuid.Nil, vizierStatus(cvmsgspb.VZ_ST_UNKNOWN), nil
 }
 
-func setClusterName(ctx context.Context, tx *sqlx.Tx, clusterID uuid.UUID, generateName func(i int) string) error {
+func setClusterName(ctx context.Context, tx *sqlx.Tx, clusterID uuid.UUID, generateName func(i int) string) (string, error) {
 	// Retry a few times until we find a name that doesn't collide.
 	finalName := ""
 	for rc := 0; rc < 10; rc++ {
@@ -973,21 +859,21 @@ func setClusterName(ctx context.Context, tx *sqlx.Tx, clusterID uuid.UUID, gener
 	}
 
 	if finalName == "" {
-		return errors.New("Could not find a unique cluster name")
+		return "", errors.New("Could not find a unique cluster name")
 	}
 
 	query := `UPDATE vizier_cluster SET cluster_name=$1 WHERE id=$2`
 	_, err := tx.ExecContext(ctx, query, finalName, clusterID)
 
-	return err
+	return finalName, err
 }
 
 // ProvisionOrClaimVizier provisions a given cluster or returns the ID if it already exists,
-func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, userID uuid.UUID, clusterUID string, clusterName string) (uuid.UUID, error) {
+func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, userID uuid.UUID, clusterUID string, clusterName string) (uuid.UUID, string, error) {
 	// TODO(zasgar): This duplicates some functionality in the Create function. Will deprecate that Create function soon.
 	tx, err := s.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return uuid.Nil, vzerrors.ErrInternalDB
+		return uuid.Nil, "", vzerrors.ErrInternalDB
 	}
 	defer tx.Rollback()
 
@@ -1007,20 +893,20 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 		return name
 	}
 
-	assignNameAndCommit := func() (uuid.UUID, error) {
+	assignNameAndCommit := func() (uuid.UUID, string, error) {
 		// Check if cluster already has a name.
 		var existingName *string
 
 		query := `SELECT cluster_name from vizier_cluster WHERE id=$1`
 		err := tx.QueryRowxContext(ctx, query, clusterID).Scan(&existingName)
 		if err != nil {
-			return uuid.Nil, vzerrors.ErrInternalDB
+			return uuid.Nil, "", vzerrors.ErrInternalDB
 		}
 
 		if existingName != nil {
 			// No input name specified, so no need to change cluster name.
 			if inputName == "" {
-				return clusterID, nil
+				return clusterID, *existingName, nil
 			}
 
 			// The existing name is already the same as the input name, or a derivation
@@ -1031,14 +917,14 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 			// cannot distinguish between randomly generated names and actual-unaltered names.
 			dbName := *existingName
 			if inputName == dbName {
-				return clusterID, nil
+				return clusterID, *existingName, nil
 			}
 			prefixIndex := strings.LastIndex(dbName, "_")
 			if prefixIndex != -1 {
 				dbName = dbName[:prefixIndex]
 			}
 			if inputName == dbName {
-				return clusterID, nil
+				return clusterID, *existingName, nil
 			}
 		}
 
@@ -1047,13 +933,14 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 			generateNameFunc = generateFromGivenName
 		}
 
-		if err := setClusterName(ctx, tx, clusterID, generateNameFunc); err != nil {
-			return uuid.Nil, vzerrors.ErrInternalDB
+		finalName, err := setClusterName(ctx, tx, clusterID, generateNameFunc)
+		if err != nil {
+			return uuid.Nil, "", vzerrors.ErrInternalDB
 		}
 
 		if err := tx.Commit(); err != nil {
 			log.WithError(err).Error("Failed to commit transaction")
-			return uuid.Nil, vzerrors.ErrInternalDB
+			return uuid.Nil, "", vzerrors.ErrInternalDB
 		}
 
 		events.Client().Enqueue(&analytics.Track{
@@ -1063,30 +950,30 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 				Set("cluster_id", clusterID.String()).
 				Set("org_id", orgID.String()),
 		})
-		return clusterID, nil
+		return clusterID, finalName, nil
 	}
 
 	clusterID, status, err := findVizierWithUID(ctx, tx, orgID, clusterUID)
 	if err != nil {
-		return uuid.Nil, err
+		return uuid.Nil, "", err
 	}
 	if clusterID != uuid.Nil {
 		if status != vizierStatus(cvmsgspb.VZ_ST_DISCONNECTED) {
-			return uuid.Nil, vzerrors.ErrProvisionFailedVizierIsActive
+			return uuid.Nil, "", vzerrors.ErrProvisionFailedVizierIsActive
 		}
 		return assignNameAndCommit()
 	}
 
 	clusterID, _, err = findVizierWithEmptyUID(ctx, tx, orgID)
 	if err != nil {
-		return uuid.Nil, err
+		return uuid.Nil, "", err
 	}
 	if clusterID != uuid.Nil {
 		// Set the cluster ID.
 		query := `UPDATE vizier_cluster SET cluster_uid=$1 WHERE id=$2`
 		rows, err := tx.QueryxContext(ctx, query, clusterUID, clusterID)
 		if err != nil {
-			return uuid.Nil, err
+			return uuid.Nil, "", err
 		}
 		rows.Close()
 		return assignNameAndCommit()
@@ -1100,7 +987,20 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 		INSERT INTO vizier_cluster_info(vizier_cluster_id, status) SELECT id, 'DISCONNECTED' FROM ins RETURNING vizier_cluster_id`
 	err = tx.QueryRowContext(ctx, query, orgID, DefaultProjectName, clusterUID).Scan(&clusterID)
 	if err != nil {
-		return uuid.Nil, err
+		return uuid.Nil, "", err
 	}
 	return assignNameAndCommit()
+}
+
+// GetOrgFromVizier fetches the org to which a Vizier belongs. This is intended to be for internal use only.
+func (s *Server) GetOrgFromVizier(ctx context.Context, id *uuidpb.UUID) (*vzmgrpb.GetOrgFromVizierResponse, error) {
+	query := `SELECT org_id FROM vizier_cluster where id=$1`
+
+	vzID := utils.UUIDFromProtoOrNil(id)
+	var orgID uuid.UUID
+	err := s.db.QueryRowxContext(ctx, query, vzID).Scan(&orgID)
+	if err != nil {
+		return nil, err
+	}
+	return &vzmgrpb.GetOrgFromVizierResponse{OrgID: utils.ProtoFromUUID(orgID)}, nil
 }

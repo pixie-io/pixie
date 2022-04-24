@@ -29,7 +29,12 @@ extend type Query {
 
   # Plugin
   plugins(kind: PluginKind): [Plugin!]!
-  retentionPluginConfig(id: String!): [PluginConfig!]!
+  retentionPluginInfo(id: String!, pluginVersion: String!): PluginInfo!
+  # This will be replaced by retentionPluginConfig once all consumers have been updated.
+  orgRetentionPluginConfig(id: String!): [PluginConfig!]!
+  retentionPluginConfig(id: String!): RetentionPluginConfig!
+  retentionScripts: [RetentionScript!]!
+  retentionScript(id: String!): DetailedRetentionScript!
 }
 
 extend type Mutation {
@@ -50,7 +55,10 @@ extend type Mutation {
   RemoveUserFromOrg(userID: ID!): Boolean!
 
   # Plugin
-  UpdateRetentionPluginConfig(id: String!, enabled: Boolean!, enabledVersion: String, configs: EditablePluginConfigs!): Boolean!
+  UpdateRetentionPluginConfig(id: String!, enabled: Boolean, enabledVersion: String, configs: EditablePluginConfigs!): Boolean!
+  UpdateRetentionScript(id: ID!, script: EditableRetentionScript): Boolean!
+  CreateRetentionScript(script: EditableRetentionScript): ID!
+  DeleteRetentionScript(id: ID!): Boolean!
 }
 
 type UserInfo {
@@ -338,6 +346,16 @@ enum PluginKind {
 type PluginConfig {
   name: String!
   value: String!
+}
+
+type PluginInfo {
+  configs: [PluginConfigSchema!]!
+  allowCustomExportURL: Boolean!
+  allowInsecureTLS: Boolean!
+}
+
+type PluginConfigSchema {
+  name: String!
   description: String!
 }
 
@@ -348,4 +366,49 @@ input EditablePluginConfig {
 
 input EditablePluginConfigs {
   configs: [EditablePluginConfig!]!
+  customExportURL: String
+  insecureTLS: Boolean
+}
+
+type RetentionPluginConfig {
+  configs: [PluginConfig!]!
+  customExportURL: String
+  insecureTLS: Boolean
+}
+
+# Data retention types.
+
+type RetentionScript {
+  id: ID!
+  name: String!
+  description: String!
+  frequencyS: Int!
+  enabled: Boolean!
+  clusters: [ID!]!
+  pluginID: String!
+  isPreset: Boolean!
+}
+
+type DetailedRetentionScript {
+  id: ID!
+  name: String!
+  description: String!
+  frequencyS: Int!
+  enabled: Boolean!
+  clusters: [ID!]!
+  contents: String!
+  pluginID: String!
+  customExportURL: String
+  isPreset: Boolean!
+}
+
+input EditableRetentionScript {
+  name: String
+  description: String
+  frequencyS: Int
+  enabled: Boolean
+  clusters: [ID!]
+  contents: String
+  pluginID: String
+  customExportURL: String
 }

@@ -21,8 +21,8 @@
 #include "src/carnot/planner/logical_planner.h"
 #include "src/carnot/planner/test_utils.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
-#include "src/common/base/test_utils.h"
 #include "src/common/perf/perf.h"
+#include "src/common/testing/testing.h"
 
 namespace px {
 namespace carnot {

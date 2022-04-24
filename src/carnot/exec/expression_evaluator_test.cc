@@ -34,7 +34,7 @@
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/planpb/test_proto.h"
 #include "src/carnot/udf/registry.h"
-#include "src/common/base/test_utils.h"
+#include "src/common/testing/testing.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/types.h"
 
@@ -117,7 +117,8 @@ class ScalarExpressionTest : public ::testing::TestWithParam<ScalarExpressionEva
     EXPECT_TRUE(func_registry_->Register<AddUDF>("add").ok());
     EXPECT_TRUE(func_registry_->Register<InitArgUDF>("init_arg").ok());
     exec_state_ = std::make_unique<ExecState>(func_registry_.get(), table_store,
-                                              MockResultSinkStubGenerator, sole::uuid4(), nullptr);
+                                              MockResultSinkStubGenerator, MockMetricsStubGenerator,
+                                              MockTraceStubGenerator, sole::uuid4(), nullptr);
     EXPECT_OK(exec_state_->AddScalarUDF(
         0, "add", std::vector<types::DataType>({types::DataType::INT64, types::DataType::INT64})));
     EXPECT_OK(

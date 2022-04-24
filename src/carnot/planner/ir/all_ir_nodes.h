@@ -42,6 +42,7 @@
 #include "src/carnot/planner/ir/memory_source_ir.h"
 #include "src/carnot/planner/ir/metadata_ir.h"
 #include "src/carnot/planner/ir/operator_ir.h"
+#include "src/carnot/planner/ir/otel_export_sink_ir.h"
 #include "src/carnot/planner/ir/rolling_ir.h"
 #include "src/carnot/planner/ir/stream_ir.h"
 #include "src/carnot/planner/ir/string_ir.h"

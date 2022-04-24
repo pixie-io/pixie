@@ -74,6 +74,10 @@ class LogicalPlanner : public NotCopyable {
   std::unique_ptr<planner::RegistryInfo> registry_info_;
 };
 
+StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
+    const distributedpb::LogicalPlannerState& logical_state, RegistryInfo* registry_info,
+    int64_t max_output_rows_per_table);
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace px

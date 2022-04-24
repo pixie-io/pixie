@@ -253,15 +253,17 @@ class AgentMetadataState : NotCopyable {
   AgentMetadataState() = delete;
   explicit AgentMetadataState(uint32_t asid, uint32_t pid)
       : AgentMetadataState(/* hostname */ "unknown", asid, pid, sole::uuid(),
-                           /* pod_name */ "unknown") {}
+                           /* pod_name */ "unknown", sole::uuid(), "") {}
 
   AgentMetadataState(std::string_view hostname, uint32_t asid, uint32_t pid, AgentID agent_id,
-                     std::string_view pod_name)
+                     std::string_view pod_name, sole::uuid vizier_id, std::string_view vizier_name)
       : hostname_(std::string(hostname)),
         pod_name_(std::string(pod_name)),
         asid_(asid),
         pid_(pid),
         agent_id_(agent_id),
+        vizier_id_(vizier_id),
+        vizier_name_(std::string(vizier_name)),
         k8s_metadata_state_(new K8sMetadataState()) {}
 
   const std::string& hostname() const { return hostname_; }
@@ -269,6 +271,9 @@ class AgentMetadataState : NotCopyable {
   uint32_t pid() const { return pid_; }
   const std::string& pod_name() const { return pod_name_; }
   const sole::uuid& agent_id() const { return agent_id_; }
+
+  const sole::uuid& vizier_id() const { return vizier_id_; }
+  const std::string& vizier_name() const { return vizier_name_; }
 
   int64_t last_update_ts_ns() const { return last_update_ts_ns_; }
   void set_last_update_ts_ns(int64_t last_update_ts_ns) { last_update_ts_ns_ = last_update_ts_ns; }
@@ -333,6 +338,9 @@ class AgentMetadataState : NotCopyable {
   uint32_t asid_;
   uint32_t pid_;
   AgentID agent_id_;
+
+  sole::uuid vizier_id_;
+  std::string vizier_name_;
 
   std::unique_ptr<K8sMetadataState> k8s_metadata_state_;
 

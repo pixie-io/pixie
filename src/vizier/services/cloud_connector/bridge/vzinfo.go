@@ -709,6 +709,18 @@ func (v *K8sVizierInfo) UpdateClusterID(id string) error {
 	return err
 }
 
+// UpdateClusterName updates the cluster ID in the cluster secrets.
+func (v *K8sVizierInfo) UpdateClusterName(id string) error {
+	s, err := v.clientset.CoreV1().Secrets(v.ns).Get(context.Background(), "pl-cluster-secrets", metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	s.Data["cluster-name"] = []byte(id)
+
+	_, err = v.clientset.CoreV1().Secrets(v.ns).Update(context.Background(), s, metav1.UpdateOptions{})
+	return err
+}
+
 // UpdateClusterIDAnnotation updates the `cluster-id` annotation for the cloudconnector.
 func (v *K8sVizierInfo) UpdateClusterIDAnnotation(id string) error {
 	ccPodsList, err := v.clientset.CoreV1().Pods(v.ns).List(context.Background(), metav1.ListOptions{

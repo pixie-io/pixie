@@ -12,6 +12,16 @@
 // 000005_fix_preset_scripts_type.up.sql
 // 000006_add_pgcrypto.down.sql
 // 000006_add_pgcrypto.up.sql
+// 000007_update_retention_scripts_table.down.sql
+// 000007_update_retention_scripts_table.up.sql
+// 000008_drop_plugin_version_retention_scripts.down.sql
+// 000008_drop_plugin_version_retention_scripts.up.sql
+// 000009_add_plugin_custom_export_url.down.sql
+// 000009_add_plugin_custom_export_url.up.sql
+// 000010_add_retention_plugin_insecure.down.sql
+// 000010_add_retention_plugin_insecure.up.sql
+// 000011_add_retention_plugin_insecure_default.down.sql
+// 000011_add_retention_plugin_insecure_default.up.sql
 package schema
 
 import (
@@ -308,7 +318,7 @@ func _000006_add_pgcryptoDownSql() (*asset, error) {
 	return a, nil
 }
 
-var __000006_add_pgcryptoUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x0e\x72\x75\x0c\x71\x55\x70\x8d\x08\x71\xf5\x0b\xf6\xf4\xf7\x53\xf0\x74\x53\xf0\xf3\x0f\x51\x70\x8d\xf0\x0c\x0e\x09\x56\x50\x2a\x48\x4f\x2e\xaa\x2c\x28\xc9\x57\xb2\x06\x04\x00\x00\xff\xff\x99\x5a\x72\xd2\x2a\x00\x00\x00")
+var __000006_add_pgcryptoUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x0e\x72\x75\x0c\x71\x55\x70\x8d\x08\x71\xf5\x0b\xf6\xf4\xf7\x53\xf0\x74\x53\xf0\xf3\x0f\x51\x70\x8d\xf0\x0c\x0e\x09\x56\x50\x2a\x48\x4f\x2e\xaa\x2c\x28\xc9\x57\xb2\xe6\x02\x04\x00\x00\xff\xff\x29\x5f\xd6\xbb\x2b\x00\x00\x00")
 
 func _000006_add_pgcryptoUpSqlBytes() ([]byte, error) {
 	return bindataRead(
@@ -323,7 +333,207 @@ func _000006_add_pgcryptoUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000006_add_pgcrypto.up.sql", size: 42, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "000006_add_pgcrypto.up.sql", size: 43, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000007_update_retention_scripts_tableDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x9c\x94\x4f\x6f\xdb\x3c\x0c\xc6\xef\xfe\x14\xcf\x31\x01\x92\xe2\x7d\xb7\xb5\x97\x9e\xba\xd6\x1d\x8c\x65\x69\xe7\x26\xc0\x8a\x61\x30\x14\x9b\xa9\xb5\x29\x92\x27\xca\x49\xfb\xed\x07\xd9\xf2\x9f\x76\x69\x0f\xbb\x89\x22\xf9\x7b\x44\x82\xd4\x55\x7a\x73\x8b\xd5\xc5\xc7\x45\x8c\xe4\x1a\xf1\xb7\xe4\x6e\x75\x87\x4a\xd5\x0f\x52\x67\x96\x1c\x69\x27\x8d\xce\x38\xb7\xb2\x72\x7c\x1e\x45\xf3\x39\x52\xda\x93\x75\xd8\x88\xfc\x17\x9c\x41\x65\x69\x2f\x4d\xcd\x70\x62\xa3\x08\x9c\x97\xb4\x13\x27\xd1\x65\x1a\x5f\xac\xe2\x80\x7e\x0d\x88\x49\x04\xcc\xe7\x30\xf6\x21\x93\x05\x24\xc3\x95\xe4\x2d\x1c\x4a\x83\x52\x78\x5b\x32\xda\x68\x90\xf6\x0a\xc5\x49\x84\x2e\x61\xbd\x4e\xae\xb0\xbc\x59\x61\xb9\x5e\x2c\x66\x2d\x2b\x68\x0d\xb8\xe4\x0a\x66\xdb\x9c\x5a\x17\x5c\x29\x5c\x63\x07\xae\xe4\x0e\x8d\xad\xb1\x1e\x3f\x30\xf6\xc2\xe6\xa5\xb0\x93\xff\xff\x7b\xf7\x61\xfa\x52\x6a\x4f\x96\xa5\xd1\x9d\x50\x67\xfe\xa3\x5a\x97\xfe\xa6\x64\x0b\x39\x5a\x5d\xe0\x9b\xcd\x4f\xca\x9d\xe7\x0e\xb1\xc7\xfa\x14\xbc\x5a\xec\xa8\x63\x35\xe7\x67\xb4\x11\xa6\x71\xbe\xf9\xb6\x82\xda\xd0\xd0\x12\xf1\xec\xe2\x2f\xec\xd8\xd9\x61\xcf\x4e\x4f\xdf\x9f\x4d\x03\x2e\x37\xda\x8f\x0b\x37\x07\x21\x75\xfb\x46\x91\xbb\x5a\x28\xdc\x3e\x2e\x46\xac\x3e\x34\x80\x02\x61\x6b\xe9\x77\x4d\x3a\x7f\xca\xd8\x3f\xa8\x34\x07\x98\xad\x23\x3d\x6e\x17\x97\xa6\x56\x05\x6c\xad\x67\x90\x1a\x4c\xb9\xd1\x05\x7b\xe8\xb3\x6c\xed\x02\x93\x1e\x2b\x63\x5d\x56\x5b\xd5\x75\x6d\x9d\x2e\x70\x28\x65\x5e\x36\x56\x21\x9c\xc0\x41\x2a\x85\x0d\x81\x49\x3b\x38\xe3\x69\xa3\xbc\xe3\xd5\xaa\x9a\x1d\xd9\x4c\x16\xdc\x81\x95\x64\xe7\xfb\x16\x5c\xdc\xab\x0c\x2b\x31\xbc\x1e\x46\x9f\x20\xd9\x82\x76\x95\x7b\x9a\x41\x30\xd7\x3b\x62\x48\xe7\x9d\x0c\xa3\x21\x94\x1a\x50\x52\x77\xab\xd6\xf4\x6f\x24\xee\x67\xe5\xfb\x8f\xae\xda\x30\xa9\xd2\x8b\x93\xa5\xd7\x07\x19\xfd\x72\x37\xd5\x06\xc7\xc6\x18\x45\x42\x07\x9a\xe4\xac\xb2\xc4\xe4\x02\xcf\x95\x64\x61\x2c\xb4\x79\xb9\x21\x02\x21\x30\x5c\x55\xd6\xec\x65\xe1\x81\x4f\xe3\xdd\x0a\xd7\xcd\x16\x0d\xf0\x5e\x34\x02\x6e\xd3\xe4\xcb\x45\x7a\x8f\xcf\xf1\x3d\x26\xfd\x42\x34\x4d\x5f\x2f\x93\xaf\xeb\x18\x93\xf6\x2f\x99\x8d\xe7\xbc\xf1\x5f\xdf\xa4\x71\xf2\x69\xd9\xa6\xf6\x3f\xc2\xec\xc5\xba\x4e\x91\xc6\xd7\x71\x1a\x2f\x2f\xe3\xd1\xc7\xa9\x48\x30\xf1\xc4\x87\x77\x71\xd1\xf4\x3c\xfa\x13\x00\x00\xff\xff\x4c\xc3\xfb\x11\x6e\x05\x00\x00")
+
+func _000007_update_retention_scripts_tableDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000007_update_retention_scripts_tableDownSql,
+		"000007_update_retention_scripts_table.down.sql",
+	)
+}
+
+func _000007_update_retention_scripts_tableDownSql() (*asset, error) {
+	bytes, err := _000007_update_retention_scripts_tableDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000007_update_retention_scripts_table.down.sql", size: 1390, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000007_update_retention_scripts_tableUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x9c\x93\x4f\x73\xd3\x30\x10\xc5\xef\xfe\x14\xef\x98\xcc\xa4\x1d\xfe\xb5\x97\x9e\x4a\xa3\x80\x87\x90\x14\x37\x9e\xa1\x27\x8f\x6c\x6f\x23\x81\x91\x3c\x92\xe2\x90\x6f\xcf\x58\x96\x12\x37\x94\x1e\xb8\x79\xb5\x6f\x7f\x4f\xde\x5d\xcd\xb3\xf5\x3d\x36\xb7\x1f\x97\x0c\xe9\x02\xec\x7b\xfa\xb0\x79\x40\xdb\xec\xb6\x52\x15\x86\x1c\x29\x27\xb5\x2a\x6c\x65\x64\xeb\xec\x4d\x92\xdc\x65\xec\x76\xc3\x42\xc5\xbf\x74\x98\x24\xc0\xc5\x05\xb4\xd9\x16\xb2\x86\xb4\x70\x82\xfa\x08\x7b\xa1\x21\x78\x1f\x4b\x8b\x41\x0d\x52\xbc\x6c\xa8\xbe\x4c\x10\x0b\xf2\x3c\x9d\x63\xb5\xde\x60\x95\x2f\x97\xb3\x81\x15\xbc\x4e\xb8\x74\x0e\xfd\xe4\xbf\x86\x14\x9c\xe0\xce\xc7\x81\x2b\x6d\x44\xe3\x49\x9b\x1e\x7f\x62\x74\xdc\x54\x82\x9b\xc9\xdb\x37\xef\x3e\x4c\xcf\xad\x3a\x32\x56\x6a\x15\x8d\x62\xf8\x9f\x6e\xb1\xfc\x55\xcb\x01\xf2\xe2\xdf\x05\xbe\x2e\x7f\x50\xe5\xe0\x9d\x09\x95\xd1\x2a\x66\x2c\x99\x4e\x56\xd4\x5b\x9e\x30\x2f\xb5\x30\x64\x15\xff\x45\xd1\xc6\x7f\x3f\x33\x1a\x61\x7c\xf2\xd5\x6b\xd7\x34\x48\x43\xb7\xf8\xb3\x83\xbf\xb0\xe3\x64\xc4\x5e\x5f\x5d\xbd\xbf\x9e\x06\x1c\xfd\x6e\xb5\x71\xc5\xce\x34\xf1\x7e\x79\xb6\xc4\x5e\xc8\x4a\xf8\xa8\xe6\x8e\x63\x2f\x9b\x06\x25\xc1\x92\x72\x70\xfa\x12\x9f\xb9\x15\x54\x63\x67\xa5\xda\x1e\x65\x25\xb7\x84\x9f\x74\xe8\x87\x81\xd6\xc8\x8e\x57\x87\xfe\x0e\x23\x8b\xf2\xe0\x88\x07\x67\x69\x8b\xd6\x90\x25\x3f\xc7\xbd\x20\x27\xc8\x40\x1b\x28\x7d\x3e\x64\x8e\x20\x0c\x47\xad\xd1\x9d\xac\xa9\x46\x79\x18\xaf\x47\x38\xf6\x8b\x70\x82\x97\x5a\x37\xc4\xd5\x2c\x49\x80\xfb\x2c\xfd\x7a\x9b\x3d\xe2\x0b\x7b\xc4\xe4\x38\x38\xdf\x8a\x7c\x95\x7e\xcb\x19\x26\xc3\x73\x98\x8d\xe7\xe1\xf3\x8b\x75\xc6\xd2\x4f\xab\xa1\xf4\xb8\xd4\xb3\xb3\x8d\x9b\x22\x63\x0b\x96\xb1\xd5\x1d\x1b\x3d\xe9\x86\xb8\x25\x3b\xe9\xe5\x51\x97\x4c\x6f\x92\x3f\x01\x00\x00\xff\xff\x69\x60\x3b\x71\x08\x04\x00\x00")
+
+func _000007_update_retention_scripts_tableUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000007_update_retention_scripts_tableUpSql,
+		"000007_update_retention_scripts_table.up.sql",
+	)
+}
+
+func _000007_update_retention_scripts_tableUpSql() (*asset, error) {
+	bytes, err := _000007_update_retention_scripts_tableUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000007_update_retention_scripts_table.up.sql", size: 1032, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000008_drop_plugin_version_retention_scriptsDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xc8\x29\x4d\xcf\xcc\x8b\x2f\x4a\x2d\x49\xcd\x2b\xc9\xcc\xcf\x8b\x2f\x4e\x2e\xca\x2c\x28\x29\x56\x70\x74\x71\x51\x70\xf6\xf7\x09\xf5\xf5\x83\xa9\x29\x4b\x2d\x2a\xce\xcc\xcf\x53\x28\x4b\x2c\x4a\xce\x48\x2c\xd2\x30\x34\x30\x32\xd1\x54\xf0\xf3\x0f\x51\xf0\x0b\xf5\xf1\xb1\xe6\x02\x04\x00\x00\xff\xff\x1f\xc6\x09\xad\x57\x00\x00\x00")
+
+func _000008_drop_plugin_version_retention_scriptsDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000008_drop_plugin_version_retention_scriptsDownSql,
+		"000008_drop_plugin_version_retention_scripts.down.sql",
+	)
+}
+
+func _000008_drop_plugin_version_retention_scriptsDownSql() (*asset, error) {
+	bytes, err := _000008_drop_plugin_version_retention_scriptsDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000008_drop_plugin_version_retention_scripts.down.sql", size: 87, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000008_drop_plugin_version_retention_scriptsUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xc8\x29\x4d\xcf\xcc\x8b\x2f\x4a\x2d\x49\xcd\x2b\xc9\xcc\xcf\x8b\x2f\x4e\x2e\xca\x2c\x28\x29\x56\x70\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x83\x29\x2a\x4b\x2d\x2a\xce\xcc\xcf\xb3\xe6\x02\x04\x00\x00\xff\xff\xd0\x69\xa2\xcb\x41\x00\x00\x00")
+
+func _000008_drop_plugin_version_retention_scriptsUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000008_drop_plugin_version_retention_scriptsUpSql,
+		"000008_drop_plugin_version_retention_scripts.up.sql",
+	)
+}
+
+func _000008_drop_plugin_version_retention_scriptsUpSql() (*asset, error) {
+	bytes, err := _000008_drop_plugin_version_retention_scriptsUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000008_drop_plugin_version_retention_scripts.up.sql", size: 65, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000009_add_plugin_custom_export_urlDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\xc8\x2f\x4a\x8f\x4f\x49\x2c\x49\x8c\x2f\x4a\x2d\x49\xcd\x2b\xc9\xcc\xcf\x8b\x2f\xc8\x29\x4d\xcf\xcc\x2b\x56\x70\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x53\x48\x2e\x2d\x2e\xc9\xcf\x8d\x4f\xad\x28\xc8\x2f\x2a\x89\x2f\x2d\xca\xb1\xe6\x02\x04\x00\x00\xff\xff\x0d\x59\xfa\x58\x46\x00\x00\x00")
+
+func _000009_add_plugin_custom_export_urlDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000009_add_plugin_custom_export_urlDownSql,
+		"000009_add_plugin_custom_export_url.down.sql",
+	)
+}
+
+func _000009_add_plugin_custom_export_urlDownSql() (*asset, error) {
+	bytes, err := _000009_add_plugin_custom_export_urlDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000009_add_plugin_custom_export_url.down.sql", size: 70, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000009_add_plugin_custom_export_urlUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\xc8\x2f\x4a\x8f\x4f\x49\x2c\x49\x8c\x2f\x4a\x2d\x49\xcd\x2b\xc9\xcc\xcf\x8b\x2f\xc8\x29\x4d\xcf\xcc\x2b\x56\x70\x74\x71\x51\x48\x2e\x2d\x2e\xc9\xcf\x8d\x4f\xad\x28\xc8\x2f\x2a\x89\x2f\x2d\xca\x51\x48\xaa\x2c\x49\x4d\xb4\xe6\x02\x04\x00\x00\xff\xff\x53\xf3\x1b\x24\x44\x00\x00\x00")
+
+func _000009_add_plugin_custom_export_urlUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000009_add_plugin_custom_export_urlUpSql,
+		"000009_add_plugin_custom_export_url.up.sql",
+	)
+}
+
+func _000009_add_plugin_custom_export_urlUpSql() (*asset, error) {
+	bytes, err := _000009_add_plugin_custom_export_urlUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000009_add_plugin_custom_export_url.up.sql", size: 68, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000010_add_retention_plugin_insecureDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\xc8\x2f\x4a\x8f\x4f\x49\x2c\x49\x8c\x2f\x4a\x2d\x49\xcd\x2b\xc9\xcc\xcf\x8b\x2f\xc8\x29\x4d\xcf\xcc\x2b\x56\x70\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x53\xc8\xcc\x2b\x4e\x4d\x2e\x2d\x4a\x8d\x2f\xc9\x29\xb6\xe6\x42\x36\x00\xab\xe6\xf8\xa2\xd4\x9c\xd4\xc4\xe2\x54\x54\x43\x12\x73\x72\xf2\xcb\xe3\x51\x8d\x02\x04\x00\x00\xff\xff\x7e\x73\xac\xa5\x8c\x00\x00\x00")
+
+func _000010_add_retention_plugin_insecureDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000010_add_retention_plugin_insecureDownSql,
+		"000010_add_retention_plugin_insecure.down.sql",
+	)
+}
+
+func _000010_add_retention_plugin_insecureDownSql() (*asset, error) {
+	bytes, err := _000010_add_retention_plugin_insecureDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000010_add_retention_plugin_insecure.down.sql", size: 140, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000010_add_retention_plugin_insecureUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x6c\xcc\x31\x0a\x02\x41\x0c\x05\xd0\xde\x53\xe4\x1e\x56\x23\xbb\xdd\x56\xb2\x7d\x88\xfa\x19\x06\x42\x22\x49\x06\xaf\x6f\x61\x63\x31\x07\x78\xaf\x1d\xe7\x7e\xa7\xb3\xdd\x8e\x9d\x3c\x3a\xbf\xa4\x84\x03\x05\xab\xe1\xc6\x6f\x9d\x7d\x58\x52\xdb\x36\x1a\x96\x78\xce\x00\x97\x26\x3d\xdc\x15\x62\xd7\xcb\x7f\xb0\xc4\x1c\x50\x48\xe2\x97\x88\xaa\x7f\x78\x5d\x7d\x03\x00\x00\xff\xff\xa7\x17\x29\x54\x8c\x00\x00\x00")
+
+func _000010_add_retention_plugin_insecureUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000010_add_retention_plugin_insecureUpSql,
+		"000010_add_retention_plugin_insecure.up.sql",
+	)
+}
+
+func _000010_add_retention_plugin_insecureUpSql() (*asset, error) {
+	bytes, err := _000010_add_retention_plugin_insecureUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000010_add_retention_plugin_insecure.up.sql", size: 140, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000011_add_retention_plugin_insecure_defaultDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x74\xcc\xb1\x0a\x02\x31\x0c\x00\xd0\xdd\xaf\xc8\x7f\x38\x55\xaf\x4e\xd5\x93\xa3\x37\x87\xa0\xe1\x28\x84\x54\x92\x14\x7f\xdf\xc1\x45\x44\xf7\xc7\x4b\xa5\xe6\x05\x6a\x3a\x94\x0c\x77\x0a\x42\xe3\x60\x8d\xd6\x15\x1f\x32\xb6\xa6\x68\x2c\x4c\xce\x0e\x6f\x7a\x9c\xcb\x7a\xbe\x00\x89\xf4\x27\x36\x75\xbe\x0d\x63\x0c\x71\x98\x96\xf9\x0a\x53\x3e\xa5\xb5\xd4\xfd\xee\x33\xee\xb6\xe1\xcf\xfc\x2b\xfd\xdf\xbd\x02\x00\x00\xff\xff\x44\x19\x35\x00\xa7\x00\x00\x00")
+
+func _000011_add_retention_plugin_insecure_defaultDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000011_add_retention_plugin_insecure_defaultDownSql,
+		"000011_add_retention_plugin_insecure_default.down.sql",
+	)
+}
+
+func _000011_add_retention_plugin_insecure_defaultDownSql() (*asset, error) {
+	bytes, err := _000011_add_retention_plugin_insecure_defaultDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000011_add_retention_plugin_insecure_default.down.sql", size: 167, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000011_add_retention_plugin_insecure_defaultUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x84\xcd\xb1\x0a\x42\x31\x0c\x46\xe1\xdd\xa7\xc8\x7b\x38\x55\xad\x53\x55\xd0\xde\x39\x04\xfd\xbd\x14\x42\x2b\x49\x2e\xbe\xbe\x83\x8b\x88\xe0\x7e\xf8\x4e\x2a\x35\x9f\xa9\xa6\x4d\xc9\x74\x93\x10\x36\x04\x7a\xb4\xd1\xf9\xa1\xcb\xdc\x3a\x1b\x14\xe2\x70\x7a\xa7\xdb\x53\x99\x0e\x47\x12\xd5\xf1\xe4\xd6\x1d\xd7\xc5\xc0\xa1\x4e\x97\x5c\x69\x97\xf7\x69\x2a\x95\xee\xa2\x8e\xf5\xea\x53\x1f\x36\xf3\xcf\xc3\x97\xfc\xc7\x7c\x05\x00\x00\xff\xff\xe3\x13\x5f\xa6\xb1\x00\x00\x00")
+
+func _000011_add_retention_plugin_insecure_defaultUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000011_add_retention_plugin_insecure_defaultUpSql,
+		"000011_add_retention_plugin_insecure_default.up.sql",
+	)
+}
+
+func _000011_add_retention_plugin_insecure_defaultUpSql() (*asset, error) {
+	bytes, err := _000011_add_retention_plugin_insecure_defaultUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000011_add_retention_plugin_insecure_default.up.sql", size: 177, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -380,18 +590,28 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"000001_create_plugin_releases_table.down.sql":    _000001_create_plugin_releases_tableDownSql,
-	"000001_create_plugin_releases_table.up.sql":      _000001_create_plugin_releases_tableUpSql,
-	"000002_create_retention_releases_table.down.sql": _000002_create_retention_releases_tableDownSql,
-	"000002_create_retention_releases_table.up.sql":   _000002_create_retention_releases_tableUpSql,
-	"000003_create_org_retention_table.down.sql":      _000003_create_org_retention_tableDownSql,
-	"000003_create_org_retention_table.up.sql":        _000003_create_org_retention_tableUpSql,
-	"000004_create_retention_scripts_table.down.sql":  _000004_create_retention_scripts_tableDownSql,
-	"000004_create_retention_scripts_table.up.sql":    _000004_create_retention_scripts_tableUpSql,
-	"000005_fix_preset_scripts_type.down.sql":         _000005_fix_preset_scripts_typeDownSql,
-	"000005_fix_preset_scripts_type.up.sql":           _000005_fix_preset_scripts_typeUpSql,
-	"000006_add_pgcrypto.down.sql":                    _000006_add_pgcryptoDownSql,
-	"000006_add_pgcrypto.up.sql":                      _000006_add_pgcryptoUpSql,
+	"000001_create_plugin_releases_table.down.sql":          _000001_create_plugin_releases_tableDownSql,
+	"000001_create_plugin_releases_table.up.sql":            _000001_create_plugin_releases_tableUpSql,
+	"000002_create_retention_releases_table.down.sql":       _000002_create_retention_releases_tableDownSql,
+	"000002_create_retention_releases_table.up.sql":         _000002_create_retention_releases_tableUpSql,
+	"000003_create_org_retention_table.down.sql":            _000003_create_org_retention_tableDownSql,
+	"000003_create_org_retention_table.up.sql":              _000003_create_org_retention_tableUpSql,
+	"000004_create_retention_scripts_table.down.sql":        _000004_create_retention_scripts_tableDownSql,
+	"000004_create_retention_scripts_table.up.sql":          _000004_create_retention_scripts_tableUpSql,
+	"000005_fix_preset_scripts_type.down.sql":               _000005_fix_preset_scripts_typeDownSql,
+	"000005_fix_preset_scripts_type.up.sql":                 _000005_fix_preset_scripts_typeUpSql,
+	"000006_add_pgcrypto.down.sql":                          _000006_add_pgcryptoDownSql,
+	"000006_add_pgcrypto.up.sql":                            _000006_add_pgcryptoUpSql,
+	"000007_update_retention_scripts_table.down.sql":        _000007_update_retention_scripts_tableDownSql,
+	"000007_update_retention_scripts_table.up.sql":          _000007_update_retention_scripts_tableUpSql,
+	"000008_drop_plugin_version_retention_scripts.down.sql": _000008_drop_plugin_version_retention_scriptsDownSql,
+	"000008_drop_plugin_version_retention_scripts.up.sql":   _000008_drop_plugin_version_retention_scriptsUpSql,
+	"000009_add_plugin_custom_export_url.down.sql":          _000009_add_plugin_custom_export_urlDownSql,
+	"000009_add_plugin_custom_export_url.up.sql":            _000009_add_plugin_custom_export_urlUpSql,
+	"000010_add_retention_plugin_insecure.down.sql":         _000010_add_retention_plugin_insecureDownSql,
+	"000010_add_retention_plugin_insecure.up.sql":           _000010_add_retention_plugin_insecureUpSql,
+	"000011_add_retention_plugin_insecure_default.down.sql": _000011_add_retention_plugin_insecure_defaultDownSql,
+	"000011_add_retention_plugin_insecure_default.up.sql":   _000011_add_retention_plugin_insecure_defaultUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -435,18 +655,28 @@ type bintree struct {
 }
 
 var _bintree = &bintree{nil, map[string]*bintree{
-	"000001_create_plugin_releases_table.down.sql":    &bintree{_000001_create_plugin_releases_tableDownSql, map[string]*bintree{}},
-	"000001_create_plugin_releases_table.up.sql":      &bintree{_000001_create_plugin_releases_tableUpSql, map[string]*bintree{}},
-	"000002_create_retention_releases_table.down.sql": &bintree{_000002_create_retention_releases_tableDownSql, map[string]*bintree{}},
-	"000002_create_retention_releases_table.up.sql":   &bintree{_000002_create_retention_releases_tableUpSql, map[string]*bintree{}},
-	"000003_create_org_retention_table.down.sql":      &bintree{_000003_create_org_retention_tableDownSql, map[string]*bintree{}},
-	"000003_create_org_retention_table.up.sql":        &bintree{_000003_create_org_retention_tableUpSql, map[string]*bintree{}},
-	"000004_create_retention_scripts_table.down.sql":  &bintree{_000004_create_retention_scripts_tableDownSql, map[string]*bintree{}},
-	"000004_create_retention_scripts_table.up.sql":    &bintree{_000004_create_retention_scripts_tableUpSql, map[string]*bintree{}},
-	"000005_fix_preset_scripts_type.down.sql":         &bintree{_000005_fix_preset_scripts_typeDownSql, map[string]*bintree{}},
-	"000005_fix_preset_scripts_type.up.sql":           &bintree{_000005_fix_preset_scripts_typeUpSql, map[string]*bintree{}},
-	"000006_add_pgcrypto.down.sql":                    &bintree{_000006_add_pgcryptoDownSql, map[string]*bintree{}},
-	"000006_add_pgcrypto.up.sql":                      &bintree{_000006_add_pgcryptoUpSql, map[string]*bintree{}},
+	"000001_create_plugin_releases_table.down.sql":          &bintree{_000001_create_plugin_releases_tableDownSql, map[string]*bintree{}},
+	"000001_create_plugin_releases_table.up.sql":            &bintree{_000001_create_plugin_releases_tableUpSql, map[string]*bintree{}},
+	"000002_create_retention_releases_table.down.sql":       &bintree{_000002_create_retention_releases_tableDownSql, map[string]*bintree{}},
+	"000002_create_retention_releases_table.up.sql":         &bintree{_000002_create_retention_releases_tableUpSql, map[string]*bintree{}},
+	"000003_create_org_retention_table.down.sql":            &bintree{_000003_create_org_retention_tableDownSql, map[string]*bintree{}},
+	"000003_create_org_retention_table.up.sql":              &bintree{_000003_create_org_retention_tableUpSql, map[string]*bintree{}},
+	"000004_create_retention_scripts_table.down.sql":        &bintree{_000004_create_retention_scripts_tableDownSql, map[string]*bintree{}},
+	"000004_create_retention_scripts_table.up.sql":          &bintree{_000004_create_retention_scripts_tableUpSql, map[string]*bintree{}},
+	"000005_fix_preset_scripts_type.down.sql":               &bintree{_000005_fix_preset_scripts_typeDownSql, map[string]*bintree{}},
+	"000005_fix_preset_scripts_type.up.sql":                 &bintree{_000005_fix_preset_scripts_typeUpSql, map[string]*bintree{}},
+	"000006_add_pgcrypto.down.sql":                          &bintree{_000006_add_pgcryptoDownSql, map[string]*bintree{}},
+	"000006_add_pgcrypto.up.sql":                            &bintree{_000006_add_pgcryptoUpSql, map[string]*bintree{}},
+	"000007_update_retention_scripts_table.down.sql":        &bintree{_000007_update_retention_scripts_tableDownSql, map[string]*bintree{}},
+	"000007_update_retention_scripts_table.up.sql":          &bintree{_000007_update_retention_scripts_tableUpSql, map[string]*bintree{}},
+	"000008_drop_plugin_version_retention_scripts.down.sql": &bintree{_000008_drop_plugin_version_retention_scriptsDownSql, map[string]*bintree{}},
+	"000008_drop_plugin_version_retention_scripts.up.sql":   &bintree{_000008_drop_plugin_version_retention_scriptsUpSql, map[string]*bintree{}},
+	"000009_add_plugin_custom_export_url.down.sql":          &bintree{_000009_add_plugin_custom_export_urlDownSql, map[string]*bintree{}},
+	"000009_add_plugin_custom_export_url.up.sql":            &bintree{_000009_add_plugin_custom_export_urlUpSql, map[string]*bintree{}},
+	"000010_add_retention_plugin_insecure.down.sql":         &bintree{_000010_add_retention_plugin_insecureDownSql, map[string]*bintree{}},
+	"000010_add_retention_plugin_insecure.up.sql":           &bintree{_000010_add_retention_plugin_insecureUpSql, map[string]*bintree{}},
+	"000011_add_retention_plugin_insecure_default.down.sql": &bintree{_000011_add_retention_plugin_insecure_defaultDownSql, map[string]*bintree{}},
+	"000011_add_retention_plugin_insecure_default.up.sql":   &bintree{_000011_add_retention_plugin_insecure_defaultUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory

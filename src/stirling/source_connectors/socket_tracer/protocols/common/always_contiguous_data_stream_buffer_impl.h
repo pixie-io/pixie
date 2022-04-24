@@ -64,6 +64,10 @@ class AlwaysContiguousDataStreamBufferImpl : public DataStreamBufferImpl {
   void AddNewChunk(size_t pos, size_t size);
   void AddNewTimestamp(size_t pos, uint64_t timestamp);
 
+  // CheckOverlap checks if the chunk to be added as indicated by pos and size
+  // overlaps with any existing chunks in the data buffer.
+  bool CheckOverlap(size_t pos, size_t size);
+
   void CleanupTimestamps();
   void CleanupChunks();
 

@@ -31,6 +31,7 @@ pl_cc_library(
     deps = [
         "//src/carnot",
         "//src/common/event:cc_library",
+        "//src/common/metrics:cc_library",
         "//src/common/uuid:cc_library",
         "//src/shared/metadata:cc_library",
         "//src/shared/schema:cc_library",
@@ -84,7 +85,6 @@ pl_cc_test(
         ":cc_library",
         ":test_utils",
         "//src/common/event:cc_library",
-        "//src/common/system:cc_library_mock",
         "//src/common/testing/event:cc_library",
     ],
 )
@@ -95,7 +95,6 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/common/event:cc_library",
-        "//src/common/system:cc_library_mock",
         "//src/common/testing/event:cc_library",
     ],
 )
@@ -106,7 +105,6 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/common/event:cc_library",
-        "//src/common/system:cc_library_mock",
         "//src/common/testing/event:cc_library",
         "//src/common/testing/grpc_utils:cc_library",
     ],
@@ -119,7 +117,6 @@ pl_cc_test(
         ":cc_library",
         ":test_utils",
         "//src/common/event:cc_library",
-        "//src/common/system:cc_library_mock",
         "//src/common/testing/event:cc_library",
     ],
 )

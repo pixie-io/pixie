@@ -212,8 +212,10 @@ void ProcessContainerPIDUpdates(
     UPID upid = upid_status.ValueOrDie();
     upids->emplace(upid);
 
+    std::string exe_path = proc_parser.GetExePath(upid.pid()).ValueOr("");
     std::string cmdline = proc_parser.GetPIDCmdline(upid.pid());
-    auto pid_info = std::make_unique<PIDInfo>(upid, std::move(cmdline), CID(cid));
+    auto pid_info =
+        std::make_unique<PIDInfo>(upid, std::move(exe_path), std::move(cmdline), CID(cid));
 
     // Push creation events to the queue.
     pid_updates->enqueue(std::make_unique<PIDStartedEvent>(*pid_info));

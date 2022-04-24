@@ -38,6 +38,7 @@ pl_cc_library(
         "//src/carnot/planner/plannerpb:func_args_pl_cc_proto",
         "//src/shared/scriptspb:scripts_pl_cc_proto",
         "//src/shared/types/typespb/wrapper:cc_library",
+        "@com_github_opentelemetry_proto//:trace_proto_cc",
         "@com_github_vinzenz_libpypa//:libpypa",
     ],
 )
@@ -73,6 +74,15 @@ pl_cc_test(
 pl_cc_test(
     name = "exporter_test",
     srcs = ["exporter_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+    ],
+)
+
+pl_cc_test(
+    name = "otel_test",
+    srcs = ["otel_test.cc"],
     deps = [
         ":cc_library",
         ":test_utils",
@@ -163,6 +173,15 @@ pl_cc_test(
 pl_cc_test(
     name = "var_table_test",
     srcs = ["var_table_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+    ],
+)
+
+pl_cc_test(
+    name = "plugin_module_test",
+    srcs = ["plugin_test.cc"],
     deps = [
         ":cc_library",
         ":test_utils",

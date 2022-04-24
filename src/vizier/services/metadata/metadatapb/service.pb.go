@@ -9,6 +9,7 @@ import (
 	fmt "fmt"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
+	github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
 	types "github.com/gogo/protobuf/types"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -20,6 +21,7 @@ import (
 	distributedpb "px.dev/pixie/src/carnot/planner/distributedpb"
 	logicalpb "px.dev/pixie/src/carnot/planner/dynamic_tracing/ir/logicalpb"
 	statuspb "px.dev/pixie/src/common/base/statuspb"
+	cvmsgspb "px.dev/pixie/src/shared/cvmsgspb"
 	schemapb "px.dev/pixie/src/table_store/schemapb"
 	messagespb "px.dev/pixie/src/vizier/messages/messagespb"
 	agentpb "px.dev/pixie/src/vizier/services/shared/agentpb"
@@ -1197,6 +1199,318 @@ func (m *UpdateConfigResponse) GetStatus() *statuspb.Status {
 	return nil
 }
 
+type GetScriptsRequest struct {
+}
+
+func (m *GetScriptsRequest) Reset()      { *m = GetScriptsRequest{} }
+func (*GetScriptsRequest) ProtoMessage() {}
+func (*GetScriptsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bfe4468195647430, []int{18}
+}
+func (m *GetScriptsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetScriptsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetScriptsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetScriptsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetScriptsRequest.Merge(m, src)
+}
+func (m *GetScriptsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetScriptsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetScriptsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetScriptsRequest proto.InternalMessageInfo
+
+type GetScriptsResponse struct {
+	Scripts map[string]*cvmsgspb.CronScript `protobuf:"bytes,1,rep,name=scripts,proto3" json:"scripts,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+}
+
+func (m *GetScriptsResponse) Reset()      { *m = GetScriptsResponse{} }
+func (*GetScriptsResponse) ProtoMessage() {}
+func (*GetScriptsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bfe4468195647430, []int{19}
+}
+func (m *GetScriptsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetScriptsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetScriptsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetScriptsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetScriptsResponse.Merge(m, src)
+}
+func (m *GetScriptsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetScriptsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetScriptsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetScriptsResponse proto.InternalMessageInfo
+
+func (m *GetScriptsResponse) GetScripts() map[string]*cvmsgspb.CronScript {
+	if m != nil {
+		return m.Scripts
+	}
+	return nil
+}
+
+type AddOrUpdateScriptRequest struct {
+	Script *cvmsgspb.CronScript `protobuf:"bytes,1,opt,name=script,proto3" json:"script,omitempty"`
+}
+
+func (m *AddOrUpdateScriptRequest) Reset()      { *m = AddOrUpdateScriptRequest{} }
+func (*AddOrUpdateScriptRequest) ProtoMessage() {}
+func (*AddOrUpdateScriptRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bfe4468195647430, []int{20}
+}
+func (m *AddOrUpdateScriptRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *AddOrUpdateScriptRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_AddOrUpdateScriptRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *AddOrUpdateScriptRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AddOrUpdateScriptRequest.Merge(m, src)
+}
+func (m *AddOrUpdateScriptRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *AddOrUpdateScriptRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_AddOrUpdateScriptRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AddOrUpdateScriptRequest proto.InternalMessageInfo
+
+func (m *AddOrUpdateScriptRequest) GetScript() *cvmsgspb.CronScript {
+	if m != nil {
+		return m.Script
+	}
+	return nil
+}
+
+type AddOrUpdateScriptResponse struct {
+}
+
+func (m *AddOrUpdateScriptResponse) Reset()      { *m = AddOrUpdateScriptResponse{} }
+func (*AddOrUpdateScriptResponse) ProtoMessage() {}
+func (*AddOrUpdateScriptResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bfe4468195647430, []int{21}
+}
+func (m *AddOrUpdateScriptResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *AddOrUpdateScriptResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_AddOrUpdateScriptResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *AddOrUpdateScriptResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AddOrUpdateScriptResponse.Merge(m, src)
+}
+func (m *AddOrUpdateScriptResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *AddOrUpdateScriptResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_AddOrUpdateScriptResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AddOrUpdateScriptResponse proto.InternalMessageInfo
+
+type DeleteScriptRequest struct {
+	ScriptID *uuidpb.UUID `protobuf:"bytes,1,opt,name=script_id,json=scriptId,proto3" json:"script_id,omitempty"`
+}
+
+func (m *DeleteScriptRequest) Reset()      { *m = DeleteScriptRequest{} }
+func (*DeleteScriptRequest) ProtoMessage() {}
+func (*DeleteScriptRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bfe4468195647430, []int{22}
+}
+func (m *DeleteScriptRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *DeleteScriptRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_DeleteScriptRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *DeleteScriptRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteScriptRequest.Merge(m, src)
+}
+func (m *DeleteScriptRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *DeleteScriptRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeleteScriptRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeleteScriptRequest proto.InternalMessageInfo
+
+func (m *DeleteScriptRequest) GetScriptID() *uuidpb.UUID {
+	if m != nil {
+		return m.ScriptID
+	}
+	return nil
+}
+
+type DeleteScriptResponse struct {
+}
+
+func (m *DeleteScriptResponse) Reset()      { *m = DeleteScriptResponse{} }
+func (*DeleteScriptResponse) ProtoMessage() {}
+func (*DeleteScriptResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bfe4468195647430, []int{23}
+}
+func (m *DeleteScriptResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *DeleteScriptResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_DeleteScriptResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *DeleteScriptResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteScriptResponse.Merge(m, src)
+}
+func (m *DeleteScriptResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *DeleteScriptResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeleteScriptResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeleteScriptResponse proto.InternalMessageInfo
+
+type SetScriptsRequest struct {
+	Scripts map[string]*cvmsgspb.CronScript `protobuf:"bytes,1,rep,name=scripts,proto3" json:"scripts,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+}
+
+func (m *SetScriptsRequest) Reset()      { *m = SetScriptsRequest{} }
+func (*SetScriptsRequest) ProtoMessage() {}
+func (*SetScriptsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bfe4468195647430, []int{24}
+}
+func (m *SetScriptsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *SetScriptsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_SetScriptsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *SetScriptsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SetScriptsRequest.Merge(m, src)
+}
+func (m *SetScriptsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *SetScriptsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_SetScriptsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_SetScriptsRequest proto.InternalMessageInfo
+
+func (m *SetScriptsRequest) GetScripts() map[string]*cvmsgspb.CronScript {
+	if m != nil {
+		return m.Scripts
+	}
+	return nil
+}
+
+type SetScriptsResponse struct {
+}
+
+func (m *SetScriptsResponse) Reset()      { *m = SetScriptsResponse{} }
+func (*SetScriptsResponse) ProtoMessage() {}
+func (*SetScriptsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bfe4468195647430, []int{25}
+}
+func (m *SetScriptsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *SetScriptsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_SetScriptsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *SetScriptsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SetScriptsResponse.Merge(m, src)
+}
+func (m *SetScriptsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *SetScriptsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_SetScriptsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_SetScriptsResponse proto.InternalMessageInfo
+
 func init() {
 	proto.RegisterType((*SchemaRequest)(nil), "px.vizier.services.metadata.SchemaRequest")
 	proto.RegisterType((*SchemaResponse)(nil), "px.vizier.services.metadata.SchemaResponse")
@@ -1220,6 +1534,16 @@ func init() {
 	proto.RegisterType((*RemoveTracepointResponse)(nil), "px.vizier.services.metadata.RemoveTracepointResponse")
 	proto.RegisterType((*UpdateConfigRequest)(nil), "px.vizier.services.metadata.UpdateConfigRequest")
 	proto.RegisterType((*UpdateConfigResponse)(nil), "px.vizier.services.metadata.UpdateConfigResponse")
+	proto.RegisterType((*GetScriptsRequest)(nil), "px.vizier.services.metadata.GetScriptsRequest")
+	proto.RegisterType((*GetScriptsResponse)(nil), "px.vizier.services.metadata.GetScriptsResponse")
+	proto.RegisterMapType((map[string]*cvmsgspb.CronScript)(nil), "px.vizier.services.metadata.GetScriptsResponse.ScriptsEntry")
+	proto.RegisterType((*AddOrUpdateScriptRequest)(nil), "px.vizier.services.metadata.AddOrUpdateScriptRequest")
+	proto.RegisterType((*AddOrUpdateScriptResponse)(nil), "px.vizier.services.metadata.AddOrUpdateScriptResponse")
+	proto.RegisterType((*DeleteScriptRequest)(nil), "px.vizier.services.metadata.DeleteScriptRequest")
+	proto.RegisterType((*DeleteScriptResponse)(nil), "px.vizier.services.metadata.DeleteScriptResponse")
+	proto.RegisterType((*SetScriptsRequest)(nil), "px.vizier.services.metadata.SetScriptsRequest")
+	proto.RegisterMapType((map[string]*cvmsgspb.CronScript)(nil), "px.vizier.services.metadata.SetScriptsRequest.ScriptsEntry")
+	proto.RegisterType((*SetScriptsResponse)(nil), "px.vizier.services.metadata.SetScriptsResponse")
 }
 
 func init() {
@@ -1227,100 +1551,116 @@ func init() {
 }
 
 var fileDescriptor_bfe4468195647430 = []byte{
-	// 1482 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x58, 0xcb, 0x6f, 0x1b, 0x55,
-	0x17, 0xf7, 0x78, 0x12, 0xc7, 0x39, 0xce, 0xf3, 0x26, 0xf9, 0x3e, 0xc7, 0x95, 0x26, 0xed, 0xe8,
-	0x7b, 0x44, 0x7d, 0xcc, 0xb4, 0xa6, 0x69, 0x36, 0x50, 0x95, 0xc4, 0x6a, 0x62, 0xb5, 0x85, 0x68,
-	0xd2, 0x16, 0x89, 0xcd, 0x68, 0xec, 0xb9, 0x76, 0x2e, 0xb5, 0x67, 0x86, 0x99, 0x6b, 0xe3, 0x20,
-	0x24, 0x10, 0x12, 0x3b, 0x84, 0x60, 0xd9, 0x25, 0x3b, 0x58, 0xf3, 0x4f, 0xb0, 0xec, 0x0a, 0x55,
-	0x08, 0x55, 0xc4, 0xdd, 0xb0, 0x42, 0xfd, 0x13, 0xd0, 0xdc, 0x87, 0x3d, 0x8e, 0xdd, 0x38, 0xce,
-	0x2a, 0xf7, 0x1e, 0x9f, 0xf3, 0x3b, 0xe7, 0xfe, 0xce, 0x6b, 0x14, 0xd8, 0x8a, 0xc2, 0xaa, 0xd9,
-	0x26, 0x9f, 0x13, 0x1c, 0x9a, 0x11, 0x0e, 0xdb, 0xa4, 0x8a, 0x23, 0xb3, 0x89, 0xa9, 0xe3, 0x3a,
-	0xd4, 0xe9, 0x1d, 0x82, 0x8a, 0xfc, 0xd1, 0x08, 0x42, 0x9f, 0xfa, 0xe8, 0x52, 0xd0, 0x31, 0xb8,
-	0x95, 0x21, 0xad, 0x0c, 0xa9, 0x5c, 0xb8, 0x51, 0x27, 0xf4, 0xa8, 0x55, 0x31, 0xaa, 0x7e, 0xd3,
-	0xac, 0xfb, 0x75, 0xdf, 0x64, 0x36, 0x95, 0x56, 0x8d, 0xdd, 0xd8, 0x85, 0x9d, 0x38, 0x56, 0x41,
-	0xab, 0xfb, 0x7e, 0xbd, 0x81, 0xfb, 0x5a, 0x6e, 0x2b, 0x74, 0x28, 0xf1, 0x3d, 0xf1, 0xfb, 0x46,
-	0x1c, 0xa2, 0x13, 0x10, 0xae, 0x60, 0xb6, 0x5a, 0xc4, 0x0d, 0x2a, 0xec, 0x8f, 0x50, 0xd8, 0x8e,
-	0x15, 0xaa, 0x4e, 0xe8, 0xf9, 0xd4, 0x0c, 0x1a, 0x8e, 0xe7, 0xe1, 0xd0, 0x74, 0x49, 0x44, 0x43,
-	0x52, 0x69, 0x51, 0x1c, 0x2b, 0x27, 0x6e, 0x76, 0xac, 0x21, 0x0c, 0xdf, 0x1b, 0x65, 0x78, 0xec,
-	0x39, 0x4d, 0x52, 0xb5, 0x69, 0xe8, 0x54, 0x89, 0x57, 0x37, 0x49, 0x68, 0x36, 0xfc, 0x3a, 0xa9,
-	0x3a, 0x8d, 0xa0, 0x22, 0x4f, 0xc2, 0xfc, 0xbf, 0xcc, 0xdc, 0x6f, 0x36, 0x7d, 0xcf, 0xac, 0x38,
-	0x11, 0x36, 0x23, 0xea, 0xd0, 0x56, 0x14, 0x93, 0xc5, 0x0e, 0x49, 0x35, 0xea, 0x54, 0x1a, 0xd8,
-	0x8e, 0xa8, 0x1f, 0x62, 0x33, 0xaa, 0x1e, 0xe1, 0x26, 0xe3, 0x94, 0x1d, 0x84, 0xda, 0x8d, 0x44,
-	0x26, 0x9a, 0x38, 0x8a, 0x9c, 0x3a, 0xcb, 0x04, 0x3f, 0x04, 0x95, 0xde, 0x51, 0xa8, 0x1b, 0xa3,
-	0x12, 0x17, 0x1d, 0x39, 0x21, 0x76, 0x4d, 0xa7, 0x8e, 0x3d, 0x1a, 0x54, 0xf8, 0x5f, 0xae, 0xaf,
-	0x2f, 0xc2, 0xfc, 0x21, 0x73, 0x67, 0xe1, 0x4f, 0x5b, 0x38, 0xa2, 0x7a, 0x19, 0x16, 0xa4, 0x20,
-	0x0a, 0x7c, 0x2f, 0xc2, 0x68, 0x1b, 0x32, 0x3c, 0xa2, 0x7c, 0xfa, 0xb2, 0xb2, 0x99, 0x2b, 0x6e,
-	0x18, 0x41, 0xc7, 0x48, 0x04, 0x6e, 0xc8, 0xc0, 0x0d, 0x61, 0x28, 0xd4, 0x75, 0x04, 0x4b, 0xef,
-	0xc7, 0xae, 0xca, 0x5e, 0xcd, 0x97, 0xf0, 0x87, 0xb0, 0x9c, 0x90, 0x09, 0x0f, 0x77, 0x61, 0x8a,
-	0x78, 0x35, 0x3f, 0xaf, 0x5c, 0x56, 0x37, 0x73, 0xc5, 0xab, 0xc6, 0x19, 0x55, 0x64, 0x30, 0xeb,
-	0x47, 0xe2, 0x66, 0x31, 0x3b, 0xfd, 0x44, 0x81, 0xf9, 0x01, 0x39, 0x7a, 0x17, 0xa6, 0xd9, 0x2b,
-	0xf3, 0x0a, 0x0b, 0xf9, 0x7f, 0xa3, 0x20, 0x39, 0x2b, 0x06, 0x67, 0x83, 0x99, 0x5b, 0xdc, 0x08,
-	0x95, 0x20, 0xc3, 0x53, 0x25, 0x5e, 0x7c, 0xfd, 0x7c, 0xe6, 0x87, 0xcc, 0xc6, 0x12, 0xb6, 0xe8,
-	0x21, 0xe4, 0x78, 0x11, 0xd9, 0xec, 0x71, 0x2a, 0x83, 0xba, 0x16, 0x43, 0x71, 0xb1, 0x21, 0x6a,
-	0xcb, 0x18, 0x28, 0x4a, 0x63, 0x97, 0xfd, 0xc8, 0xf8, 0x81, 0x6a, 0xef, 0xac, 0x3f, 0x57, 0x60,
-	0x85, 0x79, 0x79, 0x12, 0xb8, 0x0e, 0xc5, 0x91, 0x20, 0x14, 0x95, 0x61, 0xa5, 0xe9, 0x74, 0xec,
-	0x16, 0x93, 0xda, 0xc4, 0xa3, 0x38, 0x6c, 0x3b, 0x0d, 0xf1, 0xee, 0x75, 0x83, 0x37, 0x91, 0x21,
-	0x9b, 0xc8, 0x28, 0x89, 0x26, 0xb2, 0x96, 0x9b, 0x4e, 0x87, 0x43, 0x95, 0x85, 0x0d, 0xda, 0x86,
-	0x7c, 0x1f, 0x2a, 0xb2, 0x03, 0x1c, 0xda, 0xa1, 0x48, 0x11, 0x23, 0x62, 0xda, 0x5a, 0xeb, 0x19,
-	0x45, 0x07, 0x38, 0x94, 0xf9, 0xd3, 0xff, 0x56, 0x20, 0x97, 0x88, 0x0d, 0x6d, 0x43, 0x96, 0xd1,
-	0x62, 0x13, 0x57, 0x04, 0xb2, 0x18, 0x3f, 0x9b, 0xb7, 0xa8, 0xf1, 0xe4, 0x49, 0xb9, 0xb4, 0x93,
-	0xeb, 0xbe, 0xda, 0x98, 0xe1, 0x95, 0x50, 0xb2, 0x66, 0x98, 0x76, 0xd9, 0x45, 0x05, 0x98, 0x71,
-	0x71, 0x03, 0x53, 0xec, 0x32, 0x87, 0xd9, 0xfd, 0x94, 0x25, 0x05, 0xe8, 0xae, 0x4c, 0xa9, 0x3a,
-	0x49, 0x4a, 0xf7, 0x53, 0x32, 0xa9, 0xf7, 0x60, 0x36, 0x2e, 0x0d, 0x9e, 0x8c, 0x29, 0x86, 0x71,
-	0x25, 0x81, 0xd1, 0xeb, 0x23, 0x66, 0x56, 0x72, 0xa8, 0x13, 0xd3, 0xbe, 0x9f, 0xb2, 0xb2, 0xae,
-	0x38, 0xef, 0x64, 0x21, 0xc3, 0xb9, 0xd1, 0x7f, 0x48, 0xc3, 0xea, 0x60, 0x32, 0x44, 0x25, 0x3f,
-	0x82, 0x79, 0xfe, 0x72, 0x41, 0xa2, 0x28, 0xe9, 0xcd, 0xf1, 0x25, 0xcd, 0x91, 0xac, 0x39, 0x27,
-	0x01, 0x8b, 0x0e, 0x24, 0x1c, 0xef, 0xa8, 0xb8, 0x1e, 0xd5, 0x73, 0x15, 0x11, 0xef, 0x44, 0x56,
-	0x44, 0x1c, 0x91, 0x0b, 0x22, 0x54, 0x84, 0xb5, 0x01, 0x44, 0x11, 0xa8, 0xcb, 0x58, 0xcd, 0x5a,
-	0x2b, 0x49, 0x65, 0x1e, 0x85, 0x8b, 0xfe, 0x03, 0x0b, 0xd8, 0x73, 0x6d, 0xbf, 0x66, 0xb7, 0x71,
-	0x18, 0x11, 0xdf, 0x63, 0xf4, 0x65, 0xad, 0x39, 0xec, 0xb9, 0x1f, 0xd6, 0x9e, 0x72, 0x99, 0x5e,
-	0x82, 0xd5, 0x8f, 0x08, 0x3d, 0x3a, 0x08, 0x71, 0x8d, 0x74, 0x1e, 0xe0, 0x63, 0x59, 0xa0, 0xff,
-	0x82, 0x4c, 0xc0, 0x64, 0xac, 0x14, 0x66, 0x2d, 0x71, 0x43, 0xab, 0x30, 0xcd, 0xaa, 0x92, 0x65,
-	0x7a, 0xd6, 0xe2, 0x17, 0xfd, 0x3b, 0x05, 0xd6, 0x4e, 0xc1, 0x08, 0x6a, 0xf7, 0x40, 0x7d, 0xd6,
-	0x96, 0x84, 0x6e, 0x9d, 0x49, 0xe8, 0x48, 0x00, 0xe3, 0xc1, 0x53, 0x2b, 0x46, 0x28, 0x5c, 0x87,
-	0xf4, 0x83, 0xa7, 0x68, 0x09, 0xd4, 0x67, 0xf8, 0x58, 0xc4, 0x14, 0x1f, 0xe3, 0x80, 0xda, 0x4e,
-	0xa3, 0xc5, 0x6b, 0x7d, 0xce, 0xe2, 0x17, 0xfd, 0xf7, 0x34, 0xac, 0x5b, 0xb8, 0x4e, 0x22, 0x8a,
-	0xc3, 0xc7, 0xa1, 0x53, 0xc5, 0x81, 0x4f, 0x3c, 0x2a, 0x1f, 0xe7, 0x42, 0x36, 0xe4, 0x47, 0x19,
-	0xd9, 0xfe, 0x99, 0x91, 0xbd, 0x15, 0xc9, 0x18, 0x92, 0x58, 0x3d, 0xe4, 0xc2, 0x6f, 0x0a, 0x2c,
-	0x0f, 0xfb, 0xfe, 0x0c, 0xd6, 0x68, 0x4f, 0x68, 0xbb, 0x38, 0x68, 0xf8, 0xc7, 0xcd, 0xfe, 0xcc,
-	0xdb, 0x19, 0x55, 0x24, 0x83, 0x5b, 0xcc, 0x20, 0xa1, 0x21, 0x77, 0x57, 0x1f, 0xbf, 0xd4, 0x43,
-	0xb2, 0x56, 0xe9, 0x08, 0x29, 0x42, 0x30, 0xe5, 0x39, 0x4d, 0x2c, 0x12, 0xc7, 0xce, 0xe8, 0x36,
-	0xa8, 0x94, 0x36, 0x44, 0x6f, 0xbe, 0x7d, 0xec, 0xec, 0xcc, 0x74, 0x5f, 0x6d, 0xa8, 0x8f, 0x1f,
-	0x3f, 0xb4, 0x62, 0x75, 0xfd, 0x97, 0x34, 0x14, 0x46, 0x51, 0x22, 0x52, 0xfe, 0x09, 0xe4, 0xfa,
-	0x01, 0x5c, 0x9c, 0x60, 0x91, 0xff, 0xbe, 0x48, 0x0c, 0xea, 0x24, 0x38, 0xba, 0x76, 0x6a, 0xe6,
-	0xaf, 0xc4, 0x6e, 0xe4, 0xe6, 0x36, 0x06, 0x47, 0x7b, 0xe1, 0x0b, 0x58, 0x3a, 0x8d, 0x96, 0x00,
-	0x50, 0xc6, 0x02, 0xa0, 0xff, 0x43, 0x9a, 0xb8, 0xc2, 0xd3, 0xd0, 0x6c, 0xcc, 0x74, 0x5f, 0x6d,
-	0xa4, 0xcb, 0x25, 0x2b, 0x4d, 0xdc, 0x1e, 0xd7, 0x6a, 0x9f, 0x6b, 0xfd, 0x3e, 0xe4, 0xf7, 0x30,
-	0xed, 0x07, 0x90, 0xd8, 0xaf, 0xe8, 0x2a, 0xa8, 0xc4, 0x95, 0x54, 0x0d, 0x21, 0x33, 0xf6, 0xcb,
-	0xa5, 0xc8, 0x8a, 0x95, 0xf4, 0x1f, 0x55, 0x58, 0x1f, 0x01, 0x24, 0xc8, 0x3f, 0x1a, 0x45, 0xfe,
-	0xfd, 0x33, 0xc9, 0x7f, 0x2b, 0xd8, 0x29, 0xee, 0xf1, 0x00, 0xf5, 0x85, 0xe7, 0x69, 0x58, 0x3c,
-	0xa5, 0x20, 0x08, 0x52, 0xc6, 0x13, 0x74, 0x0b, 0xa6, 0x63, 0x4e, 0x79, 0x35, 0x2e, 0x14, 0x2f,
-	0x0d, 0xb0, 0xfe, 0x90, 0xd4, 0xf0, 0xee, 0x71, 0xb5, 0x81, 0xb9, 0x57, 0xae, 0x89, 0x4c, 0xc8,
-	0x72, 0x0d, 0x1c, 0xe5, 0x55, 0xf6, 0xac, 0x91, 0xb9, 0xea, 0x29, 0xf5, 0x92, 0x30, 0x95, 0x28,
-	0xf8, 0x1d, 0x58, 0xc0, 0x9d, 0x00, 0x57, 0xe3, 0x6f, 0x47, 0x1e, 0xc0, 0xf4, 0xf8, 0x00, 0xe6,
-	0xa5, 0x09, 0x7f, 0xe4, 0x15, 0x98, 0xe3, 0x63, 0xd8, 0x8e, 0x21, 0xa3, 0x7c, 0xe6, 0xb2, 0xba,
-	0x39, 0x6b, 0xe5, 0xb8, 0xec, 0x83, 0x58, 0xa4, 0x9b, 0xf0, 0x6f, 0x0b, 0x37, 0xfd, 0x36, 0x1e,
-	0xee, 0xff, 0x55, 0x98, 0xe6, 0x66, 0x0a, 0x33, 0xe3, 0x17, 0x7d, 0x0f, 0xf2, 0xc3, 0x06, 0x22,
-	0xa5, 0x93, 0x94, 0xa8, 0x5e, 0x85, 0x15, 0xbe, 0x00, 0x76, 0x7d, 0xaf, 0x46, 0xea, 0xd2, 0xeb,
-	0x98, 0xb9, 0x39, 0x2b, 0xe6, 0x66, 0xbc, 0x34, 0xf8, 0xa2, 0x09, 0x7c, 0xd7, 0x4e, 0x94, 0x30,
-	0x5f, 0x47, 0x07, 0xbe, 0x1b, 0xbf, 0x4f, 0xdf, 0x85, 0xd5, 0x41, 0x27, 0x17, 0x88, 0xb4, 0xf8,
-	0x87, 0x0a, 0x8b, 0xf2, 0xcb, 0xef, 0x90, 0x17, 0x25, 0xea, 0xc0, 0xe2, 0x1e, 0xa6, 0xc9, 0x1d,
-	0x8d, 0x6e, 0x9e, 0x77, 0x09, 0xcb, 0x6f, 0xab, 0xc2, 0xad, 0x09, 0x2c, 0x78, 0xe0, 0x37, 0x15,
-	0x84, 0x01, 0xf6, 0x70, 0x6f, 0xdf, 0x9e, 0xfd, 0x31, 0x3b, 0xf0, 0xe9, 0x5d, 0xb8, 0x76, 0x2e,
-	0x5d, 0xc1, 0x50, 0x13, 0xe6, 0xe4, 0x03, 0xe3, 0x4e, 0x43, 0x37, 0xc6, 0xc7, 0x9a, 0x98, 0x13,
-	0x05, 0xe3, 0xbc, 0xea, 0xc2, 0xdd, 0x31, 0x2c, 0xed, 0x61, 0x3a, 0xb0, 0x58, 0xd1, 0xad, 0x49,
-	0x96, 0x30, 0x77, 0x5b, 0x9c, 0x7c, 0x6f, 0x17, 0x7f, 0x56, 0x61, 0x5d, 0xa6, 0x37, 0x31, 0x26,
-	0x44, 0xa2, 0xbf, 0x51, 0x00, 0x0d, 0x0f, 0x7d, 0x74, 0xe7, 0x62, 0x6b, 0xb8, 0xb0, 0x7d, 0xc1,
-	0xed, 0x82, 0xbe, 0x56, 0x60, 0x79, 0x68, 0xfe, 0xa1, 0xad, 0x49, 0xe7, 0x25, 0x8f, 0xe2, 0xce,
-	0xc5, 0xc6, 0x2c, 0xfa, 0x12, 0x96, 0x4e, 0x37, 0x3f, 0xba, 0x3d, 0xe6, 0x45, 0x23, 0x87, 0x4b,
-	0x61, 0x6b, 0x42, 0x2b, 0x91, 0xab, 0x6f, 0x15, 0x58, 0x93, 0xb9, 0xe2, 0x2d, 0x2d, 0xf3, 0x14,
-	0xc1, 0x5c, 0xb2, 0xd3, 0xc7, 0x74, 0xe3, 0x88, 0xc9, 0x33, 0xa6, 0x1b, 0x47, 0x8d, 0x91, 0x9d,
-	0x7b, 0x2f, 0x4e, 0xb4, 0xd4, 0xcb, 0x13, 0x2d, 0xf5, 0xe6, 0x44, 0x53, 0xbe, 0xea, 0x6a, 0xca,
-	0x4f, 0x5d, 0x4d, 0xf9, 0xb5, 0xab, 0x29, 0x2f, 0xba, 0x9a, 0xf2, 0x67, 0x57, 0x53, 0xfe, 0xea,
-	0x6a, 0xa9, 0x37, 0x5d, 0x4d, 0xf9, 0xfe, 0xb5, 0x96, 0x7a, 0xf1, 0x5a, 0x4b, 0xbd, 0x7c, 0xad,
-	0xa5, 0x3e, 0x86, 0xfe, 0xff, 0x37, 0x2a, 0x19, 0xf6, 0x09, 0xf3, 0xce, 0x3f, 0x01, 0x00, 0x00,
-	0xff, 0xff, 0x9c, 0x6f, 0x6c, 0xc9, 0x11, 0x11, 0x00, 0x00,
+	// 1744 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x58, 0xcd, 0x6f, 0xdb, 0xc8,
+	0x15, 0x17, 0x45, 0x7f, 0xc8, 0x4f, 0xf2, 0xd7, 0x58, 0x4e, 0x64, 0x05, 0x90, 0x1d, 0xa2, 0x1f,
+	0x46, 0x12, 0x93, 0x89, 0x1a, 0xc7, 0x45, 0x9a, 0x06, 0x89, 0xad, 0xc6, 0x16, 0x9c, 0x34, 0x2e,
+	0x15, 0xbb, 0x40, 0x2f, 0x02, 0x25, 0x8e, 0x64, 0x36, 0x12, 0xc9, 0x92, 0x23, 0xd5, 0x2e, 0x0a,
+	0xb4, 0x28, 0xd0, 0x5b, 0x51, 0xb4, 0xc7, 0x1c, 0x7b, 0x6b, 0xcf, 0xfd, 0x03, 0x16, 0x7b, 0xdb,
+	0x63, 0x4e, 0x8b, 0x60, 0xb1, 0x30, 0xd6, 0xca, 0x65, 0x4f, 0x8b, 0xfc, 0x09, 0x0b, 0xce, 0x87,
+	0x44, 0x49, 0xb4, 0x65, 0xf9, 0xb0, 0x27, 0xcf, 0x3c, 0xbe, 0xf7, 0x9b, 0x37, 0xbf, 0xdf, 0x9b,
+	0x79, 0x23, 0xc3, 0xa6, 0xef, 0x55, 0xb5, 0xb6, 0xf5, 0x27, 0x0b, 0x7b, 0x9a, 0x8f, 0xbd, 0xb6,
+	0x55, 0xc5, 0xbe, 0xd6, 0xc4, 0xc4, 0x30, 0x0d, 0x62, 0x74, 0x07, 0x6e, 0x45, 0x7c, 0x54, 0x5d,
+	0xcf, 0x21, 0x0e, 0xba, 0xe5, 0x9e, 0xa8, 0x2c, 0x4a, 0x15, 0x51, 0xaa, 0x70, 0xce, 0x6e, 0xd4,
+	0x2d, 0x72, 0xdc, 0xaa, 0xa8, 0x55, 0xa7, 0xa9, 0xd5, 0x9d, 0xba, 0xa3, 0xd1, 0x98, 0x4a, 0xab,
+	0x46, 0x67, 0x74, 0x42, 0x47, 0x0c, 0x2b, 0x9b, 0xab, 0x3b, 0x4e, 0xbd, 0x81, 0x7b, 0x5e, 0x66,
+	0xcb, 0x33, 0x88, 0xe5, 0xd8, 0xfc, 0xfb, 0x6a, 0x90, 0xa2, 0xe1, 0x5a, 0xcc, 0x41, 0x6b, 0xb5,
+	0x2c, 0xd3, 0xad, 0xd0, 0x3f, 0xdc, 0x61, 0x2b, 0x70, 0xa8, 0x1a, 0x9e, 0xed, 0x10, 0xcd, 0x6d,
+	0x18, 0xb6, 0x8d, 0x3d, 0xcd, 0xb4, 0x7c, 0xe2, 0x59, 0x95, 0x16, 0xc1, 0x81, 0x73, 0x68, 0x56,
+	0x0e, 0x3c, 0x78, 0xe0, 0x2f, 0xa3, 0x02, 0x4f, 0x6d, 0xa3, 0x69, 0x55, 0xcb, 0xc4, 0x33, 0xaa,
+	0x96, 0x5d, 0xd7, 0x2c, 0x4f, 0x6b, 0x38, 0x75, 0xab, 0x6a, 0x34, 0xdc, 0x8a, 0x18, 0xf1, 0xf0,
+	0x1f, 0xd3, 0x70, 0xa7, 0xd9, 0x74, 0x6c, 0xad, 0x62, 0xf8, 0x58, 0xf3, 0x89, 0x41, 0x5a, 0x7e,
+	0x40, 0x16, 0x1d, 0x84, 0xdd, 0x88, 0x51, 0x69, 0xe0, 0xb2, 0x4f, 0x1c, 0x0f, 0x6b, 0x7e, 0xf5,
+	0x18, 0x37, 0x29, 0xa7, 0x74, 0xc0, 0xdd, 0x36, 0x42, 0x4a, 0x34, 0xb1, 0xef, 0x1b, 0x75, 0xaa,
+	0x04, 0x1b, 0xb8, 0x95, 0xee, 0x90, 0xbb, 0xab, 0x51, 0xc2, 0xf9, 0xc7, 0x86, 0x87, 0x4d, 0xcd,
+	0xa8, 0x63, 0x9b, 0xb8, 0x15, 0xf6, 0x97, 0xfb, 0xaf, 0x05, 0xfe, 0xfc, 0x7b, 0xb5, 0xdd, 0xf4,
+	0xeb, 0x01, 0x26, 0x1b, 0x30, 0x0f, 0x65, 0x1e, 0x66, 0x4b, 0x34, 0x21, 0x1d, 0xff, 0xa1, 0x85,
+	0x7d, 0xa2, 0x14, 0x61, 0x4e, 0x18, 0x7c, 0xd7, 0xb1, 0x7d, 0x8c, 0xb6, 0x60, 0x8a, 0xe5, 0x9c,
+	0x89, 0xaf, 0x49, 0xeb, 0xc9, 0xfc, 0xaa, 0xea, 0x9e, 0xa8, 0xa1, 0xad, 0xa9, 0x62, 0x6b, 0x2a,
+	0x0f, 0xe4, 0xee, 0x0a, 0x82, 0x85, 0xe7, 0x41, 0x32, 0x45, 0xbb, 0xe6, 0x08, 0xf8, 0x12, 0x2c,
+	0x86, 0x6c, 0x7c, 0x85, 0xa7, 0x30, 0x61, 0xd9, 0x35, 0x27, 0x23, 0xad, 0xc9, 0xeb, 0xc9, 0xfc,
+	0x1d, 0xf5, 0x92, 0x3a, 0x53, 0x69, 0xf4, 0x2b, 0x3e, 0xd3, 0x69, 0x9c, 0x72, 0x2e, 0xc1, 0x6c,
+	0x9f, 0x1d, 0x3d, 0x81, 0x49, 0xca, 0x43, 0x46, 0xa2, 0x29, 0xff, 0x24, 0x0a, 0x92, 0xf1, 0xa2,
+	0x32, 0xbe, 0x68, 0xb8, 0xce, 0x82, 0x50, 0x01, 0xa6, 0x98, 0x98, 0x7c, 0xc7, 0xf7, 0xae, 0x16,
+	0x5e, 0xa2, 0x31, 0x3a, 0x8f, 0x45, 0x2f, 0x21, 0xc9, 0xca, 0xac, 0x4c, 0x37, 0x27, 0x53, 0xa8,
+	0xbb, 0x01, 0x14, 0x33, 0xab, 0xbc, 0xfa, 0xd4, 0xbe, 0xb2, 0x55, 0x77, 0xe8, 0x47, 0xca, 0x0f,
+	0x54, 0xbb, 0x63, 0xe5, 0x9d, 0x04, 0x4b, 0x74, 0x95, 0x43, 0xd7, 0x34, 0x08, 0xf6, 0x39, 0xa1,
+	0xa8, 0x08, 0x4b, 0x4d, 0xe3, 0xa4, 0xdc, 0xa2, 0xd6, 0xb2, 0x65, 0x13, 0xec, 0xb5, 0x8d, 0x06,
+	0xdf, 0xf7, 0x8a, 0xca, 0x8e, 0x99, 0x2a, 0x8e, 0x99, 0x5a, 0xe0, 0xc7, 0x4c, 0x5f, 0x6c, 0x1a,
+	0x27, 0x0c, 0xaa, 0xc8, 0x63, 0xd0, 0x16, 0x64, 0x7a, 0x50, 0x7e, 0xd9, 0xc5, 0x5e, 0xd9, 0xe3,
+	0x12, 0x51, 0x22, 0x26, 0xf5, 0xe5, 0x6e, 0x90, 0x7f, 0x80, 0x3d, 0xa1, 0x9f, 0xf2, 0x9d, 0x04,
+	0xc9, 0x50, 0x6e, 0x68, 0x0b, 0x12, 0x94, 0x96, 0xb2, 0x65, 0xf2, 0x44, 0xe6, 0x83, 0x6d, 0xb3,
+	0x43, 0xac, 0x1e, 0x1e, 0x16, 0x0b, 0xdb, 0xc9, 0xce, 0xd9, 0xea, 0x34, 0xab, 0x84, 0x82, 0x3e,
+	0x4d, 0xbd, 0x8b, 0x26, 0xca, 0xc2, 0xb4, 0x89, 0x1b, 0x98, 0x60, 0x93, 0x2e, 0x98, 0xd8, 0x8b,
+	0xe9, 0xc2, 0x80, 0x9e, 0x0a, 0x49, 0xe5, 0x71, 0x24, 0xdd, 0x8b, 0x09, 0x51, 0x9f, 0xc1, 0x4c,
+	0x50, 0x1a, 0x4c, 0x8c, 0x09, 0x8a, 0x71, 0x3b, 0x84, 0xd1, 0x3d, 0x69, 0x34, 0xac, 0x60, 0x10,
+	0x23, 0xa0, 0x7d, 0x2f, 0xa6, 0x27, 0x4c, 0x3e, 0xde, 0x4e, 0xc0, 0x14, 0xe3, 0x46, 0xf9, 0x77,
+	0x1c, 0xd2, 0xfd, 0x62, 0xf0, 0x4a, 0x7e, 0x05, 0xb3, 0x6c, 0xe7, 0x9c, 0x44, 0x5e, 0xd2, 0xeb,
+	0xa3, 0x4b, 0x9a, 0x21, 0xe9, 0x29, 0x23, 0x04, 0x8b, 0x0e, 0x04, 0x1c, 0x3b, 0x51, 0x41, 0x3d,
+	0xca, 0x57, 0x2a, 0x22, 0x76, 0x12, 0x69, 0x11, 0x31, 0x44, 0x66, 0xf0, 0x51, 0x1e, 0x96, 0xfb,
+	0x10, 0x79, 0xa2, 0x26, 0x65, 0x35, 0xa1, 0x2f, 0x85, 0x9d, 0x59, 0x16, 0x26, 0xfa, 0x11, 0xcc,
+	0x61, 0xdb, 0x2c, 0x3b, 0xb5, 0x72, 0x1b, 0x7b, 0xbe, 0xe5, 0xd8, 0x94, 0xbe, 0x84, 0x9e, 0xc2,
+	0xb6, 0xf9, 0xba, 0x76, 0xc4, 0x6c, 0x4a, 0x01, 0xd2, 0xbf, 0xb5, 0xc8, 0xf1, 0x81, 0x87, 0x6b,
+	0xd6, 0xc9, 0x3e, 0x3e, 0x15, 0x05, 0x7a, 0x03, 0xa6, 0x5c, 0x6a, 0xa3, 0xa5, 0x30, 0xa3, 0xf3,
+	0x19, 0x4a, 0xc3, 0x24, 0xad, 0x4a, 0xaa, 0xf4, 0x8c, 0xce, 0x26, 0xca, 0x3f, 0x25, 0x58, 0x1e,
+	0x80, 0xe1, 0xd4, 0xee, 0x82, 0xfc, 0xb6, 0x2d, 0x08, 0xdd, 0xbc, 0x94, 0xd0, 0x48, 0x00, 0x75,
+	0xff, 0x48, 0x0f, 0x10, 0xb2, 0xf7, 0x20, 0xbe, 0x7f, 0x84, 0x16, 0x40, 0x7e, 0x8b, 0x4f, 0x79,
+	0x4e, 0xc1, 0x30, 0x48, 0xa8, 0x6d, 0x34, 0x5a, 0xac, 0xd6, 0x53, 0x3a, 0x9b, 0x28, 0x5f, 0xc5,
+	0x61, 0x45, 0xc7, 0x75, 0xcb, 0x27, 0xd8, 0x7b, 0xe3, 0x19, 0x55, 0xec, 0x3a, 0x96, 0x4d, 0xc4,
+	0xe6, 0x4c, 0x48, 0x78, 0x6c, 0x28, 0x32, 0xdb, 0xbb, 0x34, 0xb3, 0x0b, 0x91, 0xd4, 0x21, 0x8b,
+	0xde, 0x45, 0xce, 0x7e, 0x29, 0xc1, 0xe2, 0xf0, 0xda, 0x7f, 0x84, 0x65, 0xd2, 0x35, 0x96, 0x4d,
+	0xec, 0x36, 0x9c, 0xd3, 0x66, 0xef, 0xce, 0xdb, 0x8e, 0x2a, 0x92, 0xfe, 0x3e, 0xa7, 0x5a, 0x9e,
+	0x2a, 0xba, 0x5b, 0x0f, 0xbf, 0xd0, 0x45, 0xd2, 0xd3, 0x24, 0xc2, 0x8a, 0x10, 0x4c, 0xd8, 0x46,
+	0x13, 0x73, 0xe1, 0xe8, 0x18, 0x3d, 0x04, 0x99, 0x90, 0x06, 0x3f, 0x9b, 0x17, 0x5f, 0x3b, 0xdb,
+	0xd3, 0x9d, 0xb3, 0x55, 0xf9, 0xcd, 0x9b, 0x97, 0x7a, 0xe0, 0xae, 0xfc, 0x3f, 0x0e, 0xd9, 0x28,
+	0x4a, 0xb8, 0xe4, 0xbf, 0x87, 0x64, 0x2f, 0x81, 0xeb, 0x13, 0xcc, 0xf5, 0xef, 0x99, 0xf8, 0x45,
+	0x1d, 0x06, 0x47, 0x77, 0x07, 0xee, 0xfc, 0xa5, 0x60, 0x19, 0xd1, 0xdb, 0xd5, 0xfe, 0xab, 0x3d,
+	0xfb, 0x67, 0x58, 0x18, 0x44, 0x0b, 0x01, 0x48, 0x23, 0x01, 0xd0, 0x4f, 0x21, 0x6e, 0x99, 0x7c,
+	0xa5, 0xa1, 0xbb, 0x71, 0xaa, 0x73, 0xb6, 0x1a, 0x2f, 0x16, 0xf4, 0xb8, 0x65, 0x76, 0xb9, 0x96,
+	0x7b, 0x5c, 0x2b, 0x2f, 0x20, 0xb3, 0x8b, 0x49, 0x2f, 0x81, 0x50, 0x7f, 0x45, 0x77, 0x40, 0xb6,
+	0x4c, 0x41, 0xd5, 0x10, 0x32, 0x65, 0xbf, 0x58, 0xf0, 0xf5, 0xc0, 0x49, 0xf9, 0x8f, 0x0c, 0x2b,
+	0x11, 0x40, 0x9c, 0xfc, 0xe3, 0x28, 0xf2, 0x5f, 0x5c, 0x4a, 0xfe, 0x85, 0x60, 0x03, 0xdc, 0xe3,
+	0x3e, 0xea, 0xb3, 0xef, 0xe2, 0x30, 0x3f, 0xe0, 0xc0, 0x09, 0x92, 0x46, 0x13, 0xf4, 0x00, 0x26,
+	0x03, 0x4e, 0x59, 0x35, 0xce, 0xe5, 0x6f, 0xf5, 0xb1, 0xfe, 0xd2, 0xaa, 0xe1, 0x9d, 0xd3, 0x6a,
+	0x03, 0xb3, 0x55, 0x99, 0x27, 0xd2, 0x20, 0xc1, 0x3c, 0xb0, 0x9f, 0x91, 0xe9, 0xb6, 0x22, 0xb5,
+	0xea, 0x3a, 0x75, 0x45, 0x98, 0x08, 0x15, 0xfc, 0x36, 0xcc, 0xe1, 0x13, 0x17, 0x57, 0x83, 0xd7,
+	0x25, 0x4b, 0x60, 0x72, 0x74, 0x02, 0xb3, 0x22, 0x84, 0x6d, 0xf2, 0x36, 0xa4, 0xd8, 0x35, 0x5c,
+	0x0e, 0x20, 0xfd, 0xcc, 0xd4, 0x9a, 0xbc, 0x3e, 0xa3, 0x27, 0x99, 0xed, 0xd7, 0x81, 0x49, 0xd1,
+	0xe0, 0xa6, 0x8e, 0x9b, 0x4e, 0x1b, 0x0f, 0x9f, 0xff, 0x34, 0x4c, 0xb2, 0x30, 0x89, 0x86, 0xb1,
+	0x89, 0xb2, 0x0b, 0x99, 0xe1, 0x00, 0x2e, 0xe9, 0x38, 0x25, 0xaa, 0x54, 0x61, 0x89, 0x35, 0x80,
+	0x1d, 0xc7, 0xae, 0x59, 0x75, 0xb1, 0xea, 0x88, 0x7b, 0x73, 0x86, 0xdf, 0x9b, 0x41, 0xd3, 0x60,
+	0x8d, 0xc6, 0x75, 0xcc, 0x72, 0xa8, 0x84, 0x59, 0x3b, 0x3a, 0x70, 0xcc, 0x60, 0x7f, 0xca, 0x0e,
+	0xa4, 0xfb, 0x17, 0xb9, 0x4e, 0xa6, 0x4b, 0xb0, 0xb8, 0x8b, 0x49, 0xa9, 0xea, 0x59, 0x2e, 0x11,
+	0xef, 0x22, 0xe5, 0x73, 0x09, 0x50, 0xd8, 0xca, 0x81, 0x8f, 0x60, 0xda, 0x67, 0x26, 0x5e, 0xd1,
+	0x4f, 0x46, 0x55, 0xf4, 0x00, 0x82, 0xca, 0xe7, 0xbf, 0xb2, 0x89, 0x77, 0xaa, 0x0b, 0xb0, 0x6c,
+	0x09, 0x52, 0xe1, 0x0f, 0x11, 0x34, 0x6d, 0x84, 0x69, 0x4a, 0xe6, 0x6f, 0xd2, 0xeb, 0x99, 0xbf,
+	0xc9, 0xd5, 0x1d, 0xcf, 0xb1, 0x59, 0x3c, 0xe7, 0xef, 0x71, 0xfc, 0xe7, 0x92, 0xb2, 0x0f, 0x99,
+	0xe7, 0xa6, 0xf9, 0xda, 0x63, 0x14, 0xf1, 0xef, 0x5c, 0x07, 0x2d, 0x78, 0x95, 0x07, 0x06, 0xce,
+	0xd0, 0x85, 0x78, 0xdc, 0x4d, 0xb9, 0x05, 0x2b, 0x11, 0x60, 0xfc, 0x05, 0xf7, 0x1b, 0x58, 0x2a,
+	0xd0, 0x77, 0x56, 0xff, 0x22, 0x8f, 0x61, 0x86, 0x45, 0x5f, 0xf2, 0x92, 0x4b, 0x75, 0xce, 0x56,
+	0x13, 0x2c, 0xac, 0x58, 0xd0, 0x13, 0xcc, 0xbf, 0x68, 0x2a, 0x37, 0x20, 0xdd, 0x0f, 0xc9, 0x97,
+	0xfa, 0x4c, 0x82, 0xc5, 0xd2, 0xa0, 0x5c, 0xe8, 0x70, 0x50, 0x97, 0x5f, 0x5c, 0xaa, 0xcb, 0x10,
+	0xc0, 0x0f, 0x29, 0x4b, 0x1a, 0x50, 0x69, 0xa8, 0x2e, 0xf2, 0x5f, 0xcb, 0x30, 0x2f, 0x7e, 0x7f,
+	0x94, 0x58, 0xc2, 0xe8, 0x04, 0xe6, 0x77, 0x31, 0x09, 0xbf, 0x14, 0xd1, 0xfd, 0xab, 0x3e, 0x05,
+	0xc5, 0xce, 0xb2, 0x0f, 0xc6, 0x88, 0x60, 0xb9, 0xdc, 0x97, 0x10, 0x06, 0xa0, 0xb5, 0xcb, 0x5e,
+	0x7d, 0x97, 0xff, 0xa4, 0xea, 0xfb, 0x01, 0x98, 0xbd, 0x7b, 0x25, 0x5f, 0x7e, 0x9c, 0x9a, 0x90,
+	0x12, 0x1b, 0x0c, 0xee, 0x7b, 0xb4, 0x31, 0x3a, 0xd7, 0x50, 0xb7, 0xca, 0xaa, 0x57, 0x75, 0xe7,
+	0xcb, 0x9d, 0xc2, 0xc2, 0x2e, 0x26, 0x7d, 0xcf, 0x3b, 0xf4, 0x60, 0x9c, 0xa7, 0x20, 0x5b, 0x36,
+	0x3f, 0xfe, 0xeb, 0x31, 0xff, 0x3f, 0x19, 0x56, 0x84, 0xbc, 0xa1, 0x66, 0xc5, 0x85, 0xfe, 0xbb,
+	0x04, 0x68, 0xf8, 0xe9, 0x81, 0x1e, 0x5d, 0xef, 0x31, 0x98, 0xdd, 0xba, 0xe6, 0x1b, 0x07, 0xfd,
+	0x4d, 0xa2, 0x77, 0x61, 0x7f, 0x17, 0x46, 0x9b, 0xe3, 0x76, 0x6d, 0x96, 0xc5, 0xa3, 0xeb, 0x35,
+	0x7b, 0xf4, 0x17, 0x58, 0x18, 0x6c, 0x41, 0xe8, 0xe1, 0x88, 0x1d, 0x45, 0xb6, 0xb8, 0xec, 0xe6,
+	0x98, 0x51, 0x5c, 0xab, 0x7f, 0x48, 0xb0, 0x2c, 0xb4, 0x62, 0x8d, 0x45, 0xe8, 0xe4, 0x43, 0x2a,
+	0xdc, 0x6f, 0x46, 0x9c, 0xc6, 0x88, 0xfe, 0x37, 0xe2, 0x34, 0x46, 0x35, 0xb3, 0xfc, 0x27, 0x19,
+	0x6e, 0xf4, 0x6e, 0x92, 0x12, 0x71, 0x3c, 0x2c, 0xf2, 0x69, 0xf2, 0x63, 0x4a, 0xaf, 0x12, 0xa4,
+	0x5e, 0xb9, 0x17, 0xb1, 0x5c, 0xb4, 0x31, 0x7b, 0x17, 0x2d, 0x8f, 0xa1, 0x26, 0x30, 0xa2, 0x3c,
+	0x2e, 0xea, 0x40, 0x23, 0xca, 0xe3, 0xc2, 0x5e, 0x13, 0x68, 0x10, 0x6e, 0x0c, 0x23, 0x34, 0x88,
+	0x68, 0x4b, 0x23, 0x34, 0x88, 0xea, 0x3a, 0x01, 0xd1, 0xa5, 0xab, 0x12, 0x5d, 0x1a, 0x93, 0xe8,
+	0xe1, 0x66, 0xb0, 0xfd, 0xec, 0xfd, 0x79, 0x2e, 0xf6, 0xe1, 0x3c, 0x17, 0xfb, 0x74, 0x9e, 0x93,
+	0xfe, 0xda, 0xc9, 0x49, 0xff, 0xed, 0xe4, 0xa4, 0x2f, 0x3a, 0x39, 0xe9, 0x7d, 0x27, 0x27, 0x7d,
+	0xd3, 0xc9, 0x49, 0xdf, 0x76, 0x72, 0xb1, 0x4f, 0x9d, 0x9c, 0xf4, 0xaf, 0x8f, 0xb9, 0xd8, 0xfb,
+	0x8f, 0xb9, 0xd8, 0x87, 0x8f, 0xb9, 0xd8, 0xef, 0xa0, 0xf7, 0xaf, 0xd7, 0xca, 0x14, 0xfd, 0xed,
+	0xf4, 0xb3, 0xef, 0x03, 0x00, 0x00, 0xff, 0xff, 0x3c, 0xef, 0x2d, 0x7b, 0xac, 0x15, 0x00, 0x00,
 }
 
 func (this *SchemaRequest) Equal(that interface{}) bool {
@@ -2041,6 +2381,196 @@ func (this *UpdateConfigResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *GetScriptsRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetScriptsRequest)
+	if !ok {
+		that2, ok := that.(GetScriptsRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	return true
+}
+func (this *GetScriptsResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetScriptsResponse)
+	if !ok {
+		that2, ok := that.(GetScriptsResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Scripts) != len(that1.Scripts) {
+		return false
+	}
+	for i := range this.Scripts {
+		if !this.Scripts[i].Equal(that1.Scripts[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *AddOrUpdateScriptRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*AddOrUpdateScriptRequest)
+	if !ok {
+		that2, ok := that.(AddOrUpdateScriptRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Script.Equal(that1.Script) {
+		return false
+	}
+	return true
+}
+func (this *AddOrUpdateScriptResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*AddOrUpdateScriptResponse)
+	if !ok {
+		that2, ok := that.(AddOrUpdateScriptResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	return true
+}
+func (this *DeleteScriptRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*DeleteScriptRequest)
+	if !ok {
+		that2, ok := that.(DeleteScriptRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.ScriptID.Equal(that1.ScriptID) {
+		return false
+	}
+	return true
+}
+func (this *DeleteScriptResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*DeleteScriptResponse)
+	if !ok {
+		that2, ok := that.(DeleteScriptResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	return true
+}
+func (this *SetScriptsRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*SetScriptsRequest)
+	if !ok {
+		that2, ok := that.(SetScriptsRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Scripts) != len(that1.Scripts) {
+		return false
+	}
+	for i := range this.Scripts {
+		if !this.Scripts[i].Equal(that1.Scripts[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *SetScriptsResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*SetScriptsResponse)
+	if !ok {
+		that2, ok := that.(SetScriptsResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	return true
+}
 func (this *SchemaRequest) GoString() string {
 	if this == nil {
 		return "nil"
@@ -2349,6 +2879,110 @@ func (this *UpdateConfigResponse) GoString() string {
 	if this.Status != nil {
 		s = append(s, "Status: "+fmt.Sprintf("%#v", this.Status)+",\n")
 	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetScriptsRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&metadatapb.GetScriptsRequest{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetScriptsResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&metadatapb.GetScriptsResponse{")
+	keysForScripts := make([]string, 0, len(this.Scripts))
+	for k, _ := range this.Scripts {
+		keysForScripts = append(keysForScripts, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForScripts)
+	mapStringForScripts := "map[string]*cvmsgspb.CronScript{"
+	for _, k := range keysForScripts {
+		mapStringForScripts += fmt.Sprintf("%#v: %#v,", k, this.Scripts[k])
+	}
+	mapStringForScripts += "}"
+	if this.Scripts != nil {
+		s = append(s, "Scripts: "+mapStringForScripts+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *AddOrUpdateScriptRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&metadatapb.AddOrUpdateScriptRequest{")
+	if this.Script != nil {
+		s = append(s, "Script: "+fmt.Sprintf("%#v", this.Script)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *AddOrUpdateScriptResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&metadatapb.AddOrUpdateScriptResponse{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *DeleteScriptRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&metadatapb.DeleteScriptRequest{")
+	if this.ScriptID != nil {
+		s = append(s, "ScriptID: "+fmt.Sprintf("%#v", this.ScriptID)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *DeleteScriptResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&metadatapb.DeleteScriptResponse{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *SetScriptsRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&metadatapb.SetScriptsRequest{")
+	keysForScripts := make([]string, 0, len(this.Scripts))
+	for k, _ := range this.Scripts {
+		keysForScripts = append(keysForScripts, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForScripts)
+	mapStringForScripts := "map[string]*cvmsgspb.CronScript{"
+	for _, k := range keysForScripts {
+		mapStringForScripts += fmt.Sprintf("%#v: %#v,", k, this.Scripts[k])
+	}
+	mapStringForScripts += "}"
+	if this.Scripts != nil {
+		s = append(s, "Scripts: "+mapStringForScripts+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *SetScriptsResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&metadatapb.SetScriptsResponse{")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2787,6 +3421,186 @@ var _MetadataConfigService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateConfig",
 			Handler:    _MetadataConfigService_UpdateConfig_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "src/vizier/services/metadata/metadatapb/service.proto",
+}
+
+// CronScriptStoreServiceClient is the client API for CronScriptStoreService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type CronScriptStoreServiceClient interface {
+	GetScripts(ctx context.Context, in *GetScriptsRequest, opts ...grpc.CallOption) (*GetScriptsResponse, error)
+	AddOrUpdateScript(ctx context.Context, in *AddOrUpdateScriptRequest, opts ...grpc.CallOption) (*AddOrUpdateScriptResponse, error)
+	DeleteScript(ctx context.Context, in *DeleteScriptRequest, opts ...grpc.CallOption) (*DeleteScriptResponse, error)
+	SetScripts(ctx context.Context, in *SetScriptsRequest, opts ...grpc.CallOption) (*SetScriptsResponse, error)
+}
+
+type cronScriptStoreServiceClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewCronScriptStoreServiceClient(cc *grpc.ClientConn) CronScriptStoreServiceClient {
+	return &cronScriptStoreServiceClient{cc}
+}
+
+func (c *cronScriptStoreServiceClient) GetScripts(ctx context.Context, in *GetScriptsRequest, opts ...grpc.CallOption) (*GetScriptsResponse, error) {
+	out := new(GetScriptsResponse)
+	err := c.cc.Invoke(ctx, "/px.vizier.services.metadata.CronScriptStoreService/GetScripts", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cronScriptStoreServiceClient) AddOrUpdateScript(ctx context.Context, in *AddOrUpdateScriptRequest, opts ...grpc.CallOption) (*AddOrUpdateScriptResponse, error) {
+	out := new(AddOrUpdateScriptResponse)
+	err := c.cc.Invoke(ctx, "/px.vizier.services.metadata.CronScriptStoreService/AddOrUpdateScript", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cronScriptStoreServiceClient) DeleteScript(ctx context.Context, in *DeleteScriptRequest, opts ...grpc.CallOption) (*DeleteScriptResponse, error) {
+	out := new(DeleteScriptResponse)
+	err := c.cc.Invoke(ctx, "/px.vizier.services.metadata.CronScriptStoreService/DeleteScript", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cronScriptStoreServiceClient) SetScripts(ctx context.Context, in *SetScriptsRequest, opts ...grpc.CallOption) (*SetScriptsResponse, error) {
+	out := new(SetScriptsResponse)
+	err := c.cc.Invoke(ctx, "/px.vizier.services.metadata.CronScriptStoreService/SetScripts", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CronScriptStoreServiceServer is the server API for CronScriptStoreService service.
+type CronScriptStoreServiceServer interface {
+	GetScripts(context.Context, *GetScriptsRequest) (*GetScriptsResponse, error)
+	AddOrUpdateScript(context.Context, *AddOrUpdateScriptRequest) (*AddOrUpdateScriptResponse, error)
+	DeleteScript(context.Context, *DeleteScriptRequest) (*DeleteScriptResponse, error)
+	SetScripts(context.Context, *SetScriptsRequest) (*SetScriptsResponse, error)
+}
+
+// UnimplementedCronScriptStoreServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedCronScriptStoreServiceServer struct {
+}
+
+func (*UnimplementedCronScriptStoreServiceServer) GetScripts(ctx context.Context, req *GetScriptsRequest) (*GetScriptsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetScripts not implemented")
+}
+func (*UnimplementedCronScriptStoreServiceServer) AddOrUpdateScript(ctx context.Context, req *AddOrUpdateScriptRequest) (*AddOrUpdateScriptResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddOrUpdateScript not implemented")
+}
+func (*UnimplementedCronScriptStoreServiceServer) DeleteScript(ctx context.Context, req *DeleteScriptRequest) (*DeleteScriptResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteScript not implemented")
+}
+func (*UnimplementedCronScriptStoreServiceServer) SetScripts(ctx context.Context, req *SetScriptsRequest) (*SetScriptsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetScripts not implemented")
+}
+
+func RegisterCronScriptStoreServiceServer(s *grpc.Server, srv CronScriptStoreServiceServer) {
+	s.RegisterService(&_CronScriptStoreService_serviceDesc, srv)
+}
+
+func _CronScriptStoreService_GetScripts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetScriptsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CronScriptStoreServiceServer).GetScripts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/px.vizier.services.metadata.CronScriptStoreService/GetScripts",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CronScriptStoreServiceServer).GetScripts(ctx, req.(*GetScriptsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CronScriptStoreService_AddOrUpdateScript_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddOrUpdateScriptRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CronScriptStoreServiceServer).AddOrUpdateScript(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/px.vizier.services.metadata.CronScriptStoreService/AddOrUpdateScript",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CronScriptStoreServiceServer).AddOrUpdateScript(ctx, req.(*AddOrUpdateScriptRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CronScriptStoreService_DeleteScript_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteScriptRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CronScriptStoreServiceServer).DeleteScript(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/px.vizier.services.metadata.CronScriptStoreService/DeleteScript",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CronScriptStoreServiceServer).DeleteScript(ctx, req.(*DeleteScriptRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CronScriptStoreService_SetScripts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetScriptsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CronScriptStoreServiceServer).SetScripts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/px.vizier.services.metadata.CronScriptStoreService/SetScripts",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CronScriptStoreServiceServer).SetScripts(ctx, req.(*SetScriptsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _CronScriptStoreService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "px.vizier.services.metadata.CronScriptStoreService",
+	HandlerType: (*CronScriptStoreServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetScripts",
+			Handler:    _CronScriptStoreService_GetScripts_Handler,
+		},
+		{
+			MethodName: "AddOrUpdateScript",
+			Handler:    _CronScriptStoreService_AddOrUpdateScript_Handler,
+		},
+		{
+			MethodName: "DeleteScript",
+			Handler:    _CronScriptStoreService_DeleteScript_Handler,
+		},
+		{
+			MethodName: "SetScripts",
+			Handler:    _CronScriptStoreService_SetScripts_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -3784,6 +4598,266 @@ func (m *UpdateConfigResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *GetScriptsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetScriptsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetScriptsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *GetScriptsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetScriptsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetScriptsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Scripts) > 0 {
+		for k := range m.Scripts {
+			v := m.Scripts[k]
+			baseI := i
+			if v != nil {
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintService(dAtA, i, uint64(size))
+				}
+				i--
+				dAtA[i] = 0x12
+			}
+			i -= len(k)
+			copy(dAtA[i:], k)
+			i = encodeVarintService(dAtA, i, uint64(len(k)))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *AddOrUpdateScriptRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *AddOrUpdateScriptRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AddOrUpdateScriptRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Script != nil {
+		{
+			size, err := m.Script.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *AddOrUpdateScriptResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *AddOrUpdateScriptResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AddOrUpdateScriptResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *DeleteScriptRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DeleteScriptRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DeleteScriptRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.ScriptID != nil {
+		{
+			size, err := m.ScriptID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *DeleteScriptResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DeleteScriptResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DeleteScriptResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *SetScriptsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SetScriptsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *SetScriptsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Scripts) > 0 {
+		for k := range m.Scripts {
+			v := m.Scripts[k]
+			baseI := i
+			if v != nil {
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintService(dAtA, i, uint64(size))
+				}
+				i--
+				dAtA[i] = 0x12
+			}
+			i -= len(k)
+			copy(dAtA[i:], k)
+			i = encodeVarintService(dAtA, i, uint64(len(k)))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *SetScriptsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SetScriptsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *SetScriptsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintService(dAtA []byte, offset int, v uint64) int {
 	offset -= sovService(v)
 	base := offset
@@ -4206,6 +5280,112 @@ func (m *UpdateConfigResponse) Size() (n int) {
 	return n
 }
 
+func (m *GetScriptsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *GetScriptsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Scripts) > 0 {
+		for k, v := range m.Scripts {
+			_ = k
+			_ = v
+			l = 0
+			if v != nil {
+				l = v.Size()
+				l += 1 + sovService(uint64(l))
+			}
+			mapEntrySize := 1 + len(k) + sovService(uint64(len(k))) + l
+			n += mapEntrySize + 1 + sovService(uint64(mapEntrySize))
+		}
+	}
+	return n
+}
+
+func (m *AddOrUpdateScriptRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Script != nil {
+		l = m.Script.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+
+func (m *AddOrUpdateScriptResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *DeleteScriptRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ScriptID != nil {
+		l = m.ScriptID.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+
+func (m *DeleteScriptResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *SetScriptsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Scripts) > 0 {
+		for k, v := range m.Scripts {
+			_ = k
+			_ = v
+			l = 0
+			if v != nil {
+				l = v.Size()
+				l += 1 + sovService(uint64(l))
+			}
+			mapEntrySize := 1 + len(k) + sovService(uint64(len(k))) + l
+			n += mapEntrySize + 1 + sovService(uint64(mapEntrySize))
+		}
+	}
+	return n
+}
+
+func (m *SetScriptsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
 func sovService(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
@@ -4522,6 +5702,102 @@ func (this *UpdateConfigResponse) String() string {
 	}
 	s := strings.Join([]string{`&UpdateConfigResponse{`,
 		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "statuspb.Status", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetScriptsRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetScriptsRequest{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetScriptsResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForScripts := make([]string, 0, len(this.Scripts))
+	for k, _ := range this.Scripts {
+		keysForScripts = append(keysForScripts, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForScripts)
+	mapStringForScripts := "map[string]*cvmsgspb.CronScript{"
+	for _, k := range keysForScripts {
+		mapStringForScripts += fmt.Sprintf("%v: %v,", k, this.Scripts[k])
+	}
+	mapStringForScripts += "}"
+	s := strings.Join([]string{`&GetScriptsResponse{`,
+		`Scripts:` + mapStringForScripts + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *AddOrUpdateScriptRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&AddOrUpdateScriptRequest{`,
+		`Script:` + strings.Replace(fmt.Sprintf("%v", this.Script), "CronScript", "cvmsgspb.CronScript", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *AddOrUpdateScriptResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&AddOrUpdateScriptResponse{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DeleteScriptRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DeleteScriptRequest{`,
+		`ScriptID:` + strings.Replace(fmt.Sprintf("%v", this.ScriptID), "UUID", "uuidpb.UUID", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DeleteScriptResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DeleteScriptResponse{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SetScriptsRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForScripts := make([]string, 0, len(this.Scripts))
+	for k, _ := range this.Scripts {
+		keysForScripts = append(keysForScripts, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForScripts)
+	mapStringForScripts := "map[string]*cvmsgspb.CronScript{"
+	for _, k := range keysForScripts {
+		mapStringForScripts += fmt.Sprintf("%v: %v,", k, this.Scripts[k])
+	}
+	mapStringForScripts += "}"
+	s := strings.Join([]string{`&SetScriptsRequest{`,
+		`Scripts:` + mapStringForScripts + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SetScriptsResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SetScriptsResponse{`,
 		`}`,
 	}, "")
 	return s
@@ -6997,6 +8273,736 @@ func (m *UpdateConfigResponse) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetScriptsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetScriptsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetScriptsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetScriptsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetScriptsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetScriptsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Scripts", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Scripts == nil {
+				m.Scripts = make(map[string]*cvmsgspb.CronScript)
+			}
+			var mapkey string
+			var mapvalue *cvmsgspb.CronScript
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowService
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					wire |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					var stringLenmapkey uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowService
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapkey |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapkey := int(stringLenmapkey)
+					if intStringLenmapkey < 0 {
+						return ErrInvalidLengthService
+					}
+					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey < 0 {
+						return ErrInvalidLengthService
+					}
+					if postStringIndexmapkey > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
+					iNdEx = postStringIndexmapkey
+				} else if fieldNum == 2 {
+					var mapmsglen int
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowService
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						mapmsglen |= int(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					if mapmsglen < 0 {
+						return ErrInvalidLengthService
+					}
+					postmsgIndex := iNdEx + mapmsglen
+					if postmsgIndex < 0 {
+						return ErrInvalidLengthService
+					}
+					if postmsgIndex > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapvalue = &cvmsgspb.CronScript{}
+					if err := mapvalue.Unmarshal(dAtA[iNdEx:postmsgIndex]); err != nil {
+						return err
+					}
+					iNdEx = postmsgIndex
+				} else {
+					iNdEx = entryPreIndex
+					skippy, err := skipService(dAtA[iNdEx:])
+					if err != nil {
+						return err
+					}
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
+						return ErrInvalidLengthService
+					}
+					if (iNdEx + skippy) > postIndex {
+						return io.ErrUnexpectedEOF
+					}
+					iNdEx += skippy
+				}
+			}
+			m.Scripts[mapkey] = mapvalue
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *AddOrUpdateScriptRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AddOrUpdateScriptRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AddOrUpdateScriptRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Script", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Script == nil {
+				m.Script = &cvmsgspb.CronScript{}
+			}
+			if err := m.Script.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *AddOrUpdateScriptResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AddOrUpdateScriptResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AddOrUpdateScriptResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DeleteScriptRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeleteScriptRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeleteScriptRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ScriptID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ScriptID == nil {
+				m.ScriptID = &uuidpb.UUID{}
+			}
+			if err := m.ScriptID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DeleteScriptResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeleteScriptResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeleteScriptResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SetScriptsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SetScriptsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SetScriptsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Scripts", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Scripts == nil {
+				m.Scripts = make(map[string]*cvmsgspb.CronScript)
+			}
+			var mapkey string
+			var mapvalue *cvmsgspb.CronScript
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowService
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					wire |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					var stringLenmapkey uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowService
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapkey |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapkey := int(stringLenmapkey)
+					if intStringLenmapkey < 0 {
+						return ErrInvalidLengthService
+					}
+					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey < 0 {
+						return ErrInvalidLengthService
+					}
+					if postStringIndexmapkey > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
+					iNdEx = postStringIndexmapkey
+				} else if fieldNum == 2 {
+					var mapmsglen int
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowService
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						mapmsglen |= int(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					if mapmsglen < 0 {
+						return ErrInvalidLengthService
+					}
+					postmsgIndex := iNdEx + mapmsglen
+					if postmsgIndex < 0 {
+						return ErrInvalidLengthService
+					}
+					if postmsgIndex > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapvalue = &cvmsgspb.CronScript{}
+					if err := mapvalue.Unmarshal(dAtA[iNdEx:postmsgIndex]); err != nil {
+						return err
+					}
+					iNdEx = postmsgIndex
+				} else {
+					iNdEx = entryPreIndex
+					skippy, err := skipService(dAtA[iNdEx:])
+					if err != nil {
+						return err
+					}
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
+						return ErrInvalidLengthService
+					}
+					if (iNdEx + skippy) > postIndex {
+						return io.ErrUnexpectedEOF
+					}
+					iNdEx += skippy
+				}
+			}
+			m.Scripts[mapkey] = mapvalue
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SetScriptsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SetScriptsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SetScriptsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
 		default:
 			iNdEx = preIndex
 			skippy, err := skipService(dAtA[iNdEx:])

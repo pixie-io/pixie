@@ -23,11 +23,15 @@
 #include "src/common/exec/subprocess.h"
 #include "src/common/fs/fs_wrapper.h"
 #include "src/stirling/source_connectors/perf_profiler/java/attach.h"
+#include "src/stirling/source_connectors/perf_profiler/testing/testing.h"
 #include "src/stirling/testing/common.h"
+
+DECLARE_string(stirling_profiler_px_jattach_path);
 
 namespace px {
 namespace stirling {
 
+using ::px::stirling::profiler::testing::GetPxJattachFlagValueForTesting;
 using ::px::testing::BazelBinTestFilePath;
 using ::testing::HasSubstr;
 
@@ -40,16 +44,21 @@ using ::testing::HasSubstr;
 TEST(JavaAgentTest, ExpectedSymbolsTest) {
   // Form the file name w/ user login to make it pedantically unique.
   // Also, this is the same as in agent_test, so we keep the test logic consistent.
+
   constexpr std::string_view kJavaAppName = "fib";
 
   using fs_path = std::filesystem::path;
   const fs_path java_testing_path = "src/stirling/source_connectors/perf_profiler/testing/java";
   const fs_path toy_app_path = java_testing_path / kJavaAppName;
-  const fs_path bazel_app_path = BazelBinTestFilePath(toy_app_path);
+  const fs_path bazel_test_app_path = BazelBinTestFilePath(toy_app_path);
+  const fs_path bazel_attach_app_path = BazelBinTestFilePath(GetPxJattachFlagValueForTesting());
 
-  LOG(INFO) << "bazel_app_path: " << bazel_app_path;
-  ASSERT_TRUE(fs::Exists(bazel_app_path));
+  LOG(INFO) << "bazel_attach_app_path: " << bazel_attach_app_path;
+  LOG(INFO) << "bazel_test_app_path: " << bazel_test_app_path;
+  ASSERT_TRUE(fs::Exists(bazel_attach_app_path));
+  ASSERT_TRUE(fs::Exists(bazel_test_app_path));
 
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, bazel_attach_app_path.string());
   // Construct the a vector of strings, "libs." It is used to show the attacher where it
   // can find candidate agent.so files. The attacher will test each agent.so vs. the link
   // environment inside of the target process namespace by (2) entering that namespace
@@ -59,18 +68,19 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   const fs_path musl_lib = "build-musl/lib-px-java-agent-musl.so";
   const fs_path glibc_lib = "build-glibc/lib-px-java-agent-glibc.so";
 
-  const std::vector<std::filesystem::path> libs = {
-      std::filesystem::absolute(BazelBinTestFilePath(lib_path_pfx / musl_lib)),
-      std::filesystem::absolute(BazelBinTestFilePath(lib_path_pfx / glibc_lib)),
+  const std::vector<std::string> libs = {
+      std::filesystem::absolute(BazelBinTestFilePath(lib_path_pfx / musl_lib)).string(),
+      std::filesystem::absolute(BazelBinTestFilePath(lib_path_pfx / glibc_lib)).string(),
   };
   for (const auto& lib : libs) {
     ASSERT_TRUE(fs::Exists(lib)) << lib;
   }
+  const std::string libs_arg = absl::StrJoin(libs, ",");
 
   // Start the Java process (and wait for it to enter the "live" phase, because
   // you cannot inject a JVMTI agent during Java startup phase).
   SubProcess sub_process;
-  const auto started = sub_process.Start({bazel_app_path});
+  const auto started = sub_process.Start({bazel_test_app_path});
   ASSERT_OK(started) << absl::StrFormat("Could not start Java app: %s.", kJavaAppName);
   const uint32_t child_pid = sub_process.child_pid();
   LOG(INFO) << absl::StrFormat("Started Java app: %s, pid: %d.", kJavaAppName, child_pid);
@@ -84,7 +94,7 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   const fs_path symbol_file_path = java::StirlingSymbolFilePath(child_upid);
 
   // Invoke the attach process by creating an attach object.
-  auto attacher = java::AgentAttacher(child_upid, libs);
+  auto attacher = java::AgentAttacher(child_upid, libs_arg);
 
   // The attacher object forks. The parent process, this test, can ask the attacher object about
   // its state. Is the attacher finished (child process terminated)? attached (child process

@@ -100,12 +100,9 @@ std::filesystem::path ProcParser::ProcPidPath(pid_t pid) const {
   return std::filesystem::path(proc_base_path_) / std::to_string(pid);
 }
 
-ProcParser::ProcParser(const system::Config& cfg) {
-  CHECK(cfg.HasConfig()) << "System config is required for the ProcParser";
-  ns_per_kernel_tick_ = static_cast<int64_t>(1E9 / cfg.KernelTicksPerSecond());
-  bytes_per_page_ = cfg.PageSize();
-  proc_base_path_ = cfg.proc_path();
-}
+ProcParser::ProcParser(const system::Config& cfg) : ProcParser(cfg.proc_path()) {}
+
+ProcParser::ProcParser(std::string proc_path) : proc_base_path_(std::move(proc_path)) {}
 
 Status ProcParser::ParseNetworkStatAccumulateIFaceData(
     const std::vector<std::string_view>& dev_stat_record, NetworkStats* out) {
@@ -207,7 +204,8 @@ Status ProcParser::ParseProcPIDNetDev(int32_t pid, NetworkStats* out) const {
   return Status::OK();
 }
 
-Status ProcParser::ParseProcPIDStat(int32_t pid, ProcessStats* out) const {
+Status ProcParser::ParseProcPIDStat(int32_t pid, int32_t page_size_bytes,
+                                    int32_t kernel_tick_time_ns, ProcessStats* out) const {
   /**
    * Sample file:
    * 4602 (ibazel) S 3260 4602 3260 34818 4602 1077936128 1799 174589 \
@@ -247,15 +245,15 @@ Status ProcParser::ParseProcPIDStat(int32_t pid, ProcessStats* out) const {
     ok &= absl::SimpleAtoi(split[kProcStatUTimeField], &out->utime_ns);
     ok &= absl::SimpleAtoi(split[kProcStatKTimeField], &out->ktime_ns);
     // The kernel tracks utime and ktime in kernel ticks.
-    out->utime_ns *= ns_per_kernel_tick_;
-    out->ktime_ns *= ns_per_kernel_tick_;
+    out->utime_ns *= kernel_tick_time_ns;
+    out->ktime_ns *= kernel_tick_time_ns;
 
     ok &= absl::SimpleAtoi(split[kProcStatNumThreadsField], &out->num_threads);
     ok &= absl::SimpleAtoi(split[kProcStatVSizeField], &out->vsize_bytes);
     ok &= absl::SimpleAtoi(std::string(split[kProcStatRSSField]), &out->rss_bytes);
 
     // RSS is in pages.
-    out->rss_bytes *= bytes_per_page_;
+    out->rss_bytes *= page_size_bytes;
 
   } else {
     return error::Internal("Failed to read proc stat file: $0", fpath);
@@ -411,6 +409,40 @@ Status ProcParser::ParseProcPIDStatus(int32_t pid, ProcessStatus* out) const {
   // clang-format on
 
   return ParseFromKeyValueFile(fpath, field_name_to_offset_map, reinterpret_cast<uint8_t*>(out));
+}
+
+StatusOr<size_t> ProcParser::ParseProcPIDPss(const int32_t pid) const {
+  // We will parse a line that looks like this:
+  // Pss:                 807 kB
+  // And return the value 807*1024 (or an error status).
+  constexpr uint32_t kPssKeyIdx = 0;
+  constexpr uint32_t kPssValIdx = 1;
+  constexpr uint32_t kUnitsIdx = 2;
+
+  const std::string fpath = absl::Substitute("$0/$1/smaps_rollup", proc_base_path_, pid);
+
+  std::ifstream ifs;
+  ifs.open(fpath);
+  if (!ifs) {
+    return error::Internal("Failed to open file $0", fpath);
+  }
+
+  std::string line;
+  while (std::getline(ifs, line)) {
+    if (absl::StartsWith(line, "Pss:")) {
+      const std::vector<std::string_view> toks = absl::StrSplit(line, ' ', absl::SkipWhitespace());
+      DCHECK_EQ(toks.size(), 3);
+      DCHECK_EQ(toks[kPssKeyIdx], "Pss:");
+      DCHECK_EQ(toks[kUnitsIdx], "kB");
+      size_t pss_kb;
+      if (absl::SimpleAtoi(toks[kPssValIdx], &pss_kb)) {
+        return 1024 * pss_kb;
+      } else {
+        return error::Internal(R"(SimpleAtoi error for "$0", pid=$1.)", toks[kPssValIdx], pid);
+      }
+    }
+  }
+  return error::Internal("Could not find pss for pid $0.", pid);
 }
 
 Status ProcParser::ParseProcPIDSMaps(int32_t pid, std::vector<ProcessSMaps>* out) const {

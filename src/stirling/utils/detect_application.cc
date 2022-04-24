@@ -56,15 +56,19 @@ bool operator<(const SemVer& lhs, const SemVer& rhs) {
                                       rhs_vec.end());
 }
 
-StatusOr<SemVer> GetSemVer(const std::string& version) {
-  std::regex sem_ver_regex(R"([0-9]+\.[0-9]+\.[0-9])");
+StatusOr<SemVer> GetSemVer(const std::string& version, const bool strict) {
+  std::regex sem_ver_regex(R"([0-9]+\.[0-9]+\.[0-9]+)");
   std::smatch match;
   if (!std::regex_search(version, match, sem_ver_regex)) {
-    return error::InvalidArgument("Input '$0' does not contain a semantic version number", version);
+    // If not strict, try to match only major and minor versions.
+    if (strict || !std::regex_search(version, match, std::regex(R"([0-9]+\.[0-9]+)"))) {
+      return error::InvalidArgument("Input '$0' does not contain a semantic version number",
+                                    version);
+    }
   }
   std::string sem_ver_str = match.str(0);
   std::vector<std::string_view> fields = absl::StrSplit(sem_ver_str, ".");
-  if (fields.size() != 3) {
+  if (strict && fields.size() != 3) {
     return error::InvalidArgument(
         "Invalid semantic version '$0', must have 3 dot-separated fields, as in "
         "<major>.<minor>.<patch>",
@@ -77,7 +81,8 @@ StatusOr<SemVer> GetSemVer(const std::string& version) {
   if (!absl::SimpleAtoi(fields[1], &res.minor)) {
     return error::InvalidArgument("Minor version '$0' is not a number", fields[1]);
   }
-  if (!absl::SimpleAtoi(fields[2], &res.patch)) {
+  // If not strict, we tolerate more than 3 fields and parsing failure for patch.
+  if (fields.size() >= 3 && !absl::SimpleAtoi(fields[2], &res.patch) && strict) {
     return error::InvalidArgument("Patch version '$0' is not a number", fields[2]);
   }
   return res;

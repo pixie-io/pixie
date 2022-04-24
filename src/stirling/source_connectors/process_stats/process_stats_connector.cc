@@ -57,7 +57,9 @@ void ProcessStatsConnector::TransferProcessStatsTable(ConnectorContext* ctx,
     int32_t pid = upid.pid();
     // TODO(zasgar): We should double check the process start time to make sure it still the same
     // PID.
-    auto s1 = proc_parser_->ParseProcPIDStat(pid, &stats);
+    auto s1 =
+        proc_parser_->ParseProcPIDStat(pid, system::Config::GetInstance().PageSizeBytes(),
+                                       system::Config::GetInstance().KernelTickTimeNS(), &stats);
     if (!s1.ok()) {
       VLOG(1) << absl::Substitute(
           "Failed to fetch cpu stat info for PID ($0). Error=\"$1\" skipping.", pid, s1.msg());

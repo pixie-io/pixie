@@ -46,7 +46,9 @@
 using ScalarExpression = px::carnot::plan::ScalarExpression;
 using ScalarExpressionVector = std::vector<std::shared_ptr<ScalarExpression>>;
 using px::carnot::exec::ExecState;
+using px::carnot::exec::MockMetricsStubGenerator;
 using px::carnot::exec::MockResultSinkStubGenerator;
+using px::carnot::exec::MockTraceStubGenerator;
 using px::carnot::exec::ScalarExpressionEvaluator;
 using px::carnot::exec::ScalarExpressionEvaluatorType;
 using px::carnot::planpb::testutils::kAddScalarFuncNestedPbtxt;
@@ -82,7 +84,8 @@ void BM_ScalarExpressionTwoCols(benchmark::State& state,
   auto table_store = std::make_shared<px::table_store::TableStore>();
   PL_CHECK_OK(func_registry->Register<AddUDF>("add"));
   auto exec_state = std::make_unique<ExecState>(
-      func_registry.get(), table_store, MockResultSinkStubGenerator, sole::uuid4(), nullptr);
+      func_registry.get(), table_store, MockResultSinkStubGenerator, MockMetricsStubGenerator,
+      MockTraceStubGenerator, sole::uuid4(), nullptr);
 
   auto in1 = px::datagen::CreateLargeData<Int64Value>(data_size);
   auto in2 = px::datagen::CreateLargeData<Int64Value>(data_size);

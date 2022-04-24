@@ -34,6 +34,7 @@ go_library(
         "//src/vizier/services/query_broker/controllers",
         "//src/vizier/services/query_broker/ptproxy",
         "//src/vizier/services/query_broker/querybrokerenv",
+        "//src/vizier/services/query_broker/script_runner",
         "//src/vizier/services/query_broker/tracker",
         "@com_github_cenkalti_backoff_v3//:backoff",
         "@com_github_nats_io_nats_go//:nats_go",

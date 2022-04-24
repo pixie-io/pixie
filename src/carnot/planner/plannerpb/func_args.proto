@@ -24,6 +24,7 @@ option go_package = "plannerpb";
 
 import "src/carnot/planner/dynamic_tracing/ir/logicalpb/logical.proto";
 import "src/common/base/statuspb/status.proto";
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 // FuncToExecute specifies the name and arguments of a function to execute.
 message FuncToExecute {
@@ -54,6 +55,24 @@ message FuncToExecute {
   string output_table_prefix = 3;
 }
 
+// Configs specifies extra configuration to be given to the provider. For example,
+// endpoint information that should be used across all OTel exports.
+message Configs {
+  // OTelEndpointConfig contains information about which OTelEndpoint + headers should be attached
+  // to all OTel export calls in the script.
+  message OTelEndpointConfig {
+    string url = 1 [(gogoproto.customname) = "URL"];
+    map<string, string> headers = 2;
+    bool insecure = 3;
+  }
+  OTelEndpointConfig otel_endpoint_config = 1 [(gogoproto.customname) = "OTelEndpointConfig"];
+  message PluginConfig {
+      // The start_time of the script in nanoseconds.
+      int64 start_time_ns = 1;
+  }
+  PluginConfig plugin_config = 2;
+}
+
 // QueryRequest is the body of the request made to the planner.
 message QueryRequest {
   // query_str is the string representation of the query to run.
@@ -61,8 +80,9 @@ message QueryRequest {
   // exec_funcs is a list of functions to execute.
   // If any functions specified cannot be found the planner will return a compiler error.
   repeated FuncToExecute exec_funcs = 3;
+  // Configs specifies extra configuration to be given to the compiler.
+  Configs configs = 4;
   // TODO(zasgar): Add proto query.
-
   reserved 2;
 }
 
@@ -74,6 +94,8 @@ message CompileMutationsRequest {
   // exec_funcs is a list of functions to execute.
   // If any functions specified cannot be found the planner will return a compiler error.
   repeated FuncToExecute exec_funcs = 3;
+  // Configs specifies extra configuration to be given to the compiler.
+  Configs configs = 4;
 }
 
 // DeleteTracepoint is a mutation that deletes a tracepoint running on Vizier.

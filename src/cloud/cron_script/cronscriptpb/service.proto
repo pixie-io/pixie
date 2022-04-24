@@ -1,0 +1,143 @@
+/*
+ * Copyright 2018- The Pixie Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+syntax = "proto3";
+
+package px.services.internal;
+
+option go_package = "cronscriptpb";
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/protobuf/wrappers.proto";
+import "src/api/proto/uuidpb/uuid.proto";
+
+// This is a service for running scripts at a regularly scheduled interval.
+service CronScriptService {
+    // GetScript gets a script stored in the cron script service.
+    rpc GetScript(GetScriptRequest) returns (GetScriptResponse);
+    // GetScripts gets scripts stored in the cron script service, given a set of IDs.
+    rpc GetScripts(GetScriptsRequest) returns (GetScriptsResponse);
+    // CreateScript creates a cron script.
+    rpc CreateScript(CreateScriptRequest) returns (CreateScriptResponse);
+    // UpdateScript updates an existing cron script.
+    rpc UpdateScript(UpdateScriptRequest) returns (UpdateScriptResponse);
+    // DeleteScript deletes a cron script.
+    rpc DeleteScript(DeleteScriptRequest) returns (DeleteScriptResponse);
+}
+
+// CronScript is a script stored in the cron script service.
+message CronScript {
+    // ID is the ID of the cron script.
+    uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+    // OrgID is the org which the cron script belongs to.
+    uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
+    // The contents of the PxL script to be run.
+    string script = 3;
+    // Cron expression which specifies how often the script should be run.
+    string cron_expr = 4;
+    // The IDs of the clusters this script must be run for in this org. If none specified, indicates all clusters.
+    repeated uuidpb.UUID cluster_ids = 5 [(gogoproto.customname) = "ClusterIDs"];
+    // Environment variables that should be used to fill in this script, in a YAML format.
+    string configs = 6;
+    // Token for the user/org for which this script is run on behalf of.
+    string token = 7;
+    // Whether the cron script is enabled.
+    bool enabled = 8;
+    // How frequently a script should be run, if not specified via cron.
+    int64 frequency_s = 9;
+}
+
+// GetScriptRequest is a request to fetch information about a script in the cron script service.
+message GetScriptRequest {
+    // ID is the ID of the cron script to fetch.
+    uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+}
+
+// GetScriptResponse is the response to a GetScriptRequest.
+message GetScriptResponse {
+    // The requested script.
+    CronScript script = 1;
+}
+
+// GetScriptsRequest is a request to fetch multiple scripts in the cron script service.
+message GetScriptsRequest {
+    // IDs of the scripts to fetch.
+    repeated uuidpb.UUID ids = 1 [(gogoproto.customname) = "IDs"];
+}
+
+// GetScriptsResponse is the response to a GetScriptsRequest.
+message GetScriptsResponse {
+    // The requested scripts.
+    repeated CronScript scripts = 1;
+}
+
+// CreateScriptRequest is a request to create a new cron script.
+message CreateScriptRequest {
+    // The contents of the PxL script to be run.
+    string script = 1;
+    // Cron expression which specifies how often the script should be run.
+    string cron_expr = 2;
+    // The IDs of the clusters this script must be run for in this org. If none specified, indicates all clusters.
+    repeated uuidpb.UUID cluster_ids = 3 [(gogoproto.customname) = "ClusterIDs"];
+    // Environment variables that should be used to fill in this script, in a YAML format.
+    string configs = 4;
+    // Token for the user/org for which this script is run on behalf of.
+    string token = 5;
+    // How frequently a script should be run, if not specified via cron.
+    int64 frequency_s = 6;
+}
+
+// CreateScriptResponse is a response to a CreateScriptRequest.
+message CreateScriptResponse {
+    uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+}
+
+// UpdateScriptRequest is a request to update an existing cron script.
+message UpdateScriptRequest {
+    // The contents of the PxL script to be run.
+    google.protobuf.StringValue script = 1;
+    // How often the script should be run.
+    google.protobuf.StringValue cron_expression = 2;
+    // The IDs of the clusters this script must be run for in this org. If none specified, indicates all clusters.
+    ClusterIDs cluster_ids = 3 [(gogoproto.customname) = "ClusterIDs"];
+    // Environment variables that should be used to fill in this script, in a YAML format.
+    google.protobuf.StringValue configs = 4;
+    // Whether the cron script should be enabled.
+    google.protobuf.BoolValue enabled = 5;
+    // How frequently a script should be run, if not specified via cron.
+    google.protobuf.Int64Value frequency_s = 6;
+    uuidpb.UUID script_id = 7;
+}
+
+// ClusterIDs is a wrapper around cluster IDs.
+message ClusterIDs {
+    // The IDs of the clusters this script must be run for in this org. If none specified, indicates all clusters.
+    repeated uuidpb.UUID value = 1;
+}
+
+// UpdateScriptResponse is a response to an UpdateScriptRequest.
+message UpdateScriptResponse {}
+
+// DeleteScriptRequest is a request to delete a cron script.
+message DeleteScriptRequest {
+    // ID is the ID of the cron script to delete.
+    uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+}
+
+// DeleteScriptResponse is a response to a DeleteScriptRequest.
+message DeleteScriptResponse {}

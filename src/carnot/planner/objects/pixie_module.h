@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "src/carnot/planner/compiler_state/compiler_state.h"
-#include "src/carnot/planner/objects/funcobject.h"
+#include "src/carnot/planner/objects/qlobject.h"
 
 namespace px {
 namespace carnot {

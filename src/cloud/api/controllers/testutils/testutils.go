@@ -45,6 +45,7 @@ type MockCloudClients struct {
 	MockOrg               *mock_cloudpb.MockOrganizationServiceServer
 	MockUser              *mock_cloudpb.MockUserServiceServer
 	MockAPIKey            *mock_cloudpb.MockAPIKeyManagerServer
+	MockPlugin            *mock_cloudpb.MockPluginServiceServer
 }
 
 // CreateTestGraphQLEnv creates a test graphql environment and mock clients.
@@ -58,6 +59,7 @@ func CreateTestGraphQLEnv(t *testing.T) (controllers.GraphQLEnv, *MockCloudClien
 	as := mock_cloudpb.NewMockAutocompleteServiceServer(ctrl)
 	os := mock_cloudpb.NewMockOrganizationServiceServer(ctrl)
 	us := mock_cloudpb.NewMockUserServiceServer(ctrl)
+	ps := mock_cloudpb.NewMockPluginServiceServer(ctrl)
 	gqlEnv := controllers.GraphQLEnv{
 		APIKeyMgr:             aps,
 		ArtifactTrackerServer: ats,
@@ -67,6 +69,7 @@ func CreateTestGraphQLEnv(t *testing.T) (controllers.GraphQLEnv, *MockCloudClien
 		AutocompleteServer:    as,
 		OrgServer:             os,
 		UserServer:            us,
+		PluginServer:          ps,
 	}
 	return gqlEnv, &MockCloudClients{
 		MockAPIKey:            aps,
@@ -77,6 +80,7 @@ func CreateTestGraphQLEnv(t *testing.T) (controllers.GraphQLEnv, *MockCloudClien
 		MockAutocomplete:      as,
 		MockOrg:               os,
 		MockUser:              us,
+		MockPlugin:            ps,
 	}, ctrl.Finish
 }
 

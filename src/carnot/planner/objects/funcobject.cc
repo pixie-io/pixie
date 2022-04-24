@@ -118,6 +118,7 @@ StatusOr<ParsedArgs> FuncObject::PrepareArgs(const ArgMap& args, const pypa::Ast
       continue;
     }
     PL_ASSIGN_OR_RETURN(auto default_node, GetDefault(arg));
+    default_node->SetAst(ast);
     parsed_args.SubDefaultArg(arg, default_node);
   }
 
@@ -144,7 +145,7 @@ StatusOr<QLObjectPtr> FuncObject::GetDefault(std::string_view arg) {
                                                         /*import_px*/ true);
 }
 
-std::string FuncObject::FormatArguments(const absl::flat_hash_set<std::string> args) {
+std::string FuncObject::FormatArguments(const absl::flat_hash_set<std::string>& args) {
   // Joins the argument names by commas and surrounds each arg with single quotes.
   return absl::StrJoin(args, ",", [](std::string* out, const std::string& arg) {
     absl::StrAppend(out, absl::Substitute("'$0'", arg));
@@ -156,21 +157,20 @@ Status FuncObject::AddVisSpec(std::unique_ptr<VisSpec> vis_spec) {
   return Status::OK();
 }
 
-StatusOr<std::shared_ptr<FuncObject>> GetCallMethod(const pypa::AstPtr& ast, QLObjectPtr pyobject) {
+StatusOr<std::shared_ptr<FuncObject>> GetCallMethod(const pypa::AstPtr& ast,
+                                                    const QLObjectPtr& pyobject) {
   std::shared_ptr<FuncObject> func_object;
   if (pyobject->type_descriptor().type() == QLObjectType::kFunction) {
+    pyobject->SetAst(ast);
     return std::static_pointer_cast<FuncObject>(pyobject);
   }
-  auto func_object_or_s = pyobject->GetCallMethod();
-  if (!func_object_or_s.ok()) {
-    return WrapAstError(ast, func_object_or_s.status());
-  }
-  return func_object_or_s.ConsumeValueOrDie();
+  PL_ASSIGN_OR_RETURN(func_object, pyobject->GetCallMethod());
+  func_object->SetAst(ast);
+  return func_object;
 }
 
-
 Status FuncObject::ResolveArgAnnotationsToTypes(
-    const absl::flat_hash_map<std::string, QLObjectPtr> arg_annotation_objs) {
+    const absl::flat_hash_map<std::string, QLObjectPtr>& arg_annotation_objs) {
   for (const auto& [name, obj] : arg_annotation_objs) {
     if (obj->type() != QLObjectType::kType) {
       PL_ASSIGN_OR_RETURN(auto type_obj,

@@ -29,4 +29,5 @@ pl_cc_library(
     name = "cc_library",
     srcs = [],
     hdrs = [":headers"],
+    deps = ["//src/shared/upid:cc_library"],
 )

@@ -45,7 +45,7 @@ export interface ClusterConfig {
    * If provided, this overrides the endpoint for connections to the GRPC API on a cluster.
    * This includes the protocol, the host, and optionally the port. For example, `https://pixie.example.com:1234`.
    */
-  passthroughClusterAddress?: string | undefined;
+  passthroughClusterAddress: string;
   /**
    * If true, passes an HTTP Authorization header as part of each request to gRPC services.
    */
@@ -117,9 +117,9 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
 
   // Note: this doesn't check if the client already exists, and clobbers any existing client.
   private async createVizierClient(cluster: ClusterConfig) {
-    const { ipAddress, token } = await this.gqlClient.getClusterConnection(cluster.id, true);
+    const { token } = await this.gqlClient.getClusterConnection(cluster.id);
     const client = new VizierGRPCClient(
-      cluster.passthroughClusterAddress ?? ipAddress,
+      cluster.passthroughClusterAddress,
       // If in embed mode, we should always use the auth token with bearer auth.
       this.options.authToken ? this.options.authToken : token,
       cluster.id,

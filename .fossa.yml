@@ -260,38 +260,6 @@ analyze:
     type: go
     target: px.dev/pixie/src/cloud/config_manager/controller
     path: src/cloud/config_manager/controller
-  - name: px.dev/pixie/src/cloud/dnsmgr
-    type: go
-    target: px.dev/pixie/src/cloud/dnsmgr
-    path: src/cloud/dnsmgr
-  - name: px.dev/pixie/src/cloud/dnsmgr/controller
-    type: go
-    target: px.dev/pixie/src/cloud/dnsmgr/controller
-    path: src/cloud/dnsmgr/controller
-  - name: px.dev/pixie/src/cloud/dnsmgr/controllers/mock
-    type: go
-    target: px.dev/pixie/src/cloud/dnsmgr/controllers/mock
-    path: src/cloud/dnsmgr/controllers/mock
-  - name: px.dev/pixie/src/cloud/dnsmgr/dnsmgrenv
-    type: go
-    target: px.dev/pixie/src/cloud/dnsmgr/dnsmgrenv
-    path: src/cloud/dnsmgr/dnsmgrenv
-  - name: px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb
-    type: go
-    target: px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb
-    path: src/cloud/dnsmgr/dnsmgrpb
-  - name: px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb/mock
-    type: go
-    target: px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb/mock
-    path: src/cloud/dnsmgr/dnsmgrpb/mock
-  - name: px.dev/pixie/src/cloud/dnsmgr/load_certs
-    type: go
-    target: px.dev/pixie/src/cloud/dnsmgr/load_certs
-    path: src/cloud/dnsmgr/load_certs
-  - name: px.dev/pixie/src/cloud/dnsmgr/schema
-    type: go
-    target: px.dev/pixie/src/cloud/dnsmgr/schema
-    path: src/cloud/dnsmgr/schema
   - name: px.dev/pixie/src/cloud/indexer
     type: go
     target: px.dev/pixie/src/cloud/indexer
@@ -812,26 +780,6 @@ analyze:
     type: go
     target: px.dev/pixie/src/vizier/messages/messagespb
     path: src/vizier/messages/messagespb
-  - name: px.dev/pixie/src/vizier/services/certmgr
-    type: go
-    target: px.dev/pixie/src/vizier/services/certmgr
-    path: src/vizier/services/certmgr
-  - name: px.dev/pixie/src/vizier/services/certmgr/certmgrenv
-    type: go
-    target: px.dev/pixie/src/vizier/services/certmgr/certmgrenv
-    path: src/vizier/services/certmgr/certmgrenv
-  - name: px.dev/pixie/src/vizier/services/certmgr/certmgrpb
-    type: go
-    target: px.dev/pixie/src/vizier/services/certmgr/certmgrpb
-    path: src/vizier/services/certmgr/certmgrpb
-  - name: px.dev/pixie/src/vizier/services/certmgr/controller
-    type: go
-    target: px.dev/pixie/src/vizier/services/certmgr/controller
-    path: src/vizier/services/certmgr/controller
-  - name: px.dev/pixie/src/vizier/services/certmgr/controllers/mock
-    type: go
-    target: px.dev/pixie/src/vizier/services/certmgr/controllers/mock
-    path: src/vizier/services/certmgr/controllers/mock
   - name: px.dev/pixie/src/vizier/services/cloud_connector
     type: go
     target: px.dev/pixie/src/vizier/services/cloud_connector

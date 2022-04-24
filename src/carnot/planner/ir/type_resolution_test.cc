@@ -51,8 +51,11 @@ class TypeResolutionTest : public ASTVisitorTest {
                                      {types::ST_NONE, types::ST_PERCENT, types::ST_PERCENT,
                                       types::ST_PERCENT, types::ST_UPID, types::ST_BYTES}));
 
-    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), registry_info_.get(),
-                                                      time_now, "result_addr");
+    compiler_state_ = std::make_unique<CompilerState>(
+        std::move(rel_map), /* sensitive_columns */ SensitiveColumnMap{}, registry_info_.get(),
+        /* time_now */ time_now,
+        /* max_output_rows_per_table */ 0, "result_addr", "result_ssl_targetname",
+        /* redaction_options */ RedactionOptions{}, nullptr, nullptr);
     cpu_type_ = ValueType::Create(types::FLOAT64, types::ST_PERCENT);
     upid_type_ = ValueType::Create(types::UINT128, types::ST_UPID);
     bytes_type_ = ValueType::Create(types::INT64, types::ST_BYTES);

@@ -83,9 +83,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/bazelbuild/rules_docker/archive/refs/tags/v0.22.0.tar.gz"],
     ),
     com_google_googletest = dict(
-        sha256 = "9dc9157a9a1551ec7a7e43daea9a694a0bb5fb8bec81235d8a1e6ef64c716dcb",
-        strip_prefix = "googletest-release-1.10.0",
-        urls = ["https://github.com/google/googletest/archive/release-1.10.0.tar.gz"],
+        sha256 = "b4870bf121ff7795ba20d20bcdd8627b8e088f2d1dab299a031c1034eddc93d5",
+        strip_prefix = "googletest-release-1.11.0",
+        urls = ["https://github.com/google/googletest/archive/release-1.11.0.tar.gz"],
     ),
     com_github_grpc_grpc = dict(
         sha256 = "27dd2fc5c9809ddcde8eb6fa1fa278a3486566dfc28335fca13eb8df8bd3b958",
@@ -299,6 +299,11 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/bazelbuild/rules_jvm_external/archive/refs/tags/4.2.tar.gz"],
         sha256 = "2cd77de091e5376afaf9cc391c15f093ebd0105192373b334f0a855d89092ad5",
         strip_prefix = "rules_jvm_external-4.2",
+    ),
+    com_github_uriparser_uriparser = dict(
+        urls = ["https://github.com/uriparser/uriparser/releases/download/uriparser-0.9.6/uriparser-0.9.6.tar.gz"],
+        sha256 = "10e6f90d359c1087c45f907f95e527a8aca84422251081d1533231e031a084ff",
+        strip_prefix = "uriparser-0.9.6",
     ),
 )
 

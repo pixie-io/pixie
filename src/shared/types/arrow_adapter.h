@@ -20,12 +20,13 @@
 
 #include <arrow/array.h>
 #include <arrow/memory_pool.h>
+
 #include <algorithm>
 #include <iterator>
+#include <memory>
 #include <numeric>
 #include <string>
-
-#include <memory>
+#include <utility>
 #include <vector>
 
 #include "src/common/base/base.h"
@@ -51,6 +52,22 @@ inline std::shared_ptr<arrow::Array> ToArrow(const std::vector<TUDFValue>& data,
   DCHECK(mem_pool != nullptr);
 
   typename ValueTypeTraits<TUDFValue>::arrow_builder_type builder(mem_pool);
+  PL_CHECK_OK(builder.Reserve(data.size()));
+  for (const auto& v : data) {
+    builder.UnsafeAppend(v.val);
+  }
+  std::shared_ptr<arrow::Array> arr;
+  PL_CHECK_OK(builder.Finish(&arr));
+  return arr;
+}
+
+// Specialization of the above for time64
+template <>
+inline std::shared_ptr<arrow::Array> ToArrow<Time64NSValue>(const std::vector<Time64NSValue>& data,
+                                                            arrow::MemoryPool* mem_pool) {
+  DCHECK(mem_pool != nullptr);
+
+  arrow::Time64Builder builder(arrow::time64(arrow::TimeUnit::NANO), mem_pool);
   PL_CHECK_OK(builder.Reserve(data.size()));
   for (const auto& v : data) {
     builder.UnsafeAppend(v.val);
@@ -122,6 +139,12 @@ constexpr auto GetValueFromArrowArray(const arrow::Array* arg, int64_t idx) {
   // return GetValue(static_cast<arrow::Int64Array*>(arg), idx);
   using arrow_array_type = typename types::DataTypeTraits<TExecArgType>::arrow_array_type;
   return GetValue(static_cast<const arrow_array_type*>(arg), idx);
+}
+
+inline std::string_view GetStringViewFromArrowArray(const arrow::Array* arr, int64_t idx) {
+  DCHECK(arr->type_id() == arrow::Type::STRING);
+  auto arrow_string_view = static_cast<const arrow::StringArray*>(arr)->GetView(idx);
+  return std::string_view(arrow_string_view.data(), arrow_string_view.size());
 }
 
 template <types::DataType TDataType>
@@ -272,6 +295,83 @@ int64_t SearchArrowArrayLessThanOrEqual(
   res--;
   return std::distance(arr_iterator.begin(), res);
 }
+
+class TypeErasedArrowBuilder {
+ public:
+  virtual ~TypeErasedArrowBuilder() = default;
+
+  virtual Status Reserve(size_t num_rows) = 0;
+  virtual Status ReserveData(size_t num_bytes) = 0;
+  virtual Status Finish(std::shared_ptr<arrow::Array>* out) = 0;
+};
+
+template <types::DataType TDataType>
+class TypeErasedArrowBuilderImpl : public TypeErasedArrowBuilder {
+  using BuilderType = typename types::DataTypeTraits<TDataType>::arrow_builder_type;
+
+ public:
+  explicit TypeErasedArrowBuilderImpl(std::unique_ptr<arrow::ArrayBuilder> builder)
+      : builder_(std::move(builder)), typed_builder_(static_cast<BuilderType*>(builder_.get())) {}
+
+  Status Reserve(size_t num_rows) override {
+    PL_RETURN_IF_ERROR(typed_builder_->Reserve(num_rows));
+    return Status::OK();
+  }
+
+  Status ReserveData(size_t num_bytes) override {
+    if constexpr (TDataType == types::DataType::STRING) {
+      PL_RETURN_IF_ERROR(typed_builder_->ReserveData(num_bytes));
+    }
+    return Status::OK();
+  }
+
+  Status Finish(std::shared_ptr<arrow::Array>* out) override {
+    PL_RETURN_IF_ERROR(typed_builder_->Finish(out));
+    return Status::OK();
+  }
+
+  template <typename TIter>
+  void UnsafeAppendValues(TIter begin, TIter end) {
+    for (auto it = begin; it != end; ++it) {
+      typed_builder_->UnsafeAppend(*it);
+    }
+  }
+
+ private:
+  std::unique_ptr<arrow::ArrayBuilder> builder_;
+  BuilderType* typed_builder_;
+};
+
+template <types::DataType T>
+typename std::enable_if<
+    arrow::TypeTraits<typename DataTypeTraits<T>::arrow_type>::is_parameter_free,
+    std::unique_ptr<arrow::ArrayBuilder>>::type
+GetArrowBuilder(arrow::MemoryPool* mem_pool) {
+  return std::make_unique<typename DataTypeTraits<T>::arrow_builder_type>(mem_pool);
+}
+
+template <types::DataType T>
+typename std::enable_if<
+    !arrow::TypeTraits<typename DataTypeTraits<T>::arrow_type>::is_parameter_free,
+    std::unique_ptr<arrow::ArrayBuilder>>::type
+GetArrowBuilder(arrow::MemoryPool* mem_pool) {
+  return std::make_unique<typename DataTypeTraits<T>::arrow_builder_type>(
+      DataTypeTraits<T>::default_value(), mem_pool);
+}
+
+template <types::DataType TDataType>
+TypeErasedArrowBuilderImpl<TDataType>* GetTypedArrowBuilder(TypeErasedArrowBuilder* builder) {
+  return static_cast<TypeErasedArrowBuilderImpl<TDataType>*>(builder);
+}
+
+/**
+ * Make a type erased arrow builder based on UDFDataType and using the passed in MemoryPool.
+ * @param data_type The UDFDataType.
+ * @param mem_pool The MemoryPool to use.
+ * @return a unique_ptr to a type erased array builder.
+ */
+std::unique_ptr<TypeErasedArrowBuilder> MakeTypeErasedArrowBuilder(const DataType& data_type,
+                                                                   arrow::MemoryPool* mem_pool);
 
 }  // namespace types
 }  // namespace px

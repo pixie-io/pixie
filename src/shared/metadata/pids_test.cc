@@ -28,7 +28,8 @@ namespace md {
 class PIDInfoTest : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    info_ = std::make_unique<PIDInfo>(UPID(1, 2, 3), "test.py --abc=def", "container_1");
+    info_ = std::make_unique<PIDInfo>(UPID(1, 2, 3), "/usr/bin/python3", "test.py --abc=def",
+                                      "container_1");
   }
   std::unique_ptr<PIDInfo> info_;
 };
@@ -42,17 +43,19 @@ TEST_F(PIDInfoTest, BasicAccessors) {
 }
 
 TEST_F(PIDInfoTest, OperatorEq) {
-  EXPECT_EQ(PIDInfo(UPID(1, 2, 3), "test.py --abc=def", "container_1"), *info_);
+  EXPECT_EQ(PIDInfo(UPID(1, 2, 3), "/usr/bin/python3", "test.py --abc=def", "container_1"), *info_);
 
-  EXPECT_NE(PIDInfo(UPID(1, 2, 4), "test.py --abc=def", "container_1"), *info_);
+  EXPECT_NE(PIDInfo(UPID(1, 2, 4), "java", "test.py --abc=def", "container_1"), *info_);
 
-  EXPECT_NE(PIDInfo(UPID(1, 2, 3), "est.py --abc=def", "container_1"), *info_);
+  EXPECT_NE(PIDInfo(UPID(1, 2, 4), "/usr/bin/python3", "test.py --abc=def", "container_1"), *info_);
 
-  EXPECT_NE(PIDInfo(UPID(1, 2, 3), "test.py --abc=def", "container_2"), *info_);
+  EXPECT_NE(PIDInfo(UPID(1, 2, 3), "/usr/bin/python3", "est.py --abc=def", "container_1"), *info_);
+
+  EXPECT_NE(PIDInfo(UPID(1, 2, 3), "/usr/bin/python3", "test.py --abc=def", "container_2"), *info_);
 }
 
 TEST_F(PIDInfoTest, OperatorEqStopTime) {
-  PIDInfo other(UPID(1, 2, 3), "test.py --abc=def", "container_1");
+  PIDInfo other(UPID(1, 2, 3), "/usr/bin/python3", "test.py --abc=def", "container_1");
 
   other.set_stop_time_ns(1000);
   EXPECT_NE(other, *info_);
@@ -64,7 +67,7 @@ TEST_F(PIDInfoTest, OperatorEqStopTime) {
 TEST_F(PIDInfoTest, Clone) { EXPECT_EQ(*info_, *info_->Clone()); }
 
 TEST(PIDStartedEvent, CheckInfo) {
-  PIDInfo pid_info(UPID(1, 2, 3), "test.py --abc=def", "container_1");
+  PIDInfo pid_info(UPID(1, 2, 3), "", "test.py --abc=def", "container_1");
   PIDStartedEvent ev(pid_info);
 
   EXPECT_EQ(PIDStatusEventType::kStarted, ev.type);

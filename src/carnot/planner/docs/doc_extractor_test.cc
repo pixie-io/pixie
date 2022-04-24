@@ -41,17 +41,25 @@ namespace carnot {
 namespace planner {
 namespace docs {
 
-class DocExtractorTest : public ::testing::Test {};
-TEST_F(DocExtractorTest, can_get_module_docs) {
+class DocExtractorTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    compiler_state = std::make_unique<CompilerState>(
+        std::make_unique<RelationMap>(), SensitiveColumnMap{}, &registry_info, /* time_now */ 0,
+        /* max_output_rows_per_table */ 0,
+        /* result_addr */ "", /* ssl_targetname_override */ "", RedactionOptions{}, nullptr,
+        nullptr);
+  }
+  std::unique_ptr<CompilerState> compiler_state;
   IR ir;
   compiler::MutationsIR dynamic_trace;
   RegistryInfo registry_info;
-  CompilerState compiler_state(std::make_unique<RelationMap>(), &registry_info, 10, "result");
   compiler::ModuleHandler module_handler;
-
+};
+TEST_F(DocExtractorTest, can_get_module_docs) {
   ASSERT_OK_AND_ASSIGN(
       auto ast_visitor,
-      compiler::ASTVisitorImpl::Create(&ir, &dynamic_trace, &compiler_state, &module_handler));
+      compiler::ASTVisitorImpl::Create(&ir, &dynamic_trace, compiler_state.get(), &module_handler));
 
   DocExtractor extractor;
   for (const auto& [modname, module] : module_handler) {
@@ -63,15 +71,9 @@ TEST_F(DocExtractorTest, can_get_module_docs) {
 }
 
 TEST_F(DocExtractorTest, test_object_strings) {
-  IR ir;
-  compiler::MutationsIR dynamic_trace;
-  RegistryInfo registry_info;
-  CompilerState compiler_state(std::make_unique<RelationMap>(), &registry_info, 10, "result");
-  compiler::ModuleHandler module_handler;
-
   ASSERT_OK_AND_ASSIGN(
       auto ast_visitor,
-      compiler::ASTVisitorImpl::Create(&ir, &dynamic_trace, &compiler_state, &module_handler));
+      compiler::ASTVisitorImpl::Create(&ir, &dynamic_trace, compiler_state.get(), &module_handler));
 
   DocExtractor extractor;
   auto module_name = compiler::TraceModule::kTraceModuleObjName;

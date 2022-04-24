@@ -18,7 +18,7 @@
 
 import fetch from 'cross-fetch';
 
-import type { ClusterConnection } from 'app/api/cloud-gql-client';
+import type { ClusterConnectionInfo } from 'app/api/cloud-gql-client';
 import { mockApolloClient } from 'app/testing/mocks/apollo-mock';
 
 import { PixieAPIClient } from './api';
@@ -78,7 +78,7 @@ describe('Pixie TypeScript API Client', () => {
 
       const client = PixieAPIClient.create({ apiKey: '' });
       jest.spyOn(client.getCloudClient(), 'getClusterConnection')
-        .mockReturnValue({} as unknown as Promise<ClusterConnection>);
+        .mockReturnValue({} as unknown as Promise<ClusterConnectionInfo>);
 
       const out = await client.health('foo').toPromise();
       expect(spy).toHaveBeenCalled();
@@ -91,7 +91,7 @@ describe('Pixie TypeScript API Client', () => {
 
       const client = PixieAPIClient.create({ apiKey: '' });
       jest.spyOn(client.getCloudClient(), 'getClusterConnection')
-        .mockReturnValue({} as unknown as Promise<ClusterConnection>);
+        .mockReturnValue({} as unknown as Promise<ClusterConnectionInfo>);
 
       const out = await client.executeScript('foo', 'import px', { enableE2EEncryption: false }).toPromise();
       expect(spy).toHaveBeenCalled();

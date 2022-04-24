@@ -21,7 +21,6 @@ package vizier
 import (
 	"context"
 	"errors"
-	"net/url"
 
 	"github.com/gofrs/uuid"
 
@@ -38,7 +37,6 @@ type Lister struct {
 // ConnectionInfo has connection info about a Vizier.
 type ConnectionInfo struct {
 	ID    uuid.UUID
-	URL   *url.URL
 	Token string
 }
 
@@ -89,17 +87,8 @@ func (l *Lister) GetVizierConnection(id uuid.UUID) (*ConnectionInfo, error) {
 		return nil, errors.New("invalid token received")
 	}
 
-	var u *url.URL
-	if len(ci.IPAddress) > 0 {
-		u, err = url.Parse(ci.IPAddress)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	return &ConnectionInfo{
 		ID:    id,
-		URL:   u,
 		Token: ci.Token,
 	}, nil
 }

@@ -46,3 +46,16 @@ pl_aux_go_binary(
         "main.go",
     ],
 )
+
+pl_aux_go_binary(
+    name = "golang_1_18_grpc_client",
+    base = "@golang_1_18_image//image",
+    extra_layers = {
+        "proto": ["//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto:proto_files"],
+    },
+    files = [
+        "go.mod",
+        "go.sum",
+        "main.go",
+    ],
+)

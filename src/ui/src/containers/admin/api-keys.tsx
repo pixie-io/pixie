@@ -29,6 +29,7 @@ import {
 } from '@mui/material';
 import { distanceInWords } from 'date-fns';
 
+import { useSnackbar } from 'app/components';
 import { GQLAPIKey, GQLAPIKeyMetadata } from 'app/types/schema';
 
 import { MonoSpaceCell } from './cluster-table-cells';
@@ -57,6 +58,8 @@ export function formatAPIKey(apiKey: GQLAPIKeyMetadata): APIKeyDisplay {
 }
 
 export const APIKeyRow = React.memo<{ apiKey: APIKeyDisplay }>(({ apiKey }) => {
+  const showSnackbar = useSnackbar();
+
   const [deleteAPIKey] = useMutation<{ DeleteAPIKey: boolean }, { id: string }>(gql`
     mutation DeleteAPIKeyFromAdminPage($id: ID!) {
       DeleteAPIKey(id: $id)
@@ -74,8 +77,14 @@ export const APIKeyRow = React.memo<{ apiKey: APIKeyDisplay }>(({ apiKey }) => {
     `,
     {
       fetchPolicy: 'network-only',
+      // Apollo bug: onCompleted in useLazyQuery only fires the first time the query is invoked.
+      // https://github.com/apollographql/apollo-client/issues/6636#issuecomment-972589517
+      // Setting `notifyOnNetworkStatusChange` makes sure `onCompleted` is called again on subsequent queries.
+      notifyOnNetworkStatusChange: true,
       onCompleted: (data) => {
-        navigator.clipboard.writeText(data?.apiKey?.key).then();
+        navigator.clipboard.writeText(data?.apiKey?.key).then(() => {
+          showSnackbar({ message: 'Copied!' });
+        });
       },
     },
   );

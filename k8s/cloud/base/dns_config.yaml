@@ -1,9 +1,0 @@
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: pl-dns-config
-data:
-  PL_DNS_ZONE: cluster-dev-withpixie-dev
-  PL_DNS_PROJECT: pl-dev-infra
-  PL_USE_DEFAULT_DNS_CERT: "true"

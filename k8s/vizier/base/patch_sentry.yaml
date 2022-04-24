@@ -9,7 +9,7 @@ spec:
       initContainers:
       - name: cc-wait
         image: gcr.io/pixie-oss/pixie-dev-public/curl:1.0
-        # yamllint disable
+        # yamllint disable rule:indentation
         command: ['sh', '-c', 'set -x;
           URL="https://${SERVICE_NAME}:${SERVICE_PORT}/readyz";
           until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
@@ -17,6 +17,7 @@ spec:
             sleep 2;
           done;
         ']
+        # yamllint enable rule:indentation
         env:
           # The name of the service that Kelvin must connect with before becoming available.
         - name: SERVICE_NAME

@@ -37,6 +37,7 @@ interface CodeEditorProps {
   language?: string;
   shortcutKeys: string[];
   theme?: string;
+  isReadOnly?: boolean;
 }
 
 interface CodeEditorState {
@@ -83,6 +84,7 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, CodeEditorS
         scrollBeyondLastColumn: 3, // Prevents hiding text behind the minimap or the scrollbar. Expands the scroll area.
         scrollBeyondLastLine: false,
         fontFamily: COMMON_THEME.typography.monospace.fontFamily,
+        readOnly: this.props.isReadOnly === true,
       },
     };
     this.onChange = this.onChange.bind(this);

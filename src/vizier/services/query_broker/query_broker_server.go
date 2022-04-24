@@ -42,6 +42,7 @@ import (
 	"px.dev/pixie/src/vizier/services/query_broker/controllers"
 	"px.dev/pixie/src/vizier/services/query_broker/ptproxy"
 	"px.dev/pixie/src/vizier/services/query_broker/querybrokerenv"
+	scriptrunner "px.dev/pixie/src/vizier/services/query_broker/script_runner"
 	"px.dev/pixie/src/vizier/services/query_broker/tracker"
 )
 
@@ -138,6 +139,7 @@ func main() {
 	mdsClient := metadatapb.NewMetadataServiceClient(mdsConn)
 	mdtpClient := metadatapb.NewMetadataTracepointServiceClient(mdsConn)
 	mdconfClient := metadatapb.NewMetadataConfigServiceClient(mdsConn)
+	csClient := metadatapb.NewCronScriptStoreServiceClient(mdsConn)
 
 	// Connect to NATS.
 	var natsConn *nats.Conn
@@ -199,6 +201,17 @@ func main() {
 		}
 	}()
 	defer ptProxy.Close()
+
+	// Start cron script runner.
+	sr, err := scriptrunner.New(natsConn, csClient, vzServiceClient, viper.GetString("jwt_signing_key"))
+	if err != nil {
+		log.WithError(err).Fatal("Failed to start script runner")
+	}
+
+	err = sr.SyncScripts()
+	if err != nil {
+		log.WithError(err).Error("Failed to sync cron scripts")
+	}
 
 	s.Start()
 	s.StopOnInterrupt()

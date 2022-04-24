@@ -43,11 +43,23 @@ pl_aux_go_binary(
     ],
 )
 
+pl_aux_go_binary(
+    name = "test_go_1_18_binary",
+    base = "@golang_1_18_image//image",
+    build_flags = "-gcflags='-N -l'",
+    files = [
+        "go.mod",
+        "go.sum",
+        "test_go_binary.go",
+    ],
+)
+
 filegroup(
     name = "test_binaries",
     srcs = [
         "sockshop_payments_service",
         ":test_go_1_16_binary",
         ":test_go_1_17_binary",
+        ":test_go_1_18_binary",
     ],
 )

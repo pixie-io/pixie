@@ -4,10 +4,9 @@ kind: ConfigMap
 metadata:
   name: proxy-envoy-config
 data:
-# yamllint disable
-# The embedded YAML file is messing up yaml-lint.
-# This is almost an exact copy of base/proxy_envoy.yaml, except with a different CORS suffix. This
-# is because kustomize can't do patches within the embedded YAML.
+  # yamllint disable rule:indentation
+  # This is almost an exact copy of base/proxy_envoy.yaml, except with a different CORS suffix. This
+  # is because kustomize can't do patches within the embedded YAML.
   envoy.yaml: >
     static_resources:
       listeners:
@@ -79,4 +78,4 @@ data:
                   filename: "/service-certs/client.crt"
                 private_key:
                   filename: "/service-certs/client.key"
-# yamllint enable
+  # yamllint enable rule:indentation

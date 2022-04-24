@@ -58,11 +58,6 @@ spec:
             secretKeyRef:
               name: pl-db-secrets
               key: database-key
-        - name: PL_DNSMGR_SERVICE
-          valueFrom:
-            configMapKeyRef:
-              name: pl-service-config
-              key: PL_DNSMGR_SERVICE
         - name: PL_ARTIFACT_TRACKER_SERVICE
           valueFrom:
             configMapKeyRef:

@@ -63,10 +63,11 @@ class SharedObjectTarget : public QLObject {
       /* type */ QLObjectType::kSharedObjectTraceTarget,
   };
 
-  static StatusOr<std::shared_ptr<SharedObjectTarget>> Create(ASTVisitor* visitor,
+  static StatusOr<std::shared_ptr<SharedObjectTarget>> Create(const pypa::AstPtr& ast,
+                                                              ASTVisitor* visitor,
                                                               const std::string& name,
                                                               const md::UPID& upid) {
-    return std::shared_ptr<SharedObjectTarget>(new SharedObjectTarget(visitor, name, upid));
+    return std::shared_ptr<SharedObjectTarget>(new SharedObjectTarget(ast, visitor, name, upid));
   }
 
   static bool IsSharedObject(const QLObjectPtr& ptr) {
@@ -75,8 +76,9 @@ class SharedObjectTarget : public QLObject {
   const SharedObject& shared_object() { return shared_object_; }
 
  private:
-  SharedObjectTarget(ASTVisitor* visitor, const std::string& name, const md::UPID& upid)
-      : QLObject(SharedObjectType, visitor), shared_object_(name, upid) {}
+  SharedObjectTarget(const pypa::AstPtr& ast, ASTVisitor* visitor, const std::string& name,
+                     const md::UPID& upid)
+      : QLObject(SharedObjectType, ast, visitor), shared_object_(name, upid) {}
 
   SharedObject shared_object_;
 };

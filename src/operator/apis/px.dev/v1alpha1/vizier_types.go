@@ -54,6 +54,8 @@ type VizierSpec struct {
 	DevCloudNamespace string `json:"devCloudNamespace,omitempty"`
 	// PemMemoryLimit is a memory limit applied specifically to PEM pods.
 	PemMemoryLimit string `json:"pemMemoryLimit,omitempty"`
+	// PemMemoryLimit is a memory request applied specifically to PEM pods.
+	PemMemoryRequest string `json:"pemMemoryRequest,omitempty"`
 	// ClockConverter specifies which routine to use for converting timestamps to a synced reference time.
 	ClockConverter ClockConverterType `json:"clockConverter,omitempty"`
 	// Pod defines the policy for creating Vizier pods.
@@ -196,9 +198,6 @@ type DataCollectorParams struct {
 	DatastreamBufferSize uint32 `json:"datastreamBufferSize,omitempty"`
 	// DatastreamBufferSpikeSize is the maximum temporary size of a data stream buffer before processing.
 	DatastreamBufferSpikeSize uint32 `json:"datastreamBufferSpikeSize,omitempty"`
-	// TableStoreTableSizeLimit is the maximum allowed size for a table in the table store. When the size grows beyond this limit,
-	// old data will be discarded.
-	TableStoreTableSizeLimit int32 `json:"tableStoreTableSizeLimit,omitempty"`
 	// This contains custom flags that should be passed to the PEM via environment variables.
 	CustomPEMFlags map[string]string `json:"customPEMFlags,omitempty"`
 }

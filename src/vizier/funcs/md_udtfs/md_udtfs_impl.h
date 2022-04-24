@@ -655,9 +655,11 @@ class GetDebugTableInfo final : public carnot::udf::UDTF<GetDebugTableInfo> {
                 "The name of this table"),
         ColInfo("id", types::DataType::INT64, types::PatternType::GENERAL, "The id of the table"),
         ColInfo("batches_added", types::DataType::INT64, types::PatternType::GENERAL,
-                "The number of batches added to this table"),
+                "The number of batches added to this table in its lifetime"),
         ColInfo("batches_expired", types::DataType::INT64, types::PatternType::GENERAL,
-                "The number of batches expired from this table"),
+                "The number of batches expired from this table in its lifetime"),
+        ColInfo("bytes_added", types::DataType::INT64, types::PatternType::GENERAL,
+                "The number of bytes added to this table in its lifetime"),
         ColInfo("num_batches", types::DataType::INT64, types::PatternType::GENERAL,
                 "The number of batches active in this table"),
         ColInfo("compacted_batches", types::DataType::INT64, types::PatternType::GENERAL,
@@ -691,6 +693,7 @@ class GetDebugTableInfo final : public carnot::udf::UDTF<GetDebugTableInfo> {
     rw->Append<IndexOf("id")>(selected_id);
     rw->Append<IndexOf("batches_added")>(info.batches_added);
     rw->Append<IndexOf("batches_expired")>(info.batches_expired);
+    rw->Append<IndexOf("bytes_added")>(info.bytes_added);
     rw->Append<IndexOf("num_batches")>(info.num_batches);
     rw->Append<IndexOf("compacted_batches")>(info.compacted_batches);
     rw->Append<IndexOf("size")>(info.bytes);

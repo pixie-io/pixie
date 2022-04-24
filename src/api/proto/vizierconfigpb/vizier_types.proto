@@ -48,6 +48,8 @@ message VizierSpec {
     string dev_cloud_namespace = 7;
     // PemMemoryLimit is a memory limit applied specifically to PEM pods.
     string pem_memory_limit = 8;
+    // PemMemoryRequest is a memory request applied specifically to PEM pods.
+    string pem_memory_request = 17;
     // Pod defines the policy for creating Vizier pods.
     PodPolicyReq Pod_Policy = 9;
     // Patches defines patches that should be applied to Vizier resources.
@@ -104,9 +106,8 @@ message DataCollectorParams {
     uint32 datastream_buffer_size = 1;
     // DatastreamBufferSpikeSize is the maximum temporary size of a data stream buffer before processing.
     uint32 datastream_buffer_spike_size = 2;
-    // TableStoreTableSizeLimit is the maximum allowed size for a table in the table store. When the size grows beyond this limit,
-    // old data will be discarded.
-    int32 table_store_table_size_limit = 3;
+    // Formerly reserved for TableStoreTableSizeLimit.
+    reserved 3;
     // CustomPEMFlags specifies custom flags that should be passed to the PEM via environment variables.
     map<string, string> custom_pem_flags = 4 [(gogoproto.customname) = "CustomPEMFlags"];
 }

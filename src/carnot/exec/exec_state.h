@@ -36,6 +36,8 @@
 #include "src/shared/metadata/metadata_state.h"
 #include "src/table_store/table/table_store.h"
 
+#include "opentelemetry/proto/collector/metrics/v1/metrics_service.grpc.pb.h"
+#include "opentelemetry/proto/collector/trace/v1/trace_service.grpc.pb.h"
 #include "src/carnot/carnotpb/carnot.grpc.pb.h"
 
 namespace px {
@@ -45,6 +47,12 @@ namespace exec {
 using ResultSinkStubGenerator =
     std::function<std::unique_ptr<carnotpb::ResultSinkService::StubInterface>(
         const std::string& address, const std::string& ssl_targetname)>;
+using MetricsStubGenerator = std::function<
+    std::unique_ptr<opentelemetry::proto::collector::metrics::v1::MetricsService::StubInterface>(
+        const std::string& address, bool insecure)>;
+using TraceStubGenerator = std::function<
+    std::unique_ptr<opentelemetry::proto::collector::trace::v1::TraceService::StubInterface>(
+        const std::string& address, bool insecure)>;
 
 /**
  * ExecState manages the execution state for a single query. A new one will
@@ -56,14 +64,18 @@ using ResultSinkStubGenerator =
 class ExecState {
  public:
   ExecState() = delete;
-  explicit ExecState(
+  ExecState(
       udf::Registry* func_registry, std::shared_ptr<table_store::TableStore> table_store,
-      const ResultSinkStubGenerator& stub_generator, const sole::uuid& query_id,
+      const ResultSinkStubGenerator& stub_generator,
+      const MetricsStubGenerator& metrics_stub_generator,
+      const TraceStubGenerator& trace_stub_generator, const sole::uuid& query_id,
       ml::ModelPool* model_pool, GRPCRouter* grpc_router = nullptr,
       std::function<void(grpc::ClientContext*)> add_auth_func = [](grpc::ClientContext*) {})
       : func_registry_(func_registry),
         table_store_(std::move(table_store)),
         stub_generator_(stub_generator),
+        metrics_stub_generator_(metrics_stub_generator),
+        trace_stub_generator_(trace_stub_generator),
         query_id_(query_id),
         model_pool_(model_pool),
         grpc_router_(grpc_router),
@@ -113,6 +125,33 @@ class ExecState {
     result_sink_stub_map_[remote_address] = raw;
     // Push to the pool.
     result_sink_stubs_pool_.push_back(std::move(stub_));
+    return raw;
+  }
+
+  opentelemetry::proto::collector::metrics::v1::MetricsService::StubInterface* MetricsServiceStub(
+      const std::string& remote_address, bool insecure) {
+    if (metrics_service_stub_map_.contains(remote_address)) {
+      return metrics_service_stub_map_[remote_address];
+    }
+    std::unique_ptr<opentelemetry::proto::collector::metrics::v1::MetricsService::StubInterface>
+        stub_ = metrics_stub_generator_(remote_address, insecure);
+    opentelemetry::proto::collector::metrics::v1::MetricsService::StubInterface* raw = stub_.get();
+    metrics_service_stub_map_[remote_address] = raw;
+    // Push to the pool.
+    metrics_service_stubs_pool_.push_back(std::move(stub_));
+    return raw;
+  }
+  opentelemetry::proto::collector::trace::v1::TraceService::StubInterface* TraceServiceStub(
+      const std::string& remote_address, bool insecure) {
+    if (trace_service_stub_map_.contains(remote_address)) {
+      return trace_service_stub_map_[remote_address];
+    }
+    std::unique_ptr<opentelemetry::proto::collector::trace::v1::TraceService::StubInterface> stub_ =
+        trace_stub_generator_(remote_address, insecure);
+    opentelemetry::proto::collector::trace::v1::TraceService::StubInterface* raw = stub_.get();
+    trace_service_stub_map_[remote_address] = raw;
+    // Push to the pool.
+    trace_service_stubs_pool_.push_back(std::move(stub_));
     return raw;
   }
 
@@ -168,6 +207,8 @@ class ExecState {
   std::shared_ptr<table_store::TableStore> table_store_;
   std::shared_ptr<const md::AgentMetadataState> metadata_state_;
   const ResultSinkStubGenerator stub_generator_;
+  const MetricsStubGenerator metrics_stub_generator_;
+  const TraceStubGenerator trace_stub_generator_;
   std::map<int64_t, udf::ScalarUDFDefinition*> id_to_scalar_udf_map_;
   std::map<int64_t, udf::UDADefinition*> id_to_uda_map_;
   const sole::uuid query_id_;
@@ -183,6 +224,20 @@ class ExecState {
   // Mapping of remote address to stub that serves that address.
   absl::flat_hash_map<std::string, carnotpb::ResultSinkService::StubInterface*>
       result_sink_stub_map_;
+
+  std::vector<
+      std::unique_ptr<opentelemetry::proto::collector::metrics::v1::MetricsService::StubInterface>>
+      metrics_service_stubs_pool_;
+  absl::flat_hash_map<std::string,
+                      opentelemetry::proto::collector::metrics::v1::MetricsService::StubInterface*>
+      metrics_service_stub_map_;
+
+  std::vector<
+      std::unique_ptr<opentelemetry::proto::collector::trace::v1::TraceService::StubInterface>>
+      trace_service_stubs_pool_;
+  absl::flat_hash_map<std::string,
+                      opentelemetry::proto::collector::trace::v1::TraceService::StubInterface*>
+      trace_service_stub_map_;
 };
 
 }  // namespace exec

@@ -47,6 +47,8 @@ pl_cc_library(
         "//src/table_store/table:cc_library",
         "@com_github_apache_arrow//:arrow",
         "@com_github_grpc_grpc//:grpc++",
+        "@com_github_opentelemetry_proto//:metrics_service_grpc_cc",
+        "@com_github_opentelemetry_proto//:trace_service_grpc_cc",
         "@com_github_rlyeh_sole//:sole",
         "@com_google_absl//absl/container:node_hash_map",
     ],
@@ -278,6 +280,19 @@ pl_cc_binary(
         ":test_utils",
         "//src/carnot/planpb:plan_testutils",
         "//src/common/benchmark:cc_library",
+        "@com_github_grpc_grpc//:grpc++_test",
+    ],
+)
+
+pl_cc_test(
+    name = "otel_export_sink_node_test",
+    srcs = ["otel_export_sink_node_test.cc"] + glob(["*_mock.h"]),
+    deps = [
+        ":cc_library",
+        ":exec_node_test_helpers",
+        ":test_utils",
+        "//src/carnot/planpb:plan_testutils",
+        "@com_github_apache_arrow//:arrow",
         "@com_github_grpc_grpc//:grpc++_test",
     ],
 )

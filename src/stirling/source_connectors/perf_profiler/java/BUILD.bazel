@@ -14,7 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+load("//src/stirling/source_connectors/perf_profiler/testing:testing.bzl", "agent_libs", "agent_libs_arg", "px_jattach", "px_jattach_arg")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -24,6 +25,7 @@ pl_cc_library(
         ["*.cc"],
         exclude = [
             "**/*_test.cc",
+            "px_jattach*",
         ],
     ),
     hdrs = glob(["*.h"]),
@@ -38,6 +40,19 @@ pl_cc_library(
     ],
 )
 
+pl_cc_binary(
+    name = "px_jattach",
+    srcs = [
+        "px_jattach.cc",
+        "px_jattach.h",
+    ],
+    visibility = [
+        "//:__pkg__",
+        "//src/stirling:__subpackages__",
+    ],
+    deps = [":cc_library"],
+)
+
 pl_cc_test(
     name = "demangle_test",
     srcs = ["demangle_test.cc"],
@@ -50,11 +65,11 @@ pl_cc_test(
 pl_cc_test(
     name = "attach_test",
     srcs = ["attach_test.cc"],
-    data = [
-        "//src/stirling/source_connectors/perf_profiler/java/agent:glibc",
-        "//src/stirling/source_connectors/perf_profiler/java/agent:musl",
-        "//src/stirling/source_connectors/perf_profiler/testing/java:fib",
+    args = [
+        "-stirling_profiler_java_agent_libs %s" % agent_libs_arg,
+        "-stirling_profiler_px_jattach_path %s" % px_jattach_arg,
     ],
+    data = ["//src/stirling/source_connectors/perf_profiler/testing/java:fib"] + agent_libs + [px_jattach],
     tags = [
         "no_asan",
         "requires_root",
@@ -63,6 +78,7 @@ pl_cc_test(
         ":cc_library",
         "//src/common/exec:cc_library",
         "//src/common/fs:cc_library",
+        "//src/stirling/source_connectors/perf_profiler/testing:cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )

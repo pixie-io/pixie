@@ -60,7 +60,6 @@ type Connector struct {
 	vzDebug            vizierpb.VizierDebugServiceClient
 	vzToken            string
 	passthroughEnabled bool
-	target             string
 	cloudAddr          string
 }
 
@@ -74,18 +73,7 @@ func NewConnector(cloudAddr string, vzInfo *cloudpb.ClusterInfo, conn *Connectio
 		c.passthroughEnabled = vzInfo.Config.PassthroughEnabled
 	}
 
-	var err error
-	if !c.passthroughEnabled {
-		// We need to store the token to talk to Vizier directly.
-		c.vzToken = conn.Token
-		if conn.URL == nil {
-			return nil, errors.New("missing Vizier URL, likely still initializing")
-		}
-		c.target = conn.URL.Host
-	} else {
-		c.target = cloudAddr
-	}
-	err = c.connect(c.target)
+	err := c.connect(cloudAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +209,7 @@ func containsMutation(script *script.ExecutableScript) bool {
 }
 
 func (c *Connector) restartConnAndResumeExecute(ctx context.Context, queryID string) (vizierpb.VizierService_ExecuteScriptClient, error) {
-	err := c.connect(c.target)
+	err := c.connect(c.cloudAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -262,7 +250,6 @@ func (c *Connector) getNewVzConnInfo() error {
 		return err
 	}
 	c.vzToken = vzConn.Token
-	c.target = vzConn.URL.Host
 	return nil
 }
 

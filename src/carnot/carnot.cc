@@ -180,6 +180,7 @@ Status CarnotImpl::RegisterUDFsInPlanFragment(exec::ExecState* exec_state, plan:
       .OnGRPCSink(no_op)
       .OnUDTFSource(no_op)
       .OnEmptySource(no_op)
+      .OnOTelSink(no_op)
       .Walk(pf);
 }
 
@@ -310,8 +311,6 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
             PL_RETURN_IF_ERROR(exec_graph.Init(schema.get(), plan_state.get(), exec_state.get(), pf,
                                                /* collect_exec_node_stats */ analyze));
             PL_RETURN_IF_ERROR(exec_graph.Execute());
-            std::vector<std::string> frag_sinks = exec_graph.OutputTables();
-            output_table_strs.insert(output_table_strs.end(), frag_sinks.begin(), frag_sinks.end());
             auto exec_stats = exec_graph.GetStats();
             bytes_processed += exec_stats.bytes_processed;
             rows_processed += exec_stats.rows_processed;

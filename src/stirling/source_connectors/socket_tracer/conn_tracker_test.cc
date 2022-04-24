@@ -28,7 +28,7 @@
 #include <magic_enum.hpp>
 
 #include "protocols/http/types.h"
-#include "src/common/base/test_utils.h"
+#include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/socket_tracer/conn_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/test_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/event_generator.h"

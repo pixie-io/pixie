@@ -36,13 +36,14 @@ spec:
       initContainers:
       - name: nats-wait
         image: gcr.io/pixie-oss/pixie-dev-public/curl:1.0
-        # yamllint disable
+        # yamllint disable rule:indentation
         command: ['sh', '-c', 'set -xe;
           URL="${PROTOCOL}://${SERVICE_NAME}:${SERVICE_PORT}${HEALTH_PATH}";
           until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
             echo "waiting for ${URL}";
             sleep 2;
           done;']
+        # yamllint enable rule:indentation
         env:
         - name: SERVICE_NAME
           value: "pl-nats-mgmt"
@@ -54,7 +55,7 @@ spec:
           value: "http"
       - name: etcd-wait
         image: gcr.io/pixie-oss/pixie-dev-public/curl:1.0
-        # yamllint disable
+        # yamllint disable rule:indentation rule:line-length
         command: ['sh', '-c', 'set -xe;
           ETCD_PATH="${PL_MD_ETCD_SERVER}";
           if [ ! ${ETCD_PATH} ]; then ETCD_PATH="${DEFAULT_ETCD_PATH}"; fi;
@@ -63,6 +64,7 @@ spec:
             echo "waiting for ${URL}";
             sleep 2;
           done;']
+        # yamllint enable rule:indentation rule:line-length
         env:
         - name: HEALTH_PATH
           value: "/health"

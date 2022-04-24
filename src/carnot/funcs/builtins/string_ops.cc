@@ -41,6 +41,7 @@ void RegisterStringOpsOrDie(udf::Registry* registry) {
   registry->RegisterOrDie<HexToASCII>("hex_to_ascii");
   registry->RegisterOrDie<BytesToHex>("bytes_to_hex");
   registry->RegisterOrDie<StringToIntUDF>("atoi");
+  registry->RegisterOrDie<IntToStringUDF>("itoa");
   /*****************************************
    * Aggregate UDFs.
    *****************************************/

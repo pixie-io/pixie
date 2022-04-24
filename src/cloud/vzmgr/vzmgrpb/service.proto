@@ -41,6 +41,8 @@ service VZMgrService {
   rpc UpdateVizierConfig(cvmsgspb.UpdateVizierConfigRequest) returns (cvmsgspb.UpdateVizierConfigResponse);
   // This call is made when we want to update or install a Vizier.
   rpc UpdateOrInstallVizier(cvmsgspb.UpdateOrInstallVizierRequest) returns (cvmsgspb.UpdateOrInstallVizierResponse);
+  // Given a VizierID, get the org who owns that vizier. This should be for internal use only.
+  rpc GetOrgFromVizier(uuidpb.UUID) returns (GetOrgFromVizierResponse);
 }
 
 message CreateVizierClusterRequest {
@@ -196,4 +198,12 @@ message RegisterVizierDeploymentRequest {
 message RegisterVizierDeploymentResponse {
   // The ID for this Vizier.
   uuidpb.UUID vizier_id = 1 [(gogoproto.customname) = "VizierID"];
+  // The name for this Vizier.
+  string vizier_name = 2;
+}
+
+// GetOrgFromVizierResponse returns which org the given Vizier belongs to.
+message GetOrgFromVizierResponse {
+  // The org which owns the Vizier.
+  uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
 }

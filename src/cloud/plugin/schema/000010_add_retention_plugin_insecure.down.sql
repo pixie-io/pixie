@@ -1,0 +1,2 @@
+ALTER TABLE org_data_retention_plugins DROP COLUMN insecure_tls;
+ALTER TABLE data_retention_plugin_releases DROP COLUMN allow_insecure_tls;

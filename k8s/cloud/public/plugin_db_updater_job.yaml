@@ -1,0 +1,57 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: plugin-db-updater-job
+  labels:
+    jobgroup: plugin-db-updater
+spec:
+  ttlSecondsAfterFinished: 10
+  template:
+    metadata:
+      name: plugin-db-updater-job
+      labels:
+        jobgroup: plugin-db-updater
+    spec:
+      initContainers:
+      - name: postgres-wait
+        image: postgres:14-alpine
+        # yamllint disable rule:indentation
+        command: ['sh', '-c',
+          'until pg_isready -h ${PL_POSTGRES_HOSTNAME} -p ${PL_POSTGRES_PORT}; do
+            echo "waiting for postgres";
+            sleep 2;
+          done;']
+        # yamllint enable rule:indentation
+        envFrom:
+        - configMapRef:
+            name: pl-db-config
+      containers:
+      - name: updater
+        image: gcr.io/pixie-oss/pixie-dev/cloud/plugin/load_db:latest
+        command:
+        - /plugin_db_updater/load_db
+        envFrom:
+        - configMapRef:
+            name: pl-db-config
+        env:
+        - name: PL_POSTGRES_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: pl-db-secrets
+              key: PL_POSTGRES_USERNAME
+        - name: PL_POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pl-db-secrets
+              key: PL_POSTGRES_PASSWORD
+        - name: PL_PLUGIN_REPO
+          value: "pixie-io/pixie-plugin"
+      restartPolicy: Never
+      volumes:
+      - name: pl-db-secrets
+        secret:
+          secretName: pl-db-secrets
+  backoffLimit: 1
+  parallelism: 1
+  completions: 1

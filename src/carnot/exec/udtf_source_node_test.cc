@@ -31,7 +31,7 @@
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udfspb/udfs.pb.h"
 #include "src/common/base/base.h"
-#include "src/common/base/test_utils.h"
+#include "src/common/testing/testing.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/types.h"
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
@@ -114,7 +114,8 @@ class UDTFSourceNodeTest : public ::testing::Test {
     auto table_store = std::make_shared<table_store::TableStore>();
 
     exec_state_ = std::make_unique<ExecState>(func_registry_.get(), table_store,
-                                              MockResultSinkStubGenerator, sole::uuid4(), nullptr);
+                                              MockResultSinkStubGenerator, MockMetricsStubGenerator,
+                                              MockTraceStubGenerator, sole::uuid4(), nullptr);
   }
 
  protected:

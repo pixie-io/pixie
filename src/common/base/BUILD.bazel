@@ -41,15 +41,6 @@ pl_cc_library_internal(
     ],
 )
 
-pl_cc_library_internal(
-    name = "cc_test_library",
-    hdrs = ["test_utils.h"],
-    deps = [
-        "//src/common/base/statuspb:status_pl_cc_proto",
-        "@com_google_googletest//:gtest_prod",
-    ],
-)
-
 pl_cc_test(
     name = "env_test",
     srcs = ["env_test.cc"],

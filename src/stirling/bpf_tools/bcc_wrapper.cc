@@ -336,7 +336,7 @@ void BCCWrapper::DetachTracepoints() {
 }
 
 Status BCCWrapper::OpenPerfBuffer(const PerfBufferSpec& perf_buffer, void* cb_cookie) {
-  const int kPageSizeBytes = system::Config::GetInstance().PageSize();
+  const int kPageSizeBytes = system::Config::GetInstance().PageSizeBytes();
   int num_pages = IntRoundUpDivide(perf_buffer.size_bytes, kPageSizeBytes);
 
   // Perf buffers must be sized to a power of 2.

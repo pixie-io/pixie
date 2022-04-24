@@ -20,6 +20,7 @@
 #include <utility>
 
 #include "src/stirling/source_connectors/socket_tracer/data_stream.h"
+#include "src/stirling/source_connectors/socket_tracer/metrics.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/types.h"
 
 DEFINE_uint32(datastream_buffer_spike_size,
@@ -106,6 +107,8 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
   parse_result.state = ParseState::kNeedsMoreData;
   parse_result.end_position = 0;
 
+  size_t frame_bytes = 0;
+
   while (keep_processing && !data_buffer_.empty()) {
     size_t contiguous_bytes = data_buffer_.Head().size();
 
@@ -134,6 +137,8 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
     stat_valid_frames_ += parse_result.frame_positions.size();
     stat_invalid_frames_ += parse_result.invalid_frames;
     stat_raw_data_gaps_ += keep_processing;
+
+    frame_bytes += parse_result.frame_bytes;
   }
 
   // Check to see if we are blocked on parsing.
@@ -157,6 +162,15 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
     data_buffer_.RemovePrefix(data_buffer_.size());
     UpdateLastProgressTime();
   }
+
+  // Keep track of "lost" data in prometheus. "lost" data includes any gaps in the data stream as
+  // well as data that wasn't able to be successfully parsed.
+  ssize_t num_bytes_advanced = data_buffer_.position() - last_processed_pos_;
+  if (num_bytes_advanced > 0 && static_cast<size_t>(num_bytes_advanced) > frame_bytes) {
+    size_t bytes_lost = num_bytes_advanced - frame_bytes;
+    SocketTracerMetrics::GetProtocolMetrics(protocol_).data_loss_bytes.Increment(bytes_lost);
+  }
+  last_processed_pos_ = data_buffer_.position();
 
   last_parse_state_ = parse_result.state;
 

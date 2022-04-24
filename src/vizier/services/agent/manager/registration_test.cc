@@ -24,7 +24,6 @@
 #include "src/common/event/api_impl.h"
 #include "src/common/event/libuv.h"
 #include "src/common/event/nats.h"
-#include "src/common/system/config_mock.h"
 #include "src/common/testing/event/simulated_time_system.h"
 #include "src/shared/metadatapb/metadata.pb.h"
 #include "src/vizier/messages/messagespb/messages.pb.h"

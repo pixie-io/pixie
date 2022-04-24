@@ -35,13 +35,23 @@ TEST(DetectApplicationTest, ResultsAreAsExpected) {
 }
 
 TEST(GetSemVerTest, AsExpected) {
-  ASSERT_OK_AND_ASSIGN(SemVer sem_ver, GetSemVer("v1.2.3-test"));
+  ASSERT_OK_AND_ASSIGN(SemVer sem_ver, GetSemVer("v1.12.13-test", true));
   EXPECT_EQ(sem_ver.major, 1);
-  EXPECT_EQ(sem_ver.minor, 2);
-  EXPECT_EQ(sem_ver.patch, 3);
-  EXPECT_THAT(GetSemVer("v1.2.test").status(),
+  EXPECT_EQ(sem_ver.minor, 12);
+  EXPECT_EQ(sem_ver.patch, 13);
+
+  ASSERT_OK_AND_ASSIGN(sem_ver, GetSemVer("v1.12.13-test", false));
+  EXPECT_EQ(sem_ver.major, 1);
+  EXPECT_EQ(sem_ver.minor, 12);
+  EXPECT_EQ(sem_ver.patch, 13);
+
+  EXPECT_THAT(GetSemVer("v1.12.test", true).status(),
               StatusIs(px::statuspb::INVALID_ARGUMENT,
-                       "Input 'v1.2.test' does not contain a semantic version number"));
+                       "Input 'v1.12.test' does not contain a semantic version number"));
+  ASSERT_OK_AND_ASSIGN(sem_ver, GetSemVer("v1.12.test", false));
+  EXPECT_EQ(sem_ver.major, 1);
+  EXPECT_EQ(sem_ver.minor, 12);
+  EXPECT_EQ(sem_ver.patch, 0);
 }
 
 TEST(SemVerCompareTest, AsExpected) {

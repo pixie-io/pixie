@@ -24,81 +24,69 @@
 #include "src/carnot/funcs/builtins/math_ops.h"
 #include "src/carnot/udf/test_utils.h"
 #include "src/common/base/base.h"
-#include "src/common/base/test_utils.h"
+#include "src/common/testing/testing.h"
 
 namespace px {
 namespace carnot {
 namespace builtins {
 
 TEST(MathOps, basic_int64_add_test) {
-  auto udf_tester =
-      udf::UDFTester<AddUDF<types::Int64Value, types::Int64Value, types::Int64Value>>();
+  auto udf_tester = udf::UDFTester<AddUDF<types::Int64Value>>();
   udf_tester.ForInput(1, 2).Expect(3);
 }
 
 TEST(MathOps, basic_float64_add_test) {
-  auto udf_tester =
-      udf::UDFTester<AddUDF<types::Float64Value, types::Float64Value, types::Float64Value>>();
+  auto udf_tester = udf::UDFTester<AddUDF<types::Float64Value>>();
   udf_tester.ForInput(1.5, 2.6).Expect(4.1);
 }
 
 TEST(MathOps, basic_mixed_add_test) {
-  auto udf_tester =
-      udf::UDFTester<AddUDF<types::Float64Value, types::Int64Value, types::Float64Value>>();
+  auto udf_tester = udf::UDFTester<AddUDF<types::Float64Value>>();
   udf_tester.ForInput(1, 2.6).Expect(3.6);
 }
 
 TEST(MathOps, basic_string_add_test) {
-  auto udf_tester =
-      udf::UDFTester<AddUDF<types::StringValue, types::StringValue, types::StringValue>>();
+  auto udf_tester = udf::UDFTester<AddUDF<types::StringValue>>();
   udf_tester.ForInput("a", "b").Expect("ab");
 }
 
 TEST(MathOps, basic_int64_subtract_test) {
-  auto udf_tester =
-      udf::UDFTester<SubtractUDF<types::Int64Value, types::Int64Value, types::Int64Value>>();
+  auto udf_tester = udf::UDFTester<SubtractUDF<types::Int64Value>>();
   udf_tester.ForInput(1, 2).Expect(-1);
 }
 
 TEST(MathOps, basic_float64_subtract_test) {
-  auto udf_tester =
-      udf::UDFTester<SubtractUDF<types::Float64Value, types::Float64Value, types::Float64Value>>();
+  auto udf_tester = udf::UDFTester<SubtractUDF<types::Float64Value>>();
   udf_tester.ForInput(1.5, 2.6).Expect(-1.1);
 }
 
 TEST(MathOps, basic_mixed_subtract_test) {
-  auto udf_tester =
-      udf::UDFTester<SubtractUDF<types::Float64Value, types::Float64Value, types::Int64Value>>();
+  auto udf_tester = udf::UDFTester<SubtractUDF<types::Float64Value>>();
   udf_tester.ForInput(1.5, 2).Expect(-0.5);
 }
 
 TEST(MathOps, basic_int64_divide_test) {
-  auto udf_tester =
-      udf::UDFTester<DivideUDF<types::Float64Value, types::Int64Value, types::Int64Value>>();
+  auto udf_tester = udf::UDFTester<DivideUDF<types::Int64Value, types::Int64Value>>();
   udf_tester.ForInput(1, 2).Expect(0.5);
 }
 
 TEST(MathOps, basic_float64_divide_test) {
-  auto udf_tester =
-      udf::UDFTester<DivideUDF<types::Float64Value, types::Float64Value, types::Float64Value>>();
+  auto udf_tester = udf::UDFTester<DivideUDF<types::Float64Value, types::Float64Value>>();
   udf_tester.ForInput(1.5, 5).Expect(0.3);
 }
 
 TEST(MathOps, basic_mixed_divide_test) {
-  auto udf_tester =
-      udf::UDFTester<DivideUDF<types::Float64Value, types::Float64Value, types::Int64Value>>();
+  auto udf_tester = udf::UDFTester<DivideUDF<types::Float64Value, types::Int64Value>>();
   udf_tester.ForInput(1.5, 5).Expect(0.3);
 }
 
 TEST(MathOps, basic_int64_multiply_test) {
-  auto udf_tester =
-      udf::UDFTester<MultiplyUDF<types::Int64Value, types::Int64Value, types::Int64Value>>();
+  auto udf_tester = udf::UDFTester<MultiplyUDF<types::Int64Value>>();
   udf_tester.ForInput(1, 2).Expect(2);
 }
 
 TEST(MathOps, basic_float64_multiply_test) {
-  auto udf_tester =
-      udf::UDFTester<MultiplyUDF<types::Float64Value, types::Float64Value, types::Float64Value>>();
+  auto udf_tester = udf::UDFTester<MultiplyUDF<types::Float64Value>>();
   udf_tester.ForInput(1.5, 5).Expect(7.5);
 }
 
@@ -162,26 +150,26 @@ TEST(MathOps, basic_modulo_test_time64_int64) {
 }
 
 TEST(MathOps, basic_bool_or_test) {
-  auto udf_tester = udf::UDFTester<LogicalOrUDF<types::BoolValue, types::BoolValue>>();
+  auto udf_tester = udf::UDFTester<LogicalOrUDF<types::BoolValue>>();
   udf_tester.ForInput(true, false).Expect(true);
   udf_tester.ForInput(false, false).Expect(false);
 }
 
 TEST(MathOps, basic_int64_or_test) {
-  auto udf_tester = udf::UDFTester<LogicalOrUDF<types::Int64Value, types::Int64Value>>();
+  auto udf_tester = udf::UDFTester<LogicalOrUDF<types::Int64Value>>();
   udf_tester.ForInput(4, 0).Expect(true);
   udf_tester.ForInput(0, 0).Expect(false);
 }
 
 TEST(MathOps, basic_bool_and_test) {
-  auto udf_tester = udf::UDFTester<LogicalAndUDF<types::BoolValue, types::BoolValue>>();
+  auto udf_tester = udf::UDFTester<LogicalAndUDF<types::BoolValue>>();
   udf_tester.ForInput(true, false).Expect(false);
   udf_tester.ForInput(false, false).Expect(false);
   udf_tester.ForInput(true, true).Expect(true);
 }
 
 TEST(MathOps, basic_int64_and_test) {
-  auto udf_tester = udf::UDFTester<LogicalAndUDF<types::Int64Value, types::Int64Value>>();
+  auto udf_tester = udf::UDFTester<LogicalAndUDF<types::Int64Value>>();
   udf_tester.ForInput(4, 0).Expect(false);
   udf_tester.ForInput(0, 0).Expect(false);
   udf_tester.ForInput(5, 3).Expect(true);
@@ -225,19 +213,19 @@ TEST(MathOps, basic_int64_equal_test) {
 }
 
 TEST(MathOps, basic_string_equal_test) {
-  auto udf_tester = udf::UDFTester<EqualUDF<types::StringValue, types::StringValue>>();
+  auto udf_tester = udf::UDFTester<EqualUDF<types::StringValue>>();
   udf_tester.ForInput("abc", "abc").Expect(true);
   udf_tester.ForInput("abc", "abb").Expect(false);
 }
 
 TEST(MathOps, basic_int64_not_equal_test) {
-  auto udf_tester = udf::UDFTester<NotEqualUDF<types::Int64Value, types::Int64Value>>();
+  auto udf_tester = udf::UDFTester<NotEqualUDF<types::Int64Value>>();
   udf_tester.ForInput(-4, -4).Expect(false);
   udf_tester.ForInput(5, 2).Expect(true);
 }
 
 TEST(MathOps, basic_bool_equal_test) {
-  auto udf_tester = udf::UDFTester<EqualUDF<types::BoolValue, types::BoolValue>>();
+  auto udf_tester = udf::UDFTester<EqualUDF<types::BoolValue>>();
   udf_tester.ForInput(false, true).Expect(false);
   udf_tester.ForInput(true, false).Expect(false);
   udf_tester.ForInput(true, true).Expect(true);
@@ -245,7 +233,7 @@ TEST(MathOps, basic_bool_equal_test) {
 }
 
 TEST(MathOps, basic_bool_not_equal_test) {
-  auto udf_tester = udf::UDFTester<NotEqualUDF<types::BoolValue, types::BoolValue>>();
+  auto udf_tester = udf::UDFTester<NotEqualUDF<types::BoolValue>>();
   udf_tester.ForInput(false, true).Expect(true);
   udf_tester.ForInput(true, false).Expect(true);
   udf_tester.ForInput(true, true).Expect(false);
@@ -292,39 +280,39 @@ TEST(MathOps, basic_float_int_equal_test) {
 }
 
 TEST(MathOps, basic_uint128_equal_test) {
-  auto udf_tester = udf::UDFTester<EqualUDF<types::UInt128Value, types::UInt128Value>>();
+  auto udf_tester = udf::UDFTester<EqualUDF<types::UInt128Value>>();
   udf_tester.ForInput(types::UInt128Value(1, 2), absl::MakeUint128(1, 2)).Expect(true);
   udf_tester.ForInput(types::UInt128Value(1, 2), absl::uint128(12)).Expect(false);
   udf_tester.ForInput(types::UInt128Value(551, 2), absl::MakeUint128(551, 2)).Expect(true);
 }
 
 TEST(MathOps, basic_string_not_equal_test) {
-  auto udf_tester = udf::UDFTester<NotEqualUDF<types::StringValue, types::StringValue>>();
+  auto udf_tester = udf::UDFTester<NotEqualUDF<types::StringValue>>();
   udf_tester.ForInput("abc", "abc").Expect(false);
   udf_tester.ForInput("abc", "abb").Expect(true);
 }
 
 TEST(MathOps, basic_float64_approx_equal_test) {
-  auto udf_tester = udf::UDFTester<ApproxEqualUDF<types::Float64Value, types::Float64Value>>();
+  auto udf_tester = udf::UDFTester<ApproxEqualUDF>();
   udf_tester.ForInput(-4.1234, -4.1234).Expect(true);
   udf_tester.ForInput(-4.003, -4.008).Expect(false);
 }
 
 TEST(MathOps, basic_float64_approx_not_equal_test) {
-  auto udf_tester = udf::UDFTester<ApproxNotEqualUDF<types::Float64Value, types::Float64Value>>();
+  auto udf_tester = udf::UDFTester<ApproxNotEqualUDF>();
   udf_tester.ForInput(-4.1234, -4.1234).Expect(false);
   udf_tester.ForInput(-4.003, -4.008).Expect(true);
 }
 
 TEST(MathOps, basic_int64_greater_than_test) {
-  auto udf_tester = udf::UDFTester<GreaterThanUDF<types::Int64Value, types::Int64Value>>();
+  auto udf_tester = udf::UDFTester<GreaterThanUDF<types::Int64Value>>();
   udf_tester.ForInput(-4, -4).Expect(false);
   udf_tester.ForInput(5, 2).Expect(true);
   udf_tester.ForInput(2, 5).Expect(false);
 }
 
 TEST(MathOps, basic_float64_greater_than_test) {
-  auto udf_tester = udf::UDFTester<GreaterThanUDF<types::Float64Value, types::Float64Value>>();
+  auto udf_tester = udf::UDFTester<GreaterThanUDF<types::Float64Value>>();
   udf_tester.ForInput(-4.64, -4.64).Expect(false);
   udf_tester.ForInput(5.1, 2.5).Expect(true);
   udf_tester.ForInput(2.5, 5.1).Expect(false);
@@ -339,20 +327,20 @@ TEST(MathOps, basic_mixed_greater_than_test) {
 }
 
 TEST(MathOps, basic_string_greater_than_test) {
-  auto udf_tester = udf::UDFTester<GreaterThanUDF<types::StringValue, types::StringValue>>();
+  auto udf_tester = udf::UDFTester<GreaterThanUDF<types::StringValue>>();
   udf_tester.ForInput("abc", "bcd").Expect(false);
   udf_tester.ForInput("bcd", "abc").Expect(true);
   udf_tester.ForInput("abc", "abc").Expect(false);
 }
 
 TEST(MathOps, basic_int64_greater_than_equal_test) {
-  auto udf_tester = udf::UDFTester<GreaterThanEqualUDF<types::Int64Value, types::Int64Value>>();
+  auto udf_tester = udf::UDFTester<GreaterThanEqualUDF<types::Int64Value>>();
   udf_tester.ForInput(-4, -4).Expect(true);
   udf_tester.ForInput(5, 2).Expect(true);
   udf_tester.ForInput(2, 5).Expect(false);
 }
 TEST(MathOps, basic_float64_greater_than_equal_test) {
-  auto udf_tester = udf::UDFTester<GreaterThanEqualUDF<types::Float64Value, types::Float64Value>>();
+  auto udf_tester = udf::UDFTester<GreaterThanEqualUDF<types::Float64Value>>();
   udf_tester.ForInput(-4.64, -4.64).Expect(true);
   udf_tester.ForInput(5.1, 2.5).Expect(true);
   udf_tester.ForInput(2.5, 5.1).Expect(false);
@@ -367,21 +355,21 @@ TEST(MathOps, basic_mixed_greater_than_equal_test) {
 }
 
 TEST(MathOps, basic_string_greater_than_equal_test) {
-  auto udf_tester = udf::UDFTester<GreaterThanEqualUDF<types::StringValue, types::StringValue>>();
+  auto udf_tester = udf::UDFTester<GreaterThanEqualUDF<types::StringValue>>();
   udf_tester.ForInput("abc", "bcd").Expect(false);
   udf_tester.ForInput("bcd", "abc").Expect(true);
   udf_tester.ForInput("abc", "abc").Expect(true);
 }
 
 TEST(MathOps, basic_int64_less_than_test) {
-  auto udf_tester = udf::UDFTester<LessThanUDF<types::Int64Value, types::Int64Value>>();
+  auto udf_tester = udf::UDFTester<LessThanUDF<types::Int64Value>>();
   udf_tester.ForInput(-4, -4).Expect(false);
   udf_tester.ForInput(5, 2).Expect(false);
   udf_tester.ForInput(2, 5).Expect(true);
 }
 
 TEST(MathOps, basic_float64_less_than_test) {
-  auto udf_tester = udf::UDFTester<LessThanUDF<types::Float64Value, types::Float64Value>>();
+  auto udf_tester = udf::UDFTester<LessThanUDF<types::Float64Value>>();
   udf_tester.ForInput(-4.64, -4.64).Expect(false);
   udf_tester.ForInput(5.1, 2.5).Expect(false);
   udf_tester.ForInput(2.5, 5.1).Expect(true);
@@ -396,21 +384,21 @@ TEST(MathOps, basic_mixed_less_than_test) {
 }
 
 TEST(MathOps, basic_string_less_than_test) {
-  auto udf_tester = udf::UDFTester<LessThanUDF<types::StringValue, types::StringValue>>();
+  auto udf_tester = udf::UDFTester<LessThanUDF<types::StringValue>>();
   udf_tester.ForInput("abc", "bcd").Expect(true);
   udf_tester.ForInput("bcd", "abc").Expect(false);
   udf_tester.ForInput("abc", "abc").Expect(false);
 }
 
 TEST(MathOps, basic_int64_less_than_equal_test) {
-  auto udf_tester = udf::UDFTester<LessThanEqualUDF<types::Int64Value, types::Int64Value>>();
+  auto udf_tester = udf::UDFTester<LessThanEqualUDF<types::Int64Value>>();
   udf_tester.ForInput(-4, -4).Expect(true);
   udf_tester.ForInput(5, 2).Expect(false);
   udf_tester.ForInput(2, 5).Expect(true);
 }
 
 TEST(MathOps, basic_float64_less_than_equal_test) {
-  auto udf_tester = udf::UDFTester<LessThanEqualUDF<types::Float64Value, types::Float64Value>>();
+  auto udf_tester = udf::UDFTester<LessThanEqualUDF<types::Float64Value>>();
   udf_tester.ForInput(-4.64, -4.64).Expect(true);
   udf_tester.ForInput(5.1, 2.5).Expect(false);
   udf_tester.ForInput(2.5, 5.1).Expect(true);
@@ -425,15 +413,14 @@ TEST(MathOps, basic_mixed_less_than_equal_test) {
 }
 
 TEST(MathOps, basic_string_less_than_equal_test) {
-  auto udf_tester = udf::UDFTester<LessThanEqualUDF<types::StringValue, types::StringValue>>();
+  auto udf_tester = udf::UDFTester<LessThanEqualUDF<types::StringValue>>();
   udf_tester.ForInput("abc", "bcd").Expect(true);
   udf_tester.ForInput("bcd", "abc").Expect(false);
   udf_tester.ForInput("abc", "abc").Expect(true);
 }
 
 TEST(MathOps, int_int_bin_test) {
-  auto udf_tester =
-      udf::UDFTester<BinUDF<types::Int64Value, types::Int64Value, types::Int64Value>>();
+  auto udf_tester = udf::UDFTester<BinUDF<types::Int64Value>>();
   udf_tester.ForInput(11, 2).Expect(10);
 }
 
@@ -468,6 +455,16 @@ TEST(MathOps, round_test) {
   udf_tester.ForInput(0.0, 5).Expect("0.00000");
   udf_tester.ForInput(20.29438, 0).Expect("20");
   udf_tester.ForInput(1234, 3).Expect("1234.000");
+}
+
+TEST(MathOps, time_to_int64_test) {
+  auto udf_tester = udf::UDFTester<TimeToInt64UDF>();
+  udf_tester.ForInput(0).Expect(0);
+}
+
+TEST(MathOps, int64_to_time_test) {
+  auto udf_tester = udf::UDFTester<Int64ToTimeUDF>();
+  udf_tester.ForInput(0).Expect(0);
 }
 
 TEST(MathOps, basic_float64_mean_uda_test) {

@@ -1,0 +1,2 @@
+ALTER TABLE org_data_retention_plugins ADD insecure_tls boolean;
+ALTER TABLE data_retention_plugin_releases ADD allow_insecure_tls boolean;

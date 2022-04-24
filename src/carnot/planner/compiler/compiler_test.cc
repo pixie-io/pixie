@@ -123,8 +123,11 @@ class CompilerTest : public ::testing::Test {
     http_events_relation.AddColumn(types::INT64, "resp_latency_ns");
     rel_map->emplace("http_events", http_events_relation);
 
-    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now,
-                                                      "result_addr", "result_ssltarget");
+    compiler_state_ = std::make_unique<CompilerState>(
+        std::move(rel_map), /* sensitive_columns */ SensitiveColumnMap{}, info_.get(),
+        /* time_now */ time_now,
+        /* max_output_rows_per_table */ 0, "result_addr", "result_ssltarget",
+        /* redaction_options */ RedactionOptions{}, nullptr, nullptr);
 
     compiler_ = Compiler();
   }
@@ -736,14 +739,15 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 1
-      sorted_children: 0
+      id: 7
+      sorted_children: 6
     }
     nodes {
+      id: 7
     }
   }
   nodes {
-    id: 1
+    id: 7
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -767,6 +771,7 @@ nodes {
     }
   }
   nodes {
+    id: 6
     op {
       op_type: GRPC_SINK_OPERATOR
       grpc_sink_op {
@@ -821,21 +826,21 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 6
-      sorted_children: 11
+      id: 12
+      sorted_children: 17
     }
     nodes {
-      id: 11
-      sorted_children: 13
-      sorted_parents: 6
+      id: 17
+      sorted_children: 19
+      sorted_parents: 12
     }
     nodes {
-      id: 13
-      sorted_parents: 11
+      id: 19
+      sorted_parents: 17
     }
   }
   nodes {
-    id: 6
+    id: 12
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -859,7 +864,7 @@ nodes {
     }
   }
   nodes {
-    id: 11
+    id: 17
     op {
       op_type: FILTER_OPERATOR
       filter_op {
@@ -871,7 +876,6 @@ nodes {
                 name: "upid_to_service_name"
                 args {
                   column {
-                    node: 6
                     index: 4
                   }
                 }
@@ -890,29 +894,24 @@ nodes {
           }
         }
         columns {
-          node: 6
         }
         columns {
-          node: 6
           index: 1
         }
         columns {
-          node: 6
           index: 2
         }
         columns {
-          node: 6
           index: 3
         }
         columns {
-          node: 6
           index: 4
         }
       }
     }
   }
   nodes {
-    id: 13
+    id: 19
     op {
       op_type: GRPC_SINK_OPERATOR
       grpc_sink_op {
@@ -949,26 +948,26 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 6
-      sorted_children: 11
+      id: 12
+      sorted_children: 17
     }
     nodes {
-      id: 11
-      sorted_children: 14
-      sorted_parents: 6
+      id: 17
+      sorted_children: 20
+      sorted_parents: 12
     }
     nodes {
-      id: 14
-      sorted_children: 16
-      sorted_parents: 11
+      id: 20
+      sorted_children: 22
+      sorted_parents: 17
     }
     nodes {
-      id: 16
-      sorted_parents: 14
+      id: 22
+      sorted_parents: 20
     }
   }
   nodes {
-    id: 6
+    id: 12
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -980,7 +979,7 @@ nodes {
     }
   }
   nodes {
-    id: 11
+    id: 17
     op {
       op_type: MAP_OPERATOR
       map_op {
@@ -989,7 +988,6 @@ nodes {
             name: "upid_to_service_name"
             args {
               column {
-                node: 6
               }
             }
             args_data_types: UINT128
@@ -1000,13 +998,12 @@ nodes {
     }
   }
   nodes {
-    id: 14
+    id: 20
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 11
           }
         }
         column_names: "service"
@@ -1014,7 +1011,7 @@ nodes {
     }
   }
   nodes {
-    id: 16
+    id: 22
     op {
       op_type: GRPC_SINK_OPERATOR
       grpc_sink_op {
@@ -1043,26 +1040,26 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 6
-      sorted_children: 11
+      id: 12
+      sorted_children: 17
     }
     nodes {
-      id: 11
-      sorted_children: 18
-      sorted_parents: 6
+      id: 17
+      sorted_children: 24
+      sorted_parents: 12
     }
     nodes {
-      id: 18
-      sorted_children: 20
-      sorted_parents: 11
+      id: 24
+      sorted_children: 26
+      sorted_parents: 17
     }
     nodes {
-      id: 20
-      sorted_parents: 18
+      id: 26
+      sorted_parents: 24
     }
   }
   nodes {
-    id: 6
+    id: 12
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -1077,13 +1074,12 @@ nodes {
     }
   }
   nodes {
-    id: 11
+    id: 17
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 6
           }
         }
         expressions {
@@ -1091,7 +1087,6 @@ nodes {
             name: "upid_to_service_name"
             args {
               column {
-                node: 6
                 index: 1
               }
             }
@@ -1104,7 +1099,7 @@ nodes {
     }
   }
   nodes {
-    id: 18
+    id: 24
     op {
       op_type: AGGREGATE_OPERATOR
       agg_op {
@@ -1112,13 +1107,11 @@ nodes {
           name: "mean"
           args {
             column {
-              node: 11
             }
           }
           args_data_types: FLOAT64
         }
         groups {
-          node: 11
           index: 1
         }
         group_names: "service"
@@ -1127,7 +1120,7 @@ nodes {
     }
   }
   nodes {
-    id: 20
+    id: 26
     op {
       op_type: GRPC_SINK_OPERATOR
       grpc_sink_op {
@@ -1158,26 +1151,26 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 6
-      sorted_children: 11
+      id: 12
+      sorted_children: 17
     }
     nodes {
-      id: 11
-      sorted_children: 20
-      sorted_parents: 6
+      id: 17
+      sorted_children: 26
+      sorted_parents: 12
     }
     nodes {
-      id: 20
-      sorted_children: 22
-      sorted_parents: 11
+      id: 26
+      sorted_children: 28
+      sorted_parents: 17
     }
     nodes {
-      id: 22
-      sorted_parents: 20
+      id: 28
+      sorted_parents: 26
     }
   }
   nodes {
-    id: 6
+    id: 12
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -1192,13 +1185,13 @@ nodes {
     }
   }
   nodes {
-    id: 11
+    id: 17
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 6
+            node: 12
           }
         }
         expressions {
@@ -1206,7 +1199,7 @@ nodes {
             name: "upid_to_service_name"
             args {
               column {
-                node: 6
+                node: 12
                 index: 1
               }
             }
@@ -1219,7 +1212,7 @@ nodes {
     }
   }
   nodes {
-    id: 20
+    id: 26
     op {
       op_type: AGGREGATE_OPERATOR
       agg_op {
@@ -1227,16 +1220,16 @@ nodes {
           name: "mean"
           args {
             column {
-              node: 11
+              node: 17
             }
           }
           args_data_types: FLOAT64
         }
         groups {
-          node: 11
+          node: 17
         }
         groups {
-          node: 11
+          node: 17
           index: 1
         }
         group_names: "cpu0"
@@ -1246,7 +1239,7 @@ nodes {
     }
   }
   nodes {
-    id: 22
+    id: 28
     op {
       op_type: GRPC_SINK_OPERATOR
       grpc_sink_op {
@@ -1279,31 +1272,31 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 6
-      sorted_children: 11
+      id: 12
+      sorted_children: 17
     }
     nodes {
-      id: 11
-      sorted_children: 20
-      sorted_parents: 6
+      id: 17
+      sorted_children: 26
+      sorted_parents: 12
     }
     nodes {
-      id: 20
-      sorted_children: 25
-      sorted_parents: 11
+      id: 26
+      sorted_children: 31
+      sorted_parents: 17
     }
     nodes {
-      id: 25
-      sorted_children: 27
-      sorted_parents: 20
+      id: 31
+      sorted_children: 33
+      sorted_parents: 26
     }
     nodes {
-      id: 27
-      sorted_parents: 25
+      id: 33
+      sorted_parents: 31
     }
   }
   nodes {
-    id: 6
+    id: 12
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -1318,18 +1311,18 @@ nodes {
     }
   }
   nodes {
-    id: 11
+    id: 17
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 6
+            node: 12
           }
         }
         expressions {
           column {
-            node: 6
+            node: 12
             index: 1
           }
         }
@@ -1338,7 +1331,7 @@ nodes {
             name: "upid_to_service_name"
             args {
               column {
-                node: 6
+                node: 12
                 index: 1
               }
             }
@@ -1353,7 +1346,7 @@ nodes {
     }
   }
   nodes {
-    id: 20
+    id: 26
     op {
       op_type: AGGREGATE_OPERATOR
       agg_op {
@@ -1361,17 +1354,17 @@ nodes {
           name: "mean"
           args {
             column {
-              node: 11
+              node: 17
             }
           }
           args_data_types: FLOAT64
         }
         groups {
-          node: 11
+          node: 17
           index: 1
         }
         groups {
-          node: 11
+          node: 17
           index: 2
         }
         group_names: "upid"
@@ -1383,7 +1376,7 @@ nodes {
     }
   }
   nodes {
-    id: 25
+    id: 31
     op {
       op_type: FILTER_OPERATOR
       filter_op {
@@ -1395,7 +1388,7 @@ nodes {
                 name: "upid_to_service_name"
                 args {
                   column {
-                    node: 20
+                    node: 26
                   }
                 }
                 id: 1
@@ -1413,21 +1406,21 @@ nodes {
           }
         }
         columns {
-          node: 20
+          node: 26
         }
         columns {
-          node: 20
+          node: 26
           index: 1
         }
         columns {
-          node: 20
+          node: 26
           index: 2
         }
       }
     }
   }
   nodes {
-    id: 27
+    id: 33
     op {
       op_type: GRPC_SINK_OPERATOR
       grpc_sink_op {
@@ -1458,31 +1451,31 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 2
-      sorted_children: 28
+      id: 8
+      sorted_children: 34
     }
     nodes {
-      id: 28
-      sorted_children: 10
-      sorted_parents: 2
+      id: 34
+      sorted_children: 16
+      sorted_parents: 8
     }
     nodes {
-      id: 10
-      sorted_children: 15
-      sorted_parents: 28
+      id: 16
+      sorted_children: 21
+      sorted_parents: 34
     }
     nodes {
-      id: 15
-      sorted_children: 17
-      sorted_parents: 10
+      id: 21
+      sorted_children: 23
+      sorted_parents: 16
     }
     nodes {
-      id: 17
-      sorted_parents: 15
+      id: 23
+      sorted_parents: 21
     }
   }
   nodes {
-    id: 2
+    id: 8
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -1506,7 +1499,7 @@ nodes {
     }
   }
   nodes {
-    id: 28
+    id: 34
     op {
       op_type: MAP_OPERATOR
       map_op {
@@ -1556,7 +1549,7 @@ nodes {
     }
   }
   nodes {
-    id: 10
+    id: 16
     op {
       op_type: AGGREGATE_OPERATOR
       agg_op {
@@ -1582,7 +1575,7 @@ nodes {
     }
   }
   nodes {
-    id: 15
+    id: 21
     op {
       op_type: FILTER_OPERATOR
       filter_op {
@@ -1616,7 +1609,7 @@ nodes {
     }
   }
   nodes {
-    id: 17
+    id: 23
     op {
       op_type: GRPC_SINK_OPERATOR
       grpc_sink_op {
@@ -1644,36 +1637,36 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 2
-      sorted_children: 28
-    }
-    nodes {
-      id: 28
-      sorted_children: 10
-      sorted_parents: 2
-    }
-    nodes {
-      id: 10
+      id: 8
       sorted_children: 34
-      sorted_parents: 28
     }
     nodes {
       id: 34
-      sorted_children: 15
-      sorted_parents: 10
+      sorted_children: 16
+      sorted_parents: 8
     }
     nodes {
-      id: 15
-      sorted_children: 17
+      id: 16
+      sorted_children: 40
       sorted_parents: 34
     }
     nodes {
-      id: 17
-      sorted_parents: 15
+      id: 40
+      sorted_children: 21
+      sorted_parents: 16
+    }
+    nodes {
+      id: 21
+      sorted_children: 23
+      sorted_parents: 40
+    }
+    nodes {
+      id: 23
+      sorted_parents: 21
     }
   }
   nodes {
-    id: 2
+    id: 8
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -1697,7 +1690,7 @@ nodes {
     }
   }
   nodes {
-    id: 28
+    id: 34
     op {
       op_type: MAP_OPERATOR
       map_op {
@@ -1747,7 +1740,7 @@ nodes {
     }
   }
   nodes {
-    id: 10
+    id: 16
     op {
       op_type: AGGREGATE_OPERATOR
       agg_op {
@@ -1773,7 +1766,7 @@ nodes {
     }
   }
   nodes {
-    id: 34
+    id: 40
     op {
       op_type: MAP_OPERATOR
       map_op {
@@ -1811,7 +1804,7 @@ nodes {
     }
   }
   nodes {
-    id: 15
+    id: 21
     op {
       op_type: FILTER_OPERATOR
       filter_op {
@@ -1848,7 +1841,7 @@ nodes {
     }
   }
   nodes {
-    id: 17
+    id: 23
     op {
       op_type: GRPC_SINK_OPERATOR
       grpc_sink_op {
@@ -1945,25 +1938,25 @@ nodes {
   id: 1
   dag {
     nodes {
-      sorted_children: 24
+      sorted_children: 30
     }
     nodes {
-      sorted_children: 24
+      sorted_children: 30
     }
     nodes {
-      id: 24
-      sorted_children: 35
-      sorted_parents: 9
-      sorted_parents: 16
+      id: 30
+      sorted_children: 41
+      sorted_parents: 15
+      sorted_parents: 22
     }
     nodes {
-      id: 35
-      sorted_children: 37
-      sorted_parents: 24
+      id: 41
+      sorted_children: 43
+      sorted_parents: 30
     }
     nodes {
-      id: 37
-      sorted_parents: 35
+      id: 43
+      sorted_parents: 41
     }
   }
   nodes {
@@ -1981,7 +1974,7 @@ nodes {
     }
   }
   nodes {
-    id: 24
+    id: 30
     op {
       op_type: JOIN_OPERATOR
       join_op {
@@ -2013,36 +2006,36 @@ nodes {
     }
   }
   nodes {
-    id: 35
+    id: 41
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 24
+            node: 30
             index: 1
           }
         }
         expressions {
           column {
-            node: 24
+            node: 30
             index: 3
           }
         }
         expressions {
           column {
-            node: 24
+            node: 30
             index: 4
           }
         }
         expressions {
           column {
-            node: 24
+            node: 30
           }
         }
         expressions {
           column {
-            node: 24
+            node: 30
             index: 2
           }
         }
@@ -2055,7 +2048,7 @@ nodes {
     }
   }
   nodes {
-    id: 37
+    id: 43
     op {
       op_type: GRPC_SINK_OPERATOR
       grpc_sink_op {
@@ -2114,25 +2107,25 @@ nodes {
   id: 1
   dag {
     nodes {
-      sorted_children: 24
+      sorted_children: 30
     }
     nodes {
-      sorted_children: 24
+      sorted_children: 30
     }
     nodes {
-      id: 24
-      sorted_children: 35
-      sorted_parents: 16
-      sorted_parents: 9
+      id: 30
+      sorted_children: 41
+      sorted_parents: 22
+      sorted_parents: 15
     }
     nodes {
-      id: 35
-      sorted_children: 37
-      sorted_parents: 24
+      id: 41
+      sorted_children: 43
+      sorted_parents: 30
     }
     nodes {
-      id: 37
-      sorted_parents: 35
+      id: 43
+      sorted_parents: 41
     }
   }
   nodes {
@@ -2146,7 +2139,7 @@ nodes {
     }
   }
   nodes {
-    id: 24
+    id: 30
     op {
       op_type: JOIN_OPERATOR
       join_op {
@@ -2180,36 +2173,36 @@ nodes {
     }
   }
   nodes {
-    id: 35
+    id: 41
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 24
+            node: 30
             index: 1
           }
         }
         expressions {
           column {
-            node: 24
+            node: 30
             index: 3
           }
         }
         expressions {
           column {
-            node: 24
+            node: 30
             index: 4
           }
         }
         expressions {
           column {
-            node: 24
+            node: 30
           }
         }
         expressions {
           column {
-            node: 24
+            node: 30
             index: 2
           }
         }
@@ -2222,7 +2215,7 @@ nodes {
     }
   }
   nodes {
-    id: 37
+    id: 43
     op {
       op_type: GRPC_SINK_OPERATOR
       grpc_sink_op {
@@ -2272,28 +2265,28 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 9
-      sorted_children: 18
-      sorted_children: 17
+      id: 15
+      sorted_children: 24
+      sorted_children: 23
     }
     nodes {
-      id: 18
-      sorted_children: 17
-      sorted_parents: 9
+      id: 24
+      sorted_children: 23
+      sorted_parents: 15
     }
     nodes {
-      id: 17
-      sorted_children: 20
-      sorted_parents: 9
-      sorted_parents: 18
+      id: 23
+      sorted_children: 26
+      sorted_parents: 15
+      sorted_parents: 24
     }
     nodes {
-      id: 20
-      sorted_parents: 17
+      id: 26
+      sorted_parents: 23
     }
   }
   nodes {
-    id: 9
+    id: 15
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -2311,24 +2304,24 @@ nodes {
     }
   }
   nodes {
-    id: 18
+    id: 24
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 9
+            node: 15
           }
         }
         expressions {
           column {
-            node: 9
+            node: 15
             index: 1
           }
         }
         expressions {
           column {
-            node: 9
+            node: 15
             index: 2
           }
         }
@@ -2339,7 +2332,7 @@ nodes {
     }
   }
   nodes {
-    id: 17
+    id: 23
     op {
       op_type: JOIN_OPERATOR
       join_op {
@@ -2376,7 +2369,7 @@ nodes {
     }
   }
   nodes {
-    id: 20
+    id: 26
     op {
       op_type: GRPC_SINK_OPERATOR
       grpc_sink_op {
@@ -2998,21 +2991,21 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 7
-      sorted_children: 11
+      id: 13
+      sorted_children: 17
     }
     nodes {
-      id: 11
-      sorted_children: 21
-      sorted_parents: 7
+      id: 17
+      sorted_children: 27
+      sorted_parents: 13
     }
     nodes {
-      id: 21
-      sorted_parents: 11
+      id: 27
+      sorted_parents: 17
     }
   }
   nodes {
-    id: 7
+    id: 13
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -3024,13 +3017,13 @@ nodes {
     }
   }
   nodes {
-    id: 11
+    id: 17
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 7
+            node: 13
           }
         }
         expressions {
@@ -3038,7 +3031,7 @@ nodes {
             name: "upid_to_service_name"
             args {
               column {
-                node: 7
+                node: 13
               }
             }
             args_data_types: UINT128
@@ -3049,7 +3042,7 @@ nodes {
             name: "upid_to_pod_name"
             args {
               column {
-                node: 7
+                node: 13
               }
             }
             args_data_types: UINT128
@@ -3060,7 +3053,7 @@ nodes {
             name: "upid_to_node_name"
             args {
               column {
-                node: 7
+                node: 13
               }
             }
             args_data_types: UINT128
@@ -3074,7 +3067,7 @@ nodes {
     }
   }
   nodes {
-    id: 21
+    id: 27
     op {
       op_type: GRPC_SINK_OPERATOR
       grpc_sink_op {

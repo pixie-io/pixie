@@ -9,7 +9,7 @@ spec:
       initContainers:
       - name: hydra-wait
         image: gcr.io/pixie-oss/pixie-dev-public/curl:1.0
-        # yamllint disable
+        # yamllint disable rule:indentation
         command: ['sh', '-c', 'set -x;
           URL="${PL_HYDRA_PUBLIC_HOST}/health/ready";
           until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
@@ -17,6 +17,7 @@ spec:
             sleep 2;
           done;
         ']
+        # yamllint enable rule:indentation
         env:
         - name: PL_HYDRA_PUBLIC_HOST
           valueFrom:

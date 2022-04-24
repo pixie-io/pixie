@@ -25,12 +25,13 @@
 struct TableMetrics {
   TableMetrics(prometheus::Registry* registry, std::string table_name);
 
-  prometheus::Counter& bytes_counter;
+  prometheus::Counter& bytes_added_counter;
   prometheus::Gauge& cold_bytes_gauge;
   prometheus::Gauge& hot_bytes_gauge;
-  prometheus::Counter& num_batches_counter;
+  prometheus::Gauge& num_batches_gauge;
   prometheus::Counter& batches_added_counter;
   prometheus::Counter& batches_expired_counter;
   prometheus::Counter& compacted_batches_counter;
   prometheus::Gauge& max_table_size_gauge;
+  prometheus::Gauge& retention_ns_gauge;
 };

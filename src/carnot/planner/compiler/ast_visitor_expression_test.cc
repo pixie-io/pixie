@@ -64,8 +64,11 @@ class ASTExpressionTest : public ::testing::Test {
     udfspb::UDFInfo info_pb;
     google::protobuf::TextFormat::MergeFromString(kRegInfoProto, &info_pb);
     PL_CHECK_OK(info_->Init(info_pb));
-    compiler_state_ = std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info_.get(),
-                                                      time_now_, "result_addr");
+    compiler_state_ = std::make_unique<CompilerState>(
+        std::make_unique<RelationMap>(), /* sensitive_columns */ SensitiveColumnMap{}, info_.get(),
+        /* time_now */ time_now_,
+        /* max_output_rows_per_table */ 0, "result_addr", "result_ssl_targetname",
+        /* redaction_options */ RedactionOptions{}, nullptr, nullptr);
     graph = std::make_shared<IR>();
 
     auto ast_visitor_impl = ASTVisitorImpl::Create(graph.get(), &dynamic_trace_,
@@ -79,7 +82,7 @@ class ASTExpressionTest : public ::testing::Test {
   std::shared_ptr<IR> graph;
   std::shared_ptr<ASTVisitor> ast_visitor;
 
-  std::shared_ptr<CompilerState> compiler_state_;
+  std::unique_ptr<CompilerState> compiler_state_;
   int64_t time_now_ = 1552607213931245000;
   ModuleHandler module_handler_;
   MutationsIR dynamic_trace_;

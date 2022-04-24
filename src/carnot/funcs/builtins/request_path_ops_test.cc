@@ -16,22 +16,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <gmock/gmock-matchers.h>
-#include <gtest/gtest.h>
-
 #include <algorithm>
 #include <vector>
 
 #include "src/carnot/funcs/builtins/request_path_ops.h"
 #include "src/carnot/funcs/builtins/request_path_ops_test_utils.h"
 #include "src/carnot/udf/test_utils.h"
-#include "src/common/base/test_utils.h"
+#include "src/common/testing/testing.h"
 
 namespace px {
 namespace carnot {
 namespace builtins {
 
-class RequestPathTest : public testing::TestWithParam<const char*> {};
+class RequestPathTest : public ::testing::TestWithParam<const char*> {};
 
 TEST_P(RequestPathTest, serialization) {
   RequestPath path(GetParam());
@@ -39,8 +36,8 @@ TEST_P(RequestPathTest, serialization) {
 }
 
 INSTANTIATE_TEST_SUITE_P(RequestPathVariants, RequestPathTest,
-                         testing::Values("/abc/b/cedfeg12345", "/a/b?k=v?k2=v2",
-                                         "/a/%2F/c/?k=v%2F1"));
+                         ::testing::Values("/abc/b/cedfeg12345", "/a/b?k=v?k2=v2",
+                                           "/a/%2F/c/?k=v%2F1"));
 
 TEST(RequestPathClusteringFit, basic) {
   auto uda_tester = udf::UDATester<RequestPathClusteringFitUDA>();

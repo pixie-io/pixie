@@ -62,7 +62,7 @@ gazelle(
 # gazelle:resolve go px.dev/pixie/src/cloud/auth/authpb //src/cloud/auth/authpb:auth_go_proto
 # gazelle:resolve go px.dev/pixie/src/cloud/auth/authpb //src/cloud/auth/authpb:auth_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/cloud/config_manager/configmanagerpb //src/cloud/config_manager/configmanagerpb:service_pl_go_proto
-# gazelle:resolve go px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb //src/cloud/dnsmgr/dnsmgrpb:service_pl_go_proto
+# gazelle:resolve go px.dev/pixie/src/cloud/cron_script/cronscriptpb //src/cloud/cron_script/cronscriptpb:service_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/cloud/plugin/pluginpb //src/cloud/plugin/pluginpb:service_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/cloud/profile/profilepb //src/cloud/profile/profilepb:service_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/cloud/project_manager/projectmanagerpb //src/cloud/project_manager/projectmanagerpb:service_pl_go_proto
@@ -87,7 +87,6 @@ gazelle(
 # gazelle:resolve go px.dev/pixie/src/stirling/testing/demo_apps/hipster_shop/proto //src/stirling/testing/demo_apps/hipster_shop/proto:demo_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/table_store/schemapb //src/table_store/schemapb:schema_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/vizier/messages/messagespb //src/vizier/messages/messagespb:messages_pl_go_proto
-# gazelle:resolve go px.dev/pixie/src/vizier/services/certmgr/certmgrpb //src/vizier/services/certmgr/certmgrpb:service_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/vizier/services/metadata/metadatapb //src/vizier/services/metadata/metadatapb:service_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/vizier/services/metadata/storepb //src/vizier/services/metadata/storepb:store_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/vizier/services/shared/agentpb //src/vizier/services/shared/agentpb:agent_pl_go_proto
@@ -184,6 +183,7 @@ linux_timeconst_files = [
 
 stirling_collateral = [
     "//src/stirling/binaries:stirling_ctrl",
+    "//src/stirling/source_connectors/perf_profiler/java:px_jattach",
     # TODO(jps): Find a way to package the agent lib .so files w/ Stirling vs. PEM image.
     "//src/stirling/source_connectors/perf_profiler/java/agent:musl",
     "//src/stirling/source_connectors/perf_profiler/java/agent:glibc",

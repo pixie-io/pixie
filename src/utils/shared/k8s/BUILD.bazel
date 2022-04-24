@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "k8s",
@@ -57,5 +57,15 @@ go_library(
         "@io_k8s_klog_v2//:klog",
         "@io_k8s_kubectl//pkg/cmd/util",
         "@io_k8s_kubectl//pkg/cmd/wait",
+    ],
+)
+
+go_test(
+    name = "k8s_test",
+    srcs = ["apply_test.go"],
+    deps = [
+        ":k8s",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
     ],
 )

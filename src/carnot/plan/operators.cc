@@ -82,6 +82,8 @@ std::unique_ptr<Operator> Operator::FromProto(const planpb::Operator& pb, int64_
       return CreateOperator<UDTFSourceOperator>(id, pb.udtf_source_op());
     case planpb::EMPTY_SOURCE_OPERATOR:
       return CreateOperator<EmptySourceOperator>(id, pb.empty_source_op());
+    case planpb::OTEL_EXPORT_SINK_OPERATOR:
+      return CreateOperator<OTelExportSinkOperator>(id, pb.otel_sink_op());
     default:
       LOG(FATAL) << absl::Substitute("Unknown operator type: $0",
                                      magic_enum::enum_name(pb.op_type()));
@@ -701,6 +703,36 @@ StatusOr<table_store::schema::Relation> EmptySourceOperator::OutputRelation(
     r.AddColumn(pb_.column_types(i), pb_.column_names(i));
   }
   return r;
+}
+
+/**
+ * OTel Export Sink Operator Implementation.
+ */
+
+std::string OTelExportSinkOperator::DebugString() const { return "Op:OTelExportSink()"; }
+
+Status OTelExportSinkOperator::Init(const planpb::OTelExportSinkOperator& pb) {
+  pb_ = pb;
+  is_initialized_ = true;
+  for (const auto& [key, value] : pb_.endpoint_config().headers()) {
+    headers_.push_back({key, value});
+  }
+
+  for (const auto& attr : pb_.resource().attributes()) {
+    if (attr.column().can_be_json_encoded_array()) {
+      resource_attributes_optional_json_encoded_.push_back(attr);
+      continue;
+    }
+    resource_attributes_normal_encoding_.push_back(attr);
+  }
+  return Status::OK();
+}
+
+StatusOr<table_store::schema::Relation> OTelExportSinkOperator::OutputRelation(
+    const table_store::schema::Schema&, const PlanState&, const std::vector<int64_t>&) const {
+  DCHECK(is_initialized_) << "Not initialized";
+  // There are no outputs.
+  return table_store::schema::Relation();
 }
 
 }  // namespace plan

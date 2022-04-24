@@ -29,6 +29,7 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/stirling/obj_tools/dwarf_reader.h"
 #include "src/stirling/obj_tools/elf_reader.h"
+#include "src/stirling/obj_tools/go_syms.h"
 #include "src/stirling/utils/detect_application.h"
 
 using ::px::stirling::obj_tools::DwarfReader;
@@ -165,6 +166,17 @@ Status PopulateCommonDebugSymbols(DwarfReader* dwarf_reader, std::string_view ve
       symaddrs->syscallConn_conn_offset,
       dwarf_reader->GetStructMemberOffset(
           VENDOR_SYMBOL("google.golang.org/grpc/credentials/internal.syscallConn"), "conn"));
+  LOG_ASSIGN_STATUSOR(symaddrs->g_goid_offset,
+                      dwarf_reader->GetStructMemberOffset("runtime.g", "goid"));
+
+  // Arguments of runtime.casgstatus.
+  {
+    const std::map<std::string, obj_tools::ArgInfo> kEmptyMap;
+    std::string_view fn = "runtime.casgstatus";
+    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
+    LOG_ASSIGN(symaddrs->casgstatus_gp_loc, GetArgOffset(args_map, "gp"));
+    LOG_ASSIGN(symaddrs->casgstatus_newval_loc, GetArgOffset(args_map, "newval"));
+  }
 
 #undef VENDOR_SYMBOL
 
@@ -172,6 +184,16 @@ Status PopulateCommonDebugSymbols(DwarfReader* dwarf_reader, std::string_view ve
   // Returning an error will prevent the probes from deploying.
   if (symaddrs->FD_Sysfd_offset == -1) {
     return error::Internal("FD_Sysfd_offset not found");
+  }
+
+  if (symaddrs->casgstatus_gp_loc.type == kLocationTypeInvalid ||
+      symaddrs->casgstatus_gp_loc.offset < 0) {
+    return error::Internal("Invalid go_ptr location.");
+  }
+
+  if (symaddrs->casgstatus_newval_loc.type == kLocationTypeInvalid ||
+      symaddrs->casgstatus_newval_loc.offset < 0) {
+    return error::Internal("Invalid newval location.");
   }
 
   return Status::OK();
@@ -428,7 +450,20 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
   return Status::OK();
 }
 
-Status PopulateGoTLSDebugSymbols(DwarfReader* dwarf_reader, struct go_tls_symaddrs_t* symaddrs) {
+Status PopulateGoTLSDebugSymbols(ElfReader* elf_reader, DwarfReader* dwarf_reader,
+                                 struct go_tls_symaddrs_t* symaddrs) {
+  PL_ASSIGN_OR_RETURN(std::string build_version, ReadBuildVersion(elf_reader));
+  PL_ASSIGN_OR_RETURN(SemVer go_version, GetSemVer(build_version, false));
+  std::string retval0_arg = "~r1";
+  std::string retval1_arg = "~r2";
+
+  const SemVer kZeroIndexReturnValVersion{.major = 1, .minor = 18, .patch = 0};
+  // Return value naming in dwarf changed since Go1.18.
+  if (!(go_version < kZeroIndexReturnValVersion)) {
+    retval0_arg = "~r0";
+    retval1_arg = "~r1";
+  }
+
   const std::map<std::string, obj_tools::ArgInfo> kEmptyMap;
 
   // Arguments of crypto/tls.(*Conn).Write.
@@ -437,8 +472,8 @@ Status PopulateGoTLSDebugSymbols(DwarfReader* dwarf_reader, struct go_tls_symadd
     auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     LOG_ASSIGN(symaddrs->Write_c_loc, GetArgOffset(args_map, "c"));
     LOG_ASSIGN(symaddrs->Write_b_loc, GetArgOffset(args_map, "b"));
-    LOG_ASSIGN(symaddrs->Write_retval0_loc, GetArgOffset(args_map, "~r1"));
-    LOG_ASSIGN(symaddrs->Write_retval1_loc, GetArgOffset(args_map, "~r2"));
+    LOG_ASSIGN(symaddrs->Write_retval0_loc, GetArgOffset(args_map, retval0_arg));
+    LOG_ASSIGN(symaddrs->Write_retval1_loc, GetArgOffset(args_map, retval1_arg));
   }
 
   // Arguments of crypto/tls.(*Conn).Read.
@@ -447,8 +482,8 @@ Status PopulateGoTLSDebugSymbols(DwarfReader* dwarf_reader, struct go_tls_symadd
     auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     LOG_ASSIGN(symaddrs->Read_c_loc, GetArgOffset(args_map, "c"));
     LOG_ASSIGN(symaddrs->Read_b_loc, GetArgOffset(args_map, "b"));
-    LOG_ASSIGN(symaddrs->Read_retval0_loc, GetArgOffset(args_map, "~r1"));
-    LOG_ASSIGN(symaddrs->Read_retval1_loc, GetArgOffset(args_map, "~r2"));
+    LOG_ASSIGN(symaddrs->Read_retval0_loc, GetArgOffset(args_map, retval0_arg));
+    LOG_ASSIGN(symaddrs->Read_retval1_loc, GetArgOffset(args_map, retval1_arg));
   }
 
   // List mandatory symaddrs here (symaddrs without which all probes become useless).
@@ -490,9 +525,7 @@ StatusOr<struct go_http2_symaddrs_t> GoHTTP2SymAddrs(ElfReader* elf_reader,
 StatusOr<struct go_tls_symaddrs_t> GoTLSSymAddrs(ElfReader* elf_reader, DwarfReader* dwarf_reader) {
   struct go_tls_symaddrs_t symaddrs;
 
-  PL_UNUSED(elf_reader);
-
-  PL_RETURN_IF_ERROR(PopulateGoTLSDebugSymbols(dwarf_reader, &symaddrs));
+  PL_RETURN_IF_ERROR(PopulateGoTLSDebugSymbols(elf_reader, dwarf_reader, &symaddrs));
 
   return symaddrs;
 }

@@ -101,3 +101,33 @@ container_image(
     ],
     files = [":server_certs"],
 )
+
+container_image(
+    name = "golang_1_18_https_server_source",
+    base = "@golang_1_18_image//image",
+    directory = "/go/src/https_server",
+    files = ["https_server.go"],
+)
+
+container_run_and_commit(
+    name = "golang_1_18_https_server_build",
+    commands = [
+        "go mod init",
+        "go get",
+        "go build -v",
+    ],
+    docker_run_flags = ["-w /go/src/https_server"],
+    image = ":golang_1_18_https_server_source.tar",
+)
+
+container_image(
+    name = "golang_1_18_https_server",
+    base = ":golang_1_18_https_server_build_commit.tar",
+    directory = "/certs",
+    entrypoint = [
+        "./https_server",
+        "--cert=/certs/server.crt",
+        "--key=/certs/server.key",
+    ],
+    files = [":server_certs"],
+)

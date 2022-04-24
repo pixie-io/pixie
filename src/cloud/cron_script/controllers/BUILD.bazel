@@ -1,0 +1,82 @@
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "controllers",
+    srcs = [
+        "server.go",
+        "utils.go",
+    ],
+    importpath = "px.dev/pixie/src/cloud/cron_script/controllers",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
+        "//src/cloud/cron_script/cronscriptpb:service_pl_go_proto",
+        "//src/cloud/shared/vzshard",
+        "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
+        "//src/shared/cvmsgs",
+        "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
+        "//src/shared/scripts",
+        "//src/shared/services/authcontext",
+        "//src/shared/services/utils",
+        "//src/utils",
+        "@com_github_cenkalti_backoff_v3//:backoff",
+        "@com_github_gofrs_uuid//:uuid",
+        "@com_github_gogo_protobuf//proto",
+        "@com_github_gogo_protobuf//types",
+        "@com_github_jmoiron_sqlx//:sqlx",
+        "@com_github_nats_io_nats_go//:nats_go",
+        "@com_github_sirupsen_logrus//:logrus",
+        "@com_github_spf13_viper//:viper",
+        "@org_golang_google_grpc//codes",
+        "@org_golang_google_grpc//metadata",
+        "@org_golang_google_grpc//status",
+    ],
+)
+
+go_test(
+    name = "controllers_test",
+    srcs = ["server_test.go"],
+    deps = [
+        ":controllers",
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
+        "//src/cloud/cron_script/cronscriptpb:service_pl_go_proto",
+        "//src/cloud/cron_script/schema",
+        "//src/cloud/shared/vzshard",
+        "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
+        "//src/cloud/vzmgr/vzmgrpb/mock",
+        "//src/shared/cvmsgs",
+        "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
+        "//src/shared/scripts",
+        "//src/shared/services/authcontext",
+        "//src/shared/services/pgtest",
+        "//src/shared/services/utils",
+        "//src/utils",
+        "//src/utils/testingutils",
+        "@com_github_gofrs_uuid//:uuid",
+        "@com_github_gogo_protobuf//proto",
+        "@com_github_gogo_protobuf//types",
+        "@com_github_golang_migrate_migrate//source/go_bindata",
+        "@com_github_golang_mock//gomock",
+        "@com_github_jmoiron_sqlx//:sqlx",
+        "@com_github_nats_io_nats_go//:nats_go",
+        "@com_github_spf13_viper//:viper",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

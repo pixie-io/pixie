@@ -208,6 +208,8 @@ class DataStream : NotCopyMoveable {
     }
   }
 
+  void set_protocol(traffic_protocol_t protocol) { protocol_ = protocol; }
+
   /**
    * Cleanup frames that are parsed from the BPF events, when the condition is right.
    */
@@ -307,6 +309,12 @@ class DataStream : NotCopyMoveable {
 
   // A copy of the parse state from the last call to ProcessToRecords().
   ParseState last_parse_state_ = ParseState::kInvalid;
+
+  // Keep track of the byte position after the last processed position, in order to measure data
+  // loss.
+  size_t last_processed_pos_ = 0;
+  // Keep track of the protocol for this DataStream so that data loss can be reported per protocol.
+  traffic_protocol_t protocol_ = traffic_protocol_t::kProtocolUnknown;
 
   template <typename TFrameType>
   friend std::string DebugString(const DataStream& d, std::string_view prefix);

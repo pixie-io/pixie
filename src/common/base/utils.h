@@ -410,4 +410,15 @@ typename TContainerType::const_iterator Floor(const TContainerType& c,
   return c.end();
 }
 
+/**
+ * Helper templates for std::visit. Will not be needed after C++20.
+ * See: https://en.cppreference.com/w/cpp/utility/variant/visit
+ */
+template <class... Ts>
+struct overloaded : Ts... {
+  using Ts::operator()...;
+};
+template <class... Ts>
+overloaded(Ts...) -> overloaded<Ts...>;
+
 }  // namespace px

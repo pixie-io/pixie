@@ -23,8 +23,8 @@
 
 #include "src/common/base/file.h"
 #include "src/common/base/logging.h"
-#include "src/common/base/test_utils.h"
 #include "src/common/fs/temp_file.h"
+#include "src/common/testing/testing.h"
 
 namespace px {
 namespace fs {

@@ -24,18 +24,28 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
+	"github.com/golang/mock/gomock"
 	"github.com/jmoiron/sqlx"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 
+	"px.dev/pixie/src/api/proto/uuidpb"
+	"px.dev/pixie/src/cloud/cron_script/cronscriptpb"
+	mock_cronscriptpb "px.dev/pixie/src/cloud/cron_script/cronscriptpb/mock"
 	"px.dev/pixie/src/cloud/plugin/controllers"
 	"px.dev/pixie/src/cloud/plugin/pluginpb"
 	"px.dev/pixie/src/cloud/plugin/schema"
+	"px.dev/pixie/src/shared/scripts"
+	"px.dev/pixie/src/shared/services/authcontext"
 	"px.dev/pixie/src/shared/services/pgtest"
+	srvutils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils"
 )
 
@@ -67,7 +77,14 @@ func testMain(m *testing.M) error {
 	return nil
 }
 
+func createTestContext() context.Context {
+	sCtx := authcontext.New()
+	sCtx.Claims = srvutils.GenerateJWTForUser("abcdef", "223e4567-e89b-12d3-a456-426655440000", "test@test.com", time.Now(), "pixie")
+	return authcontext.NewContext(context.Background(), sCtx)
+}
+
 func mustLoadTestData(db *sqlx.DB) {
+	db.MustExec(`DELETE FROM plugin_retention_scripts`)
 	db.MustExec(`DELETE FROM org_data_retention_plugins`)
 	db.MustExec(`DELETE FROM data_retention_plugin_releases`)
 	db.MustExec(`DELETE FROM plugin_releases`)
@@ -79,7 +96,7 @@ func mustLoadTestData(db *sqlx.DB) {
 	db.MustExec(insertRelease, "another_plugin", "another-plugin", "This is another plugin", "anotherLogo", "0.0.1", "false")
 	db.MustExec(insertRelease, "another_plugin", "another-plugin", "This is another new plugin", "anotherLogo2", "0.0.2", "false")
 
-	insertRetentionRelease := `INSERT INTO data_retention_plugin_releases(plugin_id, version, configurations, preset_scripts, documentation_url, default_export_url, allow_custom_export_url) VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	insertRetentionRelease := `INSERT INTO data_retention_plugin_releases(plugin_id, version, configurations, preset_scripts, documentation_url, default_export_url, allow_custom_export_url, allow_insecure_tls) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 	db.MustExec(insertRetentionRelease, "test-plugin", "0.0.1", controllers.Configurations(map[string]string{"license_key": "This is what we use to authenticate"}), controllers.PresetScripts([]*controllers.PresetScript{
 		&controllers.PresetScript{
 			Name:              "http data",
@@ -93,7 +110,7 @@ func mustLoadTestData(db *sqlx.DB) {
 			DefaultFrequencyS: 20,
 			Script:            "script 2",
 		},
-	}), "http://test-doc-url", "http://test-export-url", true)
+	}), "http://test-doc-url", "http://test-export-url", true, false)
 	db.MustExec(insertRetentionRelease, "test-plugin", "0.0.2", controllers.Configurations(map[string]string{"license_key2": "This is what we use to authenticate 2"}), controllers.PresetScripts([]*controllers.PresetScript{
 		&controllers.PresetScript{
 			Name:              "dns data",
@@ -107,8 +124,22 @@ func mustLoadTestData(db *sqlx.DB) {
 			DefaultFrequencyS: 20,
 			Script:            "dns script 2",
 		},
-	}), "http://test-doc-url2", "http://test-export-url2", true)
-	db.MustExec(insertRetentionRelease, "test-plugin", "0.0.3", controllers.Configurations(map[string]string{"license_key3": "This is what we use to authenticate 3"}), nil, "http://test-doc-url3", "http://test-export-url3", true)
+	}), "http://test-doc-url2", "http://test-export-url2", true, true)
+	db.MustExec(insertRetentionRelease, "test-plugin", "0.0.3", controllers.Configurations(map[string]string{"license_key3": "This is what we use to authenticate 3"}), nil, "http://test-doc-url3", "http://test-export-url3", true, true)
+	db.MustExec(insertRetentionRelease, "another-plugin", "0.0.1", controllers.Configurations(map[string]string{"abcd": "Some field"}), controllers.PresetScripts([]*controllers.PresetScript{
+		&controllers.PresetScript{
+			Name:              "dns data",
+			Description:       "This is a script to get dns data",
+			DefaultFrequencyS: 10,
+			Script:            "dns script",
+		},
+		&controllers.PresetScript{
+			Name:              "dns data 2",
+			Description:       "This is a script to get dns data 2",
+			DefaultFrequencyS: 20,
+			Script:            "dns script 2",
+		},
+	}), "http://test-doc-url3", "http://test-export-url3", true, true)
 
 	orgConfig1 := map[string]string{
 		"license_key2": "12345",
@@ -120,16 +151,26 @@ func mustLoadTestData(db *sqlx.DB) {
 	}
 	configJSON2, _ := json.Marshal(orgConfig2)
 
-	insertOrgRelease := `INSERT INTO org_data_retention_plugins(org_id, plugin_id, version, configurations) VALUES ($1, $2, $3, PGP_SYM_ENCRYPT($4, $5))`
-	db.MustExec(insertOrgRelease, "223e4567-e89b-12d3-a456-426655440000", "test-plugin", "0.0.3", configJSON1, "test")
-	db.MustExec(insertOrgRelease, "223e4567-e89b-12d3-a456-426655440001", "test-plugin", "0.0.2", configJSON2, "test")
+	insertOrgRelease := `INSERT INTO org_data_retention_plugins(org_id, plugin_id, version, configurations, custom_export_url, insecure_tls) VALUES ($1, $2, $3, PGP_SYM_ENCRYPT($4, $5), PGP_SYM_ENCRYPT($6, $5), $7)`
+	db.MustExec(insertOrgRelease, "223e4567-e89b-12d3-a456-426655440000", "test-plugin", "0.0.3", configJSON1, "test", "https://localhost1:8080", true)
+	db.MustExec(insertOrgRelease, "223e4567-e89b-12d3-a456-426655440001", "test-plugin", "0.0.2", configJSON2, "test", "https://localhost:8080", false)
+
+	insertRetentionScript := `INSERT INTO plugin_retention_scripts (org_id, plugin_id, script_id, script_name, description, is_preset,  export_url) VALUES ($1, $2, $3, $4, $5, $6, PGP_SYM_ENCRYPT($7, $8))`
+	db.MustExec(insertRetentionScript, "223e4567-e89b-12d3-a456-426655440000", "test-plugin", "123e4567-e89b-12d3-a456-426655440000", "testScript", "This is a script", false, "https://localhost:8080", "test")
+	db.MustExec(insertRetentionScript, "223e4567-e89b-12d3-a456-426655440000", "test-plugin", "123e4567-e89b-12d3-a456-426655440001", "testScript2", "This is another script", true, "https://url", "test")
+	db.MustExec(insertRetentionScript, "223e4567-e89b-12d3-a456-426655440000", "another-plugin", "123e4567-e89b-12d3-a456-426655440002", "testScript3", "This is another script", true, "https://url", "test")
+	db.MustExec(insertRetentionScript, "223e4567-e89b-12d3-a456-426655440000", "another-plugin", "123e4567-e89b-12d3-a456-426655440003", "testScript4", "This is another script", true, "", "test")
 }
 
 func TestServer_GetPlugins(t *testing.T) {
 	mustLoadTestData(db)
 
-	s := controllers.New(db, "test")
-	resp, err := s.GetPlugins(context.Background(), &pluginpb.GetPluginsRequest{})
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+	s := controllers.New(db, "test", mockCSClient)
+	resp, err := s.GetPlugins(createTestContext(), &pluginpb.GetPluginsRequest{})
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 
@@ -157,8 +198,12 @@ func TestServer_GetPlugins(t *testing.T) {
 func TestServer_GetPluginsWithKind(t *testing.T) {
 	mustLoadTestData(db)
 
-	s := controllers.New(db, "test")
-	resp, err := s.GetPlugins(context.Background(), &pluginpb.GetPluginsRequest{Kind: pluginpb.PLUGIN_KIND_RETENTION})
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+	s := controllers.New(db, "test", mockCSClient)
+	resp, err := s.GetPlugins(createTestContext(), &pluginpb.GetPluginsRequest{Kind: pluginpb.PLUGIN_KIND_RETENTION})
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 
@@ -178,8 +223,12 @@ func TestServer_GetPluginsWithKind(t *testing.T) {
 func TestServer_GetRetentionPluginConfig(t *testing.T) {
 	mustLoadTestData(db)
 
-	s := controllers.New(db, "test")
-	resp, err := s.GetRetentionPluginConfig(context.Background(), &pluginpb.GetRetentionPluginConfigRequest{
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+	s := controllers.New(db, "test", mockCSClient)
+	resp, err := s.GetRetentionPluginConfig(createTestContext(), &pluginpb.GetRetentionPluginConfigRequest{
 		ID:      "test-plugin",
 		Version: "0.0.2",
 	})
@@ -207,14 +256,19 @@ func TestServer_GetRetentionPluginConfig(t *testing.T) {
 				Script:            "dns script 2",
 			},
 		},
+		AllowInsecureTLS: true,
 	}, resp)
 }
 
 func TestServer_GetRetentionPluginsForOrg(t *testing.T) {
 	mustLoadTestData(db)
 
-	s := controllers.New(db, "test")
-	resp, err := s.GetRetentionPluginsForOrg(context.Background(), &pluginpb.GetRetentionPluginsForOrgRequest{
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+	s := controllers.New(db, "test", mockCSClient)
+	resp, err := s.GetRetentionPluginsForOrg(createTestContext(), &pluginpb.GetRetentionPluginsForOrgRequest{
 		OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 	})
 	require.NoError(t, err)
@@ -237,8 +291,12 @@ func TestServer_GetRetentionPluginsForOrg(t *testing.T) {
 func TestServer_GetOrgRetentionPluginConfig(t *testing.T) {
 	mustLoadTestData(db)
 
-	s := controllers.New(db, "test")
-	resp, err := s.GetOrgRetentionPluginConfig(context.Background(), &pluginpb.GetOrgRetentionPluginConfigRequest{
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+	s := controllers.New(db, "test", mockCSClient)
+	resp, err := s.GetOrgRetentionPluginConfig(createTestContext(), &pluginpb.GetOrgRetentionPluginConfigRequest{
 		PluginID: "test-plugin",
 		OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 	})
@@ -250,6 +308,7 @@ func TestServer_GetOrgRetentionPluginConfig(t *testing.T) {
 		Configurations: map[string]string{
 			"license_key3": "hello",
 		},
+		CustomExportUrl: "https://localhost:8080",
 	}, resp)
 }
 
@@ -258,14 +317,73 @@ type orgConfig struct {
 	PluginID           string `db:"plugin_id"`
 	Version            string `db:"version"`
 	Configurations     map[string]string
-	ConfigurationBytes []byte `db:"configurations"`
+	ConfigurationBytes []byte  `db:"configurations"`
+	CustomExportURL    *string `db:"custom_export_url"`
+	InsecureTLS        bool    `db:"insecure_tls"`
 }
 
 func TestServer_UpdateRetentionConfigs(t *testing.T) {
+	config1 := &scripts.Config{
+		OtelEndpointConfig: &scripts.OtelEndpointConfig{
+			URL: "https://localhost:8080",
+			Headers: map[string]string{
+				"abcd": "hello",
+			},
+			Insecure: true,
+		},
+	}
+	mConfig1, _ := yaml.Marshal(&config1)
+	config2 := &scripts.Config{
+		OtelEndpointConfig: &scripts.OtelEndpointConfig{
+			URL: "https://url",
+			Headers: map[string]string{
+				"abcd": "hello",
+			},
+			Insecure: true,
+		},
+	}
+	mConfig2, _ := yaml.Marshal(&config2)
+	config3 := &scripts.Config{
+		OtelEndpointConfig: &scripts.OtelEndpointConfig{
+			URL: "http://test-export-url3",
+			Headers: map[string]string{
+				"abcd": "hello",
+			},
+			Insecure: false,
+		},
+	}
+	mConfig3, _ := yaml.Marshal(&config3)
+	config4 := &scripts.Config{
+		OtelEndpointConfig: &scripts.OtelEndpointConfig{
+			URL: "https://localhost:8080",
+			Headers: map[string]string{
+				"abcd": "hello",
+			},
+			Insecure: false,
+		},
+	}
+	mConfig4, _ := yaml.Marshal(&config4)
+	config5 := &scripts.Config{
+		OtelEndpointConfig: &scripts.OtelEndpointConfig{
+			URL: "https://localhost1:8080",
+			Headers: map[string]string{
+				"abcd": "hello",
+			},
+			Insecure: true,
+		},
+	}
+	mConfig5, _ := yaml.Marshal(&config5)
+	exportURLv3 := "https://localhost1:8080"
+	exportURLv2 := "https://localhost:8080"
+	newExportURL := "https://test:443"
 	tests := []struct {
-		name               string
-		request            *pluginpb.UpdateOrgRetentionPluginConfigRequest
-		expectedOrgConfigs []orgConfig
+		name                     string
+		request                  *pluginpb.UpdateOrgRetentionPluginConfigRequest
+		expectedOrgConfigs       []orgConfig
+		expectedCSUpdateRequests []*cronscriptpb.UpdateScriptRequest
+		expectedCSCreateRequests []*cronscriptpb.CreateScriptRequest
+		expectedCSDeleteRequests []*cronscriptpb.DeleteScriptRequest
+		expectedPluginScripts    []*controllers.RetentionScript
 	}{
 		{
 			name: "enabling new config",
@@ -286,6 +404,8 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					Configurations: map[string]string{
 						"license_key2": "12345",
 					},
+					CustomExportURL: &exportURLv3,
+					InsecureTLS:     true,
 				},
 				orgConfig{
 					OrgID:    "223e4567-e89b-12d3-a456-426655440001",
@@ -294,6 +414,7 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					Configurations: map[string]string{
 						"license_key3": "hello",
 					},
+					CustomExportURL: &exportURLv2,
 				},
 				orgConfig{
 					OrgID:    "223e4567-e89b-12d3-a456-426655440001",
@@ -302,6 +423,110 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					Configurations: map[string]string{
 						"abcd": "hello",
 					},
+				},
+			},
+			expectedCSCreateRequests: []*cronscriptpb.CreateScriptRequest{
+				&cronscriptpb.CreateScriptRequest{
+					Script:     "dns script",
+					ClusterIDs: make([]*uuidpb.UUID, 0),
+					Configs:    string(mConfig3),
+					FrequencyS: 10,
+				},
+				&cronscriptpb.CreateScriptRequest{
+					Script:     "dns script 2",
+					ClusterIDs: make([]*uuidpb.UUID, 0),
+					Configs:    string(mConfig3),
+					FrequencyS: 20,
+				},
+			},
+			expectedPluginScripts: []*controllers.RetentionScript{
+				&controllers.RetentionScript{
+					ScriptName:  "dns data",
+					Description: "This is a script to get dns data",
+					IsPreset:    true,
+					PluginID:    "another-plugin",
+					ExportURL:   "",
+				},
+				&controllers.RetentionScript{
+					ScriptName:  "dns data 2",
+					Description: "This is a script to get dns data 2",
+					IsPreset:    true,
+					PluginID:    "another-plugin",
+					ExportURL:   "",
+				},
+			},
+		},
+		{
+			name: "enabling new config with custom export URL",
+			request: &pluginpb.UpdateOrgRetentionPluginConfigRequest{
+				OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+				PluginID: "another-plugin",
+				Configurations: map[string]string{
+					"abcd": "hello",
+				},
+				Enabled:         &types.BoolValue{Value: true},
+				Version:         &types.StringValue{Value: "0.0.1"},
+				CustomExportUrl: &types.StringValue{Value: "https://localhost:8080"},
+			},
+			expectedOrgConfigs: []orgConfig{
+				orgConfig{
+					OrgID:    "223e4567-e89b-12d3-a456-426655440000",
+					PluginID: "test-plugin",
+					Version:  "0.0.3",
+					Configurations: map[string]string{
+						"license_key2": "12345",
+					},
+					CustomExportURL: &exportURLv3,
+					InsecureTLS:     true,
+				},
+				orgConfig{
+					OrgID:    "223e4567-e89b-12d3-a456-426655440001",
+					PluginID: "test-plugin",
+					Version:  "0.0.2",
+					Configurations: map[string]string{
+						"license_key3": "hello",
+					},
+					CustomExportURL: &exportURLv2,
+				},
+				orgConfig{
+					OrgID:    "223e4567-e89b-12d3-a456-426655440001",
+					PluginID: "another-plugin",
+					Version:  "0.0.1",
+					Configurations: map[string]string{
+						"abcd": "hello",
+					},
+					CustomExportURL: &exportURLv2,
+					InsecureTLS:     false,
+				},
+			},
+			expectedCSCreateRequests: []*cronscriptpb.CreateScriptRequest{
+				&cronscriptpb.CreateScriptRequest{
+					Script:     "dns script",
+					ClusterIDs: make([]*uuidpb.UUID, 0),
+					Configs:    string(mConfig4),
+					FrequencyS: 10,
+				},
+				&cronscriptpb.CreateScriptRequest{
+					Script:     "dns script 2",
+					ClusterIDs: make([]*uuidpb.UUID, 0),
+					Configs:    string(mConfig4),
+					FrequencyS: 20,
+				},
+			},
+			expectedPluginScripts: []*controllers.RetentionScript{
+				&controllers.RetentionScript{
+					ScriptName:  "dns data",
+					Description: "This is a script to get dns data",
+					IsPreset:    true,
+					PluginID:    "another-plugin",
+					ExportURL:   "",
+				},
+				&controllers.RetentionScript{
+					ScriptName:  "dns data 2",
+					Description: "This is a script to get dns data 2",
+					IsPreset:    true,
+					PluginID:    "another-plugin",
+					ExportURL:   "",
 				},
 			},
 		},
@@ -320,6 +545,15 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					Configurations: map[string]string{
 						"license_key3": "hello",
 					},
+					CustomExportURL: &exportURLv2,
+				},
+			},
+			expectedCSDeleteRequests: []*cronscriptpb.DeleteScriptRequest{
+				&cronscriptpb.DeleteScriptRequest{
+					ID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+				},
+				&cronscriptpb.DeleteScriptRequest{
+					ID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 				},
 			},
 		},
@@ -340,6 +574,8 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					Configurations: map[string]string{
 						"abcd": "hello",
 					},
+					CustomExportURL: &exportURLv3,
+					InsecureTLS:     true,
 				},
 				orgConfig{
 					OrgID:    "223e4567-e89b-12d3-a456-426655440001",
@@ -347,6 +583,100 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					Version:  "0.0.2",
 					Configurations: map[string]string{
 						"license_key3": "hello",
+					},
+					CustomExportURL: &exportURLv2,
+				},
+			},
+			expectedCSUpdateRequests: []*cronscriptpb.UpdateScriptRequest{
+				&cronscriptpb.UpdateScriptRequest{
+					ScriptId: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+					Configs: &types.StringValue{
+						Value: string(mConfig1),
+					},
+				},
+				&cronscriptpb.UpdateScriptRequest{
+					ScriptId: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+					Configs: &types.StringValue{
+						Value: string(mConfig2),
+					},
+				},
+			},
+		},
+		{
+			name: "update existing config with TLS false",
+			request: &pluginpb.UpdateOrgRetentionPluginConfigRequest{
+				OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+				PluginID: "test-plugin",
+				Configurations: map[string]string{
+					"abcd": "hello",
+				},
+				Version:     &types.StringValue{Value: "0.0.1"},
+				InsecureTLS: &types.BoolValue{Value: true},
+			},
+			expectedOrgConfigs: []orgConfig{
+				orgConfig{
+					OrgID:    "223e4567-e89b-12d3-a456-426655440000",
+					PluginID: "test-plugin",
+					Version:  "0.0.1",
+					Configurations: map[string]string{
+						"abcd": "hello",
+					},
+					CustomExportURL: &exportURLv3,
+					InsecureTLS:     false,
+				},
+				orgConfig{
+					OrgID:    "223e4567-e89b-12d3-a456-426655440001",
+					PluginID: "test-plugin",
+					Version:  "0.0.2",
+					Configurations: map[string]string{
+						"license_key3": "hello",
+					},
+					CustomExportURL: &exportURLv2,
+				},
+			},
+		},
+		{
+			name: "updating existing config with custom export URL and custom script URLs",
+			request: &pluginpb.UpdateOrgRetentionPluginConfigRequest{
+				OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+				PluginID: "test-plugin",
+				Configurations: map[string]string{
+					"abcd": "hello",
+				},
+				CustomExportUrl: &types.StringValue{Value: "https://test:443"},
+			},
+			expectedOrgConfigs: []orgConfig{
+				orgConfig{
+					OrgID:    "223e4567-e89b-12d3-a456-426655440000",
+					PluginID: "test-plugin",
+					Version:  "0.0.3",
+					Configurations: map[string]string{
+						"abcd": "hello",
+					},
+					CustomExportURL: &newExportURL,
+					InsecureTLS:     true,
+				},
+				orgConfig{
+					OrgID:    "223e4567-e89b-12d3-a456-426655440001",
+					PluginID: "test-plugin",
+					Version:  "0.0.2",
+					Configurations: map[string]string{
+						"license_key3": "hello",
+					},
+					CustomExportURL: &exportURLv2,
+				},
+			},
+			expectedCSUpdateRequests: []*cronscriptpb.UpdateScriptRequest{
+				&cronscriptpb.UpdateScriptRequest{
+					ScriptId: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+					Configs: &types.StringValue{
+						Value: string(mConfig1),
+					},
+				},
+				&cronscriptpb.UpdateScriptRequest{
+					ScriptId: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+					Configs: &types.StringValue{
+						Value: string(mConfig2),
 					},
 				},
 			},
@@ -366,6 +696,8 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					Configurations: map[string]string{
 						"license_key2": "12345",
 					},
+					CustomExportURL: &exportURLv3,
+					InsecureTLS:     true,
 				},
 				orgConfig{
 					OrgID:    "223e4567-e89b-12d3-a456-426655440001",
@@ -374,6 +706,7 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					Configurations: map[string]string{
 						"license_key3": "hello",
 					},
+					CustomExportURL: &exportURLv2,
 				},
 			},
 		},
@@ -395,6 +728,8 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					Configurations: map[string]string{
 						"abcd": "hello",
 					},
+					CustomExportURL: &exportURLv3,
+					InsecureTLS:     true,
 				},
 				orgConfig{
 					OrgID:    "223e4567-e89b-12d3-a456-426655440001",
@@ -403,6 +738,40 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					Configurations: map[string]string{
 						"license_key3": "hello",
 					},
+					CustomExportURL: &exportURLv2,
+				},
+			},
+			expectedCSUpdateRequests: []*cronscriptpb.UpdateScriptRequest{
+				&cronscriptpb.UpdateScriptRequest{
+					ScriptId: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+					Configs: &types.StringValue{
+						Value: string(mConfig1),
+					},
+				},
+				&cronscriptpb.UpdateScriptRequest{
+					ScriptId: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+					Configs: &types.StringValue{
+						Value: string(mConfig2),
+					},
+				},
+			},
+			expectedCSDeleteRequests: []*cronscriptpb.DeleteScriptRequest{
+				&cronscriptpb.DeleteScriptRequest{
+					ID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+				},
+			},
+			expectedCSCreateRequests: []*cronscriptpb.CreateScriptRequest{
+				&cronscriptpb.CreateScriptRequest{
+					Script:     "dns script",
+					ClusterIDs: make([]*uuidpb.UUID, 0),
+					Configs:    string(mConfig5),
+					FrequencyS: 10,
+				},
+				&cronscriptpb.CreateScriptRequest{
+					Script:     "dns script 2",
+					ClusterIDs: make([]*uuidpb.UUID, 0),
+					Configs:    string(mConfig5),
+					FrequencyS: 20,
 				},
 			},
 		},
@@ -412,15 +781,38 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mustLoadTestData(db)
 
-			s := controllers.New(db, "test")
-			resp, err := s.UpdateOrgRetentionPluginConfig(context.Background(), test.request)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+			updateReqs := make([]*cronscriptpb.UpdateScriptRequest, 0)
+			mockCSClient.EXPECT().UpdateScript(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, req *cronscriptpb.UpdateScriptRequest) (*cronscriptpb.UpdateScriptResponse, error) {
+				updateReqs = append(updateReqs, req)
+				return &cronscriptpb.UpdateScriptResponse{}, nil
+			}).AnyTimes()
+
+			createReqs := make([]*cronscriptpb.CreateScriptRequest, 0)
+			mockCSClient.EXPECT().CreateScript(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, req *cronscriptpb.CreateScriptRequest) (*cronscriptpb.CreateScriptResponse, error) {
+				createReqs = append(createReqs, req)
+				return &cronscriptpb.CreateScriptResponse{ID: utils.ProtoFromUUID(uuid.Must(uuid.NewV4()))}, nil
+			}).AnyTimes()
+
+			delReqs := make([]*cronscriptpb.DeleteScriptRequest, 0)
+			mockCSClient.EXPECT().DeleteScript(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, req *cronscriptpb.DeleteScriptRequest) (*cronscriptpb.DeleteScriptResponse, error) {
+				delReqs = append(delReqs, req)
+				return &cronscriptpb.DeleteScriptResponse{}, nil
+			}).AnyTimes()
+
+			s := controllers.New(db, "test", mockCSClient)
+
+			resp, err := s.UpdateOrgRetentionPluginConfig(createTestContext(), test.request)
 
 			require.NoError(t, err)
 			require.NotNil(t, resp)
 
 			assert.Equal(t, &pluginpb.UpdateOrgRetentionPluginConfigResponse{}, resp)
 
-			query := `SELECT org_id, plugin_id, version, PGP_SYM_DECRYPT(configurations, $1::text) as configurations FROM org_data_retention_plugins`
+			query := `SELECT org_id, plugin_id, version, PGP_SYM_DECRYPT(configurations, $1::text) as configurations, insecure_tls, PGP_SYM_DECRYPT(custom_export_url, $1::text) as custom_export_url FROM org_data_retention_plugins`
 			rows, err := db.Queryx(query, "test")
 			require.Nil(t, err)
 
@@ -441,6 +833,343 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 			}
 
 			assert.ElementsMatch(t, test.expectedOrgConfigs, plugins)
+			if test.expectedCSUpdateRequests != nil {
+				assert.ElementsMatch(t, test.expectedCSUpdateRequests, updateReqs)
+			}
+			if test.expectedCSCreateRequests != nil {
+				assert.ElementsMatch(t, test.expectedCSCreateRequests, createReqs)
+			}
+			if test.expectedCSDeleteRequests != nil {
+				assert.ElementsMatch(t, test.expectedCSDeleteRequests, delReqs)
+			}
+
+			if test.expectedPluginScripts != nil {
+				query = `SELECT script_name, description, is_preset, plugin_id, PGP_SYM_DECRYPT(export_url, $1::text) as export_url from plugin_retention_scripts WHERE org_id=$2 AND plugin_id=$3`
+				rows, err := db.Queryx(query, "test", utils.UUIDFromProtoOrNil(test.request.OrgID), test.request.PluginID)
+				require.Nil(t, err)
+				defer rows.Close()
+
+				rs := make([]*controllers.RetentionScript, 0)
+				for rows.Next() {
+					var script controllers.RetentionScript
+					err = rows.StructScan(&script)
+					require.Nil(t, err)
+					script.ScriptID = utils.UUIDFromProtoOrNil(nil)
+
+					rs = append(rs, &script)
+				}
+
+				assert.ElementsMatch(t, test.expectedPluginScripts, rs)
+			}
 		})
 	}
+}
+
+func TestServer_GetRetentionScripts(t *testing.T) {
+	mustLoadTestData(db)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+	mockCSClient.EXPECT().GetScripts(gomock.Any(), &cronscriptpb.GetScriptsRequest{
+		IDs: []*uuidpb.UUID{
+			utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+			utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+		},
+	}).Return(&cronscriptpb.GetScriptsResponse{
+		Scripts: []*cronscriptpb.CronScript{
+			&cronscriptpb.CronScript{
+				ID:     utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+				OrgID:  utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+				Script: "px.display()",
+				ClusterIDs: []*uuidpb.UUID{
+					utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+				},
+				Enabled:    true,
+				FrequencyS: 5,
+			},
+			&cronscriptpb.CronScript{
+				ID:     utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+				OrgID:  utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+				Script: "df.stream()",
+				ClusterIDs: []*uuidpb.UUID{
+					utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+				},
+				Enabled:    false,
+				FrequencyS: 10,
+			},
+		},
+	}, nil)
+
+	s := controllers.New(db, "test", mockCSClient)
+	resp, err := s.GetRetentionScripts(createTestContext(), &pluginpb.GetRetentionScriptsRequest{
+		OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+
+	assert.ElementsMatch(t, []*pluginpb.RetentionScript{
+		&pluginpb.RetentionScript{
+			ScriptID:    utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+			ScriptName:  "testScript",
+			Description: "This is a script",
+			FrequencyS:  5,
+			ClusterIDs: []*uuidpb.UUID{
+				utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+			},
+			PluginId: "test-plugin",
+			Enabled:  true,
+			IsPreset: false,
+		},
+		&pluginpb.RetentionScript{
+			ScriptID:    utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+			ScriptName:  "testScript2",
+			Description: "This is another script",
+			FrequencyS:  10,
+			ClusterIDs: []*uuidpb.UUID{
+				utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+			},
+			PluginId: "test-plugin",
+			Enabled:  false,
+			IsPreset: true,
+		},
+	}, resp.Scripts)
+}
+
+func TestServer_GetRetentionScript(t *testing.T) {
+	mustLoadTestData(db)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+	mockCSClient.EXPECT().GetScript(gomock.Any(), &cronscriptpb.GetScriptRequest{
+		ID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+	}).Return(&cronscriptpb.GetScriptResponse{
+		Script: &cronscriptpb.CronScript{
+			ID:     utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+			OrgID:  utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+			Script: "px.display()",
+			ClusterIDs: []*uuidpb.UUID{
+				utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+			},
+			Enabled:    true,
+			FrequencyS: 5,
+		},
+	}, nil)
+
+	s := controllers.New(db, "test", mockCSClient)
+	resp, err := s.GetRetentionScript(createTestContext(), &pluginpb.GetRetentionScriptRequest{
+		OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+		ScriptID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+
+	assert.Equal(t,
+		&pluginpb.DetailedRetentionScript{
+			Script: &pluginpb.RetentionScript{
+				ScriptID:    utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+				ScriptName:  "testScript",
+				Description: "This is a script",
+				FrequencyS:  5,
+				ClusterIDs: []*uuidpb.UUID{
+					utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+				},
+				PluginId: "test-plugin",
+				Enabled:  true,
+				IsPreset: false,
+			},
+			Contents:  "px.display()",
+			ExportURL: "https://localhost:8080",
+		}, resp.Script)
+}
+
+func TestServer_CreateRetentionScript(t *testing.T) {
+	mustLoadTestData(db)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+	orgConfig := map[string]string{
+		"license_key2": "12345",
+	}
+
+	config := &scripts.Config{
+		OtelEndpointConfig: &scripts.OtelEndpointConfig{
+			URL:      "https://localhost1:8080",
+			Headers:  orgConfig,
+			Insecure: true,
+		},
+	}
+
+	mConfig, err := yaml.Marshal(&config)
+	require.Nil(t, err)
+
+	mockCSClient.EXPECT().CreateScript(gomock.Any(), &cronscriptpb.CreateScriptRequest{
+		Script: "px.display()",
+		ClusterIDs: []*uuidpb.UUID{
+			utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+		},
+		Configs:    string(mConfig),
+		FrequencyS: 20,
+	}).Return(&cronscriptpb.CreateScriptResponse{
+		ID: utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+	}, nil)
+
+	s := controllers.New(db, "test", mockCSClient)
+	resp, err := s.CreateRetentionScript(createTestContext(), &pluginpb.CreateRetentionScriptRequest{
+		Script: &pluginpb.DetailedRetentionScript{
+			Script: &pluginpb.RetentionScript{
+				ScriptName:  "New Script",
+				Description: "This is a new script!",
+				FrequencyS:  20,
+				ClusterIDs: []*uuidpb.UUID{
+					utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+				},
+				PluginId: "test-plugin",
+				Enabled:  true,
+				IsPreset: false,
+			},
+			Contents:  "px.display()",
+			ExportURL: "",
+		},
+		OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"), resp.ID)
+
+	query := `SELECT script_name, description, is_preset, plugin_id, PGP_SYM_DECRYPT(export_url, $1::text) as export_url from plugin_retention_scripts WHERE org_id=$2 AND script_id=$3`
+	rows, err := db.Queryx(query, "test", uuid.FromStringOrNil("223e4567-e89b-12d3-a456-426655440000"), uuid.FromStringOrNil("323e4567-e89b-12d3-a456-426655440000"))
+	require.Nil(t, err)
+	require.True(t, rows.Next())
+
+	var script controllers.RetentionScript
+	err = rows.StructScan(&script)
+	require.Nil(t, err)
+
+	assert.Equal(t, "New Script", script.ScriptName)
+	assert.Equal(t, "This is a new script!", script.Description)
+	assert.Equal(t, false, script.IsPreset)
+	assert.Equal(t, "test-plugin", script.PluginID)
+	assert.Equal(t, "", script.ExportURL)
+}
+
+func TestServer_UpdateRetentionScript(t *testing.T) {
+	mustLoadTestData(db)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+	orgConfig := map[string]string{
+		"license_key2": "12345",
+	}
+
+	config := &scripts.Config{
+		OtelEndpointConfig: &scripts.OtelEndpointConfig{
+			URL:      "https://test",
+			Headers:  orgConfig,
+			Insecure: true,
+		},
+	}
+	mConfig, err := yaml.Marshal(&config)
+	require.Nil(t, err)
+
+	mockCSClient.EXPECT().UpdateScript(gomock.Any(), &cronscriptpb.UpdateScriptRequest{
+		Script: &types.StringValue{Value: "updated script"},
+		ClusterIDs: &cronscriptpb.ClusterIDs{
+			Value: []*uuidpb.UUID{
+				utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+			},
+		},
+		Enabled:    &types.BoolValue{Value: true},
+		FrequencyS: &types.Int64Value{Value: 2},
+		ScriptId:   utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+		Configs:    &types.StringValue{Value: string(mConfig)},
+	})
+
+	s := controllers.New(db, "test", mockCSClient)
+	resp, err := s.UpdateRetentionScript(createTestContext(), &pluginpb.UpdateRetentionScriptRequest{
+		ScriptID:   utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+		ScriptName: &types.StringValue{Value: "Updated Script"},
+		Enabled:    &types.BoolValue{Value: true},
+		FrequencyS: &types.Int64Value{Value: 2},
+		Contents:   &types.StringValue{Value: "updated script"},
+		ExportUrl:  &types.StringValue{Value: "https://test"},
+		ClusterIDs: []*uuidpb.UUID{
+			utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+		},
+	})
+
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+
+	query := `SELECT script_name, description, is_preset, plugin_id, PGP_SYM_DECRYPT(export_url, $1::text) as export_url from plugin_retention_scripts WHERE org_id=$2 AND script_id=$3`
+	rows, err := db.Queryx(query, "test", uuid.FromStringOrNil("223e4567-e89b-12d3-a456-426655440000"), uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"))
+	require.Nil(t, err)
+	require.True(t, rows.Next())
+
+	var script controllers.RetentionScript
+	err = rows.StructScan(&script)
+	require.Nil(t, err)
+
+	assert.Equal(t, "Updated Script", script.ScriptName)
+	assert.Equal(t, "This is a script", script.Description)
+	assert.Equal(t, false, script.IsPreset)
+	assert.Equal(t, "test-plugin", script.PluginID)
+	assert.Equal(t, "https://test", script.ExportURL)
+}
+
+func TestServer_DeleteRetentionScript(t *testing.T) {
+	mustLoadTestData(db)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+	mockCSClient.EXPECT().DeleteScript(gomock.Any(), &cronscriptpb.DeleteScriptRequest{
+		ID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+	}).Return(&cronscriptpb.DeleteScriptResponse{}, nil)
+
+	s := controllers.New(db, "test", mockCSClient)
+	resp, err := s.DeleteRetentionScript(createTestContext(), &pluginpb.DeleteRetentionScriptRequest{
+		ID:    utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+		OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+	})
+
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+
+	query := `SELECT script_name from plugin_retention_scripts WHERE org_id=$1 AND script_id=$2`
+	rows, err := db.Queryx(query, uuid.FromStringOrNil("223e4567-e89b-12d3-a456-426655440000"), uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"))
+	require.Nil(t, err)
+	require.False(t, rows.Next())
+}
+
+func TestServer_DeletePresetRetentionScript(t *testing.T) {
+	mustLoadTestData(db)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+	s := controllers.New(db, "test", mockCSClient)
+	_, err := s.DeleteRetentionScript(createTestContext(), &pluginpb.DeleteRetentionScriptRequest{
+		ID:    utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+		OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+	})
+
+	require.NotNil(t, err)
+
+	query := `SELECT script_name from plugin_retention_scripts WHERE org_id=$1 AND script_id=$2`
+	rows, err := db.Queryx(query, uuid.FromStringOrNil("223e4567-e89b-12d3-a456-426655440000"), uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440001"))
+	require.Nil(t, err)
+	require.True(t, rows.Next())
 }

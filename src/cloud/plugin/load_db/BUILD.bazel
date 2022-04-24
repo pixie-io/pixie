@@ -1,0 +1,74 @@
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+load("@io_bazel_rules_docker//container:container.bzl", "container_push")
+load("@io_bazel_rules_docker//container:image.bzl", "container_image")
+load("@io_bazel_rules_docker//container:layer.bzl", "container_layer")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "load_db_lib",
+    srcs = ["main.go"],
+    importpath = "px.dev/pixie/src/cloud/plugin/load_db",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//src/cloud/plugin/controllers",
+        "//src/cloud/plugin/schema",
+        "//src/cloud/shared/pgmigrate",
+        "//src/shared/services/pg",
+        "@com_github_golang_migrate_migrate//source/go_bindata",
+        "@com_github_jmoiron_sqlx//:sqlx",
+        "@com_github_sirupsen_logrus//:logrus",
+        "@com_github_spf13_pflag//:pflag",
+        "@com_github_spf13_viper//:viper",
+        "@in_gopkg_yaml_v2//:yaml_v2",
+    ],
+)
+
+go_binary(
+    name = "load_db",
+    embed = [":load_db_lib"],
+    visibility = ["//visibility:public"],
+)
+
+container_layer(
+    name = "plugin_db_updater_go_layer",
+    directory = "/plugin_db_updater",
+    files = [":load_db"],
+    visibility = ["//src:__subpackages__"],
+)
+
+container_image(
+    name = "plugin_db_updater_image",
+    base = "@base_image_debug//image",
+    layers = [
+        ":plugin_db_updater_go_layer",
+    ],
+    visibility = [
+        "//k8s:__subpackages__",
+        "//src/cloud:__subpackages__",
+    ],
+)
+
+container_push(
+    name = "push_plugin_db_updater_image",
+    format = "Docker",
+    image = ":plugin_db_updater_image",
+    registry = "gcr.io",
+    repository = "pixie-oss/pixie-dev/cloud/plugin/load_db",
+    tag = "$(BUNDLE_VERSION)",
+    tags = ["manual"],
+)

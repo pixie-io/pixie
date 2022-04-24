@@ -30,7 +30,10 @@ StatusOr<docspb::InternalPXLDocs> ExtractDocs() {
   IR ir;
   compiler::MutationsIR dynamic_trace;
   RegistryInfo registry_info;
-  CompilerState compiler_state(std::make_unique<RelationMap>(), &registry_info, 10, "");
+  CompilerState compiler_state(std::make_unique<RelationMap>(), SensitiveColumnMap{},
+                               &registry_info, /* time_now */ 0, /* max_output_rows_per_table */ 0,
+                               /* result_addr */ "", /* ssl_targetname_override */ "",
+                               RedactionOptions{}, nullptr, nullptr);
   compiler::ModuleHandler module_handler;
 
   PL_ASSIGN_OR_RETURN(auto ast_visitor, compiler::ASTVisitorImpl::Create(

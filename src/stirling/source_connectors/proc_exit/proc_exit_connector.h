@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include <prometheus/counter.h>
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -26,6 +28,7 @@
 #include "src/stirling/core/source_connector.h"
 #include "src/stirling/source_connectors/proc_exit/bcc_bpf_intf/proc_exit.h"
 #include "src/stirling/source_connectors/proc_exit/proc_exit_events_table.h"
+#include "src/stirling/utils/monitor.h"
 
 namespace px {
 namespace stirling {
@@ -51,7 +54,7 @@ class ProcExitConnector : public SourceConnector, public bpf_tools::BCCWrapper {
   void AcceptProcExitEvent(const struct proc_exit_event_t& event);
 
  protected:
-  explicit ProcExitConnector(std::string_view name) : SourceConnector(name, kTables) {}
+  explicit ProcExitConnector(std::string_view name);
 
   Status InitImpl() override;
   void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
@@ -59,6 +62,17 @@ class ProcExitConnector : public SourceConnector, public bpf_tools::BCCWrapper {
 
  private:
   std::vector<struct proc_exit_event_t> events_;
+
+ private:
+  // Update counters related to java process.
+  void UpdateCrashedJavaProcCounters(
+      uint32_t asid, const proc_exit_event_t& event,
+      const absl::flat_hash_map<md::UPID, md::PIDInfoUPtr>& upid_pid_info_map);
+
+  prometheus::Counter& java_proc_crashed_counter_;
+  prometheus::Counter& java_proc_crashed_with_profiler_counter_;
+  prometheus::Counter& java_proc_crashed_without_profiler_counter_;
+  StirlingMonitor& monitor_ = *StirlingMonitor::GetInstance();
 };
 
 }  // namespace proc_exit_tracer

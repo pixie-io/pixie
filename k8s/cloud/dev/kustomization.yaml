@@ -23,6 +23,8 @@ resources:
 - ../base
 - ../overlays/exposed_services_ilb
 patchesStrategicMerge:
+# bq_config is useful for testing, but we don't want dev clusters to typically send data to bq.
+# - bq_config.yaml
 - db_config.yaml
 - ory_service_config.yaml
 - proxy_envoy.yaml

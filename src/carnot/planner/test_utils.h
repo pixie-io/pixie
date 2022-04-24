@@ -745,16 +745,16 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          id: 11
-          sorted_children: 8
+          id: 17
+          sorted_children: 14
         }
         nodes {
-          id: 8
-          sorted_parents: 11
+          id: 14
+          sorted_parents: 17
         }
       }
       nodes {
-        id: 11
+        id: 17
         op {
           op_type: GRPC_SOURCE_OPERATOR
           grpc_source_op {
@@ -768,7 +768,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 8
+        id: 14
         op {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
@@ -812,16 +812,16 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          id: 6
-          sorted_children: 9
+          id: 12
+          sorted_children: 15
         }
         nodes {
-          id: 9
-          sorted_parents: 6
+          id: 15
+          sorted_parents: 12
         }
       }
       nodes {
-        id: 6
+        id: 12
         op {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
@@ -839,12 +839,12 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 9
+        id: 15
         op {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
             address: "1111"
-            grpc_source_id: 11
+            grpc_source_id: 17
             connection_options {
               ssl_targetname: "kelvin.pl.svc"
             }
@@ -1730,9 +1730,12 @@ class DistributedRulesTest : public OperatorTests {
     logical_state_ = CreateTwoPEMsOneKelvinPlannerState(kHttpEventsSchema);
 
     ASSERT_OK(registry_info_->Init(UDFInfoWithTestUDTF()));
-    compiler_state_ =
-        std::make_unique<planner::CompilerState>(MakeRelationMap(LoadSchemaPb(kHttpEventsSchema)),
-                                                 registry_info_.get(), 1234, "result_addr");
+    compiler_state_ = std::make_unique<planner::CompilerState>(
+        MakeRelationMap(LoadSchemaPb(kHttpEventsSchema)), planner::SensitiveColumnMap{},
+        registry_info_.get(), /* time_now */ 1234,
+
+        /* max_output_rows_per_table */ 0, "result_addr", "result_ssl_targetname",
+        planner::RedactionOptions{}, nullptr, nullptr);
 
     for (const auto& [plan_id, carnot_info] :
          Enumerate(logical_state_.distributed_state().carnot_info())) {

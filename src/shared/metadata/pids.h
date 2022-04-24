@@ -34,8 +34,12 @@ namespace md {
 class PIDInfo {
  public:
   PIDInfo() = delete;
-  PIDInfo(UPID upid, std::string_view cmdline, CID cid)
-      : upid_(upid), cmdline_(cmdline), cid_(std::move(cid)), stop_time_ns_(0) {}
+  PIDInfo(UPID upid, std::string exe_path, std::string cmdline, CID cid)
+      : upid_(upid),
+        exe_path_(std::move(exe_path)),
+        cmdline_(std::move(cmdline)),
+        cid_(std::move(cid)),
+        stop_time_ns_(0) {}
 
   UPID upid() const { return upid_; }
 
@@ -44,6 +48,8 @@ class PIDInfo {
   int64_t stop_time_ns() const { return stop_time_ns_; }
 
   void set_stop_time_ns(int64_t ts) { stop_time_ns_ = ts; }
+
+  const std::string& exe_path() const { return exe_path_; }
 
   const std::string& cmdline() const { return cmdline_; }
 
@@ -55,7 +61,8 @@ class PIDInfo {
   }
 
   bool operator==(const PIDInfo& other) const {
-    return (other.upid_ == upid_) && (other.cmdline_ == cmdline_) && (other.cid_ == cid_) &&
+    return (other.upid_ == upid_) && (other.exe_path_ == exe_path_) &&
+           (other.cmdline_ == cmdline_) && (other.cid_ == cid_) &&
            (other.stop_time_ns_ == stop_time_ns_);
   }
 
@@ -65,6 +72,11 @@ class PIDInfo {
 
  private:
   UPID upid_;
+
+  /**
+   * The path to the executable of this process.
+   */
+  std::string exe_path_;
 
   /**
    * The command line used to start this PID.

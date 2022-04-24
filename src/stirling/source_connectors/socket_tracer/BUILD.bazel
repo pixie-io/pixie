@@ -31,6 +31,7 @@ pl_cc_library(
     deps = [
         "//src/common/exec:cc_library",
         "//src/common/grpcutils:cc_library",
+        "//src/common/metrics:cc_library",
         "//src/stirling/bpf_tools:cc_library",
         "//src/stirling/core:cc_library",
         "//src/stirling/obj_tools:cc_library",
@@ -290,8 +291,10 @@ pl_cc_test(
     data = [
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:golang_1_16_grpc_client",
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:golang_1_17_grpc_client",
+        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:golang_1_18_grpc_client",
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_16_grpc_server_with_certs",
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_17_grpc_server_with_certs",
+        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_18_grpc_server_with_certs",
     ],
     flaky = True,
     shard_count = 3,

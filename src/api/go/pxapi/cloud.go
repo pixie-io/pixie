@@ -48,8 +48,6 @@ type VizierInfo struct {
 	Status VizierStatus
 	// Version of the installed vizier.
 	Version string
-	// DirectAccess says the cluster has direct access mode enabled. This means the data transfer will bypass the cloud.
-	DirectAccess bool
 }
 
 func clusterStatusToVizierStatus(status cloudpb.ClusterStatus) VizierStatus {
@@ -78,11 +76,10 @@ func (c *Client) ListViziers(ctx context.Context) ([]*VizierInfo, error) {
 	viziers := make([]*VizierInfo, 0)
 	for _, v := range res.Clusters {
 		viziers = append(viziers, &VizierInfo{
-			Name:         v.ClusterName,
-			ID:           utils.ProtoToUUIDStr(v.ID),
-			Version:      v.VizierVersion,
-			Status:       clusterStatusToVizierStatus(v.Status),
-			DirectAccess: !v.Config.PassthroughEnabled,
+			Name:    v.ClusterName,
+			ID:      utils.ProtoToUUIDStr(v.ID),
+			Version: v.VizierVersion,
+			Status:  clusterStatusToVizierStatus(v.Status),
 		})
 	}
 
@@ -106,20 +103,11 @@ func (c *Client) GetVizierInfo(ctx context.Context, clusterID string) (*VizierIn
 	v := res.Clusters[0]
 
 	return &VizierInfo{
-		Name:         v.ClusterName,
-		ID:           utils.ProtoToUUIDStr(v.ID),
-		Version:      v.VizierVersion,
-		Status:       clusterStatusToVizierStatus(v.Status),
-		DirectAccess: !v.Config.PassthroughEnabled,
+		Name:    v.ClusterName,
+		ID:      utils.ProtoToUUIDStr(v.ID),
+		Version: v.VizierVersion,
+		Status:  clusterStatusToVizierStatus(v.Status),
 	}, nil
-}
-
-// getConnectionInfo gets the connection info for a cluster using direct mode.
-func (c *Client) getConnectionInfo(ctx context.Context, clusterID string) (*cloudpb.GetClusterConnectionInfoResponse, error) {
-	req := &cloudpb.GetClusterConnectionInfoRequest{
-		ID: utils.ProtoFromUUIDStrOrNil(clusterID),
-	}
-	return c.cmClient.GetClusterConnectionInfo(c.cloudCtxWithMD(ctx), req)
 }
 
 // CreateDeployKey creates a new deploy key, with an optional description.

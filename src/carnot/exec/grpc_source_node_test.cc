@@ -46,7 +46,8 @@ class GRPCSourceNodeTest : public ::testing::Test {
     auto table_store = std::make_shared<table_store::TableStore>();
 
     exec_state_ = std::make_unique<ExecState>(func_registry_.get(), table_store,
-                                              MockResultSinkStubGenerator, sole::uuid4(), nullptr);
+                                              MockResultSinkStubGenerator, MockMetricsStubGenerator,
+                                              MockTraceStubGenerator, sole::uuid4(), nullptr);
 
     table_store::schema::Relation rel({types::DataType::BOOLEAN, types::DataType::TIME64NS},
                                       {"col1", "time_"});

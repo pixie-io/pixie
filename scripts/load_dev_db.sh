@@ -37,8 +37,6 @@ fi
 namespace=""
 repo_path=$(bazel info workspace)
 versions_file="${repo_path}/src/utils/artifacts/artifact_db_updater/VERSIONS.json"
-certs_path="${repo_path}/credentials/certs/dev/certs.yaml"
-certs_decoded_path="${repo_path}/credentials/certs/dev/certs_dec.yaml"
 while true; do
     if [[ "$1" == "--help" ]]; then
         usage
@@ -81,12 +79,6 @@ bazel run -c opt //src/utils/artifacts/artifact_db_updater:artifact_db_updater -
     --versions_file "${versions_file}" --postgres_db "pl" --postgres_port "${postgres_port}"
 
 git checkout main "$versions_file"
-
-# Update database with SSL certs.
-sops --config="${repo_path}"/credentials/.sops.yaml --decrypt "${certs_path}" > "${certs_decoded_path}"
-bazel run -c opt //src/cloud/dnsmgr/load_certs:load_certs -- \
-    --certs_path "${certs_decoded_path}" --postgres_db "pl" --postgres_port "${postgres_port}"
-rm "${certs_decoded_path}"
 
 # Kill kubectl port-forward.
 kill -15 "$!"

@@ -20,8 +20,11 @@
 
 #include <absl/container/flat_hash_set.h>
 
+#include <utility>
+
 #include "src/common/system/proc_parser.h"
 #include "src/shared/upid/upid.h"
+#include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
 
 namespace px {
 namespace stirling {
@@ -57,6 +60,35 @@ class ProcTracker : NotCopyMoveable {
   absl::flat_hash_set<md::UPID> upids_;
   absl::flat_hash_set<md::UPID> new_upids_;
   absl::flat_hash_set<md::UPID> deleted_upids_;
+};
+
+/**
+ * Tracks the java processes that are being monitored by Java profiling agent.
+ */
+class JavaProfilingProcTracker : NotCopyMoveable {
+ public:
+  /**
+   * Returns the pointer to the singleton.
+   */
+  static JavaProfilingProcTracker* GetSingleton() {
+    static JavaProfilingProcTracker singleton;
+    return &singleton;
+  }
+
+  /**
+   * Inserts the upid of a Java process to the list being tracked.
+   */
+  void Add(struct upid_t upid) { upids_.insert(std::move(upid)); }
+
+  /**
+   * Removes the upid of a Java process from the list being tracked.
+   */
+  void Remove(const struct upid_t& upid) { upids_.erase(upid); }
+
+  const auto& upids() const { return upids_; }
+
+ private:
+  absl::flat_hash_set<struct upid_t> upids_;
 };
 
 }  // namespace stirling

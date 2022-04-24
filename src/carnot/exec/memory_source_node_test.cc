@@ -31,7 +31,7 @@
 #include "src/carnot/exec/test_utils.h"
 #include "src/carnot/planpb/test_proto.h"
 #include "src/carnot/udf/registry.h"
-#include "src/common/base/test_utils.h"
+#include "src/common/testing/testing.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
@@ -50,7 +50,8 @@ class MemorySourceNodeTest : public ::testing::Test {
     func_registry_ = std::make_unique<udf::Registry>("test_registry");
     auto table_store = std::make_shared<table_store::TableStore>();
     exec_state_ = std::make_unique<ExecState>(func_registry_.get(), table_store,
-                                              MockResultSinkStubGenerator, sole::uuid4(), nullptr);
+                                              MockResultSinkStubGenerator, MockMetricsStubGenerator,
+                                              MockTraceStubGenerator, sole::uuid4(), nullptr);
 
     table_store::schema::Relation rel({types::DataType::BOOLEAN, types::DataType::TIME64NS},
                                       {"col1", "time_"});
@@ -142,14 +143,14 @@ TEST_F(MemorySourceNodeTest, added_batch) {
   EXPECT_FALSE(tester.node()->HasBatchesRemaining());
   auto rb1 = RowBatch(RowDescriptor(cpu_table_->GetRelation().col_types()), 3);
   std::vector<types::BoolValue> col1_in1 = {true, false, true};
-  std::vector<types::Int64Value> col2_in1 = {1, 2, 3};
+  std::vector<types::Time64NSValue> col2_in1 = {1, 2, 3};
   EXPECT_OK(rb1.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
   EXPECT_OK(rb1.AddColumn(types::ToArrow(col2_in1, arrow::default_memory_pool())));
   EXPECT_OK(cpu_table_->WriteRowBatch(rb1));
 
   auto rb2 = RowBatch(RowDescriptor(cpu_table_->GetRelation().col_types()), 2);
   std::vector<types::BoolValue> col1_in2 = {false, false};
-  std::vector<types::Int64Value> col2_in2 = {5, 6};
+  std::vector<types::Time64NSValue> col2_in2 = {5, 6};
   EXPECT_OK(rb2.AddColumn(types::ToArrow(col1_in2, arrow::default_memory_pool())));
   EXPECT_OK(rb2.AddColumn(types::ToArrow(col2_in2, arrow::default_memory_pool())));
   EXPECT_OK(cpu_table_->WriteRowBatch(rb2));
@@ -228,7 +229,8 @@ class MemorySourceNodeTabletTest : public ::testing::Test {
     func_registry_ = std::make_unique<udf::Registry>("test_registry");
     auto table_store = std::make_shared<table_store::TableStore>();
     exec_state_ = std::make_unique<ExecState>(func_registry_.get(), table_store,
-                                              MockResultSinkStubGenerator, sole::uuid4(), nullptr);
+                                              MockResultSinkStubGenerator, MockMetricsStubGenerator,
+                                              MockTraceStubGenerator, sole::uuid4(), nullptr);
 
     rel = table_store::schema::Relation({types::DataType::BOOLEAN, types::DataType::TIME64NS},
                                         {"col1", "time_"});
@@ -366,7 +368,7 @@ TEST_F(MemorySourceNodeTest, infinite_stream) {
   // Simulate stirling still writing to the table.
   auto rb1 = RowBatch(RowDescriptor(cpu_table_->GetRelation().col_types()), 4);
   std::vector<types::BoolValue> col1_in1 = {true, false, true, true};
-  std::vector<types::Int64Value> col2_in1 = {7, 8, 9, 10};
+  std::vector<types::Time64NSValue> col2_in1 = {7, 8, 9, 10};
   EXPECT_OK(rb1.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
   EXPECT_OK(rb1.AddColumn(types::ToArrow(col2_in1, arrow::default_memory_pool())));
   EXPECT_OK(cpu_table_->WriteRowBatch(rb1));
@@ -396,8 +398,8 @@ TEST_F(MemorySourceNodeTest, table_compact_between_open_and_exec) {
   EXPECT_OK(cpu_table_->CompactHotToCold(arrow::default_memory_pool()));
 
   tester.GenerateNextResult().ExpectRowBatch(
-      RowBatchBuilder(output_rd, 1, /*eow*/ false, /*eos*/ false)
-          .AddColumn<types::Time64NSValue>({3})
+      RowBatchBuilder(output_rd, 2, /*eow*/ false, /*eos*/ false)
+          .AddColumn<types::Time64NSValue>({3, 5})
           .get());
   EXPECT_TRUE(tester.node()->HasBatchesRemaining());
 
@@ -405,8 +407,8 @@ TEST_F(MemorySourceNodeTest, table_compact_between_open_and_exec) {
   EXPECT_OK(cpu_table_->CompactHotToCold(arrow::default_memory_pool()));
 
   tester.GenerateNextResult().ExpectRowBatch(
-      RowBatchBuilder(output_rd, 2, /*eow*/ true, /*eos*/ true)
-          .AddColumn<types::Time64NSValue>({5, 6})
+      RowBatchBuilder(output_rd, 1, /*eow*/ true, /*eos*/ true)
+          .AddColumn<types::Time64NSValue>({6})
           .get());
   EXPECT_FALSE(tester.node()->HasBatchesRemaining());
   tester.Close();

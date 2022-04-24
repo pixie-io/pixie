@@ -99,6 +99,7 @@ export { buildClass } from 'app/utils/build-class';
 export { ClusterIcon } from './icons/cluster';
 export { CodeIcon } from './icons/code';
 export { CopyIcon } from './icons/copy';
+export { DataDisksIcon } from './icons/data-disks';
 export { DocsIcon } from './icons/docs';
 export { EditIcon } from './icons/edit';
 export { GoogleIcon } from './icons/google';
@@ -118,7 +119,10 @@ export { PixieLogo } from './icons/pixie-logo';
 export {
   scrollbarStyles,
   COMMON_THEME,
+  DARK_BASE,
   DARK_THEME,
+  LIGHT_BASE,
   LIGHT_THEME,
   EDITOR_THEME_MAP,
+  addSyntaxToPalette,
 } from './mui-theme';

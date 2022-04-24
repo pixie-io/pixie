@@ -33,14 +33,14 @@ namespace compiler {
 class CollectionObject : public QLObject {
  public:
   const std::vector<QLObjectPtr>& items() const { return *items_; }
-  static bool IsCollection(QLObjectPtr obj) {
+  static bool IsCollection(const QLObjectPtr& obj) {
     return obj->type() == QLObjectType::kList || obj->type() == QLObjectType::kTuple;
   }
 
  protected:
-  CollectionObject(const std::vector<QLObjectPtr>& items, const TypeDescriptor& td,
-                   ASTVisitor* visitor)
-      : QLObject(td, visitor) {
+  CollectionObject(const pypa::AstPtr& ast, const std::vector<QLObjectPtr>& items,
+                   const TypeDescriptor& td, ASTVisitor* visitor)
+      : QLObject(td, ast, visitor) {
     items_ = std::make_shared<std::vector<QLObjectPtr>>(items);
   }
 
@@ -67,16 +67,17 @@ class TupleObject : public CollectionObject {
       /* type */ QLObjectType::kTuple,
   };
 
-  static StatusOr<std::shared_ptr<TupleObject>> Create(const std::vector<QLObjectPtr>& items,
+  static StatusOr<std::shared_ptr<TupleObject>> Create(const pypa::AstPtr& ast,
+                                                       const std::vector<QLObjectPtr>& items,
                                                        ASTVisitor* visitor) {
-    auto tuple = std::shared_ptr<TupleObject>(new TupleObject(items, visitor));
+    auto tuple = std::shared_ptr<TupleObject>(new TupleObject(ast, items, visitor));
     PL_RETURN_IF_ERROR(tuple->Init());
     return tuple;
   }
 
  protected:
-  TupleObject(const std::vector<QLObjectPtr>& items, ASTVisitor* visitor)
-      : CollectionObject(items, TupleType, visitor) {}
+  TupleObject(const pypa::AstPtr& ast, const std::vector<QLObjectPtr>& items, ASTVisitor* visitor)
+      : CollectionObject(ast, items, TupleType, visitor) {}
 };
 
 /**
@@ -89,16 +90,17 @@ class ListObject : public CollectionObject {
       /* type */ QLObjectType::kList,
   };
 
-  static StatusOr<std::shared_ptr<ListObject>> Create(const std::vector<QLObjectPtr>& items,
+  static StatusOr<std::shared_ptr<ListObject>> Create(const pypa::AstPtr& ast,
+                                                      const std::vector<QLObjectPtr>& items,
                                                       ASTVisitor* visitor) {
-    auto list = std::shared_ptr<ListObject>(new ListObject(items, visitor));
+    auto list = std::shared_ptr<ListObject>(new ListObject(ast, items, visitor));
     PL_RETURN_IF_ERROR(list->Init());
     return list;
   }
 
  protected:
-  ListObject(const std::vector<QLObjectPtr>& items, ASTVisitor* visitor)
-      : CollectionObject(items, ListType, visitor) {}
+  ListObject(const pypa::AstPtr& ast, const std::vector<QLObjectPtr>& items, ASTVisitor* visitor)
+      : CollectionObject(ast, items, ListType, visitor) {}
 };
 
 /**

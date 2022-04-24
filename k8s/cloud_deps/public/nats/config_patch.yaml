@@ -4,7 +4,7 @@ kind: ConfigMap
 metadata:
   name: nats-config
 data:
-# yamllint disable
+  # yamllint disable rule:indentation
   nats.conf: |
     pid_file: "/var/run/nats/nats.pid"
     http: 8222
@@ -33,4 +33,4 @@ data:
       advertise: $CLUSTER_ADVERTISE
       connect_retries: 30
     }
-# yamllint enable
+  # yamllint enable rule:indentation

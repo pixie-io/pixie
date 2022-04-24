@@ -1362,9 +1362,8 @@ def plot_latency():
 )pxl";
 
 TEST_F(ASTVisitorTest, problem_decorator_parsed) {
-  auto graph_or_s = CompileGraph(kProblemDecoratorParsing);
-  ASSERT_NOT_OK(graph_or_s);
-  EXPECT_THAT(graph_or_s.status(), HasCompilerError("'vis' object is not callable"));
+  EXPECT_THAT(CompileGraph(kProblemDecoratorParsing).status(),
+              HasCompilerError("'vis' object is not callable"));
 }
 
 constexpr char kGlobalDocStringQuery[] = R"pxl(
@@ -1975,8 +1974,16 @@ df = df.head(n=max_num_records)
 px.display(df)
 )pxl";
 TEST_F(ASTVisitorTest, agg_segfault) {
-  EXPECT_THAT(CompileGraph(kAggSegfaultScript).status().msg(),
-              ::testing::ContainsRegex(".*?All elements of the agg tuple must be column names.*?"));
+  EXPECT_THAT(CompileGraph(kAggSegfaultScript).status(),
+              HasCompilerError(".*?All elements of the agg tuple must be column names.*?"));
+}
+
+TEST_F(ASTVisitorTest, error_on_global) {
+  // Tests to make sure that we will have a valid error on global objects that don't start with ast
+  // errors. AstVisitorImpl::LookupVariable should set the ast for any referenced object.
+  auto vt = VarTable::Create();
+  EXPECT_OK(ParseScript(vt, "l = list"));
+  EXPECT_THAT(vt->Lookup("l")->CreateError("new error"), HasCompilerErrorAt(1, 5, "new error"));
 }
 
 }  // namespace compiler

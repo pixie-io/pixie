@@ -48,6 +48,12 @@ spec:
               key: cluster-id
               name: pl-cluster-secrets
               optional: true
+        - name: PL_VIZIER_NAME
+          valueFrom:
+            secretKeyRef:
+              key: cluster-name
+              name: pl-cluster-secrets
+              optional: true
         - name: PL_DEPLOY_KEY
           valueFrom:
             secretKeyRef:
