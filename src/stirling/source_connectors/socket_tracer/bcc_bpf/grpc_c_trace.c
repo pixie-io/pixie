@@ -602,6 +602,8 @@ static inline u32 get_flow_controlled_buffer_from_stream(
  *                          Data that relates to the HTTP2 connection on which the
  *                          slices are sent. This is used to determine and update
  *                          the position of the slice in the stream.
+ *                          defined in
+ *                          src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.h
  *
  * @remark  The same struct is used for multiple perf events. This seems to work
  *          fine, but we should keep an eye out for erros caused by this.
