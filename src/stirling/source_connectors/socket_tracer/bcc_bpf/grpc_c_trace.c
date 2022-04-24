@@ -314,8 +314,7 @@ static inline u32 get_fd_from_transport(const grpc_chttp2_transport* const trans
     return -1;
   }
 
-  if (0 != BPF_PROBE_READ_VAR(endpoint,
-                          (void*)(transport + GRPC_C_ENDPOINT_OFFSET_IN_TRANSPORT))) {
+  if (0 != BPF_PROBE_READ_VAR(endpoint, (void*)(transport + GRPC_C_ENDPOINT_OFFSET_IN_TRANSPORT))) {
     return -1;
   }
   if (NULL == endpoint) {
@@ -513,9 +512,11 @@ static inline u32 get_data_ptr_from_slice(const grpc_slice* const slice,
  * @return  -1 on failure.
  *          0 on success.
  */
-static inline u32 fire_metadata_events(const struct grpc_c_metadata_t* const metadata, const struct conn_id_t conn_id,
-                                       const uint32_t stream_id, const uint64_t timestamp,
-                                       const enum traffic_direction_t direction, struct pt_regs* ctx) {
+static inline u32 fire_metadata_events(const struct grpc_c_metadata_t* const metadata,
+                                       const struct conn_id_t conn_id, const uint32_t stream_id,
+                                       const uint64_t timestamp,
+                                       const enum traffic_direction_t direction,
+                                       struct pt_regs* ctx) {
   struct grpc_c_header_event_data_t* header_event = initiate_empty_grpc_header_event_data();
   if (NULL == header_event) {
     return -1;
@@ -627,8 +628,7 @@ static inline u32 get_slices_from_grpc_slice_buffer_and_fire_perf_event_per_slic
   }
 
   // Read amount of slices.
-  if (0 !=
-      BPF_PROBE_READ_VAR(amount_of_slices, (void*)(slice_buffer + 0x10))) {
+  if (0 != BPF_PROBE_READ_VAR(amount_of_slices, (void*)(slice_buffer + 0x10))) {
     return -1;
   }
 
@@ -737,8 +737,7 @@ static inline int fill_metadata_from_mdelem_list(const grpc_mdelem_list* const m
     return -1;
   }
 
-  if (0 != BPF_PROBE_READ_VAR(current_linked_mdelem,
-                          (void*)(mdelem_list + 0x10))) {
+  if (0 != BPF_PROBE_READ_VAR(current_linked_mdelem, (void*)(mdelem_list + 0x10))) {
     return -1;
   }
 
@@ -748,8 +747,8 @@ static inline int fill_metadata_from_mdelem_list(const grpc_mdelem_list* const m
     }
 
     // Get the mdelem info.
-    if (0 != BPF_PROBE_READ_VAR(grpc_mdelem_data_with_storage_bits,
-                            (void*)(current_linked_mdelem))) {
+    if (0 !=
+        BPF_PROBE_READ_VAR(grpc_mdelem_data_with_storage_bits, (void*)(current_linked_mdelem))) {
       return -1;
     }
     if (NULL == grpc_mdelem_data_with_storage_bits) {
@@ -788,8 +787,7 @@ static inline int fill_metadata_from_mdelem_list(const grpc_mdelem_list* const m
     }
 
     // Go forward in the linked list of mdelems.
-    if (0 != BPF_PROBE_READ_VAR(current_linked_mdelem,
-                            (void*)(current_linked_mdelem + 0x8))) {
+    if (0 != BPF_PROBE_READ_VAR(current_linked_mdelem, (void*)(current_linked_mdelem + 0x8))) {
       return -1;
     }
   }
