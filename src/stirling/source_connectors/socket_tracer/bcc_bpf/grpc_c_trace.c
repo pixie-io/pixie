@@ -232,7 +232,7 @@ static inline u64 lookup_version(u32 pid) {
  *
  * @return  0 on success, otherwise on failure.
  */
-static inline u32 dereference_at(void* src, const u32 offset, /* OUT */ void** dst) {
+static inline u32 dereference_at(const void* const src, const u32 offset, /* OUT */ void** dst) {
   if (NULL == src || NULL == dst) {
     return -1;
   }
@@ -256,7 +256,7 @@ static inline u32 dereference_at(void* src, const u32 offset, /* OUT */ void** d
  *
  * @return  0 on success, otherwise on failure.
  */
-static inline u32 get_stream_id(grpc_chttp2_stream* stream,
+static inline u32 get_stream_id(const grpc_chttp2_stream* const stream,
                                 /* OUT */ u32* stream_id, const u64 version) {
   u32 offset = 0;
 
@@ -306,7 +306,7 @@ static inline u32 get_stream_id(grpc_chttp2_stream* stream,
  *
  * @return  0 on success, otherwise on failure.
  */
-static inline u32 get_fd_from_transport(grpc_chttp2_transport* transport,
+static inline u32 get_fd_from_transport(const grpc_chttp2_transport* const transport,
                                         /* OUT */ u32* fd) {
   grpc_endpoint* endpoint = NULL;
 
@@ -341,7 +341,7 @@ static inline u32 get_fd_from_transport(grpc_chttp2_transport* transport,
  * @return  0 on success, otherwise on failure.
  */
 static inline u32 get_recv_initial_metadata_batch_from_stream(
-    grpc_chttp2_stream* stream,
+    const grpc_chttp2_stream* const stream,
     /* OUT */ grpc_metadata_batch** initial_metadata_batch, const u64 version) {
   uint32_t offset = 0;
   switch (version) {
@@ -372,7 +372,7 @@ static inline u32 get_recv_initial_metadata_batch_from_stream(
  * @return  0 on success, otherwise on failure.
  */
 static inline u32 get_recv_trailing_metadata_batch_from_stream(
-    grpc_chttp2_stream* stream,
+    const grpc_chttp2_stream* const stream,
     /* OUT */ grpc_metadata_batch** trailing_metadata_batch, const u64 version) {
   uint32_t offset = 0;
   switch (version) {
@@ -405,7 +405,7 @@ static inline u32 get_recv_trailing_metadata_batch_from_stream(
  * @return  0 on success, otherwise on failure.
  */
 static inline u32 get_send_initial_metadata_batch_from_stream(
-    grpc_chttp2_stream* stream,
+    const grpc_chttp2_stream* const stream,
     /* OUT */ grpc_metadata_batch** initial_metadata_batch, const u64 version) {
   uint32_t offset = 0;
   switch (version) {
@@ -436,7 +436,7 @@ static inline u32 get_send_initial_metadata_batch_from_stream(
  * @return  0 on success, otherwise on failure.
  */
 static inline u32 get_send_trailing_metadata_batch_from_stream(
-    grpc_chttp2_stream* stream,
+    const grpc_chttp2_stream* const stream,
     /* OUT */ grpc_metadata_batch** trailing_metadata_batch, const u64 version) {
   uint32_t offset = 0;
   switch (version) {
@@ -465,7 +465,7 @@ static inline u32 get_send_trailing_metadata_batch_from_stream(
  *
  * @return  0 on success, otherwise on failure.
  */
-static inline u32 get_data_ptr_from_slice(grpc_slice* slice,
+static inline u32 get_data_ptr_from_slice(const grpc_slice* const slice,
                                           /* OUT */ u32* length,
                                           /* OUT */ void** bytes) {
   void* refcount = NULL;
@@ -484,7 +484,7 @@ static inline u32 get_data_ptr_from_slice(grpc_slice* slice,
     if (0 != bpf_probe_read(length, sizeof(u8), (void*)(slice + 0x8))) {
       return -1;
     }
-    *bytes = slice + 0x9;
+    *bytes = (void*)(slice + 0x9);
     return 0;
   }
 
@@ -512,9 +512,9 @@ static inline u32 get_data_ptr_from_slice(grpc_slice* slice,
  * @return  -1 on failure.
  *          0 on success.
  */
-static inline u32 fire_metadata_events(struct grpc_c_metadata_t* metadata, struct conn_id_t conn_id,
-                                       uint32_t stream_id, uint64_t timestamp,
-                                       enum traffic_direction_t direction, struct pt_regs* ctx) {
+static inline u32 fire_metadata_events(const struct grpc_c_metadata_t* const metadata, const struct conn_id_t conn_id,
+                                       const uint32_t stream_id, const uint64_t timestamp,
+                                       const enum traffic_direction_t direction, struct pt_regs* ctx) {
   struct grpc_c_header_event_data_t* header_event = initiate_empty_grpc_header_event_data();
   if (NULL == header_event) {
     return -1;
@@ -561,7 +561,7 @@ static inline u32 fire_metadata_events(struct grpc_c_metadata_t* metadata, struc
  *          0 on success.
  */
 static inline u32 get_flow_controlled_buffer_from_stream(
-    grpc_chttp2_stream* stream,
+    const grpc_chttp2_stream* const stream,
     /* OUT */ grpc_slice_buffer** flow_controlled_buffer, const u64 version) {
   if (NULL == stream || NULL == flow_controlled_buffer) {
     return -1;
@@ -571,16 +571,16 @@ static inline u32 get_flow_controlled_buffer_from_stream(
     case GRPC_C_V1_19_0:
       // Found the offset with IDA, after "sending trailing_metadata" string.
       // https://hex-rays.com/ida-pro/
-      *flow_controlled_buffer = stream + 0x6e8;
+      *flow_controlled_buffer = (grpc_slice_buffer*)(stream + 0x6e8);
       break;
     case GRPC_C_V1_24_1:
-      *flow_controlled_buffer = stream + 0x980;
+      *flow_controlled_buffer = (grpc_slice_buffer*)(stream + 0x980);
       break;
     case GRPC_C_V1_33_2:
-      *flow_controlled_buffer = stream + 0x970;
+      *flow_controlled_buffer = (grpc_slice_buffer*)(stream + 0x970);
       break;
     case GRPC_C_V1_41_1:
-      *flow_controlled_buffer = stream + 0x978;
+      *flow_controlled_buffer = (grpc_slice_buffer*)(stream + 0x978);
       break;
     default:
       return -1;
@@ -611,7 +611,7 @@ static inline u32 get_flow_controlled_buffer_from_stream(
  *          0 on success.
  */
 static inline u32 get_slices_from_grpc_slice_buffer_and_fire_perf_event_per_slice(
-    struct pt_regs* ctx, grpc_slice_buffer* slice_buffer,
+    struct pt_regs* ctx, const grpc_slice_buffer* const slice_buffer,
     struct grpc_c_event_data_t* write_event_data, struct conn_info_t* connection_info) {
   struct grpc_c_data_slice_t* data_slice = NULL;
   grpc_slice* slice = NULL;
@@ -714,7 +714,7 @@ static inline u32 get_slices_from_grpc_slice_buffer_and_fire_perf_event_per_slic
  * @return  0 on success.
  *          Otherwise on failure.
  */
-static inline int fill_metadata_from_mdelem_list(grpc_mdelem_list* mdelem_list,
+static inline int fill_metadata_from_mdelem_list(const grpc_mdelem_list* const mdelem_list,
                                                  /* OUT */ struct grpc_c_metadata_t* metadata) {
   grpc_linked_mdelem* current_linked_mdelem = NULL;
   void* grpc_mdelem_data_with_storage_bits = NULL;
