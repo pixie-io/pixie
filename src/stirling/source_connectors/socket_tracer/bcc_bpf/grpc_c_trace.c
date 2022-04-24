@@ -237,7 +237,7 @@ static inline u32 dereference_at(const void* const src, const u32 offset, /* OUT
     return -1;
   }
 
-  if (0 != bpf_probe_read(dst, sizeof(*dst), (void*)(src + offset))) {
+  if (0 != BPF_PROBE_READ_VAR(*dst, (void*)(src + offset))) {
     return -1;
   }
 
@@ -260,7 +260,7 @@ static inline u32 get_stream_id(const grpc_chttp2_stream* const stream,
                                 /* OUT */ u32* stream_id, const u64 version) {
   u32 offset = 0;
 
-  if (NULL == stream_id || NULL == stream_id) {
+  if (NULL == stream || NULL == stream_id) {
     return -1;
   }
 
@@ -279,7 +279,7 @@ static inline u32 get_stream_id(const grpc_chttp2_stream* const stream,
       return -1;
   }
 
-  if (0 != bpf_probe_read(stream_id, sizeof(*stream_id), (void*)(stream + offset))) {
+  if (0 != BPF_PROBE_READ_VAR(*stream_id, (void*)(stream + offset))) {
     return -1;
   }
 
@@ -314,7 +314,7 @@ static inline u32 get_fd_from_transport(const grpc_chttp2_transport* const trans
     return -1;
   }
 
-  if (0 != bpf_probe_read(&endpoint, sizeof(endpoint),
+  if (0 != BPF_PROBE_READ_VAR(endpoint,
                           (void*)(transport + GRPC_C_ENDPOINT_OFFSET_IN_TRANSPORT))) {
     return -1;
   }
@@ -323,7 +323,7 @@ static inline u32 get_fd_from_transport(const grpc_chttp2_transport* const trans
   }
 
   // If endpoint is a grpc_tcp object (we assume it's the case), offset is 0x10.
-  if (0 != bpf_probe_read(fd, sizeof(*fd), (void*)(endpoint + GRPC_C_FD_OFFSET_IN_TCP_ENDPOINT))) {
+  if (0 != BPF_PROBE_READ_VAR(*fd, (void*)(endpoint + GRPC_C_FD_OFFSET_IN_TCP_ENDPOINT))) {
     return -1;
   }
 
@@ -475,12 +475,13 @@ static inline u32 get_data_ptr_from_slice(const grpc_slice* const slice,
   }
 
   // Read refcount
-  if (0 != bpf_probe_read(&refcount, sizeof(refcount), (void*)(slice))) {
+  if (0 != BPF_PROBE_READ_VAR(refcount, (void*)(slice))) {
     return -1;
   }
   if (unlikely(NULL == refcount)) {
     // This slice is an inlined grpc slice.
     // Bytes are directly inside the slice object.
+    *length = 0;
     if (0 != bpf_probe_read(length, sizeof(u8), (void*)(slice + 0x8))) {
       return -1;
     }
@@ -489,12 +490,12 @@ static inline u32 get_data_ptr_from_slice(const grpc_slice* const slice,
   }
 
   // Read length
-  if (0 != bpf_probe_read(length, sizeof(*length), (void*)(slice + 0x8))) {
+  if (0 != BPF_PROBE_READ_VAR(*length, (void*)(slice + 0x8))) {
     return -1;
   }
 
   // Read bytes pointer.
-  if (0 != bpf_probe_read(bytes, sizeof(*bytes), (void*)(slice + 0x10))) {
+  if (0 != BPF_PROBE_READ_VAR(*bytes, (void*)(slice + 0x10))) {
     return -1;
   }
 
@@ -627,12 +628,12 @@ static inline u32 get_slices_from_grpc_slice_buffer_and_fire_perf_event_per_slic
 
   // Read amount of slices.
   if (0 !=
-      bpf_probe_read(&amount_of_slices, sizeof(amount_of_slices), (void*)(slice_buffer + 0x10))) {
+      BPF_PROBE_READ_VAR(amount_of_slices, (void*)(slice_buffer + 0x10))) {
     return -1;
   }
 
   // Read pointer to first slice.
-  if (0 != bpf_probe_read(&slice, sizeof(slice), (void*)(slice_buffer + 0x08))) {
+  if (0 != BPF_PROBE_READ_VAR(slice, (void*)(slice_buffer + 0x08))) {
     return -1;
   }
 
@@ -732,11 +733,11 @@ static inline int fill_metadata_from_mdelem_list(const grpc_mdelem_list* const m
     return -1;
   }
 
-  if (0 != bpf_probe_read(&metadata->count, sizeof(metadata->count), (void*)(mdelem_list))) {
+  if (0 != BPF_PROBE_READ_VAR(metadata->count, (void*)(mdelem_list))) {
     return -1;
   }
 
-  if (0 != bpf_probe_read(&current_linked_mdelem, sizeof(current_linked_mdelem),
+  if (0 != BPF_PROBE_READ_VAR(current_linked_mdelem,
                           (void*)(mdelem_list + 0x10))) {
     return -1;
   }
@@ -747,8 +748,7 @@ static inline int fill_metadata_from_mdelem_list(const grpc_mdelem_list* const m
     }
 
     // Get the mdelem info.
-    if (0 != bpf_probe_read(&grpc_mdelem_data_with_storage_bits,
-                            sizeof(grpc_mdelem_data_with_storage_bits),
+    if (0 != BPF_PROBE_READ_VAR(grpc_mdelem_data_with_storage_bits,
                             (void*)(current_linked_mdelem))) {
       return -1;
     }
@@ -788,7 +788,7 @@ static inline int fill_metadata_from_mdelem_list(const grpc_mdelem_list* const m
     }
 
     // Go forward in the linked list of mdelems.
-    if (0 != bpf_probe_read(&current_linked_mdelem, sizeof(current_linked_mdelem),
+    if (0 != BPF_PROBE_READ_VAR(current_linked_mdelem,
                             (void*)(current_linked_mdelem + 0x8))) {
       return -1;
     }
@@ -1149,7 +1149,7 @@ int probe_ret_grpc_chttp2_list_pop_writable_stream(struct pt_regs* ctx) {
   }
 
   transport_ptr = (grpc_chttp2_transport*)args->transport;
-  if (0 != bpf_probe_read(&(stream_ptr), sizeof(stream_ptr), (void*)(args->stream))) {
+  if (0 != BPF_PROBE_READ_VAR(stream_ptr, (void*)(args->stream))) {
     return -1;
   }
 
