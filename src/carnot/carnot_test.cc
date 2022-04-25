@@ -33,6 +33,7 @@
 #include "src/carnot/exec/test_utils.h"
 #include "src/carnot/funcs/funcs.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
+#include "src/common/base/statuspb/status.pb.h"
 #include "src/common/testing/testing.h"
 #include "src/table_store/table_store.h"
 
@@ -1577,6 +1578,61 @@ TEST_F(CarnotTest, error_node_test) {
   EXPECT_EQ(errors.size(), 1);
   EXPECT_THAT(errors[0].DebugString(),
               ::testing::MatchesRegex(".*No UDF matching upid_to_service_name.*"));
+}
+
+TEST_F(CarnotTest, receive_error) {
+  grpc::ServerBuilder builder;
+  builder.AddListeningPort("localhost:0", grpc::InsecureServerCredentials());
+  builder.RegisterService(router_);
+  auto grpc_server = builder.BuildAndStart();
+
+  grpc::ChannelArguments args;
+  auto input_stub = px::carnotpb::ResultSinkService::NewStub(grpc_server->InProcessChannel(args));
+
+  auto query_id = sole::uuid4();
+
+  carnotpb::TransferResultChunkResponse response;
+  grpc::ClientContext ctx1;
+  auto writer1 = input_stub->TransferResultChunk(&ctx1, &response);
+  carnotpb::TransferResultChunkResponse resp;
+
+  // The Open() call of grpc_sink_node will make a request to the grpc server.
+  // This init request mimics that call. It's safe to believe this will happen
+  // before an error is sent over.
+  carnotpb::TransferResultChunkRequest init_req;
+  init_req.set_address("foo");
+  init_req.mutable_query_result()->set_grpc_source_id(20);
+  init_req.mutable_query_result()->set_initiate_result_stream(true);
+  ToProto(query_id, init_req.mutable_query_id());
+
+  EXPECT_TRUE(writer1->Write(init_req));
+  writer1->WritesDone();
+  auto init_writer_s = writer1->Finish();
+  ASSERT_TRUE(init_writer_s.ok()) << init_writer_s.error_message();
+
+  response.Clear();
+  grpc::ClientContext ctx2;
+  auto writer2 = input_stub->TransferResultChunk(&ctx2, &response);
+
+  carnotpb::TransferResultChunkRequest req;
+  req.set_address("foo");
+  ToProto(query_id, req.mutable_query_id());
+  Status(statuspb::INTERNAL, "didnt process data").ToProto(req.mutable_execution_error());
+
+  EXPECT_TRUE(writer2->Write(req));
+  writer2->WritesDone();
+  auto writer_s = writer2->Finish();
+  EXPECT_TRUE(writer_s.ok()) << writer_s.error_message();
+  std::string query = R"pxl(
+import px
+px.display(px.DataFrame('big_test_table'))
+)pxl";
+
+  ASSERT_THAT(carnot_->ExecuteQuery(query, query_id, 0).status().msg(),
+              ::testing::MatchesRegex(".*didnt process data.*"));
+  auto errors = result_server_->exec_errors();
+  EXPECT_EQ(errors.size(), 1);
+  EXPECT_THAT(errors[0].DebugString(), ::testing::MatchesRegex(".*didnt process data.*"));
 }
 
 }  // namespace carnot
