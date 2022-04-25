@@ -423,7 +423,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
       CheckExpectedCounts(observed_leaf_symbols_, kNumSubProcesses, elapsed_time, key1x, key2x));
 
   // Now we will test agent cleanup, specifically whether the aritfacts directory is removed.
-  // We will construt a list of artifacts paths that we expect,
+  // We will construct a list of artifacts paths that we expect,
   // then kill all the subprocesses,
   // and expect that all the artifacts paths are (as a result) removed.
   std::vector<std::filesystem::path> artifacts_paths;
