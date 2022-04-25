@@ -20,9 +20,11 @@ package scriptrunner
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
@@ -31,7 +33,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
+	"px.dev/pixie/src/api/proto/vizierpb"
+	"px.dev/pixie/src/carnot/planner/compilerpb"
+	"px.dev/pixie/src/common/base/statuspb"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/scripts"
 	"px.dev/pixie/src/utils"
@@ -247,7 +254,8 @@ func TestScriptRunner_GetCloudScripts(t *testing.T) {
 }
 
 type fakeCronStore struct {
-	scripts map[uuid.UUID]*cvmsgspb.CronScript
+	scripts                 map[uuid.UUID]*cvmsgspb.CronScript
+	receivedResultRequestCh chan<- *metadatapb.RecordExecutionResultRequest
 }
 
 // GetScripts fetches all scripts in the cron script store.
@@ -292,6 +300,7 @@ func (s *fakeCronStore) SetScripts(ctx context.Context, req *metadatapb.SetScrip
 
 // RecordExecutionResult stores the result of execution, whether that's an error or the stats about the execution.
 func (s *fakeCronStore) RecordExecutionResult(ctx context.Context, req *metadatapb.RecordExecutionResultRequest, opts ...grpc.CallOption) (*metadatapb.RecordExecutionResultResponse, error) {
+	s.receivedResultRequestCh <- req
 	return &metadatapb.RecordExecutionResultResponse{}, nil
 }
 
@@ -752,6 +761,181 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 				assert.True(t, ok)
 				assert.Equal(t, v, val.cronScript)
 			}
+		})
+	}
+}
+
+type fakeExecuteScriptClient struct {
+	// The error to send if not nil. The client does not send responses if this is not nil.
+	err       error
+	responses []*vizierpb.ExecuteScriptResponse
+	responseI int
+	grpc.ClientStream
+}
+
+func (es *fakeExecuteScriptClient) Recv() (*vizierpb.ExecuteScriptResponse, error) {
+	if es.err != nil {
+		return nil, es.err
+	}
+
+	resp := es.responses[es.responseI]
+	es.responseI++
+	return resp, nil
+}
+
+type fakeVizierServiceClient struct {
+	responses []*vizierpb.ExecuteScriptResponse
+	err       error
+}
+
+func (vs *fakeVizierServiceClient) ExecuteScript(ctx context.Context, in *vizierpb.ExecuteScriptRequest, opts ...grpc.CallOption) (vizierpb.VizierService_ExecuteScriptClient, error) {
+	return &fakeExecuteScriptClient{responses: vs.responses, err: vs.err}, nil
+}
+func (vs *fakeVizierServiceClient) HealthCheck(ctx context.Context, in *vizierpb.HealthCheckRequest, opts ...grpc.CallOption) (vizierpb.VizierService_HealthCheckClient, error) {
+	return nil, errors.New("Not implemented")
+}
+
+func TestScriptRunner_StoreResults(t *testing.T) {
+	marshalMust := func(a *types.Any, _ error) *types.Any {
+		return a
+	}
+	tests := []struct {
+		name                string
+		execScriptResponses []*vizierpb.ExecuteScriptResponse
+		// We only test the Result part.
+		expectedExecutionResult *metadatapb.RecordExecutionResultRequest
+		err                     error
+	}{
+		{
+			name: "forwards exec stats",
+			execScriptResponses: []*vizierpb.ExecuteScriptResponse{
+				&vizierpb.ExecuteScriptResponse{
+					Result: &vizierpb.ExecuteScriptResponse_Data{
+						Data: &vizierpb.QueryData{
+							ExecutionStats: &vizierpb.QueryExecutionStats{
+								Timing: &vizierpb.QueryTimingInfo{
+									ExecutionTimeNs:   123,
+									CompilationTimeNs: 456,
+								},
+								RecordsProcessed: 999,
+								BytesProcessed:   1000,
+							},
+						},
+					},
+				},
+			},
+			expectedExecutionResult: &metadatapb.RecordExecutionResultRequest{
+				Result: &metadatapb.RecordExecutionResultRequest_ExecutionStats{
+					ExecutionStats: &metadatapb.ExecutionStats{
+						ExecutionTimeNs:   123,
+						CompilationTimeNs: 456,
+						RecordsProcessed:  999,
+						BytesProcessed:    1000,
+					},
+				},
+			},
+		},
+		{
+			name: "handles non-compiler error",
+			execScriptResponses: []*vizierpb.ExecuteScriptResponse{
+				&vizierpb.ExecuteScriptResponse{
+					Status: &vizierpb.Status{
+						Code:    3, // INVALID_ARGUMENT
+						Message: "Invalid",
+					},
+				},
+			},
+			expectedExecutionResult: &metadatapb.RecordExecutionResultRequest{
+				Result: &metadatapb.RecordExecutionResultRequest_Error{
+					Error: &statuspb.Status{
+						ErrCode: statuspb.INVALID_ARGUMENT,
+						Msg:     "Invalid",
+					},
+				},
+			},
+		},
+		{
+			name: "handles compiler error",
+			execScriptResponses: []*vizierpb.ExecuteScriptResponse{
+				&vizierpb.ExecuteScriptResponse{
+					Status: &vizierpb.Status{
+						Code: 3, // INVALID_ARGUMENT
+						ErrorDetails: []*vizierpb.ErrorDetails{
+							{
+								Error: &vizierpb.ErrorDetails_CompilerError{
+									CompilerError: &vizierpb.CompilerError{
+										Message: "syntax error",
+										Line:    123,
+										Column:  456,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedExecutionResult: &metadatapb.RecordExecutionResultRequest{
+				Result: &metadatapb.RecordExecutionResultRequest_Error{
+					Error: &statuspb.Status{
+						ErrCode: statuspb.INVALID_ARGUMENT,
+						Context: marshalMust(types.MarshalAny(&compilerpb.CompilerErrorGroup{
+							Errors: []*compilerpb.CompilerError{
+								{
+									Error: &compilerpb.CompilerError_LineColError{
+										LineColError: &compilerpb.LineColError{
+											Message: "syntax error",
+											Line:    123,
+											Column:  456,
+										},
+									},
+								},
+							},
+						})),
+					},
+				},
+			},
+		},
+		{
+			name: "handles grpc error",
+			err:  status.New(codes.InvalidArgument, "Invalid").Err(),
+			expectedExecutionResult: &metadatapb.RecordExecutionResultRequest{
+				Result: &metadatapb.RecordExecutionResultRequest_Error{
+					Error: &statuspb.Status{
+						ErrCode: statuspb.INVALID_ARGUMENT,
+						Msg:     "Invalid",
+					},
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			receivedResultRequestCh := make(chan *metadatapb.RecordExecutionResultRequest)
+			fcs := &fakeCronStore{scripts: make(map[uuid.UUID]*cvmsgspb.CronScript), receivedResultRequestCh: receivedResultRequestCh}
+
+			script := &cvmsgspb.CronScript{
+				ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+				Script:     "px.display()",
+				Configs:    "config1",
+				FrequencyS: 1,
+			}
+
+			id := uuid.FromStringOrNil("223e4567-e89b-12d3-a456-426655440000")
+			fvs := &fakeVizierServiceClient{responses: test.execScriptResponses, err: test.err}
+			runner := newRunner(script, fvs, "test", id, fcs)
+			runner.start()
+
+			var result *metadatapb.RecordExecutionResultRequest
+			select {
+			case result = <-receivedResultRequestCh:
+			case <-time.After(time.Second * 10):
+			}
+			runner.stop()
+			require.NotNil(t, result, "Failed to receive a valid result")
+
+			assert.Equal(t, utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"), result.ScriptID)
+			assert.Equal(t, test.expectedExecutionResult.GetError(), result.GetError())
+			assert.Equal(t, test.expectedExecutionResult.GetExecutionStats(), result.GetExecutionStats())
 		})
 	}
 }
