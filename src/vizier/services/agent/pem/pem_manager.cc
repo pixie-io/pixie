@@ -40,6 +40,7 @@ namespace agent {
 
 Status PEMManager::InitImpl() {
   PL_RETURN_IF_ERROR(InitClockConverters());
+  StartNodeMemoryCollector();
   return Status::OK();
 }
 
@@ -117,6 +118,23 @@ Status PEMManager::InitClockConverters() {
   clock_converter_timer_->EnableTimer(
       px::system::Config::GetInstance().clock_converter()->UpdatePeriod());
   return Status::OK();
+}
+
+void PEMManager::StartNodeMemoryCollector() {
+  node_memory_timer_ = dispatcher()->CreateTimer([this]() {
+    px::system::ProcParser proc(px::system::Config::GetInstance());
+    px::system::ProcParser::SystemStats stats;
+    auto s = proc.ParseProcMemInfo(&stats);
+    LOG_IF(ERROR, !s.ok()) << "Failed to parse /proc/meminfo " << s.msg();
+    if (s.ok()) {
+      node_total_memory_.Set(stats.mem_total_bytes);
+      node_available_memory_.Set(stats.mem_available_bytes);
+    }
+    if (node_memory_timer_) {
+      node_memory_timer_->EnableTimer(kNodeMemoryCollectionPeriod);
+    }
+  });
+  node_memory_timer_->EnableTimer(kNodeMemoryCollectionPeriod);
 }
 
 }  // namespace agent
