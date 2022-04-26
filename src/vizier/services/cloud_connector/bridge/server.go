@@ -212,10 +212,11 @@ type Bridge struct {
 	droppedMessagesBeforeResume int64 // Number of messages dropped before successful resume.
 
 	natsMetricsCh chan *nats.Msg
+	metricsCh     <-chan *messagespb.MetricsMessage // Channel is used to pass metrics from the scraper to the bridge.
 }
 
 // New creates a cloud connector to cloud bridge.
-func New(vizierID uuid.UUID, assignedClusterName string, jwtSigningKey string, deployKey string, sessionID int64, vzClient vzconnpb.VZConnServiceClient, vzInfo VizierInfo, vzOperator VizierOperatorInfo, nc *nats.Conn, checker VizierHealthChecker) *Bridge {
+func New(vizierID uuid.UUID, assignedClusterName string, jwtSigningKey string, deployKey string, sessionID int64, vzClient vzconnpb.VZConnServiceClient, vzInfo VizierInfo, vzOperator VizierOperatorInfo, nc *nats.Conn, checker VizierHealthChecker, metricsCh <-chan *messagespb.MetricsMessage) *Bridge {
 	return &Bridge{
 		vizierID:            vizierID,
 		assignedClusterName: assignedClusterName,
@@ -238,6 +239,7 @@ func New(vizierID uuid.UUID, assignedClusterName string, jwtSigningKey string, d
 		wg:                sync.WaitGroup{},
 		wdWg:              sync.WaitGroup{},
 		natsMetricsCh:     make(chan *nats.Msg, 5000),
+		metricsCh:         metricsCh,
 	}
 }
 
@@ -623,13 +625,8 @@ func (s *Bridge) handleDebugPodsRequest(reqID string, req *vizierpb.DebugPodsReq
 	return s.sendDebugStreamResponse(reqID, resps)
 }
 
-func (s *Bridge) handleMetricsMessage(msg *nats.Msg) error {
-	metricsMsg := &messagespb.MetricsMessage{}
-	err := proto.Unmarshal(msg.Data, metricsMsg)
-	if err != nil {
-		return err
-	}
-	promWriteReq, err := vzmetrics.ParsePrometheusTextToWriteReq(metricsMsg.PromMetricsText, s.vizierID.String(), metricsMsg.PodName)
+func (s *Bridge) handleMetricsMessage(msg *messagespb.MetricsMessage) error {
+	promWriteReq, err := vzmetrics.ParsePrometheusTextToWriteReq(msg.PromMetricsText, s.vizierID.String(), msg.PodName)
 	if err != nil {
 		return err
 	}
@@ -1008,10 +1005,23 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 				return err
 			}
 
-		case metricsMsg := <-s.natsMetricsCh:
+		case natsMetricsMsg := <-s.natsMetricsCh:
+			metricsMsg := &messagespb.MetricsMessage{}
+			err := proto.Unmarshal(natsMetricsMsg.Data, metricsMsg)
+			if err != nil {
+				log.WithError(err).Error("failed to unmarshal metrics message")
+				continue
+			}
+			err = s.handleMetricsMessage(metricsMsg)
+			if err != nil {
+				log.WithError(err).Error("failed to bridge metrics message to cloud")
+				continue
+			}
+		case metricsMsg := <-s.metricsCh:
 			err := s.handleMetricsMessage(metricsMsg)
 			if err != nil {
-				return err
+				log.WithError(err).Error("failed to bridge metrics message to cloud")
+				continue
 			}
 
 		case <-stream.Context().Done():

@@ -43,6 +43,7 @@ import (
 	"px.dev/pixie/src/shared/status"
 	controllers "px.dev/pixie/src/vizier/services/cloud_connector/bridge"
 	"px.dev/pixie/src/vizier/services/cloud_connector/vizhealth"
+	"px.dev/pixie/src/vizier/services/cloud_connector/vzmetrics"
 )
 
 func init() {
@@ -57,6 +58,7 @@ func init() {
 	pflag.String("vizier_name", "", "The name of the user's K8s cluster, assigned by Pixie cloud")
 	pflag.String("deploy_key", "", "The deploy key for the cluster")
 	pflag.Bool("disable_auto_update", false, "Whether auto-update should be disabled")
+	pflag.Duration("metrics_scrape_period", time.Minute, "Period that the metrics scraper should run at.")
 }
 func newVzServiceClient() (vizierpb.VizierServiceClient, error) {
 	dialOpts, err := services.GetGRPCClientDialOpts()
@@ -160,10 +162,14 @@ func main() {
 	go vzInfo.CleanupCronJob("etcd-defrag-job", 2*time.Hour, quitCh)
 	defer close(quitCh)
 
+	scraper := vzmetrics.NewScraper(viper.GetString("pod_namespace"), viper.GetDuration("metrics_scrape_period"))
+	go scraper.Run()
+	defer scraper.Stop()
+
 	// We just use the current time in nanoseconds to mark the session ID. This will let the cloud side know that
 	// the cloud connector restarted. Clock skew might make this incorrect, but we mostly want this for debugging.
 	sessionID := time.Now().UnixNano()
-	svr := controllers.New(vizierID, assignedClusterName, viper.GetString("jwt_signing_key"), deployKey, sessionID, nil, vzInfo, vzInfo, nil, checker)
+	svr := controllers.New(vizierID, assignedClusterName, viper.GetString("jwt_signing_key"), deployKey, sessionID, nil, vzInfo, vzInfo, nil, checker, scraper.MetricsChannel())
 	go svr.RunStream()
 	defer svr.Stop()
 

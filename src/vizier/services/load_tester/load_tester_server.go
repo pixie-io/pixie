@@ -237,7 +237,8 @@ func main() {
 				&fakeVZInfo{clusterUID: clusterUID, idx: i},
 				&fakeVZOperator{},
 				nc,
-				&fakeVZHealthChecker{})
+				&fakeVZHealthChecker{},
+				nil)
 			cloudConnSvrs[i] = svr
 			go svr.RunStream()
 			i++

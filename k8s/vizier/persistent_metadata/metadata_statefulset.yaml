@@ -14,6 +14,9 @@ spec:
       labels:
         name: vizier-metadata
         plane: control
+      annotations:
+        px.dev/metrics_scrape: 'true'
+        px.dev/metrics_port: '50400'
     spec:
       affinity:
         nodeAffinity:

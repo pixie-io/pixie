@@ -184,6 +184,6 @@ message ConfigUpdateRequest {
 message MetricsMessage {
   // The prometheus metrics in prometheus' text exposition format.
   string prom_metrics_text = 1;
-  // The k8s name of the pod sending the metrics.
+  // The k8s name of the pod sending the metrics. If empty, it won't be added to the metric's labels.
   string pod_name = 2;
 }

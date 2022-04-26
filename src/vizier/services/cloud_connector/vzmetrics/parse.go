@@ -33,8 +33,11 @@ import (
 // ParsePrometheusTextToWriteReq parses prometheus metrics in prometheus' text-based exposition format, into a prometheus WriteRequest protobuf.
 func ParsePrometheusTextToWriteReq(text string, clusterID string, podName string) (*prompb.WriteRequest, error) {
 	dec := &expfmt.SampleDecoder{
-		Dec:  expfmt.NewDecoder(strings.NewReader(text), expfmt.FmtText),
-		Opts: &expfmt.DecodeOptions{},
+		Dec: expfmt.NewDecoder(strings.NewReader(text), expfmt.FmtText),
+		Opts: &expfmt.DecodeOptions{
+			// Default timestamp for metrics that come in without a timestamp.
+			Timestamp: model.Now(),
+		},
 	}
 	var samples model.Vector
 	for {
