@@ -422,6 +422,11 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
   DCHECK(inserted);
   if (inserted) {
     JavaProfilingProcTracker::GetSingleton()->Add(upid);
+
+    // Creating an agent attacher will start a subprocess, px_jattach.
+    // px_jattach is responsible for determining which JVMTI symbolization agent library to use
+    // (libc or musl), and then invoking jattach to inject the symbolization agent to the
+    // target Java process.
     iter->second = std::make_unique<java::AgentAttacher>(upid, agent_libs_);
 
     // Deduct one from our quota of attach attempts per iteration.
