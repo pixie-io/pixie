@@ -404,7 +404,7 @@ func runTestCase(t *testing.T, test *queryExecTestCase) {
 	}
 
 	dp := &fakeDataPrivacy{}
-	queryExec := controllers.NewQueryExecutor("qb_address", "qb_hostname", at, dp, nc, nil, nil, rf, planner, test.MutExecFactory)
+	queryExec := controllers.NewQueryExecutor("qb_address", "qb_hostname", at, dp, nc, nil, nil, rf, planner, nil, test.MutExecFactory)
 	consumer := newTestConsumer(test.ConsumeErrs)
 
 	assert.Equal(t, test.QueryExecExpectedRunError, queryExec.Run(context.Background(), test.Req, consumer))

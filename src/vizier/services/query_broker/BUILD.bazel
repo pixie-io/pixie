@@ -29,6 +29,7 @@ go_library(
         "//src/shared/services",
         "//src/shared/services/healthz",
         "//src/shared/services/httpmiddleware",
+        "//src/shared/services/metrics",
         "//src/shared/services/server",
         "//src/vizier/services/metadata/metadatapb:service_pl_go_proto",
         "//src/vizier/services/query_broker/controllers",

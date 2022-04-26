@@ -31,6 +31,8 @@ import (
 	"github.com/lestrrat-go/jwx/jwe"
 	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/nats-io/nats.go"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -56,6 +58,20 @@ type contextKey string
 const (
 	execStartKey = contextKey("execStart")
 )
+
+var queryExecTimeSummary *prometheus.SummaryVec
+
+func init() {
+	queryExecTimeSummary = promauto.NewSummaryVec(
+		prometheus.SummaryOpts{
+			Name: "query_exec_time_ms",
+			Help: "A summary of the query execution time in milliseconds for the given script.",
+			// Report only the 99th percentile. Summary also creates a _count and _sum field so we can get the average in addition to the 99th percentile.
+			Objectives: map[float64]float64{0.99: 0.001},
+		},
+		[]string{"script_name"},
+	)
+}
 
 // Planner describes the interface for any planner.
 type Planner interface {
@@ -86,7 +102,8 @@ type Server struct {
 
 	planner Planner
 
-	queryExecFactory QueryExecutorFactory
+	queryExecFactory     QueryExecutorFactory
+	queryExecTimeSummary *prometheus.SummaryVec
 }
 
 // QueryExecutorFactory creates a new QueryExecutor.
@@ -120,16 +137,17 @@ func NewServerWithForwarderAndPlanner(env querybrokerenv.QueryBrokerEnv,
 	planner Planner,
 	queryExecFactory QueryExecutorFactory) (*Server, error) {
 	s := &Server{
-		env:               env,
-		agentsTracker:     agentsTracker,
-		dataPrivacy:       dataPrivacy,
-		resultForwarder:   resultForwarder,
-		natsConn:          natsConn,
-		mdtp:              mds,
-		mdconf:            mdconf,
-		planner:           planner,
-		queryExecFactory:  queryExecFactory,
-		healthcheckQuitCh: make(chan struct{}),
+		env:                  env,
+		agentsTracker:        agentsTracker,
+		dataPrivacy:          dataPrivacy,
+		resultForwarder:      resultForwarder,
+		natsConn:             natsConn,
+		mdtp:                 mds,
+		mdconf:               mdconf,
+		planner:              planner,
+		queryExecFactory:     queryExecFactory,
+		healthcheckQuitCh:    make(chan struct{}),
+		queryExecTimeSummary: queryExecTimeSummary,
 	}
 	s.hcStatus.Store(fmt.Errorf("no healthcheck has run yet"))
 	go s.runHealthcheck()

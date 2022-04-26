@@ -28,6 +28,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/nats-io/nats.go"
+	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -66,15 +67,16 @@ type MutationExecFactory func(Planner,
 
 // QueryExecutorImpl implements the QueryExecutor interface.
 type QueryExecutorImpl struct {
-	resultAddress       string
-	resultSSLTargetName string
-	agentsTracker       AgentsTracker
-	dataPrivacy         DataPrivacy
-	natsConn            *nats.Conn
-	mdtp                metadatapb.MetadataTracepointServiceClient
-	mdconf              metadatapb.MetadataConfigServiceClient
-	resultForwarder     QueryResultForwarder
-	planner             Planner
+	resultAddress        string
+	resultSSLTargetName  string
+	agentsTracker        AgentsTracker
+	dataPrivacy          DataPrivacy
+	natsConn             *nats.Conn
+	mdtp                 metadatapb.MetadataTracepointServiceClient
+	mdconf               metadatapb.MetadataConfigServiceClient
+	resultForwarder      QueryResultForwarder
+	planner              Planner
+	queryExecTimeSummary *prometheus.SummaryVec
 
 	eg *errgroup.Group
 
@@ -83,6 +85,9 @@ type QueryExecutorImpl struct {
 	compilationTimeNs int64
 
 	mutationExecFactory MutationExecFactory
+
+	// queryName is used for labeling execution time metrics.
+	queryName string
 }
 
 // NewQueryExecutorFromServer creates a new QueryExecutor using the properties of a query broker server.
@@ -97,6 +102,7 @@ func NewQueryExecutorFromServer(s *Server, mutExecFactory MutationExecFactory) Q
 		s.mdconf,
 		s.resultForwarder,
 		s.planner,
+		s.queryExecTimeSummary,
 		mutExecFactory,
 	)
 }
@@ -112,19 +118,22 @@ func NewQueryExecutor(
 	mdconf metadatapb.MetadataConfigServiceClient,
 	resultForwarder QueryResultForwarder,
 	planner Planner,
+	queryExecTimeSummary *prometheus.SummaryVec,
 	mutExecFactory MutationExecFactory,
 ) QueryExecutor {
 	return &QueryExecutorImpl{
-		resultAddress:       resultAddress,
-		resultSSLTargetName: resultSSLTargetName,
-		agentsTracker:       agentsTracker,
-		dataPrivacy:         dataPrivacy,
-		natsConn:            natsConn,
-		mdtp:                mdtp,
-		mdconf:              mdconf,
-		resultForwarder:     resultForwarder,
-		planner:             planner,
-		mutationExecFactory: mutExecFactory,
+		resultAddress:        resultAddress,
+		resultSSLTargetName:  resultSSLTargetName,
+		agentsTracker:        agentsTracker,
+		dataPrivacy:          dataPrivacy,
+		natsConn:             natsConn,
+		mdtp:                 mdtp,
+		mdconf:               mdconf,
+		resultForwarder:      resultForwarder,
+		planner:              planner,
+		mutationExecFactory:  mutExecFactory,
+		queryExecTimeSummary: queryExecTimeSummary,
+		queryName:            "",
 	}
 }
 
@@ -146,6 +155,10 @@ func (q *QueryExecutorImpl) Run(ctx context.Context, req *vizierpb.ExecuteScript
 		q.queryID = queryID
 	}
 
+	if req.QueryName != "" {
+		q.queryName = req.QueryName
+	}
+
 	resultCh := make(chan *vizierpb.ExecuteScriptResponse)
 
 	q.eg.Go(func() error { return q.runConsumer(ctx, resultCh, consumer) })
@@ -160,6 +173,11 @@ func (q *QueryExecutorImpl) Run(ctx context.Context, req *vizierpb.ExecuteScript
 func (q *QueryExecutorImpl) Wait() error {
 	err := q.eg.Wait()
 	if err == nil {
+		// Only track execution time for named scripts.
+		if q.queryExecTimeSummary != nil && q.queryName != "" {
+			d := time.Since(q.startTime)
+			q.queryExecTimeSummary.With(prometheus.Labels{"script_name": q.queryName}).Observe(float64(d.Milliseconds()))
+		}
 		return nil
 	}
 	// There are a few common failure cases that may occur naturally during query execution. For example, ctxDeadlineExceeded,

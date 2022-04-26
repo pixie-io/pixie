@@ -71,6 +71,8 @@ go_library(
         "@com_github_lestrrat_go_jwx//jwe",
         "@com_github_lestrrat_go_jwx//jwk",
         "@com_github_nats_io_nats_go//:nats_go",
+        "@com_github_prometheus_client_golang//prometheus",
+        "@com_github_prometheus_client_golang//prometheus/promauto",
         "@com_github_sirupsen_logrus//:logrus",
         "@com_github_spf13_cast//:cast",
         "@com_github_spf13_pflag//:pflag",

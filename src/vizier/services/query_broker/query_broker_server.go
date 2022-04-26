@@ -37,6 +37,7 @@ import (
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/healthz"
 	"px.dev/pixie/src/shared/services/httpmiddleware"
+	"px.dev/pixie/src/shared/services/metrics"
 	"px.dev/pixie/src/shared/services/server"
 	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
 	"px.dev/pixie/src/vizier/services/query_broker/controllers"
@@ -104,6 +105,7 @@ func main() {
 	}
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
+	metrics.MustRegisterMetricsHandlerNoDefaultMetrics(mux)
 
 	// Connect to metadata service.
 	dialOpts, err := services.GetGRPCClientDialOpts()

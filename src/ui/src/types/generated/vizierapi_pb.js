@@ -4125,7 +4125,8 @@ proto.px.api.vizierpb.ExecuteScriptRequest.toObject = function(includeInstance, 
     mutation: jspb.Message.getBooleanFieldWithDefault(msg, 5, false),
     encryptionOptions: (f = msg.getEncryptionOptions()) && proto.px.api.vizierpb.ExecuteScriptRequest.EncryptionOptions.toObject(includeInstance, f),
     queryId: jspb.Message.getFieldWithDefault(msg, 7, ""),
-    configs: (f = msg.getConfigs()) && proto.px.api.vizierpb.Configs.toObject(includeInstance, f)
+    configs: (f = msg.getConfigs()) && proto.px.api.vizierpb.Configs.toObject(includeInstance, f),
+    queryName: jspb.Message.getFieldWithDefault(msg, 10, "")
   };
 
   if (includeInstance) {
@@ -4192,6 +4193,10 @@ proto.px.api.vizierpb.ExecuteScriptRequest.deserializeBinaryFromReader = functio
       var value = new proto.px.api.vizierpb.Configs;
       reader.readMessage(value,proto.px.api.vizierpb.Configs.deserializeBinaryFromReader);
       msg.setConfigs(value);
+      break;
+    case 10:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setQueryName(value);
       break;
     default:
       reader.skipField();
@@ -4272,6 +4277,13 @@ proto.px.api.vizierpb.ExecuteScriptRequest.serializeBinaryToWriter = function(me
       9,
       f,
       proto.px.api.vizierpb.Configs.serializeBinaryToWriter
+    );
+  }
+  f = message.getQueryName();
+  if (f.length > 0) {
+    writer.writeString(
+      10,
+      f
     );
   }
 };
@@ -5058,6 +5070,24 @@ proto.px.api.vizierpb.ExecuteScriptRequest.prototype.clearConfigs = function() {
  */
 proto.px.api.vizierpb.ExecuteScriptRequest.prototype.hasConfigs = function() {
   return jspb.Message.getField(this, 9) != null;
+};
+
+
+/**
+ * optional string query_name = 10;
+ * @return {string}
+ */
+proto.px.api.vizierpb.ExecuteScriptRequest.prototype.getQueryName = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 10, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.px.api.vizierpb.ExecuteScriptRequest} returns this
+ */
+proto.px.api.vizierpb.ExecuteScriptRequest.prototype.setQueryName = function(value) {
+  return jspb.Message.setProto3StringField(this, 10, value);
 };
 
 
