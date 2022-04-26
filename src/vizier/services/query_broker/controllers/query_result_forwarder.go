@@ -224,7 +224,11 @@ func (a *activeQuery) updateQueryState(msg *carnotpb.TransferResultChunkRequest)
 		}
 	}
 
-	return fmt.Errorf("error in ForwardQueryResult: Expected TransferResultChunkRequest to have query result or exec stats")
+	// The error is handled in another part of the code. We do nothing here.
+	if execError := msg.GetExecutionError(); execError != nil {
+		return nil
+	}
+	return fmt.Errorf("error in ForwardQueryResult: Expected TransferResultChunkRequest to have row batch, exec stats, or exec error")
 }
 
 func (a *activeQuery) queryComplete() bool {
@@ -329,6 +333,10 @@ func (a *activeQuery) handleRequest(ctx context.Context, queryID uuid.UUID, msg 
 			return nil
 		case resultCh <- resp:
 		}
+	}
+
+	if status := resp.GetStatus(); status != nil && status.Code != 0 {
+		return VizierStatusToError(status)
 	}
 
 	return nil

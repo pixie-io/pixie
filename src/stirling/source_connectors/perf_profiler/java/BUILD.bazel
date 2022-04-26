@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 load("//src/stirling/source_connectors/perf_profiler/testing:testing.bzl", "agent_libs", "agent_libs_arg", "px_jattach", "px_jattach_arg")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
@@ -25,7 +25,6 @@ pl_cc_library(
         ["*.cc"],
         exclude = [
             "**/*_test.cc",
-            "px_jattach*",
         ],
     ),
     hdrs = glob(["*.h"]),
@@ -38,19 +37,6 @@ pl_cc_library(
         "//src/stirling/bpf_tools/bcc_bpf_intf:cc_library",
         "@com_github_apangin_jattach//:jattach",
     ],
-)
-
-pl_cc_binary(
-    name = "px_jattach",
-    srcs = [
-        "px_jattach.cc",
-        "px_jattach.h",
-    ],
-    visibility = [
-        "//:__pkg__",
-        "//src/stirling:__subpackages__",
-    ],
-    deps = [":cc_library"],
 )
 
 pl_cc_test(

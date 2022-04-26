@@ -382,7 +382,9 @@ func BuildExecuteScriptResponse(r *carnotpb.TransferResultChunkRequest,
 				ExecutionStats: stats,
 			},
 		}
+		return res, nil
 	}
+
 	if queryResult := r.GetQueryResult(); queryResult != nil {
 		// This agent message type will not turn into a message on the client stream.
 		if queryResult.GetInitiateResultStream() {
@@ -407,11 +409,13 @@ func BuildExecuteScriptResponse(r *carnotpb.TransferResultChunkRequest,
 				Batch: batch,
 			},
 		}
+		return res, nil
 	}
-	if res.Result == nil {
-		return nil, fmt.Errorf("error in ForwardQueryResult: Expected TransferResultChunkRequest to have row batch or exec stats")
+	if execError := r.GetExecutionError(); execError != nil {
+		res.Status = StatusToVizierStatus(execError)
+		return res, nil
 	}
-	return res, nil
+	return nil, fmt.Errorf("error in ForwardQueryResult: Expected TransferResultChunkRequest to have row batch, exec stats, or exec error")
 }
 
 // QueryPlanResponse returns the query plan as an ExecuteScriptResponse.

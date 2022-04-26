@@ -34,7 +34,7 @@
 #include "src/stirling/source_connectors/perf_profiler/java/agent/agent_hash.h"
 #include "src/stirling/source_connectors/perf_profiler/java/agent/raw_symbol_update.h"
 #include "src/stirling/source_connectors/perf_profiler/java/attach.h"
-#include "src/stirling/source_connectors/perf_profiler/java/px_jattach.h"
+#include "src/stirling/source_connectors/perf_profiler/java/px_jattach/px_jattach.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
 extern "C" {
