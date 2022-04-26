@@ -175,13 +175,13 @@ func init() {
 	DeployCmd.Flags().Bool("deploy_olm", true, "Whether to deploy Operator Lifecycle Manager. OLM is required. This should only be false if OLM is already deployed on the cluster (either manually or through another application). Note: OLM is deployed by default on Openshift clusters.")
 	viper.BindPFlag("deploy_olm", DeployCmd.Flags().Lookup("deploy_olm"))
 
-	DeployCmd.Flags().String("olm_namespace", "olm", "The memory limit to specify for the PEMS, otherwise a default is used.")
+	DeployCmd.Flags().String("olm_namespace", "olm", "The namespace to use for the Operator Lifecycle Manager")
 	viper.BindPFlag("olm_namespace", DeployCmd.Flags().Lookup("olm_namespace"))
 
 	DeployCmd.Flags().String("olm_operator_namespace", "px-operator", "The namespace to use for the Pixie operator")
 	viper.BindPFlag("olm_operator_namespace", DeployCmd.Flags().Lookup("olm_operator_namespace"))
 
-	DeployCmd.Flags().String("data_access", "Full", "Data access level defines the level of data that may be accesssed when executing a script on the cluster. Options: 'Full' and 'Restricted'")
+	DeployCmd.Flags().String("data_access", "Full", "Data access level defines the level of data that may be accessed when executing a script on the cluster. Options: 'Full' and 'Restricted'")
 	viper.BindPFlag("data_access", DeployCmd.Flags().Lookup("data_access"))
 
 	DeployCmd.Flags().Uint32("datastream_buffer_size", 1024*1024, "Internal data collector parameters: the maximum size of a data stream buffer retained between cycles.")
