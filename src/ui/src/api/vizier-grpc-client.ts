@@ -305,6 +305,7 @@ export class VizierGRPCClient {
     funcs: VizierQueryFunc[],
     mutation: boolean,
     opts: ExecuteScriptOptions,
+    scriptName: string,
   ): Observable<ExecutionStateUpdate> {
     let call: ClientReadableStream<unknown>;
     const cancelCall = () => {
@@ -330,6 +331,7 @@ export class VizierGRPCClient {
         req.setClusterId(this.clusterID);
         req.setQueryStr(script);
         req.setMutation(mutation);
+        req.setQueryName(scriptName);
         if (keyPair) {
           const encOpts = new ExecuteScriptRequest.EncryptionOptions();
           encOpts.setJwkKey(JSON.stringify(keyPair.publicKeyJWK));

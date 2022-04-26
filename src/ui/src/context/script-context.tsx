@@ -168,6 +168,7 @@ export const ScriptContextProvider: React.FC = React.memo(({ children }) => {
       script.code,
       { enableE2EEncryption: true },
       getQueryFuncs(script.vis, args, embedState.widget),
+      script.id,
     );
     setRunningExecution(execution);
     setManual(false);
