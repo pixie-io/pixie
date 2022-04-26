@@ -27,6 +27,8 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/nats-io/nats.go"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
 
 	"px.dev/pixie/src/shared/k8s/metadatapb"
@@ -38,6 +40,19 @@ import (
 	"px.dev/pixie/src/vizier/services/shared/agentpb"
 	"px.dev/pixie/src/vizier/utils/messagebus"
 )
+
+var agentRegCounter *prometheus.CounterVec
+
+func init() {
+	agentRegCounter = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "agent_registrations",
+			Help: "Number of times an agent has registered." +
+				"Proxy for number of PEM restarts since the metadata service has been alive.",
+		},
+		[]string{"agent_pod_name"},
+	)
+}
 
 // Store is the interface that a persistent datastore needs to implement for tracking
 // agent data.
@@ -157,6 +172,9 @@ type ManagerImpl struct {
 	agentUpdateTrackers map[uuid.UUID]*agentUpdateTracker
 	// Protects agentUpdateTrackers.
 	agentUpdateTrackersMutex sync.Mutex
+
+	// Prometheus counter to keep track of agent registrations.
+	agentRegCounter *prometheus.CounterVec
 }
 
 // NewManager creates a new agent manager.
@@ -168,6 +186,7 @@ func NewManager(agtStore Store, cidr CIDRInfoProvider, conn *nats.Conn) *Manager
 		cidr:                cidr,
 		conn:                conn,
 		agentUpdateTrackers: make(map[uuid.UUID]*agentUpdateTracker),
+		agentRegCounter:     agentRegCounter,
 	}
 
 	return Manager
@@ -433,6 +452,9 @@ func (m *ManagerImpl) handleTerminatedProcesses(processes []*metadatapb.ProcessT
 func (m *ManagerImpl) RegisterAgent(agent *agentpb.Agent) (uint32, error) {
 	// Check if agent already exists.
 	aUUID := utils.UUIDFromProtoOrNil(agent.Info.AgentID)
+
+	podName := agent.Info.HostInfo.PodName
+	m.agentRegCounter.With(prometheus.Labels{"agent_pod_name": podName}).Inc()
 
 	resp, err := m.agtStore.GetAgent(aUUID)
 	if err != nil {

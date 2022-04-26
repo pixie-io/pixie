@@ -29,6 +29,7 @@ go_library(
         "//src/shared/services/election",
         "//src/shared/services/healthz",
         "//src/shared/services/httpmiddleware",
+        "//src/shared/services/metrics",
         "//src/shared/services/server",
         "//src/vizier/services/metadata/controllers",
         "//src/vizier/services/metadata/controllers/agent",

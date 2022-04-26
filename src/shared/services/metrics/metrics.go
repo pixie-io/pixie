@@ -42,3 +42,18 @@ func MustRegisterMetricsHandler(mux mux) {
 	))
 	prometheus.MustRegister(collectors.NewBuildInfoCollector())
 }
+
+// MustRegisterMetricsHandlerNoDefaultMetrics registers the metrics endpoint but removes all of the default metrics that prometheus includes, so only custom metrics are collected and reported.
+func MustRegisterMetricsHandlerNoDefaultMetrics(mux mux) {
+	mux.Handle("/metrics", promhttp.HandlerFor(
+		prometheus.DefaultGatherer,
+		promhttp.HandlerOpts{
+			// Opt into OpenMetrics to support exemplars.
+			EnableOpenMetrics: true,
+		},
+	))
+
+	// Unregister the default metrics the prometheus golang client provides.
+	prometheus.Unregister(collectors.NewGoCollector())
+	prometheus.Unregister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+}
