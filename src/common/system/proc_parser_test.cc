@@ -108,6 +108,11 @@ TEST_F(ProcParserTest, ParsePidStat) {
   EXPECT_EQ(2577 * bytes_per_page_, stats.rss_bytes);
 }
 
+TEST_F(ProcParserTest, ParsePSS) {
+  const size_t pss_bytes = parser_->ParseProcPIDPss(123).ConsumeValueOrDie();
+  EXPECT_EQ(pss_bytes, 5936128);
+}
+
 TEST_F(ProcParserTest, ParseStat) {
   ProcParser::SystemStats stats;
   PL_CHECK_OK(parser_->ParseProcStat(&stats));

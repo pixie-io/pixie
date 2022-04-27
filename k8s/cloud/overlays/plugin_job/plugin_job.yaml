@@ -1,0 +1,78 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: plugin-db-updater-job
+  labels:
+    jobgroup: plugin-db-updater
+spec:
+  ttlSecondsAfterFinished: 10
+  template:
+    metadata:
+      name: plugin-db-updater-job
+      labels:
+        jobgroup: plugin-db-updater
+    spec:
+      containers:
+      - name: updater
+        image: gcr.io/pixie-oss/pixie-dev/cloud/plugin/load_db:latest
+        command: ["/busybox/sh", "-c"]
+        args:
+        - |
+            trap "touch /tmp/pod/terminated" EXIT
+            /plugin_db_updater/load_db
+        envFrom:
+        - configMapRef:
+            name: pl-db-config
+        volumeMounts:
+        - mountPath: /tmp/pod
+          name: tmp-pod
+        env:
+        - name: PL_POSTGRES_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: pl-db-secrets
+              key: PL_POSTGRES_USERNAME
+        - name: PL_POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pl-db-secrets
+              key: PL_POSTGRES_PASSWORD
+        - name: PL_PLUGIN_REPO
+          value: "pixie-io/pixie-plugin"
+      - image: b.gcr.io/cloudsql-docker/gce-proxy:1.14
+        name: cloudsql-proxy
+        command: ["/bin/sh", "-c"]
+        envFrom:
+        - configMapRef:
+            name: pl-db-config
+        args:
+        - |
+            /cloud_sql_proxy \
+            -instances=${PL_POSTGRES_INSTANCE}=tcp:${PL_POSTGRES_PORT} \
+            -ip_address_types=PRIVATE \
+            -credential_file=/secrets/cloudsql/db_service_account.json & CHILD_PID=$!
+            (while true; do if [[ -f "/tmp/pod/terminated" ]]; then kill $CHILD_PID;
+            echo "Killed $CHILD_PID because the main container terminated."; fi; sleep 1; done) &
+            wait $CHILD_PID
+            if [[ -f "/tmp/pod/terminated" ]]; then exit 0; echo "Job completed. Exiting..."; fi
+        volumeMounts:
+        - name: pl-db-secrets
+          mountPath: /secrets/cloudsql
+          readOnly: true
+        - mountPath: /tmp/pod
+          name: tmp-pod
+          readOnly: true
+        securityContext:
+          runAsUser: 2  # non-root user
+          allowPrivilegeEscalation: false
+      restartPolicy: Never
+      volumes:
+      - name: pl-db-secrets
+        secret:
+          secretName: pl-db-secrets
+      - name: tmp-pod
+        emptyDir: {}
+  backoffLimit: 1
+  parallelism: 1
+  completions: 1

@@ -10,6 +10,8 @@
 [![Build Status](https://jenkins.corp.pixielabs.ai/buildStatus/icon?job=pixie-oss%2Fbuild-and-test-all)](https://jenkins.corp.pixielabs.ai/job/pixie-oss/job/build-and-test-all/)
 [![codecov](https://codecov.io/gh/pixie-io/pixie/branch/main/graph/badge.svg?token=UG7P3QE5PQ)](https://codecov.io/gh/pixie-io/pixie)
 [![FOSSA Status](https://app.fossa.com/api/projects/custom%2B26327%2Fgithub.com%2Fpixie-io%2Fpixie.svg?type=shield)](https://app.fossa.com/projects/custom%2B26327%2Fgithub.com%2Fpixie-io%2Fpixie?ref=badge_shield)
+[![Artifact HUB](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/pixie-operator)](https://artifacthub.io/packages/olm/community-operators/pixie-operator)
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5027/badge)](https://bestpractices.coreinfrastructure.org/projects/5027)
 
 <br>
 
@@ -162,12 +164,34 @@ Once installed, you can interact with Pixie using the:
 Pixie is a community driven project; we welcome your contribution! For code contributions, please read our [contribution guide](CONTRIBUTING.md).
 
 - File a [GitHub issue](https://github.com/pixie-io/pixie/issues) to report a bug or request a feature.
-- Join our [Slack](https://slackin.px.dev) for live conversations and quick questions.
+- Join our [Slack](https://slackin.px.dev) for live conversations and quick questions. We are also available on the [CNCF slack](https://slack.cncf.io/app_redirect?channel=pixie").
 - Follow us on [Twitter](https://twitter.com/pixie_run) and [YouTube](https://www.youtube.com/channel/UCOMCDRvBVNIS0lCyOmst7eg).
 - Join our monthly [community meetings](https://px.dev/community/#events).
 - Provide feedback on our [roadmap](https://docs.px.dev/about-pixie/roadmap/).
 
 <br clear="all">
+
+## Changelog
+
+The changelog is stored in annotated git tags.
+
+For vizier:
+
+```
+git for-each-ref refs/tags/release/vizier/$tagname --format='%(tag) %(contents)'
+```
+
+For the CLI:
+
+```
+git for-each-ref refs/tags/release/cli/$tagname --format='%(tag) %(contents)'
+```
+
+These are also published on the [releases](https://github.com/pixie-io/pixie/releases) page.
+
+## Adopters
+
+The known adopters and users of Pixie are listed [here](ADOPTERS.md).
 
 ## About Pixie
 

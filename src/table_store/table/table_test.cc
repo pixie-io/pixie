@@ -57,11 +57,6 @@ std::shared_ptr<Table> TestTable() {
 
 }  // namespace
 
-static inline BatchSlice BatchSliceFromRowIds(int64_t uniq_row_start_idx,
-                                              int64_t uniq_row_end_idx) {
-  return BatchSlice{false, -1, -1, -1, -1, uniq_row_start_idx, uniq_row_end_idx};
-}
-
 TEST(TableTest, basic_test) {
   schema::Relation rel({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
 
@@ -82,28 +77,15 @@ TEST(TableTest, basic_test) {
   EXPECT_OK(rb2.AddColumn(types::ToArrow(col2_in2, arrow::default_memory_pool())));
   EXPECT_OK(table.WriteRowBatch(rb2));
 
-  auto actual_rb1 = table
-                        .GetRowBatchSlice(table.FirstBatch(), std::vector<int64_t>({0, 1}),
-                                          arrow::default_memory_pool())
-                        .ConsumeValueOrDie();
+  Table::Cursor cursor(table_ptr.get());
+
+  auto actual_rb1 = cursor.GetNextRowBatch(std::vector<int64_t>({0, 1})).ConsumeValueOrDie();
   EXPECT_TRUE(
       actual_rb1->ColumnAt(0)->Equals(types::ToArrow(col1_in1, arrow::default_memory_pool())));
   EXPECT_TRUE(
       actual_rb1->ColumnAt(1)->Equals(types::ToArrow(col2_in1, arrow::default_memory_pool())));
 
-  auto slice = BatchSliceFromRowIds(1, 2);
-  auto rb1_sliced =
-      table.GetRowBatchSlice(slice, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
-  EXPECT_TRUE(rb1_sliced->ColumnAt(0)->Equals(
-      types::ToArrow(std::vector<types::BoolValue>({false, true}), arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1_sliced->ColumnAt(1)->Equals(
-      types::ToArrow(std::vector<types::Int64Value>({2, 3}), arrow::default_memory_pool())));
-
-  slice = BatchSliceFromRowIds(3, 4);
-  auto actual_rb2 =
-      table.GetRowBatchSlice(slice, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
+  auto actual_rb2 = cursor.GetNextRowBatch(std::vector<int64_t>({0, 1})).ConsumeValueOrDie();
   EXPECT_TRUE(
       actual_rb2->ColumnAt(0)->Equals(types::ToArrow(col1_in2, arrow::default_memory_pool())));
   EXPECT_TRUE(
@@ -124,7 +106,7 @@ TEST(TableTest, bytes_test) {
   auto col2_rb1_arrow = types::ToArrow(col2_rb1, arrow::default_memory_pool());
   EXPECT_OK(rb1.AddColumn(col1_rb1_arrow));
   EXPECT_OK(rb1.AddColumn(col2_rb1_arrow));
-  int64_t rb1_size = 3 * sizeof(int64_t) + 12 * sizeof(char);
+  int64_t rb1_size = 3 * sizeof(int64_t) + 12 * sizeof(char) + 3 * sizeof(uint32_t);
 
   EXPECT_OK(table.WriteRowBatch(rb1));
   EXPECT_EQ(table.GetTableStats().bytes, rb1_size);
@@ -136,7 +118,7 @@ TEST(TableTest, bytes_test) {
   auto col2_rb2_arrow = types::ToArrow(col2_rb2, arrow::default_memory_pool());
   EXPECT_OK(rb2.AddColumn(col1_rb2_arrow));
   EXPECT_OK(rb2.AddColumn(col2_rb2_arrow));
-  int64_t rb2_size = 2 * sizeof(int64_t) + 3 * sizeof(char);
+  int64_t rb2_size = 2 * sizeof(int64_t) + 3 * sizeof(char) + 2 * sizeof(uint32_t);
 
   EXPECT_OK(table.WriteRowBatch(rb2));
   EXPECT_EQ(table.GetTableStats().bytes, rb1_size + rb2_size);
@@ -156,7 +138,7 @@ TEST(TableTest, bytes_test) {
   }
   wrapper_batch_1->push_back(col_wrapper_1);
   wrapper_batch_1->push_back(col_wrapper_2);
-  int64_t rb3_size = 3 * sizeof(int64_t) + 9 * sizeof(char);
+  int64_t rb3_size = 3 * sizeof(int64_t) + 9 * sizeof(char) + 3 * sizeof(uint32_t);
 
   EXPECT_OK(table.TransferRecordBatch(std::move(wrapper_batch_1)));
 
@@ -174,7 +156,7 @@ TEST(TableTest, bytes_test_w_compaction) {
   auto col2_rb1_arrow = types::ToArrow(col2_rb1, arrow::default_memory_pool());
   EXPECT_OK(rb1.AddColumn(col1_rb1_arrow));
   EXPECT_OK(rb1.AddColumn(col2_rb1_arrow));
-  int64_t rb1_size = 3 * sizeof(int64_t) + 12 * sizeof(char);
+  int64_t rb1_size = 3 * sizeof(int64_t) + 12 * sizeof(char) + 3 * sizeof(uint32_t);
 
   schema::RowBatch rb2(rd, 2);
   std::vector<types::Int64Value> col1_rb2 = {4, 5};
@@ -183,7 +165,7 @@ TEST(TableTest, bytes_test_w_compaction) {
   auto col2_rb2_arrow = types::ToArrow(col2_rb2, arrow::default_memory_pool());
   EXPECT_OK(rb2.AddColumn(col1_rb2_arrow));
   EXPECT_OK(rb2.AddColumn(col2_rb2_arrow));
-  int64_t rb2_size = 2 * sizeof(int64_t) + 3 * sizeof(char);
+  int64_t rb2_size = 2 * sizeof(int64_t) + 3 * sizeof(char) + 2 * sizeof(uint32_t);
 
   std::vector<types::Int64Value> time_hot_col1 = {1, 5, 3};
   std::vector<types::StringValue> time_hot_col2 = {"test", "abc", "de"};
@@ -200,10 +182,10 @@ TEST(TableTest, bytes_test_w_compaction) {
   }
   wrapper_batch_1->push_back(col_wrapper_1);
   wrapper_batch_1->push_back(col_wrapper_2);
-  int64_t rb3_size = 3 * sizeof(int64_t) + 9 * sizeof(char);
+  int64_t rb3_size = 3 * sizeof(int64_t) + 9 * sizeof(char) + 3 * sizeof(uint32_t);
 
-  // Make minimum batch size rb1_size + rb2_size so that compaction causes 2 of the 3 batches to be
-  // compacted into cold.
+  // Make minimum batch size rb1_size + rb2_size so that compaction causes 2 of the 3 batches to
+  // be compacted into cold.
   std::shared_ptr<Table> table_ptr =
       std::make_shared<Table>("test_table", rel, 128 * 1024, rb1_size + rb2_size);
   Table& table = *table_ptr;
@@ -225,7 +207,7 @@ TEST(TableTest, expiry_test) {
   auto rd = schema::RowDescriptor({types::DataType::INT64, types::DataType::STRING});
   schema::Relation rel(rd.types(), {"col1", "col2"});
 
-  Table table("test_table", rel, 60);
+  Table table("test_table", rel, 80);
 
   schema::RowBatch rb1(rd, 3);
   std::vector<types::Int64Value> col1_rb1 = {4, 5, 10};
@@ -234,7 +216,7 @@ TEST(TableTest, expiry_test) {
   auto col2_rb1_arrow = types::ToArrow(col2_rb1, arrow::default_memory_pool());
   EXPECT_OK(rb1.AddColumn(col1_rb1_arrow));
   EXPECT_OK(rb1.AddColumn(col2_rb1_arrow));
-  int64_t rb1_size = 3 * sizeof(int64_t) + 12 * sizeof(char);
+  int64_t rb1_size = 3 * sizeof(int64_t) + 12 * sizeof(char) + 3 * sizeof(uint32_t);
 
   EXPECT_OK(table.WriteRowBatch(rb1));
   EXPECT_EQ(table.GetTableStats().bytes, rb1_size);
@@ -246,7 +228,7 @@ TEST(TableTest, expiry_test) {
   auto col2_rb2_arrow = types::ToArrow(col2_rb2, arrow::default_memory_pool());
   EXPECT_OK(rb2.AddColumn(col1_rb2_arrow));
   EXPECT_OK(rb2.AddColumn(col2_rb2_arrow));
-  int64_t rb2_size = 2 * sizeof(int64_t) + 3 * sizeof(char);
+  int64_t rb2_size = 2 * sizeof(int64_t) + 3 * sizeof(char) + 2 * sizeof(uint32_t);
 
   EXPECT_OK(table.WriteRowBatch(rb2));
   EXPECT_EQ(table.GetTableStats().bytes, rb1_size + rb2_size);
@@ -258,10 +240,10 @@ TEST(TableTest, expiry_test) {
   auto col2_rb3_arrow = types::ToArrow(col2_rb3, arrow::default_memory_pool());
   EXPECT_OK(rb3.AddColumn(col1_rb3_arrow));
   EXPECT_OK(rb3.AddColumn(col2_rb3_arrow));
-  int64_t rb3_size = 2 * sizeof(int64_t) + 27 * sizeof(char);
+  int64_t rb3_size = 2 * sizeof(int64_t) + 27 * sizeof(char) + 2 * sizeof(uint32_t);
 
   EXPECT_OK(table.WriteRowBatch(rb3));
-  EXPECT_EQ(table.GetTableStats().bytes, rb3_size);
+  EXPECT_EQ(table.GetTableStats().bytes, rb2_size + rb3_size);
 
   std::vector<types::Int64Value> time_hot_col1 = {1};
   std::vector<types::StringValue> time_hot_col2 = {"a"};
@@ -278,7 +260,7 @@ TEST(TableTest, expiry_test) {
   }
   wrapper_batch_1->push_back(col_wrapper_1);
   wrapper_batch_1->push_back(col_wrapper_2);
-  int64_t rb4_size = 1 * sizeof(int64_t) + 1 * sizeof(char);
+  int64_t rb4_size = 1 * sizeof(int64_t) + 1 * sizeof(char) + 1 * sizeof(uint32_t);
 
   EXPECT_OK(table.TransferRecordBatch(std::move(wrapper_batch_1)));
 
@@ -299,7 +281,7 @@ TEST(TableTest, expiry_test) {
   }
   wrapper_batch_1_2->push_back(col_wrapper_1_2);
   wrapper_batch_1_2->push_back(col_wrapper_2_2);
-  int64_t rb5_size = 5 * sizeof(int64_t) + 20 * sizeof(char);
+  int64_t rb5_size = 5 * sizeof(int64_t) + 20 * sizeof(char) + 5 * sizeof(uint32_t);
 
   EXPECT_OK(table.TransferRecordBatch(std::move(wrapper_batch_1_2)));
 
@@ -317,7 +299,7 @@ TEST(TableTest, expiry_test_w_compaction) {
   auto col2_rb1_arrow = types::ToArrow(col2_rb1, arrow::default_memory_pool());
   EXPECT_OK(rb1.AddColumn(col1_rb1_arrow));
   EXPECT_OK(rb1.AddColumn(col2_rb1_arrow));
-  int64_t rb1_size = 3 * sizeof(int64_t) + 12 * sizeof(char);
+  int64_t rb1_size = 3 * sizeof(int64_t) + 12 * sizeof(char) + 3 * sizeof(uint32_t);
 
   schema::RowBatch rb2(rd, 2);
   std::vector<types::Int64Value> col1_rb2 = {4, 5};
@@ -326,7 +308,7 @@ TEST(TableTest, expiry_test_w_compaction) {
   auto col2_rb2_arrow = types::ToArrow(col2_rb2, arrow::default_memory_pool());
   EXPECT_OK(rb2.AddColumn(col1_rb2_arrow));
   EXPECT_OK(rb2.AddColumn(col2_rb2_arrow));
-  int64_t rb2_size = 2 * sizeof(int64_t) + 3 * sizeof(char);
+  int64_t rb2_size = 2 * sizeof(int64_t) + 3 * sizeof(char) + 2 * sizeof(uint32_t);
 
   schema::RowBatch rb3(rd, 2);
   std::vector<types::Int64Value> col1_rb3 = {4, 5};
@@ -335,7 +317,7 @@ TEST(TableTest, expiry_test_w_compaction) {
   auto col2_rb3_arrow = types::ToArrow(col2_rb3, arrow::default_memory_pool());
   EXPECT_OK(rb3.AddColumn(col1_rb3_arrow));
   EXPECT_OK(rb3.AddColumn(col2_rb3_arrow));
-  int64_t rb3_size = 2 * sizeof(int64_t) + 27 * sizeof(char);
+  int64_t rb3_size = 2 * sizeof(int64_t) + 27 * sizeof(char) + 2 * sizeof(uint32_t);
 
   std::vector<types::Int64Value> time_hot_col1 = {1};
   std::vector<types::StringValue> time_hot_col2 = {"a"};
@@ -352,7 +334,7 @@ TEST(TableTest, expiry_test_w_compaction) {
   }
   wrapper_batch_1->push_back(col_wrapper_1);
   wrapper_batch_1->push_back(col_wrapper_2);
-  int64_t rb4_size = 1 * sizeof(int64_t) + 1 * sizeof(char);
+  int64_t rb4_size = 1 * sizeof(int64_t) + 1 * sizeof(char) + 1 * sizeof(uint32_t);
 
   std::vector<types::Int64Value> time_hot_col1_2 = {1, 2, 3, 4, 5};
   std::vector<types::StringValue> time_hot_col2_2 = {"abcdef", "ghi", "jklmno", "pqr", "tu"};
@@ -369,9 +351,9 @@ TEST(TableTest, expiry_test_w_compaction) {
   }
   wrapper_batch_1_2->push_back(col_wrapper_1_2);
   wrapper_batch_1_2->push_back(col_wrapper_2_2);
-  int64_t rb5_size = 5 * sizeof(int64_t) + 20 * sizeof(char);
+  int64_t rb5_size = 5 * sizeof(int64_t) + 20 * sizeof(char) + 5 * sizeof(uint32_t);
 
-  Table table("test_table", rel, 60, 40);
+  Table table("test_table", rel, 80, 40);
   EXPECT_OK(table.WriteRowBatch(rb1));
   EXPECT_EQ(table.GetTableStats().bytes, rb1_size);
 
@@ -380,7 +362,7 @@ TEST(TableTest, expiry_test_w_compaction) {
   EXPECT_EQ(table.GetTableStats().bytes, rb1_size + rb2_size);
 
   EXPECT_OK(table.WriteRowBatch(rb3));
-  EXPECT_EQ(table.GetTableStats().bytes, rb3_size);
+  EXPECT_EQ(table.GetTableStats().bytes, rb2_size + rb3_size);
 
   EXPECT_OK(table.TransferRecordBatch(std::move(wrapper_batch_1)));
   EXPECT_EQ(table.GetTableStats().bytes, rb3_size + rb4_size);
@@ -424,7 +406,8 @@ TEST(TableTest, write_row_batch) {
 
   EXPECT_OK(table.WriteRowBatch(rb1));
 
-  auto rb_or_s = table.GetRowBatchSlice(table.FirstBatch(), {0, 1}, arrow::default_memory_pool());
+  Table::Cursor cursor(table_ptr.get());
+  auto rb_or_s = cursor.GetNextRowBatch({0, 1});
   ASSERT_OK(rb_or_s);
   auto actual_rb = rb_or_s.ConsumeValueOrDie();
   EXPECT_TRUE(actual_rb->ColumnAt(0)->Equals(col1_rb1_arrow));
@@ -461,17 +444,13 @@ TEST(TableTest, hot_batches_test) {
   rb_wrapper_2->push_back(col2_in2_wrapper);
   EXPECT_OK(table.TransferRecordBatch(std::move(rb_wrapper_2)));
 
-  auto slice = table.FirstBatch();
-  auto rb1 =
-      table.GetRowBatchSlice(slice, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
+  Table::Cursor cursor(table_ptr.get());
+  auto rb1 = cursor.GetNextRowBatch({0, 1}).ConsumeValueOrDie();
   EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(col1_in1, arrow::default_memory_pool())));
   EXPECT_TRUE(rb1->ColumnAt(1)->Equals(types::ToArrow(col2_in1, arrow::default_memory_pool())));
 
-  slice = table.NextBatch(slice);
-  auto rb2 =
-      table.GetRowBatchSlice(slice, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
+  auto rb2 = cursor.GetNextRowBatch({0, 1}).ConsumeValueOrDie();
+  ASSERT_NE(rb2, nullptr);
   EXPECT_TRUE(rb2->ColumnAt(0)->Equals(types::ToArrow(col1_in2, arrow::default_memory_pool())));
   EXPECT_TRUE(rb2->ColumnAt(1)->Equals(types::ToArrow(col2_in2, arrow::default_memory_pool())));
 }
@@ -502,29 +481,24 @@ TEST(TableTest, hot_batches_w_compaction_test) {
   rb_wrapper_2->push_back(col1_in2_wrapper);
   rb_wrapper_2->push_back(col2_in2_wrapper);
 
-  Table table("test_table", rel, 128 * 1024, rb1_size + 1);
+  Table table("test_table", rel, 128 * 1024, rb1_size);
 
   EXPECT_OK(table.TransferRecordBatch(std::move(rb_wrapper_1)));
   EXPECT_OK(table.TransferRecordBatch(std::move(rb_wrapper_2)));
 
-  auto slice = table.FirstBatch();
-  auto rb1 =
-      table.GetRowBatchSlice(slice, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
+  Table::Cursor cursor(&table);
+  auto rb1 = cursor.GetNextRowBatch({0, 1}).ConsumeValueOrDie();
   EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(col1_in1, arrow::default_memory_pool())));
   EXPECT_TRUE(rb1->ColumnAt(1)->Equals(types::ToArrow(col2_in1, arrow::default_memory_pool())));
 
   EXPECT_OK(table.CompactHotToCold(arrow::default_memory_pool()));
 
-  slice = table.NextBatch(slice);
-  auto rb2 =
-      table.GetRowBatchSlice(slice, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
+  auto rb2 = cursor.GetNextRowBatch({0, 1}).ConsumeValueOrDie();
   EXPECT_TRUE(rb2->ColumnAt(0)->Equals(types::ToArrow(col1_in2, arrow::default_memory_pool())));
   EXPECT_TRUE(rb2->ColumnAt(1)->Equals(types::ToArrow(col2_in2, arrow::default_memory_pool())));
 }
 
-TEST(TableTest, find_batch_slice_greater_or_eq) {
+TEST(TableTest, find_rowid_from_time_first_greater_than_or_equal) {
   schema::Relation rel(std::vector<types::DataType>({types::DataType::TIME64NS}),
                        std::vector<std::string>({"time_"}));
   std::shared_ptr<Table> table_ptr = Table::Create("test_table", rel);
@@ -579,48 +553,28 @@ TEST(TableTest, find_batch_slice_greater_or_eq) {
   wrapper_batch->push_back(col_wrapper);
   EXPECT_OK(table.TransferRecordBatch(std::move(wrapper_batch)));
 
-  auto batch_slice =
-      table.FindBatchSliceGreaterThanOrEqual(0, arrow::default_memory_pool()).ConsumeValueOrDie();
-  EXPECT_EQ(0, batch_slice.uniq_row_start_idx);
-  EXPECT_EQ(3, batch_slice.uniq_row_end_idx);
+  EXPECT_EQ(0, table.FindRowIDFromTimeFirstGreaterThanOrEqual(0));
 
-  batch_slice =
-      table.FindBatchSliceGreaterThanOrEqual(5, arrow::default_memory_pool()).ConsumeValueOrDie();
-  EXPECT_EQ(3, batch_slice.uniq_row_start_idx);
-  EXPECT_EQ(3, batch_slice.uniq_row_end_idx);
+  EXPECT_EQ(3, table.FindRowIDFromTimeFirstGreaterThanOrEqual(5));
 
-  batch_slice =
-      table.FindBatchSliceGreaterThanOrEqual(6, arrow::default_memory_pool()).ConsumeValueOrDie();
-  EXPECT_EQ(3, batch_slice.uniq_row_start_idx);
-  EXPECT_EQ(3, batch_slice.uniq_row_end_idx);
+  EXPECT_EQ(3, table.FindRowIDFromTimeFirstGreaterThanOrEqual(6));
 
-  batch_slice =
-      table.FindBatchSliceGreaterThanOrEqual(8, arrow::default_memory_pool()).ConsumeValueOrDie();
-  EXPECT_EQ(4, batch_slice.uniq_row_start_idx);
-  EXPECT_EQ(6, batch_slice.uniq_row_end_idx);
+  EXPECT_EQ(4, table.FindRowIDFromTimeFirstGreaterThanOrEqual(8));
 
-  batch_slice =
-      table.FindBatchSliceGreaterThanOrEqual(10, arrow::default_memory_pool()).ConsumeValueOrDie();
-  EXPECT_EQ(9, batch_slice.uniq_row_start_idx);
-  EXPECT_EQ(9, batch_slice.uniq_row_end_idx);
+  EXPECT_EQ(9, table.FindRowIDFromTimeFirstGreaterThanOrEqual(10));
 
-  batch_slice =
-      table.FindBatchSliceGreaterThanOrEqual(13, arrow::default_memory_pool()).ConsumeValueOrDie();
-  EXPECT_EQ(10, batch_slice.uniq_row_start_idx);
-  EXPECT_EQ(12, batch_slice.uniq_row_end_idx);
+  EXPECT_EQ(10, table.FindRowIDFromTimeFirstGreaterThanOrEqual(13));
 
-  batch_slice =
-      table.FindBatchSliceGreaterThanOrEqual(21, arrow::default_memory_pool()).ConsumeValueOrDie();
-  EXPECT_EQ(13, batch_slice.uniq_row_start_idx);
-  EXPECT_EQ(15, batch_slice.uniq_row_end_idx);
+  EXPECT_EQ(13, table.FindRowIDFromTimeFirstGreaterThanOrEqual(21));
 
-  batch_slice =
-      table.FindBatchSliceGreaterThanOrEqual(24, arrow::default_memory_pool()).ConsumeValueOrDie();
-  EXPECT_EQ(-1, batch_slice.uniq_row_start_idx);
-  EXPECT_EQ(-1, batch_slice.uniq_row_end_idx);
+  // If the time is not in the table it returns the RowID after the end of the table (which is the
+  // number of rows that have been added to the table).
+  EXPECT_EQ(time_batch_1.size() + time_batch_2.size() + time_batch_3.size() + time_batch_4.size() +
+                time_batch_5.size() + time_batch_6.size(),
+            table.FindRowIDFromTimeFirstGreaterThanOrEqual(24));
 }
 
-TEST(TableTest, find_batch_slice_greater_or_eq_w_compaction) {
+TEST(TableTest, find_rowid_from_time_first_greater_than_or_equal_with_compaction) {
   schema::Relation rel(std::vector<types::DataType>({types::DataType::TIME64NS}),
                        std::vector<std::string>({"time_"}));
   int64_t compaction_size = 4 * sizeof(int64_t);
@@ -640,15 +594,10 @@ TEST(TableTest, find_batch_slice_greater_or_eq_w_compaction) {
   wrapper_batch->push_back(col_wrapper);
   EXPECT_OK(table.TransferRecordBatch(std::move(wrapper_batch)));
 
+  // Run Compaction.
   EXPECT_OK(table.CompactHotToCold(arrow::default_memory_pool()));
-  auto batch_slice =
-      table.FindBatchSliceGreaterThanOrEqual(0, arrow::default_memory_pool()).ConsumeValueOrDie();
-  EXPECT_EQ(0, batch_slice.uniq_row_start_idx);
-  EXPECT_EQ(3, batch_slice.uniq_row_end_idx);
-  batch_slice =
-      table.FindBatchSliceGreaterThanOrEqual(5, arrow::default_memory_pool()).ConsumeValueOrDie();
-  EXPECT_EQ(3, batch_slice.uniq_row_start_idx);
-  EXPECT_EQ(3, batch_slice.uniq_row_end_idx);
+  EXPECT_EQ(0, table.FindRowIDFromTimeFirstGreaterThanOrEqual(0));
+  EXPECT_EQ(3, table.FindRowIDFromTimeFirstGreaterThanOrEqual(5));
 
   wrapper_batch = std::make_unique<types::ColumnWrapperRecordBatch>();
   col_wrapper = std::make_shared<types::Time64NSValueColumnWrapper>(3);
@@ -664,18 +613,13 @@ TEST(TableTest, find_batch_slice_greater_or_eq_w_compaction) {
   wrapper_batch->push_back(col_wrapper);
   EXPECT_OK(table.TransferRecordBatch(std::move(wrapper_batch)));
 
+  // Run Compaction.
   EXPECT_OK(table.CompactHotToCold(arrow::default_memory_pool()));
-  batch_slice =
-      table.FindBatchSliceGreaterThanOrEqual(6, arrow::default_memory_pool()).ConsumeValueOrDie();
-  EXPECT_EQ(3, batch_slice.uniq_row_start_idx);
+  EXPECT_EQ(3, table.FindRowIDFromTimeFirstGreaterThanOrEqual(6));
 
-  batch_slice =
-      table.FindBatchSliceGreaterThanOrEqual(8, arrow::default_memory_pool()).ConsumeValueOrDie();
-  EXPECT_EQ(4, batch_slice.uniq_row_start_idx);
+  EXPECT_EQ(4, table.FindRowIDFromTimeFirstGreaterThanOrEqual(8));
 
-  batch_slice =
-      table.FindBatchSliceGreaterThanOrEqual(10, arrow::default_memory_pool()).ConsumeValueOrDie();
-  EXPECT_EQ(9, batch_slice.uniq_row_start_idx);
+  EXPECT_EQ(9, table.FindRowIDFromTimeFirstGreaterThanOrEqual(10));
 
   wrapper_batch = std::make_unique<types::ColumnWrapperRecordBatch>();
   col_wrapper = std::make_shared<types::Time64NSValueColumnWrapper>(3);
@@ -697,20 +641,18 @@ TEST(TableTest, find_batch_slice_greater_or_eq_w_compaction) {
   col_wrapper->AppendFromVector(time_batch_6);
   wrapper_batch->push_back(col_wrapper);
   EXPECT_OK(table.TransferRecordBatch(std::move(wrapper_batch)));
+  // Run Compaction.
   EXPECT_OK(table.CompactHotToCold(arrow::default_memory_pool()));
 
-  batch_slice =
-      table.FindBatchSliceGreaterThanOrEqual(13, arrow::default_memory_pool()).ConsumeValueOrDie();
-  EXPECT_EQ(10, batch_slice.uniq_row_start_idx);
+  EXPECT_EQ(10, table.FindRowIDFromTimeFirstGreaterThanOrEqual(13));
 
-  batch_slice =
-      table.FindBatchSliceGreaterThanOrEqual(21, arrow::default_memory_pool()).ConsumeValueOrDie();
-  EXPECT_EQ(13, batch_slice.uniq_row_start_idx);
+  EXPECT_EQ(13, table.FindRowIDFromTimeFirstGreaterThanOrEqual(21));
 
-  batch_slice =
-      table.FindBatchSliceGreaterThanOrEqual(24, arrow::default_memory_pool()).ConsumeValueOrDie();
-  EXPECT_EQ(-1, batch_slice.uniq_row_start_idx);
-  EXPECT_EQ(-1, batch_slice.uniq_row_end_idx);
+  // If the time is not in the table it returns the RowID after the end of the table (which is the
+  // number of rows that have been added to the table).
+  EXPECT_EQ(time_batch_1.size() + time_batch_2.size() + time_batch_3.size() + time_batch_4.size() +
+                time_batch_5.size() + time_batch_6.size(),
+            table.FindRowIDFromTimeFirstGreaterThanOrEqual(24));
 }
 
 TEST(TableTest, ToProto) {
@@ -719,54 +661,54 @@ TEST(TableTest, ToProto) {
   EXPECT_OK(table->ToProto(&table_proto));
 
   std::string expected = R"(
-relation {
-  columns {
-    column_name: "col1"
-    column_type: FLOAT64
-    column_semantic_type: ST_NONE
-  }
-  columns {
-    column_name: "col2"
-    column_type: INT64
-    column_semantic_type: ST_NONE
-  }
-}
-row_batches {
-  cols {
-    float64_data {
-      data: 0.5
-      data: 1.2
-      data: 5.3
-    }
-  }
-  cols {
-    int64_data {
-      data: 1
-      data: 2
-      data: 3
-    }
-  }
-  eow: false
-  eos: false
-  num_rows: 3
-}
-row_batches {
-  cols {
-    float64_data {
-      data: 0.1
-      data: 5.1
-    }
-  }
-  cols {
-    int64_data {
-      data: 5
-      data: 6
-    }
-  }
-  eow: true
-  eos: true
-  num_rows: 2
-})";
+ relation {
+   columns {
+     column_name: "col1"
+     column_type: FLOAT64
+     column_semantic_type: ST_NONE
+   }
+   columns {
+     column_name: "col2"
+     column_type: INT64
+     column_semantic_type: ST_NONE
+   }
+ }
+ row_batches {
+   cols {
+     float64_data {
+       data: 0.5
+       data: 1.2
+       data: 5.3
+     }
+   }
+   cols {
+     int64_data {
+       data: 1
+       data: 2
+       data: 3
+     }
+   }
+   eow: false
+   eos: false
+   num_rows: 3
+ }
+ row_batches {
+   cols {
+     float64_data {
+       data: 0.1
+       data: 5.1
+     }
+   }
+   cols {
+     int64_data {
+       data: 5
+       data: 6
+     }
+   }
+   eow: true
+   eos: true
+   num_rows: 2
+ })";
 
   google::protobuf::util::MessageDifferencer differ;
   table_store::schemapb::Table expected_proto;
@@ -842,13 +784,17 @@ TEST(TableTest, threaded) {
     EXPECT_OK(table_ptr->CompactHotToCold(arrow::default_memory_pool()));
   });
 
+  // Create the cursor before the write thread starts, to ensure that we get every row of the table.
+  Table::Cursor cursor(table_ptr.get(), Table::Cursor::StartSpec{},
+                       Table::Cursor::StopSpec{Table::Cursor::StopSpec::StopType::Infinite});
+
   std::thread writer_thread([table_ptr, done, max_time_counter]() {
     std::default_random_engine gen;
     std::uniform_int_distribution<int64_t> dist(256, 1024);
     int64_t time_counter = 0;
-    // This RAII wrapper around done, will notify threads waiting on done when it goes out of scope
-    // if done->Notify hasn't been called yet. This way if the writer thread dies for some reason
-    // the test will fail immediately instead of timing out.
+    // This RAII wrapper around done, will notify threads waiting on done when it goes out of
+    // scope if done->Notify hasn't been called yet. This way if the writer thread dies for some
+    // reason the test will fail immediately instead of timing out.
     NotifyOnDeath notifier(done.get());
     while (time_counter < max_time_counter) {
       int64_t batch_size = dist(gen);
@@ -869,47 +815,44 @@ TEST(TableTest, threaded) {
     done->Notify();
   });
 
-  std::thread reader_thread([table_ptr, done, max_time_counter]() {
+  std::thread reader_thread([table_ptr, done, max_time_counter, &cursor]() {
     int64_t time_counter = 0;
-    auto slice = table_ptr->FirstBatch();
-    while (!slice.IsValid()) {
-      slice = table_ptr->FirstBatch();
+
+    // Wait for the writer thread to push some data to the table.
+    while (!cursor.NextBatchReady()) {
+      std::this_thread::sleep_for(std::chrono::microseconds{50});
     }
 
-    // Loop over slices whilst the writer is still writing and we haven't seen all of the data yet.
+    // Loop over slices whilst the writer is still writing and we haven't seen all of the data
+    // yet.
     while (time_counter < max_time_counter &&
-           !done->WaitForNotificationWithTimeout(absl::Milliseconds(1))) {
-      EXPECT_TRUE(slice.IsValid());
-      auto batch =
-          table_ptr->GetRowBatchSlice(slice, {0}, arrow::default_memory_pool()).ConsumeValueOrDie();
+           !done->WaitForNotificationWithTimeout(absl::Microseconds(1))) {
+      EXPECT_TRUE(cursor.NextBatchReady());
+      auto batch = cursor.GetNextRowBatch({0}).ConsumeValueOrDie();
       auto time_col = std::static_pointer_cast<arrow::Int64Array>(batch->ColumnAt(0));
       for (int i = 0; i < time_col->length(); ++i) {
         EXPECT_EQ(time_counter, time_col->Value(i));
         time_counter++;
       }
-      // If the reader gets ahead of the writer we have to wait for the writer to write more data.
-      auto next_slice = table_ptr->NextBatch(slice);
-      if (time_counter < max_time_counter) {
-        // We check the done notifcation here so that if the writer fails to write all the data for
-        // some reason we still exit.
-        while (!next_slice.IsValid() &&
-               !done->WaitForNotificationWithTimeout(absl::Milliseconds(1))) {
-          next_slice = table_ptr->NextBatch(slice);
-        }
+      // If the reader gets ahead of the writer we have to wait for the writer to write more
+      // data. We check the done notifcation here so that if the writer fails to write all the data
+      // for some reason, we still exit.
+      while (time_counter < max_time_counter && !cursor.NextBatchReady() &&
+             !done->WaitForNotificationWithTimeout(absl::Milliseconds(1))) {
       }
-      slice = next_slice;
     }
+
+    // Now that the writer is finished move the stop of the cursor to the current end of the table.
+    cursor.UpdateStopSpec(Table::Cursor::StopSpec{Table::Cursor::StopSpec::CurrentEndOfTable});
 
     // Once the writer is finished, we loop over the remaining data in the table.
-    while (time_counter < max_time_counter && slice.IsValid()) {
-      auto batch =
-          table_ptr->GetRowBatchSlice(slice, {0}, arrow::default_memory_pool()).ConsumeValueOrDie();
+    while (time_counter < max_time_counter && !cursor.Done()) {
+      auto batch = cursor.GetNextRowBatch({0}).ConsumeValueOrDie();
       auto time_col = std::static_pointer_cast<arrow::Int64Array>(batch->ColumnAt(0));
       for (int i = 0; i < time_col->length(); ++i) {
-        EXPECT_EQ(time_counter, time_col->Value(i));
+        ASSERT_EQ(time_counter, time_col->Value(i));
         time_counter++;
       }
-      slice = table_ptr->NextBatch(slice);
     }
 
     EXPECT_EQ(time_counter, max_time_counter);
@@ -920,11 +863,14 @@ TEST(TableTest, threaded) {
   reader_thread.join();
 }
 
+// This test was add when `NextBatch` and `BatchSlice`'s were still around, and there was a bug with
+// generation handling of `BatchSlice`'s. Maintaining so as not to decrease test coverage, but this
+// bug should no longer even be plausible.
 TEST(TableTest, NextBatch_generation_bug) {
   auto rd = schema::RowDescriptor({types::DataType::INT64, types::DataType::STRING});
   schema::Relation rel(rd.types(), {"col1", "col2"});
 
-  int64_t rb1_size = 3 * sizeof(int64_t) + 12 * sizeof(char);
+  int64_t rb1_size = 3 * sizeof(int64_t) + 12 * sizeof(char) + 3 * sizeof(uint32_t);
   Table table("test_table", rel, rb1_size, rb1_size);
 
   schema::RowBatch rb1(rd, 3);
@@ -938,16 +884,58 @@ TEST(TableTest, NextBatch_generation_bug) {
   EXPECT_OK(table.WriteRowBatch(rb1));
   EXPECT_OK(table.CompactHotToCold(arrow::default_memory_pool()));
 
-  auto slice = table.FirstBatch();
+  Table::Cursor cursor(&table, Table::Cursor::StartSpec{}, Table::Cursor::StopSpec{});
   // Force cold expiration.
   EXPECT_OK(table.WriteRowBatch(rb1));
-  // Call NextBatch on slice, which before the bug fix updated it's generation when it shouldn't
-  // have.
-  table.NextBatch(slice);
-  // GetRowBatchSlice should return invalidargument since the slice was expired. Prior to the bug
-  // fix this would segfault.
-  EXPECT_NOT_OK(table.GetRowBatchSlice(slice, {0, 1}, arrow::default_memory_pool()));
+  // GetNextRowBatch should return invalidargument since the batch was expired.
+  EXPECT_NOT_OK(cursor.GetNextRowBatch({0, 1}));
 }
 
+TEST(TableTest, GetNextRowBatch_after_expiry) {
+  schema::Relation rel({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
+
+  std::vector<types::BoolValue> col1_in1 = {true, false, true};
+  auto col1_in1_wrapper =
+      types::ColumnWrapper::FromArrow(types::ToArrow(col1_in1, arrow::default_memory_pool()));
+  std::vector<types::BoolValue> col1_in2 = {false, false};
+  auto col1_in2_wrapper =
+      types::ColumnWrapper::FromArrow(types::ToArrow(col1_in2, arrow::default_memory_pool()));
+
+  std::vector<types::Int64Value> col2_in1 = {1, 2, 3};
+  auto col2_in1_wrapper =
+      types::ColumnWrapper::FromArrow(types::ToArrow(col2_in1, arrow::default_memory_pool()));
+  std::vector<types::Int64Value> col2_in2 = {5, 6};
+  auto col2_in2_wrapper =
+      types::ColumnWrapper::FromArrow(types::ToArrow(col2_in2, arrow::default_memory_pool()));
+
+  auto rb_wrapper_1 = std::make_unique<types::ColumnWrapperRecordBatch>();
+  rb_wrapper_1->push_back(col1_in1_wrapper);
+  rb_wrapper_1->push_back(col2_in1_wrapper);
+  int64_t rb1_size = 3 * sizeof(bool) + 3 * sizeof(int64_t);
+
+  auto rb_wrapper_2 = std::make_unique<types::ColumnWrapperRecordBatch>();
+  rb_wrapper_2->push_back(col1_in2_wrapper);
+  rb_wrapper_2->push_back(col2_in2_wrapper);
+  int64_t rb2_size = 2 * sizeof(bool) + 2 * sizeof(int64_t);
+
+  Table table("test_table", rel, rb1_size + rb2_size, rb1_size);
+
+  EXPECT_OK(table.TransferRecordBatch(std::move(rb_wrapper_1)));
+  EXPECT_OK(table.TransferRecordBatch(std::move(rb_wrapper_2)));
+
+  Table::Cursor cursor(&table);
+
+  // This write will expire the first batch.
+  auto rb_wrapper_1_copy = std::make_unique<types::ColumnWrapperRecordBatch>();
+  rb_wrapper_1_copy->push_back(col1_in1_wrapper);
+  rb_wrapper_1_copy->push_back(col2_in1_wrapper);
+  EXPECT_OK(table.TransferRecordBatch(std::move(rb_wrapper_1_copy)));
+
+  // GetNextRowBatch should return the second row batch since the first one was expired by the third
+  // write.
+  auto rb1 = cursor.GetNextRowBatch({0, 1}).ConsumeValueOrDie();
+  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(col1_in2, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(types::ToArrow(col2_in2, arrow::default_memory_pool())));
+}
 }  // namespace table_store
 }  // namespace px

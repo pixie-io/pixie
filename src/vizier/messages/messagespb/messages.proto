@@ -178,3 +178,12 @@ message ConfigUpdateRequest {
   // The new value of the updated setting.
   string value = 2;
 }
+
+// A message containing prometheus metrics from a vizier agent, sent to cloud connector to be
+// forwarded to cloud.
+message MetricsMessage {
+  // The prometheus metrics in prometheus' text exposition format.
+  string prom_metrics_text = 1;
+  // The k8s name of the pod sending the metrics.
+  string pod_name = 2;
+}

@@ -18,9 +18,13 @@
 
 #pragma once
 
+#include <chrono>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <utility>
+
+#include <prometheus/gauge.h>
 
 #include "src/stirling/stirling.h"
 #include "src/vizier/services/agent/manager/manager.h"
@@ -29,6 +33,8 @@
 namespace px {
 namespace vizier {
 namespace agent {
+
+constexpr auto kNodeMemoryCollectionPeriod = std::chrono::minutes(1);
 
 class PEMManager : public Manager {
  public:
@@ -53,7 +59,19 @@ class PEMManager : public Manager {
       : Manager(agent_id, pod_name, host_ip, /*grpc_server_port*/ 0, PEMManager::Capabilities(),
                 nats_url,
                 /*mds_url*/ ""),
-        stirling_(std::move(stirling)) {}
+        stirling_(std::move(stirling)),
+        node_available_memory_(prometheus::BuildGauge()
+                                   .Name("node_available_memory")
+                                   .Help("Amount of memory available for use on the node. "
+                                         "Corresponds to /proc/meminfo MemAvailable.")
+                                   .Register(GetMetricsRegistry())
+                                   .Add({})),
+        node_total_memory_(prometheus::BuildGauge()
+                               .Name("node_total_memory")
+                               .Help("Total amount of memory on the node (includes inuse and free "
+                                     "memory). Corresponds to /proc/meminfo MemTotal.")
+                               .Register(GetMetricsRegistry())
+                               .Add({})) {}
 
   std::string k8s_update_selector() const override { return info()->host_ip; }
 
@@ -64,6 +82,7 @@ class PEMManager : public Manager {
  private:
   Status InitSchemas();
   Status InitClockConverters();
+  void StartNodeMemoryCollector();
   static services::shared::agent::AgentCapabilities Capabilities() {
     services::shared::agent::AgentCapabilities capabilities;
     capabilities.set_collects_data(true);
@@ -75,6 +94,10 @@ class PEMManager : public Manager {
 
   // Timer for triggering ClockConverter polls.
   px::event::TimerUPtr clock_converter_timer_;
+  // Timer for collecting info about the node's available memory.
+  px::event::TimerUPtr node_memory_timer_;
+  prometheus::Gauge& node_available_memory_;
+  prometheus::Gauge& node_total_memory_;
 };
 
 }  // namespace agent

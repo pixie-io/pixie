@@ -1,0 +1,9 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pl-bq-config
+data:
+  PL_BQ_PROJECT: "pl-pixies"
+  PL_BQ_DATASET: "pixie_viziers_dev"
+  PL_BQ_SA_KEY_PATH: "/creds/bq.client.default.credentials_file"

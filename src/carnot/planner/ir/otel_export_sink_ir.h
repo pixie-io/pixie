@@ -92,6 +92,10 @@ struct OTelMetricSummary {
 struct OTelMetric {
   std::string name;
   std::string description;
+
+  // Unit string is the string representing the unit. If it's not set, the compiler will attempt
+  // to determine the unit from the unit_column semantic type.
+  std::string unit_str;
   // The column where we get the unit value from.
   ColumnIR* unit_column;
 
@@ -112,6 +116,8 @@ struct OTelSpan {
 
   ColumnIR* start_time_column;
   ColumnIR* end_time_column;
+
+  int64_t span_kind;
 };
 
 struct OTelData {

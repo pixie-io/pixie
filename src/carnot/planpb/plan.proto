@@ -386,6 +386,11 @@ message OTelSpan {
   // end_time_column points to the column that contains the end time of the
   // aggregation. Column must be of type TIME64NS.
   int64 end_time_column_index = 8;
+
+  // kind_value is the raw integer value for the
+  // ::opentelemetry::proto::trace::v1::Span::SpanKind. If you use a kind_value that's not a
+  // valid enum value, the value will be considered undefined.
+  int64 kind_value = 9;
 }
 
 // OTelMetricGauge maps operator columns to the fields of the OpenTelemetry Gauge metric.

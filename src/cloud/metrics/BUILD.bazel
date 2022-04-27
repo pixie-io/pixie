@@ -50,6 +50,7 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/metrics",
     deps = [
         "//src/cloud/metrics/controllers",
+        "//src/cloud/shared/vzshard",
         "//src/shared/services",
         "//src/shared/services/env",
         "//src/shared/services/healthz",
@@ -59,6 +60,7 @@ go_library(
         "@com_github_spf13_pflag//:pflag",
         "@com_github_spf13_viper//:viper",
         "@com_google_cloud_go_bigquery//:bigquery",
+        "@org_golang_google_api//googleapi",
         "@org_golang_google_api//option",
     ],
 )

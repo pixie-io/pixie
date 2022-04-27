@@ -273,6 +273,12 @@ class ProcParser {
   Status ParseProcPIDMaps(int32_t pid, std::vector<ProcessSMaps>* out) const;
 
   /**
+   * Parses /proc/<pid>/smaps_rollup for "PSS" the proportional set size memory usage.
+   * @return status of parsing or the value of PSS.
+   */
+  StatusOr<size_t> ParseProcPIDPss(const int32_t pid) const;
+
+  /**
    * Reads and returns the /proc/<pid>/fd/<fd> file descriptor link.
    *
    * Some examples of FD links are below:

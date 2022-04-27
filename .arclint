@@ -84,10 +84,7 @@
       "script-and-regex.regex": "/^(?P<file>.*): (?P<message>.*)$/m"
     },
     "filename": {
-      "type": "filename",
-      "exclude": [
-        "(^credentials/certs/accounts/)"
-      ]
+      "type": "filename"
     },
     "flake8": {
       "type": "flake8",

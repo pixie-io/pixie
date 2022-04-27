@@ -89,6 +89,7 @@ Status OTelExportSinkIR::ProcessConfig(const OTelData& data) {
     new_metric.name = metric.name;
     new_metric.description = metric.description;
 
+    new_metric.unit_str = metric.unit_str;
     PL_ASSIGN_OR_RETURN(new_metric.unit_column, AddColumn(metric.unit_column));
     PL_ASSIGN_OR_RETURN(new_metric.time_column, AddColumn(metric.time_column));
     for (const auto& attr : metric.attributes) {
@@ -148,6 +149,7 @@ Status OTelExportSinkIR::ProcessConfig(const OTelData& data) {
       PL_ASSIGN_OR_RETURN(auto column, AddColumn(attr.column_reference));
       new_span.attributes.push_back({attr.name, column});
     }
+    new_span.span_kind = span.span_kind;
     data_.spans.push_back(std::move(new_span));
   }
   return Status::OK();
@@ -167,8 +169,11 @@ Status OTelExportSinkIR::ToProto(planpb::Operator* op) const {
     metric_pb->set_name(metric.name);
     metric_pb->set_description(metric.description);
 
-    auto unit_type = static_cast<ValueType*>(metric.unit_column->resolved_type().get());
-    metric_pb->set_unit(ConvertSemanticTypeToOtel(unit_type->semantic_type()));
+    metric_pb->set_unit(metric.unit_str);
+    if (metric.unit_str.empty()) {
+      auto unit_type = static_cast<ValueType*>(metric.unit_column->resolved_type().get());
+      metric_pb->set_unit(ConvertSemanticTypeToOtel(unit_type->semantic_type()));
+    }
     if (metric.time_column->EvaluatedDataType() != types::TIME64NS) {
       return metric.time_column->CreateIRNodeError(
           "Expected time column '$0' to be TIME64NS, received $1", metric.time_column->col_name(),
@@ -315,6 +320,7 @@ Status OTelExportSinkIR::ToProto(planpb::Operator* op) const {
     for (const auto& attribute : span.attributes) {
       PL_RETURN_IF_ERROR(attribute.ToProto(span_pb->add_attributes()));
     }
+    span_pb->set_kind_value(span.span_kind);
   }
   return Status::OK();
 }

@@ -26,6 +26,7 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/api/proto/uuidpb/uuid.proto";
 import "src/carnot/queryresultspb/query_results.proto";
 import "src/table_store/schemapb/schema.proto";
+import "src/common/base/statuspb/status.proto";
 
 message TransferResultChunkRequest {
   // This field represents the address that the row batch should be sent to.
@@ -79,6 +80,8 @@ message TransferResultChunkRequest {
     // This result will be sent periodically until the end of the query, so it also functions
     // as a heartbeat for persistent streaming queries.
     QueryExecutionAndTimingInfo execution_and_timing_info = 6;
+    // Whenever an error occurs, it will be stored in this field.
+    px.statuspb.Status execution_error = 7;
   }
 }
 

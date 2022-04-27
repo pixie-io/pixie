@@ -927,6 +927,7 @@ spans {
   trace_id_column_index: 3
   span_id_column_index: 4
   parent_span_id_column_index: 5
+  kind_value: 3
 })pb",
 
                               {R"pb(
@@ -962,7 +963,45 @@ resource_spans {
           string_value: "aaaa"
         }
       }
-      kind: SPAN_KIND_SERVER
+      kind: SPAN_KIND_CLIENT
+      status {}
+    }
+  }
+})pb"}},
+                             {"span_kind_out_of_max",
+                              R"pb(
+resource { }
+spans {
+  name_string: "span"
+  start_time_column_index: 0
+  end_time_column_index: 1
+  trace_id_column_index: 2
+  span_id_column_index: 3
+  parent_span_id_column_index: 4
+  kind_value: 35
+})pb",
+
+                              {R"pb(
+cols { time64ns_data { data: 10 } }
+cols { time64ns_data { data: 12 } }
+cols { string_data { data: "00112233445566778899aabbccddeeff" } }
+cols { string_data { data: "1a2b3c4d5e6f7890" } }
+cols { string_data { data: "0987f6e5d4c3b2a1" } }
+num_rows: 1
+eow: true
+eos: true)pb"},
+                              {R"pb(
+resource_spans {
+  resource { }
+  instrumentation_library_spans {
+    spans {
+      name: "span"
+      start_time_unix_nano: 10
+      end_time_unix_nano: 12
+      trace_id: "\000\021\"3DUfw\210\231\252\273\314\335\356\377"
+      span_id: "\032+<M^ox\220"
+      parent_span_id: "\t\207\366\345\324\303\262\241"
+      kind: 35
       status {}
     }
   }
@@ -976,6 +1015,7 @@ spans {
   trace_id_column_index: 3
   span_id_column_index: 4
   parent_span_id_column_index: 5
+  kind_value: 2
 })pb",
 
                               {R"pb(
@@ -1046,6 +1086,7 @@ spans {
   trace_id_column_index: 4
   span_id_column_index: 5
   parent_span_id_column_index: -1
+  kind_value: 2
 })pb",
 
                               {R"pb(
@@ -1203,6 +1244,7 @@ spans {
   trace_id_column_index: 6
   span_id_column_index: 7
   parent_span_id_column_index: -1
+  kind_value: 2
   attributes {
     name: "http.status.code"
     column {
@@ -1466,6 +1508,84 @@ eos: true)pb",
         },
     }),
     [](const ::testing::TestParamInfo<SpanIDTestCase>& info) { return info.param.name; });
+TEST_F(OTelExportSinkNodeTest, span_stub_errors) {
+  EXPECT_CALL(*trace_mock_, Export(_, _, _))
+      .Times(1)
+      .WillRepeatedly(Invoke(
+          [&](const auto&, const auto&, const auto&) { return grpc::Status(grpc::INTERNAL, ""); }));
+
+  planpb::OTelExportSinkOperator otel_sink_op;
+
+  std::string operator_proto = R"pb(
+spans {
+  name_string: "span"
+  start_time_column_index: 0
+  end_time_column_index: 1
+  trace_id_column_index: -1
+  span_id_column_index: -1
+  parent_span_id_column_index: -1
+})pb";
+  EXPECT_TRUE(google::protobuf::TextFormat::ParseFromString(operator_proto, &otel_sink_op));
+  auto plan_node = std::make_unique<plan::OTelExportSinkOperator>(1);
+  auto s = plan_node->Init(otel_sink_op);
+  std::string row_batch = R"pb(
+cols { time64ns_data { data: 10 data: 20 } }
+cols { time64ns_data { data: 12 data: 22 } }
+num_rows: 2
+eow: true
+eos: true)pb";
+
+  // Load a RowBatch to get the Input RowDescriptor.
+  table_store::schemapb::RowBatchData row_batch_proto;
+  EXPECT_TRUE(google::protobuf::TextFormat::ParseFromString(row_batch, &row_batch_proto));
+  RowDescriptor input_rd = RowBatch::FromProto(row_batch_proto).ConsumeValueOrDie()->desc();
+  RowDescriptor output_rd({});
+
+  auto tester = exec::ExecNodeTester<OTelExportSinkNode, plan::OTelExportSinkOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+  auto rb = RowBatch::FromProto(row_batch_proto).ConsumeValueOrDie();
+  auto retval = tester.node()->ConsumeNext(exec_state_.get(), *rb.get(), 1);
+  EXPECT_NOT_OK(retval);
+  EXPECT_THAT(retval.ToString(), ::testing::MatchesRegex(".*INTERNAL.*"));
+}
+
+TEST_F(OTelExportSinkNodeTest, metrics_stub_errors) {
+  EXPECT_CALL(*metrics_mock_, Export(_, _, _))
+      .Times(1)
+      .WillRepeatedly(Invoke(
+          [&](const auto&, const auto&, const auto&) { return grpc::Status(grpc::INTERNAL, ""); }));
+
+  planpb::OTelExportSinkOperator otel_sink_op;
+
+  std::string operator_proto = R"pb(
+metrics {
+  name: "http.resp.latency"
+  time_column_index: 0
+  gauge { int_column_index: 1 }
+})pb";
+  EXPECT_TRUE(google::protobuf::TextFormat::ParseFromString(operator_proto, &otel_sink_op));
+  auto plan_node = std::make_unique<plan::OTelExportSinkOperator>(1);
+  auto s = plan_node->Init(otel_sink_op);
+  std::string row_batch = R"pb(
+cols { time64ns_data { data: 10 data: 11 } }
+cols { int64_data { data: 15 data: 150 } }
+num_rows: 2
+eow: true
+eos: true)pb";
+
+  // Load a RowBatch to get the Input RowDescriptor.
+  table_store::schemapb::RowBatchData row_batch_proto;
+  EXPECT_TRUE(google::protobuf::TextFormat::ParseFromString(row_batch, &row_batch_proto));
+  RowDescriptor input_rd = RowBatch::FromProto(row_batch_proto).ConsumeValueOrDie()->desc();
+  RowDescriptor output_rd({});
+
+  auto tester = exec::ExecNodeTester<OTelExportSinkNode, plan::OTelExportSinkOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+  auto rb = RowBatch::FromProto(row_batch_proto).ConsumeValueOrDie();
+  auto retval = tester.node()->ConsumeNext(exec_state_.get(), *rb.get(), 1);
+  EXPECT_NOT_OK(retval);
+  EXPECT_THAT(retval.ToString(), ::testing::MatchesRegex(".*INTERNAL.*"));
+}
 
 }  // namespace exec
 }  // namespace carnot

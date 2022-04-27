@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
-load("//src/stirling/source_connectors/perf_profiler/java/agent:agent_libs.bzl", "agent_libs", "agent_libs_arg")
+load("//src/stirling/source_connectors/perf_profiler/testing:testing.bzl", "agent_libs", "agent_libs_arg", "px_jattach", "px_jattach_arg")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -43,12 +43,13 @@ pl_cc_test(
     srcs = ["perf_profiler_test.cc"],
     args = [
         "-stirling_profiler_java_agent_libs %s" % agent_libs_arg,
+        "-stirling_profiler_px_jattach_path %s" % px_jattach_arg,
     ],
     data = [
         "//src/stirling/source_connectors/perf_profiler/testing/cc:profiler_test_app_fib_cpp",
         "//src/stirling/source_connectors/perf_profiler/testing/go:profiler_test_app_sqrt_go",
         "//src/stirling/source_connectors/perf_profiler/testing/java:image.tar",
-    ] + agent_libs,
+    ] + agent_libs + [px_jattach],
     tags = [
         "exclusive",
         "requires_bpf",

@@ -22,7 +22,16 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/metrics/controllers",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
+        "//src/cloud/shared/vzshard",
+        "//src/shared/cvmsgs",
+        "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
+        "@com_github_gogo_protobuf//proto",
+        "@com_github_gogo_protobuf//types",
         "@com_github_nats_io_nats_go//:nats_go",
+        "@com_github_prometheus_common//model",
+        "@com_github_prometheus_prometheus//pkg/timestamp",
+        "@com_github_prometheus_prometheus//prompb",
+        "@com_github_sirupsen_logrus//:logrus",
         "@com_google_cloud_go_bigquery//:bigquery",
     ],
 )

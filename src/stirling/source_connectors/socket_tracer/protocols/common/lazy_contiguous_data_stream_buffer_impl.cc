@@ -207,7 +207,6 @@ void LazyContiguousDataStreamBufferImpl::RemovePrefix(ssize_t n) {
       head_pos_to_ts_.clear();
     } else {
       CleanupHeadTimestamps(removed);
-      head_position_ += removed;
     }
   }
 
@@ -233,6 +232,11 @@ void LazyContiguousDataStreamBufferImpl::RemovePrefix(ssize_t n) {
     events_.insert(std::move(node_handle));
     events_size_ -= remaining;
   }
+
+  // Increment head_position_ even if head_ became invalid. In normal operation (where `Head()` is
+  // called before the next call to `position()`), this doesn't matter. However, its useful to align
+  // with the old implementation's `position()` method for the purposes of tracking data loss.
+  head_position_ += n;
 }
 
 void LazyContiguousDataStreamBufferImpl::CleanupHeadTimestamps(size_t removed) {

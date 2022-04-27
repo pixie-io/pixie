@@ -15,16 +15,11 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
-
-#include <string>
-#include <vector>
+#include "src/shared/metadata/cgroup_metadata_reader.h"
 
 #include <absl/container/flat_hash_set.h>
+
 #include "src/common/testing/testing.h"
-#include "src/shared/metadata/cgroup_metadata_reader.h"
 
 namespace px {
 namespace md {
@@ -39,7 +34,6 @@ class CGroupMetadataReaderTest : public ::testing::Test {
   }
 
   std::unique_ptr<CGroupMetadataReader> md_reader_;
-  std::filesystem::path sysfs_path_;
 };
 
 TEST_F(CGroupMetadataReaderTest, read_pid_list) {

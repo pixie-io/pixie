@@ -27,6 +27,7 @@
 #include "src/common/exec/subprocess.h"
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/testing/test_utils/container_runner.h"
+#include "src/stirling/core/connector_context.h"
 #include "src/stirling/source_connectors/perf_profiler/java/attach.h"
 #include "src/stirling/source_connectors/perf_profiler/perf_profile_connector.h"
 #include "src/stirling/source_connectors/perf_profiler/stack_traces_table.h"
@@ -42,6 +43,7 @@ namespace px {
 namespace stirling {
 
 using ::px::stirling::profiler::testing::GetAgentLibsFlagValueForTesting;
+using ::px::stirling::profiler::testing::GetPxJattachFlagValueForTesting;
 using ::px::stirling::testing::FindRecordIdxMatchesPIDs;
 using ::px::testing::BazelBinTestFilePath;
 using ::px::testing::PathExists;
@@ -161,6 +163,7 @@ class PerfProfileBPFTest : public ::testing::Test {
     FLAGS_stirling_profiler_java_symbols = true;
     FLAGS_number_attach_attempts_per_iteration = kNumSubProcesses;
     FLAGS_stirling_profiler_java_agent_libs = GetAgentLibsFlagValueForTesting();
+    FLAGS_stirling_profiler_px_jattach_path = GetPxJattachFlagValueForTesting();
 
     source_ = PerfProfileConnector::Create("perf_profile_connector");
     ASSERT_OK(source_->Init());
@@ -327,7 +330,7 @@ class PerfProfileBPFTest : public ::testing::Test {
   const std::chrono::seconds test_run_time_;
   std::unique_ptr<PerfProfileConnector> source_;
   std::unique_ptr<PerfProfilerTestSubProcesses> sub_processes_;
-  std::unique_ptr<TestContext> ctx_;
+  std::unique_ptr<StandaloneContext> ctx_;
   DataTable data_table_;
   const std::vector<DataTable*> data_tables_{&data_table_};
 
@@ -360,7 +363,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
   // Start target apps & create the connector context using the sub-process upids.
   sub_processes_ = std::make_unique<CPUPinnedSubProcesses>(bazel_app_path);
   ASSERT_NO_FATAL_FAILURE(sub_processes_->StartAll());
-  ctx_ = std::make_unique<TestContext>(sub_processes_->upids());
+  ctx_ = std::make_unique<StandaloneContext>(sub_processes_->upids());
 
   // Allow target apps to run, and periodically call transfer data on perf profile connector.
   const std::chrono::duration<double> elapsed_time = RunTest();
@@ -383,7 +386,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
   // Start target apps & create the connector context using the sub-process upids.
   sub_processes_ = std::make_unique<CPUPinnedSubProcesses>(bazel_app_path);
   ASSERT_NO_FATAL_FAILURE(sub_processes_->StartAll());
-  ctx_ = std::make_unique<TestContext>(sub_processes_->upids());
+  ctx_ = std::make_unique<StandaloneContext>(sub_processes_->upids());
 
   // Allow target apps to run, and periodically call transfer data on perf profile connector.
   const std::chrono::duration<double> elapsed_time = RunTest();
@@ -408,7 +411,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
   // Start target apps & create the connector context using the sub-process upids.
   sub_processes_ = std::make_unique<ContainerSubProcesses>(image_tar_path, kContainerNamePfx);
   ASSERT_NO_FATAL_FAILURE(sub_processes_->StartAll());
-  ctx_ = std::make_unique<TestContext>(sub_processes_->upids());
+  ctx_ = std::make_unique<StandaloneContext>(sub_processes_->upids());
 
   // Allow target apps to run, and periodically call transfer data on perf profile connector.
   const std::chrono::duration<double> elapsed_time = RunTest();
@@ -420,7 +423,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
       CheckExpectedCounts(observed_leaf_symbols_, kNumSubProcesses, elapsed_time, key1x, key2x));
 
   // Now we will test agent cleanup, specifically whether the aritfacts directory is removed.
-  // We will construt a list of artifacts paths that we expect,
+  // We will construct a list of artifacts paths that we expect,
   // then kill all the subprocesses,
   // and expect that all the artifacts paths are (as a result) removed.
   std::vector<std::filesystem::path> artifacts_paths;
@@ -445,7 +448,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
   // between the previous list of upids (our subprocs) and the current list of upids (empty)
   // to find a list of deleted upids.
   const absl::flat_hash_set<md::UPID> empty_upid_set;
-  ctx_ = std::make_unique<TestContext>(empty_upid_set);
+  ctx_ = std::make_unique<StandaloneContext>(empty_upid_set);
 
   // Run transfer data so that cleanup is kicked off in the perf profile source connector.
   // The deleted upids list that is inferred will match our original upid list.
@@ -464,7 +467,7 @@ TEST_F(PerfProfileBPFTest, TestOutOfContext) {
   ASSERT_NO_FATAL_FAILURE(sub_processes_->StartAll());
 
   // Use an empty connector context.
-  ctx_ = std::make_unique<TestContext>(absl::flat_hash_set<md::UPID>());
+  ctx_ = std::make_unique<StandaloneContext>(absl::flat_hash_set<md::UPID>());
 
   // Allow target apps to run, and periodically call transfer data on perf profile connector.
   RunTest();

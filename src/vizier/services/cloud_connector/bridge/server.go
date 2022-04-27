@@ -45,9 +45,12 @@ import (
 	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/cloud/vzconn/vzconnpb"
 	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
+	"px.dev/pixie/src/shared/cvmsgs"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	vzstatus "px.dev/pixie/src/shared/status"
 	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/vizier/messages/messagespb"
+	"px.dev/pixie/src/vizier/services/cloud_connector/vzmetrics"
 	"px.dev/pixie/src/vizier/utils/messagebus"
 )
 
@@ -207,6 +210,8 @@ type Bridge struct {
 	updateFailed  bool         // True if an update has failed (sticky).
 
 	droppedMessagesBeforeResume int64 // Number of messages dropped before successful resume.
+
+	natsMetricsCh chan *nats.Msg
 }
 
 // New creates a cloud connector to cloud bridge.
@@ -232,6 +237,7 @@ func New(vizierID uuid.UUID, assignedClusterName string, jwtSigningKey string, d
 		quitCh:            make(chan bool),
 		wg:                sync.WaitGroup{},
 		wdWg:              sync.WaitGroup{},
+		natsMetricsCh:     make(chan *nats.Msg, 5000),
 	}
 }
 
@@ -368,6 +374,18 @@ func (s *Bridge) RunStream() {
 		err := natsSub.Unsubscribe()
 		if err != nil {
 			log.WithError(err).Error("Failed to unsubscribe from NATS")
+		}
+	}()
+
+	log.WithField("topic", messagebus.MetricsTopic).Trace("Subscribing to Metrics topic on NATS")
+	natsMetricsSub, err := s.nc.ChanSubscribe(messagebus.MetricsTopic, s.natsMetricsCh)
+	if err != nil {
+		log.WithError(err).Fatal("Could not subscribe to Metrics topic on NATS. Please check for the `pl-nats` pods in the namespace to confirm they are healthy and running.")
+	}
+	defer func() {
+		err := natsMetricsSub.Unsubscribe()
+		if err != nil {
+			log.WithError(err).Error("Failed to unsubscribe from NATS metrics topic.")
 		}
 	}()
 
@@ -603,6 +621,23 @@ func (s *Bridge) handleDebugPodsRequest(reqID string, req *vizierpb.DebugPodsReq
 		},
 	}
 	return s.sendDebugStreamResponse(reqID, resps)
+}
+
+func (s *Bridge) handleMetricsMessage(msg *nats.Msg) error {
+	metricsMsg := &messagespb.MetricsMessage{}
+	err := proto.Unmarshal(msg.Data, metricsMsg)
+	if err != nil {
+		return err
+	}
+	promWriteReq, err := vzmetrics.ParsePrometheusTextToWriteReq(metricsMsg.PromMetricsText, s.vizierID.String(), metricsMsg.PodName)
+	if err != nil {
+		return err
+	}
+	anyMsg, err := types.MarshalAny(promWriteReq)
+	if err != nil {
+		return err
+	}
+	return s.publishBridgeCh(cvmsgs.VizierMetricsChannel, anyMsg)
 }
 
 func (s *Bridge) doRegistrationHandshake(stream vzconnpb.VZConnService_NATSBridgeClient) error {
@@ -871,6 +906,7 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 	// 1. Listen to NATS on v2c.<topic>.
 	// 2. Extract Topic from the stream name above.
 	// 3. Wrap the message and throw it over the wire.
+	// 4. Additionally, listen on NATS for messages on the metrics topic, and bridge those to cloud.
 
 	// Cloud -> Vizier side:
 	// 1. Read the stream.
@@ -971,6 +1007,13 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 			if err != nil {
 				return err
 			}
+
+		case metricsMsg := <-s.natsMetricsCh:
+			err := s.handleMetricsMessage(metricsMsg)
+			if err != nil {
+				return err
+			}
+
 		case <-stream.Context().Done():
 			log.Info("Stream has been closed, shutting down grpc readers")
 			return nil
@@ -1112,7 +1155,6 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) chan *cvmsgspb.VizierHeart
 			Port:                          port,
 			NumNodes:                      state.NumNodes,
 			NumInstrumentedNodes:          state.NumInstrumentedNodes,
-			PodStatuses:                   state.ControlPlanePodStatuses,
 			UnhealthyDataPlanePodStatuses: state.UnhealthyDataPlanePodStatuses,
 			K8sClusterVersion:             state.K8sClusterVersion,
 			PodStatusesLastUpdated:        state.LastUpdated.UnixNano(),
@@ -1120,6 +1162,12 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) chan *cvmsgspb.VizierHeart
 			StatusMessage:                 msg,
 			DisableAutoUpdate:             viper.GetBool("disable_auto_update"),
 		}
+
+		// Only send the control plane pod statuses every 1 min.
+		if atomic.LoadInt64(&s.hbSeqNum)%12 == 0 {
+			hbMsg.PodStatuses = state.ControlPlanePodStatuses
+		}
+
 		select {
 		case <-s.quitCh:
 			return

@@ -30,7 +30,7 @@ namespace carnot {
 namespace builtins {
 
 udf::ScalarUDFDocBuilder AddDoc();
-template <typename TReturn, typename TArg1, typename TArg2>
+template <typename TReturn, typename TArg1 = TReturn, typename TArg2 = TReturn>
 class AddUDF : public udf::ScalarUDF {
  public:
   TReturn Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val + b2.val; }
@@ -46,7 +46,7 @@ class AddUDF : public udf::ScalarUDF {
 };
 
 template <>
-class AddUDF<types::StringValue, types::StringValue, types::StringValue> : public udf::ScalarUDF {
+class AddUDF<types::StringValue> : public udf::ScalarUDF {
  public:
   types::StringValue Exec(FunctionContext*, types::StringValue b1, types::StringValue b2) {
     return b1 + b2;
@@ -55,7 +55,7 @@ class AddUDF<types::StringValue, types::StringValue, types::StringValue> : publi
   static udf::ScalarUDFDocBuilder Doc() { return AddDoc(); }
 };
 
-template <typename TReturn, typename TArg1, typename TArg2>
+template <typename TReturn, typename TArg1 = TReturn, typename TArg2 = TReturn>
 class SubtractUDF : public udf::ScalarUDF {
  public:
   TReturn Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val - b2.val; }
@@ -81,13 +81,11 @@ class SubtractUDF : public udf::ScalarUDF {
   }
 };
 
-template <typename TReturn, typename TArg1, typename TArg2>
+template <typename TArg1, typename TArg2 = TArg1>
 class DivideUDF : public udf::ScalarUDF {
-  using ReturnValueType = typename types::ValueTypeTraits<TReturn>::native_type;
-
  public:
-  TReturn Exec(FunctionContext*, TArg1 b1, TArg2 b2) {
-    return ReturnValueType(b1.val) / ReturnValueType(b2.val);
+  types::Float64Value Exec(FunctionContext*, TArg1 b1, TArg2 b2) {
+    return static_cast<double>(b1.val) / static_cast<double>(b2.val);
   }
 
   static udf::InfRuleVec SemanticInferenceRules() {
@@ -110,7 +108,7 @@ class DivideUDF : public udf::ScalarUDF {
   }
 };
 
-template <typename TReturn, typename TArg1, typename TArg2>
+template <typename TReturn, typename TArg1 = TReturn, typename TArg2 = TReturn>
 class MultiplyUDF : public udf::ScalarUDF {
  public:
   TReturn Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val * b2.val; }
@@ -263,7 +261,7 @@ class ModuloUDF : public udf::ScalarUDF {
   }
 };
 
-template <typename TArg1, typename TArg2>
+template <typename TArg1, typename TArg2 = TArg1>
 class LogicalOrUDF : public udf::ScalarUDF {
  public:
   BoolValue Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val || b2.val; }
@@ -282,7 +280,7 @@ class LogicalOrUDF : public udf::ScalarUDF {
   }
 };
 
-template <typename TArg1, typename TArg2>
+template <typename TArg1, typename TArg2 = TArg1>
 class LogicalAndUDF : public udf::ScalarUDF {
  public:
   BoolValue Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val && b2.val; }
@@ -371,7 +369,7 @@ class FloorUDF : public udf::ScalarUDF {
   }
 };
 
-template <typename TArg1, typename TArg2>
+template <typename TArg1, typename TArg2 = TArg1>
 class EqualUDF : public udf::ScalarUDF {
  public:
   BoolValue Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1 == b2; }
@@ -391,7 +389,7 @@ class EqualUDF : public udf::ScalarUDF {
   }
 };
 
-template <typename TArg1, typename TArg2>
+template <typename TArg1, typename TArg2 = TArg1>
 class NotEqualUDF : public udf::ScalarUDF {
  public:
   BoolValue Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1 != b2; }
@@ -411,10 +409,9 @@ class NotEqualUDF : public udf::ScalarUDF {
   }
 };
 
-template <typename TArg1, typename TArg2>
 class ApproxEqualUDF : public udf::ScalarUDF {
  public:
-  BoolValue Exec(FunctionContext*, TArg1 b1, TArg2 b2) {
+  BoolValue Exec(FunctionContext*, types::Float64Value b1, types::Float64Value b2) {
     return std::abs(b1.val - b2.val) < std::numeric_limits<double>::epsilon();
   }
 
@@ -430,15 +427,14 @@ class ApproxEqualUDF : public udf::ScalarUDF {
   }
 };
 
-template <typename TArg1, typename TArg2>
 class ApproxNotEqualUDF : public udf::ScalarUDF {
  public:
-  BoolValue Exec(FunctionContext*, TArg1 b1, TArg2 b2) {
+  BoolValue Exec(FunctionContext*, types::Float64Value b1, types::Float64Value b2) {
     return std::abs(b1.val - b2.val) > std::numeric_limits<double>::epsilon();
   }
 };
 
-template <typename TArg1, typename TArg2>
+template <typename TArg1, typename TArg2 = TArg1>
 class GreaterThanUDF : public udf::ScalarUDF {
  public:
   BoolValue Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1 > b2; }
@@ -457,7 +453,7 @@ class GreaterThanUDF : public udf::ScalarUDF {
   }
 };
 
-template <typename TArg1, typename TArg2>
+template <typename TArg1, typename TArg2 = TArg1>
 class GreaterThanEqualUDF : public udf::ScalarUDF {
  public:
   BoolValue Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1 >= b2; }
@@ -477,7 +473,7 @@ class GreaterThanEqualUDF : public udf::ScalarUDF {
   }
 };
 
-template <typename TArg1, typename TArg2>
+template <typename TArg1, typename TArg2 = TArg1>
 class LessThanUDF : public udf::ScalarUDF {
  public:
   BoolValue Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1 < b2; }
@@ -493,7 +489,7 @@ class LessThanUDF : public udf::ScalarUDF {
   }
 };
 
-template <typename TArg1, typename TArg2>
+template <typename TArg1, typename TArg2 = TArg1>
 class LessThanEqualUDF : public udf::ScalarUDF {
  public:
   BoolValue Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1 <= b2; }
@@ -513,7 +509,7 @@ class LessThanEqualUDF : public udf::ScalarUDF {
 
 udf::ScalarUDFDocBuilder BinDoc();
 
-template <typename TReturn, typename TArg1, typename TArg2>
+template <typename TReturn, typename TArg1 = TReturn, typename TArg2 = TReturn>
 class BinUDF : public udf::ScalarUDF {
  public:
   TReturn Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val - (b1.val % b2.val); }

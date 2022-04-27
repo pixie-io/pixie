@@ -439,7 +439,7 @@ func (r *runner) start() {
 		return
 	}
 	ticker := time.NewTicker(time.Duration(r.cronScript.FrequencyS) * time.Second)
-	r.lastRun = time.Now().Add(time.Second * time.Duration(-1*r.cronScript.FrequencyS))
+	r.lastRun = time.Now()
 
 	go func() {
 		defer ticker.Stop()
@@ -465,16 +465,17 @@ func (r *runner) start() {
 				}
 
 				// TODO(michelle): We may want to monitor the stream to ensure the script runs successfully.
+				startTime := r.lastRun
+				r.lastRun = time.Now()
 				_, err := r.vzClient.ExecuteScript(ctx, &vizierpb.ExecuteScriptRequest{
 					QueryStr: r.cronScript.Script,
 					Configs: &vizierpb.Configs{
 						OTelEndpointConfig: otelEndpoint,
 						PluginConfig: &vizierpb.Configs_PluginConfig{
-							StartTimeNs: r.lastRun.UnixNano(),
+							StartTimeNs: startTime.UnixNano(),
 						},
 					},
 				})
-				r.lastRun = r.lastRun.Add(time.Second * time.Duration(r.cronScript.FrequencyS))
 				if err != nil {
 					log.WithError(err).Error("Failed to execute cronscript")
 				}

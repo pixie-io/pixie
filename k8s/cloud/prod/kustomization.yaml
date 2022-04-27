@@ -25,6 +25,7 @@ resources:
 - vzconn_backend_config.yaml
 - ../base
 - ../overlays/exposed_services_gclb
+- ../overlays/plugin_job
 patchesStrategicMerge:
 - support_access_config.yaml
 - analytics_config.yaml
@@ -35,7 +36,6 @@ patchesStrategicMerge:
 - service_config.yaml
 - domain_config.yaml
 - cloud_ingress_ip.yaml
-- dns_config.yaml
 - scriptmgr_config.yaml
 - proxy_envoy.yaml
 patches:

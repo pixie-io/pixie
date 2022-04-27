@@ -33,11 +33,6 @@ namespace px {
 namespace stirling {
 
 /**
- * Returns the list of processes from the proc filesystem. Used by StandaloneContext.
- */
-absl::flat_hash_set<md::UPID> ListUPIDs(const std::filesystem::path& proc_path, uint32_t asid = 0);
-
-/**
  * ConnectorContext is the information passed on every Transfer call to source connectors.
  */
 class ConnectorContext {
@@ -114,13 +109,16 @@ class AgentContext : public ConnectorContext {
  */
 class StandaloneContext : public ConnectorContext {
  public:
+  explicit StandaloneContext(
+      absl::flat_hash_set<md::UPID> upids,
+      const std::filesystem::path& proc_path = system::Config::GetInstance().proc_path());
+
   uint32_t GetASID() const override { return 0; }
 
   const absl::flat_hash_set<md::UPID>& GetUPIDs() const override { return upids_; }
 
   const absl::flat_hash_map<md::UPID, md::PIDInfoUPtr>& GetPIDInfoMap() const override {
-    static const absl::flat_hash_map<md::UPID, md::PIDInfoUPtr> kEmpty;
-    return kEmpty;
+    return upid_pidinfo_map_;
   }
 
   const md::K8sMetadataState& GetK8SMetadata() override {
@@ -133,16 +131,8 @@ class StandaloneContext : public ConnectorContext {
   Status SetClusterCIDR(std::string_view cidr_str);
 
  protected:
-  // Protected constructor prevents this class from being used directly.
-  StandaloneContext() {
-    // Cannot be empty, otherwise stirling will wait indefinitely. Since StandaloneContext is used
-    // for local environment, set it such that localhost (127.0.0.1) will be treated as outside of
-    // cluster, and --treat_loopback_as_in_cluster in conn_tracker.cc will take effect.
-    // TODO(yzhao): Might need to include IPv6 version when tests for IPv6 are added.
-    ECHECK_OK(SetClusterCIDR("0.0.0.1/32"));
-  }
-
   absl::flat_hash_set<md::UPID> upids_;
+  absl::flat_hash_map<md::UPID, md::PIDInfoUPtr> upid_pidinfo_map_;
 
  private:
   std::vector<CIDRBlock> cidrs_;
@@ -153,21 +143,8 @@ class StandaloneContext : public ConnectorContext {
  */
 class SystemWideStandaloneContext : public StandaloneContext {
  public:
-  SystemWideStandaloneContext() {
-    // The context consists of all PIDs on the system.
-    upids_ = ListUPIDs(system::Config::GetInstance().proc_path(), 0);
-  }
-};
-
-/**
- * This context is used to focus on certain processes, typically for tests.
- */
-class TestContext : public StandaloneContext {
- public:
-  explicit TestContext(const absl::flat_hash_set<md::UPID>& upids) {
-    // The context consists of all PIDs on the system.
-    upids_ = upids;
-  }
+  explicit SystemWideStandaloneContext(
+      const std::filesystem::path& proc_path = system::Config::GetInstance().proc_path());
 };
 
 }  // namespace stirling

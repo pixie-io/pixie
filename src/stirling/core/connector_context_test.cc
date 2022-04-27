@@ -28,9 +28,11 @@ using ::testing::UnorderedElementsAre;
 namespace px {
 namespace stirling {
 
-TEST(ListUPIDs, Basic) {
+// Tests that the UPIDs from the local proc path are detected.
+TEST(SystemWideStandaloneContextTest, ListUPIDs) {
   const std::filesystem::path proc_path = TestFilePath("src/common/system/testdata/proc");
-  EXPECT_THAT(ListUPIDs(proc_path),
+  SystemWideStandaloneContext ctx(proc_path);
+  EXPECT_THAT(ctx.GetUPIDs(),
               UnorderedElementsAre(md::UPID{0, 123, 14329}, md::UPID{0, 1, 13},
                                    md::UPID{0, 456, 17594622}, md::UPID{0, 789, 46120203}));
 }

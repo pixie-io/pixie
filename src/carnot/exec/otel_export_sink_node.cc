@@ -193,6 +193,12 @@ void ReplicateData(const std::vector<planpb::OTelAttribute>& attributes_spec,
   }
 }
 
+Status FormatOTelStatus(int64_t id, const grpc::Status& status) {
+  return error::Internal(absl::Substitute(
+      "OTel export (carnot node_id=$0) failed with error '$1'. Details: $2 $3", id,
+      magic_enum::enum_name(status.error_code()), status.error_message(), status.error_details()));
+}
+
 using ::opentelemetry::proto::metrics::v1::ResourceMetrics;
 Status OTelExportSinkNode::ConsumeMetrics(const RowBatch& rb) {
   grpc::ClientContext context;
@@ -271,10 +277,7 @@ Status OTelExportSinkNode::ConsumeMetrics(const RowBatch& rb) {
 
   grpc::Status status = metrics_service_stub_->Export(&context, request, &metrics_response_);
   if (!status.ok()) {
-    return error::Internal(absl::Substitute(
-        "OTelExportSinkNode $0 encountered error code $1 "
-        "exporting data, message: $2 $3",
-        plan_node_->id(), status.error_code(), status.error_message(), status.error_details()));
+    return FormatOTelStatus(plan_node_->id(), status);
   }
   return Status::OK();
 }
@@ -330,7 +333,8 @@ Status OTelExportSinkNode::ConsumeSpans(const RowBatch& rb) {
         span->set_name(types::GetValueFromArrowArray<types::STRING>(name_col, row_idx));
       }
 
-      span->set_kind(::opentelemetry::proto::trace::v1::Span::SPAN_KIND_SERVER);
+      span->set_kind(
+          static_cast<::opentelemetry::proto::trace::v1::Span::SpanKind>(span_pb.kind_value()));
       span->mutable_status()->set_code(
           ::opentelemetry::proto::trace::v1::Status::STATUS_CODE_UNSET);
 
@@ -388,10 +392,7 @@ Status OTelExportSinkNode::ConsumeSpans(const RowBatch& rb) {
 
   grpc::Status status = trace_service_stub_->Export(&context, request, &trace_response_);
   if (!status.ok()) {
-    return error::Internal(absl::Substitute(
-        "OTelExportSinkNode $0 encountered error code $1 "
-        "exporting data, message: $2 $3",
-        plan_node_->id(), status.error_code(), status.error_message(), status.error_details()));
+    return FormatOTelStatus(plan_node_->id(), status);
   }
   return Status::OK();
 }

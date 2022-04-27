@@ -390,6 +390,7 @@ INSTANTIATE_TEST_SUITE_P(
               trace_id_column_index: 2
               span_id_column_index: 3
               parent_span_id_column_index: 4
+              kind_value: 3
             }
             )pb",
             [](IR* graph, OperatorIR* parent, table_store::schema::Relation* relation) {
@@ -404,6 +405,7 @@ INSTANTIATE_TEST_SUITE_P(
               span.parent_span_id_column = CreateTypedColumn(graph, "parent_span_id", relation);
               span.attributes.push_back(
                   {"req_method", CreateTypedColumn(graph, "req_method", relation)});
+              span.span_kind = 3;
 
               return graph->CreateNode<OTelExportSinkIR>(parent->ast(), parent, data)
                   .ConsumeValueOrDie();
@@ -424,6 +426,7 @@ INSTANTIATE_TEST_SUITE_P(
               trace_id_column_index: -1
               span_id_column_index: -1
               parent_span_id_column_index: -1
+              kind_value: 2
             }
             )pb",
             [](IR* graph, OperatorIR* parent, table_store::schema::Relation* relation) {
@@ -434,6 +437,7 @@ INSTANTIATE_TEST_SUITE_P(
               span.start_time_column = CreateTypedColumn(graph, "start_time", relation);
               span.end_time_column = CreateTypedColumn(graph, "end_time", relation);
               span.name = CreateTypedColumn(graph, "name_column", relation);
+              span.span_kind = 2;
 
               return graph->CreateNode<OTelExportSinkIR>(parent->ast(), parent, data)
                   .ConsumeValueOrDie();

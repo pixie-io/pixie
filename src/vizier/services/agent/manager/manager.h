@@ -29,6 +29,7 @@
 #include "src/common/base/base.h"
 #include "src/common/event/event.h"
 #include "src/common/event/nats.h"
+#include "src/common/metrics/memory_metrics.h"
 #include "src/common/uuid/uuid.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/vizier/funcs/context/vizier_context.h"
@@ -60,6 +61,10 @@ constexpr auto kChanCacheCleanupChansionPeriod = std::chrono::minutes(5);
 constexpr auto kChanIdleGracePeriod = std::chrono::minutes(1);
 
 constexpr auto kTableStoreCompactionPeriod = std::chrono::minutes(1);
+
+constexpr auto kMemoryMetricsCollectPeriod = std::chrono::minutes(1);
+
+constexpr auto kMetricsPushPeriod = std::chrono::minutes(1);
 
 /**
  * Info tracks basic information about and agent such as:
@@ -180,6 +185,7 @@ class Manager : public px::NotCopyable {
   static constexpr char kAgentPubTopic[] = "UpdateAgent";
   static constexpr char kK8sSubTopicPattern[] = "K8sUpdates/$0";
   static constexpr char kK8sPubTopic[] = "MissingMetadataRequests";
+  static constexpr char kMetricsPubTopic[] = "Metrics";
 
   // Message handlers are registered per type of Vizier message.
   // same message handler can be used for multiple different types of messages.
@@ -230,6 +236,15 @@ class Manager : public px::NotCopyable {
 
   // Timer to manage table store compaction.
   px::event::TimerUPtr tablestore_compaction_timer_;
+
+  px::metrics::MemoryMetrics memory_metrics_;
+  // Timer to collect MemoryMetrics for this agent.
+  px::event::TimerUPtr memory_metrics_timer_;
+
+  // NATS connector for publishing to the metrics topic.
+  std::unique_ptr<px::event::NATSConnector<messages::MetricsMessage>> metrics_nats_connector_;
+  // Timer for pushing metrics onto NATS.
+  px::event::TimerUPtr metrics_push_timer_;
 };
 
 /**

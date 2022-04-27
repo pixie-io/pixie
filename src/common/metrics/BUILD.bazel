@@ -23,7 +23,13 @@ package(default_visibility = [
 
 pl_cc_library(
     name = "cc_library",
-    srcs = ["metrics.cc"],
-    hdrs = ["metrics.h"],
+    srcs = [
+        "memory_metrics.cc",
+        "metrics.cc",
+    ],
+    hdrs = [
+        "memory_metrics.h",
+        "metrics.h",
+    ],
     deps = ["@com_github_jupp0r_prometheus_cpp//core"],
 )

@@ -31,7 +31,6 @@ go_library(
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
-        "//src/cloud/dnsmgr/dnsmgrpb:service_pl_go_proto",
         "//src/cloud/shared/messages",
         "//src/cloud/shared/messagespb:messages_pl_go_proto",
         "//src/cloud/shared/vzshard",
@@ -76,8 +75,6 @@ go_test(
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
         "//src/cloud/artifact_tracker/artifacttrackerpb/mock",
-        "//src/cloud/dnsmgr/dnsmgrpb:service_pl_go_proto",
-        "//src/cloud/dnsmgr/dnsmgrpb/mock",
         "//src/cloud/shared/messagespb:messages_pl_go_proto",
         "//src/cloud/shared/vzshard",
         "//src/cloud/vzmgr/controllers/mock",

@@ -44,7 +44,7 @@ class OTelExportTest : public QLObjectTest {
     ASSERT_OK_AND_ASSIGN(auto otel,
                          OTelModule::Create(compiler_state.get(), ast_visitor.get(), graph.get()));
     ASSERT_OK_AND_ASSIGN(auto otelmetric, OTelMetrics::Create(ast_visitor.get(), graph.get()));
-    ASSERT_OK_AND_ASSIGN(auto oteltrace, OTelTrace::Create(ast_visitor.get()));
+    ASSERT_OK_AND_ASSIGN(auto oteltrace, OTelTrace::Create(ast_visitor.get(), graph.get()));
     var_table->Add("otel", otel);
     var_table->Add("otelmetric", otelmetric);
     var_table->Add("oteltrace", oteltrace);
@@ -351,7 +351,7 @@ otel_sink_op {
     }
   }
 })pb"},
-        {"Span_name_string",
+        {"span_name_string",
          R"pxl(
 otel.Data(
   endpoint=otel.Endpoint(
@@ -365,7 +365,8 @@ otel.Data(
       name='svc',
       start_time=df.start_time,
       end_time=df.end_time,
-      attributes={'gc': df.young}
+      attributes={'gc': df.young},
+      kind=oteltrace.SPAN_KIND_CLIENT,
     ),
   ]
 ))pxl",
@@ -404,6 +405,7 @@ otel_sink_op {
     trace_id_column_index: -1
     span_id_column_index: -1
     parent_span_id_column_index: -1
+    kind_value: 3
   }
 })pb"},
 
@@ -458,6 +460,7 @@ otel_sink_op {
     trace_id_column_index: 5
     span_id_column_index: 6
     parent_span_id_column_index: 7
+    kind_value: 2
   }
 })pb"},
         {"all_attribute_types",
@@ -597,6 +600,110 @@ otel_sink_op {
     unit: "ns"
     gauge {
       int_column_index: 2
+    }
+  }
+})pb"},
+        {"manually_specify_gauge_unit",
+         R"pxl(
+otel.Data(
+  endpoint=otel.Endpoint(
+    url='0.0.0.0:55690',
+  ),
+  resource={
+      'service.name' : df.service,
+  },
+  data=[
+    otelmetric.Gauge(
+      name='runtime.jvm.gc.collection',
+      unit='special_unit',
+      value=df.young_gc_time,
+    )
+  ]
+))pxl",
+         table_store::schema::Relation{
+             {types::TIME64NS, types::STRING, types::STRING, types::INT64},
+             {"time_", "service", "young", "young_gc_time"},
+             {types::ST_NONE, types::ST_SERVICE_NAME, types::ST_NONE, types::ST_DURATION_NS},
+         },
+         R"pb(
+op_type: OTEL_EXPORT_SINK_OPERATOR
+otel_sink_op {
+  endpoint_config {
+    url: "0.0.0.0:55690"
+  }
+  resource {
+    attributes {
+      name: "service.name"
+      column {
+        column_type: STRING
+        column_index: 1
+        can_be_json_encoded_array: true
+      }
+    }
+  }
+  metrics {
+    name: "runtime.jvm.gc.collection"
+    time_column_index: 0
+    unit: "special_unit"
+    gauge {
+      int_column_index: 3
+    }
+  }
+})pb"},
+        {"manually_specify_summary_unit",
+         R"pxl(
+otel.Data(
+  endpoint=otel.Endpoint(
+    url='0.0.0.0:55690',
+  ),
+  resource={
+      'service.name' : df.service,
+  },
+  data=[
+    otelmetric.Summary(
+      name='http.resp.latency',
+      count=df.count,
+      sum=df.sum,
+      unit ='special_unit'
+      quantile_values={
+        0.5: df.p50,
+      },
+    )
+  ]
+))pxl",
+         table_store::schema::Relation{
+             {types::TIME64NS, types::STRING, types::STRING, types::INT64, types::FLOAT64,
+              types::FLOAT64, types::FLOAT64},
+             {"time_", "service", "status", "count", "sum", "p50", "p99"},
+             {types::ST_NONE, types::ST_SERVICE_NAME, types::ST_NONE, types::ST_NONE,
+              types::ST_NONE, types::ST_DURATION_NS, types::ST_DURATION_NS}},
+         R"pb(
+op_type: OTEL_EXPORT_SINK_OPERATOR
+otel_sink_op {
+  endpoint_config {
+    url: "0.0.0.0:55690"
+  }
+  resource {
+    attributes {
+      name: "service.name"
+      column {
+        column_type: STRING
+        column_index: 1
+        can_be_json_encoded_array: true
+      }
+    }
+  }
+  metrics {
+    name: "http.resp.latency"
+    time_column_index: 0
+    unit: "special_unit"
+    summary {
+      count_column_index: 3
+      sum_column_index: 4
+      quantile_values {
+        quantile: 0.5
+        value_column_index: 5
+      }
     }
   }
 })pb"},

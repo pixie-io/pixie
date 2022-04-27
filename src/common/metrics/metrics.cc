@@ -15,12 +15,23 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+#include <memory>
 
 #include <prometheus/registry.h>
 
 #include "src/common/metrics/metrics.h"
 
+namespace {
+std::unique_ptr<prometheus::Registry> g_registry_instance;
+
+void ResetMetricsRegistry() { g_registry_instance = std::make_unique<prometheus::Registry>(); }
+}  // namespace
+
 prometheus::Registry& GetMetricsRegistry() {
-  static prometheus::Registry registry;
-  return registry;
+  if (g_registry_instance == nullptr) {
+    ResetMetricsRegistry();
+  }
+  return *g_registry_instance;
 }
+
+void TestOnlyResetMetricsRegistry() { ResetMetricsRegistry(); }

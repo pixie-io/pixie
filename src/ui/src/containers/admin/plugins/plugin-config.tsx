@@ -20,21 +20,20 @@ import * as React from 'react';
 
 import { Box, Button, Divider, FormControlLabel, Skeleton, Stack, Switch, TextField, Tooltip } from '@mui/material';
 
+import { useSnackbar } from 'app/components';
 import { GQLEditablePluginConfigs, GQLPlugin } from 'app/types/schema';
 
 import { usePluginConfig, usePluginConfigMutation } from './plugin-gql';
 
 export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
   const { loading, schema, values } = usePluginConfig(plugin);
+  const showSnackbar = useSnackbar();
 
   const [pendingValues, setPendingValues] = React.useState<GQLEditablePluginConfigs>({
     configs: [],
   });
 
   const [saving, setSaving] = React.useState(false);
-  const setDone = React.useCallback(() => {
-    setSaving(false);
-  }, []);
   const pushPluginConfig = usePluginConfigMutation(plugin);
 
   // TODO(nick,PC-1436): Race condition technically possible in save effect; make them cancellable
@@ -46,25 +45,36 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
       configs: [...pendingValues.configs],
       customExportURL: schema?.allowCustomExportURL ? pendingValues.customExportURL : undefined,
       insecureTLS: schema?.allowInsecureTLS ? pendingValues.insecureTLS : undefined,
-    }).then(setDone).catch(setDone);
+    }).then((success) => {
+      setSaving(false);
+      if (success) {
+        showSnackbar({ message: 'Changes saved', dismissible: true });
+      } else {
+        showSnackbar({ message: 'Failed to save changes!', dismissible: true });
+      }
+    }).catch((err) => {
+      setSaving(false);
+      showSnackbar({ message: 'Failed to save changes!', dismissible: true });
+      console.error(`Failed to save changes for plugin ${plugin.name}:`, err);
+    });
   }, [
+    plugin.name,
     pushPluginConfig,
     schema?.allowCustomExportURL,
     schema?.allowInsecureTLS,
     pendingValues.configs,
     pendingValues.customExportURL,
     pendingValues.insecureTLS,
-    setDone,
+    showSnackbar,
   ]);
 
   React.useEffect(() => {
     if (!values) return;
-    setPendingValues((prev) => ({
-      ...prev,
-      ...values.configs.reduce((accum, { name, value }) => ({ ...accum, [name]: value }), {}),
+    setPendingValues({
+      configs: values.configs.map(({ name, value }) => ({ name, value })),
       customExportURL: values.customExportURL,
       insecureTLS: values.insecureTLS,
-    }));
+    });
   }, [values]);
 
   const insecureWarning = React.useMemo(() => (
@@ -97,8 +107,8 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
             variant='outlined'
             label={name}
             placeholder={description}
-            helperText={pendingValues.configs[name] ? description : ''}
-            value={pendingValues.configs[name] ?? ''}
+            helperText={pendingValues.configs.find(c => c.name === name)?.value ? description : ''}
+            value={pendingValues.configs.find(c => c.name === name)?.value ?? ''}
             onChange={(e) => setPendingValues((prev) => ({
               ...prev,
               configs: [

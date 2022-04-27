@@ -61,6 +61,13 @@ spec:
             name: cloud-proxy-service
             port:
               number: 5555
+      - path: /px.cloudapi.PluginService/
+        pathType: Prefix
+        backend:
+          service:
+            name: cloud-proxy-service
+            port:
+              number: 5555
       - path: /px.cloudapi.UserService/
         pathType: Prefix
         backend:

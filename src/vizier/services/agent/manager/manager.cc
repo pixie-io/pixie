@@ -27,9 +27,11 @@
 #include <thread>
 #include <utility>
 
+#include <prometheus/text_serializer.h>
 #include <jwt/jwt.hpp>
 
 #include "src/common/base/base.h"
+#include "src/common/metrics/metrics.h"
 #include "src/common/perf/perf.h"
 #include "src/vizier/funcs/context/vizier_context.h"
 #include "src/vizier/funcs/funcs.h"
@@ -103,7 +105,8 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
       relation_info_manager_(std::make_unique<RelationInfoManager>()),
       func_context_(this, CreateMDSStub(mds_url, grpc_channel_creds_),
                     CreateMDTPStub(mds_url, grpc_channel_creds_), table_store_,
-                    [](grpc::ClientContext* ctx) { AddServiceTokenToClientContext(ctx); }) {
+                    [](grpc::ClientContext* ctx) { AddServiceTokenToClientContext(ctx); }),
+      memory_metrics_(&GetMetricsRegistry(), "agent_id", agent_id.str()) {
   if (!has_nats_connection()) {
     LOG(WARNING) << "--nats_url is empty, skip connecting to NATS.";
   }
@@ -314,6 +317,12 @@ Status Manager::PostRegisterHook(uint32_t asid) {
     // Attach the message handler for k8s nats:
     k8s_nats_connector_->RegisterMessageHandler(
         std::bind(&Manager::NATSMessageHandler, this, std::placeholders::_1));
+
+    // Create a NATS connector for the metrics topic.
+    metrics_nats_connector_ = std::make_unique<px::event::NATSConnector<messages::MetricsMessage>>(
+        nats_addr_, kMetricsPubTopic /*pub topic*/, "" /*sub topic*/, SSL::DefaultNATSCreds());
+
+    PL_RETURN_IF_ERROR(metrics_nats_connector_->Connect(dispatcher_.get()));
   }
 
   tablestore_compaction_timer_ = dispatcher()->CreateTimer([this]() {
@@ -327,6 +336,45 @@ Status Manager::PostRegisterHook(uint32_t asid) {
     }
   });
   tablestore_compaction_timer_->EnableTimer(kTableStoreCompactionPeriod);
+
+  memory_metrics_timer_ = dispatcher()->CreateTimer([this]() {
+    memory_metrics_.MeasureMemory();
+    if (memory_metrics_timer_) {
+      memory_metrics_timer_->EnableTimer(kMemoryMetricsCollectPeriod);
+    }
+  });
+  memory_metrics_timer_->EnableTimer(kMemoryMetricsCollectPeriod);
+
+  metrics_push_timer_ = dispatcher()->CreateTimer([this]() {
+    if (!metrics_nats_connector_) {
+      LOG(ERROR) << "No NATS connection to send metrics on. Disabling metrics push timer.";
+      // Returning without calling EnableTimer to prevent future timer calls.
+      return;
+    }
+    auto& registry = GetMetricsRegistry();
+    auto metrics = registry.Collect();
+    int64_t timestamp_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                               std::chrono::system_clock::now().time_since_epoch())
+                               .count();
+    for (auto& family : metrics) {
+      for (auto& metric : family.metric) {
+        metric.timestamp_ms = timestamp_ms;
+      }
+    }
+    auto metrics_text = prometheus::TextSerializer().Serialize(metrics);
+
+    messages::MetricsMessage msg;
+    msg.set_prom_metrics_text(metrics_text);
+    msg.set_pod_name(info_.pod_name);
+
+    auto s = metrics_nats_connector_->Publish(msg);
+    LOG_IF(ERROR, !s.ok()) << s.msg();
+
+    if (metrics_push_timer_) {
+      metrics_push_timer_->EnableTimer(kMetricsPushPeriod);
+    }
+  });
+  metrics_push_timer_->EnableTimer(kMetricsPushPeriod);
 
   return Status::OK();
 }

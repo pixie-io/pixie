@@ -198,14 +198,13 @@ std::string_view JavaSymbolizationContext::Symbolize(const uintptr_t addr) {
   return native_symbolizer_fn_(addr);
 }
 
-JavaSymbolizer::JavaSymbolizer(const std::vector<std::filesystem::path> agent_libs)
-    : agent_libs_(std::move(agent_libs)) {}
+JavaSymbolizer::JavaSymbolizer(std::string&& agent_libs) : agent_libs_(std::move(agent_libs)) {}
 
 StatusOr<std::unique_ptr<Symbolizer>> JavaSymbolizer::Create(
     std::unique_ptr<Symbolizer> native_symbolizer) {
   const std::string& comma_separated_libs = FLAGS_stirling_profiler_java_agent_libs;
   const std::vector<std::string_view> lib_args = absl::StrSplit(comma_separated_libs, ",");
-  std::vector<std::filesystem::path> abs_path_libs;
+  std::vector<std::string> abs_path_libs;
   for (const auto& lib : lib_args) {
     PL_ASSIGN_OR(const auto abs_path_lib, fs::Absolute(lib), continue);
     if (!fs::Exists(abs_path_lib)) {
@@ -213,7 +212,7 @@ StatusOr<std::unique_ptr<Symbolizer>> JavaSymbolizer::Create(
       continue;
     }
     LOG(INFO) << absl::Substitute("JavaSymbolizer found agent lib $0.", abs_path_lib.string());
-    abs_path_libs.push_back(abs_path_lib);
+    abs_path_libs.push_back(abs_path_lib.string());
   }
 
   if (abs_path_libs.size() == 0) {
@@ -221,7 +220,8 @@ StatusOr<std::unique_ptr<Symbolizer>> JavaSymbolizer::Create(
     return native_symbolizer;
   }
 
-  auto jsymbolizer = std::unique_ptr<JavaSymbolizer>(new JavaSymbolizer(std::move(abs_path_libs)));
+  auto jsymbolizer =
+      std::unique_ptr<JavaSymbolizer>(new JavaSymbolizer(absl::StrJoin(abs_path_libs, ",")));
   jsymbolizer->native_symbolizer_ = std::move(native_symbolizer);
   return std::unique_ptr<Symbolizer>(jsymbolizer.release());
 }
@@ -363,6 +363,13 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
     return native_symbolizer_fn;
   }
 
+  if (!fs::Exists(FLAGS_stirling_profiler_px_jattach_path)) {
+    char const* const msg = "Could not find binary px_jattach using path: $0.";
+    LOG(WARNING) << absl::Substitute(msg, FLAGS_stirling_profiler_px_jattach_path);
+    symbolizer_functions_[upid] = native_symbolizer_fn;
+    return native_symbolizer_fn;
+  }
+
   // This process is a java process, increment the counter.
   g_java_proc_counter.Increment();
 
@@ -415,6 +422,11 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
   DCHECK(inserted);
   if (inserted) {
     JavaProfilingProcTracker::GetSingleton()->Add(upid);
+
+    // Creating an agent attacher will start a subprocess, px_jattach.
+    // px_jattach is responsible for determining which JVMTI symbolization agent library to use
+    // (libc or musl), and then invoking jattach to inject the symbolization agent to the
+    // target Java process.
     iter->second = std::make_unique<java::AgentAttacher>(upid, agent_libs_);
 
     // Deduct one from our quota of attach attempts per iteration.

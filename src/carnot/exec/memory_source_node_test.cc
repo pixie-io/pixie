@@ -398,8 +398,8 @@ TEST_F(MemorySourceNodeTest, table_compact_between_open_and_exec) {
   EXPECT_OK(cpu_table_->CompactHotToCold(arrow::default_memory_pool()));
 
   tester.GenerateNextResult().ExpectRowBatch(
-      RowBatchBuilder(output_rd, 1, /*eow*/ false, /*eos*/ false)
-          .AddColumn<types::Time64NSValue>({3})
+      RowBatchBuilder(output_rd, 2, /*eow*/ false, /*eos*/ false)
+          .AddColumn<types::Time64NSValue>({3, 5})
           .get());
   EXPECT_TRUE(tester.node()->HasBatchesRemaining());
 
@@ -407,8 +407,8 @@ TEST_F(MemorySourceNodeTest, table_compact_between_open_and_exec) {
   EXPECT_OK(cpu_table_->CompactHotToCold(arrow::default_memory_pool()));
 
   tester.GenerateNextResult().ExpectRowBatch(
-      RowBatchBuilder(output_rd, 2, /*eow*/ true, /*eos*/ true)
-          .AddColumn<types::Time64NSValue>({5, 6})
+      RowBatchBuilder(output_rd, 1, /*eow*/ true, /*eos*/ true)
+          .AddColumn<types::Time64NSValue>({6})
           .get());
   EXPECT_FALSE(tester.node()->HasBatchesRemaining());
   tester.Close();

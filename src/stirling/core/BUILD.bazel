@@ -42,6 +42,7 @@ pl_cc_library(
         "//src/stirling/source_connectors/process_stats:__pkg__",
         "//src/stirling/source_connectors/seq_gen:__pkg__",
         "//src/stirling/source_connectors/socket_tracer:__pkg__",
+        "//src/stirling/source_connectors/stirling_error:__pkg__",
         "//src/stirling/testing:__pkg__",
     ],
     deps = [
