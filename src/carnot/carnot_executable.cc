@@ -26,6 +26,7 @@
 #include "src/carnot/carnot.h"
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/exec/local_grpc_result_server.h"
+#include "src/carnot/funcs/funcs.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/type_utils.h"
@@ -242,14 +243,22 @@ int main(int argc, char* argv[]) {
   // Execute query.
   auto table_store = std::make_shared<px::table_store::TableStore>();
   auto result_server = px::carnot::exec::LocalGRPCResultSinkServer();
-  auto carnot_or_s = px::carnot::Carnot::Create(
-      sole::uuid4(), table_store,
-      std::bind(&px::carnot::exec::LocalGRPCResultSinkServer::StubGenerator, &result_server,
-                std::placeholders::_1));
-  if (!carnot_or_s.ok()) {
-    LOG(FATAL) << "Carnot failed to init.";
-  }
-  auto carnot = carnot_or_s.ConsumeValueOrDie();
+  auto func_registry = std::make_unique<px::carnot::udf::Registry>("default_registry");
+  px::carnot::funcs::RegisterFuncsOrDie(func_registry.get());
+  auto clients_config =
+      std::make_unique<px::carnot::Carnot::ClientsConfig>(px::carnot::Carnot::ClientsConfig{
+          [&result_server](const std::string& address, const std::string&) {
+            return result_server.StubGenerator(address);
+          },
+          [](grpc::ClientContext*) {},
+      });
+  auto server_config = std::make_unique<px::carnot::Carnot::ServerConfig>();
+  server_config->grpc_server_creds = grpc::InsecureServerCredentials();
+  server_config->grpc_server_port = 0;
+
+  auto carnot = px::carnot::Carnot::Create(sole::uuid4(), std::move(func_registry), table_store,
+                                           std::move(clients_config), std::move(server_config))
+                    .ConsumeValueOrDie();
   table_store->AddTable(table_name, table);
   auto exec_status = carnot->ExecuteQuery(query, sole::uuid4(), px::CurrentTimeNS());
   if (!exec_status.ok()) {

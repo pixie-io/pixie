@@ -115,12 +115,18 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
   auto func_registry = std::make_unique<px::carnot::udf::Registry>("vizier_func_registry");
   ::px::vizier::funcs::RegisterFuncsOrDie(func_context_, func_registry.get());
 
-  carnot_ = px::carnot::Carnot::Create(
-                agent_id, std::move(func_registry), table_store_,
-                std::bind(&Manager::ResultSinkStubGenerator, this, std::placeholders::_1,
-                          std::placeholders::_2),
-                [](grpc::ClientContext* ctx) { AddServiceTokenToClientContext(ctx); },
-                grpc_server_port, SSL::DefaultGRPCServerCreds())
+  auto clients_config =
+      std::make_unique<px::carnot::Carnot::ClientsConfig>(px::carnot::Carnot::ClientsConfig{
+          [this](const std::string& address, const std::string& ssl_targetname) {
+            return ResultSinkStubGenerator(address, ssl_targetname);
+          },
+          [](grpc::ClientContext* ctx) { AddServiceTokenToClientContext(ctx); }});
+  auto server_config = std::make_unique<px::carnot::Carnot::ServerConfig>();
+  server_config->grpc_server_creds = SSL::DefaultGRPCServerCreds();
+  server_config->grpc_server_port = grpc_server_port;
+
+  carnot_ = px::carnot::Carnot::Create(agent_id, std::move(func_registry), table_store_,
+                                       std::move(clients_config), std::move(server_config))
                 .ConsumeValueOrDie();
 
   info_.agent_id = agent_id;

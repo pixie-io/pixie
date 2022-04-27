@@ -29,6 +29,7 @@
 #include "src/carnot/carnot.h"
 #include "src/carnot/exec/local_grpc_result_server.h"
 #include "src/carnot/exec/test_utils.h"
+#include "src/carnot/funcs/funcs.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/testing/testing.h"
 #include "src/table_store/table_store.h"
@@ -44,9 +45,20 @@ class JoinTest : public ::testing::Test {
     Test::SetUp();
     table_store_ = std::make_shared<table_store::TableStore>();
     result_server_ = std::make_unique<exec::LocalGRPCResultSinkServer>();
-    carnot_ = Carnot::Create(sole::uuid4(), table_store_,
-                             std::bind(&exec::LocalGRPCResultSinkServer::StubGenerator,
-                                       result_server_.get(), std::placeholders::_1))
+    auto func_registry = std::make_unique<px::carnot::udf::Registry>("default_registry");
+    px::carnot::funcs::RegisterFuncsOrDie(func_registry.get());
+    auto clients_config = std::make_unique<Carnot::ClientsConfig>(Carnot::ClientsConfig{
+        [this](const std::string& address, const std::string&) {
+          return result_server_.get()->StubGenerator(address);
+        },
+        [](grpc::ClientContext*) {},
+    });
+    auto server_config = std::make_unique<Carnot::ServerConfig>();
+    server_config->grpc_server_creds = grpc::InsecureServerCredentials();
+    server_config->grpc_server_port = 0;
+
+    carnot_ = px::carnot::Carnot::Create(sole::uuid4(), std::move(func_registry), table_store_,
+                                         std::move(clients_config), std::move(server_config))
                   .ConsumeValueOrDie();
     auto left_table = CarnotTestUtils::TestTable();
     table_store_->AddTable("left_table", left_table);
