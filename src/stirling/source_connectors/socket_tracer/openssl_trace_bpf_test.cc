@@ -92,7 +92,6 @@ class BaseOpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ 
   }
 
   void SetUp() override {
-    original_openssl_force_raw_fptrs_ = FLAGS_openssl_force_raw_fptrs;
     FLAGS_openssl_force_raw_fptrs = force_fptr_;
 
     SocketTraceBPFTest::SetUp();
@@ -116,7 +115,6 @@ class BaseOpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ 
 
   TServerContainer server_;
   bool force_fptr_ = TForceFptrs;
-  bool original_openssl_force_raw_fptrs_;
 };
 
 //-----------------------------------------------------------------------------
