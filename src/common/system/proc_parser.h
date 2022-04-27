@@ -149,7 +149,9 @@ class ProcParser {
    * ProcessSMaps tracks memory stats from /proc/<pid>/smaps per address.
    */
   struct ProcessSMaps {
-    std::string address;
+    uint64_t vmem_start = 0;
+    uint64_t vmem_end = 0;
+    std::string permissions;
     std::string offset;
     std::string pathname;
 
@@ -173,6 +175,15 @@ class ProcParser {
     int64_t swap_bytes = 0;
     int64_t swap_pss_bytes = 0;
     int64_t locked_bytes = 0;
+
+    std::string ToAddress() {
+      return absl::Substitute("$0-$1", absl::Hex(this->vmem_start), absl::Hex(this->vmem_end));
+    }
+
+    bool operator==(const ProcParser::ProcessSMaps& rhs) const {
+      return this->vmem_start == rhs.vmem_start && this->vmem_end == rhs.vmem_end &&
+             this->permissions.compare(permissions) == 0 && this->pathname == rhs.pathname;
+    }
   };
 
   /**
@@ -252,6 +263,14 @@ class ProcParser {
    * @return status of parsing
    */
   Status ParseProcPIDSMaps(int32_t pid, std::vector<ProcessSMaps>* out) const;
+
+  /**
+   * @param pid process id for which to search /proc/<pid>/maps
+   * @param out A valid pointer to a vector that will contain the output structs.
+   * @return Status containing a hash set of ProcessSMap objects representing all the content in
+   * /proc/<pid>/maps
+   **/
+  Status ParseProcPIDMaps(int32_t pid, std::vector<ProcessSMaps>* out) const;
 
   /**
    * Reads and returns the /proc/<pid>/fd/<fd> file descriptor link.
@@ -336,38 +355,6 @@ class ProcParser {
   StatusOr<absl::flat_hash_set<std::string>> GetMapPaths(pid_t pid) const;
 
   /**
-   * ProcessMaps tracks details from /proc/<pid>/maps
-   */
-  struct ProcessMap {
-    uint64_t vmem_start = 0;
-    uint64_t vmem_end = 0;
-    std::string permissions;
-    uint64_t file_offset = 0;
-    uint64_t inode = 0;
-    std::string map_path;
-
-    template <typename H>
-    friend H AbslHashValue(H h, const ProcessMap& e) {
-      return H::combine(std::move(h), e.vmem_start, e.vmem_end, e.file_offset);
-    }
-
-    bool operator==(const ProcParser::ProcessMap& rhs) const {
-      return this->vmem_start == rhs.vmem_start && this->vmem_end == rhs.vmem_end &&
-             this->permissions.compare(permissions) == 0 && this->inode == rhs.inode &&
-             this->file_offset == rhs.file_offset && this->map_path == rhs.map_path;
-    }
-  };
-
-  /**
-   * @param pid process id for which to search /proc/<pid>/maps
-   * @param libpath a string containing the shared object file path to search for in
-   * /proc/<pid>/maps
-   * @return Status containing a hash set of ProcessMap objects representing all the content in
-   * /proc/<pid>/maps
-   **/
-  StatusOr<absl::flat_hash_set<ProcessMap>> GetMapEntries(pid_t pid, std::string libpath) const;
-
-  /**
    * Returns the matching executable memory mapped entry in /prod/<pid>/maps.
    *
    * Since it is possible for multiple entries to exist for the same library,
@@ -380,7 +367,7 @@ class ProcParser {
    * The following function call would return the first entry listed above:
    * GetExecutableMapEntry(<pid>, "/usr/lib/x86_64-linux-gnu/libc-2.31.so", 0x7f1a50b24000)
    **/
-  StatusOr<ProcessMap> GetExecutableMapEntry(pid_t pid, std::string libpath, uint64_t vmem_start);
+  StatusOr<ProcessSMaps> GetExecutableMapEntry(pid_t pid, std::string libpath, uint64_t vmem_start);
 
  private:
   static Status ParseNetworkStatAccumulateIFaceData(
@@ -395,6 +382,8 @@ class ProcParser {
       const std::string& fpath,
       const absl::flat_hash_map<std::string_view, size_t>& field_name_to_value_map,
       uint8_t* out_base);
+
+  Status ParseProcMapsFile(int32_t pid, std::string filename, std::vector<ProcessSMaps>* out) const;
 
   std::filesystem::path ProcPidPath(pid_t pid) const;
 

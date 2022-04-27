@@ -51,7 +51,7 @@ class RawFptrManager : NotCopyMoveable {
   uint64_t text_segment_offset_;
   void* dlopen_handle_;
   std::string lib_path_;
-  ProcParser::ProcessMap map_entry_;
+  ProcParser::ProcessSMaps map_entry_;
 };
 
 /**
