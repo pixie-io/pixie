@@ -270,8 +270,6 @@ class StirlingImpl final : public Stirling {
   absl::base_internal::SpinLock dynamic_trace_status_map_lock_;
   absl::flat_hash_map<sole::uuid, StatusOr<stirlingpb::Publish>> dynamic_trace_status_map_
       ABSL_GUARDED_BY(dynamic_trace_status_map_lock_);
-
-  ConnectorStatusStore connector_status_store_;
 };
 
 StirlingImpl* g_stirling_ptr = nullptr;
@@ -390,14 +388,11 @@ Status StirlingImpl::Init() {
 
   for (const auto& [name, create_source_fn, _] : registry_->sources()) {
     auto source_ptr = create_source_fn(name);
-    if (name == StirlingErrorConnector::kName) {
-      auto stirling_error_connector_ptr = dynamic_cast<StirlingErrorConnector*>(source_ptr.get());
-      DCHECK(stirling_error_connector_ptr != nullptr);
-      stirling_error_connector_ptr->SetConnectorStatusStore(&connector_status_store_);
-    }
-    Status s = AddSource(std::move(source_ptr));
 
-    connector_status_store_.AppendRecord(name, s);
+    Status s = AddSource(std::move(source_ptr));
+    StirlingMonitor& monitor = *StirlingMonitor::GetInstance();
+    monitor.AppendStatusRecord(name, s);
+
     LOG_IF(WARNING, !s.ok()) << absl::Substitute(
         "Source Connector (registry name=$0) not instantiated, error: $1", name, s.ToString());
   }

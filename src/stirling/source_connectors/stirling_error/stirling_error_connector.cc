@@ -50,15 +50,13 @@ void StirlingErrorConnector::TransferDataImpl(ConnectorContext* ctx,
 void StirlingErrorConnector::TransferStirlingErrorTable(ConnectorContext* ctx,
                                                         DataTable* data_table) {
   md::UPID upid = md::UPID(ctx->GetASID(), pid_, start_time_);
-  if (connector_status_store_ != nullptr) {
-    for (auto& record : connector_status_store_->ConsumeRecords()) {
-      DataTable::RecordBuilder<&kStirlingErrorTable> r(data_table, record.timestamp_ns);
-      r.Append<r.ColIndex("time_")>(record.timestamp_ns);
-      r.Append<r.ColIndex("upid")>(upid.value());
-      r.Append<r.ColIndex("source_connector")>(std::move(record.source_connector));
-      r.Append<r.ColIndex("status")>(record.status);
-      r.Append<r.ColIndex("error")>(std::move(record.error));
-    }
+  for (auto& record : monitor_.ConsumeStatusRecords()) {
+    DataTable::RecordBuilder<&kStirlingErrorTable> r(data_table, record.timestamp_ns);
+    r.Append<r.ColIndex("time_")>(record.timestamp_ns);
+    r.Append<r.ColIndex("upid")>(upid.value());
+    r.Append<r.ColIndex("source_connector")>(std::move(record.source_connector));
+    r.Append<r.ColIndex("status")>(record.status);
+    r.Append<r.ColIndex("error")>(std::move(record.error));
   }
 }
 
