@@ -53,6 +53,7 @@
 #include "src/stirling/source_connectors/process_stats/process_stats_connector.h"
 #include "src/stirling/source_connectors/seq_gen/seq_gen_connector.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
+#include "src/stirling/source_connectors/stirling_error/stirling_error_connector.h"
 
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dynamic_tracer.h"
 
@@ -74,6 +75,7 @@ const std::vector<SourceRegistry::RegistryElement> kAllSources = {
     REGISTRY_PAIR(SocketTraceConnector),       REGISTRY_PAIR(ProcessStatsConnector),
     REGISTRY_PAIR(NetworkStatsConnector),      REGISTRY_PAIR(PerfProfileConnector),
     REGISTRY_PAIR(PIDCPUUseBPFTraceConnector), REGISTRY_PAIR(proc_exit_tracer::ProcExitConnector),
+    REGISTRY_PAIR(StirlingErrorConnector),
 };
 #undef REGISTRY_PAIR
 
@@ -91,7 +93,8 @@ std::vector<std::string_view> GetSourceNamesForGroup(SourceConnectorGroup group)
         JVMStatsConnector::kName,
         SocketTraceConnector::kName,
         PerfProfileConnector::kName,
-        proc_exit_tracer::ProcExitConnector::kName
+        proc_exit_tracer::ProcExitConnector::kName,
+        StirlingErrorConnector::kName,
       };
     case SourceConnectorGroup::kAll:
       return {
@@ -102,7 +105,8 @@ std::vector<std::string_view> GetSourceNamesForGroup(SourceConnectorGroup group)
         ProcStatConnector::kName,
         SeqGenConnector::kName,
         SocketTraceConnector::kName,
-        PerfProfileConnector::kName
+        PerfProfileConnector::kName,
+        StirlingErrorConnector::kName,
       };
     case SourceConnectorGroup::kTracers:
       return {
@@ -266,6 +270,8 @@ class StirlingImpl final : public Stirling {
   absl::base_internal::SpinLock dynamic_trace_status_map_lock_;
   absl::flat_hash_map<sole::uuid, StatusOr<stirlingpb::Publish>> dynamic_trace_status_map_
       ABSL_GUARDED_BY(dynamic_trace_status_map_lock_);
+
+  ConnectorStatusStore connector_status_store_;
 };
 
 StirlingImpl* g_stirling_ptr = nullptr;
@@ -383,8 +389,16 @@ Status StirlingImpl::Init() {
   }
 
   for (const auto& [name, create_source_fn, _] : registry_->sources()) {
-    Status s = AddSource(create_source_fn(name));
-    LOG_IF(DFATAL, !s.ok()) << absl::Substitute(
+    auto source_ptr = create_source_fn(name);
+    if (name == StirlingErrorConnector::kName) {
+      auto stirling_error_connector_ptr = dynamic_cast<StirlingErrorConnector*>(source_ptr.get());
+      DCHECK(stirling_error_connector_ptr != nullptr);
+      stirling_error_connector_ptr->SetConnectorStatusStore(&connector_status_store_);
+    }
+    Status s = AddSource(std::move(source_ptr));
+
+    connector_status_store_.AppendRecord(name, s);
+    LOG_IF(WARNING, !s.ok()) << absl::Substitute(
         "Source Connector (registry name=$0) not instantiated, error: $1", name, s.ToString());
   }
   LOG(INFO) << "Stirling successfully initialized.";
