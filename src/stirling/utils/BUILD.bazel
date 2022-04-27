@@ -34,8 +34,7 @@ pl_cc_library(
         "//src/common/minitar:cc_library",
         "//src/common/system:cc_library",
         "//src/common/zlib:cc_library",
-        "//src/shared/upid:cc_library",
-        "//src/stirling/bpf_tools/bcc_bpf_intf:cc_library",
+        "//src/stirling/upid:cc_library",
         "@com_github_tencent_rapidjson//:rapidjson",
     ],
 )

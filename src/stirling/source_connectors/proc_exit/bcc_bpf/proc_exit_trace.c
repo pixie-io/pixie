@@ -22,8 +22,8 @@
 // LINT_C_FILE: Do not remove this line. It ensures cpplint treats this as a C file.
 
 #include "src/stirling/bpf_tools/bcc_bpf/task_struct_utils.h"
-#include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
 #include "src/stirling/source_connectors/proc_exit/bcc_bpf_intf/proc_exit.h"
+#include "src/stirling/upid/upid.h"
 
 BPF_PERF_OUTPUT(proc_exit_events);
 

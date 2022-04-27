@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
+#include "src/stirling/upid/upid.h"
 
 #define MAX_CMD_SIZE 32
 

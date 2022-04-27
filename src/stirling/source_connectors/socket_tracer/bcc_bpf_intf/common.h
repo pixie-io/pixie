@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
+#include "src/stirling/upid/upid.h"
 
 // This file contains definitions that are shared between various kprobes and uprobes.
 

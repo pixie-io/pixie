@@ -24,7 +24,7 @@
 
 #include "src/common/system/proc_parser.h"
 #include "src/shared/upid/upid.h"
-#include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
+#include "src/stirling/upid/upid.h"
 
 namespace px {
 namespace stirling {

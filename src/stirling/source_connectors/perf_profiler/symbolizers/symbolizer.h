@@ -22,12 +22,12 @@
 #include <string>
 #include <utility>
 
-#include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
 #include "src/stirling/bpf_tools/bcc_symbolizer.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/obj_tools/elf_reader.h"
 #include "src/stirling/source_connectors/perf_profiler/shared/types.h"
 #include "src/stirling/source_connectors/perf_profiler/symbol_cache/symbol_cache.h"
+#include "src/stirling/upid/upid.h"
 
 namespace px {
 namespace stirling {

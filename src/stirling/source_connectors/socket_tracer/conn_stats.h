@@ -26,8 +26,8 @@
 #include <absl/hash/hash.h>
 
 #include "src/shared/upid/upid.h"
-#include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
 #include "src/stirling/source_connectors/socket_tracer/conn_trackers_manager.h"
+#include "src/stirling/upid/upid.h"
 
 namespace px {
 namespace stirling {

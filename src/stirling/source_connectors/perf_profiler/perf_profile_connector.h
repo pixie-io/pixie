@@ -24,7 +24,6 @@
 #include <vector>
 
 #include "src/shared/types/types.h"
-#include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/core/source_connector.h"
 #include "src/stirling/core/types.h"
@@ -36,6 +35,7 @@
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/bcc_symbolizer.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/caching_symbolizer.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/elf_symbolizer.h"
+#include "src/stirling/upid/upid.h"
 #include "src/stirling/utils/stat_counter.h"
 
 namespace px {

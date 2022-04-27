@@ -23,9 +23,9 @@
 #include <fstream>
 
 #include "src/common/fs/fs_wrapper.h"
-#include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
 #include "src/stirling/source_connectors/perf_profiler/java/agent/raw_symbol_update.h"
 #include "src/stirling/source_connectors/perf_profiler/java/attach.h"
+#include "src/stirling/upid/upid.h"
 
 namespace px {
 namespace stirling {

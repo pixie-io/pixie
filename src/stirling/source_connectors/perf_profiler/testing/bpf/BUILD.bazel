@@ -32,6 +32,7 @@ pl_bpf_cc_resource(
         "//src/stirling/bpf_tools/bcc_bpf:headers",
         "//src/stirling/bpf_tools/bcc_bpf_intf:headers",
         "//src/stirling/source_connectors/perf_profiler/bcc_bpf_intf:headers",
+        "//src/stirling/upid:headers",
     ],
     syshdrs = "//src/stirling/bpf_tools/bcc_bpf/system-headers",
 )

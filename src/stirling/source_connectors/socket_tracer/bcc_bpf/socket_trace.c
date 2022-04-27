@@ -30,9 +30,9 @@
 
 #include "src/stirling/bpf_tools/bcc_bpf/task_struct_utils.h"
 #include "src/stirling/bpf_tools/bcc_bpf/utils.h"
-#include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf/protocol_inference.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.h"
+#include "src/stirling/upid/upid.h"
 
 // This keeps instruction count below BPF's limit of 4096 per probe.
 #define LOOP_LIMIT 42

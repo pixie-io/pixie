@@ -29,6 +29,7 @@ package(default_visibility = [
 ])
 
 proc_exit_trace_hdrs = [
+    "//src/stirling/upid:headers",
     "//src/stirling/bpf_tools/bcc_bpf_intf:headers",
     "//src/stirling/bpf_tools/bcc_bpf:headers",
     "//src/stirling/source_connectors/proc_exit/bcc_bpf_intf:headers",

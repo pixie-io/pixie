@@ -22,7 +22,7 @@
 #include <vector>
 
 #include "src/common/system/clock.h"
-#include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
+#include "src/stirling/upid/upid.h"
 
 namespace px {
 namespace stirling {
