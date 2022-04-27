@@ -33,7 +33,7 @@ constexpr DataElement kStirlingErrorElements[] = {
   {"source_connector", "The Source Connector installed",
    types::DataType::STRING, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
   {"status", "The status of the installation",
-   types::DataType::BOOLEAN, types::SematicType::ST_NONE, types::PatternType::GENERAL},
+   types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::GENERAL_ENUM},
   {"error", "The error message of the installation, if any",
    types::DataType::STRING, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
 };

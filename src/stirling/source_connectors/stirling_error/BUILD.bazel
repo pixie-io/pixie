@@ -30,5 +30,6 @@ pl_cc_library(
     deps = [
         "//src/shared/upid:cc_library",
         "//src/stirling/core:cc_library",
+        "//src/stirling/utils:cc_library",
     ],
 )
