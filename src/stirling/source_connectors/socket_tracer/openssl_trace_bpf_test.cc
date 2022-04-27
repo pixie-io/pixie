@@ -98,12 +98,6 @@ class BaseOpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ 
     SocketTraceBPFTest::SetUp();
   }
 
-  void TearDown() override {
-    SocketTraceBPFTest::TearDown();
-
-    FLAGS_openssl_force_raw_fptrs = original_openssl_force_raw_fptrs_;
-  }
-
   // Returns the trace records of the process specified by the input pid.
   TraceRecords GetTraceRecords(int pid) {
     std::vector<TaggedRecordBatch> tablets =
