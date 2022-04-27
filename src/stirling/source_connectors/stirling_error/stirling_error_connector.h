@@ -26,7 +26,7 @@
 #include "src/common/base/base.h"
 #include "src/stirling/core/source_connector.h"
 #include "src/stirling/source_connectors/stirling_error/stirling_error_table.h"
-#include "src/stirling/utils/connector_status_store.h"
+#include "src/stirling/utils/monitor.h"
 
 namespace px {
 namespace stirling {
@@ -51,15 +51,13 @@ class StirlingErrorConnector : public SourceConnector {
 
   void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
 
-  void SetConnectorStatusStore(ConnectorStatusStore* s) { connector_status_store_ = s; }
-
  private:
   explicit StirlingErrorConnector(std::string_view source_name)
       : SourceConnector(source_name, kTables) {}
 
   void TransferStirlingErrorTable(ConnectorContext* ctx, DataTable* data_table);
 
-  ConnectorStatusStore* connector_status_store_ = nullptr;
+  StirlingMonitor& monitor_ = *StirlingMonitor::GetInstance();
   int32_t pid_ = -1;
   uint64_t start_time_ = -1;
 };
