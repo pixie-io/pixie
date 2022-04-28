@@ -280,8 +280,10 @@ class AgentProcSMapsUDTF final : public carnot::udf::UDTF<AgentProcSMapsUDTF> {
     if (static_cast<size_t>(current_idx_) >= stats_.size()) {
       return false;
     }
+    auto smap = stats_[current_idx_];
+
     rw->Append<IndexOf("asid")>(ctx->metadata_state()->asid());
-    rw->Append<IndexOf("address")>(stats_[current_idx_].address);
+    rw->Append<IndexOf("address")>(smap.ToAddress());
     rw->Append<IndexOf("offset")>(stats_[current_idx_].offset);
     rw->Append<IndexOf("pathname")>(stats_[current_idx_].pathname);
     rw->Append<IndexOf("size_bytes")>(stats_[current_idx_].size_bytes);

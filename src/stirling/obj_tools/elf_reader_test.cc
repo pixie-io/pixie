@@ -112,6 +112,14 @@ TEST(ElfReaderTest, ListFuncSymbolsSuffixMatch) {
                      ElementsAre(SymbolNameIs("CanYouFindThis")));
 }
 
+TEST(ElfReaderTest, FindSegmentOffsetOfSection) {
+  const std::string kSymbolName = "CanYouFindThis";
+
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
+                       ElfReader::Create(kTestExeFixture.Path()));
+  EXPECT_OK_AND_THAT(elf_reader->FindSegmentOffsetOfSection(".text"), 0x1000);
+}
+
 TEST(ElfReaderTest, SymbolAddress) {
   const std::string path = kTestExeFixture.Path().string();
   const std::string kSymbolName = "CanYouFindThis";
