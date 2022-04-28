@@ -327,14 +327,15 @@ func (a *activeQuery) handleRequest(ctx context.Context, queryID uuid.UUID, msg 
 	}
 
 	// Some inbound messages don't translate into responses to the client stream.
-	if resp != nil {
-		select {
-		case <-ctx.Done():
-			return nil
-		case resultCh <- resp:
-		}
+	if resp == nil {
+		return nil
 	}
 
+	select {
+	case <-ctx.Done():
+		return nil
+	case resultCh <- resp:
+	}
 	if status := resp.GetStatus(); status != nil && status.Code != 0 {
 		return VizierStatusToError(status)
 	}
@@ -352,6 +353,11 @@ func (a *activeQuery) consumerHealthcheck(ctx context.Context) {
 func (a *activeQuery) producerHealthcheck(ctx context.Context) {
 	select {
 	case <-ctx.Done():
+		// producerCtx might complete after an activeQuery is already in use by a producer.
+		// The producer, not knowing that yet, will call producerHealthcheck() which would try to
+		// write to producerHealthcheckCh. The reader for producerHealthcheckCh will be dead so we would
+	// just hang.
+	case <-a.producerCtx.Done():
 	case a.producerHealthcheckCh <- true:
 	}
 }

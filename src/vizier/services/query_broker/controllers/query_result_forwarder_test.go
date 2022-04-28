@@ -992,6 +992,7 @@ func TestStreamResultsReceiveExecutionError(t *testing.T) {
 
 			go func() {
 				err = f.StreamResults(consumerCtx, queryID, resultCh)
+				assert.Regexp(t, "error sending tables", err.Error())
 				cancelConsumer()
 			}()
 
@@ -1042,6 +1043,7 @@ func TestStreamErrorWithMultipleProducers(t *testing.T) {
 
 	go func() {
 		err = f.StreamResults(consumerCtx, queryID, resultCh)
+		assert.Regexp(t, "error sending tables", err.Error())
 		cancelConsumer()
 	}()
 
@@ -1067,7 +1069,8 @@ func TestStreamErrorWithMultipleProducers(t *testing.T) {
 	assert.Nil(t, f.ForwardQueryResult(producer1Ctx, makeInitiateTableRequest(queryID, "bar")))
 	assert.Nil(t, f.ForwardQueryResult(producer2Ctx, foo0))
 	assert.Nil(t, f.ForwardQueryResult(producer2Ctx, execError))
-	assert.Nil(t, f.ForwardQueryResult(producer1Ctx, eosBar))
+	// Don't check because the race might close producer before anything else.
+	_ = f.ForwardQueryResult(producer1Ctx, eosBar)
 
 	wg.Wait()
 
