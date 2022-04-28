@@ -193,6 +193,11 @@ These are also published on the [releases](https://github.com/pixie-io/pixie/rel
 
 The known adopters and users of Pixie are listed [here](ADOPTERS.md).
 
+## Software Bill of Materials
+
+We publish a list of all the components Pixie depends on and the corresponding
+versions and licenses [here](https://storage.googleapis.com/pixie-dev-public/oss-licenses/latest.json).
+
 ## About Pixie
 
 Pixie was contributed by [New Relic, Inc.](https://newrelic.com/) to the [Cloud Native Computing Foundation](https://www.cncf.io/) as a Sandbox project in June 2021.
