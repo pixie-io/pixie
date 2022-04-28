@@ -1617,6 +1617,50 @@ class VizierNameUDF : public ScalarUDF {
   }
 };
 
+class CreateUPIDUDF : public udf::ScalarUDF {
+ public:
+  UInt128Value Exec(FunctionContext* ctx, Int64Value pid, Int64Value pid_start_time) {
+    auto md = GetMetadataState(ctx);
+    auto upid = md::UPID(md->asid(), pid.val, pid_start_time.val);
+    return upid.value();
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Convert a pid, start_time pair to a UPID.")
+        .Details("This function creates a UPID from it's underlying components..")
+        .Example("df.val = px.upid(df.pid, df.pid_start_time)")
+        .Arg("arg1", "The pid of the process.")
+        .Arg("arg2", "The start_time of the process.")
+        .Returns("The UPID.");
+  }
+
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::ExplicitRule::Create<CreateUPIDUDF>(types::ST_UPID, {})};
+  }
+};
+
+class CreateUPIDWithASIDUDF : public udf::ScalarUDF {
+ public:
+  UInt128Value Exec(FunctionContext*, Int64Value asid, Int64Value pid, Int64Value pid_start_time) {
+    auto upid = md::UPID(asid.val, pid.val, pid_start_time.val);
+    return upid.value();
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Convert a pid, start_time pair to a UPID.")
+        .Details("This function creates a UPID from it's underlying components.")
+        .Example("df.val = px.upid(px.asid(), df.pid, df.pid_start_time)")
+        .Arg("arg1", "The asid of the pem where the process is located.")
+        .Arg("arg2", "The pid of the process.")
+        .Arg("arg3", "The start_time of the process.")
+        .Returns("The UPID.");
+  }
+
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::ExplicitRule::Create<CreateUPIDWithASIDUDF>(types::ST_UPID, {})};
+  }
+};
+
 void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry);
 
 }  // namespace metadata

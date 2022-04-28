@@ -33,6 +33,8 @@ void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry) {
    * Scalar UDFs.
    *****************************************/
   registry->RegisterOrDie<ASIDUDF>("asid");
+  registry->RegisterOrDie<CreateUPIDWithASIDUDF>("upid");
+  registry->RegisterOrDie<CreateUPIDUDF>("upid");
   registry->RegisterOrDie<ContainerIDToContainerStatusUDF>("container_id_to_status");
   registry->RegisterOrDie<ContainerIDToContainerStartTimeUDF>("container_id_to_start_time");
   registry->RegisterOrDie<ContainerIDToContainerStopTimeUDF>("container_id_to_stop_time");

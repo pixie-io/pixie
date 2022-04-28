@@ -678,6 +678,24 @@ TEST_F(MetadataOpsTest, vizier_name_test) {
   udf_tester.ForInput().Expect("myvizier");
 }
 
+TEST_F(MetadataOpsTest, basic_upid_test) {
+  auto metadata_state = std::make_shared<px::md::AgentMetadataState>(
+      /* hostname */ "myhost",
+      /* asid */ 1, /* pid */ 123, agent_id_, "mypod", vizier_id_, "myvizier");
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<CreateUPIDUDF>(std::move(function_ctx));
+  udf_tester.ForInput(100, 23123).Expect(md::UPID(1, 100, 23123).value());
+}
+
+TEST_F(MetadataOpsTest, basic_upid_with_asid_test) {
+  auto metadata_state = std::make_shared<px::md::AgentMetadataState>(
+      /* hostname */ "myhost",
+      /* asid */ 1, /* pid */ 123, agent_id_, "mypod", vizier_id_, "myvizier");
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<CreateUPIDWithASIDUDF>(std::move(function_ctx));
+  udf_tester.ForInput(2, 100, 23123).Expect(md::UPID(2, 100, 23123).value());
+}
+
 }  // namespace metadata
 }  // namespace funcs
 }  // namespace carnot
