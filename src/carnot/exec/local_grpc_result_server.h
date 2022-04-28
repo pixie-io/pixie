@@ -63,6 +63,8 @@ class LocalResultSinkServer final : public carnotpb::ResultSinkService::Service 
     return ::grpc::Status::OK;
   }
 
+  void ResetQueryResults() { query_results_.clear(); }
+
  private:
   // List of the query results received.
   std::vector<carnotpb::TransferResultChunkRequest> query_results_;
@@ -90,6 +92,8 @@ class LocalGRPCResultSinkServer {
   std::vector<carnotpb::TransferResultChunkRequest> raw_query_results() {
     return result_sink_server_.query_results();
   }
+
+  void ResetQueryResults() { result_sink_server_.ResetQueryResults(); }
 
   StatusOr<QueryExecStats> exec_stats() {
     bool got_exec_stats = false;

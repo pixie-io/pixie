@@ -98,6 +98,7 @@ void BM_Query(benchmark::State& state, std::vector<types::DataType> types,
       LOG(FATAL) << "Aggregate benchmark query did not execute successfully.";
     }
     bytes_processed += server.exec_stats().ConsumeValueOrDie().execution_stats().bytes_processed();
+    server.ResetQueryResults();
     ++i;
   }
 
