@@ -218,10 +218,8 @@ list_pl_deps(
     name = "pl_3p_deps",
 )
 
-genrule(
+filegroup(
     name = "pl_3p_go_sum",
     srcs = ["go.sum"],
-    outs = ["pl_3p_go_sum.out"],
-    cmd = "cat $< | cut -d' ' -f1 > $@",
     visibility = ["//visibility:public"],
 )

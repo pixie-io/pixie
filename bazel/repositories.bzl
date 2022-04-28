@@ -191,6 +191,8 @@ def _list_pl_deps(name):
         remote = repo_config["remote"]
         if remote.endswith(".git"):
             remote = remote[:-len(".git")]
+        if repo_config["commit"]:
+            remote = remote + "/commit/" + repo_config["commit"]
         repo_urls.append(remote)
 
     native.genrule(
