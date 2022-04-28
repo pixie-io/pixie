@@ -33,7 +33,6 @@
 #include "src/stirling/obj_tools/dwarf_reader.h"
 #include "src/stirling/obj_tools/go_syms.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
-#include "src/stirling/source_connectors/socket_tracer/uprobe_symaddrs.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
 DEFINE_bool(stirling_rescan_for_dlopen, false,
@@ -135,8 +134,10 @@ StatusOr<int> UProbeManager::AttachUProbeTmpl(const ArrayView<UProbeTmpl>& probe
   return uprobe_count;
 }
 
-Status UProbeManager::UpdateOpenSSLSymAddrs(std::filesystem::path libcrypto_path, uint32_t pid) {
-  PL_ASSIGN_OR_RETURN(struct openssl_symaddrs_t symaddrs, OpenSSLSymAddrs(libcrypto_path));
+Status UProbeManager::UpdateOpenSSLSymAddrs(RawFptrManager* fptr_manager,
+                                            std::filesystem::path libcrypto_path, uint32_t pid) {
+  PL_ASSIGN_OR_RETURN(struct openssl_symaddrs_t symaddrs,
+                      OpenSSLSymAddrs(fptr_manager, libcrypto_path, pid));
 
   openssl_symaddrs_map_->UpdateValue(pid, symaddrs);
 
@@ -268,6 +269,10 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
     return 0;
   }
 
+  auto reader = ElfReader::Create(container_libcrypto).ConsumeValueOrDie();
+  auto fptr_manager = std::unique_ptr<RawFptrManager>(
+      new RawFptrManager(reader.get(), proc_parser_.get(), container_libcrypto));
+
   // Convert to host path, in case we're running inside a container ourselves.
   container_libssl = sysconfig.ToHostPath(container_libssl);
   container_libcrypto = sysconfig.ToHostPath(container_libcrypto);
@@ -279,7 +284,7 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
     return error::Internal("libcrypto not found [path = $0]", container_libcrypto.string());
   }
 
-  PL_RETURN_IF_ERROR(UpdateOpenSSLSymAddrs(container_libcrypto, pid));
+  PL_RETURN_IF_ERROR(UpdateOpenSSLSymAddrs(fptr_manager.get(), container_libcrypto, pid));
 
   // Only try probing .so files that we haven't already set probes on.
   auto result = openssl_probed_binaries_.insert(container_libssl);

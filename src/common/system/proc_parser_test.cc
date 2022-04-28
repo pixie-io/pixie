@@ -33,6 +33,7 @@ namespace px {
 namespace system {
 
 using ::testing::_;
+using ::testing::Contains;
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
 using ::testing::MatchesRegex;
@@ -187,7 +188,7 @@ TEST_F(ProcParserTest, ParsePIDSMaps) {
 
   ASSERT_GT(stats.size(), 0);
   auto& first = stats.front();
-  EXPECT_EQ("55e816b37000-55e816b65000", first.address);
+  EXPECT_EQ("55e816b37000-55e816b65000", first.ToAddress());
   EXPECT_EQ("00000000", first.offset);
   EXPECT_EQ("/usr/bin/vim.basic", first.pathname);
   EXPECT_EQ(184 * 1024, first.size_bytes);
@@ -212,7 +213,7 @@ TEST_F(ProcParserTest, ParsePIDSMaps) {
   EXPECT_EQ(0 * 1024, first.locked_bytes);
 
   auto& last = stats.back();
-  EXPECT_EQ("ffffffffff600000-ffffffffff601000", last.address);
+  EXPECT_EQ("ffffffffff600000-ffffffffff601000", last.ToAddress());
   EXPECT_EQ("00000000", last.offset);
   EXPECT_EQ("[vsyscall]", last.pathname);
   EXPECT_EQ(4 * 1024, last.size_bytes);
@@ -334,6 +335,19 @@ TEST_F(ProcParserTest, GetMapPaths) {
             "/lib/x86_64-linux-gnu/libdl-2.28.so", "/usr/lib/x86_64-linux-gnu/libcrypto.so.1.1",
             "/usr/lib/x86_64-linux-gnu/libssl.so.1.1", "/usr/sbin/nginx", "/[aio] (deleted)",
             "[heap]", "[stack]", "[uprobes]", "[vdso]", "[vsyscall]", "[vvar]"));
+  }
+}
+
+TEST_F(ProcParserTest, GetExecutableMapEntry) {
+  {
+    ProcParser::ProcessSMaps m{
+        .vmem_start = 0x565078f8c000,
+        .vmem_end = 0x565079054000,
+        .permissions = "r-xp",
+        .pathname = "/usr/sbin/nginx",
+    };
+    auto smap = parser_->GetExecutableMapEntry(123, "/usr/sbin/nginx", m.vmem_start);
+    EXPECT_OK_AND_THAT(smap, m);
   }
 }
 

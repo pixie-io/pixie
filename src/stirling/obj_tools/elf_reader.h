@@ -62,6 +62,8 @@ class ElfReader {
     }
   };
 
+  StatusOr<int32_t> FindSegmentOffsetOfSection(std::string section_name);
+
   /**
    * Returns a list of symbol names that meets the search criteria.
    *
@@ -155,6 +157,11 @@ class ElfReader {
   ElfReader() = default;
 
   StatusOr<ELFIO::section*> SymtabSection();
+
+  /**
+   * Returns the ELF section with the corresponding name
+   */
+  StatusOr<ELFIO::section*> SectionWithName(std::string_view section_name);
 
   /**
    * Locates the debug symbols for the currently loaded ELF object.
