@@ -171,7 +171,6 @@ class GRPCRouter final : public carnotpb::ResultSinkService::Service {
       std::unique_ptr<::px::carnotpb::TransferResultChunkRequest> req,
       ::grpc::ServerContext* context, TransferResultChunkState* state);
 
-  Status MarkResultStreamInitiated(QueryTracker* query_tracker, int64_t source_id);
   void MarkResultStreamClosed(QueryTracker* query_tracker, int64_t source_id);
   void RegisterResultStreamContext(QueryTracker* query_tracker, ::grpc::ServerContext* context);
   void MarkResultStreamContextAsComplete(QueryTracker* query_tracker,
