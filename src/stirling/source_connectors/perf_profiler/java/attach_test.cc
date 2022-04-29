@@ -122,7 +122,8 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   // Check to see if the symbol file has some symbols.
   const absl::flat_hash_set<std::string> expected_symbols = {
       "()J",
-      "fib52",
+      "fibs1x",
+      "fibs2x",
       "([B[B)Z",
       "LJavaFib;",
       "call_stub",

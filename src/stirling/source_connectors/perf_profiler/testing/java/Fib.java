@@ -38,47 +38,51 @@ class JavaFib {
     return next;
   }
 
-  public static long fib27() {
-    // Need to loop here for the stack trace sampler to pick up symbol fib27.
+  public static long fibs1x() {
+    // Need to loop here for the stack trace sampler to pick up symbol fibs1x.
+    // Newer JVMs can optimize this loop if it computes the same value every time,
+    // so, we make it do some "real" work.
     long ntrials = 10000;
     long x = 0;
     for(long i=0; i < ntrials; i++) {
-      x = fib(27);
+      x += fib(i%53);
     }
     return x;
   }
 
-  public static long fib52() {
-    // Need to loop here for the stack trace sampler to pick up symbol fib52.
-    long ntrials = 10000;
+  public static long fibs2x() {
+    // Need to loop here for the stack trace sampler to pick up symbol fibs2x.
+    // Newer JVMs can optimize this loop if it computes the same value every time,
+    // so, we make it do some "real" work.
+    long ntrials = 20000;
     long x = 0;
     for(long i=0; i < ntrials; i++) {
-      x = fib(52);
+      x += fib(i%53);
     }
     return x;
   }
 
   public static void main(String[] args) {
     long ntrials = 500000000;
-    long update_interval = ntrials / 10;
-    long f27 = 0;
-    long f52 = 0;
+    long update_interval = ntrials / 100000;
+    long f1xsum = 0;
+    long f2xsum = 0;
 
     for(long i=0; i < ntrials; i++) {
       for(long j=0; j < ntrials; j++) {
         // Contrived to do the following:
         // 1. Run for a (really) long time (i.e. until the process is externally killed).
-        // 2. Spend twice as much time in fib52() vs. fib27().
-        f27 = fib27();
-        f52 = fib52();
+        // 2. Spend twice as much time in fibs2x() vs. fibs1x().
+        f1xsum = fibs1x();
+        f2xsum = fibs2x();
         if(j % update_interval == 0) {
-          System.out.println(j);
+          String msg = "Completed %6d trials, f1xsum: %d, f2xsum: %d.";
+          System.out.println(String.format(msg, j, f1xsum, f2xsum));
         }
       }
-      System.out.println(String.format("Completed %d trials.", ntrials));
     }
 
-    System.out.println(f27);
-    System.out.println(f52);
+    System.out.println(f1xsum);
+    System.out.println(f2xsum);
   }
 }
