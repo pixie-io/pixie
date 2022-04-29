@@ -17,6 +17,7 @@
  */
 
 #include <algorithm>
+#include <atomic>
 
 #include <sys/sysinfo.h>
 
@@ -167,7 +168,10 @@ class PerfProfileBPFTest : public ::testing::Test {
 
     source_ = PerfProfileConnector::Create("perf_profile_connector");
     ASSERT_OK(source_->Init());
-    ASSERT_LT(source_->SamplingPeriod(), test_run_time_);
+
+    // Immediately start the transfer data thread to continue draining perf buffers,
+    // i.e. to prevent dropping perf buffer entries.
+    StartTransferDataThread();
   }
 
   void TearDown() override { ASSERT_OK(source_->Stop()); }
@@ -309,18 +313,47 @@ class PerfProfileBPFTest : public ::testing::Test {
     column_ptrs_populated_ = true;
   }
 
-  std::chrono::duration<double> RunTest() {
-    const std::chrono::milliseconds t_sleep = source_->SamplingPeriod();
-    const auto start_time = std::chrono::steady_clock::now();
-    const auto stop_time = start_time + test_run_time_;
+  void RefreshContext(const absl::flat_hash_set<md::UPID>& upids) {
+    absl::base_internal::SpinLockHolder lock(&perf_profiler_state_lock_);
+    ctx_ = std::make_unique<StandaloneContext>(upids);
+  }
 
-    // Continuously poke Stirling TransferData() using the underlying schema periodicity;
-    // break from this loop when the elapsed time exceeds the targeted run time.
-    while (std::chrono::steady_clock::now() < stop_time) {
-      source_->TransferData(ctx_.get(), data_tables_);
-      std::this_thread::sleep_for(t_sleep);
-    }
+  void StartTransferDataThread() {
+    ASSERT_TRUE(source_ != nullptr);
+
+    sampling_period_ = source_->SamplingPeriod();
+    ASSERT_LT(sampling_period_, test_run_time_);
+
+    // Create an initial empty context for use by the transfer data thread.
+    const absl::flat_hash_set<md::UPID> empty_upid_set;
+    ctx_ = std::make_unique<StandaloneContext>(empty_upid_set);
+
+    transfer_data_thread_ = std::thread([this]() {
+      transfer_enable_ = true;
+      while (transfer_enable_) {
+        {
+          absl::base_internal::SpinLockHolder lock(&perf_profiler_state_lock_);
+          source_->TransferData(ctx_.get(), data_tables_);
+        }
+        std::this_thread::sleep_for(sampling_period_);
+      }
+    });
+  }
+
+  void StopTransferDataThread() {
+    CHECK(transfer_data_thread_.joinable());
+    transfer_enable_ = false;
+    transfer_data_thread_.join();
     source_->TransferData(ctx_.get(), data_tables_);
+  }
+
+  std::chrono::duration<double> RunTest() {
+    const auto start_time = std::chrono::steady_clock::now();
+
+    // While we sleep (here), the transfer data thread is running.
+    // In that thread, TransferData() is invoked periodically.
+    std::this_thread::sleep_for(test_run_time_);
+    StopTransferDataThread();
 
     // We return the amount of time that we ran the test; it will be used to compute
     // the observed sample rate and the expected number of samples.
@@ -328,6 +361,10 @@ class PerfProfileBPFTest : public ::testing::Test {
   }
 
   const std::chrono::seconds test_run_time_;
+  std::chrono::milliseconds sampling_period_;
+  std::atomic<bool> transfer_enable_ = false;
+  std::thread transfer_data_thread_;
+  absl::base_internal::SpinLock perf_profiler_state_lock_;
   std::unique_ptr<PerfProfileConnector> source_;
   std::unique_ptr<PerfProfilerTestSubProcesses> sub_processes_;
   std::unique_ptr<StandaloneContext> ctx_;
@@ -363,7 +400,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
   // Start target apps & create the connector context using the sub-process upids.
   sub_processes_ = std::make_unique<CPUPinnedSubProcesses>(bazel_app_path);
   ASSERT_NO_FATAL_FAILURE(sub_processes_->StartAll());
-  ctx_ = std::make_unique<StandaloneContext>(sub_processes_->upids());
+  RefreshContext(sub_processes_->upids());
 
   // Allow target apps to run, and periodically call transfer data on perf profile connector.
   const std::chrono::duration<double> elapsed_time = RunTest();
@@ -386,7 +423,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
   // Start target apps & create the connector context using the sub-process upids.
   sub_processes_ = std::make_unique<CPUPinnedSubProcesses>(bazel_app_path);
   ASSERT_NO_FATAL_FAILURE(sub_processes_->StartAll());
-  ctx_ = std::make_unique<StandaloneContext>(sub_processes_->upids());
+  RefreshContext(sub_processes_->upids());
 
   // Allow target apps to run, and periodically call transfer data on perf profile connector.
   const std::chrono::duration<double> elapsed_time = RunTest();
@@ -411,7 +448,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
   // Start target apps & create the connector context using the sub-process upids.
   sub_processes_ = std::make_unique<ContainerSubProcesses>(image_tar_path, kContainerNamePfx);
   ASSERT_NO_FATAL_FAILURE(sub_processes_->StartAll());
-  ctx_ = std::make_unique<StandaloneContext>(sub_processes_->upids());
+  RefreshContext(sub_processes_->upids());
 
   // Allow target apps to run, and periodically call transfer data on perf profile connector.
   const std::chrono::duration<double> elapsed_time = RunTest();
@@ -448,7 +485,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
   // between the previous list of upids (our subprocs) and the current list of upids (empty)
   // to find a list of deleted upids.
   const absl::flat_hash_set<md::UPID> empty_upid_set;
-  ctx_ = std::make_unique<StandaloneContext>(empty_upid_set);
+  RefreshContext(empty_upid_set);
 
   // Run transfer data so that cleanup is kicked off in the perf profile source connector.
   // The deleted upids list that is inferred will match our original upid list.
