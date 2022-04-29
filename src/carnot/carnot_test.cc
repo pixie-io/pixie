@@ -28,6 +28,7 @@
 #include <pypa/parser/parser.hh>
 
 #include "src/carnot/carnot.h"
+#include "src/carnot/carnotpb/carnot.pb.h"
 #include "src/carnot/exec/grpc_router.h"
 #include "src/carnot/exec/local_grpc_result_server.h"
 #include "src/carnot/exec/test_utils.h"
@@ -1634,6 +1635,177 @@ px.display(px.DataFrame('big_test_table'))
   EXPECT_EQ(errors.size(), 1);
   EXPECT_THAT(errors[0].DebugString(), ::testing::MatchesRegex(".*didnt process data.*"));
 }
+
+constexpr char kGRPCSourcePlan[] = R"proto(
+dag {
+  nodes {
+    id: 1
+  }
+}
+nodes {
+  id: 1
+  dag {
+    nodes {
+      id: 1
+      sorted_children: 2
+    }
+    nodes {
+      id: 2
+      sorted_parents: 1
+    }
+  }
+  nodes {
+    id: 1
+    op {
+      op_type: GRPC_SOURCE_OPERATOR
+      grpc_source_op {
+        column_names: "cpu0"
+        column_types: INT64
+      }
+    }
+  }
+  nodes {
+    id: 2
+    op {
+      op_type: GRPC_SINK_OPERATOR
+      grpc_sink_op {
+        address: "result_addr"
+        output_table {
+          table_name: "out_table"
+          column_names: "cpu0"
+          column_types: INT64
+        }
+        connection_options {
+          ssl_targetname: "result_ssltarget"
+        }
+      }
+    }
+  }
+}
+)proto";
+
+struct TransferResultChunkTestCase {
+  std::string name;
+  std::string plan;
+  // Each element of this vector represents an independent TransferResultChunk context.
+  // The number of results sent over to the local results server by Carnot.
+  int64_t num_expected_query_results;
+  // Each element of each element is the string repr of the proto message to send over the stream.
+  std::vector<std::vector<std::string>> transfer_result_chunk_streams;
+};
+
+class TransferResultChunkTests : public CarnotTest,
+                                 public ::testing::WithParamInterface<TransferResultChunkTestCase> {
+};
+TEST_P(TransferResultChunkTests, sned_and_forward_messages) {
+  grpc::ServerBuilder builder;
+  builder.AddListeningPort("localhost:0", grpc::InsecureServerCredentials());
+  builder.RegisterService(router_);
+  auto grpc_server = builder.BuildAndStart();
+
+  grpc::ChannelArguments args;
+  auto input_stub = px::carnotpb::ResultSinkService::NewStub(grpc_server->InProcessChannel(args));
+
+  auto tc = GetParam();
+  for (const auto& requests : tc.transfer_result_chunk_streams) {
+    grpc::ClientContext ctx;
+    carnotpb::TransferResultChunkResponse response;
+    auto writer = input_stub->TransferResultChunk(&ctx, &response);
+    for (const auto& req_str : requests) {
+      carnotpb::TransferResultChunkRequest req;
+      ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(req_str, &req));
+      EXPECT_TRUE(writer->Write(req));
+    }
+    writer->WritesDone();
+    auto writer_s = writer->Finish();
+    ASSERT_TRUE(writer_s.ok()) << writer_s.error_message();
+  }
+
+  planpb::Plan plan;
+  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(tc.plan, &plan));
+
+  ASSERT_OK(carnot_->ExecutePlan(plan, sole::uuid{1, 1}));
+  EXPECT_TRUE(result_server_->exec_errors().empty());
+
+  EXPECT_EQ(result_server_->raw_query_results().size(), tc.num_expected_query_results);
+};
+
+INSTANTIATE_TEST_SUITE_P(TransferResultChunks, TransferResultChunkTests,
+                         ::testing::Values(
+                             TransferResultChunkTestCase{
+                                 "end2end",
+                                 kGRPCSourcePlan,
+                                 /* num_expected_query_results */ 3,
+                                 {
+                                     {
+                                         R"proto(
+                                      address: "foo"
+                                      query_id {
+                                        high_bits: 1
+                                        low_bits: 1
+                                      }
+                                      query_result {
+                                        grpc_source_id: 1
+                                        initiate_result_stream: true
+                                      })proto",
+                                         R"proto(
+                                      address: "foo"
+                                      query_id {
+                                        high_bits: 1
+                                        low_bits: 1
+                                      }
+                                      query_result {
+                                        grpc_source_id: 1
+                                        row_batch {
+                                          cols {
+                                            int64_data {
+                                            }
+                                          }
+                                          eow: true
+                                          eos: true
+                                        }
+                                      })proto",
+                                         R"proto(
+                                      address: "foo"
+                                      query_id {
+                                        high_bits: 1
+                                        low_bits: 1
+                                      }
+                                      execution_and_timing_info {
+                                        execution_stats {
+                                          timing {
+                                            execution_time_ns: 1234
+                                            compilation_time_ns: 123
+                                          }
+                                          bytes_processed: 1
+                                          records_processed: 1
+                                        }
+                                      })proto",
+                                     },
+                                 },
+                             },
+                             TransferResultChunkTestCase{
+                                 "timeout_does_not_throw_error",
+                                 kGRPCSourcePlan,
+                                 /* num_expected_query_results */ 3,
+                                 {
+                                     {
+                                         R"proto(
+                                      address: "foo"
+                                      query_id {
+                                        high_bits: 1
+                                        low_bits: 1
+                                      }
+                                      query_result {
+                                        grpc_source_id: 1
+                                        initiate_result_stream: true
+                                      })proto",
+                                     },
+                                 },
+                             }),
+                         [](const ::testing::TestParamInfo<TransferResultChunkTestCase>& info) {
+                           return info.param.name;
+                         });
 
 }  // namespace carnot
 }  // namespace px
