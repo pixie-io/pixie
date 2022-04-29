@@ -25,6 +25,7 @@ import (
 	"math"
 	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -42,7 +43,7 @@ var scriptDisableList = []string{
 	"px/http2_data",
 }
 
-const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle.json"
+const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-oss.json"
 
 func init() {
 	pflag.Int("num_runs", 10, "number of times to run a script ")
@@ -179,7 +180,8 @@ func executeScript(v []*vizier.Connector, execScript *script.ExecutableScript) (
 	// Get the exec stats collected during the stream accumulation.
 	execStats, err := tw.ExecStats()
 	if err != nil {
-		return nil, err
+		execRes.scriptErr = err
+		return &execRes, nil
 	}
 	execRes.internalExecTime = time.Duration(execStats.Timing.ExecutionTimeNs)
 	execRes.compileTime = time.Duration(execStats.Timing.CompilationTimeNs)
@@ -194,6 +196,10 @@ func isDisabled(script string) bool {
 		}
 	}
 	return false
+}
+
+func isMutation(s *script.ExecutableScript) bool {
+	return strings.Contains(s.ScriptString, "pxtrace")
 }
 
 // ScriptExecData contains the data for a single executed script.
@@ -287,7 +293,27 @@ func main() {
 		if isDisabled(s.ScriptName) {
 			continue
 		}
+		if isMutation(s) {
+			continue
+		}
+
 		log.WithField("script", s.ScriptName).WithField("idx", i).Infof("Executing new script")
+		s.Args = make(map[string]script.Arg)
+		s.Args["start_time"] = script.Arg{Name: "start_time", Value: "-5m"}
+
+		for _, v := range s.Vis.Variables {
+			if _, ok := s.Args[v.Name]; ok {
+				continue
+			}
+			value := ""
+			if len(v.ValidValues) > 0 {
+				value = v.ValidValues[0]
+			}
+			if v.DefaultValue != nil {
+				value = v.DefaultValue.Value
+			}
+			s.Args[v.Name] = script.Arg{Name: v.Name, Value: value}
+		}
 
 		externalExecTiming := make([]time.Duration, repeatCount)
 		internalExecTiming := make([]time.Duration, repeatCount)
