@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <string_view>
 
@@ -31,19 +32,19 @@ namespace amqp {
 // Represents a generic AMQP message.
 struct Message : public FrameBase {
   // Defines the type of message passed [takes values 1...4]
-  enum type { Method = 1, Header = 2, Body = 3, Heartbeat = 4 };
+  enum class type { kMethod = 1, kHeader = 2, kBody = 3, kHeartbeat = 4 };
 
   // Communication channel to be used
-  short int channel;
+  int16_t channel;
 
   // Defines the length of message upcoming
-  long int message_length;
+  int32_t message_length;
 
   // Actual body content to be used
   std::string_view message_body;
 
   // Marks end of the frame by hexadecimal value %xCE
-  const std::string Frame_end{"CE"};
+  static constexpr std::string_view kFrameEnd = "CE";
 };
 
 // Represents a pair of request and response messages.
@@ -54,10 +55,6 @@ struct Record {
   std::string ToString() const {
     return absl::Substitute("req=[$0] resp=[$1]", req.ToString(), resp.ToString());
   }
-};
-
-struct State {
-  bool conn_closed = false;
 };
 
 // Required by event parser interface.
