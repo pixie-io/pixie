@@ -72,7 +72,10 @@ message TransferResultChunkRequest {
     // Agent-specific execution stats, sent by every agent in the plan.
     repeated px.carnot.queryresultspb.AgentExecutionStats agent_execution_stats = 3;
   }
+  message InitiateConnection { }
+
   oneof result {
+    InitiateConnection initiate_conn = 8;
     // `query_result` covers query result data sent from a GRPC sink (including the request
     // to initiate the connection between the GRPC sink and its destination).
     SinkResult query_result = 5;
