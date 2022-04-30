@@ -58,6 +58,16 @@ func makeInitiateTableRequest(queryID uuid.UUID, tableName string) *carnotpb.Tra
 	}
 }
 
+func makeInitiateConnectionRequest(queryID uuid.UUID) *carnotpb.TransferResultChunkRequest {
+	return &carnotpb.TransferResultChunkRequest{
+		Address: "foo",
+		QueryID: utils.ProtoFromUUID(queryID),
+		Result: &carnotpb.TransferResultChunkRequest_InitiateConn{
+			InitiateConn: &carnotpb.TransferResultChunkRequest_InitiateConnection{},
+		},
+	}
+}
+
 func makeRowBatchResult(t *testing.T, queryID uuid.UUID, tableName string, tableID string,
 	eos bool) (*vizierpb.RowBatchData, *carnotpb.TransferResultChunkRequest) {
 	rb := new(schemapb.RowBatchData)
@@ -137,7 +147,7 @@ func makePlan(t *testing.T) (*distributedpb.DistributedPlan, map[uuid.UUID]*plan
 	return plannerResultPB.Plan, planMap
 }
 
-func TestStreamResultsSimple(t *testing.T) {
+func TestStreamResultsSimple_BackwardsCompatibility(t *testing.T) {
 	queryID := uuid.Must(uuid.NewV4())
 
 	f := controllers.NewQueryResultForwarderWithOptions(controllers.WithResultSinkTimeout(1 * time.Second))
@@ -201,6 +211,69 @@ func TestStreamResultsSimple(t *testing.T) {
 	assert.Equal(t, expected3, results[3].GetData().ExecutionStats)
 }
 
+func TestStreamResultsSimple(t *testing.T) {
+	queryID := uuid.Must(uuid.NewV4())
+
+	f := controllers.NewQueryResultForwarderWithOptions(controllers.WithResultSinkTimeout(1 * time.Second))
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	expectedTables := make(map[string]string)
+	expectedTables["foo"] = "123"
+	expectedTables["bar"] = "456"
+
+	var results []*vizierpb.ExecuteScriptResponse
+	resultCh := make(chan *vizierpb.ExecuteScriptResponse)
+
+	consumerCtx, cancelConsumer := context.WithCancel(context.Background())
+	defer cancelConsumer()
+	producerCtx, cancelProducer := context.WithCancel(context.Background())
+	defer cancelProducer()
+
+	go func() {
+		for {
+			select {
+			case msg := <-resultCh:
+				results = append(results, msg)
+			case <-consumerCtx.Done():
+				wg.Done()
+				return
+			}
+		}
+	}()
+	var err error
+
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
+
+	go func() {
+		err = f.StreamResults(consumerCtx, queryID, resultCh)
+		cancelConsumer()
+	}()
+
+	expected0, in0 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, false)
+	expected1, in1 := makeRowBatchResult(t, queryID, "bar", "456" /*eos*/, true)
+	expected2, in2 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, true)
+	expected3, in3 := makeExecStatsResult(t, queryID)
+
+	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateConnectionRequest(queryID)))
+	assert.Nil(t, f.ForwardQueryResult(producerCtx, in0))
+	assert.Nil(t, f.ForwardQueryResult(producerCtx, in1))
+	assert.Nil(t, f.ForwardQueryResult(producerCtx, in2))
+	assert.Nil(t, f.ForwardQueryResult(producerCtx, in3))
+	wg.Wait()
+
+	require.NoError(t, err)
+	assert.Equal(t, 4, len(results))
+
+	for _, result := range results {
+		assert.Equal(t, queryID.String(), result.QueryID)
+	}
+	assert.Equal(t, expected0, results[0].GetData().Batch)
+	assert.Equal(t, expected1, results[1].GetData().Batch)
+	assert.Equal(t, expected2, results[2].GetData().Batch)
+	assert.Equal(t, expected3, results[3].GetData().ExecutionStats)
+}
+
 func TestStreamResultsAgentCancel(t *testing.T) {
 	queryID := uuid.Must(uuid.NewV4())
 
@@ -245,8 +318,7 @@ func TestStreamResultsAgentCancel(t *testing.T) {
 	}()
 
 	_, in0 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, false)
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "foo")))
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "bar")))
+	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateConnectionRequest(queryID)))
 	assert.Nil(t, f.ForwardQueryResult(producerCtx, in0))
 
 	// Wait for the consumer to receive its first result before cancelling the query.
@@ -313,8 +385,7 @@ func TestStreamResultsClientContextCancel(t *testing.T) {
 		errCh <- err
 	}()
 
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "foo")))
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "bar")))
+	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateConnectionRequest(queryID)))
 	_, in0 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, false)
 	_, in1 := makeRowBatchResult(t, queryID, "bar", "456" /*eos*/, true)
 	_, in2 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, true)
@@ -386,9 +457,8 @@ func TestStreamResultsQueryPlan(t *testing.T) {
 	expected2, in2 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, true)
 	expected4, in3 := makeExecStatsResult(t, queryID)
 
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "foo")))
+	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateConnectionRequest(queryID)))
 	assert.Nil(t, f.ForwardQueryResult(producerCtx, in0))
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "bar")))
 	assert.Nil(t, f.ForwardQueryResult(producerCtx, in1))
 	assert.Nil(t, f.ForwardQueryResult(producerCtx, in2))
 	assert.Nil(t, f.ForwardQueryResult(producerCtx, in3))
@@ -467,8 +537,7 @@ func TestStreamResultsWrongQueryID(t *testing.T) {
 	expected0, goodInput := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, false)
 	_, badInput := makeRowBatchResult(t, otherQueryID, "bar", "456" /*eos*/, true)
 
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "foo")))
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "bar")))
+	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateConnectionRequest(queryID)))
 	assert.Nil(t, f.ForwardQueryResult(producerCtx, goodInput))
 
 	// Make sure StreamResults has started before cancelling the query.
@@ -499,7 +568,6 @@ func TestStreamResultsResultsBeforeInitialization(t *testing.T) {
 	wg.Add(1)
 	expectedTables := make(map[string]string)
 	expectedTables["foo"] = "123"
-	expectedTables["bar"] = "456"
 
 	var results []*vizierpb.ExecuteScriptResponse
 	resultCh := make(chan *vizierpb.ExecuteScriptResponse)
@@ -529,15 +597,14 @@ func TestStreamResultsResultsBeforeInitialization(t *testing.T) {
 		cancelConsumer()
 	}()
 
-	_, in0 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, false)
+	_, in0 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, true)
+	_, in1 := makeExecStatsResult(t, queryID)
 	assert.Nil(t, f.ForwardQueryResult(producerCtx, in0))
+	assert.Nil(t, f.ForwardQueryResult(producerCtx, in1))
 	wg.Wait()
 
-	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(), fmt.Sprintf(
-		"Received RowBatch before initializing table foo for query %s",
-		queryID.String()))
-	assert.Equal(t, 0, len(results))
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(results))
 }
 
 func TestStreamResultsNeverInitializedTable(t *testing.T) {
@@ -580,7 +647,7 @@ func TestStreamResultsNeverInitializedTable(t *testing.T) {
 	}()
 
 	expected0, in0 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, false)
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "foo")))
+	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateConnectionRequest(queryID)))
 	assert.Nil(t, f.ForwardQueryResult(producerCtx, in0))
 	wg.Wait()
 
@@ -645,9 +712,8 @@ func TestStreamResultsProducerTimeout(t *testing.T) {
 
 	_, in0 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, false)
 
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "foo")))
+	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateConnectionRequest(queryID)))
 	assert.Nil(t, f.ForwardQueryResult(producerCtx, in0))
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "bar")))
 	// We never send EOS so we should get a producer timeout here.
 	wg.Wait()
 
@@ -709,8 +775,7 @@ func TestStreamResultsNewConsumer(t *testing.T) {
 	expected3, eosBar := makeRowBatchResult(t, queryID, "bar", "456" /*eos*/, true)
 	expected4, execStats := makeExecStatsResult(t, queryID)
 
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "foo")))
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "bar")))
+	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateConnectionRequest(queryID)))
 	assert.Nil(t, f.ForwardQueryResult(producerCtx, goodInput))
 
 	var consumer2Err error
@@ -816,8 +881,7 @@ func TestStreamResultsMultipleProducers(t *testing.T) {
 	globalProducerCtx, err := f.GetProducerCtx(queryID)
 	assert.Nil(t, err)
 
-	assert.Nil(t, f.ForwardQueryResult(producer1Ctx, makeInitiateTableRequest(queryID, "foo")))
-	assert.Nil(t, f.ForwardQueryResult(producer1Ctx, makeInitiateTableRequest(queryID, "bar")))
+	assert.Nil(t, f.ForwardQueryResult(producer1Ctx, makeInitiateConnectionRequest(queryID)))
 	assert.Nil(t, f.ForwardQueryResult(producer2Ctx, goodInput))
 	assert.Nil(t, f.ForwardQueryResult(producer2Ctx, eosFoo))
 	assert.Nil(t, f.ForwardQueryResult(producer1Ctx, eosBar))
@@ -895,7 +959,7 @@ func TestStreamResultsReceiveExecutionError(t *testing.T) {
 					},
 				}
 				sendRequests := func(ctx context.Context, f controllers.QueryResultForwarder) {
-					assert.Nil(t, f.ForwardQueryResult(ctx, makeInitiateTableRequest(queryID, "foo")))
+					assert.Nil(t, f.ForwardQueryResult(ctx, makeInitiateConnectionRequest(queryID)))
 					assert.Nil(t, f.ForwardQueryResult(ctx, in0))
 					assert.Nil(t, f.ForwardQueryResult(ctx, execError))
 				}
@@ -932,7 +996,7 @@ func TestStreamResultsReceiveExecutionError(t *testing.T) {
 					},
 				}
 				sendRequests := func(ctx context.Context, f controllers.QueryResultForwarder) {
-					assert.Nil(t, f.ForwardQueryResult(ctx, makeInitiateTableRequest(queryID, "foo")))
+					assert.Nil(t, f.ForwardQueryResult(ctx, makeInitiateConnectionRequest(queryID)))
 					assert.Nil(t, f.ForwardQueryResult(ctx, execError))
 					// This call has a chance of failing based on a race, so we don't check the result.
 					// This is because during an error we don't really care what is sent over for the query ID anymore.
@@ -1065,8 +1129,7 @@ func TestStreamErrorWithMultipleProducers(t *testing.T) {
 	globalProducerCtx, err := f.GetProducerCtx(queryID)
 	assert.Nil(t, err)
 
-	assert.Nil(t, f.ForwardQueryResult(producer1Ctx, makeInitiateTableRequest(queryID, "foo")))
-	assert.Nil(t, f.ForwardQueryResult(producer1Ctx, makeInitiateTableRequest(queryID, "bar")))
+	assert.Nil(t, f.ForwardQueryResult(producer1Ctx, makeInitiateConnectionRequest(queryID)))
 	assert.Nil(t, f.ForwardQueryResult(producer2Ctx, foo0))
 	assert.Nil(t, f.ForwardQueryResult(producer2Ctx, execError))
 	// Don't check because the race might close producer before anything else.

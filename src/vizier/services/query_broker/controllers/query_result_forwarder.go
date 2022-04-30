@@ -179,6 +179,10 @@ func newActiveQuery(producerCtx context.Context, tableIDMap map[string]string,
 func (a *activeQuery) updateQueryState(msg *carnotpb.TransferResultChunkRequest) error {
 	queryIDStr := utils.UUIDFromProtoOrNil(msg.QueryID).String()
 
+	if initConn := msg.GetInitiateConn(); initConn != nil {
+		return nil
+	}
+
 	// Mark down that we received the exec stats for this query.
 	if execStats := msg.GetExecutionAndTimingInfo(); execStats != nil {
 		if a.gotFinalExecStats {
@@ -194,8 +198,10 @@ func (a *activeQuery) updateQueryState(msg *carnotpb.TransferResultChunkRequest)
 
 		if rb := queryResult.GetRowBatch(); rb != nil {
 			if a.uninitializedTables.exists(tableName) {
-				return fmt.Errorf("Received RowBatch before initializing table %s for query %s",
-					tableName, queryIDStr)
+				a.uninitializedTables.remove(tableName)
+				if a.uninitializedTables.size() == 0 {
+					close(a.allTablesConnectedCh)
+				}
 			}
 
 			if !rb.GetEos() {
@@ -211,8 +217,7 @@ func (a *activeQuery) updateQueryState(msg *carnotpb.TransferResultChunkRequest)
 
 		if queryResult.GetInitiateResultStream() {
 			if !a.uninitializedTables.exists(tableName) {
-				return fmt.Errorf("Did not expect stream to be (re)opened query result table %s for query %s",
-					tableName, queryIDStr)
+				return nil
 			}
 			a.uninitializedTables.remove(tableName)
 			// If we have initialized all of our tables, then signal to the goroutine waiting for all
@@ -228,7 +233,7 @@ func (a *activeQuery) updateQueryState(msg *carnotpb.TransferResultChunkRequest)
 	if execError := msg.GetExecutionError(); execError != nil {
 		return nil
 	}
-	return fmt.Errorf("error in ForwardQueryResult: Expected TransferResultChunkRequest to have row batch, exec stats, or exec error")
+	return fmt.Errorf("error in ForwardQueryResult: Expected TransferResultChunkRequest to have init message, row batch, exec stats, exec error")
 }
 
 func (a *activeQuery) queryComplete() bool {
