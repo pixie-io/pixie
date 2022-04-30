@@ -385,6 +385,11 @@ func BuildExecuteScriptResponse(r *carnotpb.TransferResultChunkRequest,
 		return res, nil
 	}
 
+	// This agent message type will not turn into a message on the client stream.
+	if initConn := r.GetInitiateConn(); initConn != nil {
+		return nil, nil
+	}
+
 	if queryResult := r.GetQueryResult(); queryResult != nil {
 		// This agent message type will not turn into a message on the client stream.
 		if queryResult.GetInitiateResultStream() {
@@ -415,7 +420,7 @@ func BuildExecuteScriptResponse(r *carnotpb.TransferResultChunkRequest,
 		res.Status = StatusToVizierStatus(execError)
 		return res, nil
 	}
-	return nil, fmt.Errorf("error in ForwardQueryResult: Expected TransferResultChunkRequest to have row batch, exec stats, or exec error")
+	return nil, fmt.Errorf("error in ForwardQueryResult: Expected TransferResultChunkRequest to have init message, row batch, exec stats, exec error")
 }
 
 // QueryPlanResponse returns the query plan as an ExecuteScriptResponse.
