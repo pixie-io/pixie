@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "common.h"
+#include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/common.h"
 
 // The amount of bytes in a single slice of data.
 // This value was not chosen according to some constant in the grpc-c library.
