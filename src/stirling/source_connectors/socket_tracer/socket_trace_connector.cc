@@ -1021,8 +1021,7 @@ void SocketTraceConnector::AcceptGrpcCHeaderEventData(
   std::string value =
       std::string(event->header.value).substr(0, MAXIMUM_LENGTH_OF_VALUE_IN_METADATA);
   auto h_event_ready = std::make_unique<HTTP2HeaderEvent>();
-  h_event_ready->attr =
-      header_event_data_go_style.attr;  // Re-copy data because otherwise it seems trash.
+  h_event_ready->attr = header_event_data_go_style.attr;
   h_event_ready->name = name;
   h_event_ready->value = value;
 
