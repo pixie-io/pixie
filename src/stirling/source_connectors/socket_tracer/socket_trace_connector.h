@@ -38,6 +38,7 @@
 
 #include "src/stirling/core/source_connector.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
+#include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/grpc_c.h"
 #include "src/stirling/source_connectors/socket_tracer/conn_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/conn_tracker.h"
 #include "src/stirling/source_connectors/socket_tracer/conn_trackers_manager.h"
@@ -153,6 +154,12 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static void HandleMMapEventLoss(void* cb_cookie, uint64_t lost);
   static void HandleHTTP2Event(void* cb_cookie, void* data, int data_size);
   static void HandleHTTP2EventLoss(void* cb_cookie, uint64_t lost);
+  static void HandleGrpcCEvent(void* cb_cookie, void* data, int data_size);
+  static void HandleGrpcCDataLoss(void* cb_cookie, uint64_t lost);
+  static void HandleGrpcCHeaderEvent(void* cb_cookie, void* data, int data_size);
+  static void HandleGrpcCHeaderDataLoss(void* cb_cookie, uint64_t lost);
+  static void HandleGrpcCCloseEvent(void* cb_cookie, void* data, int data_size);
+  static void HandleGrpcCCloseDataLoss(void* cb_cookie, uint64_t lost);
 
   explicit SocketTraceConnector(std::string_view source_name);
 
@@ -168,6 +175,25 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   void AcceptConnStatsEvent(conn_stats_event_t event);
   void AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> event);
   void AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event);
+    void AcceptGrpcCEventData(std::unique_ptr<struct grpc_c_event_data_t> event);
+  void AcceptGrpcCHeaderEventData(std::unique_ptr<struct grpc_c_header_event_data_t> event);
+  void AcceptGrpcCEvent(
+    struct conn_id_t connection_id,
+    uint32_t stream_id,
+    uint64_t timestamp,
+    int32_t stack_id,
+    bool outgoing,
+    uint64_t position_in_stream,
+    std::vector<struct grpc_c_data_slice_t> slices);
+  void AcceptGrpcCCloseEvent(std::unique_ptr<struct grpc_c_stream_closed_data> event);
+  void InitiateHeaderEventDataGoStyle(
+    struct conn_id_t conn_id,
+    uint32_t stream_id,
+    uint64_t timestamp,
+    int32_t stack_id,
+    bool end_stream,
+    bool outgoing,
+    /* OUT */ struct go_grpc_http2_header_event_t * header_event_data_go_style);
 
   template <typename TProtocolTraits>
   void TransferStream(ConnectorContext* ctx, ConnTracker* tracker, DataTable* data_table);
@@ -249,6 +275,9 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
     kLossConnStatsEvent,
     kLossMMapEvent,
     kLossHTTP2Event,
+    kLossGrpcCEvent,
+    kLossGrpcCHeaderEvent,
+    kLossGrpcCCloseEvent,
 
     kPollSocketDataEventCount,
     kPollSocketDataEventAttrSize,

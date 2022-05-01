@@ -360,6 +360,9 @@ auto SocketTraceConnector::InitPerfBufferSpecs() {
        PerfBufferSizeCategory::kControl},
       {"go_grpc_events", HandleHTTP2Event, HandleHTTP2EventLoss, kTargetDataBufferSize,
        PerfBufferSizeCategory::kData},
+      {"grpc_c_events", HandleGrpcCEvent, HandleGrpcCDataLoss, kTargetControlBufferSize, PerfBufferSizeCategory::kData},
+      {"grpc_c_header_events", HandleGrpcCHeaderEvent, HandleGrpcCHeaderDataLoss, kTargetControlBufferSize, PerfBufferSizeCategory::kData},
+      {"grpc_c_close_events", HandleGrpcCCloseEvent, HandleGrpcCCloseDataLoss, kTargetControlBufferSize, PerfBufferSizeCategory::kControl},
   });
   ResizePerfBufferSpecs(&specs, category_maximums);
   return specs;
@@ -801,6 +804,54 @@ void SocketTraceConnector::HandleHTTP2EventLoss(void* cb_cookie, uint64_t lost) 
   static_cast<SocketTraceConnector*>(cb_cookie)->stats_.Increment(StatKey::kLossHTTP2Event, lost);
 }
 
+void SocketTraceConnector::HandleGrpcCHeaderEvent(void* cb_cookie, void* data, int /*data_size*/) {
+  DCHECK(data != nullptr) << "GrpcCHeaderEvent data argument is null.";
+  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
+
+  auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
+  struct grpc_c_header_event_data_t * event_data = static_cast<struct grpc_c_header_event_data_t *>(data);
+  auto event = std::make_unique<struct grpc_c_header_event_data_t>(*event_data);
+
+  connector->AcceptGrpcCHeaderEventData(std::move(event));
+}
+
+void SocketTraceConnector::HandleGrpcCEvent(void* cb_cookie, void* data, int /*data_size*/) {
+  DCHECK(data != nullptr) << "GrpcCEvent data argument is null.";
+  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
+
+  auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
+  struct grpc_c_event_data_t * event_data = static_cast<struct grpc_c_event_data_t *>(data);
+  auto event = std::make_unique<struct grpc_c_event_data_t>(*event_data);
+
+  connector->AcceptGrpcCEventData(std::move(event));
+}
+
+void SocketTraceConnector::HandleGrpcCCloseEvent(void* cb_cookie, void* data, int /*data_size*/) {
+  DCHECK(data != nullptr) << "GrpcCCloseEvent data argument is null.";
+  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
+
+  auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
+  struct grpc_c_stream_closed_data * event_data = static_cast<struct grpc_c_stream_closed_data *>(data);
+  auto event = std::make_unique<struct grpc_c_stream_closed_data>(*event_data);
+
+  connector->AcceptGrpcCCloseEvent(std::move(event));
+}
+
+void SocketTraceConnector::HandleGrpcCDataLoss(void* cb_cookie, uint64_t lost) {
+  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
+  static_cast<SocketTraceConnector*>(cb_cookie)->stats_.Increment(StatKey::kLossGrpcCEvent, lost);
+}
+
+void SocketTraceConnector::HandleGrpcCHeaderDataLoss(void* cb_cookie, uint64_t lost) {
+  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
+  static_cast<SocketTraceConnector*>(cb_cookie)->stats_.Increment(StatKey::kLossGrpcCHeaderEvent, lost);
+}
+
+void SocketTraceConnector::HandleGrpcCCloseDataLoss(void* cb_cookie, uint64_t lost) {
+  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
+  static_cast<SocketTraceConnector*>(cb_cookie)->stats_.Increment(StatKey::kLossGrpcCCloseEvent, lost);
+}
+
 //-----------------------------------------------------------------------------
 // Connection Tracker Events
 //-----------------------------------------------------------------------------
@@ -843,6 +894,197 @@ void SocketTraceConnector::AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> e
 void SocketTraceConnector::AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event) {
   ConnTracker& tracker = GetOrCreateConnTracker(event->attr.conn_id);
   tracker.AddHTTP2Data(std::move(event));
+}
+
+void SocketTraceConnector::AcceptGrpcCEvent(
+  struct conn_id_t connection_id,
+  uint32_t stream_id,
+  uint64_t timestamp,
+  int32_t stack_id,
+  bool outgoing,
+  uint64_t position_in_stream,
+  std::vector<struct grpc_c_data_slice_t> slices)
+{
+  // Initiate data event template as if it arrived from Golang gRPC eBPF.
+  struct go_grpc_data_event_t data_event_go_style = {};
+
+  data_event_go_style.attr.stack_id = stack_id;
+  data_event_go_style.attr.end_stream = false; // End stream will be on an empty header, not data.
+  data_event_go_style.attr.stream_id = stream_id;
+  if (outgoing == true)
+  {
+    data_event_go_style.attr.event_type = kDataFrameEventWrite;
+  }
+  else
+  {
+    data_event_go_style.attr.event_type = kDataFrameEventRead;
+  }
+  data_event_go_style.data_attr.pos = position_in_stream;
+  data_event_go_style.attr.timestamp_ns = timestamp;
+  data_event_go_style.attr.probe_type = k_probe_type_other;
+  data_event_go_style.attr.conn_id = connection_id;
+
+  uint64_t extra_position = 0;
+  for (struct grpc_c_data_slice_t data_slice : slices)
+  {
+    struct go_grpc_data_event_t current_data_event = data_event_go_style;
+    current_data_event.data_attr.pos = position_in_stream += extra_position;
+    extra_position += data_slice.slice_len; // Add extra position for next slices.
+    current_data_event.data_attr.data_size = data_slice.slice_len;
+    current_data_event.data_attr.data_buf_size = std::min((uint32_t)data_slice.slice_len, (uint32_t)GRPC_C_SLICE_SIZE);
+    if ((uint32_t)data_slice.slice_len > (uint32_t)GRPC_C_SLICE_SIZE)
+    {
+      LOG(WARNING) << absl::Substitute(
+              "gRPC-c $0 slice of size $1 is larger than maximum size $2",
+              outgoing ? "outgoing" : "incoming",
+              (uint32_t)data_slice.slice_len,
+              (uint32_t)GRPC_C_SLICE_SIZE);
+    }
+
+    auto d_event_ready = std::make_unique<HTTP2DataEvent>();
+    try
+    {
+      d_event_ready->attr = current_data_event.attr;
+      d_event_ready->data_attr = current_data_event.data_attr;
+    // Assign instead of copy so null terminator is copied too.
+    // Assign can throw when wrong length is given, and since the data is brought from eBPF,
+    // better catch.
+      d_event_ready->payload = std::string_view(data_slice.bytes, current_data_event.data_attr.data_buf_size);
+    }
+    catch(const std::exception& e)
+    {
+      LOG(WARNING) << absl::Substitute("gRPC-C slice data assigning threw exception $0", e.what());
+      return;
+    }
+    this->AcceptHTTP2Data(std::move(d_event_ready));
+  }
+}
+
+void SocketTraceConnector::AcceptGrpcCEventData(std::unique_ptr<struct grpc_c_event_data_t> event) {
+  // Determine whether event is incoming or outgoing.
+  bool outgoing;
+  switch (event->direction)
+  {
+    case GRPC_C_EVENT_DIRECTION_INCOMING:
+      outgoing = false;
+      break;
+    case GRPC_C_EVENT_DIRECTION_OUTGOING:
+      outgoing = true;
+      break;
+    default:
+      LOG(WARNING) << absl::Substitute("gRPC-C event from pid $0 with invalid direction $1",
+            event->conn_id.upid.pid,
+            event->direction);
+      return;
+  }
+
+  // Prepare list of slices.
+  std::vector<struct grpc_c_data_slice_t> slices(0);
+  slices.push_back(event->slice);
+
+  this->AcceptGrpcCEvent(
+    event->conn_id,
+    event->stream_id,
+    event->timestamp,
+    event->stack_id,
+    outgoing,
+    event->position_in_stream,
+    slices
+  );
+}
+
+void SocketTraceConnector::InitiateHeaderEventDataGoStyle(
+      struct conn_id_t conn_id,
+      uint32_t stream_id,
+      uint64_t timestamp,
+      int32_t stack_id,
+      bool end_stream,
+      bool outgoing,
+      /* OUT */ struct go_grpc_http2_header_event_t * header_event_data_go_style) {
+  memset(header_event_data_go_style, 0, sizeof(*header_event_data_go_style));
+  header_event_data_go_style->attr.end_stream = end_stream;
+  header_event_data_go_style->attr.stream_id = stream_id;
+  header_event_data_go_style->attr.conn_id = conn_id;
+  header_event_data_go_style->attr.timestamp_ns = timestamp;
+  header_event_data_go_style->attr.probe_type = k_probe_type_other;
+  header_event_data_go_style->attr.stack_id = stack_id;
+  if (outgoing) {
+    header_event_data_go_style->attr.event_type = kHeaderEventWrite;
+  }
+  else {
+    header_event_data_go_style->attr.event_type = kHeaderEventRead;
+  }
+}
+
+void SocketTraceConnector::AcceptGrpcCHeaderEventData(std::unique_ptr<struct grpc_c_header_event_data_t> event) {
+  // Determine whether event is incoming or outgoing.
+  bool outgoing;
+  switch (event->direction) {
+    case GRPC_C_EVENT_DIRECTION_INCOMING:
+      outgoing = false;
+      break;
+    case GRPC_C_EVENT_DIRECTION_OUTGOING:
+      outgoing = true;
+      break;
+    default:
+      LOG(WARNING) << absl::Substitute("gRPC-C header event from pid $0 with invalid direction $1",
+            event->conn_id.upid.pid,
+            event->direction);
+      return;
+  }
+
+  // Initiate header event template as if it arrived from Golang gRPC eBPF.
+  struct go_grpc_http2_header_event_t header_event_data_go_style = {};
+  InitiateHeaderEventDataGoStyle(
+    event->conn_id,
+    event->stream_id,
+    event->timestamp,
+    event->stack_id,
+    false,
+    outgoing,
+    &header_event_data_go_style
+  );
+
+  std::string name = std::string(event->header.key).substr(0, MAXIMUM_LENGTH_OF_KEY_IN_METADATA);
+  std::string value = std::string(event->header.value).substr(0, MAXIMUM_LENGTH_OF_VALUE_IN_METADATA);
+  auto h_event_ready = std::make_unique<HTTP2HeaderEvent>();
+  h_event_ready->attr = header_event_data_go_style.attr; // Re-copy data because otherwise it seems trash.
+  h_event_ready->name = name;
+  h_event_ready->value = value;
+
+  this->AcceptHTTP2Header(std::move(h_event_ready));
+}
+
+void SocketTraceConnector::AcceptGrpcCCloseEvent(std::unique_ptr<struct grpc_c_stream_closed_data> event) {
+  // Initiate header event template as if it arrived from Golang gRPC eBPF.
+  struct go_grpc_http2_header_event_t header_event_data_go_style = {};
+  InitiateHeaderEventDataGoStyle(
+    event->conn_id,
+    event->stream_id,
+    event->timestamp,
+    0,
+    true,
+    true, // Whether outgoing. This does not matter because it's overridden later.
+    &header_event_data_go_style
+  );
+
+  if (event->write_closed) {
+    header_event_data_go_style.attr.event_type = kHeaderEventWrite;
+    auto h_event_ready = std::make_unique<HTTP2HeaderEvent>();
+    h_event_ready->attr = header_event_data_go_style.attr;
+    h_event_ready->name = "";
+    h_event_ready->value = "";
+    this->AcceptHTTP2Header(std::move(h_event_ready));
+  }
+
+  if (event->read_closed) {
+    header_event_data_go_style.attr.event_type = kHeaderEventRead;
+    auto h_event_ready = std::make_unique<HTTP2HeaderEvent>();
+    h_event_ready->attr = header_event_data_go_style.attr;
+    h_event_ready->name = "";
+    h_event_ready->value = "";
+    this->AcceptHTTP2Header(std::move(h_event_ready));
+  }
 }
 
 //-----------------------------------------------------------------------------

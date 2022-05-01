@@ -47,6 +47,7 @@ enum http2_probe_type_t {
   k_probe_http_http2Framer_check_frame_order,
   k_probe_http2_framer_write_data,
   k_probe_http_http2Framer_write_data,
+  k_probe_type_other,
 };
 
 enum grpc_event_type_t {
