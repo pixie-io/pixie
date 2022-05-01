@@ -130,21 +130,54 @@ typedef void grpc_mdelem_data;
  *          heap.
  *          Otherwise, a metadata struct on our percpu "heap".
  */
-static inline struct grpc_c_metadata_t* get_grpc_metadata() {
+static inline struct grpc_c_metadata_t* initiate_empty_grpc_metadata() {
   u32 kZero = 0;
-  return grpc_c_metadata_buffer_heap.lookup(&kZero);
+  struct grpc_c_metadata_t* out = grpc_c_metadata_buffer_heap.lookup(&kZero);
+  if (NULL == out) {
+    // User-mode did not initialize the buffer.
+    return NULL;
+  }
+
+  // Initiate struct metadata to zeros. Otherwise, we might reach a case where
+  // we return data from an old event.
+  out->count = 0;
+#pragma unroll
+  for (u32 i = 0; i < MAXIMUM_AMOUNT_OF_ITEMS_IN_METADATA; i++) {
+    out->items[i].key[0] = 0;
+    out->items[i].value[0] = 0;
+  }
+
+  return out;
 }
 
 /*
- * @brief   Initiate an gRPC data event.
+ * @brief   Initiate an empty gRPC data event.
  *
  * @return  NULL on failure - if user mode did not previously initiate our
  *          heap.
  *          Otherwise, a gRPC event struct on our percpu "heap".
  */
-static inline struct grpc_c_event_data_t* get_grpc_event_data() {
+static inline struct grpc_c_event_data_t* initiate_empty_grpc_event_data() {
   u32 kZero = 0;
-  return grpc_c_event_buffer_heap.lookup(&kZero);
+  struct grpc_c_event_data_t* out = grpc_c_event_buffer_heap.lookup(&kZero);
+  if (NULL == out) {
+    // User-mode did not initialize the buffer.
+    return NULL;
+  }
+
+  // Initiate struct metadata to zeros. Otherwise, we might reach a case where
+  // we return data from an old event.
+  out->conn_id.upid.start_time_ticks = 0;
+  out->conn_id.upid.pid = 0;
+  out->conn_id.fd = 0;
+  out->conn_id.tsid = 0;
+  out->stream_id = 0;
+  out->timestamp = 0;
+  out->direction = kEgress;
+  out->position_in_stream = 0;
+  out->slice.length = 0;
+
+  return out;
 }
 
 /*
@@ -800,7 +833,7 @@ static inline int fill_metadata_from_mdelem_list(const grpc_mdelem_list* const m
  *          Otherwise on failure.
  */
 static inline int handle_maybe_complete_recv_metadata(struct pt_regs* ctx, const bool is_initial) {
-  struct grpc_c_event_data_t* read_data = get_grpc_event_data();
+  struct grpc_c_event_data_t* read_data = initiate_empty_grpc_event_data();
   if (read_data == NULL) {
     return -1;
   }
@@ -878,7 +911,7 @@ static inline int handle_maybe_complete_recv_metadata(struct pt_regs* ctx, const
     return 0;
   }
 
-  metadata = get_grpc_metadata();
+  metadata = initiate_empty_grpc_metadata();
   if (NULL == metadata) {
     return -1;
   }
@@ -911,7 +944,7 @@ static inline int handle_maybe_complete_recv_metadata(struct pt_regs* ctx, const
  *          Otherwise on failure.
  */
 int probe_grpc_chttp2_data_parser_parse(struct pt_regs* ctx) {
-  struct grpc_c_event_data_t* read_data = get_grpc_event_data();
+  struct grpc_c_event_data_t* read_data = initiate_empty_grpc_event_data();
   if (read_data == NULL) {
     return -1;
   }
@@ -980,7 +1013,7 @@ int probe_grpc_chttp2_data_parser_parse(struct pt_regs* ctx) {
     return -1;
   }
   if (NULL != initial_metadata) {
-    metadata = get_grpc_metadata();
+    metadata = initiate_empty_grpc_metadata();
     if (NULL == metadata) {
       return -1;
     }
@@ -1001,7 +1034,7 @@ int probe_grpc_chttp2_data_parser_parse(struct pt_regs* ctx) {
     return -1;
   }
   if (NULL != trailing_metadata) {
-    metadata = get_grpc_metadata();
+    metadata = initiate_empty_grpc_metadata();
     if (NULL == metadata) {
       return -1;
     }
@@ -1094,7 +1127,7 @@ int probe_entry_grpc_chttp2_list_pop_writable_stream(struct pt_regs* ctx) {
  *          Otherwise on failure.
  */
 int probe_ret_grpc_chttp2_list_pop_writable_stream(struct pt_regs* ctx) {
-  struct grpc_c_event_data_t* write_data = get_grpc_event_data();
+  struct grpc_c_event_data_t* write_data = initiate_empty_grpc_event_data();
   if (write_data == NULL) {
     return -1;
   }
@@ -1159,7 +1192,7 @@ int probe_ret_grpc_chttp2_list_pop_writable_stream(struct pt_regs* ctx) {
     return -1;
   }
   if (NULL != initial_metadata) {
-    metadata = get_grpc_metadata();
+    metadata = initiate_empty_grpc_metadata();
     if (NULL == metadata) {
       return -1;
     }
@@ -1180,7 +1213,7 @@ int probe_ret_grpc_chttp2_list_pop_writable_stream(struct pt_regs* ctx) {
     return -1;
   }
   if (NULL != trailing_metadata) {
-    metadata = get_grpc_metadata();
+    metadata = initiate_empty_grpc_metadata();
     if (NULL == metadata) {
       return -1;
     }
