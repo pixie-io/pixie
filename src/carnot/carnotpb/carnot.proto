@@ -47,12 +47,8 @@ message TransferResultChunkRequest {
     oneof result_contents {
       // The row batch data.
       px.table_store.schemapb.RowBatchData row_batch = 1;
-      // This case is sent by a GRPCSink as soon as it makes the remote connection to the client
-      // receiving its results. It is used by the client to identify the particular connection and
-      // monitor that it has not been closed during query execution. It is also used to identify
-      // potential sinks that have failed to initiate a connection to their corresponding destination.
-      bool initiate_result_stream = 4;
     }
+    reserved 4; // DEPRECATED: used to be initiate_result_stream. Replaced with InitiateConnection.
     oneof destination {
       // When the TransferResultChunkRequest is being sent to another Carnot instance, 'grpc_source_id'
       // identifies the source node within the query that should receive this RowBatch.
