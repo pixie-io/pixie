@@ -130,7 +130,8 @@ TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
   // Sometimes this command is not properly traced, so we make this conditional.
   // TODO(oazizi/yzhao): Figure out why this is not always traced.
   ASSERT_THAT(redis_trace_records, Not(IsEmpty()));
-  if (redis_trace_records.begin()->cmd == "COMMAND") {
+  while (redis_trace_records.begin()->cmd == "COMMAND") {
+    LOG(INFO) << "Erasing leading COMMAND record: " << redis_trace_records.front();
     redis_trace_records.erase(redis_trace_records.begin());
   }
 
