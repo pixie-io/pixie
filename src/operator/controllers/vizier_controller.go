@@ -21,6 +21,8 @@ package controllers
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -204,10 +206,12 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 // updateVizier updates the vizier instance according to the spec. As of the current moment, we only support updates to the Vizier version.
 // Other updates to the Vizier spec will be ignored.
 func (r *VizierReconciler) updateVizier(ctx context.Context, req ctrl.Request, vz *v1alpha1.Vizier) error {
-	// TODO: We currently only trigger updates on changing Vizier versions. We should add a webhook
-	// to disallow changes to other fields.
-	if vz.Status.Version == vz.Spec.Version {
-		log.Info("Versions matched, nothing to do")
+	checksum, err := getSpecChecksum(vz)
+	if err != nil {
+		return err
+	}
+	if string(checksum) == string(vz.Status.Checksum) {
+		log.Info("Checksums matched, no need to reconcile")
 		return nil
 	}
 
@@ -389,12 +393,28 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 	vz.Status.Version = vz.Spec.Version
 	vz = setReconciliationPhase(vz, v1alpha1.ReconciliationPhaseReady)
 
+	checksum, err := getSpecChecksum(vz)
+	if err != nil {
+		return err
+	}
+	vz.Status.Checksum = checksum
 	err = r.Status().Update(ctx, vz)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func getSpecChecksum(vz *v1alpha1.Vizier) ([]byte, error) {
+	specStr, err := json.Marshal(vz.Spec)
+	if err != nil {
+		log.WithError(err).Info("Failed to marshal spec to JSON")
+		return nil, err
+	}
+	h := sha256.New()
+	h.Write([]byte(specStr))
+	return h.Sum(nil), nil
 }
 
 func (r *VizierReconciler) deleteDeprecatedCertmanager(ctx context.Context, namespace string, vz *v1alpha1.Vizier, yamlMap map[string]string) error {

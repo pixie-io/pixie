@@ -54,7 +54,9 @@ type VizierSpec struct {
 	DevCloudNamespace string `json:"devCloudNamespace,omitempty"`
 	// PemMemoryLimit is a memory limit applied specifically to PEM pods.
 	PemMemoryLimit string `json:"pemMemoryLimit,omitempty"`
-	// PemMemoryLimit is a memory request applied specifically to PEM pods.
+	// PemMemoryRequest is a memory request applied specifically
+	// to PEM pods. It will automatically use the value of pemMemoryLimit
+	// if not specified.
 	PemMemoryRequest string `json:"pemMemoryRequest,omitempty"`
 	// ClockConverter specifies which routine to use for converting timestamps to a synced reference time.
 	ClockConverter ClockConverterType `json:"clockConverter,omitempty"`
@@ -119,6 +121,9 @@ type VizierStatus struct {
 	Message string `json:"message,omitempty"`
 	// SentryDSN is key for Viziers that is used to send errors and stacktraces to Sentry.
 	SentryDSN string `json:"sentryDSN,omitempty"`
+	// A checksum of the last reconciled Vizier spec. If this checksum does not match the checksum
+	// of the current vizier spec, reconciliation should be performed.
+	Checksum []byte `json:"checksum,omitempty"`
 }
 
 // VizierPhase is a high-level summary of where the Vizier is in its lifecycle.
