@@ -130,7 +130,7 @@ spec:
                 description: PemMemoryRequest is a memory request applied specifically
                   to PEM pods. It will automatically use the value of pemMemoryLimit
                   if not specified.
-                type: string                
+                type: string
               pod:
                 description: Pod defines the policy for creating Vizier pods.
                 properties:
@@ -220,6 +220,12 @@ spec:
           status:
             description: VizierStatus defines the observed state of Vizier
             properties:
+              checksum:
+                description: A checksum of the last reconciled Vizier spec. If this
+                  checksum does not match the checksum of the current vizier spec,
+                  reconciliation should be performed.
+                format: byte
+                type: string
               lastReconciliationPhaseTime:
                 description: LastReconciliationPhaseTime is the last time that the
                   ReconciliationPhase changed.
