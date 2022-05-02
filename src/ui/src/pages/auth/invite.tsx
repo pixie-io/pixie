@@ -56,7 +56,7 @@ export const InvitePage: React.FC = () => {
     {
       variables: { inviteToken },
       context: { connType: 'unauthenticated' },
-      fetchPolicy: 'network-only',
+      fetchPolicy: 'no-cache',
     });
 
   const validToken = data?.verifyInviteToken;

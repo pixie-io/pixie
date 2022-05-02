@@ -71,7 +71,7 @@ function useAutocompleteFieldSuggester(clusterUID: string): AutocompleteFieldSug
           }
         }
       `,
-      fetchPolicy: 'network-only',
+      fetchPolicy: 'no-cache',
       variables: {
         input: partialInput,
         kind,

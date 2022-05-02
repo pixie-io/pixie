@@ -76,7 +76,7 @@ export const APIKeyRow = React.memo<{ apiKey: APIKeyDisplay }>(({ apiKey }) => {
       }
     `,
     {
-      fetchPolicy: 'network-only',
+      fetchPolicy: 'no-cache',
       // Apollo bug: onCompleted in useLazyQuery only fires the first time the query is invoked.
       // https://github.com/apollographql/apollo-client/issues/6636#issuecomment-972589517
       // Setting `notifyOnNetworkStatusChange` makes sure `onCompleted` is called again on subsequent queries.

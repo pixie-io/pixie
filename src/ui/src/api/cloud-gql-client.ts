@@ -235,7 +235,7 @@ export class CloudClient {
         }
       `,
       variables: { id },
-      fetchPolicy: 'network-only',
+      fetchPolicy: 'no-cache',
     });
     return data.clusterConnection;
   }
