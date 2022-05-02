@@ -774,13 +774,17 @@ func updatePodSpec(nodeSelector map[string]string, securityCtx *v1alpha1.PodSecu
 	}
 
 	castedNodeSelector := make(map[string]interface{})
+	ns, ok := podSpec["nodeSelector"].(map[string]interface{})
+	if ok {
+		castedNodeSelector = ns
+	}
 	for k, v := range nodeSelector {
 		if _, ok := castedNodeSelector[k]; ok {
 			continue
 		}
 		castedNodeSelector[k] = v
 	}
-	podSpec["nodeSelector"] = nodeSelector
+	podSpec["nodeSelector"] = castedNodeSelector
 
 	// Add securityContext only if enabled.
 	if securityCtx == nil || !securityCtx.Enabled {
