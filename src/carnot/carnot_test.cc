@@ -118,13 +118,14 @@ px.display(df, 'test_output')
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
   auto output_batches = result_server_->query_results("test_output");
-  EXPECT_EQ(2, output_batches.size());
+  EXPECT_EQ(3, output_batches.size());
+  EXPECT_EQ(output_batches[0].num_rows(), 0);
 
-  auto rb1 = output_batches[0];
+  auto rb1 = output_batches[1];
   EXPECT_TRUE(rb1.ColumnAt(0)->Equals(types::ToArrow(col1_in1, arrow::default_memory_pool())));
   EXPECT_TRUE(rb1.ColumnAt(1)->Equals(types::ToArrow(col2_in1, arrow::default_memory_pool())));
 
-  auto rb2 = output_batches[1];
+  auto rb2 = output_batches[2];
   EXPECT_TRUE(rb2.ColumnAt(0)->Equals(types::ToArrow(col1_in2, arrow::default_memory_pool())));
   EXPECT_TRUE(rb2.ColumnAt(1)->Equals(types::ToArrow(col2_in2, arrow::default_memory_pool())));
 }
@@ -159,10 +160,10 @@ px.display(df[['col2']]))pxl";
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("output"));
   auto output_batches = result_server_->query_results("output");
-  EXPECT_EQ(1, output_batches.size());
+  EXPECT_EQ(2, output_batches.size());
 
   std::vector<types::Int64Value> expected1 = {1};
-  EXPECT_TRUE(output_batches[0].ColumnAt(0)->Equals(
+  EXPECT_TRUE(output_batches[1].ColumnAt(0)->Equals(
       types::ToArrow(expected1, arrow::default_memory_pool())));
 }
 
@@ -184,11 +185,11 @@ px.display(df, 'test_output'))pxl";
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
   auto output_batches = result_server_->query_results("test_output");
-  EXPECT_EQ(2, output_batches.size());
+  EXPECT_EQ(3, output_batches.size());
 
-  EXPECT_TRUE(output_batches[0].ColumnAt(0)->Equals(
-      types::ToArrow(col1_in1, arrow::default_memory_pool())));
   EXPECT_TRUE(output_batches[1].ColumnAt(0)->Equals(
+      types::ToArrow(col1_in1, arrow::default_memory_pool())));
+  EXPECT_TRUE(output_batches[2].ColumnAt(0)->Equals(
       types::ToArrow(col1_in2, arrow::default_memory_pool())));
 }
 
@@ -202,10 +203,10 @@ px.display(df, 'range_output'))pxl";
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("range_output"));
   auto output_batches = result_server_->query_results("range_output");
-  EXPECT_EQ(3, output_batches.size());
+  EXPECT_EQ(4, output_batches.size());
   EXPECT_EQ(3, output_batches[0].num_columns());
 
-  auto rb1 = output_batches[0];
+  auto rb1 = output_batches[1];
 
   std::vector<types::Time64NSValue> col0_out1;
   std::vector<types::Float64Value> col1_out1;
@@ -224,7 +225,7 @@ px.display(df, 'range_output'))pxl";
   EXPECT_TRUE(rb1.ColumnAt(1)->Equals(types::ToArrow(col1_out1, arrow::default_memory_pool())));
   EXPECT_TRUE(rb1.ColumnAt(2)->Equals(types::ToArrow(col2_out1, arrow::default_memory_pool())));
 
-  auto rb2 = output_batches[1];
+  auto rb2 = output_batches[2];
 
   std::vector<types::Time64NSValue> col0_out2;
   std::vector<types::Float64Value> col1_out2;
@@ -258,7 +259,7 @@ px.display(queryDF, 'range_output'))pxl";
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("range_output"));
   auto output_batches = result_server_->query_results("range_output");
-  EXPECT_EQ(1, output_batches.size());
+  EXPECT_EQ(2, output_batches.size());
   EXPECT_EQ(3, output_batches[0].num_columns());
 
   std::vector<types::Time64NSValue> col0_out1;
@@ -273,7 +274,7 @@ px.display(queryDF, 'range_output'))pxl";
     }
   }
 
-  auto rb1 = output_batches[0];
+  auto rb1 = output_batches[1];
   EXPECT_TRUE(rb1.ColumnAt(0)->Equals(types::ToArrow(col0_out1, arrow::default_memory_pool())));
   EXPECT_TRUE(rb1.ColumnAt(1)->Equals(types::ToArrow(col1_out1, arrow::default_memory_pool())));
   EXPECT_TRUE(rb1.ColumnAt(2)->Equals(types::ToArrow(col2_out1, arrow::default_memory_pool())));
@@ -297,8 +298,9 @@ px.display(queryDF, 'range_output'))pxl";
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("range_output"));
   auto output_batches = result_server_->query_results("range_output");
-  EXPECT_EQ(1, output_batches.size());
+  EXPECT_EQ(2, output_batches.size());
   EXPECT_EQ(0, output_batches[0].num_rows());
+  EXPECT_EQ(0, output_batches[1].num_rows());
 }
 
 class CarnotRangeTest
@@ -334,10 +336,12 @@ px.display(aggDF, 'test_output'))pxl";
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
   auto output_batches = result_server_->query_results("test_output");
-  EXPECT_EQ(1, output_batches.size());
+  EXPECT_EQ(2, output_batches.size());
   EXPECT_EQ(6, output_batches[0].num_columns());
+  // First batch is a zero row batch.
+  EXPECT_EQ(output_batches[0].num_rows(), 0);
 
-  auto rb1 = output_batches[0];
+  auto rb1 = output_batches[1];
 
   auto test_col2 = CarnotTestUtils::big_test_col2;
   auto test_col3 = CarnotTestUtils::big_test_col3;
@@ -395,9 +399,13 @@ px.display(aggDF, 'test_output'))pxl";
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
   auto output_batches = result_server_->query_results("test_output");
-  EXPECT_EQ(1, output_batches.size());
+  EXPECT_EQ(2, output_batches.size());
   EXPECT_EQ(3, output_batches[0].num_columns());
-  auto rb1 = output_batches[0];
+
+  // First batch is a zero row batch.
+  EXPECT_EQ(output_batches[0].num_rows(), 0);
+
+  auto rb1 = output_batches[1];
 
   struct Key {
     int64_t num_group;
@@ -416,6 +424,7 @@ px.display(aggDF, 'test_output'))pxl";
       {Key{1, "sum"}, 6},  {Key{1, "mean"}, 7},  {Key{3, "sum"}, 24},
       {Key{2, "sum"}, 60}, {Key{2, "mean"}, 69},
   };
+
   std::map<Key, int64_t> actual;
   for (int i = 0; i < rb1.num_rows(); ++i) {
     auto output_col_num_grp = rb1.ColumnAt(0);
@@ -444,8 +453,12 @@ px.display(mapDF, 'test_output'))pxl";
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
   auto output_batches = result_server_->query_results("test_output");
-  EXPECT_EQ(3, output_batches.size());
+  EXPECT_EQ(4, output_batches.size());
   EXPECT_EQ(5, output_batches[0].num_columns());
+  // First batch is a zero row batch.
+  auto rb = output_batches[0];
+  EXPECT_EQ(rb.ColumnAt(0)->length(), 0);
+  EXPECT_EQ(rb.ColumnAt(1)->length(), 0);
 
   // Iterate through the batches.
   for (size_t i = 0; i < CarnotTestUtils::split_idx.size(); i++) {
@@ -467,7 +480,7 @@ px.display(mapDF, 'test_output'))pxl";
         strings_out.push_back(CarnotTestUtils::big_test_strings[j]);
       }
     }
-    auto rb = output_batches[i];
+    auto rb = output_batches[i + 1];
     EXPECT_TRUE(rb.ColumnAt(0)->Equals(types::ToArrow(time_out, arrow::default_memory_pool())));
     EXPECT_TRUE(rb.ColumnAt(1)->Equals(types::ToArrow(col2_out, arrow::default_memory_pool())));
     EXPECT_TRUE(rb.ColumnAt(2)->Equals(types::ToArrow(col3_out, arrow::default_memory_pool())));
@@ -495,8 +508,11 @@ px.display(mapDF, 'test_output'))pxl";
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
   auto output_batches = result_server_->query_results("test_output");
-  EXPECT_EQ(expected_num_batches, output_batches.size());
+  EXPECT_EQ(expected_num_batches + 1, output_batches.size());
   EXPECT_EQ(2, output_batches[0].num_columns());
+
+  // First batch is a zero row batch.
+  EXPECT_EQ(output_batches[0].num_rows(), 0);
 
   // Iterate through the batches.
   for (int64_t i = 0; i < expected_num_batches; i++) {
@@ -513,7 +529,7 @@ px.display(mapDF, 'test_output'))pxl";
       time_out.push_back(CarnotTestUtils::big_test_col1[j]);
       col2_out.push_back(CarnotTestUtils::big_test_col2[j]);
     }
-    auto rb = output_batches[i];
+    auto rb = output_batches[i + 1];
     EXPECT_TRUE(rb.ColumnAt(0)->Equals(types::ToArrow(time_out, arrow::default_memory_pool())));
     EXPECT_TRUE(rb.ColumnAt(1)->Equals(types::ToArrow(col2_out, arrow::default_memory_pool())));
   }
@@ -548,9 +564,12 @@ px.display(x, 'filtered_output'))pxl";
   EXPECT_THAT(result_server_->output_tables(),
               UnorderedElementsAre("test_output", "filtered_output"));
   auto output_batches = result_server_->query_results("test_output");
-  EXPECT_EQ(3, output_batches.size());
+  EXPECT_EQ(4, output_batches.size());
   EXPECT_EQ(2, output_batches[0].num_columns());
-  auto rb1 = output_batches[0];
+
+  // First batch is a zero row batch.
+  EXPECT_EQ(output_batches[0].num_rows(), 0);
+  auto rb1 = output_batches[1];
 
   auto col3 = CarnotTestUtils::big_test_col3;
   auto col_num_groups = CarnotTestUtils::big_test_groups;
@@ -566,7 +585,7 @@ px.display(x, 'filtered_output'))pxl";
 
   // test the filtered_output
   output_batches = result_server_->query_results("filtered_output");
-  EXPECT_EQ(3, output_batches.size());
+  EXPECT_EQ(4, output_batches.size());
   EXPECT_EQ(4, output_batches[0].num_columns());
 
   // iterate through the batches
@@ -587,7 +606,7 @@ px.display(x, 'filtered_output'))pxl";
         strings_out.push_back(CarnotTestUtils::big_test_strings[j]);
       }
     }
-    auto rb = output_batches[i];
+    auto rb = output_batches[i + 1];
     EXPECT_TRUE(rb.ColumnAt(0)->Equals(types::ToArrow(time_out, arrow::default_memory_pool())));
     EXPECT_TRUE(rb.ColumnAt(1)->Equals(types::ToArrow(col3_out, arrow::default_memory_pool())));
     EXPECT_TRUE(rb.ColumnAt(2)->Equals(types::ToArrow(groups_out, arrow::default_memory_pool())));
@@ -701,7 +720,7 @@ TEST_F(CarnotTest, empty_source_test) {
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("out_table"));
   auto output_batches = result_server_->query_results("out_table");
-  ASSERT_EQ(1, output_batches.size());
+  ASSERT_EQ(2, output_batches.size());
   EXPECT_EQ(2, output_batches[0].num_columns());
 
   for (const auto& rb : output_batches) {
@@ -1153,7 +1172,7 @@ struct TransferResultChunkTestCase {
 class TransferResultChunkTests : public CarnotTest,
                                  public ::testing::WithParamInterface<TransferResultChunkTestCase> {
 };
-TEST_P(TransferResultChunkTests, sned_and_forward_messages) {
+TEST_P(TransferResultChunkTests, send_and_forward_messages) {
   grpc::ServerBuilder builder;
   builder.AddListeningPort("localhost:0", grpc::InsecureServerCredentials());
   builder.RegisterService(router_);
@@ -1196,67 +1215,6 @@ TEST_P(TransferResultChunkTests, sned_and_forward_messages) {
 
 INSTANTIATE_TEST_SUITE_P(TransferResultChunks, TransferResultChunkTests,
                          ::testing::Values(
-                             TransferResultChunkTestCase{
-                                 "end2end_ignore_sink_init",
-                                 kGRPCSourcePlan,
-                                 /* num_expected_query_results */ 4,
-                                 "",
-                                 {
-                                     {
-                                         R"proto(
-                                      address: "foo"
-                                      query_id {
-                                        high_bits: 1
-                                        low_bits: 1
-                                      }
-                                      initiate_conn {}
-                                      )proto",
-                                         R"proto(
-                                      address: "foo"
-                                      query_id {
-                                        high_bits: 1
-                                        low_bits: 1
-                                      }
-                                      query_result {
-                                        grpc_source_id: 1
-                                        initiate_result_stream: true
-                                      })proto",
-                                         R"proto(
-                                      address: "foo"
-                                      query_id {
-                                        high_bits: 1
-                                        low_bits: 1
-                                      }
-                                      query_result {
-                                        grpc_source_id: 1
-                                        row_batch {
-                                          cols {
-                                            int64_data {
-                                            }
-                                          }
-                                          eow: true
-                                          eos: true
-                                        }
-                                      })proto",
-                                         R"proto(
-                                      address: "foo"
-                                      query_id {
-                                        high_bits: 1
-                                        low_bits: 1
-                                      }
-                                      execution_and_timing_info {
-                                        execution_stats {
-                                          timing {
-                                            execution_time_ns: 1234
-                                            compilation_time_ns: 123
-                                          }
-                                          bytes_processed: 1
-                                          records_processed: 1
-                                        }
-                                      })proto",
-                                     },
-                                 },
-                             },
                              TransferResultChunkTestCase{
                                  "end2end",
                                  kGRPCSourcePlan,
@@ -1331,7 +1289,12 @@ INSTANTIATE_TEST_SUITE_P(TransferResultChunks, TransferResultChunkTests,
                                       }
                                       query_result {
                                         grpc_source_id: 1
-                                        initiate_result_stream: true
+                                        row_batch {
+                                          cols {
+                                            int64_data {
+                                            }
+                                          }
+                                        }
                                       })proto",
                                      },
                                  },

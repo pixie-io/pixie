@@ -97,9 +97,9 @@ TEST_F(JoinTest, basic) {
 
   EXPECT_THAT(result_server_->output_tables(), ::testing::UnorderedElementsAre("joined"));
   auto output_batches = result_server_->query_results("joined");
-  EXPECT_EQ(1, output_batches.size());
+  EXPECT_EQ(2, output_batches.size());
 
-  auto rb1 = output_batches[0];
+  auto rb1 = output_batches[1];
 
   std::vector<types::Float64Value> expected_col1 = {0.5, 1.2, 5.3, 0.1, 5.1};
   std::vector<types::Int64Value> expected_col2 = {1, 2, 3, 5, 6};
@@ -132,9 +132,9 @@ TEST_F(JoinTest, self_join) {
 
   EXPECT_THAT(result_server_->output_tables(), ::testing::UnorderedElementsAre("joined"));
   auto output_batches = result_server_->query_results("joined");
-  EXPECT_EQ(1, output_batches.size());
+  EXPECT_EQ(2, output_batches.size());
 
-  auto rb1 = output_batches[0];
+  auto rb1 = output_batches[1];
   std::vector<types::Float64Value> expected_col1 = {0.5, 1.2, 5.3, 0.1, 5.1};
   std::vector<types::Int64Value> expected_col2 = {1, 2, 3, 5, 6};
   EXPECT_TRUE(rb1.ColumnAt(0)->Equals(types::ToArrow(expected_col1, arrow::default_memory_pool())));
