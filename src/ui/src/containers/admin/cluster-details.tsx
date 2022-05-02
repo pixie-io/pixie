@@ -549,10 +549,6 @@ const ClusterSummaryTable = ({ cluster }: {
       key: 'Heartbeat',
       value: convertHeartbeatMS(cluster.lastHeartbeatMs),
     },
-    {
-      key: 'Data Mode',
-      value: cluster.vizierConfig.passthroughEnabled ? 'Passthrough' : 'Direct',
-    },
   ];
 
   return (
@@ -663,9 +659,6 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
           statusMessage
           clusterVersion
           vizierVersion
-          vizierConfig {
-            passthroughEnabled
-          }
           lastHeartbeatMs
           numNodes
           numInstrumentedNodes
