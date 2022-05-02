@@ -391,11 +391,6 @@ func BuildExecuteScriptResponse(r *carnotpb.TransferResultChunkRequest,
 	}
 
 	if queryResult := r.GetQueryResult(); queryResult != nil {
-		// This agent message type will not turn into a message on the client stream.
-		if queryResult.GetInitiateResultStream() {
-			return nil, nil
-		}
-
 		tableName := queryResult.GetTableName()
 		tableID, present := tableIDMap[tableName]
 		if !present {

@@ -214,19 +214,6 @@ func (a *activeQuery) updateQueryState(msg *carnotpb.TransferResultChunkRequest)
 			a.remainingTableEos.remove(tableName)
 			return nil
 		}
-
-		if queryResult.GetInitiateResultStream() {
-			if !a.uninitializedTables.exists(tableName) {
-				return nil
-			}
-			a.uninitializedTables.remove(tableName)
-			// If we have initialized all of our tables, then signal to the goroutine waiting for all
-			// result sinks to be initialized that it can stop waiting.
-			if a.uninitializedTables.size() == 0 {
-				close(a.allTablesConnectedCh)
-			}
-			return nil
-		}
 	}
 
 	// The error is handled in another part of the code. We do nothing here.

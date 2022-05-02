@@ -41,23 +41,6 @@ import (
 	"px.dev/pixie/src/vizier/services/query_broker/controllers"
 )
 
-func makeInitiateTableRequest(queryID uuid.UUID, tableName string) *carnotpb.TransferResultChunkRequest {
-	return &carnotpb.TransferResultChunkRequest{
-		Address: "foo",
-		QueryID: utils.ProtoFromUUID(queryID),
-		Result: &carnotpb.TransferResultChunkRequest_QueryResult{
-			QueryResult: &carnotpb.TransferResultChunkRequest_SinkResult{
-				ResultContents: &carnotpb.TransferResultChunkRequest_SinkResult_InitiateResultStream{
-					InitiateResultStream: true,
-				},
-				Destination: &carnotpb.TransferResultChunkRequest_SinkResult_TableName{
-					TableName: tableName,
-				},
-			},
-		},
-	}
-}
-
 func makeInitiateConnectionRequest(queryID uuid.UUID) *carnotpb.TransferResultChunkRequest {
 	return &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
@@ -145,70 +128,6 @@ func makePlan(t *testing.T) (*distributedpb.DistributedPlan, map[uuid.UUID]*plan
 	planMap[uuid1] = planPB1
 	planMap[uuid2] = planPB2
 	return plannerResultPB.Plan, planMap
-}
-
-func TestStreamResultsSimple_BackwardsCompatibility(t *testing.T) {
-	queryID := uuid.Must(uuid.NewV4())
-
-	f := controllers.NewQueryResultForwarderWithOptions(controllers.WithResultSinkTimeout(1 * time.Second))
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	expectedTables := make(map[string]string)
-	expectedTables["foo"] = "123"
-	expectedTables["bar"] = "456"
-
-	var results []*vizierpb.ExecuteScriptResponse
-	resultCh := make(chan *vizierpb.ExecuteScriptResponse)
-
-	consumerCtx, cancelConsumer := context.WithCancel(context.Background())
-	defer cancelConsumer()
-	producerCtx, cancelProducer := context.WithCancel(context.Background())
-	defer cancelProducer()
-
-	go func() {
-		for {
-			select {
-			case msg := <-resultCh:
-				results = append(results, msg)
-			case <-consumerCtx.Done():
-				wg.Done()
-				return
-			}
-		}
-	}()
-	var err error
-
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
-
-	go func() {
-		err = f.StreamResults(consumerCtx, queryID, resultCh)
-		cancelConsumer()
-	}()
-
-	expected0, in0 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, false)
-	expected1, in1 := makeRowBatchResult(t, queryID, "bar", "456" /*eos*/, true)
-	expected2, in2 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, true)
-	expected3, in3 := makeExecStatsResult(t, queryID)
-
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "foo")))
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, in0))
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "bar")))
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, in1))
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, in2))
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, in3))
-	wg.Wait()
-
-	require.NoError(t, err)
-	assert.Equal(t, 4, len(results))
-
-	for _, result := range results {
-		assert.Equal(t, queryID.String(), result.QueryID)
-	}
-	assert.Equal(t, expected0, results[0].GetData().Batch)
-	assert.Equal(t, expected1, results[1].GetData().Batch)
-	assert.Equal(t, expected2, results[2].GetData().Batch)
-	assert.Equal(t, expected3, results[3].GetData().ExecutionStats)
 }
 
 func TestStreamResultsSimple(t *testing.T) {

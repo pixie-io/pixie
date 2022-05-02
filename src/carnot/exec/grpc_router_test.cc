@@ -101,12 +101,6 @@ TEST_F(GRPCRouterTest, no_node_router_test) {
   *initiate_stream_req.mutable_initiate_conn() =
       carnotpb::TransferResultChunkRequest::InitiateConnection();
 
-  // TODO(philkuz) will remove when node init is deprecated.
-  carnotpb::TransferResultChunkRequest initiate_node_req;
-  ToProto(query_id, initiate_node_req.mutable_query_id());
-  initiate_node_req.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
-  initiate_node_req.mutable_query_result()->set_initiate_result_stream(true);
-
   // Create row batches.
   RowDescriptor input_rd({types::DataType::INT64});
   auto rb1 = RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
@@ -130,7 +124,6 @@ TEST_F(GRPCRouterTest, no_node_router_test) {
   grpc::ClientContext context;
   auto writer = stub_->TransferResultChunk(&context, &response);
   EXPECT_TRUE(writer->Write(initiate_stream_req));
-  EXPECT_TRUE(writer->Write(initiate_node_req));
   EXPECT_TRUE(writer->Write(rb_req1));
   EXPECT_TRUE(writer->Write(rb_req2));
   writer->WritesDone();

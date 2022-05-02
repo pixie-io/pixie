@@ -147,10 +147,6 @@ void GRPCRouter::MarkResultStreamContextAsComplete(QueryTracker* query_tracker,
     }
     return ::grpc::Status::OK;
   }
-  // Pass through for now; plan is to deprecate eventually.
-  if (req->has_query_result() && req->query_result().initiate_result_stream()) {
-    return ::grpc::Status::OK;
-  }
   if (req->has_execution_error()) {
     absl::base_internal::SpinLockHolder query_lock(&state->query_tracker->query_lock);
     state->query_tracker->upstream_exec_errors.push_back(req->execution_error());
