@@ -18,7 +18,7 @@
 
 import * as React from 'react';
 
-import { gql, useMutation, useQuery } from '@apollo/client';
+import { ApolloError, gql, useMutation, useQuery } from '@apollo/client';
 
 import { GQL_GET_RETENTION_SCRIPTS } from 'app/pages/configure-data-export/data-export-gql';
 import {
@@ -90,7 +90,11 @@ export const GQL_UPDATE_RETENTION_PLUGIN_CONFIG = gql`
   }
 `;
 
-export function usePluginList(kind: GQLPluginKind): { loading: boolean, plugins: GQLPlugin[] } {
+export function usePluginList(kind: GQLPluginKind): {
+  plugins: GQLPlugin[],
+  loading: boolean,
+  error?: ApolloError,
+} {
   if (kind !== GQLPluginKind.PK_RETENTION) {
     throw new Error(`Plugins of kind "${GQLPluginKind[kind]}" aren't supported yet`);
   }
@@ -102,13 +106,19 @@ export function usePluginList(kind: GQLPluginKind): { loading: boolean, plugins:
 
   // Memo so that the empty array retains its identity until there is an actual change
   const plugins = React.useMemo(() => data?.plugins ?? [], [data?.plugins]);
-  return { loading: loading || (!data && !error), plugins };
+  return {
+    plugins,
+    loading: loading || (!data && !error),
+    error,
+  };
 }
 
 export function usePluginConfig(plugin: Pick<GQLPlugin, 'id' | 'enabledVersion' | 'latestVersion'>): {
-  loading: boolean,
   schema: GQLPluginInfo,
   values: GQLRetentionPluginConfig,
+  loading: boolean,
+  valuesError?: ApolloError,
+  schemaError?: ApolloError,
 } {
   const { loading: loadingSchema, data: schemaData, error: schemaError } = useQuery<{
     retentionPluginInfo: GQLPluginInfo,
@@ -135,16 +145,18 @@ export function usePluginConfig(plugin: Pick<GQLPlugin, 'id' | 'enabledVersion' 
   );
 
   return React.useMemo(() => ({
-    loading: (loadingSchema || loadingValues) && !(schemaError || valuesError),
     schema: schemaData?.retentionPluginInfo ?? null,
     values: valuesData?.retentionPluginConfig ?? null,
+    loading: (loadingSchema || loadingValues) && !(schemaError || valuesError),
+    schemaError,
+    valuesError,
   }), [loadingSchema, loadingValues, schemaError, valuesError, schemaData, valuesData]);
 }
 
 export function usePluginConfigMutation(plugin: GQLPlugin): (
   configs: GQLEditablePluginConfigs,
   enabled?: boolean,
-) => Promise<boolean> {
+) => Promise<ApolloError | null> {
   const { loading, schema, values: oldConfigs } = usePluginConfig(plugin);
 
   const [mutate] = useMutation<{
@@ -193,11 +205,14 @@ export function usePluginConfigMutation(plugin: GQLPlugin): (
         },
       },
       refetchQueries: [GQL_GET_RETENTION_PLUGINS, GQL_GET_RETENTION_PLUGIN_CONFIG, GQL_GET_RETENTION_SCRIPTS],
-    }).then(() => true, () => false);
+      onError(err) {
+        console.error(`Could not update plugin ${plugin.id}:`, err?.message);
+      },
+    }).then(() => null, (e) => e);
   }, [schema?.configs, schema?.allowCustomExportURL, schema?.allowInsecureTLS, oldConfigs, plugin, loading, mutate]);
 }
 
-export function usePluginToggleEnabled(plugin: GQLPlugin): (enable: boolean) => Promise<boolean> {
+export function usePluginToggleEnabled(plugin: GQLPlugin): (enable: boolean) => Promise<ApolloError | null> {
   const mutate = usePluginConfigMutation(plugin);
 
   return (enable: boolean) => mutate({ configs: [] }, enable);

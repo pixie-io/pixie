@@ -25,6 +25,7 @@ import {
   Edit as EditIcon,
 } from '@mui/icons-material';
 import {
+  Alert,
   Box,
   Button,
   Chip,
@@ -277,10 +278,22 @@ const RetentionScriptTable = React.memo<{
 RetentionScriptTable.displayName = 'RetentionScriptTable';
 
 export const ConfigureDataExportBody = React.memo(() => {
-  const { loading: loadingScripts, scripts } = useRetentionScripts();
-  const { loading: loadingPlugins, plugins } = useRetentionPlugins();
+  const showSnackbar = useSnackbar();
+
+  const { loading: loadingScripts, error: scriptsError, scripts } = useRetentionScripts();
+  const { loading: loadingPlugins, error: pluginsError, plugins } = useRetentionPlugins();
 
   const enabledPlugins = React.useMemo(() => (plugins?.filter(p => p.retentionEnabled) ?? []), [plugins]);
+
+  React.useEffect(() => {
+    const pMsg = pluginsError?.message;
+    const sMsg = scriptsError?.message;
+    const msg = [pMsg && `Plugins: ${pMsg}`, sMsg && `Scripts: ${sMsg}`].filter(m => m).join('; ');
+    if (msg) {
+      console.error('Something went wrong while loading retention plugins and scripts...', msg);
+      showSnackbar({ message: msg });
+    }
+  }, [pluginsError?.message, scriptsError?.message, showSnackbar]);
 
   if ((loadingScripts || loadingPlugins) && (!plugins || !scripts)) {
     return (
@@ -308,6 +321,11 @@ export const ConfigureDataExportBody = React.memo(() => {
         </a>.
       </Typography>
       <Divider variant='middle' sx={{ mt: 4, mb: 4 }} />
+      {(scriptsError || pluginsError) && (
+        <Alert severity='error' variant='outlined' sx={{ ml: 2, mb: 2 }}>
+          Something went wrong while loading retention plugins and scripts. See console for details.
+        </Alert>
+      )}
       {enabledPlugins.map(({ id, name, description }, i) => (
         <React.Fragment key={id}>
           {i > 0 && <Divider variant='middle' sx={{ mt: 4, mb: 4 }} />}

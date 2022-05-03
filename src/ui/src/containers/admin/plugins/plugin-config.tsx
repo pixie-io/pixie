@@ -38,7 +38,7 @@ import { GQLEditablePluginConfigs, GQLPlugin } from 'app/types/schema';
 import { usePluginConfig, usePluginConfigMutation } from './plugin-gql';
 
 export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
-  const { loading, schema, values } = usePluginConfig(plugin);
+  const { loading, schemaError, valuesError, schema, values } = usePluginConfig(plugin);
   const showSnackbar = useSnackbar();
 
   const [pendingValues, setPendingValues] = React.useState<GQLEditablePluginConfigs>({
@@ -47,6 +47,28 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
 
   const [saving, setSaving] = React.useState(false);
   const pushPluginConfig = usePluginConfigMutation(plugin);
+
+  React.useEffect(() => {
+    // A plugin's config can't be fetched if the plugin is disabled; this is intentional.
+    const becauseDisabled = valuesError?.message.includes('plugin is not enabled');
+
+    const showSchemaErr = !loading && !!schemaError?.message;
+    const showValuesErr = !loading && !becauseDisabled && !!valuesError?.message;
+
+    if (showSchemaErr || showValuesErr) {
+      const messageBase = schemaError?.message ?? valuesError?.message;
+      const message = messageBase.startsWith('rpc error')
+        ? messageBase.match(/^rpc error: code = ([^\s]+).*desc = (.+)$/).slice(1).join('; ')
+        : messageBase;
+      showSnackbar({ message: `Error loading plugin config "${plugin.name}": ${message}` });
+    }
+
+    if (showSchemaErr) {
+      console.error(`Error loading schema for "${plugin.name}"`, schemaError.message);
+    } else if (showValuesErr) {
+      console.error(`Error loading config for "${plugin.name}"`, valuesError.message);
+    }
+  }, [plugin.name, loading, schemaError, valuesError, showSnackbar]);
 
   // TODO(nick,PC-1436): Race condition technically possible in save effect; make them cancellable
   const save = React.useCallback((e: React.FormEvent) => {
