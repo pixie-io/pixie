@@ -147,30 +147,34 @@ const PluginLogo = React.memo<{ logo?: string }>(({ logo }) => {
 });
 PluginLogo.displayName = 'PluginLogo';
 
-const PluginHeader = React.memo<{
-  plugin: GQLPlugin,
-  numPreset: number,
-  numCustom: number
-}>(({ plugin, numPreset, numCustom }) => {
+interface PluginHeaderProps {
+  plugin: GQLPlugin;
+  onToggle: (isEnabled: boolean) => void;
+  numPreset: number;
+  numCustom: number;
+}
+const PluginHeader = React.memo<PluginHeaderProps>(({ plugin, onToggle, numPreset, numCustom }) => {
   const classes = useStyles();
 
   const [pendingToggle, setPendingToggle] = React.useState(false);
   const pushEnableState = usePluginToggleEnabled(plugin);
   const toggleEnabled = React.useCallback((event: React.MouseEvent<HTMLLabelElement>) => {
+    const enabled = !plugin.retentionEnabled;
     // Don't expand/collapse the accordion, but do toggle the switch.
     event.preventDefault();
     event.stopPropagation();
     setPendingToggle(true);
     pixieAnalytics.track('Retention plugin toggled', {
-      enabled: !plugin.retentionEnabled,
+      enabled,
       plugin: plugin.id,
     });
-    pushEnableState(!plugin.retentionEnabled).then(() => {
+    pushEnableState(enabled).then(() => {
       setPendingToggle(false);
+      onToggle(enabled);
     }).catch(() => {
       setPendingToggle(false);
     });
-  }, [pushEnableState, plugin.retentionEnabled, plugin.id]);
+  }, [pushEnableState, onToggle, plugin.retentionEnabled, plugin.id]);
 
   const disableWarning = React.useMemo(() => (
     <div className={classes.disableWarningTooltip}>
@@ -236,14 +240,20 @@ const PluginList = React.memo<RouteComponentProps<{ expandId?: string }>>(({ mat
   const { loading, plugins } = usePluginList(GQLPluginKind.PK_RETENTION);
   const { expandId } = match.params; // TODO(nick,PC-1436): Scroll to it on page load if feasible?
 
-  const getAccordionToggle = React.useCallback((id: string) => (_: unknown, isExpanded: boolean) => {
+  const getAccordionToggle = React.useCallback((id: string, enabled: boolean) => (_: unknown, expand: boolean) => {
     const base = match.url.split('/configure')[0];
+    const isExpanded = enabled && expand;
     if (isExpanded && (!expandId || expandId !== id)) {
       history.push(`${base}/configure/${id}`.replace('//', '/'));
     } else if (!isExpanded && id === expandId) {
       history.push(base);
     }
   }, [expandId, history, match]);
+
+  const getOnPluginToggled = React.useCallback((id: string) => (isEnabled: boolean) => {
+    const toggleAccordion = getAccordionToggle(id, isEnabled);
+    toggleAccordion(undefined, isEnabled);
+  }, [getAccordionToggle]);
 
   if (loading && !plugins.length) return <>Loading...</>;
   if (!plugins.length) return <h3>No retention plugins available. This is probably an error.</h3>;
@@ -254,7 +264,7 @@ const PluginList = React.memo<RouteComponentProps<{ expandId?: string }>>(({ mat
         <Accordion
           key={p.id}
           expanded={expandId === p.id && p.retentionEnabled}
-          onChange={getAccordionToggle(p.id)}
+          onChange={getAccordionToggle(p.id, p.retentionEnabled)}
         >
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
@@ -264,6 +274,7 @@ const PluginList = React.memo<RouteComponentProps<{ expandId?: string }>>(({ mat
           >
             <PluginHeader
               plugin={p}
+              onToggle={getOnPluginToggled(p.id)}
               numPreset={scripts?.filter(s => s.pluginID === p.id && s.isPreset).length ?? 0}
               numCustom={scripts?.filter(s => s.pluginID === p.id && !s.isPreset).length ?? 0}
             />
