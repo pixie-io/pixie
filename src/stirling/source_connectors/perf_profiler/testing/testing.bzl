@@ -23,3 +23,14 @@ px_jattach = "//src/stirling/source_connectors/perf_profiler/java/px_jattach:px_
 
 agent_libs_arg = ",".join(["$(location %s)" % lib for lib in agent_libs])
 px_jattach_arg = "$(location %s)" % px_jattach
+
+jdk_names = [
+    "java_image_base",
+    "azul-zulu",
+    "azul-zulu-debian",
+    "azul-zulu-alpine",
+    "amazon-corretto",
+    "adopt-j9",
+    "ibm",
+    "sap",
+]

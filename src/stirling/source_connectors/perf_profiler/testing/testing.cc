@@ -40,7 +40,7 @@ std::string GetAgentLibsFlagValueForTesting() {
   const fs_path musl_lib_sfx = "build-musl/lib-px-java-agent-musl.so";
   const std::string glibc_agent = BazelBinTestFilePath(agent_path_pfx / glibc_lib_sfx).string();
   const std::string musl_agent = BazelBinTestFilePath(agent_path_pfx / musl_lib_sfx).string();
-  return absl::StrJoin({glibc_agent, musl_agent}, ",");
+  return absl::StrJoin({musl_agent, glibc_agent}, ",");
 }
 
 std::string GetPxJattachFlagValueForTesting() {

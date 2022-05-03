@@ -36,9 +36,13 @@
 #include "src/stirling/source_connectors/perf_profiler/testing/testing.h"
 #include "src/stirling/testing/common.h"
 
-DEFINE_uint32(test_run_time, 90, "Number of seconds to run the test.");
+DEFINE_uint32(test_run_time, 30, "Number of seconds to run the test.");
+DEFINE_string(test_java_image_names, JDK_IMAGE_NAMES,
+              "Java docker images to use as Java test cases.");
 DECLARE_bool(stirling_profiler_java_symbols);
 DECLARE_string(stirling_profiler_java_agent_libs);
+DECLARE_uint32(stirling_profiler_table_update_period_seconds);
+DECLARE_uint32(stirling_profiler_stack_trace_sample_period_ms);
 
 namespace px {
 namespace stirling {
@@ -54,6 +58,34 @@ using ::testing::Not;
 using ::testing::Pair;
 using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
+
+namespace {
+// BazelXXTestAppPath() are helpers to build & return the bazelified path to
+// one of the toy apps used by perf profiler testing.
+std::filesystem::path BazelCCTestAppPath(const std::string_view app_name) {
+  const std::filesystem::path kToyAppsPath =
+      "src/stirling/source_connectors/perf_profiler/testing/cc";
+  const std::filesystem::path app_path = kToyAppsPath / app_name;
+  const std::filesystem::path bazel_app_path = BazelBinTestFilePath(app_path);
+  return bazel_app_path;
+}
+
+std::filesystem::path BazelGoTestAppPath(const std::string_view app_name) {
+  char const* const go_path_pattern = "src/stirling/source_connectors/perf_profiler/testing/go/$0_";
+  const std::filesystem::path sub_path = absl::Substitute(go_path_pattern, app_name);
+  const std::filesystem::path app_path = sub_path / app_name;
+  const std::filesystem::path bazel_app_path = BazelBinTestFilePath(app_path);
+  return bazel_app_path;
+}
+
+std::filesystem::path BazelJavaTestAppPath(const std::string_view app_name) {
+  const std::filesystem::path kToyAppsPath =
+      "src/stirling/source_connectors/perf_profiler/testing/java";
+  const std::filesystem::path app_path = kToyAppsPath / app_name;
+  const std::filesystem::path bazel_app_path = BazelBinTestFilePath(app_path);
+  return bazel_app_path;
+}
+}  // namespace
 
 class PerfProfilerTestSubProcesses {
  public:
@@ -154,7 +186,7 @@ class ContainerSubProcesses final : public PerfProfilerTestSubProcesses {
   std::vector<std::unique_ptr<ContainerRunner>> sub_processes_;
 };
 
-class PerfProfileBPFTest : public ::testing::Test {
+class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path> {
  public:
   PerfProfileBPFTest()
       : test_run_time_(FLAGS_test_run_time), data_table_(/*id*/ 0, kStackTraceTable) {}
@@ -165,6 +197,8 @@ class PerfProfileBPFTest : public ::testing::Test {
     FLAGS_number_attach_attempts_per_iteration = kNumSubProcesses;
     FLAGS_stirling_profiler_java_agent_libs = GetAgentLibsFlagValueForTesting();
     FLAGS_stirling_profiler_px_jattach_path = GetPxJattachFlagValueForTesting();
+    FLAGS_stirling_profiler_table_update_period_seconds = 5;
+    FLAGS_stirling_profiler_stack_trace_sample_period_ms = 7;
 
     source_ = PerfProfileConnector::Create("perf_profile_connector");
     ASSERT_OK(source_->Init());
@@ -175,33 +209,6 @@ class PerfProfileBPFTest : public ::testing::Test {
   }
 
   void TearDown() override { ASSERT_OK(source_->Stop()); }
-
-  // BazelXXTestAppPath() are helpers to build & return the bazelified path to
-  // one of the toy apps used by perf profiler testing.
-  std::filesystem::path BazelCCTestAppPath(const std::filesystem::path& app_name) {
-    const std::filesystem::path kToyAppsPath =
-        "src/stirling/source_connectors/perf_profiler/testing/cc";
-    const std::filesystem::path app_path = fs::JoinPath({&kToyAppsPath, &app_name});
-    const std::filesystem::path bazel_app_path = BazelBinTestFilePath(app_path);
-    return bazel_app_path;
-  }
-
-  std::filesystem::path BazelGoTestAppPath(const std::filesystem::path& app_name) {
-    const std::string sub_path_str = absl::Substitute(
-        "src/stirling/source_connectors/perf_profiler/testing/go/$0_", app_name.string());
-    const std::filesystem::path sub_path = sub_path_str;
-    const std::filesystem::path app_path = fs::JoinPath({&sub_path, &app_name});
-    const std::filesystem::path bazel_app_path = BazelBinTestFilePath(app_path);
-    return bazel_app_path;
-  }
-
-  std::filesystem::path BazelJavaTestAppPath(const std::filesystem::path& app_name) {
-    const std::filesystem::path kToyAppsPath =
-        "src/stirling/source_connectors/perf_profiler/testing/java";
-    const std::filesystem::path app_path = fs::JoinPath({&kToyAppsPath, &app_name});
-    const std::filesystem::path bazel_app_path = BazelBinTestFilePath(app_path);
-    return bazel_app_path;
-  }
 
   void PopulateObservedStackTraces(const std::vector<size_t>& target_row_idxs) {
     // Just check that the test author populated the necessary,
@@ -435,9 +442,9 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
       CheckExpectedCounts(observed_stack_traces_, kNumSubProcesses, elapsed_time, key1x, key2x));
 }
 
-TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
+TEST_P(PerfProfileBPFTest, PerfProfilerJavaTest) {
   constexpr std::string_view kContainerNamePfx = "java";
-  const std::filesystem::path image_tar_path = BazelJavaTestAppPath("image.tar");
+  const std::filesystem::path image_tar_path = GetParam();
   ASSERT_TRUE(fs::Exists(image_tar_path)) << absl::StrFormat("Missing: %s.", image_tar_path);
 
   // The target app is written such that key2x uses twice the CPU time as key1x.
@@ -512,6 +519,19 @@ TEST_F(PerfProfileBPFTest, TestOutOfContext) {
   // Pull the data from the perf profile connector into this test case.
   ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
 }
+
+std::vector<std::filesystem::path> GetJavaImagePaths() {
+  const std::vector<std::string_view> image_names =
+      absl::StrSplit(FLAGS_test_java_image_names, ",");
+  std::vector<std::filesystem::path> image_paths;
+  for (const auto image_name : image_names) {
+    image_paths.push_back(BazelJavaTestAppPath(std::string(image_name) + ".tar"));
+  }
+  return image_paths;
+}
+
+INSTANTIATE_TEST_SUITE_P(PerfProfileJavaTests, PerfProfileBPFTest,
+                         ::testing::ValuesIn(GetJavaImagePaths()));
 
 }  // namespace stirling
 }  // namespace px

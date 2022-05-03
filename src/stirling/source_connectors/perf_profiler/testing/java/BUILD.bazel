@@ -14,9 +14,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@io_bazel_rules_docker//container:image.bzl", "container_image")
 load("@io_bazel_rules_docker//java:image.bzl", "java_image")
 load("@rules_java//java:defs.bzl", "java_binary")
 load("//bazel:pl_build_system.bzl", "pl_cc_binary")
+load("//src/stirling/source_connectors/perf_profiler/testing:testing.bzl", "jdk_names")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -62,9 +64,38 @@ pl_cc_binary(
     ],
 )
 
-java_image(
-    name = "image",
-    srcs = ["Fib.java"],
-    args = ["-XX:+PreserveFramePointer"],
-    main_class = "JavaFib",
-)
+symlinks_by_jdk = {
+    # The java_image declaration expects the java binary to be located at /usr/bin/java,
+    # but, these docker base images have the java binary at a 'non-standard' location.
+    # To fix this, we include a symlink parameter in the relevant container_image declarations.
+    "adopt-j9": {"/usr/bin/java": "/opt/java/openjdk/bin/java"},
+    "ibm": {"/usr/bin/java": "/opt/ibm/java/jre/bin/java"},
+}
+
+# jdk_bases and jdk_symlinks are used to create a container_image declaration for each of our jdks.
+jdk_bases = ["@{jdk_name}//image".format(jdk_name = jdk_name) for jdk_name in jdk_names]
+
+jdk_symlinks = [symlinks_by_jdk[jdk_name] if jdk_name in symlinks_by_jdk else {} for jdk_name in jdk_names]
+
+# Declare one container_image for each jdk we are testing. We do this (vs. going directly to
+# java_image) because some JDK base images will need a symlink for /path/to/java to /usr/bin/java.
+[
+    container_image(
+        name = jdk_name,
+        base = jdk_base,
+        symlinks = jdk_symlinks,
+    )
+    for jdk_name, jdk_base, jdk_symlinks in zip(jdk_names, jdk_bases, jdk_symlinks)
+]
+
+# Declare one java_image per jdk. This will be the test image which includes our toy test app.
+[
+    java_image(
+        name = jdk_name + "-java-profiler-test-image",
+        srcs = ["Fib.java"],
+        args = ["-XX:+PreserveFramePointer"],
+        base = jdk_name,
+        main_class = "JavaFib",
+    )
+    for jdk_name in jdk_names
+]
