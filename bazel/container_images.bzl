@@ -69,6 +69,69 @@ def base_images():
         "library/openjdk",
     )
 
+    _docker_io_image(
+        # https://hub.docker.com/layers/zulu-openjdk/azul/zulu-openjdk/18/images/sha256-01a1519ff66c3038e4c66f36e5dcf4dbc68278058d83133c0bc942518fcbef6e?context=explore
+        # azul/zulu-openjdk:18
+        "azul-zulu",
+        "sha256:01a1519ff66c3038e4c66f36e5dcf4dbc68278058d83133c0bc942518fcbef6e",
+        "azul/zulu-openjdk",
+    )
+
+    _docker_io_image(
+        # https://hub.docker.com/layers/zulu-openjdk-debian/azul/zulu-openjdk-debian/15.0.6/images/sha256-d9df673eae28bd1c8e23fabcbd6c76d20285ea7e5c589975bd26866cab189c2a?context=explore
+        # azul/zulu-openjdk-debian:15.0.6
+        "azul-zulu-debian",
+        "sha256:d9df673eae28bd1c8e23fabcbd6c76d20285ea7e5c589975bd26866cab189c2a",
+        "azul/zulu-openjdk-debian",
+    )
+
+    _docker_io_image(
+        # https://hub.docker.com/layers/zulu-openjdk-alpine/azul/zulu-openjdk-alpine/17-jre/images/sha256-eef2da2a134370717e40b1cc570efba08896520af6b31744eabf64481a986878?context=explore
+        # azul/zulu-openjdk-alpine:17-jre
+        "azul-zulu-alpine",
+        "sha256:eef2da2a134370717e40b1cc570efba08896520af6b31744eabf64481a986878",
+        "azul/zulu-openjdk-alpine",
+    )
+
+    # TODO(jps): Could not pull on Jenkins, but, this may be deprecated in any case. Investigate.
+    _docker_io_image(
+        "oracle",
+        "sha256:68aacc9b930ad24ab7db27badf25bc619b4c2cb87c27b3a83da26aac05a138eb",
+        "store/oracle/jdk",
+    )
+
+    _docker_io_image(
+        # https://hub.docker.com/layers/amazoncorretto/library/amazoncorretto/18-alpine-jdk/images/sha256-52679264dee28c1cbe2ff8455efc86cc44cbceb6f94d9971abd7cd7e4c8bdc50?context=explore
+        # amazoncorretto:18-alpine-jdk
+        "amazon-corretto",
+        "sha256:52679264dee28c1cbe2ff8455efc86cc44cbceb6f94d9971abd7cd7e4c8bdc50",
+        "library/amazoncorretto",
+    )
+
+    _docker_io_image(
+        # https://hub.docker.com/layers/adoptopenjdk/library/adoptopenjdk/openj9/images/sha256-2b739b781a601a9d1e5a98fb3d47fe9dcdbd989e92c4e4eb4743364da67ca05e?context=explore
+        # adoptopenjdk:openj9
+        "adopt-j9",
+        "sha256:2b739b781a601a9d1e5a98fb3d47fe9dcdbd989e92c4e4eb4743364da67ca05e",
+        "amd64/adoptopenjdk",
+    )
+
+    _docker_io_image(
+        # https://hub.docker.com/layers/ibmjava/library/ibmjava/8-jre/images/sha256-78e2dd462373b3c5631183cc927a54aef1b114c56fe2fb3e31c4b39ba2d919dc?context=explore
+        # ibmjava:8-jre
+        "ibm",
+        "sha256:78e2dd462373b3c5631183cc927a54aef1b114c56fe2fb3e31c4b39ba2d919dc",
+        "library/ibmjava",
+    )
+
+    _docker_io_image(
+        # https://hub.docker.com/layers/sapmachine/library/sapmachine/18.0.1/images/sha256-53a036f4d787126777c010437ee4802de11b193e8aca556170301ab2c2359bc6?context=explore
+        # sapmachine:18.0.1
+        "sap",
+        "sha256:53a036f4d787126777c010437ee4802de11b193e8aca556170301ab2c2359bc6",
+        "library/sapmachine",
+    )
+
 def stirling_test_build_images():
     _docker_io_image(
         # Using golang:1.16-alpine as it is smaller than the ubuntu based image.
