@@ -269,10 +269,6 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
     return 0;
   }
 
-  auto reader = ElfReader::Create(container_libcrypto).ConsumeValueOrDie();
-  auto fptr_manager = std::unique_ptr<RawFptrManager>(
-      new RawFptrManager(reader.get(), proc_parser_.get(), container_libcrypto));
-
   // Convert to host path, in case we're running inside a container ourselves.
   container_libssl = sysconfig.ToHostPath(container_libssl);
   container_libcrypto = sysconfig.ToHostPath(container_libcrypto);
@@ -283,6 +279,10 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
   if (!fs::Exists(container_libcrypto)) {
     return error::Internal("libcrypto not found [path = $0]", container_libcrypto.string());
   }
+
+  PL_ASSIGN_OR_RETURN(auto reader, ElfReader::Create(container_libcrypto));
+  auto fptr_manager = std::unique_ptr<RawFptrManager>(
+      new RawFptrManager(reader.get(), proc_parser_.get(), container_libcrypto));
 
   PL_RETURN_IF_ERROR(UpdateOpenSSLSymAddrs(fptr_manager.get(), container_libcrypto, pid));
 
