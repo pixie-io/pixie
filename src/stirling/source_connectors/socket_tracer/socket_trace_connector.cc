@@ -938,18 +938,10 @@ void SocketTraceConnector::AcceptGrpcCEvent(struct conn_id_t connection_id, uint
     }
 
     auto d_event_ready = std::make_unique<HTTP2DataEvent>();
-    try {
-      d_event_ready->attr = current_data_event.attr;
-      d_event_ready->data_attr = current_data_event.data_attr;
-      // Assign instead of copy so null terminator is copied too.
-      // Assign can throw when wrong length is given, and since the data is brought from eBPF,
-      // better catch.
-      d_event_ready->payload =
-          std::string_view(data_slice.bytes, current_data_event.data_attr.data_buf_size);
-    } catch (const std::exception& e) {
-      LOG(WARNING) << absl::Substitute("gRPC-C slice data assigning threw exception $0", e.what());
-      return;
-    }
+    d_event_ready->attr = current_data_event.attr;
+    d_event_ready->data_attr = current_data_event.data_attr;
+    d_event_ready->payload =
+        std::string_view(data_slice.bytes, current_data_event.data_attr.data_buf_size);
     this->AcceptHTTP2Data(std::move(d_event_ready));
   }
 }
