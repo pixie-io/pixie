@@ -18,6 +18,7 @@
 
 import * as React from 'react';
 
+import { ApolloError } from '@apollo/client';
 import {
   Autocomplete,
   Box,
@@ -259,27 +260,23 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
       customExportURL: pendingValues.exportPath,
     };
     createOrUpdate(newScript)
-      .then((res: string | boolean) => {
+      .then((res: string | boolean | ApolloError) => {
         setSaving(false);
-        if (typeof res !== 'boolean') {
-          showSnackbar({
-            message: 'Script created!',
-          });
+
+        // Result is a string with the script's ID if created; `true` if it updated an existing one;
+        // `false` if it failed for an unknown reason; and an ApolloError if it failed for a known reason.
+        const created = (typeof res === 'string' && res.length);
+        const updated = res === true;
+
+        if (created || updated) {
+          const message = created ? 'Script created!' : 'Retention script saved successfully';
+          showSnackbar({ message });
           navBackToAllScripts();
-          return;
+        } else {
+          const failureReason = (typeof res !== 'object' || !res) ? 'Unknown reason' : res.message;
+          console.error('Failed to save retention script. Reason:', res);
+          showSnackbar({ message: `Failed to save retention script! Reason: ${failureReason}` });
         }
-
-        if (!res) {
-          showSnackbar({
-            message: 'Failed to save retention script, unknown reason.',
-          });
-          return;
-        }
-
-        showSnackbar({
-          message: 'Retention script saved successfully.',
-        });
-        navBackToAllScripts();
       })
       .catch(() => setSaving(false));
   }, [

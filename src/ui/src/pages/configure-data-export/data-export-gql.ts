@@ -18,7 +18,7 @@
 
 import * as React from 'react';
 
-import { gql, useMutation, useQuery } from '@apollo/client';
+import { ApolloError, gql, useMutation, useQuery } from '@apollo/client';
 
 import {
   GQLClusterStatus,
@@ -161,7 +161,7 @@ GQLPlugin,
 'id' | 'name' | 'description' | 'logo' | 'retentionEnabled' | 'latestVersion' | 'enabledVersion'
 >;
 
-export function useRetentionPlugins(): { loading: boolean, plugins: PartialPlugin[] } {
+export function useRetentionPlugins(): { loading: boolean, error?: ApolloError, plugins: PartialPlugin[] } {
   const { data, loading, error } = useQuery<{ plugins: PartialPlugin[] }>(
     GQL_GET_PLUGINS_FOR_RETENTION_SCRIPTS,
     { fetchPolicy: 'cache-and-network' },
@@ -169,11 +169,12 @@ export function useRetentionPlugins(): { loading: boolean, plugins: PartialPlugi
 
   return React.useMemo(() => ({
     loading: loading && !error,
+    error,
     plugins: data?.plugins ?? [],
   }), [data, loading, error]);
 }
 
-export function useRetentionScripts(): { loading: boolean, scripts: GQLRetentionScript[] } {
+export function useRetentionScripts(): { loading: boolean, error?: ApolloError, scripts: GQLRetentionScript[] } {
   const { data, loading, error } = useQuery<{ retentionScripts: GQLRetentionScript[] }>(
     GQL_GET_RETENTION_SCRIPTS,
     { fetchPolicy: 'cache-and-network' },
@@ -181,11 +182,16 @@ export function useRetentionScripts(): { loading: boolean, scripts: GQLRetention
 
   return React.useMemo(() => ({
     loading: loading && !error,
+    error,
     scripts: data?.retentionScripts ?? [],
   }), [data, loading, error]);
 }
 
-export function useRetentionScript(id: string): { loading: boolean, script: GQLDetailedRetentionScript } {
+export function useRetentionScript(id: string): {
+  loading: boolean,
+  error?: ApolloError,
+  script: GQLDetailedRetentionScript,
+} {
   const { data, loading, error } = useQuery<{
     retentionScript: GQLDetailedRetentionScript,
   }, { id: string }>(
@@ -198,11 +204,14 @@ export function useRetentionScript(id: string): { loading: boolean, script: GQLD
 
   return React.useMemo(() => ({
     loading: loading && !error,
+    error,
     script: data?.retentionScript ?? null,
   }), [data, loading, error]);
 }
 
-export function useMutateRetentionScript(id: string): (newScript: GQLEditableRetentionScript) => Promise<boolean> {
+export function useMutateRetentionScript(
+  id: string,
+): (newScript: GQLEditableRetentionScript) => Promise<boolean | ApolloError> {
   const { script } = useRetentionScript(id);
 
   const [updateScript] = useMutation<{
@@ -237,26 +246,28 @@ export function useMutateRetentionScript(id: string): (newScript: GQLEditableRet
       },
       refetchQueries: [GQL_GET_RETENTION_SCRIPTS, GQL_GET_RETENTION_SCRIPT],
       onError(err) {
-        // TODO(nick,PC-1440): Snackbar error here?
         console.error(`Could not update script ${script.id}:`, err?.message);
       },
-    }).then(({ data: { UpdateRetentionScript: success } }) => success);
+    }).then(
+      ({ data: { UpdateRetentionScript: success } }) => success,
+      (err) => err,
+    );
   }, [script, updateScript]);
 }
 
-export function useToggleRetentionScript(id: string): (enabled?: boolean) => Promise<boolean> {
+export function useToggleRetentionScript(id: string): (enabled?: boolean) => Promise<boolean | ApolloError> {
   const { script } = useRetentionScript(id);
   const mutate = useMutateRetentionScript(id);
 
-  return React.useCallback((enabled?: boolean) => {
-    return mutate({
+  return React.useCallback((enabled?: boolean) => (
+    mutate({
       ...script,
       enabled: enabled == null ? !script.enabled : enabled,
-    });
-  }, [mutate, script]);
+    })
+  ), [mutate, script]);
 }
 
-export function useCreateRetentionScript(): (newScript: GQLEditableRetentionScript) => Promise<string> {
+export function useCreateRetentionScript(): (newScript: GQLEditableRetentionScript) => Promise<string | ApolloError> {
   const [createScript] = useMutation<{
     CreateRetentionScript: string,
   }, {
@@ -277,14 +288,16 @@ export function useCreateRetentionScript(): (newScript: GQLEditableRetentionScri
       },
       refetchQueries: [GQL_GET_RETENTION_SCRIPTS, GQL_GET_RETENTION_SCRIPT],
       onError(err) {
-        // TODO(nick,PC-1440): Snackbar error here?
         console.error(`Could not create script named "${newScript.name}":`, err?.message);
       },
-    }).then(({ data: { CreateRetentionScript: id } }) => id);
+    }).then(
+      ({ data: { CreateRetentionScript: id } }) => id,
+      (err) => err,
+    );
   }, [createScript]);
 }
 
-export function useDeleteRetentionScript(id: string): () => Promise<boolean> {
+export function useDeleteRetentionScript(id: string): () => Promise<boolean | ApolloError> {
   const [deleteScript] = useMutation<{ DeleteRetentionScript: boolean }, { id: string }>(GQL_DELETE_RETENTION_SCRIPT);
   return React.useCallback(() => {
     pixieAnalytics.track('Retention script deleted', { id });
@@ -292,6 +305,9 @@ export function useDeleteRetentionScript(id: string): () => Promise<boolean> {
     return deleteScript({
       variables: { id },
       refetchQueries: [GQL_GET_RETENTION_SCRIPTS],
-    }).then(({ data: { DeleteRetentionScript: success } }) => success);
+    }).then(
+      ({ data: { DeleteRetentionScript: success } }) => success,
+      (err) => err,
+    );
   }, [id, deleteScript]);
 }

@@ -272,9 +272,10 @@ PluginHeader.displayName = 'PluginHeader';
 
 const PluginList = React.memo<RouteComponentProps<{ expandId?: string }>>(({ match, history }) => {
   const classes = useStyles();
+  const showSnackbar = useSnackbar();
 
   const { scripts } = useRetentionScripts();
-  const { loading, plugins } = usePluginList(GQLPluginKind.PK_RETENTION);
+  const { loading, error, plugins } = usePluginList(GQLPluginKind.PK_RETENTION);
   const { expandId } = match.params; // TODO(nick,PC-1436): Scroll to it on page load if feasible?
 
   const getAccordionToggle = React.useCallback((id: string) => (_: unknown, expand: boolean) => {
@@ -290,6 +291,13 @@ const PluginList = React.memo<RouteComponentProps<{ expandId?: string }>>(({ mat
     const toggleAccordion = getAccordionToggle(id);
     toggleAccordion(undefined, isEnabled);
   }, [getAccordionToggle]);
+
+  React.useEffect(() => {
+    if (error && !loading) {
+      showSnackbar({ message: `Error loading plugin list: ${error.message}` });
+      console.error('Error loading plugin list', error);
+    }
+  }, [loading, error, showSnackbar]);
 
   if (loading && !plugins.length) return <>Loading...</>;
   if (!plugins.length) return <h3>No retention plugins available. This is probably an error.</h3>;
