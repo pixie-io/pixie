@@ -973,6 +973,10 @@ void SocketTraceConnector::InitiateHeaderEventDataGoStyle(
     struct conn_id_t conn_id, uint32_t stream_id, uint64_t timestamp, bool end_stream,
     bool outgoing,
     /* OUT */ struct go_grpc_http2_header_event_t* header_event_data_go_style) {
+  if (NULL == header_event_data_go_style) {
+    LOG(WARNING) << "Initiation of header event data at Go-style with null pointer.";
+    return;
+  }
   memset(header_event_data_go_style, 0, sizeof(*header_event_data_go_style));
   header_event_data_go_style->attr.end_stream = end_stream;
   header_event_data_go_style->attr.stream_id = stream_id;
@@ -996,7 +1000,8 @@ void SocketTraceConnector::AcceptGrpcCHeaderEventData(
 
   // Initiate header event template as if it arrived from Golang gRPC eBPF.
   struct go_grpc_http2_header_event_t header_event_data_go_style = {};
-  InitiateHeaderEventDataGoStyle(event->conn_id, event->stream_id, event->timestamp, false,
+  InitiateHeaderEventDataGoStyle(event->conn_id, event->stream_id, event->timestamp,
+                                 /* Whether this event indicates that a stream was closed */ false,
                                  event->direction == kEgress, &header_event_data_go_style);
 
   std::string name = std::string(event->header.key).substr(0, MAXIMUM_LENGTH_OF_KEY_IN_METADATA);
@@ -1015,8 +1020,9 @@ void SocketTraceConnector::AcceptGrpcCCloseEvent(
   // Initiate header event template as if it arrived from Golang gRPC eBPF.
   struct go_grpc_http2_header_event_t header_event_data_go_style = {};
   InitiateHeaderEventDataGoStyle(
-      event->conn_id, event->stream_id, event->timestamp, true,
-      true,  // Whether outgoing. This does not matter because it's overridden later.
+      event->conn_id, event->stream_id, event->timestamp,
+      /* Whether this event indicates that a stream was closed */ true,
+      /* Whether outgoing. This does not matter because it's overridden later */ true,
       &header_event_data_go_style);
 
   if (event->write_closed) {
