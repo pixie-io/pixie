@@ -361,12 +361,12 @@ auto SocketTraceConnector::InitPerfBufferSpecs() {
        PerfBufferSizeCategory::kControl},
       {"go_grpc_events", HandleHTTP2Event, HandleHTTP2EventLoss, kTargetDataBufferSize,
        PerfBufferSizeCategory::kData},
-      {"grpc_c_events", HandleGrpcCEvent, HandleGrpcCDataLoss, kTargetControlBufferSize,
+      {"grpc_c_events", HandleGrpcCEvent, HandleGrpcCDataLoss, kTargetDataBufferSize,
        PerfBufferSizeCategory::kData},
       {"grpc_c_header_events", HandleGrpcCHeaderEvent, HandleGrpcCHeaderDataLoss,
-       kTargetControlBufferSize, PerfBufferSizeCategory::kData},
+       kTargetDataBufferSize, PerfBufferSizeCategory::kData},
       {"grpc_c_close_events", HandleGrpcCCloseEvent, HandleGrpcCCloseDataLoss,
-       kTargetControlBufferSize, PerfBufferSizeCategory::kControl},
+       kTargetDataBufferSize, PerfBufferSizeCategory::kData},
   });
   ResizePerfBufferSpecs(&specs, category_maximums);
   return specs;
@@ -955,27 +955,18 @@ void SocketTraceConnector::AcceptGrpcCEvent(struct conn_id_t connection_id, uint
 }
 
 void SocketTraceConnector::AcceptGrpcCEventData(std::unique_ptr<struct grpc_c_event_data_t> event) {
-  // Determine whether event is incoming or outgoing.
-  bool outgoing;
-  switch (event->direction) {
-    case kIngress:
-      outgoing = false;
-      break;
-    case kEgress:
-      outgoing = true;
-      break;
-    default:
-      LOG(WARNING) << absl::Substitute("gRPC-C event from pid $0 with invalid direction $1",
-                                       event->conn_id.upid.pid, event->direction);
-      return;
+  if (event->direction != kIngress && event->direction != kEgress) {
+    LOG(WARNING) << absl::Substitute("gRPC-C event from pid $0 with invalid direction $1",
+                                     event->conn_id.upid.pid, event->direction);
+    return;
   }
 
   // Prepare list of slices.
   std::vector<struct grpc_c_data_slice_t> slices(0);
   slices.push_back(event->slice);
 
-  this->AcceptGrpcCEvent(event->conn_id, event->stream_id, event->timestamp, outgoing,
-                         event->position_in_stream, slices);
+  this->AcceptGrpcCEvent(event->conn_id, event->stream_id, event->timestamp,
+                         event->direction == kEgress, event->position_in_stream, slices);
 }
 
 void SocketTraceConnector::InitiateHeaderEventDataGoStyle(
@@ -997,25 +988,16 @@ void SocketTraceConnector::InitiateHeaderEventDataGoStyle(
 
 void SocketTraceConnector::AcceptGrpcCHeaderEventData(
     std::unique_ptr<struct grpc_c_header_event_data_t> event) {
-  // Determine whether event is incoming or outgoing.
-  bool outgoing;
-  switch (event->direction) {
-    case kIngress:
-      outgoing = false;
-      break;
-    case kEgress:
-      outgoing = true;
-      break;
-    default:
-      LOG(WARNING) << absl::Substitute("gRPC-C header event from pid $0 with invalid direction $1",
-                                       event->conn_id.upid.pid, event->direction);
-      return;
+  if (event->direction != kIngress && event->direction != kEgress) {
+    LOG(WARNING) << absl::Substitute("gRPC-C header event from pid $0 with invalid direction $1",
+                                     event->conn_id.upid.pid, event->direction);
+    return;
   }
 
   // Initiate header event template as if it arrived from Golang gRPC eBPF.
   struct go_grpc_http2_header_event_t header_event_data_go_style = {};
   InitiateHeaderEventDataGoStyle(event->conn_id, event->stream_id, event->timestamp, false,
-                                 outgoing, &header_event_data_go_style);
+                                 event->direction == kEgress, &header_event_data_go_style);
 
   std::string name = std::string(event->header.key).substr(0, MAXIMUM_LENGTH_OF_KEY_IN_METADATA);
   std::string value =
