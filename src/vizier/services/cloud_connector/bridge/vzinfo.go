@@ -675,6 +675,10 @@ func (v *K8sVizierInfo) UpdateClusterIDAnnotation(id string) error {
 		ccPod.Annotations = make(map[string]string)
 	}
 	ccPod.Annotations["cluster-id"] = id
+	if ccPod.Labels == nil {
+		ccPod.Labels = make(map[string]string)
+	}
+	ccPod.Labels["cluster-id"] = id
 
 	_, err = v.clientset.CoreV1().Pods(v.ns).Update(context.Background(), &ccPod, metav1.UpdateOptions{})
 	return err
