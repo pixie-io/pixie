@@ -19,7 +19,9 @@
 package cronscript
 
 import (
+	"fmt"
 	"path"
+	"strconv"
 
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
@@ -27,11 +29,16 @@ import (
 
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/vizier/services/metadata/storepb"
 	"px.dev/pixie/src/vizier/utils/datastore"
 )
 
 const (
-	cronScriptPrefix = "/cronScript/"
+	cronScriptPrefix    = "/cronScript/"
+	scriptResultsPrefix = "/cronScriptResults"
+	// The maximum results we store per CronScript. Note if you change this, you must ensure this value is than 10000
+	// otherwise the string formatter will fail and you'll run into issues related to the prefix.
+	maxResultsPerCronScript = 10
 )
 
 // Datastore implements the CronScriptStore interface on a given Datastore.
@@ -46,6 +53,29 @@ func NewDatastore(ds datastore.MultiGetterSetterDeleterCloser) *Datastore {
 
 func getCronScriptKey(scriptID uuid.UUID) string {
 	return path.Join(cronScriptPrefix, scriptID.String())
+}
+
+// The Schema for ScriptResults:
+// root:              /cronScriptResults/<id>
+// results index:     /cronScriptResults/<id>/index
+// all results:       /cronScriptResults/<id>/results
+// specific results:  /cronScriptResults/<id>/results/<index>
+//
+// We implement the results as a ringbuffer where the current index is also stored in the db.
+// After each write, we set index := (index + 1 mod maxResultsPerConScript).
+// Once we exceed maxResultsPerConScript, we write over the old data at index 0 and so on.
+func getCronScriptResultsKey(scriptID uuid.UUID) string {
+	return path.Join(scriptResultsPrefix, scriptID.String(), "results")
+}
+
+// We store the results as a subpath under the scriptID for easy access.
+func getCronScriptSpecificResultKey(scriptID uuid.UUID, index int64) string {
+	return path.Join(getCronScriptResultsKey(scriptID), fmt.Sprintf("%04d", index))
+}
+
+// We reserve a separate subpath for the index itself.
+func getCronScriptResultsIndexKey(scriptID uuid.UUID) string {
+	return path.Join(scriptResultsPrefix, scriptID.String(), "index")
 }
 
 // GetCronScripts fetches all scripts in the cron script store.
@@ -81,15 +111,25 @@ func (t *Datastore) UpsertCronScript(script *cvmsgspb.CronScript) error {
 
 // DeleteCronScript deletes a cron script from the store by ID.
 func (t *Datastore) DeleteCronScript(id uuid.UUID) error {
-	return t.ds.DeleteWithPrefix(getCronScriptKey(id))
+	err := t.ds.DeleteWithPrefix(getCronScriptKey(id))
+	if err != nil {
+		return err
+	}
+	return t.ds.DeleteWithPrefix(getCronScriptResultsKey(id))
 }
 
 // SetCronScripts sets the list of all cron scripts to match the given set of scripts.
 func (t *Datastore) SetCronScripts(scripts []*cvmsgspb.CronScript) error {
-	// Delete all existing scripts.
-	err := t.ds.DeleteWithPrefix(cronScriptPrefix)
+	existingScripts, err := t.GetCronScripts()
 	if err != nil {
 		return err
+	}
+	removedScriptIDs := make(map[uuid.UUID]struct{})
+	for _, es := range existingScripts {
+		if es == nil {
+			continue
+		}
+		removedScriptIDs[utils.UUIDFromProtoOrNil(es.ID)] = struct{}{}
 	}
 
 	// Update with new scripts.
@@ -101,7 +141,77 @@ func (t *Datastore) SetCronScripts(scripts []*cvmsgspb.CronScript) error {
 			lastError = err
 			log.WithError(err).Error("Failed to add cron script")
 		}
+
+		// A script that appears here was not removed.
+		// It is safe to delete elements that don't exist in the original map.
+		delete(removedScriptIDs, utils.UUIDFromProtoOrNil(s.ID))
+	}
+
+	if lastError != nil {
+		return lastError
+	}
+
+	// Delete all results for removed scripts
+	for k := range removedScriptIDs {
+		err := t.DeleteCronScript(k)
+		if err != nil {
+			lastError = err
+		}
 	}
 
 	return lastError
+}
+
+// GetCronScriptResults returns the results of past runs of a specific CronScript.
+func (t *Datastore) GetCronScriptResults(id uuid.UUID) ([]*storepb.CronScriptResult, error) {
+	_, vals, err := t.ds.GetWithPrefix(getCronScriptResultsKey(id))
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*storepb.CronScriptResult, len(vals))
+	for i, val := range vals {
+		pb := &storepb.CronScriptResult{}
+		err := proto.Unmarshal(val, pb)
+		if err != nil {
+			continue
+		}
+		results[i] = pb
+	}
+	return results, nil
+}
+
+func (t *Datastore) getCronScriptResultsIndex(scriptID uuid.UUID) (int64, error) {
+	val, err := t.ds.Get(getCronScriptResultsIndexKey(scriptID))
+	if err != nil {
+		return 0, err
+	}
+	if len(val) == 0 {
+		return 0, nil
+	}
+
+	i, err := strconv.Atoi(string(val))
+	if err != nil {
+		return 0, nil
+	}
+
+	return int64(i), nil
+}
+
+// RecordCronScriptResult saves the data for the latest result. If it exceeds the maximum number for that result, the call will delete the oldest entry.
+func (t *Datastore) RecordCronScriptResult(result *storepb.CronScriptResult) error {
+	scriptID := utils.UUIDFromProtoOrNil(result.ScriptID)
+	idx, err := t.getCronScriptResultsIndex(scriptID)
+	if err != nil {
+		return err
+	}
+	val, err := result.Marshal()
+	if err != nil {
+		return err
+	}
+	err = t.ds.Set(getCronScriptSpecificResultKey(scriptID, idx), string(val))
+	if err != nil {
+		return err
+	}
+	// Increment the index.
+	return t.ds.Set(getCronScriptResultsIndexKey(scriptID), fmt.Sprint((idx+1)%maxResultsPerCronScript))
 }
