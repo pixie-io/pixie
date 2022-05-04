@@ -20,6 +20,7 @@ package cronscript
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"github.com/gofrs/uuid"
@@ -104,4 +105,9 @@ func (s *Server) SetScripts(ctx context.Context, req *metadatapb.SetScriptsReque
 	}
 
 	return &metadatapb.SetScriptsResponse{}, s.ds.SetCronScripts(scripts)
+}
+
+// RecordExecutionResult records the stats of a successful CronScript execution or the error message of an unsuccessful execution.
+func (s *Server) RecordExecutionResult(context.Context, *metadatapb.RecordExecutionResultRequest) (*metadatapb.RecordExecutionResultResponse, error) {
+	return nil, errors.New("not Implemented")
 }
