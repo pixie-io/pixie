@@ -42,6 +42,7 @@
 #include "src/vizier/services/agent/manager/k8s_update.h"
 #include "src/vizier/services/agent/manager/registration.h"
 #include "src/vizier/services/agent/manager/ssl.h"
+#include "src/vizier/services/metadata/metadatapb/service.grpc.pb.h"
 
 namespace {
 
@@ -69,28 +70,26 @@ namespace vizier {
 namespace agent {
 using ::px::event::Dispatcher;
 
-Manager::MDSServiceSPtr CreateMDSStub(std::string_view mds_addr,
-                                      std::shared_ptr<grpc::ChannelCredentials> channel_creds) {
-  // TODO(zasgar): Not constructing the MDS by checking the url being empty is a bit janky. Fix
-  // this.
-  if (mds_addr.size() == 0) {
+Manager::MDSServiceSPtr CreateMDSStub(const std::shared_ptr<grpc::Channel>& chan) {
+  if (chan == nullptr) {
     return nullptr;
   }
-  // We need to move the channel here since gRPC mocking is done by the stub.
-  auto chan = grpc::CreateChannel(std::string(mds_addr), channel_creds);
   return std::make_shared<Manager::MDSService::Stub>(chan);
 }
 
-Manager::MDTPServiceSPtr CreateMDTPStub(std::string_view mds_addr,
-                                        std::shared_ptr<grpc::ChannelCredentials> channel_creds) {
-  // TODO(zasgar): Not constructing the MDS by checking the url being empty is a bit janky. Fix
-  // this.
-  if (mds_addr.size() == 0) {
+Manager::MDTPServiceSPtr CreateMDTPStub(const std::shared_ptr<grpc::Channel>& chan) {
+  if (chan == nullptr) {
     return nullptr;
   }
-  // We need to move the channel here since gRPC mocking is done by the stub.
-  auto chan = grpc::CreateChannel(std::string(mds_addr), channel_creds);
   return std::make_shared<Manager::MDTPService::Stub>(chan);
+}
+
+std::shared_ptr<services::metadata::CronScriptStoreService::Stub> CreateCronScriptStub(
+    const std::shared_ptr<grpc::Channel>& chan) {
+  if (chan == nullptr) {
+    return nullptr;
+  }
+  return std::make_shared<services::metadata::CronScriptStoreService::Stub>(chan);
 }
 
 Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_view host_ip,
@@ -103,8 +102,13 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
       nats_addr_(nats_url),
       table_store_(std::make_shared<table_store::TableStore>()),
       relation_info_manager_(std::make_unique<RelationInfoManager>()),
-      func_context_(this, CreateMDSStub(mds_url, grpc_channel_creds_),
-                    CreateMDTPStub(mds_url, grpc_channel_creds_), table_store_,
+      // TODO(zasgar): Not constructing the MDS by checking the url being empty is a bit janky. Fix
+      // this.
+      mds_channel_(mds_url.size() == 0
+                       ? nullptr
+                       : grpc::CreateChannel(std::string(mds_url), grpc_channel_creds_)),
+      func_context_(this, CreateMDSStub(mds_channel_), CreateMDTPStub(mds_channel_),
+                    CreateCronScriptStub(mds_channel_), table_store_,
                     [](grpc::ClientContext* ctx) { AddServiceTokenToClientContext(ctx); }),
       memory_metrics_(&GetMetricsRegistry(), "agent_id", agent_id.str()) {
   if (!has_nats_connection()) {

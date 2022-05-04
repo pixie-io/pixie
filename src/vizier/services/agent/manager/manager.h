@@ -231,6 +231,7 @@ class Manager : public px::NotCopyable {
   std::unique_ptr<px::md::AgentMetadataStateManager> mds_manager_;
   std::unique_ptr<RelationInfoManager> relation_info_manager_;
 
+  std::shared_ptr<grpc::Channel> mds_channel_;
   // Factory context for vizier functions.
   funcs::VizierFuncFactoryContext func_context_;
 
