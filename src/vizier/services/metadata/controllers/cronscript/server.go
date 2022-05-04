@@ -20,7 +20,6 @@ package cronscript
 
 import (
 	"context"
-	"errors"
 	"sync"
 
 	"github.com/gofrs/uuid"
@@ -28,6 +27,7 @@ import (
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
+	"px.dev/pixie/src/vizier/services/metadata/storepb"
 )
 
 // Store is a datastore which can store, update, and retrieve information about cron scripts.
@@ -36,6 +36,7 @@ type Store interface {
 	UpsertCronScript(script *cvmsgspb.CronScript) error
 	DeleteCronScript(id uuid.UUID) error
 	SetCronScripts(scripts []*cvmsgspb.CronScript) error
+	RecordCronScriptResult(*storepb.CronScriptResult) error
 }
 
 // Server is an implementation of the cronscriptstore service.
@@ -108,6 +109,22 @@ func (s *Server) SetScripts(ctx context.Context, req *metadatapb.SetScriptsReque
 }
 
 // RecordExecutionResult records the stats of a successful CronScript execution or the error message of an unsuccessful execution.
-func (s *Server) RecordExecutionResult(context.Context, *metadatapb.RecordExecutionResultRequest) (*metadatapb.RecordExecutionResultResponse, error) {
-	return nil, errors.New("not Implemented")
+func (s *Server) RecordExecutionResult(ctx context.Context, req *metadatapb.RecordExecutionResultRequest) (*metadatapb.RecordExecutionResultResponse, error) {
+	result := &storepb.CronScriptResult{
+		ScriptID:  req.GetScriptID(),
+		Timestamp: req.Timestamp,
+		Error:     req.GetError(),
+	}
+	if execStats := req.GetExecutionStats(); execStats != nil {
+		result.ExecutionTimeNs = execStats.ExecutionTimeNs
+		result.CompilationTimeNs = execStats.CompilationTimeNs
+		result.BytesProcessed = execStats.BytesProcessed
+		result.RecordsProcessed = execStats.RecordsProcessed
+	}
+
+	err := s.ds.RecordCronScriptResult(result)
+	if err != nil {
+		return nil, err
+	}
+	return &metadatapb.RecordExecutionResultResponse{}, nil
 }

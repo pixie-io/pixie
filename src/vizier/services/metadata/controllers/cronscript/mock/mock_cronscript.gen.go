@@ -10,6 +10,7 @@ import (
 	uuid "github.com/gofrs/uuid"
 	gomock "github.com/golang/mock/gomock"
 	cvmsgspb "px.dev/pixie/src/shared/cvmsgspb"
+	storepb "px.dev/pixie/src/vizier/services/metadata/storepb"
 )
 
 // MockStore is a mock of Store interface.
@@ -62,6 +63,20 @@ func (m *MockStore) GetCronScripts() ([]*cvmsgspb.CronScript, error) {
 func (mr *MockStoreMockRecorder) GetCronScripts() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCronScripts", reflect.TypeOf((*MockStore)(nil).GetCronScripts))
+}
+
+// RecordCronScriptResult mocks base method.
+func (m *MockStore) RecordCronScriptResult(arg0 *storepb.CronScriptResult) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RecordCronScriptResult", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RecordCronScriptResult indicates an expected call of RecordCronScriptResult.
+func (mr *MockStoreMockRecorder) RecordCronScriptResult(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecordCronScriptResult", reflect.TypeOf((*MockStore)(nil).RecordCronScriptResult), arg0)
 }
 
 // SetCronScripts mocks base method.

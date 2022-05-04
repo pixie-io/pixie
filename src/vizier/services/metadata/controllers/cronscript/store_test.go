@@ -23,6 +23,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gogo/protobuf/types"
+
 	"github.com/cockroachdb/pebble"
 	"github.com/cockroachdb/pebble/vfs"
 	"github.com/gofrs/uuid"
@@ -32,6 +34,7 @@ import (
 
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/vizier/services/metadata/storepb"
 	"px.dev/pixie/src/vizier/utils/datastore/pebbledb"
 )
 
@@ -174,4 +177,115 @@ func TestStore_SetCronScripts(t *testing.T) {
 
 	assert.Contains(t, ids, utils.ProtoToUUIDStr(s3.ID))
 	assert.Contains(t, ids, utils.ProtoToUUIDStr(s4.ID))
+}
+
+func TestStore_SetCronScripts_RemovesResultsForRemovedScripts(t *testing.T) {
+	_, ds, cleanup := setupTest(t)
+	defer cleanup()
+
+	// Create new scripts.
+	s1 := &cvmsgspb.CronScript{
+		ID: utils.ProtoFromUUID(uuid.Must(uuid.NewV4())),
+	}
+	s2 := &cvmsgspb.CronScript{
+		ID: utils.ProtoFromUUID(uuid.Must(uuid.NewV4())),
+	}
+
+	require.NoError(t, ds.SetCronScripts([]*cvmsgspb.CronScript{s1, s2}))
+
+	scripts, err := ds.GetCronScripts()
+	require.NoError(t, err)
+	assert.Equal(t, 2, len(scripts))
+
+	ids := make([]string, len(scripts))
+	for i, s := range scripts {
+		ids[i] = utils.ProtoToUUIDStr(s.ID)
+	}
+
+	assert.Contains(t, ids, utils.ProtoToUUIDStr(s1.ID))
+	assert.Contains(t, ids, utils.ProtoToUUIDStr(s2.ID))
+
+	res1 := &storepb.CronScriptResult{
+		ScriptID:        s1.ID,
+		Timestamp:       types.TimestampNow(),
+		Error:           nil,
+		ExecutionTimeNs: 1234,
+	}
+	require.NoError(t, ds.RecordCronScriptResult(res1))
+	s1Results, err := ds.GetCronScriptResults(utils.UUIDFromProtoOrNil(s1.ID))
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(s1Results))
+
+	res2 := &storepb.CronScriptResult{
+		ScriptID:        s2.ID,
+		Timestamp:       types.TimestampNow(),
+		Error:           nil,
+		ExecutionTimeNs: 1234,
+	}
+
+	require.NoError(t, ds.RecordCronScriptResult(res2))
+	s2Results, err := ds.GetCronScriptResults(utils.UUIDFromProtoOrNil(s2.ID))
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(s2Results))
+
+	// Now we Set with only s1, so s2 should be gone.
+	require.NoError(t, ds.SetCronScripts([]*cvmsgspb.CronScript{s1}))
+
+	// We still have s1 results.
+	s1Results, err = ds.GetCronScriptResults(utils.UUIDFromProtoOrNil(s1.ID))
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(s1Results))
+
+	// We wipe away s2 results.
+	s2Results, err = ds.GetCronScriptResults(utils.UUIDFromProtoOrNil(s2.ID))
+	require.NoError(t, err)
+	assert.Equal(t, 0, len(s2Results))
+}
+
+func TestStore_RecordCronScriptResult(t *testing.T) {
+	_, ds, cleanup := setupTest(t)
+	defer cleanup()
+
+	scriptID := uuid.FromStringOrNil("8ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	result := &storepb.CronScriptResult{
+		ScriptID:        utils.ProtoFromUUID(scriptID),
+		Timestamp:       types.TimestampNow(),
+		Error:           nil,
+		ExecutionTimeNs: 1234,
+	}
+
+	require.NoError(t, ds.RecordCronScriptResult(result))
+
+	scriptResults, err := ds.GetCronScriptResults(scriptID)
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(scriptResults))
+	assert.Equal(t, int64(1234), scriptResults[0].ExecutionTimeNs)
+}
+
+func TestStore_RecordCronScriptResult_HitsLimit(t *testing.T) {
+	_, ds, cleanup := setupTest(t)
+	defer cleanup()
+
+	scriptID := uuid.FromStringOrNil("8ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	for i := 0; i < 100; i++ {
+		ts, err := types.TimestampProto(time.Unix(0, int64(i)))
+		require.NoError(t, err)
+		result := &storepb.CronScriptResult{
+			ScriptID:        utils.ProtoFromUUID(scriptID),
+			Timestamp:       ts,
+			Error:           nil,
+			ExecutionTimeNs: 1234,
+		}
+
+		require.NoError(t, ds.RecordCronScriptResult(result))
+
+		scriptResults, err := ds.GetCronScriptResults(scriptID)
+		require.NoError(t, err)
+		if i+1 < 10 {
+			assert.Equal(t, i+1, len(scriptResults))
+		} else {
+			assert.Equal(t, 10, len(scriptResults))
+		}
+	}
 }
