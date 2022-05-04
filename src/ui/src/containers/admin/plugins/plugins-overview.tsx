@@ -39,6 +39,7 @@ import {
   Link, Route, Switch, useRouteMatch, RouteComponentProps,
 } from 'react-router-dom';
 
+import { useSnackbar } from 'app/components';
 import { useRetentionScripts } from 'app/pages/configure-data-export/data-export-gql';
 import { GQLPlugin, GQLPluginKind } from 'app/types/schema';
 import pixieAnalytics from 'app/utils/analytics';
@@ -84,7 +85,7 @@ const useStyles = makeStyles(({ palette, spacing, typography }: Theme) => create
     maxWidth: '100%',
     overflowX: 'auto',
   },
-  disableWarningTooltip: {
+  toggleWarningTooltip: {
     '& ul': { paddingLeft: spacing(1) },
   },
 }), { name: 'PluginList' });
@@ -138,37 +139,32 @@ const PluginLogo = React.memo<{ logo?: string }>(({ logo }) => {
 });
 PluginLogo.displayName = 'PluginLogo';
 
-interface PluginHeaderProps {
-  plugin: GQLPlugin;
-  onToggle: (isEnabled: boolean) => void;
-  numPreset: number;
-  numCustom: number;
-}
-const PluginHeader = React.memo<PluginHeaderProps>(({ plugin, onToggle, numPreset, numCustom }) => {
+const ToggleWarningTooltip = React.memo<{ mode: 'enable' | 'disable', numPreset: number, numCustom: number }>(({
+  mode, numPreset, numCustom,
+}) => {
   const classes = useStyles();
 
-  const [pendingToggle, setPendingToggle] = React.useState(false);
-  const pushEnableState = usePluginToggleEnabled(plugin);
-  const toggleEnabled = React.useCallback((event: React.MouseEvent<HTMLLabelElement>) => {
-    const enabled = !plugin.retentionEnabled;
-    // Don't expand/collapse the accordion, but do toggle the switch.
-    event.preventDefault();
-    event.stopPropagation();
-    setPendingToggle(true);
-    pixieAnalytics.track('Retention plugin toggled', {
-      enabled,
-      plugin: plugin.id,
-    });
-    pushEnableState(enabled).then(() => {
-      setPendingToggle(false);
-      onToggle(enabled);
-    }).catch(() => {
-      setPendingToggle(false);
-    });
-  }, [pushEnableState, onToggle, plugin.retentionEnabled, plugin.id]);
+  const enableWarning = React.useMemo(() => (
+    <div className={classes.toggleWarningTooltip}>
+      <p><strong>Enabling</strong> this plugin will:</p>
+      <ul>
+        <li>Use its default configuration</li>
+        <li>
+          Enable its <strong>preset</strong> retention scripts for all clusters.
+          <br/>
+          You can&nbsp;
+          {/* eslint-disable-next-line react-memo/require-usememo */}
+          <Link to='/configure-data-export' onClick={(e) => e.stopPropagation()}>
+            adjust this
+          </Link>
+          &nbsp;at any time after enabling.
+        </li>
+      </ul>
+    </div>
+  ), [classes.toggleWarningTooltip]);
 
   const disableWarning = React.useMemo(() => (
-    <div className={classes.disableWarningTooltip}>
+    <div className={classes.toggleWarningTooltip}>
       <p><strong>Disabling</strong> this plugin will:</p>
       <ul>
         <li>Clear this plugin&apos;s configuration</li>
@@ -192,7 +188,56 @@ const PluginHeader = React.memo<PluginHeaderProps>(({ plugin, onToggle, numPrese
         )}
       </ul>
     </div>
-  ), [classes.disableWarningTooltip, numCustom, numPreset]);
+  ), [classes.toggleWarningTooltip, numCustom, numPreset]);
+
+  return mode === 'enable' ? enableWarning : disableWarning;
+});
+ToggleWarningTooltip.displayName = 'ToggleWarningTooltip';
+
+interface PluginHeaderProps {
+  plugin: GQLPlugin;
+  history: RouteComponentProps.history;
+  onToggle: (isEnabled: boolean) => void;
+  numPreset: number;
+  numCustom: number;
+}
+const PluginHeader = React.memo<PluginHeaderProps>(({ plugin, history, onToggle, numPreset, numCustom }) => {
+  const classes = useStyles();
+  const showSnackbar = useSnackbar();
+
+  const [pendingToggle, setPendingToggle] = React.useState(false);
+  const pushEnableState = usePluginToggleEnabled(plugin);
+  const toggleEnabled = React.useCallback((event: React.MouseEvent<HTMLLabelElement>) => {
+    const enabled = !plugin.retentionEnabled;
+    // Don't expand/collapse the accordion, but do toggle the switch.
+    event.preventDefault();
+    event.stopPropagation();
+    setPendingToggle(true);
+    pixieAnalytics.track('Retention plugin toggled', {
+      enabled,
+      plugin: plugin.id,
+    });
+    pushEnableState(enabled).then(() => {
+      setPendingToggle(false);
+      onToggle(enabled);
+      const message = `${enabled ? 'Enabled' : 'Disabled'} plugin "${plugin.id}" and its retention scripts`;
+      showSnackbar({
+        message,
+        actionTitle: enabled ? 'Configure Scripts' : undefined,
+        action: enabled ? (() => history.push('/configure-data-export')) : undefined,
+      });
+    }).catch(() => {
+      setPendingToggle(false);
+    });
+  }, [pushEnableState, onToggle, plugin.retentionEnabled, plugin.id, history, showSnackbar]);
+
+  const tooltip = React.useMemo(() => (
+    <ToggleWarningTooltip
+      mode={plugin.retentionEnabled ? 'disable' : 'enable'}
+      numPreset={numPreset}
+      numCustom={numCustom}
+    />
+  ), [numCustom, numPreset, plugin.retentionEnabled]);
 
   return (
     <>
@@ -206,7 +251,7 @@ const PluginHeader = React.memo<PluginHeaderProps>(({ plugin, onToggle, numPrese
         </OverflowTooltip>
       </span>
       <span className={classes.accordionSummaryStatus}>
-        <Tooltip arrow title={plugin.retentionEnabled ? disableWarning : ''}>
+        <Tooltip arrow title={tooltip}>
           <FormControlLabel
             // TODO(nick,PC-1436): Make the label the same width for both states so things line up; place on right.
             label={`${plugin.retentionEnabled ? 'Enabled' : 'Disabled'}`}
@@ -265,6 +310,7 @@ const PluginList = React.memo<RouteComponentProps<{ expandId?: string }>>(({ mat
           >
             <PluginHeader
               plugin={p}
+              history={history}
               onToggle={getOnPluginToggled(p.id)}
               numPreset={scripts?.filter(s => s.pluginID === p.id && s.isPreset).length ?? 0}
               numCustom={scripts?.filter(s => s.pluginID === p.id && !s.isPreset).length ?? 0}
