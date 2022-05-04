@@ -50,6 +50,9 @@ void RegisterFuncsOrDie(const VizierFuncFactoryContext& ctx, carnot::udf::Regist
 
   registry->RegisterFactoryOrDie<GetTracepointStatus, UDTFWithMDTPFactory<GetTracepointStatus>>(
       "GetTracepointStatus", ctx);
+  registry
+      ->RegisterFactoryOrDie<GetCronScriptHistory, UDTFWithCronscriptFactory<GetCronScriptHistory>>(
+          "GetCronScriptHistory", ctx);
 }
 
 }  // namespace md

@@ -37,6 +37,7 @@
 #include "src/common/uuid/uuid.h"
 #include "src/shared/types/typespb/types.pb.h"
 #include "src/vizier/services/agent/manager/manager.h"
+#include "src/vizier/services/metadata/metadatapb/service.grpc.pb.h"
 
 namespace px {
 namespace vizier {
@@ -64,6 +65,20 @@ class UDTFWithMDTPFactory : public carnot::udf::UDTFFactory {
 
   std::unique_ptr<carnot::udf::AnyUDTF> Make() override {
     return std::make_unique<TUDTF>(ctx_.mdtp_stub(), ctx_.add_auth_to_grpc_context_func());
+  }
+
+ private:
+  const VizierFuncFactoryContext& ctx_;
+};
+
+template <typename TUDTF>
+class UDTFWithCronscriptFactory : public carnot::udf::UDTFFactory {
+ public:
+  UDTFWithCronscriptFactory() = delete;
+  explicit UDTFWithCronscriptFactory(const VizierFuncFactoryContext& ctx) : ctx_(ctx) {}
+
+  std::unique_ptr<carnot::udf::AnyUDTF> Make() override {
+    return std::make_unique<TUDTF>(ctx_.cronscript_stub(), ctx_.add_auth_to_grpc_context_func());
   }
 
  private:
@@ -829,6 +844,94 @@ class GetTracepointStatus final : public carnot::udf::UDTF<GetTracepointStatus> 
   int idx_ = 0;
   std::unique_ptr<px::vizier::services::metadata::GetTracepointInfoResponse> resp_;
   std::shared_ptr<MDTPStub> stub_;
+  std::function<void(grpc::ClientContext*)> add_context_authentication_func_;
+};
+
+class GetCronScriptHistory final : public carnot::udf::UDTF<GetCronScriptHistory> {
+ public:
+  using CronScriptStoreStub = vizier::services::metadata::CronScriptStoreService::Stub;
+  GetCronScriptHistory() = delete;
+  explicit GetCronScriptHistory(
+      std::shared_ptr<CronScriptStoreStub> stub,
+      std::function<void(grpc::ClientContext*)> add_context_authentication)
+      : stub_(stub), add_context_authentication_func_(std::move(add_context_authentication)) {}
+
+  static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ONE_KELVIN; }
+
+  static constexpr auto OutputRelation() {
+    return MakeArray(
+        ColInfo("script_id", types::DataType::STRING, types::PatternType::GENERAL,
+                "The id of the cron script"),
+        ColInfo("timestamp", types::DataType::TIME64NS, types::PatternType::GENERAL,
+                "The time the script ran"),
+        ColInfo("error_message", types::DataType::STRING, types::PatternType::GENERAL,
+                "The error message if one exists"),
+        ColInfo("execution_time_ns", types::DataType::INT64, types::PatternType::GENERAL,
+                "The execution time of the script"),
+        ColInfo("compilation_time_ns", types::DataType::INT64, types::PatternType::GENERAL,
+                "The compiltation time of the script"),
+        ColInfo("bytes_processed", types::DataType::INT64, types::PatternType::GENERAL,
+                "The number of bytes processed during script execution"),
+        ColInfo("records_processed", types::DataType::INT64, types::PatternType::GENERAL,
+                "The number of records processed during script execution"));
+  }
+
+  Status Init(FunctionContext*) {
+    px::vizier::services::metadata::GetAllExecutionResultsRequest req;
+    resp_ = std::make_unique<px::vizier::services::metadata::GetAllExecutionResultsResponse>();
+
+    grpc::ClientContext ctx;
+    add_context_authentication_func_(&ctx);
+    auto s = stub_->GetAllExecutionResults(&ctx, req, resp_.get());
+    if (!s.ok()) {
+      return error::Internal("Failed to make RPC call to GetTracepointStatus: $0",
+                             s.error_message());
+    }
+    return Status::OK();
+  }
+
+  bool NextRecord(FunctionContext*, RecordWriter* rw) {
+    if (resp_->results_size() == 0) {
+      return false;
+    }
+    const auto& result = resp_->results(idx_);
+    auto u_or_s = ParseUUID(result.script_id());
+    sole::uuid u;
+    if (u_or_s.ok()) {
+      u = u_or_s.ConsumeValueOrDie();
+    }
+
+    rw->Append<IndexOf("script_id")>(u.str());
+    rw->Append<IndexOf("timestamp")>(types::Time64NSValue(
+        result.timestamp().seconds() * 1000000000 + result.timestamp().nanos()));
+
+    if (result.has_error()) {
+      rw->Append<IndexOf("error_message")>(
+          std::string(absl::Substitute("$0: $1 $2", result.error().err_code(), result.error().msg(),
+                                       result.error().context().DebugString())));
+      // set to 0.
+      rw->Append<IndexOf("execution_time_ns")>(0);
+      rw->Append<IndexOf("compilation_time_ns")>(0);
+      rw->Append<IndexOf("bytes_processed")>(0);
+      rw->Append<IndexOf("records_processed")>(0);
+    } else {
+      // Set to empty string.
+      rw->Append<IndexOf("error_message")>("");
+      const auto& exec_stats = result.execution_stats();
+      rw->Append<IndexOf("execution_time_ns")>(exec_stats.execution_time_ns());
+      rw->Append<IndexOf("compilation_time_ns")>(exec_stats.compilation_time_ns());
+      rw->Append<IndexOf("bytes_processed")>(exec_stats.bytes_processed());
+      rw->Append<IndexOf("records_processed")>(exec_stats.records_processed());
+    }
+
+    ++idx_;
+    return idx_ < resp_->results_size();
+  }
+
+ private:
+  int idx_ = 0;
+  std::unique_ptr<px::vizier::services::metadata::GetAllExecutionResultsResponse> resp_;
+  std::shared_ptr<CronScriptStoreStub> stub_;
   std::function<void(grpc::ClientContext*)> add_context_authentication_func_;
 };
 
