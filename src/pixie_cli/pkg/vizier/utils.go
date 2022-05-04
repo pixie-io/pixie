@@ -354,3 +354,29 @@ func GetClusterIDFromKubeConfig(config *rest.Config) uuid.UUID {
 	}
 	return uuid.FromStringOrNil(string(cID))
 }
+
+// GetCloudAddrFromKubeConfig returns the cloud address given the kubeconfig. If anything fails, then will return an empty string.
+func GetCloudAddrFromKubeConfig(config *rest.Config) string {
+	if config == nil {
+		return ""
+	}
+	clientset := k8s.GetClientset(config)
+	if clientset == nil {
+		return ""
+	}
+	vzNs, err := FindVizierNamespace(clientset)
+	if err != nil || vzNs == "" {
+		return ""
+	}
+
+	cm, err := clientset.CoreV1().ConfigMaps(vzNs).Get(context.Background(), "pl-cloud-config", metav1.GetOptions{})
+	if err != nil {
+		return ""
+	}
+
+	cloudAddr, ok := cm.Data["PL_CLOUD_ADDR"]
+	if !ok {
+		return ""
+	}
+	return cloudAddr
+}
