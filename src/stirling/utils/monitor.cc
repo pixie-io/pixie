@@ -50,8 +50,8 @@ void StirlingMonitor::NotifyJavaProcessCrashed(const struct upid_t& upid) {
 
 void StirlingMonitor::AppendStatusRecord(const std::string& source_connector,
                                          const Status& status) {
-  connector_status_records_.push_back({static_cast<uint64_t>(CurrentTimeNS()), source_connector,
-                                       static_cast<uint64_t>(status.code()), status.msg()});
+  connector_status_records_.push_back(
+      {CurrentTimeNS(), source_connector, status.code(), status.msg()});
 }
 
 std::vector<ConnectorStatusRecord> StirlingMonitor::ConsumeStatusRecords() {

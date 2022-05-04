@@ -38,8 +38,11 @@ pl_cc_test(
     name = "stirling_error_test",
     timeout = "moderate",
     srcs = ["stirling_error_test.cc"],
+    data = ["//src/stirling/testing:tcpdrop_bpftrace_script"],
     tags = ["requires_bpf"],
     deps = [
+        "//src/carnot/planner/probes:tracepoint_generator_lib",
+        "//src/shared/tracepoint_translation:cc_library",
         "//src/stirling:cc_library",
         "//src/stirling/testing:cc_library",
     ],
