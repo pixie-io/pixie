@@ -57,7 +57,7 @@ pl_cc_library(
     hdrs = ["tracepoint_generator.h"],
     visibility = [
         "//src/carnot:__subpackages__",
-        "//src/stirling/binaries:__subpackages__",
+        "//src/stirling:__subpackages__",
     ],
     deps = [
         ":cc_library",

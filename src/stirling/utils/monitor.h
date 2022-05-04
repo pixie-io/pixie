@@ -30,10 +30,10 @@ namespace px {
 namespace stirling {
 
 struct ConnectorStatusRecord {
-  uint64_t timestamp_ns = 0;
+  int64_t timestamp_ns = 0;
   std::string source_connector = "";
-  uint64_t status = 0;
-  std::string error = "";
+  px::statuspb::Code status;
+  std::string error;
 };
 
 class StirlingMonitor : NotCopyMoveable {

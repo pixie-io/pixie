@@ -195,6 +195,8 @@ class TracepointDeployment {
    */
   Status AddBPFTrace(const std::string& bpftrace_program, const std::string& output_name);
 
+  std::string name() const { return name_; }
+
  private:
   std::string name_;
   int64_t ttl_ns_;

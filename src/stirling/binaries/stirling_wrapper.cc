@@ -164,7 +164,7 @@ tracepoints {
 }
 )";
 
-// Get dynamic tracing program from either flags or enviornment variable.
+// Get dynamic tracing program from either flags or environment variable.
 std::optional<TraceProgram> GetTraceProgram() {
   std::string env_tracepoint(gflags::StringFromEnv("STIRLING_AUTO_TRACE", ""));
 

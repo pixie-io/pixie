@@ -18,8 +18,10 @@
 
 #include <absl/functional/bind_front.h>
 
+#include "src/carnot/planner/probes/tracepoint_generator.h"
 #include "src/common/base/base.h"
 #include "src/common/testing/testing.h"
+#include "src/shared/tracepoint_translation/translation.h"
 #include "src/stirling/core/output.h"
 #include "src/stirling/core/types.h"
 #include "src/stirling/source_connectors/seq_gen/seq_gen_connector.h"
@@ -39,7 +41,15 @@ using ::px::types::StringValue;
 using ::px::types::Time64NSValue;
 using ::px::types::UInt128Value;
 
+using DynamicTracepointDeployment =
+    ::px::stirling::dynamic_tracing::ir::logical::TracepointDeployment;
 using ::px::stirling::testing::RecordBatchSizeIs;
+
+#define CHECK_SINGLE_RECORD_BATCH(RECORD_BATCH, SOURCE, STATUS, MSG) \
+  EXPECT_THAT(RECORD_BATCH, RecordBatchSizeIs(1));                   \
+  EXPECT_EQ(RECORD_BATCH[2]->Get<StringValue>(0).string(), SOURCE);  \
+  EXPECT_EQ(RECORD_BATCH[3]->Get<Int64Value>(0).val, STATUS);        \
+  EXPECT_EQ(RECORD_BATCH[4]->Get<StringValue>(0).string(), MSG);
 
 // A SourceConnector that fails on Init.
 class FaultyConnector : public SourceConnector {
@@ -84,6 +94,7 @@ class FaultyConnector : public SourceConnector {
 class StirlingErrorTest : public ::testing::Test {
  protected:
   inline static const uint32_t kNumSources = 3;
+  inline static const std::string bpftrace_script_ = "src/stirling/testing/tcpdrop.bpftrace.pxl";
 
   template <typename TSourceType>
   std::unique_ptr<SourceRegistry> CreateSources() {
@@ -172,6 +183,72 @@ TEST_F(StirlingErrorTest, InitializationError) {
     EXPECT_EQ(record_batch[3]->Get<Int64Value>(i).val, expected_status);
     EXPECT_EQ(record_batch[4]->Get<StringValue>(i).string(), expected_error);
   }
+}
+
+// Deploy a dynamic BPFTrace probe and record the error messages of its deployment and removal.
+// Expects one message each for deployment in progress, deployment status, and removal in progress.
+TEST_F(StirlingErrorTest, BPFTraceError) {
+  // Register StirlingErrorConnector.
+  std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>();
+  registry->RegisterOrDie<StirlingErrorConnector>("stirling_error");
+
+  // Run Stirling.
+  InitStirling(std::move(registry));
+  ASSERT_OK(stirling_->RunAsThread());
+  ASSERT_OK(stirling_->WaitUntilRunning(std::chrono::seconds(5)));
+
+  // Get BPFTrace program.
+  auto trace_program = std::make_unique<DynamicTracepointDeployment>();
+  ASSERT_OK_AND_ASSIGN(std::string program_text,
+                       px::ReadFileToString(px::testing::TestFilePath(bpftrace_script_)));
+
+  // Compile tracepoint.
+  ASSERT_OK_AND_ASSIGN(auto compiled_tracepoint,
+                       px::carnot::planner::compiler::CompileTracepoint(program_text));
+  ::px::tracepoint::ConvertPlannerTracepointToStirlingTracepoint(compiled_tracepoint,
+                                                                 trace_program.get());
+
+  // Register tracepoint.
+  sole::uuid trace_id = sole::uuid4();
+  stirling_->RegisterTracepoint(trace_id, std::move(trace_program));
+
+  // Wait for deployment to finish.
+  StatusOr<stirlingpb::Publish> s;
+  do {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    s = stirling_->GetTracepointInfo(trace_id);
+  } while (!s.ok() && s.code() == px::statuspb::Code::RESOURCE_UNAVAILABLE);
+  sleep(3);
+
+  // Remove tracepoint;
+  ASSERT_OK(stirling_->RemoveTracepoint(trace_id));
+  do {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    s = stirling_->GetTracepointInfo(trace_id);
+  } while (s.ok());
+  sleep(3);
+
+  stirling_->Stop();
+  EXPECT_THAT(record_batches_, SizeIs(4));
+
+  // Stirling Error Source Connector Initialization.
+  auto& record_batch = *record_batches_[0];
+  CHECK_SINGLE_RECORD_BATCH(record_batch, "stirling_error", px::statuspb::Code::OK, "");
+
+  // TCPDrop deployment in progress.
+  record_batch = *record_batches_[1];
+  CHECK_SINGLE_RECORD_BATCH(record_batch, "tcp_drop_tracer",
+                            px::statuspb::Code::RESOURCE_UNAVAILABLE,
+                            "Probe deployment in progress.");
+
+  // TCPDrop deployed.
+  record_batch = *record_batches_[2];
+  CHECK_SINGLE_RECORD_BATCH(record_batch, "tcp_drop_tracer", px::statuspb::Code::OK, "");
+
+  // TCPDrop removal in progress.
+  record_batch = *record_batches_[3];
+  CHECK_SINGLE_RECORD_BATCH(record_batch, "tcp_drop_tracer",
+                            px::statuspb::Code::RESOURCE_UNAVAILABLE, "Probe removal in progress.");
 }
 
 }  // namespace stirling
