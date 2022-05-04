@@ -22,7 +22,7 @@ import {
   Add as AddIcon,
   Delete as DeleteIcon,
   Extension as ExtensionIcon,
-  Settings as SettingsIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import {
   Box,
@@ -87,6 +87,17 @@ const PluginIcon = React.memo<{ iconString: string }>(({ iconString }) => {
   return <ExtensionIcon sx={{ mr: 2, fontSize: 'body1.fontSize' }} />;
 });
 PluginIcon.displayName = 'PluginIcon';
+
+// eslint-disable-next-line react-memo/require-memo
+const TextLink = styled(Link)(({ theme }) => ({
+  textDecoration: 'none',
+  '&, &:visited': {
+    color: theme.palette.primary.main,
+  },
+  '&:hover': {
+    textDecoration: 'underline',
+  },
+}));
 
 const RetentionScriptRow = React.memo<{ script: GQLRetentionScript }>(({ script }) => {
   const { path } = useRouteMatch();
@@ -154,7 +165,7 @@ const RetentionScriptRow = React.memo<{ script: GQLRetentionScript }>(({ script 
     <TableRow key={id}>
       <TableCell>
         <Tooltip title={description}>
-          <span>{name}</span>
+          <TextLink to={`${path}/update/${script.id}`}>{name}</TextLink>
         </Tooltip>
       </TableCell>
       <TableCell>
@@ -193,7 +204,7 @@ const RetentionScriptRow = React.memo<{ script: GQLRetentionScript }>(({ script 
             component={Link}
             to={`${path}/update/${script.id}`}
           >
-            <SettingsIcon />
+            <EditIcon />
           </IconButton>
         </Tooltip>
         {!script.isPreset && (
