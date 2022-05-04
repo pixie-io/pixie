@@ -304,6 +304,11 @@ func (s *fakeCronStore) RecordExecutionResult(ctx context.Context, req *metadata
 	return &metadatapb.RecordExecutionResultResponse{}, nil
 }
 
+// RecordExecutionResult stores the result of execution, whether that's an error or the stats about the execution.
+func (s *fakeCronStore) GetAllExecutionResults(ctx context.Context, req *metadatapb.GetAllExecutionResultsRequest, opts ...grpc.CallOption) (*metadatapb.GetAllExecutionResultsResponse, error) {
+	return &metadatapb.GetAllExecutionResultsResponse{}, nil
+}
+
 func TestScriptRunner_SyncScripts(t *testing.T) {
 	tests := []struct {
 		name             string
