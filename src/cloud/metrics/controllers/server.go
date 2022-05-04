@@ -41,7 +41,7 @@ import (
 )
 
 // The table where these metrics are written.
-const bqMetricsTable = "vizier_metrics"
+const bqMetricsTable = "vzmetrics"
 
 // Row represents a bq row.
 type Row struct {
@@ -99,6 +99,10 @@ func (s *Server) createOrGetBQTable() (*bigquery.Table, error) {
 	}
 	err = table.Create(context.Background(), &bigquery.TableMetadata{
 		Schema: schema,
+		TimePartitioning: &bigquery.TimePartitioning{
+			Type:  bigquery.DayPartitioningType,
+			Field: "timestamp",
+		},
 	})
 	if err != nil {
 		return nil, err
