@@ -71,7 +71,6 @@ message TransferResultChunkRequest {
   message InitiateConnection { }
 
   oneof result {
-    InitiateConnection initiate_conn = 8;
     // `query_result` covers query result data sent from a GRPC sink (including the request
     // to initiate the connection between the GRPC sink and its destination).
     SinkResult query_result = 5;
@@ -81,6 +80,8 @@ message TransferResultChunkRequest {
     QueryExecutionAndTimingInfo execution_and_timing_info = 6;
     // Whenever an error occurs, it will be stored in this field.
     px.statuspb.Status execution_error = 7;
+    // The message sent during query initialization. Signals that the query has started.
+    InitiateConnection initiate_conn = 8;
   }
 }
 
