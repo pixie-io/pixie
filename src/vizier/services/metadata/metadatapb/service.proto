@@ -24,6 +24,7 @@ option go_package = "metadatapb";
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
 import "src/api/proto/uuidpb/uuid.proto";
 import "src/carnot/planner/distributedpb/distributed_plan.proto";
 import "src/carnot/planner/dynamic_tracing/ir/logicalpb/logical.proto";
@@ -67,6 +68,8 @@ service CronScriptStoreService {
   rpc DeleteScript(DeleteScriptRequest) returns (DeleteScriptResponse);
   // SetScripts sets the list of all cron scripts to match the given set of scripts.
   rpc SetScripts(SetScriptsRequest) returns (SetScriptsResponse);
+  // RecordExecutionResult records the results of a CronScriptRun
+  rpc RecordExecutionResult(RecordExecutionResultRequest) returns (RecordExecutionResultResponse);
 }
 
 message SchemaRequest {}
@@ -265,3 +268,28 @@ message SetScriptsRequest {
 
 // SetScriptsResponse is a response to a SetScriptsRequest.
 message SetScriptsResponse {}
+
+// ExecutionStats contains information about the time/data processed by the
+// query.
+message ExecutionStats {
+  // The total execution time for the query in nanoseconds.
+  int64 execution_time_ns = 1;
+  // The time in ns spent compiling the query.
+  int64 compilation_time_ns = 2;
+  // The number of input bytes.
+  int64 bytes_processed = 3;
+  // The number of input records.
+  int64 records_processed = 4;
+}
+
+message RecordExecutionResultRequest {
+  // The ID of the script that was run.
+  uuidpb.UUID script_id = 1 [(gogoproto.customname) = "ScriptID"];
+  google.protobuf.Timestamp timestamp = 2;
+  oneof result {
+    px.statuspb.Status error = 3;
+    ExecutionStats execution_stats = 4;
+  }
+}
+
+message RecordExecutionResultResponse {}
