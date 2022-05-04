@@ -999,6 +999,8 @@ message UpdateRetentionPluginConfigRequest {
   // The custom export URL that should be applied to all plugin scripts.
   google.protobuf.StringValue custom_export_url = 5;
   google.protobuf.BoolValue insecure_tls = 6 [(gogoproto.customname) = "InsecureTLS"];
+  // If enabling the plugin, whether to enable all preset scripts.
+  google.protobuf.BoolValue disable_presets = 7;
 }
 
 // UpdateRetentionPluginConfigResponse is the response to a UpdateRetentionPluginConfigRequest.
