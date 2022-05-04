@@ -47,6 +47,8 @@ func init() {
 
 	CreateAPIKeyCmd.Flags().StringP("desc", "d", "", "A description for the API key")
 	viper.BindPFlag("desc", CreateAPIKeyCmd.Flags().Lookup("desc"))
+	CreateAPIKeyCmd.Flags().BoolP("short", "s", false, "Return only the created API key, for use to pipe to other tools")
+	viper.BindPFlag("short", CreateAPIKeyCmd.Flags().Lookup("short"))
 
 	DeleteAPIKeyCmd.Flags().StringP("id", "i", "", "The API key to delete")
 	viper.BindPFlag("id", DeleteAPIKeyCmd.Flags().Lookup("id"))
@@ -74,13 +76,18 @@ var CreateAPIKeyCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cloudAddr := viper.GetString("cloud_addr")
 		desc, _ := cmd.Flags().GetString("desc")
+		short, _ := cmd.Flags().GetBool("short")
 
 		keyID, key, err := generateAPIKey(cloudAddr, desc)
 		if err != nil {
 			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 			log.WithError(err).Fatal("Failed to generate API key")
 		}
-		utils.Infof("Generated API key: \nID: %s \nKey: %s", keyID, key)
+		if short {
+			utils.Infof(key)
+		} else {
+			utils.Infof("Generated API key: \nID: %s \nKey: %s", keyID, key)
+		}
 	},
 }
 
