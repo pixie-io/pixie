@@ -37,6 +37,7 @@ type Store interface {
 	DeleteCronScript(id uuid.UUID) error
 	SetCronScripts(scripts []*cvmsgspb.CronScript) error
 	RecordCronScriptResult(*storepb.CronScriptResult) error
+	GetAllCronScriptResults() ([]*storepb.CronScriptResult, error)
 }
 
 // Server is an implementation of the cronscriptstore service.
@@ -127,4 +128,39 @@ func (s *Server) RecordExecutionResult(ctx context.Context, req *metadatapb.Reco
 		return nil, err
 	}
 	return &metadatapb.RecordExecutionResultResponse{}, nil
+}
+
+// GetAllExecutionResults returns all of the execution results for cronscripts stored by this service.
+func (s *Server) GetAllExecutionResults(ctx context.Context, req *metadatapb.GetAllExecutionResultsRequest) (*metadatapb.GetAllExecutionResultsResponse, error) {
+	results, err := s.ds.GetAllCronScriptResults()
+	if err != nil {
+		return nil, err
+	}
+	resp := &metadatapb.GetAllExecutionResultsResponse{
+		Results: make([]*metadatapb.GetAllExecutionResultsResponse_ExecutionResult, len(results)),
+	}
+
+	for i, res := range results {
+		newResult := &metadatapb.GetAllExecutionResultsResponse_ExecutionResult{
+			ScriptID:  res.ScriptID,
+			Timestamp: res.Timestamp,
+		}
+		if res.Error != nil {
+			newResult.Result = &metadatapb.GetAllExecutionResultsResponse_ExecutionResult_Error{
+				Error: res.Error,
+			}
+		} else {
+			newResult.Result = &metadatapb.GetAllExecutionResultsResponse_ExecutionResult_ExecutionStats{
+				ExecutionStats: &metadatapb.ExecutionStats{
+					ExecutionTimeNs:   res.ExecutionTimeNs,
+					CompilationTimeNs: res.CompilationTimeNs,
+					BytesProcessed:    res.BytesProcessed,
+					RecordsProcessed:  res.RecordsProcessed,
+				},
+			}
+		}
+
+		resp.Results[i] = newResult
+	}
+	return resp, nil
 }

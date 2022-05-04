@@ -215,3 +215,24 @@ func (t *Datastore) RecordCronScriptResult(result *storepb.CronScriptResult) err
 	// Increment the index.
 	return t.ds.Set(getCronScriptResultsIndexKey(scriptID), fmt.Sprint((idx+1)%maxResultsPerCronScript))
 }
+
+// GetAllCronScriptResults returns all of the stored execution results for all scripts.
+func (t *Datastore) GetAllCronScriptResults() ([]*storepb.CronScriptResult, error) {
+	keys, vals, err := t.ds.GetWithPrefix(scriptResultsPrefix)
+	if err != nil {
+		return nil, err
+	}
+	var results []*storepb.CronScriptResult
+	for i, k := range keys {
+		if path.Base(k) == "index" {
+			continue
+		}
+		newResult := &storepb.CronScriptResult{}
+		err := proto.Unmarshal(vals[i], newResult)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, newResult)
+	}
+	return results, nil
+}

@@ -68,8 +68,10 @@ service CronScriptStoreService {
   rpc DeleteScript(DeleteScriptRequest) returns (DeleteScriptResponse);
   // SetScripts sets the list of all cron scripts to match the given set of scripts.
   rpc SetScripts(SetScriptsRequest) returns (SetScriptsResponse);
-  // RecordExecutionResult records the results of a CronScriptRun
+  // RecordExecutionResult records the results of a CronScriptRun.
   rpc RecordExecutionResult(RecordExecutionResultRequest) returns (RecordExecutionResultResponse);
+// GetAllExecutionResults returns all of the execution results for cronscripts stored by this service.
+  rpc GetAllExecutionResults(GetAllExecutionResultsRequest) returns (GetAllExecutionResultsResponse);
 }
 
 message SchemaRequest {}
@@ -293,3 +295,17 @@ message RecordExecutionResultRequest {
 }
 
 message RecordExecutionResultResponse {}
+
+message GetAllExecutionResultsRequest {}
+
+message GetAllExecutionResultsResponse {
+  message ExecutionResult {
+    uuidpb.UUID script_id = 1 [(gogoproto.customname) = "ScriptID"];
+    google.protobuf.Timestamp timestamp = 2;
+    oneof result {
+      px.statuspb.Status error = 3;
+      ExecutionStats execution_stats = 4;
+    }
+  }
+  repeated ExecutionResult results = 1 ;
+}

@@ -228,6 +228,10 @@ func TestStore_SetCronScripts_RemovesResultsForRemovedScripts(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(s2Results))
 
+	allCronScriptResults, err := ds.GetAllCronScriptResults()
+	require.NoError(t, err)
+	assert.Equal(t, 2, len(allCronScriptResults))
+
 	// Now we Set with only s1, so s2 should be gone.
 	require.NoError(t, ds.SetCronScripts([]*cvmsgspb.CronScript{s1}))
 
@@ -240,6 +244,10 @@ func TestStore_SetCronScripts_RemovesResultsForRemovedScripts(t *testing.T) {
 	s2Results, err = ds.GetCronScriptResults(utils.UUIDFromProtoOrNil(s2.ID))
 	require.NoError(t, err)
 	assert.Equal(t, 0, len(s2Results))
+
+	allCronScriptResults, err = ds.GetAllCronScriptResults()
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(allCronScriptResults))
 }
 
 func TestStore_RecordCronScriptResult(t *testing.T) {
@@ -260,6 +268,10 @@ func TestStore_RecordCronScriptResult(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(scriptResults))
 	assert.Equal(t, int64(1234), scriptResults[0].ExecutionTimeNs)
+
+	allCronScriptResults, err := ds.GetAllCronScriptResults()
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(allCronScriptResults))
 }
 
 func TestStore_RecordCronScriptResult_HitsLimit(t *testing.T) {
