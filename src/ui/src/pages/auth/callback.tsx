@@ -265,6 +265,12 @@ export const AuthCallbackPage: React.FC = React.memo(() => {
 
   const sendTokenToCLI = React.useCallback(async (accessToken: string, idToken: string, redirectURI: string) => {
     try {
+      // Check the URL is from an accepted origin.
+      const parsedURL = new URL(redirectURI);
+      if (parsedURL.hostname != 'localhost') {
+        return false;
+      }
+
       const response = await redirectGet(redirectURI, { accessToken });
       return response.status === 200 && response.data === 'OK';
     } catch (error) {
@@ -299,7 +305,7 @@ export const AuthCallbackPage: React.FC = React.memo(() => {
             return;
           }
           // Fallback to manual auth unless there is an actual authentication error.
-          if (config.err?.errorType !== 'auth') {
+          if (!config || config.err?.errorType !== 'auth') {
             setConfig((c) => ({
               ...c,
               mode: 'cli_token',
