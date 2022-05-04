@@ -42,6 +42,11 @@ TEST(RegexOps, basic_regex_match) {
   udf_tester.Init("abcd.*").ForInput("abce").Expect(false);
 }
 
+TEST(RegexOps, regex_match_new_line) {
+  auto udf_tester = udf::UDFTester<RegexMatchUDF>();
+  udf_tester.Init(".*").ForInput("abcd\nefg").Expect(true);
+}
+
 TEST(RegexOps, invalid_regex_match) {
   auto udf_tester = udf::UDFTester<RegexMatchUDF>();
   udf_tester.Init(R"regex(\K)regex").ForInput(kMultiLine).Expect(false);

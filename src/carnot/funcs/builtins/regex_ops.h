@@ -41,6 +41,7 @@ class RegexMatchUDF : public udf::ScalarUDF {
  public:
   Status Init(FunctionContext*, StringValue regex) {
     re2::RE2::Options opts;
+    opts.set_dot_nl(true);
     opts.set_log_errors(false);
     regex_ = std::make_unique<re2::RE2>(regex, opts);
     return Status::OK();
