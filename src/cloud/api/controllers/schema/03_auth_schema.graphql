@@ -352,6 +352,7 @@ type PluginInfo {
   configs: [PluginConfigSchema!]!
   allowCustomExportURL: Boolean!
   allowInsecureTLS: Boolean!
+  defaultExportURL: String!
 }
 
 type PluginConfigSchema {

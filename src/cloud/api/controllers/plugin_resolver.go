@@ -75,6 +75,7 @@ type PluginInfoResolver struct {
 	Configs              []PluginConfigResolver
 	AllowCustomExportURL bool
 	AllowInsecureTLS     bool
+	DefaultExportURL     string
 }
 
 func kindGQLToCloudProto(kind string) cloudpb.PluginKind {

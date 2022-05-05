@@ -342,6 +342,7 @@ export interface GQLPluginInfo {
   configs: Array<GQLPluginConfigSchema>;
   allowCustomExportURL: boolean;
   allowInsecureTLS: boolean;
+  defaultExportURL: string;
 }
 
 export interface GQLPluginConfigSchema {
@@ -1461,6 +1462,7 @@ export interface GQLPluginInfoTypeResolver<TParent = any> {
   configs?: PluginInfoToConfigsResolver<TParent>;
   allowCustomExportURL?: PluginInfoToAllowCustomExportURLResolver<TParent>;
   allowInsecureTLS?: PluginInfoToAllowInsecureTLSResolver<TParent>;
+  defaultExportURL?: PluginInfoToDefaultExportURLResolver<TParent>;
 }
 
 export interface PluginInfoToConfigsResolver<TParent = any, TResult = any> {
@@ -1472,6 +1474,10 @@ export interface PluginInfoToAllowCustomExportURLResolver<TParent = any, TResult
 }
 
 export interface PluginInfoToAllowInsecureTLSResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface PluginInfoToDefaultExportURLResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
