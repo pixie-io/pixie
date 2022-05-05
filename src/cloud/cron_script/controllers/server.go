@@ -396,7 +396,7 @@ func (s *Server) CreateScript(ctx context.Context, req *cronscriptpb.CreateScrip
 	}
 
 	query := `INSERT INTO cron_scripts(org_id, script, cluster_ids, configs, enabled, frequency_s) VALUES ($1, $2, $3, PGP_SYM_ENCRYPT($4, $5), $6, $7) RETURNING id`
-	rows, err := s.db.Queryx(query, claimsOrgID, req.Script, ClusterIDs(clusterIDs), req.Configs, s.dbKey, true, req.FrequencyS)
+	rows, err := s.db.Queryx(query, claimsOrgID, req.Script, ClusterIDs(clusterIDs), req.Configs, s.dbKey, !req.Disabled, req.FrequencyS)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to create cron script")
 	}
@@ -413,18 +413,20 @@ func (s *Server) CreateScript(ctx context.Context, req *cronscriptpb.CreateScrip
 	}
 	idPb := utils.ProtoFromUUID(id)
 
-	s.sendCronScriptUpdateToViziers(&cvmsgspb.CronScriptUpdate{
-		Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
-			UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
-				Script: &cvmsgspb.CronScript{
-					ID:         idPb,
-					Script:     req.Script,
-					FrequencyS: req.FrequencyS,
-					Configs:    req.Configs,
+	if !req.Disabled {
+		s.sendCronScriptUpdateToViziers(&cvmsgspb.CronScriptUpdate{
+			Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
+				UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
+					Script: &cvmsgspb.CronScript{
+						ID:         idPb,
+						Script:     req.Script,
+						FrequencyS: req.FrequencyS,
+						Configs:    req.Configs,
+					},
 				},
 			},
-		},
-	}, claimsOrgID, req.ClusterIDs)
+		}, claimsOrgID, req.ClusterIDs)
+	}
 
 	return &cronscriptpb.CreateScriptResponse{ID: idPb}, nil
 }

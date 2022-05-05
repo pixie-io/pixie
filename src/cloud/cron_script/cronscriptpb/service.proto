@@ -100,6 +100,8 @@ message CreateScriptRequest {
     string token = 5;
     // How frequently a script should be run, if not specified via cron.
     int64 frequency_s = 6;
+    // Whether the script should be disabled at creation.
+    bool disabled = 7;
 }
 
 // CreateScriptResponse is a response to a CreateScriptRequest.
