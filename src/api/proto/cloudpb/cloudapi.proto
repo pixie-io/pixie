@@ -1042,6 +1042,7 @@ message GetRetentionPluginInfoResponse {
   map<string, string> configs = 1;
   bool allow_custom_export_url = 2 [(gogoproto.customname) = "AllowCustomExportURL"];
   bool allow_insecure_tls = 3 [(gogoproto.customname) = "AllowInsecureTLS"];
+  string default_export_url = 4 [(gogoproto.customname) = "DefaultExportURL"];
 }
 
 // GetRetentionScriptsRequest gets all retention scripts belonging to the org.
