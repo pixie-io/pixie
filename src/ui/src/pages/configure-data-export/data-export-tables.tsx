@@ -44,8 +44,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { styled, Theme } from '@mui/material/styles';
-import { createStyles, makeStyles } from '@mui/styles';
+import { styled } from '@mui/material/styles';
 import { distanceInWordsStrict } from 'date-fns';
 import { Link, useRouteMatch } from 'react-router-dom';
 
@@ -87,17 +86,6 @@ const PluginIcon = React.memo<{ iconString: string }>(({ iconString }) => {
   return <ExtensionIcon sx={{ mr: 2, fontSize: 'body1.fontSize' }} />;
 });
 PluginIcon.displayName = 'PluginIcon';
-
-// eslint-disable-next-line react-memo/require-memo
-const TextLink = styled(Link)(({ theme }) => ({
-  textDecoration: 'none',
-  '&, &:visited': {
-    color: theme.palette.primary.main,
-  },
-  '&:hover': {
-    textDecoration: 'underline',
-  },
-}));
 
 const RetentionScriptRow = React.memo<{ script: GQLRetentionScript }>(({ script }) => {
   const { path } = useRouteMatch();
@@ -165,7 +153,7 @@ const RetentionScriptRow = React.memo<{ script: GQLRetentionScript }>(({ script 
     <TableRow key={id}>
       <TableCell>
         <Tooltip title={description}>
-          <TextLink to={`${path}/update/${script.id}`}>{name}</TextLink>
+          <Link to={`${path}/update/${script.id}`}>{name}</Link>
         </Tooltip>
       </TableCell>
       <TableCell>
@@ -288,21 +276,7 @@ const RetentionScriptTable = React.memo<{
 });
 RetentionScriptTable.displayName = 'RetentionScriptTable';
 
-const useStyles = makeStyles(({ palette }: Theme) => createStyles({
-  link: {
-    textDecoration: 'none',
-    '&, &:visited': {
-      color: palette.primary.main,
-    },
-    '&:hover': {
-      textDecoration: 'underline',
-    },
-  },
-}), { name: 'DataExport' });
-
 export const ConfigureDataExportBody = React.memo(() => {
-  const classes = useStyles();
-
   const { loading: loadingScripts, scripts } = useRetentionScripts();
   const { loading: loadingPlugins, plugins } = useRetentionPlugins();
 
@@ -323,11 +297,9 @@ export const ConfigureDataExportBody = React.memo(() => {
       <Typography variant='h1' ml={2} mb={2}>Data Retention Scripts</Typography>
       <Typography variant='body1' ml={2} mb={2}>
         {'These scripts are provided by your '}
-        <Link to='/admin/plugins' className={classes.link}>
-          enabled plugins
-        </Link>.
-        They&apos;re enabled by default.<br/>
-        Their PxL script can&apos;t be changed, but other options can.<br/>
+        <Link to='/admin/plugins'>enabled plugins</Link>.
+        {"They're enabled by default."}<br/>
+        {"Their PxL script can't be changed, but other options can."}<br/>
         Custom scripts can be created at the bottom of this page.
       </Typography>
       <Divider variant='middle' sx={{ mt: 4, mb: 4 }} />

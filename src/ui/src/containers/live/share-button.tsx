@@ -58,17 +58,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     paddingTop: theme.spacing(1),
     paddingBottom: theme.spacing(1),
   },
-  link: {
-    '&:hover': {
-      textDecoration: 'underline',
-      opacity: 0.7,
-    },
-    textDecoration: 'none',
-    backgroundColor: 'transparent',
-    '&,&:visited': {
-      color: theme.palette.primary.main,
-    },
-  },
 }), { name: 'ShareButton' });
 
 const ShareButton = React.memo<{

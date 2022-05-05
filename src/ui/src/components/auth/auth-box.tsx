@@ -63,12 +63,6 @@ const useStyles = makeStyles(({ spacing, palette }: Theme) => createStyles({
     fontStyle: 'italic',
     marginBottom: spacing(3),
   },
-  disclaimerLink: {
-    color: palette.primary.main,
-    '&:visited': {
-      color: palette.primary.main,
-    },
-  },
 }), { name: 'AuthBox' });
 
 export interface AuthBoxProps {
@@ -111,9 +105,9 @@ export const AuthBox: React.FC<AuthBoxProps> = React.memo((props) => {
           <>
             <Typography variant='subtitle2' className={classes.disclaimer}>
               By signing up, you&apos;re agreeing to&nbsp;
-              <a href='https://pixielabs.ai/terms/' className={classes.disclaimerLink}>Terms of Service</a>
+              <a href='https://pixielabs.ai/terms/'>Terms of Service</a>
               &nbsp;and&nbsp;
-              <a href='https://pixielabs.ai/privacy' className={classes.disclaimerLink}>Privacy Policy</a>
+              <a href='https://pixielabs.ai/privacy'>Privacy Policy</a>
               .
             </Typography>
           </>

@@ -73,15 +73,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     '& p:first-child': { marginTop: 0 },
     '& p:last-child': { marginBottom: 0 },
   },
-  link: {
-    textDecoration: 'none',
-    '&, &:visited': {
-      color: theme.palette.primary.main,
-    },
-    '&:hover': {
-      textDecoration: 'underline',
-    },
-  },
 }), { name: 'OrgUsers' });
 
 const RemoveUserButton = React.memo<UserRowProps>(({ user, numUsers }) => {
@@ -284,12 +275,12 @@ export const UsersTable = React.memo(() => {
             {enableApprovals ? (
               <>
                 Users signing up with their managed email must be <strong>manually approved</strong>.
-                This can be changed by <Link to='/admin/org' className={classes.link}>disabling approvals</Link>.
+                This can be changed by <Link to='/admin/org'>disabling approvals</Link>.
               </>
             ) : (
               <>
                 Users signing up with their managed email will be <strong>automatically approved</strong>.
-                This can be changed by <Link to='/admin/org' className={classes.link}>enabling approvals</Link>.
+                This can be changed by <Link to='/admin/org'>enabling approvals</Link>.
               </>
             )}
           </p>

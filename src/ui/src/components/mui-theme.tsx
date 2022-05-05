@@ -343,6 +343,13 @@ export const COMMON_THEME = {
         ':focus': {
           outline: 'none !important',
         },
+        a: {
+          color: '#12d6d6', // Main
+          textDecoration: 'none',
+          '&:hover': {
+            textDecoration: 'underline',
+          },
+        },
         // Vega-Tooltip (included in Vega-Lite) doesn't quite get right math when constraining a tooltip to the screen.
         // Also, we sometimes use titles so long they fill the screen (like generated method signatures in flamegraphs).
         // Sticky positioning and multi-line word wrap, respectively, handle both issues with just CSS.
