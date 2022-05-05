@@ -53,7 +53,6 @@ const useDefaultStyles = makeStyles(({ spacing, typography, breakpoints, palette
   text: {
     padding: `0 ${spacing(3)}`,
     color: palette.foreground.three,
-    textDecoration: 'none',
     fontSize: typography.body2.fontSize,
   },
 }), { name: 'Footer' });

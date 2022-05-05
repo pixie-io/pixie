@@ -87,15 +87,6 @@ const useStyles = makeStyles(({ palette, spacing, typography }: Theme) => create
   disableWarningTooltip: {
     '& ul': { paddingLeft: spacing(1) },
   },
-  link: {
-    textDecoration: 'none',
-    '&, &:visited': {
-      color: palette.primary.main,
-    },
-    '&:hover': {
-      textDecoration: 'underline',
-    },
-  },
 }), { name: 'PluginList' });
 
 // Not viable as a general solution, but works for this specific layout where the parent element controls the ellipsis
@@ -185,7 +176,7 @@ const PluginHeader = React.memo<PluginHeaderProps>(({ plugin, onToggle, numPrese
           <li>
             Disable&nbsp;
             {/* eslint-disable-next-line react-memo/require-usememo */}
-            <Link to='/configure-data-export' className={classes.link} onClick={(e) => e.stopPropagation()}>
+            <Link to='/configure-data-export' onClick={(e) => e.stopPropagation()}>
               {numPreset} <strong>preset</strong> retention script{numPreset > 1 ? 's' : ''}
             </Link>
           </li>
@@ -194,14 +185,14 @@ const PluginHeader = React.memo<PluginHeaderProps>(({ plugin, onToggle, numPrese
           <li>
             Delete&nbsp;
             {/* eslint-disable-next-line react-memo/require-usememo */}
-            <Link to='/configure-data-export' className={classes.link} onClick={(e) => e.stopPropagation()}>
+            <Link to='/configure-data-export' onClick={(e) => e.stopPropagation()}>
               {numCustom} <strong>custom</strong> retention script{numCustom > 1 ? 's' : ''}
             </Link>
           </li>
         )}
       </ul>
     </div>
-  ), [classes.disableWarningTooltip, classes.link, numCustom, numPreset]);
+  ), [classes.disableWarningTooltip, numCustom, numPreset]);
 
   return (
     <>
@@ -292,7 +283,6 @@ const PluginList = React.memo<RouteComponentProps<{ expandId?: string }>>(({ mat
 PluginList.displayName = 'PluginConfig';
 
 export const PluginsOverview = React.memo(() => {
-  const classes = useStyles();
   const { path } = useRouteMatch();
 
   /* eslint-disable react-memo/require-usememo */
@@ -304,7 +294,7 @@ export const PluginsOverview = React.memo(() => {
         To process longer time spans, plugins can integrate Pixie with long-term data solutions.
         <br/>
         {'Go to '}
-        <Link to='/configure-data-export' className={classes.link} onClick={(e) => e.stopPropagation()}>
+        <Link to='/configure-data-export' onClick={(e) => e.stopPropagation()}>
           Long-term Data Export
         </Link>
         {' to configure what data is exported.'}

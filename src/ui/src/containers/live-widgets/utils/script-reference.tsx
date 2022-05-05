@@ -31,14 +31,10 @@ import {
 
 const useStyles = makeStyles(({ palette }: Theme) => createStyles({
   root: {
+    color: palette.text.primary,
     '&:hover': {
       color: palette.secondary.main,
-      textDecoration: 'underline',
-      opacity: 0.7,
     },
-    textDecoration: 'none',
-    color: palette.text.primary,
-    backgroundColor: 'transparent',
   },
 }), { name: 'ScriptReference' });
 

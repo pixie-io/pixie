@@ -22,7 +22,7 @@ import { Link } from 'react-router-dom';
 
 import pixieAnalytics from 'app/utils/analytics';
 
-export const ShareDialogContent = React.memo<{ classes: Record<'body' | 'link', string> }>(({ classes }) => {
+export const ShareDialogContent = React.memo<{ classes: Record<'body', string> }>(({ classes }) => {
   const onInviteLinkClicked = React.useCallback(() => {
     pixieAnalytics.track('Live View Script Sharing', { action: 'goto-invitations' });
   }, []);
@@ -37,12 +37,11 @@ export const ShareDialogContent = React.memo<{ classes: Record<'body' | 'link', 
         {'Send this link to share this page with other users in your organization.'}
         <br/>
         {'You may invite other users to your organization in the '}
-        <Link className={classes.link} to='/admin/users?invite=true' onClick={onInviteLinkClicked}>Admin View</Link>.
+        <Link to='/admin/users?invite=true' onClick={onInviteLinkClicked}>Admin View</Link>.
       </div>
       <div className={classes.body}>
         {'If Pixie Cloud has not been exposed to a public domain, the other user must run '}
         <Link
-          className={classes.link}
           to='https://docs.px.dev/installing-pixie/install-guides/self-hosted-pixie/#set-up-dns'
           target='_blank'
           onClick={onDnsInstructionsClicked}

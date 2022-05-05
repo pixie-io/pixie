@@ -85,15 +85,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
       margin: `${theme.spacing(4)} 0`,
     },
   },
-  link: {
-    textDecoration: 'none',
-    '&, &:visited': {
-      color: theme.palette.primary.main,
-    },
-    '&:hover': {
-      textDecoration: 'underline',
-    },
-  },
 }), { name: 'ConfigureDataExportView' });
 
 const ConfigureDataExportPage = React.memo(({ children }) => {
@@ -129,7 +120,7 @@ const NoPluginsEnabledSplash = React.memo(() => {
         Pixie only guarantees data retention for 24 hours.
         <br />
         {'Configure a '}
-        <Link to='/admin/plugins' className={classes.link}>plugin</Link>
+        <Link to='/admin/plugins'>plugin</Link>
         {' to export and store Pixie data for longer term retention.'}
         <br />
         This data will be accessible and queryable through the plugin provider.
