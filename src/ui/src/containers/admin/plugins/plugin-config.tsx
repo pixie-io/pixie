@@ -122,9 +122,10 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
         {schema?.allowCustomExportURL && (
           <TextField
             variant='outlined'
-            label='Custom export path'
-            placeholder='Default path for retention scripts'
-            helperText={pendingValues.customExportURL ? 'Default path for retention scripts' : ''}
+            label='Custom export URL'
+            required={!schema?.defaultExportURL}
+            placeholder={schema?.defaultExportURL || 'Default URL for retention scripts'}
+            helperText={pendingValues.customExportURL ? 'Default URL for retention scripts' : ''}
             value={pendingValues.customExportURL ?? ''}
             onChange={(e) => setPendingValues((prev) => ({ ...prev, customExportURL: e.target.value }))}
             InputLabelProps={{ shrink: true }}
