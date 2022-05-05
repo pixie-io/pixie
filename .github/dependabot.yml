@@ -1,0 +1,15 @@
+---
+version: 2
+updates:
+- package-ecosystem: "npm"
+  directory: "/src/ui"
+  schedule:
+    interval: "daily"
+  # Alert but don't open PRs
+  open-pull-requests-limit: 0
+- package-ecosystem: "gomod"
+  directory: "/"
+  schedule:
+    interval: "daily"
+  # Alert but don't open PRs
+  open-pull-requests-limit: 0
