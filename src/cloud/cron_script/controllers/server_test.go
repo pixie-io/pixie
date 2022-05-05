@@ -313,6 +313,60 @@ func TestServer_CreateScript(t *testing.T) {
 	}, script)
 }
 
+func TestServer_CreateScriptDisabled(t *testing.T) {
+	mustLoadTestData(db)
+
+	ctrl := gomock.NewController(t)
+	mockVZMgr := mock_vzmgrpb.NewMockVZMgrServiceClient(ctrl)
+	nc, natsCleanup := testingutils.MustStartTestNATS(t)
+	defer natsCleanup()
+
+	s := controllers.New(db, "test", nc, mockVZMgr)
+
+	vz1ID := "323e4567-e89b-12d3-a456-426655440003"
+	vz2ID := "323e4567-e89b-12d3-a456-426655440002"
+	clusterIDs := []*uuidpb.UUID{
+		utils.ProtoFromUUIDStrOrNil(vz1ID),
+		utils.ProtoFromUUIDStrOrNil(vz2ID),
+	}
+
+	resp, err := s.CreateScript(createTestContext(), &cronscriptpb.CreateScriptRequest{
+		Script:     "px.display()",
+		Configs:    "testYAML",
+		FrequencyS: 11,
+		ClusterIDs: clusterIDs,
+		Disabled:   true,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+
+	id := resp.ID
+
+	query := `SELECT id, org_id, script, cluster_ids, PGP_SYM_DECRYPT(configs, $1::text) as configs, enabled, frequency_s FROM cron_scripts WHERE org_id=$2 AND id=$3`
+	rows, err := db.Queryx(query, "test", "223e4567-e89b-12d3-a456-426655440000", utils.UUIDFromProtoOrNil(id))
+	require.Nil(t, err)
+
+	defer rows.Close()
+	require.True(t, rows.Next())
+
+	var script controllers.CronScript
+	err = rows.StructScan(&script)
+	require.Nil(t, err)
+
+	assert.Equal(t, controllers.CronScript{
+		ID:        utils.UUIDFromProtoOrNil(id),
+		OrgID:     uuid.FromStringOrNil("223e4567-e89b-12d3-a456-426655440000"),
+		Script:    "px.display()",
+		ConfigStr: "testYAML",
+		Enabled:   false,
+		ClusterIDs: []uuid.UUID{
+			uuid.FromStringOrNil("323e4567-e89b-12d3-a456-426655440003"),
+			uuid.FromStringOrNil("323e4567-e89b-12d3-a456-426655440002"),
+		},
+		FrequencyS: 11,
+	}, script)
+}
+
 func sendUpdateAndWaitForResponse(t *testing.T, nc *nats.Conn, vzID string, wg *sync.WaitGroup, isUpdate bool) func() {
 	mdSub, err := nc.Subscribe(vzshard.C2VTopic(cvmsgs.CronScriptUpdatesChannel, uuid.FromStringOrNil(vzID)), func(msg *nats.Msg) {
 		c2vMsg := &cvmsgspb.C2VMessage{}

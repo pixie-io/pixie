@@ -262,17 +262,17 @@ func (s *Server) GetOrgRetentionPluginConfig(ctx context.Context, req *pluginpb.
 	return nil, status.Error(codes.NotFound, "plugin is not enabled")
 }
 
-func (s *Server) enableOrgRetention(ctx context.Context, txn *sqlx.Tx, orgID uuid.UUID, pluginID string, version string, configurations []byte, customExportURL *string, insecureTLS bool) error {
+func (s *Server) enableOrgRetention(ctx context.Context, txn *sqlx.Tx, orgID uuid.UUID, pluginID string, version string, configurations []byte, customExportURL *string, insecureTLS bool, disablePresets bool) error {
 	query := `INSERT INTO org_data_retention_plugins (org_id, plugin_id, version, configurations, custom_export_url, insecure_tls) VALUES ($1, $2, $3, PGP_SYM_ENCRYPT($4, $5), PGP_SYM_ENCRYPT($6, $5), $7)`
 	_, err := txn.Exec(query, orgID, pluginID, version, configurations, s.dbKey, customExportURL, insecureTLS)
 	if err != nil {
 		return status.Errorf(codes.Internal, "Failed to create plugin for org")
 	}
 
-	return s.createPresetScripts(ctx, txn, orgID, pluginID, version, configurations, customExportURL)
+	return s.createPresetScripts(ctx, txn, orgID, pluginID, version, configurations, customExportURL, disablePresets)
 }
 
-func (s *Server) createPresetScripts(ctx context.Context, txn *sqlx.Tx, orgID uuid.UUID, pluginID string, version string, configurations []byte, customExportURL *string) error {
+func (s *Server) createPresetScripts(ctx context.Context, txn *sqlx.Tx, orgID uuid.UUID, pluginID string, version string, configurations []byte, customExportURL *string, disablePresets bool) error {
 	// Enabling org retention should enable any preset scripts.
 	query := `SELECT preset_scripts FROM data_retention_plugin_releases WHERE plugin_id=$1 AND version=$2`
 	rows, err := txn.Queryx(query, pluginID, version)
@@ -295,7 +295,7 @@ func (s *Server) createPresetScripts(ctx context.Context, txn *sqlx.Tx, orgID uu
 			Description: j.Description,
 			IsPreset:    true,
 			ExportURL:   "",
-		}, j.Script, make([]*uuidpb.UUID, 0), j.DefaultFrequencyS)
+		}, j.Script, make([]*uuidpb.UUID, 0), j.DefaultFrequencyS, disablePresets)
 		if err != nil {
 			return status.Errorf(codes.Internal, "Failed to create preset scripts")
 		}
@@ -530,7 +530,12 @@ func (s *Server) UpdateOrgRetentionPluginConfig(ctx context.Context, req *plugin
 	}
 
 	if !enabled && req.Enabled != nil && req.Enabled.Value { // Plugin was just enabled, we should create it.
-		err = s.enableOrgRetention(ctx, txn, orgID, req.PluginID, version, configurations, customExportURL, insecureTLS)
+		disablePresets := false
+		if req.DisablePresets != nil {
+			disablePresets = req.DisablePresets.Value
+		}
+
+		err = s.enableOrgRetention(ctx, txn, orgID, req.PluginID, version, configurations, customExportURL, insecureTLS, disablePresets)
 		if err != nil {
 			return nil, err
 		}
@@ -562,7 +567,7 @@ func (s *Server) UpdateOrgRetentionPluginConfig(ctx context.Context, req *plugin
 			return nil, err
 		}
 
-		err = s.createPresetScripts(ctx, txn, orgID, req.PluginID, version, configurations, customExportURL)
+		err = s.createPresetScripts(ctx, txn, orgID, req.PluginID, version, configurations, customExportURL, false)
 		if err != nil {
 			return nil, err
 		}
@@ -697,7 +702,7 @@ func (s *Server) GetRetentionScript(ctx context.Context, req *pluginpb.GetRetent
 	}, nil
 }
 
-func (s *Server) createRetentionScript(ctx context.Context, txn *sqlx.Tx, orgID uuid.UUID, pluginID string, rs *RetentionScript, contents string, clusterIDs []*uuidpb.UUID, frequencyS int64) (*uuidpb.UUID, error) {
+func (s *Server) createRetentionScript(ctx context.Context, txn *sqlx.Tx, orgID uuid.UUID, pluginID string, rs *RetentionScript, contents string, clusterIDs []*uuidpb.UUID, frequencyS int64, disabled bool) (*uuidpb.UUID, error) {
 	pluginExportURL, configMap, insecureTLS, err := s.getPluginConfigs(txn, orgID, pluginID)
 	if err != nil {
 		return nil, err
@@ -718,6 +723,7 @@ func (s *Server) createRetentionScript(ctx context.Context, txn *sqlx.Tx, orgID 
 		ClusterIDs: clusterIDs,
 		Configs:    configYAML,
 		FrequencyS: frequencyS,
+		Disabled:   disabled,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to create cron script")
@@ -752,7 +758,7 @@ func (s *Server) CreateRetentionScript(ctx context.Context, req *pluginpb.Create
 		Description: req.Script.Script.Description,
 		IsPreset:    req.Script.Script.IsPreset,
 		ExportURL:   req.Script.ExportURL,
-	}, req.Script.Contents, req.Script.Script.ClusterIDs, req.Script.Script.FrequencyS)
+	}, req.Script.Contents, req.Script.Script.ClusterIDs, req.Script.Script.FrequencyS, false)
 	if err != nil {
 		return nil, err
 	}

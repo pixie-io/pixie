@@ -171,6 +171,7 @@ func (p *PluginServiceServer) UpdateRetentionPluginConfig(ctx context.Context, r
 		Version:         req.Version,
 		CustomExportUrl: req.CustomExportUrl,
 		InsecureTLS:     req.InsecureTLS,
+		DisablePresets:  req.DisablePresets,
 	})
 	if err != nil {
 		return nil, err
