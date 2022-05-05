@@ -54,6 +54,7 @@ export const GQL_GET_RETENTION_PLUGIN_INFO = gql`
         description
       }
       allowCustomExportURL
+      defaultExportURL
       allowInsecureTLS
     }
   }

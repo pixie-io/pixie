@@ -45,7 +45,6 @@ import { AutoSizerContext, withAutoSizerContext } from 'app/utils/autosizer';
 import {
   ClusterInfoForRetentionScripts,
   DEFAULT_RETENTION_PXL,
-  PartialPlugin,
   useClustersForRetentionScripts,
   useCreateRetentionScript,
   useMutateRetentionScript,
@@ -170,11 +169,6 @@ function useCreateOrUpdateScript(scriptId: string, isCreate: boolean) {
   ), [scriptId, isCreate, create, update]);
 }
 
-function useAllowCustomExportURL(plugin: PartialPlugin | null) {
-  const { loading, schema } = usePluginConfig(plugin ?? { id: '', latestVersion: '' });
-  return !loading && schema?.allowCustomExportURL === true;
-}
-
 export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boolean }>(({ scriptId, isCreate }) => {
   const classes = useStyles();
   const showSnackbar = useSnackbar();
@@ -208,9 +202,11 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
     exportPath: '',
   });
 
-  const allowCustomExportURL = useAllowCustomExportURL(
-    enabledPlugins.find(p => p.id === pendingValues.pluginID),
+  const { schema, values } = usePluginConfig(
+    enabledPlugins.find(p => p.id === pendingValues.pluginID) ?? { id: '', enabledVersion: '', latestVersion: '' },
   );
+  const allowCustomExportURL = schema?.allowCustomExportURL === true;
+  const defaultExportURL = values?.customExportURL || schema?.defaultExportURL || '';
 
   const setPendingField = React.useCallback(<K extends keyof RetentionScriptForm>(
     field: K,
@@ -390,9 +386,9 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
             disabled={!allowCustomExportURL}
             sx={{ width: '25ch' }}
             variant='standard'
-            label='Export Path'
+            label='Export URL'
             placeholder={allowCustomExportURL
-              ? 'Optional. Plugin-dependent.'
+              ? (defaultExportURL || 'Optional. Plugin-dependent.')
               : 'Not available with this plugin.'
             }
             value={pendingValues.exportPath}
