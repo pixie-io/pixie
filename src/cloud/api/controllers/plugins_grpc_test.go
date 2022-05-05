@@ -260,6 +260,7 @@ func TestGetRetentionPluginInfo(t *testing.T) {
 			},
 			AllowCustomExportURL: true,
 			AllowInsecureTLS:     true,
+			DefaultExportURL:     "https://test.com",
 		}, nil)
 
 	pServer := &controllers.PluginServiceServer{mockClients.MockPlugin, mockClients.MockDataRetentionPlugin}
@@ -276,6 +277,7 @@ func TestGetRetentionPluginInfo(t *testing.T) {
 		},
 		AllowCustomExportURL: true,
 		AllowInsecureTLS:     true,
+		DefaultExportURL:     "https://test.com",
 	}, resp)
 }
 

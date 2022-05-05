@@ -149,6 +149,7 @@ func (q *QueryResolver) RetentionPluginInfo(ctx context.Context, args retentionP
 		Configs:              configs,
 		AllowCustomExportURL: resp.AllowCustomExportURL,
 		AllowInsecureTLS:     resp.AllowInsecureTLS,
+		DefaultExportURL:     resp.DefaultExportURL,
 	}, nil
 }
 
