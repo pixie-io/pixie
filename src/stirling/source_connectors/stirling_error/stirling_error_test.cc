@@ -33,7 +33,10 @@
 namespace px {
 namespace stirling {
 
+using ::testing::Eq;
+using ::testing::Field;
 using ::testing::SizeIs;
+using ::testing::StrEq;
 
 using ::px::types::ColumnWrapperRecordBatch;
 using ::px::types::Int64Value;
@@ -45,11 +48,28 @@ using DynamicTracepointDeployment =
     ::px::stirling::dynamic_tracing::ir::logical::TracepointDeployment;
 using ::px::stirling::testing::RecordBatchSizeIs;
 
-#define CHECK_SINGLE_RECORD_BATCH(RECORD_BATCH, SOURCE, STATUS, MSG) \
-  EXPECT_THAT(RECORD_BATCH, RecordBatchSizeIs(1));                   \
-  EXPECT_EQ(RECORD_BATCH[2]->Get<StringValue>(0).string(), SOURCE);  \
-  EXPECT_EQ(RECORD_BATCH[3]->Get<Int64Value>(0).val, STATUS);        \
-  EXPECT_EQ(RECORD_BATCH[4]->Get<StringValue>(0).string(), MSG);
+std::vector<ConnectorStatusRecord> ToRecordVector(
+    const std::vector<std::unique_ptr<ColumnWrapperRecordBatch>>& record_batches) {
+  std::vector<ConnectorStatusRecord> result;
+
+  for (size_t rb_idx = 0; rb_idx < record_batches.size(); ++rb_idx) {
+    auto& rb = *record_batches[rb_idx];
+    for (size_t idx = 0; idx < rb.front()->Size(); ++idx) {
+      ConnectorStatusRecord r;
+      r.source_connector = rb[2]->Get<StringValue>(idx).string();
+      r.status = static_cast<px::statuspb::Code>(rb[3]->Get<Int64Value>(idx).val);
+      r.error = rb[4]->Get<StringValue>(idx).string();
+      result.push_back(r);
+    }
+  }
+  return result;
+}
+
+auto EqConnectorStatusRecord(const ConnectorStatusRecord& x) {
+  return AllOf(Field(&ConnectorStatusRecord::source_connector, StrEq(x.source_connector)),
+               Field(&ConnectorStatusRecord::status, Eq(x.status)),
+               Field(&ConnectorStatusRecord::error, Eq(x.error)));
+}
 
 // A SourceConnector that fails on Init.
 class FaultyConnector : public SourceConnector {
@@ -94,7 +114,10 @@ class FaultyConnector : public SourceConnector {
 class StirlingErrorTest : public ::testing::Test {
  protected:
   inline static const uint32_t kNumSources = 3;
-  inline static const std::string bpftrace_script_ = "src/stirling/testing/tcpdrop.bpftrace.pxl";
+  inline static const std::string tcpdrop_bpftrace_script_ =
+      "src/stirling/testing/tcpdrop.bpftrace.pxl";
+  inline static const std::string pidsample_bpftrace_script_ =
+      "src/stirling/testing/pidsample.bpftrace.pxl";
 
   template <typename TSourceType>
   std::unique_ptr<SourceRegistry> CreateSources() {
@@ -113,6 +136,32 @@ class StirlingErrorTest : public ::testing::Test {
     stirlingpb::Publish publication;
     stirling_->GetPublishProto(&publication);
     IndexPublication(publication, &table_info_map_);
+  }
+
+  StatusOr<sole::uuid> DeployBPFTraceScript(const std::string& bpftrace_script) {
+    // Get BPFTrace program.
+    auto trace_program = std::make_unique<DynamicTracepointDeployment>();
+    PL_ASSIGN_OR_RETURN(std::string program_text,
+                        px::ReadFileToString(px::testing::TestFilePath(bpftrace_script)));
+
+    // Compile tracepoint.
+    PL_ASSIGN_OR_RETURN(auto compiled_tracepoint,
+                        px::carnot::planner::compiler::CompileTracepoint(program_text));
+    ::px::tracepoint::ConvertPlannerTracepointToStirlingTracepoint(compiled_tracepoint,
+                                                                   trace_program.get());
+
+    // Register tracepoint.
+    sole::uuid trace_id = sole::uuid4();
+    stirling_->RegisterTracepoint(trace_id, std::move(trace_program));
+
+    // Wait for deployment to finish.
+    StatusOr<stirlingpb::Publish> s;
+    do {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      s = stirling_->GetTracepointInfo(trace_id);
+    } while (!s.ok() && s.code() == px::statuspb::Code::RESOURCE_UNAVAILABLE);
+
+    return trace_id;
   }
 
   Status AppendData(uint64_t table_id, types::TabletID tablet_id,
@@ -135,7 +184,7 @@ class StirlingErrorTest : public ::testing::Test {
   std::vector<std::unique_ptr<ColumnWrapperRecordBatch>> record_batches_;
 };
 
-TEST_F(StirlingErrorTest, NoError) {
+TEST_F(StirlingErrorTest, SourceConnectorInitOK) {
   auto registry = CreateSources<SeqGenConnector>();
   InitStirling(std::move(registry));
 
@@ -158,7 +207,7 @@ TEST_F(StirlingErrorTest, NoError) {
   }
 }
 
-TEST_F(StirlingErrorTest, InitializationError) {
+TEST_F(StirlingErrorTest, SourceConnectorInitError) {
   auto registry = CreateSources<FaultyConnector>();
   InitStirling(std::move(registry));
 
@@ -187,7 +236,7 @@ TEST_F(StirlingErrorTest, InitializationError) {
 
 // Deploy a dynamic BPFTrace probe and record the error messages of its deployment and removal.
 // Expects one message each for deployment in progress, deployment status, and removal in progress.
-TEST_F(StirlingErrorTest, BPFTraceError) {
+TEST_F(StirlingErrorTest, BPFTraceDeploymentOK) {
   // Register StirlingErrorConnector.
   std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>();
   registry->RegisterOrDie<StirlingErrorConnector>("stirling_error");
@@ -197,31 +246,12 @@ TEST_F(StirlingErrorTest, BPFTraceError) {
   ASSERT_OK(stirling_->RunAsThread());
   ASSERT_OK(stirling_->WaitUntilRunning(std::chrono::seconds(5)));
 
-  // Get BPFTrace program.
-  auto trace_program = std::make_unique<DynamicTracepointDeployment>();
-  ASSERT_OK_AND_ASSIGN(std::string program_text,
-                       px::ReadFileToString(px::testing::TestFilePath(bpftrace_script_)));
-
-  // Compile tracepoint.
-  ASSERT_OK_AND_ASSIGN(auto compiled_tracepoint,
-                       px::carnot::planner::compiler::CompileTracepoint(program_text));
-  ::px::tracepoint::ConvertPlannerTracepointToStirlingTracepoint(compiled_tracepoint,
-                                                                 trace_program.get());
-
-  // Register tracepoint.
-  sole::uuid trace_id = sole::uuid4();
-  stirling_->RegisterTracepoint(trace_id, std::move(trace_program));
-
-  // Wait for deployment to finish.
-  StatusOr<stirlingpb::Publish> s;
-  do {
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    s = stirling_->GetTracepointInfo(trace_id);
-  } while (!s.ok() && s.code() == px::statuspb::Code::RESOURCE_UNAVAILABLE);
+  ASSERT_OK_AND_ASSIGN(auto trace_id, DeployBPFTraceScript(tcpdrop_bpftrace_script_));
   sleep(3);
 
   // Remove tracepoint;
   ASSERT_OK(stirling_->RemoveTracepoint(trace_id));
+  StatusOr<stirlingpb::Publish> s;
   do {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     s = stirling_->GetTracepointInfo(trace_id);
@@ -229,26 +259,61 @@ TEST_F(StirlingErrorTest, BPFTraceError) {
   sleep(3);
 
   stirling_->Stop();
-  EXPECT_THAT(record_batches_, SizeIs(4));
+
+  auto records = ToRecordVector(record_batches_);
+  EXPECT_THAT(records, SizeIs(4));
 
   // Stirling Error Source Connector Initialization.
-  auto& record_batch = *record_batches_[0];
-  CHECK_SINGLE_RECORD_BATCH(record_batch, "stirling_error", px::statuspb::Code::OK, "");
-
+  ConnectorStatusRecord r1{
+      .source_connector = "stirling_error", .status = px::statuspb::Code::OK, .error = ""};
   // TCPDrop deployment in progress.
-  record_batch = *record_batches_[1];
-  CHECK_SINGLE_RECORD_BATCH(record_batch, "tcp_drop_tracer",
-                            px::statuspb::Code::RESOURCE_UNAVAILABLE,
-                            "Probe deployment in progress.");
-
+  ConnectorStatusRecord r2{.source_connector = "tcp_drop_tracer",
+                           .status = px::statuspb::Code::RESOURCE_UNAVAILABLE,
+                           .error = "Probe deployment in progress."};
   // TCPDrop deployed.
-  record_batch = *record_batches_[2];
-  CHECK_SINGLE_RECORD_BATCH(record_batch, "tcp_drop_tracer", px::statuspb::Code::OK, "");
-
+  ConnectorStatusRecord r3{
+      .source_connector = "tcp_drop_tracer", .status = px::statuspb::Code::OK, .error = ""};
   // TCPDrop removal in progress.
-  record_batch = *record_batches_[3];
-  CHECK_SINGLE_RECORD_BATCH(record_batch, "tcp_drop_tracer",
-                            px::statuspb::Code::RESOURCE_UNAVAILABLE, "Probe removal in progress.");
+  ConnectorStatusRecord r4{.source_connector = "tcp_drop_tracer",
+                           .status = px::statuspb::Code::RESOURCE_UNAVAILABLE,
+                           .error = "Probe removal in progress."};
+
+  EXPECT_THAT(records, ElementsAre(EqConnectorStatusRecord(r1), EqConnectorStatusRecord(r2),
+                                   EqConnectorStatusRecord(r3), EqConnectorStatusRecord(r4)));
+}
+
+TEST_F(StirlingErrorTest, BPFTraceDeploymentError) {
+  // Register StirlingErrorConnector.
+  std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>();
+  registry->RegisterOrDie<StirlingErrorConnector>("stirling_error");
+
+  // Run Stirling.
+  InitStirling(std::move(registry));
+  ASSERT_OK(stirling_->RunAsThread());
+  ASSERT_OK(stirling_->WaitUntilRunning(std::chrono::seconds(5)));
+
+  ASSERT_OK(DeployBPFTraceScript(pidsample_bpftrace_script_));
+  sleep(3);
+
+  stirling_->Stop();
+  auto records = ToRecordVector(record_batches_);
+  EXPECT_THAT(records, SizeIs(3));
+
+  // Stirling Error Source Connector Initialization.
+  ConnectorStatusRecord r1{
+      .source_connector = "stirling_error", .status = px::statuspb::Code::OK, .error = ""};
+  // PidSample deployment in progress.
+  ConnectorStatusRecord r2{.source_connector = "pid_sample_tracer",
+                           .status = px::statuspb::Code::RESOURCE_UNAVAILABLE,
+                           .error = "Probe deployment in progress."};
+  // PidSample deployment failed.
+  ConnectorStatusRecord r3{.source_connector = "pid_sample_tracer",
+                           .status = px::statuspb::Code::INTERNAL,
+                           .error =
+                               "Semantic pass failed: stdin:3-4: ERROR: printf: Too many arguments "
+                               "for format string (4 supplied, 3 expected)\n"};
+  EXPECT_THAT(records, ElementsAre(EqConnectorStatusRecord(r1), EqConnectorStatusRecord(r2),
+                                   EqConnectorStatusRecord(r3)));
 }
 
 }  // namespace stirling
