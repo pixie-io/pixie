@@ -220,6 +220,7 @@ func TestPluginResolver_RetentionPluginInfo(t *testing.T) {
 		},
 		AllowCustomExportURL: true,
 		AllowInsecureTLS:     true,
+		DefaultExportURL:     "https://localhost:8080",
 	}, nil)
 
 	gqlSchema := LoadSchema(gqlEnv)
@@ -236,6 +237,7 @@ func TestPluginResolver_RetentionPluginInfo(t *testing.T) {
 						}
 						allowCustomExportURL
 						allowInsecureTLS
+						defaultExportURL
 					}
 				}
 			`,
@@ -249,7 +251,8 @@ func TestPluginResolver_RetentionPluginInfo(t *testing.T) {
 							}
 						],
 						"allowCustomExportURL": true,
-						"allowInsecureTLS": true
+						"allowInsecureTLS": true,
+						"defaultExportURL": "https://localhost:8080"
 					}
 				}
 			`,

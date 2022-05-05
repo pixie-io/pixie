@@ -146,6 +146,7 @@ func (p *PluginServiceServer) GetRetentionPluginInfo(ctx context.Context, req *c
 		Configs:              configResp.Configurations,
 		AllowCustomExportURL: configResp.AllowCustomExportURL,
 		AllowInsecureTLS:     configResp.AllowInsecureTLS,
+		DefaultExportURL:     configResp.DefaultExportURL,
 	}, nil
 }
 
