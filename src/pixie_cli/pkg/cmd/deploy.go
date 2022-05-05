@@ -670,7 +670,7 @@ func waitForHealthCheckTaskGenerator(cloudAddr string, clusterID uuid.UUID) func
 		for {
 			select {
 			case <-timeout.C:
-				return errors.New("timeout waiting for healthcheck")
+				return errors.New("timeout waiting for healthcheck  (it is possible that Pixie stabilized after the healthcheck timeout. To check if Pixie successfully deployed, run `px debug pods`)")
 			default:
 				err := runSimpleHealthCheckScript(cloudAddr, clusterID)
 				if err == nil {
