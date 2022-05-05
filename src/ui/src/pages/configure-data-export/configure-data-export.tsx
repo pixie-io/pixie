@@ -18,16 +18,20 @@
 
 import * as React from 'react';
 
+import { gql, useQuery } from '@apollo/client';
 import { Button, Typography } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 import { Link, useRouteMatch, Route, Switch } from 'react-router-dom';
 
+import { ClusterContext } from 'app/common/cluster-context';
 import { Footer, scrollbarStyles } from 'app/components';
 import { usePluginList } from 'app/containers/admin/plugins/plugin-gql';
+import { selectClusterName } from 'app/containers/App/cluster-info';
+import { LiveRouteContext } from 'app/containers/App/live-routing';
 import NavBars from 'app/containers/App/nav-bars';
 import { SidebarContext } from 'app/context/sidebar-context';
-import { GQLPluginKind } from 'app/types/schema';
+import { GQLClusterInfo, GQLClusterStatus, GQLPluginKind } from 'app/types/schema';
 import * as pixienautCarryingBoxes from 'assets/images/pixienaut-carrying-boxes.svg';
 import { Copyright } from 'configurable/copyright';
 
@@ -87,17 +91,67 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }), { name: 'ConfigureDataExportView' });
 
+// Sidebar navigation links for Live scripts need a cluster that's usually in the URL.
+// Since this isn't the live view, we need to provide that context manually.
+// Only the embed state and the cluster name actually get used; the rest can be empty values.
+const ExtraNavContext = React.memo(({ children }) => {
+  const { data } = useQuery<{
+    clusters: Pick<GQLClusterInfo, 'clusterName' | 'status'>[]
+  }>(
+    gql`
+      query listClustersForDataExportRouting {
+        clusters {
+          id
+          clusterName
+          status
+        }
+      }
+    `,
+    { fetchPolicy: 'cache-first' },
+  );
+
+  const defaultCluster = React.useMemo(() => selectClusterName(data?.clusters ?? []), [data?.clusters]);
+
+  return (
+    // eslint-disable-next-line react-memo/require-usememo
+    <LiveRouteContext.Provider value={{
+      embedState: { isEmbedded: false, disableTimePicker: false, widget: null },
+      clusterName: '',
+      scriptId: '',
+      args: {},
+    }}>
+      {/* eslint-disable-next-line react-memo/require-usememo */}
+      <ClusterContext.Provider value={{
+        loading: false,
+        selectedClusterID: '',
+        selectedClusterName: defaultCluster ?? '',
+        selectedClusterPrettyName: '',
+        selectedClusterStatus: GQLClusterStatus.CS_UNKNOWN,
+        selectedClusterStatusMessage: '',
+        selectedClusterUID: '',
+        selectedClusterVizierConfig: null,
+        setClusterByName: () => {},
+      }}>
+        {children}
+      </ClusterContext.Provider>
+    </LiveRouteContext.Provider>
+  );
+});
+ExtraNavContext.displayName = 'ExtraNavContext';
+
 const ConfigureDataExportPage = React.memo(({ children }) => {
   const classes = useStyles();
   return (
     <div className={classes.root}>
-      <SidebarContext.Provider value={{ showLiveOptions: false, showAdmin: true }}>
-        <NavBars>
-          <div className={classes.title}>
-            <div className={classes.titleText}>Long-term Data Export</div>
-          </div>
-        </NavBars>
-      </SidebarContext.Provider>
+      <ExtraNavContext>
+        <SidebarContext.Provider value={{ showLiveOptions: false, showAdmin: true }}>
+          <NavBars>
+            <div className={classes.title}>
+              <div className={classes.titleText}>Long-term Data Export</div>
+            </div>
+          </NavBars>
+        </SidebarContext.Provider>
+      </ExtraNavContext>
       <div className={classes.main}>
         <div className={classes.mainBlock}>
           {children}
