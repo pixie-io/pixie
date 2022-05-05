@@ -341,7 +341,7 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 	}()
 
 	go func() {
-		utils.Info("Starting browser")
+		utils.Info("Starting browser... (if browser-based login fails, try running `px auth login --manual` for headless login)")
 		err := open.Run(authURL.String())
 		if err != nil {
 			_ = pxanalytics.Client().Enqueue(&analytics.Track{
