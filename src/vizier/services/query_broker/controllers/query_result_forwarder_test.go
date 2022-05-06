@@ -162,7 +162,7 @@ func TestStreamResultsSimple(t *testing.T) {
 	}()
 	var err error
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil, ""))
 
 	go func() {
 		err = f.StreamResults(consumerCtx, queryID, resultCh)
@@ -229,7 +229,7 @@ func TestStreamResultsAgentCancel(t *testing.T) {
 	}()
 	var err error
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil, ""))
 
 	go func() {
 		err = f.StreamResults(consumerCtx, queryID, resultCh)
@@ -296,7 +296,7 @@ func TestStreamResultsClientContextCancel(t *testing.T) {
 	}()
 	errCh := make(chan error)
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil, ""))
 
 	go func() {
 		err := f.StreamResults(consumerCtx, queryID, resultCh)
@@ -364,7 +364,7 @@ func TestStreamResultsQueryPlan(t *testing.T) {
 		Plan:    plan,
 		PlanMap: planMap,
 	}
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, queryPlanOpts))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, queryPlanOpts, ""))
 
 	go func() {
 		err = f.StreamResults(consumerCtx, queryID, resultCh)
@@ -446,7 +446,7 @@ func TestStreamResultsWrongQueryID(t *testing.T) {
 	}()
 	var err error
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil, ""))
 
 	go func() {
 		err = f.StreamResults(consumerCtx, queryID, resultCh)
@@ -509,7 +509,7 @@ func TestStreamResultsResultsBeforeInitialization(t *testing.T) {
 	}()
 	var err error
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil, ""))
 
 	go func() {
 		err = f.StreamResults(consumerCtx, queryID, resultCh)
@@ -558,7 +558,7 @@ func TestStreamResultsNeverInitializedTable(t *testing.T) {
 	}()
 	var err error
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil, ""))
 
 	go func() {
 		err = f.StreamResults(consumerCtx, queryID, resultCh)
@@ -622,7 +622,7 @@ func TestStreamResultsProducerTimeout(t *testing.T) {
 	}()
 	var err error
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil, ""))
 
 	go func() {
 		err = f.StreamResults(consumerCtx, queryID, resultCh)
@@ -681,7 +681,7 @@ func TestStreamResultsNewConsumer(t *testing.T) {
 	}()
 	var consumer1Err error
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil, ""))
 
 	go func() {
 		consumer1Err = f.StreamResults(consumer1Ctx, queryID, resultCh1)
@@ -785,7 +785,7 @@ func TestStreamResultsMultipleProducers(t *testing.T) {
 	}()
 	var err error
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil, ""))
 
 	go func() {
 		err = f.StreamResults(consumerCtx, queryID, resultCh)
@@ -971,7 +971,7 @@ func TestStreamResultsReceiveExecutionError(t *testing.T) {
 			}()
 			var err error
 
-			assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
+			assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil, ""))
 
 			go func() {
 				err = f.StreamResults(consumerCtx, queryID, resultCh)
@@ -1022,7 +1022,7 @@ func TestStreamErrorWithMultipleProducers(t *testing.T) {
 	}()
 	var err error
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil, ""))
 
 	go func() {
 		err = f.StreamResults(consumerCtx, queryID, resultCh)

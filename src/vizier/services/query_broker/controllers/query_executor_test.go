@@ -286,7 +286,7 @@ type fakeResultForwarder struct {
 // RegisterQuery registers a query.
 func (f *fakeResultForwarder) RegisterQuery(queryID uuid.UUID, tableIDMap map[string]string,
 	compilationTimeNs int64,
-	queryPlanOpts *controllers.QueryPlanOpts) error {
+	queryPlanOpts *controllers.QueryPlanOpts, queryName string) error {
 	f.QueryRegistered = queryID
 	f.TableIDMap = tableIDMap
 	f.StreamedQueryPlanOpts = queryPlanOpts
