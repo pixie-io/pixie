@@ -155,8 +155,9 @@ func (q *QueryExecutorImpl) Run(ctx context.Context, req *vizierpb.ExecuteScript
 		q.queryID = queryID
 	}
 
-	if req.QueryName != "" {
-		q.queryName = req.QueryName
+	q.queryName = req.QueryName
+	if q.queryName == "" {
+		q.queryName = "unnamed"
 	}
 
 	resultCh := make(chan *vizierpb.ExecuteScriptResponse)
@@ -174,7 +175,7 @@ func (q *QueryExecutorImpl) Wait() error {
 	err := q.eg.Wait()
 	if err == nil {
 		// Only track execution time for named scripts.
-		if q.queryExecTimeSummary != nil && q.queryName != "" {
+		if q.queryExecTimeSummary != nil {
 			d := time.Since(q.startTime)
 			q.queryExecTimeSummary.With(prometheus.Labels{"script_name": q.queryName}).Observe(float64(d.Milliseconds()))
 		}
