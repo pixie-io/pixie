@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library")
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 
 package(default_visibility = ["//src:__subpackages__"])
 
@@ -29,5 +29,14 @@ pl_cc_library(
         "//src/carnot/udf:cc_library",
         "@com_github_tencent_rapidjson//:rapidjson",
         "@com_intel_tbb//:tbb",
+    ],
+)
+
+pl_cc_test(
+    name = "net_ops_test",
+    srcs = ["net_ops_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/udf:udf_testutils",
     ],
 )

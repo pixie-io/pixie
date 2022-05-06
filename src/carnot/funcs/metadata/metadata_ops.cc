@@ -84,6 +84,7 @@ void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<HostNumCPUsUDF>("_exec_host_num_cpus");
   registry->RegisterOrDie<VizierIDUDF>("vizier_id");
   registry->RegisterOrDie<VizierNameUDF>("vizier_name");
+  registry->RegisterOrDie<GetClusterCIDRRangeUDF>("get_cidrs");
 
   /*****************************************
    * Aggregate UDFs.

@@ -19,24 +19,30 @@
 #include <string>
 
 #include "src/carnot/funcs/net/net_ops.h"
-#include "src/carnot/udf/registry.h"
-#include "src/common/base/base.h"
+#include "src/carnot/udf/test_utils.h"
+#include "src/common/testing/testing.h"
 
 namespace px {
 namespace carnot {
 namespace funcs {
 namespace net {
 
-void RegisterNetOpsOrDie(px::carnot::udf::Registry* registry) {
-  CHECK(registry != nullptr);
-  /*****************************************
-   * Scalar UDFs.
-   *****************************************/
-  registry->RegisterOrDie<NSLookupUDF>("nslookup");
-  registry->RegisterOrDie<CIDRsContainIPUDF>("cidrs_contain_ip");
-  /*****************************************
-   * Aggregate UDFs.
-   *****************************************/
+TEST(NetOps, CIDRsContainIPUDF_basic) {
+  auto udf_tester = px::carnot::udf::UDFTester<CIDRsContainIPUDF>();
+  std::string cidrs(R"(["10.0.0.1/31"])");
+  udf_tester.ForInput(cidrs, "10.0.0.1").Expect(true);
+  udf_tester.ForInput(cidrs, "10.0.0.0").Expect(true);
+  udf_tester.ForInput(cidrs, "10.0.0.2").Expect(false);
+}
+
+TEST(NetOps, CIDRsContainIPUDF_invalid_json) {
+  auto udf_tester = px::carnot::udf::UDFTester<CIDRsContainIPUDF>();
+
+  // Check that various kinds of invalid json don't cause failures and just return false.
+  udf_tester.ForInput(R"({"test":123})", "10.0.0.1").Expect(false);
+  udf_tester.ForInput(R"([1, 3])", "10.0.0.1").Expect(false);
+  udf_tester.ForInput(R"([{"1":1}])", "10.0.0.1").Expect(false);
+  udf_tester.ForInput(R"(;{})", "10.0.0.1").Expect(false);
 }
 
 }  // namespace net
