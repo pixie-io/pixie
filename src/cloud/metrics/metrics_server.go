@@ -44,6 +44,7 @@ func init() {
 	pflag.String("bq_sa_key_path", "", "The service account for the BigQuery instance that should be used.")
 
 	pflag.String("bq_dataset", "vizier_metrics", "The BigQuery dataset to write metrics to.")
+	pflag.String("bq_dataset_loc", "", "The location for the BigQuery dataset. Used during creation.")
 }
 
 func main() {
@@ -77,8 +78,10 @@ func main() {
 			log.WithError(err).Fatal("Missing a BigQuery dataset name.")
 		}
 
+		dsLoc := viper.GetString("bq_dataset_loc")
+
 		dataset := client.Dataset(dsName)
-		err = dataset.Create(context.Background(), nil)
+		err = dataset.Create(context.Background(), &bigquery.DatasetMetadata{Location: dsLoc})
 		apiError, ok := err.(*googleapi.Error)
 		if !ok {
 			log.WithError(err).Fatal("Problem with BigQuery dataset")

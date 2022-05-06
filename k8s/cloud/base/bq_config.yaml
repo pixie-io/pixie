@@ -6,4 +6,5 @@ metadata:
 data:
   PL_BQ_PROJECT: ""
   PL_BQ_DATASET: ""
+  PL_BQ_DATASET_LOC: ""
   PL_BQ_SA_KEY_PATH: ""
