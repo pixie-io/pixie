@@ -373,15 +373,36 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceSyntacticError) {
   tracepoint.set_table_name("pid_sample_table");
 
   constexpr char kScript[] = R"(interval:ms:100 {
-           bogus
+           bogus(;
            printf("username:%s time:%s", username, nsecs);
         })";
 
   tracepoint.mutable_bpftrace()->set_program(kScript);
 
   // TODO(oazizi): Find a way to get the clang error passed up.
+  ASSERT_THAT(
+      DynamicBPFTraceConnector::Create("test", tracepoint).status(),
+      StatusIs(statuspb::INTERNAL, HasSubstr("Could not compile bpftrace script, failed to parse: "
+                                             "stdin:2:12-19: ERROR: syntax error, unexpected ;\n"
+                                             "           bogus(;")));
+}
+
+TEST(DynamicBPFTraceConnectorTest, BPFTraceTracepointFormatError) {
+  // Create a BPFTrace program spec
+  TracepointDeployment_Tracepoint tracepoint;
+  tracepoint.set_table_name("pid_sample_table");
+
+  constexpr char kScript[] = R"(tracepoint:test:test {
+           printf("username:%d time:%d", nsecs, nsecs);
+        })";
+
+  tracepoint.mutable_bpftrace()->set_program(kScript);
+
+  // TODO(oazizi): Find a way to get the clang error passed up.
   ASSERT_THAT(DynamicBPFTraceConnector::Create("test", tracepoint).status(),
-              StatusIs(statuspb::INTERNAL, HasSubstr("Could not parse bpftrace script")));
+              StatusIs(statuspb::INTERNAL,
+                       HasSubstr("Could not compile bpftrace script, invalid tracepoint: "
+                                 "stdin:1:1-21: ERROR: tracepoint not found: test:test")));
 }
 
 TEST(DynamicBPFTraceConnectorTest, BPFTraceSemanticError) {
