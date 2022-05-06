@@ -43,6 +43,7 @@ import (
 )
 
 var queryExecTimeSummary *prometheus.SummaryVec
+var queryExecNumPEMSummary *prometheus.SummaryVec
 
 func init() {
 	queryExecTimeSummary = promauto.NewSummaryVec(
@@ -51,6 +52,13 @@ func init() {
 			Help: "A summary of the query execution time in milliseconds for the given script.",
 			// Report only the 99th percentile. Summary also creates a _count and _sum field so we can get the average in addition to the 99th percentile.
 			Objectives: map[float64]float64{0.99: 0.001},
+		},
+		[]string{"script_name"},
+	)
+	queryExecNumPEMSummary = promauto.NewSummaryVec(
+		prometheus.SummaryOpts{
+			Name: "query_exec_pems_queried",
+			Help: "A summary of the number of PEMs queried for the given script. A value of 0 indicates the script only queried kelvin.",
 		},
 		[]string{"script_name"},
 	)
@@ -102,6 +110,8 @@ type QueryExecutorImpl struct {
 
 	// queryName is used for labeling execution time metrics.
 	queryName string
+	// numPEMsQueried is stored so that the prometheus metric is only updated if the query succeeded.
+	numPEMsQueried int
 }
 
 // NewQueryExecutorFromServer creates a new QueryExecutor using the properties of a query broker server.
@@ -145,6 +155,7 @@ func NewQueryExecutor(
 		planner:             planner,
 		mutationExecFactory: mutExecFactory,
 		queryName:           "",
+		numPEMsQueried:      0,
 	}
 }
 
@@ -187,6 +198,7 @@ func (q *QueryExecutorImpl) Wait() error {
 	if err == nil {
 		d := time.Since(q.startTime)
 		queryExecTimeSummary.With(prometheus.Labels{"script_name": q.queryName}).Observe(float64(d.Milliseconds()))
+		queryExecNumPEMSummary.With(prometheus.Labels{"script_name": q.queryName}).Observe(float64(q.numPEMsQueried))
 		return nil
 	}
 	// There are a few common failure cases that may occur naturally during query execution. For example, ctxDeadlineExceeded,
@@ -357,6 +369,9 @@ func (q *QueryExecutorImpl) buildAgentPlanMap(plan *distributedpb.DistributedPla
 		}
 		planMap[u] = agentPlan
 	}
+	// Plan map includes an entry for Kelvin, so the number of pems queried should be 1 less than the number of plans.
+	// TODO(james): update this to support multiple Kelvin plans.
+	q.numPEMsQueried = len(planMap) - 1
 	return planMap, nil
 }
 
@@ -466,6 +481,7 @@ func (q *QueryExecutorImpl) prepareScript(ctx context.Context, resultCh chan<- *
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
