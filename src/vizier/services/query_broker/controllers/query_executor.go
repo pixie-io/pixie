@@ -450,7 +450,7 @@ func (q *QueryExecutorImpl) prepareScript(ctx context.Context, resultCh chan<- *
 		return err
 	}
 
-	err = q.resultForwarder.RegisterQuery(q.queryID, tableNameToIDMap, q.compilationTimeNs, queryPlanOpts)
+	err = q.resultForwarder.RegisterQuery(q.queryID, tableNameToIDMap, q.compilationTimeNs, queryPlanOpts, q.queryName)
 	if err != nil {
 		return err
 	}

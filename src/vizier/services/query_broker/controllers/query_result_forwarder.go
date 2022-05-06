@@ -26,6 +26,8 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
 
 	"px.dev/pixie/src/api/proto/vizierpb"
@@ -35,6 +37,26 @@ import (
 	"px.dev/pixie/src/carnot/queryresultspb"
 	"px.dev/pixie/src/utils"
 )
+
+var queryExecRecordsSummary *prometheus.SummaryVec
+var queryExecBytesSummary *prometheus.SummaryVec
+
+func init() {
+	queryExecRecordsSummary = promauto.NewSummaryVec(
+		prometheus.SummaryOpts{
+			Name: "query_exec_records_processed",
+			Help: "A summary of the number of records processed running the given script.",
+		},
+		[]string{"script_name"},
+	)
+	queryExecBytesSummary = promauto.NewSummaryVec(
+		prometheus.SummaryOpts{
+			Name: "query_exec_bytes_processed",
+			Help: "A summary of the number of bytes processed running the given script.",
+		},
+		[]string{"script_name"},
+	)
+}
 
 // QueryPlanOpts contains options for generating and returning the query plan
 // when the query has explain=true.
@@ -140,11 +162,14 @@ type activeQuery struct {
 
 	// We store a single producer context that all producers can access, so that we can cancel all consumers at once.
 	producerCtx context.Context
+
+	// Name used for labeling metrics recorded for this query.
+	queryName string
 }
 
 func newActiveQuery(producerCtx context.Context, tableIDMap map[string]string,
 	compilationTimeNs int64,
-	queryPlanOpts *QueryPlanOpts, watchdogCancel context.CancelFunc) *activeQuery {
+	queryPlanOpts *QueryPlanOpts, watchdogCancel context.CancelFunc, queryName string) *activeQuery {
 	aq := &activeQuery{
 		queryResultCh: make(chan *carnotpb.TransferResultChunkRequest, activeQueryBufferSize),
 		tableIDMap:    tableIDMap,
@@ -165,6 +190,8 @@ func newActiveQuery(producerCtx context.Context, tableIDMap map[string]string,
 
 		cancelQueryFunc: watchdogCancel,
 		producerCtx:     producerCtx,
+
+		queryName: queryName,
 	}
 
 	for tableName := range tableIDMap {
@@ -189,6 +216,10 @@ func (a *activeQuery) updateQueryState(msg *carnotpb.TransferResultChunkRequest)
 			return fmt.Errorf("already received exec stats for query %s", queryIDStr)
 		}
 		a.gotFinalExecStats = true
+		if stats := execStats.GetExecutionStats(); stats != nil {
+			queryExecRecordsSummary.With(prometheus.Labels{"script_name": a.queryName}).Observe(float64(stats.RecordsProcessed))
+			queryExecBytesSummary.With(prometheus.Labels{"script_name": a.queryName}).Observe(float64(stats.BytesProcessed))
+		}
 		return nil
 	}
 
@@ -364,7 +395,7 @@ func (a *activeQuery) cancelQuery(err error) {
 type QueryResultForwarder interface {
 	RegisterQuery(queryID uuid.UUID, tableIDMap map[string]string,
 		compilationTimeNs int64,
-		queryPlanOpts *QueryPlanOpts) error
+		queryPlanOpts *QueryPlanOpts, queryName string) error
 
 	// Streams results from the agent stream to the client stream.
 	// Blocks until the stream (& the agent stream) has completed, been cancelled, or experienced an error.
@@ -440,7 +471,8 @@ func NewQueryResultForwarderWithOptions(opts ...QueryResultForwarderOption) Quer
 // RegisterQuery registers a query ID in the result forwarder.
 func (f *QueryResultForwarderImpl) RegisterQuery(queryID uuid.UUID, tableIDMap map[string]string,
 	compilationTimeNs int64,
-	queryPlanOpts *QueryPlanOpts) error {
+	queryPlanOpts *QueryPlanOpts,
+	queryName string) error {
 	f.activeQueriesMutex.Lock()
 	defer f.activeQueriesMutex.Unlock()
 
@@ -449,7 +481,7 @@ func (f *QueryResultForwarderImpl) RegisterQuery(queryID uuid.UUID, tableIDMap m
 	}
 	watchdogCtx, watchdogCancel := context.WithCancel(context.Background())
 	producerCtx, producerCancel := context.WithCancel(context.Background())
-	aq := newActiveQuery(producerCtx, tableIDMap, compilationTimeNs, queryPlanOpts, watchdogCancel)
+	aq := newActiveQuery(producerCtx, tableIDMap, compilationTimeNs, queryPlanOpts, watchdogCancel, queryName)
 	f.activeQueries[queryID] = aq
 
 	deleteQuery := func() {
