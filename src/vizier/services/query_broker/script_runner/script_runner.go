@@ -267,7 +267,7 @@ func (s *ScriptRunner) upsertScript(id uuid.UUID, script *cvmsgspb.CronScript) e
 		v.stop()
 		delete(s.runnerMap, id)
 	}
-	r := newRunner(script, s.vzClient, s.signingKey)
+	r := newRunner(script, s.vzClient, s.signingKey, id)
 	s.runnerMap[id] = r
 	go r.start()
 	claims := svcutils.GenerateJWTForService("cron_script_store", "vizier")
@@ -419,9 +419,11 @@ type runner struct {
 
 	done chan struct{}
 	once sync.Once
+
+	scriptID uuid.UUID
 }
 
-func newRunner(script *cvmsgspb.CronScript, vzClient vizierpb.VizierServiceClient, signingKey string) *runner {
+func newRunner(script *cvmsgspb.CronScript, vzClient vizierpb.VizierServiceClient, signingKey string, id uuid.UUID) *runner {
 	// Parse config YAML into struct.
 	var config scripts.Config
 	err := yaml.Unmarshal([]byte(script.Configs), &config)
@@ -430,7 +432,7 @@ func newRunner(script *cvmsgspb.CronScript, vzClient vizierpb.VizierServiceClien
 	}
 
 	return &runner{
-		cronScript: script, done: make(chan struct{}), vzClient: vzClient, signingKey: signingKey, config: &config,
+		cronScript: script, done: make(chan struct{}), vzClient: vzClient, signingKey: signingKey, config: &config, scriptID: id,
 	}
 }
 
@@ -475,6 +477,7 @@ func (r *runner) start() {
 							StartTimeNs: startTime.UnixNano(),
 						},
 					},
+					QueryName: "cron_" + r.scriptID.String(),
 				})
 				if err != nil {
 					log.WithError(err).Error("Failed to execute cronscript")
