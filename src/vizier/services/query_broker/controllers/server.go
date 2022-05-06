@@ -171,7 +171,8 @@ func (h *healthcheckConsumer) Consume(result *vizierpb.ExecuteScriptResponse) er
 func (s *Server) CheckHealth(ctx context.Context) error {
 	checkVersionScript := `import px; px.display(px.Version())`
 	req := &vizierpb.ExecuteScriptRequest{
-		QueryStr: checkVersionScript,
+		QueryStr:  checkVersionScript,
+		QueryName: "healthcheck",
 	}
 	consumer := &healthcheckConsumer{
 		receivedRowBatches: 0,
