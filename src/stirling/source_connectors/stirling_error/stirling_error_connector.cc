@@ -55,8 +55,10 @@ void StirlingErrorConnector::TransferStirlingErrorTable(ConnectorContext* ctx,
     r.Append<r.ColIndex("time_")>(static_cast<uint64_t>(record.timestamp_ns));
     r.Append<r.ColIndex("upid")>(upid.value());
     r.Append<r.ColIndex("source_connector")>(std::move(record.source_connector));
+    r.Append<r.ColIndex("tracepoint")>(std::move(record.tracepoint));
     r.Append<r.ColIndex("status")>(static_cast<uint64_t>(record.status));
     r.Append<r.ColIndex("error")>(std::move(record.error));
+    r.Append<r.ColIndex("info")>(std::move(record.info));
   }
 }
 

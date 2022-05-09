@@ -29,11 +29,13 @@
 namespace px {
 namespace stirling {
 
-struct ConnectorStatusRecord {
+struct SourceStatusRecord {
   int64_t timestamp_ns = 0;
-  std::string source_connector = "";
+  std::string source_connector;
+  std::string tracepoint;
   px::statuspb::Code status;
   std::string error;
+  std::string info;
 };
 
 class StirlingMonitor : NotCopyMoveable {
@@ -49,8 +51,9 @@ class StirlingMonitor : NotCopyMoveable {
   void ResetJavaProcessAttachTrackers();
 
   // Stirling Error Reporting.
-  void AppendStatusRecord(const std::string& source_connector, const Status& status);
-  std::vector<ConnectorStatusRecord> ConsumeStatusRecords();
+  void AppendStatusRecord(const std::string& source_connector, const std::string& tracepoint,
+                          const Status& status, const std::string& info);
+  std::vector<SourceStatusRecord> ConsumeStatusRecords();
 
   static constexpr auto kCrashWindow = std::chrono::seconds{5};
 
@@ -59,7 +62,7 @@ class StirlingMonitor : NotCopyMoveable {
   absl::flat_hash_map<struct upid_t, timestamp_t> java_proc_attach_times_;
 
   // Records of errors in source connectors.
-  std::vector<ConnectorStatusRecord> connector_status_records_;
+  std::vector<SourceStatusRecord> source_status_records_;
 };
 
 }  // namespace stirling

@@ -31,6 +31,7 @@
 #include <absl/base/internal/spinlock.h>
 
 #include "src/common/base/base.h"
+#include "src/common/json/json.h"
 #include "src/common/perf/elapsed_timer.h"
 #include "src/stirling/utils/system_info.h"
 
@@ -275,7 +276,14 @@ class StirlingImpl final : public Stirling {
       ABSL_GUARDED_BY(dynamic_trace_status_map_lock_);
 
   StirlingMonitor& monitor_ = *StirlingMonitor::GetInstance();
-  absl::flat_hash_map<sole::uuid, std::string> trace_id_name_map_
+
+  struct DynamicTraceInfo {
+    std::string source_connector;
+    std::string tracepoint;
+    std::string output_table;
+  };
+
+  absl::flat_hash_map<sole::uuid, DynamicTraceInfo> trace_id_info_map_
       ABSL_GUARDED_BY(dynamic_trace_status_map_lock_);
 };
 
@@ -397,8 +405,7 @@ Status StirlingImpl::Init() {
     auto source_ptr = create_source_fn(name);
 
     Status s = AddSource(std::move(source_ptr));
-    StirlingMonitor& monitor = *StirlingMonitor::GetInstance();
-    monitor.AppendStatusRecord(name, s);
+    monitor_.AppendStatusRecord(name, "Init", s, "");
 
     LOG_IF(WARNING, !s.ok()) << absl::Substitute(
         "Source Connector (registry name=$0) not instantiated, error: $1", name, s.ToString());
@@ -551,6 +558,14 @@ void StirlingImpl::DeployDynamicTraceConnector(
   // Cache table schema name as source will be moved below.
   std::string output_name(source->table_schemas()[0].name());
 
+  {
+    absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
+    auto it = trace_id_info_map_.find(trace_id);
+    if (it != trace_id_info_map_.end()) {
+      trace_id_info_map_[trace_id].output_table = output_name;
+    }
+  }
+
   timer.Start();
   // Next, try adding the source (this actually tries to deploy BPF code).
   // On failure, set status and exit, but do this outside the lock for efficiency reasons.
@@ -581,7 +596,7 @@ void StirlingImpl::DestroyDynamicTraceConnector(sole::uuid trace_id) {
   {
     absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
     dynamic_trace_status_map_.erase(trace_id);
-    trace_id_name_map_.erase(trace_id);
+    trace_id_info_map_.erase(trace_id);
   }
 }
 
@@ -599,7 +614,11 @@ void StirlingImpl::RegisterTracepoint(
 
   {
     absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
-    trace_id_name_map_[trace_id] = program->name();
+    std::string source_connector =
+        program->tracepoints(0).has_bpftrace() ? "dynamic_bpftrace" : "dynamic_trace";
+    trace_id_info_map_[trace_id] = {.source_connector = std::move(source_connector),
+                                    .tracepoint = program->name(),
+                                    .output_table = ""};
   }
 
   if (program->has_deployment_spec()) {
@@ -628,7 +647,11 @@ void StirlingImpl::RegisterTracepoint(
   }
 
   // Initialize the status of this trace to pending.
-  UpdateDynamicTraceStatus(trace_id, error::ResourceUnavailable("Probe deployment in progress."));
+  {
+    absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
+    dynamic_trace_status_map_[trace_id] =
+        error::ResourceUnavailable("Probe deployment in progress.");
+  }
 
   auto t =
       std::thread(&StirlingImpl::DeployDynamicTraceConnector, this, trace_id, std::move(program));
@@ -878,14 +901,24 @@ void StirlingImpl::UpdateDynamicTraceStatus(const sole::uuid& trace_id,
   dynamic_trace_status_map_[trace_id] = s;
 
   // Find program name and log dynamic trace status update to Stirling Monitor.
-  auto it = trace_id_name_map_.find(trace_id);
-  if (it != trace_id_name_map_.end()) {
-    monitor_.AppendStatusRecord(it->second, s.status());
+  auto it = trace_id_info_map_.find(trace_id);
+  if (it != trace_id_info_map_.end()) {
+    DynamicTraceInfo& trace_info = it->second;
+
+    // Build info JSON with trace_id and output_table.
+    ::px::utils::JSONObjectBuilder builder;
+    builder.WriteKV("trace_id", trace_id.str());
+    if (s.ok()) {
+      builder.WriteKV("output_table", trace_info.output_table);
+    }
+
+    monitor_.AppendStatusRecord(trace_info.source_connector, trace_info.tracepoint, s.status(),
+                                builder.GetString());
 
     // Clean up map if status is not ok. When status is RESOURCE_UNAVAILABLE, either deployment
     // or removal is pending, so don't clean up.
     if (!s.ok() && s.code() != statuspb::Code::RESOURCE_UNAVAILABLE) {
-      trace_id_name_map_.erase(trace_id);
+      trace_id_info_map_.erase(trace_id);
     }
   }
 }
