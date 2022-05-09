@@ -18,37 +18,23 @@
 
 #pragma once
 
-#include <cstdint>
-#include <string>
 #include <string_view>
 
-#include "src/stirling/source_connectors/socket_tracer/protocols/common/event_parser.h"  // For FrameBase
+#include "src/stirling/source_connectors/socket_tracer/protocols/amqp/types.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
 
 namespace px {
 namespace stirling {
 namespace protocols {
-namespace amqp {
 
-// Represents a generic AMQP message.
-struct Message : public FrameBase {
-  // Defines the type of message passed [takes values 1...4]
-  enum class type { kMethod = 1, kHeader = 2, kBody = 3, kHeartbeat = 4 };
-  type message_type;
+template <>
+size_t FindFrameBoundary<amqp::Message>(message_type_t, std::string_view buf, size_t start_pos,
+                                        NoState*);
 
-  // Communication channel to be used
-  int16_t message_channel;
+template <>
+ParseState ParseFrame(message_type_t type, std::string_view* buf, amqp::Message* msg,
+                      NoState* /*state*/);
 
-  // Defines the length of message upcoming
-  int32_t message_length;
-
-  // Actual body content to be used
-  std::string_view message_body;
-
-  // Marks end of the frame by hexadecimal value %xCE
-  const char kFrameEnd = 0xCE;
-};
-
-}  // namespace amqp
 }  // namespace protocols
 }  // namespace stirling
 }  // namespace px
