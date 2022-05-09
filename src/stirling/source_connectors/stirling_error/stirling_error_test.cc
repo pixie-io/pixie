@@ -17,6 +17,7 @@
  */
 
 #include <absl/functional/bind_front.h>
+#include <absl/strings/substitute.h>
 
 #include "src/carnot/planner/probes/tracepoint_generator.h"
 #include "src/common/base/base.h"
@@ -33,10 +34,12 @@
 namespace px {
 namespace stirling {
 
+using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Field;
 using ::testing::SizeIs;
 using ::testing::StrEq;
+using ::testing::UnorderedElementsAre;
 
 using ::px::types::ColumnWrapperRecordBatch;
 using ::px::types::Int64Value;
@@ -48,27 +51,31 @@ using DynamicTracepointDeployment =
     ::px::stirling::dynamic_tracing::ir::logical::TracepointDeployment;
 using ::px::stirling::testing::RecordBatchSizeIs;
 
-std::vector<ConnectorStatusRecord> ToRecordVector(
+std::vector<SourceStatusRecord> ToRecordVector(
     const std::vector<std::unique_ptr<ColumnWrapperRecordBatch>>& record_batches) {
-  std::vector<ConnectorStatusRecord> result;
+  std::vector<SourceStatusRecord> result;
 
   for (size_t rb_idx = 0; rb_idx < record_batches.size(); ++rb_idx) {
     auto& rb = *record_batches[rb_idx];
     for (size_t idx = 0; idx < rb.front()->Size(); ++idx) {
-      ConnectorStatusRecord r;
+      SourceStatusRecord r;
       r.source_connector = rb[2]->Get<StringValue>(idx).string();
-      r.status = static_cast<px::statuspb::Code>(rb[3]->Get<Int64Value>(idx).val);
-      r.error = rb[4]->Get<StringValue>(idx).string();
+      r.tracepoint = rb[3]->Get<StringValue>(idx).string();
+      r.status = static_cast<px::statuspb::Code>(rb[4]->Get<Int64Value>(idx).val);
+      r.error = rb[5]->Get<StringValue>(idx).string();
+      r.info = rb[6]->Get<StringValue>(idx).string();
       result.push_back(r);
     }
   }
   return result;
 }
 
-auto EqConnectorStatusRecord(const ConnectorStatusRecord& x) {
-  return AllOf(Field(&ConnectorStatusRecord::source_connector, StrEq(x.source_connector)),
-               Field(&ConnectorStatusRecord::status, Eq(x.status)),
-               Field(&ConnectorStatusRecord::error, Eq(x.error)));
+auto EqSourceStatusRecord(const SourceStatusRecord& x) {
+  return AllOf(Field(&SourceStatusRecord::source_connector, StrEq(x.source_connector)),
+               Field(&SourceStatusRecord::tracepoint, StrEq(x.tracepoint)),
+               Field(&SourceStatusRecord::status, Eq(x.status)),
+               Field(&SourceStatusRecord::error, StrEq(x.error)),
+               Field(&SourceStatusRecord::info, StrEq(x.info)));
 }
 
 // A SourceConnector that fails on Init.
@@ -193,18 +200,24 @@ TEST_F(StirlingErrorTest, SourceConnectorInitOK) {
   sleep(5);
   stirling_->Stop();
 
-  EXPECT_THAT(record_batches_, SizeIs(1));
-  auto& record_batch = *record_batches_[0];
+  auto records = ToRecordVector(record_batches_);
   // Stirling Error Source Connector plus the other ones.
-  EXPECT_THAT(record_batch, RecordBatchSizeIs(kNumSources + 1));
+  EXPECT_THAT(records, SizeIs(kNumSources + 1));
 
-  for (size_t i = 0; i < kNumSources + 1; ++i) {
-    std::string expected_source =
-        i < kNumSources ? absl::Substitute("sequences$0", i) : "stirling_error";
-    EXPECT_EQ(record_batch[2]->Get<StringValue>(i).string(), expected_source);
-    EXPECT_EQ(record_batch[3]->Get<Int64Value>(i).val, px::statuspb::Code::OK);
-    EXPECT_EQ(record_batch[4]->Get<StringValue>(i).string(), "");
-  }
+  SourceStatusRecord r1{
+      .source_connector = "stirling_error", .tracepoint = "Init", .status = px::statuspb::Code::OK};
+
+  SourceStatusRecord r2{
+      .source_connector = "sequences0", .tracepoint = "Init", .status = px::statuspb::Code::OK};
+
+  SourceStatusRecord r3{
+      .source_connector = "sequences1", .tracepoint = "Init", .status = px::statuspb::Code::OK};
+
+  SourceStatusRecord r4{
+      .source_connector = "sequences2", .tracepoint = "Init", .status = px::statuspb::Code::OK};
+
+  EXPECT_THAT(records, UnorderedElementsAre(EqSourceStatusRecord(r1), EqSourceStatusRecord(r2),
+                                            EqSourceStatusRecord(r3), EqSourceStatusRecord(r4)));
 }
 
 TEST_F(StirlingErrorTest, SourceConnectorInitError) {
@@ -216,22 +229,30 @@ TEST_F(StirlingErrorTest, SourceConnectorInitError) {
   sleep(5);
   stirling_->Stop();
 
-  EXPECT_THAT(record_batches_, SizeIs(1));
-  auto& record_batch = *record_batches_[0];
+  auto records = ToRecordVector(record_batches_);
   // Stirling Error Source Connector plus the other ones.
-  EXPECT_THAT(record_batch, RecordBatchSizeIs(kNumSources + 1));
+  EXPECT_THAT(records, SizeIs(kNumSources + 1));
 
-  for (size_t i = 0; i < kNumSources + 1; ++i) {
-    std::string expected_source =
-        i < kNumSources ? absl::Substitute("sequences$0", i) : "stirling_error";
-    px::statuspb::Code expected_status =
-        i < kNumSources ? px::statuspb::Code::INTERNAL : px::statuspb::Code::OK;
-    std::string expected_error = i < kNumSources ? "Initialization failed on purpose." : "";
+  SourceStatusRecord r1{
+      .source_connector = "stirling_error", .tracepoint = "Init", .status = px::statuspb::Code::OK};
 
-    EXPECT_EQ(record_batch[2]->Get<StringValue>(i).string(), expected_source);
-    EXPECT_EQ(record_batch[3]->Get<Int64Value>(i).val, expected_status);
-    EXPECT_EQ(record_batch[4]->Get<StringValue>(i).string(), expected_error);
-  }
+  SourceStatusRecord r2{.source_connector = "sequences0",
+                        .tracepoint = "Init",
+                        .status = px::statuspb::Code::INTERNAL,
+                        .error = "Initialization failed on purpose."};
+
+  SourceStatusRecord r3{.source_connector = "sequences1",
+                        .tracepoint = "Init",
+                        .status = px::statuspb::Code::INTERNAL,
+                        .error = "Initialization failed on purpose."};
+
+  SourceStatusRecord r4{.source_connector = "sequences2",
+                        .tracepoint = "Init",
+                        .status = px::statuspb::Code::INTERNAL,
+                        .error = "Initialization failed on purpose."};
+
+  EXPECT_THAT(records, UnorderedElementsAre(EqSourceStatusRecord(r1), EqSourceStatusRecord(r2),
+                                            EqSourceStatusRecord(r3), EqSourceStatusRecord(r4)));
 }
 
 // Deploy a dynamic BPFTrace probe and record the error messages of its deployment and removal.
@@ -261,25 +282,31 @@ TEST_F(StirlingErrorTest, BPFTraceDeploymentOK) {
   stirling_->Stop();
 
   auto records = ToRecordVector(record_batches_);
-  EXPECT_THAT(records, SizeIs(4));
+  EXPECT_THAT(records, SizeIs(3));
 
   // Stirling Error Source Connector Initialization.
-  ConnectorStatusRecord r1{
-      .source_connector = "stirling_error", .status = px::statuspb::Code::OK, .error = ""};
-  // TCPDrop deployment in progress.
-  ConnectorStatusRecord r2{.source_connector = "tcp_drop_tracer",
-                           .status = px::statuspb::Code::RESOURCE_UNAVAILABLE,
-                           .error = "Probe deployment in progress."};
-  // TCPDrop deployed.
-  ConnectorStatusRecord r3{
-      .source_connector = "tcp_drop_tracer", .status = px::statuspb::Code::OK, .error = ""};
-  // TCPDrop removal in progress.
-  ConnectorStatusRecord r4{.source_connector = "tcp_drop_tracer",
-                           .status = px::statuspb::Code::RESOURCE_UNAVAILABLE,
-                           .error = "Probe removal in progress."};
+  SourceStatusRecord r1{.source_connector = "stirling_error",
+                        .tracepoint = "Init",
+                        .status = px::statuspb::Code::OK,
+                        .error = ""};
 
-  EXPECT_THAT(records, ElementsAre(EqConnectorStatusRecord(r1), EqConnectorStatusRecord(r2),
-                                   EqConnectorStatusRecord(r3), EqConnectorStatusRecord(r4)));
+  // TCPDrop deployed.
+  SourceStatusRecord r2{
+      .source_connector = "dynamic_bpftrace",
+      .tracepoint = "tcp_drop_tracer",
+      .status = px::statuspb::Code::OK,
+      .error = "",
+      .info =
+          absl::Substitute(R"({"trace_id":"$0","output_table":"tcp_drop_table"})", trace_id.str())};
+  // TCPDrop removal in progress.
+  SourceStatusRecord r3{.source_connector = "dynamic_bpftrace",
+                        .tracepoint = "tcp_drop_tracer",
+                        .status = px::statuspb::Code::RESOURCE_UNAVAILABLE,
+                        .error = "Probe removal in progress.",
+                        .info = absl::Substitute(R"({"trace_id":"$0"})", trace_id.str())};
+
+  EXPECT_THAT(records, ElementsAre(EqSourceStatusRecord(r1), EqSourceStatusRecord(r2),
+                                   EqSourceStatusRecord(r3)));
 }
 
 TEST_F(StirlingErrorTest, BPFTraceDeploymentError) {
@@ -292,28 +319,27 @@ TEST_F(StirlingErrorTest, BPFTraceDeploymentError) {
   ASSERT_OK(stirling_->RunAsThread());
   ASSERT_OK(stirling_->WaitUntilRunning(std::chrono::seconds(5)));
 
-  ASSERT_OK(DeployBPFTraceScript(pidsample_bpftrace_script_));
+  ASSERT_OK_AND_ASSIGN(auto trace_id, DeployBPFTraceScript(pidsample_bpftrace_script_));
   sleep(3);
 
   stirling_->Stop();
   auto records = ToRecordVector(record_batches_);
-  EXPECT_THAT(records, SizeIs(3));
+  EXPECT_THAT(records, SizeIs(2));
 
   // Stirling Error Source Connector Initialization.
-  ConnectorStatusRecord r1{
-      .source_connector = "stirling_error", .status = px::statuspb::Code::OK, .error = ""};
-  // PidSample deployment in progress.
-  ConnectorStatusRecord r2{.source_connector = "pid_sample_tracer",
-                           .status = px::statuspb::Code::RESOURCE_UNAVAILABLE,
-                           .error = "Probe deployment in progress."};
+  SourceStatusRecord r1{.source_connector = "stirling_error",
+                        .tracepoint = "Init",
+                        .status = px::statuspb::Code::OK,
+                        .error = ""};
   // PidSample deployment failed.
-  ConnectorStatusRecord r3{.source_connector = "pid_sample_tracer",
-                           .status = px::statuspb::Code::INTERNAL,
-                           .error =
-                               "Semantic pass failed: stdin:3-4: ERROR: printf: Too many arguments "
-                               "for format string (4 supplied, 3 expected)\n"};
-  EXPECT_THAT(records, ElementsAre(EqConnectorStatusRecord(r1), EqConnectorStatusRecord(r2),
-                                   EqConnectorStatusRecord(r3)));
+  SourceStatusRecord r2{.source_connector = "dynamic_bpftrace",
+                        .tracepoint = "pid_sample_tracer",
+                        .status = px::statuspb::Code::INTERNAL,
+                        .error =
+                            "Semantic pass failed: stdin:3-4: ERROR: printf: Too many arguments "
+                            "for format string (4 supplied, 3 expected)\n",
+                        .info = absl::Substitute(R"({"trace_id":"$0"})", trace_id.str())};
+  EXPECT_THAT(records, ElementsAre(EqSourceStatusRecord(r1), EqSourceStatusRecord(r2)));
 }
 
 }  // namespace stirling
