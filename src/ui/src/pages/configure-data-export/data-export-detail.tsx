@@ -174,7 +174,7 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
   const showSnackbar = useSnackbar();
 
   const history = useHistory();
-  const backToTop = React.useCallback(() => {
+  const navBackToAllScripts = React.useCallback(() => {
     history.push('/configure-data-export');
   }, [history]);
 
@@ -261,23 +261,31 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
     createOrUpdate(newScript)
       .then((res: string | boolean) => {
         setSaving(false);
-        let message = '';
-        if (typeof res === 'boolean') {
-          message = res ? 'Retention script saved successfully.' : 'Failed to save retention script, unknown reason.';
-        } else {
-          message = 'Script created!';
+        if (typeof res !== 'boolean') {
+          showSnackbar({
+            message: 'Script created!',
+          });
+          navBackToAllScripts();
+          return;
         }
+
+        if (!res) {
+          showSnackbar({
+            message: 'Failed to save retention script, unknown reason.',
+          });
+          return;
+        }
+
         showSnackbar({
-          message,
-          actionTitle: 'Back to Scripts',
-          action: backToTop,
+          message: 'Retention script saved successfully.',
         });
+        navBackToAllScripts();
       })
       .catch(() => setSaving(false));
   }, [
     pendingValues.name, pendingValues.description, pendingValues.clusters, pendingValues.contents,
     pendingValues.frequencyS, pendingValues.pluginID, pendingValues.exportPath,
-    enabledPlugins, saving, createOrUpdate, validClusters, script?.enabled, showSnackbar, backToTop,
+    enabledPlugins, saving, createOrUpdate, validClusters, script?.enabled, showSnackbar, navBackToAllScripts,
   ]);
 
   const labelProps = React.useMemo(() => ({ shrink: true }), []);
@@ -398,7 +406,7 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
         </Stack>
       </Paper>
       <Box width={1} textAlign='right'>
-        <Button variant='outlined' type='button' color='primary' onClick={backToTop} sx={{ mr: 1 }}>
+        <Button variant='outlined' type='button' color='primary' onClick={navBackToAllScripts} sx={{ mr: 1 }}>
           Cancel
         </Button>
         <Button variant='contained' type='submit' disabled={saving || !valid} color={valid ? 'primary' : 'error'}>
