@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/gofrs/uuid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -378,5 +379,9 @@ func GetCloudAddrFromKubeConfig(config *rest.Config) string {
 	if !ok {
 		return ""
 	}
+	if strings.Contains(cloudAddr, "vzconn-service") && strings.Contains(cloudAddr, "svc.cluster.local") {
+		cloudAddr = strings.Replace(cloudAddr, "vzconn-service", "cloud-proxy-service", 1)
+	}
+
 	return cloudAddr
 }
