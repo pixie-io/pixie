@@ -19,6 +19,7 @@
 import * as React from 'react';
 
 import { Box, Button, Divider, FormControlLabel, Skeleton, Stack, Switch, TextField, Tooltip } from '@mui/material';
+import { Link } from 'react-router-dom';
 
 import { useSnackbar } from 'app/components';
 import { GQLEditablePluginConfigs, GQLPlugin } from 'app/types/schema';
@@ -149,6 +150,9 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
       <Divider variant='middle' sx={{ mt: 2, mb: 2 }} />
       {/* TODO(nick,PC-1436): Dedup code in the header's <MaterialSwitch />, maybe wrap form higher up */}
       <Box sx={{ display: 'flex', flexFlow: 'row nowrap', justifyContent: 'flex-end', alignItems: 'baseline' }}>
+        <Link component={Button} to='/configure-data-export' onClick={(e) => e.stopPropagation()}>
+          Edit Scripts
+        </Link>
         <Button
           variant='contained'
           color='primary'
