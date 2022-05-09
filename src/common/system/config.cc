@@ -38,52 +38,33 @@ DEFINE_string(host_path, gflags::StringFromEnv("PL_HOST_PATH", ""),
 
 #include <ctime>
 
-class ConfigImpl final : public Config {
- public:
-  ConfigImpl(std::unique_ptr<ClockConverter> clock_converter)
-      : host_path_(FLAGS_host_path),
-        sysfs_path_(FLAGS_sysfs_path),
-        proc_path_(absl::StrCat(FLAGS_host_path, "/proc")),
-        clock_converter_(std::move(clock_converter)) {}
+Config::Config(std::unique_ptr<ClockConverter> clock_converter)
+    : host_path_(FLAGS_host_path),
+      sysfs_path_(FLAGS_sysfs_path),
+      proc_path_(absl::StrCat(FLAGS_host_path, "/proc")),
+      clock_converter_(std::move(clock_converter)) {}
 
-  bool HasConfig() const override { return true; }
+int64_t Config::PageSizeBytes() const { return sysconf(_SC_PAGESIZE); }
 
-  int64_t PageSizeBytes() const override { return sysconf(_SC_PAGESIZE); }
+int64_t Config::KernelTicksPerSecond() const { return sysconf(_SC_CLK_TCK); }
 
-  int64_t KernelTicksPerSecond() const override { return sysconf(_SC_CLK_TCK); }
+int64_t Config::KernelTickTimeNS() const {
+  return static_cast<int64_t>(1E9 / KernelTicksPerSecond());
+}
 
-  int64_t KernelTickTimeNS() const override {
-    return static_cast<int64_t>(1E9 / KernelTicksPerSecond());
-  }
+uint64_t Config::ConvertToRealTime(uint64_t monotonic_time) const {
+  return clock_converter_->Convert(monotonic_time);
+}
 
-  uint64_t ConvertToRealTime(uint64_t monotonic_time) const override {
-    return clock_converter_->Convert(monotonic_time);
-  }
-
-  const std::filesystem::path& sysfs_path() const override { return sysfs_path_; }
-
-  const std::filesystem::path& host_path() const override { return host_path_; }
-
-  const std::filesystem::path& proc_path() const override { return proc_path_; }
-
-  std::filesystem::path ToHostPath(const std::filesystem::path& p) const override {
-    // If we're running in a container, convert path to be relative to our host mount.
-    // Note that we mount host '/' to '/host' inside container.
-    // Warning: must use JoinPath, because we are dealing with two absolute paths.
-    return fs::JoinPath({&host_path_, &p});
-  }
-
-  clock::ClockConverter* clock_converter() const override { return clock_converter_.get(); }
-
- private:
-  const std::filesystem::path host_path_;
-  const std::filesystem::path sysfs_path_;
-  const std::filesystem::path proc_path_;
-  std::unique_ptr<ClockConverter> clock_converter_;
-};
+std::filesystem::path Config::ToHostPath(const std::filesystem::path& p) const {
+  // If we're running in a container, convert path to be relative to our host mount.
+  // Note that we mount host '/' to '/host' inside container.
+  // Warning: must use JoinPath, because we are dealing with two absolute paths.
+  return fs::JoinPath({&host_path_, &p});
+}
 
 namespace {
-std::unique_ptr<ConfigImpl> g_instance;
+std::unique_ptr<Config> g_instance;
 }
 
 const Config& Config::GetInstance() {
@@ -94,8 +75,9 @@ const Config& Config::GetInstance() {
 }
 
 void Config::ResetInstance(std::unique_ptr<ClockConverter> converter) {
-  g_instance = std::make_unique<ConfigImpl>(std::move(converter));
+  g_instance.reset(new Config(std::move(converter)));
 }
+
 void Config::ResetInstance() {
   Config::ResetInstance(std::make_unique<DefaultMonoToRealtimeConverter>());
 }
