@@ -33,9 +33,10 @@ namespace amqp {
 struct Message : public FrameBase {
   // Defines the type of message passed [takes values 1...4]
   enum class type { kMethod = 1, kHeader = 2, kBody = 3, kHeartbeat = 4 };
+  type message_type;
 
   // Communication channel to be used
-  int16_t channel;
+  int16_t message_channel;
 
   // Defines the length of message upcoming
   int32_t message_length;
