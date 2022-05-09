@@ -276,18 +276,17 @@ const PluginList = React.memo<RouteComponentProps<{ expandId?: string }>>(({ mat
   const { loading, plugins } = usePluginList(GQLPluginKind.PK_RETENTION);
   const { expandId } = match.params; // TODO(nick,PC-1436): Scroll to it on page load if feasible?
 
-  const getAccordionToggle = React.useCallback((id: string, enabled: boolean) => (_: unknown, expand: boolean) => {
+  const getAccordionToggle = React.useCallback((id: string) => (_: unknown, expand: boolean) => {
     const base = match.url.split('/configure')[0];
-    const isExpanded = enabled && expand;
-    if (isExpanded && (!expandId || expandId !== id)) {
+    if (expand && (!expandId || expandId !== id)) {
       history.push(`${base}/configure/${id}`.replace('//', '/'));
-    } else if (!isExpanded && id === expandId) {
+    } else if (!expand && id === expandId) {
       history.push(base);
     }
   }, [expandId, history, match]);
 
   const getOnPluginToggled = React.useCallback((id: string) => (isEnabled: boolean) => {
-    const toggleAccordion = getAccordionToggle(id, isEnabled);
+    const toggleAccordion = getAccordionToggle(id);
     toggleAccordion(undefined, isEnabled);
   }, [getAccordionToggle]);
 
@@ -299,8 +298,8 @@ const PluginList = React.memo<RouteComponentProps<{ expandId?: string }>>(({ mat
       {plugins.filter(p => p.supportsRetention).map((p) => (
         <Accordion
           key={p.id}
-          expanded={expandId === p.id && p.retentionEnabled}
-          onChange={getAccordionToggle(p.id, p.retentionEnabled)}
+          expanded={expandId === p.id}
+          onChange={getAccordionToggle(p.id)}
         >
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
