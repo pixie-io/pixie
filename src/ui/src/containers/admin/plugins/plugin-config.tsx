@@ -106,8 +106,8 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
             key={name}
             variant='outlined'
             label={name}
-            placeholder={description}
-            helperText={pendingValues.configs.find(c => c.name === name)?.value ? description : ''}
+            placeholder={`Value for ${name}`}
+            helperText={description}
             value={pendingValues.configs.find(c => c.name === name)?.value ?? ''}
             onChange={(e) => setPendingValues((prev) => ({
               ...prev,
@@ -124,8 +124,8 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
             variant='outlined'
             label={`Custom export URL${schema?.defaultExportURL ? ' (optional)' : ''}`}
             required={!schema?.defaultExportURL}
-            placeholder={schema?.defaultExportURL || 'Default URL for retention scripts'}
-            helperText={pendingValues.customExportURL ? 'Default URL for retention scripts' : ''}
+            placeholder={schema?.defaultExportURL}
+            helperText={'Default URL for retention scripts'}
             value={pendingValues.customExportURL ?? ''}
             onChange={(e) => setPendingValues((prev) => ({ ...prev, customExportURL: e.target.value }))}
             InputLabelProps={{ shrink: true }}
