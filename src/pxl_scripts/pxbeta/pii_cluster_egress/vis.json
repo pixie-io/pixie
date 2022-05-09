@@ -7,18 +7,6 @@
       "defaultValue": "-5m"
     },
     {
-      "name": "filter_for_pii_egress",
-      "type": "PX_BOOLEAN",
-      "description": "Whether to only include results where PII has been detected egressing.",
-      "defaultValue": "false"
-    },
-    {
-      "name": "include_unknown_protocol",
-      "type": "PX_BOOLEAN",
-      "description": "Whether to include results where protocol of traffic is not currently supported by Pixie tracing.",
-      "defaultValue": "true"
-    },
-    {
       "name": "filter_for_not_ssl",
       "type": "PX_BOOLEAN",
       "description": "Include only traffic that is leaving the cluster unencrypted",
@@ -70,14 +58,6 @@
             "variable": "start_time"
           },
           {
-            "name": "filter_for_pii_egress",
-            "variable": "filter_for_pii_egress"
-          },
-          {
-            "name": "include_unknown_protocol",
-            "variable": "include_unknown_protocol"
-          },
-          {
             "name": "filter_for_not_ssl",
             "variable": "filter_for_not_ssl"
           },
@@ -105,14 +85,6 @@
           {
             "name": "start_time",
             "variable": "start_time"
-          },
-          {
-            "name": "filter_for_pii_egress",
-            "variable": "filter_for_pii_egress"
-          },
-          {
-            "name": "include_unknown_protocol",
-            "variable": "include_unknown_protocol"
           },
           {
             "name": "filter_for_not_ssl",

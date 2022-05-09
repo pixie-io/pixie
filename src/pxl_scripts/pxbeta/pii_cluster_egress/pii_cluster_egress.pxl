@@ -19,16 +19,12 @@ import px
 
 def egress_graph(
     start_time: str,
-    filter_for_pii_egress: bool,
-    include_unknown_protocol: bool,
     filter_for_not_ssl: bool,
     use_pixie_dns_resolution: bool,
 ):
     """Get a graphical representation of all traffic leaving the cluster."""
     df = traffic_leaving_cluster(
         start_time,
-        filter_for_pii_egress,
-        include_unknown_protocol,
         filter_for_not_ssl,
         use_pixie_dns_resolution,
     )
@@ -55,16 +51,12 @@ def egress_graph(
 
 def egress_data(
     start_time: str,
-    filter_for_pii_egress: bool,
-    include_unknown_protocol: bool,
     filter_for_not_ssl: bool,
     use_pixie_dns_resolution: bool,
 ):
     """Get all traffic leaving the cluster grouped by pod, remote IP address, protocol, and SSL."""
     df = traffic_leaving_cluster(
         start_time,
-        filter_for_pii_egress,
-        include_unknown_protocol,
         filter_for_not_ssl,
         use_pixie_dns_resolution,
     )
@@ -88,13 +80,11 @@ def egress_data(
 
 def traffic_leaving_cluster(
     start_time: str,
-    filter_for_pii_egress: bool,
-    include_unknown_protocol: bool,
     filter_for_not_ssl: bool,
     use_pixie_dns_resolution: bool,
 ):
     """Get all traffic leaving the cluster aggregated by upid,remote_addr pairs."""
-    df = unified_events_table(start_time, filter_for_pii_egress)
+    df = unified_events_table(start_time)
 
     df = df.groupby(
         ["node", "pod", "upid", "remote_addr", "remote_port", "protocol"]
@@ -105,8 +95,6 @@ def traffic_leaving_cluster(
 
     # Add whether the connection is ssl'd using conn stats.
     df = ssl_from_conn_stats(df, start_time)
-    # Add conn stats info about unknown protocols.
-    df = add_unknown_from_conn_stats(df, start_time, include_unknown_protocol)
     # Resolve IPs to domains using either nslookup or dns_events.
     df = reverse_lookup_dns(df, start_time, use_pixie_dns_resolution)
 
@@ -192,45 +180,6 @@ def reverse_lookup_dns(df, start_time: str, use_pixie_dns_resolution: bool):
     return df
 
 
-def add_unknown_from_conn_stats(df, start_time: str, include_unknown_protocol: bool):
-    unknown_df = px.DataFrame("conn_stats", start_time=start_time)
-    unknown_df = unknown_df[unknown_df.protocol == 0]
-    unknown_df = unknown_df[unknown_df.trace_role == 1]
-
-    unknown_df.cidrs = px.get_cidrs()
-    unknown_df = unknown_df[
-        unknown_df.remote_addr != "127.0.0.1"
-        and (unknown_df.remote_addr != "0.0.0.0" and unknown_df.remote_addr != "-")
-    ]
-    unknown_df = unknown_df[
-        not px.cidrs_contain_ip(unknown_df.cidrs, unknown_df.remote_addr)
-    ]
-
-    unknown_df.pod = unknown_df.ctx["pod"]
-    unknown_df.service = unknown_df.ctx["service"]
-    unknown_df.node = unknown_df.ctx["node"]
-
-    unknown_df.protocol = px.protocol_name(unknown_df.protocol)
-
-    unknown_df = unknown_df.groupby(
-        ["node", "pod", "upid", "remote_addr", "remote_port", "protocol", "ssl"]
-    ).agg(
-        bytes_sent_min=("bytes_sent", px.min),
-        bytes_sent_max=("bytes_sent", px.max),
-    )
-    unknown_df.bytes_egressed = unknown_df.bytes_sent_max - unknown_df.bytes_sent_min
-    unknown_df = unknown_df.drop(["bytes_sent_max", "bytes_sent_min"])
-
-    unknown_df.example_req = (
-        "Traffic egressed over unknown protocol. "
-        + "Pixie does not currently support tracing the protocol of this traffic."
-    )
-
-    unknown_df = unknown_df[include_unknown_protocol]
-    df = df.append(unknown_df)
-    return df
-
-
 def common_events_setup(table_name: str, start_time: str):
     df = px.DataFrame(table_name, start_time=start_time)
 
@@ -248,15 +197,15 @@ def common_events_setup(table_name: str, start_time: str):
     return df
 
 
-def filter_for_pii(df, filter_for_pii_egress: bool):
+def filter_for_pii(df):
     df.req_redacted = px.redact_pii_best_effort(df.req)
     df.contains_pii = px.regex_match(".*[<]REDACTED[_].*[>].*", df.req_redacted)
 
-    df = df[df.contains_pii or (not filter_for_pii_egress)]
+    df = df[df.contains_pii]
     return df.drop(["req_redacted", "contains_pii"])
 
 
-def unified_events_table(start_time: str, filter_for_pii_egress: bool):
+def unified_events_table(start_time: str):
     out_columns = [
         "time_",
         "upid",
@@ -279,7 +228,7 @@ def unified_events_table(start_time: str, filter_for_pii_egress: bool):
     http_df.resp_hdrs = http_df.resp_headers
     http_df.protocol = "HTTP"
     http_df.bytes = http_df.req_body_size
-    http_df = filter_for_pii(http_df, filter_for_pii_egress)
+    http_df = filter_for_pii(http_df)
     http_df = http_df[out_columns]
 
     # PGSQL
@@ -288,7 +237,7 @@ def unified_events_table(start_time: str, filter_for_pii_egress: bool):
     pg_df.resp_hdrs = ""
     pg_df.protocol = "PGSQL"
     pg_df.bytes = px.length(pg_df.req)
-    pg_df = filter_for_pii(pg_df, filter_for_pii_egress)
+    pg_df = filter_for_pii(pg_df)
     pg_df = pg_df[out_columns]
 
     # MYSQL
@@ -299,7 +248,7 @@ def unified_events_table(start_time: str, filter_for_pii_egress: bool):
     mysql_df.resp = mysql_df.resp_body
     mysql_df.protocol = "MySQL"
     mysql_df.bytes = px.length(mysql_df.req_body)
-    mysql_df = filter_for_pii(mysql_df, filter_for_pii_egress)
+    mysql_df = filter_for_pii(mysql_df)
     mysql_df = mysql_df[out_columns]
 
     # CQL
@@ -310,7 +259,7 @@ def unified_events_table(start_time: str, filter_for_pii_egress: bool):
     cql_df.resp = cql_df.resp_body
     cql_df.protocol = "CQL"
     cql_df.bytes = px.length(cql_df.req_body)
-    cql_df = filter_for_pii(cql_df, filter_for_pii_egress)
+    cql_df = filter_for_pii(cql_df)
     cql_df = cql_df[out_columns]
 
     # DNS
@@ -321,7 +270,7 @@ def unified_events_table(start_time: str, filter_for_pii_egress: bool):
     dns_df.resp_hdrs = dns_df.resp_header
     dns_df.protocol = "DNS"
     dns_df.bytes = px.length(dns_df.req_body)
-    dns_df = filter_for_pii(dns_df, filter_for_pii_egress)
+    dns_df = filter_for_pii(dns_df)
     dns_df = dns_df[out_columns]
 
     # REDIS
@@ -330,7 +279,7 @@ def unified_events_table(start_time: str, filter_for_pii_egress: bool):
     redis_df.resp_hdrs = ""
     redis_df.req = redis_df.req_args
     redis_df.bytes = px.length(redis_df.req_args)
-    redis_df = filter_for_pii(redis_df, filter_for_pii_egress)
+    redis_df = filter_for_pii(redis_df)
     redis_df = redis_df[out_columns]
     redis_df.protocol = "Redis"
 
