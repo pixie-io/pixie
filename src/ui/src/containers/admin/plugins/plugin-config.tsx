@@ -18,7 +18,18 @@
 
 import * as React from 'react';
 
-import { Box, Button, Divider, FormControlLabel, Skeleton, Stack, Switch, TextField, Tooltip } from '@mui/material';
+import {
+  Box,
+  Button,
+  Divider,
+  FormControlLabel,
+  Skeleton,
+  Stack,
+  Switch,
+  TextField,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import { Link } from 'react-router-dom';
 
 import { useSnackbar } from 'app/components';
@@ -102,6 +113,7 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
   return (
     <form onSubmit={save}>
       <Stack spacing={4}>
+        <Typography variant='body1' sx={{ ml: 1 }}>{plugin.description}</Typography>
         {schema?.configs.map(({ name, description }) => (
           <TextField
             key={name}
