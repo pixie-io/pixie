@@ -91,8 +91,8 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
 
   const insecureWarning = React.useMemo(() => (
     <>
-      This plugin can be configured without TLS (Transport Layer Security).<br/>
-      In most environments, disabling TLS is a <strong>Bad Idea&trade;</strong>.<br/>
+      This plugin can be configured without TLS (Transport Layer Security).<br />
+      In most environments, disabling TLS is a <strong>Bad Idea&trade;</strong>.<br />
       However, it can sometimes be useful to delay setting up TLS. This option exists for those scenarios.
     </>
   ), []);
@@ -162,7 +162,8 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
       <Divider variant='middle' sx={{ mt: 2, mb: 2 }} />
       {/* TODO(nick,PC-1436): Dedup code in the header's <MaterialSwitch />, maybe wrap form higher up */}
       <Box sx={{ display: 'flex', flexFlow: 'row nowrap', justifyContent: 'flex-end', alignItems: 'baseline' }}>
-        <Link component={Button} to='/configure-data-export' onClick={(e) => e.stopPropagation()}>
+        <Link component={Button} to='/configure-data-export' onClick={(e) => e.stopPropagation()}
+          disabled={saving || !plugin.retentionEnabled}>
           Edit Scripts
         </Link>
         <Button
@@ -170,7 +171,7 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
           color='primary'
           sx={{ ml: 1 }}
           type='submit'
-          disabled={saving}
+          disabled={saving || !plugin.retentionEnabled}
         >
           Save
         </Button>
