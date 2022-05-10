@@ -216,9 +216,11 @@ Status BPFTraceWrapper::Compile(std::string_view script, const std::vector<std::
   bpftrace::ClangParser clang;
   // TODO(yzhao): Return error messages from ClangParserHandler::get_error_messages().
   // Needs to update bpftrace source code.
-  success = clang.parse(driver.root.get(), bpftrace_, clang_compile_flags);
+  std::vector<std::string> clang_parser_err_msgs;
+  success = clang.parse(driver.root.get(), bpftrace_, clang_compile_flags, &clang_parser_err_msgs);
   if (!success) {
-    return error::Internal(ERR_MSG "Clang parse failed");
+    return error::Internal(ERR_MSG "Clang parse failed: $0",
+                           absl::StrJoin(clang_parser_err_msgs, "\n"));
   }
 
   bpftrace::ast::PassContext ctx(bpftrace_);

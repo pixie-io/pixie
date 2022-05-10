@@ -422,6 +422,10 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceSemanticError) {
                        HasSubstr("ERROR: printf: Too many arguments for format string")));
 }
 
+// TODO(yzhao): Add a test to check the error message thrown by ClangParser::parse().
+// See https://github.com/iovisor/bpftrace/discussions/2210 for possible suggestions on how to
+// trigger the error.
+
 TEST(DynamicBPFTraceConnectorTest, BPFTraceCheckPrintfsError) {
   // Create a BPFTrace program spec
   TracepointDeployment_Tracepoint tracepoint;
