@@ -12,6 +12,6 @@ spec:
         - name: PL_VIZIER_VERSION
           value: "0.11.1"
         - name: PL_CLI_VERSION
-          value: "0.7.8"
+          value: "0.7.9"
         - name: PL_OPERATOR_VERSION
           value: "0.0.26"
