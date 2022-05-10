@@ -204,17 +204,29 @@ TEST_F(StirlingErrorTest, SourceConnectorInitOK) {
   // Stirling Error Source Connector plus the other ones.
   EXPECT_THAT(records, SizeIs(kNumSources + 1));
 
-  SourceStatusRecord r1{
-      .source_connector = "stirling_error", .tracepoint = "Init", .status = px::statuspb::Code::OK};
+  SourceStatusRecord r1{.source_connector = "stirling_error",
+                        .tracepoint = "Init",
+                        .status = px::statuspb::Code::OK,
+                        .error = "",
+                        .info = ""};
 
-  SourceStatusRecord r2{
-      .source_connector = "sequences0", .tracepoint = "Init", .status = px::statuspb::Code::OK};
+  SourceStatusRecord r2{.source_connector = "sequences0",
+                        .tracepoint = "Init",
+                        .status = px::statuspb::Code::OK,
+                        .error = "",
+                        .info = ""};
 
-  SourceStatusRecord r3{
-      .source_connector = "sequences1", .tracepoint = "Init", .status = px::statuspb::Code::OK};
+  SourceStatusRecord r3{.source_connector = "sequences1",
+                        .tracepoint = "Init",
+                        .status = px::statuspb::Code::OK,
+                        .error = "",
+                        .info = ""};
 
-  SourceStatusRecord r4{
-      .source_connector = "sequences2", .tracepoint = "Init", .status = px::statuspb::Code::OK};
+  SourceStatusRecord r4{.source_connector = "sequences2",
+                        .tracepoint = "Init",
+                        .status = px::statuspb::Code::OK,
+                        .error = "",
+                        .info = ""};
 
   EXPECT_THAT(records, UnorderedElementsAre(EqSourceStatusRecord(r1), EqSourceStatusRecord(r2),
                                             EqSourceStatusRecord(r3), EqSourceStatusRecord(r4)));
@@ -233,23 +245,29 @@ TEST_F(StirlingErrorTest, SourceConnectorInitError) {
   // Stirling Error Source Connector plus the other ones.
   EXPECT_THAT(records, SizeIs(kNumSources + 1));
 
-  SourceStatusRecord r1{
-      .source_connector = "stirling_error", .tracepoint = "Init", .status = px::statuspb::Code::OK};
+  SourceStatusRecord r1{.source_connector = "stirling_error",
+                        .tracepoint = "Init",
+                        .status = px::statuspb::Code::OK,
+                        .error = "",
+                        .info = ""};
 
   SourceStatusRecord r2{.source_connector = "sequences0",
                         .tracepoint = "Init",
                         .status = px::statuspb::Code::INTERNAL,
-                        .error = "Initialization failed on purpose."};
+                        .error = "Initialization failed on purpose.",
+                        .info = ""};
 
   SourceStatusRecord r3{.source_connector = "sequences1",
                         .tracepoint = "Init",
                         .status = px::statuspb::Code::INTERNAL,
-                        .error = "Initialization failed on purpose."};
+                        .error = "Initialization failed on purpose.",
+                        .info = ""};
 
   SourceStatusRecord r4{.source_connector = "sequences2",
                         .tracepoint = "Init",
                         .status = px::statuspb::Code::INTERNAL,
-                        .error = "Initialization failed on purpose."};
+                        .error = "Initialization failed on purpose.",
+                        .info = ""};
 
   EXPECT_THAT(records, UnorderedElementsAre(EqSourceStatusRecord(r1), EqSourceStatusRecord(r2),
                                             EqSourceStatusRecord(r3), EqSourceStatusRecord(r4)));
@@ -257,7 +275,7 @@ TEST_F(StirlingErrorTest, SourceConnectorInitError) {
 
 // Deploy a dynamic BPFTrace probe and record the error messages of its deployment and removal.
 // Expects one message each for deployment in progress, deployment status, and removal in progress.
-TEST_F(StirlingErrorTest, DISABLED_BPFTraceDeploymentOK) {
+TEST_F(StirlingErrorTest, BPFTraceDeploymentOK) {
   // Register StirlingErrorConnector.
   std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>();
   registry->RegisterOrDie<StirlingErrorConnector>("stirling_error");
@@ -288,7 +306,8 @@ TEST_F(StirlingErrorTest, DISABLED_BPFTraceDeploymentOK) {
   SourceStatusRecord r1{.source_connector = "stirling_error",
                         .tracepoint = "Init",
                         .status = px::statuspb::Code::OK,
-                        .error = ""};
+                        .error = "",
+                        .info = ""};
 
   // TCPDrop deployed.
   SourceStatusRecord r2{
@@ -309,7 +328,7 @@ TEST_F(StirlingErrorTest, DISABLED_BPFTraceDeploymentOK) {
                                    EqSourceStatusRecord(r3)));
 }
 
-TEST_F(StirlingErrorTest, DISABLED_BPFTraceDeploymentError) {
+TEST_F(StirlingErrorTest, BPFTraceDeploymentError) {
   // Register StirlingErrorConnector.
   std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>();
   registry->RegisterOrDie<StirlingErrorConnector>("stirling_error");
@@ -330,13 +349,15 @@ TEST_F(StirlingErrorTest, DISABLED_BPFTraceDeploymentError) {
   SourceStatusRecord r1{.source_connector = "stirling_error",
                         .tracepoint = "Init",
                         .status = px::statuspb::Code::OK,
-                        .error = ""};
+                        .error = "",
+                        .info = ""};
   // PidSample deployment failed.
   SourceStatusRecord r2{.source_connector = "dynamic_bpftrace",
                         .tracepoint = "pid_sample_tracer",
                         .status = px::statuspb::Code::INTERNAL,
                         .error =
-                            "Semantic pass failed: stdin:3-4: ERROR: printf: Too many arguments "
+                            "Could not compile bpftrace script, Semantic pass failed: stdin:3-4: "
+                            "ERROR: printf: Too many arguments "
                             "for format string (4 supplied, 3 expected)\n",
                         .info = absl::Substitute(R"({"trace_id":"$0"})", trace_id.str())};
   EXPECT_THAT(records, ElementsAre(EqSourceStatusRecord(r1), EqSourceStatusRecord(r2)));
