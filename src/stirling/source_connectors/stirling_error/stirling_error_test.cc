@@ -257,7 +257,7 @@ TEST_F(StirlingErrorTest, SourceConnectorInitError) {
 
 // Deploy a dynamic BPFTrace probe and record the error messages of its deployment and removal.
 // Expects one message each for deployment in progress, deployment status, and removal in progress.
-TEST_F(StirlingErrorTest, BPFTraceDeploymentOK) {
+TEST_F(StirlingErrorTest, DISABLED_BPFTraceDeploymentOK) {
   // Register StirlingErrorConnector.
   std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>();
   registry->RegisterOrDie<StirlingErrorConnector>("stirling_error");
@@ -309,7 +309,7 @@ TEST_F(StirlingErrorTest, BPFTraceDeploymentOK) {
                                    EqSourceStatusRecord(r3)));
 }
 
-TEST_F(StirlingErrorTest, BPFTraceDeploymentError) {
+TEST_F(StirlingErrorTest, DISABLED_BPFTraceDeploymentError) {
   // Register StirlingErrorConnector.
   std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>();
   registry->RegisterOrDie<StirlingErrorConnector>("stirling_error");

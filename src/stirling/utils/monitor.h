@@ -34,8 +34,8 @@ struct SourceStatusRecord {
   std::string source_connector;
   std::string tracepoint;
   px::statuspb::Code status;
-  std::string error;
-  std::string info;
+  std::string error = "";
+  std::string info = "";
 };
 
 class StirlingMonitor : NotCopyMoveable {
