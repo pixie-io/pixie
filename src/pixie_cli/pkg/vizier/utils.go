@@ -381,6 +381,11 @@ func GetCloudAddrFromKubeConfig(config *rest.Config) string {
 	}
 	if strings.Contains(cloudAddr, "vzconn-service") && strings.Contains(cloudAddr, "svc.cluster.local") {
 		cloudAddr = strings.Replace(cloudAddr, "vzconn-service", "cloud-proxy-service", 1)
+		splitAddr := strings.Split(cloudAddr, ":")
+		if len(splitAddr) < 1 {
+			return cloudAddr
+		}
+		cloudAddr = fmt.Sprintf("%s:443", splitAddr[0])
 	}
 
 	return cloudAddr
