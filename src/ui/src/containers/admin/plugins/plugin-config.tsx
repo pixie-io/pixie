@@ -162,6 +162,20 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
       <Divider variant='middle' sx={{ mt: 2, mb: 2 }} />
       {/* TODO(nick,PC-1436): Dedup code in the header's <MaterialSwitch />, maybe wrap form higher up */}
       <Box sx={{ display: 'flex', flexFlow: 'row nowrap', justifyContent: 'flex-end', alignItems: 'baseline' }}>
+        {plugin.enabledVersion ?
+          <>
+            <Typography variant='h4' sx={{ ml: 1 }}>
+              {`Enabled Version: ${plugin.enabledVersion}`}
+            </Typography>&nbsp;
+            <Typography variant='caption'  sx={{ color: 'text.disabled' }}>
+              (Latest: {plugin.latestVersion})
+            </Typography>
+          </> :
+          <Typography variant='caption' sx={{ color: 'text.disabled', ml: 1 }}>
+            Latest Version: {plugin.latestVersion}
+          </Typography>
+        }
+        <Box sx={{ flexGrow: 1 }}/>
         <Link component={Button} to='/configure-data-export' onClick={(e) => e.stopPropagation()}
           disabled={saving || !plugin.retentionEnabled}>
           Edit Scripts
