@@ -95,7 +95,7 @@ class GRPCRouter final : public carnotpb::ResultSinkService::Service {
    * @return StatusOr<std::vector<queryresultspb::AgentExecutionStats>>
    */
   StatusOr<std::vector<queryresultspb::AgentExecutionStats>> GetIncomingWorkerExecStats(
-      const sole::uuid& query_id, const std::vector<uuidpb::UUID>& expected_agent_ids);
+      const sole::uuid& query_id);
 
   /**
    * @brief Number of queries currently being tracked.
