@@ -56,6 +56,7 @@ type Row struct {
 type Server struct {
 	nc        *nats.Conn
 	bqDataset *bigquery.Dataset
+	schema    bigquery.Schema
 
 	done chan struct{}
 	once sync.Once
@@ -73,13 +74,19 @@ func NewServer(nc *nats.Conn, bqDataset *bigquery.Dataset) *Server {
 
 // Start sets up the listeners starts handling messages.
 func (s *Server) Start() {
+	schema, err := bigquery.InferSchema(Row{})
+	if err != nil {
+		log.WithError(err).Fatal("Failed to infer row schema")
+	}
+	s.schema = schema
+
 	table, err := s.createOrGetBQTable()
 	if err != nil {
 		log.WithError(err).Fatal("Failed to get table from BigQuery")
 	}
 
 	for _, shard := range vzshard.GenerateShardRange() {
-		bqWriteChan := make(chan []Row, 2048)
+		bqWriteChan := make(chan []*bigquery.StructSaver, 2048)
 
 		s.startShardedHandler(shard, bqWriteChan)
 		go s.startBqWriteProcessor(table, bqWriteChan)
@@ -96,12 +103,8 @@ func (s *Server) createOrGetBQTable() (*bigquery.Table, error) {
 	}
 
 	// Table needs to be created.
-	schema, err := bigquery.InferSchema(Row{})
-	if err != nil {
-		return nil, err
-	}
 	err = table.Create(context.Background(), &bigquery.TableMetadata{
-		Schema: schema,
+		Schema: s.schema,
 		TimePartitioning: &bigquery.TimePartitioning{
 			Type:  bigquery.DayPartitioningType,
 			Field: "timestamp",
@@ -113,7 +116,7 @@ func (s *Server) createOrGetBQTable() (*bigquery.Table, error) {
 	return table, nil
 }
 
-func (s *Server) startShardedHandler(shard string, bqWriteChan chan<- []Row) {
+func (s *Server) startShardedHandler(shard string, bqWriteChan chan<- []*bigquery.StructSaver) {
 	if s.nc == nil {
 		return
 	}
@@ -144,14 +147,14 @@ func (s *Server) startShardedHandler(shard string, bqWriteChan chan<- []Row) {
 					continue
 				}
 				for _, ts := range wr.Timeseries {
-					bqWriteChan <- tsToRows(ts)
+					bqWriteChan <- tsToStructSavers(ts, s.schema)
 				}
 			}
 		}
 	}()
 }
 
-func (s *Server) startBqWriteProcessor(table *bigquery.Table, bqWriteChan <-chan []Row) {
+func (s *Server) startBqWriteProcessor(table *bigquery.Table, bqWriteChan <-chan []*bigquery.StructSaver) {
 	inserter := table.Inserter()
 	inserter.SkipInvalidRows = true
 	for {
@@ -159,16 +162,19 @@ func (s *Server) startBqWriteProcessor(table *bigquery.Table, bqWriteChan <-chan
 		case <-s.done:
 			return
 		case batch := <-bqWriteChan:
-			err := inserter.Put(context.Background(), batch)
+			// Put retries on errors, use a timeout so that we don't hang forever.
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			err := inserter.Put(ctx, batch)
 			if err != nil {
 				log.WithError(err).Warn("bigquery insertion failed")
 			}
+			cancel()
 		}
 	}
 }
 
-func tsToRows(timeseries *prompb.TimeSeries) []Row {
-	batch := make([]Row, 0, len(timeseries.Samples))
+func tsToStructSavers(timeseries *prompb.TimeSeries, schema bigquery.Schema) []*bigquery.StructSaver {
+	batch := make([]*bigquery.StructSaver, 0, len(timeseries.Samples))
 
 	var metricName string
 	labels := make(map[string]string)
@@ -187,11 +193,14 @@ func tsToRows(timeseries *prompb.TimeSeries) []Row {
 			continue
 		}
 
-		batch = append(batch, Row{
-			Metric:    metricName,
-			Labels:    string(labelsJSON),
-			Value:     v,
-			Timestamp: timestamp.Time(s.Timestamp),
+		batch = append(batch, &bigquery.StructSaver{
+			Struct: Row{
+				Metric:    metricName,
+				Labels:    string(labelsJSON),
+				Value:     v,
+				Timestamp: timestamp.Time(s.Timestamp),
+			},
+			Schema: schema,
 		})
 	}
 	return batch
