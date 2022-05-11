@@ -35,7 +35,12 @@ SocketTracerMetrics::SocketTracerMetrics(prometheus::Registry* registry,
               .Help("Total bytes of data loss for this protocol. Measured by bytes that weren't "
                     "successfully parsed.")
               .Register(*registry)
-              .Add({{"protocol", std::string(magic_enum::enum_name(protocol))}})) {}
+              .Add({{"protocol", std::string(magic_enum::enum_name(protocol))}})),
+      conn_stats_bytes(prometheus::BuildCounter()
+                           .Name("conn_stats_bytes")
+                           .Help("Total bytes of data tracked by conn stats for this protocol.")
+                           .Register(*registry)
+                           .Add({{"protocol", std::string(magic_enum::enum_name(protocol))}})) {}
 
 namespace {
 std::unordered_map<traffic_protocol_t, std::unique_ptr<SocketTracerMetrics>> g_protocol_metrics;
