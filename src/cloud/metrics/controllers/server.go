@@ -79,7 +79,10 @@ func (s *Server) Start() {
 	}
 
 	for _, shard := range vzshard.GenerateShardRange() {
-		s.startShardedHandler(shard, table)
+		bqWriteChan := make(chan []Row, 2048)
+
+		s.startShardedHandler(shard, bqWriteChan)
+		go s.startBqWriteProcessor(table, bqWriteChan)
 	}
 }
 
@@ -110,7 +113,7 @@ func (s *Server) createOrGetBQTable() (*bigquery.Table, error) {
 	return table, nil
 }
 
-func (s *Server) startShardedHandler(shard string, table *bigquery.Table) {
+func (s *Server) startShardedHandler(shard string, bqWriteChan chan<- []Row) {
 	if s.nc == nil {
 		return
 	}
@@ -141,16 +144,31 @@ func (s *Server) startShardedHandler(shard string, table *bigquery.Table) {
 					continue
 				}
 				for _, ts := range wr.Timeseries {
-					bqWrite(table, ts)
+					bqWriteChan <- tsToRows(ts)
 				}
 			}
 		}
 	}()
 }
 
-func bqWrite(table *bigquery.Table, timeseries *prompb.TimeSeries) {
+func (s *Server) startBqWriteProcessor(table *bigquery.Table, bqWriteChan <-chan []Row) {
 	inserter := table.Inserter()
 	inserter.SkipInvalidRows = true
+	for {
+		select {
+		case <-s.done:
+			return
+		case batch := <-bqWriteChan:
+			err := inserter.Put(context.Background(), batch)
+			if err != nil {
+				log.WithError(err).Warn("bigquery insertion failed")
+			}
+		}
+	}
+}
+
+func tsToRows(timeseries *prompb.TimeSeries) []Row {
+	batch := make([]Row, 0, len(timeseries.Samples))
 
 	var metricName string
 	labels := make(map[string]string)
@@ -163,7 +181,6 @@ func bqWrite(table *bigquery.Table, timeseries *prompb.TimeSeries) {
 	}
 	labelsJSON, _ := json.Marshal(labels)
 
-	var batch []Row
 	for _, s := range timeseries.Samples {
 		v := float64(s.Value)
 		if math.IsNaN(v) || math.IsInf(v, 0) {
@@ -177,11 +194,7 @@ func bqWrite(table *bigquery.Table, timeseries *prompb.TimeSeries) {
 			Timestamp: timestamp.Time(s.Timestamp),
 		})
 	}
-
-	err := inserter.Put(context.Background(), batch)
-	if err != nil {
-		log.WithError(err).Warn("bigquery insertion failed")
-	}
+	return batch
 }
 
 // Stop performs any necessary cleanup before shutdown.
