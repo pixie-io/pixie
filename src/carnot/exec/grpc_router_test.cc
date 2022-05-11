@@ -304,11 +304,7 @@ TEST_F(GRPCRouterTest, router_and_stats_test) {
   EXPECT_EQ(1, num_continues);
   EXPECT_TRUE(source_node.upstream_closed_connection());
 
-  uuidpb::UUID agent_uuid_pb;
-  ToProto(agent_uuid, &agent_uuid_pb);
-  auto exec_stats_or_s = service_->GetIncomingWorkerExecStats(query_uuid, {agent_uuid_pb});
-
-  auto exec_stats = exec_stats_or_s.ConsumeValueOrDie();
+  auto exec_stats = service_->GetIncomingWorkerExecStats(query_uuid).ConsumeValueOrDie();
   EXPECT_EQ(exec_stats.size(), 1);
 }
 

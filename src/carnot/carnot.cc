@@ -446,12 +446,15 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
     incoming_agents.push_back(id);
   }
   timer.Stop();
-  int64_t exec_time_ns = timer.ElapsedTime_us() * 1000;
 
   std::vector<queryresultspb::AgentExecutionStats> input_agent_stats;
   if (HasGRPCServer() && !incoming_agents.empty()) {
-    PL_ASSIGN_OR_RETURN(input_agent_stats, server_config_->grpc_router.GetIncomingWorkerExecStats(
-                                               query_id, incoming_agents));
+    PL_ASSIGN_OR_RETURN(input_agent_stats,
+                        server_config_->grpc_router.GetIncomingWorkerExecStats(query_id));
+    if (input_agent_stats.size() != incoming_agents.size()) {
+      LOG(WARNING) << absl::Substitute("Agent ids are not the same size. Got $0 and expected $1",
+                                       input_agent_stats.size(), incoming_agents.size());
+    }
   }
 
   // Compute bytes processed and records processed across all agents for all queries,
@@ -461,7 +464,7 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
     rows_processed += agent_stats.records_processed();
   }
 
-  agent_operator_exec_stats.set_execution_time_ns(exec_time_ns);
+  agent_operator_exec_stats.set_execution_time_ns(timer.ElapsedTime_us() * 1000);
   agent_operator_exec_stats.set_bytes_processed(bytes_processed);
   agent_operator_exec_stats.set_records_processed(rows_processed);
 
