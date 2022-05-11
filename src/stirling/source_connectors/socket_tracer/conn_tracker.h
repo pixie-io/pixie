@@ -134,9 +134,9 @@ class ConnTracker : NotCopyMoveable {
 
     void set_bytes_sent(int64_t bytes_sent) { bytes_sent_ = bytes_sent; }
 
-    int64_t bytes_recv() { return bytes_recv_; }
-    int64_t bytes_sent() { return bytes_sent_; }
-    bool closed() { return closed_; }
+    int64_t bytes_recv() const { return bytes_recv_; }
+    int64_t bytes_sent() const { return bytes_sent_; }
+    bool closed() const { return closed_; }
 
     bool OpenSinceLastRead() {
       bool val = true - last_reported_open_;
