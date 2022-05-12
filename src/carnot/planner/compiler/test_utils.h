@@ -275,7 +275,7 @@ carnot_info {
   grpc_address: "1111"
   has_grpc_server: true
   has_data_store: false
-  processes_data: false
+  processes_data: true
   accepts_remote_sources: true
   ssl_targetname: "kelvin.pl.svc"
 }

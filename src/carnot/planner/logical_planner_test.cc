@@ -53,22 +53,49 @@ class LogicalPlannerTest : public ::testing::Test {
 
 TEST_F(LogicalPlannerTest, one_pems_one_kelvin) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
-  auto plan = planner
-                  ->Plan(testutils::CreateOnePEMOneKelvinPlannerState(),
-                         MakeQueryRequest("import px\npx.display(px.DataFrame('table1'), 'out')"))
-                  .ConsumeValueOrDie();
-  auto out_pb = plan->ToProto().ConsumeValueOrDie();
-  EXPECT_THAT(out_pb, Partially(EqualsProto(testutils::kExpectedPlanOnePEMOneKelvin)))
-      << out_pb.DebugString();
+  ASSERT_OK_AND_ASSIGN(
+      auto plan,
+      planner->Plan(testutils::CreateOnePEMOneKelvinPlannerState(),
+                    MakeQueryRequest("import px\npx.display(px.DataFrame('table1'), 'out')")));
+  auto plan_pb = plan->ToProto().ConsumeValueOrDie();
+  EXPECT_THAT(plan_pb, Partially(EqualsProto(testutils::kExpectedPlanOnePEMOneKelvin)))
+      << plan_pb.DebugString();
+
+  auto kelvin_plan = plan_pb.qb_address_to_plan().find("kelvin");
+  ASSERT_NE(kelvin_plan, plan_pb.qb_address_to_plan().end());
+  EXPECT_EQ(kelvin_plan->second.execution_status_destinations_size(), 1);
+  EXPECT_EQ(kelvin_plan->second.execution_status_destinations()[0].grpc_address(),
+            "query-broker-ip:50300");
+  EXPECT_EQ(kelvin_plan->second.execution_status_destinations()[0].ssl_targetname(),
+            "query-broker-hostname");
+
+  auto pem_plan = plan_pb.qb_address_to_plan().find("pem");
+  ASSERT_NE(pem_plan, plan_pb.qb_address_to_plan().end());
+  EXPECT_EQ(pem_plan->second.execution_status_destinations_size(), 1);
+  EXPECT_EQ(pem_plan->second.execution_status_destinations()[0].grpc_address(), "1111");
+  EXPECT_EQ(pem_plan->second.execution_status_destinations()[0].ssl_targetname(), "kelvin.pl.svc");
 }
 
 TEST_F(LogicalPlannerTest, distributed_plan_test_basic_queries) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
   auto ps = testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
-  auto plan_or_s = planner->Plan(ps, MakeQueryRequest(testutils::kHttpRequestStats));
-  EXPECT_OK(plan_or_s);
-  auto plan = plan_or_s.ConsumeValueOrDie();
-  EXPECT_OK(plan->ToProto());
+  ASSERT_OK_AND_ASSIGN(auto plan,
+                       planner->Plan(ps, MakeQueryRequest(testutils::kHttpRequestStats)));
+  ASSERT_OK_AND_ASSIGN(auto plan_pb, plan->ToProto());
+
+  auto kelvin_plan = plan_pb.qb_address_to_plan().find("kelvin");
+  ASSERT_NE(kelvin_plan, plan_pb.qb_address_to_plan().end());
+  EXPECT_EQ(kelvin_plan->second.execution_status_destinations_size(), 1);
+  EXPECT_EQ(kelvin_plan->second.execution_status_destinations()[0].grpc_address(),
+            "query-broker-ip:50300");
+  EXPECT_EQ(kelvin_plan->second.execution_status_destinations()[0].ssl_targetname(),
+            "query-broker-hostname");
+
+  auto pem1_plan = plan_pb.qb_address_to_plan().find("pem1");
+  ASSERT_NE(pem1_plan, plan_pb.qb_address_to_plan().end());
+  EXPECT_EQ(pem1_plan->second.execution_status_destinations_size(), 1);
+  EXPECT_EQ(pem1_plan->second.execution_status_destinations()[0].grpc_address(), "1111");
+  EXPECT_EQ(pem1_plan->second.execution_status_destinations()[0].ssl_targetname(), "kelvin.pl.svc");
 }
 
 constexpr char kSimpleQueryDefaultLimit[] = R"pxl(

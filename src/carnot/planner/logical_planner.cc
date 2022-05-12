@@ -127,8 +127,12 @@ StatusOr<std::unique_ptr<distributed::DistributedPlan>> LogicalPlanner::Plan(
       std::shared_ptr<IR> single_node_plan,
       compiler_.CompileToIR(query_request.query_str(), compiler_state.get(), exec_funcs));
   // Create the distributed plan.
-  return distributed_planner_->Plan(logical_state.distributed_state(), compiler_state.get(),
-                                    single_node_plan.get());
+  PL_ASSIGN_OR_RETURN(auto distributed_plan,
+                      distributed_planner_->Plan(logical_state.distributed_state(),
+                                                 compiler_state.get(), single_node_plan.get()));
+  distributed_plan->SetExecutionCompleteAddress(logical_state.result_address(),
+                                                logical_state.result_ssl_targetname());
+  return distributed_plan;
 }
 
 StatusOr<std::unique_ptr<compiler::MutationsIR>> LogicalPlanner::CompileTrace(

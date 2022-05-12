@@ -147,6 +147,12 @@ class DistributedPlan {
     kelvin_ = kelvin;
   }
 
+  void SetExecutionCompleteAddress(const std::string& grpc_address,
+                                   const std::string& ssl_targetname) {
+    exec_complete_address_ = grpc_address;
+    exec_complete_ssl_targetname_ = ssl_targetname;
+  }
+
   void AddPlanToAgentMap(
       const absl::flat_hash_map<IR*, absl::flat_hash_set<int64_t>>& plan_to_agent_map) {
     plan_to_agent_map_ = std::move(plan_to_agent_map);
@@ -168,6 +174,8 @@ class DistributedPlan {
   absl::flat_hash_map<sole::uuid, int64_t> uuid_to_id_map_;
   int64_t id_counter_ = 0;
   planpb::PlanOptions plan_options_;
+  std::string exec_complete_address_;
+  std::string exec_complete_ssl_targetname_;
 };
 
 }  // namespace distributed
