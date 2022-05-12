@@ -25,6 +25,7 @@
 
 #include "src/common/base/base.h"
 #include "src/stirling/core/source_connector.h"
+#include "src/stirling/source_connectors/stirling_error/probe_status_table.h"
 #include "src/stirling/source_connectors/stirling_error/stirling_error_table.h"
 #include "src/stirling/utils/monitor.h"
 
@@ -36,8 +37,9 @@ class StirlingErrorConnector : public SourceConnector {
   static constexpr std::string_view kName = "stirling_error";
   static constexpr auto kSamplingPeriod = std::chrono::milliseconds{1000};
   static constexpr auto kPushPeriod = std::chrono::milliseconds{1000};
-  static constexpr auto kTables = MakeArray(kStirlingErrorTable);
+  static constexpr auto kTables = MakeArray(kStirlingErrorTable, kProbeStatusTable);
   static constexpr uint32_t kStirlingErrorTableNum = TableNum(kTables, kStirlingErrorTable);
+  static constexpr uint32_t kProbeStatusTableNum = TableNum(kTables, kProbeStatusTable);
 
   StirlingErrorConnector() = delete;
   ~StirlingErrorConnector() override = default;
@@ -56,6 +58,7 @@ class StirlingErrorConnector : public SourceConnector {
       : SourceConnector(source_name, kTables) {}
 
   void TransferStirlingErrorTable(ConnectorContext* ctx, DataTable* data_table);
+  void TransferProbeStatusTable(ConnectorContext* ctx, DataTable* data_table);
 
   StirlingMonitor& monitor_ = *StirlingMonitor::GetInstance();
   int32_t pid_ = -1;

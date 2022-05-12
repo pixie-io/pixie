@@ -40,18 +40,36 @@ Status StirlingErrorConnector::StopImpl() { return Status::OK(); }
 
 void StirlingErrorConnector::TransferDataImpl(ConnectorContext* ctx,
                                               const std::vector<DataTable*>& data_tables) {
-  DCHECK_EQ(data_tables.size(), 1) << "StirlingErrorConnector only has one data table.";
+  DCHECK_EQ(data_tables.size(), 2) << "StirlingErrorConnector has two data tables.";
 
   if (data_tables[kStirlingErrorTableNum] != nullptr) {
     TransferStirlingErrorTable(ctx, data_tables[kStirlingErrorTableNum]);
+  }
+
+  if (data_tables[kProbeStatusTableNum] != nullptr) {
+    TransferProbeStatusTable(ctx, data_tables[kProbeStatusTableNum]);
   }
 }
 
 void StirlingErrorConnector::TransferStirlingErrorTable(ConnectorContext* ctx,
                                                         DataTable* data_table) {
   md::UPID upid = md::UPID(ctx->GetASID(), pid_, start_time_);
-  for (auto& record : monitor_.ConsumeStatusRecords()) {
+  for (auto& record : monitor_.ConsumeSourceStatusRecords()) {
     DataTable::RecordBuilder<&kStirlingErrorTable> r(data_table, record.timestamp_ns);
+    r.Append<r.ColIndex("time_")>(static_cast<uint64_t>(record.timestamp_ns));
+    r.Append<r.ColIndex("upid")>(upid.value());
+    r.Append<r.ColIndex("source_connector")>(std::move(record.source_connector));
+    r.Append<r.ColIndex("status")>(static_cast<uint64_t>(record.status));
+    r.Append<r.ColIndex("error")>(std::move(record.error));
+    r.Append<r.ColIndex("context")>(std::move(record.context));
+  }
+}
+
+void StirlingErrorConnector::TransferProbeStatusTable(ConnectorContext* ctx,
+                                                      DataTable* data_table) {
+  md::UPID upid = md::UPID(ctx->GetASID(), pid_, start_time_);
+  for (auto& record : monitor_.ConsumeProbeStatusRecords()) {
+    DataTable::RecordBuilder<&kProbeStatusTable> r(data_table, record.timestamp_ns);
     r.Append<r.ColIndex("time_")>(static_cast<uint64_t>(record.timestamp_ns));
     r.Append<r.ColIndex("upid")>(upid.value());
     r.Append<r.ColIndex("source_connector")>(std::move(record.source_connector));

@@ -27,27 +27,29 @@ namespace px {
 namespace stirling {
 
 // clang-format off
-constexpr DataElement kStirlingErrorElements[] = {
+constexpr DataElement kProbeStatusElements[] = {
   canonical_data_elements::kTime,
   canonical_data_elements::kUPID,
   {"source_connector", "The source connector whose status is reported",
+   types::DataType::STRING, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
+  {"tracepoint", "The tracepoint in the source connector of interest",
    types::DataType::STRING, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
   {"status", "The status of the deployment or event",
    types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::GENERAL_ENUM},
   {"error", "The error messages of the deployment or event, if any",
    types::DataType::STRING, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
-  {"context", "The context in which the error occurred",
+  {"info", "Optional extra info provided as a JSON",
    types::DataType::STRING, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
 };
 
-constexpr DataTableSchema kStirlingErrorTable {
-  "stirling_error",
-  "This table contains the status of tracepoints in different Stirling source connectors and the error messages.",
-  kStirlingErrorElements
+constexpr DataTableSchema kProbeStatusTable {
+  "probe_status",
+  "This table contains the deployment status of eBPF probes in different Stirling source connectors and the error messages if deployment failed",
+  kProbeStatusElements
 };
 
 // clang-format on
-DEFINE_PRINT_TABLE(StirlingError);
+DEFINE_PRINT_TABLE(ProbeStatus);
 
 }  // namespace stirling
 }  // namespace px
