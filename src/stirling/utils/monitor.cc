@@ -48,15 +48,25 @@ void StirlingMonitor::NotifyJavaProcessCrashed(const struct upid_t& upid) {
   }
 }
 
-void StirlingMonitor::AppendStatusRecord(const std::string& source_connector,
-                                         const std::string& tracepoint, const Status& status,
-                                         const std::string& info) {
+void StirlingMonitor::AppendSourceStatusRecord(const std::string& source_connector,
+                                               const Status& status, const std::string& context) {
   source_status_records_.push_back(
+      {CurrentTimeNS(), source_connector, status.code(), status.msg(), context});
+}
+
+void StirlingMonitor::AppendProbeStatusRecord(const std::string& source_connector,
+                                              const std::string& tracepoint, const Status& status,
+                                              const std::string& info) {
+  probe_status_records_.push_back(
       {CurrentTimeNS(), source_connector, tracepoint, status.code(), status.msg(), info});
 }
 
-std::vector<SourceStatusRecord> StirlingMonitor::ConsumeStatusRecords() {
+std::vector<SourceStatusRecord> StirlingMonitor::ConsumeSourceStatusRecords() {
   return std::move(source_status_records_);
+}
+
+std::vector<ProbeStatusRecord> StirlingMonitor::ConsumeProbeStatusRecords() {
+  return std::move(probe_status_records_);
 }
 
 }  // namespace stirling

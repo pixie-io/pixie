@@ -405,7 +405,7 @@ Status StirlingImpl::Init() {
     auto source_ptr = create_source_fn(name);
 
     Status s = AddSource(std::move(source_ptr));
-    monitor_.AppendStatusRecord(name, "Init", s, "");
+    monitor_.AppendSourceStatusRecord(name, s, "Init");
 
     LOG_IF(WARNING, !s.ok()) << absl::Substitute(
         "Source Connector (registry name=$0) not instantiated, error: $1", name, s.ToString());
@@ -912,8 +912,8 @@ void StirlingImpl::UpdateDynamicTraceStatus(const sole::uuid& trace_id,
       builder.WriteKV("output_table", trace_info.output_table);
     }
 
-    monitor_.AppendStatusRecord(trace_info.source_connector, trace_info.tracepoint, s.status(),
-                                builder.GetString());
+    monitor_.AppendProbeStatusRecord(trace_info.source_connector, trace_info.tracepoint, s.status(),
+                                     builder.GetString());
 
     // Clean up map if status is not ok. When status is RESOURCE_UNAVAILABLE, either deployment
     // or removal is pending, so don't clean up.
