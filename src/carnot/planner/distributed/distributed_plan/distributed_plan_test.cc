@@ -99,6 +99,10 @@ qb_address_to_plan {
         }
       }
     }
+    execution_status_destinations {
+      grpc_address: "1111"
+      ssl_targetname: "kelvin.pl.svc"
+    }
   }
 }
 qb_address_to_plan {
@@ -166,6 +170,10 @@ qb_address_to_plan {
         }
       }
     }
+    execution_status_destinations {
+      grpc_address: "qb"
+      ssl_targetname: "qb:51300"
+    }
   }
 }
 qb_address_to_dag_id {
@@ -217,6 +225,8 @@ TEST_F(DistributedPlanTest, construction_test) {
 
     auto carnot_plan_proto = carnot_instance->PlanProto().ConsumeValueOrDie();
   }
+
+  physical_plan->SetExecutionCompleteAddress("qb", "qb:51300");
 
   physical_plan->AddEdge(physical_plan->Get(0), physical_plan->Get(1));
 

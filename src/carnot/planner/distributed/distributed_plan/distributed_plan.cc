@@ -39,6 +39,17 @@ StatusOr<distributedpb::DistributedPlan> DistributedPlan::ToProto() const {
     for (int64_t parent_i : dag_.ParentsOf(i)) {
       *(plan_proto.add_incoming_agent_ids()) = Get(parent_i)->carnot_info().agent_id();
     }
+    for (int64_t child_i : dag_.DependenciesOf(i)) {
+      auto dest = plan_proto.add_execution_status_destinations();
+      const auto& carnot_info = Get(child_i)->carnot_info();
+      dest->set_grpc_address(carnot_info.grpc_address());
+      dest->set_ssl_targetname(carnot_info.ssl_targetname());
+    }
+    if (!plan_proto.execution_status_destinations_size()) {
+      auto dest = plan_proto.add_execution_status_destinations();
+      dest->set_grpc_address(exec_complete_address_);
+      dest->set_ssl_targetname(exec_complete_ssl_targetname_);
+    }
     (*qb_address_to_plan_pb)[carnot->QueryBrokerAddress()] = plan_proto;
     (*qb_address_to_dag_id_pb)[carnot->QueryBrokerAddress()] = i;
 
