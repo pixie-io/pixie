@@ -130,6 +130,9 @@ Status CarnotImpl::ExecuteQuery(const std::string& query, const sole::uuid& quer
   planner::distributed::AnnotateAbortableSourcesForLimitsRule rule;
   PL_RETURN_IF_ERROR(rule.Execute(logical_plan.get()));
   PL_ASSIGN_OR_RETURN(auto plan_proto, logical_plan->ToProto());
+  auto dest = plan_proto.add_execution_status_destinations();
+  dest->set_grpc_address(compiler_state->result_address());
+  dest->set_ssl_targetname(compiler_state->result_ssl_targetname());
   return ExecutePlan(plan_proto, query_id, analyze);
 }
 
@@ -179,37 +182,13 @@ Status CarnotImpl::RegisterUDFsInPlanFragment(exec::ExecState* exec_state, plan:
       .Walk(pf);
 }
 
-StatusOr<absl::flat_hash_map<std::string, carnotpb::ResultSinkService::StubInterface*>>
-GetOutgoingConns(exec::ExecState* exec_state, plan::Plan* plan) {
+absl::flat_hash_map<std::string, carnotpb::ResultSinkService::StubInterface*> GetOutgoingConns(
+    exec::ExecState* exec_state, const planpb::Plan& plan) {
   absl::flat_hash_map<std::string, carnotpb::ResultSinkService::StubInterface*> outgoing_conns;
-  PL_RETURN_IF_ERROR(
-      plan::PlanWalker()
-          .OnPlanFragment([exec_state, &outgoing_conns](plan::PlanFragment* pf) {
-            auto no_op = [&](const auto&) { return Status::OK(); };
-            return plan::PlanFragmentWalker()
-                .OnMap(no_op)
-                .OnAggregate(no_op)
-                .OnFilter(no_op)
-                .OnLimit(no_op)
-                .OnMemorySink(no_op)
-                .OnMemorySource(no_op)
-                .OnUnion(no_op)
-                .OnJoin(no_op)
-                .OnGRPCSource(no_op)
-                .OnGRPCSink([exec_state, &outgoing_conns](const plan::GRPCSinkOperator& grpc_sink) {
-                  if (outgoing_conns.contains(grpc_sink.address())) {
-                    return Status::OK();
-                  }
-                  outgoing_conns[grpc_sink.address()] = exec_state->ResultSinkServiceStub(
-                      grpc_sink.address(), grpc_sink.ssl_targetname());
-                  return Status::OK();
-                })
-                .OnUDTFSource(no_op)
-                .OnEmptySource(no_op)
-                .OnOTelSink(no_op)
-                .Walk(pf);
-          })
-          .Walk(plan));
+  for (const auto& dest : plan.execution_status_destinations()) {
+    outgoing_conns[dest.grpc_address()] =
+        exec_state->ResultSinkServiceStub(dest.grpc_address(), dest.ssl_targetname());
+  }
   return outgoing_conns;
 }
 
@@ -347,7 +326,7 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
   // For each of the plan fragments in the plan, execute the query.
   std::vector<std::string> output_table_strs;
   auto exec_state = engine_state_->CreateExecState(query_id);
-  PL_ASSIGN_OR_RETURN(auto outgoing_conns, GetOutgoingConns(exec_state.get(), &plan));
+  auto outgoing_conns = GetOutgoingConns(exec_state.get(), logical_plan);
   PL_RETURN_IF_ERROR(InitiateOutgoingConns(query_id, outgoing_conns,
                                            engine_state_->add_auth_to_grpc_context_func()));
 

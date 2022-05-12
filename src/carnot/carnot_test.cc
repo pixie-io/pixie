@@ -1024,6 +1024,10 @@ px.display(df))pxl";
 }
 
 constexpr char kErrorNodePlan[] = R"proto(
+execution_status_destinations {
+  grpc_address: "error_address"
+  ssl_targetname: "result_ssltarget"
+}
 dag {
   nodes {
     id: 1
@@ -1109,6 +1113,10 @@ TEST_F(CarnotTest, result_server_receives_execution_errors_created_by_carnot) {
 }
 
 constexpr char kGRPCSourcePlan[] = R"proto(
+execution_status_destinations {
+  grpc_address: "result_addr"
+  ssl_targetname: "result_ssltarget"
+}
 dag {
   nodes {
     id: 1
