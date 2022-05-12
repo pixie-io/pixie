@@ -446,6 +446,39 @@ TEST_F(FilterPushDownTest, kelvin_only_filter) {
   EXPECT_THAT(map2->parents()[0]->parents(), ElementsAre(map1));
 }
 
+TEST_F(FilterPushDownTest, dont_update_col_names_if_not_pushing_down_map) {
+  Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
+  MemorySourceIR* src = MakeMemSource("source", relation);
+  compiler_state_->relation_map()->emplace("source", relation);
+  MapIR* map = MakeMap(src,
+                       {{"renamed", MakeColumn("abc", 0)},
+                        {"calculated", MakeAddFunc(MakeColumn("abc", 0), MakeInt(3))}},
+                       false);
+  auto agg = MakeBlockingAgg(map, {MakeColumn("renamed", 0), MakeColumn("calculated", 0)}, {});
+
+  auto eq_func1 = MakeEqualsFunc(MakeColumn("calculated", 0), MakeInt(2));
+  auto eq_func2 = MakeEqualsFunc(MakeColumn("renamed", 0), MakeInt(1));
+  auto and_func = MakeAndFunc(eq_func1, eq_func2);
+  FilterIR* filter = MakeFilter(agg, and_func);
+  MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
+
+  FilterPushdownRule rule(compiler_state_.get());
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  EXPECT_THAT(sink->parents(), ElementsAre(agg));
+  EXPECT_THAT(agg->parents(), ElementsAre(filter));
+  EXPECT_THAT(filter->parents(), ElementsAre(map));
+  EXPECT_THAT(map->parents(), ElementsAre(src));
+
+  EXPECT_MATCH(filter->filter_expr(), LogicalAnd(Equals(ColumnNode("calculated"), Int(2)),
+                                                 Equals(ColumnNode("renamed"), Int(1))));
+}
+
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot

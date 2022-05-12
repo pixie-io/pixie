@@ -614,6 +614,31 @@ TEST_F(LogicalPlannerTest, limit_pushdown_failing) {
   ASSERT_OK(proto_or_s.status());
 }
 
+const char kFilterPushDownBugQuery[] = R"pxl(
+import px
+
+df = px.DataFrame(table='http_events', start_time='-6m')
+df.service = df.ctx['service']
+
+df.requestor_pod_id = px.ip_to_pod_id(df.remote_addr)
+df.responder_service = df.service
+df.requestor_service = px.pod_id_to_service_name(df.requestor_pod_id)
+df = df.groupby(['responder_service', 'requestor_service']).agg()
+
+df = df[df.requestor_service != '' and df.responder_service != '']
+
+px.display(df)
+)pxl";
+TEST_F(LogicalPlannerTest, filter_pushdown_bug) {
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+  auto state = testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
+  auto plan_or_s = planner->Plan(state, MakeQueryRequest(kFilterPushDownBugQuery));
+  EXPECT_OK(plan_or_s);
+  auto plan = plan_or_s.ConsumeValueOrDie();
+  auto proto_or_s = plan->ToProto();
+  ASSERT_OK(proto_or_s.status());
+}
+
 TEST_F(LogicalPlannerTest, create_compiler_state_has_endpoint_config) {
   auto state = testutils::CreateTwoPEMsOneKelvinPlannerState(kCheckoutProbeTableSchema);
   auto endpoint_config = state.mutable_otel_endpoint_config();
