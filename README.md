@@ -16,7 +16,7 @@
 
 <br>
 
-Pixie is an open source observability tool for Kubernetes applications. Use Pixie to view the high-level state of your cluster (service maps, cluster resources, application traffic) and also drill-down into more detailed views (pod state, flame graphs, individual full-body application requests).
+Pixie is an open-source observability tool for Kubernetes applications. Use Pixie to view the high-level state of your cluster (service maps, cluster resources, application traffic) and also drill down into more detailed views (pod state, flame graphs, individual full-body application requests).
 
 ## Why Pixie?
 
@@ -24,7 +24,7 @@ Three features enable Pixie's magical developer experience:
 
 - **Auto-telemetry:** Pixie uses eBPF to automatically collect telemetry data such as full-body requests, resource and network metrics, application profiles, and more. See the full list of data sources [here](https://docs.px.dev/about-pixie/data-sources/).
 
-- **In-Cluster Edge Compute:** Pixie collects, stores and queries all telemetry data locally in the cluster. Pixie uses less than 5% of cluster CPU, and in most cases less than 2%.
+- **In-Cluster Edge Compute:** Pixie collects, stores and queries all telemetry data locally in the cluster. Pixie uses less than 5% of cluster CPU and in most cases less than 2%.
 
 - **Scriptability:** [PxL](https://docs.px.dev/reference/pxl/), Pixie’s flexible Pythonic query language, can be used across Pixie’s UI, CLI, and client APIs.
 
@@ -58,7 +58,7 @@ For more details, check out the [tutorial](https://docs.px.dev/tutorials/pixie-1
 Monitor your infrastructure alongside your network and application layer, including:
 
 - Resource usage by Pod, Node, Namespace.
-- CPU flamegraphs per Pod, Node.
+- CPU flame graphs per Pod, Node.
 
 <br>
 
@@ -90,11 +90,11 @@ For more details, check out the [tutorial](https://docs.px.dev/tutorials/pixie-1
 
 <br>
 
-Pixie automatically traces a number of different [database protocols](https://docs.px.dev/about-pixie/data-sources/#supported-protocols). Use Pixie to monitor the performance of your database requests:
+Pixie automatically traces several different [database protocols](https://docs.px.dev/about-pixie/data-sources/#supported-protocols). Use Pixie to monitor the performance of your database requests:
 
-- Latency, error and throughput (LET) rate for all pods.
+- Latency, error, and throughput (LET) rate for all pods.
 - LET rate per normalized query.
-- Latency per individual full body query.
+- Latency per individual full-body query.
 - Individual full-body requests and responses.
 
 <br>
@@ -111,7 +111,7 @@ For more details, check out the [tutorial](https://docs.px.dev/tutorials/pixie-1
 
 Pixie makes debugging this communication between microservices easy by providing immediate and deep (full-body) visibility into requests flowing through your cluster. See:
 
-- Full-body requests and response for [supported protocols](https://docs.px.dev/about-pixie/data-sources/#supported-protocols).
+- Full-body requests and responses for [supported protocols](https://docs.px.dev/about-pixie/data-sources/#supported-protocols).
 - Error rate per Service, Pod.
 
 <br>
@@ -136,7 +136,7 @@ For more details, check out the [tutorial](https://docs.px.dev/tutorials/pixie-1
 
 ### Distributed bpftrace Deployment
 
-Use Pixie to deploy a [bpftrace](https://github.com/iovisor/bpftrace) program to all of the nodes in your cluster. After deploying the program, Pixie captures the output into a table and makes the data available to be queried and visualized int he Pixie UI. TCP Drops pictured. For more details, check out the [tutorial](https://docs.px.dev/tutorials/custom-data/distributed-bpftrace-deployment/) or [watch](https://youtu.be/xT7OYAgIV28) an overview.
+Use Pixie to deploy a [bpftrace](https://github.com/iovisor/bpftrace) program to all of the nodes in your cluster. After deploying the program, Pixie captures the output into a table and makes the data available to be queried and visualized in the Pixie UI. TCP Drops are pictured. For more details, check out the [tutorial](https://docs.px.dev/tutorials/custom-data/distributed-bpftrace-deployment/) or [watch](https://youtu.be/xT7OYAgIV28) an overview.
 
 ### Dynamic Go Logging
 
@@ -162,7 +162,7 @@ Once installed, you can interact with Pixie using the:
 
 ## Get Involved
 
-Pixie is a community driven project; we welcome your contribution! For code contributions, please read our [contribution guide](CONTRIBUTING.md).
+Pixie is a community-driven project; we welcome your contribution! For code contributions, please read our [contribution guide](CONTRIBUTING.md).
 
 - File a [GitHub issue](https://github.com/pixie-io/pixie/issues) to report a bug or request a feature.
 - Join our [Slack](https://slackin.px.dev) for live conversations and quick questions. We are also available on the [CNCF slack](https://slack.cncf.io/app_redirect?channel=pixie").
