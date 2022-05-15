@@ -94,7 +94,7 @@ Pixie automatically traces several different [database protocols](https://docs.p
 
 - Latency, error, and throughput (LET) rate for all pods.
 - LET rate per normalized query.
-- Latency per individual full body query.
+- Latency per individual full-body query.
 - Individual full-body requests and responses.
 
 <br>
