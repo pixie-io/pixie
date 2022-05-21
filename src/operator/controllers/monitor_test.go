@@ -239,7 +239,7 @@ func TestMonitor_getCloudConnState_SeveralCloudConns(t *testing.T) {
 	assert.Equal(t, v1alpha1.VizierPhaseUnhealthy, translateReasonToPhase(state.Reason))
 }
 
-func TestMonitor_operatorBasedNATsPod(t *testing.T) {
+func TestMonitor_NATSPods(t *testing.T) {
 	httpClient := &FakeHTTPClient{
 		responses: map[string]string{
 			"http://127.0.0.1:8222/": "",
@@ -305,15 +305,6 @@ func TestMonitor_operatorBasedNATsPod(t *testing.T) {
 			expectedVizierPhase: v1alpha1.VizierPhaseUnhealthy,
 			natsPodNameLabel:    "",
 			natsPodName:         "random_pod",
-		},
-		{
-			name:                "Old PodName and label OK",
-			natsIP:              "127.0.0.1",
-			natsPhase:           v1.PodRunning,
-			expectedReason:      "",
-			expectedVizierPhase: v1alpha1.VizierPhaseHealthy,
-			natsPodNameLabel:    "",
-			natsPodName:         natsPodOldName,
 		},
 	}
 
