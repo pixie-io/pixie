@@ -125,9 +125,8 @@ type VizierMonitor struct {
 // InitAndStartMonitor initializes and starts the status monitor for the Vizier.
 func (m *VizierMonitor) InitAndStartMonitor(cloudClient *grpc.ClientConn) error {
 	// Initialize current state.
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	m.httpClient = &http.Client{Transport: tr}
 	m.cloudClient = cloudClient
 	m.ctx, m.cancel = context.WithCancel(context.Background())

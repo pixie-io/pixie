@@ -75,10 +75,8 @@ func NewScraper(namespace string, period time.Duration) Scraper {
 		log.Fatal("failed to append cert to cert pool.")
 	}
 
-	tlsConfig := &tls.Config{
-		RootCAs: certPool,
-	}
-	tr := &http.Transport{TLSClientConfig: tlsConfig}
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{RootCAs: certPool}
 	client := &http.Client{Transport: tr}
 
 	kubeConfig, err := rest.InClusterConfig()

@@ -53,15 +53,14 @@ func getESHTTPSClient(config *Config) (*http.Client, error) {
 		RootCAs: caCertPool,
 	}
 	tlsConfig.BuildNameToCertificate()
-	transport := &http.Transport{
-		DialContext: (&net.Dialer{
-			KeepAlive: 30 * time.Second,
-		}).DialContext,
-		TLSClientConfig:     tlsConfig,
-		MaxIdleConnsPerHost: 100, // Default is 2.
-	}
+
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = tlsConfig
+	tr.MaxIdleConnsPerHost = 100 // Default is 2.
+	tr.DialContext = (&net.Dialer{KeepAlive: 30 * time.Second}).DialContext
+
 	httpClient := &http.Client{
-		Transport: transport,
+		Transport: tr,
 	}
 	return httpClient, nil
 }
