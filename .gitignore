@@ -35,6 +35,7 @@ bazel-*
 **/.vscode/tasks.json
 **/.vscode/.vs_code_bazel_build/**
 **/.vscode/ipch/
+**/.vscode/*.log
 
 # ctags file
 tags
