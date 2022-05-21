@@ -51,7 +51,7 @@ import { LD_CLIENT_ID } from 'app/containers/constants';
 import { AuthRouter } from 'app/pages/auth/auth';
 import CreditsView from 'app/pages/credits/credits';
 import { makeCancellable, silentlyCatchCancellation } from 'app/utils/cancellable-promise';
-import { isProd, PIXIE_CLOUD_VERSION } from 'app/utils/env';
+import { PIXIE_CLOUD_VERSION } from 'app/utils/env';
 import { ErrorBoundary, PixienautCrashFallback } from 'app/utils/error-boundary';
 import { parseJWT } from 'app/utils/jwt';
 import history from 'app/utils/pl-history';
@@ -155,7 +155,7 @@ export const App: React.FC = () => {
             }
           </Switch>
         </Router>
-        {!isProd() ? <VersionInfo cloudVersion={PIXIE_CLOUD_VERSION} /> : null}
+        <VersionInfo cloudVersion={PIXIE_CLOUD_VERSION} />
       </SnackbarProvider>
       <PixieCookieBanner />
     </ErrorBoundary>

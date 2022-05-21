@@ -5,3 +5,4 @@ metadata:
   name: pl-domain-config
 data:
   PL_DOMAIN_NAME: withpixie.ai
+  PASSTHROUGH_PROXY_PORT: ""

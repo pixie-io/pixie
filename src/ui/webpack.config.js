@@ -301,12 +301,15 @@ module.exports = (env, argv) => {
   const contactYAML = utils.readYAMLFile(join(topLevelDir, 'k8s', 'cloud', environment,
     'contact_config.yaml'), false);
 
+  const passthroughPort = process.env.PL_BUILD_TYPE === 'dev' ? '4444' : '';
+
   webpackConfig.plugins.unshift(
     new webpack.DefinePlugin({
       __CONTACT_ENABLED__: JSON.parse(contactYAML.data.CONTACT_ENABLED),
       __ANNOUNCEMENT_ENABLED__: JSON.parse(announcementYAML.data.ANNOUNCEMENT_ENABLED),
       __ANNOUNCE_WIDGET_URL__: JSON.stringify(announcementYAML.data.ANNOUNCE_WIDGET_URL),
       __ANALYTICS_ENABLED__: JSON.parse(analyticsYAML.data.ANALYTICS_ENABLED),
+      __PASSTHROUGH_PROXY_PORT__: passthroughPort,
       __SEGMENT_UI_WRITE_KEY__: '""',
       __CONFIG_OAUTH_PROVIDER__: JSON.stringify(oauthProvider),
       __CONFIG_AUTH_URI__: JSON.stringify(authURI),
