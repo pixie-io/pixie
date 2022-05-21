@@ -156,13 +156,10 @@ func createHTTPClient() (*http.Client, error) {
 		return nil, err
 	}
 
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				RootCAs: rootCA,
-			},
-		},
-	}
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{RootCAs: rootCA}
+
+	client := &http.Client{Transport: tr}
 	return client, nil
 }
 
