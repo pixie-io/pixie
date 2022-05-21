@@ -31,6 +31,7 @@ declare global {
       ANNOUNCEMENT_ENABLED: boolean;
       ANNOUNCE_WIDGET_URL: string;
       CONTACT_ENABLED: boolean;
+      PASSTHROUGH_PROXY_PORT: string;
     };
   }
 }
@@ -57,3 +58,5 @@ export const { ANNOUNCEMENT_ENABLED } = window.__PIXIE_FLAGS__;
 export const { ANNOUNCE_WIDGET_URL } = window.__PIXIE_FLAGS__;
 // eslint-disable-next-line no-underscore-dangle
 export const { CONTACT_ENABLED } = window.__PIXIE_FLAGS__;
+// eslint-disable-next-line no-underscore-dangle
+export const { PASSTHROUGH_PROXY_PORT } = window.__PIXIE_FLAGS__;

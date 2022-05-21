@@ -18,7 +18,7 @@
 
 import { format } from 'date-fns';
 
-import { DOMAIN_NAME, SEGMENT_UI_WRITE_KEY } from 'app/containers/constants';
+import { SEGMENT_UI_WRITE_KEY } from 'app/containers/constants';
 
 // Webpack's EnvPlugin has trouble understanding destructuring when Babel gets to it first.
 // This is the case in our build (by necessity), so we must write this long-form.
@@ -45,18 +45,6 @@ if (STABLE_BUILD_NUMBER) {
 }
 
 export const PIXIE_CLOUD_VERSION = `${dateStr}+${parts.join('.')}`;
-
-export function isDev(): boolean {
-  return DOMAIN_NAME.startsWith('dev');
-}
-
-export function isStaging(): boolean {
-  return DOMAIN_NAME.startsWith('staging');
-}
-
-export function isProd(): boolean {
-  return !isDev() && !isStaging();
-}
 
 function isValidSegmentKey(k) {
   // The TS compiler is really smart and is optmizing away the checks,

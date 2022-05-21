@@ -23,9 +23,9 @@ import { useQuery, gql } from '@apollo/client';
 import { ClusterConfig } from 'app/api';
 import { useSnackbar } from 'app/components';
 import { LiveRouteContext, push } from 'app/containers/App/live-routing';
+import { PASSTHROUGH_PROXY_PORT } from 'app/containers/constants';
 import { GQLClusterInfo, GQLVizierConfig, GQLClusterStatus } from 'app/types/schema';
 import { stableSerializeArgs } from 'app/utils/args-utils';
-import { isDev } from 'app/utils/env';
 
 export interface ClusterContextProps {
   loading: boolean;
@@ -131,9 +131,9 @@ export function useClusterConfig(): ClusterConfig | null {
   const { loading, selectedClusterID, selectedClusterVizierConfig } = React.useContext(ClusterContext);
   return React.useMemo(() => {
     if (loading || !selectedClusterID) return null;
-    // If cloud is running in dev mode, automatically direct to Envoy's port, since there is
-    // no GCLB to redirect for us in dev.
-    const passthroughClusterAddress = window.location.origin + (isDev() ? ':4444' : '');
+    // If a PASSTHROUGH_PROXY_PORT is explicitly specified then there's probably no Ingress
+    // resource to automatically route passthrough requests. Manually direct to the proxy port.
+    const passthroughClusterAddress = window.location.origin + (PASSTHROUGH_PROXY_PORT && `:${PASSTHROUGH_PROXY_PORT}`);
     return {
       id: selectedClusterID,
       attachCredentials: true,
