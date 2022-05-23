@@ -32,6 +32,14 @@ def _gcr_io_image(name, digest, repo):
         repository = repo,
     )
 
+def _ghcr_io_image(name, digest, repo):
+    container_pull(
+        name = name,
+        digest = digest,
+        registry = "ghcr.io",
+        repository = repo,
+    )
+
 def base_images():
     _docker_io_image(
         "nginx_base",
@@ -130,6 +138,18 @@ def base_images():
         "sap",
         "sha256:53a036f4d787126777c010437ee4802de11b193e8aca556170301ab2c2359bc6",
         "library/sapmachine",
+    )
+
+    _ghcr_io_image(
+        "graal-vm",
+        "sha256:ffb117a5fd76d8c47120e1b4186053c306ae850483b59f24a5979d7154d35685",
+        "graalvm/jdk",
+    )
+
+    _ghcr_io_image(
+        "graal-vm-ce",
+        "sha256:fae27be89c37a78fe05a1cb36f0f4348931c515ee3e7d1629e859fb4685d94a0",
+        "graalvm/graalvm-ce",
     )
 
 def stirling_test_build_images():

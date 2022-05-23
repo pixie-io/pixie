@@ -15,6 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@io_bazel_rules_docker//container:image.bzl", "container_image")
+load("@io_bazel_rules_docker//docker/util:run.bzl", "container_run_and_extract")
 load("@io_bazel_rules_docker//java:image.bzl", "java_image")
 load("@rules_java//java:defs.bzl", "java_binary")
 load("//bazel:pl_build_system.bzl", "pl_cc_binary")
@@ -99,3 +100,27 @@ jdk_symlinks = [symlinks_by_jdk[jdk_name] if jdk_name in symlinks_by_jdk else {}
     )
     for jdk_name in jdk_names
 ]
+
+container_image(
+    name = "image-graal-vm-ce",
+    base = "@graal-vm-ce//image",
+    directory = "/app",
+    files = ["Fib.java"],
+)
+
+container_run_and_extract(
+    name = "graal-vm-aot",
+    commands = [
+        "gu install native-image",
+        "javac Fib.java",
+        "jar cvf JavaFib.jar JavaFib.class",
+        "native-image --no-fallback -cp JavaFib.jar -H:Name=JavaFib -H:Class=JavaFib -H:-DeleteLocalSymbols -H:+PreserveFramePointer -H:+ReportUnsupportedElementsAtRuntime",
+    ],
+    extract_file = "/app/JavaFib",
+    image = ":image-graal-vm-ce.tar",
+)
+
+filegroup(
+    name = "graal-vm-aot-fib",
+    srcs = ["graal-vm-aot/app/JavaFib"],
+)

@@ -33,4 +33,5 @@ jdk_names = [
     "adopt-j9",
     "ibm",
     "sap",
+    "graal-vm",
 ]
