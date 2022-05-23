@@ -124,5 +124,5 @@ export {
   LIGHT_BASE,
   LIGHT_THEME,
   EDITOR_THEME_MAP,
-  addSyntaxToPalette,
+  createPixieTheme,
 } from './mui-theme';

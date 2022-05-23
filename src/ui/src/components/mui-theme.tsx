@@ -18,11 +18,13 @@
 
 
 import { PaletteMode } from '@mui/material';
-import { createTheme, Theme } from '@mui/material/styles';
+import { createTheme, Theme, type ThemeOptions as OriginalThemeOptions } from '@mui/material/styles';
 import type {
   PaletteOptions as AugmentedPaletteOptions,
   SimplePaletteColorOptions,
 } from '@mui/material/styles/createPalette';
+import { Shadows } from '@mui/material/styles/shadows';
+import { deepmerge } from '@mui/utils';
 
 interface SyntaxPalette {
   /** Default color for tokens that don't match any other rules */
@@ -183,22 +185,6 @@ export const scrollbarStyles = (theme: Theme) => {
   };
 };
 
-export function addSyntaxToPalette(base: Omit<AugmentedPaletteOptions, 'syntax'>): AugmentedPaletteOptions {
-  return {
-    ...base,
-    syntax: {
-      normal: base.text.secondary,
-      scope: base.text.secondary,
-      divider: base.foreground.three,
-      error: (base.error as Required<SimplePaletteColorOptions>).main,
-      boolean: (base.success as Required<SimplePaletteColorOptions>).main,
-      number: (base.secondary as Required<SimplePaletteColorOptions>).main,
-      string: base.mode === 'dark' ? base.graph.ramp[0] : base.graph.ramp[2],
-      nullish: base.foreground.three,
-    },
-  };
-}
-
 export const EDITOR_THEME_MAP: Record<PaletteMode, string> = {
   dark: 'vs-dark',
   light: 'vs-light',
@@ -257,10 +243,6 @@ export const COMMON_THEME = {
     },
   },
   palette: {
-    border: {
-      focused: '1px solid rgba(255, 255, 255, 0.2)',
-      unFocused: '1px solid rgba(255, 255, 255, 0.1)',
-    },
     sideBar: {
       color: '#161616',
       colorShadow: '#000000',
@@ -344,7 +326,7 @@ export const COMMON_THEME = {
           outline: 'none !important',
         },
         a: {
-          color: '#12d6d6', // Main
+          // color: 'primary.main', // Overridden
           textDecoration: 'none',
           '&:hover': {
             textDecoration: 'underline',
@@ -380,164 +362,204 @@ export const COMMON_THEME = {
   },
 };
 
-export const DARK_BASE = {
-  ...COMMON_THEME,
-  ...{
-    palette: {
-      ...COMMON_THEME.palette,
-      mode: 'dark' as const,
-      divider: '#272822',
-      foreground: {
-        one: '#b2b5bb',
-        two: '#f2f2f2',
-        three: '#9696a5',
-        grey1: '#4a4c4f',
-        grey2: '#353738',
-        grey3: '#212324',
-        grey4: '#596274',
-        grey5: '#dbdde0',
-        white: '#ffffff',
-      },
-      background: {
-        default: '#121212',
-        paper: '#121212',
-        one: '#121212',
-        two: '#212324',
-        three: '#353535',
-        four: '#161616',
-        five: '#090909',
-        six: '#242424',
-      },
-      text: {
-        primary: '#e2e5ee',
-        secondary: '#ffffff',
-        disabled: 'rgba(226, 229, 238, 0.7)', // 70% opacity of primary
-      },
-      success: {
-        main: '#00dba6',
-        dark: '#00bd8f',
-        light: '#4dffd4',
-      },
-      warning: {
-        main: '#f6a609',
-        dark: '#dc9406',
-        light: '#ffc656',
-      },
-      info: { // Same as secondary
-        main: '#24b2ff',
-        dark: '#21a1e7',
-        light: '#79d0ff',
-      },
-      error: {
-        main: '#ff5e6d',
-        dark: '#e54e5c',
-        light: '#ff9fa8',
-      },
-      graph: {
-        ...COMMON_THEME.palette.graph,
-        flamegraph: {
-          kernel: '#98df8a',
-          java: '#31d0f3',
-          app: '#31d0f3',
-          k8s: '#4796c1',
+type DeepPartial<T> = T extends object ? {
+  [P in keyof T]?: DeepPartial<T[P]>;
+} : T;
+
+function addSyntaxToPalette(base: DeepPartial<AugmentedPaletteOptions>): AugmentedPaletteOptions {
+  const merged: Omit<AugmentedPaletteOptions, 'syntax'> = deepmerge<any>(
+    COMMON_THEME.palette,
+    base,
+    { clone: true },
+  );
+  return {
+    ...merged,
+    syntax: {
+      normal: merged.text.secondary,
+      scope: merged.text.secondary,
+      divider: merged.foreground.three,
+      error: (merged.error as Required<SimplePaletteColorOptions>).main,
+      boolean: (merged.success as Required<SimplePaletteColorOptions>).main,
+      number: (merged.secondary as Required<SimplePaletteColorOptions>).main,
+      string: merged.mode === 'dark' ? merged.graph.ramp[0] : merged.graph.ramp[2],
+      nullish: merged.foreground.three,
+    },
+  };
+}
+
+function getMuiThemeComponents(palette: DeepPartial<AugmentedPaletteOptions>) {
+  return deepmerge(
+    COMMON_THEME.components,
+    {
+      MuiCssBaseline: {
+        styleOverrides: {
+          a: {
+            color: (palette.primary as SimplePaletteColorOptions)?.main ?? COMMON_THEME.palette?.primary.main,
+          },
         },
       },
     },
-    components: {
-      ...COMMON_THEME.components,
-      MuiDivider: {
-        styleOverrides: {
-          root: {
-            backgroundColor: '#353535', // background three.
-          },
+    { clone: true },
+  );
+}
+
+export const DARK_BASE = {
+  palette: {
+    mode: 'dark' as const,
+    divider: '#272822',
+    foreground: {
+      one: '#b2b5bb',
+      two: '#f2f2f2',
+      three: '#9696a5',
+      grey1: '#4a4c4f',
+      grey2: '#353738',
+      grey3: '#212324',
+      grey4: '#596274',
+      grey5: '#dbdde0',
+      white: '#ffffff',
+    },
+    background: {
+      default: '#121212',
+      paper: '#121212',
+      one: '#121212',
+      two: '#212324',
+      three: '#353535',
+      four: '#161616',
+      five: '#090909',
+      six: '#242424',
+    },
+    text: {
+      primary: '#e2e5ee',
+      secondary: '#ffffff',
+      disabled: 'rgba(226, 229, 238, 0.7)', // 70% opacity of primary
+    },
+    border: {
+      focused: '1px solid rgba(255, 255, 255, 0.2)',
+      unFocused: '1px solid rgba(255, 255, 255, 0.1)',
+    },
+    success: {
+      main: '#00dba6',
+      dark: '#00bd8f',
+      light: '#4dffd4',
+    },
+    warning: {
+      main: '#f6a609',
+      dark: '#dc9406',
+      light: '#ffc656',
+    },
+    info: { // Same as secondary
+      main: '#24b2ff',
+      dark: '#21a1e7',
+      light: '#79d0ff',
+    },
+    error: {
+      main: '#ff5e6d',
+      dark: '#e54e5c',
+      light: '#ff9fa8',
+    },
+    graph: {
+      flamegraph: {
+        kernel: '#98df8a',
+        java: '#31d0f3',
+        app: '#31d0f3',
+        k8s: '#4796c1',
+      },
+    },
+  },
+  components: {
+    MuiDivider: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#353535', // background three.
         },
       },
     },
   },
 };
-
-export const DARK_THEME = createTheme({
-  ...DARK_BASE,
-  palette: addSyntaxToPalette(DARK_BASE.palette),
-});
 
 export const LIGHT_BASE = {
-  ...COMMON_THEME,
-  ...{
-    palette: {
-      ...COMMON_THEME.palette,
-      mode: 'light' as const,
-      divider: '#dbdde0',
-      foreground: {
-        one: '#4f4f4f',
-        two: '#000000',
-        three: '#a9adb1',
-        grey1: '#cacccf',
-        grey2: '#dbdde0',
-        grey3: '#f6f6f6',
-        grey4: '#a9adb1',
-        grey5: '#000000',
-        white: '#ffffff',
-      },
-      background: {
-        default: '#f6f6f6',
-        paper: '#fbfbfb',
-        one: '#fbfbfb',
-        two: '#ffffff',
-        three: '#f5f5f5',
-        four: '#f8f9fa',
-        five: '#fbfcfd',
-        six: '#ffffff',
-      },
-      text: {
-        primary: 'rgba(0, 0, 0, 0.87)', // Material default
-        secondary: '#000000',
-        disabled: 'rgba(0, 0, 0, 0.7)', // Muted
-      },
-      success: {
-        main: '#00bd8f',
-        dark: '#4dffd4',
-        light: '#00dba6',
-      },
-      warning: {
-        main: '#dc9406',
-        dark: '#ffc656',
-        light: '#f6a609',
-      },
-      info: { // Same as secondary
-        main: '#24b2ff',
-        dark: '#21a1e7',
-        light: '#79d0ff',
-      },
-      error: {
-        main: '#e54e5c',
-        dark: '#ff9fa8',
-        light: '#ff5e6d',
-      },
-      graph: {
-        ...COMMON_THEME.palette.graph,
-        flamegraph: {
-          kernel: '#90cb84',
-          java: '#00b1d8',
-          app: '#00b1d8',
-          k8s: '#4796c1',
-        },
+  palette: {
+    mode: 'light' as const,
+    divider: '#dbdde0',
+    foreground: {
+      one: '#4f4f4f',
+      two: '#000000',
+      three: '#a9adb1',
+      grey1: '#cacccf',
+      grey2: '#dbdde0',
+      grey3: '#f6f6f6',
+      grey4: '#a9adb1',
+      grey5: '#000000',
+      white: '#ffffff',
+    },
+    background: {
+      default: '#f6f6f6',
+      paper: '#fbfbfb',
+      one: '#fbfbfb',
+      two: '#ffffff',
+      three: '#f5f5f5',
+      four: '#f8f9fa',
+      five: '#fbfcfd',
+      six: '#ffffff',
+    },
+    text: {
+      primary: 'rgba(0, 0, 0, 0.87)', // Material default
+      secondary: '#000000',
+      disabled: 'rgba(0, 0, 0, 0.7)', // Muted
+    },
+    border: {
+      focused: '1px solid rgba(0, 0, 0, 0.2)',
+      unFocused: '1px solid rgba(0, 0, 0, 0.1)',
+    },
+    success: {
+      main: '#00bd8f',
+      dark: '#4dffd4',
+      light: '#00dba6',
+    },
+    warning: {
+      main: '#dc9406',
+      dark: '#ffc656',
+      light: '#f6a609',
+    },
+    info: { // Same as secondary
+      main: '#24b2ff',
+      dark: '#21a1e7',
+      light: '#79d0ff',
+    },
+    error: {
+      main: '#e54e5c',
+      dark: '#ff9fa8',
+      light: '#ff5e6d',
+    },
+    graph: {
+      flamegraph: {
+        kernel: '#90cb84',
+        java: '#00b1d8',
+        app: '#00b1d8',
+        k8s: '#4796c1',
       },
     },
-    components: {
-      ...COMMON_THEME.components,
-      MuiDivider: {
-        styleOverrides: {
-          root: {
-            backgroundColor: '#a9adb1', // background three.
-          },
+  },
+  components: {
+    MuiDivider: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#a9adb1', // background three.
         },
       },
     },
   },
 };
 
-export const LIGHT_THEME = createTheme({
-  ...LIGHT_BASE,
-  palette: addSyntaxToPalette(LIGHT_BASE.palette),
-});
+export function createPixieTheme(options: DeepPartial<OriginalThemeOptions>): Theme {
+  const base = options?.palette?.mode === 'light' ? LIGHT_BASE : DARK_BASE;
+  const merged: OriginalThemeOptions = deepmerge<any>(COMMON_THEME, base, { clone: true });
+  // When a custom theme override is given, we only copy color and shadow information (as we know those are safe)
+  merged.palette = addSyntaxToPalette(deepmerge(merged.palette, options.palette ?? {}, { clone: true }));
+  merged.components = getMuiThemeComponents(merged.palette);
+  if (Array.isArray(options.shadows) && options.shadows.length) merged.shadows = options.shadows as Shadows;
+  return createTheme(merged);
+}
+
+export const DARK_THEME = createPixieTheme({ palette: { mode: 'dark' } });
+export const LIGHT_THEME = createPixieTheme({ palette: { mode: 'light' } });
