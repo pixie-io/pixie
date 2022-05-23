@@ -19,12 +19,10 @@
 import * as React from 'react';
 
 import { CssBaseline } from '@mui/material';
-import { createTheme, Theme, ThemeProvider } from '@mui/material/styles';
-import { deepmerge } from '@mui/utils';
+import { Theme, ThemeProvider } from '@mui/material/styles';
 
 import {
-  addSyntaxToPalette,
-  DARK_BASE,
+  createPixieTheme,
   DARK_THEME,
   LIGHT_THEME,
 } from 'app/components/mui-theme';
@@ -74,13 +72,7 @@ export const PixieThemeContextProvider = React.memo(({ children }) => {
       const parsedTheme = JSON.parse(raw);
       // Only use the `palette` field from the theme, as we know these
       // values are safe to apply. Base atop the dark theme.
-      const newTheme = createTheme({
-        ...DARK_BASE,
-        ...{
-          palette: addSyntaxToPalette(deepmerge(DARK_THEME.palette, parsedTheme.palette, { clone: true })),
-          shadows: deepmerge(DARK_THEME.shadows, parsedTheme.shadows, { clone: true }),
-        },
-      });
+      const newTheme = createPixieTheme(parsedTheme);
       setParsedCustomTheme(newTheme);
       setTheme(newTheme);
     } catch (e) {
