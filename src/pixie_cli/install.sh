@@ -237,7 +237,7 @@ echo
 emph "Next steps:"
 cat << EOS
 - PX CLI has been installed to: ${INSTALL_PATH}. Make sure this directory is in your PATH.
-- Run ${tty_green}px deploy${tty_reset} to deploy pixie on K8s.
+- Run ${tty_green}px deploy${tty_reset} to deploy Pixie on K8s.
 - Run ${tty_green}px help${tty_reset} to get started, or visit our UI: ${tty_underline}https://${CLOUD_ADDR}${tty_reset}
 - Further documentation:
     ${tty_underline}https://${CLOUD_ADDR}/docs${tty_reset}
