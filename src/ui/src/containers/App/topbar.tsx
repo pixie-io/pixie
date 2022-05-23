@@ -20,6 +20,7 @@ import * as React from 'react';
 
 import { useQuery, useMutation, gql } from '@apollo/client';
 import {
+  Brightness4Outlined,
   Explore as ExploreIcon,
   Keyboard as KeyboardIcon,
   Menu as MenuIcon,
@@ -43,6 +44,7 @@ import {
   LogoutIcon,
   SettingsIcon,
 } from 'app/components';
+import { ThemeSelectorToggles } from 'app/components/theme-selector/theme-selector';
 import { LiveTourContext, LiveTourDialog } from 'app/containers/App/live-tour';
 import { LiveShortcutsContext } from 'app/containers/live/shortcuts';
 import { SetStateFunc } from 'app/context/common';
@@ -178,7 +180,12 @@ const ProfileItem = React.memo<{ setSidebarOpen: SetStateFunc<boolean> }>(({ set
     setAnchorEl(event.currentTarget);
   }, []);
 
-  const closeMenu = React.useCallback(() => {
+  const closeMenu = React.useCallback((event, reason?) => {
+    // Don't close the menu if we clicked on a button in a ToggleButtonGroup
+    const type = event.relatedTarget?.attributes.getNamedItem('type')?.value ?? '';
+    const value = event.relatedTarget?.attributes.getNamedItem('value')?.value ?? '';
+    if (!reason && (type === 'button' && value)) return;
+
     setOpen(false);
     setAnchorEl(null);
   }, []);
@@ -286,6 +293,13 @@ const ProfileItem = React.memo<{ setSidebarOpen: SetStateFunc<boolean> }>(({ set
             ]
           )
         }
+        <MenuItem key='theme' className={classes.menuItem}>
+          <ListItemIcon className={classes.menuItemIcon}>
+            <Brightness4Outlined />
+          </ListItemIcon>
+          {/* eslint-disable-next-line react-memo/require-usememo */}
+          <ListItemText primary={<ThemeSelectorToggles />} disableTypography className={classes.menuItemText} />
+        </MenuItem>
         <MenuItem key='logout' component={Link} to='/logout' className={classes.menuItem}>
           <ListItemIcon className={classes.menuItemIcon}>
             <LogoutIcon />

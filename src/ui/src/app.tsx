@@ -51,6 +51,7 @@ import { PixieCookieBanner } from 'configurable/cookie-banner';
 
 import 'typeface-roboto';
 import 'typeface-roboto-mono';
+import { ThemeSelectionContextProvider } from './components/theme-selector/theme-selector';
 import { PixieThemeContext, PixieThemeContextProvider } from './context/pixie-theme-context';
 
 // This side-effect-only import has to be a `require`, or else it gets erroneously optimized away during compilation.
@@ -170,14 +171,8 @@ const ThemedApp: React.FC = () => {
   // params can also be set by the parent view, in an embedded context.
   React.useEffect(() => {
     const {
-      theme: themeParam,
       customTheme,
     } = QueryString.parse(window.location.search);
-
-    if (themeParam) {
-      const themeName = Array.isArray(themeParam) ? themeParam[0] : themeParam;
-      setThemeFromName(themeName);
-    }
     if (customTheme) {
       parseAndSetTheme(Array.isArray(customTheme) ? customTheme[0] : customTheme);
     }
@@ -302,9 +297,11 @@ ReactDOM.render(
     <StyledEngineProvider injectFirst>
       <AuthContextProvider>
         <EmbedContextProvider>
-          <PixieThemeContextProvider>
-            <ThemedApp />
-          </PixieThemeContextProvider>
+          <ThemeSelectionContextProvider>
+            <PixieThemeContextProvider>
+              <ThemedApp />
+            </PixieThemeContextProvider>
+          </ThemeSelectionContextProvider>
         </EmbedContextProvider>
       </AuthContextProvider>
     </StyledEngineProvider>
