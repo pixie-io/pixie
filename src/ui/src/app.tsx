@@ -18,14 +18,9 @@
 
 import * as React from 'react';
 
-import { CssBaseline } from '@mui/material';
 import {
-  Theme,
-  ThemeProvider,
   StyledEngineProvider,
-  createTheme,
 } from '@mui/material/styles';
-import { deepmerge } from '@mui/utils';
 import Axios from 'axios';
 import { withLDProvider } from 'launchdarkly-react-client-sdk';
 import * as QueryString from 'query-string';
@@ -39,10 +34,6 @@ import { PixieAPIContext, PixieAPIContextProvider } from 'app/api';
 import { AuthContextProvider, AuthContext } from 'app/common/auth-context';
 import { EmbedContext, EmbedContextProvider } from 'app/common/embed-context';
 import {
-  DARK_BASE,
-  DARK_THEME,
-  LIGHT_THEME,
-  addSyntaxToPalette,
   SnackbarProvider,
   VersionInfo,
 } from 'app/components';
@@ -60,6 +51,7 @@ import { PixieCookieBanner } from 'configurable/cookie-banner';
 
 import 'typeface-roboto';
 import 'typeface-roboto-mono';
+import { PixieThemeContext, PixieThemeContextProvider } from './context/pixie-theme-context';
 
 // This side-effect-only import has to be a `require`, or else it gets erroneously optimized away during compilation.
 require('./wdyr');
@@ -171,37 +163,8 @@ const FlaggedApp = LD_CLIENT_ID !== ''
 const ThemedApp: React.FC = () => {
   const { setAuthToken } = React.useContext(AuthContext);
   const { setTimeArg } = React.useContext(EmbedContext);
-  const [theme, setTheme] = React.useState<Theme>(DARK_THEME);
+  const { setThemeFromName, parseAndSetTheme } = React.useContext(PixieThemeContext);
   const [embedToken, setEmbedToken] = React.useState<string>('');
-
-  const setThemeFromName = React.useCallback((themeName) => {
-    switch (themeName) {
-      case 'light':
-        setTheme(LIGHT_THEME);
-        break;
-      default:
-        setTheme(DARK_THEME);
-    }
-  }, [setTheme]);
-
-  const parseAndSetTheme = React.useCallback((customTheme: string) => {
-    // Try to parse theme and apply.
-    try {
-      const parsedTheme = JSON.parse(customTheme);
-      // Only use the `palette` field from the theme, as we know these
-      // values are safe to apply. Base atop the dark theme.
-      setTheme(createTheme({
-        ...DARK_BASE,
-        ...{
-          palette: addSyntaxToPalette(deepmerge(DARK_THEME.palette, parsedTheme.palette, { clone: true })),
-          shadows: deepmerge(DARK_THEME.shadows, parsedTheme.shadows, { clone: true }),
-        },
-      }));
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to parse MUI theme');
-    }
-  }, [setTheme]);
 
   // Parse query params to determine initial state of the page. These
   // params can also be set by the parent view, in an embedded context.
@@ -300,12 +263,16 @@ const ThemedApp: React.FC = () => {
     }
   }, [embedToken, setEmbedToken, setAuthToken, setTimeArg, parseAndSetTheme, setThemeFromName]);
 
+  const [, setReadied] = React.useState(false);
   React.useEffect(() => {
     window.addEventListener('message', listener);
     // Send a message to the parent frame to inform it that Pixie is listening
     // for postMessages. We use top, to send it to the topmost window.
     // window.postMessage is not enough for a child to contact the parent.
-    window.top.postMessage({ pixieEmbedReady: true }, '*');
+    setReadied((prev) => {
+      if (!prev) window.top.postMessage({ pixieEmbedReady: true }, '*');
+      return true;
+    });
     return () => {
       window.removeEventListener('beforeunload', listener);
     };
@@ -323,12 +290,9 @@ const ThemedApp: React.FC = () => {
   }, []);
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <PixieAPIContextProvider apiKey='' onUnauthorized={onUnauthorized}>
-        <FlaggedApp />
-      </PixieAPIContextProvider>
-    </ThemeProvider>
+    <PixieAPIContextProvider apiKey='' onUnauthorized={onUnauthorized}>
+      <FlaggedApp />
+    </PixieAPIContextProvider>
   );
 };
 ThemedApp.displayName = 'ThemedApp';
@@ -338,7 +302,9 @@ ReactDOM.render(
     <StyledEngineProvider injectFirst>
       <AuthContextProvider>
         <EmbedContextProvider>
-          <ThemedApp />
+          <PixieThemeContextProvider>
+            <ThemedApp />
+          </PixieThemeContextProvider>
         </EmbedContextProvider>
       </AuthContextProvider>
     </StyledEngineProvider>
