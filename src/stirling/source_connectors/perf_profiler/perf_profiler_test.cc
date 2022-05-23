@@ -442,6 +442,31 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
       CheckExpectedCounts(observed_stack_traces_, kNumSubProcesses, elapsed_time, key1x, key2x));
 }
 
+TEST_F(PerfProfileBPFTest, GraalVM_AOT_Test) {
+  const std::string app_path = "graal-vm-aot/app/JavaFib";
+  const std::filesystem::path bazel_app_path = BazelJavaTestAppPath(app_path);
+  ASSERT_TRUE(fs::Exists(bazel_app_path)) << absl::StrFormat("Missing: %s.", bazel_app_path);
+
+  // The target app is written such that key2x uses twice the CPU time as key1x.
+  // For Java, we will match only the leaf symbol because we cannot predict the full stack trace.
+  constexpr std::string_view key2x = "JavaFib_fibs2x_e9d725b56c4649a7fcc1e66d45ab8624143a94c1";
+  constexpr std::string_view key1x = "JavaFib_fibs1x_080f663fe758fb767651ed8dec254a0a7ec4964a";
+
+  // Start target apps & create the connector context using the sub-process upids.
+  sub_processes_ = std::make_unique<CPUPinnedSubProcesses>(bazel_app_path);
+  ASSERT_NO_FATAL_FAILURE(sub_processes_->StartAll());
+  RefreshContext(sub_processes_->upids());
+
+  // Allow target apps to run, and periodically call transfer data on perf profile connector.
+  const std::chrono::duration<double> elapsed_time = RunTest();
+
+  // Pull the data from the perf profile connector into this test case.
+  ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
+
+  ASSERT_NO_FATAL_FAILURE(
+      CheckExpectedCounts(observed_leaf_symbols_, kNumSubProcesses, elapsed_time, key1x, key2x));
+}
+
 TEST_P(PerfProfileBPFTest, PerfProfilerJavaTest) {
   constexpr std::string_view kContainerNamePfx = "java";
   const std::filesystem::path image_tar_path = GetParam();
