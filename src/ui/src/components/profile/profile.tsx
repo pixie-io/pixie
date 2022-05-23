@@ -51,7 +51,7 @@ Avatar.displayName = 'Avatar';
 
 interface ProfileMenuWrapperProps
   extends React.PropsWithChildren<Pick<MenuProps, 'anchorOrigin' | 'open' | 'anchorEl'>> {
-  onCloseMenu: () => void;
+  onCloseMenu: MenuProps['onClose'] & MenuProps['onBlur'];
   name: string;
   email: string;
   domainName: string;

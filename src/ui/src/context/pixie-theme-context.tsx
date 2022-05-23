@@ -26,6 +26,7 @@ import {
   DARK_THEME,
   LIGHT_THEME,
 } from 'app/components/mui-theme';
+import { ThemeSelectionContext } from 'app/components/theme-selector/theme-selector';
 
 export interface PixieThemeContextProps {
   theme: Theme;
@@ -70,8 +71,6 @@ export const PixieThemeContextProvider = React.memo(({ children }) => {
     // Try to parse theme and apply.
     try {
       const parsedTheme = JSON.parse(raw);
-      // Only use the `palette` field from the theme, as we know these
-      // values are safe to apply. Base atop the dark theme.
       const newTheme = createPixieTheme(parsedTheme);
       setParsedCustomTheme(newTheme);
       setTheme(newTheme);
@@ -80,6 +79,15 @@ export const PixieThemeContextProvider = React.memo(({ children }) => {
       console.error('Failed to parse MUI theme');
     }
   }, [prevRaw]);
+
+  // Watch for changes to user preference - if they've told Pixie to match their system preference, we want to
+  // honor that preference right away if it changes.
+  const { theme: userSelectedTheme } = React.useContext(ThemeSelectionContext);
+  React.useEffect(() => {
+    if (!parsedCustomTheme) {
+      setThemeFromName(userSelectedTheme.palette.mode);
+    }
+  }, [userSelectedTheme, setThemeFromName, parsedCustomTheme]);
 
   const ctx = React.useMemo(() => ({
     theme,
