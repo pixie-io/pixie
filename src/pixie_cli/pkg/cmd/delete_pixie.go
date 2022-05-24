@@ -50,7 +50,7 @@ func init() {
 	DeleteCmd.Flags().BoolP("clobber", "d", true, "Whether to delete all dependencies in the cluster")
 	viper.BindPFlag("clobber", DeleteCmd.Flags().Lookup("clobber"))
 
-	DeleteCmd.Flags().StringP("namespace", "n", "", "The namespace where pixie is located")
+	DeleteCmd.Flags().StringP("namespace", "n", "", "The namespace where Pixie is located")
 	viper.BindPFlag("namespace", DeleteCmd.Flags().Lookup("namespace"))
 }
 
