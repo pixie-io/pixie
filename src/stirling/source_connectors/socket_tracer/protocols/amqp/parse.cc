@@ -43,7 +43,7 @@ namespace {
 StatusOr<Message::type> ParseType(BinaryDecoder* decoder) {
   PL_ASSIGN_OR_RETURN(uint8_t type, decoder->ExtractInt<uint8_t>());
 
-  if (!(type >= 1 and type <= 4)) {
+  if (!(type >= 1 && type <= 4)) {
     return error::InvalidArgument(
         "AMQP message type is parsed as $0, but only [1,4] are defined in protocol specification.",
         type);
@@ -67,7 +67,6 @@ StatusOr<uint64_t> ParseLength(BinaryDecoder* decoder) {
 StatusOr<std::string_view> ParsePayload(BinaryDecoder* decoder) {
   // payload parsing
   return std::string_view();
-}
 }
 
 Status ParseMessage(message_type_t type, BinaryDecoder* decoder, Message* msg) {
