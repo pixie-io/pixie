@@ -45,24 +45,7 @@ struct Message : public FrameBase {
   std::string_view message_body;
 
   // Marks end of the frame by hexadecimal value %xCE
-  static constexpr std::string_view kFrameEnd = "CE";
-};
-
-// Represents a pair of request and response messages.
-struct Record {
-  Message req;
-  Message resp;
-
-  std::string ToString() const {
-    return absl::Substitute("req=[$0] resp=[$1]", req.ToString(), resp.ToString());
-  }
-};
-
-// Required by event parser interface.
-struct ProtocolTraits : public BaseProtocolTraits<Record> {
-  using frame_type = Message;
-  using record_type = Record;
-  using state_type = NoState;
+  const char kFrameEnd = 0xCE;
 };
 
 }  // namespace amqp
