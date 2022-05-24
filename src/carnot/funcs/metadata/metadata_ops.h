@@ -23,6 +23,7 @@
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -1615,6 +1616,98 @@ class VizierNameUDF : public ScalarUDF {
         .Example("df.vizier_name = px.vizier_name()")
         .Returns("The name of the cluster according to vizier.");
   }
+};
+
+class CreateUPIDUDF : public udf::ScalarUDF {
+ public:
+  UInt128Value Exec(FunctionContext* ctx, Int64Value pid, Int64Value pid_start_time) {
+    auto md = GetMetadataState(ctx);
+    auto upid = md::UPID(md->asid(), pid.val, pid_start_time.val);
+    return upid.value();
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Convert a pid, start_time pair to a UPID.")
+        .Details("This function creates a UPID from it's underlying components..")
+        .Example("df.val = px.upid(df.pid, df.pid_start_time)")
+        .Arg("arg1", "The pid of the process.")
+        .Arg("arg2", "The start_time of the process.")
+        .Returns("The UPID.");
+  }
+
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::ExplicitRule::Create<CreateUPIDUDF>(types::ST_UPID, {})};
+  }
+};
+
+class CreateUPIDWithASIDUDF : public udf::ScalarUDF {
+ public:
+  UInt128Value Exec(FunctionContext*, Int64Value asid, Int64Value pid, Int64Value pid_start_time) {
+    auto upid = md::UPID(asid.val, pid.val, pid_start_time.val);
+    return upid.value();
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Convert a pid, start_time pair to a UPID.")
+        .Details("This function creates a UPID from it's underlying components.")
+        .Example("df.val = px.upid(px.asid(), df.pid, df.pid_start_time)")
+        .Arg("arg1", "The asid of the pem where the process is located.")
+        .Arg("arg2", "The pid of the process.")
+        .Arg("arg3", "The start_time of the process.")
+        .Returns("The UPID.");
+  }
+
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::ExplicitRule::Create<CreateUPIDWithASIDUDF>(types::ST_UPID, {})};
+  }
+};
+
+class GetClusterCIDRRangeUDF : public udf::ScalarUDF {
+ public:
+  Status Init(FunctionContext* ctx) {
+    auto md = GetMetadataState(ctx);
+    std::set<std::string> cidr_strs;
+
+    auto pod_cidrs = md->k8s_metadata_state().pod_cidrs();
+    for (const auto& cidr : pod_cidrs) {
+      cidr_strs.insert(cidr.ToString());
+
+      if (cidr.ip_addr.family == px::InetAddrFamily::kIPv4) {
+        // Add a CIDR specifically for the CNI bridge, since pod_cidrs don't include that.
+        px::CIDRBlock bridge_cidr;
+        bridge_cidr.ip_addr = cidr.ip_addr;
+        bridge_cidr.prefix_length = 32;
+        auto& ipv4_addr = std::get<struct in_addr>(bridge_cidr.ip_addr.addr);
+        // Replace the lowest byte with 1, since s_addr is in big endian, we replace the first
+        // byte.
+        ipv4_addr.s_addr = (ipv4_addr.s_addr & 0x00ffffff) | 0x01000000;
+
+        cidr_strs.insert(bridge_cidr.ToString());
+      }
+      // TODO(james): add support for IPv6 CNI bridge.
+    }
+    auto service_cidr = md->k8s_metadata_state().service_cidr();
+    if (service_cidr.has_value()) {
+      cidr_strs.insert(service_cidr.value().ToString());
+    }
+    std::vector<std::string> cidr_vec(cidr_strs.begin(), cidr_strs.end());
+    cidrs_str_ = VectorToStringArray(cidr_vec);
+    return Status::OK();
+  }
+
+  StringValue Exec(FunctionContext*) { return cidrs_str_; }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the pod/service CIDRs for the cluster.")
+        .Details(
+            "Get a json-encoded array of pod/service CIDRs for the cluster in 'ip/prefix_length' "
+            "format. Including CIDRs that include the CNI bridge for pods.")
+        .Example("df.cidrs = px.get_cidrs()")
+        .Returns("The pod and/or service CIDRs for this cluster, encoded as a json array.");
+  }
+
+ private:
+  std::string cidrs_str_;
 };
 
 void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry);

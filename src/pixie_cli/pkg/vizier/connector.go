@@ -323,12 +323,17 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.Exec
 		return nil, err
 	}
 
+	scriptName := ""
+	if !script.IsLocal {
+		scriptName = script.ScriptName
+	}
 	reqPB := &vizierpb.ExecuteScriptRequest{
 		QueryStr:          scriptStr,
 		ClusterID:         c.id.String(),
 		ExecFuncs:         execFuncs,
 		Mutation:          containsMutation(script),
 		EncryptionOptions: encOpts,
+		QueryName:         scriptName,
 	}
 
 	getAuthCtx := func(ctx context.Context) context.Context {

@@ -410,8 +410,8 @@ message GetClusterInfoResponse { repeated ClusterInfo clusters = 1; }
 message GetClusterConnectionInfoRequest { px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ]; }
 
 message GetClusterConnectionInfoResponse {
-  string ipAddress = 1 [ (gogoproto.customname) = "IPAddress" ];
   string token = 2;
+  reserved 1;
 }
 
 message UpdateClusterVizierConfigRequest {
@@ -999,6 +999,8 @@ message UpdateRetentionPluginConfigRequest {
   // The custom export URL that should be applied to all plugin scripts.
   google.protobuf.StringValue custom_export_url = 5;
   google.protobuf.BoolValue insecure_tls = 6 [(gogoproto.customname) = "InsecureTLS"];
+  // If enabling the plugin, whether to enable all preset scripts.
+  google.protobuf.BoolValue disable_presets = 7;
 }
 
 // UpdateRetentionPluginConfigResponse is the response to a UpdateRetentionPluginConfigRequest.
@@ -1040,6 +1042,7 @@ message GetRetentionPluginInfoResponse {
   map<string, string> configs = 1;
   bool allow_custom_export_url = 2 [(gogoproto.customname) = "AllowCustomExportURL"];
   bool allow_insecure_tls = 3 [(gogoproto.customname) = "AllowInsecureTLS"];
+  string default_export_url = 4 [(gogoproto.customname) = "DefaultExportURL"];
 }
 
 // GetRetentionScriptsRequest gets all retention scripts belonging to the org.

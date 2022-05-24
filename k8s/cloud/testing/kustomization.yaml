@@ -30,6 +30,7 @@ patchesStrategicMerge:
 - analytics_config.yaml
 - contact_config.yaml
 - db_config.yaml
+- indexer_config.yaml
 - service_config.yaml
 - domain_config.yaml
 - cloud_ingress_ip.yaml

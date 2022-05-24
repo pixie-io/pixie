@@ -22,7 +22,7 @@ import {
   Add as AddIcon,
   Delete as DeleteIcon,
   Extension as ExtensionIcon,
-  Settings as SettingsIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import {
   Box,
@@ -44,8 +44,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { styled, Theme } from '@mui/material/styles';
-import { createStyles, makeStyles } from '@mui/styles';
+import { styled } from '@mui/material/styles';
 import { distanceInWordsStrict } from 'date-fns';
 import { Link, useRouteMatch } from 'react-router-dom';
 
@@ -154,7 +153,7 @@ const RetentionScriptRow = React.memo<{ script: GQLRetentionScript }>(({ script 
     <TableRow key={id}>
       <TableCell>
         <Tooltip title={description}>
-          <span>{name}</span>
+          <Link to={`${path}/update/${script.id}`}>{name}</Link>
         </Tooltip>
       </TableCell>
       <TableCell>
@@ -193,7 +192,7 @@ const RetentionScriptRow = React.memo<{ script: GQLRetentionScript }>(({ script 
             component={Link}
             to={`${path}/update/${script.id}`}
           >
-            <SettingsIcon />
+            <EditIcon />
           </IconButton>
         </Tooltip>
         {!script.isPreset && (
@@ -277,21 +276,7 @@ const RetentionScriptTable = React.memo<{
 });
 RetentionScriptTable.displayName = 'RetentionScriptTable';
 
-const useStyles = makeStyles(({ palette }: Theme) => createStyles({
-  link: {
-    textDecoration: 'none',
-    '&, &:visited': {
-      color: palette.primary.main,
-    },
-    '&:hover': {
-      textDecoration: 'underline',
-    },
-  },
-}), { name: 'DataExport' });
-
 export const ConfigureDataExportBody = React.memo(() => {
-  const classes = useStyles();
-
   const { loading: loadingScripts, scripts } = useRetentionScripts();
   const { loading: loadingPlugins, plugins } = useRetentionPlugins();
 
@@ -311,13 +296,16 @@ export const ConfigureDataExportBody = React.memo(() => {
     <Box m={2} mt={4} mb={4}>
       <Typography variant='h1' ml={2} mb={2}>Data Retention Scripts</Typography>
       <Typography variant='body1' ml={2} mb={2}>
-        {'These scripts are provided by your '}
-        <Link to='/admin/plugins' className={classes.link}>
-          enabled plugins
-        </Link>.
-        They&apos;re enabled by default.<br/>
-        Their PxL script can&apos;t be changed, but other options can.<br/>
-        Custom scripts can be created at the bottom of this page.
+        {'These preset scripts are provided by your '}
+        <Link to='/admin/plugins'>enabled plugins</Link>. <br /><br />
+        {'You cannot edit the preset scripts, but you can change their arguments and which clusters they run on.'}<br />
+        {'Write custom scripts by clicking Create Script at the bottom of the page. '}
+        {'Learn more about by visiting the '}
+        <a href='https://docs.px.dev/tutorials/integrations/otel/#setup-the-plugin' target='_blank' rel='noreferrer'>
+          plugin tutorial
+        </a> and <a href='https://docs.px.dev/reference/plugins/plugin-system/' target='_blank' rel='noreferrer'>
+          Pixie Plugin reference docs
+        </a>.
       </Typography>
       <Divider variant='middle' sx={{ mt: 4, mb: 4 }} />
       {enabledPlugins.map(({ id, name, description }, i) => (

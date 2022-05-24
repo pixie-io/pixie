@@ -61,6 +61,7 @@ func init() {
 	pflag.String("elastic_tls_key", "/elastic-certs/tls.key", "TLS Key for elastic cluster")
 	pflag.String("elastic_username", "elastic", "Username for access to elastic cluster")
 	pflag.String("elastic_password", "", "Password for access to elastic")
+	pflag.String("md_index_name", "", "The elastic index name for metadata.")
 	pflag.String("allowed_origins", "", "The allowed origins for CORS")
 
 	pflag.String("auth_connector_name", "", "If any, the name of the auth connector to be used with Pixie")
@@ -222,7 +223,11 @@ func main() {
 	sms := &controllers.ScriptMgrServer{ScriptMgr: sm}
 	cloudpb.RegisterScriptMgrServer(s.GRPCServer(), sms)
 
-	esSuggester, err := autocomplete.NewElasticSuggester(es, "scripts", pc)
+	mdIndexName := viper.GetString("md_index_name")
+	if mdIndexName == "" {
+		log.Fatal("Must specify a name for the elastic index.")
+	}
+	esSuggester, err := autocomplete.NewElasticSuggester(es, mdIndexName, "scripts", pc)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to start elastic suggester")
 	}

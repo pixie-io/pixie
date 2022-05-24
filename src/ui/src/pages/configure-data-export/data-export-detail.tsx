@@ -45,7 +45,6 @@ import { AutoSizerContext, withAutoSizerContext } from 'app/utils/autosizer';
 import {
   ClusterInfoForRetentionScripts,
   DEFAULT_RETENTION_PXL,
-  PartialPlugin,
   useClustersForRetentionScripts,
   useCreateRetentionScript,
   useMutateRetentionScript,
@@ -170,17 +169,12 @@ function useCreateOrUpdateScript(scriptId: string, isCreate: boolean) {
   ), [scriptId, isCreate, create, update]);
 }
 
-function useAllowCustomExportURL(plugin: PartialPlugin | null) {
-  const { loading, schema } = usePluginConfig(plugin ?? { id: '', latestVersion: '' });
-  return !loading && schema?.allowCustomExportURL === true;
-}
-
 export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boolean }>(({ scriptId, isCreate }) => {
   const classes = useStyles();
   const showSnackbar = useSnackbar();
 
   const history = useHistory();
-  const backToTop = React.useCallback(() => {
+  const navBackToAllScripts = React.useCallback(() => {
     history.push('/configure-data-export');
   }, [history]);
 
@@ -208,9 +202,11 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
     exportPath: '',
   });
 
-  const allowCustomExportURL = useAllowCustomExportURL(
-    enabledPlugins.find(p => p.id === pendingValues.pluginID),
+  const { schema, values } = usePluginConfig(
+    enabledPlugins.find(p => p.id === pendingValues.pluginID) ?? { id: '', enabledVersion: '', latestVersion: '' },
   );
+  const allowCustomExportURL = schema?.allowCustomExportURL === true;
+  const defaultExportURL = values?.customExportURL || schema?.defaultExportURL || '';
 
   const setPendingField = React.useCallback(<K extends keyof RetentionScriptForm>(
     field: K,
@@ -265,23 +261,31 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
     createOrUpdate(newScript)
       .then((res: string | boolean) => {
         setSaving(false);
-        let message = '';
-        if (typeof res === 'boolean') {
-          message = res ? 'Retention script saved successfully.' : 'Failed to save retention script, unknown reason.';
-        } else {
-          message = 'Script created!';
+        if (typeof res !== 'boolean') {
+          showSnackbar({
+            message: 'Script created!',
+          });
+          navBackToAllScripts();
+          return;
         }
+
+        if (!res) {
+          showSnackbar({
+            message: 'Failed to save retention script, unknown reason.',
+          });
+          return;
+        }
+
         showSnackbar({
-          message,
-          actionTitle: 'Back to Scripts',
-          action: backToTop,
+          message: 'Retention script saved successfully.',
         });
+        navBackToAllScripts();
       })
       .catch(() => setSaving(false));
   }, [
     pendingValues.name, pendingValues.description, pendingValues.clusters, pendingValues.contents,
     pendingValues.frequencyS, pendingValues.pluginID, pendingValues.exportPath,
-    enabledPlugins, saving, createOrUpdate, validClusters, script?.enabled, showSnackbar, backToTop,
+    enabledPlugins, saving, createOrUpdate, validClusters, script?.enabled, showSnackbar, navBackToAllScripts,
   ]);
 
   const labelProps = React.useMemo(() => ({ shrink: true }), []);
@@ -390,9 +394,9 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
             disabled={!allowCustomExportURL}
             sx={{ width: '25ch' }}
             variant='standard'
-            label='Export Path'
+            label='Export URL'
             placeholder={allowCustomExportURL
-              ? 'Optional. Plugin-dependent.'
+              ? (defaultExportURL || 'Optional. Plugin-dependent.')
               : 'Not available with this plugin.'
             }
             value={pendingValues.exportPath}
@@ -402,7 +406,7 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
         </Stack>
       </Paper>
       <Box width={1} textAlign='right'>
-        <Button variant='outlined' type='button' color='primary' onClick={backToTop} sx={{ mr: 1 }}>
+        <Button variant='outlined' type='button' color='primary' onClick={navBackToAllScripts} sx={{ mr: 1 }}>
           Cancel
         </Button>
         <Button variant='contained' type='submit' disabled={saving || !valid} color={valid ? 'primary' : 'error'}>

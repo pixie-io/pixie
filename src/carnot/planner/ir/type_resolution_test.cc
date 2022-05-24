@@ -364,6 +364,23 @@ TEST_F(TypeResolutionTest, func_ir_init_args) {
   EXPECT_EQ(*expected_type, *func_type);
 }
 
+TEST_F(TypeResolutionTest, join_ir_wrong_types) {
+  auto mem_src1 = MakeMemSource("cpu", {"cpu0", "upid"});
+  auto mem_src2 = MakeMemSource("cpu", {"cpu0", "upid"});
+  auto rel = compiler_state_->relation_map()->at("cpu");
+  auto join_ir =
+      MakeJoin({mem_src1, mem_src2}, "inner", rel, rel, {"cpu0"}, {"upid"}, {"_x", "_y"});
+
+  ASSERT_OK(ResolveOperatorType(mem_src1, compiler_state_.get()));
+  ASSERT_OK(ResolveOperatorType(mem_src2, compiler_state_.get()));
+  ASSERT_TRUE(mem_src1->is_type_resolved());
+  ASSERT_TRUE(mem_src2->is_type_resolved());
+
+  EXPECT_COMPILER_ERROR(
+      ResolveOperatorType(join_ir, compiler_state_.get()),
+      R"(join columns specified in `left_on` and `right_on` must have the same datatype.*["cpu0" (FLOAT64) vs "upid" (UINT128)])");
+}
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace px

@@ -30,6 +30,7 @@ namespace stirling {
 struct SocketTracerMetrics {
   SocketTracerMetrics(prometheus::Registry* registry, traffic_protocol_t protocol);
   prometheus::Counter& data_loss_bytes;
+  prometheus::Counter& conn_stats_bytes;
 
   static SocketTracerMetrics& GetProtocolMetrics(traffic_protocol_t protocol);
 

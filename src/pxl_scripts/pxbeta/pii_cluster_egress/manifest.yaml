@@ -1,0 +1,4 @@
+---
+short: Traffic containing PII leaving the cluster
+long: >
+  This view displays a summary of traffic containing PII from the cluster to external endpoints.

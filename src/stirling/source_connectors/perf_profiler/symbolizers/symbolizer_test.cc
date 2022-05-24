@@ -48,6 +48,7 @@ namespace px {
 namespace stirling {
 
 using ::px::stirling::profiler::testing::GetAgentLibsFlagValueForTesting;
+using ::px::stirling::profiler::testing::GetPxJattachFlagValueForTesting;
 using ::px::testing::BazelBinTestFilePath;
 
 template <typename TSymbolizer>
@@ -89,7 +90,9 @@ TEST_F(BCCSymbolizerTest, KernelSymbols) {
 
 TEST_F(BCCSymbolizerTest, JavaSymbols) {
   PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, GetPxJattachFlagValueForTesting());
   PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
+  PL_SET_FOR_SCOPE(FLAGS_number_attach_attempts_per_iteration, 10000);
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<Symbolizer> symbolizer,
                        JavaSymbolizer::Create(std::move(symbolizer_)));
 
@@ -102,6 +105,7 @@ TEST_F(BCCSymbolizerTest, JavaSymbols) {
   const uint64_t start_time_ns = 0;
   const struct upid_t child_upid = {{child_pid}, start_time_ns};
 
+  symbolizer->IterationPreTick();
   symbolizer->GetSymbolizerFn(child_upid);
   std::this_thread::sleep_for(std::chrono::milliseconds{100});
 
@@ -142,19 +146,25 @@ TEST_F(BCCSymbolizerTest, JavaSymbols) {
 // Expect that Java symbolization agents will not be injected after disabling.
 TEST_F(BCCSymbolizerTest, DisableJavaSymbols) {
   PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, GetPxJattachFlagValueForTesting());
   PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
+  PL_SET_FOR_SCOPE(FLAGS_number_attach_attempts_per_iteration, 10000);
+
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<Symbolizer> symbolizer,
                        JavaSymbolizer::Create(std::move(symbolizer_)));
 
   const std::filesystem::path java_app_path =
       BazelBinTestFilePath("src/stirling/source_connectors/perf_profiler/testing/java/fib");
   ASSERT_TRUE(fs::Exists(java_app_path)) << java_app_path.string();
+  ASSERT_TRUE(fs::Exists(FLAGS_stirling_profiler_px_jattach_path))
+      << FLAGS_stirling_profiler_px_jattach_path;
   SubProcess java_proc_0;
   ASSERT_OK(java_proc_0.Start({java_app_path}));
   constexpr uint64_t start_time_ns = 0;
   const uint32_t child_pid_0 = java_proc_0.child_pid();
   const struct upid_t child_upid_0 = {{child_pid_0}, start_time_ns};
 
+  symbolizer->IterationPreTick();
   symbolizer->GetSymbolizerFn(child_upid_0);
   std::this_thread::sleep_for(std::chrono::milliseconds{500});
 
@@ -326,7 +336,9 @@ TEST_F(BCCSymbolizerTest, Caching) {
 // Expect that upids for Java processes (that we attempt to symbolize) are inserted to global set.
 TEST_F(BCCSymbolizerTest, JavaProcessBeingTracked) {
   PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, GetPxJattachFlagValueForTesting());
   PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
+  PL_SET_FOR_SCOPE(FLAGS_number_attach_attempts_per_iteration, 10000);
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<Symbolizer> symbolizer,
                        JavaSymbolizer::Create(std::move(symbolizer_)));
 
@@ -341,6 +353,7 @@ TEST_F(BCCSymbolizerTest, JavaProcessBeingTracked) {
   ASSERT_OK_AND_ASSIGN(const uint64_t start_time_ns, parser.GetPIDStartTimeTicks(child_pid));
 
   const struct upid_t child_upid = {{child_pid}, start_time_ns};
+  symbolizer->IterationPreTick();
   symbolizer->GetSymbolizerFn(child_upid);
   EXPECT_TRUE(JavaProfilingProcTracker::GetSingleton()->upids().contains(child_upid));
 }

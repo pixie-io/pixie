@@ -34,6 +34,9 @@ OperatorIR* FilterPushdownRule::HandleMapPushdown(MapIR* map,
     reverse_column_name_mapping[cur_name] = old_name;
   }
 
+  // Don't actually update column_name_mapping until we know that this map is getting pushed down.
+  ColumnNameMapping column_name_updates;
+
   for (const auto& col_expr : map->col_exprs()) {
     // Ignore columns that aren't relevant to the particular filter func.
     if (!reverse_column_name_mapping.contains(col_expr.name)) {
@@ -51,11 +54,14 @@ OperatorIR* FilterPushdownRule::HandleMapPushdown(MapIR* map,
     ColumnIR* column = static_cast<ColumnIR*>(col_expr.node);
     if (col_expr.name != column->col_name()) {
       auto eventual_col_name = reverse_column_name_mapping.at(col_expr.name);
-      (*column_name_mapping)[eventual_col_name] = column->col_name();
+      column_name_updates.insert({eventual_col_name, column->col_name()});
     }
   }
   // If we didn't run into any of the above conditions, then we are save to move the
-  // filter up above the current map.
+  // filter up above the current map. And we can update the column name mapping safely.
+  for (const auto& [k, v] : column_name_updates) {
+    (*column_name_mapping)[k] = v;
+  }
   return map;
 }
 

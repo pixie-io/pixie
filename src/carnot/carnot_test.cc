@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include <map>
+#include <memory>
 #include <tuple>
 #include <unordered_map>
 #include <vector>
@@ -27,9 +28,13 @@
 #include <pypa/parser/parser.hh>
 
 #include "src/carnot/carnot.h"
+#include "src/carnot/carnotpb/carnot.pb.h"
+#include "src/carnot/exec/grpc_router.h"
 #include "src/carnot/exec/local_grpc_result_server.h"
 #include "src/carnot/exec/test_utils.h"
+#include "src/carnot/funcs/funcs.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
+#include "src/common/base/statuspb/status.pb.h"
 #include "src/common/testing/testing.h"
 #include "src/table_store/table_store.h"
 
@@ -46,9 +51,22 @@ class CarnotTest : public ::testing::Test {
     Test::SetUp();
     table_store_ = std::make_shared<table_store::TableStore>();
     result_server_ = std::make_unique<exec::LocalGRPCResultSinkServer>();
-    carnot_ = Carnot::Create(sole::uuid4(), table_store_,
-                             std::bind(&exec::LocalGRPCResultSinkServer::StubGenerator,
-                                       result_server_.get(), std::placeholders::_1))
+
+    auto func_registry = std::make_unique<px::carnot::udf::Registry>("default_registry");
+    funcs::RegisterFuncsOrDie(func_registry.get());
+    auto clients_config = std::make_unique<Carnot::ClientsConfig>(Carnot::ClientsConfig{
+        [this](const std::string& address, const std::string&) {
+          return result_server_.get()->StubGenerator(address);
+        },
+        [](grpc::ClientContext*) {},
+    });
+    auto server_config = std::make_unique<Carnot::ServerConfig>();
+    server_config->grpc_server_creds = grpc::InsecureServerCredentials();
+    server_config->grpc_server_port = 0;
+    router_ = &server_config->grpc_router;
+
+    carnot_ = px::carnot::Carnot::Create(sole::uuid4(), std::move(func_registry), table_store_,
+                                         std::move(clients_config), std::move(server_config))
                   .ConsumeValueOrDie();
     auto table = CarnotTestUtils::TestTable();
     table_store_->AddTable("test_table", table);
@@ -66,6 +84,7 @@ class CarnotTest : public ::testing::Test {
     table_store_->AddTable("http_events", http_events_table_);
   }
 
+  exec::GRPCRouter* router_;
   std::shared_ptr<table_store::TableStore> table_store_;
   std::shared_ptr<table_store::Table> big_table_;
   std::shared_ptr<table_store::Table> empty_table_;
@@ -81,13 +100,11 @@ TEST_F(CarnotTest, basic) {
   std::vector<types::Int64Value> col2_in1 = {1, 2, 3};
   std::vector<types::Int64Value> col2_in2 = {5, 6};
 
-  auto query = absl::StrJoin(
-      {
-          "import px",
-          "df = px.DataFrame(table='test_table', select=['col1','col2'])",
-          "px.display(df, 'test_output')",
-      },
-      "\n");
+  auto query = R"pxl(
+import px
+df = px.DataFrame(table='test_table', select=['col1', 'col2'])
+px.display(df, 'test_output')
+)pxl";
   // No time column, doesn't use a time parameter.
   auto query_id = sole::uuid4();
   auto s = carnot_->ExecuteQuery(query, query_id, 0);
@@ -101,13 +118,14 @@ TEST_F(CarnotTest, basic) {
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
   auto output_batches = result_server_->query_results("test_output");
-  EXPECT_EQ(2, output_batches.size());
+  EXPECT_EQ(3, output_batches.size());
+  EXPECT_EQ(output_batches[0].num_rows(), 0);
 
-  auto rb1 = output_batches[0];
+  auto rb1 = output_batches[1];
   EXPECT_TRUE(rb1.ColumnAt(0)->Equals(types::ToArrow(col1_in1, arrow::default_memory_pool())));
   EXPECT_TRUE(rb1.ColumnAt(1)->Equals(types::ToArrow(col2_in1, arrow::default_memory_pool())));
 
-  auto rb2 = output_batches[1];
+  auto rb2 = output_batches[2];
   EXPECT_TRUE(rb2.ColumnAt(0)->Equals(types::ToArrow(col1_in2, arrow::default_memory_pool())));
   EXPECT_TRUE(rb2.ColumnAt(1)->Equals(types::ToArrow(col2_in2, arrow::default_memory_pool())));
 }
@@ -120,37 +138,32 @@ TEST_F(CarnotTest, register_metadata) {
         return nullptr;
       });
 
-  auto query = absl::StrJoin(
-      {
-          "import px",
-          "df = px.DataFrame(table='test_table', select=['col1', 'col2'])",
-          "px.display(df, 'test_output')",
-      },
-      "\n");
+  auto query = R"pxl(
+import px
+df = px.DataFrame(table='test_table', select=['col1', 'col2'])
+px.display(df, 'test_output')
+)pxl";
   ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
   // Check that the function was registered correctly and that it is called once during query
   // execution.
   EXPECT_EQ(1, callback_calls);
 }
 
-TEST_F(CarnotTest, literal_only) {
-  auto query = absl::StrJoin(
-      {
-          "import px",
-          "df = px.DataFrame(table='test_table')",
-          "df = df.agg(count=('col1', px.mean))",
-          "df.col2 = 1",
-          "px.display(df[['col2']])",
-      },
-      "\n");
+TEST_F(CarnotTest, assign_literal_to_column) {
+  auto query = R"pxl(
+import px
+df = px.DataFrame(table='test_table')
+df = df.agg(count=('col1', px.mean))
+df.col2 = 1
+px.display(df[['col2']]))pxl";
   ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("output"));
   auto output_batches = result_server_->query_results("output");
-  EXPECT_EQ(1, output_batches.size());
+  EXPECT_EQ(2, output_batches.size());
 
   std::vector<types::Int64Value> expected1 = {1};
-  EXPECT_TRUE(output_batches[0].ColumnAt(0)->Equals(
+  EXPECT_TRUE(output_batches[1].ColumnAt(0)->Equals(
       types::ToArrow(expected1, arrow::default_memory_pool())));
 }
 
@@ -158,11 +171,12 @@ TEST_F(CarnotTest, map_test) {
   std::vector<types::Float64Value> col1_in1 = {1.5, 3.2, 8.3};
   std::vector<types::Float64Value> col1_in2 = {5.1, 11.1};
 
-  auto query = absl::StrJoin(
-      {"import px", "queryDF = px.DataFrame(table='test_table', select=['col1', 'col2'])",
-       "queryDF.res = px.add(queryDF.col1, queryDF['col2'])", "df = queryDF[['res']]",
-       "px.display(df, 'test_output')"},
-      "\n");
+  auto query = R"pxl(
+import px
+queryDF = px.DataFrame(table='test_table', select=['col1', 'col2'])
+queryDF.res = px.add(queryDF.col1, queryDF['col2'])
+df = queryDF[['res']]
+px.display(df, 'test_output'))pxl";
 
   // No time column, doesn't use a time parameter.
   auto uuid = sole::uuid4();
@@ -171,183 +185,28 @@ TEST_F(CarnotTest, map_test) {
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
   auto output_batches = result_server_->query_results("test_output");
-  EXPECT_EQ(2, output_batches.size());
+  EXPECT_EQ(3, output_batches.size());
 
-  EXPECT_TRUE(output_batches[0].ColumnAt(0)->Equals(
-      types::ToArrow(col1_in1, arrow::default_memory_pool())));
   EXPECT_TRUE(output_batches[1].ColumnAt(0)->Equals(
-      types::ToArrow(col1_in2, arrow::default_memory_pool())));
-}
-
-TEST_F(CarnotTest, subscript_map_test) {
-  std::vector<types::Float64Value> col1_in1 = {1.5, 3.2, 8.3};
-  std::vector<types::Float64Value> col1_in2 = {5.1, 11.1};
-
-  auto query = absl::StrJoin(
-      {"import px", "queryDF = px.DataFrame(table='test_table', select=['col1', 'col2'])",
-       "queryDF['res'] = queryDF.col1 + queryDF.col2", "px.display(queryDF, 'test_output')"},
-      "\n");
-
-  auto uuid = sole::uuid4();
-  auto s = carnot_->ExecuteQuery(query, uuid, 0);
-  ASSERT_OK(s);
-
-  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
-  auto output_batches = result_server_->query_results("test_output");
-  EXPECT_EQ(2, output_batches.size());
-  EXPECT_EQ(3, output_batches[0].num_columns());
-
-  EXPECT_TRUE(output_batches[0].ColumnAt(2)->Equals(
       types::ToArrow(col1_in1, arrow::default_memory_pool())));
-  EXPECT_TRUE(output_batches[1].ColumnAt(2)->Equals(
+  EXPECT_TRUE(output_batches[2].ColumnAt(0)->Equals(
       types::ToArrow(col1_in2, arrow::default_memory_pool())));
-}
-
-// Selecting 0 columns should still execute correctly.
-TEST_F(CarnotTest, no_columns) {
-  auto no_columns_name =
-      "import px\ndf = px.DataFrame(table='test_table', select=[])\npx.display(df, 'test_output')";
-  // No time column, doesn't use a time parameter.
-  auto query_uuid = sole::uuid4();
-  EXPECT_OK(carnot_->ExecuteQuery(no_columns_name, query_uuid, 0));
-}
-
-TEST_F(CarnotTest, map_op_udf_add) {
-  auto add_query = absl::StrJoin(
-      {"import px", "queryDF = px.DataFrame(table='test_table', select=['col1', 'col2'])",
-       "queryDF.sum = queryDF.col1 + queryDF.col2", "df = queryDF[['sum']]",
-       "px.display(df, 'test_output')"},
-      "\n");
-  auto query_uuid = sole::uuid4();
-  EXPECT_OK(carnot_->ExecuteQuery(add_query, query_uuid, 0));
-}
-
-TEST_F(CarnotTest, map_op_udf_mult) {
-  auto mult_query = absl::StrJoin(
-      {"import px", "queryDF = px.DataFrame(table='test_table', select=['col1', 'col2'])",
-       "queryDF['mult'] = queryDF['col1'] * queryDF['col2']", "df = queryDF[['mult']]",
-       "px.display(df, 'test_output')"},
-      "\n");
-  // No time column, doesn't use a time parameter.
-  auto query_uuid = sole::uuid4();
-  EXPECT_OK(carnot_->ExecuteQuery(mult_query, query_uuid, 0));
-}
-
-TEST_F(CarnotTest, map_op_udf_sub) {
-  auto sub_query = absl::StrJoin(
-      {"import px", "queryDF = px.DataFrame(table='test_table', select=['col1', 'col2'])",
-       "queryDF['sub'] = queryDF['col1'] - queryDF['col2']", "df = queryDF[['sub']]",
-       "px.display(df, 'test_output')"},
-      "\n");
-  // No time column, doesn't use a time parameter.
-  auto query_uuid = sole::uuid4();
-  EXPECT_OK(carnot_->ExecuteQuery(sub_query, query_uuid, 0));
-}
-
-TEST_F(CarnotTest, map_op_udf_div) {
-  auto div_query = absl::StrJoin(
-      {"import px", "queryDF = px.DataFrame(table='test_table', select=['col1', 'col2'])",
-       "queryDF['div'] = queryDF['col1'] / queryDF['col2']", "df = queryDF[['div']]",
-       "px.display(df, 'test_output')"},
-      "\n");
-  // No time column, doesn't use a time parameter.
-  auto query_uuid = sole::uuid4();
-  EXPECT_OK(carnot_->ExecuteQuery(div_query, query_uuid, 0));
-}
-
-TEST_F(CarnotTest, order_test) {
-  auto query = absl::StrJoin(
-      {"import px",
-       "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2', 'col3'])",
-       "queryDF['res'] = px.add(queryDF['col3'], queryDF['col2'])", "queryDF['a'] = 1",
-       "queryDF['b'] = 2", "df = queryDF[['res', 'a', 'b']]", "px.display(df, 'test_output')"},
-      "\n");
-  // Time Column unused, doesn't matter what value is.
-  auto uuid = sole::uuid4();
-  auto s = carnot_->ExecuteQuery(query, uuid, 0);
-  ASSERT_OK(s);
-
-  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
-  auto output_batches = result_server_->query_results("test_output");
-  EXPECT_EQ(3, output_batches.size());
-  EXPECT_EQ(3, output_batches[0].num_columns());
-
-  std::vector<types::Float64Value> col0_out1 = {6.5, 3.2, 17.3};
-  std::vector<types::Float64Value> col0_out2 = {5.1, 65.1};
-  std::vector<types::Float64Value> col1_out3 = {61.2, 12.1, 20.3};
-  std::vector<types::Int64Value> col1_out1 = {1, 1, 1};
-  std::vector<types::Int64Value> col2_out1 = {2, 2, 2};
-
-  auto rb1 = output_batches[0];
-  EXPECT_TRUE(rb1.ColumnAt(0)->Equals(types::ToArrow(col0_out1, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1.ColumnAt(1)->Equals(types::ToArrow(col1_out1, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1.ColumnAt(2)->Equals(types::ToArrow(col2_out1, arrow::default_memory_pool())));
-
-  auto rb2 = output_batches[1];
-  EXPECT_TRUE(rb2.ColumnAt(0)->Equals(types::ToArrow(col0_out2, arrow::default_memory_pool())));
-
-  auto rb3 = output_batches[2];
-  EXPECT_TRUE(rb3.ColumnAt(0)->Equals(types::ToArrow(col1_out3, arrow::default_memory_pool())));
-}
-
-TEST_F(CarnotTest, reused_expr) {
-  auto query = absl::StrJoin(
-      {"import px",
-       "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2', 'col3'])",
-       "queryDF['res'] = px.add(queryDF['col3'], queryDF['col2'])", "a = 1 + 1",
-       "queryDF['a'] = a - 1", "queryDF['b'] = a + 0", "df = queryDF[['res', 'a', 'b']]",
-       "px.display(df, 'test_output')"},
-      "\n");
-  // Time Column unused, doesn't matter what value is.
-  auto uuid = sole::uuid4();
-  auto s = carnot_->ExecuteQuery(query, uuid, 0);
-  ASSERT_OK(s);
-
-  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
-  auto output_batches = result_server_->query_results("test_output");
-  EXPECT_EQ(3, output_batches.size());
-  EXPECT_EQ(3, output_batches[0].num_columns());
-
-  std::vector<types::Float64Value> col0_out1 = {6.5, 3.2, 17.3};
-  std::vector<types::Float64Value> col0_out2 = {5.1, 65.1};
-  std::vector<types::Float64Value> col1_out3 = {61.2, 12.1, 20.3};
-  std::vector<types::Int64Value> col1_out1 = {1, 1, 1};
-  std::vector<types::Int64Value> col2_out1 = {2, 2, 2};
-
-  auto rb1 = output_batches[0];
-
-  EXPECT_TRUE(rb1.ColumnAt(0)->Equals(types::ToArrow(col0_out1, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1.ColumnAt(1)->Equals(types::ToArrow(col1_out1, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1.ColumnAt(2)->Equals(types::ToArrow(col2_out1, arrow::default_memory_pool())));
-
-  auto rb2 = output_batches[1];
-  EXPECT_TRUE(rb2.ColumnAt(0)->Equals(types::ToArrow(col0_out2, arrow::default_memory_pool())));
-
-  auto rb3 = output_batches[2];
-  EXPECT_TRUE(rb3.ColumnAt(0)->Equals(types::ToArrow(col1_out3, arrow::default_memory_pool())));
 }
 
 TEST_F(CarnotTest, range_test_multiple_rbs) {
-  int64_t start_time = 2;
-  int64_t stop_time = 12;
-  auto query = absl::StrJoin(
-      {
-          "import px",
-          "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2', "
-          "'col3'], start_time=$0, end_time=$1)",
-          "px.display(queryDF, 'range_output')",
-      },
-      "\n");
-  query = absl::Substitute(query, start_time, stop_time);
+  auto query = R"pxl(
+import px
+df = px.DataFrame(table='big_test_table', select=['time_','col2', 'col3'], start_time=2, end_time=12)
+px.display(df, 'range_output'))pxl";
   // now() not called, doesn't matter what now is.
   ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("range_output"));
   auto output_batches = result_server_->query_results("range_output");
-  EXPECT_EQ(3, output_batches.size());
+  EXPECT_EQ(4, output_batches.size());
   EXPECT_EQ(3, output_batches[0].num_columns());
 
-  auto rb1 = output_batches[0];
+  auto rb1 = output_batches[1];
 
   std::vector<types::Time64NSValue> col0_out1;
   std::vector<types::Float64Value> col1_out1;
@@ -355,7 +214,7 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
   table_store::Table::Cursor cursor(big_table_.get());
   auto batch = cursor.GetNextRowBatch({0}).ConsumeValueOrDie();
   for (int64_t i = 0; i < batch->ColumnAt(0)->length(); i++) {
-    if (CarnotTestUtils::big_test_col1[i].val >= 2 && CarnotTestUtils::big_test_col1[i].val < 6) {
+    if (CarnotTestUtils::big_test_col1[i].val >= 2 && CarnotTestUtils::big_test_col1[i].val < 12) {
       col0_out1.emplace_back(CarnotTestUtils::big_test_col1[i].val);
       col1_out1.emplace_back(CarnotTestUtils::big_test_col2[i].val);
       col2_out1.emplace_back(CarnotTestUtils::big_test_col3[i].val);
@@ -366,7 +225,7 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
   EXPECT_TRUE(rb1.ColumnAt(1)->Equals(types::ToArrow(col1_out1, arrow::default_memory_pool())));
   EXPECT_TRUE(rb1.ColumnAt(2)->Equals(types::ToArrow(col2_out1, arrow::default_memory_pool())));
 
-  auto rb2 = output_batches[1];
+  auto rb2 = output_batches[2];
 
   std::vector<types::Time64NSValue> col0_out2;
   std::vector<types::Float64Value> col1_out2;
@@ -374,8 +233,7 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
   auto next_batch = cursor.GetNextRowBatch({0}).ConsumeValueOrDie();
   for (int64_t i = batch->ColumnAt(0)->length();
        i < batch->ColumnAt(0)->length() + next_batch->ColumnAt(0)->length(); i++) {
-    if (CarnotTestUtils::big_test_col1[i].val >= start_time &&
-        CarnotTestUtils::big_test_col1[i].val < stop_time) {
+    if (CarnotTestUtils::big_test_col1[i].val >= 2 && CarnotTestUtils::big_test_col1[i].val < 12) {
       col0_out2.emplace_back(CarnotTestUtils::big_test_col1[i].val);
       col1_out2.emplace_back(CarnotTestUtils::big_test_col2[i].val);
       col2_out2.emplace_back(CarnotTestUtils::big_test_col3[i].val);
@@ -388,14 +246,11 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
 }
 
 TEST_F(CarnotTest, range_test_single_rb) {
-  auto query = absl::StrJoin(
-      {
-          "import px",
-          "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2', "
-          "'col3'], start_time=$0, end_time=$1)",
-          "px.display(queryDF, 'range_output')",
-      },
-      "\n");
+  std::string query = R"pxl(
+import px
+queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2',
+'col3'], start_time=$0, end_time=$1)
+px.display(queryDF, 'range_output'))pxl";
   int64_t start_time = 9;
   int64_t stop_time = 12;
   query = absl::Substitute(query, start_time, stop_time);
@@ -404,7 +259,7 @@ TEST_F(CarnotTest, range_test_single_rb) {
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("range_output"));
   auto output_batches = result_server_->query_results("range_output");
-  EXPECT_EQ(1, output_batches.size());
+  EXPECT_EQ(2, output_batches.size());
   EXPECT_EQ(3, output_batches[0].num_columns());
 
   std::vector<types::Time64NSValue> col0_out1;
@@ -419,7 +274,7 @@ TEST_F(CarnotTest, range_test_single_rb) {
     }
   }
 
-  auto rb1 = output_batches[0];
+  auto rb1 = output_batches[1];
   EXPECT_TRUE(rb1.ColumnAt(0)->Equals(types::ToArrow(col0_out1, arrow::default_memory_pool())));
   EXPECT_TRUE(rb1.ColumnAt(1)->Equals(types::ToArrow(col1_out1, arrow::default_memory_pool())));
   EXPECT_TRUE(rb1.ColumnAt(2)->Equals(types::ToArrow(col2_out1, arrow::default_memory_pool())));
@@ -428,14 +283,10 @@ TEST_F(CarnotTest, range_test_single_rb) {
 TEST_F(CarnotTest, empty_range_test) {
   // Tests that a table that has no rows that fall within the query's range, doesn't write any
   // rowbatches to the output table.
-  auto query = absl::StrJoin(
-      {
-          "import px",
-          "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2', "
-          "'col3'], start_time=$0, end_time=$1)",
-          "px.display(queryDF, 'range_output')",
-      },
-      "\n");
+  std::string query = R"pxl(
+import px
+queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2'], start_time=$0, end_time=$1)
+px.display(queryDF, 'range_output'))pxl";
   auto time_col = CarnotTestUtils::big_test_col1;
   auto max_time = std::max_element(time_col.begin(), time_col.end());
 
@@ -447,8 +298,9 @@ TEST_F(CarnotTest, empty_range_test) {
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("range_output"));
   auto output_batches = result_server_->query_results("range_output");
-  EXPECT_EQ(1, output_batches.size());
+  EXPECT_EQ(2, output_batches.size());
   EXPECT_EQ(0, output_batches[0].num_rows());
+  EXPECT_EQ(0, output_batches[1].num_rows());
 }
 
 class CarnotRangeTest
@@ -457,78 +309,39 @@ class CarnotRangeTest
  protected:
   void SetUp() {
     CarnotTest::SetUp();
-    bool start_at_now;
-    types::Int64Value sub_time;
-    std::tie(sub_time, num_batches, num_rows, start_at_now) = GetParam();
-    query =
-        "import px\nqueryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2'], "
-        "start_time=$0, "
-        "end_time=$1)\npx.display(queryDF, 'range_output')";
-    if (start_at_now) {
-      query = absl::Substitute(query, "px.now()", sub_time.val);
-    } else {
-      query = absl::Substitute(query, sub_time.val, "px.now()");
-    }
 
     auto max_time = CarnotTestUtils::big_test_col1[CarnotTestUtils::big_test_col1.size() - 1];
     now_time_ = max_time.val + 1;
   }
   size_t num_batches;
   size_t num_rows;
-  std::string query;
   int64_t now_time_;
 };
 
-std::vector<std::tuple<types::Int64Value, size_t, size_t, bool>> range_test_vals = {
-    {CarnotTestUtils::big_test_col1[CarnotTestUtils::big_test_col1.size() - 1] /*sub_time*/,
-     1 /*num_batches*/, 0 /*num_rows*/, true /*start_at_now*/},
-    {CarnotTestUtils::big_test_col1[CarnotTestUtils::split_idx[1].first].val /*sub_time*/,
-     CarnotTestUtils::split_idx.size() - 1 /*num_batches*/, 5 /*num_rows*/,
-     false /*start_at_now*/}};
-
-TEST_P(CarnotRangeTest, range_now_keyword_test) {
-  auto query_uuid = sole::uuid4();
-  auto s = carnot_->ExecuteQuery(query, query_uuid, now_time_);
-  ASSERT_OK(s);
-
-  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("range_output"));
-  auto output_batches = result_server_->query_results("range_output");
-  EXPECT_EQ(num_batches, output_batches.size());
-  EXPECT_EQ(2, output_batches[0].num_columns());
-
-  auto actual_num_rows = 0;
-  for (size_t i = 0; i < num_batches; ++i) {
-    actual_num_rows += output_batches[i].num_rows();
-  }
-  EXPECT_EQ(num_rows, actual_num_rows);
-}
-
-INSTANTIATE_TEST_SUITE_P(CarnotRangeVariants, CarnotRangeTest,
-                         ::testing::ValuesIn(range_test_vals));
-
-TEST_F(CarnotTest, group_by_all_agg_test) {
-  auto agg_dict =
-      absl::StrJoin({"mean=('col2', px.mean)", "count=('col3', px.count)", "min=('col2', px.min)",
-                     "max=('col3', px.max)", "sum=('col3', px.sum)", "sum2=('col3', px.sum)"},
-                    ",");
-  auto query = absl::StrJoin(
-      {
-          "import px",
-          "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2', 'col3'])",
-          "aggDF = queryDF.agg($0)",
-          "px.display(aggDF, 'test_output')",
-      },
-      "\n");
-  query = absl::Substitute(query, agg_dict);
+TEST_F(CarnotTest, group_by_none_agg_test) {
+  auto query = R"pxl(
+import px
+queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2', 'col3'])
+aggDF = queryDF.agg(
+  mean=('col2', px.mean),
+  count=('col3', px.count),
+  min=('col2', px.min),
+  max=('col3', px.max),
+  sum=('col3', px.sum),
+  sum2=('col3', px.sum),
+)
+px.display(aggDF, 'test_output'))pxl";
   // now() not called, doesn't matter what now is.
   ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
   auto output_batches = result_server_->query_results("test_output");
-  EXPECT_EQ(1, output_batches.size());
+  EXPECT_EQ(2, output_batches.size());
   EXPECT_EQ(6, output_batches[0].num_columns());
+  // First batch is a zero row batch.
+  EXPECT_EQ(output_batches[0].num_rows(), 0);
 
-  auto rb1 = output_batches[0];
+  auto rb1 = output_batches[1];
 
   auto test_col2 = CarnotTestUtils::big_test_col2;
   auto test_col3 = CarnotTestUtils::big_test_col3;
@@ -575,58 +388,24 @@ TEST_F(CarnotTest, group_by_all_agg_test) {
                      arrow::default_memory_pool())));
 }
 
-TEST_F(CarnotTest, group_by_col_agg_test) {
-  auto query = absl::StrJoin(
-      {
-          "import px",
-          "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col3', 'num_groups'])",
-          "aggDF = queryDF.groupby('num_groups').agg(sum=('col3', px.sum))",
-          "px.display(aggDF, 'test_output')",
-      },
-      "\n");
-  ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
-
-  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
-  auto output_batches = result_server_->query_results("test_output");
-  EXPECT_EQ(1, output_batches.size());
-  EXPECT_EQ(2, output_batches[0].num_columns());
-
-  auto rb1 = output_batches[0];
-
-  std::vector<types::Int64Value> expected_groups = {1, 2, 3};
-  std::vector<types::Int64Value> expected_sum = {13, 129, 24};
-  std::unordered_map<int64_t, int64_t> expected = {{1, 13}, {2, 129}, {3, 24}};
-  std::unordered_map<int64_t, int64_t> actual;
-
-  for (int i = 0; i < rb1.num_rows(); ++i) {
-    auto output_col_grp = rb1.ColumnAt(0);
-    auto output_col_agg = rb1.ColumnAt(1);
-    auto casted_grp = static_cast<arrow::Int64Array*>(output_col_grp.get());
-    auto casted_agg = static_cast<arrow::Int64Array*>(output_col_agg.get());
-
-    actual[casted_grp->Value(i)] = casted_agg->Value(i);
-  }
-  EXPECT_EQ(expected, actual);
-}
-
-TEST_F(CarnotTest, multiple_group_by_test) {
-  auto query = absl::StrJoin(
-      {
-          "import px",
-          "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col3', 'num_groups', "
-          "'string_groups'])",
-          "aggDF = queryDF.groupby(['num_groups', 'string_groups']).agg(sum=('col3', px.sum))",
-          "px.display(aggDF, 'test_output')",
-      },
-      "\n");
+TEST_F(CarnotTest, group_by_test) {
+  auto query = R"pxl(
+import px
+queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col3', 'num_groups', 'string_groups'])
+aggDF = queryDF.groupby(['num_groups', 'string_groups']).agg(sum=('col3', px.sum))
+px.display(aggDF, 'test_output'))pxl";
   // now() not called, doesn't matter what now is.
   ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
   auto output_batches = result_server_->query_results("test_output");
-  EXPECT_EQ(1, output_batches.size());
+  EXPECT_EQ(2, output_batches.size());
   EXPECT_EQ(3, output_batches[0].num_columns());
-  auto rb1 = output_batches[0];
+
+  // First batch is a zero row batch.
+  EXPECT_EQ(output_batches[0].num_rows(), 0);
+
+  auto rb1 = output_batches[1];
 
   struct Key {
     int64_t num_group;
@@ -645,6 +424,7 @@ TEST_F(CarnotTest, multiple_group_by_test) {
       {Key{1, "sum"}, 6},  {Key{1, "mean"}, 7},  {Key{3, "sum"}, 24},
       {Key{2, "sum"}, 60}, {Key{2, "mean"}, 69},
   };
+
   std::map<Key, int64_t> actual;
   for (int i = 0; i < rb1.num_rows(); ++i) {
     auto output_col_num_grp = rb1.ColumnAt(0);
@@ -661,205 +441,24 @@ TEST_F(CarnotTest, multiple_group_by_test) {
   EXPECT_EQ(expected, actual);
 }
 
-TEST_F(CarnotTest, comparison_tests) {
-  auto query = absl::StrJoin(
-      {
-          "import px",
-          "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col3', 'num_groups', "
-          "'string_groups'])",
-          "queryDF['lt'] = queryDF['col3'] < $0",
-          "queryDF['gt'] = queryDF['num_groups'] > $1",
-          "df = queryDF[['lt', 'gt']]",
-          "px.display(df, 'test_output')",
-      },
-      "\n");
-  // Values to test on.
-  int64_t col3_lt_val = 12;
-  int64_t num_groups_gt_val = 1;
-  query = absl::Substitute(query, col3_lt_val, num_groups_gt_val);
-  // now() not called, doesn't matter what now is.
-  ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
-
-  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
-  auto output_batches = result_server_->query_results("test_output");
-  EXPECT_EQ(3, output_batches.size());
-  EXPECT_EQ(2, output_batches[0].num_columns());
-  auto rb1 = output_batches[0];
-
-  auto col3 = CarnotTestUtils::big_test_col3;
-  auto col_num_groups = CarnotTestUtils::big_test_groups;
-  std::vector<types::BoolValue> lt_exp;
-  std::vector<types::BoolValue> gt_exp;
-
-  for (int64_t i = 0; i < rb1.num_rows(); i++) {
-    lt_exp.emplace_back(col3[i] < col3_lt_val);
-    gt_exp.emplace_back(col_num_groups[i] > num_groups_gt_val);
-  }
-  EXPECT_TRUE(rb1.ColumnAt(0)->Equals(types::ToArrow(lt_exp, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1.ColumnAt(1)->Equals(types::ToArrow(gt_exp, arrow::default_memory_pool())));
-}
-
-TEST_F(CarnotTest, comparison_to_agg_tests) {
-  auto query = absl::StrJoin(
-      {
-          "import px",
-          "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col3', 'num_groups', "
-          "'string_groups'])",
-          "queryDF['is_large'] = queryDF['col3'] > $0",
-          "aggDF = queryDF.groupby('is_large').agg(count=('num_groups', px.count))",
-          "px.display(aggDF, 'test_output')",
-      },
-      "\n");
-  // Value to test on.
-  int64_t col3_gt_val = 30;
-  query = absl::Substitute(query, col3_gt_val);
-  // now() not called, doesn't matter what now is.
-  ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
-
-  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
-  auto output_batches = result_server_->query_results("test_output");
-  EXPECT_EQ(1, output_batches.size());
-  EXPECT_EQ(2, output_batches[0].num_columns());
-  auto rb1 = output_batches[0];
-
-  auto col3 = CarnotTestUtils::big_test_col3;
-  int64_t gt_count = 0;
-  for (auto& i : col3) {
-    if (i > col3_gt_val) {
-      gt_count += 1;
-    }
-  }
-  std::unordered_map<bool, int64_t> expected = {{true, gt_count}, {false, col3.size() - gt_count}};
-  std::unordered_map<bool, int64_t> actual;
-
-  for (int i = 0; i < rb1.num_rows(); ++i) {
-    auto output_col_grp = rb1.ColumnAt(0);
-    auto output_col_agg = rb1.ColumnAt(1);
-    auto casted_grp = static_cast<arrow::BooleanArray*>(output_col_grp.get());
-    auto casted_agg = static_cast<arrow::Int64Array*>(output_col_agg.get());
-
-    actual[casted_grp->Value(i)] = casted_agg->Value(i);
-  }
-  EXPECT_EQ(expected, actual);
-}
-
-class CarnotFilterTest
-    : public CarnotTest,
-      public ::testing::WithParamInterface<
-          std::tuple<std::string, std::function<bool(const double&, const double&)>>> {
- protected:
-  void SetUp() {
-    CarnotTest::SetUp();
-    std::tie(comparison_fn_str, comparison_fn) = GetParam();
-  }
-  std::string comparison_fn_str;
-  std::function<bool(const double&, const double&)> comparison_fn;
-};
-
-std::vector<std::tuple<std::string, std::function<bool(const double&, const double&)>>>
-    filter_test_values = {{
-                              ">",
-                              [](double a, double b) { return a > b; },
-                          },
-                          {
-                              "<",
-                              [](double a, double b) { return a < b; },
-                          },
-                          {
-                              "==",
-                              [](double a, double b) { return a == b; },
-                          },
-                          {
-                              "!=",
-                              [](double a, double b) { return a != b; },
-                          }};
-
-TEST_P(CarnotFilterTest, int_filter) {
-  auto query = absl::StrJoin(
-      {
-          "import px",
-          "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2', 'col3', "
-          "'num_groups', "
-          "'string_groups'])",
-          "mapDF = queryDF[queryDF['$2'] $1 $0]",
-          "px.display(mapDF, 'test_output')",
-      },
-      "\n");
-  // these three parameters don't package well.
-  double comparison_val = 12;
-  auto comparison_column = CarnotTestUtils::big_test_col3;
-  std::string comparison_column_str = "col3";
-
-  query = absl::Substitute(query, comparison_val, comparison_fn_str, comparison_column_str);
-  ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
-
-  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
-  auto output_batches = result_server_->query_results("test_output");
-  EXPECT_EQ(3, output_batches.size());
-  EXPECT_EQ(5, output_batches[0].num_columns());
-
-  // iterate through the batches
-  for (size_t i = 0; i < CarnotTestUtils::split_idx.size(); i++) {
-    // iterate through the column
-    const auto& cur_split = CarnotTestUtils::split_idx[i];
-    int64_t left = cur_split.first;
-    int64_t right = cur_split.second;
-    std::vector<types::Time64NSValue> time_out;
-    std::vector<types::Float64Value> col2_out;
-    std::vector<types::Int64Value> col3_out;
-    std::vector<types::Int64Value> groups_out;
-    std::vector<types::StringValue> strings_out;
-    for (int64_t j = left; j < right; j++) {
-      if (comparison_fn(comparison_column[j].val, comparison_val)) {
-        time_out.push_back(CarnotTestUtils::big_test_col1[j]);
-        col2_out.push_back(CarnotTestUtils::big_test_col2[j]);
-        col3_out.push_back(CarnotTestUtils::big_test_col3[j]);
-        groups_out.push_back(CarnotTestUtils::big_test_groups[j]);
-        strings_out.push_back(CarnotTestUtils::big_test_strings[j]);
-      }
-    }
-    // If the filter filters out the entire batch, skip this batch
-    if (time_out.size() > 0 || i == CarnotTestUtils::split_idx.size() - 1) {
-      auto rb = output_batches[i];
-      EXPECT_TRUE(rb.ColumnAt(0)->Equals(types::ToArrow(time_out, arrow::default_memory_pool())));
-      EXPECT_TRUE(rb.ColumnAt(1)->Equals(types::ToArrow(col2_out, arrow::default_memory_pool())));
-      EXPECT_TRUE(rb.ColumnAt(2)->Equals(types::ToArrow(col3_out, arrow::default_memory_pool())));
-      EXPECT_TRUE(rb.ColumnAt(3)->Equals(types::ToArrow(groups_out, arrow::default_memory_pool())));
-      EXPECT_TRUE(
-          rb.ColumnAt(4)->Equals(types::ToArrow(strings_out, arrow::default_memory_pool())));
-    }
-  }
-}
-
-INSTANTIATE_TEST_SUITE_P(CarnotFilterTestSuite, CarnotFilterTest,
-                         ::testing::ValuesIn(filter_test_values));
-
 TEST_F(CarnotTest, string_filter) {
-  auto query = absl::StrJoin(
-      {
-          "import px",
-          "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2', 'col3', "
-          "'num_groups', "
-          "'string_groups'])",
-          "mapDF = queryDF[queryDF['$2'] $1 '$0']",
-          "px.display(mapDF, 'test_output')",
-      },
-      "\n");
+  std::string query = R"pxl(
+import px
+queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2', 'col3', 'num_groups', 'string_groups'])
+mapDF = queryDF[queryDF['string_groups'] == 'sum']
+px.display(mapDF, 'test_output'))pxl";
 
-  // these three parameters don't package well.
-  std::string comparison_val = "sum";
   auto comparison_column = CarnotTestUtils::big_test_strings;
-  std::string comparison_column_str = "string_groups";
-  std::string comparison_fn_str = "==";
-  auto comparison_fn = [](std::string a, std::string b) { return a == b; };
-
-  query = absl::Substitute(query, comparison_val, comparison_fn_str, comparison_column_str);
   ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
   auto output_batches = result_server_->query_results("test_output");
-  EXPECT_EQ(3, output_batches.size());
+  EXPECT_EQ(4, output_batches.size());
   EXPECT_EQ(5, output_batches[0].num_columns());
+  // First batch is a zero row batch.
+  auto rb = output_batches[0];
+  EXPECT_EQ(rb.ColumnAt(0)->length(), 0);
+  EXPECT_EQ(rb.ColumnAt(1)->length(), 0);
 
   // Iterate through the batches.
   for (size_t i = 0; i < CarnotTestUtils::split_idx.size(); i++) {
@@ -873,7 +472,7 @@ TEST_F(CarnotTest, string_filter) {
     std::vector<types::Int64Value> groups_out;
     std::vector<types::StringValue> strings_out;
     for (int64_t j = left; j < right; j++) {
-      if (comparison_fn(comparison_column[j], comparison_val)) {
+      if (comparison_column[j] == "sum") {
         time_out.push_back(CarnotTestUtils::big_test_col1[j]);
         col2_out.push_back(CarnotTestUtils::big_test_col2[j]);
         col3_out.push_back(CarnotTestUtils::big_test_col3[j]);
@@ -881,7 +480,7 @@ TEST_F(CarnotTest, string_filter) {
         strings_out.push_back(CarnotTestUtils::big_test_strings[j]);
       }
     }
-    auto rb = output_batches[i];
+    auto rb = output_batches[i + 1];
     EXPECT_TRUE(rb.ColumnAt(0)->Equals(types::ToArrow(time_out, arrow::default_memory_pool())));
     EXPECT_TRUE(rb.ColumnAt(1)->Equals(types::ToArrow(col2_out, arrow::default_memory_pool())));
     EXPECT_TRUE(rb.ColumnAt(2)->Equals(types::ToArrow(col3_out, arrow::default_memory_pool())));
@@ -896,25 +495,24 @@ class CarnotLimitTest : public CarnotTest,
 };
 
 TEST_P(CarnotLimitTest, limit) {
-  auto query = absl::StrJoin(
-      {
-          "import px",
-          "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2'])",
-          "mapDF = queryDF.head(n=$0)",
-          "px.display(mapDF, 'test_output')",
-      },
-      "\n");
+  std::string query = R"pxl(
+import px
+queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2'])
+mapDF = queryDF.head(n=$0)
+px.display(mapDF, 'test_output'))pxl";
   int64_t num_rows;
   int64_t expected_num_batches;
   std::tie(expected_num_batches, num_rows) = GetParam();
-  VLOG(2) << absl::Substitute("{$0, $1}", expected_num_batches, num_rows);
   query = absl::Substitute(query, num_rows);
   ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
   auto output_batches = result_server_->query_results("test_output");
-  EXPECT_EQ(expected_num_batches, output_batches.size());
+  EXPECT_EQ(expected_num_batches + 1, output_batches.size());
   EXPECT_EQ(2, output_batches[0].num_columns());
+
+  // First batch is a zero row batch.
+  EXPECT_EQ(output_batches[0].num_rows(), 0);
 
   // Iterate through the batches.
   for (int64_t i = 0; i < expected_num_batches; i++) {
@@ -931,70 +529,28 @@ TEST_P(CarnotLimitTest, limit) {
       time_out.push_back(CarnotTestUtils::big_test_col1[j]);
       col2_out.push_back(CarnotTestUtils::big_test_col2[j]);
     }
-    auto rb = output_batches[i];
+    auto rb = output_batches[i + 1];
     EXPECT_TRUE(rb.ColumnAt(0)->Equals(types::ToArrow(time_out, arrow::default_memory_pool())));
     EXPECT_TRUE(rb.ColumnAt(1)->Equals(types::ToArrow(col2_out, arrow::default_memory_pool())));
   }
 }
 
 // {expected_num_batches, num_rows}
-std::vector<std::tuple<int64_t, int64_t>> limit_test_values = {{1, 2}, {2, 4}, {3, 7}};
 INSTANTIATE_TEST_SUITE_P(CarnotLimitTestSuite, CarnotLimitTest,
-                         ::testing::ValuesIn(limit_test_values));
+                         ::testing::ValuesIn(std::vector<std::tuple<int64_t, int64_t>>{
+                             {1, 2}, {2, 4}, {3, 7}}));
 
-TEST_F(CarnotTest, reused_result) {
-  auto query = absl::StrJoin(
-      {
-          "import px",
-          "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col3', 'num_groups', "
-          "'string_groups'])",
-          "mapDF = queryDF[['col3', 'num_groups']]",
-          "mapDF['is_large'] = mapDF['col3'] > 30",
-          "x = queryDF[queryDF['num_groups'] > 2]",
-          "y= mapDF[['is_large', 'num_groups']]",
-          "px.display(y, 'test_output')",
-      },
-      "\n");
-  auto query_uuid = sole::uuid4();
-  auto s = carnot_->ExecuteQuery(query, query_uuid, 0);
-  VLOG(1) << s.ToString();
-  // This used to segfault according to PL-525, should now run without problems.
-  ASSERT_OK(s);
-
-  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
-  auto output_batches = result_server_->query_results("test_output");
-  EXPECT_EQ(3, output_batches.size());
-  EXPECT_EQ(2, output_batches[0].num_columns());
-
-  auto rb1 = output_batches[0];
-  auto col3 = CarnotTestUtils::big_test_col3;
-  auto col_num_groups = CarnotTestUtils::big_test_groups;
-  std::vector<types::BoolValue> gt_exp;
-  std::vector<types::Int64Value> num_groups;
-
-  for (int64_t i = 0; i < rb1.num_rows(); i++) {
-    gt_exp.emplace_back(col3[i] > 30);
-    num_groups.emplace_back(col_num_groups[i]);
-  }
-  EXPECT_TRUE(rb1.ColumnAt(0)->Equals(types::ToArrow(gt_exp, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1.ColumnAt(1)->Equals(types::ToArrow(num_groups, arrow::default_memory_pool())));
-}
-
-TEST_F(CarnotTest, multiple_result_calls) {
-  auto query = absl::StrJoin(
-      {
-          "import px",
-          "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col3', 'num_groups', "
-          "'string_groups'])",
-          "mapDF = queryDF[['col3', 'num_groups']]",
-          "mapDF['lt'] = mapDF['col3'] < $0",
-          "mapDF['gt'] = mapDF['num_groups'] > $1",
-          "df = mapDF[['lt', 'gt']]",
-          "px.display(df, 'test_output')",
-          "x = queryDF[queryDF['num_groups'] > $2]",
-          "px.display(x, 'filtered_output')",
-      },
-      "\n");
+TEST_F(CarnotTest, multiple_display_calls) {
+  std::string query = R"pxl(
+import px
+queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col3', 'num_groups', 'string_groups'])
+mapDF = queryDF[['col3', 'num_groups']]
+mapDF['lt'] = mapDF['col3'] < $0
+mapDF['gt'] = mapDF['num_groups'] > $1
+df = mapDF[['lt', 'gt']]
+px.display(df, 'test_output')
+x = queryDF[queryDF['num_groups'] > $2]
+px.display(x, 'filtered_output'))pxl";
   // Values to test on.
   int64_t col3_lt_val = 12;
   int64_t num_groups_gt_val = 1;
@@ -1008,9 +564,12 @@ TEST_F(CarnotTest, multiple_result_calls) {
   EXPECT_THAT(result_server_->output_tables(),
               UnorderedElementsAre("test_output", "filtered_output"));
   auto output_batches = result_server_->query_results("test_output");
-  EXPECT_EQ(3, output_batches.size());
+  EXPECT_EQ(4, output_batches.size());
   EXPECT_EQ(2, output_batches[0].num_columns());
-  auto rb1 = output_batches[0];
+
+  // First batch is a zero row batch.
+  EXPECT_EQ(output_batches[0].num_rows(), 0);
+  auto rb1 = output_batches[1];
 
   auto col3 = CarnotTestUtils::big_test_col3;
   auto col_num_groups = CarnotTestUtils::big_test_groups;
@@ -1026,7 +585,7 @@ TEST_F(CarnotTest, multiple_result_calls) {
 
   // test the filtered_output
   output_batches = result_server_->query_results("filtered_output");
-  EXPECT_EQ(3, output_batches.size());
+  EXPECT_EQ(4, output_batches.size());
   EXPECT_EQ(4, output_batches[0].num_columns());
 
   // iterate through the batches
@@ -1047,7 +606,7 @@ TEST_F(CarnotTest, multiple_result_calls) {
         strings_out.push_back(CarnotTestUtils::big_test_strings[j]);
       }
     }
-    auto rb = output_batches[i];
+    auto rb = output_batches[i + 1];
     EXPECT_TRUE(rb.ColumnAt(0)->Equals(types::ToArrow(time_out, arrow::default_memory_pool())));
     EXPECT_TRUE(rb.ColumnAt(1)->Equals(types::ToArrow(col3_out, arrow::default_memory_pool())));
     EXPECT_TRUE(rb.ColumnAt(2)->Equals(types::ToArrow(groups_out, arrow::default_memory_pool())));
@@ -1057,43 +616,34 @@ TEST_F(CarnotTest, multiple_result_calls) {
 
 // Test to see whether we can pass logical plan into Carnot instead of query.
 TEST_F(CarnotTest, pass_logical_plan) {
-  std::string query = absl::StrJoin(
-      {
-          "import px",
-          "queryDF = px.DataFrame(table='test_table', select=['col1', 'col2'])",
-          "queryDF['res'] = px.add(queryDF['col1'], queryDF['col2'])",
-          "df = queryDF[['res']]",
-          "px.display(df, '$0')",
-      },
-      "\n");
+  std::string query = R"pxl(
+import px
+queryDF = px.DataFrame(table='test_table', select=['col1', 'col2'])
+queryDF['res'] = px.add(queryDF['col1'], queryDF['col2'])
+df = queryDF[['res']]
+px.display(df, '$0'))pxl";
   Compiler compiler;
   int64_t current_time = 0;
   std::string logical_plan_table_name = "logical_plan";
   std::string query_table_name = "query";
 
-  // Create a CompilerState obj using the relation map and grabbing the current time.
-
-  px::StatusOr<std::unique_ptr<planner::RegistryInfo>> registry_info_or_s =
-      udfexporter::ExportUDFInfo();
-  ASSERT_OK(registry_info_or_s);
-  std::unique_ptr<planner::RegistryInfo> registry_info = registry_info_or_s.ConsumeValueOrDie();
+  std::unique_ptr<planner::RegistryInfo> registry_info =
+      udfexporter::ExportUDFInfo().ConsumeValueOrDie();
 
   planner::CompilerState compiler_state(
       table_store_->GetRelationMap(), planner::SensitiveColumnMap{}, registry_info.get(),
       current_time,
       /* max_output_rows_per_table */ 0, "result_addr", "result_ssl_targetname",
       planner::RedactionOptions{}, nullptr, nullptr);
-  StatusOr<planpb::Plan> logical_plan_status =
-      compiler.Compile(absl::Substitute(query, logical_plan_table_name), &compiler_state);
-  ASSERT_OK(logical_plan_status);
-  planpb::Plan plan = logical_plan_status.ConsumeValueOrDie();
-  auto plan_uuid = sole::uuid4();
-  auto query_uuid = sole::uuid4();
-  ASSERT_OK(carnot_->ExecutePlan(plan, plan_uuid));
+  planpb::Plan plan =
+      compiler.Compile(absl::Substitute(query, logical_plan_table_name), &compiler_state)
+          .ConsumeValueOrDie();
 
-  // Run the parallel execution using the Query path.
-  ASSERT_OK(
-      carnot_->ExecuteQuery(absl::Substitute(query, query_table_name), query_uuid, current_time));
+  // Ensure that Query and LogicalPlan paths yield the same result.
+  ASSERT_OK(carnot_->ExecutePlan(plan, sole::uuid4()));
+
+  ASSERT_OK(carnot_->ExecuteQuery(absl::Substitute(query, query_table_name), sole::uuid4(),
+                                  current_time));
 
   auto plan_table_batches = result_server_->query_results("logical_plan");
   auto query_table_batches = result_server_->query_results("query");
@@ -1170,7 +720,7 @@ TEST_F(CarnotTest, empty_source_test) {
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("out_table"));
   auto output_batches = result_server_->query_results("out_table");
-  ASSERT_EQ(1, output_batches.size());
+  ASSERT_EQ(2, output_batches.size());
   EXPECT_EQ(2, output_batches[0].num_columns());
 
   for (const auto& rb : output_batches) {
@@ -1446,13 +996,9 @@ px.display(pods_for_cluster(start_time))
 )pxl";
 
 TEST_F(CarnotTest, multiple_queries) {
-  std::string query(kPxCluster);
-
   auto exec_query_work = [&]() {
     // No time column, doesn't use a time parameter.
-    auto query_id = sole::uuid4();
-    auto s = carnot_->ExecuteQuery(query, query_id, 0);
-    ASSERT_OK(s);
+    ASSERT_OK(carnot_->ExecuteQuery(kPxCluster, sole::uuid4(), 0));
   };
 
   // TSAN should catch if running multiple queries at once mutate any shared state.
@@ -1468,14 +1014,323 @@ TEST_F(CarnotTest, multiple_queries) {
   }
 }
 
-constexpr char kInitArgQuery[] = R"pxl(
+TEST_F(CarnotTest, init_args) {
+  std::string query = R"pxl(
 import px
 df = px.DataFrame('big_test_table')
 df.match = px.regex_match('pattern', df.string_groups)
-px.display(df)
-)pxl";
+px.display(df))pxl";
+  ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
+}
 
-TEST_F(CarnotTest, init_args) { ASSERT_OK(carnot_->ExecuteQuery(kInitArgQuery, sole::uuid4(), 0)); }
+constexpr char kErrorNodePlan[] = R"proto(
+dag {
+  nodes {
+    id: 1
+  }
+}
+nodes {
+  id: 1
+  dag {
+    nodes {
+      id: 1
+      sorted_children: 2
+    }
+    nodes {
+      id: 2
+      sorted_parents: 1
+      sorted_children: 3
+    }
+    nodes {
+      id: 3
+      sorted_parents: 2
+    }
+  }
+  nodes {
+    id: 1
+    op {
+      op_type: EMPTY_SOURCE_OPERATOR
+      empty_source_op {
+        column_names: "cpu0"
+        column_types: INT64
+      }
+    }
+  }
+  nodes {
+    id: 2
+    op {
+      op_type: MAP_OPERATOR
+      map_op {
+        expressions {
+          func {
+            name: "upid_to_service_name"
+            args {
+              column {
+                node: 1
+                index: 0
+              }
+            }
+            args_data_types: UINT128
+          }
+        }
+        column_names: "service"
+      }
+    }
+  }
+  nodes {
+    id: 3
+    op {
+      op_type: GRPC_SINK_OPERATOR
+      grpc_sink_op {
+        address: "error_address"
+        output_table {
+          table_name: "out_table"
+          column_names: "cpu0"
+          column_types: INT64
+        }
+        connection_options {
+          ssl_targetname: "result_ssltarget"
+        }
+      }
+    }
+  }
+}
+)proto";
+TEST_F(CarnotTest, result_server_receives_execution_errors_created_by_carnot) {
+  planpb::Plan plan;
+  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kErrorNodePlan, &plan));
+
+  ASSERT_NOT_OK(carnot_->ExecutePlan(plan, sole::uuid4()));
+
+  auto errors = result_server_->exec_errors();
+  EXPECT_EQ(errors.size(), 1);
+  EXPECT_THAT(errors[0].DebugString(),
+              ::testing::MatchesRegex(".*No UDF matching upid_to_service_name.*"));
+}
+
+constexpr char kGRPCSourcePlan[] = R"proto(
+dag {
+  nodes {
+    id: 1
+  }
+}
+nodes {
+  id: 1
+  dag {
+    nodes {
+      id: 1
+      sorted_children: 2
+    }
+    nodes {
+      id: 2
+      sorted_parents: 1
+    }
+  }
+  nodes {
+    id: 1
+    op {
+      op_type: GRPC_SOURCE_OPERATOR
+      grpc_source_op {
+        column_names: "cpu0"
+        column_types: INT64
+      }
+    }
+  }
+  nodes {
+    id: 2
+    op {
+      op_type: GRPC_SINK_OPERATOR
+      grpc_sink_op {
+        address: "result_addr"
+        output_table {
+          table_name: "out_table"
+          column_names: "cpu0"
+          column_types: INT64
+        }
+        connection_options {
+          ssl_targetname: "result_ssltarget"
+        }
+      }
+    }
+  }
+}
+)proto";
+
+struct TransferResultChunkTestCase {
+  std::string name;
+  std::string plan;
+  // Each element of this vector represents an independent TransferResultChunk context.
+  // The number of results sent over to the local results server by Carnot.
+  int64_t num_expected_query_results;
+  // the regex for the error. If the string is empty, the test does not consider this an error.
+  // Will be tested agains the error from the plan and the exec_errors.
+  std::string error_regex;
+  // Each element of each element is the string repr of the proto message to send over the stream.
+  std::vector<std::vector<std::string>> transfer_result_chunk_streams;
+};
+
+class TransferResultChunkTests : public CarnotTest,
+                                 public ::testing::WithParamInterface<TransferResultChunkTestCase> {
+};
+TEST_P(TransferResultChunkTests, send_and_forward_messages) {
+  grpc::ServerBuilder builder;
+  builder.AddListeningPort("localhost:0", grpc::InsecureServerCredentials());
+  builder.RegisterService(router_);
+  auto grpc_server = builder.BuildAndStart();
+
+  grpc::ChannelArguments args;
+  auto input_stub = px::carnotpb::ResultSinkService::NewStub(grpc_server->InProcessChannel(args));
+
+  auto tc = GetParam();
+  for (const auto& requests : tc.transfer_result_chunk_streams) {
+    grpc::ClientContext ctx;
+    carnotpb::TransferResultChunkResponse response;
+    auto writer = input_stub->TransferResultChunk(&ctx, &response);
+    for (const auto& req_str : requests) {
+      carnotpb::TransferResultChunkRequest req;
+      ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(req_str, &req));
+      EXPECT_TRUE(writer->Write(req));
+    }
+    writer->WritesDone();
+    auto writer_s = writer->Finish();
+    EXPECT_TRUE(writer_s.ok()) << writer_s.error_message();
+  }
+
+  planpb::Plan plan;
+  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(tc.plan, &plan));
+
+  if (tc.error_regex.empty()) {
+    ASSERT_OK(carnot_->ExecutePlan(plan, sole::uuid{1, 1}));
+    EXPECT_TRUE(result_server_->exec_errors().empty());
+  } else {
+    EXPECT_THAT(carnot_->ExecutePlan(plan, sole::uuid{1, 1}).status().msg(),
+                ::testing::MatchesRegex(tc.error_regex));
+    ASSERT_EQ(result_server_->exec_errors().size(), 1);
+    EXPECT_THAT(result_server_->exec_errors()[0].DebugString(),
+                ::testing::MatchesRegex(tc.error_regex));
+  }
+
+  EXPECT_EQ(result_server_->raw_query_results().size(), tc.num_expected_query_results);
+};
+
+INSTANTIATE_TEST_SUITE_P(TransferResultChunks, TransferResultChunkTests,
+                         ::testing::Values(
+                             TransferResultChunkTestCase{
+                                 "end2end",
+                                 kGRPCSourcePlan,
+                                 /* num_expected_query_results */ 4,
+                                 "",
+                                 {
+                                     {
+                                         R"proto(
+                                      address: "foo"
+                                      query_id {
+                                        high_bits: 1
+                                        low_bits: 1
+                                      }
+                                      initiate_conn {}
+                                      )proto",
+                                         R"proto(
+                                      address: "foo"
+                                      query_id {
+                                        high_bits: 1
+                                        low_bits: 1
+                                      }
+                                      query_result {
+                                        grpc_source_id: 1
+                                        row_batch {
+                                          cols {
+                                            int64_data {
+                                            }
+                                          }
+                                          eow: true
+                                          eos: true
+                                        }
+                                      })proto",
+                                         R"proto(
+                                      address: "foo"
+                                      query_id {
+                                        high_bits: 1
+                                        low_bits: 1
+                                      }
+                                      execution_and_timing_info {
+                                        execution_stats {
+                                          timing {
+                                            execution_time_ns: 1234
+                                            compilation_time_ns: 123
+                                          }
+                                          bytes_processed: 1
+                                          records_processed: 1
+                                        }
+                                      })proto",
+                                     },
+                                 },
+                             },
+                             TransferResultChunkTestCase{
+                                 "timeout_does_not_throw_error",
+                                 kGRPCSourcePlan,
+                                 /* num_expected_query_results */ 5,
+                                 "",
+                                 {
+                                     {
+                                         R"proto(
+                                      address: "foo"
+                                      query_id {
+                                        high_bits: 1
+                                        low_bits: 1
+                                      }
+                                      initiate_conn {}
+                                      )proto",
+                                         R"proto(
+                                      address: "foo"
+                                      query_id {
+                                        high_bits: 1
+                                        low_bits: 1
+                                      }
+                                      query_result {
+                                        grpc_source_id: 1
+                                        row_batch {
+                                          cols {
+                                            int64_data {
+                                            }
+                                          }
+                                        }
+                                      })proto",
+                                     },
+                                 },
+                             },
+
+                             TransferResultChunkTestCase{
+                                 "receive_error_from_parent_agent",
+                                 kGRPCSourcePlan,
+                                 /* num_expected_query_results */ 5,
+                                 ".*didnt process data.*",
+                                 {
+                                     {
+                                         R"proto(
+                                      address: "foo"
+                                      query_id {
+                                        high_bits: 1
+                                        low_bits: 1
+                                      }
+                                      initiate_conn {}
+                                      )proto",
+                                         R"proto(
+                                      address: "foo"
+                                      query_id {
+                                        high_bits: 1
+                                        low_bits: 1
+                                      }
+                                      execution_error {
+                                        err_code: INTERNAL
+                                        msg: "didnt process data"
+                                      })proto",
+                                     },
+                                 },
+                             }),
+                         [](const ::testing::TestParamInfo<TransferResultChunkTestCase>& info) {
+                           return info.param.name;
+                         });
 
 }  // namespace carnot
 }  // namespace px

@@ -48,62 +48,47 @@ class Config : public NotCopyable {
   static void ResetInstance(std::unique_ptr<clock::ClockConverter> converter);
   static void ResetInstance();
 
-  virtual ~Config() {}
-
-  /**
-   * Checks if system config information is available.
-   * @return true if system config is available
-   */
-  virtual bool HasConfig() const = 0;
-
   /**
    * Get the page size in the kernel.
    * @return page size in bytes.
    */
-  virtual int64_t PageSizeBytes() const = 0;
+  int64_t PageSizeBytes() const;
 
   /**
    * Get the Kernel ticks per second.
    * @return int kernel ticks per second.
    */
-  virtual int64_t KernelTicksPerSecond() const = 0;
+  int64_t KernelTicksPerSecond() const;
 
   /**
    * Get the Kernel tick time in nanoseconds.
    * @return int kernel ticks time.
    */
-  virtual int64_t KernelTickTimeNS() const = 0;
+  int64_t KernelTickTimeNS() const;
 
   /**
    * If recording `nsecs` from bpf, this function can be used to
    * convert the result into realtime.
    */
-  virtual uint64_t ConvertToRealTime(uint64_t monotonic_time) const = 0;
-
-  /**
-   * Get the sysfs path.
-   */
-  virtual const std::filesystem::path& sysfs_path() const = 0;
-
-  /**
-   * Get the host root path.
-   */
-  virtual const std::filesystem::path& host_path() const = 0;
-
-  /**
-   * Get the proc path.
-   */
-  virtual const std::filesystem::path& proc_path() const = 0;
+  uint64_t ConvertToRealTime(uint64_t monotonic_time) const;
 
   /**
    * Converts a path to host relative path, for when this binary is running inside a container.
    */
-  virtual std::filesystem::path ToHostPath(const std::filesystem::path& p) const = 0;
+  std::filesystem::path ToHostPath(const std::filesystem::path& p) const;
 
-  virtual clock::ClockConverter* clock_converter() const = 0;
+  const std::filesystem::path& host_path() const { return host_path_; }
+  const std::filesystem::path& sysfs_path() const { return sysfs_path_; }
+  const std::filesystem::path& proc_path() const { return proc_path_; }
+  clock::ClockConverter* clock_converter() const { return clock_converter_.get(); }
 
- protected:
-  Config() {}
+ private:
+  explicit Config(std::unique_ptr<clock::ClockConverter> clock_converter);
+
+  const std::filesystem::path host_path_;
+  const std::filesystem::path sysfs_path_;
+  const std::filesystem::path proc_path_;
+  std::unique_ptr<clock::ClockConverter> clock_converter_;
 };
 
 }  // namespace system

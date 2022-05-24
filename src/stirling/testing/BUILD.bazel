@@ -38,6 +38,11 @@ filegroup(
     srcs = ["tcpdrop.bpftrace.pxl"],
 )
 
+filegroup(
+    name = "pidsample_bpftrace_script",
+    srcs = ["pidsample.bpftrace.pxl"],
+)
+
 pl_cc_test_library(
     name = "stirling_mock",
     srcs = ["stirling_mock.h"],

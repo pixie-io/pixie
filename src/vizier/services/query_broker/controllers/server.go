@@ -171,7 +171,8 @@ func (h *healthcheckConsumer) Consume(result *vizierpb.ExecuteScriptResponse) er
 func (s *Server) CheckHealth(ctx context.Context) error {
 	checkVersionScript := `import px; px.display(px.Version())`
 	req := &vizierpb.ExecuteScriptRequest{
-		QueryStr: checkVersionScript,
+		QueryStr:  checkVersionScript,
+		QueryName: "healthcheck",
 	}
 	consumer := &healthcheckConsumer{
 		receivedRowBatches: 0,
@@ -190,7 +191,7 @@ func (s *Server) CheckHealth(ctx context.Context) error {
 		return fmt.Errorf("results not returned on health check for query ID %s", queryExec.QueryID().String())
 	}
 
-	if consumer.receivedRowBatches > 1 || consumer.receivedRows > int64(1) {
+	if consumer.receivedRows > int64(1) {
 		// We expect only one row to be received from this query.
 		return fmt.Errorf("bad results on healthcheck for query ID %s", queryExec.QueryID().String())
 	}

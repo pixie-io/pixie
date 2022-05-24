@@ -12,6 +12,7 @@
 [![FOSSA Status](https://app.fossa.com/api/projects/custom%2B26327%2Fgithub.com%2Fpixie-io%2Fpixie.svg?type=shield)](https://app.fossa.com/projects/custom%2B26327%2Fgithub.com%2Fpixie-io%2Fpixie?ref=badge_shield)
 [![Artifact HUB](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/pixie-operator)](https://artifacthub.io/packages/olm/community-operators/pixie-operator)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5027/badge)](https://bestpractices.coreinfrastructure.org/projects/5027)
+[![CLOMonitor](https://img.shields.io/endpoint?url=https://clomonitor.io/api/projects/cncf/pixie/pixie/badge)](https://clomonitor.io/projects/cncf/pixie/pixie)
 
 <br>
 
@@ -192,6 +193,11 @@ These are also published on the [releases](https://github.com/pixie-io/pixie/rel
 ## Adopters
 
 The known adopters and users of Pixie are listed [here](ADOPTERS.md).
+
+## Software Bill of Materials
+
+We publish a list of all the components Pixie depends on and the corresponding
+versions and licenses [here](https://storage.googleapis.com/pixie-dev-public/oss-licenses/latest.json).
 
 ## About Pixie
 

@@ -170,6 +170,8 @@ message UpdateOrgRetentionPluginConfigRequest {
     // The custom export URL that should be applied to all plugin scripts.
     google.protobuf.StringValue custom_export_url = 6;
     google.protobuf.BoolValue insecure_tls = 7 [(gogoproto.customname) = "InsecureTLS"];
+    // If enabling the plugin, whether to enable all preset scripts.
+    google.protobuf.BoolValue disable_presets = 8;
 }
 
 // UpdateOrgRetentionPluginConfigResponse is a response to update a plugin's configuration.

@@ -39,6 +39,7 @@
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/go_grpc_types.hpp"
 #include "src/stirling/source_connectors/socket_tracer/conn_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/conn_trackers_manager.h"
+#include "src/stirling/source_connectors/socket_tracer/metrics.h"
 #include "src/stirling/utils/enum_map.h"
 
 DEFINE_bool(treat_loopback_as_in_cluster, true,
@@ -176,6 +177,19 @@ void ConnTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   }
 }
 
+namespace {
+void UpdateProtocolMetrics(traffic_protocol_t protocol, const conn_stats_event_t& event,
+                           const ConnTracker::ConnStatsTracker& conn_stats) {
+  auto& metrics = SocketTracerMetrics::GetProtocolMetrics(protocol);
+  if (event.rd_bytes > conn_stats.bytes_recv()) {
+    metrics.conn_stats_bytes.Increment(event.rd_bytes - conn_stats.bytes_recv());
+  }
+  if (event.wr_bytes > conn_stats.bytes_sent()) {
+    metrics.conn_stats_bytes.Increment(event.wr_bytes - conn_stats.bytes_sent());
+  }
+}
+}  // namespace
+
 void ConnTracker::AddConnStats(const conn_stats_event_t& event) {
   SetRole(event.role, "inferred from conn_stats event");
   SetRemoteAddr(event.addr, "conn_stats event");
@@ -190,6 +204,8 @@ void ConnTracker::AddConnStats(const conn_stats_event_t& event) {
     DCHECK_GE(static_cast<bool>(event.conn_events & CONN_CLOSE), conn_stats_.closed());
     DCHECK_GE(event.rd_bytes, conn_stats_.bytes_recv());
     DCHECK_GE(event.wr_bytes, conn_stats_.bytes_sent());
+
+    UpdateProtocolMetrics(protocol_, event, conn_stats_);
 
     conn_stats_.set_bytes_recv(event.rd_bytes);
     conn_stats_.set_bytes_sent(event.wr_bytes);

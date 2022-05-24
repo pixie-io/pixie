@@ -50,10 +50,6 @@ type fakeVZInfo struct {
 	clusterUID uuid.UUID
 }
 
-func (f *fakeVZInfo) GetAddress() (string, int32, error) {
-	return "", 0, nil
-}
-
 func (f *fakeVZInfo) GetVizierClusterInfo() (*cvmsgspb.VizierClusterInfo, error) {
 	return &cvmsgspb.VizierClusterInfo{
 		ClusterUID:  f.clusterUID.String(),
@@ -237,7 +233,8 @@ func main() {
 				&fakeVZInfo{clusterUID: clusterUID, idx: i},
 				&fakeVZOperator{},
 				nc,
-				&fakeVZHealthChecker{})
+				&fakeVZHealthChecker{},
+				nil)
 			cloudConnSvrs[i] = svr
 			go svr.RunStream()
 			i++

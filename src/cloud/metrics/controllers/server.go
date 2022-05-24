@@ -36,14 +36,12 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"px.dev/pixie/src/cloud/shared/vzshard"
+	"px.dev/pixie/src/shared/cvmsgs"
 	"px.dev/pixie/src/shared/cvmsgspb"
 )
 
-// The topic on which to listen to metrics sent by viziers.
-const vzMetricsTopic = "VZMetrics"
-
 // The table where these metrics are written.
-const bqMetricsTable = "vizier_metrics"
+const bqMetricsTable = "vzmetrics"
 
 // Row represents a bq row.
 type Row struct {
@@ -58,6 +56,7 @@ type Row struct {
 type Server struct {
 	nc        *nats.Conn
 	bqDataset *bigquery.Dataset
+	schema    bigquery.Schema
 
 	done chan struct{}
 	once sync.Once
@@ -75,13 +74,22 @@ func NewServer(nc *nats.Conn, bqDataset *bigquery.Dataset) *Server {
 
 // Start sets up the listeners starts handling messages.
 func (s *Server) Start() {
+	schema, err := bigquery.InferSchema(Row{})
+	if err != nil {
+		log.WithError(err).Fatal("Failed to infer row schema")
+	}
+	s.schema = schema
+
 	table, err := s.createOrGetBQTable()
 	if err != nil {
 		log.WithError(err).Fatal("Failed to get table from BigQuery")
 	}
 
 	for _, shard := range vzshard.GenerateShardRange() {
-		s.startShardedHandler(shard, table)
+		bqWriteChan := make(chan []*bigquery.StructSaver, 2048)
+
+		s.startShardedHandler(shard, bqWriteChan)
+		go s.startBqWriteProcessor(table, bqWriteChan)
 	}
 }
 
@@ -95,12 +103,12 @@ func (s *Server) createOrGetBQTable() (*bigquery.Table, error) {
 	}
 
 	// Table needs to be created.
-	schema, err := bigquery.InferSchema(Row{})
-	if err != nil {
-		return nil, err
-	}
 	err = table.Create(context.Background(), &bigquery.TableMetadata{
-		Schema: schema,
+		Schema: s.schema,
+		TimePartitioning: &bigquery.TimePartitioning{
+			Type:  bigquery.DayPartitioningType,
+			Field: "timestamp",
+		},
 	})
 	if err != nil {
 		return nil, err
@@ -108,12 +116,12 @@ func (s *Server) createOrGetBQTable() (*bigquery.Table, error) {
 	return table, nil
 }
 
-func (s *Server) startShardedHandler(shard string, table *bigquery.Table) {
+func (s *Server) startShardedHandler(shard string, bqWriteChan chan<- []*bigquery.StructSaver) {
 	if s.nc == nil {
 		return
 	}
 	natsCh := make(chan *nats.Msg, 8192)
-	sub, err := s.nc.ChanSubscribe(fmt.Sprintf("v2c.%s.*.%s", shard, vzMetricsTopic), natsCh)
+	sub, err := s.nc.ChanSubscribe(fmt.Sprintf("v2c.%s.*.%s", shard, cvmsgs.VizierMetricsChannel), natsCh)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to subscribe to NATS channel")
 	}
@@ -139,16 +147,34 @@ func (s *Server) startShardedHandler(shard string, table *bigquery.Table) {
 					continue
 				}
 				for _, ts := range wr.Timeseries {
-					bqWrite(table, ts)
+					bqWriteChan <- tsToStructSavers(ts, s.schema)
 				}
 			}
 		}
 	}()
 }
 
-func bqWrite(table *bigquery.Table, timeseries *prompb.TimeSeries) {
+func (s *Server) startBqWriteProcessor(table *bigquery.Table, bqWriteChan <-chan []*bigquery.StructSaver) {
 	inserter := table.Inserter()
 	inserter.SkipInvalidRows = true
+	for {
+		select {
+		case <-s.done:
+			return
+		case batch := <-bqWriteChan:
+			// Put retries on errors, use a timeout so that we don't hang forever.
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			err := inserter.Put(ctx, batch)
+			if err != nil {
+				log.WithError(err).Warn("bigquery insertion failed")
+			}
+			cancel()
+		}
+	}
+}
+
+func tsToStructSavers(timeseries *prompb.TimeSeries, schema bigquery.Schema) []*bigquery.StructSaver {
+	batch := make([]*bigquery.StructSaver, 0, len(timeseries.Samples))
 
 	var metricName string
 	labels := make(map[string]string)
@@ -161,25 +187,23 @@ func bqWrite(table *bigquery.Table, timeseries *prompb.TimeSeries) {
 	}
 	labelsJSON, _ := json.Marshal(labels)
 
-	var batch []Row
 	for _, s := range timeseries.Samples {
 		v := float64(s.Value)
 		if math.IsNaN(v) || math.IsInf(v, 0) {
 			continue
 		}
 
-		batch = append(batch, Row{
-			Metric:    metricName,
-			Labels:    string(labelsJSON),
-			Value:     v,
-			Timestamp: timestamp.Time(s.Timestamp),
+		batch = append(batch, &bigquery.StructSaver{
+			Struct: Row{
+				Metric:    metricName,
+				Labels:    string(labelsJSON),
+				Value:     v,
+				Timestamp: timestamp.Time(s.Timestamp),
+			},
+			Schema: schema,
 		})
 	}
-
-	err := inserter.Put(context.Background(), batch)
-	if err != nil {
-		log.WithError(err).Warn("bigquery insertion failed")
-	}
+	return batch
 }
 
 // Stop performs any necessary cleanup before shutdown.

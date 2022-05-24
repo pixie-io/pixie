@@ -1,0 +1,101 @@
+{
+  "variables": [
+    {
+      "name": "start_time",
+      "type": "PX_STRING",
+      "description": "The start time of the window in time units before now.",
+      "defaultValue": "-5m"
+    },
+    {
+      "name": "filter_for_not_ssl",
+      "type": "PX_BOOLEAN",
+      "description": "Include only traffic that is leaving the cluster unencrypted",
+      "defaultValue": "false"
+    },
+    {
+      "name": "use_pixie_dns_resolution",
+      "type": "PX_BOOLEAN",
+      "description": "Use pixie's DNS data to reverrse IP using forward DNS records, instead of nslookup",
+      "defaultValue": "false"
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Cluster Egress",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 4
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Graph",
+        "adjacencyList": {
+          "fromColumn": "protocol",
+          "toColumn": "resolved_domain"
+        },
+        "edgeWeightColumn": "bytes_egressed",
+        "edgeColorColumn": "edge_color",
+        "edgeHoverInfo": [
+          "resolved_domain",
+          "protocol",
+          "bytes_egressed",
+          "ssl",
+          "example_req"
+        ],
+        "edgeLength": 500,
+        "enableDefaultHierarchy": true,
+        "edgeThresholds": {
+          "mediumThreshold": 100,
+          "highThreshold": 200
+        }
+      },
+      "func": {
+        "name": "egress_graph",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "filter_for_not_ssl",
+            "variable": "filter_for_not_ssl"
+          },
+          {
+            "name": "use_pixie_dns_resolution",
+            "variable": "use_pixie_dns_resolution"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Egress by pod, IP",
+      "position": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 4
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      },
+      "func": {
+        "name": "egress_data",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "filter_for_not_ssl",
+            "variable": "filter_for_not_ssl"
+          },
+          {
+            "name": "use_pixie_dns_resolution",
+            "variable": "use_pixie_dns_resolution"
+          }
+        ]
+      }
+    }
+  ]
+}

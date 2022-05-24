@@ -786,29 +786,25 @@ func (v *fakeVzMgr) GetVizierConnectionInfo(ctx context.Context, in *uuidpb.UUID
 	}{
 		"00000000-1111-2222-2222-333333333333": {
 			&cvmsgspb.VizierConnectionInfo{
-				IPAddress: "1.1.1.1",
-				Token:     "abc0",
+				Token: "abc0",
 			},
 			nil,
 		},
 		"10000000-1111-2222-2222-333333333333": {
 			&cvmsgspb.VizierConnectionInfo{
-				IPAddress: "2.2.2.2",
-				Token:     "abc1",
+				Token: "abc1",
 			},
 			nil,
 		},
 		"20000000-1111-2222-2222-333333333333": {
 			&cvmsgspb.VizierConnectionInfo{
-				IPAddress: "3.3.3.3",
-				Token:     "abc2",
+				Token: "abc2",
 			},
 			nil,
 		},
 		"30000000-1111-2222-2222-333333333333": {
 			&cvmsgspb.VizierConnectionInfo{
-				IPAddress: "3.3.3.3",
-				Token:     "abc2",
+				Token: "abc2",
 			},
 			nil,
 		},

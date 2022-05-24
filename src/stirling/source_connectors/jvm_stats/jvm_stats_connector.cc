@@ -24,7 +24,6 @@
 
 #include "src/common/base/base.h"
 #include "src/common/base/byte_utils.h"
-#include "src/common/system/proc_parser.h"
 #include "src/stirling/source_connectors/jvm_stats/jvm_stats_table.h"
 #include "src/stirling/source_connectors/jvm_stats/utils/java.h"
 #include "src/stirling/utils/detect_application.h"
@@ -44,8 +43,8 @@ Status JVMStatsConnector::InitImpl() {
 }
 
 void JVMStatsConnector::FindJavaUPIDs(const ConnectorContext& ctx) {
-  const auto& proc_parser = system::ProcParser(system::Config::GetInstance());
   proc_tracker_.Update(ctx.GetUPIDs());
+  const auto& upid_pidinfo_map = ctx.GetPIDInfoMap();
 
   for (const auto& upid : proc_tracker_.new_upids()) {
     // The host PID 1 is not a Java app. However, when later invoking HsperfdataPath(), it could be
@@ -56,7 +55,12 @@ void JVMStatsConnector::FindJavaUPIDs(const ConnectorContext& ctx) {
     if (pid == 1) {
       continue;
     }
-    PL_ASSIGN_OR(const std::filesystem::path proc_exe, proc_parser.GetExePath(pid), continue);
+
+    auto iter = upid_pidinfo_map.find(upid);
+    if (iter == upid_pidinfo_map.end() || iter->second == nullptr) {
+      continue;
+    }
+    const std::filesystem::path proc_exe = iter->second->exe_path();
     if (DetectApplication(proc_exe) != Application::kJava) {
       continue;
     }

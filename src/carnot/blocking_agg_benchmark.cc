@@ -28,6 +28,7 @@
 #include "src/carnot/carnot.h"
 #include "src/carnot/exec/local_grpc_result_server.h"
 #include "src/carnot/exec/test_utils.h"
+#include "src/carnot/funcs/funcs.h"
 #include "src/carnot/udf/udf.h"
 #include "src/common/base/base.h"
 #include "src/common/benchmark/benchmark.h"
@@ -66,13 +67,20 @@ px.display(df, '$0')
 
 std::unique_ptr<Carnot> SetUpCarnot(std::shared_ptr<table_store::TableStore> table_store,
                                     LocalGRPCResultSinkServer* server) {
-  auto carnot_or_s = Carnot::Create(
-      sole::uuid4(), table_store,
-      std::bind(&LocalGRPCResultSinkServer::StubGenerator, server, std::placeholders::_1));
-  if (!carnot_or_s.ok()) {
-    LOG(FATAL) << "Failed to initialize Carnot.";
-  }
-  return carnot_or_s.ConsumeValueOrDie();
+  auto func_registry = std::make_unique<px::carnot::udf::Registry>("default_registry");
+  funcs::RegisterFuncsOrDie(func_registry.get());
+  auto clients_config = std::make_unique<Carnot::ClientsConfig>(Carnot::ClientsConfig{
+      [server](const std::string& address, const std::string&) {
+        return server->StubGenerator(address);
+      },
+      [](grpc::ClientContext*) {},
+  });
+  auto server_config = std::make_unique<Carnot::ServerConfig>();
+  server_config->grpc_server_port = 0;
+
+  return px::carnot::Carnot::Create(sole::uuid4(), std::move(func_registry), table_store,
+                                    std::move(clients_config), std::move(server_config))
+      .ConsumeValueOrDie();
 }
 
 // NOLINTNEXTLINE : runtime/references.
@@ -98,6 +106,7 @@ void BM_Query(benchmark::State& state, std::vector<types::DataType> types,
       LOG(FATAL) << "Aggregate benchmark query did not execute successfully.";
     }
     bytes_processed += server.exec_stats().ConsumeValueOrDie().execution_stats().bytes_processed();
+    server.ResetQueryResults();
     ++i;
   }
 

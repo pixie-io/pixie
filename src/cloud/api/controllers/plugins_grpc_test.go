@@ -260,6 +260,7 @@ func TestGetRetentionPluginInfo(t *testing.T) {
 			},
 			AllowCustomExportURL: true,
 			AllowInsecureTLS:     true,
+			DefaultExportURL:     "https://test.com",
 		}, nil)
 
 	pServer := &controllers.PluginServiceServer{mockClients.MockPlugin, mockClients.MockDataRetentionPlugin}
@@ -276,6 +277,7 @@ func TestGetRetentionPluginInfo(t *testing.T) {
 		},
 		AllowCustomExportURL: true,
 		AllowInsecureTLS:     true,
+		DefaultExportURL:     "https://test.com",
 	}, resp)
 }
 
@@ -299,6 +301,7 @@ func TestUpdateRetentionPluginConfig(t *testing.T) {
 		Version:         &types.StringValue{Value: "2.0.0"},
 		CustomExportUrl: &types.StringValue{Value: "https://localhost:8080"},
 		InsecureTLS:     &types.BoolValue{Value: true},
+		DisablePresets:  &types.BoolValue{Value: true},
 	}
 
 	mockClients.MockDataRetentionPlugin.EXPECT().UpdateOrgRetentionPluginConfig(gomock.Any(), mockReq).
@@ -315,6 +318,7 @@ func TestUpdateRetentionPluginConfig(t *testing.T) {
 		Version:         &types.StringValue{Value: "2.0.0"},
 		CustomExportUrl: &types.StringValue{Value: "https://localhost:8080"},
 		InsecureTLS:     &types.BoolValue{Value: true},
+		DisablePresets:  &types.BoolValue{Value: true},
 	})
 
 	require.NoError(t, err)

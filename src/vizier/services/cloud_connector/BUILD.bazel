@@ -35,6 +35,7 @@ go_library(
         "//src/shared/status",
         "//src/vizier/services/cloud_connector/bridge",
         "//src/vizier/services/cloud_connector/vizhealth",
+        "//src/vizier/services/cloud_connector/vzmetrics",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_sirupsen_logrus//:logrus",
         "@com_github_spf13_pflag//:pflag",

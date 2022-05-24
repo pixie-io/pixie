@@ -262,7 +262,6 @@ type ClusterInfo {
 }
 
 type ClusterConnectionInfo {
-  ipAddress: String!
   token: String!
 }
 
@@ -352,6 +351,7 @@ type PluginInfo {
   configs: [PluginConfigSchema!]!
   allowCustomExportURL: Boolean!
   allowInsecureTLS: Boolean!
+  defaultExportURL: String!
 }
 
 type PluginConfigSchema {

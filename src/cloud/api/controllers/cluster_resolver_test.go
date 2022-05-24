@@ -299,8 +299,7 @@ func TestClusterConnectionInfo(t *testing.T) {
 					ID: clusterID,
 				}).
 				Return(&cloudpb.GetClusterConnectionInfoResponse{
-					IPAddress: "127.0.0.1",
-					Token:     "this-is-a-token",
+					Token: "this-is-a-token",
 				}, nil)
 
 			gqlSchema := LoadSchema(gqlEnv)
@@ -311,7 +310,6 @@ func TestClusterConnectionInfo(t *testing.T) {
 					Query: `
 						query {
 							clusterConnection(id: "7ba7b810-9dad-11d1-80b4-00c04fd430c8") {
-								ipAddress
 								token
 							}
 						}
@@ -319,7 +317,6 @@ func TestClusterConnectionInfo(t *testing.T) {
 					ExpectedResult: `
 						{
 							"clusterConnection": {
-								"ipAddress": "127.0.0.1",
 								"token": "this-is-a-token"
 							}
 						}

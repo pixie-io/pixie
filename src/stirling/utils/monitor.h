@@ -19,12 +19,34 @@
 #pragma once
 
 #include <absl/container/flat_hash_map.h>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "src/common/base/mixins.h"
 #include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
 
 namespace px {
 namespace stirling {
+
+// Status of Stirling Source Connectors.
+struct SourceStatusRecord {
+  int64_t timestamp_ns = 0;
+  std::string source_connector = "";
+  px::statuspb::Code status;
+  std::string error = "";
+  std::string context = "";
+};
+
+// Status of ebpf probes.
+struct ProbeStatusRecord {
+  int64_t timestamp_ns = 0;
+  std::string source_connector;
+  std::string tracepoint = "";
+  px::statuspb::Code status;
+  std::string error = "";
+  std::string info = "";
+};
 
 class StirlingMonitor : NotCopyMoveable {
  public:
@@ -33,15 +55,29 @@ class StirlingMonitor : NotCopyMoveable {
     return &singleton;
   }
 
+  // Java Process.
   void NotifyJavaProcessAttach(const struct upid_t& upid);
   void NotifyJavaProcessCrashed(const struct upid_t& upid);
   void ResetJavaProcessAttachTrackers();
+
+  // Stirling Error Reporting.
+  void AppendProbeStatusRecord(const std::string& source_connector, const std::string& tracepoint,
+                               const Status& status, const std::string& info);
+  void AppendSourceStatusRecord(const std::string& source_connector, const Status& status,
+                                const std::string& context);
+  std::vector<ProbeStatusRecord> ConsumeProbeStatusRecords();
+  std::vector<SourceStatusRecord> ConsumeSourceStatusRecords();
 
   static constexpr auto kCrashWindow = std::chrono::seconds{5};
 
  private:
   using timestamp_t = std::chrono::time_point<std::chrono::steady_clock>;
   absl::flat_hash_map<struct upid_t, timestamp_t> java_proc_attach_times_;
+
+  // Records of probe deployment status.
+  std::vector<ProbeStatusRecord> probe_status_records_;
+  // Records of Stirling Source Connector status.
+  std::vector<SourceStatusRecord> source_status_records_;
 };
 
 }  // namespace stirling

@@ -274,7 +274,8 @@ func TestCheckHealth(t *testing.T) {
 			require.Equal(t, test.ExpectedErr, err)
 
 			expectedReq := &vizierpb.ExecuteScriptRequest{
-				QueryStr: `import px; px.display(px.Version())`,
+				QueryStr:  `import px; px.display(px.Version())`,
+				QueryName: "healthcheck",
 			}
 			assert.Equal(t, expectedReq, qe.ReqReceived)
 		})

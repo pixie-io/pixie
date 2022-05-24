@@ -85,19 +85,6 @@ class GRPCSinkNodeTest : public ::testing::Test {
   // Ownership will be transferred to the GRPC node, so access this ptr via `mock_` in the tests.
   std::unique_ptr<MockResultSinkServiceStub> mock_unique_;
 };
-
-constexpr char kExpectedInternalInitialization[] = R"proto(
-address: "localhost:1234"
-query_id {
-  high_bits: $0
-  low_bits: $1
-}
-query_result {
-  initiate_result_stream: true
-  grpc_source_id: 0
-}
-)proto";
-
 constexpr char kExpected0RowResult[] = R"proto(
 address: "localhost:1234"
 query_id {
@@ -187,8 +174,7 @@ TEST_F(GRPCSinkNodeTest, internal_result) {
 
   std::vector<TransferResultChunkRequest> actual_protos(4);
   std::vector<std::string> expected_protos = {
-      absl::Substitute(kExpectedInternalInitialization, exec_state_->query_id().ab,
-                       exec_state_->query_id().cd),
+      absl::Substitute(kExpected0RowResult, exec_state_->query_id().ab, exec_state_->query_id().cd),
       absl::Substitute(kExpectedInteralResult0, exec_state_->query_id().ab,
                        exec_state_->query_id().cd),
       absl::Substitute(kExpectedInteralResult1, exec_state_->query_id().ab,
@@ -231,14 +217,19 @@ TEST_F(GRPCSinkNodeTest, internal_result) {
   EXPECT_FALSE(add_metadata_called_);
 }
 
-constexpr char kExpectedExternalInitialization[] = R"proto(
+constexpr char kExpectedExternal0RowResult[] = R"proto(
 address: "localhost:1234"
 query_id {
   high_bits: $0
   low_bits: $1
 }
 query_result {
-  initiate_result_stream: true
+  row_batch {
+    cols {
+      int64_data {
+      }
+    }
+  }
   table_name: "output_table_name"
 }
 )proto";
@@ -315,7 +306,7 @@ TEST_F(GRPCSinkNodeTest, external_result) {
 
   std::vector<TransferResultChunkRequest> actual_protos(4);
   std::vector<std::string> expected_protos = {
-      absl::Substitute(kExpectedExternalInitialization, exec_state_->query_id().ab,
+      absl::Substitute(kExpectedExternal0RowResult, exec_state_->query_id().ab,
                        exec_state_->query_id().cd),
       absl::Substitute(kExpectedExteralResult0, exec_state_->query_id().ab,
                        exec_state_->query_id().cd),
@@ -673,8 +664,7 @@ TEST_F(GRPCSinkNodeTest, retry_failed_writes) {
 
   std::vector<TransferResultChunkRequest> actual_protos(5);
   std::vector<std::string> expected_protos = {
-      absl::Substitute(kExpectedInternalInitialization, exec_state_->query_id().ab,
-                       exec_state_->query_id().cd),
+      absl::Substitute(kExpected0RowResult, exec_state_->query_id().ab, exec_state_->query_id().cd),
       absl::Substitute(kExpectedInteralResult0, exec_state_->query_id().ab,
                        exec_state_->query_id().cd),
       absl::Substitute(kExpectedInteralResult1, exec_state_->query_id().ab,

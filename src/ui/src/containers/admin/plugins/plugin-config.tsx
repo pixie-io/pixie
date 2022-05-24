@@ -18,7 +18,19 @@
 
 import * as React from 'react';
 
-import { Box, Button, Divider, FormControlLabel, Skeleton, Stack, Switch, TextField, Tooltip } from '@mui/material';
+import {
+  Box,
+  Button,
+  Divider,
+  FormControlLabel,
+  Skeleton,
+  Stack,
+  Switch,
+  TextField,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import { Link } from 'react-router-dom';
 
 import { useSnackbar } from 'app/components';
 import { GQLEditablePluginConfigs, GQLPlugin } from 'app/types/schema';
@@ -79,8 +91,8 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
 
   const insecureWarning = React.useMemo(() => (
     <>
-      This plugin can be configured without TLS (Transport Layer Security).<br/>
-      In most environments, disabling TLS is a <strong>Bad Idea&trade;</strong>.<br/>
+      This plugin can be configured without TLS (Transport Layer Security).<br />
+      In most environments, disabling TLS is a <strong>Bad Idea&trade;</strong>.<br />
       However, it can sometimes be useful to delay setting up TLS. This option exists for those scenarios.
     </>
   ), []);
@@ -101,13 +113,14 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
   return (
     <form onSubmit={save}>
       <Stack spacing={4}>
+        <Typography variant='body1' sx={{ ml: 1 }}>{plugin.description}</Typography>
         {schema?.configs.map(({ name, description }) => (
           <TextField
             key={name}
             variant='outlined'
             label={name}
-            placeholder={description}
-            helperText={pendingValues.configs.find(c => c.name === name)?.value ? description : ''}
+            placeholder={`Value for ${name}`}
+            helperText={description}
             value={pendingValues.configs.find(c => c.name === name)?.value ?? ''}
             onChange={(e) => setPendingValues((prev) => ({
               ...prev,
@@ -122,9 +135,10 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
         {schema?.allowCustomExportURL && (
           <TextField
             variant='outlined'
-            label='Custom export path'
-            placeholder='Default path for retention scripts'
-            helperText={pendingValues.customExportURL ? 'Default path for retention scripts' : ''}
+            label={`Custom export URL${schema?.defaultExportURL ? ' (optional)' : ''}`}
+            required={!schema?.defaultExportURL}
+            placeholder={schema?.defaultExportURL}
+            helperText={'Default URL for retention scripts'}
             value={pendingValues.customExportURL ?? ''}
             onChange={(e) => setPendingValues((prev) => ({ ...prev, customExportURL: e.target.value }))}
             InputLabelProps={{ shrink: true }}
@@ -148,12 +162,30 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
       <Divider variant='middle' sx={{ mt: 2, mb: 2 }} />
       {/* TODO(nick,PC-1436): Dedup code in the header's <MaterialSwitch />, maybe wrap form higher up */}
       <Box sx={{ display: 'flex', flexFlow: 'row nowrap', justifyContent: 'flex-end', alignItems: 'baseline' }}>
+        {plugin.enabledVersion ?
+          <>
+            <Typography variant='h4' sx={{ ml: 1 }}>
+              {`Enabled Version: ${plugin.enabledVersion}`}
+            </Typography>&nbsp;
+            <Typography variant='caption'  sx={{ color: 'text.disabled' }}>
+              (Latest: {plugin.latestVersion})
+            </Typography>
+          </> :
+          <Typography variant='caption' sx={{ color: 'text.disabled', ml: 1 }}>
+            Latest Version: {plugin.latestVersion}
+          </Typography>
+        }
+        <Box sx={{ flexGrow: 1 }}/>
+        <Link component={Button} to='/configure-data-export' onClick={(e) => e.stopPropagation()}
+          disabled={saving || !plugin.retentionEnabled}>
+          Edit Scripts
+        </Link>
         <Button
           variant='contained'
           color='primary'
           sx={{ ml: 1 }}
           type='submit'
-          disabled={saving}
+          disabled={saving || !plugin.retentionEnabled}
         >
           Save
         </Button>

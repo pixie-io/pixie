@@ -197,11 +197,6 @@ class ExecState {
     add_auth_to_grpc_client_context_func_(ctx);
   }
 
-  const absl::flat_hash_map<std::string, carnotpb::ResultSinkService::StubInterface*>&
-  OutgoingServers() const {
-    return result_sink_stub_map_;
-  }
-
  private:
   udf::Registry* func_registry_;
   std::shared_ptr<table_store::TableStore> table_store_;

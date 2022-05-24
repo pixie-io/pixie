@@ -457,6 +457,80 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 			},
 		},
 		{
+			name: "enabling new config",
+			request: &pluginpb.UpdateOrgRetentionPluginConfigRequest{
+				OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+				PluginID: "another-plugin",
+				Configurations: map[string]string{
+					"abcd": "hello",
+				},
+				Enabled:        &types.BoolValue{Value: true},
+				Version:        &types.StringValue{Value: "0.0.1"},
+				DisablePresets: &types.BoolValue{Value: true},
+			},
+			expectedOrgConfigs: []orgConfig{
+				orgConfig{
+					OrgID:    "223e4567-e89b-12d3-a456-426655440000",
+					PluginID: "test-plugin",
+					Version:  "0.0.3",
+					Configurations: map[string]string{
+						"license_key2": "12345",
+					},
+					CustomExportURL: &exportURLv3,
+					InsecureTLS:     true,
+				},
+				orgConfig{
+					OrgID:    "223e4567-e89b-12d3-a456-426655440001",
+					PluginID: "test-plugin",
+					Version:  "0.0.2",
+					Configurations: map[string]string{
+						"license_key3": "hello",
+					},
+					CustomExportURL: &exportURLv2,
+				},
+				orgConfig{
+					OrgID:    "223e4567-e89b-12d3-a456-426655440001",
+					PluginID: "another-plugin",
+					Version:  "0.0.1",
+					Configurations: map[string]string{
+						"abcd": "hello",
+					},
+				},
+			},
+			expectedCSCreateRequests: []*cronscriptpb.CreateScriptRequest{
+				&cronscriptpb.CreateScriptRequest{
+					Script:     "dns script",
+					ClusterIDs: make([]*uuidpb.UUID, 0),
+					Configs:    string(mConfig3),
+					FrequencyS: 10,
+					Disabled:   true,
+				},
+				&cronscriptpb.CreateScriptRequest{
+					Script:     "dns script 2",
+					ClusterIDs: make([]*uuidpb.UUID, 0),
+					Configs:    string(mConfig3),
+					FrequencyS: 20,
+					Disabled:   true,
+				},
+			},
+			expectedPluginScripts: []*controllers.RetentionScript{
+				&controllers.RetentionScript{
+					ScriptName:  "dns data",
+					Description: "This is a script to get dns data",
+					IsPreset:    true,
+					PluginID:    "another-plugin",
+					ExportURL:   "",
+				},
+				&controllers.RetentionScript{
+					ScriptName:  "dns data 2",
+					Description: "This is a script to get dns data 2",
+					IsPreset:    true,
+					PluginID:    "another-plugin",
+					ExportURL:   "",
+				},
+			},
+		},
+		{
 			name: "enabling new config with custom export URL",
 			request: &pluginpb.UpdateOrgRetentionPluginConfigRequest{
 				OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),

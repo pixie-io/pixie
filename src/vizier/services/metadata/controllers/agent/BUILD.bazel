@@ -39,6 +39,8 @@ go_library(
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_gogo_protobuf//proto",
         "@com_github_nats_io_nats_go//:nats_go",
+        "@com_github_prometheus_client_golang//prometheus",
+        "@com_github_prometheus_client_golang//prometheus/promauto",
         "@com_github_sirupsen_logrus//:logrus",
     ],
 )

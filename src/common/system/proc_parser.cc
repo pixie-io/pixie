@@ -445,9 +445,10 @@ StatusOr<size_t> ProcParser::ParseProcPIDPss(const int32_t pid) const {
   return error::Internal("Could not find pss for pid $0.", pid);
 }
 
-Status ProcParser::ParseProcPIDSMaps(int32_t pid, std::vector<ProcessSMaps>* out) const {
+Status ProcParser::ParseProcMapsFile(int32_t pid, std::string filename,
+                                     std::vector<ProcessSMaps>* out) const {
   CHECK(out != nullptr);
-  std::string fpath = absl::Substitute("$0/$1/smaps", proc_base_path_, pid);
+  std::string fpath = absl::Substitute("$0/$1/$2", proc_base_path_, pid, filename);
 
   // Just to be safe when using offsetof, make sure object is standard layout.
   static_assert(std::is_standard_layout<ProcessSMaps>::value);
@@ -507,8 +508,13 @@ Status ProcParser::ParseProcPIDSMaps(int32_t pid, std::vector<ProcessSMaps>* out
       if (split.size() < kProcMapNumFields - 1) {
         return error::Internal("Failed to parse file $0", fpath);
       }
+      std::vector<std::string_view> vmem =
+          absl::StrSplit(split[0], absl::MaxSplits("-", 2), absl::SkipWhitespace());
+
       auto& smap_info = out->emplace_back();
-      smap_info.address = split[0];
+      smap_info.vmem_start = std::strtoull(vmem[0].data(), NULL, 16);
+      smap_info.vmem_end = std::strtoull(vmem[1].data(), NULL, 16);
+      smap_info.permissions = std::string(split[1]);
       smap_info.offset = split[2];
       smap_info.pathname = "[anonymous]";
       if (split.size() == kProcMapNumFields) {
@@ -520,6 +526,14 @@ Status ProcParser::ParseProcPIDSMaps(int32_t pid, std::vector<ProcessSMaps>* out
   }
 
   return Status::OK();
+}
+
+Status ProcParser::ParseProcPIDMaps(int32_t pid, std::vector<ProcessSMaps>* out) const {
+  return this->ParseProcMapsFile(pid, "maps", out);
+}
+
+Status ProcParser::ParseProcPIDSMaps(int32_t pid, std::vector<ProcessSMaps>* out) const {
+  return this->ParseProcMapsFile(pid, "smaps", out);
 }
 
 void ProcParser::ParseFromKeyValueLine(
@@ -806,6 +820,23 @@ StatusOr<absl::flat_hash_set<std::string>> ProcParser::GetMapPaths(pid_t pid) co
     }
   }
   return map_paths;
+}
+
+StatusOr<ProcParser::ProcessSMaps> ProcParser::GetExecutableMapEntry(pid_t pid, std::string libpath,
+                                                                     uint64_t vmem_start) {
+  std::vector<ProcParser::ProcessSMaps> map_entries;
+  PL_RETURN_IF_ERROR(ParseProcPIDMaps(pid, &map_entries));
+  for (const auto& entry : map_entries) {
+    if (entry.pathname.compare(libpath) != 0 || entry.permissions.compare("r-xp") != 0 ||
+        entry.vmem_start != vmem_start)
+      continue;
+
+    VLOG(1) << absl::Substitute("Found ProcessSMap for $0: vmem_start $1 permission $2",
+                                entry.pathname, absl::Hex(entry.vmem_start), entry.permissions);
+    return entry;
+  }
+
+  return error::NotFound(absl::Substitute("Could not find maps entry for $0", libpath));
 }
 
 }  // namespace system

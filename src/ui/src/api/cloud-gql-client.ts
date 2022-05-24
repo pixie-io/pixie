@@ -63,8 +63,6 @@ const loginRedirectLink = (on401: (errorMessage?: string) => void) => onError(({
   }
 });
 
-export type ClusterConnectionInfo = Pick<GQLClusterConnectionInfo, 'token'>;
-
 /**
  * Uses localStorage if it's available; uses an in-memory Map otherwise.
  * NodeJS doesn't implement it.
@@ -225,8 +223,8 @@ export class CloudClient {
   /**
    * Implementation detail for forming a connection to a cluster for health check and script execution requests.
    */
-  async getClusterConnection(id: string): Promise<ClusterConnectionInfo> {
-    const { data } = await this.graphQL.query<{ clusterConnection: ClusterConnectionInfo }>({
+  async getClusterConnection(id: string): Promise<GQLClusterConnectionInfo> {
+    const { data } = await this.graphQL.query<{ clusterConnection: GQLClusterConnectionInfo }>({
       query: gql`
         query GetClusterConnection($id: ID!) {
           clusterConnection(id: $id) {
@@ -235,7 +233,7 @@ export class CloudClient {
         }
       `,
       variables: { id },
-      fetchPolicy: 'network-only',
+      fetchPolicy: 'no-cache',
     });
     return data.clusterConnection;
   }

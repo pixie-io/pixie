@@ -183,6 +183,7 @@ linux_timeconst_files = [
 
 stirling_collateral = [
     "//src/stirling/binaries:stirling_ctrl",
+    "//src/stirling/source_connectors/perf_profiler/java/px_jattach:px_jattach",
     # TODO(jps): Find a way to package the agent lib .so files w/ Stirling vs. PEM image.
     "//src/stirling/source_connectors/perf_profiler/java/agent:musl",
     "//src/stirling/source_connectors/perf_profiler/java/agent:glibc",
@@ -217,10 +218,8 @@ list_pl_deps(
     name = "pl_3p_deps",
 )
 
-genrule(
+filegroup(
     name = "pl_3p_go_sum",
     srcs = ["go.sum"],
-    outs = ["pl_3p_go_sum.out"],
-    cmd = "cat $< | cut -d' ' -f1 > $@",
     visibility = ["//visibility:public"],
 )

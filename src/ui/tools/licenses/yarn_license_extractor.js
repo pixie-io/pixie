@@ -80,6 +80,11 @@ function getCleanRepo(projectName, licenseDetails) {
   return org && proj ? `https://github.com/${org}/${proj}` : undefined;
 }
 
+function getVersion(projectName) {
+  const splits = projectName.split('@');
+  return splits[splits.length - 1];
+}
+
 function getSpdxId(projectName, licenseDetails) {
   if (!licenseDetails.licenses) return '';
 
@@ -130,6 +135,7 @@ for (const [key, val] of Object.entries(jsonIn)) {
   out.set(getName(key, val), {
     name: getName(key, val),
     url: getCleanRepo(key, val),
+    version: getVersion(key),
     spdxId: getSpdxId(key, val),
     licenseText: getLicenseText(key, val),
   });

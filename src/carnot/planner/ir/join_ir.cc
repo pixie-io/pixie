@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 #include <map>
+#include <memory>
 
 #include "src/carnot/planner/ir/column_ir.h"
 #include "src/carnot/planner/ir/ir.h"
@@ -306,6 +307,24 @@ Status JoinIR::UpdateOpAfterParentTypesResolvedImpl() {
 
 Status JoinIR::ResolveType(CompilerState* compiler_state) {
   DCHECK_EQ(2, parent_types().size());
+
+  // Check that the join_on columns have the same types.
+  for (const auto& [idx, left_col] : Enumerate(left_on_columns_)) {
+    // Init checks that `left_on` and `right_on` are the same length.
+    auto right_col = right_on_columns_[idx];
+    PL_RETURN_IF_ERROR(ResolveExpressionType(left_col, compiler_state, parent_types()));
+    PL_RETURN_IF_ERROR(ResolveExpressionType(right_col, compiler_state, parent_types()));
+    auto left_col_dt = std::static_pointer_cast<ValueType>(left_col->resolved_type())->data_type();
+    auto right_col_dt =
+        std::static_pointer_cast<ValueType>(right_col->resolved_type())->data_type();
+    if (left_col_dt != right_col_dt) {
+      return CreateIRNodeError(
+          R"(join columns specified in `left_on` and `right_on` must have the same datatype, but the $0-th columns disagree. ["$1" ($2) vs "$3" ($4)])",
+          idx, left_col->col_name(), magic_enum::enum_name(left_col_dt), right_col->col_name(),
+          magic_enum::enum_name(right_col_dt));
+    }
+  }
+
   auto new_table = TableType::Create();
   for (const auto& [idx, col] : Enumerate(output_columns_)) {
     PL_RETURN_IF_ERROR(ResolveExpressionType(col, compiler_state, parent_types()));

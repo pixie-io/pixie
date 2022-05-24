@@ -27,6 +27,7 @@
 #include "src/carnot/carnotpb/carnot.grpc.pb.h"
 #include "src/carnot/carnotpb/carnot.pb.h"
 #include "src/common/base/base.h"
+#include "src/common/base/statuspb/status.pb.h"
 #include "src/table_store/table_store.h"
 
 namespace px {
@@ -63,6 +64,8 @@ class LocalResultSinkServer final : public carnotpb::ResultSinkService::Service 
     return ::grpc::Status::OK;
   }
 
+  void ResetQueryResults() { query_results_.clear(); }
+
  private:
   // List of the query results received.
   std::vector<carnotpb::TransferResultChunkRequest> query_results_;
@@ -90,6 +93,8 @@ class LocalGRPCResultSinkServer {
   std::vector<carnotpb::TransferResultChunkRequest> raw_query_results() {
     return result_sink_server_.query_results();
   }
+
+  void ResetQueryResults() { result_sink_server_.ResetQueryResults(); }
 
   StatusOr<QueryExecStats> exec_stats() {
     bool got_exec_stats = false;
@@ -124,6 +129,16 @@ class LocalGRPCResultSinkServer {
           req.query_result().table_name() == table_name) {
         auto rb = RowBatch::FromProto(req.query_result().row_batch()).ConsumeValueOrDie();
         output.push_back(*rb);
+      }
+    }
+    return output;
+  }
+
+  std::vector<statuspb::Status> exec_errors() {
+    std::vector<statuspb::Status> output;
+    for (const auto& req : result_sink_server_.query_results()) {
+      if (req.has_execution_error()) {
+        output.push_back(req.execution_error());
       }
     }
     return output;

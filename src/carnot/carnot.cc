@@ -20,8 +20,11 @@
 #include <string>
 
 #include "src/carnot/carnot.h"
+#include "src/carnot/carnotpb/carnot.grpc.pb.h"
+#include "src/carnot/carnotpb/carnot.pb.h"
 #include "src/carnot/engine_state.h"
 #include "src/carnot/exec/exec_graph.h"
+#include "src/carnot/exec/grpc_router.h"
 #include "src/carnot/funcs/builtins/builtins.h"
 #include "src/carnot/plan/operators.h"
 #include "src/carnot/plan/plan.h"
@@ -47,16 +50,10 @@ class CarnotImpl final : public Carnot {
    * grpc_server_port of 0 disables the GRPC server.
    * @return a status of whether initialization was successful.
    */
-  Status Init(const sole::uuid& agent_id, std::shared_ptr<table_store::TableStore> table_store,
-              const exec::ResultSinkStubGenerator& stub_generator, int grpc_server_port = 0,
-              std::shared_ptr<grpc::ServerCredentials> grpc_server_creds = nullptr);
-
   Status Init(const sole::uuid& agent_id, std::unique_ptr<udf::Registry> func_registry,
               std::shared_ptr<table_store::TableStore> table_store,
-              const exec::ResultSinkStubGenerator& stub_generator,
-              std::function<void(grpc::ClientContext*)> add_auth_to_grpc_context_func,
-              int grpc_server_port = 0,
-              std::shared_ptr<grpc::ServerCredentials> grpc_server_creds = nullptr);
+              std::unique_ptr<ClientsConfig> clients_config,
+              std::unique_ptr<ServerConfig> server_config);
 
   Status ExecuteQuery(const std::string& query, const sole::uuid& query_id,
                       types::Time64NSValue time_now, bool analyze) override;
@@ -94,11 +91,10 @@ class CarnotImpl final : public Carnot {
   planner::compiler::Compiler compiler_;
   std::unique_ptr<EngineState> engine_state_;
 
-  std::shared_ptr<grpc::ServerCredentials> grpc_server_creds_;
   std::unique_ptr<std::thread> grpc_server_thread_;
   std::unique_ptr<grpc::Server> grpc_server_;
-  std::unique_ptr<exec::GRPCRouter> grpc_router_;
-  int grpc_server_port_;
+  std::unique_ptr<ClientsConfig> clients_config_;
+  std::unique_ptr<ServerConfig> server_config_;
 
   // The id of the agent that owns this Carnot instance.
   sole::uuid agent_id_;
@@ -106,21 +102,20 @@ class CarnotImpl final : public Carnot {
 
 Status CarnotImpl::Init(const sole::uuid& agent_id, std::unique_ptr<udf::Registry> func_registry,
                         std::shared_ptr<table_store::TableStore> table_store,
-                        const exec::ResultSinkStubGenerator& stub_generator,
-                        std::function<void(grpc::ClientContext*)> add_auth_to_grpc_context_func,
-                        int grpc_server_port,
-                        std::shared_ptr<grpc::ServerCredentials> grpc_server_creds) {
+                        std::unique_ptr<ClientsConfig> clients_config,
+                        std::unique_ptr<ServerConfig> server_config) {
   agent_id_ = agent_id;
-  grpc_server_creds_ = grpc_server_creds;
-  grpc_server_port_ = grpc_server_port;
-  grpc_router_ = std::make_unique<exec::GRPCRouter>();
-  if (grpc_server_port_ > 0) {
+  clients_config_ = std::move(clients_config);
+  server_config_ = std::move(server_config);
+  if (server_config_->grpc_server_port > 0) {
     grpc_server_thread_ = std::make_unique<std::thread>(&CarnotImpl::GRPCServerFunc, this);
   }
 
-  PL_ASSIGN_OR_RETURN(engine_state_, EngineState::CreateDefault(
-                                         std::move(func_registry), table_store, stub_generator,
-                                         add_auth_to_grpc_context_func, grpc_router_.get()));
+  PL_ASSIGN_OR_RETURN(engine_state_,
+                      EngineState::CreateDefault(std::move(func_registry), table_store,
+                                                 clients_config_->stub_generator,
+                                                 clients_config_->add_auth_to_grpc_context_func,
+                                                 &server_config_->grpc_router));
   return Status::OK();
 }
 
@@ -184,6 +179,40 @@ Status CarnotImpl::RegisterUDFsInPlanFragment(exec::ExecState* exec_state, plan:
       .Walk(pf);
 }
 
+StatusOr<absl::flat_hash_map<std::string, carnotpb::ResultSinkService::StubInterface*>>
+GetOutgoingConns(exec::ExecState* exec_state, plan::Plan* plan) {
+  absl::flat_hash_map<std::string, carnotpb::ResultSinkService::StubInterface*> outgoing_conns;
+  PL_RETURN_IF_ERROR(
+      plan::PlanWalker()
+          .OnPlanFragment([exec_state, &outgoing_conns](plan::PlanFragment* pf) {
+            auto no_op = [&](const auto&) { return Status::OK(); };
+            return plan::PlanFragmentWalker()
+                .OnMap(no_op)
+                .OnAggregate(no_op)
+                .OnFilter(no_op)
+                .OnLimit(no_op)
+                .OnMemorySink(no_op)
+                .OnMemorySource(no_op)
+                .OnUnion(no_op)
+                .OnJoin(no_op)
+                .OnGRPCSource(no_op)
+                .OnGRPCSink([exec_state, &outgoing_conns](const plan::GRPCSinkOperator& grpc_sink) {
+                  if (outgoing_conns.contains(grpc_sink.address())) {
+                    return Status::OK();
+                  }
+                  outgoing_conns[grpc_sink.address()] = exec_state->ResultSinkServiceStub(
+                      grpc_sink.address(), grpc_sink.ssl_targetname());
+                  return Status::OK();
+                })
+                .OnUDTFSource(no_op)
+                .OnEmptySource(no_op)
+                .OnOTelSink(no_op)
+                .Walk(pf);
+          })
+          .Walk(plan));
+  return outgoing_conns;
+}
+
 Status CarnotImpl::WalkExpression(exec::ExecState* exec_state, const plan::ScalarExpression& expr) {
   StatusOr<bool> walk_result =
       plan::ExpressionWalker<bool>()
@@ -210,18 +239,45 @@ Status CarnotImpl::WalkExpression(exec::ExecState* exec_state, const plan::Scala
 }
 
 void CarnotImpl::GRPCServerFunc() {
-  CHECK(grpc_router_ != nullptr);
-  CHECK(grpc_server_creds_ != nullptr);
+  CHECK(server_config_ != nullptr);
 
-  std::string server_address(absl::Substitute("0.0.0.0:$0", grpc_server_port_));
+  std::string server_address(absl::Substitute("0.0.0.0:$0", server_config_->grpc_server_port));
   grpc::ServerBuilder builder;
 
-  builder.AddListeningPort(server_address, grpc_server_creds_);
-  builder.RegisterService(grpc_router_.get());
+  builder.AddListeningPort(server_address, server_config_->grpc_server_creds);
+  builder.RegisterService(&server_config_->grpc_router);
   grpc_server_ = builder.BuildAndStart();
   std::cout << "Server listening on " << server_address << std::endl;
   CHECK(grpc_server_ != nullptr);
   grpc_server_->Wait();
+}
+
+Status SendTransferResultChunkToOutgoingConns(
+    const absl::flat_hash_map<std::string, carnotpb::ResultSinkService::StubInterface*>&
+        outgoing_servers,
+    const std::function<void(grpc::ClientContext*)>& add_auth_to_grpc_context_func,
+    ::px::carnotpb::TransferResultChunkRequest req) {
+  if (outgoing_servers.empty()) {
+    return Status::OK();
+  }
+  for (const auto& [addr, server] : outgoing_servers) {
+    ::px::carnotpb::TransferResultChunkResponse resp;
+    req.set_address(addr);
+    grpc::ClientContext context;
+    add_auth_to_grpc_context_func(&context);
+    context.set_deadline(std::chrono::system_clock::now() + kRPCResultTimeout);
+    auto writer = server->TransferResultChunk(&context, &resp);
+    writer->Write(req);
+    writer->WritesDone();
+    auto status = writer->Finish();
+    if (!status.ok()) {
+      return error::Internal(
+          "Failed to call Finish on TransferResultChunk. "
+          "Status: $0",
+          status.error_message());
+    }
+  }
+  return Status::OK();
 }
 
 Status SendFinalExecutionStatsToOutgoingConns(
@@ -231,47 +287,54 @@ Status SendFinalExecutionStatsToOutgoingConns(
     std::function<void(grpc::ClientContext*)> add_auth_to_grpc_context_func,
     const queryresultspb::AgentExecutionStats& agent_stats,
     const std::vector<queryresultspb::AgentExecutionStats>& all_agent_stats) {
-  // Only run this if there are outgoing_servers.
-  if (outgoing_servers.size()) {
-    ::px::carnotpb::TransferResultChunkRequest req;
+  ::px::carnotpb::TransferResultChunkRequest req;
+  ToProto(query_id, req.mutable_query_id());
 
-    ToProto(query_id, req.mutable_query_id());
+  int64_t total_bytes_processed = 0;
+  int64_t total_records_processed = 0;
 
-    int64_t total_bytes_processed = 0;
-    int64_t total_records_processed = 0;
-
-    // Add all of the agent stats.
-    for (const auto& agent_stats : all_agent_stats) {
-      *(req.mutable_execution_and_timing_info()->add_agent_execution_stats()) = agent_stats;
-      total_records_processed += agent_stats.records_processed();
-      total_bytes_processed += agent_stats.bytes_processed();
-    }
-
-    // Add the stats for this particular agent.
-    auto stats = req.mutable_execution_and_timing_info()->mutable_execution_stats();
-    stats->mutable_timing()->set_execution_time_ns(agent_stats.execution_time_ns());
-    stats->set_bytes_processed(total_bytes_processed);
-    stats->set_records_processed(total_records_processed);
-
-    for (const auto& [addr, server] : outgoing_servers) {
-      ::px::carnotpb::TransferResultChunkResponse resp;
-      req.set_address(addr);
-      grpc::ClientContext context;
-      add_auth_to_grpc_context_func(&context);
-      context.set_deadline(std::chrono::system_clock::now() + kRPCResultTimeout);
-      auto writer = server->TransferResultChunk(&context, &resp);
-      writer->Write(req);
-      writer->WritesDone();
-      auto status = writer->Finish();
-      if (!status.ok()) {
-        return error::Internal(
-            "Failed to call Finish on TransferResultChunk while sending query execution stats. "
-            "Status: $0",
-            status.error_message());
-      }
-    }
+  // Add all of the agent stats.
+  for (const auto& agent_stats : all_agent_stats) {
+    *(req.mutable_execution_and_timing_info()->add_agent_execution_stats()) = agent_stats;
+    total_records_processed += agent_stats.records_processed();
+    total_bytes_processed += agent_stats.bytes_processed();
   }
-  return Status::OK();
+
+  // Add the stats for this particular agent.
+  auto stats = req.mutable_execution_and_timing_info()->mutable_execution_stats();
+  stats->mutable_timing()->set_execution_time_ns(agent_stats.execution_time_ns());
+  stats->set_bytes_processed(total_bytes_processed);
+  stats->set_records_processed(total_records_processed);
+  return SendTransferResultChunkToOutgoingConns(outgoing_servers, add_auth_to_grpc_context_func,
+                                                std::move(req));
+}
+
+Status SendErrorToOutgoingConns(
+    const sole::uuid& query_id,
+    const absl::flat_hash_map<std::string, carnotpb::ResultSinkService::StubInterface*>&
+        outgoing_servers,
+    const std::function<void(grpc::ClientContext*)>& add_auth_to_grpc_context_func, Status s) {
+  ::px::carnotpb::TransferResultChunkRequest req;
+  ToProto(query_id, req.mutable_query_id());
+  s.ToProto(req.mutable_execution_error());
+  return SendTransferResultChunkToOutgoingConns(outgoing_servers, add_auth_to_grpc_context_func,
+                                                std::move(req));
+}
+
+Status InitiateOutgoingConns(
+    const sole::uuid& query_id,
+    const absl::flat_hash_map<std::string, carnotpb::ResultSinkService::StubInterface*>&
+        outgoing_servers,
+    const std::function<void(grpc::ClientContext*)>& add_auth_to_grpc_context_func) {
+  // Only run this if there are outgoing_servers.
+  if (outgoing_servers.empty()) {
+    return Status::OK();
+  }
+  ::px::carnotpb::TransferResultChunkRequest req;
+  ToProto(query_id, req.mutable_query_id());
+  *req.mutable_initiate_conn() = ::px::carnotpb::TransferResultChunkRequest::InitiateConnection();
+  return SendTransferResultChunkToOutgoingConns(outgoing_servers, add_auth_to_grpc_context_func,
+                                                std::move(req));
 }
 
 Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uuid& query_id,
@@ -284,6 +347,9 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
   // For each of the plan fragments in the plan, execute the query.
   std::vector<std::string> output_table_strs;
   auto exec_state = engine_state_->CreateExecState(query_id);
+  PL_ASSIGN_OR_RETURN(auto outgoing_conns, GetOutgoingConns(exec_state.get(), &plan));
+  PL_RETURN_IF_ERROR(InitiateOutgoingConns(query_id, outgoing_conns,
+                                           engine_state_->add_auth_to_grpc_context_func()));
 
   // TODO(michellenguyen/zasgar, PP-2579): We should periodically update the metadata state for
   // long-running queries after a certain time duration or number of row batches processed. For now,
@@ -304,6 +370,7 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
   // Unclear how we'll use plan fragments in the future (they're currently unused). For now, we will
   // share the schema between plan fragments.
   auto schema = std::make_unique<table_store::schema::Schema>();
+  std::vector<statuspb::Status> incoming_errors;
   auto s =
       plan::PlanWalker()
           .OnPlanFragment([&](auto* pf) {
@@ -311,6 +378,11 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
             PL_RETURN_IF_ERROR(exec_graph.Init(schema.get(), plan_state.get(), exec_state.get(), pf,
                                                /* collect_exec_node_stats */ analyze));
             PL_RETURN_IF_ERROR(exec_graph.Execute());
+
+            // We must get this while exec_graph is alive. ExecutionGraph destructor calls
+            // GRPCRouter::DeleteQuery() which would delete this data.
+            auto errors = exec_state->grpc_router()->GetIncomingWorkerErrors(query_id);
+            incoming_errors.insert(incoming_errors.end(), errors.begin(), errors.end());
             auto exec_stats = exec_graph.GetStats();
             bytes_processed += exec_stats.bytes_processed;
             rows_processed += exec_stats.rows_processed;
@@ -350,7 +422,24 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
             return Status::OK();
           })
           .Walk(&plan);
-  PL_RETURN_IF_ERROR(s);
+  if (!s.ok()) {
+    PL_RETURN_IF_ERROR(SendErrorToOutgoingConns(query_id, outgoing_conns,
+                                                engine_state_->add_auth_to_grpc_context_func(), s));
+    return s;
+  }
+
+  if (!incoming_errors.empty()) {
+    std::vector<std::string> messages;
+    for (const auto& e : incoming_errors) {
+      messages.push_back(e.msg());
+    }
+
+    auto combined_status = Status(incoming_errors[0].err_code(), absl::StrJoin(messages, "\n"));
+
+    PL_RETURN_IF_ERROR(SendErrorToOutgoingConns(
+        query_id, outgoing_conns, engine_state_->add_auth_to_grpc_context_func(), combined_status));
+    return combined_status;
+  }
 
   std::vector<uuidpb::UUID> incoming_agents;
   for (const auto& id : logical_plan.incoming_agent_ids()) {
@@ -361,8 +450,8 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
 
   std::vector<queryresultspb::AgentExecutionStats> input_agent_stats;
   if (HasGRPCServer() && !incoming_agents.empty()) {
-    PL_ASSIGN_OR_RETURN(input_agent_stats,
-                        grpc_router_->GetIncomingWorkerExecStats(query_id, incoming_agents));
+    PL_ASSIGN_OR_RETURN(input_agent_stats, server_config_->grpc_router.GetIncomingWorkerExecStats(
+                                               query_id, incoming_agents));
   }
 
   // Compute bytes processed and records processed across all agents for all queries,
@@ -385,7 +474,7 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
   // analyze=true will send per operator stats.
   all_agent_stats.push_back(agent_operator_exec_stats);
 
-  return SendFinalExecutionStatsToOutgoingConns(query_id, exec_state->OutgoingServers(),
+  return SendFinalExecutionStatsToOutgoingConns(query_id, outgoing_conns,
                                                 engine_state_->add_auth_to_grpc_context_func(),
                                                 agent_operator_exec_stats, all_agent_stats);
 }
@@ -402,27 +491,12 @@ CarnotImpl::~CarnotImpl() {
 StatusOr<std::unique_ptr<Carnot>> Carnot::Create(
     const sole::uuid& agent_id, std::unique_ptr<udf::Registry> func_registry,
     std::shared_ptr<table_store::TableStore> table_store,
-    const exec::ResultSinkStubGenerator& stub_generator,
-    std::function<void(grpc::ClientContext* ctx)> add_auth_to_grpc_context_func,
-    int grpc_server_port, std::shared_ptr<grpc::ServerCredentials> grpc_server_creds) {
+    std::unique_ptr<ClientsConfig> clients_config, std::unique_ptr<ServerConfig> server_config) {
   std::unique_ptr<Carnot> carnot_impl(new CarnotImpl());
   PL_RETURN_IF_ERROR(static_cast<CarnotImpl*>(carnot_impl.get())
-                         ->Init(agent_id, std::move(func_registry), table_store, stub_generator,
-                                add_auth_to_grpc_context_func, grpc_server_port,
-                                grpc_server_creds));
+                         ->Init(agent_id, std::move(func_registry), table_store,
+                                std::move(clients_config), std::move(server_config)));
   return carnot_impl;
-}
-
-StatusOr<std::unique_ptr<Carnot>> Carnot::Create(
-    const sole::uuid& agent_id, std::shared_ptr<table_store::TableStore> table_store,
-    const exec::ResultSinkStubGenerator& stub_generator, int grpc_server_port,
-    std::shared_ptr<grpc::ServerCredentials> grpc_server_creds) {
-  auto func_registry = std::make_unique<px::carnot::udf::Registry>("default_registry");
-  px::carnot::funcs::RegisterFuncsOrDie(func_registry.get());
-
-  return Create(
-      agent_id, std::move(func_registry), table_store, stub_generator, [](grpc::ClientContext*) {},
-      grpc_server_port, grpc_server_creds);
 }
 
 }  // namespace carnot

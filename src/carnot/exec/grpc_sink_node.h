@@ -86,9 +86,8 @@ class GRPCSinkNode : public SinkNode {
 
  private:
   Status CloseWriter(ExecState* exec_state);
-  Status StartConnection(ExecState* exec_state, bool send_initiate_req);
-  Status StartConnectionWithRetries(ExecState* exec_state, bool send_initiate_req,
-                                    size_t n_retries);
+  Status StartConnection(ExecState* exec_state);
+  Status StartConnectionWithRetries(ExecState* exec_state, size_t n_retries);
   Status CancelledByServer(ExecState* exec_state);
   Status TryWriteRequest(ExecState* exec_state, const carnotpb::TransferResultChunkRequest& req);
 

@@ -459,6 +459,9 @@ export class ExecuteScriptRequest extends jspb.Message {
   hasConfigs(): boolean;
   clearConfigs(): ExecuteScriptRequest;
 
+  getQueryName(): string;
+  setQueryName(value: string): ExecuteScriptRequest;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): ExecuteScriptRequest.AsObject;
   static toObject(includeInstance: boolean, msg: ExecuteScriptRequest): ExecuteScriptRequest.AsObject;
@@ -476,6 +479,7 @@ export namespace ExecuteScriptRequest {
     encryptionOptions?: ExecuteScriptRequest.EncryptionOptions.AsObject,
     queryId: string,
     configs?: Configs.AsObject,
+    queryName: string,
   }
 
   export class FuncToExecute extends jspb.Message {

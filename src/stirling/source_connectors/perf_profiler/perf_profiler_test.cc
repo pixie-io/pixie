@@ -17,6 +17,7 @@
  */
 
 #include <algorithm>
+#include <atomic>
 
 #include <sys/sysinfo.h>
 
@@ -35,14 +36,19 @@
 #include "src/stirling/source_connectors/perf_profiler/testing/testing.h"
 #include "src/stirling/testing/common.h"
 
-DEFINE_uint32(test_run_time, 90, "Number of seconds to run the test.");
+DEFINE_uint32(test_run_time, 30, "Number of seconds to run the test.");
+DEFINE_string(test_java_image_names, JDK_IMAGE_NAMES,
+              "Java docker images to use as Java test cases.");
 DECLARE_bool(stirling_profiler_java_symbols);
 DECLARE_string(stirling_profiler_java_agent_libs);
+DECLARE_uint32(stirling_profiler_table_update_period_seconds);
+DECLARE_uint32(stirling_profiler_stack_trace_sample_period_ms);
 
 namespace px {
 namespace stirling {
 
 using ::px::stirling::profiler::testing::GetAgentLibsFlagValueForTesting;
+using ::px::stirling::profiler::testing::GetPxJattachFlagValueForTesting;
 using ::px::stirling::testing::FindRecordIdxMatchesPIDs;
 using ::px::testing::BazelBinTestFilePath;
 using ::px::testing::PathExists;
@@ -52,6 +58,34 @@ using ::testing::Not;
 using ::testing::Pair;
 using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
+
+namespace {
+// BazelXXTestAppPath() are helpers to build & return the bazelified path to
+// one of the toy apps used by perf profiler testing.
+std::filesystem::path BazelCCTestAppPath(const std::string_view app_name) {
+  const std::filesystem::path kToyAppsPath =
+      "src/stirling/source_connectors/perf_profiler/testing/cc";
+  const std::filesystem::path app_path = kToyAppsPath / app_name;
+  const std::filesystem::path bazel_app_path = BazelBinTestFilePath(app_path);
+  return bazel_app_path;
+}
+
+std::filesystem::path BazelGoTestAppPath(const std::string_view app_name) {
+  char const* const go_path_pattern = "src/stirling/source_connectors/perf_profiler/testing/go/$0_";
+  const std::filesystem::path sub_path = absl::Substitute(go_path_pattern, app_name);
+  const std::filesystem::path app_path = sub_path / app_name;
+  const std::filesystem::path bazel_app_path = BazelBinTestFilePath(app_path);
+  return bazel_app_path;
+}
+
+std::filesystem::path BazelJavaTestAppPath(const std::string_view app_name) {
+  const std::filesystem::path kToyAppsPath =
+      "src/stirling/source_connectors/perf_profiler/testing/java";
+  const std::filesystem::path app_path = kToyAppsPath / app_name;
+  const std::filesystem::path bazel_app_path = BazelBinTestFilePath(app_path);
+  return bazel_app_path;
+}
+}  // namespace
 
 class PerfProfilerTestSubProcesses {
  public:
@@ -152,7 +186,7 @@ class ContainerSubProcesses final : public PerfProfilerTestSubProcesses {
   std::vector<std::unique_ptr<ContainerRunner>> sub_processes_;
 };
 
-class PerfProfileBPFTest : public ::testing::Test {
+class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path> {
  public:
   PerfProfileBPFTest()
       : test_run_time_(FLAGS_test_run_time), data_table_(/*id*/ 0, kStackTraceTable) {}
@@ -162,40 +196,19 @@ class PerfProfileBPFTest : public ::testing::Test {
     FLAGS_stirling_profiler_java_symbols = true;
     FLAGS_number_attach_attempts_per_iteration = kNumSubProcesses;
     FLAGS_stirling_profiler_java_agent_libs = GetAgentLibsFlagValueForTesting();
+    FLAGS_stirling_profiler_px_jattach_path = GetPxJattachFlagValueForTesting();
+    FLAGS_stirling_profiler_table_update_period_seconds = 5;
+    FLAGS_stirling_profiler_stack_trace_sample_period_ms = 7;
 
     source_ = PerfProfileConnector::Create("perf_profile_connector");
     ASSERT_OK(source_->Init());
-    ASSERT_LT(source_->SamplingPeriod(), test_run_time_);
+
+    // Immediately start the transfer data thread to continue draining perf buffers,
+    // i.e. to prevent dropping perf buffer entries.
+    StartTransferDataThread();
   }
 
   void TearDown() override { ASSERT_OK(source_->Stop()); }
-
-  // BazelXXTestAppPath() are helpers to build & return the bazelified path to
-  // one of the toy apps used by perf profiler testing.
-  std::filesystem::path BazelCCTestAppPath(const std::filesystem::path& app_name) {
-    const std::filesystem::path kToyAppsPath =
-        "src/stirling/source_connectors/perf_profiler/testing/cc";
-    const std::filesystem::path app_path = fs::JoinPath({&kToyAppsPath, &app_name});
-    const std::filesystem::path bazel_app_path = BazelBinTestFilePath(app_path);
-    return bazel_app_path;
-  }
-
-  std::filesystem::path BazelGoTestAppPath(const std::filesystem::path& app_name) {
-    const std::string sub_path_str = absl::Substitute(
-        "src/stirling/source_connectors/perf_profiler/testing/go/$0_", app_name.string());
-    const std::filesystem::path sub_path = sub_path_str;
-    const std::filesystem::path app_path = fs::JoinPath({&sub_path, &app_name});
-    const std::filesystem::path bazel_app_path = BazelBinTestFilePath(app_path);
-    return bazel_app_path;
-  }
-
-  std::filesystem::path BazelJavaTestAppPath(const std::filesystem::path& app_name) {
-    const std::filesystem::path kToyAppsPath =
-        "src/stirling/source_connectors/perf_profiler/testing/java";
-    const std::filesystem::path app_path = fs::JoinPath({&kToyAppsPath, &app_name});
-    const std::filesystem::path bazel_app_path = BazelBinTestFilePath(app_path);
-    return bazel_app_path;
-  }
 
   void PopulateObservedStackTraces(const std::vector<size_t>& target_row_idxs) {
     // Just check that the test author populated the necessary,
@@ -307,18 +320,47 @@ class PerfProfileBPFTest : public ::testing::Test {
     column_ptrs_populated_ = true;
   }
 
-  std::chrono::duration<double> RunTest() {
-    const std::chrono::milliseconds t_sleep = source_->SamplingPeriod();
-    const auto start_time = std::chrono::steady_clock::now();
-    const auto stop_time = start_time + test_run_time_;
+  void RefreshContext(const absl::flat_hash_set<md::UPID>& upids) {
+    absl::base_internal::SpinLockHolder lock(&perf_profiler_state_lock_);
+    ctx_ = std::make_unique<StandaloneContext>(upids);
+  }
 
-    // Continuously poke Stirling TransferData() using the underlying schema periodicity;
-    // break from this loop when the elapsed time exceeds the targeted run time.
-    while (std::chrono::steady_clock::now() < stop_time) {
-      source_->TransferData(ctx_.get(), data_tables_);
-      std::this_thread::sleep_for(t_sleep);
-    }
+  void StartTransferDataThread() {
+    ASSERT_TRUE(source_ != nullptr);
+
+    sampling_period_ = source_->SamplingPeriod();
+    ASSERT_LT(sampling_period_, test_run_time_);
+
+    // Create an initial empty context for use by the transfer data thread.
+    const absl::flat_hash_set<md::UPID> empty_upid_set;
+    ctx_ = std::make_unique<StandaloneContext>(empty_upid_set);
+
+    transfer_data_thread_ = std::thread([this]() {
+      transfer_enable_ = true;
+      while (transfer_enable_) {
+        {
+          absl::base_internal::SpinLockHolder lock(&perf_profiler_state_lock_);
+          source_->TransferData(ctx_.get(), data_tables_);
+        }
+        std::this_thread::sleep_for(sampling_period_);
+      }
+    });
+  }
+
+  void StopTransferDataThread() {
+    CHECK(transfer_data_thread_.joinable());
+    transfer_enable_ = false;
+    transfer_data_thread_.join();
     source_->TransferData(ctx_.get(), data_tables_);
+  }
+
+  std::chrono::duration<double> RunTest() {
+    const auto start_time = std::chrono::steady_clock::now();
+
+    // While we sleep (here), the transfer data thread is running.
+    // In that thread, TransferData() is invoked periodically.
+    std::this_thread::sleep_for(test_run_time_);
+    StopTransferDataThread();
 
     // We return the amount of time that we ran the test; it will be used to compute
     // the observed sample rate and the expected number of samples.
@@ -326,6 +368,10 @@ class PerfProfileBPFTest : public ::testing::Test {
   }
 
   const std::chrono::seconds test_run_time_;
+  std::chrono::milliseconds sampling_period_;
+  std::atomic<bool> transfer_enable_ = false;
+  std::thread transfer_data_thread_;
+  absl::base_internal::SpinLock perf_profiler_state_lock_;
   std::unique_ptr<PerfProfileConnector> source_;
   std::unique_ptr<PerfProfilerTestSubProcesses> sub_processes_;
   std::unique_ptr<StandaloneContext> ctx_;
@@ -361,7 +407,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
   // Start target apps & create the connector context using the sub-process upids.
   sub_processes_ = std::make_unique<CPUPinnedSubProcesses>(bazel_app_path);
   ASSERT_NO_FATAL_FAILURE(sub_processes_->StartAll());
-  ctx_ = std::make_unique<StandaloneContext>(sub_processes_->upids());
+  RefreshContext(sub_processes_->upids());
 
   // Allow target apps to run, and periodically call transfer data on perf profile connector.
   const std::chrono::duration<double> elapsed_time = RunTest();
@@ -384,7 +430,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
   // Start target apps & create the connector context using the sub-process upids.
   sub_processes_ = std::make_unique<CPUPinnedSubProcesses>(bazel_app_path);
   ASSERT_NO_FATAL_FAILURE(sub_processes_->StartAll());
-  ctx_ = std::make_unique<StandaloneContext>(sub_processes_->upids());
+  RefreshContext(sub_processes_->upids());
 
   // Allow target apps to run, and periodically call transfer data on perf profile connector.
   const std::chrono::duration<double> elapsed_time = RunTest();
@@ -396,20 +442,45 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
       CheckExpectedCounts(observed_stack_traces_, kNumSubProcesses, elapsed_time, key1x, key2x));
 }
 
-TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
+TEST_F(PerfProfileBPFTest, GraalVM_AOT_Test) {
+  const std::string app_path = "graal-vm-aot/app/JavaFib";
+  const std::filesystem::path bazel_app_path = BazelJavaTestAppPath(app_path);
+  ASSERT_TRUE(fs::Exists(bazel_app_path)) << absl::StrFormat("Missing: %s.", bazel_app_path);
+
+  // The target app is written such that key2x uses twice the CPU time as key1x.
+  // For Java, we will match only the leaf symbol because we cannot predict the full stack trace.
+  constexpr std::string_view key2x = "JavaFib_fibs2x_e9d725b56c4649a7fcc1e66d45ab8624143a94c1";
+  constexpr std::string_view key1x = "JavaFib_fibs1x_080f663fe758fb767651ed8dec254a0a7ec4964a";
+
+  // Start target apps & create the connector context using the sub-process upids.
+  sub_processes_ = std::make_unique<CPUPinnedSubProcesses>(bazel_app_path);
+  ASSERT_NO_FATAL_FAILURE(sub_processes_->StartAll());
+  RefreshContext(sub_processes_->upids());
+
+  // Allow target apps to run, and periodically call transfer data on perf profile connector.
+  const std::chrono::duration<double> elapsed_time = RunTest();
+
+  // Pull the data from the perf profile connector into this test case.
+  ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
+
+  ASSERT_NO_FATAL_FAILURE(
+      CheckExpectedCounts(observed_leaf_symbols_, kNumSubProcesses, elapsed_time, key1x, key2x));
+}
+
+TEST_P(PerfProfileBPFTest, PerfProfilerJavaTest) {
   constexpr std::string_view kContainerNamePfx = "java";
-  const std::filesystem::path image_tar_path = BazelJavaTestAppPath("image.tar");
+  const std::filesystem::path image_tar_path = GetParam();
   ASSERT_TRUE(fs::Exists(image_tar_path)) << absl::StrFormat("Missing: %s.", image_tar_path);
 
   // The target app is written such that key2x uses twice the CPU time as key1x.
   // For Java, we will match only the leaf symbol because we cannot predict the full stack trace.
-  constexpr std::string_view key2x = "[j] long JavaFib::fib52()";
-  constexpr std::string_view key1x = "[j] long JavaFib::fib27()";
+  constexpr std::string_view key2x = "[j] long JavaFib::fibs2x()";
+  constexpr std::string_view key1x = "[j] long JavaFib::fibs1x()";
 
   // Start target apps & create the connector context using the sub-process upids.
   sub_processes_ = std::make_unique<ContainerSubProcesses>(image_tar_path, kContainerNamePfx);
   ASSERT_NO_FATAL_FAILURE(sub_processes_->StartAll());
-  ctx_ = std::make_unique<StandaloneContext>(sub_processes_->upids());
+  RefreshContext(sub_processes_->upids());
 
   // Allow target apps to run, and periodically call transfer data on perf profile connector.
   const std::chrono::duration<double> elapsed_time = RunTest();
@@ -421,7 +492,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
       CheckExpectedCounts(observed_leaf_symbols_, kNumSubProcesses, elapsed_time, key1x, key2x));
 
   // Now we will test agent cleanup, specifically whether the aritfacts directory is removed.
-  // We will construt a list of artifacts paths that we expect,
+  // We will construct a list of artifacts paths that we expect,
   // then kill all the subprocesses,
   // and expect that all the artifacts paths are (as a result) removed.
   std::vector<std::filesystem::path> artifacts_paths;
@@ -446,7 +517,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerJavaTest) {
   // between the previous list of upids (our subprocs) and the current list of upids (empty)
   // to find a list of deleted upids.
   const absl::flat_hash_set<md::UPID> empty_upid_set;
-  ctx_ = std::make_unique<StandaloneContext>(empty_upid_set);
+  RefreshContext(empty_upid_set);
 
   // Run transfer data so that cleanup is kicked off in the perf profile source connector.
   // The deleted upids list that is inferred will match our original upid list.
@@ -473,6 +544,19 @@ TEST_F(PerfProfileBPFTest, TestOutOfContext) {
   // Pull the data from the perf profile connector into this test case.
   ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
 }
+
+std::vector<std::filesystem::path> GetJavaImagePaths() {
+  const std::vector<std::string_view> image_names =
+      absl::StrSplit(FLAGS_test_java_image_names, ",");
+  std::vector<std::filesystem::path> image_paths;
+  for (const auto image_name : image_names) {
+    image_paths.push_back(BazelJavaTestAppPath(std::string(image_name) + ".tar"));
+  }
+  return image_paths;
+}
+
+INSTANTIATE_TEST_SUITE_P(PerfProfileJavaTests, PerfProfileBPFTest,
+                         ::testing::ValuesIn(GetJavaImagePaths()));
 
 }  // namespace stirling
 }  // namespace px

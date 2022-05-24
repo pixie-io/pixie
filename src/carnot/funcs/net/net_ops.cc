@@ -33,7 +33,7 @@ void RegisterNetOpsOrDie(px::carnot::udf::Registry* registry) {
    * Scalar UDFs.
    *****************************************/
   registry->RegisterOrDie<NSLookupUDF>("nslookup");
-
+  registry->RegisterOrDie<CIDRsContainIPUDF>("cidrs_contain_ip");
   /*****************************************
    * Aggregate UDFs.
    *****************************************/

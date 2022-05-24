@@ -27,6 +27,7 @@
 #include <thread>
 #include <utility>
 
+#include <prometheus/text_serializer.h>
 #include <jwt/jwt.hpp>
 
 #include "src/common/base/base.h"
@@ -114,12 +115,18 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
   auto func_registry = std::make_unique<px::carnot::udf::Registry>("vizier_func_registry");
   ::px::vizier::funcs::RegisterFuncsOrDie(func_context_, func_registry.get());
 
-  carnot_ = px::carnot::Carnot::Create(
-                agent_id, std::move(func_registry), table_store_,
-                std::bind(&Manager::ResultSinkStubGenerator, this, std::placeholders::_1,
-                          std::placeholders::_2),
-                [](grpc::ClientContext* ctx) { AddServiceTokenToClientContext(ctx); },
-                grpc_server_port, SSL::DefaultGRPCServerCreds())
+  auto clients_config =
+      std::make_unique<px::carnot::Carnot::ClientsConfig>(px::carnot::Carnot::ClientsConfig{
+          [this](const std::string& address, const std::string& ssl_targetname) {
+            return ResultSinkStubGenerator(address, ssl_targetname);
+          },
+          [](grpc::ClientContext* ctx) { AddServiceTokenToClientContext(ctx); }});
+  auto server_config = std::make_unique<px::carnot::Carnot::ServerConfig>();
+  server_config->grpc_server_creds = SSL::DefaultGRPCServerCreds();
+  server_config->grpc_server_port = grpc_server_port;
+
+  carnot_ = px::carnot::Carnot::Create(agent_id, std::move(func_registry), table_store_,
+                                       std::move(clients_config), std::move(server_config))
                 .ConsumeValueOrDie();
 
   info_.agent_id = agent_id;
@@ -316,6 +323,12 @@ Status Manager::PostRegisterHook(uint32_t asid) {
     // Attach the message handler for k8s nats:
     k8s_nats_connector_->RegisterMessageHandler(
         std::bind(&Manager::NATSMessageHandler, this, std::placeholders::_1));
+
+    // Create a NATS connector for the metrics topic.
+    metrics_nats_connector_ = std::make_unique<px::event::NATSConnector<messages::MetricsMessage>>(
+        nats_addr_, kMetricsPubTopic /*pub topic*/, "" /*sub topic*/, SSL::DefaultNATSCreds());
+
+    PL_RETURN_IF_ERROR(metrics_nats_connector_->Connect(dispatcher_.get()));
   }
 
   tablestore_compaction_timer_ = dispatcher()->CreateTimer([this]() {
@@ -337,6 +350,37 @@ Status Manager::PostRegisterHook(uint32_t asid) {
     }
   });
   memory_metrics_timer_->EnableTimer(kMemoryMetricsCollectPeriod);
+
+  metrics_push_timer_ = dispatcher()->CreateTimer([this]() {
+    if (!metrics_nats_connector_) {
+      LOG(ERROR) << "No NATS connection to send metrics on. Disabling metrics push timer.";
+      // Returning without calling EnableTimer to prevent future timer calls.
+      return;
+    }
+    auto& registry = GetMetricsRegistry();
+    auto metrics = registry.Collect();
+    int64_t timestamp_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                               std::chrono::system_clock::now().time_since_epoch())
+                               .count();
+    for (auto& family : metrics) {
+      for (auto& metric : family.metric) {
+        metric.timestamp_ms = timestamp_ms;
+      }
+    }
+    auto metrics_text = prometheus::TextSerializer().Serialize(metrics);
+
+    messages::MetricsMessage msg;
+    msg.set_prom_metrics_text(metrics_text);
+    msg.set_pod_name(info_.pod_name);
+
+    auto s = metrics_nats_connector_->Publish(msg);
+    LOG_IF(ERROR, !s.ok()) << s.msg();
+
+    if (metrics_push_timer_) {
+      metrics_push_timer_->EnableTimer(kMetricsPushPeriod);
+    }
+  });
+  metrics_push_timer_->EnableTimer(kMetricsPushPeriod);
 
   return Status::OK();
 }

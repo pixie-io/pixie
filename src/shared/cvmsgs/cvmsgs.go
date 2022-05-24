@@ -31,4 +31,7 @@ var (
 	CronScriptUpdatesChannel = "CronScriptsUpdates"
 	// CronScriptUpdatesResponseChannel is the NATS channel that script updates are published to.
 	CronScriptUpdatesResponseChannel = "CronScriptsUpdatesResponse"
+
+	// VizierMetricsChannel is the NATS channel on the cloud side that Vizier metrics are published to.
+	VizierMetricsChannel = "VZMetrics"
 )

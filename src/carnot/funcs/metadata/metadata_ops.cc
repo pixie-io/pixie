@@ -33,6 +33,8 @@ void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry) {
    * Scalar UDFs.
    *****************************************/
   registry->RegisterOrDie<ASIDUDF>("asid");
+  registry->RegisterOrDie<CreateUPIDWithASIDUDF>("upid");
+  registry->RegisterOrDie<CreateUPIDUDF>("upid");
   registry->RegisterOrDie<ContainerIDToContainerStatusUDF>("container_id_to_status");
   registry->RegisterOrDie<ContainerIDToContainerStartTimeUDF>("container_id_to_start_time");
   registry->RegisterOrDie<ContainerIDToContainerStopTimeUDF>("container_id_to_stop_time");
@@ -82,6 +84,7 @@ void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<HostNumCPUsUDF>("_exec_host_num_cpus");
   registry->RegisterOrDie<VizierIDUDF>("vizier_id");
   registry->RegisterOrDie<VizierNameUDF>("vizier_name");
+  registry->RegisterOrDie<GetClusterCIDRRangeUDF>("get_cidrs");
 
   /*****************************************
    * Aggregate UDFs.

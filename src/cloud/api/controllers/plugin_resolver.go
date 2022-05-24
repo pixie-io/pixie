@@ -75,6 +75,7 @@ type PluginInfoResolver struct {
 	Configs              []PluginConfigResolver
 	AllowCustomExportURL bool
 	AllowInsecureTLS     bool
+	DefaultExportURL     string
 }
 
 func kindGQLToCloudProto(kind string) cloudpb.PluginKind {
@@ -148,6 +149,7 @@ func (q *QueryResolver) RetentionPluginInfo(ctx context.Context, args retentionP
 		Configs:              configs,
 		AllowCustomExportURL: resp.AllowCustomExportURL,
 		AllowInsecureTLS:     resp.AllowInsecureTLS,
+		DefaultExportURL:     resp.DefaultExportURL,
 	}, nil
 }
 

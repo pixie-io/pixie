@@ -320,6 +320,8 @@ message ExecuteScriptRequest {
   reserved 2;
   // Configs specifies extra configuration to be given to the compiler.
   Configs configs = 9;
+  // Query name is used for labeling query execution timing metrics.
+  string query_name = 10;
 }
 
 // Configs specifies extra configuration to be given to the compiler. For example,

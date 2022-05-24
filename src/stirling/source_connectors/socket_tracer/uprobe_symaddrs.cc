@@ -35,6 +35,17 @@
 using ::px::stirling::obj_tools::DwarfReader;
 using ::px::stirling::obj_tools::ElfReader;
 
+DEFINE_bool(
+    openssl_force_raw_fptrs, false,
+    "Forces the openssl tracing to determine the openssl version without dlopen/dlsym. Used in the "
+    "openssl_trace_bpf_test code for integration testing raw function pointers");
+
+// TODO(ddelnano): Set this to disabled by default since using function pointers can cause
+// segmentation faults. The default can be changed once this feature has been battle tested.
+DEFINE_bool(openssl_raw_fptrs_enabled, false,
+            "If true, allows the openssl tracing implementation to fall back to function pointers "
+            "if dlopen/dlsym is unable to find symbols");
+
 namespace px {
 namespace stirling {
 
@@ -498,6 +509,56 @@ Status PopulateGoTLSDebugSymbols(ElfReader* elf_reader, DwarfReader* dwarf_reade
 
 }  // namespace
 
+RawFptrManager::RawFptrManager(ElfReader* elf_reader, system::ProcParser* proc_parser,
+                               std::string lib_path)
+    : elf_reader_(elf_reader),
+      proc_parser_(proc_parser),
+      dlopen_handle_(nullptr),
+      lib_path_(lib_path) {}
+
+StatusOr<bool> RawFptrManager::Init() {
+  dlopen_handle_ = dlopen(lib_path_.c_str(), RTLD_LAZY);
+  if (dlopen_handle_ == nullptr) {
+    return error::Internal("Failed to dlopen OpenSSL so file: $0, $1", lib_path_, dlerror());
+  }
+
+  PL_ASSIGN_OR_RETURN(text_segment_offset_, elf_reader_->FindSegmentOffsetOfSection(".text"));
+  auto pid = getpid();
+
+  // The dlopen pointer will store the address of the shared library's virtual memory location.
+  // This is dependent on the implementation details of the dl library and was discovered
+  // from the following forum post
+  // https://www.linuxquestions.org/questions/programming-9/getting-base-address-of-dynamic-library-256670/#post4189790
+  // It's crucial to find the correct /prod/<pid>/maps entry otherwise we cannot guarantee that
+  // it will still be mapped when the function is later invoked. In practice, this appears to happen
+  // because the openssl_trace_bpf_tests segfault without this additional verification.
+  auto vmem_start = text_segment_offset_ + (uint64_t) * (size_t const*)dlopen_handle_;
+  auto entry = proc_parser_->GetExecutableMapEntry(pid, lib_path_, vmem_start);
+  if (!entry.ok())
+    return error::NotFound(
+        "Failed to find map entry for pid: $0 and path: $1 vmem start: $2 and segment offset: $3",
+        pid, lib_path_, absl::Hex(vmem_start), absl::Hex(text_segment_offset_));
+
+  map_entry_ = entry.ValueOrDie();
+  return true;
+}
+
+template <class T>
+StatusOr<T*> RawFptrManager::RawSymbolToFptr(const std::string& symbol_name) {
+  auto sym_addr = elf_reader_->SymbolAddress(symbol_name).value();
+  if (!sym_addr) return error::NotFound("Could not find symbol '$0'", symbol_name);
+
+  uint64_t fptr_addr = sym_addr - text_segment_offset_ + map_entry_.vmem_start;
+  return reinterpret_cast<T*>(fptr_addr);
+}
+
+RawFptrManager::~RawFptrManager() {
+  if (dlopen_handle_ != nullptr) {
+    VLOG(1) << absl::Substitute("Closing dlopen handle for $0", lib_path_);
+    dlclose(dlopen_handle_);
+  }
+}
+
 StatusOr<struct go_common_symaddrs_t> GoCommonSymAddrs(ElfReader* elf_reader,
                                                        DwarfReader* dwarf_reader) {
   struct go_common_symaddrs_t symaddrs;
@@ -570,8 +631,18 @@ StatusOr<uint64_t> GetOpenSSLVersionNumUsingDLOpen(const std::filesystem::path& 
   return version_num;
 }
 
+StatusOr<uint64_t> GetOpenSSLVersionNumUsingFptr(RawFptrManager* fptr_manager) {
+  PL_RETURN_IF_ERROR(fptr_manager->Init());
+  const std::string symbol = "OpenSSL_version_num";
+  // NOLINTNEXTLINE(runtime/int): 'unsigned long' is from upstream, match that here (vs. uint64_t)
+  PL_ASSIGN_OR_RETURN(auto version_num_f, fptr_manager->RawSymbolToFptr<unsigned long()>(symbol));
+  return version_num_f();
+}
+
 // Returns the "fix" version number for OpenSSL.
-StatusOr<uint32_t> OpenSSLFixSubversionNum(const std::filesystem::path& lib_openssl_path) {
+StatusOr<uint32_t> OpenSSLFixSubversionNum(RawFptrManager* fptrManager,
+                                           const std::filesystem::path& lib_openssl_path,
+                                           uint32_t pid) {
   // Current use case:
   // switch for the correct number of bytes offset for the socket fd.
   //
@@ -592,7 +663,21 @@ StatusOr<uint32_t> OpenSSLFixSubversionNum(const std::filesystem::path& lib_open
   };
   open_ssl_version_num_t version_num;
 
-  PL_ASSIGN_OR_RETURN(version_num.packed, GetOpenSSLVersionNumUsingDLOpen(lib_openssl_path));
+  StatusOr<uint64_t> openssl_version_packed = GetOpenSSLVersionNumUsingDLOpen(lib_openssl_path);
+  if (FLAGS_openssl_force_raw_fptrs ||
+      (FLAGS_openssl_raw_fptrs_enabled && !openssl_version_packed.ok())) {
+    LOG(WARNING) << absl::Substitute(
+        "Unable to find openssl symbol 'OpenSSL_version_num' using dlopen/dlsym. Attempting to "
+        "find address manually for pid $0",
+        pid);
+    openssl_version_packed = GetOpenSSLVersionNumUsingFptr(fptrManager);
+
+    if (!openssl_version_packed.ok())
+      LOG(WARNING) << absl::StrFormat(
+          "Unable to find openssl symbol 'OpenSSL_version_num' with raw function pointer: %s",
+          openssl_version_packed.ToString());
+  }
+  PL_ASSIGN_OR_RETURN(version_num.packed, openssl_version_packed);
 
   const uint32_t major = version_num.major;
   const uint32_t minor = version_num.minor;
@@ -619,7 +704,9 @@ StatusOr<uint32_t> OpenSSLFixSubversionNum(const std::filesystem::path& lib_open
 
 }  // namespace
 
-StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(const std::filesystem::path& openssl_lib) {
+StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(RawFptrManager* fptrManager,
+                                                    const std::filesystem::path& openssl_lib,
+                                                    uint32_t pid) {
   // Some useful links, for different OpenSSL versions:
   // 1.1.0a:
   // https://github.com/openssl/openssl/blob/ac2c44c6289f9716de4c4beeb284a818eacde517/<filename>
@@ -647,7 +734,9 @@ StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(const std::filesystem::path&
   struct openssl_symaddrs_t symaddrs;
   symaddrs.SSL_rbio_offset = kSSL_RBIO_offset;
 
-  PL_ASSIGN_OR_RETURN(uint32_t openssl_fix_sub_version, OpenSSLFixSubversionNum(openssl_lib));
+  PL_ASSIGN_OR_RETURN(uint32_t openssl_fix_sub_version,
+                      OpenSSLFixSubversionNum(fptrManager, openssl_lib, pid));
+
   switch (openssl_fix_sub_version) {
     case 0:
       symaddrs.RBIO_num_offset = kOpenSSL_1_1_0_RBIO_num_offset;

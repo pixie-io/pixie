@@ -17,6 +17,7 @@
  */
 
 #include "src/stirling/utils/monitor.h"
+#include "src/common/base/base.h"
 
 DEFINE_bool(stirling_profiler_java_symbols, gflags::BoolFromEnv("PL_PROFILER_JAVA_SYMBOLS", false),
             "Whether to symbolize Java binaries.");
@@ -45,6 +46,27 @@ void StirlingMonitor::NotifyJavaProcessCrashed(const struct upid_t& upid) {
           upid.pid, delta.count());
     }
   }
+}
+
+void StirlingMonitor::AppendSourceStatusRecord(const std::string& source_connector,
+                                               const Status& status, const std::string& context) {
+  source_status_records_.push_back(
+      {CurrentTimeNS(), source_connector, status.code(), status.msg(), context});
+}
+
+void StirlingMonitor::AppendProbeStatusRecord(const std::string& source_connector,
+                                              const std::string& tracepoint, const Status& status,
+                                              const std::string& info) {
+  probe_status_records_.push_back(
+      {CurrentTimeNS(), source_connector, tracepoint, status.code(), status.msg(), info});
+}
+
+std::vector<SourceStatusRecord> StirlingMonitor::ConsumeSourceStatusRecords() {
+  return std::move(source_status_records_);
+}
+
+std::vector<ProbeStatusRecord> StirlingMonitor::ConsumeProbeStatusRecords() {
+  return std::move(probe_status_records_);
 }
 
 }  // namespace stirling

@@ -13,6 +13,9 @@ spec:
       labels:
         name: vizier-query-broker
         plane: control
+      annotations:
+        px.dev/metrics_scrape: 'true'
+        px.dev/metrics_port: '50300'
     spec:
       affinity:
         nodeAffinity:

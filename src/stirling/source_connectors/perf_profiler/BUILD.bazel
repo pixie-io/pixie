@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
-load("//src/stirling/source_connectors/perf_profiler/java/agent:agent_libs.bzl", "agent_libs", "agent_libs_arg")
+load("//src/stirling/source_connectors/perf_profiler/testing:testing.bzl", "agent_libs", "agent_libs_arg", "jdk_names", "px_jattach", "px_jattach_arg")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -37,18 +37,25 @@ pl_cc_library(
     ],
 )
 
+jdk_image_names = ["%s-java-profiler-test-image" % jdk_name for jdk_name in jdk_names]
+
+image_tars = ["//src/stirling/source_connectors/perf_profiler/testing/java:%s-java-profiler-test-image.tar" % jdk_name for jdk_name in jdk_names]
+
 pl_cc_test(
     name = "perf_profiler_test",
     timeout = "long",
     srcs = ["perf_profiler_test.cc"],
     args = [
         "-stirling_profiler_java_agent_libs %s" % agent_libs_arg,
+        "-stirling_profiler_px_jattach_path %s" % px_jattach_arg,
     ],
-    data = [
+    data = agent_libs + image_tars + [
+        px_jattach,
         "//src/stirling/source_connectors/perf_profiler/testing/cc:profiler_test_app_fib_cpp",
         "//src/stirling/source_connectors/perf_profiler/testing/go:profiler_test_app_sqrt_go",
-        "//src/stirling/source_connectors/perf_profiler/testing/java:image.tar",
-    ] + agent_libs,
+        "//src/stirling/source_connectors/perf_profiler/testing/java:graal-vm-aot-fib",
+    ],
+    defines = ['JDK_IMAGE_NAMES=\\"%s\\"' % ",".join(jdk_image_names)],
     tags = [
         "exclusive",
         "requires_bpf",

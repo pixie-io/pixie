@@ -46,10 +46,8 @@ message RegisterVizierRequest {
   uuidpb.UUID vizier_id = 1 [(gogoproto.customname) = "VizierID"];
   // The key that this cluster is using.
   string jwt_key = 2;
-  // Address of the proxy service. Format should be fully specified address including protocol,port.
-  // ex: https://123.123.123.123:4040
-  string address = 3;
   VizierClusterInfo cluster_info = 4;
+  reserved 3;
 }
 
 // VizierClusterInfo contains information describing a user's Vizier and the cluster that it is running on.
@@ -97,10 +95,6 @@ message VizierHeartbeat {
   int64 time = 2;
   // The sequence number of the HB.
   int64 sequence_number = 3;
-  // Address of the proxy service.
-  string address = 4;
-  // Port of the proxy service.
-  int32 port = 5;
   // Map of pod name to pod status. This only includes pods that are part of the
   // vizier control plane.
   // Ex: {
@@ -129,7 +123,7 @@ message VizierHeartbeat {
   // The current Kubernetes version that the cluster is running.
   string k8s_cluster_version = 16 [(gogoproto.customname) = "K8sClusterVersion"];
 
-  reserved 9, 10;
+  reserved 4, 5, 9, 10;
 }
 
 message PodStatus {
@@ -271,11 +265,8 @@ message UpdateOrInstallVizierResponse {
 
 // Information require to connect to a vizier cluster.
 message VizierConnectionInfo {
-  string ip_address = 1 [
-    (gogoproto.customname) = "IPAddress",
-    (gogoproto.moretags) = "db:ip_address"
-  ];
   string token = 2;
+  reserved 1;
 }
 
 // LogMessage carries log messages from Vizier to the cloud.

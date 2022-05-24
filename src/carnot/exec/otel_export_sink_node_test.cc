@@ -1508,6 +1508,84 @@ eos: true)pb",
         },
     }),
     [](const ::testing::TestParamInfo<SpanIDTestCase>& info) { return info.param.name; });
+TEST_F(OTelExportSinkNodeTest, span_stub_errors) {
+  EXPECT_CALL(*trace_mock_, Export(_, _, _))
+      .Times(1)
+      .WillRepeatedly(Invoke(
+          [&](const auto&, const auto&, const auto&) { return grpc::Status(grpc::INTERNAL, ""); }));
+
+  planpb::OTelExportSinkOperator otel_sink_op;
+
+  std::string operator_proto = R"pb(
+spans {
+  name_string: "span"
+  start_time_column_index: 0
+  end_time_column_index: 1
+  trace_id_column_index: -1
+  span_id_column_index: -1
+  parent_span_id_column_index: -1
+})pb";
+  EXPECT_TRUE(google::protobuf::TextFormat::ParseFromString(operator_proto, &otel_sink_op));
+  auto plan_node = std::make_unique<plan::OTelExportSinkOperator>(1);
+  auto s = plan_node->Init(otel_sink_op);
+  std::string row_batch = R"pb(
+cols { time64ns_data { data: 10 data: 20 } }
+cols { time64ns_data { data: 12 data: 22 } }
+num_rows: 2
+eow: true
+eos: true)pb";
+
+  // Load a RowBatch to get the Input RowDescriptor.
+  table_store::schemapb::RowBatchData row_batch_proto;
+  EXPECT_TRUE(google::protobuf::TextFormat::ParseFromString(row_batch, &row_batch_proto));
+  RowDescriptor input_rd = RowBatch::FromProto(row_batch_proto).ConsumeValueOrDie()->desc();
+  RowDescriptor output_rd({});
+
+  auto tester = exec::ExecNodeTester<OTelExportSinkNode, plan::OTelExportSinkOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+  auto rb = RowBatch::FromProto(row_batch_proto).ConsumeValueOrDie();
+  auto retval = tester.node()->ConsumeNext(exec_state_.get(), *rb.get(), 1);
+  EXPECT_NOT_OK(retval);
+  EXPECT_THAT(retval.ToString(), ::testing::MatchesRegex(".*INTERNAL.*"));
+}
+
+TEST_F(OTelExportSinkNodeTest, metrics_stub_errors) {
+  EXPECT_CALL(*metrics_mock_, Export(_, _, _))
+      .Times(1)
+      .WillRepeatedly(Invoke(
+          [&](const auto&, const auto&, const auto&) { return grpc::Status(grpc::INTERNAL, ""); }));
+
+  planpb::OTelExportSinkOperator otel_sink_op;
+
+  std::string operator_proto = R"pb(
+metrics {
+  name: "http.resp.latency"
+  time_column_index: 0
+  gauge { int_column_index: 1 }
+})pb";
+  EXPECT_TRUE(google::protobuf::TextFormat::ParseFromString(operator_proto, &otel_sink_op));
+  auto plan_node = std::make_unique<plan::OTelExportSinkOperator>(1);
+  auto s = plan_node->Init(otel_sink_op);
+  std::string row_batch = R"pb(
+cols { time64ns_data { data: 10 data: 11 } }
+cols { int64_data { data: 15 data: 150 } }
+num_rows: 2
+eow: true
+eos: true)pb";
+
+  // Load a RowBatch to get the Input RowDescriptor.
+  table_store::schemapb::RowBatchData row_batch_proto;
+  EXPECT_TRUE(google::protobuf::TextFormat::ParseFromString(row_batch, &row_batch_proto));
+  RowDescriptor input_rd = RowBatch::FromProto(row_batch_proto).ConsumeValueOrDie()->desc();
+  RowDescriptor output_rd({});
+
+  auto tester = exec::ExecNodeTester<OTelExportSinkNode, plan::OTelExportSinkOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+  auto rb = RowBatch::FromProto(row_batch_proto).ConsumeValueOrDie();
+  auto retval = tester.node()->ConsumeNext(exec_state_.get(), *rb.get(), 1);
+  EXPECT_NOT_OK(retval);
+  EXPECT_THAT(retval.ToString(), ::testing::MatchesRegex(".*INTERNAL.*"));
+}
 
 }  // namespace exec
 }  // namespace carnot

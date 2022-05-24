@@ -34,6 +34,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/blang/semver"
 	"github.com/google/go-github/v32/github"
 	"golang.org/x/oauth2"
 )
@@ -66,6 +67,7 @@ type dependency struct {
 	Name        string `json:"name"`
 	URL         string `json:"url"`
 	Package     string `json:"-"`
+	Version     string `json:"version"`
 	LicenseSPDX string `json:"spdxID,omitempty"`
 	LicenseText string `json:"licenseText,omitempty"`
 }
@@ -107,45 +109,65 @@ func writeData(dependencies []*dependency, filename string) error {
 	return outputFile.Sync()
 }
 
-func getNameAndURL(pkg string) (string, string) {
-	if *tryPkgDevGo && !strings.Contains(pkg, "github") {
+func parseDep(line string) *dependency {
+	dep := &dependency{Package: line}
+
+	if *tryPkgDevGo {
+		parts := strings.Split(line, " ")
+		if len(parts) > 1 {
+			dep.Package = parts[0]
+			dep.Version = strings.TrimSuffix(parts[1], "/go.mod")
+		}
+	}
+
+	dep.Name = dep.Package
+
+	if *tryPkgDevGo && !strings.Contains(dep.Package, "github") {
 		// This is a non github go pkg dep. Resolve to the go pkg manager
 		// since these are usually URL like but not always valid pages on the internet.
 		// e.g. k8s.io/klog
-		return pkg, fmt.Sprintf("https://pkg.go.dev/%s", pkg)
+		dep.URL = fmt.Sprintf("https://pkg.go.dev/%s", dep.Package)
+		return dep
 	}
 
-	if !strings.Contains(pkg, "github") {
+	if !strings.Contains(dep.Package, "github") {
 		// At this point we better be in Github land else all assumptions break.
-		return pkg, ""
+		dep.URL = ""
+		return dep
 	}
-
-	// Handle submodules:
-	// Go from git url to http url.
-	pkg = strings.Replace(pkg, "git@github.com:", "github.com/", 1)
-	// Nuke the .git suffix if any.
-	pkg = strings.TrimSuffix(pkg, ".git")
 
 	// Drop the scheme if any.
-	if strings.Contains(pkg, "://") {
-		parts := strings.Split(pkg, "://")
-		pkg = parts[1]
+	if strings.Contains(dep.Name, "://") {
+		parts := strings.Split(dep.Name, "://")
+		dep.Name = parts[1]
 	}
 
 	// Drop anything besides the Username and Reponame.
-	parts := strings.Split(pkg, "/")
+	parts := strings.Split(dep.Name, "/")
 	if len(parts) < 3 {
 		// This dep is somehow underspecified?
-		return pkg, ""
+		dep.URL = ""
+		return dep
 	}
 
-	name := strings.Join(parts[1:3], "/")
+	dep.Name = strings.Join(parts[1:3], "/")
 	// Remap our forks to the orignal.
-	if _, ok := remapRepos[name]; ok {
-		name = remapRepos[name]
+	if _, ok := remapRepos[dep.Name]; ok {
+		dep.Name = remapRepos[dep.Name]
 	}
 
-	return name, fmt.Sprintf("https://github.com/%s", name)
+	if strings.HasSuffix(parts[len(parts)-1], ".tar.gz") {
+		dep.Version = strings.TrimSuffix(parts[len(parts)-1], ".tar.gz")
+	}
+	if strings.HasSuffix(parts[len(parts)-1], ".zip") {
+		dep.Version = strings.TrimSuffix(parts[len(parts)-1], ".zip")
+	}
+	if len(parts) > 4 && parts[len(parts)-2] == "commit" {
+		dep.Version = parts[len(parts)-1]
+	}
+
+	dep.URL = fmt.Sprintf("https://github.com/%s", dep.Name)
+	return dep
 }
 
 func tryFetchGithubLicense(ctx context.Context, client *github.Client, dep *dependency) {
@@ -230,6 +252,14 @@ func tryFetchJSONManualLicense(dep *dependency, manual map[string]dependency) {
 	dep.LicenseText = found.LicenseText
 }
 
+func mustParseTolerant(s string) semver.Version {
+	v, err := semver.ParseTolerant(s)
+	if err != nil {
+		panic(`semver: Parse(` + s + `): ` + err.Error())
+	}
+	return v
+}
+
 func main() {
 	flag.Parse()
 	ctx := context.Background()
@@ -257,19 +287,28 @@ func main() {
 	}
 	defer modulesFile.Close()
 
-	var deps []*dependency
-	pkgSeen := make(map[string]bool)
+	depsByName := make(map[string]*dependency)
 	scanner := bufio.NewScanner(modulesFile)
 	for scanner.Scan() {
-		pkg := scanner.Text()
-		name, url := getNameAndURL(scanner.Text())
-		if !pkgSeen[name] {
-			deps = append(deps, &dependency{Name: name, URL: url, Package: pkg})
+		dep := parseDep(scanner.Text())
+		if depsByName[dep.Name] == nil {
+			depsByName[dep.Name] = dep
+			continue
 		}
-		pkgSeen[name] = true
+		if mustParseTolerant(dep.Version).GT(mustParseTolerant(depsByName[dep.Name].Version)) {
+			depsByName[dep.Name] = dep
+			continue
+		}
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
+	}
+
+	deps := make([]*dependency, len(depsByName))
+	i := 0
+	for _, dep := range depsByName {
+		deps[i] = dep
+		i++
 	}
 
 	var tc *http.Client

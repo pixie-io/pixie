@@ -235,8 +235,7 @@ func (v *VizierClusterInfo) GetClusterConnectionInfo(ctx context.Context, reques
 	}
 
 	return &cloudpb.GetClusterConnectionInfoResponse{
-		IPAddress: ci.IPAddress,
-		Token:     ci.Token,
+		Token: ci.Token,
 	}, nil
 }
 

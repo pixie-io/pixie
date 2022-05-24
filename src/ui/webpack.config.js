@@ -307,6 +307,7 @@ module.exports = (env, argv) => {
       __ANNOUNCEMENT_ENABLED__: JSON.parse(announcementYAML.data.ANNOUNCEMENT_ENABLED),
       __ANNOUNCE_WIDGET_URL__: JSON.stringify(announcementYAML.data.ANNOUNCE_WIDGET_URL),
       __ANALYTICS_ENABLED__: JSON.parse(analyticsYAML.data.ANALYTICS_ENABLED),
+      __PASSTHROUGH_PROXY_PORT__: JSON.stringify(domainYAML.data.PASSTHROUGH_PROXY_PORT || ''),
       __SEGMENT_UI_WRITE_KEY__: '""',
       __CONFIG_OAUTH_PROVIDER__: JSON.stringify(oauthProvider),
       __CONFIG_AUTH_URI__: JSON.stringify(authURI),

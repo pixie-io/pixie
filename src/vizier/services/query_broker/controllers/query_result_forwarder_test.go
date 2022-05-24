@@ -35,24 +35,18 @@ import (
 	"px.dev/pixie/src/carnot/planner/distributedpb"
 	"px.dev/pixie/src/carnot/planpb"
 	"px.dev/pixie/src/carnot/queryresultspb"
+	"px.dev/pixie/src/common/base/statuspb"
 	"px.dev/pixie/src/table_store/schemapb"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/vizier/services/query_broker/controllers"
 )
 
-func makeInitiateTableRequest(queryID uuid.UUID, tableName string) *carnotpb.TransferResultChunkRequest {
+func makeInitiateConnectionRequest(queryID uuid.UUID) *carnotpb.TransferResultChunkRequest {
 	return &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
 		QueryID: utils.ProtoFromUUID(queryID),
-		Result: &carnotpb.TransferResultChunkRequest_QueryResult{
-			QueryResult: &carnotpb.TransferResultChunkRequest_SinkResult{
-				ResultContents: &carnotpb.TransferResultChunkRequest_SinkResult_InitiateResultStream{
-					InitiateResultStream: true,
-				},
-				Destination: &carnotpb.TransferResultChunkRequest_SinkResult_TableName{
-					TableName: tableName,
-				},
-			},
+		Result: &carnotpb.TransferResultChunkRequest_InitiateConn{
+			InitiateConn: &carnotpb.TransferResultChunkRequest_InitiateConnection{},
 		},
 	}
 }
@@ -168,7 +162,7 @@ func TestStreamResultsSimple(t *testing.T) {
 	}()
 	var err error
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil, ""))
 
 	go func() {
 		err = f.StreamResults(consumerCtx, queryID, resultCh)
@@ -180,9 +174,8 @@ func TestStreamResultsSimple(t *testing.T) {
 	expected2, in2 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, true)
 	expected3, in3 := makeExecStatsResult(t, queryID)
 
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "foo")))
+	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateConnectionRequest(queryID)))
 	assert.Nil(t, f.ForwardQueryResult(producerCtx, in0))
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "bar")))
 	assert.Nil(t, f.ForwardQueryResult(producerCtx, in1))
 	assert.Nil(t, f.ForwardQueryResult(producerCtx, in2))
 	assert.Nil(t, f.ForwardQueryResult(producerCtx, in3))
@@ -236,7 +229,7 @@ func TestStreamResultsAgentCancel(t *testing.T) {
 	}()
 	var err error
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil, ""))
 
 	go func() {
 		err = f.StreamResults(consumerCtx, queryID, resultCh)
@@ -244,8 +237,7 @@ func TestStreamResultsAgentCancel(t *testing.T) {
 	}()
 
 	_, in0 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, false)
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "foo")))
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "bar")))
+	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateConnectionRequest(queryID)))
 	assert.Nil(t, f.ForwardQueryResult(producerCtx, in0))
 
 	// Wait for the consumer to receive its first result before cancelling the query.
@@ -304,7 +296,7 @@ func TestStreamResultsClientContextCancel(t *testing.T) {
 	}()
 	errCh := make(chan error)
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil, ""))
 
 	go func() {
 		err := f.StreamResults(consumerCtx, queryID, resultCh)
@@ -312,8 +304,7 @@ func TestStreamResultsClientContextCancel(t *testing.T) {
 		errCh <- err
 	}()
 
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "foo")))
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "bar")))
+	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateConnectionRequest(queryID)))
 	_, in0 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, false)
 	_, in1 := makeRowBatchResult(t, queryID, "bar", "456" /*eos*/, true)
 	_, in2 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, true)
@@ -373,7 +364,7 @@ func TestStreamResultsQueryPlan(t *testing.T) {
 		Plan:    plan,
 		PlanMap: planMap,
 	}
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, queryPlanOpts))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, queryPlanOpts, ""))
 
 	go func() {
 		err = f.StreamResults(consumerCtx, queryID, resultCh)
@@ -385,9 +376,8 @@ func TestStreamResultsQueryPlan(t *testing.T) {
 	expected2, in2 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, true)
 	expected4, in3 := makeExecStatsResult(t, queryID)
 
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "foo")))
+	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateConnectionRequest(queryID)))
 	assert.Nil(t, f.ForwardQueryResult(producerCtx, in0))
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "bar")))
 	assert.Nil(t, f.ForwardQueryResult(producerCtx, in1))
 	assert.Nil(t, f.ForwardQueryResult(producerCtx, in2))
 	assert.Nil(t, f.ForwardQueryResult(producerCtx, in3))
@@ -456,7 +446,7 @@ func TestStreamResultsWrongQueryID(t *testing.T) {
 	}()
 	var err error
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil, ""))
 
 	go func() {
 		err = f.StreamResults(consumerCtx, queryID, resultCh)
@@ -466,8 +456,7 @@ func TestStreamResultsWrongQueryID(t *testing.T) {
 	expected0, goodInput := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, false)
 	_, badInput := makeRowBatchResult(t, otherQueryID, "bar", "456" /*eos*/, true)
 
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "foo")))
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "bar")))
+	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateConnectionRequest(queryID)))
 	assert.Nil(t, f.ForwardQueryResult(producerCtx, goodInput))
 
 	// Make sure StreamResults has started before cancelling the query.
@@ -498,7 +487,6 @@ func TestStreamResultsResultsBeforeInitialization(t *testing.T) {
 	wg.Add(1)
 	expectedTables := make(map[string]string)
 	expectedTables["foo"] = "123"
-	expectedTables["bar"] = "456"
 
 	var results []*vizierpb.ExecuteScriptResponse
 	resultCh := make(chan *vizierpb.ExecuteScriptResponse)
@@ -521,22 +509,21 @@ func TestStreamResultsResultsBeforeInitialization(t *testing.T) {
 	}()
 	var err error
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil, ""))
 
 	go func() {
 		err = f.StreamResults(consumerCtx, queryID, resultCh)
 		cancelConsumer()
 	}()
 
-	_, in0 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, false)
+	_, in0 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, true)
+	_, in1 := makeExecStatsResult(t, queryID)
 	assert.Nil(t, f.ForwardQueryResult(producerCtx, in0))
+	assert.Nil(t, f.ForwardQueryResult(producerCtx, in1))
 	wg.Wait()
 
-	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(), fmt.Sprintf(
-		"Received RowBatch before initializing table foo for query %s",
-		queryID.String()))
-	assert.Equal(t, 0, len(results))
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(results))
 }
 
 func TestStreamResultsNeverInitializedTable(t *testing.T) {
@@ -571,7 +558,7 @@ func TestStreamResultsNeverInitializedTable(t *testing.T) {
 	}()
 	var err error
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil, ""))
 
 	go func() {
 		err = f.StreamResults(consumerCtx, queryID, resultCh)
@@ -579,7 +566,7 @@ func TestStreamResultsNeverInitializedTable(t *testing.T) {
 	}()
 
 	expected0, in0 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, false)
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "foo")))
+	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateConnectionRequest(queryID)))
 	assert.Nil(t, f.ForwardQueryResult(producerCtx, in0))
 	wg.Wait()
 
@@ -635,7 +622,7 @@ func TestStreamResultsProducerTimeout(t *testing.T) {
 	}()
 	var err error
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil, ""))
 
 	go func() {
 		err = f.StreamResults(consumerCtx, queryID, resultCh)
@@ -644,9 +631,8 @@ func TestStreamResultsProducerTimeout(t *testing.T) {
 
 	_, in0 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, false)
 
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "foo")))
+	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateConnectionRequest(queryID)))
 	assert.Nil(t, f.ForwardQueryResult(producerCtx, in0))
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "bar")))
 	// We never send EOS so we should get a producer timeout here.
 	wg.Wait()
 
@@ -695,7 +681,7 @@ func TestStreamResultsNewConsumer(t *testing.T) {
 	}()
 	var consumer1Err error
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil, ""))
 
 	go func() {
 		consumer1Err = f.StreamResults(consumer1Ctx, queryID, resultCh1)
@@ -708,8 +694,7 @@ func TestStreamResultsNewConsumer(t *testing.T) {
 	expected3, eosBar := makeRowBatchResult(t, queryID, "bar", "456" /*eos*/, true)
 	expected4, execStats := makeExecStatsResult(t, queryID)
 
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "foo")))
-	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateTableRequest(queryID, "bar")))
+	assert.Nil(t, f.ForwardQueryResult(producerCtx, makeInitiateConnectionRequest(queryID)))
 	assert.Nil(t, f.ForwardQueryResult(producerCtx, goodInput))
 
 	var consumer2Err error
@@ -800,7 +785,7 @@ func TestStreamResultsMultipleProducers(t *testing.T) {
 	}()
 	var err error
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil, ""))
 
 	go func() {
 		err = f.StreamResults(consumerCtx, queryID, resultCh)
@@ -815,8 +800,7 @@ func TestStreamResultsMultipleProducers(t *testing.T) {
 	globalProducerCtx, err := f.GetProducerCtx(queryID)
 	assert.Nil(t, err)
 
-	assert.Nil(t, f.ForwardQueryResult(producer1Ctx, makeInitiateTableRequest(queryID, "foo")))
-	assert.Nil(t, f.ForwardQueryResult(producer1Ctx, makeInitiateTableRequest(queryID, "bar")))
+	assert.Nil(t, f.ForwardQueryResult(producer1Ctx, makeInitiateConnectionRequest(queryID)))
 	assert.Nil(t, f.ForwardQueryResult(producer2Ctx, goodInput))
 	assert.Nil(t, f.ForwardQueryResult(producer2Ctx, eosFoo))
 	assert.Nil(t, f.ForwardQueryResult(producer1Ctx, eosBar))
@@ -838,4 +822,250 @@ func TestStreamResultsMultipleProducers(t *testing.T) {
 	assert.Equal(t, expected1, results[1].GetData().Batch)
 	assert.Equal(t, expected2, results[2].GetData().Batch)
 	assert.Equal(t, expected3, results[3].GetData().ExecutionStats)
+}
+
+func TestStreamResultsReceiveExecutionError(t *testing.T) {
+	tests := []struct {
+		name                string
+		createTestFunctions func(t *testing.T, queryID uuid.UUID) (func(context.Context, controllers.QueryResultForwarder), func(results []*vizierpb.ExecuteScriptResponse, err error))
+	}{
+		{
+			name: "error_before_init",
+			createTestFunctions: func(t *testing.T, queryID uuid.UUID) (func(context.Context, controllers.QueryResultForwarder), func(results []*vizierpb.ExecuteScriptResponse, err error)) {
+				errorStatus := &statuspb.Status{
+					ErrCode: statuspb.INTERNAL,
+					Msg:     "error sending tables",
+				}
+				execError := &carnotpb.TransferResultChunkRequest{
+					Address: "foo",
+					QueryID: utils.ProtoFromUUID(queryID),
+					Result: &carnotpb.TransferResultChunkRequest_ExecutionError{
+						ExecutionError: errorStatus,
+					},
+				}
+				sendRequests := func(ctx context.Context, f controllers.QueryResultForwarder) {
+					assert.Nil(t, f.ForwardQueryResult(ctx, execError))
+				}
+
+				checkResults := func(results []*vizierpb.ExecuteScriptResponse, err error) {
+					// We expect an error.
+					assert.Regexp(t, "error sending tables", err.Error())
+
+					for _, result := range results {
+						assert.Equal(t, queryID.String(), result.QueryID)
+					}
+
+					assert.Equal(t, 1, len(results))
+					assert.Equal(t, controllers.StatusToVizierStatus(errorStatus), results[0].GetStatus())
+				}
+				return sendRequests, checkResults
+			},
+		},
+		{
+			name: "error_after_data",
+			createTestFunctions: func(t *testing.T, queryID uuid.UUID) (func(context.Context, controllers.QueryResultForwarder), func(results []*vizierpb.ExecuteScriptResponse, err error)) {
+				expected0, in0 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, false)
+
+				errorStatus := &statuspb.Status{
+					ErrCode: statuspb.INTERNAL,
+					Msg:     "error sending tables",
+				}
+				execError := &carnotpb.TransferResultChunkRequest{
+					Address: "foo",
+					QueryID: utils.ProtoFromUUID(queryID),
+					Result: &carnotpb.TransferResultChunkRequest_ExecutionError{
+						ExecutionError: errorStatus,
+					},
+				}
+				sendRequests := func(ctx context.Context, f controllers.QueryResultForwarder) {
+					assert.Nil(t, f.ForwardQueryResult(ctx, makeInitiateConnectionRequest(queryID)))
+					assert.Nil(t, f.ForwardQueryResult(ctx, in0))
+					assert.Nil(t, f.ForwardQueryResult(ctx, execError))
+				}
+
+				checkResults := func(results []*vizierpb.ExecuteScriptResponse, err error) {
+					// We expect an error.
+					assert.Regexp(t, "error sending tables", err.Error())
+
+					for _, result := range results {
+						assert.Equal(t, queryID.String(), result.QueryID)
+					}
+
+					assert.Equal(t, 2, len(results))
+					assert.Equal(t, expected0, results[0].GetData().Batch)
+					assert.Equal(t, controllers.StatusToVizierStatus(errorStatus), results[1].GetStatus())
+				}
+				return sendRequests, checkResults
+			},
+		},
+		{
+			name: "data_after_error",
+			createTestFunctions: func(t *testing.T, queryID uuid.UUID) (func(context.Context, controllers.QueryResultForwarder), func(results []*vizierpb.ExecuteScriptResponse, err error)) {
+				_, in0 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, false)
+
+				errorStatus := &statuspb.Status{
+					ErrCode: statuspb.INTERNAL,
+					Msg:     "error sending tables",
+				}
+				execError := &carnotpb.TransferResultChunkRequest{
+					Address: "foo",
+					QueryID: utils.ProtoFromUUID(queryID),
+					Result: &carnotpb.TransferResultChunkRequest_ExecutionError{
+						ExecutionError: errorStatus,
+					},
+				}
+				sendRequests := func(ctx context.Context, f controllers.QueryResultForwarder) {
+					assert.Nil(t, f.ForwardQueryResult(ctx, makeInitiateConnectionRequest(queryID)))
+					assert.Nil(t, f.ForwardQueryResult(ctx, execError))
+					// This call has a chance of failing based on a race, so we don't check the result.
+					// This is because during an error we don't really care what is sent over for the query ID anymore.
+					// The ultimate effect is that the sender ie a Carnot instance will receive an error on their side.
+					_ = f.ForwardQueryResult(ctx, in0)
+				}
+
+				checkResults := func(results []*vizierpb.ExecuteScriptResponse, err error) {
+					// We expect an error.
+					assert.Regexp(t, "error sending tables", err.Error())
+
+					for _, result := range results {
+						assert.Equal(t, queryID.String(), result.QueryID)
+					}
+
+					assert.Equal(t, 1, len(results))
+					assert.Equal(t, controllers.StatusToVizierStatus(errorStatus), results[0].GetStatus())
+				}
+				return sendRequests, checkResults
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			queryID := uuid.Must(uuid.NewV4())
+
+			f := controllers.NewQueryResultForwarderWithOptions(controllers.WithResultSinkTimeout(1 * time.Second))
+
+			var wg sync.WaitGroup
+			wg.Add(1)
+			expectedTables := make(map[string]string)
+			expectedTables["foo"] = "123"
+
+			var results []*vizierpb.ExecuteScriptResponse
+			resultCh := make(chan *vizierpb.ExecuteScriptResponse)
+
+			consumerCtx, cancelConsumer := context.WithCancel(context.Background())
+			defer cancelConsumer()
+			producerCtx, cancelProducer := context.WithCancel(context.Background())
+			defer cancelProducer()
+
+			go func() {
+				for {
+					select {
+					case msg := <-resultCh:
+						results = append(results, msg)
+					case <-consumerCtx.Done():
+						wg.Done()
+						return
+					}
+				}
+			}()
+			var err error
+
+			assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil, ""))
+
+			go func() {
+				err = f.StreamResults(consumerCtx, queryID, resultCh)
+				assert.Regexp(t, "error sending tables", err.Error())
+				cancelConsumer()
+			}()
+
+			sendRequests, checkResults := test.createTestFunctions(t, queryID)
+
+			sendRequests(producerCtx, f)
+			wg.Wait()
+			checkResults(results, err)
+		})
+	}
+}
+
+func TestStreamErrorWithMultipleProducers(t *testing.T) {
+	queryID := uuid.Must(uuid.NewV4())
+
+	f := controllers.NewQueryResultForwarderWithOptions(controllers.WithResultSinkTimeout(1 * time.Second))
+
+	var wg sync.WaitGroup
+	expectedTables := make(map[string]string)
+	expectedTables["foo"] = "123"
+	expectedTables["bar"] = "456"
+
+	var results []*vizierpb.ExecuteScriptResponse
+	resultCh := make(chan *vizierpb.ExecuteScriptResponse)
+
+	consumerCtx, cancelConsumer := context.WithCancel(context.Background())
+	defer cancelConsumer()
+	producer1Ctx, cancelProducer1 := context.WithCancel(context.Background())
+	defer cancelProducer1()
+	producer2Ctx, cancelProducer2 := context.WithCancel(context.Background())
+	defer cancelProducer2()
+
+	wg.Add(1)
+	go func() {
+		for {
+			select {
+			case msg := <-resultCh:
+				results = append(results, msg)
+			case <-consumerCtx.Done():
+				wg.Done()
+				return
+			}
+		}
+	}()
+	var err error
+
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil, ""))
+
+	go func() {
+		err = f.StreamResults(consumerCtx, queryID, resultCh)
+		assert.Regexp(t, "error sending tables", err.Error())
+		cancelConsumer()
+	}()
+
+	errorStatus := &statuspb.Status{
+		ErrCode: statuspb.INTERNAL,
+		Msg:     "error sending tables",
+	}
+	execError := &carnotpb.TransferResultChunkRequest{
+		Address: "foo",
+		QueryID: utils.ProtoFromUUID(queryID),
+		Result: &carnotpb.TransferResultChunkRequest_ExecutionError{
+			ExecutionError: errorStatus,
+		},
+	}
+
+	expected0, foo0 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, false)
+	_, eosBar := makeRowBatchResult(t, queryID, "bar", "456" /*eos*/, true)
+
+	globalProducerCtx, err := f.GetProducerCtx(queryID)
+	assert.Nil(t, err)
+
+	assert.Nil(t, f.ForwardQueryResult(producer1Ctx, makeInitiateConnectionRequest(queryID)))
+	assert.Nil(t, f.ForwardQueryResult(producer2Ctx, foo0))
+	assert.Nil(t, f.ForwardQueryResult(producer2Ctx, execError))
+	// Don't check because the race might close producer before anything else.
+	_ = f.ForwardQueryResult(producer1Ctx, eosBar)
+
+	wg.Wait()
+
+	timer := time.NewTimer(time.Second)
+	select {
+	case <-globalProducerCtx.Done():
+	case <-timer.C:
+		assert.Fail(t, "Producer context was not cancelled at end of query.")
+	}
+
+	assert.Regexp(t, "error sending tables", err.Error())
+	assert.Equal(t, 2, len(results))
+	assert.Equal(t, queryID.String(), results[0].QueryID)
+	assert.Equal(t, expected0, results[0].GetData().Batch)
+	assert.Equal(t, controllers.StatusToVizierStatus(errorStatus), results[1].GetStatus())
 }

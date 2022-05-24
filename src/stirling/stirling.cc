@@ -31,6 +31,7 @@
 #include <absl/base/internal/spinlock.h>
 
 #include "src/common/base/base.h"
+#include "src/common/json/json.h"
 #include "src/common/perf/elapsed_timer.h"
 #include "src/stirling/utils/system_info.h"
 
@@ -53,6 +54,7 @@
 #include "src/stirling/source_connectors/process_stats/process_stats_connector.h"
 #include "src/stirling/source_connectors/seq_gen/seq_gen_connector.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
+#include "src/stirling/source_connectors/stirling_error/stirling_error_connector.h"
 
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dynamic_tracer.h"
 
@@ -74,6 +76,7 @@ const std::vector<SourceRegistry::RegistryElement> kAllSources = {
     REGISTRY_PAIR(SocketTraceConnector),       REGISTRY_PAIR(ProcessStatsConnector),
     REGISTRY_PAIR(NetworkStatsConnector),      REGISTRY_PAIR(PerfProfileConnector),
     REGISTRY_PAIR(PIDCPUUseBPFTraceConnector), REGISTRY_PAIR(proc_exit_tracer::ProcExitConnector),
+    REGISTRY_PAIR(StirlingErrorConnector),
 };
 #undef REGISTRY_PAIR
 
@@ -91,7 +94,8 @@ std::vector<std::string_view> GetSourceNamesForGroup(SourceConnectorGroup group)
         JVMStatsConnector::kName,
         SocketTraceConnector::kName,
         PerfProfileConnector::kName,
-        proc_exit_tracer::ProcExitConnector::kName
+        proc_exit_tracer::ProcExitConnector::kName,
+        StirlingErrorConnector::kName,
       };
     case SourceConnectorGroup::kAll:
       return {
@@ -102,7 +106,8 @@ std::vector<std::string_view> GetSourceNamesForGroup(SourceConnectorGroup group)
         ProcStatConnector::kName,
         SeqGenConnector::kName,
         SocketTraceConnector::kName,
-        PerfProfileConnector::kName
+        PerfProfileConnector::kName,
+        StirlingErrorConnector::kName,
       };
     case SourceConnectorGroup::kTracers:
       return {
@@ -213,6 +218,9 @@ class StirlingImpl final : public Stirling {
   void EnablePIDTrace(int pid);
   void DisablePIDTrace(int pid);
 
+  void UpdateDynamicTraceStatus(const sole::uuid& uuid,
+                                const StatusOr<stirlingpb::Publish>& status);
+
  private:
   // Adds a source to Stirling, and updates all state accordingly.
   Status AddSource(std::unique_ptr<SourceConnector> source);
@@ -265,6 +273,17 @@ class StirlingImpl final : public Stirling {
 
   absl::base_internal::SpinLock dynamic_trace_status_map_lock_;
   absl::flat_hash_map<sole::uuid, StatusOr<stirlingpb::Publish>> dynamic_trace_status_map_
+      ABSL_GUARDED_BY(dynamic_trace_status_map_lock_);
+
+  StirlingMonitor& monitor_ = *StirlingMonitor::GetInstance();
+
+  struct DynamicTraceInfo {
+    std::string source_connector;
+    std::string tracepoint;
+    std::string output_table;
+  };
+
+  absl::flat_hash_map<sole::uuid, DynamicTraceInfo> trace_id_info_map_
       ABSL_GUARDED_BY(dynamic_trace_status_map_lock_);
 };
 
@@ -383,8 +402,12 @@ Status StirlingImpl::Init() {
   }
 
   for (const auto& [name, create_source_fn, _] : registry_->sources()) {
-    Status s = AddSource(create_source_fn(name));
-    LOG_IF(DFATAL, !s.ok()) << absl::Substitute(
+    auto source_ptr = create_source_fn(name);
+
+    Status s = AddSource(std::move(source_ptr));
+    monitor_.AppendSourceStatusRecord(name, s, "Init");
+
+    LOG_IF(WARNING, !s.ok()) << absl::Substitute(
         "Source Connector (registry name=$0) not instantiated, error: $1", name, s.ToString());
   }
   LOG(INFO) << "Stirling successfully initialized.";
@@ -472,13 +495,12 @@ Status StirlingImpl::RemoveSource(std::string_view source_name) {
 // Since these errors come from a myriad of places, there would be no way to make sure
 // an error from an underlying library doesn't produce NotFound, ResourceUnavailable
 // or some future code that we plan to reserve.
-#define RETURN_ERROR(s)                                                        \
-  {                                                                            \
-    Status ret_status(px::statuspb::Code::INTERNAL, s.msg());                  \
-    absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_); \
-    dynamic_trace_status_map_[trace_id] = ret_status;                          \
-    LOG(INFO) << ret_status.ToString();                                        \
-    return;                                                                    \
+#define RETURN_ERROR(s)                                       \
+  {                                                           \
+    Status ret_status(px::statuspb::Code::INTERNAL, s.msg()); \
+    UpdateDynamicTraceStatus(trace_id, ret_status);           \
+    LOG(INFO) << ret_status.ToString();                       \
+    return;                                                   \
   }
 
 #define ASSIGN_OR_RETURN_ERROR(lhs, rexpr) PL_ASSIGN_OR(lhs, rexpr, RETURN_ERROR(__s__.status());)
@@ -536,6 +558,14 @@ void StirlingImpl::DeployDynamicTraceConnector(
   // Cache table schema name as source will be moved below.
   std::string output_name(source->table_schemas()[0].name());
 
+  {
+    absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
+    auto it = trace_id_info_map_.find(trace_id);
+    if (it != trace_id_info_map_.end()) {
+      trace_id_info_map_[trace_id].output_table = output_name;
+    }
+  }
+
   timer.Start();
   // Next, try adding the source (this actually tries to deploy BPF code).
   // On failure, set status and exit, but do this outside the lock for efficiency reasons.
@@ -549,8 +579,7 @@ void StirlingImpl::DeployDynamicTraceConnector(
     PopulatePublishProto(&publication, info_class_mgrs_, output_name);
   }
 
-  absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
-  dynamic_trace_status_map_[trace_id] = publication;
+  UpdateDynamicTraceStatus(trace_id, publication);
 }
 
 void StirlingImpl::DestroyDynamicTraceConnector(sole::uuid trace_id) {
@@ -567,6 +596,7 @@ void StirlingImpl::DestroyDynamicTraceConnector(sole::uuid trace_id) {
   {
     absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
     dynamic_trace_status_map_.erase(trace_id);
+    trace_id_info_map_.erase(trace_id);
   }
 }
 
@@ -582,13 +612,22 @@ void StirlingImpl::RegisterTracepoint(
   //               Need to differentiate errors caused by the binary not being on the host vs
   //               other errors. Also should consider races with binary creation/deletion.
 
+  {
+    absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
+    std::string source_connector =
+        program->tracepoints(0).has_bpftrace() ? "dynamic_bpftrace" : "dynamic_trace";
+    trace_id_info_map_[trace_id] = {.source_connector = std::move(source_connector),
+                                    .tracepoint = program->name(),
+                                    .output_table = ""};
+  }
+
   if (program->has_deployment_spec()) {
     std::unique_ptr<ConnectorContext> conn_ctx = GetContext();
 
     if (conn_ctx == nullptr) {
-      absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
-      dynamic_trace_status_map_[trace_id] = error::FailedPrecondition(
-          "Failed to get K8s metadata; cannot resolve K8s entity to UPID");
+      UpdateDynamicTraceStatus(
+          trace_id, error::FailedPrecondition(
+                        "Failed to get K8s metadata; cannot resolve K8s entity to UPID"));
       return;
     }
 
@@ -596,12 +635,13 @@ void StirlingImpl::RegisterTracepoint(
                                                      program->mutable_deployment_spec());
     if (!s.ok()) {
       LOG(ERROR) << s.ToString();
-      absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
       // Most failures of ResolveTargetObjPath() are caused by incorrect/incomplete user input.
       // So the error message is sent back directly to the UI.
-      dynamic_trace_status_map_[trace_id] = error::FailedPrecondition(
-          "Target binary/UPID not found, error message: $0",
-          error::IsInternal(s) ? "internal error, chat with us on Intercom" : s.ToString());
+      UpdateDynamicTraceStatus(
+          trace_id,
+          error::FailedPrecondition(
+              "Target binary/UPID not found, error message: $0",
+              error::IsInternal(s) ? "internal error, chat with us on Intercom" : s.ToString()));
       return;
     }
   }
@@ -632,10 +672,7 @@ StatusOr<stirlingpb::Publish> StirlingImpl::GetTracepointInfo(sole::uuid trace_i
 
 Status StirlingImpl::RemoveTracepoint(sole::uuid trace_id) {
   // Change the status of this trace to pending while we delete it.
-  {
-    absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
-    dynamic_trace_status_map_[trace_id] = error::ResourceUnavailable("Probe removal in progress.");
-  }
+  UpdateDynamicTraceStatus(trace_id, error::ResourceUnavailable("Probe removal in progress."));
 
   auto t = std::thread(&StirlingImpl::DestroyDynamicTraceConnector, this, trace_id);
   t.detach();
@@ -855,6 +892,34 @@ void StirlingImpl::DisablePIDTrace(int pid) {
   absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
   for (auto& s : sources_) {
     s->DisablePIDTrace(pid);
+  }
+}
+
+void StirlingImpl::UpdateDynamicTraceStatus(const sole::uuid& trace_id,
+                                            const StatusOr<stirlingpb::Publish>& s) {
+  absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
+  dynamic_trace_status_map_[trace_id] = s;
+
+  // Find program name and log dynamic trace status update to Stirling Monitor.
+  auto it = trace_id_info_map_.find(trace_id);
+  if (it != trace_id_info_map_.end()) {
+    DynamicTraceInfo& trace_info = it->second;
+
+    // Build info JSON with trace_id and output_table.
+    ::px::utils::JSONObjectBuilder builder;
+    builder.WriteKV("trace_id", trace_id.str());
+    if (s.ok()) {
+      builder.WriteKV("output_table", trace_info.output_table);
+    }
+
+    monitor_.AppendProbeStatusRecord(trace_info.source_connector, trace_info.tracepoint, s.status(),
+                                     builder.GetString());
+
+    // Clean up map if status is not ok. When status is RESOURCE_UNAVAILABLE, either deployment
+    // or removal is pending, so don't clean up.
+    if (!s.ok() && s.code() != statuspb::Code::RESOURCE_UNAVAILABLE) {
+      trace_id_info_map_.erase(trace_id);
+    }
   }
 }
 

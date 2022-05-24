@@ -104,12 +104,11 @@ Status GRPCSinkNode::InitImpl(const plan::Operator& plan_node) {
 
 Status GRPCSinkNode::PrepareImpl(ExecState*) { return Status::OK(); }
 
-Status GRPCSinkNode::StartConnection(ExecState* exec_state, bool send_initiate_req) {
-  return StartConnectionWithRetries(exec_state, send_initiate_req, kGRPCRetries);
+Status GRPCSinkNode::StartConnection(ExecState* exec_state) {
+  return StartConnectionWithRetries(exec_state, kGRPCRetries);
 }
 
-Status GRPCSinkNode::StartConnectionWithRetries(ExecState* exec_state, bool send_initiate_req,
-                                                size_t n_retries) {
+Status GRPCSinkNode::StartConnectionWithRetries(ExecState* exec_state, size_t n_retries) {
   if (n_retries == 0) {
     cancelled_ = true;
     return error::Cancelled(
@@ -132,18 +131,14 @@ Status GRPCSinkNode::StartConnectionWithRetries(ExecState* exec_state, bool send
   writer_ = stub_->TransferResultChunk(context_.get(), &response_);
 
   PL_ASSIGN_OR_RETURN(auto req, RequestWithMetadata(plan_node_.get(), exec_state));
-  if (send_initiate_req) {
-    req.mutable_query_result()->set_initiate_result_stream(true);
-  } else {
-    // If this is not the first connection we've made then we send a 0-row rb instead of an
-    // initiate_result_stream request.
-    PL_ASSIGN_OR_RETURN(
-        auto rb, RowBatch::WithZeroRows(*input_descriptor_, /* eow */ false, /* eos */ false));
-    PL_RETURN_IF_ERROR(rb->ToProto(req.mutable_query_result()->mutable_row_batch()));
-  }
+  // If this is not the first connection we've made then we send a 0-row rb instead of an
+  // initiate_result_stream request.
+  PL_ASSIGN_OR_RETURN(auto rb,
+                      RowBatch::WithZeroRows(*input_descriptor_, /* eow */ false, /* eos */ false));
+  PL_RETURN_IF_ERROR(rb->ToProto(req.mutable_query_result()->mutable_row_batch()));
 
   if (!writer_->Write(req)) {
-    return StartConnectionWithRetries(exec_state, send_initiate_req, n_retries - 1);
+    return StartConnectionWithRetries(exec_state, n_retries - 1);
   }
 
   last_send_time_ = std::chrono::system_clock::now();
@@ -178,7 +173,7 @@ Status GRPCSinkNode::TryWriteRequest(ExecState* exec_state,
   }
   // Otherwise, the connection was probably cancelled due to a timeout or other transient failure,
   // so we can try to restart the connection.
-  PL_RETURN_IF_ERROR(StartConnection(exec_state, /* send_initiate_req */ false));
+  PL_RETURN_IF_ERROR(StartConnection(exec_state));
 
   // Try again to write the request on the new connection.
   if (!writer_->Write(req)) {
@@ -188,9 +183,7 @@ Status GRPCSinkNode::TryWriteRequest(ExecState* exec_state,
   return Status::OK();
 }
 
-Status GRPCSinkNode::OpenImpl(ExecState* exec_state) {
-  return StartConnection(exec_state, /* send_initiate_req */ true);
-}
+Status GRPCSinkNode::OpenImpl(ExecState* exec_state) { return StartConnection(exec_state); }
 
 Status GRPCSinkNode::CloseWriter(ExecState* exec_state) {
   if (writer_ == nullptr) {

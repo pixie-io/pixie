@@ -38,6 +38,7 @@ const ExecuteScriptRequestJson = {
     'compressionAlg': 'DEF',
   },
   'queryId': '',
+  'queryName': '',
 };
 
 const ExecuteScriptResponseString = ''

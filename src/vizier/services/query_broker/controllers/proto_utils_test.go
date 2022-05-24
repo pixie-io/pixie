@@ -399,22 +399,15 @@ func TestBuildExecuteScriptResponse_RowBatch(t *testing.T) {
 	assert.Equal(t, convertedRB, resp.GetData().GetBatch())
 }
 
-func TestBuildExecuteScriptResponse_InitiateResultStream(t *testing.T) {
+func TestBuildExecuteScriptResponse_InitiateConn(t *testing.T) {
 	queryID := uuid.Must(uuid.NewV4())
 	queryIDpb := utils.ProtoFromUUID(queryID)
 
 	msg := &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
 		QueryID: queryIDpb,
-		Result: &carnotpb.TransferResultChunkRequest_QueryResult{
-			QueryResult: &carnotpb.TransferResultChunkRequest_SinkResult{
-				ResultContents: &carnotpb.TransferResultChunkRequest_SinkResult_InitiateResultStream{
-					InitiateResultStream: true,
-				},
-				Destination: &carnotpb.TransferResultChunkRequest_SinkResult_TableName{
-					TableName: "output_table_1",
-				},
-			},
+		Result: &carnotpb.TransferResultChunkRequest_InitiateConn{
+			InitiateConn: &carnotpb.TransferResultChunkRequest_InitiateConnection{},
 		},
 	}
 	tableIDMap := map[string]string{

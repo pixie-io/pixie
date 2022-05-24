@@ -27,6 +27,7 @@
 #include "src/stirling/utils/monitor.h"
 
 DECLARE_string(stirling_profiler_java_agent_libs);
+DECLARE_string(stirling_profiler_px_jattach_path);
 DECLARE_bool(stirling_profiler_java_symbols);
 DECLARE_uint32(number_attach_attempts_per_iteration);
 
@@ -77,7 +78,7 @@ class JavaSymbolizer : public Symbolizer {
 
  private:
   JavaSymbolizer() = delete;
-  explicit JavaSymbolizer(const std::vector<std::filesystem::path> agent_libs);
+  explicit JavaSymbolizer(std::string&& agent_libs);
   Status CreateNewJavaSymbolizationContext(const struct upid_t& upid);
   std::string_view Symbolize(JavaSymbolizationContext* ctx, const uintptr_t addr);
 
@@ -86,7 +87,7 @@ class JavaSymbolizer : public Symbolizer {
   absl::flat_hash_map<struct upid_t, std::unique_ptr<java::AgentAttacher>> active_attachers_;
   absl::flat_hash_map<struct upid_t, std::unique_ptr<JavaSymbolizationContext>>
       symbolization_contexts_;
-  const std::vector<std::filesystem::path> agent_libs_;
+  const std::string agent_libs_;
   StirlingMonitor& monitor_ = *StirlingMonitor::GetInstance();
   uint32_t num_attaches_remaining_this_iteration_ = 0;
 };

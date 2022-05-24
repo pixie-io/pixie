@@ -38,17 +38,25 @@ constexpr auto kRPCResultTimeout = std::chrono::seconds(2);
 
 class Carnot : public NotCopyable {
  public:
+  struct ServerConfig {
+    int grpc_server_port;
+    std::shared_ptr<grpc::ServerCredentials> grpc_server_creds;
+    exec::GRPCRouter grpc_router;
+  };
+
+  struct ClientsConfig {
+    exec::ResultSinkStubGenerator stub_generator;
+    std::function<void(grpc::ClientContext* ctx)> add_auth_to_grpc_context_func;
+  };
+
   static StatusOr<std::unique_ptr<Carnot>> Create(
       const sole::uuid& agent_id, std::unique_ptr<udf::Registry> func_registry,
       std::shared_ptr<table_store::TableStore> table_store,
-      const exec::ResultSinkStubGenerator& stub_generator,
-      std::function<void(grpc::ClientContext* ctx)> add_auth_to_grpc_context_func,
-      int grpc_server_port, std::shared_ptr<grpc::ServerCredentials> grpc_server_creds);
+      std::unique_ptr<ClientsConfig> clients_config, std::unique_ptr<ServerConfig> server_config);
 
   static StatusOr<std::unique_ptr<Carnot>> Create(
       const sole::uuid& agent_id, std::shared_ptr<table_store::TableStore> table_store,
-      const exec::ResultSinkStubGenerator& stub_generator, int grpc_server_port = 0,
-      std::shared_ptr<grpc::ServerCredentials> grpc_server_creds = nullptr);
+      std::unique_ptr<ClientsConfig> clients_config, std::unique_ptr<ServerConfig> server_config);
 
   using AgentMetadataCallbackFunc = std::function<std::shared_ptr<const md::AgentMetadataState>()>;
 

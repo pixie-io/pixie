@@ -64,6 +64,7 @@ export abstract class PixieAPIClientAbstract {
     script: string,
     opts: ExecuteScriptOptions,
     funcs?: VizierQueryFunc[],
+    scriptName?: string,
   ): Observable<ExecutionStateUpdate>;
 
   abstract isAuthenticated(): Promise<boolean>;
@@ -199,10 +200,11 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
     script: string,
     opts: ExecuteScriptOptions,
     funcs: VizierQueryFunc[] = [],
+    scriptName = '',
   ): Observable<ExecutionStateUpdate> {
     const hasMutation = containsMutation(script);
     return from(this.getClusterClient(cluster))
-      .pipe(switchMap((client) => client.executeScript(script, funcs, hasMutation, opts)));
+      .pipe(switchMap((client) => client.executeScript(script, funcs, hasMutation, opts, scriptName)));
   }
 
   /**

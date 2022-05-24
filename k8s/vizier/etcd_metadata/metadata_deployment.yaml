@@ -13,6 +13,9 @@ spec:
       labels:
         name: vizier-metadata
         plane: control
+      annotations:
+        px.dev/metrics_scrape: 'true'
+        px.dev/metrics_port: '50400'
     spec:
       serviceAccountName: metadata-service-account
       affinity:
