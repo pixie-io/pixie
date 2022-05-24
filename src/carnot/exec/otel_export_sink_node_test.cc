@@ -1443,20 +1443,23 @@ spans {
   parent_span_id_column_index: -1
 })pb",
             R"pb(
-cols { time64ns_data { data: 10 data: 20 } }
-cols { time64ns_data { data: 12 data: 22 } }
-cols { string_data { data: "00112233445566778899aabbccddeeff" data: "invalid_hex" } }
-cols { string_data { data: "invalid_hex" data: "0123456789abcdef" } }
-num_rows: 2
+cols { time64ns_data { data: 10 data: 20 data: 30 } }
+cols { time64ns_data { data: 12 data: 22 data: 32 } }
+cols { string_data { data: "00112233445566778899aabbccddeeff" data: "445566778899aabb" data: "invalid_hex" } }
+cols { string_data { data: "invalid_hex" data: "012345678" data: "0123456789abcdef" } }
+num_rows: 3
 eow: true
 eos: true)pb",
             {SpecificID({'\x00', '\x11', '\x22', '\x33', '\x44', '\x55', '\x66', '\x77', '\x88',
                          '\x99', '\xaa', '\xbb', '\xcc', '\xdd', '\xee', '\xff'},
                         16),
+             SpecificID({'\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x44',
+                         '\x55', '\x66', '\x77', '\x88', '\x99', '\xaa', '\xbb'},
+                        16),
              GeneratedID(16)},
-            {GeneratedID(8),
+            {GeneratedID(8), GeneratedID(8),
              SpecificID({'\x01', '\x23', '\x45', '\x67', '\x89', '\xab', '\xcd', '\xef'}, 8)},
-            {SpecificID("", 8), SpecificID("", 8)},
+            {SpecificID("", 8), SpecificID("", 8), SpecificID("", 8)},
         },
         {
             "parent_span_id_only_set_when_exact",

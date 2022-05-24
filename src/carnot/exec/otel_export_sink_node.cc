@@ -47,6 +47,8 @@ using table_store::schema::RowDescriptor;
 const int64_t kOTelSpanIDLength = 8;
 const int64_t kOTelTraceIDLength = 16;
 
+const int64_t kB3ShortTraceIDLength = 8;
+
 std::string OTelExportSinkNode::DebugStringImpl() {
   return absl::Substitute("Exec::OTelExportSinkNode: $0", plan_node_->DebugString());
 }
@@ -354,6 +356,11 @@ Status OTelExportSinkNode::ConsumeSpans(const RowBatch& rb) {
       // 2. The ID value in the column is not valid hex or not valid length.
       if (span_pb.trace_id_column_index() >= 0) {
         auto id = ParseID(rb, span_pb.trace_id_column_index(), row_idx);
+        if (id.length() == kB3ShortTraceIDLength) {
+          std::string padded_id = std::string(kOTelSpanIDLength, '\0');
+          padded_id.replace(kOTelTraceIDLength - kB3ShortTraceIDLength, kB3ShortTraceIDLength, id);
+          id = padded_id;
+        }
         if (id.length() != kOTelTraceIDLength) {
           id = GenerateID(kOTelTraceIDLength);
         }
