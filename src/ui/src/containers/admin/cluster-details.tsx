@@ -52,6 +52,7 @@ import {
   GQLContainerStatus as ContainerStatus,
   GQLPodStatus,
 } from 'app/types/schema';
+import { WithChildren } from 'app/utils/react-boilerplate';
 import { dataFromProto } from 'app/utils/result-data-utils';
 
 import {
@@ -75,7 +76,7 @@ const useLinkStyles = makeStyles((theme: Theme) => createStyles({
     color: theme.palette.foreground.grey5,
   },
 }), { name: 'BreadcrumbLink' });
-const StyledBreadcrumbLink: React.FC<{ to: string }> = React.memo(({ children, to }) => {
+const StyledBreadcrumbLink: React.FC<WithChildren<{ to: string }>> = React.memo(({ children, to }) => {
   const classes = useLinkStyles();
   return <Link className={classes.root} to={to}>{children}</Link>;
 });
@@ -99,7 +100,7 @@ const useBreadcrumbsStyles = makeStyles((theme: Theme) => createStyles({
   },
 }), { name: 'ClusterDetailsBreadcrumbs' });
 
-const StyledBreadcrumbs: React.FC = React.memo(({ children }) => {
+const StyledBreadcrumbs: React.FC<WithChildren> = React.memo(({ children }) => {
   const classes = useBreadcrumbsStyles();
   return (
     <MaterialBreadcrumbs classes={classes}>

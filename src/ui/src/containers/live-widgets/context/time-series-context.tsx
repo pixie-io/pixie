@@ -18,6 +18,8 @@
 
 import * as React from 'react';
 
+import { WithChildren } from 'app/utils/react-boilerplate';
+
 type Domain = [number, number];
 type DomainFn = ((domain: Domain) => Domain);
 
@@ -31,7 +33,7 @@ interface TimeSeriesContextProps {
 export const TimeSeriesContext = React.createContext<TimeSeriesContextProps>(null);
 TimeSeriesContext.displayName = 'TimeSeriesContext';
 
-export const TimeSeriesContextProvider = React.memo(({ children }) => {
+export const TimeSeriesContextProvider = React.memo<WithChildren>(({ children }) => {
   const [hoverTime, setHoverTime] = React.useState<number | null>(null);
   const [timeseriesDomain, setTimeseriesDomain] = React.useState<Domain | null>(null);
 
@@ -50,7 +52,7 @@ export const TimeSeriesContextProvider = React.memo(({ children }) => {
 });
 TimeSeriesContextProvider.displayName = 'TimeSeriesContextProvider';
 
-export function withTimeSeriesContext<P>(Component: React.ComponentType<P>): React.ComponentType<P> {
+export function withTimeSeriesContext<P extends object>(Component: React.ComponentType<P>): React.ComponentType<P> {
   const Wrapped: React.FC<P> = React.memo((props) => (
     <TimeSeriesContextProvider>
       <Component {...props} />

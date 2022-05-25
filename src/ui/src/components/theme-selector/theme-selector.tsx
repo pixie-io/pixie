@@ -23,6 +23,7 @@ import { Theme } from '@mui/material/styles';
 
 import { DARK_THEME, LIGHT_THEME } from 'app/components/mui-theme';
 import { PixieThemeContext } from 'app/context/pixie-theme-context';
+import { WithChildren } from 'app/utils/react-boilerplate';
 
 function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = React.useState(false);
@@ -57,7 +58,7 @@ export const ThemeSelectionContext = React.createContext<ThemeSelectionContextPr
   setMode: () => {},
 });
 
-export const ThemeSelectionContextProvider = React.memo(({ children }) => {
+export const ThemeSelectionContextProvider: React.FC<WithChildren> = React.memo(({ children }) => {
   const [stored, setStored] = React.useState<PixieThemeMode>(DEFAULT_THEME_MODE);
 
   // Try once to read localStorage

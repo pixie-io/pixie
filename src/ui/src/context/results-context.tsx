@@ -20,6 +20,7 @@ import * as React from 'react';
 
 import { VizierTable } from 'app/api';
 import { QueryExecutionStats, MutationInfo } from 'app/types/generated/vizierapi_pb';
+import { WithChildren } from 'app/utils/react-boilerplate';
 
 import { SetStateFunc } from './common';
 
@@ -55,7 +56,7 @@ export function useLatestRowCount(tableName: string): number {
   return count;
 }
 
-export const ResultsContextProvider = React.memo(({ children }) => {
+export const ResultsContextProvider: React.FC<WithChildren> = React.memo(({ children }) => {
   const [results, setResults] = React.useState<Results>({ tables: new Map() });
   const [loading, setLoading] = React.useState(false);
   const [streaming, setStreaming] = React.useState(false);

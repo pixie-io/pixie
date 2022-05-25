@@ -19,6 +19,7 @@
 import * as React from 'react';
 
 import { ScriptContext, ScriptContextProps } from 'app/context/script-context';
+import { WithChildren } from 'app/utils/react-boilerplate';
 
 export const SCRIPT_CONTEXT_DEFUALTS: ScriptContextProps = {
   script: {
@@ -39,7 +40,7 @@ export const SCRIPT_CONTEXT_DEFUALTS: ScriptContextProps = {
   cancelExecution: jest.fn(),
 };
 
-export const MockScriptContextProvider: React.FC = ({ children }) => (
+export const MockScriptContextProvider: React.FC<WithChildren> = ({ children }) => (
   <ScriptContext.Provider value={SCRIPT_CONTEXT_DEFUALTS}>
     {children}
   </ScriptContext.Provider>

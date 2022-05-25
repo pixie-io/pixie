@@ -29,6 +29,7 @@ import { Redirect, useLocation } from 'react-router';
 import { Footer, scrollbarStyles } from 'app/components';
 import NavBars from 'app/containers/App/nav-bars';
 import { SidebarContext } from 'app/context/sidebar-context';
+import { WithChildren } from 'app/utils/react-boilerplate';
 import * as pixienautSetup from 'assets/images/pixienaut-setup.svg';
 import { Copyright } from 'configurable/copyright';
 
@@ -120,7 +121,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }), { name: 'SetupView' });
 
-const SetupPage = React.memo(({ children }) => {
+const SetupPage = React.memo<WithChildren>(({ children }) => {
   const classes = useStyles();
   return (
     <div className={classes.root}>

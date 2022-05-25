@@ -18,6 +18,8 @@
 
 import * as React from 'react';
 
+import { WithChildren } from 'app/utils/react-boilerplate';
+
 export interface EmbedContextProps {
   timeArg: string;
   setTimeArg: (time: string) => void;
@@ -26,7 +28,7 @@ export interface EmbedContextProps {
 export const EmbedContext = React.createContext<EmbedContextProps>(null);
 EmbedContext.displayName = 'EmbedContext';
 
-export const EmbedContextProvider = React.memo(({ children }) => {
+export const EmbedContextProvider = React.memo<WithChildren>(({ children }) => {
   const [timeArg, setTimeArg] = React.useState<string>('');
 
   return (

@@ -27,6 +27,7 @@ import 'typeface-walter-turncoat';
 
 import { CONTACT_ENABLED } from 'app/containers/constants';
 import { SetStateFunc } from 'app/context/common';
+import { WithChildren } from 'app/utils/react-boilerplate';
 
 export interface LiveTourContextProps {
   tourOpen: boolean;
@@ -38,7 +39,7 @@ export const LiveTourContext = React.createContext<LiveTourContextProps>({
 });
 LiveTourContext.displayName = 'LiveTourContext';
 
-export const LiveTourContextProvider: React.FC = React.memo(({ children }) => {
+export const LiveTourContextProvider: React.FC<WithChildren> = React.memo(({ children }) => {
   const [tourOpen, setTourOpen] = React.useState<boolean>(false);
   return <LiveTourContext.Provider value={{ tourOpen, setTourOpen }}>{children}</LiveTourContext.Provider>;
 });

@@ -53,6 +53,7 @@ import { SidebarContext } from 'app/context/sidebar-context';
 import { GQLUserInfo, GQLUserAttributes } from 'app/types/schema';
 import pixieAnalytics from 'app/utils/analytics';
 import { buildClass } from 'app/utils/build-class';
+import { WithChildren } from 'app/utils/react-boilerplate';
 import { Logo } from 'configurable/logo';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
@@ -317,7 +318,7 @@ interface TopBarProps {
   setSidebarOpen: SetStateFunc<boolean>;
 }
 
-export const TopBar: React.FC<TopBarProps> = React.memo(({
+export const TopBar: React.FC<WithChildren<TopBarProps>> = React.memo(({
   children, toggleSidebar, setSidebarOpen,
 }) => {
   const classes = useStyles();

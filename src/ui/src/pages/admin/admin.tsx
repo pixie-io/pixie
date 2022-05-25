@@ -28,6 +28,7 @@ import { ClusterDetails } from 'app/containers/admin/cluster-details';
 import { LiveViewButton } from 'app/containers/admin/utils';
 import NavBars from 'app/containers/App/nav-bars';
 import { SidebarContext } from 'app/context/sidebar-context';
+import { WithChildren } from 'app/utils/react-boilerplate';
 import { Copyright } from 'configurable/copyright';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
@@ -69,7 +70,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }), { name: 'AdminPage' });
 
-export const AdminPage: React.FC = React.memo(({ children }) => {
+export const AdminPage: React.FC<WithChildren> = React.memo(({ children }) => {
   const classes = useStyles();
   return (
     <div className={classes.root}>

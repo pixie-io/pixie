@@ -19,6 +19,7 @@
 import * as React from 'react';
 
 import { ScriptsContext, ScriptsContextProps } from 'app/containers/App/scripts-context';
+import { WithChildren } from 'app/utils/react-boilerplate';
 
 export const SCRIPTS_CONTEXT_DEFUALTS: ScriptsContextProps = {
   scripts: new Map(),
@@ -26,7 +27,7 @@ export const SCRIPTS_CONTEXT_DEFUALTS: ScriptsContextProps = {
   setScratchScript: jest.fn(),
 };
 
-export const MockScriptsContextProvider: React.FC = ({ children }) => (
+export const MockScriptsContextProvider: React.FC<WithChildren> = ({ children }) => (
   <ScriptsContext.Provider value={SCRIPTS_CONTEXT_DEFUALTS}>
     {children}
   </ScriptsContext.Provider>

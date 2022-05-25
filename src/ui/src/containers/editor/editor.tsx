@@ -33,6 +33,7 @@ import { getKeyMap } from 'app/containers/live/shortcuts';
 import { EditorContext } from 'app/context/editor-context';
 import { LayoutContext } from 'app/context/layout-context';
 import { ScriptContext } from 'app/context/script-context';
+import { WithChildren } from 'app/utils/react-boilerplate';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -199,7 +200,7 @@ const LiveViewEditor = React.memo<{ visible: boolean }>(({ visible }) => {
 });
 LiveViewEditor.displayName = 'LiveViewEditor';
 
-export const EditorSplitPanel: React.FC = React.memo(({ children }) => {
+export const EditorSplitPanel: React.FC<WithChildren> = React.memo(({ children }) => {
   const { editorPanelOpen } = React.useContext(LayoutContext);
 
   return (

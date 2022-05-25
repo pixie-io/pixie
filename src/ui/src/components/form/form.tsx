@@ -25,6 +25,7 @@ import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
 import { PixienautBox, PixienautImage } from 'app/components/auth/pixienaut-box';
+import { WithChildren } from 'app/utils/react-boilerplate';
 
 const useStyles = makeStyles(({ spacing, typography }: Theme) => createStyles({
   button: {
@@ -118,7 +119,7 @@ interface FormFieldProps extends FormField {
 }
 
 // eslint-disable-next-line react-memo/require-memo
-const FormFieldImpl: React.FC<FormFieldProps> = ({ onChange, children, ...field }) => {
+const FormFieldImpl: React.FC<WithChildren<FormFieldProps>> = ({ onChange, children, ...field }) => {
   const classes = useStyles();
   // TODO(philkuz) figure out how to keep the value set OR wipe the value away beforehand to avoid this.
   // If the value is set beforehand, you can't edit the field.

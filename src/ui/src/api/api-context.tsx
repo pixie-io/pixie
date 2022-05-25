@@ -21,6 +21,7 @@ import * as React from 'react';
 import { ApolloProvider } from '@apollo/client/react';
 
 import { AuthContext } from 'app/common/auth-context';
+import { WithChildren } from 'app/utils/react-boilerplate';
 
 import { PixieAPIClientAbstract, PixieAPIClient } from './api';
 import { PixieAPIClientOptions } from './api-options';
@@ -28,7 +29,7 @@ import { PixieAPIClientOptions } from './api-options';
 export const PixieAPIContext = React.createContext<PixieAPIClientAbstract>(null);
 PixieAPIContext.displayName = 'PixieAPIContext';
 
-export type PixieAPIContextProviderProps = PixieAPIClientOptions;
+export type PixieAPIContextProviderProps = WithChildren<PixieAPIClientOptions>;
 
 export const PixieAPIContextProvider: React.FC<PixieAPIContextProviderProps> = React.memo(({ children, ...opts }) => {
   const [pixieClient, setPixieClient] = React.useState<PixieAPIClient>(null);

@@ -23,6 +23,8 @@ import { Button, IconButton, Snackbar } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
+import { WithChildren } from 'app/utils/react-boilerplate';
+
 const noop = () => {};
 
 interface ShowArgs {
@@ -56,7 +58,7 @@ const useSnackbarStyles = makeStyles(createStyles({
 }), { name: 'SnackbarInner' });
 
 // eslint-disable-next-line react-memo/require-memo
-export const SnackbarProvider: React.FC = (props) => {
+export const SnackbarProvider: React.FC<WithChildren> = ({ children }) => {
   const classes = useStyles();
   const snackbarClasses = useSnackbarStyles();
   const [state, setState] = React.useState<SnackbarState>({
@@ -119,7 +121,7 @@ export const SnackbarProvider: React.FC = (props) => {
   return (
     <>
       <SnackbarContext.Provider value={showSnackbar}>
-        {props.children}
+        {children}
       </SnackbarContext.Provider>
       <Snackbar
         // eslint-disable-next-line react-memo/require-usememo

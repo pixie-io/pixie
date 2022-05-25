@@ -19,6 +19,7 @@
 import * as React from 'react';
 
 import { LiveRouteContext, LiveRouteContextProps } from 'app/containers/App/live-routing';
+import { WithChildren } from 'app/utils/react-boilerplate';
 
 export const LIVE_ROUTE_CONTEXT_DEFAULTS: LiveRouteContextProps = {
   clusterName: '',
@@ -32,7 +33,7 @@ export const LIVE_ROUTE_CONTEXT_DEFAULTS: LiveRouteContextProps = {
 };
 
 // eslint-disable-next-line react-memo/require-memo
-export const MockLiveRouteContextProvider: React.FC = ({ children }) => (
+export const MockLiveRouteContextProvider: React.FC<WithChildren> = ({ children }) => (
   <LiveRouteContext.Provider value={LIVE_ROUTE_CONTEXT_DEFAULTS}>
     {children}
   </LiveRouteContext.Provider>

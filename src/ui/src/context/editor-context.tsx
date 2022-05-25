@@ -23,6 +23,7 @@ import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-conte
 import { parseVis, Vis } from 'app/containers/live/vis';
 import { ResultsContext } from 'app/context/results-context';
 import { argsForVis } from 'app/utils/args-utils';
+import { WithChildren } from 'app/utils/react-boilerplate';
 
 import { SetStateFunc } from './common';
 import { ScriptContext } from './script-context';
@@ -36,7 +37,7 @@ export interface EditorContextProps {
 export const EditorContext = React.createContext<EditorContextProps>(null);
 EditorContext.displayName = 'EditorContext';
 
-export const EditorContextProvider: React.FC = React.memo(({ children }) => {
+export const EditorContextProvider: React.FC<WithChildren> = React.memo(({ children }) => {
   const resultsContext = React.useContext(ResultsContext);
 
   const {

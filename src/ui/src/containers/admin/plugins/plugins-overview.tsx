@@ -43,6 +43,7 @@ import { useSnackbar } from 'app/components';
 import { useRetentionScripts } from 'app/pages/configure-data-export/data-export-gql';
 import { GQLPlugin, GQLPluginKind } from 'app/types/schema';
 import pixieAnalytics from 'app/utils/analytics';
+import { WithChildren } from 'app/utils/react-boilerplate';
 
 import { PluginConfig } from './plugin-config';
 import { usePluginList, usePluginToggleEnabled } from './plugin-gql';
@@ -92,7 +93,7 @@ const useStyles = makeStyles(({ palette, spacing, typography }: Theme) => create
 
 // Not viable as a general solution, but works for this specific layout where the parent element controls the ellipsis
 // and is a flex item. If we want this elsewhere in the app we'll need a more general approach for flex items.
-const OverflowTooltip: React.FC<{ title: string }> = React.memo(({ title, children }) => {
+const OverflowTooltip: React.FC<WithChildren<{ title: string }>> = React.memo(({ title, children }) => {
   const [overflow, setOverflow] = React.useState(false);
   const [span, setSpan] = React.useState<HTMLSpanElement>(null);
   const spanRef = React.useCallback((el) => setSpan(el), []);

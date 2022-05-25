@@ -25,6 +25,7 @@ import { configure, GlobalHotKeys } from 'react-hotkeys';
 
 import { Handlers, KeyMap, ShortcutsContextProps } from 'app/context/shortcuts-context';
 import { isMac } from 'app/utils/detect-os';
+import { WithChildren } from 'app/utils/react-boilerplate';
 
 type LiveHotKeyAction =
   'show-help' |
@@ -194,7 +195,10 @@ const handlerWrapper = (handler) => (e?: KeyboardEvent) => {
  *
  * The keybindings are declared here, handlers can be registered by child components of the live view.
  */
-const LiveViewShortcutsProvider: React.FC<LiveViewShortcutsProps> = React.memo(({ handlers, children }) => {
+const LiveViewShortcutsProvider: React.FC<WithChildren<LiveViewShortcutsProps>> = React.memo(({
+  handlers,
+  children,
+}) => {
   // Run this setup once.
   React.useEffect(() => {
     configure({

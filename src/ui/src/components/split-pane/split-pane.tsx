@@ -23,6 +23,7 @@ import { createStyles, makeStyles } from '@mui/styles';
 import Split from 'react-split';
 
 import { buildClass } from 'app/utils/build-class';
+import { WithChildren } from 'app/utils/react-boilerplate';
 
 interface SplitPaneContextProps {
   togglePane: (id: string) => void;
@@ -169,7 +170,7 @@ interface SplitPaneProps {
   title: string;
 }
 
-export const SplitPane = React.memo<SplitPaneProps>(({
+export const SplitPane: React.FC<WithChildren<SplitPaneProps>> = React.memo(({
   title,
   id,
   children,

@@ -18,22 +18,9 @@
 
 import * as React from 'react';
 
-import { ResultsContext, ResultsContextProps } from 'app/context/results-context';
-import { WithChildren } from 'app/utils/react-boilerplate';
-
-export const RESULTS_CONTEXT_DEFUALTS: ResultsContextProps = {
-  clearResults: jest.fn(),
-  setResults: jest.fn(),
-  setLoading: jest.fn(),
-  setStreaming: jest.fn(),
-  loading: false,
-  streaming: false,
-  tables: new Map(),
-};
-
-// eslint-disable-next-line react-memo/require-memo
-export const MockResultsContextProvider: React.FC<WithChildren> = ({ children }) => (
-  <ResultsContext.Provider value={RESULTS_CONTEXT_DEFUALTS}>
-    {children}
-  </ResultsContext.Provider>
-);
+// Like React.PropsWithChildren, but it doesn't require other props (type argument is optional).
+export type WithChildren<P = never> = [P] extends [never] ? ({
+  children?: React.ReactNode;
+}) : (P & {
+  children?: React.ReactNode;
+});
