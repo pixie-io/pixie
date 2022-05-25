@@ -29,8 +29,11 @@
 // Uncomment to show the ASAN bug.
 // #define DEMONSTRATE_ASAN_BUG
 
-// This test shows an ASAN bug, where an exception is thrown while reading /proc/<pid>/stat.
-// In particular, the /proc/<pid>/stat file is opened, but the pid dies before the file is read.
+// This test shows an ASAN bug, where an exception is thrown while reading /proc/<pid>/stat.  In
+// particular, the /proc/<pid>/stat file is opened, but the pid dies before the file is read. This
+// bug also only affect C++ APIs, fgets() wont trigger the same ASAN exception.  This bug also wont
+// happen when reading normal files (non-proc files), i.e., using std::getline() on normal files
+// when it's deleted, won't result in an ASAN exception.
 //
 // This does not cause an issue in normal (non-ASAN) builds, where an error code is returned,
 // which we then turn into a Status error. But, for some reason, with ASAN builds,
