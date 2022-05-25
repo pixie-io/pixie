@@ -24,6 +24,8 @@ import { createStyles, makeStyles } from '@mui/styles';
 
 import { PixienautBox } from 'app/components';
 
+import { WithChildren } from './react-boilerplate';
+
 export interface ErrorBoundaryFallbackProps {
   error: Error;
   /** React.ErrorInfo.componentStack, if available. */
@@ -45,10 +47,10 @@ interface ErrorBoundaryState {
  * Wrap this around any tree that should show something meaningful in place of said crash. This prevents errors from
  * bubbling up any higher than their relevant context as well, preserving parts of the app that didn't break.
  */
-export class ErrorBoundary extends React.PureComponent<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends React.PureComponent<WithChildren<ErrorBoundaryProps>, ErrorBoundaryState> {
   static readonly displayName = 'ErrorBoundary';
 
-  constructor(props: React.PropsWithChildren<ErrorBoundaryProps>) {
+  constructor(props: WithChildren<ErrorBoundaryProps>) {
     super(props);
     this.state = { error: null, errorInfo: null };
   }
@@ -58,7 +60,7 @@ export class ErrorBoundary extends React.PureComponent<ErrorBoundaryProps, Error
   }
 
   // If children change, reset error state so they can attempt to render.
-  componentDidUpdate(prevProps: React.PropsWithChildren<ErrorBoundaryProps>): void {
+  componentDidUpdate(prevProps: WithChildren<ErrorBoundaryProps>): void {
     if (prevProps.children !== this.props.children) {
       this.setState({ error: null, errorInfo: null });
     }

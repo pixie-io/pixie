@@ -23,6 +23,8 @@ import { Button, Link, Typography } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
+import { WithChildren } from 'app/utils/react-boilerplate';
+
 import { PixienautBox } from './pixienaut-box';
 
 const useStyles = makeStyles(({ spacing, palette }: Theme) => createStyles({
@@ -74,7 +76,7 @@ export interface AuthBoxProps {
   showTOSDisclaimer?: boolean;
 }
 
-export const AuthBox: React.FC<AuthBoxProps> = React.memo((props) => {
+export const AuthBox: React.FC<WithChildren<AuthBoxProps>> = React.memo((props) => {
   const {
     toggleURL,
     showTOSDisclaimer,

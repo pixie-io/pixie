@@ -21,6 +21,8 @@ import * as React from 'react';
 import { Drawer } from '@mui/material';
 import { createStyles, makeStyles } from '@mui/styles';
 
+import { WithChildren } from 'app/utils/react-boilerplate';
+
 export type DrawerDirection = 'top' | 'bottom' | 'left' | 'right';
 
 const useStyles = makeStyles(() => createStyles({
@@ -63,7 +65,7 @@ interface FixedSizeDrawerProps {
   overlay: boolean;
 }
 
-export const FixedSizeDrawer: React.FC<FixedSizeDrawerProps> = React.memo(({
+export const FixedSizeDrawer: React.FC<WithChildren<FixedSizeDrawerProps>> = React.memo(({
   children,
   otherContent,
   drawerDirection,

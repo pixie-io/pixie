@@ -32,6 +32,7 @@ import { LiveRouteContext } from 'app/containers/App/live-routing';
 import NavBars from 'app/containers/App/nav-bars';
 import { SidebarContext } from 'app/context/sidebar-context';
 import { GQLClusterInfo, GQLClusterStatus, GQLPluginKind } from 'app/types/schema';
+import { WithChildren } from 'app/utils/react-boilerplate';
 import * as pixienautCarryingBoxes from 'assets/images/pixienaut-carrying-boxes.svg';
 import { Copyright } from 'configurable/copyright';
 
@@ -94,7 +95,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 // Sidebar navigation links for Live scripts need a cluster that's usually in the URL.
 // Since this isn't the live view, we need to provide that context manually.
 // Only the embed state and the cluster name actually get used; the rest can be empty values.
-const ExtraNavContext = React.memo(({ children }) => {
+const ExtraNavContext = React.memo<WithChildren>(({ children }) => {
   const { data } = useQuery<{
     clusters: Pick<GQLClusterInfo, 'clusterName' | 'status'>[]
   }>(
@@ -139,7 +140,7 @@ const ExtraNavContext = React.memo(({ children }) => {
 });
 ExtraNavContext.displayName = 'ExtraNavContext';
 
-const ConfigureDataExportPage = React.memo(({ children }) => {
+const ConfigureDataExportPage = React.memo<WithChildren>(({ children }) => {
   const classes = useStyles();
   return (
     <div className={classes.root}>

@@ -27,6 +27,7 @@ import {
   LIGHT_THEME,
 } from 'app/components/mui-theme';
 import { ThemeSelectionContext } from 'app/components/theme-selector/theme-selector';
+import { WithChildren } from 'app/utils/react-boilerplate';
 
 export interface PixieThemeContextProps {
   theme: Theme;
@@ -43,7 +44,7 @@ export const PixieThemeContext = React.createContext<PixieThemeContextProps>({
 });
 PixieThemeContext.displayName = 'PixieThemeContext';
 
-export const PixieThemeContextProvider = React.memo(({ children }) => {
+export const PixieThemeContextProvider = React.memo<WithChildren>(({ children }) => {
   const [theme, setTheme] = React.useState<Theme>(DARK_THEME);
   const [parsedCustomTheme, setParsedCustomTheme] = React.useState<Theme | null>(null);
 

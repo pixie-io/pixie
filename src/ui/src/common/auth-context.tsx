@@ -18,6 +18,8 @@
 
 import * as React from 'react';
 
+import { WithChildren } from 'app/utils/react-boilerplate';
+
 export interface AuthContextProps {
   authToken: string;
   setAuthToken: (token: string) => void;
@@ -26,7 +28,7 @@ export interface AuthContextProps {
 export const AuthContext = React.createContext<AuthContextProps>(null);
 AuthContext.displayName = 'AuthContext';
 
-export const AuthContextProvider = React.memo(({ children }) => {
+export const AuthContextProvider = React.memo<WithChildren>(({ children }) => {
   const [authToken, setAuthToken] = React.useState<string>('');
 
   return (

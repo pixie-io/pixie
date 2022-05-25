@@ -21,6 +21,8 @@ import * as React from 'react';
 import { useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 
+import { WithChildren } from 'app/utils/react-boilerplate';
+
 type SetOpenFunc = React.Dispatch<React.SetStateAction<boolean>>;
 type Splits = [number, number];
 type SetSplitSizesFunc = (sizes: Splits) => void;
@@ -42,7 +44,7 @@ export interface LayoutContextProps {
 export const LayoutContext = React.createContext<LayoutContextProps>(null);
 LayoutContext.displayName = 'LayoutContext';
 
-export const LayoutContextProvider: React.FC = React.memo(({ children }) => {
+export const LayoutContextProvider: React.FC<WithChildren> = React.memo(({ children }) => {
   const [editorSplitsSizes, setEditorSplitSizes] = React.useState<Splits>([40, 60]);
   const [editorPanelOpen, setEditorPanelOpen] = React.useState<boolean>(false);
 

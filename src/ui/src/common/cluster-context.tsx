@@ -26,6 +26,7 @@ import { LiveRouteContext, push } from 'app/containers/App/live-routing';
 import { PASSTHROUGH_PROXY_PORT } from 'app/containers/constants';
 import { GQLClusterInfo, GQLVizierConfig, GQLClusterStatus } from 'app/types/schema';
 import { stableSerializeArgs } from 'app/utils/args-utils';
+import { WithChildren } from 'app/utils/react-boilerplate';
 
 export interface ClusterContextProps {
   loading: boolean;
@@ -57,7 +58,7 @@ const invalidCluster = (name: string): SelectedClusterInfo => ({
   prettyClusterName: name,
 });
 
-export const ClusterContextProvider = React.memo(({ children }) => {
+export const ClusterContextProvider = React.memo<WithChildren>(({ children }) => {
   const showSnackbar = useSnackbar();
 
   const {

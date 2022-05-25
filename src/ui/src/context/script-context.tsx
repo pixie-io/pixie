@@ -35,6 +35,7 @@ import {
 } from 'app/utils/args-utils';
 import { checkExhaustive } from 'app/utils/check-exhaustive';
 import { containsMutation, isStreaming } from 'app/utils/pxl';
+import { WithChildren } from 'app/utils/react-boilerplate';
 import { Script } from 'app/utils/script-bundle';
 
 const NUM_MUTATION_RETRIES = 5;
@@ -78,7 +79,7 @@ export const ScriptContext = React.createContext<ScriptContextProps>({
 });
 ScriptContext.displayName = 'ScriptContext';
 
-export const ScriptContextProvider: React.FC = React.memo(({ children }) => {
+export const ScriptContextProvider: React.FC<WithChildren> = React.memo(({ children }) => {
   const apiClient = React.useContext(PixieAPIContext);
   const {
     scriptId,

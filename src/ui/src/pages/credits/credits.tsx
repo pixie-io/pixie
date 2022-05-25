@@ -23,6 +23,7 @@ import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
 import { buildClass, scrollbarStyles, Footer } from 'app/components';
+import { WithChildren } from 'app/utils/react-boilerplate';
 import { Copyright } from 'configurable/copyright';
 import licenseJson from 'configurable/licenses.json';
 
@@ -95,7 +96,7 @@ interface LicenseEntry {
 }
 
 // eslint-disable-next-line react-memo/require-memo
-const CreditsPage: React.FC = ({ children }) => {
+const CreditsPage: React.FC<WithChildren> = ({ children }) => {
   const classes = useStyles();
   return (
     <div className={classes.root}>

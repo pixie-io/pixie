@@ -22,6 +22,8 @@ import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 import { DraggableCore } from 'react-draggable';
 
+import { WithChildren } from 'app/utils/react-boilerplate';
+
 import { FixedSizeDrawer, DrawerDirection } from './drawer';
 
 // The amount of time elasped since a user has last resized the drawer.
@@ -60,7 +62,7 @@ interface ResizableDrawerProps {
   minSize: number;
 }
 
-export const ResizableDrawer: React.FC<ResizableDrawerProps> = React.memo(({
+export const ResizableDrawer: React.FC<WithChildren<ResizableDrawerProps>> = React.memo(({
   children,
   otherContent,
   drawerDirection,

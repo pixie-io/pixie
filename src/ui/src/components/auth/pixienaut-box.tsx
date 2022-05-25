@@ -22,6 +22,8 @@ import { Paper } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
+import { WithChildren } from 'app/utils/react-boilerplate';
+
 import { PixienautBalloonSvg } from './pixienaut-balloon';
 import { PixienautOctopusSvg } from './pixienaut-octopus';
 import { PixienautToiletSvg } from './pixienaut-toilet';
@@ -104,7 +106,7 @@ export interface PixienautBoxProps {
   image?: PixienautImage;
 }
 
-export const PixienautBox: React.FC<PixienautBoxProps> = React.memo<PixienautBoxProps>(
+export const PixienautBox: React.FC<WithChildren<PixienautBoxProps>> = React.memo(
   ({ children, image = 'balloon' }) => {
     const classes = useStyles();
     const pixienautScenarios = {

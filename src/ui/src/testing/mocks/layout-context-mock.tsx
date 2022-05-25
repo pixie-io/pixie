@@ -19,6 +19,7 @@
 import * as React from 'react';
 
 import { LayoutContext, LayoutContextProps } from 'app/context/layout-context';
+import { WithChildren } from 'app/utils/react-boilerplate';
 
 export const LAYOUT_CONTEXT_DEFUALTS: LayoutContextProps = {
   editorSplitsSizes: [40, 60],
@@ -32,7 +33,7 @@ export const LAYOUT_CONTEXT_DEFUALTS: LayoutContextProps = {
   isMobile: false,
 };
 
-export const MockLayoutContextProvider: React.FC = ({ children }) => (
+export const MockLayoutContextProvider: React.FC<WithChildren> = ({ children }) => (
   <LayoutContext.Provider value={LAYOUT_CONTEXT_DEFUALTS}>
     {children}
   </LayoutContext.Provider>

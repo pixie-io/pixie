@@ -26,6 +26,8 @@ import {
   MenuProps,
 } from '@mui/material';
 
+import { WithChildren } from 'app/utils/react-boilerplate';
+
 interface AvatarProps {
   name: string;
   picture?: string;
@@ -49,8 +51,7 @@ export const Avatar = React.memo<AvatarProps>((props) => {
 });
 Avatar.displayName = 'Avatar';
 
-interface ProfileMenuWrapperProps
-  extends React.PropsWithChildren<Pick<MenuProps, 'anchorOrigin' | 'open' | 'anchorEl'>> {
+interface ProfileMenuWrapperProps extends WithChildren<Pick<MenuProps, 'anchorOrigin' | 'open' | 'anchorEl'>> {
   onCloseMenu: MenuProps['onClose'] & MenuProps['onBlur'];
   name: string;
   email: string;

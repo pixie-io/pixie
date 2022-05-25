@@ -18,6 +18,8 @@
 
 import * as React from 'react';
 
+import { WithChildren } from 'app/utils/react-boilerplate';
+
 import { LayoutContext } from './layout-context';
 
 interface DataDrawerContextProps {
@@ -29,7 +31,7 @@ interface DataDrawerContextProps {
 export const DataDrawerContext = React.createContext<DataDrawerContextProps>(null);
 DataDrawerContext.displayName = 'DataDrawerContext';
 
-export const DataDrawerContextProvider = React.memo(({ children }) => {
+export const DataDrawerContextProvider: React.FC<WithChildren> = React.memo(({ children }) => {
   const [activeTab, setActiveTab] = React.useState<string>('');
   const { setDataDrawerOpen } = React.useContext(LayoutContext);
   const openDrawerTab = React.useCallback((tab: string) => {
