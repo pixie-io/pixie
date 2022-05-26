@@ -631,9 +631,8 @@ github.com/golang/image v0.0.0-20210220032944-ac19c3e999fb/go.mod h1:FeLwcggjj3m
 github.com/golang/lint v0.0.0-20201208152925-83fdc39ff7b5 h1:yoAjkFah23+tVFVuPMY+qVhs1qr4MxUlH0TAh80VbOw=
 github.com/golang/lint v0.0.0-20201208152925-83fdc39ff7b5/go.mod h1:3xt1FjdF8hUf6vQPIChWIBhFzV8gjjsPE/fR3IyQdNY=
 github.com/golang/mobile v0.0.0-20210220033013-bdb1ca9a1e08/go.mod h1:skQtrUTUwhdJvXM/2KKJzY8pDgNr9I/FOMqDVRPBUS4=
+github.com/golang/mock v1.5.0 h1:jlYHihg//f7RRwuPfptm04yp4s7O6Kw8EZiVYIGcH0g=
 github.com/golang/mock v1.5.0/go.mod h1:CWnOUgYIOo4TcNZ0wHX3YZCqsaM1I1Jvs6v3mP3KVu8=
-github.com/golang/mock v1.6.0 h1:ErTB+efbowRARo13NNdxyJji2egdxLGQhRaY+DUumQc=
-github.com/golang/mock v1.6.0/go.mod h1:p6yTPP+5HYm5mzsMV8JkE6ZKdX+/wYM6Hr+LicevLPs=
 github.com/golang/mod v0.4.2 h1:lH77g1z4f17x8y6SttLVCeJEBqNXOmSodud0ja0tP60=
 github.com/golang/mod v0.4.2/go.mod h1:s0Qsj1ACt9ePp/hMypM3fl4fZqREWJwdYDEqhRiZZUA=
 github.com/golang/net v0.0.0-20211216030914-fe4d6282115f h1:93RQskMyCj+qMgABhIr88aAInt1TZk5IV6R4VCNlaEg=
