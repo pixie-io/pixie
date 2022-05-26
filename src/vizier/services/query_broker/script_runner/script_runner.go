@@ -389,6 +389,7 @@ func (s *ScriptRunner) natsReplyAndResponse(req *cvmsgspb.V2CMessage, requestTop
 
 	// Wait for response.
 	t := time.NewTimer(natsWaitTimeout)
+	defer t.Stop()
 	for {
 		select {
 		case <-s.done:
