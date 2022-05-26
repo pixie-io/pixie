@@ -152,7 +152,7 @@ export function useClustersForRetentionScripts(): { loading: boolean, clusters: 
 
   return React.useMemo(() => ({
     loading: loading && !error,
-    clusters: data.clusters ?? [],
+    clusters: data?.clusters ?? [],
   }), [data, loading, error]);
 }
 

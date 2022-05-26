@@ -38,6 +38,7 @@ import { Theme, useTheme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 import { useHistory } from 'react-router';
 
+import { isPixieEmbedded } from 'app/common/embed-context';
 import { CodeEditor, EDITOR_THEME_MAP, useSnackbar } from 'app/components';
 import { usePluginConfig } from 'app/containers/admin/plugins/plugin-gql';
 import { GQLClusterStatus, GQLEditableRetentionScript } from 'app/types/schema';
@@ -176,7 +177,8 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
 
   const history = useHistory();
   const navBackToAllScripts = React.useCallback(() => {
-    history.push('/configure-data-export');
+    const isEmbedded = isPixieEmbedded();
+    history.push((isEmbedded ? '/embed' : '') + '/configure-data-export');
   }, [history]);
 
   const { clusters } = useClustersForRetentionScripts();

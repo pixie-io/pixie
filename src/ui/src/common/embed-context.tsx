@@ -20,6 +20,16 @@ import * as React from 'react';
 
 import { WithChildren } from 'app/utils/react-boilerplate';
 
+export function isPixieEmbedded() {
+  const base = document.baseURI;
+  const full = window.location.href;
+  if (!full.startsWith(base)) {
+    throw new Error(`Can't tell if embedded! Full path "${full}" doesn't start with expected base path "${base}"`);
+  }
+  const rel = window.location.href.substring(base.length);
+  return /^\/?embed\b/.test(rel);
+}
+
 export interface EmbedContextProps {
   timeArg: string;
   setTimeArg: (time: string) => void;

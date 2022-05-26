@@ -32,7 +32,7 @@ import {
 
 import { PixieAPIContext, PixieAPIContextProvider } from 'app/api';
 import { AuthContextProvider, AuthContext } from 'app/common/auth-context';
-import { EmbedContext, EmbedContextProvider } from 'app/common/embed-context';
+import { EmbedContext, EmbedContextProvider, isPixieEmbedded } from 'app/common/embed-context';
 import {
   SnackbarProvider,
   VersionInfo,
@@ -118,7 +118,7 @@ export const App: React.FC = () => {
   const { authenticated, loading } = useIsAuthenticated();
   const { authToken } = React.useContext(AuthContext);
 
-  const isEmbedded = window.location.pathname.startsWith('/embed');
+  const isEmbedded = isPixieEmbedded();
 
   // If in an embedded environment, we need to wait until the authToken has been sent over from the parent.
   // While there is no authToken, we should not render the page, as all GQL requests will fail.
@@ -274,7 +274,7 @@ const ThemedApp: React.FC = () => {
   }, [listener]);
 
   const onUnauthorized = React.useCallback(() => {
-    const isEmbedded = window.location.pathname.startsWith('/embed');
+    const isEmbedded = isPixieEmbedded();
     const isLogin = window.location.pathname.endsWith('/login');
     if (!isEmbedded && !isLogin) {
       const path = window.location.origin + getAuthRedirectLocation();

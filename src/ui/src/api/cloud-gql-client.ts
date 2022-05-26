@@ -31,6 +31,7 @@ import { onError } from '@apollo/client/link/error';
 import { CachePersistor } from 'apollo3-cache-persist';
 import fetch from 'cross-fetch';
 
+import { isPixieEmbedded } from 'app/common/embed-context';
 import { GQLClusterConnectionInfo } from 'app/types/schema';
 
 import { GetCSRFCookie } from '../pages/auth/utils';
@@ -51,7 +52,7 @@ const makeCloudAuthLink = (opts: PixieAPIClientOptions) => setContext((_, { head
 
 // Apollo link that redirects to login page on HTTP status 401.
 const loginRedirectLink = (on401: (errorMessage?: string) => void) => onError(({ networkError, operation }) => {
-  const isEmbed = window.location.pathname.startsWith('/embed');
+  const isEmbed = isPixieEmbedded();
   const isLogin = window.location.pathname.endsWith('/login');
   const isCacheOnly = operation.operationName.endsWith('Cache');
   if (isEmbed || isLogin || isCacheOnly) {

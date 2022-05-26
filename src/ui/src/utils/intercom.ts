@@ -16,10 +16,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { isPixieEmbedded } from 'app/common/embed-context';
 import { CONTACT_ENABLED } from 'app/containers/constants';
 
 export const triggerID = 'intercom-trigger';
 
 export function showIntercomTrigger(): boolean {
-  return CONTACT_ENABLED && !window.location.pathname.startsWith('/embed');
+  return CONTACT_ENABLED && !isPixieEmbedded();
 }
