@@ -306,6 +306,8 @@ replace (
 	github.com/go-openapi/loads => github.com/go-openapi/loads v0.19.0
 	github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.3
 	github.com/go-openapi/strfmt => github.com/go-openapi/strfmt v0.20.0
+	// Upgrade after https://github.com/golang/mock/pull/601 makes it into a release
+	github.com/golang/mock => github.com/golang/mock v1.5.0
 	github.com/golang/protobuf => github.com/golang/protobuf v1.5.2
 	github.com/google/go-cmp => github.com/google/go-cmp v0.5.5
 	github.com/spf13/cobra => github.com/spf13/cobra v1.2.1
