@@ -49,6 +49,7 @@ import { styled } from '@mui/material/styles';
 import { distanceInWordsStrict } from 'date-fns';
 import { Link, useRouteMatch } from 'react-router-dom';
 
+import { isPixieEmbedded } from 'app/common/embed-context';
 import { Spinner, useSnackbar } from 'app/components';
 import {
   GQLClusterStatus,
@@ -279,6 +280,7 @@ RetentionScriptTable.displayName = 'RetentionScriptTable';
 
 export const ConfigureDataExportBody = React.memo(() => {
   const showSnackbar = useSnackbar();
+  const isEmbedded = isPixieEmbedded();
 
   const { loading: loadingScripts, error: scriptsError, scripts } = useRetentionScripts();
   const { loading: loadingPlugins, error: pluginsError, plugins } = useRetentionPlugins();
@@ -309,16 +311,23 @@ export const ConfigureDataExportBody = React.memo(() => {
     <Box m={2} mt={4} mb={4}>
       <Typography variant='h1' ml={2} mb={2}>Data Retention Scripts</Typography>
       <Typography variant='body1' ml={2} mb={2}>
-        {'These preset scripts are provided by your '}
-        <Link to='/admin/plugins'>enabled plugins</Link>. <br /><br />
-        {'You cannot edit the preset scripts, but you can change their arguments and which clusters they run on.'}<br />
-        {'Write custom scripts by clicking Create Script at the bottom of the page. '}
-        {'Learn more about by visiting the '}
-        <a href='https://docs.px.dev/tutorials/integrations/otel/#setup-the-plugin' target='_blank' rel='noreferrer'>
-          plugin tutorial
-        </a> and <a href='https://docs.px.dev/reference/plugins/plugin-system/' target='_blank' rel='noreferrer'>
-          Pixie Plugin reference docs
-        </a>.
+      {isEmbedded ? <></> : (
+        <>
+          {'These preset scripts are provided by your '}
+          <Link to='/admin/plugins'>enabled plugins</Link>
+          {'.'}
+          <br /><br />
+        </>
+      )}
+      {'You cannot edit the preset scripts, but you can change their arguments and which clusters they run on.'}
+      <br />
+      {'Write custom scripts by clicking Create Script at the bottom of the page. '}
+      {'Learn more by visiting the '}
+      <a href='https://docs.px.dev/tutorials/integrations/otel/#setup-the-plugin' target='_blank' rel='noreferrer'>
+        plugin tutorial
+      </a> and <a href='https://docs.px.dev/reference/plugins/plugin-system/' target='_blank' rel='noreferrer'>
+        Pixie Plugin reference docs
+      </a>.
       </Typography>
       <Divider variant='middle' sx={{ mt: 4, mb: 4 }} />
       {(scriptsError || pluginsError) && (

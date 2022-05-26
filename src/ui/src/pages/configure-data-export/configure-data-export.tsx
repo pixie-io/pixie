@@ -25,7 +25,8 @@ import { createStyles, makeStyles } from '@mui/styles';
 import { Link, useRouteMatch, Route, Switch } from 'react-router-dom';
 
 import { ClusterContext } from 'app/common/cluster-context';
-import { Footer, scrollbarStyles } from 'app/components';
+import { isPixieEmbedded } from 'app/common/embed-context';
+import { buildClass, Footer, scrollbarStyles } from 'app/components';
 import { usePluginList } from 'app/containers/admin/plugins/plugin-gql';
 import { selectClusterName } from 'app/containers/App/cluster-info';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
@@ -68,6 +69,9 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     display: 'flex',
     flexFlow: 'column nowrap',
     overflow: 'auto',
+  },
+  mainEmbedded: {
+    marginLeft: 0,
   },
   mainBlock: {
     flex: '1 0 auto',
@@ -142,18 +146,21 @@ ExtraNavContext.displayName = 'ExtraNavContext';
 
 const ConfigureDataExportPage = React.memo<WithChildren>(({ children }) => {
   const classes = useStyles();
+  const isEmbedded = isPixieEmbedded();
   return (
     <div className={classes.root}>
-      <ExtraNavContext>
-        <SidebarContext.Provider value={{ showLiveOptions: false, showAdmin: true }}>
-          <NavBars>
-            <div className={classes.title}>
-              <div className={classes.titleText}>Long-term Data Export</div>
-            </div>
-          </NavBars>
-        </SidebarContext.Provider>
-      </ExtraNavContext>
-      <div className={classes.main}>
+      {!isEmbedded && (
+        <ExtraNavContext>
+          <SidebarContext.Provider value={{ showLiveOptions: false, showAdmin: true }}>
+            <NavBars>
+              <div className={classes.title}>
+                <div className={classes.titleText}>Long-term Data Export</div>
+              </div>
+            </NavBars>
+          </SidebarContext.Provider>
+        </ExtraNavContext>
+      )}
+      <div className={buildClass(classes.main, isEmbedded && classes.mainEmbedded)}>
         <div className={classes.mainBlock}>
           {children}
         </div>
@@ -168,19 +175,30 @@ ConfigureDataExportPage.displayName = 'ConfigureDataExportPage';
 
 const NoPluginsEnabledSplash = React.memo(() => {
   const classes = useStyles();
+  const isEmbedded = isPixieEmbedded();
   return (
     <div className={classes.splashBlock}>
       <img src={pixienautCarryingBoxes} alt='Long-term Data Export Setup' />
-      <Typography variant='body2'>
-        Pixie only guarantees data retention for 24 hours.
-        <br />
-        {'Configure a '}
-        <Link to='/admin/plugins'>plugin</Link>
-        {' to export and store Pixie data for longer term retention.'}
-        <br />
-        This data will be accessible and queryable through the plugin provider.
-      </Typography>
-      <Button component={Link} to='/admin/plugins' variant='contained'>Configure Plugins</Button>
+      {isEmbedded ? (
+        <Typography variant='body2'>
+          To use this page, at least one Pixie plugin supporting long-term data export must be enabled.
+          <br />
+          If you&apos;re seeing this page embedded in another, something has likely been misconfigured.
+        </Typography>
+      ) : (
+        <>
+          <Typography variant='body2'>
+            Pixie only guarantees data retention for 24 hours.
+            <br />
+            {'Configure a '}
+            <Link to='/admin/plugins'>plugin</Link>
+            {' to export and store Pixie data for longer term retention.'}
+            <br />
+            This data will be accessible and queryable through the plugin provider.
+          </Typography>
+          <Button component={Link} to='/admin/plugins' variant='contained'>Configure Plugins</Button>
+        </>
+      )}
     </div>
   );
 });

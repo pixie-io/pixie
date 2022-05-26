@@ -332,6 +332,7 @@ export default function PixieWithContext(): React.ReactElement {
               <Route path={scriptPaths} component={ScriptShortcut} />
               <Route path='/setup' component={SetupRedirect} />
               <Route path='/configure-data-export' component={ConfigureDataExportView} />
+              <Route path='/embed/configure-data-export' component={ConfigureDataExportView} />
               <Redirect exact from='/' to='/live' />
               <Route path='/*' component={RouteNotFound} />
             </Switch>
