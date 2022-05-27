@@ -42,6 +42,7 @@ pl_cc_library(
         "//src/common/system:cc_library",
         "//src/stirling/obj_tools:cc_library",
         "//src/stirling/utils:cc_library",
+        "//src/common/json:cc_library",
         "//src/stirling/bpf_tools/bcc_bpf_intf:cc_library",
         "//src/stirling/bpf_tools/bcc_bpf:task_struct_mem_read",
     ] + select({

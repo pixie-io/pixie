@@ -50,6 +50,7 @@ void StirlingMonitor::NotifyJavaProcessCrashed(const struct upid_t& upid) {
 
 void StirlingMonitor::AppendSourceStatusRecord(const std::string& source_connector,
                                                const Status& status, const std::string& context) {
+  absl::base_internal::SpinLockHolder lock(&source_status_lock_);
   source_status_records_.push_back(
       {CurrentTimeNS(), source_connector, status.code(), status.msg(), context});
 }
@@ -57,15 +58,18 @@ void StirlingMonitor::AppendSourceStatusRecord(const std::string& source_connect
 void StirlingMonitor::AppendProbeStatusRecord(const std::string& source_connector,
                                               const std::string& tracepoint, const Status& status,
                                               const std::string& info) {
+  absl::base_internal::SpinLockHolder lock(&probe_status_lock_);
   probe_status_records_.push_back(
       {CurrentTimeNS(), source_connector, tracepoint, status.code(), status.msg(), info});
 }
 
 std::vector<SourceStatusRecord> StirlingMonitor::ConsumeSourceStatusRecords() {
+  absl::base_internal::SpinLockHolder lock(&source_status_lock_);
   return std::move(source_status_records_);
 }
 
 std::vector<ProbeStatusRecord> StirlingMonitor::ConsumeProbeStatusRecords() {
+  absl::base_internal::SpinLockHolder lock(&probe_status_lock_);
   return std::move(probe_status_records_);
 }
 
