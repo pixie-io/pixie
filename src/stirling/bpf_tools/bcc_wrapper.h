@@ -43,6 +43,7 @@
 #include <vector>
 
 #include "src/common/base/base.h"
+#include "src/common/json/json.h"
 #include "src/stirling/bpf_tools/task_struct_resolver.h"
 #include "src/stirling/obj_tools/elf_reader.h"
 
@@ -123,6 +124,17 @@ struct UProbeSpec {
     return absl::Substitute("[binary=$0 symbol=$1 address=$2 pid=$3 type=$4 probe_fn=$5]",
                             binary_path.string(), symbol, address, pid,
                             magic_enum::enum_name(attach_type), probe_fn);
+  }
+
+  std::string ToJSON() const {
+    ::px::utils::JSONObjectBuilder builder;
+    builder.WriteKV("binary", binary_path.string());
+    builder.WriteKV("symbol", symbol);
+    builder.WriteKV("address", static_cast<int64_t>(address));
+    builder.WriteKV("pid", pid);
+    builder.WriteKV("type", magic_enum::enum_name(attach_type));
+    builder.WriteKV("probe_fn", probe_fn);
+    return builder.GetString();
   }
 };
 

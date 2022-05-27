@@ -23,6 +23,7 @@
 #include "src/common/base/base.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/tracepoint_translation/translation.h"
+#include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/core/output.h"
 #include "src/stirling/core/types.h"
 #include "src/stirling/source_connectors/seq_gen/seq_gen_connector.h"
@@ -378,6 +379,54 @@ TEST_F(StirlingErrorTest, BPFTraceDeploymentError) {
                            "ERROR: printf: Too many arguments "
                            "for format string (4 supplied, 3 expected)\n",
                        .info = absl::Substitute(R"({"trace_id":"$0"})", trace_id.str())};
+  EXPECT_THAT(source_records, ElementsAre(EqSourceStatusRecord(r1)));
+  EXPECT_THAT(probe_records, ElementsAre(EqProbeStatusRecord(r2)));
+}
+
+TEST_F(StirlingErrorTest, UProbeDeploymentError) {
+  // Register StirlingErrorConnector.
+  std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>();
+  registry->RegisterOrDie<StirlingErrorConnector>("stirling_error");
+
+  // Run Stirling.
+  InitStirling(std::move(registry));
+  ASSERT_OK(stirling_->RunAsThread());
+  ASSERT_OK(stirling_->WaitUntilRunning(std::chrono::seconds(5)));
+
+  bpf_tools::BCCWrapper bcc_wrapper;
+  bpf_tools::UProbeSpec spec{
+      .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
+      .symbol = "SSL_write",
+      .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+      .probe_fn = "probe_entry_SSL_write",
+  };
+
+  // Attempt to attach UProbe and append probe status.
+  auto s = bcc_wrapper.AttachUProbe(spec);
+  if (!s.ok()) {
+    StirlingMonitor& monitor = *StirlingMonitor::GetInstance();
+    monitor.AppendProbeStatusRecord("socket_tracer", spec.probe_fn, s, spec.ToJSON());
+  }
+  // Sleep so that transfer_data has time to push the records into table.
+  sleep(3);
+
+  auto source_records = ToSourceRecordVector(source_status_batches_);
+  auto probe_records = ToProbeRecordVector(probe_status_batches_);
+
+  // Stirling Error Source Connector Initialization.
+  SourceStatusRecord r1{.source_connector = "stirling_error",
+                        .status = px::statuspb::Code::OK,
+                        .error = "",
+                        .context = "Init"};
+  // SSL_write Uprobe deployment failed.
+  ProbeStatusRecord r2{
+      .source_connector = "socket_tracer",
+      .tracepoint = "probe_entry_SSL_write",
+      .status = px::statuspb::Code::INTERNAL,
+      .error = "Can't find start of function probe_entry_SSL_write",
+      .info =
+          R"({"binary":"/usr/lib/x86_64-linux-gnu/libssl.so.1.1","symbol":"SSL_write","address":0,"pid":-1,"type":"kEntry","probe_fn":"probe_entry_SSL_write"})"};
+
   EXPECT_THAT(source_records, ElementsAre(EqSourceStatusRecord(r1)));
   EXPECT_THAT(probe_records, ElementsAre(EqProbeStatusRecord(r2)));
 }

@@ -75,9 +75,13 @@ class StirlingMonitor : NotCopyMoveable {
   absl::flat_hash_map<struct upid_t, timestamp_t> java_proc_attach_times_;
 
   // Records of probe deployment status.
-  std::vector<ProbeStatusRecord> probe_status_records_;
+  std::vector<ProbeStatusRecord> probe_status_records_ ABSL_GUARDED_BY(probe_status_lock_);
   // Records of Stirling Source Connector status.
-  std::vector<SourceStatusRecord> source_status_records_;
+  std::vector<SourceStatusRecord> source_status_records_ ABSL_GUARDED_BY(source_status_lock_);
+
+  // Lock to protect probe and source records.
+  absl::base_internal::SpinLock probe_status_lock_;
+  absl::base_internal::SpinLock source_status_lock_;
 };
 
 }  // namespace stirling

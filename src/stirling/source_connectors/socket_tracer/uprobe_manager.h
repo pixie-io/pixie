@@ -36,6 +36,7 @@
 
 #include "src/stirling/source_connectors/socket_tracer/uprobe_symaddrs.h"
 #include "src/stirling/utils/detect_application.h"
+#include "src/stirling/utils/monitor.h"
 #include "src/stirling/utils/proc_path_tools.h"
 #include "src/stirling/utils/proc_tracker.h"
 
@@ -467,6 +468,12 @@ class UProbeManager {
   StatusOr<int> AttachNodeJsOpenSSLUprobes(uint32_t pid);
 
   /**
+   * Calls BCCWrapper.AttachUProbe() with a probe template and log any errors to the probe status
+   * table.
+   */
+  Status LogAndAttachUProbe(const bpf_tools::UProbeSpec& spec);
+
+  /**
    * Helper function that calls BCCWrapper.AttachUprobe() from a probe template.
    * Among other things, it finds all symbol matches as specified in the template,
    * and attaches a probe per matching symbol.
@@ -549,6 +556,8 @@ class UProbeManager {
       node_tlswrap_symaddrs_map_;
   std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, int, ebpf::BPFMapInMapTable<uint32_t>>>
       go_goid_map_;
+
+  StirlingMonitor& monitor_ = *StirlingMonitor::GetInstance();
 };
 
 }  // namespace stirling
