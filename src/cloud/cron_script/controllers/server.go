@@ -657,6 +657,7 @@ func (s *Server) natsReplyAndResponse(req *cvmsgspb.C2VMessage, publishTopic str
 
 	// Wait for response.
 	t := time.NewTimer(natsWaitTimeout)
+	defer t.Stop()
 	for {
 		select {
 		case msg := <-subCh:
