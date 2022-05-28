@@ -321,6 +321,11 @@ def WithSourceCodeK8s(String suffix="${UUID.randomUUID()}", Closure body) {
   warnError('Script failed') {
     DefaultBuildPodTemplate(suffix) {
       timeout(time: 90, unit: 'MINUTES') {
+        container('pxbuild') {
+          sh '''
+            git config --global --add safe.directory `pwd`
+          '''
+        }
         container('gcloud') {
           unstashFromGCS(SRC_STASH_NAME)
           sh 'cp ci/bes-k8s.bazelrc bes.bazelrc'
@@ -759,7 +764,7 @@ def generateTestTargets = {
 preBuild['Process Dependencies'] = {
   WithSourceCodeK8s('process-deps') {
     container('pxbuild') {
-      if (isMainRun || isNightlyTestRegressionRun || isOSSMainRun) {
+     if (isMainRun || isNightlyTestRegressionRun || isOSSMainRun) {
         sh '''
         ./ci/bazel_build_deps.sh -a
         wc -l bazel_*

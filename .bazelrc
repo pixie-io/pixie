@@ -72,6 +72,8 @@ build:libc++ --build_tag_filters=-no_libcpp
 build:libc++ --test_tag_filters=-no_libcpp,-requires_root,-requires_bpf,-disabled
 
 # Build for GCC.
+build:gcc --linkopt -fuse-ld=lld
+build:gcc --host_linkopt -fuse-ld=lld
 build:gcc --action_env=BAZEL_LINKLIBS=-l%:libstdc++.a
 build:gcc --action_env=BAZEL_LINKOPTS=-lm:-static-libgcc
 # We need this to ensure that external projects are built with
@@ -90,15 +92,13 @@ build:gcc --copt -Wno-error=maybe-uninitialized
 build:gcc --build_tag_filters=-no_gcc
 build:gcc --test_tag_filters=-no_gcc,-requires_root,-requires_bpf,-disabled
 
-# Default build opts:
-build --config=clang
-
 # Default mac config. Same as clang except we can't statically link,
 # and mac does not use libstdc++.
 build:macos --action_env=BAZEL_LINKLIBS
 build:macos --action_env=BAZEL_LINKOPTS
 
 # bazel build --config asan ...
+build:asan --config=clang
 build:asan --define PL_CONFIG_ASAN=1
 build:asan --copt -DPL_CONFIG_ASAN
 build:asan --copt -D__SANITIZE_ADDRESS__
@@ -135,6 +135,7 @@ build:msan --define tcmalloc=disabled
 build:msan --copt -DMEMORY_SANITIZER=1
 
 # bazel build --config tsan
+build:tsan --config=clang
 build:tsan --define PL_CONFIG_TSAN=1
 build:tsan --copt -fsanitize=thread
 build:tsan --copt -fsanitize-recover=all
@@ -158,6 +159,7 @@ build:tsan --test_env=TSAN_OPTIONS=report_atomic_races=0
 # stuck for minutes without actually running.
 
 # bazel build --config bpf
+build:bpf --config=clang
 build:bpf --build_tag_filters=requires_bpf,requires_root
 build:bpf --test_tag_filters=requires_bpf,requires_root,-disabled
 test:bpf --jobs=4 --strategy=TestRunner=standalone
@@ -179,6 +181,7 @@ build:bpf_tsan --test_tag_filters=requires_bpf,requires_root,-no_tsan,-disabled
 test:bpf_tsan --jobs=4 --strategy=TestRunner=standalone
 
 # bazel build --config go_race
+build:go_race --config=clang
 build:go_race --define tcmalloc=disabled
 build:go_race --@io_bazel_rules_go//go/config:race
 test:go_race --define tcmalloc=disabled

@@ -79,7 +79,7 @@ end
 
 template '/opt/pixielabs/plenv.inc' do
   source 'plenv.inc.erb'
-  owner user
+  owner 'root'
   group root_group
   mode '0644'
   action :create
@@ -87,13 +87,21 @@ end
 
 template '/opt/pixielabs/bin/tot' do
   source 'tot.erb'
-  owner user
+  owner 'root'
   group root_group
   mode '0755'
   action :create
 end
 
-remote_file '/opt/pixielabs/bin/bazel' do
+template '/opt/pixielabs/bin/bazel' do
+  source 'bazel.erb'
+  owner 'root'
+  group root_group
+  mode '0755'
+  action :create
+end
+
+remote_file '/opt/pixielabs/bin/bazel_core' do
   source node['bazel']['download_path']
   mode 0555
   checksum node['bazel']['sha256']
