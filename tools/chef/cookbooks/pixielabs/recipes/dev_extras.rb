@@ -30,6 +30,12 @@ if node[:platform] == 'ubuntu'
     action :upgrade
   end
 
+  remote_file '/usr/share/zsh/vendor-completions/_bazel' do
+    source node['bazel']['zsh_completions']
+    mode 0644
+    checksum node['bazel']['zcomp_sha256']
+  end
+
   include_recipe 'pixielabs::linux_gperftools'
 elsif node[:platform] == 'mac_os_x'
   homebrew_package 'emacs'
