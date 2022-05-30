@@ -36,9 +36,14 @@ default['antlr'] = {}
 default['antlr']['download_path'] = 'https://www.antlr.org/download/antlr-4.9-complete.jar'
 default['antlr']['sha256'] = 'bd11b2464bc8aee5f51b119dff617101b77fa729540ee7f08241a6a672e6bc81'
 
+default['bazel']                     = {}
+default['bazel']['version']          = '4.2.2'
+default['bazel']['zsh_completions']  =
+  "https://raw.githubusercontent.com/bazelbuild/bazel/#{default['bazel']['version']}/scripts/zsh_completion/_bazel"
+default['bazel']['zcomp_sha256']     = '4094dc84add2f23823bc341186adf6b8487fbd5d4164bd52d98891c41511eba4'
+
 default['skaffold']                  = {}
 default['kubectl']                   = {}
-default['bazel']                     = {}
 default['golang']                    = {}
 default['minikube']                  = {}
 default['nodejs']                    = {}
@@ -57,10 +62,9 @@ default['helm']                      = {}
 default['opm']                       = {}
 default['lego']                      = {}
 
-
 if node[:platform] == 'ubuntu'
   default['bazel']['download_path'] =
-    'https://github.com/bazelbuild/bazel/releases/download/4.2.2/bazel-4.2.2-linux-x86_64'
+    "https://github.com/bazelbuild/bazel/releases/download/#{default['bazel']['version']}/bazel-#{default['bazel']['version']}-linux-x86_64"
   default['bazel']['sha256'] =
     '11dea6c7cfd866ed520af19a6bb1d952f3e9f4ee60ffe84e63c0825d95cb5859'
 
@@ -158,7 +162,7 @@ if node[:platform] == 'ubuntu'
     'd6a6dbf82ae9a1a7f9fbc8d85c224617a17337afa4284aaca6b0556a7347609d'
 elsif node[:platform] == 'mac_os_x'
   default['bazel']['download_path'] =
-    'https://github.com/bazelbuild/bazel/releases/download/4.2.2/bazel-4.2.2-darwin-x86_64'
+    "https://github.com/bazelbuild/bazel/releases/download/#{default['bazel']['version']}/bazel-#{default['bazel']['version']}-darwin-x86_64"
   default['bazel']['sha256'] =
     '288660a310193c492a38a0480c42c74789564c09511e6adc045b5b4b4f117f7d'
 
