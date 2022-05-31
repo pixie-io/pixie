@@ -50,6 +50,7 @@ import { LayoutContext, LayoutContextProvider } from 'app/context/layout-context
 import { ResultsContext, ResultsContextProvider } from 'app/context/results-context';
 import { ScriptContext, ScriptContextProvider } from 'app/context/script-context';
 import { GQLClusterStatus } from 'app/types/schema';
+import { stableSerializeArgs } from 'app/utils/args-utils';
 import { buildClass } from 'app/utils/build-class';
 import { showIntercomTrigger, triggerID } from 'app/utils/intercom';
 import { containsMutation } from 'app/utils/pxl';
@@ -420,6 +421,14 @@ const LiveView = React.memo(() => {
     };
   }, [setWidgetsMoveable]);
 
+  const scroller = React.useRef<HTMLDivElement>(null);
+  const serializedArgs = stableSerializeArgs(args);
+  const scrollId = !(script?.id && tables.size > 0) ? null : `${script.id}-${serializedArgs}-${tables.size}`;
+  React.useEffect(() => {
+    // Scroll up when, from the user's perspective, the script changes. Re-running it counts.
+    if (scrollId) scroller.current?.scrollTo({ top: 0 });
+  }, [scrollId]);
+
   if (!selectedClusterName || !args) return null;
 
   const willRun = script && (!containsMutation(script?.code) || manual);
@@ -434,7 +443,7 @@ const LiveView = React.memo(() => {
           setWidgetsMoveable={setWidgetsMoveable}
         />
         <EditorSplitPanel>
-          <div className={classes.main}>
+          <div className={classes.main} ref={scroller}>
             <div className={buildClass(
               classes.mainContent,
               isEmbedded && classes.embeddedMain,
