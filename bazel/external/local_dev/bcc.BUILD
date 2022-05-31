@@ -45,7 +45,6 @@ local_cc(
         "libbcc.a",
         "libbcc_bpf.a",
         "libbcc-loader-static.a",
-        "libb_frontend.a",
         "libclang_frontend.a",
     ],
     visibility = ["//visibility:public"],
