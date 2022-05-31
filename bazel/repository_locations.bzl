@@ -141,9 +141,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2020.3.tar.gz"],
     ),
     com_github_libarchive_libarchive = dict(
-        sha256 = "b60d58d12632ecf1e8fad7316dc82c6b9738a35625746b47ecdcaf4aed176176",
-        strip_prefix = "libarchive-3.4.2",
-        urls = ["https://github.com/libarchive/libarchive/releases/download/v3.4.2/libarchive-3.4.2.tar.gz"],
+        sha256 = "c676146577d989189940f1959d9e3980d28513d74eedfbc6b7f15ea45fe54ee2",
+        strip_prefix = "libarchive-3.6.1",
+        urls = ["https://github.com/libarchive/libarchive/releases/download/v3.6.1/libarchive-3.6.1.tar.gz"],
     ),
     com_google_farmhash = dict(
         sha256 = "09b5da9eaa7c7f4f073053c1c6c398e320ca917e74e8f366fd84679111e87216",
