@@ -36,4 +36,10 @@ def thrift_deps(scala_version):
             "ch.qos.logback:logback-classic:1.2.10",
         ],
         repositories = ["https://repo1.maven.org/maven2"],
+        excluded_artifacts = [
+            "io.netty:netty-handler",
+            "io.netty:netty-common",
+            "io.netty:netty-tcnative-boringssl-static",
+            # "io.netty:netty-tcnative-classes",
+        ],
     )

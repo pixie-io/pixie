@@ -80,6 +80,16 @@ thrift_library(
     srcs = glob(["**/*.thrift"]),
 )
 
+java_import(
+    name = "netty_handler",
+    jars = [
+        "netty-handler-4.1.59.Final.jar",
+        "netty-common-4.1.59.Final.jar",
+        "netty-tcnative-boringssl-static-2.0.35.Final-linux-x86_64.jar",
+        # "netty-tcnative-classes-2.0.52.Final.jar",
+    ],
+)
+
 scala_library(
     name = "scrooge_jars",
     visibility = ["//visibility:public"],
@@ -90,6 +100,7 @@ scala_library(
         "@maven//:com_twitter_finagle_thrift_2_13",
         "@maven//:com_twitter_finagle_thriftmux_2_13",
         "@maven//:com_twitter_scrooge_core_2_13",
+        ":netty_handler",
     ],
 )
 
