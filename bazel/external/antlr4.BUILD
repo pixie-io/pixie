@@ -25,8 +25,8 @@ cmake(
     name = "libantlr",
     build_args = [
         "--",  # <- Pass remaining options to the native tool.
-        "-j$(nproc)",
-        "-l$(nproc)",
+        "-j`nproc`",
+        "-l`nproc`",
     ],
     lib_source = ":all",
     out_include_dir = "include/antlr4-runtime",
