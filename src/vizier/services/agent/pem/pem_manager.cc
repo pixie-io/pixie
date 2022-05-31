@@ -34,6 +34,11 @@ DEFINE_int32(table_store_http_events_percent,
              "The percent of the table store data limit that should be devoted to the http_events "
              "table. Defaults to 40%.");
 
+DEFINE_int32(table_store_stirling_error_limit,
+             gflags::Int32FromEnv("PL_TABLE_STORE_STIRLING_ERROR_LIMIT_MB", 2),
+             "The maximum amount of data to store in the two tables for Stirling error reporting, "
+             "the stirling_error table and probe_status table.");
+
 namespace px {
 namespace vizier {
 namespace agent {
@@ -86,7 +91,11 @@ Status PEMManager::InitSchemas() {
   int64_t memory_limit = FLAGS_table_store_data_limit * 1024 * 1024;
   int64_t num_tables = relation_info_vec.size();
   int64_t http_table_size = (FLAGS_table_store_http_events_percent * memory_limit) / 100;
-  int64_t other_table_size = (memory_limit - http_table_size) / (num_tables - 1);
+  int64_t stirling_error_table_size = (FLAGS_table_store_stirling_error_limit / 2) * 1024 * 1024;
+  int64_t probe_status_table_size = (FLAGS_table_store_stirling_error_limit / 2) * 1024 * 1024;
+  int64_t other_table_size =
+      (memory_limit - http_table_size - stirling_error_table_size - probe_status_table_size) /
+      (num_tables - 3);
 
   for (const auto& relation_info : relation_info_vec) {
     std::shared_ptr<table_store::Table> table_ptr;
@@ -96,6 +105,12 @@ Status PEMManager::InitSchemas() {
       // behaviour.
       table_ptr = std::make_shared<table_store::Table>(relation_info.name, relation_info.relation,
                                                        http_table_size, 256 * 1024);
+    } else if (relation_info.name == "stirling_error") {
+      table_ptr = std::make_shared<table_store::Table>(relation_info.name, relation_info.relation,
+                                                       stirling_error_table_size);
+    } else if (relation_info.name == "probe_status") {
+      table_ptr = std::make_shared<table_store::Table>(relation_info.name, relation_info.relation,
+                                                       probe_status_table_size);
     } else {
       table_ptr = std::make_shared<table_store::Table>(relation_info.name, relation_info.relation,
                                                        other_table_size);
