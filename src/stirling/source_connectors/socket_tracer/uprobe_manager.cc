@@ -257,8 +257,12 @@ StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDPath(
 // Return error if something unexpected occurs.
 // Return 0 if nothing unexpected, but there is nothing to deploy (e.g. no OpenSSL detected).
 StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
-  constexpr std::string_view kLibSSL = "libssl.so.1.1";
-  constexpr std::string_view kLibCrypto = "libcrypto.so.1.1";
+  // TODO(ddelnano): Update this to support the existing libssl.so.1.1 and libcrypto.so.1.1 libraries.
+  // In addition to that we should allow pixie to match on netty's auto generated filepath name
+  // (i.e. libnetty_tcnative_linux_x86_648014508084024950371.so) so we can remove the need to
+  // monkey patch netty with Byteman.
+  constexpr std::string_view kLibSSL = "libnetty_tcnative_linux_x86.so";
+  constexpr std::string_view kLibCrypto = "libnetty_tcnative_linux_x86.so";
   const std::vector<std::string_view> lib_names = {kLibSSL, kLibCrypto};
 
   const system::Config& sysconfig = system::Config::GetInstance();

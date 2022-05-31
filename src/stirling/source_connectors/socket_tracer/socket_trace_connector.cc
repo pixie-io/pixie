@@ -90,7 +90,7 @@ DEFINE_bool(stirling_enable_nats_tracing, true,
 DEFINE_bool(stirling_enable_kafka_tracing, true,
             "If true, stirling will trace and process Kafka messages.");
 DEFINE_bool(stirling_enable_mux_tracing,
-            gflags::BoolFromEnv("PL_STIRLING_TRACER_ENABLE_MUX", false),
+            gflags::BoolFromEnv("PL_STIRLING_TRACER_ENABLE_MUX", true),
             "If true, stirling will trace and process Mux messages.");
 
 DEFINE_bool(stirling_disable_self_tracing, true,
