@@ -423,7 +423,7 @@ const LiveView = React.memo(() => {
 
   const scroller = React.useRef<HTMLDivElement>(null);
   const serializedArgs = stableSerializeArgs(args);
-  const scrollId = !(script?.id && tables.size > 0) ? null : `${script.id}-${serializedArgs}-${tables.size}`;
+  const scrollId = !(script?.id) ? null : `${script.id}-${serializedArgs}`;
   React.useEffect(() => {
     // Scroll up when, from the user's perspective, the script changes. Re-running it counts.
     if (scrollId) scroller.current?.scrollTo({ top: 0 });
