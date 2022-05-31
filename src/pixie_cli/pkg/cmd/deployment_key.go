@@ -97,7 +97,8 @@ var DeleteDeployKeyCmd = &cobra.Command{
 	Short: "Delete a deploy key for Pixie",
 	Run: func(cmd *cobra.Command, args []string) {
 		cloudAddr := viper.GetString("cloud_addr")
-		id := viper.GetString("id")
+		id, _ := cmd.Flags().GetString("id")
+
 		if id == "" {
 			utils.Fatal("Deployment key ID must be specified using --id flag")
 		}
