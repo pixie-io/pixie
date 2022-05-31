@@ -175,7 +175,7 @@ def _cc_deps():
     _include_all_repo("com_github_gperftools_gperftools")
     _include_all_repo("com_github_nats_io_natsc", patches = ["//bazel/external:natsc.patch"], patch_args = ["-p1"])
     _include_all_repo("com_github_libuv_libuv", patches = ["//bazel/external:libuv.patch"], patch_args = ["-p1"])
-    _include_all_repo("com_github_libarchive_libarchive")
+    _include_all_repo("com_github_libarchive_libarchive", patches = ["//bazel/external:libarchive.patch"], patch_args = ["-p1"])
 
 def _list_pl_deps(name):
     repo_urls = list()

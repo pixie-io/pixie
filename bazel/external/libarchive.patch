@@ -1,0 +1,21 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 7a0d300a..46fa472d 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -202,6 +202,7 @@ include(CTest)
+ OPTION(ENABLE_MBEDTLS "Enable use of mbed TLS" OFF)
+ OPTION(ENABLE_NETTLE "Enable use of Nettle" OFF)
+ OPTION(ENABLE_OPENSSL "Enable use of OpenSSL" ON)
++OPTION(ENABLE_LIBMD "Enable use of the LIBMD library if found" OFF)
+ OPTION(ENABLE_LIBB2 "Enable the use of the system LIBB2 library if found" ON)
+ OPTION(ENABLE_LZ4 "Enable the use of the system LZ4 library if found" ON)
+ OPTION(ENABLE_LZO "Enable the use of the system LZO library if found" OFF)
+@@ -809,7 +810,7 @@ ELSE()
+ ENDIF()
+ 
+ # FreeBSD libmd
+-IF(NOT OPENSSL_FOUND)
++IF(ENABLE_LIBMD AND NOT OPENSSL_FOUND)
+   CHECK_LIBRARY_EXISTS(md "MD5Init" "" LIBMD_FOUND)
+   IF(LIBMD_FOUND)
+     CMAKE_PUSH_CHECK_STATE()	# Save the state of the variables
