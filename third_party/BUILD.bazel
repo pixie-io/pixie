@@ -29,8 +29,8 @@ cc_library(
 configure_make(
     name = "gperftools_build",
     args = [
-        "-j$(nproc)",
-        "-l$(nproc)",
+        "-j`nproc`",
+        "-l`nproc`",
     ],
     configure_options = [
         "--enable-shared=no",
@@ -61,8 +61,8 @@ cmake(
     name = "natsc",
     build_args = [
         "--",  # <- Pass remaining options to the native tool.
-        "-j$(nproc)",
-        "-l$(nproc)",
+        "-j`nproc`",
+        "-l`nproc`",
     ],
     cache_entries = {
         # This forces nats to link against boringssl instead of openssl.
@@ -87,8 +87,8 @@ cmake(
     name = "libuv",
     build_args = [
         "--",  # <- Pass remaining options to the native tool.
-        "-j$(nproc)",
-        "-l$(nproc)",
+        "-j`nproc`",
+        "-l`nproc`",
     ],
     cache_entries = {
         "BUILDING_UV_SHARED": "OFF",
@@ -107,8 +107,8 @@ cmake(
     name = "libarchive",
     build_args = [
         "--",  # <- Pass remaining options to the native tool.
-        "-j$(nproc)",
-        "-l$(nproc)",
+        "-j`nproc`",
+        "-l`nproc`",
     ],
     cache_entries = {
         "ENABLE_CAT": "OFF",

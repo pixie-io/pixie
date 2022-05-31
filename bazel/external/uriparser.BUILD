@@ -27,8 +27,8 @@ cmake(
     name = "uriparser",
     build_args = [
         "--",  # <- Pass remaining options to the native tool.
-        "-j$(nproc)",
-        "-l$(nproc)",
+        "-j`nproc`",
+        "-l`nproc`",
     ],
     cache_entries = {
         "BUILD_SHARED_LIBS": "OFF",
