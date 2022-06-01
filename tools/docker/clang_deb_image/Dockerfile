@@ -43,7 +43,7 @@ RUN triple=$(gcc -v 2>&1 | grep "^Target:" | cut -d ' ' -f 2) && \
     -DLIBCLANG_BUILD_STATIC=ON \
     -DLLVM_INCLUDE_TESTS=OFF \
     -DLLVM_DEFAULT_TARGET_TRIPLE=${triple} \
-    -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;clangd;compiler-rt;libcxx;libcxxabi;polly;lld;openmp;libunwind" \
+    -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;clangd;compiler-rt;polly;lld;openmp" \
     ../llvm-project/llvm
 
 RUN make -j $(nproc)
@@ -86,6 +86,6 @@ RUN make -C build install
 
 WORKDIR /opt
 VOLUME /image
-ENV deb_name clang-13.0-pl1.deb
+ENV deb_name clang-13.0-pl2.deb
 CMD ["sh", "-c",  "fpm -p /image/${deb_name} \
-        -s dir -t deb -n clang-13.0 -v 13.0-pl1 --prefix /opt clang-13.0 clang-13.0-libc++"]
+        -s dir -t deb -n clang-13.0 -v 13.0-pl2 --prefix /opt clang-13.0 clang-13.0-libc++"]
