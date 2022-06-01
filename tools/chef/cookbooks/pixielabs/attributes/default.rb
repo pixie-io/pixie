@@ -16,10 +16,10 @@
 
 default['clang']               = {}
 default['clang']['deb']        =
-  'https://storage.googleapis.com/pixie-dev-public/clang-13.0-pl1.deb'
+  'https://storage.googleapis.com/pixie-dev-public/clang-13.0-pl2.deb'
 default['clang']['deb_sha256'] =
-  'f913dc8d3fa897b0e8a4b4a158ba85de364000c7a36aee71202143dd5e76d67c'
-default['clang']['version']    = "13.0-pl1"
+  '9447679053b5ae63be89698cb653321118e6d5a2217fae6ab1980cf4d93ffa82'
+default['clang']['version']    = "13.0-pl2"
 
 default['gperftools']               = {}
 default['gperftools']['deb']        =
