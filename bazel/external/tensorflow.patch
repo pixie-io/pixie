@@ -14,21 +14,18 @@ index 809b811eb1a..c9341ee70bc 100644
  
      closure_repositories()
  
-diff --git a/tensorflow/workspace2.bzl b/tensorflow/workspace2.bzl
-index 77c76aa6e20..51e7eb33514 100644
---- a/tensorflow/workspace2.bzl
-+++ b/tensorflow/workspace2.bzl
-@@ -91,8 +91,8 @@ def _tf_toolchains():
-     initialize_rbe_configs()
- 
-     # Note that we check the minimum bazel version in WORKSPACE.
--    clang6_configure(name = "local_config_clang6")
--    cc_download_clang_toolchain(name = "local_config_download_clang")
-+    #clang6_configure(name = "local_config_clang6")
-+    #cc_download_clang_toolchain(name = "local_config_download_clang")
-     cuda_configure(name = "local_config_cuda")
-     tensorrt_configure(name = "local_config_tensorrt")
-     nccl_configure(name = "local_config_nccl")
+diff --git a/third_party/llvm/workspace.bzl b/third_party/llvm/workspace.bzl
+index 82d0f71ccbd..94104822e98 100644
+--- a/third_party/llvm/workspace.bzl
++++ b/third_party/llvm/workspace.bzl
+@@ -12,7 +12,6 @@ def repo(name):
+         sha256 = LLVM_SHA256,
+         strip_prefix = "llvm-project-{commit}".format(commit = LLVM_COMMIT),
+         urls = [
+-            "https://storage.googleapis.com/mirror.tensorflow.org/github.com/llvm/llvm-project/archive/{commit}.tar.gz".format(commit = LLVM_COMMIT),
+             "https://github.com/llvm/llvm-project/archive/{commit}.tar.gz".format(commit = LLVM_COMMIT),
+         ],
+         build_file = "//third_party/llvm:llvm.BUILD",
 diff --git a/third_party/repo.bzl b/third_party/repo.bzl
 index 795f0b00b98..98e71909a2d 100644
 --- a/third_party/repo.bzl
